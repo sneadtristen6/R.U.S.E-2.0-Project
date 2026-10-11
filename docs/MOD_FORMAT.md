@@ -76,9 +76,28 @@ before = []
 
 [conflicts]                         # mods that must not be combined with this one
 # "some-other-overhaul" = "*"
+
+[edited_from]                       # an edit of someone else's mod: what it was copied from (the Studio writes it)
+# id      = "r-u-s-e-field-manual-v1"
+# name    = "R.U.S.E. Field Manual"
+# version = "1.0.0"
+# authors = ["nickgit"]
 ```
 
 `affects_gameplay` is **computed** by the builder (§10) and never declared by hand.
+
+**Editing an installed mod.** The Studio's "Edit an installed mod…" opens any mod in the Launcher's library. A mod
+this Studio made opens its own project. Anyone else's is first copied into the Studio as a mod of its own: a name the
+modder gives it and an id made from that name, with `[edited_from]` saying what it came from. An edit never carries
+the original's name or id: Export refuses it, and so does the Launcher when the file is added (`rusemod.package.
+edit_problem`), so an update of the original can't wipe the edit and two different mods never share one name.
+
+A RUSE Mod Manager mod (an `.rmod`, §13) opens the same way, and its copy is converted (`rusemod.rmodconvert`): every
+value change the Studio can show becomes a Studio change in `src/studio.rndf`, and the rest stays in a smaller `.rmod`
+that `[rmod] file` still names: new objects, deletions, whole files, texts, map layers, and values the Studio can't
+spell yet or that pass through a link the mod changes. The build applies a mod's `.rmod` first and its own changes on
+top (§10), so the copy plays as the original did. Checked on five of the listed mods: the converted copy builds the
+same unit data, value for value.
 
 ## 4. Addressing game objects
 

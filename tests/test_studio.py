@@ -1142,7 +1142,7 @@ class Terrain(WithMod):
         self.assertEqual([p["file"] for p in after["problems"]], ["maps/TwoIslands/scenario.toml"])
         self.assertEqual(self.api.set_aside("maps/TwoIslands/scenario.toml")["problems"], [])
         for bad in ("mod.toml", "maps/Blitz/terrain.broken.toml", "../x/maps/Blitz/terrain.toml", "maps/Nope/movement.toml"):
-            with self.assertRaisesRegex(StudioError, "isn't one of this mod's map files"):
+            with self.assertRaisesRegex(StudioError, "isn't one of this mod's files"):  # map, unit changes, text files
                 self.api.set_aside(bad)
 
 

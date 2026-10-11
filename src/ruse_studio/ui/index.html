@@ -662,6 +662,18 @@
     </div>
   </dialog>
 
+  <!-- Edit an installed mod (app.js openEditMods): the Launcher's mods, one row each; yours opens its project, anyone
+       else's is named as a copy of your own first, one made the older way says it can't be shown yet -->
+  <dialog id="edit-mods" class="doctor" aria-labelledby="edit-mods-title">
+    <h2 id="edit-mods-title"></h2>
+    <p id="edit-mods-lead" class="muted small"></p>
+    <input id="edit-mods-search" class="edit-mods-search" type="search" autocomplete="off" spellcheck="false">
+    <ul id="edit-mods-list" class="doctor-list"></ul>
+    <div class="actions">
+      <button id="edit-mods-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
   <!-- Duplicate map (maps.js openDuplicate, StudioApi.duplicate_map): what a new map is and how it works, then its
        name; the copy opens once it's made -->
   <dialog id="duplicate" class="doctor" aria-labelledby="dup-title">

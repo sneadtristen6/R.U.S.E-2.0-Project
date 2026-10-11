@@ -384,11 +384,13 @@ def _pack_name(name: str, taken: set) -> str:
 
 
 def _aside(path: Path) -> Path:
-    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken): out of the build's way,
-    never lost. Returns the new path."""
-    kept, k = path.with_name(f"{path.stem}.broken.toml"), 2
+    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken), or a unit changes or text
+    file to <name>.rndf.broken (the build reads only .rndf and .csv files there): out of the build's way, never lost.
+    Returns the new path."""
+    toml = path.suffix.lower() == ".toml"
+    kept, k = path.with_name(f"{path.stem}.broken.toml" if toml else f"{path.name}.broken"), 2
     while kept.exists():
-        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml"), k + 1
+        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml" if toml else f"{path.name}.broken-{k}"), k + 1
     path.rename(kept)
     return kept
 
@@ -4495,7 +4497,104 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._mod_dir()
         if folder is None:
             return {"mod": None, "problems": []}
-        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game()) + self._research_problems()}
+        from rusemod.plainproblems import explain
+        found = [explain(p) for p in check_mod_folder(folder, self._game()) + self._research_problems()]
+        for p in found:  # the map's name as the menus say it, in each language, for the plain words
+            pack = p["plain"].get("map")
+            if pack:
+                p["plain"]["map_titles"] = self._map_titles(pack, folder)
+        return {"mod": str(folder), "problems": found}
+
+    def _map_titles(self, pack: str, folder: Path) -> dict:
+        """{language: the map's name in its menus} for the map pack `pack` (a new map of the mod: its own name from
+        its map.toml); {} when it isn't known (the window shows the pack's name then)."""
+        game = self._game()
+        cache = self.__dict__.setdefault("_titles_cache", {})
+        if game is not None and game not in cache:
+            try:
+                cache[game] = {m["pack"].lower(): {lang: names[0] for lang, names in m["titles"].items() if names}
+                               for m in map_list(game)}
+            except (OSError, ValueError, KeyError):
+                cache[game] = {}
+        found = cache.get(game, {}).get(pack.lower())
+        if found:
+            return found
+        try:  # a new map: the name it gives itself
+            data = tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            return {}
+        name = data.get("name")
+        return {k: str(v) for k, v in name.items()} if isinstance(name, dict) else {"us": str(name)} if name else {}
+
+    def _map_water(self, pack: str, folder: Path) -> float:
+        """The map's own water height (world z): the level most of its ground's water points carry, the one the Map
+        Paint tab draws its water brushes from. A new map's is the shipped map's it copies."""
+        from rusemod.tms import Tms
+        game = self._game()
+        if game is None:
+            # not a game rule: the height is read from the game's own map
+            raise StudioError("We couldn't find R.U.S.E., so the map's water height can't be read.")
+        source = pack
+        try:
+            source = str(tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+                         .get("copy_of") or pack)
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            pass
+        path = find_pack(game, pack_file(source))
+        if path is None:
+            # not a game rule: the map's own pack isn't in the game folder
+            raise StudioError(f"The game has no map {source}, so its water height can't be read.")
+        with Edat.open(str(path)) as arc:
+            tms = Tms(bytes(arc.read(arc.find(LODS["highdef"]))))
+        return float(tms.to_world(2, tms.base_water()))
+
+    def open_mod_in_folder(self) -> dict:
+        """Open the current mod's folder on the PC (the mod check's fix for what a button can't fix: mod.toml by
+        hand). Returns {"opened": the folder}."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        self._starter.open_url(str(folder))
+        return {"opened": str(folder)}
+
+    def fix_problem(self, fix: dict) -> dict:
+        """Make one of the fixes the mod check offers (rusemod.plainproblems.explain): "fill" a missing value the
+        Studio knows (a water stroke's level: the map's own water height), "remove_key" a setting the game doesn't
+        know, "remove_item" one item of a map file (a stroke, an object, a spawn...), or "set_aside" a whole file.
+        A map file is kept as it was the first time it's fixed, beside it (<name>.before-fix.toml: the build doesn't
+        read it). Returns check_mod() and "message"."""
+        from rusemod import plainproblems as pp
+        kind = str((fix or {}).get("fix", ""))
+        if kind == "set_aside":
+            return self.set_aside(fix.get("file"))
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        path = folder / str(fix.get("file") or "")
+        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
+            raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")
+        table, key = str(fix.get("table", "")), fix.get("key")
+        try:
+            n = int(fix.get("n"))
+        except (TypeError, ValueError):
+            raise StudioError("Which item to fix isn't said.") from None
+        value = None
+        if kind == "fill":
+            if (table, key) not in pp.FILLS:
+                raise StudioError(f"The Studio doesn't know a safe {key} to fill in.")
+            value = self._map_water(path.parent.name, folder)
+        with self._saving:
+            text = path.read_text(encoding="utf-8")
+            try:
+                new = pp.edit(text, kind, table, n, key, value)
+            except pp.FixError as exc:
+                raise StudioError(f"That couldn't be fixed safely ({exc}). Put the file aside instead, or fix it by "
+                                  f"hand.") from None
+            before = path.with_name(f"{path.stem}.before-fix.toml")
+            if not before.exists():
+                shutil.copyfile(path, before)
+            ModEdits._write(path, new)
+        return self.check_mod() | {"message": f"Fixed. {path.name} as it was is kept beside it, as {before.name}."}
 
     def _research_problems(self) -> list[dict]:
         """The current mod's units researched from a unit that isn't there (one taken out after the warning:
@@ -4572,15 +4671,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.check_mod()
 
     def set_aside(self, file: str) -> dict:
-        """Take a broken map file (`file`: its path in the mod, as check_mod gives it) out of the current mod: it's
-        renamed <name>.broken.toml beside it, never deleted, and the build skips it. Returns check_mod() and "kept":
-        the renamed file."""
+        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it) out of
+        the current mod: it's renamed beside it (_aside), never deleted, and the build skips it. Returns check_mod()
+        and "kept": the renamed file."""
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
         path = folder / str(file or "")
-        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
-            raise StudioError(f"{file} isn't one of this mod's map files")
+        # a map file, a unit changes file or a text file (the last two renamed <name>.broken)
+        map_file = path.name in MAP_FILES and path.parent.parent == folder / "maps"
+        unit_file = path.suffix.lower() == ".rndf" and (folder / "src") in path.parents
+        text_file = path.suffix.lower() == ".csv" and path.parent == folder / "text"
+        if not (map_file or unit_file or text_file) or not path.is_file():
+            raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
             kept = _aside(path)
         return self.check_mod() | {"kept": str(kept)}
@@ -4674,6 +4777,160 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             return self.mods(kind)
         chosen = pick_folder(self._window)
         return self.choose_mod(chosen, kind) if chosen else self.mods(kind)
+
+    # --- Edit an installed mod: the mods the Launcher plays (its library), opened here with everything in them (the
+    # owner, 2026-10-10). Your own (this Studio has its project) opens that project; anyone else's is copied first under
+    # a name of its own, never the original's, so an update of the original can't wipe the edit and two different
+    # mods never share one name (rusemod.package.edit_problem). A mod made the older way (an .rmod) can't be shown yet.
+    def _library(self):
+        from rusemod.library import Library
+        return Library(self._home / "library")
+
+    def _projects(self) -> list[Path]:
+        """The Studio's own mod and map folders (its mods and maps folders)."""
+        out = []
+        for root in (self._home / "mods", self._home / "maps"):
+            out += [f for f in sorted(root.iterdir()) if (f / "mod.toml").is_file()] if root.is_dir() else []
+        return out
+
+    def _project_of(self, mod_id: str) -> Path | None:
+        """This Studio's project of the installed mod `mod_id`: the folder in its mods or maps folder with that id."""
+        for folder in self._projects():
+            try:
+                if package.info_of(folder)["id"] == mod_id:
+                    return folder
+            except package.PackageError:
+                continue
+        return None
+
+    @staticmethod
+    def _holds(folder: Path) -> tuple[bool, bool]:
+        """(whether a mod folder holds anything but maps: unit changes, texts, files, scripts; whether it holds maps)."""
+        maps = (folder / "maps").is_dir() and any(f.is_dir() for f in (folder / "maps").iterdir())
+        other = any((folder / d).is_dir() and any((folder / d).rglob("*")) for d in ("src", "text", "files", "scripts")) \
+            or any((folder / f).is_file() for f in ("menus.toml", "depots.toml"))
+        return other, maps
+
+    def installed_mods(self) -> dict:
+        """The Launcher's installed mods for "Edit an installed mod…": {"mods": [{id, name, version, author,
+        description, "yours": this Studio's project of it (its path) or "", "older": made the older way (an .rmod:
+        the Studio can't show it yet), "units"/"maps": what's in it, "edited_from": the name of the mod it's an edit
+        of, or "", "error": a mod.toml that can't be read}]}."""
+        out = []
+        for info in self._library().mods():
+            folder = Path(info.get("path") or "")
+            row = {k: info.get(k, "") for k in ("id", "name", "version", "author", "description")}
+            if info.get("error"):
+                out.append(row | {"yours": "", "older": False, "units": False, "maps": False, "edited_from": "",
+                                  "error": info["error"]})
+                continue
+            units, maps = self._holds(folder)
+            project = self._project_of(info["id"])
+            out.append(row | {"yours": str(project or ""), "older": bool(info.get("rmod")), "units": units,
+                              "maps": maps, "edited_from": str(package.edited_from(folder).get("name", "")), "error": ""})
+        return {"mods": out}
+
+    def edit_installed(self, mod_id: str, name: str = "") -> dict:
+        """Edit the installed mod `mod_id`. Yours (this Studio has its project): that project opens. Anyone else's: a
+        copy of it, named `name`, goes into the Studio's mods folder (its maps folder when it holds only maps) and
+        opens; `name` can't be the original's or another installed mod's. The copy gets an id of its own and records
+        what it was made from (mod.toml [edited_from]). It opens as the Units tab's mod and, when it holds maps, as the
+        Maps tab's too. Returns {"mod": mods("mod"), "map": mods("map"), "path", "copied", "units", "maps",
+        "message"}."""
+        folder = self._library().path_of(str(mod_id))
+        if folder is None:
+            raise StudioError("That mod isn't installed any more. Add it in the Launcher, then try again.")
+        try:
+            info = package.info_of(folder)
+        except package.PackageError as exc:
+            raise StudioError(str(exc)) from None
+        game, index = self._game(), self._path()
+        if info.get("rmod"):  # an .rmod mod: its copy is converted, so the Studio shows what it changes
+            if game is None:
+                # not a game rule: converting reads the game's own unit data
+                raise StudioError("We couldn't find R.U.S.E. Opening a RUSE Mod Manager mod reads the game's unit data.")
+            if index is None or not Path(index).is_file():
+                # not a game rule: the converter finds each changed object in the game index
+                raise StudioError("Build the game index first (Units tab: Build the index), then open this mod again.")
+        project, copied = self._project_of(info["id"]), False
+        if project is None:
+            project, copied = self._edit_copy(folder, info, name), True
+        kept = {}
+        values = 0
+        if copied and info.get("rmod"):
+            from .rmodedit import convert_folder
+            try:
+                converted = convert_folder(project, game, index)
+            except Exception as exc:  # the copy is useless half converted: it goes, and the reason is said
+                shutil.rmtree(project, ignore_errors=True)
+                raise StudioError(f"{info['name']} couldn't be opened in the Studio ({exc}). Please report this.") \
+                    from None
+            values, kept = converted.counts["values"], converted.kept_counts()
+        units, maps = self._holds(project)
+        if units or not maps:
+            self.choose_mod(str(project), "mod")
+        if maps:
+            self.choose_mod(str(project), "map")
+        shown = package.info_of(project)["name"]
+        if not copied:
+            message = f"{shown} is open: your changes go into it. Export puts it in the Launcher again."
+        elif info.get("rmod"):
+            rest = ", ".join(f"{n} {what}" for what, n in kept.items())
+            message = (f"Your copy {shown} is open. {values} of {info['name']}'s changes are in the Studio now, ready "
+                       f"to change." + (f" Kept as they are, and still in the mod: {rest}." if rest else ""))
+        else:
+            message = f"Your copy {shown} is open: everything in {info['name']} is in it, and your changes go into it."
+        return {"mod": self.mods("mod"), "map": self.mods("map"), "path": str(project), "copied": copied,
+                "units": units, "maps": maps, "values": values, "kept": kept, "message": message}
+
+    def _edit_copy(self, folder: Path, info: dict, name: str) -> Path:
+        """Copy the installed mod at `folder` into the Studio as a mod of its own named `name` (MOD_FORMAT §3
+        [edited_from]): every file its package holds, a new id made from the name, nothing of the Launcher's copy
+        changed."""
+        name = " ".join(str(name or "").split())
+        author = info.get("author") or "its author"
+        if not name:
+            raise StudioError(f"Give your copy a name of its own: it can't be called {info['name']}.")
+        if package.name_key(name) == package.name_key(info["name"]):
+            # not a game rule: an edit never takes the original's name (the owner, 2026-10-10)
+            raise StudioError(f"{info['name']} is {author}'s name for the mod. Give your copy a name of its own.")
+        taken = {package.name_key(m.get("name", "")) for m in self._library().mods()}
+        for project in self._projects():
+            try:
+                taken.add(package.name_key(package.info_of(project)["name"]))
+            except package.PackageError:
+                continue
+        if package.name_key(name) in taken:
+            raise StudioError(f"There's already a mod called {name}. Pick another name.")
+        units, maps = self._holds(folder)
+        base = self._home / ("maps" if maps and not units else "mods")
+        slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", name).encode("ascii", "ignore")
+                      .decode().lower()).strip("-") or "my-edit"
+        ids = {m.get("id") for m in self._library().mods()}
+        new_id, n = slug, 2
+        while new_id in ids or (self._home / "mods" / new_id).exists() or (self._home / "maps" / new_id).exists():
+            new_id, n = f"{slug}-{n}", n + 1
+        target = base / new_id
+        part = base / f".copying-{new_id}"
+        if part.exists():
+            shutil.rmtree(part)
+        try:
+            for f in package.files_of(folder):
+                to = part / f.relative_to(folder)
+                to.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, to)
+            text = (part / "mod.toml").read_text(encoding="utf-8")
+            text = package.set_values(text, "mod", {"id": new_id, "name": name})
+            text = package.set_values(text, package.EDITED_FROM, {"id": info["id"], "name": info["name"],
+                                                               "version": info.get("version", ""),
+                                                               "authors": list(info.get("authors") or [])})
+            tomllib.loads(text)
+            (part / "mod.toml").write_text(text, encoding="utf-8")
+            os.replace(part, target)
+        finally:
+            if part.exists():
+                shutil.rmtree(part, ignore_errors=True)
+        return target
 
     # --- the Settings tab ---
     def game_folder(self) -> dict:
@@ -7364,6 +7621,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         version = (version or "").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
+        if problem:
+            raise StudioError(problem)
         suggested = package.file_name(self.mod_info(kind) | {"version": version})
         if self._pick_save is not None:
             target = self._pick_save(suggested)
