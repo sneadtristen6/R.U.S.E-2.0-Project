@@ -74,8 +74,10 @@ nothing of the copied map and you place each player's HQ and paint the sectors; 
 map; a nation's units hide or fill in one go; any installed mod opens in the Studio (someone else's as a copy of your
 own); the mod check speaks plain words with fix buttons; units get their own look, a squad its own uniform, armour its
 real level; imported planes keep their propellers; and mods and updates download on every PC.
+
 **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
-Ocean). What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
+Ocean). 
+What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
 [Edit a scenario](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Edit-a-Scenario).
 
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
