@@ -434,17 +434,24 @@ def _sized(w: int, h: int, px: bytes, side: int) -> tuple[int, int, bytes]:
 
 
 # --- fitting to a unit ---
-HULL, TURRET, GUN = "hull", "turret", "gun"
-BONES = {HULL: "chassis", TURRET: "tourelle_01", GUN: "tourelle_01"}  # the gun turns with the turret (no recoil yet)
+HULL, TURRET, GUN, PROPELLER = "hull", "turret", "gun", "propeller"
+# the gun turns with the turret (no recoil yet); propeller discs go on the copied plane's own disc bones (fit_discs)
+BONES = {HULL: "chassis", TURRET: "tourelle_01", GUN: "tourelle_01", PROPELLER: "propeller"}
 TURRET_WORDS = ("turret", "turre", "tourelle", "tower")
 GUN_WORDS = ("barrel", "barre", "cannon", "canon", "gun")
 NOT_THE_GUN = ("minigun", "machine", "mg_", "_mg", "coax")
 PLAIN_ALPHA = 144       # alpha: the Sherman's body is mostly 128-159 (no side colour; shine is high, side colour low)
+# A plane's spinning-propeller discs as `ruse export-model` and the Studio's Open in Blender write them: a mesh of
+# their own, <model>_propeller (rusemod.gltf), each disc a flat square of 4 points (all 59 of the game's, 2026-10-10)
+DISC_MESH = "_propeller"
 
 
 def named_role(name: str) -> str | None:
-    """A mesh's role from its name alone (TURRET or GUN), or None."""
+    """A mesh's role from its name alone (TURRET, GUN or PROPELLER), or None. PROPELLER only names it: roles keeps it
+    for a mesh of discs alone (disc_pieces)."""
     n = name.lower()
+    if DISC_MESH in n:
+        return PROPELLER
     if any(w in n for w in TURRET_WORDS):
         return TURRET
     if any(w in n for w in GUN_WORDS) and not any(w in n for w in NOT_THE_GUN):
@@ -452,10 +459,45 @@ def named_role(name: str) -> str | None:
     return None
 
 
+def pieces(triangles: list, count: int) -> list[list[int]]:
+    """A mesh's points in pieces that share no point (each piece's points, in order)."""
+    parent = list(range(count))
+
+    def root(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for a, b, c in triangles:
+        ra = root(a)
+        for x in (b, c):
+            rx = root(x)
+            if rx != ra:
+                parent[rx] = ra
+    out: dict = {}
+    for i in range(count):
+        out.setdefault(root(i), []).append(i)
+    return list(out.values())
+
+
+def disc_pieces(mesh: Mesh) -> list[list[int]] | None:
+    """The discs of a mesh of propeller discs (each 4 points, 2 triangles), or None when it isn't one: a mesh only
+    named so (a downloaded model's "Spitfire_Propeller", its blades) stays an ordinary part."""
+    if not mesh.triangles:
+        return None
+    used = sorted({i for t in mesh.triangles for i in t})
+    if used != list(range(len(mesh.positions))):
+        return None
+    out = pieces(mesh.triangles, len(mesh.positions))
+    return out if all(len(p) == 4 for p in out) and len(mesh.triangles) == 2 * len(out) else None
+
+
 def roles(model: Model) -> list[str]:
-    """Each mesh's role (HULL, TURRET or GUN): from its name, else a part resting on the turret (its middle inside
-    the turret's outline, its bottom no lower than the turret's) turns with it; everything else is the hull."""
+    """Each mesh's role (HULL, TURRET, GUN or PROPELLER): from its name, else a part resting on the turret (its middle
+    inside the turret's outline, its bottom no lower than the turret's) turns with it; everything else is the hull. A
+    mesh named as propeller discs is one only when it's discs alone (disc_pieces)."""
     out: list = [named_role(m.name) for m in model.meshes]
+    out = [None if r == PROPELLER and disc_pieces(m) is None else r for m, r in zip(model.meshes, out)]
     turret = [p for m, r in zip(model.meshes, out) if r == TURRET for p in m.positions]
     if turret:
         tb = _box(turret)
@@ -466,6 +508,25 @@ def roles(model: Model) -> list[str]:
                 if tb[0] <= cx <= tb[3] and tb[1] <= cy <= tb[4] and b[2] >= tb[2] - 0.02 * (tb[5] - tb[2]):
                     out[i] = TURRET
     return [r or HULL for r in out]
+
+
+def shape(model: Model, parts: list[str]) -> tuple[Model, list[str]]:
+    """The model and its parts' roles without its propeller discs, for what its shape says (facing): a disc stands
+    above the nose, flat, often the plane's highest point (the Spitfire's 467 over its fuselage's 4)."""
+    keep = [i for i, k in enumerate(parts) if k != PROPELLER]
+    if not keep or len(keep) == len(parts):
+        return model, parts
+    return Model([model.meshes[i] for i in keep], model.materials, model.source), [parts[i] for i in keep]
+
+
+def facing_of(model: Model, parts: list[str], like: dict | None = None) -> tuple[int, int]:
+    """Which way the model faces, as prepare asks it: facing, on its shape without propeller discs (shape). A model
+    with the discs `ruse export-model` writes (the Studio's Open in Blender) is the game's own plane, in the game's
+    axes: it faces +x unless pinned otherwise (2026-10-10: of the 34 planes the importer can copy, exported and
+    imported back, the Kyushu Shinden, its propeller at its tail, came back facing backwards by the rules)."""
+    if PROPELLER in parts and not (like or {}).get("facing"):
+        return 0, 1
+    return facing(*shape(model, parts), like)
 
 
 def facing(model: Model, parts: list[str], like: dict | None = None) -> tuple[int, int]:
@@ -650,9 +711,9 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     if arrays:      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
         prep = arrays.prepare(sys.modules[__name__], model, folders, like, size, side)
         if prep is not None:
-            return prep
+            return fit_discs(prep, like)
     parts = roles(model)
-    axis, sign = facing(model, parts, like)
+    axis, sign = facing_of(model, parts, like)
     f = [0.0, 0.0, 0.0]
     f[axis] = float(sign)
     r = (f[1], -f[0], 0.0)        # forward x up: the right-hand side
@@ -714,8 +775,63 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         part.normals = [g if g is not None else n for g, n in zip(given, computed)]
         own_normals += sum(g is not None for g in given)
         out.append(part)
-    return Prepared(out, pictures, fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals,
-                                              own_alpha, notes))
+    return fit_discs(Prepared(out, pictures, fit_report(model, parts, axis, sign, scale, out, pictures, missing,
+                                                        own_normals, own_alpha, notes)), like)
+
+
+def fit_discs(prep: Prepared, like: dict) -> Prepared:
+    """The fitted model's propeller discs (the part on BONES[PROPELLER]) put on the copied plane's own disc bones, so
+    the game spins them as it spins its own (they're drawn with its propeller material: rusemod.unitmodel). `like`
+    "propellers": the copied model's discs [{"bone", "centre", "radius"}] (rusemod.unitmodel.find_source). Each disc
+    goes to the nearest of them, each of them takes one, and it's moved so its middle is that disc's: a bone spins
+    round its own disc's middle, so a disc elsewhere would swing round it. A disc further from every one of them
+    than their size, or a plane copying a unit with none, has its disc left out (a plain square the size of a
+    propeller, painted with the whole picture, is what players saw before: the report says how many)."""
+    mark = BONES[PROPELLER]
+    found = [p for p in prep.parts if p.bone == mark]
+    if not found:
+        return prep
+    kept_parts = [p for p in prep.parts if p.bone != mark]
+    spots = [s for s in (like.get("propellers") or []) if s.get("bone")]
+    discs = []      # (part, its points, its middle)
+    for part in found:
+        for pts in pieces(part.triangles, len(part.positions)):
+            box = [(min(part.positions[i][k] for i in pts), max(part.positions[i][k] for i in pts)) for k in range(3)]
+            discs.append((part, pts, tuple((lo + hi) / 2 for lo, hi in box)))
+    pairs = sorted((math.dist(d[2], s["centre"]), i, j) for i, d in enumerate(discs) for j, s in enumerate(spots))
+    took, used = {}, set()
+    for dist, i, j in pairs:
+        if i in took or j in used or dist > spots[j]["radius"]:
+            continue
+        took[i] = j
+        used.add(j)
+    groups: dict = {}
+    for i, (part, pts, middle) in enumerate(discs):
+        if i not in took:
+            continue
+        spot = spots[took[i]]
+        move = tuple(spot["centre"][k] - middle[k] for k in range(3))
+        out = groups.setdefault((spot["bone"], part.picture), Part(spot["bone"], part.picture, [], [], [], []))
+        index = {}
+        for p in pts:
+            index[p] = len(out.positions)
+            out.positions.append(tuple(part.positions[p][k] + move[k] for k in range(3)))
+            out.normals.append(part.normals[p])
+            out.uvs.append(part.uvs[p])
+        out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
+    left = len(discs) - len(took)
+    report = dict(prep.report)
+    report["propellers"] = {"kept": len(took), "left_out": left,
+                            "why": "" if not left else "none" if not spots else "far"}
+    if left:
+        report["notes"] = list(report.get("notes") or []) + [
+            f"{left} propeller disc(s) left out: " + ("the unit it copies has none to spin them" if not spots else
+                                                      "not where the copied plane's propellers are")]
+    out_parts = kept_parts + [groups[k] for k in sorted(groups)]
+    report["draws"] = len(out_parts)
+    report["vertices"] = sum(len(p.positions) for p in out_parts)
+    report["triangles"] = sum(len(p.triangles) for p in out_parts)
+    return Prepared(out_parts, prep.pictures, report)
 
 
 def hull_extent(model: Model, like: dict | None = None) -> tuple[float, float]:
@@ -725,7 +841,7 @@ def hull_extent(model: Model, like: dict | None = None) -> tuple[float, float]:
     as prepare does. After a fit at size s its hull is like["length"] x s long and width / length x like["length"] x s
     wide (an era unit's real size: ruse_studio.era_units)."""
     parts = roles(model)
-    axis, sign = facing(model, parts, like)
+    axis, sign = facing_of(model, parts, like)
     f = [0.0, 0.0, 0.0]
     f[axis] = float(sign)
     r = (f[1], -f[0], 0.0)
