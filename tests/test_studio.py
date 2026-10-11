@@ -1367,15 +1367,16 @@ class ScenarioEdits(WithMod):
     def test_hqs_are_add_hq_starts(self):
         """The owner, 2026-10-10: on a blank Operation "I'm pressing HQ start but nothing's popping up on the map" (only a
         Battles map's seats are marked placed or not, so every unmarked starting point was hidden, the new ones too),
-        and "Headquarters should not be considered units ... it should be under HQ start": Add HQ start holds a
-        player's HQ start and an HQ already built (Add unit's pickers fixed to HQs); Add unit lists no HQ."""
+        and "Headquarters should not be considered units ... It should just be all in one" (every player, the computer's
+        too, has a seat whose HQ the game builds at its start): Add HQ start places them, each drawn as an HQ badge in
+        its team's colour with its player's number (not a bare pillar); Add unit lists no HQ."""
         maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
         self.assertIn('(it.unused || it.placed === false)) continue;', maps)
         self.assertNotIn("(it.unused || !it.placed)) continue;", maps)
-        self.assertIn('const spawningNow = () => scen.tool === "spawn" || (scen.tool === "start" && scen.hqMode === "built");',
-                      maps)
-        self.assertIn('(builtHq ? g === "hq" : g !== "hq")', maps)
-        self.assertIn('if (scen.tool === "start" && scen.hqMode !== "built") {', maps)
+        self.assertIn('GROUP_ORDER.filter((g) => g !== "hq" && ofKind.some((u) => u.group === g))', maps)
+        self.assertNotIn("hqMode", maps)
+        self.assertIn('spawnIcon({ unit_kind: "buildings", icon: "hq", camp: it.alliance || 1', maps)
+        self.assertIn("g.fillText(it.tag, 80, 19);", maps)
 
     def test_an_item_turned(self):
         """The Details panel's turn: kept with the item's move (one not moved gets a move where it stands); a later move

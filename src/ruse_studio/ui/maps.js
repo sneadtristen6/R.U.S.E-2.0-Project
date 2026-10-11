@@ -1698,8 +1698,8 @@ function formationPoints(x, y) {
     [Math.round(x + (a * rx + b * fx) * gap), Math.round(y + (a * ry + b * fy) * gap)]);
 }
 
-// Adding units: Add unit, or Add HQ start's "HQ already built" (an HQ spawned for a side, with Add unit's pickers)
-const spawningNow = () => scen.tool === "spawn" || (scen.tool === "start" && scen.hqMode === "built");
+// Adding units (Add unit)
+const spawningNow = () => scen.tool === "spawn";
 
 // A ring where each unit will stand, under the pointer, while adding units.
 function showFormation(hit) {
@@ -1988,8 +1988,23 @@ function spawnIconCanvas(it, selected) {
   g.stroke();
   g.setLineDash([]);
   drawIconArt(g, MAP_ICONS[it.icon] || MAP_ICONS[KIND_ICON[it.unit_kind]] || MAP_ICONS.unit, hex);
-  // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none)
+  // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none); an HQ start has no
+  // country (the player picks it) but its player's number there
   if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 80, 18, 14);
+  if (it.tag) {
+    g.fillStyle = "#ffffff";
+    g.strokeStyle = "rgba(0,0,0,0.85)";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(80, 18, 15, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = "#111111";
+    g.font = "700 22px system-ui, sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(it.tag, 80, 19);
+  }
   return c;
 }
 
@@ -2278,7 +2293,7 @@ function drawScenario() {
     // online seating, so they always show; hiding every unmarked one hid them all, the new ones too: the owner,
     // 2026-10-10, "I'm pressing HQ start but nothing's popping up on the map")
     if (blank && it.kind === "StartingPoint" && (it.unused || it.placed === false)) continue;
-    if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
+    if (it.kind === "StartingPoint") {  // an HQ badge in the team's colour, its player's number on it
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
       if (it.cam && scen.layers.cams) {
         const own = new THREE.Group();
@@ -2287,9 +2302,11 @@ function drawScenario() {
         group.add(own);
       }
       if (!scen.layers.starts) continue;
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
-        new THREE.MeshLambertMaterial({ color: scen.selected === it.item ? 0xffffff : colour }));
-      m.position.copy(at(it.x, it.y, pillar / 2));
+      // the HQ the game builds here for the seat's player (the owner, 2026-10-10: he liked the HQ icon a placed HQ
+      // building had, and "It should just be all in one"): drawn as that icon, not a bare pillar
+      const m = spawnIcon({ unit_kind: "buildings", icon: "hq", camp: it.alliance || 1, mine: it.mine,
+        tag: String(it.place || 1) }, ICON_BASE, scen.selected === it.item);
+      m.position.copy(at(it.x, it.y, 0));
       m.userData.label = (mv.words.scen_start_what ? mv.words.scen_start_what + " · " : "")
         + fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
         + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
@@ -2801,38 +2818,28 @@ function renderScenTools() {
     $("scen-mark-words").placeholder = w.scen_mark_words_hint;
     wordsRow.title = w.tip_scen_mark_words;
   }
-  // Add HQ start holds both kinds of HQ (the owner, 2026-10-10: "Headquarters should not be considered units ... it
-  // should be under HQ start"): a player's HQ start, or an HQ already built for a side (a spawn, Add unit's pickers
-  // fixed to HQs); Add unit lists no HQ
-  const hqMode = $("scen-hq-mode");
-  hqMode.classList.toggle("hidden", scen.tool !== "start");
-  if (scen.tool === "start") {
-    hqMode.replaceChildren(...["start", "built"].map((k) => chipOf(w["scen_hq_mode_" + k], w["tip_scen_hq_mode_" + k],
-      (scen.hqMode || "start") === k, () => { scen.hqMode = k; renderScenTools(); })));
-  }
-  const builtHq = scen.tool === "start" && scen.hqMode === "built";
-  const spawning = scen.tool === "spawn" || builtHq;
+  // the HQs are Add HQ start's, not Add unit's (the owner, 2026-10-10: "Headquarters should not be considered units
+  // ... It should just be all in one"): every player, the computer's too, has a seat, and the game builds its HQ at
+  // that seat's start; Add unit lists no HQ
   const team = $("scen-team");
-  team.classList.toggle("hidden", scen.tool !== "start" || builtHq);
-  if (scen.tool === "start" && !builtHq) {
+  team.classList.toggle("hidden", scen.tool !== "start");
+  if (scen.tool === "start") {
     team.replaceChildren(...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => chipOf(fill(w.scen_team_n, { n }), w.tip_scen_team,
       scen.team === n, () => { scen.team = n; renderScenTools(); })));
   }
   const kindPick = $("scen-kind"), typePick = $("scen-group"), unit = $("scen-unit"), camp = $("scen-camp");
-  for (const box of [unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", !spawning);
-  for (const box of [kindPick, typePick]) box.classList.toggle("hidden", scen.tool !== "spawn");  // (HQs: fixed)
-  $("scen-formation").classList.toggle("hidden", !spawning || scen.count === 1);
-  if (!spawning) showFormation(null);
-  if (spawning) {
+  for (const box of [kindPick, typePick, unit, camp, $("scen-count"), $("scen-gap-row")]) box.classList.toggle("hidden", scen.tool !== "spawn");
+  $("scen-formation").classList.toggle("hidden", scen.tool !== "spawn" || scen.count === 1);
+  if (scen.tool !== "spawn") showFormation(null);
+  if (scen.tool === "spawn") {
     if (!scen.units) { loadSpawnUnits().catch((err) => scenNote((err && err.message) || String(err), "error")); }
     // 1: the kind; 2: what it's for (a building's job, or the factory that builds a unit); 3: the unit, by nation
     const all = scen.units || [];
-    if (builtHq) { scen.kind = "buildings"; scen.type = "hq"; }
-    else if (scen.type === "hq") scen.type = null;
+    if (scen.type === "hq") scen.type = null;
     kindPick.replaceChildren(...SPAWN_KINDS.map((k) => chipOf(w[k] || k, w.tip_scen_kind, scen.kind === k,
       () => { scen.kind = k; scen.type = null; renderScenTools(); })));
     const ofKind = all.filter((u) => u.kind === scen.kind);
-    const types = GROUP_ORDER.filter((g) => (builtHq ? g === "hq" : g !== "hq") && ofKind.some((u) => u.group === g));
+    const types = GROUP_ORDER.filter((g) => g !== "hq" && ofKind.some((u) => u.group === g));
     if (!types.includes(scen.type)) scen.type = types[0] || null;
     typePick.replaceChildren(...types.map((g) => chipOf(`${w["group_" + g] || g} (${ofKind.filter((u) => u.group === g).length})`,
       w.tip_group, scen.type === g, () => { scen.type = g; renderScenTools(); })));
@@ -4055,8 +4062,8 @@ async function scenPlaceAt(s, cx, cy) {
     if (made && kind !== "LabelVille" && kind !== "LabelMontagne") selectSpawn(made, false);
     return;
   }
-  // a new starting point: the team's next place, beside a road unless the toggle's off (an HQ already built: below)
-  if (scen.tool === "start" && scen.hqMode !== "built") {
+  // a new starting point: the team's next place, beside a road unless the toggle's off
+  if (scen.tool === "start") {
     const [x, y] = await snapToRoad("hq", cx, cy);
     scenEdit(() => mv.api.scenario_add_start(mv.current, s.file, scen.team, x, y)).then(() => loadPlayers(mv.current));
     return;
