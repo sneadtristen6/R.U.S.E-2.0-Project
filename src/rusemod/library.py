@@ -17,7 +17,7 @@ from pathlib import Path
 
 from rusemod import rmod
 from rusemod.build import BuildError, load_mod
-from rusemod.package import PackageError, info_of
+from rusemod.package import PackageError, edit_problem, info_of
 from rusemod.package import unpack as unpack_package
 from rusemod.rndf import RndfError
 
@@ -96,6 +96,9 @@ class Library:
                 raise LibraryError(f"{source.name} isn't a mod: add a mod file (.rusemod, .rmod or .zip), or a mod "
                                    f"folder (with {MANIFEST} in it).")
             info = check(incoming)
+            problem = edit_problem(incoming)  # not a game rule: an edit never comes in under the original's name
+            if problem:
+                raise LibraryError(f"This mod wasn't added: {problem}")
             if not _safe_id(info["id"]):
                 raise LibraryError(f"This mod's id {info['id']!r} isn't allowed (lowercase letters, digits and -).")
             target = self.folder / info["id"]

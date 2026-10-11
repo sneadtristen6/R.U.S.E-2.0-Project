@@ -592,6 +592,14 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .doc-row.fail { border-left-color: var(--error); }
 .doc-row.fail .doc-mark { color: var(--error); }
 .doctor .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* Edit an installed mod (app.js openEditMods): one row per installed mod, its name form under it when it's a copy */
+.edit-mod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px;
+                background: var(--panel-hi); border-radius: var(--radius); }
+.edit-mod-head { flex: 1; min-width: 12em; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.edit-mod-row > button { flex: none; }
+.edit-mod-copy { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.edit-mod-copy input { flex: 1; min-width: 12em; }
+.edit-mod-copy.hidden { display: none; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }

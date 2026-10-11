@@ -28,6 +28,15 @@
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
       pick_unit: "Pick a unit on the left.", mod: "Unit mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
+      edit_installed: "Edit an installed mod…", edit_title: "Edit an installed mod",
+      edit_lead: "The mods installed in the Launcher. Pick one: its units and maps open here. A mod made by someone else becomes a copy of your own with a name of its own, so its updates never touch your changes.",
+      edit_none: "No mods are installed in the Launcher yet.", edit_has_units: "units and other changes", edit_has_maps: "maps",
+      edit_by: "by {author}", edit_older: "Made the older way (an .rmod file): the Studio can't show what's in it yet.",
+      edit_open: "Edit", tip_edit_open: "Open your own mod here: everything in it shows in the Units and Maps tabs, and your changes go into it.",
+      tip_edit_copy: "Make a copy of this mod of your own, with a name of its own, and open it here with everything in it.",
+      edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
+      edit_someone: "someone else", edit_copy_name: "Your copy's name", edit_copy_go: "Make my copy and edit",
+      only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
       mod_name: "Name of the new mod", map_project: "Map changes", no_map: "Pick or start a set of map changes to save them in.", new_map: "New map changes…", export_map: "Export map…", map_name: "Name for these map changes", tip_pick_mod: "The mod your unit changes are saved in. Maps have their own list on the Maps tab.", tip_pick_map: "Where your changes to the game's maps are saved (ground, roads, buildings, scenario), apart from your unit mod: changes to any of the game's own maps, and the new maps you make with Duplicate map. Test in game plays them with your unit mod.", create: "Create", cancel: "Cancel", close: "Close",
@@ -2064,6 +2073,29 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
         current = path;
         return modsView();
+      },
+      // Edit an installed mod: the Launcher's library, made up (a Studio mod of someone else's, one of yours, an .rmod)
+      installed_mods: async () => ({ mods: [
+        { id: "r-u-s-e-field-manual-v1", name: "R.U.S.E. Field Manual", version: "1.0.0", author: "nickgit", description: "",
+          yours: "", older: false, units: true, maps: false, edited_from: "", error: "" },
+        { id: "my-mod", name: "my-mod", version: "0.1.0", author: "", description: "", yours: home + "my-mod",
+          older: false, units: true, maps: true, edited_from: "", error: "" },
+        { id: "airfield-capacity", name: "Airfield Capacity", version: "1", author: "LittleGroove", description: "",
+          yours: "", older: true, units: false, maps: false, edited_from: "", error: "" }] }),
+      edit_installed: async (id, name) => {
+        if (id === "my-mod") {
+          current = currentMap = home + "my-mod";
+          return { mod: modsView(), map: mapsView(), path: current, copied: false, units: true, maps: true,
+                   message: "my-mod is open: your changes go into it. Export puts it in the Launcher again." };
+        }
+        const key = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+        if (!key(name)) throw new Error("Give your copy a name of its own: it can't be called R.U.S.E. Field Manual.");
+        if (key(name) === key("R.U.S.E. Field Manual")) throw new Error("R.U.S.E. Field Manual is nickgit's name for the mod. Give your copy a name of its own.");
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-edit";
+        if (!mods.some((m) => m.path === home + slug)) mods.push({ path: home + slug, name: slug });
+        current = home + slug;
+        return { mod: modsView(), map: mapsView(), path: current, copied: true, units: true, maps: false,
+                 message: `Your copy ${name} is open: everything in R.U.S.E. Field Manual is in it, and your changes go into it.` };
       },
       edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|")).flatMap((k) => {
         const [, address, , how, via] = k.split("|");

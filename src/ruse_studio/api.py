@@ -4224,6 +4224,139 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         chosen = pick_folder(self._window)
         return self.choose_mod(chosen, kind) if chosen else self.mods(kind)
 
+    # --- Edit an installed mod: the mods the Launcher plays (its library), opened here with everything in them (the
+    # owner, 2026-10-10). Your own (this Studio has its project) opens that project; anyone else's is copied first under
+    # a name of its own, never the original's, so an update of the original can't wipe the edit and two different
+    # mods never share one name (rusemod.package.edit_problem). A mod made the older way (an .rmod) can't be shown yet.
+    def _library(self):
+        from rusemod.library import Library
+        return Library(self._home / "library")
+
+    def _projects(self) -> list[Path]:
+        """The Studio's own mod and map folders (its mods and maps folders)."""
+        out = []
+        for root in (self._home / "mods", self._home / "maps"):
+            out += [f for f in sorted(root.iterdir()) if (f / "mod.toml").is_file()] if root.is_dir() else []
+        return out
+
+    def _project_of(self, mod_id: str) -> Path | None:
+        """This Studio's project of the installed mod `mod_id`: the folder in its mods or maps folder with that id."""
+        for folder in self._projects():
+            try:
+                if package.info_of(folder)["id"] == mod_id:
+                    return folder
+            except package.PackageError:
+                continue
+        return None
+
+    @staticmethod
+    def _holds(folder: Path) -> tuple[bool, bool]:
+        """(whether a mod folder holds anything but maps: unit changes, texts, files, scripts; whether it holds maps)."""
+        maps = (folder / "maps").is_dir() and any(f.is_dir() for f in (folder / "maps").iterdir())
+        other = any((folder / d).is_dir() and any((folder / d).rglob("*")) for d in ("src", "text", "files", "scripts")) \
+            or any((folder / f).is_file() for f in ("menus.toml", "depots.toml"))
+        return other, maps
+
+    def installed_mods(self) -> dict:
+        """The Launcher's installed mods for "Edit an installed mod…": {"mods": [{id, name, version, author,
+        description, "yours": this Studio's project of it (its path) or "", "older": made the older way (an .rmod:
+        the Studio can't show it yet), "units"/"maps": what's in it, "edited_from": the name of the mod it's an edit
+        of, or "", "error": a mod.toml that can't be read}]}."""
+        out = []
+        for info in self._library().mods():
+            folder = Path(info.get("path") or "")
+            row = {k: info.get(k, "") for k in ("id", "name", "version", "author", "description")}
+            if info.get("error"):
+                out.append(row | {"yours": "", "older": False, "units": False, "maps": False, "edited_from": "",
+                                  "error": info["error"]})
+                continue
+            units, maps = self._holds(folder)
+            project = self._project_of(info["id"])
+            out.append(row | {"yours": str(project or ""), "older": bool(info.get("rmod")), "units": units,
+                              "maps": maps, "edited_from": str(package.edited_from(folder).get("name", "")), "error": ""})
+        return {"mods": out}
+
+    def edit_installed(self, mod_id: str, name: str = "") -> dict:
+        """Edit the installed mod `mod_id`. Yours (this Studio has its project): that project opens. Anyone else's: a
+        copy of it, named `name`, goes into the Studio's mods folder (its maps folder when it holds only maps) and
+        opens; `name` can't be the original's or another installed mod's. The copy gets an id of its own and records
+        what it was made from (mod.toml [edited_from]). It opens as the Units tab's mod and, when it holds maps, as the
+        Maps tab's too. Returns {"mod": mods("mod"), "map": mods("map"), "path", "copied", "units", "maps",
+        "message"}."""
+        folder = self._library().path_of(str(mod_id))
+        if folder is None:
+            raise StudioError("That mod isn't installed any more. Add it in the Launcher, then try again.")
+        try:
+            info = package.info_of(folder)
+        except package.PackageError as exc:
+            raise StudioError(str(exc)) from None
+        if info.get("rmod"):
+            # not a game rule: the Studio can't read an .rmod's changes as units yet
+            raise StudioError(f"{info['name']} was made the older way (an .rmod file), so the Studio can't show "
+                              f"what's in it yet.")
+        project, copied = self._project_of(info["id"]), False
+        if project is None:
+            project, copied = self._edit_copy(folder, info, name), True
+        units, maps = self._holds(project)
+        if units or not maps:
+            self.choose_mod(str(project), "mod")
+        if maps:
+            self.choose_mod(str(project), "map")
+        shown = package.info_of(project)["name"]
+        message = (f"Your copy {shown} is open: everything in {info['name']} is in it, and your changes go into it."
+                   if copied else f"{shown} is open: your changes go into it. Export puts it in the Launcher again.")
+        return {"mod": self.mods("mod"), "map": self.mods("map"), "path": str(project), "copied": copied,
+                "units": units, "maps": maps, "message": message}
+
+    def _edit_copy(self, folder: Path, info: dict, name: str) -> Path:
+        """Copy the installed mod at `folder` into the Studio as a mod of its own named `name` (MOD_FORMAT §3
+        [edited_from]): every file its package holds, a new id made from the name, nothing of the Launcher's copy
+        changed."""
+        name = " ".join(str(name or "").split())
+        author = info.get("author") or "its author"
+        if not name:
+            raise StudioError(f"Give your copy a name of its own: it can't be called {info['name']}.")
+        if package.name_key(name) == package.name_key(info["name"]):
+            # not a game rule: an edit never takes the original's name (the owner, 2026-10-10)
+            raise StudioError(f"{info['name']} is {author}'s name for the mod. Give your copy a name of its own.")
+        taken = {package.name_key(m.get("name", "")) for m in self._library().mods()}
+        for project in self._projects():
+            try:
+                taken.add(package.name_key(package.info_of(project)["name"]))
+            except package.PackageError:
+                continue
+        if package.name_key(name) in taken:
+            raise StudioError(f"There's already a mod called {name}. Pick another name.")
+        units, maps = self._holds(folder)
+        base = self._home / ("maps" if maps and not units else "mods")
+        slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", name).encode("ascii", "ignore")
+                      .decode().lower()).strip("-") or "my-edit"
+        ids = {m.get("id") for m in self._library().mods()}
+        new_id, n = slug, 2
+        while new_id in ids or (self._home / "mods" / new_id).exists() or (self._home / "maps" / new_id).exists():
+            new_id, n = f"{slug}-{n}", n + 1
+        target = base / new_id
+        part = base / f".copying-{new_id}"
+        if part.exists():
+            shutil.rmtree(part)
+        try:
+            for f in package.files_of(folder):
+                to = part / f.relative_to(folder)
+                to.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, to)
+            text = (part / "mod.toml").read_text(encoding="utf-8")
+            text = package.set_values(text, "mod", {"id": new_id, "name": name})
+            text = package.set_values(text, package.EDITED_FROM, {"id": info["id"], "name": info["name"],
+                                                               "version": info.get("version", ""),
+                                                               "authors": list(info.get("authors") or [])})
+            tomllib.loads(text)
+            (part / "mod.toml").write_text(text, encoding="utf-8")
+            os.replace(part, target)
+        finally:
+            if part.exists():
+                shutil.rmtree(part, ignore_errors=True)
+        return target
+
     # --- the Settings tab ---
     def game_folder(self) -> dict:
         """The R.U.S.E. folder in use and how it was found: {"path" or None, "picked": chosen by hand (shared with the
@@ -6913,6 +7046,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         version = (version or "").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
+        if problem:
+            raise StudioError(problem)
         suggested = package.file_name(self.mod_info(kind) | {"version": version})
         if self._pick_save is not None:
             target = self._pick_save(suggested)

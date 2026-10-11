@@ -76,9 +76,22 @@ before = []
 
 [conflicts]                         # mods that must not be combined with this one
 # "some-other-overhaul" = "*"
+
+[edited_from]                       # an edit of someone else's mod: what it was copied from (the Studio writes it)
+# id      = "r-u-s-e-field-manual-v1"
+# name    = "R.U.S.E. Field Manual"
+# version = "1.0.0"
+# authors = ["nickgit"]
 ```
 
 `affects_gameplay` is **computed** by the builder (§10) and never declared by hand.
+
+**Editing an installed mod.** The Studio's "Edit an installed mod…" opens any mod in the Launcher's library. A mod
+this Studio made opens its own project. Anyone else's is first copied into the Studio as a mod of its own: a name the
+modder gives it and an id made from that name, with `[edited_from]` saying what it came from. An edit never carries
+the original's name or id: Export refuses it, and so does the Launcher when the file is added (`rusemod.package.
+edit_problem`), so an update of the original can't wipe the edit and two different mods never share one name. A mod
+made the older way (an `.rmod`, §13) can't be opened this way yet.
 
 ## 4. Addressing game objects
 

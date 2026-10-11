@@ -21,7 +21,7 @@ const state = { lang: "base", kind: "all", nation: -1, search: "", group: "all",
 const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];
 const ERA_CHINA = 7;  // the era units' nation chip for China, which has no game nation of its own (eraunits.js)  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
-const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export", SHARE = "\u0001share";  // the mod menu's actions (never a folder path)
+const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export", SHARE = "\u0001share", EDIT = "\u0001edit";  // the mod menu's actions (never a folder path)
 
 function api() { return window.pywebview.api; }
 
@@ -153,6 +153,7 @@ function renderMods() {
       selected: m.path === current }));
     options.push(el("option", { value: NEW, textContent: kind === "mod" ? w.new_mod : w.new_map }),
       el("option", { value: OPEN, textContent: w.open_folder }),
+      el("option", { value: EDIT, textContent: w.edit_installed }),
       el("option", { value: EXPORT, textContent: kind === "mod" ? w.export_mod : w.export_map, disabled: !current }),
       el("option", { value: SHARE, textContent: w.share_mod }));
     $(PICKER[kind]).replaceChildren(...options);
@@ -174,6 +175,7 @@ function useMods(res) {
   state.mods = res.mods;
   state.mod = res.current;
   renderMods();
+  renderChips();  // "In this mod" shows only while a mod is being edited
   checkMod();
 }
 
@@ -276,6 +278,7 @@ async function pickMod(e, kind = "mod") {
     }
     if (value === EXPORT) { await openExport(kind); return; }
     if (value === SHARE) { await openShare(state.exported); return; }
+    if (value === EDIT) { await openEditMods(); return; }
     useMods(value === OPEN ? await api().open_mod_folder(kind) : await api().choose_mod(value, kind));
     if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
     else await modChanged();
@@ -379,6 +382,80 @@ async function publishMod() {
   $("share-published").classList.remove("hidden");
 }
 
+// --- Edit an installed mod (StudioApi.installed_mods, edit_installed): the Launcher's mods, opened here with everything
+// in them. Yours opens its project; anyone else's becomes a copy of your own under a name of its own (never the
+// original's: the owner, 2026-10-10); one made the older way (an .rmod) says it can't be shown yet ---
+async function openEditMods() {
+  const w = state.words;
+  $("edit-mods-title").textContent = w.edit_title;
+  $("edit-mods-lead").textContent = w.edit_lead;
+  $("edit-mods-close").textContent = w.close;
+  $("edit-mods-list").replaceChildren();
+  if (!$("edit-mods").open) $("edit-mods").showModal();
+  let res;
+  try { res = await api().installed_mods(); } catch (err) { problem(err); return; }
+  const list = res.mods || [];
+  if (!list.length) {
+    $("edit-mods-list").replaceChildren(el("li", { className: "muted small", textContent: w.edit_none }));
+    return;
+  }
+  $("edit-mods-list").replaceChildren(...list.map(editModRow));
+}
+
+function editModRow(m) {
+  const w = state.words;
+  const what = [m.units ? w.edit_has_units : "", m.maps ? w.edit_has_maps : ""].filter(Boolean).join(" · ");
+  const head = el("div", { className: "edit-mod-head" },
+    el("strong", { textContent: m.name }),
+    el("span", { className: "muted small", textContent: [m.version, m.author ? fillText(w.edit_by, { author: m.author }) : "", what].filter(Boolean).join(" · ") }));
+  const row = el("li", { className: "edit-mod-row" }, head);
+  if (m.error || m.older) {
+    row.append(el("span", { className: "muted small", textContent: m.error ? m.error : w.edit_older }));
+    return row;
+  }
+  if (m.yours) {
+    const open = el("button", { type: "button", className: "small primary", textContent: w.edit_open, title: w.tip_edit_open });
+    open.addEventListener("click", () => editInstalled(m.id, "", open));
+    row.append(el("span", { className: "badge edited", textContent: w.edit_yours }), open);
+    return row;
+  }
+  // anyone else's: a copy of your own, named first
+  const start = el("button", { type: "button", className: "small", textContent: w.edit_open, title: w.tip_edit_copy });
+  const form = el("form", { className: "edit-mod-copy hidden" });
+  const name = el("input", { autocomplete: "off", maxLength: 60, required: true, placeholder: w.edit_copy_name });
+  const go = el("button", { type: "submit", className: "small primary", textContent: w.edit_copy_go });
+  const note = el("span", { className: "small error-text", role: "alert" });  // why a name was refused, in the dialog
+  form.append(el("span", { className: "small", textContent: fillText(w.edit_copy_lead, { name: m.name, author: m.author || w.edit_someone }) }), name, go, note);
+  start.addEventListener("click", () => { form.classList.remove("hidden"); start.classList.add("hidden"); name.focus(); });
+  form.addEventListener("submit", (e) => { e.preventDefault(); editInstalled(m.id, name.value.trim(), go, note); });
+  row.append(start, form);
+  return row;
+}
+
+async function editInstalled(id, name, button, note) {
+  button.disabled = true;
+  if (note) note.textContent = "";
+  let res;
+  try { res = await api().edit_installed(id, name); } catch (err) {
+    if (note) note.textContent = (err && err.message) || String(err);
+    else problem(err);
+    button.disabled = false;
+    return;
+  }
+  $("edit-mods").close();
+  useMods(res.map);
+  useMods(res.mod);
+  say(res.message, "ok");
+  if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();
+  await modChanged();
+  if (res.units || !res.maps) {
+    state.onlyMod = true;  // what's in the mod, first: its new units and the ones it changes
+    if (state.view !== "units") showView("units");
+    renderChips();
+    await refreshList();
+  } else if (state.view !== "maps") showView("maps");
+}
+
 async function refreshMarks() {
   try { state.edited = new Set(await api().edited()); } catch (err) { problem(err); return; }
   for (const b of $("unit-list").querySelectorAll("button")) mark(b);
@@ -433,6 +510,12 @@ function renderChips() {
     b.addEventListener("click", () => { state.kind = k; state.group = "all"; renderChips(); refreshList(); });
     return b;
   }));
+  if (!era && state.mod) {  // only what the mod being edited has: its new units and the ones it changes
+    const only = el("button", { type: "button", className: "chip", textContent: w.only_mod, title: w.tip_only_mod });
+    only.setAttribute("aria-pressed", String(Boolean(state.onlyMod)));
+    only.addEventListener("click", () => { state.onlyMod = !state.onlyMod; renderChips(); refreshList(); });
+    $("kinds").append(only);
+  }
   // ammunition has no nation; an era's units add China (no game nation of its own)
   const nations = state.kind === "ammo" ? [] : era ? [-1, 0, 1, 2, 3, 4, 5, 6, ERA_CHINA] : [-1, 0, 1, 2, 3, 4, 5, 6];
   $("nations").replaceChildren(...nations.map((n) => {
@@ -480,6 +563,7 @@ async function refreshList() {
     }
     state.edited = new Set(await api().edited());
   } catch (err) { problem(err); return; }
+  if (state.onlyMod && state.mod) res.units = res.units.filter((u) => u.new || state.edited.has(u.address));
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   renderGroups(res.groups || [], res.types || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {
@@ -3918,6 +4002,7 @@ async function start() {
   $("share-publish").addEventListener("click", publishMod);
   $("share-guidelines").addEventListener("click", () => api().open_help("guidelines").catch(problem));
   $("share-close").addEventListener("click", () => $("share").close());
+  $("edit-mods-close").addEventListener("click", () => $("edit-mods").close());
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   $("test-log-copy").addEventListener("click", copyTestLog);
