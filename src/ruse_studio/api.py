@@ -376,11 +376,13 @@ def _pack_name(name: str, taken: set) -> str:
 
 
 def _aside(path: Path) -> Path:
-    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken): out of the build's way,
-    never lost. Returns the new path."""
-    kept, k = path.with_name(f"{path.stem}.broken.toml"), 2
+    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken), or a unit changes or text
+    file to <name>.rndf.broken (the build reads only .rndf and .csv files there): out of the build's way, never lost.
+    Returns the new path."""
+    toml = path.suffix.lower() == ".toml"
+    kept, k = path.with_name(f"{path.stem}.broken.toml" if toml else f"{path.name}.broken"), 2
     while kept.exists():
-        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml"), k + 1
+        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml" if toml else f"{path.name}.broken-{k}"), k + 1
     path.rename(kept)
     return kept
 
@@ -4044,7 +4046,104 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._mod_dir()
         if folder is None:
             return {"mod": None, "problems": []}
-        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game()) + self._research_problems()}
+        from rusemod.plainproblems import explain
+        found = [explain(p) for p in check_mod_folder(folder, self._game()) + self._research_problems()]
+        for p in found:  # the map's name as the menus say it, in each language, for the plain words
+            pack = p["plain"].get("map")
+            if pack:
+                p["plain"]["map_titles"] = self._map_titles(pack, folder)
+        return {"mod": str(folder), "problems": found}
+
+    def _map_titles(self, pack: str, folder: Path) -> dict:
+        """{language: the map's name in its menus} for the map pack `pack` (a new map of the mod: its own name from
+        its map.toml); {} when it isn't known (the window shows the pack's name then)."""
+        game = self._game()
+        cache = self.__dict__.setdefault("_titles_cache", {})
+        if game is not None and game not in cache:
+            try:
+                cache[game] = {m["pack"].lower(): {lang: names[0] for lang, names in m["titles"].items() if names}
+                               for m in map_list(game)}
+            except (OSError, ValueError, KeyError):
+                cache[game] = {}
+        found = cache.get(game, {}).get(pack.lower())
+        if found:
+            return found
+        try:  # a new map: the name it gives itself
+            data = tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            return {}
+        name = data.get("name")
+        return {k: str(v) for k, v in name.items()} if isinstance(name, dict) else {"us": str(name)} if name else {}
+
+    def _map_water(self, pack: str, folder: Path) -> float:
+        """The map's own water height (world z): the level most of its ground's water points carry, the one the Map
+        Paint tab draws its water brushes from. A new map's is the shipped map's it copies."""
+        from rusemod.tms import Tms
+        game = self._game()
+        if game is None:
+            # not a game rule: the height is read from the game's own map
+            raise StudioError("We couldn't find R.U.S.E., so the map's water height can't be read.")
+        source = pack
+        try:
+            source = str(tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+                         .get("copy_of") or pack)
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            pass
+        path = find_pack(game, pack_file(source))
+        if path is None:
+            # not a game rule: the map's own pack isn't in the game folder
+            raise StudioError(f"The game has no map {source}, so its water height can't be read.")
+        with Edat.open(str(path)) as arc:
+            tms = Tms(bytes(arc.read(arc.find(LODS["highdef"]))))
+        return float(tms.to_world(2, tms.base_water()))
+
+    def open_mod_in_folder(self) -> dict:
+        """Open the current mod's folder on the PC (the mod check's fix for what a button can't fix: mod.toml by
+        hand). Returns {"opened": the folder}."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        self._starter.open_url(str(folder))
+        return {"opened": str(folder)}
+
+    def fix_problem(self, fix: dict) -> dict:
+        """Make one of the fixes the mod check offers (rusemod.plainproblems.explain): "fill" a missing value the
+        Studio knows (a water stroke's level: the map's own water height), "remove_key" a setting the game doesn't
+        know, "remove_item" one item of a map file (a stroke, an object, a spawn...), or "set_aside" a whole file.
+        A map file is kept as it was the first time it's fixed, beside it (<name>.before-fix.toml: the build doesn't
+        read it). Returns check_mod() and "message"."""
+        from rusemod import plainproblems as pp
+        kind = str((fix or {}).get("fix", ""))
+        if kind == "set_aside":
+            return self.set_aside(fix.get("file"))
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        path = folder / str(fix.get("file") or "")
+        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
+            raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")
+        table, key = str(fix.get("table", "")), fix.get("key")
+        try:
+            n = int(fix.get("n"))
+        except (TypeError, ValueError):
+            raise StudioError("Which item to fix isn't said.") from None
+        value = None
+        if kind == "fill":
+            if (table, key) not in pp.FILLS:
+                raise StudioError(f"The Studio doesn't know a safe {key} to fill in.")
+            value = self._map_water(path.parent.name, folder)
+        with self._saving:
+            text = path.read_text(encoding="utf-8")
+            try:
+                new = pp.edit(text, kind, table, n, key, value)
+            except pp.FixError as exc:
+                raise StudioError(f"That couldn't be fixed safely ({exc}). Put the file aside instead, or fix it by "
+                                  f"hand.") from None
+            before = path.with_name(f"{path.stem}.before-fix.toml")
+            if not before.exists():
+                shutil.copyfile(path, before)
+            ModEdits._write(path, new)
+        return self.check_mod() | {"message": f"Fixed. {path.name} as it was is kept beside it, as {before.name}."}
 
     def _research_problems(self) -> list[dict]:
         """The current mod's units researched from a unit that isn't there (one taken out after the warning:
@@ -4121,15 +4220,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.check_mod()
 
     def set_aside(self, file: str) -> dict:
-        """Take a broken map file (`file`: its path in the mod, as check_mod gives it) out of the current mod: it's
-        renamed <name>.broken.toml beside it, never deleted, and the build skips it. Returns check_mod() and "kept":
-        the renamed file."""
+        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it) out of
+        the current mod: it's renamed beside it (_aside), never deleted, and the build skips it. Returns check_mod()
+        and "kept": the renamed file."""
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
         path = folder / str(file or "")
-        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
-            raise StudioError(f"{file} isn't one of this mod's map files")
+        # a map file, a unit changes file or a text file (the last two renamed <name>.broken)
+        map_file = path.name in MAP_FILES and path.parent.parent == folder / "maps"
+        unit_file = path.suffix.lower() == ".rndf" and (folder / "src") in path.parents
+        text_file = path.suffix.lower() == ".csv" and path.parent == folder / "text"
+        if not (map_file or unit_file or text_file) or not path.is_file():
+            raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
             kept = _aside(path)
         return self.check_mod() | {"kept": str(kept)}

@@ -37,6 +37,41 @@
       edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
       edit_someone: "someone else", edit_copy_name: "Your copy's name", edit_copy_go: "Make my copy and edit",
       edit_search: "Search installed mods", tip_edit_search: "Type part of a mod's name, its author or what it does.", edit_no_match: "No installed mod matches that.",
+      pp_stops: "The game would stop loading the mod here.", pp_item_n: "{item} {n}",
+      pp_item_stroke: "Map Paint stroke", pp_item_erase: "erase area", pp_item_object: "placed object",
+      pp_item_move: "moved map item", pp_item_remove: "removed map item", pp_item_set: "changed map item",
+      pp_item_place: "named place", pp_item_spawn: "unit placed at the start", pp_item_start: "starting point",
+      pp_item_paint: "cover paint", pp_item_block: "blocked area", pp_item_open: "opened area",
+      pp_item_road: "new road", pp_file_terrain: "ground changes", pp_file_scenery: "placed and erased objects",
+      pp_file_scenario: "starting points and placed units", pp_file_places: "named places",
+      pp_file_items: "changed map items", pp_file_cover: "cover paint", pp_file_movement: "blocked and opened areas",
+      pp_file_roads: "new roads", pp_file_map: "map settings", pp_key_level: "water height", pp_key_radius: "size",
+      pp_key_size: "size", pp_key_x: "position", pp_key_y: "position", pp_key_x2: "end point", pp_key_y2: "end point",
+      pp_key_colour: "colour", pp_key_brush: "tool", pp_key_weight: "strength", pp_key_what: "unit",
+      pp_key_camp: "side", pp_key_trucks: "trucks", pp_key_name: "name",
+      pp_missing: "On {map}, {item} is missing its {key}.",
+      pp_unknown_key: "On {map}, {item} has a setting the game doesn't know: {key}.",
+      pp_bad_value: "On {map}, {item} has a {key} the game can't use.",
+      pp_bad_item: "On {map}, {item} has a value the game can't use.",
+      pp_unreadable: "On {map}, the file of its {what} can't be read: it has a typing mistake.",
+      pp_map_file: "On {map}, the file of its {what} has a mistake.",
+      pp_unit_file: "The unit changes file {file} has a mistake on line {line}.",
+      pp_text_file: "The text file {file} has a mistake on line {line}.",
+      pp_manifest: "The mod's settings file (mod.toml) has a mistake.",
+      pp_how_item: "Fix it with a button. Removing the {item} keeps everything else on the map, and the file as it was is kept beside it.",
+      pp_how_file: "Put the file aside: it's kept, renamed, and the map goes without these changes until it's fixed. Details says exactly what's wrong.",
+      pp_how_unit_file: "Put the file aside: it's kept, renamed, and the mod goes without the changes in it until it's fixed. Details says exactly what's wrong.",
+      pp_how_studio_file: "This is the Studio's own record of your unit changes: putting it aside takes all of them out of the mod (the file is kept). Details says exactly what's wrong; ask on the Discord if you're not sure.",
+      pp_how_manifest: "Open the mod's folder and correct mod.toml in a text editor. Details says exactly what's wrong.",
+      pp_how_other: "Details says exactly what's wrong. Open the mod's folder to fix it by hand, or ask on the Discord.",
+      pp_fix_fill_level: "Use the map's water height", pp_fix_fill: "Use the map's {key}",
+      pp_fix_remove_key: "Take out {key}", pp_fix_remove_item: "Remove this {item}",
+      pp_fix_open_folder: "Open the mod's folder", pp_details: "Details", pp_fixed: "Fixed.",
+      tip_pp_fill: "Fills in the value the rest of the map has, the way Map Paint would. The file as it was is kept beside it.",
+      tip_pp_remove_item: "Takes out just this one; everything else stays. The file as it was is kept beside it.",
+      tip_pp_remove_key: "Takes out just this setting; the rest of the item stays. The file as it was is kept beside it.",
+      tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
+      tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
       only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
@@ -560,8 +595,19 @@
     .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
   const mods = [{ path: home + "sherman-test", name: "sherman-test" }];  // sample data for the preview only
-  let checkProblems = [{ file: "maps/SuperCrossRoads4/terrain.toml", set_aside: true,
-    problem: "maps/SuperCrossRoads4/terrain.toml: stroke 1: the water brush needs level" }];
+  // two made-up problems as rusemod.plainproblems.explain gives them: a water stroke without its level (Studio 0.7.0
+  // saved some), and a placed object with a setting the game doesn't know
+  const fakeFile = "maps/SuperCrossRoads4/terrain.toml", fakeSceneryFile = "maps/SuperCrossRoads4/scenery.toml";
+  const blitz = { us: "Blitz", fr: "Blitz" };
+  let checkProblems = [
+    { file: fakeFile, set_aside: true, problem: `${fakeFile}: stroke 1: the water brush needs level`,
+      plain: { kind: "missing", file: fakeFile, map: "SuperCrossRoads4", table: "stroke", item: "stroke", n: 1, keys: ["level"], key: "level", map_titles: blitz },
+      fixes: [{ fix: "fill", file: fakeFile, table: "stroke", n: 1, key: "level" }, { fix: "remove_item", file: fakeFile, table: "stroke", n: 1 },
+        { fix: "set_aside", file: fakeFile }] },
+    { file: fakeSceneryFile, set_aside: true, problem: `${fakeSceneryFile}: object 3: unknown key 'colr'`,
+      plain: { kind: "unknown_key", file: fakeSceneryFile, map: "SuperCrossRoads4", table: "object", item: "object", n: 3, key: "colr", map_titles: blitz },
+      fixes: [{ fix: "remove_key", file: fakeSceneryFile, table: "object", n: 3, key: "colr" }, { fix: "remove_item", file: fakeSceneryFile, table: "object", n: 3 },
+        { fix: "set_aside", file: fakeSceneryFile }] }];
   const fakeRoads = {};  // the made-up mod's new roads, per map
   const fakeTakeOut = {};  // the made-up mod's roads.toml take_out, per mod and map
   // the made-up maps' own bridge kinds (rusemod.bridges.kinds): the Tunisian one has none, so the dock says so
@@ -2886,6 +2932,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         checkProblems = checkProblems.filter((x) => x !== p);
         return { mod: current, problems: checkProblems, kept: `${current}/${file.replace(".toml", ".broken.toml")}` };
       },
+      fix_problem: async (fix) => {
+        if (fix.fix === "set_aside") return window.pywebview.api.set_aside(fix.file);
+        const p = checkProblems.find((x) => x.file === fix.file && x.plain.n === fix.n);
+        if (!p) throw new Error(`${fix.file} isn't one of this mod's map files`);
+        checkProblems = checkProblems.filter((x) => x !== p);
+        const name = fix.file.split("/").pop();
+        return { mod: current, problems: checkProblems, message: `Fixed. ${name} as it was is kept beside it, as ${name.replace(".toml", ".before-fix.toml")}.` };
+      },
+      open_mod_in_folder: async () => ({ opened: current }),
       scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0, trucks = null) => {
         if (trucks !== null && unit !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
         for (const [x, y] of points) {

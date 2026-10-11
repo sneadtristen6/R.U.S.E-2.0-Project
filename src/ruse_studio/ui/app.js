@@ -199,21 +199,22 @@ function renderCheck() {
   if (!list.length) { bar.replaceChildren(); return; }
   bar.replaceChildren(el("span", { className: "check-title", textContent: fillText(w.check_title, { n: list.length }) }),
     ...list.map((p) => {
-      const row = el("div", { className: "check-row" }, el("span", { textContent: p.problem }));
-      if (p.set_aside) {
-        const button = el("button", { type: "button", className: "small", textContent: w.check_set_aside, title: w.tip_check_set_aside });
-        button.addEventListener("click", async () => {
-          button.disabled = true;
-          try {
-            const res = await api().set_aside(p.file);
-            state.problems = res.problems || [];
-            renderCheck();
-            say(fillText(w.check_aside_done, { file: res.kept }), "ok");
-            if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // the map starts clean
-          } catch (err) { problem(err); button.disabled = false; }
-        });
-        row.append(button);
+      // in plain words (rusemod.plainproblems: what it is, where, what to do), the build's own words under Details
+      const say1 = el("span", { className: "check-say", textContent: plainProblem(p) });
+      const how = el("span", { className: "check-how muted", textContent: plainHow(p) });
+      const raw = el("code", { className: "check-raw hidden", textContent: p.problem });
+      const row = el("div", { className: "check-row" }, el("div", { className: "check-words" }, say1, how, raw));
+      const buttons = el("div", { className: "check-fixes" });
+      row.append(buttons);
+      for (const f of p.fixes || []) buttons.append(fixButton(p, f));
+      if (p.set_aside && !(p.fixes || []).some((f) => f.fix === "set_aside")) buttons.append(fixButton(p, { fix: "set_aside", file: p.file }));
+      if (needsFolder(p)) {
+        const open = el("button", { type: "button", className: "small", textContent: w.pp_fix_open_folder, title: w.tip_pp_open_folder });
+        open.addEventListener("click", async () => { try { await api().open_mod_in_folder(); } catch (err) { problem(err); } });
+        buttons.append(open);
       }
+      const details = el("button", { type: "button", className: "small ghost", textContent: w.pp_details, title: w.tip_pp_details });
+      details.addEventListener("click", () => raw.classList.toggle("hidden"));
       if (p.rename_to) {  // a map folder named after the map's title: rename it to the pack name the build reads
         const button = el("button", { type: "button", className: "small", textContent: fillText(w.check_rename, { name: p.rename_to }),
           title: w.tip_check_rename });
@@ -225,7 +226,7 @@ function renderCheck() {
             if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();
           } catch (err) { problem(err); button.disabled = false; }
         });
-        row.append(button);
+        buttons.append(button);
       }
       if (p.unit) {  // a unit researched from one taken out of the mod: its page, where its Upgrade box re-links it
         const button = el("button", { type: "button", className: "small", textContent: w.check_open_unit,
@@ -240,10 +241,74 @@ function renderCheck() {
           if (state.view !== "units") showView("units");
           showUnit(p.unit);
         });
-        row.append(button);
+        buttons.append(button);
       }
+      buttons.append(details);
       return row;
     }));
+}
+
+// --- one problem in plain words (StudioApi.check_mod's "plain": rusemod.plainproblems.explain) ---
+function problemMap(pl) {  // the map as the menus name it, in the Studio's language
+  const t = pl.map_titles || {};
+  return t[state.lang] || t.us || pl.map || "";
+}
+
+function problemItem(pl) {
+  const w = state.words;
+  const item = w["pp_item_" + pl.item] || pl.item || "";
+  return pl.n ? fillText(w.pp_item_n, { item, n: pl.n }) : item;
+}
+
+function problemKey(key) {
+  return (key && state.words["pp_key_" + key]) || key || "";
+}
+
+function plainProblem(p) {
+  const w = state.words, pl = p.plain || {};
+  const values = { map: problemMap(pl), item: problemItem(pl), key: problemKey(pl.key), file: pl.file || p.file || "",
+    line: pl.line || "", what: w["pp_file_" + String(pl.file || "").split("/").pop().replace(/\.toml$/, "")] || pl.file || "" };
+  const kind = pl.kind === "bad_value" && !pl.key ? "bad_item" : pl.kind;
+  const text = w["pp_" + kind];
+  if (!text || kind === "other") return p.problem;  // the Studio's own words already (research, folder names), or unknown
+  return `${fillText(text, values)} ${w.pp_stops}`;
+}
+
+function plainHow(p) {
+  const w = state.words, pl = p.plain || {};
+  if (pl.item) return fillText(w.pp_how_item, { item: w["pp_item_" + pl.item] || pl.item });
+  if (pl.kind === "unreadable" || pl.kind === "map_file") return w.pp_how_file;
+  if (pl.kind === "unit_file") return /(^|\/)studio\.rndf$/.test(pl.file || "") ? w.pp_how_studio_file : w.pp_how_unit_file;
+  if (pl.kind === "text_file") return w.pp_how_unit_file;
+  if (pl.kind === "manifest") return w.pp_how_manifest;
+  return p.unit || p.rename_to ? "" : w.pp_how_other;
+}
+
+function needsFolder(p) {  // nothing a button can fix: the mod's folder, to fix it by hand
+  const kind = (p.plain || {}).kind;
+  return (kind === "manifest" || kind === "other") && !p.unit && !p.rename_to;
+}
+
+function fixButton(p, f) {
+  const w = state.words, pl = p.plain || {};
+  const item = w["pp_item_" + pl.item] || pl.item || "";
+  const label = f.fix === "fill" ? (w["pp_fix_fill_" + f.key] || fillText(w.pp_fix_fill, { key: problemKey(f.key) }))
+    : f.fix === "remove_key" ? fillText(w.pp_fix_remove_key, { key: f.key })
+    : f.fix === "remove_item" ? fillText(w.pp_fix_remove_item, { item })
+    : w.check_set_aside;
+  const tip = { fill: w.tip_pp_fill, remove_key: w.tip_pp_remove_key, remove_item: w.tip_pp_remove_item }[f.fix] || w.tip_check_set_aside;
+  const button = el("button", { type: "button", className: f.fix === "set_aside" ? "small ghost" : "small", textContent: label, title: tip || "" });
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      const res = await api().fix_problem(f);
+      state.problems = res.problems || [];
+      renderCheck();
+      say(res.kept ? fillText(w.check_aside_done, { file: res.kept }) : res.message || w.pp_fixed, "ok");
+      if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();  // the map shows the fixed file
+    } catch (err) { problem(err); button.disabled = false; }
+  });
+  return button;
 }
 
 async function modChanged() {
