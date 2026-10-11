@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.4:** i mod si scaricano su ogni PC.
+
+- Su alcuni PC nessun mod si scaricava ("certificate verify failed: unable to get local issuer certificate"): Windows non aveva ancora preso il certificato con cui si verifica
+  GitHub, e il Launcher non poteva chiederglielo. Ora lo chiede a Windows, come fa un browser, e riprova; anche per
+  gli aggiornamenti del Launcher. Non ancora provato su un PC che aveva il problema.
+
 **0.4.8.3:** le copie con le mod vanno dove dici tu.
 
 - **Dove vanno le copie con le mod**, nelle Impostazioni: scegli la cartella in cui viene costruita la copia del gioco

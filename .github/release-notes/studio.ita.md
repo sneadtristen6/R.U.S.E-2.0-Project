@@ -1,6 +1,12 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.4:** i suoi aggiornamenti si scaricano su ogni PC.
+
+- Su alcuni PC i download da GitHub fallivano ("certificate verify failed: unable to get local issuer certificate"): Windows non aveva ancora preso il certificato con cui si
+  verifica GitHub, e lo Studio non poteva chiederglielo. Ora lo chiede a Windows, come fa un browser, e riprova. Non
+  ancora provato su un PC che aveva il problema.
+
 **0.9.8.3:** le copie con le mod vanno dove dici tu.
 
 - **Dove vanno le copie con le mod**, nelle Impostazioni: scegli la cartella in cui viene costruita la copia del gioco

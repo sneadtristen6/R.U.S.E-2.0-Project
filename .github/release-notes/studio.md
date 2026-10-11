@@ -1,6 +1,12 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.4:** its updates download on every PC.
+
+- On some PCs downloads from GitHub failed ("certificate verify failed: unable to get local issuer certificate"): Windows hadn't fetched the certificate GitHub is checked
+  against yet, and the Studio couldn't ask it to. Now it asks Windows, as a browser does, and tries again. Not tried
+  yet on a PC that had the problem.
+
 **0.9.8.3:** modded copies go where you say.
 
 - **Where modded copies go**, in Settings: choose the folder the modded copy of the game is built in, or go back to

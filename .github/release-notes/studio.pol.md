@@ -1,6 +1,12 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.4:** jego aktualizacje pobierają się na każdym komputerze.
+
+- Na niektórych komputerach pobieranie z GitHuba się nie udawało („certificate verify failed: unable to get local issuer certificate”): Windows nie pobrał jeszcze
+  certyfikatu, którym sprawdzany jest GitHub, a Studio nie mogło go o to poprosić. Teraz prosi o to Windows, tak jak
+  przeglądarka, i próbuje ponownie. Jeszcze nie wypróbowane na komputerze, który miał ten problem.
+
 **0.9.8.3:** kopie z modami trafiają tam, gdzie wskażesz.
 
 - **Gdzie trafiają kopie z modami**, w Ustawieniach: wybierz folder, w którym budowana jest kopia gry z modami, albo

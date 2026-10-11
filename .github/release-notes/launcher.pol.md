@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.4:** mody pobierają się na każdym komputerze.
+
+- Na niektórych komputerach żaden mod się nie pobierał („certificate verify failed: unable to get local issuer certificate”): Windows nie pobrał jeszcze certyfikatu, którym
+  sprawdzany jest GitHub, a Launcher nie mógł go o to poprosić. Teraz prosi o to Windows, tak jak przeglądarka, i
+  próbuje ponownie; dotyczy to też aktualizacji Launchera. Jeszcze nie wypróbowane na komputerze, który miał ten
+  problem.
+
 **0.4.8.3:** kopie z modami trafiają tam, gdzie wskażesz.
 
 - **Gdzie trafiają kopie z modami**, w Ustawieniach: wybierz folder, w którym budowana jest kopia gry z modami, albo

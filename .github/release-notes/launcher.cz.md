@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.4:** módy se stáhnou na každém PC.
+
+- Na některých PC se nestáhl žádný mód („certificate verify failed: unable to get local issuer certificate“): Windows ještě nezískaly certifikát, podle kterého se GitHub
+  ověřuje, a Launcher je o to nemohl požádat. Teď o to Windows požádá, stejně jako prohlížeč, a zkusí to znovu;
+  totéž platí pro aktualizace Launcheru. Zatím nevyzkoušeno na PC, kde se problém objevil.
+
 **0.4.8.3:** kopie s módy se ukládají tam, kam řeknete.
 
 - **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte

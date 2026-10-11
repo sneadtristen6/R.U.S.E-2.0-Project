@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4，面向玩家。** 它通过 Steam 找到 R.U.S.E.，**开始游戏** 会用你的模组构建一份修改过的游戏副本并
 启动它。你的 Steam 安装永远不会被改动。
 
+**0.4.8.4:** 模组在每台电脑上都能下载。
+
+- 在部分电脑上，所有模组都无法下载（“certificate verify failed: unable to get local issuer certificate”）：Windows 还没有获取用来验证 GitHub 的证书，而 Launcher 无法让它
+  去获取。现在 Launcher 会像浏览器一样请 Windows 检查并获取证书，然后重试；Launcher 自身的更新也是如此。尚未在出现过
+  此问题的电脑上试过。
+
 **0.4.8.3:** 模组版副本放在你指定的位置。
 
 - **模组版副本的保存位置**（设置）：选择构建模组版游戏副本的文件夹，或回到推荐位置，即游戏所在驱动器上的 `RUSE-Instances`（在那里副本与游戏共享文件，
