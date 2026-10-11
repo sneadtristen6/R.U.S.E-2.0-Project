@@ -279,6 +279,12 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
   M1 Abrams, Studio 0.9.6).
+- **A new unit's own copy of its model:** `files/models/<the new unit's name>.copy.toml` gives a copied unit its own
+  copy of the model its source draws: the same mesh, bones and moving parts, with textures of its own (named in the
+  source texture's group, `TSCCombCS_<unit>_CombinedDSCTexture01`), so painting it changes that unit only. Its paint is
+  in `files/models/<the new unit's name>/`, laid out as `files/replace/` (named for the source's textures). The Studio
+  writes both: *Give it its own copy of the model*, then *Repaint in Blender* on the unit. A unit can't have a copy and
+  an imported `.glb` both; a unit whose model part names no model (infantry) can't have a copy.
 - **Units from other eras (Studio 0.9.8.2):** an era unit added to a mod is an ordinary new unit (above): its values,
   its model in `files/models/`, its card, and its research link (`UpgradeRequire`) like any unit's. The mod also keeps
   `era_units.json` (which era units it has: `{era unit key: its new unit's address}`) and `CREDITS-era-units.md` (each
