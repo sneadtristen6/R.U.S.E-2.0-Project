@@ -72,6 +72,7 @@
       tip_pp_remove_key: "Takes out just this setting; the rest of the item stays. The file as it was is kept beside it.",
       tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
       tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
+      model_copy: "Give it its own copy of the model", tip_model_copy: "The same model with textures of its own: Repaint in Blender then changes only this unit, not the unit it copies.", model_copy_how: "Now it draws the model of the unit it copies, so a repaint changes both. With its own copy, a repaint changes only this one.", model_copy_has: "This unit has its own copy of the model: Repaint in Blender changes only this unit.", model_copy_remove: "Use the shared model again", tip_model_copy_remove: "Back to the model of the unit it copies. Its paint stays in the mod, for when it gets a copy again.",
       only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
@@ -532,8 +533,9 @@
              textures: [pic], painted: fakePainted.has(address) ? [pic] : [], download: "https://www.blender.org/download/",
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
              opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
-             own_model: fakeModels.get(address) || null };
+             own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address) };
   }
+  const fakeModelCopies = new Set();  // new units with their own copy of the model (model_copy)
   const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
   const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
                         parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
@@ -2126,6 +2128,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { model: fakeModels.get(address), ...fakeLook(address) };
       },
       model_import_remove: async (address) => { fakeModels.delete(address); return fakeLook(address); },
+      model_copy: async (address) => {
+        if (fakeModels.has(address)) throw new Error("This unit has an imported model: take it out first (Remove the model), then give it a copy.");
+        fakeModelCopies.add(address);
+        return { ...fakeLook(address), message: "It has its own copy of the model now: Repaint in Blender changes only this unit." };
+      },
+      model_copy_remove: async (address) => {
+        fakeModelCopies.delete(address);
+        return { ...fakeLook(address), message: "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
+      },
       // its size on the slider (StudioApi.model_size_marks / model_sizes / model_resize / models_resize_all): a plane
       // (an address with Avion in it) has a real-life size of 3.4, a ground unit 1.3
       model_size_marks: async (address) => ({ tiny: 0.05, huge: 20, game: 1, real: /Avion/.test(address) ? 3.4 : 1.3,

@@ -45,6 +45,8 @@ class ModInfo:
     textures: dict = field(default_factory=dict)             # texture path in ZZ_Win.dat -> (colour PNG, alpha PNG) (§7)
     cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
     models: dict = field(default_factory=dict)               # a new unit's name -> its own model .glb (files/models, §7)
+    model_copies: dict = field(default_factory=dict)         # a new unit's name -> its paint, for its own copy of the
+    # model it copies (files/models/<name>.copy.toml and files/models/<name>/, §7; rusemod.unitmodel.write_unit_copy)
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
     scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)

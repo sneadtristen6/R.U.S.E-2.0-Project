@@ -1665,6 +1665,29 @@ function modelBox(address, info, draw, changed) {
     } catch (err) { problem(err); } finally { pick.disabled = false; }
   });
   const box = el("div", { className: "model-own" }, el("h3", { textContent: w.model_title }));
+  // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
+  // model with textures of its own, so Repaint in Blender above changes this unit only
+  const copyAction = (call, button) => async () => {
+    button.disabled = true;
+    try {
+      const r = await api()[call](address);
+      say(r.message, "ok");
+      draw(r);
+      if (changed) changed();
+    } catch (err) { problem(err); button.disabled = false; }
+  };
+  if (info.own_copy) {
+    const back = el("button", { type: "button", className: "ghost", textContent: w.model_copy_remove, title: w.tip_model_copy_remove });
+    back.addEventListener("click", copyAction("model_copy_remove", back));
+    box.append(el("p", { className: "small", textContent: w.model_copy_has }), el("div", { className: "actions" }, back));
+    box.pick = back;
+    return box;  // (one model per unit: no import while it has a copy)
+  }
+  if (!own) {
+    const copy = el("button", { type: "button", textContent: w.model_copy, title: w.tip_model_copy });
+    copy.addEventListener("click", copyAction("model_copy", copy));
+    box.append(el("p", { className: "muted small", textContent: w.model_copy_how }), el("div", { className: "actions" }, copy));
+  }
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));

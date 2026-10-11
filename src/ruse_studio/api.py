@@ -7039,13 +7039,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
         "opened": whether the unit has been opened in Blender (its work folder is there)}."""
         from rusemod.blender import DOWNLOAD
-        from rusemod.unitlook import LOOK_FILE, mod_textures
+        from rusemod.unitlook import LOOK_FILE
         if self._game() is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no models to open.")
         found, textures = self._look_models(address)
         mod = self._mod_dir()
-        painted = sorted(set(textures) & set(mod_textures(mod))) if mod else []
+        painted = sorted(set(textures) & set(self._paint_of(address))) if mod else []
         blender = self._blender()
         own = self._own_model_file(address)
         own_model = None
@@ -7054,9 +7054,83 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 own_model = json.loads(own.with_suffix(".json").read_text(encoding="utf-8")).get("report") or {}
             except (OSError, ValueError):
                 own_model = {}
+        copy = self._own_copy_file(address)
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
                 "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
-                "new_unit": own is not None, "own_model": own_model}
+                "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file())}
+
+    # --- a new unit's own copy of the model it copies (the owner, 2026-10-11: "duplicate that part"; built by
+    # rusemod.unitmodel.write_unit_copy): the same model with textures of its own, so Repaint in Blender changes this
+    # unit only; its paint is kept in files/models/<the unit's name>/ instead of files/replace ---
+    def _own_copy_file(self, address: str) -> Path | None:
+        """A new unit's files/models/<its name>.copy.toml in the current mod, whether made yet or not; None for the
+        game's own units."""
+        own = self._own_model_file(address)
+        from rusemod.unitmodel import COPY
+        return own.with_name(own.stem + COPY) if own is not None else None
+
+    def _paint_root(self, address: str) -> Path | None:
+        """Where the unit's paint goes: its copy's folder (files/models/<its name>/) when it has its own copy, else
+        None (the mod's files/replace, every unit drawn with the same model)."""
+        copy = self._own_copy_file(address)
+        return copy.with_name(copy.name[:-len(".copy.toml")]) if copy is not None and copy.is_file() else None
+
+    def _paint_of(self, address: str) -> dict:
+        """The paint the unit shows: its copy's, or the mod's files/replace ({texture: (colour PNG, alpha PNG)})."""
+        from rusemod.unitlook import mod_textures, paint_in
+        root, mod = self._paint_root(address), self._mod_dir()
+        return paint_in(root) if root is not None else mod_textures(mod) if mod is not None else {}
+
+    def model_copy(self, address: str) -> dict:
+        """Give the new unit at `address` its own copy of the model it copies (files/models/<its name>.copy.toml):
+        built as the same model with textures of its own. Returns look() and a "message"."""
+        copy = self._own_copy_file(address)
+        if copy is None:
+            # not a game rule: a game unit's model stays the game's (copy the unit first, as for an imported model)
+            raise StudioError("Only a new unit made in this mod can get its own copy of a model: copy the unit first.")
+        own = self._own_model_file(address)
+        if own is not None and own.is_file():
+            # not a game rule: one model per unit
+            raise StudioError("This unit has an imported model: take it out first (Remove the model), then give it a "
+                              "copy.")
+        model = self._copied_model(address)
+        if model is None:
+            # not a game rule: the build copies a model named by the unit's GfxDescriptor.MeshDescriptor
+            raise StudioError("This unit's model can't be copied yet: only units drawn with one model of their own "
+                              "(vehicles, planes, ships) can, not infantry.")
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has its own copy of the model it "
+                        f"copies; its paint is in the folder of its name beside this file.\nof = {json.dumps(model)}\n",
+                        encoding="utf-8")
+        return {**self.look(address), "message": "It has its own copy of the model now: Repaint in Blender changes "
+                                                 "only this unit."}
+
+    def model_copy_remove(self, address: str) -> dict:
+        """The new unit draws the model it copies again (its .copy.toml goes; its paint stays in the mod, for a copy
+        made again). Returns look() and a "message"."""
+        copy = self._own_copy_file(address)
+        if copy is not None:
+            copy.unlink(missing_ok=True)
+        return {**self.look(address), "message": "It draws the model it copies again. Its paint is kept in the mod, "
+                                                 "for when it gets a copy again."}
+
+    def _copied_model(self, address: str) -> str | None:
+        """The model a new unit's copy would copy: the one its source's GfxDescriptor.MeshDescriptor names (the
+        build's rusemod.build._own_model_part), or None (infantry draw theirs another way)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _unit = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            gfx = next((w for p, k, w in ix.uses(real) if p == "GfxDescriptor" and k == "object"), None)
+            mesh = next((w for p, k, w in ix.uses(gfx) if p == "MeshDescriptor" and k == "object"), None) if gfx \
+                else None
+            return next((str(w) for p, k, w in ix.uses(mesh) if p == "FileName" and k == "file"
+                         and str(w).lower().endswith(".ase2ndfbin")), None) if mesh else None
+        finally:
+            ix.close()
 
     def look_open(self, address: str) -> dict:
         """Write the unit's models with their pictures into its work folder and open them in Blender, ready to paint
@@ -7080,7 +7154,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             lib.close()
         mod = self._mod_dir()
         if mod is not None:  # paint the mod already has goes on the pictures, so work goes on from it
-            have = unitlook.mod_textures(mod)
+            have = self._paint_of(address)  # (its own copy's, when it has one)
             for name, info in record["pictures"].items():
                 pics = have.get(info["texture"])
                 src = pics[1 if info["kind"] == "alpha" else 0] if pics else None
@@ -7110,7 +7184,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if running or proc is None:
             quiet = ask_to_save(folder, timeout=20.0 if running else 2.0) is None and running
         record = json.loads((folder / unitlook.LOOK_FILE).read_text(encoding="utf-8"))
-        brought = unitlook.bring_back(folder, mod)
+        brought = unitlook.bring_back(folder, mod, self._paint_root(address))  # (into its copy's, when it has one)
         for b in brought:  # what's in the mod now is the new starting point: bringing back twice adds nothing
             pic = folder / b["picture"]
             record["pictures"][b["picture"]]["hash"] = unitlook._pixels_hash(pic, b["kind"] == "alpha")
@@ -7134,7 +7208,6 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         The .glb files (rusemod.gltf) are made once per game build and kept in the cache: a few seconds the first
         time, then at once."""
         from rusemod import gltf, models
-        from rusemod.unitlook import mod_textures
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -7173,8 +7246,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if lib is not None:
                     lib.close()
         paint = {}
-        mod = self._mod_dir()
-        have = mod_textures(mod) if mod is not None else {}
+        have = self._paint_of(address)  # (its own copy's paint, when it has one)
         for tex in textures:
             colour = (have.get(tex) or (None, None))[0]
             if colour is None:

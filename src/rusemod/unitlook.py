@@ -393,7 +393,13 @@ def standin_name(member: str) -> str:
 def mod_textures(folder: Path) -> dict:
     """{texture path in ZZ_Win.dat (backslashes, lower case): (colour picture or None, alpha picture or None)}
     from a mod's files/replace/**/<name>.tgv.png and <name>.tgv.alpha.png."""
-    root = Path(folder) / REPLACE
+    return paint_in(Path(folder) / REPLACE)
+
+
+def paint_in(root: Path) -> dict:
+    """mod_textures' pictures under any folder laid out as files/replace (a new unit's own copy of its model keeps its
+    paint so: files/models/<the unit's name>/, rusemod.unitmodel.write_unit_copy)."""
+    root = Path(root)
     out: dict = {}
     if not root.is_dir():
         return out
@@ -412,6 +418,50 @@ def mod_textures(folder: Path) -> dict:
     return out
 
 
+def paint(original: bytes, colour_file, alpha_file) -> tuple[str, bytes, dict, tuple | None]:
+    """A game texture (or card, or flag badge) `original` with a mod's paint (its colour and alpha PNGs, either None):
+    (its kind, "texture", "card" or "picture"; the new bytes, `original` itself when nothing was painted; the report;
+    and for a painted texture what its stand-ins need: (colour pixels, alpha pixels, w, h, changed colour blocks,
+    changed alpha blocks)). LookError for a picture that doesn't fit the texture."""
+    pics = []
+    for f in (colour_file, alpha_file):
+        if f is None:
+            pics.append((0, 0, None))
+            continue
+        try:
+            pics.append(read_png(Path(f).read_bytes()))
+        except ValueError as exc:
+            raise LookError(f"{f}: {exc}") from None
+    (cw, ch, cpx), (aw, ah, apx) = pics
+    w, h = (cw, ch) if cpx is not None else (aw, ah)
+    if cpx is not None and apx is not None and (cw, ch) != (aw, ah):
+        raise LookError(f"{alpha_file}: {aw} x {ah}, but its colour picture is {cw} x {ch}")
+    if is_picture(original):  # a unit's card or a flag badge: one level, no stand-ins
+        plain = is_plain(original)
+        if cpx is None or (apx is not None and not plain):
+            raise LookError(f"{alpha_file or colour_file}: a card has no alpha picture, only its colour")
+        try:
+            new, report = make_picture(original, cpx, w, h, apx if plain else None)
+        except LookError as exc:
+            raise LookError(f"{colour_file}: {exc}") from None
+        return ("picture" if plain else "card"), new, report, None
+    try:
+        new, report = make_texture(original, cpx, apx, w, h)
+    except LookError as exc:
+        raise LookError(f"{colour_file or alpha_file}: {exc}") from None
+    if new is original:
+        return "texture", new, report, None
+    g = Tgv(original)
+    old_px = dxt.decode_rgba(tgu1.decode(g.payload(len(g.mips) - 1)), w, h, g.format)
+    cflags = _changed(cpx, old_px, w, h, 0, 3) if cpx is not None else [False] * (w * h // 16)
+    aflags = [False] * (w * h // 16)
+    if apx is not None:
+        merged = bytearray(old_px)
+        merged[3::4] = apx[0::4]
+        aflags = _changed(bytes(merged), old_px, w, h, 3, 1)
+    return "texture", new, report, (cpx, apx, w, h, cflags, aflags)
+
+
 def changes(zz, textures: dict, say=print, before: dict | None = None) -> dict:
     """{member path in ZZ_Win.dat: new bytes} for the painted `textures` ({member: (colour PNG, alpha PNG)}):
     each texture and its stand-ins in every stand-in pack (.ppk, PRXYPCPC) that has one. `before`: members other
@@ -425,50 +475,19 @@ def changes(zz, textures: dict, say=print, before: dict | None = None) -> dict:
             # not a game rule: the picture is named for a texture this game doesn't have (a typo, another game build)
             raise LookError(f"files/replace/{member.replace(chr(92), '/')}.png: the game has no texture {member}")
         original = bytes(zz.read(e))
-        pics = []
-        for f in (colour_file, alpha_file):
-            if f is None:
-                pics.append((0, 0, None))
-                continue
-            try:
-                pics.append(read_png(Path(f).read_bytes()))
-            except ValueError as exc:
-                raise LookError(f"{f}: {exc}") from None
-        (cw, ch, cpx), (aw, ah, apx) = pics
-        w, h = (cw, ch) if cpx is not None else (aw, ah)
-        if cpx is not None and apx is not None and (cw, ch) != (aw, ah):
-            raise LookError(f"{alpha_file}: {aw} x {ah}, but its colour picture is {cw} x {ch}")
-        if is_picture(original):  # a unit's card or a flag badge: one level, no stand-ins
-            plain = is_plain(original)
-            if cpx is None or (apx is not None and not plain):
-                raise LookError(f"{alpha_file or colour_file}: a card has no alpha picture, only its colour")
-            try:
-                new, report = make_picture(original, cpx, w, h, apx if plain else None)
-            except LookError as exc:
-                raise LookError(f"{colour_file}: {exc}") from None
+        kind, new, report, standin = paint(original, colour_file, alpha_file)
+        if kind != "texture":  # a unit's card or a flag badge: one level, no stand-ins
             if new is not original:
                 out[e.path] = new
-            say(f"{'picture' if plain else 'card'} {member}: {report['encoded']:,} of {report['blocks']:,} "
-                f"{report.get('unit', 'blocks')} changed")
+            say(f"{kind} {member}: {report['encoded']:,} of {report['blocks']:,} {report.get('unit', 'blocks')} "
+                f"changed")
             continue
-        try:
-            new, report = make_texture(original, cpx, apx, w, h)
-        except LookError as exc:
-            raise LookError(f"{colour_file or alpha_file}: {exc}") from None
         if new is original:
             say(f"texture {member}: the picture is the game's own (nothing painted): left as it is")
             continue
         out[e.path] = new
         say(f"texture {member}: {report['encoded']:,} of {report['blocks']:,} blocks painted, in {report['levels']} levels")
-        g = Tgv(original)
-        old_px = dxt.decode_rgba(tgu1.decode(g.payload(len(g.mips) - 1)), w, h, g.format)
-        cflags = _changed(cpx, old_px, w, h, 0, 3) if cpx is not None else [False] * (w * h // 16)
-        aflags = [False] * (w * h // 16)
-        if apx is not None:
-            merged = bytearray(old_px)
-            merged[3::4] = apx[0::4]
-            aflags = _changed(bytes(merged), old_px, w, h, 3, 1)
-        standins[standin_name(member)] = (cpx, apx, w, h, cflags, aflags)
+        standins[standin_name(member)] = standin
     if standins:
         # A stand-in whose picture other stand-ins share (the M4 Sherman's tracks with the Firefly's, the Calliope's and
         # the flamethrower's) is left as the game has it: painting it in place repaints the others, and giving it its
@@ -554,11 +573,13 @@ def prepare(lib, models: list[str], folder: Path, side: int = 4096) -> dict:
     return record
 
 
-def bring_back(folder: Path, mod: Path) -> list[dict]:
-    """Copy every picture in `folder` (made by prepare) that was painted since into the mod's files/replace, named
-    for its texture. Returns [{picture, texture, kind, to}] of what was copied (a texture whose colour and alpha
-    pictures are both untouched is left as the mod has it)."""
+def bring_back(folder: Path, mod: Path, root: Path | None = None) -> list[dict]:
+    """Copy every picture in `folder` (made by prepare) that was painted since into the mod's files/replace (or into
+    `root`, laid out the same: a new unit's own copy of its model, files/models/<the unit's name>/), named for its
+    texture. Returns [{picture, texture, kind, to}] of what was copied (a texture whose colour and alpha pictures are
+    both untouched is left as the mod has it)."""
     folder, mod = Path(folder), Path(mod)
+    root = Path(root) if root is not None else mod / REPLACE
     record = json.loads((folder / LOOK_FILE).read_text(encoding="utf-8"))
     done = []
     for name, info in sorted(record["pictures"].items()):
@@ -566,7 +587,7 @@ def bring_back(folder: Path, mod: Path) -> list[dict]:
         if not pic.is_file() or _pixels_hash(pic, info["kind"] == "alpha") == info["hash"]:
             continue
         rel = info["texture"].replace("\\", "/") + (".alpha.png" if info["kind"] == "alpha" else ".png")
-        to = mod / REPLACE / rel
+        to = root / rel
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(pic, to)
         done.append({"picture": name, "texture": info["texture"], "kind": info["kind"], "to": str(to)})
