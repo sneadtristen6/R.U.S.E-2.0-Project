@@ -23849,16 +23849,16 @@ jpn = "このカメラ移動を削除します。"
 sc = "删除此镜头移动。"
 
 [ms_cam_untried]
-us = "Camera moves of your own haven't been tried in the game yet (the first test is under way)."
-fr = "Vos propres mouvements de caméra n'ont pas encore été essayés en jeu (premier test en cours)."
-ger = "Eigene Kamerafahrten wurden im Spiel noch nicht getestet (der erste Test läuft)."
-ita = "I tuoi movimenti di camera non sono ancora stati provati nel gioco (primo test in corso)."
-spa = "Tus propios movimientos de cámara aún no se han probado en el juego (primera prueba en curso)."
-pol = "Własne ruchy kamery nie były jeszcze testowane w grze (trwa pierwszy test)."
-ru = "Свои движения камеры в игре ещё не проверены (идёт первый тест)."
-cz = "Vlastní pohyby kamery ve hře zatím nebyly vyzkoušeny (probíhá první test)."
-jpn = "独自のカメラ移動はまだゲームで試していません(最初のテスト中)。"
-sc = "自己的镜头移动尚未在游戏中测试(首次测试进行中)。"
+us = "A camera move of your own was seen in the game as a mission's opening; one played by an event hasn't been tried yet."
+fr = "Un mouvement de caméra à vous a été vu en jeu en ouverture de mission ; un mouvement lancé par un événement n'a pas encore été essayé."
+ger = "Eine eigene Kamerafahrt wurde im Spiel als Missionsauftakt gesehen; eine, die ein Ereignis abspielt, wurde noch nicht getestet."
+ita = "Un tuo movimento di camera è stato visto in gioco come apertura della missione; uno avviato da un evento non è ancora stato provato."
+spa = "Un movimiento de cámara propio se ha visto en el juego como apertura de la misión; uno lanzado por un evento aún no se ha probado."
+pol = "Własny ruch kamery sprawdzono w grze jako otwarcie misji; ruchu uruchamianego przez zdarzenie jeszcze nie testowano."
+ru = "Своё движение камеры проверено в игре как начало миссии; запуск по событию ещё не проверен."
+cz = "Vlastní pohyb kamery byl ve hře vyzkoušen jako úvod mise; pohyb spuštěný událostí zatím vyzkoušen nebyl."
+jpn = "独自のカメラ移動はミッションの冒頭としてゲームで確認済みです。イベントで再生するものはまだ試していません。"
+sc = "自己的镜头移动已作为任务开场在游戏中试过；由事件播放的尚未测试。"
 
 # --- the Scenario side's mission trays (mission.js, StudioApi.mission; 2026-10-10) ---
 

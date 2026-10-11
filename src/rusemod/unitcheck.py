@@ -149,8 +149,8 @@ def _shown(obj) -> list | None:
 def research_hidden_parent_problems(game, names) -> dict[str, str]:
     """For the units `names`: {name: why} when the unit is shown in its build menu at a battle date where the unit
     it's researched from (UpgradeRequire) is hidden (its ShowInMenu 0 there). The game's build menu puts a researched
-    unit's button after its parent's and stops when the parent has none (headup/menu.py add_bouton_techno, KeyError:
-    seen 2026-10-10, Italy's units hidden and China's researched from them). The owner, 2026-10-10: "There shouldn't
+    unit's button after its parent's and stops when the parent has none (seen in the game
+    2026-10-10, Italy's units hidden and China's researched from them). The owner, 2026-10-10: "There shouldn't
     be a unit hidden behind a research one shown in the menu ... The one available to be built should be first before
     the research one" (rule unit-research-shown-parent)."""
     out = {}

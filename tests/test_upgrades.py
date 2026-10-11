@@ -141,8 +141,8 @@ class Upgrades(unittest.TestCase):
 
     def test_a_hidden_unit_is_no_research_parent(self):
         """A unit the mod hides from every battle date's menu (ShowInMenu all 0) isn't offered to research from: the
-        game's menu looks up a shown upgrade's parent by its button and stops on one it hasn't got (headup/menu.py
-        add_bouton_techno, KeyError; seen in the game 2026-10-10, Italy's units hidden, China's researched from them)."""
+        game's menu looks up a shown upgrade's parent by its button and stops on one it hasn't got (seen in the game
+        2026-10-10, Italy's units hidden, China's researched from them)."""
         self.api.new_mod("Hidden")
         edits = ModEdits(self.home / "mods" / "hidden")
         edits.set(C, "ShowInMenu", [0, 0, 0, 0, 0])

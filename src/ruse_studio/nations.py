@@ -251,8 +251,8 @@ class NationCalls:
                 else:
                     edits.reset(address, self.SHOW_IN_MENU)
         # a unit still shown that is researched from one now hidden crashes the game when its building's menu opens
-        # (headup/menu.py add_bouton_techno looks up the parent's button: KeyError; seen in the game 2026-10-10, the
-        # Chinese units researched from Italy's hidden ones): it becomes buyable from the start, as the Upgrade box's
+        # (the menu looks up the parent's button; seen in the game 2026-10-10, the Chinese units researched
+        # from Italy's hidden ones): it becomes buyable from the start, as the Upgrade box's
         # "none" makes it, and the page says which
         unlinked = []
         if hide:

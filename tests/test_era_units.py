@@ -395,7 +395,7 @@ class EraResearch(unittest.TestCase):
     def test_a_unit_never_shown_isnt_suggested(self):
         """The dearest unit the build menu never shows (ShowInMenu 0 at every battle date, as the game's DEMO, film and
         empty units) isn't suggested, nor offered: a shown unit researched from one the menu has no button for stops
-        the game (headup/menu.py add_bouton_techno, KeyError; seen in the game 2026-10-10)."""
+        the game (seen in the game 2026-10-10)."""
         from ruse_studio.edits import ModEdits
         self.api.new_mod("Hidden")
         edits = ModEdits(self.home / "mods" / "hidden")

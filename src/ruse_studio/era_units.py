@@ -638,7 +638,7 @@ class EraUnitCalls:
             # the new unit is shown at its start unit's dates; a parent missing from the menu at one of them is no
             # choice (2026-10-09: the dearest were the game's atomic units, shown at the last date only, and DEMO,
             # film and empty units, never shown; 2026-10-10, seen in the game: a shown upgrade whose parent has no
-            # button in the menu stops the game, headup/menu.py add_bouton_techno)
+            # button in the menu stops the game)
             mine_at = shown_at(source, _props(ix.show(self._resolve(edits, source)[0]))) if source else None
             prices, never_shown = {}, set()
             for a in choices:

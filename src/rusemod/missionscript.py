@@ -1,5 +1,5 @@
 """A mission script written by the build, with no compiler: the game's 45 mission scripts are straight-line code
-(PLAN decision 23's "safe mission language", private/notes/mission-scripting-research-2026-10-03.md): a list of
+(PLAN decision 23's "safe mission language"): a list of
 `NAME = module.Block(Arg=value, ...)` statements after the imports, and one function, `def launch(): import
 leveldesign.launcher; return leveldesign.launcher.launch(ER)`. This module holds that list (Call, Attr, Ref, plain
 values) and writes it the way Python 2.5 compiles it (the game's interpreter: absolute imports, true division, the
@@ -31,8 +31,8 @@ WRITTEN_OPS = {LOAD_NAME, LOAD_CONST, LOAD_ATTR, STORE_NAME, CALL_FUNCTION, BUIL
 
 _NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
-# The blocks a mission may make: module -> class names, all from the game's own missions (the research note's
-# usage.txt and catalog.txt), the ones rusemod.mission writes.
+# The blocks a mission may make: module -> class names, all used by the game's own missions, the ones rusemod.mission
+# writes.
 ALLOWED = {
     "leveldesign.camera": {"DescriptorStartCameraPath"},
     "leveldesign.camps": {"VariableCamp", "LocalizedCampName", "DescriptorHudElementsVisibility"},

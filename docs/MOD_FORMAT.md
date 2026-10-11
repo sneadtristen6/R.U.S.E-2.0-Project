@@ -458,7 +458,7 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   erased, its roads and bridges taken out, only the starting points kept, no sectors (`[sectors] no_sectors`: the
   modder paints them with the Sectors brush; a map made blank by Studio 0.9.8 to 0.9.8.2 has the sectors over the
   whole map instead), and its own menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05, with
-  the sectors over the whole map; no sectors and painted ones not yet). The starting points stay in its files but
+  the sectors over the whole map; painted sectors since: § Sectors below). The starting points stay in its files but
   none is placed: the modder places each player's HQ (`blank`, below).
 - **`blank = "terrain"`** or **`"ocean"`** (a blank start sets it; a map made blank by Studio 0.9.8 to 0.9.8.2 has
   `ground = "generated"` instead, which counts the same): the map started blank, so nothing of the copied map is on
@@ -599,9 +599,11 @@ look = [889143, 833073, 24000]                                 # the spot it loo
 - Named points and zones, groups, goals, sides and camera moves are checked before anything is built; what isn't
   tried in the game yet is said as a warning (the Studio lists the same).
 - Tried in the game: messages, units brought in, an artillery strike, moves and holding a zone, an attack, a bombing
-  run, a paratroop drop, main and bonus goals, a goal on a zone or a group, a group of named units, victory in an
-  Operation and in a chapter (T22, T30, T41). Not yet: the mission's own camera moves, the goals panel at the start,
-  a goal done after a time, repeating events, money given during a mission, a side handed to the computer (T45).
+  run, main and bonus goals, a goal on a zone or a group, a group of named units, victory in an Operation and in a
+  chapter (T22, T30, T41); the mission's own camera move as it opens, the goals panel at the start, a goal done
+  after a time, a repeating event, money given during a mission, a side handed to the computer (T45). Not yet: a
+  paratroop drop (the game's own drop mission, which a community mod's airlift runs), a camera move played by an
+  event, events on a zone or a group destroyed, a goal done by an event.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 
