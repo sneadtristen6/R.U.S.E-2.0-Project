@@ -2097,7 +2097,11 @@ function zoneBorder(triangles, p) {
 // fades inwards (clear at the border, gone `band` in), and a faint fill, in its own colour; all following the ground.
 // A zone's hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
 // zone's own name in the file is only a code, zone_<guid>)
-const zoneLabel = (z, k) => `${mv.words.scen_zone} ${k + 1} · ${mv.words.scen_zone_what || z.name}`;
+// a zone's sector number (the Sectors tool's "Sector 3" is number 2): its colour and its name everywhere, so a sector
+// keeps one colour and one number in every view (the owner, 2026-10-10: the colours changed when the Sectors tool
+// opened, coloured by list place here and by number there)
+const zoneNumber = (z, k) => (Number.isInteger(z.number) && z.number >= 0 ? z.number : k);
+const zoneLabel = (z, k) => `${mv.words.scen_zone} ${zoneNumber(z, k) + 1} · ${mv.words.scen_zone_what || z.name}`;
 
 // A zone flat on the map, for pointing at it: its own triangles (a few hundred), not the drape that follows the
 // ground (tens of thousands each; raycasting those took 20-46 ms a pointer move on a blank D-Day, 2026-10-09)
@@ -2126,7 +2130,7 @@ function zoneAt(x, y) {
 }
 
 function drawZone(z, k, zones, at, step) {
-  const { THREE } = mv.gl, colour = zoneColour(k);
+  const { THREE } = mv.gl, number = zoneNumber(z, k), colour = zoneColour(number);
   const label = zoneLabel(z, k);
   const p = z.points;
   const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
@@ -2178,6 +2182,30 @@ function drawZone(z, k, zones, at, step) {
     transparent: true, opacity: 0.95, depthWrite: false }));
   border.renderOrder = 9;
   zones.add(border);
+  zones.add(sectorTag(number, colour, zoneInside(z), at));
+}
+
+// A point inside zone `z` for its number: the middle of its biggest triangle (a triangle's middle is always in it).
+function zoneInside(z) {
+  const p = z.points, t = z.triangles;
+  let best = -1, x = p[0], y = p[1];
+  for (let i = 0; i + 2 < t.length; i += 3) {
+    const ax = p[2 * t[i]], ay = p[2 * t[i] + 1], bx = p[2 * t[i + 1]], by = p[2 * t[i + 1] + 1];
+    const cx = p[2 * t[i + 2]], cy = p[2 * t[i + 2] + 1];
+    const area = Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay));
+    if (area > best) { best = area; x = (ax + bx + cx) / 3; y = (ay + by + cy) / 3; }
+  }
+  return [x, y];
+}
+
+// A sector's number on the map, in its colour, always facing the camera: the same in the map view and the Sectors
+// tool, so "Sector 3" on a button is the 3 on the ground (the owner, 2026-10-10: "numbered and color-coded").
+function sectorTag(number, colour, [x, y], at) {
+  const light = colour.clone().offsetHSL(0, 0, 0.22);   // lighter than its fill, on a dark outline: readable on it
+  const tag = mapLabel(String(number + 1), `#${light.getHexString()}`, (mv.size || 1000) * 0.06);
+  tag.position.copy(at(x, y, (mv.size || 1000) * 0.01));
+  tag.userData.label = `${mv.words.scen_zone} ${number + 1}`;
+  return tag;
 }
 
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
@@ -3182,10 +3210,26 @@ function renderSectorTools(s) {
   const picks = $("scen-sectors-pick");
   const listed = v ? v.sectors : [];
   if (sec.pick !== "new" && sec.pick !== -1 && !listed.some((x) => x.number === sec.pick)) sec.pick = "new";
-  const swatch = (n) => el("span", { className: "swatch", style: `background: rgb(${sectorRgb(n).join(", ")})` });
+  const swatch = (n) => el("span", { className: "sector-swatch", style: `background: rgb(${sectorRgb(n).join(", ")})` });
+  // a sector's own ×: taken out in one click, its ground to the sectors round it (Undo brings it back); the owner,
+  // 2026-10-10: "It doesn't let you just like delete the ... sector super easy"
+  const takeOut = (n) => {
+    const x = el("span", { className: "chip-x", textContent: "×", title: fill(w.tip_sectors_delete_n, { n: n + 1 }) });
+    x.onclick = (e) => {
+      e.stopPropagation();
+      if (!can) return;
+      if (sec.pick === n) sec.pick = "new";
+      sectorCall(() => mv.api.sector_area(mv.current, s.file, [{ sector: n, points: [] }]));
+    };
+    return x;
+  };
   const chip = (label, tip, value, n) => {
     const c = chipOf(label, tip, sec.pick === value, () => { sec.pick = value; renderSectorTools(s); });
-    if (n !== undefined) c.prepend(swatch(n), " ");
+    if (n !== undefined) {
+      c.prepend(swatch(n));
+      if (mv.brush.mod) c.append(takeOut(n));
+      c.classList.toggle("busy", !can);
+    }
     return c;
   };
   const newChip = chip(w.sectors_new, v && v.next === null ? w.tip_sectors_new_full : w.tip_sectors_new, "new");
@@ -3229,6 +3273,7 @@ function renderSectorTools(s) {
   if (sec.error) { lines.push(sec.error); bad = true; }
   if (!v) lines.push(sec.busy ? w.sectors_busy : "");
   else {
+    if (sec.busy) lines.push(w.sectors_busy);   // a save on its way: said, and the buttons wait (no second delete)
     if (v.empty) { lines.push(w.sectors_empty); bad = true; }
     for (const p of v.problems) {
       lines.push(fill(p.pieces > 1 ? w.sectors_pieces : w.sectors_hole, { n: p.number + 1, pieces: p.pieces }));
@@ -3274,6 +3319,7 @@ async function loadSectorView(outlines) {
 async function sectorCall(call) {
   const pack = mv.current;
   sec.busy = true;
+  renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);   // "working…" and the buttons wait, at once
   try {
     const v = await call();
     if (pack === mv.current) {
@@ -3307,6 +3353,26 @@ function takeSectorView(v) {
   for (let k = 0; k < v.runs.length; k += 2) { sec.cells.fill(v.runs[k], i, i + v.runs[k + 1]); i += v.runs[k + 1]; }
   sectorDrawCells(0, sec.ny - 1, 0, sec.nx - 1);
   sectorDrawLines();
+  sectorDrawTags();
+}
+
+// Each sector's number on the Sectors tool's cells, where the view puts its label (inside it), in its colour: the
+// same tag the map view draws on its zones (sectorTag).
+function sectorDrawTags() {
+  const gl = mv.gl;
+  if (sec.tags) {
+    if (gl) gl.scene.remove(sec.tags);
+    sec.tags.traverse((o) => { if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+    sec.tags = null;
+  }
+  if (!gl || !mv.edit || !sec.view) return;
+  const { THREE } = gl, grid = makeGrid(mv.edit), size = mv.size || 1000;
+  const at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + size * 0.0015 + up, y * SCALE);
+  sec.tags = new THREE.Group();
+  for (const x of sec.view.sectors) sec.tags.add(sectorTag(x.number, zoneColour(x.number), [x.x, x.y], at));
+  sec.tags.visible = sec.on;
+  gl.scene.add(sec.tags);
+  gl.draw();
 }
 
 function sectorDropMesh() {
@@ -3350,6 +3416,7 @@ function sectorOverlayShow(show) {
     gl.scene.add(sec.mesh);
   }
   if (sec.mesh) sec.mesh.visible = show;
+  if (sec.tags) sec.tags.visible = show;
   const lines = show && (sec.outlines || sec.mode === "shapes");
   if (sec.linesMesh) sec.linesMesh.visible = lines;
   if (sec.dotsMesh) sec.dotsMesh.visible = lines && sec.mode === "shapes";

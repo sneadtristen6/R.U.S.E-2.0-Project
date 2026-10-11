@@ -21220,6 +21220,18 @@ cz = "Odebrat vybraný sektor: jeho zem připadne sektorům kolem."
 jpn = "選んだセクターを外します。その地面は周りのセクターのものになります。"
 sc = "移除所选扇区：它的地面归周围的扇区。"
 
+[tip_sectors_delete_n]
+us = "Take out sector {n}: its ground goes to the sectors around it (Undo brings it back)."
+fr = "Retirer le secteur {n} : son terrain va aux secteurs autour (Annuler le remet)."
+ger = "Sektor {n} entfernen: sein Boden geht an die Sektoren ringsum (Rückgängig holt ihn zurück)."
+ita = "Togli il settore {n}: il suo terreno va ai settori intorno (Annulla lo rimette)."
+spa = "Quitar el sector {n}: su terreno pasa a los sectores de alrededor (Deshacer lo devuelve)."
+pol = "Usuń sektor {n}: jego ziemia przejdzie do sektorów wokół (Cofnij go przywróci)."
+ru = "Убрать сектор {n}: его земля перейдёт к секторам вокруг («Отменить» вернёт его)."
+cz = "Odebrat sektor {n}: jeho zem připadne sektorům kolem (Zpět ho vrátí)."
+jpn = "セクター {n} を外します。その地面は周りのセクターのものになります（元に戻すで戻せます）。"
+sc = "移除扇区 {n}：它的地面归周围的扇区（撤销可恢复）。"
+
 [tip_sectors_delete_none]
 us = "Pick a sector first (its button above)."
 fr = "Choisissez d'abord un secteur (son bouton ci-dessus)."

@@ -96,6 +96,12 @@ button:disabled { cursor: default; opacity: 0.5; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; }
 .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+/* a sector's chip: its colour on the map, and its own × to take it out */
+.chip .sector-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px;
+  border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; }
+.chip .chip-x { margin-left: 6px; padding: 0 4px; border-radius: 999px; opacity: 0.6; cursor: pointer; }
+.chip .chip-x:hover { opacity: 1; color: #ff8a8a; background: rgba(255, 90, 90, 0.2); }
+.chip.busy .chip-x { opacity: 0.25; cursor: wait; }
 .unit-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
 .unit-list button { width: 100%; text-align: left; padding: 7px 10px; background: none; border: 1px solid transparent; }
 .unit-list button:hover { background: var(--panel); }
