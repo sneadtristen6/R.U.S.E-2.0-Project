@@ -2135,23 +2135,33 @@ function zoneAt(x, y) {
   return "";
 }
 
-function drawZone(z, k, zones, at, step) {
-  const { THREE } = mv.gl, number = zoneNumber(z, k), colour = zoneColour(number);
-  const label = zoneLabel(z, k);
+// The ground the zones are draped on, as a key (its heights' sum and range) and whether it's flat: a zone's drape is
+// kept while the key is the same, and flat ground (Blank Terrain) needs none.
+function groundKey(grid) {
+  let sum = 0, lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < grid.z.length; k++) {
+    const v = grid.z[k];
+    sum += v * ((k % 97) + 1);
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return { key: `${grid.cols}x${grid.rows}:${sum}:${lo}:${hi}`, flat: !(hi - lo > 1e-6 * Math.max(1, Math.abs(hi))) };
+}
+
+// A zone's drape (its triangles cut down to `step` so it follows the ground), glow and border on the ground, worked out
+// once per zone and ground. The owner, 2026-10-10: "Taking like 20 seconds between each one" on the Scenario side:
+// every tool's click draws the scenario again, and one painted sector's drape (long thin triangles cut down to a ground
+// cell and a half) took 3 s of it, measured on a copy of his map.
+const zoneShapesKept = new WeakMap();
+function zoneShapes(z, colour, at, step, ground) {
+  const kept = zoneShapesKept.get(z);
+  if (kept && kept.ground === ground && kept.step === step) return kept;
   const p = z.points;
   const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const v = at(xy[2 * i], xy[2 * i + 1]);
     pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  g.setIndex(tris);
-  const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0,
-    side: THREE.DoubleSide, depthWrite: false }));
-  fill.userData = { label, zonePart: "fill" };  // pointing anywhere inside says which zone, filled or not
-  fill.renderOrder = 7;
-  zones.add(fill);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < p.length; i += 2) {
     x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
@@ -2173,22 +2183,40 @@ function drawZone(z, k, zones, at, step) {
       corner(sx, sy, 1); corner(ex + nx * band, ey + ny * band, 0); corner(sx + nx * band, sy + ny * band, 0);
     }
   }
+  const out = { ground, step, pos, tris, glow: new Float32Array(glow), tint: new Float32Array(tint),
+    line: new Float32Array(line), inside: zoneInside(z) };
+  zoneShapesKept.set(z, out);
+  return out;
+}
+
+function drawZone(z, k, zones, at, step, ground) {
+  const { THREE } = mv.gl, number = zoneNumber(z, k), colour = zoneColour(number);
+  const label = zoneLabel(z, k);
+  const { pos, tris, glow, tint, line, inside } = zoneShapes(z, colour, at, step, ground);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setIndex(tris);
+  const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0,
+    side: THREE.DoubleSide, depthWrite: false }));
+  fill.userData = { label, zonePart: "fill" };  // pointing anywhere inside says which zone, filled or not
+  fill.renderOrder = 7;
+  zones.add(fill);
   if (!line.length) return;
   const gg = new THREE.BufferGeometry();
-  gg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(glow), 3));
-  gg.setAttribute("color", new THREE.BufferAttribute(new Float32Array(tint), 4));
+  gg.setAttribute("position", new THREE.BufferAttribute(glow, 3));
+  gg.setAttribute("color", new THREE.BufferAttribute(tint, 4));
   const shine = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0,
     side: THREE.DoubleSide, depthWrite: false }));
   shine.userData.zonePart = "glow";
   shine.renderOrder = 8;
   zones.add(shine);
   const lg = new THREE.BufferGeometry();
-  lg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(line), 3));
+  lg.setAttribute("position", new THREE.BufferAttribute(line, 3));
   const border = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: colour.clone().offsetHSL(0, 0, 0.2),
     transparent: true, opacity: 0.95, depthWrite: false }));
   border.renderOrder = 9;
   zones.add(border);
-  zones.add(sectorTag(number, colour, zoneInside(z), at));
+  zones.add(sectorTag(number, colour, inside, at));
 }
 
 // A point inside zone `z` for its number: the middle of its biggest triangle (a triangle's middle is always in it).
@@ -2221,11 +2249,12 @@ function drawScenario() {
   if (!gl || !mv.edit || !s) { if (gl) gl.draw(); renderSelection(); return; }
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
-  const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
+  // about a ground cell and a half: the zone follows hills and pits (flat ground: no drape at all, nothing to follow)
+  const ground = groundKey(grid), step = ground.flat ? Infinity : 1.5 * Math.max(grid.sx, grid.sy);
   const zones = new THREE.Group();  // the zones together (their switch in the Scenario tray)
   group.add(zones);
   scen.zones = zones;
-  s.zones.forEach((z, k) => drawZone(z, k, zones, at, step));
+  s.zones.forEach((z, k) => drawZone(z, k, zones, at, step, ground.key));
   fillZones();
   zones.visible = scen.layers.zones && scen.tool !== "sectors";  // the Sectors brush shows its own cells instead
   scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
@@ -3211,7 +3240,7 @@ function renderSectorTools(s) {
   }
   sectorOverlayShow(true);
   const v = sec.view, can = Boolean(mv.brush.mod) && Boolean(v) && !sec.busy, shapes = sec.mode === "shapes";
-  if (shapes && v && !v.outlines && !sec.lines && !sec.busy) loadSectorView(true);   // the corners need the outlines
+  if (shapes && v && !v.empty && !v.outlines && !sec.lines && !sec.busy) loadSectorView(true);   // the corners need them
   $("scen-sectors-mode").replaceChildren(...["shapes", "paint"].map((k) => chipOf(w["sectors_mode_" + k],
     w["tip_sectors_mode_" + k], sec.mode === k, () => {
       sec.mode = k;
@@ -3340,7 +3369,7 @@ async function sectorCall(call) {
     if (pack === mv.current) {
       sec.dirty = true;
       takeSectorView(v);
-      if ((sec.outlines || sec.mode === "shapes") && !v.outlines) loadSectorView(true);
+      if ((sec.outlines || sec.mode === "shapes") && !v.outlines && !v.empty) loadSectorView(true);
     }
   } catch (err) {
     if (sec.view && pack === mv.current) takeSectorView(sec.view);  // a stroke not saved: off the ground again

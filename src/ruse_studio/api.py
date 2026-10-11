@@ -3139,9 +3139,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             else:
                 x, y = sectors.label_point(lab, n, g, np)
             listed.append({"number": n, "cells": int(counted[n + 1]), "x": round(x, 1), "y": round(y, 1)})
-        lines = None
+        # asked for, the outlines are always a dict, {} with no sector: None meant "not worked out" to the page, which
+        # asked again at once, forever, on a map that starts with no sectors (the owner, 2026-10-10: on a blank map
+        # "you literally can't make your own sectors", every press waiting on the next ask)
+        lines = {} if outlines else None
         if numbers and outlines:
             chains, rings, _problems, _pinched = sectors.sector_shapes(lab.copy(), g, np)
+            for ch in chains:   # Shapes' dots only (the build keeps its own): fewer, so each can be pressed
+                ch.scale *= self.SHAPES_LOOSER
             one = {z: r for z, r in rings.items() if len(r) == 1}
             try:
                 lines = {str(z): [round(c, 1) for pt in pts for c in pt]
@@ -3156,6 +3161,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "next": free if free <= sectors.MOST_SECTOR else None, "tidied": tidied, "outlines": lines}
 
     SECTOR_STROKE_DABS = 5000   # dabs one drag may hold (sectors.MOST_POINTS is the file's own limit)
+    # Shapes' corner dots follow the cells this many times looser than the build's outlines (a painted border's 1.5
+    # cells, about 3 m): the owner, 2026-10-10, "make half as many vertices because some of these are like impossible to
+    # press. At least half"
+    SHAPES_LOOSER = 4.0
 
     def sector_paint(self, pack: str, file: str, sector: int, radius: float, points: list, shape: str = "round",
                      dx: float = 1.0, dy: float = 0.0) -> dict:

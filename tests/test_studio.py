@@ -1780,13 +1780,26 @@ class ZonesOnTheGround(unittest.TestCase):
         owner's D-Day hill, 2026-10-01). The split itself was checked in the Studio's page: every edge under the
         step, the area and the outline kept."""
         draw = self.function("drawScenario()")
-        self.assertIn("const step = 1.5 * Math.max(grid.sx, grid.sy);", draw)
-        self.assertIn("drawZone(z, k, zones, at, step)", draw)
+        self.assertIn("step = ground.flat ? Infinity : 1.5 * Math.max(grid.sx, grid.sy);", draw)
+        self.assertIn("drawZone(z, k, zones, at, step, ground.key)", draw)
+        shapes = self.function("zoneShapes(")
+        self.assertIn("drapeZone(p, z.triangles, step)", shapes)
         zone = self.function("drawZone(")
-        self.assertIn("drapeZone(p, z.triangles, step)", zone)
         self.assertIn("g.setIndex(tris);", zone)
         self.assertNotIn("g.setIndex(z.triangles)", zone)
         self.assertIn("mid.get(key)", self.function("drapeZone("))  # an edge's middle made once: no cracks
+
+    def test_a_zone_is_draped_once_per_ground(self):
+        """The owner, 2026-10-10: on the Scenario side "Taking like 20 seconds between each one". Every tool's click
+        draws the scenario again, and one painted sector's drape took 3 s (4.4 s for his two, measured on a copy of
+        his map in the Studio's page): a zone's drape, glow and border are kept per zone and ground (its heights' key)
+        and made again only when either changes; flat ground has nothing to follow (no split). His clicks then took
+        20 to 98 ms."""
+        shapes = self.function("zoneShapes(")
+        self.assertIn("const kept = zoneShapesKept.get(z);", shapes)
+        self.assertIn("kept.ground === ground && kept.step === step", shapes)
+        self.assertIn("zoneShapesKept.set(z, out);", shapes)
+        self.assertIn("flat: !(hi - lo > ", self.function("groundKey("))
 
     def test_zones_are_borders_with_a_see_through_inside(self):
         """The owner, 2026-10-03: the coloured sheets floating over the map covered its textures and the icons; "like
@@ -1795,7 +1808,7 @@ class ZonesOnTheGround(unittest.TestCase):
         on the ground; the slider sets the inside (0: the borders alone) and is kept by the Studio (prefs "view").
         Looked at in the Studio's page: borders, glow and fill at 35 %, the borders alone at 0 %."""
         zone = self.function("drawZone(")
-        self.assertIn("zoneBorder(z.triangles, p)", zone)   # (its edges matched by position: 1fe05f8)
+        self.assertIn("zoneBorder(z.triangles, p)", self.function("zoneShapes("))   # (edges matched by position: 1fe05f8)
         self.assertIn("new THREE.LineSegments(", zone)
         self.assertIn('zonePart: "fill"', zone)
         self.assertIn('zonePart = "glow"', zone)

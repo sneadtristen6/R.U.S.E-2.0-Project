@@ -334,6 +334,10 @@ class StudioBrush(_with_mod()):
         v = self.api.sector_start("Blitz", f, True)
         self.assertEqual((v["empty"], v["starts_empty"], v["next"]), (True, True, 0))
         self.assertEqual(set(self.cells(v)), {0})
+        # no sector yet, outlines asked for (Shapes): {} not None, which the page took for "not worked out" and asked
+        # again, forever: on a blank map no box could be drawn (the owner, 2026-10-10)
+        self.assertEqual(self.api.sector_view("Blitz", f, outlines=True)["outlines"], {})
+        self.assertIsNone(self.api.sector_view("Blitz", f)["outlines"])
         v = self.api.sector_paint("Blitz", f, 0, 4000.0, [[x, 60000.0] for x in range(20000, 100001, 4000)],
                                   "square")
         self.assertEqual(([s["number"] for s in v["sectors"]], v["strokes"], v["next"]), ([0], 1, 1))
