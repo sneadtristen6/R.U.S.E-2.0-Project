@@ -1,6 +1,12 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.4:** jeho aktualizace se stáhnou na každém PC.
+
+- Na některých PC selhávalo stahování z GitHubu („certificate verify failed: unable to get local issuer certificate“): Windows ještě nezískaly certifikát, podle kterého se
+  GitHub ověřuje, a Studio je o to nemohlo požádat. Teď o to Windows požádá, stejně jako prohlížeč, a zkusí to znovu.
+  Zatím nevyzkoušeno na PC, kde se problém objevil.
+
 **0.9.8.3:** kopie s módy se ukládají tam, kam řeknete.
 
 - **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte

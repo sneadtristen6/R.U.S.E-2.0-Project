@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.4:** mods download on every PC.
+
+- On some PCs no mod would download ("certificate verify failed: unable to get local issuer certificate"): Windows hadn't fetched the certificate GitHub is checked against
+  yet, and the Launcher couldn't ask it to. Now it asks Windows, as a browser does, and tries again; the Launcher's
+  own updates too. Not tried yet on a PC that had the problem.
+
 **0.4.8.3:** modded copies go where you say.
 
 - **Where modded copies go**, in Settings: choose the folder the modded copy of the game is built in, or go back to
