@@ -16,6 +16,7 @@ import re
 import shutil
 import tempfile
 import tomllib
+import unicodedata
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -68,6 +69,41 @@ def manifest_info(data: dict, folder=None) -> dict:
 def file_name(info: dict) -> str:
     """The package's file name: `<id>-<version>.rusemod`."""
     return f"{info['id']}-{info['version'] or '0.0.0'}{EXTENSION}"
+
+
+# --- an edit of someone else's mod (the Studio's "Edit an installed mod…"): [edited_from] in its mod.toml (§3) ---
+EDITED_FROM = "edited_from"
+
+
+def name_key(name) -> str:
+    """A mod name as names are compared: case, the forms of accented letters and spaces don't make two different."""
+    return " ".join(unicodedata.normalize("NFKC", str(name or "")).casefold().split())
+
+
+def edited_from(folder) -> dict:
+    """The mod a mod folder is an edit of ({id, name, version, authors}), or {} for a mod that isn't one."""
+    try:
+        data = tomllib.loads((Path(folder) / MANIFEST).read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return {}
+    table = data.get(EDITED_FROM)
+    return table if isinstance(table, dict) else {}
+
+
+def edit_problem(folder) -> str:
+    """Why an edit can't go out as it is: its name or id is the original mod's again (the owner, 2026-10-10: an edited
+    mod never takes the original's name); "" when it's fine or not an edit."""
+    source = edited_from(folder)
+    if not source:
+        return ""
+    try:
+        info = info_of(folder)
+    except PackageError:
+        return ""
+    if name_key(info["name"]) == name_key(source.get("name", "")) or info["id"] == source.get("id"):
+        return (f"{info['name']} is an edit of {source.get('name') or 'another mod'}, so it can't carry that mod's "
+                f"name or id. Give it its own in its mod.toml.")
+    return ""
 
 
 # --- editing a manifest without losing what's in it ---

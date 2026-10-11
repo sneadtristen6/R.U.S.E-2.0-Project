@@ -103,7 +103,10 @@ def load_mod(path) -> tuple[ModInfo, list]:
                 raise BuildError(f"{manifest_file}: [rmod] file must name a .rmod file next to mod.toml (got {name!r})")
             rmod.check(file)
             info.rmod = file
-            return info, []
+            if not (path / "src").is_dir() and not (path / "text").is_dir():
+                return info, []
+            # an .rmod mod converted for the Studio (rusemod.rmodconvert) has changes of its own too: read below,
+            # built on top of every .rmod (build_and_write)
         src = path / "src"
         files = sorted(src.rglob("*.rndf"), key=lambda p: p.relative_to(src).as_posix().lower()) if src.is_dir() else []
         ops = []
@@ -143,10 +146,14 @@ def load_mod(path) -> tuple[ModInfo, list]:
         except ScenarioError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
         from .unitlook import mod_cards, mod_textures
-        from .unitmodel import mod_models
+        from .unitmodel import UnitModelError, mod_copies, mod_models
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
         info.models = mod_models(path)
+        try:
+            info.model_copies = mod_copies(path)
+        except UnitModelError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
         info.sounds = mod_sounds(path)
         try:
@@ -766,6 +773,7 @@ class BuildResult:
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
+    own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
     new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
@@ -1154,7 +1162,6 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
-    from .patch import Inline, Ref, _fresh
     wanted: dict = {}
     for m in order:
         for unit, glb in (getattr(m, "models", None) or {}).items():
@@ -1162,34 +1169,168 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     out: dict = {}
     for unit, (glb, mod_id) in sorted(wanted.items()):
-        name = by_name.get(unit)
-        if name is None:
-            # not a game rule: a model for a unit no mod in the set makes
-            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: no mod in the set makes a "
-                                                    f"new unit {unit}"))
+        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result)
+        if source is None:
             continue
-        gfx = run.game.objects[name].props.get("GfxDescriptor")
-        mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
-        if isinstance(mesh, Ref) and mesh.target in run.game.objects:
-            # a plane's model part is an object of its own that the copy shares with the unit it copies (the Bf 109's
-            # MeshDescriptor names one; a tank's is written in the unit): the copy gets a copy of that part, written
-            # in it, to name its own model, and the copied unit keeps its own (era planes, 2026-10-08)
-            mesh = Inline(_fresh(run.game.objects[mesh.target]))
-            gfx.obj.props["MeshDescriptor"] = mesh
-        file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
-        if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
-            # not a game rule: what our build supports (a model part of its own, naming one model file)
-            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: {unit} has no model part of "
-                                                    f"its own (GfxDescriptor.MeshDescriptor) naming a model, so it "
-                                                    f"can't get one"))
-            continue
-        source = file.value
-        folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-        mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
         out[unit] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
                                                f"beside {source}"))
     return out
+
+
+def unit_own_copies(run, order: list, result: BuildResult) -> dict:
+    """Units' own copies of the models they draw (a mod's files/models/<the unit's name>.copy.toml, its paint in
+    files/models/<the unit's name>/; rusemod.unitmodel.write_unit_copy): every model part of the unit that names one
+    of the models its file lists names the unit's copy instead, beside the game's model. A new unit's, or one of the
+    game's units' (a squad's own uniform: its soldiers, its bazooka man and its token's figure; the owner,
+    2026-10-11: "you don't want the whole game to be colored the same"). Returns {unit: ({the game's model: its copy},
+    its paint, mod id)}. A unit with an imported model too (files/models/<name>.glb) is an error: it would have two."""
+    from .unitmodel import copy_model_name, model_key
+    wanted: dict = {}
+    for m in order:
+        for unit, (of, paint) in (getattr(m, "model_copies", None) or {}).items():
+            wanted[unit] = (of, paint, m.id)
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    for unit, (of, paint, mod_id) in sorted(wanted.items()):
+        where = f"{mod_id}: files/models/{unit}.copy.toml"
+        if unit in result.own_models:
+            # not a game rule: one model per unit (an imported one, or a copy of the one it copies)
+            result.findings.append(Finding("error", f"{where}: {unit} has an imported model too "
+                                                    f"(files/models/{unit}.glb); take one of the two out"))
+            continue
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            # not a game rule: a copy for a unit nothing makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
+                                                    f"has none of that name"))
+            continue
+        if not of:  # (a file naming no model: the one its GfxDescriptor draws, as the first copies were made)
+            source = _own_model_part(run, by_name, unit, where, result) if name in by_name.values() else None
+            if source is None:
+                if name not in by_name.values():
+                    result.findings.append(Finding("error", f"{where}: `of` names no model to copy"))
+                continue
+            out[unit] = ({model_key(source): copy_model_name(source, unit)}, paint, mod_id)
+        else:
+            several = len({model_key(m) for m in of}) > 1
+            copies = {model_key(m): copy_model_name(m, unit, several) for m in of}
+            missing = [m for m in copies if not _point_at_copies(run, name, {m: copies[m]})]
+            if missing:
+                # not a game rule: the build copies only models the unit's own model parts name
+                result.findings.append(Finding("error", f"{where}: {unit} draws no {', '.join(missing)} (none of "
+                                                        f"its model parts names it)"))
+                continue
+            out[unit] = (copies, paint, mod_id)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own copy of "
+                                               f"{', '.join(out[unit][0])}"
+                                               f"{f', {len(paint)} texture(s) painted' if paint else ''}"))
+    return out
+
+
+def _game_unit(run, unit: str) -> str | None:
+    """The name of the game's unit called `unit` ("Descriptor_Unit_Soldat_US_Lourd"), or None."""
+    name = f"$/GFX/Everything/{unit}"
+    return name if name in run.game.objects else None
+
+
+def _point_at_copies(run, name: str, copies: dict) -> int:
+    """Point every model part of the unit `name` (under its GfxDescriptor* links: a squad's soldiers, its bazooka man,
+    its token's figure) that names one of `copies`' models ({the game's model, rusemod.unitmodel.model_key: the copy's
+    name}) at the copy. A part the unit links to that other units link to as well (an unnamed object of its own in
+    the unit data, or a model part) is copied into the unit first, so they keep the game's. A game unit is copied
+    before it's changed (Game.own). Returns how many model parts name a copy now (0: none named those models)."""
+    from .patch import Inline, ListV, MapV, PairV, Ref, _fresh
+    from .unitmodel import model_key
+    objects = run.game.objects
+    reached: dict = {}
+
+    def names_one(obj) -> bool:
+        f = obj.props.get("FileName")
+        return isinstance(f, Text) and f.kind == "path" and model_key(f.value) in copies
+
+    def followed(prop: str, v) -> bool:  # (never into another unit, a shared drawer or the like: only unnamed parts)
+        return isinstance(v, Ref) and v.target in objects and (prop == "MeshDescriptor" or not v.target.startswith("$/"))
+
+    def reaches(prop: str, v, depth: int = 0) -> bool:
+        if depth > 24:
+            return False
+        if isinstance(v, Ref):
+            if not followed(prop, v):
+                return False
+            if v.target not in reached:
+                reached[v.target] = False  # (a loop counts as no)
+                obj = objects[v.target]
+                reached[v.target] = names_one(obj) or any(reaches(p, w, depth + 1) for p, w in obj.props.items())
+            return reached[v.target]
+        if isinstance(v, Inline):
+            return names_one(v.obj) or any(reaches(p, w, depth + 1) for p, w in v.obj.props.items())
+        if isinstance(v, ListV):
+            return any(reaches(prop, x, depth + 1) for x in v.items)
+        if isinstance(v, MapV):
+            return any(reaches(prop, x, depth + 1) for _k, x in v.pairs)
+        if isinstance(v, PairV):
+            return reaches(prop, v.a, depth + 1) or reaches(prop, v.b, depth + 1)
+        return False
+
+    def point(prop: str, v, put) -> int:
+        if not reaches(prop, v):
+            return 0
+        if isinstance(v, Ref):
+            v = Inline(_fresh(objects[v.target]))  # the unit's own copy of a part others link to as well
+            put(v)
+        if isinstance(v, Inline):
+            n = 0
+            if names_one(v.obj):
+                v.obj.props["FileName"] = Text("path", copies[model_key(v.obj.props["FileName"].value)])
+                n += 1
+            for p, w in list(v.obj.props.items()):
+                n += point(p, w, lambda x, p=p, o=v.obj: o.props.__setitem__(p, x))
+            return n
+        if isinstance(v, ListV):
+            return sum(point(prop, x, lambda y, i=i: v.items.__setitem__(i, y)) for i, x in enumerate(v.items))
+        if isinstance(v, MapV):
+            return sum(point(prop, x, lambda y, i=i, k=k: v.pairs.__setitem__(i, (k, y)))
+                       for i, (k, x) in enumerate(v.pairs))
+        if isinstance(v, PairV):
+            return point(prop, v.a, lambda y: setattr(v, "a", y)) + point(prop, v.b, lambda y: setattr(v, "b", y))
+        return 0
+
+    if not any(reaches(p, w) for p, w in objects[name].props.items() if p.startswith("GfxDescriptor")):
+        return 0
+    unit = run.game.own(name)
+    return sum(point(p, w, lambda x, p=p: unit.props.__setitem__(p, x))
+               for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
+
+
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult) -> str | None:
+    """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
+    model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
+    part names no model file."""
+    from .patch import Inline, Ref, _fresh
+    name = by_name.get(unit)
+    if name is None:
+        # not a game rule: a model for a unit no mod in the set makes
+        result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+        return None
+    gfx = run.game.objects[name].props.get("GfxDescriptor")
+    mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
+    if isinstance(mesh, Ref) and mesh.target in run.game.objects:
+        # a plane's model part is an object of its own that the copy shares with the unit it copies (the Bf 109's
+        # MeshDescriptor names one; a tank's is written in the unit): the copy gets a copy of that part, written
+        # in it, to name its own model, and the copied unit keeps its own (era planes, 2026-10-08)
+        mesh = Inline(_fresh(run.game.objects[mesh.target]))
+        gfx.obj.props["MeshDescriptor"] = mesh
+    file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
+    if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
+        # not a game rule: what our build supports (a model part of its own, naming one model file)
+        result.findings.append(Finding("error", f"{where}: {unit} has no model part of its own "
+                                                f"(GfxDescriptor.MeshDescriptor) naming a model, so it can't get one"))
+        return None
+    source = file.value
+    folder = source.replace("/", "\\").rsplit("\\", 1)[0]
+    mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
+    return source
 
 
 def unit_classes(base, run, zz_win, result: BuildResult) -> None:
@@ -1310,6 +1451,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
                                                 f"its text/*.csv"))
     result.own_cards = unit_cards(run, order, result)
     result.own_models = unit_own_models(run, order, result)
+    result.own_copies = unit_own_copies(run, order, result)
     if result.errors:
         return result
     notes: list = []
@@ -1711,9 +1853,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
     build before anything is built, with every such clash named; a later mod overwriting an earlier one's values is
-    a warning."""
+    a warning. An .rmod mod converted for the Studio (rusemod.rmodconvert) also has changes of its own: they're built
+    with the other mods, on top of every .rmod."""
     rmods = [m for m, _ops in mods if m.rmod is not None]
-    mods = [(m, ops) for m, ops in mods if m.rmod is None]
+    mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
     if len(rmods) > 1:
         from . import rmod
@@ -1785,7 +1928,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
         if run:
-            result.order = [m.id for m in rmods] + result.order
+            first = [m.id for m in rmods]
+            result.order = first + [i for i in result.order if i not in first]
             result.findings = overwrites + run.findings + result.findings
         say("load order: " + " -> ".join(result.order))
         for line in report_lines(result.findings, show_all=show_all):
@@ -3175,6 +3319,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+        if result.own_copies and text_arc is not None:  # units' own copies of their models (rusemod.unitmodel)
+            from .unitlook import LookError
+            from .unitmodel import UnitModelError, write_unit_copy
+            for unit, (copies, paint, mod_id) in sorted(result.own_copies.items()):
+                try:
+                    written = write_unit_copy(text_arc, copies, unit, paint, earlier={
+                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                except (UnitModelError, LookError, ValueError, OSError, struct.error) as exc:
+                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: {exc}") from None
+                result.model_imports.update(written.changed)
+                result.new_files.update(written.added)
+                r = written.report
+                say(f"own copy of {', '.join(copies)} for {unit}: {len(written.added)} texture(s), "
+                    f"{len(r['painted'])} painted; into {len(written.changed)} pack(s)")
         sounds: dict = {}  # mods' own sounds (MOD_FORMAT §7, rusemod.sound): a later mod's WAV wins
         for mod_id in result.order:
             sounds.update(getattr(by_id.get(mod_id), "sounds", None) or {})

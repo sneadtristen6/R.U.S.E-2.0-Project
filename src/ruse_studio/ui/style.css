@@ -610,6 +610,15 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .doc-row.fail { border-left-color: var(--error); }
 .doc-row.fail .doc-mark { color: var(--error); }
 .doctor .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* Edit an installed mod (app.js openEditMods): one row per installed mod, its name form under it when it's a copy */
+.edit-mod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px;
+                background: var(--panel-hi); border-radius: var(--radius); }
+.edit-mod-head { flex: 1; min-width: 12em; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.edit-mod-row > button { flex: none; }
+.edit-mod-copy { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.edit-mod-copy input { flex: 1; min-width: 12em; }
+.edit-mod-copy.hidden { display: none; }
+.edit-mods-search { width: 100%; box-sizing: border-box; margin-top: 10px; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }
@@ -706,6 +715,16 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .check-title { color: var(--error, #e8836f); font-weight: 600; }
 .check-row { display: flex; align-items: center; gap: 10px; }
 .check-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* each problem in plain words (app.js plainProblem): what's wrong, how to fix it, the build's own words under Details */
+.check-bar .check-row { align-items: flex-start; flex-wrap: wrap; padding: 4px 0; }
+.check-bar .check-row + .check-row { border-top: 1px solid rgba(232, 131, 111, 0.25); }
+.check-words { flex: 1 1 360px; display: grid; gap: 2px; min-width: 0; }
+.check-say { color: var(--text); }
+.check-how { font-size: 12px; }
+.check-how:empty { display: none; }
+.check-raw { font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; opacity: 0.8; }
+.check-raw.hidden { display: none; }
+.check-fixes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
 /* a unit's flags: one chip per number, a cross takes it off, a picker adds one */
 .flags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }

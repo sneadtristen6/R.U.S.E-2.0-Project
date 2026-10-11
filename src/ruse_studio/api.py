@@ -77,6 +77,7 @@ FLAG_LISTS = set(WHOLE_LISTS)  # lists edited as a set of flags, any length (a u
 # Upgrades (LittleGroove's "Upgrade chain"): an upgrade names the unit it's researched from and carries the flag; its
 # research price and time (also on units that are researched without being upgrades) start at his 50 and 50
 UPGRADE, UPGRADE_FLAG, RESEARCH = "UpgradeRequire", "IsUpgrade", {"UpgradePrice": 50, "UpgradeTime": 50}
+RIDES = "TransportPourMorphe"  # the truck a squad or a gun turns into on the roads (StudioApi.rides_in)
 # Taking a new unit out of the mod while others are researched from it (the owner, 2026-10-09: "the modder can choose
 # if it warn, refuse, or relinks"; Settings > Research, kept as the preference "research_gone"): "warn" asks first and,
 # when the modder goes ahead, leaves them researched from a unit that isn't there (the check bar and their Upgrade box
@@ -188,6 +189,13 @@ PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for 
 
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
+
+
+def _truck_kind(address: str) -> str:
+    """A truck's kind by its name: "troops" (Descriptor_Unit_TransportSoldier...), "guns" (TransportCanon...) or the
+    rest (TransportHQ)."""
+    tail = _tail(address)
+    return "troops" if "TransportSoldier" in tail else "guns" if "TransportCanon" in tail else "other"
 
 
 def _shifted_cam(cam: dict, dx: float, dy: float) -> dict:
@@ -385,11 +393,13 @@ def _pack_name(name: str, taken: set) -> str:
 
 
 def _aside(path: Path) -> Path:
-    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken): out of the build's way,
-    never lost. Returns the new path."""
-    kept, k = path.with_name(f"{path.stem}.broken.toml"), 2
+    """Rename a mod file that can't be read to <name>.broken.toml (-2, -3... when taken), or a unit changes or text
+    file to <name>.rndf.broken (the build reads only .rndf and .csv files there): out of the build's way, never lost.
+    Returns the new path."""
+    toml = path.suffix.lower() == ".toml"
+    kept, k = path.with_name(f"{path.stem}.broken.toml" if toml else f"{path.name}.broken"), 2
     while kept.exists():
-        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml"), k + 1
+        kept, k = path.with_name(f"{path.stem}.broken-{k}.toml" if toml else f"{path.name}.broken-{k}"), k + 1
     path.rename(kept)
     return kept
 
@@ -4532,7 +4542,104 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._mod_dir()
         if folder is None:
             return {"mod": None, "problems": []}
-        return {"mod": str(folder), "problems": check_mod_folder(folder, self._game()) + self._research_problems()}
+        from rusemod.plainproblems import explain
+        found = [explain(p) for p in check_mod_folder(folder, self._game()) + self._research_problems()]
+        for p in found:  # the map's name as the menus say it, in each language, for the plain words
+            pack = p["plain"].get("map")
+            if pack:
+                p["plain"]["map_titles"] = self._map_titles(pack, folder)
+        return {"mod": str(folder), "problems": found}
+
+    def _map_titles(self, pack: str, folder: Path) -> dict:
+        """{language: the map's name in its menus} for the map pack `pack` (a new map of the mod: its own name from
+        its map.toml); {} when it isn't known (the window shows the pack's name then)."""
+        game = self._game()
+        cache = self.__dict__.setdefault("_titles_cache", {})
+        if game is not None and game not in cache:
+            try:
+                cache[game] = {m["pack"].lower(): {lang: names[0] for lang, names in m["titles"].items() if names}
+                               for m in map_list(game)}
+            except (OSError, ValueError, KeyError):
+                cache[game] = {}
+        found = cache.get(game, {}).get(pack.lower())
+        if found:
+            return found
+        try:  # a new map: the name it gives itself
+            data = tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            return {}
+        name = data.get("name")
+        return {k: str(v) for k, v in name.items()} if isinstance(name, dict) else {"us": str(name)} if name else {}
+
+    def _map_water(self, pack: str, folder: Path) -> float:
+        """The map's own water height (world z): the level most of its ground's water points carry, the one the Map
+        Paint tab draws its water brushes from. A new map's is the shipped map's it copies."""
+        from rusemod.tms import Tms
+        game = self._game()
+        if game is None:
+            # not a game rule: the height is read from the game's own map
+            raise StudioError("We couldn't find R.U.S.E., so the map's water height can't be read.")
+        source = pack
+        try:
+            source = str(tomllib.loads((folder / "maps" / pack / "map.toml").read_text(encoding="utf-8"))
+                         .get("copy_of") or pack)
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            pass
+        path = find_pack(game, pack_file(source))
+        if path is None:
+            # not a game rule: the map's own pack isn't in the game folder
+            raise StudioError(f"The game has no map {source}, so its water height can't be read.")
+        with Edat.open(str(path)) as arc:
+            tms = Tms(bytes(arc.read(arc.find(LODS["highdef"]))))
+        return float(tms.to_world(2, tms.base_water()))
+
+    def open_mod_in_folder(self) -> dict:
+        """Open the current mod's folder on the PC (the mod check's fix for what a button can't fix: mod.toml by
+        hand). Returns {"opened": the folder}."""
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        self._starter.open_url(str(folder))
+        return {"opened": str(folder)}
+
+    def fix_problem(self, fix: dict) -> dict:
+        """Make one of the fixes the mod check offers (rusemod.plainproblems.explain): "fill" a missing value the
+        Studio knows (a water stroke's level: the map's own water height), "remove_key" a setting the game doesn't
+        know, "remove_item" one item of a map file (a stroke, an object, a spawn...), or "set_aside" a whole file.
+        A map file is kept as it was the first time it's fixed, beside it (<name>.before-fix.toml: the build doesn't
+        read it). Returns check_mod() and "message"."""
+        from rusemod import plainproblems as pp
+        kind = str((fix or {}).get("fix", ""))
+        if kind == "set_aside":
+            return self.set_aside(fix.get("file"))
+        folder = self._mod_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        path = folder / str(fix.get("file") or "")
+        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
+            raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")
+        table, key = str(fix.get("table", "")), fix.get("key")
+        try:
+            n = int(fix.get("n"))
+        except (TypeError, ValueError):
+            raise StudioError("Which item to fix isn't said.") from None
+        value = None
+        if kind == "fill":
+            if (table, key) not in pp.FILLS:
+                raise StudioError(f"The Studio doesn't know a safe {key} to fill in.")
+            value = self._map_water(path.parent.name, folder)
+        with self._saving:
+            text = path.read_text(encoding="utf-8")
+            try:
+                new = pp.edit(text, kind, table, n, key, value)
+            except pp.FixError as exc:
+                raise StudioError(f"That couldn't be fixed safely ({exc}). Put the file aside instead, or fix it by "
+                                  f"hand.") from None
+            before = path.with_name(f"{path.stem}.before-fix.toml")
+            if not before.exists():
+                shutil.copyfile(path, before)
+            ModEdits._write(path, new)
+        return self.check_mod() | {"message": f"Fixed. {path.name} as it was is kept beside it, as {before.name}."}
 
     def _research_problems(self) -> list[dict]:
         """The current mod's units researched from a unit that isn't there (one taken out after the warning:
@@ -4609,15 +4716,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return self.check_mod()
 
     def set_aside(self, file: str) -> dict:
-        """Take a broken map file (`file`: its path in the mod, as check_mod gives it) out of the current mod: it's
-        renamed <name>.broken.toml beside it, never deleted, and the build skips it. Returns check_mod() and "kept":
-        the renamed file."""
+        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it) out of
+        the current mod: it's renamed beside it (_aside), never deleted, and the build skips it. Returns check_mod()
+        and "kept": the renamed file."""
         folder = self._mod_dir()
         if folder is None:
             raise StudioError("Pick or make a mod first.")
         path = folder / str(file or "")
-        if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
-            raise StudioError(f"{file} isn't one of this mod's map files")
+        # a map file, a unit changes file or a text file (the last two renamed <name>.broken)
+        map_file = path.name in MAP_FILES and path.parent.parent == folder / "maps"
+        unit_file = path.suffix.lower() == ".rndf" and (folder / "src") in path.parents
+        text_file = path.suffix.lower() == ".csv" and path.parent == folder / "text"
+        if not (map_file or unit_file or text_file) or not path.is_file():
+            raise StudioError(f"{file} isn't one of this mod's files")
         with self._saving:
             kept = _aside(path)
         return self.check_mod() | {"kept": str(kept)}
@@ -4711,6 +4822,160 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             return self.mods(kind)
         chosen = pick_folder(self._window)
         return self.choose_mod(chosen, kind) if chosen else self.mods(kind)
+
+    # --- Edit an installed mod: the mods the Launcher plays (its library), opened here with everything in them (the
+    # owner, 2026-10-10). Your own (this Studio has its project) opens that project; anyone else's is copied first under
+    # a name of its own, never the original's, so an update of the original can't wipe the edit and two different
+    # mods never share one name (rusemod.package.edit_problem). A mod made the older way (an .rmod) can't be shown yet.
+    def _library(self):
+        from rusemod.library import Library
+        return Library(self._home / "library")
+
+    def _projects(self) -> list[Path]:
+        """The Studio's own mod and map folders (its mods and maps folders)."""
+        out = []
+        for root in (self._home / "mods", self._home / "maps"):
+            out += [f for f in sorted(root.iterdir()) if (f / "mod.toml").is_file()] if root.is_dir() else []
+        return out
+
+    def _project_of(self, mod_id: str) -> Path | None:
+        """This Studio's project of the installed mod `mod_id`: the folder in its mods or maps folder with that id."""
+        for folder in self._projects():
+            try:
+                if package.info_of(folder)["id"] == mod_id:
+                    return folder
+            except package.PackageError:
+                continue
+        return None
+
+    @staticmethod
+    def _holds(folder: Path) -> tuple[bool, bool]:
+        """(whether a mod folder holds anything but maps: unit changes, texts, files, scripts; whether it holds maps)."""
+        maps = (folder / "maps").is_dir() and any(f.is_dir() for f in (folder / "maps").iterdir())
+        other = any((folder / d).is_dir() and any((folder / d).rglob("*")) for d in ("src", "text", "files", "scripts")) \
+            or any((folder / f).is_file() for f in ("menus.toml", "depots.toml"))
+        return other, maps
+
+    def installed_mods(self) -> dict:
+        """The Launcher's installed mods for "Edit an installed mod…": {"mods": [{id, name, version, author,
+        description, "yours": this Studio's project of it (its path) or "", "older": made the older way (an .rmod:
+        the Studio can't show it yet), "units"/"maps": what's in it, "edited_from": the name of the mod it's an edit
+        of, or "", "error": a mod.toml that can't be read}]}."""
+        out = []
+        for info in self._library().mods():
+            folder = Path(info.get("path") or "")
+            row = {k: info.get(k, "") for k in ("id", "name", "version", "author", "description")}
+            if info.get("error"):
+                out.append(row | {"yours": "", "older": False, "units": False, "maps": False, "edited_from": "",
+                                  "error": info["error"]})
+                continue
+            units, maps = self._holds(folder)
+            project = self._project_of(info["id"])
+            out.append(row | {"yours": str(project or ""), "older": bool(info.get("rmod")), "units": units,
+                              "maps": maps, "edited_from": str(package.edited_from(folder).get("name", "")), "error": ""})
+        return {"mods": out}
+
+    def edit_installed(self, mod_id: str, name: str = "") -> dict:
+        """Edit the installed mod `mod_id`. Yours (this Studio has its project): that project opens. Anyone else's: a
+        copy of it, named `name`, goes into the Studio's mods folder (its maps folder when it holds only maps) and
+        opens; `name` can't be the original's or another installed mod's. The copy gets an id of its own and records
+        what it was made from (mod.toml [edited_from]). It opens as the Units tab's mod and, when it holds maps, as the
+        Maps tab's too. Returns {"mod": mods("mod"), "map": mods("map"), "path", "copied", "units", "maps",
+        "message"}."""
+        folder = self._library().path_of(str(mod_id))
+        if folder is None:
+            raise StudioError("That mod isn't installed any more. Add it in the Launcher, then try again.")
+        try:
+            info = package.info_of(folder)
+        except package.PackageError as exc:
+            raise StudioError(str(exc)) from None
+        game, index = self._game(), self._path()
+        if info.get("rmod"):  # an .rmod mod: its copy is converted, so the Studio shows what it changes
+            if game is None:
+                # not a game rule: converting reads the game's own unit data
+                raise StudioError("We couldn't find R.U.S.E. Opening a RUSE Mod Manager mod reads the game's unit data.")
+            if index is None or not Path(index).is_file():
+                # not a game rule: the converter finds each changed object in the game index
+                raise StudioError("Build the game index first (Units tab: Build the index), then open this mod again.")
+        project, copied = self._project_of(info["id"]), False
+        if project is None:
+            project, copied = self._edit_copy(folder, info, name), True
+        kept = {}
+        values = 0
+        if copied and info.get("rmod"):
+            from .rmodedit import convert_folder
+            try:
+                converted = convert_folder(project, game, index)
+            except Exception as exc:  # the copy is useless half converted: it goes, and the reason is said
+                shutil.rmtree(project, ignore_errors=True)
+                raise StudioError(f"{info['name']} couldn't be opened in the Studio ({exc}). Please report this.") \
+                    from None
+            values, kept = converted.counts["values"], converted.kept_counts()
+        units, maps = self._holds(project)
+        if units or not maps:
+            self.choose_mod(str(project), "mod")
+        if maps:
+            self.choose_mod(str(project), "map")
+        shown = package.info_of(project)["name"]
+        if not copied:
+            message = f"{shown} is open: your changes go into it. Export puts it in the Launcher again."
+        elif info.get("rmod"):
+            rest = ", ".join(f"{n} {what}" for what, n in kept.items())
+            message = (f"Your copy {shown} is open. {values} of {info['name']}'s changes are in the Studio now, ready "
+                       f"to change." + (f" Kept as they are, and still in the mod: {rest}." if rest else ""))
+        else:
+            message = f"Your copy {shown} is open: everything in {info['name']} is in it, and your changes go into it."
+        return {"mod": self.mods("mod"), "map": self.mods("map"), "path": str(project), "copied": copied,
+                "units": units, "maps": maps, "values": values, "kept": kept, "message": message}
+
+    def _edit_copy(self, folder: Path, info: dict, name: str) -> Path:
+        """Copy the installed mod at `folder` into the Studio as a mod of its own named `name` (MOD_FORMAT §3
+        [edited_from]): every file its package holds, a new id made from the name, nothing of the Launcher's copy
+        changed."""
+        name = " ".join(str(name or "").split())
+        author = info.get("author") or "its author"
+        if not name:
+            raise StudioError(f"Give your copy a name of its own: it can't be called {info['name']}.")
+        if package.name_key(name) == package.name_key(info["name"]):
+            # not a game rule: an edit never takes the original's name (the owner, 2026-10-10)
+            raise StudioError(f"{info['name']} is {author}'s name for the mod. Give your copy a name of its own.")
+        taken = {package.name_key(m.get("name", "")) for m in self._library().mods()}
+        for project in self._projects():
+            try:
+                taken.add(package.name_key(package.info_of(project)["name"]))
+            except package.PackageError:
+                continue
+        if package.name_key(name) in taken:
+            raise StudioError(f"There's already a mod called {name}. Pick another name.")
+        units, maps = self._holds(folder)
+        base = self._home / ("maps" if maps and not units else "mods")
+        slug = re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", name).encode("ascii", "ignore")
+                      .decode().lower()).strip("-") or "my-edit"
+        ids = {m.get("id") for m in self._library().mods()}
+        new_id, n = slug, 2
+        while new_id in ids or (self._home / "mods" / new_id).exists() or (self._home / "maps" / new_id).exists():
+            new_id, n = f"{slug}-{n}", n + 1
+        target = base / new_id
+        part = base / f".copying-{new_id}"
+        if part.exists():
+            shutil.rmtree(part)
+        try:
+            for f in package.files_of(folder):
+                to = part / f.relative_to(folder)
+                to.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, to)
+            text = (part / "mod.toml").read_text(encoding="utf-8")
+            text = package.set_values(text, "mod", {"id": new_id, "name": name})
+            text = package.set_values(text, package.EDITED_FROM, {"id": info["id"], "name": info["name"],
+                                                               "version": info.get("version", ""),
+                                                               "authors": list(info.get("authors") or [])})
+            tomllib.loads(text)
+            (part / "mod.toml").write_text(text, encoding="utf-8")
+            os.replace(part, target)
+        finally:
+            if part.exists():
+                shutil.rmtree(part, ignore_errors=True)
+        return target
 
     # --- the Settings tab ---
     def game_folder(self) -> dict:
@@ -6408,19 +6673,33 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     @staticmethod
     def _unit_models(ix: Index, address: str) -> list[str]:
         """The model files (.ase2ndfbin, as mesh packs name them) of a unit's graphics: the object its GfxDescriptor
-        names and that object's own parts (not the shared interface pieces they refer to)."""
-        gfx = next((w for p, k, w in ix.uses(address) if p == "GfxDescriptor" and k == "object"), None)
-        files, seen, todo = set(), set(), [gfx] if gfx else []
-        while todo and len(seen) < 2000:
-            a = todo.pop()
-            if a in seen:
-                continue
-            seen.add(a)
-            for _p, kind, what in ix.uses(a):
-                if kind == "file" and str(what).lower().endswith(".ase2ndfbin"):
-                    files.add(str(what).lower().replace("/", "\\"))
-                elif kind == "object" and what and what not in seen and what.startswith(gfx):
-                    todo.append(what)
+        names and that object's own parts (not the shared interface pieces they refer to). A unit whose GfxDescriptor
+        reaches none keeps its models under its other graphics: infantry their soldiers (GfxDescriptorBazooka,
+        GfxDescriptorIconeCadavre: 194 of the game's units; the owner, 2026-10-11: "there's no 3D models for
+        infantry"). Those are walked then, the unit's own parts of them only."""
+        links = [(p, w) for p, k, w in ix.uses(address) if k == "object" and p.startswith("GfxDescriptor") and w]
+
+        def under(roots: list[str], shared_mesh: bool = False) -> set[str]:
+            files = set()
+            for root in roots:
+                seen, todo = set(), [root]
+                while todo and len(seen) < 2000:
+                    a = todo.pop()
+                    if a in seen:
+                        continue
+                    seen.add(a)
+                    for p, kind, what in ix.uses(a):
+                        if kind == "file" and str(what).lower().endswith(".ase2ndfbin"):
+                            files.add(str(what).lower().replace("/", "\\"))
+                        elif kind == "object" and what and what not in seen and (
+                                what.startswith(root) or (shared_mesh and p.endswith("MeshDescriptor"))):
+                            todo.append(what)  # (a soldier's model part another infantry unit has too: its model)
+            return files
+
+        files = under([w for p, w in links if p == "GfxDescriptor"])
+        if not files:  # (a wreck the game reuses for fallen soldiers, the M36 Jackson's, is no soldier)
+            files = {f for f in under([w for p, w in links if p != "GfxDescriptor" and w.startswith(address + ":")],
+                                      True) if "_dest" not in f.rsplit("\\", 1)[-1]}
         return sorted(files)
 
     @staticmethod
@@ -6805,13 +7084,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
         "opened": whether the unit has been opened in Blender (its work folder is there)}."""
         from rusemod.blender import DOWNLOAD
-        from rusemod.unitlook import LOOK_FILE, mod_textures
+        from rusemod.unitlook import LOOK_FILE
         if self._game() is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no models to open.")
         found, textures = self._look_models(address)
         mod = self._mod_dir()
-        painted = sorted(set(textures) & set(mod_textures(mod))) if mod else []
+        painted = sorted(set(textures) & set(self._paint_of(address))) if mod else []
         blender = self._blender()
         own = self._own_model_file(address)
         own_model = None
@@ -6820,9 +7099,158 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 own_model = json.loads(own.with_suffix(".json").read_text(encoding="utf-8")).get("report") or {}
             except (OSError, ValueError):
                 own_model = {}
+        copy = self._own_copy_file(address)
+        # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy)
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
                 "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
-                "new_unit": own is not None, "own_model": own_model}
+                "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file()),
+                "soldiers": bool(found) and self._soldiers(address)}
+
+    # --- a unit's own copy of the models it draws (the owner, 2026-10-11: "duplicate that part"; built by
+    # rusemod.unitmodel.write_unit_copy): the same models with textures of their own, so Repaint in Blender changes
+    # this unit only; its paint is kept in files/models/<the unit's name>/ instead of files/replace. A squad's is its
+    # uniform: the game's US soldiers, gun crews and vehicle crews all wear one picture, so a repaint of a game squad
+    # turned every one of them blue (T48; the owner: "you don't want the whole fucking game to be colored the same"),
+    # so a squad's uniform is the game's (Default) or its own (Custom: its own copy), a game squad's too ---
+    def _own_copy_file(self, address: str) -> Path | None:
+        """The unit's files/models/<its name>.copy.toml in the current mod, whether made yet or not: a new unit's, or
+        one of the game's units' ($/GFX/Everything/<name>); None without a mod or for anything else."""
+        from rusemod.unitmodel import COPY, MODELS
+        own = self._own_model_file(address)
+        if own is not None:
+            return own.with_name(own.stem + COPY)
+        mod = self._mod_dir()
+        if mod is None or ":" in address or not address.startswith("$/GFX/Everything/Descriptor_"):
+            return None
+        return mod / MODELS / f"{_tail(address)}{COPY}"
+
+    def _paint_root(self, address: str) -> Path | None:
+        """Where the unit's paint goes: its copy's folder (files/models/<its name>/) when it has its own copy, else
+        None (the mod's files/replace, every unit drawn with the same model)."""
+        copy = self._own_copy_file(address)
+        return copy.with_name(copy.name[:-len(".copy.toml")]) if copy is not None and copy.is_file() else None
+
+    def _paint_of(self, address: str) -> dict:
+        """The paint the unit shows: its copy's, or the mod's files/replace ({texture: (colour PNG, alpha PNG)})."""
+        from rusemod.unitlook import mod_textures, paint_in
+        root, mod = self._paint_root(address), self._mod_dir()
+        return paint_in(root) if root is not None else mod_textures(mod) if mod is not None else {}
+
+    def model_copy(self, address: str) -> dict:
+        """Give the unit at `address` its own copy of the models it draws (files/models/<its name>.copy.toml, `of`
+        listing them): built as the same models with textures of its own. A squad's custom uniform: its soldiers,
+        its bazooka man and its token's figure. A new unit's or one of the game's. Returns look() and a "message"."""
+        copy = self._own_copy_file(address)
+        if copy is None:
+            if self._mod_dir() is None:
+                raise StudioError("Pick or make a mod first: the copy is saved in it.")
+            # not a game rule: what the build finds by name (a unit, $/GFX/Everything/<name>)
+            raise StudioError("Only a unit can get its own copy of its model.")
+        own = self._own_model_file(address)
+        if own is not None and own.is_file():
+            # not a game rule: one model per unit
+            raise StudioError("This unit has an imported model: take it out first (Remove the model), then give it a "
+                              "copy.")
+        models = self._copy_models(address)
+        if not models:
+            # not a game rule: the build copies the models the unit's own model parts name
+            raise StudioError("This unit has no model the Studio can copy.")
+        soldiers = self._soldiers(address)
+        what = "its own uniform" if soldiers else "its own copy of the model it draws"
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(f"# Made by the RUSE Studio: {copy.name[:-len('.copy.toml')]} has {what}; its paint is in the "
+                        f"folder of its name beside this file.\nof = {json.dumps(models)}\n", encoding="utf-8")
+        return {**self.look(address), "message": "It has a uniform of its own now: Repaint in Blender changes only "
+                                                 "this squad." if soldiers else
+                "It has its own copy of the model now: Repaint in Blender changes only this unit."}
+
+    def model_copy_remove(self, address: str) -> dict:
+        """The unit draws the game's models again (its .copy.toml goes; its paint stays in the mod, for a copy made
+        again). Returns look() and a "message"."""
+        copy = self._own_copy_file(address)
+        if copy is not None:
+            copy.unlink(missing_ok=True)
+        return {**self.look(address), "message": "It wears the default uniform again. Your paint is kept in the mod, "
+                                                 "for when it gets a custom one again." if self._soldiers(address) else
+                "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again."}
+
+    def _copy_models(self, address: str) -> list[str]:
+        """The models a unit's own copy copies: every model the unit draws that the mesh packs hold (_look_models: a
+        vehicle's own, a squad's soldiers; not the files of its moves, common\\fusilier_*, which its parts name too),
+        as the packs name them."""
+        return self._look_models(address)[0]
+
+    # --- the truck a squad or a gun rides in on the roads (its TransportPourMorphe: every US squad rides the same
+    # troop truck, every US gun the same gun truck; the owner, 2026-10-11: "rangers versus GI, getting a different
+    # truck"): the game's, another nation's, or a copy of a truck the mod makes (and repaints, its own copy) ---
+    def rides_in(self, address: str, lang: str = schema.BASE) -> dict:
+        """{"now": the truck it rides in (with the mod's change), "game": the game's for it, "choices": [{"address",
+        "name", "code", "new"}]: the game's trucks of its kind (troops or guns, every nation's) and the mod's copies of
+        any of them}; {} for a unit that rides in none."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            game = next((w for p, k, w in ix.uses(real) if p == RIDES and k == "object" and w), None)
+            if game is None:
+                return {}
+            trucks = sorted(set(ix.links(RIDES).values()))
+            kind = _truck_kind(game)
+            mine = {t: u for t, u in (edits.new_units if edits else {}).items() if u.source in trucks}
+            listed = [t for t in trucks if _truck_kind(t) == kind] + sorted(mine)
+            names = self._names(ix, listed, lang, edits.new_units if edits else {})
+        finally:
+            ix.close()
+        now = edits.get(new.target if new else real, RIDES) if edits else None
+        now = str(now) if isinstance(now, Link) else game
+        return {"now": now, "game": game, "choices": [
+            {"address": t, "name": names.get(t) or _tail(t), "code": _tail(t), "new": t in mine} for t in listed]}
+
+    def rides_in_set(self, address: str, truck: str, lang: str = schema.BASE) -> dict:
+        """The unit at `address` rides in `truck` (one of rides_in's choices) in the current mod; the game's truck for
+        it takes the change out. Returns rides_in() and a "message"."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: the change is saved in it.")
+        info = self.rides_in(address, lang)
+        if not info:
+            raise StudioError("This unit doesn't ride in a truck.")
+        chosen = next((c for c in info["choices"] if c["address"] == truck), None)
+        if chosen is None:
+            # not a game rule: the trucks of its kind the game has, and the mod's copies of them
+            raise StudioError(f"{_tail(truck)} isn't one of the trucks it can ride in.")
+        real, new = self._resolve(edits, address)
+        target = new.target if new else real
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            if truck == info["game"]:
+                edits.reset(target, RIDES, None)
+            else:
+                edits.set(target, RIDES, Link(truck))
+        return {**self.rides_in(address, lang), "message": f"It rides in {chosen['name']} on the roads now."}
+
+    def _soldiers(self, address: str) -> bool:
+        """Whether the unit is a squad (its models are soldiers: an infantry class, TInfanterieDescriptor)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _unit = self._resolve(edits, address)
+        try:
+            ix = self._open()
+        except FileNotFoundError:  # (no game index yet: nothing known of it)
+            return False
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return False
+            return isinstance(o, dict) and "Infanterie" in str(o.get("class") or "")
+        finally:
+            ix.close()
 
     def look_open(self, address: str) -> dict:
         """Write the unit's models with their pictures into its work folder and open them in Blender, ready to paint
@@ -6836,6 +7264,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         found, _textures = self._look_models(address)
         if not found:
             raise StudioError("This unit has no 3D model the Studio can open.")
+        self._custom_uniform_first(address)
         folder = self._look_folder(address)
         if folder.exists():
             shutil.rmtree(folder, ignore_errors=True)  # a fresh copy of the game's pictures each time
@@ -6846,7 +7275,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             lib.close()
         mod = self._mod_dir()
         if mod is not None:  # paint the mod already has goes on the pictures, so work goes on from it
-            have = unitlook.mod_textures(mod)
+            have = self._paint_of(address)  # (its own copy's, when it has one)
             for name, info in record["pictures"].items():
                 pics = have.get(info["texture"])
                 src = pics[1 if info["kind"] == "alpha" else 0] if pics else None
@@ -6855,6 +7284,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._blenders[str(folder)] = open_models(blender, record["models"])
         return {**self.look(address), "message": f"Opening {len(found)} model(s) in Blender. Paint on the model "
                 "there, then come back and click Bring back: it saves your paint and puts it in your mod."}
+
+    def _custom_uniform_first(self, address: str) -> None:
+        """StudioError for a squad wearing the default uniform: the game's picture, worn by other squads and by gun
+        and vehicle crews too (T48: one US squad repainted turned every US soldier blue), so it's repainted only as a
+        custom uniform (model_copy)."""
+        if self._mod_dir() is not None and self._paint_root(address) is None and self._soldiers(address):
+            # not a game rule: the owner's choice, 2026-10-11 ("default uniform ... or do you want a custom uniform")
+            raise StudioError("Pick Custom uniform first: the default uniform is worn by other squads and by gun and "
+                              "vehicle crews too, so it isn't repainted here.")
 
     def look_bring_back(self, address: str) -> dict:
         """Copy every picture painted in Blender (since Open in Blender) into the current mod (files/replace), so
@@ -6870,13 +7308,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         folder = self._look_folder(address)
         if not (folder / unitlook.LOOK_FILE).is_file():
             raise StudioError("Open this unit in Blender first and paint it, then Bring back.")
+        self._custom_uniform_first(address)
         proc = self._blenders.get(str(folder))
         running = proc is not None and proc.poll() is None
         quiet = False
         if running or proc is None:
             quiet = ask_to_save(folder, timeout=20.0 if running else 2.0) is None and running
         record = json.loads((folder / unitlook.LOOK_FILE).read_text(encoding="utf-8"))
-        brought = unitlook.bring_back(folder, mod)
+        brought = unitlook.bring_back(folder, mod, self._paint_root(address))  # (into its copy's, when it has one)
         for b in brought:  # what's in the mod now is the new starting point: bringing back twice adds nothing
             pic = folder / b["picture"]
             record["pictures"][b["picture"]]["hash"] = unitlook._pixels_hash(pic, b["kind"] == "alpha")
@@ -6900,7 +7339,6 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         The .glb files (rusemod.gltf) are made once per game build and kept in the cache: a few seconds the first
         time, then at once."""
         from rusemod import gltf, models
-        from rusemod.unitlook import mod_textures
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -6939,8 +7377,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if lib is not None:
                     lib.close()
         paint = {}
-        mod = self._mod_dir()
-        have = mod_textures(mod) if mod is not None else {}
+        have = self._paint_of(address)  # (its own copy's paint, when it has one)
         for tex in textures:
             colour = (have.get(tex) or (None, None))[0]
             if colour is None:
@@ -7401,6 +7838,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         version = (version or "").strip()
         if not re.fullmatch(r"\d+\.\d+\.\d+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
+        if problem:
+            raise StudioError(problem)
         suggested = package.file_name(self.mod_info(kind) | {"version": version})
         if self._pick_save is not None:
             target = self._pick_save(suggested)

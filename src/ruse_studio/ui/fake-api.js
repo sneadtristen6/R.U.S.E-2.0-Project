@@ -28,6 +28,53 @@
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
       pick_unit: "Pick a unit on the left.", mod: "Unit mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
+      edit_installed: "Edit an installed mod…", edit_title: "Edit an installed mod",
+      edit_lead: "The mods installed in the Launcher. Pick one: its units and maps open here. A mod made by someone else becomes a copy of your own with a name of its own, so its updates never touch your changes.",
+      edit_none: "No mods are installed in the Launcher yet.", edit_has_units: "units and other changes", edit_has_maps: "maps",
+      edit_by: "by {author}", edit_older: "A RUSE Mod Manager mod (.rmod): in your copy its value changes become Studio changes you can change; its new units, texts and files stay as they are.",
+      edit_open: "Edit", tip_edit_open: "Open your own mod here: everything in it shows in the Units and Maps tabs, and your changes go into it.",
+      tip_edit_copy: "Make a copy of this mod of your own, with a name of its own, and open it here with everything in it.",
+      edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
+      edit_someone: "someone else", edit_copy_name: "Your copy's name", edit_copy_go: "Make my copy and edit",
+      edit_search: "Search installed mods", tip_edit_search: "Type part of a mod's name, its author or what it does.", edit_no_match: "No installed mod matches that.",
+      pp_stops: "The game would stop loading the mod here.", pp_item_n: "{item} {n}",
+      pp_item_stroke: "Map Paint stroke", pp_item_erase: "erase area", pp_item_object: "placed object",
+      pp_item_move: "moved map item", pp_item_remove: "removed map item", pp_item_set: "changed map item",
+      pp_item_place: "named place", pp_item_spawn: "unit placed at the start", pp_item_start: "starting point",
+      pp_item_paint: "cover paint", pp_item_block: "blocked area", pp_item_open: "opened area",
+      pp_item_road: "new road", pp_file_terrain: "ground changes", pp_file_scenery: "placed and erased objects",
+      pp_file_scenario: "starting points and placed units", pp_file_places: "named places",
+      pp_file_items: "changed map items", pp_file_cover: "cover paint", pp_file_movement: "blocked and opened areas",
+      pp_file_roads: "new roads", pp_file_map: "map settings", pp_key_level: "water height", pp_key_radius: "size",
+      pp_key_size: "size", pp_key_x: "position", pp_key_y: "position", pp_key_x2: "end point", pp_key_y2: "end point",
+      pp_key_colour: "colour", pp_key_brush: "tool", pp_key_weight: "strength", pp_key_what: "unit",
+      pp_key_camp: "side", pp_key_trucks: "trucks", pp_key_name: "name",
+      pp_missing: "On {map}, {item} is missing its {key}.",
+      pp_unknown_key: "On {map}, {item} has a setting the game doesn't know: {key}.",
+      pp_bad_value: "On {map}, {item} has a {key} the game can't use.",
+      pp_bad_item: "On {map}, {item} has a value the game can't use.",
+      pp_unreadable: "On {map}, the file of its {what} can't be read: it has a typing mistake.",
+      pp_map_file: "On {map}, the file of its {what} has a mistake.",
+      pp_unit_file: "The unit changes file {file} has a mistake on line {line}.",
+      pp_text_file: "The text file {file} has a mistake on line {line}.",
+      pp_manifest: "The mod's settings file (mod.toml) has a mistake.",
+      pp_how_item: "Fix it with a button. Removing the {item} keeps everything else on the map, and the file as it was is kept beside it.",
+      pp_how_file: "Put the file aside: it's kept, renamed, and the map goes without these changes until it's fixed. Details says exactly what's wrong.",
+      pp_how_unit_file: "Put the file aside: it's kept, renamed, and the mod goes without the changes in it until it's fixed. Details says exactly what's wrong.",
+      pp_how_studio_file: "This is the Studio's own record of your unit changes: putting it aside takes all of them out of the mod (the file is kept). Details says exactly what's wrong; ask on the Discord if you're not sure.",
+      pp_how_manifest: "Open the mod's folder and correct mod.toml in a text editor. Details says exactly what's wrong.",
+      pp_how_other: "Details says exactly what's wrong. Open the mod's folder to fix it by hand, or ask on the Discord.",
+      pp_fix_fill_level: "Use the map's water height", pp_fix_fill: "Use the map's {key}",
+      pp_fix_remove_key: "Take out {key}", pp_fix_remove_item: "Remove this {item}",
+      pp_fix_open_folder: "Open the mod's folder", pp_details: "Details", pp_fixed: "Fixed.",
+      tip_pp_fill: "Fills in the value the rest of the map has, the way Map Paint would. The file as it was is kept beside it.",
+      tip_pp_remove_item: "Takes out just this one; everything else stays. The file as it was is kept beside it.",
+      tip_pp_remove_key: "Takes out just this setting; the rest of the item stays. The file as it was is kept beside it.",
+      tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
+      tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
+      model_copy: "Give it its own copy of the model", tip_model_copy: "The same model with textures of its own: Repaint in Blender then changes only this unit, not the unit it copies.", model_copy_how: "Now it draws the model of the unit it copies, so a repaint changes both. With its own copy, a repaint changes only this one.", model_copy_has: "This unit has its own copy of the model: Repaint in Blender changes only this unit.", model_copy_remove: "Use the shared model again", tip_model_copy_remove: "Back to the model of the unit it copies. Its paint stays in the mod, for when it gets a copy again.",
+      uniform_title: "Uniform", uniform_default: "Default uniform: the game's own. Other squads and the gun and vehicle crews wear it too, so it isn't repainted here. Pick Custom uniform to give this squad one of its own.", uniform_custom: "Custom uniform", tip_uniform_custom: "Gives this squad a uniform of its own (its own copy of its soldiers), so what you paint after Open in Blender changes only this squad.", uniform_has: "Custom uniform: only this squad wears it. Paint it with Open in Blender, then Bring back.", uniform_default_again: "Back to the default uniform", tip_uniform_default_again: "This squad wears the game's uniform again. Your paint stays in the mod, for when it gets a custom one again.", uniform_shared_paint: "This mod repaints the default uniform itself ({n} picture(s)), so every squad and crew that wears it changes.", card_stale: "Its picture in the build menu still shows the game's paint.", card_take: "Take a new picture", tip_card_take: "Takes a picture of the unit with your paint, from the front corner, as its picture in the build menu.", card_choose: "Choose a picture…", tip_card_choose: "Use a picture file of your own (PNG or JPG). It's fitted to the card's size, cut at the edges if it has to be.", rides_in: "Rides in", tip_rides_in: "The truck this unit turns into on the roads. Pick another nation's, or a copy of a truck you made and repainted.", rides_in_how: "The truck it turns into on the roads. To give a squad a truck of its own look: open a truck, copy it, give the copy its own copy of the model and repaint it, then pick it here.", rides_in_game: "(the game's)", rides_in_mine: "(yours)", rides_in_open: "Open the truck", tip_rides_in_open: "Opens the truck's page: copy it there to give it a look of its own.",
+      only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
       mod_name: "Name of the new mod", map_project: "Map changes", no_map: "Pick or start a set of map changes to save them in.", new_map: "New map changes…", export_map: "Export map…", map_name: "Name for these map changes", tip_pick_mod: "The mod your unit changes are saved in. Maps have their own list on the Maps tab.", tip_pick_map: "Where your changes to the game's maps are saved (ground, roads, buildings, scenario), apart from your unit mod: changes to any of the game's own maps, and the new maps you make with Duplicate map. Test in game plays them with your unit mod.", create: "Create", cancel: "Cancel", close: "Close",
@@ -490,8 +537,23 @@
              textures: [pic], painted: fakePainted.has(address) ? [pic] : [], download: "https://www.blender.org/download/",
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
              opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
-             own_model: fakeModels.get(address) || null };
+             own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address),
+             soldiers: fakeSquad(address) };
   }
+  // a squad (its look is its uniform: Default or Custom) and the truck it rides in (rides_in): the GI squad and its copies
+  const fakeSquad = (address) => /Soldat/.test(address)
+    || mine().some((n) => address === newAddress(n.id) && /Soldat/.test(n.source));
+  const FAKE_TRUCKS = [["$/GFX/Everything/Descriptor_Unit_TransportSoldier", "TRUCK"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_GER", "OPEL BLITZ"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_UK", "BEDFORD"]];
+  const fakeRides = new Map();  // squad -> the truck the mod has it ride in
+  function fakeRidesIn(address) {
+    if (!fakeSquad(address)) return {};
+    const game = FAKE_TRUCKS[0][0];
+    return { now: fakeRides.get(address) || game, game, choices: FAKE_TRUCKS.map(([a, name]) =>
+      ({ address: a, name, code: a.split("/").pop(), new: false })) };
+  }
+  const fakeModelCopies = new Set();  // units with their own copy of the model (model_copy): a squad's custom uniform
   const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
   const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
                         parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
@@ -554,8 +616,19 @@
     .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
   const mods = [{ path: home + "sherman-test", name: "sherman-test" }];  // sample data for the preview only
-  let checkProblems = [{ file: "maps/SuperCrossRoads4/terrain.toml", set_aside: true,
-    problem: "maps/SuperCrossRoads4/terrain.toml: stroke 1: the water brush needs level" }];
+  // two made-up problems as rusemod.plainproblems.explain gives them: a water stroke without its level (Studio 0.7.0
+  // saved some), and a placed object with a setting the game doesn't know
+  const fakeFile = "maps/SuperCrossRoads4/terrain.toml", fakeSceneryFile = "maps/SuperCrossRoads4/scenery.toml";
+  const blitz = { us: "Blitz", fr: "Blitz" };
+  let checkProblems = [
+    { file: fakeFile, set_aside: true, problem: `${fakeFile}: stroke 1: the water brush needs level`,
+      plain: { kind: "missing", file: fakeFile, map: "SuperCrossRoads4", table: "stroke", item: "stroke", n: 1, keys: ["level"], key: "level", map_titles: blitz },
+      fixes: [{ fix: "fill", file: fakeFile, table: "stroke", n: 1, key: "level" }, { fix: "remove_item", file: fakeFile, table: "stroke", n: 1 },
+        { fix: "set_aside", file: fakeFile }] },
+    { file: fakeSceneryFile, set_aside: true, problem: `${fakeSceneryFile}: object 3: unknown key 'colr'`,
+      plain: { kind: "unknown_key", file: fakeSceneryFile, map: "SuperCrossRoads4", table: "object", item: "object", n: 3, key: "colr", map_titles: blitz },
+      fixes: [{ fix: "remove_key", file: fakeSceneryFile, table: "object", n: 3, key: "colr" }, { fix: "remove_item", file: fakeSceneryFile, table: "object", n: 3 },
+        { fix: "set_aside", file: fakeSceneryFile }] }];
   const fakeRoads = {};  // the made-up mod's new roads, per map
   const fakeTakeOut = {};  // the made-up mod's roads.toml take_out, per mod and map
   // the made-up maps' own bridge kinds (rusemod.bridges.kinds): the Tunisian one has none, so the dock says so
@@ -2073,6 +2146,25 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { model: fakeModels.get(address), ...fakeLook(address) };
       },
       model_import_remove: async (address) => { fakeModels.delete(address); return fakeLook(address); },
+      model_copy: async (address) => {
+        if (fakeModels.has(address)) throw new Error("This unit has an imported model: take it out first (Remove the model), then give it a copy.");
+        fakeModelCopies.add(address);
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It has a uniform of its own now: Repaint in Blender changes only this squad."
+          : "It has its own copy of the model now: Repaint in Blender changes only this unit." };
+      },
+      model_copy_remove: async (address) => {
+        fakeModelCopies.delete(address);
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It wears the default uniform again. Your paint is kept in the mod, for when it gets a custom one again."
+          : "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
+      },
+      rides_in: async (address) => fakeRidesIn(address),
+      rides_in_set: async (address, truck) => {
+        const info = fakeRidesIn(address);
+        const chosen = (info.choices || []).find((c) => c.address === truck);
+        if (!chosen) throw new Error("That isn't one of the trucks it can ride in.");
+        if (truck === info.game) fakeRides.delete(address); else fakeRides.set(address, truck);
+        return { ...fakeRidesIn(address), message: `It rides in ${chosen.name} on the roads now.` };
+      },
       // its size on the slider (StudioApi.model_size_marks / model_sizes / model_resize / models_resize_all): a plane
       // (an address with Avion in it) has a real-life size of 3.4, a ground unit 1.3
       model_size_marks: async (address) => ({ tiny: 0.05, huge: 20, game: 1, real: /Avion/.test(address) ? 3.4 : 1.3,
@@ -2103,6 +2195,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       look_open: async (address) => {
         if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
+        if (fakeSquad(address) && !fakeModelCopies.has(address)) throw new Error("Pick Custom uniform first: the default uniform is worn by other squads and by gun and vehicle crews too, so it isn't repainted here.");
         fakeLooks.add(address);
         return { ...fakeLook(address), message: "Opening 1 model(s) in Blender. Paint on the model there, then come back and click Bring back: it saves your paint and puts it in your mod." };
       },
@@ -2148,6 +2241,32 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
         current = path;
         return modsView();
+      },
+      // Edit an installed mod: the Launcher's library, made up (a Studio mod of someone else's, one of yours, an .rmod)
+      installed_mods: async () => ({ mods: [
+        { id: "r-u-s-e-field-manual-v1", name: "R.U.S.E. Field Manual", version: "1.0.0", author: "nickgit", description: "",
+          yours: "", older: false, units: true, maps: false, edited_from: "", error: "" },
+        { id: "my-mod", name: "my-mod", version: "0.1.0", author: "", description: "", yours: home + "my-mod",
+          older: false, units: true, maps: true, edited_from: "", error: "" },
+        { id: "airfield-capacity", name: "Airfield Capacity", version: "1", author: "LittleGroove", description: "",
+          yours: "", older: true, units: false, maps: false, edited_from: "", error: "" }] }),
+      edit_installed: async (id, name) => {
+        if (id === "my-mod") {
+          current = currentMap = home + "my-mod";
+          return { mod: modsView(), map: mapsView(), path: current, copied: false, units: true, maps: true,
+                   message: "my-mod is open: your changes go into it. Export puts it in the Launcher again." };
+        }
+        const key = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const [original, author] = id === "airfield-capacity" ? ["Airfield Capacity", "LittleGroove"] : ["R.U.S.E. Field Manual", "nickgit"];
+        if (!key(name)) throw new Error(`Give your copy a name of its own: it can't be called ${original}.`);
+        if (key(name) === key(original)) throw new Error(`${original} is ${author}'s name for the mod. Give your copy a name of its own.`);
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-edit";
+        if (!mods.some((m) => m.path === home + slug)) mods.push({ path: home + slug, name: slug });
+        current = home + slug;
+        const message = id === "airfield-capacity"
+          ? `Your copy ${name} is open. 12 of ${original}'s changes are in the Studio now, ready to change. Kept as they are, and still in the mod: 2 new objects.`
+          : `Your copy ${name} is open: everything in ${original} is in it, and your changes go into it.`;
+        return { mod: modsView(), map: mapsView(), path: current, copied: true, units: true, maps: false, message };
       },
       edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|")).flatMap((k) => {
         const [, address, , how, via] = k.split("|");
@@ -2960,6 +3079,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         checkProblems = checkProblems.filter((x) => x !== p);
         return { mod: current, problems: checkProblems, kept: `${current}/${file.replace(".toml", ".broken.toml")}` };
       },
+      fix_problem: async (fix) => {
+        if (fix.fix === "set_aside") return window.pywebview.api.set_aside(fix.file);
+        const p = checkProblems.find((x) => x.file === fix.file && x.plain.n === fix.n);
+        if (!p) throw new Error(`${fix.file} isn't one of this mod's map files`);
+        checkProblems = checkProblems.filter((x) => x !== p);
+        const name = fix.file.split("/").pop();
+        return { mod: current, problems: checkProblems, message: `Fixed. ${name} as it was is kept beside it, as ${name.replace(".toml", ".before-fix.toml")}.` };
+      },
+      open_mod_in_folder: async () => ({ opened: current }),
       scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0, trucks = null) => {
         if (trucks !== null && unit !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
         for (const [x, y] of points) {
