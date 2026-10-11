@@ -1047,6 +1047,9 @@ def fill_left(lab, np, avoid: int | None = None, sectors_only: bool = False) -> 
     sector's, or no sector's where no-sector ground touches them (not with `sectors_only`: only sectors take it);
     any that touch nothing they can take become no sector. Sector `avoid` (the one that gave the ground up) is never
     what they take."""
+    # One ring at a time from the edges, each cell visited once (the ring's cells as index arrays): a cell takes its
+    # neighbour above, below, left or right, the first of those that can be taken. The whole box redone for every
+    # ring took 42 s on the owner's 19 edits (2026-10-10); the box is padded so a neighbour index never leaves it.
     left = lab == LEFT_OVER
     if not left.any():
         return
@@ -1054,33 +1057,37 @@ def fill_left(lab, np, avoid: int | None = None, sectors_only: bool = False) -> 
     i0, i1 = max(0, int(rows[0]) - 1), min(lab.shape[0] - 1, int(rows[-1]) + 1)
     j0, j1 = max(0, int(cols[0]) - 1), min(lab.shape[1] - 1, int(cols[-1]) + 1)
     sub = lab[i0:i1 + 1, j0:j1 + 1]
-    while True:
-        hole = sub == LEFT_OVER
-        if not hole.any():
-            return
-        moved = False
-        for side in ("above", "below", "left", "right"):   # each cell's neighbour on that side, as src
-            src = np.full_like(sub, LEFT_OVER)
-            if side == "above":
-                src[1:, :] = sub[:-1, :]
-            elif side == "below":
-                src[:-1, :] = sub[1:, :]
-            elif side == "left":
-                src[:, 1:] = sub[:, :-1]
-            else:
-                src[:, :-1] = sub[:, 1:]
-            take = hole & (src != LEFT_OVER)
-            if avoid is not None:
-                take &= src != avoid
-            if sectors_only:
-                take &= src != NO_SECTOR
-            if take.any():
-                sub[take] = src[take]
-                hole &= ~take
-                moved = True
-        if not moved:
-            sub[hole] = NO_SECTOR
-            return
+    h, w = sub.shape
+    cells = np.full((h + 2, w + 2), LEFT_OVER, sub.dtype)
+    cells[1:-1, 1:-1] = sub
+    cells = cells.ravel()
+    hole = cells == LEFT_OVER
+    hole[:w + 2] = hole[-(w + 2):] = False                     # (the padding: never filled, never taken from)
+    hole.reshape(h + 2, w + 2)[:, [0, -1]] = False
+    can = (cells != LEFT_OVER)
+    if avoid is not None:
+        can &= cells != avoid
+    if sectors_only:
+        can &= cells != NO_SECTOR
+    sides = (-(w + 2), w + 2, -1, 1)                           # above, below, left, right
+    ring = np.flatnonzero(hole)
+    while ring.size:
+        source = np.full(ring.size, -1, np.int64)
+        for d in sides:
+            near = ring + d
+            first = (source < 0) & can[near]
+            source[first] = near[first]
+        got = source >= 0
+        if not got.any():
+            break
+        filled = ring[got]
+        cells[filled] = cells[source[got]]
+        can[filled] = True        # (never `avoid`, and never no sector when sectors_only: only takeable values spread)
+        hole[filled] = False
+        ring = np.concatenate([filled + d for d in sides])
+        ring = np.unique(ring[hole[ring]])
+    cells[hole] = NO_SECTOR                                    # touching nothing it can take
+    sub[...] = cells.reshape(h + 2, w + 2)[1:-1, 1:-1]
 
 
 def area_cells(lab, a: SectorArea, g: Grid, np) -> None:
