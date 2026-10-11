@@ -1832,16 +1832,35 @@ class MapAndScenarioSides(unittest.TestCase):
         groups = groups[:groups.index("\n};\n")]
         map_side, scenario_side = groups.split("scenario: [")
         self.assertIn('["sectors", ["sectors"], "sectors"]', map_side)
-        self.assertNotIn("scen_", map_side)
+        # the one scenario tool on the Map side: the towns' and hills' names, a tab beside Buildings (2026-10-10)
+        self.assertEqual(re.findall(r'"(scen_\w+)"', map_side), ["scen_names"])
+        self.assertIn('["building", ["building", "scen_names"], "building"]', map_side)
         for kind in ("scen_move", "scen_spawn", "scen_start", "scen_mark"):
             self.assertIn(f'["{kind}", ["{kind}"]', scenario_side)
         self.assertNotIn('"terrain"', scenario_side)
-        self.assertIn('toMode(scen.tool === "sectors" ? "map" : "scenario")', self.function("setScenTool("))
+        self.assertIn('toMode(MAP_SIDE_TOOLS.has(scen.tool) ? "map" : "scenario")', self.function("setScenTool("))
+        self.assertIn('const MAP_SIDE_TOOLS = new Set(["sectors", "names"])', self.maps())
         for opens in ("setBrushMode(", "setPlaceMode(", "setRoadMode(", "setBridgeMode("):
             self.assertIn('toMode("map")', self.function(opens), opens)
         page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
         self.assertLess(page.index('id="mode-map"'), page.index('id="brush-look"'))
         self.assertIn('id="tray-sectors"', page)
+
+    def test_town_and_hill_names_are_the_map_sides(self):
+        """The owner, 2026-10-10: "you should be able to name towns ... on the map editor when you're making the actual
+        town", the scenario then pointing at them. The names are the scenario's items (LabelVille, LabelMontagne) but
+        drawn in a group of their own that fades and locks with the Map side, placed with Names and grabbed there;
+        Add a spot or zone keeps the mission's points and zones."""
+        maps = self.maps()
+        self.assertIn('"zones", "names"]);', maps)                       # MAP_SIDE
+        self.assertIn('const NAME_KINDS = new Set(["LabelVille", "LabelMontagne"])', maps)
+        self.assertIn('fade(scen.names, alpha.scenario * (locked("names")', self.function("fadeLayers("))
+        self.assertIn("names.add(sprite)", self.function("drawScenario("))
+        grab = self.function("grabAt(")
+        self.assertIn("onMap ? (scen.names ? scen.names.children : []) : scen.group.children", grab)
+        self.assertIn('scen.tool === "names"', self.function("canGrab("))
+        tools = self.function("renderScenTools(")
+        self.assertIn('MARK_KINDS.filter((k) => NAME_KINDS.has(k) === (scen.tool === "names"))', tools)
 
     def test_the_other_side_is_faded_and_locked(self):
         self.assertIn('mv.mode === "scenario"', self.function("canGrab("))  # no grabbing the scenario's from Map
@@ -1995,7 +2014,7 @@ class Labels(unittest.TestCase):
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
         used |= {"brush_" + name for name in re.findall(r'^  (\w+): \["\w+", "\w+", -?1, (?:true|false),', maps, re.M)}
         self.assertEqual(len(used & {"brush_hill", "brush_ramp", "brush_cover", "brush_town", "brush_block_vehicles"}), 5)
-        # Add a name or zone: each kind's chip, its tooltip ("tip_" + it) and its help line (it + "_help")
+        # Names and Add a spot or zone: each kind's chip, its tooltip ("tip_" + it) and its help line (it + "_help")
         marks = re.findall(r'"(scen_mark_\w+)"', re.search(r"const MARK_WORD = \{(.*?)\};", maps, re.S).group(1))
         self.assertEqual(len(marks), 5)
         used |= {k for m in marks for k in (m, "tip_" + m, m + "_help")}

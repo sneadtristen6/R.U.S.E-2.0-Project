@@ -302,7 +302,7 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=
         # rule: seats-per-team
         raise PlayersError(f"{pack}: {setting.count} players need a starting point for each (seen in the game: a "
                            f"player without one starts with no HQ and no units); {scenario_file} has none for {where}. "
-                           f"Add them (scenario.toml [[start]], or the Studio's Add starting point)")
+                           f"Add them (scenario.toml [[start]], or the Studio's Add HQ start)")
     before = p["NbPlayers"].scalar() if "NbPlayers" in p else None
     if 3 in layouts and setting.count % 3 and warn is not None:
         warn(f"{pack}: {name!r} offers three teams, but {setting.count} players can't make three even teams: that "

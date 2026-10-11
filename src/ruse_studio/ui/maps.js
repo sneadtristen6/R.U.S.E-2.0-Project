@@ -619,7 +619,7 @@ function layerObjects(k) {
     case "cover": return [cover.mesh];
     case "moves": return [moves.mesh, erased.mesh];
     case "roads": return [roads.line, road.mesh, road.preview, bridge.mesh];
-    case "scenario": return scen.group ? scen.group.children.filter((o) => o !== scen.zones) : [];
+    case "scenario": return scen.group ? scen.group.children.filter((o) => o !== scen.zones && o !== scen.names) : [];
     default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || []), mv.place.meshes[k]];
   }
 }
@@ -631,7 +631,11 @@ function layerObjects(k) {
 // A locked thing is a pale ghost of itself: see-through, and lit things lifted towards white, because see-through alone
 // lost the HQs' pillars (lit, their dark red is the fields' brown: at 45 % a pillar was 109,68,34 on ground 101,82,34)
 const LOCKED_ALPHA = 0.4, GHOST_LIFT = 0.3;
-const MAP_SIDE = new Set(["cover", "moves", "roads", "building", "prop", "vegetation", "zones"]);
+// The towns' and hills' names are the Map side's too, though they're the scenario's items (the owner, 2026-10-10: "you
+// should be able to name towns ... on the map editor when you're making the actual town"): the Names tile places them,
+// and they move there; on the Scenario side they're a ghost like the buildings.
+const MAP_SIDE = new Set(["cover", "moves", "roads", "building", "prop", "vegetation", "zones", "names"]);
+const NAME_KINDS = new Set(["LabelVille", "LabelMontagne"]);
 const locked = (k) => (k === "scenario" ? mv.mode !== "scenario" : MAP_SIDE.has(k) && mv.mode !== "map");
 const shownAlpha = (k) => alpha[k] * (locked(k) ? LOCKED_ALPHA : 1);
 
@@ -668,6 +672,7 @@ function fade(obj, a, ghost = false) {
 function fadeLayers() {
   for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, shownAlpha(k), locked(k));
   fade(scen.zones, alpha.scenario * (locked("zones") ? LOCKED_ALPHA : 1), locked("zones"));
+  fade(scen.names, alpha.scenario * (locked("names") ? LOCKED_ALPHA : 1), locked("names"));
 }
 
 function renderLayers() {
@@ -1578,8 +1583,9 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
   type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null, sel: new Set(), box: null,
   unitByAddress: null, unitsLoading: null, markKind: "LabelVille", trucks: 25 };
-// What the Add a name or zone tool adds (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's
-// name on the map, a named point or a round or square zone the mission scripts use
+// What the Names tab (Map side: towns and hills) and Add a spot or zone (Scenario side: points and zones) add
+// (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's name on the map, a named point or a round
+// or square zone the mission scripts use
 const MARK_KINDS = ["LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
 const MARK_WORD = { LabelVille: "scen_mark_town", LabelMontagne: "scen_mark_hill", Name: "scen_mark_point",
   CircularZone: "scen_mark_circle", RectangleZone: "scen_mark_rect" };
@@ -1592,7 +1598,7 @@ const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // Scenario tray, kept by the Studio (prefs "view": saveView; the window's own storage is only a fallback, it's lost
 // every start). Only the view changes, never the mod. ---
 // "points": the named points and trigger zones the mission scripts use (a campaign chapter has hundreds): off until
-// asked for, and shown while the Add a name or zone tool is picked
+// asked for, and shown while Names or Add a spot or zone is picked
 const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns", "points"];
 const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
 const GONE_OPACITY = 0.35;  // a map item the mod takes out: still drawn, faded, so it can be put back
@@ -1723,7 +1729,7 @@ async function loadScenarios(pack, ask) {
 }
 
 // --- how many players the map takes (StudioApi.map_players / set_players, the mod's maps/<map>/map.toml):
-// the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add starting point) ---
+// the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add HQ start) ---
 async function loadPlayers(pack, ask) {
   try {
     const got = await mv.api.map_players(pack);
@@ -2223,6 +2229,9 @@ function drawScenario() {
   fillZones();
   zones.visible = scen.layers.zones && scen.tool !== "sectors";  // the Sectors brush shows its own cells instead
   scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
+  const names = new THREE.Group();  // the towns' and hills' names: the Map side's (MAP_SIDE "names")
+  group.add(names);
+  scen.names = names;
   const pillar = size * 0.03, blank = blankMap();
   // the hover line's last words: "drag to move" on the Scenario side; on the Map side, where to go to change it
   const dragTip = mv.mode === "scenario" ? mv.words.scen_drag_tip : mv.words.locked_scenario;
@@ -2296,10 +2305,11 @@ function drawScenario() {
         : it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
       sprite.userData.label = text + (it.mine ? ` · ${mv.words.scen_mine}` : "")
-        + (it.gone ? ` · ${mv.words.scen_taken_out}` : "");
+        + (it.gone ? ` · ${mv.words.scen_taken_out}` : "")
+        + (mv.mode !== "map" && mv.words.locked_map ? ` · ${mv.words.locked_map}` : "");  // changed on the Map side
       sprite.userData.item = it.item;  // picked to take it out (or put it back), dragged to move it
       if (it.gone) sprite.material.opacity = GONE_OPACITY;
-      group.add(sprite);
+      names.add(sprite);
     }
   }
   group.visible = scen.show;
@@ -2323,7 +2333,9 @@ function setScenTool(tool) {
   scen.tool = scen.tool === tool ? null : tool;
   scen.selected = null;
   if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); stopRoad(); stopBridge(); }
-  if (scen.tool) toMode(scen.tool === "sectors" ? "map" : "scenario");  // the bar shows the side the tool is on
+  if (scen.tool) toMode(MAP_SIDE_TOOLS.has(scen.tool) ? "map" : "scenario");  // the bar shows the side the tool is on
+  if (scen.tool === "names" && !NAME_KINDS.has(scen.markKind)) scen.markKind = "LabelVille";
+  if (scen.tool === "mark" && NAME_KINDS.has(scen.markKind)) scen.markKind = "Name";
   dock.check = false;
   pointerMode();
   renderScenTools();
@@ -2729,13 +2741,16 @@ function renderScenTools() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
   spawnDesc();  // shown only with Add unit
   // (the tools themselves are tiles in the bar on the Scenario side, and Sectors on the Map side: renderDock)
-  // Add a name or zone: what to add (each chip says what it is for), and a town's or hill's words to show
+  // Names or Add a spot or zone: what to add (each chip says what it is for), and a town's or hill's words to show
+  // (Names, on the Map side, holds the towns' and hills' names; Add a spot or zone the mission's spots and zones)
   const markPick = $("scen-mark-kind"), wordsRow = $("scen-mark-words-row");
-  markPick.classList.toggle("hidden", scen.tool !== "mark");
-  const labelKind = scen.markKind === "LabelVille" || scen.markKind === "LabelMontagne";
-  wordsRow.classList.toggle("hidden", scen.tool !== "mark" || !labelKind);
-  if (scen.tool === "mark") {
-    markPick.replaceChildren(...MARK_KINDS.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
+  const marking = scen.tool === "mark" || scen.tool === "names";
+  markPick.classList.toggle("hidden", !marking);
+  const labelKind = NAME_KINDS.has(scen.markKind);
+  wordsRow.classList.toggle("hidden", !marking || !labelKind);
+  if (marking) {
+    const kinds = MARK_KINDS.filter((k) => NAME_KINDS.has(k) === (scen.tool === "names"));
+    markPick.replaceChildren(...kinds.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
       scen.markKind === k, () => { scen.markKind = k; renderScenTools(); })));
     $("scen-mark-words-label").textContent = w.scen_mark_words;
     $("scen-mark-words").placeholder = w.scen_mark_words_hint;
@@ -2873,7 +2888,7 @@ function renderScenTools() {
     renderItemDetails(s, it);
   } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
   else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
-  else if (scen.tool === "mark") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
+  else if (scen.tool === "mark" || scen.tool === "names") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
   else if (scen.tool === "sectors") { scenNote(""); renderItemDetails(null, null); }  // its notes: renderSectorTools
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
@@ -3818,10 +3833,13 @@ function scenPointerDown(ev) {
 // Pressing on empty ground still turns the view. ---
 const GRABBABLE = ["StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
 
-// On the Scenario side only: on the Map side the scenario's things are faded and locked.
+// On the Scenario side the scenario's things move (on the Map side they're faded and locked), except the towns' and
+// hills' names: those move on the Map side, looking around or with Names open.
 function canGrab() {
-  return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && mv.mode === "scenario" && !mv.brush.on
-    && !mv.place.on && !road.on && !bridge.on && (!scen.tool || scen.tool === "move" || FORM_TOOLS.has(scen.tool)));
+  const tools = mv.mode === "scenario" ? !scen.tool || scen.tool === "move" || FORM_TOOLS.has(scen.tool)
+    : !scen.tool || scen.tool === "names";
+  return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && !mv.brush.on && !mv.place.on && !road.on
+    && !bridge.on && tools);
 }
 
 // What a press at `ev` would grab: {cam: the start} for a camera's grip, {it, objs} for an item (its drawn parts), or null
@@ -3831,8 +3849,11 @@ function grabAt(ev) {
   const rect = gl.renderer.domElement.getBoundingClientRect();
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-  const items = scen.group.children.filter((o) => o.userData.item !== undefined);
-  const grips = scen.group.children.flatMap((o) => o.isGroup ? o.children : []).filter((o) => o.userData.camOf !== undefined);
+  const onMap = mv.mode === "map";   // the Map side grabs the names alone, the Scenario side everything but them
+  const items = (onMap ? (scen.names ? scen.names.children : []) : scen.group.children)
+    .filter((o) => o.userData.item !== undefined);
+  const grips = onMap ? [] : scen.group.children.flatMap((o) => o.isGroup && o !== scen.names ? o.children : [])
+    .filter((o) => o.userData.camOf !== undefined);
   const hit = gl.raycaster.intersectObjects([...items, ...grips], false)[0];
   if (!hit) return null;
   if (hit.object.userData.camOf !== undefined) {
@@ -3954,7 +3975,7 @@ async function scenPlaceAt(s, cx, cy) {
     moveItem(s, it, x, y);
     return;
   }
-  if (scen.tool === "mark") {  // a new name on the map, named point or zone where clicked
+  if (scen.tool === "mark" || scen.tool === "names") {  // a new name on the map, named point or zone where clicked
     const kind = scen.markKind, words = $("scen-mark-words").value.trim();
     if ((kind === "LabelVille" || kind === "LabelMontagne") && !words) {
       scenNote(mv.words.scen_mark_words_first, "error");
@@ -4437,7 +4458,9 @@ const DOCK_GROUPS = {
     ["ground", ["terrain", "water"], "terrain"],
     ["zones", ["cover", "movement"], "cover"],
     ["ways", ["roads", "bridges"], "roads"],
-    ["building", ["building"], "building"],
+    // a town's buildings and its name together (the names are the scenario's items, placed on this side); a tile of
+    // their own wrapped the bar onto two rows
+    ["building", ["building", "scen_names"], "building"],
     ["nature", ["prop", "vegetation"], "vegetation"],
     ["paint", ["paint", "erase"], "paint"],
     ["sectors", ["sectors"], "sectors"],
@@ -4456,7 +4479,9 @@ const DOCK_GROUPS = {
   ],
 };
 const MISSION_DOCK_KINDS = new Set(["scen_mission", "scen_goals", "scen_events", "scen_cameras"]);  // need a mission's map
-const SCEN_KINDS = new Set(["sectors", "scen_move", "scen_spawn", "scen_start", "scen_mark", ...MISSION_DOCK_KINDS]);
+const SCEN_KINDS = new Set(["sectors", "scen_names", "scen_move", "scen_spawn", "scen_start", "scen_mark",
+  ...MISSION_DOCK_KINDS]);
+const MAP_SIDE_TOOLS = new Set(["sectors", "names"]);   // the scenario's tools whose tiles are on the Map side
 const scenToolOf = (kind) => (kind === "sectors" ? "sectors" : kind.slice("scen_".length));
 // the mission's trays are forms: the map turns and grabs as when looking around (Camera moves takes its clicks)
 const FORM_TOOLS = new Set(["mission", "goals", "events"]);
@@ -4549,6 +4574,7 @@ function kindName(kind) {
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
     bridges: w.dock_bridges, check: w.dock_check, erase: w.brush_erase, paint: w.dock_paint, sectors: w.scen_sectors_tool,
     scen_move: w.scen_move_tool, scen_spawn: w.scen_spawn_tool, scen_start: w.scen_start_tool, scen_mark: w.scen_mark_tool,
+    scen_names: w.scen_names_tool,
     scen_mission: w.scen_mission_tool, scen_goals: w.scen_goals_tool, scen_events: w.scen_events_tool,
     scen_cameras: w.scen_cameras_tool }[kind]
     || w[`scenery_${kind}`] || kind;
@@ -4661,6 +4687,7 @@ function renderDock() {
   const kinds = group ? dockGroups().find(([g]) => g === group)[1] : [];
   $("tray-tabs").replaceChildren(...(kinds.length > 1 ? kinds.map((k) => {
     const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: kindTip(k) });
+    if (SCEN_KINDS.has(k) && !s) { tab.disabled = true; tab.title = w.tip_scen_locked; }   // Names needs a scenario
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", String(k === kind));
     tab.addEventListener("click", () => { if (k !== dockKind()) openKind(k); });

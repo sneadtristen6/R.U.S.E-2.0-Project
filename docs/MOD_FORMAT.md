@@ -1042,7 +1042,8 @@ trucks = 60          # every depot on D-Day: 60 trucks (a map named wins over [a
 ### New names, named points and zones: `maps/<map pack>/places.toml` (built: `rusemod.scenario`; not yet seen in the game)
 
 A mod adds town and hill names, named points and zones to a map's scenarios, one table each (the Studio's Maps tab:
-Add a name or zone; LittleGroove's + Placement):
+the Map side's Buildings & Names, Names tab, for town and hill names; the Scenario side's Add a spot or zone for named
+points and zones; LittleGroove's + Placement):
 
 ```toml
 [[place]]
@@ -1077,7 +1078,7 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
   as the map has it: no shipped map is 4v4, so how the menus list one is untested), and the name's count
   ("(6) Cotentin (3v3)" becomes "(8) Cotentin (4v4)").
 - It refuses a count the entry's scenario can't seat, naming each starting point that's missing (`[[start]]` above,
-  or the Studio's Add starting point). It counts a team's points, not their place numbers: every shipped entry seats
+  or the Studio's Add HQ start). It counts a team's points, not their place numbers: every shipped entry seats
   its own count this way.
 - A map that offers three teams with a count that isn't a multiple of 3 gets a warning: whether that layout is still
   offered, or gives uneven teams, is untested.

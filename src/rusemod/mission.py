@@ -616,7 +616,7 @@ def problems(m: Mission, base: Base, ctx: Context) -> list:
 
     def point(name, at):
         if name and name not in ctx.points:
-            out.append(("error", f"{at}: {name!r} isn't a named point of the map (add it with Add a name or zone)"))
+            out.append(("error", f"{at}: {name!r} isn't a named point of the map (add it with Add a spot or zone)"))
 
     def zone(name, at):
         if name and name not in ctx.zones:
