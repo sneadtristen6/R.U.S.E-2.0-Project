@@ -557,7 +557,7 @@ IMPORTS = ["_enum_for_game_play", "defines.colors", "leveldesign.camera", "level
            "leveldesign.operator", "leveldesign.variable", "leveldesignsolo.camps", "leveldesignsolo.condition",
            "leveldesignsolo.contrainte_unit", "leveldesignsolo.descriptor", "leveldesignsolo.fx",
            "leveldesignsolo.helper", "leveldesignsolo.missions", "leveldesignsolo.objectif",
-           "leveldesignsolo.production", "leveldesignsolo.units", "parametres.Classes"]
+           "leveldesignsolo.production", "leveldesignsolo.strategic_ia", "leveldesignsolo.units", "parametres.Classes"]
 CATEGORY = ("IsAttacked IsAvion IsAvionAuSol IsAvionEnVol IsAvionSansMunitionsRestantes IsBatiment IsBatimentFake "
             "IsCamoufle IsEnCombat IsEnForet IsEnSilenceRadio IsEnZoneCombat IsInfanterie IsSelectionnee "
             "IsSousTirArtillerie IsTank IsTruck IsTruckConstruction IsTruckDevise IsUberStress IsUnitFake IsVue").split()
@@ -928,7 +928,7 @@ def script(m: Mission, base: Base, ctx: Context, keys) -> tuple:
         if a.do == "wait":
             return _wait(a.seconds)
         if a.do == "ai":
-            return call("leveldesignsolo.camps.DescriptorIAAll", Camp=side)
+            return call("leveldesignsolo.strategic_ia.DescriptorIAAll", Camp=side)
         raise MissionError(f"unknown action {a.do}")
 
     def run(actions: list, tag: str, k0: int = 1) -> list:
@@ -995,7 +995,7 @@ def script(m: Mission, base: Base, ctx: Context, keys) -> tuple:
                       SituationAwareness=True, TimeRemaining=True, UnitHints=True))
     for s in m.sides:
         if s.plays == "ai" and s.number in camps:
-            start.append(call("leveldesignsolo.camps.DescriptorIAAll", Camp=camps[s.number]))
+            start.append(call("leveldesignsolo.strategic_ia.DescriptorIAAll", Camp=camps[s.number]))
     start.append(call("leveldesign.descriptor.DescriptorIncrementeVariableInteger", Value=1, Variable=v_ready))
     begin = sc.add("START", _seq(*start))
     main = sc.add("MAIN", _seq(wait_for(c_ready), _sim(*first, after, *flows)))

@@ -44,7 +44,7 @@ ALLOWED = {
     "leveldesign.launcheffetmap": {"DescriptorLaunchEffetMap", "GameRulesChallenge", "GameRulesSkirmish"},
     "leveldesign.operator": {"OperatorIntegerEqual", "OperatorIntegerStrictlyMore", "OperatorIntegerMoreOrEqual"},
     "leveldesign.variable": {"VariableInteger"},
-    "leveldesignsolo.camps": {"DescriptorSetRessourceCamp", "DescriptorIAAll"},
+    "leveldesignsolo.camps": {"DescriptorSetRessourceCamp"},
     "leveldesignsolo.condition": {"ConditionUnitGroup", "ConditionDetectUnitDansZoneDetection"},
     "leveldesignsolo.contrainte_unit": {"ContrainteOnUnitTeam", "ContrainteOnUnitCategory",
                                         "ContrainteOnUnitAllContrainte"},
@@ -57,6 +57,7 @@ ALLOWED = {
                                  "DescriptorDeclencheVictoireChallenge", "DescriptorDeclencheVictoire",
                                  "DescriptorDeclencheDefaite"},
     "leveldesignsolo.production": {"DescriptorCreateUnit"},
+    "leveldesignsolo.strategic_ia": {"DescriptorIAAll"},   # (not .camps: T45 stopped on it, 2026-10-10)
     "leveldesignsolo.timer": {"VariableTimer", "DescriptorStartTimer"},
     "leveldesignsolo.units": {"VariableUnitGroup"},
 }

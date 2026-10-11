@@ -11,7 +11,7 @@ from fixtures import make_ndf, val
 from rusemod import mission as M
 from rusemod import missionbuild as MB
 from rusemod.dic import name_to_key
-from rusemod.missionscript import (LOAD_NAME, WRITTEN_OPS, Attr, Long, Ref, assemble, call, check,
+from rusemod.missionscript import (ALLOWED, LOAD_NAME, WRITTEN_OPS, Attr, Long, Ref, assemble, call, check,
                                    instructions_used, source)
 from rusemod.ndf import Ndf, sub_values
 from rusemod.pyscript import Code, ScriptError, instructions, load
@@ -226,6 +226,13 @@ class MissionScript(unittest.TestCase):
         self.assertEqual(parts[0], Ref("RUN_G0_reach"))
         self.assertEqual(parts[1], Ref("PANEL_AFTER"))
         self.assertIn("DescriptorPlayEffetAfterWait(Action=PANEL, Duree=1)", self.text)
+
+    def test_the_computer_side_block_comes_from_strategic_ia(self):
+        """DescriptorIAAll lives in leveldesignsolo.strategic_ia (the game's catalog; Fortress Europa imports it
+        so). T45 named leveldesignsolo.camps and the mission stopped on the script error (2026-10-10)."""
+        self.assertIn("import leveldesignsolo.strategic_ia", self.text)
+        self.assertIn("leveldesignsolo.strategic_ia.DescriptorIAAll(Camp=SIDE_1)", self.text)
+        self.assertNotIn("DescriptorIAAll", ALLOWED["leveldesignsolo.camps"])
 
     def test_sides_rules_events_and_cameras(self):
         t = self.text
