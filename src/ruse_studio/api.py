@@ -63,6 +63,7 @@ from .music import MusicCalls
 from .era_units import EraUnitCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
+from .roles import RoleCalls, hits_mount
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -415,7 +416,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls, EraUnitCalls, MissionCalls):
+                NationCalls, EraUnitCalls, MissionCalls, RoleCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -706,23 +707,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         ix = self._open()
         try:
             plan = ix.clone_plan(real)
+            # a mount a role change replaced (a bomb bay, roles.RoleCalls) shows its own weapons in its place
+            gone, extra = self.role_parts(ix, edits, base, real.partition(":")[0])
+            listed = [(a, a, (base + a[len(new.source):]) if new else a) for a in plan["copied"] + plan["shared"]
+                      if ix.show(a)["class"] == WEAPON and not a.startswith(tuple(gone))] + extra
             # in their place on the unit (turret 1's weapons first), so "Weapon 1" is the main gun
-            parts = sorted((a for a in plan["copied"] + plan["shared"] if ix.show(a)["class"] == WEAPON),
-                           key=lambda a: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", a)])
+            parts = sorted(listed, key=lambda x: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", x[0])])
             weapons = []
             unit_shots = self._shots(ix, real.partition(":")[0])
-            for part in parts:
+            for _order, part, where in parts:
                 o = ix.show(part)
                 tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
                 fires = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
-                where = (base + part[len(new.source):]) if new else part
                 chosen = edits.get(where, "Ammunition") if edits else None
                 current = str(chosen) if chosen else fires
                 weapons.append({"real": part, "address": where, "name": tag or f"{_tail(part)}", "fires": fires,
                                 "shot": self._shot_now(ix, edits, unit_shots.get(tag, []), real, base),
                                 "range": self._range(ix, edits, current) if current else None,
                                 "game_range": self._range(ix, edits, current, game=True) if current else None,
-                                "firing": self._firing(ix, edits, current) if current else []})
+                                "firing": self._firing(ix, edits, current) if current else [],
+                                "hits": self.hits_of(ix, edits, current) if current else None,
+                                "game_hits": self.hits_of(ix, None, fires) if fires else None})
             rows = self._all_ammo(ix)
             names = self._ammo_names(ix, rows, lang)
             nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
@@ -739,10 +744,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     "nations": self._nations_of(users.get(a, []), nation_of, lang)}
                    for a, n in sorted(names.items(), key=lambda kv: kv[1].lower())]
         out = []
-        for w in weapons:
+        for n, w in enumerate(weapons):
             chosen = edits.get(w["address"], "Ammunition") if edits else None
             current = str(chosen) if chosen else w["fires"]
+            both = bool(edits and hits_mount(address, n) in edits.new_units)  # a second weapon beside it (roles)
             out.append({"address": w["address"], "name": w["name"],
+                        "hits": "both" if both else w["hits"], "game_hits": w["game_hits"],
                         "ammo": {"address": current, "name": names.get(current) or (_tail(current) if current else "")},
                         "game_ammo": w["fires"], "edited": bool(chosen), "shot": w["shot"],
                         "range": w["range"], "game_range": w["game_range"],
@@ -846,7 +853,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
-        if weapon.partition(":")[0] != unit.partition(":")[0]:
+        role_mount = self.role_mount_of(edits, unit, weapon)  # a bomb bay a role change gave it (roles.RoleCalls)
+        if weapon.partition(":")[0] != unit.partition(":")[0] and not role_mount:
             raise StudioError(f"{weapon} isn't a weapon of {unit}")
         real_weapon, _new = self._resolve(edits, weapon)
         real_ammo, ammo_copy = self._resolve(edits, ammo)
@@ -869,7 +877,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             game_ammo = next((what for p, k, what in ix.uses(real_weapon) if p == "Ammunition" and k == "object"), None)
             tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
             real_unit = real_weapon.partition(":")[0]
-            mine = self._shots(ix, real_unit).get(tag, []) if tag else []
+            # a role mount's shot is the plane's model's, not the bomber it was copied from: left as it is
+            mine = self._shots(ix, real_unit).get(tag, []) if tag and not role_mount else []
             theirs = self._shot_of(ix, real_ammo) if mine and ammo != game_ammo else []
         finally:
             ix.close()
@@ -976,7 +985,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if unit is None:
             return address, None
         _base, _, inside = address.partition(":")
-        return unit.source + (f":{inside}" if inside else ""), unit
+        sep = "." if ":" in unit.source else ":"  # a copy of a part (a role change's bomb bay): inside that part
+        return unit.source + (f"{sep}{inside}" if inside else ""), unit
 
     @staticmethod
     def _shots(ix: Index, unit: str) -> dict[str, list[dict]]:

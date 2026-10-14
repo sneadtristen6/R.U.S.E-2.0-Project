@@ -974,6 +974,82 @@ function weaponRange(u, wp, redraw) {
   return out;
 }
 
+// What a weapon can hit (StudioApi.set_weapon_hits): the ground, planes, or both (a second weapon beside it, the way the
+// game's AA guns carry one for each). The owner, 2026-10-14: any weapon on any unit, a tank shooting planes too.
+function weaponHits(u, wp, redraw) {
+  const w = state.words;
+  const pick = el("select", { disabled: !state.mod, title: w.tip_hits });
+  pick.setAttribute("aria-label", w.hits);
+  for (const [value, word] of [["ground", w.hits_ground], ["planes", w.hits_planes], ["both", w.hits_both]]) {
+    pick.append(el("option", { value, textContent: word, selected: wp.hits === value }));
+  }
+  pick.addEventListener("change", async () => {
+    try {
+      const res = await api().set_weapon_hits(u.address, wp.address, pick.value);
+      await refreshMarks();
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+    redraw();  // its ammo, its shot and its range follow
+  });
+  const line = el("div", { className: "weapon-range" + (wp.hits !== wp.game_hits ? " edited" : "") },
+    el("span", { className: "range-label", textContent: w.hits, title: w.tip_hits }), pick);
+  const out = el("div", {}, line);
+  if (wp.hits !== wp.game_hits) {
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_hits,
+      disabled: !state.mod });
+    undo.addEventListener("click", () => { pick.value = wp.game_hits; pick.dispatchEvent(new Event("change")); });
+    const game = { ground: w.hits_ground, planes: w.hits_planes, both: w.hits_both }[wp.game_hits];
+    out.append(el("div", { className: "was" }, el("span", { textContent: fill(w.was, { v: game }) }), undo),
+      el("div", { className: "muted small", textContent: w.hits_not_tried }));
+  }
+  return out;
+}
+
+// A plane's role (StudioApi.plane_role / set_plane_role): fighter, fighter-bomber, bomber or scout. A bomber's bombs go
+// in a bomb bay, the only way a bomber's run drops them (a player's report, 2026-10-14: a fighter-bomber given carpet
+// bombs flew to its target and dropped nothing).
+function roleGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_role_pick });
+  pick.setAttribute("aria-label", w.role_title);
+  const was = el("div", { className: "was" });
+  const why = el("p", { className: "notice hidden" });
+  const moved = el("p", { className: "muted small hidden", textContent: w.role_bombs_moved });
+  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const name = (id) => w["role_" + id] || id;
+  const show = (info) => {
+    const options = info.roles.map((r) => el("option", { value: r.id, selected: r.id === info.role,
+      textContent: r.seen || r.id === info.game ? name(r.id) : fill(w.role_not_tried, { role: name(r.id) }) }));
+    if (!info.roles.some((r) => r.id === info.role)) {
+      options.unshift(el("option", { value: "", disabled: true, selected: true, textContent: name(info.role) }));
+    }
+    pick.replaceChildren(...options);
+    pick.disabled = !can || !info.editable;
+    why.textContent = info.why ? (w[info.why + "_why"] || w[info.why] || "") : "";
+    why.classList.toggle("hidden", !info.why || info.why === "no_mod");
+    const edited = info.role !== info.game;
+    head.classList.toggle("edited", edited);
+    moved.classList.toggle("hidden", !(edited && (info.role === "bomber" || info.game === "bomber")));
+    if (!edited) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_role_undo });
+    undo.addEventListener("click", () => choose(null));
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", name(info.game)) }), undo);
+  };
+  const choose = async (role) => {
+    try {
+      const res = await api().set_plane_role(u.address, role, state.lang);
+      await refreshMarks();
+      await showUnit(state.page.address, state.page.via);  // its weapons moved with the role: the whole page again
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value || null));
+  api().plane_role(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.role_title }),
+    el("p", { className: "muted small", textContent: w.role_help }), why, el("table", {}, head), moved);
+}
+
 // A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first),
 // and how far it shoots.
 function weaponsGroup(u) {
@@ -996,6 +1072,7 @@ function weaponsGroup(u) {
       // the muzzle flash and sound this weapon plays (they follow the ammo: api.set_ammo)
       const shot = el("div", { className: "muted small", textContent: wp.shot ? fill(w.shot, { fx: wp.shot }) : "" });
       const cell = el("td", {}, el("div", { className: "boxes" }, pick, open), was, shot);
+      if (wp.hits) cell.append(weaponHits(u, wp, draw));
       if (wp.range !== null && wp.range !== undefined) cell.append(weaponRange(u, wp, draw));
       const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, cell);
       const showWas = (edited) => {
@@ -2106,6 +2183,7 @@ async function showUnit(address, via) {
     parts.push(group);
   }
   if (u.has_armour) parts.push(armourGroup(u));
+  if (u.class === "TAvionDescriptor" && (u.named || u.new) && u.editable) parts.push(roleGroup(u));
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
   if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
