@@ -305,9 +305,11 @@ class Roles(unittest.TestCase):
         copy = self.api.set_weapon_hits(ME109, gun["address"], "ground")["ammo"]
         objs = self.built(folder)
         props = objs[copy].props
-        self.assertEqual(int(props["Arme"].value), 3)  # the AA guns' ground ammo's damage
-        self.assertNotIn("ProjectileType", props)
-        self.assertNotIn("TirIndirect", props)
+        # as every plane's ground ammo has it (strafing guns, rockets, Rudel's cannon): T54, 2026-10-14, a fighter's
+        # cannon left with its air-to-air marks flew the strafing pass and fired nothing
+        self.assertEqual((int(props["Arme"].value), int(props["ProjectileType"].value), int(props["TirIndirect"].value)),
+                         (3, 4, 1))
+        self.assertEqual(float(props["PorteeMaximale"].value), 208000.0)  # the cannon's own 90,000 is too short
 
     def test_nothing_without_a_mod(self):
         with self.assertRaises(StudioError):

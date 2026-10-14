@@ -43,6 +43,8 @@ ROLE_MOUNT = "Role_"  # the start of the name of the mount a role change makes (
 ARME, SHAPE, INDIRECT, NO_PHYSICS = "Arme", "ProjectileType", "TirIndirect", "FX_tir_sans_physic"
 AIR = 1  # Arme: anti-plane damage (the AA guns' and fighters' ammo); it does nothing to ground units (T51)
 GROUND_ARME = 3  # Arme of the AA guns' ground ammo (Ammo_DCA_..._SOL), given to a ground copy of anti-plane ammo
+RANGE = "PorteeMaximale"
+PLANE_GROUND_SHAPE, PLANE_GROUND_RANGE = 4, 208000.0  # every plane's ground ammo: dropped/strafing shots, its reach
 HITS = ("ground", "planes", "both")
 HITS_COPY = "Ammo_Hits_"  # the start of the name of an ammo copy set_weapon_hits makes
 HITS_MOUNT = "Mount_Hits_"  # ... and of the second weapon it adds for "both"
@@ -215,8 +217,11 @@ class RoleCalls:
             source, carry = self._ammo_source(edits, ammo)
             src_air = self._air(ix, source, {})
             now_air = self.hits_of(ix, edits, ammo) == "planes"
+            plane = ix.show(self._resolve(edits, unit)[0].partition(":")[0])["class"] == PLANE
+            game = {p: n for p, n, _t in ix.show(source)["values"] if n is not None}  # the source ammo's values
         finally:
             ix.close()
+        marks = lambda air: self._marks(air, plane, game, carry)  # noqa: E731
         copies = {air: f"{source.rsplit('/', 1)[0]}/{HITS_COPY}{stem}_{'Air' if air else 'Ground'}"
                   for air in (True, False)}
         with self._saving:  # the second weapon an earlier "both" added goes first
@@ -233,12 +238,12 @@ class RoleCalls:
                 self.set_ammo(unit, weapon, source)  # a copy made here, back to its source's kind: the source again
                 ammo = source
             else:
-                ammo = self._hits_copy(edits, source, carry, want_air, copies[want_air])
+                ammo = self._hits_copy(edits, source, carry, marks(want_air), copies[want_air])
                 self.set_ammo(unit, weapon, ammo)
         other = None
         if hits == "both":
             other = (source if (not want_air) == src_air and not carry else
-                     self._hits_copy(edits, source, carry, not want_air, copies[not want_air]))
+                     self._hits_copy(edits, source, carry, marks(not want_air), copies[not want_air]))
             with self._saving:
                 edits = ModEdits(edits.folder)
                 edits.add_unit(mount, real_weapon, plain_name(mount), {"Ammunition": Link(other)}, named=False)
@@ -250,12 +255,28 @@ class RoleCalls:
                     edits.remove_unit(copy)
         return {"saved": str(edits.file), "hits": hits, "ammo": ammo}
 
-    def _hits_copy(self, edits, source: str, carry: dict, air: bool, target: str) -> str:
-        """A copy of `source` at `target` (with the mod's changes `carry`) marked to hit planes (`air`) or the
-        ground. One made there earlier is made again."""
-        from .edits import REMOVED, ModEdits, plain_name
-        marks = ({ARME: AIR, SHAPE: 3, INDIRECT: 1, NO_PHYSICS: 1} if air else
-                 {ARME: GROUND_ARME, SHAPE: REMOVED, INDIRECT: REMOVED, NO_PHYSICS: REMOVED})
+    @staticmethod
+    def _marks(air: bool, plane: bool, game: dict, carry: dict) -> dict:
+        """The values that make a copy of an ammo (its game values `game`, the mod's `carry`) hit planes (`air`) or
+        the ground, on a plane's weapon or another unit's. Anti-plane, as the AA guns' and fighters' guns: Arme 1,
+        ProjectileType 3, indirect, no physics. The ground from a plane, as every plane's strafing guns, rockets and
+        Rudel's cannon: ProjectileType 4, indirect, at least their 208,000 range, no direct-fire share (T54: a
+        fighter's cannon left with its air-to-air marks flew the pass and fired nothing). The ground from anything
+        else, as the AA guns' ground ammo (_SOL): Arme 3, none of the anti-plane marks."""
+        from .edits import REMOVED
+        if air:
+            return {ARME: AIR, SHAPE: 3, INDIRECT: 1, NO_PHYSICS: 1}
+        gone = lambda *props: {p: REMOVED for p in props if p in game}  # noqa: E731
+        if plane:
+            reach = max(float(game.get(RANGE, 0)), float(carry.get(RANGE, 0) or 0), PLANE_GROUND_RANGE)
+            return {ARME: GROUND_ARME, SHAPE: PLANE_GROUND_SHAPE, INDIRECT: 1, RANGE: reach,
+                    **gone("PourcentageTirDirect", "PourcentageTirDirectEnMouvement")}
+        return {ARME: GROUND_ARME, **gone(SHAPE, INDIRECT, NO_PHYSICS)}
+
+    def _hits_copy(self, edits, source: str, carry: dict, marks: dict, target: str) -> str:
+        """A copy of `source` at `target` (with the mod's changes `carry`) with `marks` (_marks) on top. One made
+        there earlier is made again."""
+        from .edits import ModEdits, plain_name
         with self._saving:
             edits = ModEdits(edits.folder)
             if target in edits.new_units:
