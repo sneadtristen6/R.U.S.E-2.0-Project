@@ -79,15 +79,15 @@ def ammo(n, kind, arme, shape=None, air=False):
 
 
 UNITS = make_ndf(
-    objects=[plane(2, 1, [2, 101], AIR_FB, 1),                                   # 0 Stuka
+    objects=[plane(2, 1, [2, 101, 21], AIR_FB, 1),                                # 0 Stuka
              (1, [(P_TURRETS, lst(ref(2, 2)))]),                                 # 1 its weapons
              (2, [(P_ABS_MOUNTS, lst(ref(3, 4)))]),                              # 2 its bomb mount (forward)
              (4, [(P_TAG, s(0)), (P_AMMO, ref(9, 5))]),                          # 3 the dive bomb
-             plane(3, 4, [2, 13], AIR_BL, 5),                                    # 4 B-25
+             plane(3, 4, [2, 13, 21], AIR_BL, 5),                                 # 4 B-25
              (1, [(P_TURRETS, lst(ref(6, 3)))]),                                 # 5 its weapons
              (3, [(P_BAY_MOUNTS, lst(ref(7, 4)))]),                              # 6 its bomb bay
              (4, [(P_TAG, s(0)), (P_AMMO, ref(10, 5))]),                         # 7 carpet bombs
-             plane(1, 1, [2, 100], AIR_F, 11),                                   # 8 ME109
+             plane(1, 1, [2, 100, 21], AIR_F, 11),                                # 8 ME109
              ammo(1, DIVEBOMB, 3, 4),                                            # 9 dive bomb
              ammo(2, CARPETS, 3, 4),                                             # 10 carpet bombs
              (1, [(P_TURRETS, lst(ref(12, 2)))]),                                # 11 ME109's weapons
@@ -191,7 +191,7 @@ class Roles(unittest.TestCase):
         objs = self.built(folder)
         stuka = objs[STUKA].props
         self.assertEqual((int(stuka["CategoryVolant"].value), int(stuka["CategorieIA"].value)), (3, 4))
-        self.assertEqual([int(f.value) for f in stuka["InitialFlagSet"].items], [2, 13])  # the bomber's flag
+        self.assertEqual([int(f.value) for f in stuka["InitialFlagSet"].items], [2, 13, 21])  # the bomber's flags
         self.assertEqual(stuka["TypeUnitHintToken"], objs[B25].props["TypeUnitHintToken"])  # a bomber's words
         self.assertEqual(self.mounts(objs, STUKA), [("TTurretBombardierDescriptor", [BOMB])])  # its own bomb, in a bay
         self.assertEqual(self.mounts(objs, B25), [("TTurretBombardierDescriptor", [CARPET])])  # the B-25 untouched
@@ -226,7 +226,7 @@ class Roles(unittest.TestCase):
         self.api.set_plane_role(B25, "fighter_bomber")
         objs = self.built(folder)
         self.assertEqual(int(objs[B25].props["CategoryVolant"].value), 2)
-        self.assertEqual([int(f.value) for f in objs[B25].props["InitialFlagSet"].items], [2, 101])
+        self.assertEqual([int(f.value) for f in objs[B25].props["InitialFlagSet"].items], [2, 101, 21])
         self.assertEqual(self.mounts(objs, B25), [("TTurretAbsolueDescriptor", [CARPET])])  # the Stuka's mount, copied
 
     def test_a_plane_with_no_bombs_cant_be_a_bomber_and_a_fighter_needs_no_mount(self):
@@ -240,6 +240,16 @@ class Roles(unittest.TestCase):
         self.assertEqual(self.mounts(objs, STUKA), [("TTurretAbsolueDescriptor", [BOMB])])
         with self.assertRaises(StudioError):
             self.api.set_plane_role(STUKA, "paratroop")
+
+    def test_a_scout_gets_the_scouts_flags(self):
+        # every game scout has 99 and 70 (its sight centred on the point it circles) and no 21; a Stuka made a scout
+        # with 99 alone had no scout's sight and crashed the game when sent at the enemy (T53, 2026-10-14)
+        folder = self.mod()
+        self.api.set_plane_role(STUKA, "scout")
+        objs = self.built(folder)
+        self.assertEqual([int(f.value) for f in objs[STUKA].props["InitialFlagSet"].items], [2, 99, 70])
+        self.api.set_plane_role(STUKA, None)
+        self.assertEqual(ModEdits(folder).edits, {})  # its own flags back: nothing left to write
 
     def test_a_copy_of_a_plane_made_a_bomber(self):
         folder = self.mod()

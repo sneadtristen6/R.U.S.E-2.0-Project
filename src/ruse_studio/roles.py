@@ -28,10 +28,14 @@ ROLE = "CategoryVolant"
 AI_ROLE = "CategorieIA"
 FLAGS = "InitialFlagSet"
 HINTS = ("TypeUnitHintToken", "DescriptionUnitHintToken", "EfficaceHintToken")
-# role -> (CategoryVolant, its flag, CategorieIA), as every game plane of that role has them
-ROLES = {"fighter": (1, 100, 1), "fighter_bomber": (2, 101, 1), "bomber": (3, 13, 4), "scout": (5, 99, 3)}
+# role -> (CategoryVolant, its flags, CategorieIA), as every game plane of that role has them (the game's 63 planes,
+# 2026-10-14): fighters 100, fighter-bombers 101, bombers 13, each with 21 (a fighting unit); scouts 99 and 70 (their
+# sight centred on the point they circle) and never 21. A Stuka made a scout with 99 alone had no scout's sight and
+# crashed the game when sent at the enemy (T53)
+ROLES = {"fighter": (1, (100, 21), 1), "fighter_bomber": (2, (101, 21), 1), "bomber": (3, (13, 21), 4),
+         "scout": (5, (99, 70), 3)}
 PARATROOP = 4  # a paratroop plane's role: it carries paratroopers, which no other plane has, so it's not offered
-ROLE_FLAGS = {flag for _c, flag, _ai in ROLES.values()}
+ROLE_FLAGS = {flag for _c, flags, _ai in ROLES.values() for flag in flags}
 ROLE_OF = {c: role for role, (c, _f, _ai) in ROLES.items()}
 SEEN = {"bomber"}  # roles seen working in the game on a plane made into them (T50, 2026-10-14)
 ROLE_MOUNT = "Role_"  # the start of the name of the mount a role change makes (a bomb bay, or a forward mount)
@@ -155,17 +159,17 @@ class RoleCalls:
                     edits.edits.pop(edits.key(keyed, prop), None)
                 back = [f for f in flags if f not in ROLE_FLAGS or f in game_flags]
                 back += [f for f in game_flags if f in ROLE_FLAGS and f not in back]
-                if back == game_flags:
+                if sorted(back) == sorted(game_flags):  # the game's own set: its order doesn't matter
                     edits.edits.pop(edits.key(keyed, FLAGS), None)
                 else:
                     edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, back)
             else:
-                c, flag, ai = ROLES[role]
+                c, role_flags, ai = ROLES[role]
                 for prop, value in ((ROLE, c), (AI_ROLE, ai)):
                     edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, value)
                 for prop, token in hints.get(c, {}).items():
                     edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, Literal(f"key({token})"))
-                put = [f for f in flags if f not in ROLE_FLAGS] + [flag]
+                put = [f for f in flags if f not in ROLE_FLAGS] + list(role_flags)
                 edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, put)
                 if plan is not None:
                     turret, turret_real, source, ammo = plan
