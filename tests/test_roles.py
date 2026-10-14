@@ -27,7 +27,9 @@ BOMB, CARPET, CANNON, AP, HE = (E + n for n in ("Ammo_Bombe_pique_Junker", "Ammo
                                                 "Ammo_Canon_air_moyen", "Ammo_Canon_AP_100", "Ammo_Canon_HE_105"))
 DIVEBOMB, CARPETS, AIRGUN, APSHELL, HESHELL = (name_to_key(n) for n in ("DIVEBOMB", "CARPETS", "AIRGUN", "APSHELL",
                                                                        "HESHELL"))
-AIR_FB, AIR_BL, AIR_F = (name_to_key(n) for n in ("AIR_FB", "AIR_BL", "AIR_F"))
+AIR_FB, AIR_BL, AIR_F, AIR_REC, RECO_AR, TANK_M = (name_to_key(n) for n in ("AIR_FB", "AIR_BL", "AIR_F", "AIR_REC",
+                                                                              "RECO_AR", "TANK_M"))
+SCOUT, RECON_CAR = E + "Descriptor_Avion_Grasshopper", E + "Descriptor_Unit_M8_Greyhound"
 
 
 def i32(v):
@@ -61,7 +63,18 @@ def s(i):
 # classes: 0 TAvionDescriptor, 1 TWeaponDescriptor, 2 TTurretAbsolueDescriptor, 3 TTurretBombardierDescriptor,
 # 4 TMountedWeaponDescriptor, 5 TAmmunition, 6 TUniteAuSolDescriptor, 7 TTurretOneAxisDescriptor
 P_ROLE, P_AI, P_FLAGS, P_HINT, P_WD, P_TURRETS, P_ABS_MOUNTS, P_BAY_MOUNTS, P_TAG, P_AMMO, P_ID, P_TYPE, P_ARME, \
-    P_SHAPE, P_RANGE, P_WD_GROUND, P_ONE_MOUNTS, P_INDIRECT, P_NOPHYS = range(19)
+    P_SHAPE, P_RANGE, P_WD_GROUND, P_ONE_MOUNTS, P_INDIRECT, P_NOPHYS, P_SIGHT, P_G_AI, P_G_CAT, P_G_SIGHT, P_G_FLAGS, \
+    P_G_HINT = range(25)
+
+
+def f32(v):
+    return val(0x05, struct.pack("<f", v))
+
+
+def ground(ai, cat, sight, flags, hint, wd=None):
+    values = [(P_G_AI, i32(ai)), (P_G_CAT, i32(cat)), (P_G_SIGHT, f32(sight)),
+              (P_G_FLAGS, lst(*(u32(f) for f in flags))), (P_G_HINT, key(hint))]
+    return (6, values + ([(P_WD_GROUND, ref(wd, 1))] if wd is not None else []))
 
 
 def plane(role, ai, flags, hint, wd):
@@ -94,27 +107,32 @@ UNITS = make_ndf(
              (2, [(P_ABS_MOUNTS, lst(ref(13, 4)))]),                             # 12 its cannon mount
              (4, [(P_TAG, s(0)), (P_AMMO, ref(14, 5))]),                         # 13 its cannon
              ammo(3, AIRGUN, 1, 3, air=True),                                    # 14 air cannon
-             (6, [(P_WD_GROUND, ref(16, 1))]),                                   # 15 Panzer IV
+             ground(1, 2, 104000, [10, 55, 21, 11], TANK_M, 16),                 # 15 Panzer IV
              (1, [(P_TURRETS, lst(ref(17, 7)))]),                                # 16 its weapons
              (7, [(P_ONE_MOUNTS, lst(ref(18, 4), ref(19, 4)))]),                 # 17 its turret
              (4, [(P_TAG, s(0)), (P_AMMO, ref(20, 5))]),                         # 18 AP
              (4, [(P_TAG, s(1)), (P_AMMO, ref(21, 5))]),                         # 19 HE
              ammo(4, APSHELL, 5),                                                # 20 AP shell
-             ammo(5, HESHELL, 3, 1)],                                            # 21 HE shell
+             ammo(5, HESHELL, 3, 1),                                             # 21 HE shell
+             (0, [(P_ROLE, i32(5)), (P_AI, i32(3)), (P_FLAGS, lst(u32(2), u32(99), u32(70))), (P_HINT, key(AIR_REC)),
+                  (P_SIGHT, f32(195000))]),                                      # 22 Grasshopper (a scout, unarmed)
+             ground(3, 1, 234000, [10], RECO_AR)],                               # 23 Greyhound (recon)
     classes=["TAvionDescriptor", "TWeaponDescriptor", "TTurretAbsolueDescriptor", "TTurretBombardierDescriptor",
              "TMountedWeaponDescriptor", "TAmmunition", "TUniteAuSolDescriptor", "TTurretOneAxisDescriptor"],
     props=[("CategoryVolant", 0), ("CategorieIA", 0), ("InitialFlagSet", 0), ("TypeUnitHintToken", 0),
            ("WeaponDescriptor", 0), ("TurretDescriptorList", 1), ("MountedWeaponDescriptorList", 2),
            ("MountedWeaponDescriptorList", 3), ("EffectTag", 4), ("Ammunition", 4), ("AmmunitionId", 5),
            ("TypeName", 5), ("Arme", 5), ("ProjectileType", 5), ("PorteeMaximale", 5), ("WeaponDescriptor", 6),
-           ("MountedWeaponDescriptorList", 7), ("TirIndirect", 5), ("FX_tir_sans_physic", 5)],
+           ("MountedWeaponDescriptorList", 7), ("TirIndirect", 5), ("FX_tir_sans_physic", 5), ("DetectionBase", 0),
+           ("CategorieIA", 6), ("Category", 6), ("DetectionBase", 6), ("InitialFlagSet", 6), ("TypeUnitHintToken", 6)],
     strings=["weapon_effet_tag1", "weapon_effet_tag2"],
     exports={0: "GFX/Everything/Descriptor_Avion_Junkers_87", 4: "GFX/Everything/Descriptor_Avion_B25",
              8: "GFX/Everything/Descriptor_Avion_ME109_GR", 9: "GFX/Everything/Ammo_Bombe_pique_Junker",
              10: "GFX/Everything/Ammo_Carpet_bombing_leger", 14: "GFX/Everything/Ammo_Canon_air_moyen",
              15: "GFX/Everything/Descriptor_Unit_Panzer_IV_G", 20: "GFX/Everything/Ammo_Canon_AP_100",
-             21: "GFX/Everything/Ammo_Canon_HE_105"},
-    topo=[0, 4, 8, 9, 10, 14, 15, 20, 21])
+             21: "GFX/Everything/Ammo_Canon_HE_105", 22: "GFX/Everything/Descriptor_Avion_Grasshopper",
+             23: "GFX/Everything/Descriptor_Unit_M8_Greyhound"},
+    topo=[0, 4, 8, 9, 10, 14, 15, 20, 21, 22, 23])
 
 
 def write_game(root: Path):
@@ -241,15 +259,50 @@ class Roles(unittest.TestCase):
         with self.assertRaises(StudioError):
             self.api.set_plane_role(STUKA, "paratroop")
 
-    def test_a_scout_gets_the_scouts_flags(self):
-        # every game scout has 99 and 70 (its sight centred on the point it circles) and no 21; a Stuka made a scout
-        # with 99 alone had no scout's sight and crashed the game when sent at the enemy (T53, 2026-10-14)
+    def test_an_armed_scout_keeps_the_fighters_behaviour(self):
+        # every game scout has 99 and 70 and no 21, and the scouts' sight (DetectionBase). The flags pick the plane's
+        # behaviour, 100 first, then 99: a plane with 99 alone gets the scout's, which has no attack, and crashed the
+        # game when sent to attack (T53-T56). An armed scout also gets 100, so it behaves as a fighter
         folder = self.mod()
+        self.assertTrue(self.api.plane_role(STUKA)["armed"])
         self.api.set_plane_role(STUKA, "scout")
         objs = self.built(folder)
-        self.assertEqual([int(f.value) for f in objs[STUKA].props["InitialFlagSet"].items], [2, 99, 70])
+        props = objs[STUKA].props
+        self.assertEqual([int(f.value) for f in props["InitialFlagSet"].items], [2, 100, 99, 70])
+        self.assertEqual(float(props["DetectionBase"].value), 195000.0)  # the scouts' sight, which only scouts have
+        self.assertEqual(int(props["CategoryVolant"].value), 5)
+        self.api.set_plane_role(STUKA, "fighter_bomber")  # the scouts' sight goes with the role
+        self.assertNotIn("DetectionBase", self.built(folder)[STUKA].props)
         self.api.set_plane_role(STUKA, None)
         self.assertEqual(ModEdits(folder).edits, {})  # its own flags back: nothing left to write
+
+    def test_an_unarmed_scout_is_as_the_games(self):
+        info = self.api.plane_role(SCOUT)
+        self.assertEqual((info["role"], info["armed"]), ("scout", False))
+        folder = self.mod()
+        self.api.set_plane_role(SCOUT, "fighter")
+        self.assertEqual([int(f.value) for f in self.built(folder)[SCOUT].props["InitialFlagSet"].items], [2, 100, 21])
+        self.api.set_plane_role(SCOUT, "scout")  # its own role again: nothing left
+        self.assertEqual(ModEdits(folder).edits, {})
+
+    def test_a_tank_made_a_recon_unit(self):
+        # T56: a Panzer IV with the recon cars' values worked as recon; the longer sight alone did not
+        self.assertEqual(self.api.ground_role(PANZER)["role"], "game")
+        greyhound = self.api.ground_role(RECON_CAR)
+        self.assertEqual((greyhound["role"], greyhound["why"]), ("recon", "no_mod"))
+        folder = self.mod()
+        self.assertEqual(self.api.ground_role(RECON_CAR)["why"], "ground_role_recon_already")
+        info = self.api.set_ground_role(PANZER, "recon")
+        self.assertEqual((info["role"], info["game"]), ("recon", "game"))
+        props = self.built(folder)[PANZER].props
+        self.assertEqual((int(props["CategorieIA"].value), int(props["Category"].value)), (3, 1))
+        self.assertEqual(float(props["DetectionBase"].value), 234000.0)
+        self.assertEqual([int(f.value) for f in props["InitialFlagSet"].items], [10])  # no 55, 21, 11
+        self.assertEqual(props["TypeUnitHintToken"], self.built(folder)[RECON_CAR].props["TypeUnitHintToken"])
+        self.api.set_ground_role(PANZER, None)
+        self.assertEqual(ModEdits(folder).edits, {})
+        with self.assertRaises(StudioError):
+            self.api.set_ground_role(STUKA, "recon")
 
     def test_a_copy_of_a_plane_made_a_bomber(self):
         folder = self.mod()
@@ -328,15 +381,19 @@ class OnThePage(unittest.TestCase):
         ui = ROOT / "src" / "ruse_studio" / "ui"
         app, fake = (ui / "app.js").read_text(encoding="utf-8"), (ui / "fake-api.js").read_text(encoding="utf-8")
         for needle in ("function roleGroup", "api().plane_role(", "api().set_plane_role(", "function weaponHits",
-                       "api().set_weapon_hits("):
+                       "api().set_weapon_hits(", "function groundRoleGroup", "api().ground_role(",
+                       "api().set_ground_role("):
             self.assertIn(needle, app)
-        for needle in ("plane_role: async", "set_plane_role: async", "set_weapon_hits: async"):
+        for needle in ("plane_role: async", "set_plane_role: async", "set_weapon_hits: async", "ground_role: async",
+                       "set_ground_role: async"):
             self.assertIn(needle, fake)
         words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         langs = set(words["language"])
         keys = ("role_title", "role_help", "role_fighter", "role_fighter_bomber", "role_bomber", "role_scout",
                 "role_paratroop", "role_paratroop_why", "role_not_tried", "role_bombs_moved", "tip_role_pick",
-                "tip_role_undo", "hits", "hits_ground", "hits_planes", "hits_both", "tip_hits", "hits_not_tried")
+                "tip_role_undo", "hits", "hits_ground", "hits_planes", "hits_both", "tip_hits", "hits_not_tried",
+                "role_scout_armed", "ground_role_help", "ground_role_game", "ground_role_recon", "tip_ground_role",
+                "ground_role_recon_already")
         for k in keys:
             with self.subTest(word=k):
                 self.assertEqual(set(words[k]), langs)

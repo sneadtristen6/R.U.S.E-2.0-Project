@@ -4,12 +4,16 @@ make much sense, it should still be a thing": any weapon on any unit, a tank sho
 
 What the game ties together (seen in the game in tests T50-T52, 2026-10-14):
 
-- A plane's role is its CategoryVolant: 1 fighter, 2 fighter-bomber, 3 bomber, 4 paratroop plane, 5 scout. Each role
-  flies its own way. A bomber flies a level bomb run and only a bomb bay (TTurretBombardierDescriptor) drops on it; a
-  fighter-bomber dives and fires its ordinary forward mounts. So a plane made a bomber gets its bombs moved into a copy
-  of a bomber's bomb bay (T50: role alone, or bay alone, dropped nothing; both together worked). A fighter drops bombs
-  as it is (T51). The role also has a flag (100, 101, 13, 99), the computer player's category (CategorieIA) and the
-  build menu's words for it (TypeUnitHintToken and the two hints): they change with it.
+- A plane's role is its CategoryVolant (1 fighter, 2 fighter-bomber, 3 bomber, 4 paratroop plane, 5 scout) AND its
+  role flag, which picks how it behaves: 100 fighter, else 99 scout, else 101 fighter-bomber, else 13 bomber. A bomber
+  flies a level bomb run and only a bomb bay (TTurretBombardierDescriptor) drops on it; a fighter-bomber dives and
+  fires its ordinary forward mounts. So a plane made a bomber gets its bombs moved into a copy of a bomber's bomb bay
+  (T50: the role alone, or the bay alone, dropped nothing; both together worked). A fighter drops bombs as it is (T51).
+  The role also has the computer player's category (CategorieIA), the build menu's words for it and, for a scout, the
+  scouts' sight (DetectionBase): they change with it. The scout's behaviour has no attack: a plane with 99 that is
+  sent to attack crashes the game (T53-T56), so an armed scout also gets 100 (the fighter's behaviour).
+- A ground unit made a recon unit takes the recon cars' values (T56, the Scout Tank: worked as recon; the sight alone
+  did not): CategorieIA 3, Category 1, their sight, none of the tank, fighting-unit and no-woods flags, their words.
 - What a weapon can hit comes from its ammunition: the game's anti-plane ammo (AA guns, fighters' guns) is Arme 1 with
   ProjectileType 3, TirIndirect and no physics; a Panzer IV's AP shell copied with those shot planes down and did
   nothing to ground units (T51, T52). The game's AA guns carry two weapons, one for planes and one for the ground, and
@@ -34,7 +38,16 @@ HINTS = ("TypeUnitHintToken", "DescriptionUnitHintToken", "EfficaceHintToken")
 # crashed the game when sent at the enemy (T53)
 ROLES = {"fighter": (1, (100, 21), 1), "fighter_bomber": (2, (101, 21), 1), "bomber": (3, (13, 21), 4),
          "scout": (5, (99, 70), 3)}
+# The flags pick how a plane behaves: 100 fighter, else 99 scout, else 101 fighter-bomber, else 13 bomber, else 59
+# paratroop. A scout doesn't attack: a plane with 99 that is ordered to attack crashes the game (T53-T56). So an ARMED
+# scout also gets 100: it behaves as a fighter (attacks work), 99 kept for the recon panel (not tried in the game yet)
+ARMED_SCOUT_FLAG = 100
+DETECTION = "DetectionBase"  # how far a unit sees: scouts 195,000 (only they have it), recon cars 234,000, tanks 104,000
 PARATROOP = 4  # a paratroop plane's role: it carries paratroopers, which no other plane has, so it's not offered
+GROUND = "TUniteAuSolDescriptor"
+CATEGORY = "Category"
+RECON_AI, RECON_CATEGORY = 3, 1  # the recon cars' CategorieIA and Category (tanks: 1 and 2)
+RECON_DROP = (55, 21, 11)  # flags no recon car has: tank, a fighting unit, can't enter woods
 ROLE_FLAGS = {flag for _c, flags, _ai in ROLES.values() for flag in flags}
 ROLE_OF = {c: role for role, (c, _f, _ai) in ROLES.items()}
 SEEN = {"bomber"}  # roles seen working in the game on a plane made into them (T50, 2026-10-14)
@@ -87,6 +100,7 @@ class RoleCalls:
                 raise StudioError(f"{address} isn't a plane")
             game = self._number(o, ROLE)
             bombs = self._bomb_turret(ix, edits, address, real) is not None or self._bay_of(ix, real) is not None
+            armed = any(self._mount_parts(ix, t[1]) for t in self._turrets(ix, real))
         finally:
             ix.close()
         keyed = address if new else o["address"]
@@ -97,7 +111,7 @@ class RoleCalls:
         if game == PARATROOP:
             why = "role_paratroop"
         return {"role": name(now), "game": name(game), "roles": [{"id": r, "seen": r in SEEN} for r in ROLES],
-                "editable": why == "" and self._editable(o)[0], "why": why, "bombs": bombs}
+                "editable": why == "" and self._editable(o)[0], "why": why, "bombs": bombs, "armed": armed}
 
     def set_plane_role(self, address: str, role: str | None, lang: str = "base") -> dict:
         """Make a plane a fighter, a fighter-bomber, a bomber or a scout (None: the game's role again), in the current
@@ -126,7 +140,8 @@ class RoleCalls:
             game_flags = [int(n) for p, n, _t in o["values"] if p.startswith(FLAGS + "[")]
             mine = edits.get(keyed, FLAGS)
             flags = [int(x) for x in mine] if isinstance(mine, list) else game_flags
-            hints = self._role_hints(ix)
+            armed = any(self._mount_parts(ix, t[1]) for t in self._turrets(ix, real))
+            values = self._role_values(ix).get((want, armed), {})
             bay = self._bay_of(ix, real)
             plan = None
             if want != game:
@@ -157,7 +172,7 @@ class RoleCalls:
                 for k in [k for k in edits.edits if k[0] == mount]:
                     del edits.edits[k]
             if want == game:
-                for prop in (ROLE, AI_ROLE, *HINTS):
+                for prop in (ROLE, AI_ROLE, *HINTS, DETECTION):
                     edits.edits.pop(edits.key(keyed, prop), None)
                 back = [f for f in flags if f not in ROLE_FLAGS or f in game_flags]
                 back += [f for f in game_flags if f in ROLE_FLAGS and f not in back]
@@ -167,10 +182,14 @@ class RoleCalls:
                     edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, back)
             else:
                 c, role_flags, ai = ROLES[role]
+                if role == "scout" and armed:  # it behaves as a fighter, so its attacks work
+                    role_flags = (ARMED_SCOUT_FLAG, *role_flags)
                 for prop, value in ((ROLE, c), (AI_ROLE, ai)):
                     edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, value)
-                for prop, token in hints.get(c, {}).items():
-                    edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, Literal(f"key({token})"))
+                edits.edits.pop(edits.key(keyed, DETECTION), None)  # an earlier role's sight goes
+                for prop, value in values.items():
+                    value = Literal(f"key({value})") if prop in HINTS else value
+                    edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, value)
                 put = [f for f in flags if f not in ROLE_FLAGS] + list(role_flags)
                 edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, put)
                 if plan is not None:
@@ -189,6 +208,76 @@ class RoleCalls:
                                                                         Link(mount))
             edits.save()
         return {"saved": str(edits.file), **self.plane_role(address, lang)}
+
+    # --- a ground unit's role: recon (T56: a Panzer IV made like the recon cars worked as recon) ---
+    def ground_role(self, address: str, lang: str = "base") -> dict:
+        """A ground unit's Role box: {"role": "recon" or "game" (as the game has it), "game": the same for the game's
+        unit, "editable", "why"}."""
+        from .api import StudioError
+        edits = self._edits_or_none()
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            o = ix.show(real)
+        finally:
+            ix.close()
+        if o["class"] != GROUND:
+            raise StudioError(f"{address} isn't a ground vehicle")
+        keyed = address if new else o["address"]
+        game = "recon" if self._number(o, AI_ROLE) == RECON_AI else "game"
+        mine = edits.get(keyed, AI_ROLE) if edits else None
+        now = "recon" if (mine == RECON_AI if mine is not None else game == "recon") else "game"
+        why = "no_mod" if edits is None else ("ground_role_recon_already" if game == "recon" else "")
+        return {"role": now, "game": game, "editable": why == "" and self._editable(o)[0], "why": why}
+
+    def set_ground_role(self, address: str, role: str | None, lang: str = "base") -> dict:
+        """Make a ground vehicle a recon unit ("recon"), or as the game has it again (None or "game"), in the current
+        mod: the recon cars' category for the computer player (3) and for the game (Category 1), their sight (the
+        DetectionBase most of them have), their build menu words, and none of the tank, fighting-unit and no-woods flags
+        (55, 21, 11): what the Scout Tank had (T56)."""
+        from .api import StudioError
+        from .edits import Literal, ModEdits
+        if role not in (None, "game", "recon"):
+            raise StudioError("Pick recon, or as the game has it.")
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            o = ix.show(real)
+            if o["class"] != GROUND:
+                raise StudioError(f"{address} isn't a ground vehicle")
+            recon = self._typical(ix, GROUND, lambda u: "recon" if self._number(u, AI_ROLE) == RECON_AI else None,
+                                  (*HINTS[:2], DETECTION, CATEGORY)).get("recon", {})
+        finally:
+            ix.close()
+        keyed = address if new else o["address"]
+        game_flags = [int(n) for p, n, _t in o["values"] if p.startswith(FLAGS + "[")]
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            mine = edits.get(keyed, FLAGS)
+            flags = [int(x) for x in mine] if isinstance(mine, list) else game_flags
+            props = (AI_ROLE, CATEGORY, DETECTION, *HINTS[:2])
+            if role != "recon":
+                for prop in props:
+                    edits.edits.pop(edits.key(keyed, prop), None)
+                back = flags + [f for f in game_flags if f in RECON_DROP and f not in flags]
+                if sorted(back) == sorted(game_flags):
+                    edits.edits.pop(edits.key(keyed, FLAGS), None)
+                else:
+                    edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, back)
+            else:
+                values = {AI_ROLE: RECON_AI, CATEGORY: RECON_CATEGORY,
+                          **{p: v for p, (v, _n, _all) in recon.items() if p != CATEGORY}}
+                for prop, value in values.items():
+                    value = Literal(f"key({value})") if prop in HINTS else value
+                    edits.edits[edits.key(keyed, prop)] = self._edit(keyed, prop, value)
+                put = [f for f in flags if f not in RECON_DROP]
+                if put != game_flags:
+                    edits.edits[edits.key(keyed, FLAGS)] = self._edit(keyed, FLAGS, put)
+            edits.save()
+        return {"saved": str(edits.file), **self.ground_role(address, lang)}
 
     # --- what a weapon can hit ---
     def set_weapon_hits(self, unit: str, weapon: str, hits: str) -> dict:
@@ -444,18 +533,41 @@ class RoleCalls:
             raise StudioError("This game build has no fighter-bomber with bombs to copy a mount from.")
         return next((f for f in found if "Descriptor_Avion_Junkers_87:" in f), found[0])
 
-    def _role_hints(self, ix) -> dict:
-        """CategoryVolant -> {each of the build menu's words for the role (TypeUnitHintToken,
-        DescriptionUnitHintToken, EfficaceHintToken): the one most of the game's planes of that role have}."""
+    @staticmethod
+    def _typical(ix, cls: str, group, props) -> dict:
+        """{group: {prop: (the value most of the game's objects of class `cls` in that group have, how many have the
+        prop, how many are in the group)}}; `group(o)` is an object's group (None: left out)."""
         seen: dict[tuple, Counter] = {}
-        for o in ix.of_class(PLANE):
-            role = self._number(o, ROLE)
-            for p, _n, t in o["values"]:
-                if p in HINTS and t:
-                    seen.setdefault((role, p), Counter())[t] += 1
-        out: dict[int, dict] = {}
-        for (role, prop), counts in seen.items():
-            out.setdefault(role, {})[prop] = counts.most_common(1)[0][0]
+        total: Counter = Counter()
+        for o in ix.of_class(cls):
+            g = group(o)
+            if g is None:
+                continue
+            total[g] += 1
+            for p, n, t in o["values"]:
+                if p in props and (t or n is not None):
+                    seen.setdefault((g, p), Counter())[t if t else n] += 1
+        out: dict = {}
+        for (g, p), counts in seen.items():
+            out.setdefault(g, {})[p] = (counts.most_common(1)[0][0], sum(counts.values()), total[g])
+        return out
+
+    def _role_values(self, ix) -> dict:
+        """(CategoryVolant, armed) -> {prop: value} a plane made that role takes from the game's planes of it: the
+        build menu's words most of them have (the armed scouts' own, the Avro Anson's "armed recon", for an armed
+        scout), and the scouts' sight (DetectionBase 195,000, which only scouts have) when all of them have it."""
+        armed = lambda o: any(p == "WeaponDescriptor" and k == "object" for p, k, _w in ix.uses(o["address"]))  # noqa
+        by_armed = self._typical(ix, PLANE, lambda o: (self._number(o, ROLE), armed(o)), HINTS)
+        by_role = self._typical(ix, PLANE, lambda o: self._number(o, ROLE), (*HINTS, DETECTION))
+        out: dict = {}
+        for c in {c for c, _f, _ai in ROLES.values()}:
+            for is_armed in (False, True):
+                words = by_armed.get((c, is_armed)) or by_role.get(c, {})
+                values = {p: v for p, (v, _n, _all) in words.items() if p in HINTS}
+                det = by_role.get(c, {}).get(DETECTION)
+                if det and det[1] == det[2]:
+                    values[DETECTION] = det[0]
+                out[(c, is_armed)] = values
         return out
 
 

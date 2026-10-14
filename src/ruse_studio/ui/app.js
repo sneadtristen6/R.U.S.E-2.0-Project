@@ -1019,8 +1019,10 @@ function roleGroup(u) {
   const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
   const name = (id) => w["role_" + id] || id;
   const show = (info) => {
+    // an armed plane made a scout keeps its attacks (the fighter's behaviour: a scout's crashes the game on attack)
+    const label = (id) => id === "scout" && info.armed ? w.role_scout_armed : name(id);
     const options = info.roles.map((r) => el("option", { value: r.id, selected: r.id === info.role,
-      textContent: r.seen || r.id === info.game ? name(r.id) : fill(w.role_not_tried, { role: name(r.id) }) }));
+      textContent: r.seen || r.id === info.game ? label(r.id) : fill(w.role_not_tried, { role: label(r.id) }) }));
     if (!info.roles.some((r) => r.id === info.role)) {
       options.unshift(el("option", { value: "", disabled: true, selected: true, textContent: name(info.role) }));
     }
@@ -1048,6 +1050,44 @@ function roleGroup(u) {
   api().plane_role(u.address, state.lang).then(show).catch(problem);
   return el("div", { className: "group" }, el("h2", { textContent: w.role_title }),
     el("p", { className: "muted small", textContent: w.role_help }), why, el("table", {}, head), moved);
+}
+
+// A ground vehicle's role (StudioApi.ground_role / set_ground_role): as the game has it, or recon, with everything the
+// game's recon cars have (T56: a Panzer IV made that way worked as recon; the longer sight alone did not)
+function groundRoleGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_ground_role });
+  pick.setAttribute("aria-label", w.role_title);
+  const was = el("div", { className: "was" });
+  const why = el("p", { className: "notice hidden" });
+  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const name = (id) => id === "recon" ? w.ground_role_recon : w.ground_role_game;
+  const show = (info) => {
+    pick.replaceChildren(...["game", "recon"].map((id) => el("option", { value: id, selected: id === info.role,
+      textContent: id === "recon" && info.game !== "recon" ? fill(w.role_not_tried, { role: name(id) }) : name(id) })));
+    pick.disabled = !can || !info.editable;
+    why.textContent = info.why && info.why !== "no_mod" ? (w[info.why] || "") : "";
+    why.classList.toggle("hidden", !why.textContent);
+    const edited = info.role !== info.game;
+    head.classList.toggle("edited", edited);
+    if (!edited) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_role_undo });
+    undo.addEventListener("click", () => choose(null));
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", name(info.game)) }), undo);
+  };
+  const choose = async (role) => {
+    try {
+      const res = await api().set_ground_role(u.address, role, state.lang);
+      await refreshMarks();
+      await showUnit(state.page.address, state.page.via);  // its values and flags changed: the whole page again
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value === "recon" ? "recon" : null));
+  api().ground_role(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.role_title }),
+    el("p", { className: "muted small", textContent: w.ground_role_help }), why, el("table", {}, head));
 }
 
 // A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first),
@@ -2184,6 +2224,7 @@ async function showUnit(address, via) {
   }
   if (u.has_armour) parts.push(armourGroup(u));
   if (u.class === "TAvionDescriptor" && (u.named || u.new) && u.editable) parts.push(roleGroup(u));
+  if (u.class === "TUniteAuSolDescriptor" && (u.named || u.new) && u.editable) parts.push(groundRoleGroup(u));
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
   if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)

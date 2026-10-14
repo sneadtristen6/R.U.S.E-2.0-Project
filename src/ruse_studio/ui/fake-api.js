@@ -435,6 +435,7 @@
   // a panel's size handle (words.toml tip_panel_size)
   Object.assign(words.us, { armour_title: "Armour", armour_help: "How hard this unit is to hurt, as one of the game's own levels. The fights use it, and its card and build menu show its picture: tanks have levels 1 to 5, the number on the shield.", armour_level: "Level", tip_armour_pick: "Pick one of the game's armour levels: the unit fights with it, and its card and build menu show it.", tip_armour_undo: "Give it the game's armour level again.", armour_tank: "Armour {n}", armour_light: "Light vehicles (transports)", armour_infantry: "Infantry", armour_aircraft: "Aircraft", armour_para: "Paratroopers coming down", armour_trucks: "Construction trucks", armour_building: "Buildings and fortifications", armour_old_way: "This unit's armour was changed inside its armour part: it fights with the new value, but its card and build menu still show the old one. Pick its level here to fix that.", armour_on_unit: "Armour is changed on the unit's own page, under Armour: each level of the game has its own picture on the card, so a number changed here would fight differently from what the card shows.", model_propellers: "Its propellers spin as the game's do ({n} discs).", model_propellers_none: "{n} propeller discs left out: the unit it copies has no propellers to spin them.", model_propellers_far: "{n} propeller discs left out: they aren't where the copied plane's propellers are." });
   Object.assign(words.us, { role_title: "Role", role_help: "What kind of plane it is: how it flies and attacks. A bomber drops its bombs on a straight run from a bomb bay; a fighter-bomber dives at its target. Changing it also changes its build menu words and how the computer players use it.", role_fighter: "Fighter", role_fighter_bomber: "Fighter-bomber", role_bomber: "Bomber", role_scout: "Scout", role_paratroop: "Paratroop plane", role_paratroop_why: "A paratroop plane carries paratroopers, which no other plane has: its role stays.", role_not_tried: "{role} (not tried in the game yet)", role_bombs_moved: "As a bomber, its bombs drop from a bomb bay (copied from a game bomber's), the only way a bomber's run drops them.", tip_role_pick: "Pick what kind of plane it is. A plane needs a weapon firing bombs to be a bomber.", tip_role_undo: "Give it back the game's role, its bombs back where they were.", hits: "Hits", hits_ground: "The ground", hits_planes: "Planes", hits_both: "The ground and planes", tip_hits: "What this weapon can hit. Planes: its ammo gets a copy that hits planes and does nothing to the ground. Both: it keeps its ammo and gets a second weapon beside it for the other, the way the game's AA guns do.", hits_not_tried: "Tank rounds and AA guns shooting planes were seen in the game (2026-10-14); a plane's guns made to hit the ground, not yet." });
+  Object.assign(words.us, { role_scout_armed: "Scout, keeping its attacks", ground_role_help: "Recon: the game's recon cars' sight (much further than a tank's), how the computer players use them, their build menu words, and it can go into woods. It stays as tough and armed as it is.", ground_role_game: "As the game has it", ground_role_recon: "Recon", tip_ground_role: "Make this vehicle a recon unit, or keep it as the game has it.", ground_role_recon_already: "This is one of the game's own recon units." });
   Object.assign(words.us, { tip_panel_size:"Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size." });
   Object.assign(words.fr, { tip_panel_size: "Taille {n} % : glissez vers le bas pour réduire ce panneau, vers le haut pour l'agrandir (la molette marche aussi). Double-clic : taille normale." });
   // the map screen's two sides (words.toml mode_*, tip_mode_*, tip_scen_locked, locked_*)
@@ -1156,7 +1157,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   function roleOf(address) {
     const game = "fighter_bomber";
     return { role: roleEdits.get(address) || game, game, editable: Boolean(current), why: current ? "" : "no_mod",
-      bombs: true, roles: ["fighter", "fighter_bomber", "bomber", "scout"].map((id) => ({ id, seen: id === "bomber" })) };
+      bombs: true, armed: true,
+      roles: ["fighter", "fighter_bomber", "bomber", "scout"].map((id) => ({ id, seen: id === "bomber" })) };
+  }
+  const groundRoleEdits = new Map();
+  function groundRoleOf(address) {
+    return { role: groundRoleEdits.get(address) || "game", game: "game", editable: Boolean(current),
+      why: current ? "" : "no_mod" };
   }
 
   // an ammo's range (PorteeMaximale) with the mod's change (`game`: the game's; a copy: its source's), as api._range
@@ -2136,6 +2143,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
         if (role === null || role === roleOf(address).game) roleEdits.delete(address); else roleEdits.set(address, role);
         return { saved: current + "/src/studio.rndf", ...roleOf(address) };
+      },
+      ground_role: async (address) => groundRoleOf(address),
+      set_ground_role: async (address, role) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (role === "recon") groundRoleEdits.set(address, role); else groundRoleEdits.delete(address);
+        return { saved: current + "/src/studio.rndf", ...groundRoleOf(address) };
       },
       set_weapon_hits: async (unitAddress, weapon, hits) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
