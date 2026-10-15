@@ -24,6 +24,28 @@ class Guide(unittest.TestCase):
                 self.assertIn(e["danger"], ("", "crash", "breaks"))
                 self.assertEqual(bool(e["danger"]), bool(e["danger_why"]))
 
+    def test_every_language_explains_every_flag(self):
+        import tomllib
+        from pathlib import Path
+        from rusemod import schema
+        root = Path(flaginfo.__file__).parent
+        english = flaginfo.guide("us")
+        for lang in schema.LANGS:
+            if lang == "us":
+                continue
+            with self.subTest(lang=lang):
+                own = tomllib.loads((root / f"flaginfo_{lang}.toml").read_text(encoding="utf-8"))
+                self.assertEqual(sorted(int(n) for n in own), list(range(105)))
+                for n, e in english.items():
+                    mine = own[str(n)]
+                    for key in ("what", "does", "use"):
+                        self.assertTrue(mine.get(key), (lang, n, key))
+                    self.assertEqual(bool(mine.get("danger_why")), bool(e["danger_why"]), (lang, n))
+                g = flaginfo.guide(lang)
+                self.assertEqual(g[62]["danger"], "crash")         # the kind and danger stay the English file's
+                self.assertNotEqual(g[62]["what"], english[62]["what"])
+        self.assertEqual(flaginfo.guide("xx")[11]["what"], english[11]["what"])  # no file: English
+
     def test_the_known_crashes_are_marked(self):
         g = flaginfo.guide()
         self.assertEqual(sorted(n for n, e in g.items() if e["danger"] == "crash"), [59, 62, 63, 99])

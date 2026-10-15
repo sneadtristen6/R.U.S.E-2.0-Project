@@ -697,7 +697,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         none = {"count": 0, "examples": []}
-        info = flaginfo.guide()
+        info = flaginfo.guide(lang)
         blank = {"group": "unused", "sure": "unused", "what": "", "does": "", "use": "", "danger": "",
                  "danger_why": ""}
         # the flag guide (rusemod.flaginfo): what it is, what it does, how to use it, how sure we are, its danger
@@ -707,7 +707,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                           for n in sorted(set(rows) | set(schema.flag_numbers()))],
                 "groups": list(flaginfo.GROUPS)}
 
-    def flag_check(self, address: str, flags: list | None = None) -> dict:
+    def flag_check(self, address: str, flags: list | None = None, lang: str = schema.BASE) -> dict:
         """What's wrong with a unit's flags, as the Studio and the build see it (rusemod.flaginfo.judge): `flags` the
         set to check (None: the unit's flags now, with the current mod's change). {"problems": [{level, flag, why}],
         "blocked": whether the build will refuse it (a known crash)}. The unit's kind, its weapons, the unit it drops
@@ -734,6 +734,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             flags = mine if isinstance(mine, list) else had
         flags = [int(n) for n in flags]
         problems = flaginfo.judge(o["class"], flags, had, armed, drops)
+        words = flaginfo.guide(lang)
+        for p in problems:  # in the Studio's language: the flag's own danger as its guide says it
+            if p.pop("own", False) and lang not in (schema.BASE, "us") and words.get(p["flag"], {}).get("danger_why"):
+                p["why"] = words[p["flag"]]["danger_why"]
         now = {(p["level"], p["flag"]) for p in problems}
         adding = {}  # what adding each flag it hasn't got would do: "error" (a crash) or "warning", for the Add list
         for n in sorted(set(flaginfo.guide()) - set(flags)):

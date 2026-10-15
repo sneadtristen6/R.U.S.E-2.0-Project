@@ -20,12 +20,22 @@ BUILDING_CLASS = "TBatimentDescriptor"
 INFANTRY_CLASSES = ("TInfanterieDescriptor",)
 
 
-@lru_cache(maxsize=1)
-def guide() -> dict[int, dict]:
-    """{flag: {group, sure, what, does, use, danger, danger_why}} for 0-104 (danger "" when none)."""
+TEXTS = ("what", "does", "use", "danger_why")  # the words of a flag: flaginfo_<lang>.toml has them in that language
+
+
+@lru_cache(maxsize=16)
+def guide(lang: str = "us") -> dict[int, dict]:
+    """{flag: {group, sure, what, does, use, danger, danger_why}} for 0-104 (danger "" when none), its words in `lang`
+    (flaginfo_<lang>.toml; English, flaginfo.toml, for a language or a text that has none)."""
     raw = tomllib.loads(Path(__file__).with_name("flaginfo.toml").read_text(encoding="utf-8"))
-    return {int(n): {"group": e["group"], "sure": e["sure"], "what": e["what"], "does": e["does"], "use": e["use"],
-                     "danger": e.get("danger", ""), "danger_why": e.get("danger_why", "")} for n, e in raw.items()}
+    own = Path(__file__).with_name(f"flaginfo_{lang}.toml")
+    words = tomllib.loads(own.read_text(encoding="utf-8")) if lang not in ("us", "base") and own.is_file() else {}
+    out = {}
+    for n, e in raw.items():
+        mine = words.get(n, {})
+        out[int(n)] = {"group": e["group"], "sure": e["sure"], "danger": e.get("danger", ""),
+                       **{k: mine.get(k) or e.get(k, "") for k in TEXTS}}
+    return out
 
 
 def judge(cls: str, flags, had=frozenset(), armed: bool = False, drops: bool = True) -> list[dict]:
@@ -38,8 +48,8 @@ def judge(cls: str, flags, had=frozenset(), armed: bool = False, drops: bool = T
     building, infantry = cls == BUILDING_CLASS, cls in INFANTRY_CLASSES
     out = []
 
-    def say(level, n, why):
-        out.append({"level": level, "flag": n, "why": why})
+    def say(level, n, why, own=True):  # own: the flag's own danger (its danger_why says it, in every language)
+        out.append({"level": level, "flag": n, "why": why, "own": own})
     if not truck:
         for n, what in TRUCK_ONLY.items():
             if n in flags and n not in had:
@@ -59,7 +69,7 @@ def judge(cls: str, flags, had=frozenset(), armed: bool = False, drops: bool = T
                           "airfield's control tower, which is expected to stop the game with a script error.")
     if plane and 2 not in flags:
         say("warning", 2, "A plane without flag 2 (aircraft) isn't moved or ordered like one. Every plane of the game "
-                          "has it.")
+                          "has it.", own=False)
     if not building:
         if 4 in flags:
             say("warning", 4, "Flag 4 (building) on a unit is expected to freeze it: buildings don't move or think.")
@@ -79,7 +89,7 @@ def judge(cls: str, flags, had=frozenset(), armed: bool = False, drops: bool = T
         say("warning", 22, "Without flag 22 the player can't give the unit orders.")
     if truck and 62 not in flags:
         say("warning", 62, "A truck without flag 62 isn't handled as a truck, so it may carry no supplies. Every truck "
-                           "of the game has it.")
+                           "of the game has it.", own=False)
     for n in sorted(f for f in flags if not 0 <= f <= 104):
-        say("warning", n, f"Flag {n} is outside 0 to 104: the game ignores it.")
+        say("warning", n, f"Flag {n} is outside 0 to 104: the game ignores it.", own=False)
     return out

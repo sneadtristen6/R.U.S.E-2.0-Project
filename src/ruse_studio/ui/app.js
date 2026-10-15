@@ -876,7 +876,7 @@ function flagRow(u, r, mode, th) {
     if (mode === "own") r.edited_own = value; else r.edited = value;
   };
   const check = async () => {
-    try { checked = await api().flag_check(u.address, current); } catch (err) { checked = { problems: [], blocked: false, adding: {} }; }
+    try { checked = await api().flag_check(u.address, current, state.lang); } catch (err) { checked = { problems: [], blocked: false, adding: {} }; }
     render();
   };
   const save = async (next) => {

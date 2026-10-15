@@ -736,7 +736,7 @@ what = "Recon plane"
 does = "The plane behaves as a scout (unless it also has 100): a click on the map sends it to look, it doesn't count in its team's army and the recon panel shows it. A scout never attacks."
 use = "Use the Studio's Role box: Scout on an armed plane also sets 100 so its attacks keep working."
 danger = "crash"
-danger_why = "A plane that has weapons and 99 without 100 crashes the game when it's sent to attack (T53-T56). The Studio won't build a plane you gave 99 that way: add 100 too, or take 99 off."
+danger_why = "A plane that has weapons and 99 without 100 crashes the game when it's sent to attack. The Studio won't build a plane you gave 99 that way: add 100 too, or take 99 off."
 
 [100]
 group = "kind"
