@@ -81,6 +81,31 @@ size and behind research: see [[Units from other eras|Units-From-Other-Eras]].
 A weapon can fire another unit's ammunition; its muzzle flash and sound come with it. Ammunition is sorted by type
 (AP, HE, anti-aircraft, machine guns, bombs, rockets...).
 
+## Change a plane's role (Studio 0.9.8.5)
+
+A plane's page has a **Role** box: **Fighter**, **Fighter-bomber**, **Bomber** or **Scout**. How it flies and attacks,
+how the computer players use it and its build menu words change with it.
+
+- **Bomber:** a bomber drops its bombs on a straight run, and only from a bomb bay. Pick bombs for one of its weapons
+  first (Weapons, below), then make it a Bomber: its bombs go in a bomb bay copied from a game bomber's, and you can
+  change them there. This is the fix for a fighter-bomber given carpet bombs that dropped nothing. Seen in the game.
+- **Scout:** a plane with guns stays able to attack (the box says **Scout, keeping its attacks**) and gets the scouts'
+  sight. Seen in the game with a Stuka and an ME109.
+- A paratroop plane keeps its role. **Undo** beside the box gives the game's role back, its bombs where they were.
+
+## Make a vehicle recon (Studio 0.9.8.5)
+
+A ground vehicle's **Role** box: **Recon** gives it the recon cars' sight (much further than a tank's), how the
+computer players use them, their build menu words, and it can go into woods. It stays as tough and armed as it is.
+Seen in the game with a Panzer IV.
+
+## What a weapon hits (Studio 0.9.8.5)
+
+Under each weapon, **Hits** picks **The ground**, **Planes**, or **The ground and planes**. Planes: the weapon fires a
+copy of its ammo that hits planes (and does nothing to the ground). Both: it keeps its ammo and gets a second weapon
+beside it for planes, the way the game's AA guns carry one for each. A tank firing at planes is seen in the game; a
+plane's gun set to hit the ground alone does no damage yet.
+
 ## Test it
 
 **Test in game** builds the mod and starts R.U.S.E. Look for the unit where it's built (its factory) in a battle (main menu: **BATTLES**, then a map).

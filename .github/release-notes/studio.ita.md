@@ -1,6 +1,16 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.5:** aerei in qualsiasi ruolo, armi che colpiscono gli aerei e una libreria per il pennello Texture di Map Paint.
+
+- **Il ruolo di un aereo** (segnalato da un giocatore: un cacciabombardiere a cui venivano date le bombe a tappeto di un bombardiere volava fino al bersaglio e non sganciava nulla): una nuova casella Ruolo nella pagina di un aereo lo rende Caccia, Cacciabombardiere, Bombardiere o Ricognitore. Il suo comportamento, il modo in cui lo usano i giocatori del computer e le sue parole nel menu di costruzione cambiano con esso. Le bombe di un bombardiere vanno in una stiva (copiata da quella di un bombardiere del gioco), l'unico modo in cui il passaggio di un bombardiere le sgancia. Visto in gioco: un cacciabombardiere reso bombardiere sgancia le sue bombe; un ricognitore che tiene le sue armi (uno Stuka, un ME109) attacca ancora e ha la vista dei ricognitori.
+- **Veicoli da ricognizione:** la casella Ruolo di un veicolo terrestre lo rende da Ricognizione: la vista delle autoblindo da ricognizione (molto più lontano di quella di un carro), il modo in cui le usano i giocatori del computer, le loro parole nel menu di costruzione, e può entrare nei boschi (visto in gioco con un Panzer IV).
+- **Cosa colpisce un'arma:** il Colpisce di ogni arma sceglie il terreno, gli aerei o entrambi (una seconda arma accanto, come i cannoni contraerei del gioco ne portano una per ciascuno). Visto in gioco: proiettili di carro sparati contro aerei. Noto: un'arma d'aereo impostata per colpire solo il terreno non fa ancora danni.
+- **Il pennello Texture di Map Paint ha una libreria:** le texture del terreno del gioco (erba, campi, sabbia, neve, roccia, strade..., per teatro, con una ricerca), un quadrato del terreno di qualsiasi mappa, immagini tue e immagini gratuite online (Poly Haven e ambientCG, CC0; foto aeree degli Stati Uniti, pubblico dominio), un'immagine scaricata per clic e tenuta nella tua mod con il suo credito. Un cursore Dimensione, le texture usate di recente e **Dettaglio del gioco da vicino**, che posa le decal del gioco di una texture del gioco sul terreno che dipingi. Non ancora visto in gioco; i download online non ancora provati.
+- **Gli oggetti messi in campo aperto**, lontano da città, fattorie e boschi della mappa, sono ora alla portata della visualizzazione del gioco, e i grandi gruppi di nuovi oggetti sono disposti come quelli del gioco (non ancora visto in gioco).
+- **Ridipingere più in fretta:** il terreno dipinto viene tenuto da una build all'altra, qualunque copia o mod l'abbia dipinto: una mappa ridipinta allo stesso modo lo riprende in pochi secondi, non in minuti.
+- **Ancora con bug, usale a tua discrezione:** le texture di Map Paint e tutte e due le mappe vuote (Terreno vuoto e Oceano vuoto).
+
 **0.9.8.4:** missioni tue, mappe vuote da costruire e molto altro da personalizzare.
 
 - **Ancora con bug, usale a tua discrezione:** le texture di Map Paint e tutte e due le mappe vuote (Terreno vuoto e Oceano vuoto).

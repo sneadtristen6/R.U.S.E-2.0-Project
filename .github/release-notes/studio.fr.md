@@ -1,6 +1,16 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.5:** des avions dans n'importe quel rôle, des armes qui touchent les avions, et une bibliothèque pour le pinceau Texture de Map Paint.
+
+- **Le rôle d'un avion** (signalé par un joueur : un chasseur-bombardier à qui l'on donnait les bombes en tapis d'un bombardier volait jusqu'à sa cible et ne larguait rien) : une nouvelle case Rôle sur la page d'un avion en fait un Chasseur, un Chasseur-bombardier, un Bombardier ou un Éclaireur. Son comportement, la façon dont les joueurs de l'ordinateur l'utilisent et ses mots dans le menu de construction changent avec. Les bombes d'un bombardier vont dans une soute (copiée sur celle d'un bombardier du jeu), la seule façon dont le passage d'un bombardier les largue. Vu en jeu : un chasseur-bombardier devenu bombardier largue ses bombes ; un éclaireur qui garde ses armes (un Stuka, un ME109) attaque toujours et a la vue des éclaireurs.
+- **Véhicules de reconnaissance :** la case Rôle d'un véhicule terrestre en fait un véhicule de Reconnaissance : la vue des voitures de reconnaissance (bien plus loin que celle d'un char), la façon dont les joueurs de l'ordinateur les utilisent, leurs mots dans le menu de construction, et il peut entrer dans les bois (vu en jeu avec un Panzer IV).
+- **Ce qu'une arme touche :** le Touche de chaque arme choisit le sol, les avions, ou les deux (une seconde arme à côté, comme les canons antiaériens du jeu en portent une pour chacun). Vu en jeu : des obus de char tirés sur des avions. Connu : une arme d'avion réglée pour toucher le sol seul ne fait encore aucun dégât.
+- **Le pinceau Texture de Map Paint a une bibliothèque :** les textures de sol du jeu (herbe, champs, sable, neige, roche, routes..., par théâtre, avec une recherche), un carré du sol de n'importe quelle carte, vos propres images, et des images gratuites en ligne (Poly Haven et ambientCG, CC0 ; photos aériennes des États-Unis, domaine public), une image téléchargée par clic et gardée dans votre mod avec son crédit. Un curseur Taille, les textures utilisées récemment, et **Détail du jeu de près**, qui pose les décalques du jeu d'une texture du jeu sur le sol que vous peignez. Pas encore vu en jeu ; les téléchargements en ligne pas encore essayés.
+- **Les objets placés en terrain dégagé**, loin des villes, des fermes et des bois de la carte, sont maintenant à la portée de l'affichage du jeu, et les grands groupes de nouveaux objets sont rangés comme ceux du jeu (pas encore vu en jeu).
+- **Repeindre plus vite :** le sol peint est gardé d'une construction à l'autre, quelle que soit la copie ou le mod qui l'a peint : une carte repeinte de la même façon le reprend en quelques secondes, pas en minutes.
+- **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et Océan vierge).
+
 **0.9.8.4:** vos propres missions, des cartes vierges à construire, et bien plus à personnaliser.
 
 - **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et Océan vierge).

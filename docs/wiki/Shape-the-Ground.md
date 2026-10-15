@@ -32,6 +32,22 @@ Click the **Water** tab (in **Ground & water**):
   valley for a river, or into a dip for a lake.
 - **Drain** puts the water back to the map's base level: rivers and lakes there dry up.
 
+## Paint the ground with a texture (Studio 0.9.8.5)
+
+**Still buggy, use at your own discretion.** In the bar along the bottom, click **Map Paint**, then **Texture**. Pick
+where the texture comes from, click one, and drag on the ground:
+
+- **Game textures:** the ground textures of the game's own maps (grass, fields, sand, snow, rock, roads...), by
+  group, with a search. They're read from your game; nothing of them goes in your mod.
+- **From a map:** pick a map, click a spot on it: a 320 m square of its ground becomes your texture.
+- **Your pictures:** **Add a picture…** keeps a picture of your own in your mod (`files/ground`).
+- **Online (free):** Poly Haven and ambientCG textures (CC0) and US aerial photos (public domain). A click downloads
+  that one picture into your mod, with its credit. Not tried yet.
+- **This map:** copies this map's own ground from a spot you pick.
+
+**Size** lays it bigger or smaller (a quarter to 16 times). With a game texture, **Game detail up close** also lays
+the game's own decals of it over what you paint. Not yet seen in the game.
+
 ## Undo and start over
 
 **Undo** (or **Ctrl+Z**) takes back the last stroke; **Start over** takes back every stroke on this map.
