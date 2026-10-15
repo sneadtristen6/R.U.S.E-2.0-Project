@@ -839,24 +839,45 @@ function row(u, r, mode) {
 const FLAG_LISTS = new Set(["InitialFlagSet"]);
 let knownFlags = null;  // from api.flags(), once per language
 
+// The flag guide's words for one flag: what it is, what it does, how to use it, how sure we are, its danger and who
+// has it (api.flags: rusemod/flaginfo.toml), as one tooltip; `here` adds what the Studio found for this unit.
+function flagTip(k, here) {
+  const w = state.words;
+  if (!k) return "";
+  const lines = [`${k.flag} · ${k.what || k.meaning || ""}`];
+  if (k.does) lines.push(k.does);
+  if (k.use) lines.push(`${w.flag_how}: ${k.use}`);
+  if (k.sure) lines.push(`${w.flag_sure}: ${w["flag_sure_" + k.sure] || k.sure}`);
+  if (k.danger_why) lines.push(`⚠ ${k.danger_why}`);
+  if (k.count) lines.push(fill(w.flag_used_by, { n: k.count, names: k.examples.join(", ") }));
+  if (here) lines.push(`⚠ ${here}`);
+  return lines.join("\n");
+}
+
 function flagRow(u, r, mode, th) {
   const w = state.words;
   const via = state.page.via;
   const st = rowState(r, mode);
   let current = (st.mine || st.base).slice();
+  let checked = { problems: [], blocked: false, adding: {} };  // api.flag_check: what's wrong with this unit's flags
   const chips = el("div", { className: "flags" });
   const was = el("div", { className: "was" });
-  const cell = el("td", {}, chips, was);
+  // what flags are and what the Studio does with them (the owner, 2026-10-15: "it has to tell the modder what the
+  // thinking is going to be doing"), the guide to all of them, and what it found on this unit
+  const guideButton = el("button", { type: "button", className: "link", textContent: w.flag_guide, title: w.tip_flag_guide });
+  guideButton.addEventListener("click", () => openFlagGuide(current));
+  const about = el("p", { className: "muted small flags-about" }, `${w.flags_about} `, guideButton);
+  const found = el("div", { className: "flag-problems" });
+  const cell = el("td", {}, chips, found, about, was);
   const tr = el("tr", {}, th, cell);
-  const meaning = (n) => {
-    const k = knownFlags && knownFlags.find((f) => f.flag === n);
-    if (!k) return String(n);
-    const who = k.count ? fill(w.flag_used_by, { n: k.count, names: k.examples.join(", ") }) : "";
-    return [k.meaning, who].filter(Boolean).join(" · ");
-  };
+  const info = (n) => knownFlags && knownFlags.find((f) => f.flag === n);
   const setMine = (value) => {
     st.mine = value;
     if (mode === "own") r.edited_own = value; else r.edited = value;
+  };
+  const check = async () => {
+    try { checked = await api().flag_check(u.address, current); } catch (err) { checked = { problems: [], blocked: false, adding: {} }; }
+    render();
   };
   const save = async (next) => {
     try {
@@ -866,12 +887,39 @@ function flagRow(u, r, mode, th) {
       render();
       await refreshMarks();
       say(w.saved.replace("{file}", res.saved), "ok");
+      await check();
     } catch (err) { problem(err); }
+  };
+  const showProblems = () => {
+    found.replaceChildren(...checked.problems.map((p) => {
+      const box = el("div", { className: `notice ${p.level === "error" ? "error" : "warn"} flag-problem` },
+        el("strong", { textContent: p.level === "error" ? w.flag_crash_head : w.flag_warn_head }), ` ${p.why}`);
+      if (state.mod && current.includes(p.flag)) {  // the fix: take the flag off (or, for a recon plane, add 100)
+        const off = el("button", { type: "button", className: "small", textContent: fill(w.flag_take_off, { n: p.flag }) });
+        off.addEventListener("click", () => save(current.filter((m) => m !== p.flag)));
+        box.append(" ", off);
+        if (p.flag === 99 && !current.includes(100)) {
+          const add = el("button", { type: "button", className: "small ghost", textContent: fill(w.flag_add_this, { n: 100 }) });
+          add.addEventListener("click", () => save([...current, 100]));
+          box.append(" ", add);
+        }
+      } else if (state.mod && !current.includes(p.flag)) {  // a flag it needs back
+        const back = el("button", { type: "button", className: "small", textContent: fill(w.flag_put_back, { n: p.flag }) });
+        back.addEventListener("click", () => save([...current, p.flag]));
+        box.append(" ", back);
+      }
+      return box;
+    }));
+    if (checked.blocked) found.append(el("p", { className: "small flag-blocked", textContent: w.flag_blocked }));
   };
   const render = () => {
     tr.classList.toggle("edited", st.mine !== null);
+    const level = new Map(checked.problems.filter((p) => current.includes(p.flag)).map((p) => [p.flag, p]));
     chips.replaceChildren(...current.map((n) => {
-      const chip = el("span", { className: "flag", title: meaning(n) }, String(n));
+      const k = info(n), bad = level.get(n);
+      const cls = ["flag", k ? `flag-${k.group}` : "", bad ? `flag-${bad.level}` : ""].filter(Boolean).join(" ");
+      const chip = el("span", { className: cls, title: k ? flagTip(k, bad && bad.why) : String(n) },
+        String(n), el("span", { className: "flag-name", textContent: k ? (k.what || k.meaning || "") : "" }));
       if (state.mod) {
         const x = el("button", { type: "button", className: "x", textContent: "×", title: w.flag_remove });
         x.addEventListener("click", () => save(current.filter((m) => m !== n)));
@@ -879,14 +927,22 @@ function flagRow(u, r, mode, th) {
       }
       return chip;
     }));
+    showProblems();
     if (state.mod) {
+      // the Add list by what the flags are for; one that crashes on this unit, or is expected to break it, says so
       const pick = el("select", { title: w.flag_add });
       pick.append(el("option", { value: "", textContent: w.flag_add }));
+      const groups = new Map();
       for (const f of knownFlags || []) {
         if (current.includes(f.flag)) continue;
-        pick.append(el("option", { value: String(f.flag), textContent: `${f.flag}` + (f.meaning ? ` · ${f.meaning}` : "") +
-          (f.count ? ` (${fill(w.flag_count, { n: f.count })})` : "") }));  // no unit has it: it says it does nothing
+        const g = f.group || "unused";
+        if (!groups.has(g)) groups.set(g, el("optgroup", { label: w["flag_group_" + g] || g }));
+        const risk = checked.adding[f.flag];
+        const mark = risk === "error" ? ` ⚠ ${w.flag_crashes_here}` : risk === "warning" ? ` ⚠ ${w.flag_breaks_here}` : "";
+        groups.get(g).append(el("option", { value: String(f.flag), title: flagTip(f),
+          textContent: `${f.flag} · ${f.what || f.meaning || ""}${mark}` + (f.count ? ` (${fill(w.flag_count, { n: f.count })})` : "") }));
       }
+      for (const g of FLAG_GROUP_ORDER) if (groups.has(g)) pick.append(groups.get(g));
       pick.append(el("option", { value: "?", textContent: w.flag_add_number }));
       pick.addEventListener("change", () => {
         if (pick.value === "?") {
@@ -914,9 +970,57 @@ function flagRow(u, r, mode, th) {
       was.append(el("span", { textContent: w.was.replace("{v}", st.base.join(" · ")) }), undo);
     }
   };
-  if (knownFlags) render();
-  else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); }).catch((err) => { problem(err); render(); });
+  if (knownFlags) { render(); check(); }
+  else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); check(); }).catch((err) => { problem(err); render(); });
   return tr;
+}
+
+// The flag guide (api.flags: rusemod/flaginfo.toml): every flag, by what it's for, each with what it is, what it does,
+// how to use it, how sure we are and its danger; `mine` (this unit's flags) marked; a search box over all of it.
+const FLAG_GROUP_ORDER = ["kind", "combat", "movement", "sight", "player", "preview", "state", "unused"];
+
+async function openFlagGuide(mine) {
+  const w = state.words;
+  $("flag-guide-title").textContent = w.flag_guide_title;
+  $("flag-guide-lead").textContent = w.flag_guide_lead;
+  $("flag-guide-close").textContent = w.close;
+  $("flag-guide-search").placeholder = w.flag_guide_search;
+  $("flag-guide-search").value = "";
+  state.flagGuideMine = new Set(mine || []);
+  if (!knownFlags) {
+    try { knownFlags = (await api().flags(state.lang)).flags; } catch (err) { problem(err); return; }
+  }
+  renderFlagGuide();
+  if (!$("flag-guide").open) $("flag-guide").showModal();
+  $("flag-guide-search").focus();
+}
+
+function renderFlagGuide() {
+  const w = state.words, mine = state.flagGuideMine || new Set();
+  const fold = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const words = fold($("flag-guide-search").value).split(/\s+/).filter(Boolean);
+  const out = [];
+  for (const g of FLAG_GROUP_ORDER) {
+    const flags = (knownFlags || []).filter((f) => (f.group || "unused") === g && words.every((x) =>
+      fold([f.flag, f.what, f.meaning, f.does, f.use].join(" ")).includes(x)));
+    if (!flags.length) continue;
+    out.push(el("h3", { className: "flag-guide-group", textContent: w["flag_group_" + g] || g }),
+      el("p", { className: "muted small", textContent: w["flag_group_" + g + "_help"] || "" }));
+    for (const f of flags) {
+      const badges = [el("span", { className: `flag-sure flag-sure-${f.sure}`, textContent: w["flag_sure_" + f.sure] || f.sure })];
+      if (f.danger) badges.push(el("span", { className: `flag-danger flag-danger-${f.danger}`, textContent: w["flag_danger_" + f.danger] || f.danger }));
+      if (mine.has(f.flag)) badges.push(el("span", { className: "flag-mine", textContent: w.flag_this_unit }));
+      out.push(el("div", { className: "flag-card" + (f.danger ? ` flag-card-${f.danger}` : "") },
+        el("div", { className: "flag-card-head" }, el("span", { className: "flag-num", textContent: String(f.flag) }),
+          el("strong", { textContent: f.what || f.meaning || "" }), ...badges),
+        f.does ? el("p", { className: "small", textContent: f.does }) : "",
+        f.use ? el("p", { className: "small" }, el("em", { textContent: `${w.flag_how}: ` }), f.use) : "",
+        f.danger_why ? el("p", { className: "small flag-danger-why", textContent: `⚠ ${f.danger_why}` }) : "",
+        f.count ? el("p", { className: "muted small", textContent: fill(w.flag_used_by, { n: f.count, names: f.examples.join(", ") }) }) : ""));
+    }
+  }
+  if (!out.length) out.push(el("p", { className: "muted small", textContent: w.flag_guide_none }));
+  $("flag-guide-list").replaceChildren(...out);
 }
 
 // A weapon's range on its unit's page (api.set_range): a slider and a box. When other units fire the same ammo, the
@@ -1135,8 +1239,13 @@ function weaponsGroup(u) {
       showWas(wp.edited);
       table.append(tr);
     });
+    // how weapons and ammo work, step by step (the owner, 2026-10-15: "how to change weapons, ammo type, all of
+    // that very well"): a weapon fires one ammo, picked in its list; a copy of an ammo is changed for that weapon only
+    const how = el("details", { className: "weapons-how" }, el("summary", { textContent: w.weapons_how_title }),
+      el("ol", {}, ...["weapons_how_1", "weapons_how_2", "weapons_how_3", "weapons_how_4", "weapons_how_5"].map((k) =>
+        el("li", { className: "small", textContent: w[k] }))));
     group.replaceChildren(el("h2", { textContent: w.weapons }), table,
-      el("p", { className: "muted small", textContent: w.weapons_help }));
+      el("p", { className: "muted small", textContent: w.weapons_help }), how);
     group.classList.remove("hidden");
   }).catch(problem);
   draw();
@@ -4384,6 +4493,8 @@ async function start() {
   $("share-publish").addEventListener("click", publishMod);
   $("share-guidelines").addEventListener("click", () => api().open_help("guidelines").catch(problem));
   $("share-close").addEventListener("click", () => $("share").close());
+  $("flag-guide-close").addEventListener("click", () => $("flag-guide").close());
+  $("flag-guide-search").addEventListener("input", renderFlagGuide);
   $("edit-mods-close").addEventListener("click", () => $("edit-mods").close());
   $("edit-mods-search").addEventListener("input", renderEditMods);
   $("test").addEventListener("click", testInGame);

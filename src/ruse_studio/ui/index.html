@@ -720,6 +720,18 @@
 
   <!-- Edit an installed mod (app.js openEditMods): the Launcher's mods, one row each; yours opens its project, anyone
        else's is named as a copy of your own first, one made the older way says it can't be shown yet -->
+  <!-- The flag guide (app.js openFlagGuide, StudioApi.flags: rusemod/flaginfo.toml): every unit flag, what it is,
+       what it does, how to use it, how sure we are and its danger -->
+  <dialog id="flag-guide" class="doctor flag-guide" aria-labelledby="flag-guide-title">
+    <h2 id="flag-guide-title"></h2>
+    <p id="flag-guide-lead" class="muted small"></p>
+    <input id="flag-guide-search" class="edit-mods-search" type="search" autocomplete="off" spellcheck="false">
+    <div id="flag-guide-list" class="flag-guide-list"></div>
+    <div class="actions">
+      <button id="flag-guide-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
   <dialog id="edit-mods" class="doctor" aria-labelledby="edit-mods-title">
     <h2 id="edit-mods-title"></h2>
     <p id="edit-mods-lead" class="muted small"></p>

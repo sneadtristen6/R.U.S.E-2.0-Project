@@ -256,8 +256,8 @@ class Engine:
         self.trail = defaultdict(list)
         self._gen = 0                      # bumped whenever objects appear, disappear or parts are shared
         self._index_gen, self._by_class, self._all = -1, {}, []
-        from .unitflags import truck_flags  # the truck-only flags units carry before any mod (_truck_flags)
-        self._had_truck_flags = {n: f for n, o in self.game.objects.items() if (f := truck_flags(o))}
+        from .unitflags import crash_flags  # the flags that crash, as units carry them before any mod (_truck_flags)
+        self._had_truck_flags = {n: f for n, o in self.game.objects.items() if (f := crash_flags(o))}
         from . import unitcheck  # what's wrong with the units before any mod: not the mods' doing (_unit_rules)
         self._had_unit = {n: {why for _lvl, _prop, why in unitcheck.problems(o)}
                           for n, o in self.game.objects.items() if unitcheck.is_unit(o)}
@@ -917,7 +917,7 @@ class Engine:
         unit a mod made or whose flags a mod changed, unless the unit carried that flag before the mods. It names the
         last operation that put the flag there, whether it changed the whole list or one item of it, else the last one
         that changed the unit's flags, else the one that made the unit."""
-        from .unitflags import PROP, TRUCK_ONLY, crashes, numbers
+        from .unitflags import CRASH_FLAGS, PROP, SCOUT, crashes, numbers
         blame = {name: self.created[name] for name in new}
         steps = defaultdict(list)  # unit -> [(puts a truck flag in, when it ran, step, op)], every path to its flags
         for (owner, path), done in self.trail.items():
@@ -928,12 +928,20 @@ class Engine:
             for k, (op, value) in enumerate(done):
                 given = op.value if op.kind in ("set", "append", "insert") else value if op.kind in ("mul", "add") \
                     else None  # `add` turns an item into another number: what it made
-                steps[owner].append((bool(numbers(given) & set(TRUCK_ONLY)), when.get(id(op), -1), k, op))
+                steps[owner].append((bool(numbers(given) & CRASH_FLAGS), when.get(id(op), -1), k, op))
         for owner, found in steps.items():
             blame[owner] = max(found, key=lambda s: s[:3])[3]
         for name in sorted(blame):
-            had = set() if name in self.created else self._had_truck_flags.get(name, set())
-            for why in crashes(self.game.objects[name], had):
+            # a new unit is new: all of its truck flags count; but it had the recon flag 99 if the game's unit it copies
+            # has it before any mod (the game's armed recon planes carry 99 alone: a copy keeps it); a flag a mod gave
+            # the unit it copies still counts
+            root, seen = name, set()
+            while root in self.created and root not in seen:
+                seen.add(root)
+                root = self.created[root].source or ""
+            had = self._had_truck_flags.get(name, set()) if name not in self.created \
+                else self._had_truck_flags.get(root, set()) & {SCOUT}
+            for why in crashes(self.game.objects[name], had, self.game.objects):
                 # rule: truck-flags
                 self._find("error", f"{blame[name].at()}: {name}: {why}", blame[name])
 

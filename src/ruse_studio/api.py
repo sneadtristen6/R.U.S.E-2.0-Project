@@ -32,8 +32,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, newmap,
-                     package, packfiles, scenario, scenery, schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
+                     newmap, package, packfiles, scenario, scenery, schema, startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -697,9 +697,51 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         none = {"count": 0, "examples": []}
+        info = flaginfo.guide()
+        blank = {"group": "unused", "sure": "unused", "what": "", "does": "", "use": "", "danger": "",
+                 "danger_why": ""}
+        # the flag guide (rusemod.flaginfo): what it is, what it does, how to use it, how sure we are, its danger
         return {"flags": [{"flag": n, "count": rows.get(n, none)["count"],
-                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang)}
-                          for n in sorted(set(rows) | set(schema.flag_numbers()))]}
+                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang),
+                           **info.get(n, blank)}
+                          for n in sorted(set(rows) | set(schema.flag_numbers()))],
+                "groups": list(flaginfo.GROUPS)}
+
+    def flag_check(self, address: str, flags: list | None = None) -> dict:
+        """What's wrong with a unit's flags, as the Studio and the build see it (rusemod.flaginfo.judge): `flags` the
+        set to check (None: the unit's flags now, with the current mod's change). {"problems": [{level, flag, why}],
+        "blocked": whether the build will refuse it (a known crash)}. The unit's kind, its weapons, the unit it drops
+        and the flags the game's own unit (or the one a new unit copies) carries come from the game index."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {"problems": [], "blocked": False}
+            had = sorted(int(n) for path, n, _t in o["values"] if path.startswith("InitialFlagSet[") and n is not None)
+            plan = ix.clone_plan(real)
+            armed = any(ix.show(a)["class"] == WEAPON for a in plan["copied"] + plan["shared"])
+            drops = any(p == "UniteTransportee" and k == "object" and w for p, k, w in ix.uses(real))
+        finally:
+            ix.close()
+        if flags is None:
+            mine = edits.get(new.target if new else real, "InitialFlagSet") if edits else None
+            flags = mine if isinstance(mine, list) else had
+        flags = [int(n) for n in flags]
+        problems = flaginfo.judge(o["class"], flags, had, armed, drops)
+        now = {(p["level"], p["flag"]) for p in problems}
+        adding = {}  # what adding each flag it hasn't got would do: "error" (a crash) or "warning", for the Add list
+        for n in sorted(set(flaginfo.guide()) - set(flags)):
+            worse = [p["level"] for p in flaginfo.judge(o["class"], flags + [n], had, armed, drops)
+                     if (p["level"], p["flag"]) not in now]
+            if worse:
+                adding[n] = "error" if "error" in worse else "warning"
+        return {"problems": problems, "blocked": any(p["level"] == "error" for p in problems), "adding": adding}
 
     def weapons(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited, range,
