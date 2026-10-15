@@ -1,5 +1,6 @@
 """Map Paint on whole grids (numpy): groundpaint.paint_strokes's own tile records, byte for byte, many times sooner.
-For colour strokes of any footprint and edge; a tile a stamp reaches is left to paint_strokes (paint_tile gives None).
+For colour, texture and stamp strokes of any footprint and edge (a stamp reads the map's own picture as
+groundpaint._picture_sampler does: _Picture).
 
 What paint_strokes does, block for block (_in_turn does the same sums in the same order for a whole tile at once):
   - a stroke is laid on a pixel when its share there (its fall-off at the pixel's middle, or the mean of 3 x 3 points
@@ -65,6 +66,10 @@ def _t2(f, xs, ys, grid: bool = True):
         n = math.sqrt(f.dx * f.dx + f.dy * f.dy) or 1.0
         u = np.abs(ox * f.dx + oy * f.dy) / n
         v = np.abs(oy * f.dx - ox * f.dy) / n
+        if f.along:   # a rectangle: each way against its own half-length (brush.Footprint.t2's own sums)
+            a, b = u / f.along, v / f.r
+            m = np.where(a > b, a, b)
+            return m * m
         m = np.where(u > v, u, v) / f.r
         return m * m
     if f.shape == "line":
@@ -117,12 +122,91 @@ def _texture(stroke, swatch, xs, ys, pixel: float):
     return got[:, :, :3].astype(np.float64), got[:, :, 3].astype(np.float64) / 255.0
 
 
+class _Picture:
+    """groundpaint._picture_sampler on whole grids: the map's own picture at one level of `store` (its tiles as they
+    are, before any paint), with the same sums for which tile and which pixel a point falls on. Tiles are decoded once
+    (several stamps of one area read the same few)."""
+
+    def __init__(self, gp, store, bounds, level: int, cache=None):
+        self.gp, self.store, self.bounds, self.level, self.cache = gp, store, bounds, level, cache
+        self.tiles: dict = {}
+        if level >= store.depth:  # the whole-map overview tile
+            self.over = next((t for t in store.tiles if t.level == store.depth), None)
+            self.rect = gp._tile_rect(store, self.over, bounds) if self.over is not None else None
+        else:
+            cw, ch = gp._cells(store, bounds)
+            side = 1 << (store.depth - 1 - level)
+            self.tw, self.th = cw / side, ch / side
+
+    KEEP = 160  # decoded tiles held at most (each 512 x 512 x 3 bytes: under 130 MB), then forgotten all at once
+
+    def shift(self, stroke):
+        """A tint stroke's shift at this level: groundpaint._tint_shift with paint_strokes's own sampler, so the
+        same numbers."""
+        memo = self.__dict__.setdefault("_shifts", {})
+        if stroke not in memo:
+            memo[stroke] = self.gp._tint_shift(self.gp._picture_sampler(self.store, self.bounds, self.level, self.cache),
+                                               stroke)
+        return memo[stroke]
+
+    def _tile(self, key):
+        if key not in self.tiles:
+            if len(self.tiles) >= self.KEEP:
+                self.tiles.clear()
+            tile = self.over if self.level >= self.store.depth else None
+            try:
+                blocks, w, h = self.gp._blocks(self.store, tile if tile is not None
+                                               else self.store.tile(self.level, *key), self.cache)
+                self.tiles[key] = (pixels_of(bytes(blocks), w // 4, h // 4), w, h)
+            except (KeyError, self.gp.PaintError):
+                self.tiles[key] = None
+        return self.tiles[key]
+
+    def at(self, xs, ys):
+        """(colours [row, column, 3] as float, [row, column] True where the map has a picture) at every (x of xs, y of
+        ys)."""
+        out = np.zeros((len(ys), len(xs), 3), dtype=np.float64)
+        there = np.zeros((len(ys), len(xs)), dtype=bool)
+        x0, y0 = self.bounds[0], self.bounds[1]
+        if self.level >= self.store.depth:
+            if self.over is None:
+                return out, there
+            kx, ky = np.zeros(len(xs), dtype=_I), np.zeros(len(ys), dtype=_I)
+        else:  # int((x - x0) // tw): numpy's floor division of floats is Python's
+            kx = np.floor_divide(xs - x0, self.tw).astype(_I)
+            ky = np.floor_divide(ys - y0, self.th).astype(_I)
+        for b in np.unique(ky).tolist():
+            rows = np.flatnonzero(ky == b)
+            for a in np.unique(kx).tolist():
+                cols = np.flatnonzero(kx == a)
+                got = self._tile((a, b))
+                if got is None:
+                    continue
+                pic, w, h = got
+                if self.level >= self.store.depth:
+                    rx0, ry0, rx1, ry1 = self.rect
+                else:
+                    rx0, ry0 = x0 + a * self.tw, y0 + b * self.th
+                    rx1, ry1 = rx0 + self.tw, ry0 + self.th
+                # int(): towards zero, so a point a hair before the tile's edge is its pixel 0, as there
+                i = np.trunc((xs[cols] - rx0) / (rx1 - rx0) * w).astype(_I)
+                j = np.trunc((ys[rows] - ry0) / (ry1 - ry0) * h).astype(_I)
+                ci, rj = (i >= 0) & (i < w), (j >= 0) & (j < h)
+                if not ci.any() or not rj.any():
+                    continue
+                cols, rows_in, i, j = cols[ci], rows[rj], i[ci], j[rj]
+                out[np.ix_(rows_in, cols)] = pic[np.ix_(j, i)]
+                there[np.ix_(rows_in, cols)] = True
+        return out, there
+
+
 def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, hard: list, px, py, cx0, cy0,
-             pw: float, ph: float, swatches=None):
+             pw: float, ph: float, swatches=None, picture=None):
     """A tile's pixels after the strokes of `reach`, each laid in its turn on every pixel (paint_strokes's sums in
     its order), and the blocks a hard stroke covered whole (always written again). `old`: its pixels before; `px`,
     `py` the pixels' middles, `cx0`, `cy0` the blocks' corners. A texture stroke lays its texture's colour at each
-    pixel, its share times the texture's alpha (`swatches`: paint_strokes's)."""
+    pixel, its share times the texture's alpha (`swatches`: paint_strokes's); a stamp the map's own picture where it
+    copies from (`picture`: a _Picture of the tile's level), and nothing where that is off the map."""
     ny, nx = len(cy0), len(cx0)
     img = old.astype(np.float64)
     force = np.zeros((ny, nx), dtype=bool)
@@ -149,10 +233,19 @@ def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, ha
         if i0 >= i1 or j0 >= j1:
             continue
         a = _coverage(s, f, px[i0:i1], py[j0:j1], pw, ph) * s.weight
-        if c is None:  # a texture: its colour at each pixel, as much as it shows
+        there = None
+        if c is None and s.kind.kind in ("stamp", "tint"):  # the map's own picture where it copies from (px + sx)
+            tex, there = picture.at(px[i0:i1] + s.sx, py[j0:j1] + s.sy)
+            if s.kind.kind == "tint":  # (TINT_KEEP of it, its shift added, as paint_strokes: then kept in 0..255)
+                d = picture.shift(s)
+                tex = np.stack([np.minimum(255.0, np.maximum(0.0, tex[:, :, ch] * gp.TINT_KEEP + d[ch]))
+                                for ch in range(3)], axis=2)
+        elif c is None:  # a texture: its colour at each pixel, as much as it shows
             tex, shows = _texture(s, swatches[s.texture], px[i0:i1], py[j0:j1], max(pw, ph))
             a = a * shows
         lay = a > 0.0
+        if there is not None:
+            lay &= there
         sub = img[j0:j1, i0:i1]
         if hard[k]:
             x0, y0 = cx0[i0 // 4:i1 // 4], cy0[j0 // 4:j1 // 4]
@@ -266,13 +359,17 @@ def _by_colour(gp, old, reach: list, strokes: list, boxes: list, colours: list, 
 
 
 def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, colours: list, hard: list, cache=None,
-               swatches=None):
+               swatches=None, bounds=None, pictures=None):
     """One tile painted as groundpaint.paint_strokes paints it: its new record, b"" when nothing changes, or None when
-    a stroke near it isn't a colour or a texture laid with the soft shape (a stamp: paint_strokes's own pixels). `gp`
-    is rusemod.groundpaint, `rect` the tile's place (_tile_rect), `near` the strokes whose boxes reach it; `boxes`,
-    `colours`, `hard` and `swatches` as paint_strokes makes them. Tiles a texture reaches are laid in turn."""
+    a stroke near it isn't a colour, a texture or a stamp laid with the soft shape, or is a stamp with no `bounds` to
+    find where it copies from (then paint_strokes's own pixels). `gp` is rusemod.groundpaint, `rect` the tile's place
+    (_tile_rect), `near` the strokes whose boxes reach it; `boxes`, `colours`, `hard` and `swatches` as paint_strokes
+    makes them; `bounds` the map's (map_bounds), `pictures` {level: _Picture} kept from tile to tile. Tiles a texture
+    or a stamp reaches are laid in turn."""
     for k in near:
-        if strokes[k].kind.shape != "soft" or (colours[k] is None and strokes[k].kind.kind != "texture"):
+        kind = strokes[k].kind
+        if kind.shape != "soft" or (colours[k] is None and kind.kind not in ("texture", "stamp", "tint")) or (
+                kind.kind in ("stamp", "tint") and bounds is None):
             return None
     rx0, ry0, rx1, ry1 = rect
     w, h = gp._dims(store, tile)
@@ -289,7 +386,14 @@ def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, co
     px = (cx0[:, None] + ((np.arange(4) + 0.5) * pw)[None, :]).ravel()
     py = (cy0[:, None] + ((np.arange(4) + 0.5) * ph)[None, :]).ravel()
     if len(reach) > MOST or any(hard[k] or colours[k] is None or not 0.0 <= strokes[k].weight <= 1.0 for k in reach):
-        new, force = _in_turn(gp, old, reach, strokes, boxes, colours, hard, px, py, cx0, cy0, pw, ph, swatches)
+        picture = None
+        if any(strokes[k].kind.kind in ("stamp", "tint") for k in reach):
+            pictures = {} if pictures is None else pictures
+            if tile.level not in pictures:
+                pictures[tile.level] = _Picture(gp, store, bounds, tile.level, cache)
+            picture = pictures[tile.level]
+        new, force = _in_turn(gp, old, reach, strokes, boxes, colours, hard, px, py, cx0, cy0, pw, ph, swatches,
+                              picture)
     else:
         new, force = _by_colour(gp, old, reach, strokes, boxes, colours, px, py, pw, ph), False
         if isinstance(new, tuple):  # that colour all over

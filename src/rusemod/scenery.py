@@ -4,6 +4,7 @@ every shipped map). Objects stand on the ground wherever it is: the game puts th
 from __future__ import annotations
 
 import bisect
+import collections
 import hashlib
 import json
 import math
@@ -530,13 +531,18 @@ class NewObject:
                           # stretch theirs 0.9 to 1.9 to fit the river)
     lift: float = 0.0    # its height against the ground the game puts it on (map units; shipped bridges sit
                          # 130 to 850 below)
+    levels: int = 0      # which of the decor dresser's levels draw it, as a draw-tree LOD mask (1/2 close, 4 middle,
+                         # 0x10 middle with GroundQuality, 8 far): the mask a shipped copy of it carries (copy_objects);
+                         # 0 = drawn by every level, far included (what placed buildings and trees get)
+    height: float = 0.0  # its scale upward when not its size (a shipped plant is often flatter or taller than it is
+                         # wide: copy_objects keeps it); 0 = its size
 
     def matrix(self) -> tuple:
         """Where it goes, in map coordinates: turned, sized, stretched along its own y, lifted."""
         t = math.radians(self.turn)
         c, s = math.cos(t) * self.size, math.sin(t) * self.size
         k = self.stretch
-        return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.size, self.lift)
+        return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.height or self.size, self.lift)
 
 
 ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped ones: 1,300 to 73,000, about 4,100 typical)
@@ -753,23 +759,31 @@ def _is_road(item: bytes) -> bool:
     return not w >> 31 and bool(w & 0x01000000)  # as Scenery._block tells them: not an object, not a reference
 
 
-def _new_block(items: list[bytes], box: tuple, boxes: list[tuple] | None = None) -> bytes:
+def _new_block(items: list[bytes], box: tuple, boxes: list[tuple] | None = None,
+               levels: list[int] | None = None) -> bytes:
     """A block of `items` in `box`, its tree as the shipped blocks' (D-Day's block 13: 29,228 entries, 9,853 nodes):
     the root's left side the far-view list (every item but road pieces, which the shipped maps never list for far
     view: 0 of 10,505), its right side every item, each list a search tree (_subtree) over the items' `boxes` (in the
     block's coordinates; none: each the whole block), so the game finds the items of a cell it walks without going
     through all of them. The root and the full list's nodes over a road piece or a placed block carry the road mark,
     so the game's road pass reaches road pieces in it, or in a block it places (a superset only costs culling);
-    whether that shows them on screen isn't known (T12)."""
+    whether that shows them on screen isn't known (T12). `levels` (one per item, NewObject.levels; 0 = every level):
+    an item whose mask has no far bit stays off the far-view list, and the full list holds each mask's items under
+    nodes of that mask, as the shipped blocks' own stickers, low plants and stones are (the deepest node's mask is
+    the one the dresser goes by: their middle-only and close-only items never drawn from far)."""
     offsets, pos = [], 4
     for it in items:
         offsets.append(pos)
         pos += len(it)
     boxes = boxes or [tuple(box)] * len(items)
-    far_e, far_n = _subtree([(b, o, False) for it, o, b in zip(items, offsets, boxes) if not _is_road(it)],
-                            box, 0, 0x08)
-    full_e, full_n = _subtree([(b, o, not struct.unpack_from("<I", it)[0] >> 31)  # a road piece or a placed block
-                               for it, o, b in zip(items, offsets, boxes)], box, len(far_e), ALL_TIERS & ~0x08)
+    levels = levels or [0] * len(items)
+    far_e, far_n = _subtree([(b, o, False) for it, o, b, lv in zip(items, offsets, boxes, levels)
+                             if not _is_road(it) and (not lv or lv & 0x08)], box, 0, 0x08)
+    groups: dict[int, list] = {}  # the full list by mask: the default (every level but far) first
+    for it, o, b, lv in zip(items, offsets, boxes, levels):
+        mask = ALL_TIERS & ~0x08 if not lv else lv & ALL_TIERS & ~0x08
+        groups.setdefault(mask, []).append((b, o, not struct.unpack_from("<I", it)[0] >> 31))  # a road piece or block
+    full_e, full_n = _by_mask(sorted(groups.items(), key=lambda kv: -kv[0]), box, len(far_e))
     entries = far_e + full_e  # the far-view items first, then all of them
     if len(entries) > 0xFFFF:
         raise SceneryEditError("too many objects for one new block: a tree node splits its entries at a 16-bit index")
@@ -778,6 +792,27 @@ def _new_block(items: list[bytes], box: tuple, boxes: list[tuple] | None = None)
     out = (head + struct.pack(f"<{len(entries)}I", *entries) + b"".join(struct.pack("<IHBB", *n) for n in nodes)
            + struct.pack("<I", FILLER) + b"".join(items))
     return out + b"\0" * (-len(out) % BLOCK_ALIGN)
+
+
+def _by_mask(groups: list[tuple[int, list]], box: tuple, lo: int) -> tuple[list[int], list[list[int]]]:
+    """The full list's tree over `groups` [(mask, things as _subtree takes them)]: one group is its own search tree;
+    more are joined by nodes whose two sides each span the whole box (shares 255 and 0), the first group on the left
+    and the rest on the right, each node's mask all of its groups' together (the deepest node's is the one that
+    counts). Returns (entries from index `lo`, nodes) as _subtree does."""
+    mask, things = groups[0]
+    if len(groups) == 1:
+        return _subtree(things, box, lo, mask)
+    left_e, left_n = _subtree(things, box, lo, mask)
+    right_e, right_n = _by_mask(groups[1:], box, lo + len(left_e))
+    every = 0
+    road = False
+    for m, ts in groups:
+        every |= m
+        road = road or any(t[2] for t in ts)
+    if 1 + len(left_n) >= 1 << 18:
+        raise SceneryEditError("too many objects for one new block: its tree's nodes are too far apart")
+    word = ((every | (ROAD_TIER if road else 0)) << 20) | ((1 + len(left_n)) << 2)  # axis 0, both sides whole
+    return left_e + right_e, [[word, lo + len(left_e), 255, 0]] + left_n + right_n
 
 
 def _share(v: float, a0: float, ext: float, up: bool) -> int:
@@ -896,7 +931,10 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
                 data, more = _add_block(data, group)
                 notes += more
             continue
-        groups, lost = _carriers(Scenery(data), things, roads)
+        groups, lost, short = _carriers(Scenery(data), things, roads)
+        if short:
+            notes.append(f"{short} new object(s) hang on a block the map lists at fewer detail levels than they ask "
+                         f"(no block listed at theirs holds their spot): drawn at those levels only")
         if lost and not roads:  # in open ground: one carrier's box in the top block's tree widened over them
             data, at, more = _widen(Scenery(data), data, lost)
             notes += more
@@ -1909,6 +1947,1037 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
     return out
 
 
+# --- the map's own ground detail laid again somewhere else on it ([[copy]], MOD_FORMAT §8) -----------------------------
+# Up close a shipped map's ground is its stickers (ground decals ~5 deep), low plants and stones, laid by Eugen's tools in
+# patterns (fields tiled in rows, heath scattered, hedge feet in strips; private notes ground-structure-2026-10-10). A
+# copy lays the map's own arrangement from one place in another, object by object, each with the LOD levels its shipped
+# copy is drawn at: the same look, by construction, the first step to brushes that match the game (the owner,
+# 2026-10-10: "at the very least, the paint and the textures we add on our studio are gonna load just like the game's").
+COPY_LAYERS = ("stickers", "plants", "stones")  # ground decals (not road stickers); low plants; stone props (low_cover)
+
+
+LOW_COVER = "low cover"   # in an EraseArea's `types`: every low plant and stone type of the map (resolved at build)
+FILL_GAP = {"plants": 260.0, "stones": 390.0, "stickers": 780.0}   # the fill rule: a copied plant is left off within
+# 1 m of a plant the map already has there, a stone within 1.5 m of a stone, a sticker within 3 m of one of its own
+# kind (the owner, 2026-10-10: "I wouldn't want to like throw a plant on top of a plant"; a brush fills its layer up
+# to the recipe, never past it, and never takes anything off)
+
+
+@dataclass(frozen=True)
+class CopyArea:
+    """A shape whose ground detail comes from elsewhere on a map: the source is the shape moved by (sx, sy) and
+    turned `turn` degrees about its own middle; every object of `layers` whose middle lies in the source is laid again
+    in the shape, turned with it. Nothing is taken off the shape: an [[erase]] there does that. `source`: the map pack
+    whose shipped scenery the source is read from ("" = this map's). `within`: a bigger footprint (shape, x, y,
+    radius, dx, dy) the copy is clipped to (a preset's tile at the preset's edge). `fill`: the fill rule (FILL_GAP):
+    an object is left off where the map already has one of its layer (its kind, for a sticker) right there. What
+    earlier copies of the same build laid counts the same way whatever the mode (a brush is many dabs that overlap:
+    none throws a plant on a plant), except among copies of one `group` (a preset's own tiles, which meet edge to
+    edge and must not thin each other along their joins); 0 = no group, every other copy counts. `along`: a square's
+    half-length along dx, dy when not `radius` (a rectangle: a field's tile, whole rows each way; 0 = a square).
+    The field brush's copies (expand_field_brush) also take: `only`, name prefixes of the objects copied (its crops);
+    `near` and `near_r`, places of the target map an object must land within near_r of (the stickers of the field
+    painted over, so nothing lands on its hedges, the road or the meadow beside it); `src_clip`, a rectangle of the
+    source (x, y, half across, dx, dy, half along: the source field's inside) the objects must come from."""
+    x: float
+    y: float
+    radius: float
+    sx: float
+    sy: float
+    turn: float = 0.0
+    layers: tuple = COPY_LAYERS
+    shape: str = "square"  # round or square (sides along dx, dy, `radius` from its middle to each side)
+    dx: float = 1.0
+    dy: float = 0.0
+    source: str = ""
+    within: tuple | None = None
+    fill: bool = False
+    group: int = 0
+    along: float = 0.0
+    only: tuple = ()
+    near: tuple = ()
+    near_r: float = 0.0
+    src_clip: tuple | None = None
+
+    def footprint(self):
+        from .brush import Footprint
+        if self.shape == "square":
+            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy, along=self.along)
+        return Footprint("round", self.x, self.y, self.radius)
+
+    def source_clip(self):
+        """The source rectangle the copy's objects must come from (`src_clip`), or None."""
+        if not self.src_clip:
+            return None
+        from .brush import Footprint
+        x, y, r, dx, dy, along = self.src_clip
+        return Footprint("square", x, y, r, dx, dy, along=along)
+
+    def clip(self):
+        """The footprint the copy must also lie in (`within`), or None."""
+        if not self.within:
+            return None
+        from .brush import Footprint
+        shape, x, y, r, dx, dy = self.within
+        return Footprint("square", x, y, r, dx, dy) if shape == "square" else Footprint("round", x, y, r)
+
+    def to_target(self) -> tuple:
+        """The transform (3x4) that takes a source point to its place in the shape."""
+        t = math.radians(self.turn)
+        c, s = math.cos(t), math.sin(t)
+        ox, oy = self.x + self.sx, self.y + self.sy
+        return (c, -s, 0.0, self.x - (c * ox - s * oy), s, c, 0.0, self.y - (s * ox + c * oy), 0.0, 0.0, 1.0, 0.0)
+
+
+def parse_copies(rows: list, where: str = "scenery.toml") -> list[CopyArea]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"x", "y", "radius", "sx", "sy", "turn", "layers", "shape", "dx", "dy", "fill",
+                                   "source"})
+        if extra:
+            raise SceneryEditError(f"{where}: copy {k + 1}: unknown key {extra[0]!r}")
+        shape = row.get("shape", "square")
+        if shape not in ("round", "square"):
+            raise SceneryEditError(f"{where}: copy {k + 1}: shape must be round or square")
+        try:
+            x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
+            sx, sy, turn = float(row["sx"]), float(row["sy"]), float(row.get("turn", 0.0))
+            dx, dy = float(row.get("dx", 1.0)), float(row.get("dy", 0.0))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: copy {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: copy {k + 1}: x, y, radius, sx, sy, turn, dx and dy must be "
+                                   f"numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, r, sx, sy, turn, dx, dy)) or not 0 < r <= ERASE_MAX:
+            raise SceneryEditError(f"{where}: copy {k + 1}: the radius must be above 0 and at most "
+                                   f"{ERASE_MAX:,.0f} map units")
+        if shape == "square" and dx == 0.0 and dy == 0.0:
+            raise SceneryEditError(f"{where}: copy {k + 1}: the square's direction dx, dy can't be 0, 0")
+        layers = row.get("layers", list(COPY_LAYERS))
+        if (not isinstance(layers, list) or not layers or not all(isinstance(g, str) for g in layers)
+                or any(g not in COPY_LAYERS for g in layers)):
+            raise SceneryEditError(f"{where}: copy {k + 1}: layers must be a list of {', '.join(COPY_LAYERS)}")
+        fill, source = row.get("fill", False), row.get("source", "")
+        if not isinstance(fill, bool):
+            raise SceneryEditError(f"{where}: copy {k + 1}: fill must be true or false")
+        if not isinstance(source, str):
+            raise SceneryEditError(f"{where}: copy {k + 1}: source must be a map pack name")
+        out.append(CopyArea(x, y, r, sx, sy, turn, tuple(layers), shape, dx, dy, source, None, fill))
+    return out
+
+
+# --- presets: a map's ground kinds laid over an area (MOD_FORMAT §8 [[preset]]) ---------------------------------
+PRESET_MODES = ("add", "replace")
+TILE = 13000.0   # a preset's tile, 50 m (260 map units a metre): the size of the library's source squares
+PRESET_FILE = "ground_presets.toml"   # beside this module: the library (name, description, map, sources)
+BORDERS = ("none", "edge", "hedge")   # what a preset may lay along its outline: nothing, or the [[border]] so named
+BORDER_WIDTH = 520.0   # the band a border's strips lie in: 2 m across, centred on the outline (strips: 0.8-1.5 m)
+BORDER_LAYERS = ("plants", "stones")   # what a border copies: its strip, not the ground stickers it lay on
+BORDER_SAG = 65.0      # a round area's outline is chords that stray at most this far inside it (25 cm)
+
+
+@dataclass(frozen=True)
+class PresetArea:
+    """A shape filled with one of the library's ground kinds ("Wheat field", ...): tiles of TILE across it, each laid
+    from one of the kind's source squares on its map (stickers, low plants and stones with the game's own detail
+    levels, and the ground picture stamped). `mode` add: the fill rule, nothing of the map's taken off; replace: the
+    shape's own stickers, low plants and stones taken off first. `seed` picks which source each tile gets. `border`:
+    the game's own strips laid along the outline (BORDERS: none, edge, hedge; expand_border)."""
+    name: str
+    x: float
+    y: float
+    radius: float
+    mode: str = "add"
+    shape: str = "square"
+    dx: float = 1.0
+    dy: float = 0.0
+    seed: int = 0
+    border: str = "none"
+
+    def footprint(self):
+        from .brush import Footprint
+        if self.shape == "square":
+            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
+        return Footprint("round", self.x, self.y, self.radius)
+
+
+def parse_presets(rows: list, where: str = "scenery.toml") -> list[PresetArea]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"name", "x", "y", "radius", "mode", "shape", "dx", "dy", "seed", "border"})
+        if extra:
+            raise SceneryEditError(f"{where}: preset {k + 1}: unknown key {extra[0]!r}")
+        name = row.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise SceneryEditError(f"{where}: preset {k + 1} has no name")
+        shape = row.get("shape", "square")
+        if shape not in ("round", "square"):
+            raise SceneryEditError(f"{where}: preset {k + 1}: shape must be round or square")
+        mode = row.get("mode", "add")
+        if mode not in PRESET_MODES:
+            raise SceneryEditError(f"{where}: preset {k + 1}: mode must be add or replace")
+        border = row.get("border", "none")
+        if border not in BORDERS:
+            raise SceneryEditError(f"{where}: preset {k + 1}: border must be {', '.join(BORDERS[:-1])} or "
+                                   f"{BORDERS[-1]}")
+        try:
+            x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
+            dx, dy = float(row.get("dx", 1.0)), float(row.get("dy", 0.0))
+            seed = int(row.get("seed", 0))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: preset {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: preset {k + 1}: x, y, radius, dx, dy and seed must be numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, r, dx, dy)) or not 0 < r <= ERASE_MAX:
+            raise SceneryEditError(f"{where}: preset {k + 1}: the radius must be above 0 and at most "
+                                   f"{ERASE_MAX:,.0f} map units")
+        if shape == "square" and dx == 0.0 and dy == 0.0:
+            raise SceneryEditError(f"{where}: preset {k + 1}: the square's direction dx, dy can't be 0, 0")
+        out.append(PresetArea(name.strip(), x, y, r, mode, shape, dx, dy, seed, border))
+    return out
+
+
+def preset_library(path=None) -> dict[str, dict]:
+    """The ground presets, by name: {"description", "map" (the pack whose squares they are), "sources" [(x, y)...]
+    (50 m squares' middles), "aligned" (rows run one way)}. From ground_presets.toml beside this module."""
+    import tomllib
+    from pathlib import Path
+    file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    out: dict[str, dict] = {}
+    for row in data.get("preset", []):
+        name = str(row.get("name", "")).strip()
+        sources = [(float(s[0]), float(s[1])) for s in row.get("sources", [])]
+        if not name or not sources or not row.get("map"):
+            raise SceneryEditError(f"{file.name}: a preset needs a name, a map and sources")
+        out[name] = {"type": "tile", "description": str(row.get("description", "")), "map": str(row["map"]),
+                     "sources": sources, "aligned": bool(row.get("aligned", False))}
+    for row in data.get("field", []):   # a field kind: one real field's rows tiled over the area (expand_field)
+        name = str(row.get("name", "")).strip()
+        sources = []
+        for s in row.get("sources", []):
+            if len(s) != 7:
+                raise SceneryEditError(f"{file.name}: a field source is [x, y, angle, window along, window across, "
+                                       f"pitch along, pitch across]")
+            sources.append(FieldSource(*(float(v) for v in s)))
+        if not name or not sources or not row.get("map"):
+            raise SceneryEditError(f"{file.name}: a field needs a name, a map and sources")
+        if any(s.pitch_u <= 0 or s.pitch_v <= 0 or s.window_u < s.pitch_u or s.window_v < s.pitch_v for s in sources):
+            raise SceneryEditError(f"{file.name}: field {name!r}: a window must hold whole pitches above 0")
+        out[name] = {"type": "field", "description": str(row.get("description", "")), "map": str(row["map"]),
+                     "sources": sources, "aligned": True}
+    return out
+
+
+@dataclass(frozen=True)
+class FieldSource:
+    """One real field to lay a field kind from: the middle of a window inside it (map units), the direction its
+    rows run (degrees, from +x toward +y), the window's extent along and across the rows, and the rows' pitch along
+    (sticker to sticker) and across (row to row). A window of whole pitches tiles seamlessly: the rows run on."""
+    x: float
+    y: float
+    angle: float
+    window_u: float
+    window_v: float
+    pitch_u: float
+    pitch_v: float
+
+
+def hedgerow_library(path=None) -> dict[str, dict]:
+    """What a field's hedgerow carries besides its strips, per map: the trees along a field's edge (name, share,
+    LOD levels) and how many there are per 100 m, and the fence piece (name, levels, length). From the [[hedgerow]]
+    tables of ground_presets.toml beside this module."""
+    import tomllib
+    from pathlib import Path
+    file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    out: dict[str, dict] = {}
+    for row in data.get("hedgerow", []):
+        if not row.get("map"):
+            raise SceneryEditError(f"{file.name}: a hedgerow needs a map")
+        trees = [(str(t[0]), float(t[1]), int(t[2])) for t in row.get("trees", [])]
+        fence = row.get("fence")
+        out[str(row["map"])] = {"trees_per_100m": float(row.get("trees_per_100m", 0.0)), "trees": trees,
+                                "fence": (str(fence[0]), int(fence[1]), float(fence[2])) if fence else None}
+    return out
+
+
+HEDGEROW_OUT = 1.5 * 260.0   # a hedgerow's trees stand this far outside the outline (the strips lie on it)
+FENCE_OUT = 0.6 * 260.0      # the fence line, just outside the strips
+
+
+def expand_hedgerow(area: PresetArea, hedgerow: dict | None, seed: int = 0) -> list[NewObject]:
+    """The trees and the fence a field's border carries (a field kind with a border, from hedgerow_library's entry
+    for its map): along each run of the outline, fence pieces end to end FENCE_OUT outside it, and with a hedge
+    (border "hedge"; a field's plain "edge" has the fence alone) trees at the map's count per 100 m (species by
+    share, each where the map draws its kind), stood HEDGEROW_OUT outside with a little scatter. Only drawn (solid
+    false): the strips under them hold the ground. Nothing without a hedgerow entry for the map."""
+    import random
+    if not hedgerow or area.border == "none":
+        return []
+    hedge = area.border == "hedge"
+    rng = random.Random(seed * 7919 + 1)
+    out: list[NewObject] = []
+    trees, per = hedgerow.get("trees") or [], hedgerow.get("trees_per_100m", 0.0)
+    fence = hedgerow.get("fence")
+    for (x0, y0), (x1, y1) in border_outline(area):
+        run = math.hypot(x1 - x0, y1 - y0)
+        if run <= 0.0:
+            continue
+        ux, uy = (x1 - x0) / run, (y1 - y0) / run
+        vx, vy = -uy, ux   # outward, away from the area's middle (a square's outline and a circle's go round
+        if (x0 + x1) / 2 * vx + (y0 + y1) / 2 * vy < area.x * vx + area.y * vy:   # opposite ways)
+            vx, vy = -vx, -vy
+        along = math.degrees(math.atan2(uy, ux))
+        if fence:
+            name, levels, piece = fence
+            count = max(1, int(math.ceil(run / piece)))
+            for p in range(count):
+                d = min((p + 0.5) * piece, run - piece / 2)
+                out.append(NewObject(name, x0 + ux * d + vx * FENCE_OUT, y0 + uy * d + vy * FENCE_OUT, along, 1.0,
+                                     solid=False, levels=levels))
+        if hedge and trees and per > 0.0:
+            count = int(round(run / 260.0 * per / 100.0))
+            for t in range(count):
+                d = (t + rng.uniform(0.25, 0.75)) * run / count
+                r = rng.random()
+                name, levels = trees[-1][0], trees[-1][2]
+                for nm, share, lv in trees:
+                    r -= share
+                    if r <= 0.0:
+                        name, levels = nm, lv
+                        break
+                off = HEDGEROW_OUT + rng.uniform(-0.5, 0.5) * 260.0
+                out.append(NewObject(name, x0 + ux * d + vx * off, y0 + uy * d + vy * off, rng.uniform(0.0, 360.0),
+                                     1.0, solid=False, levels=levels))
+    return out
+
+
+def expand_field(area: PresetArea, kind: dict, group: int = 1) -> tuple[list[CopyArea], list]:
+    """A field kind laid as the editor laid a field: ONE source field (kind["sources"], FieldSource, picked by
+    area.seed), its window tiled over the area with the rows running along the area's dx, dy. A tile is a
+    rectangle of whole pitches each way (the window floored to sticker pitches along the rows and row pitches
+    across), laid edge to edge: the rows run on from tile to tile both ways, nothing is laid twice (2026-10-14:
+    square tiles overlapping by a pitch along the rows laid a ploughed field's crops and stones twice in every
+    overlap, 360 tiles on a 100 m square). Every tile copies the same window, turned from the source's row
+    direction to the area's (CopyArea.turn), clipped to the area, with the preset's group. The ground picture is
+    stamped from the window too, squares as wide as a tile along it (unturned: a stamp copies by offset; the rows in
+    the picture are faint, the stickers carry them)."""
+    from .brush import HARD_EDGE, Stroke
+    sources = kind["sources"]
+    src = sources[area.seed % len(sources)]
+    n = math.hypot(area.dx, area.dy) or 1.0
+    ux, uy = area.dx / n, area.dy / n
+    vx, vy = -uy, ux
+    long = max(1, int(src.window_u // src.pitch_u)) * src.pitch_u   # along the rows
+    wide = max(1, int(src.window_v // src.pitch_v)) * src.pitch_v   # across them
+    turn = math.degrees(math.atan2(uy, ux)) - src.angle
+    foot = area.footprint()
+    within = (area.shape, area.x, area.y, area.radius, area.dx, area.dy)
+    steps_u = int(math.ceil(area.radius / long)) + 1
+    steps_v = int(math.ceil(area.radius / wide)) + 1
+    dabs = max(1, int(math.ceil(long / wide)))   # stamps along a tile, each `wide` across
+    copies, stamps = [], []
+    for j in range(-steps_v, steps_v + 1):
+        for i in range(-steps_u, steps_u + 1):
+            du, dv = (i + 0.5) * long, (j + 0.5) * wide
+            cx, cy = area.x + du * ux + dv * vx, area.y + du * uy + dv * vy
+            # a tile is laid when any of its corners lies in the area (the clip cuts the rest)
+            corners = [(cx + a * ux + b * vx, cy + a * uy + b * vy) for a in (-long / 2, long / 2)
+                       for b in (-wide / 2, wide / 2)]
+            if all(foot.t2(x, y) >= 1.0 for x, y in corners) and foot.t2(cx, cy) >= 1.0:
+                continue
+            copies.append(CopyArea(cx, cy, wide / 2, src.x - cx, src.y - cy, turn, COPY_LAYERS, "square", area.dx,
+                                   area.dy, kind["map"], within, area.mode == "add", group, along=long / 2))
+            for k in range(dabs):
+                a = (k + 0.5) * long / dabs - long / 2
+                stamps.append(Stroke("stamp", cx + a * ux, cy + a * uy, wide / 2 / HARD_EDGE, sx=src.x - cx,
+                                     sy=src.y - cy, shape="square", edge="hard", dx=area.dx, dy=area.dy, clear=False))
+    return copies, stamps
+
+
+def expand_preset(area: PresetArea, lib: dict, group: int = 1, borders: dict | None = None,
+                  hedgerows: dict | None = None) -> tuple[list[CopyArea], list[EraseArea], list, list]:
+    """What a preset area lays, as (copies, erases, stamps, objects): a CopyArea per tile (its source square the
+    kind's, round-robin from `seed`, clipped
+    to the area, the fill rule in add mode, all of one `group`: the build gives each preset its own, so its tiles
+    never thin each other along their joins while other areas' objects count), an EraseArea of the area's low cover
+    in replace mode, and a stamp stroke per tile (the source square's ground picture). Tiles are TILE across, in
+    rows along the area's dx, dy, centred on the area; a tile is laid when its middle lies in the area. With a
+    border (area.border, from `borders`, default border_library()), the tiles are clipped half a BORDER_WIDTH inside
+    the outline and expand_border's strips and band erase are added: the game's fields end at hedge feet and field
+    edges, not in a hard line of crops. A FIELD kind (the library's [[field]] tables) is laid by expand_field
+    instead of tiles, and its border also carries the map's hedgerow trees and fence (expand_hedgerow, from
+    `hedgerows`, default hedgerow_library()): the objects returned last.
+
+    The stamps reach past their tiles: a hard edge is full strength only out to HARD_EDGE of the radius and fades to
+    nothing at it, so stamps of exactly a tile each left the ground underneath along every join (Preset D-Day,
+    2026-10-11: a dark cross through each wheat square, 40 % darker than the tiles, a bright one on the sand). At
+    TILE / 2 / HARD_EDGE a stamp is full over its whole tile and its fade lies over the next tile, where the later
+    stamp paints full again, or past the area's edge, where it softens into the ground around."""
+    from .brush import HARD_EDGE, Stroke
+    if area.name not in lib:
+        known = ", ".join(sorted(lib)) or "none"
+        raise SceneryEditError(f"no ground preset is called {area.name!r} (the presets: {known})")
+    kind = lib[area.name]
+    objects: list = []
+    if kind.get("type") == "field":
+        copies, stamps = expand_field(area, kind, group)
+    else:
+        sources = kind["sources"]
+        foot = area.footprint()
+        n = math.hypot(area.dx, area.dy) or 1.0
+        ux, uy = area.dx / n, area.dy / n          # along a row of tiles
+        vx, vy = -uy, ux                           # across the rows
+        steps = int(math.ceil(area.radius / TILE)) + 1
+        within = (area.shape, area.x, area.y, area.radius, area.dx, area.dy)
+        copies, stamps = [], []
+        k = area.seed
+        for j in range(-steps, steps + 1):
+            for i in range(-steps, steps + 1):
+                # tile middles at odd multiples of half a tile when the area is wider than one tile, else the middle
+                cx = area.x + (i + 0.5) * TILE * ux + (j + 0.5) * TILE * vx if area.radius > TILE / 2 else area.x
+                cy = area.y + (i + 0.5) * TILE * uy + (j + 0.5) * TILE * vy if area.radius > TILE / 2 else area.y
+                if foot.t2(cx, cy) >= 1.0:
+                    continue
+                sx, sy = sources[k % len(sources)]
+                k += 1
+                copies.append(CopyArea(cx, cy, TILE / 2, sx - cx, sy - cy, 0.0, COPY_LAYERS, "square", area.dx,
+                                       area.dy, kind["map"], within, area.mode == "add", group))
+                stamps.append(Stroke("stamp", cx, cy, TILE / 2 / HARD_EDGE, sx=sx - cx, sy=sy - cy, shape="square",
+                                     edge="hard", dx=area.dx, dy=area.dy, clear=False))
+                if area.radius <= TILE / 2:
+                    break
+            if area.radius <= TILE / 2 and copies:
+                break
+    erases = []
+    if area.mode == "replace":
+        erases.append(EraseArea(area.x, area.y, area.radius, ("decal",), (LOW_COVER,), shape=area.shape, dx=area.dx,
+                                dy=area.dy))
+    if area.border != "none":   # the tiles stop short of the border's band; its strips and erase follow (expand_border)
+        from dataclasses import replace as _with
+        inner = (area.shape, area.x, area.y, max(area.radius - BORDER_WIDTH / 2, area.radius / 2), area.dx, area.dy)
+        copies = [_with(c, within=inner) for c in copies]
+        strips, band = expand_border(area, border_library() if borders is None else borders, group)
+        copies += strips
+        erases += band
+        if kind.get("type") == "field":
+            rows = hedgerow_library() if hedgerows is None else hedgerows
+            objects = expand_hedgerow(area, rows.get(kind["map"]), area.seed + group)
+    return copies, erases, stamps, objects
+
+
+@dataclass(frozen=True)
+class FieldBrush:
+    """A dab of the field brush ([[fieldbrush]] in scenery.toml, MOD_FORMAT §8; the owner, 2026-10-14: "a field
+    brush ... that modifies what's there", only the strip under it, round or square): the map's own fields under it
+    turned into `look` (look_library). Only the fields change (expand_field_brush): their row stickers swap kind
+    where they lie, their crops are laid anew from a real field of the look turned to their rows, and the ground
+    picture under each sticker is stamped from that field. Hedges, fences, trees, the meadow and roads stay."""
+    look: str
+    x: float
+    y: float
+    radius: float
+    shape: str = "round"   # round, or square (sides along dx, dy, `radius` from its middle to each side)
+    dx: float = 1.0
+    dy: float = 0.0
+    seed: int = 0
+
+    def footprint(self):
+        from .brush import Footprint
+        if self.shape == "square":
+            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
+        return Footprint("round", self.x, self.y, self.radius)
+
+
+def parse_field_brushes(rows: list, where: str = "scenery.toml") -> list[FieldBrush]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"look", "x", "y", "radius", "shape", "dx", "dy", "seed"})
+        if extra:
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1}: unknown key {extra[0]!r}")
+        look = row.get("look")
+        if not isinstance(look, str) or not look.strip():
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1} has no look")
+        shape = row.get("shape", "round")
+        if shape not in ("round", "square"):
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1}: shape must be round or square")
+        try:
+            x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
+            dx, dy = float(row.get("dx", 1.0)), float(row.get("dy", 0.0))
+            seed = int(row.get("seed", 0))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1}: x, y, radius, dx, dy and seed must be "
+                                   f"numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, r, dx, dy)) or not 0 < r <= ERASE_MAX:
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1}: the radius must be above 0 and at most "
+                                   f"{ERASE_MAX:,.0f} map units")
+        if shape == "square" and dx == 0.0 and dy == 0.0:
+            raise SceneryEditError(f"{where}: fieldbrush {k + 1}: the square's direction dx, dy can't be 0, 0")
+        out.append(FieldBrush(look.strip(), x, y, r, shape, dx, dy, seed))
+    return out
+
+
+def look_library(path=None) -> dict[str, dict]:
+    """The field brush's looks, by name: {"description", "map" (whose fields they are measured on and copied from),
+    "field_kinds" (name prefixes of the map's field stickers the brush swaps), "crops" (name prefixes of the crop
+    plants it replaces), "stickers" [(kind, share)] (the row stickers it lays), "sources" [(x, y, the rows' facing
+    in degrees, inside along, inside across, its crops' turn against that facing)] (big fields of the look its crops
+    come from), "colour" ("#rrggbb": the look's ground colour on the map, the picture under the strip is tinted to;
+    "" none)}. From the [[look]] tables of ground_presets.toml beside this module."""
+    import tomllib
+    from pathlib import Path
+    file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    out: dict[str, dict] = {}
+    for row in data.get("look", []):
+        name = str(row.get("name", "")).strip()
+        sources = [tuple(float(v) for v in s) for s in row.get("sources", [])]
+        stickers = [(str(s[0]), float(s[1])) for s in row.get("stickers", [])]
+        if not name or not row.get("map") or not sources or not stickers:
+            raise SceneryEditError(f"{file.name}: a look needs a name, a map, stickers and sources")
+        if any(len(s) not in (5, 6) or s[3] <= 0 or s[4] <= 0 for s in sources):
+            raise SceneryEditError(f"{file.name}: look {name!r}: a source is [x, y, facing, inside along, inside "
+                                   f"across(, its crops' turn against the facing)], both sizes above 0")
+        out[name] = {"description": str(row.get("description", "")), "map": str(row["map"]),
+                     "field_kinds": tuple(row.get("field_kinds", ["Labourage", "Paille"])),
+                     "crops": tuple(row.get("crops", ["Champs_"])), "stickers": stickers,
+                     "sources": [s if len(s) == 6 else s + (0.0,) for s in sources],
+                     "colour": str(row.get("colour", ""))}
+    return out
+
+
+FIELD_HALF = 2048.0        # a field sticker's square, middle to side at size 1 (MinExtent/MaxExtent -2048..2048 in
+                           # every decor set: 15.75 m pieces); `halves` overrides it per type
+BRUSH_ANGLE = 12.0         # degrees: stickers whose facings are this alike are one field's rows
+# Two row stickers of one facing are one field when their middles lie under these many (half + half) apart along
+# the rows and across them. Measured on D-Day's 150,318 row stickers (scratch/looks/field_gaps.py, 2026-10-15): the
+# nearest one along the rows lies 0.8-1.1 away (their squares just meet), across 0.6-0.9 (rows overlap), and a second
+# bump across at 1.1-1.3 is the plot on the far side of a hedge or a track.
+FIELD_ALONG = 1.12
+FIELD_ACROSS = 1.0
+FIELD_REACH = 400.0 * 260.0  # the farthest a field's stickers are looked for round the brush
+
+
+def _facing(m) -> float:
+    return math.degrees(math.atan2(m[4], m[0])) % 180.0
+
+
+def _mean_facing(group: list) -> float:
+    c = sum(math.cos(math.radians(2 * _facing(m))) for _s, m, _k in group)
+    s = sum(math.sin(math.radians(2 * _facing(m))) for _s, m, _k in group)
+    return (math.degrees(math.atan2(s, c)) / 2) % 180.0
+
+
+def _cut(name: str) -> str:
+    """A row sticker's cut: "triangle" or "demi" (the pieces the map lays at a field's corners and ends), else ""."""
+    short = name.rsplit("/", 1)[-1]
+    return next((c for c in ("triangle", "demi") if short.endswith("_" + c)), "")
+
+
+def _alike(a: float, b: float) -> bool:
+    d = abs(a - b) % 180.0
+    return min(d, 180.0 - d) <= BRUSH_ANGLE
+
+
+def sticker_half(sc: Scenery, sym: int, m, halves: dict | None = None) -> float:
+    """A placed field sticker's square, middle to side (map units): its type's half extent times its size."""
+    return (halves or {}).get(sc.names[sym], FIELD_HALF) * math.hypot(m[0], m[4])
+
+
+def brush_fields(brush: "FieldBrush", look: dict, sc: Scenery, halves: dict | None = None) -> list[list]:
+    """The WHOLE fields a field brush dab touches (the owner, 2026-10-15: Eugen's field is its prefab's stickers and
+    the ground painted under the whole field, so the brush changes whole fields): each field is the stickers of one
+    facing joined square to square from those whose middles lie under the brush (within FIELD_ALONG and FIELD_ACROSS
+    of their sizes: not across a hedge or a track), so its shape is the union of its own stickers' squares, as
+    Eugen's prefab laid them. Each sticker
+    (name index, transform, LOD mask, its half size). [] when no field sticker lies under the brush."""
+    foot = brush.footprint()
+    x0, x1, y0, y1 = foot.box()
+    short = [n.rsplit("/", 1)[-1] for n in sc.names]
+    syms = {i for i, n in enumerate(short) if n.startswith(tuple(look["field_kinds"]))}
+    found: dict = {}
+    for sym, m, mask in walk_levels(sc, (x0 - FIELD_REACH, y0 - FIELD_REACH, x1 + FIELD_REACH, y1 + FIELD_REACH), syms):
+        key = (sym, round(m[3], 1), round(m[7], 1))
+        if key in found:
+            found[key][2] |= mask
+        else:
+            found[key] = [sym, m, mask, sticker_half(sc, sym, m, halves)]
+    pts = list(found.values())
+    if not pts:
+        return []
+    cell = 2.0 * max(p[3] for p in pts)
+    grid: dict = {}
+    for k, p in enumerate(pts):
+        grid.setdefault((int(p[1][3] // cell), int(p[1][7] // cell)), []).append(k)
+
+    def joined(a, b) -> bool:
+        pa, pb = pts[a], pts[b]
+        if not _alike(_facing(pa[1]), _facing(pb[1])):
+            return False
+        t = math.radians(_facing(pa[1]))
+        ux, uy = math.cos(t), math.sin(t)
+        dx, dy = pb[1][3] - pa[1][3], pb[1][7] - pa[1][7]
+        s = pa[3] + pb[3]
+        return abs(dx * ux + dy * uy) < FIELD_ALONG * s and abs(-dx * uy + dy * ux) < FIELD_ACROSS * s
+
+    seeds = [k for k, p in enumerate(pts) if foot.t2(p[1][3], p[1][7]) < 1.0]
+    taken: set = set()
+    fields = []
+    for s in seeds:
+        if s in taken:
+            continue
+        todo, field = [s], []
+        taken.add(s)
+        while todo:
+            a = todo.pop()
+            field.append(tuple(pts[a]))
+            gx, gy = int(pts[a][1][3] // cell), int(pts[a][1][7] // cell)
+            for i in (gx - 1, gx, gx + 1):
+                for j in (gy - 1, gy, gy + 1):
+                    for b in grid.get((i, j), ()):
+                        if b not in taken and joined(a, b):
+                            taken.add(b)
+                            todo.append(b)
+        fields.append(field)
+    return fields
+
+
+def field_key(field: list) -> frozenset:
+    """A field's identity: its row stickers (name index, x, y), as brush_fields finds them."""
+    return frozenset((s, round(m[3], 1), round(m[7], 1)) for s, m, _k, _h in field)
+
+
+def own_fields(dabs: list, looks: dict, sc: Scenery, halves: dict | None = None) -> tuple[list, set]:
+    """For a map's field brush dabs in order: each dab's fields that are its own (a field two dabs touch is the
+    LATER dab's, as a later stroke paints over an earlier one), and every row sticker any of them changes (so no
+    dab lays one of them again as an untouched neighbour)."""
+    found = [brush_fields(d, looks[d.look], sc, halves) for d in dabs]
+    last = {}
+    for k, fields in enumerate(found):
+        for f in fields:
+            last[field_key(f)] = k
+    own = [[f for f in fields if last[field_key(f)] == k] for k, fields in enumerate(found)]
+    changed = set().union(*last) if last else set()
+    return own, changed
+
+
+def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int = 0, halves: dict | None = None,
+                       fields: list | None = None, changed: set | None = None,
+                       relaid: set | None = None):
+    """What a field brush dab does to the map whose scenery is `sc` (as it ships, before the build erases anything),
+    as (erases, objects, copies, stamps, notes). For each WHOLE field it touches (brush_fields):
+      - the field's row stickers are taken off and laid again where they were, the same size, facing and levels,
+        all of the look's main kind (a corner piece that kind's corner piece where the map has one, else as it was);
+      - its crops (look["crops"]) go, and the look's crops are copied from one of its source fields, their own run
+        turned onto these rows, from the source's inside only, landing only on the field (within a sticker's half
+        size of one of its stickers); a field bigger than the source is laid in squares of the source's size;
+      - the ground picture under the field is the field's own, tinted to the look's colour (its mean the look's,
+        a third of its grain kept): a hard "tint" square on each whole row sticker, so the coloured shape is the
+        field's own shape, edge to edge, as Eugen's picture paints a field under its stickers.
+    What the erases take of a NEIGHBOUR field's row stickers (squares overlap across a hedge) is laid again as it
+    was, unless `changed` (own_fields: every row sticker the map's dabs change) holds it, or `relaid` does (the
+    neighbour stickers an earlier dab of the map laid again; this dab adds its own: two dabs' erases over one
+    neighbour sticker laid it twice). `fields`: this dab's own fields (own_fields), else every field it touches.
+    Nothing is done where there's no field under the brush."""
+    from .brush import Stroke
+    given = fields is not None
+    fields = brush_fields(brush, look, sc, halves) if fields is None else fields
+    if not fields:
+        why = "every field under it is painted by a later dab" if given else "no field under it"
+        return [], [], [], [], [f"field brush at ({brush.x:.0f}, {brush.y:.0f}): {why}, nothing done"]
+    full = {}
+    for n in sc.names:
+        full.setdefault(n.rsplit("/", 1)[-1], n)
+    shares = [(full[n], s) for n, s in look["stickers"] if n in full]
+    if not shares:
+        raise SceneryEditError(f"the look's row stickers ({', '.join(n for n, _s in look['stickers'])}) aren't on "
+                               f"this map")
+    main = max((s for s in shares if not _cut(s[0])), key=lambda s: s[1], default=shares[0])[0]
+    short = [n.rsplit("/", 1)[-1] for n in sc.names]
+    field_syms = {i for i, n in enumerate(short) if n.startswith(tuple(look["field_kinds"]))}
+    crop_names = tuple(sorted({sc.names[i] for i, n in enumerate(short) if n.startswith(tuple(look["crops"]))}))
+    kinds = tuple(sorted({sc.names[i] for i in field_syms}))
+    erases, objects, copies, stamps, notes = [], [], [], [], []
+    mine: set = set()   # (sym, x, y) of every sticker of the fields changed
+    for field in fields:
+        mine.update((s, round(m[3], 1), round(m[7], 1)) for s, m, _k, _h in field)
+    sources = look["sources"]
+    for g, field in enumerate(fields):
+        ang = _mean_facing([(s, m, k) for s, m, k, _h in field])
+        for sym, m, mask, half in field:
+            f = _facing(m)
+            t = math.radians(f)
+            erases.append(EraseArea(m[3], m[7], half, (), kinds + crop_names, shape="square", dx=math.cos(t),
+                                    dy=math.sin(t)))
+            size = math.hypot(m[0], m[4])
+            stretch = math.hypot(m[1], m[5]) / size if size else 1.0
+            cut = _cut(sc.names[sym])
+            kind = main if not cut else (main + "_" + cut if main + "_" + cut in sc.names else sc.names[sym])
+            objects.append(NewObject(kind, m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
+                                     stretch=stretch, lift=m[11], levels=mask, height=m[10] or size))
+            if look.get("colour") and not cut:   # (a corner or half piece covers part of its square only)
+                stamps.append(Stroke("tint", m[3], m[7], half, colour=look["colour"], clear=False, shape="square",
+                                     edge="hard", dx=math.cos(t), dy=math.sin(t)))
+        # the crops: from the source whose rows run nearest these, turned onto them, over the field's box in squares
+        def off(src):
+            d = abs(src[2] + src[5] - ang) % 180.0
+            return min(d, 180.0 - d)
+        ranked = sorted(range(len(sources)), key=lambda k: (round(off(sources[k])), k))
+        close = [k for k in ranked if off(sources[k]) <= off(sources[ranked[0]]) + 5.0]
+        sx0, sy0, sang, along, across, crop = sources[close[(brush.seed + g) % len(close)]]
+        turn = ang - (sang + crop)
+        turn = (turn + 90.0) % 180.0 - 90.0   # rows have no front: the least turn
+        ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+        su, sv = math.cos(math.radians(sang)), math.sin(math.radians(sang))
+        o = math.radians(abs(crop))
+        side = min(along, across) / (math.cos(o) + math.sin(o))
+        us = [m[3] * ux + m[7] * uy for _s, m, _k, _h in field]
+        vs = [-m[3] * uy + m[7] * ux for _s, m, _k, _h in field]
+        reach = max(h for _s, _m, _k, h in field)
+        u0, u1, v0, v1 = min(us) - reach, max(us) + reach, min(vs) - reach, max(vs) + reach
+        nu, nv = max(1, math.ceil((u1 - u0) / side)), max(1, math.ceil((v1 - v0) / side))
+        # the crops land inside the field's own sticker squares (its shape, the squares the erases take), never past
+        # them (circles of the stickers' middle size let them spill up to 1.4 m past a smaller sticker's edge)
+        pts = [(m[3], m[7], h, math.cos(math.radians(_facing(m))), math.sin(math.radians(_facing(m))))
+               for _s, m, _k, h in field]
+        near_r = reach
+        pieces = 0
+        for i in range(nu):
+            for j in range(nv):
+                cu, cv = u0 + (i + 0.5) * (u1 - u0) / nu, v0 + (j + 0.5) * (v1 - v0) / nv
+                cx, cy = cu * ux - cv * uy, cu * uy + cv * ux
+                here = tuple(p for p in pts if abs((p[0] - cx) * ux + (p[1] - cy) * uy) <= side / 2 + reach
+                             and abs(-(p[0] - cx) * uy + (p[1] - cy) * ux) <= side / 2 + reach)
+                if not here:
+                    continue
+                # each piece its own cell alone (cells meet edge to edge; a piece a whole source square wide laid
+                # the crops two and three times over where pieces overlapped: 10,029 on a field that had 301)
+                copies.append(CopyArea(cx, cy, (v1 - v0) / nv / 2, sx0 - cx, sy0 - cy, turn, ("plants",), "square", ux, uy,
+                                       look["map"], None, False, group, along=(u1 - u0) / nu / 2, only=tuple(look["crops"]),
+                                       near=here, near_r=near_r, src_clip=(sx0, sy0, across / 2, su, sv, along / 2)))
+                pieces += 1
+        notes.append(f"field brush at ({brush.x:.0f}, {brush.y:.0f}): a whole field of {len(field)} row sticker(s) "
+                     f"facing {ang:.0f} degrees made {brush.look}, crops from the field at ({sx0:.0f}, {sy0:.0f}) "
+                     f"turned {turn:.0f} degrees in {pieces} piece(s)")
+    # a neighbour field's row stickers the erases take (their squares overlap across a hedge): laid again as they were
+    boxes = [e.footprint().box() for e in erases]
+    bx0, bx1 = min(b[0] for b in boxes), max(b[1] for b in boxes)
+    by0, by1 = min(b[2] for b in boxes), max(b[3] for b in boxes)
+    feet = [e.footprint() for e in erases]
+    kept = 0
+    seen: set = set() if relaid is None else relaid
+    for sym, m, mask in walk_levels(sc, (bx0, by0, bx1, by1), field_syms):
+        key = (sym, round(m[3], 1), round(m[7], 1))
+        if key in mine or key in (changed or ()) or key in seen or not any(ft.t2(m[3], m[7]) < 1.0 for ft in feet):
+            continue
+        seen.add(key)
+        size = math.hypot(m[0], m[4])
+        objects.append(NewObject(sc.names[sym], m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
+                                 stretch=math.hypot(m[1], m[5]) / size if size else 1.0, lift=m[11], levels=mask,
+                                 height=m[10] or size))
+        kept += 1
+    if kept:
+        notes.append(f"field brush: {kept} row sticker(s) of neighbouring fields laid again as they were")
+    return erases, objects, copies, stamps, notes
+
+
+def border_library(path=None) -> dict[str, dict]:
+    """The border strips a preset can lay along its outline, by name ("edge", "hedge"): {"description", "map" (the
+    pack whose strips they are), "sources" [(x, y, dx, dy, length)...]}: each a straight strip of the map's own, by
+    its middle, its direction and its length (map units). From the [[border]] tables of ground_presets.toml beside
+    this module."""
+    import tomllib
+    from pathlib import Path
+    file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    out: dict[str, dict] = {}
+    for row in data.get("border", []):
+        name = str(row.get("name", "")).strip()
+        if not name or not row.get("sources") or not row.get("map"):
+            raise SceneryEditError(f"{file.name}: a border needs a name, a map and sources")
+        sources = []
+        for s in row["sources"]:
+            try:
+                x, y, dx, dy, length = (float(v) for v in s)
+            except (TypeError, ValueError):
+                raise SceneryEditError(f"{file.name}: border {name}: a source is x, y, dx, dy, length") from None
+            if not all(math.isfinite(v) for v in (x, y, dx, dy, length)) or length <= 0 or dx == dy == 0.0:
+                raise SceneryEditError(f"{file.name}: border {name}: a source needs a length above 0 and a "
+                                       f"direction dx, dy other than 0, 0")
+            sources.append((x, y, dx, dy, length))
+        out[name] = {"description": str(row.get("description", "")), "map": str(row["map"]), "sources": sources}
+    return out
+
+
+def border_outline(area: PresetArea) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    """The area's outline as straight runs, each (start, end) going round it: a square's four sides (turned with its
+    dx, dy), a circle's chords, as many as keep each within BORDER_SAG of the circle (8 at least)."""
+    if area.shape == "square":
+        cs = area.footprint().corners()
+        return [(cs[k], cs[(k + 1) % 4]) for k in range(4)]
+    chord = math.sqrt(8.0 * area.radius * BORDER_SAG)   # a chord c strays c² / 8r inside the circle
+    n = max(8, math.ceil(2.0 * math.pi * area.radius / chord))
+    step = 2.0 * math.pi / n
+    pts = [(area.x + area.radius * math.cos(step * k), area.y + area.radius * math.sin(step * k)) for k in range(n)]
+    return [(pts[k], pts[(k + 1) % n]) for k in range(n)]
+
+
+def expand_border(area: PresetArea, borders: dict, group: int = 0) -> tuple[list[CopyArea], list[EraseArea]]:
+    """What a preset's border lays (area.border, a name in `borders`: border_library): along each run of its outline
+    (border_outline), an EraseArea of the band BORDER_WIDTH across centred on it (the stickers, low plants and stones
+    of the map there, so the strips never sit in its crops), and the run cut in equal pieces no longer than the
+    kind's shortest strip, each a CopyArea of the middle of one of the kind's strips (round-robin from area.seed)
+    turned to lie along the run, its plants and stones only (BORDER_LAYERS), at the LOD levels they are drawn at on
+    their map. A copy's square and its clip (`within`), as long as the piece and moved apart across the run, overlap
+    in the band alone. The copies take the preset's `group`, so the tiles beside them don't thin them."""
+    if area.border == "none":
+        return [], []
+    if area.border not in borders:
+        known = ", ".join(sorted(borders)) or "none"
+        raise SceneryEditError(f"no border is called {area.border!r} (the borders: {known})")
+    kind = borders[area.border]
+    sources = kind["sources"]
+    shortest = min(s[4] for s in sources)
+    half = BORDER_WIDTH / 2
+    copies, erases = [], []
+    k = area.seed
+    for (x0, y0), (x1, y1) in border_outline(area):
+        run = math.hypot(x1 - x0, y1 - y0)
+        if run <= 0.0:
+            continue
+        ux, uy = (x1 - x0) / run, (y1 - y0) / run
+        vx, vy = -uy, ux
+        erases.append(EraseArea(x0, y0, half, ("decal",), (LOW_COVER,), shape="line", x2=x1, y2=y1))
+        pieces = max(1, math.ceil(run / shortest))
+        s = run / pieces / 2
+        a = max(s - half, 0.0)
+        for p in range(pieces):
+            cx, cy = x0 + ux * (2 * p + 1) * s, y0 + uy * (2 * p + 1) * s
+            px, py, pdx, pdy, _length = sources[k % len(sources)]
+            k += 1
+            norm = math.hypot(pdx, pdy)
+            pdx, pdy = pdx / norm, pdy / norm
+            turn = math.degrees(math.atan2(uy, ux) - math.atan2(pdy, pdx))
+            ax, ay = cx + vx * a, cy + vy * a
+            fx, fy = px - pdy * a, py + pdx * a   # the source's point under the square's middle
+            copies.append(CopyArea(ax, ay, s, fx - ax, fy - ay, turn, BORDER_LAYERS, "square", ux, uy, kind["map"],
+                                   ("square", cx - vx * a, cy - vy * a, s, ux, uy), False, group))
+    return copies, erases
+
+
+def entry_masks(b: Block) -> dict[int, int]:
+    """{entry index: the LOD mask of the deepest node of the block's draw tree listing it}: what the decor dresser goes
+    by (bits 1/2 close, 4 middle, 0x10 middle with GroundQuality, 8 far; private notes ground-structure §1)."""
+    out: dict[int, int] = {}
+    count = len(b.nodes) // 8
+    todo = [(0, 0, len(b.entries))] if count else []
+    while todo:
+        i, lo, hi = todo.pop()
+        if i >= count:
+            continue
+        word, split = struct.unpack_from("<IH", b.nodes, 8 * i)
+        for k in range(lo, hi):
+            out[k] = (word >> 20) & 0x1F
+        if word & (1 << 28):
+            continue
+        if not word & (1 << 30):
+            todo.append((i + 1, lo, split))
+        if not word & (1 << 31):
+            todo.append((i + ((word & 0xFFFFF) >> 2), split, hi))
+    return out
+
+
+def walk_levels(sc: Scenery, box: tuple, only: set[int]):
+    """(name index, 3x4 transform in map coordinates, LOD mask) for every object of `only` whose middle lies in `box`
+    (x0, y0, x1, y1, map units): the mask the dresser draws it at, its own entries' (entry_masks) ANDed with every
+    block reference's above it. Blocks whose box misses `box` aren't walked."""
+    x0, y0, x1, y1 = box
+    keep = sc.holding(only)
+    own: dict[int, dict[int, int]] = {}
+
+    def item_masks(b: Block) -> dict[int, int]:
+        got = own.get(b.index)
+        if got is None:
+            masks = entry_masks(b)
+            got = {}
+            for k, at in enumerate(b.entries):
+                got[at] = got.get(at, 0) | masks.get(k, 0)
+            own[b.index] = got
+        return got
+
+    def meets(b: Block, m: tuple) -> bool:
+        bx0, by0, bx1, by1 = b.bbox
+        xs = [m[0] * x + m[1] * y + m[3] for x, y in ((bx0, by0), (bx1, by0), (bx0, by1), (bx1, by1))]
+        ys = [m[4] * x + m[5] * y + m[7] for x, y in ((bx0, by0), (bx1, by0), (bx0, by1), (bx1, by1))]
+        return max(xs) >= x0 and min(xs) <= x1 and max(ys) >= y0 and min(ys) <= y1
+
+    todo = [(r, IDENTITY, ALL_TIERS) for r in sc.roots()]
+    while todo:
+        i, m, above = todo.pop()
+        b = sc.blocks[i]
+        if not keep[i] or not above:
+            continue
+        masks = item_masks(b)
+        for it in b.items:
+            if it.kind == "object":
+                if it.symbol in only:
+                    w = compose(m, it.matrix())
+                    if x0 <= w[3] <= x1 and y0 <= w[7] <= y1:
+                        yield it.symbol, w, above & masks.get(it.at, 0)
+            elif it.kind == "child":
+                j = sc._by_offset[it.child_offset]
+                if keep[j]:
+                    w = compose(m, it.matrix())
+                    if meets(sc.blocks[j], w):
+                        todo.append((j, w, above & masks.get(it.at, 0)))
+
+
+def copy_layers(names: list[str], descs: dict) -> dict[str, set[int]]:
+    """{layer: the name indexes of a map's types in it} (COPY_LAYERS): stickers are its decals but road stickers,
+    plants and stones its low cover (low_cover)."""
+    roads = set(road_stickers(names, descs))
+    low = set(low_cover(descs, names))
+    out: dict[str, set[int]] = {g: set() for g in COPY_LAYERS}
+    for i, n in enumerate(names):
+        d = descs.get(n)
+        if d is None:
+            continue
+        if d.group == "decal" and n not in roads:
+            out["stickers"].add(i)
+        elif n in low:
+            out["plants" if d.group == "vegetation" else "stones"].add(i)
+    return out
+
+
+class _Taken:
+    """Points for the fill rule, by layer (plants, stones) or by sticker type name, in cells of the widest gap, asked
+    "is one within `gap` of (x, y)?": what the map already has in a footprint (built from the scenery), or what the
+    build has laid so far (empty, then `add`ed, each point with the copy's group)."""
+
+    def __init__(self, sc: Scenery | None = None, box: tuple | None = None, layer_of: dict | None = None):
+        self.cell = max(FILL_GAP.values())
+        self.points: dict[tuple, list] = {}
+        if sc is not None:
+            for sym, m, _mask in walk_levels(sc, box, set(layer_of)):
+                self.add(sc.names[sym] if layer_of[sym] == "stickers" else layer_of[sym], m[3], m[7])
+
+    def add(self, key, x: float, y: float, group: int = 0) -> None:
+        self.points.setdefault((key, int(x // self.cell), int(y // self.cell)), []).append((x, y, group))
+
+    def near(self, key, x: float, y: float, gap: float, group: int = 0) -> bool:
+        """Whether a point of `key` lies within `gap`, points of the same group (not 0) left out."""
+        cx, cy = int(x // self.cell), int(y // self.cell)
+        g2 = gap * gap
+        for i in (cx - 1, cx, cx + 1):
+            for j in (cy - 1, cy, cy + 1):
+                for px, py, g in self.points.get((key, i, j), ()):
+                    if (px - x) ** 2 + (py - y) ** 2 < g2 and not (group and g == group):
+                        return True
+        return False
+
+
+def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
+                 sources: dict[str, bytes] | None = None) -> tuple[list[NewObject], list[str]]:
+    """The objects `areas` lay (each a NewObject with its shipped copy's LOD levels, solid = false), read from the
+    scenery file `data` as the map ships it (or from `sources[area.source]`, another map's shipped scenery, when the
+    area names one), and notes: per area how many of each layer, and any object left out (a mirrored one, one sized
+    past what a placed object may be, or one the fill rule left off: FILL_GAP, against the map in fill mode and
+    against what the areas before it laid in any mode, CopyArea.group)."""
+    sc = Scenery(data)
+    layers = copy_layers(sc.names, descs)
+    read: dict[str, tuple] = {"": (sc, layers)}
+    out: list[NewObject] = []
+    notes: list[str] = []
+    laid = _Taken()
+    for n, a in enumerate(areas, 1):
+        if a.source and a.source not in read:
+            if not sources or a.source not in sources:
+                raise SceneryEditError(f"copy {n} takes its ground from {a.source}, whose scenery wasn't given")
+            src_sc = Scenery(sources[a.source])
+            read[a.source] = (src_sc, copy_layers(src_sc.names, descs))
+        src_sc, src_layers = read[a.source]
+        only = set().union(*(src_layers[g] for g in a.layers))
+        if a.only:   # (the field brush's crops alone)
+            only = {i for i in only if src_sc.names[i].rsplit("/", 1)[-1].startswith(tuple(a.only))}
+        layer_of = {i: g for g in a.layers for i in src_layers[g]}
+        foot = a.footprint()
+        clip = a.clip()
+        sclip = a.source_clip()
+        near = None
+        if a.near:   # the places an object must land in, filed in cells of near_r: a point (x, y) is a circle of
+            near = collections.defaultdict(list)   # near_r round it, a square (x, y, half, dx, dy) its own square
+            for p in a.near:
+                near[(int(p[0] // a.near_r), int(p[1] // a.near_r))].append(p)
+        r2 = a.near_r * a.near_r
+
+        def lands(x, y) -> bool:
+            cx, cy = int(x // a.near_r), int(y // a.near_r)
+            for i in (cx - 1, cx, cx + 1):
+                for j in (cy - 1, cy, cy + 1):
+                    for p in near.get((i, j), ()):
+                        if len(p) == 2:
+                            if (p[0] - x) ** 2 + (p[1] - y) ** 2 <= r2:
+                                return True
+                        elif (abs((x - p[0]) * p[3] + (y - p[1]) * p[4]) < p[2]
+                              and abs(-(x - p[0]) * p[4] + (y - p[1]) * p[3]) < p[2]):
+                            return True
+            return False
+        to = a.to_target()
+        back = _inverse(to)
+        tx0, tx1, ty0, ty1 = foot.box()
+        corners = [(back[0] * x + back[1] * y + back[3], back[4] * x + back[5] * y + back[7])
+                   for x, y in ((tx0, ty0), (tx1, ty0), (tx0, ty1), (tx1, ty1))]
+        src = (min(c[0] for c in corners), min(c[1] for c in corners),
+               max(c[0] for c in corners), max(c[1] for c in corners))
+        taken = None
+        if a.fill:
+            here = {i: g for g in a.layers for i in layers[g]}
+            pad = max(FILL_GAP.values())   # what sits just outside the shape counts too
+            taken = _Taken(sc, (tx0 - pad, ty0 - pad, tx1 + pad, ty1 + pad), here)
+        counts = {g: 0 for g in a.layers}
+        mirrored = sized = off = dup = 0
+        for sym, m, mask in walk_levels(src_sc, src, only):
+            if sclip is not None and sclip.t2(m[3], m[7]) >= 1.0:
+                continue
+            w = compose(to, m)
+            if foot.t2(w[3], w[7]) >= 1.0 or not mask or (clip is not None and clip.t2(w[3], w[7]) >= 1.0):
+                continue
+            if near is not None and not lands(w[3], w[7]):
+                continue
+            size = math.hypot(w[0], w[4])
+            if w[0] * w[5] - w[1] * w[4] < 0:
+                mirrored += 1
+                continue
+            stretch = math.hypot(w[1], w[5]) / size if size else 1.0
+            if not (0.05 <= size <= 50 and 0.2 <= stretch <= 5):
+                sized += 1
+                continue
+            layer = layer_of[sym]
+            key = src_sc.names[sym] if layer == "stickers" else layer
+            if taken is not None and taken.near(key, w[3], w[7], FILL_GAP[layer]):
+                off += 1
+                continue
+            if laid.near(key, w[3], w[7], FILL_GAP[layer], a.group):
+                dup += 1
+                continue
+            out.append(NewObject(src_sc.names[sym], w[3], w[7], math.degrees(math.atan2(w[4], w[0])), size,
+                                 solid=False, stretch=stretch, lift=w[11], levels=mask, height=w[10] or size))
+            laid.add(key, w[3], w[7], a.group)
+            counts[layer] += 1
+        notes.append(f"copy {n}: " + ", ".join(f"{c:,} {g}" for g, c in counts.items())
+                     + f" from {a.sx / 260:+.0f} m, {a.sy / 260:+.0f} m away"   # 260 map units a metre
+                     + (f" on {a.source}" if a.source else "")
+                     + (f", turned {a.turn:g} degrees" if a.turn else "")
+                     + (f"; {off:,} left off where the map already has one (fill rule)" if off else "")
+                     + (f"; {dup:,} left off where an earlier copy laid one (fill rule)" if dup else "")
+                     + (f"; {mirrored} mirrored left out" if mirrored else "")
+                     + (f"; {sized} sized past 0.05-50 (or stretched past 0.2-5) left out" if sized else ""))
+    return out, notes
+
+
 def _far_children(sc: Scenery) -> list[Item]:
     """The top block's references to blocks that it lists for far view (its first node's count of entries)."""
     roots = sc.roots()
@@ -2035,11 +3104,18 @@ class _Carrier:
     far: list               # its leaf boxes in the far-view list (map coordinates: the top block is placed as is)
     full: list              # and in the list of every item
     marked: bool = False    # its path to the full list's leaf already has the road mark
+    mask: int = 0           # the LOD levels its full-list listings carry (their nodes' masks, or'ed): the game ANDs
+                            # a node's mask down the chain, so a block hung on it is drawn at these levels at most
 
 
-def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tuple[int, list]], list]:
-    """New things per carrier, as [(the top block's reference's `at`, its things)], and the things in no carrier's
-    boxes. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
+def _needs(p) -> int:
+    """The LOD levels (but far) a new object asks of the block it hangs on: its own, else every one."""
+    return (getattr(p, "levels", 0) or ALL_TIERS) & ALL_TIERS & ~0x08
+
+
+def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tuple[int, list]], list, int]:
+    """New things per carrier, as [(the top block's reference's `at`, its things)], the things in no carrier's
+    boxes, and how many things hang on a carrier listed at fewer levels than they ask. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
     only while it walks the cell its origin lies in, so a thing has to lie in its carrier's leaf box (on D-Day 416
     of the 431 shipped road middles do; one carrier for a whole road left up to 1.8 km of it outside, and on Edge
     3 in 10 new objects 300 m off a village). Road pieces (walked by the road pass through the full list) go on a far-listed
@@ -2051,6 +3127,7 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
     top, far = sc.blocks[0], _far_children(sc)
     nodes = _tree(top)
     boxes = _leaf_boxes(top)
+    masks = entry_masks(top)
     split = nodes[0][1]
     far_at = {it.at for it in far}
     children = {it.at for it in top.items if it.kind == "child"}
@@ -2064,6 +3141,7 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
         else:
             c.full.append(boxes[e])
             c.marked = c.marked and all(nodes[k][0] & ROAD_BIT for k in _path(nodes, e))
+            c.mask |= masks.get(e, 0)
 
     def inside(bs, p):
         return any(b[0] <= p.x <= b[2] and b[1] <= p.y <= b[3] for b in bs)
@@ -2071,11 +3149,19 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
     def meets(bs, p, size):  # a box meets the grid cell (of `size`) that p lies in: the game walks that leaf there
         x0, y0 = math.floor(p.x / size) * size, math.floor(p.y / size) * size
         return any(b[0] <= x0 + size and x0 <= b[2] and b[1] <= y0 + size and y0 <= b[3] for b in bs)
+
+    def draws(c, p):  # the carrier's listings carry every level the thing asks (2026-10-11: a meadow hung on a
+        return (c.mask & _needs(p)) == _needs(p)   # block listed without the close level lost it up close)
     close, far_cell = GRID_CELL[2], GRID_CELL[0]
     if roads:
         rounds = [(lambda c, p: c.at in far_at and inside(c.full, p), lambda c: c.marked)]
     else:
-        rounds = [(lambda c, p: c.at in far_at and meets(c.full, p, close) and meets(c.far, p, far_cell),
+        # first the carriers whose levels cover the thing's; the same rounds without that last, so nothing is left
+        # out for it (such a thing is drawn at fewer levels than it asks: add_objects says so)
+        rounds = [(lambda c, p: c.at in far_at and meets(c.full, p, close) and meets(c.far, p, far_cell)
+                   and draws(c, p), lambda c: True),
+                  (lambda c, p: meets(c.full, p, close) and draws(c, p), lambda c: c.at in far_at),
+                  (lambda c, p: c.at in far_at and meets(c.full, p, close) and meets(c.far, p, far_cell),
                    lambda c: True),
                   (lambda c, p: meets(c.full, p, close), lambda c: c.at in far_at)]
     # between carriers that hold as many, the one whose block is nearest the things (on M03_Italie every far-listed
@@ -2087,6 +3173,56 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
         return math.hypot(max(x0 - mx, 0.0, mx - x1), max(y0 - my, 0.0, my - y1))
     out: dict[int, list] = {}
     left = list(things)
+    if not roads:
+        # An object's rounds look only at the cells it lies in (close and far) and the levels it asks, so each
+        # carrier is asked once for each such key instead of for every object: the same answers, so the same
+        # carriers in the same order, many times sooner (the side-by-side test's presets: ~70 s here, 2026-10-14).
+        # Every round asks meets(c.full, p, close) first: the keys a carrier's full boxes meet are found once.
+        def cell_of(p):
+            return (math.floor(p.x / close), math.floor(p.y / close), math.floor(p.x / far_cell),
+                    math.floor(p.y / far_cell), _needs(p))
+        key_of = [cell_of(p) for p in things]
+        at_of = {id(p): k for p, k in zip(things, key_of)}
+        keys = set(key_of)
+
+        def meets_cell(bs, fx, fy, size):  # meets(), from the cell's own numbers
+            x0, y0 = fx * size, fy * size
+            return any(b[0] <= x0 + size and x0 <= b[2] and b[1] <= y0 + size and y0 <= b[3] for b in bs)
+        near: dict[int, list] = {}
+        for c in cands.values():
+            if not c.full:
+                continue
+            bx0, by0 = min(b[0] for b in c.full), min(b[1] for b in c.full)
+            bx1, by1 = max(b[2] for b in c.full), max(b[3] for b in c.full)
+            near[c.at] = [k for k in keys if bx0 <= (k[0] + 1) * close and k[0] * close <= bx1
+                          and by0 <= (k[1] + 1) * close and k[1] * close <= by1 and meets_cell(c.full, k[0], k[1], close)]
+        key_rounds = [
+            (lambda c, k: c.at in far_at and meets_cell(c.far, k[2], k[3], far_cell) and draws_mask(c, k[4]),
+             lambda c: True),
+            (lambda c, k: draws_mask(c, k[4]), lambda c: c.at in far_at),
+            (lambda c, k: c.at in far_at and meets_cell(c.far, k[2], k[3], far_cell), lambda c: True),
+            (lambda c, k: True, lambda c: c.at in far_at)]
+
+        def draws_mask(c, needs):
+            return (c.mask & needs) == needs
+        for holds, better in key_rounds:
+            pool = [c for c in cands.values() if c.full]
+            held = {c.at: {k for k in near[c.at] if holds(c, k)} for c in pool}
+            while left and pool:
+                mx, my = sum(p.x for p in left) / len(left), sum(p.y for p in left) / len(left)
+                count: dict = {}
+                for p in left:
+                    k = at_of[id(p)]
+                    count[k] = count.get(k, 0) + 1
+                best = max(pool, key=lambda c: (sum(count.get(k, 0) for k in held[c.at]), better(c),
+                                                -off(c, mx, my)))
+                mine = held[best.at]
+                got = [p for p in left if at_of[id(p)] in mine]
+                if not got:
+                    break
+                out.setdefault(best.at, []).extend(got)
+                left = [p for p in left if at_of[id(p)] not in mine]
+        rounds = []  # (done above)
     for holds, better in rounds:
         pool = [c for c in cands.values() if c.full]
         while left and pool:
@@ -2102,7 +3238,9 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
             x0, y0, x1, y1 = _world_box(sc, it)
             return math.hypot(max(x0 - p.x, 0.0, p.x - x1), max(y0 - p.y, 0.0, p.y - y1)), (x1 - x0) * (y1 - y0)
         out.setdefault(min(far, key=gap).at, []).append(p)
-    return list(out.items()), left
+    short = 0 if roads else sum(1 for at, group in out.items() for p in group
+                                if at in cands and (cands[at].mask & _needs(p)) != _needs(p))
+    return list(out.items()), left, short
 
 
 def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, list[str]]:
@@ -2510,6 +3648,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
     inner = sc.block_at(carrier.child_offset)
     items, xs, ys = [], [inner.bbox[0], inner.bbox[2]], [inner.bbox[1], inner.bbox[3]]
     boxes = [tuple(inner.bbox)]  # each item's box in the new block, for its tree: the old block's own first
+    levels = [0]                 # each item's LOD mask (NewObject.levels): the old block drawn as before
     style = _road_style(sc)
     for o in objects:
         if isinstance(o, RoadPiece):
@@ -2520,6 +3659,7 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
             xs += px
             ys += py
             boxes.append((min(px), min(py), max(px), max(py)))
+            levels.append(0)
             continue
         sym = index.get(o.type)
         if sym is None:
@@ -2534,14 +3674,15 @@ def _wrap(sc: Scenery, data: bytes, objects: list[NewObject], far: list[Item],
         xs += [local[3] - pad, local[3] + pad]
         ys += [local[7] - pad, local[7] + pad]
         boxes.append((local[3] - pad, local[7] - pad, local[3] + pad, local[7] + pad))
-    probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0), boxes)  # its size: where the old block moves to
+        levels.append(o.levels)
+    probe = _new_block([b"\0" * 4] + items, (0.0, 0.0, 0.0, 0.0), boxes, levels)  # its size: where the old block moves
     shift = len(probe)
     moved_to = carrier.child_offset + shift
     if sc.fields[3] + shift > DATA_LIMIT:
         raise SceneryEditError("the map's scenery is too big for a new block to be referenced")
     # the old block, placed where it was (no transform: the reference to the new block keeps the old one's)
     first = struct.pack("<I", link_word(carrier.word & 0xFF000000, moved_to) | T_IDENTITY)
-    new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)), boxes)
+    new = _new_block([first] + items, (min(xs), min(ys), max(xs), max(ys)), boxes, levels)
     if len(new) != shift:
         raise SceneryError("a new block came out a different size than measured")
     # every block, its references to blocks after the top one moved by the new block's size

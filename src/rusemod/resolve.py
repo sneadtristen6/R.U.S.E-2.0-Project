@@ -31,6 +31,8 @@ class ModInfo:
     rmod: object = None                                      # a .rmod mod: its file (rusemod.rmod applies it)
     scenery: dict = field(default_factory=dict)              # map pack name -> [scenery.NewObject] (§8)
     erase: dict = field(default_factory=dict)                # map pack name -> [scenery.EraseArea] (§8, scenery.toml)
+    copy: dict = field(default_factory=dict)                 # map pack name -> [scenery.CopyArea] (§8, scenery.toml)
+    fields: dict = field(default_factory=dict)               # map pack name -> [scenery.FieldBrush] (§8, scenery.toml)
     scenario: dict = field(default_factory=dict)             # map pack name -> [scenario.Move] (§8)
     cover: dict = field(default_factory=dict)                # map pack name -> [cover.Paint] (§8)
     movement: dict = field(default_factory=dict)             # map pack name -> [nav.Block] (§8)

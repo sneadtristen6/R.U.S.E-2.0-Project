@@ -196,13 +196,18 @@ def _map_readers() -> dict:
     from .roadnet import RoadNetError, parse_roads, parse_take_out
     from .scenario import (ScenarioError, parse_changes, parse_moves, parse_places, parse_removes, parse_spawns,
                            parse_starts)
-    from .scenery import SceneryEditError, parse_erase, parse_objects
+    from .scenery import (SceneryEditError, parse_copies, parse_erase, parse_field_brushes, parse_objects,
+                          parse_presets)
     from .sectors import SectorError, parse_sectors
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
-        "scenery.toml": (("object", "erase"), "a scenery file holds [[object]] and [[erase]] tables",
-                         lambda d, rel: parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel),
+        "scenery.toml": (("object", "erase", "copy", "preset", "fieldbrush"),
+                         "a scenery file holds [[object]], [[erase]], [[copy]], [[preset]] and [[fieldbrush]] tables",
+                         lambda d, rel: (parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel)
+                                         + parse_copies(d.get("copy", []), rel)
+                                         + parse_presets(d.get("preset", []), rel)
+                                         + parse_field_brushes(d.get("fieldbrush", []), rel)),
                          SceneryEditError),
         # moves and removes first: they name the shipped items by their number, which starts and spawns (added at
         # the end) don't shift, and a removed item keeps its place; the sectors' setting last (rusemod.sectors)
@@ -309,14 +314,47 @@ def read_scenery(folder: Path) -> dict:
 
 
 def _erase_areas(info) -> None:
-    """The erase areas of a mod's scenery.toml files go to `info.erase`; its objects stay in `info.scenery`."""
-    from .scenery import EraseArea
+    """The erase areas of a mod's scenery.toml files go to `info.erase` and its copies to `info.copy`; its objects stay
+    in `info.scenery`. A preset area ([[preset]]) becomes its tiles' copies, its erase (replace mode) and its ground
+    picture stamps (into `info.paint`, with the terrain file's own paint strokes) first (scenery.expand_preset). The
+    field brush's dabs ([[fieldbrush]]) go to `info.fields`: they read the map's own fields, so the build expands
+    them where it reads the map's scenery (scenery.expand_field_brush)."""
+    from .scenery import (CopyArea, EraseArea, FieldBrush, PresetArea, border_library, expand_preset,
+                          hedgerow_library, preset_library)
+    lib = borders = hedgerows = None
     for pack, rows in list(info.scenery.items()):
+        dabs = [r for r in rows if isinstance(r, FieldBrush)]
+        if dabs:
+            info.fields[pack] = dabs
+            rows = [r for r in rows if not isinstance(r, FieldBrush)]
+            if not rows:
+                del info.scenery[pack]
+                continue
+            info.scenery[pack] = rows
+        presets = [r for r in rows if isinstance(r, PresetArea)]
+        if presets:
+            if lib is None:
+                lib, borders, hedgerows = preset_library(), border_library(), hedgerow_library()
+            rows = [r for r in rows if not isinstance(r, PresetArea)]
+            for k, p in enumerate(presets, 1):
+                # its own group: its tiles (and border strips) don't thin each other
+                copies, erases, stamps, objects = expand_preset(p, lib, group=k, borders=borders, hedgerows=hedgerows)
+                # the area's erase before its tiles, as the build applies them; a field's hedgerow trees and fence
+                # are placed objects like a [[object]] row's
+                rows = rows + erases + copies + objects
+                if stamps:
+                    info.paint.setdefault(pack, []).extend(stamps)
         areas = [r for r in rows if isinstance(r, EraseArea)]
-        if not areas:
+        copies = [r for r in rows if isinstance(r, CopyArea)]
+        if not areas and not copies:
+            if presets:
+                info.scenery[pack] = rows
             continue
-        info.erase[pack] = areas
-        rest = [r for r in rows if not isinstance(r, EraseArea)]
+        if areas:
+            info.erase[pack] = areas
+        if copies:
+            info.copy[pack] = copies
+        rest = [r for r in rows if not isinstance(r, (EraseArea, CopyArea))]
         if rest:
             info.scenery[pack] = rest
         else:
@@ -498,12 +536,13 @@ def grounded(objects: list, descs: dict, lowest_of) -> tuple[list, int]:
     times its size: an upper storey meant to sit on its ground floor (TownHouseC_Haut starts 4.7 m up) placed alone,
     or any such piece made bigger (the owner's 10x houses floated about 47 m up, 2026-10-01). Such an object is sunk
     (its `lift`) so its lowest point sits on the ground. `lowest_of(type)` gives the model's lowest point in map
-    units (None when unknown). Bridges keep their own sink, and road pieces aren't objects."""
+    units (None when unknown). Bridges keep their own sink, road pieces aren't objects, and an object laid as the map
+    lays it (a [[copy]]'s: NewObject.levels) keeps the height its shipped copy has."""
     from dataclasses import replace
     from .scenery import NewObject
     out, moved = [], 0
     for o in objects:
-        d = descs.get(o.type) if isinstance(o, NewObject) else None
+        d = descs.get(o.type) if isinstance(o, NewObject) and not o.levels else None
         low = lowest_of(o.type) if d is not None and not d.bridge else None
         if low is not None and low > GROUND_GAP:
             out.append(replace(o, lift=o.lift - low * o.size))
@@ -2371,6 +2410,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (_areas, ids) in erasing.items():
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
+        copying = scenario_edits(result.order, mods, "copy")  # the map's own ground detail laid again ([[copy]])
+        for name, (_areas, ids) in copying.items():
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
+        brushing = scenario_edits(result.order, mods, "fields")  # the field brush's dabs ([[fieldbrush]])
+        for name, (_dabs, ids) in brushing.items():
+            every, who = with_pieces.setdefault(name, ([], []))
+            who.extend(i for i in ids if i not in who)
+        brush_paint: dict = {}  # map pack name -> the field brush's picture stamps, for the paint step
         take_outs = {name: (take_out_of(rows), ids)  # the map's own roads and bridges taken out (roads.toml take_out)
                      for name, (rows, ids) in scenario_edits(result.order, mods, "take_out").items()}
         for name, (_what, ids) in take_outs.items():
@@ -2401,13 +2449,65 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             entry = next((e for e in map_packs if e[0] == map_path), None)
             map_arc = entry[1] if entry else open_pack(map_path)
             changed_members = entry[2] if entry else {}
-            from .scenery import (MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects,
+            from .scenery import (LOW_COVER, MEMBER, SceneryEditError, SceneryError, add_objects, bury_objects,
                                   erase_objects)
             areas, erase_ids = erasing.get(name, ([], []))
             try:
                 member = map_arc.find(MEMBER).path
                 raw = changed_members.get(member) or bytes(map_arc.read(map_arc.find(MEMBER)))
+                copied, copy_notes = [], []
+                copy_areas = list(copying.get(name, ([], []))[0])
+                if name in brushing:  # the field brush, from the map's own fields as it comes in
+                    from .scenery import Scenery as _Scenery
+                    from .scenery import expand_field_brush, look_library, own_fields
+                    from .groundtex import decal_types
+                    looks, here = look_library(), _Scenery(raw)
+                    # each sticker type's own square (the decor sets' MaxExtent): a field's shape is its stickers'
+                    halves = {d.name: d.half for ds in decal_types(arc).values() for d in ds}
+                    areas = list(areas)
+                    dabs = brushing[name][0]
+                    for k, dab in enumerate(dabs, 1):
+                        if dab.look not in looks:  # not a game rule: the look is the Studio's own library's
+                            raise SceneryEditError(f"{', '.join(brushing[name][1])}: field brush {k}: there's no "
+                                                   f"look called {dab.look!r} (the looks: {', '.join(sorted(looks))})")
+                    # a field two dabs touch is the later one's; nothing one dab changes is laid back by another
+                    own, changed = own_fields(dabs, looks, here, halves)
+                    relaid: set = set()   # a neighbour sticker two dabs' erases take is laid back once
+                    for k, dab in enumerate(dabs, 1):
+                        b_erases, b_objects, b_copies, b_stamps, b_notes = expand_field_brush(
+                            dab, looks[dab.look], here, group=1000 + k, halves=halves, fields=own[k - 1],
+                            changed=changed, relaid=relaid)
+                        areas += b_erases
+                        copied += b_objects
+                        copy_areas += b_copies
+                        brush_paint.setdefault(name, ([], brushing[name][1]))[0].extend(b_stamps)
+                        copy_notes += b_notes
+                if copy_areas:  # read from the scenery as it comes in: before this build erases anything
+                    from .scenery import copy_objects
+                    if descs is None:
+                        descs = descriptors(arc)
+                    sources: dict = {}   # another map's shipped scenery a preset's tiles come from
+                    for area in copy_areas:
+                        if area.source and area.source not in sources:
+                            src_path = find_map(area.source)
+                            if src_path is None:  # not a game rule: a file the preset reads isn't there
+                                raise BuildError(f"{', '.join(copying[name][1])}: the ground preset's map "
+                                                 f"{area.source} isn't in this game ({pack_file(area.source)} is "
+                                                 f"missing), so its tiles can't be read")
+                            src_arc = next((e[1] for e in map_packs if e[0] == src_path), None) or open_pack(src_path)
+                            sources[area.source] = bytes(src_arc.read(src_arc.find(MEMBER)))
+                    more, more_notes = copy_objects(raw, copy_areas, descs, sources)
+                    copied, copy_notes = copied + more, copy_notes + more_notes
+                if any(LOW_COVER in a.types for a in areas):  # a preset's replace: the map's low plants and stones
+                    from dataclasses import replace as _with
+                    from .scenery import low_cover
+                    if descs is None:
+                        descs = descriptors(arc)
+                    low = tuple(low_cover(descs, set(Scenery(raw).names)))
+                    areas = [_with(a, types=tuple(t for t in a.types if t != LOW_COVER) + low)
+                             if LOW_COVER in a.types else a for a in areas]
                 raw, sunk = bury_objects(raw, bridge_hide.get(name, []))  # before the new blocks move them
+                sunk = copy_notes + sunk
                 gone_what = take_outs.get(name, (None, []))[0]
                 if gone_what is not None and (gone_what.roads or gone_what.bridges):
                     # the map's own roads (their pieces, drawn from far; their stickers, up close) and bridges out,
@@ -2452,7 +2552,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                        f"side; woods' cover and movement unchanged)"
                                        + (f", but {kept} of {len(road_lines[name])} keep their trees and bushes "
                                           f"(keep_trees: only props taken off)" if kept else "")]
-                objects = list(objects) + dressed
+                objects = list(objects) + dressed + copied
                 sizes = None  # an erase by size (Map Paint's clearing, filled riverbeds): how far each type reaches
                 strokes = painting.get(name, ([], []))[0]
                 from .scenery import low_cover, model_reach, sticker_reach
@@ -2573,11 +2673,15 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     lowest.close()
                 as_placed = objects  # by their own types: what the steps after go by (solid buildings, ...)
                 seen = result.visibility  # placed types with no far mode: their copies, drawn from far too
-                if seen and any(getattr(o, "type", None) in seen for o in objects):
+                # (not an object laid at its shipped copy's levels, a [[copy]]'s: drawn exactly as the map draws it)
+
+                def far_too(o) -> bool:
+                    return getattr(o, "type", None) in seen and not getattr(o, "levels", 0)
+                if seen and any(far_too(o) for o in objects):
                     from dataclasses import replace as _replace
                     from .scenery import add_names
-                    swapped = sorted({o.type for o in objects if getattr(o, "type", None) in seen})
-                    objects = [_replace(o, type=seen[o.type]) if getattr(o, "type", None) in seen else o for o in objects]
+                    swapped = sorted({o.type for o in objects if far_too(o)})
+                    objects = [_replace(o, type=seen[o.type]) if far_too(o) else o for o in objects]
                     raw = add_names(raw, [seen[t] for t in swapped])
                     sunk = sunk + [f"drawn from far too (the game draws these only up close, or no further than the "
                                    f"middle distance): "
@@ -2766,7 +2870,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 library.append(Library(zz, arc, map_reader, files, cache))
             return library[0]
 
-        for name, (strokes, ids) in scenario_edits(result.order, mods, "paint").items():  # the Map Paint strokes,
+        all_paint = scenario_edits(result.order, mods, "paint")
+        for name, (stamps, ids) in brush_paint.items():  # the field brush's picture after the mods' own paint
+            strokes, who = all_paint.setdefault(name, ([], []))
+            all_paint[name] = (strokes + stamps, who + [i for i in ids if i not in who])
+        for name, (strokes, ids) in all_paint.items():  # the Map Paint strokes,
             # before the new roads, so a road drawn over paint shows on top of it
             map_path = find_map(name)
             if map_path is None:
@@ -2797,10 +2905,12 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                                             f"can't be read ({exc})"))
                     continue
             # the same paint on the same ground as an earlier build: its pictures from the build cache (a map painted
-            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep); a texture's own pixels count
+            # all over takes many minutes), kept like a reshaped map (rusemod.mapkeep) but apart from the reshaped maps
+            # (kind "paint": a build of three painted maps used to throw out the terrain it was about to use); a
+            # texture's own pixels count
             made_from = ["paint", paint_inputs(read_map)] + sorted(f"{r} {s.digest}" for r, s in (swatches or {}).items())
             paint_k = mapkeep.key(name, made_from, strokes, None) if cache is not None else None
-            kept = mapkeep.read(cache, paint_k)
+            kept = mapkeep.read(cache, paint_k, "paint")
             if kept is not None and isinstance(kept.get("notes"), list):
                 painted, notes = kept["members"], kept["notes"]
             else:
@@ -2811,7 +2921,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the paint can't be laid "
                                                             f"({exc})"))
                     continue
-                mapkeep.write(cache, paint_k, {"members": painted, "notes": notes})
+                mapkeep.write(cache, paint_k, {"members": painted, "notes": notes}, "paint")
             changed_members.update(painted)
             say(f"paint: {name}, from {', '.join(ids)}: {len(strokes)} stroke(s) on the ground's picture")
             for note in notes:
