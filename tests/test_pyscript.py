@@ -199,6 +199,21 @@ class InTheBuild(unittest.TestCase):
         self.assertTrue(any(f.level == "warning" and "isn't a copy of a unit" in f.message for f in result.findings))
         self.assertEqual(result.script_changed, {})
 
+    def test_a_copy_of_a_units_part_takes_no_class(self):
+        # a B-25's bomb bay copied for a Stuka (T50, 2026-10-14): the engine places a part's copy with its owner as
+        # the source (the copy goes in the owner's file), and the build took that for a copy of the unit itself
+        from types import SimpleNamespace
+        from rusemod.build import BuildResult, unit_classes
+        from rusemod.model import Obj
+        from rusemod.patch import Op
+        tank = Obj("TUniteAuSolDescriptor", {})
+        base = SimpleNamespace(objects={"$/Tank_A": tank})
+        run = SimpleNamespace(created={"$/Bay": Op("clone", "$/Bay", source="$/Tank_A")},
+                              game=SimpleNamespace(objects={"$/Tank_A": tank, "$/Bay": Obj("TTurretBombardierDescriptor", {})}))
+        result = BuildResult()
+        unit_classes(base, run, Edat(ZZ_WIN), result)
+        self.assertEqual((result.findings, result.new_classes, result.script_changed), ([], [], {}))
+
     def test_without_the_list(self):
         for zz_win in (None, make_edat([("file", "other.bin", b"x")])):
             result = self.build("export Tank_C is clone $/Tank_A ( )", zz_win)

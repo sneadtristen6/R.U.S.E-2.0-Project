@@ -434,6 +434,8 @@
   Object.assign(words.sc, { set_backup_title: "游戏的干净备份", set_backup_help: "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。", backup_none: "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。", backup_have: "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}", backup_other: "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。", backup_make: "创建备份", backup_make_again: "重新创建备份", backup_replace_ask: "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？", backup_replace_yes: "替换", backup_check: "检查游戏文件", backup_deep: "逐字节比较（较慢）", backup_restore: "恢复干净文件", backup_restore_ask: "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？", backup_restore_yes: "恢复", backup_verify: "通过 Steam 验证", backup_verify_tip: "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。", backup_verify_opened: "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。", backup_making: "正在创建备份… {pct}", backup_checking: "正在检查游戏文件… {pct}", backup_restoring: "正在恢复游戏文件… {pct}", backup_made: "备份已创建：{files} 个文件，{size} GB。", backup_clean: "游戏文件与备份一致：没有任何变化。", backup_differs: "与备份不同的文件：{n} 个", backup_changed: "已更改（{n}）", backup_missing: "缺失（{n}）", backup_added: "不属于游戏（{n}）", backup_more: "…还有 {n} 个", backup_nothing: "无需恢复：游戏文件与备份一致。", backup_restored: "完成：已恢复 {n} 个文件。", backup_set_aside: "{m} 个不属于游戏的文件现在位于 {path}。", backup_kept: "被替换的 {k} 个已更改文件保存在 {path}。" });
   // a panel's size handle (words.toml tip_panel_size)
   Object.assign(words.us, { armour_title: "Armour", armour_help: "How hard this unit is to hurt, as one of the game's own levels. The fights use it, and its card and build menu show its picture: tanks have levels 1 to 5, the number on the shield.", armour_level: "Level", tip_armour_pick: "Pick one of the game's armour levels: the unit fights with it, and its card and build menu show it.", tip_armour_undo: "Give it the game's armour level again.", armour_tank: "Armour {n}", armour_light: "Light vehicles (transports)", armour_infantry: "Infantry", armour_aircraft: "Aircraft", armour_para: "Paratroopers coming down", armour_trucks: "Construction trucks", armour_building: "Buildings and fortifications", armour_old_way: "This unit's armour was changed inside its armour part: it fights with the new value, but its card and build menu still show the old one. Pick its level here to fix that.", armour_on_unit: "Armour is changed on the unit's own page, under Armour: each level of the game has its own picture on the card, so a number changed here would fight differently from what the card shows.", model_propellers: "Its propellers spin as the game's do ({n} discs).", model_propellers_none: "{n} propeller discs left out: the unit it copies has no propellers to spin them.", model_propellers_far: "{n} propeller discs left out: they aren't where the copied plane's propellers are." });
+  Object.assign(words.us, { role_title: "Role", role_help: "What kind of plane it is: how it flies and attacks. A bomber drops its bombs on a straight run from a bomb bay; a fighter-bomber dives at its target. Changing it also changes its build menu words and how the computer players use it.", role_fighter: "Fighter", role_fighter_bomber: "Fighter-bomber", role_bomber: "Bomber", role_scout: "Scout", role_paratroop: "Paratroop plane", role_paratroop_why: "A paratroop plane carries paratroopers, which no other plane has: its role stays.", role_not_tried: "{role} (not tried in the game yet)", role_bombs_moved: "As a bomber, its bombs drop from a bomb bay (copied from a game bomber's), the only way a bomber's run drops them.", tip_role_pick: "Pick what kind of plane it is. A plane needs a weapon firing bombs to be a bomber.", tip_role_undo: "Give it back the game's role, its bombs back where they were.", hits: "Hits", hits_ground: "The ground", hits_planes: "Planes", hits_both: "The ground and planes", tip_hits: "What this weapon can hit. Planes: its ammo gets a copy that hits planes and does nothing to the ground. Both: it keeps its ammo and gets a second weapon beside it for the other, the way the game's AA guns do.", hits_not_tried: "Tank rounds and AA guns shooting planes were seen in the game (2026-10-14); a plane's guns made to hit the ground, not yet." });
+  Object.assign(words.us, { role_scout_armed: "Scout, keeping its attacks", ground_role_help: "Recon: the game's recon cars' sight (much further than a tank's), how the computer players use them, their build menu words, and it can go into woods. It stays as tough and armed as it is.", ground_role_game: "As the game has it", ground_role_recon: "Recon", tip_ground_role: "Make this vehicle a recon unit, or keep it as the game has it.", ground_role_recon_already: "This is one of the game's own recon units." });
   Object.assign(words.us, { tip_panel_size:"Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size." });
   Object.assign(words.fr, { tip_panel_size: "Taille {n} % : glissez vers le bas pour réduire ce panneau, vers le haut pour l'agrandir (la molette marche aussi). Double-clic : taille normale." });
   // the map screen's two sides (words.toml mode_*, tip_mode_*, tip_scen_locked, locked_*)
@@ -1144,7 +1146,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { weapons: [{ address: weapon, name: "weapon_effet_tag1", ammo: { address: current_, name: names.get(current_) || current_ },
       game_ammo: ammoAddress(game.id), edited: Boolean(chosen), shot: shotOf(current_),
       range: rangeOf(current_), game_range: rangeOf(current_, true), firing,
+      hits: hitsEdits.get(weapon) || "ground", game_hits: "ground",
       own_copy: myAmmo().some((n) => ammoAddress(n.id) === current_) && firing.length === 1 }], choices };
+  }
+
+  // What a weapon hits and a plane's role (api.set_weapon_hits, plane_role, set_plane_role): kept here as the choices
+  // only; a made-up plane is a fighter-bomber in the game
+  const hitsEdits = new Map();
+  const roleEdits = new Map();
+  function roleOf(address) {
+    const game = "fighter_bomber";
+    return { role: roleEdits.get(address) || game, game, editable: Boolean(current), why: current ? "" : "no_mod",
+      bombs: true, armed: true,
+      roles: ["fighter", "fighter_bomber", "bomber", "scout"].map((id) => ({ id, seen: id === "bomber" })) };
+  }
+  const groundRoleEdits = new Map();
+  function groundRoleOf(address) {
+    return { role: groundRoleEdits.get(address) || "game", game: "game", editable: Boolean(current),
+      why: current ? "" : "no_mod" };
   }
 
   // an ammo's range (PorteeMaximale) with the mod's change (`game`: the game's; a copy: its source's), as api._range
@@ -2144,6 +2163,23 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       unit: async (address, lang, via) => unit(address, lang, via),
       upgrade: async (address, lang) => upgradeOf(address, lang),
+      plane_role: async (address) => roleOf(address),
+      set_plane_role: async (address, role) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (role === null || role === roleOf(address).game) roleEdits.delete(address); else roleEdits.set(address, role);
+        return { saved: current + "/src/studio.rndf", ...roleOf(address) };
+      },
+      ground_role: async (address) => groundRoleOf(address),
+      set_ground_role: async (address, role) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (role === "recon") groundRoleEdits.set(address, role); else groundRoleEdits.delete(address);
+        return { saved: current + "/src/studio.rndf", ...groundRoleOf(address) };
+      },
+      set_weapon_hits: async (unitAddress, weapon, hits) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (hits === "ground") hitsEdits.delete(weapon); else hitsEdits.set(weapon, hits);
+        return { saved: current + "/src/studio.rndf", hits };
+      },
       armour: async (address) => armourOf(address),
       set_armour: async (address, value) => {
         if (value === null || value === 6) armourEdits.delete(address); else armourEdits.set(address, value);

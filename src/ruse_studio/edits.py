@@ -43,6 +43,11 @@ class Literal(str):
     `MAP [(1, 2)]`, `true`): what the Values tab sets beyond numbers and links (rusemod.rndf.literal writes it)."""
 
 
+class Append(list):
+    """Items added at the end of a list (`Prop += [$/GFX/Everything/A]`), by their addresses: a second weapon on a
+    turret (ruse_studio.roles, What it can hit: both)."""
+
+
 class _Removed:
     def __repr__(self) -> str:
         return "REMOVED"
@@ -107,6 +112,8 @@ def number(x) -> str:
 
 
 def literal(value) -> str:
+    if isinstance(value, Append):
+        return "[" + ", ".join(str(v) for v in value) + "]"
     if isinstance(value, (Link, Literal)):
         return str(value)
     return "[" + ", ".join(number(v) for v in value) + "]" if isinstance(value, list) else number(value)
@@ -117,7 +124,9 @@ _KEY_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
 
 def _line(prop: str, value) -> str:
     """One change as a line of a block: `Prop = value`, or `delete Prop` for one taken out."""
-    return f"    delete {prop}\n" if value is REMOVED else f"    {prop} = {literal(value)}\n"
+    if value is REMOVED:
+        return f"    delete {prop}\n"
+    return f"    {prop} {'+=' if isinstance(value, Append) else '='} {literal(value)}\n"
 
 
 def game_key(target: str) -> str:
@@ -184,6 +193,10 @@ class ModEdits:
                     continue
                 if op.kind == "delprop" and op.target:
                     self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, REMOVED, op.share)
+                    continue
+                if op.kind == "append" and op.target and all(isinstance(v, Ref) and v.target for v in op.value):
+                    added = Append(Link(v.target) for v in op.value)
+                    self.edits[(op.target, op.path, op.share or "")] = Edit(op.target, op.path, added, op.share)
                     continue
                 value = _plain(op.value)
                 if op.kind == "set" and value is not None and op.target:

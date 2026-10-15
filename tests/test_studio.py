@@ -809,6 +809,7 @@ class AmmoAndFlags(WithMod):
                                          "ammo": {"address": AMMO_75, "name": "AP shell · Medium cal."},
                                          "game_ammo": AMMO_75, "edited": False, "shot": "",
                                          "range": 104000.0, "game_range": 104000.0, "own_copy": False,
+                                         "hits": "ground", "game_hits": "ground",
                                          "firing": [{"address": PANZER_IV, "name": "Panzer IV"}]}])
         self.assertEqual([(c["address"], c["nations"]) for c in w["choices"]],
                          [(AMMO_88, []), (AMMO_75, ["Germany"])])  # by name: Large before Medium; whose it is
