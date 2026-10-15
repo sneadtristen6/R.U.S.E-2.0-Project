@@ -237,7 +237,7 @@ class RoleCalls:
         (55, 21, 11): what the Scout Tank had (T56)."""
         from .api import StudioError
         from .edits import Literal, ModEdits
-        if role not in (None, "game", "recon"):
+        if role not in (None, "game", "recon"):  # not a game rule: the Role box's own choices
             raise StudioError("Pick recon, or as the game has it.")
         edits = self._edits()
         if edits is None:
@@ -515,7 +515,7 @@ class RoleCalls:
         """A game bomber's bomb bay to copy (the B-25's when the game has it)."""
         from .api import StudioError
         bays = [o["address"] for o in ix.of_class(BAY)]
-        if not bays:
+        if not bays:  # not a game rule: nothing in this game build to copy a bomb bay from
             raise StudioError("This game build has no bomber with a bomb bay to copy.")
         return next((b for b in bays if "Descriptor_Avion_B25:" in b), bays[0])
 
@@ -529,7 +529,7 @@ class RoleCalls:
             turret = self._bomb_turret(ix, None, o["address"], o["address"])
             if turret is not None:
                 found.append(turret[2])
-        if not found:
+        if not found:  # not a game rule: nothing in this game build to copy a bomb mount from
             raise StudioError("This game build has no fighter-bomber with bombs to copy a mount from.")
         return next((f for f in found if "Descriptor_Avion_Junkers_87:" in f), found[0])
 
