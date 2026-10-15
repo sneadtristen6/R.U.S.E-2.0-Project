@@ -398,6 +398,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .road-length { position: absolute; pointer-events: none; padding: 2px 8px; background: var(--hud);
                border: 1px solid var(--hud-line); border-radius: 2px; font-size: 12px; white-space: nowrap; }
 .road-length b { color: var(--accent); font-weight: 600; }
+.brush-tag { z-index: 3; font-size: 13px; white-space: normal; max-width: 340px; }
+.brush-tag.bad { color: var(--error); border-color: var(--error); }
 .map-canvas canvas { display: block; }
 .map-pick { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px;
             text-align: center; pointer-events: none; }
@@ -471,6 +473,21 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .dock-tray .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .dock-tray .place-search, .dock-tray .place-list { border-radius: 0; background: var(--bg); border-color: #2d527d; }
 .dock-tray .place-list option:checked { background: var(--accent-dark); color: #fff; }
+/* the place list: a picture of each type's model, two rows high, scrolling (the owner, 2026-10-15: "take inspiration
+   from city skylines and how they'll have every asset's picture in those menus") */
+.place-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: 236px;
+              overflow-y: auto; padding: 1px; }
+.place-tile { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 4px; border: 1px solid #2d527d;
+              border-radius: 0; background: var(--bg); color: inherit; cursor: pointer; text-align: center; min-width: 0; }
+.place-tile:hover { border-color: var(--hud-line); background: var(--panel); }
+.place-tile[aria-selected="true"] { border-color: #9fd2ff; background: var(--accent-dark); }
+.place-pic { display: grid; place-items: center; aspect-ratio: 1; background: radial-gradient(circle at 50% 40%, #2a4a74, #0b1a2e); }
+.place-pic img { width: 100%; height: 100%; object-fit: contain; }
+.place-pic svg { width: 42%; height: 42%; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round;
+                 stroke-linejoin: round; opacity: 0.7; }
+.place-name { font-size: 11px; line-height: 1.2; max-height: 2.4em; overflow: hidden; overflow-wrap: anywhere; }
+.place-count { position: absolute; top: 5px; right: 5px; padding: 0 4px; font-size: 10px; border-radius: 2px;
+               background: rgba(4, 12, 24, 0.75); color: var(--muted); }
 /* what's selected on the map (maps.js renderSelection), above the tray as the game shows a selection above its build
    bar: the map's own icons, how many of each, the count by kind */
 /* the picked item's own values (maps.js renderItemDetails) */

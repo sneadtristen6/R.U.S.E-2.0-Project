@@ -109,6 +109,9 @@
       <div id="map-canvas" class="map-canvas"></div>
       <!-- how long the road being drawn is, beside the pointer (maps.js showRoadLength) -->
       <div id="road-length" class="road-length hidden"></div>
+      <!-- what a brush did or a click would do, beside the pointer: a zone stroke's change for units, the town under
+           the pointer (maps.js pointerTag) -->
+      <div id="brush-tag" class="road-length brush-tag hidden" role="status"></div>
       <p id="map-pick" class="map-pick muted"></p>
       <!-- a new map from scratch, before any map is open (maps.js openDuplicate(true)): Blank Terrain or Blank Ocean on
            a game map's size and starting points. The owner, 2026-10-06: a blank map had to be found under Duplicate
@@ -294,7 +297,8 @@
           <div id="tray-place" class="tray-body hidden">
             <div class="tray-main">
               <input id="place-search" type="search" class="place-search">
-              <select id="place-type" size="5" class="place-list"></select>
+              <!-- each type as a picture of its model, Cities: Skylines style (maps.js placeOptions, renderThumb) -->
+              <div id="place-grid" class="place-grid" role="listbox"></div>
               <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
               <div id="place-scenery-note" class="muted small"></div>
             </div>

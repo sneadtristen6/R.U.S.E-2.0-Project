@@ -288,6 +288,31 @@ class Built(unittest.TestCase):
         shape = shape[:shape.index("\n}\n")]
         self.assertIn('s.square || s.shape === "square" ? "square" : "round"', shape)   # square = true too
 
+    def test_every_zone_stroke_leaves_a_mark(self):
+        """The owner, 2026-10-15, on Kasserine Pass's desert (almost no cover of its own): Uncover and Open "literally
+        do nothing", as a stroke that changed nothing for units drew nothing. Each zone brush now marks the cells it
+        went over (cover's bit 8, moves' bit 4, drawn striped), the marks never change what a cell means for units
+        (MEANS), and Town finds its town in metres (its numbers were map units, 3.85 times too short)."""
+        import re
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        block = maps[maps.index("const PAINTS = {"):]
+        block = block[:block.index("};")]
+        paints = {b: (o, int(on), int(off)) for b, o, on, off in re.findall(r"(\w+): \[(\w+), (\d+), (\d+)\]", block)}
+        self.assertEqual(len(paints), 10)
+        for brush, (o, on, off) in paints.items():
+            if o == "cover":  # cover painted, or the mark of cover taken away: never both
+                self.assertTrue(on == 8 and off & 7 == 7 or on & 7 and off == 8, brush)
+            elif o == "moves":  # every Block and Open stroke marks what it went over
+                self.assertTrue(on & 4, brush)
+                self.assertFalse(off & 4, brush)
+        self.assertIn("[[cover, (v) => (v & 7 ? 1 : 0)], [moves, (v) => v & 3]]", maps)
+        self.assertIn("const METRE = 260;", maps)
+        self.assertIn("const TOWN_PICK = 150, TOWN_LINK = 60, TOWN_REACH = 800", maps)
+        town = maps[maps.index("function townAt("):]
+        town = town[:town.index("\n}\n")]
+        self.assertIn("link = Math.max(2 * r, TOWN_LINK * METRE), reach = TOWN_REACH * METRE", town)
+        self.assertIn("Math.max(near, TOWN_PICK * METRE)", town)
+
     def test_the_map_view_gets_the_grid(self):
         import base64
         from ruse_studio.api import StudioApi, StudioError

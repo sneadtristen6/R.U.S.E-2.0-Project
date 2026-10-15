@@ -2037,7 +2037,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
     # every visit read everything again (issue #15: "a map is slow to open").
     MAP_DATA_KEPT = 24
-    MAP_DATA_FORMAT = 1  # the kept files' format: a new one means they're all made again
+    MAP_DATA_FORMAT = 2  # the kept files' format: a new one means they're all made again (2: every type to place has
+                         # its number in the scenery's types, for its model)
 
     def _kept_on_disk(self, what: str, pack: str, sources: list, make):
         """`make()`'s answer (JSON-ready) for one map, kept in the cache folder between runs: named by the map, the

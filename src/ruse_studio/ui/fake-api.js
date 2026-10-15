@@ -963,6 +963,46 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",
     lang_code_names: "内部名称（用于制作模组，界面为英语）",
     lang_pick_help: "用你的语言显示 Studio、帮助和游戏中的单位名称。随时可以用顶部的语言按钮更改。" });
+  // the zone brushes' marks and counts, Town's preview, and the place list's pictures (2026-10-15)
+  Object.assign(words.us, { legend_cover_taken: "Cover taken away (Uncover, trees erased): units are seen here (striped)",
+    legend_move_opened: "Opened with an Open brush: units can go here (striped)",
+    legend_move_changed: "Striped colours: changed with a Block or Open brush",
+    town_preview: "Click: cover around these {n} buildings.", town_point: "Point at a town's buildings: they get rings first.",
+    zone_cover_done: "Units hide here now: {m2} m² of new cover.",
+    zone_cover_none: "This ground already had cover: nothing changed for units ({m2} m² marked).",
+    zone_uncover_done: "Cover taken away from {m2} m²: units are seen there now.",
+    zone_uncover_none: "No cover here to take away: this ground had none ({m2} m² marked, striped).",
+    zone_block_done: "Closed {m2} m² to these units.",
+    zone_block_none: "Already closed to these units: nothing changed ({m2} m² marked, striped).",
+    zone_open_done: "Opened {m2} m²: units can go there now.",
+    zone_open_none: "Units could already go here: nothing changed ({m2} m² marked, striped blue).",
+    place_used: "{n} on this map", place_no_picture: "No picture: the Studio can't show this one's model yet. It's placed all the same." });
+  Object.assign(words.fr, { legend_cover_taken: "Couvert retiré (Découvrir, arbres effacés) : les unités y sont vues (rayé)",
+    legend_move_opened: "Ouvert au pinceau Ouvrir : les unités passent (rayé)",
+    legend_move_changed: "Couleurs rayées : changées au pinceau Bloquer ou Ouvrir",
+    town_preview: "Cliquez : du couvert autour de ces {n} bâtiments.",
+    town_point: "Pointez les bâtiments d'une ville : ils s'entourent d'abord d'anneaux.",
+    zone_cover_done: "Les unités s'y cachent maintenant : {m2} m² de nouveau couvert.",
+    zone_cover_none: "Ce terrain avait déjà du couvert : rien ne change pour les unités ({m2} m² marqués).",
+    zone_uncover_done: "Couvert retiré sur {m2} m² : les unités y sont vues maintenant.",
+    zone_uncover_none: "Pas de couvert à retirer ici : ce terrain n'en avait pas ({m2} m² marqués, rayés).",
+    zone_block_done: "{m2} m² fermés à ces unités.",
+    zone_block_none: "Déjà fermé à ces unités : rien ne change ({m2} m² marqués, rayés).",
+    zone_open_done: "{m2} m² ouverts : les unités peuvent y aller maintenant.",
+    zone_open_none: "Les unités passaient déjà ici : rien ne change ({m2} m² marqués, rayés de bleu).",
+    place_used: "{n} sur cette carte",
+    place_no_picture: "Pas d'image : le Studio ne sait pas encore montrer son modèle. Il est placé quand même." });
+  Object.assign(words.sc, { legend_cover_taken: "掩护已移除（移除掩护、擦除的树）：单位在此可被看到（条纹）",
+    legend_move_opened: "用“开放”画笔开放：单位可以进入（条纹）", legend_move_changed: "条纹颜色：用“封锁”或“开放”画笔改过的地方",
+    town_preview: "点击：在这 {n} 栋建筑周围加掩护。", town_point: "指向城镇的建筑：会先出现圆圈。",
+    zone_cover_done: "单位现在可以在此隐藏：新增掩护 {m2} 平方米。",
+    zone_cover_none: "这里原本就有掩护：对单位没有变化（已标记 {m2} 平方米）。",
+    zone_uncover_done: "已移除 {m2} 平方米的掩护：单位现在在那里可被看到。",
+    zone_uncover_none: "这里没有可移除的掩护：原本就没有（已用条纹标记 {m2} 平方米）。",
+    zone_block_done: "已对这些单位封锁 {m2} 平方米。", zone_block_none: "已对这些单位封锁：没有变化（已用条纹标记 {m2} 平方米）。",
+    zone_open_done: "已开放 {m2} 平方米：单位现在可以去那里。",
+    zone_open_none: "单位本来就能到这里：没有变化（已用蓝色条纹标记 {m2} 平方米）。",
+    place_used: "本地图上有 {n} 个", place_no_picture: "无图片：Studio 暂时无法显示它的模型。仍会照常放置。" });
   const words_ = (lang) => words[lang] || words.us;
   const modsView = () => ({ mods: mods.slice(), current });
 
@@ -1235,9 +1275,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
 
   // A made-up village in the island's middle, a wood to its north and a few carts about.
   function fakeScenery(pack) {
+    // (the basket stands nowhere on the map: it's there to place, so it has a number too, as rusemod.scenery.view does)
     const types = [["MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", ""],
       ["TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", ""],
-      ["Charette_1", "prop", "Props/Ferme", ""], ["Chene_02", "vegetation", "Vegetation/Arbres", ""]];
+      ["Charette_1", "prop", "Props/Ferme", ""], ["Chene_02", "vegetation", "Vegetation/Arbres", ""],
+      ["Cotentin_PanierOsier1", "prop", "Props/Ville", ""]];
     const items = { building: [], prop: [], vegetation: [] }, c = 655360, seed = pack.length;
     for (let k = 0; k < 40; k++) {
       const a = k * 2.4, r = 9000 + 1500 * k;
@@ -1252,19 +1294,81 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     // the others fall back to English)
     const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1,
         { us: "Town hall (Normandy)", fr: "Mairie (Normandie)", ger: "Rathaus (Normandie)" },
-        { us: "town building", fr: "bâtiment de ville", ger: "Stadtgebäude" }],
+        { us: "town building", fr: "bâtiment de ville", ger: "Stadtgebäude" }, 0],
       ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39,
         { us: "Town house B 2 high", fr: "Maison de ville B 2 haut", ger: "Stadthaus B 2 hoch" },
-        { us: "building piece", fr: "élément de bâtiment", ger: "Gebäudeteil" }],
+        { us: "building piece", fr: "élément de bâtiment", ger: "Gebäudeteil" }, 1],
       ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30, { us: "Cart 1", fr: "Charrette 1", ger: "Karren 1" },
-        { us: "farm prop", fr: "objet de ferme", ger: "Hofgegenstand" }],
+        { us: "farm prop", fr: "objet de ferme", ger: "Hofgegenstand" }, 2],
       ["TypeWarrior/Cotentin_PanierOsier1", "Cotentin_PanierOsier1", "prop", "Props/Ville", 4,
         { us: "Wicker basket 1 (Cotentin)", fr: "Panier en osier 1 (Cotentin)", ger: "Weidenkorb 1 (Cotentin)" },
-        { us: "town prop", fr: "objet de ville", ger: "Stadtgegenstand" }],
+        { us: "town prop", fr: "objet de ville", ger: "Stadtgegenstand" }, 4],
       ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000, { us: "Oak 2", fr: "Chêne 2", ger: "Eiche 2" },
-        { us: "tree", fr: "arbre", ger: "Baum" }]];
+        { us: "tree", fr: "arbre", ger: "Baum" }, 3]];
     return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
+  }
+
+  // Made-up models for the made-up types (a town hall, a tall house, a cart, an oak, a basket), as map_models gives
+  // them (an index and one buffer, map units, x east, y south, z up), so the preview draws models: the map's objects,
+  // what's placed, the ghost at the pointer and the place list's pictures. No pictures: each draws in its kind's colour.
+  let fakeMapModelsMade = null;
+  function fakeMapModels() {
+    if (fakeMapModelsMade) return fakeMapModelsMade;
+    // convex solids in the scene's axes (x east, y up, z south) as triangles, each turned to face outwards
+    const box = (w, h, d, y0 = 0, x = 0, z = 0) => {
+      const c = [];
+      for (const X of [x - w / 2, x + w / 2]) for (const Y of [y0, y0 + h]) for (const Z of [z - d / 2, z + d / 2]) c.push([X, Y, Z]);
+      return [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]
+        .flatMap(([a, b, e, f]) => [[c[a], c[b], c[e]], [c[a], c[e], c[f]]]);
+    };
+    const peak = (w, h, d, y0) => {  // a roof: four slopes to a ridge point
+      const top = [0, y0 + h, 0], k = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]].map(([X, Z]) => [X, y0, Z]);
+      return k.map((p, i) => [p, k[(i + 1) % 4], top]).concat([[k[0], k[1], k[2]], [k[0], k[2], k[3]]]);
+    };
+    const cone = (r, h, y0, n = 9) => {
+      const top = [0, y0 + h, 0], base = [0, y0, 0], ring = [];
+      for (let i = 0; i < n; i++) ring.push([r * Math.cos(2 * Math.PI * i / n), y0, r * Math.sin(2 * Math.PI * i / n)]);
+      return ring.flatMap((p, i) => [[p, ring[(i + 1) % n], top], [p, base, ring[(i + 1) % n]]]);
+    };
+    const outward = (tris) => {
+      const m = [0, 1, 2].map((k) => tris.reduce((s, t) => s + t[0][k] + t[1][k] + t[2][k], 0) / (3 * tris.length));
+      return tris.map(([a, b, c]) => {
+        const u = [0, 1, 2].map((k) => b[k] - a[k]), v = [0, 1, 2].map((k) => c[k] - a[k]);
+        let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+        const len = Math.hypot(...n) || 1, f = [0, 1, 2].map((k) => (a[k] + b[k] + c[k]) / 3 - m[k]);
+        n = n.map((x) => x / len);
+        return n[0] * f[0] + n[1] * f[1] + n[2] * f[2] < 0 ? [a, c, b, n.map((x) => -x)] : [a, b, c, n];
+      });
+    };
+    const shapes = [
+      [box(5200, 2600, 3600), peak(5600, 1600, 4000, 2600)],                           // the town hall
+      [box(2400, 4200, 2400), peak(2700, 1300, 2700, 4200)],                           // the tall town house
+      [box(1100, 300, 600, 350), box(160, 500, 700, 0, -380), box(160, 500, 700, 0, 380)],  // the cart
+      [box(280, 1400, 280), cone(1500, 3600, 1100)],                                   // the oak
+      [box(420, 380, 420), box(460, 60, 460, 380)],                                    // the basket
+    ].map((solids) => solids.flatMap(outward));
+    const sizes = shapes.map((t) => 3 * t.length);
+    const total = sizes.reduce((s, n) => s + n * (12 + 4 + 8 + 4), 0);
+    const buf = new ArrayBuffer(total), models = {};
+    let at = 0;
+    shapes.forEach((tris, t) => {
+      const n = sizes[t], part = { texture: null, vertices: n, triangles: tris.length };
+      const pos = new Float32Array(buf, (part.positions = at), 3 * n);
+      const nrm = new Int8Array(buf, (part.normals = at += 12 * n), 4 * n);
+      part.uvs = at += 4 * n;
+      const idx = new Uint32Array(buf, (part.indices = at += 8 * n), n);
+      at += 4 * n;
+      tris.forEach(([a, b, c, nn], i) => [a, b, c].forEach((p, j) => {
+        const v = 3 * i + j;
+        pos.set([p[0], p[2], p[1]], 3 * v);  // the game's axes: x east, y south, z up
+        nrm.set([Math.round(nn[0] * 127), Math.round(nn[2] * 127), Math.round(nn[1] * 127), 0], 4 * v);
+        idx[v] = v;
+      }));
+      models[t] = [part];
+    });
+    fakeMapModelsMade = { base: "", index: { bin: URL.createObjectURL(new Blob([buf])), models, textures: {} } };
+    return fakeMapModelsMade;
   }
 
   async function fakeGround(pack, lod) {
@@ -2881,7 +2985,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),
-      map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
+      map_models: async () => fakeMapModels(),  // made-up models for the made-up types (fakeMapModels)
       // Map Paint's textures (rusemod.groundtex): a few made-up ones, each a two-colour checker
       ground_textures: async () => ({ base: "", groups: ["grass", "fields", "earth", "sand", "rock", "snow", "water",
         "roads", "town", "damage", "marks", "other"], textures: fakeTextures.map(([ref, group, words, a]) => ({

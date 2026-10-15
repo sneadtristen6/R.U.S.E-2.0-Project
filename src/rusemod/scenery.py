@@ -458,9 +458,10 @@ SHOW = {"building": None, "prop": 20000, "vegetation": 40000}  # what the Studio
 def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: dict | None = None) -> dict:
     """A map's scenery for the Studio's map view (JSON-ready): {"types": [[short name, group, category, model,
     [every model], whether it's a bridge]],
-    "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat}} with every
-    building and a sample of props and trees (`budget`, default SHOW). Positions are map units; the game sets
-    objects on the ground itself."""
+    "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat},
+    "palette": [[type, short name, group, category, how many the map has, its names, what it is, its number in
+    types]]} with every building and a sample of props and trees (`budget`, default SHOW), and every type there is
+    to place (the palette). Positions are map units; the game sets objects on the ground itself."""
     descs = descriptors(unit_arc) if descs is None else descs
     sc = Scenery(map_arc.read(map_arc.find(MEMBER)))
     budget = SHOW if budget is None else budget
@@ -484,11 +485,19 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
         items[g] = flat
     per_type = sc.types()
     from .scenerynames import kinds, names  # the game names these only in its editor's code, mostly French
-    palette = sorted(([descs[n].name, n.split("/", 1)[-1], descs[n].group, descs[n].category, per_type.get(i, 0),
-                       names(n.split("/", 1)[-1]), kinds(descs[n].category)]
-                      for i, n in enumerate(sc.names[:len(sc.flags)])
-                      if sc.flags[i] == 1 and n in descs and descs[n].group in PLACEABLE),
-                     key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
+    # every type there is to place gets a number in `types` too, after the shown items' own: the Studio makes each
+    # one's model (rusemod.models.map_models) for the place list's pictures and what's placed
+    rows = []
+    for i, n in enumerate(sc.names[:len(sc.flags)]):
+        if sc.flags[i] != 1 or n not in descs or descs[n].group not in PLACEABLE:
+            continue
+        d = descs[n]
+        if i not in index:
+            index[i] = len(types)
+            types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or "", list(d.models), d.bridge])
+        rows.append([d.name, n.split("/", 1)[-1], d.group, d.category, per_type.get(i, 0), names(n.split("/", 1)[-1]),
+                     kinds(d.category), index[i]])
+    palette = sorted(rows, key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
     return {"types": types, "items": items, "palette": palette,
             "groups": {g: {"shown": len(shown.get(g, [])), "total": totals.get(g, 0)} for g in budget}}
 
