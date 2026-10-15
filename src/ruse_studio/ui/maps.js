@@ -51,10 +51,11 @@ const BRUSHES = {
   erase: ["erase", "flat", 1, false, 3, 0],  // the map's own trees and props taken away: scenery.toml [[erase]] circles
   // Map Paint: the ground's picture, not its shape; strength is the opacity (rusemod.groundpaint)
   paint: ["paint", "soft", 1, false, 7, 60],  // a colour from the wheel, the map's own colours or the eyedropper
-  stamp: ["stamp", "soft", 1, false, 7, 100],  // the map's own ground copied from a spot picked (a clone stamp)
+  stamp: ["stamp", "soft", 1, false, 7, 100],  // the Texture brush: a texture picked, or this map's own ground from a spot
+  texture: ["texture", "soft", 1, false, 7, 100],  // (its strokes with a texture picked: never a brush of the dock)
 };
 const WATER = new Set(["water", "drain"]);
-const PAINT_KINDS = new Set(["paint", "stamp"]);  // their sizes grow on a curve (brushRadius)
+const PAINT_KINDS = new Set(["paint", "stamp", "texture"]);  // their sizes grow on a curve (brushRadius)
 // finer sizes than the ground brushes' (share of 1%)
 const SIZE_UNIT = { cover: 0.25, uncover: 0.25, town: 0.1, block: 0.25, block_infantry: 0.25, block_vehicles: 0.25,
   open: 0.25, open_infantry: 0.25, open_vehicles: 0.25, forest: 0.25, erase: 0.25 };
@@ -955,9 +956,10 @@ function forget(mesh) {
 
 // --- Map Paint (rusemod.groundpaint.paint_strokes): the Colour and Texture brushes paint the ground's
 // picture. The Studio shows them on its own copy of the map's picture (a canvas laid on the ground), with the build's
-// rules: each stroke at its opacity times its brush's fall-off, in order; a Texture stroke copies the map's own
-// picture from where it was told (sx, sy), as the map was before any paint. The build paints every level of the
-// game's tiles the same way; what the game shows is not tested yet. ---
+// rules: each stroke at its opacity times its brush's fall-off, in order; a Texture stroke lays the texture picked,
+// repeating (rusemod.groundtex: the game's own, a square of any map's ground, the mod's own picture), or copies the
+// map's own picture from where it was told (sx, sy), as the map was before any paint. The build paints every level of
+// the game's tiles the same way; what the game shows of the textures is not tested yet. ---
 const paint = {
   canvas: null, ctx: null, data: null, base: null, tex: null, material: null, original: null, batch: false,
   colour: "#8a7a4e", recent: [], palette: null,  // the colour painted, the last ones used, the map's own colours
@@ -965,6 +967,24 @@ const paint = {
   source: null,   // where Texture copies from: { x, y } picked, until the next stroke turns it into the offset
   offset: null,   // Texture's offset from each point it paints to where it copies from: { sx, sy }, kept stroke to stroke
   clear: true,    // the strokes take off what hides them up close (the build: groundpaint.paint_clearing; T21)
+  decals: true,   // a game texture's strokes get the game's own decals of it up close (groundtex.decal_grid)
+  // the Texture brush's library (the owner, 2026-10-09: "On a blank map, there is no spot to copy from ... add all of
+  // the game textures ... make it very easy to be able to add cool textures to your map")
+  from: "game",   // where Texture takes from: "game" (the game's textures), "map" (any map's ground), "own" (the mod's
+                  // own pictures), "online" (free pictures from the internet) or "spot" (a spot of this map, copied)
+  texture: null,  // the texture picked (its ref, rusemod.groundtex) and how big it's laid: 2^texScale times its own
+  texScale: 0,
+  textures: null, // the game's textures (StudioApi.ground_textures), once read; texGroup and texSearch filter them
+  texGroup: "all", texSearch: "", texLoading: false,
+  own: null,      // the mod's own pictures (StudioApi.ground_pictures)
+  // Online (free): Poly Haven, ambientCG or US aerial photos (StudioApi.online_textures): each one's list once read,
+  // what's typed to find in each (ambientCG's site is asked for `asked` once typing stops), the US photos' size and a
+  // typed place, and the one picture being downloaded (`busy`: one at a time)
+  online: { from: "polyhaven", lists: {}, loading: "", error: "", errorFor: "", search: { polyhaven: "",
+    ambientcg: "", usgs: "" }, asked: "", timer: 0, metres: 320, where: "", busy: "", busyName: "" },
+  mapPick: null,  // From a map: { pack, picture, bounds } of the map being picked from
+  swatches: {},   // ref -> { period, n, mips: [Uint8ClampedArray], name, thumb } once its picture is in, or { loading }
+  used: [],       // the textures painted with lately, newest first
 };
 
 // The canvas the paint is shown on: the ground's picture as the map has it, made again when the picture changes (a
@@ -1039,17 +1059,24 @@ function paintDab(s) {
   const [x0, y0, , x1, y1] = mv.edit.bounds, pw = (x1 - x0) / W, ph = (y1 - y0) / H;
   const rgb = s.brush === "paint" ? hexRgb(s.colour) : null, weight = s.weight === undefined ? 1 : s.weight;
   const ox = s.brush === "stamp" ? s.sx / pw : 0, oy = s.brush === "stamp" ? s.sy / ph : 0;
+  const tex = s.brush === "texture" ? textureSampler(s, Math.max(pw, ph)) : null;
+  if (s.brush === "texture" && !tex) return;  // its picture is on its way: the paint is laid again when it's in
   for (let r = ra; r <= rb; r++) {
     const y = y0 + (r + 0.5) * ph;
     for (let col = ca; col <= cb; col++) {
       const t2 = footT2(s, x0 + (col + 0.5) * pw, y);
       if (t2 >= 1) continue;
-      const a = edgeWeight(s.edge, "soft", t2) * weight;
+      let a = edgeWeight(s.edge, "soft", t2) * weight;
       if (a <= 0) continue;
       const k = 4 * (r * W + col);
       let cr, cg, cbl;
       if (rgb) [cr, cg, cbl] = rgb;
-      else {  // Texture: the map's own picture where it copies from, as the map was before any paint
+      else if (tex) {  // a texture picked: its colour here, as much as it shows (its alpha)
+        const t = tex(x0 + (col + 0.5) * pw, y);
+        a *= t[3] / 255;
+        if (a <= 0) continue;
+        [cr, cg, cbl] = t;
+      } else {  // Texture: the map's own picture where it copies from, as the map was before any paint
         const sc = Math.floor(col + 0.5 + ox), sr = Math.floor(r + 0.5 + oy);
         if (sc < 0 || sr < 0 || sc >= W || sr >= H) continue;
         const j = 4 * (sr * W + sc);
@@ -1081,6 +1108,484 @@ function hexRgb(hex) {
 
 function rgbHex(rgb) {
   return "#" + rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+
+// --- the Texture brush's textures (rusemod.groundtex; StudioApi's GroundTextureCalls): the picture the build lays
+// (made seamless), sampled the build's way: from the map's corner, `size` map units a repeat, each pixel the mip
+// whose pixels are nearest its size, nearest pixel, as much as it shows (its alpha) ---
+const NEAREST_MIP = Math.SQRT2;  // groundtex.NEAREST_MIP
+const TEX_SCALES = [-2, 4];      // the Size slider: 2^n times the texture's own size, a quarter to 16 times
+const TEX_USED = 8;              // textures kept in "Used lately"
+// a group's own word, not said again in a texture's name ("Grass · light green", not "Grass · light green, grass")
+const GROUP_WORD = { grass: "grass", earth: "earth", sand: "sand", rock: "rock", snow: "snow", town: "town" };
+
+function halveRgba(n, px) {  // groundtex.halve: each pixel the mean of the four under it, rounded half up
+  const h = n >> 1, out = new Uint8ClampedArray(h * h * 4);
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < h; i++) {
+      const a = 4 * (2 * j * n + 2 * i), b = a + 4 * n, o = 4 * (j * h + i);
+      for (let c = 0; c < 4; c++) out[o + c] = (px[a + c] + px[a + 4 + c] + px[b + c] + px[b + 4 + c] + 2) >> 2;
+    }
+  }
+  return out;
+}
+
+// A texture stroke's sampler for pixels `pixel` map units across: (x, y) -> [r, g, b, a], or null while its picture
+// is on its way (asked for once; the paint is laid again when it's in).
+function textureSampler(s, pixel) {
+  const sw = paint.swatches[s.texture];
+  if (!sw || !sw.mips) { loadSwatch(s.texture); return null; }
+  const rep = s.size > 0 ? s.size : sw.period;
+  let m = 0;
+  while (m + 1 < sw.mips.length && rep / (sw.n >> (m + 1)) <= pixel * NEAREST_MIP) m++;
+  const n = sw.n >> m, data = sw.mips[m], last = n - 1;
+  return (x, y) => {
+    const u = x / rep, v = y / rep;
+    const i = Math.min(last, Math.floor((u - Math.floor(u)) * n)), j = Math.min(last, Math.floor((v - Math.floor(v)) * n));
+    const k = 4 * (j * n + i);
+    return [data[k], data[k + 1], data[k + 2], data[k + 3]];
+  };
+}
+
+async function loadSwatch(ref) {
+  if (!ref || paint.swatches[ref]) return;
+  const sw = paint.swatches[ref] = { loading: true };
+  try {
+    const res = await mv.api.ground_texture(ref);
+    const img = new Image();
+    img.src = res.png;
+    await img.decode();
+    const c = el("canvas", { width: res.n, height: res.n }), ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    const mips = [ctx.getImageData(0, 0, res.n, res.n).data];
+    for (let n = res.n; n > 1; n >>= 1) mips.push(halveRgba(n, mips[mips.length - 1]));
+    Object.assign(sw, { loading: false, period: res.period, n: res.n, mips, png: res.png });
+  } catch (e) {
+    Object.assign(sw, { loading: false, error: String((e && e.message) || e) });
+    brushNote(fill(mv.words.tex_cant_read, { error: sw.error }), "error");
+  }
+  paintRefresh();
+  if (mv.gl) mv.gl.draw();
+  renderPaintPanel();
+}
+
+function gameTexture(ref) {
+  return paint.textures ? paint.textures.byRef[ref] || null : null;
+}
+
+// What a texture is called: a game texture by its group and the words its name says (gtex_*), a map's square by its
+// map, the mod's own picture by its file's name.
+function textureName(ref) {
+  const w = mv.words;
+  if (!ref) return "";
+  if (ref.startsWith("game:")) {
+    const t = gameTexture(ref);
+    if (!t) return ref.split("/").pop().replace(/_/g, " ");
+    const group = w[`gtex_group_${t.group}`] || t.group;
+    const said = t.words.filter((k) => k !== GROUP_WORD[t.group]).map((k) => w[`gtex_${k}`] || k.replace(/_/g, " "));
+    return said.length ? `${group} · ${said.join(", ")}` : group;
+  }
+  if (ref.startsWith("map:")) return fill(w.tex_from_map_name, { map: mapName(ref.split(":")[1]) });
+  return ref.slice(5).replace(/\.png$/i, "");
+}
+
+function textureWhere(t) {  // the decor sets a game texture is in, as the game's theatres
+  return t.theatres.map((th) => mv.words[`gtex_theatre_${th}`] || th).join(", ");
+}
+
+function texturePeriod(ref) {  // map units it repeats every at its own size, when known
+  const t = gameTexture(ref), sw = paint.swatches[ref], own = ownPicture(ref);
+  return t ? t.period : sw && sw.period ? sw.period : own && own.period ? own.period
+    : ref && ref.startsWith("map:") ? 81920 : ref ? 8192 : 0;
+}
+
+function ownPicture(ref) {  // the mod's own picture's row (StudioApi.ground_pictures: its period, metres, credit)
+  return ref && ref.startsWith("file:") && paint.own ? paint.own.find((p) => p.ref === ref) || null : null;
+}
+
+function metresText(m) {  // metres said: whole ones from 10 m, else to a tenth
+  return (m >= 10 ? Math.round(m) : Math.round(m * 10) / 10).toLocaleString();
+}
+
+function textureThumb(ref) {  // a small picture of it: the game's list's, or its own picture once in
+  const t = gameTexture(ref), sw = paint.swatches[ref];
+  if (t) return paint.textures.base + t.thumb;
+  if (ref && ref.startsWith("file:") && paint.own) {
+    const o = paint.own.find((p) => p.ref === ref);
+    if (o) return o.thumb;
+  }
+  return sw && sw.png ? sw.png : "";
+}
+
+function pickTexture(ref) {
+  if (ref !== paint.texture) paint.texScale = 0;  // a new texture starts at its own size
+  paint.texture = ref;
+  paint.picking = null;
+  if (paint.from === "spot") paint.from = ref.startsWith("map:") ? "map" : ref.startsWith("file:") ? "own" : "game";
+  loadSwatch(ref);
+  renderPaintPanel();
+  brushNote(fill(mv.words.tex_picked_note, { name: textureName(ref) }));
+}
+
+function textureUsed(ref) {
+  if (paint.used[0] === ref) return;
+  paint.used = [ref, ...paint.used.filter((r) => r !== ref)].slice(0, TEX_USED);
+  renderTexturesUsed();
+}
+
+function renderTexturesUsed() {
+  const w = mv.words, used = paint.used.filter((r) => r !== paint.texture || paint.from === "spot");
+  $("tex-used-label").textContent = used.length ? w.tex_used : "";
+  $("tex-used-label").title = w.tip_tex_used;
+  $("tex-used").replaceChildren(...used.map((r) => textureButton(r, textureThumb(r), textureName(r))));
+}
+
+async function loadGameTextures() {
+  if (paint.textures || paint.texLoading || !mv.api) return;
+  paint.texLoading = true;
+  const w = mv.words;
+  try {
+    let res = await mv.api.ground_textures();
+    while (res && res.job) {
+      let view, since = 0;
+      do {
+        await wait(700);
+        view = await mv.api.job(res.job, since);
+        since = view.count;
+        if (view.lines.length) $("tex-state").textContent = fill(w.tex_loading, { progress: view.lines[view.lines.length - 1] });
+      } while (view.state === "running");
+      if (view.state !== "done") throw new Error(view.message);
+      res = await mv.api.ground_textures();
+    }
+    const byRef = {};
+    for (const t of res.textures) byRef[t.ref] = t;
+    paint.textures = { base: res.base, list: res.textures, groups: res.groups, byRef };
+  } catch (e) {
+    $("tex-state").textContent = fill(w.tex_cant_read, { error: String((e && e.message) || e) });
+  } finally {
+    paint.texLoading = false;
+  }
+  renderPaintPanel();
+}
+
+async function loadOwnPictures() {
+  if (!mv.api) return;
+  try {
+    paint.own = (await mv.api.ground_pictures()).pictures;
+  } catch (e) {
+    paint.own = [];
+  }
+  renderPaintPanel();
+}
+
+// A picture button for the lists: its small picture over a checker (so see-through shows), its name as its tooltip.
+function textureButton(ref, thumb, title) {
+  const b = el("button", { type: "button", className: "tex-item", title });
+  b.setAttribute("aria-pressed", String(paint.texture === ref && paint.from !== "spot"));
+  b.setAttribute("aria-label", title);
+  if (thumb) b.append(el("img", { src: thumb, alt: "", loading: "lazy", draggable: false }));
+  b.addEventListener("click", () => pickTexture(ref));
+  return b;
+}
+
+function renderGameTextures() {
+  const w = mv.words, cat = paint.textures;
+  if (!cat) {
+    $("tex-groups").replaceChildren();
+    $("tex-grid").replaceChildren();
+    if (!paint.texLoading) $("tex-state").textContent = fill(w.tex_loading, { progress: "" });
+    loadGameTextures();
+    return;
+  }
+  const have = new Set(cat.list.map((t) => t.group));
+  const chip = (g) => {
+    const label = g === "all" ? w.tex_group_all : w[`gtex_group_${g}`] || g;
+    const b = el("button", { type: "button", className: "chip", textContent: label,
+      title: g === "all" ? w.tip_tex_group_all : fill(w.tip_tex_group, { group: label }) });
+    b.setAttribute("aria-pressed", String(paint.texGroup === g));
+    b.addEventListener("click", () => { paint.texGroup = g; renderPaintPanel(); });
+    return b;
+  };
+  $("tex-groups").replaceChildren(...["all", ...cat.groups.filter((g) => have.has(g))].map(chip));
+  const find = paint.texSearch.trim().toLowerCase();
+  const shown = cat.list.filter((t) => (paint.texGroup === "all" || t.group === paint.texGroup)
+    && (!find || `${textureName(t.ref)} ${textureWhere(t)}`.toLowerCase().includes(find)));
+  $("tex-grid").replaceChildren(...shown.map((t) => textureButton(t.ref, cat.base + t.thumb,
+    fill(t.see_through ? w.tip_tex_item_see : w.tip_tex_item, { name: textureName(t.ref), where: textureWhere(t),
+      m: Math.round(t.period / METRE) }))));
+  $("tex-state").textContent = shown.length ? "" : w.tex_none_found;
+}
+
+function renderOwnPictures() {
+  const w = mv.words;
+  if (paint.own === null || paint.ownFor !== mv.brush.mod) {  // (another mod picked: its own pictures)
+    paint.own = [];
+    paint.ownFor = mv.brush.mod;
+    loadOwnPictures();
+  }
+  $("tex-own-grid").replaceChildren(...paint.own.map((p) => textureButton(p.ref, p.thumb, p.credit  // (online ones)
+    ? fill(w.tip_tex_own_item_credit, { name: p.name, m: metresText((p.period || 8192) / METRE),
+      source: p.credit.source || "", author: p.credit.author || "", licence: p.credit.licence || "" })
+    : fill(w.tip_tex_own_item, { name: p.name }))));
+  $("tex-state").textContent = paint.own.length ? "" : w.tex_own_none;
+}
+
+function renderMapPick() {
+  const w = mv.words, list = $("tex-map-list");
+  if (list.options.length !== mv.maps.length) {
+    list.replaceChildren(el("option", { value: "", textContent: w.tex_map_choose }),
+      ...mv.maps.map((m) => el("option", { value: m.pack, textContent: mapName(m.pack) })));
+  }
+  list.value = paint.mapPick ? paint.mapPick.pack : "";
+  const pic = $("tex-map-pic");
+  pic.classList.toggle("hidden", !paint.mapPick || !paint.mapPick.picture);
+  if (paint.mapPick && paint.mapPick.picture && pic.src !== paint.mapPick.picture) pic.src = paint.mapPick.picture;
+  pic.title = w.tip_tex_map_pic;
+  $("tex-state").textContent = !paint.mapPick ? w.tex_map_first : paint.mapPick.picture ? w.tex_map_click : "";
+}
+
+async function chooseMapToPick(pack) {
+  paint.mapPick = pack ? { pack, picture: null, bounds: null } : null;
+  renderPaintPanel();
+  if (!pack) return;
+  try {
+    const res = await mv.api.map_overview(pack);
+    if (paint.mapPick && paint.mapPick.pack === pack) Object.assign(paint.mapPick, res);
+  } catch (e) {
+    brushNote(fill(mv.words.tex_cant_read, { error: String((e && e.message) || e) }), "error");
+  }
+  renderPaintPanel();
+}
+
+async function takeMapSquare(ev) {  // a click on the map's overview: the square of its ground there
+  const p = paint.mapPick, img = $("tex-map-pic");
+  if (!p || !p.bounds) return;
+  const r = img.getBoundingClientRect(), [x0, y0, x1, y1] = p.bounds;
+  const x = x0 + (ev.clientX - r.left) / r.width * (x1 - x0), y = y0 + (ev.clientY - r.top) / r.height * (y1 - y0);
+  $("tex-state").textContent = mv.words.tex_map_taking;
+  try {
+    const res = await mv.api.map_texture(p.pack, x, y);
+    pickTexture(res.ref);
+    brushNote(fill(mv.words.tex_map_taken, { map: mapName(p.pack) }));
+  } catch (e) {
+    brushNote(fill(mv.words.tex_cant_read, { error: String((e && e.message) || e) }), "error");
+    renderPaintPanel();
+  }
+}
+
+// A picture's middle square as a PNG data URL, n pixels across, n the largest power of two no more than its side or
+// 1,024 (groundtex.square's sizes): any picture the browser can show (the app has no JPG reader of its own).
+async function squarePng(src) {
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  const side = Math.min(img.naturalWidth, img.naturalHeight);
+  let n = 1;
+  while (n * 2 <= Math.min(side, 1024)) n *= 2;
+  const c = el("canvas", { width: n, height: n }), ctx = c.getContext("2d");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, n, n);
+  return c.toDataURL("image/png");
+}
+
+// Your own picture: any picture the browser can show, its middle square (1,024 pixels at most) made a PNG here and
+// kept in the mod (files/ground), then picked.
+async function addOwnPicture(file) {
+  const w = mv.words;
+  if (!file) return;
+  if (!mv.brush.mod) { brushNote(w.no_mod, "error"); return; }
+  try {
+    const url = URL.createObjectURL(file);
+    let png;
+    try {
+      png = await squarePng(url);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    const res = await mv.api.add_ground_picture(file.name, png);
+    paint.own = res.pictures;
+    pickTexture(res.ref);
+    brushNote(fill(w.tex_own_added, { name: textureName(res.ref) }));
+  } catch (e) {
+    brushNote(fill(w.tex_cant_read, { error: String((e && e.message) || e) }), "error");
+  }
+}
+
+// Online (free) (StudioApi.online_textures, online_texture): Poly Haven's and ambientCG's textures (CC0), shown by
+// their own small pictures, and US aerial photos (public domain) of the places named or of a typed latitude and
+// longitude. A click downloads only that one picture; it's kept in the mod like your own (with its real size and
+// credit, files/ground/<name>.toml) and picked. The owner, 2026-10-09: "the more, the merrier".
+function onlineLabel(src) {
+  const w = mv.words;
+  return src === "polyhaven" ? w.tex_online_polyhaven : src === "ambientcg" ? w.tex_online_ambientcg : w.tex_online_usgs;
+}
+
+async function loadOnline(src, words) {
+  const o = paint.online, key = `${src}:${words}`;
+  if (o.loading === key || !mv.api) return;
+  o.loading = key;
+  try {
+    const res = await mv.api.online_textures(src, words);
+    o.lists[src] = Object.assign(res, { asked: words });
+    o.error = "";
+  } catch (e) {
+    o.error = String((e && e.message) || e);
+    o.errorFor = key;
+  } finally {
+    if (o.loading === key) o.loading = "";
+  }
+  renderPaintPanel();
+}
+
+function onlineButton(src, t, licence) {  // a Poly Haven or ambientCG texture: its site's small picture
+  const w = mv.words, o = paint.online;
+  const title = fill(t.metres ? w.tip_tex_online_item : w.tip_tex_online_item_nosize,
+    { name: t.name, m: t.metres ? metresText(t.metres) : "", author: t.author || "", licence });
+  const b = el("button", { type: "button", className: "tex-item", title });
+  b.setAttribute("aria-label", title);
+  if (o.busy === `${src}:${t.id}`) b.setAttribute("aria-busy", "true");
+  if (t.thumb) b.append(el("img", { src: t.thumb, alt: "", loading: "lazy", draggable: false, referrerPolicy: "no-referrer" }));
+  b.addEventListener("click", () => takeOnline(src, t.id, t.name));
+  return b;
+}
+
+function placeChip(p) {  // a US place to photograph, by its name in the Studio's language
+  const w = mv.words, o = paint.online, name = w[`tex_place_${p.id}`] || p.name;
+  const title = fill(w.tip_tex_place, { place: name, lat: p.lat, lon: p.lon, m: metresText(o.metres) });
+  const b = el("button", { type: "button", className: "chip", textContent: name, title });
+  if (o.busy === `usgs:${p.id}`) b.setAttribute("aria-busy", "true");
+  b.addEventListener("click", () => takeOnline("usgs", p.id, name));
+  return b;
+}
+
+function renderOnline() {
+  const w = mv.words, o = paint.online, src = o.from;
+  const subs = [["polyhaven", w.tex_online_polyhaven, w.tip_tex_online_polyhaven],
+    ["ambientcg", w.tex_online_ambientcg, w.tip_tex_online_ambientcg], ["usgs", w.tex_online_usgs, w.tip_tex_online_usgs]];
+  $("tex-online-from").replaceChildren(...subs.map(([key, label, tip]) => {
+    const b = el("button", { type: "button", className: "chip", textContent: label, title: tip });
+    b.setAttribute("aria-pressed", String(src === key));
+    b.addEventListener("click", () => { o.from = key; o.error = ""; renderPaintPanel(); });
+    return b;
+  }));
+  const search = $("tex-online-search"), usgs = src === "usgs";
+  search.placeholder = usgs ? w.tex_online_find_place : w.tex_online_search;
+  search.title = usgs ? w.tip_tex_online_find_place : src === "ambientcg" ? w.tip_tex_online_search_site
+    : w.tip_tex_online_search;
+  search.setAttribute("aria-label", search.title);
+  if (search.value !== o.search[src]) search.value = o.search[src];
+  $("tex-online-place").classList.toggle("hidden", !usgs);
+  $("tex-online-note").textContent = usgs ? w.tex_online_note_usgs : src === "ambientcg" ? w.tex_online_note_ambientcg
+    : w.tex_online_note_polyhaven;
+  const grid = $("tex-online-grid");
+  grid.classList.toggle("tex-places", usgs);
+  const want = src === "ambientcg" ? o.asked : "", list = o.lists[src];
+  const state = (text) => { $("tex-state").textContent = o.busy ? fill(w.tex_online_getting, { name: o.busyName }) : text; };
+  if (!list || list.asked !== want) {
+    grid.replaceChildren();
+    if (o.error && o.errorFor === `${src}:${want}`) {
+      state(fill(w.tex_online_cant_list, { source: onlineLabel(src), error: o.error }));
+    } else {
+      state(fill(w.tex_online_listing, { source: onlineLabel(src) }));
+      loadOnline(src, want);
+    }
+    return;
+  }
+  const find = o.search[src].trim().toLowerCase();
+  let shown;
+  if (usgs) {
+    const metres = $("tex-online-metres");
+    if (metres.options.length !== list.metres.length) {
+      metres.replaceChildren(...list.metres.map((m) => el("option", { value: String(m),
+        textContent: fill(w.tex_online_m, { m: metresText(m) }) })));
+    }
+    metres.value = String(o.metres);
+    metres.title = w.tip_tex_online_metres;
+    $("tex-online-metres-label").textContent = w.tex_online_metres;
+    const where = $("tex-online-where");
+    where.placeholder = w.tex_online_where;
+    where.title = w.tip_tex_online_where;
+    where.setAttribute("aria-label", w.tip_tex_online_where);
+    if (where.value !== o.where) where.value = o.where;
+    $("tex-online-take").textContent = w.tex_online_take;
+    $("tex-online-take").title = w.tip_tex_online_take;
+    shown = list.items.filter((p) => !find || `${w[`tex_place_${p.id}`] || ""} ${p.name}`.toLowerCase().includes(find));
+    grid.replaceChildren(...shown.map((p) => placeChip(p)));
+  } else {
+    shown = src === "ambientcg" ? list.items  // (its site found them by the words typed)
+      : list.items.filter((t) => !find || `${t.name} ${t.tags.join(" ")}`.toLowerCase().includes(find));
+    grid.replaceChildren(...shown.map((t) => onlineButton(src, t, list.licence)));
+  }
+  state(shown.length ? "" : w.tex_online_none);
+}
+
+async function takeOnline(src, id, name) {  // download one picture and keep it in the mod: `id` "" for a typed place
+  const w = mv.words, o = paint.online;
+  if (!mv.brush.mod) { brushNote(w.no_mod, "error"); return; }
+  if (o.busy) return;  // one at a time
+  if (src === "usgs" && !id && !o.where.trim()) { brushNote(w.tex_online_where_first, "error"); return; }
+  o.busy = `${src}:${id}`;
+  o.busyName = name || o.where.trim();
+  renderPaintPanel();
+  try {
+    const got = await mv.api.online_texture(src, id, src === "usgs" ? o.metres : 0, id ? "" : o.where);
+    const png = await squarePng(got.picture);
+    const res = await mv.api.add_ground_picture(got.name, png, got.metres, got.credit);
+    paint.own = res.pictures;
+    paint.ownFor = mv.brush.mod;
+    o.busy = "";
+    pickTexture(res.ref);
+    brushNote(fill(w.tex_online_added, { name: textureName(res.ref), source: got.credit.source }));
+  } catch (e) {
+    o.busy = "";
+    brushNote(fill(w.tex_online_cant, { error: String((e && e.message) || e) }), "error");
+    renderPaintPanel();
+  }
+}
+
+function renderTexturePanel() {
+  const w = mv.words, from = paint.from;
+  const sources = [["game", w.tex_from_game, w.tip_tex_from_game], ["map", w.tex_from_map, w.tip_tex_from_map],
+    ["own", w.tex_from_own, w.tip_tex_from_own], ["online", w.tex_from_online, w.tip_tex_from_online],
+    ["spot", w.tex_from_spot, w.tip_tex_from_spot]];
+  $("tex-from").replaceChildren(...sources.map(([key, label, tip]) => {
+    const b = el("button", { type: "button", className: "chip", textContent: label, title: tip });
+    b.setAttribute("aria-pressed", String(from === key));
+    b.addEventListener("click", () => { paint.from = key; paint.picking = null; renderPaintPanel(); brushNote(""); });
+    return b;
+  }));
+  for (const key of ["game", "map", "own", "online", "spot"]) $(`tex-${key}`).classList.toggle("hidden", from !== key);
+  const search = $("tex-search");
+  search.placeholder = w.tex_search;
+  search.title = w.tip_tex_search;
+  search.setAttribute("aria-label", w.tip_tex_search);
+  $("tex-map-list").title = w.tip_tex_map_list;
+  $("tex-add").textContent = w.tex_own_add;
+  $("tex-add").title = w.tip_tex_own_add;
+  if (from === "game") renderGameTextures();
+  else if (from === "map") renderMapPick();
+  else if (from === "own") renderOwnPictures();
+  else if (from === "online") renderOnline();
+  else $("tex-state").textContent = "";
+  const picked = from !== "spot" && paint.texture;
+  $("tex-now").classList.toggle("hidden", !picked);
+  $("tex-size-row").classList.toggle("hidden", !picked);
+  if (picked) {
+    const thumb = textureThumb(paint.texture), now = $("tex-now-pic");
+    now.style.backgroundImage = thumb ? `url("${thumb}")` : "";
+    $("tex-now-name").textContent = textureName(paint.texture);
+    const own = ownPicture(paint.texture), credit = own && own.credit;  // (an online one says whose it is)
+    $("tex-now").title = credit ? fill(w.tip_tex_now_credit, { source: credit.source || "", author: credit.author || "",
+      licence: credit.licence || "" }) : w.tip_tex_now;
+    const rep = texturePeriod(paint.texture) * Math.pow(2, paint.texScale), size = $("tex-size");
+    size.min = String(TEX_SCALES[0]);
+    size.max = String(TEX_SCALES[1]);
+    size.value = String(paint.texScale);
+    size.title = w.tip_tex_size;
+    $("tex-size-label").textContent = fill(w.tex_size, { m: (rep >= 10 * METRE ? Math.round(rep / METRE)
+      : Math.round(rep / METRE * 10) / 10).toLocaleString() });
+  }
+  renderTexturesUsed();
 }
 
 function rgbHsv([r, g, b]) {
@@ -1232,18 +1737,24 @@ function renderPaintPanel() {
     $("paint-recent").replaceChildren(...paint.recent.map(swatch));
     drawWheel();
   } else {
+    renderTexturePanel();
     const pick = $("stamp-pick");
     pick.textContent = w.stamp_pick;
     pick.title = w.tip_stamp_pick;
     pick.setAttribute("aria-pressed", String(paint.picking === "source"));
-    $("stamp-state").textContent = paint.picking === "source" ? w.stamp_pick_help
-      : paint.source || paint.offset ? w.stamp_from : w.stamp_from_none;
+    $("stamp-state").textContent = paint.from !== "spot" ? ""
+      : paint.picking === "source" ? w.stamp_pick_help : paint.source || paint.offset ? w.stamp_from : w.stamp_from_none;
   }
   const clear = $("paint-clear");
   clear.textContent = w.paint_clear;
   clear.title = w.tip_paint_clear;
   clear.setAttribute("aria-pressed", String(paint.clear));
-  $("paint-note").textContent = w.paint_note;
+  const decals = $("paint-decals");  // the game's own decals up close: for the game's textures only
+  decals.classList.toggle("hidden", colour || paint.from === "spot" || !String(paint.texture || "").startsWith("game:"));
+  decals.textContent = w.paint_decals;
+  decals.title = w.tip_paint_decals;
+  decals.setAttribute("aria-pressed", String(paint.decals));
+  $("paint-note").textContent = !colour && paint.from !== "spot" ? w.tex_note : w.paint_note;
 }
 
 // The colour of the object under the pointer (a building, a prop, a tree drawn with its real model), for matching the
@@ -1298,6 +1809,7 @@ function paintPick(x, y, alt, ev) {
   paint.source = { x, y };
   paint.offset = null;
   paint.picking = null;
+  paint.from = "spot";  // (Alt+click with a texture picked: this map's own ground from here instead)
   renderPaintPanel();
   brushNote(mv.words.stamp_picked);
   return true;
@@ -5709,7 +6221,16 @@ function newStroke(x, y, level, end) {
   if (kind === "ramp") { s.level = level; s.weight = set.strength / 100; s.x2 = end.x; s.y2 = end.y; s.level2 = end.z; }
   if (kind === "water") s.level = level;
   if (kind === "paint") { s.colour = paint.colour; s.weight = set.strength / 100; s.clear = paint.clear; }
-  if (kind === "stamp") { s.sx = paint.offset.sx; s.sy = paint.offset.sy; s.weight = set.strength / 100; s.clear = paint.clear; }
+  if (kind === "stamp" && paint.from !== "spot") {  // a texture picked: laid repeating (rusemod.groundtex)
+    s.brush = "texture";
+    s.texture = paint.texture;
+    if (paint.texScale) s.size = Math.round(texturePeriod(paint.texture) * Math.pow(2, paint.texScale));
+    if (!paint.decals && paint.texture.startsWith("game:")) s.decals = false;
+    s.weight = set.strength / 100;
+    s.clear = paint.clear;
+  } else if (kind === "stamp") {
+    s.sx = paint.offset.sx; s.sy = paint.offset.sy; s.weight = set.strength / 100; s.clear = paint.clear;
+  }
   if (kind !== "ramp") Object.assign(s, tipFields(name, end));
   return s;
 }
@@ -5743,7 +6264,7 @@ function showRing(p) {
   if (start) {
     gl.startRing.position.set(start.sx, start.sy + lift, start.sz);
     gl.startRing.scale.set(r, r, r);
-  } else if (name === "stamp" && p && (paint.offset || paint.source)) {  // Texture: where it copies from, as it moves
+  } else if (name === "stamp" && p && paint.from === "spot" && (paint.offset || paint.source)) {  // where it copies from
     const sx = paint.offset ? p.x + paint.offset.sx * SCALE : paint.source.x * SCALE;
     const sz = paint.offset ? p.z + paint.offset.sy * SCALE : paint.source.y * SCALE;
     gl.startRing.visible = true;
@@ -6012,7 +6533,10 @@ function watchPointer() {
     // a plateau's top and a lake's surface sit Strength above the ground clicked; Level and Flatten take its height
     const level = kind === "water" || name === "plateau" ? z + lift(set.strength, z0, z1) : kind === "level" ? z : 0;
     if (paintPick(x, y, ev.altKey, ev)) return;  // Map Paint: the eyedropper, or Texture's spot to copy from (or Alt+click)
-    if (kind === "stamp") {  // Texture copies from the spot picked: the first stroke after picking fixes the offset
+    if (kind === "stamp" && paint.from !== "spot") {  // Texture with a texture picked
+      if (!paint.texture) { brushNote(mv.words.tex_none_picked, "error"); return; }
+      textureUsed(paint.texture);
+    } else if (kind === "stamp") {  // Texture copies from the spot picked: the first stroke after picking fixes the offset
       if (!paint.offset && !paint.source) { brushNote(mv.words.stamp_from_none, "error"); return; }
       if (!paint.offset || paint.source) {
         const start = drawsLine() && mv.brush.rampStart ? mv.brush.rampStart : { x, y };
@@ -7371,8 +7895,35 @@ function wire() {
     renderPaintPanel();
     brushNote(paint.picking ? mv.words.stamp_pick_help : "");
   });
+  // the Texture brush's library: find, size, a map to take ground from, your own pictures
+  $("tex-search").addEventListener("input", (e) => { paint.texSearch = e.target.value; renderGameTextures(); });
+  $("tex-size").addEventListener("input", (e) => { paint.texScale = Number(e.target.value); renderPaintPanel(); });
+  $("tex-map-list").addEventListener("change", (e) => chooseMapToPick(e.target.value));
+  $("tex-map-pic").addEventListener("click", (ev) => takeMapSquare(ev));
+  $("tex-add").addEventListener("click", () => $("tex-file").click());
+  $("tex-file").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    addOwnPicture(file);
+  });
+  // Online (free): find (ambientCG's site is asked once typing stops), the US photos' size, a typed place
+  $("tex-online-search").addEventListener("input", (e) => {
+    const o = paint.online;
+    o.search[o.from] = e.target.value;
+    if (o.from !== "ambientcg") { renderOnline(); return; }
+    clearTimeout(o.timer);
+    o.timer = setTimeout(() => { o.asked = o.search.ambientcg.trim().replace(/\s+/g, " "); renderPaintPanel(); }, 700);
+  });
+  $("tex-online-metres").addEventListener("change", (e) => { paint.online.metres = Number(e.target.value); renderOnline(); });
+  $("tex-online-where").addEventListener("input", (e) => { paint.online.where = e.target.value; });
+  $("tex-online-where").addEventListener("keydown", (e) => { if (e.key === "Enter") takeOnline("usgs", "", ""); });
+  $("tex-online-take").addEventListener("click", () => takeOnline("usgs", "", ""));
   $("paint-clear").addEventListener("click", () => {  // for the strokes painted from now on
     paint.clear = !paint.clear;
+    renderPaintPanel();
+  });
+  $("paint-decals").addEventListener("click", () => {  // for the strokes painted from now on
+    paint.decals = !paint.decals;
     renderPaintPanel();
   });
   $("brush-angle").addEventListener("input", (e) => {  // a square brush's turn: its outline follows at once

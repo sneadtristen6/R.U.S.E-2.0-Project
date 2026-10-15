@@ -12,8 +12,8 @@ Terrain and Blank Ocean do) and every file is made again from the strokes' own s
   the whole grid, each square two triangles, every triangle crossing the water cut there on the shape itself (marching
   triangles): wholly wet or wholly dry, the water's edge on the true outline (a grid point the edge passes within
   SNAP_STEPS of the file's steps goes onto the water, so no triangle folds once rounded); a cell they don't change keeps
-  the grid's points on its edges only and draws each of its 64 patches as a fan round the patch's middle. Patches in the
-  shipped order, each its own run of points; list 1 = the triangles wholly under water; normals from the faces over the
+  the grid's points on its edges only and draws each of its patches (PATCHES_NEAR each way, 8 as shipped) as a fan
+  round the patch's middle. Patches in the shipped order (hilbert), each its own run of points; list 1 = the triangles wholly under water; normals from the faces over the
   whole map; parents = the previous point;
 - the edge's skirt (the curtain hanging from the map's edge, and the water's side) following the new edge;
 - the gameplay ground (occlusioninfo_terrainonly.kdt: where units and new buildings stand, and where a click lands):
@@ -40,17 +40,36 @@ from .tms import SKIRT_BOTTOM, Cell, Patch, Q_MAX, Tms, VertexBuffer, encode_ind
 
 PER_CELL_NEAR = 128   # close-up mesh: squares a cell each way (D-Day's cells: a point every 9.85 m)
 PER_CELL_FAR = 48     # far mesh (D-Day's: every 52.5 m)
+PATCHES_NEAR = 8      # a cell's patches each way, close-up mesh (every shipped map's: 8); a power of two dividing
+PATCHES_FAR = 8       # PER_CELL_NEAR; the far mesh's the same way
 SNAP_STEPS = 2.5      # a water's edge this many of the file's steps from a grid point: the point goes onto the water
 REUSE_WITHIN = 8000   # the gameplay ground's index list stores steps of at most 16,383: a point is shared only among
                       # the last this many written
-# the 64 patches' (column, row) in the shipped order (a space-filling curve, the same in every shipped cell, close-up
-# and far: read from D-Day's)
-HILBERT = [(0, 0), (0, 1), (1, 1), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (2, 2), (3, 2), (3, 3), (2, 3), (1, 3),
-           (1, 2), (0, 2), (0, 3), (0, 4), (1, 4), (1, 5), (0, 5), (0, 6), (0, 7), (1, 7), (1, 6), (2, 6), (2, 7),
-           (3, 7), (3, 6), (3, 5), (2, 5), (2, 4), (3, 4), (4, 4), (5, 4), (5, 5), (4, 5), (4, 6), (4, 7), (5, 7),
-           (5, 6), (6, 6), (6, 7), (7, 7), (7, 6), (7, 5), (6, 5), (6, 4), (7, 4), (7, 3), (7, 2), (6, 2), (6, 3),
-           (5, 3), (4, 3), (4, 2), (5, 2), (5, 1), (4, 1), (4, 0), (5, 0), (6, 0), (6, 1), (7, 1), (7, 0)]
 STILL = bytes((0, 128, 128, 0))   # a flow texel of still water (rusemod.water: a dry cell given water)
+
+
+def hilbert(n: int) -> list[tuple[int, int]]:
+    """A cell's n x n patches' (column, row) in the order they're stored: a space-filling curve (every shipped cell's,
+    close-up and far, n = 8, read from D-Day's), each quarter of the cell a run, each quarter of that a run, and so
+    on; a finer split nests the coarser one (each run of 4 patches one of its patches)."""
+    out = []
+    for d in range(n * n):
+        x = y = 0
+        half, acc, q0, q1, q2, q3 = n >> 1, 0, 0, 2, 3, 1   # the quarters' places now: bit 0 column, bit 1 row
+        while half:
+            rest, size = d - acc, half * half
+            q = rest // size
+            acc += q * size
+            place = (q0, q1, q2, q3)[q]
+            if q == 0:
+                q1, q3 = q3, q1
+            elif q == 3:
+                q0, q2 = q2, q0
+            x += half if place & 1 else 0
+            y += half if place & 2 else 0
+            half >>= 1
+        out.append((x, y))
+    return out
 
 
 class GroundGenError(ValueError):
@@ -130,11 +149,13 @@ def fine_cells(t: Tms, shape: Shape) -> set:
     return out
 
 
-def make_mesh(t: Tms, h, w, per_cell: int, fine: set) -> tuple[list, dict]:
+def make_mesh(t: Tms, h, w, per_cell: int, fine: set, div: int = 8) -> tuple[list, dict]:
     """Every cell of mesh `t` (its grid, bounds and storage as they are) from the ground's height `h(x, y)` and the
-    water's level `w(x, y)` (world z); `fine`: the cells drawn as the whole grid. Returns (cells, counts)."""
+    water's level `w(x, y)` (world z); `fine`: the cells drawn as the whole grid; `div`: a cell's patches each way
+    (t.patch_div is set to it). Returns (cells, counts)."""
     q = t.to_quant
-    assert per_cell % 8 == 0
+    assert per_cell % div == 0 and div & (div - 1) == 0
+    t.patch_div = div
     s = t.cell_w / per_cell
     nx, ny = t.grid_w * per_cell, t.grid_h * per_cell
     world = t.to_world
@@ -217,7 +238,7 @@ def make_mesh(t: Tms, h, w, per_cell: int, fine: set) -> tuple[list, dict]:
             if len(set(tri)) == 3:   # a crossing snapped onto a corner leaves that piece empty
                 tris.append(tri)
 
-    n8 = per_cell // 8
+    n8 = per_cell // div
     flat = 0
     for row in range(t.grid_h):
         for col in range(t.grid_w):
@@ -230,8 +251,8 @@ def make_mesh(t: Tms, h, w, per_cell: int, fine: set) -> tuple[list, dict]:
                         cut((i, j), (i + 1, j + 1), (i, j + 1))
                 continue
             flat += 1
-            for pr in range(8):
-                for pc in range(8):
+            for pr in range(div):
+                for pc in range(div):
                     ia, ja = i0 + pc * n8, j0 + pr * n8
                     ib, jb = ia + n8, ja + n8
                     loop = [(i, ja) for i in range(ia, ib)] if ja == j0 else [(ia, ja)]
@@ -271,18 +292,19 @@ def make_mesh(t: Tms, h, w, per_cell: int, fine: set) -> tuple[list, dict]:
         ln = math.sqrt(nv[0] * nv[0] + nv[1] * nv[1] + nv[2] * nv[2]) or 1.0
         normals.append(tuple(max(0, min(255, round((c / ln + 1) * 127.5))) for c in nv) + (128,))
     by_cell: dict = {}
-    ps = t.cell_w / 8
+    ps = t.cell_w / div
     for tri in fixed:
         mx = (wpts[tri[0]][0] + wpts[tri[1]][0] + wpts[tri[2]][0]) / 3
         my = (wpts[tri[0]][1] + wpts[tri[1]][1] + wpts[tri[2]][1]) / 3
         col, row = min(t.grid_w - 1, int(mx // t.cell_w)), min(t.grid_h - 1, int(my // t.cell_h))
-        pc = (min(7, int((mx - col * t.cell_w) // ps)), min(7, int((my - row * t.cell_h) // ps)))
+        pc = (min(div - 1, int((mx - col * t.cell_w) // ps)), min(div - 1, int((my - row * t.cell_h) // ps)))
         by_cell.setdefault(row * t.grid_w + col, {}).setdefault(pc, []).append(tri)
     cells, wet_tris, wide = [], 0, 0
+    order = hilbert(div)
     for k in range(len(t.cells)):
         patches_in = by_cell.get(k, {})
         positions, norms, list0, list1, patches = [], [], [], [], []
-        for cr in HILBERT:
+        for cr in order:
             local = {}
             vstart, i0start, i1start = len(positions), len(list0), len(list1)
             for tri in patches_in.get(cr, []):
@@ -588,7 +610,7 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     shape = Shape(strokes, bounds, base)
     notes = []
     fine_near = fine_cells(near, shape)
-    near.cells, ni = make_mesh(near, shape.h, shape.w, PER_CELL_NEAR, fine_near)
+    near.cells, ni = make_mesh(near, shape.h, shape.w, PER_CELL_NEAR, fine_near, PATCHES_NEAR)
     moved = fit_skirt(near, shape.h, shape.w)
     notes.append(f"{name}: close-up mesh drawn as our own: {ni['triangles']} triangles ({ni['water']} under water), "
                  f"{len(fine_near)} cell(s) a point every {ni['spacing']:.0f} map units, {ni['flat']} flat; most points "
@@ -597,7 +619,7 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     def far_w(x, y):
         return shape.w(x, y) - offset
     fine_far = fine_cells(far, shape)
-    far.cells, fi = make_mesh(far, shape.h, far_w, PER_CELL_FAR, fine_far)
+    far.cells, fi = make_mesh(far, shape.h, far_w, PER_CELL_FAR, fine_far, PATCHES_FAR)
     moved = fit_skirt(far, shape.h, far_w)
     notes.append(f"{name}: far mesh drawn as our own: {fi['triangles']} triangles, {len(fine_far)} cell(s) on the "
                  f"grid, {fi['flat']} flat; its water {offset:.0f} under the close-up mesh's; {moved} skirt point(s)")

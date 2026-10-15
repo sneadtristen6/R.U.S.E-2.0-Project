@@ -1165,6 +1165,31 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     }).map((u) => u.id);
   }
 
+  // Map Paint's textures in the preview: [ref, group, words, colour], each drawn as a checker of its colour
+  const fakeTextures = [["game:france/stickers01/herbe_verte", "grass", ["green", "grass"], "#4f6e2a"],
+    ["game:france/stickers01/labourage", "fields", ["ploughed"], "#7a6040"],
+    ["game:france/stickers01/terre", "earth", ["earth"], "#6a4a30"],
+    ["game:italie/stickers/sable", "sand", ["sand"], "#b09060"],
+    ["game:ardennes/stickers/plaque_neige", "snow", ["snow"], "#dcdcd8"],
+    ["game:france/stickers01/cour_paves", "town", ["yard", "cobbles"], "#7a7068"]];
+  const fakeOwnPictures = [];
+  // Online (free) in the preview: [id, name, metres, colour] per source, nothing downloaded (groundtex_online)
+  const fakeOnline = {
+    polyhaven: [["aerial_beach_01", "Aerial Beach 01", 30, "#c8b48a"], ["aerial_grass_rock", "Aerial Grass Rock", 30,
+      "#5a7040"], ["snow_field_aerial", "Snow Field Aerial", 30, "#e4e8ec"], ["rocky_terrain", "Rocky Terrain", 8,
+      "#80786c"]],
+    ambientcg: [["Grass005", "Grass 005", null, "#4a6a2a"], ["Ground054", "Ground 054", 2, "#6a5a40"],
+      ["Gravel022", "Gravel 022", null, "#8a8478"]],
+  };
+  const fakePlaces = [["wheat_kansas", "Wheat fields (Kansas)", 38.35, -98.6, "#c8b070"],
+    ["pines_arizona", "Pine forest (Arizona)", 35.05, -111.65, "#3a5a30"],
+    ["dunes_california", "Sand dunes (California)", 32.95, -115.1, "#d8c090"]];
+  function fakeChecker(a, b) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="${a}"/>`
+      + `<rect width="4" height="4" fill="${b}"/><rect x="4" y="4" width="4" height="4" fill="${b}"/></svg>`;
+    return "data:image/svg+xml;base64," + btoa(svg);
+  }
+
   // The Maps view: a made-up island, packed like rusemod.terrain (uint16 positions over the bounds, zlib, base64)
   // (titles: what the game's menus call each map, as the game has them)
   const fakeMaps = [
@@ -2821,6 +2846,50 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),
       map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
+      // Map Paint's textures (rusemod.groundtex): a few made-up ones, each a two-colour checker
+      ground_textures: async () => ({ base: "", groups: ["grass", "fields", "earth", "sand", "rock", "snow", "water",
+        "roads", "town", "damage", "marks", "other"], textures: fakeTextures.map(([ref, group, words, a]) => ({
+        ref, theatres: ["france"], group, words, period: 8192, see_through: false, thumb: fakeChecker(a, "#222") })) }),
+      ground_texture: async (ref) => {
+        const t = fakeTextures.find((x) => x[0] === ref), own = fakeOwnPictures.find((p) => p.ref === ref);
+        return { ref, period: own && own.period ? own.period : ref.startsWith("map:") ? 81920 : 8192, n: 8,
+          png: own ? own.thumb : fakeChecker(t ? t[3] : "#9a8a5a", "#4a3a2a") };
+      },
+      map_overview: async (pack) => ({ pack, picture: fakeChecker("#6a8a4a", "#c8b070"), bounds: [0, 0, 1000000, 1000000] }),
+      map_texture: async (pack, x, y) => ({ ref: `map:${pack}:${Math.round(x)}:${Math.round(y)}`, period: 81920, n: 8,
+        png: fakeChecker("#c8b070", "#8a7040") }),
+      ground_pictures: async () => ({ pictures: fakeOwnPictures, folder: "mods/test/files/ground" }),
+      add_ground_picture: async (name, picture, metres, credit) => {
+        const ref = `file:${String(name).replace(/\.\w+$/, "")}.png`;
+        fakeOwnPictures.push({ ref, name: ref.slice(5, -4), thumb: picture, period: metres ? metres * 260 : 8192,
+          ...(metres ? { metres } : {}), ...(credit ? { credit } : {}) });
+        return { pictures: fakeOwnPictures, folder: "mods/test/files/ground", ref };
+      },
+      online_textures: async (source, words) => {
+        await new Promise((r) => setTimeout(r, 300));  // (a site's list takes a moment)
+        if (source === "usgs") return { source, licence: "Public domain", metres: [160, 320, 640, 1280], default: 320,
+          items: fakePlaces.map(([id, name, lat, lon]) => ({ id, name, lat, lon, group: "fields" })) };
+        const find = String(words || "").toLowerCase();
+        return { source, licence: "CC0", words, items: fakeOnline[source].filter(([, name]) => source !== "ambientcg"
+          || !find || name.toLowerCase().includes(find)).map(([id, name, metres, a]) => ({ id, name, metres,
+          thumb: fakeChecker(a, "#333"), tags: [], author: source === "ambientcg" ? "ambientCG" : "Rob Tuytel" })) };
+      },
+      online_texture: async (source, item, metres, where) => {
+        await new Promise((r) => setTimeout(r, 500));  // (a download takes a moment)
+        if (source === "usgs") {
+          const p = fakePlaces.find((x) => x[0] === item);
+          if (!p && !/^\s*-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*$/.test(where || "")) {
+            throw new Error("type a latitude and a longitude, like 38.2, -98.4");
+          }
+          return { name: `${p ? p[1].replace(/[()]/g, "") : `US photo ${where}`} ${metres}m`,
+            picture: fakeChecker(p ? p[4] : "#7a8a5a", "#5a6a3a"), metres, credit: { source: "USGS National Map, NAIP imagery",
+              author: "USDA Farm Production and Conservation, through the USGS", licence: "Public domain", url: "" } };
+        }
+        const t = fakeOnline[source].find((x) => x[0] === item);
+        return { name: t[1], picture: fakeChecker(t[3], "#333"), metres: t[2],
+          credit: { source: source === "ambientcg" ? "ambientCG" : "Poly Haven",
+            author: source === "ambientcg" ? "ambientCG" : "Rob Tuytel", licence: "CC0", url: "" } };
+      },
       app_version: async () => ({ app: "Studio", version: "0.8.1" }),
       // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
       start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },

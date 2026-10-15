@@ -61,6 +61,7 @@ from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
 from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
 from .music import MusicCalls
 from .era_units import EraUnitCalls
+from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
 from . import __version__
@@ -305,6 +306,15 @@ _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scena
                   scenery.SceneryEditError, RoadNetError, NewMapError, PictureError, PlayersError)
 
 
+def _object_dict(o) -> dict:
+    """A placed object (rusemod.scenery.NewObject) as the Maps view takes it: without the fields only the build's
+    own objects set (`levels`, `height`: a copied or generated plant's), which a scenery.toml row never holds."""
+    out = asdict(o)
+    for k in ("levels", "height"):
+        out.pop(k, None)
+    return out
+
+
 def _erase_dict(a) -> dict:
     """An erase area (rusemod.scenery.EraseArea) as the Maps view takes it."""
     out = {"x": a.x, "y": a.y, "radius": a.radius, "what": list(a.what), "types": list(a.types)}
@@ -415,7 +425,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls, EraUnitCalls, MissionCalls):
+                NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -3877,7 +3887,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             objects = self._read_objects(path)
             erase = self._read_objects(path, "erase")
-        return {"objects": [asdict(o) for o in objects], "erase": [_erase_dict(a) for a in erase],
+        return {"objects": [_object_dict(o) for o in objects], "erase": [_erase_dict(a) for a in erase],
                 "saved": str(path) if objects or erase else None, "mod": str(folder)}
 
     def scenery_erase(self, pack: str, areas: list) -> dict:
@@ -4429,7 +4439,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             every = self._read_objects(path) + [o]
             self._write_objects(path, every)
-        return {"count": len(every), "saved": str(path), "object": asdict(o)}
+        return {"count": len(every), "saved": str(path), "object": _object_dict(o)}
 
     def road_add(self, pack: str, points: list, join: float = 3000.0, keep_trees: bool = False) -> dict:
         """Add a road (its line: [[x, y], ...] in map units, in order) to the map in the current mod. Its ends join a

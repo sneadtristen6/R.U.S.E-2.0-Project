@@ -557,6 +557,38 @@ def _picture_sampler(store: Tmst, bounds, level: int, cache=None):
     return at
 
 
+TINT_SAMPLES = 9   # a tint stroke's mean: the map's own picture at 9 x 9 points over its box, those in its shape
+TINT_KEEP = 0.35   # how much of the map's own texture a tint keeps: enough grain and light, not the old field's
+                   # furrows showing through the new crop (the owner, 2026-10-14: "different fields poking through")
+
+
+def _tint_shift(sampler, stroke) -> tuple[float, float, float]:
+    """What a tint stroke adds to TINT_KEEP of the map's own picture at each pixel (one level's `sampler`,
+    _picture_sampler): its colour less TINT_KEEP of the picture's mean under it, so the picture keeps some of its
+    texture (its grain and light) and its mean there becomes the stroke's colour. Where nothing of the picture lies
+    under it, the stroke's colour less nothing (the colour itself)."""
+    from .brush import colour_rgb
+    x0, x1, y0, y1 = stroke.box()
+    foot = stroke.footprint()
+    n, total = 0, [0.0, 0.0, 0.0]
+    for j in range(TINT_SAMPLES):
+        for i in range(TINT_SAMPLES):
+            x = x0 + (i + 0.5) * (x1 - x0) / TINT_SAMPLES
+            y = y0 + (j + 0.5) * (y1 - y0) / TINT_SAMPLES
+            if foot.t2(x, y) >= 1.0:
+                continue
+            c = sampler(x, y)
+            if c is None:
+                continue
+            n += 1
+            total = [total[0] + c[0], total[1] + c[1], total[2] + c[2]]
+    want = colour_rgb(stroke.colour)
+    if not n:
+        return float(want[0]), float(want[1]), float(want[2])
+    return (want[0] - TINT_KEEP * (total[0] / n), want[1] - TINT_KEEP * (total[1] / n),
+            want[2] - TINT_KEEP * (total[2] / n))
+
+
 def _coverage(stroke, px: float, py: float, pw: float, ph: float) -> float:
     """How strongly `stroke` paints the pixel centred at (px, py), pw x ph map units: its fall-off at the centre, or the
     mean over 3 x 3 points of the pixel when the stroke is under two pixels across (a coarse level)."""
@@ -662,19 +694,32 @@ def whole_grids() -> str:
     return f"numpy {np.__version__}"
 
 
-def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> dict[int, bytes]:
+def texture_at(stroke, swatch, pw: float, ph: float):
+    """(x, y) -> (r, g, b, a): a texture stroke's texture where it lays it, for pixels pw x ph map units across
+    (groundtex.Swatch.sampler: the mip whose pixels are the largest still no bigger than these)."""
+    from .groundtex import rep_of
+    return swatch.sampler(rep_of(stroke, swatch), max(pw, ph))
+
+
+def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swatches=None) -> dict[int, bytes]:
     """The Map Paint `strokes` laid on every tile of `store` (over `bounds`, map_bounds) they touch, at every level, in
     order; only the 4x4 blocks they touch are encoded again. A block a solid stroke covers whole (_solid_over) takes
     its colour at once, and only the strokes after it are worked out pixel by pixel there, so a ginormous patch costs
     about its edge. Returns {tile index: new tile record} for Tmst.members. `cache`: _tgu1_blocks's; `only`: the
-    tile indices to paint (a worker's share), each painted as it is among all of them.
+    tile indices to paint (a worker's share), each painted as it is among all of them. `swatches`: {texture ref:
+    groundtex.Swatch} for the texture strokes (groundtex.Library.for_strokes): each pixel takes the texture's colour
+    there (texture_at), its share times the texture's alpha.
 
-    With numpy there, a tile no stamp reaches is painted on whole grids (rusemod.paintnp): these same sums in this
-    same order, so the same record, many times sooner. The pixel-by-pixel way below is what it is checked against,
-    and what paints stamps, and everything without numpy."""
+    With numpy there, every tile is painted on whole grids (rusemod.paintnp): these same sums in this same order, so
+    the same record, many times sooner. The pixel-by-pixel way below is what it is checked against, and what paints
+    everything without numpy."""
     from .brush import colour_rgb
     if not strokes:
         return {}
+    swatches = swatches or {}
+    missing = sorted({s.texture for s in strokes if s.kind.kind == "texture" and s.texture not in swatches})
+    if missing:
+        raise PaintError(f"the texture {missing[0]} wasn't made ready to paint with")
     arrays = whole_arrays()
     boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
     colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
@@ -682,6 +727,8 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> 
     hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" for s, c in zip(strokes, colours)]
     solid_blocks: dict = {}  # colour -> its 4x4 block, encoded once
     samplers: dict = {}
+    pictures: dict = {}  # paintnp's own samplers, a level each
+    shifts: dict = {}    # (stroke, level) -> a tint stroke's shift (_tint_shift)
     out = {}
     for tile in store.tiles:
         if only is not None and tile.index not in only:
@@ -692,7 +739,7 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> 
             continue
         if arrays is not None:
             record = arrays.paint_tile(sys.modules[__name__], store, tile, (rx0, ry0, rx1, ry1), near, strokes, boxes,
-                                       colours, hard, cache)
+                                       colours, hard, cache, swatches, bounds, pictures)
             if record is not None:
                 if record:
                     out[tile.index] = record
@@ -700,6 +747,8 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> 
         w, h = _dims(store, tile)  # never assumed: the overview tile is 256 on Blitz, 1024 x 512 on D-Day
         pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
         quick = {k: _quick_round(strokes[k], pw, ph) for k in near}
+        textures = {k: texture_at(strokes[k], swatches[strokes[k].texture], pw, ph) for k in near
+                    if strokes[k].kind.kind == "texture"}
         blocks, painted = None, False
         nx = w // 4
         for by in range(h // 4):
@@ -767,12 +816,26 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None) -> 
                             a = _coverage(s, px, py, pw, ph) * s.weight
                         if a <= 0.0:
                             continue
+                        if k in textures:  # a texture: its colour here, as much as it shows (its alpha)
+                            tr, tg, tb, ta = textures[k](px, py)
+                            a = a * (ta / 255.0)
+                            if a <= 0.0:
+                                continue
+                            r, g, b = r + (tr - r) * a, g + (tg - g) * a, b + (tb - b) * a
+                            touched, close = True, None
+                            continue
                         if c is None:  # a stamp: the map's own picture at the same level, where it copies from
                             if tile.level not in samplers:
                                 samplers[tile.level] = _picture_sampler(store, bounds, tile.level, cache)
                             c = samplers[tile.level](px + s.sx, py + s.sy)
                             if c is None:
                                 continue
+                            if s.kind.kind == "tint":  # (a tint: TINT_KEEP of it there, its shift added)
+                                key = (k, tile.level)
+                                if key not in shifts:
+                                    shifts[key] = _tint_shift(samplers[tile.level], s)
+                                d = shifts[key]
+                                c = tuple(min(255.0, max(0.0, c[ch] * TINT_KEEP + d[ch])) for ch in range(3))
                             r, g, b = r + (c[0] - r) * a, g + (c[1] - g) * a, b + (c[2] - b) * a
                             touched, close = True, None
                             continue
@@ -880,27 +943,59 @@ SHARE_FROM_GRIDS = 64  # the same, painted on whole grids (rusemod.paintnp): a t
                        # there, and worker programs a few seconds to start and to be handed the tile set
 
 
-def _start_paint(index_file: str, chunk_file: str, bounds, strokes: list, cache) -> None:
+def _start_paint(index_file: str, chunk_file: str, bounds, strokes: list, cache, swatches=None) -> None:
     import mmap
     with open(index_file, "rb") as f:
         index = f.read()
     held = open(chunk_file, "rb")  # (kept open with its view while the worker lives)
     chunk = mmap.mmap(held.fileno(), 0, access=mmap.ACCESS_READ)
-    _WORK.update(store=Tmst(index, chunk), bounds=bounds, strokes=strokes, cache=cache, held=held)
+    _WORK.update(store=Tmst(index, chunk), bounds=bounds, strokes=strokes, cache=cache, held=held, swatches=swatches)
 
 
 def _paint_job(indices: list) -> dict:
-    return paint_strokes(_WORK["store"], _WORK["bounds"], _WORK["strokes"], _WORK["cache"], only=set(indices))
+    return paint_strokes(_WORK["store"], _WORK["bounds"], _WORK["strokes"], _WORK["cache"], only=set(indices),
+                         swatches=_WORK.get("swatches"))
 
 
-TILES_KEPT = 8  # tile sets whose painted tiles are kept (two a map), the most recently painted
+def _paints(stroke) -> str:
+    """What of a stroke paints the ground's picture, for the names of the tiles it paints: the stroke with the
+    switches that change no pixel set one way (clear: the low cover taken off; decals: the game's decals laid over a
+    texture; block: a water stroke's)."""
+    import dataclasses
+    return repr(dataclasses.replace(stroke, clear=True, decals=True, block=True))
 
 
-def _tile_names(store: Tmst, bounds, strokes: list) -> tuple[list, dict]:
+def _stamp_sources(store: Tmst, bounds, tile, rect, box, stroke, whole: bool = False) -> list:
+    """The tiles of `tile`'s level a stamp copies from where it paints `tile` (the part of `rect` in its `box`, moved
+    by its offset, a pixel more each way), found by _picture_sampler's own sums: [(x, y, the tile or None)]."""
+    if tile.level >= store.depth:  # the overview copies from itself
+        return [(0, 0, tile)]
+    rx0, ry0, rx1, ry1 = rect
+    w, h = _dims(store, tile)
+    pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
+    if whole:   # a tint: its shift reads the picture under all of it, whatever tile it paints
+        rx0, ry0, rx1, ry1 = box[0], box[2], box[1], box[3]
+    ax0, ax1 = max(rx0, box[0]) + stroke.sx - pw, min(rx1, box[1]) + stroke.sx + pw
+    ay0, ay1 = max(ry0, box[2]) + stroke.sy - ph, min(ry1, box[3]) + stroke.sy + ph
+    cw, ch = _cells(store, bounds)
+    side = 1 << (store.depth - 1 - tile.level)
+    tw, th = cw / side, ch / side
+    x0, y0 = bounds[0], bounds[1]
+    out = []
+    for ky in range(int((ay0 - y0) // th), int((ay1 - y0) // th) + 1):
+        for kx in range(int((ax0 - x0) // tw), int((ax1 - x0) // tw) + 1):
+            try:
+                out.append((kx, ky, store.tile(tile.level, kx, ky)))
+            except KeyError:
+                out.append((kx, ky, None))
+    return out
+
+
+def _tile_names(store: Tmst, bounds, strokes: list, swatches=None) -> tuple[list, dict]:
     """(the tiles a stroke's box reaches, in the set's order; a fingerprint for each of what its painted record is
-    made from): the tile as packed, its place and size, the strokes whose boxes reach it in their order, and the
-    code. A tile a stamp reaches has none (a stamp copies other tiles' ground), and none has when the code can't be
-    read to tell."""
+    made from): the tile as packed, its place and size, the strokes whose boxes reach it in their order (_paints; a
+    texture stroke with its texture's own fingerprint, a stamp with the tiles it copies from as packed), and the code.
+    None has one when the code can't be read to tell."""
     import hashlib
     from .model import code_version
     try:
@@ -908,7 +1003,9 @@ def _tile_names(store: Tmst, bounds, strokes: list) -> tuple[list, dict]:
     except OSError:
         code = None
     boxes = [s.box() for s in strokes]
-    said = [repr(s).encode("utf-8", "surrogatepass") for s in strokes]
+    made = swatches or {}
+    said = [(_paints(s) + (f" {getattr(made.get(s.texture), 'digest', '')}" if s.kind.kind == "texture" else ""))
+            .encode("utf-8", "surrogatepass") for s in strokes]
     todo, names = [], {}
     for tile in store.tiles:
         rect = _tile_rect(store, tile, bounds)
@@ -917,7 +1014,7 @@ def _tile_names(store: Tmst, bounds, strokes: list) -> tuple[list, dict]:
         if not near:
             continue
         todo.append(tile.index)
-        if code is None or any(strokes[k].kind.kind != "paint" for k in near):
+        if code is None:
             continue
         tex = store.texture(tile)
         payload = tex.payload(0)
@@ -926,42 +1023,45 @@ def _tile_names(store: Tmst, bounds, strokes: list) -> tuple[list, dict]:
         h.update(payload)
         for k in near:
             h.update(struct.pack("<Q", len(said[k])) + said[k])
+            if strokes[k].kind.kind in ("stamp", "tint"):
+                for kx, ky, src in _stamp_sources(store, bounds, tile, rect, boxes[k], strokes[k],
+                                                  strokes[k].kind.kind == "tint"):
+                    stex = None if src is None else store.texture(src)
+                    got = b"" if stex is None else stex.payload(0)
+                    h.update(struct.pack("<qqbIIQ", kx, ky, stex is not None, stex.width if stex else 0,
+                                         stex.height if stex else 0, len(got)) + got)
         names[tile.index] = h.digest()
     return todo, names
 
 
-def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone: list) -> dict[int, bytes]:
+def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone: list,
+                 swatches=None) -> dict[int, bytes]:
     """paint_strokes on a tile set, its tiles shared out to `workers` programs when there are SHARE_FROM or more to
     paint, in small runs so none waits on another; put back in the set's order. The workers read the set from a file
     written once (in `cache`, the build's folder, when given). Workers that can't start: the same work in this program,
     and why goes in `alone`.
 
-    With `cache`, each painted tile is kept (rusemod.mapkeep, one file for the tile set: its last painting) under a
-    fingerprint of what it is made from (_tile_names), and a tile whose fingerprint is the same as last time is taken
-    from there: a stroke added, moved or taken away paints again only the tiles its box reaches."""
-    import hashlib
+    With `cache`, each painted tile is kept (rusemod.mapkeep.write_tiles: a pack of a painting's new tiles) under a
+    fingerprint of what it is made from (_tile_names), and a tile whose fingerprint is kept is taken from there,
+    whichever map, copy or mod painted it: a stroke added, moved or taken away paints again only the tiles its box
+    reaches."""
     import tempfile
     from . import mapkeep
     from .mend import _pool
-    todo, names = _tile_names(store, bounds, strokes)
-    set_name = hashlib.blake2b(b"painted tiles\0" + bytes(store.index), digest_size=20).hexdigest() if names else None
-    kept = (mapkeep.read(cache, set_name, "tiles") or {}).get("members", {}) if names else {}
-    have = {}  # tile -> its record as kept (b"" for a tile the strokes leave as it is)
-    for i, name in names.items():
-        was = kept.get(i)
-        if isinstance(was, tuple) and len(was) == 2 and was[0] == name and isinstance(was[1], bytes):
-            have[i] = was[1]
+    todo, names = _tile_names(store, bounds, strokes, swatches)
+    kept = mapkeep.read_tiles(cache, names.values()) if cache is not None else {}
+    have = {i: kept[name] for i, name in names.items() if name in kept}  # tile -> its record (b"": left as it is)
     rest = [i for i in todo if i not in have]
 
     def whole(got: dict) -> dict:
-        if names and (rest or len(kept) != len(names)):  # this painting's tiles, for the next one
-            mapkeep.write(cache, set_name, {"members": {i: (name, have.get(i, got.get(i, b"")))
-                                                        for i, name in names.items()}}, "tiles", TILES_KEPT)
+        mapkeep.write_tiles(cache, {names[i]: got.get(i, b"") for i in rest if i in names})  # for the next painting
         both = {i: have.get(i) or got.get(i) for i in todo}
         return {i: record for i, record in both.items() if record}
     if not rest:
         return whole({})
-    grids = whole_arrays() is not None and all(s.kind.kind == "paint" for s in strokes)  # (a stamp: pixel by pixel)
+    # a tile a stamp reaches reads the tiles it copies from too: about 0.6 s a tile on whole grids (24 of the
+    # side-by-side test's, 14 s in one program, 2026-10-14), so those are shared out as soon as pixel by pixel
+    grids = whole_arrays() is not None and not any(s.kind.kind in ("stamp", "tint") for s in strokes)
     if workers > 1 and len(rest) >= (SHARE_FROM_GRIDS if grids else SHARE_FROM):
         try:
             if cache is not None:
@@ -974,21 +1074,23 @@ def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone:
                     f.write(store.chunk)
                 runs = [rest[k:k + 4] for k in range(0, len(rest), 4)]
                 got: dict = {}
-                with _pool(_start_paint, (index_file, chunk_file, bounds, strokes, cache),
+                with _pool(_start_paint, (index_file, chunk_file, bounds, strokes, cache, swatches),
                            min(workers, len(runs))) as pool:
                     for part in pool.map(_paint_job, runs):
                         got.update(part)
             return whole(got)
         except Exception as exc:  # noqa: BLE001 - workers that can't start: the same work in this program
             alone.append(f"{type(exc).__name__}: {exc}")
-    return whole(paint_strokes(store, bounds, strokes, cache, only=set(rest)))
+    return whole(paint_strokes(store, bounds, strokes, cache, only=set(rest), swatches=swatches))
 
 
-def paint_ground(read, path_of, strokes: list, cache=None, workers: int | None = None) -> tuple[dict, list[str]]:
+def paint_ground(read, path_of, strokes: list, cache=None, workers: int | None = None,
+                 swatches=None) -> tuple[dict, list[str]]:
     """({member: new bytes}, notes): the Map Paint `strokes` laid on both tile sets of a map pack (paint_strokes) and,
     for the stamps, its close-up map (stamp_detail). `read(name)` gives a member's bytes (the build's chain) or None,
     `path_of(name)` its full path in the pack; `cache`: _tgu1_blocks's. The tiles are shared out to `workers` programs
-    (default mend.WORKERS; a map painted all over has thousands), each answer the same as one program's."""
+    (default mend.WORKERS; a map painted all over has thousands), each answer the same as one program's. `swatches`:
+    the texture strokes' textures (groundtex.Library.for_strokes); a texture leaves the close-up map as it is."""
     from .mend import WORKERS
     mesh = read("output\\highdef.tms")
     if mesh is None:
@@ -1002,7 +1104,7 @@ def paint_ground(read, path_of, strokes: list, cache=None, workers: int | None =
         store = Tmst(index, chunk)
         store.lod = lod
         store.index_path, store.chunk_path = path_of(f"output\\{lod}.tmst_pc"), path_of(f"output\\{lod}.tmst_chunk_pc")
-        tiles = _paint_tiles(store, bounds, strokes, cache, WORKERS if workers is None else workers, alone)
+        tiles = _paint_tiles(store, bounds, strokes, cache, WORKERS if workers is None else workers, alone, swatches)
         if tiles:
             out.update(store.members(tiles))
         notes.append(f"{lod}: {len(tiles)} tile(s) painted")

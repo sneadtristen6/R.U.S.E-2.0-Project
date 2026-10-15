@@ -1,0 +1,131 @@
+# The ground presets of the Studio's Preset brush: each a ground kind of a shipped map, laid as the game lays
+# it (stickers, low plants, stones with the game's own detail levels, the ground picture stamped) in 50 m
+# tiles taken from the squares listed (map units; 260 a metre). Measured on D-Day by
+# private/tools/looks/make_preset_library.py (2026-10-11). The Studio shows the name and description.
+
+[[preset]]
+name = "Meadow"
+description = "Normandy pasture: green grass with tufts of tall grass, a few low bushes and stones."
+map = "M04_Cotentin"
+aligned = false
+sources = [[2606500.0, 2047500.0], [3906500.0, 2333500.0], [2775500.0, 1046500.0], [1670500.0, 2320500.0], [3646500.0, 2476500.0], [994500.0, 890500.0], [1111500.0, 994500.0], [2476500.0, 2216500.0]]
+
+[[preset]]
+name = "Heath"
+description = "Open heath near the coast: dark earth and sand with marsh grass and dry bushes."
+map = "M04_Cotentin"
+aligned = false
+sources = [[2931500.0, 2034500.0], [2879500.0, 1748500.0], [2502500.0, 1813500.0], [2944500.0, 2385500.0], [2944500.0, 2021500.0], [2450500.0, 2346500.0], [1995500.0, 1917500.0], [2918500.0, 1878500.0]]
+
+[[preset]]
+name = "Marsh"
+description = "Low wet ground: dark earth with pools and thick marsh grass, no stones."
+map = "M04_Cotentin"
+aligned = false
+sources = [[2788500.0, 1592500.0], [2580500.0, 2216500.0], [2398500.0, 2138500.0], [2593500.0, 1228500.0], [2775500.0, 2203500.0], [2775500.0, 1605500.0], [2437500.0, 1787500.0], [2775500.0, 1644500.0]]
+
+[[preset]]
+name = "Sandy heath"
+description = "Sandy heath with tracks worn across it: pale earth, tall grass and shrubs."
+map = "M04_Cotentin"
+aligned = false
+sources = [[2905500.0, 1787500.0], [1046500.0, 1618500.0], [1514500.0, 916500.0], [3737500.0, 1982500.0], [3906500.0, 2034500.0], [3698500.0, 2008500.0], [2515500.0, 799500.0], [2905500.0, 1774500.0]]
+
+# The border strips a preset can lay along its outline (its `border`): straight strips of the map's own
+# (x, y the middle, dx, dy along it, the length; map units), each holding nothing but the strip in the
+# 2 m band along it. Found by private/tools/looks/border_sources.py (2026-10-14).
+
+[[border]]
+name = "edge"
+description = "A field's edge as the game lays it on D-Day: a 16 m strip of green crop and bushes with a couple of stones (the map's field-edge strip, placed 12,735 times)."
+map = "M04_Cotentin"
+sources = [[986084.7, 787708.5, 0.499989, 0.866032, 4046.6], [3735086.2, 2601084.7, -0.837628, 0.546242, 4046.5], [1837818.9, 2512753.9, 0.500021, -0.866013, 4046.6], [2671559.7, 876173.0, 0.499989, 0.866032, 4046.6], [2794917.0, 2031249.2, -0.500021, -0.866013, 4046.6], [1831137.9, 1487279.2, 0.993554, 0.113355, 4046.3], [1237562.6, 1989889.4, 0.499989, 0.866032, 4046.6], [2148445.1, 2001898.8, -0.500021, 0.866013, 4046.6]]
+
+[[border]]
+name = "hedge"
+description = "The foot of a Normandy hedge: a 27 m strip of bushes and tall grass (the map's hedge-foot strip, placed 30,363 times); on a field, the map's hedgerow trees and field fence along it too."
+map = "M04_Cotentin"
+sources = [[1010557.6, 740617.5, -0.866032, -0.499989, 6956.4], [3911752.0, 2428487.3, -0.511286, -0.859410, 6955.8], [1879649.4, 2570190.7, -0.999914, 0.013094, 6955.8], [2794914.8, 1000347.5, -0.879615, 0.475687, 6955.3], [1762759.2, 1487823.1, -0.999694, -0.024722, 6955.9], [2819408.5, 2117213.8, 0.000000, -1.000000, 6956.5], [1246732.4, 2175015.1, 0.866032, 0.499989, 6956.4], [1077813.9, 1468760.7, 0.000000, -1.000000, 6956.5]]
+
+# The field kinds: ONE real field of the map laid over the whole area, as Eugen's editor laid a field
+# (its rows all one way, along the area's direction). Each source is a window inside one field:
+# [x, y (its middle), the rows' direction (degrees), window along and across, sticker pitch along and
+# across the rows] (map units); an area takes one by its seed. Found by private/tools/looks/
+# field_sources.py (2026-10-14).
+
+[[field]]
+name = "Wheat field"
+description = "A ripe wheat field as on D-Day's farms: the rows of one of the map's own fields laid over the whole area in one direction, wheat in clumps, stubble under it."
+map = "M04_Cotentin"
+sources = [[1113503.0, 951925.8, 149.39, 8365.3, 6240.0, 1394.2, 1560.0], [1216725.8, 1367288.5, 89.18, 5507.3, 4160.0, 917.9, 1040.0], [1181592.5, 1629833.9, 100.92, 16757.3, 2080.0, 2792.9, 520.0], [1831582.6, 2308429.6, 92.22, 5560.6, 2080.0, 926.8, 520.0], [1820279.2, 2193037.9, 152.22, 5559.6, 2080.0, 926.6, 520.0], [3579826.0, 2462320.0, 97.51, 11715.7, 2080.0, 3905.2, 520.0]]
+
+[[field]]
+name = "Ploughed field"
+description = "A field between crops: one of the map's own ploughed fields, its dark rows laid over the whole area in one direction, stones turned up along them."
+map = "M04_Cotentin"
+sources = [[2158447.1, 2402571.0, 34.11, 11910.1, 2080.0, 1985.0, 520.0], [3333172.0, 2373082.5, 34.11, 10511.5, 2080.0, 1751.9, 520.0], [1840527.3, 2098800.5, 94.11, 10511.4, 2080.0, 1751.9, 520.0], [3026722.0, 2550011.8, 34.11, 11268.7, 2080.0, 1878.1, 520.0], [2413822.0, 957650.8, 34.11, 12148.1, 2080.0, 2024.7, 520.0], [1593451.0, 1126822.7, 154.11, 12147.9, 2080.0, 2024.7, 520.0]]
+
+[[field]]
+name = "Stubble field"
+description = "A harvested field: one of the map's own stubble fields, pale straw rows laid over the whole area in one direction."
+map = "M04_Cotentin"
+sources = [[2184472.8, 1874245.4, 29.41, 8368.3, 6240.0, 1394.7, 1560.0], [2164217.2, 1666299.9, 89.15, 6135.1, 8320.0, 1022.5, 2080.0], [2436318.3, 2547322.2, 149.41, 6233.2, 8320.0, 1038.9, 2080.0], [2232018.1, 1131890.7, 149.41, 6233.2, 8320.0, 1038.9, 2080.0], [1711698.1, 2286643.4, 149.39, 5545.6, 8320.0, 924.3, 2080.0], [3492145.8, 2197059.3, 89.41, 5549.7, 8320.0, 925.0, 2080.0]]
+
+# What a field's hedge carries besides its strip (`border = "hedge"`), per map: trees along the
+# outline at the map's count per 100 m of field edge, by species share (with the map's own detail
+# levels), and a fence of the map's field fence pieces end to end (name, levels, a piece's length).
+# Measured on D-Day's fields by field_sources.py and fence_pitch.py (2026-10-14).
+
+[[hedgerow]]
+map = "M04_Cotentin"
+trees_per_100m = 6.45
+trees = [["TypeWarrior/Pommier", 0.344, 30], ["TypeWarrior/Hetre_01", 0.225, 15], ["TypeWarrior/Orme_01", 0.104, 15], ["TypeWarrior/Bouleau_01", 0.091, 15], ["TypeWarrior/Charme_01", 0.062, 15], ["TypeWarrior/Chene_01", 0.059, 15], ["TypeWarrior/Chene_03", 0.058, 15], ["TypeWarrior/Chene_02", 0.014, 31]]
+fence = ["TypeWarrior/BarriereChamps_03", 31, 480.0]
+
+# The field brush's LOOKS: what it turns the strip of a field under it into, keeping the field's own
+# rows, outline and hedges. `stickers`: the row stickers' kinds and shares (each sticker of the field
+# under the brush stays where it is, its kind drawn by these shares); `field_kinds`: the map's field
+# sticker kinds it swaps (name prefixes); `crops`: the crop plants it replaces (prefixes), copied from
+# `sources`, big fields of the look: [x, y (the middle), the rows' facing (degrees), inside along and
+# across] (map units), the copy turned to the field painted over; the ground picture is stamped from
+# the same place. Measured by scratch/looks/field_index.py and field_recipes.py (2026-10-14).
+
+[[look]]
+name = "Wheat"
+description = "Ripe wheat: straw and pale rows, wheat in clumps over much of the field."
+map = "M04_Cotentin"
+field_kinds = ["Labourage", "Paille"]
+crops = ["Champs_"]
+colour = "#7c6927"
+stickers = [["Paille", 0.43], ["Labourage_herbeclaire", 0.245], ["Labourage_terreclaire", 0.178], ["Labourage", 0.06], ["Labourage_terrefonce", 0.06], ["Labourage_herbeclaire_triangle", 0.012], ["Labourage_herbefonce", 0.008], ["Labourage_terreclaire_triangle", 0.005]]
+sources = [[2673924.0, 930789.8, 166.50, 31928.0, 49816.0, 10.77], [1680697.3, 1673636.2, 106.50, 31928.0, 49816.0, 10.77], [3344941.0, 2562596.2, 120.20, 40066.0, 38974.0, -2.02], [3271950.1, 2366702.7, 0.20, 40066.0, 38974.0, -2.01], [1865612.2, 2155009.9, 60.20, 40066.0, 38974.0, -2.01], [3284969.1, 2539478.8, 32.66, 28522.0, 26260.0, -4.37], [3859686.7, 2484005.4, 154.08, 36504.0, 14456.0, -5.78]]
+
+[[look]]
+name = "Ploughed"
+description = "Ploughed earth: dark rows, next to nothing growing."
+map = "M04_Cotentin"
+field_kinds = ["Labourage", "Paille"]
+crops = ["Champs_"]
+colour = "#655621"
+stickers = [["Labourage_terrefonce", 0.306], ["Labourage", 0.28], ["Labourage_herbeclaire", 0.131], ["Labourage_terreclaire", 0.082], ["Labourage_herbefonce", 0.077], ["Paille", 0.067], ["Labourage_triangle", 0.037], ["Labourage_demi", 0.008]]
+sources = [[3791726.4, 2498320.1, 90.34, 42744.0, 25506.0, 0.0], [3602083.0, 2220191.2, 150.34, 42744.0, 25506.0, 0.0], [2697313.7, 998738.2, 30.34, 42744.0, 25506.0, 0.0], [3076942.4, 2496160.1, 0.75, 15626.0, 26468.0, 0.0], [1470024.1, 1919402.1, 122.64, 18330.0, 21268.0, 0.0], [2692977.0, 2205511.8, 60.52, 30680.0, 11466.0, 0.0]]
+
+[[look]]
+name = "Stubble"
+description = "A harvested field: straw rows, a few clumps left."
+map = "M04_Cotentin"
+field_kinds = ["Labourage", "Paille"]
+crops = ["Champs_"]
+colour = "#7b5f25"
+stickers = [["Paille", 0.469], ["Labourage_terrefonce", 0.229], ["Labourage_herbeclaire", 0.143], ["Labourage_terreclaire", 0.103], ["Labourage", 0.032], ["Labourage_triangle", 0.007], ["Paille_triangle", 0.005], ["Labourage_herbefonce", 0.005]]
+sources = [[1623396.2, 1708554.1, 21.46, 25610.0, 22152.0, -0.32], [2040021.2, 1953955.6, 0.65, 16614.0, 28678.0, 0.0]]
+
+[[look]]
+name = "Green crop"
+description = "A green crop: pale green rows, green clumps over much of the field."
+map = "M04_Cotentin"
+field_kinds = ["Labourage", "Paille"]
+crops = ["Champs_"]
+colour = "#525a1e"
+stickers = [["Labourage_herbeclaire", 0.838], ["Labourage", 0.051], ["Paille", 0.047], ["Labourage_terreclaire", 0.031], ["Labourage_terrefonce", 0.026], ["Labourage_herbefonce", 0.004], ["Labourage_triangle", 0.002], ["Paille_triangle", 0.002]]
+sources = [[1261806.3, 1648143.7, 29.85, 17342.0, 36582.0, 0.33], [1306727.1, 1264513.1, 118.12, 19812.0, 22022.0, 1.89], [1970118.1, 1560309.7, 59.33, 19760.0, 20228.0, 0.59]]

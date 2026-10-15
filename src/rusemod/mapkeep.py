@@ -18,6 +18,7 @@ import io
 import json
 import os
 import pickle
+import struct
 import threading
 import zlib
 from pathlib import Path
@@ -97,7 +98,8 @@ def path_of(cache, k: str, kind: str = "map") -> Path:
 
 def read(cache, k: str | None, kind: str = "map") -> dict | None:
     """The map kept under `k`, or None when there's none, or it's damaged. `kind`: what is kept ("map": a map's
-    ground; "tiles": a tile set's painted tiles, groundpaint._paint_tiles), each kind with its own files."""
+    ground; "paint": its painted pictures, the build's Map Paint step; "movement": its movement graphs), each kind
+    with its own files, KEEP_MOST of each."""
     if cache is None or not k:
         return None
     p = path_of(cache, k, kind)
@@ -119,6 +121,107 @@ def read(cache, k: str | None, kind: str = "map") -> dict | None:
     except OSError:
         pass
     return got
+
+
+TILES = "painted-tiles"   # in the build cache: painted tiles, a pack a painting, each tile under its fingerprint
+TILES_MOST = 2 << 30      # bytes of packs kept at most, the most recently used
+PACK_MAGIC = b"RTP1"
+_PACK_ROW = struct.Struct("<20sQQ20s")  # a tile's fingerprint, where its record starts and its length, its digest
+# One pack for a painting's new tiles, not a file a tile: Windows looks into every new file the first time it is
+# opened (on this PC ~40 ms a file, measured 2026-10-14: 2,522 tiles read back in 230 s one file each, 2 s as one).
+
+
+def read_tiles(cache, names) -> dict:
+    """The painted tiles kept under any of `names` (a tile's fingerprint, _tile_names's), {name: record} (b"" for a
+    tile the strokes leave as it is), from whichever pack holds them, the newest first; a damaged record or pack is
+    left out (its tile painted again)."""
+    want, got = set(names), {}
+    if cache is None or not want:
+        return got
+    try:
+        packs = sorted(Path(cache, TILES).glob("pack-*.bin"), key=lambda p: p.stat().st_mtime, reverse=True)
+    except OSError:
+        return got
+    for p in packs:
+        if not want:
+            break
+        try:
+            with open(p, "rb") as f:
+                head = f.read(8)
+                if len(head) != 8 or head[:4] != PACK_MAGIC:
+                    continue
+                count = struct.unpack("<I", head[4:])[0]
+                rows = f.read(count * _PACK_ROW.size)
+                if len(rows) != count * _PACK_ROW.size:
+                    continue
+                used = False
+                for name, at, size, digest in _PACK_ROW.iter_unpack(rows):
+                    if name not in want:
+                        continue
+                    f.seek(at)
+                    record = f.read(size)
+                    if len(record) == size and hashlib.blake2b(record, digest_size=DIGEST).digest() == digest:
+                        got[name] = record
+                        want.discard(name)
+                        used = True
+        except OSError:
+            continue
+        if used:
+            try:
+                os.utime(p)  # recently used: kept longest
+            except OSError:
+                pass
+    return got
+
+
+def write_tiles(cache, records: dict, most: int = TILES_MOST) -> None:
+    """Keep painted tiles, {name: record}, as one pack (so any map, copy or mod painting a tile the same way finds
+    it, read_tiles); then forget the least recently used packs beyond `most` bytes in all. The old way (one file a
+    tile set, maps' `tiles-*.bin`, where two copies of one map threw each other's out) is taken away."""
+    if cache is None or not records:
+        return
+    names = sorted(records)
+    folder = Path(cache, TILES)
+    p = folder / f"pack-{hashlib.blake2b(b''.join(names), digest_size=DIGEST).hexdigest()}.bin"
+    part = p.with_name(f"{p.name}.{os.getpid()}-{threading.get_ident()}.part")
+    at = 8 + len(names) * _PACK_ROW.size
+    rows, body = [], []
+    for name in names:
+        record = records[name]
+        rows.append(_PACK_ROW.pack(name, at, len(record), hashlib.blake2b(record, digest_size=DIGEST).digest()))
+        body.append(record)
+        at += len(record)
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(part, "wb") as f:
+            f.write(PACK_MAGIC + struct.pack("<I", len(names)))
+            f.writelines(rows)
+            f.writelines(body)
+        part.replace(p)  # two builds at once never read half a pack
+    except OSError:
+        try:
+            part.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return
+    for old in Path(cache, FOLDER).glob("tiles-*.bin"):
+        try:
+            old.unlink()
+        except OSError:
+            pass
+    try:
+        kept = sorted((f.stat().st_mtime, f.stat().st_size, f) for f in folder.glob("pack-*.bin"))
+    except OSError:
+        return
+    total = sum(size for _when, size, _p in kept)
+    for _when, size, old in kept:  # oldest first
+        if total <= most:
+            break
+        try:
+            old.unlink()
+            total -= size
+        except OSError:
+            pass  # in use by another build: forgotten next time
 
 
 def write(cache, k: str | None, value: dict, kind: str = "map", most: int = KEEP_MOST) -> None:

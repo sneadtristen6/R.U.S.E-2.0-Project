@@ -94,9 +94,14 @@ BRUSHES = {
     # the Map Paint tab (PLAN §15): the ground's picture, not its shape (rusemod.groundpaint.paint_strokes)
     "paint": Brush("paint", "soft"),  # a colour laid over the ground picture, `weight` its opacity
     "stamp": Brush("stamp", "soft"),  # the map's own ground copied from (x + sx, y + sy), `weight` its opacity
+    # a texture laid repeating, `size` map units a repeat (rusemod.groundtex: the game's, a map's square, the mod's)
+    "texture": Brush("texture", "soft"),
+    # the map's own picture where it lies, some of its texture kept (groundpaint.TINT_KEEP) and its mean under the
+    # stroke made `colour` (the field brush's picture: groundpaint._tint_shift), `weight` its opacity
+    "tint": Brush("tint", "soft"),
 }
 WATER_KINDS = ("water", "drain")
-PAINT_KINDS = ("paint", "stamp")
+PAINT_KINDS = ("paint", "stamp", "texture", "tint")
 GROUND_UNCHANGED = WATER_KINDS + ("cover", "block", "open") + PAINT_KINDS  # kinds that never move the ground
 CRATER_RIM = 0.35      # the crater's rim rises by this share of the bowl's depth
 
@@ -144,7 +149,8 @@ HARD_EDGE = 0.85
 @dataclass(frozen=True)
 class Footprint:
     """A stroke's footprint in map units: `shape` round (radius r round x, y), square (sides 2r long, running along
-    the direction dx, dy) or line (r either side of the segment x, y to x2, y2, round at both ends)."""
+    the direction dx, dy; with `along`, 2 * along long that way: a rectangle, as a field's tile of whole rows) or
+    line (r either side of the segment x, y to x2, y2, round at both ends)."""
     shape: str
     x: float
     y: float
@@ -153,6 +159,7 @@ class Footprint:
     dy: float = 0.0
     x2: float = 0.0
     y2: float = 0.0
+    along: float = 0.0   # a square's half-length along dx, dy when not r (0: r)
 
     def t2(self, px: float, py: float) -> float:
         """(how far out / r)², 0 at the middle (on a line's segment), 1 on the edge."""
@@ -161,6 +168,9 @@ class Footprint:
             n = math.sqrt(self.dx * self.dx + self.dy * self.dy) or 1.0
             u = abs(ox * self.dx + oy * self.dy) / n
             v = abs(oy * self.dx - ox * self.dy) / n
+            if self.along:   # a rectangle: each way against its own half-length
+                m = u / self.along if u / self.along > v / self.r else v / self.r
+                return m * m
             m = u if u > v else v
             return (m / self.r) ** 2
         if self.shape == "line":
@@ -182,6 +192,8 @@ class Footprint:
         n = math.sqrt(self.dx * self.dx + self.dy * self.dy) or 1.0
         ux, uy = self.dx / n * self.r, self.dy / n * self.r
         vx, vy = -uy, ux
+        if self.along:   # a rectangle: along dx, dy its own half-length
+            ux, uy = self.dx / n * self.along, self.dy / n * self.along
         return [(self.x + a * ux + b * vx, self.y + a * uy + b * vy) for a, b in ((1, 1), (1, -1), (-1, -1), (-1, 1))]
 
     def box(self) -> tuple[float, float, float, float]:
@@ -230,6 +242,14 @@ class Footprint:
         n = math.sqrt(self.dx * self.dx + self.dy * self.dy) or 1.0
         ux, uy = self.dx / n, self.dy / n
         out = []
+        if self.along:   # a rectangle: cells about `size` across each way, each in the circle round it
+            ka = max(1, int(2.0 * self.along / size + 0.999))
+            ca = 2.0 * self.along / ka
+            for i in range(ka):
+                for j in range(k):
+                    a, b = -self.along + (i + 0.5) * ca, -self.r + (j + 0.5) * cell
+                    out.append((self.x + a * ux - b * uy, self.y + a * uy + b * ux, math.hypot(ca, cell) / 2))
+            return out
         for i in range(k):
             for j in range(k):
                 a, b = -self.r + (i + 0.5) * cell, -self.r + (j + 0.5) * cell
@@ -302,10 +322,16 @@ class Stroke:
     colour: str = ""      # paint: the colour laid on the ground picture, "#rrggbb"
     sx: float = 0.0       # stamp: where the ground it copies lies, from each point it paints (world units)
     sy: float = 0.0
-    clear: bool = True    # paint, stamp: take off what hides it up close (stickers, low plants, stones) where it is
-                          # at least half strength (groundpaint.paint_clearing; TESTS.md T21)
+    clear: bool = True    # paint, stamp, texture: take off what hides it up close (stickers, low plants, stones)
+                          # where it is at least half strength (groundpaint.paint_clearing; TESTS.md T21)
     block: bool = True    # water: its water closes the ground under it to units, as a shipped map's does; false: a
                           # thin layer units go under, the movement taking all of the stroke's place for dry ground
+    texture: str = ""     # texture: what it lays (rusemod.groundtex: game:..., map:..., file:...)
+    size: float = 0.0     # texture: map units one repeat covers; 0 = the texture's own
+    decals: bool = True   # texture, a game one: the game's own decals of it laid over it, for detail up close
+                          # (groundtex.decal_grid); not tried in the game yet
+    length: float = 0.0   # a square's half-length along dx, dy when not `radius`: a rectangle (the field brush's tint
+                          # under one row sticker: scenery.expand_field_brush); 0 = a square
 
     @property
     def kind(self) -> Brush:
@@ -323,7 +349,7 @@ class Stroke:
         if self.brush == "ramp" or self.shape == "line":
             return Footprint("line", self.x, self.y, self.radius, x2=self.x2, y2=self.y2)
         if self.square or self.shape == "square":
-            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy)
+            return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy, along=self.length)
         return Footprint("round", self.x, self.y, self.radius)
 
     def strength_at(self, x: float, y: float) -> float:
@@ -412,8 +438,9 @@ class Stroke:
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
           "water": ("level",), "drain": (), "cover": (), "block": (), "open": (), "paint": ("colour",),
-          "stamp": ("sx", "sy")}
-_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy")
+          "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",)}
+_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "size",
+            "length")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -490,8 +517,8 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             raise BrushError(f"{at}: the square's direction dx, dy can't be 0, 0")
         kind = BRUSHES[brush].kind
         if "colour" in item:
-            if kind != "paint":
-                raise BrushError(f"{at}: colour is for the paint brush")
+            if kind not in ("paint", "tint"):
+                raise BrushError(f"{at}: colour is for the paint and tint brushes")
             if not isinstance(item["colour"], str) or not _COLOUR.match(item["colour"]):
                 raise BrushError(f"{at}: colour must be like \"#a07850\" (red, green, blue in hex), not {item['colour']!r}")
             values["colour"] = item["colour"].lower()
@@ -499,13 +526,30 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             raise BrushError(f"{at}: sx and sy (where a stamp copies from) are for the stamp brush")
         if kind == "stamp" and values["sx"] == 0.0 and values["sy"] == 0.0:
             raise BrushError(f"{at}: the stamp copies from where it paints (sx, sy are 0, 0): pick another spot")
+        if "texture" in item or "size" in values:
+            if kind != "texture":
+                raise BrushError(f"{at}: texture and size (what a texture lays, how big) are for the texture brush")
+            from .groundtex import TextureError, check_ref
+            try:
+                values["texture"] = check_ref(item.get("texture"))
+            except TextureError as exc:
+                raise BrushError(f"{at}: {exc}") from None
+            if values.get("size", 0.0) < 0.0:
+                raise BrushError(f"{at}: size can't be below 0 (0 lays the texture at its own size)")
         if "clear" in item:
             if kind not in PAINT_KINDS:
-                raise BrushError(f"{at}: clear (taking off what hides the paint up close) is for the paint and stamp "
-                                 f"brushes")
+                raise BrushError(f"{at}: clear (taking off what hides the paint up close) is for the paint, stamp, "
+                                 f"texture and tint brushes")
             if not isinstance(item["clear"], bool):
                 raise BrushError(f"{at}: clear must be true or false")
             values["clear"] = item["clear"]
+        if "decals" in item:
+            if kind != "texture":  # not a game rule: the stroke file's own field, only a texture stroke has it
+                raise BrushError(f"{at}: decals (the game's own decals laid over a game texture) are for the texture "
+                                 f"brush")
+            if not isinstance(item["decals"], bool):
+                raise BrushError(f"{at}: decals must be true or false")
+            values["decals"] = item["decals"]
         if "block" in item:
             if brush != "water":
                 raise BrushError(f"{at}: block (whether its water keeps units out) is for the water brush")
@@ -535,10 +579,16 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
         if kind == "ramp":
             lines += [f"x2 = {_num_text(s.x2)}", f"y2 = {_num_text(s.y2)}", f"level = {_num_text(s.level)}",
                       f"level2 = {_num_text(s.level2)}"]
-        if kind == "paint":
+        if kind in ("paint", "tint"):
             lines.append(f'colour = "{s.colour}"')
         if kind == "stamp":
             lines += [f"sx = {_num_text(s.sx)}", f"sy = {_num_text(s.sy)}"]
+        if kind == "texture":
+            lines.append(f'texture = "{s.texture}"')
+            if s.size > 0.0:
+                lines.append(f"size = {_num_text(s.size)}")
+            if not s.decals:
+                lines.append("decals = false")
         if kind in ("level", "smooth", "ramp") + PAINT_KINDS:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:
@@ -553,6 +603,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines += [f"x2 = {_num_text(s.x2)}", f"y2 = {_num_text(s.y2)}"]
         if (s.square or s.shape == "square") and (s.dx, s.dy) != (1.0, 0.0):
             lines += [f"dx = {_num_text(s.dx)}", f"dy = {_num_text(s.dy)}"]
+        if (s.square or s.shape == "square") and s.length:
+            lines.append(f"length = {_num_text(s.length)}")
         if s.edge != "soft":
             lines.append(f'edge = "{s.edge}"')
     return "\n".join(lines).lstrip("\n") + "\n"

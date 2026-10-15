@@ -666,7 +666,8 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `block`, `block_infantry`, `block_vehicles` | ground units can't use (all of them, infantry or vehicles): a `movement.toml` block after the mod's own; the ground doesn't move | the circle |
 | `open`, `open_infantry`, `open_vehicles` | ground units can use where the map has none (the reverse of block): a `movement.toml` open after the mod's own; the ground doesn't move | the circle, in circles of 5 m or more (towns: 1.2 m) |
 | `paint` | the Studio's Map Paint **Colour**: lays `colour` ("#rrggbb") on the ground's picture at `weight` (its opacity, 0..1, 1 when left out), on every level of both tile sets; the ground doesn't move. With `clear` (true when left out) the build also takes off what hides it up close (below). Seen in the game | round hump weighting (a hard edge: full nearly to the edge) |
-| `stamp` | Map Paint's **Texture**: lays the map's own picture from (`x` + `sx`, `y` + `sy`) at `weight`, as the map was before any paint, at every level; the map's close-up picture takes that spot's values too, so it blends up close as the spot does. `clear` as for `paint`. Seen in the game with `clear` (a light field copied into a riverbed reads as a road: copy from ground like its surroundings) | round hump weighting |
+| `stamp` | Map Paint's **Texture** with **This map** picked: lays the map's own picture from (`x` + `sx`, `y` + `sy`) at `weight`, as the map was before any paint, at every level; the map's close-up picture takes that spot's values too, so it blends up close as the spot does. `clear` as for `paint`. Seen in the game with `clear` (a light field copied into a riverbed reads as a road: copy from ground like its surroundings) | round hump weighting |
+| `texture` | Map Paint's **Texture** with a texture picked: lays `texture` repeating across the ground from the map's corner, `size` map units a repeat (left out: the texture's own size), at `weight`, on every level of both tile sets; a see-through texture lays as much as it shows. The map's close-up picture stays as it is. `clear` as for `paint`. `texture` is one of: `game:<theatre>/<folder>/<name>`, one of the game's own ground textures (read from the player's game when the mod is built; the Studio lists them); `map:<map pack>:<x>:<y>`, a 320 m square of that map's ground picture centred there; `file:<name>.png`, the mod's own picture in `files/ground/` (any PNG; its middle square is used). Every texture is made seamless first. With a game texture, `decals` (true when left out) also lays the game's own decals of that texture over the ground it paints at least half strength (only decals of the decor sets the map loads; laid 2.5 times their size, each texture on its own grid; as many as the map's scenery has room for, spread out evenly when there isn't room for all). Not tried in the game yet | round hump weighting |
 
 ```toml
 [[stroke]]
@@ -685,8 +686,36 @@ radius = 26000.0
 sx     = 110000.0    # stamp: where the ground it copies lies, from each point it paints (world units)
 sy     = 110000.0
 weight = 1.0
-clear  = false       # paint, stamp: leave what hides it up close (true when left out: it goes)
+clear  = false       # paint, stamp, texture: leave what hides it up close (true when left out: it goes)
+
+[[stroke]]
+brush   = "texture"
+x       = 641088.0
+y       = 859645.0
+radius  = 52000.0
+texture = "game:france/stickers01/labourage"   # or "map:M02_Tunisie:850000:420000", or "file:my sand.png"
+size    = 16384.0    # texture: map units one repeat covers (left out: the texture's own size)
+weight  = 0.8
 ```
+
+A mod's own pictures to paint with go in `files/ground/` (`files/ground/my sand.png`): the Studio's **Your pictures**
+puts them there, and so does **Online (free)** (Poly Haven's and ambientCG's textures, CC0, and US aerial photos from
+the USGS National Map, public domain), which downloads only the one picture clicked.
+
+A picture may have a sidecar beside it with the same name, `files/ground/<name>.toml` (`rusemod.groundtex.read_credit`),
+saying how much ground it covers and where it comes from; Online (free) writes one for each picture it downloads:
+
+```toml
+metres  = 30.0                                   # the real ground the picture (its middle square) covers across
+source  = "Poly Haven"                           # where it comes from
+author  = "Rob Tuytel"                           # who made it
+licence = "CC0"                                  # "CC0" or "Public domain" for Online (free) pictures
+url     = "https://polyhaven.com/a/aerial_beach_01"
+```
+
+With `metres` the picture is laid at its real size: one repeat covers `metres` x 260 map units (a stroke's `size` still
+changes it); without a sidecar, or without `metres` in it, a repeat is 32 m (8,192 map units). The rest is shown in the
+Studio's tooltips and kept with the picture; the game never reads it. Every field is optional.
 
 Paint strokes apply in their order, each over what's below it (a stroke on the same place again builds up), before
 the mod's new roads are painted, so a road drawn over paint shows on top.

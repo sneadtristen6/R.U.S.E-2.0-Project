@@ -1,5 +1,6 @@
 """A map's scenery (rusemod.scenery) on small made-up files: the file, its blocks and items, the walk, what the
 Studio shows, and the scenery types from made-up descriptor NDFs (no game files needed)."""
+import dataclasses
 import hashlib
 import math
 import random
@@ -11,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
-from rusemod import scenery
+from rusemod import brush, scenery
 from rusemod.build import build_and_write, load_mod
 from rusemod.edat import Edat
 from rusemod.scenery import (BURY, SCALE16, SHRINK, T_COMPACT, T_FULL, NewObject, Scenery, SceneryEditError,
@@ -129,6 +130,25 @@ def italy_top():
     return make_scenery([root, wood], NAMES)
 
 
+def open_fields():
+    """A top block over 40,960 x 40,960 placing a town hall and a wood twice, both references listed for far view. Its
+    full list's node splits along x: the hall and the west wood's reference in its left side (x up to 5,140), the
+    east wood's in its right side (from 35,980); the middle of the map is open ground, in no box (a painted field
+    away from D-Day's villages)."""
+    wood = block([compact(1, 0.0, 0.0)], box=(-100.0, -100.0, 100.0, 100.0))
+    items = [compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]
+    offsets = [0, len(items[0]), len(items[0]) + len(items[1])]
+    nodes = (struct.pack("<IHBB", 0x1F << 20 | 2 << 2, 2, 0xFF, 0)            # the root: far list | full list
+             + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, 2, 0xFF, 0)     # the far list's leaf
+             + struct.pack("<IHBB", 0xC0000000 | 0x17 << 20, 4, 0x20, 0xE0))  # the full list, split along x
+    entries = [offsets[1], offsets[2]] + offsets
+    head = struct.pack("<II4f", 0x80000000 | len(entries), 3, 0.0, 0.0, 40960.0, 40960.0) + bytes(8)
+    root_len = len(head) + 4 * len(entries) + len(nodes) + sum(map(len, items))
+    items = [compact(0, 1000.0, 2000.0), moved(root_len, 2000.0, 1000.0), moved(root_len, 38000.0, 8000.0)]
+    root = head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items)
+    return make_scenery([root, wood], NAMES)
+
+
 def make_scenery(blocks, names):
     offsets, pos = [], 0
     for b in blocks:
@@ -195,6 +215,13 @@ class Reading(unittest.TestCase):
         s = Scenery(make_scenery([block([compact(1, 1, 2), compact(1, 3, 4)], far=True)], NAMES))
         self.assertEqual(len(s.blocks[0].items), 2)
         self.assertEqual(s.types(), {1: 2})
+
+    def test_a_reference_holds_its_block_s_place_in_24_bits(self):
+        word = 0x9C000002   # flags and a transform kind round the place
+        self.assertEqual(scenery.link_offset(scenery.link_word(word, 0x123450)), 0x123450)
+        self.assertEqual(scenery.link_word(word, 0x123450) & ~0x00FFFFFC, word & ~0x00FFFFFC)
+        with self.assertRaises(SceneryEditError):   # past what 24 bits hold
+            scenery.link_word(word, 0x1000000)
 
     def test_a_wrong_sum_or_version_is_refused(self):
         raw = bytearray(village())
@@ -331,11 +358,68 @@ class Adding(unittest.TestCase):
         self.assertEqual(len(s.blocks), 3)
         refs = [(b.index, s._by_offset[it.child_offset]) for b in s.blocks for it in b.items if it.kind == "child"]
         self.assertEqual(refs, [(0, 1), (0, 2), (1, 2)])  # the far one (listed first) goes through the new block
-        self.assertIn("with block 1", notes[0])
+        self.assertIn("with block 1", " ".join(notes))  # (after the tree's widening: its box is 1 across)
         hall = next(m for sym, m in s.walk() if sym == 0 and round(m[3]) == 5300)
         _x, _y, turn, size = placement(hall)
         self.assertAlmostEqual(math.degrees(turn), 45.0, places=3)
         self.assertAlmostEqual(size, 2.0, places=3)
+
+    def test_new_objects_keep_the_levels_asked(self):
+        """An object with levels (a [[copy]]'s: its shipped copy's LOD mask) is drawn at exactly those levels: off
+        the far-view list when the mask has no far bit, under full-list nodes of its own mask; one without keeps
+        every level. A copy's transform takes the source square onto the target, turned about its middle."""
+        wood = block([struct.pack("<I", 0x80000000 | 1 << 4 | 1), moved(0x80000000 | 1 << 4, 100.0, 0.0), road()])
+        items = [compact(0, 1000.0, 2000.0), moved(0, 0, 0), moved(0, 0, 0)]
+        root_len = len(block(items)) + 4
+        items = [compact(0, 1000.0, 2000.0), moved(root_len, 5000.0, 0.0), moved(root_len, 5000.0, 9000.0)]
+        offsets = [0, len(items[0]), len(items[0]) + len(items[1])]
+        head = struct.pack("<II4f", 0x80000000 | 4, 1, 0.0, 0.0, 1.0, 1.0) + bytes(8)
+        tree = struct.pack("<4I", offsets[2], *offsets) + struct.pack("<II", 0xC0000000 | 0x1F << 20, 0x00FF0000 | 1)
+        data = make_scenery([head + tree + b"".join(items), wood], NAMES)
+        new, _ = add_objects(data, [NewObject("TypeWarrior/Chene_02", 5200.0, 9100.0, levels=0x05),
+                                    NewObject("TypeWarrior/Chene_02", 5250.0, 9150.0, levels=0x10),
+                                    NewObject("TypeWarrior/MairieNormande", 5300.0, 9200.0)])
+        s = Scenery(new)
+        got = {round(m[3]): mask for sym, m, mask in scenery.walk_levels(s, (5100.0, 9000.0, 5400.0, 9300.0), {0, 1})}
+        self.assertEqual(got[5200], 0x05)
+        self.assertEqual(got[5250], 0x10)
+        self.assertEqual(got[5300] & 0x08, 0x08)   # drawn from far as before
+        area = scenery.CopyArea(1000.0, 2000.0, 50.0, sx=300.0, sy=-400.0, turn=90.0)
+        m = area.to_target()
+        self.assertAlmostEqual(m[3] + m[0] * 1300.0 + m[1] * 1600.0, 1000.0, places=6)   # the source's middle lands
+        self.assertAlmostEqual(m[7] + m[4] * 1300.0 + m[5] * 1600.0, 2000.0, places=6)   # on the target's
+        self.assertAlmostEqual(m[4], 1.0, places=6)                                        # turned a quarter
+
+    def test_new_objects_hang_on_a_block_listed_at_their_levels(self):
+        """Two far-listed references whose full-list leaf boxes both hold the spot: A listed without the close level
+        (0x16), B with every level (0x17). A copied plant (levels 0x15) goes on B, though A is nearer, so it keeps its
+        close level; with only A's kind it hangs there, drawn at fewer levels, and add_objects says so (2026-10-11:
+        a meadow's plants lost their close level that way)."""
+        def top(mask_b):
+            wood = block([compact(1, 0.0, 0.0)], box=(-100.0, -100.0, 100.0, 100.0))
+            first = len(moved(0, 0, 0))
+            entries = [0, first, 0, first]
+            nodes = (struct.pack("<IHBB", 0x1F << 20 | 2 << 2, 2, 0xFF, 0)          # the root: far list | full list
+                     + struct.pack("<IHBB", 0xC0000000 | 0x08 << 20, 2, 0xFF, 0)   # the far list's leaf
+                     + struct.pack("<IHBB", 0x17 << 20 | 2 << 2, 3, 0xFF, 0)       # the full list: A left, B right,
+                     + struct.pack("<IHBB", 0xC0000000 | 0x16 << 20, 2, 0xFF, 0)   # both sides the whole box; A's leaf
+                     + struct.pack("<IHBB", 0xC0000000 | mask_b << 20, 3, 0xFF, 0))  # B's leaf
+            head = struct.pack("<II4f", 0x80000000 | len(entries), 5, 0.0, 0.0, 40960.0, 40960.0) + bytes(8)
+            root_len = len(head) + 4 * len(entries) + len(nodes) + 2 * first
+            items = [moved(root_len, 5000.0, 5000.0), moved(root_len, 30000.0, 30000.0)]
+            return make_scenery([head + struct.pack(f"<{len(entries)}I", *entries) + nodes + b"".join(items), wood],
+                                NAMES)
+
+        def levels_at(data):
+            return {round(m[3]): mask for _s, m, mask in
+                    scenery.walk_levels(Scenery(data), (5900.0, 5900.0, 6100.0, 6100.0), {1})}
+        plant = NewObject("TypeWarrior/Chene_02", 6000.0, 6000.0, levels=0x15)   # nearer A
+        new, notes = add_objects(top(0x17), [plant])
+        self.assertEqual(levels_at(new), {6000: 0x15})
+        self.assertNotIn("fewer detail levels", " ".join(notes))
+        new, notes = add_objects(top(0x16), [plant])
+        self.assertEqual(levels_at(new), {6000: 0x14})
+        self.assertIn("1 new object(s) hang on a block the map lists at fewer detail levels", " ".join(notes))
 
     def test_a_map_whose_top_block_places_only_blocks(self):
         root_len = len(block([moved(0, 0.0, 0.0)]))
@@ -370,6 +454,666 @@ class Adding(unittest.TestCase):
         self.assertEqual([round(v, 6) for v in m], [0.0, -3.0, 0.0, 10.0, 2.0, 0.0, 0.0, 20.0, 0.0, 0.0, 2.0, -7.0])
         x, y, turn, size = placement(m)
         self.assertEqual((x, y, round(math.degrees(turn)), size), (10.0, 20.0, 90, 2.0))
+
+
+LOW_NAMES = ["TypeWarrior/HerbeHaute_01", "TypeWarrior/Caillou_01", "TypeWarrior/Herbe_verte"]
+LOW_DESCS = {"TypeWarrior/HerbeHaute_01": scenery.Descriptor("TypeWarrior/HerbeHaute_01", "TSceneryDescriptor",
+                                                              "Vegetation/Herbes", "vegetation", None, "x"),
+             "TypeWarrior/Caillou_01": scenery.Descriptor("TypeWarrior/Caillou_01", "TSceneryDescriptor",
+                                                          "Props/Ferme", "prop", None, "x"),
+             "TypeWarrior/Herbe_verte": scenery.Descriptor("TypeWarrior/Herbe_verte", "TSceneryDescriptorSticker",
+                                                           "Stickers", "decal", None, "x")}
+
+
+class Presets(unittest.TestCase):
+    """[[preset]]: a ground kind of the library tiled over an area (scenery.expand_preset), and the fill rule a copy
+    follows in add mode (copy_objects: nothing laid on top of what the map already has there)."""
+
+    def library(self) -> dict:
+        folder = Path(tempfile.mkdtemp(prefix="presets-"))
+        (folder / "p.toml").write_text(
+            '[[preset]]\nname = "Wheat field"\ndescription = "Ripe wheat."\nmap = "M04_Cotentin"\naligned = true\n'
+            'sources = [[100000.0, 200000.0], [300000.0, 400000.0], [500000.0, 600000.0]]\n', encoding="utf-8")
+        return scenery.preset_library(folder / "p.toml")
+
+    def test_the_rows_and_the_library(self):
+        lib = self.library()
+        self.assertEqual(lib["Wheat field"]["sources"], [(100000.0, 200000.0), (300000.0, 400000.0),
+                                                         (500000.0, 600000.0)])
+        self.assertEqual(lib["Wheat field"]["map"], "M04_Cotentin")
+        self.assertTrue(lib["Wheat field"]["aligned"])
+        rows = scenery.parse_presets([{"name": "Wheat field", "x": 1.0, "y": 2.0, "radius": 13000.0,
+                                       "mode": "replace", "seed": 2}])
+        self.assertEqual(rows, [scenery.PresetArea("Wheat field", 1.0, 2.0, 13000.0, "replace", "square", 1.0, 0.0, 2)])
+        for bad, why in (({"x": 1, "y": 2, "radius": 10}, "no name"),
+                         ({"name": "W", "x": 1, "y": 2, "radius": 10, "mode": "paint"}, "add or replace"),
+                         ({"name": "W", "x": 1, "y": 2, "radius": 10, "size": 3}, "unknown key"),
+                         ({"name": "W", "x": 1, "radius": 10}, "has no y"),
+                         ({"name": "W", "x": 1, "y": 2, "radius": 10, "shape": "line"}, "round or square")):
+            with self.assertRaisesRegex(SceneryEditError, why):
+                scenery.parse_presets([bad])
+        with self.assertRaisesRegex(SceneryEditError, "no ground preset is called 'Dunes'"):
+            scenery.expand_preset(scenery.PresetArea("Dunes", 0.0, 0.0, 6500.0), lib)
+        self.assertIn("Wheat field", scenery.preset_library())   # the library the build ships
+
+    def test_an_area_is_tiled_from_the_kind_s_squares(self):
+        lib = self.library()
+        tile = scenery.TILE
+        area = scenery.PresetArea("Wheat field", 10000.0, 20000.0, tile, "add", seed=1)   # 100 m: 2 x 2 tiles
+        copies, erases, stamps, objects = scenery.expand_preset(area, lib)
+        self.assertEqual(objects, [])   # a tile kind lays no hedgerow
+        self.assertEqual(sorted((c.x, c.y) for c in copies),
+                         sorted((10000.0 + i * tile / 2, 20000.0 + j * tile / 2) for i in (-1, 1) for j in (-1, 1)))
+        self.assertEqual(erases, [])
+        self.assertEqual([c.radius for c in copies], [tile / 2] * 4)
+        self.assertTrue(all(c.fill and c.source == "M04_Cotentin" and c.layers == scenery.COPY_LAYERS for c in copies))
+        self.assertEqual(copies[0].within, ("square", 10000.0, 20000.0, tile, 1.0, 0.0))
+        # the sources go round from the seed: 1, 2, 0, 1
+        self.assertEqual([(c.x + c.sx, c.y + c.sy) for c in copies],
+                         [(300000.0, 400000.0), (500000.0, 600000.0), (100000.0, 200000.0), (300000.0, 400000.0)])
+        # a stamp reaches past its tile by the hard edge's fade, so the tiles' joins hold no ground from underneath
+        self.assertEqual([(s.brush, s.shape, s.edge, s.clear, s.radius) for s in stamps],
+                         [("stamp", "square", "hard", False, tile / 2 / brush.HARD_EDGE)] * 4)
+        self.assertEqual(brush.edge_weight("hard", "square", (tile / 2 / stamps[0].radius) ** 2), 1.0)
+        self.assertEqual([(s.x + s.sx, s.y + s.sy) for s in stamps], [(c.x + c.sx, c.y + c.sy) for c in copies])
+        one = scenery.PresetArea("Wheat field", 10000.0, 20000.0, tile / 2, "replace")   # one tile: on the middle
+        copies, erases, stamps, _o = scenery.expand_preset(one, lib)
+        self.assertEqual([(c.x, c.y, c.fill) for c in copies], [(10000.0, 20000.0, False)])
+        self.assertEqual(len(stamps), 1)
+        self.assertEqual(erases, [scenery.EraseArea(10000.0, 20000.0, tile / 2, ("decal",), (scenery.LOW_COVER,),
+                                                    shape="square", dx=1.0, dy=0.0)])
+        rnd = scenery.PresetArea("Wheat field", 0.0, 0.0, tile * 1.6, "add", "round")   # a circle: tiles inside it
+        copies, _e, _s, _o = scenery.expand_preset(rnd, lib)
+        self.assertEqual(len(copies), 12)   # middles 0.5 and 1.5 tiles out: 4 inner, 8 at 1.58 out, the 4 corners
+        self.assertTrue(all(math.hypot(c.x, c.y) < tile * 1.6 for c in copies))   # (2.12 out) outside
+
+    def test_the_fill_rule_lays_nothing_on_what_the_map_has(self):
+        """The source square (round 1000, 1000) holds two tall-grass tufts, a stone and a grass sticker; the target
+        (round 5000, 5000) already has a tuft right where the first would land and the same sticker 1 m from where the
+        copied one would: in add mode those two are left off, the rest laid; in replace mode everything is laid."""
+        items = [compact(0, 1000.0, 1000.0), compact(0, 1400.0, 1000.0), compact(1, 1050.0, 1050.0),
+                 compact(2, 1100.0, 1100.0),                                   # the source's
+                 compact(0, 5000.0, 5000.0), compact(2, 5100.0, 5360.0)]       # what the target already has (the
+        data = make_scenery([block(items, box=(0.0, 0.0, 10000.0, 10000.0))], LOW_NAMES)   # sticker 1 m off)
+        area = scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0, fill=True)
+        laid, notes = scenery.copy_objects(data, [area], LOW_DESCS)
+        self.assertEqual(sorted((o.type.split("/")[-1], o.x, o.y) for o in laid),
+                         [("Caillou_01", 5050.0, 5050.0), ("HerbeHaute_01", 5400.0, 5000.0)])
+        self.assertIn("2 left off where the map already has one (fill rule)", notes[0])
+        laid, notes = scenery.copy_objects(data, [scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0)],
+                                           LOW_DESCS)
+        self.assertEqual(len(laid), 4)
+        self.assertNotIn("fill rule", notes[0])
+        # clipped to a bigger footprint: only what lies within 100 units of the target's middle
+        clipped = scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0,
+                                   within=("round", 5000.0, 5000.0, 100.0, 1.0, 0.0))
+        laid, _n = scenery.copy_objects(data, [clipped], LOW_DESCS)
+        self.assertEqual(sorted((o.x, o.y) for o in laid), [(5000.0, 5000.0), (5050.0, 5050.0)])
+        # another map as the source: its scenery handed in by pack name
+        other = scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0, source="Elsewhere")
+        with self.assertRaisesRegex(SceneryEditError, "Elsewhere"):
+            scenery.copy_objects(data, [other], LOW_DESCS)
+        laid, _n = scenery.copy_objects(data, [other], LOW_DESCS, {"Elsewhere": data})
+        self.assertEqual(len(laid), 4)
+
+    def test_the_fill_rule_holds_between_overlapping_copies(self):
+        """A brush is many dabs that overlap: the second dab lays nothing within the gap of what the first laid, in
+        any mode; but the tiles of one preset (one group) meet edge to edge and never thin each other."""
+        items = [compact(0, 1000.0, 1000.0), compact(0, 1400.0, 1000.0), compact(1, 1050.0, 1050.0),
+                 compact(2, 1100.0, 1100.0)]
+        data = make_scenery([block(items, box=(0.0, 0.0, 10000.0, 10000.0))], LOW_NAMES)
+        first = scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0)
+        second = scenery.CopyArea(5000.0, 5000.0, 1300.0, sx=-4000.0, sy=-4000.0)   # the same dab again
+        laid, notes = scenery.copy_objects(data, [first, second], LOW_DESCS)
+        self.assertEqual(len(laid), 4)
+        self.assertIn("4 left off where an earlier copy laid one (fill rule)", notes[1])
+        # 1.15 m over: its far tuft lands 1.15 m past the first's (1 m gap: laid), its near tuft 0.4 m short of the
+        # first's far one (left off), the stone 1.15 m off (1.5 m gap: left off), the sticker too (3 m)
+        shifted = scenery.CopyArea(5300.0, 5000.0, 1300.0, sx=-4300.0, sy=-4000.0)
+        laid, notes = scenery.copy_objects(data, [first, shifted], LOW_DESCS)
+        self.assertEqual(sorted(o.type.split("/")[-1] for o in laid),
+                         ["Caillou_01"] + ["HerbeHaute_01"] * 3 + ["Herbe_verte"])
+        self.assertIn("3 left off where an earlier copy laid one", notes[1])
+        tiles = [dataclasses.replace(first, group=7), dataclasses.replace(second, group=7)]
+        laid, notes = scenery.copy_objects(data, tiles, LOW_DESCS)
+        self.assertEqual(len(laid), 8)
+        self.assertNotIn("fill rule", notes[1])
+
+
+class Borders(unittest.TestCase):
+    """A preset's border ([[preset]] border = "edge" or "hedge"): the game's own strips copied along the area's
+    outline (scenery.expand_border), in a band 2 m across centred on it, with the map's stickers and low cover there
+    taken off first and the area's own tiles stopping short of it, so the strips never sit in the crops."""
+
+    def library(self, text: str | None = None) -> tuple[dict, dict]:
+        """A library of one preset and the border "hedge": a strip 2000 long along x round 1000, 1000 and one 3000
+        long along y round 9000, 1000 (given the wrong length on purpose: a direction is any length)."""
+        folder = Path(tempfile.mkdtemp(prefix="borders-"))
+        (folder / "b.toml").write_text(
+            '[[preset]]\nname = "Wheat field"\nmap = "M04_Cotentin"\nsources = [[100000.0, 200000.0]]\n\n'
+            + (text if text is not None else
+               '[[border]]\nname = "hedge"\ndescription = "Hedge foot."\nmap = "M04_Cotentin"\n'
+               'sources = [[1000.0, 1000.0, 1.0, 0.0, 2000.0], [9000.0, 1000.0, 0.0, 2.0, 3000.0]]\n'),
+            encoding="utf-8")
+        return scenery.preset_library(folder / "b.toml"), scenery.border_library(folder / "b.toml")
+
+    @staticmethod
+    def inside(c, x: float, y: float) -> bool:
+        return c.footprint().t2(x, y) < 1.0 and c.clip().t2(x, y) < 1.0
+
+    def test_the_rows_and_the_library(self):
+        _lib, borders = self.library()
+        self.assertEqual(borders, {"hedge": {"description": "Hedge foot.", "map": "M04_Cotentin", "sources": [
+            (1000.0, 1000.0, 1.0, 0.0, 2000.0), (9000.0, 1000.0, 0.0, 2.0, 3000.0)]}})
+        rows = scenery.parse_presets([{"name": "Wheat field", "x": 1.0, "y": 2.0, "radius": 13000.0, "border": "hedge"},
+                                      {"name": "Wheat field", "x": 1.0, "y": 2.0, "radius": 13000.0}])
+        self.assertEqual([r.border for r in rows], ["hedge", "none"])
+        for bad in ("wall", 1, ""):
+            with self.assertRaisesRegex(SceneryEditError, "border must be none, edge or hedge"):
+                scenery.parse_presets([{"name": "W", "x": 1, "y": 2, "radius": 10, "border": bad}])
+        for text, why in (('[[border]]\nname = "hedge"\nsources = [[1.0, 2.0, 1.0, 0.0, 5.0]]\n', "a name, a map"),
+                          ('[[border]]\nname = "hedge"\nmap = "M"\nsources = [[1.0, 2.0, 3.0]]\n', "x, y, dx, dy"),
+                          ('[[border]]\nname = "hedge"\nmap = "M"\nsources = [[1.0, 2.0, 0.0, 0.0, 5.0]]\n',
+                           "direction"),
+                          ('[[border]]\nname = "hedge"\nmap = "M"\nsources = [[1.0, 2.0, 1.0, 0.0, 0.0]]\n',
+                           "length above 0")):
+            with self.assertRaisesRegex(SceneryEditError, why):
+                self.library(text)
+        lib, borders = self.library()
+        with self.assertRaisesRegex(SceneryEditError, "no border is called 'edge'"):
+            scenery.expand_preset(scenery.PresetArea("Wheat field", 0.0, 0.0, 6500.0, border="edge"), lib,
+                                  borders=borders)
+        shipped = scenery.border_library()   # the library the build ships: every border a row may name
+        self.assertEqual(sorted(shipped), sorted(b for b in scenery.BORDERS if b != "none"))
+        for name, kind in shipped.items():
+            self.assertEqual(kind["map"], "M04_Cotentin")
+            self.assertEqual(len(kind["sources"]), 8, name)
+            self.assertTrue(all(len(s) == 5 and s[4] > 0 for s in kind["sources"]))
+
+    def test_a_square_s_sides_in_pieces_along_the_band(self):
+        _lib, borders = self.library()
+        area = scenery.PresetArea("Wheat field", 50000.0, 60000.0, 6500.0, "add", dx=3.0, dy=4.0, border="hedge")
+        copies, erases = scenery.expand_border(area, borders, group=5)
+        corners = area.footprint().corners()
+        self.assertEqual([(e.x, e.y, e.x2, e.y2) for e in erases],
+                         [(*corners[k], *corners[(k + 1) % 4]) for k in range(4)])
+        self.assertTrue(all(e.shape == "line" and e.radius == scenery.BORDER_WIDTH / 2 and e.what == ("decal",)
+                            and e.types == (scenery.LOW_COVER,) for e in erases))
+        # each side 13000 long, in 7 pieces (the shortest strip is 2000), each from the next strip in turn
+        self.assertEqual(len(copies), 28)
+        self.assertTrue(all(c.layers == scenery.BORDER_LAYERS and not c.fill and c.group == 5
+                            and c.source == "M04_Cotentin" and c.radius == 13000.0 / 7 / 2 for c in copies))
+        strips = borders["hedge"]["sources"]
+        for k, c in enumerate(copies):
+            px, py, pdx, pdy, _n = strips[k % 2]
+            m = c.to_target()
+            mid = ((c.x + c.within[1]) / 2, (c.y + c.within[2]) / 2)   # the piece's middle, on the outline
+            self.assertAlmostEqual(m[0] * px + m[1] * py + m[3], mid[0], places=6)
+            self.assertAlmostEqual(m[4] * px + m[5] * py + m[7], mid[1], places=6)
+            side = k // 7
+            (x0, y0), (x1, y1) = corners[side], corners[(side + 1) % 4]
+            along = math.atan2((m[4] * pdx + m[5] * pdy), (m[0] * pdx + m[1] * pdy))
+            self.assertAlmostEqual(along, math.atan2(y1 - y0, x1 - x0), places=9)
+        # a point of the band lies in one piece exactly; 1 m and a bit off the outline, in none
+        for side in range(4):
+            (x0, y0), (x1, y1) = corners[side], corners[(side + 1) % 4]
+            run = math.hypot(x1 - x0, y1 - y0)
+            ux, uy = (x1 - x0) / run, (y1 - y0) / run
+            for t in [0.05 + 0.9 * i / 40 for i in range(41)]:
+                for off, want in ((0.0, 1), (250.0, 1), (-250.0, 1), (275.0, 0), (-275.0, 0)):
+                    x, y = x0 + ux * t * run - uy * off, y0 + uy * t * run + ux * off
+                    self.assertEqual(sum(self.inside(c, x, y) for c in copies), want, (side, t, off))
+
+    def test_a_round_area_s_outline_in_short_chords(self):
+        _lib, borders = self.library()
+        area = scenery.PresetArea("Wheat field", 1000.0, 2000.0, 13000.0, "add", "round", border="hedge")
+        runs = scenery.border_outline(area)
+        self.assertEqual(len(runs), 32)   # chords of at most 2,600 (10 m) stray 65 (25 cm) inside a 50 m circle
+        for (x0, y0), (x1, y1) in runs:
+            self.assertAlmostEqual(math.hypot(x0 - 1000.0, y0 - 2000.0), 13000.0, places=6)
+            self.assertLessEqual(13000.0 - math.hypot((x0 + x1) / 2 - 1000.0, (y0 + y1) / 2 - 2000.0),
+                                 scenery.BORDER_SAG)
+        self.assertEqual(runs[-1][1], runs[0][0])   # closed
+        copies, erases = scenery.expand_border(area, borders)
+        self.assertEqual((len(copies), len(erases)), (64, 32))   # each chord 2,552 long: two pieces of the 2,000 strip
+        small = scenery.PresetArea("Wheat field", 0.0, 0.0, 520.0, "add", "round", border="hedge")
+        self.assertEqual(len(scenery.border_outline(small)), 8)
+        self.assertEqual(scenery.expand_border(dataclasses.replace(area, border="none"), borders), ([], []))
+
+    def test_the_strips_plants_and_stones_land_in_the_band(self):
+        """The strip: 10 tufts along y = 1000 every 200 from x = 100, a stone 100 off its middle line, a sticker on
+        it (stickers stay: a border copies plants and stones) and a tuft 500 off it (the field beside: outside the
+        band). A 5200 square turned 3, 4 has sides of 3 pieces 1733 long, each the middle of the strip: 8 tufts and
+        the stone."""
+        items = [compact(0, 100.0 + 200.0 * i, 1000.0) for i in range(10)]
+        items += [compact(1, 1000.0, 1100.0), compact(2, 1000.0, 1000.0), compact(0, 1000.0, 1500.0)]
+        data = make_scenery([block(items, box=(0.0, 0.0, 2000.0, 2000.0))], LOW_NAMES)
+        borders = {"hedge": {"description": "", "map": "M04_Cotentin", "sources": [(1000.0, 1000.0, 1.0, 0.0, 2000.0)]}}
+        area = scenery.PresetArea("Wheat field", 20000.0, 20000.0, 2600.0, "add", dx=3.0, dy=4.0, border="hedge")
+        strips, _band = scenery.expand_border(area, borders, group=2)
+        laid, _notes = scenery.copy_objects(data, strips, LOW_DESCS, {"M04_Cotentin": data})
+        self.assertEqual(Counter(o.type.split("/")[-1] for o in laid), {"HerbeHaute_01": 96, "Caillou_01": 12})
+        self.assertTrue(all(o.levels == 0x1F for o in laid))   # the levels the strip is drawn at on its map
+        for o in laid:   # within 1 m of the outline: the square's own measure, |along| or |across| at its largest
+            u = abs((o.x - 20000.0) * 0.6 + (o.y - 20000.0) * 0.8)
+            v = abs((o.y - 20000.0) * 0.6 - (o.x - 20000.0) * 0.8)
+            self.assertLessEqual(abs(max(u, v) - 2600.0), scenery.BORDER_WIDTH / 2 + 1e-6)
+        self.assertEqual(sorted(round(abs(max(abs((o.x - 20000.0) * 0.6 + (o.y - 20000.0) * 0.8),
+                                              abs((o.y - 20000.0) * 0.6 - (o.x - 20000.0) * 0.8)) - 2600.0))
+                                for o in laid if o.type.endswith("Caillou_01")), [100] * 12)
+
+    def test_a_preset_with_a_border(self):
+        """The tiles as without a border but clipped 1 m inside the outline, then the border's strips (the preset's
+        group, so the tiles beside them don't thin them) and its band erase; border none changes nothing and needs
+        no border library."""
+        lib, borders = self.library()
+        area = scenery.PresetArea("Wheat field", 0.0, 0.0, 13000.0, "replace", border="hedge")
+        plain = dataclasses.replace(area, border="none")
+        copies, erases, stamps, objects = scenery.expand_preset(area, lib, group=3, borders=borders)
+        copies0, erases0, stamps0, objects0 = scenery.expand_preset(plain, lib, group=3, borders={})
+        self.assertEqual((objects, objects0), ([], []))   # tile kinds: no hedgerow, border or not
+        strips, band = scenery.expand_border(area, borders, 3)
+        inner = ("square", 0.0, 0.0, 13000.0 - scenery.BORDER_WIDTH / 2, 1.0, 0.0)
+        self.assertEqual(copies, [dataclasses.replace(c, within=inner) for c in copies0] + strips)
+        self.assertEqual(erases, erases0 + band)
+        self.assertEqual(len(erases0), 1)   # replace mode: the area's own erase first
+        self.assertEqual(stamps, stamps0)
+        rnd = scenery.PresetArea("Wheat field", 0.0, 0.0, 13000.0, "add", "round", border="hedge")
+        copies, _e, _s, _o = scenery.expand_preset(rnd, lib, borders=borders)
+        self.assertEqual(copies[0].within, ("round", 0.0, 0.0, 13000.0 - scenery.BORDER_WIDTH / 2, 1.0, 0.0))
+
+
+class Fields(unittest.TestCase):
+    """[[field]]: a field kind laid as Eugen's editor laid a field, ONE real field's rows over the whole area in one
+    direction (scenery.expand_field), and the hedge its border carries: the map's trees and field fence along the
+    outline, outside it (scenery.expand_hedgerow, [[hedgerow]])."""
+
+    TABLES = ('[[preset]]\nname = "Meadow"\nmap = "M04_Cotentin"\nsources = [[100000.0, 200000.0]]\n\n'
+              '[[field]]\nname = "Wheat field"\ndescription = "One field."\nmap = "M04_Cotentin"\n'
+              'sources = [[1000000.0, 900000.0, 30.0, 8000.0, 6000.0, 1400.0, 1500.0], '
+              '[2000000.0, 800000.0, 120.0, 9000.0, 3000.0, 1000.0, 1000.0]]\n\n'
+              '[[border]]\nname = "hedge"\nmap = "M04_Cotentin"\nsources = [[1000.0, 1000.0, 1.0, 0.0, 2000.0]]\n\n'
+              '[[hedgerow]]\nmap = "M04_Cotentin"\ntrees_per_100m = 6.0\n'
+              'trees = [["TypeWarrior/Pommier", 0.6, 30], ["TypeWarrior/Hetre_01", 0.4, 15]]\n'
+              'fence = ["TypeWarrior/BarriereChamps_02", 31, 780.0]\n')
+
+    def tables(self, text: str | None = None) -> Path:
+        folder = Path(tempfile.mkdtemp(prefix="fields-"))
+        (folder / "f.toml").write_text(self.TABLES if text is None else text, encoding="utf-8")
+        return folder / "f.toml"
+
+    def test_the_tables(self):
+        path = self.tables()
+        lib = scenery.preset_library(path)
+        self.assertEqual((lib["Meadow"]["type"], lib["Wheat field"]["type"]), ("tile", "field"))
+        self.assertEqual(lib["Wheat field"]["sources"][0],
+                         scenery.FieldSource(1000000.0, 900000.0, 30.0, 8000.0, 6000.0, 1400.0, 1500.0))
+        self.assertTrue(lib["Wheat field"]["aligned"])
+        rows = scenery.hedgerow_library(path)
+        self.assertEqual(rows["M04_Cotentin"], {
+            "trees_per_100m": 6.0, "trees": [("TypeWarrior/Pommier", 0.6, 30), ("TypeWarrior/Hetre_01", 0.4, 15)],
+            "fence": ("TypeWarrior/BarriereChamps_02", 31, 780.0)})
+        for bad, why in (("[1.0, 2.0, 3.0, 8000.0, 6000.0, 1400.0]", "a field source is"),
+                         ("[1.0, 2.0, 3.0, 1000.0, 6000.0, 1400.0, 1500.0]", "whole pitches"),
+                         ("[1.0, 2.0, 3.0, 8000.0, 6000.0, 0.0, 1500.0]", "whole pitches")):
+            with self.assertRaisesRegex(SceneryEditError, why):
+                scenery.preset_library(self.tables(f'[[field]]\nname = "W"\nmap = "M"\nsources = [{bad}]\n'))
+        with self.assertRaisesRegex(SceneryEditError, "a hedgerow needs a map"):
+            scenery.hedgerow_library(self.tables("[[hedgerow]]\ntrees_per_100m = 3.0\n"))
+        shipped = scenery.preset_library()   # the library the build ships: its fields are field kinds
+        self.assertTrue(all(k["type"] in ("tile", "field") for k in shipped.values()))
+
+    def test_one_field_s_rows_over_the_whole_area(self):
+        """Every tile copies the SAME window (the source the seed picks), turned from the source's rows to the area's
+        direction; tiles are rectangles of whole pitches, 5 x 1,400 along the rows by 4 x 1,500 across, laid edge to
+        edge (no part of the area in two), clipped to the area; nothing of the area is left out; two stamps a tile
+        (each a tile wide), from the same window."""
+        from rusemod import brush
+        lib = scenery.preset_library(self.tables())
+        area = scenery.PresetArea("Wheat field", 50000.0, 60000.0, 20000.0, "add", dx=0.6, dy=0.8, seed=2)
+        copies, stamps = scenery.expand_field(area, lib["Wheat field"], group=5)
+        src = lib["Wheat field"]["sources"][0]   # seed 2 of two sources: the first
+        self.assertTrue(copies)
+        self.assertEqual({(round(c.x + c.sx, 6), round(c.y + c.sy, 6)) for c in copies}, {(src.x, src.y)})
+        self.assertEqual({c.turn for c in copies}, {math.degrees(math.atan2(0.8, 0.6)) - 30.0})
+        self.assertEqual({(c.radius, c.along) for c in copies}, {(3000.0, 3500.0)})
+        self.assertTrue(all(c.fill and c.group == 5 and c.source == "M04_Cotentin" and c.shape == "square"
+                            and (c.dx, c.dy) == (0.6, 0.8) and c.within == ("square", 50000.0, 60000.0, 20000.0, 0.6, 0.8)
+                            for c in copies))
+        # tile middles on a grid: 7,000 apart along the rows (0.6, 0.8), 6,000 across (-0.8, 0.6)
+        along = sorted({round((c.x - 50000.0) * 0.6 + (c.y - 60000.0) * 0.8, 3) for c in copies})
+        across = sorted({round(-(c.x - 50000.0) * 0.8 + (c.y - 60000.0) * 0.6, 3) for c in copies})
+        self.assertEqual({round(b - a, 3) for a, b in zip(along, along[1:])}, {7000.0})
+        self.assertEqual({round(b - a, 3) for a, b in zip(across, across[1:])}, {6000.0})
+        foot = area.footprint()
+        for k in range(-19, 19, 2):   # every point of the area lies in exactly one tile (off the tiles' joins)
+            for m in range(-19, 19, 2):
+                a, b = k * 1000.0 + 137.0, m * 1000.0 + 211.0
+                x, y = 50000.0 + a * 0.6 - b * 0.8, 60000.0 + a * 0.8 + b * 0.6
+                self.assertLess(foot.t2(x, y), 1.0)
+                self.assertEqual(sum(c.footprint().t2(x, y) < 1.0 for c in copies), 1, (k, m))
+        tile = copies[0].footprint()   # a tile's own shape: 3,500 out along the rows, 3,000 across
+        self.assertLess(tile.t2(tile.x + 3499.0 * 0.6, tile.y + 3499.0 * 0.8), 1.0)
+        self.assertGreater(tile.t2(tile.x - 2999.0 * 0.8 * 1.01, tile.y + 2999.0 * 0.6 * 1.01), 1.0)
+        self.assertEqual(len(stamps), 2 * len(copies))
+        self.assertEqual([(s.x, s.y, s.sx, s.sy) for s in stamps[:2]],
+                         [(copies[0].x + a * 0.6, copies[0].y + a * 0.8, copies[0].sx, copies[0].sy)
+                          for a in (-1750.0, 1750.0)])
+        self.assertEqual({(s.brush, s.shape, s.edge, s.radius) for s in stamps},
+                         {("stamp", "square", "hard", 3000.0 / brush.HARD_EDGE)})
+        other = scenery.expand_field(dataclasses.replace(area, seed=1), lib["Wheat field"])[0]
+        self.assertEqual({(round(c.x + c.sx), round(c.y + c.sy)) for c in other}, {(2000000, 800000)})
+
+    def test_a_hedge_carries_the_map_s_trees_and_fence_outside_the_field(self):
+        """Along each side: trees at the map's 6 per 100 m (a 100 m side: 6), 1.5 m (+-0.5) outside, by the species'
+        shares, each at its own levels; fence pieces end to end 0.6 m outside, along the side; none solid. The same
+        seed gives the same hedge; no border, or no hedgerow for the map, none. expand_preset lays them with a field
+        kind's hedge border."""
+        path = self.tables()
+        row = scenery.hedgerow_library(path)["M04_Cotentin"]
+        for shape, dx, dy in (("square", 1.0, 0.0), ("square", 0.6, -0.8), ("round", 1.0, 0.0)):
+            area = scenery.PresetArea("Wheat field", 40000.0, 30000.0, 13000.0, "add", shape, dx=dx, dy=dy,
+                                      border="hedge", seed=4)
+            got = scenery.expand_hedgerow(area, row, seed=9)
+            self.assertEqual(got, scenery.expand_hedgerow(area, row, seed=9), shape)
+            trees = [o for o in got if not o.type.endswith("BarriereChamps_02")]
+            fence = [o for o in got if o.type.endswith("BarriereChamps_02")]
+            self.assertTrue(all(not o.solid for o in got))
+            self.assertEqual({(o.type, o.levels) for o in trees} <= {("TypeWarrior/Pommier", 30),
+                                                                      ("TypeWarrior/Hetre_01", 15)}, True)
+            self.assertEqual({o.levels for o in fence}, {31})
+            self.assertTrue(all(area.footprint().t2(o.x, o.y) > 1.0 for o in got), shape)  # all outside the field
+            runs = scenery.border_outline(area)
+            self.assertEqual(len(trees), sum(round(math.dist(a, b) / 260.0 * 6.0 / 100.0) for a, b in runs), shape)
+            self.assertEqual(len(fence), sum(max(1, math.ceil(math.dist(a, b) / 780.0)) for a, b in runs), shape)
+            if shape != "square":
+                continue
+            self.assertEqual((len(trees), len(fence)), (24, 4 * 34), shape)  # 6 trees, 34 pieces a 100 m side
+            for (x0, y0), (x1, y1) in runs:
+                run = math.hypot(x1 - x0, y1 - y0)
+                ux, uy = (x1 - x0) / run, (y1 - y0) / run
+
+                def out(o):   # how far outside this side (its outward normal -uy, ux), and how far along it
+                    return -(o.x - x0) * uy + (o.y - y0) * ux, (o.x - x0) * ux + (o.y - y0) * uy
+                mine = [o for o in trees if 0.0 <= out(o)[1] <= run and 0.0 < out(o)[0] < 600.0]
+                self.assertEqual(len(mine), 6, shape)
+                self.assertTrue(all(260.0 <= out(o)[0] <= 520.0 for o in mine), shape)
+                posts = [o for o in fence if abs(out(o)[0] - scenery.FENCE_OUT) < 1e-6 and 0.0 <= out(o)[1] <= run]
+                self.assertEqual(len(posts), 34, shape)
+                self.assertTrue(all(abs(math.cos(math.radians(o.turn)) - ux) < 1e-9 for o in posts), shape)
+        self.assertEqual(scenery.expand_hedgerow(dataclasses.replace(area, border="none"), row), [])
+        edge = scenery.expand_hedgerow(dataclasses.replace(area, border="edge"), row, seed=9)  # a field's edge: the
+        self.assertEqual(edge, [o for o in got if o.type.endswith("BarriereChamps_02")])         # fence alone
+        self.assertTrue(edge)
+        self.assertEqual(scenery.expand_hedgerow(area, None), [])
+        lib, borders = scenery.preset_library(path), scenery.border_library(path)
+        square = scenery.PresetArea("Wheat field", 40000.0, 30000.0, 13000.0, "add", border="hedge", seed=4)
+        _c, _e, _s, objects = scenery.expand_preset(square, lib, group=2, borders=borders,
+                                                    hedgerows=scenery.hedgerow_library(path))
+        self.assertEqual(objects, scenery.expand_hedgerow(square, row, square.seed + 2))
+        meadow = dataclasses.replace(square, name="Meadow")   # a tile kind's hedge: the strips alone
+        self.assertEqual(scenery.expand_preset(meadow, lib, borders=borders,
+                                               hedgerows=scenery.hedgerow_library(path))[3], [])
+
+
+FB_NAMES = ["TypeWarrior/Labourage_terrefonce", "TypeWarrior/Paille", "TypeWarrior/Champs_Bles",
+            "TypeWarrior/HerbeHaute_01", "TypeWarrior/BarriereChamps_03", "TypeWarrior/Labourage_triangle",
+            "TypeWarrior/Paille_triangle"]
+FB_DESCS = {
+    "TypeWarrior/Labourage_terrefonce": scenery.Descriptor("TypeWarrior/Labourage_terrefonce", "TSceneryDescriptorSticker",
+                                                           "Stickers", "decal", None, "x"),
+    "TypeWarrior/Paille": scenery.Descriptor("TypeWarrior/Paille", "TSceneryDescriptorSticker", "Stickers", "decal",
+                                             None, "x"),
+    "TypeWarrior/Champs_Bles": scenery.Descriptor("TypeWarrior/Champs_Bles", "TSceneryDescriptor", "Vegetation/Herbes",
+                                                  "vegetation", None, "x"),
+    "TypeWarrior/HerbeHaute_01": scenery.Descriptor("TypeWarrior/HerbeHaute_01", "TSceneryDescriptor",
+                                                    "Vegetation/Herbes", "vegetation", None, "x"),
+    "TypeWarrior/BarriereChamps_03": scenery.Descriptor("TypeWarrior/BarriereChamps_03", "TSceneryDescriptor",
+                                                        "Props/Ferme", "prop", None, "x")}
+
+
+class FieldBrush(unittest.TestCase):
+    """[[fieldbrush]]: the WHOLE fields a dab touches turned into a look (scenery.expand_field_brush), the way Eugen's
+    field is made: its prefab's row stickers (swapped to the look's kind where they lie), its crops (copied anew from a
+    real field of the look, turned to its rows, landing only on the field) and the ground picture under the whole
+    field (tinted to the look's colour, a square on each row sticker: the field's own shape). A field is its row
+    stickers joined square to square (FIELD_ALONG, FIELD_ACROSS); the plot across a hedge, and everything that isn't
+    the field's, stay."""
+
+    LOOK = {"description": "", "map": "", "field_kinds": ("Labourage", "Paille"), "crops": ("Champs_",),
+            "stickers": [("Paille", 1.0)], "sources": [(80000.0, 80000.0, 120.0, 30000.0, 30000.0, 0.0)],
+            "colour": "#7b6927"}
+    A, B, ANGLE = (20000.0, 20000.0), None, 30.0
+
+    @staticmethod
+    def grid(sym, cx, cy, deg, step_u, step_v, half_u, half_v=None):
+        """Objects of `sym` on a grid round (cx, cy) along `deg` (u) and across it (v), facing `deg`."""
+        a = math.radians(deg)
+        ux, uy = math.cos(a), math.sin(a)
+        half_v = half_u if half_v is None else half_v
+        out = []
+        for i in range(-int(half_u // step_u), int(half_u // step_u) + 1):
+            for j in range(-int(half_v // step_v), int(half_v // step_v) + 1):
+                u, v = i * step_u, j * step_v
+                out.append(compact(sym, cx + u * ux - v * uy, cy + u * uy + v * ux, a))
+        return out
+
+    @staticmethod
+    def across(cx, cy, deg, v):
+        a = math.radians(deg)
+        return cx - v * math.sin(a), cy + v * math.cos(a)
+
+    def map_data(self, second=False, neighbour=False, past=False):
+        """Field A: ploughed row stickers facing 30 deg round (20000, 20000), 2,500 apart along the rows and 3,500
+        across (rows -7,000..7,000), with its own wheat crops, a fence and a hedge tuft; plot B: the same facing, its
+        nearest row 4,600 across from A's last (past FIELD_ACROSS: the far side of a hedge); `second`, a field facing
+        80 deg round (36000, 20000); `neighbour`, one row sticker facing 75 deg whose middle lies inside A's edge
+        squares; `past`, a one-sticker field facing 60 deg 1,500 past that neighbour; a wheat field facing 120 deg
+        round (80000, 80000) to copy crops from."""
+        items = self.grid(0, 20000.0, 20000.0, 30.0, 2500.0, 3500.0, 10000.0, 7000.0)
+        items += self.grid(2, 20000.0, 20000.0, 30.0, 1000.0, 1000.0, 9000.0, 6000.0)
+        items += [compact(4, 21000.0, 21000.0), compact(3, 19500.0, 20500.0)]
+        bx, by = self.across(20000.0, 20000.0, 30.0, 7000.0 + 4600.0 + 3500.0)
+        items += self.grid(0, bx, by, 30.0, 2500.0, 3500.0, 6000.0, 3500.0)
+        if second:
+            items += self.grid(0, 36000.0, 20000.0, 80.0, 2500.0, 3500.0, 6000.0)
+        if neighbour:
+            nx, ny = self.across(20000.0, 20000.0, 30.0, -7000.0 - 1500.0)
+            items.append(compact(0, nx, ny, math.radians(75.0)))
+        if past:
+            items.append(compact(0, *self.across(20000.0, 20000.0, 30.0, -10000.0), math.radians(60.0)))
+        items += self.grid(1, 80000.0, 80000.0, 120.0, 2500.0, 3500.0, 15000.0)
+        items += self.grid(2, 80000.0, 80000.0, 120.0, 1000.0, 1000.0, 15000.0)
+        items += [compact(3, 80500.0, 80500.0)]
+        return make_scenery([block(items, box=(0.0, 0.0, 100000.0, 100000.0))], FB_NAMES)
+
+    @staticmethod
+    def stickers(sc, sym=0):
+        return [(m[3], m[7], math.degrees(math.atan2(m[4], m[0])) % 180.0)
+                for _s, m, _k in scenery.walk_levels(sc, (0, 0, 1e6, 1e6), {sym})]
+
+    @staticmethod
+    def on(o, squares, deg=30.0):
+        """Whether `o` lies inside one of field A's sticker squares (FIELD_HALF round each middle, along `deg`)."""
+        a = math.radians(deg)
+        h = scenery.FIELD_HALF + 1.0
+        return any(abs((o.x - x) * math.cos(a) + (o.y - y) * math.sin(a)) <= h
+                   and abs(-(o.x - x) * math.sin(a) + (o.y - y) * math.cos(a)) <= h for x, y in squares)
+
+    def field_a(self, sc):
+        """Field A's own row stickers: within its rows' extent round its middle, facing 30."""
+        a = math.radians(30.0)
+        out = []
+        for x, y, f in self.stickers(sc):
+            u = (x - 20000.0) * math.cos(a) + (y - 20000.0) * math.sin(a)
+            v = -(x - 20000.0) * math.sin(a) + (y - 20000.0) * math.cos(a)
+            if abs(u) <= 10001.0 and abs(v) <= 7001.0 and abs(f - 30.0) < 1.0:
+                out.append((round(x, 3), round(y, 3)))
+        return sorted(out)
+
+    def test_the_rows_and_the_library(self):
+        rows = scenery.parse_field_brushes([{"look": "Wheat", "x": 1, "y": 2, "radius": 3000, "shape": "square",
+                                             "dx": 0.6, "dy": 0.8, "seed": 4}])
+        self.assertEqual(rows, [scenery.FieldBrush("Wheat", 1.0, 2.0, 3000.0, "square", 0.6, 0.8, 4)])
+        for bad, why in (({"x": 1, "y": 2, "radius": 3}, "has no look"),
+                         ({"look": "W", "x": 1, "y": 2, "radius": 3, "size": 3}, "unknown key"),
+                         ({"look": "W", "x": 1, "radius": 3}, "has no y"),
+                         ({"look": "W", "x": 1, "y": 2, "radius": 3, "shape": "line"}, "round or square"),
+                         ({"look": "W", "x": 1, "y": 2, "radius": 0}, "radius must be above 0")):
+            with self.assertRaisesRegex(SceneryEditError, why):
+                scenery.parse_field_brushes([bad])
+        looks = scenery.look_library()   # the library the build ships: D-Day's looks
+        self.assertTrue({"Wheat", "Ploughed"} <= set(looks))
+        self.assertTrue(all(len(s) == 6 for k in looks.values() for s in k["sources"]))
+        self.assertTrue(all(k["colour"].startswith("#") for k in looks.values()))
+
+    def test_a_dab_changes_the_whole_field_it_touches(self):
+        """A dab 1,000 round in A's middle: every row sticker of A (63) laid again where it was, facing the same way,
+        now straw; one square erase and one tint square on each, the sticker's own size; A's crops copied anew,
+        landing only on A; plot B across the hedge, the fence and the hedge tuft untouched."""
+        data = self.map_data()
+        sc = scenery.Scenery(data)
+        dab = scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0, seed=1)
+        erases, objects, copies, stamps, notes = scenery.expand_field_brush(dab, self.LOOK, sc)
+        a = self.field_a(sc)
+        self.assertEqual(len(a), 9 * 5)
+        self.assertEqual(sorted((round(o.x, 3), round(o.y, 3)) for o in objects), a)   # A whole, nothing of B
+        self.assertTrue(all(o.type == "TypeWarrior/Paille" and abs(o.turn - 30.0) < 0.1 and not o.solid
+                            for o in objects))
+        self.assertEqual(sorted((round(e.x, 3), round(e.y, 3)) for e in erases), a)
+        self.assertTrue(all((e.shape, e.what) == ("square", ()) and abs(e.radius - scenery.FIELD_HALF) < 1.0
+                            for e in erases))
+        self.assertTrue(all(abs(math.degrees(math.atan2(e.dy, e.dx)) - 30.0) < 0.1 for e in erases))
+        self.assertTrue(all({"TypeWarrior/Labourage_terrefonce", "TypeWarrior/Champs_Bles"} <= set(e.types)
+                            and not {"TypeWarrior/HerbeHaute_01", "TypeWarrior/BarriereChamps_03"} & set(e.types) for e in erases))
+        self.assertEqual(sorted((round(s.x, 3), round(s.y, 3)) for s in stamps), a)
+        self.assertTrue(all((s.brush, s.shape, s.edge, s.clear, s.colour) == ("tint", "square", "hard", False, "#7b6927")
+                            and abs(s.radius - scenery.FIELD_HALF) < 1.0 for s in stamps))
+        laid, _n = scenery.copy_objects(data, copies, FB_DESCS)
+        self.assertTrue(laid)
+        self.assertEqual({o.type for o in laid}, {"TypeWarrior/Champs_Bles"})
+        pts = [(x, y) for x, y in a]
+        self.assertTrue(all(self.on(o, pts)
+                            for o in laid))
+        self.assertTrue(all(abs(abs(c.turn) - 90.0) < 0.01 for c in copies))   # 120 to 30: a quarter turn
+        self.assertIn("a whole field of 45 row sticker(s)", notes[0])
+        self.assertEqual(scenery.expand_field_brush(dab, dict(self.LOOK, colour=""), sc)[3], [])   # no colour: none
+        b = scenery.expand_field_brush(scenery.FieldBrush("Wheat", *self.across(20000.0, 20000.0, 30.0, 15100.0), 500.0),
+                                       self.LOOK, sc)[1]
+        self.assertEqual(len(b), 5 * 3)   # a dab on B: B alone (5 along, 3 rows)
+
+    def test_a_neighbour_s_row_sticker_under_the_erase_is_laid_again_as_it_was(self):
+        sc = scenery.Scenery(self.map_data(neighbour=True))
+        nx, ny = self.across(20000.0, 20000.0, 30.0, -8500.0)
+        objects = scenery.expand_field_brush(scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0), self.LOOK, sc)[1]
+        back = [o for o in objects if abs(o.x - nx) < 0.5 and abs(o.y - ny) < 0.5]
+        self.assertEqual([(o.type, round(o.turn) % 180) for o in back], [("TypeWarrior/Labourage_terrefonce", 75)])
+
+    def test_a_neighbour_two_dabs_erases_take_is_laid_again_once(self):
+        """The neighbour sticker between A and a one-sticker field C facing 60 deg (1,500 past it, not joined to A or
+        to it: other facings): dabs on A and on C each take it in their erases; with the map's `relaid` shared it is
+        laid back once (D-Day's dabs 3 and 4 laid one Paille twice)."""
+        sc = scenery.Scenery(self.map_data(neighbour=True, past=True))
+        nx, ny = self.across(20000.0, 20000.0, 30.0, -8500.0)
+        cx, cy = self.across(20000.0, 20000.0, 30.0, -10000.0)
+        looks = {"Wheat": self.LOOK, "Ploughed": dict(self.LOOK, stickers=[("Labourage_terrefonce", 1.0)])}
+        dabs = [scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0), scenery.FieldBrush("Ploughed", cx, cy, 500.0)]
+        own, changed = scenery.own_fields(dabs, looks, sc)
+        self.assertEqual([len(f) for fs in own for f in fs], [45, 1])
+
+        def back(relaid):
+            out = 0
+            for k, dab in enumerate(dabs):
+                erases, objects, _c, _s, _n = scenery.expand_field_brush(dab, looks[dab.look], sc, fields=own[k],
+                                                                         changed=changed, relaid=relaid)
+                self.assertTrue(any(e.footprint().t2(nx, ny) < 1.0 for e in erases))   # each dab's erase takes it
+                out += sum(1 for o in objects if abs(o.x - nx) < 0.5 and abs(o.y - ny) < 0.5)
+            return out
+        self.assertEqual(back(None), 2)    # each dab alone lays it back
+        self.assertEqual(back(set()), 1)   # the map's dabs together: once
+
+    def test_two_dabs_on_one_field_the_later_paints_it(self):
+        """Two dabs on A (Wheat, then Ploughed): A is the later dab's alone, each of its stickers laid once; the first
+        dab does nothing; a sticker one dab changes is never laid back as a neighbour by another."""
+        sc = scenery.Scenery(self.map_data(neighbour=True))
+        looks = {"Wheat": self.LOOK, "Ploughed": dict(self.LOOK, stickers=[("Labourage_terrefonce", 1.0)])}
+        dabs = [scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0),
+                scenery.FieldBrush("Ploughed", 22165.0, 21250.0, 1000.0)]   # on A's sticker 2,500 along
+        own, changed = scenery.own_fields(dabs, looks, sc)
+        self.assertEqual([len(o) for o in own], [0, 1])
+        self.assertEqual(len(changed), 9 * 5)
+        first = scenery.expand_field_brush(dabs[0], looks["Wheat"], sc, fields=own[0], changed=changed)
+        self.assertEqual(first[:4], ([], [], [], []))
+        self.assertIn("painted by a later dab", first[4][0])
+        _e, objects, _c, _s, _n = scenery.expand_field_brush(dabs[1], looks["Ploughed"], sc, fields=own[1],
+                                                             changed=changed)
+        spots = [(round(o.x, 1), round(o.y, 1)) for o in objects]
+        self.assertEqual(len(spots), len(set(spots)))                  # nothing laid twice
+        self.assertEqual(sum(1 for o in objects if o.type == "TypeWarrior/Labourage_terrefonce"
+                             and abs(o.turn - 30.0) < 0.1), 9 * 5)   # A, now the later dab's look
+
+    def test_the_crops_turn_by_their_own_run(self):
+        """A source whose crops run 10 degrees off its stickers: the copy turns 10 degrees more, so they run with the
+        rows painted over (the least turn, a half turn either way: rows have no front)."""
+        sc = scenery.Scenery(self.map_data())
+        dab = scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0)
+        plain = scenery.expand_field_brush(dab, self.LOOK, sc)[2][0].turn
+        off = dict(self.LOOK, sources=[(80000.0, 80000.0, 120.0, 30000.0, 30000.0, 10.0)])
+        turned = scenery.expand_field_brush(dab, off, sc)[2][0].turn
+        self.assertAlmostEqual((turned - plain + 90.0) % 180.0 - 90.0, -10.0, places=3)
+        self.assertTrue(-90.0 <= turned <= 90.0)
+
+    def test_one_kind_for_the_field_and_a_corner_piece_stays_a_corner_piece(self):
+        """Every row sticker becomes the look's MAIN kind (a field is one kind, not a checker of the look's mix); a
+        corner sticker (_triangle) becomes that kind's corner piece where the map has one, else stays as it was, and
+        gets no tint square (it covers part of its square only)."""
+        items = self.grid(0, 20000.0, 20000.0, 30.0, 2500.0, 3500.0, 6000.0) + [compact(5, 21234.0, 19876.0, 0.5)]
+        sc = scenery.Scenery(make_scenery([block(items, box=(0.0, 0.0, 100000.0, 100000.0))], FB_NAMES))
+        dab = scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0)
+        mix = dict(self.LOOK, stickers=[("Labourage_terrefonce", 0.2), ("Paille", 0.7), ("Paille_triangle", 0.1)])
+        _e, objects, _c, stamps, _n = scenery.expand_field_brush(dab, mix, sc)
+        corner = [o for o in objects if (round(o.x), round(o.y)) == (21234, 19876)]
+        self.assertEqual([o.type for o in corner], ["TypeWarrior/Paille_triangle"])
+        self.assertTrue(all(o.type == "TypeWarrior/Paille" for o in objects if o not in corner))
+        self.assertEqual(len(stamps), len(objects) - 1)
+        dark = dict(self.LOOK, stickers=[("Labourage_terrefonce", 1.0)])   # the map has no Labourage_terrefonce_triangle
+        objects = scenery.expand_field_brush(dab, dark, sc)[1]
+        self.assertEqual([o.type for o in objects if (round(o.x), round(o.y)) == (21234, 19876)],
+                         ["TypeWarrior/Labourage_triangle"])
+        self.assertEqual({o.type for o in objects if (round(o.x), round(o.y)) != (21234, 19876)},
+                         {"TypeWarrior/Labourage_terrefonce"})
+
+    def test_two_fields_under_one_brush_and_none(self):
+        data = self.map_data(second=True)
+        sc = scenery.Scenery(data)
+        dab = scenery.FieldBrush("Wheat", 28000.0, 20000.0, 9000.0, "square")
+        _e, objects, copies, _s, notes = scenery.expand_field_brush(dab, self.LOOK, sc)
+        self.assertEqual({abs(round(c.turn)) for c in copies}, {40, 90})   # each field turned to its own rows
+        self.assertEqual(len(notes), 2)
+        nothing = scenery.expand_field_brush(scenery.FieldBrush("Wheat", 50000.0, 50000.0, 3000.0), self.LOOK, sc)
+        self.assertEqual(nothing[:4], ([], [], [], []))
+        self.assertIn("no field under it", nothing[4][0])
+
+    def test_a_field_bigger_than_the_source_is_laid_in_pieces(self):
+        """A source 10,000 inside: field A (about 24,000 x 18,000 with its squares) in pieces 10,000 across, each crop
+        still landing on A."""
+        data = self.map_data()
+        sc = scenery.Scenery(data)
+        small = dict(self.LOOK, sources=[(80000.0, 80000.0, 120.0, 10000.0, 10000.0, 0.0)])
+        _e, _o, copies, _s, _n = scenery.expand_field_brush(scenery.FieldBrush("Wheat", 20000.0, 20000.0, 1000.0),
+                                                            small, sc)
+        self.assertGreater(len(copies), 4)
+        self.assertTrue(all(c.radius <= 5000.0 and c.along <= 5000.0 for c in copies))   # inside the source
+        a = math.radians(30.0)
+        for k in range(-12, 13):   # no point of the field in two pieces (they laid the crops twice over, 2026-10-15)
+            for j in range(-10, 11):
+                u, v = k * 997.0 + 13.0, j * 991.0 + 7.0
+                x, y = 20000.0 + u * math.cos(a) - v * math.sin(a), 20000.0 + u * math.sin(a) + v * math.cos(a)
+                self.assertLessEqual(sum(c.footprint().t2(x, y) < 1.0 for c in copies), 1, (k, j))
+        laid, _n = scenery.copy_objects(data, copies, FB_DESCS)
+        self.assertTrue(laid)
+        a = self.field_a(sc)
+        self.assertTrue(all(self.on(o, a) for o in laid))
 
 
 class RoadStickers(unittest.TestCase):
@@ -601,9 +1345,93 @@ class RoadStickers(unittest.TestCase):
             add_objects(data, [NewObject("TypeWarrior/Chene_02", 50000.0, 9000.0)])
         _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 3000.0, 5000.0)])  # between the boxes:
         self.assertNotIn("no box", " ".join(notes))  # its cell meets the south one, so the game walks it there
-        _new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 30000.0, 30000.0)])  # out in the open
-        self.assertIn("lie in no box of the map's draw tree", notes[-1])
-        self.assertIn("(30000, 30000)", notes[-1])
+        before = scenery._leaf_boxes(Scenery(data).blocks[0])
+        new, notes = add_objects(data, [NewObject("TypeWarrior/Chene_02", 30000.0, 30000.0)])  # out in the open,
+        self.assertNotIn("no box", " ".join(notes))  # past the top block's own box (10,000 across): it grows too
+        self.assertIn("draw tree widened", " ".join(notes))
+        top = Scenery(new).blocks[0]
+        self.assertTrue(top.bbox[2] >= 30720.0 and top.bbox[3] >= 30720.0, top.bbox)  # the object's whole cell
+        after = scenery._leaf_boxes(top)
+        for e, b in before.items():
+            a = after[e]
+            self.assertTrue(a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3], (e, b, a))
+        self.assertTrue(any(a[0] <= 30000.0 <= a[2] and a[1] <= 30000.0 <= a[3] for e, a in after.items() if e >= 2))
+
+    def test_open_ground_widens_one_box_and_keeps_every_other(self):
+        """Objects in no box of the top block's tree (a painted field away from the map's own scenery): the west
+        wood's leaf box (the bigger) is widened over their cells, every entry's leaf box still holds what it held,
+        and they go in a block wrapping that reference, so the game's walk reaches them."""
+        data = open_fields()
+        top0 = Scenery(data).blocks[0]
+        before = scenery._leaf_boxes(top0)
+        self.assertEqual(len(scenery._carriers(Scenery(data), [NewObject("TypeWarrior/Chene_02", 20000.0, 20000.0)])[1]),
+                         1)  # out in the open: in no box
+        field = [NewObject("TypeWarrior/Chene_02", 20000.0, 20000.0), NewObject("TypeWarrior/Chene_02", 25000.0, 12000.0)]
+        new, notes = add_objects(data, field)
+        self.assertNotIn("no box", " ".join(notes))
+        self.assertIn("draw tree widened", " ".join(notes))
+        s = Scenery(new)
+        top = s.blocks[0]
+        after = scenery._leaf_boxes(top)
+        for e, b in before.items():
+            a = after[e]
+            self.assertTrue(a[0] <= b[0] and a[1] <= b[1] and a[2] >= b[2] and a[3] >= b[3], (e, b, a))
+        west = next(it for it in top.items if it.kind == "child" and round(it.matrix()[3]) == 2000)
+        e = top.entries.index(west.at, 2)  # its entry in the full list
+        cell = scenery.GRID_CELL[2]
+        for o in field:
+            x0, y0 = math.floor(o.x / cell) * cell, math.floor(o.y / cell) * cell
+            b = after[e]
+            self.assertTrue(b[0] <= x0 and b[1] <= y0 and b[2] >= x0 + cell and b[3] >= y0 + cell, b)
+        wrapper = s.blocks[s._by_offset[west.child_offset]]
+        self.assertEqual(sum(1 for it in wrapper.items if it.kind == "object"), 2)
+
+    def test_a_new_block_finds_each_item_through_its_tree(self):
+        """A new block's lists are search trees like the shipped blocks': leaves of 1 to 4 entries, each item in the
+        leaf box of its entry in both lists (the far list without road pieces), the far list's nodes marked far only."""
+        rnd = random.Random(7)
+        places = [(rnd.uniform(0.0, 9000.0), rnd.uniform(0.0, 5000.0)) for _ in range(300)]
+        items = [compact(1, x, y) for x, y in places]
+        boxes = [(x - 50.0, y - 50.0, x + 50.0, y + 50.0) for x, y in places]
+        raw = scenery._new_block(items, (-50.0, -50.0, 9050.0, 5050.0), boxes)
+        b = Scenery(make_scenery([raw], NAMES)).blocks[0]
+        nodes = scenery._tree(b)
+        split0 = nodes[0][1]
+        self.assertEqual((split0, len(b.entries)), (300, 600))
+        leaves = scenery._leaf_boxes(b)
+        self.assertEqual(set(leaves), set(range(600)))
+        by_at = {it.at: it for it in b.items}
+        for e, at in enumerate(b.entries):
+            m = by_at[at].matrix()
+            x0, y0, x1, y1 = leaves[e]
+            self.assertTrue(x0 <= m[3] <= x1 and y0 <= m[7] <= y1, (e, m[3], m[7], leaves[e]))
+        self.assertEqual(sorted(b.entries[:300]), sorted(b.entries[300:]))
+        right = (nodes[0][0] & 0xFFFFF) >> 2
+        self.assertTrue(all((w >> 20) & 0x3F == 0x08 for w, *_ in nodes[1:right]))
+        self.assertTrue(all((w >> 20) & 0x3F == 0x17 for w, *_ in nodes[right:]))  # no road piece, no block placed
+        sizes, todo = [], [(0, 0, 600)]
+        while todo:
+            k, lo, hi = todo.pop()
+            w, sp = nodes[k][:2]
+            for leaf, a, z, nxt in ((w & 0x40000000, lo, sp, k + 1), (w & 0x80000000, sp, hi, k + ((w & 0xFFFFF) >> 2))):
+                if leaf:
+                    sizes.append(z - a)
+                else:
+                    todo.append((nxt, a, z))
+        self.assertTrue(sizes and all(1 <= n <= scenery.LEAF_MOST for n in sizes), Counter(sizes))
+
+    def test_more_objects_than_a_block_holds_go_in_blocks_wrapping_each_other(self):
+        from unittest import mock
+        data = open_fields()
+        near = [NewObject("TypeWarrior/Chene_02", 1500.0 + 20.0 * k, 1500.0 + 15.0 * (k % 7)) for k in range(120)]
+        with mock.patch.object(scenery, "BLOCK_MOST", 50):
+            new, notes = add_objects(data, near)
+        self.assertEqual(sum("added in a new block" in n for n in notes), 4)  # halved till each fits: 4 of 30
+        s = Scenery(new)
+        placed = [(round(m[3]) + 2000, round(m[7]) + 1000)  # in the west wood reference's frame (2000, 1000)
+                  for bl in s.blocks[1:] if tuple(bl.bbox) != (-100.0, -100.0, 100.0, 100.0)
+                  for it in bl.items if it.kind == "object" for m in [it.matrix()]]
+        self.assertEqual(sorted(placed), sorted((round(o.x), round(o.y)) for o in near))  # each once
 
     def test_the_maps_own_tier_and_turn_bits_are_not_copied(self):
         wood = block([struct.pack("<I4h4f", 0x80000000 | 0x34000000 | 1 << 4, *[round(1 / SCALE16), 0, 0,

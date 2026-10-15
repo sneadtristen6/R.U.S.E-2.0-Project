@@ -207,11 +207,52 @@
                     <div id="paint-recent" class="swatches" role="group"></div>
                   </div>
                 </div>
+                <!-- the Texture brush (maps.js renderTexturePanel; rusemod.groundtex): the game's own textures, a
+                     square of any map's ground, your own pictures, or this map's ground from a spot -->
                 <div id="paint-stamp" class="paint-stamp hidden">
-                  <button id="stamp-pick" type="button" class="chip"></button>
+                  <div id="tex-from" class="chips" role="group"></div>
+                  <div id="tex-game" class="tex-pane">
+                    <input id="tex-search" class="tex-search" type="search" spellcheck="false" autocomplete="off">
+                    <div id="tex-groups" class="chips tex-groups" role="group"></div>
+                    <div id="tex-grid" class="tex-grid" role="group"></div>
+                  </div>
+                  <div id="tex-map" class="tex-pane hidden">
+                    <select id="tex-map-list" class="tex-map-list"></select>
+                    <img id="tex-map-pic" class="tex-map-pic hidden" alt="">
+                  </div>
+                  <div id="tex-own" class="tex-pane hidden">
+                    <button id="tex-add" type="button" class="chip"></button>
+                    <input id="tex-file" type="file" accept="image/*" class="hidden">
+                    <div id="tex-own-grid" class="tex-grid" role="group"></div>
+                  </div>
+                  <!-- Online (free): Poly Haven, ambientCG, US aerial photos (maps.js renderOnline; groundtex_online):
+                       only the picture clicked is downloaded, then kept in the mod like your own -->
+                  <div id="tex-online" class="tex-pane hidden">
+                    <div id="tex-online-from" class="chips tex-groups" role="group"></div>
+                    <input id="tex-online-search" class="tex-search" type="search" spellcheck="false" autocomplete="off">
+                    <div id="tex-online-place" class="tex-online-place hidden">
+                      <label class="small"><span id="tex-online-metres-label"></span>
+                        <select id="tex-online-metres" class="tex-map-list"></select></label>
+                      <input id="tex-online-where" class="tex-search" type="text" spellcheck="false" autocomplete="off">
+                      <button id="tex-online-take" type="button" class="chip"></button>
+                    </div>
+                    <div id="tex-online-grid" class="tex-grid" role="group"></div>
+                    <div id="tex-online-note" class="muted small"></div>
+                  </div>
+                  <div id="tex-spot" class="tex-pane hidden">
+                    <button id="stamp-pick" type="button" class="chip"></button>
+                  </div>
+                  <div id="tex-state" class="muted small"></div>
+                  <div id="tex-now" class="tex-now hidden"><span id="tex-now-pic" class="tex-now-pic"></span>
+                    <span id="tex-now-name" class="small"></span></div>
+                  <label id="tex-size-row" class="brush-slider small hidden"><span id="tex-size-label"></span>
+                    <input id="tex-size" type="range" min="-2" max="4" step="1" value="0"></label>
+                  <div id="tex-used-label" class="muted small"></div>
+                  <div id="tex-used" class="tex-grid tex-used" role="group"></div>
                   <div id="stamp-state" class="muted small"></div>
                 </div>
                 <button id="paint-clear" type="button" class="chip" aria-pressed="true"></button>
+                <button id="paint-decals" type="button" class="chip hidden" aria-pressed="true"></button>
                 <div id="paint-note" class="muted small"></div>
               </div>
             </div>
