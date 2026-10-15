@@ -78,6 +78,7 @@ function problem(err) {
 async function setLanguage(lang) {
   state.lang = lang;
   knownFlags = null;  // the flags' meanings are in the language
+  knownNumbers = null;  // and the numbers' (rusemod/numberinfo.toml)
   saveLang(lang);
   state.words = await api().strings(lang);
   renderUpdate();
@@ -830,7 +831,111 @@ function row(u, r, mode) {
   for (const box of boxes) box.addEventListener("change", () => save(box));
   if (one) one.addEventListener("change", () => save(one));
   showWas();
+  numberHelp(u, r, th, cell, () => (one ? [one] : boxes), st, ranged);
   return tr;
+}
+
+// --- what a number means (api.numbers: rusemod/numberinfo.toml), shown on every number of a unit's page (the owner,
+// 2026-10-15: "this is their base stat. And then you can make it smaller or larger", "give them perspective on the
+// scale of what the numbers mean", "Include all numbers"): its meaning when its name is hovered, its value in plain
+// units (metres, km/h, seconds, degrees, $, %), a slider making it smaller or larger than the game's value (its base
+// stat), and a bar showing where it sits among the game's units of its kind (api.number_scale) ---
+let knownNumbers = null;  // api.numbers(), once per language
+const BASE_LEAST = -90, BASE_MOST = 300;  // the base-stat slider: % of the game's value
+
+function numberEntry(cls, prop) {
+  if (!knownNumbers) return null;
+  return knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+}
+
+// A number in plain units ("about 35 km/h"), or "" when its unit has none.
+function numberPlain(entry, value) {
+  const w = state.words, p = entry && knownNumbers.plain[entry.unit];
+  if (!p || !Number.isFinite(value)) return "";
+  const v = value / p[0];
+  const shown = Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : Number(v.toPrecision(3)).toLocaleString();
+  return fill(w.number_about_value, { v: shown, unit: w[p[1]] || "" });
+}
+
+function numberTip(entry) {
+  const w = state.words;
+  if (!entry) return "";
+  const sure = w[`number_sure_${entry.sure}`] || entry.sure;
+  return [entry.what, entry.does, `${w.flag_sure}: ${sure}`].filter(Boolean).join("\n");
+}
+
+function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
+  const w = state.words;
+  const help = el("div", { className: "number-help" });
+  cell.append(help);
+  const draw = () => {
+    const entry = numberEntry(u.class, r.prop);
+    if (!entry) return;
+    th.title = numberTip(entry);
+    th.classList.add("has-meaning");
+    const amount = knownNumbers.amounts.includes(entry.unit) && r.type !== "bool";
+    const base = Number(st.base[0]);
+    const plainNote = el("span", { className: "muted small number-plain" });
+    const sync = () => {
+      const v = Number(getBoxes()[0].value);
+      plainNote.textContent = numberPlain(entry, v);
+      if (slider && Number.isFinite(v) && base) {
+        const pct = Math.round((v / base - 1) * 100);
+        slider.value = String(Math.max(BASE_LEAST, Math.min(BASE_MOST, pct)));
+        pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
+      }
+    };
+    // the base-stat slider: not on ranges (they have their own, in metres), choices, switches and ids, nor a value of 0
+    let slider = null;
+    const pctNote = el("span", { className: "small number-pct" });
+    const row = el("div", { className: "number-row" }, plainNote);
+    if (amount && !ranged && base && state.mod) {
+      slider = el("input", { type: "range", min: String(BASE_LEAST), max: String(BASE_MOST), step: "5",
+        className: "base-slider", title: fill(w.tip_number_slider, { base: base.toLocaleString() }) });
+      slider.setAttribute("aria-label", fill(w.number_slider, { name: r.label }));
+      const whole = WHOLE.has(r.type);
+      slider.addEventListener("input", () => {
+        const pct = Number(slider.value);
+        for (const [i, b] of getBoxes().entries()) {
+          const own = Number(st.base[i] ?? base);
+          const v = own * (1 + pct / 100);
+          b.value = String(whole ? Math.round(v) : Number(v.toPrecision(6)));
+        }
+        plainNote.textContent = numberPlain(entry, Number(getBoxes()[0].value));
+        pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
+      });
+      slider.addEventListener("change", () => getBoxes()[0].dispatchEvent(new Event("change")));
+      row.append(el("span", { className: "small muted", textContent: fill(w.number_base, { v: base.toLocaleString() }) }),
+        slider, pctNote);
+    }
+    for (const b of getBoxes()) { b.addEventListener("input", sync); b.addEventListener("change", sync); }
+    sync();
+    // where it sits among the game's units of its kind, asked for once the row is shown
+    const scale = el("div", { className: "number-scale" });
+    if (amount) {
+      api().number_scale(u.address, r.prop, state.lang).then((s) => {
+        if (!s || !s.count || s.min === s.max) return;
+        const span = s.max - s.min;
+        const at = (v) => `${Math.max(0, Math.min(100, ((v - s.min) / span) * 100))}%`;
+        const bar = el("div", { className: "scale-bar" }, el("span", { className: "scale-band",
+          style: `left:${at(s.low)};width:calc(${at(s.high)} - ${at(s.low)})` }));
+        for (const m of s.marks) bar.append(el("span", { className: "scale-mark", style: `left:${at(m.value)}`,
+          title: `${m.name}: ${m.value.toLocaleString()} ${numberPlain(entry, m.value)}` }));
+        const here = Number(getBoxes()[0].value);
+        if (Number.isFinite(here)) bar.append(el("span", { className: "scale-here", style: `left:${at(here)}`,
+          title: fill(w.number_this_unit, { v: here.toLocaleString() }) }));
+        const names = s.marks.map((m) => `${m.name} ${m.value.toLocaleString()}`).join(" · ");
+        scale.replaceChildren(el("span", { className: "muted small", textContent: fill(w.number_among, { n: s.count }) }),
+          bar, el("span", { className: "muted small scale-names", textContent: names }));
+      }).catch(() => {});
+    }
+    help.replaceChildren(row, scale);
+    if (entry.sure === "community" && knownNumbers.plain[entry.unit]) {  // a scale from others, not measured by us
+      row.append(el("span", { className: "muted small number-sure", textContent: w.number_scale_unmeasured }));
+    }
+  };
+  if (knownNumbers) draw();
+  else api().numbers(state.lang).then((res) => { knownNumbers = res; draw(); }).catch(() => {});
 }
 
 // A unit's flags (InitialFlagSet): a set of numbers of any length. Shown as chips with a cross to take one out, and

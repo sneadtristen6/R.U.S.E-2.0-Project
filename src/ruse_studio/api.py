@@ -33,7 +33,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
 from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
-                     newmap, package, packfiles, scenario, scenery, schema, startlog, values as every_value)
+                     newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
+                     values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -706,6 +707,54 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                            **info.get(n, blank)}
                           for n in sorted(set(rows) | set(schema.flag_numbers()))],
                 "groups": list(flaginfo.GROUPS)}
+
+    # --- the number guide (rusemod.numberinfo): what every number means, in plain units, and where a unit's number
+    # sits among its kind's (the owner, 2026-10-15: "this is their base stat. And then you can make it smaller or
+    # larger", "give them perspective on the scale of what the numbers mean") ---
+    def numbers(self, lang: str = schema.BASE) -> dict:
+        """{"numbers": {key: {group, unit, sure, what, does}}, "plain": {unit: [game units to one plain unit, its
+        word]}, "amounts": the units the base-stat slider changes}; a key is "Property" or "Class.Property"."""
+        return {"numbers": numberinfo.guide(lang), "plain": {k: list(v) for k, v in numberinfo.PLAIN.items()},
+                "amounts": sorted(numberinfo.AMOUNTS)}
+
+    def number_scale(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Where the game's value of `prop` on the object at `address` sits among the game's objects of its class:
+        {"class", "count", "min", "low", "median", "high", "max" (the 10th and 90th centiles as low and high), "game":
+        its own game value, "marks": [{"name", "value"}]: the named objects at the lowest, median and highest value
+        (each value once)}; {} when the class has no such number. A list's first item stands for the list."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {}
+            rows = ix.db.execute("""SELECT o.address, o.export, v.path, v.num FROM value v JOIN object o
+                                    ON o.id = v.object WHERE o.class = ? AND o.shadow = 0 AND v.num IS NOT NULL
+                                    AND (v.path = ? OR v.path = ?)""", (o["class"], prop, prop + "[0]")).fetchall()
+            values = sorted(n for _a, _e, _p, n in rows)
+            if not values:
+                return {}
+            game = next((n for p, n, _t in o["values"] if p in (prop, prop + "[0]") and n is not None), None)
+            named = sorted(((n, a) for a, e, _p, n in rows if e), key=lambda x: x[0])
+            picks, seen = [], set()
+            for n, a in ([named[0], named[len(named) // 2], named[-1]] if named else []):
+                if n not in seen:
+                    seen.add(n)
+                    picks.append((n, a))
+            names = self._names(ix, [a for _n, a in picks], lang, edits.new_units if edits else None)
+        finally:
+            ix.close()
+
+        def at(share: float) -> float:
+            return values[min(len(values) - 1, int(share * (len(values) - 1) + 0.5))]
+        return {"class": o["class"], "count": len(values), "min": values[0], "low": at(0.1), "median": at(0.5),
+                "high": at(0.9), "max": values[-1], "game": game,
+                "marks": [{"name": names.get(a) or _tail(a), "value": n} for n, a in picks]}
 
     def flag_check(self, address: str, flags: list | None = None, lang: str = schema.BASE) -> dict:
         """What's wrong with a unit's flags, as the Studio and the build see it (rusemod.flaginfo.judge): `flags` the

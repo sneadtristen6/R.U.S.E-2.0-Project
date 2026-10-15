@@ -1,0 +1,1775 @@
+# What every number of the game's units and buildings, and of the parts they own or link to (weapons, ammunition,
+# armour, plane flight, turrets, graphics, sounds), means: the Studio's number guide (rusemod.numberinfo; the owner,
+# 2026-10-15: "We need to know everything that has a number behind it that relates to these units and buildings",
+# "Include the looks only. But just describe what the look is", "Include all numbers"). English for now.
+#
+# A key is a property's name ("SeuilMort"), or "Class.Property" where the same name means something else on that
+# class ("TAvionDescriptor.VitesseLineaire").
+# group: health, movement, sight, combat, ammo, production, menu, identity, computer, flight, turret, looks, sound,
+#   interface, effects.
+# unit: how to read the number:
+#   m       = a distance, 260 game units to a metre (measured on the game's maps by the R.U.S.E 2.0 Project);
+#   kmh     = a ground speed, 130 game units to 1 km/h (LittleGroove and the community; not timed by us yet);
+#   kmh_air = a plane's speed, 57.77 game units to 1 km/h (the community; not timed by us yet);
+#   accel   = an acceleration, 260 game units to 1 m/s per second (LittleGroove; not timed by us yet);
+#   s       = seconds; deg = an angle in radians, shown in degrees; degs = radians a second, shown in degrees a second;
+#   money   = dollars, as the build menu shows them; pts = points the game counts with, no real-world unit;
+#   count = how many; times = a multiplier; share = a share from 0 to 1, shown as a %; level = a level the game
+#   compares; choice = one of a list of kinds; yesno = 1 yes, 0 no; id = a number that names something; mask = bits,
+#   each one a switch; frame = an animation frame; raw = a number with no known unit yet.
+# sure: tried = seen in the game; known = certain from the game's own data and menus; community = from the community
+#   or LittleGroove's work, not checked by us; name = from its name and the values the game's units have; not tried.
+
+# --- health and toughness ---
+[SeuilMort]
+group = "health"
+unit = "pts"
+sure = "known"
+what = "Health"
+does = "How much damage it takes to destroy it. Most of the game's tanks, cars, squads and guns have 400: what makes a Tiger tougher than a jeep is mostly its armour level (Armour), which cuts the damage of every shot that isn't strong enough for it. Buildings have from 50 to 4,500."
+
+[SeuilPinned]
+group = "health"
+unit = "pts"
+sure = "known"
+what = "Pinned threshold"
+does = "How much suppression it takes before the unit is pinned down (stops moving and fires less). Shots landing near it within the ammo's suppression radius add suppression. Most units have 200; higher = harder to pin."
+
+[ArmureHint]
+group = "health"
+unit = "level"
+sure = "tried"
+what = "Armour level shown"
+does = "The armour level the unit's card and build menu show (the number on the shield, 1 to 5). The Studio's Armour box sets it together with the armour itself, so the two always agree."
+
+[BaseBlindage]
+group = "health"
+unit = "level"
+sure = "tried"
+what = "Armour"
+does = "The armour the unit fights with (1 to 10 in the game): the higher it is, the less damage weaker ammo does to it. Change it with the Armour box, which picks one of the game's levels and keeps the card's shield number the same (seen in the game)."
+
+[ReculeSeulementSiUberstress]
+group = "health"
+unit = "yesno"
+sure = "name"
+what = "Falls back only when fully pinned"
+does = "1: the unit only retreats under fire once it's completely pinned (extreme suppression), not before. 38 of the game's units have it."
+
+# --- movement ---
+[VitesseLineaire]
+group = "movement"
+unit = "kmh"
+sure = "community"
+what = "Speed"
+does = "How fast it moves when travelling, off roads. A Sherman has 4,550 (about 35 km/h), a jeep 6,110 (about 47 km/h), a rifle squad 3,120 (about 24 km/h)."
+
+["TAvionDescriptor.VitesseLineaire"]
+group = "flight"
+unit = "kmh_air"
+sure = "community"
+what = "Flying speed"
+does = "How fast the plane flies: 13,000 to 46,800 in the game (about 225 to 810 km/h)."
+
+[VitesseLineaireAuSol]
+group = "flight"
+unit = "kmh_air"
+sure = "name"
+what = "Speed on the ground"
+does = "How fast the plane rolls on the airfield when it takes off and lands."
+
+[VitesseLineaireIdle]
+group = "flight"
+unit = "kmh_air"
+sure = "name"
+what = "Patrol speed"
+does = "How fast the plane flies while circling with nothing to do, slower than its full speed."
+
+[VitesseCombat]
+group = "movement"
+unit = "kmh"
+sure = "name"
+what = "Speed while fighting"
+does = "How fast it moves while in combat. For tanks and cars it's usually the same as Speed; for squads and towed guns it's much slower (a rifle squad 1,040, about 8 km/h; an anti-tank gun 520, about 4 km/h, pushed by its crew)."
+
+[SpeedBonusOnRoad]
+group = "movement"
+unit = "share"
+sure = "name"
+what = "Road speed bonus"
+does = "How much faster it goes on a road than off it: 0.6 is about 60% faster. Squads and guns get it as the truck they turn into. Planes and trucks have 1."
+
+[MaxAcceleration]
+group = "movement"
+unit = "accel"
+sure = "community"
+what = "Acceleration"
+does = "How quickly it gets up to speed. Most tanks have 3,900."
+
+[MaxDeceleration]
+group = "movement"
+unit = "accel"
+sure = "community"
+what = "Braking"
+does = "How quickly it slows down and stops."
+
+[TempsDemiTour]
+group = "movement"
+unit = "s"
+sure = "name"
+what = "U-turn time"
+does = "How many seconds it takes to turn round to face the other way. Infantry 0.01 (at once), cars 0.5, tanks 1, the slowest 6."
+
+[Radius]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Size on the ground"
+does = "How much room the unit takes: other units keep this far from its middle when they steer round it. Infantry 104-130 (about 0.5 m), tanks 520-780 (2-3 m), guns 390-650, trucks 2,000, buildings 7,800-13,000 (30-50 m)."
+
+["TAvionDescriptor.Radius"]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Size in the air"
+does = "How much room the plane takes when other planes fly round it: 780 to 2,600 (3 to 10 m)."
+
+[StickToGround]
+group = "movement"
+unit = "yesno"
+sure = "name"
+what = "Follows the ground"
+does = "1: the unit tilts with the slope it stands on. Every ground unit and building of the game has it."
+
+[Scale]
+group = "looks"
+unit = "times"
+sure = "name"
+what = "Model size"
+does = "Looks only: the unit's 3D model drawn this many times its size. Units have 1; infantry 0.2; buildings 0.1. The Studio's Size slider on an imported model changes the model itself instead."
+
+# --- sight ---
+[DetectionBase]
+group = "sight"
+unit = "m"
+sure = "tried"
+what = "Vision range"
+does = "How far it sees ground units. A tank 104,000 (about 400 m); recon cars 234,000 (900 m); scout planes 195,000 (750 m). A Panzer IV given 234,000 alone didn't act as recon; the Role box gives the rest."
+
+[PorteeVisionVolant]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Air vision range"
+does = "How far it sees planes. Most units 208,000 (800 m); a few 2,600 (10 m: they hardly see planes)."
+
+[SignatureRadar]
+group = "sight"
+unit = "choice"
+sure = "name"
+what = "Radar signature"
+does = "What kind of contact it shows as on the enemy's radar: 1 ground units, 2 buildings, 3 planes."
+
+[AltitudeNoise]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Height wobble"
+does = "Looks only: how much the plane's height wobbles while flying (130-260, under 1 m)."
+
+# --- combat (a unit's own) ---
+[PorteeAttackReflexAir]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Auto-attack range (air)"
+does = "How far a plane goes after enemy planes on its own, without an order: 130,000 to 208,000 (500 to 800 m)."
+
+[PorteeAttackReflexSol]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Auto-attack range (ground)"
+does = "How far a plane goes after ground targets on its own: 182,000 (700 m) on every plane of the game."
+
+[SecondaryWeaponMaxAmmo]
+group = "combat"
+unit = "count"
+sure = "name"
+what = "Bombs or rockets carried"
+does = "How many shots of its second weapon (bombs, rockets) a plane carries before it flies home to rearm: 1 to 4 in the game."
+
+# --- production and menus ---
+[ProductionPrice]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Price"
+does = "What it costs to build, in $, at each of the five battle dates (the game keeps one price per date)."
+
+[ProductionTime]
+group = "production"
+unit = "s"
+sure = "community"
+what = "Build time"
+does = "How many seconds it takes to build. With more than one factory of its kind it's shared between them."
+
+[UpgradePrice]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Research price"
+does = "What researching it costs, in $, before it can be built (units that are researched from another)."
+
+[UpgradeTime]
+group = "production"
+unit = "s"
+sure = "name"
+what = "Research time"
+does = "How long researching it takes, in seconds."
+
+[IsUpgrade]
+group = "production"
+unit = "yesno"
+sure = "known"
+what = "Is an upgrade"
+does = "1: the unit is an upgrade of the one it's researched from (it replaces it in the build menu once researched)."
+
+[ShowInMenu]
+group = "menu"
+unit = "yesno"
+sure = "known"
+what = "Shown in the build menu"
+does = "1: shown in its build menu at that battle date (one value for each of the five dates)."
+
+[PositionInMenu]
+group = "menu"
+unit = "id"
+sure = "known"
+what = "Menu slot"
+does = "Where it sits in its build menu: units of the same line share a slot, upgrades stack on it."
+
+[Factory]
+group = "menu"
+unit = "choice"
+sure = "known"
+what = "Factory"
+does = "Which build menu it's in (the Studio shows each menu by its name, and lets you move a unit to another nation's)."
+
+[Menu]
+group = "menu"
+unit = "choice"
+sure = "name"
+what = "Building menu"
+does = "Which page of the building menu the building is on."
+
+[Nationalite]
+group = "identity"
+unit = "choice"
+sure = "known"
+what = "Nation"
+does = "Which country it belongs to: 0 USA, 1 Germany, 2 UK, 3 France, 4 Italy, 5 USSR, 6 Japan."
+
+[InitialFlagSet]
+group = "identity"
+unit = "choice"
+sure = "known"
+what = "Flags"
+does = "The unit's flags: numbered switches for what it is and what it can do. Each one is explained in the Flag guide, under the flags."
+
+[DescriptorId]
+group = "identity"
+unit = "id"
+sure = "known"
+what = "Id"
+does = "The unit's own number: each unit has a different one, and the game and saved games find it by it. The Studio gives a new unit a free one."
+
+[TrackingId]
+group = "identity"
+unit = "id"
+sure = "name"
+what = "Statistics id"
+does = "The number the end-of-game statistics and the game's own tracking know the unit by."
+
+[Key]
+group = "identity"
+unit = "id"
+sure = "name"
+what = "Key"
+does = "A number a few units carry (8 tanks, 7 planes, 2 squads); its use isn't known yet."
+
+[TypeForAcknow]
+group = "identity"
+unit = "choice"
+sure = "name"
+what = "Voice type"
+does = "Which set of voice lines the unit answers orders with."
+
+[AcknowUnitType]
+group = "identity"
+unit = "choice"
+sure = "name"
+what = "Voice kind"
+does = "Which kind of unit the voice lines name (tank, infantry, plane...)."
+
+[IconeType]
+group = "interface"
+unit = "choice"
+sure = "name"
+what = "Map icon"
+does = "Which icon the unit shows on the map table when zoomed out."
+
+[Category]
+group = "computer"
+unit = "choice"
+sure = "tried"
+what = "Category"
+does = "What kind of unit the game counts it as: 1 recon (the recon Role sets it; seen in the game), 7 planes, 8 and 9 buildings; the others aren't all named yet."
+
+[CategorieIA]
+group = "computer"
+unit = "choice"
+sure = "tried"
+what = "Computer's category"
+does = "What the computer player uses the unit for: 3 recon (the Role box sets it with the role; seen in the game); the others aren't all named yet."
+
+[CategoryVolant]
+group = "flight"
+unit = "choice"
+sure = "tried"
+what = "Plane role"
+does = "What kind of plane it flies as (fighter, fighter-bomber, bomber, scout, paratroop): how it moves and attacks. Change it with the Role box, which sets the flags with it."
+
+[IsDepotForIA]
+group = "computer"
+unit = "yesno"
+sure = "name"
+what = "A depot for the computer"
+does = "1: the computer player treats this building as a supply depot."
+
+# --- buildings ---
+[TypeBatiment]
+group = "identity"
+unit = "choice"
+sure = "tried"
+what = "Building type"
+does = "What kind of building it is to the game (HQ, barracks, depot...). A decoy building given flag 5 and TypeBatiment -7 produces for real."
+
+[BuildPolicy]
+group = "production"
+unit = "choice"
+sure = "community"
+what = "Where it can be built"
+does = "Where the building may be placed: 2 anywhere (defences), 3 on a depot slab; buildings without it need a road nearby."
+
+[DistanceToRoad]
+group = "production"
+unit = "m"
+sure = "community"
+what = "Distance to a road"
+does = "How close to a road the building must be placed: 5,000 to 31,000 (20 to 120 m). Bunkers 8,000 (about 30 m)."
+
+[CanBeSpawnedInMapMulti]
+group = "production"
+unit = "yesno"
+sure = "name"
+what = "Can be placed in multiplayer maps"
+does = "1: the building can be put on a multiplayer map's scenario."
+
+["TBatimentPaths.Radius"]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Paths round the building"
+does = "How far round the building the paths units take go."
+
+# --- weapons ---
+[TirEnMouvement]
+group = "combat"
+unit = "yesno"
+sure = "name"
+what = "Fires on the move"
+does = "1: this weapon can fire while the unit moves."
+
+[SalveNumber]
+group = "combat"
+unit = "raw"
+sure = "name"
+what = "Volley number"
+does = "Which volley this weapon fires in (-1: it fires on its own, not in volleys)."
+
+["TWeaponDescriptor.Salves"]
+group = "combat"
+unit = "raw"
+sure = "name"
+what = "Volleys"
+does = "Whether the weapon fires in volleys (1) or shot by shot (-1)."
+
+# --- ammunition ---
+[Puissance]
+group = "ammo"
+unit = "pts"
+sure = "known"
+what = "Damage"
+does = "The damage one hit does, before armour. Small arms 2-10, tank guns tens to hundreds, bombs and the V2 far more (up to 2,000,000 for the atom bomb). A unit is destroyed when the damage it took reaches its Health."
+
+[Level]
+group = "ammo"
+unit = "level"
+sure = "name"
+what = "Ammo level"
+does = "The ammo's level (1 to 5). The game weighs it against the target's armour: ammo of a higher level does more damage to armoured units. How the two are compared isn't measured yet."
+
+[Arme]
+group = "ammo"
+unit = "choice"
+sure = "known"
+what = "Weapon type"
+does = "What kind of weapon fires it (machine gun, cannon, howitzer, bomb...): which targets it's good against and the icon on the card."
+
+[PorteeMaximale]
+group = "ammo"
+unit = "m"
+sure = "known"
+what = "Range"
+does = "How far it can hit: 13,000 (50 m) to 2,600,000 (10 km, the V2). Tank guns usually 65,000-130,000 (250-500 m)."
+
+[PorteeMinimale]
+group = "ammo"
+unit = "m"
+sure = "name"
+what = "Minimum range"
+does = "Closer than this it can't fire (artillery and mortars): 13,000 to 169,000 (50 to 650 m)."
+
+[TempsEntreDeuxTirs]
+group = "ammo"
+unit = "s"
+sure = "known"
+what = "Time between shots"
+does = "Seconds between two shots: 0.2 for a machine gun, a few seconds for a tank gun, up to 60 for the heaviest guns. Lower = more shots."
+
+[TempsEntreDeuxSalves]
+group = "ammo"
+unit = "s"
+sure = "name"
+what = "Time between volleys"
+does = "Seconds between two volleys, for weapons that fire volleys (rocket launchers, bombs)."
+
+[NbTirParSalves]
+group = "ammo"
+unit = "count"
+sure = "known"
+what = "Shots per volley"
+does = "How many shots one volley fires: 1 to 100."
+
+[AngleDispersion]
+group = "ammo"
+unit = "deg"
+sure = "name"
+what = "Spread"
+does = "How far shots stray from where they're aimed: 0.01 (about half a degree, very precise) to 0.3 (17 degrees, artillery)."
+
+[PourcentageTirDirect]
+group = "ammo"
+unit = "share"
+sure = "name"
+what = "Accuracy standing still"
+does = "How likely a shot is to hit when the unit isn't moving: 0.5 to 1 (50% to 100%)."
+
+[PourcentageTirDirectEnMouvement]
+group = "ammo"
+unit = "share"
+sure = "name"
+what = "Accuracy on the move"
+does = "How likely a shot is to hit while the unit moves: 0.4 to 1 (40% to 100%)."
+
+[RayonPinned]
+group = "ammo"
+unit = "m"
+sure = "known"
+what = "Suppression radius"
+does = "How far from where it lands a shot suppresses units (adds to their pinned count): 130 (half a metre) to 78,000 (300 m)."
+
+[TirIndirect]
+group = "ammo"
+unit = "yesno"
+sure = "known"
+what = "Indirect fire"
+does = "1: the ammo is fired indirectly, over obstacles at targets others spot (artillery)."
+
+[AllowAmbushShot]
+group = "ammo"
+unit = "yesno"
+sure = "known"
+what = "Can ambush"
+does = "1: the ammo can be fired from an ambush in a wood."
+
+[ProjectileType]
+group = "effects"
+unit = "choice"
+sure = "name"
+what = "Projectile kind"
+does = "Looks only: what kind of shot is drawn flying (shell, bullet, rocket, bomb)."
+
+[AmmunitionId]
+group = "identity"
+unit = "id"
+sure = "known"
+what = "Ammo id"
+does = "The ammo's own number (1000-1138): each ammo has a different one. The Studio gives a copy a free one."
+
+[NeedModelChange]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Changes the model when fired"
+does = "Looks only: 1 on the squads' anti-tank weapons: the soldier switches to the model holding it when it fires."
+
+[TempsAnimation]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Firing animation time"
+does = "Looks only: how long the soldier's firing animation lasts (1.6 s on the squads' anti-tank weapons)."
+
+[FX_vitesse_de_depart]
+group = "effects"
+unit = "m"
+sure = "name"
+what = "Shot speed (drawn)"
+does = "Looks only: how fast the drawn shot leaves the gun, in game units a second: 150 to 520,000 (2,000 m a second)."
+
+[FX_frottement]
+group = "effects"
+unit = "raw"
+sure = "name"
+what = "Shot drag (drawn)"
+does = "Looks only: how fast the drawn shot slows down in the air."
+
+[FX_tir_tendu]
+group = "effects"
+unit = "yesno"
+sure = "name"
+what = "Flat shot (drawn)"
+does = "Looks only: 1 draws the shot flying flat and straight instead of arcing."
+
+[FX_tir_sans_physic]
+group = "effects"
+unit = "yesno"
+sure = "name"
+what = "Shot drawn without physics"
+does = "Looks only: 1 draws the shot without gravity and drag."
+
+# --- plane flight ---
+[AltitudeDeVol]
+group = "flight"
+unit = "m"
+sure = "community"
+what = "Flying height"
+does = "How high the plane flies: 52,000 to 208,000 (200 to 800 m)."
+
+[ChaosAltitudeDeVol]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Flying height spread"
+does = "How much the plane's flying height varies from plane to plane and over time: 7,800 to 32,500 (30 to 125 m)."
+
+[AltitudeDownAirport]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Height when landing"
+does = "How high the plane is when it starts coming down to its airfield: 65,000 (250 m)."
+
+[AltitudeDownAttack]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Attack height"
+does = "How low the plane comes down for a ground attack: 13,000 to 39,000 (50 to 150 m)."
+
+[LengthDownAirport]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Landing approach length"
+does = "How long the plane's descent to the airfield is: 78,000 to 156,000 (300 to 600 m)."
+
+[LengthUpAirport]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Take-off climb length"
+does = "How long the plane's climb after take-off is: 52,000 to 130,000 (200 to 500 m)."
+
+[LengthDownAttack]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Attack dive length"
+does = "How long the plane's descent onto a ground target is: 13,000 to 208,000 (50 to 800 m)."
+
+[LengthUpAttack]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Pull-up length after an attack"
+does = "How long the plane's climb after a ground attack is: 13,000 to 208,000 (50 to 800 m)."
+
+[DelaiAttackGround]
+group = "flight"
+unit = "s"
+sure = "name"
+what = "Delay before a ground attack"
+does = "Seconds the plane waits on its run before firing at a ground target: 0.1 to 4.5."
+
+[GroundAttackAcceleration]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Acceleration on a ground attack"
+does = "How quickly the plane speeds up during a ground attack."
+
+[GroundAttackDecceleration]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Slowing on a ground attack"
+does = "How quickly the plane slows down for a ground attack."
+
+[MustDiveAttack]
+group = "flight"
+unit = "yesno"
+sure = "name"
+what = "Dive bomber"
+does = "1: the plane attacks in a steep dive (2 of the game's planes have it)."
+
+[DiveAttackStartAltitude]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Dive start height"
+does = "How high a dive bomber starts its dive: 44,200 to 91,000 (170 to 350 m)."
+
+[DiveAttackEndAltitude]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Dive pull-out height"
+does = "How low a dive bomber dives before pulling out: 31,200 to 39,000 (120 to 150 m)."
+
+[DiveAttackAcceleration]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Dive acceleration"
+does = "How quickly a dive bomber speeds up in its dive."
+
+[DiveAttackAngleToHit]
+group = "flight"
+unit = "deg"
+sure = "name"
+what = "Dive angle to release"
+does = "How steep the dive must be before the bomb is released: 10 to 35 degrees."
+
+[DiveAttackDownAngleSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Nose-down speed in a dive"
+does = "How fast a dive bomber tips its nose down into the dive (90 degrees a second)."
+
+[DiveAttackDownRollSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Roll speed into a dive"
+does = "How fast a dive bomber rolls over as it starts its dive (120 degrees a second)."
+
+[DiveAttackUpAngleSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Nose-up speed after a dive"
+does = "How fast a dive bomber pulls its nose up out of the dive (35 to 50 degrees a second)."
+
+[DiveAttackUpRollSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Roll speed out of a dive"
+does = "How fast a dive bomber rolls level after its dive (60 degrees a second)."
+
+[LoopingStartAltitude]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Loop start height"
+does = "How high a plane is when it starts a loop to come round again: 57,200 to 109,200 (220 to 420 m)."
+
+[LoopingAltitudeToHit]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Loop top height"
+does = "How high the top of the plane's loop is: 70,200 to 124,800 (270 to 480 m)."
+
+[LoopingAcceleration]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Acceleration in a loop"
+does = "How quickly the plane speeds up coming out of a loop."
+
+[LoopingDecceleration]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Slowing in a loop"
+does = "How quickly the plane slows climbing into a loop."
+
+[LoopingPitchAngleSpeedStart]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Loop pitch speed (start)"
+does = "How fast the plane's nose comes up as the loop starts (20 degrees a second)."
+
+[LoopingPitchAngleSpeedEnd]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Loop pitch speed (end)"
+does = "How fast the plane's nose turns at the end of the loop: 30 to 90 degrees a second."
+
+[PitchAngleMax]
+group = "flight"
+unit = "deg"
+sure = "name"
+what = "Steepest climb or dive"
+does = "How far the plane may tip its nose up or down in normal flight: 5 to 80 degrees."
+
+[RollAngleMax]
+group = "flight"
+unit = "deg"
+sure = "name"
+what = "Steepest bank"
+does = "How far the plane banks into a turn: 5 to 50 degrees."
+
+[RollAcceleration]
+group = "flight"
+unit = "raw"
+sure = "name"
+what = "Bank acceleration"
+does = "How quickly the plane rolls into and out of a bank (4 to 8)."
+
+[RollRatioSpeed]
+group = "flight"
+unit = "times"
+sure = "name"
+what = "Bank to turn"
+does = "How much the plane banks for a given turn: 0.1 to 2."
+
+[RadiusStandard]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Turning circle"
+does = "How wide the plane's normal turns are: 26,000 to 104,000 (100 to 400 m)."
+
+[RadiusApproach]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Approach circle"
+does = "How wide the plane's turns are as it approaches where it was sent: 10,400 to 104,000 (40 to 400 m)."
+
+[RadiusApproachAttackGround]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Approach circle for a ground attack"
+does = "How wide the plane's turns are as it lines up a ground attack: 20,800 to 104,000 (80 to 400 m)."
+
+[RadiusApproachEngage]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Approach circle for a dogfight"
+does = "How wide the plane's turns are as it closes in on an enemy plane: 15,600 to 52,000 (60 to 200 m)."
+
+[RadiusEngage]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Dogfight start distance"
+does = "How close an enemy plane must be for the plane to start a dogfight: 10,400 to 104,000 (40 to 400 m)."
+
+[RadiusEngaged]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Dogfight turning circle"
+does = "How wide the plane's turns are in a dogfight: 26,000 to 104,000 (100 to 400 m)."
+
+[RadiusChangeAltitude]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Height change distance"
+does = "How far the plane flies while changing height: 9,750 to 52,000 (40 to 200 m)."
+
+[CrashGravity]
+group = "flight"
+unit = "accel"
+sure = "name"
+what = "Fall when shot down"
+does = "How fast a shot-down plane falls: 1,300 to 5,200."
+
+[CrashPitchAcceleration]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Nose-down when shot down"
+does = "Looks only: how fast a shot-down plane's nose drops faster and faster (1 to 5 degrees a second, each second)."
+
+[CrashPitchMaxSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Fastest nose-down when shot down"
+does = "Looks only: the fastest a shot-down plane's nose drops (5 to 35 degrees a second)."
+
+[CrashRollAcceleration]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Spin when shot down"
+does = "Looks only: how fast a shot-down plane starts to spin (8 to 70 degrees a second, each second)."
+
+[CrashRollMaxSpeed]
+group = "flight"
+unit = "degs"
+sure = "name"
+what = "Fastest spin when shot down"
+does = "Looks only: the fastest a shot-down plane spins (150 to 1,000 degrees a second)."
+
+# --- turrets and gun crews ---
+[VitesseRotation]
+group = "turret"
+unit = "degs"
+sure = "name"
+what = "Turret turning speed"
+does = "How fast the turret or gun turns to aim: 15 to 200 degrees a second. Slower turrets take longer to bring their gun onto a new target."
+
+[AngleRotationMax]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Turret turn limit"
+does = "How far the turret or gun can turn each way from straight ahead: 15 degrees (a gun in the hull) to 360 (all round)."
+
+[AngleRotationBase]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Turret rest angle"
+does = "Which way the turret faces at rest (180 degrees: backwards, on a few vehicles)."
+
+[AngleRotationBasePitch]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Gun rest elevation"
+does = "How high the gun points at rest: 10 to 30 degrees."
+
+[AngleRotationMaxPitch]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Highest gun elevation"
+does = "How high the gun can point: 15 to 90 degrees (anti-aircraft guns point straight up)."
+
+[AngleRotationMinPitch]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Lowest gun elevation"
+does = "How low the gun can point (10 degrees on two guns)."
+
+[NbFX]
+group = "effects"
+unit = "count"
+sure = "name"
+what = "Muzzles"
+does = "Looks only: how many muzzle flashes the turret or weapon draws when it fires (1 to 8: the guns of a multi-barrel weapon)."
+
+[Spread]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Idle look-around"
+does = "Looks only: how far, in degrees, an idle gun or turret swings to look around (80 to 180)."
+
+[TurretRotationSpeedMultiplier]
+group = "turret"
+unit = "times"
+sure = "name"
+what = "Idle turning speed"
+does = "Looks only: how fast an idle turret turns while looking around, times its normal speed (0.25 to 1)."
+
+[WaitMinInSeconds]
+group = "turret"
+unit = "s"
+sure = "name"
+what = "Idle wait (shortest)"
+does = "Looks only: the shortest time an idle turret waits before it looks somewhere else."
+
+[WaitMaxInSeconds]
+group = "turret"
+unit = "s"
+sure = "name"
+what = "Idle wait (longest)"
+does = "Looks only: the longest time an idle turret waits before it looks somewhere else."
+
+[VerticalAngleMax]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Idle highest look"
+does = "Looks only: how high an idle anti-aircraft gun points while scanning the sky (10 to 25 degrees)."
+
+[VerticalAngleMin]
+group = "turret"
+unit = "deg"
+sure = "name"
+what = "Idle lowest look"
+does = "Looks only: how low an idle gun points while looking around (25 degrees on one gun)."
+
+[UseCustomVerticalAngles]
+group = "turret"
+unit = "yesno"
+sure = "name"
+what = "Own idle angles"
+does = "Looks only: 1 makes the gun crew use the two idle angles above instead of the game's."
+
+[AngleMaxDegree]
+group = "turret"
+unit = "raw"
+sure = "name"
+what = "Part turn limit (degrees)"
+does = "Looks only: how far a moving part of the model turns one way, in degrees (45 to 180)."
+
+[AngleMinDegree]
+group = "turret"
+unit = "raw"
+sure = "name"
+what = "Part turn limit, other way (degrees)"
+does = "Looks only: how far a moving part of the model turns the other way, in degrees (-180 to -45)."
+
+# --- trucks ---
+[TruckType]
+group = "identity"
+unit = "choice"
+sure = "name"
+what = "Truck kind"
+does = "What the truck does (supply, construction and the game's other kinds, 1 to 5); each number isn't named yet."
+
+# --- the map table's tokens ---
+[BaseSize]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Token size"
+does = "Looks only: how big the unit's token figure is on the map table zoomed out (8 to 20)."
+
+["TFigurineOptions.Scale"]
+group = "interface"
+unit = "times"
+sure = "name"
+what = "Token figure size"
+does = "Looks only: how many times its size the little figure on the unit's token is drawn (2 to 4)."
+
+["TPawnDescriptor.Power"]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Token weight"
+does = "Looks only: how much a token pushes the tokens round it apart when they crowd on the map table (385 to 1,386)."
+
+["TPawnDescriptor.Radius"]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Token size on the table"
+does = "Looks only: how big the unit's round token is on the map table (385 to 1,386)."
+
+[SocleHeight]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Token base height"
+does = "Looks only: how thick the token's base is (200)."
+
+[OffSetZFigurine]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Token figure height"
+does = "Looks only: how far above its base the token's figure stands (200)."
+
+[DureteRepositionnement]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Token push-back"
+does = "Looks only: how firmly crowded tokens slide back into place (10)."
+
+[RandomTranslateFactor]
+group = "interface"
+unit = "share"
+sure = "name"
+what = "Token jitter"
+does = "Looks only: how far tokens are nudged at random so a stack doesn't look like one (0.15)."
+
+[ForceOneStack]
+group = "interface"
+unit = "yesno"
+sure = "name"
+what = "One stack"
+does = "Looks only: 1 shows every token of this kind in one stack."
+
+[ScaleWithVisibilityRange_Coef]
+group = "looks"
+unit = "times"
+sure = "name"
+what = "Grows when zoomed out"
+does = "Looks only: how much bigger the model is drawn when the camera is far away, so it stays visible (3 to 22 times)."
+
+[InnerScale]
+group = "looks"
+unit = "times"
+sure = "name"
+what = "Inner model size"
+does = "Looks only: the size the soldier or model is drawn at inside its own part (0.46 to 1)."
+
+[MaxMaskedAnimationCount]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Animations at once"
+does = "Looks only: how many animations a soldier can play on parts of its body at the same time (1 or 2)."
+
+# --- the map table's circles (one shared drawer) ---
+[GeometrySubTiling_OneCircle]
+group = "interface"
+unit = "count"
+sure = "name"
+what = "Circle detail"
+does = "Looks only: how finely the selection circles on the ground are cut (3)."
+
+[MaxRadiusExpander]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Biggest circle"
+does = "Looks only: the largest a selection circle grows."
+
+[MinRadiusExpander]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Smallest circle"
+does = "Looks only: the smallest a selection circle shrinks."
+
+["TMetaCircleDrawer.MaxRange"]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Circles' draw distance"
+does = "Looks only: how far away the circles under units are still drawn."
+
+[MaxV]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Circle texture stretch"
+does = "Looks only: how far the circle's picture is stretched along it."
+
+[MaxWidth]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Circle line width (most)"
+does = "Looks only: the widest the circle's line gets when zoomed out."
+
+[MinWidth]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Circle line width (least)"
+does = "Looks only: the narrowest the circle's line gets up close."
+
+[MaxZOffset]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Circle lift (most)"
+does = "Looks only: the most the circle is lifted above the ground so hills don't hide it."
+
+[MinZOffset]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Circle lift (least)"
+does = "Looks only: the least the circle is lifted above the ground."
+
+# --- model graphics: tracks, wheels, suspension, propellers ---
+[RoueNb]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Road wheels"
+does = "Looks only: how many wheels the track runs over (5 to 13), for the track's animation."
+
+[RouePartieSolMin]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "First wheel on the ground"
+does = "Looks only: from which wheel the track touches the ground."
+
+[RouePartieSolMax]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Last wheel on the ground"
+does = "Looks only: up to which wheel the track touches the ground."
+
+[Cote]
+group = "looks"
+unit = "choice"
+sure = "name"
+what = "Track side"
+does = "Looks only: which side of the vehicle this track is on."
+
+[PartieHauteDeformNb]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Sagging top run"
+does = "Looks only: how many points of the track's top run sag between the wheels (2)."
+
+[CahotsMax]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Bumps at once"
+does = "Looks only: how many bumps can ripple along a track at once (2)."
+
+[DelaiPropagation]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Bump travel time"
+does = "Looks only: how long a bump takes to ripple along the track (1.2 s)."
+
+[ForceBruitRoulementBas]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Track shake (bottom)"
+does = "Looks only: how much the bottom of the track shakes while rolling."
+
+[ForceBruitRoulementHaut]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Track shake (top)"
+does = "Looks only: how much the top of the track shakes while rolling."
+
+[ForceCahotMin]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bump strength (least)"
+does = "Looks only: how strong the smallest bump in the track is."
+
+[ForceCahotMax]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bump strength (most)"
+does = "Looks only: how strong the biggest bump in the track is."
+
+[ForceDeformationPartieHaut]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Top run sag"
+does = "Looks only: how much the track's top run sags between the wheels."
+
+[FrequenceCahots]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How often bumps come"
+does = "Looks only: how often a bump runs along the track."
+
+[IntervalleCahots]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Space between bumps"
+does = "Looks only: how far apart bumps are along the track."
+
+[LongueurCahotMin]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bump length (least)"
+does = "Looks only: how short a bump in the track can be."
+
+[LongueurCahotMax]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bump length (most)"
+does = "Looks only: how long a bump in the track can be."
+
+[CoefElev]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Wheel bounce"
+does = "Looks only: how much a wheel moves up and down over the ground (2 to 10)."
+
+[CoefRotate]
+group = "looks"
+unit = "times"
+sure = "name"
+what = "Wheel spin"
+does = "Looks only: how fast the wheel spins for the speed the vehicle goes (1)."
+
+[CoefRotateDirection]
+group = "looks"
+unit = "times"
+sure = "name"
+what = "Steering wheel turn"
+does = "Looks only: how much a steering wheel turns for a turn of the vehicle (1)."
+
+[AngMaxRotateDirection]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Steering lock"
+does = "Looks only: how far the front wheels turn, in degrees (45)."
+
+[AngParSecondeRotateDirection]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Steering speed"
+does = "Looks only: how fast the front wheels turn, in degrees a second (360)."
+
+[Coef_Bruit_Sur_Pente]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Chassis shake on slopes"
+does = "Looks only: how much the hull shakes on slopes."
+
+[Coef_Bruit_Sur_Ressort]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Suspension shake"
+does = "Looks only: how much the hull bounces on its springs."
+
+[Coef_Bruit_Sur_Roulis]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Sway shake"
+does = "Looks only: how much the hull rocks side to side."
+
+[Coef_Sur_Pente_Relation_Acceleration]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Nose lift when accelerating"
+does = "Looks only: how much the hull tips back when the vehicle speeds up and forward when it brakes."
+
+[Coef_Sur_Pente_Relation_Terrain]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Tilt with the ground"
+does = "Looks only: how much the hull follows the slope it's on, front to back."
+
+[Coef_Sur_Roulis_Relation_Rotation]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Lean in turns"
+does = "Looks only: how much the hull leans out in a turn."
+
+[Coef_Sur_Roulis_Relation_Terrain]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Side tilt with the ground"
+does = "Looks only: how much the hull follows the slope it's on, side to side."
+
+[Amortissement]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Moving part damping"
+does = "Looks only: how quickly a moving part of the model (an antenna, a gun barrel's recoil, the hull on its springs) stops swinging."
+
+[Attraction]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Moving part springiness"
+does = "Looks only: how strongly a moving part of the model is pulled back to its rest position."
+
+[Elastic]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Springs back"
+does = "Looks only: 1 makes the moving part spring back like a spring."
+
+[Debattement_Min]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Moving part limit (one way)"
+does = "Looks only: how far a moving part of the model can swing one way."
+
+[Debattement_Max]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Moving part limit (other way)"
+does = "Looks only: how far a moving part of the model can swing the other way."
+
+[Operation]
+group = "looks"
+unit = "choice"
+sure = "name"
+what = "How the part moves"
+does = "Looks only: which way a moving part of the model moves (turns, slides...)."
+
+[VisibleByDefault]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Shown at first"
+does = "Looks only: 1 shows this part of the model until something hides it (a part that drops off, say)."
+
+[IsAvant]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Front landing gear"
+does = "Looks only: 1 on a plane's front landing gear."
+
+[Rot]
+group = "looks"
+unit = "deg"
+sure = "name"
+what = "Landing gear fold"
+does = "Looks only: how far the plane's landing gear turns as it folds up."
+
+[Trans]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Landing gear travel"
+does = "Looks only: how far the plane's landing gear moves as it folds up."
+
+[TransAfterRot]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Landing gear travel after folding"
+does = "Looks only: how far the landing gear moves once it has turned."
+
+[SensRotationADroite]
+group = "looks"
+unit = "choice"
+sure = "name"
+what = "Propeller direction"
+does = "Looks only: which way the propeller spins (1 right, -1 left)."
+
+[TempsAvantArretHelice]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Propeller stop time"
+does = "Looks only: how long the propeller takes to stop once the engine is off (2.8 to 4 s)."
+
+[VitesseHeliceMinLS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Propeller speed, slow (least)"
+does = "Looks only: the slowest the propeller spins when the plane moves slowly."
+
+[VitesseHeliceMaxLS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Propeller speed, slow (most)"
+does = "Looks only: the fastest the propeller spins when the plane moves slowly."
+
+[VitesseHeliceMinHS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Propeller speed, fast (least)"
+does = "Looks only: the slowest the spinning disc turns when the plane flies fast."
+
+[VitesseHeliceMaxHS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Propeller speed, fast (most)"
+does = "Looks only: the fastest the spinning disc turns when the plane flies fast."
+
+[VitesseDeplacementMaxLS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Slow-propeller speed limit"
+does = "Looks only: up to which flying speed the propeller is drawn as separate blades."
+
+[VitesseDeplacementMaxHS]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Fast-propeller speed limit"
+does = "Looks only: from which flying speed the propeller is drawn as a spinning disc."
+
+[DontCastShadow]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "No shadow"
+does = "Looks only: 1 draws the model without a shadow."
+
+[HasSubModele]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Has a part model"
+does = "Looks only: 1 when this part is a model of its own (a turret, a wheel)."
+
+[MobileGeneratedAtStartForFx]
+group = "effects"
+unit = "yesno"
+sure = "name"
+what = "Effect point made at start"
+does = "Looks only: 1 makes the point an effect (a muzzle flash, smoke) comes from as soon as the unit appears."
+
+[UsefulnessMask]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Which packs need it"
+does = "Bits saying which nations' and modes' packs load this model, animation or picture. A unit using another nation's model may show it without some pieces if that nation's packs aren't loaded."
+
+# --- animations ---
+[PlayInLoop]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Plays in a loop"
+does = "Looks only: 1 repeats the animation (an idle soldier, a flag) instead of playing it once."
+
+[ForceDuree]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Fixed length"
+does = "Looks only: 1 plays the animation over a set time whatever its own length."
+
+[FEventType]
+group = "looks"
+unit = "choice"
+sure = "name"
+what = "Animation event kind"
+does = "Looks only: what happens at a moment of the animation (a sound, an effect)."
+
+[FlushOnAnimeEnd]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Cleared at the end"
+does = "Looks only: 1 cancels the event when the animation ends."
+
+[Frame]
+group = "looks"
+unit = "frame"
+sure = "name"
+what = "Event frame"
+does = "Looks only: at which frame of the animation the event happens."
+
+[RequireAnimationCorrectness]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Exact frame needed"
+does = "Looks only: 1 only fires the event when the animation really reaches that frame."
+
+[AnimationSlot]
+group = "looks"
+unit = "id"
+sure = "name"
+what = "Animation slot"
+does = "Looks only: which of the soldier's animation slots this part of the body uses."
+
+[DefaultWeight]
+group = "looks"
+unit = "share"
+sure = "name"
+what = "Animation blend"
+does = "Looks only: how much this animation counts when two play on the body at once."
+
+[MaskUnionCode]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Bones it moves"
+does = "Looks only: bits saying which bones of the soldier this animation moves."
+
+[Coef_O1_Sub]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion offset"
+does = "Looks only: a number subtracted in the formula that moves a bone of the model with the unit (40 to 80)."
+
+[Coef_O2_Mul]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion factor"
+does = "Looks only: how strongly a bone of the model follows what drives it (-5 to 5)."
+
+[RangeActivationMin]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion starts at"
+does = "Looks only: from which input value the bone starts to move."
+
+[RangeActivationMax]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion full at"
+does = "Looks only: at which input value the bone has moved all the way."
+
+[RangeActivationExclusMax]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Up to, not including"
+does = "Looks only: 1 makes the bone's top input value excluded."
+
+[RangeSortie]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Limited output"
+does = "Looks only: 1 keeps the bone's movement between its two limits."
+
+[RangeSortieMin]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion lowest"
+does = "Looks only: the least the bone moves (-100)."
+
+[RangeSortieMax]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Bone motion highest"
+does = "Looks only: the most the bone moves (100)."
+
+# --- effects and scripted actions ---
+[MaxDuration]
+group = "effects"
+unit = "s"
+sure = "name"
+what = "Effect length"
+does = "Looks only: the longest an effect or a scripted action (a shot's flash and sound, a smoke puff) runs: 1.5 to 3 s."
+
+[IntroduceNewCentroid]
+group = "effects"
+unit = "yesno"
+sure = "name"
+what = "Effect from its own point"
+does = "Looks only: 1 plays the effect from a point of its own instead of the unit's middle."
+
+[TryToUseOrderedParamsAsNamedParams]
+group = "effects"
+unit = "yesno"
+sure = "name"
+what = "Effect call style"
+does = "How the effect's call passes its settings; for the game's effects only."
+
+["TEugBFloat.Value"]
+group = "effects"
+unit = "raw"
+sure = "name"
+what = "Effect setting"
+does = "A number an effect is called with (a size, a strength, a time), depending on the effect."
+
+# --- the build view of a unit (how a building looks while being built) ---
+[Modes]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Build view modes"
+does = "Looks only: which of the building-site looks this view is used for."
+
+[Ranges]
+group = "looks"
+unit = "m"
+sure = "name"
+what = "Build view distances"
+does = "Looks only: from how far away each building-site look is drawn."
+
+[BoobsIndex]
+group = "looks"
+unit = "id"
+sure = "name"
+what = "Build view piece"
+does = "Looks only: which piece of the building site this view shows."
+
+[FxMode]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Build view effect"
+does = "Looks only: the effect drawn on the building site (dust, scaffolding)."
+
+[JobPriority]
+group = "looks"
+unit = "count"
+sure = "name"
+what = "Build view priority"
+does = "Looks only: how early the game prepares this view."
+
+[KeepGeometryMask]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Pieces kept"
+does = "Looks only: which pieces of the building stay drawn during the build."
+
+[MaskDestroyed]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Destroyed look"
+does = "Looks only: which pieces show when the building is destroyed."
+
+["TGfxLevelBuildStateGeoDatabaseModification.Mask"]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Map change mask"
+does = "Which layer of the map the building changes once built (where units can go round it)."
+
+["TGfxLevelBuildStateGeoDatabaseModification.Value"]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Map change value"
+does = "What the building writes into that layer of the map once built."
+
+[Undoable]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Undone when destroyed"
+does = "1: the building's change to the map is taken back when it's destroyed."
+
+[Mode]
+group = "looks"
+unit = "mask"
+sure = "name"
+what = "Map change mode"
+does = "How the building's change to the map is applied."
+
+[Variant]
+group = "looks"
+unit = "id"
+sure = "name"
+what = "Animation variant"
+does = "Looks only: which variant of the animation set a part uses."
+
+[Version]
+group = "looks"
+unit = "id"
+sure = "name"
+what = "Animation set version"
+does = "Looks only: the version of the animation set's quick-access table."
+
+# --- sounds ---
+[Algo_Truck]
+group = "sound"
+unit = "yesno"
+sure = "name"
+what = "Truck engine sound"
+does = "Sound only: 1 plays the engine the way trucks' engines sound."
+
+[Run_In_Fade_Velocity]
+group = "sound"
+unit = "raw"
+sure = "name"
+what = "Engine sound fade-in"
+does = "Sound only: how fast the running engine sound fades in when the unit starts moving."
+
+[Run_Out_Fade_Velocity]
+group = "sound"
+unit = "raw"
+sure = "name"
+what = "Engine sound fade-out"
+does = "Sound only: how fast the running engine sound fades out when the unit stops."
+
+[Run_Out_Pitch_To_Go]
+group = "sound"
+unit = "times"
+sure = "name"
+what = "Engine pitch when stopping"
+does = "Sound only: how low the engine's pitch drops as it stops (0.8: 20% lower)."
+
+[Run_Out_Pitch_Velocity]
+group = "sound"
+unit = "raw"
+sure = "name"
+what = "Engine pitch drop speed"
+does = "Sound only: how fast the engine's pitch drops as it stops."
+
+[IdleAndStop_Out_Fade_Velocity]
+group = "sound"
+unit = "raw"
+sure = "name"
+what = "Idle sound fade-out"
+does = "Sound only: how fast the idling engine sound fades when the unit moves off or is gone."
+
+[Dive_Out_Fade_Velocity]
+group = "sound"
+unit = "raw"
+sure = "name"
+what = "Dive sound fade-out"
+does = "Sound only: how fast a plane's dive sound fades when it pulls out."
