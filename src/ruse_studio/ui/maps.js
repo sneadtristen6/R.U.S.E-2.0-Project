@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const SCALE = 1 / 1000;  // world units to scene units: a standard map is about 1,300 scene units wide
 const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "lowdef", water: true, gl: null, ask: 0,
   stats: null, groundTex: {}, edit: null, size: 0,  // size: the map's longer side in scene units (the keys' speed)
+  mode: "map",  // the tools the bar holds: "map" or "scenario" (setMode); the other side's things are faded and locked
   // brush: the tool picked, its size and strength per brush (slider values), the strokes on this map (as saved),
   // the size of each group of strokes made this session (for Undo; a Forest stroke's: { n, objects: its trees }), the
   // drag being painted, and the mod saved into. The Erase brush's own: its circles on this map (the scenery file's
@@ -69,6 +70,31 @@ function brushRadius(name) {
   const [x0, , , x1] = mv.edit.bounds, size = settingsOf(name).size;
   if (PAINT_KINDS.has(name)) return (x1 - x0) * PAINT_SIZE[0] * Math.pow(PAINT_SIZE[1], size - 1);
   return size / 100 * (x1 - x0) * (SIZE_UNIT[name] || 1);
+}
+// A number box beside a tool's slider (the owner, 2026-10-10, "all of them": past the slider's ends, up to what the
+// Studio takes): `get` and `set` are the tool's own value, which the slider shows within its range. A paint brush's
+// size grows on a curve (brushRadius): 20 already covers a whole map, so its box stops there.
+const TYPED = { size: [1, 50], paint: [1, 20], place: [0.05, 50], spacing: [0.5, 1000], area: [5, 5000], gap: [1, 1000] };
+function typedBeside(sliderId, [least, most], get, set, tip) {
+  const slider = $(sliderId);
+  let box = slider.parentElement.querySelector(".typed-number");
+  if (!box) {
+    box = el("input", { type: "number", className: "typed-number", step: "any" });
+    slider.after(box);
+    box.addEventListener("change", () => {
+      const n = Number(box.value);
+      const ok = box.value.trim() !== "" && Number.isFinite(n) && n >= Number(box.min) && n <= Number(box.max);
+      box.setAttribute("aria-invalid", String(!ok));
+      if (ok) box._set(n); else box.value = String(box._get());
+    });
+    slider.addEventListener("input", () => { box.value = slider.value; box.setAttribute("aria-invalid", "false"); });
+  }
+  box._get = get;
+  box._set = set;
+  box.min = String(least);
+  box.max = String(most);
+  box.title = fill(mv.words.tip_typed_number || "", { least, most }) + (tip ? " " + tip : "");
+  if (document.activeElement !== box) box.value = String(get());
 }
 const CRATER_RIM = 0.35;
 const HEIGHT_SHARE = 0.6;  // strength 100% = this share of the map's height range (hill, raise, lower, crater, plateau)
@@ -593,34 +619,61 @@ function layerObjects(k) {
     case "water": return [mv.gl && mv.gl.water];
     case "cover": return [cover.mesh];
     case "moves": return [moves.mesh, erased.mesh];
-    case "roads": return [roads.line, road.mesh, road.preview];
-    case "scenario": return [scen.group];
-    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || [])];
+    case "roads": return [roads.line, road.mesh, road.preview, bridge.mesh];
+    case "scenario": return scen.group ? scen.group.children.filter((o) => o !== scen.zones && o !== scen.names) : [];
+    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || []), mv.place.meshes[k]];
   }
 }
 
-function fade(obj, a) {
+// --- Map and Scenario (the owner, 2026-10-09): the bar holds one side's tools, and the other side's things show
+// faded and can't be picked: in Map mode the scenario's units, HQs and spots ("no dragging a unit while painting
+// ground"), "and vice versa. So in the scenario mode, you can't accidentally move a building". The sectors are on the
+// Map side (his sorting, the same day). The ground and the water are the map itself: never faded. ---
+// A locked thing is a pale ghost of itself: see-through, and lit things lifted towards white, because see-through alone
+// lost the HQs' pillars (lit, their dark red is the fields' brown: at 45 % a pillar was 109,68,34 on ground 101,82,34)
+const LOCKED_ALPHA = 0.4, GHOST_LIFT = 0.3;
+// The towns' and hills' names are the Map side's too, though they're the scenario's items (the owner, 2026-10-10: "you
+// should be able to name towns ... on the map editor when you're making the actual town"): the Names tile places them,
+// and they move there; on the Scenario side they're a ghost like the buildings.
+const MAP_SIDE = new Set(["cover", "moves", "roads", "building", "prop", "vegetation", "zones", "names"]);
+const NAME_KINDS = new Set(["LabelVille", "LabelMontagne"]);
+const locked = (k) => (k === "scenario" ? mv.mode !== "scenario" : MAP_SIDE.has(k) && mv.mode !== "map");
+const shownAlpha = (k) => alpha[k] * (locked(k) ? LOCKED_ALPHA : 1);
+
+// A part's materials at `a` of their own opacity, a ghost when `ghost`. The game's models cut their leaves and windows
+// out at alphaTest 0.5, which the opacity counts in: the cut-out is scaled too, or a model under half would vanish
+// instead of fading.
+function fade(obj, a, ghost = false) {
   if (!obj) return;
   obj.traverse((o) => {
     for (const m of o.material ? [].concat(o.material) : []) {
       const u = m.userData;
-      if (u.alpha === a) continue;
+      if (u.alpha === a && Boolean(u.ghost) === ghost) continue;
       if (u.baseOpacity === undefined) Object.assign(u, { baseOpacity: m.opacity, baseTransparent: m.transparent,
         baseDepthWrite: m.depthWrite });
+      if (u.baseAlphaTest === undefined) u.baseAlphaTest = m.alphaTest || 0;
+      if (u.baseAlphaTest) m.alphaTest = u.baseAlphaTest * a;
       m.opacity = u.baseOpacity * a;
       m.transparent = u.baseTransparent || a < 1;
       m.depthWrite = a < 1 ? false : u.baseDepthWrite;
+      if (m.emissive) {  // lit materials only; icons, labels and lines are drawn in their own colours already
+        if (u.baseEmissive === undefined) u.baseEmissive = m.emissive.getHex();
+        m.emissive.setHex(u.baseEmissive);
+        if (ghost) m.emissive.addScalar(GHOST_LIFT);
+      }
       m.needsUpdate = true;
       u.alpha = a;
+      u.ghost = ghost;
     }
   });
 }
 
-// Before every frame, once a slider has moved (new parts, a redrawn road say, take their layer's value too)
+// Before every frame (new parts, a redrawn road say, take their layer's value too): the slider's value, times the
+// locked side's fade. The scenario's zones (sectors) take the Scenario slider and the Map side's fade.
 function fadeLayers() {
-  if (!LAYERS.some((k) => alpha[k] !== 1) && !mv.faded) return;
-  mv.faded = true;
-  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, alpha[k]);
+  for (const k of LAYERS) for (const o of layerObjects(k)) fade(o, shownAlpha(k), locked(k));
+  fade(scen.zones, alpha.scenario * (locked("zones") ? LOCKED_ALPHA : 1), locked("zones"));
+  fade(scen.names, alpha.scenario * (locked("names") ? LOCKED_ALPHA : 1), locked("names"));
 }
 
 function renderLayers() {
@@ -807,7 +860,7 @@ const ROAD_LIFT = 600;   // map units above the ground (about 2 m), so the groun
 
 async function loadRoads(pack, ask) {
   dropRoads();
-  const res = await mv.api.map_roads(pack);
+  const res = blankMap(pack) ? { pieces: [] } : await mv.api.map_roads(pack);  // a blank map's roads are all taken out
   if (ask !== mv.ask || !mv.edit) return;
   roads.pieces = res.pieces;
   road.samples = null;  // snapping reads them
@@ -2041,9 +2094,10 @@ const ALLIANCE = [0x3f7fe0, 0xe0503f, 0x49b85a, 0xe0c33f, 0xa35ee0, 0x3fc8d8];
 // item numbers: renderSelection shows them as the game shows a selection); box: a selection box being dragged
 const scen = { data: null, pick: 0, show: true, group: null, tool: null, selected: null, units: null, kind: "ground",
   type: null, camp: "-1", count: 1, formation: "line", gap: {}, team: 1, players: null, sel: new Set(), box: null,
-  unitByAddress: null, unitsLoading: null, markKind: "LabelVille" };
-// What the Add a name or zone tool adds (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's
-// name on the map, a named point or a round or square zone the mission scripts use
+  unitByAddress: null, unitsLoading: null, markKind: "LabelVille", trucks: 25 };
+// What the Names tab (Map side: towns and hills) and Add a spot or zone (Scenario side: points and zones) add
+// (StudioApi.scenario_place; LittleGroove's + Placement): a town's or a hill's name on the map, a named point or a round
+// or square zone the mission scripts use
 const MARK_KINDS = ["LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
 const MARK_WORD = { LabelVille: "scen_mark_town", LabelMontagne: "scen_mark_hill", Name: "scen_mark_point",
   CircularZone: "scen_mark_circle", RectangleZone: "scen_mark_rect" };
@@ -2056,7 +2110,7 @@ const SPAWN_KINDS = ["buildings", "ground", "infantry", "air"];
 // Scenario tray, kept by the Studio (prefs "view": saveView; the window's own storage is only a fallback, it's lost
 // every start). Only the view changes, never the mod. ---
 // "points": the named points and trigger zones the mission scripts use (a campaign chapter has hundreds): off until
-// asked for, and shown while the Add a name or zone tool is picked
+// asked for, and shown while Names or Add a spot or zone is picked
 const SCEN_LAYERS = ["starts", "cams", "depots", "buildings", "units", "zones", "towns", "points"];
 const ICON_BASE = 0.042;  // an icon's height as a share of the view's, at size 100 %, close up
 const GONE_OPACITY = 0.35;  // a map item the mod takes out: still drawn, faded, so it can be put back
@@ -2082,6 +2136,7 @@ function keptScenView(view) {
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
   if (typeof view.road_trees === "boolean") road.keepTrees = view.road_trees;  // and its "Keep the trees"
+  if (view.map_mode === "map" || view.map_mode === "scenario") mv.mode = view.map_mode;  // the side the bar was on
 }
 
 // the icons' size now: the slider's, and smaller as the camera pulls back (down to 40 % with the whole map in view)
@@ -2099,7 +2154,10 @@ function fitIcon(sprite, k = iconScale()) {
 function fitIcons() {
   if (!scen.group) return;
   const k = iconScale();
-  for (const o of scen.group.children) if (o.userData.icon) fitIcon(o, k);
+  for (const o of scen.group.children) {
+    if (o.userData.icon) fitIcon(o, k);
+    else if (o.userData.marker) o.scale.setScalar(scen.iconSize);   // a named point's or a zone's diamond (the owner,
+  }                                                                  // 2026-10-10: the slider didn't size them)
 }
 
 // which switch a spawn goes by
@@ -2108,7 +2166,7 @@ function spawnLayer(it) {
 }
 // Several at once: how many one click adds, in which shape, how far apart (metres, per kind to start with). The shape
 // faces up the screen (away from the camera), its middle on the click; each unit is turned that way too.
-const SPAWN_MOST = 10;  // the "how many" slider's top
+const SPAWN_MOST = 50;  // the "how many" slider's top: as many as one click may add (StudioApi.SPAWN_MOST; it was 10)
 const FORMATIONS = ["line", "column", "wedge", "box", "circle"];
 const SPAWN_GAP = { infantry: 12, ground: 25, air: 50, buildings: 60 };
 
@@ -2152,12 +2210,15 @@ function formationPoints(x, y) {
     [Math.round(x + (a * rx + b * fx) * gap), Math.round(y + (a * ry + b * fy) * gap)]);
 }
 
+// Adding units (Add unit)
+const spawningNow = () => scen.tool === "spawn";
+
 // A ring where each unit will stand, under the pointer, while adding units.
 function showFormation(hit) {
   const gl = mv.gl;
   if (!gl || !gl.ring) return;
   gl.ghosts = gl.ghosts || [];
-  const pts = hit && scen.tool === "spawn" ? formationPoints(hit.x / SCALE, hit.z / SCALE) : [];
+  const pts = hit && spawningNow() ? formationPoints(hit.x / SCALE, hit.z / SCALE) : [];
   const r = spawnGap() * METRE * SCALE * 0.3;
   while (gl.ghosts.length < pts.length) { const g = gl.ring.clone(); gl.scene.add(g); gl.ghosts.push(g); }
   if (!pts.length && !gl.ghosts.some((g) => g.visible)) return;
@@ -2186,7 +2247,7 @@ async function loadScenarios(pack, ask) {
 }
 
 // --- how many players the map takes (StudioApi.map_players / set_players, the mod's maps/<map>/map.toml):
-// the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add starting point) ---
+// the map's online entry, a count from 2 to 8, and the starting points a count still needs (Add HQ start) ---
 async function loadPlayers(pack, ask) {
   try {
     const got = await mv.api.map_players(pack);
@@ -2258,6 +2319,7 @@ function renderScenarioPick() {
   pick.disabled = !list.length;
   pick.title = w.tip_scen_pick;
   const s = list[scen.pick];
+  renderDock();  // the scenario tools' tiles: locked while there's no scenario to edit
   // where this setup plays in the game: its menu, its title, and the players it's made for
   $("scen-where").textContent = s && (s.entries || []).length ? fill(w.scen_where, { where: s.entries.map((e) =>
     `${w["scen_kind_" + e.kind] || e.kind} › ${(e.titles || {})[mv.lang] || (e.titles || {}).us || e.name}`
@@ -2438,8 +2500,23 @@ function spawnIconCanvas(it, selected) {
   g.stroke();
   g.setLineDash([]);
   drawIconArt(g, MAP_ICONS[it.icon] || MAP_ICONS[KIND_ICON[it.unit_kind]] || MAP_ICONS.unit, hex);
-  // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none)
+  // its country: a roundel on the badge's corner (a depot spot and an unknown unit have none); an HQ start has no
+  // country (the player picks it) but its player's number there
   if (it.nation !== undefined && it.nation !== null && it.group !== "depot") drawRoundel(g, it.nation, 80, 18, 14);
+  if (it.tag) {
+    g.fillStyle = "#ffffff";
+    g.strokeStyle = "rgba(0,0,0,0.85)";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(80, 18, 15, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = "#111111";
+    g.font = "700 22px system-ui, sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(it.tag, 80, 19);
+  }
   return c;
 }
 
@@ -2533,13 +2610,20 @@ function drawStartCamera(it, group, colour, at) {
 }
 
 // A zone's border: the edges only one of its triangles has (whatever order its points come in), each with that
-// triangle's third corner, which says which way the inside is.
-function zoneBorder(triangles) {
-  const seen = new Map();
+// triangle's third corner, which says which way the inside is. Points and triangles are told apart by where they are
+// (`p`: the zone's x, y pairs), not by their numbers: a zone the build makes again (rusemod.sectors.zone_mesh, as the
+// shipped ones are drawn) repeats its points in each of its parts and its band in its border part, which drew lines
+// across a sector where its parts meet (the owner's blank D-Day, 2026-10-09).
+function zoneBorder(triangles, p) {
+  const seen = new Map(), done = new Set(), at = (i) => `${p[2 * i]},${p[2 * i + 1]}`;
   for (let i = 0; i + 2 < triangles.length; i += 3) {
-    const t = [triangles[i], triangles[i + 1], triangles[i + 2]];
+    const t = [triangles[i], triangles[i + 1], triangles[i + 2]], where = t.map(at);
+    const same = where.slice().sort().join(" ");
+    if (done.has(same) || where[0] === where[1] || where[1] === where[2] || where[0] === where[2]) continue;
+    done.add(same);
     for (let e = 0; e < 3; e++) {
-      const a = t[e], b = t[(e + 1) % 3], key = a < b ? `${a},${b}` : `${b},${a}`;
+      const a = t[e], b = t[(e + 1) % 3], ka = where[e], kb = where[(e + 1) % 3];
+      const key = ka < kb ? `${ka} ${kb}` : `${kb} ${ka}`;
       const got = seen.get(key);
       if (got) got.n += 1;
       else seen.set(key, { a, b, c: t[(e + 2) % 3], n: 1 });
@@ -2550,25 +2634,67 @@ function zoneBorder(triangles) {
 
 // A zone on the ground, Stellaris' way (ZONE_FILL_MOST): a clear line along its border, a glow just inside it that
 // fades inwards (clear at the border, gone `band` in), and a faint fill, in its own colour; all following the ground.
-function drawZone(z, k, zones, at, step) {
-  // its hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
-  // zone's own name in the file is only a code, zone_<guid>)
-  const { THREE } = mv.gl, colour = zoneColour(k);
-  const label = `${mv.words.scen_zone} ${k + 1} · ${mv.words.scen_zone_what || z.name}`;
+// A zone's hover: "Zone 2 · an area of the map (a sector), not a side" (the owner asked whether zones are sides; the
+// zone's own name in the file is only a code, zone_<guid>)
+// a zone's sector number (the Sectors tool's "Sector 3" is number 2): its colour and its name everywhere, so a sector
+// keeps one colour and one number in every view (the owner, 2026-10-10: the colours changed when the Sectors tool
+// opened, coloured by list place here and by number there)
+const zoneNumber = (z, k) => (Number.isInteger(z.number) && z.number >= 0 ? z.number : k);
+const zoneLabel = (z, k) => `${mv.words.scen_zone} ${zoneNumber(z, k) + 1} · ${mv.words.scen_zone_what || z.name}`;
+
+// A zone flat on the map, for pointing at it: its own triangles (a few hundred), not the drape that follows the
+// ground (tens of thousands each; raycasting those took 20-46 ms a pointer move on a blank D-Day, 2026-10-09)
+function flatZone(z, k) {
+  const p = z.points;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
+  }
+  return { p, t: z.triangles, box: [x0, y0, x1, y1], label: zoneLabel(z, k) };
+}
+
+// The zone at map point x, y ("" when none): the first whose triangles hold it, as the drape's raycast found it.
+function zoneAt(x, y) {
+  for (const { p, t, box, label } of scen.zoneFlat || []) {
+    if (x < box[0] || x > box[2] || y < box[1] || y > box[3]) continue;
+    for (let i = 0; i + 2 < t.length; i += 3) {
+      const ax = p[2 * t[i]], ay = p[2 * t[i] + 1], bx = p[2 * t[i + 1]], by = p[2 * t[i + 1] + 1];
+      const cx = p[2 * t[i + 2]], cy = p[2 * t[i + 2] + 1];
+      const d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by), d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy);
+      const d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay);
+      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return label;  // inside or on an edge
+    }
+  }
+  return "";
+}
+
+// The ground the zones are draped on, as a key (its heights' sum and range) and whether it's flat: a zone's drape is
+// kept while the key is the same, and flat ground (Blank Terrain) needs none.
+function groundKey(grid) {
+  let sum = 0, lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < grid.z.length; k++) {
+    const v = grid.z[k];
+    sum += v * ((k % 97) + 1);
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return { key: `${grid.cols}x${grid.rows}:${sum}:${lo}:${hi}`, flat: !(hi - lo > 1e-6 * Math.max(1, Math.abs(hi))) };
+}
+
+// A zone's drape (its triangles cut down to `step` so it follows the ground), glow and border on the ground, worked out
+// once per zone and ground. The owner, 2026-10-10: "Taking like 20 seconds between each one" on the Scenario side:
+// every tool's click draws the scenario again, and one painted sector's drape (long thin triangles cut down to a ground
+// cell and a half) took 3 s of it, measured on a copy of his map.
+const zoneShapesKept = new WeakMap();
+function zoneShapes(z, colour, at, step, ground) {
+  const kept = zoneShapesKept.get(z);
+  if (kept && kept.ground === ground && kept.step === step) return kept;
   const p = z.points;
   const { xy, tris } = drapeZone(p, z.triangles, step), n = xy.length / 2, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const v = at(xy[2 * i], xy[2 * i + 1]);
     pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  g.setIndex(tris);
-  const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0,
-    side: THREE.DoubleSide, depthWrite: false }));
-  fill.userData = { label, zonePart: "fill" };  // pointing anywhere inside says which zone, filled or not
-  fill.renderOrder = 7;
-  zones.add(fill);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < p.length; i += 2) {
     x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
@@ -2576,7 +2702,7 @@ function drawZone(z, k, zones, at, step) {
   const band = Math.min(0.1 * Math.min(x1 - x0, y1 - y0), 0.015 * (mv.size || 1000) / SCALE);
   const line = [], glow = [], tint = [];
   const corner = (x, y, a) => { const v = at(x, y); glow.push(v.x, v.y, v.z); tint.push(colour.r, colour.g, colour.b, a); };
-  for (const { a, b, c } of zoneBorder(z.triangles)) {
+  for (const { a, b, c } of zoneBorder(z.triangles, p)) {
     const ax = p[2 * a], ay = p[2 * a + 1], dx = p[2 * b] - ax, dy = p[2 * b + 1] - ay, len = Math.hypot(dx, dy);
     if (!len) continue;
     let nx = -dy / len, ny = dx / len;  // across the edge, turned to the inside (where the third corner is)
@@ -2590,21 +2716,63 @@ function drawZone(z, k, zones, at, step) {
       corner(sx, sy, 1); corner(ex + nx * band, ey + ny * band, 0); corner(sx + nx * band, sy + ny * band, 0);
     }
   }
+  const out = { ground, step, pos, tris, glow: new Float32Array(glow), tint: new Float32Array(tint),
+    line: new Float32Array(line), inside: zoneInside(z) };
+  zoneShapesKept.set(z, out);
+  return out;
+}
+
+function drawZone(z, k, zones, at, step, ground) {
+  const { THREE } = mv.gl, number = zoneNumber(z, k), colour = zoneColour(number);
+  const label = zoneLabel(z, k);
+  const { pos, tris, glow, tint, line, inside } = zoneShapes(z, colour, at, step, ground);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setIndex(tris);
+  const fill = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: colour, transparent: true, opacity: 0,
+    side: THREE.DoubleSide, depthWrite: false }));
+  fill.userData = { label, zonePart: "fill" };  // pointing anywhere inside says which zone, filled or not
+  fill.renderOrder = 7;
+  zones.add(fill);
   if (!line.length) return;
   const gg = new THREE.BufferGeometry();
-  gg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(glow), 3));
-  gg.setAttribute("color", new THREE.BufferAttribute(new Float32Array(tint), 4));
+  gg.setAttribute("position", new THREE.BufferAttribute(glow, 3));
+  gg.setAttribute("color", new THREE.BufferAttribute(tint, 4));
   const shine = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0,
     side: THREE.DoubleSide, depthWrite: false }));
   shine.userData.zonePart = "glow";
   shine.renderOrder = 8;
   zones.add(shine);
   const lg = new THREE.BufferGeometry();
-  lg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(line), 3));
+  lg.setAttribute("position", new THREE.BufferAttribute(line, 3));
   const border = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: colour.clone().offsetHSL(0, 0, 0.2),
     transparent: true, opacity: 0.95, depthWrite: false }));
   border.renderOrder = 9;
   zones.add(border);
+  zones.add(sectorTag(number, colour, inside, at));
+}
+
+// A point inside zone `z` for its number: the middle of its biggest triangle (a triangle's middle is always in it).
+function zoneInside(z) {
+  const p = z.points, t = z.triangles;
+  let best = -1, x = p[0], y = p[1];
+  for (let i = 0; i + 2 < t.length; i += 3) {
+    const ax = p[2 * t[i]], ay = p[2 * t[i] + 1], bx = p[2 * t[i + 1]], by = p[2 * t[i + 1] + 1];
+    const cx = p[2 * t[i + 2]], cy = p[2 * t[i + 2] + 1];
+    const area = Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay));
+    if (area > best) { best = area; x = (ax + bx + cx) / 3; y = (ay + by + cy) / 3; }
+  }
+  return [x, y];
+}
+
+// A sector's number on the map, in its colour, always facing the camera: the same in the map view and the Sectors
+// tool, so "Sector 3" on a button is the 3 on the ground (the owner, 2026-10-10: "numbered and color-coded").
+function sectorTag(number, colour, [x, y], at) {
+  const light = colour.clone().offsetHSL(0, 0, 0.22);   // lighter than its fill, on a dark outline: readable on it
+  const tag = mapLabel(String(number + 1), `#${light.getHexString()}`, (mv.size || 1000) * 0.06);
+  tag.position.copy(at(x, y, (mv.size || 1000) * 0.01));
+  tag.userData.label = `${mv.words.scen_zone} ${number + 1}`;
+  return tag;
 }
 
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
@@ -2614,16 +2782,30 @@ function drawScenario() {
   if (!gl || !mv.edit || !s) { if (gl) gl.draw(); renderSelection(); return; }
   const { THREE } = gl, grid = makeGrid(mv.edit), group = new THREE.Group(), size = mv.size || 1000;
   const lift = size * 0.0015, at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + lift + up, y * SCALE);
-  const step = 1.5 * Math.max(grid.sx, grid.sy);  // about a ground cell and a half: the zone follows hills and pits
+  // about a ground cell and a half: the zone follows hills and pits (flat ground: no drape at all, nothing to follow)
+  const ground = groundKey(grid), step = ground.flat ? Infinity : 1.5 * Math.max(grid.sx, grid.sy);
   const zones = new THREE.Group();  // the zones together (their switch in the Scenario tray)
   group.add(zones);
   scen.zones = zones;
-  s.zones.forEach((z, k) => drawZone(z, k, zones, at, step));
+  s.zones.forEach((z, k) => drawZone(z, k, zones, at, step, ground.key));
   fillZones();
-  zones.visible = scen.layers.zones;
-  const pillar = size * 0.03;
+  zones.visible = scen.layers.zones && scen.tool !== "sectors";  // the Sectors brush shows its own cells instead
+  scen.zoneFlat = s.zones.map((z, k) => flatZone(z, k));  // for pointing at them (scenarioAt)
+  const names = new THREE.Group();  // the towns' and hills' names: the Map side's (MAP_SIDE "names")
+  group.add(names);
+  scen.names = names;
+  const pillar = size * 0.03, blank = blankMap();
+  // the hover line's last words: "drag to move" on the Scenario side; on the Map side, where to go to change it
+  const dragTip = mv.mode === "scenario" ? mv.words.scen_drag_tip : mv.words.locked_scenario;
   for (const it of s.items) {
-    if (it.kind === "StartingPoint") {  // a tall pillar in the alliance's colour
+    if (blank && it.gone) continue;  // a blank map: what it took out of the map it copies isn't there to put back
+    // a blank map's HQs: only those the modder has placed, with their cameras (StudioApi._with_hqs; the owner,
+    // 2026-10-09: "the HQ shouldn't be there, the camera starting angle shouldn't be there")
+    // (only a Battles map's seats are marked placed or not: an Operation's and a chapter's starting points have no
+    // online seating, so they always show; hiding every unmarked one hid them all, the new ones too: the owner,
+    // 2026-10-10, "I'm pressing HQ start but nothing's popping up on the map")
+    if (blank && it.kind === "StartingPoint" && (it.unused || it.placed === false)) continue;
+    if (it.kind === "StartingPoint") {  // an HQ badge in the team's colour, its player's number on it
       const colour = ALLIANCE[((it.alliance || 1) - 1) % ALLIANCE.length];
       if (it.cam && scen.layers.cams) {
         const own = new THREE.Group();
@@ -2632,20 +2814,22 @@ function drawScenario() {
         group.add(own);
       }
       if (!scen.layers.starts) continue;
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(pillar * 0.08, pillar * 0.08, pillar, 12),
-        new THREE.MeshLambertMaterial({ color: scen.selected === it.item ? 0xffffff : colour }));
-      m.position.copy(at(it.x, it.y, pillar / 2));
+      // the HQ the game builds here for the seat's player (the owner, 2026-10-10: he liked the HQ icon a placed HQ
+      // building had, and "It should just be all in one"): drawn as that icon, not a bare pillar
+      const m = spawnIcon({ unit_kind: "buildings", icon: "hq", camp: it.alliance || 1, mine: it.mine,
+        tag: String(it.place || 1) }, ICON_BASE, scen.selected === it.item);
+      m.position.copy(at(it.x, it.y, 0));
       m.userData.label = (mv.words.scen_start_what ? mv.words.scen_start_what + " · " : "")
         + fill(mv.words.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
         + (it.name ? ` · ${it.name}` : "") + (it.moved ? ` · ${mv.words.scen_moved}` : "")
-        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (mv.words.scen_drag_tip ? ` · ${mv.words.scen_drag_tip}` : "");
+        + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (dragTip ? ` · ${dragTip}` : "");
       m.userData.item = it.item;
       group.add(m);
     } else if (it.kind === "Spawn") {  // an icon where a unit or building appears: what it is, its side, its country
       if (!scen.layers[spawnLayer(it)]) continue;
       const m = spawnIcon(it, ICON_BASE, scen.selected === it.item || scen.sel.has(it.item));
       m.position.copy(at(it.x, it.y, 0));
-      m.userData.label = spawnLabel(it) + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+      m.userData.label = spawnLabel(it) + (dragTip && !it.gone ? ` · ${dragTip}` : "");
       if (it.gone) m.material.opacity = GONE_OPACITY;  // taken out by the mod: faded, to put back
       m.userData.item = it.item;
       group.add(m);
@@ -2656,7 +2840,7 @@ function drawScenario() {
       const picked = scen.selected === it.item, colour = picked ? 0xffffff : POINT_COLOUR;
       const label = `${mv.words[MARK_WORD[it.kind]] || it.kind}${it.name ? " · " + it.name : ""}`
         + (it.mine ? ` · ${mv.words.scen_mine}` : "") + (it.gone ? ` · ${mv.words.scen_taken_out}` : "")
-        + (mv.words.scen_drag_tip && !it.gone ? ` · ${mv.words.scen_drag_tip}` : "");
+        + (dragTip && !it.gone ? ` · ${dragTip}` : "");
       let pts = null;
       if (it.kind === "CircularZone" && it.radius) {
         pts = [];
@@ -2678,7 +2862,8 @@ function drawScenario() {
       const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(pillar * (it.kind === "Name" ? 0.3 : 0.22)),
         new THREE.MeshLambertMaterial({ color: colour, transparent: true, opacity: it.gone ? GONE_OPACITY : 1 }));
       diamond.position.copy(at(it.x, it.y, pillar * 0.35));
-      diamond.userData = { label, item: it.item };
+      diamond.userData = { label, item: it.item, marker: true };   // sized by the icon slider too (fitIcons)
+      diamond.scale.setScalar(scen.iconSize);
       group.add(diamond);
     } else if ((it.kind === "LabelVille" || it.kind === "LabelMontagne") && (it.text || it.name) && scen.layers.towns) {
       // a new label shows its own words (the map project's new text), in the language the Studio is in
@@ -2688,10 +2873,11 @@ function drawScenario() {
         : it.kind === "LabelVille" ? "#ffffff" : "#e8d9a8", size * 0.012);
       sprite.position.copy(at(it.x, it.y, pillar * 0.4));
       sprite.userData.label = text + (it.mine ? ` · ${mv.words.scen_mine}` : "")
-        + (it.gone ? ` · ${mv.words.scen_taken_out}` : "");
+        + (it.gone ? ` · ${mv.words.scen_taken_out}` : "")
+        + (mv.mode !== "map" && mv.words.locked_map ? ` · ${mv.words.locked_map}` : "");  // changed on the Map side
       sprite.userData.item = it.item;  // picked to take it out (or put it back), dragged to move it
       if (it.gone) sprite.material.opacity = GONE_OPACITY;
-      group.add(sprite);
+      names.add(sprite);
     }
   }
   group.visible = scen.show;
@@ -2715,12 +2901,104 @@ function setScenTool(tool) {
   scen.tool = scen.tool === tool ? null : tool;
   scen.selected = null;
   if (scen.tool) { if (mv.brush.on) setBrushMode(false); if (mv.place.on) setPlaceMode(false); stopRoad(); stopBridge(); }
-  dock.scenario = true;  // the tool dropped again keeps the scenario's tray open
+  if (scen.tool) toMode(MAP_SIDE_TOOLS.has(scen.tool) ? "map" : "scenario");  // the bar shows the side the tool is on
+  if (scen.tool === "names" && !NAME_KINDS.has(scen.markKind)) scen.markKind = "LabelVille";
+  if (scen.tool === "mark" && NAME_KINDS.has(scen.markKind)) scen.markKind = "Name";
   dock.check = false;
   pointerMode();
   renderScenTools();
   drawScenario();
   renderDock();
+  if (MISSION_TOOLS.has(scen.tool)) openMissionTray();
+  drawMissionCameras();
+}
+
+// --- a new Operation's or chapter's own mission (mission.js): its trays, and its camera moves on the map ---
+function openMissionTray() {
+  const mvw = window.MissionView;
+  if (!mvw) return;
+  mvw.onPlay = playCamera;
+  mvw.onAddCamera = addCamera;
+  if (!scen.units && !scen.unitsLoading) loadSpawnUnits().then(() => { if (MISSION_TOOLS.has(scen.tool)) mvw.render(); }).catch(() => {});
+  mvw.open({ api: mv.api, words: mv.words, lang: mv.lang, pack: mv.current, units: scen.units || [],
+    nationNames: mv.nationNames || [], box: $("ms-box"), onChange: drawMissionCameras }, scen.tool)
+    .then(() => drawMissionCameras());  // (the camera moves are drawn once the mission is read)
+}
+
+// The camera moves on the map while Camera moves is open: each path as a line through its points (the one picked
+// bright), its points as dots, a line from its first point to the spot it looks at
+function drawMissionCameras() {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (gl.missionCams) {
+    gl.scene.remove(gl.missionCams);
+    gl.missionCams.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    gl.missionCams = null;
+  }
+  const mvw = window.MissionView, draft = mvw && mvw.draft();
+  if (scen.tool !== "cameras" || !draft) { gl.draw(); return; }
+  const { THREE } = gl, group = new THREE.Group(), picked = mvw.camera();
+  const v = ([x, y, z]) => new THREE.Vector3(x * SCALE, z * SCALE, y * SCALE);
+  for (const c of draft.camera || []) {
+    const pts = (c.points || []).map(v), bright = c === picked;
+    if (pts.length >= 2) {
+      const curve = new THREE.CatmullRomCurve3(pts);
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(pts.length * 12)),
+        new THREE.LineBasicMaterial({ color: bright ? 0xffd34d : 0x9fb8c8, transparent: true, opacity: bright ? 1 : 0.6 })));
+    }
+    for (const p of pts) {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry((mv.size || 1000) * 0.004, 10, 8),
+        new THREE.MeshBasicMaterial({ color: bright ? 0xffd34d : 0x9fb8c8 }));
+      dot.position.copy(p);
+      group.add(dot);
+    }
+    if (c.look && pts.length) {
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([pts[0], v(c.look)]),
+        new THREE.LineDashedMaterial({ color: 0xff8a3d, dashSize: (mv.size || 1000) * 0.01, gapSize: (mv.size || 1000) * 0.006 }))
+        .computeLineDistances());
+    }
+  }
+  group.renderOrder = 9;
+  gl.scene.add(group);
+  gl.missionCams = group;
+  gl.draw();
+}
+
+// A new camera move: three points round where the view looks, at the height set, looking at it
+function addCamera() {
+  const gl = mv.gl, mvw = window.MissionView;
+  if (!gl || !mvw) return;
+  const t = gl.controls.target, x = t.x / SCALE, y = t.z / SCALE, ground = t.y / SCALE, r = (mv.size || 1000) / SCALE * 0.08;
+  const h = ground + mvw.heightUnits();
+  mvw.addCamera({ points: [[x - r, y + r, h], [x, y + r * 1.3, h], [x + r, y + r, h]].map((p) => p.map(Math.round)),
+    look: [Math.round(x), Math.round(y), Math.round(ground)] });
+}
+
+// Play a camera move on the map view as the game would fly it: along its points, eased in and out, looking at its
+// spot; the view comes back where it was
+function playCamera(c) {
+  const gl = mv.gl;
+  if (!gl || !c || (c.points || []).length < 2) return;
+  const { THREE } = gl, v = ([x, y, z]) => new THREE.Vector3(x * SCALE, z * SCALE, y * SCALE);
+  const curve = new THREE.CatmullRomCurve3(c.points.map(v)), look = v(c.look || c.points[0]);
+  const keep = { pos: gl.camera.position.clone(), target: gl.controls.target.clone() };
+  const ms = Math.max(1, c.seconds || 15) * 1000, t0 = performance.now();
+  gl.controls.enabled = false;
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / ms), e = t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+    gl.camera.position.copy(curve.getPoint(e));
+    gl.camera.lookAt(look);
+    gl.renderer.render(gl.scene, gl.camera);
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      gl.camera.position.copy(keep.pos);
+      gl.controls.target.copy(keep.target);
+      gl.controls.enabled = true;
+      gl.controls.update();
+      gl.draw();
+    }
+  };
+  requestAnimationFrame(step);
 }
 
 async function loadSpawnUnits() {
@@ -2962,7 +3240,62 @@ function spawnDesc() {
   const box = $("scen-unit-desc"), pick = $("scen-unit").value;
   const u = (scen.units || []).find((x) => x.address === pick);
   box.textContent = (u && u.desc) || "";
-  box.classList.toggle("hidden", scen.tool !== "spawn" || !box.textContent);
+  box.classList.toggle("hidden", !spawningNow() || !box.textContent);
+  renderSpawnTrucks();
+}
+
+// --- A supply depot's money (the owner, 2026-10-10: "no way to increase max amt of money in supply depot"): a depot
+// holds about trucks x trucks a convoy x money a truck (LittleGroove's measure in the game, StudioApi.depot_money,
+// with the unit mod's Economy values); its trucks go up to the file's own top (scenario.TRUCKS_MOST), and past the
+// game's own depots (15 to 72) the Studio says it isn't tried in the game ---
+const TRUCKS_MOST = 2147483647;
+
+// The money values and the unit mod's rule for this map's depots (its Economy tab's Depots on the maps), read again
+// each time (that tab may have changed them meanwhile).
+async function depotMoney() {
+  try { mv.depotMoney = await mv.api.depot_money(mv.current); } catch { mv.depotMoney = null; }
+  return mv.depotMoney;
+}
+
+// Under a depot's trucks: about what it holds, and a word when it has more than the game's depots. `ruled`: the
+// depot's trucks aren't set by hand, so the Economy tab's rule for this map (if any) gives it its trucks.
+function showDepotMoney(box, trucks, ruled = false) {
+  const w = mv.words, m = mv.depotMoney;
+  const parts = [];
+  const rule = ruled && m && m.rule;
+  if (rule && Number.isFinite(trucks)) {
+    const what = rule.times !== null && rule.times !== undefined ? fill(w.economy_depots_x, { n: rule.times })
+      : fill(w.economy_depots_n, { n: Number(rule.trucks).toLocaleString() });
+    trucks = rule.times !== null && rule.times !== undefined ? Math.round(trucks * rule.times) : rule.trucks;
+    parts.push(fill(w.scen_depot_rule, { what, n: trucks.toLocaleString() }));
+  }
+  if (m && m.ready && Number.isFinite(trucks) && trucks >= 0) {
+    parts.push(fill(w.scen_depot_money, { money: Math.round(trucks * m.per_convoy * m.per_truck).toLocaleString(),
+      trucks: Math.round(trucks).toLocaleString(), convoy: m.per_convoy, truck: m.per_truck }));
+  }
+  if (m && Number.isFinite(trucks) && trucks > m.shipped[1]) parts.push(fill(w.scen_depot_untried, { most: m.shipped[1] }));
+  box.textContent = parts.join(" ");
+}
+
+// The Spawn tool with the supply depot spot picked: the new depots' trucks, and what each will hold.
+function renderSpawnTrucks() {
+  const w = mv.words, row = $("scen-depot-row");
+  const on = scen.tool === "spawn" && $("scen-unit").value === DEPOT_SLAB;
+  row.classList.toggle("hidden", !on);
+  if (!on) { row.replaceChildren(); return; }
+  const number = el("input", { type: "number", min: "0", max: String(TRUCKS_MOST), step: "1", className: "scen-detail-number",
+    value: String(scen.trucks), title: w.tip_scen_spawn_trucks });
+  const holds = el("div", { className: "muted" });
+  number.addEventListener("input", () => {
+    const n = Number(number.value);
+    const good = number.value.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= TRUCKS_MOST;
+    number.setAttribute("aria-invalid", String(!good));
+    if (good) { scen.trucks = n; scen.trucksSet = true; }  // (untouched: the build's 25, or the Economy tab's rule)
+    showDepotMoney(holds, n);
+  });
+  row.title = w.tip_scen_spawn_trucks;
+  row.replaceChildren(el("span", { textContent: w.scen_item_trucks }), number, holds);
+  depotMoney().then(() => showDepotMoney(holds, scen.trucks, !scen.trucksSet));
 }
 
 // what a placed or moved item sticks to the road as: "depot", "hq" or null
@@ -2975,27 +3308,31 @@ function snapKind(item, unit) {
 function renderScenTools() {
   const w = mv.words, s = ((scen.data || {}).scenarios || [])[scen.pick];
   spawnDesc();  // shown only with Add unit
-  iconTile($("scen-move"), "move", w.scen_move_tool).title = w.tip_scen_move;
-  $("scen-move").setAttribute("aria-pressed", String(scen.tool === "move"));
-  iconTile($("scen-spawn"), "spawn", w.scen_spawn_tool).title = w.tip_scen_spawn;
-  $("scen-spawn").setAttribute("aria-pressed", String(scen.tool === "spawn"));
-  iconTile($("scen-start"), "start", w.scen_start_tool).title = w.tip_scen_start;
-  $("scen-start").setAttribute("aria-pressed", String(scen.tool === "start"));
-  iconTile($("scen-mark"), "mark", w.scen_mark_tool).title = w.tip_scen_mark;
-  $("scen-mark").setAttribute("aria-pressed", String(scen.tool === "mark"));
-  $("scen-move").disabled = $("scen-spawn").disabled = $("scen-start").disabled = $("scen-mark").disabled = !s;
-  // Add a name or zone: what to add (each chip says what it is for), and a town's or hill's words to show
+  // (the tools themselves are tiles in the bar on the Scenario side, and Sectors on the Map side: renderDock)
+  // Names or Add a spot or zone: what to add (each chip says what it is for), and a town's or hill's words to show
+  // (Names, on the Map side, holds the towns' and hills' names; Add a spot or zone the mission's spots and zones)
   const markPick = $("scen-mark-kind"), wordsRow = $("scen-mark-words-row");
-  markPick.classList.toggle("hidden", scen.tool !== "mark");
-  const labelKind = scen.markKind === "LabelVille" || scen.markKind === "LabelMontagne";
-  wordsRow.classList.toggle("hidden", scen.tool !== "mark" || !labelKind);
-  if (scen.tool === "mark") {
-    markPick.replaceChildren(...MARK_KINDS.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
+  const marking = scen.tool === "mark" || scen.tool === "names";
+  markPick.classList.toggle("hidden", !marking);
+  const labelKind = NAME_KINDS.has(scen.markKind);
+  wordsRow.classList.toggle("hidden", !marking || !labelKind);
+  // a zone's size, set before it's placed (the owner, 2026-10-10: "you also can't change how big or small the zone
+  // is"); after, the zone stays picked with its own size box (renderItemDetails)
+  const zoneKind = scen.markKind === "CircularZone" || scen.markKind === "RectangleZone";
+  $("scen-mark-size-row").classList.toggle("hidden", !marking || !zoneKind);
+  $("scen-mark-size-label").textContent = scen.markKind === "CircularZone" ? w.scen_item_radius : w.scen_mark_side;
+  $("scen-mark-size-row").title = w.tip_scen_mark_size;
+  if (marking) {
+    const kinds = MARK_KINDS.filter((k) => NAME_KINDS.has(k) === (scen.tool === "names"));
+    markPick.replaceChildren(...kinds.map((k) => chipOf(w[MARK_WORD[k]] || k, w["tip_" + MARK_WORD[k]],
       scen.markKind === k, () => { scen.markKind = k; renderScenTools(); })));
     $("scen-mark-words-label").textContent = w.scen_mark_words;
     $("scen-mark-words").placeholder = w.scen_mark_words_hint;
     wordsRow.title = w.tip_scen_mark_words;
   }
+  // the HQs are Add HQ start's, not Add unit's (the owner, 2026-10-10: "Headquarters should not be considered units
+  // ... It should just be all in one"): every player, the computer's too, has a seat, and the game builds its HQ at
+  // that seat's start; Add unit lists no HQ
   const team = $("scen-team");
   team.classList.toggle("hidden", scen.tool !== "start");
   if (scen.tool === "start") {
@@ -3010,10 +3347,11 @@ function renderScenTools() {
     if (!scen.units) { loadSpawnUnits().catch((err) => scenNote((err && err.message) || String(err), "error")); }
     // 1: the kind; 2: what it's for (a building's job, or the factory that builds a unit); 3: the unit, by nation
     const all = scen.units || [];
+    if (scen.type === "hq") scen.type = null;
     kindPick.replaceChildren(...SPAWN_KINDS.map((k) => chipOf(w[k] || k, w.tip_scen_kind, scen.kind === k,
       () => { scen.kind = k; scen.type = null; renderScenTools(); })));
     const ofKind = all.filter((u) => u.kind === scen.kind);
-    const types = GROUP_ORDER.filter((g) => ofKind.some((u) => u.group === g));
+    const types = GROUP_ORDER.filter((g) => g !== "hq" && ofKind.some((u) => u.group === g));
     if (!types.includes(scen.type)) scen.type = types[0] || null;
     typePick.replaceChildren(...types.map((g) => chipOf(`${w["group_" + g] || g} (${ofKind.filter((u) => u.group === g).length})`,
       w.tip_group, scen.type === g, () => { scen.type = g; renderScenTools(); })));
@@ -3057,7 +3395,7 @@ function renderScenTools() {
           : w.tip_scen_camp + (o.team > 0 ? " " + fill(w.scen_owner_team, { team: o.team }) : "");
         return chipOf(label, tip, scen.camp === id, () => { scen.camp = id; renderScenTools(); });
       }));
-    // a slider, 1 to 10 (a player asked for 3, 5, 7 and 9 too, 2026-10-03: the buttons offered 1, 2, 4, 6, 8, 10)
+    // a slider, 1 to SPAWN_MOST (a player asked for 3, 5, 7 and 9 too, 2026-10-03: the buttons offered 1, 2, 4, 6, 8, 10)
     const countLabel = el("span", { className: "muted small", textContent: fill(w.scen_count_n, { n: scen.count }) });
     const countSlider = el("input", { type: "range", min: "1", max: String(SPAWN_MOST), step: "1",
       value: String(scen.count), title: w.tip_scen_count });
@@ -3077,6 +3415,7 @@ function renderScenTools() {
     $("scen-gap").value = spawnGap();
     $("scen-gap-label").textContent = fill(w.place_spacing, { m: spawnGap() });
     $("scen-gap-row").title = w.tip_scen_gap;
+    typedBeside("scen-gap", TYPED.gap, () => spawnGap(), (n) => { scen.gap[scen.kind] = n; renderScenTools(); }, w.tip_scen_gap);
   }
   $("scen-layers").replaceChildren(el("span", { className: "muted small", textContent: w.scen_layers_show || "Show" }),
     ...SCEN_LAYERS.map((k) => chipOf(w["scen_layer_" + k] || k, w.tip_scen_layers, scen.layers[k], () => {
@@ -3094,12 +3433,16 @@ function renderScenTools() {
   $("scen-snap-label").textContent = w.scen_snap_roads || "Stick to roads";
   snapRow.title = w.tip_scen_snap_roads || "";
   renderScenClear(s);
+  renderScenHqs(s);
+  renderSectorTools(s);  // the Sectors brush's own controls (shown with its tool only)
   renderItemDetails(null, null);  // the picked item's values: shown again below when there is one
   if (!mv.brush.mod && scen.tool) { scenNote(w.no_mod, "error"); return; }
   if (scen.tool === "move") {
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
     if (!it) { scenNote(w.scen_pick_item + (w.scen_cam_drag ? " " + w.scen_cam_drag : "")); return; }
-    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint"
+    if (it.seat && !it.placed) { scenNote(fill(w.scen_hq_click, { t: it.seat[0], k: it.seat[1] })); return; }
+    const parts = [fill(w.scen_pick_place, { what: it.kind === "StartingPoint" && it.seat
+      ? fill(w.scen_hq_seat, { t: it.seat[0], k: it.seat[1] }) : it.kind === "StartingPoint"
       ? fill(w.scen_start_place, { n: it.alliance || "?", p: it.place || 1 })
       : it.kind === "Spawn" ? w.scen_spawn : it.text || it.name || "" })];
     const n = $("scen-note");
@@ -3121,9 +3464,14 @@ function renderScenTools() {
     }
     itemTakeOut(s, it, n);
     renderItemDetails(s, it);
-  } else if (scen.tool === "spawn") { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
+  } else if (spawningNow()) { scenNote(w.scen_spawn_help); renderItemDetails(null, null); }
   else if (scen.tool === "start") { scenNote(w.scen_start_help); renderItemDetails(null, null); }
-  else if (scen.tool === "mark") { scenNote(w[MARK_WORD[scen.markKind] + "_help"]); renderItemDetails(null, null); }
+  else if (scen.tool === "mark" || scen.tool === "names") {
+    scenNote(w[MARK_WORD[scen.markKind] + "_help"]);
+    const it = s && scen.selected !== null ? s.items[scen.selected] : null;   // the one just placed: its name, size
+    renderItemDetails(s, it && MARK_KINDS.includes(it.kind) ? it : null);
+  }
+  else if (scen.tool === "sectors") { scenNote(""); renderItemDetails(null, null); }  // its notes: renderSectorTools
   else {
     scenNote(s && w.scen_drag_help ? w.scen_drag_help : "");
     const it = s && scen.selected !== null ? s.items[scen.selected] : null;
@@ -3163,14 +3511,16 @@ const DETAIL_KINDS = ["Spawn", "CircularZone", "RectangleZone", "LabelVille", "L
 
 function renderItemDetails(s, it) {
   const w = mv.words, box = $("scen-details");
-  // the map's own items, and the names, points and zones the mod adds (its own spawns and starts have none here)
-  const show = Boolean(s && it && !it.gone && DETAIL_KINDS.includes(it.kind) && (!it.mine || it.place !== undefined));
+  // the map's own items, and the spawns, names, points and zones the mod adds (its own starts have none here)
+  const ownSpawn = Boolean(it && it.mine && it.spawn !== undefined);
+  const show = Boolean(s && it && !it.gone && DETAIL_KINDS.includes(it.kind) && (!it.mine || it.place !== undefined || ownSpawn));
   box.classList.toggle("hidden", !show);
   box.replaceChildren();
   if (!show) return;
   const can = Boolean(mv.brush.mod);
-  const save = (field, value) => scenEdit(() => it.mine ? mv.api.scenario_place_set(mv.current, it.place, field, value)
-    : mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
+  const save = (field, value) => scenEdit(() => ownSpawn ? mv.api.scenario_spawn_set(mv.current, it.spawn, field, value)
+    : it.mine ? mv.api.scenario_place_set(mv.current, it.place, field, value)
+      : mv.api.scenario_change(mv.current, s.file, it.item, field, value), true);
   const gameLine = (field, text, back) => {
     if (!it.game || !(field in it.game)) return null;
     const reset = el("button", { type: "button", className: "link", textContent: w.scen_item_reset,
@@ -3183,7 +3533,8 @@ function renderItemDetails(s, it) {
   box.append(el("div", { className: "scen-details-title", textContent: w.scen_item_title, title: w.tip_scen_item_title }));
   if (it.kind === "Spawn") {
     const skirmish = s.kind === "skirmish";
-    const now = it.camp === null || it.camp === undefined ? 0 : it.camp;
+    // (a map's own spawn without a Camp is the game's camp 0; one the mod adds without a side is neutral)
+    const now = it.camp === null || it.camp === undefined ? (ownSpawn ? -1 : 0) : it.camp;
     const owners = (s.owners || [{ camp: -1, kind: "neutral" }]).slice();
     if (!owners.some((o) => o.camp === now)) owners.push({ camp: now, kind: "camp" });
     const label = (o) => o.kind === "neutral" ? w.scen_side_neutral
@@ -3197,16 +3548,31 @@ function renderItemDetails(s, it) {
     const gameCamp = it.game && "camp" in it.game ? (it.game.camp === null || it.game.camp === undefined ? 0 : it.game.camp) : null;
     box.append(row(w.scen_item_camp, tip, side,
       gameLine("camp", gameCamp === null ? "" : label(owners.find((o) => o.camp === gameCamp) || { camp: gameCamp, kind: "camp" }), gameCamp)));
-    if (it.trucks !== undefined || it.what === "DalleBatimentDepot") {
-      const trucks = el("input", { type: "number", min: "0", max: "1000", step: "1", className: "scen-detail-number",
+    if (ownSpawn && !missionLocked()) {  // a group of the map's own mission it joins, for its events to order it
+      const group = el("input", { type: "text", className: "small", value: it.mission_group || "", maxLength: 40,
+        placeholder: w.ms_group_hint, disabled: !can, title: w.tip_scen_item_group });
+      group.addEventListener("keydown", (e) => e.stopPropagation());
+      group.addEventListener("change", () => save("group", group.value.trim().replace(/[^A-Za-z0-9_]/g, "_")));
+      box.append(row(w.ms_group, w.tip_scen_item_group, group));
+    }
+    if (it.trucks !== undefined || it.what === DEPOT_SLAB) {
+      // no top but the file's own (scenario.TRUCKS_MOST): the Studio's old 1000 was its own, not the game's
+      const trucks = el("input", { type: "number", min: "0", max: String(TRUCKS_MOST), step: "1", className: "scen-detail-number",
         value: it.trucks === undefined || it.trucks === null ? "" : String(it.trucks), disabled: !can, title: w.tip_scen_item_trucks });
+      const holds = el("div", { className: "muted" });
       trucks.addEventListener("change", () => {
         const n = Number(trucks.value);
-        if (trucks.value.trim() === "" || !Number.isInteger(n) || n < 0 || n > 1000) { trucks.value = it.trucks ?? ""; return; }
+        if (trucks.value.trim() === "" || !Number.isInteger(n) || n < 0 || n > TRUCKS_MOST) { trucks.value = it.trucks ?? ""; return; }
         save("trucks", n);
       });
+      trucks.addEventListener("input", () => showDepotMoney(holds, Number(trucks.value)));
       box.append(row(w.scen_item_trucks, w.tip_scen_item_trucks, trucks,
-        gameLine("trucks", it.game && it.game.trucks !== null && it.game.trucks !== undefined ? String(it.game.trucks) : "", it.game ? it.game.trucks : null)));
+        gameLine("trucks", it.game && it.game.trucks !== null && it.game.trucks !== undefined ? String(it.game.trucks) : "", it.game ? it.game.trucks : null)),
+      holds);
+      // set by hand here (the map's own depot changed, or one the mod adds given trucks): the Economy tab's rule
+      // for this map leaves it be
+      const byHand = ownSpawn ? Boolean(it.trucks_set) : Boolean(it.game && "trucks" in it.game);
+      depotMoney().then(() => showDepotMoney(holds, it.trucks === undefined || it.trucks === null ? 0 : it.trucks, !byHand));
     }
   } else if (it.kind === "CircularZone" || it.kind === "RectangleZone") {
     const fields = it.kind === "CircularZone" ? [["radius", w.scen_item_radius]] : [["width", w.scen_item_width], ["height", w.scen_item_height]];
@@ -3248,8 +3614,9 @@ function renderItemDetails(s, it) {
     box.append(row(it.kind === "LabelVille" ? w.scen_item_town : w.scen_item_hill, w.tip_scen_item_no_key,
       el("span", { className: "muted", textContent: `“${it.text || it.name}”` })));
   }
-  // the name the mission scripts find it by (a unit, a named point, a zone): changing it can break a script
-  if (["Spawn", "Name", "CircularZone", "RectangleZone"].includes(it.kind)) {
+  // the name the mission scripts find it by (a unit, a named point, a zone): changing it can break a script (a spawn
+  // the mod adds has none)
+  if (["Spawn", "Name", "CircularZone", "RectangleZone"].includes(it.kind) && !ownSpawn) {
     const name = el("input", { type: "text", maxLength: 200, className: "scen-detail-text", value: it.name || "",
       placeholder: w.scen_item_no_name, disabled: !can, title: w.tip_scen_item_name });
     name.addEventListener("change", () => {
@@ -3261,13 +3628,13 @@ function renderItemDetails(s, it) {
       gameLine("name", it.game && it.game.name ? it.game.name : w.scen_item_no_name, it.game ? it.game.name || "" : "")));
   }
   // its turn, in degrees: only an item that has one (a label has none); a new point or zone gets one when set
-  if (it.turns || (it.mine && it.place !== undefined && it.kind !== "LabelVille" && it.kind !== "LabelMontagne")) {
+  if (it.turns || ownSpawn || (it.mine && it.place !== undefined && it.kind !== "LabelVille" && it.kind !== "LabelMontagne")) {
     const deg = (r) => Math.round(r * 180 / Math.PI * 10) / 10;
     const turn = el("input", { type: "number", step: "1", className: "scen-detail-number", value: String(deg(it.turn || 0)),
       disabled: !can, title: w.tip_scen_item_turn });
-    const turnTo = (radians) => scenEdit(() => it.mine
-      ? mv.api.scenario_place_set(mv.current, it.place, "rotation", radians)
-      : mv.api.scenario_turn(mv.current, s.file, it.item, radians), true);
+    const turnTo = (radians) => scenEdit(() => ownSpawn ? mv.api.scenario_spawn_set(mv.current, it.spawn, "rotation", radians)
+      : it.mine ? mv.api.scenario_place_set(mv.current, it.place, "rotation", radians)
+        : mv.api.scenario_turn(mv.current, s.file, it.item, radians), true);
     turn.addEventListener("change", () => {
       const d = Number(turn.value);
       if (turn.value.trim() === "" || !Number.isFinite(d)) { turn.value = String(deg(it.turn || 0)); return; }
@@ -3301,6 +3668,33 @@ function renderScenClear(s) {
     b.addEventListener("click", () => scenEdit(() => mv.api.scenario_remove(mv.current, s.file, items.map((it) => it.item))));
     box.append(b, " ");
   }
+  // Every supply depot of this scenario at once, the map's and the mod's own (StudioApi.scenario_depots): the same
+  // trucks each, or each one's times a number; more trucks, more money in every depot (the owner, 2026-10-10: "no
+  // way to increase max amt of money in supply depot")
+  const allDepots = s.items.filter((it) => it.kind === "Spawn" && !it.gone && (it.group === "depot" || it.what === DEPOT_SLAB));
+  if (allDepots.length) {
+    const number = el("input", { type: "number", min: "0", step: "any", value: "2", className: "scen-detail-number",
+      title: w.tip_scen_depots });
+    const how = el("select", { className: "small", title: w.tip_scen_depots },
+      el("option", { value: "times", textContent: w.scen_depots_times }),
+      el("option", { value: "trucks", textContent: w.scen_depots_each }));
+    how.addEventListener("change", () => { number.value = how.value === "trucks" ? "50" : "2"; });
+    const apply = el("button", { type: "button", className: "small", textContent: w.scen_depots_apply, title: w.tip_scen_depots });
+    apply.addEventListener("click", () => {
+      const n = Number(number.value);
+      if (number.value.trim() === "" || !Number.isFinite(n) || n < 0 || (how.value === "trucks" && !Number.isInteger(n))) {
+        number.setAttribute("aria-invalid", "true");
+        return;
+      }
+      number.setAttribute("aria-invalid", "false");
+      scenEdit(() => how.value === "trucks" ? mv.api.scenario_depots(mv.current, s.file, n, null)
+        : mv.api.scenario_depots(mv.current, s.file, null, n), true);
+    });
+    const back = el("button", { type: "button", className: "link", textContent: w.scen_depots_back, title: w.tip_scen_depots_back });
+    back.addEventListener("click", () => scenEdit(() => mv.api.scenario_depots(mv.current, s.file, null, null), true));
+    box.append(el("div", { className: "scen-detail-row", title: w.tip_scen_depots },
+      el("span", { textContent: fill(w.scen_depots_label, { n: allDepots.length }) }), number, " ", how, " ", apply, " ", back));
+  }
   // Sectors over the whole map: every scenario of the map, each place its sectors leave out to the nearest one
   // (StudioApi.scenario_sectors, rusemod.sectors); drawn as the build will make them
   if ((s.zones || []).length) {
@@ -3309,6 +3703,675 @@ function renderScenClear(s) {
       () => scenEdit(() => mv.api.scenario_sectors(mv.current, !whole))), " ");
     if (whole && s.sectors_note) box.append(el("span", { className: "muted", textContent: s.sectors_note }));
   }
+}
+
+// A blank map's HQs (StudioApi._with_hqs: s.hqs), one row per player the map seats: placed or not, and Place (or
+// Move, once placed): it's picked with the Move tool, and the next click on the ground puts it there, its camera with
+// it. Test in game waits until every one is placed (the build says which aren't).
+function renderScenHqs(s) {
+  const w = mv.words, box = $("scen-hqs"), hqs = (s && s.hqs) || [];
+  box.replaceChildren();
+  box.classList.toggle("hidden", !hqs.length);
+  if (!hqs.length) return;
+  box.title = w.tip_scen_hqs;
+  box.append(el("div", { className: "scen-hqs-title", textContent: w.scen_hqs_title, title: w.tip_scen_hqs }));
+  for (const h of hqs) {
+    const picked = scen.tool === "move" && scen.selected === h.item;
+    const row = el("div", { className: "scen-hq-row" + (picked ? " picked" : "") },
+      el("span", { textContent: fill(w.scen_hq_seat, { t: h.team, k: h.seat }) + " · " }),
+      el("span", { className: h.placed ? "muted" : "error-text",
+        textContent: h.placed ? w.scen_hq_placed : w.scen_hq_not_placed }), " ");
+    const b = el("button", { type: "button", className: "link", textContent: h.placed ? w.scen_hq_move : w.scen_hq_place,
+      title: mv.brush.mod ? w.tip_scen_hq_place : w.no_mod });
+    b.disabled = !mv.brush.mod;
+    b.addEventListener("click", () => {
+      if (scen.tool !== "move") setScenTool("move");
+      scen.selected = h.item;
+      scen.sel = new Set();
+      drawScenario();
+      renderScenTools();
+    });
+    row.append(b);
+    box.append(row);
+  }
+  const left = hqs.filter((h) => !h.placed).length;
+  box.append(el("div", { className: left ? "error-text" : "muted",
+    textContent: left ? fill(w.scen_hqs_left, { n: left }) : w.scen_hqs_all }));
+}
+
+// --- the Sectors brush (the owner, 2026-10-09: "Build a sector tool now"): pick a sector (or New sector, or No
+// sector to take ground out of every sector), then drag on the ground to paint it, like the Cover brush paints
+// cover. Saved in the map project's scenario.toml, per scenario (StudioApi.sector_paint, rusemod.sectors); the cells
+// shown are the build's own (StudioApi.sector_view), so what the note says is what the build will say. Not tried in
+// the game yet. ---
+// mode: "shapes" (each sector's corners dragged on the map: the owner, 2026-10-09, "draggable square rectangles that
+// you can adjust", his pick "Shapes + brush") or "paint" (the brush, for touch-ups); drag: a corner being dragged
+// ({key, owners: [[sector, index in its outline]], moved}); newBox: a new sector's box being dragged
+const sec = { view: null, file: null, pack: null, pick: "new", shape: "round", size: 4, painting: null, busy: false,
+  dirty: false, outlines: false, lines: null, nx: 0, ny: 0, box: null, cells: null, canvas: null, ctx: null, img: null,
+  tex: null, mesh: null, linesMesh: null, on: false, error: "", mode: "shapes", dotsMesh: null, hotMesh: null,
+  drag: null, newBox: null, hot: null };
+const SECTOR_SIZE_MOST = 20;  // the size slider: a dab's radius as a share of the map's width, in %
+
+// a sector's colour on the overlay: the zones' own (zoneColour), by its number (worked out once each)
+const sectorColours = [];
+function sectorRgb(number) {
+  if (!sectorColours[number]) {
+    const c = zoneColour(number);
+    sectorColours[number] = [Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255)];
+  }
+  return sectorColours[number];
+}
+
+function sectorRadius() {
+  const [x0, , , x1] = mv.edit.bounds;
+  return sec.size / 100 * (x1 - x0);
+}
+
+// The tool's controls and notes, and its cells on the ground while it's picked.
+function renderSectorTools(s) {
+  const w = mv.words, box = $("scen-sectors-box"), on = scen.tool === "sectors" && Boolean(s);
+  box.classList.toggle("hidden", !on);
+  if (on !== sec.on) {
+    sec.on = on;
+    if (!on && sec.dirty) {  // the sectors as the build makes them, drawn as zones again
+      sec.dirty = false;
+      scenEdit(() => mv.api.map_scenarios(mv.current), true);
+    }
+    if (!on && mv.gl && mv.gl.ring) { mv.gl.ring.visible = false; mv.gl.squareRing.visible = false; }
+  }
+  if (!on) { sectorOverlayShow(false); return; }
+  if (sec.file !== s.file || sec.pack !== mv.current || (sec.mesh && mv.gl && mv.gl.ground
+    && sec.mesh.geometry.index !== mv.gl.ground.geometry.index)) {
+    sec.file = s.file;   // another scenario, another map (or its ground made again): its own cells
+    sec.pack = mv.current;
+    sec.view = null;
+    sec.lines = null;
+    sec.cells = null;
+    sectorDropMesh();
+    loadSectorView();
+  }
+  sectorOverlayShow(true);
+  const v = sec.view, can = Boolean(mv.brush.mod) && Boolean(v) && !sec.busy, shapes = sec.mode === "shapes";
+  if (shapes && v && !v.empty && !v.outlines && !sec.lines && !sec.busy) loadSectorView(true);   // the corners need them
+  $("scen-sectors-mode").replaceChildren(...["shapes", "paint"].map((k) => chipOf(w["sectors_mode_" + k],
+    w["tip_sectors_mode_" + k], sec.mode === k, () => {
+      sec.mode = k;
+      if (mv.gl && mv.gl.ring) { mv.gl.ring.visible = false; mv.gl.squareRing.visible = false; }
+      sectorDrawLines();
+      renderSectorTools(s);
+    })));
+  $("scen-sectors-shape").classList.toggle("hidden", shapes);   // the brush's own: its dab and size
+  $("scen-sectors-size-row").classList.toggle("hidden", shapes);
+  $("scen-sectors-outlines-row").classList.toggle("hidden", shapes);   // (Shapes always shows them)
+  const picks = $("scen-sectors-pick");
+  const listed = v ? v.sectors : [];
+  if (sec.pick !== "new" && sec.pick !== -1 && !listed.some((x) => x.number === sec.pick)) sec.pick = "new";
+  const swatch = (n) => el("span", { className: "sector-swatch", style: `background: rgb(${sectorRgb(n).join(", ")})` });
+  // a sector's own ×: taken out in one click, its ground to the sectors round it (Undo brings it back); the owner,
+  // 2026-10-10: "It doesn't let you just like delete the ... sector super easy"
+  const takeOut = (n) => {
+    const x = el("span", { className: "chip-x", textContent: "×", title: fill(w.tip_sectors_delete_n, { n: n + 1 }) });
+    x.onclick = (e) => {
+      e.stopPropagation();
+      if (!can) return;
+      if (sec.pick === n) sec.pick = "new";
+      sectorCall(() => mv.api.sector_area(mv.current, s.file, [{ sector: n, points: [] }]));
+    };
+    return x;
+  };
+  const chip = (label, tip, value, n) => {
+    const c = chipOf(label, tip, sec.pick === value, () => { sec.pick = value; renderSectorTools(s); });
+    if (n !== undefined) {
+      c.prepend(swatch(n));
+      if (mv.brush.mod) c.append(takeOut(n));
+      c.classList.toggle("busy", !can);
+    }
+    return c;
+  };
+  const newChip = chip(w.sectors_new, v && v.next === null ? w.tip_sectors_new_full : w.tip_sectors_new, "new");
+  newChip.disabled = Boolean(v) && v.next === null;
+  picks.replaceChildren(...listed.map((x) => chip(fill(w.sectors_n, { n: x.number + 1 }), w.tip_sectors_pick, x.number, x.number)),
+    newChip, chip(w.sectors_none, shapes ? w.tip_sectors_none_shapes : w.tip_sectors_none, -1));
+  $("scen-sectors-shape").replaceChildren(...["round", "square"].map((k) => chipOf(w["sectors_" + k], w.tip_sectors_shape,
+    sec.shape === k, () => { sec.shape = k; renderSectorTools(s); })));
+  $("scen-sectors-size").value = String(sec.size);
+  $("scen-sectors-size").max = String(SECTOR_SIZE_MOST);
+  $("scen-sectors-size-label").textContent = fill(w.sectors_size, { pct: sec.size });
+  $("scen-sectors-size-row").title = w.tip_sectors_size;
+  const strokes = v ? v.strokes : 0;
+  const button = (id, word, tip, locked, why, call) => {
+    const b = $(id);
+    b.textContent = word;
+    b.disabled = !can || locked;
+    b.title = !mv.brush.mod ? w.no_mod : locked ? why : tip;
+    b.onclick = () => sectorCall(call);
+  };
+  button("scen-sectors-undo", w.sectors_undo, w.tip_sectors_undo, !strokes, w.tip_sectors_undo_none,
+    () => mv.api.sector_undo(mv.current, s.file));
+  button("scen-sectors-clear", w.sectors_clear, w.tip_sectors_clear, !strokes, w.tip_sectors_undo_none,
+    () => mv.api.sector_clear(mv.current, s.file));
+  const picked = typeof sec.pick === "number" && sec.pick >= 0;   // a sector taken out: its ground to its neighbours
+  button("scen-sectors-delete", w.sectors_delete, w.tip_sectors_delete, !picked, w.tip_sectors_delete_none,
+    () => mv.api.sector_area(mv.current, s.file, [{ sector: sec.pick, points: [] }]));
+  const empty = Boolean(v && v.starts_empty);
+  button("scen-sectors-start", empty ? w.sectors_start_map : w.sectors_start_none,
+    empty ? w.tip_sectors_start_map : w.tip_sectors_start_none, false, "",
+    () => mv.api.sector_start(mv.current, s.file, !empty));
+  const outl = $("scen-sectors-outlines");
+  outl.checked = sec.outlines;
+  outl.disabled = !v;
+  $("scen-sectors-outlines-label").textContent = w.sectors_outlines;
+  $("scen-sectors-outlines-row").title = w.tip_sectors_outlines;
+  // what the build will say: no sector at all, a sector in pieces or with a hole (and that it's untried)
+  const note = $("scen-sectors-note"), lines = [];
+  let bad = false;
+  if (!mv.brush.mod) { lines.push(w.no_mod); bad = true; }
+  if (sec.error) { lines.push(sec.error); bad = true; }
+  if (!v) lines.push(sec.busy ? w.sectors_busy : "");
+  else {
+    if (sec.busy) lines.push(w.sectors_busy);   // a save on its way: said, and the buttons wait (no second delete)
+    if (v.empty) { lines.push(w.sectors_empty); bad = true; }
+    for (const p of v.problems) {
+      lines.push(fill(p.pieces > 1 ? w.sectors_pieces : w.sectors_hole, { n: p.number + 1, pieces: p.pieces }));
+      bad = true;
+    }
+    // what the build tidies, as shown (StudioApi.sector_view "tidied": rusemod.sectors.tidy_cells); bits too small
+    // to see (under 0.1 % of the sectors' ground: a moved border's straight line against the old cells' steps, a few
+    // metres) aren't said, the thin lines always are
+    const total = v.sectors.reduce((n, x) => n + x.cells, 0);
+    const said = (v.tidied || []).filter((t) => t.kind !== "pieces" || t.cells >= total / 1000);
+    for (const t of said) {
+      if (t.kind === "pieces") {
+        lines.push(fill(t.to < 0 ? w.sectors_tidy_pieces_none : w.sectors_tidy_pieces,
+          { bits: t.bits, n: t.number + 1, to: t.to + 1 }));
+      } else {
+        lines.push(fill(t.number < 0 ? w.sectors_tidy_gap : w.sectors_tidy_line, { n: t.number + 1, around: t.around + 1 }));
+      }
+    }
+    if (!bad) lines.push(shapes ? w.sectors_shapes_help : w.sectors_help);
+    if (said.length) lines.push(w.sectors_tidy_untried);
+    lines.push(w.sectors_untried);
+  }
+  note.replaceChildren(...lines.filter(Boolean).map((t) => el("div", { textContent: t })));
+  note.className = "small" + (bad ? " error-text" : "");
+}
+
+async function loadSectorView(outlines) {
+  const pack = mv.current, file = sec.file;
+  sec.busy = true;
+  try {
+    const v = await mv.api.sector_view(pack, file, Boolean(outlines || sec.outlines || sec.mode === "shapes"));
+    if (pack !== mv.current || file !== sec.file) return;
+    takeSectorView(v);
+  } catch (err) {
+    sec.error = (err && err.message) || String(err);
+  } finally {
+    sec.busy = false;
+    renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);
+  }
+}
+
+// A save (a stroke, Undo, Clear, the start): the view it returns shown; its outlines asked for again when they're on.
+async function sectorCall(call) {
+  const pack = mv.current;
+  sec.busy = true;
+  renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);   // "working…" and the buttons wait, at once
+  try {
+    const v = await call();
+    if (pack === mv.current) {
+      sec.dirty = true;
+      takeSectorView(v);
+      if ((sec.outlines || sec.mode === "shapes") && !v.outlines && !v.empty) loadSectorView(true);
+    }
+  } catch (err) {
+    if (sec.view && pack === mv.current) takeSectorView(sec.view);  // a stroke not saved: off the ground again
+    sec.error = (err && err.message) || String(err);
+  } finally {
+    sec.busy = false;
+    renderSectorTools(((scen.data || {}).scenarios || [])[scen.pick]);
+  }
+}
+
+// The view's cells (run by run) into the overlay's picture; its outlines, when it has them, as lines.
+function takeSectorView(v) {
+  sec.view = v;
+  sec.error = "";
+  sec.lines = v.outlines || (sec.outlines ? sec.lines : null);
+  const n = v.nx * v.ny;
+  if (!sec.cells || sec.nx !== v.nx || sec.ny !== v.ny) {
+    sec.nx = v.nx;
+    sec.ny = v.ny;
+    sec.cells = new Uint8Array(n);
+    sectorDropMesh();
+  }
+  sec.box = v.box;
+  let i = 0;
+  for (let k = 0; k < v.runs.length; k += 2) { sec.cells.fill(v.runs[k], i, i + v.runs[k + 1]); i += v.runs[k + 1]; }
+  sectorDrawCells(0, sec.ny - 1, 0, sec.nx - 1);
+  sectorDrawLines();
+  sectorDrawTags();
+}
+
+// Each sector's number on the Sectors tool's cells, where the view puts its label (inside it), in its colour: the
+// same tag the map view draws on its zones (sectorTag).
+function sectorDrawTags() {
+  const gl = mv.gl;
+  if (sec.tags) {
+    if (gl) gl.scene.remove(sec.tags);
+    sec.tags.traverse((o) => { if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+    sec.tags = null;
+  }
+  if (!gl || !mv.edit || !sec.view) return;
+  const { THREE } = gl, grid = makeGrid(mv.edit), size = mv.size || 1000;
+  const at = (x, y, up = 0) => new THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE + size * 0.0015 + up, y * SCALE);
+  sec.tags = new THREE.Group();
+  for (const x of sec.view.sectors) sec.tags.add(sectorTag(x.number, zoneColour(x.number), [x.x, x.y], at));
+  sec.tags.visible = sec.on;
+  gl.scene.add(sec.tags);
+  gl.draw();
+}
+
+function sectorDropMesh() {
+  for (const k of ["mesh", "linesMesh"]) {
+    const o = sec[k];
+    if (!o) continue;
+    if (mv.gl) mv.gl.scene.remove(o);
+    o.geometry.dispose();
+    o.material.dispose();
+    sec[k] = null;
+  }
+}
+
+// The cells on the ground: the ground's own points, with their place in the cells' picture (like overlayMesh).
+function sectorOverlayShow(show) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (show && !sec.mesh && sec.cells && gl.ground && mv.edit) {
+    const { THREE } = gl, ed = mv.edit, [bx, by, bw, bh] = sec.box;
+    if (!sec.canvas || sec.canvas.width !== sec.nx || sec.canvas.height !== sec.ny) {
+      sec.canvas = document.createElement("canvas");
+      sec.canvas.width = sec.nx;
+      sec.canvas.height = sec.ny;
+      sec.ctx = sec.canvas.getContext("2d");
+      sec.img = sec.ctx.createImageData(sec.nx, sec.ny);
+      if (sec.tex) sec.tex.dispose();
+      sec.tex = new THREE.CanvasTexture(sec.canvas);
+      sec.tex.flipY = false;  // row 0 is the cells' first row (y 0)
+      sec.tex.userData.keep = true;
+      sectorDrawCells(0, sec.ny - 1, 0, sec.nx - 1);
+    }
+    const src = gl.ground.geometry, g = new THREE.BufferGeometry(), uv = new Float32Array(ed.n * 2);
+    for (let i = 0; i < ed.n; i++) { uv[2 * i] = (ed.wx[i] - bx) / bw; uv[2 * i + 1] = (ed.wy[i] - by) / bh; }
+    g.setAttribute("position", src.attributes.position);
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    g.setIndex(src.index);
+    sec.mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: sec.tex, transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, side: THREE.DoubleSide }));
+    sec.mesh.frustumCulled = false;  // its points move with the ground's
+    sec.mesh.renderOrder = 5;
+    gl.scene.add(sec.mesh);
+  }
+  if (sec.mesh) sec.mesh.visible = show;
+  if (sec.tags) sec.tags.visible = show;
+  const lines = show && (sec.outlines || sec.mode === "shapes");
+  if (sec.linesMesh) sec.linesMesh.visible = lines;
+  if (sec.dotsMesh) sec.dotsMesh.visible = lines && sec.mode === "shapes";
+  if (sec.hotMesh) sec.hotMesh.visible = lines && sec.mode === "shapes";
+  gl.draw();
+}
+
+function sectorDrawCells(r0, r1, c0, c1) {
+  if (!sec.cells || !sec.img) return;
+  const n = sec.nx, px = sec.img.data;
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const i = r * n + c, k = 4 * i, v = sec.cells[i];
+      if (v) { const rgb = sectorRgb(v - 1); px[k] = rgb[0]; px[k + 1] = rgb[1]; px[k + 2] = rgb[2]; px[k + 3] = 130; }
+      else px[k + 3] = 0;
+    }
+  }
+  sec.ctx.putImageData(sec.img, 0, 0, c0, r0, c1 - c0 + 1, r1 - r0 + 1);
+  sec.tex.needsUpdate = true;
+  if (mv.gl) mv.gl.draw();
+}
+
+// The sectors' outlines as the build traces them (Show outlines, and always in Shapes): lines on the ground in each
+// sector's colour; in Shapes their corners as dots too (the one under the pointer or dragged bigger), and a new
+// sector's box while it's dragged.
+function sectorDrawLines() {
+  const gl = mv.gl;
+  if (!gl || !mv.edit) return;
+  for (const k of ["linesMesh", "dotsMesh", "hotMesh"]) {
+    const o = sec[k];
+    if (o) { gl.scene.remove(o); o.geometry.dispose(); o.material.dispose(); sec[k] = null; }
+  }
+  const shapes = sec.mode === "shapes";
+  if (!(sec.outlines || shapes) || !(sec.lines || sec.newBox)) { gl.draw(); return; }
+  const { THREE } = gl, grid = makeGrid(mv.edit), lift = (mv.size || 1000) * 0.002, pos = [], col = [];
+  const at = (x, y) => [x * SCALE, groundAt(grid, x, y) * SCALE + lift, y * SCALE];
+  const ring = (p, rgb) => {
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length;
+      pos.push(...at(p[i], p[i + 1]), ...at(p[j], p[j + 1]));
+      col.push(...rgb, ...rgb);
+    }
+  };
+  for (const [num, p] of Object.entries(sec.lines || {})) ring(p, sectorRgb(Number(num)).map((c) => Math.min(1, c / 255 + 0.2)));
+  const b = sec.newBox;
+  if (b) ring([b.x0, b.y0, b.x1, b.y0, b.x1, b.y1, b.x0, b.y1], b.none ? [0.85, 0.85, 0.85] : [1, 0.83, 0.3]);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(col), 3));
+  sec.linesMesh = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false }));
+  sec.linesMesh.renderOrder = 11;
+  sec.linesMesh.visible = sec.on;
+  gl.scene.add(sec.linesMesh);
+  if (shapes && sec.lines) {
+    const dots = [], hot = [];
+    for (const [key, d] of sectorDots()) (key === sec.hot || (sec.drag && key === sec.drag.key) ? hot : dots).push(...at(d.x, d.y));
+    const points = (list, size, colour) => {
+      const pg = new THREE.BufferGeometry();
+      pg.setAttribute("position", new THREE.BufferAttribute(new Float32Array(list), 3));
+      const m = new THREE.Points(pg, new THREE.PointsMaterial({ size, sizeAttenuation: false, color: colour, depthTest: false }));
+      m.renderOrder = 12;
+      m.visible = sec.on;
+      gl.scene.add(m);
+      return m;
+    };
+    sec.dotsMesh = points(dots, 7, 0xffffff);
+    sec.hotMesh = points(hot, 13, 0xffd34d);
+  }
+  gl.draw();
+}
+
+// --- Shapes: each sector's outline (as the build traces it: two sectors share their border's corners, point for
+// point) with its corners as dots. Dragging a dot moves it in every sector that has it, so a shared border stays
+// shared; let go and each sector it changed is saved as its new shape (StudioApi.sector_area, rusemod.sectors
+// SectorArea: the build fills it on its own grid, the ground a sector gives up going to what touches it, and tidies
+// as for the brush). Double-click a border: a new dot; right-click a dot: it's taken out. New sector: drag a box;
+// No sector: a box of no sector (its edges are the borders round it, their dots dragged as any). ---
+function sectorDots() {   // {key "x,y": {x, y, owners: [[sector, index of x in its outline], ...]}}
+  const out = new Map();
+  for (const [num, p] of Object.entries(sec.lines || {})) {
+    for (let i = 0; i < p.length; i += 2) {
+      const key = `${p[i]},${p[i + 1]}`;
+      if (!out.has(key)) out.set(key, { x: p[i], y: p[i + 1], owners: [] });
+      out.get(key).owners.push([num, i]);
+    }
+  }
+  return out;
+}
+
+function sectorScreen(x, y, grid, rect) {   // a map point on the screen: [x, y] in pixels, or null behind the camera
+  const gl = mv.gl, v = new gl.THREE.Vector3(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE).project(gl.camera);
+  if (v.z > 1) return null;
+  return [rect.left + (v.x + 1) / 2 * rect.width, rect.top + (1 - v.y) / 2 * rect.height];
+}
+
+const SECTOR_REACH = 10;   // pixels: how near the pointer a dot or a border is to be picked
+function sectorDotAt(ev) {
+  if (!sec.lines || !mv.gl || !mv.edit) return null;
+  const grid = makeGrid(mv.edit), rect = mv.gl.renderer.domElement.getBoundingClientRect();
+  let best = null, bestD = SECTOR_REACH * SECTOR_REACH;
+  for (const [key, d] of sectorDots()) {
+    const s = sectorScreen(d.x, d.y, grid, rect);
+    if (!s) continue;
+    const dd = (s[0] - ev.clientX) ** 2 + (s[1] - ev.clientY) ** 2;
+    if (dd < bestD) { bestD = dd; best = { key, ...d }; }
+  }
+  return best;
+}
+
+// The border under the pointer: its two corners' keys and the map point on it nearest the pointer.
+function sectorEdgeAt(ev) {
+  if (!sec.lines || !mv.gl || !mv.edit) return null;
+  const grid = makeGrid(mv.edit), rect = mv.gl.renderer.domElement.getBoundingClientRect();
+  let best = null, bestD = SECTOR_REACH * SECTOR_REACH;
+  for (const p of Object.values(sec.lines)) {
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length, a = sectorScreen(p[i], p[i + 1], grid, rect), b = sectorScreen(p[j], p[j + 1], grid, rect);
+      if (!a || !b) continue;
+      const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
+      if (!l2) continue;
+      const t = Math.max(0.05, Math.min(0.95, ((ev.clientX - a[0]) * ex + (ev.clientY - a[1]) * ey) / l2));
+      const dd = (a[0] + t * ex - ev.clientX) ** 2 + (a[1] + t * ey - ev.clientY) ** 2;
+      if (dd < bestD) {
+        bestD = dd;
+        best = { a: `${p[i]},${p[i + 1]}`, b: `${p[j]},${p[j + 1]}`,
+          x: Math.round(p[i] + t * (p[j] - p[i])), y: Math.round(p[i + 1] + t * (p[j + 1] - p[i + 1])) };
+      }
+    }
+  }
+  return best;
+}
+
+// Save the new shapes of the sectors `nums` (their outlines as they are in sec.lines) in one go, changed only inside
+// `within` (the triangles round a corner that moved), so the rest of each stays cell for cell as the build had it.
+function sectorSaveShapes(nums, within) {
+  const pairs = (p) => { const out = []; for (let i = 0; i < p.length; i += 2) out.push([p[i], p[i + 1]]); return out; };
+  const areas = [...new Set(nums)].map((n) => ({ sector: Number(n), points: pairs(sec.lines[n]), within }));
+  if (areas.length) sectorCall(() => mv.api.sector_area(mv.current, sec.file, areas));
+}
+
+// A corner's neighbours in each sector that has it: [[sector, index, [prev x, y], [next x, y]], ...]
+function sectorAround(owners) {
+  return owners.map(([num, i]) => {
+    const p = sec.lines[num], n = p.length, a = (i - 2 + n) % n, b = (i + 2) % n;
+    return [num, i, [p[a], p[a + 1]], [p[b], p[b + 1]]];
+  });
+}
+
+function sectorShapesOn() {
+  return scen.tool === "sectors" && sec.on && sec.mode === "shapes" && Boolean(sec.view) && Boolean(mv.gl) && Boolean(mv.edit);
+}
+
+// A press in Shapes, before the view's own (capture): on a dot, its drag; with New sector picked, a box; with No
+// sector picked, a box of no sector (the owner, 2026-10-10: "at any place in the map, there could be no sector or it
+// could be covered"); else the view turns as usual.
+function sectorShapeDown(ev) {
+  if (!sectorShapesOn() || ev.button !== 0 || sec.busy) return;
+  if (!mv.brush.mod) { scenNote(mv.words.no_mod, "error"); return; }
+  const dot = sectorDotAt(ev);
+  const p = dot ? null : hitGround(ev);
+  const box = p && ((sec.pick === "new" && sec.view.next !== null) || sec.pick === -1);
+  if (!dot && !box) return;
+  ev.preventDefault();
+  ev.stopPropagation();   // the view doesn't turn under the drag
+  mv.gl.renderer.domElement.parentElement.setPointerCapture(ev.pointerId);
+  if (dot) sec.drag = { key: dot.key, owners: dot.owners, moved: false, from: [dot.x, dot.y], around: sectorAround(dot.owners) };
+  else {
+    const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+    sec.newBox = { x0: x, y0: y, x1: x, y1: y, none: sec.pick === -1 };
+  }
+  sectorDrawLines();
+}
+
+function sectorShapeMove(ev) {
+  if (!sectorShapesOn()) return;
+  if (!sec.drag && !sec.newBox) {   // over a dot: it's drawn bigger, so it's clear what a press takes
+    const dot = sectorDotAt(ev), key = dot ? dot.key : null;
+    if (key !== sec.hot) { sec.hot = key; sectorDrawLines(); }
+    mv.gl.renderer.domElement.style.cursor = key ? "grab" : "";
+    return;
+  }
+  const p = hitGround(ev);
+  if (!p) return;
+  const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+  if (sec.drag) {
+    for (const [num, i] of sec.drag.owners) { sec.lines[num][i] = x; sec.lines[num][i + 1] = y; }
+    sec.drag.key = `${x},${y}`;
+    sec.drag.moved = true;
+  } else {
+    sec.newBox.x1 = x;
+    sec.newBox.y1 = y;
+  }
+  sectorDrawLines();
+}
+
+function sectorShapeUp() {
+  const d = sec.drag, b = sec.newBox;
+  sec.drag = null;
+  sec.newBox = null;
+  if (d && d.moved) {   // the ground that changed: each sector's two triangles round the corner, before and after
+    const [ox, oy] = d.from, [nx, ny] = d.key.split(",").map(Number), within = [];
+    for (const [, , prev, next] of d.around) within.push([prev, [ox, oy], next], [prev, [nx, ny], next]);
+    sectorSaveShapes(d.owners.map(([num]) => num), within);
+  } else if (b) {
+    const [x0, x1] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1)], [y0, y1] = [Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+    const [mx0, , , mx1] = mv.edit.bounds;
+    if (x1 - x0 > (mx1 - mx0) / 200 && y1 - y0 > (mx1 - mx0) / 200) {   // (a click, not a box: nothing)
+      const n = b.none ? -1 : sec.view.next;
+      sec.pick = n;   // the new sector stays picked (No sector too: another box)
+      sectorCall(() => mv.api.sector_area(mv.current, sec.file, [{ sector: n, points: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] }]));
+    }
+  }
+  sectorDrawLines();
+}
+
+// Double-click a border: a new dot there, in each sector the border belongs to. Nothing changes until it's dragged
+// (the drag saves it with the shape), so it's only drawn till then.
+function sectorAddDot(ev) {
+  if (!sectorShapesOn() || !mv.brush.mod || sec.busy) return;
+  const e = sectorEdgeAt(ev);
+  if (!e) return;
+  for (const p of Object.values(sec.lines)) {
+    for (let i = 0; i < p.length; i += 2) {
+      const j = (i + 2) % p.length, a = `${p[i]},${p[i + 1]}`, b = `${p[j]},${p[j + 1]}`;
+      if ((a === e.a && b === e.b) || (a === e.b && b === e.a)) {
+        p.splice(i + 2, 0, e.x, e.y);
+        break;
+      }
+    }
+  }
+  sec.hot = `${e.x},${e.y}`;
+  sectorDrawLines();
+}
+
+// Right-click a dot: it's taken out of each sector that has it (a sector keeps at least three corners).
+function sectorRemoveDot(ev) {
+  if (!sectorShapesOn()) return false;
+  const dot = sectorDotAt(ev);
+  if (!dot) return false;
+  ev.preventDefault();
+  if (!mv.brush.mod || sec.busy || dot.owners.some(([num]) => sec.lines[num].length <= 6)) return true;
+  const within = sectorAround(dot.owners).map(([, , prev, next]) => [prev, [dot.x, dot.y], next]);   // the corner cut off
+  for (const [num, i] of dot.owners) sec.lines[num].splice(i, 2);
+  sectorSaveShapes(dot.owners.map(([num]) => num), within);
+  return true;
+}
+
+// One dab on the shown cells (the build's rule: a cell whose middle is inside it), before the save.
+function sectorDab(x, y, value) {
+  if (!sec.cells || !sec.box) return;
+  const [bx, by, bw, bh] = sec.box, cw = bw / sec.nx, ch = bh / sec.ny, r = sec.painting.radius;
+  const s = { x, y, radius: r, shape: sec.shape };
+  const c0 = Math.max(0, Math.floor((x - r - bx) / cw)), c1 = Math.min(sec.nx - 1, Math.ceil((x + r - bx) / cw));
+  const r0 = Math.max(0, Math.floor((y - r - by) / ch)), r1 = Math.min(sec.ny - 1, Math.ceil((y + r - by) / ch));
+  if (c0 > c1 || r0 > r1) return;
+  for (let row = r0; row <= r1; row++) {
+    const cy = by + (row + 0.5) * ch;
+    for (let c = c0; c <= c1; c++) if (footT2(s, bx + (c + 0.5) * cw, cy) < 1) sec.cells[row * sec.nx + c] = value + 1;
+  }
+  sectorDrawCells(r0, r1, c0, c1);
+}
+
+// A press on the ground with the Sectors brush: the drag starts (its dabs every half radius, as Cover's).
+function sectorDown(ev, s) {
+  if (sec.mode !== "paint") return;   // (Shapes: sectorShapeDown, before the view's own)
+  if (!mv.brush.mod || !sec.view || sec.busy) return;  // (no mod: the note says so already)
+  const value = sec.pick === "new" ? sec.view.next : sec.pick;
+  if (value === null || value === undefined) { sec.error = mv.words.tip_sectors_new_full; renderSectorTools(s); return; }
+  const p = hitGround(ev);
+  if (!p) return;
+  const x = Math.round(p.x / SCALE), y = Math.round(p.z / SCALE);
+  sec.painting = { file: s.file, value, radius: Math.max(1, Math.round(sectorRadius())), points: [[x, y]], last: [x, y] };
+  sectorDab(x, y, value);
+  mv.gl.renderer.domElement.setPointerCapture(ev.pointerId);
+}
+
+function sectorMove(p) {
+  const g = sec.painting;
+  if (sec.mode !== "paint") return;
+  sectorRing(p);
+  if (!g || !p) return;
+  const x = p.x / SCALE, y = p.z / SCALE, spacing = g.radius / 2;
+  let [lx, ly] = g.last, dist = Math.hypot(x - lx, y - ly);
+  while (dist >= spacing && g.points.length < 5000) {
+    lx += (x - lx) * spacing / dist;
+    ly += (y - ly) * spacing / dist;
+    g.points.push([Math.round(lx), Math.round(ly)]);
+    sectorDab(lx, ly, g.value);
+    dist = Math.hypot(x - lx, y - ly);
+  }
+  g.last = [lx, ly];
+}
+
+// Let go: the drag saved as one stroke; a new sector stays picked, so the next drag paints more of it.
+function sectorUp() {
+  const g = sec.painting;
+  sec.painting = null;
+  if (!g) return;
+  if (sec.pick === "new") sec.pick = g.value;
+  sectorCall(() => mv.api.sector_paint(mv.current, g.file, g.value, g.radius, g.points, sec.shape));
+}
+
+// The brush's outline under the pointer, in the picked sector's colour (red: No sector).
+function sectorRing(p) {
+  const gl = mv.gl;
+  if (!gl || !gl.ring) return;
+  const r = sectorRadius() * SCALE, square = sec.shape === "square";
+  gl.ring.visible = Boolean(p) && !square;
+  gl.squareRing.visible = Boolean(p) && square;
+  if (p) {
+    const value = sec.pick === "new" ? (sec.view ? sec.view.next : 0) : sec.pick;
+    if (value === -1 || value === null) gl.ring.material.color.setHex(0xe0533d);
+    else gl.ring.material.color.setRGB(...sectorRgb(value).map((c) => c / 255));
+    gl.ring.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.ring.scale.set(r, r, r);
+    gl.squareRing.position.set(p.x, p.y + r * 0.02, p.z);
+    gl.squareRing.scale.set(r * Math.SQRT2, r * Math.SQRT2, r * Math.SQRT2);
+    gl.squareRing.rotation.set(-Math.PI / 2, 0, 0);
+  }
+  gl.draw();
+}
+
+function watchSectorPointer(canvas) {
+  let pending = null, frame = 0;
+  canvas.addEventListener("pointermove", (ev) => {
+    if (scen.tool !== "sectors") return;
+    pending = ev;
+    if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (scen.tool === "sectors" && pending) sectorMove(hitGround(pending)); });
+  });
+  for (const type of ["pointerup", "pointercancel"]) canvas.addEventListener(type, () => { if (sec.painting) sectorUp(); });
+  canvas.addEventListener("pointerleave", () => { if (scen.tool === "sectors") sectorRing(null); });
+  // Shapes: a press on a dot (or a box for a new sector) is taken before the view turns (as Drag to move does)
+  const host = canvas.parentElement;
+  host.addEventListener("pointerdown", sectorShapeDown, { capture: true });
+  let shapeEv = null, shapeFrame = 0;
+  host.addEventListener("pointermove", (ev) => {
+    if (!sectorShapesOn()) return;
+    shapeEv = ev;
+    if (!shapeFrame) shapeFrame = requestAnimationFrame(() => { shapeFrame = 0; if (shapeEv) sectorShapeMove(shapeEv); });
+  });
+  for (const type of ["pointerup", "pointercancel"]) host.addEventListener(type, () => { if (sec.drag || sec.newBox) sectorShapeUp(); });
+  canvas.addEventListener("dblclick", sectorAddDot);
+  // right-drag moves the view: only a right-click that stays put takes a dot out
+  let rightAt = null;
+  host.addEventListener("pointerdown", (ev) => { rightAt = ev.button === 2 ? [ev.clientX, ev.clientY] : null; }, { capture: true });
+  canvas.addEventListener("contextmenu", (ev) => {
+    if (rightAt && Math.hypot(ev.clientX - rightAt[0], ev.clientY - rightAt[1]) <= 4) sectorRemoveDot(ev);
+    rightAt = null;
+  });
+  $("scen-sectors-size").addEventListener("input", (e) => {
+    sec.size = Number(e.target.value) || 1;
+    $("scen-sectors-size-label").textContent = fill(mv.words.sectors_size, { pct: sec.size });
+  });
+  $("scen-sectors-outlines").addEventListener("change", (e) => {
+    sec.outlines = e.target.checked;
+    if (sec.outlines && sec.file) loadSectorView(true);
+    else sectorDrawLines();
+  });
 }
 
 // Save a change, then draw the scenario as the mod leaves it now.
@@ -3327,8 +4390,15 @@ async function scenEdit(call, keepPicked = false) {
 
 function scenPointerDown(ev) {
   const gl = mv.gl, s = ((scen.data || {}).scenarios || [])[scen.pick];
-  if (!scen.tool || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
+  if (scen.tool === "cameras" && ev.button === 0 && gl.ground && mv.edit) {  // Camera moves: the next point, or the look
+    ev.preventDefault();
+    const p = hitGround(ev);
+    if (p && window.MissionView) window.MissionView.cameraClick(p.x / SCALE, p.z / SCALE, p.y / SCALE);
+    return;
+  }
+  if (!scen.tool || FORM_TOOLS.has(scen.tool) || ev.button !== 0 || !gl.ground || !mv.edit || !s) return;
   ev.preventDefault();
+  if (scen.tool === "sectors") { sectorDown(ev, s); return; }  // the Sectors brush: a drag paints
   // Move, pressed on the ground (a press on an item is grabStart's): a box dragged selects every spawn in it (no mod
   // needed); a click puts the item picked there, or clears what's selected (boxEnd)
   if (scen.tool === "move") { boxStart(ev); return; }
@@ -3345,9 +4415,13 @@ function scenPointerDown(ev) {
 // Pressing on empty ground still turns the view. ---
 const GRABBABLE = ["StartingPoint", "Spawn", "LabelVille", "LabelMontagne", "Name", "CircularZone", "RectangleZone"];
 
+// On the Scenario side the scenario's things move (on the Map side they're faded and locked), except the towns' and
+// hills' names: those move on the Map side, looking around or with Names open.
 function canGrab() {
+  const tools = mv.mode === "scenario" ? !scen.tool || scen.tool === "move" || FORM_TOOLS.has(scen.tool)
+    : !scen.tool || scen.tool === "names";
   return Boolean(mv.gl && mv.edit && scen.group && scen.group.visible && !mv.brush.on && !mv.place.on && !road.on
-    && !bridge.on && (!scen.tool || scen.tool === "move"));
+    && !bridge.on && tools);
 }
 
 // What a press at `ev` would grab: {cam: the start} for a camera's grip, {it, objs} for an item (its drawn parts), or null
@@ -3357,8 +4431,11 @@ function grabAt(ev) {
   const rect = gl.renderer.domElement.getBoundingClientRect();
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
-  const items = scen.group.children.filter((o) => o.userData.item !== undefined);
-  const grips = scen.group.children.flatMap((o) => o.isGroup ? o.children : []).filter((o) => o.userData.camOf !== undefined);
+  const onMap = mv.mode === "map";   // the Map side grabs the names alone, the Scenario side everything but them
+  const items = (onMap ? (scen.names ? scen.names.children : []) : scen.group.children)
+    .filter((o) => o.userData.item !== undefined);
+  const grips = onMap ? [] : scen.group.children.flatMap((o) => o.isGroup && o !== scen.names ? o.children : [])
+    .filter((o) => o.userData.camOf !== undefined);
   const hit = gl.raycaster.intersectObjects([...items, ...grips], false)[0];
   if (!hit) return null;
   if (hit.object.userData.camOf !== undefined) {
@@ -3480,17 +4557,25 @@ async function scenPlaceAt(s, cx, cy) {
     moveItem(s, it, x, y);
     return;
   }
-  if (scen.tool === "mark") {  // a new name on the map, named point or zone where clicked
+  if (scen.tool === "mark" || scen.tool === "names") {  // a new name on the map, named point or zone where clicked
     const kind = scen.markKind, words = $("scen-mark-words").value.trim();
     if ((kind === "LabelVille" || kind === "LabelMontagne") && !words) {
       scenNote(mv.words.scen_mark_words_first, "error");
       $("scen-mark-words").focus();
       return;
     }
-    scenEdit(() => mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words));
+    const metres = Number($("scen-mark-size").value);
+    const size = (kind === "CircularZone" || kind === "RectangleZone") && metres > 0 ? metres * METRE : null;
+    const before = new Set(s.items.map((it) => it.item));
+    await scenEdit(() => mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words, size));
+    // the one just placed stays picked: its name and size in the tray, to change at once
+    const now = ((scen.data || {}).scenarios || [])[scen.pick];
+    const made = now && now.items.find((it) => it.kind === kind && it.mine && !before.has(it.item));
+    if (made && kind !== "LabelVille" && kind !== "LabelMontagne") selectSpawn(made, false);
     return;
   }
-  if (scen.tool === "start") {  // a new starting point: the team's next place, beside a road unless the toggle's off
+  // a new starting point: the team's next place, beside a road unless the toggle's off
+  if (scen.tool === "start") {
     const [x, y] = await snapToRoad("hq", cx, cy);
     scenEdit(() => mv.api.scenario_add_start(mv.current, s.file, scen.team, x, y)).then(() => loadPlayers(mv.current));
     return;
@@ -3500,7 +4585,7 @@ async function scenPlaceAt(s, cx, cy) {
   let points = formationPoints(cx, cy);
   if (snapKind(null, unit) === "depot") points = await Promise.all(points.map(([px, py]) => snapToRoad("depot", px, py)));
   scenEdit(() => mv.api.scenario_spawn_many(mv.current, s.file, unit, points,
-    camp === "" ? null : Number(camp), Math.atan2(fy, fx)));
+    camp === "" ? null : Number(camp), Math.atan2(fy, fx), unit === DEPOT_SLAB && scen.trucksSet ? scen.trucks : null));
 }
 
 // Pointing at a zone, a starting point or a spawn says what it is.
@@ -3511,19 +4596,23 @@ function scenarioAt(ev) {
   gl.ndc.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
   gl.raycaster.setFromCamera(gl.ndc, gl.camera);
   // the spawns' icons are sprites, not meshes: left out, pointing at a unit said nothing (a French player, 2026-10-05)
-  const shown = [...scen.group.children, ...(scen.zones && scen.zones.visible ? scen.zones.children : [])]  // their own group
-    .filter((o) => (o.isMesh || o.isSprite) && o.userData.label);
-  const hits = gl.raycaster.intersectObjects(shown, false);
-  // an icon, a pillar or a diamond before a zone
-  const solid = hits.find((h) => h.object.isSprite || h.object.geometry.type !== "BufferGeometry");
-  return ((solid || hits[0]) || { object: { userData: {} } }).object.userData.label || "";
+  const shown = scen.group.children.filter((o) => (o.isMesh || o.isSprite) && o.userData.label);
+  const hit = gl.raycaster.intersectObjects(shown, false)[0];
+  if (hit) return hit.object.userData.label || "";  // an icon, a pillar or a diamond before a zone
+  if (!scen.zones || !scen.zones.visible || !gl.ground) return "";
+  const p = gl.raycaster.intersectObject(gl.ground, false)[0];  // the zones under the pointer, on the map itself
+  return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : "";
 }
 
 async function loadScenery(pack, ask) {
   clearScenery();
   $("scenery-stats").textContent = mv.words.scenery_loading;
-  const data = await mv.api.map_scenery(pack);
+  let data = await mv.api.map_scenery(pack);
   if (ask !== mv.ask || !mv.edit) return;
+  if (blankMap(pack)) {  // every object of the map it copies is erased: none drawn or pointed at; the types stay (Place)
+    const none = { shown: 0, total: 0 };
+    data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };
+  }
   mv.scenery.data = data;
   mv.scenery.meshes = sceneryMeshes(data);
   for (const mesh of Object.values(mv.scenery.meshes)) mv.gl.scene.add(mesh);
@@ -3598,6 +4687,7 @@ function renderPlace() {
   $("place-turn").title = w.tip_place_turn;
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
   $("place-size").title = w.tip_place_size;
+  typedBeside("place-size", TYPED.place, () => p.size, (n) => { p.size = n; renderPlace(); }, w.tip_place_size);
   $("place-solid-row").classList.toggle("hidden", p.group !== "building");  // only buildings stop units
   $("place-solid").checked = p.solid;
   $("place-solid-label").textContent = w.place_solid;
@@ -3617,9 +4707,12 @@ function renderPlace() {
   $("place-spacing").value = spacingOf(p.group);
   $("place-spacing-label").textContent = fill(w.place_spacing, { m: spacingOf(p.group) });
   $("place-spacing").title = w.tip_place_spacing;
+  typedBeside("place-spacing", TYPED.spacing, () => spacingOf(p.group), (n) => { p.spacing[p.group] = n; renderPlace(); },
+    w.tip_place_spacing);
   $("place-area").value = p.area;
   $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
   $("place-area").title = w.tip_place_area_size;
+  typedBeside("place-area", TYPED.area, () => p.area, (n) => { p.area = n; renderPlace(); }, w.tip_place_area_size);
   if (p.on) $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help : w.place_help;
 }
 
@@ -3629,7 +4722,7 @@ function spacingOf(group) {
 
 function setPlaceMode(on) {
   mv.place.on = on;
-  if (on) { dock.scenario = false; dock.check = false; stopRoad(); stopBridge(); }
+  if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
   if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
   if (on && mv.brush.on) setBrushMode(false);
@@ -3846,6 +4939,7 @@ function takeOff(objs) {
 // --- showing one map ---
 async function show(pack, keepCamera) {
   const w = mv.words, ask = ++mv.ask;
+  if (mv.current !== pack && window.MissionView) window.MissionView.forget();  // another map: its own mission
   mv.current = pack;
   renderList();
   $("map-pick").textContent = w.map_loading;
@@ -3904,8 +4998,9 @@ async function show(pack, keepCamera) {
   $("map-hud").classList.remove("hidden");
   $("map-dock").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
-  loadScenery(pack, ask).then(() => loadModels(pack, ask).catch((err) => {  // the shapes stay when models can't be had
-    $("map-ground").textContent = (err && err.message) || String(err);
+  const blank = blankMap(pack);  // nothing of the map it copies is drawn: no models for its objects, no ground pictures
+  loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask).catch((err) => {  // the shapes stay when
+    $("map-ground").textContent = (err && err.message) || String(err);  // models can't be had
   })).catch((err) => {  // no types to place then: the place panel says so too
     $("scenery-stats").textContent = (err && err.message) || String(err);
     placeNote((err && err.message) || String(err), "error");
@@ -3916,12 +5011,22 @@ async function show(pack, keepCamera) {
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadRoads(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadModRoads(pack, ask).catch((err) => roadNote((err && err.message) || String(err), "error"));
-  realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+  if (blank) $("map-ground").textContent = "";  // (the last map's "loading" said nothing more)
+  else realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
+}
+
+// A map started blank (Duplicate map's Blank Terrain or Blank Ocean; StudioApi.maps "blank"): nothing of the map it
+// copies is drawn on it, as nothing of it is in the game (the owner, 2026-10-09: "nothing should be there. This isn't
+// D-Day"): not its objects (all erased), its roads (taken out), the items it took out or its ground's pictures. What
+// the modder adds shows as on any map.
+function blankMap(pack = mv.current) {
+  const m = (mv.maps || []).find((x) => x.pack === pack);
+  return Boolean(m && m.blank);
 }
 
 // --- the dock: the tools by kind along the bottom, as Cities: Skylines does it (a bar of kinds; the kind picked opens
 // its tray above), drawn in the game's own HUD look (style.css). [kind, its brushes]: the three place kinds place the
-// map's own types, the scenario kind edits the picked scenario. ---
+// map's own types; Sectors and the scen_ kinds are the picked scenario's tools (scen.tool). ---
 const DOCK = [
   ["terrain", ["hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp"]],
   ["water", ["water", "drain"]],
@@ -3929,24 +5034,57 @@ const DOCK = [
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
   ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp"]], ["erase", ["erase"]],
-  ["scenario", null], ["check", null],
+  ["sectors", null], ["scen_move", null], ["scen_spawn", null], ["scen_start", null], ["scen_mark", null],
+  ["scen_mission", null], ["scen_goals", null], ["scen_events", null], ["scen_cameras", null],
+  ["check", null],
 ];
-// The bar's tiles: kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a
-// tab per kind. [group, its kinds, its icon]. Map Paint holds Paint and Erase (the owner, 2026-10-03: "an editing tab
-// or like a drawing tab and include the erase tool with it").
-const DOCK_GROUPS = [
-  ["ground", ["terrain", "water"], "terrain"],
-  ["zones", ["cover", "movement"], "cover"],
-  ["ways", ["roads", "bridges"], "roads"],
-  ["building", ["building"], "building"],
-  ["nature", ["prop", "vegetation"], "vegetation"],
-  ["paint", ["paint", "erase"], "paint"],
-  ["scenario", ["scenario"], "scenario"],
-  ["check", ["check"], "check"],
-];
-// the scenario kind open (no tool picked yet); "Check this map" open; the last brush of each kind; the last kind
-// open in each group
-const dock = { scenario: false, check: false, last: {}, lastIn: {} };
+// The bar's tiles, per side (the owner, 2026-10-09: a Map / Scenario button "swaps the tool panel only"; Map is
+// "terrain, roads, like making woods, making like cities", Scenario "spawning the units, choosing the sides, the camera
+// angles"): kinds that go together share one (the owner, 2026-10-01: the bar was too long), its tray showing a tab per
+// kind. [group, its kinds, its icon]. Map Paint holds Paint and Erase (the owner, 2026-10-03: "an editing tab or like a
+// drawing tab and include the erase tool with it"). Check is on both sides.
+const DOCK_GROUPS = {
+  map: [
+    ["ground", ["terrain", "water"], "terrain"],
+    ["zones", ["cover", "movement"], "cover"],
+    ["ways", ["roads", "bridges"], "roads"],
+    // a town's buildings and its name together (the names are the scenario's items, placed on this side); a tile of
+    // their own wrapped the bar onto two rows
+    ["building", ["building", "scen_names"], "building"],
+    ["nature", ["prop", "vegetation"], "vegetation"],
+    ["paint", ["paint", "erase"], "paint"],
+    ["sectors", ["sectors"], "sectors"],
+    ["check", ["check"], "check"],
+  ],
+  scenario: [
+    ["scen_move", ["scen_move"], "move"],
+    ["scen_spawn", ["scen_spawn"], "spawn"],
+    ["scen_start", ["scen_start"], "start"],
+    ["scen_mark", ["scen_mark"], "mark"],
+    // a new Operation's or chapter's own mission (mission.js): sides and rules, goals and events, camera moves
+    ["scen_mission", ["scen_mission"], "mission"],
+    ["scen_story", ["scen_goals", "scen_events"], "goals"],
+    ["scen_cameras", ["scen_cameras"], "camera"],
+    ["check", ["check"], "check"],
+  ],
+};
+const MISSION_DOCK_KINDS = new Set(["scen_mission", "scen_goals", "scen_events", "scen_cameras"]);  // need a mission's map
+const SCEN_KINDS = new Set(["sectors", "scen_names", "scen_move", "scen_spawn", "scen_start", "scen_mark",
+  ...MISSION_DOCK_KINDS]);
+const MAP_SIDE_TOOLS = new Set(["sectors", "names"]);   // the scenario's tools whose tiles are on the Map side
+const scenToolOf = (kind) => (kind === "sectors" ? "sectors" : kind.slice("scen_".length));
+// the mission's trays are forms: the map turns and grabs as when looking around (Camera moves takes its clicks)
+const FORM_TOOLS = new Set(["mission", "goals", "events"]);
+const MISSION_TOOLS = new Set(["mission", "goals", "events", "cameras"]);
+
+// Why the open map can't have a mission of its own (a word key), or null: a new Operation's or chapter's only
+function missionLocked() {
+  const m = mv.maps.find((x) => x.pack === mv.current);
+  if (!m || !m.copy_of) return "mission_why_copy";
+  return (m.kinds || []).some((k) => k === "operation" || k === "campaign") ? null : "mission_why_battles";
+}
+// "Check this map" open; the last brush of each kind; the last kind open in each group
+const dock = { check: false, last: {}, lastIn: {} };
 
 // 24-unit line drawings, one per kind and tool (stroked, see .dock-tile svg)
 const ICONS = {
@@ -3991,6 +5129,10 @@ const ICONS = {
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
   mark: "M12 21s-6-6.5-6-11a6 6 0 0 1 12 0c0 4.5-6 11-6 11z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
+  sectors: "M3 4h18v16H3z M3 11c4 0 5-3 9-3 M12 8v12 M12 14c3 0 5 2 9 2",
+  mission: "M6 3h9l4 4v14H6z M15 3v4h4 M9 11h7 M9 15h7 M9 19h4",
+  goals: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2z",
+  camera: "M3 8h12v10H3z M15 11l6-3v10l-6-3 M6 5h4",
 };
 const BRUSH_ICON = { water: "drop", cover: "cover", block: "movement" };
 for (const f of FORMATIONS) {
@@ -4020,18 +5162,33 @@ function brushKind(name) {
 function kindName(kind) {
   const w = mv.words;
   return { terrain: w.dock_terrain, water: w.brush_water, cover: w.brush_cover, movement: w.dock_movement, roads: w.dock_roads,
-    bridges: w.dock_bridges, check: w.dock_check, scenario: w.scen_show, erase: w.brush_erase, paint: w.dock_paint }[kind]
+    bridges: w.dock_bridges, check: w.dock_check, erase: w.brush_erase, paint: w.dock_paint, sectors: w.scen_sectors_tool,
+    scen_move: w.scen_move_tool, scen_spawn: w.scen_spawn_tool, scen_start: w.scen_start_tool, scen_mark: w.scen_mark_tool,
+    scen_names: w.scen_names_tool,
+    scen_mission: w.scen_mission_tool, scen_goals: w.scen_goals_tool, scen_events: w.scen_events_tool,
+    scen_cameras: w.scen_cameras_tool }[kind]
     || w[`scenery_${kind}`] || kind;
 }
 
-// The kind open: the brush's, the place kind's, or the scenario's; null while just looking around.
+// What a kind does, one sentence (its tile's and its tray's): a scenario tool says its own (tip_scen_*)
+function kindTip(kind) {
+  const w = mv.words;
+  return (SCEN_KINDS.has(kind) ? w[`tip_scen_${scenToolOf(kind)}`] : w[`tip_dock_${kind}`]) || "";
+}
+
+// The scenario picked in the map panel (each has its own units, HQs, names and sectors), or none
+function pickedScenario() {
+  return ((scen.data || {}).scenarios || [])[scen.pick] || null;
+}
+
+// The kind open: the brush's, the place kind's, or the scenario tool's; null while just looking around.
 function dockKind() {
   if (mv.brush.on) return brushKind(mv.brush.name);
   if (road.on) return "roads";
   if (bridge.on) return "bridges";
   if (mv.place.on) return mv.place.group;
   if (dock.check) return "check";
-  return dock.scenario || scen.tool ? "scenario" : null;
+  return scen.tool ? (scen.tool === "sectors" ? "sectors" : "scen_" + scen.tool) : null;
 }
 
 function openKind(kind) {
@@ -4047,10 +5204,10 @@ function openKind(kind) {
     renderDock();
     return;
   }
-  if (kind === "scenario") {
+  if (SCEN_KINDS.has(kind)) {
+    if (MISSION_DOCK_KINDS.has(kind) ? missionLocked() : !pickedScenario()) return;  // its tile is locked and says why
     lookAround();
-    dock.scenario = true;
-    renderDock();
+    setScenTool(scenToolOf(kind));
     return;
   }
   mv.place.group = kind;
@@ -4060,31 +5217,42 @@ function openKind(kind) {
   setPlaceMode(true);
 }
 
+const dockGroups = () => DOCK_GROUPS[mv.mode];
+
 function groupOf(kind) {
-  return (DOCK_GROUPS.find(([, kinds]) => kinds.includes(kind)) || [null])[0];
+  return (dockGroups().find(([, kinds]) => kinds.includes(kind)) || [null])[0];
 }
 
 function groupName(group) {
-  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  const [, kinds] = dockGroups().find(([g]) => g === group);
   return kinds.length === 1 ? kindName(kinds[0]) : mv.words[`dock_group_${group}`] || kinds.map(kindName).join(" & ");
 }
 
 // A tile opens its group at the kind last used there; the open group's tile again closes it.
 function openGroup(group) {
-  const [, kinds] = DOCK_GROUPS.find(([g]) => g === group);
+  const [, kinds] = dockGroups().find(([g]) => g === group);
   if (kinds.includes(dockKind())) { lookAround(); return; }
   openKind(dock.lastIn[group] || kinds[0]);
 }
 
-// The bar's tiles, again when the words change.
+// The bar's tiles, again when the words change or the side does.
 function renderDockBar() {
   const w = mv.words;
+  for (const [id, mode, word, tip] of [["mode-map", "map", "mode_map", "tip_mode_map"],
+    ["mode-scen", "scenario", "scen_show", "tip_mode_scenario"]]) {
+    const b = $(id);
+    b.textContent = w[word] || mode;
+    b.title = w[tip] || "";
+    b.setAttribute("aria-checked", String(mv.mode === mode));
+  }
+  $("dock-mode").setAttribute("aria-label", w.mode_label || "");
   iconTile($("brush-look"), "look", w.brush_look).title = w.tip_look;
-  $("dock-kinds").replaceChildren(...DOCK_GROUPS.map(([group, kinds, icon]) => {
-    const tip = kinds.length === 1 ? w[`tip_dock_${kinds[0]}`] : w[`tip_dock_group_${group}`];
+  $("dock-kinds").replaceChildren(...dockGroups().map(([group, kinds, icon]) => {
+    const tip = kinds.length === 1 ? kindTip(kinds[0]) : w[`tip_dock_group_${group}`];
     const tile = iconTile(el("button", { type: "button", className: "dock-tile", title: tip || "" }), icon,
       groupName(group));
     tile.dataset.group = group;
+    tile.dataset.tip = tip || "";
     tile.addEventListener("click", () => openGroup(group));
     return tile;
   }));
@@ -4092,14 +5260,24 @@ function renderDockBar() {
 }
 
 function renderDock() {
-  const w = mv.words, kind = dockKind(), group = groupOf(kind);
+  const w = mv.words, kind = dockKind(), group = groupOf(kind), s = pickedScenario();
   if (group) dock.lastIn[group] = kind;
   $("brush-look").setAttribute("aria-pressed", String(!kind));
-  for (const tile of $("dock-kinds").children) tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
+  for (const tile of $("dock-kinds").children) {
+    tile.setAttribute("aria-pressed", String(tile.dataset.group === group));
+    // a scenario's tools need a scenario, a mission's a new Operation or chapter: locked, saying why
+    const g = tile.dataset.group;
+    const kindsOf = (dockGroups().find(([x]) => x === g) || [null, []])[1];
+    const why = kindsOf.some((k) => MISSION_DOCK_KINDS.has(k)) ? missionLocked() && w[missionLocked()]
+      : SCEN_KINDS.has(g) && !s ? (g === "sectors" ? w.tip_scen_sectors_locked : w.tip_scen_locked) : null;
+    tile.disabled = Boolean(why);
+    tile.title = why || tile.dataset.tip;
+  }
   // a group of two kinds: a tab for each, above the open one's tools
-  const kinds = group ? DOCK_GROUPS.find(([g]) => g === group)[1] : [];
+  const kinds = group ? dockGroups().find(([g]) => g === group)[1] : [];
   $("tray-tabs").replaceChildren(...(kinds.length > 1 ? kinds.map((k) => {
-    const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: w[`tip_dock_${k}`] || "" });
+    const tab = el("button", { type: "button", className: "tray-tab", textContent: kindName(k), title: kindTip(k) });
+    if (SCEN_KINDS.has(k) && !s) { tab.disabled = true; tab.title = w.tip_scen_locked; }   // Names needs a scenario
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", String(k === kind));
     tab.addEventListener("click", () => { if (k !== dockKind()) openKind(k); });
@@ -4108,12 +5286,39 @@ function renderDock() {
   $("dock-tray").classList.toggle("hidden", !kind);
   $("tray-brush").classList.toggle("hidden", !(kind && (DOCK.find(([k]) => k === kind) || [])[1]));
   $("tray-place").classList.toggle("hidden", !PLACEABLE.includes(kind));
-  $("tray-scen").classList.toggle("hidden", kind !== "scenario");
+  $("tray-scen").classList.toggle("hidden", !(SCEN_KINDS.has(kind) && kind !== "sectors" && !MISSION_DOCK_KINDS.has(kind)));
+  $("tray-sectors").classList.toggle("hidden", kind !== "sectors");
+  $("tray-mission").classList.toggle("hidden", !MISSION_DOCK_KINDS.has(kind));
   $("tray-roads").classList.toggle("hidden", kind !== "roads");
   $("tray-bridges").classList.toggle("hidden", kind !== "bridges");
   $("tray-check").classList.toggle("hidden", kind !== "check");
   $("tray-title").textContent = kind ? groupName(group) : "";
-  $("tray-tip").textContent = kind ? w[`tip_dock_${kind}`] || "" : "";
+  $("tray-tip").textContent = kind ? kindTip(kind) : "";
+}
+
+// The switch between the two sides: whatever tool was open closes, the bar takes the other side's tools, and the
+// side left behind fades and locks (fadeLayers, canGrab, the hover line). Kept by the Studio (prefs "view").
+function setMode(mode) {
+  if (mv.mode === mode) return;
+  lookAround();
+  toMode(mode);
+}
+
+// The side a tool belongs to, when the tool is opened another way (a key, a button in a list): the bar follows it.
+function toMode(mode) {
+  if (mv.mode === mode) return;
+  mv.mode = mode;
+  if (mode === "map" && (scen.sel.size || scen.selected !== null)) {  // the scenario's selection doesn't stay behind
+    scen.sel.clear();
+    scen.selected = null;
+  }
+  $("scenery-hover").textContent = "";
+  renderDockBar();
+  if (scen.data) drawScenario();  // its hover words: "drag to move" only where it moves
+  renderScenTools();
+  pointerMode();
+  saveView();
+  if (mv.gl) mv.gl.draw();
 }
 
 // --- new roads, Cities: Skylines style (maps/<map>/roads.toml; StudioApi.road_add, rusemod.roadnet). Straight: click
@@ -4375,7 +5580,7 @@ function setRoadMode(on) {
     if (mv.brush.on) setBrushMode(false);
     if (mv.place.on) setPlaceMode(false);
     if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-    dock.scenario = false;
+    toMode("map");
     dock.check = false;
     stopBridge();
     road.on = true;
@@ -4600,7 +5805,7 @@ function setBridgeMode(on) {
     if (mv.brush.on) setBrushMode(false);
     if (mv.place.on) setPlaceMode(false);
     if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-    dock.scenario = false;
+    toMode("map");
     dock.check = false;
     stopRoad();
     bridge.on = true;
@@ -4921,6 +6126,8 @@ function renderBrushes() {
   }));
   const set = settingsOf(b.name), erase = erasing(), painting = PAINT_KINDS.has(BRUSHES[b.name][0]);
   $("brush-size").value = set.size;
+  typedBeside("brush-size", painting ? TYPED.paint : TYPED.size, () => settingsOf(b.name).size,
+    (n) => { settingsOf(b.name).size = n; sizeLabel(); }, w.tip_brush_size);
   $("brush-strength").value = set.strength;
   $("brush-strength-row").classList.toggle("hidden",
     ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));
@@ -4978,7 +6185,7 @@ function cancelRamp() {
 
 function setBrushMode(on) {
   mv.brush.on = on;
-  if (on) { dock.scenario = false; dock.check = false; stopRoad(); stopBridge(); }
+  if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on) { mv.place.on = false; if (scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); } }
   if (!on) cancelRamp();
   pointerMode();
@@ -4991,7 +6198,8 @@ function setBrushMode(on) {
 function pointerMode() {
   const gl = mv.gl;
   if (!gl) return;
-  const busy = mv.brush.on || mv.place.on || Boolean(scen.tool) || road.on || bridge.on, M = gl.THREE.MOUSE;
+  const busy = mv.brush.on || mv.place.on || (Boolean(scen.tool) && !FORM_TOOLS.has(scen.tool)) || road.on || bridge.on,
+    M = gl.THREE.MOUSE;
   // the middle button turns the view in every mode (the wheel zooms), so the hand never has to change buttons
   gl.controls.mouseButtons = busy ? { LEFT: null, MIDDLE: M.ROTATE, RIGHT: M.PAN }
                                   : { LEFT: M.ROTATE, MIDDLE: M.ROTATE, RIGHT: M.PAN };
@@ -5392,6 +6600,7 @@ function watchPointer() {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
   }
   canvas.addEventListener("pointerdown", scenPointerDown);
+  watchSectorPointer(canvas);  // the Sectors brush's drag and ring
   // Drag to move: listened for on the map's frame, before the view's own handlers (capture), so a press on an item
   // grabs it instead of turning the view; the frame keeps the pointer until the button's let go.
   const host = canvas.parentElement;
@@ -5501,7 +6710,7 @@ function watchPointer() {
   }
   let spawnMove = null, spawnFrame = 0;
   canvas.addEventListener("pointermove", (ev) => {
-    if (scen.tool !== "spawn") return;
+    if (!spawningNow()) return;
     spawnMove = ev;
     if (!spawnFrame) spawnFrame = requestAnimationFrame(() => { spawnFrame = 0; showFormation(spawnMove && hitGround(spawnMove)); });
   });
@@ -5514,9 +6723,12 @@ function watchPointer() {
     hoverEv = ev;
     if (!hoverFrame) hoverFrame = requestAnimationFrame(() => {
       hoverFrame = 0;
-      const s = scenarioAt(hoverEv);
-      const t = s ? null : sceneryAt(hoverEv);
-      $("scenery-hover").textContent = s || (t ? `${t[0]} · ${t[2] || t[1]}` : "");
+      // the side the bar is on is said first; a locked object of the map says where to go to change it
+      const said = () => {
+        const t = sceneryAt(hoverEv);
+        return t ? `${t[0]} · ${t[2] || t[1]}` + (mv.mode !== "map" && mv.words.locked_map ? ` · ${mv.words.locked_map}` : "") : "";
+      };
+      $("scenery-hover").textContent = mv.mode === "map" ? said() || scenarioAt(hoverEv) : scenarioAt(hoverEv) || said();
     });
   });
   canvas.addEventListener("pointerleave", () => {
@@ -5978,10 +7190,12 @@ function renderDupKinds() {
 
 function renderDupStarts() {
   const w = mv.words, map = mapName(dupPack()), battles = dup.kind === "battles";
+  const story = dup.kind === "operation" || dup.kind === "campaign";  // Blank Terrain starts its own mission there
   const starts = dup.scratch ? DUP_STARTS.filter((k) => k !== "copy") : DUP_STARTS;  // from scratch: blank only
   $("dup-start").textContent = w.dup_start;
   $("dup-starts").replaceChildren(...starts.map((k) => {
-    const b = el("button", { type: "button", className: "dup-kind", disabled: k !== "copy" && !battles },
+    const open = k === "copy" || battles || (story && k === "blank_terrain");
+    const b = el("button", { type: "button", className: "dup-kind", disabled: !open },
       el("span", { className: "kind-name", textContent: w[`dup_start_${k}`] }),
       el("span", { className: "kind-what", textContent: fill(w[`dup_start_${k}_what`], { map }) }),
       ...(w[`dup_start_${k}_warn`] ? [el("span", { className: "kind-warn", textContent: "⚠ " + w[`dup_start_${k}_warn`] })] : []));
@@ -5990,7 +7204,7 @@ function renderDupStarts() {
     b.addEventListener("click", () => { dup.start = k; renderDupStarts(); dupSuggestName(); });
     return b;
   }));
-  $("dup-start-note").textContent = w.dup_start_battles_only;
+  $("dup-start-note").textContent = story ? w.dup_start_own_mission : w.dup_start_battles_only;
   $("dup-start-note").classList.toggle("hidden", battles || !dup.entries.length);
   $("dup-how-edits").classList.toggle("hidden", dup.start !== "copy");  // a blank start takes none of them along
 }
@@ -6370,11 +7584,10 @@ function nudge(what, dir) {
 }
 
 function lookAround() {
-  dock.scenario = false;
   dock.check = false;
   stopRoad();
   stopBridge();
-  if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); }
+  if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); drawMissionCameras(); }
   cancelRamp();
   mv.place.lineStart = null;
   showPlaceGuide(null);
@@ -6418,11 +7631,14 @@ function onKey(e) {
     return;
   }
   if (fieldFocused(false)) return;
+  // the Map side's keys pick its tools on the Map side only: on the Scenario side a slip of a finger would turn the
+  // next click into a hill instead of a unit
+  const onMap = mv.mode === "map";
   const digit = /^Digit([0-9])$/.exec(e.code);
-  if (digit) { const b = Object.keys(BRUSHES)[(Number(digit[1]) + 9) % 10]; if (b) pickBrush(b); return; }
+  if (digit) { const b = Object.keys(BRUSHES)[(Number(digit[1]) + 9) % 10]; if (b && onMap) pickBrush(b); return; }
   const action = keys.by[e.code];
-  if (action === "brush") { if (mv.brush.on) lookAround(); else pickBrush(mv.brush.name); }
-  else if (action === "place") setPlaceMode(!mv.place.on);
+  if (action === "brush") { if (mv.brush.on) lookAround(); else if (onMap) pickBrush(mv.brush.name); }
+  else if (action === "place") { if (onMap) setPlaceMode(!mv.place.on); }
   else if (action === "size_down") nudge("size", -1);
   else if (action === "size_up") nudge("size", 1);
   else if (action === "strength_down") nudge("strength", -1);
@@ -6605,11 +7821,9 @@ function wire() {
     drawScenario();
     renderScenTools();
   });
-  $("scen-move").addEventListener("click", () => setScenTool("move"));
   $("scen-gap").addEventListener("input", (e) => { scen.gap[scen.kind] = Number(e.target.value); renderScenTools(); });
-  $("scen-spawn").addEventListener("click", () => setScenTool("spawn"));
-  $("scen-start").addEventListener("click", () => setScenTool("start"));
-  $("scen-mark").addEventListener("click", () => setScenTool("mark"));
+  $("mode-map").addEventListener("click", () => setMode("map"));
+  $("mode-scen").addEventListener("click", () => setMode("scenario"));
   $("scen-size").addEventListener("input", (e) => {  // the icons' size, live
     scen.iconSize = Number(e.target.value) / 100;
     saveScenView();
@@ -6789,7 +8003,7 @@ function foldMaps(folded) {
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
     scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
-    road_snap: road.snapOn, road_trees: road.keepTrees }).catch(() => {});
+    road_snap: road.snapOn, road_trees: road.keepTrees, map_mode: mv.mode }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
@@ -6808,7 +8022,8 @@ window.MapView = {
           const view = (await api.prefs()).view || {};
           mv.kind = view.map_kind || mv.kind;
           foldMaps(Boolean(view.maps_folded));
-          keptScenView(view);  // the Scenario tray's kinds shown and icon size
+          keptScenView(view);  // the Scenario tray's kinds shown and icon size, and the side the bar was on
+          renderDockBar();
         } catch { /* kept nothing */ }
         mv.maps = (await api.maps()).maps;
       } catch (err) {

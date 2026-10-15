@@ -24,6 +24,12 @@ Its units are changed on the **Units** tab, as always: **New unit…** puts a co
 [[units from other eras|Units-From-Other-Eras]] can join them. What a unit says is on its page, under **Voice** (see
 [[Music and sounds|Music-and-Sounds]]).
 
+**All its units at once** (on the Nations tab): **Hide all of <nation>'s units** takes them out of its build menus
+(its buildings stay), **Show them again** puts them back, and you can fill its menus with an era's units of another
+nation in one go (every unit ticked with its building picked; untick any, then add). A unit researched from a hidden
+one becomes buyable from the start, and the page says which. A building left with nothing to build is named, with a
+way to give it its own units back. Seen in the game (Italy's units hidden, China's era units in its menus).
+
 ## What's been seen in the game
 
 Seen (Italy made China): the new name in the lobby's nation list, the new flag beside the player's name in a match, no

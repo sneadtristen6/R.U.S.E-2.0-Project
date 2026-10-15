@@ -55,7 +55,7 @@ from .doctor import GAME_PROGRAMS
 from .instance import STEAM_APPID, _free, _remove_tree, _who
 from .steam import build_of
 
-BACKUPS = "RUSE-Backup"         # next to RUSE-Instances, on the game's drive
+BACKUPS = "RUSE-Backup"         # next to the modded copies' folder (RUSE-Instances on the game's drive, by default)
 MANIFEST = "manifest.json"
 SET_ASIDE = "set-aside-"        # + the date: the files a restore moved out of the game folder
 NO_BUILD = "no-build"           # the folder of a game whose Steam build can't be read (a folder picked by hand)
@@ -81,9 +81,13 @@ def steam_verify_url() -> str:
     return f"steam://validate/{STEAM_APPID}"
 
 
-def backups_dir(game: Path) -> Path:
-    """Where backups go: RUSE-Backup on the game's drive, beside RUSE-Instances."""
-    return Path(Path(game).anchor) / BACKUPS
+def backups_dir(game: Path, home: Path | None = None) -> Path:
+    """Where backups go: RUSE-Backup beside the modded copies' folder (rusemod.play.instances_dir: the folder chosen
+    in Settings, read from the platform folder `home`, else $RUSE_INSTANCES, else RUSE-Instances on the game's drive;
+    so by default RUSE-Backup on the game's drive). A backup made before the copies' folder was changed stays where
+    it was: the apps look beside the new folder only."""
+    from .play import instances_dir
+    return instances_dir(game, home).parent / BACKUPS
 
 
 def backup_path(folder: Path, build: str | None) -> Path:
@@ -899,7 +903,7 @@ class BackupCalls:
         return run
 
     def _backup_folder(self, game: Path) -> Path:
-        return Path(self._backups) if self._backups else backups_dir(game)
+        return Path(self._backups) if self._backups else backups_dir(game, self._home)
 
     def _the_game(self) -> Path:
         game = self._backup_game()

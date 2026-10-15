@@ -486,7 +486,8 @@ class Changes(unittest.TestCase):
                          ({"kind": "Spawn", "camp": -2}, "camp is -1"),
                          ({"kind": "Spawn", "camp": 1.5}, "camp is -1"),
                          ({"kind": "Spawn", "camp": True}, "camp is a number"),
-                         ({"kind": "Spawn", "trucks": 1001}, "0 to 1000"),
+                         ({"kind": "Spawn", "trucks": 2 ** 31}, "0 to 2,147,483,647"),
+                         ({"kind": "Spawn", "trucks": 2.5}, "whole number"),
                          ({"kind": "CircularZone", "radius": 0}, "more than 0"),
                          ({"kind": "CircularZone", "radius": float("nan")}, "more than 0"),
                          ({"kind": "Spawn"}, "changes nothing"),
@@ -494,6 +495,56 @@ class Changes(unittest.TestCase):
                          ({"kind": "Spawn", "file": "a.txt", "camp": 1}, "scenario's name")):
             with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
                 parse_changes([{"file": "a.scenario", "item": 0, **bad}])
+
+    def test_a_depot_may_have_more_trucks_than_the_old_top(self):
+        """The owner, 2026-10-10: "no way to increase max amt of money in supply depot". The Studio's own top of 1000
+        trucks is gone: a depot's trucks go up to what its 32-bit ChampInteger holds, written as one."""
+        from rusemod.scenario import TRUCKS_MOST, parse_changes, parse_spawns, view
+        for n in (1001, 250_000, TRUCKS_MOST):
+            with self.subTest(n=n):
+                self.assertEqual(parse_changes([{"file": "a.scenario", "item": 0, "kind": "Spawn", "trucks": n}])[0]
+                                 .values, {"trucks": n})
+                self.assertEqual(parse_spawns([{"file": "a.scenario", "what": "DalleBatimentDepot", "x": 1, "y": 2,
+                                                "trucks": n}])[0].trucks, n)
+        s = Scenario.read(detail_scenario())
+        s.set_value(0, "trucks", TRUCKS_MOST)
+        self.assertEqual(view(Scenario.read(s.to_bytes()))["items"][0]["trucks"], TRUCKS_MOST)
+
+    def test_the_depots_file(self):
+        """depots.toml (the Economy tab's Depots on the maps): [all] and [maps.<map>], trucks or times; read back as
+        written, and every mistake refused."""
+        import tomllib
+        from rusemod.scenario import DepotRule, depot_rule, depots_toml, parse_depots
+        rules = {"all": DepotRule(times=2.0), "M04_Cotentin": DepotRule(trucks=60)}
+        text = depots_toml(rules, "made by a test")
+        self.assertTrue(text.startswith("# made by a test\n\n[all]\ntimes = 2.0\n"))
+        self.assertEqual(parse_depots(tomllib.loads(text)), rules)
+        self.assertEqual(depot_rule(rules, "m04_cotentin"), DepotRule(trucks=60))  # the map named wins
+        self.assertEqual(depot_rule(rules, "Blitz"), DepotRule(times=2.0))
+        self.assertIsNone(depot_rule({}, "Blitz"))
+        self.assertEqual((DepotRule(times=1.5).apply(25), DepotRule(times=3).apply(None), DepotRule(trucks=9).apply(25)),
+                         (38, 0, 9))
+        for bad, why in (({"every": {"times": 2}}, "unknown table"), ({"all": {"times": -1}}, "0 or more"),
+                         ({"all": {"times": 2, "trucks": 3}}, "one of the two"), ({"all": {}}, "one of the two"),
+                         ({"all": {"trucks": 2.5}}, "whole number"), ({"all": {"trucks": 2 ** 31}}, "2,147,483,647"),
+                         ({"maps": {"D Day": {"trucks": 3}}}, "pack name"), ({"maps": 3}, "one table per map")):
+            with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
+                parse_depots(bad)
+
+    def test_the_depots_rule_as_changes(self):
+        """A map's depots under a rule: a Change of each shipped depot's trucks, before the mod's own changes; a depot
+        the mod gives trucks itself keeps them, and a new depot without trucks gets the rule's."""
+        from rusemod.scenario import Change, DepotRule, Spawn, with_depots
+        shipped = {"leveldesign.scenario": Scenario.read(detail_scenario())}
+        mine = Change("leveldesign.scenario", 1, "Spawn", {"trucks": 5})
+        camp = Change("leveldesign.scenario", 0, "Spawn", {"camp": 2})
+        new = Spawn("leveldesign.scenario", "DalleBatimentDepot", 1.0, 2.0)
+        rows = with_depots([new, camp, mine], DepotRule(times=2), shipped)
+        self.assertEqual(rows, [Spawn("leveldesign.scenario", "DalleBatimentDepot", 1.0, 2.0, trucks=50),
+                                Change("leveldesign.scenario", 0, "Spawn", {"trucks": 50}), camp, mine])
+        rows = with_depots([], DepotRule(trucks=7), shipped)
+        self.assertEqual([(c.item, c.values) for c in rows], [(0, {"trucks": 7}), (1, {"trucks": 7})])
+        self.assertEqual(with_depots([], DepotRule(times=1), shipped), [])  # nothing to change
 
     def test_applied_after_the_moves(self):
         from rusemod.scenario import Change, Move, apply_moves
@@ -741,7 +792,8 @@ class Spawns(unittest.TestCase):
                                         "camp": 0}])[0].camp, 0)
         for bad, why in (({"camp": -2}, "camp is -1"), ({"camp": True}, "whole numbers"),
                          ({"trucks": 5}, "only for a supply depot"),
-                         ({"what": "DalleBatimentDepot", "trucks": -1}, "0 to 1000"),
+                         ({"what": "DalleBatimentDepot", "trucks": -1}, "0 to 2,147,483,647"),
+                         ({"what": "DalleBatimentDepot", "trucks": 2 ** 31}, "0 to 2,147,483,647"),
                          ({"x": float("inf")}, "finite")):
             with self.subTest(bad=bad), self.assertRaisesRegex(ScenarioError, why):
                 parse_spawns([{"file": "a.scenario", "what": "Unit_X", "x": 1, "y": 2, **bad}])

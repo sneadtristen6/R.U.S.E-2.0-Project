@@ -7,8 +7,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import struct
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 from .ndf import Ndf, local_ref, sub_values
 
@@ -674,6 +676,22 @@ def of_map(arc, map_pack: str) -> dict[str, "Scenario"]:
     return dict(sorted(out.items()))
 
 
+def map_packs_of(arc) -> list[str]:
+    """Every map with scenarios in an open DataMap_Win.dat, by the pack name folder_of finds it under (lower case;
+    a flat test map's flat_<x>)."""
+    out = set()
+    for e in arc.entries:
+        p = e.path.lower()
+        if not (p.startswith("test\\map\\") and p.endswith(".scenario")):
+            continue
+        parts = p[len("test\\map\\"):].split("\\")
+        if len(parts) == 2:
+            out.add(parts[0])
+        elif len(parts) == 3 and parts[0] == "flat":
+            out.add("flat_" + parts[1])
+    return sorted(out)
+
+
 def campath_member(map_pack: str, scenario_file: str) -> str:
     """Where a scenario's warm-up camera paths are: `test\\map\\<map>\\campath\\campaths_<scenario>.ndfbin` in
     DataMap_Win.dat (LittleGroove's RUSE-Mod-Manager map editor reads them there)."""
@@ -1038,8 +1056,9 @@ def parse_changes(items, where: str = "items.toml") -> list[Change]:
                 if not isinstance(v, int) or not (v == NEUTRAL or 0 <= v <= 16):
                     raise ScenarioError(f"{at}: camp is -1 (neutral) or a scenario camp from 0 up")
             elif k == "trucks":  # as a new depot's trucks are checked (parse_spawns)
-                if not isinstance(v, int) or not 0 <= v <= 1000:
-                    raise ScenarioError(f"{at}: trucks goes from 0 to 1000 (the shipped depots have 15 to 72)")
+                if not isinstance(v, int):
+                    raise ScenarioError(f"{at}: trucks is a whole number")
+                _check_trucks(v, at)
             elif not (math.isfinite(v) and v > 0):
                 raise ScenarioError(f"{at}: {k} is a size, more than 0")
             values[k] = v
@@ -1162,13 +1181,130 @@ CLASS_PATH = "front.parametres.Classes."  # where the shipped spawns name most u
 DEPOT = "front.batiment_depot.DalleBatimentDepot"  # a supply depot's slab: the shipped spawns name it this way (1,625)
 SHIPPED_PATHS = {"DalleBatimentDepot": DEPOT}       # class names the game finds elsewhere than CLASS_PATH
 DEPOT_TRUCKS = 25   # the trucks a depot slab starts with (ChampInteger): what most shipped depots have (800 of them)
+TRUCKS_SHIPPED = (15, 72)  # the fewest and the most trucks a shipped depot has
+# the most trucks a depot may get: ChampInteger is a 32-bit whole number. Not a game rule: the Studio's old top of
+# 1000 was its own, and a depot past the shipped 72 isn't tried in the game yet (the Studio says so beside it)
+TRUCKS_MOST = 2 ** 31 - 1
+
+
+def _check_trucks(trucks: int, at: str) -> None:
+    if not 0 <= trucks <= TRUCKS_MOST:
+        raise ScenarioError(f"{at}: trucks goes from 0 to {TRUCKS_MOST:,} (the shipped depots have "
+                            f"{TRUCKS_SHIPPED[0]} to {TRUCKS_SHIPPED[1]})")
+
+
+# --- every supply depot of every map, or of the maps named (a mod's depots.toml, MOD_FORMAT §8; the Studio's Economy
+# tab, the owner, 2026-10-10: "you would check like one map or all the maps"): each depot's trucks set, or times what
+# it has. A map named wins over all maps; a depot whose trucks the mod sets itself (items.toml, a new depot's
+# `trucks`) keeps them. The build writes them as the map's own items changed (Change), so it's the same as setting
+# each depot's trucks by hand ---
+DEPOTS_FILE = "depots.toml"
+ALL_MAPS = "all"
+
+
+@dataclass
+class DepotRule:
+    """Every depot of a map (or of every map): `trucks` each, or `times` its own trucks (a depot the mod adds without
+    trucks: times DEPOT_TRUCKS). One of the two."""
+    trucks: int | None = None
+    times: float | None = None
+
+    def apply(self, game: int | None) -> int:
+        """A depot's trucks under this rule, from what it has (None: a shipped depot without trucks, which has none)."""
+        if self.trucks is not None:
+            return self.trucks
+        return min(round((game or 0) * self.times), TRUCKS_MOST)
+
+
+def parse_depots(data: dict, where: str = DEPOTS_FILE) -> dict[str, DepotRule]:
+    """{ALL_MAPS or a map pack name: its rule} from a depots.toml: [all] and [maps.<map pack>] tables, each with
+    `trucks` (a whole number) or `times` (a number, 0 or more)."""
+    if not isinstance(data, dict):
+        raise ScenarioError(f"{where} isn't a table")
+    extra = sorted(set(data) - {ALL_MAPS, "maps"})
+    if extra:
+        raise ScenarioError(f"{where}: unknown table {extra[0]!r} (a depots file has [all] and [maps.<map>])")
+    tables = [(ALL_MAPS, data[ALL_MAPS], f"{where}: [all]")] if ALL_MAPS in data else []
+    maps = data.get("maps", {})
+    if not isinstance(maps, dict):
+        raise ScenarioError(f"{where}: maps holds one table per map, [maps.<map pack>]")
+    tables += [(pack, t, f"{where}: [maps.{pack}]") for pack, t in maps.items()]
+    out = {}
+    for key, t, at in tables:
+        if key != ALL_MAPS and not re.fullmatch(r"[A-Za-z0-9_]+", key):
+            raise ScenarioError(f"{at}: a map's pack name has only letters, digits and _")
+        if not isinstance(t, dict) or set(t) - {"trucks", "times"} or len(t) != 1:
+            raise ScenarioError(f"{at}: give trucks (each depot's) or times (each depot's own trucks times this), "
+                                f"one of the two")
+        if "trucks" in t:
+            v = t["trucks"]
+            if isinstance(v, bool) or not isinstance(v, int):
+                raise ScenarioError(f"{at}: trucks is a whole number")
+            _check_trucks(v, at)
+            out[key] = DepotRule(trucks=v)
+        else:
+            v = t["times"]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
+                raise ScenarioError(f"{at}: times is a number, 0 or more")
+            out[key] = DepotRule(times=float(v))
+    return out
+
+
+def depots_toml(rules: dict[str, DepotRule], header: str = "") -> str:
+    lines = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for key in [k for k in rules if k == ALL_MAPS] + sorted((k for k in rules if k != ALL_MAPS), key=str.lower):
+        r = rules[key]
+        lines.append(f"[{ALL_MAPS}]" if key == ALL_MAPS else f"[maps.{key}]")
+        lines += [f"trucks = {r.trucks}" if r.trucks is not None else f"times = {r.times!r}", ""]
+    return "\n".join(lines)
+
+
+def read_depots(folder) -> dict[str, DepotRule]:
+    """A mod's depots.toml, or {} when it has none."""
+    import tomllib
+    f = Path(folder) / DEPOTS_FILE
+    if not f.is_file():
+        return {}
+    try:
+        data = tomllib.loads(f.read_text(encoding="utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        raise ScenarioError(f"{DEPOTS_FILE}: {exc}") from None
+    return parse_depots(data)
+
+
+def depot_rule(rules: dict[str, DepotRule], map_pack: str) -> DepotRule | None:
+    """The rule a map's depots get: the one naming the map, else all maps', else None."""
+    mine = next((r for k, r in rules.items() if k != ALL_MAPS and k.lower() == map_pack.lower()), None)
+    return mine if mine is not None else rules.get(ALL_MAPS)
+
+
+def with_depots(rows: list, rule: DepotRule, shipped: dict[str, "Scenario"]) -> list:
+    """A map's scenario rows (Move, Spawn, Change...) with its depots' trucks set by `rule`: each shipped depot of
+    every scenario (`shipped`: file name -> Scenario, as the game has them) gets a Change of its trucks, put before
+    the mod's own changes; a new depot without trucks gets them. A depot the rows already give trucks keeps them."""
+    own = {(r.file.lower(), r.item) for r in rows if isinstance(r, Change) and "trucks" in r.values}
+    out = [replace(r, trucks=rule.apply(DEPOT_TRUCKS))
+           if isinstance(r, Spawn) and r.trucks is None and r.class_path == DEPOT else r for r in rows]
+    made = []
+    for file, s in sorted(shipped.items(), key=lambda kv: kv[0].lower()):
+        for i, it in enumerate(s.items):
+            if it.kind != "Spawn" or it.values.get("PythonClassName") != DEPOT or (file.lower(), i) in own:
+                continue
+            game = it.values.get("ChampInteger")
+            game = game if isinstance(game, int) and not isinstance(game, bool) else None
+            new = rule.apply(game)
+            if new != (game or 0):
+                made.append(Change(file, i, "Spawn", {"trucks": new}))
+    first = next((n for n, r in enumerate(out) if isinstance(r, Change)), len(out))
+    return out[:first] + made + out[first:]
 
 
 @dataclass
 class Spawn:
     """A unit or building spawned when scenario `file` starts: `what` (a class name, Unit_M4_Sherman, or the full
     class path the shipped spawns use), for side `camp` (None: neutral, -1), at x, y, turned `rotation` radians.
-    `trucks`: a depot's trucks (None: DEPOT_TRUCKS)."""
+    `trucks`: a depot's trucks (None: DEPOT_TRUCKS). `group`: the group of a map's own mission it joins (its design
+    item is then named, group_names, and the mission gathers it by that name: TagUnit, proven in T30)."""
     file: str
     what: str
     x: float
@@ -1177,10 +1313,38 @@ class Spawn:
     rotation: float = 0.0
     trucks: int | None = None
     z: float | None = None   # the ground's height there: the build fills it from the map (the shipped ones match it)
+    group: str | None = None
 
     @property
     def class_path(self) -> str:
         return self.what if "." in self.what else SHIPPED_PATHS.get(self.what, CLASS_PATH + self.what)
+
+
+_GROUP = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,39}$")
+
+
+def group_names(spawns, file: str | None = None) -> list:
+    """Each spawn's design item name, or None: a spawn with a group is named MG_<group>_<n>, n counting that group's
+    spawns of its scenario in order (the scenario pass names the items so, and a map's mission gathers them by it)."""
+    seen: dict = {}
+    out = []
+    for s in spawns:
+        if not isinstance(s, Spawn) or not s.group or (file is not None and s.file.lower() != file.lower()):
+            out.append(None)
+            continue
+        key = (s.file.lower(), s.group)
+        seen[key] = seen.get(key, 0) + 1
+        out.append(f"MG_{s.group}_{seen[key]}")
+    return out
+
+
+def placed_groups(spawns, file: str) -> dict:
+    """{group: [its spawns' design item names]} for scenario `file` (a map's mission's Context.placed)."""
+    out: dict = {}
+    for s, name in zip(spawns, group_names(spawns, file)):
+        if name:
+            out.setdefault(s.group, []).append(name)
+    return out
 
 
 def spawn_class_problems(map_pack: str, spawns: list[Spawn], registered, shipped_paths) -> list[str]:
@@ -1229,7 +1393,7 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         at = f"{where}: spawn {n}"
         if not isinstance(m, dict):
             raise ScenarioError(f"{at} isn't a table")
-        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks"})
+        extra = sorted(set(m) - {"file", "what", "x", "y", "camp", "rotation", "trucks", "group"})
         if extra:
             raise ScenarioError(f"{at}: unknown key {extra[0]!r}")
         for k in ("file", "what", "x", "y"):
@@ -1256,9 +1420,11 @@ def parse_spawns(items, where: str = "scenario.toml") -> list[Spawn]:
         if trucks is not None:
             if Spawn(f, what, x, y).class_path != DEPOT:
                 raise ScenarioError(f"{at}: trucks is only for a supply depot (what = \"DalleBatimentDepot\")")
-            if not 0 <= trucks <= 1000:
-                raise ScenarioError(f"{at}: trucks goes from 0 to 1000 (the shipped depots have 15 to 72)")
-        out.append(Spawn(f, what, x, y, camp, rot, trucks))
+            _check_trucks(trucks, at)
+        group = m.get("group")
+        if group is not None and (not isinstance(group, str) or not _GROUP.match(group)):
+            raise ScenarioError(f"{at}: group must be a name of letters, digits and _ (starting with a letter, up to 40)")
+        out.append(Spawn(f, what, x, y, camp, rot, trucks, group=group or None))
     return out
 
 
@@ -1272,6 +1438,8 @@ def spawns_toml(spawns: list[Spawn]) -> str:
             lines.append(f"rotation = {s.rotation!r}")
         if s.trucks is not None:
             lines.append(f"trucks = {s.trucks}")
+        if s.group:
+            lines.append(f'group = "{s.group}"')
         lines.append("")
     return "\n".join(lines)
 
@@ -1436,7 +1604,7 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
         s.set_warmup(item, f"{name}_mod{k}")
         return f"{name}_mod{k}"
 
-    for m in moves:
+    for m, spawn_name in zip(moves, group_names(moves)):  # (a grouped spawn's item named for its map's mission)
         member = folder + m.file
         if member.lower() not in files:
             raw = read(member)
@@ -1472,7 +1640,7 @@ def apply_moves(read, map_pack: str, moves: list, skirmish=(), warn=None,
                 near = min(s.items, key=lambda it: (it.position[0] - m.x) ** 2 + (it.position[1] - m.y) ** 2,
                            default=None)
                 z = near.position[2] if near is not None else 0.0
-            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks)
+            s.add_spawn(m.x, m.y, m.class_path, camp=camp, rotation=m.rotation, z=z, trucks=trucks, name=spawn_name)
             continue
         if isinstance(m, Start):
             item = s.add_start(m.x, m.y, m.team, m.place, m.rotation, m.z)

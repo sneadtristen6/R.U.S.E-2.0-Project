@@ -1269,6 +1269,18 @@ class Block:
     spare: bool = False
 
 
+def owner_circles(win: bytes) -> list[tuple[float, float, float]]:
+    """Every circle that owns a local map (a town's or a bridge's own movement: units inside keep to the circles of
+    that local map), in either graph of a movement file (mapinfo.win), as (x, y, radius)."""
+    from ruse_mod_engine import sdb
+    out = []
+    bufs = sdb.split_mapinfo(win)[1]
+    for k in (1, 2):
+        g = Graph.read(bufs[k])
+        out += [tuple(c[:3]) for c in g.circles[:len(g.subs)] if c[2] > 0]
+    return sorted(set(out))
+
+
 def closing(blocks) -> list[Block]:
     """The blocks that take ground away (not the opens): what bridges, roads and the cover check keep clear of."""
     return [b for b in blocks if not b.open]

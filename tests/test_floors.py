@@ -48,6 +48,42 @@ class TakenOut(unittest.TestCase):
         self.assertIn("8 triangle(s) of the 1 bridge(s) taken out sunk under the ground", notes[0])
         self.assertEqual(floors.sink_floors(k, lambda x, y: FLAT, [Deck.of(0.0, 0.0, 10.0, 0.0)]), (b"", []))
 
+    def test_the_outer_bands_of_a_wide_floor_go_too(self):
+        """T41 (2026-10-09): on Blitz's Blank Terrain the deck match left 80 of the 320 floor triangles (the wide stone
+        floors' outer bands, 8,000 to 15,300 from a deck's line, at the old deck heights): 25 m under the flattened
+        ground, units dropped into them. With the map's own triangles given, every one along a gone deck within
+        ACROSS_WIDE goes; a triangle the map didn't ship (a mod's new bridge's floor) stays, and so does one beyond
+        ACROSS_WIDE."""
+        band = strip(SHIPPED, FLAT, FLAT, lift=-6000.0, across=15000.0)   # out of the narrow and the apron tests
+        mine = strip(SHIPPED, FLAT, FLAT, lift=-6000.0, across=14000.0)   # a mod's floor there, not the map's own
+        far = strip(SHIPPED, FLAT, FLAT, lift=-6000.0, across=40000.0)    # beyond ACROSS_WIDE
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), band + mine + far))
+        own = {floors.tri_key(t) for t in triangles(Kdt(rebuild(Kdt(make_valid_kdt()), band + far)))}
+        self.assertEqual(floors.sink_floors(k, lambda x, y: FLAT, [SHIPPED]), (b"", []))   # the deck match finds none
+        data, _notes = floors.sink_floors(k, lambda x, y: FLAT, [SHIPPED], own)
+        tris = triangles(Kdt(data))
+        sunk = [t for t in tris if all(p[2] == floors.SUNK for p in t)]
+        self.assertEqual((len(tris), len(sunk)), (24, 8))
+        self.assertTrue(all(max(abs(p[1] - 100000.0) for p in t) > 14500.0 for t in sunk))   # the band's, not mine
+
+    def test_floors_taken_out_lie_on_the_ground_as_built(self):
+        """T41 run 3 (2026-10-09): with every floor of Blitz's bridges sunk to SUNK, units over them went "so far under
+        the map you can't even figure out where they are": a unit stands on an objects-only triangle wherever it is.
+        Given the ground as built (`lay_at`), each point of a floor taken out lies on it; a point off that ground still
+        goes to SUNK."""
+        other = Deck.of(300000.0, 300000.0, 310000.0, 300000.0)
+        k = Kdt(rebuild(Kdt(make_valid_kdt()), strip(SHIPPED, FLAT, FLAT) + strip(other, FLAT, FLAT)))
+        new_ground = 5000.0                                   # e.g. Blank Terrain's level, above the old deck
+        data, notes = floors.sink_floors(k, lambda x, y: FLAT, [SHIPPED], None,
+                                         lambda x, y: None if x > 106000.0 else new_ground)
+        tris = triangles(Kdt(data))
+        step = (Kdt(data).bounds_max[2] - floors.SUNK) / 0x7FFF
+        laid = [t for t in tris if all(abs(p[2] - new_ground) <= step for p in t)]
+        off = [p for t in tris for p in t if abs(p[2] - floors.SUNK) <= step]
+        self.assertEqual(len(laid), 4)                        # the half of the deck the new ground covers
+        self.assertTrue(off and all(p[0] > 106000.0 for p in off))
+        self.assertIn("8 triangle(s) of the 1 bridge(s) taken out laid on the ground", notes[0])
+
 
 class Decks(unittest.TestCase):
     def test_along_and_across(self):

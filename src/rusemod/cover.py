@@ -8,15 +8,18 @@ layer:
     x = 500000.0      # map units, like a scenario's positions
     y = 640000.0
     radius = 20000.0
-    layer = "cover"   # or "blocked" (for the AI only: units still walk there without a movement.toml block)
+    layer = "cover"   # or "blocked" (the AI's no-go, and direct fire stops at it: units still walk there without a
+                      # movement.toml block)
     erase = false     # true clears it (a wood's cover taken away)
     square = false    # true: a square along the map's axes, `radius` (map units) from its middle to each side (the
                       # owner asked for a square brush, 2026-09-30; its edges follow the grid's rows and columns)
 
 A cell is painted when its centre is in the circle (or square), and only those cells change: painting nothing gives
 the same file back. The designers drew cover as zones, not from the trees, so a town or a wood made in a mod gives
-cover only once cover is painted over it. "Blocked" is for the AI only: units move by the map's movement
-(rusemod.nav), so ground units must keep off needs a movement.toml block too (unpaired_blocked). On a map that isn't
+cover only once cover is painted over it. "Blocked" doesn't keep units off: units move by the map's movement
+(rusemod.nav), so ground units must keep off needs a movement.toml block too (unpaired_blocked). It is the AI's
+ground to avoid, and a unit fires its direct weapons only along a line crossing no blocked cell (read from the game
+2026-10-09, T41; not tried in the game), so an erased town takes it with it (build.cleared_woods). On a map that isn't
 square the grid reaches past its short side, the map in its middle (taken as the map's own size, a paint landed up to
 a kilometre off: a wood cleared on D-Day kept hiding infantry in the game, 2026-10-01)."""
 from __future__ import annotations

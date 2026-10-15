@@ -29,7 +29,7 @@ from .modelin import ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matri
 from .ndf import Ndf, Value
 from .spk import Spk, SpkError
 from .tmst import Tgv, make_tgv
-from .unitlook import halve
+from .unitlook import halve, make_standin, paint as painted, paint_in
 from .unitpacks import NONE, PROXY_MAGIC, Buffer, MeshPack, Proxy, ProxyPack, _material_list, _subs, _texts
 
 MODELS = Path("files") / "models"   # a mod's new units' models: <the unit's name>.glb
@@ -38,6 +38,7 @@ SKINNED_2F = ("$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn__Bl
               "TexPackedAtlas0_4ubn")
 STRIDE = 12 + 4 + 4 + 4 + 8 + 4
 ROOT, TURRET = "chassis", "tourelle_01"
+PROPELLER_TYPE = "helice"   # a material type starting so draws a spinning-propeller disc (helice_1: the game's 43 planes)
 STANDIN_SIDE = 64
 INDEX_16, INDEX_32 = 1, 0   # an index buffer's kind: 1 = 16-bit (every one the game ships), else 32-bit
 
@@ -143,9 +144,10 @@ class Source:
     body_texture: str = ""         # its body material's picture (ZZ:\\GenTexGroup\\...\\X01.png)
 
 
-def find_source(zz, model: str) -> Source:
-    """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
-    needs. UnitModelError when no pack holds it, or it has no bones."""
+def packs_holding(zz, model: str) -> tuple[str, dict, dict]:
+    """The model `model` (its pack name, any case) across ZZ_Win.dat's packs: (its name as the packs have it, the mesh
+    packs that hold it, the skeleton packs that hold its skeleton entry: {member path: raw bytes} each).
+    UnitModelError when no pack holds it."""
     model = model.replace("/", "\\").lower()
     if model.startswith("datadir:\\"):
         model = model[len("datadir:\\"):]
@@ -170,6 +172,13 @@ def find_source(zz, model: str) -> Source:
             skeletons[e.path] = raw
     if not meshes:
         raise UnitModelError(f"no mesh pack holds the model {model}")
+    return model, meshes, skeletons
+
+
+def find_source(zz, model: str) -> Source:
+    """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
+    needs. UnitModelError when no pack holds it, or it has no bones."""
+    model, meshes, skeletons = packs_holding(zz, model)
     first = MeshPack.read(next(iter(meshes.values())))
     skel = first.skeletons[first.items[model][2]] if first.items[model][2] != NONE else None
     if skel is None and skeletons:
@@ -184,11 +193,14 @@ def find_source(zz, model: str) -> Source:
     mats = spk.materials()
     hull, hull_y, low = [], [], math.inf
     body = None
+    propellers = []
     for part in spk.model(model):
         remap = mats[part.material].get("skinning") or []
         tex = next(iter(mats[part.material].get("textures", {}).values()), "")
         if body is None and "CombinedDSCTexture" in mats[part.material].get("textures", {}):
             body = tex
+        if mats[part.material].get("type", "").startswith(PROPELLER_TYPE):
+            propellers += _discs(part, remap, bones)
         for i in range(len(part.positions) // 3):
             p = part.positions[3 * i:3 * i + 3]
             low = min(low, p[2])
@@ -202,8 +214,26 @@ def find_source(zz, model: str) -> Source:
         raise UnitModelError(f"{model} has no hull on its {ROOT} bone, or no body texture (CombinedDSCTexture)")
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
     like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
-            "ground": low, "middle": (max(hull) + min(hull)) / 2}
+            "ground": low, "middle": (max(hull) + min(hull)) / 2, "propellers": propellers}
     return Source(model, meshes, skeletons, bones, like, body)
+
+
+def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
+    """A propeller draw's discs (each a piece of 4 points: all 59 of the game's) as modelin.fit_discs takes them:
+    {"bone": the bone it spins on (helice_hs_1...), "centre": its middle, "radius": half its widest side}."""
+    from .modelin import pieces
+    n = len(part.positions) // 3
+    tris = [tuple(part.indices[k:k + 3]) for k in range(0, len(part.indices) - 2, 3)]
+    out = []
+    for pts in pieces(tris, n):
+        xyz = [part.positions[3 * i:3 * i + 3] for i in pts]
+        box = [(min(p[k] for p in xyz), max(p[k] for p in xyz)) for k in range(3)]
+        local = part.bones[pts[0]][0] if pts[0] < len(part.bones) else 0
+        bone = remap[local] if local < len(remap) else local
+        out.append({"bone": bones.names[bone] if bone < len(bones.names) else "",
+                    "centre": tuple((lo + hi) / 2 for lo, hi in box),
+                    "radius": max(hi - lo for lo, hi in box) / 2})
+    return out
 
 
 # --- the mod's file back ---
@@ -400,43 +430,58 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
                 bones: Skeleton) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
-    material naming its own picture (for MeshPack.add to carry into each pack). `bones`: the copied model's
-    skeleton (its entry is in the skeleton packs)."""
+    material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
+    propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
+    helice_1: the game draws it as a spinning disc) naming its picture. `bones`: the copied model's skeleton (its
+    entry is in the skeleton packs)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
     roots = _material_list(nd)
     spk = Spk(raw)
-    body_number = next(d[1] for d in (src.draws[k] for k in range(first, first + src.meshes[mesh][1]))
-                       if "CombinedDSCTexture" in spk.materials()[d[1]].get("textures", {}))
-    body = nd.objects[roots[body_number]]
-    old = next(t for pi, v in body.props if nd.prop_name(pi) == "Textures" for t in _texts(nd, v)
-               if t.lower().endswith(".png"))
-    skin = next((v for pi, v in body.props if nd.prop_name(pi) == "SkinningRemapping"), None)
-    remap = [struct.unpack_from("<i", x.payload)[0] for x in _subs(skin)] if skin is not None else []
+    mats = spk.materials()
+    own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
+    body_number = next(m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {}))
+    disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
+    disc_bones = {d["bone"] for p in spk.model(source) if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
+                  for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
+
+    def material(number: int):
+        """(the material object, the picture its Textures name, its bone numbers' remapping)."""
+        obj = nd.objects[roots[number]]
+        pic = next(t for pi, v in obj.props if nd.prop_name(pi) == "Textures" for t in _texts(nd, v)
+                   if t.lower().endswith(".png"))
+        skin = next((v for pi, v in obj.props if nd.prop_name(pi) == "SkinningRemapping"), None)
+        return obj, pic, [struct.unpack_from("<i", x.payload)[0] for x in _subs(skin)] if skin is not None else []
+
+    looks = {"body": material(body_number)}
+    if disc_number is not None:
+        looks["disc"] = material(disc_number)
     if SKINNED_2F.encode() not in [f.split(b"\0", 1)[0] for f in src.formats]:
         src.formats.append(SKINNED_2F.encode().ljust(256, b"\0"))
     fmt = [f.split(b"\0", 1)[0] for f in src.formats].index(SKINNED_2F.encode())
     material_of: dict = {}
     draws = []
     for part in prep.parts:
-        if part.picture not in material_of:
+        look = "disc" if part.bone in disc_bones and "disc" in looks else "body"
+        base, old, remap = looks[look]
+        if (look, part.picture) not in material_of:
             image = images[part.picture] if part.picture >= 0 else old
-            props = [(pi, _retext(nd, v, old, image) if nd.prop_name(pi) == "Textures" else v) for pi, v in body.props]
-            n = nd.add_object(body.cls, props)
+            props = [(pi, _retext(nd, v, old, image) if nd.prop_name(pi) == "Textures" else v) for pi, v in base.props]
+            n = nd.add_object(base.cls, props)
             roots.append(n)
-            material_of[part.picture] = len(roots) - 1
+            material_of[(look, part.picture)] = len(roots) - 1
         if part.bone not in bones.names:
             raise UnitModelError(f"{source}'s skeleton has no bone {part.bone} (a part of the .glb is named so)")
         bone = bones.names.index(part.bone)
         if bone not in remap:
-            raise UnitModelError(f"the body material of {source} doesn't reach the bone {part.bone}")
+            raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {part.bone}")
         vb = _vertex_buffer(part, remap.index(bone))
         vb.kind = fmt
         src.vbs.append(vb)
         src.ibs.append(_index_buffer(part))
-        draws.append((0, material_of[part.picture], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
+        draws.append((0, material_of[(look, part.picture)], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
     root = nd.objects[nd.topo[0]]
     root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(roots)) + b"".join(
         Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, nd.objects[n].cls)).encode() for n in roots)))
@@ -517,3 +562,170 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
                    "textures": sorted(added), "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk")),
                    "box": box})
     return Written(changed, added, new, report)
+
+
+# --- a new unit's own copy of the model it copies (the owner, 2026-10-11: "duplicate that part"): the same mesh,
+# bones and moving parts, its textures its own, so Repaint in Blender changes that unit only and not every unit drawn
+# with the game's model (a Discord player wanted new roundels on the new units of a mod) ---
+COPY = ".copy.toml"  # files/models/<the unit's name>.copy.toml: the unit has its own copy; its paint in files/models/<name>/
+
+
+def mod_copies(folder: Path) -> dict:
+    """{a unit's name: (the models it has copies of, as its .copy.toml's `of` lists them ([] if it names none: the
+    build then copies the one its GfxDescriptor draws), its paint ({the copied models' texture in ZZ_Win.dat: (colour
+    PNG, alpha PNG)}, laid out as files/replace: rusemod.unitlook.paint_in))} from a mod's
+    files/models/<the unit's name>.copy.toml and files/models/<the unit's name>/. UnitModelError for a .copy.toml that
+    can't be read."""
+    import tomllib
+    root = Path(folder) / MODELS
+    if not root.is_dir():
+        return {}
+    out: dict = {}
+    for f in sorted(root.glob("*" + COPY)):
+        unit = f.name[:-len(COPY)]
+        try:
+            of = tomllib.loads(f.read_text(encoding="utf-8")).get("of") or []
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+            raise UnitModelError(f"{MODELS.as_posix()}/{f.name} can't be read: {exc}") from None
+        of = [of] if isinstance(of, str) else of
+        if not isinstance(of, list) or not all(isinstance(m, str) and m.strip() for m in of):
+            raise UnitModelError(f"{MODELS.as_posix()}/{f.name}: `of` names a model or a list of models")
+        out[unit] = (of, paint_in(root / unit))
+    return out
+
+
+def model_key(model: str) -> str:
+    """A model's name as the packs have it: ww2\\res3d\\...\\x.ase2ndfbin (any case, / or \\, a DataDir: in front)."""
+    model = model.replace("/", "\\").lower()
+    return model[len("datadir:\\"):] if model.startswith("datadir:\\") else model
+
+
+def copy_model_name(source_model: str, unit: str, several: bool = False) -> str:
+    """The name of a unit's copy of the game's model `source_model`, beside it, its folder written as the source's
+    is: ...\\<unit>lod0.Ase2ndfbin, or ...\\<unit>_<the source's name>lod0.Ase2ndfbin when the unit has copies of
+    several models (a squad's soldiers, its bazooka man)."""
+    path = source_model.replace("/", "\\")
+    if path.lower().startswith("datadir:\\"):
+        path = path[len("datadir:\\"):]
+    folder, base = path.rsplit("\\", 1)
+    stem = base[:-len(".ase2ndfbin")] if base.lower().endswith(".ase2ndfbin") else base
+    stem = stem[:-len("lod0")] if stem.lower().endswith("lod0") else stem
+    return f"{folder}\\{unit}_{stem}lod0.Ase2ndfbin" if several else f"{folder}\\{unit}lod0.Ase2ndfbin"
+
+
+def copy_name(picture: str, unit: str) -> str:
+    """A copied texture's name, beside the game's and in its texture group (texture_group: the game finds a model's
+    picture through it): ...\\TSCCombCS_CombinedDSCTexture01.png -> ...\\TSCCombCS_<unit>_CombinedDSCTexture01.png."""
+    folder, name = picture.replace("/", "\\").rsplit("\\", 1)
+    return f"{folder}\\{texture_group(name)}_{unit}_{name.split('_', 1)[1]}"
+
+
+def _copied(raw: bytes, source: str, new: str, pictures: dict) -> MeshPack:
+    """A copy of pack `raw` holding `new`: `source`'s draw calls on its own buffers (MeshPack.add then shares them),
+    each material a copy naming the pictures as `pictures` says ({the game's picture: the copy's})."""
+    src = MeshPack.read(raw)
+    data, mesh, skel = src.items[source]
+    first, count = src.meshes[mesh]
+    nd = Ndf(src.materials)
+    roots = _material_list(nd)
+    copies: dict = {}
+    draws = []
+    for d in range(first, first + count):
+        a, m, ib, vb, e, f = src.draws[d]
+        if m not in copies:
+            body = nd.objects[roots[m]]
+            props = []
+            for pi, v in body.props:
+                if nd.prop_name(pi) == "Textures":
+                    for old, picture in pictures.items():
+                        v = _retext(nd, v, old, picture)
+                props.append((pi, v))
+            roots.append(nd.add_object(body.cls, props))
+            copies[m] = len(roots) - 1
+        draws.append((a, copies[m], ib, vb, e, f))
+    root = nd.objects[nd.topo[0]]
+    root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(roots)) + b"".join(
+        Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, nd.objects[n].cls)).encode() for n in roots)))
+    src.materials = nd.to_logical()
+    src.material_count = len(roots)
+    src.items[new] = [data, None, skel]
+    src._renumber({new: draws})
+    return src
+
+
+def write_unit_copy(zz, copies, unit: str, paint: dict | None = None, earlier: dict | None = None) -> Written:
+    """The unit `unit`'s own copies of the game's models into ZZ_Win.dat `zz`, each beside its model: `copies`
+    ({the game's model: its copy's name}, or one model's name: copied as ...\\<unit>lod0). Each copy has the same mesh,
+    bones and draw calls (its vertex and index buffers shared in each pack); the models' textures are copied once for
+    the unit under names of its own (copy_name: a squad's soldiers and its bazooka man share theirs, as the game's do)
+    and painted as `paint` says ({the game's texture member: (colour PNG, alpha PNG)}: the Studio's Repaint in Blender
+    on the copy), with their stand-ins. `earlier`: members other build steps already changed (path -> bytes), changed
+    from there."""
+    if isinstance(copies, str):
+        copies = {copies: copy_model_name(copies, unit)}
+    earlier = {k.lower(): v for k, v in (earlier or {}).items()}
+    paint = {k.lower().replace("/", "\\"): v for k, v in (paint or {}).items()}
+    held = []  # (the game's model, its copy, its mesh packs, its skeleton packs)
+    for source, new in copies.items():
+        model, meshes, skeletons = packs_holding(zz, source)
+        new = model_key(new)
+        if any(new in MeshPack.read(raw).items for raw in meshes.values()):
+            raise UnitModelError(f"the packs already have a model called {new}")
+        held.append((model, new, meshes, skeletons))
+    pictures: dict = {}
+    for model, _new, meshes, _skeletons in held:
+        pictures.update({pic: copy_name(pic, unit) for pic in MeshPack.read(next(iter(meshes.values()))).textures(model)
+                         if zz.entry(texture_member(pic)) is not None})  # (a picture of no texture here stays shared)
+    if not pictures:
+        raise UnitModelError(f"{', '.join(m for m, *_ in held)}: no textures of their own to copy")
+    changed: dict = {}
+
+    def current(path: str, raw: bytes) -> bytes:  # a pack as the copies before this one and earlier steps left it
+        return changed.get(path) or earlier.get(path.lower(), raw)
+    for model, new, meshes, skeletons in held:
+        carrier = _copied(next(iter(meshes.values())), model, new, pictures)
+        for path, raw in meshes.items():
+            pack = MeshPack.read(current(path, raw))
+            pack.add(carrier, new)
+            changed[path] = pack.to_bytes()
+        for path, raw in skeletons.items():
+            pack = MeshPack.read(current(path, raw))
+            holder = MeshPack.read(raw)
+            holder.items[new] = list(holder.items[model])
+            pack.add(holder, new)
+            changed[path] = pack.to_bytes()
+    added: dict = {}
+    standins: dict = {}  # the copy's stand-in -> (the game's, what painting it needs or None)
+    for old, picture in pictures.items():
+        old_member, member = texture_member(old), texture_member(picture)
+        original = bytes(zz.read(zz.entry(old_member)))
+        colour, alpha = paint.get(old_member, (None, None))
+        stand = None
+        if colour is not None or alpha is not None:
+            kind, original, _report, stand = painted(original, colour, alpha)
+            if kind != "texture":
+                raise UnitModelError(f"{old_member} isn't a model's texture")
+        added[member] = original
+        standins[standin_member(member)] = (standin_member(old_member), stand)
+    for e in zz.entries:  # every stand-in pack holding a copied texture's stand-in gets the copy's (painted, or shared)
+        if not e.path.lower().endswith(".ppk"):
+            continue
+        raw = changed.get(e.path) or earlier.get(e.path.lower()) or bytes(zz.read(e))
+        if raw[:8] != PROXY_MAGIC:
+            continue
+        pack = ProxyPack.read(raw)
+        names = pack.names()
+        hits = [(n, old, stand) for n, (old, stand) in standins.items() if old in names and n not in names]
+        for n, old, stand in hits:
+            p = pack.proxies[pack.names().index(old)]  # (each one added moves the ones after it)
+            data = make_standin(p.data, *stand) if stand else p.data
+            pack.add(ProxyPack([Proxy(standin_key(n), data, p.extra, n.encode("latin-1").ljust(256, b"\0"))], [0]), n)
+        if hits:
+            changed[e.path] = pack.to_bytes()
+    report = {"models": {model: new for model, new, *_ in held}, "model": held[0][1], "copy_of": held[0][0],
+              "mesh_packs": sorted({p for *_, meshes, _s in held for p in meshes}),
+              "skeleton_packs": sorted({p for *_, skeletons in held for p in skeletons}),
+              "textures": sorted(added), "painted": sorted(texture_member(p) for o, p in pictures.items()
+                                                           if texture_member(o) in paint),
+              "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk"))}
+    return Written(changed, added, held[0][1], report)

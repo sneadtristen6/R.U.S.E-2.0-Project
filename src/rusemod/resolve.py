@@ -42,14 +42,20 @@ class ModInfo:
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
     menu_pictures: dict = field(default_factory=dict)        # map pack name -> [menupicture.MenuPictures] (§8)
     menu_order: list = field(default_factory=list)           # [menuorder.Order]: missions' places in the menus (§8)
+    depots: dict = field(default_factory=dict)               # "all" or a map pack -> scenario.DepotRule (depots.toml)
     textures: dict = field(default_factory=dict)             # texture path in ZZ_Win.dat -> (colour PNG, alpha PNG) (§7)
     cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
     models: dict = field(default_factory=dict)               # a new unit's name -> its own model .glb (files/models, §7)
+    model_copies: dict = field(default_factory=dict)         # a unit's name -> (the models it has copies of, its
+    # paint): its own copies of the models it draws (files/models/<name>.copy.toml and files/models/<name>/, §7;
+    # rusemod.unitmodel.write_unit_copy)
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
     scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)
     game_files: list = field(default_factory=list)           # whole game files it changes or adds (§7, files/game):
     # rusemod.gamefiles.GameFile
+    missions: dict = field(default_factory=dict)             # new map's folder name -> (mission.Mission, its file)
+    # (maps/<map>/mission.toml, §8: a new Operation's or chapter's own mission)
 
 
 # --- versions ---

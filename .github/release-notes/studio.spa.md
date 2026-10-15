@@ -1,6 +1,32 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.4:** tus propias misiones, mapas en blanco para construir y mucho más para personalizar.
+
+- **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno en blanco y Océano en blanco).
+- **Tus propias misiones:** una nueva Operación o un nuevo capítulo de campaña tiene su propia misión en el lado Escenario de la pantalla del mapa: bandos, objetivos, eventos (Cuando → Hacer: traer unidades, mover, atacar, mantener una zona, artillería, bombardeo, paracaidistas, mensajes, dinero, victoria, derrota) y movimientos de cámara. Visto en el juego: su movimiento de cámara, los objetivos (una zona, un grupo destruido, un tiempo), eventos que se repiten, el dinero, un bando entregado al ordenador. Aún no probado: los paracaidistas, un movimiento de cámara lanzado por un evento.
+- **Mapa | Escenario** en la pantalla del mapa: lo del otro lado se ve atenuado y no se puede agarrar por error.
+- **Mapas en blanco:** ya no se ve nada del mapa copiado, y tú colocas el CG de cada jugador (la construcción espera a que estén todos colocados). Terreno en blanco sirve también para Operaciones y capítulos de campaña.
+- **Tus propios sectores:** píntalos, arrastra sus esquinas, dibuja uno nuevo como un recuadro, deja terreno sin sector, borra uno (visto en el juego).
+- **Depósitos de suministros:** la pestaña Economía da más camiones a cada depósito de cada mapa, o de un mapa (veces, o un número cada uno); se acabó el tope de 1.000 camiones.
+- **Pestaña Naciones:** oculta de una vez todas las unidades de una nación, muéstralas de nuevo o llena sus menús con las unidades de una época.
+- **Editar un mod instalado:** abre cualquier mod del Launcher; el de otra persona se convierte en una copia tuya con su propio nombre. Los mods de RUSE Mod Manager (.rmod) se convierten para que sus valores se puedan cambiar.
+- **La comprobación del mod en palabras sencillas**, con un botón para arreglar cada problema.
+- **Un aspecto propio para una unidad:** su propia copia del modelo para repintar; los pelotones llevan el uniforme por defecto o uno personalizado; elige el camión en el que viaja un pelotón o un cañón. La infantería se ve en 3D y se abre en Blender.
+- **El blindaje** se elige entre los niveles del juego, así la tarjeta muestra con qué lucha la unidad; **los aviones importados** conservan sus hélices girando y vuelven mirando hacia delante (ambos vistos en el juego).
+- **Tamaños de modelo en un deslizador** (Diminuto, Tamaño del juego, Tamaño real, Enorme: de 0,05 a 20), cambiables cuando quieras, todos los aviones de una vez.
+- **Más para cambiar:** un valor propio de una dificultad o un perfil de la IA para uno que solo Por defecto incluye; números más allá de los deslizadores de las herramientas del mapa; retoques de música más fuertes y más largos.
+- **Corregido:** una unidad mostrada en un menú pero investigada desde una oculta detenía el juego: la comprobación la nombra y la construcción la rechaza. Los tanques vuelven a disparar a través de pueblos borrados, y las unidades ya no caen en los huecos donde se quitaron puentes (visto en el juego).
+- **Las descargas funcionan en cualquier PC:** cuando Windows aún no ha obtenido el certificado con el que se comprueba GitHub, el Studio se lo pide, como hace un navegador, y lo vuelve a intentar (aún no probado en un PC que tuviera el problema).
+
+**0.9.8.3:** las copias con mods van donde tú digas.
+
+- **Dónde van las copias con mods**, en Ajustes: elige la carpeta donde se construye la copia del juego con mods, o
+  vuelve al lugar recomendado, `RUSE-Instances` en la unidad del juego (allí la copia comparte los archivos del juego
+  y está lista en segundos; en otra unidad es una copia completa del juego, más lenta y más grande). La copia de
+  seguridad limpia del juego va al lado. El próximo Probar en el juego construye en el nuevo lugar; la carpeta antigua
+  puede borrarse a mano. El Launcher usa la misma carpeta.
+
 **0.9.8.2:** llegan las unidades de otras épocas: sus modelos, a tamaño real, tras una investigación.
 
 - **Unidades de otras épocas:** las épocas WWI, WWII+, Guerra Fría y Moderna de la pestaña Unidades ya tienen sus

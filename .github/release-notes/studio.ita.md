@@ -1,6 +1,32 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.4:** missioni tue, mappe vuote da costruire e molto altro da personalizzare.
+
+- **Ancora con bug, usale a tua discrezione:** le texture di Map Paint e tutte e due le mappe vuote (Terreno vuoto e Oceano vuoto).
+- **Missioni tue:** una nuova Operazione o un nuovo capitolo di campagna ha la sua missione, nel lato Scenario della schermata della mappa: schieramenti, obiettivi, eventi (Quando → Fai: far arrivare unità, muovere, attaccare, tenere una zona, artiglieria, bombardamento, paracadutisti, messaggi, denaro, vittoria, sconfitta) e movimenti di camera. Visto in gioco: il suo movimento di camera, gli obiettivi (una zona, un gruppo distrutto, un tempo), eventi che si ripetono, il denaro, uno schieramento dato al computer. Non ancora provato: i paracadutisti, un movimento di camera avviato da un evento.
+- **Mappa | Scenario** nella schermata della mappa: ciò che sta dall'altro lato appare sbiadito e non si può afferrare per sbaglio.
+- **Mappe vuote:** della mappa copiata non si vede più niente, e sei tu a mettere il QG di ogni giocatore (la build aspetta che siano tutti messi). Terreno vuoto funziona anche per Operazioni e capitoli di campagna.
+- **Settori tuoi:** dipingili, trascina i loro angoli, disegnane uno nuovo come riquadro, lascia terreno senza settore, eliminane uno (visto in gioco).
+- **Depositi di rifornimento:** la scheda Economia dà più camion a ogni deposito di ogni mappa, o di una mappa (per tot volte, o un numero ciascuno); niente più tetto di 1.000 camion.
+- **Scheda Nazioni:** nascondi in un colpo tutte le unità di una nazione, mostrale di nuovo, o riempi i suoi menu con le unità di un'epoca.
+- **Modifica una mod installata:** apri qualsiasi mod del Launcher; quella di un altro diventa una tua copia con un nome tutto suo. Le mod di RUSE Mod Manager (.rmod) vengono convertite così che i loro valori si possano cambiare.
+- **Il controllo della mod in parole semplici**, con un pulsante per correggere ogni problema.
+- **Un aspetto tutto suo per un'unità:** una sua copia del modello da ridipingere; le squadre indossano l'uniforme predefinita o una personalizzata; scegli il camion su cui viaggia una squadra o un cannone. La fanteria si vede in 3D e si apre in Blender.
+- **La corazza** si sceglie tra i livelli del gioco, così la scheda mostra con cosa combatte l'unità; **gli aerei importati** tengono le eliche che girano e tornano rivolti in avanti (entrambi visti in gioco).
+- **Dimensioni dei modelli su un cursore** (Minuscolo, Misura del gioco, Misura reale, Enorme: da 0,05 a 20), da cambiare quando vuoi, tutti gli aerei in un colpo.
+- **Altro da cambiare:** un valore proprio di una difficoltà o di un profilo dell'IA per uno che solo Predefinito elenca; numeri oltre i cursori degli strumenti della mappa; ritocchi musicali più forti e più lunghi.
+- **Corretto:** un'unità mostrata in un menu ma ricercata da una nascosta fermava il gioco: il controllo la nomina e la build la rifiuta. I carri sparano di nuovo attraverso le città cancellate, e le unità non cadono più nei buchi dove i ponti sono stati tolti (visto in gioco).
+- **I download funzionano su ogni PC:** quando Windows non ha ancora preso il certificato con cui si verifica GitHub, lo Studio glielo chiede, come fa un browser, e riprova (non ancora provato su un PC che aveva il problema).
+
+**0.9.8.3:** le copie con le mod vanno dove dici tu.
+
+- **Dove vanno le copie con le mod**, nelle Impostazioni: scegli la cartella in cui viene costruita la copia del gioco
+  con le mod, o torna al posto consigliato, `RUSE-Instances` sull'unità del gioco (lì la copia condivide i file del
+  gioco ed è pronta in pochi secondi; su un'altra unità è una copia completa del gioco, più lenta e più grande). Il
+  backup pulito del gioco va accanto. Il prossimo Prova in gioco costruisce nel nuovo posto; la vecchia cartella si
+  può eliminare a mano. Il Launcher usa la stessa cartella.
+
 **0.9.8.2:** arrivano le unità di altre epoche: i loro modelli, a grandezza reale, dietro una ricerca.
 
 - **Unità di altre epoche:** le epoche WWI, WWII+, Guerra fredda e Moderno della scheda Unità ora hanno le loro

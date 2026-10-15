@@ -1,6 +1,19 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.4:** mods download on every PC, and it plays mods made with Studio 0.9.8.4.
+
+- **Mods download on every PC:** on some PCs no mod would download ("certificate verify failed: unable to get local issuer certificate"). Now the Launcher asks Windows for the certificate, as a browser does, and tries again; its own updates too. Not tried yet on a PC that had the problem.
+- **Mods made with Studio 0.9.8.4 play:** missions of their own, blank maps with their HQs and sectors, depots with more trucks (an older Launcher refuses depots over 1,000 trucks), units with their own looks and uniforms, edits of other people's mods under their own names.
+- **Still buggy, play at your own discretion:** maps made with Map Paint's textures, and blank maps (Blank Terrain, Blank Ocean).
+
+**0.4.8.3:** modded copies go where you say.
+
+- **Where modded copies go**, in Settings: choose the folder the modded copy of the game is built in, or go back to
+  the recommended place, `RUSE-Instances` on the game's drive (there the copy shares the game's files and is ready in
+  seconds; on another drive it is a full copy of the game, slower and bigger). The game's clean backup goes beside it.
+  The next Play builds in the new place; the old folder can be deleted by hand. The Studio uses the same folder.
+
 **0.4.8.2:** it opens in your web browser where its own window can't, and plays mods made with Studio 0.9.8.2.
 
 - **Linux and Steam Deck (through Proton):** the Launcher opens in your web browser when its own window can't. Not

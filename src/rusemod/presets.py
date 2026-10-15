@@ -6,11 +6,16 @@ map's own files that take the copied map back to its ground and its starting poi
   going under it as under a navy map's painted sea (a water stroke with block = false), painted the owner's blue
   under the water.
 - Both: every object of the map's scenery erased (the types the game gives no kind are named one by one), the map's
-  own roads and bridges taken out, every design item but the starting points taken out (depots, town names), and the
-  sectors over the whole map.
+  own roads and bridges taken out, every design item but the starting points taken out (depots, town names), and no
+  sectors (the modder paints them: the Studio's Sectors brush, rusemod.sectors; maps made blank by Studio 0.9.8 to
+  0.9.8.2 have their sectors over the whole map instead). The starting points stay in the files (the game seats
+  players on them) but none is placed: the map's map.toml says `blank`, and the modder places each player's HQ, the
+  build waiting until every one is (rusemod.players.blank_seats; the owner, 2026-10-09: "the HQ shouldn't be there
+  ... This isn't D-Day").
 
-Every number comes from the map's own files, so every PC writes the same files. Not seen in the game yet
-(2026-10-05): the owner's blank D-Day ("a blank blue map on the lowest terrain, with nothing on it") is the model."""
+Every number comes from the map's own files, so every PC writes the same files. The owner's blank D-Day ("a blank
+blue map on the lowest terrain, with nothing on it") is the model. Played in the game: both blank maps (2026-10-05),
+Blank Terrain with HQs placed and painted sectors (T42, 2026-10-09) and as an Operation (T41, T46)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -167,8 +172,11 @@ def preset_files(kind: str, f: Facts) -> dict[str, str]:
         "terrain.toml": strokes_toml(strokes(kind, f), said + "the whole map flat, "
                                      + ("the sea over it (units go under it), painted blue under the water."
                                         if kind == "blank_ocean" else "every water drained, painted one colour.")),
+        # no sectors to start with: the modder paints them (the Studio's Sectors brush; the owner, 2026-10-09). Maps
+        # made blank before (Studio 0.9.8 to 0.9.8.2) have whole_map = true instead, and keep it.
         "scenario.toml": scenario_toml([], [], [], removes, said + "every design item but the starting points taken "
-                                       "out; the sectors over the whole map.", Sectors(True)),
+                                       "out; no sectors (paint them with the Sectors brush).",
+                                       Sectors(no_sectors=(f.scenario,))),
         "roads.toml": roads_toml([], said + "the map's own roads and bridges taken out.", TakeOut(True, True)),
         "scenery.toml": objects_toml([], said + "everything on the map erased.", [erase]),
     }

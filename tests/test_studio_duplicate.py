@@ -263,9 +263,16 @@ class BlankStart(WithAMapProject):
                              sorted(list(presets.preset_files(kind, self.facts())) + ["map.toml", "menu.png",
                                                                                      "menu-wide.png"]))  # no hill
 
-    def test_only_from_a_battles_map(self):
-        with self.assertRaisesRegex(StudioError, "Battles map"):
+    def test_blank_ocean_only_from_a_battles_map(self):
+        """Blank Ocean starts from a Battles map only (the owner, 2026-10-09: "We don't want ops making ocean maps
+        yet"); Blank Terrain from an Operation or a chapter too, as a mission of its own (rusemod.mission; T41
+        played one)."""
+        with self.assertRaisesRegex(StudioError, "Blank Ocean starts from a Battles map"):
+            self.api.duplicate_map("SuperCrossRoads4", "Anzio Ocean", entry=ANZIO, preset="blank_ocean")
+        try:
             self.api.duplicate_map("SuperCrossRoads4", "Anzio Blank", entry=ANZIO, preset="blank_terrain")
+        except StudioError as exc:  # (this made-up game has no files to start blank from)
+            self.assertNotIn("starts from a Battles map", str(exc))
         with self.assertRaisesRegex(StudioError, "no 'blank_moon'"):
             self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 
@@ -382,8 +389,48 @@ class MenuPictures(WithAMapProject):
                 pack = self.api.duplicate_map("SuperCrossRoads4", presets.NAMES[kind], preset=kind)["pack"]
             self.assertEqual(self.api._menu_scene_kind(pack), want)
             self.assertEqual(self.toml(pack)["ground"], "generated")  # a blank start's ground is drawn as its own
+            self.assertEqual(self.toml(pack)["blank"], kind.removeprefix("blank_"))  # and the map says it started blank
+            row = next(m for m in self.api.maps()["maps"] if m["pack"] == pack)
+            self.assertTrue(row["blank"])  # the view draws nothing of the copied map's
+            again = self.api.duplicate_map(pack, presets.NAMES[kind] + " Two")["pack"]  # a copy of it stays blank
+            self.assertEqual((self.toml(again)["blank"], self.toml(again)["ground"]),
+                             (kind.removeprefix("blank_"), "generated"))
         pack = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
         self.assertEqual(self.api._menu_scene_kind(pack), ("map", None))
+        self.assertNotIn("blank", self.toml(pack))
+        self.assertFalse(next(m for m in self.api.maps()["maps"] if m["pack"] == pack)["blank"])
+
+    def test_a_blank_map_draws_nothing_of_the_copied_maps(self):
+        """The owner, 2026-10-09, on a Blank Terrain copy of D-Day: "nothing should be there. This isn't D-Day." The
+        map view knows a blank map from the Maps list's `blank` and leaves out what the copied map had: its objects
+        (kept as types to place, none drawn), its roads, the items it took out, its 3D models and its ground's
+        pictures; zones are pointed at on the map itself, not through their drape (20-46 ms a move before)."""
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
+        js = (ui / "maps.js").read_text(encoding="utf-8")
+        self.assertIn("function blankMap(pack = mv.current) {", js)
+        self.assertIn("data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };", js)
+        self.assertIn("const res = blankMap(pack) ? { pieces: [] } : await mv.api.map_roads(pack);", js)
+        self.assertIn("if (blank && it.gone) continue;", js)
+        self.assertIn("loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask)", js)
+        self.assertIn("else realGround(pack, ask)", js)
+        self.assertIn("return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : \"\";", js)
+        fake = (ui / "fake-api.js").read_text(encoding="utf-8")
+        self.assertIn("blank: preset ? true : Boolean(m.blank)", fake)  # the offline pages make blank maps too
+        # a sector the build makes again repeats its points per part: its border is found by where they are, so no
+        # line crosses it where its parts meet (seen on the owner's blank D-Day and on painted sectors, 2026-10-09)
+        self.assertIn("function zoneBorder(triangles, p) {", js)
+        self.assertIn("zoneBorder(z.triangles, p)", js)
+
+    def test_a_map_made_blank_before_blank_was_written_counts_as_blank(self):
+        """Studio 0.9.8 to 0.9.8.2 wrote a blank start's map.toml with ground = "generated" and no blank: only a blank
+        start sets that ground, so such a map counts as blank (the owner's own blank D-Day, 2026-10-09)."""
+        from rusemod import newmap
+        old = newmap.parse({"copy_of": "M04_Cotentin", "name": "Blank D-Day", "ground": "generated"}, "map.toml", "X")
+        self.assertTrue(newmap.is_blank(old[0]))
+        self.assertFalse(newmap.is_blank(newmap.parse({"copy_of": "M04_Cotentin", "name": "D"}, "map.toml", "X")[0]))
+        self.assertFalse(newmap.is_blank(None))
+        with self.assertRaises(newmap.NewMapError):
+            newmap.parse({"copy_of": "M04_Cotentin", "name": "D", "blank": "desert"}, "map.toml", "X")
 
     def test_blank_ocean_offered_with_its_warning(self):
         """The owner, 2026-10-08: Blank Ocean taken out ("remove blank ocean"), then "blank oceans stay in with a warning

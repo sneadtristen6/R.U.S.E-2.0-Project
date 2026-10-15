@@ -1,6 +1,31 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.4:** vlastní mise, prázdné mapy k zastavění a mnohem víc k přizpůsobení.
+
+- **Stále chybové, používejte na vlastní uvážení:** textury Map Paint a obě prázdné mapy (Prázdný terén a Prázdný oceán).
+- **Vlastní mise:** nová Operace nebo nová kapitola kampaně dostane vlastní misi na straně Scénář obrazovky mapy: strany, cíle, události (Když → Udělej: přivést jednotky, pohyb, útok, držet zónu, dělostřelectvo, bombardování, výsadkáři, zprávy, peníze, vítězství, porážka) a pohyby kamery. Ověřeno ve hře: její pohyb kamery, cíle (zóna, zničená skupina, čas), opakované události, peníze, strana předaná počítači. Zatím nevyzkoušeno: výsadkáři, pohyb kamery spuštěný událostí.
+- **Mapa | Scénář** na obrazovce mapy: věci druhé strany jsou vybledlé a nejde je omylem chytit.
+- **Prázdné mapy:** ze zkopírované mapy už není nic vidět a velitelství každého hráče umístíte sami (sestavení čeká, až budou umístěna všechna). Prázdný terén funguje i pro Operace a kapitoly kampaně.
+- **Vlastní sektory:** malujte je, táhněte jejich rohy, nakreslete nový jako obdélník, nechte zem bez sektoru, sektor smažte (ověřeno ve hře).
+- **Zásobovací sklady:** karta Ekonomika dá každému skladu na každé mapě nebo na jedné mapě víc nákladních aut (krát, nebo počet na každý); žádný strop 1 000 aut.
+- **Karta Národy:** skryjte najednou všechny jednotky národa, zase je ukažte nebo naplňte jeho nabídky jednotkami z epochy.
+- **Upravit nainstalovaný mód:** otevřete libovolný mód z Launcheru; cizí se stane vaší kopií pod vlastním jménem. Módy RUSE Mod Manager (.rmod) se převedou, aby šly měnit jejich hodnoty.
+- **Kontrola módu jednoduchými slovy**, s tlačítkem opravy u každého problému.
+- **Vlastní vzhled jednotky:** vlastní kopie jejího modelu k přemalování; čety nosí výchozí uniformu nebo vlastní; vyberte nákladní auto, kterým jede četa nebo dělo. Pěchota je vidět ve 3D a otevře se v Blenderu.
+- **Pancéřování** se vybírá z úrovní hry, takže karta ukazuje, s čím jednotka bojuje; **importovaná letadla** si nechají točící se vrtule a vracejí se natočená dopředu (obojí ověřeno ve hře).
+- **Velikosti modelů na posuvníku** (Drobný, Velikost hry, Skutečná, Obří: 0,05 až 20), kdykoli změnitelné, všechna letadla najednou.
+- **Víc ke změně:** vlastní hodnota obtížnosti nebo profilu AI pro hodnotu, kterou má jen Výchozí; čísla za posuvníky nástrojů mapy; hlasitější a delší úpravy hudby.
+- **Opraveno:** jednotka ukázaná v nabídce, ale zkoumaná ze skryté, zastavila hru: kontrola ji jmenuje a sestavení ji odmítne. Tanky znovu střílejí přes smazaná města a jednotky už nepadají do děr po odstraněných mostech (ověřeno ve hře).
+- **Stahování funguje na každém PC:** když Windows ještě nestáhl certifikát, kterým se ověřuje GitHub, Studio o něj Windows požádá, jako prohlížeč, a zkusí to znovu (zatím nevyzkoušeno na PC, které mělo ten problém).
+
+**0.9.8.3:** kopie s módy se ukládají tam, kam řeknete.
+
+- **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte
+  na doporučené místo, `RUSE-Instances` na disku hry (tam kopie sdílí soubory hry a je hotová za pár sekund; na jiném
+  disku je to úplná kopie hry, pomalejší a větší). Čistá záloha hry jde vedle. Další Vyzkoušet ve hře sestaví na
+  novém místě; starou složku lze smazat ručně. Launcher používá stejnou složku.
+
 **0.9.8.2:** přicházejí jednotky z jiných období: jejich modely, ve skutečné velikosti, za výzkumem.
 
 - **Jednotky z jiných období:** období WWI, WWII+, Studená válka a Současnost na kartě Jednotky teď mají své

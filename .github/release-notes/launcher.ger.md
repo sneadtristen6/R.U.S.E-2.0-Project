@@ -1,6 +1,20 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.4:** Mods laden auf jedem PC herunter, und er spielt Mods, die mit Studio 0.9.8.4 gemacht sind.
+
+- **Mods laden auf jedem PC herunter:** auf manchen PCs lud kein Mod herunter („certificate verify failed: unable to get local issuer certificate“). Jetzt fragt der Launcher Windows nach dem Zertifikat, wie ein Browser, und versucht es erneut; auch bei seinen eigenen Updates. Noch nicht auf einem PC mit dem Problem getestet.
+- **Mods aus Studio 0.9.8.4 laufen:** eigene Missionen, leere Karten mit ihren HQs und Sektoren, Depots mit mehr Lastwagen (ein älterer Launcher lehnt Depots über 1.000 Lastwagen ab), Einheiten mit eigenem Aussehen und eigenen Uniformen, Bearbeitungen fremder Mods unter eigenem Namen.
+- **Noch fehlerhaft, Spielen auf eigene Verantwortung:** Karten mit den Texturen von Map Paint und leere Karten (Leeres Gelände, Leerer Ozean).
+
+**0.4.8.3:** Kopien mit Mods kommen dorthin, wo du es sagst.
+
+- **Wohin Kopien mit Mods kommen**, in den Einstellungen: Wähle den Ordner, in dem die Kopie des Spiels mit Mods gebaut
+  wird, oder geh zurück zum empfohlenen Ort, `RUSE-Instances` auf dem Laufwerk des Spiels (dort teilt die Kopie die
+  Dateien des Spiels und ist in Sekunden fertig; auf einem anderen Laufwerk ist sie eine vollständige Kopie des Spiels,
+  langsamer und größer). Die saubere Sicherung des Spiels kommt daneben. Das nächste Spielen baut am neuen Ort; der
+  alte Ordner kann von Hand gelöscht werden. Das Studio nutzt denselben Ordner.
+
 **0.4.8.2:** Er öffnet sich in deinem Webbrowser, wo sein eigenes Fenster es nicht kann, und spielt Mods aus Studio
 0.9.8.2.
 

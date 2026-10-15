@@ -137,6 +137,43 @@ def research_parent_problems(game, names) -> dict[str, str]:
     return out
 
 
+SHOWN = "ShowInMenu"
+
+
+def _shown(obj) -> list | None:
+    """A unit's ShowInMenu, one number per battle date (None when it has no list)."""
+    v = obj.props.get(SHOWN) if obj is not None else None
+    return [_int(x) for x in v.items] if isinstance(v, ListV) else None
+
+
+def research_hidden_parent_problems(game, names) -> dict[str, str]:
+    """For the units `names`: {name: why} when the unit is shown in its build menu at a battle date where the unit
+    it's researched from (UpgradeRequire) is hidden (its ShowInMenu 0 there). The game's build menu puts a researched
+    unit's button after its parent's and stops when the parent has none (seen in the game
+    2026-10-10, Italy's units hidden and China's researched from them). The owner, 2026-10-10: "There shouldn't
+    be a unit hidden behind a research one shown in the menu ... The one available to be built should be first before
+    the research one" (rule unit-research-shown-parent)."""
+    out = {}
+    for name in names:
+        obj = game.objects.get(name)
+        if obj is None or not is_unit(obj):
+            continue
+        v = obj.props.get(UPGRADE)
+        if not isinstance(v, Ref):
+            continue
+        mine, theirs = _shown(obj), _shown(game.objects.get(v.target))
+        if not mine or theirs is None:
+            continue
+        dates = [i + 1 for i, s in enumerate(mine) if s and i < len(theirs) and theirs[i] == 0]
+        if dates:
+            when = "every battle date" if len(dates) == DATES else f"battle date {', '.join(map(str, dates))}"
+            out[name] = (f"it's shown in its build menu at {when}, but {v.target}, the "
+                         f"unit it's researched from ({UPGRADE}), is hidden there ({SHOWN} 0): the game stops when that "
+                         f"build menu opens (seen in the game). Show {v.target} at those dates too, or make this one a "
+                         f"unit of its own (delete {UPGRADE} and IsUpgrade: the Studio's Upgrade box does both)")
+    return out
+
+
 def _resolve(game, v):
     """The object a list item is: an owned part, or the named object a reference points at (with its name)."""
     if isinstance(v, Inline):

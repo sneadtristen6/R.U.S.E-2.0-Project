@@ -176,6 +176,69 @@ def seats(counts: dict, layouts: list[int], players: int) -> list[tuple[int, int
     return sorted(missing)
 
 
+def entry_seating(read_glad, pack: str) -> list[tuple[str, int | None, list[int], str | None]]:
+    """The map's online entries as the game seats them: [(map-list name, NbPlayers, the layouts it offers (LAYOUTS'
+    team counts, 0 = free-for-all), its scenario file)]. `read_glad(member)` gives a ZZ_GladPatchableWin.dat member's
+    bytes or None; a game without the map list or menus gives none."""
+    g_raw, m_raw = read_glad(GLOBALS), read_glad(MAPINFO)
+    if g_raw is None or m_raw is None:
+        return []
+    g, m = Ndf(g_raw), Ndf(m_raw)
+    out = []
+    for mi, gi, name in entries(m, g, pack):
+        p = _props(g, g.objects[gi])
+        out.append((name, p["NbPlayers"].scalar() if "NbPlayers" in p else None,
+                    [teams for key, teams in LAYOUTS if key in p and p[key].scalar()], scenario_of(m, mi, read_glad)))
+    return out
+
+
+def seated(starts: list, layouts: list[int], players: int) -> dict:
+    """Which starting points the game seats players on, for `players` in each layout offered (2, 3, 4 teams; 0 =
+    free-for-all): `starts` [(key, team, place)], `place` its AlliancePriority (absent: 1). A team's players take its
+    starting points by place, lowest first, so a team that needs N players uses its first N (between equal places,
+    the file's order is taken: which one the game takes then isn't known). Returns {key: (team, seat)} for those any
+    layout uses, `seat` its number in the team from 1."""
+    need: dict = {}
+    for teams in layouts:
+        if teams == 0:
+            for t in range(1, players + 1):
+                need[t] = max(need.get(t, 0), 1)
+        elif not players % teams:  # (a layout that can't take this many evenly isn't offered: seats() skips it too)
+            for t in range(1, teams + 1):
+                need[t] = max(need.get(t, 0), players // teams)
+    by_team: dict = {}
+    for n, (key, team, place) in enumerate(starts):
+        by_team.setdefault(team, []).append((place, n, key))
+    out = {}
+    for team, rows in by_team.items():
+        for seat, (_place, _n, key) in enumerate(sorted(rows)[:need.get(team, 0)], start=1):
+            out[key] = (team, seat)
+    return out
+
+
+def blank_seats(scenario_raw: bytes, file: str, rows: list, players: int, layouts: list[int]) -> dict:
+    """A blank map's HQs (newmap.is_blank; the owner, 2026-10-09: on a blank map "the HQ shouldn't be there ...
+    nothing should be there. This isn't D-Day"): the starting points of scenario `file` (its bytes as the game has
+    them) that seat players, with the mod's scenario rows `rows` (scenario.toml: a Move puts one of them, a Start adds
+    one). Returns {key: (team, seat, placed)}: key the item's number in the file for its own starting points, ("new",
+    n) for the mod's n-th Start of the file; `placed` once the mod has put it (moved it, or it's the mod's own)."""
+    from .scenario import Move, Scenario, Start
+    s = Scenario.read(scenario_raw)
+    moved = {m.item for m in rows if isinstance(m, Move) and m.kind == "StartingPoint" and m.file.lower() == file.lower()}
+    starts = [(k, it.values.get("AllianceNum"), int(it.values.get("AlliancePriority") or 1))
+              for k, it in enumerate(s.items) if it.kind == "StartingPoint" and isinstance(it.values.get("AllianceNum"), int)]
+    places = {}
+    for _k, team, place in starts:
+        places.setdefault(team, set()).add(place)
+    own = [m for m in rows if isinstance(m, Start) and m.file.lower() == file.lower()]
+    for n, st in enumerate(own):  # the mod's own starts, at their place (the team's next when it says none)
+        place = st.place or max(places.get(st.team, {0}), default=0) + 1
+        places.setdefault(st.team, set()).add(place)
+        starts.append((("new", n), st.team, place))
+    return {key: (team, seat, not isinstance(key, int) or key in moved)
+            for key, (team, seat) in seated(starts, layouts, players).items()}
+
+
 def _set_int(nd: Ndf, o, name: str, value: int | None) -> None:
     """Set an int property of object `o` (adding it when the object hasn't got it); None drops it."""
     for k, (pi, v) in enumerate(o.props):
@@ -239,7 +302,7 @@ def apply_players(read_glad, pack: str, setting: Players, starting_points, warn=
         # rule: seats-per-team
         raise PlayersError(f"{pack}: {setting.count} players need a starting point for each (seen in the game: a "
                            f"player without one starts with no HQ and no units); {scenario_file} has none for {where}. "
-                           f"Add them (scenario.toml [[start]], or the Studio's Add starting point)")
+                           f"Add them (scenario.toml [[start]], or the Studio's Add HQ start)")
     before = p["NbPlayers"].scalar() if "NbPlayers" in p else None
     if 3 in layouts and setting.count % 3 and warn is not None:
         warn(f"{pack}: {name!r} offers three teams, but {setting.count} players can't make three even teams: that "

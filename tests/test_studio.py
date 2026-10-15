@@ -1143,7 +1143,7 @@ class Terrain(WithMod):
         self.assertEqual([p["file"] for p in after["problems"]], ["maps/TwoIslands/scenario.toml"])
         self.assertEqual(self.api.set_aside("maps/TwoIslands/scenario.toml")["problems"], [])
         for bad in ("mod.toml", "maps/Blitz/terrain.broken.toml", "../x/maps/Blitz/terrain.toml", "maps/Nope/movement.toml"):
-            with self.assertRaisesRegex(StudioError, "isn't one of this mod's map files"):
+            with self.assertRaisesRegex(StudioError, "isn't one of this mod's files"):  # map, unit changes, text files
                 self.api.set_aside(bad)
 
 
@@ -1348,6 +1348,37 @@ class ScenarioEdits(WithMod):
         self.assertEqual((back["name"], "game" in back), ("", False))
         self.assertFalse(self.file.with_name("items.toml").exists())
 
+    def test_a_zone_placed_at_the_trays_size(self):
+        """The owner, 2026-10-10: "you also can't change how big or small the zone is". The Add a spot or zone tray has a
+        Size box: the zone is placed that size (world units), else ZONE_SIZE; a size that isn't a sensible number is
+        refused. The page keeps the new zone picked, its own size box shown (renderScenTools)."""
+        zone = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "CircularZone", 7.0, 8.0, "",
+                                                  400 * 260.0))[-1]
+        self.assertEqual(zone["radius"], 104000.0)
+        square = self.items(self.api.scenario_place("Blitz", "leveldesign.scenario", "RectangleZone", 7.0, 8.0, "",
+                                                    52000.0))[-1]
+        self.assertEqual((square["width"], square["height"]), (52000.0, 52000.0))
+        for bad in (0, -5, "big", StudioApi.ZONE_SIZE_MOST * 2):
+            with self.assertRaises(StudioError):
+                self.api.scenario_place("Blitz", "leveldesign.scenario", "CircularZone", 7.0, 8.0, "", bad)
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        self.assertIn("mv.api.scenario_place(mv.current, s.file, kind, cx, cy, words, size)", maps)
+        self.assertIn("if (made && kind !== \"LabelVille\" && kind !== \"LabelMontagne\") selectSpawn(made, false);", maps)
+
+    def test_hqs_are_add_hq_starts(self):
+        """The owner, 2026-10-10: on a blank Operation "I'm pressing HQ start but nothing's popping up on the map" (only a
+        Battles map's seats are marked placed or not, so every unmarked starting point was hidden, the new ones too),
+        and "Headquarters should not be considered units ... It should just be all in one" (every player, the computer's
+        too, has a seat whose HQ the game builds at its start): Add HQ start places them, each drawn as an HQ badge in
+        its team's colour with its player's number (not a bare pillar); Add unit lists no HQ."""
+        maps = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "maps.js").read_text(encoding="utf-8")
+        self.assertIn('(it.unused || it.placed === false)) continue;', maps)
+        self.assertNotIn("(it.unused || !it.placed)) continue;", maps)
+        self.assertIn('GROUP_ORDER.filter((g) => g !== "hq" && ofKind.some((u) => u.group === g))', maps)
+        self.assertNotIn("hqMode", maps)
+        self.assertIn('spawnIcon({ unit_kind: "buildings", icon: "hq", camp: it.alliance || 1', maps)
+        self.assertIn("g.fillText(it.tag, 80, 19);", maps)
+
     def test_an_item_turned(self):
         """The Details panel's turn: kept with the item's move (one not moved gets a move where it stands); a later move
         or a camera turn keeps it; the game's turn again, where it stands, takes the move out."""
@@ -1443,6 +1474,81 @@ class ScenarioEdits(WithMod):
         data = tomllib.loads(self.file.read_text(encoding="utf-8"))
         self.assertEqual([s.get("camp") for s in data["spawn"]], [-1, -1, -1])
         self.assertEqual(Spawn("x.scenario", data["spawn"][-1]["what"], 0.0, 0.0).class_path, DEPOT)
+
+
+class DepotTrucks(WithMod):
+    """A supply depot's money (the owner, 2026-10-10: "theres currently no way to increase max amt of money in supply
+    depot"): its trucks past the Studio's old top of 1000, the depots the mod adds given trucks and changed after,
+    and every depot of a scenario at once."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from test_scenario import detail_scenario  # 0 a depot of 25 trucks, 1 a depot without trucks, 2 a Sherman
+        folder = "test/map/blitz/".replace("/", "\\")
+        (cls.game / "Data" / "PC" / "190852" / "DataMap_Win.dat").write_bytes(
+            make_edat([("dir", folder, [("file", "leveldesign.scenario", detail_scenario())])]))
+
+    def setUp(self):
+        super().setUp()
+        menus = mock.patch("rusemod.scenario.kinds_of", return_value={})
+        menus.start()
+        self.addCleanup(menus.stop)
+        self.mod = Path(self.api.new_mod("Depots")["current"])
+        self.spawns = self.mod / "maps" / "Blitz" / "scenario.toml"
+        self.changes = self.mod / "maps" / "Blitz" / "items.toml"
+
+    def items(self, res):
+        return next(s for s in res["scenarios"] if s["file"] == "leveldesign.scenario")["items"]
+
+    def test_a_map_depot_past_the_old_top(self):
+        it = self.items(self.api.scenario_change("Blitz", "leveldesign.scenario", 0, "trucks", 250_000))[0]
+        self.assertEqual((it["trucks"], it["game"]), (250_000, {"trucks": 25}))
+        self.assertEqual(tomllib.loads(self.changes.read_text(encoding="utf-8"))["set"][0]["trucks"], 250_000)
+        for bad in (-1, 2 ** 31, 2.5):
+            with self.subTest(bad=bad), self.assertRaisesRegex(StudioError, "whole number"):
+                self.api.scenario_change("Blitz", "leveldesign.scenario", 0, "trucks", bad)
+
+    def test_a_depot_the_mod_adds(self):
+        items = self.items(self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", "DalleBatimentDepot",
+                                                        [[1, 2], [3, 4]], None, 0.0, 5000))
+        mine = [it for it in items if it.get("mine")]
+        self.assertEqual([(it["trucks"], it["spawn"]) for it in mine], [(5000, 0), (5000, 1)])
+        self.assertEqual([s["trucks"] for s in tomllib.loads(self.spawns.read_text(encoding="utf-8"))["spawn"]],
+                         [5000, 5000])
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "trucks", 90))[-1]
+        self.assertEqual(it["trucks"], 90)
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "camp", 1))[-1]
+        self.assertEqual(it["camp"], 1)
+        it = self.items(self.api.scenario_spawn_set("Blitz", 1, "rotation", 1.25))[-1]
+        self.assertEqual(it["turn"], 1.25)
+        self.assertEqual(self.items(self.api.scenario_spawn("Blitz", "leveldesign.scenario", "DalleBatimentDepot",
+                                                            5.0, 6.0))[-1]["trucks"], 25)  # unset: the build's 25
+        with self.assertRaisesRegex(StudioError, "whole number"):
+            self.api.scenario_spawn_set("Blitz", 0, "trucks", -5)
+        with self.assertRaisesRegex(StudioError, "can't be changed here"):
+            self.api.scenario_spawn_set("Blitz", 0, "what", "Unit_X")
+        with self.assertRaisesRegex(StudioError, "isn't in the mod"):
+            self.api.scenario_spawn_set("Blitz", 9, "trucks", 5)
+        with self.assertRaisesRegex(StudioError, "Only a supply depot has trucks"):
+            self.api.scenario_spawn_many("Blitz", "leveldesign.scenario", M4, [[1, 2]], None, 0.0, 40)
+
+    def test_every_depot_at_once(self):
+        self.api.scenario_spawn("Blitz", "leveldesign.scenario", "DalleBatimentDepot", 5.0, 6.0)
+        res = self.api.scenario_depots("Blitz", "leveldesign.scenario", None, 3)
+        items = self.items(res)
+        self.assertEqual(res["depots"], 3)  # the map's two and the mod's one; the Sherman isn't one
+        self.assertEqual([items[0]["trucks"], items[1].get("trucks"), items[-1]["trucks"]], [75, None, 75])
+        self.assertNotIn("trucks", items[2])
+        items = self.items(self.api.scenario_depots("Blitz", "leveldesign.scenario", 400, None))
+        self.assertEqual([items[0]["trucks"], items[1]["trucks"], items[-1]["trucks"]], [400, 400, 400])
+        items = self.items(self.api.scenario_depots("Blitz", "leveldesign.scenario"))  # back to the game's
+        self.assertEqual([items[0]["trucks"], items[1].get("trucks"), items[-1]["trucks"]], [25, None, 25])
+        self.assertFalse(self.changes.exists())
+        self.assertNotIn("trucks", tomllib.loads(self.spawns.read_text(encoding="utf-8"))["spawn"][0])
+        for trucks, times, why in ((5, 2, "not both"), (None, -1, "0 or more"), (-1, None, "whole number")):
+            with self.subTest(trucks=trucks, times=times), self.assertRaisesRegex(StudioError, why):
+                self.api.scenario_depots("Blitz", "leveldesign.scenario", trucks, times)
 
 
 class MapDocks(WithMod):
@@ -1706,13 +1812,26 @@ class ZonesOnTheGround(unittest.TestCase):
         owner's D-Day hill, 2026-10-01). The split itself was checked in the Studio's page: every edge under the
         step, the area and the outline kept."""
         draw = self.function("drawScenario()")
-        self.assertIn("const step = 1.5 * Math.max(grid.sx, grid.sy);", draw)
-        self.assertIn("drawZone(z, k, zones, at, step)", draw)
+        self.assertIn("step = ground.flat ? Infinity : 1.5 * Math.max(grid.sx, grid.sy);", draw)
+        self.assertIn("drawZone(z, k, zones, at, step, ground.key)", draw)
+        shapes = self.function("zoneShapes(")
+        self.assertIn("drapeZone(p, z.triangles, step)", shapes)
         zone = self.function("drawZone(")
-        self.assertIn("drapeZone(p, z.triangles, step)", zone)
         self.assertIn("g.setIndex(tris);", zone)
         self.assertNotIn("g.setIndex(z.triangles)", zone)
         self.assertIn("mid.get(key)", self.function("drapeZone("))  # an edge's middle made once: no cracks
+
+    def test_a_zone_is_draped_once_per_ground(self):
+        """The owner, 2026-10-10: on the Scenario side "Taking like 20 seconds between each one". Every tool's click
+        draws the scenario again, and one painted sector's drape took 3 s (4.4 s for his two, measured on a copy of
+        his map in the Studio's page): a zone's drape, glow and border are kept per zone and ground (its heights' key)
+        and made again only when either changes; flat ground has nothing to follow (no split). His clicks then took
+        20 to 98 ms."""
+        shapes = self.function("zoneShapes(")
+        self.assertIn("const kept = zoneShapesKept.get(z);", shapes)
+        self.assertIn("kept.ground === ground && kept.step === step", shapes)
+        self.assertIn("zoneShapesKept.set(z, out);", shapes)
+        self.assertIn("flat: !(hi - lo > ", self.function("groundKey("))
 
     def test_zones_are_borders_with_a_see_through_inside(self):
         """The owner, 2026-10-03: the coloured sheets floating over the map covered its textures and the icons; "like
@@ -1721,7 +1840,7 @@ class ZonesOnTheGround(unittest.TestCase):
         on the ground; the slider sets the inside (0: the borders alone) and is kept by the Studio (prefs "view").
         Looked at in the Studio's page: borders, glow and fill at 35 %, the borders alone at 0 %."""
         zone = self.function("drawZone(")
-        self.assertIn("zoneBorder(z.triangles)", zone)
+        self.assertIn("zoneBorder(z.triangles, p)", self.function("zoneShapes("))   # (edges matched by position: 1fe05f8)
         self.assertIn("new THREE.LineSegments(", zone)
         self.assertIn('zonePart: "fill"', zone)
         self.assertIn('zonePart = "glow"', zone)
@@ -1740,6 +1859,66 @@ class ZonesOnTheGround(unittest.TestCase):
         text = self.maps()
         body = text[text.index("function " + head):]
         return body[:body.index("\n}\n")]
+
+
+class MapAndScenarioSides(unittest.TestCase):
+    """The owner, 2026-10-09: on the map screen a Map / Scenario button "swaps the tool panel only", the map staying as
+    it is; on each side the other side's things show faded and can't be picked ("no dragging a unit while painting
+    ground ... and vice versa. So in the scenario mode, you can't accidentally move a building"); sectors are on the Map
+    side. Looked at in the Studio's page on a copy of D-Day (2026-10-10): each side's tiles, the locked side a pale ghost
+    (40 % and lit things lifted: at see-through alone the HQs' dark red pillars vanished into the fields) with its models'
+    cut-out scaled with it, no hand over a depot on the Map side, the number keys doing nothing on the Scenario side."""
+
+    maps = staticmethod(ZonesOnTheGround.maps)
+    function = ZonesOnTheGround.function
+
+    def test_each_side_has_its_own_tiles(self):
+        groups = self.maps()[self.maps().index("const DOCK_GROUPS = {"):]
+        groups = groups[:groups.index("\n};\n")]
+        map_side, scenario_side = groups.split("scenario: [")
+        self.assertIn('["sectors", ["sectors"], "sectors"]', map_side)
+        # the one scenario tool on the Map side: the towns' and hills' names, a tab beside Buildings (2026-10-10)
+        self.assertEqual(re.findall(r'"(scen_\w+)"', map_side), ["scen_names"])
+        self.assertIn('["building", ["building", "scen_names"], "building"]', map_side)
+        for kind in ("scen_move", "scen_spawn", "scen_start", "scen_mark"):
+            self.assertIn(f'["{kind}", ["{kind}"]', scenario_side)
+        self.assertNotIn('"terrain"', scenario_side)
+        self.assertIn('toMode(MAP_SIDE_TOOLS.has(scen.tool) ? "map" : "scenario")', self.function("setScenTool("))
+        self.assertIn('const MAP_SIDE_TOOLS = new Set(["sectors", "names"])', self.maps())
+        for opens in ("setBrushMode(", "setPlaceMode(", "setRoadMode(", "setBridgeMode("):
+            self.assertIn('toMode("map")', self.function(opens), opens)
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        self.assertLess(page.index('id="mode-map"'), page.index('id="brush-look"'))
+        self.assertIn('id="tray-sectors"', page)
+
+    def test_town_and_hill_names_are_the_map_sides(self):
+        """The owner, 2026-10-10: "you should be able to name towns ... on the map editor when you're making the actual
+        town", the scenario then pointing at them. The names are the scenario's items (LabelVille, LabelMontagne) but
+        drawn in a group of their own that fades and locks with the Map side, placed with Names and grabbed there;
+        Add a spot or zone keeps the mission's points and zones."""
+        maps = self.maps()
+        self.assertIn('"zones", "names"]);', maps)                       # MAP_SIDE
+        self.assertIn('const NAME_KINDS = new Set(["LabelVille", "LabelMontagne"])', maps)
+        self.assertIn('fade(scen.names, alpha.scenario * (locked("names")', self.function("fadeLayers("))
+        self.assertIn("names.add(sprite)", self.function("drawScenario("))
+        grab = self.function("grabAt(")
+        self.assertIn("onMap ? (scen.names ? scen.names.children : []) : scen.group.children", grab)
+        self.assertIn('scen.tool === "names"', self.function("canGrab("))
+        tools = self.function("renderScenTools(")
+        self.assertIn('MARK_KINDS.filter((k) => NAME_KINDS.has(k) === (scen.tool === "names"))', tools)
+
+    def test_the_other_side_is_faded_and_locked(self):
+        self.assertIn('mv.mode === "scenario"', self.function("canGrab("))  # no grabbing the scenario's from Map
+        self.assertIn("fade(o, shownAlpha(k), locked(k))", self.function("fadeLayers("))
+        fade = self.function("fade(")
+        self.assertIn("u.baseAlphaTest * a", fade)  # a faded model fades, it doesn't vanish
+        self.assertIn("m.emissive.addScalar(GHOST_LIFT)", fade)  # and a dark one stays findable
+        keys = self.function("onKey(")
+        self.assertIn("if (b && onMap) pickBrush(b)", keys)  # a slip of a finger on the Scenario side paints nothing
+        self.assertIn("map_mode: mv.mode", self.function("saveView("))
+        words = _words()
+        for key in ("mode_map", "tip_mode_map", "tip_mode_scenario", "tip_scen_locked", "locked_scenario", "locked_map"):
+            self.assertEqual(len(words[key]), 10, key)
 
 
 class MapIcons(unittest.TestCase):
@@ -1809,7 +1988,9 @@ class SpawnNamesAndSelection(unittest.TestCase):
         self.assertIn("THREE.Sprite(", self.function("spawnIcon("))
         at = self.function("scenarioAt(")
         self.assertIn("o.isSprite", at)
-        self.assertIn("h.object.isSprite", at)  # an icon counts before a zone under it
+        # an icon counts before a zone under it: the icons are tried first, the zones only when none is hit (on the
+        # map itself since 2026-10-09: zoneAt, not through their drape)
+        self.assertLess(at.index("if (hit) return"), at.index("zoneAt("))
 
     def test_a_box_a_click_and_shift_select_and_the_strip_shows_the_map_icons(self):
         self.assertIn("boxStart(ev)", self.function("scenPointerDown("))
@@ -1867,7 +2048,7 @@ class Labels(unittest.TestCase):
 
     def test_every_word_the_studio_screen_uses_exists(self):
         ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
-        app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js", "files.js"))
+        app = "\n".join((ui / f).read_text(encoding="utf-8") for f in ("app.js", "maps.js", "files.js", "mission.js"))
         used = set(re.findall(r"(?:\b(?:w|state\.words|mv\.words)|\bW\(\))\.([a-z_]+)", app))
         files = (ui / "files.js").read_text(encoding="utf-8")  # the Files tab's packs and kinds, looked up by key
         used |= set(re.findall(r'"(files_pack_\w+)"', files))
@@ -1878,7 +2059,7 @@ class Labels(unittest.TestCase):
         maps = (ui / "maps.js").read_text(encoding="utf-8")  # each brush's name is looked up by key
         used |= {"brush_" + name for name in re.findall(r'^  (\w+): \["\w+", "\w+", -?1, (?:true|false),', maps, re.M)}
         self.assertEqual(len(used & {"brush_hill", "brush_ramp", "brush_cover", "brush_town", "brush_block_vehicles"}), 5)
-        # Add a name or zone: each kind's chip, its tooltip ("tip_" + it) and its help line (it + "_help")
+        # Names and Add a spot or zone: each kind's chip, its tooltip ("tip_" + it) and its help line (it + "_help")
         marks = re.findall(r'"(scen_mark_\w+)"', re.search(r"const MARK_WORD = \{(.*?)\};", maps, re.S).group(1))
         self.assertEqual(len(marks), 5)
         used |= {k for m in marks for k in (m, "tip_" + m, m + "_help")}

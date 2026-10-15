@@ -1,6 +1,32 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.4:** vos propres missions, des cartes vierges à construire, et bien plus à personnaliser.
+
+- **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et Océan vierge).
+- **Vos propres missions :** une nouvelle Opération ou un nouveau chapitre de campagne a sa propre mission, côté Scénario de l'écran de carte : camps, objectifs, événements (Quand → Faire : faire venir des unités, déplacer, attaquer, tenir une zone, artillerie, bombardement, parachutistes, messages, argent, victoire, défaite) et mouvements de caméra. Vu en jeu : son mouvement de caméra, les objectifs (une zone, un groupe détruit, un temps), les événements répétés, l'argent, un camp confié à l'ordinateur. Pas encore essayé : les parachutistes, un mouvement de caméra lancé par un événement.
+- **Carte | Scénario** sur l'écran de carte : ce qui est de l'autre côté est estompé et ne peut pas être pris par erreur.
+- **Cartes vierges :** plus rien de la carte copiée ne s'affiche, et vous placez le QG de chaque joueur (la construction attend qu'ils soient tous placés). Terrain vierge marche aussi pour les Opérations et les chapitres de campagne.
+- **Vos propres secteurs :** peignez-les, tirez leurs coins, tracez-en un nouveau en boîte, laissez du terrain sans secteur, supprimez-en un (vu en jeu).
+- **Dépôts de ravitaillement :** l'onglet Économie donne plus de camions à chaque dépôt de chaque carte, ou d'une carte (fois, ou un nombre chacun) ; plus de plafond à 1 000 camions.
+- **Onglet Nations :** cachez d'un coup toutes les unités d'une nation, montrez-les de nouveau, ou remplissez ses menus avec les unités d'une époque.
+- **Modifier un mod installé :** ouvrez n'importe quel mod du Launcher ; celui de quelqu'un d'autre devient une copie à vous sous son propre nom. Les mods RUSE Mod Manager (.rmod) sont convertis pour que leurs valeurs puissent être changées.
+- **La vérification du mod en mots simples**, avec un bouton pour corriger chaque problème.
+- **Le look propre d'une unité :** sa propre copie de son modèle à repeindre ; les escouades portent l'uniforme par défaut ou un uniforme personnalisé ; choisissez le camion dans lequel une escouade ou un canon roule. L'infanterie s'affiche en 3D et s'ouvre dans Blender.
+- **Le blindage** se choisit parmi les niveaux du jeu, pour que la carte montre ce avec quoi l'unité se bat ; **les avions importés** gardent leurs hélices qui tournent et reviennent tournés vers l'avant (les deux vus en jeu).
+- **Tailles des modèles sur un curseur** (Minuscule, Taille du jeu, Taille réelle, Énorme : 0,05 à 20), à changer quand vous voulez, tous les avions d'un coup.
+- **Plus à changer :** une valeur propre à une difficulté ou un profil d'IA pour une valeur que seul Défaut liste ; des nombres au-delà des curseurs des outils de carte ; des retouches de musique plus fortes et plus longues.
+- **Corrigé :** une unité montrée dans un menu mais recherchée depuis une unité cachée arrêtait le jeu : la vérification la nomme et la construction la refuse. Les chars tirent de nouveau à travers les villes effacées, et les unités ne tombent plus dans les trous laissés là où les ponts ont été retirés (vu en jeu).
+- **Les téléchargements marchent sur tous les PC :** quand Windows n'a pas encore récupéré le certificat qui sert à vérifier GitHub, le Studio le lui demande, comme un navigateur, puis réessaie (pas encore essayé sur un PC qui avait le problème).
+
+**0.9.8.3:** les copies avec les mods vont où vous le dites.
+
+- **Où vont les copies avec les mods**, dans les Réglages : choisissez le dossier où la copie du jeu avec les mods est
+  construite, ou revenez à l'emplacement recommandé, `RUSE-Instances` sur le disque du jeu (la copie y partage les
+  fichiers du jeu et est prête en quelques secondes ; sur un autre disque, c'est une copie complète du jeu, plus lente
+  et plus grosse). La sauvegarde propre du jeu va à côté. Le prochain Tester en jeu construit au nouvel endroit ;
+  l'ancien dossier peut être supprimé à la main. Le Launcher utilise le même dossier.
+
 **0.9.8.2:** les unités d'autres époques arrivent : leurs modèles, à leur vraie taille, derrière une recherche.
 
 - **Des unités d'autres époques :** les époques WWI, WWII+, Guerre froide et Moderne de l'onglet Unités ont désormais

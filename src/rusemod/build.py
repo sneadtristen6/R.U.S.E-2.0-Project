@@ -103,7 +103,10 @@ def load_mod(path) -> tuple[ModInfo, list]:
                 raise BuildError(f"{manifest_file}: [rmod] file must name a .rmod file next to mod.toml (got {name!r})")
             rmod.check(file)
             info.rmod = file
-            return info, []
+            if not (path / "src").is_dir() and not (path / "text").is_dir():
+                return info, []
+            # an .rmod mod converted for the Studio (rusemod.rmodconvert) has changes of its own too: read below,
+            # built on top of every .rmod (build_and_write)
         src = path / "src"
         files = sorted(src.rglob("*.rndf"), key=lambda p: p.relative_to(src).as_posix().lower()) if src.is_dir() else []
         ops = []
@@ -138,11 +141,20 @@ def load_mod(path) -> tuple[ModInfo, list]:
             info.menu_order = menu_order_of(path)  # menus.toml: missions' places in the menus
         except MenuOrderError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .scenario import ScenarioError, read_depots
+        try:
+            info.depots = read_depots(path)  # depots.toml: every depot's trucks, on every map or the ones named
+        except ScenarioError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .unitlook import mod_cards, mod_textures
-        from .unitmodel import mod_models
+        from .unitmodel import UnitModelError, mod_copies, mod_models
         info.textures = mod_textures(path)
         info.cards = mod_cards(path)
         info.models = mod_models(path)
+        try:
+            info.model_copies = mod_copies(path)
+        except UnitModelError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
         info.sounds = mod_sounds(path)
         try:
@@ -156,6 +168,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
         info.solved = read_mod(path)
         from . import mapscripts
         info.scripts = mapscripts.read_mod(path)
+        from .mission import MissionError, read_mod as missions_of
+        try:
+            info.missions = missions_of(path)  # maps/<map>/mission.toml: a new Operation's or chapter's own mission
+        except MissionError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .gamefiles import GameFileError, read_mod as game_files_of
         try:
             info.game_files = game_files_of(path, info.id)
@@ -211,9 +228,10 @@ def _map_readers() -> dict:
         "roads.toml": (("road", "take_out"), "a roads file holds [[road]] tables and take_out = [\"roads\", \"bridges\"]",
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
-        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground"),
+        "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground",
+                      "blank"),
                      "a map file holds players = N (and entry = the map-list name), picture, wide_picture and "
-                     "start_dots, and for a new map copy_of, name and ground",
+                     "start_dots, and for a new map copy_of, name, ground and blank",
                      _map_toml, (PlayersError, NewMapError, PictureError)),
     }
 
@@ -449,7 +467,11 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     point), so the area opens whole; each house's own ground alone opens next to nothing (islands no unit reaches,
     checked in memory on T25's spots). Seen in the game 2026-10-04 (TESTS.md T25): tanks and infantry drive through
     where Blitz's town stood, and infantry there no longer act as in a town. Erasing only props leaves both, and so
-    does a new road's own clearing (keep_ground)."""
+    does a new road's own clearing (keep_ground).
+
+    The blocked layer goes too, under trees and buildings alike: the maps mark their towns' buildings blocked, and
+    where an erased town stood (everywhere on Blank Terrain, which erases the whole map) tanks saw the enemy and
+    didn't fire (seen in T41 run 1, 2026-10-09); with the blocked layer taken out with them, they fired (T41 run 2)."""
     from .cover import Paint
     from .nav import Block
     opens, uncover = {}, {}
@@ -460,9 +482,10 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
             # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
             opens[name] = ([Block(x, y, r, "all", True) for a in cleared
                             for x, y, r in a.footprint().circles(_block_cell(a.footprint()))], list(ids))
-        if woods:
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
-                              for a in woods], list(ids))
+                              for a in woods]
+                             + [Paint(a.x, a.y, a.radius, "blocked", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
+                                for a in cleared], list(ids))
     return opens, uncover
 
 
@@ -767,9 +790,13 @@ class BuildResult:
     new_classes: list = field(default_factory=list)  # class names added to the game's Python unit list
     terrain_changed: dict = field(default_factory=dict)  # map pack file name -> {member path: new bytes}
     new_maps: dict = field(default_factory=dict)    # new map's pack name -> newmap.Clone (what it adds)
+    mission_scripts: dict = field(default_factory=dict)  # new members of IA_Common.dat: the new maps' own missions
+    mission_packs: list = field(default_factory=list)    # [(entry GUID, kind, own pack GUID)]: missions' own packs
+    mission_sources: dict = field(default_factory=dict)  # new map's pack name -> its mission script as Python
     added: dict = field(default_factory=dict)       # pack file name -> {member path: bytes}: members new maps add
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
+    own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
     new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
@@ -1158,7 +1185,6 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
-    from .patch import Inline, Ref, _fresh
     wanted: dict = {}
     for m in order:
         for unit, glb in (getattr(m, "models", None) or {}).items():
@@ -1166,34 +1192,168 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     out: dict = {}
     for unit, (glb, mod_id) in sorted(wanted.items()):
-        name = by_name.get(unit)
-        if name is None:
-            # not a game rule: a model for a unit no mod in the set makes
-            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: no mod in the set makes a "
-                                                    f"new unit {unit}"))
+        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result)
+        if source is None:
             continue
-        gfx = run.game.objects[name].props.get("GfxDescriptor")
-        mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
-        if isinstance(mesh, Ref) and mesh.target in run.game.objects:
-            # a plane's model part is an object of its own that the copy shares with the unit it copies (the Bf 109's
-            # MeshDescriptor names one; a tank's is written in the unit): the copy gets a copy of that part, written
-            # in it, to name its own model, and the copied unit keeps its own (era planes, 2026-10-08)
-            mesh = Inline(_fresh(run.game.objects[mesh.target]))
-            gfx.obj.props["MeshDescriptor"] = mesh
-        file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
-        if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
-            # not a game rule: what our build supports (a model part of its own, naming one model file)
-            result.findings.append(Finding("error", f"{mod_id}: files/models/{unit}.glb: {unit} has no model part of "
-                                                    f"its own (GfxDescriptor.MeshDescriptor) naming a model, so it "
-                                                    f"can't get one"))
-            continue
-        source = file.value
-        folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-        mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
         out[unit] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
                                                f"beside {source}"))
     return out
+
+
+def unit_own_copies(run, order: list, result: BuildResult) -> dict:
+    """Units' own copies of the models they draw (a mod's files/models/<the unit's name>.copy.toml, its paint in
+    files/models/<the unit's name>/; rusemod.unitmodel.write_unit_copy): every model part of the unit that names one
+    of the models its file lists names the unit's copy instead, beside the game's model. A new unit's, or one of the
+    game's units' (a squad's own uniform: its soldiers, its bazooka man and its token's figure; the owner,
+    2026-10-11: "you don't want the whole game to be colored the same"). Returns {unit: ({the game's model: its copy},
+    its paint, mod id)}. A unit with an imported model too (files/models/<name>.glb) is an error: it would have two."""
+    from .unitmodel import copy_model_name, model_key
+    wanted: dict = {}
+    for m in order:
+        for unit, (of, paint) in (getattr(m, "model_copies", None) or {}).items():
+            wanted[unit] = (of, paint, m.id)
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    for unit, (of, paint, mod_id) in sorted(wanted.items()):
+        where = f"{mod_id}: files/models/{unit}.copy.toml"
+        if unit in result.own_models:
+            # not a game rule: one model per unit (an imported one, or a copy of the one it copies)
+            result.findings.append(Finding("error", f"{where}: {unit} has an imported model too "
+                                                    f"(files/models/{unit}.glb); take one of the two out"))
+            continue
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            # not a game rule: a copy for a unit nothing makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
+                                                    f"has none of that name"))
+            continue
+        if not of:  # (a file naming no model: the one its GfxDescriptor draws, as the first copies were made)
+            source = _own_model_part(run, by_name, unit, where, result) if name in by_name.values() else None
+            if source is None:
+                if name not in by_name.values():
+                    result.findings.append(Finding("error", f"{where}: `of` names no model to copy"))
+                continue
+            out[unit] = ({model_key(source): copy_model_name(source, unit)}, paint, mod_id)
+        else:
+            several = len({model_key(m) for m in of}) > 1
+            copies = {model_key(m): copy_model_name(m, unit, several) for m in of}
+            missing = [m for m in copies if not _point_at_copies(run, name, {m: copies[m]})]
+            if missing:
+                # not a game rule: the build copies only models the unit's own model parts name
+                result.findings.append(Finding("error", f"{where}: {unit} draws no {', '.join(missing)} (none of "
+                                                        f"its model parts names it)"))
+                continue
+            out[unit] = (copies, paint, mod_id)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own copy of "
+                                               f"{', '.join(out[unit][0])}"
+                                               f"{f', {len(paint)} texture(s) painted' if paint else ''}"))
+    return out
+
+
+def _game_unit(run, unit: str) -> str | None:
+    """The name of the game's unit called `unit` ("Descriptor_Unit_Soldat_US_Lourd"), or None."""
+    name = f"$/GFX/Everything/{unit}"
+    return name if name in run.game.objects else None
+
+
+def _point_at_copies(run, name: str, copies: dict) -> int:
+    """Point every model part of the unit `name` (under its GfxDescriptor* links: a squad's soldiers, its bazooka man,
+    its token's figure) that names one of `copies`' models ({the game's model, rusemod.unitmodel.model_key: the copy's
+    name}) at the copy. A part the unit links to that other units link to as well (an unnamed object of its own in
+    the unit data, or a model part) is copied into the unit first, so they keep the game's. A game unit is copied
+    before it's changed (Game.own). Returns how many model parts name a copy now (0: none named those models)."""
+    from .patch import Inline, ListV, MapV, PairV, Ref, _fresh
+    from .unitmodel import model_key
+    objects = run.game.objects
+    reached: dict = {}
+
+    def names_one(obj) -> bool:
+        f = obj.props.get("FileName")
+        return isinstance(f, Text) and f.kind == "path" and model_key(f.value) in copies
+
+    def followed(prop: str, v) -> bool:  # (never into another unit, a shared drawer or the like: only unnamed parts)
+        return isinstance(v, Ref) and v.target in objects and (prop == "MeshDescriptor" or not v.target.startswith("$/"))
+
+    def reaches(prop: str, v, depth: int = 0) -> bool:
+        if depth > 24:
+            return False
+        if isinstance(v, Ref):
+            if not followed(prop, v):
+                return False
+            if v.target not in reached:
+                reached[v.target] = False  # (a loop counts as no)
+                obj = objects[v.target]
+                reached[v.target] = names_one(obj) or any(reaches(p, w, depth + 1) for p, w in obj.props.items())
+            return reached[v.target]
+        if isinstance(v, Inline):
+            return names_one(v.obj) or any(reaches(p, w, depth + 1) for p, w in v.obj.props.items())
+        if isinstance(v, ListV):
+            return any(reaches(prop, x, depth + 1) for x in v.items)
+        if isinstance(v, MapV):
+            return any(reaches(prop, x, depth + 1) for _k, x in v.pairs)
+        if isinstance(v, PairV):
+            return reaches(prop, v.a, depth + 1) or reaches(prop, v.b, depth + 1)
+        return False
+
+    def point(prop: str, v, put) -> int:
+        if not reaches(prop, v):
+            return 0
+        if isinstance(v, Ref):
+            v = Inline(_fresh(objects[v.target]))  # the unit's own copy of a part others link to as well
+            put(v)
+        if isinstance(v, Inline):
+            n = 0
+            if names_one(v.obj):
+                v.obj.props["FileName"] = Text("path", copies[model_key(v.obj.props["FileName"].value)])
+                n += 1
+            for p, w in list(v.obj.props.items()):
+                n += point(p, w, lambda x, p=p, o=v.obj: o.props.__setitem__(p, x))
+            return n
+        if isinstance(v, ListV):
+            return sum(point(prop, x, lambda y, i=i: v.items.__setitem__(i, y)) for i, x in enumerate(v.items))
+        if isinstance(v, MapV):
+            return sum(point(prop, x, lambda y, i=i, k=k: v.pairs.__setitem__(i, (k, y)))
+                       for i, (k, x) in enumerate(v.pairs))
+        if isinstance(v, PairV):
+            return point(prop, v.a, lambda y: setattr(v, "a", y)) + point(prop, v.b, lambda y: setattr(v, "b", y))
+        return 0
+
+    if not any(reaches(p, w) for p, w in objects[name].props.items() if p.startswith("GfxDescriptor")):
+        return 0
+    unit = run.game.own(name)
+    return sum(point(p, w, lambda x, p=p: unit.props.__setitem__(p, x))
+               for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
+
+
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult) -> str | None:
+    """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
+    model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
+    part names no model file."""
+    from .patch import Inline, Ref, _fresh
+    name = by_name.get(unit)
+    if name is None:
+        # not a game rule: a model for a unit no mod in the set makes
+        result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+        return None
+    gfx = run.game.objects[name].props.get("GfxDescriptor")
+    mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
+    if isinstance(mesh, Ref) and mesh.target in run.game.objects:
+        # a plane's model part is an object of its own that the copy shares with the unit it copies (the Bf 109's
+        # MeshDescriptor names one; a tank's is written in the unit): the copy gets a copy of that part, written
+        # in it, to name its own model, and the copied unit keeps its own (era planes, 2026-10-08)
+        mesh = Inline(_fresh(run.game.objects[mesh.target]))
+        gfx.obj.props["MeshDescriptor"] = mesh
+    file = mesh.obj.props.get("FileName") if isinstance(mesh, Inline) else None
+    if not isinstance(file, Text) or file.kind != "path" or not file.value.lower().endswith(".ase2ndfbin"):
+        # not a game rule: what our build supports (a model part of its own, naming one model file)
+        result.findings.append(Finding("error", f"{where}: {unit} has no model part of its own "
+                                                f"(GfxDescriptor.MeshDescriptor) naming a model, so it can't get one"))
+        return None
+    source = file.value
+    folder = source.replace("/", "\\").rsplit("\\", 1)[0]
+    mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
+    return source
 
 
 def unit_classes(base, run, zz_win, result: BuildResult) -> None:
@@ -1314,6 +1474,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
                                                 f"its text/*.csv"))
     result.own_cards = unit_cards(run, order, result)
     result.own_models = unit_own_models(run, order, result)
+    result.own_copies = unit_own_copies(run, order, result)
     if result.errors:
         return result
     notes: list = []
@@ -1457,6 +1618,99 @@ def _start_dots(result, making: dict, shipped: dict, read_data, ground_bounds, s
             f"points are")
 
 
+def _make_mission(result, clone, found: tuple, mod_id: str, rows: list, game, text_arc, read_data, say) -> bool:
+    """A new map's own mission (maps/<map>/mission.toml, rusemod.mission and missionbuild): its script into
+    result.mission_scripts, its texts into the copy's new ZZ_Win.dat files, its camera moves into the copy's own camera
+    file, its scenario cluster and MapIA pointed at them, its own menu pack into result.mission_packs. False (with the
+    findings said) when it can't be made."""
+    from . import mission as M
+    from . import missionbuild as MB
+    from .scenario import Place, Scenario
+    mission, rel = found
+    new, src, bs = clone.new, clone.source, chr(92)
+    where = f"{mod_id}: {rel}"
+    if clone.kind not in ("operation", "campaign"):
+        # not a game rule: our missions are made for Operations and campaign chapters (BATTLES events come later)
+        result.findings.append(Finding("error", f"{where}: maps/{new} copies a BATTLES map; a mission of its own is "
+                                                f"for a copy of an Operation or a campaign chapter (map.toml entry)"))
+        return False
+    try:
+        if text_arc is None:
+            # not a game rule: the game or one of its files isn't found
+            raise MB.MissionBuildError("ZZ_Win.dat isn't in this game, so the mission's texts can't be added")
+        clusters = [k for k in clone.glad if f"scenario{bs}{new.lower()}{bs}" in k.lower() and "clustermap" in k.lower()]
+        if len(clusters) != 1:
+            raise MB.MissionBuildError(f"the copy's scenario cluster wasn't found once ({len(clusters)})")
+        cluster, folder = MB.cluster_pointed(clone.glad[clusters[0]], src, new)
+        ia_path = find_pack(game, "IA_Common.dat")
+        if ia_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise MB.MissionBuildError("IA_Common.dat isn't in this game, so no mission can be added")
+        with Edat.open(str(ia_path)) as ia:
+            src_member, new_member = MB.script_members(ia, src, folder, new)
+            base = M.base_of(bytes(ia.read(ia.find(src_member))))
+        # what the mission can name: the copy's scenario's named points and zones, and those the mods add
+        scen = next((d for k, d in clone.data.items() if k.lower().endswith(bs + clone.scenario.lower())), None)
+        points, zones, rects = set(), set(), set()
+        for it in (Scenario.read(scen).items if scen is not None else []):
+            name = it.values.get("Name")
+            if isinstance(name, str) and name:
+                (zones if it.kind in ("CircularZone", "RectangleZone") else points).add(name)
+                if it.kind == "RectangleZone":
+                    rects.add(name)
+        for r in rows:
+            if isinstance(r, Place) and r.file.lower() == clone.scenario.lower() and r.name:
+                if r.kind in ("CircularZone", "RectangleZone"):
+                    zones.add(r.name)
+                    if r.kind == "RectangleZone":
+                        rects.add(r.name)
+                else:
+                    points.add(r.name)
+        mapia = [k for k in clone.glad if f"scenario{bs}{new.lower()}{bs}" in k.lower() and "mapia" in k.lower()]
+        cam_member = MB.camera_file_of(clone.glad[mapia[0]], src) if len(mapia) == 1 else None
+        cam_raw = read_data(cam_member) if cam_member else None
+        classes = None
+        found_list = pyscript.find_unit_list(text_arc) if text_arc is not None else None
+        if found_list:
+            try:
+                ul = pyscript.unit_list(pyscript.read_xyz(found_list[3]).payload)
+                classes = {n for n, c in ul.classes.items() if c.registered} | set(result.new_classes)
+            except pyscript.ScriptError:
+                classes = None
+        from .scenario import placed_groups
+        ctx = M.Context(new, clone.kind, points, zones, rects,
+                        set(MB.camera_paths(cam_raw)) if cam_raw is not None else set(),
+                        placed_groups(rows, clone.scenario), classes)
+        bad = M.problems(mission, base, ctx)
+        for level, message in bad:
+            result.findings.append(Finding(level, f"{where}: {message}"))
+            say(f"{level}: {where}: {message}")
+        if any(level == "error" for level, _m in bad):
+            return False
+        xyz, text = MB.compiled(mission, base, ctx, new)
+        dics = MB.text_files([e.path for e in text_arc.entries], lambda p: bytes(text_arc.read(text_arc.entry(p))),
+                             src, folder, new, M.texts(mission, new))
+        if mission.cameras:
+            if cam_raw is None or len(mapia) != 1:
+                raise MB.MissionBuildError("the copied map has no camera file to add the camera moves to")
+            own = cam_member.replace(bs + src.lower() + bs, bs + new.lower() + bs)
+            clone.data[own] = MB.with_cameras(cam_raw, mission.cameras)
+            clone.glad[mapia[0]] = MB.mapia_pointed(clone.glad[mapia[0]], src, new)
+    except (MB.MissionBuildError, M.MissionError, pyscript.ScriptError, ValueError, KeyError, struct.error,
+            zlib.error) as exc:
+        result.findings.append(Finding("error", f"{where}: the mission couldn't be made: {exc}"))
+        return False
+    clone.glad[clusters[0]] = cluster
+    clone.zz_new.update(dics)
+    result.mission_scripts[new_member] = xyz
+    result.mission_sources[new] = text
+    from .newmap import guid_for
+    result.mission_packs.append((clone.guid, clone.kind, guid_for(new, "own menu pack")))
+    clone.notes.append(f"its own mission: {len(mission.goals)} goal(s), {len(mission.events)} event(s), "
+                       f"{len(mission.cameras)} camera move(s), in a menu pack of its own")
+    return True
+
+
 def _menu_orders(result, mods: list, arc, say) -> None:
     """Missions put in the mods' order in their menus (menus.toml, rusemod.menuorder): on globals.cpp as the build
     has it once everything else is in (the new maps' entries, the player counts), in load order."""
@@ -1502,6 +1756,23 @@ def scenario_edits(order: list[str], mods: list, what: str = "scenario") -> dict
             every.extend(moves)
             ids.append(mod_id)
     return out
+
+
+def depot_rules(order: list[str], mods: list) -> tuple[dict, list[str]]:
+    """Every mod's depots.toml together ({"all" or a map pack: scenario.DepotRule}), a later mod's rule for a map or
+    for all maps replacing an earlier one's, and the mods that have one, in load order."""
+    by_id = {m.id: m for m, _ in mods}
+    rules: dict = {}
+    ids: list[str] = []
+    for mod_id in order:
+        m = by_id.get(mod_id)
+        if m is None or not getattr(m, "depots", None):
+            continue
+        for k, r in m.depots.items():
+            rules.pop(next((x for x in rules if x.lower() == k.lower()), k), None)
+            rules[k] = r
+        ids.append(mod_id)
+    return rules, ids
 
 
 def draw_new_roads(read_map, path_of, lines: list, shaded=None, cache=None, shipped=None) -> tuple[dict, list[str]]:
@@ -1605,9 +1876,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
     build before anything is built, with every such clash named; a later mod overwriting an earlier one's values is
-    a warning."""
+    a warning. An .rmod mod converted for the Studio (rusemod.rmodconvert) also has changes of its own: they're built
+    with the other mods, on top of every .rmod."""
     rmods = [m for m, _ops in mods if m.rmod is not None]
-    mods = [(m, ops) for m, ops in mods if m.rmod is None]
+    mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
     if len(rmods) > 1:
         from . import rmod
@@ -1679,7 +1951,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
         if run:
-            result.order = [m.id for m in rmods] + result.order
+            first = [m.id for m in rmods]
+            result.order = first + [i for i in result.order if i not in first]
             result.findings = overwrites + run.findings + result.findings
         say("load order: " + " -> ".join(result.order))
         for line in report_lines(result.findings, show_all=show_all):
@@ -1744,6 +2017,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {clone.pack_from}, the pack of "
                                                             f"{spec.copy_of}, isn't in this game, so it can't be copied"))
                     continue
+                owner = next((m for m, _ops in mods if m.id == mod_id), None)
+                found = next((v for k, v in getattr(owner, "missions", {}).items() if k.lower() == name.lower()), None)
+                if found is not None:  # its own mission (maps/<map>/mission.toml)
+                    rows = [r for mod_id_ in result.order for m, _ops in mods if m.id == mod_id_  # (load order, as
+                            for k, rs in m.scenario.items() if k.lower() == name.lower() for r in rs]  # applied)
+                    if not _make_mission(result, clone, found, mod_id, rows, game, text_arc,
+                                         reading(data_new, data_base), say):
+                        continue
                 for member, data in clone.glad_changed.items():
                     e = arc.entry(member)
                     for old in [m for m in result.changed if m.lower() == member.lower()]:
@@ -2418,7 +2699,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     if k_raw is not None and shipped_ground is not None and sc_shipped is not None:
                         decks = [floors.Deck.of(*b.deck) for b in shipped_bridges(
                             Scenery(sc_shipped), descs, lambda kind: model_length(game, descs, kind))]
-                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks)
+                        own_raw = read_shipped(floors.MEMBER)  # the map's own floors: every one along a gone deck
+                        own = ({floors.tri_key(t) for t in floors.triangles(Kdt(own_raw))}  # goes (a mod's new
+                               if own_raw is not None else None)                           # bridges keep theirs)
+                        now_ground = read_done("output\\highdef.tms")  # the ground as built (a reshaped or blank
+                        lay = Ground(Tms(now_ground)).height_at if now_ground is not None else None   # map's own)
+                        data, more = floors.sink_floors(Kdt(k_raw), Ground(Tms(shipped_ground)).height_at, decks,
+                                                        own, lay)
                         if data:
                             done[map_arc.find(floors.MEMBER).path] = data
                         notes += more
@@ -2609,9 +2896,26 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             every, who = blocks.setdefault(name, ([], []))    # dried beds opened, new water closed, and placed
             every.extend(walls)                               # buildings last, so units always go around them
             who.extend(i for i in ids if i not in who)
+        from .newmap import is_blank
+        for name, (spec, mod_id) in making.items():  # a blank map: its old towns' and bridges' own movement opened
+            if not is_blank(spec) or name not in result.new_maps:  # whole (T41 run 4: units stuck where the bridges
+                continue                                           # stood; their decks' local maps kept them in)
+            from .cover import member as movement_member
+            from .nav import Block, NavError, owner_circles
+            raw = reading(data_new, data_base)(movement_member(name)) if data_base is not None else None
+            try:
+                owners = owner_circles(raw) if raw is not None else []
+            except (NavError, ValueError, KeyError, IndexError, struct.error):
+                owners = []
+            if owners:
+                every, who = blocks.setdefault(name, ([], []))
+                every.extend(Block(x, y, r, "all", True, True) for x, y, r in owners)
+                who.extend([mod_id] if mod_id not in who else [])
+                say(f"  {name}: blank: {len(owners)} town or bridge circle(s) opened whole (not tried in the game yet)")
         players = scenario_edits(result.order, mods, "players")
         roads_out = {name: ids for name, (what, ids) in take_outs.items() if what.roads}
-        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out:
+        depots, depot_ids = depot_rules(result.order, mods)
+        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out or depots:
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, closing
@@ -2674,6 +2978,46 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         except (OSError, TypeError, KeyError, ValueError, struct.error, zlib.error):
                             missions_read[key] = []  # no script to read: the warning falls back to the spawns
                     return missions_read[key]
+                if depots:  # depots.toml: every depot's trucks on the maps named or on every map, written as each
+                    # depot's own trucks changed (before the mods' own changes, which win: scenario.with_depots)
+                    from .scenario import ALL_MAPS, depot_rule, map_packs_of, of_map, with_depots
+                    packs = map_packs_of(data_arc) if ALL_MAPS in depots else []
+                    for pack in {p.lower(): p for p in [*packs, *(k for k in depots if k != ALL_MAPS)]}.values():
+                        key = next((k for k in moves if k.lower() == pack.lower()), pack)
+                        rows, ids = moves.get(key, ([], []))
+                        scenarios = of_map(data_arc, key)  # (not `shipped`: shipped_paths() above reads that name)
+                        new_rows = with_depots(rows, depot_rule(depots, key), scenarios) if scenarios else rows
+                        if new_rows != rows:
+                            moves[key] = (new_rows, ids + [i for i in depot_ids if i not in ids])
+                from .newmap import is_blank
+                for name, (spec, mod_id) in making.items():  # a blank map's HQs: every seat's put by the modder
+                    if not is_blank(spec):
+                        continue
+                    from .players import blank_seats, entry_seating
+                    from .scenario import folder_of
+                    rows = moves.get(name, ([], []))[0]
+                    settings = players.get(name, ([], []))[0]
+                    for entry, count, layouts, file in entry_seating(read_glad, name):
+                        raw = read_data(folder_of(name) + file) if file else None
+                        n = settings[-1].count if settings else count
+                        if raw is None or not n:
+                            continue
+                        try:
+                            seats_ = blank_seats(raw, file, rows, n, layouts)
+                        except (ScenarioError, ValueError, struct.error):
+                            continue  # (its scenario can't be read: the moves below say so)
+                        missing = sorted((t, k) for t, k, placed in seats_.values() if not placed)
+                        if missing:
+                            # The owner's call (2026-10-09): a blank map's HQs are each put by the modder ("the HQ
+                            # shouldn't be there ... This isn't D-Day"), and Test in game stops until they are. The game
+                            # itself would start those players where the copied map had them; a blank map with HQs
+                            # left there has never been tried in the game.
+                            where = ", ".join(f"team {t}, HQ {k}" for t, k in missing)
+                            # not a game rule: the owner's call for blank maps (above), not something the game asks
+                            result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {entry!r} seats {n} "
+                                                                    f"players, and these HQs aren't placed yet: {where}. "
+                                                                    f"Place each in the Studio (Scenario, Each "
+                                                                    f"player's HQ), or set fewer players"))
                 for name, (map_moves, ids) in moves.items():
                     from .players import skirmish_files
                     from .scenario import Move, Spawn, spawn_class_problems
@@ -2715,8 +3059,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"  {note}")
                 for name, (rows, ids) in moves.items():  # sectors over the whole map (rusemod.sectors), after the
                     from .scenario import folder_of       # design items: every scenario's zones and zone map, their
-                    from .sectors import SectorError, apply_sectors, whole_map_of  # points on the final ground
-                    if not whole_map_of(rows):
+                    from .sectors import SectorError, apply_sectors, sectors_of  # points on the final ground; or
+                    setting = sectors_of(rows)                                   # painted (the Sectors brush)
+                    if setting is None or not setting.active:
                         continue
                     height_at = None
                     map_path = find_map(name)
@@ -2737,14 +3082,19 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                    and "\\" not in e.path[len(folder):])
                     skipped: list = []
                     try:
-                        new, notes = apply_sectors(read_data, name, files, height_at, skipped=skipped)
+                        # a painted scenario with no sector at all, or a painted sector in pieces or with a hole,
+                        # raises PaintError (a SectorError): the build stops with it, so the map check and Test in
+                        # game say why
+                        new, notes = apply_sectors(read_data, name, files, height_at, skipped=skipped,
+                                                   setting=setting)
                     except (SectorError, ValueError, struct.error) as exc:
                         result.findings.append(Finding("error", f"{', '.join(ids)}: {exc}{_meant(game, name)}"))
                         continue
                     for why in skipped:
                         warn(f"{', '.join(ids)}: {why}")
                     changed_members.update(new)
-                    say(f"sectors: {name}, over the whole map, from {', '.join(ids)}")
+                    say(f"sectors: {name}, {'painted' if setting.paints or setting.no_sectors else 'over the whole map'}"
+                        f", from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
                 for name, (map_paints, ids) in paints.items():
@@ -2904,6 +3254,18 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if changed_members or data_new:
                     data_packs.append((data_path, data_arc, changed_members))
         _menu_orders(result, mods, arc, say)  # last on the menus: after the new maps' entries and the player counts
+        if result.mission_packs:  # a new map with its own mission: alone in a menu pack of its own (missionbuild)
+            from . import missionbuild
+            from .players import GLOBALS
+            key = next((k for k in result.changed if k.lower() == GLOBALS.lower()), None)
+            if key is None:
+                result.findings.append(Finding("error", "the missions' own menu packs: the menus weren't changed"))
+            else:
+                try:
+                    result.changed[key] = missionbuild.own_packs(result.changed[key], result.mission_packs)
+                    say(f"menus: {len(result.mission_packs)} mission(s) of the mods' own, each in a pack of its own")
+                except (missionbuild.MissionBuildError, ValueError, KeyError, struct.error, StopIteration) as exc:
+                    result.findings.append(Finding("error", f"the missions' own menu packs couldn't be made: {exc}"))
         by_id = {m.id: m for m, _ops in mods}
         mod_scripts = [(i, by_id[i].scripts) for i in result.order if i in by_id and getattr(by_id[i], "scripts", None)]
         if mod_scripts:  # the game's mission scripts the mods change (rusemod.mapscripts, MOD_FORMAT §9)
@@ -2920,6 +3282,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if scripts_changed:
                     data_packs.append((ia_path, ia_arc, scripts_changed))
                     say(f"mission scripts: {len(scripts_changed)} changed in {ia_path.name}")
+        if result.mission_scripts:  # the new maps' own missions (rusemod.mission): new files of IA_Common.dat
+            from .newmap import Grown
+            ia_path = find_pack(game, "IA_Common.dat")
+            at = next((k for k, (p, _a, _c) in enumerate(data_packs) if ia_path is not None and p == ia_path), None)
+            if at is None:
+                data_packs.append((ia_path, Grown(open_pack(ia_path), result.mission_scripts), {}))
+            else:
+                p, a, c = data_packs[at]
+                data_packs[at] = (p, Grown(a, result.mission_scripts), c)
+            say(f"mission scripts: {len(result.mission_scripts)} new in {ia_path.name}")
         for path, pack in new_packs.items():  # a new map's pack is written even when no mod edits its files
             if not any(e[0] == path for e in map_packs):
                 map_packs.append((path, pack, {}))
@@ -3038,6 +3410,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+        if result.own_copies and text_arc is not None:  # units' own copies of their models (rusemod.unitmodel)
+            from .unitlook import LookError
+            from .unitmodel import UnitModelError, write_unit_copy
+            for unit, (copies, paint, mod_id) in sorted(result.own_copies.items()):
+                try:
+                    written = write_unit_copy(text_arc, copies, unit, paint, earlier={
+                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                except (UnitModelError, LookError, ValueError, OSError, struct.error) as exc:
+                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: {exc}") from None
+                result.model_imports.update(written.changed)
+                result.new_files.update(written.added)
+                r = written.report
+                say(f"own copy of {', '.join(copies)} for {unit}: {len(written.added)} texture(s), "
+                    f"{len(r['painted'])} painted; into {len(written.changed)} pack(s)")
         sounds: dict = {}  # mods' own sounds (MOD_FORMAT §7, rusemod.sound): a later mod's WAV wins
         for mod_id in result.order:
             sounds.update(getattr(by_id.get(mod_id), "sounds", None) or {})

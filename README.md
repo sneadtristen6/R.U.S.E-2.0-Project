@@ -16,6 +16,20 @@
 
 </div>
 
+> [!TIP]
+> **How to install and play (5 minutes):**
+> 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), take the
+>    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.4.exe**.
+> 2. Run it. If Windows says "Windows protected your PC": **More info**, then **Run anyway**.
+> 3. Open **RUSE Launcher**: it finds R.U.S.E. through Steam by itself.
+> 4. Click **Supported mods**, tick the mods you want and press **Install**.
+> 5. Put them in a mod set (**New mod set…**) and press **Play**.
+>
+> Every step, with what to do when something goes wrong: **[Install and play](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Install-and-Play)**.
+> To make mods, get **RUSE Studio** the same way from the
+> [studio releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) and start with
+> [Your first mod](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Your-First-Mod).
+
 ## What R.U.S.E. 2.0 is
 
 **New maps, new units and one-press modded play for R.U.S.E.** Two free apps:
@@ -53,6 +67,18 @@ card in the build menu. Pick an era in the Studio's Units tab and it downloads; 
     </td>
   </tr>
 </table>
+
+**New in 0.9.8.4: missions of your own, blank maps you build up, and much more to customise.** A new Operation or
+campaign chapter gets its own mission (goals, events, camera moves) on the map screen's Scenario side; blank maps show
+nothing of the copied map and you place each player's HQ and paint the sectors; supply depots get more trucks on every
+map; a nation's units hide or fill in one go; any installed mod opens in the Studio (someone else's as a copy of your
+own); the mod check speaks plain words with fix buttons; units get their own look, a squad its own uniform, armour its
+real level; imported planes keep their propellers; and mods and updates download on every PC.
+
+**Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
+Ocean). 
+What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
+[Edit a scenario](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Edit-a-Scenario).
 
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
 Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
@@ -686,7 +712,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.2) &middot; **Studio** for modders, a preview (latest: 0.9.8.2) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.4) &middot; **Studio** for modders, a preview (latest: 0.9.8.4) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check

@@ -31,6 +31,7 @@ ruse2-core/
     game/<pack>/mods/<mod id>/<path>  a file added to a game pack (§7)
   maps/<MapId>/            map sources (see §8)
   menus.toml               where missions show in their menus (see §8)
+  depots.toml              every supply depot's trucks, on every map or the ones named (see §8)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
 ```
@@ -75,9 +76,28 @@ before = []
 
 [conflicts]                         # mods that must not be combined with this one
 # "some-other-overhaul" = "*"
+
+[edited_from]                       # an edit of someone else's mod: what it was copied from (the Studio writes it)
+# id      = "r-u-s-e-field-manual-v1"
+# name    = "R.U.S.E. Field Manual"
+# version = "1.0.0"
+# authors = ["nickgit"]
 ```
 
 `affects_gameplay` is **computed** by the builder (§10) and never declared by hand.
+
+**Editing an installed mod.** The Studio's "Edit an installed mod…" opens any mod in the Launcher's library. A mod
+this Studio made opens its own project. Anyone else's is first copied into the Studio as a mod of its own: a name the
+modder gives it and an id made from that name, with `[edited_from]` saying what it came from. An edit never carries
+the original's name or id: Export refuses it, and so does the Launcher when the file is added (`rusemod.package.
+edit_problem`), so an update of the original can't wipe the edit and two different mods never share one name.
+
+A RUSE Mod Manager mod (an `.rmod`, §13) opens the same way, and its copy is converted (`rusemod.rmodconvert`): every
+value change the Studio can show becomes a Studio change in `src/studio.rndf`, and the rest stays in a smaller `.rmod`
+that `[rmod] file` still names: new objects, deletions, whole files, texts, map layers, and values the Studio can't
+spell yet or that pass through a link the mod changes. The build applies a mod's `.rmod` first and its own changes on
+top (§10), so the copy plays as the original did. Checked on five of the listed mods: the converted copy builds the
+same unit data, value for value.
 
 ## 4. Addressing game objects
 
@@ -259,6 +279,22 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
   M1 Abrams, Studio 0.9.6).
+- **A unit's own copy of its models:** `files/models/<the unit's name>.copy.toml` gives a unit its own copy of the
+  models it draws: the same meshes, bones and moving parts, with textures of their own (named in the source texture's
+  group, `TSCCombCS_<unit>_CombinedDSCTexture01`), so painting it changes that unit only. `of = ["<model>", ...]` lists
+  the models (as the packs name them, `ww2\\res3d\\...\\x.ase2ndfbin`); every model part of the unit that names one of
+  them (under its `GfxDescriptor*` links) names the copy instead, and a part it shares with other units is copied into
+  it first, so they keep the game's. One model is copied as `<folder>\<unit>lod0`, several as
+  `<folder>\<unit>_<model>lod0`, sharing the copied textures. A new unit's or one of the game's units'
+  (`Descriptor_Unit_Soldat_US_Lourd.copy.toml`). Its paint is in `files/models/<the unit's name>/`, laid out as
+  `files/replace/` (named for the source's textures). The Studio writes both: *Give it its own copy of the model* (a
+  new vehicle) or *Custom uniform* (a squad: its soldiers, its bazooka man and its token's figure), then *Open in
+  Blender* and *Bring back*. A unit can't have a copy and an imported `.glb` both. A file naming no model (the first
+  ones) copies the model its `GfxDescriptor` draws.
+- **A squad's uniform:** the game's soldiers of a nation wear one picture (the US's: its GIs, Rangers and paratroopers,
+  and the crews of its guns and open vehicles), so a repaint of it in `files/replace/` changes them all. The Studio
+  repaints a squad only as a custom uniform (its own copy, above). Seen in the game (T48: one squad repainted in
+  `files/replace/` turned every US soldier and crew blue).
 - **Units from other eras (Studio 0.9.8.2):** an era unit added to a mod is an ordinary new unit (above): its values,
   its model in `files/models/`, its card, and its research link (`UpgradeRequire`) like any unit's. The mod also keeps
   `era_units.json` (which era units it has: `{era unit key: its new unit's address}`) and `CREDITS-era-units.md` (each
@@ -417,10 +453,22 @@ fr = "Blitz jumeau"            # us fr ger ita spa pol ru cz jpn sc (en de it es
   button warns that separate islands aren't ready for full-scale battles: a land unit ordered onto an island it can't
   reach crashes the game). The window
   says why a new map sits on a game map (the game can't load one made from nothing) and asks which one it's *Built
-  on*: that map gives it its size, its player count and its starting points, nothing else. It
+  on*: that map gives it its size and its player count, nothing else. It
   writes the copy's files from the shipped map's own: the whole map flat (land, or the sea over it), everything on it
-  erased, its roads and bridges taken out, only the starting points kept, the sectors over the whole map, and its own
-  menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05).
+  erased, its roads and bridges taken out, only the starting points kept, no sectors (`[sectors] no_sectors`: the
+  modder paints them with the Sectors brush; a map made blank by Studio 0.9.8 to 0.9.8.2 has the sectors over the
+  whole map instead), and its own menu pictures with `start_dots` (below). Seen in the game (both, 2026-10-05, with
+  the sectors over the whole map; painted sectors since: § Sectors below). The starting points stay in its files but
+  none is placed: the modder places each player's HQ (`blank`, below).
+- **`blank = "terrain"`** or **`"ocean"`** (a blank start sets it; a map made blank by Studio 0.9.8 to 0.9.8.2 has
+  `ground = "generated"` instead, which counts the same): the map started blank, so nothing of the copied map is on
+  it. The Studio draws none of it (its objects, roads, items taken out, ground pictures), and none of its HQs until
+  the modder places them (the owner, 2026-10-09: "the HQ shouldn't be there, the camera starting angle shouldn't be
+  there"). Each starting point that seats a player (the map's player count, in each layout its entry offers: a team's
+  players take its starting points lowest `AlliancePriority` first) counts as placed once the mod moves it
+  (`[[move]]`) or adds it (`[[start]]`); its opening camera moves with it. The build stops until every one is placed,
+  naming them (team, HQ); fewer players need fewer. That stop is the owner's call, not something the game asks: a
+  blank map with HQs left where the copied map had them has never been tried in the game. Refused on a shipped map.
 - **`ground = "generated"`** (a blank start sets it): the new map's ground is drawn as its own from its terrain
   strokes, starting from the map flattened all over, instead of the shipped map's ground being pushed about: the
   close-up and far ground on one grid cut exactly at the water, the ground units stand on the same as the ground
@@ -487,6 +535,75 @@ missions = [                       # each: its map's pack name, a /, its scenari
 - **The Studio:** the Maps tab's **Menus, files and texts of this mission…**, *In the menus*: the menu as the game
   builds it, under its own headings, with **Move up** and **Move down** (among the missions of its group from its own
   list, as LittleGroove's Menu Entry step) and **Game's order** to take the mod's order out.
+
+### A new Operation's or chapter's own mission: `maps/<NewName>/mission.toml` (built: `rusemod.mission`)
+
+A new map copied from an Operation or a campaign chapter (`map.toml` `entry`) plays the mission it copies, unless its
+folder has a `mission.toml`: then it plays a mission of its own, made by the build from this file (the Studio's
+Scenario side: **Mission**, **Goals & events**, **Camera moves**). A copy started on Blank Terrain from an Operation
+or a chapter gets one from the start (the copied mission needs the map's own items). BATTLES maps can't have one yet.
+
+```toml
+[mission]
+time_limit = 30             # minutes on the clock (an Operation counts down); 0: no clock
+time_up = "defeat"          # when it runs out: defeat, victory or nothing
+win = "main_goals"          # main_goals (victory once every main goal is done) or events (an event's victory only)
+opening = "Flyby"           # optional: a camera move played as the mission loads (a [[camera]], or the map's own)
+
+[[side]]                    # the copied mission's sides, by number (its scenario's camps): never more or fewer
+number = 1
+nation = "Germany"          # optional: US, Germany, UK, France, Italy, USSR, Japan
+difficulty = "hard"         # optional: easy, normal, hard
+plays = "ai"                # optional, a computer side: script (only what the events say) or ai (the whole map)
+money = 500                 # optional: its money at the start
+
+[[goal]]
+id = "reach"                # a name of its own (goals and events each need one)
+text = { us = "TAKE THE BRIDGE", fr = "PRENEZ LE PONT" }   # or text = "TAKE THE BRIDGE": English everywhere
+main = true                 # true: counts towards the win; false: a bonus goal
+done = "zone"               # zone (a unit of the player's reaches it), destroyed (a group), time (seconds), event
+zone = "zone_bridge"        # a round or square zone of the map (places.toml, or the map's own)
+marker = "point_bridge"     # optional: a named point the goal's label sits on
+start = "start"             # start (in the goals panel at the start) or event (shown by an event's goal step)
+
+[[event]]
+id = "column"
+when = "time"               # start, time (at), zone (zone, side, count), destroyed (group), goal (goal)
+at = 40                     # seconds after the start
+repeat = 0                  # time only: again every this many seconds (at least 5); 0 once
+wait = 0                    # seconds between being set off and the first step
+do = [                      # in turn; a goal shown runs beside the steps after it
+  { do = "message", text = "An enemy column is coming." },
+  { do = "spawn", unit = "Unit_Carro_Armato_M15_42", count = 2, side = 2, at = "point_east", group = "column" },
+  { do = "move", group = "column", to = ["point_way", "point_hill"] },
+  { do = "hold", group = "column", zone = "zone_hill" },
+]
+
+[[camera]]
+name = "Flyby"
+seconds = 15
+points = [[880000, 820000, 60000], [900000, 840000, 50000]]   # map units, z the height above the sea
+look = [889143, 833073, 24000]                                 # the spot it looks at the whole way
+```
+
+- The steps: `message` (text), `spawn` (unit, count, side, at, group), `move` (group, to), `attack` (group, target:
+  a group), `hold` (group, zone), `artillery` (group: its guns, on the map; at), `bombing` and `paradrop` (group:
+  the planes, brought in first; at), `camera` (camera, seconds), `money` (side, amount: its money becomes that),
+  `goal` (show a goal set to start by an event), `complete` (a goal set to be done by an event), `victory`,
+  `defeat`, `wait` (seconds), `ai` (side: the computer plays it over the whole map from then on).
+- The build makes the mission's script from the game's own mission blocks only, the way the game's own missions are
+  made: nothing a mod brings runs. Its texts go into the game's ten languages (a language left out shows the
+  English). Its camera moves go into the copy's own camera file. The mission goes in a menu pack of its own (the
+  game keeps a mission's saved results by its pack and place, so it can't land on a shipped mission's), so a
+  chapter is open from the start.
+- Named points and zones, groups, goals, sides and camera moves are checked before anything is built; what isn't
+  tried in the game yet is said as a warning (the Studio lists the same).
+- Tried in the game: messages, units brought in, an artillery strike, moves and holding a zone, an attack, a bombing
+  run, main and bonus goals, a goal on a zone or a group, a group of named units, victory in an Operation and in a
+  chapter (T22, T30, T41); the mission's own camera move as it opens, the goals panel at the start, a goal done
+  after a time, a repeating event, money given during a mission, a side handed to the computer (T45). Not yet: a
+  paratroop drop (the game's own drop mission, which a community mod's airlift runs), a camera move played by an
+  event, events on a zone or a group destroyed, a goal done by an event.
 
 ### Reshaping an existing map's ground (built: `rusemod.brush`, `rusemod.terrain_edit`)
 
@@ -732,6 +849,10 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
 - **A circle that takes trees clears a wood**: the build also opens its ground to every unit and takes the forest
   cover away there, after the mod's own movement and cover edits (`rusemod.build.cleared_woods`; proven in the game
   2026-10-01: tanks drive in, infantry there are seen).
+- **A circle that takes trees or buildings also takes the blocked layer** (§ cover.toml below) under it: units fire
+  their direct weapons only along a line crossing no blocked cell, and the maps mark their towns' buildings blocked,
+  so tanks saw the enemy where an erased town stood and didn't fire (Blank Terrain, T41, 2026-10-09). Not tried in
+  the game yet.
 - The Studio's **Erase** tool (Maps view) paints these circles along a drag: trees and props, buildings too when
   picked. It tints red what they take, and counts it the way the build erases (`rusemod.scenery.erase_count`).
 - Erase areas are applied before the mod's own objects are added, so objects placed inside a circle stay.
@@ -802,6 +923,67 @@ whole_map = true   # every scenario of the map: each place its sectors leave out
 - Seen in the game (2026-10-05, a drained D-Day, then Blank Ocean and Blank Terrain): the sectors meet the map's
   edges all round, and a ruse card takes on a sector that was sea.
 
+A mod also paints a scenario's sectors itself (the Studio's Sectors brush, in the Scenario panel):
+
+```toml
+[sectors]
+no_sectors = ["leveldesign_3v3_v01.scenario"]   # these scenarios start with no sectors at all
+
+[[sectors.paint]]                  # one drag of the brush
+file = "leveldesign_3v3_v01.scenario"   # the scenario it paints
+sector = 0                         # the sector's number (0 is the first: the Studio calls it Sector 1); -1: no sector
+radius = 40000.0                   # each dab's size, map units
+shape = "square"                   # round (the default) or square
+points = [[1200000.0, 900000.0], [1220000.0, 900000.0]]   # where each dab went
+```
+
+- A scenario starts from its own sectors (over the whole map when `whole_map` is on), or from none when it is in
+  `no_sectors`. Each stroke then puts the ground under its dabs in its sector, in order; `-1` takes the ground out
+  of every sector (the eraser). Ground left in no sector stays in none, as on the shipped maps.
+- A dab is round, or a square with sides twice the radius long (`dx` and `dy` turn it, as in cover.toml). The ground
+  is cut into the same grid as above (4 m on D-Day); a cell is painted when its middle is under a dab.
+- A sector's shape (the Studio's Sectors tool, Shapes: each sector's outline with its corners to drag, shared corners
+  moving both sectors; New sector drags a box; No sector drags a box of no sector; Delete sector) is a row of its own
+  in the same list, in order with the strokes:
+
+  ```toml
+  [[sectors.paint]]
+  file = "leveldesign_3v3_v01.scenario"
+  sector = 8
+  group = 1                          # rows saved together (Undo takes them back together)
+  area = [[1830000.0, 1400000.0], [1900000.0, 1390000.0], [1880000.0, 1500000.0]]   # its corners, in order
+  within = [[[1800000.0, 1350000.0], [1836032.0, 1399808.0], [1850000.0, 1520000.0]]]   # optional: where it changes
+  ```
+
+  The sector becomes exactly the ground inside `area` (a cell is inside when its middle is, by the even-odd rule);
+  the ground it had outside goes to what touches it (another sector, or no sector next to no-sector ground). No
+  corners (`area = []`): the sector is taken out, all its ground to the sectors round it (none of it to no sector,
+  unless no sector is all that touches it). `sector = -1` with corners: the ground inside them goes to no sector,
+  whatever sectors had it, and nothing else changes; no sector is only ever where a mod puts it. `within` limits the
+  change to the ground inside those polygons (a corner dragged: the two triangles it made with its neighbouring
+  corners, before and after), so the rest of the sector stays cell for cell as it was.
+- Each sector's outline is traced round its painted ground and it gets its own zone map share, as above. A number
+  the scenario already has keeps its name and its label (moved inside the sector when the paint left it outside); a
+  new number gets a new sector, made like the scenario's own.
+- A sector in the scenario's file has one outline, so the painted ground is tidied before it is written, and the
+  Studio's Sectors brush shows it tidied (what you see is what the build writes):
+  - a sector left in two or more pieces keeps its biggest piece; each smaller piece goes to the sector it shares the
+    most border with, or to no sector when it touches only no-sector ground and the map's edge;
+  - a sector that goes all the way round something (another sector, or ground the eraser took out) gets a thin line
+    one grid cell wide (4 m on D-Day) cut through it from the hole to its outside, in the hole's own sector, along
+    the shortest straight cut (a row or a column) that keeps the sector in one piece. The sector becomes a C shape.
+- The build stops when a painted scenario has no sector at all (paint at least one), and, as a last resort, when a
+  hole can't be opened by any straight cut: the message names the sector.
+- A new Blank Terrain or Blank Ocean map starts with its scenario in `no_sectors`. Blank maps made before (Studio 0.9.8
+  to 0.9.8.2) have `whole_map = true` and keep it.
+- Seen in the game (2026-10-09): 13 painted sectors on a blank map, a new number among them; a sector's shape
+  changed on D-Day (a corner moved, a new sector drawn as a box, a ruse card lighting it up on its own); a sector
+  taken out (numbers with a gap: loads, no crash; 2026-10-10 with all its ground given to the sectors round it:
+  nothing missing on the map table); ground in no sector in the middle of the land (2026-10-10, six boxes on
+  D-Day): the map table draws each as a square gap in the sectors, and a ruse card held over it lights up nothing.
+  Not tried in the game yet: the tidying (pieces given to a neighbour, the thin lines), and a map with no sectors at
+  all (the build won't make one).
+
 A mod also adds units and buildings a scenario spawns when it starts, one table each (the shipped campaigns and
 Operations spawn theirs this way; skirmish maps spawn only their supply depots):
 
@@ -814,8 +996,12 @@ y = 650000.0
 camp = 0                      # who gets it: -1 neutral (the default), else one of the scenario's own camps (0 up)
 rotation = 0.5                # radians, optional
 trucks = 25                   # a supply depot (what = "DalleBatimentDepot") only: its trucks (default 25)
+group = "column"              # optional: a group of the map's own mission (mission.toml, below) it joins
 ```
 
+- `group` (a name of letters, digits and `_`, starting with a letter): the build names the item `MG_<group>_<n>`
+  (n counting that group's spawns in the scenario, in order) and the map's own mission puts it in that group, so its
+  events can order it and a goal can be to destroy it (a mission's group of named units: tried in the game, T30).
 - The build adds a design item (`TGameDesignItem` + `TGameDesignAddOn_Spawn`) to the scenario's list; moves are
   applied first, so their item numbers stay the shipped ones. It stands at the ground's height there (every shipped
   spawn does), and a depot gets its trucks (`ChampInteger`; the game gives a depot without it none).
@@ -871,7 +1057,7 @@ file = "leveldesign_normal.scenario"   # which of the map's scenarios, as for [[
 item = 41                              # the item's number in that file, as for [[move]]
 kind = "Spawn"                         # Spawn, CircularZone, RectangleZone, Name, LabelVille or LabelMontagne
 camp = 2                               # a spawn: who gets it, -1 neutral or one of the scenario's camps (0 up)
-trucks = 40                            # a supply depot: its trucks, 0 to 1000 (the shipped depots have 15 to 72)
+trucks = 40                            # a supply depot: its trucks, 0 to 2,147,483,647 (the shipped have 15 to 72)
 # radius = 75000.0                     # a circle zone: its radius, in map units
 # width = 120000.0                     # a rectangle zone: its width and height, in map units
 # height = 80000.0
@@ -886,6 +1072,30 @@ trucks = 40                            # a supply depot: its trucks, 0 to 1000 (
   value an item hasn't got is refused. A name is one line of up to 200 letters a scenario file keeps in one byte each.
 - `kind` guards as it does for a move. A skirmish scenario's items stay neutral: a camp other than -1 there is
   refused, as it is for a new spawn.
+- A depot's trucks go up to what its 32-bit whole number holds (2,147,483,647); the Studio's old top of 1000 was its
+  own, not the game's. A depot holds about trucks x trucks a convoy x money a truck (the last two are economy values,
+  the Studio's Economy tab; LittleGroove's measure in the game). More than the shipped 72 isn't tried in the game yet.
+
+### Every depot on every map, or on one: `depots.toml` (built: `rusemod.scenario.with_depots`; not tried in the game yet)
+
+A file at the mod's top (beside `mod.toml`; the Studio's Economy tab writes it). Each table gives every supply depot
+of every scenario of a map its trucks: `[all]` for every map, `[maps.<map pack>]` for one, with `trucks` (each
+depot's) or `times` (each depot's own trucks times this; a shipped depot without trucks has none, a new depot without
+`trucks` counts as 25):
+
+```toml
+[all]
+times = 2.0          # every depot on every map: twice its trucks
+
+[maps.M04_Cotentin]
+trucks = 60          # every depot on D-Day: 60 trucks (a map named wins over [all])
+```
+
+- The build writes each depot's trucks as if the mod set them in `items.toml`, before the mod's own changes: a depot
+  the mod gives trucks itself (`items.toml`, or a new depot's `trucks`) keeps them.
+- A later mod's table for a map, or for all maps, replaces an earlier one's.
+- How often trucks leave a depot (`TempsENtreDeuxConvois`) is one economy value the game uses on every map: it can't
+  be set per map.
 - Zones and names are used by the scenario's mission script (§9): a size changed here changes where things happen,
   and a name changed here is lost to a script that still uses the old one.
 - A town's or hill's name on the map is one of the game's texts, in its `ville_multi` table: the label's text names
@@ -898,7 +1108,8 @@ trucks = 40                            # a supply depot: its trucks, 0 to 1000 (
 ### New names, named points and zones: `maps/<map pack>/places.toml` (built: `rusemod.scenario`; not yet seen in the game)
 
 A mod adds town and hill names, named points and zones to a map's scenarios, one table each (the Studio's Maps tab:
-Add a name or zone; LittleGroove's + Placement):
+the Map side's Buildings & Names, Names tab, for town and hill names; the Scenario side's Add a spot or zone for named
+points and zones; LittleGroove's + Placement):
 
 ```toml
 [[place]]
@@ -933,7 +1144,7 @@ entry = "(6) Cotentin (3v3)"  # optional: which of the map's entries, when it ha
   as the map has it: no shipped map is 4v4, so how the menus list one is untested), and the name's count
   ("(6) Cotentin (3v3)" becomes "(8) Cotentin (4v4)").
 - It refuses a count the entry's scenario can't seat, naming each starting point that's missing (`[[start]]` above,
-  or the Studio's Add starting point). It counts a team's points, not their place numbers: every shipped entry seats
+  or the Studio's Add HQ start). It counts a team's points, not their place numbers: every shipped entry seats
   its own count this way.
 - A map that offers three teams with a count that isn't a multiple of 3 gets a warning: whether that layout is still
   offered, or gives uneven teams, is untested.
@@ -962,7 +1173,9 @@ square = true       # optional: a square along the map's axes, `radius` (map uni
                     # its edges follow the grid's rows and columns
 ```
 
-- **`blocked` doesn't stop units.** It is what the AI asks about ground (its sight lines, where it builds and
+- **`blocked` doesn't stop units moving, but it stops their direct fire across it**: a unit fires its direct
+  weapons only along a line crossing no blocked cell (artillery doesn't ask; read from the game 2026-10-09, not
+  tried in the game). It is also what the AI asks about ground (its sight lines, where it builds and
   defends, and the AI grid's clearance); units move by the movement graphs alone, and walk on shipped "blocked" cells
   too (from 3% of them on SuperCrossroads4 to half on Ardennes). To keep units off, add a `movement.toml` block with
   the same x, y and radius: the build warns about a blocked paint with no block holding its middle.

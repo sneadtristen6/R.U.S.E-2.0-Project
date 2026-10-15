@@ -474,7 +474,7 @@
     try { if (!ed.game) ed.game = await gameBuffer(reference); } catch (err) { problem(err); return; }
     const mine = rms(ed.src, ed.start, ed.end), game = rms(ed.game, 0, ed.game.duration);
     if (!mine || !game) return;
-    ed.db = Math.max(-20, Math.min(10, Math.round(20 * Math.log10(game / mine) * 2) / 2));
+    ed.db = Math.max(-40, Math.min(20, Math.round(20 * Math.log10(game / mine) * 2) / 2));  // (the slider's ends)
     $("me-volume").value = String(ed.db);
     syncInputs();
     $("me-note").textContent = fill(w.music_matched, { db: `${ed.db > 0 ? "+" : ""}${ed.db.toFixed(1)}` });

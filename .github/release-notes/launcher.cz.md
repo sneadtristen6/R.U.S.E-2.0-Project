@@ -1,6 +1,19 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.4:** módy se stahují na každém PC a spouští módy vytvořené ve Studiu 0.9.8.4.
+
+- **Módy se stahují na každém PC:** na některých PC se nestáhl žádný mód („certificate verify failed: unable to get local issuer certificate“). Teď Launcher požádá Windows o certifikát, jako prohlížeč, a zkusí to znovu; i u vlastních aktualizací. Zatím nevyzkoušeno na PC, které mělo ten problém.
+- **Módy ze Studia 0.9.8.4 fungují:** vlastní mise, prázdné mapy s jejich velitelstvími a sektory, sklady s víc auty (starší Launcher sklady s víc než 1 000 auty odmítne), jednotky s vlastním vzhledem a uniformami, úpravy cizích módů pod vlastním jménem.
+- **Stále chybové, hrajte na vlastní uvážení:** mapy vytvořené s texturami Map Paint a prázdné mapy (Prázdný terén, Prázdný oceán).
+
+**0.4.8.3:** kopie s módy se ukládají tam, kam řeknete.
+
+- **Kam se ukládají kopie s módy**, v Nastavení: vyberte složku, ve které se sestavuje kopie hry s módy, nebo se vraťte
+  na doporučené místo, `RUSE-Instances` na disku hry (tam kopie sdílí soubory hry a je hotová za pár sekund; na jiném
+  disku je to úplná kopie hry, pomalejší a větší). Čistá záloha hry jde vedle. Další Hrát sestaví na novém místě;
+  starou složku lze smazat ručně. Studio používá stejnou složku.
+
 **0.4.8.2:** otevře se ve vašem webovém prohlížeči, když jeho vlastní okno nemůže, a spouští mody ze Studia 0.9.8.2.
 
 - **Linux a Steam Deck (přes Proton):** Launcher se otevře ve vašem webovém prohlížeči, když jeho vlastní okno

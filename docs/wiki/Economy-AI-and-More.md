@@ -12,12 +12,22 @@ limits, decoys, and the ruse cards each side starts with. A change counts for ev
 administration buildings are buildings: their price, build time and strength are on the **Units** tab.
 Seen in the game: the starting money and the ruse cards at the start.
 
+**Depots on the maps** (under Supply depots): give every supply depot more trucks, so more money, on **All maps** or
+**One map:** you pick. Multiply each depot's trucks (**times their trucks**) or give them all the same number
+(**trucks each**). The line above it says what a depot holds with your values. A depot you gave its own trucks on the
+Maps tab keeps them. Play mods with more than 1,000 trucks a depot with Launcher 0.4.8.4 or newer. Seen in the game
+(D-Day's depots with 500 trucks; other maps three times theirs).
+
 ## AI tab
 
 How the computer players play. A computer player mixes three sets of values: **Default**, its difficulty and its
 profile (both picked in the game's lobby); pick one to see and change what it lists: when it starts attacking, how
 strong it waits to be, how it defends, the units it prefers, and its ruse cards.
 Seen in the game: a ruse card taken out of the menu, one moved in it, a card's length, and when Easy starts attacking.
+
+A difficulty or profile lists only some values; the rest come from **Default**. To give it its own value for one only
+Default lists, pick it under **Give <name> its own value** and click **Add**: it starts as Default's (nothing changes yet), then change it on its row.
+Not tried in the game yet.
 
 **Map and mission scripts**, below it: the scripts the game runs on its maps (the campaign's chapters, challenges,
 Operations), shown as Python to read. **Copy** copies one.

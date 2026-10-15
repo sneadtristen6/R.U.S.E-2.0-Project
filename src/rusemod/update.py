@@ -25,6 +25,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import net
+
 REPO = "sneadtristen6/R.U.S.E-2.0-Project"
 API = f"https://api.github.com/repos/{REPO}/releases?per_page=40"
 APPS = {"launcher": "Launcher", "studio": "Studio"}
@@ -141,7 +143,7 @@ def fix_app_list_version(app: str, version: str, reg=None) -> str | None:
 def _get_json(url: str):
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
                                                "User-Agent": "RUSE-Mod-Platform-updater"})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:  # noqa: S310 (https only, fixed host)
+    with net.urlopen(req, _TIMEOUT) as r:  # noqa: S310 (https only, fixed host)
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -150,7 +152,7 @@ FEED = f"https://github.com/{REPO}/releases.atom"
 
 def _get_text(url: str) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": "RUSE-Mod-Platform-updater"})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:  # noqa: S310 (https only, fixed host)
+    with net.urlopen(req, _TIMEOUT) as r:  # noqa: S310 (https only, fixed host)
         return r.read().decode("utf-8")
 
 
@@ -260,7 +262,7 @@ def changes_in(rel: Release, lang: str, current: str, opener=None) -> list:
 
 def _open(url: str):
     req = urllib.request.Request(url, headers={"User-Agent": "RUSE-Mod-Platform-updater"})
-    resp = urllib.request.urlopen(req, timeout=60)  # noqa: S310
+    resp = net.urlopen(req, 60)  # noqa: S310
     final = resp.geturl()
     if not final.startswith(_ALLOWED_HOSTS):
         resp.close()

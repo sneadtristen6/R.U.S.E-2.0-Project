@@ -89,6 +89,14 @@ RULES: dict[str, Rule] = {
                 "are in the project's private notes). Test 5, the same units with those links deleted, loaded at once "
                 "(owner: 'load it in instantly'); test 6, era units researched from their own army's units and "
                 "chained (T-80 -> T-90M), loaded and researched as set"),
+    "unit-research-shown-parent": Rule(
+        "A unit shown in its build menu at a battle date where the unit it's researched from is hidden (ShowInMenu "
+        "0): the game stops when that build menu opens.",
+        "game", "2026-10-10 more-custom test: Italy's units hidden, Chinese era units researched from them; the game "
+                "stopped as soon as Italy's buildings were built, on the hidden parent's research button (the details "
+                "are in the project's private notes). The owner the same day: \"don't allow that to happen. There "
+                "shouldn't be a unit hidden behind a research one shown in the menu\"; with the links taken out, the "
+                "next test ran"),
     "unit-five-dates": Rule(
         "ProductionPrice and ShowInMenu have 5 items, one per battle date; fewer makes the unit free or hidden.",
         "studied", "partly: the game's scripts make a missing price 0 and a missing menu item hidden, with the length "
@@ -121,6 +129,15 @@ RULES: dict[str, Rule] = {
         "studied", "partly: a class name the game's unit list doesn't have raises an error while the map loads "
                    "(2026-10-02); our second check (other class paths must be ones shipped spawns use) is stricter than "
                    "the game, which takes any path that exists"),
+    "mission-unit-class": Rule(
+        "A mission's spawn must name a registered class in the game's Python unit list, or its script fails.",
+        "studied", "partly: the script names the class as parametres.Classes.<name>, so a name the unit list doesn't "
+                   "define fails when the script runs (2026-10-10); needing it registered (its base_class line) is "
+                   "stricter and not tried"),
+    "mission-human-sides": Rule(
+        "A mission keeps the copied mission's human sides as they are: it can't add one or give one to the computer.",
+        "studied", "the game's one co-op Operation script raises an error when the connected players aren't as many "
+                   "as its human sides (2026-10-09); not seen in a match"),
     "delete-unit-class": Rule(
         "Deleting a unit the game's Python unit list names makes the game fail to load units.",
         "studied", "every class in the game's unit list looks its unit up by name as the list loads, and a missing "

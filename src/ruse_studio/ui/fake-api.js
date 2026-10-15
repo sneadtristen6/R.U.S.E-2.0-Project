@@ -28,6 +28,53 @@
       own_part: "its own", shared_part: "shared with other units", used_by: "Used by", copy_address: "Copy address",
       no_index: "No game index yet. Build it once (about a minute).", build_index: "Build the index",
       pick_unit: "Pick a unit on the left.", mod: "Unit mod", new_mod: "New mod…", open_folder: "Open a mod folder…",
+      edit_installed: "Edit an installed mod…", edit_title: "Edit an installed mod",
+      edit_lead: "The mods installed in the Launcher. Pick one: its units and maps open here. A mod made by someone else becomes a copy of your own with a name of its own, so its updates never touch your changes.",
+      edit_none: "No mods are installed in the Launcher yet.", edit_has_units: "units and other changes", edit_has_maps: "maps",
+      edit_by: "by {author}", edit_older: "A RUSE Mod Manager mod (.rmod): in your copy its value changes become Studio changes you can change; its new units, texts and files stay as they are.",
+      edit_open: "Edit", tip_edit_open: "Open your own mod here: everything in it shows in the Units and Maps tabs, and your changes go into it.",
+      tip_edit_copy: "Make a copy of this mod of your own, with a name of its own, and open it here with everything in it.",
+      edit_yours: "Yours", edit_copy_lead: "{name} is {author}'s mod. Your changes go into a copy of your own; give it a name of its own:",
+      edit_someone: "someone else", edit_copy_name: "Your copy's name", edit_copy_go: "Make my copy and edit",
+      edit_search: "Search installed mods", tip_edit_search: "Type part of a mod's name, its author or what it does.", edit_no_match: "No installed mod matches that.",
+      pp_stops: "The game would stop loading the mod here.", pp_item_n: "{item} {n}",
+      pp_item_stroke: "Map Paint stroke", pp_item_erase: "erase area", pp_item_object: "placed object",
+      pp_item_move: "moved map item", pp_item_remove: "removed map item", pp_item_set: "changed map item",
+      pp_item_place: "named place", pp_item_spawn: "unit placed at the start", pp_item_start: "starting point",
+      pp_item_paint: "cover paint", pp_item_block: "blocked area", pp_item_open: "opened area",
+      pp_item_road: "new road", pp_file_terrain: "ground changes", pp_file_scenery: "placed and erased objects",
+      pp_file_scenario: "starting points and placed units", pp_file_places: "named places",
+      pp_file_items: "changed map items", pp_file_cover: "cover paint", pp_file_movement: "blocked and opened areas",
+      pp_file_roads: "new roads", pp_file_map: "map settings", pp_key_level: "water height", pp_key_radius: "size",
+      pp_key_size: "size", pp_key_x: "position", pp_key_y: "position", pp_key_x2: "end point", pp_key_y2: "end point",
+      pp_key_colour: "colour", pp_key_brush: "tool", pp_key_weight: "strength", pp_key_what: "unit",
+      pp_key_camp: "side", pp_key_trucks: "trucks", pp_key_name: "name",
+      pp_missing: "On {map}, {item} is missing its {key}.",
+      pp_unknown_key: "On {map}, {item} has a setting the game doesn't know: {key}.",
+      pp_bad_value: "On {map}, {item} has a {key} the game can't use.",
+      pp_bad_item: "On {map}, {item} has a value the game can't use.",
+      pp_unreadable: "On {map}, the file of its {what} can't be read: it has a typing mistake.",
+      pp_map_file: "On {map}, the file of its {what} has a mistake.",
+      pp_unit_file: "The unit changes file {file} has a mistake on line {line}.",
+      pp_text_file: "The text file {file} has a mistake on line {line}.",
+      pp_manifest: "The mod's settings file (mod.toml) has a mistake.",
+      pp_how_item: "Fix it with a button. Removing the {item} keeps everything else on the map, and the file as it was is kept beside it.",
+      pp_how_file: "Put the file aside: it's kept, renamed, and the map goes without these changes until it's fixed. Details says exactly what's wrong.",
+      pp_how_unit_file: "Put the file aside: it's kept, renamed, and the mod goes without the changes in it until it's fixed. Details says exactly what's wrong.",
+      pp_how_studio_file: "This is the Studio's own record of your unit changes: putting it aside takes all of them out of the mod (the file is kept). Details says exactly what's wrong; ask on the Discord if you're not sure.",
+      pp_how_manifest: "Open the mod's folder and correct mod.toml in a text editor. Details says exactly what's wrong.",
+      pp_how_other: "Details says exactly what's wrong. Open the mod's folder to fix it by hand, or ask on the Discord.",
+      pp_fix_fill_level: "Use the map's water height", pp_fix_fill: "Use the map's {key}",
+      pp_fix_remove_key: "Take out {key}", pp_fix_remove_item: "Remove this {item}",
+      pp_fix_open_folder: "Open the mod's folder", pp_details: "Details", pp_fixed: "Fixed.",
+      tip_pp_fill: "Fills in the value the rest of the map has, the way Map Paint would. The file as it was is kept beside it.",
+      tip_pp_remove_item: "Takes out just this one; everything else stays. The file as it was is kept beside it.",
+      tip_pp_remove_key: "Takes out just this setting; the rest of the item stays. The file as it was is kept beside it.",
+      tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
+      tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
+      model_copy: "Give it its own copy of the model", tip_model_copy: "The same model with textures of its own: Repaint in Blender then changes only this unit, not the unit it copies.", model_copy_how: "Now it draws the model of the unit it copies, so a repaint changes both. With its own copy, a repaint changes only this one.", model_copy_has: "This unit has its own copy of the model: Repaint in Blender changes only this unit.", model_copy_remove: "Use the shared model again", tip_model_copy_remove: "Back to the model of the unit it copies. Its paint stays in the mod, for when it gets a copy again.",
+      uniform_title: "Uniform", uniform_default: "Default uniform: the game's own. Other squads and the gun and vehicle crews wear it too, so it isn't repainted here. Pick Custom uniform to give this squad one of its own.", uniform_custom: "Custom uniform", tip_uniform_custom: "Gives this squad a uniform of its own (its own copy of its soldiers), so what you paint after Open in Blender changes only this squad.", uniform_has: "Custom uniform: only this squad wears it. Paint it with Open in Blender, then Bring back.", uniform_default_again: "Back to the default uniform", tip_uniform_default_again: "This squad wears the game's uniform again. Your paint stays in the mod, for when it gets a custom one again.", uniform_shared_paint: "This mod repaints the default uniform itself ({n} picture(s)), so every squad and crew that wears it changes.", card_stale: "Its picture in the build menu still shows the game's paint.", card_take: "Take a new picture", tip_card_take: "Takes a picture of the unit with your paint, from the front corner, as its picture in the build menu.", card_choose: "Choose a picture…", tip_card_choose: "Use a picture file of your own (PNG or JPG). It's fitted to the card's size, cut at the edges if it has to be.", rides_in: "Rides in", tip_rides_in: "The truck this unit turns into on the roads. Pick another nation's, or a copy of a truck you made and repainted.", rides_in_how: "The truck it turns into on the roads. To give a squad a truck of its own look: open a truck, copy it, give the copy its own copy of the model and repaint it, then pick it here.", rides_in_game: "(the game's)", rides_in_mine: "(yours)", rides_in_open: "Open the truck", tip_rides_in_open: "Opens the truck's page: copy it there to give it a look of its own.",
+      only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
       export_help: "One file to share: the mod folder packed. The version, author and description are kept in the mod.",
       mod_name: "Name of the new mod", map_project: "Map changes", no_map: "Pick or start a set of map changes to save them in.", new_map: "New map changes…", export_map: "Export map…", map_name: "Name for these map changes", tip_pick_mod: "The mod your unit changes are saved in. Maps have their own list on the Maps tab.", tip_pick_map: "Where your changes to the game's maps are saved (ground, roads, buildings, scenario), apart from your unit mod: changes to any of the game's own maps, and the new maps you make with Duplicate map. Test in game plays them with your unit mod.", create: "Create", cancel: "Cancel", close: "Close",
@@ -378,16 +425,20 @@
       place_one: "单个", place_area: "区域", place_line: "直线", tip_place_one: "每次点击地面放置一个物体。", tip_place_area: "在地面上拖动以填满区域：树林、村庄。物体之间至少保持所设间距。", tip_place_line: "先点击直线起点，再点击终点：按间距放置物体，并沿直线方向摆放（树篱、一排房屋）。", place_spacing: "间距 {m} 米", tip_place_spacing: "区域或直线中物体之间的距离（针对此类物体）。", place_area_size: "区域 {m} 米", tip_place_area_size: "区域笔刷的半径：一笔填充的宽度。", place_area_help: "在地面上拖动，用所选物体填满。中键拖动旋转视角，右键拖动平移。", place_line_help: "点击直线起点，再点击终点。按 Esc 取消未完成的直线。", place_line_next: "现在点击直线的终点。", place_none_room: "此处没有空间：间距范围内已都有物体。", place_placed: "已放置 {n} 个物体并保存到mod。Ctrl+Z 可一次撤销。", place_most: "一笔最多放置这么多；如需更多请再画一次。" },
   };
   // the troubleshooter's words (words.toml doc_*)
-  Object.assign(words.us, { doc_button: "Troubleshoot", doc_title: "Troubleshooter", doc_intro: "What can stop a test or Play, checked in one go.", doc_checking: "Checking…", doc_again: "Check again", doc_copy: "Copy report", doc_copied: "Report copied: paste it into your bug report or on Discord.", doc_close: "Close", doc_fix_close_game: "Close R.U.S.E.", doc_fix_clear_leftovers: "Clear them", doc_fix_choose_game: "Choose folder…", doc_fixed: "Done ({done}).", doc_fix_left: "Not everything could be done: {left}", doc_game_ok: "R.U.S.E. found: {path}", doc_game_missing: "R.U.S.E. wasn't found. Choose its folder (the one with RUSE.exe).", doc_steam_ok: "Steam is running.", doc_steam_off: "Steam isn't running. It's started for you when you play.", doc_running_none: "No R.U.S.E. left running.", doc_running_copy: "R.U.S.E. is still running from a modded copy: {names}. Close it before the next test or Play.", doc_running_game: "R.U.S.E. is running (the Steam game): {names}. Close it before testing mods.", doc_drive_ok: "Modded copies go to {path} ({fs}).", doc_drive_other: "Modded copies go to {path}, on a {fs} drive: each copy is a full copy, and Windows may refuse to delete one while R.U.S.E. runs. An NTFS drive is best.", doc_space_ok: "{gb} GB free for modded copies.", doc_space_low: "Only {gb} GB free where modded copies go: a copy may need {need} GB.", doc_left_none: "No leftover copies.", doc_left: "Leftover copies: {names}. They only take up space; you can clear them now.", doc_left_held: "Leftover copies: {names}, held by {held}. Close that program, then clear them.", doc_readonly: "{n} of the game's files are marked read-only. That's fine: modded copies never keep the mark.", doc_write_ok: "The app can write where modded copies go.", doc_write_fail: "The app can't write to {path} ({why}). Modded copies always go there, on the game's drive: check that folder's permissions, or whether an antivirus blocks it.", doc_troubleshoot_link: "Troubleshoot" });
-  Object.assign(words.fr, { doc_button: "Dépannage", doc_title: "Dépannage", doc_intro: "Ce qui peut bloquer un test ou « Jouer », vérifié en une fois.", doc_checking: "Vérification…", doc_again: "Vérifier à nouveau", doc_copy: "Copier le rapport", doc_copied: "Rapport copié : collez-le dans votre rapport de bug ou sur Discord.", doc_close: "Fermer", doc_fix_close_game: "Fermer R.U.S.E.", doc_fix_clear_leftovers: "Les supprimer", doc_fix_choose_game: "Choisir le dossier…", doc_fixed: "Fait ({done}).", doc_fix_left: "Tout n'a pas pu être fait : {left}", doc_game_ok: "R.U.S.E. trouvé : {path}", doc_game_missing: "R.U.S.E. est introuvable. Choisissez son dossier (celui qui contient RUSE.exe).", doc_steam_ok: "Steam est lancé.", doc_steam_off: "Steam n'est pas lancé. Il est démarré pour vous quand vous jouez.", doc_running_none: "Aucun R.U.S.E. resté ouvert.", doc_running_copy: "R.U.S.E. tourne encore depuis une copie avec mods : {names}. Fermez-le avant le prochain test ou « Jouer ».", doc_running_game: "R.U.S.E. est lancé (le jeu Steam) : {names}. Fermez-le avant de tester des mods.", doc_drive_ok: "Les copies avec mods vont dans {path} ({fs}).", doc_drive_other: "Les copies avec mods vont dans {path}, sur un disque {fs} : chaque copie est complète, et Windows peut refuser d'en supprimer une pendant que R.U.S.E. tourne. Un disque NTFS est préférable.", doc_space_ok: "{gb} Go libres pour les copies avec mods.", doc_space_low: "Seulement {gb} Go libres là où vont les copies avec mods : une copie peut demander {need} Go.", doc_left_none: "Aucune copie restante.", doc_left: "Copies restantes : {names}. Elles ne font qu'occuper de la place ; vous pouvez les supprimer dès maintenant.", doc_left_held: "Copies restantes : {names}, bloquées par {held}. Fermez ce programme, puis supprimez-les.", doc_readonly: "{n} fichiers du jeu sont en lecture seule. Ce n'est pas un problème : les copies avec mods ne gardent jamais cet attribut.", doc_write_ok: "L'application peut écrire là où vont les copies avec mods.", doc_write_fail: "L'application ne peut pas écrire dans {path} ({why}). Les copies avec les mods vont toujours là, sur le disque du jeu : vérifiez les autorisations de ce dossier, ou si un antivirus le bloque.", doc_troubleshoot_link: "Dépannage" });
-  Object.assign(words.sc, { doc_button: "故障排查", doc_title: "故障排查", doc_intro: "一次检查所有可能阻止测试或“开始游戏”的问题。", doc_checking: "正在检查…", doc_again: "重新检查", doc_copy: "复制报告", doc_copied: "报告已复制：请粘贴到你的错误报告或 Discord 中。", doc_close: "关闭", doc_fix_close_game: "关闭 R.U.S.E.", doc_fix_clear_leftovers: "清除", doc_fix_choose_game: "选择文件夹…", doc_fixed: "已完成（{done}）。", doc_fix_left: "部分操作未能完成：{left}", doc_game_ok: "已找到 R.U.S.E.：{path}", doc_game_missing: "未找到 R.U.S.E.。请选择其文件夹（包含 RUSE.exe 的那个）。", doc_steam_ok: "Steam 正在运行。", doc_steam_off: "Steam 未运行。开始游戏时会自动为你启动。", doc_running_none: "没有仍在运行的 R.U.S.E.。", doc_running_copy: "R.U.S.E. 仍在从模组版副本运行：{names}。请在下次测试或“开始游戏”前关闭它。", doc_running_game: "R.U.S.E.（Steam 游戏）正在运行：{names}。测试模组前请先关闭它。", doc_drive_ok: "模组版副本保存在 {path}（{fs}）。", doc_drive_other: "模组版副本保存在 {fs} 驱动器上的 {path}：每份都是完整副本，且 R.U.S.E. 运行时 Windows 可能拒绝删除它。最好使用 NTFS 驱动器。", doc_space_ok: "模组版副本可用空间：{gb} GB。", doc_space_low: "模组版副本所在位置仅剩 {gb} GB 可用空间：一份副本可能需要 {need} GB。", doc_left_none: "没有残留的副本。", doc_left: "残留的副本：{names}。它们只占用空间；你可以现在就清除。", doc_left_held: "残留的副本：{names}，被 {held} 占用。请关闭该程序，然后清除它们。", doc_readonly: "游戏有 {n} 个文件被标记为只读。这没有问题：模组版副本不会保留此标记。", doc_write_ok: "应用可以写入模组版副本所在的位置。", doc_write_fail: "应用无法写入 {path}（{why}）。模组版副本总是放在那里，即游戏所在的驱动器：请检查该文件夹的权限，或是否被杀毒软件拦截。", doc_troubleshoot_link: "故障排查" });
+  Object.assign(words.us, { doc_button: "Troubleshoot", doc_title: "Troubleshooter", doc_intro: "What can stop a test or Play, checked in one go.", doc_checking: "Checking…", doc_again: "Check again", doc_copy: "Copy report", doc_copied: "Report copied: paste it into your bug report or on Discord.", doc_close: "Close", doc_fix_close_game: "Close R.U.S.E.", doc_fix_clear_leftovers: "Clear them", doc_fix_choose_game: "Choose folder…", doc_fixed: "Done ({done}).", doc_fix_left: "Not everything could be done: {left}", doc_game_ok: "R.U.S.E. found: {path}", doc_game_missing: "R.U.S.E. wasn't found. Choose its folder (the one with RUSE.exe).", doc_steam_ok: "Steam is running.", doc_steam_off: "Steam isn't running. It's started for you when you play.", doc_running_none: "No R.U.S.E. left running.", doc_running_copy: "R.U.S.E. is still running from a modded copy: {names}. Close it before the next test or Play.", doc_running_game: "R.U.S.E. is running (the Steam game): {names}. Close it before testing mods.", doc_drive_ok: "Modded copies go to {path} ({fs}).", doc_drive_other: "Modded copies go to {path}, on a {fs} drive: each copy is a full copy, and Windows may refuse to delete one while R.U.S.E. runs. An NTFS drive is best.", doc_space_ok: "{gb} GB free for modded copies.", doc_space_low: "Only {gb} GB free where modded copies go: a copy may need {need} GB.", doc_left_none: "No leftover copies.", doc_left: "Leftover copies: {names}. They only take up space; you can clear them now.", doc_left_held: "Leftover copies: {names}, held by {held}. Close that program, then clear them.", doc_readonly: "{n} of the game's files are marked read-only. That's fine: modded copies never keep the mark.", doc_write_ok: "The app can write where modded copies go.", doc_write_fail: "The app can't write to {path} ({why}). Check that folder's permissions, or whether an antivirus blocks it, or choose another folder for modded copies in Settings.", set_copies_title: "Where modded copies go", set_copies_help: "Test in game builds the modded copy of the game in this folder (the Launcher's Play too: one copy for the whole PC). The recommended place is RUSE-Instances on the game's drive: there the copy shares the game's files and is ready in seconds. On another drive it is a full copy of the game, slower and bigger. The game's clean backup goes beside it, in RUSE-Backup. After a change, the next Test in game builds in the new place; the old folder only takes up space and can be deleted by hand.", set_copies_none: "R.U.S.E. wasn't found yet, so the recommended place isn't known. Pick the game folder first.", set_copies_change: "Choose folder…", set_copies_default: "Use the recommended place", set_copies_changed: "Modded copies now go to {path}. The next Test in game builds there; the old folder only takes up space and can be deleted by hand.", set_copies_fixed: "Modded copies go to {path}, the folder given when the app started.", tip_copies_change: "Pick the folder the modded copies of the game are built in; the old folder stays until you delete it.", tip_copies_default: "Build the modded copies in RUSE-Instances on the game's drive again, the recommended place.", tip_copies_default_off: "Modded copies already go to the recommended place.", tip_copies_fixed: "The folder was given when the app started, so it can't be changed here.", doc_copies_recommended: "Modded copies go to {path}, the recommended place.", doc_copies_chosen: "Modded copies go to {path}, the folder chosen in Settings.", doc_copies_env: "Modded copies go to {path}, set by the RUSE_INSTANCES environment variable.", doc_copies_other_drive: "{path} is on another drive than the game ({drive}): each modded copy is a full copy of the game, slower to build and as big as the game. The recommended place is {recommended}.", doc_troubleshoot_link: "Troubleshoot" });
+  Object.assign(words.fr, { doc_button: "Dépannage", doc_title: "Dépannage", doc_intro: "Ce qui peut bloquer un test ou « Jouer », vérifié en une fois.", doc_checking: "Vérification…", doc_again: "Vérifier à nouveau", doc_copy: "Copier le rapport", doc_copied: "Rapport copié : collez-le dans votre rapport de bug ou sur Discord.", doc_close: "Fermer", doc_fix_close_game: "Fermer R.U.S.E.", doc_fix_clear_leftovers: "Les supprimer", doc_fix_choose_game: "Choisir le dossier…", doc_fixed: "Fait ({done}).", doc_fix_left: "Tout n'a pas pu être fait : {left}", doc_game_ok: "R.U.S.E. trouvé : {path}", doc_game_missing: "R.U.S.E. est introuvable. Choisissez son dossier (celui qui contient RUSE.exe).", doc_steam_ok: "Steam est lancé.", doc_steam_off: "Steam n'est pas lancé. Il est démarré pour vous quand vous jouez.", doc_running_none: "Aucun R.U.S.E. resté ouvert.", doc_running_copy: "R.U.S.E. tourne encore depuis une copie avec mods : {names}. Fermez-le avant le prochain test ou « Jouer ».", doc_running_game: "R.U.S.E. est lancé (le jeu Steam) : {names}. Fermez-le avant de tester des mods.", doc_drive_ok: "Les copies avec mods vont dans {path} ({fs}).", doc_drive_other: "Les copies avec mods vont dans {path}, sur un disque {fs} : chaque copie est complète, et Windows peut refuser d'en supprimer une pendant que R.U.S.E. tourne. Un disque NTFS est préférable.", doc_space_ok: "{gb} Go libres pour les copies avec mods.", doc_space_low: "Seulement {gb} Go libres là où vont les copies avec mods : une copie peut demander {need} Go.", doc_left_none: "Aucune copie restante.", doc_left: "Copies restantes : {names}. Elles ne font qu'occuper de la place ; vous pouvez les supprimer dès maintenant.", doc_left_held: "Copies restantes : {names}, bloquées par {held}. Fermez ce programme, puis supprimez-les.", doc_readonly: "{n} fichiers du jeu sont en lecture seule. Ce n'est pas un problème : les copies avec mods ne gardent jamais cet attribut.", doc_write_ok: "L'application peut écrire là où vont les copies avec mods.", doc_write_fail: "L'application ne peut pas écrire dans {path} ({why}). Vérifiez les autorisations de ce dossier, ou si un antivirus le bloque, ou choisissez un autre dossier pour les copies avec les mods dans les Réglages.", doc_troubleshoot_link: "Dépannage" });
+  Object.assign(words.sc, { doc_button: "故障排查", doc_title: "故障排查", doc_intro: "一次检查所有可能阻止测试或“开始游戏”的问题。", doc_checking: "正在检查…", doc_again: "重新检查", doc_copy: "复制报告", doc_copied: "报告已复制：请粘贴到你的错误报告或 Discord 中。", doc_close: "关闭", doc_fix_close_game: "关闭 R.U.S.E.", doc_fix_clear_leftovers: "清除", doc_fix_choose_game: "选择文件夹…", doc_fixed: "已完成（{done}）。", doc_fix_left: "部分操作未能完成：{left}", doc_game_ok: "已找到 R.U.S.E.：{path}", doc_game_missing: "未找到 R.U.S.E.。请选择其文件夹（包含 RUSE.exe 的那个）。", doc_steam_ok: "Steam 正在运行。", doc_steam_off: "Steam 未运行。开始游戏时会自动为你启动。", doc_running_none: "没有仍在运行的 R.U.S.E.。", doc_running_copy: "R.U.S.E. 仍在从模组版副本运行：{names}。请在下次测试或“开始游戏”前关闭它。", doc_running_game: "R.U.S.E.（Steam 游戏）正在运行：{names}。测试模组前请先关闭它。", doc_drive_ok: "模组版副本保存在 {path}（{fs}）。", doc_drive_other: "模组版副本保存在 {fs} 驱动器上的 {path}：每份都是完整副本，且 R.U.S.E. 运行时 Windows 可能拒绝删除它。最好使用 NTFS 驱动器。", doc_space_ok: "模组版副本可用空间：{gb} GB。", doc_space_low: "模组版副本所在位置仅剩 {gb} GB 可用空间：一份副本可能需要 {need} GB。", doc_left_none: "没有残留的副本。", doc_left: "残留的副本：{names}。它们只占用空间；你可以现在就清除。", doc_left_held: "残留的副本：{names}，被 {held} 占用。请关闭该程序，然后清除它们。", doc_readonly: "游戏有 {n} 个文件被标记为只读。这没有问题：模组版副本不会保留此标记。", doc_write_ok: "应用可以写入模组版副本所在的位置。", doc_write_fail: "应用无法写入 {path}（{why}）。请检查该文件夹的权限，或是否被杀毒软件拦截，或者在设置中为模组版副本选择另一个文件夹。", doc_troubleshoot_link: "故障排查" });
   // the clean game backup's words (words.toml backup_*, set_backup_*)
   Object.assign(words.us, { set_backup_title: "Clean game backup", set_backup_help: "RUSE Launcher and RUSE Studio never change the game's own folder, but other mod managers and hand edits can. Make a backup while the game is clean, right after Steam installs or verifies it. Check game files then shows what has changed since, and Restore clean files puts the game's files back.", backup_none: "No backup yet. It takes {need} GB; {free} GB is free on {drive}.", backup_have: "Backup of build {build}, made {date} ({size} GB): {path}", backup_other: "The backup is of build {build} (made {date}), but Steam has updated the game since (build {now}), so it can't be used. Verify with Steam, then make a new backup.", backup_make: "Make backup", backup_make_again: "Make backup again", backup_replace_ask: "This replaces the backup made {date}. Do it only if the game is clean now (use Verify with Steam first). Replace it?", backup_replace_yes: "Replace", backup_check: "Check game files", backup_deep: "Compare every byte (slower)", backup_restore: "Restore clean files", backup_restore_ask: "{n} file(s) will be copied back from the backup, and {m} file(s) that aren't the game's will be moved into a folder in {path}. Nothing is deleted. Restore?", backup_restore_yes: "Restore", backup_verify: "Verify with Steam", backup_verify_tip: "Steam's own repair: it checks every file and downloads the ones that changed. No backup needed.", backup_verify_opened: "Steam is checking the game's files and downloads any that changed; Steam shows how far it is.", backup_making: "Making the backup… {pct}", backup_checking: "Checking the game's files… {pct}", backup_restoring: "Restoring the game's files… {pct}", backup_made: "Backup made: {files} files, {size} GB.", backup_clean: "The game's files match the backup: nothing has changed.", backup_differs: "{n} file(s) differ from the backup:", backup_changed: "Changed ({n})", backup_missing: "Missing ({n})", backup_added: "Not the game's ({n})", backup_more: "…and {n} more", backup_nothing: "Nothing to restore: the game's files match the backup.", backup_restored: "Done: {n} file(s) restored.", backup_set_aside: "{m} file(s) that weren't the game's are now in {path}.", backup_kept: "The {k} changed file(s) that were replaced are kept in {path}." });
   Object.assign(words.fr, { set_backup_title: "Sauvegarde propre du jeu", set_backup_help: "RUSE Launcher et RUSE Studio ne modifient jamais le dossier du jeu, mais d'autres gestionnaires de mods et des modifications à la main peuvent le faire. Faites une sauvegarde pendant que le jeu est propre, juste après que Steam l'a installé ou vérifié. « Vérifier les fichiers du jeu » montre ensuite ce qui a changé depuis, et « Restaurer les fichiers propres » remet les fichiers du jeu en place.", backup_none: "Pas encore de sauvegarde. Elle demande {need} Go ; {free} Go sont libres sur {drive}.", backup_have: "Sauvegarde de la version {build}, faite le {date} ({size} Go) : {path}", backup_other: "La sauvegarde est de la version {build} (faite le {date}), mais Steam a mis le jeu à jour depuis (version {now}) : elle ne peut pas servir. Vérifiez avec Steam, puis faites une nouvelle sauvegarde.", backup_make: "Faire une sauvegarde", backup_make_again: "Refaire la sauvegarde", backup_replace_ask: "Ceci remplace la sauvegarde faite le {date}. Ne le faites que si le jeu est propre maintenant (utilisez d'abord « Vérifier avec Steam »). La remplacer ?", backup_replace_yes: "Remplacer", backup_check: "Vérifier les fichiers du jeu", backup_deep: "Comparer chaque octet (plus lent)", backup_restore: "Restaurer les fichiers propres", backup_restore_ask: "{n} fichier(s) seront recopiés depuis la sauvegarde, et {m} fichier(s) qui ne sont pas ceux du jeu seront déplacés dans un dossier de {path}. Rien n'est supprimé. Restaurer ?", backup_restore_yes: "Restaurer", backup_verify: "Vérifier avec Steam", backup_verify_tip: "La réparation de Steam : il vérifie chaque fichier et retélécharge ceux qui ont changé. Aucune sauvegarde nécessaire.", backup_verify_opened: "Steam vérifie les fichiers du jeu et retélécharge ceux qui ont changé ; Steam affiche sa progression.", backup_making: "Sauvegarde en cours… {pct}", backup_checking: "Vérification des fichiers du jeu… {pct}", backup_restoring: "Restauration des fichiers du jeu… {pct}", backup_made: "Sauvegarde faite : {files} fichiers, {size} Go.", backup_clean: "Les fichiers du jeu correspondent à la sauvegarde : rien n'a changé.", backup_differs: "{n} fichier(s) diffèrent de la sauvegarde :", backup_changed: "Modifiés ({n})", backup_missing: "Manquants ({n})", backup_added: "Pas du jeu ({n})", backup_more: "…et {n} de plus", backup_nothing: "Rien à restaurer : les fichiers du jeu correspondent à la sauvegarde.", backup_restored: "Terminé : {n} fichier(s) restauré(s).", backup_set_aside: "{m} fichier(s) qui n'étaient pas ceux du jeu sont maintenant dans {path}.", backup_kept: "Les {k} fichier(s) modifié(s) qui ont été remplacés sont conservés dans {path}." });
   Object.assign(words.sc, { set_backup_title: "游戏的干净备份", set_backup_help: "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。", backup_none: "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。", backup_have: "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}", backup_other: "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。", backup_make: "创建备份", backup_make_again: "重新创建备份", backup_replace_ask: "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？", backup_replace_yes: "替换", backup_check: "检查游戏文件", backup_deep: "逐字节比较（较慢）", backup_restore: "恢复干净文件", backup_restore_ask: "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？", backup_restore_yes: "恢复", backup_verify: "通过 Steam 验证", backup_verify_tip: "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。", backup_verify_opened: "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。", backup_making: "正在创建备份… {pct}", backup_checking: "正在检查游戏文件… {pct}", backup_restoring: "正在恢复游戏文件… {pct}", backup_made: "备份已创建：{files} 个文件，{size} GB。", backup_clean: "游戏文件与备份一致：没有任何变化。", backup_differs: "与备份不同的文件：{n} 个", backup_changed: "已更改（{n}）", backup_missing: "缺失（{n}）", backup_added: "不属于游戏（{n}）", backup_more: "…还有 {n} 个", backup_nothing: "无需恢复：游戏文件与备份一致。", backup_restored: "完成：已恢复 {n} 个文件。", backup_set_aside: "{m} 个不属于游戏的文件现在位于 {path}。", backup_kept: "被替换的 {k} 个已更改文件保存在 {path}。" });
   // a panel's size handle (words.toml tip_panel_size)
-  Object.assign(words.us, { tip_panel_size: "Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size." });
+  Object.assign(words.us, { armour_title: "Armour", armour_help: "How hard this unit is to hurt, as one of the game's own levels. The fights use it, and its card and build menu show its picture: tanks have levels 1 to 5, the number on the shield.", armour_level: "Level", tip_armour_pick: "Pick one of the game's armour levels: the unit fights with it, and its card and build menu show it.", tip_armour_undo: "Give it the game's armour level again.", armour_tank: "Armour {n}", armour_light: "Light vehicles (transports)", armour_infantry: "Infantry", armour_aircraft: "Aircraft", armour_para: "Paratroopers coming down", armour_trucks: "Construction trucks", armour_building: "Buildings and fortifications", armour_old_way: "This unit's armour was changed inside its armour part: it fights with the new value, but its card and build menu still show the old one. Pick its level here to fix that.", armour_on_unit: "Armour is changed on the unit's own page, under Armour: each level of the game has its own picture on the card, so a number changed here would fight differently from what the card shows.", model_propellers: "Its propellers spin as the game's do ({n} discs).", model_propellers_none: "{n} propeller discs left out: the unit it copies has no propellers to spin them.", model_propellers_far: "{n} propeller discs left out: they aren't where the copied plane's propellers are." });
+  Object.assign(words.us, { tip_panel_size:"Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size." });
   Object.assign(words.fr, { tip_panel_size: "Taille {n} % : glissez vers le bas pour réduire ce panneau, vers le haut pour l'agrandir (la molette marche aussi). Double-clic : taille normale." });
+  // the map screen's two sides (words.toml mode_*, tip_mode_*, tip_scen_locked, locked_*)
+  Object.assign(words.us, { mode_map: "Map", mode_label: "Tools for the map or for the scenario", tip_mode_map: "Map tools: ground, water, cover, roads, buildings, trees, paint and sectors. The scenario's units, HQs and names show faded and can't be picked, so nothing of theirs moves by accident.", tip_mode_scenario: "Scenario tools: move things, add units and buildings, starting points, names and zones. The map's buildings, trees and roads show faded and can't be picked, so nothing of theirs moves by accident.", tip_scen_locked: "Pick a scenario first, in the map panel: each scenario has its own units, HQs and names.", locked_scenario: "switch to Scenario to change it", locked_map: "switch to Map to change it" });
+  Object.assign(words.fr, { mode_map: "Carte", mode_label: "Outils pour la carte ou pour le scénario", tip_mode_map: "Outils de la carte : terrain, eau, couvert, routes, bâtiments, arbres, peinture et secteurs. Les unités, QG et noms du scénario sont estompés et ne peuvent pas être pris, pour que rien ne bouge par erreur.", tip_mode_scenario: "Outils du scénario : déplacer, ajouter unités et bâtiments, points de départ, noms et zones. Les bâtiments, arbres et routes de la carte sont estompés et ne peuvent pas être pris, pour que rien ne bouge par erreur.", tip_scen_locked: "Choisissez d'abord un scénario, dans le panneau de la carte : chaque scénario a ses propres unités, QG et noms.", locked_scenario: "passez en Scénario pour le changer", locked_map: "passez en Carte pour le changer" });
   // what's selected on the map (words.toml scen_sel_*)
   Object.assign(words.us, { scen_sel_count: "{n} selected", scen_sel_ground: "vehicles", scen_sel_infantry: "infantry", scen_sel_air: "aircraft", scen_sel_buildings: "buildings", scen_sel_other: "others", scen_sel_only: "Click to keep only these selected.", scen_sel_hint: "Drag a box on the ground to select several · Shift+click adds or takes one off · Esc clears", scen_sel_clear: "Clear" });
   Object.assign(words.fr, { scen_sel_count: "{n} sélectionnés", scen_sel_ground: "véhicules", scen_sel_infantry: "infanterie", scen_sel_air: "avions", scen_sel_buildings: "bâtiments", scen_sel_other: "autres", scen_sel_only: "Cliquez pour ne garder que ceux-ci.", scen_sel_hint: "Tracez un cadre sur le sol pour en sélectionner plusieurs · Maj+clic en ajoute ou en retire un · Échap efface", scen_sel_clear: "Effacer" });
@@ -486,8 +537,23 @@
              textures: [pic], painted: fakePainted.has(address) ? [pic] : [], download: "https://www.blender.org/download/",
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
              opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
-             own_model: fakeModels.get(address) || null };
+             own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address),
+             soldiers: fakeSquad(address) };
   }
+  // a squad (its look is its uniform: Default or Custom) and the truck it rides in (rides_in): the GI squad and its copies
+  const fakeSquad = (address) => /Soldat/.test(address)
+    || mine().some((n) => address === newAddress(n.id) && /Soldat/.test(n.source));
+  const FAKE_TRUCKS = [["$/GFX/Everything/Descriptor_Unit_TransportSoldier", "TRUCK"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_GER", "OPEL BLITZ"],
+    ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_UK", "BEDFORD"]];
+  const fakeRides = new Map();  // squad -> the truck the mod has it ride in
+  function fakeRidesIn(address) {
+    if (!fakeSquad(address)) return {};
+    const game = FAKE_TRUCKS[0][0];
+    return { now: fakeRides.get(address) || game, game, choices: FAKE_TRUCKS.map(([a, name]) =>
+      ({ address: a, name, code: a.split("/").pop(), new: false })) };
+  }
+  const fakeModelCopies = new Set();  // units with their own copy of the model (model_copy): a squad's custom uniform
   const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
   const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
                         parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
@@ -550,8 +616,19 @@
     .replace(/^_|_$/g, "");
   const home = "C:/Users/You/AppData/Local/RUSE Mod Platform/mods/";
   const mods = [{ path: home + "sherman-test", name: "sherman-test" }];  // sample data for the preview only
-  let checkProblems = [{ file: "maps/SuperCrossRoads4/terrain.toml", set_aside: true,
-    problem: "maps/SuperCrossRoads4/terrain.toml: stroke 1: the water brush needs level" }];
+  // two made-up problems as rusemod.plainproblems.explain gives them: a water stroke without its level (Studio 0.7.0
+  // saved some), and a placed object with a setting the game doesn't know
+  const fakeFile = "maps/SuperCrossRoads4/terrain.toml", fakeSceneryFile = "maps/SuperCrossRoads4/scenery.toml";
+  const blitz = { us: "Blitz", fr: "Blitz" };
+  let checkProblems = [
+    { file: fakeFile, set_aside: true, problem: `${fakeFile}: stroke 1: the water brush needs level`,
+      plain: { kind: "missing", file: fakeFile, map: "SuperCrossRoads4", table: "stroke", item: "stroke", n: 1, keys: ["level"], key: "level", map_titles: blitz },
+      fixes: [{ fix: "fill", file: fakeFile, table: "stroke", n: 1, key: "level" }, { fix: "remove_item", file: fakeFile, table: "stroke", n: 1 },
+        { fix: "set_aside", file: fakeFile }] },
+    { file: fakeSceneryFile, set_aside: true, problem: `${fakeSceneryFile}: object 3: unknown key 'colr'`,
+      plain: { kind: "unknown_key", file: fakeSceneryFile, map: "SuperCrossRoads4", table: "object", item: "object", n: 3, key: "colr", map_titles: blitz },
+      fixes: [{ fix: "remove_key", file: fakeSceneryFile, table: "object", n: 3, key: "colr" }, { fix: "remove_item", file: fakeSceneryFile, table: "object", n: 3 },
+        { fix: "set_aside", file: fakeSceneryFile }] }];
   const fakeRoads = {};  // the made-up mod's new roads, per map
   const fakeTakeOut = {};  // the made-up mod's roads.toml take_out, per mod and map
   // the made-up maps' own bridge kinds (rusemod.bridges.kinds): the Tunisian one has none, so the dock says so
@@ -752,6 +829,71 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { order, headings: { 0: "2 players", 1: "3-4 players" }, up: at === 0 ? "top" : null,
       down: at === 2 ? "pack" : null, mine: missionOrder.join() !== "MP01,MP02,MP06" };
   }
+  // the Sectors brush's fake: strokes per map and scenario, cells worked out on a small grid (no checks)
+  const sectorPaints = new Map();
+  function fakeSectors(pack, file) {
+    const key = `${current}|${pack}|${file}`;
+    if (!sectorPaints.has(key)) sectorPaints.set(key, { strokes: [], empty: false });
+    return sectorPaints.get(key);
+  }
+  function fakeSectorView(pack, file, outlines) {
+    const f = fakeSectors(pack, file), n = 64, size = 1310720, step = size / n, cells = new Array(n * n);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) cells[i * n + j] = f.empty ? 0 : (j < n / 2 ? 1 : 2);
+    const inside = (pts, x, y) => {   // the even-odd test (rusemod.sectors.polygon_mask)
+      let c = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, yi] = pts[i], [xj, yj] = pts[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    for (const s of f.strokes) {
+      if (s.area) {   // a sector's new shape (StudioApi.sector_area): what it gave up goes to no sector here, a
+        // sector taken out gives its ground to the nearest other sector in its row (sector -1: a No sector box)
+        const own = s.sector + 1, freed = [];
+        if (own > 0) for (let k = 0; k < cells.length; k++) if (cells[k] === own) { cells[k] = 0; freed.push(k); }
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) if (s.area.length >= 3 && inside(s.area, (j + 0.5) * step, (i + 0.5) * step)) cells[i * n + j] = own;
+        }
+        if (!s.area.length) {
+          for (const k of freed) {
+            const row = k - (k % n);
+            for (let d = 1; d < n; d++) {
+              const near = [k - d, k + d].find((q) => q >= row && q < row + n && cells[q] > 0 && cells[q] !== own);
+              if (near !== undefined) { cells[k] = cells[near]; break; }
+            }
+          }
+        }
+        continue;
+      }
+      for (const [x, y] of s.points) {
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            const dx = (j + 0.5) * step - x, dy = (i + 0.5) * step - y;
+            const t = s.shape === "square" ? Math.max(Math.abs(dx), Math.abs(dy)) / s.radius : Math.hypot(dx, dy) / s.radius;
+            if (t < 1) cells[i * n + j] = s.sector + 1;
+          }
+        }
+      }
+    }
+    const runs = [];
+    for (const v of cells) {
+      if (runs.length && runs[runs.length - 2] === v) runs[runs.length - 1] += 1;
+      else runs.push(v, 1);
+    }
+    const numbers = [...new Set(cells)].filter((v) => v > 0).map((v) => v - 1).sort((a, b) => a - b);
+    const sectors = numbers.map((num) => {
+      const at = cells.indexOf(num + 1);
+      return { number: num, cells: cells.filter((v) => v === num + 1).length * 16,
+        x: ((at % n) + 0.5) * step, y: (Math.floor(at / n) + 0.5) * step };
+    });
+    const lines = outlines ? Object.fromEntries(sectors.map((s) => [String(s.number),
+      [s.x - step, s.y - step, s.x + step, s.y - step, s.x + step, s.y + step, s.x - step, s.y + step]])) : null;
+    const free = [...Array(255).keys()].find((k) => !numbers.includes(k));
+    return { file, nx: n, ny: n, box: [0, 0, size, size], runs, sectors, problems: [], empty: !numbers.length,
+      starts_empty: f.empty, whole_map: false, strokes: f.strokes.length,
+      next: free === undefined ? null : free, tidied: [], outlines: lines };
+  }
   function withScenarioEdits(pack) {
     const out = baseScenarios();
     const e = current && scenarioEdits.get(`${current}|${pack}`) || { moves: [], spawns: [], starts: [] };
@@ -795,8 +937,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           start: n, item: s.items.length, cam, camera: st.camera || 0 });
       });
       e.spawns.forEach((sp, n) => {
-        if (sp.file === s.file) s.items.push({ kind: "Spawn", x: sp.x, y: sp.y, turn: 0, name: "", camp: sp.camp, what: sp.what,
-          mine: true, spawn: n, item: s.items.length });
+        if (sp.file !== s.file) return;
+        const it = { kind: "Spawn", x: sp.x, y: sp.y, turn: sp.rotation || 0, name: "", camp: sp.camp, what: sp.what,
+          mine: true, spawn: n, item: s.items.length };
+        if (sp.what === "DalleBatimentDepot") Object.assign(it, { trucks: sp.trucks ?? 25, group: "depot", icon: "depot" });
+        s.items.push(it);
       });
     }
     return out;
@@ -840,7 +985,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       used_by: usedBy, editable, why_not: whyNot, users, share: share || null, named: !address.includes(":"),
       can_copy: editable && !address.includes(":") && units.some((u) => E + u.id === address), new: null,
       can_copy_ammo: false, has_weapons: !address.includes(":") && cls !== "TAmmunition",
-      can_upgrade: !address.includes(":") && cls !== "TAmmunition", in_game: true };
+      can_upgrade: !address.includes(":") && cls !== "TAmmunition", in_game: true,
+      has_armour: !address.includes(":") && cls !== "TAmmunition" };
+  }
+  // the Armour box (StudioApi.armour): the game's levels, every made-up unit armour 2 (BaseBlindage 6) in the game
+  const armourEdits = new Map();  // address -> the mod's level (BaseBlindage)
+  const ARMOUR_LEVELS = [[5, "armour_tank", 1], [6, "armour_tank", 2], [7, "armour_tank", 3], [8, "armour_tank", 4],
+    [9, "armour_tank", 5], [4, "armour_light", 0], [3, "armour_infantry", 0], [1, "armour_aircraft", 0],
+    [2, "armour_para", 0], [10, "armour_trucks", 0]].map(([value, word, n]) => ({ value, word, n }));
+  function armourOf(address) {
+    return { levels: ARMOUR_LEVELS, game: 6, value: armourEdits.has(address) ? armourEdits.get(address) : null,
+      old: null, editable: true };
   }
   // the Upgrade box (StudioApi.upgrade): every made-up unit may be an upgrade of the first one, which has none
   const upgradeEdits = new Map();  // address -> the mod's parent (null: a unit of its own)
@@ -1224,7 +1379,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"eras_note": "These are all the free (CC0 and CC BY) models we could include. There are plenty more out there, and you can add your own with Import model.", "eras_not_downloaded": "The {era} units aren't on this PC yet: {n} units, {size} to download.", "eras_download": "Download the {era} units", "tip_eras_download": "Downloads this era's units (their models and pictures) from RUSE 2.0's GitHub. Every file is checked before it's used. Once they're here, they update themselves when new ones come out.", "eras_downloading": "Downloading: {done} of {total}…", "eras_unpacking": "Unpacking…", "eras_download_done": "The {era} units are ready.", "eras_updating": "Updating the {era} units: newer ones are out…", "eras_none_yet": "No {era} units are out yet: they come as they're finished.", "eras_no_list": "The list of era units couldn't be loaded ({why}).", "eras_era_ww1": "WWI", "eras_era_ww2": "WWII+", "eras_era_cold": "Cold War", "eras_era_modern": "Modern", "eras_nation_usa": "USA", "eras_nation_germany": "Germany", "eras_nation_uk": "United Kingdom", "eras_nation_france": "France", "eras_nation_italy": "Italy", "eras_nation_ussr": "USSR", "eras_nation_russia": "Russia", "eras_nation_japan": "Japan", "eras_nation_china": "China", "tip_eras_nation": "The nation whose build menu the unit goes in.", "tip_eras_factory": "The build menu (building) the unit goes in.", "eras_model_by": "Model by {author} ({licence}):", "tip_eras_credit": "The model's page, where its maker shared it.", "eras_in_place_of": "in place of {name}", "eras_game_model": "No model yet: it shows the copied unit's model.", "eras_no_fit": "The importer can't fit this kind of unit yet (towed guns): it shows the copied unit's model for now.", "eras_added": "{name} is in your mod.", "eras_removed": "{name} is out of your mod.", "era_vanilla": "Vanilla", "tip_era_chip": "Vanilla: the game's own units. WWI, WWII+, Cold War, Modern: RUSE 2.0's units for that era, each with another maker's free 3D model; add any of them to your mod.", "eras_in_mod_badge": "in your mod", "eras_start_from": "Start from", "tip_eras_start_from": "The game unit whose values it starts with: speed, armour, weapons, how it plays. Any unit of its kind; the first is the suggested one.", "eras_start_help": "It starts with that unit's values. Once it's in your mod, change any of them on its page, like any unit.", "eras_suggested": "Suggested", "eras_start_same": "Same type", "eras_start_other": "Other units", "eras_add": "Add to my mod", "tip_eras_add": "Makes it a new unit of your mod: its model, its maker's credit, the values of the unit it starts from, in the build menu picked.", "tip_eras_name": "Its name in the game, in every language.", "tip_eras_price": "What it costs to build, at every battle date.", "eras_in_mod_as": "It's in your mod: change its values, model and card on its page, like any unit.", "eras_open_page": "Open its page", "tip_eras_open_page": "Its page in your mod, where every value can be changed.", "eras_take_out": "Take it out of my mod", "tip_eras_take_out": "Deletes its unit from your mod, with every change made to it, its model and its credit."});
   // an era unit's size and the unit it's researched from (words.toml eras_size*, eras_research_*, tip_eras_size,
   // tip_eras_research_*)
-  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.2 to 5: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
+  Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.05 to 20: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
   // research: what taking out a unit others are researched from does, seconds or minutes (words.toml research_*, set_research_*, upgrade_parent_gone, upgrade_gone_option, check_open_unit)
   Object.assign(words.us, {"set_research_title": "Research", "set_research_help": "What happens to the units researched from a unit you take out of your mod, and whether research times are typed in seconds or minutes.", "research_gone_label": "When you take out a unit that others are researched from:", "tip_research_gone": "What the Studio does when you delete a unit of your mod (or take an era unit out) while other units are researched from it.", "research_gone_warn": "Warn me first", "research_gone_refuse": "Refuse", "research_gone_relink": "Re-link them", "tip_research_gone_warn": "The Studio asks first. If you go ahead, the units researched from it are left researched from a unit that's gone: the check bar lists them, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "tip_research_gone_refuse": "The unit stays in your mod while any unit is researched from it: pick another unit for them in their Upgrade and research box first.", "tip_research_gone_relink": "The units researched from it are researched from the unit it was researched from instead, at the same price and time. If it wasn't researched from any, they become buyable from the start.", "research_time_unit": "Research time in", "tip_research_time_unit": "Type research times in seconds or minutes: minutes are turned into whole seconds, the unit the times are kept in (that the game counts them in seconds isn't timed in the game yet).", "research_seconds": "seconds", "research_minutes": "minutes", "research_gone_ask": "Researched from {name}: {names}. If you take it out, they're left researched from a unit that's gone, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "research_gone_anyway": "Take it out anyway", "tip_research_gone_anyway": "Takes it out now. The units researched from it wait for you to pick another unit for them; the check bar lists them.", "research_gone_settings": "Change this in Settings", "tip_research_gone_settings": "Opens Settings, where you choose what taking out such a unit does: warn first, refuse, or re-link them.", "research_relinked": "{name} is now researched from {to}.", "research_relinked_none": "{name} is now buyable from the start.", "research_left": "Researched from a unit that's gone: {names}. Pick another unit for each in its Upgrade and research box (the check bar lists them).", "upgrade_parent_gone": "It's researched from a unit that's no longer in your mod, so the build stops on it. Pick another unit below, or none.", "upgrade_gone_option": "{name} (no longer in your mod)", "check_open_unit": "Open its page", "tip_check_open_unit": "Shows this unit's page, where its Upgrade and research box picks another unit to research it from."});
   // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
@@ -1433,6 +1588,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["decoys", [["ConstructionDelayForFakeBuildingsMin", "Decoy buildings: seconds before building (least)", "int32", 5]]],
   ];
   const economyEdits = new Map();  // prop -> the mod's value (StudioApi.economy_edit)
+  const depotRules = new Map();  // "all" or a map pack, lower case -> its rule (StudioApi.economy_depots_set)
   // the Music tab: [group, [[member, name, seconds, also, maps]]], as StudioApi.music groups the real game's songs
   const MUSIC_DIR = "gen_sound\\ww2\\sons\\atp_music\\";
   const MUSIC = [
@@ -1662,6 +1818,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["#1a8a4a", "#d22"], ["#d22", "#ffd700"], ["#fff", "#d00"]];
   const fakeBadge = ([a, b]) => "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="13" fill="${a}"/><circle cx="14" cy="14" r="6" fill="${b}"/></svg>`);
   const nationFlags = new Map();
+  const nationHidden = new Set();  // units a nation's Hide all took out of its build menus (StudioApi.nation_units_hide)
+  const fakeJobs = new Map();  // id -> { state, message, lines }: jobs the stand-ins finish at once (nation_fill)
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
   const fakeGameFiles = new Map();  // `${mod}|${pack}|${nested}|${path}` -> "changed" or "added" (StudioApi.files_change)
@@ -1734,16 +1892,22 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   // each level, two with a fix that takes them away, and the game missing (with its fix) until a folder is chosen
   const PICKED = "D:\\Games\\R.U.S.E";
   let fakeGame = mode === "notfound" ? null : "D:\\Steam\\steamapps\\common\\R.U.S.E";
+  let fakeCopies = null;  // the folder chosen for modded copies (Settings), or null: the recommended place
+  const copiesView = () => ({ path: fakeCopies || (fakeGame ? "D:\\RUSE-Instances" : null), how: fakeCopies ? "chosen" : "recommended",
+    recommended: fakeGame ? "D:\\RUSE-Instances" : null, drive: fakeGame ? "D:" : null, other_drive: Boolean(fakeGame && fakeCopies) });
   const doctorState = { running: true, leftovers: true };
   function fakeDoctor() {
     const f = (key, level, say, fix, data) => ({ key, level, say, data: data || {}, fix: fix || null });
-    const copies = "D:\\RUSE-Instances";
+    const copies = fakeCopies || "D:\\RUSE-Instances";
     const findings = [fakeGame ? f("game", "ok", "doc_game_ok", null, { path: fakeGame })
       : f("game", "fail", "doc_game_missing", "choose_game"), f("steam", "info", "doc_steam_off"),
     doctorState.running ? f("running", "warn", "doc_running_copy", "close_game", { names: "RUSE.exe (4120)" })
       : f("running", "ok", "doc_running_none")];
     if (fakeGame) {  // no game: no place for modded copies yet, so no checks of them
-      findings.push(f("drive", "ok", "doc_drive_ok", null, { path: copies, fs: "NTFS" }), f("space", "ok", "doc_space_ok", null, { gb: 182.4 }),
+      findings.push(fakeCopies ? f("drive", "ok", "doc_copies_chosen", null, { path: copies, fs: "NTFS", how: "chosen" })
+        : f("drive", "ok", "doc_copies_recommended", null, { path: copies, fs: "NTFS", how: "recommended" }));
+      if (fakeCopies) findings.push(f("other_drive", "info", "doc_copies_other_drive", null, { path: copies, drive: "D:", recommended: "D:\\RUSE-Instances" }));
+      findings.push(f("space", "ok", "doc_space_ok", null, { gb: 182.4 }),
         doctorState.leftovers ? f("leftovers", "info", "doc_left", "clear_leftovers", { names: "studio-sherman-test.old" })
           : f("leftovers", "ok", "doc_left_none"),
         f("readonly", "info", "doc_readonly", null, { n: 3 }),
@@ -1912,6 +2076,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       prefs: async () => ({ ...prefs }),
       game_folder: async () => ({ path: fakeGame, picked: fakeGame === PICKED, version: "0.6.3" }),
       choose_game_folder: async () => { fakeGame = PICKED; return { path: fakeGame, picked: true, version: "0.6.3" }; },
+      // where modded copies go (Settings): the recommended place until a folder is chosen, which here is on another
+      // drive (so the full-copy note shows); Use the recommended place puts it back
+      copies_folder: async () => copiesView(),
+      choose_copies_folder: async () => { fakeCopies = "E:\\Games\\RUSE-Instances"; return copiesView(); },
+      use_recommended_copies: async () => { fakeCopies = null; return copiesView(); },
       set_pref: async (key, value) => { if (value === null) delete prefs[key]; else prefs[key] = value; return { ...prefs }; },
       set_ammo: async (unitAddress, weapon, chosen) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
@@ -1975,6 +2144,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       unit: async (address, lang, via) => unit(address, lang, via),
       upgrade: async (address, lang) => upgradeOf(address, lang),
+      armour: async (address) => armourOf(address),
+      set_armour: async (address, value) => {
+        if (value === null || value === 6) armourEdits.delete(address); else armourEdits.set(address, value);
+        return { saved: "src/studio.rndf", ...armourOf(address) };
+      },
       set_upgrade: async (address, parent, lang) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
         const game = upgradeOf(address, lang).game_parent;
@@ -1993,12 +2167,60 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       model_import: async (address, file, size) => {
         if (!fakeLook(address).new_unit) throw new Error("Only a new unit made in this mod can get a model of its own: copy the unit first.");
         await new Promise((r) => setTimeout(r, 400));
-        fakeModels.set(address, { ...FAKE_IMPORT, scale: 2.46 * (size || 1) });
+        fakeModels.set(address, { ...FAKE_IMPORT, scale: 2.46 * (size || 1), size: Number(size) || 1 });
         return { model: fakeModels.get(address), ...fakeLook(address) };
       },
       model_import_remove: async (address) => { fakeModels.delete(address); return fakeLook(address); },
+      model_copy: async (address) => {
+        if (fakeModels.has(address)) throw new Error("This unit has an imported model: take it out first (Remove the model), then give it a copy.");
+        fakeModelCopies.add(address);
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It has a uniform of its own now: Repaint in Blender changes only this squad."
+          : "It has its own copy of the model now: Repaint in Blender changes only this unit." };
+      },
+      model_copy_remove: async (address) => {
+        fakeModelCopies.delete(address);
+        return { ...fakeLook(address), message: fakeSquad(address) ? "It wears the default uniform again. Your paint is kept in the mod, for when it gets a custom one again."
+          : "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
+      },
+      rides_in: async (address) => fakeRidesIn(address),
+      rides_in_set: async (address, truck) => {
+        const info = fakeRidesIn(address);
+        const chosen = (info.choices || []).find((c) => c.address === truck);
+        if (!chosen) throw new Error("That isn't one of the trucks it can ride in.");
+        if (truck === info.game) fakeRides.delete(address); else fakeRides.set(address, truck);
+        return { ...fakeRidesIn(address), message: `It rides in ${chosen.name} on the roads now.` };
+      },
+      // its size on the slider (StudioApi.model_size_marks / model_sizes / model_resize / models_resize_all): a plane
+      // (an address with Avion in it) has a real-life size of 3.4, a ground unit 1.3
+      model_size_marks: async (address) => ({ tiny: 0.05, huge: 20, game: 1, real: /Avion/.test(address) ? 3.4 : 1.3,
+        start: (units.find((u) => address.endsWith(u.id)) || {}).name || "Sherman" }),
+      model_sizes: async (address, lang) => {
+        const own = fakeModels.get(address);
+        if (!own) return null;
+        const kind = /Avion/.test(address) ? "air" : "ground";
+        return { size: own.size || 1, resizable: true, kind, marks: await window.pywebview.api.model_size_marks(address, lang),
+          same_kind: [...fakeModels.keys()].filter((a) => /Avion/.test(a) === (kind === "air")).length };
+      },
+      model_resize: async (address, size) => {
+        if (!fakeModels.has(address)) throw new Error("This unit has no model of its own to resize: import one first.");
+        await new Promise((r) => setTimeout(r, 400));
+        fakeModels.set(address, { ...fakeModels.get(address), scale: 2.46 * size, size: Number(size) });
+        return { model: fakeModels.get(address), ...fakeLook(address) };
+      },
+      models_resize_all: async (kind, to, times) => {
+        const lines = [];
+        for (const [a, m] of fakeModels) {
+          if (kind !== "all" && /Avion/.test(a) !== (kind === "air")) continue;
+          const size = to === "game" ? 1 : to === "real" ? (/Avion/.test(a) ? 3.4 : 1.3) : Math.min(20, Math.max(0.05, (m.size || 1) * times));
+          fakeModels.set(a, { ...m, scale: 2.46 * size, size });
+          lines.push(`resized\t${a.split("/").pop()}\t${size}`);
+        }
+        fakeJobs.set("resize", { state: "done", message: `${lines.length} model(s) done.`, lines });
+        return { job: "resize" };
+      },
       look_open: async (address) => {
         if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
+        if (fakeSquad(address) && !fakeModelCopies.has(address)) throw new Error("Pick Custom uniform first: the default uniform is worn by other squads and by gun and vehicle crews too, so it isn't repainted here.");
         fakeLooks.add(address);
         return { ...fakeLook(address), message: "Opening 1 model(s) in Blender. Paint on the model there, then come back and click Bring back: it saves your paint and puts it in your mod." };
       },
@@ -2044,6 +2266,32 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });
         current = path;
         return modsView();
+      },
+      // Edit an installed mod: the Launcher's library, made up (a Studio mod of someone else's, one of yours, an .rmod)
+      installed_mods: async () => ({ mods: [
+        { id: "r-u-s-e-field-manual-v1", name: "R.U.S.E. Field Manual", version: "1.0.0", author: "nickgit", description: "",
+          yours: "", older: false, units: true, maps: false, edited_from: "", error: "" },
+        { id: "my-mod", name: "my-mod", version: "0.1.0", author: "", description: "", yours: home + "my-mod",
+          older: false, units: true, maps: true, edited_from: "", error: "" },
+        { id: "airfield-capacity", name: "Airfield Capacity", version: "1", author: "LittleGroove", description: "",
+          yours: "", older: true, units: false, maps: false, edited_from: "", error: "" }] }),
+      edit_installed: async (id, name) => {
+        if (id === "my-mod") {
+          current = currentMap = home + "my-mod";
+          return { mod: modsView(), map: mapsView(), path: current, copied: false, units: true, maps: true,
+                   message: "my-mod is open: your changes go into it. Export puts it in the Launcher again." };
+        }
+        const key = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+        const [original, author] = id === "airfield-capacity" ? ["Airfield Capacity", "LittleGroove"] : ["R.U.S.E. Field Manual", "nickgit"];
+        if (!key(name)) throw new Error(`Give your copy a name of its own: it can't be called ${original}.`);
+        if (key(name) === key(original)) throw new Error(`${original} is ${author}'s name for the mod. Give your copy a name of its own.`);
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-edit";
+        if (!mods.some((m) => m.path === home + slug)) mods.push({ path: home + slug, name: slug });
+        current = home + slug;
+        const message = id === "airfield-capacity"
+          ? `Your copy ${name} is open. 12 of ${original}'s changes are in the Studio now, ready to change. Kept as they are, and still in the mod: 2 new objects.`
+          : `Your copy ${name} is open: everything in ${original} is in it, and your changes go into it.`;
+        return { mod: modsView(), map: mapsView(), path: current, copied: true, units: true, maps: false, message };
       },
       edited: async () => [...new Set([...edits.keys()].filter((k) => k.startsWith(current + "|")).flatMap((k) => {
         const [, address, , how, via] = k.split("|");
@@ -2225,6 +2473,45 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         }
         return {};
       },
+      // a nation's units at once (StudioApi.nation_units / nation_units_hide / nation_fill_list / nation_fill)
+      nation_units: async (n, lang = "us") => {
+        const own = units.filter((u) => u.nation === n && u.kind !== "buildings" && u.factory !== undefined && u.factory !== null)
+          .map((u) => ({ address: E + u.id, name: nameOf(u, lang), kind: u.kind, factory: u.factory, hidden: nationHidden.has(E + u.id) }));
+        const eras = [...eraHere].map((era) => ({ era, nations: [...new Set(FAKE_ERA_UNITS.filter((u) => u.era === era).map((u) => u.nation))].sort() }))
+          .filter((e) => e.nations.length);
+        // its buildings left with nothing to build: every own unit there hidden, none of the era units added put in
+        const filled = new Set(FAKE_ERA_UNITS.filter((u) => eraAdded.has(u.key)).map((u) => u.factory));
+        const empty = [...new Set(own.map((u) => u.factory))].filter((f) => !filled.has(f)
+          && own.filter((u) => u.factory === f).every((u) => u.hidden)).sort((a, b) => a - b);
+        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras, empty };
+      },
+      nation_units_hide: async (n, hide = true, lang = "us", factory = null) => {
+        if (!current) throw new Error("Pick or make a mod first: the change is saved in it.");
+        for (const u of units.filter((x) => x.nation === n && x.kind !== "buildings" && (factory === null || x.factory === factory))) {
+          if (hide) nationHidden.add(E + u.id); else nationHidden.delete(E + u.id);
+        }
+        return window.pywebview.api.nation_units(n);
+      },
+      nation_fill_list: async (n, era, source, lang = "us") => {
+        const menus = (await window.pywebview.api.menus(lang)).nations[n].factories;
+        const have = new Set(menus.map((m) => m.factory));
+        return { menus, units: FAKE_ERA_UNITS.filter((u) => u.era === era && u.nation === source).map((u) => ({ key: u.key,
+          name: u.name, card: u.card, kind: u.aircraft ? "air" : "ground", factory: have.has(u.factory) ? u.factory : null,
+          added: eraAdded.has(u.key) })) };
+      },
+      nation_fill: async (n, picks) => {
+        if (!current) throw new Error("Pick or make a mod first: the units are added to it.");
+        const lines = [];
+        for (const p of picks) {
+          const u = FAKE_ERA_UNITS.find((x) => x.key === p.key);
+          try {
+            const made = await window.pywebview.api.era_unit_add(p.key, n, p.factory);
+            lines.push(`added\t${made.name}`);
+          } catch (err) { lines.push(`skipped\t${u ? u.name : p.key}\t${err.message}`); }
+        }
+        fakeJobs.set("fill", { state: "done", message: `${picks.length} era unit(s) done.`, lines });
+        return { job: "fill" };
+      },
       // era units in the Units tab (StudioApi.era_units_list / era_unit_page / era_start_price / era_unit_add /
       // era_unit_remove / era_sections / era_download, ruse_studio.era_units): a small made-up library, nothing in the
       // mod until added; Modern isn't downloaded until its Download is pressed
@@ -2259,8 +2546,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!current) throw new Error("Pick or make a mod first: an era unit is added to a mod.");
         const u = FAKE_ERA_UNITS.find((x) => x.key === key);
         if (eraAdded.has(key)) throw new Error(`${u.name} is already in this mod`);
-        if (size !== null && size !== undefined && !(size >= 0.2 && size <= 5)) {
-          throw new Error("Give a size from 0.2 to 5 (1 is as long as the unit it starts from).");
+        if (size !== null && size !== undefined && !(size >= 0.05 && size <= 20)) {
+          throw new Error("Give a size from 0.05 to 20 (1 is as long as the unit it starts from).");
         }
         const made = await window.pywebview.api.new_unit(source || u.copies, name || u.name, price, nation, factory);
         eraAdded.set(key, made.address);
@@ -2486,6 +2773,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       export_mod: async () => ({ job: "export" }),
       build_index: async () => ({ job: "index" }),
       job: async (id, since) => backupJobs[id] ? backupJobView(id, since || 0)
+        : fakeJobs.has(id) ? { ...fakeJobs.get(id), lines: fakeJobs.get(id).lines.slice(since || 0), count: fakeJobs.get(id).lines.length }
         : mode === "testfails" && id === "test"  // a test stopped by a leftover copy, as a player's was
         ? { state: "failed", message: "[WinError 5] Access is denied: 'D:\\RUSE-Instances\\studio-sherman-test.old'",
           lines: jobs.test[0].slice(0, 1), count: 1 }
@@ -2515,7 +2803,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const kind = ((FAKE_ENTRIES[m.copy_of || pack] || []).find((e) => e.name === entry) || {}).kind || "battles";
         fakeMaps.splice(at + 1, 0, { ...m, pack: own, names: [name], paths: [own], file: `DataMap${own}_v09.dat`,
           kinds: [kind === "battles" ? "skirmish" : kind], titles: { us: [name], fr: [name], sc: [name] },
-          copy_of: m.copy_of || pack });
+          copy_of: m.copy_of || pack, blank: preset ? true : Boolean(m.blank) });  // StudioApi.maps "blank"
         return { pack: own, maps: fakeMaps };
       },
       // a map's menu pictures (StudioApi.menu_pictures and its window's calls); no file picker here: as if menu.png /
@@ -2790,6 +3078,32 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         scenEdits(pack).wholeMap = Boolean(whole);
         return withScenarioEdits(pack);
       },
+      // the Sectors brush (StudioApi.sector_*): a 64 x 64 grid over the map; the map's own sectors two halves
+      sector_view: async (pack, file, outlines) => fakeSectorView(pack, file, outlines),
+      sector_paint: async (pack, file, sector, radius, points, shape) => {
+        if (!(sector >= -1 && sector <= 254)) throw new Error("That stroke can't be saved (sector is a whole number from 0 to 254).");
+        fakeSectors(pack, file).strokes.push({ sector, radius, points, shape });
+        return fakeSectorView(pack, file);
+      },
+      sector_area: async (pack, file, areas) => {   // a shape edit: the sectors it changes, kept together for Undo
+        const f = fakeSectors(pack, file), group = f.strokes.reduce((g, s) => Math.max(g, s.group || 0), 0) + 1;
+        for (const a of areas) {
+          if (!(a.sector >= -1 && a.sector <= 254) || (a.sector === -1 && !(a.points || []).length)) {
+            throw new Error("That shape can't be saved (sector is a whole number from 0 to 254, or -1: no sector, with corners).");
+          }
+          f.strokes.push({ sector: a.sector, area: a.points || [], group });
+        }
+        return fakeSectorView(pack, file, true);
+      },
+      sector_undo: async (pack, file) => {
+        const f = fakeSectors(pack, file);
+        if (!f.strokes.length) throw new Error("There's no painted sector stroke to take back.");
+        const last = f.strokes.pop();
+        while (last.group && f.strokes.length && f.strokes[f.strokes.length - 1].group === last.group) f.strokes.pop();
+        return fakeSectorView(pack, file, Boolean(last.group));
+      },
+      sector_clear: async (pack, file) => { fakeSectors(pack, file).strokes = []; return fakeSectorView(pack, file); },
+      sector_start: async (pack, file, empty) => { fakeSectors(pack, file).empty = Boolean(empty); return fakeSectorView(pack, file); },
       scenario_change: async (pack, file, item, field, value) => {
         const e = scenEdits(pack), s = baseScenarios().scenarios.find((x) => x.file === file);
         const it = s && s.items[item];
@@ -2834,9 +3148,80 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         checkProblems = checkProblems.filter((x) => x !== p);
         return { mod: current, problems: checkProblems, kept: `${current}/${file.replace(".toml", ".broken.toml")}` };
       },
-      scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0) => {
-        for (const [x, y] of points) scenEdits(pack).spawns.push({ file, what: unit.replace(E, "Unit_"), x, y, camp, rotation });
+      fix_problem: async (fix) => {
+        if (fix.fix === "set_aside") return window.pywebview.api.set_aside(fix.file);
+        const p = checkProblems.find((x) => x.file === fix.file && x.plain.n === fix.n);
+        if (!p) throw new Error(`${fix.file} isn't one of this mod's map files`);
+        checkProblems = checkProblems.filter((x) => x !== p);
+        const name = fix.file.split("/").pop();
+        return { mod: current, problems: checkProblems, message: `Fixed. ${name} as it was is kept beside it, as ${name.replace(".toml", ".before-fix.toml")}.` };
+      },
+      open_mod_in_folder: async () => ({ opened: current }),
+      scenario_spawn_many: async (pack, file, unit, points, camp = -1, rotation = 0, trucks = null) => {
+        if (trucks !== null && unit !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
+        for (const [x, y] of points) {
+          scenEdits(pack).spawns.push({ file, what: unit.replace(E, "Unit_"), x, y, camp, rotation, trucks });
+        }
         return withScenarioEdits(pack);
+      },
+      // a spawn the mod adds: its side, a depot's trucks, its turn (StudioApi.scenario_spawn_set)
+      scenario_spawn_set: async (pack, number, field, value) => {
+        const sp = scenEdits(pack).spawns[number];
+        if (!sp) throw new Error("that spawn isn't in the mod any more");
+        if (field === "trucks" && sp.what !== "DalleBatimentDepot") throw new Error("Only a supply depot has trucks.");
+        if (field === "trucks" && !(Number.isInteger(value) && value >= 0 && value <= 2147483647)) {
+          throw new Error("A depot's trucks are a whole number from 0 to 2,147,483,647.");
+        }
+        sp[field === "rotation" ? "rotation" : field] = Number(value);
+        return withScenarioEdits(pack);
+      },
+      // every depot of a scenario at once (StudioApi.scenario_depots): trucks each, times the game's, or back
+      scenario_depots: async (pack, file, trucks = null, times = null) => {
+        const e = scenEdits(pack), s = baseScenarios().scenarios.find((x) => x.file === file);
+        e.changes = e.changes || [];
+        let count = 0;
+        const each = (game) => trucks !== null ? trucks : times !== null ? Math.round(game * times) : null;
+        (s ? s.items : []).forEach((it, item) => {
+          if (it.kind !== "Spawn" || it.what !== "DalleBatimentDepot") return;
+          let c = e.changes.find((x) => x.file === file && x.item === item);
+          if (!c) { c = { file, item, values: {} }; e.changes.push(c); }
+          const n = each(it.trucks || 0);
+          if (n === null || n === (it.trucks || 0)) delete c.values.trucks; else c.values.trucks = n;
+          count += 1;
+        });
+        e.changes = e.changes.filter((c) => Object.keys(c.values).length);
+        for (const sp of e.spawns) {
+          if (sp.file !== file || sp.what !== "DalleBatimentDepot") continue;
+          const n = each(25);
+          sp.trucks = n === null || n === 25 ? null : n;
+          count += 1;
+        }
+        return { ...withScenarioEdits(pack), depots: count };
+      },
+      // what a depot's trucks are worth (StudioApi.depot_money): the Economy tab's money a truck and trucks a convoy
+      depot_money: async (pack = null) => {
+        const value = (prop, game) => economyEdits.has(prop) ? economyEdits.get(prop) : game;
+        const rule = pack ? (depotRules.get(pack.toLowerCase()) || depotRules.get("all")) : null;
+        return { ready: mode !== "noindex", usual: 25, shipped: [15, 72], most: 2147483647,
+          per_truck: value("QteDeviseParCamion", 3), per_truck_mine: economyEdits.has("QteDeviseParCamion"),
+          per_convoy: value("NbCamionParConvoi", 3), per_convoy_mine: economyEdits.has("NbCamionParConvoi"),
+          rule: rule ? { ...rule } : null };
+      },
+      // the Economy tab's Depots on the maps (StudioApi.economy_depots / economy_depots_set): all maps or one
+      economy_depots: async () => ({ can: Boolean(current),
+        rules: [...depotRules.values()].sort((a, b) => (a.map !== "all") - (b.map !== "all") || a.name.localeCompare(b.name)),
+        maps: fakeMaps.map((m) => ({ pack: m.pack, name: m.names[0] })), money: await window.pywebview.api.depot_money() }),
+      economy_depots_set: async (where, trucks = null, times = null) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (trucks !== null && times !== null) throw new Error("Give the depots a number of trucks, or a times, not both.");
+        const key = String(where).toLowerCase();
+        if (trucks === null && times === null) depotRules.delete(key);
+        else {
+          const m = fakeMaps.find((x) => x.pack.toLowerCase() === key);
+          depotRules.set(key, { map: key === "all" ? "all" : m ? m.pack : where, name: m ? m.names[0] : where,
+            trucks, times });
+        }
+        return window.pywebview.api.economy_depots();
       },
       scenario_move_spawn: async (pack, number, x, y) => {
         Object.assign(scenEdits(pack).spawns[number], { x, y });
