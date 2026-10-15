@@ -1,0 +1,745 @@
+# La guida ai numeri in italiano (rusemod.numberinfo; fa fede l'inglese in numberinfo.toml).
+[SeuilMort]
+what = "Salute"
+does = "Quanti danni servono per distruggerla. La maggior parte dei carri, veicoli, squadre e cannoni del gioco ha 400: ciò che rende un Tiger più resistente di una jeep è soprattutto il suo livello di corazza (Corazza), che riduce i danni di ogni colpo non abbastanza forte per lei. Gli edifici hanno da 50 a 4.500."
+[SeuilPinned]
+what = "Soglia d'inchiodamento"
+does = "Quanta soppressione serve prima che l'unità sia inchiodata (smette di avanzare e spara meno). I colpi che cadono vicino entro il raggio di soppressione della munizione la aumentano. La maggior parte delle unità ha 200; più alto = più difficile da inchiodare."
+[ArmureHint]
+what = "Livello di corazza mostrato"
+does = "Il livello di corazza che la scheda e il menu di costruzione dell'unità mostrano (il numero sullo scudo, da 1 a 5). Il campo Corazza dello Studio lo imposta insieme alla corazza vera, così i due coincidono sempre."
+[BaseBlindage]
+what = "Corazza"
+does = "La corazza con cui l'unità combatte (da 1 a 10 nel gioco): più è alta, meno danni le fanno le munizioni più deboli. Cambiala con il campo Corazza, che sceglie uno dei livelli del gioco e mantiene uguale il numero sullo scudo della scheda (visto in gioco)."
+[ReculeSeulementSiUberstress]
+what = "Ripiega solo se del tutto inchiodata"
+does = "1: l'unità si ritira sotto il fuoco solo quando è completamente inchiodata (soppressione estrema), non prima. 38 unità del gioco ce l'hanno."
+[VitesseLineaire]
+what = "Velocità"
+does = "Quanto veloce si sposta fuori strada. Uno Sherman ha 4.550 (circa 35 km/h), una jeep 6.110 (circa 47 km/h), una squadra di fucilieri 3.120 (circa 24 km/h)."
+["TAvionDescriptor.VitesseLineaire"]
+what = "Velocità di volo"
+does = "Quanto veloce vola l'aereo: da 13.000 a 46.800 nel gioco (circa da 225 a 810 km/h)."
+[VitesseLineaireAuSol]
+what = "Velocità a terra"
+does = "Quanto veloce l'aereo rulla sull'aeroporto al decollo e all'atterraggio."
+[VitesseLineaireIdle]
+what = "Velocità di pattuglia"
+does = "Quanto veloce vola l'aereo quando gira in tondo senza nulla da fare, più lento della sua velocità massima."
+[VitesseCombat]
+what = "Velocità in combattimento"
+does = "Quanto veloce si muove in combattimento. Per carri e veicoli di solito è uguale alla Velocità; per squadre e cannoni trainati è molto più lenta (una squadra di fucilieri 1.040, circa 8 km/h; un cannone anticarro 520, circa 4 km/h, spinto dai serventi)."
+[SpeedBonusOnRoad]
+what = "Bonus di velocità su strada"
+does = "Quanto va più veloce su strada che fuori: 0,6 è circa il 60% più veloce. Squadre e cannoni lo ricevono come il camion in cui si trasformano. Aerei e camion hanno 1."
+[MaxAcceleration]
+what = "Accelerazione"
+does = "Quanto rapidamente prende velocità. La maggior parte dei carri ha 3.900."
+[MaxDeceleration]
+what = "Frenata"
+does = "Quanto rapidamente rallenta e si ferma."
+[TempsDemiTour]
+what = "Tempo d'inversione"
+does = "Quanti secondi impiega a girarsi dall'altra parte. Fanteria 0,01 (subito), veicoli 0,5, carri 1, i più lenti 6."
+[Radius]
+what = "Ingombro a terra"
+does = "Quanto spazio occupa l'unità: le altre unità restano a questa distanza dal suo centro quando la aggirano. Fanteria 104-130 (circa 0,5 m), carri 520-780 (2-3 m), cannoni 390-650, camion 2.000, edifici 7.800-13.000 (30-50 m)."
+["TAvionDescriptor.Radius"]
+what = "Ingombro in volo"
+does = "Quanto spazio occupa l'aereo quando altri aerei gli volano intorno: da 780 a 2.600 (da 3 a 10 m)."
+[StickToGround]
+what = "Segue il terreno"
+does = "1: l'unità s'inclina con il pendio su cui si trova. Ogni unità di terra ed edificio del gioco ce l'ha."
+[Scale]
+what = "Dimensione del modello"
+does = "Solo aspetto: il modello 3D dell'unità disegnato tante volte la sua dimensione. Le unità hanno 1, la fanteria 0,2, gli edifici 0,1. Il cursore Dimensione dello Studio su un modello importato cambia invece il modello stesso."
+[DetectionBase]
+what = "Raggio visivo"
+does = "Fin dove vede le unità di terra. Un carro 104.000 (circa 400 m); le autoblindo da ricognizione 234.000 (900 m); gli aerei da ricognizione 195.000 (750 m). Un Panzer IV con solo 234.000 non agiva da ricognitore; il campo Ruolo dà il resto."
+[PorteeVisionVolant]
+what = "Raggio visivo aereo"
+does = "Fin dove vede gli aerei. La maggior parte delle unità 208.000 (800 m); alcune 2.600 (10 m: vedono a malapena gli aerei)."
+[SignatureRadar]
+what = "Firma radar"
+does = "Come quale tipo di contatto appare sul radar nemico: 1 unità di terra, 2 edifici, 3 aerei."
+[AltitudeNoise]
+what = "Oscillazione di quota"
+does = "Solo aspetto: quanto oscilla la quota dell'aereo in volo (130-260, meno di 1 m)."
+[PorteeAttackReflexAir]
+what = "Raggio d'attacco automatico (aria)"
+does = "Fin dove un aereo insegue da solo gli aerei nemici, senza ordine: da 130.000 a 208.000 (da 500 a 800 m)."
+[PorteeAttackReflexSol]
+what = "Raggio d'attacco automatico (terra)"
+does = "Fin dove un aereo insegue da solo i bersagli a terra: 182.000 (700 m) su ogni aereo del gioco."
+[SecondaryWeaponMaxAmmo]
+what = "Bombe o razzi trasportati"
+does = "Quanti colpi della sua seconda arma (bombe, razzi) un aereo porta prima di tornare a riarmarsi: da 1 a 4 nel gioco."
+[ProductionPrice]
+what = "Prezzo"
+does = "Quanto costa costruirla, in $, a ciascuna delle cinque date di battaglia (il gioco tiene un prezzo per data)."
+[ProductionTime]
+what = "Tempo di costruzione"
+does = "Quanti secondi servono a costruirla. Con più di una fabbrica del suo tipo, il lavoro si divide tra loro."
+[UpgradePrice]
+what = "Prezzo della ricerca"
+does = "Quanto costa ricercarla, in $, prima di poterla costruire (unità ricercate a partire da un'altra)."
+[UpgradeTime]
+what = "Tempo di ricerca"
+does = "Quanto dura la ricerca, in secondi."
+[IsUpgrade]
+what = "È un miglioramento"
+does = "1: l'unità è un miglioramento di quella da cui è ricercata (la sostituisce nel menu di costruzione una volta ricercata)."
+[ShowInMenu]
+what = "Mostrata nel menu di costruzione"
+does = "1: mostrata nel suo menu di costruzione a quella data di battaglia (un valore per ciascuna delle cinque date)."
+[PositionInMenu]
+what = "Posto nel menu"
+does = "Dove sta nel suo menu di costruzione: le unità della stessa linea condividono un posto, i miglioramenti vi si impilano."
+[Factory]
+what = "Fabbrica"
+does = "In quale menu di costruzione si trova (lo Studio mostra ogni menu col suo nome e ti lascia spostare un'unità in quello di un'altra nazione)."
+[Menu]
+what = "Menu degli edifici"
+does = "In quale pagina del menu degli edifici si trova l'edificio."
+[Nationalite]
+what = "Nazione"
+does = "A quale paese appartiene: 0 USA, 1 Germania, 2 Regno Unito, 3 Francia, 4 Italia, 5 URSS, 6 Giappone."
+[InitialFlagSet]
+what = "Flag"
+does = "I flag dell'unità: interruttori numerati per ciò che è e ciò che può fare. Ognuno è spiegato nella Guida ai flag, sotto i flag."
+[DescriptorId]
+what = "Id"
+does = "Il numero proprio dell'unità: ogni unità ne ha uno diverso, e il gioco e i salvataggi la trovano con esso. Lo Studio dà a una nuova unità uno libero."
+[TrackingId]
+what = "Id delle statistiche"
+does = "Il numero con cui le statistiche di fine partita e il tracciamento del gioco conoscono l'unità."
+[Key]
+what = "Chiave"
+does = "Un numero che alcune unità portano (8 carri, 7 aerei, 2 squadre); il suo uso non è ancora noto."
+[TypeForAcknow]
+what = "Tipo di voce"
+does = "Con quale serie di battute vocali l'unità risponde agli ordini."
+[AcknowUnitType]
+what = "Genere di voce"
+does = "Quale tipo di unità nominano le battute vocali (carro, fanteria, aereo...)."
+[IconeType]
+what = "Icona sulla mappa"
+does = "Quale icona l'unità mostra sul tavolo della mappa vista da lontano."
+[Category]
+what = "Categoria"
+does = "Come quale tipo di unità il gioco la conta: 1 ricognizione (la imposta il ruolo Ricognitore; visto in gioco), 7 aerei, 8 e 9 edifici; le altre non hanno ancora tutte un nome."
+[CategorieIA]
+what = "Categoria per il computer"
+does = "Per cosa il giocatore computer usa l'unità: 3 ricognizione (il campo Ruolo la imposta con il ruolo; visto in gioco); le altre non hanno ancora tutte un nome."
+[CategoryVolant]
+what = "Ruolo dell'aereo"
+does = "Come quale tipo di aereo vola (caccia, cacciabombardiere, bombardiere, ricognitore, paracadutisti): come si muove e attacca. Cambialo con il campo Ruolo, che imposta i flag insieme."
+[IsDepotForIA]
+what = "Deposito per il computer"
+does = "1: il giocatore computer tratta questo edificio come un deposito di rifornimenti."
+[TypeBatiment]
+what = "Tipo di edificio"
+does = "Che tipo di edificio è per il gioco (QG, caserma, deposito...). Un edificio esca con il flag 5 e TypeBatiment -7 produce davvero."
+[BuildPolicy]
+what = "Dove si può costruire"
+does = "Dove l'edificio può essere piazzato: 2 ovunque (difese), 3 su una piazzola di deposito; senza questo valore serve una strada vicina."
+[DistanceToRoad]
+what = "Distanza da una strada"
+does = "Quanto vicino a una strada va piazzato l'edificio: da 5.000 a 31.000 (da 20 a 120 m). I bunker 8.000 (circa 30 m)."
+[CanBeSpawnedInMapMulti]
+what = "Piazzabile nelle mappe multigiocatore"
+does = "1: l'edificio può essere messo nello scenario di una mappa multigiocatore."
+["TBatimentPaths.Radius"]
+what = "Percorsi intorno all'edificio"
+does = "Fin dove intorno all'edificio passano i percorsi delle unità."
+[TirEnMouvement]
+what = "Spara in movimento"
+does = "1: quest'arma può sparare mentre l'unità si muove."
+[SalveNumber]
+what = "Numero di salva"
+does = "In quale salva spara quest'arma (-1: spara da sola, non a salve)."
+["TWeaponDescriptor.Salves"]
+what = "Salve"
+does = "Se l'arma spara a salve (1) o colpo per colpo (-1)."
+[Puissance]
+what = "Danno"
+does = "Il danno di un colpo a segno, prima della corazza. Armi leggere 2-10, cannoni dei carri da decine a centinaia, bombe e V2 molto di più (fino a 2.000.000 per la bomba atomica). Un'unità è distrutta quando i danni subiti raggiungono la sua Salute."
+[Level]
+what = "Livello della munizione"
+does = "Il livello della munizione (da 1 a 5). Il gioco lo pesa contro la corazza del bersaglio: una munizione di livello più alto fa più danni alle unità corazzate. Come i due si confrontano non è ancora misurato."
+[Arme]
+what = "Tipo d'arma"
+does = "Che tipo d'arma la spara (mitragliatrice, cannone, obice, bomba...): contro quali bersagli è efficace e l'icona sulla scheda."
+[PorteeMaximale]
+what = "Gittata"
+does = "Fin dove può colpire: da 13.000 (50 m) a 2.600.000 (10 km, la V2). I cannoni dei carri di solito 65.000-130.000 (250-500 m)."
+[PorteeMinimale]
+what = "Gittata minima"
+does = "Più vicino di così non può sparare (artiglieria e mortai): da 13.000 a 169.000 (da 50 a 650 m)."
+[TempsEntreDeuxTirs]
+what = "Tempo tra i colpi"
+does = "Secondi tra due colpi: 0,2 per una mitragliatrice, qualche secondo per un cannone di carro, fino a 60 per i pezzi più pesanti. Più basso = più colpi."
+[TempsEntreDeuxSalves]
+what = "Tempo tra le salve"
+does = "Secondi tra due salve, per le armi che sparano a salve (lanciarazzi, bombe)."
+[NbTirParSalves]
+what = "Colpi per salva"
+does = "Quanti colpi spara una salva: da 1 a 100."
+[AngleDispersion]
+what = "Dispersione"
+does = "Quanto i colpi si allontanano dal punto mirato: da 0,01 (circa mezzo grado, molto preciso) a 0,3 (17 gradi, artiglieria)."
+[PourcentageTirDirect]
+what = "Precisione da fermo"
+does = "Quanto è probabile che un colpo vada a segno quando l'unità è ferma: da 0,5 a 1 (dal 50% al 100%)."
+[PourcentageTirDirectEnMouvement]
+what = "Precisione in movimento"
+does = "Quanto è probabile che un colpo vada a segno mentre l'unità si muove: da 0,4 a 1 (dal 40% al 100%)."
+[RayonPinned]
+what = "Raggio di soppressione"
+does = "Fin dove dal punto d'impatto un colpo sopprime le unità (aumenta la loro soppressione): da 130 (mezzo metro) a 78.000 (300 m)."
+[TirIndirect]
+what = "Tiro indiretto"
+does = "1: la munizione è sparata in tiro indiretto, oltre gli ostacoli, su bersagli che altri avvistano (artiglieria)."
+[AllowAmbushShot]
+what = "Può tendere imboscate"
+does = "1: la munizione può essere sparata da un'imboscata in un bosco."
+[ProjectileType]
+what = "Tipo di proiettile"
+does = "Solo aspetto: che tipo di colpo è disegnato in volo (granata, pallottola, razzo, bomba)."
+[AmmunitionId]
+what = "Id della munizione"
+does = "Il numero proprio della munizione (1000-1138): ognuna ne ha uno diverso. Lo Studio dà a una copia uno libero."
+[NeedModelChange]
+what = "Cambia modello quando spara"
+does = "Solo aspetto: 1 sulle armi anticarro delle squadre: il soldato passa al modello che la impugna quando spara."
+[TempsAnimation]
+what = "Durata dell'animazione di tiro"
+does = "Solo aspetto: quanto dura l'animazione di tiro del soldato (1,6 s sulle armi anticarro delle squadre)."
+[FX_vitesse_de_depart]
+what = "Velocità del colpo (disegnato)"
+does = "Solo aspetto: quanto veloce il colpo disegnato lascia l'arma, in unità di gioco al secondo: da 150 a 520.000 (2.000 m al secondo)."
+[FX_frottement]
+what = "Attrito del colpo (disegnato)"
+does = "Solo aspetto: quanto rapidamente il colpo disegnato rallenta nell'aria."
+[FX_tir_tendu]
+what = "Tiro teso (disegnato)"
+does = "Solo aspetto: 1 disegna il colpo piatto e dritto invece che ad arco."
+[FX_tir_sans_physic]
+what = "Colpo disegnato senza fisica"
+does = "Solo aspetto: 1 disegna il colpo senza gravità né attrito."
+[AltitudeDeVol]
+what = "Quota di volo"
+does = "Quanto in alto vola l'aereo: da 52.000 a 208.000 (da 200 a 800 m)."
+[ChaosAltitudeDeVol]
+what = "Variazione della quota di volo"
+does = "Quanto varia la quota di volo da un aereo all'altro e nel tempo: da 7.800 a 32.500 (da 30 a 125 m)."
+[AltitudeDownAirport]
+what = "Quota all'atterraggio"
+does = "A che quota è l'aereo quando inizia a scendere verso il suo aeroporto: 65.000 (250 m)."
+[AltitudeDownAttack]
+what = "Quota d'attacco"
+does = "Quanto scende l'aereo per un attacco a terra: da 13.000 a 39.000 (da 50 a 150 m)."
+[LengthDownAirport]
+what = "Lunghezza dell'avvicinamento"
+does = "Quanto è lunga la discesa dell'aereo verso l'aeroporto: da 78.000 a 156.000 (da 300 a 600 m)."
+[LengthUpAirport]
+what = "Lunghezza della salita dopo il decollo"
+does = "Quanto è lunga la salita dell'aereo dopo il decollo: da 52.000 a 130.000 (da 200 a 500 m)."
+[LengthDownAttack]
+what = "Lunghezza della picchiata d'attacco"
+does = "Quanto è lunga la discesa dell'aereo su un bersaglio a terra: da 13.000 a 208.000 (da 50 a 800 m)."
+[LengthUpAttack]
+what = "Lunghezza della richiamata dopo l'attacco"
+does = "Quanto è lunga la salita dell'aereo dopo un attacco a terra: da 13.000 a 208.000 (da 50 a 800 m)."
+[DelaiAttackGround]
+what = "Attesa prima di un attacco a terra"
+does = "Secondi che l'aereo aspetta durante il passaggio prima di sparare su un bersaglio a terra: da 0,1 a 4,5."
+[GroundAttackAcceleration]
+what = "Accelerazione in attacco a terra"
+does = "Quanto rapidamente l'aereo accelera durante un attacco a terra."
+[GroundAttackDecceleration]
+what = "Rallentamento in attacco a terra"
+does = "Quanto rapidamente l'aereo rallenta per un attacco a terra."
+[MustDiveAttack]
+what = "Bombardiere in picchiata"
+does = "1: l'aereo attacca in una picchiata ripida (2 aerei del gioco ce l'hanno)."
+[DiveAttackStartAltitude]
+what = "Quota d'inizio picchiata"
+does = "A che quota un bombardiere in picchiata inizia la picchiata: da 44.200 a 91.000 (da 170 a 350 m)."
+[DiveAttackEndAltitude]
+what = "Quota di richiamata"
+does = "Fin dove scende un bombardiere in picchiata prima di richiamare: da 31.200 a 39.000 (da 120 a 150 m)."
+[DiveAttackAcceleration]
+what = "Accelerazione in picchiata"
+does = "Quanto rapidamente un bombardiere in picchiata accelera nella picchiata."
+[DiveAttackAngleToHit]
+what = "Angolo di picchiata allo sgancio"
+does = "Quanto deve essere ripida la picchiata prima che la bomba sia sganciata: da 10 a 35 gradi."
+[DiveAttackDownAngleSpeed]
+what = "Velocità d'abbassamento del muso"
+does = "Quanto rapidamente un bombardiere in picchiata abbassa il muso nella picchiata (90 gradi al secondo)."
+[DiveAttackDownRollSpeed]
+what = "Velocità di rollio in picchiata"
+does = "Quanto rapidamente un bombardiere in picchiata si rovescia all'inizio della picchiata (120 gradi al secondo)."
+[DiveAttackUpAngleSpeed]
+what = "Velocità di richiamata"
+does = "Quanto rapidamente un bombardiere in picchiata rialza il muso uscendo dalla picchiata (da 35 a 50 gradi al secondo)."
+[DiveAttackUpRollSpeed]
+what = "Velocità di rollio in uscita"
+does = "Quanto rapidamente un bombardiere in picchiata torna livellato dopo la picchiata (60 gradi al secondo)."
+[LoopingStartAltitude]
+what = "Quota d'inizio del looping"
+does = "A che quota è un aereo quando inizia un looping per ripassare: da 57.200 a 109.200 (da 220 a 420 m)."
+[LoopingAltitudeToHit]
+what = "Quota in cima al looping"
+does = "Quanto è alta la cima del looping dell'aereo: da 70.200 a 124.800 (da 270 a 480 m)."
+[LoopingAcceleration]
+what = "Accelerazione nel looping"
+does = "Quanto rapidamente l'aereo accelera uscendo da un looping."
+[LoopingDecceleration]
+what = "Rallentamento nel looping"
+does = "Quanto rapidamente l'aereo rallenta salendo in un looping."
+[LoopingPitchAngleSpeedStart]
+what = "Velocità di beccheggio (inizio looping)"
+does = "Quanto rapidamente il muso dell'aereo sale all'inizio del looping (20 gradi al secondo)."
+[LoopingPitchAngleSpeedEnd]
+what = "Velocità di beccheggio (fine looping)"
+does = "Quanto rapidamente il muso dell'aereo gira alla fine del looping: da 30 a 90 gradi al secondo."
+[PitchAngleMax]
+what = "Salita o discesa più ripida"
+does = "Quanto l'aereo può alzare o abbassare il muso in volo normale: da 5 a 80 gradi."
+[RollAngleMax]
+what = "Inclinazione massima"
+does = "Quanto l'aereo s'inclina in virata: da 5 a 50 gradi."
+[RollAcceleration]
+what = "Accelerazione di rollio"
+does = "Quanto rapidamente l'aereo entra ed esce da un'inclinazione (da 4 a 8)."
+[RollRatioSpeed]
+what = "Inclinazione per virata"
+does = "Quanto l'aereo s'inclina per una data virata: da 0,1 a 2."
+[RadiusStandard]
+what = "Raggio di virata"
+does = "Quanto sono larghe le virate normali dell'aereo: da 26.000 a 104.000 (da 100 a 400 m)."
+[RadiusApproach]
+what = "Raggio d'avvicinamento"
+does = "Quanto sono larghe le virate dell'aereo mentre si avvicina a dove è stato mandato: da 10.400 a 104.000 (da 40 a 400 m)."
+[RadiusApproachAttackGround]
+what = "Raggio d'avvicinamento per un attacco a terra"
+does = "Quanto sono larghe le virate dell'aereo mentre si allinea per un attacco a terra: da 20.800 a 104.000 (da 80 a 400 m)."
+[RadiusApproachEngage]
+what = "Raggio d'avvicinamento per un duello aereo"
+does = "Quanto sono larghe le virate dell'aereo mentre si avvicina a un aereo nemico: da 15.600 a 52.000 (da 60 a 200 m)."
+[RadiusEngage]
+what = "Distanza d'inizio duello"
+does = "Quanto vicino deve essere un aereo nemico perché l'aereo inizi un duello: da 10.400 a 104.000 (da 40 a 400 m)."
+[RadiusEngaged]
+what = "Raggio di virata in duello"
+does = "Quanto sono larghe le virate dell'aereo in un duello aereo: da 26.000 a 104.000 (da 100 a 400 m)."
+[RadiusChangeAltitude]
+what = "Distanza per cambiare quota"
+does = "Quanto vola l'aereo mentre cambia quota: da 9.750 a 52.000 (da 40 a 200 m)."
+[CrashGravity]
+what = "Caduta quando abbattuto"
+does = "Quanto rapidamente cade un aereo abbattuto: da 1.300 a 5.200."
+[CrashPitchAcceleration]
+what = "Muso giù quando abbattuto"
+does = "Solo aspetto: quanto rapidamente il muso di un aereo abbattuto scende sempre più in fretta (da 1 a 5 gradi al secondo, ogni secondo)."
+[CrashPitchMaxSpeed]
+what = "Muso giù più rapido quando abbattuto"
+does = "Solo aspetto: la velocità massima con cui scende il muso di un aereo abbattuto (da 5 a 35 gradi al secondo)."
+[CrashRollAcceleration]
+what = "Avvitamento quando abbattuto"
+does = "Solo aspetto: quanto rapidamente un aereo abbattuto inizia ad avvitarsi (da 8 a 70 gradi al secondo, ogni secondo)."
+[CrashRollMaxSpeed]
+what = "Avvitamento più rapido quando abbattuto"
+does = "Solo aspetto: la velocità massima con cui si avvita un aereo abbattuto (da 150 a 1.000 gradi al secondo)."
+[VitesseRotation]
+what = "Velocità di rotazione della torretta"
+does = "Quanto rapidamente la torretta o il cannone gira per mirare: da 15 a 200 gradi al secondo. Le torrette più lente impiegano di più a portare il cannone su un nuovo bersaglio."
+[AngleRotationMax]
+what = "Limite di rotazione della torretta"
+does = "Quanto la torretta o il cannone può girare da ciascun lato rispetto al davanti: da 15 gradi (un cannone in casamatta) a 360 (tutto intorno)."
+[AngleRotationBase]
+what = "Angolo di riposo della torretta"
+does = "Dove guarda la torretta a riposo (180 gradi: all'indietro, su alcuni veicoli)."
+[AngleRotationBasePitch]
+what = "Alzo di riposo del cannone"
+does = "Quanto in alto punta il cannone a riposo: da 10 a 30 gradi."
+[AngleRotationMaxPitch]
+what = "Alzo massimo del cannone"
+does = "Quanto in alto può puntare il cannone: da 15 a 90 gradi (i cannoni antiaerei puntano dritto in su)."
+[AngleRotationMinPitch]
+what = "Alzo minimo del cannone"
+does = "Quanto in basso può puntare il cannone (10 gradi su due cannoni)."
+[NbFX]
+what = "Bocche"
+does = "Solo aspetto: quante vampe di bocca la torretta o l'arma disegna quando spara (da 1 a 8: le canne di un'arma a più canne)."
+[Spread]
+what = "Sguardo a riposo"
+does = "Solo aspetto: di quanti gradi un cannone o una torretta a riposo ruota per guardarsi intorno (da 80 a 180)."
+[TurretRotationSpeedMultiplier]
+what = "Velocità di rotazione a riposo"
+does = "Solo aspetto: quanto veloce gira una torretta a riposo mentre si guarda intorno, volte la sua velocità normale (da 0,25 a 1)."
+[WaitMinInSeconds]
+what = "Attesa a riposo (minima)"
+does = "Solo aspetto: il tempo più breve che una torretta a riposo aspetta prima di guardare altrove."
+[WaitMaxInSeconds]
+what = "Attesa a riposo (massima)"
+does = "Solo aspetto: il tempo più lungo che una torretta a riposo aspetta prima di guardare altrove."
+[VerticalAngleMax]
+what = "Sguardo più alto a riposo"
+does = "Solo aspetto: quanto in alto punta un antiaereo a riposo mentre scruta il cielo (da 10 a 25 gradi)."
+[VerticalAngleMin]
+what = "Sguardo più basso a riposo"
+does = "Solo aspetto: quanto in basso punta un cannone a riposo mentre si guarda intorno (25 gradi su un cannone)."
+[UseCustomVerticalAngles]
+what = "Angoli di riposo propri"
+does = "Solo aspetto: 1 fa usare ai serventi i due angoli di riposo qui sopra invece di quelli del gioco."
+[AngleMaxDegree]
+what = "Limite di rotazione di una parte (gradi)"
+does = "Solo aspetto: quanto gira una parte mobile del modello da un lato, in gradi (da 45 a 180)."
+[AngleMinDegree]
+what = "Limite di rotazione di una parte, altro lato (gradi)"
+does = "Solo aspetto: quanto gira una parte mobile del modello dall'altro lato, in gradi (da -180 a -45)."
+[TruckType]
+what = "Tipo di camion"
+does = "Cosa fa il camion (rifornimento, costruzione e gli altri tipi del gioco, da 1 a 5); i singoli numeri non hanno ancora un nome."
+[BaseSize]
+what = "Dimensione della pedina"
+does = "Solo aspetto: quanto è grande la figura della pedina dell'unità sul tavolo della mappa visto da lontano (da 8 a 20)."
+["TFigurineOptions.Scale"]
+what = "Dimensione della figura della pedina"
+does = "Solo aspetto: quante volte la sua dimensione è disegnata la piccola figura sulla pedina (da 2 a 4)."
+["TPawnDescriptor.Power"]
+what = "Peso della pedina"
+does = "Solo aspetto: quanto una pedina spinge via quelle intorno quando si affollano sul tavolo della mappa (da 385 a 1.386)."
+["TPawnDescriptor.Radius"]
+what = "Dimensione della pedina sul tavolo"
+does = "Solo aspetto: quanto è grande la pedina rotonda dell'unità sul tavolo della mappa (da 385 a 1.386)."
+[SocleHeight]
+what = "Altezza della base della pedina"
+does = "Solo aspetto: quanto è spessa la base della pedina (200)."
+[OffSetZFigurine]
+what = "Altezza della figura della pedina"
+does = "Solo aspetto: quanto sopra la sua base sta la figura (200)."
+[DureteRepositionnement]
+what = "Ritorno delle pedine"
+does = "Solo aspetto: con quanta decisione le pedine affollate tornano al loro posto (10)."
+[RandomTranslateFactor]
+what = "Sfalsamento delle pedine"
+does = "Solo aspetto: quanto le pedine sono spostate a caso perché una pila non sembri una sola (0,15)."
+[ForceOneStack]
+what = "Una sola pila"
+does = "Solo aspetto: 1 mostra tutte le pedine di questo tipo in una sola pila."
+[ScaleWithVisibilityRange_Coef]
+what = "Cresce da lontano"
+does = "Solo aspetto: quanto più grande è disegnato il modello quando la telecamera è lontana, perché resti visibile (da 3 a 22 volte)."
+[InnerScale]
+what = "Dimensione interna del modello"
+does = "Solo aspetto: la dimensione a cui il soldato o il modello è disegnato dentro la sua parte (da 0,46 a 1)."
+[MaxMaskedAnimationCount]
+what = "Animazioni contemporanee"
+does = "Solo aspetto: quante animazioni un soldato può eseguire insieme su parti del corpo (1 o 2)."
+[GeometrySubTiling_OneCircle]
+what = "Dettaglio dei cerchi"
+does = "Solo aspetto: quanto finemente sono suddivisi i cerchi di selezione a terra (3)."
+[MaxRadiusExpander]
+what = "Cerchio più grande"
+does = "Solo aspetto: quanto può crescere al massimo un cerchio di selezione."
+[MinRadiusExpander]
+what = "Cerchio più piccolo"
+does = "Solo aspetto: quanto può rimpicciolire al massimo un cerchio di selezione."
+["TMetaCircleDrawer.MaxRange"]
+what = "Distanza di disegno dei cerchi"
+does = "Solo aspetto: fino a quale distanza i cerchi sotto le unità sono ancora disegnati."
+[MaxV]
+what = "Allungamento della texture del cerchio"
+does = "Solo aspetto: quanto l'immagine del cerchio è allungata lungo il cerchio."
+[MaxWidth]
+what = "Spessore della linea del cerchio (massimo)"
+does = "Solo aspetto: lo spessore massimo della linea del cerchio vista da lontano."
+[MinWidth]
+what = "Spessore della linea del cerchio (minimo)"
+does = "Solo aspetto: lo spessore minimo della linea del cerchio vista da vicino."
+[MaxZOffset]
+what = "Sollevamento del cerchio (massimo)"
+does = "Solo aspetto: quanto al massimo il cerchio è sollevato dal suolo perché le colline non lo nascondano."
+[MinZOffset]
+what = "Sollevamento del cerchio (minimo)"
+does = "Solo aspetto: quanto al minimo il cerchio è sollevato dal suolo."
+[RoueNb]
+what = "Ruote portanti"
+does = "Solo aspetto: su quante ruote scorre il cingolo (da 5 a 13), per la sua animazione."
+[RouePartieSolMin]
+what = "Prima ruota a terra"
+does = "Solo aspetto: da quale ruota il cingolo tocca il suolo."
+[RouePartieSolMax]
+what = "Ultima ruota a terra"
+does = "Solo aspetto: fino a quale ruota il cingolo tocca il suolo."
+[Cote]
+what = "Lato del cingolo"
+does = "Solo aspetto: su quale lato del veicolo si trova questo cingolo."
+[PartieHauteDeformNb]
+what = "Tratto superiore cedevole"
+does = "Solo aspetto: quanti punti del tratto superiore del cingolo s'incurvano tra le ruote (2)."
+[CahotsMax]
+what = "Sobbalzi contemporanei"
+does = "Solo aspetto: quanti sobbalzi possono correre insieme lungo un cingolo (2)."
+[DelaiPropagation]
+what = "Tempo di propagazione di un sobbalzo"
+does = "Solo aspetto: quanto impiega un sobbalzo a percorrere il cingolo (1,2 s)."
+[ForceBruitRoulementBas]
+what = "Vibrazione del cingolo (sotto)"
+does = "Solo aspetto: quanto vibra la parte bassa del cingolo mentre rotola."
+[ForceBruitRoulementHaut]
+what = "Vibrazione del cingolo (sopra)"
+does = "Solo aspetto: quanto vibra la parte alta del cingolo mentre rotola."
+[ForceCahotMin]
+what = "Forza del sobbalzo (minima)"
+does = "Solo aspetto: quanto è forte il sobbalzo più piccolo nel cingolo."
+[ForceCahotMax]
+what = "Forza del sobbalzo (massima)"
+does = "Solo aspetto: quanto è forte il sobbalzo più grande nel cingolo."
+[ForceDeformationPartieHaut]
+what = "Cedimento del tratto superiore"
+does = "Solo aspetto: quanto s'incurva il tratto superiore del cingolo tra le ruote."
+[FrequenceCahots]
+what = "Frequenza dei sobbalzi"
+does = "Solo aspetto: quanto spesso un sobbalzo corre lungo il cingolo."
+[IntervalleCahots]
+what = "Distanza tra i sobbalzi"
+does = "Solo aspetto: quanto distano i sobbalzi lungo il cingolo."
+[LongueurCahotMin]
+what = "Lunghezza del sobbalzo (minima)"
+does = "Solo aspetto: quanto può essere corto un sobbalzo nel cingolo."
+[LongueurCahotMax]
+what = "Lunghezza del sobbalzo (massima)"
+does = "Solo aspetto: quanto può essere lungo un sobbalzo nel cingolo."
+[CoefElev]
+what = "Molleggio della ruota"
+does = "Solo aspetto: quanto una ruota si muove su e giù sul terreno (da 2 a 10)."
+[CoefRotate]
+what = "Rotazione della ruota"
+does = "Solo aspetto: quanto veloce gira la ruota per la velocità del veicolo (1)."
+[CoefRotateDirection]
+what = "Sterzata della ruota"
+does = "Solo aspetto: quanto sterza una ruota sterzante per una curva del veicolo (1)."
+[AngMaxRotateDirection]
+what = "Sterzata massima"
+does = "Solo aspetto: di quanto sterzano le ruote anteriori, in gradi (45)."
+[AngParSecondeRotateDirection]
+what = "Velocità di sterzata"
+does = "Solo aspetto: quanto veloce sterzano le ruote anteriori, in gradi al secondo (360)."
+[Coef_Bruit_Sur_Pente]
+what = "Scossoni dello scafo in pendenza"
+does = "Solo aspetto: quanto si scuote lo scafo in pendenza."
+[Coef_Bruit_Sur_Ressort]
+what = "Scossoni delle sospensioni"
+does = "Solo aspetto: quanto rimbalza lo scafo sulle molle."
+[Coef_Bruit_Sur_Roulis]
+what = "Scossoni di rollio"
+does = "Solo aspetto: quanto ondeggia lo scafo da un lato all'altro."
+[Coef_Sur_Pente_Relation_Acceleration]
+what = "Impennata in accelerazione"
+does = "Solo aspetto: quanto lo scafo s'inclina indietro quando il veicolo accelera e in avanti quando frena."
+[Coef_Sur_Pente_Relation_Terrain]
+what = "Inclinazione col terreno"
+does = "Solo aspetto: quanto lo scafo segue il pendio, da davanti a dietro."
+[Coef_Sur_Roulis_Relation_Rotation]
+what = "Inclinazione in curva"
+does = "Solo aspetto: quanto lo scafo si piega verso l'esterno in curva."
+[Coef_Sur_Roulis_Relation_Terrain]
+what = "Inclinazione laterale col terreno"
+does = "Solo aspetto: quanto lo scafo segue il pendio, da un lato all'altro."
+[Amortissement]
+what = "Smorzamento di una parte mobile"
+does = "Solo aspetto: quanto rapidamente una parte mobile del modello (un'antenna, il rinculo di una canna, lo scafo sulle molle) smette di oscillare."
+[Attraction]
+what = "Richiamo di una parte mobile"
+does = "Solo aspetto: con quanta forza una parte mobile del modello è riportata alla sua posizione di riposo."
+[Elastic]
+what = "Torna come una molla"
+does = "Solo aspetto: 1 fa tornare indietro la parte mobile come una molla."
+[Debattement_Min]
+what = "Escursione di una parte (un lato)"
+does = "Solo aspetto: quanto può oscillare una parte mobile del modello da un lato."
+[Debattement_Max]
+what = "Escursione di una parte (altro lato)"
+does = "Solo aspetto: quanto può oscillare una parte mobile del modello dall'altro lato."
+[Operation]
+what = "Come si muove la parte"
+does = "Solo aspetto: in che modo si muove una parte mobile del modello (ruota, scorre...)."
+[VisibleByDefault]
+what = "Visibile all'inizio"
+does = "Solo aspetto: 1 mostra questa parte del modello finché qualcosa non la nasconde (ad esempio una parte che si stacca)."
+[IsAvant]
+what = "Carrello anteriore"
+does = "Solo aspetto: 1 sul carrello d'atterraggio anteriore di un aereo."
+[Rot]
+what = "Ripiegamento del carrello"
+does = "Solo aspetto: quanto ruota il carrello dell'aereo mentre si ripiega."
+[Trans]
+what = "Corsa del carrello"
+does = "Solo aspetto: quanto si sposta il carrello dell'aereo mentre si ripiega."
+[TransAfterRot]
+what = "Corsa del carrello dopo il ripiegamento"
+does = "Solo aspetto: quanto si sposta il carrello dopo aver ruotato."
+[SensRotationADroite]
+what = "Senso dell'elica"
+does = "Solo aspetto: in che verso gira l'elica (1 a destra, -1 a sinistra)."
+[TempsAvantArretHelice]
+what = "Tempo d'arresto dell'elica"
+does = "Solo aspetto: quanto impiega l'elica a fermarsi a motore spento (da 2,8 a 4 s)."
+[VitesseHeliceMinLS]
+what = "Velocità dell'elica, lenta (minima)"
+does = "Solo aspetto: la velocità minima dell'elica quando l'aereo va piano."
+[VitesseHeliceMaxLS]
+what = "Velocità dell'elica, lenta (massima)"
+does = "Solo aspetto: la velocità massima dell'elica quando l'aereo va piano."
+[VitesseHeliceMinHS]
+what = "Velocità dell'elica, veloce (minima)"
+does = "Solo aspetto: la velocità minima del disco rotante quando l'aereo vola veloce."
+[VitesseHeliceMaxHS]
+what = "Velocità dell'elica, veloce (massima)"
+does = "Solo aspetto: la velocità massima del disco rotante quando l'aereo vola veloce."
+[VitesseDeplacementMaxLS]
+what = "Limite per l'elica lenta"
+does = "Solo aspetto: fino a quale velocità di volo l'elica è disegnata a pale separate."
+[VitesseDeplacementMaxHS]
+what = "Limite per l'elica veloce"
+does = "Solo aspetto: da quale velocità di volo l'elica è disegnata come un disco rotante."
+[DontCastShadow]
+what = "Senza ombra"
+does = "Solo aspetto: 1 disegna il modello senza ombra."
+[HasSubModele]
+what = "Ha un sottomodello"
+does = "Solo aspetto: 1 quando questa parte è un modello a sé (una torretta, una ruota)."
+[MobileGeneratedAtStartForFx]
+what = "Punto d'effetto creato all'inizio"
+does = "Solo aspetto: 1 crea il punto da cui parte un effetto (vampa di bocca, fumo) appena l'unità compare."
+[UsefulnessMask]
+what = "Quali pacchetti ne hanno bisogno"
+does = "Bit che dicono quali pacchetti di quali nazioni e modalità caricano questo modello, animazione o immagine. Un'unità che usa il modello di un'altra nazione potrebbe mostrarlo senza alcuni pezzi se i pacchetti di quella nazione non sono caricati."
+[PlayInLoop]
+what = "Va in ciclo"
+does = "Solo aspetto: 1 ripete l'animazione (un soldato a riposo, una bandiera) invece di eseguirla una volta."
+[ForceDuree]
+what = "Durata fissa"
+does = "Solo aspetto: 1 esegue l'animazione su un tempo fisso, qualunque sia la sua lunghezza."
+[FEventType]
+what = "Tipo di evento d'animazione"
+does = "Solo aspetto: cosa succede in un momento dell'animazione (un suono, un effetto)."
+[FlushOnAnimeEnd]
+what = "Cancellato alla fine"
+does = "Solo aspetto: 1 annulla l'evento quando l'animazione finisce."
+[Frame]
+what = "Fotogramma dell'evento"
+does = "Solo aspetto: a quale fotogramma dell'animazione avviene l'evento."
+[RequireAnimationCorrectness]
+what = "Fotogramma esatto richiesto"
+does = "Solo aspetto: 1 fa scattare l'evento solo se l'animazione raggiunge davvero quel fotogramma."
+[AnimationSlot]
+what = "Slot d'animazione"
+does = "Solo aspetto: quale slot d'animazione del soldato usa questa parte del corpo."
+[DefaultWeight]
+what = "Fusione delle animazioni"
+does = "Solo aspetto: quanto conta questa animazione quando due girano insieme sul corpo."
+[MaskUnionCode]
+what = "Ossa mosse"
+does = "Solo aspetto: bit che dicono quali ossa del soldato muove questa animazione."
+[Coef_O1_Sub]
+what = "Scostamento del moto dell'osso"
+does = "Solo aspetto: un numero sottratto nella formula che muove un osso del modello con l'unità (da 40 a 80)."
+[Coef_O2_Mul]
+what = "Fattore del moto dell'osso"
+does = "Solo aspetto: quanto un osso del modello segue ciò che lo muove (da -5 a 5)."
+[RangeActivationMin]
+what = "Il moto dell'osso inizia a"
+does = "Solo aspetto: da quale valore d'ingresso l'osso comincia a muoversi."
+[RangeActivationMax]
+what = "Il moto dell'osso è pieno a"
+does = "Solo aspetto: a quale valore d'ingresso l'osso si è mosso del tutto."
+[RangeActivationExclusMax]
+what = "Fino a, escluso"
+does = "Solo aspetto: 1 esclude il valore d'ingresso più alto dell'osso."
+[RangeSortie]
+what = "Uscita limitata"
+does = "Solo aspetto: 1 tiene il movimento dell'osso tra i suoi due limiti."
+[RangeSortieMin]
+what = "Moto dell'osso minimo"
+does = "Solo aspetto: il minimo di cui si muove l'osso (-100)."
+[RangeSortieMax]
+what = "Moto dell'osso massimo"
+does = "Solo aspetto: il massimo di cui si muove l'osso (100)."
+[MaxDuration]
+what = "Durata dell'effetto"
+does = "Solo aspetto: la durata massima di un effetto o di un'azione scriptata (vampa e suono di un colpo, uno sbuffo di fumo): da 1,5 a 3 s."
+[IntroduceNewCentroid]
+what = "Effetto dal proprio punto"
+does = "Solo aspetto: 1 esegue l'effetto da un punto proprio invece che dal centro dell'unità."
+[TryToUseOrderedParamsAsNamedParams]
+what = "Modo di chiamata dell'effetto"
+does = "Come la chiamata dell'effetto passa le sue impostazioni; solo per gli effetti del gioco."
+["TEugBFloat.Value"]
+what = "Impostazione dell'effetto"
+does = "Un numero con cui è chiamato un effetto (una dimensione, una forza, un tempo), secondo l'effetto."
+[Modes]
+what = "Modalità di vista del cantiere"
+does = "Solo aspetto: per quali aspetti del cantiere si usa questa vista."
+[Ranges]
+what = "Distanze di vista del cantiere"
+does = "Solo aspetto: da quale distanza è disegnato ciascun aspetto del cantiere."
+[BoobsIndex]
+what = "Pezzo del cantiere"
+does = "Solo aspetto: quale pezzo del cantiere mostra questa vista."
+[FxMode]
+what = "Effetto del cantiere"
+does = "Solo aspetto: l'effetto disegnato sul cantiere (polvere, impalcature)."
+[JobPriority]
+what = "Priorità della vista del cantiere"
+does = "Solo aspetto: quanto presto il gioco prepara questa vista."
+[KeepGeometryMask]
+what = "Pezzi mantenuti"
+does = "Solo aspetto: quali pezzi dell'edificio restano disegnati durante la costruzione."
+[MaskDestroyed]
+what = "Aspetto distrutto"
+does = "Solo aspetto: quali pezzi compaiono quando l'edificio è distrutto."
+["TGfxLevelBuildStateGeoDatabaseModification.Mask"]
+what = "Maschera di modifica della mappa"
+does = "Quale strato della mappa l'edificio cambia una volta costruito (dove le unità possono girargli intorno)."
+["TGfxLevelBuildStateGeoDatabaseModification.Value"]
+what = "Valore di modifica della mappa"
+does = "Cosa l'edificio scrive in quello strato della mappa una volta costruito."
+[Undoable]
+what = "Annullato alla distruzione"
+does = "1: la modifica della mappa dell'edificio è annullata quando viene distrutto."
+[Mode]
+what = "Modo di modifica della mappa"
+does = "Come si applica la modifica della mappa dell'edificio."
+[Variant]
+what = "Variante d'animazione"
+does = "Solo aspetto: quale variante della serie d'animazioni usa una parte."
+[Version]
+what = "Versione della serie d'animazioni"
+does = "Solo aspetto: la versione della tabella d'accesso rapido della serie d'animazioni."
+[Algo_Truck]
+what = "Suono del motore da camion"
+does = "Solo suono: 1 fa suonare il motore come i motori dei camion."
+[Run_In_Fade_Velocity]
+what = "Dissolvenza in entrata del motore"
+does = "Solo suono: quanto rapidamente sale il suono del motore in marcia quando l'unità parte."
+[Run_Out_Fade_Velocity]
+what = "Dissolvenza in uscita del motore"
+does = "Solo suono: quanto rapidamente si spegne il suono del motore in marcia quando l'unità si ferma."
+[Run_Out_Pitch_To_Go]
+what = "Tono del motore all'arresto"
+does = "Solo suono: quanto scende il tono del motore quando si ferma (0,8: il 20% più basso)."
+[Run_Out_Pitch_Velocity]
+what = "Velocità di calo del tono del motore"
+does = "Solo suono: quanto rapidamente scende il tono del motore quando si ferma."
+[IdleAndStop_Out_Fade_Velocity]
+what = "Dissolvenza del minimo"
+does = "Solo suono: quanto rapidamente si spegne il suono del motore al minimo quando l'unità parte o scompare."
+[Dive_Out_Fade_Velocity]
+what = "Dissolvenza del suono di picchiata"
+does = "Solo suono: quanto rapidamente si spegne il suono di picchiata di un aereo quando richiama."

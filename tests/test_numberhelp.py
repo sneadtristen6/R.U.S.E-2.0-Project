@@ -38,6 +38,23 @@ class Guide(unittest.TestCase):
                     self.assertTrue(e["does"].startswith(("Looks only", "Sound only", "Bits", "Which", "What",
                                                           "1:", "How")), e["does"])
 
+    def test_every_language_explains_every_number(self):
+        from rusemod import schema
+        root = Path(numberinfo.__file__).parent
+        english = numberinfo.guide("us")
+        for lang in schema.LANGS:
+            if lang == "us":
+                continue
+            with self.subTest(lang=lang):
+                own = tomllib.loads((root / f"numberinfo_{lang}.toml").read_text(encoding="utf-8"))
+                self.assertEqual(sorted(own), sorted(english))
+                for key in english:
+                    for text in numberinfo.TEXTS:
+                        self.assertTrue(own[key].get(text), (lang, key, text))
+                g = numberinfo.guide(lang)
+                self.assertNotEqual(g["SeuilMort"]["does"], english["SeuilMort"]["does"])
+                self.assertEqual(g["SeuilMort"]["unit"], english["SeuilMort"]["unit"])  # unit and sure stay English's
+
     def test_a_class_s_own_meaning_comes_first(self):
         self.assertEqual(numberinfo.lookup("TAvionDescriptor", "VitesseLineaire")["unit"], "kmh_air")
         self.assertEqual(numberinfo.lookup("TUniteAuSolDescriptor", "VitesseLineaire")["unit"], "kmh")
