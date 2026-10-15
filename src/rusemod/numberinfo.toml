@@ -9,8 +9,9 @@
 #   interface, effects.
 # unit: how to read the number:
 #   m       = a distance, 260 game units to a metre (measured on the game's maps by the R.U.S.E 2.0 Project);
-#   kmh     = a ground speed, 130 game units to 1 km/h (LittleGroove and the community; not timed by us yet);
-#   kmh_air = a plane's speed, 57.77 game units to 1 km/h (the community; not timed by us yet);
+#   kmh     = a ground speed, 130 game units to 1 km/h: the km/h the game's own unit panel shows (its
+#             UnitDescriptorResource speed factor for ground units, 18), which LittleGroove's figure matches;
+#   kmh_air = a plane's speed, 57.78 game units to 1 km/h: the same panel's km/h for planes (its plane factor, 8);
 #   accel   = an acceleration, 260 game units to 1 m/s per second (LittleGroove; not timed by us yet);
 #   s       = seconds; deg = an angle in radians, shown in degrees; degs = radians a second, shown in degrees a second;
 #   money   = dollars, as the build menu shows them; pts = points the game counts with, no real-world unit;
@@ -60,14 +61,14 @@ does = "1: the unit only retreats under fire once it's completely pinned (extrem
 [VitesseLineaire]
 group = "movement"
 unit = "kmh"
-sure = "community"
+sure = "known"
 what = "Speed"
 does = "How fast it moves when travelling, off roads. A Sherman has 4,550 (about 35 km/h), a jeep 6,110 (about 47 km/h), a rifle squad 3,120 (about 24 km/h)."
 
 ["TAvionDescriptor.VitesseLineaire"]
 group = "flight"
 unit = "kmh_air"
-sure = "community"
+sure = "known"
 what = "Flying speed"
 does = "How fast the plane flies: 13,000 to 46,800 in the game (about 225 to 810 km/h)."
 

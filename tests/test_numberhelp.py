@@ -62,7 +62,10 @@ class Guide(unittest.TestCase):
 
     def test_plain_units(self):
         self.assertAlmostEqual(numberinfo.plain("m", 104000), 400)
-        self.assertAlmostEqual(numberinfo.plain("kmh", 4550), 35)
+        self.assertAlmostEqual(numberinfo.plain("kmh", 4550), 35)  # a Sherman: 35 km/h on the game's unit panel
+        self.assertAlmostEqual(numberinfo.plain("kmh_air", 46800), 810, delta=0.5)  # the fastest plane on it
+        for key in ("VitesseLineaire", "TAvionDescriptor.VitesseLineaire"):  # the panel's own km/h, not a guess
+            self.assertEqual(numberinfo.guide()[key]["sure"], "known")
         self.assertAlmostEqual(numberinfo.plain("deg", math.pi), 180)
         self.assertAlmostEqual(numberinfo.plain("share", 0.6), 60)
         self.assertIsNone(numberinfo.plain("pts", 400))

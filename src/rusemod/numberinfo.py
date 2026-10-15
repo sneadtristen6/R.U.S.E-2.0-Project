@@ -14,7 +14,7 @@ from pathlib import Path
 
 TEXTS = ("what", "does")  # the words of a number: numberinfo_<lang>.toml has them in that language
 # how each unit is shown in plain units: (game units to one plain unit, the plain unit's word in words.toml)
-PLAIN = {"m": (260.0, "unit_m"), "kmh": (130.0, "unit_kmh"), "kmh_air": (57.77, "unit_kmh"),
+PLAIN = {"m": (260.0, "unit_m"), "kmh": (130.0, "unit_kmh"), "kmh_air": (57.78, "unit_kmh"),
          "accel": (260.0, "unit_ms2"), "deg": (math.pi / 180, "unit_deg"), "degs": (math.pi / 180, "unit_degs"),
          "s": (1.0, "unit_s"), "money": (1.0, "unit_money"), "share": (0.01, "unit_pct")}
 # units a modder changes as an amount (the base-stat slider makes them smaller or larger); the rest name a kind, a
