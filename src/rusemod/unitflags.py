@@ -44,15 +44,49 @@ def truck_flags(obj) -> set[int]:
     return numbers(obj.props.get(PROP)) & set(TRUCK_ONLY)
 
 
-def crashes(obj, had=frozenset()) -> list[str]:
-    """Why this unit (a patch.Obj) would crash the game at match start: a sentence for each truck-only flag it carries
-    without being a truck. Nothing for a truck, or for a unit without those flags. `had`: the ones it carried before
-    any mod (the game's own data), which don't count."""
-    if is_truck(obj):
-        return []
-    found = truck_flags(obj) - set(had)
-    return [f"flag {n} ({what}) on a unit that isn't a truck crashes R.U.S.E. at match start; take it off (only "
-            f"trucks, {TRUCK_CLASS} units, can carry it)" for n, what in TRUCK_ONLY.items() if n in found]
+SCOUT, FIGHTER = 99, 100   # a plane with 99 and not 100 behaves as a scout, and a scout sent to attack crashes the game
+WEAPON_CLASS = "TMountedWeaponDescriptor"
+CRASH_FLAGS = set(TRUCK_ONLY) | {SCOUT}  # the flags crashes() asks about (patch.Engine._truck_flags: who put them in)
+
+
+def crash_flags(obj) -> set[int]:
+    """The flags of a unit (a patch.Obj) that crashes() asks about."""
+    return numbers(obj.props.get(PROP)) & CRASH_FLAGS
+
+
+def armed(obj, objects: dict | None = None) -> bool:
+    """Whether a unit (a patch.Obj) has a weapon: a mounted weapon written in it, or one it links to (`objects`: the
+    game's objects by name, for the links)."""
+    from .patch import Inline, _walk_obj
+    for v in _walk_obj(obj):
+        if isinstance(v, Inline) and v.obj.cls == WEAPON_CLASS:
+            return True
+        if isinstance(v, Ref) and objects is not None and getattr(objects.get(v.target), "cls", None) == WEAPON_CLASS:
+            return True
+    return False
+
+
+def crashes(obj, had=frozenset(), objects: dict | None = None) -> list[str]:
+    """Why this unit (a patch.Obj) would crash the game: a sentence for each truck-only flag it carries without being
+    a truck (at match start), and for a plane with weapons given the recon flag 99 without the fighter flag 100 (when
+    it's sent to attack: seen in the R.U.S.E 2.0 Project's tests T53 to T56, 2026-10-14; the flags pick how a plane
+    behaves, 100 first, then 99, and a scout has no way to attack). `had`: the flags it carried before any mod (the
+    game's own data, or the unit a new one copies), which don't count: the game's own recon planes with guns (Potez
+    63.11, Avro Anson, Nieman R10) have 99 alone. `objects`: the game's objects by name, to find linked weapons."""
+    flags = numbers(obj.props.get(PROP))
+    out = []
+    if not is_truck(obj):
+        found = truck_flags(obj) - set(had)
+        out += [f"flag {n} ({what}) on a unit that isn't a truck crashes R.U.S.E. at match start; take it off (only "
+                f"trucks, {TRUCK_CLASS} units, can carry it)" for n, what in TRUCK_ONLY.items() if n in found]
+    if obj.cls == AIRCRAFT_CLASS and SCOUT in flags and FIGHTER not in flags and SCOUT not in set(had) \
+            and armed(obj, objects):
+        # rule: scout-attack
+        out.append(f"flag {SCOUT} (avion_reco, recon plane) on a plane with weapons and without flag {FIGHTER} "
+                   f"(avion_chasseur) crashes R.U.S.E. when the plane is sent to attack: it behaves as a scout, and a "
+                   f"scout can't attack; add {FIGHTER} too (an armed scout, as the Role box makes one), or take "
+                   f"{SCOUT} off")
+    return out
 
 
 def problems(obj) -> list[tuple[str, str, str]]:

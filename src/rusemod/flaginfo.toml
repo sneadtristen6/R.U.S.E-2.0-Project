@@ -1,0 +1,774 @@
+# What every unit flag (InitialFlagSet, 0-104) is, what it does in the game, and how to use it: the Studio's flag
+# guide (rusemod.flaginfo; the owner, 2026-10-15: "each flag should tell you exactly what each flag is", "warn people
+# if it's a known crash and ... not allow them to start the game if it's going to crash"). The short name in ten
+# languages stays in labels.toml [flags]; this file holds the full explanation (English for now).
+#
+# group: kind (what the unit is), combat, movement, sight, player (selection and orders), preview (placement
+#   previews), state (the game sets it on units while it runs), unused.
+# sure: how we know what it does:
+#   tried    = tried in the game (by the R.U.S.E 2.0 Project or the community: DomesticNukes, ProLution);
+#   units    = from which of the game's own units carry it and what they have in common;
+#   expected = what studying the game says it does; not tried in the game yet;
+#   state    = the game sets and clears it while it runs; written in a unit's list it does nothing (90 and 91 tried);
+#   unused   = nothing in the game uses it.
+# danger: crash = seen crashing the game (the Studio stops the build); breaks = expected to break the unit (a warning).
+# carriers: how many of the game's units have it (counted from the game's data, build 24670294).
+
+[0]
+group = "kind"
+sure = "units"
+what = "Airfield"
+does = "Marks a building as an airfield: your planes are based here, and clicking your own airfield with a plane sends it home to land. The computer player's recon planning looks for one."
+use = "Only for airfield buildings. On anything else it only makes the game treat it as a place planes can land."
+
+[1]
+group = "combat"
+sure = "tried"
+what = "Artillery (indirect fire)"
+does = "The unit fires indirectly, at what other units spot, like the game's howitzers. Also tells the computer player to use it as artillery."
+use = "Works on any unit: DomesticNukes gave it to 410 units of all kinds and they all fired indirectly."
+
+[2]
+group = "kind"
+sure = "units"
+what = "Aircraft"
+does = "The unit is a plane: built at the airfield's control tower, flies home to refuel, takes no ground orders. Every one of the game's 63 planes has it, and nothing else does."
+use = "Keep it on every plane. Never put it on a ground unit: the game would try to build it at an airfield's control tower."
+danger = "breaks"
+danger_why = "On a unit that isn't a plane, building it is expected to stop the game with a script error (it looks for an airfield's control tower)."
+
+[3]
+group = "state"
+sure = "state"
+what = "Plane may attack before being engaged"
+does = "The game sets it when a plane starts a sortie."
+use = "Leave it out: the game manages it."
+
+[4]
+group = "kind"
+sure = "units"
+what = "Building"
+does = "The thing is a building: the building panel, placement and capture rules, left out of unit statistics. A building never moves and has no way of thinking like a unit."
+use = "Only for buildings."
+danger = "breaks"
+danger_why = "On a unit, expected to freeze it: buildings don't move and don't take unit orders."
+
+[5]
+group = "kind"
+sure = "tried"
+what = "Production building"
+does = "A building that produces units (barracks, factories, airfields). With it instead of 30 (and TypeBatiment -7) a decoy building produces for real."
+use = "For buildings that build units."
+
+[6]
+group = "kind"
+sure = "units"
+what = "Defensive building"
+does = "Bunkers and gun positions: the defence panel, and bombers pick them as targets on their own. Such a thing stands where it is, like the game's ships."
+use = "Only for defensive buildings."
+danger = "breaks"
+danger_why = "On a unit that should move, expected to make it stand still."
+
+[7]
+group = "kind"
+sure = "units"
+what = "Supply depot"
+does = "A depot: placed on a depot slab, with the depot panel; capturing and losing it counts as a depot."
+use = "Only for supply depots."
+
+[8]
+group = "kind"
+sure = "units"
+what = "Headquarters"
+does = "The HQ: a command building (behind the 'can't hide it' rule) and the computer player values it most."
+use = "Only for headquarters."
+
+[9]
+group = "unused"
+sure = "unused"
+what = "Super-weapon site (unused)"
+does = "Nothing in the game uses it."
+use = "Leave it out."
+
+[10]
+group = "combat"
+sure = "units"
+what = "Can take damage"
+does = "Explosions can hurt it: splash damage and the V2 look for units with it. 454 of the game's units have it."
+use = "Keep it on anything that should be hurt by explosions. Without it a unit may be immune to splash damage (not tried)."
+
+[11]
+group = "movement"
+sure = "tried"
+what = "Can't enter woods"
+does = "The unit stays out of woods (its paths go round them) and never gets the woods' cover. Tanks and most vehicles have it."
+use = "To let a vehicle into woods, take 11, 21 and 55 off together (tried by DomesticNukes). 11 is the one that matters for woods."
+
+[12]
+group = "unused"
+sure = "unused"
+what = "Made by a ruse card (unused)"
+does = "Nothing in the game uses it as a unit flag."
+use = "Leave it out."
+
+[13]
+group = "kind"
+sure = "units"
+what = "Bomber"
+does = "The plane behaves as a bomber: on its own it only attacks buildings, and it gets a big parking spot at the airfield. Which of 100, 99, 101, 13, 59 a plane has decides how it behaves, in that order."
+use = "For bombers. Use the Studio's Role box on a plane rather than changing 13, 99, 100 and 101 by hand: it sets them together."
+
+[14]
+group = "combat"
+sure = "units"
+what = "Captures buildings"
+does = "Infantry that can capture buildings; the computer player sends such units to capture. A decoy loses it."
+use = "For infantry that should capture."
+
+[15]
+group = "unused"
+sure = "unused"
+what = "No name (unused)"
+does = "Nothing in the game uses it."
+use = "Leave it out."
+
+[16]
+group = "unused"
+sure = "unused"
+what = "No name (unused)"
+does = "Nothing in the game uses it."
+use = "Leave it out."
+
+[17]
+group = "state"
+sure = "expected"
+what = "Immune to reflex fire"
+does = "Turrets don't fire at it on their own. Mission scripts set it; the game clears it when a deployable finishes building."
+use = "In a unit's list, not tried: it may or may not stick."
+
+[18]
+group = "kind"
+sure = "units"
+what = "Towed gun"
+does = "Anti-tank and field guns: counted as a vehicle in the end-of-game statistics. Nothing else."
+use = "Only changes the statistics."
+
+[19]
+group = "player"
+sure = "tried"
+what = "Can be captured"
+does = "A building that can be captured (the capture order). On vehicles or infantry it does nothing (tried by DomesticNukes)."
+use = "Only for buildings."
+
+[20]
+group = "kind"
+sure = "units"
+what = "Artillery aim point"
+does = "The invisible point artillery fires at: left out of targets and selection."
+use = "Only for the game's aim point."
+
+[21]
+group = "combat"
+sure = "tried"
+what = "Fighting unit"
+does = "A unit that fights: the game also adds it while a unit attacks. The computer player's danger estimate and the statistics count it."
+use = "Part of the woods trio: take 11, 21 and 55 off together to let a vehicle into woods."
+
+[22]
+group = "player"
+sure = "units"
+what = "Takes the player's orders"
+does = "The player can order it. Mission scripts take it off to lock a unit."
+use = "Keep it on anything the player should control."
+danger = "breaks"
+danger_why = "Without it the player can't order the unit (the community lists it as essential)."
+
+[23]
+group = "kind"
+sure = "units"
+what = "Depot slab"
+does = "The ground slab a supply depot is built on."
+use = "Only for the depot slab."
+
+[24]
+group = "sight"
+sure = "units"
+what = "Seen as a ground contact"
+does = "Enemies see it as a ground contact. A plane swaps 24 and 25 when it takes off and lands."
+use = "Keep it on ground units and buildings."
+
+[25]
+group = "sight"
+sure = "units"
+what = "Seen as an air contact"
+does = "Enemies see it as an air contact: planes in flight, paratroopers in the air."
+use = "Keep it on planes."
+
+[26]
+group = "state"
+sure = "state"
+what = "In combat"
+does = "The game sets it while the unit fights."
+use = "Leave it out: the game manages it."
+
+[27]
+group = "state"
+sure = "state"
+what = "In a wood"
+does = "The game sets it when a unit is in a wood (from the map's woods), unless it has 11 or 92: the woods' cover and ambush."
+use = "Leave it out. To let a unit hide in woods, take 11 (and 92) off; to give a wood cover, paint it on the map."
+
+[28]
+group = "state"
+sure = "state"
+what = "Acts as a factory"
+does = "The game sets it while it runs."
+use = "Leave it out."
+
+[29]
+group = "state"
+sure = "state"
+what = "Decoy"
+does = "The decoy ruse card sets it: the unit is left out of team counts, bomb drops, reflex fire and statistics."
+use = "Leave it out: use the decoy units (30, 31) instead."
+
+[30]
+group = "kind"
+sure = "tried"
+what = "Decoy building"
+does = "A fake building: shows to the enemy as a building, produces nothing. Swap it for 5 (and TypeBatiment -7) and it produces for real (tried by DomesticNukes)."
+use = "Only for decoy buildings."
+
+[31]
+group = "kind"
+sure = "units"
+what = "Decoy truck"
+does = "A fake construction or supply truck."
+use = "Only for decoy trucks."
+
+[32]
+group = "unused"
+sure = "unused"
+what = "Trucks' hidden-buildings marker (unused)"
+does = "Nothing in the game uses it."
+use = "Leave it out."
+
+[33]
+group = "preview"
+sure = "units"
+what = "Placement preview"
+does = "The see-through preview shown while you place something."
+use = "Only for the game's previews."
+
+[34]
+group = "preview"
+sure = "units"
+what = "Building placement preview"
+does = "The see-through building shown while you place one."
+use = "Only for the game's previews."
+
+[35]
+group = "state"
+sure = "state"
+what = "Depot placement preview"
+does = "The game sets it on the depot's preview."
+use = "Leave it out."
+
+[36]
+group = "state"
+sure = "state"
+what = "Order preview"
+does = "The game sets it on an order's preview."
+use = "Leave it out."
+
+[37]
+group = "state"
+sure = "state"
+what = "Preview put down"
+does = "The game sets it when a preview is placed."
+use = "Leave it out."
+
+[38]
+group = "preview"
+sure = "units"
+what = "Production preview"
+does = "The preview used while placing something to be built."
+use = "Only for the game's previews."
+
+[39]
+group = "unused"
+sure = "unused"
+what = "In a group (unused)"
+does = "Nothing in the game uses it as a unit flag."
+use = "Leave it out."
+
+[40]
+group = "combat"
+sure = "units"
+what = "Has a weapon"
+does = "Its turrets only fire with it. The player's attack order and the computer player check it too; weapons on and off switch it."
+use = "Keep it on anything armed. Without it the unit's guns don't fire."
+
+[41]
+group = "player"
+sure = "units"
+what = "Glows when hovered"
+does = "Lights up under the mouse."
+use = "Keep it on anything the player clicks."
+
+[42]
+group = "kind"
+sure = "units"
+what = "Infantry"
+does = "The unit is infantry: the computer player, the jamming card and how it dies (infantry leave bodies, not wrecks)."
+use = "Only for infantry."
+danger = "breaks"
+danger_why = "On a vehicle, expected to stop the game with a script error when it dies (it dies the infantry way)."
+
+[43]
+group = "player"
+sure = "expected"
+what = "Counted by its team"
+does = "The unit is filed in its team's lists and counts, and the missions' scripts see it. 459 of the game's units have it."
+use = "Never take it off."
+danger = "breaks"
+danger_why = "Without it the unit is expected to be in none of its team's lists: missions and the computer player don't see it."
+
+[44]
+group = "kind"
+sure = "tried"
+what = "Logistics"
+does = "Every truck has it; suppression wears off differently on it. On a tank it does nothing (tried)."
+use = "Leave it as the game has it."
+
+[45]
+group = "unused"
+sure = "unused"
+what = "Super-weapon ammunition (unused)"
+does = "Nothing in the game uses it."
+use = "Leave it out."
+
+[46]
+group = "player"
+sure = "units"
+what = "Left out of box selection"
+does = "127 of the game's units have it; no effect of it was found in the game."
+use = "Leave it as the game has it."
+
+[47]
+group = "movement"
+sure = "units"
+what = "Other units steer round it"
+does = "Other units steer around it instead of driving through. Planes and trucks don't have it."
+use = "Keep it on ground units. Without it others may drive through it (not tried)."
+
+[48]
+group = "kind"
+sure = "units"
+what = "Paratroopers on the ground"
+does = "Paratroopers after the drop: the computer player's danger estimate and the production button's plane check."
+use = "Only for paratroopers."
+
+[49]
+group = "kind"
+sure = "units"
+what = "Paratroopers in the air"
+does = "Paratroopers during the drop: they don't think or move on the ground while it's set."
+use = "Only for paratroopers in the air."
+danger = "breaks"
+danger_why = "On a ground unit, expected to freeze it (no way of thinking, no ground movement)."
+
+[50]
+group = "player"
+sure = "units"
+what = "Can be clicked"
+does = "The mouse can pick it."
+use = "Keep it on anything the player clicks."
+
+[51]
+group = "state"
+sure = "state"
+what = "Plane flying home"
+does = "The game sets it when a plane heads back."
+use = "Leave it out."
+
+[52]
+group = "state"
+sure = "state"
+what = "Plane busy"
+does = "The game sets it during a ground attack and a bomb run; the plane refuses new orders then."
+use = "Leave it out."
+
+[53]
+group = "player"
+sure = "units"
+what = "Can be selected"
+does = "The player can select it."
+use = "Keep it on anything the player controls."
+
+[54]
+group = "state"
+sure = "state"
+what = "Under artillery fire"
+does = "The game sets it for 20 seconds when artillery hits near the unit."
+use = "Leave it out."
+
+[55]
+group = "kind"
+sure = "tried"
+what = "Tank"
+does = "Counts as a tank in the end-of-game statistics and in the missions' 'tank' category. Nothing else: it has no effect of its own in a battle."
+use = "Part of the woods trio: take 11, 21 and 55 off together to let a vehicle into woods."
+
+[56]
+group = "state"
+sure = "state"
+what = "Plane still has all its ammunition"
+does = "The game sets it; a fighter-bomber only attacks on its own while it's set."
+use = "Leave it out."
+
+[57]
+group = "combat"
+sure = "units"
+what = "A target"
+does = "Turrets and splash damage treat it as something to hit. 435 of the game's units have it."
+use = "Keep it on anything that should be shot at. Without it a unit may never be shot (not tried)."
+
+[58]
+group = "sight"
+sure = "tried"
+what = "Always visible"
+does = "Shown whatever the fog of war: buildings, trucks, ships. On a tank it showed no change (tried)."
+use = "Leave it as the game has it."
+
+[59]
+group = "kind"
+sure = "units"
+what = "Paratroop transport"
+does = "The plane that drops paratroopers: built at the runway, behaves as a paratroop plane, and drops the unit in its UniteTransportee."
+use = "Only on planes that have a UniteTransportee (the unit they drop)."
+danger = "crash"
+danger_why = "On a unit that isn't a plane, or a plane without a UniteTransportee, the game crashes when it looks for the paratroopers. The Studio won't build it."
+
+[60]
+group = "kind"
+sure = "units"
+what = "A building's turret"
+does = "A gun that belongs to a building: shown in the building's panel."
+use = "Only for buildings' turrets."
+
+[61]
+group = "state"
+sure = "state"
+what = "Plane in a dogfight"
+does = "The game sets it while planes engage."
+use = "Leave it out."
+
+[62]
+group = "kind"
+sure = "tried"
+what = "Truck"
+does = "A truck: driven by the game's truck logic (it has no thinking of its own), carries supplies. Every one of the game's 18 trucks has it."
+use = "Only on trucks (TTruckDescriptor units), and every truck needs it."
+danger = "crash"
+danger_why = "On anything but a truck the game crashes when the match starts (DomesticNukes, on a Stuart). The Studio won't build it."
+
+[63]
+group = "kind"
+sure = "tried"
+what = "Construction truck"
+does = "A truck that builds buildings."
+use = "Only on construction trucks."
+danger = "crash"
+danger_why = "On anything but a truck the game crashes (ProLution). The Studio won't build it."
+
+[64]
+group = "kind"
+sure = "tried"
+what = "Supply truck"
+does = "A truck that carries money. On a tank it does nothing (tried)."
+use = "Only for supply trucks."
+
+[65]
+group = "state"
+sure = "state"
+what = "Extreme suppression"
+does = "The game sets it when a unit is pinned: it stops firing."
+use = "Leave it out."
+
+[66]
+group = "state"
+sure = "state"
+what = "Turning into another unit"
+does = "The game sets it while a unit morphs (a squad into its truck on a road)."
+use = "Leave it out."
+
+[67]
+group = "movement"
+sure = "tried"
+what = "Flying; takes orders off the map"
+does = "The plane is in the air (the game swaps it with 68 at take-off and landing). On a ground unit it lets it take orders off the map, but it stops at an invisible barrier at the edge (DomesticNukes)."
+use = "Keep it on planes. To really drive off the map, the map's movement maps have to be extended too."
+
+[68]
+group = "state"
+sure = "state"
+what = "Parked plane"
+does = "The game sets it while a plane is on the ground."
+use = "Leave it out."
+
+[69]
+group = "state"
+sure = "state"
+what = "Under attack"
+does = "The game sets it while the unit is attacked."
+use = "Leave it out."
+
+[70]
+group = "sight"
+sure = "units"
+what = "Sees around its patrol point"
+does = "A plane's sight is centred on the point it was sent to, not on itself. The game's recon planes have it."
+use = "For recon planes."
+
+[71]
+group = "sight"
+sure = "tried"
+what = "Sees all around"
+does = "360° vision, whichever way it faces. Works on any ground unit (DomesticNukes gave it to 150 more)."
+use = "Add it to any unit that should see behind itself."
+
+[72]
+group = "sight"
+sure = "units"
+what = "Sees through obstacles"
+does = "Its sight ignores hills and scenery. Planes have it."
+use = "Not tried on ground units yet."
+
+[73]
+group = "state"
+sure = "state"
+what = "Seen"
+does = "The game sets it while the enemy sees the unit."
+use = "Leave it out."
+
+[74]
+group = "unused"
+sure = "unused"
+what = "A plane's shadow (unused)"
+does = "Nothing in the game uses it as a unit flag."
+use = "Leave it out."
+
+[75]
+group = "state"
+sure = "state"
+what = "Infantry body"
+does = "The game sets it on a fallen soldier."
+use = "Leave it out."
+
+[76]
+group = "movement"
+sure = "tried"
+what = "Ship (stands still)"
+does = "The game's ships have it: they stand where a mission puts them, like a building. Without it (and with a tank's chassis) a ship drives on land (DomesticNukes' Navy Mod)."
+use = "Only for ships that never move."
+danger = "breaks"
+danger_why = "On a unit that should move, expected to make it stand still."
+
+[77]
+group = "combat"
+sure = "tried"
+what = "Never fires on its own"
+does = "The unit only fires when ordered: no reflex fire (DomesticNukes gave it to 317 units)."
+use = "Not for buildings: they'd never fire."
+
+[78]
+group = "state"
+sure = "state"
+what = "Plane out of ammunition"
+does = "The game sets it; it is cleared at take-off and landing."
+use = "Leave it out."
+
+[79]
+group = "state"
+sure = "state"
+what = "Selected"
+does = "The game sets it while the unit is selected."
+use = "Leave it out."
+
+[80]
+group = "state"
+sure = "expected"
+what = "Can't be targeted"
+does = "No order can target it. Mission scripts set it."
+use = "In a unit's list, not tried."
+
+[81]
+group = "state"
+sure = "state"
+what = "Script marker: reflex fire stopped"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[82]
+group = "state"
+sure = "state"
+what = "Script marker: group range"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[83]
+group = "state"
+sure = "state"
+what = "Script marker: can't be targeted"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[84]
+group = "state"
+sure = "state"
+what = "Script marker: group disarmed"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[85]
+group = "state"
+sure = "state"
+what = "Script marker: group locked"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[86]
+group = "state"
+sure = "state"
+what = "Script marker: group sight"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[87]
+group = "state"
+sure = "state"
+what = "Script marker: damage"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[88]
+group = "state"
+sure = "state"
+what = "Script marker: stress"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[89]
+group = "state"
+sure = "state"
+what = "Script marker: speed"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[90]
+group = "state"
+sure = "tried"
+what = "Radio silence (the ruse card)"
+does = "The radio silence card sets and clears it. In a unit's list it does nothing (tried)."
+use = "Leave it out."
+
+[91]
+group = "state"
+sure = "tried"
+what = "Camouflaged (the ruse card)"
+does = "The camouflage card sets and clears it. In a unit's list it does nothing (tried)."
+use = "Leave it out."
+
+[92]
+group = "movement"
+sure = "units"
+what = "Woods don't hide it"
+does = "The unit never gets the woods' cover, even inside a wood."
+use = "For units that should stay visible in woods."
+
+[93]
+group = "kind"
+sure = "units"
+what = "Administrative building"
+does = "A command building, like the HQ; counted by its team."
+use = "Only for administrative buildings."
+
+[94]
+group = "state"
+sure = "state"
+what = "Vehicle wreck"
+does = "The game sets it on a destroyed vehicle."
+use = "Leave it out."
+
+[95]
+group = "state"
+sure = "state"
+what = "Plane wreck"
+does = "The game sets it on a destroyed plane."
+use = "Leave it out."
+
+[96]
+group = "state"
+sure = "state"
+what = "Holding fire for an ambush"
+does = "The game sets it while a unit in a wood waits to spring its ambush."
+use = "Leave it out."
+
+[97]
+group = "state"
+sure = "expected"
+what = "Can't be captured"
+does = "Mission scripts set it."
+use = "In a unit's list, not tried."
+
+[98]
+group = "state"
+sure = "state"
+what = "Script marker: can't be captured"
+does = "A mission script's 'already done' marker."
+use = "Leave it out."
+
+[99]
+group = "kind"
+sure = "tried"
+what = "Recon plane"
+does = "The plane behaves as a scout (unless it also has 100): a click on the map sends it to look, it doesn't count in its team's army and the recon panel shows it. A scout never attacks."
+use = "Use the Studio's Role box: Scout on an armed plane also sets 100 so its attacks keep working."
+danger = "crash"
+danger_why = "A plane that has weapons and 99 without 100 crashes the game when it's sent to attack. The Studio won't build a plane you gave 99 that way: add 100 too, or take 99 off."
+
+[100]
+group = "kind"
+sure = "units"
+what = "Fighter"
+does = "The plane behaves as a fighter (checked first, before 99, 101 and 13): on its own it only attacks planes in the air; clicking an enemy attacks it."
+use = "For fighters. With 99 too, it's an armed scout that can still attack."
+
+[101]
+group = "kind"
+sure = "units"
+what = "Fighter-bomber"
+does = "The plane behaves as a fighter-bomber (after 100 and 99): on its own it attacks ground units (not buildings or supply trucks), only while it still has all its ammunition."
+use = "For fighter-bombers. Use the Role box to change a plane's role."
+
+[102]
+group = "kind"
+sure = "units"
+what = "Decoy airfield"
+does = "A fake airfield: counts as an airfield."
+use = "Only for decoy airfields."
+
+[103]
+group = "state"
+sure = "state"
+what = "Can drop paratroopers"
+does = "The game gives it to paratroop planes at take-off; the drop order needs it."
+use = "Leave it out: 59 is the one to set."
+
+[104]
+group = "state"
+sure = "state"
+what = "Has a scanner"
+does = "The game gives it to every unit when it's made."
+use = "Leave it out."

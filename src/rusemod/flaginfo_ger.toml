@@ -1,0 +1,537 @@
+# Das Flag-Handbuch auf Deutsch (rusemod.flaginfo; maßgeblich ist das Englische in flaginfo.toml).
+[0]
+what = "Flugplatz"
+does = "Macht ein Gebäude zum Flugplatz: Deine Flugzeuge sind dort stationiert, und ein Klick mit einem Flugzeug auf deinen eigenen Flugplatz schickt es zur Landung. Die Aufklärungsplanung des Computers sucht nach einem."
+use = "Nur für Flugplätze. Auf anderem behandelt das Spiel es nur als Ort, an dem Flugzeuge landen können."
+
+[1]
+what = "Artillerie (indirektes Feuer)"
+does = "Die Einheit feuert indirekt auf das, was andere Einheiten entdecken, wie die Haubitzen des Spiels. Sagt auch dem Computer, sie als Artillerie einzusetzen."
+use = "Funktioniert bei jeder Einheit: DomesticNukes gab es 410 Einheiten aller Art, und alle feuerten indirekt."
+
+[2]
+what = "Flugzeug"
+does = "Die Einheit ist ein Flugzeug: am Kontrollturm des Flugplatzes gebaut, fliegt zum Auftanken heim, nimmt keine Bodenbefehle. Alle 63 Flugzeuge des Spiels haben es, und nichts sonst."
+use = "Auf jedem Flugzeug lassen. Nie auf eine Bodeneinheit setzen: Das Spiel würde versuchen, sie am Kontrollturm eines Flugplatzes zu bauen."
+danger_why = "Auf einer Einheit, die kein Flugzeug ist, dürfte ihr Bau das Spiel mit einem Skriptfehler anhalten (es sucht den Kontrollturm eines Flugplatzes)."
+
+[3]
+what = "Flugzeug darf ohne Gefecht angreifen"
+does = "Das Spiel setzt es, wenn ein Flugzeug zu einem Einsatz startet."
+use = "Weglassen: Das Spiel verwaltet es."
+
+[4]
+what = "Gebäude"
+does = "Das Ding ist ein Gebäude: Gebäudeleiste, Platzierungs- und Eroberungsregeln, nicht in der Einheitenstatistik. Ein Gebäude bewegt sich nie und denkt nicht wie eine Einheit."
+use = "Nur für Gebäude."
+danger_why = "Auf einer Einheit dürfte es sie einfrieren: Gebäude bewegen sich nicht und nehmen keine Einheitenbefehle."
+
+[5]
+what = "Produktionsgebäude"
+does = "Ein Gebäude, das Einheiten baut (Kasernen, Fabriken, Flugplätze). Statt 30 gesetzt (mit TypeBatiment -7) produziert ein Täuschungsgebäude wirklich."
+use = "Für Gebäude, die Einheiten bauen."
+
+[6]
+what = "Verteidigungsgebäude"
+does = "Bunker und Geschützstellungen: die Verteidigungsleiste, und Bomber greifen sie von selbst an. So etwas steht, wo es ist, wie die Schiffe des Spiels."
+use = "Nur für Verteidigungsgebäude."
+danger_why = "Auf einer Einheit, die sich bewegen soll, dürfte es sie stillstehen lassen."
+
+[7]
+what = "Versorgungsdepot"
+does = "Ein Depot: auf einer Depotplatte gebaut, mit der Depotleiste; Erobern und Verlieren zählt als Depot."
+use = "Nur für Versorgungsdepots."
+
+[8]
+what = "Hauptquartier"
+does = "Das HQ: ein Kommandogebäude (hinter der Regel „kann es nicht verstecken“) und das, was der Computer am höchsten bewertet."
+use = "Nur für Hauptquartiere."
+
+[9]
+what = "Superwaffenstandort (unbenutzt)"
+does = "Nichts im Spiel nutzt es."
+use = "Weglassen."
+
+[10]
+what = "Kann Schaden nehmen"
+does = "Explosionen können es verletzen: Flächenschaden und die V2 suchen nach Einheiten damit. 454 Einheiten des Spiels haben es."
+use = "Auf allem lassen, was Explosionen treffen sollen. Ohne es wäre eine Einheit vielleicht immun gegen Flächenschaden (nicht getestet)."
+
+[11]
+what = "Kann nicht in Wälder"
+does = "Die Einheit bleibt aus Wäldern heraus (ihre Wege führen herum) und bekommt nie die Deckung des Waldes. Panzer und die meisten Fahrzeuge haben es."
+use = "Um ein Fahrzeug in Wälder zu lassen, 11, 21 und 55 zusammen entfernen (von DomesticNukes getestet). 11 ist der, der für Wälder zählt."
+
+[12]
+what = "Von einer Ruse-Karte erzeugt (unbenutzt)"
+does = "Nichts im Spiel nutzt es als Einheiten-Flag."
+use = "Weglassen."
+
+[13]
+what = "Bomber"
+does = "Das Flugzeug verhält sich wie ein Bomber: Von selbst greift es nur Gebäude an, und es bekommt einen großen Stellplatz am Flugplatz. Welchen von 100, 99, 101, 13, 59 ein Flugzeug hat, bestimmt in dieser Reihenfolge sein Verhalten."
+use = "Für Bomber. Nutze lieber das Feld Rolle eines Flugzeugs, statt 13, 99, 100 und 101 von Hand zu ändern: Es setzt sie zusammen."
+
+[14]
+what = "Erobert Gebäude"
+does = "Infanterie, die Gebäude erobern kann; der Computer schickt solche Einheiten zum Erobern. Eine Täuschung verliert es."
+use = "Für Infanterie, die erobern soll."
+
+[15]
+what = "Ohne Namen (unbenutzt)"
+does = "Nichts im Spiel nutzt es."
+use = "Weglassen."
+
+[16]
+what = "Ohne Namen (unbenutzt)"
+does = "Nichts im Spiel nutzt es."
+use = "Weglassen."
+
+[17]
+what = "Immun gegen Reflexfeuer"
+does = "Geschütztürme feuern nicht von selbst darauf. Missionsskripte setzen es; das Spiel entfernt es, wenn ein Aufbaubares fertig gebaut ist."
+use = "In der Liste einer Einheit nicht getestet: Es bleibt vielleicht, vielleicht nicht."
+
+[18]
+what = "Gezogenes Geschütz"
+does = "Panzerabwehr- und Feldgeschütze: in der Statistik am Spielende als Fahrzeug gezählt. Sonst nichts."
+use = "Ändert nur die Statistik."
+
+[19]
+what = "Eroberbar"
+does = "Ein Gebäude, das erobert werden kann (der Eroberungsbefehl). Auf Fahrzeugen oder Infanterie bewirkt es nichts (von DomesticNukes getestet)."
+use = "Nur für Gebäude."
+
+[20]
+what = "Zielpunkt der Artillerie"
+does = "Der unsichtbare Punkt, auf den Artillerie feuert: nicht bei Zielen und Auswahl."
+use = "Nur für den Zielpunkt des Spiels."
+
+[21]
+what = "Kampfeinheit"
+does = "Eine Einheit, die kämpft: Das Spiel setzt es auch, während eine Einheit angreift. Die Gefahrenschätzung des Computers und die Statistik zählen es."
+use = "Teil des Wald-Trios: 11, 21 und 55 zusammen entfernen, um ein Fahrzeug in Wälder zu lassen."
+
+[22]
+what = "Nimmt Befehle des Spielers"
+does = "Der Spieler kann ihr Befehle geben. Missionsskripte entfernen es, um eine Einheit zu sperren."
+use = "Auf allem lassen, was der Spieler steuern soll."
+danger_why = "Ohne es kann der Spieler der Einheit keine Befehle geben (die Community nennt es unverzichtbar)."
+
+[23]
+what = "Depotplatte"
+does = "Die Bodenplatte, auf der ein Versorgungsdepot gebaut wird."
+use = "Nur für die Depotplatte."
+
+[24]
+what = "Als Bodenkontakt gesehen"
+does = "Der Feind sieht es als Bodenkontakt. Ein Flugzeug tauscht 24 und 25 beim Start und bei der Landung."
+use = "Auf Bodeneinheiten und Gebäuden lassen."
+
+[25]
+what = "Als Luftkontakt gesehen"
+does = "Der Feind sieht es als Luftkontakt: Flugzeuge im Flug, Fallschirmjäger in der Luft."
+use = "Auf Flugzeugen lassen."
+
+[26]
+what = "Im Kampf"
+does = "Das Spiel setzt es, während die Einheit kämpft."
+use = "Weglassen: Das Spiel verwaltet es."
+
+[27]
+what = "Im Wald"
+does = "Das Spiel setzt es, wenn eine Einheit in einem Wald ist (aus den Wäldern der Karte), außer sie hat 11 oder 92: Deckung und Hinterhalt des Waldes."
+use = "Weglassen. Damit sich eine Einheit im Wald versteckt, 11 (und 92) entfernen; damit ein Wald Deckung gibt, ihn auf der Karte malen."
+
+[28]
+what = "Wirkt als Fabrik"
+does = "Das Spiel setzt es während des Spiels."
+use = "Weglassen."
+
+[29]
+what = "Täuschung"
+does = "Die Täuschungs-Ruse-Karte setzt es: Die Einheit fehlt in Teamzählungen, Bombenabwürfen, Reflexfeuer und Statistik."
+use = "Weglassen: Nutze stattdessen die Täuschungseinheiten (30, 31)."
+
+[30]
+what = "Täuschungsgebäude"
+does = "Ein falsches Gebäude: für den Feind ein Gebäude, produziert nichts. Gegen 5 getauscht (mit TypeBatiment -7) produziert es wirklich (von DomesticNukes getestet)."
+use = "Nur für Täuschungsgebäude."
+
+[31]
+what = "Täuschungslastwagen"
+does = "Ein falscher Bau- oder Versorgungslastwagen."
+use = "Nur für Täuschungslastwagen."
+
+[32]
+what = "Markierung der Lastwagen für versteckte Gebäude (unbenutzt)"
+does = "Nichts im Spiel nutzt es."
+use = "Weglassen."
+
+[33]
+what = "Platzierungsvorschau"
+does = "Die durchsichtige Vorschau, die beim Platzieren gezeigt wird."
+use = "Nur für die Vorschauen des Spiels."
+
+[34]
+what = "Gebäude-Platzierungsvorschau"
+does = "Das durchsichtige Gebäude, das beim Platzieren gezeigt wird."
+use = "Nur für die Vorschauen des Spiels."
+
+[35]
+what = "Depot-Platzierungsvorschau"
+does = "Das Spiel setzt es auf die Vorschau des Depots."
+use = "Weglassen."
+
+[36]
+what = "Befehlsvorschau"
+does = "Das Spiel setzt es auf die Vorschau eines Befehls."
+use = "Weglassen."
+
+[37]
+what = "Vorschau abgesetzt"
+does = "Das Spiel setzt es, wenn eine Vorschau platziert ist."
+use = "Weglassen."
+
+[38]
+what = "Produktionsvorschau"
+does = "Die Vorschau beim Platzieren von etwas, das gebaut werden soll."
+use = "Nur für die Vorschauen des Spiels."
+
+[39]
+what = "In einer Gruppe (unbenutzt)"
+does = "Nichts im Spiel nutzt es als Einheiten-Flag."
+use = "Weglassen."
+
+[40]
+what = "Hat eine Waffe"
+does = "Ihre Geschütztürme feuern nur damit. Der Angriffsbefehl des Spielers und der Computer prüfen es auch; Waffen ein und aus schalten es."
+use = "Auf allem Bewaffneten lassen. Ohne es feuern die Waffen der Einheit nicht."
+
+[41]
+what = "Leuchtet beim Überfahren"
+does = "Leuchtet unter der Maus auf."
+use = "Auf allem lassen, was der Spieler anklickt."
+
+[42]
+what = "Infanterie"
+does = "Die Einheit ist Infanterie: der Computer, die Störkarte und wie sie stirbt (Infanterie hinterlässt Körper, keine Wracks)."
+use = "Nur für Infanterie."
+danger_why = "Auf einem Fahrzeug dürfte das Spiel mit einem Skriptfehler anhalten, wenn es stirbt (es stirbt wie Infanterie)."
+
+[43]
+what = "Von seinem Team gezählt"
+does = "Die Einheit steht in den Listen und Zählungen ihres Teams, und die Missionsskripte sehen sie. 459 Einheiten des Spiels haben es."
+use = "Nie entfernen."
+danger_why = "Ohne es dürfte die Einheit in keiner Liste ihres Teams stehen: Missionen und Computer sehen sie nicht."
+
+[44]
+what = "Logistik"
+does = "Jeder Lastwagen hat es; Niederhalten klingt darauf anders ab. Auf einem Panzer bewirkt es nichts (getestet)."
+use = "So lassen, wie das Spiel es hat."
+
+[45]
+what = "Superwaffen-Munition (unbenutzt)"
+does = "Nichts im Spiel nutzt es."
+use = "Weglassen."
+
+[46]
+what = "Nicht in der Rahmenauswahl"
+does = "127 Einheiten des Spiels haben es; im Spiel wurde keine Wirkung gefunden."
+use = "So lassen, wie das Spiel es hat."
+
+[47]
+what = "Andere Einheiten weichen ihm aus"
+does = "Andere Einheiten lenken um es herum, statt hindurchzufahren. Flugzeuge und Lastwagen haben es nicht."
+use = "Auf Bodeneinheiten lassen. Ohne es fahren andere vielleicht hindurch (nicht getestet)."
+
+[48]
+what = "Fallschirmjäger am Boden"
+does = "Fallschirmjäger nach dem Absprung: die Gefahrenschätzung des Computers und die Flugzeugprüfung des Produktionsknopfs."
+use = "Nur für Fallschirmjäger."
+
+[49]
+what = "Fallschirmjäger in der Luft"
+does = "Fallschirmjäger während des Absprungs: Solange es gesetzt ist, denken und bewegen sie sich nicht am Boden."
+use = "Nur für Fallschirmjäger in der Luft."
+danger_why = "Auf einer Bodeneinheit dürfte es sie einfrieren (kein Denken, keine Bodenbewegung)."
+
+[50]
+what = "Anklickbar"
+does = "Die Maus kann es auswählen."
+use = "Auf allem lassen, was der Spieler anklickt."
+
+[51]
+what = "Flugzeug auf dem Heimflug"
+does = "Das Spiel setzt es, wenn ein Flugzeug zurückkehrt."
+use = "Weglassen."
+
+[52]
+what = "Flugzeug beschäftigt"
+does = "Das Spiel setzt es bei einem Bodenangriff und einem Bombenanflug; das Flugzeug lehnt dann neue Befehle ab."
+use = "Weglassen."
+
+[53]
+what = "Auswählbar"
+does = "Der Spieler kann es auswählen."
+use = "Auf allem lassen, was der Spieler steuert."
+
+[54]
+what = "Unter Artilleriebeschuss"
+does = "Das Spiel setzt es für 20 Sekunden, wenn Artillerie nahe der Einheit einschlägt."
+use = "Weglassen."
+
+[55]
+what = "Panzer"
+does = "Zählt als Panzer in der Statistik am Spielende und in der Kategorie „Panzer“ der Missionen. Sonst nichts: Im Gefecht hat es keine eigene Wirkung."
+use = "Teil des Wald-Trios: 11, 21 und 55 zusammen entfernen, um ein Fahrzeug in Wälder zu lassen."
+
+[56]
+what = "Flugzeug hat noch alle Munition"
+does = "Das Spiel setzt es; ein Jagdbomber greift nur von selbst an, solange es gesetzt ist."
+use = "Weglassen."
+
+[57]
+what = "Ein Ziel"
+does = "Geschütztürme und Flächenschaden behandeln es als etwas zu Treffendes. 435 Einheiten des Spiels haben es."
+use = "Auf allem lassen, worauf geschossen werden soll. Ohne es würde eine Einheit vielleicht nie beschossen (nicht getestet)."
+
+[58]
+what = "Immer sichtbar"
+does = "Unabhängig vom Nebel des Krieges gezeigt: Gebäude, Lastwagen, Schiffe. Auf einem Panzer keine sichtbare Änderung (getestet)."
+use = "So lassen, wie das Spiel es hat."
+
+[59]
+what = "Fallschirmjäger-Transporter"
+does = "Das Flugzeug, das Fallschirmjäger absetzt: an der Startbahn gebaut, verhält sich als Absetzflugzeug und setzt die Einheit aus seinem UniteTransportee ab."
+use = "Nur auf Flugzeugen mit einem UniteTransportee (der Einheit, die sie absetzen)."
+danger_why = "Auf einer Einheit, die kein Flugzeug ist, oder einem Flugzeug ohne UniteTransportee stürzt das Spiel ab, wenn es die Fallschirmjäger sucht. Das Studio baut das nicht."
+
+[60]
+what = "Geschützturm eines Gebäudes"
+does = "Ein Geschütz, das zu einem Gebäude gehört: in der Leiste des Gebäudes gezeigt."
+use = "Nur für Geschütztürme von Gebäuden."
+
+[61]
+what = "Flugzeug im Luftkampf"
+does = "Das Spiel setzt es, während Flugzeuge kämpfen."
+use = "Weglassen."
+
+[62]
+what = "Lastwagen"
+does = "Ein Lastwagen: von der Lastwagenlogik des Spiels gefahren (er denkt nicht selbst), transportiert Nachschub. Alle 18 Lastwagen des Spiels haben es."
+use = "Nur auf Lastwagen (TTruckDescriptor-Einheiten), und jeder Lastwagen braucht es."
+danger_why = "Auf allem außer einem Lastwagen stürzt das Spiel beim Spielstart ab (DomesticNukes, auf einem Stuart). Das Studio baut das nicht."
+
+[63]
+what = "Baulastwagen"
+does = "Ein Lastwagen, der Gebäude baut."
+use = "Nur auf Baulastwagen."
+danger_why = "Auf allem außer einem Lastwagen stürzt das Spiel ab (ProLution). Das Studio baut das nicht."
+
+[64]
+what = "Versorgungslastwagen"
+does = "Ein Lastwagen, der Geld transportiert. Auf einem Panzer bewirkt es nichts (getestet)."
+use = "Nur für Versorgungslastwagen."
+
+[65]
+what = "Extremes Niederhalten"
+does = "Das Spiel setzt es, wenn eine Einheit niedergehalten ist: Sie hört auf zu feuern."
+use = "Weglassen."
+
+[66]
+what = "Verwandelt sich in eine andere Einheit"
+does = "Das Spiel setzt es, während sich eine Einheit verwandelt (ein Trupp in seinen Lastwagen auf einer Straße)."
+use = "Weglassen."
+
+[67]
+what = "Fliegend; nimmt Befehle außerhalb der Karte"
+does = "Das Flugzeug ist in der Luft (das Spiel tauscht es mit 68 bei Start und Landung). Auf einer Bodeneinheit lässt es sie Befehle außerhalb der Karte annehmen, aber sie hält an einer unsichtbaren Grenze am Rand an (DomesticNukes)."
+use = "Auf Flugzeugen lassen. Um wirklich aus der Karte zu fahren, müssen auch die Bewegungskarten der Karte erweitert werden."
+
+[68]
+what = "Geparktes Flugzeug"
+does = "Das Spiel setzt es, während ein Flugzeug am Boden ist."
+use = "Weglassen."
+
+[69]
+what = "Wird angegriffen"
+does = "Das Spiel setzt es, während die Einheit angegriffen wird."
+use = "Weglassen."
+
+[70]
+what = "Sieht um seinen Patrouillenpunkt"
+does = "Die Sicht eines Flugzeugs ist auf den Punkt zentriert, zu dem es geschickt wurde, nicht auf sich selbst. Die Aufklärer des Spiels haben es."
+use = "Für Aufklärungsflugzeuge."
+
+[71]
+what = "Sieht rundum"
+does = "360°-Sicht, egal wohin sie blickt. Funktioniert auf jeder Bodeneinheit (DomesticNukes gab es 150 weiteren)."
+use = "Jeder Einheit geben, die hinter sich sehen soll."
+
+[72]
+what = "Sieht durch Hindernisse"
+does = "Ihre Sicht ignoriert Hügel und Kulisse. Flugzeuge haben es."
+use = "Auf Bodeneinheiten noch nicht getestet."
+
+[73]
+what = "Gesehen"
+does = "Das Spiel setzt es, während der Feind die Einheit sieht."
+use = "Weglassen."
+
+[74]
+what = "Schatten eines Flugzeugs (unbenutzt)"
+does = "Nichts im Spiel nutzt es als Einheiten-Flag."
+use = "Weglassen."
+
+[75]
+what = "Körper eines Infanteristen"
+does = "Das Spiel setzt es auf einen gefallenen Soldaten."
+use = "Weglassen."
+
+[76]
+what = "Schiff (steht still)"
+does = "Die Schiffe des Spiels haben es: Sie stehen, wo eine Mission sie hinsetzt, wie ein Gebäude. Ohne es (und mit dem Fahrgestell eines Panzers) fährt ein Schiff an Land (DomesticNukes' Navy Mod)."
+use = "Nur für Schiffe, die sich nie bewegen."
+danger_why = "Auf einer Einheit, die sich bewegen soll, dürfte es sie stillstehen lassen."
+
+[77]
+what = "Feuert nie von selbst"
+does = "Die Einheit feuert nur auf Befehl: kein Reflexfeuer (DomesticNukes gab es 317 Einheiten)."
+use = "Nicht für Gebäude: Sie würden nie feuern."
+
+[78]
+what = "Flugzeug ohne Munition"
+does = "Das Spiel setzt es; bei Start und Landung wird es gelöscht."
+use = "Weglassen."
+
+[79]
+what = "Ausgewählt"
+does = "Das Spiel setzt es, während die Einheit ausgewählt ist."
+use = "Weglassen."
+
+[80]
+what = "Kann nicht anvisiert werden"
+does = "Kein Befehl kann es anvisieren. Missionsskripte setzen es."
+use = "In der Liste einer Einheit nicht getestet."
+
+[81]
+what = "Skriptmarkierung: Reflexfeuer gestoppt"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[82]
+what = "Skriptmarkierung: Reichweite der Gruppe"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[83]
+what = "Skriptmarkierung: kann nicht anvisiert werden"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[84]
+what = "Skriptmarkierung: Gruppe entwaffnet"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[85]
+what = "Skriptmarkierung: Gruppe gesperrt"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[86]
+what = "Skriptmarkierung: Sicht der Gruppe"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[87]
+what = "Skriptmarkierung: Schaden"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[88]
+what = "Skriptmarkierung: Stress"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[89]
+what = "Skriptmarkierung: Geschwindigkeit"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[90]
+what = "Funkstille (die Ruse-Karte)"
+does = "Die Karte Funkstille setzt und entfernt es. In der Liste einer Einheit bewirkt es nichts (getestet)."
+use = "Weglassen."
+
+[91]
+what = "Getarnt (die Ruse-Karte)"
+does = "Die Tarnkarte setzt und entfernt es. In der Liste einer Einheit bewirkt es nichts (getestet)."
+use = "Weglassen."
+
+[92]
+what = "Wälder verstecken es nicht"
+does = "Die Einheit bekommt nie die Deckung des Waldes, auch nicht im Wald."
+use = "Für Einheiten, die im Wald sichtbar bleiben sollen."
+
+[93]
+what = "Verwaltungsgebäude"
+does = "Ein Kommandogebäude wie das HQ; von seinem Team gezählt."
+use = "Nur für Verwaltungsgebäude."
+
+[94]
+what = "Fahrzeugwrack"
+does = "Das Spiel setzt es auf ein zerstörtes Fahrzeug."
+use = "Weglassen."
+
+[95]
+what = "Flugzeugwrack"
+does = "Das Spiel setzt es auf ein zerstörtes Flugzeug."
+use = "Weglassen."
+
+[96]
+what = "Hält das Feuer für einen Hinterhalt zurück"
+does = "Das Spiel setzt es, während eine Einheit im Wald auf ihren Hinterhalt wartet."
+use = "Weglassen."
+
+[97]
+what = "Kann nicht erobert werden"
+does = "Missionsskripte setzen es."
+use = "In der Liste einer Einheit nicht getestet."
+
+[98]
+what = "Skriptmarkierung: kann nicht erobert werden"
+does = "Eine „schon erledigt“-Markierung eines Missionsskripts."
+use = "Weglassen."
+
+[99]
+what = "Aufklärungsflugzeug"
+does = "Das Flugzeug verhält sich als Aufklärer (außer es hat auch 100): Ein Klick auf die Karte schickt es zum Beobachten, es zählt nicht zur Armee seines Teams und die Aufklärungsleiste zeigt es. Ein Aufklärer greift nie an."
+use = "Nutze das Feld Rolle im Studio: Aufklärer auf einem bewaffneten Flugzeug setzt auch 100, damit seine Angriffe weiter funktionieren."
+danger_why = "Ein Flugzeug mit Waffen und 99 ohne 100 lässt das Spiel abstürzen, wenn es zum Angriff geschickt wird. Das Studio baut kein Flugzeug, dem du 99 so gegeben hast: Füge auch 100 hinzu oder entferne 99."
+
+[100]
+what = "Jäger"
+does = "Das Flugzeug verhält sich als Jäger (zuerst geprüft, vor 99, 101 und 13): Von selbst greift es nur Flugzeuge in der Luft an; ein Klick auf einen Feind greift ihn an."
+use = "Für Jäger. Mit 99 dazu ist es ein bewaffneter Aufklärer, der noch angreifen kann."
+
+[101]
+what = "Jagdbomber"
+does = "Das Flugzeug verhält sich als Jagdbomber (nach 100 und 99): Von selbst greift es Bodeneinheiten an (keine Gebäude oder Versorgungslastwagen), nur solange es noch alle Munition hat."
+use = "Für Jagdbomber. Nutze das Feld Rolle, um die Rolle eines Flugzeugs zu ändern."
+
+[102]
+what = "Täuschungsflugplatz"
+does = "Ein falscher Flugplatz: zählt als Flugplatz."
+use = "Nur für Täuschungsflugplätze."
+
+[103]
+what = "Kann Fallschirmjäger absetzen"
+does = "Das Spiel gibt es Absetzflugzeugen beim Start; der Absetzbefehl braucht es."
+use = "Weglassen: 59 ist der zu setzende."
+
+[104]
+what = "Hat einen Scanner"
+does = "Das Spiel gibt es jeder Einheit, wenn sie erzeugt wird."
+use = "Weglassen."

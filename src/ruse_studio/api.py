@@ -32,8 +32,9 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, newmap,
-                     package, packfiles, scenario, scenery, schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
+                     newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
+                     values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -697,9 +698,103 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         none = {"count": 0, "examples": []}
+        info = flaginfo.guide(lang)
+        blank = {"group": "unused", "sure": "unused", "what": "", "does": "", "use": "", "danger": "",
+                 "danger_why": ""}
+        # the flag guide (rusemod.flaginfo): what it is, what it does, how to use it, how sure we are, its danger
         return {"flags": [{"flag": n, "count": rows.get(n, none)["count"],
-                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang)}
-                          for n in sorted(set(rows) | set(schema.flag_numbers()))]}
+                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang),
+                           **info.get(n, blank)}
+                          for n in sorted(set(rows) | set(schema.flag_numbers()))],
+                "groups": list(flaginfo.GROUPS)}
+
+    # --- the number guide (rusemod.numberinfo): what every number means, in plain units, and where a unit's number
+    # sits among its kind's (the owner, 2026-10-15: "this is their base stat. And then you can make it smaller or
+    # larger", "give them perspective on the scale of what the numbers mean") ---
+    def numbers(self, lang: str = schema.BASE) -> dict:
+        """{"numbers": {key: {group, unit, sure, what, does}}, "plain": {unit: [game units to one plain unit, its
+        word]}, "amounts": the units the base-stat slider changes}; a key is "Property" or "Class.Property"."""
+        return {"numbers": numberinfo.guide(lang), "plain": {k: list(v) for k, v in numberinfo.PLAIN.items()},
+                "amounts": sorted(numberinfo.AMOUNTS)}
+
+    def number_scale(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Where the game's value of `prop` on the object at `address` sits among the game's objects of its class:
+        {"class", "count", "min", "low", "median", "high", "max" (the 10th and 90th centiles as low and high), "game":
+        its own game value, "marks": [{"name", "value"}]: the named objects at the lowest, median and highest value
+        (each value once)}; {} when the class has no such number. A list's first item stands for the list."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {}
+            rows = ix.db.execute("""SELECT o.address, o.export, v.path, v.num FROM value v JOIN object o
+                                    ON o.id = v.object WHERE o.class = ? AND o.shadow = 0 AND v.num IS NOT NULL
+                                    AND (v.path = ? OR v.path = ?)""", (o["class"], prop, prop + "[0]")).fetchall()
+            values = sorted(n for _a, _e, _p, n in rows)
+            if not values:
+                return {}
+            game = next((n for p, n, _t in o["values"] if p in (prop, prop + "[0]") and n is not None), None)
+            named = sorted(((n, a) for a, e, _p, n in rows if e), key=lambda x: x[0])
+            picks, seen = [], set()
+            for n, a in ([named[0], named[len(named) // 2], named[-1]] if named else []):
+                if n not in seen:
+                    seen.add(n)
+                    picks.append((n, a))
+            names = self._names(ix, [a for _n, a in picks], lang, edits.new_units if edits else None)
+        finally:
+            ix.close()
+
+        def at(share: float) -> float:
+            return values[min(len(values) - 1, int(share * (len(values) - 1) + 0.5))]
+        return {"class": o["class"], "count": len(values), "min": values[0], "low": at(0.1), "median": at(0.5),
+                "high": at(0.9), "max": values[-1], "game": game,
+                "marks": [{"name": names.get(a) or _tail(a), "value": n} for n, a in picks]}
+
+    def flag_check(self, address: str, flags: list | None = None, lang: str = schema.BASE) -> dict:
+        """What's wrong with a unit's flags, as the Studio and the build see it (rusemod.flaginfo.judge): `flags` the
+        set to check (None: the unit's flags now, with the current mod's change). {"problems": [{level, flag, why}],
+        "blocked": whether the build will refuse it (a known crash)}. The unit's kind, its weapons, the unit it drops
+        and the flags the game's own unit (or the one a new unit copies) carries come from the game index."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {"problems": [], "blocked": False}
+            had = sorted(int(n) for path, n, _t in o["values"] if path.startswith("InitialFlagSet[") and n is not None)
+            plan = ix.clone_plan(real)
+            armed = any(ix.show(a)["class"] == WEAPON for a in plan["copied"] + plan["shared"])
+            drops = any(p == "UniteTransportee" and k == "object" and w for p, k, w in ix.uses(real))
+        finally:
+            ix.close()
+        if flags is None:
+            mine = edits.get(new.target if new else real, "InitialFlagSet") if edits else None
+            flags = mine if isinstance(mine, list) else had
+        flags = [int(n) for n in flags]
+        problems = flaginfo.judge(o["class"], flags, had, armed, drops)
+        words = flaginfo.guide(lang)
+        for p in problems:  # in the Studio's language: the flag's own danger as its guide says it
+            if p.pop("own", False) and lang not in (schema.BASE, "us") and words.get(p["flag"], {}).get("danger_why"):
+                p["why"] = words[p["flag"]]["danger_why"]
+        now = {(p["level"], p["flag"]) for p in problems}
+        adding = {}  # what adding each flag it hasn't got would do: "error" (a crash) or "warning", for the Add list
+        for n in sorted(set(flaginfo.guide()) - set(flags)):
+            worse = [p["level"] for p in flaginfo.judge(o["class"], flags + [n], had, armed, drops)
+                     if (p["level"], p["flag"]) not in now]
+            if worse:
+                adding[n] = "error" if "error" in worse else "warning"
+        return {"problems": problems, "blocked": any(p["level"] == "error" for p in problems), "adding": adding}
 
     def weapons(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited, range,

@@ -773,6 +773,51 @@ tr.edited .flag { border-color: var(--accent); }
 .flag .x { padding: 0 4px; background: none; border: 0; color: var(--muted); font-size: 14px; line-height: 1; cursor: pointer; }
 .flag .x:hover { color: var(--error); }
 .flags select { max-width: 22em; font-size: 12px; }
+/* each chip says what the flag is (its number, then its name); a crash on this unit red, a warning amber; the guide
+   (openFlagGuide) and what the Studio found on this unit under them */
+.flag .flag-name { margin-left: 4px; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.flag.flag-error { border-color: var(--error); background: color-mix(in srgb, var(--error) 18%, var(--panel-hi)); }
+.flag.flag-warning { border-color: var(--accent); }
+.flag.flag-state, .flag.flag-unused { opacity: 0.75; }
+.flags-about { margin: 6px 0 0; max-width: 780px; }
+.notice.error { border-left-color: var(--error); color: var(--text); }
+.flag-problem { margin-top: 6px; }
+.flag-problem button { margin-left: 4px; }
+.flag-blocked { margin: 6px 0 0; color: var(--error); }
+.flag-guide { width: min(860px, 94vw); }
+.flag-guide-list { max-height: 62vh; overflow: auto; padding-right: 6px; }
+.flag-guide-group { margin: 14px 0 2px; font-size: 14px; }
+.flag-card { padding: 8px 10px; margin: 6px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.flag-card p { margin: 4px 0 0; }
+.flag-card-crash { border-color: var(--error); }
+.flag-card-breaks { border-color: var(--accent); }
+.flag-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.flag-num { min-width: 2.2em; padding: 1px 6px; border-radius: 999px; background: var(--panel-hi); text-align: center;
+  font-weight: 600; }
+.flag-sure, .flag-danger, .flag-mine { padding: 1px 6px; border-radius: 4px; font-size: 11px; border: 1px solid var(--line); }
+.flag-sure-tried { border-color: var(--ok, #6fcf97); }
+.flag-danger-crash { border-color: var(--error); color: var(--error); }
+.flag-danger-breaks { border-color: var(--accent); }
+.flag-mine { border-color: var(--accent); }
+.flag-danger-why { color: var(--text); }
+/* what a number means (numberHelp): its plain value, the base-stat slider, and where it sits among its kind */
+th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
+.number-help { display: grid; gap: 3px; margin-top: 4px; max-width: 520px; }
+.number-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.number-row .base-slider { width: 180px; }
+.number-pct { min-width: 9em; }
+.number-scale { display: grid; gap: 2px; }
+.scale-bar { position: relative; height: 8px; border-radius: 4px; background: var(--panel-hi); border: 1px solid var(--line); }
+.scale-band { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 4px; }
+.scale-mark { position: absolute; top: -2px; width: 2px; height: 10px; margin-left: -1px; background: var(--muted); }
+.scale-here { position: absolute; top: -4px; width: 10px; height: 14px; margin-left: -5px; border-radius: 3px;
+  background: var(--accent); box-shadow: 0 0 0 1px var(--bg); }
+.scale-names { overflow-wrap: anywhere; }
+.weapons-how { margin-top: 8px; max-width: 780px; }
+.weapons-how summary { cursor: pointer; font-size: 13px; }
+.weapons-how ol { margin: 6px 0 0; padding-left: 20px; }
+.weapons-how li { margin: 3px 0; }
 .map-kind { width: 100%; margin-bottom: 8px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
 .unit-group { width: 100%; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
 .scen-pick { max-width: 190px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
