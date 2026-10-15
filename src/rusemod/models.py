@@ -82,6 +82,12 @@ class Library:
             return medium_name(model)
         return model if model in self.where else None
 
+    def box(self, model: str) -> tuple | None:
+        """A descriptor's model's box as its pack's name table gives it (min x, y, z, max x, y, z; model units), the
+        model itself (not its lighter version); None when no pack has it."""
+        name = self.find(model, lighter=False)
+        return self.where[name].items[name].box if name is not None else None
+
     def parts(self, name: str) -> list[tuple]:
         """A model's draw calls as (part, texture path or None)."""
         spk = self.where[name]

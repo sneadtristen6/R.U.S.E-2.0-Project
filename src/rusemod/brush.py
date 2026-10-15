@@ -332,6 +332,48 @@ class Stroke:
                           # (groundtex.decal_grid); not tried in the game yet
     length: float = 0.0   # a square's half-length along dx, dy when not `radius`: a rectangle (the field brush's tint
                           # under one row sticker: scenery.expand_field_brush); 0 = a square
+    turn: float = 0.0     # stamp: its copy turned this many degrees (anticlockwise) round the stroke's middle: a point
+                          # reads the ground at the middle + (sx, sy) + its own offset from the middle turned back by
+                          # `turn` (source_of); 0 = a plain shift. The field brush's picture of a real field, turned onto
+                          # the rows it paints over (scenery.expand_field_brush)
+
+    fold: float = 0.0     # stamp: where it reads past the square of this half size round (fx, fy), its sides along
+    fx: float = 0.0       # `fturn` degrees, it reads folded back into it as in a mirror (source_of): a field bigger
+    fy: float = 0.0       # than the even middle of the real field it copies reads that middle again, no seam, never
+    fturn: float = 0.0    # the hedges round it (scenery.expand_field_brush); 0 = no fold
+    clip: tuple = ()      # stamp: paints only inside this mask (x0, y0, cell, columns, rows, bytes: one per cell, row
+                          # by row from (x0, y0), 1 = inside): a plot's painted outline as the map's own picture draws
+                          # it (scenery.field_outline); () = everywhere its footprint reaches. Made by the build, never
+                          # written to a terrain file
+
+    def clip_at(self, x: float, y: float) -> bool:
+        """Whether the clip lets (x, y) be painted (no clip: everywhere)."""
+        if not self.clip:
+            return True
+        x0, y0, cell, w, h, bits = self.clip
+        i, j = int((x - x0) // cell), int((y - y0) // cell)
+        return 0 <= i < w and 0 <= j < h and bits[j * w + i] != 0
+
+    def source_of(self, x, y):
+        """Where a stamp at (x, y) copies the ground from (a tint, a plain shift: where it paints)."""
+        if not self.turn:
+            qx, qy = x + self.sx, y + self.sy
+        else:
+            c, s = self.__dict__.get("_turned") or self.__dict__.setdefault(
+                "_turned", (math.cos(math.radians(self.turn)), math.sin(math.radians(self.turn))))
+            ox, oy = x - self.x, y - self.y
+            qx, qy = self.x + self.sx + (ox * c + oy * s), self.y + self.sy + (oy * c - ox * s)
+        if self.fold <= 0.0:
+            return qx, qy
+        c, s = self.__dict__.get("_fold") or self.__dict__.setdefault(
+            "_fold", (math.cos(math.radians(self.fturn)), math.sin(math.radians(self.fturn))))
+        w = self.fold
+        dx, dy = qx - self.fx, qy - self.fy
+        u, v = dx * c + dy * s, dy * c - dx * s
+        u, v = (u + w) % (4.0 * w), (v + w) % (4.0 * w)   # a mirror's repeat: 4 halves, the second two turned back
+        u = (4.0 * w - u if u > 2.0 * w else u) - w
+        v = (4.0 * w - v if v > 2.0 * w else v) - w
+        return self.fx + (u * c - v * s), self.fy + (u * s + v * c)
 
     @property
     def kind(self) -> Brush:
@@ -439,8 +481,8 @@ class Stroke:
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
           "water": ("level",), "drain": (), "cover": (), "block": (), "open": (), "paint": ("colour",),
           "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",)}
-_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "size",
-            "length")
+_NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "turn",
+            "fold", "fx", "fy", "fturn", "size", "length")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -524,7 +566,15 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             values["colour"] = item["colour"].lower()
         if ("sx" in values or "sy" in values) and kind != "stamp":
             raise BrushError(f"{at}: sx and sy (where a stamp copies from) are for the stamp brush")
-        if kind == "stamp" and values["sx"] == 0.0 and values["sy"] == 0.0:
+        if "turn" in values and kind != "stamp":
+            raise BrushError(f"{at}: turn (how far a stamp's copy is turned) is for the stamp brush")
+        if any(k in values for k in ("fold", "fx", "fy", "fturn")):
+            if kind != "stamp":
+                raise BrushError(f"{at}: fold, fx, fy and fturn (the square a stamp reads folded into) are for the "
+                                 f"stamp brush")
+            if values.get("fold", 0.0) < 0.0:
+                raise BrushError(f"{at}: fold (half the side of the square a stamp reads in) can't be below 0")
+        if kind == "stamp" and values["sx"] == 0.0 and values["sy"] == 0.0 and not values.get("turn"):
             raise BrushError(f"{at}: the stamp copies from where it paints (sx, sy are 0, 0): pick another spot")
         if "texture" in item or "size" in values:
             if kind != "texture":
@@ -583,6 +633,11 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f'colour = "{s.colour}"')
         if kind == "stamp":
             lines += [f"sx = {_num_text(s.sx)}", f"sy = {_num_text(s.sy)}"]
+            if s.turn:
+                lines.append(f"turn = {_num_text(s.turn)}")
+            if s.fold > 0.0:
+                lines += [f"fold = {_num_text(s.fold)}", f"fx = {_num_text(s.fx)}", f"fy = {_num_text(s.fy)}",
+                          f"fturn = {_num_text(s.fturn)}"]
         if kind == "texture":
             lines.append(f'texture = "{s.texture}"')
             if s.size > 0.0:

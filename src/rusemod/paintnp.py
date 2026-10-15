@@ -98,15 +98,33 @@ def _strength(stroke, f, xs, ys, grid: bool = True):
     return np.where(t2 < 1.0, w, 0.0)
 
 
+def _clip(stroke, xs, ys, grid: bool = True):
+    """brush.Stroke.clip_at for every pixel middle (x of xs, y of ys; or, not `grid`, each (xs[n], ys[n])), as 1.0 / 0.0
+    by the same sums."""
+    x0, y0, cell, w, h, bits = stroke.clip
+    cells = np.frombuffer(bits, dtype=np.uint8).reshape(h, w)
+    i = np.floor_divide(np.asarray(xs, dtype=np.float64) - x0, cell).astype(_I)
+    j = np.floor_divide(np.asarray(ys, dtype=np.float64) - y0, cell).astype(_I)
+    if grid:
+        i, j = i[None, :], j[:, None]
+    ok = (i >= 0) & (i < w) & (j >= 0) & (j < h)
+    got = cells[np.clip(j, 0, h - 1), np.clip(i, 0, w - 1)] != 0
+    return (ok & got).astype(np.float64)
+
+
 def _coverage(stroke, f, xs, ys, pw: float, ph: float, grid: bool = True):
     """groundpaint._coverage for every pixel middle (x of xs, y of ys); or, not `grid`, for each (xs[n], ys[n])."""
     if stroke.radius >= 2 * max(pw, ph):
-        return _strength(stroke, f, xs, ys, grid)
-    total = 0.0
-    for j in (-1, 0, 1):
-        for i in (-1, 0, 1):
-            total = total + _strength(stroke, f, xs + i * pw / 3, ys + j * ph / 3, grid)
-    return total / 9
+        out = _strength(stroke, f, xs, ys, grid)
+    else:
+        total = 0.0
+        for j in (-1, 0, 1):
+            for i in (-1, 0, 1):
+                total = total + _strength(stroke, f, xs + i * pw / 3, ys + j * ph / 3, grid)
+        out = total / 9
+    if stroke.clip:   # (a field's painted outline: nothing where the pixel's middle is outside it)
+        out = out * _clip(stroke, xs, ys, grid)
+    return out
 
 
 def _texture(stroke, swatch, xs, ys, pixel: float):
@@ -199,6 +217,62 @@ class _Picture:
                 there[np.ix_(rows_in, cols)] = True
         return out, there
 
+    def at_points(self, xs, ys):
+        """at() for points one by one (xs, ys: arrays of one shape, a turned stamp's points): (colours [..., 3] as
+        float, [...] True where the map has a picture), the same sums for which tile and which pixel."""
+        shape = np.broadcast(xs, ys).shape
+        xs, ys = np.broadcast_to(xs, shape).ravel(), np.broadcast_to(ys, shape).ravel()
+        out = np.zeros((xs.size, 3), dtype=np.float64)
+        there = np.zeros(xs.size, dtype=bool)
+        x0, y0 = self.bounds[0], self.bounds[1]
+        if self.level >= self.store.depth:
+            if self.over is None:
+                return out.reshape(shape + (3,)), there.reshape(shape)
+            kx, ky = np.zeros(xs.size, dtype=_I), np.zeros(xs.size, dtype=_I)
+        else:
+            kx = np.floor_divide(xs - x0, self.tw).astype(_I)
+            ky = np.floor_divide(ys - y0, self.th).astype(_I)
+        keys = np.stack([kx, ky], axis=1)
+        for a, b in np.unique(keys, axis=0).tolist():
+            here = np.flatnonzero((kx == a) & (ky == b))
+            got = self._tile((a, b))
+            if got is None:
+                continue
+            pic, w, h = got
+            if self.level >= self.store.depth:
+                rx0, ry0, rx1, ry1 = self.rect
+            else:
+                rx0, ry0 = x0 + a * self.tw, y0 + b * self.th
+                rx1, ry1 = rx0 + self.tw, ry0 + self.th
+            i = np.trunc((xs[here] - rx0) / (rx1 - rx0) * w).astype(_I)
+            j = np.trunc((ys[here] - ry0) / (ry1 - ry0) * h).astype(_I)
+            ok = (i >= 0) & (i < w) & (j >= 0) & (j < h)
+            out[here[ok]] = pic[j[ok], i[ok]]
+            there[here[ok]] = True
+        return out.reshape(shape + (3,)), there.reshape(shape)
+
+
+def _source_points(s, xs, ys):
+    """brush.Stroke.source_of for every pixel middle (x of xs, y of ys), the same sums in the same order: ([row,
+    column] x, [row, column] y) where a turned or folded stamp reads."""
+    x, y = xs[None, :], ys[:, None]
+    if not s.turn:
+        qx, qy = np.broadcast_to(x + s.sx, (len(ys), len(xs))), np.broadcast_to(y + s.sy, (len(ys), len(xs)))
+    else:
+        c, sn = math.cos(math.radians(s.turn)), math.sin(math.radians(s.turn))
+        ox, oy = x - s.x, y - s.y
+        qx, qy = s.x + s.sx + (ox * c + oy * sn), s.y + s.sy + (oy * c - ox * sn)
+    if s.fold <= 0.0:
+        return qx, qy
+    c, sn = math.cos(math.radians(s.fturn)), math.sin(math.radians(s.fturn))
+    w = s.fold
+    dx, dy = qx - s.fx, qy - s.fy
+    u, v = dx * c + dy * sn, dy * c - dx * sn
+    u, v = np.mod(u + w, 4.0 * w), np.mod(v + w, 4.0 * w)
+    u = np.where(u > 2.0 * w, 4.0 * w - u, u) - w
+    v = np.where(v > 2.0 * w, 4.0 * w - v, v) - w
+    return s.fx + (u * c - v * sn), s.fy + (u * sn + v * c)
+
 
 def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, hard: list, px, py, cx0, cy0,
              pw: float, ph: float, swatches=None, picture=None):
@@ -235,7 +309,10 @@ def _in_turn(gp, old, reach: list, strokes: list, boxes: list, colours: list, ha
         a = _coverage(s, f, px[i0:i1], py[j0:j1], pw, ph) * s.weight
         there = None
         if c is None and s.kind.kind in ("stamp", "tint"):  # the map's own picture where it copies from (px + sx)
-            tex, there = picture.at(px[i0:i1] + s.sx, py[j0:j1] + s.sy)
+            if s.turn or s.fold > 0.0:   # turned or folded: each pixel its own point (Stroke.source_of's sums)
+                tex, there = picture.at_points(*_source_points(s, px[i0:i1], py[j0:j1]))
+            else:
+                tex, there = picture.at(px[i0:i1] + s.sx, py[j0:j1] + s.sy)
             if s.kind.kind == "tint":  # (TINT_KEEP of it, its shift added, as paint_strokes: then kept in 0..255)
                 d = picture.shift(s)
                 tex = np.stack([np.minimum(255.0, np.maximum(0.0, tex[:, :, ch] * gp.TINT_KEEP + d[ch]))

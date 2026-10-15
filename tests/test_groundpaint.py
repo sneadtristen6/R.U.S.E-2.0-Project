@@ -1,5 +1,6 @@
 """Painting on the ground's picture (rusemod.groundpaint), on a tiny made-up tile set: 2x1 cells of 1,000 map units,
 a 256-pixel overview tile like the game's (its size comes from the payload, never assumed) and 512-pixel tiles."""
+import math
 import struct
 import unittest
 from pathlib import Path
@@ -350,6 +351,24 @@ class MapPaint(unittest.TestCase):
                 {"brush": "stamp", "x": 1000.0, "y": 500.0, "radius": 600.0, "sx": 1000.0, "sy": 0.0, "weight": 0.3}]
             + [{"brush": "stamp", "x": 603.9 + 41.0 * k, "y": 153.9 + 13.0 * k, "radius": 1.5 + 0.9 * k,
                 "sx": 1000.0 - 37.0 * k, "sy": 11.0 * k, "edge": "hard" if k % 2 else "soft"} for k in range(8)],
+            "turned stamps (the field brush's picture of a real field)": [
+                {"brush": "paint", "x": 1250.0, "y": 600.0, "radius": 300.0, "colour": red, "weight": 0.8},
+                {"brush": "stamp", "x": 1000.0, "y": 500.0, "radius": 160.0, "sx": 0.0, "sy": 0.0, "turn": 180.0,
+                 "edge": "hard"},   # across the join, swapped side for side
+                {"brush": "stamp", "x": 700.0, "y": 650.0, "radius": 60.0, "shape": "square", "dx": 0.6, "dy": 0.8,
+                 "length": 140.0, "edge": "hard", "sx": 655.5, "sy": -120.25, "turn": 37.5},
+                {"brush": "stamp", "x": 480.0, "y": 470.0, "radius": 260.0, "sx": 777.7, "sy": 33.3, "turn": -71.0,
+                 "weight": 0.6},
+                {"brush": "stamp", "x": 1850.0, "y": 120.0, "radius": 200.0, "sx": 100.0, "sy": -50.0, "turn": 90.0,
+                 "edge": "hard"}]   # partly from off the map
+            + [{"brush": "stamp", "x": 603.9 + 41.0 * k, "y": 153.9 + 13.0 * k, "radius": 1.5 + 0.9 * k,
+                "sx": 1000.0 - 37.0 * k, "sy": 11.0 * k, "turn": 23.0 * k + 1.0, "edge": "hard" if k % 2 else "soft"}
+               for k in range(6)]
+            + [  # folded into a square over the join (the field brush reading a real field's even middle again)
+                {"brush": "stamp", "x": 400.0, "y": 500.0, "radius": 300.0, "sx": 650.0, "sy": 10.0, "turn": 33.0,
+                 "fold": 90.0, "fx": 1010.0, "fy": 480.0, "fturn": 21.0, "edge": "hard"},
+                {"brush": "stamp", "x": 1500.0, "y": 300.0, "radius": 140.0, "shape": "square", "dx": 0.8, "dy": 0.6,
+                 "sx": -480.0, "sy": 250.0, "fold": 45.5, "fx": 990.0, "fy": 560.0, "fturn": -50.0, "weight": 0.7}],
             "tints over the join, faint, small and off the map": [
                 {"brush": "paint", "x": 900.0, "y": 300.0, "radius": 150.0, "colour": red, "weight": 0.6},
                 {"brush": "tint", "x": 1000.0, "y": 500.0, "radius": 300.0, "colour": "#7b6927"},
@@ -628,6 +647,76 @@ class MapPaint(unittest.TestCase):
         self.assertTrue(near(pixel(painted, painted.tiles[3], 300.0, 250.0), SAND))  # the stamp: sand, not red
         self.assertTrue(near(pixel(painted, painted.tiles[1], 300.0, 250.0), SAND))  # cell 0's whole tile too
         self.assertTrue(near(pixel(painted, painted.tiles[3], 300.0, 450.0), GREEN))  # off the stamp: grass
+
+    def test_a_clipped_stamp_paints_inside_its_mask_alone(self):
+        """A stamp with a clip (a field's painted outline): inside the mask's cells it copies as any stamp, outside it
+        nothing changes; pixel by pixel and on whole grids give the same tiles; a mask cell is read by the pixel's
+        middle (Stroke.clip_at)."""
+        from unittest import mock
+
+        import rusemod.groundpaint as gp
+        from rusemod.brush import Stroke
+        cell, w, h = 20.0, 30, 20   # 600 x 400 units from (700, 300): an L of cells
+        bits = bytes(1 if (i < 15 or j < 8) else 0 for j in range(h) for i in range(w))
+        clip = (700.0, 300.0, cell, w, h, bits)
+        st = Stroke("stamp", 1000.0, 500.0, 300.0, sx=-500.0, sy=0.0, shape="square", edge="hard", clear=False,
+                    clip=clip)
+        self.assertTrue(st.clip_at(705.0, 305.0) and not st.clip_at(1290.0, 690.0) and not st.clip_at(650.0, 500.0))
+        made = [st, Stroke("stamp", 1200.0, 450.0, 120.0, sx=-300.0, sy=40.0, turn=20.0, clip=clip, weight=0.6)]
+        s = two_colour_store()
+        out = gp.paint_strokes(s, BOUNDS, made)
+        if gp.whole_arrays() is not None:
+            with mock.patch.object(gp, "whole_arrays", lambda: None):
+                pixels = gp.paint_strokes(two_colour_store(), BOUNDS, made)
+            self.assertEqual(sorted(out), sorted(pixels))
+            for i in pixels:
+                self.assertEqual(out[i], pixels[i], i)
+        painted = Tmst(*s.rebuild(out))
+        tile = painted.tiles[0]
+        self.assertTrue(near(pixel(painted, tile, 1250.0, 650.0), pixel(s, s.tiles[0], 1250.0, 650.0)))   # outside
+        self.assertTrue(near(pixel(painted, tile, 1100.0, 400.0), GREEN))   # inside: the grass 500 to the left
+
+    def test_a_turned_stamp_copies_its_spot_turned(self):
+        """A stamp turned half way round over the join of grass (cell 0) and sand (cell 1), copying from where it is:
+        each side reads the other (Stroke.source_of: the middle + (sx, sy) + the offset turned back); its tiles to read
+        are the turned box's. Its stroke line keeps the turn; a turn on another brush is refused."""
+        import tomllib
+
+        from rusemod.brush import BrushError, Stroke, parse_strokes, strokes_toml
+        from rusemod.groundpaint import paint_strokes
+        s = two_colour_store()
+        out = paint_strokes(s, BOUNDS, strokes({"brush": "stamp", "x": 1000.0, "y": 500.0, "radius": 160.0, "sx": 0.0,
+                                                "sy": 0.0, "turn": 180.0, "edge": "hard"}))
+        painted = Tmst(*s.rebuild(out))
+        tile = painted.tiles[0]
+        self.assertTrue(near(pixel(painted, tile, 950.0, 500.0), SAND))    # grass side: now the sand it faces
+        self.assertTrue(near(pixel(painted, tile, 1050.0, 500.0), GREEN))  # sand side: now grass
+        st = Stroke("stamp", 100.0, 200.0, 50.0, sx=1000.0, sy=0.0, turn=90.0)
+        x, y = st.source_of(110.0, 200.0)                  # 10 along x from the middle, turned back a quarter
+        self.assertAlmostEqual(x, 1100.0, places=6)
+        self.assertAlmostEqual(y, 190.0, places=6)
+        self.assertEqual(Stroke("stamp", 0.0, 0.0, 1.0, sx=5.0, sy=6.0).source_of(1.0, 2.0), (6.0, 8.0))
+        back = parse_strokes(tomllib.loads(strokes_toml([st]))["stroke"])
+        self.assertEqual(back, [st])
+        # folded: whatever it paints, it reads inside its square (half 30 round (500, 500), sides 30 degrees round),
+        # mirrored at the sides: two points either side of a side read the same spot, and inside it reads straight
+        fd = Stroke("stamp", 0.0, 0.0, 400.0, sx=400.0, sy=100.0, turn=10.0, fold=30.0, fx=500.0, fy=500.0, fturn=30.0)
+        c, s_ = math.cos(math.radians(30.0)), math.sin(math.radians(30.0))
+        for x in range(-300, 301, 37):
+            for y in range(-300, 301, 41):
+                qx, qy = fd.source_of(float(x), float(y))
+                u, v = (qx - 500.0) * c + (qy - 500.0) * s_, (qy - 500.0) * c - (qx - 500.0) * s_
+                self.assertLessEqual(max(abs(u), abs(v)), 30.0 + 1e-6)
+        edge = Stroke("stamp", 0.0, 0.0, 400.0, sx=500.0, sy=500.0, fold=30.0, fx=500.0, fy=500.0)
+        a, b = edge.source_of(29.0, 3.0), edge.source_of(31.0, 3.0)   # 1 inside the side at u 30, 1 past it
+        self.assertAlmostEqual(a[0], b[0], places=6)
+        self.assertAlmostEqual(a[1], b[1], places=6)
+        self.assertEqual(edge.source_of(10.0, -20.0), (510.0, 480.0))
+        self.assertEqual(parse_strokes(tomllib.loads(strokes_toml([fd]))["stroke"]), [fd])
+        with self.assertRaisesRegex(BrushError, "fold"):
+            parse_strokes([{"brush": "paint", "x": 0, "y": 0, "radius": 5, "colour": "#102030", "fold": 4}])
+        with self.assertRaisesRegex(BrushError, "turn"):
+            parse_strokes([{"brush": "paint", "x": 0, "y": 0, "radius": 5, "colour": "#102030", "turn": 4}])
 
     def test_a_tint_keeps_the_ground_s_texture_and_moves_its_colour(self):
         """A tint across the join of grass (cell 0) and sand (cell 1): the step between them is kept at TINT_KEEP of
