@@ -1949,7 +1949,7 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
 
 # --- the map's own ground detail laid again somewhere else on it ([[copy]], MOD_FORMAT §8) -----------------------------
 # Up close a shipped map's ground is its stickers (ground decals ~5 deep), low plants and stones, laid by Eugen's tools in
-# patterns (fields tiled in rows, heath scattered, hedge feet in strips; private notes ground-structure-2026-10-10). A
+# patterns (fields tiled in rows, heath scattered, hedge feet in strips). A
 # copy lays the map's own arrangement from one place in another, object by object, each with the LOD levels its shipped
 # copy is drawn at: the same look, by construction, the first step to brushes that match the game (the owner,
 # 2026-10-10: "at the very least, the paint and the textures we add on our studio are gonna load just like the game's").
@@ -2453,7 +2453,7 @@ FIELD_HALF = 2048.0        # a field sticker's square, middle to side at size 1 
                            # every decor set: 15.75 m pieces); `halves` overrides it per type
 BRUSH_ANGLE = 12.0         # degrees: stickers whose facings are this alike are one field's rows
 # Two row stickers of one facing are one field when their middles lie under these many (half + half) apart along
-# the rows and across them. Measured on D-Day's 150,318 row stickers (scratch/looks/field_gaps.py, 2026-10-15): the
+# the rows and across them. Measured on D-Day's 150,318 row stickers (2026-10-15): the
 # nearest one along the rows lies 0.8-1.1 away (their squares just meet), across 0.6-0.9 (rows overlap), and a second
 # bump across at 1.1-1.3 is the plot on the far side of a hedge or a track.
 FIELD_ALONG = 1.12
@@ -2770,7 +2770,7 @@ def expand_border(area: PresetArea, borders: dict, group: int = 0) -> tuple[list
 
 def entry_masks(b: Block) -> dict[int, int]:
     """{entry index: the LOD mask of the deepest node of the block's draw tree listing it}: what the decor dresser goes
-    by (bits 1/2 close, 4 middle, 0x10 middle with GroundQuality, 8 far; private notes ground-structure §1)."""
+    by (bits 1/2 close, 4 middle, 0x10 middle with GroundQuality, 8 far)."""
     out: dict[int, int] = {}
     count = len(b.nodes) // 8
     todo = [(0, 0, len(b.entries))] if count else []

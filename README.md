@@ -80,6 +80,14 @@ Ocean).
 What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
 [Edit a scenario](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Edit-a-Scenario).
 
+**Coming next.** Already in the code here, for the next update: a plane's **Role** (make a fighter-bomber a bomber
+that drops from a bomb bay, or a scout that keeps its guns; make a tank a recon unit), what each weapon **Hits** (the
+ground, planes or both: a tank can fire at planes), and Map Paint's **field brush**, which turns whole fields into
+wheat, ploughed earth, stubble or a green crop the way the game's own maps paint them. After that: **towns you draw**
+(lay out the streets, mark them as homes, shops or industry, and the Studio fills them with the game's own buildings,
+in rows the way R.U.S.E.'s villages are built), roads that curve and meet at proper junctions, faster map builds, and
+the Studio and the Launcher in every language they offer, their messages included.
+
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
 Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
 **Nations** tab that makes one of the game's nations into another, with a name and a flag of its own.
