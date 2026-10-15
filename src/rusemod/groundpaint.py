@@ -591,7 +591,10 @@ def _tint_shift(sampler, stroke) -> tuple[float, float, float]:
 
 def _coverage(stroke, px: float, py: float, pw: float, ph: float) -> float:
     """How strongly `stroke` paints the pixel centred at (px, py), pw x ph map units: its fall-off at the centre, or the
-    mean over 3 x 3 points of the pixel when the stroke is under two pixels across (a coarse level)."""
+    mean over 3 x 3 points of the pixel when the stroke is under two pixels across (a coarse level). Nothing where the
+    stroke's clip (a field's painted outline) leaves the pixel's middle out."""
+    if stroke.clip and not stroke.clip_at(px, py):
+        return 0.0
     if stroke.radius >= 2 * max(pw, ph):
         return stroke.strength_at(px, py)
     total = 0.0
@@ -605,7 +608,7 @@ def _quick_round(stroke, pw: float, ph: float) -> tuple[float, float, float] | N
     """(x, y, r²) for a stroke whose coverage paint_strokes works out in place, the same sums as _coverage: a round,
     soft-edged brush of the soft shape (Map Paint's own) at least two pixels across. None for any other."""
     if (stroke.footprint().shape != "round" or stroke.edge == "hard" or stroke.kind.shape != "soft"
-            or not stroke.radius >= 2 * max(pw, ph)):
+            or not stroke.radius >= 2 * max(pw, ph) or stroke.clip):
         return None
     f = stroke.footprint()
     return f.x, f.y, f.r * f.r
@@ -827,7 +830,7 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swa
                         if c is None:  # a stamp: the map's own picture at the same level, where it copies from
                             if tile.level not in samplers:
                                 samplers[tile.level] = _picture_sampler(store, bounds, tile.level, cache)
-                            c = samplers[tile.level](px + s.sx, py + s.sy)
+                            c = samplers[tile.level](*s.source_of(px, py))
                             if c is None:
                                 continue
                             if s.kind.kind == "tint":  # (a tint: TINT_KEEP of it there, its shift added)
@@ -905,7 +908,7 @@ def stamp_detail(raw: bytes, bounds, strokes: list) -> tuple[bytes, list[str]]:
                     a = _coverage(s, px, py, pw, ph) * s.weight
                     if a <= 0.0:
                         continue
-                    c = source(px + s.sx, py + s.sy)
+                    c = source(*s.source_of(px, py))
                     if c is None:
                         continue
                     r, g, b = rgb[i]
@@ -975,8 +978,21 @@ def _stamp_sources(store: Tmst, bounds, tile, rect, box, stroke, whole: bool = F
     pw, ph = (rx1 - rx0) / w, (ry1 - ry0) / h
     if whole:   # a tint: its shift reads the picture under all of it, whatever tile it paints
         rx0, ry0, rx1, ry1 = box[0], box[2], box[1], box[3]
-    ax0, ax1 = max(rx0, box[0]) + stroke.sx - pw, min(rx1, box[1]) + stroke.sx + pw
-    ay0, ay1 = max(ry0, box[2]) + stroke.sy - ph, min(ry1, box[3]) + stroke.sy + ph
+    if stroke.fold > 0.0:   # a folded stamp reads in its square alone, wherever it paints
+        co, si = math.cos(math.radians(stroke.fturn)), math.sin(math.radians(stroke.fturn))
+        w = stroke.fold
+        corners = [(stroke.fx + a * w * co - b * w * si, stroke.fy + a * w * si + b * w * co)
+                   for a in (-1, 1) for b in (-1, 1)]
+        ax0, ax1 = min(p[0] for p in corners) - pw, max(p[0] for p in corners) + pw
+        ay0, ay1 = min(p[1] for p in corners) - ph, max(p[1] for p in corners) + ph
+    elif stroke.turn:   # a turned stamp: the box round the turned corners of what it paints here
+        qx0, qx1, qy0, qy1 = max(rx0, box[0]), min(rx1, box[1]), max(ry0, box[2]), min(ry1, box[3])
+        corners = [stroke.source_of(x, y) for x in (qx0, qx1) for y in (qy0, qy1)]
+        ax0, ax1 = min(c[0] for c in corners) - pw, max(c[0] for c in corners) + pw
+        ay0, ay1 = min(c[1] for c in corners) - ph, max(c[1] for c in corners) + ph
+    else:
+        ax0, ax1 = max(rx0, box[0]) + stroke.sx - pw, min(rx1, box[1]) + stroke.sx + pw
+        ay0, ay1 = max(ry0, box[2]) + stroke.sy - ph, min(ry1, box[3]) + stroke.sy + ph
     cw, ch = _cells(store, bounds)
     side = 1 << (store.depth - 1 - tile.level)
     tw, th = cw / side, ch / side

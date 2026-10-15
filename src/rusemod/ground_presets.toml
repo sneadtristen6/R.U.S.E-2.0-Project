@@ -81,50 +81,167 @@ trees_per_100m = 6.45
 trees = [["TypeWarrior/Pommier", 0.344, 30], ["TypeWarrior/Hetre_01", 0.225, 15], ["TypeWarrior/Orme_01", 0.104, 15], ["TypeWarrior/Bouleau_01", 0.091, 15], ["TypeWarrior/Charme_01", 0.062, 15], ["TypeWarrior/Chene_01", 0.059, 15], ["TypeWarrior/Chene_03", 0.058, 15], ["TypeWarrior/Chene_02", 0.014, 31]]
 fence = ["TypeWarrior/BarriereChamps_03", 31, 480.0]
 
-# The field brush's LOOKS: what it turns the strip of a field under it into, keeping the field's own
-# rows, outline and hedges. `stickers`: the row stickers' kinds and shares (each sticker of the field
-# under the brush stays where it is, its kind drawn by these shares); `field_kinds`: the map's field
-# sticker kinds it swaps (name prefixes); `crops`: the crop plants it replaces (prefixes), copied from
-# `sources`, big fields of the look: [x, y (the middle), the rows' facing (degrees), inside along and
-# across] (map units), the copy turned to the field painted over; the ground picture is stamped from
-# the same place. Measured on D-Day's fields (2026-10-14).
+# The field brush's LOOKS: what it turns a whole field under it into, keeping the field's own rows,
+# outline and hedges. `sources`: real D-Day fields of the look, each [x, y (the middle), the rows'
+# facing (degrees), inside along and across (map units), its crops' turn against the facing, its
+# ground colour, its row sticker kind]: a brushed field takes ONE source's colour (the picture under the
+# field is tinted to it), its row sticker kind and its crops (copied from its middle square, turned to
+# the rows), so it is that real field near and far. A look is what the source's middle shows: the
+# picture's hue from far, its row stickers and its crops (measured on D-Day's fields, 2026-10-15).
+# `stickers` and `colour`: the look's own, for a source without them.
+# `field_kinds`: the map's field sticker kinds it swaps (name prefixes); `crops`: the crop plants it
+# replaces (prefixes); `hay`: whether the map's own fields of the look carry hay (false: the hay and
+# carts on a field it makes go, its tractors too past 3 m in); `trees_within`: the deepest (m from
+# the field's edge) the look's fields carry trees (none: any depth); `masks`: per source, its row
+# pieces' detail-ring flags, "flag:count" (a brushed field's pieces take its source's).
 
 [[look]]
 name = "Wheat"
-description = "Ripe wheat: straw and pale rows, wheat in clumps over much of the field."
+description = "Ripe wheat: straw rows on yellow ground, wheat in clumps all over."
 map = "M04_Cotentin"
 field_kinds = ["Labourage", "Paille"]
 crops = ["Champs_"]
-colour = "#7c6927"
-stickers = [["Paille", 0.43], ["Labourage_herbeclaire", 0.245], ["Labourage_terreclaire", 0.178], ["Labourage", 0.06], ["Labourage_terrefonce", 0.06], ["Labourage_herbeclaire_triangle", 0.012], ["Labourage_herbefonce", 0.008], ["Labourage_terreclaire_triangle", 0.005]]
-sources = [[2673924.0, 930789.8, 166.50, 31928.0, 49816.0, 10.77], [1680697.3, 1673636.2, 106.50, 31928.0, 49816.0, 10.77], [3344941.0, 2562596.2, 120.20, 40066.0, 38974.0, -2.02], [3271950.1, 2366702.7, 0.20, 40066.0, 38974.0, -2.01], [1865612.2, 2155009.9, 60.20, 40066.0, 38974.0, -2.01], [3284969.1, 2539478.8, 32.66, 28522.0, 26260.0, -4.37], [3859686.7, 2484005.4, 154.08, 36504.0, 14456.0, -5.78]]
+colour = "#8a732b"
+hay = true
+trees_within = 6.0
+masks = ["16:26 21:13 23:1", "16:25 21:13 23:1"]
+stickers = [["Paille", 1.0]]
+sources = [[3859686.7, 2484005.4, 154.08, 29203.2, 11564.8, -5.78, "#8a732b", "Paille"], [1651648.1, 1707420.8, 34.12, 23712.0, 15912.0, -5.8, "#886f2c", "Paille"]]
 
 [[look]]
 name = "Ploughed"
-description = "Ploughed earth: dark rows, next to nothing growing."
+description = "Ploughed earth: dark rows on reddish-brown ground, next to nothing growing."
 map = "M04_Cotentin"
 field_kinds = ["Labourage", "Paille"]
 crops = ["Champs_"]
-colour = "#655621"
-stickers = [["Labourage_terrefonce", 0.306], ["Labourage", 0.28], ["Labourage_herbeclaire", 0.131], ["Labourage_terreclaire", 0.082], ["Labourage_herbefonce", 0.077], ["Paille", 0.067], ["Labourage_triangle", 0.037], ["Labourage_demi", 0.008]]
-sources = [[3791726.4, 2498320.1, 90.34, 42744.0, 25506.0, 0.0], [3602083.0, 2220191.2, 150.34, 42744.0, 25506.0, 0.0], [2697313.7, 998738.2, 30.34, 42744.0, 25506.0, 0.0], [3076942.4, 2496160.1, 0.75, 15626.0, 26468.0, 0.0], [1470024.1, 1919402.1, 122.64, 18330.0, 21268.0, 0.0], [2692977.0, 2205511.8, 60.52, 30680.0, 11466.0, 0.0]]
-
-[[look]]
-name = "Stubble"
-description = "A harvested field: straw rows, a few clumps left."
-map = "M04_Cotentin"
-field_kinds = ["Labourage", "Paille"]
-crops = ["Champs_"]
-colour = "#7b5f25"
-stickers = [["Paille", 0.469], ["Labourage_terrefonce", 0.229], ["Labourage_herbeclaire", 0.143], ["Labourage_terreclaire", 0.103], ["Labourage", 0.032], ["Labourage_triangle", 0.007], ["Paille_triangle", 0.005], ["Labourage_herbefonce", 0.005]]
-sources = [[1623396.2, 1708554.1, 21.46, 25610.0, 22152.0, -0.32], [2040021.2, 1953955.6, 0.65, 16614.0, 28678.0, 0.0]]
+colour = "#825b2a"
+hay = false
+trees_within = 6.0
+masks = ["16:44 17:6 21:6 23:6", "16:44 17:6 21:6 23:6"]
+stickers = [["Labourage_terrefonce", 1.0]]
+sources = [[1392351.4, 1051127.8, 0.72, 12688.0, 24523.2, -5.46, "#835b2b", "Labourage_terrefonce"], [1776570.7, 2235110.4, 120.72, 12688.0, 24523.2, -5.46, "#825b2a", "Labourage_terrefonce"]]
 
 [[look]]
 name = "Green crop"
-description = "A green crop: pale green rows, green clumps over much of the field."
+description = "A green field: light-grass rows on green ground, a few green clumps."
 map = "M04_Cotentin"
 field_kinds = ["Labourage", "Paille"]
 crops = ["Champs_"]
-colour = "#525a1e"
-stickers = [["Labourage_herbeclaire", 0.838], ["Labourage", 0.051], ["Paille", 0.047], ["Labourage_terreclaire", 0.031], ["Labourage_terrefonce", 0.026], ["Labourage_herbefonce", 0.004], ["Labourage_triangle", 0.002], ["Paille_triangle", 0.002]]
-sources = [[1261806.3, 1648143.7, 29.85, 17342.0, 36582.0, 0.33], [1306727.1, 1264513.1, 118.12, 19812.0, 22022.0, 1.89], [1970118.1, 1560309.7, 59.33, 19760.0, 20228.0, 0.59]]
+colour = "#405213"
+hay = true
+masks = ["16:70 21:3", "16:75 17:5 21:7", "16:43 17:8 21:29 22:3 23:18", "16:48", "16:48"]
+stickers = [["Labourage_herbeclaire", 1.0]]
+sources = [[1762121.6, 2295465.6, 43.82, 14092.0, 39884.0, 32.31, "#405213", "Labourage_herbeclaire"], [2128350.3, 1700402.9, 167.35, 16614.0, 49348.0, 28.78, "#425212", "Labourage_herbeclaire"], [2922477.7, 2072816.5, 1.65, 18761.6, 36233.6, -1.55, "#485417", "Labourage_herbeclaire"], [2742568.3, 2560397.7, 150.37, 30082.0, 14014.0, 2.95, "#4d6316", "Labourage_herbeclaire"], [3758744.8, 2233257.4, 90.36, 30082.0, 14014.0, 2.96, "#4d6416", "Labourage_herbeclaire"]]
+
+# The field brush keeps its new standing crops off each building by D-Day's own gap for its type (m,
+# from the walls: the model's box): the closest quarter of the type's placements beside standing
+# crops (harvested crops, squashed or sunk, don't count); a type not listed, `default` (every
+# building's). Measured 2026-10-15 (looks/crop_patches.py).
+[building_gaps]
+default = 5.46
+"Cabane_Pierre" = 1.85
+"Chateau_dEau_01" = 22.11
+"Chateau_dEau_02" = 17.56
+"Chateau_dEau_03" = 5.51
+"Chateau_dEau_04" = 12.41
+"Cottage1_1" = 28.13
+"Cottage1_2" = 1.77
+"Cottage1_3" = 12.59
+"Cottage2" = 7.97
+"Cottage3" = 12.22
+"Ecurie" = 16.67
+"Entrepot" = 2.41
+"Entrepot_02" = 6.67
+"Etable_02" = 5.46
+"Etable_03" = 6.84
+"Etables" = 1.69
+"FermeAAngle_Bas" = 6.75
+"FermeAAngle_Milieu" = 9.88
+"FermeAAngle_Toit" = 7.62
+"FermeAPetite_Bas" = 9.2
+"FermeAPetite_Milieu" = 10.82
+"FermeAPetite_Toit" = 9.16
+"FermeA_Bas" = 2.24
+"FermeA_Milieu" = 2.25
+"FermeA_Toit" = 2.11
+"FermeBAngle_Bas" = 6.43
+"FermeBAngle_Milieu" = 3.47
+"FermeBAngle_Toit" = 5.61
+"FermeBPetite_Bas" = 6.87
+"FermeBPetite_Toit" = 6.66
+"FermeB_Bas" = 6.3
+"FermeB_Milieu" = 0.0
+"FermeB_Toit" = 6.19
+"Ferme_1" = 4.15
+"Ferme_2" = 11.28
+"Grange" = 17.62
+"Maison3F_1ET_Colombages_Cordonnerie" = 23.81
+"Maison3F_1ET_Colombages_salonthe2" = 0.85
+"Market_02" = 4.83
+"Moulin_carre_01" = 14.51
+"Moulin_carre_02" = 5.53
+"Pigeonnier" = 11.39
+"Pigeonnier_02" = 4.11
+"Porcherie" = 5.65
+"Porcherie_02" = 15.28
+"Ruine" = 2.37
+"TownHouseAAngle120_Bas" = 8.44
+"TownHouseAAngle120_Haut" = 8.43
+"TownHouseAAngle120_Toit4" = 8.22
+"TownHouseAAngle30_Bas" = 11.04
+"TownHouseAAngle30_Haut" = 11.03
+"TownHouseAAngle30_Toit2" = 19.64
+"TownHouseAAngle30_Toit3" = 10.8
+"TownHouseAAngle30_Toit4" = 10.0
+"TownHouseAAngle_Bas" = 2.21
+"TownHouseAAngle_Haut" = 2.21
+"TownHouseAAngle_Milieu" = 3.23
+"TownHouseAAngle_Toit3" = 3.23
+"TownHouseAAngle_Toit4" = 2.21
+"TownHouseB2_Bas" = 7.83
+"TownHouseB2_Haut" = 6.95
+"TownHouseB2_Milieu" = 7.54
+"TownHouseB3_Bas" = 8.85
+"TownHouseBAngle_Bas" = 1.32
+"TownHouseBAngle_Haut" = 1.32
+"TownHouseBAngle_Toit5" = 1.32
+"TownHouseB_Bas" = 6.53
+"TownHouseB_Toit1" = 7.61
+"TownHouseB_Toit2" = 6.59
+"TownHouseB_Toit3" = 8.93
+"TownHouseB_Toit4" = 6.5
+"TownHouseC2_Bas" = 9.7
+"TownHouseC4_Bas" = 24.04
+"TownHouseC5_Bas" = 12.76
+"TownHouseC6_Bas" = 3.71
+"TownHouseC_Haut" = 9.03
+"TownHouseC_Milieu" = 12.77
+"TownHouseC_Toit1" = 4.05
+"TownHouseC_Toit2" = 24.04
+"TownHouseC_Toit5" = 9.54
+"TownHouseD2_Bas" = 4.38
+"TownHouseD2_Haut" = 4.31
+"TownHouseD2_Milieu" = 3.54
+"TownHouseDAngle_Bas" = 1.11
+"TownHouseDAngle_Haut" = 5.83
+"TownHouseDAngle_Milieu" = 1.11
+"TownHouseDAngle_Toit1" = 5.84
+"TownHouseDAngle_Toit3" = 1.11
+"TownHouseDAngle_Toit4" = 8.09
+"TownHouseD_Bas" = 5.97
+"TownHouseD_Haut" = 5.69
+"TownHouseD_Toit2" = 3.61
+"TownHouseD_Toit4" = 4.33
+"TownHouseD_Toit5" = 5.73
+"Transformateur" = 20.62
+"VillageHouse_A2" = 6.69
+"VillageHouse_B1" = 7.76
+"VillageHouse_B2" = 25.71
+"VillageHouse_C1" = 0.0
+"VillageHouse_ToitA_2" = 18.08
+"VillageHouse_ToitA_3" = 6.63
+"VillageHouse_ToitA_4" = 4.11
+"VillageHouse_ToitB_4" = 25.55
+"VillageHouse_ToitB_5" = 7.46
+"VillageHouse_ToitC_3" = 0.0
+"VillageHouse_ToitC_4" = 11.89

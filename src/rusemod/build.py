@@ -196,18 +196,20 @@ def _map_readers() -> dict:
     from .roadnet import RoadNetError, parse_roads, parse_take_out
     from .scenario import (ScenarioError, parse_changes, parse_moves, parse_places, parse_removes, parse_spawns,
                            parse_starts)
-    from .scenery import (SceneryEditError, parse_copies, parse_erase, parse_field_brushes, parse_objects,
-                          parse_presets)
+    from .scenery import (SceneryEditError, parse_copies, parse_erase, parse_field_brushes, parse_field_copies,
+                          parse_objects, parse_presets)
     from .sectors import SectorError, parse_sectors
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
-        "scenery.toml": (("object", "erase", "copy", "preset", "fieldbrush"),
-                         "a scenery file holds [[object]], [[erase]], [[copy]], [[preset]] and [[fieldbrush]] tables",
+        "scenery.toml": (("object", "erase", "copy", "preset", "fieldbrush", "fieldcopy"),
+                         "a scenery file holds [[object]], [[erase]], [[copy]], [[preset]], [[fieldbrush]] and "
+                         "[[fieldcopy]] tables",
                          lambda d, rel: (parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel)
                                          + parse_copies(d.get("copy", []), rel)
                                          + parse_presets(d.get("preset", []), rel)
-                                         + parse_field_brushes(d.get("fieldbrush", []), rel)),
+                                         + parse_field_brushes(d.get("fieldbrush", []), rel)
+                                         + parse_field_copies(d.get("fieldcopy", []), rel)),
                          SceneryEditError),
         # moves and removes first: they name the shipped items by their number, which starts and spawns (added at
         # the end) don't shift, and a removed item keeps its place; the sectors' setting last (rusemod.sectors)
@@ -319,14 +321,14 @@ def _erase_areas(info) -> None:
     picture stamps (into `info.paint`, with the terrain file's own paint strokes) first (scenery.expand_preset). The
     field brush's dabs ([[fieldbrush]]) go to `info.fields`: they read the map's own fields, so the build expands
     them where it reads the map's scenery (scenery.expand_field_brush)."""
-    from .scenery import (CopyArea, EraseArea, FieldBrush, PresetArea, border_library, expand_preset,
+    from .scenery import (CopyArea, EraseArea, FieldBrush, FieldCopy, PresetArea, border_library, expand_preset,
                           hedgerow_library, preset_library)
     lib = borders = hedgerows = None
     for pack, rows in list(info.scenery.items()):
-        dabs = [r for r in rows if isinstance(r, FieldBrush)]
-        if dabs:
+        dabs = [r for r in rows if isinstance(r, (FieldBrush, FieldCopy))]   # (and the field copies: they read the
+        if dabs:                                                             # map's own fields too)
             info.fields[pack] = dabs
-            rows = [r for r in rows if not isinstance(r, FieldBrush)]
+            rows = [r for r in rows if not isinstance(r, (FieldBrush, FieldCopy))]
             if not rows:
                 del info.scenery[pack]
                 continue
@@ -2460,13 +2462,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 copy_areas = list(copying.get(name, ([], []))[0])
                 if name in brushing:  # the field brush, from the map's own fields as it comes in
                     from .scenery import Scenery as _Scenery
-                    from .scenery import expand_field_brush, look_library, own_fields
+                    from .scenery import FieldCopy, expand_field_brush, expand_field_copy, look_library, own_fields
                     from .groundtex import decal_types
                     looks, here = look_library(), _Scenery(raw)
                     # each sticker type's own square (the decor sets' MaxExtent): a field's shape is its stickers'
                     halves = {d.name: d.half for ds in decal_types(arc).values() for d in ds}
                     areas = list(areas)
-                    dabs = brushing[name][0]
+                    dabs = [d for d in brushing[name][0] if not isinstance(d, FieldCopy)]
+                    for k, fc in enumerate((d for d in brushing[name][0] if isinstance(d, FieldCopy)), 1):
+                        c_erases, c_copies, c_stamps, c_notes = expand_field_copy(fc, here, group=2000 + k,
+                                                                                  halves=halves)
+                        areas += c_erases
+                        copy_areas += c_copies
+                        brush_paint.setdefault(name, ([], brushing[name][1]))[0].extend(c_stamps)
+                        copy_notes += c_notes
                     for k, dab in enumerate(dabs, 1):
                         if dab.look not in looks:  # not a game rule: the look is the Studio's own library's
                             raise SceneryEditError(f"{', '.join(brushing[name][1])}: field brush {k}: there's no "
@@ -2474,10 +2483,57 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     # a field two dabs touch is the later one's; nothing one dab changes is laid back by another
                     own, changed = own_fields(dabs, looks, here, halves)
                     relaid: set = set()   # a neighbour sticker two dabs' erases take is laid back once
+                    # (no picture given: a stamp per row sticker. The painted outline from the picture's colour,
+                    # scenery.field_outline, held only 64% of an uneven field's squares on D-Day, 2026-10-15: whole
+                    # parts kept their old paint; off until it follows the painted boundary lines, F-33)
+                    field_picture = None
+                    field_buildings = None   # each building type's model box and the gap crops keep from it (F-34)
+                    if dabs:
+                        from .scenery import building_table
+                        if descs is None:
+                            descs = descriptors(arc)
+                        try:
+                            from .models import Library
+                            model_lib = Library(game)
+                        except OSError:   # (no mesh packs to read: no building kept clear)
+                            model_lib = None
+                        if model_lib is not None:
+                            try:
+                                field_buildings = building_table(here.names, descs, model_lib.box)
+                            finally:
+                                model_lib.close()
+                    # each dab's PARCEL: the ground the map's own paint and borders give the field under it (the owner,
+                    # 2026-10-15: R's paint over E's corner, W's trees, Q's corner spot; rusemod.parcels); a later dab's
+                    # ground is the later dab's. Without numpy or the map's picture: the fields' squares, as before.
+                    ground, dab_parcels = None, [None] * len(dabs)
+                    if dabs:
+                        try:
+                            from .groundpaint import map_bounds
+                            from .parcels import FieldGround, subtract
+                            from .scenery import _facing, brush_fields
+                            from .tmst import Tmst
+                            hd_store = Tmst(bytes(map_arc.read(map_arc.find("output\\highdef.tmst_pc"))),
+                                            bytes(map_arc.read(map_arc.find("output\\highdef.tmst_chunk_pc"))))
+                            ground = FieldGround(here, hd_store,
+                                                 map_bounds(bytes(map_arc.read(map_arc.find("output\\highdef.tms")))),
+                                                 descs)
+                        except (ImportError, KeyError, ValueError):
+                            ground = None
+                    if ground is not None:
+                        for k, dab in enumerate(dabs):
+                            squares = [(m[3], m[7], h, math.radians(_facing(m)))
+                                       for f in brush_fields(dab, looks[dab.look], here, halves) for _s, m, _mk, h in f]
+                            dab_parcels[k] = ground.parcel(dab.footprint(), squares)
+                        for k in range(len(dabs)):
+                            for j in range(k + 1, len(dabs)):
+                                if dab_parcels[k] is not None and dab_parcels[j] is not None:
+                                    subtract(dab_parcels[k], dab_parcels[j])
                     for k, dab in enumerate(dabs, 1):
                         b_erases, b_objects, b_copies, b_stamps, b_notes = expand_field_brush(
                             dab, looks[dab.look], here, group=1000 + k, halves=halves, fields=own[k - 1],
-                            changed=changed, relaid=relaid)
+                            changed=changed, relaid=relaid, picture=field_picture, buildings=field_buildings,
+                            descs=descs, parcel=dab_parcels[k - 1], ground=ground,
+                            others=[p for j, p in enumerate(dab_parcels) if j != k - 1 and p is not None])
                         areas += b_erases
                         copied += b_objects
                         copy_areas += b_copies

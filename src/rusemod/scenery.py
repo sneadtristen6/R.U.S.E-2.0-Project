@@ -1963,10 +1963,12 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
 # copy is drawn at: the same look, by construction, the first step to brushes that match the game (the owner,
 # 2026-10-10: "at the very least, the paint and the textures we add on our studio are gonna load just like the game's").
 COPY_LAYERS = ("stickers", "plants", "stones")  # ground decals (not road stickers); low plants; stone props (low_cover)
+FIELD_COPY_LAYERS = COPY_LAYERS + ("trees", "props")  # and the rest of a field (expand_field_copy): trees, other props
+                                                      # (hay, carts, tractors, fences); never buildings (not solid here)
 
 
 LOW_COVER = "low cover"   # in an EraseArea's `types`: every low plant and stone type of the map (resolved at build)
-FILL_GAP = {"plants": 260.0, "stones": 390.0, "stickers": 780.0}   # the fill rule: a copied plant is left off within
+FILL_GAP = {"plants": 260.0, "stones": 390.0, "stickers": 780.0, "trees": 260.0, "props": 130.0}   # the fill rule: a copied plant is left off within
 # 1 m of a plant the map already has there, a stone within 1.5 m of a stone, a sticker within 3 m of one of its own
 # kind (the owner, 2026-10-10: "I wouldn't want to like throw a plant on top of a plant"; a brush fills its layer up
 # to the recipe, never past it, and never takes anything off)
@@ -1987,7 +1989,14 @@ class CopyArea:
     The field brush's copies (expand_field_brush) also take: `only`, name prefixes of the objects copied (its crops);
     `near` and `near_r`, places of the target map an object must land within near_r of (the stickers of the field
     painted over, so nothing lands on its hedges, the road or the meadow beside it); `src_clip`, a rectangle of the
-    source (x, y, half across, dx, dy, half along: the source field's inside) the objects must come from."""
+    source (x, y, half across, dx, dy, half along: the source field's inside) the objects must come from; `avoid`,
+    places of the target no object may land in: (x, y, r) a circle, (x, y, half u, half v, ux, uy, gap) a rectangle
+    (a building's footprint: its middle, half sizes along its u axis (ux, uy) and the v axis square to it) and all
+    within `gap` of it; `harvest`, where a crop landing is laid harvested (round the hay and machines left on a field):
+    (x, y, r) a circle, the crop as HARVESTED says for its kind, or (x, y, r, height, lift, kind) the spot of one of
+    the map's own harvested crops, a crop of its kind laid as it is (its height and lift; the nearest such spot); `skip`,
+    name prefixes of objects not copied; `inside`, a test (x, y) -> bool an object must land where it holds
+    (FieldInside: a field's interior, for its dressing)."""
     x: float
     y: float
     radius: float
@@ -2007,12 +2016,30 @@ class CopyArea:
     near: tuple = ()
     near_r: float = 0.0
     src_clip: tuple | None = None
+    avoid: tuple = ()
+    harvest: tuple = ()
+    skip: tuple = ()
+    inside: object = field(default=None, compare=False)
 
     def footprint(self):
         from .brush import Footprint
         if self.shape == "square":
             return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy, along=self.along)
         return Footprint("round", self.x, self.y, self.radius)
+
+    def avoids(self, x: float, y: float) -> bool:
+        """Whether (x, y) lies in one of the `avoid` places."""
+        for p in self.avoid:
+            if len(p) == 3:
+                if (x - p[0]) ** 2 + (y - p[1]) ** 2 < p[2] * p[2]:
+                    return True
+                continue
+            cx, cy, hu, hv, ux, uy, gap = p
+            du = abs((x - cx) * ux + (y - cy) * uy) - hu
+            dv = abs(-(x - cx) * uy + (y - cy) * ux) - hv
+            if max(du, 0.0) ** 2 + max(dv, 0.0) ** 2 < gap * gap or (du < 0.0 and dv < 0.0):
+                return True
+        return False
 
     def source_clip(self):
         """The source rectangle the copy's objects must come from (`src_clip`), or None."""
@@ -2429,13 +2456,117 @@ def parse_field_brushes(rows: list, where: str = "scenery.toml") -> list[FieldBr
     return out
 
 
+@dataclass(frozen=True)
+class FieldCopy:
+    """A real field of the map laid again whole somewhere else ([[fieldcopy]] in scenery.toml, MOD_FORMAT §8): the
+    ploppable field, for a blank map (the owner, 2026-10-15). Eugen built his fields as prefab blocks and placed the
+    same block several times, each turned its own way; the ground picture under each was
+    painted place by place. So the copy takes the field under (sx, sy) whole: everything inside its outline and a
+    `border` (map units) round it (rows, crops, fences, hay, carts, trees, the hedge's foot) and the picture under
+    it, turned `turn` degrees round its middle and laid with that middle at (x, y) (expand_field_copy)."""
+    x: float
+    y: float
+    sx: float
+    sy: float
+    turn: float = 0.0
+    border: float = 6.0 * 260.0
+
+
+def parse_field_copies(rows: list, where: str = "scenery.toml") -> list[FieldCopy]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - {"x", "y", "sx", "sy", "turn", "border"})
+        if extra:
+            raise SceneryEditError(f"{where}: fieldcopy {k + 1}: unknown key {extra[0]!r}")
+        try:
+            x, y, sx, sy = float(row["x"]), float(row["y"]), float(row["sx"]), float(row["sy"])
+            turn, border = float(row.get("turn", 0.0)), float(row.get("border", 6.0 * 260.0))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: fieldcopy {k + 1} has no {exc.args[0]} (x, y: where it goes; sx, sy: a "
+                                   f"point in the field it copies)") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: fieldcopy {k + 1}: x, y, sx, sy, turn and border must be numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, sx, sy, turn, border)) or not 0.0 <= border <= 50.0 * 260.0:
+            raise SceneryEditError(f"{where}: fieldcopy {k + 1}: border must be 0 to 13,000 map units (50 m)")
+        out.append(FieldCopy(x, y, sx, sy, turn, border))
+    return out
+
+
+FIELD_KINDS = ("Labourage", "Paille")   # the row stickers a field is made of, every decor set
+
+
+def field_under(sc: Scenery, x: float, y: float, halves: dict | None = None) -> list | None:
+    """The field (brush_fields' list of its row stickers) at (x, y): the biggest whose squares hold the point, else
+    the one whose sticker's middle is nearest within 15 m (a field's middle can fall between its stickers), else
+    None."""
+    fields = brush_fields(FieldBrush("", x, y, 15.0 * 260.0), {"field_kinds": FIELD_KINDS}, sc, halves)
+
+    def holds(field):
+        for _s, m, _k, h in field:
+            t = math.atan2(m[4], m[0])
+            u = (x - m[3]) * math.cos(t) + (y - m[7]) * math.sin(t)
+            v = -(x - m[3]) * math.sin(t) + (y - m[7]) * math.cos(t)
+            if abs(u) <= h and abs(v) <= h:
+                return True
+        return False
+    holding = [f for f in fields if holds(f)]
+    if holding:
+        return max(holding, key=len)
+    if not fields:
+        return None
+    return min(fields, key=lambda f: min(math.hypot(m[3] - x, m[7] - y) for _s, m, _k, _h in f))
+
+
+def expand_field_copy(fc: FieldCopy, sc: Scenery, group: int = 0, halves: dict | None = None):
+    """What a field copy does to the map whose scenery is `sc` (as it ships): (erases, copies, stamps, notes). The
+    field is brush_fields' field under (sx, sy) (the biggest, where two meet there); every point within `border` of
+    one of its row stickers' squares is copied, turned `turn` round the field's middle onto (x, y): first what was
+    there is erased (every kind, square by square), then every object standing there in the source is copied
+    (CopyArea, all layers, landing only on the grown squares), then the picture (a hard stamp per grown square,
+    turned). Nothing is done where there's no field at (sx, sy)."""
+    from .brush import Stroke
+    field = field_under(sc, fc.sx, fc.sy, halves)
+    if field is None:
+        return [], [], [], [f"field copy to ({fc.x:.0f}, {fc.y:.0f}): no field at ({fc.sx:.0f}, {fc.sy:.0f}), "
+                            f"nothing done"]
+    xs = [m[3] for _s, m, _k, _h in field]
+    ys = [m[7] for _s, m, _k, _h in field]
+    fx, fy = (min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0   # its middle
+    c, s = math.cos(math.radians(fc.turn)), math.sin(math.radians(fc.turn))
+
+    def there(px, py):   # a source point's place in the copy
+        ox, oy = px - fx, py - fy
+        return fc.x + ox * c - oy * s, fc.y + ox * s + oy * c
+    grown = []   # each square in the copy: (x, y, half + border, dx, dy)
+    for _s, m, _k, half in field:
+        t = math.atan2(m[4], m[0]) + math.radians(fc.turn)
+        x, y = there(m[3], m[7])
+        grown.append((x, y, half + fc.border, math.cos(t), math.sin(t)))
+    erases = [EraseArea(x, y, h, ERASE_DEFAULT, (), shape="square", dx=dx, dy=dy) for x, y, h, dx, dy in grown]
+    reach = max(math.hypot(x - fc.x, y - fc.y) + h * math.sqrt(2.0) for x, y, h, _dx, _dy in grown)
+    copies = [CopyArea(fc.x, fc.y, reach, fx - fc.x, fy - fc.y, fc.turn, FIELD_COPY_LAYERS, "square", 1.0, 0.0, "", None,
+                       False, group, near=tuple(grown), near_r=max(h for _x, _y, h, _dx, _dy in grown))]
+    stamps = []
+    for x, y, h, dx, dy in grown:   # the picture: what lies under each grown square in the source, turned
+        qx, qy = fx + (x - fc.x) * c + (y - fc.y) * s, fy - (x - fc.x) * s + (y - fc.y) * c
+        stamps.append(Stroke("stamp", x, y, h, sx=qx - x, sy=qy - y, turn=fc.turn, clear=False, shape="square",
+                             edge="hard", dx=dx, dy=dy))
+    notes = [f"field copy: the field of {len(field)} row sticker(s) round ({fx:.0f}, {fy:.0f}) laid at "
+             f"({fc.x:.0f}, {fc.y:.0f}) turned {fc.turn:.0f} degrees, with {fc.border / 260.0:.0f} m round it"]
+    return erases, copies, stamps, notes
+
+
 def look_library(path=None) -> dict[str, dict]:
     """The field brush's looks, by name: {"description", "map" (whose fields they are measured on and copied from),
     "field_kinds" (name prefixes of the map's field stickers the brush swaps), "crops" (name prefixes of the crop
     plants it replaces), "stickers" [(kind, share)] (the row stickers it lays), "sources" [(x, y, the rows' facing
-    in degrees, inside along, inside across, its crops' turn against that facing)] (big fields of the look its crops
-    come from), "colour" ("#rrggbb": the look's ground colour on the map, the picture under the strip is tinted to;
-    "" none)}. From the [[look]] tables of ground_presets.toml beside this module."""
+    in degrees, inside along, inside across, its crops' turn against that facing, its ground colour "#rrggbb" or "",
+    its row sticker kind or "")] (real fields of the look: a brushed field takes one source's colour, row sticker
+    kind and crops, so it is that field near and far), "colour" ("#rrggbb": the look's ground colour on the map, for
+    a source without its own; "" none), "hay" (whether the map's own fields of the look carry hay; without, the hay
+    and carts on a field it makes go), "trees_within" (the deepest, metres from a field's edge, the look's fields
+    carry trees; None: any depth), "masks" ([{detail-ring flag: count}] per source: its row pieces')}. From the
+    [[look]] tables of ground_presets.toml beside this module."""
     import tomllib
     from pathlib import Path
     file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
@@ -2443,18 +2574,88 @@ def look_library(path=None) -> dict[str, dict]:
     out: dict[str, dict] = {}
     for row in data.get("look", []):
         name = str(row.get("name", "")).strip()
-        sources = [tuple(float(v) for v in s) for s in row.get("sources", [])]
+        sources = []
+        for s in row.get("sources", []):
+            try:
+                nums = tuple(float(v) for v in s[:6])
+                words = tuple(str(v) for v in s[6:])
+            except (TypeError, ValueError):
+                nums, words = (), ("", "", "")
+            if len(nums) not in (5, 6) or len(words) > 2 or nums[3] <= 0 or nums[4] <= 0 or \
+                    (len(nums) == 5 and words):
+                raise SceneryEditError(f"{file.name}: look {name!r}: a source is [x, y, facing, inside along, inside "
+                                       f"across(, its crops' turn against the facing(, its colour, its row sticker "
+                                       f"kind))], both sizes above 0")
+            sources.append(nums + (0.0,) * (6 - len(nums)) + words + ("",) * (2 - len(words)))
         stickers = [(str(s[0]), float(s[1])) for s in row.get("stickers", [])]
         if not name or not row.get("map") or not sources or not stickers:
             raise SceneryEditError(f"{file.name}: a look needs a name, a map, stickers and sources")
-        if any(len(s) not in (5, 6) or s[3] <= 0 or s[4] <= 0 for s in sources):
-            raise SceneryEditError(f"{file.name}: look {name!r}: a source is [x, y, facing, inside along, inside "
-                                   f"across(, its crops' turn against the facing)], both sizes above 0")
+        masks = []
+        for text in row.get("masks", []):   # per source: "flag:count ..." of its row pieces' detail-ring flags
+            got = {}
+            for part in str(text).split():
+                k, _sep, n = part.partition(":")
+                got[int(k)] = int(n)
+            masks.append(got)
+        tw = row.get("trees_within")
         out[name] = {"description": str(row.get("description", "")), "map": str(row["map"]),
                      "field_kinds": tuple(row.get("field_kinds", ["Labourage", "Paille"])),
                      "crops": tuple(row.get("crops", ["Champs_"])), "stickers": stickers,
-                     "sources": [s if len(s) == 6 else s + (0.0,) for s in sources],
-                     "colour": str(row.get("colour", ""))}
+                     "sources": sources, "colour": str(row.get("colour", "")), "hay": bool(row.get("hay", True)),
+                     "trees_within": float(tw) if tw is not None else None, "masks": masks}
+    return out
+
+
+def building_gaps(path=None) -> tuple[float, dict[str, float]]:
+    """(default, {building type's short name: gap}) in metres: how far from its walls (its model's box) the field
+    brush keeps new standing crops off each building type, as the map keeps its own (the [building_gaps] table of
+    ground_presets.toml beside this module: D-Day's closest quarter of each type's placements beside standing
+    crops); a type not listed takes the default. (0.0, {}) when the file has none."""
+    import tomllib
+    from pathlib import Path
+    file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
+    table = dict(tomllib.loads(file.read_text(encoding="utf-8")).get("building_gaps", {}))
+    default = float(table.pop("default", 0.0))
+    return default, {str(k): float(v) for k, v in table.items()}
+
+
+def building_rects(sc: "Scenery", buildings: dict, box: tuple) -> list:
+    """The buildings of `buildings` (building_table) whose middles lie in `box` (x0, y0, x1, y1), each once, as
+    (type, x, y, half u, half v, ux, uy, gap): its model's box through its placement (middle, half sizes along its own
+    x axis (ux, uy) and square to it) and its type's gap: CopyArea.avoid's rectangles with the type in front."""
+    syms = {i for i, n in enumerate(sc.names) if n in buildings}
+    out, seen = [], set()
+    for sym, m, _mask in walk_levels(sc, box, syms):
+        key = (sym, round(m[3], 1), round(m[7], 1))
+        if key in seen:
+            continue
+        seen.add(key)
+        x0, y0, x1, y1, gap = buildings[sc.names[sym]]
+        sx, sy = math.hypot(m[0], m[4]), math.hypot(m[1], m[5])
+        if not sx or not sy:
+            continue
+        bx, by = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        out.append((sc.names[sym], m[3] + m[0] * bx + m[1] * by, m[7] + m[4] * bx + m[5] * by, (x1 - x0) / 2.0 * sx,
+                    (y1 - y0) / 2.0 * sy, m[0] / sx, m[4] / sx, gap))
+    return out
+
+
+def building_table(names: list, descs: dict, box_of, gaps: tuple | None = None) -> dict:
+    """{building type: (x0, y0, x1, y1, gap)}, map units, for expand_field_brush: each of the map's building types
+    (`names`, by their descriptors `descs`) with its model's box as the mesh packs list it (`box_of(model)` -> (min
+    x, y, z, max x, y, z) or None: models.Library.box; a composite's models together) and the gap new standing crops
+    keep from it (`gaps`: building_gaps(), read when None). A type whose model isn't found is left out."""
+    default, by_type = gaps if gaps is not None else building_gaps()
+    out = {}
+    for n in names:
+        d = descs.get(n)
+        if d is None or d.group != "building":
+            continue
+        got = [b for b in (box_of(m) for m in (d.models or ((d.model,) if d.model else ()))) if b]
+        if not got:
+            continue
+        gap = by_type.get(n.rsplit("/", 1)[-1], default) * 260.0   # 260 map units a metre
+        out[n] = (min(b[0] for b in got), min(b[1] for b in got), max(b[3] for b in got), max(b[4] for b in got), gap)
     return out
 
 
@@ -2468,6 +2669,184 @@ BRUSH_ANGLE = 12.0         # degrees: stickers whose facings are this alike are 
 FIELD_ALONG = 1.12
 FIELD_ACROSS = 1.0
 FIELD_REACH = 400.0 * 260.0  # the farthest a field's stickers are looked for round the brush
+# A field's picture stamp reaches this much past its row sticker's square: a hard stroke is full to HARD_EDGE (0.85)
+# and fades out past it, so it is full to about the sticker's own edge, and closes the gaps between a field's squares
+# (up to 0.12 of two halves along the rows, wedges where facings differ) that left the old colour in lines through
+# the field, seen from above 2026-10-15. The field's one map makes the overlaps read the same spot.
+FIELD_STAMP = 1.15
+SMALL_FIELD = 4   # whole row stickers: a field of fewer is a fragment between bigger plots, painted as the dab's biggest
+
+# What stands on a field besides its crops (rusemod.maplayout reads the same): hay, and the farm machines.
+FARM_HAY = ("Foin",)
+FARM_MACHINES = ("Charrette", "Tracteur", "Remorque", "Faucheuse", "Moissonneuse", "Herse", "Charrue", "Botteleuse")
+TRACTORS = ("Tracteur",)
+# Hay and machines left standing on a field the brush changes keep a harvested patch round them, as Eugen lays one
+# (D-Day, 2026-10-15, F-34; the owner's E: bales left in a full field of standing wheat): his crops round hay on wheat
+# plots are 97% laid harvested within 2 m, half-way back to the plot's own share by 4.1 m; round a machine with no
+# hay near it on a wheat plot no standing crop at all (measured on D-Day, 2026-10-15). Harvested,
+# the wheat is squashed to a quarter and sunk 0.13 m (131,257 of the 314,412 harvested Champs_Bles within 3 m of hay;
+# next half height, 0.26 m down), the green crop squashed to about half (harvest_pairs.py); the light green and border
+# crops he leaves standing.
+HAY_PATCH = 4.0 * 260.0
+HARVESTED = {"Champs_Bles": (0.25, -0.13 * 260.0), "Champs_Verts": (0.48, 0.0)}   # height (up scale), lift
+# A look without hay (look["hay"] false: D-Day's 1,310 ploughed plots carry none): the hay and carts on a field it
+# makes go, and its tractors past this far in (the 281 machines on D-Day's ploughed plots are tractors within 3 m of
+# the edge).
+NO_HAY_MACHINE_DEPTH = 3.0 * 260.0
+# Eugen's harvested crops round hay and machines are theirs out to here: on D-Day's wheat plots the share of crops laid
+# harvested falls from 97% at the hay to the plot's own (about 30%) by 7 m (crop_patches.py, 2026-10-15). Within it the
+# brush keeps Eugen's harvested ground as he shaped it, a block along the rows (E's cluster: 25 x 20 m), not circles:
+# a new crop within HARVESTED_SPOT of one of his harvested crops is laid as that crop is (its height, its sink).
+HAY_REACH = 7.0 * 260.0
+HARVESTED_SPOT = 1.0 * 260.0   # (a clump's 16 crops stand 0.75 m apart: 1 m round each fills his block solid)
+# A field's dressing besides its rows and crops is its look too (the owner's 2026-10-15 shots: R up close littered with
+# the ploughed field's stones, Q with its old grass patches, W's old hedgerow trees in the middle of new wheat): from
+# FIELD_EDGE in, its low plants, stones, ground stickers and trees are the source field's, as Eugen dressed it. Along
+# the edge they stay the map's: D-Day's low plants stand 2,000-3,800 a hectare within 2 m of a field's edge (the hedge
+# foot) and 150-800 inside, its wheat fields' trees 34 a hectare there and none past 6 m (dressing_depth.py).
+FIELD_EDGE = 2.0 * 260.0
+DRESSING_LAYERS = ("stickers", "plants", "stones", "trees")
+
+
+class FieldInside:
+    """Whether a point lies at least `edge` inside the union of a field's squares (x, y, half, facing radians): its
+    middle in a square and a ring of 12 points `edge` round it too. Called (x, y), or (x, y, reach) as an erase area's
+    mask (EraseArea.mask)."""
+
+    def __init__(self, squares, edge: float):
+        self.squares = [(x, y, h, math.cos(t), math.sin(t)) for x, y, h, t in squares]
+        self.edge = edge
+        self.cell = 2.0 * max((h for _x, _y, h, _c, _s in self.squares), default=1.0)
+        self.grid: dict = {}
+        for k, (x, y, h, _c, _s) in enumerate(self.squares):
+            r = h * 1.4143
+            for i in range(int((x - r) // self.cell), int((x + r) // self.cell) + 1):
+                for j in range(int((y - r) // self.cell), int((y + r) // self.cell) + 1):
+                    self.grid.setdefault((i, j), []).append(k)
+        self.ring = [(math.cos(k * math.pi / 6), math.sin(k * math.pi / 6)) for k in range(12)]
+
+    def holds(self, x: float, y: float) -> bool:
+        """Whether (x, y) lies in one of the squares."""
+        for k in self.grid.get((int(x // self.cell), int(y // self.cell)), ()):
+            cx, cy, h, c, s = self.squares[k]
+            if abs((x - cx) * c + (y - cy) * s) <= h and abs(-(x - cx) * s + (y - cy) * c) <= h:
+                return True
+        return False
+
+    def __call__(self, x: float, y: float, _reach: float = 0.0) -> bool:
+        return self.holds(x, y) and all(self.holds(x + self.edge * c, y + self.edge * s) for c, s in self.ring)
+
+
+OUTLINE_CELL = 160.0           # map units a cell of a field's painted outline: the finest picture's pixel (61.5 cm)
+OUTLINE_REACH = 3.0 * 260.0    # how far past its row stickers' squares a field's paint may reach
+OUTLINE_COLOUR = 45.0          # how far (RGB distance) a pixel may be from the field's own median colour
+
+
+def field_outline(squares: list, picture, cell: float = OUTLINE_CELL, reach: float = OUTLINE_REACH,
+                  tolerance: float = OUTLINE_COLOUR) -> tuple:
+    """A field's PAINTED outline, as the map's own ground picture draws it (`picture`: (x, y) -> rgb or None, the
+    finest level), for a stamp's clip (brush.Stroke.clip): from the field's row sticker squares (`squares`: (x, y,
+    half, facing radians)), every cell of `cell` map units reachable from the squares' middles through cells of the
+    field's own colour (within `tolerance` of the median under the squares) and inside the squares grown by `reach`,
+    plus the holes that leaves inside (a shadow, a patch: still the field). A dark boundary line (the hedge's foot,
+    a track) stops it, so the field's paint ends where the map's own did, and the line stays. () when the picture
+    has nothing there. Returns (x0, y0, cell, columns, rows, bytes)."""
+    if not squares:
+        return ()
+    grown = [(x, y, h + reach, math.cos(t), math.sin(t)) for x, y, h, t in squares]
+    x0 = min(x - h * 1.4143 for x, _y, h, _c, _s in grown)
+    x1 = max(x + h * 1.4143 for x, _y, h, _c, _s in grown)
+    y0 = min(y - h * 1.4143 for _x, y, h, _c, _s in grown)
+    y1 = max(y + h * 1.4143 for _x, y, h, _c, _s in grown)
+    x0, y0 = math.floor(x0 / cell) * cell, math.floor(y0 / cell) * cell
+    w, h = int(math.ceil((x1 - x0) / cell)), int(math.ceil((y1 - y0) / cell))
+    near = [[] for _ in range(w * h)]   # (the grown squares reaching each cell, by their boxes)
+    for k, (x, y, r, _c, _s) in enumerate(grown):
+        e = r * 1.4143
+        for j in range(max(0, int((y - e - y0) // cell)), min(h, int((y + e - y0) // cell) + 1)):
+            for i in range(max(0, int((x - e - x0) // cell)), min(w, int((x + e - x0) // cell) + 1)):
+                near[j * w + i].append(k)
+
+    def in_grown(i, j):
+        px, py = x0 + (i + 0.5) * cell, y0 + (j + 0.5) * cell
+        for k in near[j * w + i]:
+            x, y, r, c, s = grown[k]
+            if abs((px - x) * c + (py - y) * s) <= r and abs(-(px - x) * s + (py - y) * c) <= r:
+                return True
+        return False
+    colour: dict = {}
+
+    def col(i, j):
+        got = colour.get((i, j), False)
+        if got is False:
+            got = colour[(i, j)] = picture(x0 + (i + 0.5) * cell, y0 + (j + 0.5) * cell)
+        return got
+    samples = []
+    for x, y, half, t in squares:
+        for a, b in ((0, 0), (-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)):
+            px = x + (a * math.cos(t) - b * math.sin(t)) * half
+            py = y + (a * math.sin(t) + b * math.cos(t)) * half
+            c = picture(px, py)
+            if c is not None:
+                samples.append(c)
+    if not samples:
+        return ()
+    ref = [sorted(c[q] for c in samples)[len(samples) // 2] for q in range(3)]
+    tol2 = tolerance * tolerance
+
+    def own(i, j):
+        c = col(i, j)
+        return c is not None and sum((c[q] - ref[q]) ** 2 for q in range(3)) <= tol2 and in_grown(i, j)
+    inside = bytearray(w * h)
+    todo = []
+    for x, y, _half, _t in squares:
+        i, j = int((x - x0) // cell), int((y - y0) // cell)
+        if 0 <= i < w and 0 <= j < h and not inside[j * w + i] and own(i, j):
+            inside[j * w + i] = 1
+            todo.append((i, j))
+    while todo:
+        i, j = todo.pop()
+        for a, b in ((i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)):
+            if 0 <= a < w and 0 <= b < h and not inside[b * w + a] and own(a, b):
+                inside[b * w + a] = 1
+                todo.append((a, b))
+    if not any(inside):
+        return ()
+    # the holes: cells the outside can't reach without crossing the field
+    outside = bytearray(w * h)
+    todo = [(i, j) for i in range(w) for j in (0, h - 1)] + [(i, j) for j in range(h) for i in (0, w - 1)]
+    for i, j in todo:
+        outside[j * w + i] = 0 if inside[j * w + i] else 1
+    todo = [(i, j) for i, j in todo if outside[j * w + i]]
+    while todo:
+        i, j = todo.pop()
+        for a, b in ((i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)):
+            if 0 <= a < w and 0 <= b < h and not outside[b * w + a] and not inside[b * w + a]:
+                outside[b * w + a] = 1
+                todo.append((a, b))
+    bits = bytes(1 if inside[k] or (not outside[k] and in_grown(k % w, k // w)) else 0 for k in range(w * h))
+    return (x0, y0, cell, w, h, bits)
+
+
+def _stamp_rect(x: float, y: float, half: float, t: float, squares: list) -> tuple:
+    """(middle x, y, half across, half along) of the field brush's picture stamp on a row sticker's square (middle
+    x, y, `half`, facing t radians): FIELD_STAMP of its half past each side beyond which another of its field's
+    squares (`squares`: (x, y, half, facing)) lies in line (along the rows or across them, within 1.3 of the two
+    halves: its neighbours), its own edge on every other side (the field's outline)."""
+    c, s = math.cos(t), math.sin(t)
+    ext = {"+u": half, "-u": half, "+v": half, "-v": half}
+    for qx, qy, qh, _qt in squares:
+        du, dv = (qx - x) * c + (qy - y) * s, -(qx - x) * s + (qy - y) * c
+        if du == 0.0 and dv == 0.0:
+            continue
+        reach, side = (half + qh) * 1.3, (half + qh) * 0.5
+        if abs(dv) < side and 0.0 < abs(du) < reach:
+            ext["+u" if du > 0 else "-u"] = half * FIELD_STAMP
+        if abs(du) < side and 0.0 < abs(dv) < reach:
+            ext["+v" if dv > 0 else "-v"] = half * FIELD_STAMP
+    hu, hv = (ext["+u"] + ext["-u"]) / 2.0, (ext["+v"] + ext["-v"]) / 2.0
+    mu, mv = (ext["+u"] - ext["-u"]) / 2.0, (ext["+v"] - ext["-v"]) / 2.0
+    return x + mu * c - mv * s, y + mu * s + mv * c, hv, hu
 
 
 def _facing(m) -> float:
@@ -2501,7 +2880,7 @@ def brush_fields(brush: "FieldBrush", look: dict, sc: Scenery, halves: dict | No
     the ground painted under the whole field, so the brush changes whole fields): each field is the stickers of one
     facing joined square to square from those whose middles lie under the brush (within FIELD_ALONG and FIELD_ACROSS
     of their sizes: not across a hedge or a track), so its shape is the union of its own stickers' squares, as
-    Eugen's prefab laid them. Each sticker
+    Eugen's prefab laid them; with them any plot lying wholly inside them. Each sticker
     (name index, transform, LOD mask, its half size). [] when no field sticker lies under the brush."""
     foot = brush.footprint()
     x0, x1, y0, y1 = foot.box()
@@ -2551,6 +2930,35 @@ def brush_fields(brush: "FieldBrush", look: dict, sc: Scenery, halves: dict | No
                             taken.add(b)
                             todo.append(b)
         fields.append(field)
+    # a plot lying wholly inside those fields (every sticker's middle in their squares: a corner or headland piece, a
+    # stray sticker laid at another facing, one or two stickers each) is part of them and changes with them (seven
+    # such straw plots stayed straw inside a field made ploughed: the bands in Q, the owner's 2026-10-15 shots)
+    if fields:
+        sq = [(p[1][3], p[1][7], p[3], math.radians(_facing(p[1]))) for f in fields for p in f]
+
+        def inside(k) -> bool:
+            x, y = pts[k][1][3], pts[k][1][7]
+            return any(abs((x - cx) * math.cos(t) + (y - cy) * math.sin(t)) < h
+                       and abs(-(x - cx) * math.sin(t) + (y - cy) * math.cos(t)) < h for cx, cy, h, t in sq)
+        looked: set = set()
+        for s in range(len(pts)):
+            if s in taken or s in looked or not inside(s):
+                continue
+            todo, members = [s], [s]
+            looked.add(s)
+            while todo:
+                a = todo.pop()
+                gx, gy = int(pts[a][1][3] // cell), int(pts[a][1][7] // cell)
+                for i in (gx - 1, gx, gx + 1):
+                    for j in (gy - 1, gy, gy + 1):
+                        for b in grid.get((i, j), ()):
+                            if b not in taken and b not in looked and joined(a, b):
+                                looked.add(b)
+                                members.append(b)
+                                todo.append(b)
+            if all(inside(k) for k in members):
+                taken.update(members)
+                fields.append([tuple(pts[k]) for k in members])
     return fields
 
 
@@ -2575,23 +2983,40 @@ def own_fields(dabs: list, looks: dict, sc: Scenery, halves: dict | None = None)
 
 def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int = 0, halves: dict | None = None,
                        fields: list | None = None, changed: set | None = None,
-                       relaid: set | None = None):
+                       relaid: set | None = None, picture=None, buildings: dict | None = None,
+                       descs: dict | None = None, parcel=None, ground=None, others=()):
     """What a field brush dab does to the map whose scenery is `sc` (as it ships, before the build erases anything),
-    as (erases, objects, copies, stamps, notes). For each WHOLE field it touches (brush_fields):
-      - the field's row stickers are taken off and laid again where they were, the same size, facing and levels,
-        all of the look's main kind (a corner piece that kind's corner piece where the map has one, else as it was);
-      - its crops (look["crops"]) go, and the look's crops are copied from one of its source fields, their own run
-        turned onto these rows, from the source's inside only, landing only on the field (within a sticker's half
-        size of one of its stickers); a field bigger than the source is laid in squares of the source's size;
-      - the ground picture under the field is the field's own, tinted to the look's colour (its mean the look's,
-        a third of its grain kept): a hard "tint" square on each whole row sticker, so the coloured shape is the
-        field's own shape, edge to edge, as Eugen's picture paints a field under its stickers.
-    What the erases take of a NEIGHBOUR field's row stickers (squares overlap across a hedge) is laid again as it
-    was, unless `changed` (own_fields: every row sticker the map's dabs change) holds it, or `relaid` does (the
-    neighbour stickers an earlier dab of the map laid again; this dab adds its own: two dabs' erases over one
-    neighbour sticker laid it twice). `fields`: this dab's own fields (own_fields), else every field it touches.
+    as (erases, objects, copies, stamps, notes). Each WHOLE field it touches (brush_fields) becomes ONE real field of
+    the look, near and far: the source (look["sources"]) whose crops run nearest its rows gives
+      - its row sticker kind: the field's row stickers are taken off and laid again where they were, the same size,
+        facing and levels, all of that kind (a corner piece that kind's corner piece where the map has one, else as
+        it was; a source without one, the look's main kind);
+      - its crops: the field's crops (look["crops"]) go, and the source's are copied from the square in its middle,
+        their own run turned onto these rows, landing only on the field (within its stickers' squares); a field
+        bigger than that square is laid in cells of its size;
+      - its ground picture (Eugen paints each field's picture its own colour, under the whole field): a hard turned
+        "stamp" on each whole row sticker's square copies the source's picture through the same cells, its stripes
+        turned onto these rows, so the field's own shape shows that field's colour and grain.
+    What the erases take of ANOTHER plot's row stickers (squares overlap across a hedge: their middles lie in the
+    field's squares) is laid again where it was as the field's kind (each overlapping sticker goes with the plot
+    holding its middle), unless `changed` (own_fields: every row sticker the map's dabs change) holds it, or `relaid`
+    does (the stickers an earlier dab of the map laid again; this dab adds its own: two dabs' erases over one sticker
+    laid it twice). `fields`: this dab's own fields (own_fields), else every field it touches.
+    `picture`: the map's ground picture, finest level ((x, y) -> rgb or None): each field's paint is then one stamp
+    clipped to the field's painted outline (field_outline); without it, a stamp per row sticker.
+    What stands on a field stays as the map has it, as Eugen's own fields have it (F-34, measured on D-Day): its hay
+    and farm machines keep their harvested ground (a new crop where one of the map's own harvested crops within
+    HAY_REACH of them lay is laid as that one is; within HAY_PATCH of them at least as HARVESTED says), and on a look
+    whose fields carry no hay (look["hay"] false: ploughed) the hay and carts go, and the tractors past
+    NO_HAY_MACHINE_DEPTH in. `buildings` (building_table): no new crop lands in a building's box or within its type's
+    gap of it. `descs` (the game's scenery descriptors): the field's dressing from FIELD_EDGE in (its low plants,
+    stones, ground stickers and trees: DRESSING_LAYERS) is taken off and the source's laid there, as its crops are.
+    `parcel` (parcels.Parcel, with `ground`: parcels.FieldGround): the dab's parcel, the ground the map's paint gives
+    the field under it; the dab is then expand_field_parcel's, not this.
     Nothing is done where there's no field under the brush."""
-    from .brush import Stroke
+    if parcel is not None:
+        return expand_field_parcel(brush, look, sc, parcel, group, halves, buildings, ground, others)
+    from .brush import HARD_EDGE, Stroke
     given = fields is not None
     fields = brush_fields(brush, look, sc, halves) if fields is None else fields
     if not fields:
@@ -2614,8 +3039,136 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
     for field in fields:
         mine.update((s, round(m[3], 1), round(m[7], 1)) for s, m, _k, _h in field)
     sources = look["sources"]
+    farm_syms = {i for i, n in enumerate(short) if n.startswith(FARM_HAY + FARM_MACHINES)}
+    on_field: set = set()   # (sym, x, y) of the hay and machines already seen on one of the fields
+    farm_erases = []        # (each one object alone: kept out of the neighbour re-lay's footprints below)
+    reach_b = max((max(abs(v) for v in b[:4]) * 1.4143 + b[4] for b in (buildings or {}).values()), default=0.0)
+
+    # each field's plan: ONE real field of the look for the whole field, near and far, the source whose crops run
+    # nearest its rows giving its ground picture, its row sticker kind and its crops (the look's median colour and one
+    # kind for all its fields laid every look olive-brown, ploughed dark green up close: the owner's 2026-10-15
+    # shots); its picture through one turned map, its middle onto the source's, read folded back (as in a mirror) into
+    # the source's even middle square where the field is bigger: no seam in it, never the hedges round that square
+    def layout(field, ang, k):
+        sx0, sy0, sang, along, across, crop, colour, row = sources[k]
+        ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+        o = math.radians(abs(crop))
+        side = min(along, across) / (math.cos(o) + math.sin(o))
+        us = [m[3] * ux + m[7] * uy for _s, m, _k, _h in field]
+        vs = [-m[3] * uy + m[7] * ux for _s, m, _k, _h in field]
+        reach = max(h for _s, _m, _k, h in field)
+        u0, u1, v0, v1 = min(us) - reach, max(us) + reach, min(vs) - reach, max(vs) + reach
+        mu, mv = (u0 + u1) / 2.0, (v0 + v1) / 2.0
+        return {"k": k, "ang": ang, "ux": ux, "uy": uy, "side": side, "reach": reach, "box": (u0, u1, v0, v1),
+                "pturn": (ang - sang + 90.0) % 180.0 - 90.0, "mx": mu * ux - mv * uy, "my": mu * uy + mv * ux}
+
+    def pick(ang, g):
+        def off(src):
+            d = abs(src[2] + src[5] - ang) % 180.0
+            return min(d, 180.0 - d)
+        ranked = sorted(range(len(sources)), key=lambda k: (round(off(sources[k])), k))
+        close = [k for k in ranked if off(sources[k]) <= off(sources[ranked[0]]) + 5.0]
+        return close[(brush.seed + g) % len(close)]
+    angs = [_mean_facing([(s, m, k) for s, m, k, _h in field]) for field in fields]
+    plans = [layout(field, angs[g], pick(angs[g], g)) for g, field in enumerate(fields)]
+    pictures = list(plans)
+    # a field of a few stickers (a fragment wedged between bigger plots) is the dab's biggest field's: its source and
+    # its picture through that field's map, so it isn't a patch of another real field at its own angle (R's middle)
+    big = max(range(len(fields)), key=lambda g: len(fields[g]))
     for g, field in enumerate(fields):
-        ang = _mean_facing([(s, m, k) for s, m, k, _h in field])
+        if g != big and sum(1 for s, _m, _k, _h in field if not _cut(sc.names[s])) < SMALL_FIELD:
+            plans[g] = layout(field, angs[g], plans[big]["k"])
+            pictures[g] = pictures[big]
+
+    # what stands on the fields stays as the map has it, as Eugen's own fields have it (F-34): their hay and farm
+    # machines, the crops round them laid harvested (HAY_PATCH: round those just over a field's edge too, a
+    # neighbour's or the next changed field's: the new crops of a field facing another way came within 0.6 m of the
+    # hay on the field beside it at E); on a look whose fields carry no hay, the hay and carts go, and the tractors
+    # past NO_HAY_MACHINE_DEPTH in (bales left in a full field of new wheat at E, the owner's 2026-10-15 shots)
+    field_squares = [[(m[3], m[7], half, math.radians(_facing(m))) for _s, m, _k, half in field] for field in fields]
+
+    def depth(sq, x, y):   # how far (x, y) lies inside a field's squares (below 0 outside them)
+        return max(h - max(abs((x - qx) * math.cos(t) + (y - qy) * math.sin(t)),
+                           abs(-(x - qx) * math.sin(t) + (y - qy) * math.cos(t))) for qx, qy, h, t in sq)
+
+    def box_of(sq, grow=0.0):
+        return (min(x - h * 1.4143 for x, _y, h, _t in sq) - grow, min(y - h * 1.4143 for _x, y, h, _t in sq) - grow,
+                max(x + h * 1.4143 for x, _y, h, _t in sq) + grow, max(y + h * 1.4143 for _x, y, h, _t in sq) + grow)
+    standing_on, gone_from, taken = [0] * len(fields), [0] * len(fields), set()
+    for g, sq in enumerate(field_squares):
+        for sym, m, _mask in walk_levels(sc, box_of(sq), farm_syms):
+            key = (sym, round(m[3], 1), round(m[7], 1))
+            if key in on_field or depth(sq, m[3], m[7]) < 0.0:
+                continue
+            on_field.add(key)
+            if not look.get("hay", True) and (short[sym].startswith(FARM_HAY) or not short[sym].startswith(TRACTORS)
+                                              or depth(sq, m[3], m[7]) > NO_HAY_MACHINE_DEPTH):
+                farm_erases.append(EraseArea(m[3], m[7], 13.0, (), (sc.names[sym],)))   # (that one object: 5 cm)
+                taken.add(key)
+                gone_from[g] += 1
+            else:
+                standing_on[g] += 1
+    patch, near_seen = [], set()
+    for sq in field_squares:
+        for sym, m, _mask in walk_levels(sc, box_of(sq, HAY_PATCH), farm_syms):
+            key = (sym, round(m[3], 1), round(m[7], 1))
+            if key in taken or key in near_seen or depth(sq, m[3], m[7]) < -HAY_PATCH:
+                continue
+            near_seen.add(key)
+            patch.append((m[3], m[7], HAY_PATCH))
+    # Eugen's own harvested ground round them: his crops laid harvested (squashed under 0.6 or sunk past 0.1 m) within
+    # HAY_REACH of a hay piece or machine that stays, on these fields; a new crop at one of their spots is laid as he
+    # laid it (E's harvested block, 25 x 20 m along the rows, came out as a circle round each bale: the owner's "the
+    # hay bales look like poop", 2026-10-15)
+    crop_syms = {i for i, n in enumerate(short) if n.startswith(tuple(look["crops"]))}
+    if patch:
+        hay_cells: dict = {}
+        for p in patch:
+            hay_cells.setdefault((int(p[0] // HAY_REACH), int(p[1] // HAY_REACH)), []).append((p[0], p[1]))
+        crop_seen: set = set()
+        for sq in field_squares:
+            for sym, m, _mask in walk_levels(sc, box_of(sq), crop_syms):
+                key = (sym, round(m[3], 1), round(m[7], 1))
+                if key in crop_seen or depth(sq, m[3], m[7]) < 0.0:
+                    continue
+                crop_seen.add(key)
+                height = m[10] or math.hypot(m[0], m[4])
+                if height >= 0.6 and m[11] >= -0.1 * 260.0:   # (standing)
+                    continue
+                cx, cy = int(m[3] // HAY_REACH), int(m[7] // HAY_REACH)
+                if any((m[3] - hx) ** 2 + (m[7] - hy) ** 2 <= HAY_REACH * HAY_REACH
+                       for i in (cx - 1, cx, cx + 1) for j in (cy - 1, cy, cy + 1) for hx, hy in hay_cells.get((i, j), ())):
+                    patch.append((m[3], m[7], HARVESTED_SPOT, height, m[11], short[sym]))
+    # the dressing (descs given): its kinds, every kind of the layers but the rows, the crops and the hay
+    skip_names = tuple(look["field_kinds"]) + tuple(look["crops"]) + FARM_HAY + FARM_MACHINES
+    dressing_types: tuple = ()
+    if descs is not None:
+        in_layers = copy_layers(sc.names, descs)
+        dressing_types = tuple(sorted({sc.names[i] for g in DRESSING_LAYERS for i in in_layers[g]
+                                       if not short[i].startswith(skip_names)}))
+    dressing_erases = []   # (kept out of the neighbour re-lay's footprints below, as the farm erases)
+    kinds_here: list = []  # each field's row sticker kind, for the other plots' stickers with their middle in it
+    for g, field in enumerate(fields):
+        plan, pic = plans[g], pictures[g]
+        ang = plan["ang"]
+        sx0, sy0, sang, along, across, crop, colour, row = sources[plan["k"]]
+        colour = colour or look.get("colour", "")
+        kind_here = full.get(row, main) if row else main
+        kinds_here.append(kind_here)
+        turn = ang - (sang + crop)
+        turn = (turn + 90.0) % 180.0 - 90.0   # rows have no front: the least turn
+        ux, uy = plan["ux"], plan["uy"]
+        su, sv = math.cos(math.radians(sang)), math.sin(math.radians(sang))
+        side, reach = plan["side"], plan["reach"]
+        u0, u1, v0, v1 = plan["box"]
+        cell = side   # the crops: the source's middle laid over the field's box in cells, edge to edge
+        nu, nv = max(1, math.ceil((u1 - u0) / cell)), max(1, math.ceil((v1 - v0) / cell))
+        psx, psy, pang, pcrop = sources[pic["k"]][0], sources[pic["k"]][1], sources[pic["k"]][2], sources[pic["k"]][5]
+        pturn = pic["pturn"]
+        pc, ps = math.cos(math.radians(pturn)), math.sin(math.radians(pturn))
+        pside = pic["side"]
+        squares = [(m[3], m[7], half, math.radians(_facing(m))) for _s, m, _k, half in field]
+        field_stamps = []
         for sym, m, mask, half in field:
             f = _facing(m)
             t = math.radians(f)
@@ -2624,30 +3177,49 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
             size = math.hypot(m[0], m[4])
             stretch = math.hypot(m[1], m[5]) / size if size else 1.0
             cut = _cut(sc.names[sym])
-            kind = main if not cut else (main + "_" + cut if main + "_" + cut in sc.names else sc.names[sym])
+            kind = kind_here if not cut else (kind_here + "_" + cut if kind_here + "_" + cut in sc.names
+                                              else sc.names[sym])
             objects.append(NewObject(kind, m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
                                      stretch=stretch, lift=m[11], levels=mask, height=m[10] or size))
-            if look.get("colour") and not cut:   # (a corner or half piece covers part of its square only)
-                stamps.append(Stroke("tint", m[3], m[7], half, colour=look["colour"], clear=False, shape="square",
-                                     edge="hard", dx=math.cos(t), dy=math.sin(t)))
-        # the crops: from the source whose rows run nearest these, turned onto them, over the field's box in squares
-        def off(src):
-            d = abs(src[2] + src[5] - ang) % 180.0
-            return min(d, 180.0 - d)
-        ranked = sorted(range(len(sources)), key=lambda k: (round(off(sources[k])), k))
-        close = [k for k in ranked if off(sources[k]) <= off(sources[ranked[0]]) + 5.0]
-        sx0, sy0, sang, along, across, crop = sources[close[(brush.seed + g) % len(close)]]
-        turn = ang - (sang + crop)
-        turn = (turn + 90.0) % 180.0 - 90.0   # rows have no front: the least turn
-        ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
-        su, sv = math.cos(math.radians(sang)), math.sin(math.radians(sang))
-        o = math.radians(abs(crop))
-        side = min(along, across) / (math.cos(o) + math.sin(o))
-        us = [m[3] * ux + m[7] * uy for _s, m, _k, _h in field]
-        vs = [-m[3] * uy + m[7] * ux for _s, m, _k, _h in field]
-        reach = max(h for _s, _m, _k, h in field)
-        u0, u1, v0, v1 = min(us) - reach, max(us) + reach, min(vs) - reach, max(vs) + reach
-        nu, nv = max(1, math.ceil((u1 - u0) / side)), max(1, math.ceil((v1 - v0) / side))
+            if cut:   # (a corner or half piece covers part of its square only)
+                continue
+            # the ground picture under it: the source field's own (its colour, its stripes and grain) through the
+            # field's one map, a hard rectangle on its square reaching FIELD_STAMP past it only toward the field's own
+            # stickers (closing the gaps between them) and stopping at its edge everywhere else: the field's own
+            # outline, the plot boundary and the neighbour's ground kept (reaching past every side cut a stepped edge
+            # into the neighbour and painted over the dark line under a boundary's grass, 2026-10-15)
+            cx, cy, hv, hu = _stamp_rect(m[3], m[7], half, t, squares)
+            ox, oy = cx - pic["mx"], cy - pic["my"]
+            field_stamps.append(Stroke("stamp", cx, cy, hv, sx=psx + (ox * pc + oy * ps) - cx,
+                                       sy=psy + (oy * pc - ox * ps) - cy, turn=pturn, fold=pside / 2.0, fx=psx,
+                                       fy=psy, fturn=pang + pcrop, clear=False, shape="square", edge="hard",
+                                       dx=math.cos(t), dy=math.sin(t), length=hu))
+        # with the map's picture: ONE stamp over the field, clipped to its painted outline (field_outline), so the
+        # new paint ends where the map's own paint of this field ended (a hedge line, the plot beyond) instead of
+        # along its stickers' squares (a stepped edge into the neighbour at R's middle, 2026-10-15)
+        clip = field_outline(squares, picture) if picture is not None else ()
+        if clip:
+            cx0, cy0, ccell, cw, chh, _bits = clip
+            cx, cy = cx0 + cw * ccell / 2.0, cy0 + chh * ccell / 2.0
+            r = max(cw, chh) * ccell / 2.0 / HARD_EDGE + ccell   # full strength over the whole mask
+            ox, oy = cx - pic["mx"], cy - pic["my"]
+            field_stamps = [Stroke("stamp", cx, cy, r, sx=psx + (ox * pc + oy * ps) - cx,
+                                   sy=psy + (oy * pc - ox * ps) - cy, turn=pturn, fold=pside / 2.0, fx=psx, fy=psy,
+                                   fturn=pang + pcrop, clear=False, shape="square", edge="hard", clip=clip)]
+        stamps.extend(field_stamps)
+        # the buildings round the field: its new crops kept off them by their type's gap (the barn full of wheat, E)
+        rects = tuple(r[1:] for r in building_rects(sc, buildings, box_of(squares, reach_b))) if buildings else ()
+        # its dressing from FIELD_EDGE in (descs given): the map's taken off, the source's laid as its crops are
+        inside = None
+        if dressing_types:
+            whole = [(m[3], m[7], h, math.radians(_facing(m))) for s, m, _k, h in field if not _cut(sc.names[s])]
+            if whole:
+                inside = FieldInside(whole, FIELD_EDGE)
+                wx0, wy0, wx1, wy1 = box_of(whole)
+                dressing_erases.append(EraseArea((wx0 + wx1) / 2.0, (wy0 + wy1) / 2.0,
+                                                 math.hypot(wx1 - wx0, wy1 - wy0) / 2.0, (), dressing_types,
+                                                 mask=inside))
+        # the crops: from that source's middle, turned onto these rows, cell by cell
         # the crops land inside the field's own sticker squares (its shape, the squares the erases take), never past
         # them (circles of the stickers' middle size let them spill up to 1.4 m past a smaller sticker's edge)
         pts = [(m[3], m[7], h, math.cos(math.radians(_facing(m))), math.sin(math.radians(_facing(m))))
@@ -2658,20 +3230,42 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
             for j in range(nv):
                 cu, cv = u0 + (i + 0.5) * (u1 - u0) / nu, v0 + (j + 0.5) * (v1 - v0) / nv
                 cx, cy = cu * ux - cv * uy, cu * uy + cv * ux
-                here = tuple(p for p in pts if abs((p[0] - cx) * ux + (p[1] - cy) * uy) <= side / 2 + reach
-                             and abs(-(p[0] - cx) * uy + (p[1] - cy) * ux) <= side / 2 + reach)
+                here = tuple(p for p in pts if abs((p[0] - cx) * ux + (p[1] - cy) * uy) <= cell / 2 + reach
+                             and abs(-(p[0] - cx) * uy + (p[1] - cy) * ux) <= cell / 2 + reach)
                 if not here:
                     continue
+                pr = math.hypot((u1 - u0) / nu / 2, (v1 - v0) / nv / 2) + reach   # (what can reach the piece)
+                avoid = tuple(b for b in rects if math.hypot(b[0] - cx, b[1] - cy) < pr + max(b[2], b[3]) * 1.4143
+                              + b[6])
+                harvest = tuple(p for p in patch if math.hypot(p[0] - cx, p[1] - cy) < pr + p[2])
                 # each piece its own cell alone (cells meet edge to edge; a piece a whole source square wide laid
                 # the crops two and three times over where pieces overlapped: 10,029 on a field that had 301)
                 copies.append(CopyArea(cx, cy, (v1 - v0) / nv / 2, sx0 - cx, sy0 - cy, turn, ("plants",), "square", ux, uy,
                                        look["map"], None, False, group, along=(u1 - u0) / nu / 2, only=tuple(look["crops"]),
-                                       near=here, near_r=near_r, src_clip=(sx0, sy0, across / 2, su, sv, along / 2)))
+                                       near=here, near_r=near_r, src_clip=(sx0, sy0, across / 2, su, sv, along / 2),
+                                       avoid=avoid, harvest=harvest))
+                if inside is not None:   # the source's dressing through the same cell, in the field's interior
+                    copies.append(CopyArea(cx, cy, (v1 - v0) / nv / 2, sx0 - cx, sy0 - cy, turn, DRESSING_LAYERS,
+                                           "square", ux, uy, look["map"], None, False, group, along=(u1 - u0) / nu / 2,
+                                           skip=skip_names, near=here, near_r=near_r,
+                                           src_clip=(sx0, sy0, across / 2, su, sv, along / 2), avoid=avoid,
+                                           inside=inside))
                 pieces += 1
         notes.append(f"field brush at ({brush.x:.0f}, {brush.y:.0f}): a whole field of {len(field)} row sticker(s) "
-                     f"facing {ang:.0f} degrees made {brush.look}, crops from the field at ({sx0:.0f}, {sy0:.0f}) "
-                     f"turned {turn:.0f} degrees in {pieces} piece(s)")
-    # a neighbour field's row stickers the erases take (their squares overlap across a hedge): laid again as they were
+                     f"facing {ang:.0f} degrees made {brush.look} like the field at ({sx0:.0f}, {sy0:.0f}): its "
+                     f"{kind_here.rsplit('/', 1)[-1]} rows, its ground picture{f' ({colour})' if colour else ''} "
+                     f"turned {pturn:.0f} degrees and its crops turned {turn:.0f} degrees, in {pieces} piece(s)"
+                     + (f"; {standing_on[g]} hay piece(s) and farm machine(s) left standing, the crops round them laid "
+                        f"harvested" if standing_on[g] else "")
+                     + (f"; {gone_from[g]} hay piece(s) and farm machine(s) taken off ({brush.look} fields carry none)"
+                        if gone_from[g] else "")
+                     + (f"; its crops kept off {len(rects)} building(s)" if rects else "")
+                     + (f"; its dressing from {FIELD_EDGE / 260.0:.0f} m in (low plants, stones, ground stickers, "
+                        f"trees) the source's" if inside is not None else ""))
+    # another plot's row stickers the erases take (their middles lie in a changed field's squares: plots overlap
+    # across a hedge) go with that field: laid again where they were as its kind (a straw sticker of a big neighbour
+    # plot reached 14 m into Q made ploughed, the owner's 2026-10-15 shots); one whose middle lies outside isn't taken
+    # and stays the neighbour's: each overlapping sticker goes with the plot holding its middle
     boxes = [e.footprint().box() for e in erases]
     bx0, bx1 = min(b[0] for b in boxes), max(b[1] for b in boxes)
     by0, by1 = min(b[2] for b in boxes), max(b[3] for b in boxes)
@@ -2683,14 +3277,389 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
         if key in mine or key in (changed or ()) or key in seen or not any(ft.t2(m[3], m[7]) < 1.0 for ft in feet):
             continue
         seen.add(key)
+        g = max(range(len(fields)), key=lambda q: depth(field_squares[q], m[3], m[7]))
+        cut = _cut(sc.names[sym])
+        kind = kinds_here[g] if not cut else (kinds_here[g] + "_" + cut if kinds_here[g] + "_" + cut in sc.names
+                                              else sc.names[sym])
         size = math.hypot(m[0], m[4])
-        objects.append(NewObject(sc.names[sym], m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
+        objects.append(NewObject(kind, m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
                                  stretch=math.hypot(m[1], m[5]) / size if size else 1.0, lift=m[11], levels=mask,
                                  height=m[10] or size))
         kept += 1
     if kept:
-        notes.append(f"field brush: {kept} row sticker(s) of neighbouring fields laid again as they were")
+        notes.append(f"field brush: {kept} row sticker(s) of other plots with their middle in a changed field laid "
+                     f"again as its kind")
+    return erases + farm_erases + dressing_erases, objects, copies, stamps, notes
+
+
+def _pick_source(sources: list, ang: float, seed: int) -> int:
+    """The source whose crops run nearest a field's rows facing `ang` degrees (several within 5 degrees of the best:
+    one by `seed`)."""
+    def off(src):
+        d = abs(src[2] + src[5] - ang) % 180.0
+        return min(d, 180.0 - d)
+    ranked = sorted(range(len(sources)), key=lambda k: (round(off(sources[k])), k))
+    close = [k for k in ranked if off(sources[k]) <= off(sources[ranked[0]]) + 5.0]
+    return close[seed % len(close)]
+
+
+def _ring_flag(dist: dict, x: float, y: float, old: int) -> int:
+    """A row piece's detail-ring flags, drawn from `dist` ({flag: count}: its source field's pieces') by its place, so
+    a field's pieces carry its source's in the same shares; `old` without one."""
+    if not dist:
+        return old
+    total = sum(dist.values())
+    h = ((int(round(x)) * 73856093) ^ (int(round(y)) * 19349663)) & 0xFFFFFFFF
+    r = (h % 100003) / 100003.0 * total
+    acc = 0
+    for flag, n in sorted(dist.items()):
+        acc += n
+        if r < acc:
+            return flag
+    return old
+
+
+ONE_FIELD = 45.0   # RGB distance under which the paint on every side of a tree or a hedge strip is one field's (a
+                   # pasture's light and dark stripes 30 apart: W; two fields' paint 100 apart: E's yellow and brown)
+
+
+def expand_field_parcel(brush: "FieldBrush", look: dict, sc: Scenery, parcel, group: int = 0,
+                        halves: dict | None = None, buildings: dict | None = None, ground=None, others=()):
+    """What a field brush dab does to the map whose scenery is `sc` (as it ships) where its PARCEL lies (parcel:
+    rusemod.parcels.Parcel, the ground the map's own paint and borders give the field under the dab: FieldGround
+    .parcel), as (erases, objects, copies, stamps, notes); expand_field_brush's way on the squares, the parcel deciding
+    what is the field's (the owner, 2026-10-15: "Go with what you have planned"):
+      - its row pieces: every one whose middle lies in it (whichever plot it belongs to) taken off and laid again where
+        it was as the look's ONE source's kind, its detail-ring flags drawn from that source's own pieces' (R's pieces
+        kept their old fields' flags: two greens at 77 m), never one outside it;
+      - its paint: ONE stamp of the source's picture through one turned map, clipped to the parcel (it stops where the
+        map's own paint of the field stops: R's green no longer over E's corner);
+      - its crops: the old ones in it taken off, the source's laid over it in cells, landing only in it (W's tree
+        line's strip, a corner piece's ground: Q's tiny spot);
+      - its trees and border strips (hedge feet) in one field's paint more than look["trees_within"] metres in taken
+        off (W's trees in the middle of the wheat), their ground then the field's; those between two fields' paint
+        kept, a hedge foot's ground cut out of it, the new crops 0.8 m off a kept tree;
+      - its hay and machines as expand_field_brush keeps them (Eugen's harvested ground round them; none on a look
+        without hay), its new crops kept off `buildings` (building_table);
+      - nothing else of its dressing changes (the source's copied in cells laid a bush line across Q's fence).
+    `ground` (parcels.FieldGround): the map's paint, border strips and trees (without it: no trees or strips go);
+    `others`: the map's other dabs' parcels, whose ground this one never takes (its gaps closed grew R's into E's)."""
+    from .brush import HARD_EDGE, Stroke
+    from .numpy2 import np
+    P = parcel
+    tree_syms = ground.tree_syms if ground is not None else None
+    full = {}
+    for n in sc.names:
+        full.setdefault(n.rsplit("/", 1)[-1], n)
+    shares = [(full[n], s) for n, s in look["stickers"] if n in full]
+    if not shares:
+        raise SceneryEditError(f"the look's row stickers ({', '.join(n for n, _s in look['stickers'])}) aren't on "
+                               f"this map")
+    main = max((s for s in shares if not _cut(s[0])), key=lambda s: s[1], default=shares[0])[0]
+    short = [n.rsplit("/", 1)[-1] for n in sc.names]
+    field_syms = {i for i, n in enumerate(short) if n.startswith(tuple(look["field_kinds"]))}
+    crop_names = tuple(sorted({sc.names[i] for i, n in enumerate(short) if n.startswith(tuple(look["crops"]))}))
+    crop_syms = {i for i, n in enumerate(short) if n.startswith(tuple(look["crops"]))}
+    farm_syms = {i for i, n in enumerate(short) if n.startswith(FARM_HAY + FARM_MACHINES)}
+    where = f"field brush at ({brush.x:.0f}, {brush.y:.0f})"
+    erases, objects, copies, stamps, notes = [], [], [], [], []
+    bx0, by0, bx1, by1 = P.box()
+    # the row pieces whose middles lie in the parcel
+    found: dict = {}
+    for sym, m, mask in walk_levels(sc, (bx0, by0, bx1, by1), field_syms):
+        if not P.holds(m[3], m[7]):
+            continue
+        key = (sym, round(m[3], 1), round(m[7], 1))
+        if key in found:
+            found[key][2] |= mask
+        else:
+            found[key] = [sym, m, mask, sticker_half(sc, sym, m, halves)]
+    pieces = list(found.values())
+    if not pieces:
+        return [], [], [], [], [f"{where}: no field's row pieces on the ground under it, nothing done"]
+    # the plan: the facing most of its pieces share, the source whose crops run nearest it
+    angs = [_facing(m) for _s, m, _k, _h in pieces]
+    best = max(([b for b in angs if _alike(a, b)] for a in angs), key=len)
+    c = sum(math.cos(math.radians(2 * a)) for a in best)
+    s_ = sum(math.sin(math.radians(2 * a)) for a in best)
+    ang = (math.degrees(math.atan2(s_, c)) / 2) % 180.0
+    sources = look["sources"]
+    k = _pick_source(sources, ang, brush.seed)
+    sx0, sy0, sang, along, across, crop, colour, row = sources[k]
+    colour = colour or look.get("colour", "")
+    kind_here = full.get(row, main) if row else main
+    dist = (look.get("masks") or [])[k] if k < len(look.get("masks") or []) else None
+    turn = (ang - (sang + crop) + 90.0) % 180.0 - 90.0
+    ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+    su, sv = math.cos(math.radians(sang)), math.sin(math.radians(sang))
+    o = math.radians(abs(crop))
+    side = min(along, across) / (math.cos(o) + math.sin(o))
+    pturn = (ang - sang + 90.0) % 180.0 - 90.0
+    pc, ps = math.cos(math.radians(pturn)), math.sin(math.radians(pturn))
+    # what stands inside it: the trees and border strips (hedge feet) in ONE field's paint (the same colour all round
+    # them: W's tree group and its strips, in the middle of one pasture's paint) more than look["trees_within"] in (to
+    # the edge of the field's ground and its row squares, gaps under 6 m closed) go, their ground the field's; those
+    # between two fields' paint (the hedge between E's two fields) stay, their ground cut out of the parcel (no crops on
+    # a hedge foot). The trees that stay keep the new crops 0.8 m off (D-Day's wheat comes within 0.6-1.3 m).
+    gone_trees = gone_strips = 0
+    tw = look.get("trees_within")
+    keep_off: list = []
+    squares = [(m[3], m[7], h, math.radians(_facing(m))) for s, m, _k, h in pieces if not _cut(sc.names[s])]
+    picture = getattr(ground, "picture", None)
+    if ground is not None and squares:
+        own = P.mask | _cells_in_squares(P, squares)
+        from .parcels import _grow, _inside, _shrink
+        closed = _shrink(_grow(own, 10), 10) | own
+        deep_m = _inside(closed, P.cell)
+
+        def deep(x, y):
+            i, j = int((x - P.x0) // P.cell), int((y - P.y0) // P.cell)
+            return tw is not None and 0 <= i < P.w and 0 <= j < P.h and deep_m[j, i] >= tw
+
+        def one_field(x, y, dirs, off, loose=False):
+            """Whether the ground `off` away on every side (dirs: unit vectors, in opposite pairs) is the parcel's
+            and its paint one field's (`loose`: where the parcel isn't on both sides, the paint isn't asked: True)."""
+            pts = [(x + ux_ * off, y + uy_ * off) for ux_, uy_ in dirs]
+            if not all(P.holds(px_, py_) or _near_mask(P, px_, py_, 1.0 * 260.0) for px_, py_ in pts):
+                return loose
+            xs_ = [p[0] + a * 0.6 * 260.0 for p in pts for a in (-1, 0, 1)]
+            ys_ = [p[1] + b * 0.6 * 260.0 for p in pts for b in (-1, 0, 1)]
+            rgb, there = picture(xs_, ys_)
+            if not there.all():
+                return False
+            means = rgb.reshape(len(pts), 3, 3).mean(axis=1)
+            return float(np.sqrt(((means[:, None] - means[None]) ** 2).sum(-1)).max()) <= ONE_FIELD
+        grown = np.zeros_like(P.mask)
+        cut = np.zeros_like(P.mask)
+        strip_kinds = ground.strip_kinds()
+        for b, mt in ground.strips((bx0, by0, bx1, by1)):
+            kind = strip_kinds.get(b)
+            if kind is None:
+                continue
+            hl, hw, mx_, my_, sux, suy, types = kind
+            x = mt[0] * mx_ + mt[1] * my_ + mt[3]
+            y = mt[4] * mx_ + mt[5] * my_ + mt[7]
+            ax, ay = mt[0] * sux + mt[1] * suy, mt[4] * sux + mt[5] * suy
+            sc_ = math.hypot(ax, ay) or 1.0
+            ax, ay = ax / sc_, ay / sc_
+            L, Wd = hl * sc_, hw * sc_
+            if not (P.holds(x, y) or _near_mask(P, x, y, Wd + 1.0 * 260.0)):
+                continue
+            pts = [(x + ax * L * t / 24.0, y + ay * L * t / 24.0) for t in range(-24, 25)]   # (every ~0.5 m)
+            sides = ((-ay, ax), (ay, -ax))
+            if (deep(x, y) and one_field(x, y, sides, Wd + 3.0 * 260.0)
+                    and all(one_field(px_, py_, sides, Wd + 3.0 * 260.0, loose=True) for px_, py_ in pts[8:-8:8])):
+                erases.append(EraseArea(x - ax * L, y - ay * L, Wd + 0.3 * 260.0, (), types, shape="line",
+                                        x2=x + ax * L, y2=y + ay * L))
+                gone_strips += 1
+                for px_, py_ in pts:
+                    _paint_disc(P, grown, px_, py_, Wd + 1.0 * 260.0)
+            else:
+                for px_, py_ in pts:
+                    _paint_disc(P, cut, px_, py_, Wd + 0.3 * 260.0)
+        if tw is not None and tree_syms:
+            seen: set = set()
+            dirs = [(math.cos(a * math.pi / 4), math.sin(a * math.pi / 4)) for a in range(8)]
+            for sym, m, _mask in walk_levels(sc, (bx0, by0, bx1, by1), set(tree_syms)):
+                key = (sym, round(m[3], 1), round(m[7], 1))
+                if key in seen:
+                    continue
+                seen.add(key)
+                if not (P.holds(m[3], m[7]) or _near_mask(P, m[3], m[7], 2.0 * 260.0)):
+                    continue
+                if deep(m[3], m[7]) and one_field(m[3], m[7], dirs, 5.0 * 260.0):
+                    erases.append(EraseArea(m[3], m[7], 13.0, (), (sc.names[sym],)))
+                    gone_trees += 1
+                    _paint_disc(P, grown, m[3], m[7], 4.0 * 260.0)
+                else:
+                    keep_off.append((m[3], m[7], 0.8 * 260.0))
+        elif tree_syms:
+            for sym, m, _mask in walk_levels(sc, (bx0, by0, bx1, by1), set(tree_syms)):
+                if P.holds(m[3], m[7]):
+                    keep_off.append((m[3], m[7], 0.8 * 260.0))
+        # its ground: the gone ones' and the gaps under 7 m in it the field's (within 3 m of its own row squares: W's
+        # strips run where no square lies), then the kept hedge feet cut out
+        from .parcels import _depth as _sq_depth
+        own_sq = _sq_depth(squares, P.x0, P.y0, P.cell, P.w, P.h) > -3.0 * 260.0
+        closed = _shrink(_grow(P.mask, 6), 6)
+        P.mask = (P.mask | ((grown | closed) & own_sq)) & ~cut
+        from .parcels import _components
+        holes, nh = _components(~P.mask)
+        edge_ids = set(np.unique(np.concatenate([holes[0], holes[-1], holes[:, 0], holes[:, -1]])).tolist())
+        for k_ in range(1, nh + 1):
+            if k_ not in edge_ids:
+                P.mask |= (holes == k_) & ~cut
+        P.inside = _parcel_inside(P)
+        from .parcels import subtract as _subtract
+        for q in others:   # (another dab's ground stays its own)
+            if q is not None and q is not P:
+                _subtract(P, q)
+    # its row pieces, again: the ground it gained (gaps closed, hedges gone) holds some
+    if ground is not None and squares:
+        found = {}
+        for sym, m, mask in walk_levels(sc, P.box(), field_syms):
+            if not P.holds(m[3], m[7]):
+                continue
+            key = (sym, round(m[3], 1), round(m[7], 1))
+            if key in found:
+                found[key][2] |= mask
+            else:
+                found[key] = [sym, m, mask, sticker_half(sc, sym, m, halves)]
+        pieces = list(found.values())
+        bx0, by0, bx1, by1 = P.box()
+    # its row pieces: laid again as the source's kind, with the source's detail-ring flags in the source's shares
+    # exactly (each piece's by its place's hash, in order: a hash per piece alone laid W's 18% close against 35%)
+    flags: dict = {}
+    if dist:
+        import hashlib
+        order = sorted(pieces, key=lambda p: hashlib.blake2b(f"{p[1][3]:.1f},{p[1][7]:.1f}".encode(),
+                                                             digest_size=8).digest())
+        total, acc, i = sum(dist.values()), 0, 0
+        for flag, n_ in sorted(dist.items()):
+            acc += n_
+            upto = round(acc / total * len(order))
+            while i < upto:
+                flags[id(order[i])] = flag
+                i += 1
+    for piece in pieces:
+        sym, m, mask, _half = piece
+        erases.append(EraseArea(m[3], m[7], 13.0, (), (sc.names[sym],)))   # (that one piece: 5 cm)
+        size = math.hypot(m[0], m[4])
+        stretch = math.hypot(m[1], m[5]) / size if size else 1.0
+        cut = _cut(sc.names[sym])
+        kind = kind_here if not cut else (kind_here + "_" + cut if kind_here + "_" + cut in sc.names else sc.names[sym])
+        objects.append(NewObject(kind, m[3], m[7], math.degrees(math.atan2(m[4], m[0])), size, solid=False,
+                                 stretch=stretch, lift=m[11], levels=flags.get(id(piece), mask),
+                                 height=m[10] or size))
+    # its crops: the old ones in it off
+    R = math.hypot(bx1 - bx0, by1 - by0) / 2.0
+    erases.append(EraseArea((bx0 + bx1) / 2.0, (by0 + by1) / 2.0, R, (), crop_names, mask=P.holds))
+    # its extent along the rows
+    jj, ii = np.nonzero(P.mask)
+    cxs = P.x0 + (ii + 0.5) * P.cell
+    cys = P.y0 + (jj + 0.5) * P.cell
+    us, vs = cxs * ux + cys * uy, -cxs * uy + cys * ux
+    u0, u1 = float(us.min()) - P.cell, float(us.max()) + P.cell
+    v0, v1 = float(vs.min()) - P.cell, float(vs.max()) + P.cell
+    mu, mv = (u0 + u1) / 2.0, (v0 + v1) / 2.0
+    mx, my = mu * ux - mv * uy, mu * uy + mv * ux
+    # its paint: one stamp of the source's picture over it, clipped to it
+    cx, cy = (bx0 + bx1) / 2.0, (by0 + by1) / 2.0
+    r = max(bx1 - bx0, by1 - by0) / 2.0 / HARD_EDGE + P.cell
+    ox, oy = cx - mx, cy - my
+    stamps.append(Stroke("stamp", cx, cy, r, sx=sx0 + (ox * pc + oy * ps) - cx, sy=sy0 + (oy * pc - ox * ps) - cy,
+                         turn=pturn, fold=side / 2.0, fx=sx0, fy=sy0, fturn=sang + crop, clear=False, shape="square",
+                         edge="hard", clip=P.clip()))
+    # what stands on it: hay and machines (expand_field_brush's rules, on the parcel)
+    patch, gone_farm, standing = [], 0, 0
+    taken: set = set()
+    for sym, m, _mask in walk_levels(sc, (bx0 - HAY_PATCH, by0 - HAY_PATCH, bx1 + HAY_PATCH, by1 + HAY_PATCH), farm_syms):
+        key = (sym, round(m[3], 1), round(m[7], 1))
+        if key in taken:
+            continue
+        taken.add(key)
+        on = P.holds(m[3], m[7])
+        if on and not look.get("hay", True) and (short[sym].startswith(FARM_HAY) or not short[sym].startswith(TRACTORS)
+                                                 or P.depth(m[3], m[7]) * 260.0 > NO_HAY_MACHINE_DEPTH):
+            erases.append(EraseArea(m[3], m[7], 13.0, (), (sc.names[sym],)))
+            gone_farm += 1
+            continue
+        standing += on
+        if on or _near_mask(P, m[3], m[7], HAY_PATCH):
+            patch.append((m[3], m[7], HAY_PATCH))
+    if patch:   # Eugen's own harvested ground round them
+        cells_: dict = {}
+        for p in patch:
+            cells_.setdefault((int(p[0] // HAY_REACH), int(p[1] // HAY_REACH)), []).append((p[0], p[1]))
+        seen_c: set = set()
+        for sym, m, _mask in walk_levels(sc, (bx0, by0, bx1, by1), crop_syms):
+            key = (sym, round(m[3], 1), round(m[7], 1))
+            if key in seen_c or not P.holds(m[3], m[7]):
+                continue
+            seen_c.add(key)
+            height = m[10] or math.hypot(m[0], m[4])
+            if height >= 0.6 and m[11] >= -0.1 * 260.0:
+                continue
+            gx, gy = int(m[3] // HAY_REACH), int(m[7] // HAY_REACH)
+            if any((m[3] - hx) ** 2 + (m[7] - hy) ** 2 <= HAY_REACH * HAY_REACH
+                   for i in (gx - 1, gx, gx + 1) for j in (gy - 1, gy, gy + 1) for hx, hy in cells_.get((i, j), ())):
+                patch.append((m[3], m[7], HARVESTED_SPOT, height, m[11], short[sym]))
+    rects = tuple(b[1:] for b in building_rects(sc, buildings, (bx0 - 40 * 260.0, by0 - 40 * 260.0,
+                                                                bx1 + 40 * 260.0, by1 + 40 * 260.0))) if buildings else ()
+    # its crops: the source's middle laid over it in cells of that square, edge to edge, landing only in it
+    nu, nv = max(1, math.ceil((u1 - u0) / side)), max(1, math.ceil((v1 - v0) / side))
+    pieces_laid = 0
+    for i in range(nu):
+        for j in range(nv):
+            cu, cv = u0 + (i + 0.5) * (u1 - u0) / nu, v0 + (j + 0.5) * (v1 - v0) / nv
+            px, py = cu * ux - cv * uy, cu * uy + cv * ux
+            hu, hv = (u1 - u0) / nu / 2, (v1 - v0) / nv / 2
+            if not _cell_meets_mask(P, px, py, hu, hv, ux, uy):
+                continue
+            pr = math.hypot(hu, hv)
+            avoid = tuple(b for b in rects if math.hypot(b[0] - px, b[1] - py) < pr + max(b[2], b[3]) * 1.4143 + b[6])
+            avoid += tuple(t for t in keep_off if math.hypot(t[0] - px, t[1] - py) < pr + t[2])
+            harvest = tuple(p for p in patch if math.hypot(p[0] - px, p[1] - py) < pr + p[2])
+            copies.append(CopyArea(px, py, hv, sx0 - px, sy0 - py, turn, ("plants",), "square", ux, uy, look["map"],
+                                   None, False, group, along=hu, only=tuple(look["crops"]),
+                                   src_clip=(sx0, sy0, across / 2, su, sv, along / 2), avoid=avoid, harvest=harvest,
+                                   inside=P.holds))
+            pieces_laid += 1
+    notes.append(f"{where}: its field's ground ({P.area_m2():,.0f} m2, as the map paints it) made {brush.look} like the "
+                 f"field at ({sx0:.0f}, {sy0:.0f}): {len(pieces)} row piece(s) its "
+                 f"{kind_here.rsplit('/', 1)[-1]} rows, facing {ang:.0f} degrees, the source's ring flags; its ground "
+                 f"picture{f' ({colour})' if colour else ''} turned {pturn:.0f} degrees, its crops turned {turn:.0f} "
+                 f"degrees in {pieces_laid} piece(s)"
+                 + (f"; {standing} hay piece(s) and farm machine(s) left standing on Eugen's harvested ground"
+                    if standing else "")
+                 + (f"; {gone_farm} hay piece(s) and farm machine(s) taken off ({brush.look} fields carry none)"
+                    if gone_farm else "")
+                 + (f"; {gone_trees} tree(s) and {gone_strips} hedge strip(s) more than {tw:g} m in taken off "
+                    f"({brush.look} fields have none so deep)" if gone_trees or gone_strips else "")
+                 + (f"; its crops kept off {len(rects)} building(s)" if rects else ""))
     return erases, objects, copies, stamps, notes
+
+
+def _near_mask(P, x: float, y: float, r: float) -> bool:
+    """Whether a parcel holds a cell within r of (x, y)."""
+    i0, i1 = max(0, int((x - r - P.x0) // P.cell)), min(P.w, int((x + r - P.x0) // P.cell) + 1)
+    j0, j1 = max(0, int((y - r - P.y0) // P.cell)), min(P.h, int((y + r - P.y0) // P.cell) + 1)
+    return i0 < i1 and j0 < j1 and bool(P.mask[j0:j1, i0:i1].any())
+
+
+def _paint_disc(P, grid, x: float, y: float, r: float) -> None:
+    """Marks a parcel grid's cells within r of (x, y)."""
+    from .numpy2 import np
+    i0, i1 = max(0, int((x - r - P.x0) // P.cell)), min(P.w, int((x + r - P.x0) // P.cell) + 1)
+    j0, j1 = max(0, int((y - r - P.y0) // P.cell)), min(P.h, int((y + r - P.y0) // P.cell) + 1)
+    if i0 >= i1 or j0 >= j1:
+        return
+    X, Y = np.meshgrid(P.x0 + (np.arange(i0, i1) + 0.5) * P.cell - x, P.y0 + (np.arange(j0, j1) + 0.5) * P.cell - y)
+    grid[j0:j1, i0:i1] |= X * X + Y * Y <= r * r
+
+
+def _cells_in_squares(P, squares: list):
+    """The parcel grid's cells inside the squares (x, y, half, facing radians)."""
+    from .parcels import _depth
+    return _depth(squares, P.x0, P.y0, P.cell, P.w, P.h) >= 0.0
+
+
+def _parcel_inside(P):
+    from .parcels import _inside
+    return _inside(P.mask, P.cell)
+
+
+def _cell_meets_mask(P, x: float, y: float, hu: float, hv: float, ux: float, uy: float) -> bool:
+    """Whether a turned cell (middle x, y; half sizes hu along (ux, uy), hv across) holds any of the parcel."""
+    r = math.hypot(hu, hv)
+    i0, i1 = max(0, int((x - r - P.x0) // P.cell)), min(P.w, int((x + r - P.x0) // P.cell) + 1)
+    j0, j1 = max(0, int((y - r - P.y0) // P.cell)), min(P.h, int((y + r - P.y0) // P.cell) + 1)
+    if i0 >= i1 or j0 >= j1:
+        return False
+    from .numpy2 import np
+    X, Y = np.meshgrid(P.x0 + (np.arange(i0, i1) + 0.5) * P.cell - x, P.y0 + (np.arange(j0, j1) + 0.5) * P.cell - y)
+    inside = (np.abs(X * ux + Y * uy) <= hu) & (np.abs(-X * uy + Y * ux) <= hv)
+    return bool((inside & P.mask[j0:j1, i0:i1]).any())
 
 
 def border_library(path=None) -> dict[str, dict]:
@@ -2845,11 +3814,11 @@ def walk_levels(sc: Scenery, box: tuple, only: set[int]):
 
 
 def copy_layers(names: list[str], descs: dict) -> dict[str, set[int]]:
-    """{layer: the name indexes of a map's types in it} (COPY_LAYERS): stickers are its decals but road stickers,
-    plants and stones its low cover (low_cover)."""
+    """{layer: the name indexes of a map's types in it} (FIELD_COPY_LAYERS): stickers are its decals but road
+    stickers, plants and stones its low cover (low_cover), trees its other vegetation, props its other props."""
     roads = set(road_stickers(names, descs))
     low = set(low_cover(descs, names))
-    out: dict[str, set[int]] = {g: set() for g in COPY_LAYERS}
+    out: dict[str, set[int]] = {g: set() for g in FIELD_COPY_LAYERS}
     for i, n in enumerate(names):
         d = descs.get(n)
         if d is None:
@@ -2858,6 +3827,10 @@ def copy_layers(names: list[str], descs: dict) -> dict[str, set[int]]:
             out["stickers"].add(i)
         elif n in low:
             out["plants" if d.group == "vegetation" else "stones"].add(i)
+        elif d.group == "vegetation":
+            out["trees"].add(i)
+        elif d.group == "prop":
+            out["props"].add(i)
     return out
 
 
@@ -2911,7 +3884,30 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
         only = set().union(*(src_layers[g] for g in a.layers))
         if a.only:   # (the field brush's crops alone)
             only = {i for i in only if src_sc.names[i].rsplit("/", 1)[-1].startswith(tuple(a.only))}
+        if a.skip:   # (the field brush's dressing: not the rows, the crops, the hay)
+            only = {i for i in only if not src_sc.names[i].rsplit("/", 1)[-1].startswith(tuple(a.skip))}
         layer_of = {i: g for g in a.layers for i in src_layers[g]}
+        spots: dict = {}   # the map's own harvested crops' spots (harvest entries of six), by HARVESTED_SPOT cell
+        for h in a.harvest:
+            if len(h) == 6:
+                spots.setdefault((int(h[0] // HARVESTED_SPOT), int(h[1] // HARVESTED_SPOT)), []).append(h)
+        circles = [h for h in a.harvest if len(h) == 3]
+
+        def harvested(x, y, kind):
+            """(height, lift) of a crop of `kind` landing at (x, y) where the map's own crops are harvested, or None."""
+            best, bd = None, None
+            cx, cy = int(x // HARVESTED_SPOT), int(y // HARVESTED_SPOT)
+            for i in (cx - 1, cx, cx + 1):
+                for j in (cy - 1, cy, cy + 1):
+                    for hx, hy, hr, hh, hl, hk in spots.get((i, j), ()):
+                        d = (x - hx) ** 2 + (y - hy) ** 2
+                        if d < hr * hr and (bd is None or d < bd):
+                            best, bd = (hh, hl, hk), d
+            if best is not None:   # the nearest of his: as it is, if the same kind; else as that kind lies harvested
+                return (best[0], best[1]) if best[2] == kind else HARVESTED.get(kind)
+            if any((x - hx) ** 2 + (y - hy) ** 2 < hr * hr for hx, hy, hr in circles):
+                return HARVESTED.get(kind)
+            return None
         foot = a.footprint()
         clip = a.clip()
         sclip = a.source_clip()
@@ -2947,7 +3943,7 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
             pad = max(FILL_GAP.values())   # what sits just outside the shape counts too
             taken = _Taken(sc, (tx0 - pad, ty0 - pad, tx1 + pad, ty1 + pad), here)
         counts = {g: 0 for g in a.layers}
-        mirrored = sized = off = dup = 0
+        mirrored = sized = off = dup = kept_off = cut = 0
         for sym, m, mask in walk_levels(src_sc, src, only):
             if sclip is not None and sclip.t2(m[3], m[7]) >= 1.0:
                 continue
@@ -2955,6 +3951,11 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
             if foot.t2(w[3], w[7]) >= 1.0 or not mask or (clip is not None and clip.t2(w[3], w[7]) >= 1.0):
                 continue
             if near is not None and not lands(w[3], w[7]):
+                continue
+            if a.inside is not None and not a.inside(w[3], w[7]):
+                continue
+            if a.avoid and a.avoids(w[3], w[7]):
+                kept_off += 1
                 continue
             size = math.hypot(w[0], w[4])
             if w[0] * w[5] - w[1] * w[4] < 0:
@@ -2972,8 +3973,14 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
             if laid.near(key, w[3], w[7], FILL_GAP[layer], a.group):
                 dup += 1
                 continue
+            height, lift = w[10] or size, w[11]
+            if a.harvest:   # round hay and machines left on a field: the crop as Eugen lays it harvested there
+                low = harvested(w[3], w[7], src_sc.names[sym].rsplit("/", 1)[-1])
+                if low is not None:
+                    height, lift = low
+                    cut += 1
             out.append(NewObject(src_sc.names[sym], w[3], w[7], math.degrees(math.atan2(w[4], w[0])), size,
-                                 solid=False, stretch=stretch, lift=w[11], levels=mask, height=w[10] or size))
+                                 solid=False, stretch=stretch, lift=lift, levels=mask, height=height))
             laid.add(key, w[3], w[7], a.group)
             counts[layer] += 1
         notes.append(f"copy {n}: " + ", ".join(f"{c:,} {g}" for g, c in counts.items())
@@ -2982,6 +3989,8 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
                      + (f", turned {a.turn:g} degrees" if a.turn else "")
                      + (f"; {off:,} left off where the map already has one (fill rule)" if off else "")
                      + (f"; {dup:,} left off where an earlier copy laid one (fill rule)" if dup else "")
+                     + (f"; {kept_off:,} kept off a building" if kept_off else "")
+                     + (f"; {cut:,} laid harvested round hay and farm machines" if cut else "")
                      + (f"; {mirrored} mirrored left out" if mirrored else "")
                      + (f"; {sized} sized past 0.05-50 (or stretched past 0.2-5) left out" if sized else ""))
     return out, notes

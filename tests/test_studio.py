@@ -978,7 +978,8 @@ class Terrain(WithMod):
                                               "level": 0.0, "weight": 1.0, "x2": 0.0, "y2": 0.0, "level2": 0.0,
                                               "square": False, "shape": "round", "edge": "soft", "dx": 1.0, "dy": 0.0,
                                               "colour": "", "sx": 0.0, "sy": 0.0, "clear": True, "block": True,
-                                              "texture": "", "size": 0.0, "decals": True, "length": 0.0})
+                                              "texture": "", "size": 0.0, "decals": True, "length": 0.0,
+                                              "turn": 0.0, "fold": 0.0, "fx": 0.0, "fy": 0.0, "fturn": 0.0})
         # the brush types (2026-10-03): a square turned any way and a line, with a hard edge, saved and read back
         turned = {"brush": "raise", "x": 1, "y": 2, "radius": 30, "height": 5.0, "shape": "square", "dx": 0.6,
                   "dy": 0.8, "edge": "hard"}
