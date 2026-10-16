@@ -49,11 +49,15 @@ def _script_saves() -> str:
 
 def _errors_worded() -> str:
     """The errors' words came with the app (errors.toml beside its code): an error said again in French."""
+    from rusemod import buildtext
     from .errortext import worded
     said = worded("Pick or make a mod first.", "fr")
     if said == "Pick or make a mod first.":
         raise RuntimeError("errors.toml isn't beside the app's code: every error would stay English")
-    return repr(said)
+    line = buildtext.worded("Starting Steam…", "fr")
+    if line == "Starting Steam…":
+        raise RuntimeError("rusemod's buildtext.toml isn't beside the app's code: the build's lines would stay English")
+    return f"{said!r}, {line!r}"
 
 
 def _beside_the_code() -> str:

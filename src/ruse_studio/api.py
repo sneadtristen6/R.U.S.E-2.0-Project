@@ -32,8 +32,8 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
-                     newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
+from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions,
+                     mod_index, newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
                      values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
@@ -7945,7 +7945,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             except Exception:  # noqa: BLE001 - a folder that can't be read just gets no fix
                 continue
         order = [by_id[i] for i in job.order if i in by_id] or folders
-        return {"problems": [self._problem(text, folders, order) for text in job.errors]}
+        lang = self.prefs().get("lang") or schema.BASE  # each found by its English words, said in the player's
+        return {"problems": [self._problem(text, folders, order) | {"text": buildtext.worded(text, lang)}
+                             for text in job.errors]}
 
     def _problem(self, text: str, folders: list, order: list) -> dict:
         fixes, mod = [], ""
@@ -8281,4 +8283,5 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
         if view.get("state") == "failed" and isinstance(view.get("message"), str):
             view["message"] = self._worded(view["message"])  # a StudioError in the Studio's language
-        return view
+        # and the build's lines, message and errors (rusemod.buildtext)
+        return buildtext.worded_view(view, self.prefs().get("lang") or schema.BASE)
