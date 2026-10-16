@@ -1,0 +1,745 @@
+# Průvodce čísly česky (rusemod.numberinfo; závazná je angličtina v numberinfo.toml).
+[SeuilMort]
+what = "Zdraví"
+does = "Kolik poškození je potřeba k jejímu zničení. Většina tanků, vozidel, družstev a děl ve hře má 400: Tiger je odolnější než džíp hlavně díky úrovni pancéřování (Pancéřování), která snižuje poškození každého výstřelu, který na něj není dost silný. Budovy mají od 50 do 4 500."
+[SeuilPinned]
+what = "Práh přišpendlení"
+does = "Kolik potlačení je potřeba, než je jednotka přišpendlena k zemi (přestane postupovat a střílí méně). Výstřely dopadající blízko, v poloměru potlačení munice, ho zvyšují. Většina jednotek má 200; vyšší = hůř přišpendlit."
+[ArmureHint]
+what = "Zobrazená úroveň pancéřování"
+does = "Úroveň pancéřování, kterou ukazují karta jednotky a nabídka stavby (číslo na štítu, 1 až 5). Pole Pancéřování ve Studiu ji nastavuje spolu se samotným pancéřováním, takže se vždy shodují."
+[BaseBlindage]
+what = "Pancéřování"
+does = "Pancéřování, se kterým jednotka bojuje (1 až 10 ve hře): čím vyšší, tím méně poškození jí dává slabší munice. Měňte ho polem Pancéřování, které vybere jednu z úrovní hry a zachová číslo na štítu karty (ověřeno ve hře)."
+[ReculeSeulementSiUberstress]
+what = "Ustupuje jen zcela přišpendlená"
+does = "1: jednotka pod palbou ustoupí, až když je zcela přišpendlená (extrémní potlačení), ne dřív. Má to 38 jednotek hry."
+[VitesseLineaire]
+what = "Rychlost"
+does = "Jak rychle se pohybuje mimo silnice. Sherman má 4 550 (asi 35 km/h), džíp 6 110 (asi 47 km/h), střelecké družstvo 3 120 (asi 24 km/h)."
+["TAvionDescriptor.VitesseLineaire"]
+what = "Rychlost letu"
+does = "Jak rychle letadlo letí: 13 000 až 46 800 ve hře (asi 225 až 810 km/h)."
+[VitesseLineaireAuSol]
+what = "Rychlost na zemi"
+does = "Jak rychle letadlo pojíždí po letišti při startu a přistání."
+[VitesseLineaireIdle]
+what = "Hlídková rychlost"
+does = "Jak rychle letadlo letí, když krouží bez úkolu, pomaleji než jeho plná rychlost."
+[VitesseCombat]
+what = "Rychlost v boji"
+does = "Jak rychle se pohybuje v boji. U tanků a vozidel obvykle stejná jako Rychlost; u družstev a tažených děl mnohem pomalejší (střelecké družstvo 1 040, asi 8 km/h; protitankové dělo 520, asi 4 km/h, tlačené obsluhou)."
+[SpeedBonusOnRoad]
+what = "Bonus rychlosti na silnici"
+does = "O kolik rychleji jede po silnici než mimo ni: 0,6 je asi o 60 % rychleji. Družstva a děla ho dostávají jako nákladní auto, ve které se mění. Letadla a nákladní auta mají 1."
+[MaxAcceleration]
+what = "Zrychlení"
+does = "Jak rychle nabere rychlost. Většina tanků má 3 900."
+[MaxDeceleration]
+what = "Brzdění"
+does = "Jak rychle zpomalí a zastaví."
+[TempsDemiTour]
+what = "Doba otočení"
+does = "Kolik sekund trvá otočit se opačným směrem. Pěchota 0,01 (hned), vozidla 0,5, tanky 1, nejpomalejší 6."
+[Radius]
+what = "Velikost na zemi"
+does = "Kolik místa jednotka zabírá: ostatní jednotky se drží tak daleko od jejího středu, když ji objíždějí. Pěchota 104–130 (asi 0,5 m), tanky 520–780 (2–3 m), děla 390–650, nákladní auta 2 000, budovy 7 800–13 000 (30–50 m)."
+["TAvionDescriptor.Radius"]
+what = "Velikost ve vzduchu"
+does = "Kolik místa letadlo zabírá, když ho jiná letadla obletují: 780 až 2 600 (3 až 10 m)."
+[StickToGround]
+what = "Kopíruje terén"
+does = "1: jednotka se naklání se svahem, na kterém stojí. Má to každá pozemní jednotka a budova hry."
+[Scale]
+what = "Velikost modelu"
+does = "Jen vzhled: 3D model jednotky kreslený tolikrát větší. Jednotky mají 1, pěchota 0,2, budovy 0,1. Posuvník Velikost ve Studiu u importovaného modelu místo toho mění samotný model."
+[DetectionBase]
+what = "Dohled"
+does = "Jak daleko vidí pozemní jednotky. Tank 104 000 (asi 400 m); průzkumná vozidla 234 000 (900 m); průzkumná letadla 195 000 (750 m). Panzer IV jen s 234 000 nejednal jako průzkumník; zbytek dá pole Role."
+[PorteeVisionVolant]
+what = "Dohled na letadla"
+does = "Jak daleko vidí letadla. Většina jednotek 208 000 (800 m); některé 2 600 (10 m: letadla skoro nevidí)."
+[SignatureRadar]
+what = "Radarová stopa"
+does = "Jako jaký kontakt se ukazuje na nepřátelském radaru: 1 pozemní jednotky, 2 budovy, 3 letadla."
+[AltitudeNoise]
+what = "Kolísání výšky"
+does = "Jen vzhled: jak moc kolísá výška letadla za letu (130–260, méně než 1 m)."
+[PorteeAttackReflexAir]
+what = "Dosah samostatného útoku (vzduch)"
+does = "Jak daleko letadlo samo pronásleduje nepřátelská letadla bez rozkazu: 130 000 až 208 000 (500 až 800 m)."
+[PorteeAttackReflexSol]
+what = "Dosah samostatného útoku (zem)"
+does = "Jak daleko letadlo samo pronásleduje pozemní cíle: 182 000 (700 m) u každého letadla hry."
+[SecondaryWeaponMaxAmmo]
+what = "Nesené bomby nebo rakety"
+does = "Kolik ran své druhé zbraně (bomby, rakety) letadlo nese, než letí domů přezbrojit: 1 až 4 ve hře."
+[ProductionPrice]
+what = "Cena"
+does = "Kolik stojí stavba, v $, v každém z pěti dat bitvy (hra drží jednu cenu na datum)."
+[ProductionTime]
+what = "Doba stavby"
+does = "Kolik sekund trvá stavba. S více továrnami jejího druhu se dělí mezi ně."
+[UpgradePrice]
+what = "Cena výzkumu"
+does = "Kolik stojí výzkum, v $, než ji lze stavět (jednotky vyzkoumané z jiné)."
+[UpgradeTime]
+what = "Doba výzkumu"
+does = "Jak dlouho trvá výzkum, v sekundách."
+[IsUpgrade]
+what = "Je vylepšení"
+does = "1: jednotka je vylepšením té, ze které se zkoumá (po výzkumu ji nahradí v nabídce stavby)."
+[ShowInMenu]
+what = "Zobrazena v nabídce stavby"
+does = "1: zobrazena ve své nabídce stavby v tom datu bitvy (jedna hodnota pro každé z pěti dat)."
+[PositionInMenu]
+what = "Místo v nabídce"
+does = "Kde stojí ve své nabídce stavby: jednotky stejné linie sdílejí místo, vylepšení se na něj vrší."
+[Factory]
+what = "Továrna"
+does = "Ve které nabídce stavby je (Studio ukazuje každou nabídku jménem a dovolí přesunout jednotku do nabídky jiného národa)."
+[Menu]
+what = "Nabídka budov"
+does = "Na které stránce nabídky budov budova je."
+[Nationalite]
+what = "Národ"
+does = "Ke které zemi patří: 0 USA, 1 Německo, 2 Spojené království, 3 Francie, 4 Itálie, 5 SSSR, 6 Japonsko."
+[InitialFlagSet]
+what = "Flagy"
+does = "Flagy jednotky: číslované přepínače toho, čím je a co umí. Každý je vysvětlen v Průvodci flagy, pod flagy."
+[DescriptorId]
+what = "Id"
+does = "Vlastní číslo jednotky: každá má jiné a hra i uložené hry ji podle něj najdou. Studio dá nové jednotce volné."
+[TrackingId]
+what = "Id statistik"
+does = "Číslo, pod kterým jednotku znají statistiky na konci hry a sledování hry."
+[Key]
+what = "Klíč"
+does = "Číslo, které nese několik jednotek (8 tanků, 7 letadel, 2 družstva); k čemu slouží, zatím není známo."
+[TypeForAcknow]
+what = "Typ hlasu"
+does = "Kterou sadou hlasových hlášek jednotka odpovídá na rozkazy."
+[AcknowUnitType]
+what = "Druh hlasu"
+does = "Jaký druh jednotky hlasové hlášky jmenují (tank, pěchota, letadlo...)."
+[IconeType]
+what = "Ikona na mapě"
+does = "Jakou ikonu jednotka ukazuje na stole s mapou při oddálení."
+[Category]
+what = "Kategorie"
+does = "Jako jaký druh jednotky ji hra počítá: 1 průzkum (nastaví ho role Průzkumný; ověřeno ve hře), 7 letadla, 8 a 9 budovy; ostatní ještě nemají všechny jméno."
+[CategorieIA]
+what = "Kategorie pro počítač"
+does = "K čemu počítač jednotku používá: 3 průzkum (pole Role ho nastaví spolu s rolí; ověřeno ve hře); ostatní ještě nemají všechny jméno."
+[CategoryVolant]
+what = "Role letadla"
+does = "Jako jaké letadlo létá (stíhač, stíhací bombardér, bombardér, průzkumný, výsadkový): jak se pohybuje a útočí. Měňte ji polem Role, které zároveň nastaví flagy."
+[IsDepotForIA]
+what = "Sklad pro počítač"
+does = "1: počítač bere tuto budovu jako zásobovací sklad."
+[TypeBatiment]
+what = "Typ budovy"
+does = "Jaká budova to pro hru je (velitelství, kasárna, sklad...). Klamná budova s flagem 5 a TypeBatiment -7 opravdu vyrábí."
+[BuildPolicy]
+what = "Kde lze stavět"
+does = "Kam lze budovu umístit: 2 kamkoli (obrana), 3 na plochu skladu; bez této hodnoty potřebuje silnici poblíž."
+[DistanceToRoad]
+what = "Vzdálenost od silnice"
+does = "Jak blízko silnice musí budova stát: 5 000 až 31 000 (20 až 120 m). Bunkry 8 000 (asi 30 m)."
+[CanBeSpawnedInMapMulti]
+what = "Lze umístit na mapy pro více hráčů"
+does = "1: budovu lze umístit do scénáře mapy pro více hráčů."
+["TBatimentPaths.Radius"]
+what = "Cesty kolem budovy"
+does = "Jak daleko kolem budovy vedou cesty jednotek."
+[TirEnMouvement]
+what = "Střílí za pohybu"
+does = "1: tato zbraň může střílet, zatímco jednotka jede."
+[SalveNumber]
+what = "Číslo salvy"
+does = "Ve které salvě tato zbraň střílí (-1: střílí sama, ne v salvách)."
+["TWeaponDescriptor.Salves"]
+what = "Salvy"
+does = "Zda zbraň střílí v salvách (1), nebo ránu po ráně (-1)."
+[Puissance]
+what = "Poškození"
+does = "Poškození jednoho zásahu, před pancéřováním. Ruční zbraně 2–10, tankové kanóny desítky až stovky, bomby a V2 mnohem víc (až 2 000 000 u atomové bomby). Jednotka je zničena, když utržené poškození dosáhne jejího Zdraví."
+[Level]
+what = "Úroveň munice"
+does = "Úroveň munice (1 až 5). Hra ji poměřuje s pancéřováním cíle: munice vyšší úrovně dává obrněným jednotkám víc poškození. Jak přesně se porovnávají, zatím není změřeno."
+[Arme]
+what = "Druh zbraně"
+does = "Jaká zbraň ji střílí (kulomet, kanón, houfnice, bomba...): na jaké cíle je dobrá a ikona na kartě."
+[PorteeMaximale]
+what = "Dostřel"
+does = "Jak daleko může zasáhnout: 13 000 (50 m) až 2 600 000 (10 km, V2). Tankové kanóny obvykle 65 000–130 000 (250–500 m)."
+[PorteeMinimale]
+what = "Nejmenší dostřel"
+does = "Blíž střílet nemůže (dělostřelectvo a minomety): 13 000 až 169 000 (50 až 650 m)."
+[TempsEntreDeuxTirs]
+what = "Doba mezi výstřely"
+does = "Sekundy mezi dvěma výstřely: 0,2 kulomet, pár sekund tankový kanón, až 60 nejtěžší děla. Méně = víc výstřelů."
+[TempsEntreDeuxSalves]
+what = "Doba mezi salvami"
+does = "Sekundy mezi dvěma salvami u zbraní, které střílejí salvy (raketomety, bomby)."
+[NbTirParSalves]
+what = "Výstřelů na salvu"
+does = "Kolik výstřelů vypálí jedna salva: 1 až 100."
+[AngleDispersion]
+what = "Rozptyl"
+does = "Jak daleko výstřely uhýbají od bodu míření: 0,01 (asi půl stupně, velmi přesné) až 0,3 (17 stupňů, dělostřelectvo)."
+[PourcentageTirDirect]
+what = "Přesnost na místě"
+does = "Jak pravděpodobně výstřel zasáhne, když jednotka stojí: 0,5 až 1 (50 % až 100 %)."
+[PourcentageTirDirectEnMouvement]
+what = "Přesnost za pohybu"
+does = "Jak pravděpodobně výstřel zasáhne, když se jednotka pohybuje: 0,4 až 1 (40 % až 100 %)."
+[RayonPinned]
+what = "Poloměr potlačení"
+does = "Jak daleko od místa dopadu výstřel potlačuje jednotky (zvyšuje jejich potlačení): 130 (půl metru) až 78 000 (300 m)."
+[TirIndirect]
+what = "Nepřímá palba"
+does = "1: munice se střílí nepřímo, přes překážky, na cíle, které zjistí jiní (dělostřelectvo)."
+[AllowAmbushShot]
+what = "Může střílet ze zálohy"
+does = "1: munici lze vystřelit ze zálohy v lese."
+[ProjectileType]
+what = "Druh střely"
+does = "Jen vzhled: jaký výstřel se kreslí v letu (granát, kulka, raketa, bomba)."
+[AmmunitionId]
+what = "Id munice"
+does = "Vlastní číslo munice (1000–1138): každá má jiné. Studio dá kopii volné."
+[NeedModelChange]
+what = "Mění model při výstřelu"
+does = "Jen vzhled: 1 u protitankových zbraní družstev: voják při výstřelu přepne na model, který ji drží."
+[TempsAnimation]
+what = "Délka animace výstřelu"
+does = "Jen vzhled: jak dlouho trvá animace výstřelu vojáka (1,6 s u protitankových zbraní družstev)."
+[FX_vitesse_de_depart]
+what = "Rychlost výstřelu (kresleného)"
+does = "Jen vzhled: jak rychle kreslený výstřel opouští zbraň, v jednotkách hry za sekundu: 150 až 520 000 (2 000 m za sekundu)."
+[FX_frottement]
+what = "Odpor výstřelu (kresleného)"
+does = "Jen vzhled: jak rychle kreslený výstřel zpomaluje ve vzduchu."
+[FX_tir_tendu]
+what = "Plochá dráha (kreslená)"
+does = "Jen vzhled: 1 kreslí výstřel plochý a rovný místo oblouku."
+[FX_tir_sans_physic]
+what = "Výstřel kreslený bez fyziky"
+does = "Jen vzhled: 1 kreslí výstřel bez gravitace a odporu."
+[AltitudeDeVol]
+what = "Výška letu"
+does = "Jak vysoko letadlo letí: 52 000 až 208 000 (200 až 800 m)."
+[ChaosAltitudeDeVol]
+what = "Rozptyl výšky letu"
+does = "Jak moc se výška letu liší mezi letadly a v čase: 7 800 až 32 500 (30 až 125 m)."
+[AltitudeDownAirport]
+what = "Výška při přistání"
+does = "V jaké výšce je letadlo, když začne klesat ke svému letišti: 65 000 (250 m)."
+[AltitudeDownAttack]
+what = "Výška útoku"
+does = "Jak nízko letadlo sestoupí k útoku na zem: 13 000 až 39 000 (50 až 150 m)."
+[LengthDownAirport]
+what = "Délka přiblížení na přistání"
+does = "Jak dlouhé je klesání letadla k letišti: 78 000 až 156 000 (300 až 600 m)."
+[LengthUpAirport]
+what = "Délka stoupání po startu"
+does = "Jak dlouhé je stoupání letadla po startu: 52 000 až 130 000 (200 až 500 m)."
+[LengthDownAttack]
+what = "Délka útočného klesání"
+does = "Jak dlouhé je klesání letadla na pozemní cíl: 13 000 až 208 000 (50 až 800 m)."
+[LengthUpAttack]
+what = "Délka vybrání po útoku"
+does = "Jak dlouhé je stoupání letadla po útoku na zem: 13 000 až 208 000 (50 až 800 m)."
+[DelaiAttackGround]
+what = "Prodleva před útokem na zem"
+does = "Sekundy, které letadlo při náletu čeká, než vystřelí na pozemní cíl: 0,1 až 4,5."
+[GroundAttackAcceleration]
+what = "Zrychlení při útoku na zem"
+does = "Jak rychle letadlo zrychluje během útoku na zem."
+[GroundAttackDecceleration]
+what = "Zpomalení při útoku na zem"
+does = "Jak rychle letadlo zpomaluje k útoku na zem."
+[MustDiveAttack]
+what = "Střemhlavý bombardér"
+does = "1: letadlo útočí strmým střemhlavým letem (mají to 2 letadla hry)."
+[DiveAttackStartAltitude]
+what = "Výška začátku střemhlavého letu"
+does = "V jaké výšce střemhlavý bombardér začíná střemhlavý let: 44 200 až 91 000 (170 až 350 m)."
+[DiveAttackEndAltitude]
+what = "Výška vybrání"
+does = "Jak nízko střemhlavý bombardér klesne, než vybere: 31 200 až 39 000 (120 až 150 m)."
+[DiveAttackAcceleration]
+what = "Zrychlení ve střemhlavém letu"
+does = "Jak rychle střemhlavý bombardér zrychluje ve střemhlavém letu."
+[DiveAttackAngleToHit]
+what = "Úhel střemhlavého letu k shozu"
+does = "Jak strmý musí být střemhlavý let, než je bomba shozena: 10 až 35 stupňů."
+[DiveAttackDownAngleSpeed]
+what = "Rychlost sklopení nosu"
+does = "Jak rychle střemhlavý bombardér sklopí nos do střemhlavého letu (90 stupňů za sekundu)."
+[DiveAttackDownRollSpeed]
+what = "Rychlost klonění do střemhlavého letu"
+does = "Jak rychle se střemhlavý bombardér překlopí na začátku střemhlavého letu (120 stupňů za sekundu)."
+[DiveAttackUpAngleSpeed]
+what = "Rychlost vybrání"
+does = "Jak rychle střemhlavý bombardér zvedne nos ze střemhlavého letu (35 až 50 stupňů za sekundu)."
+[DiveAttackUpRollSpeed]
+what = "Rychlost klonění po střemhlavém letu"
+does = "Jak rychle se střemhlavý bombardér po střemhlavém letu srovná (60 stupňů za sekundu)."
+[LoopingStartAltitude]
+what = "Výška začátku přemetu"
+does = "V jaké výšce je letadlo, když začne přemet, aby nalétlo znovu: 57 200 až 109 200 (220 až 420 m)."
+[LoopingAltitudeToHit]
+what = "Výška vrcholu přemetu"
+does = "Jak vysoko je vrchol přemetu letadla: 70 200 až 124 800 (270 až 480 m)."
+[LoopingAcceleration]
+what = "Zrychlení v přemetu"
+does = "Jak rychle letadlo zrychluje, když vychází z přemetu."
+[LoopingDecceleration]
+what = "Zpomalení v přemetu"
+does = "Jak rychle letadlo zpomaluje, když stoupá do přemetu."
+[LoopingPitchAngleSpeedStart]
+what = "Rychlost klopení (začátek přemetu)"
+does = "Jak rychle se nos letadla zvedá na začátku přemetu (20 stupňů za sekundu)."
+[LoopingPitchAngleSpeedEnd]
+what = "Rychlost klopení (konec přemetu)"
+does = "Jak rychle se nos letadla otáčí na konci přemetu: 30 až 90 stupňů za sekundu."
+[PitchAngleMax]
+what = "Nejstrmější stoupání nebo klesání"
+does = "Jak moc může letadlo v běžném letu zvednout nebo sklopit nos: 5 až 80 stupňů."
+[RollAngleMax]
+what = "Největší náklon"
+does = "Jak moc se letadlo naklání v zatáčce: 5 až 50 stupňů."
+[RollAcceleration]
+what = "Zrychlení náklonu"
+does = "Jak rychle letadlo vchází do náklonu a vychází z něj (4 až 8)."
+[RollRatioSpeed]
+what = "Náklon na zatáčku"
+does = "Jak moc se letadlo naklání při dané zatáčce: 0,1 až 2."
+[RadiusStandard]
+what = "Poloměr zatáčení"
+does = "Jak široké jsou běžné zatáčky letadla: 26 000 až 104 000 (100 až 400 m)."
+[RadiusApproach]
+what = "Poloměr přiblížení"
+does = "Jak široké jsou zatáčky letadla, když se blíží tam, kam bylo posláno: 10 400 až 104 000 (40 až 400 m)."
+[RadiusApproachAttackGround]
+what = "Poloměr přiblížení k útoku na zem"
+does = "Jak široké jsou zatáčky letadla, když se srovnává k útoku na zem: 20 800 až 104 000 (80 až 400 m)."
+[RadiusApproachEngage]
+what = "Poloměr přiblížení ke vzdušnému boji"
+does = "Jak široké jsou zatáčky letadla, když se blíží k nepřátelskému letadlu: 15 600 až 52 000 (60 až 200 m)."
+[RadiusEngage]
+what = "Vzdálenost zahájení vzdušného boje"
+does = "Jak blízko musí být nepřátelské letadlo, aby letadlo zahájilo vzdušný boj: 10 400 až 104 000 (40 až 400 m)."
+[RadiusEngaged]
+what = "Poloměr zatáčení ve vzdušném boji"
+does = "Jak široké jsou zatáčky letadla ve vzdušném boji: 26 000 až 104 000 (100 až 400 m)."
+[RadiusChangeAltitude]
+what = "Vzdálenost změny výšky"
+does = "Jak daleko letadlo letí, zatímco mění výšku: 9 750 až 52 000 (40 až 200 m)."
+[CrashGravity]
+what = "Pád po sestřelení"
+does = "Jak rychle padá sestřelené letadlo: 1 300 až 5 200."
+[CrashPitchAcceleration]
+what = "Klesání nosu po sestřelení"
+does = "Jen vzhled: jak rychle nos sestřeleného letadla klesá stále rychleji (1 až 5 stupňů za sekundu, každou sekundu)."
+[CrashPitchMaxSpeed]
+what = "Nejrychlejší klesání nosu po sestřelení"
+does = "Jen vzhled: nejrychleji, jak klesá nos sestřeleného letadla (5 až 35 stupňů za sekundu)."
+[CrashRollAcceleration]
+what = "Vývrtka po sestřelení"
+does = "Jen vzhled: jak rychle se sestřelené letadlo začne točit (8 až 70 stupňů za sekundu, každou sekundu)."
+[CrashRollMaxSpeed]
+what = "Nejrychlejší vývrtka po sestřelení"
+does = "Jen vzhled: nejrychleji, jak se sestřelené letadlo točí (150 až 1 000 stupňů za sekundu)."
+[VitesseRotation]
+what = "Rychlost otáčení věže"
+does = "Jak rychle se věž nebo dělo otáčí k zamíření: 15 až 200 stupňů za sekundu. Pomalejším věžím trvá déle namířit dělo na nový cíl."
+[AngleRotationMax]
+what = "Mez otáčení věže"
+does = "Jak daleko se věž nebo dělo může otočit na každou stranu od směru vpřed: 15 stupňů (dělo v korbě) až 360 (dokola)."
+[AngleRotationBase]
+what = "Klidový úhel věže"
+does = "Kam věž v klidu míří (180 stupňů: dozadu, u několika vozidel)."
+[AngleRotationBasePitch]
+what = "Klidová elevace děla"
+does = "Jak vysoko dělo v klidu míří: 10 až 30 stupňů."
+[AngleRotationMaxPitch]
+what = "Největší elevace děla"
+does = "Jak vysoko může dělo mířit: 15 až 90 stupňů (protiletadlová děla míří kolmo vzhůru)."
+[AngleRotationMinPitch]
+what = "Nejmenší elevace děla"
+does = "Jak nízko může dělo mířit (10 stupňů u dvou děl)."
+[NbFX]
+what = "Ústí"
+does = "Jen vzhled: kolik úsťových záblesků věž nebo zbraň kreslí při výstřelu (1 až 8: hlavně vícehlavňové zbraně)."
+[Spread]
+what = "Rozhlížení v klidu"
+does = "Jen vzhled: o kolik stupňů se dělo nebo věž v klidu natáčí, aby se rozhlédla (80 až 180)."
+[TurretRotationSpeedMultiplier]
+what = "Rychlost otáčení v klidu"
+does = "Jen vzhled: jak rychle se věž v klidu otáčí při rozhlížení, krát její běžná rychlost (0,25 až 1)."
+[WaitMinInSeconds]
+what = "Čekání v klidu (nejkratší)"
+does = "Jen vzhled: nejkratší doba, kterou věž v klidu čeká, než se podívá jinam."
+[WaitMaxInSeconds]
+what = "Čekání v klidu (nejdelší)"
+does = "Jen vzhled: nejdelší doba, kterou věž v klidu čeká, než se podívá jinam."
+[VerticalAngleMax]
+what = "Nejvyšší pohled v klidu"
+does = "Jen vzhled: jak vysoko míří protiletadlové dělo v klidu při prohledávání oblohy (10 až 25 stupňů)."
+[VerticalAngleMin]
+what = "Nejnižší pohled v klidu"
+does = "Jen vzhled: jak nízko míří dělo v klidu při rozhlížení (25 stupňů u jednoho děla)."
+[UseCustomVerticalAngles]
+what = "Vlastní klidové úhly"
+does = "Jen vzhled: 1 nechá obsluhu používat dva klidové úhly výše místo těch ze hry."
+[AngleMaxDegree]
+what = "Mez otáčení dílu (stupně)"
+does = "Jen vzhled: jak daleko se pohyblivý díl modelu otočí na jednu stranu, ve stupních (45 až 180)."
+[AngleMinDegree]
+what = "Mez otáčení dílu, druhá strana (stupně)"
+does = "Jen vzhled: jak daleko se pohyblivý díl modelu otočí na druhou stranu, ve stupních (-180 až -45)."
+[TruckType]
+what = "Druh nákladního auta"
+does = "Co nákladní auto dělá (zásobování, stavba a další druhy hry, 1 až 5); jednotlivá čísla zatím nemají jméno."
+[BaseSize]
+what = "Velikost figurky"
+does = "Jen vzhled: jak velká je figurka žetonu jednotky na stole s mapou při oddálení (8 až 20)."
+["TFigurineOptions.Scale"]
+what = "Velikost postavičky žetonu"
+does = "Jen vzhled: kolikrát větší se kreslí postavička na žetonu (2 až 4)."
+["TPawnDescriptor.Power"]
+what = "Váha žetonu"
+does = "Jen vzhled: jak silně žeton odstrkuje žetony kolem, když se tlačí na stole s mapou (385 až 1 386)."
+["TPawnDescriptor.Radius"]
+what = "Velikost žetonu na stole"
+does = "Jen vzhled: jak velký je kulatý žeton jednotky na stole s mapou (385 až 1 386)."
+[SocleHeight]
+what = "Výška podstavce žetonu"
+does = "Jen vzhled: jak silný je podstavec žetonu (200)."
+[OffSetZFigurine]
+what = "Výška postavičky žetonu"
+does = "Jen vzhled: jak vysoko nad podstavcem postavička stojí (200)."
+[DureteRepositionnement]
+what = "Návrat žetonů"
+does = "Jen vzhled: jak rázně se natlačené žetony vracejí na místo (10)."
+[RandomTranslateFactor]
+what = "Posunutí žetonů"
+does = "Jen vzhled: jak daleko se žetony náhodně posunou, aby hromádka nevypadala jako jeden (0,15)."
+[ForceOneStack]
+what = "Jedna hromádka"
+does = "Jen vzhled: 1 ukazuje všechny žetony tohoto druhu v jedné hromádce."
+[ScaleWithVisibilityRange_Coef]
+what = "Roste při oddálení"
+does = "Jen vzhled: o kolik větší se model kreslí, když je kamera daleko, aby zůstal vidět (3 až 22krát)."
+[InnerScale]
+what = "Vnitřní velikost modelu"
+does = "Jen vzhled: velikost, ve které se voják nebo model kreslí uvnitř svého dílu (0,46 až 1)."
+[MaxMaskedAnimationCount]
+what = "Animací najednou"
+does = "Jen vzhled: kolik animací může voják přehrávat najednou na částech těla (1 nebo 2)."
+[GeometrySubTiling_OneCircle]
+what = "Podrobnost kruhů"
+does = "Jen vzhled: jak jemně jsou rozdělené výběrové kruhy na zemi (3)."
+[MaxRadiusExpander]
+what = "Největší kruh"
+does = "Jen vzhled: do jaké velikosti výběrový kruh nejvýš vyroste."
+[MinRadiusExpander]
+what = "Nejmenší kruh"
+does = "Jen vzhled: do jaké velikosti se výběrový kruh nejvýš zmenší."
+["TMetaCircleDrawer.MaxRange"]
+what = "Vzdálenost kreslení kruhů"
+does = "Jen vzhled: do jaké vzdálenosti se kruhy pod jednotkami ještě kreslí."
+[MaxV]
+what = "Natažení textury kruhu"
+does = "Jen vzhled: jak moc je obrázek kruhu podél něj natažený."
+[MaxWidth]
+what = "Šířka čáry kruhu (největší)"
+does = "Jen vzhled: nejširší čára kruhu při oddálení."
+[MinWidth]
+what = "Šířka čáry kruhu (nejmenší)"
+does = "Jen vzhled: nejužší čára kruhu zblízka."
+[MaxZOffset]
+what = "Zvednutí kruhu (největší)"
+does = "Jen vzhled: nejvíc, jak je kruh zvednutý nad zemí, aby ho kopce nezakryly."
+[MinZOffset]
+what = "Zvednutí kruhu (nejmenší)"
+does = "Jen vzhled: nejméně, jak je kruh zvednutý nad zemí."
+[RoueNb]
+what = "Pojezdová kola"
+does = "Jen vzhled: přes kolik kol pás běží (5 až 13), pro jeho animaci."
+[RouePartieSolMin]
+what = "První kolo na zemi"
+does = "Jen vzhled: od kterého kola se pás dotýká země."
+[RouePartieSolMax]
+what = "Poslední kolo na zemi"
+does = "Jen vzhled: do kterého kola se pás dotýká země."
+[Cote]
+what = "Strana pásu"
+does = "Jen vzhled: na které straně vozidla tento pás je."
+[PartieHauteDeformNb]
+what = "Prověšená horní větev"
+does = "Jen vzhled: kolik bodů horní větve pásu se prověšuje mezi koly (2)."
+[CahotsMax]
+what = "Otřesů najednou"
+does = "Jen vzhled: kolik otřesů může běžet po pásu najednou (2)."
+[DelaiPropagation]
+what = "Doba běhu otřesu"
+does = "Jen vzhled: jak dlouho otřes běží po pásu (1,2 s)."
+[ForceBruitRoulementBas]
+what = "Chvění pásu (dole)"
+does = "Jen vzhled: jak moc se při jízdě chvěje spodek pásu."
+[ForceBruitRoulementHaut]
+what = "Chvění pásu (nahoře)"
+does = "Jen vzhled: jak moc se při jízdě chvěje vršek pásu."
+[ForceCahotMin]
+what = "Síla otřesu (nejmenší)"
+does = "Jen vzhled: jak silný je nejmenší otřes v pásu."
+[ForceCahotMax]
+what = "Síla otřesu (největší)"
+does = "Jen vzhled: jak silný je největší otřes v pásu."
+[ForceDeformationPartieHaut]
+what = "Prověšení horní větve"
+does = "Jen vzhled: jak moc se horní větev pásu prověšuje mezi koly."
+[FrequenceCahots]
+what = "Četnost otřesů"
+does = "Jen vzhled: jak často otřes běží po pásu."
+[IntervalleCahots]
+what = "Rozestup otřesů"
+does = "Jen vzhled: jak daleko od sebe jsou otřesy podél pásu."
+[LongueurCahotMin]
+what = "Délka otřesu (nejmenší)"
+does = "Jen vzhled: jak krátký může být otřes v pásu."
+[LongueurCahotMax]
+what = "Délka otřesu (největší)"
+does = "Jen vzhled: jak dlouhý může být otřes v pásu."
+[CoefElev]
+what = "Pérování kola"
+does = "Jen vzhled: jak moc se kolo pohybuje nahoru a dolů po terénu (2 až 10)."
+[CoefRotate]
+what = "Otáčení kola"
+does = "Jen vzhled: jak rychle se kolo točí při rychlosti vozidla (1)."
+[CoefRotateDirection]
+what = "Natočení řízeného kola"
+does = "Jen vzhled: jak moc se řízené kolo natočí při zatáčce vozidla (1)."
+[AngMaxRotateDirection]
+what = "Největší rejd"
+does = "Jen vzhled: jak daleko se přední kola natočí, ve stupních (45)."
+[AngParSecondeRotateDirection]
+what = "Rychlost řízení"
+does = "Jen vzhled: jak rychle se přední kola natáčejí, ve stupních za sekundu (360)."
+[Coef_Bruit_Sur_Pente]
+what = "Třesení korby ve svahu"
+does = "Jen vzhled: jak moc se korba třese ve svazích."
+[Coef_Bruit_Sur_Ressort]
+what = "Třesení odpružení"
+does = "Jen vzhled: jak moc korba poskakuje na pružinách."
+[Coef_Bruit_Sur_Roulis]
+what = "Houpání"
+does = "Jen vzhled: jak moc se korba houpe ze strany na stranu."
+[Coef_Sur_Pente_Relation_Acceleration]
+what = "Zvedání přídě při zrychlení"
+does = "Jen vzhled: jak moc se korba zakloní dozadu, když vozidlo zrychluje, a dopředu, když brzdí."
+[Coef_Sur_Pente_Relation_Terrain]
+what = "Náklon s terénem"
+does = "Jen vzhled: jak moc korba kopíruje svah zepředu dozadu."
+[Coef_Sur_Roulis_Relation_Rotation]
+what = "Náklon v zatáčkách"
+does = "Jen vzhled: jak moc se korba v zatáčce nakloní ven."
+[Coef_Sur_Roulis_Relation_Terrain]
+what = "Boční náklon s terénem"
+does = "Jen vzhled: jak moc korba kopíruje svah ze strany na stranu."
+[Amortissement]
+what = "Tlumení pohyblivého dílu"
+does = "Jen vzhled: jak rychle se pohyblivý díl modelu (anténa, zákluz hlavně, korba na pružinách) přestane kývat."
+[Attraction]
+what = "Návrat pohyblivého dílu"
+does = "Jen vzhled: jak silně je pohyblivý díl modelu tažen zpět do klidové polohy."
+[Elastic]
+what = "Pruží zpět"
+does = "Jen vzhled: 1 nechá pohyblivý díl odpružit zpět jako pružinu."
+[Debattement_Min]
+what = "Výchylka dílu (jedna strana)"
+does = "Jen vzhled: jak daleko se pohyblivý díl modelu může vychýlit na jednu stranu."
+[Debattement_Max]
+what = "Výchylka dílu (druhá strana)"
+does = "Jen vzhled: jak daleko se pohyblivý díl modelu může vychýlit na druhou stranu."
+[Operation]
+what = "Jak se díl pohybuje"
+does = "Jen vzhled: jakým způsobem se pohyblivý díl modelu pohybuje (otáčí se, posouvá...)."
+[VisibleByDefault]
+what = "Zpočátku viditelný"
+does = "Jen vzhled: 1 ukazuje tento díl modelu, dokud ho něco neskryje (třeba díl, který odpadne)."
+[IsAvant]
+what = "Příďový podvozek"
+does = "Jen vzhled: 1 u předního podvozku letadla."
+[Rot]
+what = "Zatahování podvozku"
+does = "Jen vzhled: jak moc se podvozek letadla při zatahování otočí."
+[Trans]
+what = "Posun podvozku"
+does = "Jen vzhled: jak daleko se podvozek letadla při zatahování posune."
+[TransAfterRot]
+what = "Posun podvozku po zatažení"
+does = "Jen vzhled: jak daleko se podvozek posune po otočení."
+[SensRotationADroite]
+what = "Směr vrtule"
+does = "Jen vzhled: na kterou stranu se vrtule točí (1 doprava, -1 doleva)."
+[TempsAvantArretHelice]
+what = "Doba zastavení vrtule"
+does = "Jen vzhled: jak dlouho se vrtule po vypnutí motoru zastavuje (2,8 až 4 s)."
+[VitesseHeliceMinLS]
+what = "Otáčky vrtule, pomalu (nejmenší)"
+does = "Jen vzhled: nejpomaleji, jak se vrtule točí, když se letadlo pohybuje pomalu."
+[VitesseHeliceMaxLS]
+what = "Otáčky vrtule, pomalu (největší)"
+does = "Jen vzhled: nejrychleji, jak se vrtule točí, když se letadlo pohybuje pomalu."
+[VitesseHeliceMinHS]
+what = "Otáčky vrtule, rychle (nejmenší)"
+does = "Jen vzhled: nejpomaleji, jak se točí rotující kotouč, když letadlo letí rychle."
+[VitesseHeliceMaxHS]
+what = "Otáčky vrtule, rychle (největší)"
+does = "Jen vzhled: nejrychleji, jak se točí rotující kotouč, když letadlo letí rychle."
+[VitesseDeplacementMaxLS]
+what = "Mez pomalé vrtule"
+does = "Jen vzhled: do jaké rychlosti letu se vrtule kreslí jako samostatné listy."
+[VitesseDeplacementMaxHS]
+what = "Mez rychlé vrtule"
+does = "Jen vzhled: od jaké rychlosti letu se vrtule kreslí jako rotující kotouč."
+[DontCastShadow]
+what = "Bez stínu"
+does = "Jen vzhled: 1 kreslí model bez stínu."
+[HasSubModele]
+what = "Má podmodel"
+does = "Jen vzhled: 1, když je tento díl samostatný model (věž, kolo)."
+[MobileGeneratedAtStartForFx]
+what = "Bod efektu vytvořen na začátku"
+does = "Jen vzhled: 1 vytvoří bod, ze kterého vychází efekt (úsťový záblesk, kouř), hned jak se jednotka objeví."
+[UsefulnessMask]
+what = "Které balíky ho potřebují"
+does = "Bity, které říkají, které balíky kterých národů a režimů načítají tento model, animaci nebo obrázek. Jednotka s modelem jiného národa ho může ukázat bez některých částí, pokud balíky toho národa nejsou načteny."
+[PlayInLoop]
+what = "Hraje ve smyčce"
+does = "Jen vzhled: 1 opakuje animaci (voják v klidu, vlajka) místo jednoho přehrání."
+[ForceDuree]
+what = "Pevná délka"
+does = "Jen vzhled: 1 přehraje animaci za pevnou dobu bez ohledu na její vlastní délku."
+[FEventType]
+what = "Druh události animace"
+does = "Jen vzhled: co se stane v okamžiku animace (zvuk, efekt)."
+[FlushOnAnimeEnd]
+what = "Smazáno na konci"
+does = "Jen vzhled: 1 zruší událost, když animace skončí."
+[Frame]
+what = "Snímek události"
+does = "Jen vzhled: na kterém snímku animace událost nastane."
+[RequireAnimationCorrectness]
+what = "Nutný přesný snímek"
+does = "Jen vzhled: 1 spustí událost, jen když animace ten snímek opravdu dosáhne."
+[AnimationSlot]
+what = "Slot animace"
+does = "Jen vzhled: který slot animace vojáka tato část těla používá."
+[DefaultWeight]
+what = "Prolínání animací"
+does = "Jen vzhled: kolik tato animace váží, když na těle hrají dvě najednou."
+[MaskUnionCode]
+what = "Pohybované kosti"
+does = "Jen vzhled: bity, které říkají, kterými kostmi vojáka tato animace hýbe."
+[Coef_O1_Sub]
+what = "Posun pohybu kosti"
+does = "Jen vzhled: číslo odečítané ve vzorci, který hýbe kostí modelu spolu s jednotkou (40 až 80)."
+[Coef_O2_Mul]
+what = "Násobitel pohybu kosti"
+does = "Jen vzhled: jak silně kost modelu sleduje to, co ji pohání (-5 až 5)."
+[RangeActivationMin]
+what = "Pohyb kosti začíná od"
+does = "Jen vzhled: od jaké vstupní hodnoty se kost začne hýbat."
+[RangeActivationMax]
+what = "Plný pohyb kosti při"
+does = "Jen vzhled: při jaké vstupní hodnotě se kost pohnula úplně."
+[RangeActivationExclusMax]
+what = "Do, bez zahrnutí"
+does = "Jen vzhled: 1 vyloučí nejvyšší vstupní hodnotu kosti."
+[RangeSortie]
+what = "Omezený výstup"
+does = "Jen vzhled: 1 drží pohyb kosti mezi jejími dvěma mezemi."
+[RangeSortieMin]
+what = "Nejmenší pohyb kosti"
+does = "Jen vzhled: nejméně, jak se kost pohne (-100)."
+[RangeSortieMax]
+what = "Největší pohyb kosti"
+does = "Jen vzhled: nejvíc, jak se kost pohne (100)."
+[MaxDuration]
+what = "Délka efektu"
+does = "Jen vzhled: nejdéle, jak trvá efekt nebo skriptovaná akce (záblesk a zvuk výstřelu, obláček kouře): 1,5 až 3 s."
+[IntroduceNewCentroid]
+what = "Efekt z vlastního bodu"
+does = "Jen vzhled: 1 přehraje efekt z vlastního bodu místo ze středu jednotky."
+[TryToUseOrderedParamsAsNamedParams]
+what = "Způsob volání efektu"
+does = "Jak volání efektu předává svá nastavení; jen pro efekty hry."
+["TEugBFloat.Value"]
+what = "Nastavení efektu"
+does = "Číslo, se kterým se efekt volá (velikost, síla, čas), podle efektu."
+[Modes]
+what = "Režimy pohledu na staveniště"
+does = "Jen vzhled: pro které vzhledy staveniště se tento pohled používá."
+[Ranges]
+what = "Vzdálenosti pohledu na staveniště"
+does = "Jen vzhled: od jaké vzdálenosti se kreslí každý vzhled staveniště."
+[BoobsIndex]
+what = "Díl staveniště"
+does = "Jen vzhled: který díl staveniště tento pohled ukazuje."
+[FxMode]
+what = "Efekt staveniště"
+does = "Jen vzhled: efekt kreslený na staveništi (prach, lešení)."
+[JobPriority]
+what = "Priorita pohledu na staveniště"
+does = "Jen vzhled: jak brzy hra tento pohled připraví."
+[KeepGeometryMask]
+what = "Ponechané díly"
+does = "Jen vzhled: které díly budovy zůstávají během stavby nakreslené."
+[MaskDestroyed]
+what = "Zničený vzhled"
+does = "Jen vzhled: které díly se objeví, když je budova zničena."
+["TGfxLevelBuildStateGeoDatabaseModification.Mask"]
+what = "Maska změny mapy"
+does = "Kterou vrstvu mapy budova po postavení mění (kudy ji jednotky mohou obejít)."
+["TGfxLevelBuildStateGeoDatabaseModification.Value"]
+what = "Hodnota změny mapy"
+does = "Co budova po postavení zapíše do té vrstvy mapy."
+[Undoable]
+what = "Vráceno při zničení"
+does = "1: změna mapy, kterou budova udělala, se vrátí, když je zničena."
+[Mode]
+what = "Režim změny mapy"
+does = "Jak se změna mapy, kterou budova dělá, uplatní."
+[Variant]
+what = "Varianta animace"
+does = "Jen vzhled: kterou variantu sady animací díl používá."
+[Version]
+what = "Verze sady animací"
+does = "Jen vzhled: verze tabulky rychlého přístupu sady animací."
+[Algo_Truck]
+what = "Zvuk motoru nákladního auta"
+does = "Jen zvuk: 1 nechá motor znít tak, jak zní motory nákladních aut."
+[Run_In_Fade_Velocity]
+what = "Náběh zvuku motoru"
+does = "Jen zvuk: jak rychle zesílí zvuk běžícího motoru, když se jednotka rozjede."
+[Run_Out_Fade_Velocity]
+what = "Doznění zvuku motoru"
+does = "Jen zvuk: jak rychle utichne zvuk běžícího motoru, když jednotka zastaví."
+[Run_Out_Pitch_To_Go]
+what = "Tón motoru při zastavení"
+does = "Jen zvuk: jak moc klesne tón motoru při zastavení (0,8: o 20 % níž)."
+[Run_Out_Pitch_Velocity]
+what = "Rychlost poklesu tónu"
+does = "Jen zvuk: jak rychle klesá tón motoru při zastavení."
+[IdleAndStop_Out_Fade_Velocity]
+what = "Doznění volnoběhu"
+does = "Jen zvuk: jak rychle utichne zvuk motoru na volnoběh, když se jednotka rozjede nebo zmizí."
+[Dive_Out_Fade_Velocity]
+what = "Doznění zvuku střemhlavého letu"
+does = "Jen zvuk: jak rychle utichne zvuk střemhlavého letu letadla, když vybírá."

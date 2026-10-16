@@ -19,7 +19,7 @@
 > [!TIP]
 > **How to install and play (5 minutes):**
 > 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), take the
->    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.4.exe**.
+>    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.5.exe**.
 > 2. Run it. If Windows says "Windows protected your PC": **More info**, then **Run anyway**.
 > 3. Open **RUSE Launcher**: it finds R.U.S.E. through Steam by itself.
 > 4. Click **Supported mods**, tick the mods you want and press **Install**.
@@ -68,6 +68,13 @@ card in the build menu. Pick an era in the Studio's Units tab and it downloads; 
   </tr>
 </table>
 
+**New in 0.9.8.5: planes in any role, weapons that hit planes, and a library for Map Paint's textures.** A plane's
+new **Role** box makes it a fighter, fighter-bomber, bomber or scout: a fighter-bomber given a bomber's carpet bombs
+now drops them from a bomb bay once it's made a bomber (a player's report, seen in the game), and a scout can keep its
+guns. A tank can be made a recon unit, and each weapon's **Hits** picks the ground, planes or both (tank rounds at
+planes, seen in the game). Map Paint's Texture brush paints with the game's own ground textures, any map's ground,
+your own pictures or free ones online, with the game's detail up close; a map painted again comes back in seconds.
+
 **New in 0.9.8.4: missions of your own, blank maps you build up, and much more to customise.** A new Operation or
 campaign chapter gets its own mission (goals, events, camera moves) on the map screen's Scenario side; blank maps show
 nothing of the copied map and you place each player's HQ and paint the sectors; supply depots get more trucks on every
@@ -79,6 +86,12 @@ real level; imported planes keep their propellers; and mods and updates download
 Ocean). 
 What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
 [Edit a scenario](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Edit-a-Scenario).
+
+**Coming next.** Map Paint's **field brush**, which turns whole fields into wheat, ploughed earth, stubble or a green
+crop the way the game's own maps paint them; **towns you draw** (lay out the streets, mark them as homes, shops or
+industry, and the Studio fills them with the game's own buildings, in rows the way R.U.S.E.'s villages are built);
+roads that curve and meet at proper junctions; faster map builds; and the Studio and the Launcher in every language
+they offer, their messages included.
 
 **LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
 Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
@@ -712,7 +725,7 @@ Twelve hours, six rounds of testing.
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.4) &middot; **Studio** for modders, a preview (latest: 0.9.8.4) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.5) &middot; **Studio** for modders, a preview (latest: 0.9.8.5) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
 are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check

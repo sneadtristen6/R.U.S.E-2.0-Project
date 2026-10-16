@@ -1,0 +1,745 @@
+# 数值指南（简体中文）（rusemod.numberinfo；以 numberinfo.toml 的英文为准）。
+[SeuilMort]
+what = "生命值"
+does = "摧毁它需要多少伤害。游戏中大多数坦克、车辆、班组和火炮都是 400：虎式比吉普车耐打，主要靠它的装甲等级（装甲），它会削减每一发对它来说不够强的射击的伤害。建筑为 50 到 4,500。"
+[SeuilPinned]
+what = "压制阈值"
+does = "单位被压制（停止前进、射击变少）前需要多少压制值。落在附近、处于弹药压制半径内的射击会增加压制值。大多数单位为 200；越高越难被压制。"
+[ArmureHint]
+what = "显示的装甲等级"
+does = "单位卡片和建造菜单上显示的装甲等级（盾牌上的数字，1 到 5）。Studio 的“装甲”栏会同时设置它和实际装甲，所以两者总是一致。"
+[BaseBlindage]
+what = "装甲"
+does = "单位作战时用的装甲（游戏中 1 到 10）：越高，较弱的弹药对它造成的伤害越少。用“装甲”栏修改它，该栏会选择游戏的一个等级，并保持卡片盾牌上的数字一致（已在游戏中确认）。"
+[ReculeSeulementSiUberstress]
+what = "只在完全被压制时后撤"
+does = "1：单位只有在完全被压制（极度压制）时才会在火力下撤退，之前不会。游戏中有 38 个单位带有它。"
+[VitesseLineaire]
+what = "速度"
+does = "在道路外行进的速度。谢尔曼为 4,550（约 35 km/h），吉普车 6,110（约 47 km/h），步枪班 3,120（约 24 km/h）。"
+["TAvionDescriptor.VitesseLineaire"]
+what = "飞行速度"
+does = "飞机飞行的速度：游戏中 13,000 到 46,800（约 225 到 810 km/h）。"
+[VitesseLineaireAuSol]
+what = "地面速度"
+does = "飞机起飞和降落时在机场上滑行的速度。"
+[VitesseLineaireIdle]
+what = "巡逻速度"
+does = "飞机无事可做、盘旋时的速度，比全速慢。"
+[VitesseCombat]
+what = "战斗中速度"
+does = "战斗中移动的速度。坦克和车辆通常与“速度”相同；班组和牵引火炮则慢得多（步枪班 1,040，约 8 km/h；反坦克炮 520，约 4 km/h，由炮组推动）。"
+[SpeedBonusOnRoad]
+what = "道路速度加成"
+does = "在道路上比道路外快多少：0.6 约为快 60%。班组和火炮以它们变成的卡车获得此加成。飞机和卡车为 1。"
+[MaxAcceleration]
+what = "加速度"
+does = "达到速度有多快。大多数坦克为 3,900。"
+[MaxDeceleration]
+what = "制动"
+does = "减速并停下有多快。"
+[TempsDemiTour]
+what = "掉头时间"
+does = "转向反方向需要多少秒。步兵 0.01（立即），车辆 0.5，坦克 1，最慢的 6。"
+[Radius]
+what = "地面尺寸"
+does = "单位占多大地方：其他单位绕开它时会与它的中心保持这个距离。步兵 104-130（约 0.5 m），坦克 520-780（2-3 m），火炮 390-650，卡车 2,000，建筑 7,800-13,000（30-50 m）。"
+["TAvionDescriptor.Radius"]
+what = "空中尺寸"
+does = "其他飞机绕飞时飞机占多大地方：780 到 2,600（3 到 10 m）。"
+[StickToGround]
+what = "贴合地形"
+does = "1：单位随所站的坡面倾斜。游戏中每个地面单位和建筑都带有它。"
+[Scale]
+what = "模型尺寸"
+does = "仅外观：单位的 3D 模型按这个倍数绘制。单位为 1，步兵 0.2，建筑 0.1。对导入的模型，Studio 的“尺寸”滑块改的是模型本身。"
+[DetectionBase]
+what = "视野范围"
+does = "能看到地面单位的距离。坦克 104,000（约 400 m）；侦察车 234,000（900 m）；侦察机 195,000（750 m）。只给了 234,000 的四号坦克并没有当作侦察单位行动；其余由“角色”栏提供。"
+[PorteeVisionVolant]
+what = "对空视野范围"
+does = "能看到飞机的距离。大多数单位 208,000（800 m）；少数 2,600（10 m：几乎看不到飞机）。"
+[SignatureRadar]
+what = "雷达特征"
+does = "在敌方雷达上显示为哪种接触：1 地面单位，2 建筑，3 飞机。"
+[AltitudeNoise]
+what = "高度晃动"
+does = "仅外观：飞行中飞机高度晃动多少（130-260，不到 1 m）。"
+[PorteeAttackReflexAir]
+what = "自动攻击范围（空中）"
+does = "飞机在没有命令时自行追击敌机的距离：130,000 到 208,000（500 到 800 m）。"
+[PorteeAttackReflexSol]
+what = "自动攻击范围（地面）"
+does = "飞机自行追击地面目标的距离：游戏中每架飞机都是 182,000（700 m）。"
+[SecondaryWeaponMaxAmmo]
+what = "携带的炸弹或火箭"
+does = "飞机飞回补给前携带多少发第二武器（炸弹、火箭）：游戏中 1 到 4。"
+[ProductionPrice]
+what = "价格"
+does = "建造费用，单位 $，五个战役日期各一个（游戏每个日期保存一个价格）。"
+[ProductionTime]
+what = "建造时间"
+does = "建造需要多少秒。若有多个同类工厂，会在它们之间分担。"
+[UpgradePrice]
+what = "研究价格"
+does = "能建造之前研究它要花多少，单位 $（从另一单位研究出的单位）。"
+[UpgradeTime]
+what = "研究时间"
+does = "研究需要多长时间，单位秒。"
+[IsUpgrade]
+what = "是升级"
+does = "1：该单位是其研究来源单位的升级（研究后在建造菜单中取代它）。"
+[ShowInMenu]
+what = "在建造菜单中显示"
+does = "1：在该战役日期显示在其建造菜单中（五个日期各一个值）。"
+[PositionInMenu]
+what = "菜单位置"
+does = "它在建造菜单中的位置：同一系列的单位共享一个位置，升级叠放在上面。"
+[Factory]
+what = "工厂"
+does = "它在哪个建造菜单里（Studio 按名称显示每个菜单，并允许把单位移到其他国家的菜单）。"
+[Menu]
+what = "建筑菜单"
+does = "建筑位于建筑菜单的哪一页。"
+[Nationalite]
+what = "国家"
+does = "它属于哪个国家：0 美国，1 德国，2 英国，3 法国，4 意大利，5 苏联，6 日本。"
+[InitialFlagSet]
+what = "旗标"
+does = "单位的旗标：表示它是什么、能做什么的编号开关。每一个都在旗标下方的“旗标指南”中有说明。"
+[DescriptorId]
+what = "ID"
+does = "单位自己的编号：每个单位都不同，游戏和存档靠它找到单位。Studio 会给新单位一个空闲编号。"
+[TrackingId]
+what = "统计 ID"
+does = "终局统计和游戏自身记录用来识别单位的编号。"
+[Key]
+what = "键"
+does = "少数单位带有的数值（8 辆坦克、7 架飞机、2 个班组）；用途尚不清楚。"
+[TypeForAcknow]
+what = "语音类型"
+does = "单位用哪组语音回应命令。"
+[AcknowUnitType]
+what = "语音种类"
+does = "语音称呼的单位种类（坦克、步兵、飞机……）。"
+[IconeType]
+what = "地图图标"
+does = "缩小视角时单位在地图桌上显示的图标。"
+[Category]
+what = "类别"
+does = "游戏把它算作哪种单位：1 侦察（由“侦察机”角色设置；已在游戏中确认），7 飞机，8 和 9 建筑；其他尚未全部命名。"
+[CategorieIA]
+what = "电脑用类别"
+does = "电脑玩家把单位用来做什么：3 侦察（“角色”栏随角色一起设置；已在游戏中确认）；其他尚未全部命名。"
+[CategoryVolant]
+what = "飞机角色"
+does = "它作为哪种飞机飞行（战斗机、战斗轰炸机、轰炸机、侦察机、伞兵）：如何移动和攻击。用“角色”栏修改，该栏会同时设置旗标。"
+[IsDepotForIA]
+what = "电脑用补给站"
+does = "1：电脑玩家把这座建筑当作补给站。"
+[TypeBatiment]
+what = "建筑类型"
+does = "对游戏来说它是哪种建筑（指挥部、兵营、补给站……）。带旗标 5 且 TypeBatiment 为 -7 的诱饵建筑会真正生产。"
+[BuildPolicy]
+what = "可建造位置"
+does = "建筑可以放在哪里：2 任意位置（防御工事），3 补给站地基上；没有此值的建筑需要附近有道路。"
+[DistanceToRoad]
+what = "与道路的距离"
+does = "建筑必须放在离道路多近的地方：5,000 到 31,000（20 到 120 m）。碉堡 8,000（约 30 m）。"
+[CanBeSpawnedInMapMulti]
+what = "可放在多人地图上"
+does = "1：建筑可以放进多人地图的场景。"
+["TBatimentPaths.Radius"]
+what = "建筑周围的路径"
+does = "单位路径在建筑周围绕多远。"
+[TirEnMouvement]
+what = "行进间射击"
+does = "1：单位移动时这件武器也能射击。"
+[SalveNumber]
+what = "齐射编号"
+does = "这件武器在哪一轮齐射中射击（-1：单独射击，不齐射）。"
+["TWeaponDescriptor.Salves"]
+what = "齐射"
+does = "武器是齐射（1）还是一发一发射击（-1）。"
+[Puissance]
+what = "伤害"
+does = "一次命中的伤害，在装甲之前。轻武器 2-10，坦克炮几十到几百，炸弹和 V2 远远更多（原子弹高达 2,000,000）。单位受到的伤害达到其生命值时被摧毁。"
+[Level]
+what = "弹药等级"
+does = "弹药的等级（1 到 5）。游戏拿它与目标的装甲比较：等级越高的弹药对装甲单位造成的伤害越多。两者具体如何比较尚未测量。"
+[Arme]
+what = "武器类型"
+does = "由哪种武器发射（机枪、火炮、榴弹炮、炸弹……）：对哪些目标有效，以及卡片上的图标。"
+[PorteeMaximale]
+what = "射程"
+does = "能打多远：13,000（50 m）到 2,600,000（10 km，V2）。坦克炮通常 65,000-130,000（250-500 m）。"
+[PorteeMinimale]
+what = "最小射程"
+does = "比这更近就不能射击（火炮和迫击炮）：13,000 到 169,000（50 到 650 m）。"
+[TempsEntreDeuxTirs]
+what = "射击间隔"
+does = "两发之间的秒数：机枪 0.2，坦克炮几秒，最重的火炮可达 60。越低 = 射得越多。"
+[TempsEntreDeuxSalves]
+what = "齐射间隔"
+does = "齐射武器（火箭炮、炸弹）两轮齐射之间的秒数。"
+[NbTirParSalves]
+what = "每轮齐射发数"
+does = "一轮齐射发射多少发：1 到 100。"
+[AngleDispersion]
+what = "散布"
+does = "射击偏离瞄准点多远：0.01（约半度，非常精准）到 0.3（17 度，火炮）。"
+[PourcentageTirDirect]
+what = "静止命中率"
+does = "单位静止时一发命中的概率：0.5 到 1（50% 到 100%）。"
+[PourcentageTirDirectEnMouvement]
+what = "移动命中率"
+does = "单位移动时一发命中的概率：0.4 到 1（40% 到 100%）。"
+[RayonPinned]
+what = "压制半径"
+does = "一发射击在落点多远范围内压制单位（增加其压制值）：130（半米）到 78,000（300 m）。"
+[TirIndirect]
+what = "间接射击"
+does = "1：弹药以间接方式发射，越过障碍物打击别人发现的目标（火炮）。"
+[AllowAmbushShot]
+what = "可伏击"
+does = "1：弹药可以从树林中的伏击位置发射。"
+[ProjectileType]
+what = "弹丸种类"
+does = "仅外观：飞行中绘制哪种射击（炮弹、子弹、火箭、炸弹）。"
+[AmmunitionId]
+what = "弹药 ID"
+does = "弹药自己的编号（1000-1138）：每种弹药都不同。Studio 会给副本一个空闲编号。"
+[NeedModelChange]
+what = "射击时换模型"
+does = "仅外观：班组的反坦克武器为 1：士兵射击时切换到手持该武器的模型。"
+[TempsAnimation]
+what = "射击动画时长"
+does = "仅外观：士兵射击动画持续多久（班组反坦克武器为 1.6 秒）。"
+[FX_vitesse_de_depart]
+what = "射击速度（绘制）"
+does = "仅外观：绘制的射击离开武器的速度，单位为游戏单位每秒：150 到 520,000（每秒 2,000 m）。"
+[FX_frottement]
+what = "射击阻力（绘制）"
+does = "仅外观：绘制的射击在空中减速有多快。"
+[FX_tir_tendu]
+what = "平射（绘制）"
+does = "仅外观：1 把射击画成平直的，而不是弧线。"
+[FX_tir_sans_physic]
+what = "无物理绘制的射击"
+does = "仅外观：1 绘制射击时不带重力和阻力。"
+[AltitudeDeVol]
+what = "飞行高度"
+does = "飞机飞多高：52,000 到 208,000（200 到 800 m）。"
+[ChaosAltitudeDeVol]
+what = "飞行高度浮动"
+does = "飞行高度在飞机之间和随时间变化多少：7,800 到 32,500（30 到 125 m）。"
+[AltitudeDownAirport]
+what = "降落时高度"
+does = "飞机开始向机场下降时的高度：65,000（250 m）。"
+[AltitudeDownAttack]
+what = "攻击高度"
+does = "飞机为对地攻击下降到多低：13,000 到 39,000（50 到 150 m）。"
+[LengthDownAirport]
+what = "降落进场长度"
+does = "飞机向机场下降的距离：78,000 到 156,000（300 到 600 m）。"
+[LengthUpAirport]
+what = "起飞爬升长度"
+does = "飞机起飞后爬升的距离：52,000 到 130,000（200 到 500 m）。"
+[LengthDownAttack]
+what = "攻击俯冲长度"
+does = "飞机向地面目标下降的距离：13,000 到 208,000（50 到 800 m）。"
+[LengthUpAttack]
+what = "攻击后拉起长度"
+does = "飞机对地攻击后爬升的距离：13,000 到 208,000（50 到 800 m）。"
+[DelaiAttackGround]
+what = "对地攻击前延迟"
+does = "飞机在攻击航线上向地面目标开火前等待的秒数：0.1 到 4.5。"
+[GroundAttackAcceleration]
+what = "对地攻击加速"
+does = "对地攻击时飞机加速有多快。"
+[GroundAttackDecceleration]
+what = "对地攻击减速"
+does = "飞机为对地攻击减速有多快。"
+[MustDiveAttack]
+what = "俯冲轰炸机"
+does = "1：飞机以陡峭俯冲进行攻击（游戏中有 2 架飞机带有它）。"
+[DiveAttackStartAltitude]
+what = "俯冲起始高度"
+does = "俯冲轰炸机开始俯冲的高度：44,200 到 91,000（170 到 350 m）。"
+[DiveAttackEndAltitude]
+what = "拉起高度"
+does = "俯冲轰炸机拉起前俯冲到多低：31,200 到 39,000（120 到 150 m）。"
+[DiveAttackAcceleration]
+what = "俯冲加速"
+does = "俯冲轰炸机在俯冲中加速有多快。"
+[DiveAttackAngleToHit]
+what = "投弹俯冲角"
+does = "投下炸弹前俯冲必须有多陡：10 到 35 度。"
+[DiveAttackDownAngleSpeed]
+what = "压机头速度"
+does = "俯冲轰炸机压下机头进入俯冲的速度（每秒 90 度）。"
+[DiveAttackDownRollSpeed]
+what = "进入俯冲的滚转速度"
+does = "俯冲轰炸机开始俯冲时翻转的速度（每秒 120 度）。"
+[DiveAttackUpAngleSpeed]
+what = "拉起速度"
+does = "俯冲轰炸机从俯冲中抬起机头的速度（每秒 35 到 50 度）。"
+[DiveAttackUpRollSpeed]
+what = "俯冲后的滚转速度"
+does = "俯冲轰炸机俯冲后改平的速度（每秒 60 度）。"
+[LoopingStartAltitude]
+what = "筋斗起始高度"
+does = "飞机为再次进入而开始筋斗时的高度：57,200 到 109,200（220 到 420 m）。"
+[LoopingAltitudeToHit]
+what = "筋斗顶点高度"
+does = "飞机筋斗顶点有多高：70,200 到 124,800（270 到 480 m）。"
+[LoopingAcceleration]
+what = "筋斗中加速"
+does = "飞机从筋斗中出来时加速有多快。"
+[LoopingDecceleration]
+what = "筋斗中减速"
+does = "飞机爬升进入筋斗时减速有多快。"
+[LoopingPitchAngleSpeedStart]
+what = "俯仰速度（筋斗开始）"
+does = "筋斗开始时机头抬起的速度（每秒 20 度）。"
+[LoopingPitchAngleSpeedEnd]
+what = "俯仰速度（筋斗结束）"
+does = "筋斗结束时机头转动的速度：每秒 30 到 90 度。"
+[PitchAngleMax]
+what = "最陡爬升或俯冲"
+does = "正常飞行中飞机能抬起或压下机头多少：5 到 80 度。"
+[RollAngleMax]
+what = "最大坡度"
+does = "飞机转弯时倾斜多少：5 到 50 度。"
+[RollAcceleration]
+what = "坡度加速"
+does = "飞机进入和退出倾斜有多快（4 到 8）。"
+[RollRatioSpeed]
+what = "每次转弯的坡度"
+does = "对于给定转弯飞机倾斜多少：0.1 到 2。"
+[RadiusStandard]
+what = "转弯半径"
+does = "飞机正常转弯有多宽：26,000 到 104,000（100 到 400 m）。"
+[RadiusApproach]
+what = "进场半径"
+does = "飞机接近被派往的地点时转弯有多宽：10,400 到 104,000（40 到 400 m）。"
+[RadiusApproachAttackGround]
+what = "对地攻击进场半径"
+does = "飞机对准对地攻击时转弯有多宽：20,800 到 104,000（80 到 400 m）。"
+[RadiusApproachEngage]
+what = "空战进场半径"
+does = "飞机接近敌机时转弯有多宽：15,600 到 52,000（60 到 200 m）。"
+[RadiusEngage]
+what = "空战开始距离"
+does = "敌机要多近飞机才开始空战：10,400 到 104,000（40 到 400 m）。"
+[RadiusEngaged]
+what = "空战转弯半径"
+does = "飞机在空战中转弯有多宽：26,000 到 104,000（100 到 400 m）。"
+[RadiusChangeAltitude]
+what = "改变高度的距离"
+does = "飞机改变高度时飞行的距离：9,750 到 52,000（40 到 200 m）。"
+[CrashGravity]
+what = "被击落时下坠"
+does = "被击落的飞机下坠有多快：1,300 到 5,200。"
+[CrashPitchAcceleration]
+what = "被击落时机头下沉"
+does = "仅外观：被击落飞机的机头下沉得越来越快的程度（每秒 1 到 5 度，每秒递增）。"
+[CrashPitchMaxSpeed]
+what = "被击落时最快机头下沉"
+does = "仅外观：被击落飞机机头下沉的最快速度（每秒 5 到 35 度）。"
+[CrashRollAcceleration]
+what = "被击落时螺旋"
+does = "仅外观：被击落的飞机开始旋转的速度（每秒 8 到 70 度，每秒递增）。"
+[CrashRollMaxSpeed]
+what = "被击落时最快螺旋"
+does = "仅外观：被击落飞机旋转的最快速度（每秒 150 到 1,000 度）。"
+[VitesseRotation]
+what = "炮塔转速"
+does = "炮塔或火炮转动瞄准的速度：每秒 15 到 200 度。越慢的炮塔把炮对准新目标所需时间越长。"
+[AngleRotationMax]
+what = "炮塔转动限制"
+does = "炮塔或火炮从正前方向每侧能转多少：15 度（车体内的炮）到 360（全向）。"
+[AngleRotationBase]
+what = "炮塔静止角度"
+does = "静止时炮塔朝向哪里（180 度：朝后，少数车辆如此）。"
+[AngleRotationBasePitch]
+what = "火炮静止仰角"
+does = "静止时火炮指向多高：10 到 30 度。"
+[AngleRotationMaxPitch]
+what = "火炮最大仰角"
+does = "火炮能指向多高：15 到 90 度（高射炮可垂直向上）。"
+[AngleRotationMinPitch]
+what = "火炮最小仰角"
+does = "火炮能指向多低（两门炮为 10 度）。"
+[NbFX]
+what = "炮口"
+does = "仅外观：炮塔或武器开火时绘制多少个炮口焰（1 到 8：多管武器的炮管）。"
+[Spread]
+what = "待机环视"
+does = "仅外观：待机的火炮或炮塔为环顾四周转动多少度（80 到 180）。"
+[TurretRotationSpeedMultiplier]
+what = "待机转速"
+does = "仅外观：待机炮塔环视时转动的速度，为其正常速度的倍数（0.25 到 1）。"
+[WaitMinInSeconds]
+what = "待机等待（最短）"
+does = "仅外观：待机炮塔看向别处前等待的最短时间。"
+[WaitMaxInSeconds]
+what = "待机等待（最长）"
+does = "仅外观：待机炮塔看向别处前等待的最长时间。"
+[VerticalAngleMax]
+what = "待机最高视线"
+does = "仅外观：待机的高射炮扫视天空时指向多高（10 到 25 度）。"
+[VerticalAngleMin]
+what = "待机最低视线"
+does = "仅外观：待机的火炮环视时指向多低（一门炮为 25 度）。"
+[UseCustomVerticalAngles]
+what = "自定义待机角度"
+does = "仅外观：1 让炮组使用上面两个待机角度而不是游戏的。"
+[AngleMaxDegree]
+what = "部件转动限制（度）"
+does = "仅外观：模型的活动部件向一侧转动多少度（45 到 180）。"
+[AngleMinDegree]
+what = "部件转动限制，另一侧（度）"
+does = "仅外观：模型的活动部件向另一侧转动多少度（-180 到 -45）。"
+[TruckType]
+what = "卡车种类"
+does = "卡车做什么（补给、建造及游戏的其他种类，1 到 5）；各个编号尚未命名。"
+[BaseSize]
+what = "棋子大小"
+does = "仅外观：缩小视角时地图桌上单位棋子人偶的大小（8 到 20）。"
+["TFigurineOptions.Scale"]
+what = "棋子人偶尺寸"
+does = "仅外观：棋子上的小人偶按几倍大小绘制（2 到 4）。"
+["TPawnDescriptor.Power"]
+what = "棋子重量"
+does = "仅外观：棋子在地图桌上挤在一起时把周围棋子推开的力度（385 到 1,386）。"
+["TPawnDescriptor.Radius"]
+what = "桌上棋子大小"
+does = "仅外观：地图桌上单位圆形棋子的大小（385 到 1,386）。"
+[SocleHeight]
+what = "棋子底座高度"
+does = "仅外观：棋子底座的厚度（200）。"
+[OffSetZFigurine]
+what = "棋子人偶高度"
+does = "仅外观：人偶站在底座上方多高（200）。"
+[DureteRepositionnement]
+what = "棋子回位"
+does = "仅外观：挤在一起的棋子回到原位的力度（10）。"
+[RandomTranslateFactor]
+what = "棋子随机偏移"
+does = "仅外观：棋子随机挪动多远，使一叠看起来不像一个（0.15）。"
+[ForceOneStack]
+what = "单叠"
+does = "仅外观：1 把这一类的所有棋子显示为一叠。"
+[ScaleWithVisibilityRange_Coef]
+what = "远处放大"
+does = "仅外观：镜头很远时模型画大多少以保持可见（3 到 22 倍）。"
+[InnerScale]
+what = "模型内部尺寸"
+does = "仅外观：士兵或模型在自身部件内绘制的大小（0.46 到 1）。"
+[MaxMaskedAnimationCount]
+what = "同时动画数"
+does = "仅外观：士兵在身体各部位能同时播放多少个动画（1 或 2）。"
+[GeometrySubTiling_OneCircle]
+what = "圆圈精细度"
+does = "仅外观：地面选择圈分割的精细程度（3）。"
+[MaxRadiusExpander]
+what = "最大圆圈"
+does = "仅外观：选择圈能扩大到的最大程度。"
+[MinRadiusExpander]
+what = "最小圆圈"
+does = "仅外观：选择圈能缩小到的最小程度。"
+["TMetaCircleDrawer.MaxRange"]
+what = "圆圈绘制距离"
+does = "仅外观：单位下方的圆圈在多远内仍会绘制。"
+[MaxV]
+what = "圆圈纹理拉伸"
+does = "仅外观：圆圈图片沿圆圈拉伸多少。"
+[MaxWidth]
+what = "圆圈线宽（最大）"
+does = "仅外观：缩小视角时圆圈线条最宽的程度。"
+[MinWidth]
+what = "圆圈线宽（最小）"
+does = "仅外观：近看时圆圈线条最窄的程度。"
+[MaxZOffset]
+what = "圆圈抬高（最大）"
+does = "仅外观：为不被山丘遮住，圆圈离地抬高的最大量。"
+[MinZOffset]
+what = "圆圈抬高（最小）"
+does = "仅外观：圆圈离地抬高的最小量。"
+[RoueNb]
+what = "负重轮"
+does = "仅外观：履带经过多少个负重轮（5 到 13），用于履带动画。"
+[RouePartieSolMin]
+what = "第一个着地轮"
+does = "仅外观：履带从哪个轮开始接触地面。"
+[RouePartieSolMax]
+what = "最后一个着地轮"
+does = "仅外观：履带到哪个轮为止接触地面。"
+[Cote]
+what = "履带侧"
+does = "仅外观：这条履带在车辆的哪一侧。"
+[PartieHauteDeformNb]
+what = "上段下垂"
+does = "仅外观：履带上段在轮间下垂的点数（2）。"
+[CahotsMax]
+what = "同时颠簸数"
+does = "仅外观：一条履带上同时能传播多少个颠簸（2）。"
+[DelaiPropagation]
+what = "颠簸传播时间"
+does = "仅外观：一个颠簸沿履带传完需要多久（1.2 秒）。"
+[ForceBruitRoulementBas]
+what = "履带抖动（下）"
+does = "仅外观：行驶时履带下段抖动多少。"
+[ForceBruitRoulementHaut]
+what = "履带抖动（上）"
+does = "仅外观：行驶时履带上段抖动多少。"
+[ForceCahotMin]
+what = "颠簸强度（最小）"
+does = "仅外观：履带中最小颠簸的强度。"
+[ForceCahotMax]
+what = "颠簸强度（最大）"
+does = "仅外观：履带中最大颠簸的强度。"
+[ForceDeformationPartieHaut]
+what = "上段下垂量"
+does = "仅外观：履带上段在轮间下垂多少。"
+[FrequenceCahots]
+what = "颠簸频率"
+does = "仅外观：颠簸沿履带传播的频繁程度。"
+[IntervalleCahots]
+what = "颠簸间距"
+does = "仅外观：沿履带的颠簸之间相隔多远。"
+[LongueurCahotMin]
+what = "颠簸长度（最小）"
+does = "仅外观：履带中颠簸最短能多短。"
+[LongueurCahotMax]
+what = "颠簸长度（最大）"
+does = "仅外观：履带中颠簸最长能多长。"
+[CoefElev]
+what = "车轮弹跳"
+does = "仅外观：车轮随地面上下移动多少（2 到 10）。"
+[CoefRotate]
+what = "车轮转动"
+does = "仅外观：按车辆速度车轮转多快（1）。"
+[CoefRotateDirection]
+what = "转向轮转角"
+does = "仅外观：车辆转弯时转向轮转多少（1）。"
+[AngMaxRotateDirection]
+what = "最大转向角"
+does = "仅外观：前轮转多少度（45）。"
+[AngParSecondeRotateDirection]
+what = "转向速度"
+does = "仅外观：前轮转动的速度，每秒多少度（360）。"
+[Coef_Bruit_Sur_Pente]
+what = "坡上车体抖动"
+does = "仅外观：车体在坡上抖动多少。"
+[Coef_Bruit_Sur_Ressort]
+what = "悬挂抖动"
+does = "仅外观：车体在弹簧上弹跳多少。"
+[Coef_Bruit_Sur_Roulis]
+what = "侧摆抖动"
+does = "仅外观：车体左右摇摆多少。"
+[Coef_Sur_Pente_Relation_Acceleration]
+what = "加速时车头抬起"
+does = "仅外观：车辆加速时车体后仰、刹车时前倾的程度。"
+[Coef_Sur_Pente_Relation_Terrain]
+what = "随地形倾斜"
+does = "仅外观：车体前后方向跟随坡面的程度。"
+[Coef_Sur_Roulis_Relation_Rotation]
+what = "转弯侧倾"
+does = "仅外观：转弯时车体向外侧倾的程度。"
+[Coef_Sur_Roulis_Relation_Terrain]
+what = "随地形侧倾"
+does = "仅外观：车体左右方向跟随坡面的程度。"
+[Amortissement]
+what = "活动部件阻尼"
+does = "仅外观：模型的活动部件（天线、炮管后坐、弹簧上的车体）多快停止摆动。"
+[Attraction]
+what = "活动部件回弹力"
+does = "仅外观：模型的活动部件被拉回静止位置的力度。"
+[Elastic]
+what = "弹簧回弹"
+does = "仅外观：1 让活动部件像弹簧一样弹回。"
+[Debattement_Min]
+what = "部件摆幅（一侧）"
+does = "仅外观：模型的活动部件向一侧能摆多远。"
+[Debattement_Max]
+what = "部件摆幅（另一侧）"
+does = "仅外观：模型的活动部件向另一侧能摆多远。"
+[Operation]
+what = "部件运动方式"
+does = "仅外观：模型的活动部件如何运动（转动、滑动……）。"
+[VisibleByDefault]
+what = "初始可见"
+does = "仅外观：1 显示模型的这个部件，直到有东西把它隐藏（例如会脱落的部件）。"
+[IsAvant]
+what = "前起落架"
+does = "仅外观：飞机的前起落架为 1。"
+[Rot]
+what = "起落架收起转动"
+does = "仅外观：飞机起落架收起时转动多少。"
+[Trans]
+what = "起落架移动"
+does = "仅外观：飞机起落架收起时移动多少。"
+[TransAfterRot]
+what = "收起后起落架移动"
+does = "仅外观：起落架转动之后再移动多少。"
+[SensRotationADroite]
+what = "螺旋桨方向"
+does = "仅外观：螺旋桨朝哪个方向转（1 向右，-1 向左）。"
+[TempsAvantArretHelice]
+what = "螺旋桨停转时间"
+does = "仅外观：发动机关闭后螺旋桨停下需要多久（2.8 到 4 秒）。"
+[VitesseHeliceMinLS]
+what = "螺旋桨转速，低速（最小）"
+does = "仅外观：飞机慢速移动时螺旋桨最慢的转速。"
+[VitesseHeliceMaxLS]
+what = "螺旋桨转速，低速（最大）"
+does = "仅外观：飞机慢速移动时螺旋桨最快的转速。"
+[VitesseHeliceMinHS]
+what = "螺旋桨转速，高速（最小）"
+does = "仅外观：飞机高速飞行时旋转盘最慢的转速。"
+[VitesseHeliceMaxHS]
+what = "螺旋桨转速，高速（最大）"
+does = "仅外观：飞机高速飞行时旋转盘最快的转速。"
+[VitesseDeplacementMaxLS]
+what = "低速螺旋桨速度上限"
+does = "仅外观：飞行速度在多少以下时螺旋桨画成分开的桨叶。"
+[VitesseDeplacementMaxHS]
+what = "高速螺旋桨速度下限"
+does = "仅外观：飞行速度从多少起螺旋桨画成旋转盘。"
+[DontCastShadow]
+what = "无阴影"
+does = "仅外观：1 绘制模型时不带阴影。"
+[HasSubModele]
+what = "有子模型"
+does = "仅外观：当此部件是独立模型（炮塔、车轮）时为 1。"
+[MobileGeneratedAtStartForFx]
+what = "开始时生成特效点"
+does = "仅外观：1 在单位一出现就创建特效（炮口焰、烟）发出的点。"
+[UsefulnessMask]
+what = "需要它的包"
+does = "表示哪些国家和模式的包会加载此模型、动画或图片的位。使用其他国家模型的单位，如果那个国家的包没有加载，可能显示时缺少部分部件。"
+[PlayInLoop]
+what = "循环播放"
+does = "仅外观：1 重复播放动画（待机的士兵、旗帜），而不是只播一次。"
+[ForceDuree]
+what = "固定时长"
+does = "仅外观：1 不论动画本身多长，都按固定时间播放。"
+[FEventType]
+what = "动画事件类型"
+does = "仅外观：动画某一时刻发生什么（声音、特效）。"
+[FlushOnAnimeEnd]
+what = "结束时清除"
+does = "仅外观：1 在动画结束时取消该事件。"
+[Frame]
+what = "事件帧"
+does = "仅外观：事件在动画的哪一帧发生。"
+[RequireAnimationCorrectness]
+what = "需要准确帧"
+does = "仅外观：1 只有动画真正到达那一帧时才触发事件。"
+[AnimationSlot]
+what = "动画槽"
+does = "仅外观：身体这一部位使用士兵的哪个动画槽。"
+[DefaultWeight]
+what = "动画混合"
+does = "仅外观：身体上同时播放两个动画时，这个动画占多少比重。"
+[MaskUnionCode]
+what = "带动的骨骼"
+does = "仅外观：表示这个动画带动士兵哪些骨骼的位。"
+[Coef_O1_Sub]
+what = "骨骼运动偏移"
+does = "仅外观：让模型骨骼随单位运动的公式中减去的数（40 到 80）。"
+[Coef_O2_Mul]
+what = "骨骼运动系数"
+does = "仅外观：模型骨骼跟随其驱动源的强度（-5 到 5）。"
+[RangeActivationMin]
+what = "骨骼开始运动于"
+does = "仅外观：骨骼从哪个输入值开始运动。"
+[RangeActivationMax]
+what = "骨骼完全运动于"
+does = "仅外观：骨骼在哪个输入值时已完全运动。"
+[RangeActivationExclusMax]
+what = "不含上限"
+does = "仅外观：1 排除骨骼输入的最高值。"
+[RangeSortie]
+what = "限制输出"
+does = "仅外观：1 把骨骼运动保持在其两个限制之间。"
+[RangeSortieMin]
+what = "骨骼运动最小"
+does = "仅外观：骨骼运动的最小量（-100）。"
+[RangeSortieMax]
+what = "骨骼运动最大"
+does = "仅外观：骨骼运动的最大量（100）。"
+[MaxDuration]
+what = "特效时长"
+does = "仅外观：特效或脚本动作（射击的闪光和声音、一团烟）最长持续多久：1.5 到 3 秒。"
+[IntroduceNewCentroid]
+what = "从自身点发出特效"
+does = "仅外观：1 从自身的点播放特效，而不是从单位中心。"
+[TryToUseOrderedParamsAsNamedParams]
+what = "特效调用方式"
+does = "特效调用如何传递其设置；仅用于游戏自带的特效。"
+["TEugBFloat.Value"]
+what = "特效设置"
+does = "调用特效时用的数值（大小、强度、时间），视特效而定。"
+[Modes]
+what = "工地视图模式"
+does = "仅外观：此视图用于工地的哪些外观。"
+[Ranges]
+what = "工地视图距离"
+does = "仅外观：工地的每种外观从多远开始绘制。"
+[BoobsIndex]
+what = "工地部件"
+does = "仅外观：此视图显示工地的哪个部件。"
+[FxMode]
+what = "工地特效"
+does = "仅外观：工地上绘制的特效（灰尘、脚手架）。"
+[JobPriority]
+what = "工地视图优先级"
+does = "仅外观：游戏多早准备此视图。"
+[KeepGeometryMask]
+what = "保留的部件"
+does = "仅外观：建造期间建筑的哪些部件保持绘制。"
+[MaskDestroyed]
+what = "被毁外观"
+does = "仅外观：建筑被摧毁时显示哪些部件。"
+["TGfxLevelBuildStateGeoDatabaseModification.Mask"]
+what = "地图修改掩码"
+does = "建筑建成后改变地图的哪一层（单位可以从哪里绕过它）。"
+["TGfxLevelBuildStateGeoDatabaseModification.Value"]
+what = "地图修改值"
+does = "建筑建成后向那一层地图写入什么。"
+[Undoable]
+what = "被毁时撤销"
+does = "1：建筑被摧毁时，它对地图的修改会被撤销。"
+[Mode]
+what = "地图修改模式"
+does = "建筑对地图的修改如何应用。"
+[Variant]
+what = "动画变体"
+does = "仅外观：部件使用动画组的哪个变体。"
+[Version]
+what = "动画组版本"
+does = "仅外观：动画组快速访问表的版本。"
+[Algo_Truck]
+what = "卡车发动机声"
+does = "仅声音：1 让发动机发出卡车发动机那样的声音。"
+[Run_In_Fade_Velocity]
+what = "发动机声淡入"
+does = "仅声音：单位起步时运转中的发动机声增强有多快。"
+[Run_Out_Fade_Velocity]
+what = "发动机声淡出"
+does = "仅声音：单位停下时运转中的发动机声消失有多快。"
+[Run_Out_Pitch_To_Go]
+what = "停车时发动机音调"
+does = "仅声音：停下时发动机音调降低多少（0.8：低 20%）。"
+[Run_Out_Pitch_Velocity]
+what = "音调下降速度"
+does = "仅声音：停下时发动机音调下降有多快。"
+[IdleAndStop_Out_Fade_Velocity]
+what = "怠速声淡出"
+does = "仅声音：单位起步或消失时怠速发动机声消失有多快。"
+[Dive_Out_Fade_Velocity]
+what = "俯冲声淡出"
+does = "仅声音：飞机拉起时俯冲声消失有多快。"

@@ -458,9 +458,10 @@ SHOW = {"building": None, "prop": 20000, "vegetation": 40000}  # what the Studio
 def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: dict | None = None) -> dict:
     """A map's scenery for the Studio's map view (JSON-ready): {"types": [[short name, group, category, model,
     [every model], whether it's a bridge]],
-    "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat}} with every
-    building and a sample of props and trees (`budget`, default SHOW). Positions are map units; the game sets
-    objects on the ground itself."""
+    "groups": {group: {"shown": n, "total": n}}, "items": {group: [type, x, y, turn, size, ...] flat},
+    "palette": [[type, short name, group, category, how many the map has, its names, what it is, its number in
+    types]]} with every building and a sample of props and trees (`budget`, default SHOW), and every type there is
+    to place (the palette). Positions are map units; the game sets objects on the ground itself."""
     descs = descriptors(unit_arc) if descs is None else descs
     sc = Scenery(map_arc.read(map_arc.find(MEMBER)))
     budget = SHOW if budget is None else budget
@@ -484,11 +485,19 @@ def view(map_arc, unit_arc, descs: dict[str, Descriptor] | None = None, budget: 
         items[g] = flat
     per_type = sc.types()
     from .scenerynames import kinds, names  # the game names these only in its editor's code, mostly French
-    palette = sorted(([descs[n].name, n.split("/", 1)[-1], descs[n].group, descs[n].category, per_type.get(i, 0),
-                       names(n.split("/", 1)[-1]), kinds(descs[n].category)]
-                      for i, n in enumerate(sc.names[:len(sc.flags)])
-                      if sc.flags[i] == 1 and n in descs and descs[n].group in PLACEABLE),
-                     key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
+    # every type there is to place gets a number in `types` too, after the shown items' own: the Studio makes each
+    # one's model (rusemod.models.map_models) for the place list's pictures and what's placed
+    rows = []
+    for i, n in enumerate(sc.names[:len(sc.flags)]):
+        if sc.flags[i] != 1 or n not in descs or descs[n].group not in PLACEABLE:
+            continue
+        d = descs[n]
+        if i not in index:
+            index[i] = len(types)
+            types.append([d.name.split("/", 1)[-1], d.group, d.category, d.model or "", list(d.models), d.bridge])
+        rows.append([d.name, n.split("/", 1)[-1], d.group, d.category, per_type.get(i, 0), names(n.split("/", 1)[-1]),
+                     kinds(d.category), index[i]])
+    palette = sorted(rows, key=lambda r: (PLACEABLE.index(r[2]), -r[4], r[1].lower()))
     return {"types": types, "items": items, "palette": palette,
             "groups": {g: {"shown": len(shown.get(g, [])), "total": totals.get(g, 0)} for g in budget}}
 
@@ -1983,7 +1992,7 @@ def parse_erase(rows: list, where: str = "scenery.toml") -> list[EraseArea]:
 
 # --- the map's own ground detail laid again somewhere else on it ([[copy]], MOD_FORMAT §8) -----------------------------
 # Up close a shipped map's ground is its stickers (ground decals ~5 deep), low plants and stones, laid by Eugen's tools in
-# patterns (fields tiled in rows, heath scattered, hedge feet in strips; private notes ground-structure-2026-10-10). A
+# patterns (fields tiled in rows, heath scattered, hedge feet in strips). A
 # copy lays the map's own arrangement from one place in another, object by object, each with the LOD levels its shipped
 # copy is drawn at: the same look, by construction, the first step to brushes that match the game (the owner,
 # 2026-10-10: "at the very least, the paint and the textures we add on our studio are gonna load just like the game's").
@@ -2500,7 +2509,7 @@ def parse_field_brushes(rows: list, where: str = "scenery.toml") -> list[FieldBr
 class FieldCopy:
     """A real field of the map laid again whole somewhere else ([[fieldcopy]] in scenery.toml, MOD_FORMAT §8): the
     ploppable field, for a blank map (the owner, 2026-10-15). Eugen built his fields as prefab blocks and placed the
-    same block several times, each turned its own way (field-anatomy note §1); the ground picture under each was
+    same block several times, each turned its own way; the ground picture under each was
     painted place by place. So the copy takes the field under (sx, sy) whole: everything inside its outline and a
     `border` (map units) round it (rows, crops, fences, hay, carts, trees, the hedge's foot) and the picture under
     it, turned `turn` degrees round its middle and laid with that middle at (x, y) (expand_field_copy)."""
@@ -2713,7 +2722,7 @@ FIELD_HALF = 2048.0        # a field sticker's square, middle to side at size 1 
                            # every decor set: 15.75 m pieces); `halves` overrides it per type
 BRUSH_ANGLE = 12.0         # degrees: stickers whose facings are this alike are one field's rows
 # Two row stickers of one facing are one field when their middles lie under these many (half + half) apart along
-# the rows and across them. Measured on D-Day's 150,318 row stickers (scratch/looks/field_gaps.py, 2026-10-15): the
+# the rows and across them. Measured on D-Day's 150,318 row stickers (2026-10-15): the
 # nearest one along the rows lies 0.8-1.1 away (their squares just meet), across 0.6-0.9 (rows overlap), and a second
 # bump across at 1.1-1.3 is the plot on the far side of a hedge or a track.
 FIELD_ALONG = 1.12
@@ -2733,7 +2742,7 @@ TRACTORS = ("Tracteur",)
 # Hay and machines left standing on a field the brush changes keep a harvested patch round them, as Eugen lays one
 # (D-Day, 2026-10-15, F-34; the owner's E: bales left in a full field of standing wheat): his crops round hay on wheat
 # plots are 97% laid harvested within 2 m, half-way back to the plot's own share by 4.1 m; round a machine with no
-# hay near it on a wheat plot no standing crop at all (scratch/looks/crop_patches.py, machine_ground.py). Harvested,
+# hay near it on a wheat plot no standing crop at all (measured on D-Day, 2026-10-15). Harvested,
 # the wheat is squashed to a quarter and sunk 0.13 m (131,257 of the 314,412 harvested Champs_Bles within 3 m of hay;
 # next half height, 0.26 m down), the green crop squashed to about half (harvest_pairs.py); the light green and border
 # crops he leaves standing.
@@ -3798,7 +3807,7 @@ def expand_border(area: PresetArea, borders: dict, group: int = 0) -> tuple[list
 
 def entry_masks(b: Block) -> dict[int, int]:
     """{entry index: the LOD mask of the deepest node of the block's draw tree listing it}: what the decor dresser goes
-    by (bits 1/2 close, 4 middle, 0x10 middle with GroundQuality, 8 far; private notes ground-structure §1)."""
+    by (bits 1/2 close, 4 middle, 0x10 middle with GroundQuality, 8 far)."""
     out: dict[int, int] = {}
     count = len(b.nodes) // 8
     todo = [(0, 0, len(b.entries))] if count else []

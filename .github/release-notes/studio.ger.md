@@ -1,6 +1,16 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.5:** Flugzeuge in jeder Rolle, Waffen, die Flugzeuge treffen, und eine Bibliothek für den Textur-Pinsel von Map Paint.
+
+- **Die Rolle eines Flugzeugs** (Meldung eines Spielers: ein Jagdbomber mit den Bombenteppich-Bomben eines Bombers flog zu seinem Ziel und warf nichts ab): ein neues Rolle-Feld auf der Seite eines Flugzeugs macht es zum Jäger, Jagdbomber, Bomber oder Aufklärer. Sein Verhalten, wie die Computerspieler es einsetzen, und seine Worte im Baumenü ändern sich mit. Die Bomben eines Bombers kommen in einen Bombenschacht (kopiert von einem Bomber des Spiels), der einzige Weg, wie ein Bomberanflug sie abwirft. Im Spiel gesehen: ein Jagdbomber, der zum Bomber gemacht wurde, wirft seine Bomben ab; ein Aufklärer, der seine Waffen behält (eine Stuka, eine ME109), greift weiter an und hat die Sicht der Aufklärer.
+- **Aufklärungsfahrzeuge:** das Rolle-Feld eines Bodenfahrzeugs macht es zur Aufklärung: die Sicht der Spähwagen (viel weiter als die eines Panzers), wie die Computerspieler sie einsetzen, ihre Worte im Baumenü, und es kann in Wälder fahren (im Spiel gesehen mit einem Panzer IV).
+- **Was eine Waffe trifft:** das Trifft jeder Waffe wählt den Boden, Flugzeuge oder beides (eine zweite Waffe daneben, so wie die Flak-Geschütze des Spiels für jedes eine tragen). Im Spiel gesehen: Panzergranaten, die auf Flugzeuge feuern. Bekannt: eine Flugzeugwaffe, die nur den Boden treffen soll, richtet noch keinen Schaden an.
+- **Der Textur-Pinsel von Map Paint bekommt eine Bibliothek:** die Bodentexturen des Spiels (Gras, Felder, Sand, Schnee, Fels, Straßen..., nach Kriegsschauplatz, mit Suche), ein Quadrat vom Boden jeder Karte, eigene Bilder und kostenlose Bilder aus dem Internet (Poly Haven und ambientCG, CC0; US-Luftbilder, gemeinfrei), ein Bild pro Klick heruntergeladen und mit seiner Quellenangabe in Ihrem Mod behalten. Ein Größe-Regler, die zuletzt benutzten Texturen und **Spieldetail aus der Nähe**, das die eigenen Decals des Spiels einer Spieltextur über den gemalten Boden legt. Noch nicht im Spiel gesehen; die Online-Downloads noch nicht getestet.
+- **Objekte auf offenem Gelände**, fern von den Städten, Höfen und Wäldern der Karte, sind jetzt in Reichweite der Darstellung des Spiels, und große Gruppen neuer Objekte werden so angelegt wie die des Spiels (noch nicht im Spiel gesehen).
+- **Schneller neu malen:** der gemalte Boden wird von Build zu Build behalten, gleich welche Kopie oder welcher Mod ihn gemalt hat: eine gleich bemalte Karte holt ihn in Sekunden zurück, nicht in Minuten.
+- **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres Gelände und Leerer Ozean).
+
 **0.9.8.4:** eigene Missionen, leere Karten zum Aufbauen und viel mehr zum Anpassen.
 
 - **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres Gelände und Leerer Ozean).

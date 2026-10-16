@@ -1,6 +1,16 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.5:** samoloty w dowolnej roli, broń trafiająca samoloty i biblioteka dla pędzla Tekstura w Map Paint.
+
+- **Rola samolotu** (zgłoszenie gracza: myśliwiec-bombowiec, któremu dano bomby dywanowe bombowca, leciał do celu i niczego nie zrzucał): nowe pole Rola na stronie samolotu robi z niego Myśliwiec, Myśliwiec-bombowiec, Bombowiec lub Zwiadowcę. Razem z nią zmienia się jego zachowanie, to, jak używają go gracze komputerowi, i jego słowa w menu budowy. Bomby bombowca trafiają do komory bombowej (skopiowanej z bombowca z gry), bo tylko z niej zrzuca je nalot bombowca. Sprawdzone w grze: myśliwiec-bombowiec zmieniony w bombowiec zrzuca bomby; zwiadowca, który zachowuje broń (Stuka, ME109), nadal atakuje i ma zasięg widzenia zwiadowców.
+- **Pojazdy rozpoznawcze:** pole Rola pojazdu naziemnego robi z niego Rozpoznanie: zasięg widzenia samochodów rozpoznawczych (dużo dalej niż czołgu), to, jak używają ich gracze komputerowi, ich słowa w menu budowy, i może wjeżdżać do lasów (sprawdzone w grze z Panzerem IV).
+- **Co trafia broń:** Trafia przy każdej broni wybiera ziemię, samoloty albo jedno i drugie (druga broń obok, tak jak działa przeciwlotnicze w grze mają po jednej na każde). Sprawdzone w grze: pociski czołgowe strzelające do samolotów. Znane: broń samolotu ustawiona tylko na ziemię jeszcze nie zadaje obrażeń.
+- **Pędzel Tekstura w Map Paint dostaje bibliotekę:** tekstury terenu z gry (trawa, pola, piasek, śnieg, skały, drogi..., według teatru działań, z wyszukiwaniem), kwadrat terenu dowolnej mapy, własne obrazy i darmowe obrazy z internetu (Poly Haven i ambientCG, CC0; zdjęcia lotnicze USA, domena publiczna), jeden obraz pobierany na kliknięcie i zapisany w twoim modzie z informacją o autorze. Suwak Rozmiar, ostatnio używane tekstury i **Detal gry z bliska**, który kładzie własne naklejki gry dla tekstury z gry na malowanym terenie. Jeszcze niesprawdzone w grze; pobieranie z internetu jeszcze niewypróbowane.
+- **Obiekty postawione w otwartym terenie**, z dala od miast, gospodarstw i lasów mapy, są teraz w zasięgu rysowania gry, a duże grupy nowych obiektów są ułożone tak jak w grze (jeszcze niesprawdzone w grze).
+- **Szybsze ponowne malowanie:** pomalowany teren jest zachowywany między budowaniami, niezależnie od tego, która kopia lub mod go pomalowały: mapa pomalowana tak samo odzyskuje go w kilka sekund, a nie minut.
+- **Wciąż z błędami, używasz na własną odpowiedzialność:** tekstury Map Paint i obie puste mapy (Pusty teren i Pusty ocean).
+
 **0.9.8.4:** własne misje, puste mapy do zabudowania i dużo więcej do dostosowania.
 
 - **Wciąż z błędami, używasz na własną odpowiedzialność:** tekstury Map Paint i obie puste mapy (Pusty teren i Pusty ocean).

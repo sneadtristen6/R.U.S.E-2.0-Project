@@ -1,7 +1,7 @@
 # The ground presets of the Studio's Preset brush: each a ground kind of a shipped map, laid as the game lays
 # it (stickers, low plants, stones with the game's own detail levels, the ground picture stamped) in 50 m
-# tiles taken from the squares listed (map units; 260 a metre). Measured on D-Day by
-# private/tools/looks/make_preset_library.py (2026-10-11). The Studio shows the name and description.
+# tiles taken from the squares listed (map units; 260 a metre). Measured on D-Day (2026-10-11). The Studio
+# shows the name and description.
 
 [[preset]]
 name = "Meadow"
@@ -33,7 +33,7 @@ sources = [[2905500.0, 1787500.0], [1046500.0, 1618500.0], [1514500.0, 916500.0]
 
 # The border strips a preset can lay along its outline (its `border`): straight strips of the map's own
 # (x, y the middle, dx, dy along it, the length; map units), each holding nothing but the strip in the
-# 2 m band along it. Found by private/tools/looks/border_sources.py (2026-10-14).
+# 2 m band along it. Found on D-Day (2026-10-14).
 
 [[border]]
 name = "edge"
@@ -50,8 +50,7 @@ sources = [[1010557.6, 740617.5, -0.866032, -0.499989, 6956.4], [3911752.0, 2428
 # The field kinds: ONE real field of the map laid over the whole area, as Eugen's editor laid a field
 # (its rows all one way, along the area's direction). Each source is a window inside one field:
 # [x, y (its middle), the rows' direction (degrees), window along and across, sticker pitch along and
-# across the rows] (map units); an area takes one by its seed. Found by private/tools/looks/
-# field_sources.py (2026-10-14).
+# across the rows] (map units); an area takes one by its seed. Found on D-Day (2026-10-14).
 
 [[field]]
 name = "Wheat field"
@@ -74,7 +73,7 @@ sources = [[2184472.8, 1874245.4, 29.41, 8368.3, 6240.0, 1394.7, 1560.0], [21642
 # What a field's hedge carries besides its strip (`border = "hedge"`), per map: trees along the
 # outline at the map's count per 100 m of field edge, by species share (with the map's own detail
 # levels), and a fence of the map's field fence pieces end to end (name, levels, a piece's length).
-# Measured on D-Day's fields by field_sources.py and fence_pitch.py (2026-10-14).
+# Measured on D-Day's fields (2026-10-14).
 
 [[hedgerow]]
 map = "M04_Cotentin"
@@ -88,8 +87,8 @@ fence = ["TypeWarrior/BarriereChamps_03", 31, 480.0]
 # ground colour, its row sticker kind]: a brushed field takes ONE source's colour (the picture under the
 # field is tinted to it), its row sticker kind and its crops (copied from its middle square, turned to
 # the rows), so it is that real field near and far. A look is what the source's middle shows: the
-# picture's hue from far, its row stickers and its crops (scratch/looks/source_middles.py,
-# middle_hues.py, 2026-10-15). `stickers` and `colour`: the look's own, for a source without them.
+# picture's hue from far, its row stickers and its crops (measured on D-Day's fields, 2026-10-15).
+# `stickers` and `colour`: the look's own, for a source without them.
 # `field_kinds`: the map's field sticker kinds it swaps (name prefixes); `crops`: the crop plants it
 # replaces (prefixes); `hay`: whether the map's own fields of the look carry hay (false: the hay and
 # carts on a field it makes go, its tractors too past 3 m in); `trees_within`: the deepest (m from

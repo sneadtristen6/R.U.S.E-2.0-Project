@@ -165,7 +165,7 @@ class Studio(unittest.TestCase):
                          ["Descriptor_Unit_M4_Sherman", "Descriptor_Unit_Panzer_IV_G"])  # the type is searched too
 
     def test_names_a_player_knows_and_the_games_own_line(self):
-        # the owner, 2026-10-03: "descriptor building vehicular factory lorette ... what the fuck is that"
+        # the owner, 2026-10-03: code names like "descriptor building vehicular factory lorette" mean nothing to a player
         base = {u["base_name"]: u for u in self.api.units()["units"]}
         sherman = base["Descriptor_Unit_M4_Sherman"]
         self.assertEqual((sherman["name"], sherman["game_name"]), ("Descriptor_Unit_M4_Sherman", "M4 Sherman"))
@@ -809,6 +809,7 @@ class AmmoAndFlags(WithMod):
                                          "ammo": {"address": AMMO_75, "name": "AP shell · Medium cal."},
                                          "game_ammo": AMMO_75, "edited": False, "shot": "",
                                          "range": 104000.0, "game_range": 104000.0, "own_copy": False,
+                                         "hits": "ground", "game_hits": "ground",
                                          "firing": [{"address": PANZER_IV, "name": "Panzer IV"}]}])
         self.assertEqual([(c["address"], c["nations"]) for c in w["choices"]],
                          [(AMMO_88, []), (AMMO_75, ["Germany"])])  # by name: Large before Medium; whose it is

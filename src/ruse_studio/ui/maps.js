@@ -223,7 +223,7 @@ async function scene3d() {
   const sun = new THREE.DirectionalLight(0xfff1dc, 2.0);
   sun.position.set(-0.6, 1.0, -0.35);         // from the north-west, high: slopes read clearly
   scene.add(sun);
-  const draw = () => { fadeLayers(); fitIcons(); renderer.render(scene, camera); };
+  const draw = () => { fadeLayers(); fitIcons(); fitSectorTags(); renderer.render(scene, camera); };
   controls.addEventListener("change", draw);
   new ResizeObserver(() => {
     const w = host.clientWidth, h = host.clientHeight;
@@ -531,25 +531,45 @@ function reapply() {
 //   goes when the mod is built (tinted red, tintScenery). A circle that takes trees also opens its ground to every
 //   unit and takes its cover away, after the mod's strokes, as the build does (rusemod.build.cleared_woods).
 //   Proven in the game: tanks drive into a cleared wood and infantry there are seen (2026-10-01). ---
-// cover's cells: bit 1 the map's own, bit 2 the Town tool's, bit 4 painted (Cover brush, Forest); one colour each
-// (COVER_COLOURS, the legend's too), the Town tool's over a painted one over the map's own
-const COVER_COLOURS = { own: [60, 210, 90, 125], painted: [170, 240, 70, 150], town: [240, 150, 50, 160] };
-const MOVE_COLOURS = { none: [220, 50, 40, 120], infantry: [235, 200, 40, 115], vehicles: [170, 90, 220, 120] };
+// cover's cells: bit 1 the map's own, bit 2 the Town tool's, bit 4 painted (Cover brush, Forest), bit 8 taken away
+// (Uncover, or a wood an Erase circle clears); one colour each (COVER_COLOURS, the legend's too), the Town tool's over a
+// painted one over the map's own. moves' cells: bits 1 and 2 as above, bit 4 changed by a Block or Open brush.
+// What a brush changed is striped (STRIPE), so every stroke shows where it went, even on ground it changed nothing
+// on: Uncover where there was no cover, Open where units could already go (the owner, 2026-10-15, painting on
+// Kasserine Pass's desert, which has almost no cover: "they literally do nothing ... there's no indicator that it's
+// working").
+const COVER_COLOURS = { own: [60, 210, 90, 125], painted: [170, 240, 70, 150], town: [240, 150, 50, 160],
+  taken: [240, 236, 222, 165] };
+const MOVE_COLOURS = { none: [220, 50, 40, 120], infantry: [235, 200, 40, 115], vehicles: [170, 90, 220, 120],
+  opened: [60, 150, 250, 165] };
 const ERASE_COLOUR = [235, 70, 45, 120];
+const STRIPE = 2600;  // map units (10 m) each stripe is wide, at least two cells
+// A colour drawn in stripes: `a` on one, `b` (or nothing) on the next; `paler` lifts a colour towards white for the
+// stripes between a changed cell's own colour
+const striped = (a, b = null) => ({ stripe: [a, b] });
+const paler = (c) => [c[0] + (255 - c[0]) * 0.5, c[1] + (255 - c[1]) * 0.5, c[2] + (255 - c[2]) * 0.5, c[3] + 30];
 const cover = { kinds: ["cover", "town", "forest"], colors: [null, COVER_COLOURS.own, COVER_COLOURS.town, COVER_COLOURS.town,
-  COVER_COLOURS.painted, COVER_COLOURS.painted, COVER_COLOURS.town, COVER_COLOURS.town] };
-const moves = { kinds: ["block", "open"], colors: [null, MOVE_COLOURS.vehicles, MOVE_COLOURS.infantry, MOVE_COLOURS.none] };
+  COVER_COLOURS.painted, COVER_COLOURS.painted, COVER_COLOURS.town, COVER_COLOURS.town, striped(COVER_COLOURS.taken)] };
+const moves = { kinds: ["block", "open"], colors: [null, MOVE_COLOURS.vehicles, MOVE_COLOURS.infantry, MOVE_COLOURS.none,
+  striped(MOVE_COLOURS.opened), ...[MOVE_COLOURS.vehicles, MOVE_COLOURS.infantry, MOVE_COLOURS.none].map((c) => striped(c, paler(c)))] };
 const erased = { kinds: ["erase"], colors: [null, ERASE_COLOUR] };
 const OVERLAYS = [cover, moves, erased];
 const ERASE_CELLS = 1024;  // the erased overlay's cells across the map (about 12 m each on the biggest maps)
 for (const o of OVERLAYS) {
   Object.assign(o, { base: null, cells: null, size: 0, box: null, canvas: null, ctx: null, img: null, tex: null,
-    mesh: null, show: false, batch: false });
+    mesh: null, show: false, batch: false, stripe: 2 });
 }
 // what a brush does to an overlay's cells: [overlay, bits it sets, bits it clears]
-const PAINTS = { cover: [cover, 4, 0], town: [cover, 2, 0], uncover: [cover, 0, 7], block: [moves, 3, 0], block_infantry: [moves, 1, 0],
-  block_vehicles: [moves, 2, 0], open: [moves, 0, 3], open_infantry: [moves, 0, 1], open_vehicles: [moves, 0, 2],
+const PAINTS = { cover: [cover, 4, 8], town: [cover, 2, 8], uncover: [cover, 8, 7], block: [moves, 7, 0], block_infantry: [moves, 5, 0],
+  block_vehicles: [moves, 6, 0], open: [moves, 4, 3], open_infantry: [moves, 4, 1], open_vehicles: [moves, 4, 2],
   erase: [erased, 1, 0] };
+// What a cell means for units, without the marks of what changed it: hidden or not (cover), closed to whom (moves)
+const MEANS = new Map([[cover, (v) => (v & 7 ? 1 : 0)], [moves, (v) => v & 3]]);
+// a zone brush's ring is drawn in the colour it paints (Block infantry leaves ground for vehicles only, and so on)
+const ZONE_RING = { cover: COVER_COLOURS.painted, uncover: COVER_COLOURS.taken, town: COVER_COLOURS.town,
+  forest: COVER_COLOURS.painted, block: MOVE_COLOURS.none, block_infantry: MOVE_COLOURS.vehicles,
+  block_vehicles: MOVE_COLOURS.infantry, open: MOVE_COLOURS.opened, open_infantry: MOVE_COLOURS.opened,
+  open_vehicles: MOVE_COLOURS.opened };
 
 function overlayShown(o) {
   return o.show || (mv.brush.on && o.kinds.includes(BRUSHES[mv.brush.name][0]));
@@ -569,11 +589,12 @@ function renderLegend() {
   const rows = [];
   if (overlayShown(cover)) {
     rows.push([COVER_COLOURS.own, w.legend_cover_own], [COVER_COLOURS.painted, w.legend_cover_painted],
-      [COVER_COLOURS.town, w.legend_cover_town]);
+      [COVER_COLOURS.town, w.legend_cover_town], [striped(COVER_COLOURS.taken), w.legend_cover_taken]);
   }
   if (overlayShown(moves)) {
     rows.push([MOVE_COLOURS.none, w.legend_move_none], [MOVE_COLOURS.infantry, w.legend_move_infantry],
-      [MOVE_COLOURS.vehicles, w.legend_move_vehicles]);
+      [MOVE_COLOURS.vehicles, w.legend_move_vehicles], [striped(MOVE_COLOURS.opened), w.legend_move_opened],
+      [striped(MOVE_COLOURS.none, paler(MOVE_COLOURS.none)), w.legend_move_changed]);
   }
   if (overlayShown(erased)) rows.push([ERASE_COLOUR, w.legend_erase]);
   if (scen.show && scen.group) {  // the scenario: starting points (pillars), spawns (icons), their sides' colours
@@ -582,7 +603,10 @@ function renderLegend() {
   }
   box.replaceChildren(...(rows.length ? [el("div", { className: "legend-title", textContent: w.legend_title })] : []),
     ...rows.map(([c, text]) => el("div", { className: "legend-row" },
-      c ? el("span", { className: "swatch", style: `background: ${rgb(c)}` }) : el("span", { className: "swatch none" }),
+      !c ? el("span", { className: "swatch none" })
+        : c.stripe ? el("span", { className: "swatch", style: "background: repeating-linear-gradient(135deg, "
+          + `${rgb(c.stripe[0])} 0 3px, ${c.stripe[1] ? rgb(c.stripe[1]) : "transparent"} 3px 6px)` })
+          : el("span", { className: "swatch", style: `background: ${rgb(c)}` }),
       el("span", { textContent: text }))));
   box.classList.toggle("hidden", !rows.length);
 }
@@ -621,7 +645,7 @@ function layerObjects(k) {
     case "moves": return [moves.mesh, erased.mesh];
     case "roads": return [roads.line, road.mesh, road.preview, bridge.mesh];
     case "scenario": return scen.group ? scen.group.children.filter((o) => o !== scen.zones && o !== scen.names) : [];
-    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || []), mv.place.meshes[k]];
+    default: return [mv.scenery.meshes[k], ...((mv.scenery.models || {})[k] || []), ...(mv.place.meshes[k] || [])];
   }
 }
 
@@ -741,7 +765,8 @@ async function loadMoves(pack, ask) {
 }
 
 function startOverlay(o, base, res) {
-  Object.assign(o, { base, cells: base.slice(), size: res.size, box: res.box });
+  Object.assign(o, { base, cells: base.slice(), size: res.size, box: res.box,
+    stripe: Math.max(2, Math.round(STRIPE / (res.box[2] / res.size))) });  // (one cell would be a chequerboard)
   overlayMesh(o);
   o.batch = true;
   for (const s of mv.brush.strokes) if (PAINTS[s.brush] && PAINTS[s.brush][0] === o) overlayDab(s);
@@ -826,22 +851,56 @@ function overlayDab(s) {
   const c0 = Math.max(0, Math.floor((x0 - bx) / cw)), c1 = Math.min(n - 1, Math.ceil((x1 - bx) / cw));
   const r0 = Math.max(0, Math.floor((y0 - by) / ch)), r1 = Math.min(n - 1, Math.ceil((y1 - by) / ch));
   if (c0 > c1 || r0 > r1) return;
+  const count = zoneCount && zoneCount.o === o && !o.batch ? zoneCount : null;  // (not the strokes drawn again)
   for (let r = r0; r <= r1; r++) {
     const y = by + (r + 0.5) * ch;
     for (let c = c0; c <= c1; c++) {
       const i = r * n + c;
-      if (footT2(s, bx + (c + 0.5) * cw, y) <= 1) o.cells[i] = (o.cells[i] & ~off) | on;
+      if (footT2(s, bx + (c + 0.5) * cw, y) <= 1) {
+        if (count && !count.seen[i]) { count.seen[i] = 1; count.cells.push(i); count.was.push(o.cells[i]); }
+        o.cells[i] = (o.cells[i] & ~off) | on;
+      }
     }
   }
   if (!o.batch) overlayDraw(o, r0, r1, c0, c1);
 }
 
+// A zone stroke being painted (Cover, Uncover, Town, Forest's cover, Block, Open): its overlay, the cells it reached
+// and what each held before it, so its end can say what it changed for units (zoneSaid).
+let zoneCount = null;
+function countZone(brush) {
+  const o = PAINTS[brush] && PAINTS[brush][0];
+  zoneCount = o && o.cells && MEANS.has(o) ? { o, brush, seen: new Uint8Array(o.size * o.size), cells: [], was: [] } : null;
+}
+
+// What the zone stroke just painted did, in square metres: on the ground it reached, how much now hides units or is
+// closed to them that wasn't, and the other way round. "Nothing changed" is said too, so a stroke always answers.
+function zoneSaid(count) {
+  if (!count || !count.cells.length) return "";
+  const w = mv.words, o = count.o, means = MEANS.get(o), [, , bw, bh] = o.box;
+  const closed = (v) => (o === moves ? (v & 1) + ((v >> 1) & 1) : v);
+  let more = 0, less = 0;
+  count.cells.forEach((i, k) => {
+    const a = closed(means(count.was[k])), b = closed(means(o.cells[i]));
+    if (b > a) more++; else if (b < a) less++;
+  });
+  const cell = (bw / o.size) * (bh / o.size) / (METRE * METRE);
+  const m2 = (n) => (Math.round(n * cell / 100) * 100 || Math.round(n * cell)).toLocaleString();
+  const all = m2(count.cells.length), kind = BRUSHES[count.brush][0];
+  if (count.brush === "uncover") return less ? fill(w.zone_uncover_done, { m2: m2(less) }) : fill(w.zone_uncover_none, { m2: all });
+  if (kind === "block") return more ? fill(w.zone_block_done, { m2: m2(more) }) : fill(w.zone_block_none, { m2: all });
+  if (kind === "open") return less ? fill(w.zone_open_done, { m2: m2(less) }) : fill(w.zone_open_none, { m2: all });
+  return more ? fill(w.zone_cover_done, { m2: m2(more) }) : fill(w.zone_cover_none, { m2: all });
+}
+
 function overlayDraw(o, r0, r1, c0, c1) {
   if (!o.cells || !o.img) return;
-  const n = o.size, px = o.img.data;
+  const n = o.size, px = o.img.data, wide = o.stripe;
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
-      const i = r * n + c, k = 4 * i, rgba = o.colors[o.cells[i]];
+      const i = r * n + c, k = 4 * i;
+      let rgba = o.colors[o.cells[i]];
+      if (rgba && rgba.stripe) rgba = rgba.stripe[Math.floor((r + c) / wide) & 1];  // diagonal stripes
       if (rgba) { px[k] = rgba[0]; px[k + 1] = rgba[1]; px[k + 2] = rgba[2]; px[k + 3] = rgba[3]; }
       else px[k + 3] = 0;
     }
@@ -928,28 +987,138 @@ function buildingSpots() {
   return out;
 }
 
-// The town clicked: the building nearest the click, and every building linked to it by a chain of neighbours
-// (no further apart than twice the margin, at least 60 m), within 800 m of the click. Each gets a cover circle.
-function townStrokes(x, y) {
-  const r = brushRadius("town"), link = Math.max(2 * r, 6000), reach = 80000;
-  const pts = buildingSpots().filter(([px, py]) => (px - x) ** 2 + (py - y) ** 2 <= reach * reach);
-  let seed = -1, best = 15000 * 15000;  // a building within 150 m of the click
-  pts.forEach(([px, py], i) => { const d = (px - x) ** 2 + (py - y) ** 2; if (d < best) { best = d; seed = i; } });
-  if (seed < 0) return [];
-  const town = new Set([seed]), queue = [seed];
-  while (queue.length && town.size < 3000) {
-    const [qx, qy] = pts[queue.shift()];
-    pts.forEach(([px, py], j) => {
-      if (!town.has(j) && (px - qx) ** 2 + (py - qy) ** 2 <= link * link) { town.add(j); queue.push(j); }
-    });
+// The buildings' spots in squares of `cell` map units, made again when the map's or the mod's buildings change.
+let townGrid = null;
+function buildingGrid(cell) {
+  const d = mv.scenery.data, placed = mv.place.objects;
+  if (townGrid && townGrid.data === d && townGrid.placed === placed && townGrid.n === placed.length && townGrid.cell === cell) {
+    return townGrid;
   }
-  return [...town].map((i) => ({ brush: "town", x: Math.round(pts[i][0]), y: Math.round(pts[i][1]), radius: r }));
+  const grid = new Map();
+  for (const p of buildingSpots()) {
+    const k = `${Math.floor(p[0] / cell)},${Math.floor(p[1] / cell)}`;
+    (grid.get(k) || grid.set(k, []).get(k)).push(p);
+  }
+  return (townGrid = { data: d, placed, n: placed.length, cell, grid });
+}
+
+// The town at a spot: the building nearest it, within `near` map units (at least 150 m: the pointer's reach on the
+// screen, so a click at any zoom finds the town under it), and every building linked to that one by a chain of
+// neighbours no further apart than twice the margin (at least 60 m), within 800 m of the spot. Each gets a cover circle.
+const TOWN_PICK = 150, TOWN_LINK = 60, TOWN_REACH = 800, TOWN_MOST = 3000;  // metres, and buildings at most
+function townAt(x, y, near = 0) {
+  const r = brushRadius("town"), link = Math.max(2 * r, TOWN_LINK * METRE), reach = TOWN_REACH * METRE;
+  const g = buildingGrid(link), at = (cx, cy) => g.grid.get(`${cx},${cy}`) || [];
+  const pick = Math.max(near, TOWN_PICK * METRE), span = Math.ceil(pick / link);
+  const cx = Math.floor(x / link), cy = Math.floor(y / link);
+  let seed = null, best = pick * pick;
+  for (let i = -span; i <= span; i++) {
+    for (let j = -span; j <= span; j++) {
+      for (const p of at(cx + i, cy + j)) {
+        const d = (p[0] - x) ** 2 + (p[1] - y) ** 2;
+        if (d < best) { best = d; seed = p; }
+      }
+    }
+  }
+  if (!seed) return [];
+  const town = new Set([seed]), queue = [seed];
+  for (let q = 0; q < queue.length && town.size < TOWN_MOST; q++) {
+    const [qx, qy] = queue[q], qcx = Math.floor(qx / link), qcy = Math.floor(qy / link);
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        for (const p of at(qcx + i, qcy + j)) {
+          if (town.has(p) || (p[0] - qx) ** 2 + (p[1] - qy) ** 2 > link * link || (p[0] - x) ** 2 + (p[1] - y) ** 2 > reach * reach) continue;
+          town.add(p);
+          queue.push(p);
+        }
+      }
+    }
+  }
+  return [...town];
+}
+
+function townStrokes(x, y, near) {
+  const r = brushRadius("town");
+  return townAt(x, y, near).map(([px, py]) => ({ brush: "town", x: Math.round(px), y: Math.round(py), radius: r }));
+}
+
+// How many map units `px` pixels of the screen span at a point of the scene (a pick that's as easy at any zoom).
+function pixelsAt(p, px) {
+  const gl = mv.gl, h = gl.renderer.domElement.clientHeight || 1;
+  return gl.camera.position.distanceTo(p) * 2 * Math.tan(gl.camera.fov * Math.PI / 360) / h * px / SCALE;
+}
+
+// With Town picked, before the click: a ring on each building the click would give cover (yellow, over the orange of
+// cover a town already has) and the count at the pointer (the owner, 2026-10-15: "the town button doesn't do
+// anything").
+const TOWN_POINTER = 40;  // pixels: how near the pointer a town's building is found
+const TOWN_QUIET = 24;    // pixels the pointer moves after a click before the rings show again
+const TOWN_RING = [255, 232, 90];
+function showTownPreview(p, ev) {
+  const gl = mv.gl, { THREE } = gl;
+  if (!gl.townRings) {
+    const geo = new THREE.RingGeometry(0.86, 1, 32);
+    geo.rotateX(-Math.PI / 2);
+    gl.townRings = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(
+      ...TOWN_RING.map((v) => v / 255), THREE.SRGBColorSpace), transparent: true, opacity: 0.9, depthTest: false }), TOWN_MOST);
+    gl.townRings.renderOrder = 10;
+    gl.townRings.frustumCulled = false;
+    gl.scene.add(gl.townRings);
+  }
+  const rings = gl.townRings, quiet = mv.brush.townClicked;
+  // after a click the cover it made shows, with its count, until the pointer moves on
+  if (quiet && ev && Math.hypot(ev.clientX - quiet.clientX, ev.clientY - quiet.clientY) < TOWN_QUIET) return;
+  mv.brush.townClicked = null;
+  const town = p && mv.brush.on && mv.brush.name === "town" && mv.edit ? townAt(p.x / SCALE, p.z / SCALE,
+    pixelsAt(p, TOWN_POINTER)) : [];
+  rings.visible = town.length > 0;
+  if (town.length) {
+    const grid = heightGrid(), m = new THREE.Matrix4(), r = brushRadius("town") * SCALE;
+    town.forEach(([x, y], k) => {
+      m.makeScale(r, r, r);
+      m.setPosition(x * SCALE, (groundAt(grid, x, y) + 300) * SCALE, y * SCALE);
+      rings.setMatrixAt(k, m);
+    });
+    rings.count = town.length;
+    rings.instanceMatrix.needsUpdate = true;
+  }
+  if (p && ev && mv.brush.on && mv.brush.name === "town") {
+    pointerTag(ev, town.length ? fill(mv.words.town_preview, { n: town.length.toLocaleString() }) : mv.words.town_point);
+  }
+  gl.draw();
+}
+
+// The ground's heights on a coarse grid (makeGrid), kept until a stroke changes the ground
+let heightKept = null;
+function heightGrid() {
+  const ed = mv.edit, n = mv.brush.strokes.length;
+  if (!heightKept || heightKept.ed !== ed || heightKept.n !== n) heightKept = { ed, n, grid: makeGrid(ed) };
+  return heightKept.grid;
+}
+
+// A word beside the pointer, over the map (a brush's count, what a click would do); `bad` in the error colour. Shown
+// at the pointer `ev` (or where the pointer last was), for a few seconds when `stay` is given.
+let tagTimer = 0;
+function pointerTag(ev, text, bad = false, stay = 0) {
+  const tag = $("brush-tag");
+  clearTimeout(tagTimer);
+  if (!text) { tag.classList.add("hidden"); return; }
+  const at = ev || mv.brush.lastPointer;
+  tag.textContent = text;
+  tag.classList.toggle("bad", bad);
+  if (at) {
+    const box = tag.parentElement.getBoundingClientRect();
+    tag.style.left = `${Math.round(at.clientX - box.left + 16)}px`;
+    tag.style.top = `${Math.round(at.clientY - box.top + 18)}px`;
+  }
+  tag.classList.remove("hidden");
+  if (stay) tagTimer = setTimeout(() => tag.classList.add("hidden"), stay);
 }
 
 function forget(mesh) {
   if (!mesh) return;
   mv.gl.scene.remove(mesh);
-  mesh.geometry.dispose();
+  if (!mesh.geometry.userData.keep) mesh.geometry.dispose();  // (a model's parts are shared: modelLibrary)
   if (mesh.material.map && !mesh.material.map.userData.keep) mesh.material.map.dispose();
   mesh.material.dispose();
 }
@@ -1786,7 +1955,7 @@ function objectColourAt(ev) {
   const col = Math.min(px.width - 1, Math.floor(u * px.width));
   const row = Math.min(px.height - 1, Math.floor((map.flipY ? 1 - v : v) * px.height));
   const k = 4 * (row * px.width + col);
-  if (px.data[k + 3] < 128) return null;  // a see-through bit (between a tree's leaves)
+  if (hit.object.material.alphaTest && px.data[k + 3] < 128) return null;  // a see-through bit (between a tree's leaves)
   const { flat, rows } = hit.object.userData, t = d && d.types[flat[5 * rows[hit.instanceId]]];
   return { hex: rgbHex([px.data[k], px.data[k + 1], px.data[k + 2]]), name: t ? t[0] : "" };
 }
@@ -1877,58 +2046,23 @@ async function loadModels(pack, ask) {
   }
   if (!res || !res.index || ask !== mv.ask || !mv.scenery.data) return;
   note.textContent = fill(w.models_loading, { progress: "" });
-  const { THREE } = mv.gl, idx = res.index;
-  const buf = await (await fetch(res.base + idx.bin)).arrayBuffer();
+  const buf = await (await fetch(res.base + res.index.bin)).arrayBuffer();
   if (ask !== mv.ask) return;
-  const loader = new THREE.TextureLoader(), textures = {};
-  const textureOf = (key) => {
-    if (!key || !idx.textures[key]) return null;
-    if (!textures[key]) {
-      const t = loader.load(res.base + idx.textures[key], () => mv.gl.draw());
-      t.flipY = false;  // the game's UVs start at the picture's top
-      t.colorSpace = THREE.SRGBColorSpace;
-      textures[key] = t;
-    }
-    return textures[key];
-  };
-  const geometries = {};
-  const geometryOf = (typeIdx) => {
-    if (geometries[typeIdx]) return geometries[typeIdx];
-    const parts = (idx.models[typeIdx] || []).map((p) => {
-      const n = p.vertices;
-      const src = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
-      for (let i = 0; i < n; i++) {  // map units, x east, y south, z up -> the scene's x east, y up, z south
-        pos[3 * i] = src[3 * i]; pos[3 * i + 1] = src[3 * i + 2]; pos[3 * i + 2] = src[3 * i + 1];
-      }
-      const nsrc = new Int8Array(buf, p.normals, 4 * n), nrm = new Float32Array(3 * n);
-      for (let i = 0; i < n; i++) {
-        nrm[3 * i] = nsrc[4 * i] / 127; nrm[3 * i + 1] = nsrc[4 * i + 2] / 127; nrm[3 * i + 2] = nsrc[4 * i + 1] / 127;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      geo.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
-      geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, p.uvs, 2 * n).slice(), 2));
-      geo.setIndex(new THREE.BufferAttribute(new Uint32Array(buf, p.indices, 3 * p.triangles).slice(), 1));
-      return { geo, texture: p.texture };
-    });
-    return (geometries[typeIdx] = parts);
-  };
+  const lib = modelLibrary(res, buf);
   clearModels();
-  const models = {};
+  mv.scenery.lib = lib;
+  const { THREE } = mv.gl, models = {};
   for (const [group, mesh] of Object.entries(mv.scenery.meshes)) {
     const flat = mesh.userData.flat, byType = new Map();
     for (let k = 0; k < flat.length / 5; k++) {
       const t = flat[5 * k];
-      if (idx.models[t] && idx.models[t].length) (byType.get(t) || byType.set(t, []).get(t)).push(k);
+      if (lib.has(t)) (byType.get(t) || byType.set(t, []).get(t)).push(k);
     }
-    const colour = SCENERY_LOOK[group][3], list = [], rest = [];
+    const list = [], rest = [];
     for (let k = 0; k < flat.length / 5; k++) if (!byType.has(flat[5 * k])) rest.push(k);
     for (const [t, rows] of byType) {
-      for (const part of geometryOf(t)) {
-        const map = textureOf(part.texture);
-        const mat = new THREE.MeshLambertMaterial(map ? { map, alphaTest: 0.5, side: THREE.DoubleSide }
-                                                      : { color: colour, side: THREE.DoubleSide });
-        const inst = new THREE.InstancedMesh(part.geo, mat, rows.length);
+      for (const part of lib.parts(t)) {
+        const inst = new THREE.InstancedMesh(part.geo, lib.material(group, part), rows.length);
         inst.userData = { group, rows, flat, real: true };
         inst.visible = mv.scenery.show[group];
         mv.gl.scene.add(inst);
@@ -1946,13 +2080,150 @@ async function loadModels(pack, ask) {
     mesh.material.visible = false;  // the shapes aren't drawn any more: they stay to point at (sceneryAt)
   }
   mv.scenery.models = models;
-  placeScenery();
+  placeScenery();  // (draws what the mod places with its models too)
+  placeOptions();  // the place list's pictures
   note.textContent = "";
 }
 
 function clearModels() {
   for (const list of Object.values(mv.scenery.models || {})) for (const m of list) forget(m);
   mv.scenery.models = {};
+  if (mv.scenery.lib) {
+    const lib = mv.scenery.lib;
+    mv.scenery.lib = null;
+    drawPlaced();         // what the mod places goes back to its shapes, off the library's models
+    showPlaceGhost(null);
+    lib.dispose();
+  }
+}
+
+// The models once in (map_models' index and buffers), for everything that draws a type: the map's own objects, what
+// the mod places, the ghost at the pointer and the place list's pictures. parts(t): a type's parts ({ geo, texture }),
+// made once; material(group, part): a new material on the part's shared picture; ready(t): its pictures loaded.
+function modelLibrary(res, buf) {
+  const { THREE } = mv.gl, idx = res.index, types = mv.scenery.data.types, textures = {}, geometries = {};
+  const textureOf = (key) => {
+    if (!key || !idx.textures[key]) return null;
+    if (!textures[key]) {
+      const tex = new THREE.Texture();
+      tex.flipY = false;  // the game's UVs start at the picture's top
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.userData.keep = true;  // shared by many meshes: forget() leaves it, the library's dispose() frees it
+      const ready = new Promise((done) => {
+        const img = new Image();
+        img.onload = () => { tex.image = bleed(img); tex.needsUpdate = true; if (mv.gl) mv.gl.draw(); done(); };
+        img.onerror = () => done();
+        img.src = res.base + idx.textures[key];
+      });
+      textures[key] = { tex, ready };
+    }
+    return textures[key];
+  };
+  const has = (t) => Boolean(idx.models[t] && idx.models[t].length);
+  const parts = (t) => {
+    if (geometries[t]) return geometries[t];
+    // a tree's leaves are cards whose normals point out of the crown, lit the same from either side: each gets a face
+    // both ways round (drawn front side only), as one face seen from behind turned its normal away from the light and
+    // the leaves came out black (the owner, 2026-10-15: "the trees. They're just fucking shitty sprites")
+    const twoWay = (types[t] || [])[1] === "vegetation";
+    return (geometries[t] = (idx.models[t] || []).map((p) => {
+      const n = p.vertices;
+      const src = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
+      for (let i = 0; i < n; i++) {  // map units, x east, y south, z up -> the scene's x east, y up, z south
+        pos[3 * i] = src[3 * i]; pos[3 * i + 1] = src[3 * i + 2]; pos[3 * i + 2] = src[3 * i + 1];
+      }
+      const nsrc = new Int8Array(buf, p.normals, 4 * n), nrm = new Float32Array(3 * n);
+      for (let i = 0; i < n; i++) {
+        nrm[3 * i] = nsrc[4 * i] / 127; nrm[3 * i + 1] = nsrc[4 * i + 2] / 127; nrm[3 * i + 2] = nsrc[4 * i + 1] / 127;
+      }
+      const tri = new Uint32Array(buf, p.indices, 3 * p.triangles), index = new Uint32Array((twoWay ? 2 : 1) * tri.length);
+      index.set(tri);
+      if (twoWay) {
+        for (let i = 0; i < tri.length; i += 3) {
+          index[tri.length + i] = tri[i]; index[tri.length + i + 1] = tri[i + 2]; index[tri.length + i + 2] = tri[i + 1];
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
+      geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, p.uvs, 2 * n).slice(), 2));
+      geo.setIndex(new THREE.BufferAttribute(index, 1));
+      geo.computeBoundingBox();
+      geo.userData.keep = true;  // shared: forget() leaves it, the library's dispose() frees it
+      return { geo, texture: p.texture, twoWay };
+    }));
+  };
+  // A "CombinedDS" picture's alpha isn't see-through: on Kasserine Pass's map most of it is under half (89 % of one
+  // atlas) while its models (baskets, barrels, fences, cushions) are solid, and cutting at half left them all but
+  // invisible, in the view and in the place list. Those are drawn solid; the others cut their leaves and windows out.
+  const material = (group, part) => {
+    const t = textureOf(part.texture), side = part.twoWay ? THREE.FrontSide : THREE.DoubleSide;
+    const cut = /CombinedDSTexture/i.test(part.texture || "") ? 0 : 0.5;
+    return new THREE.MeshLambertMaterial(t ? { map: t.tex, alphaTest: cut, side } : { color: SCENERY_LOOK[group][3], side });
+  };
+  const ready = (t) => Promise.all(parts(t).map((p) => (textureOf(p.texture) || {}).ready));
+  const dispose = () => {
+    for (const { tex } of Object.values(textures)) tex.dispose();
+    for (const list of Object.values(geometries)) for (const p of list) p.geo.dispose();
+  };
+  return { has, parts, material, ready, dispose };
+}
+
+// A model's picture with its see-through pixels coloured like the leaf or edge beside them (up to BLEED pixels out):
+// the game's pictures leave them black, which darkened every leaf's edge where the picture is drawn smaller or between
+// its pixels. The see-through stays see-through; a picture without any is left as it is.
+const BLEED = 8;
+function bleed(img) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, n = w * h;
+  const c = el("canvas", { width: w, height: h }), ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, w, h), p = data.data, done = new Uint8Array(n), queued = new Uint8Array(n);
+  for (let i = 0; i < n; i++) if (p[4 * i + 3]) done[i] = 1;
+  const around = (i) => {
+    const x = i % w, out = [];
+    if (x > 0) out.push(i - 1);
+    if (x < w - 1) out.push(i + 1);
+    if (i >= w) out.push(i - w);
+    if (i < n - w) out.push(i + w);
+    return out;
+  };
+  let front = [];
+  for (let i = 0; i < n; i++) if (!done[i] && around(i).some((j) => done[j])) { front.push(i); queued[i] = 1; }
+  if (!front.length) return img;
+  for (let pass = 0; pass < BLEED && front.length; pass++) {
+    for (const i of front) {
+      let r = 0, g = 0, b = 0, k = 0;
+      for (const j of around(i)) if (done[j]) { r += p[4 * j]; g += p[4 * j + 1]; b += p[4 * j + 2]; k++; }
+      p[4 * i] = r / k; p[4 * i + 1] = g / k; p[4 * i + 2] = b / k;
+    }
+    for (const i of front) done[i] = 1;
+    const next = [];
+    for (const i of front) for (const j of around(i)) if (!done[j] && !queued[j]) { queued[j] = 1; next.push(j); }
+    front = next;
+  }
+  ctx.putImageData(data, 0, 0);
+  return c;
+}
+
+// A type's number in the map's types (the models' numbers) by its name, as the palette gives it; null without one
+function typeNumber(type) {
+  const d = mv.scenery.data;
+  if (!d) return null;
+  if (!d.numbers) {
+    d.numbers = new Map();
+    const short = new Map((d.types || []).map((t, i) => [t[0], i]));  // a palette made before it said its number
+    for (const r of d.palette || []) {
+      const t = r[7] ?? short.get(r[1]);
+      if (t !== undefined) d.numbers.set(r[0], t);
+    }
+  }
+  return d.numbers.get(type) ?? null;
+}
+
+// A type's group (building, prop, vegetation) by its name, as the palette gives it
+function groupOfType(type) {
+  const r = ((mv.scenery.data && mv.scenery.data.palette) || []).find((x) => x[0] === type);
+  return r ? r[2] : "building";
 }
 
 // --- what stands on the map: every building, a sample of props and trees (StudioApi.map_scenery) ---
@@ -2772,7 +3043,22 @@ function sectorTag(number, colour, [x, y], at) {
   const tag = mapLabel(String(number + 1), `#${light.getHexString()}`, (mv.size || 1000) * 0.06);
   tag.position.copy(at(x, y, (mv.size || 1000) * 0.01));
   tag.userData.label = `${mv.words.scen_zone} ${number + 1}`;
+  tag.userData.sectorTag = true;  // hidden when the camera is close (fitSectorTags)
   return tag;
+}
+
+// A sector's number is as big as the map makes it (sectorTag): close in it filled the view and hid everything under it
+// (the owner, 2026-10-15: "when you're super close in, the giant numbers for the sectors don't go away and they block
+// like all of your view ... when you're close, it just doesn't show them"). Each number hides once it would be taller
+// than this share of the view, and shows again further out. Before every frame (the view's draw).
+const SECTOR_TAG_MOST = 0.18;
+function fitSectorTags() {
+  const cam = mv.gl.camera, view = 2 * Math.tan(cam.fov * Math.PI / 360);
+  for (const tags of [scen.zones, sec.tags]) {
+    for (const o of (tags && tags.children) || []) {
+      if (o.userData.sectorTag) o.visible = o.scale.y <= SECTOR_TAG_MOST * view * cam.position.distanceTo(o.position);
+    }
+  }
 }
 
 // Everything the picked scenario puts on the map, on the ground as it is now (strokes too).
@@ -4668,13 +4954,109 @@ function placeOptions() {
     && (!q || [r[1], r[3], said(r[5]), said(r[6]), (r[5] && r[5].us) || "", (r[6] && r[6].us) || ""]
       .some((t) => t.toLowerCase().includes(q))));
   if (!rows.some((r) => r[0] === p.type)) p.type = rows.length ? rows[0][0] : null;
-  $("place-type").replaceChildren(...rows.map((r) => {
-    const name = said(r[5]) || r[1], what = said(r[6]);
-    const o = el("option", { value: r[0], textContent: (what ? `${name} · ${what}` : name) + (r[4] ? `  (${r[4].toLocaleString()})` : ""),
-      title: `${name}${what ? " · " + what : ""}\n${mv.words.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
-    o.selected = r[0] === p.type;
-    return o;
+  // a tile each: a picture of its model (rendered once the models are in: renderThumb), its name, how many the map has
+  const w = mv.words;
+  $("place-grid").replaceChildren(...rows.map((r) => {
+    const name = said(r[5]) || r[1], what = said(r[6]), pic = thumbOf(r[0]);
+    const tile = el("button", { type: "button", className: "place-tile", title: `${name}${what ? " · " + what : ""}`
+      + (r[4] ? `\n${fill(w.place_used, { n: r[4].toLocaleString() })}` : "")
+      + (pic === false ? `\n${w.place_no_picture}` : "") + `\n${w.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
+    tile.dataset.type = r[0];
+    tile.setAttribute("role", "option");
+    tile.setAttribute("aria-selected", String(r[0] === p.type));
+    tile.append(el("span", { className: "place-pic" }, pic ? el("img", { src: pic, alt: "" }) : kindIcon(p.group)),
+      el("span", { className: "place-name", textContent: name }));
+    if (r[4]) tile.append(el("span", { className: "place-count", textContent: r[4].toLocaleString() }));
+    tile.addEventListener("click", () => pickType(r[0]));
+    return tile;
   }));
+}
+
+// Picking a type starts placing, as picking a brush starts painting
+function pickType(type) {
+  mv.place.type = type;
+  for (const tile of $("place-grid").children) tile.setAttribute("aria-selected", String(tile.dataset.type === type));
+  if (!mv.place.on) setPlaceMode(true); else placeNote("");
+}
+
+function kindIcon(kind) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = `<path d="${ICONS[kind] || ICONS.building}"/>`;
+  return svg;
+}
+
+// --- the place list's pictures: each type's model drawn once, small, from above at three quarters, on a renderer of
+// their own (made the first time); a type's picture is kept while the map's models are. ---
+const THUMB = 112;  // pixels
+const thumbs = { lib: null, cache: new Map(), queue: [], busy: false, renderer: null, scene: null, camera: null };
+
+// A type's picture: its address once drawn, null while it's on the way (the tile is filled in then), false when the
+// type has no model to draw (or the models aren't in yet: the tiles are made again when they are)
+function thumbOf(type) {
+  const lib = mv.scenery.lib, t = typeNumber(type);
+  if (!lib) return null;
+  if (t === null || !lib.has(t)) return false;
+  if (thumbs.lib !== lib) Object.assign(thumbs, { lib, cache: new Map(), queue: [] });
+  if (thumbs.cache.has(type)) return thumbs.cache.get(type);
+  thumbs.cache.set(type, null);
+  thumbs.queue.push(type);
+  if (!thumbs.busy) drawThumbs();
+  return null;
+}
+
+async function drawThumbs() {
+  thumbs.busy = true;
+  try {
+    while (thumbs.queue.length) {
+      const lib = thumbs.lib, type = thumbs.queue.shift(), t = typeNumber(type);
+      await lib.ready(t);  // its pictures loaded first
+      if (thumbs.lib !== lib || mv.scenery.lib !== lib) break;
+      const url = renderThumb(lib, t, groupOfType(type));
+      thumbs.cache.set(type, url);
+      for (const tile of $("place-grid").children) {
+        if (tile.dataset.type === type) tile.firstChild.replaceChildren(el("img", { src: url, alt: "" }));
+      }
+      await new Promise((done) => setTimeout(done, 0));  // the page stays quick while they're drawn
+    }
+  } finally {
+    thumbs.busy = false;
+  }
+}
+
+function renderThumb(lib, t, group) {
+  const { THREE } = mv.gl;
+  if (!thumbs.renderer) {
+    thumbs.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    thumbs.renderer.setPixelRatio(1);
+    thumbs.renderer.setSize(THUMB, THUMB, false);
+    thumbs.scene = new THREE.Scene();
+    thumbs.scene.add(new THREE.HemisphereLight(0xe3ecf2, 0x6a5a44, 2.6));  // brighter than the map: a picture to read
+    const sun = new THREE.DirectionalLight(0xfff1dc, 2.8);
+    sun.position.set(0.4, 1.0, 0.9);  // from above, behind the camera's shoulder: the faces seen are lit
+    thumbs.scene.add(sun);
+    thumbs.camera = new THREE.PerspectiveCamera(30, 1, 1, 1);
+  }
+  const model = new THREE.Group(), box = new THREE.Box3();
+  for (const part of lib.parts(t)) {
+    model.add(new THREE.Mesh(part.geo, lib.material(group, part)));
+    box.union(part.geo.boundingBox);
+  }
+  thumbs.scene.add(model);
+  const cam = thumbs.camera, centre = box.getCenter(new THREE.Vector3());
+  const r = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 1);
+  const dist = r / Math.sin(cam.fov * Math.PI / 360);
+  cam.position.copy(centre).addScaledVector(new THREE.Vector3(0.9, 0.75, 1.3).normalize(), dist);  // from the south-east
+  cam.near = dist / 50;
+  cam.far = dist * 3;
+  cam.updateProjectionMatrix();
+  cam.lookAt(centre);
+  thumbs.renderer.render(thumbs.scene, cam);
+  const url = thumbs.renderer.domElement.toDataURL("image/png");
+  thumbs.scene.remove(model);
+  for (const m of model.children) m.material.dispose();
+  return url;
 }
 
 function renderPlace() {
@@ -4682,7 +5064,7 @@ function renderPlace() {
   $("place-scenery-note").textContent = w.scenery_note;  // no cover from placed scenery; buildings stop units
   $("place-search").placeholder = w.search || "";
   $("place-search").title = w.tip_place_search;
-  $("place-type").title = w.tip_place_type;
+  $("place-grid").title = w.tip_place_type;
   $("place-turn-label").textContent = `${w.place_turn} ${p.turn}°`;
   $("place-turn").title = w.tip_place_turn;
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
@@ -4724,7 +5106,7 @@ function setPlaceMode(on) {
   mv.place.on = on;
   if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-  if (!on) { mv.place.lineStart = null; showPlaceGuide(null); }
+  if (!on) { mv.place.lineStart = null; showPlaceGuide(null); showPlaceGhost(null); }
   if (on && mv.brush.on) setBrushMode(false);
   pointerMode();
   if (on) placeNote(!mv.place.mod ? mv.words.no_mod : !mv.place.type ? whyNoType() : "", "error");
@@ -4739,37 +5121,114 @@ function whyNoType() {
   return mv.scenery.data ? mv.words.place_pick : mv.words.scenery_loading;
 }
 
-// The objects this mod places, in gold, on the ground as it is now.
+// The objects this mod places, on the ground as it is now: each with its real model once the models are in (until
+// then, or for a type without one, a gold shape), and a gold dot that marks it at any zoom, so what was placed shows
+// even from far away (the owner, 2026-10-15: placing buildings "seemed not to work", and "it just says a fucking
+// orange or yellow square": a building was a 4 m gold box, two pixels at a normal zoom).
+const PLACED_DOT = 9;  // pixels across, at any zoom
 function drawPlaced() {
-  const gl = mv.gl, p = mv.place;
+  const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
   if (!gl) return;
-  for (const m of Object.values(p.meshes)) forget(m);
+  for (const list of Object.values(p.meshes)) for (const m of list) forget(m);
   p.meshes = {};
   const bridges = bridgeTypes();  // drawn as decks (drawBridges)
   if (mv.edit && p.objects.length) {
-    const groupOf = new Map(((mv.scenery.data && mv.scenery.data.palette) || []).map((r) => [r[0], r[2]]));
-    const lists = {};
-    for (const o of p.objects) if (!bridges.has(o.type)) (lists[groupOf.get(o.type) || "building"] ||= []).push(o);
+    const lists = new Map();  // a type with a model, or a group's shape: its objects
+    for (const o of p.objects) {
+      if (bridges.has(o.type)) continue;
+      const group = groupOfType(o.type), t = typeNumber(o.type), model = lib && t !== null && lib.has(t);
+      const key = model ? t : group;
+      (lists.get(key) || lists.set(key, { group, t: model ? t : null, list: [] }).get(key)).list.push(o);
+    }
     const { THREE } = gl, grid = makeGrid(mv.edit), m = new THREE.Matrix4(), q = new THREE.Quaternion();
-    const at = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-    for (const [group, list] of Object.entries(lists)) {
+    const at = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), dots = {};
+    for (const { group, t, list } of lists.values()) {
       const [shape, width, height] = SCENERY_LOOK[group];
-      const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
-      geo.translate(0, 0.5, 0);
-      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR }), list.length);
+      let meshes;
+      if (t !== null) {
+        meshes = lib.parts(t).map((part) => new THREE.InstancedMesh(part.geo, lib.material(group, part), list.length));
+      } else {
+        const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+        geo.translate(0, 0.5, 0);
+        meshes = [new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR }), list.length)];
+      }
       list.forEach((o, k) => {
-        at.set(o.x * SCALE, groundAt(grid, o.x, o.y) * SCALE, o.y * SCALE);
+        const z = groundAt(grid, o.x, o.y);
+        at.set(o.x * SCALE, z * SCALE, o.y * SCALE);
         q.setFromAxisAngle(up, -o.turn * Math.PI / 180);
-        s.set(width * o.size * SCALE, height * o.size * SCALE, width * o.size * SCALE);
-        mesh.setMatrixAt(k, m.compose(at, q, s));
+        if (t !== null) s.set(o.size * SCALE, o.size * SCALE, o.size * SCALE);  // a model is in map units already
+        else s.set(width * o.size * SCALE, height * o.size * SCALE, width * o.size * SCALE);
+        m.compose(at, q, s);
+        for (const mesh of meshes) mesh.setMatrixAt(k, m);
+        (dots[group] ||= []).push(o.x * SCALE, (z + 150) * SCALE, o.y * SCALE);
       });
-      mesh.instanceMatrix.needsUpdate = true;
-      mesh.computeBoundingSphere();
-      gl.scene.add(mesh);
-      p.meshes[group] = mesh;
+      for (const mesh of meshes) {
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.computeBoundingSphere();
+        gl.scene.add(mesh);
+      }
+      (p.meshes[group] ||= []).push(...meshes);
+    }
+    for (const [group, xyz] of Object.entries(dots)) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(xyz), 3));
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: PLACED_COLOUR, size: PLACED_DOT,
+        sizeAttenuation: false }));
+      pts.frustumCulled = false;
+      gl.scene.add(pts);
+      p.meshes[group].push(pts);
     }
   }
   drawBridges();  // (draws the view)
+}
+
+// The picked type at the pointer before a click places it (One, and a Line's start): its real model, see-through,
+// turned and sized as it will stand; a gold shape until the models are in. The owner, 2026-10-15: "how do I know what
+// they look like?"
+const GHOST_ALPHA = 0.6;
+function showPlaceGhost(hit) {
+  const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
+  if (!gl) return;
+  const type = hit && p.on && p.how !== "area" && p.type && mv.edit ? p.type : null;
+  if (!type) {
+    if (gl.ghost && gl.ghost.visible) { gl.ghost.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, t = typeNumber(type), group = groupOfType(type), model = Boolean(lib && t !== null && lib.has(t));
+  const key = `${type}|${model}`;
+  if (!gl.ghost || gl.ghost.userData.key !== key) {
+    if (gl.ghost) {
+      gl.scene.remove(gl.ghost);
+      gl.ghost.traverse((o) => { if (o.isMesh) { o.material.dispose(); if (!o.geometry.userData.keep) o.geometry.dispose(); } });
+    }
+    const ghost = new THREE.Group(), [shape, width, height] = SCENERY_LOOK[group];
+    if (model) {
+      for (const part of lib.parts(t)) {
+        const mat = lib.material(group, part);
+        if (mat.alphaTest || !mat.map) {  // (a picture whose alpha isn't see-through would come out patchy: it stays solid)
+          Object.assign(mat, { transparent: true, opacity: GHOST_ALPHA, depthWrite: false });
+          mat.alphaTest *= GHOST_ALPHA;  // the leaves' cut-out at the faded opacity (as fade does)
+        }
+        ghost.add(new THREE.Mesh(part.geo, mat));
+      }
+    } else {
+      const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+      geo.translate(0, 0.5, 0);
+      geo.scale(width, height, width);
+      ghost.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR, transparent: true,
+        opacity: GHOST_ALPHA, depthWrite: false })));
+    }
+    ghost.userData.key = key;
+    for (const o of ghost.children) o.renderOrder = 9;
+    gl.ghost = ghost;
+    gl.scene.add(ghost);
+  }
+  const ghost = gl.ghost, k = p.size * SCALE;
+  ghost.position.set(hit.x, hit.y, hit.z);
+  ghost.rotation.set(0, -p.turn * Math.PI / 180, 0);
+  ghost.scale.set(k, k, k);
+  ghost.visible = true;
+  gl.draw();
 }
 
 async function loadPlaced(pack, ask) {
@@ -6206,6 +6665,10 @@ function pointerMode() {
   if (!mv.brush.on && gl.ring) { gl.ring.visible = false; gl.squareRing.visible = false; gl.draw(); }
   if (gl.ring) gl.ring.material.color.setHex(mv.brush.on && erasing() ? 0xe0533d : 0xc8a64b);  // Erase's ring in red
   if (gl.ring && mv.brush.on && mv.brush.name === "paint") gl.ring.material.color.set(paint.colour);  // Colour's in its colour
+  const zone = mv.brush.on && ZONE_RING[mv.brush.name];  // a zone brush's in the colour it paints
+  if (gl.ring && zone) gl.ring.material.color.setRGB(...zone.slice(0, 3).map((v) => v / 255), gl.THREE.SRGBColorSpace);
+  if (gl.townRings && !(mv.brush.on && mv.brush.name === "town") && gl.townRings.visible) { gl.townRings.visible = false; gl.draw(); }
+  if (!mv.brush.on || mv.brush.name === "town") pointerTag(null, "");
   if (busy) $("scenery-hover").textContent = "";
   gl.renderer.domElement.style.cursor = busy ? "crosshair" : "";
 }
@@ -6248,7 +6711,7 @@ function showRing(p) {
   if (!gl.ring) return;
   const name = mv.brush.name, r = brushRadius(name) * SCALE, lift = r * 0.02;
   const square = tipChoices(name).shapes.length > 0 && settingsOf(name).shape === "square";
-  gl.ring.visible = Boolean(p) && !square;
+  gl.ring.visible = Boolean(p) && !square && name !== "town";  // Town rings the buildings it would cover instead
   gl.squareRing.visible = Boolean(p) && square;
   if (p) {
     gl.ring.position.set(p.x, p.y + lift, p.z);
@@ -6295,6 +6758,7 @@ function dab(group, x, y) {
     return;
   }
   const s = newStroke(x, y, group.level, group.end);
+  if (!group.strokes.length && PAINTS[s.brush]) countZone(s.brush);  // a zone stroke: what it changes is said at its end
   group.strokes.push(s);
   group.last = [x, y];
   mv.brush.strokes.push(s);
@@ -6343,8 +6807,11 @@ function paintTo(p) {
 async function finishStroke() {
   const g = mv.brush.painting;
   mv.brush.painting = null;
+  const zone = zoneCount;  // what a zone stroke changed, counted now (another stroke may start while this one saves)
+  zoneCount = null;
   if (g && g.erase) { finishErase(g); return; }
   if (!g || !g.strokes.length) return;
+  const said = zone ? zoneSaid(zone) : "";
   redraw(false, true);
   placeScenery();
   const pack = mv.current, trees = g.objects || [];
@@ -6368,7 +6835,13 @@ async function finishStroke() {
     // cover or movement painted where an Erase circle clears a wood: the build clears it after, so the view does too
     if (g.strokes.some((s) => PAINTS[s.brush]) && mv.brush.erase.some(clearsWood)) refreshErased();
     showCount();
-    brushNote(g.objects ? fill(mv.words.forest_done, { n: trees.length.toLocaleString() }) : mv.words.brush_note);
+    // what it did, in the tray and at the pointer: a zone stroke's change for units (Town's buildings, Forest's
+    // trees first), else that it's saved
+    const lead = g.town ? fill(mv.words.town_done, { n: g.town.toLocaleString() })
+      : g.objects ? fill(mv.words.forest_done, { n: trees.length.toLocaleString() }) : "";
+    const text = [lead, said].filter(Boolean).join(" ");
+    brushNote(text ? `${text} ${mv.words.brush_note}` : mv.words.brush_note);
+    if (text) pointerTag(null, text, false, 5000);
   } catch (err) {
     if (placed) { try { await mv.api.scenery_undo(pack, trees.length, trees); } catch (_) { /* said below */ } }
     if (pack !== mv.current) return;
@@ -6514,7 +6987,9 @@ function watchPointer() {
     frame = 0;
     if (!pending || !mv.brush.on || !gl.ground) return;
     const p = hitGround(pending);
+    mv.brush.lastPointer = { clientX: pending.clientX, clientY: pending.clientY };  // where a stroke's count is said
     showRing(p);
+    if (mv.brush.name === "town") showTownPreview(p, pending);
     if (p && mv.brush.painting) paintTo(p);
   };
   canvas.addEventListener("pointermove", (ev) => {
@@ -6548,13 +7023,15 @@ function watchPointer() {
     }
     if (kind === "paint") rememberColour(paint.colour);
     if (kind === "town") {  // one click: cover circles around the town's buildings, saved as one group
-      const strokes = townStrokes(x, y);
-      if (!strokes.length) { brushNote(mv.words.town_none, "error"); return; }
-      const group = { strokes: [], last: null, stamp: true, start: mv.brush.strokes.length };
+      const strokes = townStrokes(x, y, pixelsAt(p, TOWN_POINTER));
+      if (!strokes.length) { brushNote(mv.words.town_none, "error"); pointerTag(ev, mv.words.town_none, true, 4000); return; }
+      const group = { strokes: [], last: null, stamp: true, start: mv.brush.strokes.length, town: strokes.length };
+      if (gl.townRings) gl.townRings.visible = false;  // the cover it makes shows instead (showTownPreview)
+      mv.brush.townClicked = { clientX: ev.clientX, clientY: ev.clientY };
+      countZone("town");
       for (const s of strokes) { group.strokes.push(s); mv.brush.strokes.push(s); overlayDab(s); }
       mv.brush.painting = group;
-      const saved = mv.brush.groups.length;
-      finishStroke().then(() => { if (mv.brush.groups.length > saved) brushNote(fill(mv.words.town_done, { n: strokes.length })); });
+      finishStroke();
       return;
     }
     const what = ["vegetation", "prop", "building"].filter((g) => mv.brush.eraseWhat[g]);
@@ -6685,12 +7162,14 @@ function watchPointer() {
   let placeMove = null, placeFrame = 0;
   canvas.addEventListener("pointermove", (ev) => {
     const p = mv.place;
-    if (!p.on || p.how === "one") return;
+    if (!p.on) return;
     placeMove = ev;
     if (placeFrame) return;
     placeFrame = requestAnimationFrame(() => {
       placeFrame = 0;
       const hit = placeMove && hitGround(placeMove);
+      showPlaceGhost(hit);  // what a click places, where it would stand
+      if (p.how === "one") return;
       showPlaceGuide(hit);
       const stroke = p.painting;
       if (!hit || !stroke || !stroke.last) return;
@@ -6733,6 +7212,8 @@ function watchPointer() {
   });
   canvas.addEventListener("pointerleave", () => {
     if (mv.brush.on && gl.ring) { gl.ring.visible = false; gl.squareRing.visible = false; gl.draw(); }
+    if (gl.townRings && gl.townRings.visible) { gl.townRings.visible = false; pointerTag(null, ""); gl.draw(); }
+    if (gl.ghost && gl.ghost.visible) showPlaceGhost(null);
     if (mv.place.on && mv.place.how === "area" && gl.ring) { gl.ring.visible = false; gl.draw(); }
   });
 }
@@ -7937,10 +8418,6 @@ function wire() {
   $("brush-look").addEventListener("click", () => lookAround());
   $("place-undo").addEventListener("click", () => undoPlace());
   $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });
-  $("place-type").addEventListener("change", (e) => {  // picking a type starts placing, as picking a brush starts painting
-    mv.place.type = e.target.value;
-    if (!mv.place.on) setPlaceMode(true); else placeNote("");
-  });
   $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
   $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });
   $("place-solid").addEventListener("change", (e) => { mv.place.solid = e.target.checked; });

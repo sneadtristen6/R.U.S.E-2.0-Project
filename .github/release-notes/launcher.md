@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.5:** it plays mods made with Studio 0.9.8.5.
+
+- **Mods made with Studio 0.9.8.5 play:** planes in a new role (a bomber with its bomb bay, a scout that keeps its guns), recon vehicles, weapons that hit planes, and ground painted from the Texture brush's library with the game's detail over it. An older Launcher can't build some of them.
+- **Faster:** a map painted again the same way takes its painted ground back from the last build in seconds.
+- **Still buggy, play at your own discretion:** maps made with Map Paint's textures, and blank maps (Blank Terrain, Blank Ocean).
+
 **0.4.8.4:** mods download on every PC, and it plays mods made with Studio 0.9.8.4.
 
 - **Mods download on every PC:** on some PCs no mod would download ("certificate verify failed: unable to get local issuer certificate"). Now the Launcher asks Windows for the certificate, as a browser does, and tries again; its own updates too. Not tried yet on a PC that had the problem.

@@ -1,0 +1,537 @@
+# La guía de banderas en español (rusemod.flaginfo; manda el inglés de flaginfo.toml).
+[0]
+what = "Aeródromo"
+does = "Convierte un edificio en aeródromo: tus aviones tienen allí su base, y hacer clic con un avión en tu propio aeródromo lo manda a aterrizar. La planificación de reconocimiento del ordenador busca uno."
+use = "Solo para aeródromos. En otra cosa, el juego solo lo trata como un sitio donde los aviones pueden aterrizar."
+
+[1]
+what = "Artillería (fuego indirecto)"
+does = "La unidad dispara de forma indirecta, a lo que otras unidades avistan, como los obuses del juego. También le dice al ordenador que la use como artillería."
+use = "Funciona en cualquier unidad: DomesticNukes se la dio a 410 unidades de todo tipo y todas dispararon de forma indirecta."
+
+[2]
+what = "Avión"
+does = "La unidad es un avión: se construye en la torre de control del aeródromo, vuelve a repostar y no recibe órdenes de tierra. Los 63 aviones del juego la tienen, y nada más."
+use = "Déjala en cada avión. No la pongas nunca en una unidad de tierra: el juego intentaría construirla en la torre de control de un aeródromo."
+danger_why = "En una unidad que no es un avión, construirla debería detener el juego con un error de script (busca la torre de control de un aeródromo)."
+
+[3]
+what = "Avión que puede atacar sin entrar en combate"
+does = "El juego la pone cuando un avión sale a una misión."
+use = "Déjala fuera: la gestiona el juego."
+
+[4]
+what = "Edificio"
+does = "La cosa es un edificio: panel de edificio, reglas de colocación y captura, fuera de las estadísticas de unidades. Un edificio nunca se mueve ni piensa como una unidad."
+use = "Solo para edificios."
+danger_why = "En una unidad debería congelarla: los edificios no se mueven ni reciben órdenes de unidad."
+
+[5]
+what = "Edificio de producción"
+does = "Un edificio que produce unidades (cuarteles, fábricas, aeródromos). Puesta en lugar de 30 (con TypeBatiment -7), un edificio señuelo produce de verdad."
+use = "Para los edificios que construyen unidades."
+
+[6]
+what = "Edificio defensivo"
+does = "Búnkeres y emplazamientos de cañones: el panel de defensa, y los bombarderos los atacan por su cuenta. Algo así se queda donde está, como los barcos del juego."
+use = "Solo para edificios defensivos."
+danger_why = "En una unidad que debería moverse, debería dejarla quieta."
+
+[7]
+what = "Depósito de suministros"
+does = "Un depósito: puesto sobre una losa de depósito, con el panel del depósito; tomarlo y perderlo cuenta como depósito."
+use = "Solo para depósitos de suministros."
+
+[8]
+what = "Cuartel general"
+does = "El CG: un edificio de mando (detrás de la regla «no se puede ocultar») y el que el ordenador más valora."
+use = "Solo para cuarteles generales."
+
+[9]
+what = "Emplazamiento de superarma (sin uso)"
+does = "Nada en el juego la usa."
+use = "Déjala fuera."
+
+[10]
+what = "Puede recibir daño"
+does = "Las explosiones pueden herirla: el daño de área y la V2 buscan unidades que la tengan. 454 unidades del juego la tienen."
+use = "Déjala en todo lo que las explosiones deban herir. Sin ella, una unidad quizá sería inmune al daño de área (sin probar)."
+
+[11]
+what = "No entra en bosques"
+does = "La unidad se queda fuera de los bosques (sus rutas los rodean) y nunca recibe la cobertura del bosque. Los tanques y casi todos los vehículos la tienen."
+use = "Para que un vehículo entre en bosques, quita 11, 21 y 55 a la vez (probado por DomesticNukes). La que cuenta para los bosques es la 11."
+
+[12]
+what = "Creada por una carta de ardid (sin uso)"
+does = "Nada en el juego la usa como bandera de unidad."
+use = "Déjala fuera."
+
+[13]
+what = "Bombardero"
+does = "El avión se comporta como bombardero: por su cuenta solo ataca edificios, y tiene un gran sitio de aparcamiento en el aeródromo. Cuál de 100, 99, 101, 13, 59 tenga un avión decide cómo se comporta, en ese orden."
+use = "Para bombarderos. Usa la casilla Función del avión en vez de cambiar 13, 99, 100 y 101 a mano: las pone juntas."
+
+[14]
+what = "Captura edificios"
+does = "Infantería que puede capturar edificios; el ordenador manda estas unidades a capturar. Un señuelo la pierde."
+use = "Para la infantería que deba capturar."
+
+[15]
+what = "Sin nombre (sin uso)"
+does = "Nada en el juego la usa."
+use = "Déjala fuera."
+
+[16]
+what = "Sin nombre (sin uso)"
+does = "Nada en el juego la usa."
+use = "Déjala fuera."
+
+[17]
+what = "Inmune al fuego reflejo"
+does = "Las torretas no le disparan por su cuenta. Los scripts de misión la ponen; el juego la quita cuando un desplegable termina de construirse."
+use = "En la lista de una unidad, sin probar: quizá se mantenga, quizá no."
+
+[18]
+what = "Cañón remolcado"
+does = "Cañones antitanque y de campaña: contados como vehículo en las estadísticas de fin de partida. Nada más."
+use = "Solo cambia las estadísticas."
+
+[19]
+what = "Capturable"
+does = "Un edificio que se puede capturar (la orden de captura). En vehículos o infantería no hace nada (probado por DomesticNukes)."
+use = "Solo para edificios."
+
+[20]
+what = "Punto de mira de la artillería"
+does = "El punto invisible al que dispara la artillería: fuera de objetivos y selección."
+use = "Solo para el punto de mira del juego."
+
+[21]
+what = "Unidad de combate"
+does = "Una unidad que combate: el juego también la añade mientras una unidad ataca. La estimación de peligro del ordenador y las estadísticas la cuentan."
+use = "Parte del trío del bosque: quita 11, 21 y 55 a la vez para que un vehículo entre en bosques."
+
+[22]
+what = "Recibe las órdenes del jugador"
+does = "El jugador puede darle órdenes. Los scripts de misión la quitan para bloquear una unidad."
+use = "Déjala en todo lo que el jugador deba controlar."
+danger_why = "Sin ella, el jugador no puede dar órdenes a la unidad (la comunidad la considera esencial)."
+
+[23]
+what = "Losa del depósito"
+does = "La losa del suelo sobre la que se construye un depósito de suministros."
+use = "Solo para la losa del depósito."
+
+[24]
+what = "Vista como contacto terrestre"
+does = "El enemigo la ve como contacto terrestre. Un avión intercambia 24 y 25 al despegar y aterrizar."
+use = "Déjala en unidades de tierra y edificios."
+
+[25]
+what = "Vista como contacto aéreo"
+does = "El enemigo la ve como contacto aéreo: aviones en vuelo, paracaidistas en el aire."
+use = "Déjala en los aviones."
+
+[26]
+what = "En combate"
+does = "El juego la pone mientras la unidad combate."
+use = "Déjala fuera: la gestiona el juego."
+
+[27]
+what = "En un bosque"
+does = "El juego la pone cuando una unidad está en un bosque (según los bosques del mapa), salvo que tenga 11 o 92: la cobertura y la emboscada del bosque."
+use = "Déjala fuera. Para que una unidad se esconda en bosques, quita 11 (y 92); para dar cobertura a un bosque, píntala en el mapa."
+
+[28]
+what = "Actúa como fábrica"
+does = "El juego la pone durante la partida."
+use = "Déjala fuera."
+
+[29]
+what = "Señuelo"
+does = "La carta de ardid señuelo la pone: la unidad queda fuera de los recuentos de equipo, los lanzamientos de bombas, el fuego reflejo y las estadísticas."
+use = "Déjala fuera: usa mejor las unidades señuelo (30, 31)."
+
+[30]
+what = "Edificio señuelo"
+does = "Un edificio falso: para el enemigo es un edificio, no produce nada. Cambiada por 5 (con TypeBatiment -7) produce de verdad (probado por DomesticNukes)."
+use = "Solo para edificios señuelo."
+
+[31]
+what = "Camión señuelo"
+does = "Un camión de construcción o de suministros falso."
+use = "Solo para camiones señuelo."
+
+[32]
+what = "Marcador de camiones para edificios ocultos (sin uso)"
+does = "Nada en el juego la usa."
+use = "Déjala fuera."
+
+[33]
+what = "Vista previa de colocación"
+does = "La vista previa transparente que se muestra mientras colocas algo."
+use = "Solo para las vistas previas del juego."
+
+[34]
+what = "Vista previa de colocación de edificio"
+does = "El edificio transparente que se muestra mientras colocas uno."
+use = "Solo para las vistas previas del juego."
+
+[35]
+what = "Vista previa de colocación del depósito"
+does = "El juego la pone en la vista previa del depósito."
+use = "Déjala fuera."
+
+[36]
+what = "Vista previa de una orden"
+does = "El juego la pone en la vista previa de una orden."
+use = "Déjala fuera."
+
+[37]
+what = "Vista previa colocada"
+does = "El juego la pone cuando se coloca una vista previa."
+use = "Déjala fuera."
+
+[38]
+what = "Vista previa de producción"
+does = "La vista previa usada al colocar algo que se va a construir."
+use = "Solo para las vistas previas del juego."
+
+[39]
+what = "En un grupo (sin uso)"
+does = "Nada en el juego la usa como bandera de unidad."
+use = "Déjala fuera."
+
+[40]
+what = "Tiene un arma"
+does = "Sus torretas solo disparan con ella. La orden de ataque del jugador y el ordenador también la comprueban; activar y desactivar las armas la cambia."
+use = "Déjala en todo lo que esté armado. Sin ella, las armas de la unidad no disparan."
+
+[41]
+what = "Se ilumina al pasar el ratón"
+does = "Se ilumina bajo el ratón."
+use = "Déjala en todo lo que el jugador pulse."
+
+[42]
+what = "Infantería"
+does = "La unidad es infantería: el ordenador, la carta de interferencia y cómo muere (la infantería deja cuerpos, no restos)."
+use = "Solo para infantería."
+danger_why = "En un vehículo, al morir debería detener el juego con un error de script (muere como la infantería)."
+
+[43]
+what = "Contada por su equipo"
+does = "La unidad está en las listas y recuentos de su equipo, y los scripts de las misiones la ven. 459 unidades del juego la tienen."
+use = "No la quites nunca."
+danger_why = "Sin ella, la unidad no debería estar en ninguna lista de su equipo: las misiones y el ordenador no la ven."
+
+[44]
+what = "Logística"
+does = "Todos los camiones la tienen; la supresión se les pasa de otra forma. En un tanque no hace nada (probado)."
+use = "Déjala como la tiene el juego."
+
+[45]
+what = "Munición de superarma (sin uso)"
+does = "Nada en el juego la usa."
+use = "Déjala fuera."
+
+[46]
+what = "Fuera de la selección por recuadro"
+does = "127 unidades del juego la tienen; no se encontró ningún efecto en el juego."
+use = "Déjala como la tiene el juego."
+
+[47]
+what = "Las demás unidades la rodean"
+does = "Las demás unidades la rodean en vez de atravesarla. Los aviones y los camiones no la tienen."
+use = "Déjala en las unidades de tierra. Sin ella, otras podrían atravesarla (sin probar)."
+
+[48]
+what = "Paracaidistas en tierra"
+does = "Paracaidistas tras el salto: la estimación de peligro del ordenador y la comprobación de avión del botón de producción."
+use = "Solo para paracaidistas."
+
+[49]
+what = "Paracaidistas en el aire"
+does = "Paracaidistas durante el salto: mientras está puesta no piensan ni se mueven en tierra."
+use = "Solo para paracaidistas en el aire."
+danger_why = "En una unidad de tierra debería congelarla (sin pensar, sin moverse en tierra)."
+
+[50]
+what = "Se puede pulsar"
+does = "El ratón puede elegirla."
+use = "Déjala en todo lo que el jugador pulse."
+
+[51]
+what = "Avión volviendo a la base"
+does = "El juego la pone cuando un avión regresa."
+use = "Déjala fuera."
+
+[52]
+what = "Avión ocupado"
+does = "El juego la pone durante un ataque a tierra y un bombardeo; el avión rechaza entonces nuevas órdenes."
+use = "Déjala fuera."
+
+[53]
+what = "Seleccionable"
+does = "El jugador puede seleccionarla."
+use = "Déjala en todo lo que el jugador controle."
+
+[54]
+what = "Bajo fuego de artillería"
+does = "El juego la pone durante 20 segundos cuando la artillería impacta cerca de la unidad."
+use = "Déjala fuera."
+
+[55]
+what = "Tanque"
+does = "Cuenta como tanque en las estadísticas de fin de partida y en la categoría «tanque» de las misiones. Nada más: no tiene efecto propio en combate."
+use = "Parte del trío del bosque: quita 11, 21 y 55 a la vez para que un vehículo entre en bosques."
+
+[56]
+what = "Avión aún con toda su munición"
+does = "El juego la pone; un cazabombardero solo ataca por su cuenta mientras está puesta."
+use = "Déjala fuera."
+
+[57]
+what = "Un objetivo"
+does = "Las torretas y el daño de área la tratan como algo a lo que dar. 435 unidades del juego la tienen."
+use = "Déjala en todo aquello a lo que se deba disparar. Sin ella, quizá nunca se le dispararía a una unidad (sin probar)."
+
+[58]
+what = "Siempre visible"
+does = "Se muestra sea cual sea la niebla de guerra: edificios, camiones, barcos. En un tanque no hubo cambio visible (probado)."
+use = "Déjala como la tiene el juego."
+
+[59]
+what = "Transporte de paracaidistas"
+does = "El avión que suelta paracaidistas: se construye en la pista, se comporta como avión de salto y suelta la unidad de su UniteTransportee."
+use = "Solo en aviones que tienen un UniteTransportee (la unidad que sueltan)."
+danger_why = "En una unidad que no es un avión, o en un avión sin UniteTransportee, el juego se bloquea al buscar a los paracaidistas. El Studio no lo construirá."
+
+[60]
+what = "Torreta de un edificio"
+does = "Un cañón que pertenece a un edificio: se muestra en el panel del edificio."
+use = "Solo para torretas de edificios."
+
+[61]
+what = "Avión en combate aéreo"
+does = "El juego la pone mientras los aviones se enfrentan."
+use = "Déjala fuera."
+
+[62]
+what = "Camión"
+does = "Un camión: lo lleva la lógica de camiones del juego (no piensa por sí mismo), transporta suministros. Los 18 camiones del juego la tienen."
+use = "Solo en camiones (unidades TTruckDescriptor), y todo camión la necesita."
+danger_why = "En cualquier cosa que no sea un camión, el juego se bloquea al empezar la partida (DomesticNukes, en un Stuart). El Studio no lo construirá."
+
+[63]
+what = "Camión de construcción"
+does = "Un camión que construye edificios."
+use = "Solo en camiones de construcción."
+danger_why = "En cualquier cosa que no sea un camión, el juego se bloquea (ProLution). El Studio no lo construirá."
+
+[64]
+what = "Camión de suministros"
+does = "Un camión que transporta dinero. En un tanque no hace nada (probado)."
+use = "Solo para camiones de suministros."
+
+[65]
+what = "Supresión extrema"
+does = "El juego la pone cuando una unidad está inmovilizada: deja de disparar."
+use = "Déjala fuera."
+
+[66]
+what = "Se transforma en otra unidad"
+does = "El juego la pone mientras una unidad se transforma (un pelotón en su camión en una carretera)."
+use = "Déjala fuera."
+
+[67]
+what = "En vuelo; acepta órdenes fuera del mapa"
+does = "El avión está en el aire (el juego la cambia por la 68 al despegar y aterrizar). En una unidad de tierra le permite aceptar órdenes fuera del mapa, pero se detiene en una barrera invisible en el borde (DomesticNukes)."
+use = "Déjala en los aviones. Para salir de verdad del mapa también hay que ampliar los mapas de movimiento del mapa."
+
+[68]
+what = "Avión aparcado"
+does = "El juego la pone mientras un avión está en tierra."
+use = "Déjala fuera."
+
+[69]
+what = "Atacada"
+does = "El juego la pone mientras la unidad es atacada."
+use = "Déjala fuera."
+
+[70]
+what = "Ve alrededor de su punto de patrulla"
+does = "La vista de un avión se centra en el punto al que lo enviaron, no en sí mismo. Los aviones de reconocimiento del juego la tienen."
+use = "Para aviones de reconocimiento."
+
+[71]
+what = "Ve todo alrededor"
+does = "Visión de 360°, mire hacia donde mire. Funciona en cualquier unidad de tierra (DomesticNukes se la dio a 150 más)."
+use = "Añádela a cualquier unidad que deba ver detrás de sí."
+
+[72]
+what = "Ve a través de los obstáculos"
+does = "Su vista ignora colinas y decorado. Los aviones la tienen."
+use = "Aún sin probar en unidades de tierra."
+
+[73]
+what = "Vista"
+does = "El juego la pone mientras el enemigo ve la unidad."
+use = "Déjala fuera."
+
+[74]
+what = "Sombra de un avión (sin uso)"
+does = "Nada en el juego la usa como bandera de unidad."
+use = "Déjala fuera."
+
+[75]
+what = "Cuerpo de un soldado"
+does = "El juego la pone en un soldado caído."
+use = "Déjala fuera."
+
+[76]
+what = "Barco (inmóvil)"
+does = "Los barcos del juego la tienen: se quedan donde una misión los pone, como un edificio. Sin ella (y con el chasis de un tanque) un barco anda por tierra (Navy Mod de DomesticNukes)."
+use = "Solo para barcos que nunca se mueven."
+danger_why = "En una unidad que debería moverse, debería dejarla quieta."
+
+[77]
+what = "Nunca dispara por su cuenta"
+does = "La unidad solo dispara cuando se le ordena: sin fuego reflejo (DomesticNukes se la dio a 317 unidades)."
+use = "No para edificios: nunca dispararían."
+
+[78]
+what = "Avión sin munición"
+does = "El juego la pone; se borra al despegar y al aterrizar."
+use = "Déjala fuera."
+
+[79]
+what = "Seleccionada"
+does = "El juego la pone mientras la unidad está seleccionada."
+use = "Déjala fuera."
+
+[80]
+what = "No se puede apuntar"
+does = "Ninguna orden puede apuntarla. Los scripts de misión la ponen."
+use = "En la lista de una unidad, sin probar."
+
+[81]
+what = "Marcador de script: fuego reflejo detenido"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[82]
+what = "Marcador de script: alcance del grupo"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[83]
+what = "Marcador de script: no se puede apuntar"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[84]
+what = "Marcador de script: grupo desarmado"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[85]
+what = "Marcador de script: grupo bloqueado"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[86]
+what = "Marcador de script: vista del grupo"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[87]
+what = "Marcador de script: daño"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[88]
+what = "Marcador de script: estrés"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[89]
+what = "Marcador de script: velocidad"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[90]
+what = "Silencio de radio (la carta de ardid)"
+does = "La carta silencio de radio la pone y la quita. En la lista de una unidad no hace nada (probado)."
+use = "Déjala fuera."
+
+[91]
+what = "Camuflada (la carta de ardid)"
+does = "La carta camuflaje la pone y la quita. En la lista de una unidad no hace nada (probado)."
+use = "Déjala fuera."
+
+[92]
+what = "Los bosques no la ocultan"
+does = "La unidad nunca recibe la cobertura del bosque, ni siquiera dentro de un bosque."
+use = "Para unidades que deban seguir visibles en bosques."
+
+[93]
+what = "Edificio administrativo"
+does = "Un edificio de mando, como el CG; contado por su equipo."
+use = "Solo para edificios administrativos."
+
+[94]
+what = "Restos de vehículo"
+does = "El juego la pone en un vehículo destruido."
+use = "Déjala fuera."
+
+[95]
+what = "Restos de avión"
+does = "El juego la pone en un avión destruido."
+use = "Déjala fuera."
+
+[96]
+what = "Contiene el fuego para una emboscada"
+does = "El juego la pone mientras una unidad en un bosque espera para lanzar su emboscada."
+use = "Déjala fuera."
+
+[97]
+what = "No se puede capturar"
+does = "Los scripts de misión la ponen."
+use = "En la lista de una unidad, sin probar."
+
+[98]
+what = "Marcador de script: no se puede capturar"
+does = "Un marcador «ya hecho» de un script de misión."
+use = "Déjala fuera."
+
+[99]
+what = "Avión de reconocimiento"
+does = "El avión se comporta como explorador (salvo que también tenga 100): un clic en el mapa lo manda a observar, no cuenta en el ejército de su equipo y el panel de reconocimiento lo muestra. Un explorador nunca ataca."
+use = "Usa la casilla Función del Studio: Reconocimiento en un avión armado también pone 100, para que sus ataques sigan funcionando."
+danger_why = "Un avión con armas y con 99 sin 100 bloquea el juego cuando se le manda atacar. El Studio no construirá un avión al que le hayas puesto 99 así: añade también 100, o quita 99."
+
+[100]
+what = "Caza"
+does = "El avión se comporta como caza (se comprueba primero, antes de 99, 101 y 13): por su cuenta solo ataca aviones en vuelo; pulsar sobre un enemigo lo ataca."
+use = "Para cazas. Con 99 también, es un explorador armado que aún puede atacar."
+
+[101]
+what = "Cazabombardero"
+does = "El avión se comporta como cazabombardero (tras 100 y 99): por su cuenta ataca unidades de tierra (no edificios ni camiones de suministros), solo mientras le quede toda su munición."
+use = "Para cazabombarderos. Usa la casilla Función para cambiar la función de un avión."
+
+[102]
+what = "Aeródromo señuelo"
+does = "Un aeródromo falso: cuenta como aeródromo."
+use = "Solo para aeródromos señuelo."
+
+[103]
+what = "Puede soltar paracaidistas"
+does = "El juego se la da a los aviones de salto al despegar; la orden de salto la necesita."
+use = "Déjala fuera: la que hay que poner es la 59."
+
+[104]
+what = "Tiene un escáner"
+does = "El juego se la da a cada unidad cuando se crea."
+use = "Déjala fuera."

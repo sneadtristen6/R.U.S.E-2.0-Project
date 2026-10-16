@@ -6,8 +6,9 @@
 ## Place
 
 1. In the bar, click **Buildings**, or **Props & trees** and then its **Props** or **Trees** tab.
-2. Pick a type from the list (type in the search box to narrow it). The list holds this map's own types: the game
-   only takes a type a map already uses.
+2. Pick a type from the pictures (type in the search box to narrow them). Each picture is drawn from the game's own
+   model of it, and the number in its corner is how many the map already has. The list holds this map's own types:
+   the game only takes a type a map already uses.
 3. Choose how a click places:
    - **One**: one object where you click;
    - **Area**: drag to scatter objects in a circle (**Spacing** keeps them apart, **Area** sets the circle);
@@ -15,7 +16,8 @@
 4. **Turn** and **Size** (up to 10×) are the sliders on the right. Trees vary a little in size and turn by
    themselves, so a wood doesn't look stamped.
 
-Placed objects show in gold until you test the mod.
+Before you click, the type shows see-through under the pointer, turned and sized as it will stand. Placed objects
+show as their own models, each with a small gold dot at its foot that marks it from far away.
 
 ## Solid buildings
 

@@ -1,0 +1,537 @@
+# Przewodnik po flagach po polsku (rusemod.flaginfo; wiążący jest angielski w flaginfo.toml).
+[0]
+what = "Lotnisko"
+does = "Robi z budynku lotnisko: twoje samoloty mają tu bazę, a kliknięcie samolotem na własne lotnisko wysyła go do lądowania. Planowanie zwiadu przez komputer szuka lotniska."
+use = "Tylko dla lotnisk. Na czymś innym gra traktuje to tylko jako miejsce, gdzie samoloty mogą lądować."
+
+[1]
+what = "Artyleria (ogień pośredni)"
+does = "Jednostka strzela pośrednio, w to, co wypatrzą inne jednostki, jak haubice w grze. Mówi też komputerowi, by używał jej jako artylerii."
+use = "Działa na każdej jednostce: DomesticNukes dał ją 410 jednostkom wszelkiego rodzaju i wszystkie strzelały pośrednio."
+
+[2]
+what = "Samolot"
+does = "Jednostka jest samolotem: budowana przy wieży kontrolnej lotniska, wraca tankować, nie przyjmuje rozkazów naziemnych. Ma ją wszystkie 63 samoloty gry i nic poza nimi."
+use = "Zostaw na każdym samolocie. Nigdy nie dawaj jednostce naziemnej: gra próbowałaby ją zbudować przy wieży kontrolnej lotniska."
+danger_why = "Na jednostce, która nie jest samolotem, jej budowa powinna zatrzymać grę błędem skryptu (gra szuka wieży kontrolnej lotniska)."
+
+[3]
+what = "Samolot może atakować bez wejścia w walkę"
+does = "Gra ustawia ją, gdy samolot wylatuje na misję."
+use = "Pomiń: gra sama tym zarządza."
+
+[4]
+what = "Budynek"
+does = "To budynek: panel budynku, zasady stawiania i przejmowania, poza statystykami jednostek. Budynek nigdy się nie rusza i nie myśli jak jednostka."
+use = "Tylko dla budynków."
+danger_why = "Na jednostce powinna ją zamrozić: budynki się nie ruszają i nie przyjmują rozkazów jednostek."
+
+[5]
+what = "Budynek produkcyjny"
+does = "Budynek, który produkuje jednostki (koszary, fabryki, lotniska). Wstawiona zamiast 30 (z TypeBatiment -7) sprawia, że budynek-atrapa produkuje naprawdę."
+use = "Dla budynków, które budują jednostki."
+
+[6]
+what = "Budynek obronny"
+does = "Bunkry i stanowiska dział: panel obrony, a bombowce same je atakują. Taki obiekt stoi tam, gdzie jest, jak okręty w grze."
+use = "Tylko dla budynków obronnych."
+danger_why = "Na jednostce, która ma się ruszać, powinna ją unieruchomić."
+
+[7]
+what = "Skład zaopatrzenia"
+does = "Skład: stawiany na płycie składu, z panelem składu; zdobycie i utrata liczą się jako skład."
+use = "Tylko dla składów zaopatrzenia."
+
+[8]
+what = "Kwatera główna"
+does = "KG: budynek dowodzenia (za regułą „nie można go ukryć”), który komputer ceni najwyżej."
+use = "Tylko dla kwater głównych."
+
+[9]
+what = "Miejsce superbroni (nieużywana)"
+does = "Nic w grze jej nie używa."
+use = "Pomiń."
+
+[10]
+what = "Może otrzymać obrażenia"
+does = "Eksplozje mogą ją zranić: obrażenia obszarowe i V2 szukają jednostek z nią. Ma ją 454 jednostki gry."
+use = "Zostaw na wszystkim, co mają ranić eksplozje. Bez niej jednostka byłaby może odporna na obrażenia obszarowe (niesprawdzone)."
+
+[11]
+what = "Nie wjeżdża do lasu"
+does = "Jednostka trzyma się z dala od lasów (jej trasy je omijają) i nigdy nie dostaje osłony lasu. Mają ją czołgi i większość pojazdów."
+use = "Aby pojazd wjechał do lasu, usuń razem 11, 21 i 55 (sprawdził DomesticNukes). Dla lasów liczy się 11."
+
+[12]
+what = "Stworzona przez kartę podstępu (nieużywana)"
+does = "Nic w grze nie używa jej jako flagi jednostki."
+use = "Pomiń."
+
+[13]
+what = "Bombowiec"
+does = "Samolot zachowuje się jak bombowiec: sam atakuje tylko budynki i ma duże miejsce postojowe na lotnisku. To, którą z 100, 99, 101, 13, 59 ma samolot, decyduje w tej kolejności o jego zachowaniu."
+use = "Dla bombowców. Zamiast zmieniać 13, 99, 100 i 101 ręcznie, użyj pola Rola samolotu: ustawia je razem."
+
+[14]
+what = "Przejmuje budynki"
+does = "Piechota, która może przejmować budynki; komputer wysyła takie jednostki do przejmowania. Atrapa ją traci."
+use = "Dla piechoty, która ma przejmować."
+
+[15]
+what = "Bez nazwy (nieużywana)"
+does = "Nic w grze jej nie używa."
+use = "Pomiń."
+
+[16]
+what = "Bez nazwy (nieużywana)"
+does = "Nic w grze jej nie używa."
+use = "Pomiń."
+
+[17]
+what = "Odporna na ogień odruchowy"
+does = "Wieżyczki same do niej nie strzelają. Skrypty misji ją ustawiają; gra ją zdejmuje, gdy obiekt do rozstawienia skończy się budować."
+use = "Na liście jednostki niesprawdzone: może zostanie, może nie."
+
+[18]
+what = "Działo holowane"
+does = "Działa przeciwpancerne i polowe: liczone jako pojazd w statystykach końca gry. Nic więcej."
+use = "Zmienia tylko statystyki."
+
+[19]
+what = "Do przejęcia"
+does = "Budynek, który można przejąć (rozkaz przejęcia). Na pojazdach czy piechocie nic nie robi (sprawdził DomesticNukes)."
+use = "Tylko dla budynków."
+
+[20]
+what = "Punkt celowania artylerii"
+does = "Niewidzialny punkt, w który strzela artyleria: poza celami i zaznaczaniem."
+use = "Tylko dla punktu celowania z gry."
+
+[21]
+what = "Jednostka bojowa"
+does = "Jednostka, która walczy: gra dodaje ją też na czas ataku. Liczy ją ocena zagrożenia komputera i statystyki."
+use = "Część leśnej trójki: usuń razem 11, 21 i 55, by pojazd wjechał do lasu."
+
+[22]
+what = "Przyjmuje rozkazy gracza"
+does = "Gracz może wydawać jej rozkazy. Skrypty misji ją zdejmują, by zablokować jednostkę."
+use = "Zostaw na wszystkim, czym gracz ma sterować."
+danger_why = "Bez niej gracz nie może wydawać jednostce rozkazów (społeczność uznaje ją za niezbędną)."
+
+[23]
+what = "Płyta składu"
+does = "Płyta na ziemi, na której buduje się skład zaopatrzenia."
+use = "Tylko dla płyty składu."
+
+[24]
+what = "Widziana jako kontakt naziemny"
+does = "Wróg widzi ją jako kontakt naziemny. Samolot zamienia 24 i 25 przy starcie i lądowaniu."
+use = "Zostaw na jednostkach naziemnych i budynkach."
+
+[25]
+what = "Widziana jako kontakt powietrzny"
+does = "Wróg widzi ją jako kontakt powietrzny: samoloty w locie, spadochroniarze w powietrzu."
+use = "Zostaw na samolotach."
+
+[26]
+what = "W walce"
+does = "Gra ustawia ją, gdy jednostka walczy."
+use = "Pomiń: gra sama tym zarządza."
+
+[27]
+what = "W lesie"
+does = "Gra ustawia ją, gdy jednostka jest w lesie (według lasów mapy), chyba że ma 11 lub 92: osłona i zasadzka lasu."
+use = "Pomiń. Aby jednostka chowała się w lesie, usuń 11 (i 92); aby las dawał osłonę, namaluj ją na mapie."
+
+[28]
+what = "Działa jak fabryka"
+does = "Gra ustawia ją w trakcie rozgrywki."
+use = "Pomiń."
+
+[29]
+what = "Atrapa"
+does = "Karta podstępu „atrapa” ją ustawia: jednostka jest pomijana w liczeniu drużyny, zrzutach bomb, ogniu odruchowym i statystykach."
+use = "Pomiń: użyj raczej jednostek-atrap (30, 31)."
+
+[30]
+what = "Budynek-atrapa"
+does = "Fałszywy budynek: dla wroga to budynek, niczego nie produkuje. Zamieniona na 5 (z TypeBatiment -7) produkuje naprawdę (sprawdził DomesticNukes)."
+use = "Tylko dla budynków-atrap."
+
+[31]
+what = "Ciężarówka-atrapa"
+does = "Fałszywa ciężarówka budowlana lub zaopatrzeniowa."
+use = "Tylko dla ciężarówek-atrap."
+
+[32]
+what = "Znacznik ciężarówek dla ukrytych budynków (nieużywana)"
+does = "Nic w grze jej nie używa."
+use = "Pomiń."
+
+[33]
+what = "Podgląd rozmieszczania"
+does = "Przezroczysty podgląd pokazywany, gdy coś stawiasz."
+use = "Tylko dla podglądów gry."
+
+[34]
+what = "Podgląd stawiania budynku"
+does = "Przezroczysty budynek pokazywany, gdy go stawiasz."
+use = "Tylko dla podglądów gry."
+
+[35]
+what = "Podgląd stawiania składu"
+does = "Gra ustawia ją na podglądzie składu."
+use = "Pomiń."
+
+[36]
+what = "Podgląd rozkazu"
+does = "Gra ustawia ją na podglądzie rozkazu."
+use = "Pomiń."
+
+[37]
+what = "Podgląd postawiony"
+does = "Gra ustawia ją, gdy podgląd zostanie postawiony."
+use = "Pomiń."
+
+[38]
+what = "Podgląd produkcji"
+does = "Podgląd używany przy stawianiu czegoś do zbudowania."
+use = "Tylko dla podglądów gry."
+
+[39]
+what = "W grupie (nieużywana)"
+does = "Nic w grze nie używa jej jako flagi jednostki."
+use = "Pomiń."
+
+[40]
+what = "Ma broń"
+does = "Jej wieżyczki strzelają tylko z nią. Sprawdza ją też rozkaz ataku gracza i komputer; włączanie i wyłączanie broni ją przełącza."
+use = "Zostaw na wszystkim, co uzbrojone. Bez niej broń jednostki nie strzela."
+
+[41]
+what = "Świeci po najechaniu"
+does = "Podświetla się pod myszą."
+use = "Zostaw na wszystkim, co gracz klika."
+
+[42]
+what = "Piechota"
+does = "Jednostka jest piechotą: komputer, karta zakłóceń i sposób śmierci (piechota zostawia ciała, nie wraki)."
+use = "Tylko dla piechoty."
+danger_why = "Na pojeździe powinna zatrzymać grę błędem skryptu, gdy ten ginie (ginie jak piechota)."
+
+[43]
+what = "Liczona przez swoją drużynę"
+does = "Jednostka jest na listach i w liczeniu swojej drużyny, a skrypty misji ją widzą. Ma ją 459 jednostek gry."
+use = "Nigdy jej nie usuwaj."
+danger_why = "Bez niej jednostka nie powinna być na żadnej liście drużyny: misje i komputer jej nie widzą."
+
+[44]
+what = "Logistyka"
+does = "Ma ją każda ciężarówka; tłumienie mija na niej inaczej. Na czołgu nic nie robi (sprawdzone)."
+use = "Zostaw tak, jak ma to gra."
+
+[45]
+what = "Amunicja superbroni (nieużywana)"
+does = "Nic w grze jej nie używa."
+use = "Pomiń."
+
+[46]
+what = "Pomijana przy zaznaczaniu ramką"
+does = "Ma ją 127 jednostek gry; w grze nie znaleziono żadnego efektu."
+use = "Zostaw tak, jak ma to gra."
+
+[47]
+what = "Inne jednostki ją omijają"
+does = "Inne jednostki ją omijają, zamiast przez nią przejeżdżać. Samoloty i ciężarówki jej nie mają."
+use = "Zostaw na jednostkach naziemnych. Bez niej inne mogłyby przez nią przejeżdżać (niesprawdzone)."
+
+[48]
+what = "Spadochroniarze na ziemi"
+does = "Spadochroniarze po zrzucie: ocena zagrożenia komputera i sprawdzanie samolotu przy przycisku produkcji."
+use = "Tylko dla spadochroniarzy."
+
+[49]
+what = "Spadochroniarze w powietrzu"
+does = "Spadochroniarze w trakcie zrzutu: dopóki jest ustawiona, nie myślą ani nie ruszają się na ziemi."
+use = "Tylko dla spadochroniarzy w powietrzu."
+danger_why = "Na jednostce naziemnej powinna ją zamrozić (bez myślenia, bez ruchu po ziemi)."
+
+[50]
+what = "Klikalna"
+does = "Mysz może ją wybrać."
+use = "Zostaw na wszystkim, co gracz klika."
+
+[51]
+what = "Samolot wraca do bazy"
+does = "Gra ustawia ją, gdy samolot wraca."
+use = "Pomiń."
+
+[52]
+what = "Samolot zajęty"
+does = "Gra ustawia ją przy ataku na cel naziemny i nalocie bombowym; samolot odrzuca wtedy nowe rozkazy."
+use = "Pomiń."
+
+[53]
+what = "Do zaznaczenia"
+does = "Gracz może ją zaznaczyć."
+use = "Zostaw na wszystkim, czym gracz steruje."
+
+[54]
+what = "Pod ostrzałem artylerii"
+does = "Gra ustawia ją na 20 sekund, gdy artyleria uderzy blisko jednostki."
+use = "Pomiń."
+
+[55]
+what = "Czołg"
+does = "Liczy się jako czołg w statystykach końca gry i w kategorii „czołg” misji. Nic więcej: w bitwie nie ma własnego efektu."
+use = "Część leśnej trójki: usuń razem 11, 21 i 55, by pojazd wjechał do lasu."
+
+[56]
+what = "Samolot ma jeszcze całą amunicję"
+does = "Gra ją ustawia; myśliwiec-bombowiec atakuje sam tylko, dopóki jest ustawiona."
+use = "Pomiń."
+
+[57]
+what = "Cel"
+does = "Wieżyczki i obrażenia obszarowe traktują ją jako coś do trafienia. Ma ją 435 jednostek gry."
+use = "Zostaw na wszystkim, do czego ma się strzelać. Bez niej do jednostki może nikt nie strzelać (niesprawdzone)."
+
+[58]
+what = "Zawsze widoczna"
+does = "Pokazywana bez względu na mgłę wojny: budynki, ciężarówki, okręty. Na czołgu bez widocznej zmiany (sprawdzone)."
+use = "Zostaw tak, jak ma to gra."
+
+[59]
+what = "Transport spadochroniarzy"
+does = "Samolot, który zrzuca spadochroniarzy: budowany przy pasie startowym, zachowuje się jak samolot desantowy i zrzuca jednostkę ze swojego UniteTransportee."
+use = "Tylko na samolotach, które mają UniteTransportee (jednostkę, którą zrzucają)."
+danger_why = "Na jednostce, która nie jest samolotem, albo na samolocie bez UniteTransportee gra się wywala, gdy szuka spadochroniarzy. Studio tego nie zbuduje."
+
+[60]
+what = "Wieżyczka budynku"
+does = "Działo należące do budynku: pokazywane w panelu budynku."
+use = "Tylko dla wieżyczek budynków."
+
+[61]
+what = "Samolot w walce powietrznej"
+does = "Gra ustawia ją, gdy samoloty walczą."
+use = "Pomiń."
+
+[62]
+what = "Ciężarówka"
+does = "Ciężarówka: prowadzona przez logikę ciężarówek gry (sama nie myśli), wozi zaopatrzenie. Mają ją wszystkie 18 ciężarówek gry."
+use = "Tylko na ciężarówkach (jednostkach TTruckDescriptor), a każda ciężarówka jej potrzebuje."
+danger_why = "Na czymkolwiek poza ciężarówką gra wywala się na starcie meczu (DomesticNukes, na Stuarcie). Studio tego nie zbuduje."
+
+[63]
+what = "Ciężarówka budowlana"
+does = "Ciężarówka, która stawia budynki."
+use = "Tylko na ciężarówkach budowlanych."
+danger_why = "Na czymkolwiek poza ciężarówką gra się wywala (ProLution). Studio tego nie zbuduje."
+
+[64]
+what = "Ciężarówka zaopatrzeniowa"
+does = "Ciężarówka, która wozi pieniądze. Na czołgu nic nie robi (sprawdzone)."
+use = "Tylko dla ciężarówek zaopatrzeniowych."
+
+[65]
+what = "Skrajne stłumienie"
+does = "Gra ustawia ją, gdy jednostka jest przygwożdżona: przestaje strzelać."
+use = "Pomiń."
+
+[66]
+what = "Zmienia się w inną jednostkę"
+does = "Gra ustawia ją, gdy jednostka się przemienia (oddział w swoją ciężarówkę na drodze)."
+use = "Pomiń."
+
+[67]
+what = "W locie; przyjmuje rozkazy poza mapą"
+does = "Samolot jest w powietrzu (gra zamienia ją z 68 przy starcie i lądowaniu). Na jednostce naziemnej pozwala przyjmować rozkazy poza mapą, ale zatrzymuje się ona na niewidzialnej barierze przy krawędzi (DomesticNukes)."
+use = "Zostaw na samolotach. Aby naprawdę wyjechać poza mapę, trzeba też rozszerzyć mapy ruchu mapy."
+
+[68]
+what = "Zaparkowany samolot"
+does = "Gra ustawia ją, gdy samolot jest na ziemi."
+use = "Pomiń."
+
+[69]
+what = "Atakowana"
+does = "Gra ustawia ją, gdy jednostka jest atakowana."
+use = "Pomiń."
+
+[70]
+what = "Widzi wokół punktu patrolu"
+does = "Widok samolotu jest wyśrodkowany na punkcie, do którego go wysłano, a nie na nim samym. Mają ją samoloty zwiadowcze gry."
+use = "Dla samolotów zwiadowczych."
+
+[71]
+what = "Widzi dookoła"
+does = "Widzenie 360°, niezależnie od kierunku. Działa na każdej jednostce naziemnej (DomesticNukes dał ją 150 kolejnym)."
+use = "Dodaj każdej jednostce, która ma widzieć za sobą."
+
+[72]
+what = "Widzi przez przeszkody"
+does = "Jej widok ignoruje wzgórza i scenerię. Mają ją samoloty."
+use = "Jeszcze niesprawdzone na jednostkach naziemnych."
+
+[73]
+what = "Widziana"
+does = "Gra ustawia ją, gdy wróg widzi jednostkę."
+use = "Pomiń."
+
+[74]
+what = "Cień samolotu (nieużywana)"
+does = "Nic w grze nie używa jej jako flagi jednostki."
+use = "Pomiń."
+
+[75]
+what = "Ciało piechura"
+does = "Gra ustawia ją na poległym żołnierzu."
+use = "Pomiń."
+
+[76]
+what = "Okręt (nieruchomy)"
+does = "Mają ją okręty gry: stoją tam, gdzie postawi je misja, jak budynek. Bez niej (i z podwoziem czołgu) okręt jeździ po lądzie (Navy Mod DomesticNukesa)."
+use = "Tylko dla okrętów, które nigdy się nie ruszają."
+danger_why = "Na jednostce, która ma się ruszać, powinna ją unieruchomić."
+
+[77]
+what = "Nigdy nie strzela sama"
+does = "Jednostka strzela tylko na rozkaz: bez ognia odruchowego (DomesticNukes dał ją 317 jednostkom)."
+use = "Nie dla budynków: nigdy by nie strzelały."
+
+[78]
+what = "Samolot bez amunicji"
+does = "Gra ją ustawia; jest kasowana przy starcie i lądowaniu."
+use = "Pomiń."
+
+[79]
+what = "Zaznaczona"
+does = "Gra ustawia ją, gdy jednostka jest zaznaczona."
+use = "Pomiń."
+
+[80]
+what = "Nie można jej namierzyć"
+does = "Żaden rozkaz nie może jej namierzyć. Ustawiają ją skrypty misji."
+use = "Na liście jednostki niesprawdzone."
+
+[81]
+what = "Znacznik skryptu: ogień odruchowy wstrzymany"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[82]
+what = "Znacznik skryptu: zasięg grupy"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[83]
+what = "Znacznik skryptu: nie można namierzyć"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[84]
+what = "Znacznik skryptu: grupa rozbrojona"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[85]
+what = "Znacznik skryptu: grupa zablokowana"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[86]
+what = "Znacznik skryptu: widok grupy"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[87]
+what = "Znacznik skryptu: obrażenia"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[88]
+what = "Znacznik skryptu: stres"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[89]
+what = "Znacznik skryptu: prędkość"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[90]
+what = "Cisza radiowa (karta podstępu)"
+does = "Karta ciszy radiowej ją ustawia i zdejmuje. Na liście jednostki nic nie robi (sprawdzone)."
+use = "Pomiń."
+
+[91]
+what = "Zamaskowana (karta podstępu)"
+does = "Karta maskowania ją ustawia i zdejmuje. Na liście jednostki nic nie robi (sprawdzone)."
+use = "Pomiń."
+
+[92]
+what = "Las jej nie ukrywa"
+does = "Jednostka nigdy nie dostaje osłony lasu, nawet w lesie."
+use = "Dla jednostek, które mają być widoczne w lesie."
+
+[93]
+what = "Budynek administracyjny"
+does = "Budynek dowodzenia, jak KG; liczony przez swoją drużynę."
+use = "Tylko dla budynków administracyjnych."
+
+[94]
+what = "Wrak pojazdu"
+does = "Gra ustawia ją na zniszczonym pojeździe."
+use = "Pomiń."
+
+[95]
+what = "Wrak samolotu"
+does = "Gra ustawia ją na zniszczonym samolocie."
+use = "Pomiń."
+
+[96]
+what = "Wstrzymuje ogień do zasadzki"
+does = "Gra ustawia ją, gdy jednostka w lesie czeka na odpalenie zasadzki."
+use = "Pomiń."
+
+[97]
+what = "Nie można jej przejąć"
+does = "Ustawiają ją skrypty misji."
+use = "Na liście jednostki niesprawdzone."
+
+[98]
+what = "Znacznik skryptu: nie można przejąć"
+does = "Znacznik „już zrobione” skryptu misji."
+use = "Pomiń."
+
+[99]
+what = "Samolot zwiadowczy"
+does = "Samolot zachowuje się jak zwiadowca (chyba że ma też 100): kliknięcie na mapie wysyła go na obserwację, nie liczy się do armii drużyny, a panel zwiadu go pokazuje. Zwiadowca nigdy nie atakuje."
+use = "Użyj pola Rola w Studio: Zwiadowczy na uzbrojonym samolocie ustawia też 100, więc jego ataki dalej działają."
+danger_why = "Samolot z bronią i z 99 bez 100 wywala grę, gdy wyślesz go do ataku. Studio nie zbuduje samolotu, któremu dałeś tak 99: dodaj też 100 albo usuń 99."
+
+[100]
+what = "Myśliwiec"
+does = "Samolot zachowuje się jak myśliwiec (sprawdzane najpierw, przed 99, 101 i 13): sam atakuje tylko samoloty w powietrzu; kliknięcie wroga go atakuje."
+use = "Dla myśliwców. Z 99 to uzbrojony zwiadowca, który dalej może atakować."
+
+[101]
+what = "Myśliwiec-bombowiec"
+does = "Samolot zachowuje się jak myśliwiec-bombowiec (po 100 i 99): sam atakuje jednostki naziemne (nie budynki ani ciężarówki zaopatrzeniowe), tylko dopóki ma całą amunicję."
+use = "Dla myśliwców-bombowców. Rolę samolotu zmieniaj polem Rola."
+
+[102]
+what = "Lotnisko-atrapa"
+does = "Fałszywe lotnisko: liczy się jako lotnisko."
+use = "Tylko dla lotnisk-atrap."
+
+[103]
+what = "Może zrzucać spadochroniarzy"
+does = "Gra daje ją samolotom desantowym przy starcie; rozkaz zrzutu jej potrzebuje."
+use = "Pomiń: ustawia się 59."
+
+[104]
+what = "Ma skaner"
+does = "Gra daje ją każdej jednostce przy jej utworzeniu."
+use = "Pomiń."

@@ -4,7 +4,7 @@ and nothing past it.
 Why (2026-10-15): the brush's fields are row pieces of one facing joined square to square (scenery.brush_fields),
 and their squares are not the fields the player sees. Where two plots' squares overlap (most of D-Day's plots along
 their edges), Eugen's paint follows the plot holding the point deepest only 57% of the time, the plot with the nearest
-row piece 57% (13,173 points of 1,812 plots where the two plots' colours differ: scratch/looks/ownership_measure.py):
+row piece 57% (13,173 points of 1,812 plots where the two plots' colours differ; measured 2026-10-15):
 he painted the picture by hand per place. A dab's paint changed over its fields' squares spilled into the next field
 (R's green over E's corner by the hut, seen from afar in the owner's 14:24 shots); ground inside a field no square
 covers (W's tree line) and corner pieces' ground (Q's tiny spot) were left in their old paint.
@@ -89,7 +89,7 @@ class Parcel:
 def border_blocks(sc, low_syms: set, most: int = BORDER_MIN) -> dict:
     """{block index: (half long, half wide, middle x, middle y, long axis x, long axis y)} in the block's own frame: the
     map's border strips (on D-Day #983, the hedge-foot strip, 27 x 1.5 m, placed 30,363 times; #986, the field-edge
-    strip, 16 x 0.8 m, 12,735 times: scratch/looks/border_sources.py): leaf blocks of low cover only (`low_syms`),
+    strip, 16 x 0.8 m, 12,735 times): leaf blocks of low cover only (`low_syms`),
     10-40 m long and under 3.5 m wide, placed `most` times or more."""
     weight = [0] * len(sc.blocks)
     for r in sc.roots():

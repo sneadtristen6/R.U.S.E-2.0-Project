@@ -32,8 +32,9 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, gamefiles, identity, loc, mapscripts, missions, mod_index, newmap,
-                     package, packfiles, scenario, scenery, schema, startlog, values as every_value)
+from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
+                     newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
+                     values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -64,6 +65,7 @@ from .era_units import EraUnitCalls
 from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
+from .roles import RoleCalls, hits_mount
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -425,7 +427,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls):
+                NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -560,7 +562,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             names = ix.names([u["key"] for u in rows], lang) if lang != schema.BASE else {}
             # the game's own words on each unit's card, English beside the code names: its type ("Light Tank", "Heavy
             # Bomber"), its name and its line ("May field armored units and armored recon."; the owner, 2026-10-03:
-            # "descriptor building vehicular factory lorette ... what the fuck is that")
+            # code names like "descriptor building vehicular factory lorette" mean nothing to a player)
             told = lang if lang in schema.LANGS else "us"
             type_names = {k: html.unescape(t).strip() for k, t in ix.names([u["type_key"] for u in rows], told).items()}
             game_names = names if lang != schema.BASE else ix.names([u["key"] for u in rows], told)
@@ -696,9 +698,103 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
         none = {"count": 0, "examples": []}
+        info = flaginfo.guide(lang)
+        blank = {"group": "unused", "sure": "unused", "what": "", "does": "", "use": "", "danger": "",
+                 "danger_why": ""}
+        # the flag guide (rusemod.flaginfo): what it is, what it does, how to use it, how sure we are, its danger
         return {"flags": [{"flag": n, "count": rows.get(n, none)["count"],
-                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang)}
-                          for n in sorted(set(rows) | set(schema.flag_numbers()))]}
+                           "examples": [names[e] for e in rows.get(n, none)["examples"]], "meaning": schema.flag(n, lang),
+                           **info.get(n, blank)}
+                          for n in sorted(set(rows) | set(schema.flag_numbers()))],
+                "groups": list(flaginfo.GROUPS)}
+
+    # --- the number guide (rusemod.numberinfo): what every number means, in plain units, and where a unit's number
+    # sits among its kind's (the owner, 2026-10-15: "this is their base stat. And then you can make it smaller or
+    # larger", "give them perspective on the scale of what the numbers mean") ---
+    def numbers(self, lang: str = schema.BASE) -> dict:
+        """{"numbers": {key: {group, unit, sure, what, does}}, "plain": {unit: [game units to one plain unit, its
+        word]}, "amounts": the units the base-stat slider changes}; a key is "Property" or "Class.Property"."""
+        return {"numbers": numberinfo.guide(lang), "plain": {k: list(v) for k, v in numberinfo.PLAIN.items()},
+                "amounts": sorted(numberinfo.AMOUNTS)}
+
+    def number_scale(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
+        """Where the game's value of `prop` on the object at `address` sits among the game's objects of its class:
+        {"class", "count", "min", "low", "median", "high", "max" (the 10th and 90th centiles as low and high), "game":
+        its own game value, "marks": [{"name", "value"}]: the named objects at the lowest, median and highest value
+        (each value once)}; {} when the class has no such number. A list's first item stands for the list."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {}
+            rows = ix.db.execute("""SELECT o.address, o.export, v.path, v.num FROM value v JOIN object o
+                                    ON o.id = v.object WHERE o.class = ? AND o.shadow = 0 AND v.num IS NOT NULL
+                                    AND (v.path = ? OR v.path = ?)""", (o["class"], prop, prop + "[0]")).fetchall()
+            values = sorted(n for _a, _e, _p, n in rows)
+            if not values:
+                return {}
+            game = next((n for p, n, _t in o["values"] if p in (prop, prop + "[0]") and n is not None), None)
+            named = sorted(((n, a) for a, e, _p, n in rows if e), key=lambda x: x[0])
+            picks, seen = [], set()
+            for n, a in ([named[0], named[len(named) // 2], named[-1]] if named else []):
+                if n not in seen:
+                    seen.add(n)
+                    picks.append((n, a))
+            names = self._names(ix, [a for _n, a in picks], lang, edits.new_units if edits else None)
+        finally:
+            ix.close()
+
+        def at(share: float) -> float:
+            return values[min(len(values) - 1, int(share * (len(values) - 1) + 0.5))]
+        return {"class": o["class"], "count": len(values), "min": values[0], "low": at(0.1), "median": at(0.5),
+                "high": at(0.9), "max": values[-1], "game": game,
+                "marks": [{"name": names.get(a) or _tail(a), "value": n} for n, a in picks]}
+
+    def flag_check(self, address: str, flags: list | None = None, lang: str = schema.BASE) -> dict:
+        """What's wrong with a unit's flags, as the Studio and the build see it (rusemod.flaginfo.judge): `flags` the
+        set to check (None: the unit's flags now, with the current mod's change). {"problems": [{level, flag, why}],
+        "blocked": whether the build will refuse it (a known crash)}. The unit's kind, its weapons, the unit it drops
+        and the flags the game's own unit (or the one a new unit copies) carries come from the game index."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, new = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                return {"problems": [], "blocked": False}
+            had = sorted(int(n) for path, n, _t in o["values"] if path.startswith("InitialFlagSet[") and n is not None)
+            plan = ix.clone_plan(real)
+            armed = any(ix.show(a)["class"] == WEAPON for a in plan["copied"] + plan["shared"])
+            drops = any(p == "UniteTransportee" and k == "object" and w for p, k, w in ix.uses(real))
+        finally:
+            ix.close()
+        if flags is None:
+            mine = edits.get(new.target if new else real, "InitialFlagSet") if edits else None
+            flags = mine if isinstance(mine, list) else had
+        flags = [int(n) for n in flags]
+        problems = flaginfo.judge(o["class"], flags, had, armed, drops)
+        words = flaginfo.guide(lang)
+        for p in problems:  # in the Studio's language: the flag's own danger as its guide says it
+            if p.pop("own", False) and lang not in (schema.BASE, "us") and words.get(p["flag"], {}).get("danger_why"):
+                p["why"] = words[p["flag"]]["danger_why"]
+        now = {(p["level"], p["flag"]) for p in problems}
+        adding = {}  # what adding each flag it hasn't got would do: "error" (a crash) or "warning", for the Add list
+        for n in sorted(set(flaginfo.guide()) - set(flags)):
+            worse = [p["level"] for p in flaginfo.judge(o["class"], flags + [n], had, armed, drops)
+                     if (p["level"], p["flag"]) not in now]
+            if worse:
+                adding[n] = "error" if "error" in worse else "warning"
+        return {"problems": problems, "blocked": any(p["level"] == "error" for p in problems), "adding": adding}
 
     def weapons(self, address: str, lang: str = schema.BASE) -> dict:
         """A unit's mounted weapons and what each fires: [{address, name, ammo: {address, name}, edited, range,
@@ -716,23 +812,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         ix = self._open()
         try:
             plan = ix.clone_plan(real)
+            # a mount a role change replaced (a bomb bay, roles.RoleCalls) shows its own weapons in its place
+            gone, extra = self.role_parts(ix, edits, base, real.partition(":")[0])
+            listed = [(a, a, (base + a[len(new.source):]) if new else a) for a in plan["copied"] + plan["shared"]
+                      if ix.show(a)["class"] == WEAPON and not a.startswith(tuple(gone))] + extra
             # in their place on the unit (turret 1's weapons first), so "Weapon 1" is the main gun
-            parts = sorted((a for a in plan["copied"] + plan["shared"] if ix.show(a)["class"] == WEAPON),
-                           key=lambda a: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", a)])
+            parts = sorted(listed, key=lambda x: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", x[0])])
             weapons = []
             unit_shots = self._shots(ix, real.partition(":")[0])
-            for part in parts:
+            for _order, part, where in parts:
                 o = ix.show(part)
                 tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
                 fires = next((what for p, k, what in ix.uses(part) if p == "Ammunition" and k == "object"), None)
-                where = (base + part[len(new.source):]) if new else part
                 chosen = edits.get(where, "Ammunition") if edits else None
                 current = str(chosen) if chosen else fires
                 weapons.append({"real": part, "address": where, "name": tag or f"{_tail(part)}", "fires": fires,
                                 "shot": self._shot_now(ix, edits, unit_shots.get(tag, []), real, base),
                                 "range": self._range(ix, edits, current) if current else None,
                                 "game_range": self._range(ix, edits, current, game=True) if current else None,
-                                "firing": self._firing(ix, edits, current) if current else []})
+                                "firing": self._firing(ix, edits, current) if current else [],
+                                "hits": self.hits_of(ix, edits, current) if current else None,
+                                "game_hits": self.hits_of(ix, None, fires) if fires else None})
             rows = self._all_ammo(ix)
             names = self._ammo_names(ix, rows, lang)
             nation_of = {u["address"]: u["nation"] for u in self._all_units(ix)}
@@ -749,10 +849,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     "nations": self._nations_of(users.get(a, []), nation_of, lang)}
                    for a, n in sorted(names.items(), key=lambda kv: kv[1].lower())]
         out = []
-        for w in weapons:
+        for n, w in enumerate(weapons):
             chosen = edits.get(w["address"], "Ammunition") if edits else None
             current = str(chosen) if chosen else w["fires"]
+            both = bool(edits and hits_mount(address, n) in edits.new_units)  # a second weapon beside it (roles)
             out.append({"address": w["address"], "name": w["name"],
+                        "hits": "both" if both else w["hits"], "game_hits": w["game_hits"],
                         "ammo": {"address": current, "name": names.get(current) or (_tail(current) if current else "")},
                         "game_ammo": w["fires"], "edited": bool(chosen), "shot": w["shot"],
                         "range": w["range"], "game_range": w["game_range"],
@@ -856,7 +958,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
-        if weapon.partition(":")[0] != unit.partition(":")[0]:
+        role_mount = self.role_mount_of(edits, unit, weapon)  # a bomb bay a role change gave it (roles.RoleCalls)
+        if weapon.partition(":")[0] != unit.partition(":")[0] and not role_mount:
             raise StudioError(f"{weapon} isn't a weapon of {unit}")
         real_weapon, _new = self._resolve(edits, weapon)
         real_ammo, ammo_copy = self._resolve(edits, ammo)
@@ -879,7 +982,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             game_ammo = next((what for p, k, what in ix.uses(real_weapon) if p == "Ammunition" and k == "object"), None)
             tag = next((t for p, _n, t in o["values"] if p == "EffectTag"), None)
             real_unit = real_weapon.partition(":")[0]
-            mine = self._shots(ix, real_unit).get(tag, []) if tag else []
+            # a role mount's shot is the plane's model's, not the bomber it was copied from: left as it is
+            mine = self._shots(ix, real_unit).get(tag, []) if tag and not role_mount else []
             theirs = self._shot_of(ix, real_ammo) if mine and ammo != game_ammo else []
         finally:
             ix.close()
@@ -986,7 +1090,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if unit is None:
             return address, None
         _base, _, inside = address.partition(":")
-        return unit.source + (f":{inside}" if inside else ""), unit
+        sep = "." if ":" in unit.source else ":"  # a copy of a part (a role change's bomb bay): inside that part
+        return unit.source + (f"{sep}{inside}" if inside else ""), unit
 
     @staticmethod
     def _shots(ix: Index, unit: str) -> dict[str, list[dict]]:
@@ -2027,7 +2132,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
     # every visit read everything again (issue #15: "a map is slow to open").
     MAP_DATA_KEPT = 24
-    MAP_DATA_FORMAT = 1  # the kept files' format: a new one means they're all made again
+    MAP_DATA_FORMAT = 2  # the kept files' format: a new one means they're all made again (2: every type to place has
+                         # its number in the scenery's types, for its model)
 
     def _kept_on_disk(self, what: str, pack: str, sources: list, make):
         """`make()`'s answer (JSON-ready) for one map, kept in the cache folder between runs: named by the map, the

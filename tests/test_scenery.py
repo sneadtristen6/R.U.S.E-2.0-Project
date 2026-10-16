@@ -311,6 +311,14 @@ class Descriptors(unittest.TestCase):
         self.assertIs(v["types"][hall[0]][5], False)  # not a bridge: the Erase brush tints it with the buildings
         self.assertEqual(hall[1:3], [1000, 2000])
         self.assertEqual(scenery.MEMBER, "output\\save.boobspc")
+        # every type there is to place has its number in types (its model is made for the place list's picture),
+        # the ones no shown item uses too
+        self.assertEqual([(r[0], v["types"][r[7]][0]) for r in v["palette"]],
+                         [("TypeWarrior/MairieNormande", "MairieNormande"), ("TypeWarrior/Chene_02", "Chene_02")])
+        bare = view(maps, unit_pack(), budget={"building": 0, "vegetation": 0})
+        self.assertEqual(bare["items"], {"building": [], "vegetation": []})
+        self.assertEqual(sorted(t[0] for t in bare["types"]), ["Chene_02", "MairieNormande"])
+        self.assertEqual([bare["types"][r[7]][0] for r in bare["palette"]], ["MairieNormande", "Chene_02"])
 
 
 def spots(data):
@@ -2622,8 +2630,11 @@ class Studio(unittest.TestCase):
         self.assertLessEqual(set(picked), set(scenery.ERASE_GROUPS))
         self.assertIn('return (a.what || ERASE_DEFAULT).includes("vegetation");', maps)
         self.assertIn('clearsWood(a) ? ["erase", "open", "uncover"] : ["erase"]', maps)
-        self.assertIn("open: [moves, 0, 3]", maps)       # open to every unit
-        self.assertIn("uncover: [cover, 0, 7]", maps)    # cover taken away (the map's own, the Town tool's, painted)
+        # open to every unit; cover taken away (the map's own, the Town tool's, painted). Bit 4 of moves and bit 8 of
+        # cover only mark what a brush changed (drawn striped): what a cell means for units is the other bits (MEANS)
+        self.assertIn("open: [moves, 4, 3]", maps)
+        self.assertIn("uncover: [cover, 8, 7]", maps)
+        self.assertIn("[[cover, (v) => (v & 7 ? 1 : 0)], [moves, (v) => v & 3]]", maps)
         reapply = maps[maps.index("function reapply()"):]
         reapply = reapply[:reapply.index("\n}\n")]
         self.assertLess(reapply.index("applyStroke(ed, s)"), reapply.index("eraseDab(a)"))

@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.4 and Launcher 0.4.8.4: missions of your own, blank maps you build up, and much more to customise"
 category: Announcements
 order: 9
+skip: never posted; 0.9.8.5's announcement covers it (the owner, 2026-10-15: "update the studio and launcher with what we had done")
 ---
 **RUSE Studio 0.9.8.4** and **RUSE Launcher 0.4.8.4** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

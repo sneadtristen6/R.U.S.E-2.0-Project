@@ -1,6 +1,16 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.5:** letadla v jakékoli roli, zbraně, které zasahují letadla, a knihovna pro štětec Textura v Map Paint.
+
+- **Role letadla** (hlášení hráče: stíhací bombardér, kterému se daly kobercové bomby bombardéru, doletěl k cíli a nic neshodil): nové pole Role na stránce letadla z něj udělá Stíhačku, Stíhací bombardér, Bombardér nebo Průzkumníka. S ní se mění jeho chování, to, jak ho používají počítačoví hráči, i jeho slova v nabídce stavby. Bomby bombardéru jdou do pumovnice (zkopírované z bombardéru hry), jediným způsobem, jak je nálet bombardéru shodí. Ověřeno ve hře: stíhací bombardér změněný na bombardér shazuje bomby; průzkumník, který si nechá zbraně (Stuka, ME109), dál útočí a vidí jako průzkumníci.
+- **Průzkumná vozidla:** pole Role pozemního vozidla z něj udělá Průzkum: dohled průzkumných vozů (mnohem dál než tank), to, jak je používají počítačoví hráči, jejich slova v nabídce stavby, a může vjet do lesa (ověřeno ve hře s Panzerem IV).
+- **Co zbraň zasahuje:** Zasahuje u každé zbraně vybere zem, letadla nebo obojí (druhá zbraň vedle, tak jako protiletadlová děla hry nesou na každé jednu). Ověřeno ve hře: tankové granáty střílející na letadla. Známé: zbraň letadla nastavená jen na zem zatím nezpůsobuje poškození.
+- **Štětec Textura v Map Paint dostal knihovnu:** textury terénu ze hry (tráva, pole, písek, sníh, skály, cesty..., podle bojiště, s hledáním), čtverec terénu libovolné mapy, vlastní obrázky a obrázky zdarma z internetu (Poly Haven a ambientCG, CC0; letecké snímky USA, volné dílo), jeden obrázek stažený na kliknutí a uložený ve vašem módu i s uvedením autora. Posuvník Velikost, naposledy použité textury a **Detail hry zblízka**, který na malovaný terén položí vlastní obtisky hry pro texturu ze hry. Zatím neověřeno ve hře; stahování z internetu zatím nevyzkoušeno.
+- **Objekty umístěné v otevřeném terénu**, daleko od měst, statků a lesů mapy, jsou teď v dosahu vykreslování hry a velké skupiny nových objektů jsou uspořádané jako objekty hry (zatím neověřeno ve hře).
+- **Rychlejší přemalování:** namalovaný terén se uchovává od sestavení k sestavení, ať ho namalovala kterákoli kopie nebo mód: mapa namalovaná stejně ho dostane zpět za pár sekund, ne minut.
+- **Stále chybové, používejte na vlastní uvážení:** textury Map Paint a obě prázdné mapy (Prázdný terén a Prázdný oceán).
+
 **0.9.8.4:** vlastní mise, prázdné mapy k zastavění a mnohem víc k přizpůsobení.
 
 - **Stále chybové, používejte na vlastní uvážení:** textury Map Paint a obě prázdné mapy (Prázdný terén a Prázdný oceán).

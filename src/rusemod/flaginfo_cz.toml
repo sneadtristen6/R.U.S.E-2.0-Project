@@ -1,0 +1,537 @@
+# Průvodce flagy česky (rusemod.flaginfo; rozhoduje angličtina ve flaginfo.toml).
+[0]
+what = "Letiště"
+does = "Udělá z budovy letiště: tvá letadla tu mají základnu a kliknutí letadlem na vlastní letiště ho pošle přistát. Plánování průzkumu počítače nějaké hledá."
+use = "Jen pro letiště. Na něčem jiném ho hra bere jen jako místo, kde mohou letadla přistát."
+
+[1]
+what = "Dělostřelectvo (nepřímá palba)"
+does = "Jednotka střílí nepřímo na to, co objeví jiné jednotky, jako houfnice ve hře. Také řekne počítači, aby ji použil jako dělostřelectvo."
+use = "Funguje u každé jednotky: DomesticNukes ho dal 410 jednotkám všech druhů a všechny střílely nepřímo."
+
+[2]
+what = "Letadlo"
+does = "Jednotka je letadlo: staví se u řídicí věže letiště, vrací se tankovat, nebere pozemní rozkazy. Mají ho všech 63 letadel hry a nic jiného."
+use = "Nechte na každém letadle. Nikdy ho nedávejte pozemní jednotce: hra by se ji snažila stavět u řídicí věže letiště."
+danger_why = "U jednotky, která není letadlo, by její stavba měla zastavit hru chybou skriptu (hledá řídicí věž letiště)."
+
+[3]
+what = "Letadlo smí útočit bez zapojení"
+does = "Hra ho nastaví, když letadlo vzlétá na misi."
+use = "Vynechte: spravuje ho hra."
+
+[4]
+what = "Budova"
+does = "Jde o budovu: panel budovy, pravidla umísťování a dobývání, mimo statistiky jednotek. Budova se nikdy nehýbe a nepřemýšlí jako jednotka."
+use = "Jen pro budovy."
+danger_why = "U jednotky by ji měl zmrazit: budovy se nehýbou a neberou rozkazy jednotek."
+
+[5]
+what = "Výrobní budova"
+does = "Budova, která vyrábí jednotky (kasárny, továrny, letiště). Dosazený místo 30 (s TypeBatiment -7) zajistí, že klamná budova vyrábí doopravdy."
+use = "Pro budovy, které staví jednotky."
+
+[6]
+what = "Obranná budova"
+does = "Bunkry a dělostřelecká postavení: panel obrany a bombardéry je samy napadají. Taková věc stojí na místě jako lodě ve hře."
+use = "Jen pro obranné budovy."
+danger_why = "U jednotky, která se má pohybovat, by ji měl znehybnit."
+
+[7]
+what = "Zásobovací sklad"
+does = "Sklad: postavený na desce skladu, s panelem skladu; dobytí i ztráta se počítají jako sklad."
+use = "Jen pro zásobovací sklady."
+
+[8]
+what = "Velitelství"
+does = "Velitelství: velitelská budova (za pravidlem „nelze ji skrýt“), které si počítač cení nejvíc."
+use = "Jen pro velitelství."
+
+[9]
+what = "Místo superzbraně (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá."
+use = "Vynechte."
+
+[10]
+what = "Může utrpět poškození"
+does = "Výbuchy ho mohou zranit: plošné poškození a V2 hledají jednotky s ním. Má ho 454 jednotek hry."
+use = "Nechte na všem, co mají výbuchy zraňovat. Bez něj by jednotka možná byla imunní vůči plošnému poškození (nevyzkoušeno)."
+
+[11]
+what = "Nevjede do lesa"
+does = "Jednotka se drží mimo lesy (její trasy je objíždějí) a nikdy nezíská krytí lesa. Mají ho tanky a většina vozidel."
+use = "Aby vozidlo vjelo do lesa, odeberte 11, 21 a 55 najednou (vyzkoušel DomesticNukes). Pro lesy rozhoduje 11."
+
+[12]
+what = "Vytvořeno kartou lsti (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá jako flag jednotky."
+use = "Vynechte."
+
+[13]
+what = "Bombardér"
+does = "Letadlo se chová jako bombardér: samo útočí jen na budovy a má velké parkovací místo na letišti. Který z 100, 99, 101, 13, 59 letadlo má, rozhoduje v tomto pořadí o jeho chování."
+use = "Pro bombardéry. Místo ruční změny 13, 99, 100 a 101 použijte pole Role letadla: nastaví je společně."
+
+[14]
+what = "Dobývá budovy"
+does = "Pěchota, která může dobývat budovy; počítač posílá takové jednotky dobývat. Klam ho ztrácí."
+use = "Pro pěchotu, která má dobývat."
+
+[15]
+what = "Bez názvu (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá."
+use = "Vynechte."
+
+[16]
+what = "Bez názvu (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá."
+use = "Vynechte."
+
+[17]
+what = "Imunní vůči reflexní palbě"
+does = "Věže na něj samy nestřílejí. Skripty misí ho nastavují; hra ho odebere, když se rozmístitelný objekt dostaví."
+use = "V seznamu jednotky nevyzkoušeno: možná vydrží, možná ne."
+
+[18]
+what = "Tažené dělo"
+does = "Protitanková a polní děla: ve statistikách na konci hry počítána jako vozidlo. Nic dalšího."
+use = "Mění jen statistiky."
+
+[19]
+what = "Lze dobýt"
+does = "Budova, kterou lze dobýt (rozkaz k dobytí). Na vozidlech či pěchotě nic nedělá (vyzkoušel DomesticNukes)."
+use = "Jen pro budovy."
+
+[20]
+what = "Zaměřovací bod dělostřelectva"
+does = "Neviditelný bod, na který dělostřelectvo střílí: vynechaný z cílů a výběru."
+use = "Jen pro zaměřovací bod hry."
+
+[21]
+what = "Bojová jednotka"
+does = "Jednotka, která bojuje: hra ho přidá i po dobu útoku. Počítá s ním odhad nebezpečí počítače a statistiky."
+use = "Součást lesní trojice: odeberte 11, 21 a 55 najednou, aby vozidlo vjelo do lesa."
+
+[22]
+what = "Přijímá rozkazy hráče"
+does = "Hráč jí může dávat rozkazy. Skripty misí ho odebírají, aby jednotku zablokovaly."
+use = "Nechte na všem, co má hráč ovládat."
+danger_why = "Bez něj hráč nemůže jednotce dávat rozkazy (komunita ho považuje za nezbytný)."
+
+[23]
+what = "Deska skladu"
+does = "Deska na zemi, na které se staví zásobovací sklad."
+use = "Jen pro desku skladu."
+
+[24]
+what = "Viděn jako pozemní kontakt"
+does = "Nepřítel ho vidí jako pozemní kontakt. Letadlo prohazuje 24 a 25 při vzletu a přistání."
+use = "Nechte na pozemních jednotkách a budovách."
+
+[25]
+what = "Viděn jako vzdušný kontakt"
+does = "Nepřítel ho vidí jako vzdušný kontakt: letadla v letu, výsadkáři ve vzduchu."
+use = "Nechte na letadlech."
+
+[26]
+what = "V boji"
+does = "Hra ho nastaví, dokud jednotka bojuje."
+use = "Vynechte: spravuje ho hra."
+
+[27]
+what = "V lese"
+does = "Hra ho nastaví, když je jednotka v lese (podle lesů mapy), pokud nemá 11 nebo 92: krytí a přepad v lese."
+use = "Vynechte. Aby se jednotka v lese skrývala, odeberte 11 (a 92); aby les dával krytí, namalujte ho na mapě."
+
+[28]
+what = "Funguje jako továrna"
+does = "Hra ho nastavuje během hraní."
+use = "Vynechte."
+
+[29]
+what = "Klam"
+does = "Nastaví ho karta lsti klam: jednotka je vynechána z počtů týmu, shozů bomb, reflexní palby a statistik."
+use = "Vynechte: použijte raději klamné jednotky (30, 31)."
+
+[30]
+what = "Klamná budova"
+does = "Falešná budova: pro nepřítele je to budova, nic nevyrábí. Vyměněná za 5 (s TypeBatiment -7) vyrábí doopravdy (vyzkoušel DomesticNukes)."
+use = "Jen pro klamné budovy."
+
+[31]
+what = "Klamné nákladní auto"
+does = "Falešné stavební nebo zásobovací auto."
+use = "Jen pro klamná nákladní auta."
+
+[32]
+what = "Značka nákladních aut pro skryté budovy (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá."
+use = "Vynechte."
+
+[33]
+what = "Náhled umístění"
+does = "Průhledný náhled zobrazený, když něco umisťujete."
+use = "Jen pro náhledy hry."
+
+[34]
+what = "Náhled umístění budovy"
+does = "Průhledná budova zobrazená, když ji umisťujete."
+use = "Jen pro náhledy hry."
+
+[35]
+what = "Náhled umístění skladu"
+does = "Hra ho nastaví na náhled skladu."
+use = "Vynechte."
+
+[36]
+what = "Náhled rozkazu"
+does = "Hra ho nastaví na náhled rozkazu."
+use = "Vynechte."
+
+[37]
+what = "Náhled položen"
+does = "Hra ho nastaví, když je náhled umístěn."
+use = "Vynechte."
+
+[38]
+what = "Náhled výroby"
+does = "Náhled použitý při umisťování něčeho, co se má postavit."
+use = "Jen pro náhledy hry."
+
+[39]
+what = "Ve skupině (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá jako flag jednotky."
+use = "Vynechte."
+
+[40]
+what = "Má zbraň"
+does = "Její věže střílejí jen s ním. Kontroluje ho i rozkaz k útoku hráče a počítač; zapnutí a vypnutí zbraní ho přepíná."
+use = "Nechte na všem ozbrojeném. Bez něj zbraně jednotky nestřílejí."
+
+[41]
+what = "Svítí při najetí myší"
+does = "Rozsvítí se pod myší."
+use = "Nechte na všem, na co hráč kliká."
+
+[42]
+what = "Pěchota"
+does = "Jednotka je pěchota: počítač, karta rušení a způsob smrti (pěchota zanechává těla, ne vraky)."
+use = "Jen pro pěchotu."
+danger_why = "U vozidla by měl při jeho zničení zastavit hru chybou skriptu (umírá jako pěchota)."
+
+[43]
+what = "Počítaný svým týmem"
+does = "Jednotka je v seznamech a počtech svého týmu a skripty misí ji vidí. Má ho 459 jednotek hry."
+use = "Nikdy ho neodebírejte."
+danger_why = "Bez něj by jednotka neměla být v žádném seznamu svého týmu: mise a počítač ji nevidí."
+
+[44]
+what = "Logistika"
+does = "Má ho každé nákladní auto; potlačení na něm odeznívá jinak. Na tanku nic nedělá (vyzkoušeno)."
+use = "Nechte, jak ho má hra."
+
+[45]
+what = "Munice superzbraně (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá."
+use = "Vynechte."
+
+[46]
+what = "Vynechán z výběru rámečkem"
+does = "Má ho 127 jednotek hry; ve hře nebyl nalezen žádný účinek."
+use = "Nechte, jak ho má hra."
+
+[47]
+what = "Ostatní jednotky ho objíždějí"
+does = "Ostatní jednotky ho objíždějí, místo aby jím projely. Letadla a nákladní auta ho nemají."
+use = "Nechte na pozemních jednotkách. Bez něj by jím jiné možná projížděly (nevyzkoušeno)."
+
+[48]
+what = "Výsadkáři na zemi"
+does = "Výsadkáři po seskoku: odhad nebezpečí počítače a kontrola letadla u tlačítka výroby."
+use = "Jen pro výsadkáře."
+
+[49]
+what = "Výsadkáři ve vzduchu"
+does = "Výsadkáři během seskoku: dokud je nastaven, nepřemýšlejí ani se nepohybují po zemi."
+use = "Jen pro výsadkáře ve vzduchu."
+danger_why = "U pozemní jednotky by ji měl zmrazit (bez přemýšlení, bez pohybu po zemi)."
+
+[50]
+what = "Lze na něj kliknout"
+does = "Myš ho může vybrat."
+use = "Nechte na všem, na co hráč kliká."
+
+[51]
+what = "Letadlo se vrací na základnu"
+does = "Hra ho nastaví, když se letadlo vrací."
+use = "Vynechte."
+
+[52]
+what = "Letadlo zaneprázdněné"
+does = "Hra ho nastaví při útoku na zem a při náletu; letadlo pak odmítá nové rozkazy."
+use = "Vynechte."
+
+[53]
+what = "Lze vybrat"
+does = "Hráč ho může vybrat."
+use = "Nechte na všem, co hráč ovládá."
+
+[54]
+what = "Pod dělostřeleckou palbou"
+does = "Hra ho nastaví na 20 sekund, když dělostřelectvo dopadne blízko jednotky."
+use = "Vynechte."
+
+[55]
+what = "Tank"
+does = "Počítá se jako tank ve statistikách na konci hry a v kategorii „tank“ v misích. Nic dalšího: v bitvě nemá vlastní účinek."
+use = "Součást lesní trojice: odeberte 11, 21 a 55 najednou, aby vozidlo vjelo do lesa."
+
+[56]
+what = "Letadlo má ještě všechnu munici"
+does = "Hra ho nastavuje; stíhací bombardér útočí sám jen, dokud je nastaven."
+use = "Vynechte."
+
+[57]
+what = "Cíl"
+does = "Věže a plošné poškození ho berou jako něco k zasažení. Má ho 435 jednotek hry."
+use = "Nechte na všem, na co se má střílet. Bez něj by se na jednotku možná nikdy nestřílelo (nevyzkoušeno)."
+
+[58]
+what = "Vždy viditelný"
+does = "Zobrazený bez ohledu na mlhu války: budovy, nákladní auta, lodě. Na tanku bez viditelné změny (vyzkoušeno)."
+use = "Nechte, jak ho má hra."
+
+[59]
+what = "Transport výsadkářů"
+does = "Letadlo, které shazuje výsadkáře: staví se u ranveje, chová se jako výsadkové letadlo a shazuje jednotku ze svého UniteTransportee."
+use = "Jen na letadlech, která mají UniteTransportee (jednotku, kterou shazují)."
+danger_why = "U jednotky, která není letadlo, nebo u letadla bez UniteTransportee hra spadne, když hledá výsadkáře. Studio to nesestaví."
+
+[60]
+what = "Věž budovy"
+does = "Dělo patřící budově: zobrazené v panelu budovy."
+use = "Jen pro věže budov."
+
+[61]
+what = "Letadlo ve vzdušném souboji"
+does = "Hra ho nastavuje, dokud letadla bojují."
+use = "Vynechte."
+
+[62]
+what = "Nákladní auto"
+does = "Nákladní auto: řídí ho logika nákladních aut hry (samo nepřemýšlí), vozí zásoby. Mají ho všech 18 nákladních aut hry."
+use = "Jen na nákladních autech (jednotkách TTruckDescriptor) a každé nákladní auto ho potřebuje."
+danger_why = "Na čemkoli kromě nákladního auta hra spadne na začátku zápasu (DomesticNukes, na Stuartu). Studio to nesestaví."
+
+[63]
+what = "Stavební nákladní auto"
+does = "Nákladní auto, které staví budovy."
+use = "Jen na stavebních nákladních autech."
+danger_why = "Na čemkoli kromě nákladního auta hra spadne (ProLution). Studio to nesestaví."
+
+[64]
+what = "Zásobovací nákladní auto"
+does = "Nákladní auto, které vozí peníze. Na tanku nic nedělá (vyzkoušeno)."
+use = "Jen pro zásobovací nákladní auta."
+
+[65]
+what = "Extrémní potlačení"
+does = "Hra ho nastaví, když je jednotka přišpendlená: přestane střílet."
+use = "Vynechte."
+
+[66]
+what = "Mění se v jinou jednotku"
+does = "Hra ho nastavuje, dokud se jednotka proměňuje (družstvo ve své nákladní auto na silnici)."
+use = "Vynechte."
+
+[67]
+what = "Ve vzduchu; přijímá rozkazy mimo mapu"
+does = "Letadlo je ve vzduchu (hra ho při vzletu a přistání prohazuje s 68). U pozemní jednotky jí dovolí přijímat rozkazy mimo mapu, ale zastaví se na neviditelné hranici na okraji (DomesticNukes)."
+use = "Nechte na letadlech. Aby jednotka opravdu vyjela z mapy, je třeba rozšířit i pohybové mapy mapy."
+
+[68]
+what = "Zaparkované letadlo"
+does = "Hra ho nastavuje, dokud je letadlo na zemi."
+use = "Vynechte."
+
+[69]
+what = "Napadený"
+does = "Hra ho nastavuje, dokud je jednotka napadena."
+use = "Vynechte."
+
+[70]
+what = "Vidí kolem svého bodu hlídky"
+does = "Výhled letadla je vystředěný na bod, kam bylo posláno, ne na ně samo. Mají ho průzkumná letadla hry."
+use = "Pro průzkumná letadla."
+
+[71]
+what = "Vidí všude kolem"
+does = "Výhled 360°, ať se dívá kamkoli. Funguje u každé pozemní jednotky (DomesticNukes ho dal dalším 150)."
+use = "Přidejte ho každé jednotce, která má vidět za sebe."
+
+[72]
+what = "Vidí přes překážky"
+does = "Jeho výhled ignoruje kopce a kulisy. Mají ho letadla."
+use = "U pozemních jednotek zatím nevyzkoušeno."
+
+[73]
+what = "Viděn"
+does = "Hra ho nastavuje, dokud nepřítel jednotku vidí."
+use = "Vynechte."
+
+[74]
+what = "Stín letadla (nepoužívaný)"
+does = "Nic ve hře ho nepoužívá jako flag jednotky."
+use = "Vynechte."
+
+[75]
+what = "Tělo pěšáka"
+does = "Hra ho nastaví na padlého vojáka."
+use = "Vynechte."
+
+[76]
+what = "Loď (stojí na místě)"
+does = "Mají ho lodě hry: stojí, kam je mise postaví, jako budova. Bez něj (a s podvozkem tanku) loď jezdí po souši (Navy Mod od DomesticNukese)."
+use = "Jen pro lodě, které se nikdy nehýbou."
+danger_why = "U jednotky, která se má pohybovat, by ji měl znehybnit."
+
+[77]
+what = "Nikdy nestřílí sám"
+does = "Jednotka střílí jen na rozkaz: bez reflexní palby (DomesticNukes ho dal 317 jednotkám)."
+use = "Ne pro budovy: nikdy by nestřílely."
+
+[78]
+what = "Letadlo bez munice"
+does = "Hra ho nastavuje; maže se při vzletu a přistání."
+use = "Vynechte."
+
+[79]
+what = "Vybraný"
+does = "Hra ho nastavuje, dokud je jednotka vybraná."
+use = "Vynechte."
+
+[80]
+what = "Nelze zaměřit"
+does = "Žádný rozkaz ho nemůže zaměřit. Nastavují ho skripty misí."
+use = "V seznamu jednotky nevyzkoušeno."
+
+[81]
+what = "Značka skriptu: reflexní palba zastavena"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[82]
+what = "Značka skriptu: dostřel skupiny"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[83]
+what = "Značka skriptu: nelze zaměřit"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[84]
+what = "Značka skriptu: skupina odzbrojena"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[85]
+what = "Značka skriptu: skupina zablokována"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[86]
+what = "Značka skriptu: výhled skupiny"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[87]
+what = "Značka skriptu: poškození"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[88]
+what = "Značka skriptu: stres"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[89]
+what = "Značka skriptu: rychlost"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[90]
+what = "Rádiové ticho (karta lsti)"
+does = "Karta rádiového ticha ho nastavuje a odebírá. V seznamu jednotky nic nedělá (vyzkoušeno)."
+use = "Vynechte."
+
+[91]
+what = "Maskovaný (karta lsti)"
+does = "Karta maskování ho nastavuje a odebírá. V seznamu jednotky nic nedělá (vyzkoušeno)."
+use = "Vynechte."
+
+[92]
+what = "Les ho neskryje"
+does = "Jednotka nikdy nezíská krytí lesa, ani v lese."
+use = "Pro jednotky, které mají v lese zůstat viditelné."
+
+[93]
+what = "Správní budova"
+does = "Velitelská budova jako velitelství; počítaná svým týmem."
+use = "Jen pro správní budovy."
+
+[94]
+what = "Vrak vozidla"
+does = "Hra ho nastaví na zničené vozidlo."
+use = "Vynechte."
+
+[95]
+what = "Vrak letadla"
+does = "Hra ho nastaví na zničené letadlo."
+use = "Vynechte."
+
+[96]
+what = "Drží palbu kvůli přepadu"
+does = "Hra ho nastavuje, dokud jednotka v lese čeká na spuštění přepadu."
+use = "Vynechte."
+
+[97]
+what = "Nelze dobýt"
+does = "Nastavují ho skripty misí."
+use = "V seznamu jednotky nevyzkoušeno."
+
+[98]
+what = "Značka skriptu: nelze dobýt"
+does = "Značka „už hotovo“ skriptu mise."
+use = "Vynechte."
+
+[99]
+what = "Průzkumné letadlo"
+does = "Letadlo se chová jako průzkumník (pokud nemá i 100): kliknutí na mapu ho pošle pozorovat, nepočítá se do armády svého týmu a ukazuje ho panel průzkumu. Průzkumník nikdy neútočí."
+use = "Použijte pole Role ve Studiu: Průzkumný na ozbrojeném letadle nastaví i 100, takže jeho útoky dál fungují."
+danger_why = "Letadlo se zbraněmi a s 99 bez 100 shodí hru, když ho pošlete útočit. Studio nesestaví letadlo, kterému jste takto dali 99: přidejte i 100, nebo 99 odeberte."
+
+[100]
+what = "Stíhačka"
+does = "Letadlo se chová jako stíhačka (kontroluje se jako první, před 99, 101 a 13): samo útočí jen na letadla ve vzduchu; kliknutí na nepřítele na něj zaútočí."
+use = "Pro stíhačky. S 99 je to ozbrojený průzkumník, který stále může útočit."
+
+[101]
+what = "Stíhací bombardér"
+does = "Letadlo se chová jako stíhací bombardér (po 100 a 99): samo útočí na pozemní jednotky (ne budovy ani zásobovací auta), jen dokud má všechnu munici."
+use = "Pro stíhací bombardéry. Roli letadla měňte polem Role."
+
+[102]
+what = "Klamné letiště"
+does = "Falešné letiště: počítá se jako letiště."
+use = "Jen pro klamná letiště."
+
+[103]
+what = "Může shazovat výsadkáře"
+does = "Hra ho dává výsadkovým letadlům při vzletu; rozkaz k výsadku ho potřebuje."
+use = "Vynechte: nastavuje se 59."
+
+[104]
+what = "Má skener"
+does = "Hra ho dává každé jednotce při jejím vytvoření."
+use = "Vynechte."

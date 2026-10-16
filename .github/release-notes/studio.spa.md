@@ -1,6 +1,16 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.5:** aviones en cualquier papel, armas que alcanzan a los aviones y una biblioteca para el pincel Textura de Map Paint.
+
+- **El papel de un avión** (aviso de un jugador: un cazabombardero al que se le daban las bombas en alfombra de un bombardero volaba hasta su objetivo y no soltaba nada): una nueva casilla Papel en la página de un avión lo convierte en Caza, Cazabombardero, Bombardero o Explorador. Su comportamiento, cómo lo usan los jugadores del ordenador y sus palabras en el menú de construcción cambian con él. Las bombas de un bombardero van en una bodega de bombas (copiada de la de un bombardero del juego), la única forma en que la pasada de un bombardero las suelta. Visto en el juego: un cazabombardero convertido en bombardero suelta sus bombas; un explorador que conserva sus armas (un Stuka, un ME109) sigue atacando y tiene la vista de los exploradores.
+- **Vehículos de reconocimiento:** la casilla Papel de un vehículo terrestre lo convierte en Reconocimiento: la vista de los coches de reconocimiento (mucho más lejos que la de un tanque), cómo los usan los jugadores del ordenador, sus palabras en el menú de construcción, y puede entrar en los bosques (visto en el juego con un Panzer IV).
+- **A qué alcanza un arma:** el Alcanza de cada arma elige el suelo, los aviones o ambos (una segunda arma a su lado, como los cañones antiaéreos del juego llevan una para cada cosa). Visto en el juego: proyectiles de tanque disparando a aviones. Conocido: un arma de avión puesta para alcanzar solo el suelo aún no hace daño.
+- **El pincel Textura de Map Paint tiene una biblioteca:** las texturas de suelo del juego (hierba, campos, arena, nieve, roca, carreteras..., por teatro, con una búsqueda), un cuadrado del suelo de cualquier mapa, imágenes tuyas e imágenes gratuitas en línea (Poly Haven y ambientCG, CC0; fotos aéreas de EE. UU., dominio público), una imagen descargada por clic y guardada en tu mod con su crédito. Un deslizador Tamaño, las texturas usadas últimamente y **Detalle del juego de cerca**, que pone las calcomanías propias del juego de una textura del juego sobre el suelo que pintas. Aún no visto en el juego; las descargas en línea aún no probadas.
+- **Los objetos colocados en terreno abierto**, lejos de los pueblos, granjas y bosques del mapa, ahora están al alcance del dibujado del juego, y los grupos grandes de objetos nuevos se ordenan como los del juego (aún no visto en el juego).
+- **Repintar más rápido:** el suelo pintado se guarda de una construcción a otra, sea cual sea la copia o el mod que lo pintó: un mapa repintado igual lo recupera en segundos, no en minutos.
+- **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno en blanco y Océano en blanco).
+
 **0.9.8.4:** tus propias misiones, mapas en blanco para construir y mucho más para personalizar.
 
 - **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno en blanco y Océano en blanco).

@@ -73,6 +73,9 @@
       tip_pp_open_folder: "Opens the mod's folder on your PC, to fix the file by hand.",
       tip_pp_details: "Shows the mistake as the game build reports it: handy when asking for help.",
       model_copy: "Give it its own copy of the model", tip_model_copy: "The same model with textures of its own: Repaint in Blender then changes only this unit, not the unit it copies.", model_copy_how: "Now it draws the model of the unit it copies, so a repaint changes both. With its own copy, a repaint changes only this one.", model_copy_has: "This unit has its own copy of the model: Repaint in Blender changes only this unit.", model_copy_remove: "Use the shared model again", tip_model_copy_remove: "Back to the model of the unit it copies. Its paint stays in the mod, for when it gets a copy again.",
+      number_about_value: "about {v} {unit}", unit_m: "m", unit_kmh: "km/h", unit_ms2: "m/s²", unit_deg: "°", unit_degs: "° a second", unit_s: "s", unit_money: "$", unit_pct: "%", number_base: "Base stat {v}", number_from_base: "{pct}% from the base stat", number_slider: "{name}: smaller or larger", tip_number_slider: "Makes it smaller or larger than the game's value, {base} (its base stat): from -90% to +300%. Let go to save it. The box takes any exact number.", number_this_unit: "This unit: {v}", number_among: "Among the game's {n} of this kind (lowest, middle, highest):", number_scale_unmeasured: "(this scale comes from the community; not measured by us yet)", number_sure_tried: "seen in the game", number_sure_known: "certain, from the game's own data and menus", number_sure_community: "from the community, not checked by us yet", number_sure_name: "from its name and the values the game's units have; not tried yet",
+      weapons_how_title: "How weapons and ammo work", weapons_how_1: "Each weapon (Weapon 1 is the main gun) fires one ammo. The list beside it picks which: any of the game's ammo, sorted by type (AP, HE, anti-aircraft, machine guns, bombs, rockets...), or a copy you made. Its muzzle flash and sound come with it.", weapons_how_2: "The ammo decides what the weapon does: its damage, its range, how fast it fires and what it can hit. Open the ammo to see and change those numbers.", weapons_how_3: "Changing an ammo's own numbers changes every unit that fires it (its page lists them). For this unit only: on the ammo's page click Copy this ammo..., change the copy, then pick the copy in the weapon's list here.", weapons_how_4: "Hits, under a weapon, picks whether it fires at the ground, at planes, or both. A plane's Role box (Fighter, Fighter-bomber, Bomber, Scout) sets how it attacks; a bomber drops its bombs from a bomb bay.", weapons_how_5: "Adding a weapon to a unit, or taking one off, isn't possible yet: weapons are tied to the model's animations, and we're not that far along yet.",
+      flags_about: "Flags are on/off switches that tell the game what this unit is and what it can do. Hover a flag to see exactly what it does. The Studio checks this unit's flags every time you change them, and again before the game starts: it stops anything known to crash the game, and warns you about anything expected to break the unit.", flag_guide: "Flag guide: every flag explained", tip_flag_guide: "Opens the guide: every flag by what it's for, what it does, how to use it, how sure we are, and which ones crash the game.", flag_guide_title: "Unit flags: what each one is and does", flag_guide_lead: "Every flag the game reads (0 to 104). 'Tried in the game' means someone ran it in the game; 'from the game's units' comes from which of the game's own units have it; 'expected' is what studying the game says, not tried yet. Flags the game sets on its own while it runs do nothing in a unit's list. The Studio won't start the game with a flag marked 'crashes the game' where it crashes.", flag_guide_search: "Search: a number, a word (woods, truck, recon...)", flag_guide_none: "No flag matches that.", flag_how: "How to use it", flag_sure: "How sure we are", flag_sure_tried: "tried in the game", flag_sure_units: "from the game's units", flag_sure_expected: "expected, not tried yet", flag_sure_state: "the game sets it itself", flag_sure_unused: "unused", flag_danger_crash: "crashes the game", flag_danger_breaks: "can break the unit", flag_this_unit: "this unit has it", flag_crash_head: "This crashes the game:", flag_warn_head: "Expected to break the unit:", flag_take_off: "Take {n} off", flag_add_this: "Add {n}", flag_put_back: "Put {n} back", flag_blocked: "The Studio won't start the game with this mod until it's fixed, because the game would crash.", flag_crashes_here: "crashes the game on this unit", flag_breaks_here: "expected to break this unit", flag_group_kind: "What the unit is", flag_group_kind_help: "These decide what kind of unit the game treats it as: a plane, a truck, a building, infantry... Many only make sense on that kind of unit.", flag_group_combat: "Fighting", flag_group_combat_help: "Whether it fires, how, whether it can be hit, and whether it captures.", flag_group_movement: "Moving", flag_group_movement_help: "Where it can go: woods, off the map, standing still.", flag_group_sight: "Seeing and being seen", flag_group_sight_help: "How it sees and how enemies see it.", flag_group_player: "The player's control", flag_group_player_help: "Selecting it, clicking it, ordering it, and whether its team counts it. Keep these as the game has them.", flag_group_preview: "Placement previews", flag_group_preview_help: "Only for the see-through previews the game shows while you place something.", flag_group_state: "Set by the game while it runs", flag_group_state_help: "The game turns these on and off by itself (in combat, camouflaged, flying home...). Putting them in a unit's list does nothing, so leave them out.", flag_group_unused: "Unused", flag_group_unused_help: "Nothing in the game uses these: they do nothing.",
       uniform_title: "Uniform", uniform_default: "Default uniform: the game's own. Other squads and the gun and vehicle crews wear it too, so it isn't repainted here. Pick Custom uniform to give this squad one of its own.", uniform_custom: "Custom uniform", tip_uniform_custom: "Gives this squad a uniform of its own (its own copy of its soldiers), so what you paint after Open in Blender changes only this squad.", uniform_has: "Custom uniform: only this squad wears it. Paint it with Open in Blender, then Bring back.", uniform_default_again: "Back to the default uniform", tip_uniform_default_again: "This squad wears the game's uniform again. Your paint stays in the mod, for when it gets a custom one again.", uniform_shared_paint: "This mod repaints the default uniform itself ({n} picture(s)), so every squad and crew that wears it changes.", card_stale: "Its picture in the build menu still shows the game's paint.", card_take: "Take a new picture", tip_card_take: "Takes a picture of the unit with your paint, from the front corner, as its picture in the build menu.", card_choose: "Choose a picture…", tip_card_choose: "Use a picture file of your own (PNG or JPG). It's fitted to the card's size, cut at the edges if it has to be.", rides_in: "Rides in", tip_rides_in: "The truck this unit turns into on the roads. Pick another nation's, or a copy of a truck you made and repainted.", rides_in_how: "The truck it turns into on the roads. To give a squad a truck of its own look: open a truck, copy it, give the copy its own copy of the model and repaint it, then pick it here.", rides_in_game: "(the game's)", rides_in_mine: "(yours)", rides_in_open: "Open the truck", tip_rides_in_open: "Opens the truck's page: copy it there to give it a look of its own.",
       only_mod: "In this mod", tip_only_mod: "Show only what the mod being edited has: its new units and the ones it changes.",
       export_mod: "Export mod…", version: "Version", author: "Author", description: "Description", export: "Export",
@@ -434,6 +437,8 @@
   Object.assign(words.sc, { set_backup_title: "游戏的干净备份", set_backup_help: "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。", backup_none: "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。", backup_have: "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}", backup_other: "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。", backup_make: "创建备份", backup_make_again: "重新创建备份", backup_replace_ask: "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？", backup_replace_yes: "替换", backup_check: "检查游戏文件", backup_deep: "逐字节比较（较慢）", backup_restore: "恢复干净文件", backup_restore_ask: "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？", backup_restore_yes: "恢复", backup_verify: "通过 Steam 验证", backup_verify_tip: "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。", backup_verify_opened: "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。", backup_making: "正在创建备份… {pct}", backup_checking: "正在检查游戏文件… {pct}", backup_restoring: "正在恢复游戏文件… {pct}", backup_made: "备份已创建：{files} 个文件，{size} GB。", backup_clean: "游戏文件与备份一致：没有任何变化。", backup_differs: "与备份不同的文件：{n} 个", backup_changed: "已更改（{n}）", backup_missing: "缺失（{n}）", backup_added: "不属于游戏（{n}）", backup_more: "…还有 {n} 个", backup_nothing: "无需恢复：游戏文件与备份一致。", backup_restored: "完成：已恢复 {n} 个文件。", backup_set_aside: "{m} 个不属于游戏的文件现在位于 {path}。", backup_kept: "被替换的 {k} 个已更改文件保存在 {path}。" });
   // a panel's size handle (words.toml tip_panel_size)
   Object.assign(words.us, { armour_title: "Armour", armour_help: "How hard this unit is to hurt, as one of the game's own levels. The fights use it, and its card and build menu show its picture: tanks have levels 1 to 5, the number on the shield.", armour_level: "Level", tip_armour_pick: "Pick one of the game's armour levels: the unit fights with it, and its card and build menu show it.", tip_armour_undo: "Give it the game's armour level again.", armour_tank: "Armour {n}", armour_light: "Light vehicles (transports)", armour_infantry: "Infantry", armour_aircraft: "Aircraft", armour_para: "Paratroopers coming down", armour_trucks: "Construction trucks", armour_building: "Buildings and fortifications", armour_old_way: "This unit's armour was changed inside its armour part: it fights with the new value, but its card and build menu still show the old one. Pick its level here to fix that.", armour_on_unit: "Armour is changed on the unit's own page, under Armour: each level of the game has its own picture on the card, so a number changed here would fight differently from what the card shows.", model_propellers: "Its propellers spin as the game's do ({n} discs).", model_propellers_none: "{n} propeller discs left out: the unit it copies has no propellers to spin them.", model_propellers_far: "{n} propeller discs left out: they aren't where the copied plane's propellers are." });
+  Object.assign(words.us, { role_title: "Role", role_help: "What kind of plane it is: how it flies and attacks. A bomber drops its bombs on a straight run from a bomb bay; a fighter-bomber dives at its target. Changing it also changes its build menu words and how the computer players use it.", role_fighter: "Fighter", role_fighter_bomber: "Fighter-bomber", role_bomber: "Bomber", role_scout: "Scout", role_paratroop: "Paratroop plane", role_paratroop_why: "A paratroop plane carries paratroopers, which no other plane has: its role stays.", role_not_tried: "{role} (not tried in the game yet)", role_bombs_moved: "As a bomber, its bombs drop from a bomb bay (copied from a game bomber's), the only way a bomber's run drops them.", tip_role_pick: "Pick what kind of plane it is. A plane needs a weapon firing bombs to be a bomber.", tip_role_undo: "Give it back the game's role, its bombs back where they were.", hits: "Hits", hits_ground: "The ground", hits_planes: "Planes", hits_both: "The ground and planes", tip_hits: "What this weapon can hit. Planes: its ammo gets a copy that hits planes and does nothing to the ground. Both: it keeps its ammo and gets a second weapon beside it for the other, the way the game's AA guns do.", hits_not_tried: "Tank rounds and AA guns shooting planes were seen in the game (2026-10-14); a plane's guns made to hit the ground, not yet." });
+  Object.assign(words.us, { role_scout_armed: "Scout, keeping its attacks", ground_role_help: "Recon: the game's recon cars' sight (much further than a tank's), how the computer players use them, their build menu words, and it can go into woods. It stays as tough and armed as it is.", ground_role_game: "As the game has it", ground_role_recon: "Recon", tip_ground_role: "Make this vehicle a recon unit, or keep it as the game has it.", ground_role_recon_already: "This is one of the game's own recon units." });
   Object.assign(words.us, { tip_panel_size:"Size {n}%: drag down to make this panel smaller, up to make it bigger (the mouse wheel works too). Double-click: normal size." });
   Object.assign(words.fr, { tip_panel_size: "Taille {n} % : glissez vers le bas pour réduire ce panneau, vers le haut pour l'agrandir (la molette marche aussi). Double-clic : taille normale." });
   // the map screen's two sides (words.toml mode_*, tip_mode_*, tip_scen_locked, locked_*)
@@ -711,6 +716,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     Type97_ChiHa: [10, 11, 21, 22, 55] };
   // a few of the 105 (StudioApi.flags gives them all, rusemod/labels.toml [flags]): 91, which no unit carries, says it
   // does nothing in a unit's flags, and 62 warns of the crash
+  // the flag guide for the made-up flags (rusemod/flaginfo.toml), and its check: the truck flags crash on anything but a truck
+  const FAKE_FLAG_GUIDE = {"1": {"group": "combat", "sure": "tried", "what": "Artillery (indirect fire)", "does": "The unit fires indirectly, at what other units spot, like the game's howitzers. Also tells the computer player to use it as artillery.", "use": "Works on any unit: DomesticNukes gave it to 410 units of all kinds and they all fired indirectly.", "danger": "", "danger_why": ""}, "10": {"group": "combat", "sure": "units", "what": "Can take damage", "does": "Explosions can hurt it: splash damage and the V2 look for units with it. 454 of the game's units have it.", "use": "Keep it on anything that should be hurt by explosions. Without it a unit may be immune to splash damage (not tried).", "danger": "", "danger_why": ""}, "11": {"group": "movement", "sure": "tried", "what": "Can't enter woods", "does": "The unit stays out of woods (its paths go round them) and never gets the woods' cover. Tanks and most vehicles have it.", "use": "To let a vehicle into woods, take 11, 21 and 55 off together (tried by DomesticNukes). 11 is the one that matters for woods.", "danger": "", "danger_why": ""}, "21": {"group": "combat", "sure": "tried", "what": "Fighting unit", "does": "A unit that fights: the game also adds it while a unit attacks. The computer player's danger estimate and the statistics count it.", "use": "Part of the woods trio: take 11, 21 and 55 off together to let a vehicle into woods.", "danger": "", "danger_why": ""}, "22": {"group": "player", "sure": "units", "what": "Takes the player's orders", "does": "The player can order it. Mission scripts take it off to lock a unit.", "use": "Keep it on anything the player should control.", "danger": "breaks", "danger_why": "Without it the player can't order the unit (the community lists it as essential)."}, "55": {"group": "kind", "sure": "tried", "what": "Tank", "does": "Counts as a tank in the end-of-game statistics and in the missions' 'tank' category. Nothing else: it has no effect of its own in a battle.", "use": "Part of the woods trio: take 11, 21 and 55 off together to let a vehicle into woods.", "danger": "", "danger_why": ""}, "62": {"group": "kind", "sure": "tried", "what": "Truck", "does": "A truck: driven by the game's truck logic (it has no thinking of its own), carries supplies. Every one of the game's 18 trucks has it.", "use": "Only on trucks (TTruckDescriptor units), and every truck needs it.", "danger": "crash", "danger_why": "On anything but a truck the game crashes when the match starts (DomesticNukes, on a Stuart). The Studio won't build it."}, "63": {"group": "kind", "sure": "tried", "what": "Construction truck", "does": "A truck that builds buildings.", "use": "Only on construction trucks.", "danger": "crash", "danger_why": "On anything but a truck the game crashes (ProLution). The Studio won't build it."}, "72": {"group": "sight", "sure": "units", "what": "Sees through obstacles", "does": "Its sight ignores hills and scenery. Planes have it.", "use": "Not tried on ground units yet.", "danger": "", "danger_why": ""}, "91": {"group": "state", "sure": "tried", "what": "Camouflaged (the ruse card)", "does": "The camouflage card sets and clears it. In a unit's list it does nothing (tried).", "use": "Leave it out.", "danger": "", "danger_why": ""}, "99": {"group": "kind", "sure": "tried", "what": "Recon plane", "does": "The plane behaves as a scout (unless it also has 100): a click on the map sends it to look, it doesn't count in its team's army and the recon panel shows it. A scout never attacks.", "use": "Use the Studio's Role box: Scout on an armed plane also sets 100 so its attacks keep working.", "danger": "crash", "danger_why": "A plane that has weapons and 99 without 100 crashes the game when it's sent to attack (T53-T56). The Studio won't build a plane you gave 99 that way: add 100 too, or take 99 off."}, "100": {"group": "kind", "sure": "units", "what": "Fighter", "does": "The plane behaves as a fighter (checked first, before 99, 101 and 13): on its own it only attacks planes in the air; clicking an enemy attacks it.", "use": "For fighters. With 99 too, it's an armed scout that can still attack.", "danger": "", "danger_why": ""}, "2": {"group": "kind", "sure": "units", "what": "Aircraft", "does": "The unit is a plane: built at the airfield's control tower, flies home to refuel, takes no ground orders. Every one of the game's 63 planes has it, and nothing else does.", "use": "Keep it on every plane. Never put it on a ground unit: the game would try to build it at an airfield's control tower.", "danger": "breaks", "danger_why": "On a unit that isn't a plane, building it is expected to stop the game with a script error (it looks for an airfield's control tower)."}, "43": {"group": "player", "sure": "expected", "what": "Counted by its team", "does": "The unit is filed in its team's lists and counts, and the missions' scripts see it. 459 of the game's units have it.", "use": "Never take it off.", "danger": "breaks", "danger_why": "Without it the unit is expected to be in none of its team's lists: missions and the computer player don't see it."}};
+  // the number guide for the numbers the fake shows (rusemod/numberinfo.toml), and a made-up scale for each
+  const FAKE_NUMBERS = { numbers: {"ProductionPrice": {"group": "production", "unit": "money", "sure": "known", "what": "Price", "does": "What it costs to build, in $, at each of the five battle dates (the game keeps one price per date)."}, "ProductionTime": {"group": "production", "unit": "s", "sure": "community", "what": "Build time", "does": "How many seconds it takes to build. With more than one factory of its kind it's shared between them."}, "SeuilMort": {"group": "health", "unit": "pts", "sure": "known", "what": "Health", "does": "How much damage it takes to destroy it. Most of the game's tanks, cars, squads and guns have 400: what makes a Tiger tougher than a jeep is mostly its armour level (Armour), which cuts the damage of every shot that isn't strong enough for it. Buildings have from 50 to 4,500."}, "VitesseLineaire": {"group": "movement", "unit": "kmh", "sure": "known", "what": "Speed", "does": "How fast it moves when travelling, off roads. A Sherman has 4,550 (about 35 km/h), a jeep 6,110 (about 47 km/h), a rifle squad 3,120 (about 24 km/h)."}, "TAvionDescriptor.VitesseLineaire": {"group": "flight", "unit": "kmh_air", "sure": "known", "what": "Flying speed", "does": "How fast the plane flies: 13,000 to 46,800 in the game (about 225 to 810 km/h)."}, "DetectionBase": {"group": "sight", "unit": "m", "sure": "tried", "what": "Vision range", "does": "How far it sees ground units. A tank 104,000 (about 400 m); recon cars 234,000 (900 m); scout planes 195,000 (750 m). A Panzer IV given 234,000 alone didn't act as recon; the Role box gives the rest."}, "Factory": {"group": "menu", "unit": "choice", "sure": "known", "what": "Factory", "does": "Which build menu it's in (the Studio shows each menu by its name, and lets you move a unit to another nation's)."}, "PositionInMenu": {"group": "menu", "unit": "id", "sure": "known", "what": "Menu slot", "does": "Where it sits in its build menu: units of the same line share a slot, upgrades stack on it."}, "Nationalite": {"group": "identity", "unit": "choice", "sure": "known", "what": "Nation", "does": "Which country it belongs to: 0 USA, 1 Germany, 2 UK, 3 France, 4 Italy, 5 USSR, 6 Japan."}, "DescriptorId": {"group": "identity", "unit": "id", "sure": "known", "what": "Id", "does": "The unit's own number: each unit has a different one, and the game and saved games find it by it. The Studio gives a new unit a free one."}, "VitesseRotation": {"group": "turret", "unit": "degs", "sure": "name", "what": "Turret turning speed", "does": "How fast the turret or gun turns to aim: 15 to 200 degrees a second. Slower turrets take longer to bring their gun onto a new target."}, "TirEnMouvement": {"group": "combat", "unit": "yesno", "sure": "name", "what": "Fires on the move", "does": "1: this weapon can fire while the unit moves."}, "Puissance": {"group": "ammo", "unit": "pts", "sure": "known", "what": "Damage", "does": "The damage one hit does, before armour. Small arms 2-10, tank guns tens to hundreds, bombs and the V2 far more (up to 2,000,000 for the atom bomb). A unit is destroyed when the damage it took reaches its Health."}}, plain: {"m": [260.0, "unit_m"], "kmh": [130.0, "unit_kmh"], "kmh_air": [57.78, "unit_kmh"], "accel": [260.0, "unit_ms2"], "deg": [0.017453292519943295, "unit_deg"], "degs": [0.017453292519943295, "unit_degs"], "s": [1.0, "unit_s"], "money": [1.0, "unit_money"], "share": [0.01, "unit_pct"]}, amounts: ["accel", "count", "deg", "degs", "kmh", "kmh_air", "level", "m", "money", "pts", "raw", "s", "share", "times"] };
   const knownFlags = [
     { flag: 1, count: 54, examples: ["M7 Priest", "Wespe", "Type 4 Ha-To"], meaning: {
       us: "Artillery: fires indirectly at what others spot; works on any unit, tested (artillerie)",
@@ -961,6 +970,46 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",
     lang_code_names: "内部名称（用于制作模组，界面为英语）",
     lang_pick_help: "用你的语言显示 Studio、帮助和游戏中的单位名称。随时可以用顶部的语言按钮更改。" });
+  // the zone brushes' marks and counts, Town's preview, and the place list's pictures (2026-10-15)
+  Object.assign(words.us, { legend_cover_taken: "Cover taken away (Uncover, trees erased): units are seen here (striped)",
+    legend_move_opened: "Opened with an Open brush: units can go here (striped)",
+    legend_move_changed: "Striped colours: changed with a Block or Open brush",
+    town_preview: "Click: cover around these {n} buildings.", town_point: "Point at a town's buildings: they get rings first.",
+    zone_cover_done: "Units hide here now: {m2} m² of new cover.",
+    zone_cover_none: "This ground already had cover: nothing changed for units ({m2} m² marked).",
+    zone_uncover_done: "Cover taken away from {m2} m²: units are seen there now.",
+    zone_uncover_none: "No cover here to take away: this ground had none ({m2} m² marked, striped).",
+    zone_block_done: "Closed {m2} m² to these units.",
+    zone_block_none: "Already closed to these units: nothing changed ({m2} m² marked, striped).",
+    zone_open_done: "Opened {m2} m²: units can go there now.",
+    zone_open_none: "Units could already go here: nothing changed ({m2} m² marked, striped blue).",
+    place_used: "{n} on this map", place_no_picture: "No picture: the Studio can't show this one's model yet. It's placed all the same." });
+  Object.assign(words.fr, { legend_cover_taken: "Couvert retiré (Découvrir, arbres effacés) : les unités y sont vues (rayé)",
+    legend_move_opened: "Ouvert au pinceau Ouvrir : les unités passent (rayé)",
+    legend_move_changed: "Couleurs rayées : changées au pinceau Bloquer ou Ouvrir",
+    town_preview: "Cliquez : du couvert autour de ces {n} bâtiments.",
+    town_point: "Pointez les bâtiments d'une ville : ils s'entourent d'abord d'anneaux.",
+    zone_cover_done: "Les unités s'y cachent maintenant : {m2} m² de nouveau couvert.",
+    zone_cover_none: "Ce terrain avait déjà du couvert : rien ne change pour les unités ({m2} m² marqués).",
+    zone_uncover_done: "Couvert retiré sur {m2} m² : les unités y sont vues maintenant.",
+    zone_uncover_none: "Pas de couvert à retirer ici : ce terrain n'en avait pas ({m2} m² marqués, rayés).",
+    zone_block_done: "{m2} m² fermés à ces unités.",
+    zone_block_none: "Déjà fermé à ces unités : rien ne change ({m2} m² marqués, rayés).",
+    zone_open_done: "{m2} m² ouverts : les unités peuvent y aller maintenant.",
+    zone_open_none: "Les unités passaient déjà ici : rien ne change ({m2} m² marqués, rayés de bleu).",
+    place_used: "{n} sur cette carte",
+    place_no_picture: "Pas d'image : le Studio ne sait pas encore montrer son modèle. Il est placé quand même." });
+  Object.assign(words.sc, { legend_cover_taken: "掩护已移除（移除掩护、擦除的树）：单位在此可被看到（条纹）",
+    legend_move_opened: "用“开放”画笔开放：单位可以进入（条纹）", legend_move_changed: "条纹颜色：用“封锁”或“开放”画笔改过的地方",
+    town_preview: "点击：在这 {n} 栋建筑周围加掩护。", town_point: "指向城镇的建筑：会先出现圆圈。",
+    zone_cover_done: "单位现在可以在此隐藏：新增掩护 {m2} 平方米。",
+    zone_cover_none: "这里原本就有掩护：对单位没有变化（已标记 {m2} 平方米）。",
+    zone_uncover_done: "已移除 {m2} 平方米的掩护：单位现在在那里可被看到。",
+    zone_uncover_none: "这里没有可移除的掩护：原本就没有（已用条纹标记 {m2} 平方米）。",
+    zone_block_done: "已对这些单位封锁 {m2} 平方米。", zone_block_none: "已对这些单位封锁：没有变化（已用条纹标记 {m2} 平方米）。",
+    zone_open_done: "已开放 {m2} 平方米：单位现在可以去那里。",
+    zone_open_none: "单位本来就能到这里：没有变化（已用蓝色条纹标记 {m2} 平方米）。",
+    place_used: "本地图上有 {n} 个", place_no_picture: "无图片：Studio 暂时无法显示它的模型。仍会照常放置。" });
   const words_ = (lang) => words[lang] || words.us;
   const modsView = () => ({ mods: mods.slice(), current });
 
@@ -1144,7 +1193,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { weapons: [{ address: weapon, name: "weapon_effet_tag1", ammo: { address: current_, name: names.get(current_) || current_ },
       game_ammo: ammoAddress(game.id), edited: Boolean(chosen), shot: shotOf(current_),
       range: rangeOf(current_), game_range: rangeOf(current_, true), firing,
+      hits: hitsEdits.get(weapon) || "ground", game_hits: "ground",
       own_copy: myAmmo().some((n) => ammoAddress(n.id) === current_) && firing.length === 1 }], choices };
+  }
+
+  // What a weapon hits and a plane's role (api.set_weapon_hits, plane_role, set_plane_role): kept here as the choices
+  // only; a made-up plane is a fighter-bomber in the game
+  const hitsEdits = new Map();
+  const roleEdits = new Map();
+  function roleOf(address) {
+    const game = "fighter_bomber";
+    return { role: roleEdits.get(address) || game, game, editable: Boolean(current), why: current ? "" : "no_mod",
+      bombs: true, armed: true,
+      roles: ["fighter", "fighter_bomber", "bomber", "scout"].map((id) => ({ id, seen: id === "bomber" })) };
+  }
+  const groundRoleEdits = new Map();
+  function groundRoleOf(address) {
+    return { role: groundRoleEdits.get(address) || "game", game: "game", editable: Boolean(current),
+      why: current ? "" : "no_mod" };
   }
 
   // an ammo's range (PorteeMaximale) with the mod's change (`game`: the game's; a copy: its source's), as api._range
@@ -1216,9 +1282,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
 
   // A made-up village in the island's middle, a wood to its north and a few carts about.
   function fakeScenery(pack) {
+    // (the basket stands nowhere on the map: it's there to place, so it has a number too, as rusemod.scenery.view does)
     const types = [["MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", ""],
       ["TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", ""],
-      ["Charette_1", "prop", "Props/Ferme", ""], ["Chene_02", "vegetation", "Vegetation/Arbres", ""]];
+      ["Charette_1", "prop", "Props/Ferme", ""], ["Chene_02", "vegetation", "Vegetation/Arbres", ""],
+      ["Cotentin_PanierOsier1", "prop", "Props/Ville", ""]];
     const items = { building: [], prop: [], vegetation: [] }, c = 655360, seed = pack.length;
     for (let k = 0; k < 40; k++) {
       const a = k * 2.4, r = 9000 + 1500 * k;
@@ -1233,19 +1301,81 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     // the others fall back to English)
     const palette = [["TypeWarrior/MairieNormande", "MairieNormande", "building", "COC/Normandie/Batiments_Villes_Villages", 1,
         { us: "Town hall (Normandy)", fr: "Mairie (Normandie)", ger: "Rathaus (Normandie)" },
-        { us: "town building", fr: "bâtiment de ville", ger: "Stadtgebäude" }],
+        { us: "town building", fr: "bâtiment de ville", ger: "Stadtgebäude" }, 0],
       ["TypeWarrior/TownHouseB2_Haut", "TownHouseB2_Haut", "building", "COC/Normandie/BatimentsMorceaux/TownHouseB/B2", 39,
         { us: "Town house B 2 high", fr: "Maison de ville B 2 haut", ger: "Stadthaus B 2 hoch" },
-        { us: "building piece", fr: "élément de bâtiment", ger: "Gebäudeteil" }],
+        { us: "building piece", fr: "élément de bâtiment", ger: "Gebäudeteil" }, 1],
       ["TypeWarrior/Charette_1", "Charette_1", "prop", "Props/Ferme", 30, { us: "Cart 1", fr: "Charrette 1", ger: "Karren 1" },
-        { us: "farm prop", fr: "objet de ferme", ger: "Hofgegenstand" }],
+        { us: "farm prop", fr: "objet de ferme", ger: "Hofgegenstand" }, 2],
       ["TypeWarrior/Cotentin_PanierOsier1", "Cotentin_PanierOsier1", "prop", "Props/Ville", 4,
         { us: "Wicker basket 1 (Cotentin)", fr: "Panier en osier 1 (Cotentin)", ger: "Weidenkorb 1 (Cotentin)" },
-        { us: "town prop", fr: "objet de ville", ger: "Stadtgegenstand" }],
+        { us: "town prop", fr: "objet de ville", ger: "Stadtgegenstand" }, 4],
       ["TypeWarrior/Chene_02", "Chene_02", "vegetation", "Vegetation/Arbres", 12000, { us: "Oak 2", fr: "Chêne 2", ger: "Eiche 2" },
-        { us: "tree", fr: "arbre", ger: "Baum" }]];
+        { us: "tree", fr: "arbre", ger: "Baum" }, 3]];
     return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
+  }
+
+  // Made-up models for the made-up types (a town hall, a tall house, a cart, an oak, a basket), as map_models gives
+  // them (an index and one buffer, map units, x east, y south, z up), so the preview draws models: the map's objects,
+  // what's placed, the ghost at the pointer and the place list's pictures. No pictures: each draws in its kind's colour.
+  let fakeMapModelsMade = null;
+  function fakeMapModels() {
+    if (fakeMapModelsMade) return fakeMapModelsMade;
+    // convex solids in the scene's axes (x east, y up, z south) as triangles, each turned to face outwards
+    const box = (w, h, d, y0 = 0, x = 0, z = 0) => {
+      const c = [];
+      for (const X of [x - w / 2, x + w / 2]) for (const Y of [y0, y0 + h]) for (const Z of [z - d / 2, z + d / 2]) c.push([X, Y, Z]);
+      return [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]
+        .flatMap(([a, b, e, f]) => [[c[a], c[b], c[e]], [c[a], c[e], c[f]]]);
+    };
+    const peak = (w, h, d, y0) => {  // a roof: four slopes to a ridge point
+      const top = [0, y0 + h, 0], k = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]].map(([X, Z]) => [X, y0, Z]);
+      return k.map((p, i) => [p, k[(i + 1) % 4], top]).concat([[k[0], k[1], k[2]], [k[0], k[2], k[3]]]);
+    };
+    const cone = (r, h, y0, n = 9) => {
+      const top = [0, y0 + h, 0], base = [0, y0, 0], ring = [];
+      for (let i = 0; i < n; i++) ring.push([r * Math.cos(2 * Math.PI * i / n), y0, r * Math.sin(2 * Math.PI * i / n)]);
+      return ring.flatMap((p, i) => [[p, ring[(i + 1) % n], top], [p, base, ring[(i + 1) % n]]]);
+    };
+    const outward = (tris) => {
+      const m = [0, 1, 2].map((k) => tris.reduce((s, t) => s + t[0][k] + t[1][k] + t[2][k], 0) / (3 * tris.length));
+      return tris.map(([a, b, c]) => {
+        const u = [0, 1, 2].map((k) => b[k] - a[k]), v = [0, 1, 2].map((k) => c[k] - a[k]);
+        let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+        const len = Math.hypot(...n) || 1, f = [0, 1, 2].map((k) => (a[k] + b[k] + c[k]) / 3 - m[k]);
+        n = n.map((x) => x / len);
+        return n[0] * f[0] + n[1] * f[1] + n[2] * f[2] < 0 ? [a, c, b, n.map((x) => -x)] : [a, b, c, n];
+      });
+    };
+    const shapes = [
+      [box(5200, 2600, 3600), peak(5600, 1600, 4000, 2600)],                           // the town hall
+      [box(2400, 4200, 2400), peak(2700, 1300, 2700, 4200)],                           // the tall town house
+      [box(1100, 300, 600, 350), box(160, 500, 700, 0, -380), box(160, 500, 700, 0, 380)],  // the cart
+      [box(280, 1400, 280), cone(1500, 3600, 1100)],                                   // the oak
+      [box(420, 380, 420), box(460, 60, 460, 380)],                                    // the basket
+    ].map((solids) => solids.flatMap(outward));
+    const sizes = shapes.map((t) => 3 * t.length);
+    const total = sizes.reduce((s, n) => s + n * (12 + 4 + 8 + 4), 0);
+    const buf = new ArrayBuffer(total), models = {};
+    let at = 0;
+    shapes.forEach((tris, t) => {
+      const n = sizes[t], part = { texture: null, vertices: n, triangles: tris.length };
+      const pos = new Float32Array(buf, (part.positions = at), 3 * n);
+      const nrm = new Int8Array(buf, (part.normals = at += 12 * n), 4 * n);
+      part.uvs = at += 4 * n;
+      const idx = new Uint32Array(buf, (part.indices = at += 8 * n), n);
+      at += 4 * n;
+      tris.forEach(([a, b, c, nn], i) => [a, b, c].forEach((p, j) => {
+        const v = 3 * i + j;
+        pos.set([p[0], p[2], p[1]], 3 * v);  // the game's axes: x east, y south, z up
+        nrm.set([Math.round(nn[0] * 127), Math.round(nn[2] * 127), Math.round(nn[1] * 127), 0], 4 * v);
+        idx[v] = v;
+      }));
+      models[t] = [part];
+    });
+    fakeMapModelsMade = { base: "", index: { bin: URL.createObjectURL(new Blob([buf])), models, textures: {} } };
+    return fakeMapModelsMade;
   }
 
   async function fakeGround(pack, lod) {
@@ -2125,7 +2255,25 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         newAmmo.push({ mod: current, id: stem, source, name });
         return { address: ammoAddress(stem), name, saved: current + "/src/studio.rndf" };
       },
-      flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null })) }),
+      flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null,
+        ...(FAKE_FLAG_GUIDE[f.flag] || {}) })), groups: ["kind", "combat", "movement", "sight", "player", "preview", "state", "unused"] }),
+      numbers: async () => FAKE_NUMBERS,
+      number_scale: async (address, prop) => {
+        const made = { SeuilMort: [250, 300, 400, 900, 2000, 400], VitesseLineaire: [520, 2600, 4030, 6110, 57200, 4550],
+          ProductionTime: [5, 5, 10, 20, 60, 20], ProductionPrice: [0, 5, 15, 40, 80, 15], DetectionBase: [26, 26000, 104000, 234000, 234000, 104000],
+          VitesseRotation: [0.26, 0.35, 0.52, 2.1, 3.5, 0.52] }[prop];
+        if (!made) return {};
+        const [min, low, median, high, max, game] = made;
+        return { class: "TUniteAuSolDescriptor", count: 204, min, low, median, high, max, game,
+          marks: [{ name: "Jeep", value: min }, { name: "M4 Sherman", value: median }, { name: "Tiger", value: max }] };
+      },
+      flag_check: async (address, flags) => {
+        const truck = /Truck|GMC/i.test(address), problems = [];
+        for (const n of [62, 63]) if (!truck && (flags || []).includes(n)) problems.push({ level: "error", flag: n,
+          why: `Flag ${n} (${n === 62 ? "truck" : "construction truck"}) crashes the game at match start on anything that isn't a truck. Take it off.` });
+        const adding = truck ? {} : { 62: "error", 63: "error" };
+        return { problems, blocked: problems.length > 0, adding };
+      },
       delete_unit: async (address, researched) => {
         const j = newAmmo.findIndex((n) => n.mod === current && ammoAddress(n.id) === address);
         if (j >= 0) {
@@ -2144,6 +2292,23 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       unit: async (address, lang, via) => unit(address, lang, via),
       upgrade: async (address, lang) => upgradeOf(address, lang),
+      plane_role: async (address) => roleOf(address),
+      set_plane_role: async (address, role) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (role === null || role === roleOf(address).game) roleEdits.delete(address); else roleEdits.set(address, role);
+        return { saved: current + "/src/studio.rndf", ...roleOf(address) };
+      },
+      ground_role: async (address) => groundRoleOf(address),
+      set_ground_role: async (address, role) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (role === "recon") groundRoleEdits.set(address, role); else groundRoleEdits.delete(address);
+        return { saved: current + "/src/studio.rndf", ...groundRoleOf(address) };
+      },
+      set_weapon_hits: async (unitAddress, weapon, hits) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (hits === "ground") hitsEdits.delete(weapon); else hitsEdits.set(weapon, hits);
+        return { saved: current + "/src/studio.rndf", hits };
+      },
       armour: async (address) => armourOf(address),
       set_armour: async (address, value) => {
         if (value === null || value === 6) armourEdits.delete(address); else armourEdits.set(address, value);
@@ -2845,7 +3010,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       map_view: async (pack, lod) => fakeGround(pack, lod || "lowdef"),
       map_ground: async () => ({ url: null }),
-      map_models: async () => ({}),  // no game models in the preview: the shapes stay  // the made-up island has only its colours
+      map_models: async () => fakeMapModels(),  // made-up models for the made-up types (fakeMapModels)
       // Map Paint's textures (rusemod.groundtex): a few made-up ones, each a two-colour checker
       ground_textures: async () => ({ base: "", groups: ["grass", "fields", "earth", "sand", "rock", "snow", "water",
         "roads", "town", "damage", "marks", "other"], textures: fakeTextures.map(([ref, group, words, a]) => ({

@@ -11,8 +11,8 @@ You only need **RUSE Launcher** to play mods. **RUSE Studio** is for making them
 ## Step 1: Download the Launcher
 
 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher) page.
-2. The newest one is at the top, marked **Latest** (for example *RUSE Launcher 0.4.8.4*).
-3. Scroll down to **Assets** under it and click **RUSE-Launcher-Setup-0.4.8.4.exe** (the version number changes; take
+2. The newest one is at the top, marked **Latest** (for example *RUSE Launcher 0.4.8.5*).
+3. Scroll down to **Assets** under it and click **RUSE-Launcher-Setup-0.4.8.5.exe** (the version number changes; take
    the `.exe` that starts with `RUSE-Launcher-Setup`). Your browser downloads it.
 
 The other files there (`RUSE-Launcher-notes.json`, *Source code*) aren't needed.
@@ -89,7 +89,7 @@ close it to close the app. Not tried on Linux yet: please tell us how it goes in
 
 1. Open the [studio releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) page. The Studio
    is a preview, so its releases are marked **Pre-release**: take the newest.
-2. Under **Assets**, click **RUSE-Studio-Setup-0.9.8.4.exe** (the newest version), run it as in Step 2.
+2. Under **Assets**, click **RUSE-Studio-Setup-0.9.8.5.exe** (the newest version), run it as in Step 2.
 3. Start **RUSE Studio**, then follow [[Your first mod|Your-First-Mod]] (10 minutes).
 
 **Next:** [[Play with friends|Play-With-Friends]]

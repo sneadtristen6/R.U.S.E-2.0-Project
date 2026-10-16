@@ -17,7 +17,35 @@ The **Units** tab lists every unit and building. Narrow it down with:
 2. Type a new value. It's saved in your mod at once; the game's value shows next to it.
 3. **Undo** next to a value puts the game's value back.
 
-Flags (what a unit can do or be) show as chips: the cross takes one off, the menu adds one.
+## Flags: what a unit is and what it can do
+
+Flags are on/off switches, numbered 0 to 104, that tell the game what a unit is (a plane, a truck, infantry, a
+building...) and what it can do (go into woods, see all around, fire only when ordered...). On a unit's page they show
+as chips, each with its name: hover one to see exactly what it does, how to use it and how sure we are about it. The
+cross takes one off; **Add a flag…** adds one, sorted by what the flags are for.
+
+**Flag guide: every flag explained** (under the flags) opens the whole list, with a search box. For each flag it says:
+
+- **what it is and what it does** in the game;
+- **how to use it**;
+- **how sure we are:** *tried in the game*, *from the game's units* (what the game's own units that have it have in
+  common), *expected, not tried yet*, *the game sets it itself* (it turns these on and off while it runs: in a unit's
+  list they do nothing), or *unused*.
+
+**The Studio checks every unit's flags** each time you change them, and again before the game starts:
+
+- **Known crashes stop the build**, so the game is never started with them. The unit's page says why and offers the
+  fix (**Take 62 off**, **Add 100**):
+  - 62 (truck) or 63 (construction truck) on anything that isn't a truck: the game crashes at match start;
+  - 99 (recon plane) on a plane with weapons, without 100 (fighter): the game crashes when the plane is sent to
+    attack. Use the **Role** box (Scout keeps its attacks) or add 100;
+  - 59 (paratroop transport) on anything but a plane, or on a plane with no unit to drop.
+- **What's expected to break a unit is a warning**, not a stop: 2 (aircraft) on a ground unit, 4 (building) or 49 on a
+  unit, 6 or 76 on a unit that should move (it stands still), 42 (infantry) on a vehicle, or taking off 43 (its team
+  counts it) or 22 (the player can order it).
+
+Useful ones, tried in the game: take **11, 21 and 55** off together to let a vehicle into woods; **1** gives any unit
+indirect fire; **71** sees all around; **77** fires only when ordered.
 
 ## Make a new unit
 
@@ -76,10 +104,46 @@ left researched from a hidden one becomes buyable from the start.
 366 units from WWI to today, each another maker's free 3D model, can be added to your mod as new units, at their real
 size and behind research: see [[Units from other eras|Units-From-Other-Eras]].
 
-## Give a weapon other ammo
+## Weapons and ammo
 
-A weapon can fire another unit's ammunition; its muzzle flash and sound come with it. Ammunition is sorted by type
-(AP, HE, anti-aircraft, machine guns, bombs, rockets...).
+The **Weapons** box on a unit's page lists its weapons (Weapon 1 is the main gun). **How weapons and ammo work**, under
+it, has these steps too.
+
+1. **Each weapon fires one ammo.** The list beside it picks which: any of the game's ammo, sorted by type (AP, HE,
+   anti-aircraft, machine guns, bombs, rockets...), or a copy you made. Its muzzle flash and sound come with it.
+2. **The ammo decides what the weapon does:** its damage, range, rate of fire and what it can hit. **Open the ammo**
+   to see and change its numbers.
+3. **Changing an ammo changes every unit that fires it** (its page lists them). For one unit only: on the ammo's page
+   click **Copy this ammo…**, change the copy, then pick the copy in the weapon's list. A weapon's **range** slider
+   asks the same: this unit only, or every unit with that ammo.
+4. **Hits** (under a weapon) picks the ground, planes or both. A plane's **Role** box sets how it attacks (below).
+5. **Adding or removing a weapon isn't possible yet:** weapons are tied to the model's animations, and we're not that
+   far along yet.
+
+## Change a plane's role (Studio 0.9.8.5)
+
+A plane's page has a **Role** box: **Fighter**, **Fighter-bomber**, **Bomber** or **Scout**. How it flies and attacks,
+how the computer players use it and its build menu words change with it.
+
+- **Bomber:** a bomber drops its bombs on a straight run, and only from a bomb bay. Pick bombs for one of its weapons
+  first (Weapons, below), then make it a Bomber: its bombs go in a bomb bay copied from a game bomber's, and you can
+  change them there. This is the fix for a fighter-bomber given carpet bombs that dropped nothing. Seen in the game.
+- **Scout:** a plane with guns stays able to attack (the box says **Scout, keeping its attacks**) and gets the scouts'
+  sight. Seen in the game with a Stuka and an ME109.
+- A paratroop plane keeps its role. **Undo** beside the box gives the game's role back, its bombs where they were.
+
+## Make a vehicle recon (Studio 0.9.8.5)
+
+A ground vehicle's **Role** box: **Recon** gives it the recon cars' sight (much further than a tank's), how the
+computer players use them, their build menu words, and it can go into woods. It stays as tough and armed as it is.
+Seen in the game with a Panzer IV.
+
+## What a weapon hits (Studio 0.9.8.5)
+
+Under each weapon, **Hits** picks **The ground**, **Planes**, or **The ground and planes**. Planes: the weapon fires a
+copy of its ammo that hits planes (and does nothing to the ground). Both: it keeps its ammo and gets a second weapon
+beside it for planes, the way the game's AA guns carry one for each. A tank firing at planes is seen in the game; a
+plane's gun set to hit the ground alone does no damage yet.
 
 ## Test it
 

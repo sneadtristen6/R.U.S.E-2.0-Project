@@ -1426,7 +1426,8 @@ def unit_classes(base, run, zz_win, result: BuildResult) -> None:
     new = []
     for name, op in wanted:
         obj = run.game.objects[name]
-        like = ul.by_path.get(op.source) if op.kind == "clone" else None
+        # a copy of a unit's part (its bomb bay, say) is placed with the unit as its source: only a unit takes a class
+        like = ul.by_path.get(op.source) if op.kind == "clone" and obj.cls in unit_kinds else None
         if like is None:
             if obj.cls in unit_kinds:
                 result.findings.append(Finding("warning", f"{op.at()}: {name} is a new {obj.cls} but isn't a copy of "

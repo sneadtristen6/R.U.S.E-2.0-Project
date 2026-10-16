@@ -1,0 +1,745 @@
+# 数値ガイド（日本語）（rusemod.numberinfo。正本は numberinfo.toml の英語）。
+[SeuilMort]
+what = "耐久力"
+does = "破壊するのに必要なダメージ量。ゲームの戦車・車両・分隊・砲のほとんどは 400 です。ティーガーがジープより頑丈なのは主に装甲レベル（装甲）のためで、装甲に対して威力が足りない弾のダメージを毎発減らします。建物は 50〜4,500。"
+[SeuilPinned]
+what = "釘付けのしきい値"
+does = "ユニットが釘付けになる（前進をやめ、射撃が減る）までに必要な制圧量。弾薬の制圧半径内の近くに着弾すると増えます。ほとんどのユニットは 200。高いほど釘付けにしにくくなります。"
+[ArmureHint]
+what = "表示される装甲レベル"
+does = "ユニットのカードと生産メニューに表示される装甲レベル（盾の数字、1〜5）。Studio の「装甲」欄は実際の装甲と一緒にこれを設定するので、両者は常に一致します。"
+[BaseBlindage]
+what = "装甲"
+does = "ユニットが戦闘で使う装甲（ゲーム内で 1〜10）。高いほど弱い弾から受けるダメージが減ります。「装甲」欄で変更してください。ゲームのレベルの1つを選び、カードの盾の数字も同じに保ちます（ゲーム内で確認済み）。"
+[ReculeSeulementSiUberstress]
+what = "完全に釘付けのときだけ後退"
+does = "1：ユニットは完全に釘付けになったとき（極度の制圧）だけ砲火の中で後退し、それより前には後退しません。ゲームの 38 ユニットが持っています。"
+[VitesseLineaire]
+what = "速度"
+does = "道路外を移動するときの速さ。シャーマンは 4,550（約 35 km/h）、ジープは 6,110（約 47 km/h）、小銃分隊は 3,120（約 24 km/h）。"
+["TAvionDescriptor.VitesseLineaire"]
+what = "飛行速度"
+does = "航空機の飛ぶ速さ。ゲーム内で 13,000〜46,800（約 225〜810 km/h）。"
+[VitesseLineaireAuSol]
+what = "地上速度"
+does = "航空機が離着陸時に飛行場を滑走する速さ。"
+[VitesseLineaireIdle]
+what = "巡回速度"
+does = "やることがなく旋回しているときの航空機の速さ。最高速度より遅くなります。"
+[VitesseCombat]
+what = "戦闘中の速度"
+does = "戦闘中に動く速さ。戦車や車両では通常「速度」と同じ。分隊や牽引砲ではずっと遅くなります（小銃分隊 1,040、約 8 km/h。対戦車砲 520、約 4 km/h、砲兵が押して動かす）。"
+[SpeedBonusOnRoad]
+what = "道路での速度ボーナス"
+does = "道路外より道路上でどれだけ速いか。0.6 は約 60% 速いという意味です。分隊と砲は変身するトラックとしてこれを受けます。航空機とトラックは 1。"
+[MaxAcceleration]
+what = "加速"
+does = "速度に達するまでの速さ。ほとんどの戦車は 3,900。"
+[MaxDeceleration]
+what = "制動"
+does = "減速して止まるまでの速さ。"
+[TempsDemiTour]
+what = "反転時間"
+does = "反対方向へ向き直るのにかかる秒数。歩兵 0.01（即座）、車両 0.5、戦車 1、最も遅いもので 6。"
+[Radius]
+what = "地上での大きさ"
+does = "ユニットが占める場所。他のユニットは回り込むとき、その中心からこの距離を保ちます。歩兵 104〜130（約 0.5 m）、戦車 520〜780（2〜3 m）、砲 390〜650、トラック 2,000、建物 7,800〜13,000（30〜50 m）。"
+["TAvionDescriptor.Radius"]
+what = "空中での大きさ"
+does = "他の航空機がよけて飛ぶときに航空機が占める場所。780〜2,600（3〜10 m）。"
+[StickToGround]
+what = "地形に沿う"
+does = "1：ユニットは立っている斜面に合わせて傾きます。ゲームのすべての地上ユニットと建物が持っています。"
+[Scale]
+what = "モデルのサイズ"
+does = "見た目のみ：ユニットの 3D モデルをこの倍率で描きます。ユニットは 1、歩兵は 0.2、建物は 0.1。インポートしたモデルでは Studio の「サイズ」スライダーが代わりにモデル自体を変えます。"
+[DetectionBase]
+what = "視界"
+does = "地上ユニットが見える距離。戦車 104,000（約 400 m）、偵察車 234,000（900 m）、偵察機 195,000（750 m）。234,000 だけを与えた IV 号戦車は偵察として動きませんでした。残りは「役割」欄が与えます。"
+[PorteeVisionVolant]
+what = "対空視界"
+does = "航空機が見える距離。ほとんどのユニットは 208,000（800 m）。一部は 2,600（10 m：航空機がほとんど見えない）。"
+[SignatureRadar]
+what = "レーダー反応"
+does = "敵のレーダーにどんな種類の反応として映るか。1 地上ユニット、2 建物、3 航空機。"
+[AltitudeNoise]
+what = "高度の揺れ"
+does = "見た目のみ：飛行中に航空機の高度がどれだけ揺れるか（130〜260、1 m 未満）。"
+[PorteeAttackReflexAir]
+what = "自動攻撃範囲（空）"
+does = "命令なしで航空機が自分から敵機を追う距離。130,000〜208,000（500〜800 m）。"
+[PorteeAttackReflexSol]
+what = "自動攻撃範囲（地上）"
+does = "航空機が自分から地上目標を追う距離。ゲームのすべての航空機で 182,000（700 m）。"
+[SecondaryWeaponMaxAmmo]
+what = "搭載する爆弾またはロケット"
+does = "航空機が再武装のために帰還するまでに積んでいる第2兵装（爆弾、ロケット）の数。ゲーム内で 1〜4。"
+[ProductionPrice]
+what = "価格"
+does = "生産にかかる費用（$）。5つの戦闘日付それぞれに1つ（ゲームは日付ごとに価格を持ちます）。"
+[ProductionTime]
+what = "生産時間"
+does = "生産にかかる秒数。同じ種類の工場が複数あれば分担されます。"
+[UpgradePrice]
+what = "研究費"
+does = "生産できるようになる前に研究するための費用（$）（他のユニットから研究されるユニット）。"
+[UpgradeTime]
+what = "研究時間"
+does = "研究にかかる時間（秒）。"
+[IsUpgrade]
+what = "改良型"
+does = "1：ユニットは研究元のユニットの改良型です（研究後、生産メニューで研究元と置き換わります）。"
+[ShowInMenu]
+what = "生産メニューに表示"
+does = "1：その戦闘日付で生産メニューに表示されます（5つの日付それぞれに1つの値）。"
+[PositionInMenu]
+what = "メニューの位置"
+does = "生産メニューのどこに並ぶか。同じ系列のユニットは1つの位置を共有し、改良型はその上に重なります。"
+[Factory]
+what = "工場"
+does = "どの生産メニューに入っているか（Studio は各メニューを名前で表示し、ユニットを他国のメニューへ移せます）。"
+[Menu]
+what = "建物メニュー"
+does = "建物が建物メニューのどのページにあるか。"
+[Nationalite]
+what = "国"
+does = "どの国に属するか。0 アメリカ、1 ドイツ、2 イギリス、3 フランス、4 イタリア、5 ソ連、6 日本。"
+[InitialFlagSet]
+what = "フラグ"
+does = "ユニットのフラグ：ユニットが何であり何ができるかを決める番号付きのスイッチ。それぞれフラグの下の「フラグガイド」で説明されています。"
+[DescriptorId]
+what = "ID"
+does = "ユニット固有の番号。ユニットごとに異なり、ゲームとセーブデータはこれでユニットを見つけます。Studio は新しいユニットに空いている番号を付けます。"
+[TrackingId]
+what = "統計 ID"
+does = "試合終了時の統計とゲーム自身の記録がユニットを識別する番号。"
+[Key]
+what = "キー"
+does = "いくつかのユニット（戦車 8、航空機 7、分隊 2）が持つ数値。用途はまだ分かっていません。"
+[TypeForAcknow]
+what = "ボイスの種類"
+does = "ユニットが命令に応答するボイスのセット。"
+[AcknowUnitType]
+what = "ボイスの区分"
+does = "ボイスが呼ぶユニットの種類（戦車、歩兵、航空機…）。"
+[IconeType]
+what = "マップアイコン"
+does = "ズームアウトしたマップテーブル上でユニットが表示するアイコン。"
+[Category]
+what = "カテゴリー"
+does = "ゲームがユニットをどの種類として数えるか。1 偵察（「偵察機」の役割で設定。ゲーム内で確認済み）、7 航空機、8 と 9 建物。他はまだすべてに名前が付いていません。"
+[CategorieIA]
+what = "コンピューター用カテゴリー"
+does = "コンピューターがユニットを何に使うか。3 偵察（「役割」欄が役割と一緒に設定。ゲーム内で確認済み）。他はまだすべてに名前が付いていません。"
+[CategoryVolant]
+what = "航空機の役割"
+does = "どの種類の航空機として飛ぶか（戦闘機、戦闘爆撃機、爆撃機、偵察機、空挺）：どう動き、どう攻撃するか。「役割」欄で変更してください。フラグも一緒に設定されます。"
+[IsDepotForIA]
+what = "コンピューター用の補給所"
+does = "1：コンピューターはこの建物を補給所として扱います。"
+[TypeBatiment]
+what = "建物の種類"
+does = "ゲームにとってどんな建物か（司令部、兵舎、補給所…）。フラグ 5 と TypeBatiment -7 を持つ囮の建物は実際に生産します。"
+[BuildPolicy]
+what = "建設できる場所"
+does = "建物を置ける場所。2 どこでも（防御施設）、3 補給所の土台の上。この値がなければ近くに道路が必要です。"
+[DistanceToRoad]
+what = "道路からの距離"
+does = "建物を道路からどれだけ近くに置く必要があるか。5,000〜31,000（20〜120 m）。トーチカは 8,000（約 30 m）。"
+[CanBeSpawnedInMapMulti]
+what = "マルチプレイマップに配置可能"
+does = "1：建物をマルチプレイマップのシナリオに置けます。"
+["TBatimentPaths.Radius"]
+what = "建物の周りの経路"
+does = "ユニットの経路が建物の周りをどれだけ離れて通るか。"
+[TirEnMouvement]
+what = "移動しながら射撃"
+does = "1：この兵器はユニットが移動中でも射撃できます。"
+[SalveNumber]
+what = "斉射番号"
+does = "この兵器がどの斉射で撃つか（-1：斉射ではなく単独で撃つ）。"
+["TWeaponDescriptor.Salves"]
+what = "斉射"
+does = "兵器が斉射で撃つか（1）、1発ずつ撃つか（-1）。"
+[Puissance]
+what = "ダメージ"
+does = "1発命中したときの装甲前のダメージ。小火器 2〜10、戦車砲は数十〜数百、爆弾と V2 ははるかに多い（原子爆弾は最大 2,000,000）。受けたダメージが耐久力に達するとユニットは破壊されます。"
+[Level]
+what = "弾薬レベル"
+does = "弾薬のレベル（1〜5）。ゲームはこれを目標の装甲と比べます。レベルの高い弾薬ほど装甲ユニットに多くのダメージを与えます。正確な比べ方はまだ測定されていません。"
+[Arme]
+what = "兵器の種類"
+does = "どんな兵器が撃つか（機関銃、砲、榴弾砲、爆弾…）：どんな目標に強いか、そしてカード上のアイコン。"
+[PorteeMaximale]
+what = "射程"
+does = "命中させられる距離。13,000（50 m）〜2,600,000（10 km、V2）。戦車砲は通常 65,000〜130,000（250〜500 m）。"
+[PorteeMinimale]
+what = "最小射程"
+does = "これより近くには撃てません（砲兵と迫撃砲）。13,000〜169,000（50〜650 m）。"
+[TempsEntreDeuxTirs]
+what = "射撃間隔"
+does = "2発の間の秒数。機関銃 0.2、戦車砲は数秒、最も重い砲は最大 60。低いほど多く撃ちます。"
+[TempsEntreDeuxSalves]
+what = "斉射間隔"
+does = "斉射する兵器（ロケット砲、爆弾）の2回の斉射の間の秒数。"
+[NbTirParSalves]
+what = "1斉射の弾数"
+does = "1回の斉射で撃つ弾数。1〜100。"
+[AngleDispersion]
+what = "散布"
+does = "弾が狙った点からどれだけそれるか。0.01（約 0.5 度、非常に正確）〜0.3（17 度、砲兵）。"
+[PourcentageTirDirect]
+what = "停止時の命中率"
+does = "ユニットが止まっているときに弾が当たる確率。0.5〜1（50%〜100%）。"
+[PourcentageTirDirectEnMouvement]
+what = "移動時の命中率"
+does = "ユニットが動いているときに弾が当たる確率。0.4〜1（40%〜100%）。"
+[RayonPinned]
+what = "制圧半径"
+does = "着弾点からどれだけ離れたユニットまで制圧するか（制圧量を増やす）。130（50 cm）〜78,000（300 m）。"
+[TirIndirect]
+what = "間接射撃"
+does = "1：弾薬は間接射撃で、障害物越しに、他のユニットが見つけた目標へ撃たれます（砲兵）。"
+[AllowAmbushShot]
+what = "待ち伏せ可能"
+does = "1：森の中の待ち伏せから撃てる弾薬です。"
+[ProjectileType]
+what = "弾の種類"
+does = "見た目のみ：飛んでいる弾をどう描くか（砲弾、銃弾、ロケット、爆弾）。"
+[AmmunitionId]
+what = "弾薬 ID"
+does = "弾薬固有の番号（1000〜1138）。弾薬ごとに異なります。Studio はコピーに空いている番号を付けます。"
+[NeedModelChange]
+what = "射撃時にモデルを切り替え"
+does = "見た目のみ：分隊の対戦車兵器で 1。撃つとき、兵士はその兵器を持ったモデルに切り替わります。"
+[TempsAnimation]
+what = "射撃アニメーションの長さ"
+does = "見た目のみ：兵士の射撃アニメーションの長さ（分隊の対戦車兵器で 1.6 秒）。"
+[FX_vitesse_de_depart]
+what = "弾の速さ（描画）"
+does = "見た目のみ：描かれる弾が銃口を出る速さ。ゲーム単位毎秒で 150〜520,000（毎秒 2,000 m）。"
+[FX_frottement]
+what = "弾の空気抵抗（描画）"
+does = "見た目のみ：描かれる弾が空中でどれだけ速く減速するか。"
+[FX_tir_tendu]
+what = "低伸弾道（描画）"
+does = "見た目のみ：1 で弾を弧ではなく平らにまっすぐ描きます。"
+[FX_tir_sans_physic]
+what = "物理なしで描く弾"
+does = "見た目のみ：1 で弾を重力と空気抵抗なしで描きます。"
+[AltitudeDeVol]
+what = "飛行高度"
+does = "航空機が飛ぶ高さ。52,000〜208,000（200〜800 m）。"
+[ChaosAltitudeDeVol]
+what = "飛行高度のばらつき"
+does = "飛行高度が機体ごと・時間ごとにどれだけ変わるか。7,800〜32,500（30〜125 m）。"
+[AltitudeDownAirport]
+what = "着陸時の高度"
+does = "航空機が飛行場へ降下を始めるときの高度。65,000（250 m）。"
+[AltitudeDownAttack]
+what = "攻撃高度"
+does = "地上攻撃のために航空機がどこまで降りるか。13,000〜39,000（50〜150 m）。"
+[LengthDownAirport]
+what = "着陸進入の長さ"
+does = "飛行場への降下の長さ。78,000〜156,000（300〜600 m）。"
+[LengthUpAirport]
+what = "離陸後の上昇の長さ"
+does = "離陸後の上昇の長さ。52,000〜130,000（200〜500 m）。"
+[LengthDownAttack]
+what = "攻撃降下の長さ"
+does = "地上目標への降下の長さ。13,000〜208,000（50〜800 m）。"
+[LengthUpAttack]
+what = "攻撃後の引き起こしの長さ"
+does = "地上攻撃後の上昇の長さ。13,000〜208,000（50〜800 m）。"
+[DelaiAttackGround]
+what = "地上攻撃前の待ち時間"
+does = "航空機が攻撃進入中、地上目標を撃つ前に待つ秒数。0.1〜4.5。"
+[GroundAttackAcceleration]
+what = "地上攻撃時の加速"
+does = "地上攻撃中に航空機がどれだけ速く加速するか。"
+[GroundAttackDecceleration]
+what = "地上攻撃時の減速"
+does = "地上攻撃のために航空機がどれだけ速く減速するか。"
+[MustDiveAttack]
+what = "急降下爆撃機"
+does = "1：航空機は急角度の急降下で攻撃します（ゲームの航空機 2 機が持っています）。"
+[DiveAttackStartAltitude]
+what = "急降下開始高度"
+does = "急降下爆撃機が急降下を始める高度。44,200〜91,000（170〜350 m）。"
+[DiveAttackEndAltitude]
+what = "引き起こし高度"
+does = "急降下爆撃機が引き起こす前にどこまで降りるか。31,200〜39,000（120〜150 m）。"
+[DiveAttackAcceleration]
+what = "急降下中の加速"
+does = "急降下爆撃機が急降下中にどれだけ速く加速するか。"
+[DiveAttackAngleToHit]
+what = "投下時の急降下角"
+does = "爆弾を投下する前に急降下がどれだけ急である必要があるか。10〜35 度。"
+[DiveAttackDownAngleSpeed]
+what = "機首下げの速さ"
+does = "急降下爆撃機が機首を下げて急降下に入る速さ（毎秒 90 度）。"
+[DiveAttackDownRollSpeed]
+what = "急降下に入るロールの速さ"
+does = "急降下を始めるとき急降下爆撃機が横転する速さ（毎秒 120 度）。"
+[DiveAttackUpAngleSpeed]
+what = "引き起こしの速さ"
+does = "急降下爆撃機が急降下から機首を上げる速さ（毎秒 35〜50 度）。"
+[DiveAttackUpRollSpeed]
+what = "急降下後のロールの速さ"
+does = "急降下の後、急降下爆撃機が水平に戻る速さ（毎秒 60 度）。"
+[LoopingStartAltitude]
+what = "宙返り開始高度"
+does = "再進入のために宙返りを始めるときの航空機の高度。57,200〜109,200（220〜420 m）。"
+[LoopingAltitudeToHit]
+what = "宙返り頂点の高度"
+does = "航空機の宙返りの頂点の高さ。70,200〜124,800（270〜480 m）。"
+[LoopingAcceleration]
+what = "宙返り中の加速"
+does = "宙返りから抜けるとき航空機がどれだけ速く加速するか。"
+[LoopingDecceleration]
+what = "宙返り中の減速"
+does = "宙返りへ上昇するとき航空機がどれだけ速く減速するか。"
+[LoopingPitchAngleSpeedStart]
+what = "ピッチの速さ（宙返り開始）"
+does = "宙返りの始めに機首が上がる速さ（毎秒 20 度）。"
+[LoopingPitchAngleSpeedEnd]
+what = "ピッチの速さ（宙返り終了）"
+does = "宙返りの終わりに機首が回る速さ。毎秒 30〜90 度。"
+[PitchAngleMax]
+what = "最大の上昇角・降下角"
+does = "通常飛行で機首をどこまで上げ下げできるか。5〜80 度。"
+[RollAngleMax]
+what = "最大バンク角"
+does = "旋回でどこまで機体を傾けるか。5〜50 度。"
+[RollAcceleration]
+what = "バンクの加速"
+does = "バンクに入る・戻るときの速さ（4〜8）。"
+[RollRatioSpeed]
+what = "旋回あたりのバンク"
+does = "ある旋回に対してどれだけ傾くか。0.1〜2。"
+[RadiusStandard]
+what = "旋回半径"
+does = "通常の旋回の広さ。26,000〜104,000（100〜400 m）。"
+[RadiusApproach]
+what = "接近時の旋回半径"
+does = "送られた場所へ近づくときの旋回の広さ。10,400〜104,000（40〜400 m）。"
+[RadiusApproachAttackGround]
+what = "地上攻撃の接近旋回半径"
+does = "地上攻撃の位置につくときの旋回の広さ。20,800〜104,000（80〜400 m）。"
+[RadiusApproachEngage]
+what = "空戦の接近旋回半径"
+does = "敵機に近づくときの旋回の広さ。15,600〜52,000（60〜200 m）。"
+[RadiusEngage]
+what = "空戦開始距離"
+does = "空戦を始めるために敵機がどれだけ近くにいる必要があるか。10,400〜104,000（40〜400 m）。"
+[RadiusEngaged]
+what = "空戦中の旋回半径"
+does = "空戦中の旋回の広さ。26,000〜104,000（100〜400 m）。"
+[RadiusChangeAltitude]
+what = "高度変更の距離"
+does = "高度を変える間に航空機が飛ぶ距離。9,750〜52,000（40〜200 m）。"
+[CrashGravity]
+what = "撃墜時の落下"
+does = "撃墜された航空機の落ちる速さ。1,300〜5,200。"
+[CrashPitchAcceleration]
+what = "撃墜時の機首下げ"
+does = "見た目のみ：撃墜された航空機の機首がだんだん速く下がる度合い（毎秒 1〜5 度ずつ、毎秒）。"
+[CrashPitchMaxSpeed]
+what = "撃墜時の最速の機首下げ"
+does = "見た目のみ：撃墜された航空機の機首が下がる最高の速さ（毎秒 5〜35 度）。"
+[CrashRollAcceleration]
+what = "撃墜時のきりもみ"
+does = "見た目のみ：撃墜された航空機が回転し始める速さ（毎秒 8〜70 度ずつ、毎秒）。"
+[CrashRollMaxSpeed]
+what = "撃墜時の最速のきりもみ"
+does = "見た目のみ：撃墜された航空機が回転する最高の速さ（毎秒 150〜1,000 度）。"
+[VitesseRotation]
+what = "砲塔の旋回速度"
+does = "照準のために砲塔または砲が回る速さ。毎秒 15〜200 度。遅い砲塔ほど新しい目標へ砲を向けるのに時間がかかります。"
+[AngleRotationMax]
+what = "砲塔の旋回限界"
+does = "砲塔または砲が正面から左右それぞれにどこまで回れるか。15 度（車体の砲）〜360（全周）。"
+[AngleRotationBase]
+what = "砲塔の待機角度"
+does = "待機中の砲塔の向き（180 度：後ろ向き、一部の車両）。"
+[AngleRotationBasePitch]
+what = "砲の待機仰角"
+does = "待機中に砲が向く高さ。10〜30 度。"
+[AngleRotationMaxPitch]
+what = "砲の最大仰角"
+does = "砲が向ける最も高い角度。15〜90 度（対空砲は真上を向きます）。"
+[AngleRotationMinPitch]
+what = "砲の最小仰角"
+does = "砲が向ける最も低い角度（砲 2 門で 10 度）。"
+[NbFX]
+what = "砲口"
+does = "見た目のみ：撃つときに砲塔または兵器が描く発砲炎の数（1〜8：多砲身兵器の砲身）。"
+[Spread]
+what = "待機中の見回し"
+does = "見た目のみ：待機中の砲または砲塔が見回すために振る角度（80〜180 度）。"
+[TurretRotationSpeedMultiplier]
+what = "待機中の旋回速度"
+does = "見た目のみ：見回し中の待機砲塔の旋回速度。通常速度の何倍か（0.25〜1）。"
+[WaitMinInSeconds]
+what = "待機の間（最短）"
+does = "見た目のみ：待機中の砲塔が別の方向を見るまでの最短の待ち時間。"
+[WaitMaxInSeconds]
+what = "待機の間（最長）"
+does = "見た目のみ：待機中の砲塔が別の方向を見るまでの最長の待ち時間。"
+[VerticalAngleMax]
+what = "待機中の最も高い視線"
+does = "見た目のみ：待機中の対空砲が空を見回すときに向ける高さ（10〜25 度）。"
+[VerticalAngleMin]
+what = "待機中の最も低い視線"
+does = "見た目のみ：待機中の砲が見回すときに向ける低さ（砲 1 門で 25 度）。"
+[UseCustomVerticalAngles]
+what = "独自の待機角度"
+does = "見た目のみ：1 で砲兵がゲームの角度の代わりに上の2つの待機角度を使います。"
+[AngleMaxDegree]
+what = "部品の回転限界（度）"
+does = "見た目のみ：モデルの可動部品が一方へ回る角度（45〜180 度）。"
+[AngleMinDegree]
+what = "部品の回転限界・反対側（度）"
+does = "見た目のみ：モデルの可動部品が反対側へ回る角度（-180〜-45 度）。"
+[TruckType]
+what = "トラックの種類"
+does = "トラックの役目（補給、建設などゲームの種類、1〜5）。各番号にはまだ名前が付いていません。"
+[BaseSize]
+what = "駒の大きさ"
+does = "見た目のみ：ズームアウトしたマップテーブル上のユニットの駒の人形の大きさ（8〜20）。"
+["TFigurineOptions.Scale"]
+what = "駒の人形の大きさ"
+does = "見た目のみ：駒の上の小さな人形を何倍の大きさで描くか（2〜4）。"
+["TPawnDescriptor.Power"]
+what = "駒の重さ"
+does = "見た目のみ：マップテーブル上で駒が混み合ったとき、周りの駒をどれだけ押しのけるか（385〜1,386）。"
+["TPawnDescriptor.Radius"]
+what = "テーブル上の駒の大きさ"
+does = "見た目のみ：マップテーブル上のユニットの丸い駒の大きさ（385〜1,386）。"
+[SocleHeight]
+what = "駒の台座の高さ"
+does = "見た目のみ：駒の台座の厚さ（200）。"
+[OffSetZFigurine]
+what = "駒の人形の高さ"
+does = "見た目のみ：人形が台座からどれだけ上に立つか（200）。"
+[DureteRepositionnement]
+what = "駒の押し戻し"
+does = "見た目のみ：混み合った駒がどれだけしっかり元の位置へ戻るか（10）。"
+[RandomTranslateFactor]
+what = "駒のずらし"
+does = "見た目のみ：積み重ねが1つに見えないよう駒をランダムにずらす量（0.15）。"
+[ForceOneStack]
+what = "1つの山"
+does = "見た目のみ：1 でこの種類の駒をすべて1つの山にまとめて表示します。"
+[ScaleWithVisibilityRange_Coef]
+what = "遠くで大きく"
+does = "見た目のみ：カメラが遠いとき見えるように、モデルをどれだけ大きく描くか（3〜22 倍）。"
+[InnerScale]
+what = "モデルの内部サイズ"
+does = "見た目のみ：兵士やモデルを自分の部品の中で描く大きさ（0.46〜1）。"
+[MaxMaskedAnimationCount]
+what = "同時アニメーション数"
+does = "見た目のみ：兵士が体の部位で同時に再生できるアニメーションの数（1 または 2）。"
+[GeometrySubTiling_OneCircle]
+what = "円の細かさ"
+does = "見た目のみ：地面の選択円の分割の細かさ（3）。"
+[MaxRadiusExpander]
+what = "最大の円"
+does = "見た目のみ：選択円が広がる最大の大きさ。"
+[MinRadiusExpander]
+what = "最小の円"
+does = "見た目のみ：選択円が縮む最小の大きさ。"
+["TMetaCircleDrawer.MaxRange"]
+what = "円の描画距離"
+does = "見た目のみ：ユニットの下の円をどの距離まで描くか。"
+[MaxV]
+what = "円のテクスチャの伸び"
+does = "見た目のみ：円の画像を円に沿ってどれだけ伸ばすか。"
+[MaxWidth]
+what = "円の線の太さ（最大）"
+does = "見た目のみ：ズームアウトしたときの円の線の最大の太さ。"
+[MinWidth]
+what = "円の線の太さ（最小）"
+does = "見た目のみ：近くで見たときの円の線の最小の太さ。"
+[MaxZOffset]
+what = "円の浮かせ（最大）"
+does = "見た目のみ：丘に隠れないよう円を地面から浮かせる最大の量。"
+[MinZOffset]
+what = "円の浮かせ（最小）"
+does = "見た目のみ：円を地面から浮かせる最小の量。"
+[RoueNb]
+what = "転輪"
+does = "見た目のみ：履帯が通る転輪の数（5〜13）。履帯のアニメーション用。"
+[RouePartieSolMin]
+what = "接地する最初の転輪"
+does = "見た目のみ：履帯がどの転輪から地面に触れるか。"
+[RouePartieSolMax]
+what = "接地する最後の転輪"
+does = "見た目のみ：履帯がどの転輪まで地面に触れるか。"
+[Cote]
+what = "履帯の側"
+does = "見た目のみ：この履帯が車両のどちら側にあるか。"
+[PartieHauteDeformNb]
+what = "上部のたるみ"
+does = "見た目のみ：履帯の上側で転輪の間がたるむ点の数（2）。"
+[CahotsMax]
+what = "同時の揺れ"
+does = "見た目のみ：履帯を同時に伝わる揺れの数（2）。"
+[DelaiPropagation]
+what = "揺れの伝わる時間"
+does = "見た目のみ：揺れが履帯を伝わるのにかかる時間（1.2 秒）。"
+[ForceBruitRoulementBas]
+what = "履帯の振動（下）"
+does = "見た目のみ：走行中に履帯の下側がどれだけ振動するか。"
+[ForceBruitRoulementHaut]
+what = "履帯の振動（上）"
+does = "見た目のみ：走行中に履帯の上側がどれだけ振動するか。"
+[ForceCahotMin]
+what = "揺れの強さ（最小）"
+does = "見た目のみ：履帯の最も小さな揺れの強さ。"
+[ForceCahotMax]
+what = "揺れの強さ（最大）"
+does = "見た目のみ：履帯の最も大きな揺れの強さ。"
+[ForceDeformationPartieHaut]
+what = "上部のたるみ量"
+does = "見た目のみ：履帯の上側が転輪の間でどれだけたるむか。"
+[FrequenceCahots]
+what = "揺れの頻度"
+does = "見た目のみ：揺れが履帯を伝わる頻度。"
+[IntervalleCahots]
+what = "揺れの間隔"
+does = "見た目のみ：履帯に沿った揺れ同士の間隔。"
+[LongueurCahotMin]
+what = "揺れの長さ（最小）"
+does = "見た目のみ：履帯の揺れの最も短い長さ。"
+[LongueurCahotMax]
+what = "揺れの長さ（最大）"
+does = "見た目のみ：履帯の揺れの最も長い長さ。"
+[CoefElev]
+what = "車輪の上下動"
+does = "見た目のみ：車輪が地面に沿って上下する量（2〜10）。"
+[CoefRotate]
+what = "車輪の回転"
+does = "見た目のみ：車両の速度に対して車輪が回る速さ（1）。"
+[CoefRotateDirection]
+what = "操舵輪の切れ"
+does = "見た目のみ：車両の旋回に対して操舵輪がどれだけ切れるか（1）。"
+[AngMaxRotateDirection]
+what = "最大舵角"
+does = "見た目のみ：前輪が切れる角度（45 度）。"
+[AngParSecondeRotateDirection]
+what = "操舵の速さ"
+does = "見た目のみ：前輪が切れる速さ（毎秒 360 度）。"
+[Coef_Bruit_Sur_Pente]
+what = "坂での車体の揺れ"
+does = "見た目のみ：坂で車体がどれだけ揺れるか。"
+[Coef_Bruit_Sur_Ressort]
+what = "サスペンションの揺れ"
+does = "見た目のみ：車体がばねの上でどれだけ弾むか。"
+[Coef_Bruit_Sur_Roulis]
+what = "横揺れ"
+does = "見た目のみ：車体が左右にどれだけ揺れるか。"
+[Coef_Sur_Pente_Relation_Acceleration]
+what = "加速時の前上がり"
+does = "見た目のみ：車両が加速すると後ろへ、ブレーキで前へ車体がどれだけ傾くか。"
+[Coef_Sur_Pente_Relation_Terrain]
+what = "地形に沿った傾き"
+does = "見た目のみ：車体が前後方向に斜面をどれだけなぞるか。"
+[Coef_Sur_Roulis_Relation_Rotation]
+what = "旋回での傾き"
+does = "見た目のみ：旋回で車体がどれだけ外側へ傾くか。"
+[Coef_Sur_Roulis_Relation_Terrain]
+what = "地形に沿った横の傾き"
+does = "見た目のみ：車体が左右方向に斜面をどれだけなぞるか。"
+[Amortissement]
+what = "可動部品の減衰"
+does = "見た目のみ：モデルの可動部品（アンテナ、砲身の後座、ばねの上の車体）がどれだけ早く揺れ止むか。"
+[Attraction]
+what = "可動部品の戻り"
+does = "見た目のみ：モデルの可動部品が待機位置へ引き戻される強さ。"
+[Elastic]
+what = "ばねのように戻る"
+does = "見た目のみ：1 で可動部品がばねのように跳ね戻ります。"
+[Debattement_Min]
+what = "部品の振れ幅（一方）"
+does = "見た目のみ：モデルの可動部品が一方へ振れられる量。"
+[Debattement_Max]
+what = "部品の振れ幅（反対側）"
+does = "見た目のみ：モデルの可動部品が反対側へ振れられる量。"
+[Operation]
+what = "部品の動き方"
+does = "見た目のみ：モデルの可動部品がどう動くか（回る、滑る…）。"
+[VisibleByDefault]
+what = "最初から表示"
+does = "見た目のみ：1 で何かが隠すまでモデルのこの部品を表示します（たとえば外れ落ちる部品）。"
+[IsAvant]
+what = "前脚"
+does = "見た目のみ：航空機の前側の降着装置で 1。"
+[Rot]
+what = "脚の折りたたみ"
+does = "見た目のみ：航空機の降着装置が折りたたまれるときに回る量。"
+[Trans]
+what = "脚の移動"
+does = "見た目のみ：航空機の降着装置が折りたたまれるときに動く量。"
+[TransAfterRot]
+what = "折りたたみ後の脚の移動"
+does = "見た目のみ：回転した後に降着装置が動く量。"
+[SensRotationADroite]
+what = "プロペラの回転方向"
+does = "見た目のみ：プロペラが回る向き（1 右、-1 左）。"
+[TempsAvantArretHelice]
+what = "プロペラの停止時間"
+does = "見た目のみ：エンジン停止後にプロペラが止まるまでの時間（2.8〜4 秒）。"
+[VitesseHeliceMinLS]
+what = "プロペラ回転・低速時（最小）"
+does = "見た目のみ：航空機がゆっくり動くときのプロペラの最も遅い回転。"
+[VitesseHeliceMaxLS]
+what = "プロペラ回転・低速時（最大）"
+does = "見た目のみ：航空機がゆっくり動くときのプロペラの最も速い回転。"
+[VitesseHeliceMinHS]
+what = "プロペラ回転・高速時（最小）"
+does = "見た目のみ：航空機が速く飛ぶときの回転円盤の最も遅い回転。"
+[VitesseHeliceMaxHS]
+what = "プロペラ回転・高速時（最大）"
+does = "見た目のみ：航空機が速く飛ぶときの回転円盤の最も速い回転。"
+[VitesseDeplacementMaxLS]
+what = "低速プロペラの速度上限"
+does = "見た目のみ：どの飛行速度までプロペラを個々の羽根として描くか。"
+[VitesseDeplacementMaxHS]
+what = "高速プロペラの速度下限"
+does = "見た目のみ：どの飛行速度からプロペラを回転円盤として描くか。"
+[DontCastShadow]
+what = "影なし"
+does = "見た目のみ：1 でモデルを影なしで描きます。"
+[HasSubModele]
+what = "サブモデルあり"
+does = "見た目のみ：この部品が独立したモデル（砲塔、車輪）のとき 1。"
+[MobileGeneratedAtStartForFx]
+what = "エフェクト点を最初に作成"
+does = "見た目のみ：1 でユニットが現れるとすぐ、エフェクト（発砲炎、煙）が出る点を作ります。"
+[UsefulnessMask]
+what = "必要とするパック"
+does = "どの国・どのモードのパックがこのモデル、アニメーション、画像を読み込むかを示すビット。他国のモデルを使うユニットは、その国のパックが読み込まれていないと一部の部品が欠けて表示されることがあります。"
+[PlayInLoop]
+what = "ループ再生"
+does = "見た目のみ：1 でアニメーション（待機中の兵士、旗）を1回でなく繰り返します。"
+[ForceDuree]
+what = "固定の長さ"
+does = "見た目のみ：1 でアニメーション自身の長さにかかわらず決まった時間で再生します。"
+[FEventType]
+what = "アニメーションイベントの種類"
+does = "見た目のみ：アニメーションのある瞬間に起きること（音、エフェクト）。"
+[FlushOnAnimeEnd]
+what = "終了時に消去"
+does = "見た目のみ：1 でアニメーション終了時にイベントを取り消します。"
+[Frame]
+what = "イベントのフレーム"
+does = "見た目のみ：アニメーションのどのフレームでイベントが起きるか。"
+[RequireAnimationCorrectness]
+what = "正確なフレームが必要"
+does = "見た目のみ：1 でアニメーションが本当にそのフレームに達したときだけイベントを起こします。"
+[AnimationSlot]
+what = "アニメーションスロット"
+does = "見た目のみ：この体の部位が兵士のどのアニメーションスロットを使うか。"
+[DefaultWeight]
+what = "アニメーションの混合"
+does = "見た目のみ：体で2つのアニメーションが同時に流れるとき、このアニメーションがどれだけ効くか。"
+[MaskUnionCode]
+what = "動かす骨"
+does = "見た目のみ：このアニメーションが兵士のどの骨を動かすかを示すビット。"
+[Coef_O1_Sub]
+what = "骨の動きのオフセット"
+does = "見た目のみ：モデルの骨をユニットと一緒に動かす式で引かれる数（40〜80）。"
+[Coef_O2_Mul]
+what = "骨の動きの係数"
+does = "見た目のみ：モデルの骨が駆動元にどれだけ強く追従するか（-5〜5）。"
+[RangeActivationMin]
+what = "骨が動き始める値"
+does = "見た目のみ：どの入力値から骨が動き始めるか。"
+[RangeActivationMax]
+what = "骨が動き切る値"
+does = "見た目のみ：どの入力値で骨が完全に動いたか。"
+[RangeActivationExclusMax]
+what = "上限を含まない"
+does = "見た目のみ：1 で骨の入力の最大値を含めません。"
+[RangeSortie]
+what = "出力を制限"
+does = "見た目のみ：1 で骨の動きを2つの限界の間に保ちます。"
+[RangeSortieMin]
+what = "骨の動きの最小"
+does = "見た目のみ：骨が動く最小の量（-100）。"
+[RangeSortieMax]
+what = "骨の動きの最大"
+does = "見た目のみ：骨が動く最大の量（100）。"
+[MaxDuration]
+what = "エフェクトの長さ"
+does = "見た目のみ：エフェクトまたはスクリプト動作（発砲の閃光と音、煙の一吹き）の最長の長さ。1.5〜3 秒。"
+[IntroduceNewCentroid]
+what = "独自の点からのエフェクト"
+does = "見た目のみ：1 でユニットの中心ではなく独自の点からエフェクトを再生します。"
+[TryToUseOrderedParamsAsNamedParams]
+what = "エフェクトの呼び出し方式"
+does = "エフェクトの呼び出しが設定をどう渡すか。ゲームのエフェクト専用。"
+["TEugBFloat.Value"]
+what = "エフェクトの設定値"
+does = "エフェクトを呼ぶときの数値（大きさ、強さ、時間）。エフェクトによって異なります。"
+[Modes]
+what = "建設表示モード"
+does = "見た目のみ：この表示が建設現場のどの見た目に使われるか。"
+[Ranges]
+what = "建設表示の距離"
+does = "見た目のみ：建設現場の各見た目をどの距離から描くか。"
+[BoobsIndex]
+what = "建設現場の部品"
+does = "見た目のみ：この表示が建設現場のどの部品を見せるか。"
+[FxMode]
+what = "建設現場のエフェクト"
+does = "見た目のみ：建設現場に描くエフェクト（ほこり、足場）。"
+[JobPriority]
+what = "建設表示の優先度"
+does = "見た目のみ：ゲームがこの表示をどれだけ早く準備するか。"
+[KeepGeometryMask]
+what = "残す部品"
+does = "見た目のみ：建設中も描かれ続ける建物の部品。"
+[MaskDestroyed]
+what = "破壊後の見た目"
+does = "見た目のみ：建物が破壊されたときに現れる部品。"
+["TGfxLevelBuildStateGeoDatabaseModification.Mask"]
+what = "マップ変更マスク"
+does = "建物が完成後に変えるマップのレイヤー（ユニットがその周りを通れる場所）。"
+["TGfxLevelBuildStateGeoDatabaseModification.Value"]
+what = "マップ変更値"
+does = "建物が完成後にそのマップレイヤーへ書き込む内容。"
+[Undoable]
+what = "破壊で元に戻る"
+does = "1：建物が破壊されると、その建物によるマップ変更が取り消されます。"
+[Mode]
+what = "マップ変更モード"
+does = "建物によるマップ変更の適用方法。"
+[Variant]
+what = "アニメーションのバリエーション"
+does = "見た目のみ：部品がアニメーションセットのどのバリエーションを使うか。"
+[Version]
+what = "アニメーションセットのバージョン"
+does = "見た目のみ：アニメーションセットのクイックアクセス表のバージョン。"
+[Algo_Truck]
+what = "トラックのエンジン音"
+does = "音のみ：1 でエンジンをトラックのエンジンのように鳴らします。"
+[Run_In_Fade_Velocity]
+what = "エンジン音のフェードイン"
+does = "音のみ：ユニットが動き出すとき走行中のエンジン音が大きくなる速さ。"
+[Run_Out_Fade_Velocity]
+what = "エンジン音のフェードアウト"
+does = "音のみ：ユニットが止まるとき走行中のエンジン音が消える速さ。"
+[Run_Out_Pitch_To_Go]
+what = "停止時のエンジン音の高さ"
+does = "音のみ：止まるときにエンジン音の高さがどこまで下がるか（0.8：20% 低く）。"
+[Run_Out_Pitch_Velocity]
+what = "音の高さが下がる速さ"
+does = "音のみ：止まるときにエンジン音の高さが下がる速さ。"
+[IdleAndStop_Out_Fade_Velocity]
+what = "アイドリング音のフェードアウト"
+does = "音のみ：ユニットが動き出すか消えるとき、アイドリング音が消える速さ。"
+[Dive_Out_Fade_Velocity]
+what = "急降下音のフェードアウト"
+does = "音のみ：航空機が引き起こすとき急降下音が消える速さ。"

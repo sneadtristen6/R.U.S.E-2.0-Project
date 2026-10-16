@@ -78,6 +78,7 @@ function problem(err) {
 async function setLanguage(lang) {
   state.lang = lang;
   knownFlags = null;  // the flags' meanings are in the language
+  knownNumbers = null;  // and the numbers' (rusemod/numberinfo.toml)
   saveLang(lang);
   state.words = await api().strings(lang);
   renderUpdate();
@@ -830,7 +831,111 @@ function row(u, r, mode) {
   for (const box of boxes) box.addEventListener("change", () => save(box));
   if (one) one.addEventListener("change", () => save(one));
   showWas();
+  numberHelp(u, r, th, cell, () => (one ? [one] : boxes), st, ranged);
   return tr;
+}
+
+// --- what a number means (api.numbers: rusemod/numberinfo.toml), shown on every number of a unit's page (the owner,
+// 2026-10-15: "this is their base stat. And then you can make it smaller or larger", "give them perspective on the
+// scale of what the numbers mean", "Include all numbers"): its meaning when its name is hovered, its value in plain
+// units (metres, km/h, seconds, degrees, $, %), a slider making it smaller or larger than the game's value (its base
+// stat), and a bar showing where it sits among the game's units of its kind (api.number_scale) ---
+let knownNumbers = null;  // api.numbers(), once per language
+const BASE_LEAST = -90, BASE_MOST = 300;  // the base-stat slider: % of the game's value
+
+function numberEntry(cls, prop) {
+  if (!knownNumbers) return null;
+  return knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+}
+
+// A number in plain units ("about 35 km/h"), or "" when its unit has none.
+function numberPlain(entry, value) {
+  const w = state.words, p = entry && knownNumbers.plain[entry.unit];
+  if (!p || !Number.isFinite(value)) return "";
+  const v = value / p[0];
+  const shown = Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : Number(v.toPrecision(3)).toLocaleString();
+  return fill(w.number_about_value, { v: shown, unit: w[p[1]] || "" });
+}
+
+function numberTip(entry) {
+  const w = state.words;
+  if (!entry) return "";
+  const sure = w[`number_sure_${entry.sure}`] || entry.sure;
+  return [entry.what, entry.does, `${w.flag_sure}: ${sure}`].filter(Boolean).join("\n");
+}
+
+function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
+  const w = state.words;
+  const help = el("div", { className: "number-help" });
+  cell.append(help);
+  const draw = () => {
+    const entry = numberEntry(u.class, r.prop);
+    if (!entry) return;
+    th.title = numberTip(entry);
+    th.classList.add("has-meaning");
+    const amount = knownNumbers.amounts.includes(entry.unit) && r.type !== "bool";
+    const base = Number(st.base[0]);
+    const plainNote = el("span", { className: "muted small number-plain" });
+    const sync = () => {
+      const v = Number(getBoxes()[0].value);
+      plainNote.textContent = numberPlain(entry, v);
+      if (slider && Number.isFinite(v) && base) {
+        const pct = Math.round((v / base - 1) * 100);
+        slider.value = String(Math.max(BASE_LEAST, Math.min(BASE_MOST, pct)));
+        pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
+      }
+    };
+    // the base-stat slider: not on ranges (they have their own, in metres), choices, switches and ids, nor a value of 0
+    let slider = null;
+    const pctNote = el("span", { className: "small number-pct" });
+    const row = el("div", { className: "number-row" }, plainNote);
+    if (amount && !ranged && base && state.mod) {
+      slider = el("input", { type: "range", min: String(BASE_LEAST), max: String(BASE_MOST), step: "5",
+        className: "base-slider", title: fill(w.tip_number_slider, { base: base.toLocaleString() }) });
+      slider.setAttribute("aria-label", fill(w.number_slider, { name: r.label }));
+      const whole = WHOLE.has(r.type);
+      slider.addEventListener("input", () => {
+        const pct = Number(slider.value);
+        for (const [i, b] of getBoxes().entries()) {
+          const own = Number(st.base[i] ?? base);
+          const v = own * (1 + pct / 100);
+          b.value = String(whole ? Math.round(v) : Number(v.toPrecision(6)));
+        }
+        plainNote.textContent = numberPlain(entry, Number(getBoxes()[0].value));
+        pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
+      });
+      slider.addEventListener("change", () => getBoxes()[0].dispatchEvent(new Event("change")));
+      row.append(el("span", { className: "small muted", textContent: fill(w.number_base, { v: base.toLocaleString() }) }),
+        slider, pctNote);
+    }
+    for (const b of getBoxes()) { b.addEventListener("input", sync); b.addEventListener("change", sync); }
+    sync();
+    // where it sits among the game's units of its kind, asked for once the row is shown
+    const scale = el("div", { className: "number-scale" });
+    if (amount) {
+      api().number_scale(u.address, r.prop, state.lang).then((s) => {
+        if (!s || !s.count || s.min === s.max) return;
+        const span = s.max - s.min;
+        const at = (v) => `${Math.max(0, Math.min(100, ((v - s.min) / span) * 100))}%`;
+        const bar = el("div", { className: "scale-bar" }, el("span", { className: "scale-band",
+          style: `left:${at(s.low)};width:calc(${at(s.high)} - ${at(s.low)})` }));
+        for (const m of s.marks) bar.append(el("span", { className: "scale-mark", style: `left:${at(m.value)}`,
+          title: `${m.name}: ${m.value.toLocaleString()} ${numberPlain(entry, m.value)}` }));
+        const here = Number(getBoxes()[0].value);
+        if (Number.isFinite(here)) bar.append(el("span", { className: "scale-here", style: `left:${at(here)}`,
+          title: fill(w.number_this_unit, { v: here.toLocaleString() }) }));
+        const names = s.marks.map((m) => `${m.name} ${m.value.toLocaleString()}`).join(" · ");
+        scale.replaceChildren(el("span", { className: "muted small", textContent: fill(w.number_among, { n: s.count }) }),
+          bar, el("span", { className: "muted small scale-names", textContent: names }));
+      }).catch(() => {});
+    }
+    help.replaceChildren(row, scale);
+    if (entry.sure === "community" && knownNumbers.plain[entry.unit]) {  // a scale from others, not measured by us
+      row.append(el("span", { className: "muted small number-sure", textContent: w.number_scale_unmeasured }));
+    }
+  };
+  if (knownNumbers) draw();
+  else api().numbers(state.lang).then((res) => { knownNumbers = res; draw(); }).catch(() => {});
 }
 
 // A unit's flags (InitialFlagSet): a set of numbers of any length. Shown as chips with a cross to take one out, and
@@ -839,24 +944,45 @@ function row(u, r, mode) {
 const FLAG_LISTS = new Set(["InitialFlagSet"]);
 let knownFlags = null;  // from api.flags(), once per language
 
+// The flag guide's words for one flag: what it is, what it does, how to use it, how sure we are, its danger and who
+// has it (api.flags: rusemod/flaginfo.toml), as one tooltip; `here` adds what the Studio found for this unit.
+function flagTip(k, here) {
+  const w = state.words;
+  if (!k) return "";
+  const lines = [`${k.flag} · ${k.what || k.meaning || ""}`];
+  if (k.does) lines.push(k.does);
+  if (k.use) lines.push(`${w.flag_how}: ${k.use}`);
+  if (k.sure) lines.push(`${w.flag_sure}: ${w["flag_sure_" + k.sure] || k.sure}`);
+  if (k.danger_why) lines.push(`⚠ ${k.danger_why}`);
+  if (k.count) lines.push(fill(w.flag_used_by, { n: k.count, names: k.examples.join(", ") }));
+  if (here) lines.push(`⚠ ${here}`);
+  return lines.join("\n");
+}
+
 function flagRow(u, r, mode, th) {
   const w = state.words;
   const via = state.page.via;
   const st = rowState(r, mode);
   let current = (st.mine || st.base).slice();
+  let checked = { problems: [], blocked: false, adding: {} };  // api.flag_check: what's wrong with this unit's flags
   const chips = el("div", { className: "flags" });
   const was = el("div", { className: "was" });
-  const cell = el("td", {}, chips, was);
+  // what flags are and what the Studio does with them (the owner, 2026-10-15: "it has to tell the modder what the
+  // thinking is going to be doing"), the guide to all of them, and what it found on this unit
+  const guideButton = el("button", { type: "button", className: "link", textContent: w.flag_guide, title: w.tip_flag_guide });
+  guideButton.addEventListener("click", () => openFlagGuide(current));
+  const about = el("p", { className: "muted small flags-about" }, `${w.flags_about} `, guideButton);
+  const found = el("div", { className: "flag-problems" });
+  const cell = el("td", {}, chips, found, about, was);
   const tr = el("tr", {}, th, cell);
-  const meaning = (n) => {
-    const k = knownFlags && knownFlags.find((f) => f.flag === n);
-    if (!k) return String(n);
-    const who = k.count ? fill(w.flag_used_by, { n: k.count, names: k.examples.join(", ") }) : "";
-    return [k.meaning, who].filter(Boolean).join(" · ");
-  };
+  const info = (n) => knownFlags && knownFlags.find((f) => f.flag === n);
   const setMine = (value) => {
     st.mine = value;
     if (mode === "own") r.edited_own = value; else r.edited = value;
+  };
+  const check = async () => {
+    try { checked = await api().flag_check(u.address, current, state.lang); } catch (err) { checked = { problems: [], blocked: false, adding: {} }; }
+    render();
   };
   const save = async (next) => {
     try {
@@ -866,12 +992,39 @@ function flagRow(u, r, mode, th) {
       render();
       await refreshMarks();
       say(w.saved.replace("{file}", res.saved), "ok");
+      await check();
     } catch (err) { problem(err); }
+  };
+  const showProblems = () => {
+    found.replaceChildren(...checked.problems.map((p) => {
+      const box = el("div", { className: `notice ${p.level === "error" ? "error" : "warn"} flag-problem` },
+        el("strong", { textContent: p.level === "error" ? w.flag_crash_head : w.flag_warn_head }), ` ${p.why}`);
+      if (state.mod && current.includes(p.flag)) {  // the fix: take the flag off (or, for a recon plane, add 100)
+        const off = el("button", { type: "button", className: "small", textContent: fill(w.flag_take_off, { n: p.flag }) });
+        off.addEventListener("click", () => save(current.filter((m) => m !== p.flag)));
+        box.append(" ", off);
+        if (p.flag === 99 && !current.includes(100)) {
+          const add = el("button", { type: "button", className: "small ghost", textContent: fill(w.flag_add_this, { n: 100 }) });
+          add.addEventListener("click", () => save([...current, 100]));
+          box.append(" ", add);
+        }
+      } else if (state.mod && !current.includes(p.flag)) {  // a flag it needs back
+        const back = el("button", { type: "button", className: "small", textContent: fill(w.flag_put_back, { n: p.flag }) });
+        back.addEventListener("click", () => save([...current, p.flag]));
+        box.append(" ", back);
+      }
+      return box;
+    }));
+    if (checked.blocked) found.append(el("p", { className: "small flag-blocked", textContent: w.flag_blocked }));
   };
   const render = () => {
     tr.classList.toggle("edited", st.mine !== null);
+    const level = new Map(checked.problems.filter((p) => current.includes(p.flag)).map((p) => [p.flag, p]));
     chips.replaceChildren(...current.map((n) => {
-      const chip = el("span", { className: "flag", title: meaning(n) }, String(n));
+      const k = info(n), bad = level.get(n);
+      const cls = ["flag", k ? `flag-${k.group}` : "", bad ? `flag-${bad.level}` : ""].filter(Boolean).join(" ");
+      const chip = el("span", { className: cls, title: k ? flagTip(k, bad && bad.why) : String(n) },
+        String(n), el("span", { className: "flag-name", textContent: k ? (k.what || k.meaning || "") : "" }));
       if (state.mod) {
         const x = el("button", { type: "button", className: "x", textContent: "×", title: w.flag_remove });
         x.addEventListener("click", () => save(current.filter((m) => m !== n)));
@@ -879,14 +1032,22 @@ function flagRow(u, r, mode, th) {
       }
       return chip;
     }));
+    showProblems();
     if (state.mod) {
+      // the Add list by what the flags are for; one that crashes on this unit, or is expected to break it, says so
       const pick = el("select", { title: w.flag_add });
       pick.append(el("option", { value: "", textContent: w.flag_add }));
+      const groups = new Map();
       for (const f of knownFlags || []) {
         if (current.includes(f.flag)) continue;
-        pick.append(el("option", { value: String(f.flag), textContent: `${f.flag}` + (f.meaning ? ` · ${f.meaning}` : "") +
-          (f.count ? ` (${fill(w.flag_count, { n: f.count })})` : "") }));  // no unit has it: it says it does nothing
+        const g = f.group || "unused";
+        if (!groups.has(g)) groups.set(g, el("optgroup", { label: w["flag_group_" + g] || g }));
+        const risk = checked.adding[f.flag];
+        const mark = risk === "error" ? ` ⚠ ${w.flag_crashes_here}` : risk === "warning" ? ` ⚠ ${w.flag_breaks_here}` : "";
+        groups.get(g).append(el("option", { value: String(f.flag), title: flagTip(f),
+          textContent: `${f.flag} · ${f.what || f.meaning || ""}${mark}` + (f.count ? ` (${fill(w.flag_count, { n: f.count })})` : "") }));
       }
+      for (const g of FLAG_GROUP_ORDER) if (groups.has(g)) pick.append(groups.get(g));
       pick.append(el("option", { value: "?", textContent: w.flag_add_number }));
       pick.addEventListener("change", () => {
         if (pick.value === "?") {
@@ -914,9 +1075,57 @@ function flagRow(u, r, mode, th) {
       was.append(el("span", { textContent: w.was.replace("{v}", st.base.join(" · ")) }), undo);
     }
   };
-  if (knownFlags) render();
-  else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); }).catch((err) => { problem(err); render(); });
+  if (knownFlags) { render(); check(); }
+  else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); check(); }).catch((err) => { problem(err); render(); });
   return tr;
+}
+
+// The flag guide (api.flags: rusemod/flaginfo.toml): every flag, by what it's for, each with what it is, what it does,
+// how to use it, how sure we are and its danger; `mine` (this unit's flags) marked; a search box over all of it.
+const FLAG_GROUP_ORDER = ["kind", "combat", "movement", "sight", "player", "preview", "state", "unused"];
+
+async function openFlagGuide(mine) {
+  const w = state.words;
+  $("flag-guide-title").textContent = w.flag_guide_title;
+  $("flag-guide-lead").textContent = w.flag_guide_lead;
+  $("flag-guide-close").textContent = w.close;
+  $("flag-guide-search").placeholder = w.flag_guide_search;
+  $("flag-guide-search").value = "";
+  state.flagGuideMine = new Set(mine || []);
+  if (!knownFlags) {
+    try { knownFlags = (await api().flags(state.lang)).flags; } catch (err) { problem(err); return; }
+  }
+  renderFlagGuide();
+  if (!$("flag-guide").open) $("flag-guide").showModal();
+  $("flag-guide-search").focus();
+}
+
+function renderFlagGuide() {
+  const w = state.words, mine = state.flagGuideMine || new Set();
+  const fold = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const words = fold($("flag-guide-search").value).split(/\s+/).filter(Boolean);
+  const out = [];
+  for (const g of FLAG_GROUP_ORDER) {
+    const flags = (knownFlags || []).filter((f) => (f.group || "unused") === g && words.every((x) =>
+      fold([f.flag, f.what, f.meaning, f.does, f.use].join(" ")).includes(x)));
+    if (!flags.length) continue;
+    out.push(el("h3", { className: "flag-guide-group", textContent: w["flag_group_" + g] || g }),
+      el("p", { className: "muted small", textContent: w["flag_group_" + g + "_help"] || "" }));
+    for (const f of flags) {
+      const badges = [el("span", { className: `flag-sure flag-sure-${f.sure}`, textContent: w["flag_sure_" + f.sure] || f.sure })];
+      if (f.danger) badges.push(el("span", { className: `flag-danger flag-danger-${f.danger}`, textContent: w["flag_danger_" + f.danger] || f.danger }));
+      if (mine.has(f.flag)) badges.push(el("span", { className: "flag-mine", textContent: w.flag_this_unit }));
+      out.push(el("div", { className: "flag-card" + (f.danger ? ` flag-card-${f.danger}` : "") },
+        el("div", { className: "flag-card-head" }, el("span", { className: "flag-num", textContent: String(f.flag) }),
+          el("strong", { textContent: f.what || f.meaning || "" }), ...badges),
+        f.does ? el("p", { className: "small", textContent: f.does }) : "",
+        f.use ? el("p", { className: "small" }, el("em", { textContent: `${w.flag_how}: ` }), f.use) : "",
+        f.danger_why ? el("p", { className: "small flag-danger-why", textContent: `⚠ ${f.danger_why}` }) : "",
+        f.count ? el("p", { className: "muted small", textContent: fill(w.flag_used_by, { n: f.count, names: f.examples.join(", ") }) }) : ""));
+    }
+  }
+  if (!out.length) out.push(el("p", { className: "muted small", textContent: w.flag_guide_none }));
+  $("flag-guide-list").replaceChildren(...out);
 }
 
 // A weapon's range on its unit's page (api.set_range): a slider and a box. When other units fire the same ammo, the
@@ -974,6 +1183,122 @@ function weaponRange(u, wp, redraw) {
   return out;
 }
 
+// What a weapon can hit (StudioApi.set_weapon_hits): the ground, planes, or both (a second weapon beside it, the way the
+// game's AA guns carry one for each). The owner, 2026-10-14: any weapon on any unit, a tank shooting planes too.
+function weaponHits(u, wp, redraw) {
+  const w = state.words;
+  const pick = el("select", { disabled: !state.mod, title: w.tip_hits });
+  pick.setAttribute("aria-label", w.hits);
+  for (const [value, word] of [["ground", w.hits_ground], ["planes", w.hits_planes], ["both", w.hits_both]]) {
+    pick.append(el("option", { value, textContent: word, selected: wp.hits === value }));
+  }
+  pick.addEventListener("change", async () => {
+    try {
+      const res = await api().set_weapon_hits(u.address, wp.address, pick.value);
+      await refreshMarks();
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+    redraw();  // its ammo, its shot and its range follow
+  });
+  const line = el("div", { className: "weapon-range" + (wp.hits !== wp.game_hits ? " edited" : "") },
+    el("span", { className: "range-label", textContent: w.hits, title: w.tip_hits }), pick);
+  const out = el("div", {}, line);
+  if (wp.hits !== wp.game_hits) {
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_hits,
+      disabled: !state.mod });
+    undo.addEventListener("click", () => { pick.value = wp.game_hits; pick.dispatchEvent(new Event("change")); });
+    const game = { ground: w.hits_ground, planes: w.hits_planes, both: w.hits_both }[wp.game_hits];
+    out.append(el("div", { className: "was" }, el("span", { textContent: fill(w.was, { v: game }) }), undo),
+      el("div", { className: "muted small", textContent: w.hits_not_tried }));
+  }
+  return out;
+}
+
+// A plane's role (StudioApi.plane_role / set_plane_role): fighter, fighter-bomber, bomber or scout. A bomber's bombs go
+// in a bomb bay, the only way a bomber's run drops them (a player's report, 2026-10-14: a fighter-bomber given carpet
+// bombs flew to its target and dropped nothing).
+function roleGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_role_pick });
+  pick.setAttribute("aria-label", w.role_title);
+  const was = el("div", { className: "was" });
+  const why = el("p", { className: "notice hidden" });
+  const moved = el("p", { className: "muted small hidden", textContent: w.role_bombs_moved });
+  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const name = (id) => w["role_" + id] || id;
+  const show = (info) => {
+    // an armed plane made a scout keeps its attacks (the fighter's behaviour: a scout's crashes the game on attack)
+    const label = (id) => id === "scout" && info.armed ? w.role_scout_armed : name(id);
+    const options = info.roles.map((r) => el("option", { value: r.id, selected: r.id === info.role,
+      textContent: r.seen || r.id === info.game ? label(r.id) : fill(w.role_not_tried, { role: label(r.id) }) }));
+    if (!info.roles.some((r) => r.id === info.role)) {
+      options.unshift(el("option", { value: "", disabled: true, selected: true, textContent: name(info.role) }));
+    }
+    pick.replaceChildren(...options);
+    pick.disabled = !can || !info.editable;
+    why.textContent = info.why ? (w[info.why + "_why"] || w[info.why] || "") : "";
+    why.classList.toggle("hidden", !info.why || info.why === "no_mod");
+    const edited = info.role !== info.game;
+    head.classList.toggle("edited", edited);
+    moved.classList.toggle("hidden", !(edited && (info.role === "bomber" || info.game === "bomber")));
+    if (!edited) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_role_undo });
+    undo.addEventListener("click", () => choose(null));
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", name(info.game)) }), undo);
+  };
+  const choose = async (role) => {
+    try {
+      const res = await api().set_plane_role(u.address, role, state.lang);
+      await refreshMarks();
+      await showUnit(state.page.address, state.page.via);  // its weapons moved with the role: the whole page again
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value || null));
+  api().plane_role(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.role_title }),
+    el("p", { className: "muted small", textContent: w.role_help }), why, el("table", {}, head), moved);
+}
+
+// A ground vehicle's role (StudioApi.ground_role / set_ground_role): as the game has it, or recon, with everything the
+// game's recon cars have (T56: a Panzer IV made that way worked as recon; the longer sight alone did not)
+function groundRoleGroup(u) {
+  const w = state.words;
+  const can = Boolean(state.mod && u.editable);
+  const pick = el("select", { disabled: !can, title: w.tip_ground_role });
+  pick.setAttribute("aria-label", w.role_title);
+  const was = el("div", { className: "was" });
+  const why = el("p", { className: "notice hidden" });
+  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const name = (id) => id === "recon" ? w.ground_role_recon : w.ground_role_game;
+  const show = (info) => {
+    pick.replaceChildren(...["game", "recon"].map((id) => el("option", { value: id, selected: id === info.role,
+      textContent: id === "recon" && info.game !== "recon" ? fill(w.role_not_tried, { role: name(id) }) : name(id) })));
+    pick.disabled = !can || !info.editable;
+    why.textContent = info.why && info.why !== "no_mod" ? (w[info.why] || "") : "";
+    why.classList.toggle("hidden", !why.textContent);
+    const edited = info.role !== info.game;
+    head.classList.toggle("edited", edited);
+    if (!edited) { was.replaceChildren(); return; }
+    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_role_undo });
+    undo.addEventListener("click", () => choose(null));
+    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", name(info.game)) }), undo);
+  };
+  const choose = async (role) => {
+    try {
+      const res = await api().set_ground_role(u.address, role, state.lang);
+      await refreshMarks();
+      await showUnit(state.page.address, state.page.via);  // its values and flags changed: the whole page again
+      say(w.saved.replace("{file}", res.saved), "ok");
+    } catch (err) { problem(err); }
+  };
+  pick.addEventListener("change", () => choose(pick.value === "recon" ? "recon" : null));
+  api().ground_role(u.address, state.lang).then(show).catch(problem);
+  return el("div", { className: "group" }, el("h2", { textContent: w.role_title }),
+    el("p", { className: "muted small", textContent: w.ground_role_help }), why, el("table", {}, head));
+}
+
 // A unit's weapons and what each fires: one dropdown per weapon, listing every ammunition (the mod's copies first),
 // and how far it shoots.
 function weaponsGroup(u) {
@@ -996,6 +1321,7 @@ function weaponsGroup(u) {
       // the muzzle flash and sound this weapon plays (they follow the ammo: api.set_ammo)
       const shot = el("div", { className: "muted small", textContent: wp.shot ? fill(w.shot, { fx: wp.shot }) : "" });
       const cell = el("td", {}, el("div", { className: "boxes" }, pick, open), was, shot);
+      if (wp.hits) cell.append(weaponHits(u, wp, draw));
       if (wp.range !== null && wp.range !== undefined) cell.append(weaponRange(u, wp, draw));
       const tr = el("tr", { className: wp.edited ? "edited" : "" }, th, cell);
       const showWas = (edited) => {
@@ -1018,8 +1344,13 @@ function weaponsGroup(u) {
       showWas(wp.edited);
       table.append(tr);
     });
+    // how weapons and ammo work, step by step (the owner, 2026-10-15: "how to change weapons, ammo type, all of
+    // that very well"): a weapon fires one ammo, picked in its list; a copy of an ammo is changed for that weapon only
+    const how = el("details", { className: "weapons-how" }, el("summary", { textContent: w.weapons_how_title }),
+      el("ol", {}, ...["weapons_how_1", "weapons_how_2", "weapons_how_3", "weapons_how_4", "weapons_how_5"].map((k) =>
+        el("li", { className: "small", textContent: w[k] }))));
     group.replaceChildren(el("h2", { textContent: w.weapons }), table,
-      el("p", { className: "muted small", textContent: w.weapons_help }));
+      el("p", { className: "muted small", textContent: w.weapons_help }), how);
     group.classList.remove("hidden");
   }).catch(problem);
   draw();
@@ -2106,6 +2437,8 @@ async function showUnit(address, via) {
     parts.push(group);
   }
   if (u.has_armour) parts.push(armourGroup(u));
+  if (u.class === "TAvionDescriptor" && (u.named || u.new) && u.editable) parts.push(roleGroup(u));
+  if (u.class === "TUniteAuSolDescriptor" && (u.named || u.new) && u.editable) parts.push(groundRoleGroup(u));
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
   if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
@@ -4265,6 +4598,8 @@ async function start() {
   $("share-publish").addEventListener("click", publishMod);
   $("share-guidelines").addEventListener("click", () => api().open_help("guidelines").catch(problem));
   $("share-close").addEventListener("click", () => $("share").close());
+  $("flag-guide-close").addEventListener("click", () => $("flag-guide").close());
+  $("flag-guide-search").addEventListener("input", renderFlagGuide);
   $("edit-mods-close").addEventListener("click", () => $("edit-mods").close());
   $("edit-mods-search").addEventListener("input", renderEditMods);
   $("test").addEventListener("click", testInGame);

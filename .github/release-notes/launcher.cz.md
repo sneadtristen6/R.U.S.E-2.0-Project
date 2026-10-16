@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.5:** spouští módy vytvořené ve Studiu 0.9.8.5.
+
+- **Módy ze Studia 0.9.8.5 fungují:** letadla v nové roli (bombardér s pumovnicí, průzkumník, který si nechá zbraně), průzkumná vozidla, zbraně, které zasahují letadla, a terén namalovaný z knihovny štětce Textura s detailem hry navrch. Starší Launcher některé z nich nesestaví.
+- **Rychleji:** mapa namalovaná stejně dostane namalovaný terén z minulého sestavení zpět za pár sekund.
+- **Stále chybové, hrajte na vlastní uvážení:** mapy vytvořené s texturami Map Paint a prázdné mapy (Prázdný terén, Prázdný oceán).
+
 **0.4.8.4:** módy se stahují na každém PC a spouští módy vytvořené ve Studiu 0.9.8.4.
 
 - **Módy se stahují na každém PC:** na některých PC se nestáhl žádný mód („certificate verify failed: unable to get local issuer certificate“). Teď Launcher požádá Windows o certifikát, jako prohlížeč, a zkusí to znovu; i u vlastních aktualizací. Zatím nevyzkoušeno na PC, které mělo ten problém.

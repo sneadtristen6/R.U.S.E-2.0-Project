@@ -1,6 +1,16 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.5:** planes in any role, weapons that hit planes, and a library for Map Paint's Texture brush.
+
+- **A plane's role** (a player's report: a fighter-bomber given a bomber's carpet bombs flew to its target and dropped nothing): a new Role box on a plane's page makes it a Fighter, Fighter-bomber, Bomber or Scout. Its behaviour, how the computer players use it and its build menu words change with it. A bomber's bombs go in a bomb bay (copied from a game bomber's), the only way a bomber's run drops them. Seen in the game: a fighter-bomber made a bomber drops its bombs; a scout that keeps its guns (a Stuka, an ME109) still attacks and has the scouts' sight.
+- **Recon vehicles:** a ground vehicle's Role box makes it Recon: the recon cars' sight (much further than a tank's), how the computer players use them, their build menu words, and it can go into woods (seen in the game with a Panzer IV).
+- **What a weapon hits:** each weapon's Hits picks the ground, planes, or both (a second weapon beside it, the way the game's AA guns carry one for each). Seen in the game: tank rounds firing at planes. Known: a plane's gun set to hit the ground alone does no damage yet.
+- **Map Paint's Texture brush gets a library:** the game's own ground textures (grass, fields, sand, snow, rock, roads..., by theatre, with a search), a square of any map's ground, pictures of your own, and free pictures online (Poly Haven and ambientCG, CC0; US aerial photos, public domain), one picture downloaded per click and kept in your mod with its credit. A Size slider, the textures used lately, and **Game detail up close**, which lays the game's own decals of a game texture over the ground you paint. Not yet seen in the game; the online downloads not tried yet.
+- **Objects placed in open ground**, away from the map's towns, farms and woods, are now within reach of the game's drawing, and big groups of new objects are laid out the way the game's own are (not yet seen in the game).
+- **Faster repainting:** the painted ground is kept from build to build, whichever copy or mod painted it: a map painted again the same way takes it back in seconds, not minutes.
+- **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank Ocean).
+
 **0.9.8.4:** missions of your own, blank maps you build up, and much more to customise.
 
 - **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank Ocean).
