@@ -2491,8 +2491,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     areas = list(areas)
                     dabs = [d for d in brushing[name][0] if not isinstance(d, FieldCopy)]
                     field_copies = [d for d in brushing[name][0] if isinstance(d, FieldCopy)]
-                    field_buildings = None   # each building type's model box and the gap crops keep from it (F-34)
-                    if dabs or field_copies:   # (and what stood on one a field copy leaves behind: F-47)
+                    field_buildings = None   # each building type's model box and the gap crops keep from it
+                    if dabs or field_copies:   # (and what stood on one a field copy leaves behind)
                         from .scenery import building_table
                         if descs is None:
                             descs = descriptors(arc)
@@ -2523,7 +2523,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     relaid: set = set()   # a neighbour sticker two dabs' erases take is laid back once
                     # (no picture given: a stamp per row sticker. The painted outline from the picture's colour,
                     # scenery.field_outline, held only 64% of an uneven field's squares on D-Day, 2026-10-15: whole
-                    # parts kept their old paint; off until it follows the painted boundary lines, F-33)
+                    # parts kept their old paint; off until it follows the painted boundary lines)
                     field_picture = None
                     # each dab's PARCEL: the ground the map's own paint and borders give the field under it (the owner,
                     # 2026-10-15: R's paint over E's corner, W's trees, Q's corner spot; rusemod.parcels); a later dab's

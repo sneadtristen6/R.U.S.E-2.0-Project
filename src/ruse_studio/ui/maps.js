@@ -2124,7 +2124,7 @@ function modelLibrary(res, buf) {
     if (geometries[t]) return geometries[t];
     // a tree's leaves are cards whose normals point out of the crown, lit the same from either side: each gets a face
     // both ways round (drawn front side only), as one face seen from behind turned its normal away from the light and
-    // the leaves came out black (the owner, 2026-10-15: "the trees. They're just fucking shitty sprites")
+    // the leaves came out black (the owner, 2026-10-15: the trees were flat "sprites")
     const twoWay = (types[t] || [])[1] === "vegetation";
     return (geometries[t] = (idx.models[t] || []).map((p) => {
       const n = p.vertices;
@@ -5123,8 +5123,8 @@ function whyNoType() {
 
 // The objects this mod places, on the ground as it is now: each with its real model once the models are in (until
 // then, or for a type without one, a gold shape), and a gold dot that marks it at any zoom, so what was placed shows
-// even from far away (the owner, 2026-10-15: placing buildings "seemed not to work", and "it just says a fucking
-// orange or yellow square": a building was a 4 m gold box, two pixels at a normal zoom).
+// even from far away (the owner, 2026-10-15: placing buildings "seemed not to work", and that it showed only an
+// orange or yellow square: a building was a 4 m gold box, two pixels at a normal zoom).
 const PLACED_DOT = 9;  // pixels across, at any zoom
 function drawPlaced() {
   const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;

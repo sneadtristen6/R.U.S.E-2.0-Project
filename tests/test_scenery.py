@@ -1161,7 +1161,7 @@ class FieldBrush(unittest.TestCase):
         self.assertIn("no field", none[3][0])
 
     def test_what_stands_on_a_field_stays_as_eugen_lays_it(self):
-        """F-34 (D-Day, measured 2026-10-15): hay and farm machines left on a changed field keep a harvested patch:
+        """D-Day, measured 2026-10-15: hay and farm machines left on a changed field keep a harvested patch:
         the new crops within HAY_PATCH of them laid as Eugen lays them harvested (wheat squashed to a quarter, sunk
         0.13 m); no new crop lands in a building's box or within its type's gap of it; on a look whose fields carry
         no hay (ploughed) the hay goes, and the tractors past NO_HAY_MACHINE_DEPTH in (the one 2.1 m in stays)."""
@@ -1811,7 +1811,7 @@ class RoadStickers(unittest.TestCase):
     def test_open_ground_widens_one_box_and_keeps_every_other(self):
         """Objects in no box of the top block's tree (a painted field away from the map's own scenery): the leaf box
         of the reference whose block lies nearest them (the east wood: ~17 km from their middle, the west ~25 km;
-        before 2026-10-15 the bigger box, the west's, and a farm hung 5.6 km off was never drawn: F-45) is widened
+        before 2026-10-15 the bigger box, the west's, and a farm hung 5.6 km off was never drawn) is widened
         over their cells, every entry's leaf box still holds what it held, and they go in a block wrapping that
         reference, so the game's walk reaches them."""
         data = open_fields()

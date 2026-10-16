@@ -209,7 +209,7 @@ def hue_of(rgb) -> float:
 
 def look_of(picture, rows: dict, crops: dict, area_m2: float) -> str:
     """What a plot reads as, by what the map shows: its picture's hue (from far), its main row sticker kind and its
-    crops (the field brush's look library uses the same bands, make_preset_library.py): wheat (yellow, straw rows,
+    crops (the field brush's look library uses the same bands): wheat (yellow, straw rows,
     35+ crop clumps a 100 m2, more wheat than green), stubble (yellow, straw rows, under 10), ploughed (brown, earth
     rows, under 10), green (green, light grass rows, under 10), green crop (green, 35+ green clumps), else meadow-ish
     "other"."""

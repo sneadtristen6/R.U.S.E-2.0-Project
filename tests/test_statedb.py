@@ -45,7 +45,7 @@ def mesh(strokes) -> Tms:
 class Water(unittest.TestCase):
     def test_a_drained_sea_is_made_land(self):
         """The blank farm's case: the copied map's sea (0x09 everywhere), the new ground flat and dry: every cell made
-        land (0x01), so the game draws scenery there (F-46)."""
+        land (0x01), so the game draws scenery there."""
         new, dried, flooded = statedb.with_water(state([WATER] * 16), mesh([whole(10.0)]))
         self.assertEqual((dried, flooded), (16, 0))
         self.assertEqual(cells(new), [LAND] * 16)

@@ -473,8 +473,8 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .dock-tray .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .dock-tray .place-search, .dock-tray .place-list { border-radius: 0; background: var(--bg); border-color: #2d527d; }
 .dock-tray .place-list option:checked { background: var(--accent-dark); color: #fff; }
-/* the place list: a picture of each type's model, two rows high, scrolling (the owner, 2026-10-15: "take inspiration
-   from city skylines and how they'll have every asset's picture in those menus") */
+/* the place list: a picture of each type's model, two rows high, scrolling (the owner,
+   2026-10-15), Cities: Skylines style */
 .place-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: 236px;
               overflow-y: auto; padding: 1px; }
 .place-tile { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 4px; border: 1px solid #2d527d;

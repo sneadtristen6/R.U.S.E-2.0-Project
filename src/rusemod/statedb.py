@@ -9,7 +9,7 @@ a 64 x 64 sample of the map):
 
 The game draws no scenery decor on a cell it reads as water: on the blank farm (2026-10-16) the fields copied onto
 D-Day's drained sea (0x09) drew no crops, stones, plants or trees at any distance, field 7, half on D-Day's land
-(0x01), drew its trees and fences there, and the kept area round the HQ (0x01) drew everything (F-46). The build
+(0x01), drew its trees and fences there, and the kept area round the HQ (0x01) drew everything. The build
 left this file as the copied map had it. with_water() writes the water bit again from a new close-up mesh."""
 from __future__ import annotations
 

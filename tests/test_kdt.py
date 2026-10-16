@@ -42,7 +42,7 @@ def hand_positions(positions, parents, fill=0xDD) -> bytes:
 
 def hand_normal(n) -> int:
     """The packed normal laid out by hand: dominant axis tag, a in the top 16 bits, b in 12 bits (wrapping); exactly
-    along an axis, a hair off it (a field 0x7FFD, b field 0xFFF: the game casts no shadows over 0x80000005, F-23)."""
+    along an axis, a hair off it (a field 0x7FFD, b field 0xFFF: the game casts no shadows over 0x80000005)."""
     k = max(range(3), key=lambda i: abs(n[i]))
     a, b = n[(k + 1) % 3] / abs(n[k]), n[(k + 2) % 3] / abs(n[k])
     hi, mid = round(a * 32768) + 32768, round(b * 8192) % 4096
@@ -206,7 +206,7 @@ class Positions(unittest.TestCase):
 class Normals(unittest.TestCase):
     def test_word_layout(self):
         # exactly along an axis (a = b = 0) is written a hair off it (AXIS_NUDGE): the game casts no shadows over a
-        # ground stored 0x80000005, and no shipped map stores such a word (F-23)
+        # ground stored 0x80000005, and no shipped map stores such a word
         self.assertEqual(encode_normal((0.0, 0.0, 1.0)), 0x7FFDFFF5)         # +z
         self.assertEqual(encode_normal((0.0, 0.0, -1.0)), 0x7FFDFFF4)
         self.assertEqual(encode_normal((1.0, 0.0, 0.0)), 0x7FFDFFF1)

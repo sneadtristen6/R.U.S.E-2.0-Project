@@ -132,8 +132,8 @@ def encode_normal(n) -> int:
     data does); a is clamped to the 16-bit field; b wraps like the game's own packer.
 
     A normal exactly along an axis (a and b both 0) is written a hair off it, AXIS_NUDGE (a = -3/32768,
-    b = -1/8192: the commonest word under D-Day's level ground, 0x7ffdfff5). Rule (game, F-23): a map whose gameplay
-    ground stores its normals exactly straight up (0x80000005) casts no shadows in RUSE.exe; the same flat ground
+    b = -1/8192: the commonest word under D-Day's level ground, 0x7ffdfff5). Rule (seen in the game): a map whose gameplay
+    ground stores its normals exactly straight up (0x80000005) casts no shadows in the game; the same flat ground
     with the nudged word casts them (seen in the game 2026-10-15, shadow split rounds 1-3). None of the 3.5 million
     normals in the 32 shipped maps' three trees is exactly along an axis."""
     k = 0

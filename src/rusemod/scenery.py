@@ -2740,11 +2740,11 @@ FARM_HAY = ("Foin",)
 FARM_MACHINES = ("Charrette", "Tracteur", "Remorque", "Faucheuse", "Moissonneuse", "Herse", "Charrue", "Botteleuse")
 TRACTORS = ("Tracteur",)
 # Hay and machines left standing on a field the brush changes keep a harvested patch round them, as Eugen lays one
-# (D-Day, 2026-10-15, F-34; the owner's E: bales left in a full field of standing wheat): his crops round hay on wheat
+# (D-Day, 2026-10-15; the owner's E: bales left in a full field of standing wheat): his crops round hay on wheat
 # plots are 97% laid harvested within 2 m, half-way back to the plot's own share by 4.1 m; round a machine with no
 # hay near it on a wheat plot no standing crop at all (measured on D-Day, 2026-10-15). Harvested,
 # the wheat is squashed to a quarter and sunk 0.13 m (131,257 of the 314,412 harvested Champs_Bles within 3 m of hay;
-# next half height, 0.26 m down), the green crop squashed to about half (harvest_pairs.py); the light green and border
+# next half height, 0.26 m down), the green crop squashed to about half; the light green and border
 # crops he leaves standing.
 HAY_PATCH = 4.0 * 260.0
 HARVESTED = {"Champs_Bles": (0.25, -0.13 * 260.0), "Champs_Verts": (0.48, 0.0)}   # height (up scale), lift
@@ -2753,7 +2753,7 @@ HARVESTED = {"Champs_Bles": (0.25, -0.13 * 260.0), "Champs_Verts": (0.48, 0.0)} 
 # the edge).
 NO_HAY_MACHINE_DEPTH = 3.0 * 260.0
 # Eugen's harvested crops round hay and machines are theirs out to here: on D-Day's wheat plots the share of crops laid
-# harvested falls from 97% at the hay to the plot's own (about 30%) by 7 m (crop_patches.py, 2026-10-15). Within it the
+# harvested falls from 97% at the hay to the plot's own (about 30%) by 7 m (2026-10-15). Within it the
 # brush keeps Eugen's harvested ground as he shaped it, a block along the rows (E's cluster: 25 x 20 m), not circles:
 # a new crop within HARVESTED_SPOT of one of his harvested crops is laid as that crop is (its height, its sink).
 HAY_REACH = 7.0 * 260.0
@@ -2762,7 +2762,7 @@ HARVESTED_SPOT = 1.0 * 260.0   # (a clump's 16 crops stand 0.75 m apart: 1 m rou
 # the ploughed field's stones, Q with its old grass patches, W's old hedgerow trees in the middle of new wheat): from
 # FIELD_EDGE in, its low plants, stones, ground stickers and trees are the source field's, as Eugen dressed it. Along
 # the edge they stay the map's: D-Day's low plants stand 2,000-3,800 a hectare within 2 m of a field's edge (the hedge
-# foot) and 150-800 inside, its wheat fields' trees 34 a hectare there and none past 6 m (dressing_depth.py).
+# foot) and 150-800 inside, its wheat fields' trees 34 a hectare there and none past 6 m.
 FIELD_EDGE = 2.0 * 260.0
 DRESSING_LAYERS = ("stickers", "plants", "stones", "trees")
 
@@ -3063,7 +3063,7 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
     laid it twice). `fields`: this dab's own fields (own_fields), else every field it touches.
     `picture`: the map's ground picture, finest level ((x, y) -> rgb or None): each field's paint is then one stamp
     clipped to the field's painted outline (field_outline); without it, a stamp per row sticker.
-    What stands on a field stays as the map has it, as Eugen's own fields have it (F-34, measured on D-Day): its hay
+    What stands on a field stays as the map has it, as Eugen's own fields have it (measured on D-Day): its hay
     and farm machines keep their harvested ground (a new crop where one of the map's own harvested crops within
     HAY_REACH of them lay is laid as that one is; within HAY_PATCH of them at least as HARVESTED says), and on a look
     whose fields carry no hay (look["hay"] false: ploughed) the hay and carts go, and the tractors past
@@ -3139,7 +3139,7 @@ def expand_field_brush(brush: "FieldBrush", look: dict, sc: Scenery, group: int 
             plans[g] = layout(field, angs[g], plans[big]["k"])
             pictures[g] = pictures[big]
 
-    # what stands on the fields stays as the map has it, as Eugen's own fields have it (F-34): their hay and farm
+    # what stands on the fields stays as the map has it, as Eugen's own fields have it: their hay and farm
     # machines, the crops round them laid harvested (HAY_PATCH: round those just over a field's edge too, a
     # neighbour's or the next changed field's: the new crops of a field facing another way came within 0.6 m of the
     # hay on the field beside it at E); on a look whose fields carry no hay, the hay and carts go, and the tractors
@@ -4461,7 +4461,7 @@ def _widen_choice(sc: Scenery, cands: list, things: list, nodes: list, far_at: s
     """Which (full-list entry, reference `at`) _widen stretches over `things`: the reference whose block lies nearest
     them, then the one fewest nodes down. (Before 2026-10-15 it was the fewest nodes down, far-listed first, the
     biggest box: on the blank farm a block 5.6 km off took 30,183 copied plants in four nested blocks, and none was
-    drawn in the game; field 7's, hung on a block 218 m off, were: F-45.)"""
+    drawn in the game; field 7's, hung on a block 218 m off, were.)"""
     items = {it.at: it for it in sc.blocks[0].items}
     return min(cands, key=lambda c: (_box_gap(_world_box(sc, items[c[1]]), things), len(_path(nodes, c[0]))))
 

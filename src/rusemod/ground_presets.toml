@@ -136,7 +136,7 @@ sources = [[1762121.6, 2295465.6, 43.82, 14092.0, 39884.0, 32.31, "#405213", "La
 # The field brush keeps its new standing crops off each building by D-Day's own gap for its type (m,
 # from the walls: the model's box): the closest quarter of the type's placements beside standing
 # crops (harvested crops, squashed or sunk, don't count); a type not listed, `default` (every
-# building's). Measured 2026-10-15 (looks/crop_patches.py).
+# building's). Measured on D-Day, 2026-10-15.
 [building_gaps]
 default = 5.46
 "Cabane_Pierre" = 1.85
