@@ -1,6 +1,16 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.6:** ogni flag e ogni numero delle unità spiegati, gli strumenti della mappa mostrano cosa hanno fatto, e le mappe vuote disegnate bene.
+
+- **I flag delle unità spiegati:** ogni flag nella pagina di un'unità mostra il suo nome, e passandoci sopra si vede cosa fa, come usarlo e quanto ne siamo sicuri. **Guida ai flag: tutti spiegati** li elenca tutti e 105, con una ricerca. Lo Studio controlla i flag di un'unità: un crash noto (i flag di un camion su qualcosa che non è un camion, un aereo armato con il flag da ricognizione senza quello da caccia) mostra la sua correzione, e lo Studio non avvia il gioco finché non è corretto; i flag che dovrebbero rompere un'unità danno un avviso.
+- **Ogni numero spiegato:** passa sopra il nome di qualsiasi numero di un'unità o di un edificio per vedere cosa significa; accanto, il suo valore in unità semplici (metri, km/h, secondi, gradi, $, %), un cursore per renderlo più piccolo o più grande del valore del gioco (il suo valore base, da -90% a +300%), e dove si colloca tra le unità del gioco del suo tipo. Le velocità sono nei km/h del gioco.
+- **Come funzionano armi e munizioni**, passo per passo, nel riquadro Armi.
+- **Gli strumenti della mappa mostrano cosa hanno fatto:** Copertura, Scopri, Città, Foresta, Blocca e Apri segnano il terreno su cui è passato ogni tratto e dicono quanti m² sono cambiati per le unità, o che non è cambiato nulla. Città lavora in metri veri e cerchia prima gli edifici che un clic coprirà.
+- **Piazzare:** edifici, alberi e oggetti piazzati mostrano i loro veri modelli (con un punto ai loro piedi); quello scelto appare trasparente sotto il puntatore prima del clic; l'elenco da piazzare è una griglia di immagini. Gli alberi non sono più neri, e i numeri dei settori si nascondono quando la telecamera è vicina.
+- **Mappe vuote** (visto in gioco su un Terreno vuoto): ombre sul terreno piatto; ciò che piazzi dove la mappa copiata aveva il mare viene disegnato; il pavimento della telecamera segue il nuovo terreno.
+- **Ancora con bug, usale a tua discrezione:** le texture di Map Paint e tutte e due le mappe vuote (Terreno vuoto e Oceano vuoto).
+
 **0.9.8.5:** aerei in qualsiasi ruolo, armi che colpiscono gli aerei e una libreria per il pennello Texture di Map Paint.
 
 - **Il ruolo di un aereo** (segnalato da un giocatore: un cacciabombardiere a cui venivano date le bombe a tappeto di un bombardiere volava fino al bersaglio e non sganciava nulla): una nuova casella Ruolo nella pagina di un aereo lo rende Caccia, Cacciabombardiere, Bombardiere o Ricognitore. Il suo comportamento, il modo in cui lo usano i giocatori del computer e le sue parole nel menu di costruzione cambiano con esso. Le bombe di un bombardiere vanno in una stiva (copiata da quella di un bombardiere del gioco), l'unico modo in cui il passaggio di un bombardiere le sgancia. Visto in gioco: un cacciabombardiere reso bombardiere sgancia le sue bombe; un ricognitore che tiene le sue armi (uno Stuka, un ME109) attacca ancora e ha la vista dei ricognitori.

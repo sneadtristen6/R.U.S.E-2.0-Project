@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.6:** il joue les mods faits avec Studio 0.9.8.6.
+
+- **Les mods faits avec Studio 0.9.8.6 se jouent :** des cartes vierges avec des ombres sur le sol plat, ce qui est placé là où la carte copiée avait la mer dessiné, et le plancher de la caméra sur le nouveau sol.
+- **Un plantage connu refusé :** un mod dont un avion armé porte le drapeau de reconnaissance sans celui de chasseur plantait le jeu quand l'avion était envoyé attaquer ; le Launcher refuse maintenant de le construire et dit pourquoi.
+- **Encore buggé, à jouer à vos risques :** les cartes faites avec les textures de Map Paint, et les cartes vierges (Terrain vierge, Océan vierge).
+
 **0.4.8.5:** il joue les mods faits avec Studio 0.9.8.5.
 
 - **Les mods faits avec Studio 0.9.8.5 se jouent :** des avions dans un nouveau rôle (un bombardier avec sa soute, un éclaireur qui garde ses armes), des véhicules de reconnaissance, des armes qui touchent les avions, et du sol peint depuis la bibliothèque du pinceau Texture avec le détail du jeu par-dessus. Un Launcher plus ancien ne peut pas construire certains d'entre eux.

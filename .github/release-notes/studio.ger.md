@@ -1,6 +1,16 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.6:** jede Flag und jede Zahl der Einheiten erklärt, die Kartenwerkzeuge zeigen, was sie getan haben, und leere Karten richtig dargestellt.
+
+- **Einheiten-Flags erklärt:** jede Flag auf der Seite einer Einheit zeigt ihren Namen, und beim Darüberfahren sieht man, was sie tut, wie man sie benutzt und wie sicher wir sind. **Flag-Handbuch: alle Flags erklärt** listet alle 105, mit Suche. Das Studio prüft die Flags einer Einheit: ein bekannter Absturz (die Flags eines Lastwagens an etwas, das kein Lastwagen ist, ein bewaffnetes Flugzeug mit der Aufklärer-Flag ohne die Jäger-Flag) zeigt seine Lösung, und das Studio startet das Spiel nicht, bis er behoben ist; Flags, die eine Einheit voraussichtlich kaputt machen, geben eine Warnung.
+- **Jede Zahl erklärt:** fahren Sie über den Namen einer beliebigen Zahl einer Einheit oder eines Gebäudes, um zu sehen, was sie bedeutet; daneben ihr Wert in einfachen Einheiten (Meter, km/h, Sekunden, Grad, $, %), ein Regler, der sie kleiner oder größer als den Wert des Spiels macht (ihr Grundwert, -90 % bis +300 %), und wo sie unter den Einheiten des Spiels ihrer Art liegt. Geschwindigkeiten sind in den km/h des Spiels.
+- **So funktionieren Waffen und Munition**, Schritt für Schritt, im Feld Waffen.
+- **Die Kartenwerkzeuge zeigen, was sie getan haben:** Deckung, Freilegen, Stadt, Wald, Sperren und Öffnen markieren den Boden, über den jeder Strich ging, und sagen, wie viele m² sich für Einheiten geändert haben, oder dass sich nichts geändert hat. Stadt arbeitet in echten Metern und umkreist zuerst die Gebäude, die ein Klick abdecken wird.
+- **Platzieren:** platzierte Gebäude, Bäume und Objekte zeigen ihre echten Modelle (mit einem Punkt an ihrem Fuß); das gewählte erscheint vor dem Klick durchsichtig unter dem Zeiger; die Platzierliste ist ein Raster aus Bildern. Bäume sind nicht mehr schwarz, und Sektornummern verschwinden, wenn die Kamera nah ist.
+- **Leere Karten** (im Spiel gesehen auf Leeres Gelände): Schatten auf flachem Boden; was Sie dort platzieren, wo die kopierte Karte Meer hatte, wird dargestellt; der Kameraboden folgt dem neuen Boden.
+- **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres Gelände und Leerer Ozean).
+
 **0.9.8.5:** Flugzeuge in jeder Rolle, Waffen, die Flugzeuge treffen, und eine Bibliothek für den Textur-Pinsel von Map Paint.
 
 - **Die Rolle eines Flugzeugs** (Meldung eines Spielers: ein Jagdbomber mit den Bombenteppich-Bomben eines Bombers flog zu seinem Ziel und warf nichts ab): ein neues Rolle-Feld auf der Seite eines Flugzeugs macht es zum Jäger, Jagdbomber, Bomber oder Aufklärer. Sein Verhalten, wie die Computerspieler es einsetzen, und seine Worte im Baumenü ändern sich mit. Die Bomben eines Bombers kommen in einen Bombenschacht (kopiert von einem Bomber des Spiels), der einzige Weg, wie ein Bomberanflug sie abwirft. Im Spiel gesehen: ein Jagdbomber, der zum Bomber gemacht wurde, wirft seine Bomben ab; ein Aufklärer, der seine Waffen behält (eine Stuka, eine ME109), greift weiter an und hat die Sicht der Aufklärer.

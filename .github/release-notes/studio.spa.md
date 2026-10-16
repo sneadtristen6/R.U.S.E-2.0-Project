@@ -1,6 +1,16 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.6:** cada bandera y cada número de las unidades explicados, las herramientas del mapa muestran lo que hicieron, y los mapas en blanco bien dibujados.
+
+- **Las banderas de las unidades explicadas:** cada bandera en la página de una unidad muestra su nombre, y al pasar el ratón se ve qué hace, cómo usarla y lo seguros que estamos. **Guía de banderas: todas explicadas** lista las 105, con una búsqueda. El Studio revisa las banderas de una unidad: un cierre conocido del juego (las banderas de un camión en algo que no es un camión, un avión armado con la bandera de reconocimiento sin la de caza) muestra su arreglo, y el Studio no inicia el juego hasta que esté arreglado; las banderas que se espera que rompan una unidad dan un aviso.
+- **Cada número explicado:** pasa el ratón por el nombre de cualquier número de una unidad o un edificio para ver qué significa; a su lado, su valor en unidades sencillas (metros, km/h, segundos, grados, $, %), un deslizador para hacerlo más pequeño o más grande que el valor del juego (su valor base, de -90 % a +300 %), y dónde queda entre las unidades del juego de su tipo. Las velocidades van en los km/h del juego.
+- **Cómo funcionan las armas y la munición**, paso a paso, en el recuadro Armas.
+- **Las herramientas del mapa muestran lo que hicieron:** Cobertura, Descubrir, Pueblo, Bosque, Bloquear y Abrir marcan el suelo por el que pasó cada trazo y dicen cuántos m² cambiaron para las unidades, o que nada cambió. Pueblo funciona en metros reales y rodea primero los edificios que cubrirá un clic.
+- **Colocar:** los edificios, árboles y objetos colocados muestran sus modelos reales (con un punto a sus pies); el elegido se ve transparente bajo el puntero antes del clic; la lista para colocar es una cuadrícula de imágenes. Los árboles ya no salen negros, y los números de sector se ocultan cuando la cámara está cerca.
+- **Mapas en blanco** (visto en el juego en un Terreno en blanco): sombras sobre el suelo llano; lo que colocas donde el mapa copiado tenía mar se dibuja; el suelo de la cámara sigue al nuevo terreno.
+- **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno en blanco y Océano en blanco).
+
 **0.9.8.5:** aviones en cualquier papel, armas que alcanzan a los aviones y una biblioteca para el pincel Textura de Map Paint.
 
 - **El papel de un avión** (aviso de un jugador: un cazabombardero al que se le daban las bombas en alfombra de un bombardero volaba hasta su objetivo y no soltaba nada): una nueva casilla Papel en la página de un avión lo convierte en Caza, Cazabombardero, Bombardero o Explorador. Su comportamiento, cómo lo usan los jugadores del ordenador y sus palabras en el menú de construcción cambian con él. Las bombas de un bombardero van en una bodega de bombas (copiada de la de un bombardero del juego), la única forma en que la pasada de un bombardero las suelta. Visto en el juego: un cazabombardero convertido en bombardero suelta sus bombas; un explorador que conserva sus armas (un Stuka, un ME109) sigue atacando y tiene la vista de los exploradores.

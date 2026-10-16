@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.6:** it plays mods made with Studio 0.9.8.6.
+
+- **Mods made with Studio 0.9.8.6 play:** blank maps with shadows over flat ground, what's placed where the copied map had sea drawn, and the camera's floor on the new ground.
+- **A known crash refused:** a mod whose armed plane carries the recon flag without the fighter flag crashed the game when the plane was sent to attack; the Launcher now refuses to build it and says why.
+- **Still buggy, play at your own discretion:** maps made with Map Paint's textures, and blank maps (Blank Terrain, Blank Ocean).
+
 **0.4.8.5:** it plays mods made with Studio 0.9.8.5.
 
 - **Mods made with Studio 0.9.8.5 play:** planes in a new role (a bomber with its bomb bay, a scout that keeps its guns), recon vehicles, weapons that hit planes, and ground painted from the Texture brush's library with the game's detail over it. An older Launcher can't build some of them.

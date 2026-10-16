@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.6:** spouští mody vytvořené ve Studiu 0.9.8.6.
+
+- **Mody ze Studia 0.9.8.6 hrají:** prázdné mapy se stíny na rovném terénu, umístěné věci tam, kde kopírovaná mapa měla moře, nakreslené, a podlaha kamery na novém terénu.
+- **Známý pád odmítnut:** mod, jehož ozbrojené letadlo nese flag průzkumu bez flagu stíhačky, shazoval hru, když bylo letadlo posláno útočit; teď ho Launcher odmítne sestavit a řekne proč.
+- **Stále chybové, hrajte na vlastní uvážení:** mapy vytvořené s texturami Map Paint a prázdné mapy (Prázdný terén, Prázdný oceán).
+
 **0.4.8.5:** spouští módy vytvořené ve Studiu 0.9.8.5.
 
 - **Módy ze Studia 0.9.8.5 fungují:** letadla v nové roli (bombardér s pumovnicí, průzkumník, který si nechá zbraně), průzkumná vozidla, zbraně, které zasahují letadla, a terén namalovaný z knihovny štětce Textura s detailem hry navrch. Starší Launcher některé z nich nesestaví.

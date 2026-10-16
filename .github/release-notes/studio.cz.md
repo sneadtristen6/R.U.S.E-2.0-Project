@@ -1,6 +1,16 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.6:** každý flag a každé číslo jednotek vysvětlené, nástroje mapy ukazují, co udělaly, a prázdné mapy se kreslí správně.
+
+- **Flagy jednotek vysvětlené:** každý flag na stránce jednotky ukazuje svůj název a po najetí myší je vidět, co dělá, jak ho použít a jak moc si jsme jistí. **Průvodce flagy: všechny vysvětlené** vypíše všech 105, s hledáním. Studio kontroluje flagy jednotky: známý pád hry (flagy nákladního auta na něčem, co není nákladní auto, ozbrojené letadlo s flagem průzkumu bez flagu stíhačky) ukáže svou opravu a Studio nespustí hru, dokud není opraven; flagy, které asi rozbijí jednotku, dají varování.
+- **Každé číslo vysvětlené:** najeďte na název libovolného čísla jednotky nebo budovy a uvidíte, co znamená; vedle jeho hodnotu v jednoduchých jednotkách (metry, km/h, sekundy, stupně, $, %), posuvník, který ho zmenší nebo zvětší oproti hodnotě hry (jeho základní hodnotě, od -90 % do +300 %), a kde leží mezi jednotkami hry stejného druhu. Rychlosti jsou v km/h samotné hry.
+- **Jak fungují zbraně a munice**, krok za krokem, v rámečku Zbraně.
+- **Nástroje mapy ukazují, co udělaly:** Kryt, Odkrýt, Město, Les, Zablokovat a Otevřít označí terén, přes který šel každý tah, a řeknou, kolik m² se pro jednotky změnilo, nebo že se nic nezměnilo. Město pracuje ve skutečných metrech a nejdřív zakroužkuje budovy, které kliknutí pokryje.
+- **Umisťování:** umístěné budovy, stromy a předměty ukazují své skutečné modely (s tečkou u paty); vybraný je vidět průhledně pod ukazatelem před kliknutím; seznam k umístění je mřížka obrázků. Stromy už nejsou černé a čísla sektorů se schovají, když je kamera blízko.
+- **Prázdné mapy** (viděno ve hře na Prázdném terénu): stíny na rovném terénu; to, co umístíte tam, kde kopírovaná mapa měla moře, se nakreslí; podlaha kamery sleduje nový terén.
+- **Stále chybové, používejte na vlastní uvážení:** textury Map Paint a obě prázdné mapy (Prázdný terén a Prázdný oceán).
+
 **0.9.8.5:** letadla v jakékoli roli, zbraně, které zasahují letadla, a knihovna pro štětec Textura v Map Paint.
 
 - **Role letadla** (hlášení hráče: stíhací bombardér, kterému se daly kobercové bomby bombardéru, doletěl k cíli a nic neshodil): nové pole Role na stránce letadla z něj udělá Stíhačku, Stíhací bombardér, Bombardér nebo Průzkumníka. S ní se mění jeho chování, to, jak ho používají počítačoví hráči, i jeho slova v nabídce stavby. Bomby bombardéru jdou do pumovnice (zkopírované z bombardéru hry), jediným způsobem, jak je nálet bombardéru shodí. Ověřeno ve hře: stíhací bombardér změněný na bombardér shazuje bomby; průzkumník, který si nechá zbraně (Stuka, ME109), dál útočí a vidí jako průzkumníci.

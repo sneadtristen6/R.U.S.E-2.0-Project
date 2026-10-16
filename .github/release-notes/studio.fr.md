@@ -1,6 +1,16 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.6:** chaque drapeau et chaque nombre des unités expliqués, les outils de carte montrent ce qu'ils ont fait, et les cartes vierges bien dessinées.
+
+- **Les drapeaux des unités expliqués :** chaque drapeau sur la page d'une unité montre son nom, et en le survolant on voit ce qu'il fait, comment s'en servir et à quel point nous en sommes sûrs. **Guide des drapeaux : tous expliqués** liste les 105, avec une recherche. Le Studio vérifie les drapeaux d'une unité : un plantage connu (les drapeaux d'un camion sur autre chose qu'un camion, un avion armé avec le drapeau de reconnaissance sans celui de chasseur) montre sa correction, et le Studio ne lance pas le jeu tant qu'il n'est pas corrigé ; les drapeaux qui devraient casser une unité donnent un avertissement.
+- **Chaque nombre expliqué :** survolez le nom de n'importe quel nombre d'une unité ou d'un bâtiment pour voir ce qu'il veut dire ; à côté, sa valeur en unités simples (mètres, km/h, secondes, degrés, $, %), un curseur pour le rendre plus petit ou plus grand que la valeur du jeu (sa valeur de base, de -90 % à +300 %), et où il se place parmi les unités du jeu de son genre. Les vitesses sont dans les km/h du jeu.
+- **Comment marchent les armes et les munitions**, pas à pas, dans le cadre Armes.
+- **Les outils de carte montrent ce qu'ils ont fait :** Couvert, Découvrir, Ville, Forêt, Bloquer et Ouvrir marquent le sol que chaque trait a parcouru et disent combien de m² ont changé pour les unités, ou que rien n'a changé. Ville marche en vrais mètres et entoure d'abord les bâtiments qu'un clic couvrira.
+- **Placer :** les bâtiments, arbres et objets placés montrent leurs vrais modèles (avec un point à leur pied) ; celui choisi apparaît en transparence sous le pointeur avant le clic ; la liste à placer est une grille d'images. Les arbres ne sont plus noirs, et les numéros de secteur se cachent quand la caméra est proche.
+- **Cartes vierges** (vu en jeu sur un Terrain vierge) : des ombres sur le sol plat ; ce que vous placez là où la carte copiée avait la mer est dessiné ; le plancher de la caméra suit le nouveau sol.
+- **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et Océan vierge).
+
 **0.9.8.5:** des avions dans n'importe quel rôle, des armes qui touchent les avions, et une bibliothèque pour le pinceau Texture de Map Paint.
 
 - **Le rôle d'un avion** (signalé par un joueur : un chasseur-bombardier à qui l'on donnait les bombes en tapis d'un bombardier volait jusqu'à sa cible et ne larguait rien) : une nouvelle case Rôle sur la page d'un avion en fait un Chasseur, un Chasseur-bombardier, un Bombardier ou un Éclaireur. Son comportement, la façon dont les joueurs de l'ordinateur l'utilisent et ses mots dans le menu de construction changent avec. Les bombes d'un bombardier vont dans une soute (copiée sur celle d'un bombardier du jeu), la seule façon dont le passage d'un bombardier les largue. Vu en jeu : un chasseur-bombardier devenu bombardier largue ses bombes ; un éclaireur qui garde ses armes (un Stuka, un ME109) attaque toujours et a la vue des éclaireurs.

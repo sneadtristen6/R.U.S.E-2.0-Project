@@ -1,6 +1,16 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.6:** każda flaga i każda liczba jednostek wyjaśnione, narzędzia mapy pokazują, co zrobiły, a puste mapy rysują się poprawnie.
+
+- **Flagi jednostek wyjaśnione:** każda flaga na stronie jednostki pokazuje swoją nazwę, a po najechaniu widać, co robi, jak jej używać i jak bardzo jesteśmy pewni. **Przewodnik po flagach: wszystkie wyjaśnione** wymienia wszystkie 105, z wyszukiwaniem. Studio sprawdza flagi jednostki: znany crash (flagi ciężarówki na czymś, co nie jest ciężarówką, uzbrojony samolot z flagą zwiadu bez flagi myśliwca) pokazuje swoją poprawkę, a Studio nie uruchomi gry, dopóki nie zostanie poprawiony; flagi, które mogą zepsuć jednostkę, dają ostrzeżenie.
+- **Każda liczba wyjaśniona:** najedź na nazwę dowolnej liczby jednostki lub budynku, by zobaczyć, co znaczy; obok jej wartość w prostych jednostkach (metry, km/h, sekundy, stopnie, $, %), suwak, który robi ją mniejszą lub większą od wartości z gry (jej wartości bazowej, od -90% do +300%), i gdzie wypada wśród jednostek gry tego rodzaju. Prędkości są w km/h samej gry.
+- **Jak działają broń i amunicja**, krok po kroku, w ramce Broń.
+- **Narzędzia mapy pokazują, co zrobiły:** Osłona, Odsłoń, Miasto, Las, Blokuj i Otwórz zaznaczają teren, po którym przeszło każde pociągnięcie, i mówią, ile m² zmieniło się dla jednostek, albo że nic się nie zmieniło. Miasto działa w prawdziwych metrach i najpierw otacza budynki, które obejmie kliknięcie.
+- **Stawianie:** postawione budynki, drzewa i obiekty pokazują swoje prawdziwe modele (z kropką u stóp); wybrany widać półprzezroczyście pod kursorem przed kliknięciem; lista do stawiania to siatka obrazków. Drzewa nie są już czarne, a numery sektorów chowają się, gdy kamera jest blisko.
+- **Puste mapy** (widziane w grze na Pustym terenie): cienie na płaskim terenie; to, co postawisz tam, gdzie kopiowana mapa miała morze, jest rysowane; podłoga kamery idzie za nowym terenem.
+- **Wciąż z błędami, używasz na własną odpowiedzialność:** tekstury Map Paint i obie puste mapy (Pusty teren i Pusty ocean).
+
 **0.9.8.5:** samoloty w dowolnej roli, broń trafiająca samoloty i biblioteka dla pędzla Tekstura w Map Paint.
 
 - **Rola samolotu** (zgłoszenie gracza: myśliwiec-bombowiec, któremu dano bomby dywanowe bombowca, leciał do celu i niczego nie zrzucał): nowe pole Rola na stronie samolotu robi z niego Myśliwiec, Myśliwiec-bombowiec, Bombowiec lub Zwiadowcę. Razem z nią zmienia się jego zachowanie, to, jak używają go gracze komputerowi, i jego słowa w menu budowy. Bomby bombowca trafiają do komory bombowej (skopiowanej z bombowca z gry), bo tylko z niej zrzuca je nalot bombowca. Sprawdzone w grze: myśliwiec-bombowiec zmieniony w bombowiec zrzuca bomby; zwiadowca, który zachowuje broń (Stuka, ME109), nadal atakuje i ma zasięg widzenia zwiadowców.

@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.6:** uruchamia mody zrobione w Studio 0.9.8.6.
+
+- **Mody zrobione w Studio 0.9.8.6 działają:** puste mapy z cieniami na płaskim terenie, to, co postawione tam, gdzie kopiowana mapa miała morze, narysowane, i podłoga kamery na nowym terenie.
+- **Znany crash odrzucony:** mod, w którym uzbrojony samolot ma flagę zwiadu bez flagi myśliwca, wywracał grę, gdy samolot był wysyłany do ataku; teraz Launcher odmawia jego zbudowania i mówi dlaczego.
+- **Wciąż z błędami, grasz na własną odpowiedzialność:** mapy zrobione z teksturami Map Paint i puste mapy (Pusty teren, Pusty ocean).
+
 **0.4.8.5:** uruchamia mody zrobione w Studio 0.9.8.5.
 
 - **Mody zrobione w Studio 0.9.8.5 działają:** samoloty w nowej roli (bombowiec z komorą bombową, zwiadowca, który zachowuje broń), pojazdy rozpoznawcze, broń trafiająca samoloty i teren malowany z biblioteki pędzla Tekstura z detalem gry na wierzchu. Starszy Launcher nie zbuduje niektórych z nich.

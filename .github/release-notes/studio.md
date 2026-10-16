@@ -1,6 +1,16 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.6:** every unit flag and number explained, the map tools show what they did, and blank maps drawn right.
+
+- **Unit flags explained:** each flag on a unit's page shows its name, and hovering it says what it does, how to use it and how sure we are. **Flag guide: every flag explained** lists all 105, with a search. The Studio checks a unit's flags: a known crash (a truck's flags on something that isn't a truck, an armed plane given the recon flag without the fighter flag) shows its fix, and the Studio won't start the game until it's fixed; flags expected to break a unit get a warning.
+- **Every number explained:** hover the name of any number of a unit or building to see what it means; beside it, its value in plain units (metres, km/h, seconds, degrees, $, %), a slider to make it smaller or larger than the game's value (its base stat, -90% to +300%), and where it sits among the game's units of its kind. Speeds are in the game's own km/h.
+- **How weapons and ammo work**, step by step, in the Weapons box.
+- **The map tools show what they did:** Cover, Uncover, Town, Forest, Block and Open mark the ground each stroke went over and say how many m² changed for units, or that nothing changed. Town works in real metres and rings the buildings a click will cover first.
+- **Placing:** placed buildings, trees and props show their real models (with a dot at each one's foot); the picked one shows see-through under the pointer before you click; the place list is a grid of pictures. Trees are no longer black, and sector numbers hide when the camera is close.
+- **Blank maps** (seen in the game on a Blank Terrain map): shadows over flat ground; what you place where the copied map had sea is drawn; the camera's floor follows the new ground.
+- **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank Ocean).
+
 **0.9.8.5:** planes in any role, weapons that hit planes, and a library for Map Paint's Texture brush.
 
 - **A plane's role** (a player's report: a fighter-bomber given a bomber's carpet bombs flew to its target and dropped nothing): a new Role box on a plane's page makes it a Fighter, Fighter-bomber, Bomber or Scout. Its behaviour, how the computer players use it and its build menu words change with it. A bomber's bombs go in a bomb bay (copied from a game bomber's), the only way a bomber's run drops them. Seen in the game: a fighter-bomber made a bomber drops its bombs; a scout that keeps its guns (a Stuka, an ME109) still attacks and has the scouts' sight.

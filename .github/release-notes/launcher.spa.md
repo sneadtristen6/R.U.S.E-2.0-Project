@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.6:** ejecuta los mods hechos con Studio 0.9.8.6.
+
+- **Los mods hechos con Studio 0.9.8.6 se juegan:** mapas en blanco con sombras sobre el suelo llano, lo colocado donde el mapa copiado tenía mar dibujado, y el suelo de la cámara sobre el nuevo terreno.
+- **Un cierre conocido rechazado:** un mod con un avión armado que lleva la bandera de reconocimiento sin la de caza cerraba el juego cuando el avión era enviado a atacar; ahora el Launcher se niega a construirlo y dice por qué.
+- **Todavía con fallos, juégalo bajo tu propio criterio:** los mapas hechos con las texturas de Map Paint, y los mapas en blanco (Terreno en blanco, Océano en blanco).
+
 **0.4.8.5:** juega los mods hechos con Studio 0.9.8.5.
 
 - **Los mods hechos con Studio 0.9.8.5 funcionan:** aviones en un nuevo papel (un bombardero con su bodega de bombas, un explorador que conserva sus armas), vehículos de reconocimiento, armas que alcanzan a los aviones y suelo pintado desde la biblioteca del pincel Textura con el detalle del juego encima. Un Launcher más antiguo no puede construir algunos de ellos.

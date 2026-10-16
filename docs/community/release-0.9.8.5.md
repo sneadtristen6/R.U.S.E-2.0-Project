@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.5 and Launcher 0.4.8.5: planes in any role, weapons that hit planes, and a texture library for Map Paint"
 category: Announcements
 order: 10
+skip: never posted; 0.9.8.6's announcement covers it (the owner, 2026-10-16: "release")
 ---
 **RUSE Studio 0.9.8.5** and **RUSE Launcher 0.4.8.5** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.
