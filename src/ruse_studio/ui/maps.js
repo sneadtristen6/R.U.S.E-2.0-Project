@@ -5077,6 +5077,9 @@ function renderPlace() {
   $("place-undo").textContent = w.brush_undo;
   $("place-undo").title = w.tip_place_undo;
   $("place-undo").disabled = !p.objects.length;
+  $("place-redo").textContent = w.brush_redo;
+  $("place-redo").title = w.tip_place_redo;
+  $("place-redo").disabled = !redo.place.length || !p.mod;
   $("place-count").textContent = p.objects.length ? fill(w.place_count, { n: p.objects.length.toLocaleString() }) : "";
   $("place-how").replaceChildren(...PLACE_HOW.map((how) => {
     const chip = el("button", { type: "button", className: "chip", textContent: w[`place_${how}`], title: w[`tip_place_${how}`] });
@@ -5267,6 +5270,7 @@ async function placeAt(ev) {
     await mv.api.scenery_add(pack, [obj]);
     if (pack !== mv.current) return;
     p.groups.push([obj]);
+    redo.place = [];
     placeNote(w.brush_note);
   } catch (err) {
     if (pack !== mv.current) return;
@@ -5287,6 +5291,7 @@ async function placeMany(objs) {
     await mv.api.scenery_add(pack, objs);
     if (pack !== mv.current) return;
     p.groups.push(objs);
+    redo.place = [];
     placeNote(fill(w.place_placed, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
   } catch (err) {
     if (pack !== mv.current) return;
@@ -5372,6 +5377,18 @@ function showPlaceGuide(pt) {
   gl.draw();
 }
 
+// Redo puts back what Undo took, with the same call that saved it the first time. Each tool keeps its own list, as
+// its Undo does; a new step in a tool empties that tool's list (what was taken back can't follow a new step), and so
+// does Start over and opening another map.
+const redo = { place: [], brush: [], erase: [], road: [] };
+
+function forgetRedo() {
+  redo.place = [];
+  redo.brush = [];
+  redo.erase = [];
+  redo.road = [];
+}
+
 // Undo takes back the last click, area or line placed, by the objects themselves: a Forest stroke's trees (the
 // brushes' Undo takes those, with its cover) may have come after them.
 async function undoPlace() {
@@ -5384,8 +5401,33 @@ async function undoPlace() {
     await mv.api.scenery_undo(pack, group.length, group);
     if (pack !== mv.current) return;
     takeOff(group);
+    redo.place.push(group);
     renderPlace();
-  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+    renderBridgeTray();
+  } catch (err) {
+    p.groups.push(group);  // not taken back: it stays Undo's
+    placeNote((err && err.message) || String(err), "error");
+  }
+}
+
+// Redo in a place tray: the last click, area or line Undo took back, placed again in one go.
+async function redoPlace() {
+  const p = mv.place, pack = mv.current;
+  if (!p.mod || p.painting || !redo.place.length) return;
+  const group = redo.place.pop();
+  try {
+    await mv.api.scenery_add(pack, group);
+    if (pack !== mv.current) return;
+    p.objects.push(...group);
+    p.groups.push(group);
+    drawPlaced();
+    renderPlace();
+    renderBridgeTray();
+  } catch (err) {
+    if (pack !== mv.current) return;
+    redo.place.push(group);
+    placeNote((err && err.message) || String(err), "error");
+  }
 }
 
 // Objects taken off the map: out of the list and the view.
@@ -5399,6 +5441,7 @@ function takeOff(objs) {
 async function show(pack, keepCamera) {
   const w = mv.words, ask = ++mv.ask;
   if (mv.current !== pack && window.MissionView) window.MissionView.forget();  // another map: its own mission
+  if (mv.current !== pack) forgetRedo();  // what was taken back on one map can't be put back on another
   mv.current = pack;
   renderList();
   $("map-pick").textContent = w.map_loading;
@@ -6011,6 +6054,9 @@ function renderRoadTray() {
   $("road-undo").textContent = w.brush_undo;
   $("road-undo").title = w.tip_road_undo;
   $("road-undo").disabled = !road.mine.length;
+  $("road-redo").textContent = w.brush_redo;
+  $("road-redo").title = w.tip_road_redo;
+  $("road-redo").disabled = !redo.road.length || !road.mod;
   $("road-snap").checked = road.snapOn;
   $("road-snap-label").textContent = w.road_snap || "Snap ends to roads and bridges";
   $("road-snap-row").title = w.tip_road_snap || "";
@@ -6069,6 +6115,7 @@ async function finishRoad() {
     await mv.api.road_add(pack, line, 3000, keep);
     if (pack !== mv.current) return;
     road.mine.push({ points: line, join: 3000, crossings: [], keep_trees: keep });
+    redo.road = [];
     road.samples = null;  // the new road's points snap too
     drawModRoads();
     renderRoadTray();
@@ -6088,12 +6135,32 @@ async function undoRoad() {
   try {
     const res = await mv.api.road_undo(pack, 1);
     if (pack !== mv.current) return;
-    road.mine.splice(road.mine.length - res.removed, res.removed);
+    redo.road.push(...road.mine.splice(road.mine.length - res.removed, res.removed));
     road.samples = null;
     drawModRoads();
     renderRoadTray();
     renderBridgeTray();
   } catch (err) { roadNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo in the Roads tray: the last road Undo took back, drawn again along the same line.
+async function redoRoad() {
+  const pack = mv.current;
+  if (!road.mod || !redo.road.length) return;
+  const r = redo.road.pop();
+  try {
+    await mv.api.road_add(pack, r.points, r.join, Boolean(r.keep_trees));
+    if (pack !== mv.current) return;
+    road.mine.push({ points: r.points, join: r.join, crossings: [], keep_trees: Boolean(r.keep_trees) });
+    road.samples = null;
+    drawModRoads();
+    renderRoadTray();
+    refreshCrossings(pack);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    redo.road.push(r);
+    roadNote((err && err.message) || String(err), "error");
+  }
 }
 
 // A click while drawing a road: the next point (snapped); Straight ends at its second, Curve at its third.
@@ -6248,6 +6315,9 @@ function renderBridgeTray() {
   $("bridge-undo").textContent = w.brush_undo;
   $("bridge-undo").title = w.tip_bridges_undo;
   $("bridge-undo").disabled = !(last && types.has(last.type)) || !mv.place.mod;
+  $("bridge-redo").textContent = w.brush_redo;
+  $("bridge-redo").title = w.tip_bridges_redo;
+  $("bridge-redo").disabled = !bridgeRedoNext() || !mv.place.mod;
   $("bridge-count").textContent = mine ? fill(w.bridges_count, { n: mine }) : "";
   if (bridge.on) $("map-help").textContent = w.bridges_help;
 }
@@ -6289,7 +6359,8 @@ async function bridgeAt(ev) {
       bridgeLength(k));
     if (pack !== mv.current) return;
     mv.place.objects.push(res.object);
-    mv.place.groups.push(1);
+    mv.place.groups.push([res.object]);  // a group is the objects Undo takes back (a bare count took nothing back)
+    redo.place = [];
     drawPlaced();
     renderPlace();
     bridgeNote(w.brush_note);
@@ -6305,6 +6376,18 @@ async function undoBridge() {
   const last = mv.place.objects[mv.place.objects.length - 1];
   if (!last || !bridgeTypes().has(last.type)) return;
   await undoPlace();
+  renderBridgeTray();
+}
+
+// Redo in the Bridges tray: the last bridge Undo took back (while what's next to redo is a bridge).
+function bridgeRedoNext() {
+  const group = redo.place[redo.place.length - 1];
+  return Boolean(group && group.length === 1 && bridgeTypes().has(group[0].type));
+}
+
+async function redoBridge() {
+  if (!bridgeRedoNext()) return;
+  await redoPlace();
   renderBridgeTray();
 }
 
@@ -6505,6 +6588,7 @@ function showCount() {
   const w = mv.words, n = (erasing() ? mv.brush.erase : mv.brush.strokes).length;
   $("brush-count").textContent = n ? fill(erasing() ? w.erase_count : w.brush_count, { n: n.toLocaleString() }) : "";
   $("brush-undo").disabled = !n || !mv.brush.mod;
+  $("brush-redo").disabled = !(erasing() ? redo.erase : redo.brush).length || !mv.brush.mod;
   $("brush-clear").disabled = !n || !mv.brush.mod;
   if (!n) $("brush-sure").classList.add("hidden");
 }
@@ -6611,6 +6695,7 @@ function renderBrushes() {
   $("brush-water-whole").title = w.tip_water_whole;
   $("brush-water-whole").disabled = !b.mod;
   $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
+  $("brush-redo").title = erase ? w.tip_erase_redo : w.tip_brush_redo;
   $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
   renderBrushTip();
   sizeLabel();
@@ -6832,6 +6917,7 @@ async function finishStroke() {
     } else {
       mv.brush.groups.push(g.strokes.length);
     }
+    redo.brush = [];
     // cover or movement painted where an Erase circle clears a wood: the build clears it after, so the view does too
     if (g.strokes.some((s) => PAINTS[s.brush]) && mv.brush.erase.some(clearsWood)) refreshErased();
     showCount();
@@ -6862,6 +6948,7 @@ async function finishErase(g) {
     await mv.api.scenery_erase(pack, g.erase);
     if (pack !== mv.current) return;
     b.eraseGroups.push(g.erase.length);
+    redo.erase = [];
     showCount();
     countTakes(pack);
   } catch (err) {
@@ -6917,11 +7004,32 @@ async function undoErase() {
   try {
     const res = await mv.api.scenery_erase_undo(pack, n);
     if (pack !== mv.current) return;
-    b.erase.splice(b.erase.length - res.removed, res.removed);
+    const gone = b.erase.splice(b.erase.length - res.removed, res.removed);
+    if (gone.length) redo.erase.push(gone);
     refreshErased();
     showCount();
     countTakes(pack);
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo under the Erase brush: the last drag's circles Undo took back, saved again.
+async function redoErase() {
+  const b = mv.brush, pack = mv.current;
+  if (!b.mod || b.painting || !redo.erase.length) return;
+  const circles = redo.erase.pop();
+  try {
+    await mv.api.scenery_erase(pack, circles);
+    if (pack !== mv.current) return;
+    b.erase.push(...circles);
+    b.eraseGroups.push(circles.length);
+    refreshErased();
+    showCount();
+    countTakes(pack);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    redo.erase.push(circles);
+    brushNote((err && err.message) || String(err), "error");
+  }
 }
 
 // "Start over" under the Erase brush: every circle on this map goes; the map keeps all its own scenery.
@@ -6933,6 +7041,7 @@ async function clearErase() {
     if (pack !== mv.current) return;
     b.erase = [];
     b.eraseGroups = [];
+    redo.erase = [];
     refreshErased();
     showCount();
     countTakes(pack);
@@ -6948,16 +7057,53 @@ async function undoStroke() {
   try {
     const res = await mv.api.terrain_undo(pack, n);
     if (pack !== mv.current) return;
-    b.strokes.splice(b.strokes.length - res.removed, res.removed);
-    if (last.objects && last.objects.length) {
-      await mv.api.scenery_undo(pack, last.objects.length, last.objects);
+    const strokes = b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    const trees = last.objects && last.objects.length ? last.objects : null;
+    if (trees) {
+      await mv.api.scenery_undo(pack, trees.length, trees);
       if (pack !== mv.current) return;
-      takeOff(last.objects);
+      takeOff(trees);
       renderPlace();
     }
+    if (strokes.length) redo.brush.push({ strokes, objects: trees });
     reapply();
     showCount();
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo under a brush: the last stroke or drag Undo took back, saved again (a Forest stroke's trees with its cover,
+// both or neither, as when it was painted).
+async function redoStroke() {
+  const b = mv.brush, pack = mv.current;
+  if (erasing()) { redoErase(); return; }
+  if (!b.mod || b.painting || !redo.brush.length) return;
+  const g = redo.brush.pop(), trees = g.objects || [];
+  let placed = false;
+  try {
+    if (trees.length) {
+      await mv.api.scenery_add(pack, trees);
+      placed = true;
+    }
+    await mv.api.terrain_add(pack, g.strokes);
+    if (pack !== mv.current) return;
+    b.strokes.push(...g.strokes);
+    if (trees.length) {
+      for (const o of trees) forestTrees.add(o);
+      mv.place.objects.push(...trees);
+      b.groups.push({ n: g.strokes.length, objects: trees });
+      drawPlaced();
+      renderPlace();
+    } else {
+      b.groups.push(g.strokes.length);
+    }
+    reapply();
+    showCount();
+  } catch (err) {
+    if (placed) { try { await mv.api.scenery_undo(pack, trees.length, trees); } catch (_) { /* said below */ } }
+    if (pack !== mv.current) return;
+    redo.brush.push(g);
+    brushNote((err && err.message) || String(err), "error");
+  }
 }
 
 // "Start over": every stroke on this map goes (after the question under the button).
@@ -6971,6 +7117,7 @@ async function clearStrokes() {
     if (pack !== mv.current) return;
     b.strokes = [];
     b.groups = [];
+    redo.brush = [];
     reapply();
     showCount();
     brushNote(b.name === "ramp" ? mv.words.ramp_help : "");
@@ -7842,6 +7989,8 @@ function renderWords() {
   $("brush-strength").title = w.tip_brush_strength;
   $("brush-undo").textContent = w.brush_undo;
   $("brush-undo").title = w.tip_brush_undo;
+  $("brush-redo").textContent = w.brush_redo;
+  $("brush-redo").title = w.tip_brush_redo;
   $("brush-clear").textContent = w.brush_clear;
   $("brush-clear").title = w.tip_brush_clear;
   $("brush-clear-yes").textContent = w.remove_all;
@@ -8083,6 +8232,12 @@ function onKey(e) {
   const held = HELD.has(e.code);
   if (e.type === "keyup") { if (held) keys.down.delete(e.code); return; }
   const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && !e.altKey && (e.code === "KeyY" || (e.code === "KeyZ" && e.shiftKey))) {  // Redo, as other editors
+    if (fieldFocused(false)) return;                                                   // have it
+    e.preventDefault();
+    if (mv.brush.on) redoStroke(); else if (mv.place.on) redoPlace(); else if (road.on) redoRoad(); else if (bridge.on) redoBridge();
+    return;
+  }
   if (ctrl && !e.altKey && e.code === "KeyZ") {  // the one shortcut that works with a modifier
     if (fieldFocused(false)) return;              // a text box has its own undo
     e.preventDefault();
@@ -8417,6 +8572,10 @@ function wire() {
   });
   $("brush-look").addEventListener("click", () => lookAround());
   $("place-undo").addEventListener("click", () => undoPlace());
+  $("place-redo").addEventListener("click", () => redoPlace());
+  $("brush-redo").addEventListener("click", () => redoStroke());
+  $("road-redo").addEventListener("click", () => redoRoad());
+  $("bridge-redo").addEventListener("click", () => redoBridge());
   $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });
   $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
   $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });

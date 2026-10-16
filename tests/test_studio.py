@@ -1923,6 +1923,54 @@ class MapAndScenarioSides(unittest.TestCase):
             self.assertEqual(len(words[key]), 10, key)
 
 
+class Redo(unittest.TestCase):
+    """The owner, 2026-10-16: "Redo should be put in." Every map tool with an Undo has a Redo beside it (Ctrl+Y or
+    Ctrl+Shift+Z) that puts back what Undo took with the call that saved it; a new step in that tool, Start over, or
+    another map empties what's left to redo. Tried in the Studio's page (?fake, Blitz): place, bridges, roads, a hill
+    stroke and Erase circles each went off with Undo and came back with Redo, and Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z did
+    the same."""
+
+    maps = staticmethod(ZonesOnTheGround.maps)
+    function = ZonesOnTheGround.function
+
+    def test_every_undo_has_a_redo(self):
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for tray in ("brush", "place", "road", "bridge"):
+            self.assertLess(page.index(f'id="{tray}-undo"'), page.index(f'id="{tray}-redo"'), tray)
+        maps = self.maps()
+        for redo, adds in (("redoPlace(", "mv.api.scenery_add(pack, group)"),
+                           ("redoStroke(", "mv.api.terrain_add(pack, g.strokes)"),
+                           ("redoErase(", "mv.api.scenery_erase(pack, circles)"),
+                           ("redoRoad(", "mv.api.road_add(pack, r.points, r.join, Boolean(r.keep_trees))")):
+            self.assertIn(adds, self.function(redo), redo)
+        for undo, keeps in (("undoPlace(", "redo.place.push(group)"),
+                            ("undoStroke(", "redo.brush.push({ strokes, objects: trees })"),
+                            ("undoErase(", "redo.erase.push(gone)"),
+                            ("undoRoad(", "redo.road.push(...road.mine.splice(")):
+            self.assertIn(keeps, self.function(undo), undo)
+        keys = self.function("onKey(")
+        self.assertIn('e.code === "KeyY" || (e.code === "KeyZ" && e.shiftKey)', keys)
+        self.assertLess(keys.index('"KeyY"'), keys.index('if (ctrl && !e.altKey && e.code === "KeyZ")'))  # before Undo
+        words = _words()
+        for key in ("brush_redo", "tip_place_redo", "tip_road_redo", "tip_bridges_redo", "tip_brush_redo",
+                    "tip_erase_redo"):
+            self.assertEqual(len(words[key]), 10, key)
+        self.assertIn("Ctrl+Y", words["keys_undo"]["us"])
+
+    def test_a_new_step_empties_what_is_left_to_redo(self):
+        for fn, empties in (("placeAt(", "redo.place = []"), ("placeMany(", "redo.place = []"),
+                            ("bridgeAt(", "redo.place = []"), ("finishStroke(", "redo.brush = []"),
+                            ("finishErase(", "redo.erase = []"), ("finishRoad(", "redo.road = []"),
+                            ("clearStrokes(", "redo.brush = []"), ("clearErase(", "redo.erase = []")):
+            self.assertIn(empties, self.function(fn), fn)
+        self.assertIn("if (mv.current !== pack) forgetRedo()", self.function("show("))
+
+    def test_a_bridge_is_undone_by_its_object(self):
+        """A bridge was saved in the place tray's groups as a bare 1, so its Undo took nothing back (seen while adding
+        Redo, 2026-10-16): a group is the objects Undo takes."""
+        self.assertIn("mv.place.groups.push([res.object])", self.function("bridgeAt("))
+
+
 class MapIcons(unittest.TestCase):
     """Each kind of building and unit gets its own icon on the map (the owner, 2026-10-03), by the game's own names."""
 
