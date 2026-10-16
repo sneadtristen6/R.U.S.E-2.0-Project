@@ -543,6 +543,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         """What the window asks before it closes: unsaved's last words, or None to close at once."""
         return self._close_ask
 
+    # --- errors in the player's language (ruse_studio.errortext): every page call's StudioError, and a job's ---
+    def _worded(self, text: str) -> str:
+        from .errortext import worded
+        return worded(text, self.prefs().get("lang") or schema.BASE)
+
+    def page_error(self, exc):
+        """A page call's StudioError said again in the Studio's language (rusemod.webui page_api), or None to pass it
+        on as it is."""
+        if not isinstance(exc, StudioError):
+            return None
+        said = self._worded(str(exc))
+        return StudioError(said) if said != str(exc) else None
+
     def status(self) -> dict:
         path = self._path()
         if path is None or not path.is_file():
@@ -8265,4 +8278,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return job.start(work, "The game index is ready.")
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        return self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        if view.get("state") == "failed" and isinstance(view.get("message"), str):
+            view["message"] = self._worded(view["message"])  # a StudioError in the Studio's language
+        return view

@@ -107,9 +107,16 @@ def _passed_on(api, cls, name: str):
     """A function for page_api's class calling `api.name`, with the method's own signature (self first, as pywebview
     reads it: the page's function takes the same arguments)."""
     method = getattr(api, name)
+    worded = getattr(api, "page_error", None)  # an error said in the page's language (the Studio's errortext)
 
     def call(self, *args, **kwargs):
-        return method(*args, **kwargs)
+        try:
+            return method(*args, **kwargs)
+        except Exception as exc:
+            again = worded(exc) if worded is not None else None
+            if again is None:
+                raise
+            raise again from None
     call.__name__ = call.__qualname__ = name
     call.__doc__ = method.__doc__
     try:
