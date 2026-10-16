@@ -23,7 +23,11 @@ Terrain and Blank Ocean do) and every file is made again from the strokes' own s
   open sea from the shape at once, the cells by an island sampled as rusemod.water samples them);
 - the map's own road model, if it stays, laid on the new ground.
 
-The camera floor (occlusioninfo_camera.kdt) and the floors units stand on over bridges are not made here.
+- the camera's floor (occlusioninfo_camera.kdt): the far mesh's triangles a few metres over its ground or water, as
+  Eugen's sits over level land (camera_floor; until 2026-10-15 a blank map kept the copied map's, D-Day's 53-61 m
+  under a flat 74 m farm).
+
+The floors units stand on over bridges are not made here.
 Seen in the game (navy test copies, 2026-10-06/07, the same sums run as test tools): the big island ("perfect. Exactly
 what we need"), the far view, the whole close-up mesh, the gameplay ground ("The buildings work and the tanks drive
 around just fine")."""
@@ -398,7 +402,38 @@ def gameplay_ground(k: Kdt, mesh: Tms) -> tuple[bytes, str]:
         wv = mesh.world_vertices(c_k)
         t0 = c.triangles(0)
         tris += [(wv[t0[i]], wv[t0[i + 1]], wv[t0[i + 2]]) for i in range(0, len(t0), 3)]
+    data, held, widened = _fill_tree(k, tris, "gameplay ground")
+    return data, (f"gameplay ground: the close-up mesh's {len(tris)} triangles in its {len(held)} parts "
+                  f"({min(held)}..{max(held)} each), {widened} top limit(s) widened")
 
+
+CAMERA_OVER = 3.7 * 260.0   # the camera floor over level ground: Edge's median over its 10,301 level grid points (5%
+                            # 0.4 m, 95% 10.2 m); D-Day's over its HQ 3.2 m (measured 2026-10-15)
+
+
+def camera_floor(k: Kdt, mesh: Tms) -> tuple[bytes, str]:
+    """The camera's floor (occlusioninfo_camera.kdt, the camera rides on it: CameraSetter) over the new ground: the
+    far mesh's triangles, each point at its ground or water surface, whichever is higher, plus CAMERA_OVER, in the
+    shipped tree's parts (gameplay_ground's way). Eugen's floor is a coarse hull a few metres over level land (Edge);
+    a blank map kept the copied map's (the blank farm: 53-61 m under a flat 74 m ground, 2026-10-15)."""
+    (x0, y0, z0, x1, y1, z1), q = mesh.bounds, Q_MAX
+    tris = []
+    for c in mesh.cells:
+        wv = [(x0 + p[0] * (x1 - x0) / q, y0 + p[1] * (y1 - y0) / q,
+               z0 + max(p[2], p[3]) * (z1 - z0) / q + CAMERA_OVER) for p in c.positions()]
+        t0 = c.triangles(0)
+        tris += [(wv[t0[i]], wv[t0[i + 1]], wv[t0[i + 2]]) for i in range(0, len(t0), 3)]
+    data, held, widened = _fill_tree(k, tris, "camera floor")
+    zs = [p[2] for t in tris for p in t]
+    return data, (f"camera floor: the far mesh's {len(tris)} triangles {CAMERA_OVER / 260.0:.1f} m over its ground or "
+                  f"water ({min(zs) / 260.0:.1f}..{max(zs) / 260.0:.1f} m) in its {len(held)} parts, {widened} top "
+                  f"limit(s) widened")
+
+
+def _fill_tree(k: Kdt, tris: list, what: str) -> tuple[bytes, list, int]:
+    """`k` (a .kdt) holding `tris` (world triangles): each subtree the ones that touch its region, normals from the
+    faces, its trees built again, its MainNode's height clips widened. Returns (file, triangles per part, clips
+    widened)."""
     def qp(p):
         return k.to_quant(0, p[0]), k.to_quant(1, p[1]), k.to_quant(2, p[2])
     acc: dict = {}
@@ -440,7 +475,7 @@ def gameplay_ground(k: Kdt, mesh: Tms) -> tuple[bytes, str]:
                     nrm.append(normal[key])
                 flat.append(at)
         if not mine:   # a region with nothing over it: one flat triangle at its corner keeps the subtree valid
-            raise GroundGenError(f"the gameplay ground's region {s} holds no triangle")
+            raise GroundGenError(f"the {what}'s region {s} holds no triangle")
         k.set_mesh(s, pos, flat, nrm)
         kdt_edit.rebuild(k, s, pos, [tuple(flat[i:i + 3]) for i in range(0, len(flat), 3)])
         held.append(len(mine))
@@ -449,9 +484,8 @@ def gameplay_ground(k: Kdt, mesh: Tms) -> tuple[bytes, str]:
     wrong = [p for s in range(len(k.subtrees)) for p in kdt_edit.check(k, s)] + \
         kdt_edit.check_main(k, range(len(k.subtrees)))
     if wrong:
-        raise GroundGenError(f"the gameplay ground's trees came out wrong: {wrong[:3]}")
-    return k.to_bytes(), (f"gameplay ground: the close-up mesh's {len(tris)} triangles in its {len(held)} parts "
-                          f"({min(held)}..{max(held)} each), {widened} top limit(s) widened")
+        raise GroundGenError(f"the {what}'s trees came out wrong: {wrong[:3]}")
+    return k.to_bytes(), held, widened
 
 
 # --- the water's pictures -------------------------------------------------------------------------------------------
@@ -628,6 +662,12 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     ground_bytes, said = gameplay_ground(k, near_back)
     notes.append(f"{name}: {said}")
     out = {FILES["highdef"]: near_bytes, FILES["lowdef"]: far_bytes, FILES["ground"]: ground_bytes}
+    cam_raw = read(FILES["camera"])
+    if cam_raw is not None:
+        out[FILES["camera"]], said = camera_floor(Kdt(cam_raw), far_back)
+        notes.append(f"{name}: {said}")
+    else:
+        notes.append(f"{name}: it has no camera floor file: none made")
     if max_depth:
         tex_raw = {key: read(m) for key, m in W.TEXTURES.items()}
         if all(v is not None for v in tex_raw.values()):

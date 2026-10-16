@@ -355,8 +355,8 @@ class Together(unittest.TestCase):
                 if abs(y - 1500) < 1 and 1700 < x < 1950:     # the east slope leans east
                     self.assertGreater(n[0], 0.1)
                     east += 1
-                if x < 700 and y < 700:                        # far from the hill: still straight up
-                    self.assertEqual(n, (0.0, 0.0, 1.0))
+                if x < 700 and y < 700:                        # far from the hill: still straight up (stored a
+                    self.assertTrue(abs(n[0]) < 2e-4 and abs(n[1]) < 2e-4 and n[2] > 0.9999, n)   # hair off it)
                     west += 1
         self.assertTrue(east and west)
 

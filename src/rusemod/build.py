@@ -2159,6 +2159,27 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 before = read(GROUND["highdef"]) if GROUND["highdef"] in changed_members else None
                 if before is None:
                     return made
+                # the level-build state database marks water, and the game draws no scenery on it: drained ground
+                # made land, new water made water (rusemod.statedb; the blank farm's fields on D-Day's drained sea
+                # drew nothing, 2026-10-16)
+                from .statedb import MEMBER as STATE, with_water
+                from .tms import Tms
+                state = read(STATE)
+                if state is not None:
+                    try:
+                        # a ground drawn as our own is all new: the water marks follow it everywhere (the copied
+                        # map's shore cells mean nothing there); an edited one keeps Eugen's where it didn't change
+                        new_state, dried, flooded = with_water(state, Tms(changed_members[GROUND["highdef"]]),
+                                                               None if drawn else Tms(before))
+                    except (ValueError, struct.error, IndexError) as exc:
+                        made["warnings"].append(f"{', '.join(ids)}: {name}: its level-build state (output.sdb) "
+                                                f"couldn't be read ({exc}): scenery on drained ground may not show")
+                    else:
+                        if dried or flooded:
+                            changed_members[STATE] = new_state
+                            made["lines"].append(f"  {name}: level-build state (output.sdb): {dried:,} cell(s) of "
+                                                 f"drained ground made land, {flooded:,} of new water made water, so "
+                                                 f"scenery shows on the new land")
                 # ground under water is never walkable on a shipped map: new water is blocked
                 from .bridges import Water
                 from .nav import water_blocks
@@ -2469,9 +2490,26 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     halves = {d.name: d.half for ds in decal_types(arc).values() for d in ds}
                     areas = list(areas)
                     dabs = [d for d in brushing[name][0] if not isinstance(d, FieldCopy)]
-                    for k, fc in enumerate((d for d in brushing[name][0] if isinstance(d, FieldCopy)), 1):
+                    field_copies = [d for d in brushing[name][0] if isinstance(d, FieldCopy)]
+                    field_buildings = None   # each building type's model box and the gap crops keep from it (F-34)
+                    if dabs or field_copies:   # (and what stood on one a field copy leaves behind: F-47)
+                        from .scenery import building_table
+                        if descs is None:
+                            descs = descriptors(arc)
+                        try:
+                            from .models import Library
+                            model_lib = Library(game)
+                        except OSError:   # (no mesh packs to read: no building kept clear)
+                            model_lib = None
+                        if model_lib is not None:
+                            try:
+                                field_buildings = building_table(here.names, descs, model_lib.box)
+                            finally:
+                                model_lib.close()
+                    for k, fc in enumerate(field_copies, 1):
                         c_erases, c_copies, c_stamps, c_notes = expand_field_copy(fc, here, group=2000 + k,
-                                                                                  halves=halves)
+                                                                                  halves=halves,
+                                                                                  buildings=field_buildings)
                         areas += c_erases
                         copy_areas += c_copies
                         brush_paint.setdefault(name, ([], brushing[name][1]))[0].extend(c_stamps)
@@ -2487,21 +2525,6 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     # scenery.field_outline, held only 64% of an uneven field's squares on D-Day, 2026-10-15: whole
                     # parts kept their old paint; off until it follows the painted boundary lines, F-33)
                     field_picture = None
-                    field_buildings = None   # each building type's model box and the gap crops keep from it (F-34)
-                    if dabs:
-                        from .scenery import building_table
-                        if descs is None:
-                            descs = descriptors(arc)
-                        try:
-                            from .models import Library
-                            model_lib = Library(game)
-                        except OSError:   # (no mesh packs to read: no building kept clear)
-                            model_lib = None
-                        if model_lib is not None:
-                            try:
-                                field_buildings = building_table(here.names, descs, model_lib.box)
-                            finally:
-                                model_lib.close()
                     # each dab's PARCEL: the ground the map's own paint and borders give the field under it (the owner,
                     # 2026-10-15: R's paint over E's corner, W's trees, Q's corner spot; rusemod.parcels); a later dab's
                     # ground is the later dab's. Without numpy or the map's picture: the fields' squares, as before.

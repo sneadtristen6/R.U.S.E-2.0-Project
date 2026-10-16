@@ -5,8 +5,8 @@ import unittest
 
 from rusemod import kdt_edit
 from rusemod.brush import Stroke
-from rusemod.groundgen import (GroundGenError, Shape, fine_cells, fit_skirt, gameplay_ground, hilbert, make_mesh,
-                               water_pictures)
+from rusemod.groundgen import (CAMERA_OVER, GroundGenError, Shape, camera_floor, fine_cells, fit_skirt,
+                               gameplay_ground, hilbert, make_mesh, water_pictures)
 from rusemod.kdt import Kdt
 from rusemod.tms import SKIRT_BOTTOM, Q_MAX, Tms
 from rusemod.water import CASE, TEXTURES, TILE, _cell, _pixels, _water_triangles
@@ -209,6 +209,33 @@ class GameplayGround(unittest.TestCase):
             self.assertEqual(kdt_edit.check(k2, s), [])
         self.assertEqual(kdt_edit.check_main(k2, range(len(k2.subtrees))), [])
         self.assertIn("triangles in its 2 parts", said)
+
+    def test_the_camera_floor_lies_a_few_metres_over_the_new_ground(self):
+        """The camera's floor made from the mesh: every point CAMERA_OVER over the ground (the island's top too),
+        its trees valid (a blank map kept the copied map's: 53-61 m under the blank farm's flat 74 m, 2026-10-15)."""
+        k = Kdt(make_valid_kdt())
+        size = k.bounds_max[0]
+        t = Tms(make_tms(gw=2, gh=2))
+        t.bounds = [0.0, 0.0, -100.0, size, size, 3176.7]
+        t.cell_w = t.cell_h = size / 2
+        shape = Shape([whole(10.0, size), Stroke(brush="plateau", x=0.75 * size, y=0.75 * size, radius=size / 8,
+                                                  level=60.0, weight=1.0, edge="hard")], (0.0, 0.0, size, size), -50.0)
+        t.cells, _info = make_mesh(t, shape.h, shape.w, 16, fine_cells(t, shape))
+        t = Tms(t.to_bytes())
+        data, said = camera_floor(k, t)
+        k2 = Kdt(data)
+        for s in range(len(k2.subtrees)):
+            self.assertEqual(kdt_edit.check(k2, s), [])
+        self.assertEqual(kdt_edit.check_main(k2, range(len(k2.subtrees))), [])
+        step = (k2.bounds_max[2] - k2.bounds_min[2]) / 0x7FFF
+        ground = {z for c_k in range(len(t.cells)) for _x, _y, z in t.world_vertices(c_k)}
+        zs = {k2.to_world(2, p[2]) for s in range(len(k2.subtrees)) for p in k2.positions(s)}
+        for z in zs:   # a point of the mesh as stored, CAMERA_OVER up, to the tree's own step
+            self.assertTrue(min(abs(z - (g + CAMERA_OVER)) for g in ground) <= step, (z, sorted(ground)[:5]))
+        self.assertAlmostEqual(min(zs), min(ground) + CAMERA_OVER, delta=step)   # the flat ground
+        self.assertAlmostEqual(max(zs), max(ground) + CAMERA_OVER, delta=step)   # the island's top
+        self.assertGreater(max(ground) - min(ground), 40.0)
+        self.assertIn("camera floor", said)
 
 
 class WaterPictures(unittest.TestCase):

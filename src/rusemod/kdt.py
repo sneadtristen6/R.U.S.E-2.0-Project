@@ -124,9 +124,18 @@ def decode_normal(word: int) -> tuple[float, float, float]:
     return (n[0] / length, n[1] / length, n[2] / length)
 
 
+AXIS_NUDGE = (0x7FFD, 0xFFF)   # a, b fields written for a normal exactly along an axis (see encode_normal)
+
+
 def encode_normal(n) -> int:
     """(nx, ny, nz), any length -> packed normal. On a tie the later axis is the dominant one (what the shipped
-    data does); a is clamped to the 16-bit field; b wraps like the game's own packer."""
+    data does); a is clamped to the 16-bit field; b wraps like the game's own packer.
+
+    A normal exactly along an axis (a and b both 0) is written a hair off it, AXIS_NUDGE (a = -3/32768,
+    b = -1/8192: the commonest word under D-Day's level ground, 0x7ffdfff5). Rule (game, F-23): a map whose gameplay
+    ground stores its normals exactly straight up (0x80000005) casts no shadows in RUSE.exe; the same flat ground
+    with the nudged word casts them (seen in the game 2026-10-15, shadow split rounds 1-3). None of the 3.5 million
+    normals in the 32 shipped maps' three trees is exactly along an axis."""
     k = 0
     for i in (1, 2):
         if abs(n[i]) >= abs(n[k]):
@@ -138,6 +147,8 @@ def encode_normal(n) -> int:
     b = n[(k + 2) % 3] / d
     hi = min(max(int(round(a * 32768)) + 32768, 0), 0xFFFF)
     mid = int(round(b * 8192)) & 0xFFF
+    if hi == 0x8000 and mid == 0:
+        hi, mid = AXIS_NUDGE
     return hi << 16 | mid << 4 | 2 * k + (1 if n[k] > 0 else 0)
 
 
