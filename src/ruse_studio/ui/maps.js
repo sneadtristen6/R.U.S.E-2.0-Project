@@ -2273,15 +2273,19 @@ function placeScenery() {
   const { THREE } = mv.gl, grid = makeGrid(mv.edit);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
+  // the map's own objects this mod moved or took away (Select's [[own]] rows) aren't drawn where they were
+  const hidden = ownHidden(), types = mv.scenery.data ? mv.scenery.data.types : [];
   for (const mesh of shapes.concat(models)) {
     const { group, flat, rows, real } = mesh.userData, [, width, height] = SCENERY_LOOK[group];
     const n = rows ? rows.length : flat.length / 5;
     for (let j = 0; j < n; j++) {
       const k = rows ? rows[j] : j;
       const x = flat[5 * k + 1], y = flat[5 * k + 2], size = Math.max(0.3, Math.min(flat[5 * k + 4], 4));
+      const gone = hidden.size > 0 && types[flat[5 * k]] && hidden.has(`${types[flat[5 * k]][0]}|${x}|${y}`);
       p.set(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE);
       q.setFromAxisAngle(up, -flat[5 * k + 3]);  // the game turns from east toward south; the scene's Y turns the other way
-      if (real) s.set(size * SCALE, size * SCALE, size * SCALE);
+      if (gone) s.set(0, 0, 0);
+      else if (real) s.set(size * SCALE, size * SCALE, size * SCALE);
       else s.set(width * size * SCALE, height * size * SCALE, width * size * SCALE);
       mesh.setMatrixAt(j, m.compose(p, q, s));
     }
@@ -4928,7 +4932,7 @@ const PLACEABLE = ["building", "prop", "vegetation"];
 const PLACED_COLOUR = 0xe8c14f;
 // How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); or a line
 // between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses).
-const PLACE_HOW = ["one", "area", "line"];
+const PLACE_HOW = ["one", "area", "line", "select"];  // select: pick what stands on the map (sel)
 const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
 const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
 const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
@@ -5070,24 +5074,40 @@ function renderPlace() {
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
   $("place-size").title = w.tip_place_size;
   typedBeside("place-size", TYPED.place, () => p.size, (n) => { p.size = n; renderPlace(); }, w.tip_place_size);
-  $("place-solid-row").classList.toggle("hidden", p.group !== "building");  // only buildings stop units
+  $("place-solid-row").classList.toggle("hidden", p.group !== "building" || p.how === "select");  // only buildings stop units
   $("place-solid").checked = p.solid;
   $("place-solid-label").textContent = w.place_solid;
   $("place-solid-row").title = w.tip_place_solid;
+  const picking = p.how === "select";
+  if (picking && sel.items.length) {  // Turn and Size say the first picked one's, and set every picked one's
+    const first = selPose(sel.items[0]);
+    if (first) {
+      $("place-turn-label").textContent = `${w.place_turn} ${Math.round(((first.turn % 360) + 360) % 360)}°`;
+      $("place-size-label").textContent = `${w.brush_size} ${first.size.toFixed(2)}×`;
+    }
+  }
   $("place-undo").textContent = w.brush_undo;
-  $("place-undo").title = w.tip_place_undo;
-  $("place-undo").disabled = !p.objects.length;
+  $("place-undo").title = picking ? w.tip_sel_undo : w.tip_place_undo;
+  $("place-undo").disabled = picking ? !sel.undo.length || sel.busy : !p.objects.length;
   $("place-redo").textContent = w.brush_redo;
-  $("place-redo").title = w.tip_place_redo;
-  $("place-redo").disabled = !redo.place.length || !p.mod;
+  $("place-redo").title = picking ? w.tip_sel_redo : w.tip_place_redo;
+  $("place-redo").disabled = picking ? !sel.redo.length || sel.busy : !redo.place.length || !p.mod;
+  renderSel();
   $("place-count").textContent = p.objects.length ? fill(w.place_count, { n: p.objects.length.toLocaleString() }) : "";
   $("place-how").replaceChildren(...PLACE_HOW.map((how) => {
     const chip = el("button", { type: "button", className: "chip", textContent: w[`place_${how}`], title: w[`tip_place_${how}`] });
     chip.setAttribute("aria-pressed", String(p.how === how));
-    chip.addEventListener("click", () => { p.how = how; p.lineStart = null; showPlaceGuide(null); if (!p.on) setPlaceMode(true); else renderPlace(); });
+    chip.addEventListener("click", () => {
+      p.how = how;
+      p.lineStart = null;
+      showPlaceGuide(null);
+      showPlaceGhost(null);
+      if (!p.on) setPlaceMode(true); else renderPlace();
+      drawSelection();  // the picks' rings show in Select (and stay picked when another way is tried)
+    });
     return chip;
   }));
-  $("place-spacing-row").classList.toggle("hidden", p.how === "one");
+  $("place-spacing-row").classList.toggle("hidden", p.how === "one" || p.how === "select");
   $("place-area-row").classList.toggle("hidden", p.how !== "area");
   $("place-spacing").value = spacingOf(p.group);
   $("place-spacing-label").textContent = fill(w.place_spacing, { m: spacingOf(p.group) });
@@ -5098,7 +5118,10 @@ function renderPlace() {
   $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
   $("place-area").title = w.tip_place_area_size;
   typedBeside("place-area", TYPED.area, () => p.area, (n) => { p.area = n; renderPlace(); }, w.tip_place_area_size);
-  if (p.on) $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help : w.place_help;
+  if (p.on) {
+    $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help
+      : p.how === "select" ? w.sel_help : w.place_help;
+  }
 }
 
 function spacingOf(group) {
@@ -5116,6 +5139,7 @@ function setPlaceMode(on) {
   if (!on) $("map-help").textContent = mv.brush.on ? mv.words.brush_help : mv.words.map_help;
   renderPlace();
   renderDock();
+  drawSelection();  // Select's rings show only while the place tools are open
 }
 
 // Nothing to place yet: the map's types are still being read (a second or two on a real map), or the kind picked has
@@ -5135,9 +5159,14 @@ function drawPlaced() {
   for (const list of Object.values(p.meshes)) for (const m of list) forget(m);
   p.meshes = {};
   const bridges = bridgeTypes();  // drawn as decks (drawBridges)
-  if (mv.edit && p.objects.length) {
+  // what the mod placed (where a drag is carrying the picked ones), and the map's own it moved (Select)
+  const dragging = sel.drag && sel.drag.moved ? new Map(sel.items.filter((it) => it.kind === "placed")
+    .map((it) => [it.obj, shownPose(it)])) : null;
+  const shown = (dragging ? p.objects.map((o) => (dragging.has(o) ? { ...o, ...dragging.get(o) } : o)) : p.objects)
+    .concat(ownMovedObjects());
+  if (mv.edit && shown.length) {
     const lists = new Map();  // a type with a model, or a group's shape: its objects
-    for (const o of p.objects) {
+    for (const o of shown) {
       if (bridges.has(o.type)) continue;
       const group = groupOfType(o.type), t = typeNumber(o.type), model = lib && t !== null && lib.has(t);
       const key = model ? t : group;
@@ -5192,7 +5221,7 @@ const GHOST_ALPHA = 0.6;
 function showPlaceGhost(hit) {
   const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
   if (!gl) return;
-  const type = hit && p.on && p.how !== "area" && p.type && mv.edit ? p.type : null;
+  const type = hit && p.on && p.how !== "area" && p.how !== "select" && p.type && mv.edit ? p.type : null;
   if (!type) {
     if (gl.ghost && gl.ghost.visible) { gl.ghost.visible = false; gl.draw(); }
     return;
@@ -5241,6 +5270,9 @@ async function loadPlaced(pack, ask) {
   mv.place.groups = [];
   mv.place.lineStart = null;
   mv.place.mod = res.mod;
+  forgetSel(res.own || []);  // the map's own objects this mod moves or takes away ([[own]]): Select's, not drawn
+  if (sel.own.length && mv.edit && Object.keys(mv.scenery.meshes).length) placeScenery();  // where they were
+  drawSelection();
   mv.brush.erase = res.erase || [];  // the Erase brush's circles: the same file's [[erase]] tables
   mv.brush.eraseGroups = [];
   refreshErased();
@@ -5435,6 +5467,445 @@ function takeOff(objs) {
   const gone = new Set(objs);
   mv.place.objects = mv.place.objects.filter((o) => !gone.has(o));
   drawPlaced();
+}
+
+// --- Select, the place trays' fourth way (the owner, 2026-10-16: "select move and delete things already placed,
+// including what's on the map"): a click picks what stands nearest, what this mod placed or the map's own
+// (StudioApi.map_objects_at); Shift+click adds one or takes it off; a box dragged on the ground picks all in it
+// (map_objects_in). Dragging a picked one moves them all, Turn and Size set theirs, Delete (the button or the key)
+// takes them away. What the mod placed changes in its own rows (scenery_change); the map's own become [[own]] rows
+// (scenery_own: taken away there, placed again where they went). Each step goes back with Undo and forth with Redo.
+// An item: { kind: "placed", obj } (one of mv.place.objects) or { kind: "own", orig } (where the map's file has it:
+// type, group, x, y, turn, size, lift). ---
+const SEL_PICK = 8 * METRE;     // how far from a click an object is picked (8 m; further when zoomed out: SEL_PIXELS)
+const SEL_PIXELS = 18;          // ...as far as this many pixels round the click
+const SEL_RING = [90, 220, 255];
+const sel = { items: [], own: [], undo: [], redo: [], drag: null, box: null, busy: false, origs: new Map() };
+
+// The map's own object as its file has it (type, group, x, y, turn, size, lift), kept by type and place: an [[own]]
+// row holds only where it was and where it went, so its first turn and size come from the map (map_objects_at)
+const origKey = (o) => `${o.type}|${Math.round(o.x)}|${Math.round(o.y)}`;
+
+function keepOrig(o) {
+  sel.origs.set(origKey(o), o);
+  return o;
+}
+
+async function origOf(row) {
+  const kept = sel.origs.get(origKey(row));
+  if (kept) return kept;
+  const pack = mv.current;
+  try {
+    const res = await mv.api.map_objects_at(pack, Math.round(row.x), Math.round(row.y), 60);
+    const o = res.objects.find((x) => sameOrig(row, x));
+    if (o) return keepOrig(o);
+  } catch (_) { /* below: as the row has it */ }
+  return { type: row.type, group: groupOfType(row.type), x: row.x, y: row.y, turn: row.turn || 0, size: row.size || 1,
+    lift: row.lift || 0 };
+}
+
+function selecting() {
+  return mv.place.on && mv.place.how === "select";
+}
+
+function sameOrig(r, o) {
+  return r.type === o.type && Math.abs(r.x - o.x) < 1 && Math.abs(r.y - o.y) < 1;
+}
+
+function ownRow(orig) {
+  return sel.own.find((r) => sameOrig(r, orig)) || null;
+}
+
+// Where an item stands now (map units; turn in degrees, as a placed object's), or null when it's taken away
+function selPose(it) {
+  if (it.kind === "placed") return { x: it.obj.x, y: it.obj.y, turn: it.obj.turn, size: it.obj.size };
+  const r = ownRow(it.orig);
+  if (r && r.gone) return null;
+  return r ? { x: r.to_x, y: r.to_y, turn: r.turn, size: r.size } : { x: it.orig.x, y: it.orig.y, turn: it.orig.turn,
+    size: it.orig.size };
+}
+
+// ...and while a drag moves the picked ones, where it would put them
+function shownPose(it) {
+  const p = selPose(it), d = sel.drag;
+  return p && d && d.moved && sel.items.includes(it) ? { ...p, x: p.x + d.dx, y: p.y + d.dy } : p;
+}
+
+function selType(it) {
+  return it.kind === "placed" ? it.obj.type : it.orig.type;
+}
+
+// What the game's own editor calls a type, in the Studio's language (the palette's names), else its short name
+function typeLabel(type) {
+  const r = ((mv.scenery.data && mv.scenery.data.palette) || []).find((x) => x[0] === type);
+  if (!r) return type.slice(type.indexOf("/") + 1);
+  return (mv.lang !== "base" && r[5] && (r[5][mv.lang] || r[5].us)) || r[1];
+}
+
+// The map's own objects drawn somewhere else now: moved ones, and the ones a drag is carrying
+function ownMovedObjects() {
+  const out = [];
+  for (const r of sel.own) if (!r.gone) out.push({ type: r.type, x: r.to_x, y: r.to_y, turn: r.turn, size: r.size, own: r });
+  const d = sel.drag;
+  if (d && d.moved) {
+    for (const it of sel.items) {
+      if (it.kind !== "own") continue;
+      const p = shownPose(it), r = ownRow(it.orig);
+      const at = r ? out.findIndex((o) => o.own === r) : -1;
+      const o = { type: it.orig.type, x: p.x, y: p.y, turn: p.turn, size: p.size, own: r || it.orig };
+      if (at >= 0) out[at] = o; else out.push(o);
+    }
+  }
+  return out;
+}
+
+// The map's own objects not drawn where its file has them (taken away, moved, or carried by a drag): the keys
+// placeScenery hides them by (its short name and place, rounded as the view's are)
+function ownHidden() {
+  const keys = new Set(), add = (o) => {
+    const short = o.type.slice(o.type.indexOf("/") + 1), x = Math.round(o.x), y = Math.round(o.y);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) keys.add(`${short}|${x + i}|${y + j}`);
+  };
+  for (const r of sel.own) add(r);
+  if (sel.drag && sel.drag.moved) for (const it of sel.items) if (it.kind === "own") add(it.orig);
+  return keys;
+}
+
+// A ring on each picked object, the colour of a selection
+function drawSelection() {
+  const gl = mv.gl;
+  if (!gl || !gl.THREE) return;
+  const { THREE } = gl, n = sel.items.length;
+  if (!gl.selRings || gl.selRings.userData.most < n) {
+    if (gl.selRings) forget(gl.selRings);
+    const geo = new THREE.RingGeometry(0.8, 1, 32);
+    geo.rotateX(-Math.PI / 2);
+    const most = Math.max(64, n);
+    gl.selRings = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(
+      ...SEL_RING.map((v) => v / 255), THREE.SRGBColorSpace), transparent: true, opacity: 0.95, depthTest: false }), most);
+    gl.selRings.userData.most = most;
+    gl.selRings.renderOrder = 11;
+    gl.selRings.frustumCulled = false;
+    gl.scene.add(gl.selRings);
+  }
+  const rings = gl.selRings, grid = mv.edit ? heightGrid() : null, m = new THREE.Matrix4();
+  let k = 0;
+  for (const it of sel.items) {
+    const p = shownPose(it);
+    if (!p || !grid) continue;
+    const r = (groupOfType(selType(it)) === "building" ? 1400 : 500) * Math.max(0.5, Math.min(p.size, 4)) * SCALE;
+    m.makeScale(r, r, r);
+    m.setPosition(p.x * SCALE, (groundAt(grid, p.x, p.y) + 200) * SCALE, p.y * SCALE);
+    rings.setMatrixAt(k++, m);
+  }
+  rings.count = k;
+  rings.visible = k > 0 && mv.place.on;
+  rings.instanceMatrix.needsUpdate = true;
+  gl.draw();
+}
+
+function selRedraw() {
+  placeScenery();   // the map's own: the ones moved or taken away hidden where they were (and drawPlaced: where they went)
+  drawSelection();
+  renderPlace();
+}
+
+function clearSel() {
+  if (!sel.items.length) return;
+  sel.items = [];
+  drawSelection();
+  renderPlace();
+}
+
+// Forget the picks and the steps: another map, or the mod's file read again
+function forgetSel(own) {
+  sel.items = [];
+  sel.own = own || [];
+  sel.undo = [];
+  sel.redo = [];
+  sel.drag = null;
+  sel.origs = new Map();
+}
+
+// What can be picked round (x, y), nearest first: what this mod placed, the map's own moved by it, and the map's own
+// where its file has them (unless this mod moved or took them away). `reach` in map units.
+async function selCandidates(x, y, reach) {
+  const pack = mv.current, out = [];
+  const near = (p) => p && Math.hypot(p.x - x, p.y - y) <= reach;
+  for (const obj of mv.place.objects) {
+    if (bridgeTypes().has(obj.type) || forestTrees.has(obj)) continue;  // bridges and a Forest's trees have their own Undo
+    if (near(obj)) out.push({ it: { kind: "placed", obj }, d: Math.hypot(obj.x - x, obj.y - y) });
+  }
+  for (const r of sel.own) {
+    if (r.gone || !near({ x: r.to_x, y: r.to_y })) continue;
+    out.push({ it: { kind: "own", orig: await origOf(r) }, d: Math.hypot(r.to_x - x, r.to_y - y) });
+  }
+  if (!blankMap(pack)) {
+    const res = await mv.api.map_objects_at(pack, Math.round(x), Math.round(y), Math.round(reach));
+    if (pack !== mv.current) return [];
+    for (const o of res.objects) if (!ownRow(o)) out.push({ it: { kind: "own", orig: keepOrig(o) }, d: o.distance });
+  }
+  return out.sort((a, b) => a.d - b.d).map((c) => c.it);
+}
+
+function sameItem(a, b) {
+  return a.kind === b.kind && (a.kind === "placed" ? a.obj === b.obj : sameOrig(a.orig, b.orig));
+}
+
+// A click: the nearest thing there picked (Shift: added, or taken off when it's already picked)
+async function selPickAt(ev, add) {
+  const w = mv.words, hit = hitGround(ev);
+  if (!hit) { placeNote(w.place_ground, "error"); return; }
+  const x = hit.x / SCALE, y = hit.z / SCALE, reach = Math.min(Math.max(SEL_PICK, pixelsAt(hit, SEL_PIXELS)), 26000);
+  try {
+    const found = await selCandidates(x, y, reach);
+    const it = found[0];
+    if (!it) { if (!add) clearSel(); placeNote(w.sel_nothing); return; }
+    const at = sel.items.findIndex((s) => sameItem(s, it));
+    if (add) { if (at >= 0) sel.items.splice(at, 1); else sel.items.push(it); }
+    else sel.items = [at >= 0 ? sel.items[at] : it];
+    placeNote("");
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  drawSelection();
+  renderPlace();
+}
+
+// A box dragged on the screen: everything inside it picked (x0, y0, x1, y1 in the page's pixels)
+async function selPickBox(b) {
+  const gl = mv.gl, pack = mv.current, w = mv.words;
+  const rect = gl.renderer.domElement.getBoundingClientRect(), v = new gl.THREE.Vector3();
+  const [l, r, t, bt] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1), Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+  const corners = [[l, t], [r, t], [l, bt], [r, bt]].map(([cx, cy]) => hitGround({ clientX: cx, clientY: cy }))
+    .filter(Boolean);
+  if (corners.length < 4) { placeNote(w.sel_box_ground, "error"); return; }
+  const xs = corners.map((p) => p.x / SCALE), ys = corners.map((p) => p.z / SCALE);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const grid = heightGrid();
+  const onScreen = (p) => {  // its place on the ground, seen inside the box
+    v.set(p.x * SCALE, groundAt(grid, p.x, p.y) * SCALE, p.y * SCALE).project(gl.camera);
+    if (v.z > 1) return false;
+    const sx = rect.left + (v.x + 1) / 2 * rect.width, sy = rect.top + (1 - v.y) / 2 * rect.height;
+    return sx >= l && sx <= r && sy >= t && sy <= bt;
+  };
+  const got = [];
+  for (const obj of mv.place.objects) {
+    if (!bridgeTypes().has(obj.type) && !forestTrees.has(obj) && onScreen(obj)) got.push({ kind: "placed", obj });
+  }
+  let more = false;
+  try {
+    for (const row of sel.own) {
+      if (!row.gone && onScreen({ x: row.to_x, y: row.to_y })) got.push({ kind: "own", orig: await origOf(row) });
+    }
+    if (!blankMap(pack)) {
+      const res = await mv.api.map_objects_in(pack, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+      if (pack !== mv.current) return;
+      for (const o of res.objects) if (!ownRow(o) && onScreen(o)) got.push({ kind: "own", orig: keepOrig(o) });
+      more = res.more;
+    }
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); return; }
+  const keep = b.add ? sel.items.slice() : [];
+  for (const it of got) if (!keep.some((s) => sameItem(s, it))) keep.push(it);
+  sel.items = keep;
+  placeNote(more ? w.sel_more : got.length ? "" : w.sel_nothing);
+  drawSelection();
+  renderPlace();
+}
+
+// One step, saved: `placed` [[old, new or null]] for what the mod placed, `own` the [[own]] list before and after.
+// forward: as made (and Redo); else back (Undo).
+async function selApply(step, forward) {
+  const pack = mv.current, p = mv.place;
+  const pairs = step.placed.map(([a, b]) => (forward ? [a, b] : [b, a]));
+  const adds = pairs.filter(([a]) => a === null).map(([, b]) => b);       // a deleted one put back (Undo of Delete)
+  const changes = pairs.filter(([a]) => a !== null);
+  if (changes.length) await mv.api.scenery_change(pack, changes);
+  if (adds.length) await mv.api.scenery_add(pack, adds);
+  const own = forward ? step.after : step.before;
+  if (step.after !== step.before) {
+    const res = await mv.api.scenery_own(pack, own);
+    if (pack !== mv.current) return;
+    sel.own = res.own;
+  }
+  // the view's lists: each object in its row's place, Undo's groups following it
+  const swap = new Map(changes.map(([a, b]) => [a, b]));
+  const turn = (o) => (swap.has(o) ? swap.get(o) : o);
+  p.objects = p.objects.map(turn).filter(Boolean).concat(adds);
+  p.groups = p.groups.map((g) => (Array.isArray(g) ? g.map(turn).filter(Boolean) : g)).filter((g) => !Array.isArray(g) || g.length);
+  // what was picked when the step was made stays picked, each where it is now (an object taken away, not)
+  sel.items = step.picked.map((it) => {
+    if (it.kind !== "placed") return it;
+    const pair = step.placed.find(([a, b]) => a === it.obj || b === it.obj);
+    return pair ? { kind: "placed", obj: forward ? pair[1] : pair[0] } : it;
+  }).filter((it) => (it.kind === "placed" ? it.obj && p.objects.includes(it.obj) : selPose(it)));
+}
+
+// A change to every picked thing: change(pose) gives its new pose, or null to take it away
+async function selChange(change) {
+  if (sel.busy || !sel.items.length) return;
+  const w = mv.words;
+  if (!mv.place.mod) { placeNote(w.no_mod, "error"); return; }
+  const placed = [];
+  let own = sel.own.slice();
+  for (const it of sel.items) {
+    const now = selPose(it);
+    if (!now) continue;
+    const next = change(now);
+    if (it.kind === "placed") {
+      placed.push([it.obj, next ? { ...it.obj, x: Math.round(next.x), y: Math.round(next.y), turn: next.turn,
+        size: next.size } : null]);
+      continue;
+    }
+    const o = it.orig;
+    own = own.filter((r) => !sameOrig(r, o));
+    if (!next) { own.push({ type: o.type, x: o.x, y: o.y, gone: true }); continue; }
+    const back = Math.hypot(next.x - o.x, next.y - o.y) < 1 && Math.abs(next.turn - o.turn) < 0.01
+      && Math.abs(next.size - o.size) < 1e-4;
+    if (!back) {
+      own.push({ type: o.type, x: o.x, y: o.y, to_x: Math.round(next.x), to_y: Math.round(next.y), turn: next.turn,
+        size: next.size, lift: o.lift || 0 });
+    }
+  }
+  const step = { placed, before: sel.own, after: own, picked: sel.items.slice() };
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+    sel.redo = [];
+    placeNote(w.brush_note);
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+function selDelete() {
+  return selChange(() => null);
+}
+
+// The map's own picked objects put back as the map has them (their rows dropped); what the mod placed stays
+async function selRestore() {
+  if (sel.busy) return;
+  const origs = sel.items.filter((it) => it.kind === "own").map((it) => it.orig);
+  const own = sel.own.filter((r) => !origs.some((o) => sameOrig(r, o)));
+  if (own.length === sel.own.length) return;
+  const step = { placed: [], before: sel.own, after: own, picked: sel.items.slice() };
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+    sel.redo = [];
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+async function selUndo() {
+  if (sel.busy || !sel.undo.length) return;
+  const step = sel.undo.pop();
+  sel.busy = true;
+  try {
+    await selApply(step, false);
+    sel.redo.push(step);
+  } catch (err) { sel.undo.push(step); placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+async function selRedo() {
+  if (sel.busy || !sel.redo.length) return;
+  const step = sel.redo.pop();
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+  } catch (err) { sel.redo.push(step); placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+// The press of the left button in Select: on a picked object a drag moves them all; elsewhere a box (or a click)
+function selPointerDown(ev) {
+  const hit = hitGround(ev);
+  if (hit && sel.items.length && mv.place.mod) {
+    const x = hit.x / SCALE, y = hit.z / SCALE, reach = Math.max(SEL_PICK, pixelsAt(hit, SEL_PIXELS));
+    const on = sel.items.some((it) => { const p = selPose(it); return p && Math.hypot(p.x - x, p.y - y) <= reach; });
+    if (on && !ev.shiftKey) {
+      sel.drag = { x, y, dx: 0, dy: 0, moved: false };
+      return true;
+    }
+  }
+  sel.box = { x0: ev.clientX, y0: ev.clientY, x1: ev.clientX, y1: ev.clientY, add: ev.shiftKey, shown: false, ev };
+  return true;
+}
+
+function selPointerMove(ev) {
+  if (sel.drag) {
+    const hit = hitGround(ev);
+    if (!hit) return;
+    const d = sel.drag;
+    d.dx = hit.x / SCALE - d.x;
+    d.dy = hit.z / SCALE - d.y;
+    const was = d.moved;
+    d.moved = d.moved || Math.hypot(d.dx, d.dy) > 0.5 * METRE;
+    if (!d.moved) return;
+    if (!was) placeScenery(); else drawPlaced();  // the map's own picked ones leave their place once, then follow
+    drawSelection();
+    return;
+  }
+  const b = sel.box;
+  if (!b) return;
+  b.x1 = ev.clientX;
+  b.y1 = ev.clientY;
+  if (!b.shown && Math.abs(b.x1 - b.x0) + Math.abs(b.y1 - b.y0) < 6) return;  // a click, not a box (yet)
+  b.shown = true;
+  let box = $("sel-box");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "sel-box";
+    box.className = "scen-box";
+    document.body.append(box);
+  }
+  box.style.left = `${Math.min(b.x0, b.x1)}px`;
+  box.style.top = `${Math.min(b.y0, b.y1)}px`;
+  box.style.width = `${Math.abs(b.x1 - b.x0)}px`;
+  box.style.height = `${Math.abs(b.y1 - b.y0)}px`;
+}
+
+async function selPointerUp() {
+  if (sel.drag) {
+    const d = sel.drag;
+    if (!d.moved) { sel.drag = null; return; }
+    const { dx, dy } = d;
+    sel.drag = null;
+    await selChange((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
+    return;
+  }
+  const b = sel.box;
+  sel.box = null;
+  const box = $("sel-box");
+  if (box) box.remove();
+  if (!b) return;
+  if (b.shown) await selPickBox(b); else await selPickAt(b.ev, b.add);
+}
+
+// The tray's part for Select: what's picked, and what can be done with it
+function renderSel() {
+  const w = mv.words, p = mv.place, on = selecting();
+  $("place-sel").classList.toggle("hidden", !on);
+  $("place-search").classList.toggle("hidden", on);
+  $("place-grid").classList.toggle("hidden", on);
+  if (!on) return;
+  const own = sel.items.filter((it) => it.kind === "own").length, n = sel.items.length;
+  $("place-sel-what").textContent = !n ? w.sel_hint
+    : n === 1 ? fill(w.sel_one, { name: typeLabel(selType(sel.items[0])), whose: own ? w.sel_whose_map : w.sel_whose_mod })
+      : fill(w.sel_many, { n: n.toLocaleString(), own: own.toLocaleString(), placed: (n - own).toLocaleString() });
+  const moved = sel.items.some((it) => it.kind === "own" && ownRow(it.orig));
+  for (const [id, text, tip, off] of [["place-sel-delete", w.sel_delete, w.tip_sel_delete, !n || !p.mod],
+    ["place-sel-restore", w.sel_restore, w.tip_sel_restore, !moved || !p.mod],
+    ["place-sel-clear", w.sel_clear, w.tip_sel_clear, !n]]) {
+    $(id).textContent = text;
+    $(id).title = tip;
+    $(id).disabled = off || sel.busy;
+  }
 }
 
 // --- showing one map ---
@@ -7279,6 +7750,7 @@ function watchPointer() {
     const p = mv.place;
     if (!p.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
     ev.preventDefault();
+    if (p.how === "select") { if (selPointerDown(ev)) canvas.setPointerCapture(ev.pointerId); return; }
     if (p.how === "one") { placeAt(ev); return; }
     const w = mv.words;
     if (!p.mod) { placeNote(w.no_mod, "error"); return; }
@@ -7314,6 +7786,7 @@ function watchPointer() {
     if (placeFrame) return;
     placeFrame = requestAnimationFrame(() => {
       placeFrame = 0;
+      if (p.how === "select") { if (placeMove) selPointerMove(placeMove); return; }  // a drag moving, or a box
       const hit = placeMove && hitGround(placeMove);
       showPlaceGhost(hit);  // what a click places, where it would stand
       if (p.how === "one") return;
@@ -7328,6 +7801,7 @@ function watchPointer() {
   });
   for (const type of ["pointerup", "pointercancel"]) {
     canvas.addEventListener(type, () => {
+      if (sel.drag || sel.box) { selPointerUp(); return; }  // Select's drag or box ends
       const p = mv.place, stroke = p.painting;
       if (!stroke) return;
       p.painting = null;
@@ -8235,16 +8709,23 @@ function onKey(e) {
   if (ctrl && !e.altKey && (e.code === "KeyY" || (e.code === "KeyZ" && e.shiftKey))) {  // Redo, as other editors
     if (fieldFocused(false)) return;                                                   // have it
     e.preventDefault();
-    if (mv.brush.on) redoStroke(); else if (mv.place.on) redoPlace(); else if (road.on) redoRoad(); else if (bridge.on) redoBridge();
+    if (mv.brush.on) redoStroke(); else if (selecting()) selRedo(); else if (mv.place.on) redoPlace();
+    else if (road.on) redoRoad(); else if (bridge.on) redoBridge();
     return;
   }
   if (ctrl && !e.altKey && e.code === "KeyZ") {  // the one shortcut that works with a modifier
     if (fieldFocused(false)) return;              // a text box has its own undo
     e.preventDefault();
-    if (mv.brush.on) undoStroke(); else if (mv.place.on) undoPlace(); else if (road.on) undoRoad(); else if (bridge.on) undoBridge();
+    if (mv.brush.on) undoStroke(); else if (selecting()) selUndo(); else if (mv.place.on) undoPlace();
+    else if (road.on) undoRoad(); else if (bridge.on) undoBridge();
     return;
   }
   if (ctrl || e.altKey) return;
+  if ((e.key === "Delete" || e.key === "Backspace") && selecting() && sel.items.length && !fieldFocused(false)) {
+    e.preventDefault();  // Select: what's picked goes, as the game's editor and every other one does it
+    selDelete();
+    return;
+  }
   if (e.key === "Escape") {
     if (fieldFocused(true)) { document.activeElement.blur(); return; }  // first out of the box, then back to Look
     if (road.on && road.pts.length) {  // then the road being drawn
@@ -8255,6 +8736,7 @@ function onKey(e) {
       return;
     }
     if (scen.sel.size) { clearSelection(); return; }  // then what's selected, as in the game
+    if (selecting() && sel.items.length) { clearSel(); return; }  // (Select's picks the same)
     lookAround();
     return;
   }
@@ -8571,8 +9053,18 @@ function wire() {
     }
   });
   $("brush-look").addEventListener("click", () => lookAround());
-  $("place-undo").addEventListener("click", () => undoPlace());
-  $("place-redo").addEventListener("click", () => redoPlace());
+  $("place-undo").addEventListener("click", () => (selecting() ? selUndo() : undoPlace()));
+  $("place-redo").addEventListener("click", () => (selecting() ? selRedo() : redoPlace()));
+  $("place-sel-delete").addEventListener("click", () => selDelete());
+  $("place-sel-restore").addEventListener("click", () => selRestore());
+  $("place-sel-clear").addEventListener("click", () => clearSel());
+  // in Select, Turn and Size set every picked one's when let go (the first picked one's shown on the label)
+  $("place-turn").addEventListener("change", (e) => {
+    if (selecting() && sel.items.length) selChange((p) => ({ ...p, turn: Number(e.target.value) }));
+  });
+  $("place-size").addEventListener("change", (e) => {
+    if (selecting() && sel.items.length) selChange((p) => ({ ...p, size: Number(e.target.value) }));
+  });
   $("brush-redo").addEventListener("click", () => redoStroke());
   $("road-redo").addEventListener("click", () => redoRoad());
   $("bridge-redo").addEventListener("click", () => redoBridge());

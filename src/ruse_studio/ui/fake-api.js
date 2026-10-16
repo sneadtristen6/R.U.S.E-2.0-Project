@@ -105,6 +105,19 @@
       tip_bridges_redo: "Put back the last bridge Undo took off the map (Ctrl+Y).",
       tip_brush_redo: "Put back the last stroke Undo took back (Ctrl+Y).",
       tip_erase_redo: "Put back the last circles Undo took back (Ctrl+Y).",
+      place_select: "Select",
+      tip_place_select: "Pick what stands on the map, what this mod placed or the map's own: click one, Shift+click to add, or drag a box. Then drag to move, Turn and Size, or Delete.",
+      sel_help: "Click to pick · Shift+click to add · drag a box around several · drag a picked one to move it · Delete takes them away · Esc picks none",
+      sel_hint: "Click a building, prop or tree to pick it, or drag a box around several.",
+      sel_one: "{name}: {whose}", sel_whose_map: "the map's own", sel_whose_mod: "placed by this mod",
+      sel_many: "{n} picked: {own} of the map's own, {placed} placed by this mod",
+      sel_delete: "Delete", tip_sel_delete: "Take what's picked off the map (Delete key). The map's own go when the mod is built; Undo puts them back.",
+      sel_restore: "Put back as the map has it", tip_sel_restore: "The map's own picked objects go back where the map has them, as they were.",
+      sel_clear: "Pick none", tip_sel_clear: "Pick nothing (Esc).", sel_nothing: "Nothing to pick there.",
+      sel_more: "More than 2,000 in that box: the 2,000 nearest its middle are picked.",
+      sel_box_ground: "Drag the box over the ground only.",
+      tip_sel_undo: "Take back the last move, turn, size or delete (Ctrl+Z).",
+      tip_sel_redo: "Do again the last move, turn, size or delete Undo took back (Ctrl+Y).",
       brush_help: "Click or drag on the ground to paint · middle-drag to turn · right-drag to move · wheel to zoom",
       brush_count: "Strokes on this map: {n}", brush_note: "Saved in the mod. \"Test in game\" builds it into the map.",
       brush_ramp: "Ramp", ramp_help: "Click where the ramp starts, then where it ends. Esc cancels.",
@@ -255,6 +268,19 @@
       tip_bridges_redo: "Remettre le dernier pont retiré par l'annulation (Ctrl+Y).",
       tip_brush_redo: "Rétablir le dernier coup de pinceau annulé (Ctrl+Y).",
       tip_erase_redo: "Rétablir les derniers cercles annulés (Ctrl+Y).",
+      place_select: "Sélection",
+      tip_place_select: "Choisir ce qui se trouve sur la carte, ce que ce mod a placé ou ce qui appartient à la carte : cliquer sur un objet, Maj+clic pour en ajouter, ou tracer un cadre. Puis glisser pour déplacer, Rotation et Taille, ou Supprimer.",
+      sel_help: "Clic pour choisir · Maj+clic pour ajouter · tracer un cadre autour de plusieurs · glisser un objet choisi pour le déplacer · Suppr les retire · Échap pour ne rien choisir",
+      sel_hint: "Cliquez sur un bâtiment, un objet ou un arbre pour le choisir, ou tracez un cadre autour de plusieurs.",
+      sel_one: "{name} : {whose}", sel_whose_map: "propre à la carte", sel_whose_mod: "placé par ce mod",
+      sel_many: "{n} choisis : {own} propres à la carte, {placed} placés par ce mod",
+      sel_delete: "Supprimer", tip_sel_delete: "Retirer de la carte ce qui est choisi (touche Suppr). Les objets propres à la carte partent quand le mod est construit ; Annuler les remet.",
+      sel_restore: "Remettre comme sur la carte", tip_sel_restore: "Les objets choisis propres à la carte reviennent à leur place d'origine, tels qu'ils étaient.",
+      sel_clear: "Ne rien choisir", tip_sel_clear: "Ne rien choisir (Échap).", sel_nothing: "Rien à choisir ici.",
+      sel_more: "Plus de 2 000 dans ce cadre : les 2 000 les plus proches du centre sont choisis.",
+      sel_box_ground: "Tracez le cadre sur le sol uniquement.",
+      tip_sel_undo: "Annuler le dernier déplacement, rotation, changement de taille ou suppression (Ctrl+Z).",
+      tip_sel_redo: "Rétablir le dernier déplacement, rotation, changement de taille ou suppression annulé (Ctrl+Y).",
       brush_help: "Cliquez ou glissez sur le sol pour peindre · glisser du milieu pour tourner · clic droit pour déplacer · molette pour zoomer",
       brush_count: "Coups de pinceau sur cette carte : {n}",
       brush_note: "Enregistré dans le mod. « Tester en jeu » l'intègre à la carte.", brush_ramp: "Rampe",
@@ -440,6 +466,19 @@
       tip_bridges_redo: "放回被“撤销”移除的最后一座桥（Ctrl+Y）。",
       tip_brush_redo: "重做最后撤销的一笔（Ctrl+Y）。",
       tip_erase_redo: "重做最后撤销的圆圈（Ctrl+Y）。",
+      place_select: "选择",
+      tip_place_select: "选择地图上的物体（本模组放置的或地图原有的）：单击选中，Shift+单击添加，或拖出方框。然后拖动可移动，可调旋转和大小，或删除。",
+      sel_help: "单击选择 · Shift+单击添加 · 拖出方框选多个 · 拖动已选物体以移动 · Delete 删除 · Esc 取消选择",
+      sel_hint: "单击建筑、物件或树木以选中，或拖出方框选中多个。",
+      sel_one: "{name}（{whose}）", sel_whose_map: "地图原有", sel_whose_mod: "本模组放置",
+      sel_many: "已选 {n} 个：地图原有 {own} 个，本模组放置 {placed} 个",
+      sel_delete: "删除", tip_sel_delete: "从地图上移除所选物体（Delete 键）。地图原有物体在构建模组时移除；“撤销”可放回。",
+      sel_restore: "恢复为地图原样", tip_sel_restore: "所选的地图原有物体恢复到地图上的原位和原样。",
+      sel_clear: "取消选择", tip_sel_clear: "取消全部选择（Esc）。", sel_nothing: "那里没有可选的物体。",
+      sel_more: "方框内超过 2,000 个：已选中离中心最近的 2,000 个。",
+      sel_box_ground: "请只在地面上拖出方框。",
+      tip_sel_undo: "撤销最后一次移动、旋转、缩放或删除（Ctrl+Z）。",
+      tip_sel_redo: "重做最后撤销的移动、旋转、缩放或删除（Ctrl+Y）。",
       place_one: "单个", place_area: "区域", place_line: "直线", tip_place_one: "每次点击地面放置一个物体。", tip_place_area: "在地面上拖动以填满区域：树林、村庄。物体之间至少保持所设间距。", tip_place_line: "先点击直线起点，再点击终点：按间距放置物体，并沿直线方向摆放（树篱、一排房屋）。", place_spacing: "间距 {m} 米", tip_place_spacing: "区域或直线中物体之间的距离（针对此类物体）。", place_area_size: "区域 {m} 米", tip_place_area_size: "区域笔刷的半径：一笔填充的宽度。", place_area_help: "在地面上拖动，用所选物体填满。中键拖动旋转视角，右键拖动平移。", place_line_help: "点击直线起点，再点击终点。按 Esc 取消未完成的直线。", place_line_next: "现在点击直线的终点。", place_none_room: "此处没有空间：间距范围内已都有物体。", place_placed: "已放置 {n} 个物体并保存到mod。Ctrl+Z 可一次撤销。", place_most: "一笔最多放置这么多；如需更多请再画一次。" },
   };
   // the troubleshooter's words (words.toml doc_*)
@@ -705,6 +744,18 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const terrains = new Map();  // `${mod}|${map pack}` -> strokes, like the mod's maps/<pack>/terrain.toml
   const placed = new Map();    // `${mod}|${map pack}` -> placed objects, like the mod's maps/<pack>/scenery.toml
   const erased = new Map();    // `${mod}|${map pack}` -> its circles to erase, the same file's [[erase]] tables
+  const owned = new Map();     // `${mod}|${map pack}` -> the map's own objects it moves or takes away ([[own]] tables)
+  // The made-up village's objects as the real map_objects_at gives the map's own (every one, where the file has it)
+  const fakeOwnObjects = (pack) => {
+    const d = fakeScenery(pack), full = new Map(d.palette.map((row) => [row[7], row[0]])), out = [];
+    for (const [group, flat] of Object.entries(d.items)) {
+      for (let k = 0; k < flat.length; k += 5) {
+        out.push({ type: full.get(flat[k]) || `TypeWarrior/${d.types[flat[k]][0]}`, group, x: flat[k + 1],
+          y: flat[k + 2], turn: flat[k + 3] * 180 / Math.PI, size: flat[k + 4], lift: 0 });
+      }
+    }
+    return out;
+  };
   const editKey = (address, prop, how, via) => `${current}|${address}|${prop}|${how || ""}|${how === "own" ? via : ""}`;
   if (current) edits.set(editKey(E + "M4_Sherman", "ProductionTime"), 1);  // a cheap, fast Sherman, as in the owner's test
   const mine = () => newUnits.filter((n) => n.mod === current);
@@ -3094,7 +3145,45 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       map_scenery: async (pack) => fakeScenery(pack),
       scenery: async (pack) => ({ objects: current ? (placed.get(`${current}|${pack}`) || []) : [],
-        erase: current ? (erased.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
+        erase: current ? (erased.get(`${current}|${pack}`) || []) : [],
+        own: current ? (owned.get(`${current}|${pack}`) || []) : [], saved: null, mod: current }),
+      map_objects_at: async (pack, x, y, radius = 2600) => ({
+        objects: fakeOwnObjects(pack).map((o) => ({ ...o, distance: Math.hypot(o.x - x, o.y - y) }))
+          .filter((o) => o.distance <= Math.min(radius, 26000)).sort((a, b) => a.distance - b.distance) }),
+      map_objects_in: async (pack, x0, y0, x1, y1) => {
+        const [xa, xb] = [x0, x1].sort((a, b) => a - b), [ya, yb] = [y0, y1].sort((a, b) => a - b);
+        if (Math.hypot(xb - xa, yb - ya) / 2 > 130000) {
+          throw new Error("That box is too big to pick from: at most 1,000 m corner to corner. Drag a smaller one, or use the Erase brush for a whole area.");
+        }
+        const objects = fakeOwnObjects(pack).filter((o) => o.x >= xa && o.x <= xb && o.y >= ya && o.y <= yb)
+          .map((o) => ({ ...o, distance: Math.hypot(o.x - (xa + xb) / 2, o.y - (ya + yb) / 2) }));
+        return { objects: objects.slice(0, 2000), more: objects.length > 2000 };
+      },
+      scenery_own: async (pack, rows) => {  // the whole list, each building opening its old ground (made-up reach)
+        if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
+        const groups = new Map(fakeOwnObjects(pack).map((o) => [o.type, o.group]));
+        const own = rows.map((r) => {
+          const building = groups.get(r.type) === "building";
+          return { gone: false, to_x: 0, to_y: 0, turn: 0, size: 1, lift: 0, ...r, solid: building && !r.gone,
+            open: r.open || (building ? 1800 * (r.size || 1) : 0) };
+        });
+        owned.set(`${current}|${pack}`, own);
+        return { own, saved: own.length ? `${current}/maps/${pack}/scenery.toml` : null };
+      },
+      scenery_change: async (pack, changes) => {  // [old, new] pairs; new null takes it off
+        if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
+        const key = `${current}|${pack}`, list = (placed.get(key) || []).slice();
+        const same = (a, b) => ["type", "x", "y", "turn", "size"].every((k) => a[k] === b[k]);
+        let changed = 0;
+        for (const [old, now] of changes) {
+          const at = list.map((p) => same(p, old)).lastIndexOf(true);
+          if (at < 0) continue;
+          changed++;
+          if (now) list[at] = now; else list.splice(at, 1);
+        }
+        placed.set(key, list);
+        return { count: list.length, changed, saved: `${current}/maps/${pack}/scenery.toml` };
+      },
       scenery_erase: async (pack, areas) => {  // the same file's [[erase]] tables
         if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
         const key = `${current}|${pack}`;

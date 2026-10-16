@@ -197,15 +197,18 @@ def _map_readers() -> dict:
     from .scenario import (ScenarioError, parse_changes, parse_moves, parse_places, parse_removes, parse_spawns,
                            parse_starts)
     from .scenery import (SceneryEditError, parse_copies, parse_erase, parse_field_brushes, parse_field_copies,
-                          parse_objects, parse_presets)
+                          parse_objects, parse_own, parse_presets)
     from .sectors import SectorError, parse_sectors
     return {
         "terrain.toml": (("stroke",), "a terrain file holds [[stroke]] tables",
                          lambda d, rel: parse_strokes(d.get("stroke", []), rel), BrushError),
-        "scenery.toml": (("object", "erase", "copy", "preset", "fieldbrush", "fieldcopy"),
-                         "a scenery file holds [[object]], [[erase]], [[copy]], [[preset]], [[fieldbrush]] and "
-                         "[[fieldcopy]] tables",
+        "scenery.toml": (("object", "erase", "copy", "preset", "fieldbrush", "fieldcopy", "own"),
+                         "a scenery file holds [[object]], [[erase]], [[copy]], [[preset]], [[fieldbrush]], "
+                         "[[fieldcopy]] and [[own]] tables",
+                         # an [[own]] row (the map's own object moved or taken away) is an erase of that one object
+                         # and, when it's moved, the object placed again (scenery.OwnEdit.expand)
                          lambda d, rel: (parse_objects(d.get("object", []), rel) + parse_erase(d.get("erase", []), rel)
+                                         + [x for e in parse_own(d.get("own", []), rel) for x in e.expand()]
                                          + parse_copies(d.get("copy", []), rel)
                                          + parse_presets(d.get("preset", []), rel)
                                          + parse_field_brushes(d.get("fieldbrush", []), rel)
@@ -518,14 +521,18 @@ def cleared_woods(erasing: dict) -> tuple[dict, dict]:
     for name, (areas, ids) in erasing.items():
         cleared = [a for a in areas if ("vegetation" in a.what or "building" in a.what) and not a.keep_ground]
         woods = [a for a in cleared if "vegetation" in a.what]
-        if cleared:
+        # one of the map's own buildings moved or taken away ([[own]]): its own ground, as far as it reaches
+        single = [a for a in areas if a.opens and a not in cleared]
+        if cleared or single:
             # a square or a line opens as circles covering it (the movement graphs are circles), and uncovers itself
             opens[name] = ([Block(x, y, r, "all", True) for a in cleared
-                            for x, y, r in a.footprint().circles(_block_cell(a.footprint()))], list(ids))
+                            for x, y, r in a.footprint().circles(_block_cell(a.footprint()))]
+                           + [Block(a.x, a.y, a.opens, "all", True) for a in single], list(ids))
             uncover[name] = ([Paint(a.x, a.y, a.radius, "cover", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
                               for a in woods]
                              + [Paint(a.x, a.y, a.radius, "blocked", True, False, a.shape, a.dx, a.dy, a.x2, a.y2)
-                                for a in cleared], list(ids))
+                                for a in cleared]
+                             + [Paint(a.x, a.y, a.opens, "blocked", True, False) for a in single], list(ids))
     return opens, uncover
 
 
@@ -2788,8 +2795,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if any("building" in a.what and not a.keep_ground for a in areas):
                     say(f"  {erased['building']} of the map's buildings erased: the ground of the erase area(s) that "
                         f"take buildings is opened to every unit (cleared_woods; seen in the game)")
-                if any("building" not in a.what and any(t in descs and descs[t].group == "building"
-                                                        and not descs[t].bridge for t in a.types) for a in areas):
+                if any("building" not in a.what and not a.opens  # (an [[own]] row opens its building's own ground)
+                       and any(t in descs and descs[t].group == "building" and not descs[t].bridge for t in a.types)
+                       for a in areas):
                     result.findings.append(Finding("warning", (
                         f"{', '.join(erase_ids)}: {name}: buildings erased by name (an erase area's types) leave their "
                         f"ground closed to units: the map's movement still has them. Name \"building\" in that area's "

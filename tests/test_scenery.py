@@ -2481,6 +2481,112 @@ class Building(unittest.TestCase):
             self.assertIn("Nothing was written.", lines)
 
 
+class OwnObjects(unittest.TestCase):
+    """The map's own objects picked, moved, turned and taken away (the owner, 2026-10-16: "select move and delete
+    things already placed, including what's on the map"): objects_near finds what stands at a click without walking
+    the whole map, and an [[own]] row is an erase of that one object plus, when it moved, the object placed again."""
+
+    def test_objects_near_finds_what_the_whole_walk_finds(self):
+        raw = village()
+        sc = Scenery(raw)
+        placed = scenery._placed_items(sc)
+        every = list(sc.walk())
+        rng = random.Random(16)
+        spots_ = [(5050.0, 0.0), (1000.0, 2000.0), (5100.0, 9000.0), (-3000.0, 4000.0)]
+        spots_ += [(rng.uniform(-1000, 7000), rng.uniform(-1000, 10000)) for _ in range(40)]
+        for x, y in spots_:
+            for r in (10.0, 120.0, 3000.0):
+                want = sorted((round(math.hypot(m[3] - x, m[7] - y), 6), s, round(m[3], 3), round(m[7], 3))
+                              for s, m in every if math.hypot(m[3] - x, m[7] - y) <= r)
+                got = sorted((round(d, 6), s, round(m[3], 3), round(m[7], 3))
+                             for d, s, m in scenery.objects_near(sc, x, y, r, placed=placed))
+                self.assertEqual(got, want, (x, y, r))
+        near = scenery.objects_near(sc, 5050.0, 0.0, 100.0)
+        self.assertEqual([round(d) for d, _s, _m in near], [50, 50])          # nearest first, both oaks
+        hall = scenery.objects_near(sc, 1000.0, 2000.0, 10.0, only={0})
+        self.assertEqual(len(hall), 1)
+        x, y, turn, size = placement(hall[0][2])
+        self.assertAlmostEqual(math.degrees(turn), 90.0, places=2)          # its transform, turned as placed
+        self.assertEqual(scenery.objects_near(sc, 1000.0, 2000.0, 10.0, only={1}), [])
+
+    def test_a_row_takes_that_one_object_and_places_it_again(self):
+        """The north wood's first oak (5000, 9000) goes; its twin in the same shared block (5100, 9000) and the south
+        copy of the wood stay. Moved, it's placed again where it went."""
+        raw = village()
+        gone = scenery.OwnEdit("TypeWarrior/Chene_02", 5000.0, 9000.0, gone=True)
+        parts = gone.expand()
+        self.assertEqual(len(parts), 1)
+        new, _notes = scenery.erase_objects(raw, parts, {})[:2]
+        self.assertEqual(spots(raw) - spots(new), Counter({(1, 5000.0, 9000.0): 1}))
+        self.assertEqual(spots(new) - spots(raw), Counter())
+        moved_ = scenery.OwnEdit("TypeWarrior/MairieNormande", 1000.0, 2000.0, to_x=1500.0, to_y=2500.0, turn=45.0,
+                                 size=1.5, solid=True, open=900.0)
+        area, obj = moved_.expand()
+        self.assertEqual(area.types, ("TypeWarrior/MairieNormande",))
+        self.assertEqual(area.what, ())
+        self.assertEqual(area.opens, 900.0)
+        self.assertEqual(obj, NewObject("TypeWarrior/MairieNormande", 1500.0, 2500.0, 45.0, 1.5, True))
+        new = scenery.erase_objects(raw, [area], {})[0]
+        self.assertEqual(spots(raw) - spots(new), Counter({(0, 1000.0, 2000.0): 1}))
+
+    def test_rows_read_back_as_written(self):
+        rows = [scenery.OwnEdit("TypeWarrior/Chene_02", 5000.0, 9000.0, gone=True),
+                scenery.OwnEdit("TypeWarrior/MairieNormande", 1000.0, 2000.0, to_x=1500.0, to_y=2500.0, turn=45.0,
+                                size=1.5, lift=-20.0, solid=True, open=900.0)]
+        text = objects_toml([NewObject("TypeWarrior/Chene_02", 50.0, 60.0)], own=rows)
+        data = tomllib.loads(text)
+        self.assertEqual(scenery.parse_own(data["own"]), rows)
+        self.assertEqual(parse_objects(data["object"]), [NewObject("TypeWarrior/Chene_02", 50.0, 60.0)])
+        for bad, why in (({"type": "T", "x": 1, "y": 2}, "say where it goes"),
+                         ({"type": "T", "x": 1, "y": 2, "gone": "yes"}, "gone must be true or false"),
+                         ({"type": "T", "x": 1, "y": 2, "gone": True, "colour": 3}, "unknown key 'colour'"),
+                         ({"type": "T", "x": 1, "y": 2, "to_x": 1, "to_y": 2, "size": 99}, "out of range"),
+                         ({"x": 1, "y": 2, "gone": True}, "has no type")):
+            with self.assertRaises(SceneryEditError) as ctx:
+                scenery.parse_own([bad])
+            self.assertIn(why, str(ctx.exception))
+
+    def test_a_moved_building_opens_its_own_ground(self):
+        from rusemod.build import cleared_woods
+        moved_ = scenery.OwnEdit("TypeWarrior/MairieNormande", 1000.0, 2000.0, to_x=1500.0, to_y=2500.0, solid=True,
+                                 open=900.0)
+        tree = scenery.OwnEdit("TypeWarrior/Chene_02", 5000.0, 9000.0, gone=True)
+        opens, uncover = cleared_woods({"Test": ([moved_.expand()[0], tree.expand()[0]], ["m"])})
+        blocks, ids = opens["Test"]
+        self.assertEqual(ids, ["m"])
+        self.assertEqual([(b.x, b.y, b.radius, b.open) for b in blocks], [(1000.0, 2000.0, 900.0, True)])
+        self.assertEqual([(p.x, p.y, p.radius, p.layer, p.erase) for p in uncover["Test"][0]],
+                         [(1000.0, 2000.0, 900.0, "blocked", True)])
+        self.assertEqual(cleared_woods({"Test": ([tree.expand()[0]], ["m"])}), ({}, {}))  # a tree alone opens nothing
+
+    def test_a_mod_with_rows_builds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game = root / "R.U.S.E"
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("file", "x.bin", b"x")]))
+            shipped = make_edat([("dir", "output\\", [("file", "save.boobspc", village())])])
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(shipped)
+            mod = root / "mod"
+            (mod / "maps" / "Test").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "moves"\nversion = "1.0.0"\n', encoding="utf-8")
+            rows = [scenery.OwnEdit("TypeWarrior/Chene_02", 5000.0, 9000.0, gone=True),
+                    scenery.OwnEdit("TypeWarrior/Chene_02", 5100.0, 0.0, to_x=6000.0, to_y=500.0, turn=30.0)]
+            (mod / "maps" / "Test" / "scenery.toml").write_text(objects_toml([], own=rows), encoding="utf-8")
+            info, _ops = load_mod(mod)
+            self.assertEqual(info.erase, {"Test": [rows[0].expand()[0], rows[1].expand()[0]]})
+            self.assertEqual(info.scenery, {"Test": [NewObject("TypeWarrior/Chene_02", 6000.0, 500.0, 30.0, 1.0,
+                                                               False)]})
+            lines = []
+            result = build_and_write(game, [(info, _ops)], out=root / "out", say=lines.append)
+            self.assertEqual(result.errors, [], lines)
+            arc = Edat((root / "out" / "DataMapTest_v09.dat").read_bytes())
+            new = bytes(arc.read(arc.find(scenery.MEMBER)))
+            self.assertEqual(spots(village()) - spots(new), Counter({(1, 5000.0, 9000.0): 1, (1, 5100.0, 0.0): 1}))
+            self.assertEqual(spots(new) - spots(village()), Counter({(1, 6000.0, 500.0): 1}))
+
+
 class Studio(unittest.TestCase):
     """The Studio's calls: what stands on a map, and placing objects into the current mod's scenery file."""
 
@@ -2497,7 +2603,7 @@ class Studio(unittest.TestCase):
             v = api.map_scenery("Test")
             self.assertEqual([(r[0], r[2], r[4]) for r in v["palette"]],
                              [("TypeWarrior/MairieNormande", "building", 1), ("TypeWarrior/Chene_02", "vegetation", 4)])
-            self.assertEqual(api.scenery("Test"), {"objects": [], "erase": [], "saved": None, "mod": None})
+            self.assertEqual(api.scenery("Test"), {"objects": [], "erase": [], "own": [], "saved": None, "mod": None})
             with self.assertRaises(StudioError):
                 api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])  # no mod yet
             folder = Path(api.new_mod("Village")["current"])
@@ -2532,6 +2638,69 @@ class Studio(unittest.TestCase):
             self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 1.0, 2.0, 30.0, 0.9),
                                                     NewObject("TypeWarrior/MairieNormande", 70.0, 80.0)])
             self.assertEqual(api.scenery_undo("Test", 1, [dict(tree, x=99)])["removed"], 0)  # not there: nothing
+
+    def test_select(self):
+        """Select (the owner, 2026-10-16): the map's own objects found at a click and in a box, saved as [[own]] rows
+        (a building solid where it goes, its old ground opened as far as it reaches), what the mod placed changed in
+        place, and every rewrite of the file keeping the others' rows."""
+        from ruse_studio.api import StudioApi, StudioError
+        from rusemod.nav import FOOTPRINT
+        with tempfile.TemporaryDirectory() as tmp:
+            game = Path(tmp) / "R.U.S.E"
+            (game / "Data" / "PC" / "190852").mkdir(parents=True)
+            (game / "Maps" / "PC").mkdir(parents=True)
+            (game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").write_bytes(unit_pack_raw())
+            (game / "Maps" / "PC" / "DataMapTest_v09.dat").write_bytes(
+                make_edat([("dir", "output\\", [("file", "save.boobspc", village())])]))
+            api = StudioApi(game_dir=game, home=Path(tmp, "home"), index_path=Path(tmp, "none.sqlite"))
+            # the village: the hall at (1000, 2000) turned 90 degrees; oaks at (5000, 0), (5100, 0), (5000, 9000), ...
+            at = api.map_objects_at("Test", 5040, 0, 200)["objects"]
+            self.assertEqual([(o["type"], round(o["x"]), round(o["distance"])) for o in at],
+                             [("TypeWarrior/Chene_02", 5000, 40), ("TypeWarrior/Chene_02", 5100, 60)])
+            hall = api.map_objects_at("Test", 1000, 2000, 10)["objects"][0]
+            self.assertEqual((hall["group"], round(hall["turn"])), ("building", 90))
+            box = api.map_objects_in("Test", 4900, -100, 5200, 9100)
+            self.assertEqual((len(box["objects"]), box["more"]), (4, False))
+            with self.assertRaisesRegex(StudioError, "too big to pick from"):
+                api.map_objects_in("Test", 0, 0, 400000, 400000)
+            with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+                api.scenery_own("Test", [{"type": "TypeWarrior/Chene_02", "x": 5000, "y": 0, "gone": True}])
+            folder = Path(api.new_mod("Moves")["current"])
+            path = folder / "maps" / "Test" / "scenery.toml"
+            api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60}])
+            api.scenery_erase("Test", [{"x": 9000, "y": 9000, "radius": 50}])
+            res = api.scenery_own("Test", [
+                {"type": "TypeWarrior/Chene_02", "x": 5000, "y": 0, "gone": True},
+                {"type": "TypeWarrior/MairieNormande", "x": 1000, "y": 2000, "to_x": 1500, "to_y": 2500, "turn": 45,
+                 "size": 2}])
+            gone, hall_row = res["own"]
+            self.assertEqual((gone["gone"], gone["solid"], gone["open"]), (True, False, 0.0))
+            # no models' archive in this made-up game: the footprint placed buildings fall back to, times its size
+            self.assertEqual((hall_row["solid"], hall_row["open"]), (True, FOOTPRINT * 2))
+            with self.assertRaisesRegex(StudioError, "isn't one of this map's own"):
+                api.scenery_own("Test", [{"type": "TypeWarrior/Nope", "x": 1, "y": 2, "gone": True}])
+            # placing and erasing again keep the rows; the rows keep the objects and circles
+            api.scenery_add("Test", [{"type": "TypeWarrior/Chene_02", "x": 70, "y": 80}])
+            self.assertEqual(len(api.scenery("Test")["own"]), 2)
+            self.assertEqual(len(api.scenery("Test")["erase"]), 1)
+            # what the mod placed, changed where it is in the file, and taken off
+            res = api.scenery_change("Test", [[{"type": "TypeWarrior/Chene_02", "x": 50, "y": 60},
+                                               {"type": "TypeWarrior/Chene_02", "x": 55, "y": 65, "turn": 30}]])
+            self.assertEqual((res["count"], res["changed"]), (2, 1))
+            self.assertEqual([(o["x"], o["y"], o["turn"]) for o in api.scenery("Test")["objects"]],
+                             [(55.0, 65.0, 30.0), (70.0, 80.0, 0.0)])
+            res = api.scenery_change("Test", [[{"type": "TypeWarrior/Chene_02", "x": 70, "y": 80}, None],
+                                              [{"type": "TypeWarrior/Chene_02", "x": 1, "y": 1}, None]])
+            self.assertEqual((res["count"], res["changed"]), (1, 1))
+            info, _ops = load_mod(folder)
+            self.assertEqual(info.scenery["Test"], [NewObject("TypeWarrior/Chene_02", 55.0, 65.0, 30.0),
+                                                    NewObject("TypeWarrior/MairieNormande", 1500.0, 2500.0, 45.0, 2.0,
+                                                              True)])
+            self.assertEqual(len(info.erase["Test"]), 3)  # the circle, and one per [[own]] row
+            # every row gone: the file holds the rest
+            api.scenery_own("Test", [])
+            self.assertNotIn("[[own]]", path.read_text(encoding="utf-8"))
+            self.assertEqual(len(api.scenery("Test")["objects"]), 1)
 
     def test_the_erase_tool(self):
         """The map view's Erase brush: its circles saved as the scenery file's [[erase]] tables (the file's objects

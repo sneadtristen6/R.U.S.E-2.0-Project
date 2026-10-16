@@ -1965,6 +1965,43 @@ class Redo(unittest.TestCase):
             self.assertIn(empties, self.function(fn), fn)
         self.assertIn("if (mv.current !== pack) forgetRedo()", self.function("show("))
 
+    def test_select_picks_moves_and_takes_away(self):
+        """The owner, 2026-10-16: "select move and delete things already placed, including what's on the map". Select
+        is the place trays' fourth way: a click picks the nearest (what the mod placed, or the map's own through
+        map_objects_at), a box picks all in it (map_objects_in), a drag moves the picked ones, Turn and Size set
+        theirs, Delete takes them away; the map's own become [[own]] rows (scenery_own), what the mod placed changes
+        in place (scenery_change); Undo and Redo walk the steps. Tried in the Studio's page (?fake, Blitz): a house
+        of the map's own picked with the mouse and dragged (drawn where it went, hidden where it was, its ring
+        there), 73 oaks picked with a box, taken away with the Delete key and put back with Ctrl+Z, still picked."""
+        maps = self.maps()
+        self.assertIn('const PLACE_HOW = ["one", "area", "line", "select"]', maps)
+        self.assertIn("mv.api.map_objects_at(pack,", self.function("selCandidates("))
+        self.assertIn("mv.api.map_objects_in(pack,", self.function("selPickBox("))
+        apply = self.function("selApply(")
+        for call in ("mv.api.scenery_change(pack, changes)", "mv.api.scenery_add(pack, adds)",
+                     "mv.api.scenery_own(pack, own)"):
+            self.assertIn(call, apply)
+        self.assertIn("if (gone) s.set(0, 0, 0);", self.function("placeScenery("))  # moved or taken away: not where it was
+        self.assertIn(".concat(ownMovedObjects())", self.function("drawPlaced("))      # ...but where it went
+        keys = self.function("onKey(")
+        self.assertIn("else if (selecting()) selUndo();", keys)
+        self.assertIn("else if (selecting()) selRedo();", keys)
+        self.assertIn('(e.key === "Delete" || e.key === "Backspace") && selecting()', keys)
+        self.assertIn("forgetSel(res.own || [])", self.function("loadPlaced("))
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-sel"', 'id="place-sel-what"', 'id="place-sel-delete"', 'id="place-sel-restore"',
+                       'id="place-sel-clear"'):
+            self.assertIn(needle, page)
+        words = _words()
+        for key in ("place_select", "tip_place_select", "sel_help", "sel_hint", "sel_one", "sel_whose_map",
+                    "sel_whose_mod", "sel_many", "sel_delete", "tip_sel_delete", "sel_restore", "tip_sel_restore",
+                    "sel_clear", "tip_sel_clear", "sel_nothing", "sel_more", "sel_box_ground", "tip_sel_undo",
+                    "tip_sel_redo"):
+            self.assertEqual(len(words[key]), 10, key)
+        fake = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
+        for call in ("map_objects_at: async", "map_objects_in: async", "scenery_own: async", "scenery_change: async"):
+            self.assertIn(call, fake)
+
     def test_a_bridge_is_undone_by_its_object(self):
         """A bridge was saved in the place tray's groups as a bare 1, so its Undo took nothing back (seen while adding
         Redo, 2026-10-16): a group is the objects Undo takes."""

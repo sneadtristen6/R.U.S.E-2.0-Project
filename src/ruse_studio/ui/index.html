@@ -300,6 +300,15 @@
               <input id="place-search" type="search" class="place-search">
               <!-- each type as a picture of its model, Cities: Skylines style (maps.js placeOptions, renderThumb) -->
               <div id="place-grid" class="place-grid" role="listbox"></div>
+              <!-- Select (maps.js sel): what's picked, and what can be done with it -->
+              <div id="place-sel" class="place-sel hidden">
+                <div id="place-sel-what" class="small"></div>
+                <div class="map-controls">
+                  <button id="place-sel-delete" type="button" class="ghost danger" disabled></button>
+                  <button id="place-sel-restore" type="button" class="ghost" disabled></button>
+                  <button id="place-sel-clear" type="button" class="ghost" disabled></button>
+                </div>
+              </div>
               <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
               <div id="place-scenery-note" class="muted small"></div>
             </div>
