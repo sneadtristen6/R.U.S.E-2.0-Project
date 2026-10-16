@@ -4647,6 +4647,50 @@ async function firstBackup(show) {
   makeBackup();
 }
 
+// --- closing with something not saved yet (the owner, 2026-10-16: "a warning before closing with unsaved
+// changes"): most of the Studio saves each change as it's made, so what can be lost is a script edited and not saved,
+// text typed in a box and not yet entered (a box takes its text on Enter or when the focus leaves it, and closing
+// the window does neither), the music editor holding a sound not used yet, and a save or a Test in game still running.
+// The page says which to the window (StudioApi.unsaved), which asks before closing (rusemod.webui); in a web browser
+// the browser's own "Leave site?" asks. ---
+let typedAt = null;  // the box being typed in, with its text when the focus came to it (or when it last took it)
+document.addEventListener("focusin", (e) => {
+  const t = e.target;
+  const box = t && (t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && ["text", "number", ""].includes(t.type)));
+  typedAt = box && !t.readOnly && !t.disabled ? { el: t, value: t.value } : null;
+});
+document.addEventListener("change", (e) => { if (typedAt && e.target === typedAt.el) typedAt.value = e.target.value; });
+
+function unsavedReasons() {
+  const w = state.words, out = [], area = $("ai-script-area");
+  if (area && area.value !== scriptSaved && !area.disabled && area.value.trim()) out.push(w.unsaved_script);
+  const t = typedAt;
+  if (t && t.el.isConnected && document.activeElement === t.el && t.el.value !== t.value && t.el !== area) {
+    out.push(w.unsaved_typed);
+  }
+  if (window.SoundView && SoundView.editing && SoundView.editing()) out.push(w.unsaved_music);
+  if ((window.MapView && MapView.busy && MapView.busy()) || (window.MissionView && MissionView.busy && MissionView.busy())
+    || (window.SoundView && SoundView.busy && SoundView.busy())) out.push(w.unsaved_saving);
+  if ($("test") && $("test").dataset.running === "1") out.push(w.unsaved_test);
+  return out.filter(Boolean);
+}
+
+let unsavedSaid = "";
+function tellUnsaved() {
+  if (!started || !window.pywebview || !window.pywebview.api || !window.pywebview.api.unsaved) return;
+  const w = state.words, reasons = unsavedReasons(), key = reasons.join("\n");
+  if (key === unsavedSaid) return;
+  unsavedSaid = key;
+  const ask = reasons.length ? { title: w.unsaved_title, text: `${w.unsaved_text}\n\n${reasons.map((r) => `• ${r}`).join("\n")}\n\n${w.unsaved_close}` } : null;
+  Promise.resolve(api().unsaved(ask)).catch(() => { unsavedSaid = ""; });  // (said again on the next look)
+}
+setInterval(tellUnsaved, 700);
+window.addEventListener("beforeunload", (e) => {
+  if (!unsavedReasons().length) return;
+  e.preventDefault();
+  e.returnValue = "";  // the browser asks "Leave site?" (its own words)
+});
+
 let started = false;
 function startOnce() {
   if (started) return;

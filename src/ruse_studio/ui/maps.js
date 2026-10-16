@@ -9136,6 +9136,8 @@ function saveView() {
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
 window.MapView = {
+  // a stroke, an area or a Select step not saved yet (app.js unsavedReasons: closing the Studio asks first)
+  busy() { return Boolean(mv.brush.painting || mv.place.painting || sel.busy || sel.drag); },
   async open(api, words, lang) {
     mv.api = api;
     mv.words = words;

@@ -2008,6 +2008,76 @@ class Redo(unittest.TestCase):
         self.assertIn("mv.place.groups.push([res.object])", self.function("bridgeAt("))
 
 
+class AskBeforeClosing(unittest.TestCase):
+    """The owner, 2026-10-16: a warning before closing with unsaved changes. The page tells the app what isn't saved
+    (StudioApi.unsaved); closing the window asks then (rusemod.webui.ask_before_closing), Yes closes, No keeps it
+    open, and with nothing unsaved it closes at once. Tried in the Studio's page (?fake): the AI script edited and
+    not saved, and a box typed in with the real keyboard and not entered, each made the question; Enter and a click
+    elsewhere took it away again."""
+
+    class Window:
+        class Events:
+            def __init__(self):
+                self.closing = self.Handlers()
+
+            class Handlers(list):
+                def __iadd__(self, fn):
+                    self.append(fn)
+                    return self
+
+        def __init__(self):
+            self.events = self.Events()
+
+    def test_the_window_asks_only_while_something_is_unsaved(self):
+        from rusemod import webui
+        api = StudioApi(game_dir=Path("Z:/nowhere"), home=Path(tempfile.mkdtemp(dir=os.environ.get("TEMP"))),
+                        index_path=Path("Z:/none.sqlite"))
+        window = self.Window()
+        webui.ask_before_closing(window, api.closing_check)
+        closing = window.events.closing[0]
+        with mock.patch.object(webui.browsermode, "message_box", return_value=7) as box, \
+                mock.patch.object(webui.sys, "platform", "win32"):
+            self.assertTrue(closing())                     # nothing unsaved: closes at once, no question
+            box.assert_not_called()
+            self.assertEqual(api.unsaved({"title": "Close RUSE Studio?", "text": "Not everything is saved yet"}),
+                             {"asking": True})
+            self.assertFalse(closing())                    # No: the window stays open
+            text, title, flags = box.call_args.args
+            self.assertEqual((text, title), ("Not everything is saved yet", "Close RUSE Studio?"))
+            self.assertEqual(flags & 0x0F, 0x04)            # Yes / No
+            self.assertTrue(flags & 0x100)                  # No picked first: Enter keeps the work
+            box.return_value = 6
+            self.assertTrue(closing())                     # Yes: closes
+            self.assertEqual(api.unsaved(None), {"asking": False})
+            box.reset_mock()
+            self.assertTrue(closing())
+            box.assert_not_called()
+        api.unsaved({"text": "x"})
+        with mock.patch.object(webui.browsermode, "message_box", side_effect=OSError("no box")), \
+                mock.patch.object(webui.sys, "platform", "win32"):
+            self.assertTrue(closing())  # the box can't be shown: it closes, as before it asked
+        window = self.Window()
+        webui.ask_before_closing(window, lambda: 1 / 0)  # a fault of ours never keeps the window open
+        self.assertTrue(window.events.closing[0]())
+
+    def test_the_page_says_what_isnt_saved(self):
+        app = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
+        body = app[app.index("function unsavedReasons("):]
+        body = body[:body.index("\n}\n")]
+        for reason in ("w.unsaved_script", "w.unsaved_typed", "w.unsaved_music", "w.unsaved_saving", "w.unsaved_test"):
+            self.assertIn(reason, body)
+        self.assertIn("setInterval(tellUnsaved, 700)", app)
+        self.assertIn('window.addEventListener("beforeunload"', app)  # in a web browser, the browser asks
+        for view, fn in (("maps.js", "busy() {"), ("mission.js", "busy() {"), ("sound.js", "busy() {"),
+                         ("sound.js", "editing() {")):
+            self.assertIn(fn, (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / view).read_text(
+                encoding="utf-8"), view)
+        words = _words()
+        for key in ("unsaved_title", "unsaved_text", "unsaved_close", "unsaved_script", "unsaved_typed",
+                    "unsaved_music", "unsaved_saving", "unsaved_test"):
+            self.assertEqual(len(words[key]), 10, key)
+
+
 class MapIcons(unittest.TestCase):
     """Each kind of building and unit gets its own icon on the map (the owner, 2026-10-03), by the game's own names."""
 

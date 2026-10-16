@@ -461,6 +461,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
         self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
         self._picks: dict[tuple, tuple] = {}     # the last two maps' scenery read for picking (_pick_index)
+        self._close_ask: dict | None = None     # what the window asks before closing while something isn't saved (unsaved)
         self._reaches: dict[str, float] = {}     # a building type's reach, measured on its model (_building_reach)
         self._scenario_owners: dict[tuple, list[dict]] = {}  # mission CampList owners, for the spawn picker
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
@@ -528,6 +529,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def nations(self, lang: str = schema.BASE) -> list[str]:
         return [schema.nation(n, lang) for n in range(NATIONS)]
+
+    # --- closing the window with something not saved yet (the owner, 2026-10-16): the page says what (app.js
+    # unsavedReasons), and the window asks before it closes (rusemod.webui.ask_before_closing) ---
+    def unsaved(self, ask=None) -> dict:
+        """What isn't saved yet, as the page words it: {"title", "text"} in the Studio's language, or None when all
+        is. Kept for closing_check."""
+        self._close_ask = ({"title": str(ask.get("title") or "RUSE Studio"), "text": str(ask["text"])}
+                           if isinstance(ask, dict) and ask.get("text") else None)
+        return {"asking": self._close_ask is not None}
+
+    def closing_check(self):
+        """What the window asks before it closes: unsaved's last words, or None to close at once."""
+        return self._close_ask
 
     def status(self) -> dict:
         path = self._path()

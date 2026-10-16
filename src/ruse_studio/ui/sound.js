@@ -529,6 +529,7 @@
     }
     stop();
     btn.disabled = true;
+    S.saving = true;  // (closing the Studio now asks first: app.js unsavedReasons)
     try {
       $("me-note").textContent = w.music_making;
       const wav = await finished();
@@ -546,6 +547,7 @@
       $("me-note").textContent = (err && err.message) || String(err);
     } finally {
       btn.disabled = false;
+      S.saving = false;
     }
   }
 
@@ -698,6 +700,8 @@
     setWords(words, lang) { S.words = words; S.lang = lang; render(); },
     modChanged() { render(); },
     leave() { stop(); },
+    busy() { return Boolean(S.saving); },                            // a sound being saved (app.js unsavedReasons)
+    editing() { const d = $("music-editor"); return Boolean(d && d.open && !S.saving); },  // a sound cut, not used yet
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
 })();

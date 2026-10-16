@@ -159,6 +159,9 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
     window = webview.create_window(title, f"{base}/{page}", js_api=page_side, width=width, height=height,
                                    min_size=(900, 600), background_color="#0a1628")  # the apps' navy, before the page draws
     api._window = window
+    check = getattr(api, "closing_check", None)
+    if callable(check):
+        ask_before_closing(window, check)
     if setup is not None:
         setup(window)
     if log is not None:
@@ -188,6 +191,28 @@ def open_window(title: str, folder: Path, page: str, api, width=1180, height=760
         return _in_browser(title, folder, page, api, extra, setup, words, failed)
     startlog.mark("closed")
     return 0
+
+
+def ask_before_closing(window, check) -> None:
+    """Closing the window asks first while something isn't saved yet (the owner, 2026-10-16: a warning before closing
+    with unsaved changes): `check()` gives {"title", "text"} in the page's language, or None when all is saved (the
+    page keeps the app told: StudioApi.unsaved). Yes closes, No keeps the window open; No is the button picked first.
+    A fault here never stops a close. An update ends the app on its own (rusemod.update), past this question."""
+    def closing():
+        try:
+            ask = check()
+        except Exception:  # noqa: BLE001  (never keep the window open on a fault of our own)
+            return True
+        if not ask or sys.platform != "win32":
+            return True
+        try:
+            return browsermode.message_box(ask["text"], ask["title"], 0x04 | 0x30 | 0x100) == 6  # Yes/No, warning, No first
+        except Exception:  # noqa: BLE001  (the box can't be shown: it closes, as it did before it asked)
+            return True
+    try:
+        window.events.closing += closing  # pywebview: a handler giving False keeps the window open
+    except Exception:  # noqa: BLE001  (another pywebview: it closes without asking)
+        pass
 
 
 class EngineWatch(logging.Handler):
