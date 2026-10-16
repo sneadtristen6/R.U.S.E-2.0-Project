@@ -352,6 +352,33 @@ def map_objects(sc, descs: dict, lines, reach: float = ON_ROAD):
                         todo.append((j, cm))
 
 
+NEW_PIECE = 50 * METRE  # a cut-off piece whose middle lies this far from every piece the map had is a new one
+
+
+def new_cut_off(shipped: bytes | None, built: bytes) -> list[dict]:
+    """The cut-off pieces (cut_off's "fail" findings) of a built map's movement file that its shipped one (`shipped`,
+    or None) didn't have: ground a mod's changes closed off from the rest of the map, where an order crashes the game
+    (the owner, 2026-10-16: a map that would crash the game is refused before Test in game). A piece the shipped map
+    already has (its middle within NEW_PIECE of one, for the same units and graph) isn't the mod's doing."""
+    from ruse_mod_engine import sdb
+    parts = sdb.split_mapinfo(built)
+    if parts is None:
+        return []
+    before: dict = {}
+    old = sdb.split_mapinfo(shipped) if shipped else None
+    for k, units in UNITS:
+        if old is not None:
+            for f in cut_off(Graph.read(old[1][k]), units):
+                before.setdefault((units, f["data"]["sub"]), []).append((f["data"]["x"], f["data"]["y"]))
+    out = []
+    for k, units in UNITS:
+        for f in cut_off(Graph.read(parts[1][k]), units):
+            d = f["data"]
+            if not any(math.hypot(d["x"] - x, d["y"] - y) <= NEW_PIECE for x, y in before.get((units, d["sub"]), [])):
+                out.append(f)
+    return out
+
+
 def check_built(win: bytes, lines, decks=(), objects=()) -> list[dict]:
     """Every check on a built map: `win` its mapinfo.win, `lines` the mod's roads (map points, in the order the build
     added them), `decks` its bridges ((x0, y0, x1, y1, road number or 0)), `objects` what stands near the roads

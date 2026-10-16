@@ -7895,7 +7895,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if game is None:
                 # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
-            self._starter.modded(game, folders, instance, name, say, words=said)
+            self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True)
             say(f"Built in {instance}. To see your changes in the game:")
             for line in look or ["Your unit changes show in every game mode."]:
                 say(f"  {line}")

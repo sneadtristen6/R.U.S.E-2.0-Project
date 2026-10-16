@@ -1914,7 +1914,8 @@ def report_lines(findings, show_all: bool = False, keep: int = 3):
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
-                    cache: Path | None = None, built_from: dict | None = None) -> BuildResult:
+                    cache: Path | None = None, built_from: dict | None = None,
+                    cut_off_errors: bool = False) -> BuildResult:
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
@@ -3410,6 +3411,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         say(f"movement: {name}, every circle's links checked")
                         for note in notes:
                             say(f"  {note}")
+                # last of all: ground the mods' changes cut off from the rest of the map, which the map as shipped
+                # didn't have (rusemod.mapcheck.new_cut_off): an order onto it crashes the game. An error when
+                # `cut_off_errors` (the Studio's Test in game: the owner, 2026-10-16, a map that would crash is refused
+                # first), else a warning (a player's Play goes on, told where)
+                from .cover import member as movement_member
+                from .mapcheck import new_cut_off
+                from .nav import NavError
+                for name in sorted(set(blocks) | set(bridge_spans) | set(new_roads) | set(roads_out)):
+                    win = changed_members.get(movement_member(name))
+                    if win is None:
+                        continue
+                    try:
+                        shipped = bytes(data_arc.read(data_arc.find(movement_member(name))))
+                    except KeyError:
+                        shipped = None
+                    try:
+                        found = new_cut_off(shipped, win)
+                    except (NavError, ValueError, struct.error):
+                        continue  # (a file the check can't read: the build's own checks have said what they could)
+                    for f in found:
+                        d = f["data"]
+                        text = (f"{name}: ground around ({d['x']}, {d['y']}), {d['metres']} m across, is cut off for "
+                                f"{d['units']}: they can't reach it from the rest of the map, and an order onto it "
+                                f"crashes the game. Open a way to it (the Movement brush's Open, or Erase), or take "
+                                f"back what closed it{_meant(game, name)}")
+                        if cut_off_errors:
+                            result.findings.append(Finding("error", text))
+                        else:
+                            warn(text)
                 for name, (map_moves, ids) in moves.items():  # the mods' starting points on the final ground
                     from .scenario import start_ground_problems
                     # rule: start-ground

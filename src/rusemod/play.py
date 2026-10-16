@@ -261,7 +261,8 @@ class Starter:
         say("Starting R.U.S.E. through Steam…")
         self.open_url(STEAM_PLAY)
 
-    def modded(self, game: Path, mod_folders, instance: Path, name: str, say, words: dict | None = None) -> None:
+    def modded(self, game: Path, mod_folders, instance: Path, name: str, say, words: dict | None = None,
+               cut_off_errors: bool = False) -> None:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
@@ -271,7 +272,9 @@ class Starter:
         When the copy was last built from these same mods (every file as it was), this game build and this app, and
         is still as that build left it, nothing is built: the game starts from it (rusemod.instance.needs_build). A
         mod changed while the build read it leaves the copy with no record, so the next Play builds again.
-        `words`: the app's words in the player's language, for the lines meant for the player (in_words)."""
+        `words`: the app's words in the player's language, for the lines meant for the player (in_words).
+        `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
+        instead of being a warning (build_and_write)."""
         from .backup import _claim, _release
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
@@ -293,6 +296,7 @@ class Starter:
                 keep_order(mods)
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),
+                                         cut_off_errors=cut_off_errors,
                                          built_from=made_from)
                 if built_from(game, mod_folders)["key"] != made_from["key"] or mod_stamps(mod_folders) != stamps:
                     forget(str(instance))  # changed while the build read it: the copy may hold some of each

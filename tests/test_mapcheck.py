@@ -238,6 +238,47 @@ class Built(unittest.TestCase):
         self.assertEqual([(f["key"], f["level"], f["say"]) for f in broken], [("build", "fail", "mc_build_failed")])
 
 
+def mapinfo(infantry, vehicles):
+    """A mapinfo.win holding these two graphs (and a road network of one road)."""
+    net = RoadNet([(0.0, 0.0), (5000.0, 0.0)], [(0, 1, 500)])
+    net.add_road([(0.0, 2000.0), (27000.0, 2000.0)])
+    head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+    return nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+        net.to_bytes(), infantry.to_bytes(), vehicles.to_bytes(), b"cover")) + b"tail", {})
+
+
+class NewPieces(unittest.TestCase):
+    """The owner, 2026-10-16: a map that would crash the game is refused before Test in game. The build compares each
+    changed map's movement with the map as shipped: ground the mods cut off that the map didn't have stops the
+    Studio's build (rusemod.build cut_off_errors) and is a warning in a player's Play."""
+
+    def test_only_what_the_mod_cut_off(self):
+        shipped = mapinfo(river([(40000.0, 41000.0, 3200.0)]), river())  # the map already has one island for infantry
+        self.assertEqual(mapcheck.new_cut_off(shipped, shipped), [])     # nothing new: nothing said
+        built = mapinfo(river([(40000.0, 41000.0, 3200.0)]), river([(30000.0, 52000.0, 3200.0)]))
+        found = mapcheck.new_cut_off(shipped, built)
+        self.assertEqual([(f["data"]["units"], f["data"]["x"], f["data"]["y"], f["level"]) for f in found],
+                         [("vehicles", 30000, 52000, "fail")])
+        moved_a_little = mapinfo(river([(40500.0, 41000.0, 3200.0)]), river())  # the old island, a little changed
+        self.assertEqual(mapcheck.new_cut_off(shipped, moved_a_little), [])
+        self.assertEqual(len(mapcheck.new_cut_off(None, built)), 2)       # no shipped file: every piece is new
+        self.assertEqual(mapcheck.new_cut_off(shipped, b"not a mapinfo.win"), [])
+
+    def test_the_build_stops_the_studio_and_warns_a_player(self):
+        from rusemod import build
+        src = Path(build.__file__).read_text(encoding="utf-8")
+        at = src.index("from .mapcheck import new_cut_off")
+        block = src[at:at + 2600]
+        self.assertIn("found = new_cut_off(shipped, win)", block)
+        self.assertIn('if cut_off_errors:\n                            result.findings.append(Finding("error", text))',
+                      block)
+        self.assertIn("warn(text)", block)
+        play = (Path(build.__file__).with_name("play.py")).read_text(encoding="utf-8")
+        self.assertIn("cut_off_errors=cut_off_errors,", play)
+        studio = (Path(build.__file__).parents[1] / "ruse_studio" / "api.py").read_text(encoding="utf-8")
+        self.assertIn("words=said, cut_off_errors=True)", studio)
+
+
 class Words(unittest.TestCase):
     def test_every_word_the_check_says(self):
         source = Path(mapcheck.__file__).read_text(encoding="utf-8")
