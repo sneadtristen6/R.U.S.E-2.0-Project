@@ -1,11 +1,16 @@
 """rusemod.parcels: a dab's parcel, the ground the map's own paint and borders give the field under it (made-up
-pictures), and scenery.expand_field_parcel on it (test_scenery's made-up map)."""
+pictures), and scenery.expand_field_parcel on it (test_scenery's made-up map). Skipped without numpy: the apps carry
+it, and without it the field brush keeps to the fields' squares (test_scenery)."""
 import math
 import unittest
 
-import numpy as np
+try:
+    import numpy as np
+    from rusemod import parcels
+except ImportError:
+    np = parcels = None
 
-from rusemod import parcels, scenery
+from rusemod import scenery
 import test_scenery as ts
 from test_scenery import FB_DESCS
 
@@ -26,6 +31,7 @@ def under_disc(cx, cy, r):
     return lambda xs, ys: (np.asarray(xs) - cx) ** 2 + (np.asarray(ys) - cy) ** 2 < r * r
 
 
+@unittest.skipIf(np is None, "numpy isn't here: rusemod.parcels needs it")
 class Find(unittest.TestCase):
     """find_parcel on a row of squares 0..20,000 along x, 2,048 to each side across (a field of 9 x 1 pieces)."""
     SQUARES = [(float(x), 0.0, 2048.0, 0.0) for x in range(0, 20001, 2500)]
@@ -75,6 +81,7 @@ class Find(unittest.TestCase):
         self.assertEqual(sum(bits), int(q.mask.sum()))
 
 
+@unittest.skipIf(np is None, "numpy isn't here: rusemod.parcels needs it")
 class Brush(unittest.TestCase):
     """expand_field_parcel on test_scenery's field A (ploughed rows facing 30 round (20000, 20000)) with a parcel
     covering the half of A on the +x side of x = 20,000."""

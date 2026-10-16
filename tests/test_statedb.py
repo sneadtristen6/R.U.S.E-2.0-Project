@@ -1,7 +1,13 @@
 """The level-build state database's water bit (rusemod.statedb), on made-up meshes (tests/test_groundgen.py's way) and
-a made-up SDB: drained ground made land, new water made water, Eugen's own marks left where the ground didn't change."""
+a made-up SDB: drained ground made land, new water made water, Eugen's own marks left where the ground didn't change.
+Skipped without numpy: the apps carry it, and without it the build leaves the file as it is and says so."""
 import struct
 import unittest
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
 
 from rusemod import statedb
 from rusemod.groundgen import Shape, fine_cells, make_mesh
@@ -42,6 +48,7 @@ def mesh(strokes) -> Tms:
     return Tms(t.to_bytes())
 
 
+@unittest.skipIf(numpy is None, "numpy isn't here: statedb.with_water needs it")
 class Water(unittest.TestCase):
     def test_a_drained_sea_is_made_land(self):
         """The blank farm's case: the copied map's sea (0x09 everywhere), the new ground flat and dry: every cell made

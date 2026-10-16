@@ -2171,6 +2171,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         # map's shore cells mean nothing there); an edited one keeps Eugen's where it didn't change
                         new_state, dried, flooded = with_water(state, Tms(changed_members[GROUND["highdef"]]),
                                                                None if drawn else Tms(before))
+                    except ImportError:  # the apps carry numpy; plain Python builds on without this step
+                        made["warnings"].append(f"{', '.join(ids)}: {name}: its level-build state (output.sdb) "
+                                                f"needs numpy to be redrawn: scenery on drained ground may not show")
                     except (ValueError, struct.error, IndexError) as exc:
                         made["warnings"].append(f"{', '.join(ids)}: {name}: its level-build state (output.sdb) "
                                                 f"couldn't be read ({exc}): scenery on drained ground may not show")
