@@ -41,10 +41,14 @@ def hand_positions(positions, parents, fill=0xDD) -> bytes:
 
 
 def hand_normal(n) -> int:
-    """The packed normal laid out by hand: dominant axis tag, a in the top 16 bits, b in 12 bits (wrapping)."""
+    """The packed normal laid out by hand: dominant axis tag, a in the top 16 bits, b in 12 bits (wrapping); exactly
+    along an axis, a hair off it (a field 0x7FFD, b field 0xFFF: the game casts no shadows over 0x80000005, F-23)."""
     k = max(range(3), key=lambda i: abs(n[i]))
     a, b = n[(k + 1) % 3] / abs(n[k]), n[(k + 2) % 3] / abs(n[k])
-    return (round(a * 32768) + 32768) << 16 | (round(b * 8192) % 4096) << 4 | 2 * k + (n[k] > 0)
+    hi, mid = round(a * 32768) + 32768, round(b * 8192) % 4096
+    if (hi, mid) == (0x8000, 0):
+        hi, mid = 0x7FFD, 0xFFF
+    return hi << 16 | mid << 4 | 2 * k + (n[k] > 0)
 
 
 def hand_storage(positions=POSITIONS, parents=PARENTS, normals=NORMALS, opaque=None):
@@ -201,10 +205,14 @@ class Positions(unittest.TestCase):
 
 class Normals(unittest.TestCase):
     def test_word_layout(self):
-        self.assertEqual(encode_normal((0.0, 0.0, 1.0)), 0x80000005)         # +z, a = b = 0
-        self.assertEqual(encode_normal((0.0, 0.0, -1.0)), 0x80000004)
-        self.assertEqual(encode_normal((1.0, 0.0, 0.0)), 0x80000001)
-        self.assertEqual(encode_normal((0.0, -1.0, 0.0)), 0x80000002)
+        # exactly along an axis (a = b = 0) is written a hair off it (AXIS_NUDGE): the game casts no shadows over a
+        # ground stored 0x80000005, and no shipped map stores such a word (F-23)
+        self.assertEqual(encode_normal((0.0, 0.0, 1.0)), 0x7FFDFFF5)         # +z
+        self.assertEqual(encode_normal((0.0, 0.0, -1.0)), 0x7FFDFFF4)
+        self.assertEqual(encode_normal((1.0, 0.0, 0.0)), 0x7FFDFFF1)
+        self.assertEqual(encode_normal((0.0, -1.0, 0.0)), 0x7FFDFFF2)
+        self.assertEqual(encode_normal((1e-6, 0.0, 1.0)), 0x7FFDFFF5)        # rounds to the axis: nudged too
+        self.assertEqual(encode_normal((0.0001, 0.0, 1.0)) >> 16, 32771)      # off the axis: as it is
         w = encode_normal((0.5, -0.25, 1.0))                                  # +z: a = 0.5, b = -0.25
         self.assertEqual(w >> 16, 32768 + 16384)
         self.assertEqual((w >> 4) & 0xFFF, (-2048) & 0xFFF)
@@ -212,8 +220,9 @@ class Normals(unittest.TestCase):
         self.assertEqual(encode_normal((0.2, 0.7, 0.1)), hand_normal((0.2, 0.7, 0.1)))   # +y: a = z/y, b = x/y
 
     def test_decode_gives_the_unit_normal_back(self):
-        for n in [(0.1, -0.2, 0.9), (-0.9, 0.1, 0.2), (0.15, 0.7, 0.1), (0.0, 0.0, -1.0), (0.7, 0.1, -0.7)]:
+        for n in [(0.1, -0.2, 0.9), (-0.9, 0.1, 0.2), (0.15, 0.7, 0.1), (0.7, 0.1, -0.7)]:
             self.assertTrue(close(decode_normal(encode_normal(n)), unit(n), 1e-4), n)
+        self.assertTrue(close(decode_normal(encode_normal((0.0, 0.0, -1.0))), (0.0, 0.0, -1.0), 2e-4))   # nudged
 
     def test_b_wraps_when_it_exceeds_a_quarter(self):
         n = (0.1, 0.4, 1.0)                                    # +z, b = 0.4: round(0.4 * 8192) = 3277 > 2047
@@ -227,8 +236,10 @@ class Normals(unittest.TestCase):
 
     def test_every_word_survives_decode_then_encode(self):
         # 0x8635 is the shipped tie (a = -1: x and z equal, tagged z); 0xFF5 is the same tie at the other end of b
-        for w in [0x8635, 0x1234_5675, 0xFFFF_FFF0, 0x0000_0FF5, 0x7FFF_8003, 0x8000_0001, 0x8000_0004]:
+        for w in [0x8635, 0x1234_5675, 0xFFFF_FFF0, 0x0000_0FF5, 0x7FFF_8003, 0x7FFD_FFF5, 0x8001_FFF5]:
             self.assertEqual(encode_normal(decode_normal(w)), w, hex(w))
+        for w in [0x8000_0001, 0x8000_0004, 0x8000_0005]:         # exactly along an axis: comes back nudged
+            self.assertEqual(encode_normal(decode_normal(w)), 0x7FFD_FFF0 | (w & 15), hex(w))
 
     def test_tie_picks_the_later_axis(self):
         self.assertEqual(encode_normal((-0.7, -0.1, 0.7)) & 15, 5)
@@ -242,7 +253,7 @@ class Normals(unittest.TestCase):
         self.assertEqual(len(data), 16)
         self.assertEqual(data, struct.pack("<4I", *(hand_normal(n) for n in NORMALS[0])))
         for got, want in zip(decode_normals(data), NORMALS[0]):
-            self.assertTrue(close(got, unit(want), 1e-4))
+            self.assertTrue(close(got, unit(want), 2e-4))   # straight up comes back a hair off it (AXIS_NUDGE)
         with self.assertRaises(ValueError):
             encode_normal((0.0, 0.0, 0.0))
         with self.assertRaises(ValueError):
@@ -271,7 +282,7 @@ class Container(unittest.TestCase):
             self.assertEqual(self.k.positions(s), POSITIONS[s])
             self.assertEqual(self.k.parents(s), PARENTS[s])
             for got, want in zip(self.k.normals(s), NORMALS[s]):
-                self.assertTrue(close(got, unit(want), 1e-4))
+                self.assertTrue(close(got, unit(want), 2e-4))   # straight up is stored a hair off it (AXIS_NUDGE)
 
     def test_unchanged_file_rebuilds_byte_identical(self):
         self.assertEqual(self.k.to_bytes(), self.raw)
@@ -352,7 +363,7 @@ class Editing(unittest.TestCase):
         k.set_normals(1, new)
         r = Kdt(k.to_bytes())
         for got, want in zip(r.normals(1), new):
-            self.assertTrue(close(got, unit(want), 1e-4))
+            self.assertTrue(close(got, unit(want), 2e-4))   # straight up comes back a hair off it (AXIS_NUDGE)
         self.assertEqual(r.positions(1), POSITIONS[1])
         self.assertEqual(r.subtrees[0], k.subtrees[0])
 

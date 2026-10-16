@@ -510,6 +510,8 @@ MARGIN = 5000.0       # added to a new block's box around its objects' positions
 LEAF_MOST = 4         # entries a leaf of a new block's tree lists at most, as the shipped trees' leaves do (1 to 4)
 BLOCK_MOST = 12000    # objects one new block holds at most: each is listed twice (far and full), a tree node splits
                       # its entries at a 16-bit index, and the shipped maps' biggest block lists 39,699 (M03_Italie)
+WIDEN_MOST = 2500     # objects one widened carrier takes at most (add_objects): D-Day's blocks hold up to 2,830 in
+                      # 99 of 100 (measured 2026-10-15); the blank farm's field 7, drawn, hung 1,637 on one
 GROUP = 40000.0       # objects further apart than this (400 m) go in separate new blocks, each hung on an object near
                       # them: the game draws a block when the object it hangs on is in view (owner's test, 2026-09-30:
                       # towers hung on a decal 3 km away never showed)
@@ -875,14 +877,16 @@ def _subtree(things: list, box: tuple, lo: int, mask: int) -> tuple[list[int], l
     return entries, nodes
 
 
-def _chunks(things: list) -> list[list]:
-    """`things` in parts of at most BLOCK_MOST, neighbours together: halved along the longer spread of their places."""
-    if len(things) <= BLOCK_MOST:
+def _chunks(things: list, most: int | None = None) -> list[list]:
+    """`things` in parts of at most `most` (BLOCK_MOST), neighbours together: halved along the longer spread of their
+    places."""
+    most = BLOCK_MOST if most is None else most
+    if len(things) <= most:
         return [things]
     spread_x = max(p.x for p in things) - min(p.x for p in things)
     spread_y = max(p.y for p in things) - min(p.y for p in things)
     part = sorted(things, key=(lambda p: p.x) if spread_x >= spread_y else (lambda p: p.y))
-    return _chunks(part[:len(part) // 2]) + _chunks(part[len(part) // 2:])
+    return _chunks(part[:len(part) // 2], most) + _chunks(part[len(part) // 2:], most)
 
 
 def _groups(objects: list[NewObject]) -> list[list[NewObject]]:
@@ -932,18 +936,48 @@ def add_objects(data: bytes, objects: list[NewObject]) -> tuple[bytes, list[str]
                 notes += more
             continue
         groups, lost, short = _carriers(Scenery(data), things, roads)
-        if short:
-            notes.append(f"{short} new object(s) hang on a block the map lists at fewer detail levels than they ask "
-                         f"(no block listed at theirs holds their spot): drawn at those levels only")
-        if lost and not roads:  # in open ground: one carrier's box in the top block's tree widened over them
-            data, at, more = _widen(Scenery(data), data, lost)
-            notes += more
-            if at is not None:
-                gone, kept = {id(p) for p in lost}, {}
+        if (lost or short) and not roads:
+            # in open ground, or where only blocks listed at fewer levels than they ask lie (a blank map's erased
+            # ground: its big sticker blocks are listed middle-only, 0x10, so copied crops and stones there were
+            # never drawn; the blank farm, 2026-10-15): one carrier listed at their levels, its box in the top
+            # block's tree widened over them, as the map hangs its own crops on blocks listed at every level
+            # (2026-10-15: one carrier 5.6 km off took all 30,183 in four blocks nested one in the next, and none was
+            # drawn; field 7's 1,637 in one block on a carrier 218 m off were.) In parts of neighbours of at most
+            # WIDEN_MOST, each on its own carrier, the nearest one listed at the part's levels (and for far view when
+            # one of them asks for it), so no new block wraps another.
+            move = list({id(p): p for p in lost + short}.values())
+            lost_ids = {id(p) for p in lost}
+            placed: dict[int, list] = {}
+            # those asking to be drawn from far (trees: a far-listed carrier, often farther off) in parts of their
+            # own, so the rest (crops, stones, low plants) take the nearest carriers listed at their levels
+            asks_far = [p for p in move if getattr(p, "levels", 0) & 0x08]
+            rest = [p for p in move if not getattr(p, "levels", 0) & 0x08]
+            parts = (_chunks(rest, WIDEN_MOST) if rest else []) + (_chunks(asks_far, WIDEN_MOST) if asks_far else [])
+            for part in parts:
+                levels = 0
+                for p in part:
+                    levels |= _needs(p)
+                far = any(getattr(p, "levels", 0) & 0x08 for p in part)
+                data, at, more = _widen(Scenery(data), data, part, levels, far, avoid=set(placed))
+                if at is None and far:   # no far-listed reference listed at their levels: drawn from middle in
+                    data, at, more = _widen(Scenery(data), data, part, levels, avoid=set(placed))
+                if at is None and any(id(p) in lost_ids for p in part):  # none listed at their levels: the open ground's
+                    data, at, more = _widen(Scenery(data), data, part, avoid=set(placed))   # on any
+                notes += more
+                if at is not None:
+                    placed.setdefault(at, []).extend(part)
+            if placed:
+                gone, kept = {id(p) for ps in placed.values() for p in ps}, {}
                 for a, group in groups:
                     kept.setdefault(a, []).extend(p for p in group if id(p) not in gone)
-                kept.setdefault(at, []).extend(lost)
-                groups, lost = [(a, g) for a, g in kept.items() if g], []
+                for a, ps in placed.items():
+                    kept.setdefault(a, []).extend(ps)
+                groups = [(a, g) for a, g in kept.items() if g]
+                lost = [p for p in lost if id(p) not in gone]
+                short = [p for p in short if id(p) not in gone]
+        if short:
+            notes.append(f"{len(short)} new object(s) hang on a block the map lists at fewer detail levels than they "
+                         f"ask (no block listed at theirs holds their spot): drawn at those levels only")
         outside += lost
         for at, group in groups:
             for part in _chunks(group):  # a carrier given more than one block holds: one wrapping the next
@@ -1965,6 +1999,28 @@ FILL_GAP = {"plants": 260.0, "stones": 390.0, "stickers": 780.0, "trees": 260.0,
 # to the recipe, never past it, and never takes anything off)
 
 
+RAISED = 0.3 * 260.0         # an object this far over the ground stands on something (CopyArea.src_avoid)
+BUILDING_REACH = 3.0 * 260.0  # and within this of a building's model box, on that building: D-Day's raised wall plants
+                              # (veget_EU_033/035/036) lie within 1 m of one 72-78% of the time, within 3 m 83-85%;
+                              # objects on the ground 2.6% (measured 2026-10-16)
+
+
+def _in_places(places, x: float, y: float) -> bool:
+    """Whether (x, y) lies in one of `places`: (x, y, r) circles or (x, y, half u, half v, ux, uy, gap) rectangles
+    and all within `gap` of them (CopyArea.avoid)."""
+    for p in places:
+        if len(p) == 3:
+            if (x - p[0]) ** 2 + (y - p[1]) ** 2 < p[2] * p[2]:
+                return True
+            continue
+        cx, cy, hu, hv, ux, uy, gap = p
+        du = abs((x - cx) * ux + (y - cy) * uy) - hu
+        dv = abs(-(x - cx) * uy + (y - cy) * ux) - hv
+        if max(du, 0.0) ** 2 + max(dv, 0.0) ** 2 < gap * gap or (du < 0.0 and dv < 0.0):
+            return True
+    return False
+
+
 @dataclass(frozen=True)
 class CopyArea:
     """A shape whose ground detail comes from elsewhere on a map: the source is the shape moved by (sx, sy) and
@@ -2009,6 +2065,9 @@ class CopyArea:
     src_clip: tuple | None = None
     avoid: tuple = ()
     harvest: tuple = ()
+    src_avoid: tuple = ()   # buildings of the SOURCE (avoid's rectangles) the copy doesn't take: an object raised
+                            # more than RAISED over the ground with its source place in one (or within its gap) stood
+                            # on that building (wall plants, window boxes), and is left out (expand_field_copy)
     skip: tuple = ()
     inside: object = field(default=None, compare=False)
 
@@ -2020,17 +2079,7 @@ class CopyArea:
 
     def avoids(self, x: float, y: float) -> bool:
         """Whether (x, y) lies in one of the `avoid` places."""
-        for p in self.avoid:
-            if len(p) == 3:
-                if (x - p[0]) ** 2 + (y - p[1]) ** 2 < p[2] * p[2]:
-                    return True
-                continue
-            cx, cy, hu, hv, ux, uy, gap = p
-            du = abs((x - cx) * ux + (y - cy) * uy) - hu
-            dv = abs(-(x - cx) * uy + (y - cy) * ux) - hv
-            if max(du, 0.0) ** 2 + max(dv, 0.0) ** 2 < gap * gap or (du < 0.0 and dv < 0.0):
-                return True
-        return False
+        return _in_places(self.avoid, x, y)
 
     def source_clip(self):
         """The source rectangle the copy's objects must come from (`src_clip`), or None."""
@@ -2508,13 +2557,16 @@ def field_under(sc: Scenery, x: float, y: float, halves: dict | None = None) -> 
     return min(fields, key=lambda f: min(math.hypot(m[3] - x, m[7] - y) for _s, m, _k, _h in f))
 
 
-def expand_field_copy(fc: FieldCopy, sc: Scenery, group: int = 0, halves: dict | None = None):
+def expand_field_copy(fc: FieldCopy, sc: Scenery, group: int = 0, halves: dict | None = None,
+                      buildings: dict | None = None):
     """What a field copy does to the map whose scenery is `sc` (as it ships): (erases, copies, stamps, notes). The
     field is brush_fields' field under (sx, sy) (the biggest, where two meet there); every point within `border` of
     one of its row stickers' squares is copied, turned `turn` round the field's middle onto (x, y): first what was
     there is erased (every kind, square by square), then every object standing there in the source is copied
     (CopyArea, all layers, landing only on the grown squares), then the picture (a hard stamp per grown square,
-    turned). Nothing is done where there's no field at (sx, sy)."""
+    turned). Buildings aren't copied, so with `buildings` (building_table) what stood raised on one of the source's
+    (within BUILDING_REACH of its model box: wall plants, window boxes) is left out too: copied alone it floated (the
+    blank farm's field 3, flowers 3-5 m up, 2026-10-16). Nothing is done where there's no field at (sx, sy)."""
     from .brush import Stroke
     field = field_under(sc, fc.sx, fc.sy, halves)
     if field is None:
@@ -2535,8 +2587,15 @@ def expand_field_copy(fc: FieldCopy, sc: Scenery, group: int = 0, halves: dict |
         grown.append((x, y, half + fc.border, math.cos(t), math.sin(t)))
     erases = [EraseArea(x, y, h, ERASE_DEFAULT, (), shape="square", dx=dx, dy=dy) for x, y, h, dx, dy in grown]
     reach = max(math.hypot(x - fc.x, y - fc.y) + h * math.sqrt(2.0) for x, y, h, _dx, _dy in grown)
+    on = ()
+    if buildings:   # the source's buildings round the field, which the copy leaves behind
+        pad = max(h for _s, _m, _k, h in field) + fc.border + BUILDING_REACH
+        box = (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad)
+        on = tuple((cx, cy, hu, hv, ux, uy, BUILDING_REACH)
+                   for _t, cx, cy, hu, hv, ux, uy, _gap in building_rects(sc, buildings, box))
     copies = [CopyArea(fc.x, fc.y, reach, fx - fc.x, fy - fc.y, fc.turn, FIELD_COPY_LAYERS, "square", 1.0, 0.0, "", None,
-                       False, group, near=tuple(grown), near_r=max(h for _x, _y, h, _dx, _dy in grown))]
+                       False, group, near=tuple(grown), near_r=max(h for _x, _y, h, _dx, _dy in grown),
+                       src_avoid=on)]
     stamps = []
     for x, y, h, dx, dy in grown:   # the picture: what lies under each grown square in the source, turned
         qx, qy = fx + (x - fc.x) * c + (y - fc.y) * s, fy - (x - fc.x) * s + (y - fc.y) * c
@@ -3934,7 +3993,7 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
             pad = max(FILL_GAP.values())   # what sits just outside the shape counts too
             taken = _Taken(sc, (tx0 - pad, ty0 - pad, tx1 + pad, ty1 + pad), here)
         counts = {g: 0 for g in a.layers}
-        mirrored = sized = off = dup = kept_off = cut = 0
+        mirrored = sized = off = dup = kept_off = cut = on_building = 0
         for sym, m, mask in walk_levels(src_sc, src, only):
             if sclip is not None and sclip.t2(m[3], m[7]) >= 1.0:
                 continue
@@ -3947,6 +4006,9 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
                 continue
             if a.avoid and a.avoids(w[3], w[7]):
                 kept_off += 1
+                continue
+            if a.src_avoid and m[11] > RAISED and _in_places(a.src_avoid, m[3], m[7]):
+                on_building += 1   # it stood on a building the copy doesn't take: it would float
                 continue
             size = math.hypot(w[0], w[4])
             if w[0] * w[5] - w[1] * w[4] < 0:
@@ -3981,6 +4043,7 @@ def copy_objects(data: bytes, areas: list[CopyArea], descs: dict,
                      + (f"; {off:,} left off where the map already has one (fill rule)" if off else "")
                      + (f"; {dup:,} left off where an earlier copy laid one (fill rule)" if dup else "")
                      + (f"; {kept_off:,} kept off a building" if kept_off else "")
+                     + (f"; {on_building:,} that stood on a building left behind left out" if on_building else "")
                      + (f"; {cut:,} laid harvested round hay and farm machines" if cut else "")
                      + (f"; {mirrored} mirrored left out" if mirrored else "")
                      + (f"; {sized} sized past 0.05-50 (or stretched past 0.2-5) left out" if sized else ""))
@@ -4122,9 +4185,9 @@ def _needs(p) -> int:
     return (getattr(p, "levels", 0) or ALL_TIERS) & ALL_TIERS & ~0x08
 
 
-def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tuple[int, list]], list, int]:
+def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tuple[int, list]], list, list]:
     """New things per carrier, as [(the top block's reference's `at`, its things)], the things in no carrier's
-    boxes, and how many things hang on a carrier listed at fewer levels than they ask. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
+    boxes, and the things that hang on a carrier listed at fewer levels than they ask. The game finds a block's items only through the leaf boxes of the top block's tree, and draws an object
     only while it walks the cell its origin lies in, so a thing has to lie in its carrier's leaf box (on D-Day 416
     of the 431 shipped road middles do; one carrier for a whole road left up to 1.8 km of it outside, and on Edge
     3 in 10 new objects 300 m off a village). Road pieces (walked by the road pass through the full list) go on a far-listed
@@ -4247,21 +4310,29 @@ def _carriers(sc: Scenery, things: list, roads: bool = False) -> tuple[list[tupl
             x0, y0, x1, y1 = _world_box(sc, it)
             return math.hypot(max(x0 - p.x, 0.0, p.x - x1), max(y0 - p.y, 0.0, p.y - y1)), (x1 - x0) * (y1 - y0)
         out.setdefault(min(far, key=gap).at, []).append(p)
-    short = 0 if roads else sum(1 for at, group in out.items() for p in group
-                                if at in cands and (cands[at].mask & _needs(p)) != _needs(p))
+    def short_of(at, p):  # listed at fewer levels than it asks, or asks to be drawn from far (a tree: the shipped
+        if at not in cands or (cands[at].mask & _needs(p)) != _needs(p):   # copy's own far bit) and the carrier
+            return at in cands                                             # isn't listed for far view over it
+        return bool(getattr(p, "levels", 0) & 0x08) and not (at in far_at and meets(cands[at].far, p, far_cell))
+    short = [] if roads else [p for at, group in out.items() for p in group if short_of(at, p)]
     return list(out.items()), left, short
 
 
-def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, list[str]]:
+def _widen(sc: Scenery, data: bytes, things: list, levels: int = 0, far: bool = False,
+           avoid=()) -> tuple[bytes, int | None, list[str]]:
     """For new objects in no carrier's box (_carriers: open ground, away from the map's villages, farms and woods),
+    or only in boxes of carriers listed at fewer levels than they ask (`levels`: the levels they ask together; only
+    a reference whose full-list listing carries them all is widened, none: (data, None, []); `far`: some ask to be
+    drawn from far too, so only a far-listed reference, its far-list leaf box widened as well; `avoid`: references
+    already given others, passed over while another will do, so no block wraps another),
     one reference of the top block, its leaf box in the full list widened over all their cells: the shares of the
     nodes on the way down to it grown, every other node's box still holding what it held (its shares worked out
     again, rounded outward), so the game reaches that reference, and the block that will wrap it, wherever they lie,
     from middle distance in, and nothing the map had is lost. Objects past the top block's own box (past the last
     of the map's own scenery: on the decals test copy, 26,960 of them) grow that box too, and so every node's. On
-    M03_Italie, a shipped map, every far-listed reference's boxes are the whole map. Picks the reference fewest
-    nodes down, far-listed first, then the one whose box is biggest already. Returns (the file, that reference's
-    `at`, notes); (data, None, []) when none can: a map whose top block has no tree."""
+    M03_Italie, a shipped map, every far-listed reference's boxes are the whole map. Picks the reference whose block
+    lies nearest them (_widen_choice). Returns (the file, that reference's `at`, notes); (data, None, []) when none
+    can: a map whose top block has no tree."""
     top = sc.blocks[0]
     nodes = _tree(top)
     if not nodes or not things:
@@ -4281,15 +4352,25 @@ def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, l
     children = {it.at for it in top.items if it.kind == "child"}
     far_at = {it.at for it in _far_children(sc)}
     cands = [(e, a) for e, a in enumerate(top.entries) if e >= split0 and a in children and e in boxes]
+    if levels:  # every node on its way down carries them (the game ANDs the masks down the chain)
+        cands = [(e, a) for e, a in cands
+                 if all((nodes[k][0] >> 20) & levels == levels for k in _path(nodes, e))]
+    far_entry: dict[int, int] = {}   # a far-listed reference's entry in the far list, its path drawn from far
+    if far:
+        for ef, a in enumerate(top.entries[:split0]):
+            if a in children and ef in boxes and a not in far_entry and \
+                    all((nodes[k][0] >> 20) & 0x08 for k in _path(nodes, ef)):
+                far_entry[a] = ef
+        cands = [(e, a) for e, a in cands if a in far_entry]
+    fresh = [c for c in cands if c[1] not in avoid]
+    cands = fresh or cands
     if not cands:
         return bytes(data), None, []
-
-    def area(b):
-        return (b[2] - b[0]) * (b[3] - b[1])
-    e, at = min(cands, key=lambda c: (len(_path(nodes, c[0])), c[1] not in far_at, -area(boxes[c[0]])))
-    toward = {}  # the nodes on the way down to entry e: the side each takes
-    for k in _path(nodes, e):
-        toward[k] = "L" if e < nodes[k][1] else "R"
+    e, at = _widen_choice(sc, cands, things, nodes, far_at)
+    toward: dict[int, set] = {}  # the nodes on the way down to entry e (and its far entry): the sides each takes
+    for entry in (e, far_entry[at]) if far else (e,):
+        for k in _path(nodes, entry):
+            toward.setdefault(k, set()).add("L" if entry < nodes[k][1] else "R")
     old: dict = {}  # every node's box and its sides' boxes, as they were
     todo = [(0, tuple(top.bbox))]
     while todo:
@@ -4314,13 +4395,14 @@ def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, l
         if w & 0x10000000:
             continue
         was, lw, rw = old[k]
-        lw = union(lw, want) if toward.get(k) == "L" else lw
-        rw = union(rw, want) if toward.get(k) == "R" else rw
+        sides = toward.get(k, ())
+        lw = union(lw, want) if "L" in sides else lw
+        rw = union(rw, want) if "R" in sides else rw
         axis = 0 if w & 3 == 0 else 1
         a0, ext = (box[0], box[2] - box[0]) if axis == 0 else (box[1], box[3] - box[1])
         if box == was:  # its own box as it was: its shares only grow, and only toward entry e
-            n1 = max(b1, _share(lw[axis + 2], a0, ext, up=True)) if toward.get(k) == "L" else b1
-            n2 = min(b2, _share(rw[axis], a0, ext, up=False)) if toward.get(k) == "R" else b2
+            n1 = max(b1, _share(lw[axis + 2], a0, ext, up=True)) if "L" in sides else b1
+            n2 = min(b2, _share(rw[axis], a0, ext, up=False)) if "R" in sides else b2
         else:  # its box grew: shares worked out again to hold what its sides held
             n1, n2 = _share(lw[axis + 2], a0, ext, up=True), _share(rw[axis], a0, ext, up=False)
         new[k][2:] = [n1, n2]
@@ -4346,12 +4428,33 @@ def _widen(sc: Scenery, data: bytes, things: list) -> tuple[bytes, int | None, l
     grown = Scenery(bytes(out))  # nothing the map had is lost: every entry's leaf box holds its old one
     after = _leaf_boxes(grown.blocks[0])
     if any(not (after[i][0] <= b[0] and after[i][1] <= b[1] and after[i][2] >= b[2] and after[i][3] >= b[3])
-           for i, b in boxes.items()) or not (after[e][0] <= want[0] and after[e][1] <= want[1]
-                                               and after[e][2] >= want[2] and after[e][3] >= want[3]):
+           for i, b in boxes.items()) or \
+            any(not (after[i][0] <= want[0] and after[i][1] <= want[1] and after[i][2] >= want[2]
+                     and after[i][3] >= want[3]) for i in ((e, far_entry[at]) if far else (e,))):
         raise SceneryError("widening the top block's tree lost a box")
-    return bytes(out), at, [f"{len(things)} new object(s) in open ground, away from the map's own scenery: one box of "
-                            f"the map's draw tree widened to reach them ({changed} of its {len(nodes)} node(s) "
-                            f"changed; not tried in the game yet)"]
+    where = ("away from the map's own scenery listed at their detail levels" if levels else
+             "in open ground, away from the map's own scenery")
+    it = next(i for i in top.items if i.at == at)
+    gap = _box_gap(_world_box(sc, it), things) / 260.0
+    return bytes(out), at, [f"{len(things)} new object(s) {where}: one block's box in the map's draw tree widened to "
+                            f"reach them{' (its far view too)' if far else ''}, a block {gap:.0f} m from them "
+                            f"({changed} of the tree's {len(nodes)} node(s) changed)"]
+
+
+def _box_gap(box: tuple, things: list) -> float:
+    """How far (map units) a world box (x0, y0, x1, y1) lies from the middle of `things`."""
+    mx, my = sum(p.x for p in things) / len(things), sum(p.y for p in things) / len(things)
+    x0, y0, x1, y1 = box
+    return math.hypot(max(x0 - mx, 0.0, mx - x1), max(y0 - my, 0.0, my - y1))
+
+
+def _widen_choice(sc: Scenery, cands: list, things: list, nodes: list, far_at: set) -> tuple[int, int]:
+    """Which (full-list entry, reference `at`) _widen stretches over `things`: the reference whose block lies nearest
+    them, then the one fewest nodes down. (Before 2026-10-15 it was the fewest nodes down, far-listed first, the
+    biggest box: on the blank farm a block 5.6 km off took 30,183 copied plants in four nested blocks, and none was
+    drawn in the game; field 7's, hung on a block 218 m off, were: F-45.)"""
+    items = {it.at: it for it in sc.blocks[0].items}
+    return min(cands, key=lambda c: (_box_gap(_world_box(sc, items[c[1]]), things), len(_path(nodes, c[0]))))
 
 
 # --- road pieces filed where the map files its own: among a block's items, in the leaf of its tree that holds them ---
