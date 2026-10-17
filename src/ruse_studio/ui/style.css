@@ -399,14 +399,34 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .test-problems .check-row > span:first-child { flex: 1 1 420px; }
 .test-problems .check-row > span + span { flex: none; white-space: nowrap; }  /* "(in test)" whole, never "(in tes t)" */
 .test-problems .check-row.fixed > span:first-child { text-decoration: line-through; color: var(--muted); }
-.status { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 5px 20px; border-top: 1px solid var(--line);
-          background: var(--panel); color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.status-close { margin-left: auto; padding: 0 8px; background: none; border: none; color: var(--muted); font-size: 16px;
-                line-height: 1; cursor: pointer; }
-.status-close:hover { color: var(--text, #fff); }
-.status.ok { color: var(--ok); }
-.status.error { color: var(--error); }
-.status.warn { color: var(--accent); }
+/* what just happened (app.js toast): cards stacked at the bottom right, the newest at the bottom */
+.toasts { position: fixed; right: 16px; bottom: calc(16px + var(--toasts-lift, 0px)); z-index: 900; display: flex; flex-direction: column; align-items: flex-end;
+          gap: 8px; max-width: min(440px, calc(100vw - 32px)); pointer-events: none; }
+.toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 10px 10px 12px;
+         background: var(--hud); border: 1px solid var(--hud-line); border-left-width: 4px; border-radius: var(--radius);
+         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); font-size: 13px; overflow-wrap: anywhere;
+         animation: toast-in 0.18s ease-out; transition: opacity 0.25s, transform 0.25s; }
+.toast.going { opacity: 0; transform: translateX(24px); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.toast.ok { border-left-color: var(--ok); }
+.toast.error { border-left-color: var(--error); }
+.toast.warn { border-left-color: #ffcf5c; }
+.toast.job { border-left-color: var(--accent); }
+.toast-mark { flex: none; width: 18px; text-align: center; font-weight: 700; }
+.toast.ok .toast-mark { color: var(--ok); }
+.toast.error .toast-mark { color: var(--error); }
+.toast.warn .toast-mark { color: #ffcf5c; }
+.toast.info .toast-mark { color: var(--muted); }
+.toast.job .toast-mark { width: 16px; height: 16px; margin: 1px; border: 2px solid var(--line); border-top-color: var(--accent);
+                         border-radius: 50%; animation: toast-spin 0.9s linear infinite; }
+@keyframes toast-spin { to { transform: rotate(360deg); } }
+.toast-body { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.toast-text { color: var(--text); }
+.toast-line { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toast-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.toast-actions:empty { display: none; }
+.toast-close { flex: none; padding: 0 4px; background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1; }
+.toast-close:hover { color: var(--text); }
 
 .no-index { position: fixed; inset: 60px 0 0 0; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; background: var(--bg); }

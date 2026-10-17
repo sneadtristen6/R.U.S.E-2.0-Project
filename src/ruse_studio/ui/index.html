@@ -934,7 +934,8 @@
     <div class="actions"><button id="ms-close" type="button" class="small ghost"></button></div>
   </dialog>
 
-  <footer id="status" class="status" role="status"></footer>
+  <!-- what just happened, as cards at the bottom right (app.js say, toast, jobCard): a problem stays until closed -->
+  <div id="status" class="toasts" role="status" aria-live="polite"></div>
 
   <section id="no-index" class="no-index hidden">
     <p id="no-index-text"></p>

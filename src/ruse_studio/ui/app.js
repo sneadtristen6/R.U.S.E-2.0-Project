@@ -52,22 +52,98 @@ function saveLang(lang) {
   Promise.resolve().then(() => api().set_pref("lang", lang)).catch(() => {});
 }
 
-// --- the bar at the bottom: what just happened ---
+// --- pop-ups: what just happened, as cards stacked at the bottom right (the owner's Studio 1.0 list, item 11, "job/
+// error pop-ups"; the design: studio-tools-design §11.5). A card that says something went fine (✓) fades after a few
+// seconds and a plain message after a few more; a problem (✗) stays until it's closed, with Report beside it (the
+// player posts it); a job's card (jobCard: Test in game) shows its latest line while it runs and becomes its result.
+// The same text again takes its card's place, and at most TOAST_MOST are up at once (the oldest that fades goes
+// first). Every card can be closed (owner, 2026-10-02: a failed test's message stayed with no way out). ---
+const TOAST_MOST = 4, TOAST_OK_MS = 4000, TOAST_INFO_MS = 8000, TOAST_GONE_MS = 250;
+const TOAST_MARKS = { ok: "✔︎", error: "✖︎", warn: "⚠︎", "": "ℹ︎" };  // drawn as text
+let lastSaid = "";   // the last message, for a copied test log
+
+function dropToast(card) {
+  if (!card || !card.isConnected || card.classList.contains("going")) return;
+  clearTimeout(card._fade);
+  card.classList.add("going");
+  setTimeout(() => card.remove(), TOAST_GONE_MS);
+}
+
+function fadeToast(card, ms) {   // gone after `ms`, the clock held while the mouse is on it
+  clearTimeout(card._fade);
+  card._fade = setTimeout(() => dropToast(card), ms);
+  card.onmouseenter = () => clearTimeout(card._fade);
+  card.onmouseleave = () => { card._fade = setTimeout(() => dropToast(card), ms / 2); };
+}
+
+// A card for `text` (kind "ok", "error", "warn", "job" or ""), its buttons `actions` [{label, tip, act}]. Returns it.
+function toast(text, kind, actions) {
+  const w = state.words || {}, box = $("status");
+  for (const c of box.querySelectorAll(".toast")) if (c._text === text && !c.classList.contains("job")) c.remove();
+  const mark = el("span", { className: "toast-mark", textContent: kind === "job" ? "" : TOAST_MARKS[kind] || TOAST_MARKS[""] });
+  const said = el("span", { className: "toast-text", textContent: text });
+  const buttons = el("div", { className: "toast-actions" });
+  const close = el("button", { type: "button", className: "toast-close", textContent: "×",
+    title: w.tip_status_close || "", ariaLabel: w.close || "Close" });
+  const card = el("div", { className: "toast " + (kind || "info") }, mark, el("div", { className: "toast-body" }, said, buttons), close);
+  card._text = text;
+  card._said = said;
+  card._buttons = buttons;
+  close.addEventListener("click", () => dropToast(card));
+  for (const a of actions || []) addToastAction(card, a);
+  box.append(card);
+  const cards = [...box.querySelectorAll(".toast:not(.going)")];
+  for (const old of cards.slice(0, Math.max(0, cards.length - TOAST_MOST))) {
+    if (!old.classList.contains("job")) dropToast(old);
+  }
+  if (kind === "ok") fadeToast(card, TOAST_OK_MS);
+  else if (kind !== "error" && kind !== "job") fadeToast(card, TOAST_INFO_MS);
+  return card;
+}
+
+function addToastAction(card, { label, tip, act }) {
+  const b = el("button", { type: "button", className: "link", textContent: label, title: tip || "" });
+  b.addEventListener("click", act);
+  card._buttons.append(b);
+  return b;
+}
+
+// A job's card: its latest line while it runs (line), then its result (done).
+function jobCard(text) {
+  const card = toast(text, "job");
+  card._said.append(el("span", { className: "toast-line muted" }));
+  return {
+    card,
+    line(t) { card.querySelector(".toast-line").textContent = t || ""; },
+    done(ok, message, actions) {
+      dropToast(card);
+      return message ? toast(message, ok ? "ok" : "error", actions) : null;
+    } };
+}
+
+// the cards stand above the test's log while it's open, so its Copy report and Close stay in reach
+function liftToasts() {
+  const panel = $("test-panel");
+  const up = panel && !panel.classList.contains("hidden") ? panel.offsetHeight : 0;
+  document.documentElement.style.setProperty("--toasts-lift", `${up}px`);
+}
+if ($("test-panel")) {
+  new ResizeObserver(liftToasts).observe($("test-panel"));
+  new MutationObserver(liftToasts).observe($("test-panel"), { attributes: true, attributeFilter: ["class"] });
+}
+
 function say(text, kind) {
-  const bar = $("status"), w = state.words || {};
-  bar.textContent = text || "";
-  bar.className = "status" + (kind ? " " + kind : "");
-  if (kind === "error" && text && w.report) {  // an error can go straight into a bug report (the player posts it)
-    const report = el("button", { type: "button", className: "link", textContent: w.report, title: w.tip_report || "" });
-    report.addEventListener("click", () => api().report_problem(text).catch(() => {}));
-    bar.append(" ", report);
+  if (!text) {   // a message taken back: the cards that fade go at once
+    for (const c of $("status").querySelectorAll(".toast")) {
+      if (!c.classList.contains("error") && !c.classList.contains("job")) dropToast(c);
+    }
+    return null;
   }
-  if (text) {  // every message can be closed (owner, 2026-10-02: a failed test's message stayed with no way out)
-    const close = el("button", { type: "button", className: "status-close", textContent: "×",
-      title: w.tip_status_close || "", ariaLabel: w.close || "Close" });
-    close.addEventListener("click", () => say(""));
-    bar.append(close);
-  }
+  const w = state.words || {};
+  lastSaid = text;
+  const actions = kind === "error" && w.report  // an error can go straight into a bug report (the player posts it)
+    ? [{ label: w.report, tip: w.tip_report, act: () => api().report_problem(text).catch(() => {}) }] : [];
+  return toast(text, kind || "", actions);
 }
 
 function problem(err) {
@@ -2581,12 +2657,13 @@ async function showUnit(address, via) {
 }
 
 // --- test the mod in the game ---
-async function follow(jobId, log, done) {
+async function follow(jobId, log, done, onLine) {   // onLine: each new line as it comes (a job's card)
   let seen = 0;
   const tick = async () => {
     let j;
     try { j = await api().job(jobId, seen); } catch (err) { problem(err); done(false); return; }
     for (const line of j.lines) log.textContent += line + "\n";
+    if (onLine && j.lines.length) onLine(j.lines[j.lines.length - 1]);
     log.scrollTop = log.scrollHeight;
     seen = j.count;
     if (j.state === "running") { setTimeout(tick, 500); return; }
@@ -2614,18 +2691,24 @@ async function testInGame() {
   $("test-problems").classList.add("hidden");
   $("test-panel").classList.remove("hidden");
   if (state.view === "settings") renderBackup();  // a restore waits for the test's copy
+  const w = state.words;
+  const showLog = { label: w.toast_log, tip: w.tip_toast_log, act: () => $("test-panel").classList.remove("hidden") };
+  const card = jobCard(w.test_running);   // its latest line while the copy is built, then its result
+  addToastAction(card.card, showLog);
   const finish = (ok, message, j) => {
     button.dataset.running = "0";
     button.disabled = !state.mod;
     if (state.view === "settings") renderBackup();
-    if (message) say(message, ok ? "ok" : "error");
+    if (message) lastSaid = message;
+    const report = { label: w.report, tip: w.tip_report, act: () => api().report_problem(message || "").catch(() => {}) };
+    card.done(ok, message, ok ? [showLog] : [showLog, ...(w.report ? [report] : [])]);
     // mistakes in the mods: each one listed with its fix, not the troubleshooter (it can't fix a mod)
     if (!ok && j && j.errors && j.errors.length) showTestProblems();
     else if (!ok) offerTroubleshoot();
   };
   try {
     const { job } = await api().test_in_game();
-    follow(job, log, finish);
+    follow(job, log, finish, (line) => card.line(line));
   } catch (err) { problem(err); finish(false); }
 }
 
@@ -2682,7 +2765,7 @@ async function copyText(text) {
 
 // The test's log and its message, for a bug report or Discord
 async function copyTestLog() {
-  const text = $("test-log").textContent + ($("status").firstChild ? "\n" + $("status").firstChild.textContent : "");
+  const text = $("test-log").textContent + (lastSaid ? "\n" + lastSaid : "");
   if (await copyText(text)) say(state.words.doc_copied, "ok");
 }
 
@@ -2695,10 +2778,9 @@ let doctorReport = "";
 // copy Windows won't delete, stopped every second test for a player, 2026-09-30)
 function offerTroubleshoot() {
   const w = state.words;
-  const link = el("button", { type: "button", className: "link", textContent: w.doc_troubleshoot_link, title: w.doc_intro });
-  link.addEventListener("click", openDoctor);
-  const close = $("status").querySelector(".status-close");  // the × stays last
-  if (close) close.before(" ", link); else $("status").append(" ", link);
+  const action = { label: w.doc_troubleshoot_link, tip: w.doc_intro, act: openDoctor };
+  const cards = $("status").querySelectorAll(".toast.error:not(.going)");   // on the newest problem's card
+  if (cards.length) addToastAction(cards[cards.length - 1], action); else toast(w.doc_intro, "error", [action]);
 }
 
 function openDoctor() {
