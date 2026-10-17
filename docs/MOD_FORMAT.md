@@ -291,6 +291,26 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   new vehicle) or *Custom uniform* (a squad: its soldiers, its bazooka man and its token's figure), then *Open in
   Blender* and *Bring back*. A unit can't have a copy and an imported `.glb` both. A file naming no model (the first
   ones) copies the model its `GfxDescriptor` draws.
+- **A map asset of its own** (a rock or cliff, a prop, a bush or plant, a tree): `files/assets/<name>/asset.toml`
+  beside its model (.glb, .gltf with its files beside it, or .3ds) becomes the scenery type `TypeWarrior/R2_<name>`
+  (`<name>` its folder's name in letters and digits: `rock_face_01` is `R2_RockFace01`), placed like any type in a
+  map's `scenery.toml`:
+
+  ```toml
+  kind    = "rock"            # rock, prop, plant or tree
+  model   = "rock_face_01_2k.gltf"
+  size    = 1.0               # times the model's own size, 0.01 to 100 (1: as modelled, a metre a metre)
+  source  = "polyhaven.com"   # optional, kept for the credits: source, author, licence
+  ```
+
+  The type is a copy of one of the game's of that kind (`RocherNormandie_01`, `TasPlanchesBois`,
+  `BuissonSec03_France`, `Chene_01`) with the model ours; the model goes into every model pack holding that type's
+  model, so it loads wherever that one does, at full detail (no size cap). A rock or prop is drawn the same at every
+  distance; a plant close and in its middle-distance picture; a tree is its leaves (the see-through materials:
+  glTF's `alphaMode` MASK or BLEND, the mask in the picture's alpha, or a `<name>_alpha_<size>.png` beside a
+  `<name>_diff_<size>` picture as Poly Haven's come) and its wood (the rest), with a far picture of its own made of
+  them. Each picture (PNG or TGA; at most 2048 a side) becomes a texture of its own in the game model's picture group.
+  Not seen in the game yet.
 - **A squad's uniform:** the game's soldiers of a nation wear one picture (the US's: its GIs, Rangers and paratroopers,
   and the crews of its guns and open vehicles), so a repaint of it in `files/replace/` changes them all. The Studio
   repaints a squad only as a custom uniform (its own copy, above). Seen in the game (T48: one squad repainted in

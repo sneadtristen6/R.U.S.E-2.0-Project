@@ -53,6 +53,8 @@ const BRUSHES = {
   paint: ["paint", "soft", 1, false, 7, 60],  // a colour from the wheel, the map's own colours or the eyedropper
   stamp: ["stamp", "soft", 1, false, 7, 100],  // the Texture brush: a texture picked, or this map's own ground from a spot
   texture: ["texture", "soft", 1, false, 7, 100],  // (its strokes with a texture picked: never a brush of the dock)
+  // one click: the ground the other brushes moved, inside it, painted by its new shape (rusemod.repaint)
+  repaint: ["repaint", "soft", 1, true, 3, 0],
 };
 const WATER = new Set(["water", "drain"]);
 const PAINT_KINDS = new Set(["paint", "stamp", "texture"]);  // their sizes grow on a curve (brushRadius)
@@ -145,6 +147,11 @@ function footT2(s, x, y) {
   const ox = x - s.x, oy = y - s.y, shape = footShape(s);
   if (shape === "square") {
     const dx = s.dx === undefined ? 1 : s.dx, dy = s.dy === undefined ? 0 : s.dy, n = Math.hypot(dx, dy) || 1;
+    if (s.length) {  // a rectangle: `length` along dx, dy, `radius` across (brush.Footprint.t2's sums)
+      const a = Math.abs(ox * dx + oy * dy) / n / s.length, b = Math.abs(oy * dx - ox * dy) / n / s.radius;
+      const m = a > b ? a : b;
+      return m * m;
+    }
     const m = Math.max(Math.abs(ox * dx + oy * dy), Math.abs(oy * dx - ox * dy)) / n / s.radius;
     return m * m;
   }
@@ -176,6 +183,10 @@ function boxOf(s) {
   if (shape === "line") return [Math.min(s.x, s.x2) - r, Math.max(s.x, s.x2) + r, Math.min(s.y, s.y2) - r, Math.max(s.y, s.y2) + r];
   if (shape === "square") {
     const dx = s.dx === undefined ? 1 : s.dx, dy = s.dy === undefined ? 0 : s.dy, n = Math.hypot(dx, dy) || 1;
+    if (s.length) {  // a rectangle: `length` along, `radius` across
+      const ex = (Math.abs(dx) * s.length + Math.abs(dy) * r) / n, ey = (Math.abs(dy) * s.length + Math.abs(dx) * r) / n;
+      return [s.x - ex, s.x + ex, s.y - ey, s.y + ey];
+    }
     const ex = (Math.abs(dx) + Math.abs(dy)) / n * r;  // a square turned any way: its corners' reach on either axis
     return [s.x - ex, s.x + ex, s.y - ex, s.y + ex];
   }
@@ -251,7 +262,18 @@ async function scene3d() {
   guide.renderOrder = 10;
   guide.visible = false;
   scene.add(startRing, guide);
-  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring, squareRing, startRing, guide,
+  // Map Paint's dab under the pointer, shaded as the build lays it (showShade): a flat square SHADE_SPAN radii across
+  const shadeCanvas = el("canvas", { width: SHADE_N, height: SHADE_N });
+  const shadeTex = new THREE.CanvasTexture(shadeCanvas);
+  shadeTex.colorSpace = THREE.SRGBColorSpace;
+  const shade = new THREE.Mesh(new THREE.PlaneGeometry(SHADE_SPAN, SHADE_SPAN),
+    new THREE.MeshBasicMaterial({ map: shadeTex, transparent: true, depthTest: false, depthWrite: false }));
+  shade.rotation.x = -Math.PI / 2;
+  shade.renderOrder = 9;
+  shade.visible = false;
+  shade.userData = { canvas: shadeCanvas, tex: shadeTex };
+  scene.add(shade);
+  mv.gl = { THREE, renderer, scene, camera, controls, draw, ground: null, water: null, ring, squareRing, startRing, guide, shade,
     raycaster: new THREE.Raycaster(), ndc: new THREE.Vector2() };
   watchPointer();
   setBrushMode(mv.brush.on);
@@ -419,8 +441,13 @@ function gridApply(g, s, average) {
 }
 
 function applyStroke(ed, s) {
+  if (s.brush === "repaint") { repaintSoon(); return; }  // the build paints what moved: asked for (repaintSoon)
+  if (!PAINT_KINDS.has(s.brush) && paint.repainted.length) repaintSoon();  // the ground changed under it
   if (PAINTS[s.brush]) { overlayDab(s); return; }  // the cover grid or where units go, not the ground
-  if (PAINT_KINDS.has(s.brush)) { paintDab(s); return; }  // the ground's picture (Map Paint), not its shape
+  if (PAINT_KINDS.has(s.brush)) {  // the ground's picture (Map Paint), not its shape
+    if (!(paint.batch && paint.coats.has(s))) paintDab(s);  // (a coat: laid already, under repainted: paintBegin)
+    return;
+  }
   if (WATER.has(s.brush)) {  // the water surface inside the circle, as rusemod.water does: no falloff
     const [xlo, xhi, ylo, yhi] = boxOf(s), level = s.brush === "water" ? s.level : ed.baseWater;
     near(ed.index, xlo, xhi, ylo, yhi, (i) => {
@@ -515,6 +542,7 @@ function reapply() {
   paintEnd();
   redraw(true, true);
   placeScenery();
+  if (paint.repainted.length) repaintSoon();  // (an Undo may have taken its Paint by shape stroke off)
 }
 
 // --- overlays over the ground, each a grid of cells drawn as a picture on the ground's own points (so they follow
@@ -1139,10 +1167,20 @@ const paint = {
   decals: true,   // a game texture's strokes get the game's own decals of it up close (groundtex.decal_grid)
   // the Texture brush's library (the owner, 2026-10-09: "On a blank map, there is no spot to copy from ... add all of
   // the game textures ... make it very easy to be able to add cool textures to your map")
-  from: "game",   // where Texture takes from: "game" (the game's textures), "map" (any map's ground), "own" (the mod's
-                  // own pictures), "online" (free pictures from the internet) or "spot" (a spot of this map, copied)
+  from: "palette",  // where Texture takes from: "palette" (ground materials measured on the game's maps), "game"
+                  // (the game's textures), "map" (any map's ground), "own" (the mod's own pictures), "online" (free
+                  // pictures from the internet) or "spot" (a spot of this map, copied)
   texture: null,  // the texture picked (its ref, rusemod.groundtex) and how big it's laid: 2^texScale times its own
   texScale: 0,
+  texTurn: 0,     // degrees the texture is turned on the ground (a stroke's turn: a field's rows run this way)
+  mask: "",       // the brush's pattern (rusemod.brushmask; "" plain), for Colour and Texture alike
+  dither: false,  // a speckled edge instead of a blend (brushmask.dither_at: up close only, the finest level)
+  beach: false,   // Paint by shape: sand round the new lakes (off: grass to the water, as D-Day's inland water)
+  masks: null,    // the masks themselves (StudioApi.brush_masks), once read: maskSampler
+  repainted: [],  // what the build lays for the map's Paint by shape strokes (StudioApi.repaint_preview): repaintSoon
+  coats: new Set(),  // the map's paint strokes, from the first, that coat it all (coatStrokes): laid under repainted
+  repaintFor: "", repaintTimer: 0,
+  materials: null, matLoading: false,  // the palette (StudioApi.ground_palette), once read
   textures: null, // the game's textures (StudioApi.ground_textures), once read; texGroup and texSearch filter them
   texGroup: "all", texSearch: "", texLoading: false,
   own: null,      // the mod's own pictures (StudioApi.ground_pictures)
@@ -1194,10 +1232,28 @@ function paintPixel(x, y) {
 function paintBegin() {
   const gl = mv.gl, mat = gl && gl.ground && gl.ground.material;
   // a map with no paint keeps its own picture (one painted earlier this session is put back to it)
-  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush)) && !(paint.canvas && paint.material === mat)) return;
+  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush)) && !paint.repainted.length
+      && !(paint.canvas && paint.material === mat)) return;
   if (!paintSurface()) return;
   paint.data.data.set(paint.base.data);
   paint.batch = true;
+  paint.coats = paint.repainted.length ? coatStrokes() : new Set();
+  for (const s of paint.coats) paintDab(s);  // a blank map's one-colour coat first (repaint.coats)
+  for (const s of paint.repainted) paintDab(s);  // what moved, by its new shape (repaintSoon): under the mod's paint
+}
+
+// The map's paint strokes, from the first, that coat the whole map at full strength (Blank Terrain's one colour):
+// Paint by shape goes over them and under the rest (rusemod.repaint.coats' test).
+function coatStrokes() {
+  const [x0, y0, , x1, y1] = mv.edit.bounds, out = new Set();
+  const corners = [[x0, y0], [x0, y1], [x1, y0], [x1, y1]];
+  for (const s of mv.brush.strokes) {
+    if (!PAINT_KINDS.has(s.brush)) continue;
+    if (!(s.brush === "paint" && s.edge === "hard" && (s.weight === undefined || s.weight >= 1) && !s.mask
+          && !s.dither && corners.every(([x, y]) => footT2(s, x, y) <= HARD_EDGE * HARD_EDGE))) break;
+    out.add(s);
+  }
+  return out;
 }
 
 function paintEnd() {
@@ -1209,10 +1265,10 @@ function paintEnd() {
 
 // The picture changed under the paint (the real tiles arrived): the paint again on the new one.
 function paintRefresh() {
-  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush))) return;
+  if (!mv.brush.strokes.some((s) => PAINT_KINDS.has(s.brush)) && !paint.repainted.length) return;
   if (!paintSurface()) return;
   paintBegin();
-  for (const s of mv.brush.strokes) if (PAINT_KINDS.has(s.brush)) paintDab(s);
+  for (const s of mv.brush.strokes) if (PAINT_KINDS.has(s.brush) && !paint.coats.has(s)) paintDab(s);
   paintEnd();
 }
 
@@ -1230,12 +1286,14 @@ function paintDab(s) {
   const ox = s.brush === "stamp" ? s.sx / pw : 0, oy = s.brush === "stamp" ? s.sy / ph : 0;
   const tex = s.brush === "texture" ? textureSampler(s, Math.max(pw, ph)) : null;
   if (s.brush === "texture" && !tex) return;  // its picture is on its way: the paint is laid again when it's in
+  const mask = maskSampler(s);
+  if (mask === undefined) return;  // the masks are on their way: the same
+  const speckle = s.dither && Math.max(pw, ph) <= DITHER_MOST;  // (as the build: only on pixels as fine as the finest)
   for (let r = ra; r <= rb; r++) {
     const y = y0 + (r + 0.5) * ph;
     for (let col = ca; col <= cb; col++) {
-      const t2 = footT2(s, x0 + (col + 0.5) * pw, y);
-      if (t2 >= 1) continue;
-      let a = edgeWeight(s.edge, "soft", t2) * weight;
+      const xm = x0 + (col + 0.5) * pw;
+      let a = dabCoverage(s, mask, speckle, xm, y, pw, ph) * weight;
       if (a <= 0) continue;
       const k = 4 * (r * W + col);
       let cr, cg, cbl;
@@ -1259,6 +1317,128 @@ function paintDab(s) {
   if (paint.batch) return;
   paint.ctx.putImageData(paint.data, 0, 0, ca, ra, cb - ca + 1, rb - ra + 1);
   paint.tex.needsUpdate = true;
+}
+
+// How much of a Colour or Texture stroke reaches the pixel centred at (x, y), pw x ph map units, before its opacity:
+// rusemod.groundpaint._coverage's sums (its fall-off; a mask's (maskSampler) reach or share; a speckled edge's all or
+// nothing where `speckle`).
+function dabCoverage(s, mask, speckle, x, y, pw, ph) {
+  let t2 = footT2(s, x, y);
+  if (t2 >= 1) return 0;
+  const m = mask ? mask(x, y) : 1;
+  if (mask && mask.edge) t2 *= mask.reach(m);  // an edge mask: how far it reaches here (brushmask.reach_scale)
+  if (t2 >= 1) return 0;
+  let cov = edgeWeight(s.edge, "soft", t2);
+  if (mask && !mask.edge) cov *= m;  // any other: as much as it shows
+  if (speckle && cov > 0) cov = ditherAt(s, x, y, pw, ph) < cov ? 1 : 0;  // a speckled edge: all or nothing
+  return cov;
+}
+
+// The dab the pointer would lay, shaded on the ground as the build lays it (Map Paint plan step 7): its colour (or
+// its texture, turned and mirrored as laid) as strongly as its opacity and fall-off, its pattern and speckles in it,
+// over a square SHADE_SPAN radii across. Colour and Texture only; a line's ends aren't known until it's drawn.
+const SHADE_N = 96, SHADE_SPAN = 2.2, SHADE_ALPHA = 0.85, HOLD_STILL = 3;
+function showShade(p) {
+  const gl = mv.gl, shade = gl && gl.shade;
+  if (!shade) return;
+  const name = mv.brush.name, kind = BRUSHES[name] && BRUSHES[name][0];
+  const on = Boolean(p) && mv.brush.on && (kind === "paint" || kind === "stamp") && mv.edit && !mv.brush.painting
+    && !(kind === "stamp" && paint.from !== "spot" && !paint.texture)
+    && !(kind === "stamp" && paint.from === "spot" && !paint.offset) && settingsOf(name).shape !== "line";
+  if (!on) {
+    if (shade.visible) { shade.visible = false; gl.draw(); }
+    return;
+  }
+  const s = newStroke(p.x / SCALE, p.z / SCALE, 0, null);
+  const tex = s.brush === "texture" ? textureSampler(s, (SHADE_SPAN * s.radius) / SHADE_N) : null;
+  const mask = maskSampler(s);
+  if ((s.brush === "texture" && !tex) || mask === undefined) { shade.visible = false; return; }  // on their way
+  const { canvas, tex: ctex } = shade.userData, ctx = canvas.getContext("2d"), img = ctx.createImageData(SHADE_N, SHADE_N);
+  const step = (SHADE_SPAN * s.radius) / SHADE_N, x0 = s.x - SHADE_SPAN * s.radius / 2, y0 = s.y - SHADE_SPAN * s.radius / 2;
+  const speckle = s.dither && step <= DITHER_MOST, rgb = s.brush === "paint" ? hexRgb(s.colour) : [235, 235, 235];
+  const weight = s.weight === undefined ? 1 : s.weight;
+  for (let j = 0; j < SHADE_N; j++) {
+    const y = y0 + (j + 0.5) * step;
+    for (let i = 0; i < SHADE_N; i++) {
+      const x = x0 + (i + 0.5) * step;
+      let a = dabCoverage(s, mask, speckle, x, y, step, step) * weight;
+      if (a <= 0) continue;
+      let c = rgb;
+      if (tex) { const t = tex(x, y); a *= t[3] / 255; c = t; }
+      img.data.set([c[0], c[1], c[2], Math.round(255 * SHADE_ALPHA * a)], 4 * (j * SHADE_N + i));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  ctex.needsUpdate = true;
+  const r = s.radius * SCALE;
+  shade.position.set(p.x, p.y + r * 0.02, p.z);
+  shade.scale.set(r, r, 1);
+  shade.visible = true;
+}
+
+// Paint by shape (Map Paint plan step 8): the build's own answer for the map's repaint strokes (the mod's ground
+// brushes applied as the build does, then rusemod.repaint's rules), asked for a moment after they or the ground change
+// (the Studio keeps it: a second time is quick), laid on the picture under the mod's own paint.
+function repaintSoon() {
+  clearTimeout(paint.repaintTimer);
+  paint.repaintTimer = setTimeout(askRepaint, 600);
+}
+
+async function askRepaint() {
+  const pack = mv.current, w = mv.words;
+  if (!mv.api || !pack) return;
+  if (mv.brush.painting) { repaintSoon(); return; }  // (a drag going on: its strokes aren't saved yet)
+  if (paint.repainted.length && !paint.repaintFor.startsWith(`${pack}|`)) {  // another map: not its answer
+    paint.repainted = [];
+    reapply();
+  }
+  const shape = mv.brush.strokes.filter((s) => !PAINT_KINDS.has(s.brush));
+  const key = `${pack}|${JSON.stringify(shape)}`;
+  if (key === paint.repaintFor) return;  // (the answer for these strokes is on already: a redraw asks again)
+  paint.repaintFor = key;
+  if (!shape.some((s) => s.brush === "repaint")) {
+    if (paint.repainted.length) { paint.repainted = []; reapply(); if (mv.gl) mv.gl.draw(); }
+    return;
+  }
+  try {
+    let res = await mv.api.repaint_preview(pack);
+    while (res && res.job) {
+      let view, since = 0;
+      do {
+        await wait(700);
+        view = await mv.api.job(res.job, since);
+        since = view.count;
+        brushNote(fill(w.repaint_working, { progress: view.lines.length ? view.lines[view.lines.length - 1] : "" }));
+      } while (view.state === "running");
+      if (view.state !== "done") throw new Error(view.message);
+      res = await mv.api.repaint_preview(pack);
+    }
+    if (pack !== mv.current || key !== paint.repaintFor) return;  // (another map, or newer strokes asked for)
+    paint.repainted = res.strokes;
+    for (const s of paint.repainted) loadSwatch(s.texture);
+    reapply();
+    if (mv.gl) mv.gl.draw();
+    if (res.said) brushNote(fill(w.repaint_done, { said: res.said }));
+  } catch (e) {
+    paint.repaintFor = "";
+    brushNote(fill(w.repaint_cant, { error: String((e && e.message) || e) }), "error");
+  }
+}
+
+// Holding still while painting builds the dab under the pointer up (Map Paint plan step 7): every HOLD_STEP ms with
+// the pointer still for HOLD_WAIT ms, its opacity rises by HOLD_MORE, up to all of it; it is saved as one dab with
+// its final amount.
+const HOLD_WAIT = 300, HOLD_STEP = 120, HOLD_MORE = 0.04;
+function holdBuildUp(group) {
+  const timer = setInterval(() => {
+    if (mv.brush.painting !== group) { clearInterval(timer); return; }
+    const s = group.strokes[group.strokes.length - 1];
+    if (!s || performance.now() - (mv.brush.movedAt || 0) < HOLD_WAIT || (s.weight === undefined ? 1 : s.weight) >= 1) return;
+    s.weight = Math.min(1, Math.round(((s.weight === undefined ? 1 : s.weight) + HOLD_MORE) * 100) / 100);
+    paintRefresh();
+    if (mv.gl) mv.gl.draw();
+    brushNote(fill(mv.words.paint_building, { pct: Math.round(s.weight * 100) }));
+  }, HOLD_STEP);
 }
 
 // The ground's colour at a map point as the picture shows it now (the paint too), or null off it.
@@ -1308,12 +1488,118 @@ function textureSampler(s, pixel) {
   let m = 0;
   while (m + 1 < sw.mips.length && rep / (sw.n >> (m + 1)) <= pixel * NEAREST_MIP) m++;
   const n = sw.n >> m, data = sw.mips[m], last = n - 1;
+  const turn = s.turn || 0, c = Math.cos(turn * Math.PI / 180), sn = Math.sin(turn * Math.PI / 180);
+  // a palette swatch's grain (rusemod.groundtex.Swatch.grain_sampler's sums): unturned, unmirrored, its own repeat
+  let g = null, gn = 0, grep = 0;
+  if (sw.grain) {
+    grep = sw.grainPeriod * rep / sw.period;
+    let gm = 0;
+    while (gm + 1 < sw.grain.length && grep / (sw.grainN >> (gm + 1)) <= pixel * NEAREST_MIP) gm++;
+    g = sw.grain[gm]; gn = sw.grainN >> gm;
+  }
   return (x, y) => {
-    const u = x / rep, v = y / rep;
-    const i = Math.min(last, Math.floor((u - Math.floor(u)) * n)), j = Math.min(last, Math.floor((v - Math.floor(v)) * n));
+    let f = 1;
+    if (g) {
+      const gu = x / grep, gv = y / grep;
+      const gi = Math.min(gn - 1, Math.floor((gu - Math.floor(gu)) * gn));
+      const gj = Math.min(gn - 1, Math.floor((gv - Math.floor(gv)) * gn));
+      f = g[gj * gn + gi] / sw.grainUnit;
+    }
+    if (turn) { const tx = x * c + y * sn; y = y * c - x * sn; x = tx; }  // turned back by the turn round (0, 0)
+    const u = x / rep, v = y / rep, cu = Math.floor(u), cv = Math.floor(v);
+    let i = Math.min(last, Math.floor((u - cu) * n)), j = Math.min(last, Math.floor((v - cv) * n));
+    if (sw.mirrored) {  // a palette swatch: each column of repeats mirrored or not along, each row across
+      if (coin(cu, 7)) i = last - i;
+      if (coin(cv, 68917)) j = last - j;
+    }
     const k = 4 * (j * n + i);
-    return [data[k], data[k + 1], data[k + 2], data[k + 3]];
+    if (f === 1) return [data[k], data[k + 1], data[k + 2], data[k + 3]];
+    return [Math.min(255, Math.floor(data[k] * f + 0.5)), Math.min(255, Math.floor(data[k + 1] * f + 0.5)),
+      Math.min(255, Math.floor(data[k + 2] * f + 0.5)), data[k + 3]];
   };
+}
+
+// A one-byte-a-pixel square at half its size (groundtex._halve_plane's sums: the mean of four, rounded half up).
+function halvePlane(n, p) {
+  const h = n >> 1, out = new Uint8Array(h * h);
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < h; i++) {
+      out[j * h + i] = (p[2 * j * n + 2 * i] + p[2 * j * n + 2 * i + 1] + p[(2 * j + 1) * n + 2 * i]
+        + p[(2 * j + 1) * n + 2 * i + 1] + 2) >> 2;
+    }
+  }
+  return out;
+}
+
+// A brush that is a picture (rusemod.brushmask): (x, y) -> how much its mask lets through there (0..1), read in the
+// stroke's own frame with the build's own sums; `edge` when the mask sets how far it reaches instead (`reach`: what
+// the point's distance out is multiplied by). null without a mask; undefined while the masks are on their way.
+function maskSampler(s) {
+  if (!s.mask) return null;
+  const mk = paint.masks;
+  if (!mk || !mk.data) { loadMasks(); return undefined; }
+  const data = mk.data[s.mask];
+  if (!data) return null;
+  const N = mk.size, shape = s.square ? "square" : s.shape || "round";
+  let x = s.x, y = s.y, ax, ay;
+  if (shape === "square") {
+    const dx = s.dx === undefined ? 1 : s.dx, dy = s.dy === undefined ? 0 : s.dy, n = Math.sqrt(dx * dx + dy * dy) || 1;
+    ax = dx / n; ay = dy / n;
+  } else if (shape === "line" && (s.x2 !== s.x || s.y2 !== s.y)) {
+    const sx = s.x2 - s.x, sy = s.y2 - s.y, n = Math.sqrt(sx * sx + sy * sy);
+    ax = sx / n; ay = sy / n; x = s.x + sx / 2; y = s.y + sy / 2;
+  } else {  // a round dab: one of the turnings, picked by where it is
+    let h = ((Math.floor(s.x) * 92821 + Math.floor(s.y) * 68917 + 29) % MIX + MIX) % MIX;
+    h = (h * h + 12345) % MIX;
+    [ax, ay] = mk.turns[Math.floor(h * mk.turns.length / MIX)];
+  }
+  const span = 2 * s.radius, wrap = (k) => ((k % N) + N) % N;
+  const f = (px, py) => {
+    const ox = px - x, oy = py - y;
+    const fu = ((ox * ax + oy * ay) / span + 0.5) * N - 0.5, fv = ((oy * ax - ox * ay) / span + 0.5) * N - 0.5;
+    const gu = Math.floor(fu), gv = Math.floor(fv), tu = fu - gu, tv = fv - gv;
+    const i0 = wrap(gu), i1 = wrap(gu + 1), j0 = wrap(gv) * N, j1 = wrap(gv + 1) * N;
+    return ((data[j0 + i0] * (1 - tu) + data[j0 + i1] * tu) * (1 - tv)
+      + (data[j1 + i0] * (1 - tu) + data[j1 + i1] * tu) * tv) / 255;
+  };
+  f.edge = mk.edge.includes(s.mask);
+  f.reach = (m) => { const r = mk.ragIn + (1 - mk.ragIn) * m; return 1 / (r * r); };
+  return f;
+}
+
+async function loadMasks() {
+  if (paint.masks || !mv.api) return;
+  paint.masks = { loading: true };
+  try {
+    const res = await mv.api.brush_masks();
+    const data = {};
+    for (const [name, b64] of Object.entries(res.masks)) data[name] = Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+    paint.masks = { size: res.size, turns: res.turns, edge: res.edge, ragIn: res.rag_in, names: Object.keys(res.masks),
+      data };
+  } catch (e) {
+    paint.masks = { size: 0, turns: [], edge: [], ragIn: 1, names: [], data: {} };
+  }
+  paintRefresh();
+  if (mv.gl) mv.gl.draw();
+  renderPaintPanel();
+}
+
+const DITHER_MOST = 1.5 * 160;  // brushmask.DITHER_MOST: a speckled edge only on pixels this small at most
+function ditherAt(s, px, py, pw, ph) {  // brushmask.dither_at: the same whole-number sums
+  const i = Math.floor(px / pw), j = Math.floor(py / ph);
+  const seed = ((Math.floor(s.x) * 31 + Math.floor(s.y) * 17) % MIX + MIX) % MIX;
+  let h = ((i * 92821 + j * 68917 + seed) % MIX + MIX) % MIX;
+  h = (h * h + 12345) % MIX;
+  h = (h * h + 54321) % MIX;
+  return (h + 0.5) / MIX;
+}
+
+const MIX = 65521;  // groundtex.MIX
+function coin(k, salt) {  // groundtex.coin: the same whole-number sums, so the page mirrors the repeats the build does
+  let h = ((k * 92821 + salt) % MIX + MIX) % MIX;
+  h = (h * h + 12345) % MIX;
+  h = (h * h + 54321) % MIX;
+  return Math.floor(h * 2 / MIX);
 }
 
 async function loadSwatch(ref) {
@@ -1328,7 +1614,21 @@ async function loadSwatch(ref) {
     ctx.drawImage(img, 0, 0);
     const mips = [ctx.getImageData(0, 0, res.n, res.n).data];
     for (let n = res.n; n > 1; n >>= 1) mips.push(halveRgba(n, mips[mips.length - 1]));
-    Object.assign(sw, { loading: false, period: res.period, n: res.n, mips, png: res.png });
+    let grain = null;
+    if (res.grain) {  // a palette swatch's grain: one byte a pixel (kept as grey), laid by itself over the colour
+      const gi = new Image();
+      gi.src = res.grain;
+      await gi.decode();
+      const gc = el("canvas", { width: res.grain_n, height: res.grain_n });
+      const gctx = gc.getContext("2d", { willReadFrequently: true });
+      gctx.drawImage(gi, 0, 0);
+      const rgba = gctx.getImageData(0, 0, res.grain_n, res.grain_n).data, top = new Uint8Array(res.grain_n * res.grain_n);
+      for (let q = 0; q < top.length; q++) top[q] = rgba[4 * q];
+      grain = [top];
+      for (let n = res.grain_n; n > 1; n >>= 1) grain.push(halvePlane(n, grain[grain.length - 1]));
+    }
+    Object.assign(sw, { loading: false, period: res.period, n: res.n, mips, png: res.png, mirrored: Boolean(res.mirrored),
+      grain, grainN: res.grain_n || 0, grainPeriod: res.grain_period || 0, grainUnit: res.grain_unit || 100 });
   } catch (e) {
     Object.assign(sw, { loading: false, error: String((e && e.message) || e) });
     brushNote(fill(mv.words.tex_cant_read, { error: sw.error }), "error");
@@ -1355,7 +1655,16 @@ function textureName(ref) {
     return said.length ? `${group} · ${said.join(", ")}` : group;
   }
   if (ref.startsWith("map:")) return fill(w.tex_from_map_name, { map: mapName(ref.split(":")[1]) });
+  if (ref.startsWith("swatch:")) {
+    const p = paletteSwatch(ref), name = ref.split(":")[2];
+    const said = w[`pal_${name}`] || (p ? p.label : name.replace(/_/g, " "));
+    return p ? `${mapName(p.map)} · ${said}` : said;
+  }
   return ref.slice(5).replace(/\.png$/i, "");
+}
+
+function paletteSwatch(ref) {  // the palette's row for it (StudioApi.ground_palette), once read
+  return paint.materials ? paint.materials.find((p) => p.ref === ref) || null : null;
 }
 
 function textureWhere(t) {  // the decor sets a game texture is in, as the game's theatres
@@ -1363,8 +1672,8 @@ function textureWhere(t) {  // the decor sets a game texture is in, as the game'
 }
 
 function texturePeriod(ref) {  // map units it repeats every at its own size, when known
-  const t = gameTexture(ref), sw = paint.swatches[ref], own = ownPicture(ref);
-  return t ? t.period : sw && sw.period ? sw.period : own && own.period ? own.period
+  const t = gameTexture(ref), sw = paint.swatches[ref], own = ownPicture(ref), p = paletteSwatch(ref);
+  return t ? t.period : p ? p.period : sw && sw.period ? sw.period : own && own.period ? own.period
     : ref && ref.startsWith("map:") ? 81920 : ref ? 8192 : 0;
 }
 
@@ -1377,8 +1686,9 @@ function metresText(m) {  // metres said: whole ones from 10 m, else to a tenth
 }
 
 function textureThumb(ref) {  // a small picture of it: the game's list's, or its own picture once in
-  const t = gameTexture(ref), sw = paint.swatches[ref];
+  const t = gameTexture(ref), sw = paint.swatches[ref], p = paletteSwatch(ref);
   if (t) return paint.textures.base + t.thumb;
+  if (p) return p.thumb;
   if (ref && ref.startsWith("file:") && paint.own) {
     const o = paint.own.find((p) => p.ref === ref);
     if (o) return o.thumb;
@@ -1390,7 +1700,8 @@ function pickTexture(ref) {
   if (ref !== paint.texture) paint.texScale = 0;  // a new texture starts at its own size
   paint.texture = ref;
   paint.picking = null;
-  if (paint.from === "spot") paint.from = ref.startsWith("map:") ? "map" : ref.startsWith("file:") ? "own" : "game";
+  if (paint.from === "spot") paint.from = ref.startsWith("map:") ? "map" : ref.startsWith("file:") ? "own"
+    : ref.startsWith("swatch:") ? "palette" : "game";
   loadSwatch(ref);
   renderPaintPanel();
   brushNote(fill(mv.words.tex_picked_note, { name: textureName(ref) }));
@@ -1435,6 +1746,55 @@ async function loadGameTextures() {
     paint.texLoading = false;
   }
   renderPaintPanel();
+}
+
+async function loadPalette() {
+  if (paint.materials || paint.matLoading || !mv.api) return;
+  paint.matLoading = true;
+  const w = mv.words;
+  try {
+    let res = await mv.api.ground_palette();
+    while (res && res.job) {
+      let view, since = 0;
+      do {
+        await wait(500);
+        view = await mv.api.job(res.job, since);
+        since = view.count;
+        if (view.lines.length) $("tex-state").textContent = fill(w.tex_palette_loading, { progress: view.lines[view.lines.length - 1] });
+      } while (view.state === "running");
+      if (view.state !== "done") throw new Error(view.message);
+      res = await mv.api.ground_palette();
+    }
+    if (res.error) throw new Error(res.error);
+    paint.materials = res.swatches;
+  } catch (e) {
+    $("tex-state").textContent = fill(w.tex_cant_read, { error: String((e && e.message) || e) });
+  } finally {
+    paint.matLoading = false;
+  }
+  renderPaintPanel();
+}
+
+// The palette: each map's materials under its name (a field's rows laid the way Turn says).
+function renderPalette() {
+  const w = mv.words, list = paint.materials;
+  if (!list) {
+    $("tex-palette-grid").replaceChildren();
+    if (!paint.matLoading) $("tex-state").textContent = fill(w.tex_palette_loading, { progress: "" });
+    loadPalette();
+    return;
+  }
+  const out = [];
+  for (const map of [...new Set(list.map((p) => p.map))]) {
+    out.push(el("div", { className: "muted small tex-theme", textContent: mapName(map) }));
+    const grid = el("div", { className: "tex-grid", role: "group" });
+    grid.append(...list.filter((p) => p.map === map).map((p) => textureButton(p.ref, p.thumb,
+      fill(p.kind === "rows" ? w.tip_tex_palette_rows : w.tip_tex_palette, { name: textureName(p.ref),
+        m: Math.round(p.period / METRE) }))));
+    out.push(grid);
+  }
+  $("tex-palette-grid").replaceChildren(...out);
+  $("tex-state").textContent = list.length ? "" : w.tex_none_found;
 }
 
 async function loadOwnPictures() {
@@ -1714,16 +2074,18 @@ async function takeOnline(src, id, name) {  // download one picture and keep it 
 
 function renderTexturePanel() {
   const w = mv.words, from = paint.from;
-  const sources = [["game", w.tex_from_game, w.tip_tex_from_game], ["map", w.tex_from_map, w.tip_tex_from_map],
-    ["own", w.tex_from_own, w.tip_tex_from_own], ["online", w.tex_from_online, w.tip_tex_from_online],
-    ["spot", w.tex_from_spot, w.tip_tex_from_spot]];
+  const sources = [["palette", w.tex_from_palette, w.tip_tex_from_palette], ["game", w.tex_from_game,
+    w.tip_tex_from_game], ["map", w.tex_from_map, w.tip_tex_from_map], ["own", w.tex_from_own, w.tip_tex_from_own],
+    ["online", w.tex_from_online, w.tip_tex_from_online], ["spot", w.tex_from_spot, w.tip_tex_from_spot]];
   $("tex-from").replaceChildren(...sources.map(([key, label, tip]) => {
     const b = el("button", { type: "button", className: "chip", textContent: label, title: tip });
     b.setAttribute("aria-pressed", String(from === key));
     b.addEventListener("click", () => { paint.from = key; paint.picking = null; renderPaintPanel(); brushNote(""); });
     return b;
   }));
-  for (const key of ["game", "map", "own", "online", "spot"]) $(`tex-${key}`).classList.toggle("hidden", from !== key);
+  for (const key of ["palette", "game", "map", "own", "online", "spot"]) {
+    $(`tex-${key}`).classList.toggle("hidden", from !== key);
+  }
   const search = $("tex-search");
   search.placeholder = w.tex_search;
   search.title = w.tip_tex_search;
@@ -1731,7 +2093,8 @@ function renderTexturePanel() {
   $("tex-map-list").title = w.tip_tex_map_list;
   $("tex-add").textContent = w.tex_own_add;
   $("tex-add").title = w.tip_tex_own_add;
-  if (from === "game") renderGameTextures();
+  if (from === "palette") renderPalette();
+  else if (from === "game") renderGameTextures();
   else if (from === "map") renderMapPick();
   else if (from === "own") renderOwnPictures();
   else if (from === "online") renderOnline();
@@ -1739,7 +2102,13 @@ function renderTexturePanel() {
   const picked = from !== "spot" && paint.texture;
   $("tex-now").classList.toggle("hidden", !picked);
   $("tex-size-row").classList.toggle("hidden", !picked);
+  $("tex-turn-row").classList.toggle("hidden", !picked);
   if (picked) {
+    const turn = $("tex-turn"), rows = paletteSwatch(paint.texture);
+    turn.value = String(paint.texTurn);
+    turn.title = w.tip_tex_turn;
+    $("tex-turn-label").textContent = fill(rows && rows.kind === "rows" ? w.tex_turn_rows : w.tex_turn,
+      { deg: paint.texTurn });
     const thumb = textureThumb(paint.texture), now = $("tex-now-pic");
     now.style.backgroundImage = thumb ? `url("${thumb}")` : "";
     $("tex-now-name").textContent = textureName(paint.texture);
@@ -1914,6 +2283,11 @@ function renderPaintPanel() {
     $("stamp-state").textContent = paint.from !== "spot" ? ""
       : paint.picking === "source" ? w.stamp_pick_help : paint.source || paint.offset ? w.stamp_from : w.stamp_from_none;
   }
+  renderMaskPicker();
+  const dither = $("paint-dither");  // a speckled edge (brushmask.dither_at), on the finest level only
+  dither.textContent = w.paint_dither;
+  dither.title = w.tip_paint_dither;
+  dither.setAttribute("aria-pressed", String(paint.dither));
   const clear = $("paint-clear");
   clear.textContent = w.paint_clear;
   clear.title = w.tip_paint_clear;
@@ -1924,6 +2298,39 @@ function renderPaintPanel() {
   decals.title = w.tip_paint_decals;
   decals.setAttribute("aria-pressed", String(paint.decals));
   $("paint-note").textContent = !colour && paint.from !== "spot" ? w.tex_note : w.paint_note;
+}
+
+// The brush's pattern (rusemod.brushmask): plain, or one of the masks, each shown as a small picture of itself.
+const maskThumbs = {};
+function maskThumb(name) {
+  const mk = paint.masks;
+  if (maskThumbs[name] || !mk || !mk.data || !mk.data[name]) return maskThumbs[name] || "";
+  const N = mk.size, c = el("canvas", { width: N, height: N }), ctx = c.getContext("2d"), img = ctx.createImageData(N, N);
+  for (let k = 0; k < N * N; k++) {
+    const v = mk.data[name][k];
+    img.data.set([v, v, v, 255], 4 * k);
+  }
+  ctx.putImageData(img, 0, 0);
+  maskThumbs[name] = c.toDataURL();
+  return maskThumbs[name];
+}
+
+function renderMaskPicker() {
+  const w = mv.words, mk = paint.masks;
+  $("paint-mask-label").textContent = w.paint_mask;
+  $("paint-mask-label").title = w.tip_paint_mask;
+  if (!mk || !mk.names) { loadMasks(); $("paint-mask").replaceChildren(); return; }
+  $("paint-mask").replaceChildren(...["", ...mk.names].map((name) => {
+    const label = w[`mask_${name || "none"}`] || name;
+    const b = el("button", { type: "button", className: "chip mask-chip", title: fill(w.tip_paint_mask_one,
+      { name: label }) });
+    const thumb = name ? maskThumb(name) : "";
+    if (thumb) b.append(el("img", { src: thumb, alt: "", draggable: false }));
+    b.append(document.createTextNode(label));
+    b.setAttribute("aria-pressed", String(paint.mask === name));
+    b.addEventListener("click", () => { paint.mask = name; renderPaintPanel(); });
+    return b;
+  }));
 }
 
 // The colour of the object under the pointer (a building, a prop, a tree drawn with its real model), for matching the
@@ -5492,7 +5899,7 @@ const DOCK = [
   ["cover", ["cover", "uncover", "town", "forest"]],
   ["movement", ["block", "block_infantry", "block_vehicles", "open", "open_infantry", "open_vehicles"]],
   ["roads", null], ["bridges", null],
-  ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp"]], ["erase", ["erase"]],
+  ["building", null], ["prop", null], ["vegetation", null], ["paint", ["paint", "stamp", "repaint"]], ["erase", ["erase"]],
   ["sectors", null], ["scen_move", null], ["scen_spawn", null], ["scen_start", null], ["scen_mark", null],
   ["scen_mission", null], ["scen_goals", null], ["scen_events", null], ["scen_cameras", null],
   ["check", null],
@@ -5584,7 +5991,8 @@ const ICONS = {
   erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18",
   paint: "M14 3l7 7-8 8-4 1 1-4z M12 5l7 7 M4 21c3 0 4-1 4-3",
   stamp: "M9 3h6v5l-2 2v3h6v4H5v-4h6v-3L9 8z M4 21h16",
-  move: "M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
+  repaint: "M3 19l6-9 4 5 3-4 5 8z M14 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z",  // a hill, a spark over it
+  move:"M12 3v18 M3 12h18 M9 6l3-3 3 3 M9 18l3 3 3-3 M6 9l-3 3 3 3 M18 9l3 3-3 3",
   spawn: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v8 M8 12h8",
   start: "M6 21V3 M6 4h11l-3 4 3 4H6",
   mark: "M12 21s-6-6.5-6-11a6 6 0 0 1 12 0c0 4.5-6 11-6 11z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
@@ -6610,6 +7018,10 @@ function renderBrushes() {
   $("brush-water-whole").textContent = w.water_whole;
   $("brush-water-whole").title = w.tip_water_whole;
   $("brush-water-whole").disabled = !b.mod;
+  $("brush-repaint").classList.toggle("hidden", b.name !== "repaint");  // Paint by shape: a sandy shore or not
+  $("brush-repaint-beach").textContent = w.repaint_beach;
+  $("brush-repaint-beach").title = w.tip_repaint_beach;
+  $("brush-repaint-beach").setAttribute("aria-pressed", String(paint.beach));
   $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
   $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
   renderBrushTip();
@@ -6688,12 +7100,16 @@ function newStroke(x, y, level, end) {
     s.brush = "texture";
     s.texture = paint.texture;
     if (paint.texScale) s.size = Math.round(texturePeriod(paint.texture) * Math.pow(2, paint.texScale));
+    if (paint.texTurn) s.turn = paint.texTurn;
     if (!paint.decals && paint.texture.startsWith("game:")) s.decals = false;
     s.weight = set.strength / 100;
     s.clear = paint.clear;
   } else if (kind === "stamp") {
     s.sx = paint.offset.sx; s.sy = paint.offset.sy; s.weight = set.strength / 100; s.clear = paint.clear;
   }
+  if ((kind === "paint" || kind === "stamp") && paint.mask) s.mask = paint.mask;  // a brush that is a picture
+  if ((kind === "paint" || kind === "stamp") && paint.dither) s.dither = true;    // a speckled edge
+  if (kind === "repaint" && paint.beach) s.beach = true;   // sand round the new lakes (rusemod.repaint)
   if (kind !== "ramp") Object.assign(s, tipFields(name, end));
   return s;
 }
@@ -6987,8 +7403,13 @@ function watchPointer() {
     frame = 0;
     if (!pending || !mv.brush.on || !gl.ground) return;
     const p = hitGround(pending);
+    const was = mv.brush.lastPointer;
+    if (!was || Math.hypot(pending.clientX - was.clientX, pending.clientY - was.clientY) > HOLD_STILL) {
+      mv.brush.movedAt = performance.now();  // (holding still builds the dab up: holdBuildUp)
+    }
     mv.brush.lastPointer = { clientX: pending.clientX, clientY: pending.clientY };  // where a stroke's count is said
     showRing(p);
+    showShade(p);
     if (mv.brush.name === "town") showTownPreview(p, pending);
     if (p && mv.brush.painting) paintTo(p);
   };
@@ -7072,6 +7493,11 @@ function watchPointer() {
     dab(group, x, y);
     if (stamp) finishStroke();
     else canvas.setPointerCapture(ev.pointerId);
+    if (!stamp && (kind === "paint" || kind === "stamp")) {  // Map Paint: holding still lays more (holdBuildUp)
+      mv.brush.movedAt = performance.now();
+      holdBuildUp(group);
+      showShade(null);
+    }
   });
   for (const type of ["pointerup", "pointercancel"]) {
     canvas.addEventListener(type, () => { if (mv.brush.painting) finishStroke(); });
@@ -8379,6 +8805,7 @@ function wire() {
   // the Texture brush's library: find, size, a map to take ground from, your own pictures
   $("tex-search").addEventListener("input", (e) => { paint.texSearch = e.target.value; renderGameTextures(); });
   $("tex-size").addEventListener("input", (e) => { paint.texScale = Number(e.target.value); renderPaintPanel(); });
+  $("tex-turn").addEventListener("input", (e) => { paint.texTurn = Number(e.target.value); renderPaintPanel(); });
   $("tex-map-list").addEventListener("change", (e) => chooseMapToPick(e.target.value));
   $("tex-map-pic").addEventListener("click", (ev) => takeMapSquare(ev));
   $("tex-add").addEventListener("click", () => $("tex-file").click());
@@ -8407,6 +8834,10 @@ function wire() {
     paint.decals = !paint.decals;
     renderPaintPanel();
   });
+  $("paint-dither").addEventListener("click", () => {  // for the strokes painted from now on
+    paint.dither = !paint.dither;
+    renderPaintPanel();
+  });
   $("brush-angle").addEventListener("input", (e) => {  // a square brush's turn: its outline follows at once
     settingsOf(mv.brush.name).angle = Number(e.target.value);
     $("brush-angle-label").textContent = fill(mv.words.brush_angle || "{deg}", { deg: e.target.value });
@@ -8426,6 +8857,10 @@ function wire() {
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-erase-whole").addEventListener("click", () => eraseWhole());
   $("brush-water-whole").addEventListener("click", () => waterWhole());
+  $("brush-repaint-beach").addEventListener("click", () => {  // for the Paint by shape strokes made from now on
+    paint.beach = !paint.beach;
+    renderBrushes();
+  });
   $("road-finish").addEventListener("click", () => finishRoad());
   $("road-undo").addEventListener("click", () => undoRoad());
   $("bridge-undo").addEventListener("click", () => undoBridge());

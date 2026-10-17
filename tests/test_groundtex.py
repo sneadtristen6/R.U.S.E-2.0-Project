@@ -1,6 +1,7 @@
 """Map Paint's textures (rusemod.groundtex): what names one, how a picture is made to repeat without a seam, its
 smaller copies, and the Texture brush's strokes laid on the made-up tile set of test_groundpaint (2 x 1 cells of
 1,000 map units), pixel by pixel and on whole grids alike."""
+import math
 import struct
 import tempfile
 import unittest
@@ -331,6 +332,41 @@ class TheStudio(unittest.TestCase):
         with self.assertRaises(gt.TextureError):
             self.api.add_ground_picture("bad.png", "data:image/png;base64,bm90IGEgcGljdHVyZQ==")
 
+    def test_the_palette(self):
+        """ground_palette: the palette's pictures made once in a job from the map each is measured on, then listed
+        with small pictures; ground_texture gives one mirrored, its repeat its side."""
+        import time
+        import ruse_studio.groundtex_calls as calls
+        got = self.api.ground_palette()  # no game: nothing to read the materials from
+        self.assertEqual(got["swatches"], [])
+        self.assertIn("M04_Cotentin", got["error"])
+        pack = Path(self.tmp.name, "M04_Cotentin.dat")
+        pack.write_bytes(b"made-up")
+        flat = lambda read, x, y, side, facing, n, cache=None: (n, bytes((120, 100, 40, 255)) * n * n)  # noqa: E731
+        made = []
+        with mock.patch.object(calls, "find_pack", lambda game, name: None if name == "ZZ_Win.dat" else pack), \
+                mock.patch.object(self.api, "_game", lambda: Path(self.tmp.name)), \
+                mock.patch.object(calls.Edat, "open", lambda path: mock.MagicMock()), \
+                mock.patch.object(gt, "map_patch", lambda *a, **k: made.append(a[1:5]) or flat(*a, **k)):
+            job = self.api.ground_palette()["job"]   # (no ZZ_Win.dat: the swatches without their grain)
+            end = time.time() + 30
+            while self.api.job(job)["state"] == "running" and time.time() < end:
+                time.sleep(0.05)
+            self.assertEqual(self.api.job(job)["state"], "done", self.api.job(job))
+            pal = gt.palette()
+            self.assertEqual(len(made), len(pal))  # each read from its map once
+            listed = self.api.ground_palette()["swatches"]
+            self.assertEqual([s["ref"] for s in listed], list(pal))
+            self.assertEqual(len(made), len(pal))  # then kept: not read again
+            wheat = next(s for s in listed if s["name"] == "wheat")
+            self.assertEqual((wheat["kind"], wheat["map"], wheat["period"]), ("rows", "M04_Cotentin",
+                                                                              pal["swatch:dday:wheat"].side))
+            self.assertTrue(wheat["thumb"].startswith("data:image/png;base64,"))
+            one = self.api.ground_texture("swatch:dday:wheat")
+            self.assertEqual((one["period"], one["mirrored"]), (pal["swatch:dday:wheat"].side, True))
+        with self.assertRaises(gt.TextureError):
+            self.api.ground_texture("swatch:dday:none")
+
     def test_the_build_reads_the_mods_own_picture_in_its_strokes(self):
         from rusemod.build import BuildError, load_mod
         from rusemod.dxt import png_bytes
@@ -600,6 +636,371 @@ class Online(unittest.TestCase):
         for bad in (-1.0, float("nan"), "30", 1e9):
             with self.assertRaises(gt.TextureError):
                 self.api.add_ground_picture("bad", pic, bad)
+
+
+def stripes(n: int) -> bytes:
+    """Rows along i (a field's rows): each row j its own shade, a dark furrow every 4th; dark top to light bottom, so
+    its top and bottom meet in a seam."""
+    out = bytearray()
+    for j in range(n):
+        v = 30 if j % 4 == 0 else 40 + 200 * j // n
+        out += bytes((v, v // 2, 10, 255)) * n
+    return bytes(out)
+
+
+def turned(n: int, px: bytes) -> bytes:
+    """The picture with its columns and rows swapped."""
+    return b"".join(px[4 * (i * n + j):4 * (i * n + j) + 4] for j in range(n) for i in range(n))
+
+
+ROWS = gt.Swatch.make("swatch:t:rows", 32, stripes(32), 64.0, mirrored=True)
+PLAIN = gt.Swatch.make("swatch:t:plain", 32, ramp(32), 64.0, mirrored=True)
+DOWN = gt.Swatch.make("swatch:t:down", 32, turned(32, ramp(32)), 64.0, mirrored=True)
+COINS = [1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1]  # coin(k, 7) for k from -3 to 8
+
+
+class Palette(unittest.TestCase):
+    """The named palette's swatches: each repeat mirrored its own way, no seam whichever way two neighbours are."""
+
+    def test_which_way_each_repeat_is_mirrored(self):
+        self.assertEqual([gt.coin(k, 7) for k in range(-3, 9)], COINS)  # (the Studio's the same)
+        for salt in (7, 68917):
+            flips = [gt.coin(k, salt) for k in range(-64, 64)]
+            self.assertLess(abs(sum(flips) / len(flips) - 0.5), 0.15)  # each about as often
+            alike = sum(a == b for a, b in zip(flips, flips[1:])) / (len(flips) - 1)
+            self.assertLess(abs(alike - 0.5), 0.15)  # the next alike about as often as chance
+        for ci in range(-4, 4):
+            for cj in range(-4, 4):  # along i the same down a column of repeats, across it the same along a row
+                self.assertEqual(gt.mirror_of(ci, cj) & 1, gt.mirror_of(ci, 99) & 1)
+                self.assertEqual(gt.mirror_of(ci, cj) & 2, gt.mirror_of(-99, cj) & 2)
+
+    def test_no_seam_whichever_way_two_repeats_are_mirrored(self):
+        for sw in (PLAIN, DOWN):  # a ramp along each way: its two ends 200 apart before it's mended
+            at = sw.sampler(64.0, 2.0)  # 2 units a pixel: its finest
+            worst = 0
+            for k in range(-6, 6):
+                for t in range(1, 64, 3):
+                    edge = 64.0 * k
+                    worst = max(worst, abs(at(edge - 1.0, t + 0.5)[0] - at(edge + 1.0, t + 0.5)[0]),
+                                abs(at(t + 0.5, edge - 1.0)[0] - at(t + 0.5, edge + 1.0)[0]))
+            self.assertLess(worst, 20, sw.ref)
+        self.assertGreater(abs(ramp(32)[0] - ramp(32)[4 * 31]), 200)
+        self.assertEqual(PLAIN.mips[0][1], gt.seamless(32, ramp(32)))  # its pixels: made seamless as any texture
+        self.assertNotEqual(PLAIN.digest, gt.Swatch.make("swatch:t:plain", 32, ramp(32), 64.0).digest)
+
+    def test_the_games_own_grain_under_a_swatchs_colour(self):
+        """F-56: a palette swatch with a detail is its picture averaged over DETAIL_SPLIT (low_pass) and the detail's
+        grain laid by itself over it (grain_of, Swatch.grain_sampler): unmirrored, so no fold line shows; about 1 on
+        average, so the colour from afar is the swatch's own; light and dark up close; the scalar sampler and the
+        painter's numpy sums the same bytes."""
+        from rusemod import paintnp
+        from rusemod.numpy2 import np
+        from rusemod.brush import Stroke
+        dn, rep = 32, 32 * 40.0   # 40 units a pixel: x4 ground's finest
+        detail = bytes(v for j in range(dn) for i in range(dn)
+                       for v in ((40, 200, 40, 255) if (i // 2 + j // 2) % 2 else (10, 60, 10, 255)))
+        g = gt.grain_of(dn, detail, rep, gt.DETAIL_SPLIT)
+        self.assertEqual(len(g), dn * dn)
+        self.assertLess(abs(sum(g) / len(g) / gt.GRAIN_UNIT - 1.0), 0.08)   # about 1 on average
+        self.assertGreater(max(g) - min(g), 60)                             # the grain, light and dark
+        self.assertEqual(set(gt.grain_of(dn, bytes(4 * dn * dn), rep, gt.DETAIL_SPLIT)), {int(gt.GRAIN_UNIT)})
+        n, side = 64, 64 * 40.0
+        base = bytes(v for q in range(n * n) for v in (120, 90, 50, 255))
+        sw = gt.Swatch.make("swatch:t:g", n, base, side, mirrored=True, grain=(dn, g, rep))
+        self.assertEqual((sw.grain_period, sw.grain[0][0], len(sw.grain)), (rep, dn, 6))
+        self.assertNotEqual(sw.digest, gt.Swatch.make("swatch:t:g", n, base, side, mirrored=True).digest)
+        at = sw.sampler(side, 40.0)
+        got = [at(x * 40.0 + 20.0, y * 40.0 + 20.0) for y in range(-40, 40, 3) for x in range(-40, 40, 3)]
+        self.assertGreater(max(c[1] for c in got) - min(c[1] for c in got), 40)   # the grain shows up close
+        self.assertTrue(all(abs(c[0] / max(1, c[2]) - 120 / 50) < 0.2 for c in got if c[2] > 10))   # its hue
+        far = sw.sampler(side, 40.0 * 64)(10.0, 10.0)   # from afar: the grain's last mip, about 1
+        self.assertLess(max(abs(far[c] - (120, 90, 50)[c]) for c in range(3)), 8)
+        xs = np.arange(-40, 40) * 40.0 + 20.0
+        stroke = Stroke("texture", 0.0, 0.0, 1000.0, texture="swatch:t:g")
+        rgb, _a = paintnp._texture(stroke, sw, xs, xs, 40.0)
+        want = [[at(x, y)[:3] for x in xs] for y in xs]
+        self.assertEqual(rgb.astype(int).tolist(), [[list(c) for c in row] for row in want])   # the same bytes
+        self.assertTrue(all(p.detail.lower().endswith(".tgv") and p.detail_side > 0.0 for p in gt.palette().values()))
+        self.assertEqual((gt.detail_repeats(7800.0, 12000.0), gt.detail_repeats(10400.0, 4096.0)), (1, 3))
+        rows = bytes(v for j in range(n) for i in range(n) for v in ((200, 150, 90, 255) if i % 4 < 2 else
+                                                                      (90, 60, 30, 255)))   # rows 2 pixels wide
+        kept = gt.low_pass(n, rows, side, side / n)   # (a field: averaged over the map's pixel)
+        self.assertGreater(kept[0] - kept[4 * 2], 60)   # its rows still there
+        lost = gt.low_pass(n, rows, side, gt.DETAIL_SPLIT)
+        self.assertLess(abs(lost[0] - lost[4 * 2]), 40)   # (averaged over DETAIL_SPLIT they'd be gone)
+
+    def test_a_fields_rows_keep_running_one_way(self):
+        at = ROWS.sampler(64.0, 2.0)
+        for ci in range(-4, 4):
+            for cj in range(-4, 4):  # along a row inside a repeat, away from its mended edges: one shade
+                for row in (12.5, 21.5, 36.5):
+                    shades = {at(64.0 * ci + x, 64.0 * cj + row)[0] for x in (10.5, 20.5, 30.5, 40.5, 50.5)}
+                    self.assertEqual(len(shades), 1, (ci, cj, row))
+
+    def test_some_repeats_mirrored_some_not(self):
+        at = PLAIN.sampler(64.0, 2.0)
+        ways = set()
+        for ci in range(8):  # the ramp rises along x in some repeats, falls in others
+            x0 = 64.0 * ci
+            ways.add(at(x0 + 52.5, 32.5)[0] > at(x0 + 12.5, 32.5)[0])
+            self.assertEqual(ways and at(x0 + 52.5, 32.5)[0] > at(x0 + 12.5, 32.5)[0],
+                             gt.mirror_of(ci, 0) & 1 == 0, ci)
+        self.assertEqual(ways, {True, False})
+
+    def test_a_turned_texture(self):
+        at, turned = RED_BLUE.sampler(64.0, 1.0), RED_BLUE.sampler(64.0, 1.0, 90.0)
+        for x, y in ((3.5, 5.5), (100.25, -7.75), (-40.5, 33.5)):
+            self.assertEqual(turned(x, y), at(y, -x))  # a point reads the texture at itself turned back
+
+    def test_the_same_with_and_without_numpy(self):
+        import rusemod.groundpaint as gp
+        if gp.whole_arrays() is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        made = strokes({"brush": "texture", "x": 500.0, "y": 450.0, "radius": 300.0, "texture": "swatch:t:rows",
+                        "turn": 33.0, "size": 90.0},
+                       {"brush": "texture", "x": 1300.0, "y": 500.0, "radius": 350.0, "texture": "swatch:t:plain",
+                        "size": 70.0, "edge": "hard"},
+                       {"brush": "texture", "x": 900.0, "y": 300.0, "radius": 200.0, "texture": "file:rb.png",
+                        "turn": -120.0, "size": 50.0})
+        swatches = {**SWATCHES, "swatch:t:rows": ROWS, "swatch:t:plain": PLAIN}  # (mirrored, turned, both)
+        grids = gp.paint_strokes(two_colour_store(), BOUNDS, made, swatches=swatches)
+        with mock.patch.object(gp, "whole_arrays", lambda: None):
+            pixels = gp.paint_strokes(two_colour_store(), BOUNDS, made, swatches=swatches)
+        self.assertEqual(sorted(grids), sorted(pixels))
+        for i in pixels:
+            self.assertEqual(grids[i], pixels[i], i)
+
+    def test_turn_in_the_file(self):
+        item = {"brush": "texture", "x": 1.0, "y": 2.0, "radius": 3.0, "texture": "swatch:dday:wheat", "turn": 154.08}
+        made = parse_strokes([item])
+        self.assertEqual(made[0].turn, 154.08)
+        import tomllib
+        self.assertEqual(parse_strokes(tomllib.loads(strokes_toml(made))["stroke"]), made)
+        with self.assertRaises(BrushError):
+            parse_strokes([{"brush": "paint", "x": 1.0, "y": 1.0, "radius": 1.0, "colour": "#000000", "turn": 5.0}])
+
+    def test_the_palette_in_the_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.toml"
+            path.write_text('[themes]\ndday = "D-Day"\n\n[[swatch]]\ntheme = "dday"\nname = "wheat"\nlabel = "Wheat"\n'
+                            'map = "M04_Cotentin"\nx = 100.0\ny = 200.0\nside = 8192.0\nfacing = 154.08\n'
+                            'kind = "rows"\nwhy = "a field"\n', encoding="utf-8")
+            got = gt.palette(path)
+            self.assertEqual(list(got), ["swatch:dday:wheat"])
+            w = got["swatch:dday:wheat"]
+            self.assertEqual((w.label, w.theme_label, w.map, w.side, w.facing, w.kind),
+                             ("Wheat", "D-Day", "M04_Cotentin", 8192.0, 154.08, "rows"))
+            lib = gt.Library(swatches=got)
+            self.assertEqual(lib.period_of("swatch:dday:wheat"), 8192.0)
+            with self.assertRaises(gt.TextureError):
+                lib.swatch("swatch:dday:wheat", 64)  # its map isn't there
+            with self.assertRaises(gt.TextureError):
+                lib.period_of("swatch:dday:sand")
+            for bad in ('theme = "other"', 'kind = "dots"', "side = 0.0", 'name = "Wheat!"'):
+                key = bad.split(" ")[0]
+                text = path.read_text(encoding="utf-8")
+                lines = [ln for ln in text.splitlines() if not ln.startswith(key + " ")]
+                (Path(tmp) / "bad.toml").write_text("\n".join(lines + [bad]) + "\n", encoding="utf-8")
+                with self.assertRaises(gt.TextureError, msg=bad):
+                    gt.palette(Path(tmp) / "bad.toml")
+
+    def test_a_patch_turned_to_its_rows(self):
+        """map_patch: the map's picture read turned, so the way `facing` points runs along the patch's columns."""
+        import rusemod.groundpaint as gp
+        import rusemod.tmst as tm
+
+        def picture(_store, _bounds, _level, _cache):
+            return lambda x, y: (int(x / 40.0) % 256, int(y / 40.0) % 256, 0)  # red grows along x, green along y
+        with mock.patch.object(gp, "_picture_sampler", picture), \
+                mock.patch.object(gp, "map_bounds", lambda _m: (0.0, 0.0, 20000.0, 20000.0)), \
+                mock.patch.object(tm, "Tmst", lambda *_a: None):
+            n, px = gt.map_patch(lambda _m: b"x", 5000.0, 5000.0, 1600.0, 90.0, 16)
+        self.assertEqual(n, 16)
+        red = [[px[4 * (j * n + i)] for i in range(n)] for j in range(n)]
+        green = [[px[4 * (j * n + i) + 1] for i in range(n)] for j in range(n)]
+        self.assertTrue(all(len(set(row)) <= 2 for row in red))   # along its columns' way: map +y, red the same
+        self.assertGreater(green[0][-1] - green[0][0], 30)          # ...and green growing
+        self.assertGreater(red[0][0] - red[-1][0], 30)               # across: map -x
+        self.assertEqual({px[4 * k + 3] for k in range(n * n)}, {255})
+
+
+class Masks(unittest.TestCase):
+    """Brushes that are pictures (rusemod.brushmask): five masks, read in each stroke's own frame, the same sums pixel
+    by pixel and on whole grids."""
+
+    def test_the_masks(self):
+        from rusemod import brushmask as bm
+        self.assertEqual(bm.MASKS, ("noise", "splatter", "ragged", "tufts", "ridge"))
+        for name in bm.MASKS:
+            m = bm.make(name)
+            self.assertEqual(len(m), bm.SIZE * bm.SIZE, name)
+            self.assertLess(min(m), 40, name)      # each lets nothing through somewhere...
+            self.assertGreater(max(m), 215, name)  # ...and (nearly) all somewhere else
+            bm._made.pop(name)
+            self.assertEqual(bm.make(name), m, name)  # made the same again (fixed seeds)
+        share = {n: sum(bm.make(n)) / (255 * bm.SIZE * bm.SIZE) for n in bm.MASKS}
+        self.assertLess(share["splatter"], 0.5)   # drops on bare ground
+        self.assertEqual((bm.reach_scale(1.0), bm.reach_scale(0.0)), (1.0, 1.0 / (bm.RAG_IN * bm.RAG_IN)))
+        for ax, ay in bm.TURNS:   # each turning a whole length
+            self.assertAlmostEqual(ax * ax + ay * ay, 1.0, places=15)
+        with self.assertRaises(ValueError):
+            bm.make("dots")
+
+    def test_read_in_the_stroke_s_own_frame(self):
+        from rusemod import brushmask as bm
+        from rusemod.brush import Stroke
+        data = bm.make("splatter")
+        s = Stroke("paint", 1000.0, 2000.0, 320.0, colour="#000000", shape="square", dx=0.0, dy=2.0, mask="splatter")
+        self.assertEqual(bm.frame(s), (1000.0, 2000.0, 0.0, 1.0, 640.0))
+        # a value's middle (10 + 0.5 columns along dx, dy from the frame's corner; 5 + 0.5 rows across) reads it alone
+        for i, j in ((10, 5), (0, 0), (63, 63), (31, 40)):
+            u, v = (i + 0.5) / 64 * 640.0 - 320.0, (j + 0.5) / 64 * 640.0 - 320.0
+            x, y = 1000.0 + u * 0.0 - v * 1.0, 2000.0 + u * 1.0 + v * 0.0
+            self.assertAlmostEqual(bm.mask_at(s, x, y), data[j * 64 + i] / 255.0, places=9, msg=(i, j))
+        # repeating: a whole width further on reads the same
+        self.assertAlmostEqual(bm.mask_at(s, 1000.0, 2000.0 + 640.0), bm.mask_at(s, 1000.0, 2000.0), places=9)
+        dab = Stroke("paint", 12345.6, -789.0, 50.0, colour="#000000", mask="noise")
+        self.assertIn(bm.frame(dab)[2:4], bm.TURNS)   # a round dab: one of the turnings, by where it is
+        turned = {bm.frame(Stroke("paint", 997.0 * k, 0.0, 50.0, colour="#000000", mask="noise"))[2:4]
+                  for k in range(40)}
+        self.assertGreater(len(turned), 6)   # dabs along a drag turned many ways
+
+    def test_the_same_with_and_without_numpy(self):
+        import rusemod.groundpaint as gp
+        if gp.whole_arrays() is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        made = strokes({"brush": "paint", "x": 500.0, "y": 450.0, "radius": 300.0, "colour": "#c8aa6e", "mask": "noise"},
+                       {"brush": "paint", "x": 1300.0, "y": 500.0, "radius": 350.0, "colour": "#202080", "edge": "hard",
+                        "shape": "square", "dx": 0.3, "dy": 1.0, "mask": "splatter"},
+                       {"brush": "texture", "x": 900.0, "y": 300.0, "radius": 200.0, "texture": "file:rb.png",
+                        "mask": "ragged", "weight": 0.8},
+                       {"brush": "paint", "x": 200.0, "y": 700.0, "radius": 90.0, "colour": "#ffffff", "shape": "line",
+                        "x2": 900.0, "y2": 800.0, "mask": "ridge"},
+                       {"brush": "paint", "x": 1700.0, "y": 300.0, "radius": 1.2, "colour": "#00ff00", "mask": "tufts"})
+        grids = gp.paint_strokes(two_colour_store(), BOUNDS, made, swatches=SWATCHES)
+        with mock.patch.object(gp, "whole_arrays", lambda: None):
+            pixels = gp.paint_strokes(two_colour_store(), BOUNDS, made, swatches=SWATCHES)
+        self.assertEqual(sorted(grids), sorted(pixels))
+        for i in pixels:
+            self.assertEqual(grids[i], pixels[i], i)
+
+    def test_a_splattered_patch_leaves_ground_between_its_drops(self):
+        from rusemod.groundpaint import paint_strokes
+        s = two_colour_store()
+        plain = Tmst(*s.rebuild(paint_strokes(s, BOUNDS, strokes(
+            {"brush": "paint", "x": 300.0, "y": 250.0, "radius": 120.0, "colour": "#ff0000", "edge": "hard"}))))
+        s = two_colour_store()
+        drops = Tmst(*s.rebuild(paint_strokes(s, BOUNDS, strokes(
+            {"brush": "paint", "x": 300.0, "y": 250.0, "radius": 120.0, "colour": "#ff0000", "edge": "hard",
+             "mask": "splatter"}))))
+        spots = [(300.0 + dx, 250.0 + dy) for dx in range(-60, 61, 6) for dy in range(-60, 61, 6)]
+        red = [near(pixel(drops, drops.tiles[3], x, y), (255, 0, 0), 30) for x, y in spots]
+        self.assertTrue(all(near(pixel(plain, plain.tiles[3], x, y), (255, 0, 0), 12) for x, y in spots))
+        self.assertTrue(any(red) and not all(red), sum(red))
+
+    def test_a_ragged_patch_is_whole_inside_and_torn_round_its_edge(self):
+        """ragged sets how far the stroke reaches (RAG_IN to all of its radius): its middle is all paint, its outline
+        goes in and out between RAG_IN and the radius."""
+        from rusemod import brushmask as bm
+        from rusemod.groundpaint import paint_strokes
+        s = two_colour_store()
+        dab = {"brush": "paint", "x": 500.0, "y": 500.0, "radius": 300.0, "colour": "#ff0000", "edge": "hard",
+               "mask": "ragged"}
+        got = Tmst(*s.rebuild(paint_strokes(s, BOUNDS, strokes(dab))))
+
+        def red(x, y):   # in the finest tile over the point
+            tile = next(t for t in got.tiles if t.level == 0 and got.area(t)[0] <= x / 1000 < got.area(t)[2]
+                        and got.area(t)[1] <= y / 1000 < got.area(t)[3])
+            return near(pixel(got, tile, x, y), (255, 0, 0), 40)
+        import math as m
+        inside = [red(500.0 + r * m.cos(a / 10), 500.0 + r * m.sin(a / 10)) for a in range(63)
+                  for r in (20.0, 80.0, 0.45 * bm.RAG_IN * 300.0)]
+        self.assertTrue(all(inside))
+        ring = [red(500.0 + 0.8 * 300.0 * m.cos(a / 10), 500.0 + 0.8 * 300.0 * m.sin(a / 10)) for a in range(63)]
+        self.assertTrue(any(ring) and not all(ring), sum(ring))   # torn: in and out round it
+
+    def test_in_the_file(self):
+        import tomllib
+        item = {"brush": "texture", "x": 1.0, "y": 2.0, "radius": 3.0, "texture": "swatch:dday:grass", "mask": "tufts"}
+        made = parse_strokes([item])
+        self.assertEqual(made[0].mask, "tufts")
+        self.assertEqual(parse_strokes(tomllib.loads(strokes_toml(made))["stroke"]), made)
+        self.assertNotIn("mask", strokes_toml(parse_strokes([{**item, "mask": ""}])))
+        for bad, says in (({**item, "mask": "dots"}, "must be one of"),
+                          ({"brush": "raise", "x": 1.0, "y": 1.0, "radius": 1.0, "height": 5.0, "mask": "noise"},
+                           "is for the paint")):
+            with self.assertRaises(BrushError) as caught:
+                parse_strokes([bad])
+            self.assertIn(says, str(caught.exception))
+
+    def test_a_speckled_edge(self):
+        """dither: on the finest level each pixel takes the stroke whole or not at all, more of them nearer its middle
+        (a chance that follows the fall-off); a coarser level blends as before; the same with and without numpy."""
+        import rusemod.groundpaint as gp
+        from rusemod import brushmask as bm
+        dab = {"brush": "paint", "x": 500.0, "y": 500.0, "radius": 300.0, "colour": "#ff0000", "dither": True}
+        made = strokes(dab)[0]
+        fine, coarse = 2.0, bm.DITHER_MOST * 1.01
+        ring = [gp._coverage(made, 500.0 + 200.0 * math.cos(a / 50), 500.0 + 200.0 * math.sin(a / 50), fine, fine)
+                for a in range(314)]
+        self.assertEqual(set(ring), {0.0, 1.0})   # all or nothing
+        share = sum(ring) / len(ring)
+        plain = strokes({**dab, "dither": False})[0]
+        want = plain.strength_at(700.0, 500.0)
+        self.assertLess(abs(share - want), 0.1, (share, want))   # as many as the fall-off's share
+        x, y = 690.0, 505.0   # coarser: blended, as before
+        self.assertEqual(gp._coverage(made, x, y, coarse, coarse), gp._coverage(plain, x, y, coarse, coarse))
+        if gp.whole_arrays() is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        many = strokes({**dab, "edge": "hard"}, {"brush": "texture", "x": 1300.0, "y": 500.0, "radius": 350.0,
+                                                 "texture": "file:rb.png", "dither": True, "mask": "ragged"},
+                       {"brush": "paint", "x": 900.0, "y": 300.0, "radius": 1.3, "colour": "#00ff00", "dither": True})
+        grids = gp.paint_strokes(two_colour_store(), BOUNDS, many, swatches=SWATCHES)
+        with mock.patch.object(gp, "whole_arrays", lambda: None):
+            pixels = gp.paint_strokes(two_colour_store(), BOUNDS, many, swatches=SWATCHES)
+        self.assertEqual(sorted(grids), sorted(pixels))
+        for i in pixels:
+            self.assertEqual(grids[i], pixels[i], i)
+        import tomllib
+        self.assertEqual(parse_strokes(tomllib.loads(strokes_toml([made]))["stroke"]), [made])
+        with self.assertRaises(BrushError):
+            parse_strokes([{"brush": "raise", "x": 1.0, "y": 1.0, "radius": 1.0, "height": 5.0, "dither": True}])
+
+    def test_the_page_gets_the_masks(self):
+        import base64
+        from rusemod import brushmask as bm
+        from ruse_studio.api import StudioApi
+        with tempfile.TemporaryDirectory() as tmp:
+            got = StudioApi(home=Path(tmp, "home"), game_dir=Path(tmp, "game")).brush_masks()
+        self.assertEqual((got["size"], list(got["masks"])), (bm.SIZE, list(bm.MASKS)))
+        self.assertEqual(base64.b64decode(got["masks"]["ridge"]), bm.make("ridge"))
+        self.assertEqual([tuple(t) for t in got["turns"]], list(bm.TURNS))
+
+
+class EncodedOnce(unittest.TestCase):
+    """paintnp.encoded: a block's pixels encoded once for all the tiles a worker paints, the same 8 bytes as encoding
+    it again."""
+
+    def test_a_block_is_encoded_once(self):
+        import rusemod.groundpaint as gp
+        if gp.whole_arrays() is None:
+            self.skipTest("numpy isn't here: paint_strokes paints pixel by pixel alone")
+        from rusemod import dxtnp, paintnp
+        import numpy as np
+        a, b, c = bytes(range(48)), bytes(range(100, 148)), bytes([7] * 48)
+        paintnp._DONE.clear()
+        calls = []
+        real = dxtnp.encode_blocks
+        with mock.patch.object(dxtnp, "encode_blocks", lambda rows: calls.append(len(rows)) or real(rows)):
+            one = paintnp.encoded([a, b, a])
+            two = paintnp.encoded([b, c, a])
+        self.assertEqual(calls, [2, 1])   # a and b the first time; then only c is new
+        self.assertEqual(one, b"".join(real(np.frombuffer(p, dtype=np.uint8).reshape(1, 48)) for p in (a, b, a)))
+        self.assertEqual(two, b"".join(real(np.frombuffer(p, dtype=np.uint8).reshape(1, 48)) for p in (b, c, a)))
+        with mock.patch.object(paintnp, "DONE_MOST", 2):   # full: forgotten, but the tile's own still come out
+            three = paintnp.encoded([c, bytes([9] * 48)])
+        self.assertEqual(three[:8], two[8:16])
+        self.assertLessEqual(len(paintnp._DONE), 3)
 
 
 class Library(unittest.TestCase):

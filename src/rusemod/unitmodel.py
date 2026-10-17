@@ -334,8 +334,15 @@ def level_room(w: int, h: int, k: int) -> int:
 
 
 def dxt5_blocks(px: bytes, w: int, h: int) -> bytes:
-    """RGBA pixels (w, h multiples of 4) as DXT5 blocks, row by row."""
+    """RGBA pixels (w, h multiples of 4) as DXT5 blocks, row by row. With numpy there (rusemod.dxtnp), every block at
+    once: the same bytes (a 2048 x 2048 picture's levels in seconds, not a minute); these loops are what that is checked
+    against."""
+    from . import unitlook
     from .unitlook import alpha_block, block_pixels
+    if unitlook.whole_arrays():
+        from .dxtnp import encode_dxt5_blocks, np
+        rows = np.frombuffer(px, dtype=np.uint8)[:w * h * 4].reshape(h // 4, 4, w // 4, 4, 4)
+        return encode_dxt5_blocks(rows.transpose(0, 2, 1, 3, 4).reshape(-1, 64))
     out = bytearray()
     for by in range(h // 4):
         for bx in range(w // 4):

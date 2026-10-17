@@ -835,12 +835,8 @@ def mend_tile(mend, store, tile, bounds, mine: list, samplers: dict, source, cac
 
 
 # --- the close-up map (mend.mend_detail_parts): one DXT5 picture, all four channels ----------------------------------
-def _alpha_tables(a0, a1):
-    """dxt._alpha_table for many blocks: (n, 8)."""
-    eight = [a0, a1] + [((7 - k) * a0 + k * a1 + 3) // 7 for k in range(1, 7)]
-    six = [a0, a1] + [((5 - k) * a0 + k * a1 + 2) // 5 for k in range(1, 5)]
-    six += [np.zeros_like(a0), np.full_like(a0, 255)]
-    return np.where((a0 > a1)[:, None], np.stack(eight, axis=1), np.stack(six, axis=1))
+_alpha_tables = dxtnp.alpha_tables
+_dxt5_blocks = dxtnp.encode_dxt5_blocks
 
 
 def _dxt5_pixels(blocks: bytes, nx: int, ny: int):
@@ -862,22 +858,6 @@ def _dxt5_pixels(blocks: bytes, nx: int, ny: int):
     colour = pal[np.arange(ny * nx)[:, None], (idx[:, None] >> (2 * np.arange(16, dtype=_I))[None, :]) & 3]
     pix = np.concatenate([colour, alpha[:, :, None]], axis=2)  # (block, pixel, 4)
     return pix.reshape(ny, nx, 4, 4, 4).transpose(0, 2, 1, 3, 4).reshape(ny * 4, nx * 4, 4).astype(np.uint8)
-
-
-def _dxt5_blocks(rows) -> bytes:
-    """dxt.encode_dxt5_block for each row ((n, 64): 16 pixels of red, green, blue, alpha): n x 16 bytes."""
-    px = np.asarray(rows, dtype=np.uint8).reshape(-1, 16, 4)
-    n = len(px)
-    alpha = px[:, :, 3].astype(_I)
-    a0, a1 = alpha.max(axis=1), alpha.min(axis=1)
-    step = np.abs(_alpha_tables(a0, a1)[:, None, :] - alpha[:, :, None]).argmin(axis=2)  # (the first of equals)
-    bits = (step.astype(_I) << (3 * np.arange(16, dtype=_I))[None, :]).sum(axis=1)
-    out = np.zeros((n, 16), dtype=np.uint8)
-    out[:, 0], out[:, 1] = a0, a1
-    out[:, 2:8] = (bits[:, None] >> (8 * np.arange(6, dtype=_I))[None, :]) & 0xFF
-    colours = dxtnp.encode_blocks(np.ascontiguousarray(px[:, :, :3]).reshape(n, 48))
-    out[:, 8:] = np.frombuffer(colours, dtype=np.uint8).reshape(n, 8)
-    return out.tobytes()
 
 
 def mend_detail(mend, blocks: bytes, old: bytes, w: int, h: int, bounds, parts):

@@ -912,6 +912,35 @@ class Fields(unittest.TestCase):
         other = scenery.expand_field(dataclasses.replace(area, seed=1), lib["Wheat field"])[0]
         self.assertEqual({(round(c.x + c.sx), round(c.y + c.sy)) for c in other}, {(2000000, 800000)})
 
+    def test_a_field_kind_with_a_swatch_lays_it_once_turned_to_its_rows(self):
+        """A field kind naming a palette swatch: its picture is ONE texture stroke of it over the area (hard, out past
+        the area's edge as a stamp reaches), turned to the rows (the area's direction, the stickers' axis, + 90),
+        instead of a stamp per tile from the kind's own map; the tiles' copies are the same."""
+        from rusemod import brush
+        lib = scenery.preset_library(self.tables())
+        kind = {**lib["Wheat field"], "swatch": "swatch:dday:wheat"}
+        area = scenery.PresetArea("Wheat field", 50000.0, 60000.0, 20000.0, "add", dx=0.6, dy=0.8, seed=2)
+        copies, stamps = scenery.expand_field(area, kind, group=5)
+        self.assertEqual(copies, scenery.expand_field(area, lib["Wheat field"], group=5)[0])
+        self.assertEqual(len(stamps), 1)
+        s = stamps[0]
+        self.assertEqual((s.brush, s.texture, s.shape, s.edge, s.clear, s.x, s.y, s.dx, s.dy),
+                         ("texture", "swatch:dday:wheat", "square", "hard", False, 50000.0, 60000.0, 0.6, 0.8))
+        self.assertAlmostEqual(s.radius, 20000.0 / brush.HARD_EDGE)
+        self.assertAlmostEqual(s.turn, math.degrees(math.atan2(0.8, 0.6)) + 90.0)
+        round_area = dataclasses.replace(area, shape="round")
+        s = scenery.expand_field(round_area, kind)[1][0]
+        self.assertEqual((s.shape, s.dx, s.dy), ("round", 1.0, 0.0))
+        with self.assertRaisesRegex(SceneryEditError, "swatch:<theme>:<name>"):  # not a palette swatch's name
+            scenery.preset_library(self.tables(self.TABLES.replace('name = "Wheat field"',
+                                                                   'name = "Wheat field"\nswatch = "wheat"')))
+        shipped = scenery.preset_library()
+        self.assertEqual({k: v["swatch"] for k, v in shipped.items() if v["type"] == "field"},
+                         {"Wheat field": "swatch:dday:wheat", "Ploughed field": "swatch:dday:ploughed",
+                          "Stubble field": "swatch:dday:wheat"})
+        from rusemod.groundtex import palette
+        self.assertTrue(all(v["swatch"] in palette() for v in shipped.values() if v["type"] == "field"))
+
     def test_a_hedge_carries_the_map_s_trees_and_fence_outside_the_field(self):
         """Along each side: trees at the map's 6 per 100 m (a 100 m side: 6), 1.5 m (+-0.5) outside, by the species'
         shares, each at its own levels; fence pieces end to end 0.6 m outside, along the side; none solid. The same

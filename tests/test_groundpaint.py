@@ -496,6 +496,13 @@ class MapPaint(unittest.TestCase):
                 again = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, alone)
             self.assertEqual(again, one)
             self.assertEqual(alone, ["OSError: no programs here"])
+            # a pool whose workers died: this program paints, and says why
+            from concurrent.futures.process import BrokenProcessPool
+            notes: list = []
+            with mock.patch("rusemod.mend._pool", lambda *a: (_ for _ in ()).throw(BrokenProcessPool("died"))):
+                broke = gp._paint_tiles(two_colour_store(), BOUNDS, layers, None, 2, notes)
+            self.assertEqual(broke, one)
+            self.assertEqual(notes, ["BrokenProcessPool: died"])
         if gp.whole_arrays() is not None:  # on whole grids a few tiles are quicker here than starting programs
             self.assertLess(len(one), gp.SHARE_FROM_GRIDS)
             with mock.patch("rusemod.mend._pool", no_pool):
@@ -822,6 +829,18 @@ class MapPaint(unittest.TestCase):
         self.assertEqual([s.brush for s in info.paint["Blitz"]], ["paint", "stamp"])
         self.assertEqual([s.brush for s in info.terrain["Blitz"]], ["raise"])
         self.assertNotIn("Only", info.terrain)  # a map with only paint leaves its ground files alone
+
+    def test_a_coat_goes_under_the_preset_fields(self):
+        """F-52: a preset field's ground (put in first, by _erase_areas) stays over the terrain file's paint, so a
+        Blank Terrain coat over the whole map doesn't hide it from afar."""
+        from types import SimpleNamespace
+        from rusemod.build import _paint_brushes
+        coat = strokes({"brush": "paint", "x": 1.0, "y": 2.0, "radius": 3000.0, "colour": "#5f6f3a",
+                        "shape": "square", "edge": "hard"})
+        field = strokes({"brush": "texture", "x": 1.0, "y": 2.0, "radius": 30.0, "texture": "swatch:dday:wheat"})
+        info = SimpleNamespace(terrain={"Blank": coat}, paint={"Blank": field})
+        _paint_brushes(info)
+        self.assertEqual([s.brush for s in info.paint["Blank"]], ["paint", "texture"])
 
 
 if __name__ == "__main__":

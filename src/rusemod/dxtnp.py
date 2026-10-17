@@ -6,16 +6,19 @@ order its set of pairs gives them: that order is asked of the same set here, blo
 block whose colour axis shrank to nothing on the first try (it starts again from its farthest pixel there) is handed
 to dxt.encode_block whole.
 
-encode_blocks_quick is dxt.encode_block_quick the same way: each block's first pair of end colours only."""
+encode_blocks_quick is dxt.encode_block_quick the same way: each block's first pair of end colours only;
+encode_dxt5_blocks is dxt.encode_dxt5_block, its alpha half done for many blocks at once too."""
 from __future__ import annotations
 
-from . import dxt
+from . import dxt, dxtnb
 from .numpy2 import np
 
 _I = np.int64
 _S = np.int32
 _NUDGES = [(da, db) for da in (-0x0821, 0, 0x0821) for db in (-0x0821, 0, 0x0821)]
 _NUDGE_AT = {n: j for j, n in enumerate(_NUDGES)}
+_NUDGE_ARRAY = np.array(_NUDGES, dtype=_I)   # (dxtnb's sums: the same pairs in the same order)
+_AS_IS = np.zeros((1, 2), dtype=_I)          # (encode_blocks_quick: the first pair only)
 _SHIFTS = 2 * np.arange(16, dtype=_I)
 CHUNK = 2048  # blocks worked on together (their tries: 9 pairs x 16 pixels x 4 colours each)
 
@@ -98,13 +101,16 @@ def _some(px):
     """(c0, c1, word, left) for blocks that aren't one flat colour: px (n, 16, 3) int64. `left` marks the blocks to
     give to dxt.encode_block whole."""
     n = len(px)
-    a, b0, left = _ends(px)
-    # the pairs tried: the two ends as they are, and each nudged a step either way
-    ca = np.stack([a + da for da, _db in _NUDGES], axis=1)
-    cb = np.stack([b0 + db for _da, db in _NUDGES], axis=1)
-    tried = (ca >= 0) & (ca <= 0xFFFF) & (cb >= 0) & (cb <= 0xFFFF) & (ca != cb)
-    c0, c1 = np.maximum(ca, cb), np.minimum(ca, cb)  # (n, 9)
-    word, err = _tried(px, c0, c1)
+    if dxtnb.ends_and_tries is not None:   # the same sums compiled (Numba), block after block
+        a, b0, left, c0, c1, word, err, tried = dxtnb.ends_and_tries(np.ascontiguousarray(px), _NUDGE_ARRAY)
+    else:
+        a, b0, left = _ends(px)
+        # the pairs tried: the two ends as they are, and each nudged a step either way
+        ca = np.stack([a + da for da, _db in _NUDGES], axis=1)
+        cb = np.stack([b0 + db for _da, db in _NUDGES], axis=1)
+        tried = (ca >= 0) & (ca <= 0xFFFF) & (cb >= 0) & (cb <= 0xFFFF) & (ca != cb)
+        c0, c1 = np.maximum(ca, cb), np.minimum(ca, cb)  # (n, 9)
+        word, err = _tried(px, c0, c1)
     err = np.where(tried, err, np.iinfo(_I).max)
     least = err.min(axis=1)
     pick = err.argmin(axis=1)
@@ -123,6 +129,10 @@ def _some(px):
 
 def _some_quick(px):
     """_some for dxt.encode_block_quick: each block's first pair of end colours only, no nudging."""
+    if dxtnb.ends_and_tries is not None:   # the same sums compiled (Numba): the one pair, as it is
+        a, b0, left, _c0, _c1, word, _err, _tried_one = dxtnb.ends_and_tries(np.ascontiguousarray(px), _AS_IS)
+        c0, c1 = np.maximum(a, b0), np.minimum(a, b0)
+        return c0, c1, np.where(a == b0, 0, word[:, 0]), left
     a, b0, left = _ends(px)
     c0, c1 = np.maximum(a, b0), np.minimum(a, b0)
     word, _err = _tried(px, c0[:, None], c1[:, None])
@@ -138,6 +148,31 @@ def encode_blocks_quick(rows) -> bytes:
     """dxt.encode_block_quick for each row of `rows`, as encode_blocks: the same 8 bytes each (for the riverbed mend,
     rusemod.mendnp)."""
     return _packed(rows, _some_quick, dxt.encode_block_quick)
+
+
+def alpha_tables(a0, a1):
+    """dxt._alpha_table for many blocks: (n, 8)."""
+    eight = [a0, a1] + [((7 - k) * a0 + k * a1 + 3) // 7 for k in range(1, 7)]
+    six = [a0, a1] + [((5 - k) * a0 + k * a1 + 2) // 5 for k in range(1, 5)]
+    six += [np.zeros_like(a0), np.full_like(a0, 255)]
+    return np.where((a0 > a1)[:, None], np.stack(eight, axis=1), np.stack(six, axis=1))
+
+
+def encode_dxt5_blocks(rows) -> bytes:
+    """dxt.encode_dxt5_block for each row ((n, 64): 16 pixels of red, green, blue, alpha): n x 16 bytes."""
+    px = np.asarray(rows, dtype=np.uint8).reshape(-1, 16, 4)
+    n = len(px)
+    out = np.zeros((n, 16), dtype=np.uint8)
+    for at in range(0, n, 16 * CHUNK):  # (each block's alpha steps: 16 pixels x 8 steps)
+        alpha = px[at:at + 16 * CHUNK, :, 3].astype(_I)
+        a0, a1 = alpha.max(axis=1), alpha.min(axis=1)
+        step = np.abs(alpha_tables(a0, a1)[:, None, :] - alpha[:, :, None]).argmin(axis=2)  # (the first of equals)
+        bits = (step.astype(_I) << (3 * np.arange(16, dtype=_I))[None, :]).sum(axis=1)
+        out[at:at + 16 * CHUNK, 0], out[at:at + 16 * CHUNK, 1] = a0, a1
+        out[at:at + 16 * CHUNK, 2:8] = (bits[:, None] >> (8 * np.arange(6, dtype=_I))[None, :]) & 0xFF
+    colours = encode_blocks(np.ascontiguousarray(px[:, :, :3]).reshape(n, 48))
+    out[:, 8:] = np.frombuffer(colours, dtype=np.uint8).reshape(n, 8)
+    return out.tobytes()
 
 
 def _packed(rows, some, one) -> bytes:

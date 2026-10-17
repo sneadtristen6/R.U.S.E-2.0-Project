@@ -25,6 +25,7 @@ import math
 
 from . import dxtnp
 from .brush import HARD_EDGE
+from .brushmask import DITHER_MOST
 from .numpy2 import np
 
 _I = np.int64
@@ -85,9 +86,12 @@ def _t2(f, xs, ys, grid: bool = True):
     return (ox * ox + oy * oy) / (f.r * f.r)
 
 
-def _strength(stroke, f, xs, ys, grid: bool = True):
-    """brush.Stroke.strength_at for a paint stroke (the soft shape): its fall-off, 0 outside it."""
+def _strength(stroke, f, xs, ys, grid: bool = True, reach=None):
+    """brush.Stroke.strength_at for a paint stroke (the soft shape): its fall-off, 0 outside it; `reach` (an edge
+    mask's, brushmask.reach_scale, at each pixel) multiplies how far out each point lies first."""
     t2 = _t2(f, xs, ys, grid)
+    if reach is not None:
+        t2 = t2 * reach
     if stroke.edge != "hard":
         u = 1.0 - t2
         w = u * u
@@ -114,17 +118,59 @@ def _clip(stroke, xs, ys, grid: bool = True):
 
 def _coverage(stroke, f, xs, ys, pw: float, ph: float, grid: bool = True):
     """groundpaint._coverage for every pixel middle (x of xs, y of ys); or, not `grid`, for each (xs[n], ys[n])."""
+    from .brushmask import EDGE_MASKS, RAG_IN
+    reach = None
+    if stroke.mask in EDGE_MASKS:   # how far it reaches at each pixel (brushmask.reach_scale's own sums)
+        s = RAG_IN + (1.0 - RAG_IN) * _mask(stroke, xs, ys, grid)
+        reach = 1.0 / (s * s)
     if stroke.radius >= 2 * max(pw, ph):
-        out = _strength(stroke, f, xs, ys, grid)
+        out = _strength(stroke, f, xs, ys, grid, reach)
     else:
         total = 0.0
         for j in (-1, 0, 1):
             for i in (-1, 0, 1):
-                total = total + _strength(stroke, f, xs + i * pw / 3, ys + j * ph / 3, grid)
+                total = total + _strength(stroke, f, xs + i * pw / 3, ys + j * ph / 3, grid, reach)
         out = total / 9
     if stroke.clip:   # (a field's painted outline: nothing where the pixel's middle is outside it)
         out = out * _clip(stroke, xs, ys, grid)
+    if stroke.mask and reach is None:   # any other mask: as much as it shows (brushmask.mask_at's own sums)
+        out = out * _mask(stroke, xs, ys, grid)
+    if stroke.dither and max(pw, ph) <= DITHER_MOST:   # a speckled edge (brushmask.dither_at's own sums)
+        out = np.where((out > 0.0) & (_dither(stroke, xs, ys, pw, ph, grid) < out), 1.0, 0.0)
     return out
+
+
+def _dither(stroke, xs, ys, pw: float, ph: float, grid: bool = True):
+    """brushmask.dither_at for every pixel middle (x of xs, y of ys; or, not `grid`, each (xs[n], ys[n]))."""
+    from .brushmask import MIX
+    i = np.floor(np.asarray(xs, dtype=np.float64) / pw).astype(_I)
+    j = np.floor(np.asarray(ys, dtype=np.float64) / ph).astype(_I)
+    if grid:
+        i, j = i[None, :], j[:, None]
+    seed = (math.floor(stroke.x) * 31 + math.floor(stroke.y) * 17) % MIX
+    h = np.mod(i * 92821 + j * 68917 + seed, MIX)
+    h = np.mod(h * h + 12345, MIX)
+    h = np.mod(h * h + 54321, MIX)
+    return (h + 0.5) / MIX
+
+
+def _mask(stroke, xs, ys, grid: bool = True):
+    """brushmask.mask_at for every pixel middle (x of xs, y of ys; or, not `grid`, each (xs[n], ys[n])), by the same
+    sums."""
+    from .brushmask import SIZE, frame, make
+    data = np.frombuffer(make(stroke.mask), dtype=np.uint8).astype(np.float64)
+    x, y, ax, ay, span = frame(stroke)
+    xs, ys = np.asarray(xs, dtype=np.float64), np.asarray(ys, dtype=np.float64)
+    ox, oy = ((xs - x)[None, :], (ys - y)[:, None]) if grid else (xs - x, ys - y)
+    fu = ((ox * ax + oy * ay) / span + 0.5) * SIZE - 0.5
+    fv = ((oy * ax - ox * ay) / span + 0.5) * SIZE - 0.5
+    gu, gv = np.floor(fu), np.floor(fv)
+    tu, tv = fu - gu, fv - gv
+    gu, gv = gu.astype(_I), gv.astype(_I)
+    i0, i1 = np.mod(gu, SIZE), np.mod(gu + 1, SIZE)
+    j0, j1 = np.mod(gv, SIZE) * SIZE, np.mod(gv + 1, SIZE) * SIZE
+    return ((data[j0 + i0] * (1.0 - tu) + data[j0 + i1] * tu) * (1.0 - tv)
+            + (data[j1 + i0] * (1.0 - tu) + data[j1 + i1] * tu) * tv) / 255.0
 
 
 def _texture(stroke, swatch, xs, ys, pixel: float):
@@ -134,10 +180,49 @@ def _texture(stroke, swatch, xs, ys, pixel: float):
     rep = rep_of(stroke, swatch)
     n, data = swatch.mips[swatch.mip_for(rep, pixel)]
     pic = np.frombuffer(data, dtype=np.uint8).reshape(n, n, 4)
-    i = np.minimum(np.floor(np.mod(xs / rep, 1.0) * n).astype(_I), n - 1)
-    j = np.minimum(np.floor(np.mod(ys / rep, 1.0) * n).astype(_I), n - 1)
-    got = pic[j[:, None], i[None, :]]
-    return got[:, :, :3].astype(np.float64), got[:, :, 3].astype(np.float64) / 255.0
+    if not stroke.turn and not swatch.mirrored:
+        i = np.minimum(np.floor(np.mod(xs / rep, 1.0) * n).astype(_I), n - 1)
+        j = np.minimum(np.floor(np.mod(ys / rep, 1.0) * n).astype(_I), n - 1)
+        got = pic[j[:, None], i[None, :]]
+        return _grained(swatch, rep, pixel, xs, ys, got[:, :, :3]), got[:, :, 3].astype(np.float64) / 255.0
+    u, v = np.broadcast_arrays(xs[None, :], ys[:, None])
+    if stroke.turn:   # turned back by the turn round (0, 0), as the sampler
+        c, s = math.cos(math.radians(stroke.turn)), math.sin(math.radians(stroke.turn))
+        u, v = u * c + v * s, v * c - u * s
+    i = np.minimum(np.floor(np.mod(u / rep, 1.0) * n).astype(_I), n - 1)
+    j = np.minimum(np.floor(np.mod(v / rep, 1.0) * n).astype(_I), n - 1)
+    if swatch.mirrored:   # each repeat's own way (groundtex.mirror_of's sums)
+        from .groundtex import MIX
+
+        def coin(k, salt):
+            h = np.mod(k * 92821 + salt, MIX)
+            h = np.mod(h * h + 12345, MIX)
+            h = np.mod(h * h + 54321, MIX)
+            return h * 2 // MIX
+        way = coin(np.floor(u / rep).astype(_I), 7) | coin(np.floor(v / rep).astype(_I), 68917) << 1
+        i = np.where((way & 1) != 0, n - 1 - i, i)
+        j = np.where((way & 2) != 0, n - 1 - j, j)
+    got = pic[j, i]
+    return _grained(swatch, rep, pixel, xs, ys, got[:, :, :3]), got[:, :, 3].astype(np.float64) / 255.0
+
+
+def _grained(swatch, rep: float, pixel: float, xs, ys, rgb):
+    """The colour [row, column, 3] times a palette swatch's grain where it has one (groundtex.Swatch.grain_sampler's
+    sums: unturned, unmirrored, the mip nearest `pixel`), as float64; as it is without."""
+    if not swatch.grain:
+        return rgb.astype(np.float64)
+    from .groundtex import GRAIN_UNIT, NEAREST_MIP
+    grep = swatch.grain_period * rep / swatch.period
+    m, most = 0, pixel * NEAREST_MIP
+    while m + 1 < len(swatch.grain) and grep / swatch.grain[m + 1][0] <= most:
+        m += 1
+    n, g = swatch.grain[m]
+    plane = np.frombuffer(g, dtype=np.uint8).reshape(n, n)
+    i = np.minimum(np.floor(np.mod(xs / grep, 1.0) * n).astype(_I), n - 1)
+    j = np.minimum(np.floor(np.mod(ys / grep, 1.0) * n).astype(_I), n - 1)
+    f = plane[j[:, None], i[None, :]].astype(np.float64) / GRAIN_UNIT
+    # the scalar sampler's int(v * f + 0.5) capped at 255, so both give the same bytes
+    return np.minimum(255.0, np.floor(rgb.astype(np.float64) * f[:, :, None] + 0.5))
 
 
 class _Picture:
@@ -492,7 +577,29 @@ def paint_tile(gp, store, tile, rect, near: list, strokes: list, boxes: list, co
     rows = new.reshape(ny, 4, nx, 4, 3).transpose(0, 2, 1, 3, 4).reshape(ny * nx, 48)[which].tobytes()
     seen: dict = {}  # a block's 48 bytes -> its place among the different ones (a painted field is mostly one)
     back = [seen.setdefault(rows[at:at + 48], len(seen)) for at in range(0, len(rows), 48)]
-    made = dxtnp.encode_blocks(np.frombuffer(b"".join(seen), dtype=np.uint8).reshape(len(seen), 48))
+    made = encoded(list(seen))
     out = np.frombuffer(blocks, dtype=np.uint8).reshape(ny * nx, 8).copy()
     out[which] = np.frombuffer(made, dtype=np.uint8).reshape(len(seen), 8)[np.array(back, dtype=_I)]
     return gp.zipo_tile(out.tobytes(), w, h)
+
+
+DONE_MOST = 400_000  # blocks _DONE keeps at most (each about 150 bytes held: ~60 MB a worker), then forgets them all
+_DONE: dict = {}     # a block's 48 bytes of pixels -> its 8 bytes encoded, kept across the tiles a worker paints
+
+
+def encoded(pixels: list) -> bytes:
+    """dxtnp.encode_blocks for each block of `pixels` (48 bytes of RGB each), in order: a block encoded for an earlier
+    tile is taken as it was (the encoder is a function of the 48 bytes alone, so the same bytes), only new ones are
+    encoded. Most of a textured area's blocks are its texture's own texels again (one interior cell of D-Day at 15.6
+    cm: 84% pure texture, an encoder shared across tiles would encode 18% of them, 2026-10-10), so tiles of one
+    texture share most of their blocks."""
+    new = [b for b in dict.fromkeys(pixels) if b not in _DONE]
+    if new:
+        if len(_DONE) + len(new) > DONE_MOST:
+            keep = {b: _DONE[b] for b in pixels if b in _DONE}   # (this tile's own, kept through the clearing)
+            _DONE.clear()
+            _DONE.update(keep)
+        made = dxtnp.encode_blocks(np.frombuffer(b"".join(new), dtype=np.uint8).reshape(len(new), 48))
+        for k, b in enumerate(new):
+            _DONE[b] = made[8 * k:8 * k + 8]
+    return b"".join(_DONE[b] for b in pixels)

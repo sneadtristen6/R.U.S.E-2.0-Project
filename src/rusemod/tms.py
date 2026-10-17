@@ -663,6 +663,38 @@ class Tms:
                             row[px] = l1 * za + l2 * zb + l3 * zc
         return grid
 
+    def height_box(self, x0: float, y0: float, x1: float, y1: float, step: float) -> list[list[float | None]]:
+        """Ground heights (world z) at the middles of a grid of `step` squares over the box [x0, x1] x [y0, y1] (row
+        0 at y0), by rasterizing triangle list 0 there as height_grid does over the whole map: fine squares over a
+        small part of it (rusemod.repaint) without a grid that fine over all of it. None off the mesh."""
+        cols, rows = max(1, int(math.ceil((x1 - x0) / step))), max(1, int(math.ceil((y1 - y0) / step)))
+        grid: list[list[float | None]] = [[None] * cols for _ in range(rows)]
+        for k, c in enumerate(self.cells):
+            pts = self.world_vertices(k)
+            if not pts or max(p[0] for p in pts) < x0 or min(p[0] for p in pts) > x1 \
+                    or max(p[1] for p in pts) < y0 or min(p[1] for p in pts) > y1:
+                continue
+            tri = c.triangles(0)
+            g = [((p[0] - x0) / step, (p[1] - y0) / step, p[2]) for p in pts]
+            for t in range(0, len(tri) - 2, 3):
+                (ax, ay, za), (bx, by, zb), (cx, cy, zc) = g[tri[t]], g[tri[t + 1]], g[tri[t + 2]]
+                den = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+                if not den:
+                    continue
+                gx0, gx1 = max(int(min(ax, bx, cx) - 0.5), 0), min(int(max(ax, bx, cx) - 0.5) + 1, cols - 1)
+                gy0, gy1 = max(int(min(ay, by, cy) - 0.5), 0), min(int(max(ay, by, cy) - 0.5) + 1, rows - 1)
+                for py in range(gy0, gy1 + 1):
+                    qy = py + 0.5
+                    row = grid[py]
+                    for px in range(gx0, gx1 + 1):
+                        qx = px + 0.5
+                        l1 = ((by - cy) * (qx - cx) + (cx - bx) * (qy - cy)) / den
+                        l2 = ((cy - ay) * (qx - cx) + (ax - cx) * (qy - cy)) / den
+                        l3 = 1 - l1 - l2
+                        if l1 >= -1e-9 and l2 >= -1e-9 and l3 >= -1e-9:
+                            row[px] = l1 * za + l2 * zb + l3 * zc
+        return grid
+
     # -- editing ----------------------------------------------------------------------------------------------
 
     def edit_heights(self, fn: Callable[[float, float, float], float | None]) -> int:

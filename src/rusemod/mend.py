@@ -23,6 +23,7 @@ import os
 import sys
 from array import array
 from collections import deque
+from contextlib import contextmanager
 
 from . import dxt
 from .groundpaint import PaintError, _blocks, _picture_sampler, _tgv_with_payload, _tile_rect
@@ -773,9 +774,29 @@ def _tile_job(indices: list) -> dict:
     return out
 
 
+NO_NUMBA = "RUSE_NO_NUMBA"   # set: dxtnb and tgu1nb leave Numba out (their numpy sums, the same bytes)
+
+
+@contextmanager
 def _pool(start, args, workers: int):
+    """Worker programs for `with _pool(...) as pool:`, started without Numba: with it, a paint worker lost its call
+    queue's semaphore between its start and its first job ("OSError: [WinError 6] The handle is invalid" at
+    queue.get's _sem.release, one worker in seven, in 2 of 3 pools of every build from 2026-10-16 17:22, then the paint
+    went on one core); the same build with Numba kept out of the workers kept all of them (each worker's semaphore
+    was whole when its loop started and gone by its first job; not reproduced in one program). The workers spawn as
+    the pool's jobs are handed out, so NO_NUMBA is set for as long as the pool lives; this program keeps the Numba it
+    has."""
     from concurrent.futures import ProcessPoolExecutor
-    return ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args)
+    before = os.environ.get(NO_NUMBA)
+    os.environ[NO_NUMBA] = "1"
+    try:
+        with ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args) as pool:
+            yield pool
+    finally:
+        if before is None:
+            os.environ.pop(NO_NUMBA, None)
+        else:
+            os.environ[NO_NUMBA] = before
 
 
 def workers_start() -> str:

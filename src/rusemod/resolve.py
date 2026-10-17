@@ -39,6 +39,8 @@ class ModInfo:
     roads: dict = field(default_factory=dict)                # map pack name -> [roadnet.Road] (§8)
     take_out: dict = field(default_factory=dict)             # map pack name -> [roadnet.TakeOut] (§8, roads.toml)
     paint: dict = field(default_factory=dict)                # map pack name -> [brush.Stroke] paint/stamp/texture (§8)
+    repaint: dict = field(default_factory=dict)              # map pack name -> [brush.Stroke] repaint (§8: the ground
+    # the other brushes moved, painted by its new shape: rusemod.repaint)
     ground_pictures: dict = field(default_factory=dict)      # file:<mod id>/<name>.png -> its path (files/ground, §8)
     players: dict = field(default_factory=dict)              # map pack name -> [players.Players] (§8, map.toml)
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
@@ -51,6 +53,8 @@ class ModInfo:
     model_copies: dict = field(default_factory=dict)         # a unit's name -> (the models it has copies of, its
     # paint): its own copies of the models it draws (files/models/<name>.copy.toml and files/models/<name>/, §7;
     # rusemod.unitmodel.write_unit_copy)
+    assets: dict = field(default_factory=dict)               # its own map assets: name -> rusemod.sceneryasset.Asset
+    # (files/assets/<name>/asset.toml and its model): each a scenery type TypeWarrior/R2_<name> the maps can place
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
     scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)

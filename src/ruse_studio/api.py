@@ -310,9 +310,10 @@ _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scena
 
 def _object_dict(o) -> dict:
     """A placed object (rusemod.scenery.NewObject) as the Maps view takes it: without the fields only the build's
-    own objects set (`levels`, `height`: a copied or generated plant's), which a scenery.toml row never holds."""
+    own objects set (`levels`, `height`: a copied or generated plant's; `up`: a rock laid to its slope), which a
+    scenery.toml row never holds."""
     out = asdict(o)
-    for k in ("levels", "height"):
+    for k in ("levels", "height", "up"):
         out.pop(k, None)
     return out
 

@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import dxt, tgu1
+from .brushmask import DITHER_MOST
 from .tmst import Tgv, Tmst, zipo_pack, zipo_tile, zipo_unpack
 
 LODS = ("highdef", "lowdef")
@@ -595,20 +596,32 @@ def _coverage(stroke, px: float, py: float, pw: float, ph: float) -> float:
     stroke's clip (a field's painted outline) leaves the pixel's middle out."""
     if stroke.clip and not stroke.clip_at(px, py):
         return 0.0
+    reach = 1.0
+    if stroke.mask:   # a brush that is a picture (brushmask): an edge mask sets how far it reaches here
+        from .brushmask import EDGE_MASKS, mask_at, reach_scale
+        if stroke.mask in EDGE_MASKS:
+            reach = reach_scale(mask_at(stroke, px, py))
     if stroke.radius >= 2 * max(pw, ph):
-        return stroke.strength_at(px, py)
-    total = 0.0
-    for j in (-1, 0, 1):
-        for i in (-1, 0, 1):
-            total += stroke.strength_at(px + i * pw / 3, py + j * ph / 3)
-    return total / 9
+        out = stroke.strength_at(px, py, reach)
+    else:
+        total = 0.0
+        for j in (-1, 0, 1):
+            for i in (-1, 0, 1):
+                total += stroke.strength_at(px + i * pw / 3, py + j * ph / 3, reach)
+        out = total / 9
+    if stroke.mask and stroke.mask not in EDGE_MASKS and out > 0.0:
+        out = out * mask_at(stroke, px, py)   # ...any other lets through as much as it shows at the pixel's middle
+    if stroke.dither and out > 0.0 and max(pw, ph) <= DITHER_MOST:   # a speckled edge on the finest level: all or
+        from .brushmask import dither_at                                # nothing, by the fall-off's chance
+        out = 1.0 if dither_at(stroke, px, py, pw, ph) < out else 0.0
+    return out
 
 
 def _quick_round(stroke, pw: float, ph: float) -> tuple[float, float, float] | None:
     """(x, y, r²) for a stroke whose coverage paint_strokes works out in place, the same sums as _coverage: a round,
     soft-edged brush of the soft shape (Map Paint's own) at least two pixels across. None for any other."""
     if (stroke.footprint().shape != "round" or stroke.edge == "hard" or stroke.kind.shape != "soft"
-            or not stroke.radius >= 2 * max(pw, ph) or stroke.clip):
+            or not stroke.radius >= 2 * max(pw, ph) or stroke.clip or stroke.mask or stroke.dither):
         return None
     f = stroke.footprint()
     return f.x, f.y, f.r * f.r
@@ -622,7 +635,7 @@ def _solid_over(stroke, colour, x0: float, y0: float, x1: float, y1: float) -> b
     whose full-strength part (out to HARD_EDGE) holds all four corners. Every footprint (round, square, line) is convex,
     so its corners inside means all of it is."""
     from .brush import HARD_EDGE
-    if colour is None or stroke.weight < 1.0 or stroke.edge != "hard":
+    if colour is None or stroke.weight < 1.0 or stroke.edge != "hard" or stroke.mask:
         return False
     f, most = stroke.footprint(), HARD_EDGE * HARD_EDGE
     return all(f.t2(x, y) <= most for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)))
@@ -699,9 +712,10 @@ def whole_grids() -> str:
 
 def texture_at(stroke, swatch, pw: float, ph: float):
     """(x, y) -> (r, g, b, a): a texture stroke's texture where it lays it, for pixels pw x ph map units across
-    (groundtex.Swatch.sampler: the mip whose pixels are the largest still no bigger than these)."""
+    (groundtex.Swatch.sampler: the mip whose pixels are the largest still no bigger than these), turned the stroke's
+    `turn`."""
     from .groundtex import rep_of
-    return swatch.sampler(rep_of(stroke, swatch), max(pw, ph))
+    return swatch.sampler(rep_of(stroke, swatch), max(pw, ph), stroke.turn)
 
 
 def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swatches=None) -> dict[int, bytes]:
@@ -727,7 +741,7 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swa
     boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
     colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
     # the strokes that can cover a block whole (_solid_over's own first look, made once)
-    hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" for s, c in zip(strokes, colours)]
+    hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" and not s.mask for s, c in zip(strokes, colours)]
     solid_blocks: dict = {}  # colour -> its 4x4 block, encoded once
     samplers: dict = {}
     pictures: dict = {}  # paintnp's own samplers, a level each
@@ -963,9 +977,9 @@ def _paint_job(indices: list) -> dict:
 def _paints(stroke) -> str:
     """What of a stroke paints the ground's picture, for the names of the tiles it paints: the stroke with the
     switches that change no pixel set one way (clear: the low cover taken off; decals: the game's decals laid over a
-    texture; block: a water stroke's)."""
+    texture; block: a water stroke's; rocks: the 3D rocks over a rock's)."""
     import dataclasses
-    return repr(dataclasses.replace(stroke, clear=True, decals=True, block=True))
+    return repr(dataclasses.replace(stroke, clear=True, decals=True, block=True, rocks=True))
 
 
 def _stamp_sources(store: Tmst, bounds, tile, rect, box, stroke, whole: bool = False) -> list:
@@ -1091,7 +1105,7 @@ def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone:
                 runs = [rest[k:k + 4] for k in range(0, len(rest), 4)]
                 got: dict = {}
                 with _pool(_start_paint, (index_file, chunk_file, bounds, strokes, cache, swatches),
-                           min(workers, len(runs))) as pool:
+                           min(workers, len(runs))) as pool:   # (its workers without Numba: mend._pool says why)
                     for part in pool.map(_paint_job, runs):
                         got.update(part)
             return whole(got)

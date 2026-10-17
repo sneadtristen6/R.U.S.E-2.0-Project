@@ -175,6 +175,35 @@ class Tgu1WholeArrays(unittest.TestCase):
                 self.assertEqual(got, tgu1.decode_full(payload).dxt, (w, h, seed))
                 self.assertEqual(tgu1.decode(payload), got)
 
+    def test_the_compiled_walk_reads_and_refuses_as_numpy(self):
+        """rusemod.tgu1nb (Numba, when it's here): the same values as tgu1np's numpy walk, and the same refusals, on
+        whole payloads and on streams cut short or with a bit flipped."""
+        import random
+        from unittest import mock
+
+        from rusemod import tgu1nb, tgu1np
+        if tgu1nb.values is None:
+            self.skipTest("Numba isn't here: tgu1np walks with numpy")
+        payloads = [tgu1.encode(dxt.encode(p, w, h), w, h) for w, h, seed in ((32, 32, 1), (64, 32, 7), (128, 128, 3))
+                    for p in (gradient(w, h), speckled(w, h, seed))]
+        for payload in payloads:
+            fast = tgu1np.decode(payload)
+            with mock.patch.object(tgu1nb, "values", None):
+                self.assertEqual(tgu1np.decode(payload), fast)
+        rnd = random.Random(5)
+        for mode in (0, 2, 5, 8, 9, 15):
+            for _ in range(40):
+                data = bytes(rnd.randrange(256) for _ in range(rnd.randrange(1, 24)))
+                nbits = rnd.randrange(0, 8 * len(data) + 1)
+                want = rnd.randrange(0, 12)
+                compiled = tgu1np._stream(mode, data, nbits, want)
+                with mock.patch.object(tgu1nb, "values", None):
+                    plain = tgu1np._stream(mode, data, nbits, want)
+                if plain is None:
+                    self.assertIsNone(compiled, (mode, data, nbits, want))
+                else:
+                    self.assertEqual(compiled.tolist(), plain.tolist(), (mode, data, nbits, want))
+
     def test_blocks_past_the_block_count_are_zero_as_there(self):
         fast = tgu1.whole_arrays()
         for count in (64, 24, 0):

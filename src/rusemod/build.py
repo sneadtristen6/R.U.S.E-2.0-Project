@@ -155,6 +155,11 @@ def load_mod(path) -> tuple[ModInfo, list]:
             info.model_copies = mod_copies(path)
         except UnitModelError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .sceneryasset import AssetError, mod_assets
+        try:
+            info.assets = mod_assets(path)  # files/assets/<name>/asset.toml: its own rocks, props, plants, trees
+        except AssetError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
         info.sounds = mod_sounds(path)
         try:
@@ -318,7 +323,8 @@ def read_scenery(folder: Path) -> dict:
 def _erase_areas(info) -> None:
     """The erase areas of a mod's scenery.toml files go to `info.erase` and its copies to `info.copy`; its objects stay
     in `info.scenery`. A preset area ([[preset]]) becomes its tiles' copies, its erase (replace mode) and its ground
-    picture stamps (into `info.paint`, with the terrain file's own paint strokes) first (scenery.expand_preset). The
+    picture stamps (into `info.paint`, laid OVER the terrain file's own paint strokes: _paint_brushes puts those
+    under them, as the field brush's picture goes over the mods' paint; scenery.expand_preset). The
     field brush's dabs ([[fieldbrush]]) go to `info.fields`: they read the map's own fields, so the build expands
     them where it reads the map's scenery (scenery.expand_field_brush)."""
     from .scenery import (CopyArea, EraseArea, FieldBrush, FieldCopy, PresetArea, border_library, expand_preset,
@@ -448,14 +454,20 @@ def _block_brushes(info) -> None:
 def _paint_brushes(info) -> None:
     """The Studio's Map Paint brushes (paint, stamp, texture) live in terrain.toml with the others, but change the
     ground's picture, not its shape: they move to `info.paint` in their order, like the cover brushes to the cover
-    grid."""
+    grid, under the preset areas' picture stamps (a Blank Terrain coat over the whole map hid a preset field's ground
+    from afar, where its crops aren't drawn: F-52, the palette test 10-16). A repaint stroke goes to `info.repaint`:
+    the build paints what the ground brushes moved by its new shape (rusemod.repaint), under the mod's own paint."""
     from .brush import PAINT_KINDS
     for pack, strokes in list(info.terrain.items()):
         paint = [s for s in strokes if s.kind.kind in PAINT_KINDS]
-        if not paint:
+        repaint = [s for s in strokes if s.kind.kind == "repaint"]
+        if not paint and not repaint:
             continue
-        info.paint.setdefault(pack, []).extend(paint)
-        rest = [s for s in strokes if s.kind.kind not in PAINT_KINDS]
+        if paint:   # under the preset areas' picture stamps (_erase_areas put them in first): a whole-map coat
+            info.paint[pack] = paint + info.paint.get(pack, [])   # mustn't hide a preset field's ground (F-52)
+        if repaint:
+            info.repaint.setdefault(pack, []).extend(repaint)
+        rest = [s for s in strokes if s.kind.kind not in PAINT_KINDS and s.kind.kind != "repaint"]
         if rest:
             info.terrain[pack] = rest
         else:
@@ -838,6 +850,7 @@ class BuildResult:
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
     own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
+    own_assets: dict = field(default_factory=dict)  # mods' map assets: name -> (sceneryasset.Asset, mod id)
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
     new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
@@ -1478,7 +1491,28 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     if result.visibility:
         extra = [(ModInfo("r2-visibility"), parse(visibility.rndf(base, result.visibility), file="visibility.rndf",
                                                   mod="r2-visibility"))]
-    run = Engine(base).run([by_id[m.id] for m in order] + extra)
+    first = []  # the mods' own map assets' scenery types (rusemod.sceneryasset), before any mod's rules
+    for m in order:
+        for name, asset in sorted(m.assets.items()):
+            if name in result.own_assets:
+                result.findings.append(Finding("error", f"{m.id}: files/assets/{name}: {result.own_assets[name][1]} "
+                                                        f"has an asset of that name too"))
+            result.own_assets[name] = (asset, m.id)
+    if result.errors:
+        return result
+    if result.own_assets and text_arc is None:
+        result.findings.append(Finding("error", "these mods add map assets, whose models go into ZZ_Win.dat; it wasn't "
+                                                "given"))
+        return result
+    if result.own_assets:
+        from .sceneryasset import AssetError, rules as asset_rules
+        try:
+            text = asset_rules(base, [a for a, _mod in result.own_assets.values()])
+        except AssetError as exc:
+            result.findings.append(Finding("error", str(exc)))
+            return result
+        first = [(ModInfo("r2-assets"), parse(text, file="files/assets", mod="r2-assets"))]
+    run = Engine(base).run(first + [by_id[m.id] for m in order] + extra)
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     if shadows:
         result.findings.insert(0, Finding("note", f"left {len(shadows)} debug-info copies as shipped "
@@ -2458,6 +2492,28 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                    for s in strokes):
                 every, who = with_pieces.setdefault(name, ([], []))
                 who.extend(i for i in ids if i not in who)
+        repaints = scenario_edits(result.order, mods, "repaint")   # (rusemod.repaint: under the rest of the paint,
+        # over a blank map's one-colour coat; its rock with the map's own 3D rocks, rusemod.rocks)
+        ground_strokes = terrain_edits(result.order, mods) if repaints else {}
+        ruled_kept: dict = {}  # map pack name -> repaint's strokes and words (repaint.expand), made once: the rocks
+        for name, (rows, ids) in repaints.items():  # over its rock (the scenery) and the paint both use them
+            if any(r.rocks for r in rows):
+                every, who = with_pieces.setdefault(name, ([], []))
+                who.extend(i for i in ids if i not in who)
+
+        def ruled_for(name: str, map_arc, done: dict) -> tuple[list, str]:
+            """Repaint's strokes on map `name` and what it did in words, from its pack and its members built so far
+            (`done`: the ground as shaped)."""
+            e = map_arc.find("output\\highdef.tms")
+            old = bytes(map_arc.read(e))
+            new = done.get(e.path) or old
+            if name not in ruled_kept or ruled_kept[name][0] != new:   # (made again if the ground changed since)
+                from .repaint import expand, start_level
+                shaped = ground_strokes.get(name, ([], []))[0]
+                ruled_kept[name] = (new, expand(repaints[name][0], old, new,
+                                                [s for s in shaped if s.kind.kind == "water"],
+                                                start_level(shaped, old)))
+            return ruled_kept[name][1]
         for name, (_filled, ids) in filled_hollows.items():  # riverbeds raised flat: their low cover goes (T28)
             every, who = with_pieces.setdefault(name, ([], []))
             who.extend(i for i in ids if i not in who)
@@ -2720,6 +2776,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     erased_towers = gone(towers, lighthouses(raw)) if towers else []
                     if erased_towers:  # their lights go with them (rusemod.lighthouses), once every map's scenery
                         lights_out[name] = (erased_towers, ids)  # is done
+                laid_decals = 0
                 if any(s.kind.kind == "texture" and s.decals and s.texture.startswith("game:") for s in strokes):
                     # up close: the game's own decals of the game textures painted, laid over the ground they paint
                     # (groundtex.decal_grid), as many as the map's scenery has room for; not tried in the game yet
@@ -2732,21 +2789,72 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     grid = (min(held.grid_dims[2 * k] * GRID_CELL[k] for k in range(3)),  # the scenery grid's
                             min(held.grid_dims[2 * k + 1] * GRID_CELL[k] for k in range(3)))  # width and height
                     sets = map_sets(arc, name)
-                    decals, said = decal_grid(strokes, decal_kept["types"], sets, seed=name, most=room, inside=grid)
+                    decals, laid_how = decal_grid(strokes, decal_kept["types"], sets, seed=name, most=room, inside=grid)
                     if decals:
                         raw = add_names(raw, sorted({o.type for o in decals}))
                         objects = list(objects) + decals
                         sunk = sunk + [f"Map Paint up close: {len(decals):,} of the game's own decal(s) over the game "
-                                       f"textures painted, {said['step'] / 260:.0f} m apart"
-                                       + (" (spread out to fit the map's scenery room)" if said["thinned"] else "")
+                                       f"textures painted, {laid_how['step'] / 260:.0f} m apart"
+                                       + (" (spread out to fit the map's scenery room)" if laid_how["thinned"] else "")
                                        + " (" + ", ".join(f"{t.split('/')[-1]} {n:,}"
-                                                          for t, n in sorted(said["types"].items())) + ")"]
-                    elif said.get("types") is not None and room == 0:
+                                                          for t, n in sorted(laid_how["types"].items())) + ")"]
+                    elif laid_how.get("types") is not None and room == 0:
                         sunk = sunk + ["Map Paint up close: no room left in the map's scenery for the game's decals"]
-                    if said.get("missing"):
-                        sunk = sunk + [f"Map Paint up close: no decal of {', '.join(r[5:] for r in said['missing'])} "
-                                       f"is loaded on this map (its decor sets: {', '.join(sorted(sets)) or 'none'}), "
-                                       f"so it shows from its painted ground only"]
+                    if laid_how.get("missing"):
+                        sunk = sunk + [f"Map Paint up close: no decal of "
+                                       f"{', '.join(r[5:] for r in laid_how['missing'])} is loaded on this map (its "
+                                       f"decor sets: {', '.join(sorted(sets)) or 'none'}), so it shows from its "
+                                       f"painted ground only"]
+                    laid_decals = len(decals)
+                rock_strokes = strokes
+                if name in repaints and any(r.rocks for r in repaints[name][0]):
+                    from .repaint import RepaintError, coats
+                    try:
+                        ruled = ruled_for(name, map_arc, changed_members)[0]
+                    except (RepaintError, KeyError, ValueError, struct.error):
+                        ruled = []   # (the paint step says why)
+                    shipped_ground = bytes(map_arc.read(map_arc.find("output\\highdef.tms")))
+                    coat = coats(strokes, shipped_ground)
+                    rock_strokes = list(strokes[:coat]) + ruled + list(strokes[coat:])
+                from .rocks import is_rock
+                if any(is_rock(s) for s in rock_strokes):
+                    # up close: the map's own 3D rocks over the palette's rock painted (rusemod.rocks), laid to the
+                    # slope, as many as the map's scenery has room for; not tried in the game yet
+                    from .groundtex import DECAL_BYTES
+                    from .models import Library as _Models
+                    from .rocks import map_mix, rock_layer, rock_room
+                    from .scenery import GRID_CELL
+                    from .tms import Tms
+                    if descs is None:
+                        descs = descriptors(arc)
+                    held = Scenery(raw)
+                    placed_n = held.types()   # every name the map lists (loaded on it), how many it places
+                    used = {n: placed_n.get(i, 0) for i, n in enumerate(held.names) if n}
+                    grid = (min(held.grid_dims[2 * k] * GRID_CELL[k] for k in range(3)),
+                            min(held.grid_dims[2 * k + 1] * GRID_CELL[k] for k in range(3)))
+                    ground_now = changed_members.get(map_arc.find("output\\highdef.tms").path) \
+                        or bytes(map_arc.read(map_arc.find("output\\highdef.tms")))
+                    shapes = _Models(game)
+                    try:
+                        def box_of(t, shapes=shapes):
+                            d = descs.get(t)
+                            first = (d.models or ((d.model,) if d.model else ())) if d is not None else ()
+                            return shapes.box(first[0]) if first else None
+                        rocks, rocks_how = rock_layer(rock_strokes, Tms(ground_now), used, box_of, seed=name,
+                                                      most=rock_room(held.fields[3], laid_decals * DECAL_BYTES),
+                                                      inside=grid)
+                    finally:
+                        shapes.close()
+                    if rocks:
+                        objects = list(objects) + rocks
+                        sunk = sunk + [f"Map Paint up close: {len(rocks):,} of the map's own 3D rocks over the rock "
+                                       f"painted, laid to its slope"
+                                       + (" (thinned to fit the map's scenery room)" if rocks_how["thinned"] else "")
+                                       + " (" + ", ".join(f"{t.split('/')[-1]} {n:,}"
+                                                          for t, n in sorted(rocks_how["types"].items())) + ")"]
+                    elif not any(map_mix(used).values()):
+                        sunk = sunk + ["Map Paint up close: this map places none of the game's rocks, so its painted "
+                                       "rock gets no 3D rocks (a type from another theatre isn't loaded on it)"]
                 if descs is None:
                     descs = descriptors(arc)
                 lowest = _LowestPoints(game, descs)
@@ -2770,6 +2878,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                    f"middle distance): "
                                    f"{', '.join(t.split('/')[-1] for t in swapped)}; the mod's objects use copies of "
                                    f"them ({SEEN_SUFFIX}), the map's own stay as shipped"]
+                if result.own_assets:  # the mods' own map assets' types (rusemod.sceneryasset): new to every map
+                    from .scenery import add_names
+                    from .sceneryasset import type_name
+                    mine = {type_name(n) for n in result.own_assets}
+                    raw = add_names(raw, sorted({o.type for o in objects if getattr(o, "type", None) in mine}))
                 changed_members[member], notes = add_objects(raw, objects)
                 notes = sunk + erased_notes + notes + ([f"{lowered} placed object(s) lowered to stand on the ground "
                                                         f"(their models start above their base point: an upper "
@@ -2957,6 +3070,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         for name, (stamps, ids) in brush_paint.items():  # the field brush's picture after the mods' own paint
             strokes, who = all_paint.setdefault(name, ([], []))
             all_paint[name] = (strokes + stamps, who + [i for i in ids if i not in who])
+        for name, (_rows, ids) in repaints.items():   # (repaints: read with the scenery's rocks, above)
+            strokes, who = all_paint.setdefault(name, ([], []))
+            all_paint[name] = (strokes, who + [i for i in ids if i not in who])
         for name, (strokes, ids) in all_paint.items():  # the Map Paint strokes,
             # before the new roads, so a road drawn over paint shows on top of it
             map_path = find_map(name)
@@ -2979,6 +3095,20 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             from . import mapkeep
             from .groundpaint import DETAIL, PaintError, paint_ground, paint_inputs
             from .groundtex import TextureError
+            if name in repaints:   # the ground the brushes moved, by its new shape, under the mods' own paint
+                from .repaint import RepaintError, coats
+                try:
+                    old = bytes(map_arc.read(map_arc.find("output\\highdef.tms")))
+                    ruled, words = ruled_for(name, map_arc, changed_members)
+                except (RepaintError, KeyError, ValueError, struct.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(repaints[name][1])}: {name}: what moved "
+                                                            f"can't be repainted ({exc})"))
+                    continue
+                coat = coats(strokes, old)   # over a blank map's one-colour coat, under the rest
+                strokes = strokes[:coat] + ruled + strokes[coat:]
+                say(f"repaint: {name}, from {', '.join(repaints[name][1])}: {words}")
+                if not strokes:
+                    continue
             swatches = None
             if any(s.kind.kind == "texture" for s in strokes):
                 try:
@@ -2994,8 +3124,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             made_from = ["paint", paint_inputs(read_map)] + sorted(f"{r} {s.digest}" for r, s in (swatches or {}).items())
             paint_k = mapkeep.key(name, made_from, strokes, None) if cache is not None else None
             kept = mapkeep.read(cache, paint_k, "paint")
-            if kept is not None and isinstance(kept.get("notes"), list):
-                painted, notes = kept["members"], kept["notes"]
+            if kept is not None and isinstance(kept.get("notes"), list):   # (its notes are that build's: said so)
+                painted = kept["members"]
+                notes = ["kept from an earlier build of the same paint; what it said then:"] + kept["notes"]
             else:
                 try:
                     painted, notes = paint_ground(read_map, lambda m, a=map_arc: a.find(m).path, strokes, cache,
@@ -3617,6 +3748,21 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 r = written.report
                 say(f"own copy of {', '.join(copies)} for {unit}: {len(written.added)} texture(s), "
                     f"{len(r['painted'])} painted; into {len(written.changed)} pack(s)")
+        if result.own_assets and text_arc is not None:  # mods' own map assets (rusemod.sceneryasset)
+            from .sceneryasset import AssetError, type_name, write_asset
+            for name, (asset, mod_id) in sorted(result.own_assets.items()):
+                try:
+                    written = write_asset(text_arc, asset, earlier={
+                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                except (AssetError, ValueError, OSError, struct.error) as exc:
+                    raise BuildError(f"{mod_id}: files/assets/{name}: {exc}") from None
+                result.model_imports.update(written.changed)
+                result.new_files.update(written.added)
+                r = written.report
+                say(f"map asset {type_name(name)} ({asset.kind}): "
+                    + ", ".join(f"{role} {r['triangles'][role]:,} triangles in {r['draws'][role]} draw(s)"
+                                for role in r["triangles"])
+                    + f", {r['pictures']} texture(s); into {len(r['mesh_packs'])} mesh pack(s)")
         sounds: dict = {}  # mods' own sounds (MOD_FORMAT §7, rusemod.sound): a later mod's WAV wins
         for mod_id in result.order:
             sounds.update(getattr(by_id.get(mod_id), "sounds", None) or {})

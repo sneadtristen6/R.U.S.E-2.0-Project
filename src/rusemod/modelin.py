@@ -1,8 +1,9 @@
 """Models from other 3D tools into the game's form (the model importer), step one: read a model file into named
 parts and fit them to a unit, ready for the build (rusemod.unitmodel) to write as the game stores its own.
 
-Readers: Autodesk .3ds (the free-model sites' commonest format, with its pictures beside it: .tga or .png) and glTF
-binary .glb (Blender's, pictures inside). A model read is a list of Mesh, z up, right-handed, in the file's own units.
+Readers: Autodesk .3ds (the free-model sites' commonest format, with its pictures beside it: .tga or .png), glTF
+binary .glb (Blender's, pictures inside) and glTF .gltf (its buffers and pictures as files beside it: Poly Haven's
+models). A model read is a list of Mesh, z up, right-handed, in the file's own units.
 
 Fitting (`prepare`): each part gets a role, from its name (turret, barrel...) or, failing that, from where it sits (a
 part resting on the turret turns with it); everything else is the hull. The model is turned to face the game's way (its
@@ -68,6 +69,9 @@ class Material:
     colour: tuple = (0.7, 0.7, 0.7)
     data: bytes = b""             # the picture itself, when the model file holds it (.glb)
     alpha: bytes = b""            # its own alpha picture (side colour / shine), when the .glb names one
+    cutout: str = ""              # glTF's alphaMode when its picture is see-through in places (leaves): MASK, BLEND
+    mask: bytes = b""             # the see-through mask picture (white shows) when it's a file of its own (a .gltf's
+                                  # <name>_alpha_<size>.png beside its colour picture, as Poly Haven's plants come)
 
 
 @dataclass
@@ -276,6 +280,85 @@ def _srgb(c: float) -> float:
     return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
 
 
+def _beside(base: Path, uri: str) -> bytes:
+    """A .gltf's buffer or picture: a data: URI's bytes, or the file it names beside the .gltf (never outside its
+    folder)."""
+    import base64
+    from urllib.parse import unquote
+    if uri.startswith("data:"):
+        return base64.b64decode(uri.split(",", 1)[1])
+    path = (base / unquote(uri)).resolve()
+    if base.resolve() not in path.parents:
+        raise ModelError(f"it names a file outside its folder: {uri}")
+    if not path.is_file():
+        raise ModelError(f"the file it names isn't beside it: {uri}")
+    return path.read_bytes()
+
+
+def gltf_document(path: Path) -> tuple[dict, bytes]:
+    """A .gltf (its JSON, with its buffers and pictures as files beside it) as a .glb holds it: one binary with every
+    buffer one after the other and every picture moved in, so it reads as a .glb does. A material whose see-through
+    mask is a picture of its own beside its colour picture (<name>_alpha_<size>.png for <name>_diff_<size>.jpg, as Poly
+    Haven's plants come) gets it as `rusemod_mask_texture` in its extras (and is see-through, MASK, if it didn't say)."""
+    path = Path(path)
+    base = path.parent
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ModelError(f"{path.name}: {exc}") from None
+    binary = bytearray()
+
+    def add(data: bytes) -> int:
+        binary.extend(bytes(-len(binary) % 4))
+        at = len(binary)
+        binary.extend(data)
+        return at
+    starts = [add(_beside(base, b["uri"])) if "uri" in b else add(b"") for b in doc.get("buffers", [])]
+    for v in doc.get("bufferViews", []):
+        v["byteOffset"] = v.get("byteOffset", 0) + starts[v.get("buffer", 0)]
+        v["buffer"] = 0
+    views = doc.setdefault("bufferViews", [])
+
+    def picture(uri: str) -> int:
+        data = _beside(base, uri)
+        views.append({"buffer": 0, "byteOffset": add(data), "byteLength": len(data)})
+        doc.setdefault("images", []).append({"bufferView": len(views) - 1, "name": uri})
+        return len(doc["images"]) - 1
+    used = set()   # the pictures a material shows (its colour picture): the others (normal maps...) aren't read
+    for m in doc.get("materials", []):
+        older = (m.get("extensions") or {}).get("KHR_materials_pbrSpecularGlossiness") or {}
+        tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture") or older.get("diffuseTexture")
+        if tex is not None:
+            used.add(doc["textures"][tex["index"]]["source"])
+    for k, img in enumerate(doc.get("images", [])):
+        if "uri" not in img:
+            continue
+        uri = img.pop("uri")
+        if not uri.startswith("data:"):
+            img["name"] = uri
+        if k not in used:
+            continue
+        data = _beside(base, uri)
+        views.append({"buffer": 0, "byteOffset": add(data), "byteLength": len(data)})
+        img["bufferView"] = len(views) - 1
+    for m in doc.get("materials", []):   # (any material: Poly Haven's fir twigs have a mask and no alphaMode)
+        tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
+        if tex is None:
+            continue
+        name = doc["images"][doc["textures"][tex["index"]]["source"]].get("name", "")
+        for diff in ("_diff_", "_diffuse_", "_col_"):
+            if diff in name:
+                stem = name[:name.rindex(diff)] + "_alpha_" + name[name.rindex(diff) + len(diff):].rsplit(".", 1)[0]
+                for ext in (".png", ".jpg"):
+                    if (base / (stem + ext)).is_file():
+                        doc.setdefault("textures", []).append({"source": picture(stem + ext)})
+                        m.setdefault("extras", {})["rusemod_mask_texture"] = len(doc["textures"]) - 1
+                        break
+                break
+    doc["buffers"] = [{"byteLength": len(binary)}]
+    return doc, bytes(binary)
+
+
 def read_glb(path: Path) -> Model:
     """A .glb's meshes (z up) with their own normals when it has them, and each material's picture and, when the
     material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture."""
@@ -283,6 +366,16 @@ def read_glb(path: Path) -> Model:
         doc, binary = glb_document(Path(path).read_bytes())
     except (ValueError, struct.error) as exc:
         raise ModelError(f"{Path(path).name}: {exc}") from None
+    return _read_document(doc, binary, path)
+
+
+def read_gltf(path: Path) -> Model:
+    """A .gltf with its files beside it (gltf_document), read as a .glb is; a see-through material keeps its alphaMode
+    (Material.cutout) and its mask picture when it has one of its own (Material.mask)."""
+    return _read_document(*gltf_document(path), path)
+
+
+def _read_document(doc: dict, binary: bytes, path) -> Model:
     materials = []
     for m in doc.get("materials", []):
         pic, data, alpha = "", b"", b""
@@ -303,7 +396,10 @@ def read_glb(path: Path) -> Model:
         # unconverted, a mustard Rapier and a dark green Land Rover drew black)
         factor = pbr.get("baseColorFactor") or older.get("diffuseFactor")
         colour = tuple(_srgb(c) for c in factor[:3]) if factor else (0.7, 0.7, 0.7)
-        materials.append(Material(m.get("name", ""), pic, colour, data, alpha))
+        mask_tex = (m.get("extras") or {}).get("rusemod_mask_texture")
+        mask = glb_image(doc, binary, doc["textures"][mask_tex]["source"]) if mask_tex is not None else b""
+        cutout = m.get("alphaMode", "") if m.get("alphaMode") in ("MASK", "BLEND") else "MASK" if mask else ""
+        materials.append(Material(m.get("name", ""), pic, colour, data, alpha, cutout, mask))
     meshes = []
     arrays = whole_arrays()
 
@@ -349,14 +445,16 @@ def read_glb(path: Path) -> Model:
 
 
 def read_model(path: Path) -> Model:
-    """A model file by its kind: .3ds or .glb."""
+    """A model file by its kind: .3ds, .glb or .gltf (with its files beside it)."""
     suffix = Path(path).suffix.lower()
     if suffix == ".3ds":
         return read_3ds(path)
     if suffix == ".glb":
         return read_glb(path)
-    raise ModelError(f"{Path(path).name}: a {suffix or 'nameless'} file; the importer reads .3ds and .glb (Blender "
-                     "saves .glb: File > Export > glTF 2.0)")
+    if suffix == ".gltf":
+        return read_gltf(path)
+    raise ModelError(f"{Path(path).name}: a {suffix or 'nameless'} file; the importer reads .3ds, .glb and .gltf "
+                     "(Blender saves both glTF kinds: File > Export > glTF 2.0)")
 
 
 # --- pictures ---
