@@ -2235,11 +2235,21 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             pass
         return out
 
+    def _sized(self, pack: str):
+        """A new map's own size (map.toml size, rusemod.bigmap): (cells across, cells down), or None (the size of the
+        map it copies)."""
+        copy = self._new_maps().get(pack.lower())
+        return tuple(copy[1].size) if copy is not None and copy[1].size else None
+
     def map_view(self, pack: str, lod: str = "lowdef") -> dict:
         """One map's ground for the 3D view: its mesh as packed buffers the window unpacks, and its overview picture.
-        `lod`: "lowdef" (light, opens fast) or "highdef" (the close-up mesh the game draws near the camera)."""
+        `lod`: "lowdef" (light, opens fast) or "highdef" (the close-up mesh the game draws near the camera). A map of
+        its own size (map.toml size) shows a flat ground that size, as the build starts it."""
         if lod not in LODS:
             raise StudioError(f"No detail level called {lod!r}")
+        sized = self._sized(pack)
+        if sized is not None:
+            return self._sized_view(self._game_pack(pack), lod, sized)
         pack = self._game_pack(pack)  # a new map shows the ground it copies
         game = self._game()
         if game is None:
@@ -2257,6 +2267,48 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._grounds[key] = view
             while len(self._grounds) > 4:
                 self._grounds.pop(next(iter(self._grounds)))
+        return view
+
+    def _sized_view(self, source: str, lod: str, sized: tuple) -> dict:
+        """The 3D view's ground for a map of its own size: the copied map's mesh grown flat to it (rusemod.bigmap, as
+        the build grows it), its picture the copied one's colour. Kept on disk per size."""
+        from rusemod import bigmap
+        from rusemod.terrain import PICTURE, mesh_buffers
+        from rusemod.tms import Tms
+        game = self._game()
+        map_path = find_pack(game, pack_file(source)) if game is not None else None
+        if map_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError(f"{pack_file(source)} isn't in the game folder.")
+        cx, cy = sized
+        key = (str(game), source, lod, sized)
+        with self._grounds_lock:
+            if key in self._grounds:
+                return self._grounds[key]
+
+        def make():
+            import base64
+            with Edat.open(str(map_path)) as arc:
+                raw = bytes(arc.read(arc.find(LODS[lod])))
+                near0 = Tms(bytes(arc.read(arc.find(LODS["highdef"]))))
+                try:
+                    rgb = bigmap.colour_of(bytes(arc.read(arc.find(PICTURE))))
+                except KeyError:
+                    rgb = bytes((96, 112, 72, 255))
+            ground = near0.height_at(near0.bounds[3] / 2, near0.bounds[4] / 2) or 0.0
+            water = near0.to_world(2, near0.base_water())
+            close = lod == "highdef"
+            grown, _info = bigmap.grow_mesh(raw, cx if close else cx // 2, cy if close else cy // 2, close, ground,
+                                            water)
+            view = mesh_buffers(Tms(grown))
+            w, h = bigmap.picture_size(cx, cy, 8)
+            png = bigmap.png_bytes(w, h, rgb)
+            view.update(pack=source, lod=lod, size=[cx, cy],
+                        picture="data:image/png;base64," + base64.b64encode(png).decode("ascii"))
+            return view
+        view = self._kept_on_disk(f"ground-{lod}-{cx}x{cy}", source, [map_path], make)
+        with self._grounds_lock:
+            self._grounds[key] = view
         return view
 
     def map_scenery(self, pack: str) -> dict:
@@ -2332,6 +2384,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         "bits": base64 of n*n bits (cell i at byte i // 8, bit i % 8; row by row from y0), 1 = cover}. n is at most
         1024 (bigger grids are sampled); kept per map."""
         from rusemod import cover
+        sized = self._sized(pack)   # (a map of its own size: the cover grid as the build makes it, none yet)
         pack = self._game_pack(pack)
         game = self._game()
         if game is None:
@@ -2341,7 +2394,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if path is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{cover.PACK} isn't in the game folder.")
-        key = ("cover", str(path), path.stat().st_mtime, pack.lower())
+        key = ("cover", str(path), path.stat().st_mtime, pack.lower(), sized)
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
@@ -2353,6 +2406,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 except KeyError:
                     raise StudioError(f"{pack} has no cover grid in {cover.PACK}, so its cover can't be shown or "
                                       f"painted.") from None
+            if sized is not None:
+                from rusemod.bigmap import grow_mapinfo
+                win = grow_mapinfo(win, *sized)[0]
             try:
                 got = cover.cover_bits(win)
             except (cover.CoverError, ValueError, struct.error) as exc:
@@ -2370,6 +2426,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         from y0; 1 = a circle of that graph holds the cell's middle). n is 512; kept per map."""
         from rusemod import cover, nav
         from ruse_mod_engine import sdb
+        sized = self._sized(pack)   # (a map of its own size: open everywhere, as the build starts it)
         pack = self._game_pack(pack)
         game = self._game()
         if game is None:
@@ -2379,7 +2436,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if path is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError(f"{cover.PACK} isn't in the game folder.")
-        key = ("movement", str(path), path.stat().st_mtime, pack.lower())
+        key = ("movement", str(path), path.stat().st_mtime, pack.lower(), sized)
         with self._grounds_lock:
             cached = self._sceneries.get(key)
         if cached is not None:
@@ -2389,6 +2446,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 win = bytes(arc.read(arc.find(cover.member(pack))))
             except KeyError:
                 raise StudioError(f"{pack} has no movement data in {cover.PACK}.") from None
+        if sized is not None:
+            from rusemod.bigmap import grow_mapinfo
+            win = grow_mapinfo(win, *sized)[0]
         try:
             bufs = sdb.split_mapinfo(win)[1]
             graphs = {name: nav.Graph.read(bufs[k]) for name, k in (("infantry", 1), ("vehicles", 2))}
@@ -3264,10 +3324,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         from rusemod.cover import member as movement_member
         game = self._game()
         shipped = self._game_pack(pack)
+        sized = self._sized(pack)
         path = find_pack(game, scenario.PACK) if game is not None else None
         if path is None:
             return None, "the game's scenarios aren't found"
-        key = ("whole-map-sectors", str(path), path.stat().st_mtime, shipped.lower(), file.lower())
+        key = ("whole-map-sectors", str(path), path.stat().st_mtime, shipped.lower(), file.lower(), sized)
         with self._grounds_lock:
             hit = self._sceneries.get(key)
         if hit is not None:
@@ -3282,6 +3343,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     out = (None, "it has no zone map: its sectors stay as they are")
                 else:
                     width, height = sectors.map_size(bytes(arc.read(arc.find(movement_member(shipped)))))
+                    if sized is not None:
+                        from rusemod.bigmap import CASE
+                        width, height = sized[0] * CASE, sized[1] * CASE
                     res = sectors.over_whole_map(s, bytes(arc.read(kdt)), width, height, None, self.PREVIEW_CELLS)
                     s.zones = res.zones
                     out = (scenario.view(s)["zones"], "")
@@ -3314,11 +3378,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         from rusemod.cover import member as movement_member
         game = self._game()
         shipped = self._game_pack(pack)
+        sized = self._sized(pack)   # (a map of its own size: its sectors are painted over that)
         path = find_pack(game, scenario.PACK) if game is not None else None
         if path is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E., so there are no sectors to paint.")
-        key = ("sector-source", str(path), path.stat().st_mtime, shipped.lower(), file.lower())
+        key = ("sector-source", str(path), path.stat().st_mtime, shipped.lower(), file.lower(), sized)
         with self._grounds_lock:
             hit = self._sceneries.get(key)
         if hit is not None:
@@ -3337,6 +3402,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except (KeyError, ValueError, struct.error) as exc:   # (SectorError and ScenarioError are ValueErrors)
             # not a game rule: the game's own files couldn't be read
             raise StudioError(f"{file}: its sectors can't be read ({exc})") from None
+        if sized is not None:
+            from rusemod.bigmap import CASE
+            width, height = sized[0] * CASE, sized[1] * CASE
         out = (s, kdt_raw, width, height)
         with self._grounds_lock:
             self._sceneries[key] = out
@@ -3350,7 +3418,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         s, kdt_raw, width, height = self._sector_source(pack, file)
         g = sectors.Grid.over(width, height)
         empty = setting.starts_empty(file)
-        start_key = ("sector-start", self._game_pack(pack).lower(), file.lower(), empty, setting.whole_map)
+        start_key = ("sector-start", self._game_pack(pack).lower(), file.lower(), empty, setting.whole_map,
+                     width, height)
         with self._grounds_lock:
             start = self._sceneries.get(start_key)
         if start is None:
@@ -3418,9 +3487,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         from rusemod import sectors
         from rusemod.numpy2 import np
         setting = self._sector_setting(pack)
-        painted, g, _src = self._sector_cells(pack, file, setting)
+        painted, g, src = self._sector_cells(pack, file, setting)
         key = ("sector-tidy", pack.lower(), file.lower(), setting.starts_empty(file), setting.whole_map,
-               tuple(setting.paints_of(file)))
+               tuple(setting.paints_of(file)), src[2], src[3])
         kept = getattr(self, "_tidy_kept", None)
         if kept is None:
             kept = self._tidy_kept = {}
@@ -3471,10 +3540,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             except sectors.SectorError:
                 lines = {}
         free = next(n for n in range(sectors.MOST_SECTOR + 2) if n > sectors.MOST_SECTOR or n not in numbers)
+        made = [p for p in setting.paints_of(file) if isinstance(p, sectors.SectorAuto)]
+        auto = {"metres": round(made[-1].size / 260.0), "seed": made[-1].seed} if made else None
         return {"file": file, "nx": nx, "ny": ny, "box": [0.0, 0.0, nx * g.step * k, ny * g.step * k], "runs": runs,
                 "sectors": listed, "problems": problems, "empty": not numbers,
                 "starts_empty": setting.starts_empty(file), "whole_map": setting.whole_map,
-                "strokes": len(setting.paints_of(file)),
+                "strokes": len(setting.paints_of(file)), "auto": auto,
                 "next": free if free <= sectors.MOST_SECTOR else None, "tidied": tidied, "outlines": lines}
 
     SECTOR_STROKE_DABS = 5000   # dabs one drag may hold (sectors.MOST_POINTS is the file's own limit)
@@ -3502,6 +3573,30 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         with self._saving:
             now = self._sector_setting(pack)
             self._save_sectors(pack, _replace(now, paints=now.paints + (paint,)))
+        return self.sector_view(pack, file)
+
+    def sector_auto(self, pack: str, file: str, size_m: float, seed: int = 0) -> dict:
+        """Make sectors on scenario `file` (the owner, 2026-10-17: "more intricate sectors rather than just four big
+        blobs"): its whole map cut into sectors about `size_m` metres across with wandering borders
+        (rusemod.sectors.SectorAuto), over every stroke and shape it had (kept under it, so Undo brings them back;
+        a second try takes the first one's place); the brush and shapes then reshape them. `seed`: another layout of
+        the same size. Returns sector_view ("auto": the newest {"metres", "seed"})."""
+        from dataclasses import replace as _replace
+        from rusemod import sectors
+        self._base_scenario(pack, file)   # (a scenario the map has)
+        try:
+            row = sectors.parse_paint({"file": file, "auto": float(size_m), "seed": int(seed)}, "Make sectors")
+        except (TypeError, ValueError) as exc:   # (SectorError is a ValueError)
+            raise StudioError(f"Those sectors can't be made ({exc}).") from None
+        with self._saving:
+            now = self._sector_setting(pack)
+            paints = list(now.paints)
+            mine = [i for i, p in enumerate(paints) if p.file.lower() == file.lower()]
+            if mine and isinstance(paints[mine[-1]], sectors.SectorAuto):   # another try: in place of the last one
+                paints[mine[-1]] = row
+            else:   # after what was there, so Undo brings it back
+                paints.append(row)
+            self._save_sectors(pack, _replace(now, paints=tuple(paints)))
         return self.sector_view(pack, file)
 
     SECTOR_AREAS_MOST = 64   # sectors one shape edit may change (a corner shared by a few, a deleted one)
@@ -3964,6 +4059,94 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             raise StudioError(f"{path} has a mistake ({exc}). The mod check at the top can set it aside, or fix it "
                               f"by hand.") from None
         return got[0] if got else None
+
+    def map_size(self, pack: str) -> dict:
+        """A map's size for the Map size panel (the owner, 2026-10-17: add a tile on a side, the way Cities: Skylines
+        buys land): {"cells": [across, down] now, "copied": [across, down] of the map it copies, "km": [x, y], "can":
+        whether its size can change (a new map started blank), "why": why not ("shipped": one of the game's maps,
+        "copy": a copy keeping the copied map's ground; the page words it, size_why_*), "most": the most cells a side, "tile":
+        cells a tile is (2: the far view draws them two by two), "clouds": metres, "off" or None, "room": "kept",
+        "out" or None (as the build decides)}."""
+        from rusemod import bigmap, newmap
+        copied = self._copied_cells(self._game_pack(pack))
+        copy = self._new_maps().get(pack.lower())
+        spec = copy[1] if copy is not None else None
+        cells = list(spec.size) if spec is not None and spec.size else copied
+        why = "" if spec is not None and spec.blank else "shipped" if spec is None else "copy"
+        clouds = None if spec is None or spec.clouds is None else (
+            "off" if spec.clouds == newmap.CLOUDS_OFF else round(spec.clouds / newmap.M))
+        return {"cells": cells, "copied": copied, "km": [round(c * bigmap.CASE / 260 / 1000, 1) for c in cells],
+                "can": not why, "why": why, "most": bigmap.MOST, "tile": 2, "clouds": clouds,
+                "room": spec.room if spec is not None else None}
+
+    def _copied_cells(self, source: str) -> list:
+        """The game's map `source`'s size in cells, [across, down] (its movement graph's box, as the sectors read it)."""
+        from rusemod import bigmap, sectors
+        from rusemod.cover import member as movement_member
+        game = self._game()
+        path = find_pack(game, scenario.PACK) if game is not None else None
+        if path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so the map's size can't be read.")
+        with Edat.open(str(path)) as arc:
+            try:
+                w, h = sectors.map_size(bytes(arc.read(arc.find(movement_member(source)))))
+            except (KeyError, ValueError, TypeError) as exc:
+                raise StudioError(f"{source}: its size can't be read ({exc}).") from None
+        return [round(w / bigmap.CASE), round(h / bigmap.CASE)]
+
+    def set_map_size(self, pack: str, across: int, down: int, first_x: int = 0, first_y: int = 0) -> dict:
+        """Give a blank new map `across` x `down` cells (map.toml size; rusemod.bigmap grows it in the build).
+        `first_x` / `first_y`: cells added (or, below 0, taken off) on the map's first sides (x = 0, y = 0): everything
+        the mod placed moves with the map (bigmap.shift_map_folder), and so do the copied scenario's items the mod
+        hasn't moved, so nothing changes place on the ground. The copied map's own size again: size is left out.
+        Returns map_size."""
+        from rusemod import bigmap, newmap
+        copy = self._new_maps().get(pack.lower())
+        now = self.map_size(pack)
+        if now["why"] == "shipped":
+            raise StudioError("A shipped map keeps its size.")
+        if now["why"]:
+            raise StudioError("Only a map started blank (Duplicate map: Blank Terrain or Blank Ocean) can change size: a "
+                              "copy keeps the copied map's ground, and its size with it.")
+        try:
+            cells = bigmap.check_size([int(across), int(down)], "the map's size")
+        except (bigmap.BigMapError, TypeError, ValueError) as exc:
+            raise StudioError(str(exc)) from None
+        if first_x % 2 or first_y % 2:
+            raise StudioError("A strip is two squares wide: add or take off an even number of squares on a side.")
+        spec = replace(copy[1], size=None if list(cells) == now["copied"] and not (first_x or first_y) else cells)
+        dx, dy = first_x * bigmap.CASE, first_y * bigmap.CASE
+        path = self._map_file(pack)
+        players = self._read_players(pack)
+        files = [s["file"] for s in self.map_scenarios(pack, edited=False)["scenarios"]] if dx or dy else []
+        with self._saving:
+            if dx or dy:
+                moves, spawns = self._read_scenario_edits(pack)
+                moved = {(m.file.lower(), m.item) for m in moves}
+                for f in files:   # the copied scenario's items the mod hasn't moved: moved with the map, as moves
+                    base = self._base_scenario(pack, f)
+                    for i, it in enumerate(base["items"]):
+                        if it["kind"] in scenario.KINDS_MOVABLE and (f.lower(), i) not in moved:
+                            moves.append(scenario.Move(f, i, it["kind"], it["x"], it["y"]))
+                self._write_scenario_edits(pack, moves, spawns)   # (written before the shift, which moves them all)
+                bigmap.shift_map_folder(path.parent, dx, dy)
+            # the blank start's whole-map strokes (level, drain or sea, paint) made to reach over the new size: a blank
+            # map's ground is drawn as our own only from a first stroke levelling all of it (groundgen.Shape)
+            old = bigmap.whole_map_reach(now["cells"][0] * bigmap.CASE, now["cells"][1] * bigmap.CASE)
+            new = bigmap.whole_map_reach(cells[0] * bigmap.CASE, cells[1] * bigmap.CASE)
+            terrain_toml = path.parent / "terrain.toml"
+            if terrain_toml.is_file():
+                text, n = bigmap.refit_whole_map(terrain_toml.read_text(encoding="utf-8"),
+                                                 (old[0] + dx, old[1] + dy, old[2]), new)
+                if n:
+                    _save_checked(terrain_toml, text, lambda data: None)
+            text = newmap.map_toml(spec, players.count if players else None,
+                                   f"A new map: a copy of {spec.copy_of} called {spec.names['us']!r} in the menus "
+                                   "(MOD_FORMAT §8).\nMade in the RUSE Studio, which rewrites this file.")
+            _save_checked(path, text, lambda data: newmap.parse(data, str(path), copy[0]))
+        self._grounds.clear()
+        return self.map_size(pack)
 
     def set_players(self, pack: str, count: int | None, entry: str | None = None) -> dict:
         """Set how many players the map takes in the current mod (None: as the game has it). Returns map_players."""

@@ -52,6 +52,11 @@ class NewMapError(ValueError):
 
 GROUNDS = ("kept", "generated")   # a new map's ground: the copied map's moved, or drawn as our own (map.toml ground)
 BLANKS = ("terrain", "ocean")     # a new map started blank (map.toml blank): rusemod.presets' Blank Terrain or Ocean
+ROOMS = ("kept", "out")           # a sized map's HQ room (map.toml room): the copied map's, or out of sight
+CLOUDS_OFF = 1.5e6                # map.toml clouds = "off": the cloud layer over the camera's top (about 1,130,000), so
+                                  # no cloud covers the map at any height (80 km map, 2026-10-17: "the clouds are gone")
+CLOUDS_M = (50, 50000)            # map.toml clouds in metres: the shipped maps' layers are 230-1,720 m up
+M = 260.0                         # map units a metre
 
 
 @dataclass
@@ -66,6 +71,12 @@ class NewMap:
                                   # not the copied map's moved; "kept": the copied map's, moved by the strokes
     blank: str | None = None      # BLANKS: started blank, nothing of the copied map's on it (the owner, 2026-10-09:
                                   # "nothing should be there. This isn't D-Day"); None: a copy as it was
+    size: tuple | None = None     # a blank map's cells (across, down), even, 2..bigmap.MOST: rusemod.bigmap grows it;
+                                  # None: the copied map's size
+    clouds: float | None = None   # the cloud layer's height in map units (MapConstante CloudHeight); None: the copied
+                                  # map's, or over the camera's top on a map bigger than it
+    room: str | None = None       # ROOMS: the HQ room kept, or out of sight; None: out on a map bigger than the copied
+                                  # one (its table is the copied map's size), kept otherwise
     picture_data: bytes | None = field(default=None, compare=False, repr=False)  # that PNG's bytes, read with the mod
     wide_picture_data: bytes | None = field(default=None, compare=False, repr=False)
 
@@ -132,7 +143,33 @@ def parse(data: dict, where: str = "map.toml", folder: str = "") -> list[NewMap]
     if blank is not None and blank not in BLANKS:
         raise NewMapError(f"{where}: blank must be one of {', '.join(repr(b) for b in BLANKS)} (the map started as "
                           f"Blank Terrain or Blank Ocean), or left out")
-    return [NewMap(src, names, entry, picture, wide, dots, ground, blank)]
+    size = clouds = room = None
+    if "size" in data:
+        if blank is None:
+            raise NewMapError(f"{where}: size is for a new map that started blank (blank = \"terrain\" or \"ocean\"): "
+                              f"a copy keeps the copied map's ground, and its size with it")
+        from .bigmap import BigMapError, check_size
+        try:
+            size = check_size(data["size"], where)
+        except BigMapError as exc:
+            raise NewMapError(str(exc)) from None
+    if "clouds" in data:
+        c = data["clouds"]
+        if c == "off":
+            clouds = CLOUDS_OFF
+        elif isinstance(c, (int, float)) and not isinstance(c, bool) and CLOUDS_M[0] <= c <= CLOUDS_M[1]:
+            clouds = float(c) * M
+        else:
+            raise NewMapError(f"{where}: clouds must be the cloud layer's height in metres ({CLOUDS_M[0]} to "
+                              f"{CLOUDS_M[1]}; the shipped maps' are 230 to 1,720 m), or \"off\"")
+    if "room" in data:
+        if data["room"] not in ROOMS:
+            raise NewMapError(f"{where}: room must be one of {', '.join(repr(r) for r in ROOMS)} (the HQ room kept, "
+                              f"or out of sight)")
+        if size is None:
+            raise NewMapError(f"{where}: room is for a map given its own size (size = [across, down])")
+        room = data["room"]
+    return [NewMap(src, names, entry, picture, wide, dots, ground, blank, size, clouds, room)]
 
 
 def is_blank(spec: NewMap | None) -> bool:
@@ -159,6 +196,12 @@ def map_toml(spec: NewMap, players: int | None = None, header: str = "") -> str:
         lines.append(f'ground = "{spec.ground}"')
     if spec.blank:
         lines.append(f'blank = "{spec.blank}"')
+    if spec.size:
+        lines.append(f"size = [{spec.size[0]}, {spec.size[1]}]")
+    if spec.clouds is not None:
+        lines.append('clouds = "off"' if spec.clouds == CLOUDS_OFF else f"clouds = {round(spec.clouds / M)}")
+    if spec.room:
+        lines.append(f'room = "{spec.room}"')
     if set(spec.names) == {"us"}:
         lines.append(f'name = "{_toml_text(spec.names["us"])}"')
     else:

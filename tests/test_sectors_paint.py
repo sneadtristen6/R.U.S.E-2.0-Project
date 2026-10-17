@@ -380,6 +380,27 @@ class StudioBrush(_with_mod()):
         with self.assertRaises(Exception):
             self.api.sector_paint("Blitz", f, 300, 5000.0, [[1.0, 1.0]])
 
+    def test_make_sectors_over_what_was_painted_and_another_layout_in_its_place(self):
+        """Make sectors (the owner, 2026-10-17: "more intricate sectors rather than just four big blobs"): the whole
+        map cut up, kept over the strokes before it (Undo brings them back); Another layout takes its place."""
+        f = "leveldesign.scenario"
+        self.api.sector_paint("Blitz", f, 0, 4000.0, [[60000.0, 60000.0]])
+        v = self.api.sector_auto("Blitz", f, 500)        # the made-up map is about 1,000 x 760 m: 2 x 2 sectors
+        nx, ny = S.auto_layout(W, H, 500 * 260.0)
+        self.assertEqual(([s["number"] for s in v["sectors"]], v["strokes"], v["auto"], v["problems"]),
+                         (list(range(nx * ny)), 2, {"metres": 500, "seed": 0}, []))
+        self.assertNotIn(0, self.cells(v))               # every place in a sector
+        again = self.api.sector_auto("Blitz", f, 500, 1)
+        self.assertEqual((again["strokes"], again["auto"]), (2, {"metres": 500, "seed": 1}))
+        data = tomllib.loads(self.file.read_text(encoding="utf-8"))["sectors"]["paint"]
+        self.assertEqual([("auto" in p, p.get("seed")) for p in data], [(False, None), (True, 1)])
+        v = self.api.sector_undo("Blitz", f)
+        self.assertEqual((v["strokes"], v["auto"]), (1, None))
+        self.assertEqual([s["number"] for s in v["sectors"]], [0, 1])   # the map's own two, with the stroke on them
+        for bad in (10, 50000, "a lot"):
+            with self.assertRaises(Exception, msg=str(bad)):
+                self.api.sector_auto("Blitz", f, bad)
+
     def test_shapes_saved_together_and_taken_back_together(self):
         """A shape edit (the owner, 2026-10-09: sectors as shapes you drag): the sectors it changes saved in one go,
         the outlines with them, and Undo taking them all back."""

@@ -87,6 +87,30 @@ class SectorArea:
     within: tuple = ()
 
 
+AUTO_M = (500.0, 40000.0)   # an automatic sector's size in metres, least and most
+AUTO_JITTER = 0.35          # how far a sector's middle strays from its place on the grid (a share of the spacing)
+AUTO_WAVE = 0.18            # how far its borders wander (a share of the spacing): small enough that every sector stays
+AUTO_WAVELENGTH = 1.3       # one piece (the bend never folds: 0.18 x 2 pi / 1.3 < 1), the wave this many spacings long
+
+
+@dataclass(frozen=True)
+class SectorAuto:
+    """The Studio's Make sectors (the owner, 2026-10-17: "how do we get more intricate sectors rather than just four big
+    blobs?"): scenario `file`'s whole map cut into sectors about `size` map units across, every place in one. Their
+    middles sit on a grid at that spacing, each nudged off it a little, every place goes to the nearest middle, and
+    the distances are bent by slow waves so the borders wander instead of running straight (the shipped maps' sectors
+    follow the land: 5-30 a map, 1-12 km² each). Numbered 0, 1, 2 ... a row at a time from the map's first corner.
+    `seed` picks another layout of the same size; the same on every PC. Strokes and areas after it reshape them."""
+    file: str
+    size: float
+    seed: int = 0
+
+
+def auto_layout(width: float, height: float, size: float) -> tuple[int, int]:
+    """How many sectors across and down a map of `width` x `height` map units gets at `size` (at least one each way)."""
+    return max(1, round(width / size)), max(1, round(height / size))
+
+
 @dataclass(frozen=True)
 class Sectors:
     """What a mod does to a map's sectors (scenario.toml `[sectors]`): `whole_map`, every scenario's sectors reach
@@ -159,6 +183,20 @@ def parse_paint(p, at: str):
         raise SectorError(f"{at} isn't a table")
     if "area" in p:
         return parse_area(p, at)
+    if "auto" in p:
+        extra = sorted(set(p) - {"file", "auto", "seed"})
+        if extra:
+            raise SectorError(f"{at}: unknown key {extra[0]!r} (an automatic row holds file, auto and seed)")
+        if not isinstance(p.get("file"), str) or not p["file"].lower().endswith(".scenario"):
+            raise SectorError(f"{at}: file is a scenario file's name (like leveldesign_3v3_v01.scenario)")
+        size = p["auto"]
+        if not _number(size) or not AUTO_M[0] <= size <= AUTO_M[1]:
+            raise SectorError(f"{at}: auto is the sectors' size in metres, {AUTO_M[0]:.0f} to {AUTO_M[1]:.0f} (the "
+                              f"shipped maps' sectors are about 1,000 to 3,500 m across)")
+        seed = p.get("seed", 0)
+        if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
+            raise SectorError(f"{at}: seed is a whole number, 0 or more")
+        return SectorAuto(p["file"], float(size) * 260.0, seed)
     extra = sorted(set(p) - {"file", "sector", "radius", "points", "shape", "dx", "dy"})
     if extra:
         raise SectorError(f"{at}: unknown key {extra[0]!r}")
@@ -235,6 +273,13 @@ def sectors_toml(setting) -> str:
         lines.append("no_sectors = [" + ", ".join(_toml_str(f) for f in setting.no_sectors) + "]")
     lines.append("")
     for p in setting.paints:
+        if isinstance(p, SectorAuto):
+            lines += ["# The whole map cut into sectors about `auto` metres across (the Studio's Make sectors).",
+                      "[[sectors.paint]]", f"file = {_toml_str(p.file)}", f"auto = {round(p.size / 260.0)}"]
+            if p.seed:
+                lines.append(f"seed = {p.seed}")
+            lines.append("")
+            continue
         if isinstance(p, SectorArea):
             lines += ["[[sectors.paint]]", f"file = {_toml_str(p.file)}", f"sector = {p.sector}", f"group = {p.group}",
                       "area = [" + ", ".join(f"[{x!r}, {y!r}]" for x, y in p.points) + "]"]
@@ -1168,6 +1213,9 @@ def paint_cells(lab, paint, g: Grid, np) -> None:
     if isinstance(paint, SectorArea):
         area_cells(lab, paint, g, np)
         return
+    if isinstance(paint, SectorAuto):
+        auto_cells(lab, paint, g, np)
+        return
     value = paint.sector
     r2 = paint.radius * paint.radius
     n = math.sqrt(paint.dx * paint.dx + paint.dy * paint.dy) or 1.0
@@ -1187,6 +1235,37 @@ def paint_cells(lab, paint, g: Grid, np) -> None:
         else:
             t2 = (ox * ox + oy * oy) / r2
         lab[i0:i1 + 1, j0:j1 + 1][t2 < 1.0] = value
+
+
+def auto_cells(lab, auto: SectorAuto, g: Grid, np) -> None:
+    """Every cell of `lab` (in place) in the sector SectorAuto says: the nearest of the nudged middles, measured in
+    a place bent by two slow waves (each cell's nearest found among the 3 x 3 middles round its own grid place)."""
+    import random
+    nx, ny = auto_layout(g.width, g.height, auto.size)
+    if nx * ny > MOST_SECTOR + 1:
+        raise SectorError(f"{auto.file}: sectors {auto.size / 260:.0f} m across make {nx * ny} on this map; a scenario "
+                          f"holds {MOST_SECTOR + 1} at most: make them bigger")
+    sx, sy = g.width / nx, g.height / ny
+    rng = random.Random(f"rusemod sectors {auto.file.lower()} {auto.seed} {nx}x{ny}")
+    mid_x = np.array([(i + 0.5 + rng.uniform(-AUTO_JITTER, AUTO_JITTER)) * sx for j in range(ny) for i in range(nx)])
+    mid_y = np.array([(j + 0.5 + rng.uniform(-AUTO_JITTER, AUTO_JITTER)) * sy for j in range(ny) for i in range(nx)])
+    p1, p2 = rng.uniform(0, 2 * math.pi), rng.uniform(0, 2 * math.pi)
+    x = ((np.arange(g.nx) + 0.5) * g.step)[None, :]
+    y = ((np.arange(g.ny) + 0.5) * g.step)[:, None]
+    wx = x + AUTO_WAVE * sx * np.sin(2 * math.pi * y / (AUTO_WAVELENGTH * sy) + p1)
+    wy = y + AUTO_WAVE * sy * np.sin(2 * math.pi * x / (AUTO_WAVELENGTH * sx) + p2)
+    gi = np.clip(np.floor(wx / sx).astype(np.int64), 0, nx - 1)
+    gj = np.clip(np.floor(wy / sy).astype(np.int64), 0, ny - 1)
+    best = np.full(np.broadcast_shapes(wx.shape, wy.shape), np.inf)
+    out = np.zeros(best.shape, np.int32)
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            k = np.clip(gj + dj, 0, ny - 1) * nx + np.clip(gi + di, 0, nx - 1)
+            d = (wx - mid_x[k]) ** 2 + (wy - mid_y[k]) ** 2
+            closer = d < best
+            best[closer] = d[closer]
+            out[closer] = k[closer]
+    lab[:, :] = out
 
 
 def painted_cells(start, paints, g: Grid, np):

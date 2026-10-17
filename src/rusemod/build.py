@@ -244,9 +244,10 @@ def _map_readers() -> dict:
                        lambda d, rel: parse_roads(d.get("road", []), rel) + parse_take_out(d.get("take_out"), rel),
                        RoadNetError),
         "map.toml": (("players", "entry", "copy_of", "name", "picture", "wide_picture", "start_dots", "ground",
-                      "blank"),
+                      "blank", "size", "clouds", "room"),
                      "a map file holds players = N (and entry = the map-list name), picture, wide_picture and "
-                     "start_dots, and for a new map copy_of, name, ground and blank",
+                     "start_dots, and for a new map copy_of, name, ground and blank (and for a blank one size, "
+                     "clouds and room)",
                      _map_toml, (PlayersError, NewMapError, PictureError)),
     }
 
@@ -2058,6 +2059,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         new_paths: dict = {}  # new map's pack name, lower case -> its pack's path, as the copy will have it
         sources: dict = {}    # new map's pack name, lower case -> the shipped map's folder (its water constants)
         generated: set = set()  # new maps (lower case) whose ground is drawn as our own (map.toml ground; groundgen)
+        sized: dict = {}        # new maps (lower case) given a size of their own -> (cells across, down) (bigmap)
         data_base, data_new = None, {}  # DataMap_Win.dat as opened for the new maps, and the members they add
         try:
             making = new_maps(result.order, mods)
@@ -2101,6 +2103,29 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     result.findings.append(Finding("error", f"{mod_id}: maps/{name}: {clone.pack_from}, the pack of "
                                                             f"{spec.copy_of}, isn't in this game, so it can't be copied"))
                     continue
+                base_pack = open_pack(source)
+                if spec.size:  # a blank map of its own size (map.toml size): its copied files grown to it (bigmap)
+                    from .bigmap import BigMapError, Resized, grow_clone, grow_pack
+                    from .newmap import CLOUDS_OFF
+                    cx, cy = spec.size
+                    try:
+                        members, facts, pack_notes = grow_pack(base_pack, cx, cy)
+                        bigger = cx * cy > facts["cells"]
+                        room = spec.room or ("out" if bigger else "kept")
+                        clouds = spec.clouds if spec.clouds is not None else (CLOUDS_OFF if bigger else None)
+                        clone.notes += [f"size {cx} x {cy} cells: {note}" for note in pack_notes + grow_clone(
+                            clone, reading(result.changed, glad_new, arc), cx, cy, clouds, room)]
+                    except ImportError:
+                        # not a game rule: the apps carry numpy, a plain Python build hasn't it
+                        result.findings.append(Finding("error", f"{mod_id}: maps/{name}: its size ({cx} x {cy} "
+                                                                f"cells) needs numpy, which this Python hasn't got"))
+                        continue
+                    except (BigMapError, ValueError, KeyError, struct.error) as exc:
+                        result.findings.append(Finding("error", f"{mod_id}: maps/{name}: it can't be made {cx} x {cy} "
+                                                                f"cells ({exc})"))
+                        continue
+                    base_pack = Resized(base_pack, members)
+                    sized[name.lower()] = spec.size
                 owner = next((m for m, _ops in mods if m.id == mod_id), None)
                 found = next((v for k, v in getattr(owner, "missions", {}).items() if k.lower() == name.lower()), None)
                 if found is not None:  # its own mission (maps/<map>/mission.toml)
@@ -2121,7 +2146,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 glad_new.update(clone.glad)
                 data_new.update(clone.data)
                 path = Path(game) / "Maps" / "PC" / pack_file(name)
-                new_packs[path] = NewPack(open_pack(source), clone.pack_id, source.name)
+                new_packs[path] = NewPack(base_pack, clone.pack_id, source.name)
                 new_paths[name.lower()] = path
                 sources[name.lower()] = clone.map_folder
                 if spec.ground == "generated":
@@ -2279,7 +2304,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if cache is not None:
                 try:
                     depth = depth_of()
-                    keep_key = mapkeep.key(name + ("|generated" if name.lower() in generated else ""),
+                    size_tag = "|{}x{}".format(*sized[name.lower()]) if name.lower() in sized else ""
+                    keep_key = mapkeep.key(name + ("|generated" if name.lower() in generated else "") + size_tag,
                                            mapkeep.pack_identity(map_arc, map_path), strokes, depth)
                 except Exception:  # noqa: BLE001 - nothing to tell it by: the map is made as before, and not kept
                     keep_key = None

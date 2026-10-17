@@ -277,6 +277,77 @@ class BlankStart(WithAMapProject):
             self.api.duplicate_map("SuperCrossRoads4", "Moon", preset="blank_moon")
 
 
+class MapSize(WithAMapProject):
+    """Map size (StudioApi.map_size / set_map_size, map.toml size; the owner, 2026-10-17: add a tile on a side, the
+    way Cities: Skylines buys land): only a blank new map changes size, two cells a step; a strip on its first sides
+    moves what the mod placed with the map, and the blank start's whole-map strokes reach over the new size (else the
+    build falls back to its slow way of drawing the ground)."""
+
+    def setUp(self):
+        from rusemod import bigmap, presets
+        super().setUp()
+        patch = mock.patch.object(StudioApi, "_copied_cells", return_value=[12, 8])
+        patch.start()
+        self.addCleanup(patch.stop)
+        facts = presets.Facts((0.0, 0.0, 12 * bigmap.CASE, 8 * bigmap.CASE), 12623.0, 19233.0,
+                              "leveldesign_normal.scenario", [(0, "StartingPoint")], [])
+        with mock.patch.object(presets, "copy_scenario", return_value=facts.scenario), \
+                mock.patch.object(presets, "read_facts", return_value=facts):
+            self.pack = self.api.duplicate_map("SuperCrossRoads4", "Big Blitz", preset="blank_terrain")["pack"]
+        self.folder = self.api._map_dir() / "maps" / self.pack
+
+    def first_stroke(self):
+        s = tomllib.loads((self.folder / "terrain.toml").read_text(encoding="utf-8"))["stroke"][0]
+        return rounded((s["x"], s["y"], s["radius"]))
+
+    def test_only_a_blank_new_map(self):
+        self.assertFalse(self.api.map_size("SuperCrossRoads4")["can"])
+        copy = self.api.duplicate_map("SuperCrossRoads4", "Blitz at Dusk")["pack"]
+        self.assertEqual((self.api.map_size(copy)["why"], self.api.map_size("SuperCrossRoads4")["why"]), ("copy", "shipped"))
+        with self.assertRaisesRegex(StudioError, "Only a map started blank"):
+            self.api.set_map_size(copy, 24, 16)
+
+    def test_bigger_on_the_far_sides_and_back(self):
+        from rusemod import bigmap
+        got = self.api.map_size(self.pack)
+        self.assertEqual((got["cells"], got["copied"], got["can"], got["tile"], got["most"]),
+                         ([12, 8], [12, 8], True, 2, bigmap.MOST))
+        self.assertEqual(self.first_stroke(), rounded(bigmap.whole_map_reach(12 * bigmap.CASE, 8 * bigmap.CASE)))
+        got = self.api.set_map_size(self.pack, 24, 16)
+        self.assertEqual((got["cells"], got["km"]), ([24, 16], [30.2, 20.2]))
+        toml = tomllib.loads((self.folder / "map.toml").read_text(encoding="utf-8"))
+        self.assertEqual((toml["size"], toml["blank"], toml["copy_of"]), ([24, 16], "terrain", "SuperCrossRoads4"))
+        self.assertEqual(self.first_stroke(), rounded(bigmap.whole_map_reach(24 * bigmap.CASE, 16 * bigmap.CASE)))
+        got = self.api.set_map_size(self.pack, 12, 8)          # the copied map's own size: size left out
+        self.assertEqual(got["cells"], [12, 8])
+        self.assertNotIn("size", tomllib.loads((self.folder / "map.toml").read_text(encoding="utf-8")))
+        self.assertEqual(self.first_stroke(), rounded(bigmap.whole_map_reach(12 * bigmap.CASE, 8 * bigmap.CASE)))
+
+    def test_a_strip_on_the_first_side_moves_what_was_placed(self):
+        from rusemod import bigmap
+        (self.folder / "scenery.toml").write_text(
+            (self.folder / "scenery.toml").read_text(encoding="utf-8")
+            + '\n[[object]]\ntype = "House"\nx = 1000.0\ny = 2000.0\n', encoding="utf-8")
+        with mock.patch.object(StudioApi, "map_scenarios", return_value={"scenarios": []}):
+            got = self.api.set_map_size(self.pack, 16, 8, first_x=4)
+        self.assertEqual(got["cells"], [16, 8])
+        house = tomllib.loads((self.folder / "scenery.toml").read_text(encoding="utf-8"))["object"][-1]
+        self.assertEqual((house["x"], house["y"]), (1000.0 + 4 * bigmap.CASE, 2000.0))
+        self.assertEqual(self.first_stroke(), rounded(bigmap.whole_map_reach(16 * bigmap.CASE, 8 * bigmap.CASE)))
+
+    def test_sizes_it_cant_take(self):
+        from rusemod import bigmap
+        for across, down, first in ((25, 16, 0), (0, 8, 0), (bigmap.MOST + 2, 8, 0), (16, 8, 3)):
+            with self.assertRaises(StudioError, msg=(across, down, first)):
+                self.api.set_map_size(self.pack, across, down, first_x=first)
+        self.assertNotIn("size", tomllib.loads((self.folder / "map.toml").read_text(encoding="utf-8")))
+
+
+def rounded(values, places=3):
+    """`values` rounded, to compare floats written to TOML and read back."""
+    return tuple(round(v, places) for v in values)
+
+
 class MenuPictures(WithAMapProject):
     """A map's own pictures in the menus (StudioApi.menu_pictures and the calls of its window; map.toml picture,
     wide_picture, start_dots): a PNG picked for either, the game's own back, the start dots, and the pictures made in

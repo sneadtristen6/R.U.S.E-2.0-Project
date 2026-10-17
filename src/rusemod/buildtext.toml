@@ -1731,3 +1731,27 @@ ru = "{0}: {1}: то, что сдвинулось, нельзя перекрас
 cz = "{0}: {1}: co se pohnulo, nelze přemalovat ({2})"
 jpn = "{0}：{1}：動いた部分は塗り直せません（{2}）"
 sc = "{0}：{1}：移动过的部分无法重新涂刷（{2}）"
+
+[e78915de068]
+us = "{0}: maps/{1}: its size ({2} x {3} cells) needs numpy, which this Python hasn't got"
+fr = "{0} : maps/{1} : sa taille ({2} x {3} cases) a besoin de numpy, que ce Python n'a pas"
+ger = "{0}: maps/{1}: ihre Größe ({2} x {3} Zellen) braucht numpy, das dieses Python nicht hat"
+ita = "{0}: maps/{1}: le sue dimensioni ({2} x {3} celle) richiedono numpy, che questo Python non ha"
+spa = "{0}: maps/{1}: su tamaño ({2} x {3} celdas) necesita numpy, que este Python no tiene"
+pol = "{0}: maps/{1}: jej rozmiar ({2} x {3} komórek) wymaga numpy, którego ten Python nie ma"
+ru = "{0}: maps/{1}: для её размера ({2} x {3} клеток) нужен numpy, которого нет в этом Python"
+cz = "{0}: maps/{1}: její velikost ({2} x {3} buněk) potřebuje numpy, které tento Python nemá"
+jpn = "{0}：maps/{1}：この大きさ（{2} x {3} セル）には numpy が必要ですが、この Python にはありません"
+sc = "{0}：maps/{1}：其大小（{2} x {3} 格）需要 numpy，而此 Python 没有"
+
+[e617539d0ea]
+us = "{0}: maps/{1}: it can't be made {2} x {3} cells ({4})"
+fr = "{0} : maps/{1} : elle ne peut pas faire {2} x {3} cases ({4})"
+ger = "{0}: maps/{1}: sie kann nicht {2} x {3} Zellen groß werden ({4})"
+ita = "{0}: maps/{1}: non può diventare di {2} x {3} celle ({4})"
+spa = "{0}: maps/{1}: no puede medir {2} x {3} celdas ({4})"
+pol = "{0}: maps/{1}: nie może mieć {2} x {3} komórek ({4})"
+ru = "{0}: maps/{1}: её нельзя сделать размером {2} x {3} клеток ({4})"
+cz = "{0}: maps/{1}: nemůže mít {2} x {3} buněk ({4})"
+jpn = "{0}：maps/{1}：{2} x {3} セルにはできません（{4}）"
+sc = "{0}：maps/{1}：无法做成 {2} x {3} 格（{4}）"

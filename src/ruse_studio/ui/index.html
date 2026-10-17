@@ -136,6 +136,8 @@
           <!-- the map's own pictures in the game's menus (maps.js openMenuPictures, StudioApi.menu_pictures): any map,
                with a map project to keep them in -->
           <button id="map-picture" type="button" class="chip map-duplicate hidden"></button>
+          <!-- a blank new map's size, a strip on any side (maps.js openMapSize, StudioApi.map_size): new maps only -->
+          <button id="map-size-open" type="button" class="chip map-duplicate hidden"></button>
           <!-- the map's background sound (sound.js openAmbience, StudioApi.map_sound): any map, in the map project -->
           <button id="map-sound" type="button" class="chip map-duplicate hidden"></button>
         </div>
@@ -419,6 +421,15 @@
               <div id="scen-sectors-box" class="hidden">
                 <!-- Shapes: each sector's corners dragged on the map; Paint: the brush, for touch-ups (maps.js sec.mode) -->
                 <div id="scen-sectors-mode" class="chips" role="group"></div>
+                <!-- Make sectors (maps.js renderSectorTools, StudioApi.sector_auto): the whole map cut into sectors about
+                     this many km across, borders wandering; Another layout: the same size cut another way -->
+                <div id="scen-sectors-auto-row" class="small">
+                  <label><span id="scen-sectors-auto-label"></span>
+                    <input id="scen-sectors-auto" type="number" min="0.5" max="40" step="0.5" value="5"
+                      class="scen-detail-number"> km</label>
+                  <button id="scen-sectors-auto-make" type="button" class="link"></button>
+                  <button id="scen-sectors-auto-again" type="button" class="link"></button>
+                </div>
                 <div id="scen-sectors-pick" class="chips" role="group"></div>
                 <div id="scen-sectors-shape" class="chips" role="group"></div>
                 <label id="scen-sectors-size-row" class="brush-slider small"><span id="scen-sectors-size-label"></span>
@@ -852,6 +863,45 @@
     <p id="mp-shared" class="muted small"></p>
     <p id="mp-note" class="small" role="status"></p>
     <div class="actions"><button id="mp-close" type="button" class="small ghost"></button></div>
+  </dialog>
+
+  <!-- Map size (maps.js openMapSize, StudioApi.map_size / set_map_size; the owner, 2026-10-17: add a tile on a side,
+       the way Cities: Skylines buys land): strips of ground two squares wide added on or taken off any side, drawn as
+       the map's top view shows it (its first x side on the left, its first y side at the top), then made at once -->
+  <dialog id="map-size" class="doctor" aria-labelledby="size-title">
+    <h2 id="size-title"></h2>
+    <p id="size-lead" class="small"></p>
+    <div class="size-board">
+      <div class="size-side size-top">
+        <button id="size-top-cut" type="button" class="chip size-step"></button>
+        <button id="size-top-add" type="button" class="chip size-step"></button>
+      </div>
+      <div class="size-side size-left">
+        <button id="size-left-add" type="button" class="chip size-step"></button>
+        <button id="size-left-cut" type="button" class="chip size-step"></button>
+      </div>
+      <canvas id="size-canvas" class="size-canvas" width="400" height="260"></canvas>
+      <div class="size-side size-right">
+        <button id="size-right-add" type="button" class="chip size-step"></button>
+        <button id="size-right-cut" type="button" class="chip size-step"></button>
+      </div>
+      <div class="size-side size-bottom">
+        <button id="size-bottom-cut" type="button" class="chip size-step"></button>
+        <button id="size-bottom-add" type="button" class="chip size-step"></button>
+      </div>
+    </div>
+    <p id="size-readout" class="size-readout"></p>
+    <div class="mp-buttons">
+      <button id="size-all-add" type="button" class="small"></button>
+      <button id="size-all-cut" type="button" class="small"></button>
+      <button id="size-back" type="button" class="small ghost"></button>
+    </div>
+    <p id="size-how" class="muted small"></p>
+    <p id="size-note" class="small" role="status"></p>
+    <div class="actions">
+      <button id="size-apply" type="button" class="small primary"></button>
+      <button id="size-close" type="button" class="small ghost"></button>
+    </div>
   </dialog>
 
   <!-- a mission's three steps (maps.js openMission, StudioApi.mission_steps, rusemod.missionsteps: LittleGroove's Menu

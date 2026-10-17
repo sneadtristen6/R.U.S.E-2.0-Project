@@ -643,8 +643,11 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     offset = base - far.to_world(2, far.base_water())
     shape = Shape(strokes, bounds, base)
     notes = []
+    from .bigmap import per_cell
+    big = near.grid_w * near.grid_h > 256   # a map past 16 x 16 cells (rusemod.bigmap): coarser squares, balanced trees
+    pn, pf = per_cell(near.grid_w * near.grid_h)
     fine_near = fine_cells(near, shape)
-    near.cells, ni = make_mesh(near, shape.h, shape.w, PER_CELL_NEAR, fine_near, PATCHES_NEAR)
+    near.cells, ni = make_mesh(near, shape.h, shape.w, pn, fine_near, PATCHES_NEAR)
     moved = fit_skirt(near, shape.h, shape.w)
     notes.append(f"{name}: close-up mesh drawn as our own: {ni['triangles']} triangles ({ni['water']} under water), "
                  f"{len(fine_near)} cell(s) a point every {ni['spacing']:.0f} map units, {ni['flat']} flat; most points "
@@ -653,18 +656,27 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     def far_w(x, y):
         return shape.w(x, y) - offset
     fine_far = fine_cells(far, shape)
-    far.cells, fi = make_mesh(far, shape.h, far_w, PER_CELL_FAR, fine_far, PATCHES_FAR)
+    far.cells, fi = make_mesh(far, shape.h, far_w, pf, fine_far, PATCHES_FAR)
     moved = fit_skirt(far, shape.h, far_w)
     notes.append(f"{name}: far mesh drawn as our own: {fi['triangles']} triangles, {len(fine_far)} cell(s) on the "
                  f"grid, {fi['flat']} flat; its water {offset:.0f} under the close-up mesh's; {moved} skirt point(s)")
     near_bytes, far_bytes = near.to_bytes(), far.to_bytes()
     near_back, far_back = Tms(near_bytes), Tms(far_bytes)
-    ground_bytes, said = gameplay_ground(k, near_back)
+    size = (near.bounds[3], near.bounds[4])
+    if big:   # parts cut again from the finished mesh, so a part holds about bigmap.PART_TARGET triangles wherever
+        from .bigmap import balanced_tree   # the strokes made the mesh finer
+        ground_bytes, said = balanced_tree(raw["ground"], near_back, False, size)
+    else:
+        ground_bytes, said = gameplay_ground(k, near_back)
     notes.append(f"{name}: {said}")
     out = {FILES["highdef"]: near_bytes, FILES["lowdef"]: far_bytes, FILES["ground"]: ground_bytes}
     cam_raw = read(FILES["camera"])
     if cam_raw is not None:
-        out[FILES["camera"]], said = camera_floor(Kdt(cam_raw), far_back)
+        if big:
+            from .bigmap import balanced_tree
+            out[FILES["camera"]], said = balanced_tree(cam_raw, far_back, True, size)
+        else:
+            out[FILES["camera"]], said = camera_floor(Kdt(cam_raw), far_back)
         notes.append(f"{name}: {said}")
     else:
         notes.append(f"{name}: it has no camera floor file: none made")

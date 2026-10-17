@@ -709,6 +709,19 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .mp-dots { display: flex; align-items: center; gap: 6px; }
 @media (max-width: 640px) { .mp-row { flex-direction: column; } .mp-big, .mp-wide { width: 100%; height: auto; } }
 
+/* Map size (maps.js openMapSize): the map's outline with + and − on each side, the copied map's ground inside it */
+.size-board { display: grid; grid-template-columns: auto minmax(0, 400px) auto; grid-template-rows: auto auto auto;
+              gap: 6px; align-items: center; justify-items: center; margin: 12px auto 4px; width: fit-content; max-width: 100%; }
+.size-top { grid-column: 2; grid-row: 1; }
+.size-left { grid-column: 1; grid-row: 2; flex-direction: column; }
+.size-canvas { grid-column: 2; grid-row: 2; width: 100%; max-width: 400px; height: auto; background: #26282b;
+               border: 1px solid var(--line); border-radius: var(--radius); }
+.size-right { grid-column: 3; grid-row: 2; flex-direction: column; }
+.size-bottom { grid-column: 2; grid-row: 3; }
+.size-side { display: flex; gap: 6px; }
+.size-step { min-width: 44px; font-size: 16px; font-weight: 600; }
+.size-readout { text-align: center; font-size: 15px; margin: 6px 0 10px; }
+
 /* Share your mod (app.js openShare): how an exported mod gets onto the supported-mods list */
 .share-steps { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.45; }
 .share-file { display: grid; gap: 4px; margin-top: 12px; padding: 10px 12px; background: var(--panel-hi);

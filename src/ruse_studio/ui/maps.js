@@ -4562,6 +4562,17 @@ function renderSectorTools(s) {
   button("scen-sectors-start", empty ? w.sectors_start_map : w.sectors_start_none,
     empty ? w.tip_sectors_start_map : w.tip_sectors_start_none, false, "",
     () => mv.api.sector_start(mv.current, s.file, !empty));
+  // Make sectors (the owner, 2026-10-17: "more intricate sectors rather than just four big blobs"): the whole map cut
+  // into sectors about this many km across; Another layout: the same size cut another way (StudioApi.sector_auto)
+  const made = v && v.auto, km = $("scen-sectors-auto");
+  if (made && document.activeElement !== km) km.value = String(made.metres / 1000);
+  $("scen-sectors-auto-label").textContent = w.sectors_auto;
+  $("scen-sectors-auto-row").title = w.tip_sectors_auto;
+  const metres = () => Math.round(Number(km.value) * 1000);
+  button("scen-sectors-auto-make", w.sectors_auto_make, w.tip_sectors_auto_make, false, "",
+    () => mv.api.sector_auto(mv.current, s.file, metres(), 0));
+  button("scen-sectors-auto-again", w.sectors_auto_again, w.tip_sectors_auto_again, !made, w.tip_sectors_auto_again_none,
+    () => mv.api.sector_auto(mv.current, s.file, metres(), made.seed + 1));
   const outl = $("scen-sectors-outlines");
   outl.checked = sec.outlines;
   outl.disabled = !v;
@@ -4593,6 +4604,7 @@ function renderSectorTools(s) {
         lines.push(fill(t.number < 0 ? w.sectors_tidy_gap : w.sectors_tidy_line, { n: t.number + 1, around: t.around + 1 }));
       }
     }
+    if (made) lines.push(fill(w.sectors_auto_made, { n: v.sectors.length, km: made.metres / 1000, seed: made.seed + 1 }));
     if (!bad) lines.push(shapes ? w.sectors_shapes_help : w.sectors_help);
     if (said.length) lines.push(w.sectors_tidy_untried);
     lines.push(w.sectors_untried);
@@ -8931,6 +8943,9 @@ function renderDelete() {
   $("map-picture").classList.toggle("hidden", !mv.current);  // its pictures in the menus (openMenuPictures)
   $("map-picture").textContent = w.map_picture;
   $("map-picture").title = w.tip_map_picture;
+  $("map-size-open").classList.toggle("hidden", !mine);  // a new map's size (openMapSize: it says when it can't)
+  $("map-size-open").textContent = w.map_size_btn;
+  $("map-size-open").title = w.tip_map_size_btn;
   $("map-sound").classList.toggle("hidden", !mv.current || !window.SoundView);  // its background sound (sound.js)
   $("map-sound").textContent = w.map_sound_btn;
   $("map-sound").title = w.tip_map_sound;
@@ -9052,6 +9067,153 @@ function wireMenuPictures() {
   $("mp-bring").addEventListener("click", () => menuPicturesCall(() => mv.api.menu_pictures_bring_back(pack())));
   $("mp-close").addEventListener("click", () => $("menu-pics").close());
   $("menu-pics").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
+}
+
+// --- Map size (StudioApi.map_size / set_map_size, map.toml size; rusemod.bigmap grows the map in the build): a blank
+// new map made bigger or smaller a strip at a time, on any side (the owner, 2026-10-17: "add a tile in like a
+// direction", the way Cities: Skylines buys land). A strip is two of the game's squares wide (the far view draws them
+// two by two). The sides are drawn as the top view shows the map: its first x side on the left, its first y side at
+// the top; a strip there moves everything the mod placed, so it stays on the same ground. Made at once, on Make it. ---
+const msz = { pack: null, data: null, left: 0, top: 0, right: 0, bottom: 0, busy: false, note: "", bad: false };
+const SQUARE_KM = 327680 / 260 / 1000;   // one of the game's squares (rusemod.bigmap.CASE), in km
+const SIZE_SIDES = ["left", "top", "right", "bottom"];
+
+async function openMapSize() {
+  const pack = mv.current;
+  if (!pack) return;
+  Object.assign(msz, { pack, data: null, left: 0, top: 0, right: 0, bottom: 0, busy: false, note: "", bad: false });
+  renderMapSize();
+  $("map-size").showModal();
+  try {
+    const got = await mv.api.map_size(pack);
+    if (msz.pack !== pack) return;
+    msz.data = got;
+  } catch (err) {
+    msz.note = (err && err.message) || String(err);
+    msz.bad = true;
+  }
+  renderMapSize();
+}
+
+function sizeWanted(extra) {   // [across, down] with the strips asked for (and `extra` {side: strips} more)
+  const d = msz.data, e = extra || {}, t = d.tile;
+  const n = (k) => msz[k] + (e[k] || 0);
+  return [d.cells[0] + t * (n("left") + n("right")), d.cells[1] + t * (n("top") + n("bottom"))];
+}
+
+function sizeFits(extra) {
+  const d = msz.data, [a, b] = sizeWanted(extra);
+  return a >= d.tile && b >= d.tile && a <= d.most && b <= d.most;
+}
+
+function sizeWords(cells) {
+  return fill(mv.words.size_now, { a: cells[0], b: cells[1], x: (cells[0] * SQUARE_KM).toFixed(1),
+    y: (cells[1] * SQUARE_KM).toFixed(1) });
+}
+
+function renderMapSize() {
+  const w = mv.words, d = msz.data, can = Boolean(d && d.can) && Boolean(mv.brush.mod) && !msz.busy;
+  const why = d && d.why ? w[`size_why_${d.why}`] || d.why : "";   // why it can't change size (StudioApi.map_size)
+  const strip = d ? d.tile * SQUARE_KM : 2 * SQUARE_KM;
+  $("size-title").textContent = w.size_title;
+  $("size-lead").textContent = fill(w.size_lead, { km: SQUARE_KM.toFixed(2), strip: strip.toFixed(1) });
+  $("size-how").textContent = w.size_how;
+  const changed = Boolean(d) && SIZE_SIDES.some((k) => msz[k]);
+  for (const k of SIZE_SIDES) {
+    for (const [what, by] of [["add", 1], ["cut", -1]]) {
+      const b = $(`size-${k}-${what}`), fits = Boolean(d) && sizeFits({ [k]: by });
+      b.textContent = by > 0 ? "+" : "−";
+      b.disabled = !can || !fits;
+      b.title = !d || can ? (fits || !d ? fill(w[`tip_size_${what}`], { km: strip.toFixed(1) })
+        : fill(by > 0 ? w.tip_size_most : w.tip_size_least, { most: d.most, tile: d.tile })) : (why || w.no_mod);
+      b.onclick = () => { msz[k] += by; msz.note = ""; renderMapSize(); };
+    }
+  }
+  const all = (id, word, tip, by) => {
+    const b = $(id), fits = Boolean(d) && sizeFits(Object.fromEntries(SIZE_SIDES.map((k) => [k, by])));
+    b.textContent = word;
+    b.title = tip;
+    b.disabled = !can || !fits;
+    b.onclick = () => { for (const k of SIZE_SIDES) msz[k] += by; msz.note = ""; renderMapSize(); };
+  };
+  all("size-all-add", w.size_all_add, w.tip_size_all_add, 1);
+  all("size-all-cut", w.size_all_cut, w.tip_size_all_cut, -1);
+  const back = $("size-back");
+  back.textContent = w.size_back;
+  back.title = w.tip_size_back;
+  back.disabled = !changed || msz.busy;
+  back.onclick = () => { for (const k of SIZE_SIDES) msz[k] = 0; msz.note = ""; renderMapSize(); };
+  $("size-readout").textContent = !d ? w.size_reading : changed
+    ? fill(w.size_change, { now: sizeWords(d.cells), then: sizeWords(sizeWanted()) }) : sizeWords(d.cells);
+  const apply = $("size-apply");
+  apply.textContent = w.size_apply;
+  apply.title = !mv.brush.mod ? w.no_mod : why || w.tip_size_apply;
+  apply.disabled = !can || !changed;
+  $("size-close").textContent = w.close;
+  const note = $("size-note");
+  const said = msz.note || why || (!mv.brush.mod ? w.no_mod : "");
+  note.textContent = said;
+  note.className = "small" + (msz.bad || (d && !d.can) || !mv.brush.mod ? " error-text" : "");
+  drawMapSize();
+}
+
+// The map as it is (a dashed outline) and as it will be (the ground, with a faint line every strip), both fitted in.
+function drawMapSize() {
+  const c = $("size-canvas"), ctx = c.getContext("2d"), d = msz.data;
+  ctx.clearRect(0, 0, c.width, c.height);
+  if (!d) return;
+  const t = d.tile, [a, b] = sizeWanted();
+  const nx0 = -t * msz.left, ny0 = -t * msz.top;             // the new map's corner, in the old map's squares
+  const ux0 = Math.min(0, nx0), uy0 = Math.min(0, ny0);
+  const ux1 = Math.max(d.cells[0], nx0 + a), uy1 = Math.max(d.cells[1], ny0 + b);
+  const pad = 16, k = Math.min((c.width - 2 * pad) / (ux1 - ux0), (c.height - 2 * pad) / (uy1 - uy0));
+  const ox = (c.width - k * (ux1 - ux0)) / 2 - k * ux0, oy = (c.height - k * (uy1 - uy0)) / 2 - k * uy0;
+  const X = (x) => ox + k * x, Y = (y) => oy + k * y;
+  ctx.fillStyle = "#4b6a3c";
+  ctx.fillRect(X(nx0), Y(ny0), k * a, k * b);
+  if (k * t >= 3) {   // a line every strip, while they're far enough apart to see
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = t; i < a; i += t) { ctx.moveTo(Math.round(X(nx0 + i)) + 0.5, Y(ny0)); ctx.lineTo(Math.round(X(nx0 + i)) + 0.5, Y(ny0 + b)); }
+    for (let j = t; j < b; j += t) { ctx.moveTo(X(nx0), Math.round(Y(ny0 + j)) + 0.5); ctx.lineTo(X(nx0 + a), Math.round(Y(ny0 + j)) + 0.5); }
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "#f3f7fc";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.strokeRect(X(0), Y(0), k * d.cells[0], k * d.cells[1]);
+  ctx.setLineDash([]);
+}
+
+async function applyMapSize() {
+  const d = msz.data, pack = msz.pack;
+  if (!d || msz.busy) return;
+  const [a, b] = sizeWanted(), t = d.tile;
+  msz.busy = true;
+  msz.bad = false;
+  msz.note = fill(mv.words.size_making, { a, b });
+  renderMapSize();
+  try {
+    const got = await mv.api.set_map_size(pack, a, b, t * msz.left, t * msz.top);
+    if (msz.pack !== pack) return;
+    Object.assign(msz, { data: got, left: 0, top: 0, right: 0, bottom: 0 });
+    msz.note = fill(mv.words.size_made, { a: got.cells[0], b: got.cells[1] });
+    if (mv.current === pack) show(pack);   // the map again, its ground and scenarios at the new size
+  } catch (err) {
+    msz.note = (err && err.message) || String(err);
+    msz.bad = true;
+  } finally {
+    msz.busy = false;
+    renderMapSize();
+  }
+}
+
+function wireMapSize() {
+  $("map-size-open").addEventListener("click", openMapSize);
+  $("size-apply").addEventListener("click", applyMapSize);
+  $("size-close").addEventListener("click", () => $("map-size").close());
+  $("map-size").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
 }
 
 // --- a mission's three steps (StudioApi.mission_steps, rusemod.missionsteps: LittleGroove's Menu Entry, Load & Files
@@ -10147,6 +10309,7 @@ function wire() {
   $("dup-base").addEventListener("change", dupBaseChanged);
   $("map-picture").addEventListener("click", openMenuPictures);
   wireMenuPictures();
+  wireMapSize();
   wireMission();
   $("map-sound").addEventListener("click", () => {  // the map's background sound (sound.js; StudioApi.map_sound)
     if (mv.current) window.SoundView.openAmbience(mv.current, mapName(mv.current), mv.words, mv.lang);
