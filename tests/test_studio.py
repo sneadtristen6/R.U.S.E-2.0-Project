@@ -180,6 +180,27 @@ class Studio(unittest.TestCase):
         self.assertEqual((page["name"], page["game_name"], page["desc"]),
                          ("Descriptor_Unit_M4_Sherman", "M4 Sherman", ""))
 
+    def test_search_every_word_and_tags(self):
+        # the owner's Studio 1.0 list, item 11: search with tags (studio-tools-design §11.3)
+        from ruse_studio.api import search_terms
+        self.assertEqual(search_terms("  Sherman #US  #  m4 "), (["sherman", "m4"], ["us"]))
+
+        def found(search, **kw):
+            return sorted(u["base_name"] for u in self.api.units("us", search=search, **kw)["units"])
+        self.assertEqual(found("#us"), found("", nation=0))
+        self.assertEqual(found("#ger armor"), ["Descriptor_Unit_Panzer_IV_G"])   # a tag's start, and a word
+        self.assertEqual(found("sherman panzer"), [])                             # every word must match
+        self.assertEqual(found("#building"), sorted(u["base_name"] for u in self.api.units("us", "buildings")["units"]))
+        self.assertEqual(found("#germany #us"), [])
+        tags = {t["tag"]: t["label"] for t in self.api.units("us")["tags"]}
+        self.assertEqual((tags["us"], tags["germany"]), ("USA", "Germany"))
+        self.assertIn("building", tags)
+        self.assertNotIn("new", tags)   # no new unit in this mod
+        ammo = self.api.ammo("us")
+        self.assertTrue(ammo["tags"])
+        some = ammo["tags"][0]["tag"]
+        self.assertEqual({a["group"] for a in self.api.ammo("us", search="#" + some)["units"]}, {some})
+
     def test_type_order(self):
         from ruse_studio.api import _type_order
         found = {"Heavy Bomber": "AIR_bh", "Fighter": "AIR_f", "Light Bomber": "AIR_bl", "Fort guns": None,

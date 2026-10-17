@@ -582,6 +582,10 @@
   Object.assign(words.us, {"step_less": "Less", "step_more": "More", "tip_step_less": "One step down. Hold it to keep going.", "tip_step_more": "One step up. Hold it to keep going."});
   Object.assign(words.fr, {"step_less": "Moins", "step_more": "Plus", "tip_step_less": "Un cran de moins. Maintenez pour continuer.", "tip_step_more": "Un cran de plus. Maintenez pour continuer."});
   Object.assign(words.sc, {"step_less": "减少", "step_more": "增加", "tip_step_less": "减小一档。按住可连续减小。", "tip_step_more": "增大一档。按住可连续增大。"});
+  // search with tags (words.toml tip_search_tags, search_tags, search_recent, tip_search_tag, tip_search_recent, tag_new)
+  Object.assign(words.us, {"tip_search_tags": "Every word you type must match. #tags narrow it: #us, #germany, #air, #armor, #new (your mod's new units). Type # to see them all.", "search_tags": "Tags:", "search_recent": "Recent:", "tip_search_tag": "Add #{tag} to the search: {label}.", "tip_search_recent": "Search for this again.", "tag_new": "Your mod's new units"});
+  Object.assign(words.fr, {"tip_search_tags": "Chaque mot tapé doit correspondre. Les #tags affinent : #us, #germany, #air, #armor, #new (les nouvelles unités de votre mod). Tapez # pour tous les voir.", "search_tags": "Tags :", "search_recent": "Récentes :", "tip_search_tag": "Ajouter #{tag} à la recherche : {label}.", "tip_search_recent": "Relancer cette recherche.", "tag_new": "Les nouvelles unités de votre mod"});
+  Object.assign(words.sc, {"tip_search_tags": "输入的每个词都必须匹配。#标签可缩小范围：#us、#germany、#air、#armor、#new（你模组的新单位）。输入 # 查看全部。", "search_tags": "标签：", "search_recent": "最近：", "tip_search_tag": "将 #{tag} 加入搜索：{label}。", "tip_search_recent": "再次搜索此内容。", "tag_new": "你模组的新单位"});
   // the opening camera (words.toml scen_cam_*)
   Object.assign(words.us, {"scen_cam_what": "Opening camera · team {n}, place {p}", "scen_cam_rest": "the match opens looking from here, after its warm-up flight (the dotted line)", "scen_cam_view": "what the screen shows when the match opens"});
   Object.assign(words.fr, {"scen_cam_what": "Caméra d'ouverture · équipe {n}, place {p}", "scen_cam_rest": "la partie s'ouvre en regardant d'ici, après le vol d'introduction (la ligne pointillée)", "scen_cam_view": "ce que montre l'écran à l'ouverture de la partie"});
@@ -961,6 +965,26 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { cells, copied: [4, 4], km: cells.map((c) => Math.round(c * k * 10) / 10), can: true,
       why: "", most: 128, tile: 2,
       clouds: null, room: null };
+  }
+  // search with tags (StudioApi.search_terms, units "tags"): every word must match, every #tag start one of its tags
+  const NATION_TAGS = ["us", "germany", "uk", "france", "italy", "ussr", "japan"];
+  function fakeTagsOf(u) {
+    const g = u.group === "fake" ? "decoy" : u.group;
+    return [u.kind === "buildings" ? "building" : u.kind, g, NATION_TAGS[u.nation], ...(u.new ? ["new"] : [])].filter(Boolean);
+  }
+  function fakeFinds(search, said, tags) {
+    const terms = (search || "").toLowerCase().split(/\s+/).filter(Boolean), text = said.join(" ").toLowerCase();
+    return terms.every((t) => (t.startsWith("#") ? t.length < 2 || tags.some((o) => o.startsWith(t.slice(1))) : text.includes(t)));
+  }
+  function fakeTagList(list, lang) {
+    const names = nations[lang] || nations.us, out = new Map();
+    for (const u of list) {
+      out.set(NATION_TAGS[u.nation], names[u.nation]);
+      out.set(u.kind === "buildings" ? "building" : u.kind, u.kind);
+      out.set(u.group === "fake" ? "decoy" : u.group, u.group);
+      if (u.new) out.set("new", "new");
+    }
+    return [...out].filter(([k]) => k).sort().map(([tag, label]) => ({ tag, label }));
   }
   function scenEdits(pack) {
     if (!current) throw new Error("Pick or make a mod first: scenario changes are saved in it.");
@@ -2380,8 +2404,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
             slot: u.slot, new: Boolean(u.new), source: u.source || null, group: u.group || groupOf(u), type: typeOf(u),
             ...(u.new ? { game_name: u.names.us, desc: aboutOf(u.source).desc } : aboutOf(E + u.id)),
             decoy: (u.group || groupOf(u)) === "fake" }))
-          .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()));
-        return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)), types };
+          .filter((u) => fakeFinds(search, [u.name, u.address, u.type || "", u.nation_name], fakeTagsOf(u)));
+        return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)), types,
+          tags: fakeTagList(shown.map((u) => ({ ...u, address: E + u.id, group: u.group || groupOf(u) })), lang) };
       },
       menus: async (lang) => {
         const names = nations[lang] || nations.us;

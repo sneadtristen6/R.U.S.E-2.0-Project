@@ -190,6 +190,36 @@ _PREFIX = re.compile(r"^(Descriptor_[A-Za-z]+_)")  # Descriptor_Unit_M4_Sherman 
 PACKAGE_FILES = ("RUSE mods (*.rusemod)",)  # the "save as" dialog's filter for Export mod…
 
 
+NATION_TAGS = ("us", "germany", "uk", "france", "italy", "ussr", "japan")   # the seven nations' #tags, by number
+KIND_TAGS = {"buildings": "building"}   # a kind's #tag where it isn't the kind's own name
+GROUP_TAGS = {"fake": "decoy"}          # a group's #tag where it isn't the group's own name
+RECENT_SEARCHES = 8                     # searches the Units search keeps (prefs "searches")
+
+
+def search_terms(search: str) -> tuple[list[str], list[str]]:
+    """A search's words and #tags, lower case (the owner's Studio 1.0 list, item 11, "search with tags"): every word
+    must be in what a thing is called, every #tag must start one of its tags (#ger finds #germany)."""
+    words, tags = [], []
+    for t in search.lower().split():
+        if t.startswith("#"):
+            if len(t) > 1:
+                tags.append(t[1:])
+        else:
+            words.append(t)
+    return words, tags
+
+
+def tag_word(text: str) -> str:
+    """A name as a #tag: lower case, no spaces ("Royaume-Uni" -> "royaume-uni", "Anti-tank" -> "anti-tank")."""
+    return re.sub(r"\s+", "", text.lower())
+
+
+def search_finds(words: list[str], tags: list[str], said: list[str], tags_of: set[str]) -> bool:
+    """Whether a thing called `said` (its names) with the tags `tags_of` is found by these words and #tags."""
+    text = " ".join(s for s in said if s).lower()
+    return all(w in text for w in words) and all(any(o.startswith(t) for o in tags_of) for t in tags)
+
+
 def _tail(address: str) -> str:
     return address.rsplit("/", 1)[-1]
 
@@ -693,8 +723,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         "factory": own.get("Factory", src["factory"]), "slot": None, "new": True,
                         "source": unit.source, "name": unit.name, "type_key": src.get("type_key"),
                         "desc_key": src.get("desc_key")})
-        query, own_words = search.strip().lower(), words(lang)
-        out, present, kinds = [], set(), {}
+        (find, find_tags), own_words = search_terms(search), words(lang)
+        out, present, kinds, tags = [], set(), {}, {}
+        if new:
+            tags["new"] = own_words.get("tag_new", "new")
         for u in new + rows:
             k = KIND_OF.get(u["class"], "ground")
             if kind != "all" and k != kind or nation >= 0 and u["nation"] != nation:
@@ -720,7 +752,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             name = (u.get("name") or names.get(u["key"]) or (game_name if lang != schema.BASE else "")
                     or _tail(u["address"]))
             desc = (descs.get(u.get("desc_key")) or "").strip()
-            if query and not any(query in s.lower() for s in (name, u["address"], utype or "", game_name)):
+            group_name = own_words.get("group_" + g, "")
+            nation_name = schema.nation(u["nation"], lang)
+            mine = {KIND_TAGS.get(k, k), GROUP_TAGS.get(g, g), tag_word(nation_name), tag_word(group_name)}
+            if 0 <= u["nation"] < len(NATION_TAGS):
+                mine.add(NATION_TAGS[u["nation"]])
+                tags.setdefault(NATION_TAGS[u["nation"]], schema.nation(u["nation"], lang if lang != schema.BASE else "us"))
+            if u.get("new"):
+                mine.add("new")
+            tags.setdefault(KIND_TAGS.get(k, k), own_words.get(k, k))
+            tags.setdefault(GROUP_TAGS.get(g, g), group_name or g)
+            if (find or find_tags) and not search_finds(find, find_tags, [name, u["address"], utype or "", game_name,
+                                                                          nation_name, group_name], mine):
                 continue
             out.append({"address": u["address"], "name": name, "base_name": _tail(u["address"]), "kind": k,
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
@@ -728,7 +771,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         "source": u.get("source"), "group": g, "type": utype, "game_name": game_name, "desc": desc,
                         "decoy": g == "fake", "no_model": u["address"] in modelless})  # (not a new unit's start)
         return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present],
-                "types": _type_order(kinds) if kind in UNIT_KINDS else []}
+                "types": _type_order(kinds) if kind in UNIT_KINDS else [],
+                "tags": [{"tag": k, "label": v} for k, v in sorted(tags.items())]}
 
     # --- ammunition: what a weapon fires (damage, range, rate of fire); several units' weapons share one ---
     def _all_ammo(self, ix: Index) -> list[dict]:
@@ -769,24 +813,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         order = {g: n for n, g in enumerate(AMMO_GROUP_ORDER)}
         # by group, then the game's kind (MG turrets apart from machine-guns), then the game's own order
         rows = sorted(rows, key=lambda a: (order[group_of[a["address"]]], english.get(a["type_key"], "")))
-        words = search.strip().lower()
-        out, present = [], set()
+        (find, find_tags), own_words = search_terms(search), words(lang)
+        out, present, tags = [], set(), {}
+        if new:
+            tags["new"] = own_words.get("tag_new", "new")
         for a in new + rows:
             g = group_of[a.get("source") or a["address"]]
             present.add(g)
+            tags.setdefault(g, own_words.get("group_" + g, g))
             if group != "all" and g != group:
                 continue
             name = a.get("name") or names[a["address"]]
             used = [user_names[u] for u in a["users"]]
-            if words and words not in name.lower() and words not in a["address"].lower() \
-                    and not any(words in u.lower() for u in used):
+            mine = {g, tag_word(own_words.get("group_" + g, ""))} | ({"new"} if a.get("new") else set())
+            if (find or find_tags) and not search_finds(find, find_tags, [name, a["address"], *used], mine):
                 continue
             nations = self._nations_of(a["users"] or by_address.get(a.get("source"), {}).get("users", []), nation_of, lang)
             out.append({"address": a["address"], "name": name, "base_name": _tail(a["address"]), "kind": "ammo",
                         "id": a["id"], "users": used, "nations": nations, "nation": -1, "nation_name": "",
                         "factory": None, "slot": None, "new": a.get("new", False), "source": a.get("source"),
                         "source_name": a.get("source_name"), "group": g})
-        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in AMMO_GROUP_ORDER if g in present]}
+        return {"units": out, "total": len(rows) + len(new), "groups": [g for g in AMMO_GROUP_ORDER if g in present],
+                "tags": [{"tag": k, "label": v} for k, v in sorted(tags.items())]}
 
     @staticmethod
     def _nations_of(users, nation_of: dict, lang: str) -> list[str]:

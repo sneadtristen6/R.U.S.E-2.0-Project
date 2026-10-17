@@ -129,6 +129,7 @@ async function setLanguage(lang) {
     "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   $("search").placeholder = w.search;
+  $("search").title = [w.tip_search, w.tip_search_tags].filter(Boolean).join(" ");   // (and how #tags work)
   $("no-index-text").textContent = state.oldIndex ? w.old_index : w.no_index;
   $("build-index").textContent = w.build_index;
   renderMods();
@@ -691,6 +692,8 @@ async function refreshList() {
   // New unit starts from a unit with a model: those the Studio can't read a model for are left out (the owner,
   // 2026-10-17: "if those units don't have models, just don't include them")
   if (state.start === "new") res.units = res.units.filter((u) => !u.no_model);
+  searchTags = res.tags || [];   // (the #tags the search box offers: renderSearchHints)
+  renderSearchHints();
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   renderGroups(res.groups || [], res.types || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {
@@ -4862,9 +4865,13 @@ async function start() {
   $("unit-group").addEventListener("change", (e) => { state.group = e.target.value; refreshList(); });
   $("search").addEventListener("input", (e) => {
     state.search = e.target.value;
+    renderSearchHints();
     clearTimeout(timer);
     timer = setTimeout(refreshList, 150);
   });
+  $("search").addEventListener("focus", renderSearchHints);
+  $("search").addEventListener("blur", () => { keepSearch($("search").value); renderSearchHints(); });
+  $("search").addEventListener("keydown", (e) => { if (e.key === "Enter") keepSearch($("search").value); });
   window.addEventListener("keydown", unitKeys);
   const res = await api().mods();
   state.mods = res.mods;
@@ -4943,6 +4950,60 @@ window.addEventListener("beforeunload", (e) => {
   e.preventDefault();
   e.returnValue = "";  // the browser asks "Leave site?" (its own words)
 });
+
+// --- search with tags (the owner's Studio 1.0 list, item 11; the design: studio-tools-design §11.3; StudioApi.units
+// and ammo say the "tags" of the list): every word must match, #tags narrow it (#us, #air, #armor, #new...). Typing #
+// shows the tags there are, a click finishes the word; an empty box shows the recent searches, kept by the Studio
+// (prefs "searches", RECENT_SEARCHES of them). Shown while the box has the focus. ---
+const RECENT_SEARCHES = 8;
+let searchTags = [];   // [{tag, label}]: the tags of the list shown
+
+function recentSearches() {
+  const kept = state.prefs && state.prefs.searches;
+  return Array.isArray(kept) ? kept.filter((s) => typeof s === "string" && s.trim()) : [];
+}
+
+function keepSearch(text) {
+  const said = (text || "").trim();
+  if (!said || recentSearches()[0] === said) return;
+  const list = [said, ...recentSearches().filter((s) => s !== said)].slice(0, RECENT_SEARCHES);
+  state.prefs = { ...state.prefs, searches: list };
+  Promise.resolve().then(() => api().set_pref("searches", list)).catch(() => {});
+}
+
+function setSearch(text) {
+  const box = $("search");
+  box.value = text;
+  state.search = text;
+  box.focus();
+  refreshList();
+  renderSearchHints();
+}
+
+function renderSearchHints() {
+  const w = state.words || {}, box = $("search-hints"), input = $("search");
+  if (!box || !input) return;
+  const v = input.value, last = v.split(/\s+/).pop() || "";
+  const chip = (text, tip, then) => {
+    const c = el("button", { type: "button", className: "chip", textContent: text, title: tip || "" });
+    c.addEventListener("mousedown", (e) => e.preventDefault());   // (the box keeps the focus)
+    c.addEventListener("click", then);
+    return c;
+  };
+  let chips = [];
+  if (last.startsWith("#")) {   // the tags that start with what's typed, the ones already in the search left out
+    const part = last.slice(1).toLowerCase(), before = v.slice(0, v.length - last.length);
+    const used = new Set(before.toLowerCase().split(/\s+/).filter((t) => t.startsWith("#")).map((t) => t.slice(1)));
+    chips = searchTags.filter((t) => t.tag.startsWith(part) && !used.has(t.tag)).slice(0, 16)
+      .map((t) => chip("#" + t.tag, fill(w.tip_search_tag, { tag: t.tag, label: t.label }), () => setSearch(before + "#" + t.tag + " ")));
+    if (chips.length) chips.unshift(el("span", { className: "muted small", textContent: w.search_tags || "" }));
+  } else if (!v.trim()) {
+    chips = recentSearches().map((s) => chip(s, w.tip_search_recent, () => setSearch(s)));
+    if (chips.length) chips.unshift(el("span", { className: "muted small", textContent: w.search_recent || "" }));
+  }
+  box.replaceChildren(...chips);
+  box.classList.toggle("hidden", document.activeElement !== input || !chips.length);
+}
 
 // --- number rows: every slider shown as [−] number [+] (the owner's Studio 1.0 list, item 11: "+/- number rows instead
 // of sliders"; the design: studio-tools-design §11.1, rows typed or stepped, steps landing on round numbers). The

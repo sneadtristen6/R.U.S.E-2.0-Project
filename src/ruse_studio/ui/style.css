@@ -991,6 +991,9 @@ th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); t
 
 /* era units in the Units tab (eraunits.js): the era filter above the kinds; an era unit's model picture on its page */
 .chips.eras { margin-bottom: 2px; }
+/* the search's hints (app.js renderSearchHints): the #tags once # is typed, else the recent searches */
+.chips.search-hints { align-items: center; margin: -2px 0 2px; }
+.chips.search-hints .chip { font-size: 12px; }
 .era-picture { display: block; max-width: min(100%, 560px); border-radius: var(--radius); border: 1px solid var(--line); margin: 8px 0; }
 
 /* the Nations tab (nations.js): a nation each, its flag, names and units; Change… opens its name, army and flag */

@@ -84,6 +84,9 @@
       <div id="unit-start" class="start-choice" role="group"></div>
       <p id="start-help" class="start-help small hidden"></p>
       <input id="search" type="search" autocomplete="off">
+      <!-- under the search while it has the focus (app.js renderSearchHints): the #tags there are once # is typed, else
+           the recent searches -->
+      <div id="search-hints" class="chips search-hints hidden" role="group"></div>
       <!-- the era filter (eraunits.js): the game's own units, or RUSE 2.0's units for an era -->
       <div id="eras" class="chips eras" role="group"></div>
       <p id="era-note" class="muted small hidden"></p>
