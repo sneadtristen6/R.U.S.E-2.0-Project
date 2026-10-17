@@ -19,7 +19,7 @@ from rusemod.spk import Spk
 from rusemod.tmst import Tgv
 from rusemod.unitpacks import Buffer, MeshPack, Proxy, ProxyPack, proxy_name
 
-TMP = "D:/RUSE-2.0/scratch/tmp"
+TMP = None   # the system's temp folder (TEMP)
 FMT = "$/M3D/System/VERTEXTYPE/" + sa.FORMAT
 ROCK = "ww2\\res3d\\decors\\props\\props_2\\rocher_1lod0.ase2ndfbin"
 OAK = "ww2\\res3d\\decors\\vegetation_eu\\chene_01_feuilleslod0.ase2ndfbin"

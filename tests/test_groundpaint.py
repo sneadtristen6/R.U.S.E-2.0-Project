@@ -831,7 +831,7 @@ class MapPaint(unittest.TestCase):
         self.assertNotIn("Only", info.terrain)  # a map with only paint leaves its ground files alone
 
     def test_a_coat_goes_under_the_preset_fields(self):
-        """F-52: a preset field's ground (put in first, by _erase_areas) stays over the terrain file's paint, so a
+        """A preset field's ground (put in first, by _erase_areas) stays over the terrain file's paint, so a
         Blank Terrain coat over the whole map doesn't hide it from afar."""
         from types import SimpleNamespace
         from rusemod.build import _paint_brushes

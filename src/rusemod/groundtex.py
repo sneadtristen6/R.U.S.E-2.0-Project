@@ -788,7 +788,7 @@ def low_pass(n: int, px: bytes, side: float, split: float) -> bytes:
 
 
 def grain_of(dn: int, dpx: bytes, rep: float, split: float) -> bytes:
-    """A detail texture's grain (F-56): dn x dn of it (RGBA, `rep` map units across) as how much each pixel lightens
+    """A detail texture's grain: dn x dn of it (RGBA, `rep` map units across) as how much each pixel lightens
     or darkens against its own average over `split` (its brightness over that, DETAIL_MOST at most each way), one
     byte a pixel, GRAIN_UNIT = 1, made to repeat without a seam. Averaged over `split` it is about 1: laid over a
     colour averaged that way (low_pass), the colour is the same from afar and the grain shows up close."""

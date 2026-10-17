@@ -11,7 +11,7 @@ from pathlib import Path
 from rusemod.dxt import png_bytes
 from rusemod.modelin import ModelError, read_model
 
-TMP = "D:/RUSE-2.0/scratch/tmp"
+TMP = None   # the system's temp folder (TEMP)
 
 
 def write_model(folder: Path, *, mask: bool = True, uri: str = "leaf.bin") -> Path:

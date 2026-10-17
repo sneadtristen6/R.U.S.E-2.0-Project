@@ -689,7 +689,7 @@ class Palette(unittest.TestCase):
         self.assertNotEqual(PLAIN.digest, gt.Swatch.make("swatch:t:plain", 32, ramp(32), 64.0).digest)
 
     def test_the_games_own_grain_under_a_swatchs_colour(self):
-        """F-56: a palette swatch with a detail is its picture averaged over DETAIL_SPLIT (low_pass) and the detail's
+        """A palette swatch with a detail is its picture averaged over DETAIL_SPLIT (low_pass) and the detail's
         grain laid by itself over it (grain_of, Swatch.grain_sampler): unmirrored, so no fold line shows; about 1 on
         average, so the colour from afar is the swatch's own; light and dark up close; the scalar sampler and the
         painter's numpy sums the same bytes."""

@@ -455,7 +455,7 @@ def _paint_brushes(info) -> None:
     """The Studio's Map Paint brushes (paint, stamp, texture) live in terrain.toml with the others, but change the
     ground's picture, not its shape: they move to `info.paint` in their order, like the cover brushes to the cover
     grid, under the preset areas' picture stamps (a Blank Terrain coat over the whole map hid a preset field's ground
-    from afar, where its crops aren't drawn: F-52, the palette test 10-16). A repaint stroke goes to `info.repaint`:
+    from afar, where its crops aren't drawn: the palette test 10-16). A repaint stroke goes to `info.repaint`:
     the build paints what the ground brushes moved by its new shape (rusemod.repaint), under the mod's own paint."""
     from .brush import PAINT_KINDS
     for pack, strokes in list(info.terrain.items()):
@@ -464,7 +464,7 @@ def _paint_brushes(info) -> None:
         if not paint and not repaint:
             continue
         if paint:   # under the preset areas' picture stamps (_erase_areas put them in first): a whole-map coat
-            info.paint[pack] = paint + info.paint.get(pack, [])   # mustn't hide a preset field's ground (F-52)
+            info.paint[pack] = paint + info.paint.get(pack, [])   # mustn't hide a preset field's ground
         if repaint:
             info.repaint.setdefault(pack, []).extend(repaint)
         rest = [s for s in strokes if s.kind.kind not in PAINT_KINDS and s.kind.kind != "repaint"]
