@@ -271,6 +271,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .values-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .group table.values-table { max-width: 900px; }
 .group table.values-table th { width: 34%; }
+/* what a value does (the number guide), under its name */
+.values-table th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; color: var(--muted); }
 .values-table input.values-text, .values-table input.values-key { width: 100%; max-width: 520px; padding: 3px 7px;
   background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; font: 12px Consolas, monospace; }
 .values-table input:disabled, .values-table textarea:disabled { opacity: 0.6; }

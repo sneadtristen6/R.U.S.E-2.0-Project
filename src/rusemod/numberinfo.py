@@ -31,23 +31,32 @@ MODES = ("1945", "1942", "1939", "Total War", "Nuclear")
 GROUPS = ("health", "movement", "sight", "combat", "ammo", "production", "menu", "identity", "computer", "flight",
           "turret", "looks", "sound", "interface", "effects")
 SURE = ("tried", "known", "community", "name")
+# the game's units and buildings: "units" in an entry's `classes` (a name some other kind of object has too, meaning
+# something else there: the main menu's Factory, a map shape's Radius, a cutscene's Key)
+UNIT_CLASSES = ("TUniteAuSolDescriptor", "TBatimentDescriptor", "TAvionDescriptor", "TInfanterieDescriptor",
+                "TTruckDescriptor", "TUniteDescriptor")
 
 
 @lru_cache(maxsize=16)
 def guide(lang: str = "us") -> dict[str, dict]:
-    """{key: {group, unit, sure, what, does}}, the words in `lang` (numberinfo_<lang>.toml; English for a language or
-    a text that has none)."""
+    """{key: {group, unit, sure, what, does[, classes]}}, the words in `lang` (numberinfo_<lang>.toml; English for a
+    language or a text that has none). "classes": the only kinds of object a property-name key is about (the All values
+    tab shows every kind); none: every kind that has it."""
     raw = tomllib.loads(Path(__file__).with_name("numberinfo.toml").read_text(encoding="utf-8"))
     own = Path(__file__).with_name(f"numberinfo_{lang}.toml")
     words = tomllib.loads(own.read_text(encoding="utf-8")) if lang not in ("us", "base") and own.is_file() else {}
     return {k: {"group": e["group"], "unit": e["unit"], "sure": e["sure"],
-                **{t: (words.get(k) or {}).get(t) or e[t] for t in TEXTS}} for k, e in raw.items()}
+                **{t: (words.get(k) or {}).get(t) or e[t] for t in TEXTS},
+                **({"classes": [c for name in e["classes"] for c in (UNIT_CLASSES if name == "units" else (name,))]}
+                   if "classes" in e else {})} for k, e in raw.items()}
 
 
 def lookup(cls: str, prop: str, lang: str = "us") -> dict | None:
-    """The guide's entry for property `prop` of an object of class `cls`, or None when the guide has none."""
+    """The guide's entry for property `prop` of an object of class `cls`, or None when the guide has none (or its
+    entry is about other kinds of object)."""
     g = guide(lang)
-    return g.get(f"{cls}.{prop}") or g.get(prop)
+    e = g.get(f"{cls}.{prop}") or g.get(prop)
+    return e if e is None or "classes" not in e or cls in e["classes"] else None
 
 
 def plain(unit: str, value: float) -> float | None:

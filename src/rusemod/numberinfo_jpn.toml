@@ -1041,3 +1041,146 @@ does = "コンピュータープレイヤーが囮の建物の計略で囮の建
 [ConstructionDelayForFakeBuildingsMax]
 what = "囮の建物の間隔（最大）"
 does = "コンピュータープレイヤーが囮の建物の計略で囮の建物を建てるとき、次の建物までに待つ最長の秒数。ゲームでは 10。"
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "デバッグ名"
+does = "ゲームのエラーメッセージやログでのユニットの名前（Unit_M4_Sherman）。プレイヤーには見えません。"
+[NameInMenuToken]
+what = "名前"
+does = "生産メニューとカードでの名前になるゲームのテキスト（シャーマンは N_UNI_137）。欄の下の「言葉を変える…」で、すべての言語の言葉そのものを変えられます。"
+[TypeUnitHintToken]
+what = "種類の行"
+does = "カードの名前の下に、ユニットの種類として出るテキスト（シャーマンは TANK_madv）。vide：なし。"
+[DescriptionUnitHintToken]
+what = "カードの説明"
+does = "カードに短い説明として出るテキスト（シャーマンは DTANK_madv）。vide：なし。"
+[EfficaceHintToken]
+what = "有効な相手"
+does = "カードに、何に対して強いかとして出るテキスト（E_ground：すべての地上目標、unarmed：非武装）。vide：なし。"
+[LongDescriptionUnitHintToken]
+what = "歴史のテキスト"
+does = "長い説明になるテキスト：実在のユニットの歴史（LD_UNI_137 はシャーマンの歴史）。"
+[WeaponDescriptor]
+what = "武器"
+does = "武器：砲塔とその上の砲を持つ部分で、砲ごとに弾薬があります。ユニットタブの「武器」欄で変更します。空：非武装。"
+[ArmorDescriptor]
+what = "装甲"
+does = "装甲レベル：複数のユニットが共有するオブジェクト（シャーマンは M4 Skink のものを指します）。ユニットタブの「装甲」でゲームのレベルから選びます。"
+[GfxDescriptor]
+what = "外見"
+does = "見た目のみ：3Dモデルと、その部品の動き方（履帯、車輪、砲塔）。建物の場合：マップ上の見た目で、ゲームが建物の場所に加える多数の部品の配置です。"
+[GfxDescriptorIcone]
+what = "遠くからの外見"
+does = "見た目のみ：カメラが高いときにユニットを表すもの。地上ユニットはマップ台の丸いコマ、航空機は小さなモデル。"
+[GfxDescriptorIconeJeton]
+what = "コマ"
+does = "見た目のみ：カメラが高いときの、マップ台上の航空機の丸いコマ。"
+[GfxDescriptorCadavre]
+what = "残骸"
+does = "見た目のみ：破壊されたときに残るもの（残骸のモデル）。"
+[GfxDescriptorIconeCadavre]
+what = "兵士の姿"
+does = "見た目のみ：分隊の兵士モデルのひとつ（名前からすると、倒れた兵士用のもの）。Studio はこれで分隊を表示し、塗り直します。"
+[GfxDescriptorFusilier]
+what = "小銃兵"
+does = "見た目のみ：分隊の小銃兵のモデル。"
+[GfxDescriptorBazooka]
+what = "バズーカ兵"
+does = "見た目のみ：分隊のバズーカ兵のモデル。"
+[SoundMotorDescriptor]
+what = "移動の音"
+does = "音のみ：動くときの音（エンジン、航空機のエンジン）。ほかのユニットのものが多い（シャーマンは ARL 40 のものを使用）。"
+[TextureForInterface]
+what = "カードの画像"
+does = "生産メニューとカードでの画像。ユニットタブの「この視点をカードにする」で3Dモデルから新しく作れます。"
+[UpgradeRequire]
+what = "研究元"
+does = "研究の元になるユニット。その研究が終わると生産できます（シャーマンには M3 Lee が必要）。空：研究なし。"
+[UnitIdleManager]
+what = "待機中のふるまい"
+does = "待っている間にすること：砲や砲塔が周りを見回します。ほかのユニットのものが多い（シャーマンは ARL 44 のものを使用）。"
+[TransportPourMorphe]
+what = "乗る車両"
+does = "道路を移動するときに変わるトラック（分隊や砲）。ユニットタブの「乗る車両」欄で選びます。"
+[MouvementHandlerInfo]
+what = "飛行"
+does = "航空機の飛び方：飛行の値を持つ部分（開くと値が見られます）。"
+[UniteTransportee]
+what = "投下する部隊"
+does = "輸送機が投下するユニット（C47 は米軍の空挺兵を投下）。空挺のフラグを持ち、ここが空の航空機はゲームをクラッシュさせます。"
+[AmmoDeath]
+what = "墜落時の爆発"
+does = "航空機が撃墜されたときの爆発：軽い機体か中型の機体のもの。"
+[UniteDefense]
+what = "防衛ユニット"
+does = "防御施設のために戦うユニット：バンカーの砲（マジノバンカーの砲塔）。"
+[BatimentPaths]
+what = "経路"
+does = "ユニットが建物を回り込み、出入りする道：出口、入口、駐機場所、飛行場の滑走路。"
+["TBatimentPaths.FactoryExit"]
+what = "出口"
+does = "建物が作ったユニットが道路へ出る経路（ゲームで確認：門から道路へ）。"
+["TBatimentPaths.FactoryEntry"]
+what = "入口"
+does = "ユニットが建物に入る経路。"
+["TBatimentPaths.ByPass"]
+what = "迂回路"
+does = "ユニットが建物を回り込む経路。"
+["TBatimentPaths.Vision"]
+what = "視点"
+does = "名前からすると：建物が見張る地点。"
+["TBatimentPaths.ParkingEntryLarge"]
+what = "駐機場への入口（大型機）"
+does = "飛行場の大型機が駐機場所へ向かう経路。"
+["TBatimentPaths.ParkingEntrySmall"]
+what = "駐機場への入口（小型機）"
+does = "飛行場の小型機が駐機場所へ向かう経路。"
+["TBatimentPaths.ParkingExit"]
+what = "駐機場からの出口"
+does = "飛行場の航空機が駐機場所から出る経路。"
+["TBatimentPaths.MultiPathParking"]
+what = "駐機場所"
+does = "飛行場の駐機場所と、その間の経路。"
+["TBatimentPaths.Runway"]
+what = "滑走路"
+does = "飛行場の滑走路：航空機が離着陸する場所。"
+[TurretDescriptorList]
+what = "砲塔"
+does = "武器の砲塔（または砲架）。それぞれが載せる砲を持ちます。ユニットタブの「武器」欄で手順ごとに表示されます。"
+[MountedWeaponDescriptorList]
+what = "砲"
+does = "この砲塔に載る砲。それぞれに弾薬があります。"
+[EffectTag]
+what = "射撃エフェクト"
+does = "この砲が撃つときのエフェクト（発射炎と煙）を、エフェクトの名前で指定します。"
+["TAmmunition.Name"]
+what = "名前"
+does = "弾薬の名前になるテキスト（N_AR_lc：小口径）。"
+[TypeName]
+what = "種類"
+does = "弾薬の種類の名前になるテキスト（T_ARM_0：徹甲弾）。"
+["TAmmunition.Icon"]
+what = "画像"
+does = "弾薬の小さな画像。ほかの弾薬のものが多い（20mm 徹甲弾はバズーカのものを使用）。"
+[StressManager]
+what = "ストレス表"
+does = "名前からすると：命中が目標をどれだけストレス状態にする（釘付けにする）かを、目標の装甲レベルごとに定めた表。ゲームのすべての弾薬が同じものを使います。"
+["TArmorDescriptor.Name"]
+what = "名前"
+does = "この装甲レベルの名前になるテキスト（N_ARMU_1：航空機）。"
+["TArmorDescriptor.Icon"]
+what = "画像"
+does = "装甲レベルの小さな画像。"
+[_Filename]
+what = "ソースファイル"
+does = "このオブジェクトが書かれた Eugen 自身のソースファイル（DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf）。彼らの管理用の記録で、変える必要はありません。"
+[_Line]
+what = "ソースの行"
+does = "このオブジェクトが始まる Eugen のソースファイルの行。彼らの管理用の記録で、変える必要はありません。"
+[_Column]
+what = "ソースの列"
+does = "その行での Eugen のソースファイルの列。彼らの管理用の記録で、変える必要はありません。"
+[_ShortDatabaseName]
+what = "短い名前"
+does = "Eugen のツールがこのオブジェクトに付けた短い名前。彼らの管理用の記録で、変える必要はありません。"

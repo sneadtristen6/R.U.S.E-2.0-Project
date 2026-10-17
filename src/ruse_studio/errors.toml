@@ -3159,3 +3159,27 @@ ru = "Ему нечего сбрасывать: сначала выберите 
 cz = "Nemá pumy ke shození: nejprve vyberte pumy pro jednu z jeho zbraní (Zbraně, níže), pak z něj udělejte bombardér."
 jpn = "投下する爆弾がありません。先に武器のどれかに爆弾を選び（下の「武器」）、それから爆撃機にしてください。"
 sc = "它没有可投放的炸弹：请先为其某件武器选择炸弹（下方“武器”），再将其设为轰炸机。"
+
+[eec08e83fde]
+us = "{0} isn't a game mode the economy has ({1})"
+fr = "{0} n'est pas un mode de jeu de l'économie ({1})"
+ger = "{0} ist kein Spielmodus der Wirtschaft ({1})"
+ita = "{0} non è una modalità di gioco dell'economia ({1})"
+spa = "{0} no es un modo de juego de la economía ({1})"
+pol = "{0} nie jest trybem gry ekonomii ({1})"
+ru = "{0} — не режим игры экономики ({1})"
+cz = "{0} není herní režim ekonomiky ({1})"
+jpn = "{0} は経済のゲームモードではありません（{1}）"
+sc = "{0} 不是经济数值的游戏模式（{1}）"
+
+[e3e637e5fa9]
+us = "The game index has no {0} copy of the economy's values."
+fr = "L'index du jeu n'a pas de copie {0} des valeurs de l'économie."
+ger = "Der Spielindex hat keine {0}-Kopie der Wirtschaftswerte."
+ita = "L'indice del gioco non ha una copia {0} dei valori dell'economia."
+spa = "El índice del juego no tiene una copia {0} de los valores de la economía."
+pol = "Indeks gry nie ma kopii {0} wartości ekonomii."
+ru = "В индексе игры нет копии {0} значений экономики."
+cz = "Index hry nemá kopii {0} hodnot ekonomiky."
+jpn = "ゲーム索引に経済の値の {0} のコピーがありません。"
+sc = "游戏索引中没有经济数值的 {0} 副本。"

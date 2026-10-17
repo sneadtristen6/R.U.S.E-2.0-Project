@@ -23,7 +23,7 @@ class Guide(unittest.TestCase):
 
     def test_each_entry_says_what_it_is_and_how_to_read_it(self):
         units = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share", "pct",
-                 "min", "level", "choice", "yesno", "id", "mask", "frame", "raw"}
+                 "min", "level", "choice", "yesno", "id", "mask", "frame", "raw", "link", "text", "name"}
         for key, e in numberinfo.guide().items():
             with self.subTest(key=key):
                 self.assertIn(e["group"], numberinfo.GROUPS)
@@ -70,6 +70,19 @@ class Guide(unittest.TestCase):
         self.assertEqual(numberinfo.lookup("TUniteAuSolDescriptor", "VitesseLineaire")["unit"], "kmh")
         self.assertIsNone(numberinfo.lookup("TUniteAuSolDescriptor", "NoSuchThing"))
 
+    def test_a_name_other_kinds_share_with_another_meaning(self):
+        """The All values tab shows every kind of object: a unit's words aren't shown on another kind's value of the
+        same name (the main menu's Factory, a map shape's Radius, a cutscene's Key)."""
+        for cls in numberinfo.UNIT_CLASSES:
+            self.assertEqual(numberinfo.lookup(cls, "Factory")["what"], "Factory")
+        for cls, prop in (("TMainMenuInfos", "Factory"), ("TMainMenuInfos", "PositionInMenu"),
+                          ("TSceneryDescriptorFillRegularPolygon", "Radius"), ("TCutsceneDescriptor", "Key"),
+                          ("TViewVariantDescriptor", "Category"), ("TMultiMapInfo", "TrackingId")):
+            self.assertIsNone(numberinfo.lookup(cls, prop), (cls, prop))
+        self.assertEqual(numberinfo.lookup("TPawnDescriptor", "Radius")["what"], "Token size on the table")
+        self.assertIsNotNone(numberinfo.lookup("TMetaCircleDrawer", "MaxWidth"))
+        self.assertIn("classes", numberinfo.guide("fr")["Radius"])  # every language
+
     def test_plain_units(self):
         self.assertAlmostEqual(numberinfo.plain("m", 104000), 400)
         self.assertAlmostEqual(numberinfo.plain("kmh", 4550), 35)  # a Sherman: 35 km/h on the game's unit panel
@@ -92,7 +105,9 @@ class Page(unittest.TestCase):
             self.assertEqual(len(words[key]), 10, key)
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider",
-                       "MODE_LISTS", "mode-box", "number_full_speed"):
+                       "MODE_LISTS", "mode-box", "number_full_speed",
+                       "const entry = numberEntry(p.class, r.prop);",  # the All values tab: what each value does
+                       "e.classes && !e.classes.includes(cls)"):
             self.assertIn(needle, app)
         fake = (ROOT / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ("numbers: async", "number_scale: async"):

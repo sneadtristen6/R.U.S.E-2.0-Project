@@ -1041,3 +1041,146 @@ does = "Le temps le plus court, en secondes, qu'un joueur ordinateur attend entr
 [ConstructionDelayForFakeBuildingsMax]
 what = "Délai des bâtiments leurres (max.)"
 does = "Le temps le plus long, en secondes, qu'un joueur ordinateur attend entre deux bâtiments leurres qu'il pose avec la ruse des bâtiments leurres. 10 dans le jeu."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Nom de débogage"
+does = "Le nom de l'unité dans les messages d'erreur et journaux du jeu (Unit_M4_Sherman). Les joueurs ne le voient jamais."
+[NameInMenuToken]
+what = "Nom"
+does = "Quel texte du jeu est son nom, dans le menu de production et sur sa carte (N_UNI_137 pour le Sherman). Changer le texte… sous la case change les mots eux-mêmes, dans toutes les langues."
+[TypeUnitHintToken]
+what = "Ligne de type"
+does = "Quel texte la carte montre comme son type d'unité, sous son nom (TANK_madv pour le Sherman). vide : aucun."
+[DescriptionUnitHintToken]
+what = "Description de la carte"
+does = "Quel texte la carte montre comme courte description (DTANK_madv pour le Sherman). vide : aucun."
+[EfficaceHintToken]
+what = "Efficace contre"
+does = "Quel texte la carte montre comme ce contre quoi elle est efficace (E_ground : toutes les cibles au sol ; unarmed : non armée). vide : aucun."
+[LongDescriptionUnitHintToken]
+what = "Texte d'histoire"
+does = "Quel texte est sa description longue : l'histoire de l'unité réelle (LD_UNI_137 raconte celle du Sherman)."
+[WeaponDescriptor]
+what = "Armes"
+does = "Ses armes : la partie qui porte ses tourelles et les canons dessus, chacun avec ses munitions. La case Armes de l'onglet Unités les change. Vide : non armée."
+[ArmorDescriptor]
+what = "Blindage"
+does = "Son niveau de blindage : un objet que plusieurs unités partagent (le Sherman pointe sur celui du M4 Skink). Blindage, dans l'onglet Unités, choisit un des niveaux du jeu."
+[GfxDescriptor]
+what = "Apparence"
+does = "Apparence seulement : son modèle 3D et comment ses parties bougent (chenilles, roues, tourelle). Pour un bâtiment : son apparence sur la carte, un ensemble de nombreuses pièces que le jeu ajoute là où il se trouve."
+[GfxDescriptorIcone]
+what = "Apparence de loin"
+does = "Apparence seulement : ce qui la représente quand la caméra est haute : le jeton rond d'une unité au sol sur la table de jeu, le petit modèle d'un avion."
+[GfxDescriptorIconeJeton]
+what = "Jeton"
+does = "Apparence seulement : le jeton rond d'un avion sur la table de jeu quand la caméra est haute."
+[GfxDescriptorCadavre]
+what = "Épave"
+does = "Apparence seulement : ce qu'il en reste quand elle est détruite (le modèle de son épave)."
+[GfxDescriptorIconeCadavre]
+what = "Figurine de soldat"
+does = "Apparence seulement : un des modèles de soldat d'une escouade (d'après son nom, celui dessiné pour un soldat tombé). Le Studio montre et repeint une escouade avec lui."
+[GfxDescriptorFusilier]
+what = "Fusilier"
+does = "Apparence seulement : le modèle des fusiliers d'une escouade."
+[GfxDescriptorBazooka]
+what = "Homme au bazooka"
+does = "Apparence seulement : le modèle de l'homme au bazooka d'une escouade."
+[SoundMotorDescriptor]
+what = "Son en mouvement"
+does = "Son seulement : le bruit qu'elle fait en bougeant (un moteur, les moteurs d'un avion), souvent celui d'une autre unité (le Sherman utilise celui de l'ARL 40)."
+[TextureForInterface]
+what = "Image de la carte"
+does = "Son image dans le menu de production et sur sa carte. Dans l'onglet Unités, Utiliser cette vue comme carte en fait une nouvelle à partir de son modèle 3D."
+[UpgradeRequire]
+what = "Recherchée depuis"
+does = "L'unité depuis laquelle elle se recherche : elle peut être produite une fois cette recherche faite (le Sherman demande le M3 Lee). Vide : pas de recherche."
+[UnitIdleManager]
+what = "Comportement en attente"
+does = "Ce qu'elle fait en attendant : son canon ou sa tourelle qui regarde autour. Souvent celui d'une autre unité (le Sherman utilise celui de l'ARL 44)."
+[TransportPourMorphe]
+what = "Se déplace en"
+does = "Le camion en lequel elle se change pour rouler sur les routes (pour une escouade ou un canon). La case Se déplace en de l'onglet Unités le choisit."
+[MouvementHandlerInfo]
+what = "Vol"
+does = "Comment l'avion vole : la partie qui porte ses valeurs de vol (ouvrez-la pour les voir)."
+[UniteTransportee]
+what = "Largue"
+does = "L'unité qu'un avion de transport largue (le C47 largue des parachutistes américains). Un avion avec le drapeau parachutistes et rien ici fait planter le jeu."
+[AmmoDeath]
+what = "Explosion au crash"
+does = "L'explosion quand l'avion est abattu : celle d'un avion léger ou moyen."
+[UniteDefense]
+what = "Unité de défense"
+does = "L'unité qui combat pour une défense : les canons d'un bunker (la tourelle du bunker Maginot)."
+[BatimentPaths]
+what = "Chemins"
+does = "Où les unités passent autour du bâtiment, y entrent et en sortent : ses sorties, entrées, places de parking et la piste d'un aérodrome."
+["TBatimentPaths.FactoryExit"]
+what = "Sortie"
+does = "Le chemin qu'une unité qu'il produit prend pour sortir, jusqu'à la route (vu en jeu : par la porte, sur la route)."
+["TBatimentPaths.FactoryEntry"]
+what = "Entrée"
+does = "Le chemin que les unités prennent pour y entrer."
+["TBatimentPaths.ByPass"]
+what = "Contournement"
+does = "Le chemin que les unités prennent pour le contourner."
+["TBatimentPaths.Vision"]
+what = "Points de vue"
+does = "D'après son nom : les points d'où le bâtiment regarde."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Entrée du parking (gros avions)"
+does = "Le chemin d'un aérodrome pour ses plus gros avions vers leurs places de parking."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Entrée du parking (petits avions)"
+does = "Le chemin d'un aérodrome pour ses plus petits avions vers leurs places de parking."
+["TBatimentPaths.ParkingExit"]
+what = "Sortie du parking"
+does = "Le chemin d'un aérodrome pour ses avions hors de leurs places de parking."
+["TBatimentPaths.MultiPathParking"]
+what = "Places de parking"
+does = "Les places de parking d'un aérodrome et les chemins entre elles."
+["TBatimentPaths.Runway"]
+what = "Piste"
+does = "La piste d'un aérodrome : là où ses avions décollent et atterrissent."
+[TurretDescriptorList]
+what = "Tourelles"
+does = "Les tourelles de l'arme (ou affûts), chacune avec les canons qu'elle porte. La case Armes de l'onglet Unités les montre étape par étape."
+[MountedWeaponDescriptorList]
+what = "Canons"
+does = "Les canons de cette tourelle, chacun avec ses munitions."
+[EffectTag]
+what = "Effet de tir"
+does = "Quel effet joue quand ce canon tire (son éclair et sa fumée), par le nom de l'effet."
+["TAmmunition.Name"]
+what = "Nom"
+does = "Quel texte nomme la munition (N_AR_lc : petit calibre)."
+[TypeName]
+what = "Type"
+does = "Quel texte nomme son type (T_ARM_0 : obus perforant)."
+["TAmmunition.Icon"]
+what = "Image"
+does = "La petite image de la munition, souvent celle d'une autre (l'obus perforant de 20 mm utilise celle du bazooka)."
+[StressManager]
+what = "Table de stress"
+does = "D'après son nom : la table de combien un coup stresse (cloue au sol) une cible, selon son niveau de blindage. Toutes les munitions du jeu utilisent la même."
+["TArmorDescriptor.Name"]
+what = "Nom"
+does = "Quel texte nomme ce niveau de blindage (N_ARMU_1 : avion)."
+["TArmorDescriptor.Icon"]
+what = "Image"
+does = "La petite image du niveau de blindage."
+[_Filename]
+what = "Fichier source"
+does = "Le fichier des sources d'Eugen où cet objet a été écrit (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Leur suivi interne : rien à changer."
+[_Line]
+what = "Ligne source"
+does = "La ligne du fichier source d'Eugen où cet objet commence. Leur suivi interne : rien à changer."
+[_Column]
+what = "Colonne source"
+does = "La colonne sur cette ligne du fichier source d'Eugen. Leur suivi interne : rien à changer."
+[_ShortDatabaseName]
+what = "Nom court"
+does = "Le nom court que les outils d'Eugen ont donné à cet objet. Leur suivi interne : rien à changer."

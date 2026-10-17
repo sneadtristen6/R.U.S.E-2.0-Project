@@ -1041,3 +1041,146 @@ does = "Nejkratší doba, v sekundách, kterou počítačový hráč čeká mezi
 [ConstructionDelayForFakeBuildingsMax]
 what = "Prodleva mezi budovami-maketami (max.)"
 does = "Nejdelší doba, v sekundách, kterou počítačový hráč čeká mezi dvěma budovami-maketami, které staví lstí budov-maket. 10 ve hře."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Ladicí název"
+does = "Název jednotky v chybových hlášeních a protokolech hry (Unit_M4_Sherman). Hráči ho nikdy nevidí."
+[NameInMenuToken]
+what = "Název"
+does = "Který text hry je jejím názvem, ve výrobní nabídce a na její kartě (N_UNI_137 u Shermana). Změnit text… pod polem mění samotná slova, ve všech jazycích."
+[TypeUnitHintToken]
+what = "Řádek typu"
+does = "Který text karta ukazuje jako druh jednotky, pod názvem (TANK_madv u Shermana). vide: žádný."
+[DescriptionUnitHintToken]
+what = "Popis na kartě"
+does = "Který text karta ukazuje jako krátký popis (DTANK_madv u Shermana). vide: žádný."
+[EfficaceHintToken]
+what = "Účinná proti"
+does = "Který text karta ukazuje jako to, proti čemu je dobrá (E_ground: všechny pozemní cíle; unarmed: neozbrojená). vide: žádný."
+[LongDescriptionUnitHintToken]
+what = "Historický text"
+does = "Který text je jejím dlouhým popisem: historií skutečné jednotky (LD_UNI_137 vypráví příběh Shermana)."
+[WeaponDescriptor]
+what = "Zbraně"
+does = "Její zbraně: část s jejími věžemi a děly na nich, každé se svou municí. Pole Zbraně na kartě Jednotky je mění. Prázdné: neozbrojená."
+[ArmorDescriptor]
+what = "Pancéřování"
+does = "Její úroveň pancéřování: objekt, který sdílí více jednotek (Sherman ukazuje na pancéřování M4 Skink). Pancéřování na kartě Jednotky vybírá jednu z úrovní hry."
+[GfxDescriptor]
+what = "Vzhled"
+does = "Jen vzhled: její 3D model a jak se pohybují jeho části (pásy, kola, věž). U budovy: její vzhled na mapě, sestava mnoha dílů, které hra přidá tam, kde stojí."
+[GfxDescriptorIcone]
+what = "Vzhled zdálky"
+does = "Jen vzhled: co ji zastupuje, když je kamera vysoko: kulatý žeton pozemní jednotky na stole s mapou, malý model letadla."
+[GfxDescriptorIconeJeton]
+what = "Žeton"
+does = "Jen vzhled: kulatý žeton letadla na stole s mapou, když je kamera vysoko."
+[GfxDescriptorCadavre]
+what = "Vrak"
+does = "Jen vzhled: co z ní zbude po zničení (model jejího vraku)."
+[GfxDescriptorIconeCadavre]
+what = "Postava vojáka"
+does = "Jen vzhled: jeden z modelů vojáků jednotky (podle názvu ten kreslený pro padlého vojáka). Studio jím jednotku ukazuje a přebarvuje."
+[GfxDescriptorFusilier]
+what = "Střelec"
+does = "Jen vzhled: model střelců jednotky."
+[GfxDescriptorBazooka]
+what = "Voják s bazukou"
+does = "Jen vzhled: model vojáka s bazukou v jednotce."
+[SoundMotorDescriptor]
+what = "Zvuk pohybu"
+does = "Jen zvuk: jak zní, když se pohybuje (motor, motory letadla), často zvuk jiné jednotky (Sherman používá zvuk ARL 40)."
+[TextureForInterface]
+what = "Obrázek karty"
+does = "Její obrázek ve výrobní nabídce a na kartě. Na kartě Jednotky vytvoří Použít tento pohled jako kartu nový z jejího 3D modelu."
+[UpgradeRequire]
+what = "Zkoumá se z"
+does = "Jednotka, ze které se zkoumá: lze ji stavět po dokončení toho výzkumu (Sherman potřebuje M3 Lee). Prázdné: bez výzkumu."
+[UnitIdleManager]
+what = "Chování při čekání"
+does = "Co dělá, když čeká: její dělo nebo věž se rozhlíží. Často chování jiné jednotky (Sherman používá chování ARL 44)."
+[TransportPourMorphe]
+what = "Jezdí v"
+does = "Nákladní auto, ve které se mění, aby jela po silnicích (jednotka pěchoty nebo dělo). Pole Jezdí v na kartě Jednotky ho vybírá."
+[MouvementHandlerInfo]
+what = "Let"
+does = "Jak letadlo létá: část s jeho letovými hodnotami (otevři ji, abys je viděl)."
+[UniteTransportee]
+what = "Shazuje"
+does = "Jednotka, kterou shazuje transportní letadlo (C47 shazuje americké výsadkáře). Letadlo s příznakem výsadku a ničím zde shodí hru."
+[AmmoDeath]
+what = "Výbuch při pádu"
+does = "Výbuch, když je letadlo sestřeleno: lehkého nebo středního letadla."
+[UniteDefense]
+what = "Obranná jednotka"
+does = "Jednotka, která bojuje za obranné postavení: děla bunkru (věž bunkru Maginotovy linie)."
+[BatimentPaths]
+what = "Cesty"
+does = "Kudy jednotky budovu obcházejí, vcházejí a vycházejí: její výjezdy, vjezdy, parkovací místa a vzletová dráha letiště."
+["TBatimentPaths.FactoryExit"]
+what = "Výjezd"
+does = "Cesta, kterou jí vyrobená jednotka vyjede k silnici (viděno ve hře: branou na silnici)."
+["TBatimentPaths.FactoryEntry"]
+what = "Vjezd"
+does = "Cesta, kterou do ní jednotky vjíždějí."
+["TBatimentPaths.ByPass"]
+what = "Objížďka"
+does = "Cesta, kterou ji jednotky objíždějí."
+["TBatimentPaths.Vision"]
+what = "Body výhledu"
+does = "Podle názvu: body, ze kterých budova vyhlíží."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Vjezd na stání (velká letadla)"
+does = "Cesta letiště pro jeho větší letadla na parkovací místa."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Vjezd na stání (malá letadla)"
+does = "Cesta letiště pro jeho menší letadla na parkovací místa."
+["TBatimentPaths.ParkingExit"]
+what = "Výjezd ze stání"
+does = "Cesta letiště pro jeho letadla z parkovacích míst."
+["TBatimentPaths.MultiPathParking"]
+what = "Parkovací místa"
+does = "Parkovací místa letiště a cesty mezi nimi."
+["TBatimentPaths.Runway"]
+what = "Vzletová dráha"
+does = "Vzletová dráha letiště: kde jeho letadla vzlétají a přistávají."
+[TurretDescriptorList]
+what = "Věže"
+does = "Věže zbraně (nebo lafety), každá s děly, která nese. Pole Zbraně na kartě Jednotky je ukazuje krok za krokem."
+[MountedWeaponDescriptorList]
+what = "Děla"
+does = "Děla na této věži, každé se svou municí."
+[EffectTag]
+what = "Efekt výstřelu"
+does = "Který efekt se přehraje, když toto dělo vystřelí (záblesk a kouř), podle názvu efektu."
+["TAmmunition.Name"]
+what = "Název"
+does = "Který text pojmenovává munici (N_AR_lc: malá ráže)."
+[TypeName]
+what = "Druh"
+does = "Který text pojmenovává její druh (T_ARM_0: průbojný granát)."
+["TAmmunition.Icon"]
+what = "Obrázek"
+does = "Malý obrázek munice, často jiné munice (20mm průbojný granát používá obrázek bazuky)."
+[StressManager]
+what = "Tabulka stresu"
+does = "Podle názvu: tabulka, jak moc zásah stresuje (přišpendlí k zemi) cíl, podle jeho úrovně pancéřování. Všechny munice hry používají tutéž."
+["TArmorDescriptor.Name"]
+what = "Název"
+does = "Který text pojmenovává tuto úroveň pancéřování (N_ARMU_1: letadlo)."
+["TArmorDescriptor.Icon"]
+what = "Obrázek"
+does = "Malý obrázek úrovně pancéřování."
+[_Filename]
+what = "Zdrojový soubor"
+does = "Soubor ve zdrojích Eugenu, ve kterém byl tento objekt napsán (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Jejich vnitřní evidence: nic ke změně."
+[_Line]
+what = "Zdrojový řádek"
+does = "Řádek zdrojového souboru Eugenu, na kterém tento objekt začíná. Jejich vnitřní evidence: nic ke změně."
+[_Column]
+what = "Zdrojový sloupec"
+does = "Sloupec na tom řádku zdrojového souboru Eugenu. Jejich vnitřní evidence: nic ke změně."
+[_ShortDatabaseName]
+what = "Krátký název"
+does = "Krátký název, který tomuto objektu daly nástroje Eugenu. Jejich vnitřní evidence: nic ke změně."

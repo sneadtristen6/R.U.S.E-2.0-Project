@@ -5580,6 +5580,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if prop not in economy.PROPS:
             raise StudioError(f"{prop} isn't one of the economy's values")
         if mode is not None and mode not in economy.TARGETS:
+            # not a game rule: the Studio's own names for the game's two copies
             raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
@@ -5617,6 +5618,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     def economy_reset(self, prop: str, mode: str | None = None) -> dict:
         """Take one economy value's change out of the current mod: both copies, or one (`mode`, as economy_edit)."""
         if mode is not None and mode not in economy.TARGETS:
+            # not a game rule: the Studio's own names for the game's two copies
             raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:

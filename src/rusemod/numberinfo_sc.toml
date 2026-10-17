@@ -1041,3 +1041,146 @@ does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等
 [ConstructionDelayForFakeBuildingsMax]
 what = "诱饵建筑的间隔（最多）"
 does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等待的最长秒数。游戏中为 10。"
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "调试名称"
+does = "单位在游戏错误信息和日志中的名称（Unit_M4_Sherman）。玩家看不到它。"
+[NameInMenuToken]
+what = "名称"
+does = "哪条游戏文本是它在建造菜单和卡片上的名称（谢尔曼为 N_UNI_137）。框下方的“修改文字…”可在所有语言中修改文字本身。"
+[TypeUnitHintToken]
+what = "类型行"
+does = "卡片在名称下方显示为单位类型的文本（谢尔曼为 TANK_madv）。vide：无。"
+[DescriptionUnitHintToken]
+what = "卡片说明"
+does = "卡片显示为简短说明的文本（谢尔曼为 DTANK_madv）。vide：无。"
+[EfficaceHintToken]
+what = "有效对象"
+does = "卡片显示它擅长对付什么的文本（E_ground：所有地面目标；unarmed：无武装）。vide：无。"
+[LongDescriptionUnitHintToken]
+what = "历史文本"
+does = "哪条文本是它的长说明：真实单位的历史（LD_UNI_137 讲述谢尔曼的历史）。"
+[WeaponDescriptor]
+what = "武器"
+does = "它的武器：带有炮塔及其上火炮的部分，每门火炮都有弹药。“单位”标签页的“武器”框可修改。空：无武装。"
+[ArmorDescriptor]
+what = "装甲"
+does = "它的装甲等级：多个单位共用的对象（谢尔曼指向 M4 Skink 的）。“单位”标签页的“装甲”从游戏的等级中选择。"
+[GfxDescriptor]
+what = "外观"
+does = "仅外观：它的3D模型及其部件的运动方式（履带、车轮、炮塔）。对建筑而言：它在地图上的外观，即游戏在其所在位置添加的许多部件的布局。"
+[GfxDescriptorIcone]
+what = "远处外观"
+does = "仅外观：镜头很高时代表它的东西：地面单位在地图桌上的圆形棋子，飞机的小模型。"
+[GfxDescriptorIconeJeton]
+what = "棋子"
+does = "仅外观：镜头很高时飞机在地图桌上的圆形棋子。"
+[GfxDescriptorCadavre]
+what = "残骸"
+does = "仅外观：被摧毁后留下的东西（残骸模型）。"
+[GfxDescriptorIconeCadavre]
+what = "士兵形象"
+does = "仅外观：小队的士兵模型之一（从名称看，是为阵亡士兵绘制的那个）。Studio 用它显示和重新涂装小队。"
+[GfxDescriptorFusilier]
+what = "步枪兵"
+does = "仅外观：小队步枪兵的模型。"
+[GfxDescriptorBazooka]
+what = "火箭筒兵"
+does = "仅外观：小队火箭筒兵的模型。"
+[SoundMotorDescriptor]
+what = "移动声音"
+does = "仅声音：它移动时的声音（发动机、飞机发动机），常用其他单位的（谢尔曼使用 ARL 40 的）。"
+[TextureForInterface]
+what = "卡片图片"
+does = "它在建造菜单和卡片上的图片。在“单位”标签页中，“将此视角用作卡片”会根据它的3D模型制作新图片。"
+[UpgradeRequire]
+what = "研究自"
+does = "它研究自哪个单位：该研究完成后即可建造（谢尔曼需要 M3 Lee）。空：无需研究。"
+[UnitIdleManager]
+what = "等待行为"
+does = "它等待时做什么：火炮或炮塔四处张望。常用其他单位的（谢尔曼使用 ARL 44 的）。"
+[TransportPourMorphe]
+what = "乘坐"
+does = "它在道路上行进时变成的卡车（小队或火炮）。“单位”标签页的“乘坐”框可选择。"
+[MouvementHandlerInfo]
+what = "飞行"
+does = "飞机如何飞行：包含其飞行数值的部分（打开可查看）。"
+[UniteTransportee]
+what = "空投"
+does = "运输机空投的单位（C47 空投美军伞兵）。带有伞兵标志而此处为空的飞机会使游戏崩溃。"
+[AmmoDeath]
+what = "坠毁爆炸"
+does = "飞机被击落时的爆炸：轻型或中型飞机的。"
+[UniteDefense]
+what = "防御单位"
+does = "为防御工事作战的单位：碉堡的火炮（马奇诺碉堡的炮塔）。"
+[BatimentPaths]
+what = "路径"
+does = "单位绕过建筑、进出建筑的路线：出口、入口、停机位和机场跑道。"
+["TBatimentPaths.FactoryExit"]
+what = "出口"
+does = "它建造的单位驶出到道路的路径（游戏中已确认：从大门驶上道路）。"
+["TBatimentPaths.FactoryEntry"]
+what = "入口"
+does = "单位进入它的路径。"
+["TBatimentPaths.ByPass"]
+what = "绕行"
+does = "单位绕过它的路径。"
+["TBatimentPaths.Vision"]
+what = "视点"
+does = "从名称看：建筑向外观察的点。"
+["TBatimentPaths.ParkingEntryLarge"]
+what = "停机位入口（大型飞机）"
+does = "机场供大型飞机进入停机位的路径。"
+["TBatimentPaths.ParkingEntrySmall"]
+what = "停机位入口（小型飞机）"
+does = "机场供小型飞机进入停机位的路径。"
+["TBatimentPaths.ParkingExit"]
+what = "停机位出口"
+does = "机场供飞机驶出停机位的路径。"
+["TBatimentPaths.MultiPathParking"]
+what = "停机位"
+does = "机场的停机位及其间的路径。"
+["TBatimentPaths.Runway"]
+what = "跑道"
+does = "机场的跑道：飞机起降的地方。"
+[TurretDescriptorList]
+what = "炮塔"
+does = "武器的炮塔（或炮架），每个都带有其火炮。“单位”标签页的“武器”框会逐步显示。"
+[MountedWeaponDescriptorList]
+what = "火炮"
+does = "这个炮塔上的火炮，每门都有弹药。"
+[EffectTag]
+what = "开火效果"
+does = "这门火炮开火时播放的效果（炮口闪光和烟），按效果名称指定。"
+["TAmmunition.Name"]
+what = "名称"
+does = "为弹药命名的文本（N_AR_lc：小口径）。"
+[TypeName]
+what = "种类"
+does = "为其种类命名的文本（T_ARM_0：穿甲弹）。"
+["TAmmunition.Icon"]
+what = "图片"
+does = "弹药的小图片，常用其他弹药的（20毫米穿甲弹使用火箭筒的）。"
+[StressManager]
+what = "压制表"
+does = "从名称看：按目标装甲等级规定一次命中对目标造成多少压制（使其趴下）的表。游戏的所有弹药都用同一个。"
+["TArmorDescriptor.Name"]
+what = "名称"
+does = "为这个装甲等级命名的文本（N_ARMU_1：飞机）。"
+["TArmorDescriptor.Icon"]
+what = "图片"
+does = "装甲等级的小图片。"
+[_Filename]
+what = "源文件"
+does = "Eugen 自己的源文件中写入此对象的文件（DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf）。他们的内部记录：无需修改。"
+[_Line]
+what = "源文件行"
+does = "此对象在 Eugen 源文件中开始的行。他们的内部记录：无需修改。"
+[_Column]
+what = "源文件列"
+does = "在 Eugen 源文件该行中的列。他们的内部记录：无需修改。"
+[_ShortDatabaseName]
+what = "短名称"
+does = "Eugen 的工具给此对象起的短名称。他们的内部记录：无需修改。"

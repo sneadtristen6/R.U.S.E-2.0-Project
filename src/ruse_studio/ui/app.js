@@ -797,9 +797,15 @@ function modeNames() {
 
 function row(u, r, mode) {
   const w = state.words;
-  const th = el("th", { textContent: r.label });
-  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
-  if (!r.editable) return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
+  // a value with no name of its own in labels.toml is called by the number guide's ("Statistics id", not TrackingId)
+  const entry = numberEntry(u.class, r.prop);
+  const label = r.label === r.prop && entry && state.lang !== "base" ? entry.what : r.label;
+  const th = el("th", { textContent: label });
+  if (state.lang !== "base" && label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  if (!r.editable) {  // (one that can't be changed still says what it is)
+    if (entry) { th.title = numberTip(entry); th.classList.add("has-meaning"); }
+    return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
+  }
   if (FLAG_LISTS.has(r.prop)) return flagRow(u, r, mode, th);
   const via = state.page.via;
   const st = rowState(r, mode);
@@ -899,7 +905,8 @@ const BASE_LEAST = -90, BASE_MOST = 300;  // the base-stat slider: % of the game
 
 function numberEntry(cls, prop) {
   if (!knownNumbers) return null;
-  return knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+  const e = knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+  return e && e.classes && !e.classes.includes(cls) ? null : e;  // (its words are about other kinds of object)
 }
 
 // A number in plain units ("about 35 km/h"), or "" when its unit has none.
@@ -1037,6 +1044,8 @@ function flagRow(u, r, mode, th) {
   let checked = { problems: [], blocked: false, adding: {} };  // api.flag_check: what's wrong with this unit's flags
   const chips = el("div", { className: "flags" });
   const was = el("div", { className: "was" });
+  const entry = numberEntry(u.class, r.prop);  // (what the flags are, on the name, as the other rows have it)
+  if (entry) th.title = numberTip(entry);
   // what flags are and what the Studio does with them (the owner, 2026-10-15: "it has to tell the modder what the
   // thinking is going to be doing"), the guide to all of them, and what it found on this unit
   const guideButton = el("button", { type: "button", className: "link", textContent: w.flag_guide, title: w.tip_flag_guide });
@@ -1295,7 +1304,7 @@ function roleGroup(u) {
   const was = el("div", { className: "was" });
   const why = el("p", { className: "notice hidden" });
   const moved = el("p", { className: "muted small hidden", textContent: w.role_bombs_moved });
-  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.role_title, title: w.tip_role_pick }), el("td", {}, pick, was));
   const name = (id) => w["role_" + id] || id;
   const show = (info) => {
     // an armed plane made a scout keeps its attacks (the fighter's behaviour: a scout's crashes the game on attack)
@@ -1340,7 +1349,7 @@ function groundRoleGroup(u) {
   pick.setAttribute("aria-label", w.role_title);
   const was = el("div", { className: "was" });
   const why = el("p", { className: "notice hidden" });
-  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.role_title, title: w.tip_ground_role }), el("td", {}, pick, was));
   const name = (id) => id === "recon" ? w.ground_role_recon : w.ground_role_game;
   const show = (info) => {
     pick.replaceChildren(...["game", "recon"].map((id) => el("option", { value: id, selected: id === info.role,
@@ -1378,7 +1387,7 @@ function weaponsGroup(u) {
     if (!res.weapons.length) return;
     const table = el("table");
     res.weapons.forEach((wp, i) => {
-      const th = el("th", { textContent: fill(w.weapon_n, { n: i + 1 }) }, el("small", { textContent: wp.name }));
+      const th = el("th", { textContent: fill(w.weapon_n, { n: i + 1 }), title: w.tip_weapon_n }, el("small", { textContent: wp.name }));
       const pick = el("select", { disabled: !state.mod, title: w.fires });
       for (const c of res.choices) {
         pick.append(el("option", { value: c.address, textContent: (c.new ? `${w.new_mark} ` : "") + c.name +
@@ -2349,7 +2358,8 @@ function upgradeGroup(u) {
   const was = el("div", { className: "was" });
   const kids = el("p", { className: "muted small" });
   const table = el("table");
-  const head = el("tr", {}, el("th", { textContent: w.upgrade_from }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.upgrade_from,
+    title: numberTip(numberEntry(u.class, "UpgradeRequire")) || w.tip_upgrade_from }), el("td", {}, pick, was));
   const gone = el("p", { className: "notice warn hidden", textContent: w.upgrade_parent_gone });
   const researchRow = (prop, r) => {
     // the research time in the unit picked beside it (the game keeps whole seconds); the price as it is
@@ -2391,7 +2401,10 @@ function upgradeGroup(u) {
       } catch (err) { problem(err); }
     });
     mark(r.value);
-    return el("tr", {}, el("th", { textContent: r.label }), cell);
+    // what it is, from the number guide, on the name (as the unit's other numbers have it)
+    const entry = numberEntry(u.class, prop);
+    return el("tr", {}, el("th", { textContent: r.label, title: numberTip(entry),
+      className: entry ? "has-meaning" : "" }), cell);
   };
   const show = (info) => {
     const current = info.parent ? info.parent.address : "", game = info.game_parent ? info.game_parent.address : "";
@@ -2436,7 +2449,7 @@ function armourGroup(u) {
   const pick = el("select", { disabled: !can, title: w.tip_armour_pick });
   const was = el("div", { className: "was" });
   const old = el("p", { className: "notice warn hidden", textContent: w.armour_old_way });
-  const head = el("tr", {}, el("th", { textContent: w.armour_level }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.armour_level, title: w.tip_armour_pick }), el("td", {}, pick, was));
   const label = (levels, value) => {
     const l = levels.find((x) => x.value === value);
     return l ? fill(w[l.word], { n: l.n }) : w.armour_building;
@@ -3741,6 +3754,9 @@ async function renderValues() {
     "values-prop": "tip_values_prop", "values-value": "tip_values_value", "values-go": "tip_values_go" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   renderValuesNew();
+  if (!knownNumbers) {  // what each value does (the number guide), for the lines under the values' names
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   if (!state.valueFiles) {
     try { state.valueFiles = (await api().values_files()).files; } catch (err) { problem(err); return; }
   }
@@ -3899,8 +3915,18 @@ function valueGameText(r) {
 function valueRow(p, r) {
   const w = state.words;
   const kindTip = w[VALUE_KIND_TIPS[r.kind] || "values_kind_fixed"] || "";
-  const th = el("th", { textContent: r.label, title: `${kindTip}\n(${r.prop} · ${r.type})` });
-  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  // what it does, from the number guide (rusemod/numberinfo.toml), as the Units, Economy and AI tabs say it; a value
+  // with no name of its own in labels.toml is called by the guide's ("Weapons", not WeaponDescriptor)
+  const entry = numberEntry(p.class, r.prop);
+  const label = r.label === r.prop && entry && state.lang !== "base" ? entry.what : r.label;
+  const th = el("th", { textContent: label, title: `${kindTip}\n(${r.prop} · ${r.type})` });
+  if (state.lang !== "base" && label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  if (entry) {
+    th.title = `${numberTip(entry)}\n\n${kindTip}\n(${r.prop} · ${r.type})`;
+    th.append(el("small", { className: "about", textContent: entry.does }));
+  }
+  const scale = entry && knownNumbers && knownNumbers.plain[entry.unit];
+  const plainOf = (v) => scale && scale[0] !== 1 ? numberPlain(entry, Number(v)) : "";  // ("25%" for 0.25, "about 400 m")
   const now = r.edited && !r.edited.removed ? r.edited : null;  // the mod's value: what the box shows
   const shown = now ? now.value : r.value;
   const text = now ? now.text : r.text;
@@ -3914,7 +3940,9 @@ function valueRow(p, r) {
     const b = box({ type: "number", value: String(shown), step: WHOLE.has(r.type) ? "1" : "any" });
     b.setAttribute("aria-label", r.label);
     b.addEventListener("change", () => { if (b.value.trim() === "") { b.value = String(shown); return; } save(Number(b.value)); });
-    td.append(el("div", { className: "boxes" }, b));
+    const plain = el("span", { className: "muted small number-plain", textContent: plainOf(shown) });
+    b.addEventListener("input", () => { plain.textContent = b.value.trim() === "" ? "" : plainOf(b.value); });
+    td.append(el("div", { className: "boxes" }, b, plain));
   } else if (r.kind === "bool") {
     const b = box({ type: "checkbox", checked: Boolean(shown) });
     b.setAttribute("aria-label", r.label);
@@ -4019,7 +4047,12 @@ function valueRow(p, r) {
         (state.valuesAsText = state.valuesAsText || new Set()).add(key);
         showValueObject(p.address, { keep: true });
       });
-      td.append(el("div", { className: "boxes" }, ...boxes), asText);
+      // a price or shown-in-menu list: one value per game mode, each box with its mode's name (as on the Units tab)
+      const modes = MODE_LISTS.has(r.prop) && items.length === 5 ? modeNames() : null;
+      if (modes) boxes.forEach((b, i) => { b.title = `${tip}\n${modes[i]}`; b.setAttribute("aria-label", `${r.label} [${modes[i]}]`); });
+      const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" }, el("small", { textContent: modes[i] }), b))
+        : boxes;
+      td.append(el("div", { className: "boxes" }, ...cells), asText);
     }
   } else if (r.kind === "link") {
     td.append(valueLink(p, r, shown, can, tip, save));

@@ -1041,3 +1041,146 @@ does = "Il tempo più breve, in secondi, che un giocatore computer aspetta tra d
 [ConstructionDelayForFakeBuildingsMax]
 what = "Attesa tra edifici esca (max.)"
 does = "Il tempo più lungo, in secondi, che un giocatore computer aspetta tra due edifici esca che piazza con l'inganno degli edifici esca. 10 nel gioco."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Nome di debug"
+does = "Il nome dell'unità nei messaggi d'errore e nei registri del gioco (Unit_M4_Sherman). I giocatori non lo vedono mai."
+[NameInMenuToken]
+what = "Nome"
+does = "Quale testo del gioco è il suo nome, nel menu di produzione e sulla sua scheda (N_UNI_137 per lo Sherman). Cambia le parole… sotto la casella cambia le parole stesse, in ogni lingua."
+[TypeUnitHintToken]
+what = "Riga del tipo"
+does = "Quale testo la scheda mostra come il suo tipo di unità, sotto il nome (TANK_madv per lo Sherman). vide: nessuno."
+[DescriptionUnitHintToken]
+what = "Descrizione della scheda"
+does = "Quale testo la scheda mostra come breve descrizione (DTANK_madv per lo Sherman). vide: nessuno."
+[EfficaceHintToken]
+what = "Efficace contro"
+does = "Quale testo la scheda mostra come ciò contro cui è efficace (E_ground: tutti i bersagli a terra; unarmed: disarmata). vide: nessuno."
+[LongDescriptionUnitHintToken]
+what = "Testo storico"
+does = "Quale testo è la sua descrizione lunga: la storia dell'unità reale (LD_UNI_137 racconta quella dello Sherman)."
+[WeaponDescriptor]
+what = "Armi"
+does = "Le sue armi: la parte che porta le sue torrette e i cannoni sopra, ognuno con le sue munizioni. La casella Armi della scheda Unità le cambia. Vuoto: disarmata."
+[ArmorDescriptor]
+what = "Corazza"
+does = "Il suo livello di corazza: un oggetto che più unità condividono (lo Sherman punta a quello dell'M4 Skink). Corazza, nella scheda Unità, sceglie uno dei livelli del gioco."
+[GfxDescriptor]
+what = "Aspetto"
+does = "Solo aspetto: il suo modello 3D e come si muovono le sue parti (cingoli, ruote, torretta). Per un edificio: il suo aspetto sulla mappa, un insieme di molti pezzi che il gioco aggiunge dove si trova."
+[GfxDescriptorIcone]
+what = "Aspetto da lontano"
+does = "Solo aspetto: ciò che la rappresenta quando la telecamera è alta: la pedina rotonda di un'unità di terra sul tavolo, il piccolo modello di un aereo."
+[GfxDescriptorIconeJeton]
+what = "Pedina"
+does = "Solo aspetto: la pedina rotonda di un aereo sul tavolo quando la telecamera è alta."
+[GfxDescriptorCadavre]
+what = "Relitto"
+does = "Solo aspetto: ciò che ne resta quando viene distrutta (il modello del suo relitto)."
+[GfxDescriptorIconeCadavre]
+what = "Figura del soldato"
+does = "Solo aspetto: uno dei modelli di soldato di una squadra (dal nome, quello disegnato per un soldato caduto). Lo Studio mostra e ridipinge una squadra con esso."
+[GfxDescriptorFusilier]
+what = "Fuciliere"
+does = "Solo aspetto: il modello dei fucilieri di una squadra."
+[GfxDescriptorBazooka]
+what = "Soldato col bazooka"
+does = "Solo aspetto: il modello del soldato col bazooka di una squadra."
+[SoundMotorDescriptor]
+what = "Suono in movimento"
+does = "Solo suono: il rumore che fa muovendosi (un motore, i motori di un aereo), spesso quello di un'altra unità (lo Sherman usa quello dell'ARL 40)."
+[TextureForInterface]
+what = "Immagine della scheda"
+does = "La sua immagine nel menu di produzione e sulla sua scheda. Nella scheda Unità, Usa questa vista come scheda ne crea una nuova dal suo modello 3D."
+[UpgradeRequire]
+what = "Ricercata da"
+does = "L'unità da cui si ricerca: si può produrre una volta finita quella ricerca (lo Sherman richiede l'M3 Lee). Vuoto: nessuna ricerca."
+[UnitIdleManager]
+what = "Comportamento in attesa"
+does = "Cosa fa mentre aspetta: il suo cannone o la torretta che si guarda intorno. Spesso quello di un'altra unità (lo Sherman usa quello dell'ARL 44)."
+[TransportPourMorphe]
+what = "Viaggia su"
+does = "Il camion in cui si trasforma per viaggiare sulle strade (per una squadra o un cannone). La casella Viaggia su della scheda Unità lo sceglie."
+[MouvementHandlerInfo]
+what = "Volo"
+does = "Come vola l'aereo: la parte con i suoi valori di volo (aprila per vederli)."
+[UniteTransportee]
+what = "Lancia"
+does = "L'unità che un aereo da trasporto lancia (il C47 lancia paracadutisti americani). Un aereo con la bandiera paracadutisti e niente qui manda in crash il gioco."
+[AmmoDeath]
+what = "Esplosione allo schianto"
+does = "L'esplosione quando l'aereo viene abbattuto: quella di un aereo leggero o medio."
+[UniteDefense]
+what = "Unità di difesa"
+does = "L'unità che combatte per una difesa: i cannoni di un bunker (la torretta del bunker Maginot)."
+[BatimentPaths]
+what = "Percorsi"
+does = "Dove le unità girano intorno all'edificio, entrano ed escono: le sue uscite, entrate, posti di parcheggio e la pista di un aeroporto."
+["TBatimentPaths.FactoryExit"]
+what = "Uscita"
+does = "Il percorso che un'unità prodotta prende per uscire, fino alla strada (visto in gioco: dal cancello sulla strada)."
+["TBatimentPaths.FactoryEntry"]
+what = "Entrata"
+does = "Il percorso che le unità prendono per entrare."
+["TBatimentPaths.ByPass"]
+what = "Aggiramento"
+does = "Il percorso che le unità prendono per girarci intorno."
+["TBatimentPaths.Vision"]
+what = "Punti di vista"
+does = "Dal nome: i punti da cui l'edificio guarda."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Entrata parcheggio (aerei grandi)"
+does = "Il percorso di un aeroporto per i suoi aerei più grandi verso i posti di parcheggio."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Entrata parcheggio (aerei piccoli)"
+does = "Il percorso di un aeroporto per i suoi aerei più piccoli verso i posti di parcheggio."
+["TBatimentPaths.ParkingExit"]
+what = "Uscita parcheggio"
+does = "Il percorso di un aeroporto per i suoi aerei fuori dai posti di parcheggio."
+["TBatimentPaths.MultiPathParking"]
+what = "Posti di parcheggio"
+does = "I posti di parcheggio di un aeroporto e i percorsi tra loro."
+["TBatimentPaths.Runway"]
+what = "Pista"
+does = "La pista di un aeroporto: dove i suoi aerei decollano e atterrano."
+[TurretDescriptorList]
+what = "Torrette"
+does = "Le torrette dell'arma (o affusti), ognuna con i cannoni che porta. La casella Armi della scheda Unità le mostra passo per passo."
+[MountedWeaponDescriptorList]
+what = "Cannoni"
+does = "I cannoni su questa torretta, ognuno con le sue munizioni."
+[EffectTag]
+what = "Effetto di sparo"
+does = "Quale effetto parte quando questo cannone spara (lampo e fumo), per nome dell'effetto."
+["TAmmunition.Name"]
+what = "Nome"
+does = "Quale testo dà il nome alla munizione (N_AR_lc: piccolo calibro)."
+[TypeName]
+what = "Tipo"
+does = "Quale testo dà il nome al suo tipo (T_ARM_0: proiettile perforante)."
+["TAmmunition.Icon"]
+what = "Immagine"
+does = "La piccola immagine della munizione, spesso quella di un'altra (il proiettile perforante da 20 mm usa quella del bazooka)."
+[StressManager]
+what = "Tabella dello stress"
+does = "Dal nome: la tabella di quanto un colpo stressa (inchioda) un bersaglio, secondo il suo livello di corazza. Tutte le munizioni del gioco usano la stessa."
+["TArmorDescriptor.Name"]
+what = "Nome"
+does = "Quale testo dà il nome a questo livello di corazza (N_ARMU_1: aereo)."
+["TArmorDescriptor.Icon"]
+what = "Immagine"
+does = "La piccola immagine del livello di corazza."
+[_Filename]
+what = "File sorgente"
+does = "Il file dei sorgenti di Eugen in cui questo oggetto è stato scritto (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Loro registrazione interna: niente da cambiare."
+[_Line]
+what = "Riga sorgente"
+does = "La riga del file sorgente di Eugen dove inizia questo oggetto. Loro registrazione interna: niente da cambiare."
+[_Column]
+what = "Colonna sorgente"
+does = "La colonna su quella riga del file sorgente di Eugen. Loro registrazione interna: niente da cambiare."
+[_ShortDatabaseName]
+what = "Nome breve"
+does = "Il nome breve che gli strumenti di Eugen hanno dato a questo oggetto. Loro registrazione interna: niente da cambiare."

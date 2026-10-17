@@ -1041,3 +1041,146 @@ does = "Najkrótszy czas, w sekundach, jaki gracz komputerowy czeka między dwom
 [ConstructionDelayForFakeBuildingsMax]
 what = "Odstęp między budynkami-atrapami (maks.)"
 does = "Najdłuższy czas, w sekundach, jaki gracz komputerowy czeka między dwoma budynkami-atrapami stawianymi podstępem budynków-atrap. 10 w grze."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Nazwa do debugowania"
+does = "Nazwa jednostki w komunikatach o błędach i dziennikach gry (Unit_M4_Sherman). Gracze nigdy jej nie widzą."
+[NameInMenuToken]
+what = "Nazwa"
+does = "Który tekst gry jest jej nazwą, w menu produkcji i na jej karcie (N_UNI_137 dla Shermana). Zmień słowa… pod polem zmienia same słowa, we wszystkich językach."
+[TypeUnitHintToken]
+what = "Wiersz typu"
+does = "Który tekst karta pokazuje jako rodzaj jednostki, pod nazwą (TANK_madv dla Shermana). vide: brak."
+[DescriptionUnitHintToken]
+what = "Opis na karcie"
+does = "Który tekst karta pokazuje jako krótki opis (DTANK_madv dla Shermana). vide: brak."
+[EfficaceHintToken]
+what = "Skuteczna przeciw"
+does = "Który tekst karta pokazuje jako to, przeciw czemu jest skuteczna (E_ground: wszystkie cele naziemne; unarmed: nieuzbrojona). vide: brak."
+[LongDescriptionUnitHintToken]
+what = "Tekst historyczny"
+does = "Który tekst jest jej długim opisem: historią prawdziwej jednostki (LD_UNI_137 opowiada historię Shermana)."
+[WeaponDescriptor]
+what = "Broń"
+does = "Jej broń: część z jej wieżami i działami na nich, każde z amunicją. Pole Broń w karcie Jednostki ją zmienia. Puste: nieuzbrojona."
+[ArmorDescriptor]
+what = "Pancerz"
+does = "Jej poziom pancerza: obiekt dzielony przez kilka jednostek (Sherman wskazuje na pancerz M4 Skink). Pancerz w karcie Jednostki wybiera jeden z poziomów gry."
+[GfxDescriptor]
+what = "Wygląd"
+does = "Tylko wygląd: jej model 3D i to, jak poruszają się jego części (gąsienice, koła, wieża). W budynku: jego wygląd na mapie, układ wielu elementów, które gra dodaje tam, gdzie stoi."
+[GfxDescriptorIcone]
+what = "Wygląd z daleka"
+does = "Tylko wygląd: to, co ją przedstawia, gdy kamera jest wysoko: okrągły żeton jednostki naziemnej na stole mapy, mały model samolotu."
+[GfxDescriptorIconeJeton]
+what = "Żeton"
+does = "Tylko wygląd: okrągły żeton samolotu na stole mapy, gdy kamera jest wysoko."
+[GfxDescriptorCadavre]
+what = "Wrak"
+does = "Tylko wygląd: to, co z niej zostaje po zniszczeniu (model jej wraku)."
+[GfxDescriptorIconeCadavre]
+what = "Figura żołnierza"
+does = "Tylko wygląd: jeden z modeli żołnierzy oddziału (według nazwy ten rysowany dla poległego żołnierza). Studio pokazuje i przemalowuje nim oddział."
+[GfxDescriptorFusilier]
+what = "Strzelec"
+does = "Tylko wygląd: model strzelców oddziału."
+[GfxDescriptorBazooka]
+what = "Żołnierz z bazooką"
+does = "Tylko wygląd: model żołnierza z bazooką w oddziale."
+[SoundMotorDescriptor]
+what = "Dźwięk ruchu"
+does = "Tylko dźwięk: jak brzmi, gdy się porusza (silnik, silniki samolotu), często dźwięk innej jednostki (Sherman używa dźwięku ARL 40)."
+[TextureForInterface]
+what = "Obraz karty"
+does = "Jej obraz w menu produkcji i na karcie. W karcie Jednostki Użyj tego widoku jako karty robi nowy z jej modelu 3D."
+[UpgradeRequire]
+what = "Badana z"
+does = "Jednostka, z której jest badana: można ją budować po ukończeniu tego badania (Sherman wymaga M3 Lee). Puste: bez badania."
+[UnitIdleManager]
+what = "Zachowanie w oczekiwaniu"
+does = "Co robi, gdy czeka: jej działo lub wieża rozgląda się. Często zachowanie innej jednostki (Sherman używa zachowania ARL 44)."
+[TransportPourMorphe]
+what = "Jedzie w"
+does = "Ciężarówka, w którą zmienia się, by jechać drogami (oddział lub działo). Pole Jedzie w w karcie Jednostki ją wybiera."
+[MouvementHandlerInfo]
+what = "Lot"
+does = "Jak lata samolot: część z jego wartościami lotu (otwórz ją, by je zobaczyć)."
+[UniteTransportee]
+what = "Zrzuca"
+does = "Jednostka, którą zrzuca samolot transportowy (C47 zrzuca amerykańskich spadochroniarzy). Samolot z flagą spadochroniarzy i niczym tutaj powoduje awarię gry."
+[AmmoDeath]
+what = "Wybuch przy rozbiciu"
+does = "Wybuch, gdy samolot zostaje zestrzelony: lekkiego lub średniego samolotu."
+[UniteDefense]
+what = "Jednostka obrony"
+does = "Jednostka, która walczy za umocnienie: działa bunkra (wieża bunkra Maginota)."
+[BatimentPaths]
+what = "Ścieżki"
+does = "Którędy jednostki omijają budynek, wchodzą i wychodzą: jego wyjścia, wejścia, miejsca postojowe i pas startowy lotniska."
+["TBatimentPaths.FactoryExit"]
+what = "Wyjście"
+does = "Ścieżka, którą wyprodukowana jednostka wychodzi do drogi (widziane w grze: przez bramę na drogę)."
+["TBatimentPaths.FactoryEntry"]
+what = "Wejście"
+does = "Ścieżka, którą jednostki do niego wchodzą."
+["TBatimentPaths.ByPass"]
+what = "Objazd"
+does = "Ścieżka, którą jednostki go omijają."
+["TBatimentPaths.Vision"]
+what = "Punkty widzenia"
+does = "Według nazwy: punkty, z których budynek patrzy."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Wjazd na postój (duże samoloty)"
+does = "Ścieżka lotniska dla jego większych samolotów na miejsca postojowe."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Wjazd na postój (małe samoloty)"
+does = "Ścieżka lotniska dla jego mniejszych samolotów na miejsca postojowe."
+["TBatimentPaths.ParkingExit"]
+what = "Wyjazd z postoju"
+does = "Ścieżka lotniska dla jego samolotów z miejsc postojowych."
+["TBatimentPaths.MultiPathParking"]
+what = "Miejsca postojowe"
+does = "Miejsca postojowe lotniska i ścieżki między nimi."
+["TBatimentPaths.Runway"]
+what = "Pas startowy"
+does = "Pas startowy lotniska: tam jego samoloty startują i lądują."
+[TurretDescriptorList]
+what = "Wieże"
+does = "Wieże broni (lub łoża), każda z działami, które niesie. Pole Broń w karcie Jednostki pokazuje je krok po kroku."
+[MountedWeaponDescriptorList]
+what = "Działa"
+does = "Działa na tej wieży, każde z amunicją."
+[EffectTag]
+what = "Efekt strzału"
+does = "Który efekt pojawia się, gdy to działo strzela (błysk i dym), według nazwy efektu."
+["TAmmunition.Name"]
+what = "Nazwa"
+does = "Który tekst nazywa amunicję (N_AR_lc: mały kaliber)."
+[TypeName]
+what = "Rodzaj"
+does = "Który tekst nazywa jej rodzaj (T_ARM_0: pocisk przeciwpancerny)."
+["TAmmunition.Icon"]
+what = "Obraz"
+does = "Mały obraz amunicji, często innej amunicji (20-mm pocisk przeciwpancerny używa obrazu bazooki)."
+[StressManager]
+what = "Tabela stresu"
+does = "Według nazwy: tabela tego, jak bardzo trafienie stresuje (przygważdża) cel, według jego poziomu pancerza. Każda amunicja gry używa tej samej."
+["TArmorDescriptor.Name"]
+what = "Nazwa"
+does = "Który tekst nazywa ten poziom pancerza (N_ARMU_1: samolot)."
+["TArmorDescriptor.Icon"]
+what = "Obraz"
+does = "Mały obraz poziomu pancerza."
+[_Filename]
+what = "Plik źródłowy"
+does = "Plik w źródłach Eugen, w którym zapisano ten obiekt (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Ich wewnętrzna ewidencja: nic do zmiany."
+[_Line]
+what = "Wiersz źródła"
+does = "Wiersz pliku źródłowego Eugen, w którym zaczyna się ten obiekt. Ich wewnętrzna ewidencja: nic do zmiany."
+[_Column]
+what = "Kolumna źródła"
+does = "Kolumna w tym wierszu pliku źródłowego Eugen. Ich wewnętrzna ewidencja: nic do zmiany."
+[_ShortDatabaseName]
+what = "Krótka nazwa"
+does = "Krótka nazwa, którą narzędzia Eugen nadały temu obiektowi. Ich wewnętrzna ewidencja: nic do zmiany."
