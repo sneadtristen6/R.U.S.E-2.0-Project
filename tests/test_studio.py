@@ -1974,7 +1974,7 @@ class Redo(unittest.TestCase):
         of the map's own picked with the mouse and dragged (drawn where it went, hidden where it was, its ring
         there), 73 oaks picked with a box, taken away with the Delete key and put back with Ctrl+Z, still picked."""
         maps = self.maps()
-        self.assertIn('const PLACE_HOW = ["one", "area", "line", "grid", "box", "select"]', maps)
+        self.assertIn('const PLACE_HOW = ["one", "area", "line", "path", "grid", "box", "select"]', maps)
         self.assertIn("mv.api.map_objects_at(pack,", self.function("selCandidates("))
         self.assertIn("mv.api.map_objects_in(pack,", self.function("selPickBox("))
         apply = self.function("selApply(")
@@ -2043,6 +2043,32 @@ class GridBoxAndRoads(unittest.TestCase):
         for fn in ("gridOf(", "fillBox("):
             self.assertIn("nearestRoad(x, y, clear)", self.function(fn), fn)
         self.assertIn("place_roads: mv.place.roads", self.function("saveView("))
+
+    def test_path_for_hedges_and_tree_belts(self):
+        """The owner, 2026-10-16: "rows of hedges and forests". Path: clicks along the way, a smooth line through them
+        (roadLine "free"), objects every spacing along it or a belt Width across; trees with Cover get line-shaped
+        Cover strokes along it, saved with them and taken back with them by the place tray's Undo (while they're the
+        brushes' last group); Along the last path lays another object on the same line. Tried in the Studio's page
+        (?fake, Blitz): an S-curve of 4 clicks, 2,078 m: 347 oaks in a line, then a 40 m belt of 340 with 52 cover
+        strokes, Undo took trees and cover, Redo put both back; 260 carts along the last path."""
+        self.assertIn('roadLine("free", pts)', self.function("pathLine("))
+        self.assertIn("await placeCovered(objs, pathCover(objs.path))", self.function("placePath("))
+        self.assertIn('brush: "cover"', self.function("pathCover("))
+        self.assertIn('shape: "line"', self.function("pathCover("))
+        self.assertIn("await mv.api.terrain_add(pack, strokes)", self.function("placeCovered("))
+        self.assertIn("if (group.cover && !group.coverLeft) await undoCover(group)", self.function("undoPlace("))
+        self.assertIn("if (b.groups[b.groups.length - 1] !== group.cover)", self.function("undoCover("))
+        self.assertIn("await mv.api.terrain_add(pack, group.strokes)", self.function("redoPlace("))
+        self.assertIn("finishPath()", self.function("onKey("))
+        self.assertIn("pathOf(p.lastPath)", self.function("placeAgain("))
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-width"', 'id="place-cover"', 'id="place-finish"', 'id="place-again"'):
+            self.assertIn(needle, page)
+        words = _words()
+        for key in ("place_path", "tip_place_path", "place_path_help", "place_path_next", "place_width",
+                    "place_width_line", "tip_place_width", "place_cover", "tip_place_cover", "tip_place_finish",
+                    "place_again", "tip_place_again", "place_placed_cover", "place_cover_left"):
+            self.assertEqual(len(words[key]), 10, key)
 
     def test_words(self):
         words = _words()

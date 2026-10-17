@@ -25,8 +25,10 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
     // first click; grid: a grid's first row once its end is clicked ({ b }); box: a box being dragged ({ a, b });
     // painting: an area being dragged; rows: a grid's or a box's gap between rows, per kind, in metres; roads: Face the
     // roads (kept with the view); seed: the variety of the line, grid or box being made, so its preview is what's placed
+    // path: a path being clicked ({ pts }); lastPath: the last one placed (its clicks); width: a path's width per kind
+    // (metres; 0 one line); cover: a path of trees hides units (pathCover)
     how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null, grid: null, box: null, rows: {},
-    roads: true, seed: 1 } };
+    roads: true, seed: 1, path: null, lastPath: null, width: {}, cover: true } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -4937,8 +4939,9 @@ const PLACEABLE = ["building", "prop", "vegetation"];
 const PLACED_COLOUR = 0xe8c14f;
 // How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); a line
 // between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses); a grid (a
-// line, then rows moved out from it: gridOf); or a box dragged on the ground, filled in rows (fillBox).
-const PLACE_HOW = ["one", "area", "line", "grid", "box", "select"];  // select: pick what stands on the map (sel)
+// line, then rows moved out from it: gridOf); a box dragged on the ground, filled in rows (fillBox); or a path
+// clicked along the way, curving through the clicks (pathOf: hedges, tree belts).
+const PLACE_HOW = ["one", "area", "line", "path", "grid", "box", "select"];  // select: pick what stands on the map (sel)
 const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
 const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
 const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
@@ -5136,9 +5139,28 @@ function renderPlace() {
   $("place-roads").checked = p.roads;
   $("place-roads-label").textContent = w.place_roads;
   $("place-roads-row").title = w.tip_place_roads;
+  // Path: its width, its cover (trees), Finish, and Along the last path
+  const path = p.how === "path";
+  $("place-width-row").classList.toggle("hidden", !path);
+  $("place-width").value = widthOf(p.group);
+  $("place-width-label").textContent = widthOf(p.group) ? fill(w.place_width, { m: widthOf(p.group) }) : w.place_width_line;
+  $("place-width").title = w.tip_place_width;
+  typedBeside("place-width", [0, 1000], () => widthOf(p.group), (n) => { p.width[p.group] = n; renderPlace(); },
+    w.tip_place_width);
+  $("place-cover-row").classList.toggle("hidden", !path || p.group !== "vegetation");
+  $("place-cover").checked = p.cover;
+  $("place-cover-label").textContent = w.place_cover;
+  $("place-cover-row").title = w.tip_place_cover;
+  $("place-path-row").classList.toggle("hidden", !path);
+  $("place-finish").textContent = w.road_finish || "Finish";
+  $("place-finish").title = w.tip_place_finish;
+  $("place-finish").disabled = !(p.path && p.path.pts.length >= 2);
+  $("place-again").textContent = w.place_again;
+  $("place-again").title = w.tip_place_again;
+  $("place-again").disabled = !p.lastPath || !p.type || !p.mod;
   if (p.on) {
     $("map-help").textContent = { area: w.place_area_help, line: w.place_line_help, grid: w.place_grid_help,
-      box: w.place_box_help, select: w.sel_help }[p.how] || w.place_help;
+      box: w.place_box_help, path: w.place_path_help, select: w.sel_help }[p.how] || w.place_help;
   }
 }
 
@@ -5239,7 +5261,7 @@ const GHOST_ALPHA = 0.6;
 function showPlaceGhost(hit) {
   const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
   if (!gl) return;
-  const first = p.how === "one" || ((p.how === "line" || p.how === "grid") && !p.lineStart);
+  const first = p.how === "one" || ((p.how === "line" || p.how === "grid") && !p.lineStart) || (p.how === "path" && !p.path);
   const type = hit && p.on && first && p.type && mv.edit ? p.type : null;
   if (!type) {
     if (gl.ghost && gl.ghost.visible) { gl.ghost.visible = false; gl.draw(); }
@@ -5282,6 +5304,7 @@ async function loadPlaced(pack, ask) {
   mv.place.objects = res.objects;
   mv.place.groups = [];
   dropPlaceGesture();
+  mv.place.lastPath = null;
   mv.place.mod = res.mod;
   forgetSel(res.own || []);  // the map's own objects this mod moves or takes away ([[own]]): Select's, not drawn
   if (sel.own.length && mv.edit && Object.keys(mv.scenery.meshes).length) placeScenery();  // where they were
@@ -5618,22 +5641,215 @@ function placePreview(hit) {
       p.box.b = pt;
       objs = fillBox(p.box.a, pt);
       note = fill(w.place_box_count, { n: objs.length.toLocaleString(), cols: objs.cols, rows: objs.rows, w: objs.w, h: objs.h });
+    } else if (p.how === "path" && p.path) {
+      objs = pathOf(p.path.pts.concat([[pt.x, pt.y]]));
+      note = fill(w.place_line_count, { n: objs.length.toLocaleString(), m: objs.m });
     }
   }
+  showPathLine(objs && objs.path);
   showPlacePreview(objs);
   showPlaceBox(p.how === "box" ? p.box : null);
   if (note) placeNote(note + (objs.length >= MOST ? " " + w.place_most : ""));
 }
 
-// A line, a grid or a box half made is dropped: by Esc, another way or kind picked, the tools closed, another map
+// A line, a path, a grid or a box half made is dropped: by Esc, another way or kind picked, the tools closed, another
+// map
 function dropPlaceGesture() {
   const p = mv.place;
   p.lineStart = null;
   p.grid = null;
   p.box = null;
+  p.path = null;
   showPlaceGuide(null);
   showPlacePreview(null);
   showPlaceBox(null);
+  showPathLine(null);
+}
+
+// --- Path: rows of hedges and forests (the owner, 2026-10-16: "I would like to be able to have rows of hedges and
+// forests"). Clicked along the way (a double-click, Enter or Finish ends it): a smooth line through the clicks, as a
+// Freeform road's (roadLine), with an object every spacing along it, turned along it; with a Width, a belt of them
+// at least the spacing apart (a tree belt, a wood's edge); a path of trees with Cover hides units as the Forest
+// brush's woods do (cover strokes along it, saved with the trees: the place tray's Undo takes both). "Along the last
+// path" lays the picked object along the last path again: a hedge's bushes, then its trees. ---
+const COVER_HALF = 10;   // metres: the least a path's cover reaches either side of its line (the cover grid is coarse)
+const COVER_STEP = 40;   // metres of path per cover stroke (a line-shaped Cover stroke each)
+
+function widthOf(group) {
+  return mv.place.width[group] ?? 0;
+}
+
+const pathCovers = () => mv.place.group === "vegetation" && mv.place.cover;
+
+// The smooth line through a path's clicks ([x, y] each), its points ~ROAD_SAMPLE apart, and the distance to each
+function pathLine(pts) {
+  const line = roadLine("free", pts), cum = [0];
+  for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]));
+  return { line, cum, len: cum[cum.length - 1] };
+}
+
+// The spot `d` along a path line and its way there: [x, y, ux, uy]
+function alongPath({ line, cum }, d) {
+  let lo = 0, hi = cum.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+  const seg = cum[hi] - cum[lo] || 1, t = Math.max(0, Math.min(1, (d - cum[lo]) / seg));
+  const [ax, ay] = line[lo], [bx, by] = line[hi];
+  return [ax + (bx - ax) * t, ay + (by - ay) * t, (bx - ax) / seg, (by - ay) / seg];
+}
+
+// What a path through `pts` places: one line of objects every spacing (both ends included), or with a Width at least
+// the spacing, a belt of them scattered along it no closer than the spacing (to each other and to what the mod
+// placed before, as an area). `m` (metres long) and `path` (pathLine) are set on the list.
+function pathOf(pts) {
+  return withSeed(() => {
+    const p = mv.place, path = pathLine(pts), gap = spacingOf(p.group) * METRE, wide = widthOf(p.group) * METRE;
+    const out = [], heading = (ux, uy) => Math.round(Math.atan2(uy, ux) * 180 / Math.PI + p.turn + 720) % 360;
+    if (pts.length >= 2 && path.len > 0) {
+      if (wide < gap) {
+        const n = Math.min(MOST, Math.floor(path.len / gap) + 1);
+        for (let k = 0; k < n; k++) {
+          const [x, y, ux, uy] = alongPath(path, n === 1 ? 0 : k * path.len / (n - 1));
+          out.push(objectAt(x, y, heading(ux, uy)));
+        }
+      } else {
+        const key = (a, b) => `${Math.floor(a / gap)},${Math.floor(b / gap)}`, grid = new Map();
+        const put = (o) => (grid.get(key(o.x, o.y)) || grid.set(key(o.x, o.y), []).get(key(o.x, o.y))).push(o);
+        for (const o of p.objects) put(o);
+        const free = (a, b) => {
+          const cx = Math.floor(a / gap), cy = Math.floor(b / gap);
+          for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+            for (const o of grid.get(`${cx + i},${cy + j}`) || []) if (Math.hypot(o.x - a, o.y - b) < gap) return false;
+          }
+          return true;
+        };
+        const [x0, y0, , x1, y1] = mv.edit.bounds, tries = Math.ceil(path.len * wide / (gap * gap) * 3);
+        for (let t = 0; t < tries && out.length < MOST; t++) {
+          const [x, y, ux, uy] = alongPath(path, placeRand() * path.len), off = (placeRand() - 0.5) * wide;
+          const ox = x - uy * off, oy = y + ux * off;
+          if (ox < x0 || ox > x1 || oy < y0 || oy > y1 || !free(ox, oy)) continue;
+          const o = objectAt(ox, oy, heading(ux, uy));
+          out.push(o);
+          put(o);
+        }
+      }
+    }
+    return Object.assign(out, { m: Math.round(path.len / METRE), path });
+  });
+}
+
+// The cover a path of trees gives: line-shaped Cover strokes along it, COVER_STEP apart, reaching half its width
+// either side (COVER_HALF at least), as the Forest brush gives its woods cover
+function pathCover(path) {
+  const r = Math.round(Math.max(widthOf(mv.place.group) * METRE / 2, COVER_HALF * METRE)), out = [];
+  const n = Math.max(1, Math.ceil(path.len / (COVER_STEP * METRE)));
+  let [ax, ay] = alongPath(path, 0);
+  for (let k = 1; k <= n; k++) {
+    const [bx, by] = alongPath(path, k * path.len / n);
+    out.push({ brush: "cover", x: Math.round(ax), y: Math.round(ay), radius: r, shape: "line", x2: Math.round(bx),
+      y2: Math.round(by) });
+    [ax, ay] = [bx, by];
+  }
+  return out;
+}
+
+// A path being clicked ends: placed (with its cover, for trees with Cover), and kept for "Along the last path"
+async function finishPath() {
+  const p = mv.place, pts = p.path ? p.path.pts : [];
+  if (pts.length < 2 || !p.type) return;
+  const objs = pathOf(pts);
+  p.lastPath = pts;
+  dropPlaceGesture();
+  await placePath(objs);
+}
+
+// "Along the last path": the picked object, at its spacing and width, along the last path placed
+async function placeAgain() {
+  const p = mv.place;
+  if (!p.lastPath || !p.type || !p.mod) return;
+  p.seed = newSeed();
+  await placePath(pathOf(p.lastPath));
+}
+
+async function placePath(objs) {
+  if (pathCovers() && objs.length) await placeCovered(objs, pathCover(objs.path));
+  else await placeMany(objs);
+}
+
+// Trees and their cover in one go: the trees saved, then the cover strokes (both or neither); one place group, which
+// the place tray's Undo takes back with its cover (the cover is also the brushes' last group, `cover`).
+async function placeCovered(objs, strokes) {
+  const p = mv.place, b = mv.brush, pack = mv.current, w = mv.words;
+  p.objects.push(...objs);
+  drawPlaced();
+  let placed = false;
+  try {
+    await mv.api.scenery_add(pack, objs);
+    placed = true;
+    await mv.api.terrain_add(pack, strokes);
+    if (pack !== mv.current) return;
+    addCover(objs, strokes);
+    p.groups.push(objs);
+    redo.place = [];
+    placeNote(fill(w.place_placed_cover, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
+  } catch (err) {
+    if (placed) { try { await mv.api.scenery_undo(pack, objs.length, objs); } catch (_) { /* said below */ } }
+    if (pack !== mv.current) return;
+    p.objects.splice(p.objects.length - objs.length, objs.length);
+    drawPlaced();
+    placeNote((err && err.message) || String(err), "error");
+  }
+  renderPlace();
+}
+
+// A path's cover strokes, saved: on the view and on the brushes' list, as the group `objs.cover`
+function addCover(objs, strokes) {
+  const b = mv.brush;
+  b.strokes.push(...strokes);
+  for (const s of strokes) applyStroke(mv.edit, s);
+  objs.cover = { n: strokes.length };
+  objs.strokes = strokes;
+  b.groups.push(objs.cover);
+  redo.brush = [];
+  showCount();
+  if (mv.gl) mv.gl.draw();
+}
+
+// Undo of a path with cover: its cover goes too while it's still the brushes' last group; after other brush strokes
+// it stays (and Redo won't lay it twice), and the note says so.
+async function undoCover(group) {
+  const b = mv.brush, pack = mv.current;
+  if (b.groups[b.groups.length - 1] !== group.cover) {
+    group.coverLeft = true;
+    placeNote(mv.words.place_cover_left, "error");
+    return;
+  }
+  const res = await mv.api.terrain_undo(pack, group.cover.n);
+  if (pack !== mv.current) return;
+  b.groups.pop();
+  b.strokes.splice(b.strokes.length - res.removed, res.removed);
+  reapply();
+  showCount();
+}
+
+// The path being clicked, drawn over the ground (none: hidden)
+function showPathLine(path) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (!path || path.line.length < 2 || !mv.edit) {
+    if (gl.pathLine && gl.pathLine.visible) { gl.pathLine.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, grid = makeGrid(mv.edit), pos = new Float32Array(path.line.length * 3);
+  path.line.forEach(([x, y], k) => pos.set([x * SCALE, (groundAt(grid, x, y) + ROAD_LIFT) * SCALE, y * SCALE], 3 * k));
+  if (!gl.pathLine) {
+    gl.pathLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: PLACED_COLOUR, depthTest: false }));
+    gl.pathLine.renderOrder = 10;
+    gl.pathLine.frustumCulled = false;
+    gl.scene.add(gl.pathLine);
+  }
+  gl.pathLine.geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  gl.pathLine.visible = true;
+  gl.draw();
 }
 
 // A model's material see-through, as the picked type shows at the pointer (showPlaceGhost) and in a preview
@@ -5774,10 +5990,11 @@ async function undoPlace() {
     if (pack !== mv.current) return;
     takeOff(group);
     redo.place.push(group);
+    if (group.cover && !group.coverLeft) await undoCover(group);  // a path of trees: its cover too
     renderPlace();
     renderBridgeTray();
   } catch (err) {
-    p.groups.push(group);  // not taken back: it stays Undo's
+    if (!redo.place.includes(group)) p.groups.push(group);  // not taken back: it stays Undo's
     placeNote((err && err.message) || String(err), "error");
   }
 }
@@ -5792,12 +6009,18 @@ async function redoPlace() {
     if (pack !== mv.current) return;
     p.objects.push(...group);
     p.groups.push(group);
+    if (group.cover && !group.coverLeft) {  // a path of trees: its cover laid again
+      await mv.api.terrain_add(pack, group.strokes);
+      if (pack !== mv.current) return;
+      addCover(group, group.strokes);
+    }
     drawPlaced();
     renderPlace();
     renderBridgeTray();
   } catch (err) {
     if (pack !== mv.current) return;
-    redo.place.push(group);
+    if (!p.groups.includes(group)) redo.place.push(group);  // (placed but its cover not: the objects stay)
+    else { group.coverLeft = true; drawPlaced(); renderPlace(); }
     placeNote((err && err.message) || String(err), "error");
   }
 }
@@ -8079,6 +8302,13 @@ function watchPointer() {
     roadMove = ev;
     if (!roadFrame) roadFrame = requestAnimationFrame(() => { roadFrame = 0; if (road.on && roadMove) roadPointerMove(roadMove); });
   });
+  canvas.addEventListener("dblclick", () => {  // a place tray's Path ends with a double-click (its clicks: one point)
+    const pp = mv.place.on && mv.place.how === "path" && mv.place.path;
+    if (!pp) return;
+    const q = pp.pts;
+    if (q.length >= 2 && Math.hypot(q[q.length - 1][0] - q[q.length - 2][0], q[q.length - 1][1] - q[q.length - 2][1]) < ROAD_SAMPLE) q.pop();
+    finishPath();
+  });
   canvas.addEventListener("dblclick", () => {  // Freeform ends with a double-click (its two clicks add one point)
     if (!road.on || road.tool !== "free") return;
     const p = road.pts;
@@ -8119,6 +8349,15 @@ function watchPointer() {
       placeMany(objs);
       return;
     }
+    if (p.how === "path") {  // a path: a point each click, until a double-click, Enter or Finish
+      if (!p.path) { p.path = { pts: [] }; p.seed = newSeed(); }
+      p.path.pts.push([Math.round(x), Math.round(y)]);
+      showPlaceGhost(null);
+      placePreview(hit);
+      placeNote(w.place_path_next);
+      renderPlace();
+      return;
+    }
     if (p.how === "box") {  // a box: from here to where the button's let go
       p.box = { a: { x, y }, b: { x, y } };
       p.seed = newSeed();
@@ -8151,7 +8390,7 @@ function watchPointer() {
       showPlaceGhost(hit);  // what a click places, where it would stand
       if (p.how === "one") return;
       showPlaceGuide(hit);
-      if (p.lineStart || p.box) { if (hit) placePreview(hit); return; }  // a line, a grid or a box under way
+      if (p.lineStart || p.box || p.path) { if (hit) placePreview(hit); return; }  // a line, path, grid or box under way
       const stroke = p.painting;
       if (!hit || !stroke || !stroke.last) return;
       const x = hit.x / SCALE, y = hit.z / SCALE, step = p.area * METRE / 2;
@@ -9101,7 +9340,7 @@ function onKey(e) {
       drawRoadPreview();
       return;
     }
-    if (mv.place.on && (mv.place.lineStart || mv.place.box)) {  // then a line, a grid or a box half made
+    if (mv.place.on && (mv.place.lineStart || mv.place.box || mv.place.path)) {  // then a line, path, grid or box half made
       dropPlaceGesture();
       placeNote("");
       return;
@@ -9112,6 +9351,7 @@ function onKey(e) {
     return;
   }
   if (e.key === "Enter" && road.on && road.tool === "free" && !fieldFocused(false)) { finishRoad(); return; }
+  if (e.key === "Enter" && mv.place.on && mv.place.path && !fieldFocused(false)) { finishPath(); return; }  // a Path
   if (held) {
     if (fieldFocused(e.code.startsWith("Arrow"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
     e.preventDefault();  // the arrows would scroll the page
@@ -9447,6 +9687,10 @@ function wire() {
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
   $("place-rows").addEventListener("input", (e) => { mv.place.rows[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-roads").addEventListener("change", (e) => { mv.place.roads = e.target.checked; saveView(); });
+  $("place-width").addEventListener("input", (e) => { mv.place.width[mv.place.group] = Number(e.target.value); renderPlace(); });
+  $("place-cover").addEventListener("change", (e) => { mv.place.cover = e.target.checked; });
+  $("place-finish").addEventListener("click", () => finishPath());
+  $("place-again").addEventListener("click", () => placeAgain());
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-erase-whole").addEventListener("click", () => eraseWhole());
   $("brush-water-whole").addEventListener("click", () => waterWhole());
