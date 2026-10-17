@@ -307,6 +307,11 @@ def write_asset(zz, asset: Asset, earlier: dict | None = None):
     pictures are added as textures of their own, and their stand-ins go in every stand-in pack holding the game
     picture's. Returns rusemod.unitmodel.Written (changed packs, added textures, our model's name, a report).
     `earlier`: members other build steps already changed (path -> bytes), changed from there."""
+    try:  # the models' sums are on whole arrays only; the Studio and the Launcher carry numpy
+        from .numpy2 import np  # noqa: F401
+    except ImportError:
+        raise AssetError("map assets need numpy 2, which the Studio and the Launcher carry; this Python has none "
+                         "(run the build from the Studio or the Launcher)") from None
     from .modelin import read_model
     from .spk import Spk, SpkError
     from .unitmodel import Written, new_standin, new_texture, standin_key, standin_member, texture_member

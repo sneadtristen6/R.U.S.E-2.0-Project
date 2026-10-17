@@ -19,6 +19,12 @@ from rusemod.spk import Spk
 from rusemod.tmst import Tgv
 from rusemod.unitpacks import Buffer, MeshPack, Proxy, ProxyPack, proxy_name
 
+try:  # a model's parts, its masks and its packs are made on whole arrays: without numpy the build refuses assets
+    from rusemod.numpy2 import np as _np
+except ImportError:
+    _np = None
+NO_NUMPY = "numpy isn't here: map assets need it (the apps carry it)"
+
 TMP = None   # the system's temp folder (TEMP)
 FMT = "$/M3D/System/VERTEXTYPE/" + sa.FORMAT
 ROCK = "ww2\\res3d\\decors\\props\\props_2\\rocher_1lod0.ase2ndfbin"
@@ -121,6 +127,7 @@ def points(part):
     return [struct.unpack_from("<3f", d.vertices, 28 * i) for d in part.draws for i in range(d.points)]
 
 
+@unittest.skipIf(_np is None, NO_NUMPY)
 class TheModel(unittest.TestCase):
     def test_names(self):
         self.assertEqual(sa.asset_name("rock_face_01"), "RockFace01")
@@ -191,6 +198,7 @@ class Pictures(unittest.TestCase):
         self.assertEqual((set(bark.rgba[3::4]), bark.see_through), ({255}, False))
         self.assertEqual((plain.width, plain.rgba[:4]), (4, bytes([255, 0, 128, 255])))
 
+    @unittest.skipIf(_np is None, NO_NUMPY)
     def test_a_mask_of_another_size_fits(self):
         colour = png_bytes(bytes([10, 20, 30] * 64), 8, 8)
         mask = png_bytes(bytes([255] * 3 * 8 + [0] * 3 * 8), 4, 4)   # (top half white)
@@ -205,6 +213,7 @@ class Pictures(unittest.TestCase):
             sa.pictures(Model([], [Material("a", "a_diff_2k.jpg", data=b"\xff\xd8\xff\xe0 not read here")]))
 
 
+@unittest.skipIf(_np is None, NO_NUMPY)
 class Packs(unittest.TestCase):
     def test_written_and_read_back(self):
         made = sa.parts(quad(), 1.0)

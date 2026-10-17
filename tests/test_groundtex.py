@@ -693,8 +693,11 @@ class Palette(unittest.TestCase):
         grain laid by itself over it (grain_of, Swatch.grain_sampler): unmirrored, so no fold line shows; about 1 on
         average, so the colour from afar is the swatch's own; light and dark up close; the scalar sampler and the
         painter's numpy sums the same bytes."""
-        from rusemod import paintnp
-        from rusemod.numpy2 import np
+        try:
+            from rusemod import paintnp
+            from rusemod.numpy2 import np
+        except ImportError:
+            self.skipTest("numpy isn't here: the painter's sums are checked against it")
         from rusemod.brush import Stroke
         dn, rep = 32, 32 * 40.0   # 40 units a pixel: x4 ground's finest
         detail = bytes(v for j in range(dn) for i in range(dn)
