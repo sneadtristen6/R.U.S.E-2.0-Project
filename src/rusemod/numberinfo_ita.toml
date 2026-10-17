@@ -34,10 +34,10 @@ what = "Bonus di velocità su strada"
 does = "Quanto va più veloce su strada che fuori: 0,6 è circa il 60% più veloce. Squadre e cannoni lo ricevono come il camion in cui si trasformano. Aerei e camion hanno 1."
 [MaxAcceleration]
 what = "Accelerazione"
-does = "Quanto rapidamente prende velocità. La maggior parte dei carri ha 3.900."
+does = "Quanto rapidamente prende velocità: il gioco aggiunge un quinto di questo valore alla sua velocità ogni 0,2 secondi, quindi la sua velocità divisa per questo valore dà i secondi per arrivare alla velocità massima (mostrati accanto alla casella). La maggior parte dei carri ha 3.900: uno Sherman (4.550) è alla velocità massima in circa 1,2 s."
 [MaxDeceleration]
 what = "Frenata"
-does = "Quanto rapidamente rallenta e si ferma."
+does = "Quanto rapidamente rallenta e si ferma: la sua velocità divisa per questo valore dà i secondi per fermarsi dalla velocità massima (mostrati accanto alla casella)."
 [TempsDemiTour]
 what = "Tempo d'inversione"
 does = "Quanti secondi impiega a girarsi dall'altra parte. Fanteria 0,01 (subito), veicoli 0,5, carri 1, i più lenti 6."
@@ -76,10 +76,10 @@ what = "Bombe o razzi trasportati"
 does = "Quanti colpi della sua seconda arma (bombe, razzi) un aereo porta prima di tornare a riarmarsi: da 1 a 4 nel gioco."
 [ProductionPrice]
 what = "Prezzo"
-does = "Quanto costa costruirla, in $, a ciascuna delle cinque date di battaglia (il gioco tiene un prezzo per data)."
+does = "Quanto costa produrla, in $, in ciascuna delle cinque modalità di gioco, nell'ordine del gioco: 1945, 1942, 1939, Guerra totale, Nucleare (il gioco usa quello della modalità della battaglia)."
 [ProductionTime]
 what = "Tempo di costruzione"
-does = "Quanti secondi servono a costruirla. Con più di una fabbrica del suo tipo, il lavoro si divide tra loro."
+does = "Quanti secondi servono a costruirla. Se più fabbriche del suo tipo la costruiscono, il tempo si divide tra loro, ma mai sotto il tempo di produzione minimo del gioco (quello della scheda Economia)."
 [UpgradePrice]
 what = "Prezzo della ricerca"
 does = "Quanto costa ricercarla, in $, prima di poterla costruire (unità ricercate a partire da un'altra)."
@@ -91,7 +91,7 @@ what = "È un miglioramento"
 does = "1: l'unità è un miglioramento di quella da cui è ricercata (la sostituisce nel menu di costruzione una volta ricercata)."
 [ShowInMenu]
 what = "Mostrata nel menu di costruzione"
-does = "1: mostrata nel suo menu di costruzione a quella data di battaglia (un valore per ciascuna delle cinque date)."
+does = "1: mostrata nel suo menu di costruzione in quella modalità di gioco; un valore per ciascuna delle cinque, nell'ordine del gioco: 1945, 1942, 1939, Guerra totale, Nucleare. I carri di fine guerra del gioco sono mostrati solo in 1945, Guerra totale e Nucleare."
 [PositionInMenu]
 what = "Posto nel menu"
 does = "Dove sta nel suo menu di costruzione: le unità della stessa linea condividono un posto, i miglioramenti vi si impilano."
@@ -743,3 +743,444 @@ does = "Solo suono: quanto rapidamente si spegne il suono del motore al minimo q
 [Dive_Out_Fade_Velocity]
 what = "Dissolvenza del suono di picchiata"
 does = "Solo suono: quanto rapidamente si spegne il suono di picchiata di un aereo quando richiama."
+
+# --- i giocatori del computer (la scheda IA) ---
+[AttaqueTempsActivation]
+what = "Secondi prima di iniziare ad attaccare"
+does = "Quanti secondi di battaglia aspetta prima di attaccare; fino ad allora non molesta né manda aiuto a un deposito minacciato. Predefinito 30; Facile 300 (5 minuti); Testuggine 600 (10 minuti). Difficile e Blitzkrieg non lo elencano, quindi contano 0: attaccano dal primo secondo."
+[OffensiveNbMissionMax]
+what = "Attacchi contemporanei al massimo"
+does = "Il massimo di attacchi (e rappresaglie) che conduce insieme. -1 vuol dire nessun limite, ciò che usano tutti gli insiemi del gioco."
+[MissionFacteurLancementAttaque]
+what = "Aggressività (soglia d'attacco)"
+does = "Ciò che i progettisti di missioni del gioco chiamano la sua aggressività (Agressivite, che gli script della campagna cambiano durante la missione): il gioco la moltiplica per un fattore fisso e confronta le forze in un luogo prima di lanciarvi un attacco. Gli insiemi del gioco: Predefinito 0,7; Facile e Blitzkrieg 0,2; Difficile 0,9; Testuggine 1. In che direzione lo spinga un numero più alto non è ancora misurato: provalo in gioco."
+[MissionFacteurEnoughToDestroy]
+what = "Forza radunata contro un nemico"
+does = "Quanta forza manda a un attacco, come multiplo della forza nemica lì (i progettisti di missioni lo chiamano rinforzo per l'attacco, Renfort_pour_attaque). Predefinito 1,2; Facile 0,2; Medio 1,4; Difficile 1,8; Blitzkrieg 1,5; Testuggine 1."
+[DefenseDistanceMenace]
+what = "Distanza di minaccia"
+does = "A che distanza da un luogo che difende un nemico conta come minaccia; il gioco rende la zona sorvegliata circa 1,4 volte questa distanza (la distanza per la radice di 2). 312.000 (1.200 m) negli insiemi del gioco; Testuggine 26.000.000 (100 km: tutto sulla mappa è una minaccia)."
+[DefenseDistanceUrgent]
+what = "Distanza di minaccia urgente"
+does = "Quanto vicino a un luogo che difende deve arrivare un nemico perché la difesa diventi urgente (la Distance_Defense_Urgente dei progettisti di missioni, accanto alla distanza di minaccia). Predefinito 156.000 (600 m); Difficile 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Unità mandate a una difesa non urgente"
+does = "Quante delle sue unità manda a una difesa che non è urgente (la Nbre_Unit_Defense_Non_Urgente dei progettisti di missioni). Predefinito 1; Medio 2; Difficile 3; Testuggine 6."
+[DefenseNbMissionMax]
+what = "Luoghi difesi insieme, al massimo"
+does = "Il massimo di missioni difensive (luoghi che sorveglia) che conduce insieme. Predefinito 2; Facile e Difficile 4; Testuggine 10. Blitzkrieg non lo elenca, quindi conta 0 e non sorveglia nulla."
+[HarcelementActif]
+what = "Molesta il nemico"
+does = "1: molesta (piccole incursioni, finita la sua attesa prima di attaccare). 0: mai. Facile e Testuggine non lo elencano, quindi contano 0 e non molestano mai."
+[UpgradeActifPourHarcelement]
+what = "Potenziamenti per le molestie"
+does = "Se può usare unità potenziate per le sue incursioni. Facile e Blitzkrieg non lo elencano (0)."
+[CashReserveTempsActivation]
+what = "Secondi prima di tenere una riserva di denaro"
+does = "Per quanti secondi di battaglia può spendere tutto il suo denaro; poi mette da parte il denaro che servono agli edifici ordinati prima di comprare unità. 240 (4 minuti) in tutti gli insiemi del gioco."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% di denaro tenuto per gli edifici amministrativi"
+does = "La quota del suo denaro, in %, che tiene per gli edifici amministrativi (che alzano le entrate). 20% negli insiemi del gioco; Difficile 25%. Dove il gioco la legga non è ancora trovato."
+[PercentMoneyToUseForIdle]
+what = "% di denaro usato quando inattivo"
+does = "La quota del suo denaro, in %, che può spendere in unità quando non ha altro da fare: i numeri Prodotto quando inattivo più sotto. A 0 non produce mai quando inattivo e quei numeri non fanno nulla. Predefinito e Facile 0; Medio 50%; Difficile 100%."
+[DeviseBonusIA]
+what = "Denaro extra all'inizio (trucco)"
+does = "Il denaro extra che riceve all'inizio della battaglia, in $. Solo Difficile lo ha: 150 $ oltre ai 200 $ con cui inizia ogni giocatore."
+[IncomeBonusIA]
+what = "Entrate extra a ogni pagamento (trucco)"
+does = "Denaro extra, in $, aggiunto a ciascuno dei suoi pagamenti di entrate. Solo Difficile lo ha: 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Edifici amministrativi in più prima di fermarsi"
+does = "Quanti edifici amministrativi oltre il necessario costruisce prima di smettere; -1 vuol dire nessun limite. Predefinito e i profili -1; Difficile 2; Facile e Medio non lo elencano, quindi contano 0: nessuno oltre il necessario."
+[DepotNbEnPlusAvantDesactivation]
+what = "Depositi in più prima di fermarsi"
+does = "Quanti depositi di rifornimento punta oltre a quelli che ha, finché ci sono posti per depositi da prendere. Predefinito 2; Medio 3; Difficile 4; Blitzkrieg 1; Facile non lo elenca (0)."
+[ValueDepotMinForTruckFactory]
+what = "Valore minimo dei depositi per una fabbrica di camion"
+does = "Prima di costruire una fabbrica di camion vicino a un gruppo di depositi, quei depositi devono avere ancora almeno questi rifornimenti, in $: i carichi di camion che restano loro per 3 $ a carico (6 $ in modalità Nucleare), ciò che il gioco chiama il denaro disponibile di un deposito. 100 $ in tutti gli insiemi: cinque Sherman, metà dei 200 $ iniziali di un giocatore."
+[MinutesLeftMinForTruckFactory]
+what = "Minuti rimasti minimi per una fabbrica di camion"
+does = "In una battaglia con limite di tempo costruisce una fabbrica di camion solo se restano almeno questi minuti. 5 in tutti gli insiemi."
+[NbDepotMinForTruckFactory]
+what = "Depositi minimi per una fabbrica di camion"
+does = "Quanti depositi deve contare un gruppo (i suoi e gli altri entro la distanza del gruppo di depositi) prima che vi costruisca una fabbrica di camion. 2 in tutti gli insiemi."
+[NbUnitsDangerousDepot]
+what = "Unità che rendono pericoloso un deposito"
+does = "Quante unità conta attorno a uno dei suoi depositi prima di considerarlo in pericolo e mandare aiuto. Predefinito 1; Testuggine 4; Difficile e Blitzkrieg non lo elencano (0)."
+[SeuilDistanceGroupeDepot]
+what = "Distanza del gruppo di depositi"
+does = "Quando sceglie dove mettere una nuova fabbrica di camion, i depositi entro questa distanza dal centro dei suoi depositi lontani, misurata lungo il percorso delle unità, contano come un gruppo; la fabbrica va accanto al deposito del gruppo più vicino alla sua base. 234.000 (900 m) in tutti gli insiemi."
+[SeuilDistanceTruckFactory]
+what = "Distanza della fabbrica di camion"
+does = "Costruisce un'altra fabbrica di camion quando uno dei suoi depositi è almeno a questa distanza dalla sua fabbrica di camion più vicina, misurata lungo la strada dei camion, non in linea d'aria (solo se ha già una fabbrica di camion). Predefinito e i profili 520.000 (2.000 m); ogni difficoltà 780.000 (3.000 m), e poiché nessun profilo la cambia, in battaglia contano 3.000 m."
+[NbMaxProductionForEnnemyUnit]
+what = "Unità prodotte al massimo contro un'unità nemica"
+does = "Il massimo di unità che produce per rispondere a un'unità nemica. 1 in tutti gli insiemi. Dove il gioco la legga non è ancora trovato."
+[NbProdIdleInfanterie]
+what = "Prodotto quando inattivo: fanteria"
+does = "Quando non ha altro da fare e può spendere da inattivo (% di denaro usato quando inattivo non è 0), produce fanteria finché non ne ha tanta. Regolare 2; Obice e Prototipo 1."
+[NbProdIdleTank]
+what = "Prodotto quando inattivo: carri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce carri finché non ne ha tanti. Regolare e Prototipo 3; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Prodotto quando inattivo: anticarro"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce anticarro finché non ne ha tanti. Prototipo 1; Testuggine 2."
+[NbProdIdleArti]
+what = "Prodotto quando inattivo: artiglieria"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce artiglieria finché non ne ha tanta. Obice 5; Testuggine 2."
+[NbProdIdleDCA]
+what = "Prodotto quando inattivo: contraerea"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce contraerea finché non ne ha tanta. Testuggine 2."
+[NbProdIdleChasseur]
+what = "Prodotto quando inattivo: caccia"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce caccia finché non ne ha tanti. Dal cielo 2."
+[NbProdIdleBomber]
+what = "Prodotto quando inattivo: bombardieri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce bombardieri finché non ne ha tanti. Dal cielo 1."
+[NbProdIdleChasseurBomber]
+what = "Prodotto quando inattivo: cacciabombardieri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce cacciabombardieri finché non ne ha tanti. Dal cielo 2; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Avvia ricerche quando inattivo"
+does = "1: quando non ha altro da fare può anche avviare ricerche. Solo Prototipo lo ha."
+[BonusUnitesAvions]
+what = "Preferenza: aerei"
+does = "Punti di preferenza aggiunti a ogni aereo che può produrre. Le preferenze si sommano per unità e contano solo le differenze tra le sue unità: valuta ogni unità per quanto sta sotto la sua preferita. Dal cielo +500 fa degli aerei il suo netto favorito."
+[BonusUnitesArtillerie]
+what = "Preferenza: artiglieria"
+does = "Punti di preferenza aggiunti a ogni unità d'artiglieria che può produrre (vedi Preferenza: aerei per come si sommano). Obice +8.000 mette l'artiglieria molto davanti a tutto il resto."
+[BonusUnitesExperimentales]
+what = "Preferenza: prototipi"
+does = "Punti di preferenza aggiunti a ogni prototipo che può produrre (le unità della categoria 12 del gioco). Prototipo +400."
+[BonusUnitesRecherche]
+what = "Preferenza: ricerca"
+does = "Punti di preferenza aggiunti a ogni unità che deve ancora ricercare (la lista delle ricerche del gioco non la dà ancora per fatta), così ricerca di più. Prototipo +400."
+[BonusUnitesTank]
+what = "Preferenza: carri"
+does = "Punti di preferenza aggiunti a ogni carro che può produrre. Nessun insieme del gioco lo usa, quindi la scheda IA non può proporlo (Aggiungi propone solo i valori che Predefinito elenca); gli script della campagna sì (Bonus_Tank, da 150 a 200)."
+[BonusBatimentOTF]
+what = "Preferenza: edifici difensivi"
+does = "Punti di preferenza aggiunti a ogni edificio difensivo (bunker e postazioni di cannoni: flag 6). Lo rendono anche più propenso a erigere difese nei luoghi che sorveglia: il gioco lo pesa con 0,5 + questo valore / 200, cioè 1,5 con il +200 di Testuggine contro 0,5 a 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% di probabilità di giocare un inganno di manipolazione all'inizio"
+does = "La probabilità, in %, che giochi un inganno di manipolazione all'inizio della battaglia. Predefinito 40%; Medio 60%; Difficile 80%."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Carte d'inganno tenute da parte (difficoltà)"
+does = "Carte d'inganno che tiene in mano invece di giocarle; il gioco somma il numero della difficoltà e quello del profilo. Medio e Difficile 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Carte d'inganno tenute da parte (profilo)"
+does = "Carte d'inganno che tiene in mano invece di giocarle; il gioco somma questo numero a quello della difficoltà. Prototipo e Testuggine 1."
+[TempsActivationBatimentCamoufle]
+what = "Secondi prima di mimetizzare gli edifici"
+does = "Quanti secondi di battaglia prima che usi l'inganno della mimetizzazione sui suoi edifici. Solo Facile lo imposta: 600 (10 minuti); altrove 0, dall'inizio."
+[RepresailleFacteurUniteCombattante]
+what = "Fattore di rappresaglia: unità combattenti"
+does = "Quanto duramente risponde dopo aver perso unità combattenti, come multiplo; gli script della campagna lo impostano insieme a quello delle unità non combattenti come un'unica rappresaglia (Represailles, 1 o 2). Predefinito 1; Facile 0,5; Difficile 2; Testuggine non lo elenca (0: nessuna rappresaglia per esse)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Fattore di rappresaglia: unità non combattenti"
+does = "Quanto duramente risponde dopo aver perso unità che non combattono (camion, edifici), come multiplo; gli script della campagna lo impostano insieme a quello delle unità combattenti. Predefinito 2; Facile 1; Difficile 4; Testuggine non lo elenca (0)."
+[TimeOutRepresailles]
+what = "Limite di tempo della rappresaglia"
+does = "Quanti secondi mantiene una rappresaglia prima di abbandonarla. Predefinito 120 (2 minuti); Difficile 240."
+[ProbaRepereFake]
+what = "Probabilità di scoprire le esche"
+does = "La probabilità, da 0 a 1, che smascheri un'esca in un luogo che difende o attacca; il gioco la tira ogni 24 secondi. Predefinito 0,5 (50%); Facile 0,1; Difficile 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Secondi in cui ricorda le unità che non vede"
+does = "Per quanti secondi ricorda un'unità nemica che non vede più. Predefinito 300 (5 minuti); Facile 60; Difficile 360."
+[BonusValue]
+what = "Preferenza extra per queste unità"
+does = "Punti di preferenza aggiunti alle unità elencate, in una battaglia la cui modalità di gioco, difficoltà e profilo sono ciascuno nelle liste (una lista vuota va bene per tutti). Si sommano alle preferenze proprie dell'insieme (Preferenza: aerei…). La voce del gioco: +400 per i cannoni nucleari in modalità Nucleare, a ogni difficoltà e con ogni profilo."
+[ConsiderStackAsOneEnnemy]
+what = "Conta una pila come un solo nemico"
+does = "1: conta una pila di queste unità come un solo nemico. La voce del gioco ha 1."
+[UnitIDs]
+what = "Unità (per numero)"
+does = "Le unità a cui si applica la voce, per il numero proprio di ogni unità (il suo Id); la scheda IA le fa scegliere per nome. Una lista vuota vorrebbe dire tutte le unità."
+[WarModes]
+what = "Modalità di gioco (per numero)"
+does = "Le modalità di gioco in cui vale la voce, per il numero che il gioco dà loro: 0 1945, 1 1942, 2 1939, 3 Guerra totale, 4 Nucleare (l'ordine della lista del gioco)."
+[AIDifficulties]
+what = "Difficoltà (per numero)"
+does = "Le difficoltà in cui vale la voce: 0 Facile, 1 Medio, 2 Difficile."
+[AIProfiles]
+what = "Profili (per numero)"
+does = "I profili con cui vale la voce: 0 Regolare, 1 Dal cielo, 2 Obice, 3 Prototipo, 4 Blitzkrieg, 5 Testuggine, 6 Casuale."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Durata"
+does = "Quanto dura l'inganno una volta giocato, in secondi: da 240 a 360 nel gioco (da 4 a 6 minuti)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Mostrato nel menu degli inganni"
+does = "1: la carta è nel menu degli inganni, così giocatori e computer possono giocarla."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Posto nel menu degli inganni"
+does = "Dove sta la carta nel menu degli inganni: più basso viene prima."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Denaro iniziale"
+does = "Il denaro con cui ogni giocatore inizia una battaglia, in $. 200 nel gioco: dieci Sherman da 20 $."
+[TempsGenAutoDevises]
+what = "Secondi tra i pagamenti automatici"
+does = "Ogni quanti secondi pagano gli edifici che producono denaro da soli (il denaro automatico del gioco); il reddito extra dei giocatori computer (trucco) viene pagato con lo stesso ritmo. 4 nel gioco."
+[QuantiteGenAutoDevises]
+what = "Pagamento automatico"
+does = "Quanto vale un pagamento automatico, in $. 1 nel gioco: con un pagamento ogni 4 secondi, 15 $ al minuto."
+[StockDeviseSupplementaireFacile]
+what = "Rifornimento extra ai depositi su Facile (campagna)"
+does = "Nella campagna su Facile, il rifornimento extra che gli script delle missioni aggiungono ai depositi (lo chiedono al gioco). 72 nel gioco. Le battaglie non lo usano."
+[QteDeviseParCamion]
+what = "Denaro per carico di camion"
+does = "Quanto porta un camion di rifornimento da un deposito, in $. Modalità solite del gioco 3, modalità Nucleare 6. Il denaro rimasto in un deposito è il numero di carichi rimasti per questo valore."
+[NbCamionParConvoi]
+what = "Camion per convoglio"
+does = "Quanti camion lasciano insieme un deposito in un convoglio. 3 nel gioco: un convoglio porta 3 x 3 $ = 9 $ nelle modalità solite."
+[TempsENtreDeuxConvois]
+what = "Secondi tra due convogli"
+does = "Quanto aspetta, in secondi, un deposito tra due convogli. 30 nel gioco: circa 18 $ al minuto da un deposito nelle modalità solite, senza contare il viaggio."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Intervallo tra i camion di un convoglio (min.)"
+does = "Il tempo più breve, in secondi, tra le partenze di due camion dello stesso convoglio. 1,5 nel gioco."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Intervallo tra i camion di un convoglio (max.)"
+does = "Il tempo più lungo, in secondi, tra le partenze di due camion dello stesso convoglio. 1,5 nel gioco."
+[RatioForDepotNearlyDepleted]
+what = "Deposito quasi vuoto a"
+does = "Un deposito conta come quasi vuoto quando i carichi che gli restano sono questa quota di quelli iniziali, o meno (i giocatori computer ne cercano allora un altro). 0,25 (25%) nel gioco."
+[MinProductionTime]
+what = "Tempo di produzione più breve"
+does = "Nessuna unità si costruisce in meno tempo di questo, in secondi, per quante fabbriche del suo tipo la costruiscano. 1 nel gioco."
+[MaximumBatimentProduction]
+what = "Edifici in costruzione insieme (max.)"
+does = "Quanti edifici costruiscono insieme i giocatori computer. 2 nel gioco."
+[MaxProductionQueueSize]
+what = "Coda di produzione più lunga"
+does = "Il massimo di unità che un giocatore computer mette nella sua coda di produzione. 30 nel gioco."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Edifici e ricerche insieme"
+does = "Quanti edifici e ricerche ha in corso insieme un giocatore computer. 2 nel gioco."
+[VirtualFactoryQueueMaximumSlot]
+what = "Posti nella coda di una fabbrica"
+does = "Quanti posti ha la coda di una fabbrica. 2 nel gioco."
+[NbAvionsParAeroport]
+what = "Aerei per aeroporto"
+does = "Quanti aerei può avere un giocatore per ogni aeroporto che possiede: non si possono costruire altri aerei quando il loro numero arriva a questo valore per gli aeroporti. 8 nel gioco."
+[NbMaxCardsInPool]
+what = "Carte d'inganno in mano (max.)"
+does = "Il massimo di carte d'inganno che uno schieramento può tenere. 99 nel gioco: nessun limite in pratica."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Carte d'inganno all'inizio (1 giocatore per schieramento)"
+does = "Quante carte d'inganno ha all'inizio uno schieramento con 1 giocatore. Modalità solite del gioco 2, modalità Nucleare 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Carte d'inganno all'inizio (2 giocatori per schieramento)"
+does = "Quante carte d'inganno ha all'inizio uno schieramento con 2 giocatori. Modalità solite del gioco 2, modalità Nucleare 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Carte d'inganno all'inizio (3 giocatori per schieramento)"
+does = "Quante carte d'inganno ha all'inizio uno schieramento con 3 giocatori. Modalità solite del gioco 2, modalità Nucleare 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Carte d'inganno all'inizio (4 giocatori per schieramento)"
+does = "Quante carte d'inganno ha all'inizio uno schieramento con 4 giocatori. Modalità solite del gioco 2, modalità Nucleare 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Quando arrivano nuove carte d'inganno (1 giocatore per schieramento)"
+does = "I momenti della battaglia, in secondi, in cui uno schieramento con 1 giocatore riceve una nuova carta d'inganno da scegliere. Modalità solite del gioco 105, 210, 315 (ogni 1 minuto e 45); modalità Nucleare 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Quando arrivano nuove carte d'inganno (2 giocatori per schieramento)"
+does = "I momenti della battaglia, in secondi, in cui uno schieramento con 2 giocatori riceve una nuova carta d'inganno da scegliere. Modalità solite del gioco 105, 210, 315; modalità Nucleare 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Quando arrivano nuove carte d'inganno (3 giocatori per schieramento)"
+does = "I momenti della battaglia, in secondi, in cui uno schieramento con 3 giocatori riceve una nuova carta d'inganno da scegliere. Modalità solite del gioco 105, 210, 315; modalità Nucleare 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Quando arrivano nuove carte d'inganno (4 giocatori per schieramento)"
+does = "I momenti della battaglia, in secondi, in cui uno schieramento con 4 giocatori riceve una nuova carta d'inganno da scegliere. Modalità solite del gioco 105, 210, 315; modalità Nucleare 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Valore dell'esercito che forza un attacco"
+does = "I giocatori computer confrontano il valore di un esercito con questo prima di un attacco: il gioco controlla le forze quando il valore lì è più basso. 600 nel gioco."
+[MinArmyValueToUseManipulationCard]
+what = "Valore minimo dell'esercito per un inganno di manipolazione"
+does = "Un giocatore computer gioca un inganno di manipolazione solo se il suo esercito vale almeno questo. 120 nel gioco."
+[MaxWaitingRequest]
+what = "Ordini in attesa (max.)"
+does = "Il massimo di ordini di produzione che un giocatore computer tiene in attesa. 30 nel gioco."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Ordini in attesa prima di una nuova fabbrica"
+does = "Quando un giocatore computer ha tanti ordini di produzione in attesa, costruisce un'altra fabbrica invece di metterne altri in coda. 8 nel gioco."
+[MaxTimeWaitingRequest]
+what = "Attesa più lunga di un ordine"
+does = "Quanto, in secondi, un ordine di produzione di un giocatore computer può aspettare prima di essere annullato (quando Annulla gli ordini in attesa è attivo). 60 nel gioco."
+[CheckAndCancelWaitingRequest]
+what = "Annulla gli ordini in attesa"
+does = "1: un giocatore computer annulla gli ordini di produzione che hanno aspettato più dell'attesa più lunga. 1 nel gioco."
+[BP_DepotAddedValue]
+what = "Valore di un deposito da proteggere"
+does = "Quanto vale un deposito di rifornimenti per un giocatore computer quando decide cosa proteggere. 50 nel gioco, contro 150 per il suo QG."
+[BP_HqValue]
+what = "Valore del QG da proteggere"
+does = "Quanto vale il suo QG per un giocatore computer quando decide cosa proteggere. 150 nel gioco, contro 50 per un deposito."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Unità esca in un'offensiva esca (min.)"
+does = "Il minimo di unità esca che manda l'offensiva esca di un giocatore computer. 4 nel gioco."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Unità esca in un'offensiva esca (max.)"
+does = "Il massimo di unità esca che manda l'offensiva esca di un giocatore computer. 5 nel gioco."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Aerei esca in un attacco aereo esca (min.)"
+does = "Il minimo di aerei esca che manda l'attacco aereo esca di un giocatore computer. 4 nel gioco."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Aerei esca in un attacco aereo esca (max.)"
+does = "Il massimo di aerei esca che manda l'attacco aereo esca di un giocatore computer. 5 nel gioco."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Carri esca in un attacco corazzato esca (min.)"
+does = "Il minimo di carri esca che manda l'attacco corazzato esca di un giocatore computer. 4 nel gioco."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Carri esca in un attacco corazzato esca (max.)"
+does = "Il massimo di carri esca che manda l'attacco corazzato esca di un giocatore computer. 5 nel gioco."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Attesa tra edifici esca (min.)"
+does = "Il tempo più breve, in secondi, che un giocatore computer aspetta tra due edifici esca che piazza con l'inganno degli edifici esca. 5 nel gioco."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Attesa tra edifici esca (max.)"
+does = "Il tempo più lungo, in secondi, che un giocatore computer aspetta tra due edifici esca che piazza con l'inganno degli edifici esca. 10 nel gioco."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Nome di debug"
+does = "Il nome dell'unità nei messaggi d'errore e nei registri del gioco (Unit_M4_Sherman). I giocatori non lo vedono mai."
+[NameInMenuToken]
+what = "Nome"
+does = "Quale testo del gioco è il suo nome, nel menu di produzione e sulla sua scheda (N_UNI_137 per lo Sherman). Cambia le parole… sotto la casella cambia le parole stesse, in ogni lingua."
+[TypeUnitHintToken]
+what = "Riga del tipo"
+does = "Quale testo la scheda mostra come il suo tipo di unità, sotto il nome (TANK_madv per lo Sherman). vide: nessuno."
+[DescriptionUnitHintToken]
+what = "Descrizione della scheda"
+does = "Quale testo la scheda mostra come breve descrizione (DTANK_madv per lo Sherman). vide: nessuno."
+[EfficaceHintToken]
+what = "Efficace contro"
+does = "Quale testo la scheda mostra come ciò contro cui è efficace (E_ground: tutti i bersagli a terra; unarmed: disarmata). vide: nessuno."
+[LongDescriptionUnitHintToken]
+what = "Testo storico"
+does = "Quale testo è la sua descrizione lunga: la storia dell'unità reale (LD_UNI_137 racconta quella dello Sherman)."
+[WeaponDescriptor]
+what = "Armi"
+does = "Le sue armi: la parte che porta le sue torrette e i cannoni sopra, ognuno con le sue munizioni. La casella Armi della scheda Unità le cambia. Vuoto: disarmata."
+[ArmorDescriptor]
+what = "Corazza"
+does = "Il suo livello di corazza: un oggetto che più unità condividono (lo Sherman punta a quello dell'M4 Skink). Corazza, nella scheda Unità, sceglie uno dei livelli del gioco."
+[GfxDescriptor]
+what = "Aspetto"
+does = "Solo aspetto: il suo modello 3D e come si muovono le sue parti (cingoli, ruote, torretta). Per un edificio: il suo aspetto sulla mappa, un insieme di molti pezzi che il gioco aggiunge dove si trova."
+[GfxDescriptorIcone]
+what = "Aspetto da lontano"
+does = "Solo aspetto: ciò che la rappresenta quando la telecamera è alta: la pedina rotonda di un'unità di terra sul tavolo, il piccolo modello di un aereo."
+[GfxDescriptorIconeJeton]
+what = "Pedina"
+does = "Solo aspetto: la pedina rotonda di un aereo sul tavolo quando la telecamera è alta."
+[GfxDescriptorCadavre]
+what = "Relitto"
+does = "Solo aspetto: ciò che ne resta quando viene distrutta (il modello del suo relitto)."
+[GfxDescriptorIconeCadavre]
+what = "Figura del soldato"
+does = "Solo aspetto: uno dei modelli di soldato di una squadra (dal nome, quello disegnato per un soldato caduto). Lo Studio mostra e ridipinge una squadra con esso."
+[GfxDescriptorFusilier]
+what = "Fuciliere"
+does = "Solo aspetto: il modello dei fucilieri di una squadra."
+[GfxDescriptorBazooka]
+what = "Soldato col bazooka"
+does = "Solo aspetto: il modello del soldato col bazooka di una squadra."
+[SoundMotorDescriptor]
+what = "Suono in movimento"
+does = "Solo suono: il rumore che fa muovendosi (un motore, i motori di un aereo), spesso quello di un'altra unità (lo Sherman usa quello dell'ARL 40)."
+[TextureForInterface]
+what = "Immagine della scheda"
+does = "La sua immagine nel menu di produzione e sulla sua scheda. Nella scheda Unità, Usa questa vista come scheda ne crea una nuova dal suo modello 3D."
+[UpgradeRequire]
+what = "Ricercata da"
+does = "L'unità da cui si ricerca: si può produrre una volta finita quella ricerca (lo Sherman richiede l'M3 Lee). Vuoto: nessuna ricerca."
+[UnitIdleManager]
+what = "Comportamento in attesa"
+does = "Cosa fa mentre aspetta: il suo cannone o la torretta che si guarda intorno. Spesso quello di un'altra unità (lo Sherman usa quello dell'ARL 44)."
+[TransportPourMorphe]
+what = "Viaggia su"
+does = "Il camion in cui si trasforma per viaggiare sulle strade (per una squadra o un cannone). La casella Viaggia su della scheda Unità lo sceglie."
+[MouvementHandlerInfo]
+what = "Volo"
+does = "Come vola l'aereo: la parte con i suoi valori di volo (aprila per vederli)."
+[UniteTransportee]
+what = "Lancia"
+does = "L'unità che un aereo da trasporto lancia (il C47 lancia paracadutisti americani). Un aereo con la bandiera paracadutisti e niente qui manda in crash il gioco."
+[AmmoDeath]
+what = "Esplosione allo schianto"
+does = "L'esplosione quando l'aereo viene abbattuto: quella di un aereo leggero o medio."
+[UniteDefense]
+what = "Unità di difesa"
+does = "L'unità che combatte per una difesa: i cannoni di un bunker (la torretta del bunker Maginot)."
+[BatimentPaths]
+what = "Percorsi"
+does = "Dove le unità girano intorno all'edificio, entrano ed escono: le sue uscite, entrate, posti di parcheggio e la pista di un aeroporto."
+["TBatimentPaths.FactoryExit"]
+what = "Uscita"
+does = "Il percorso che un'unità prodotta prende per uscire, fino alla strada (visto in gioco: dal cancello sulla strada)."
+["TBatimentPaths.FactoryEntry"]
+what = "Entrata"
+does = "Il percorso che le unità prendono per entrare."
+["TBatimentPaths.ByPass"]
+what = "Aggiramento"
+does = "Il percorso che le unità prendono per girarci intorno."
+["TBatimentPaths.Vision"]
+what = "Punti di vista"
+does = "Dal nome: i punti da cui l'edificio guarda."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Entrata parcheggio (aerei grandi)"
+does = "Il percorso di un aeroporto per i suoi aerei più grandi verso i posti di parcheggio."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Entrata parcheggio (aerei piccoli)"
+does = "Il percorso di un aeroporto per i suoi aerei più piccoli verso i posti di parcheggio."
+["TBatimentPaths.ParkingExit"]
+what = "Uscita parcheggio"
+does = "Il percorso di un aeroporto per i suoi aerei fuori dai posti di parcheggio."
+["TBatimentPaths.MultiPathParking"]
+what = "Posti di parcheggio"
+does = "I posti di parcheggio di un aeroporto e i percorsi tra loro."
+["TBatimentPaths.Runway"]
+what = "Pista"
+does = "La pista di un aeroporto: dove i suoi aerei decollano e atterrano."
+[TurretDescriptorList]
+what = "Torrette"
+does = "Le torrette dell'arma (o affusti), ognuna con i cannoni che porta. La casella Armi della scheda Unità le mostra passo per passo."
+[MountedWeaponDescriptorList]
+what = "Cannoni"
+does = "I cannoni su questa torretta, ognuno con le sue munizioni."
+[EffectTag]
+what = "Effetto di sparo"
+does = "Quale effetto parte quando questo cannone spara (lampo e fumo), per nome dell'effetto."
+["TAmmunition.Name"]
+what = "Nome"
+does = "Quale testo dà il nome alla munizione (N_AR_lc: piccolo calibro)."
+[TypeName]
+what = "Tipo"
+does = "Quale testo dà il nome al suo tipo (T_ARM_0: proiettile perforante)."
+["TAmmunition.Icon"]
+what = "Immagine"
+does = "La piccola immagine della munizione, spesso quella di un'altra (il proiettile perforante da 20 mm usa quella del bazooka)."
+[StressManager]
+what = "Tabella dello stress"
+does = "Dal nome: la tabella di quanto un colpo stressa (inchioda) un bersaglio, secondo il suo livello di corazza. Tutte le munizioni del gioco usano la stessa."
+["TArmorDescriptor.Name"]
+what = "Nome"
+does = "Quale testo dà il nome a questo livello di corazza (N_ARMU_1: aereo)."
+["TArmorDescriptor.Icon"]
+what = "Immagine"
+does = "La piccola immagine del livello di corazza."
+[_Filename]
+what = "File sorgente"
+does = "Il file dei sorgenti di Eugen in cui questo oggetto è stato scritto (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Loro registrazione interna: niente da cambiare."
+[_Line]
+what = "Riga sorgente"
+does = "La riga del file sorgente di Eugen dove inizia questo oggetto. Loro registrazione interna: niente da cambiare."
+[_Column]
+what = "Colonna sorgente"
+does = "La colonna su quella riga del file sorgente di Eugen. Loro registrazione interna: niente da cambiare."
+[_ShortDatabaseName]
+what = "Nome breve"
+does = "Il nome breve che gli strumenti di Eugen hanno dato a questo oggetto. Loro registrazione interna: niente da cambiare."

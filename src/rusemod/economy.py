@@ -1,7 +1,8 @@
 """The game's economy, as LittleGroove's Economy editor (RUSE-Mod-Manager) offers it, for the Studio: starting money
 and income, the depots' supply trucks, production limits, the ruse cards, and the computer players' production and
 decoys. The game has these values twice (its usual game modes, and the Nuclear mode's: not tried in the game yet), so
-the Studio changes both copies from one value, each reached by the file it's in, and a change holds in every mode.
+the Studio changes both copies from one value, each reached by the file it's in, and a change holds in every mode; or
+one copy alone, where the two are shown apart (the owner, 2026-10-17: "separate normal and nuclear for sure").
 
 Depots, admin buildings and truck factories themselves (price, build time, strength) are buildings: the Studio's
 Units page changes them. The population cap isn't offered: it is a console setting, off in the PC game (not tested).

@@ -135,9 +135,32 @@ class Words(unittest.TestCase):
                 self.assertEqual(set(words[f"ai_group_{group}"]), LANGS)
         for k in ("ai_tab", "ai_title", "tip_tab_ai", "ai_help", "ai_how_title", "ai_mix", "ai_default",
                   "ai_same_default", "ai_none", "ai_bonus_title", "ai_bonus_help", "ai_cards_title", "ai_cards_help",
-                  "ai_not_in_menu", "tip_ai_reset"):
+                  "ai_not_in_menu", "tip_ai_reset", "ai_bonus_summary", "ai_bonus_any_mode", "ai_bonus_any_difficulty",
+                  "ai_bonus_any_profile", "ai_bonus_any_unit", "ai_battle", "ai_battle_wins", "tip_ai_battle",
+                  "tip_ai_choice", "ai_sure_name", "unit_min"):
             with self.subTest(key=k):
                 self.assertEqual(set(words[k]), LANGS)
+
+    def test_every_value_is_explained(self):
+        # what each value does, in the number guide (rusemod.numberinfo), in every language
+        from rusemod import numberinfo
+        for lang in LANGS:
+            for cls, props in ((ai.PROFILE, ai.PROFILE_PROPS), (ai.BONUS, ai.BONUS_PROPS), (ai.CARD, ai.CARD_PROPS)):
+                for prop in props:
+                    with self.subTest(lang=lang, prop=prop):
+                        entry = numberinfo.lookup(cls, prop, lang)
+                        self.assertIsNotNone(entry)
+                        self.assertEqual(entry["group"], "computer")  # a ruse card's menu slot isn't a unit's
+        self.assertEqual(numberinfo.lookup(ai.PROFILE, "SeuilDistanceTruckFactory")["unit"], "m")
+        self.assertEqual(numberinfo.lookup(ai.PROFILE, "MinutesLeftMinForTruckFactory")["unit"], "min")
+        self.assertEqual(numberinfo.lookup(ai.PROFILE, "ValueDepotMinForTruckFactory")["unit"], "money")
+
+    def test_battle_values(self):
+        out = ai.battle_values({"A": 30, "B": 1}, [("Easy", {"A": 300, "B": 1}), ("Hard", {})],
+                               [("Regular", {"A": 30}), ("Turtle", {"A": 600, "B": 0})])
+        self.assertEqual(out["A"], {"difficulties": [("Easy", 300), ("Hard", 0)], "personalities": [("Turtle", 600)]})
+        self.assertEqual(out["B"], {"difficulties": [("Easy", 1), ("Hard", 0)],
+                                    "personalities": [("Regular", 0), ("Turtle", 0)]})
 
     def test_the_tab_is_on_the_page(self):
         html = (ROOT / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
@@ -146,7 +169,8 @@ class Words(unittest.TestCase):
         for needle in ('id="tab-ai"', 'id="ai-view"', 'id="ai-pick"', 'id="ai-groups"', 'id="ai-bonuses"',
                        'id="ai-cards"'):
             self.assertIn(needle, html)
-        for needle in ("function renderAI", "api().ai(", "api().ai_edit(", "api().ai_reset(", 'showView("ai")'):
+        for needle in ("function renderAI", "api().ai(", "api().ai_edit(", "api().ai_reset(", 'showView("ai")',
+                       "function aiBattleLine", "function aiChoiceBox", "function aiBonusSummary"):
             self.assertIn(needle, app)
         for needle in ("ai: async", "ai_edit: async", "ai_reset: async"):
             self.assertIn(needle, fake)
@@ -226,6 +250,37 @@ class Tab(unittest.TestCase):
                          {"BonusValue": (400, None), "ConsiderStackAsOneEnnemy": (1, None),
                           "UnitIDs": ([3008], ["NUCLEAR LONG TOM"]), "WarModes": ([4], ["Nuclear mode"]),
                           "AIDifficulties": ([0, 1], ["Easy", "Hard"]), "AIProfiles": ([0, 6], ["Regular", "6"])})
+
+    def test_what_each_value_comes_to_in_a_battle(self):
+        # the owner, 2026-10-17: "not very clear what profile goes to what number". The game's rule: the profile's
+        # value when it isn't Default's, else the difficulty's when it isn't Default's, else Default's; a value a set
+        # doesn't list counts as 0 (Hard has no AttaqueTempsActivation: it attacks at once)
+        battle = self.api.ai("us")["battle"]
+        self.assertEqual(battle["AttaqueTempsActivation"],
+                         {"difficulties": [("Easy", 300), ("Hard", 0)], "personalities": []})
+        self.assertEqual(battle["OffensiveNbMissionMax"],
+                         {"difficulties": [("Easy", -1), ("Hard", -1)], "personalities": [("Regular", 2)]})
+        # Regular doesn't list it here: its 0 isn't Default's 1, so it wins on any difficulty
+        self.assertEqual(battle["HarcelementActif"],
+                         {"difficulties": [("Easy", 0), ("Hard", 1)], "personalities": [("Regular", 0)]})
+        self.assertEqual(battle["DeviseBonusIA"],  # one only Hard lists: Default counts 0
+                         {"difficulties": [("Easy", 0), ("Hard", 150)], "personalities": []})
+        self.api.new_mod("Battle")
+        self.api.ai_edit(REGULAR, "AttaqueTempsActivation", 90)  # the mod's changes count
+        self.assertEqual(self.api.ai("us")["battle"]["AttaqueTempsActivation"]["personalities"], [("Regular", 90)])
+
+    def test_a_bonus_s_lists_are_picked_by_name(self):
+        page = self.api.ai("us")
+        choices = page["choices"]
+        self.assertEqual(choices["AIDifficulties"], [{"n": 0, "name": "Easy"}, {"n": 1, "name": "Hard"}])
+        self.assertEqual(choices["AIProfiles"], [{"n": 0, "name": "Regular"}, {"n": 1, "name": "Random"}])
+        self.assertEqual([c["n"] for c in choices["WarModes"]], [0, 1, 2, 3, 4])  # the game's own table
+        self.assertEqual(choices["WarModes"][4]["name"], "Nuclear mode")
+        self.assertEqual(choices["UnitIDs"], [{"n": 3008, "name": "NUCLEAR LONG TOM", "nation": "USA"}])
+        # each row says its class: its meaning is in the number guide
+        self.assertEqual({r["cls"] for p in page["profiles"] for g in p["groups"] for r in g["rows"]}, {ai.PROFILE})
+        self.assertEqual({r["cls"] for b in page["bonuses"] for r in b["rows"]}, {ai.BONUS})
+        self.assertEqual({r["cls"] for c in page["cards"] for r in c["rows"]}, {ai.CARD})
 
     def test_in_another_language(self):
         page = self.api.ai("fr")

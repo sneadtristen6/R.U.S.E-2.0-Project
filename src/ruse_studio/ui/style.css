@@ -189,6 +189,16 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-pick-row > span:empty { display: none; }
 .group table.ai-cards th { width: 34%; }
 .ai-cards th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; color: var(--muted); }
+/* the AI tab: what each value does (the number guide), what it comes to in a battle, a bonus in one sentence */
+#ai-view .group th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; max-width: 46em; }
+#ai-view .group th small.ai-sure { font-family: inherit; font-style: italic; font-weight: normal; margin-top: 2px; }
+#ai-view .boxes select { max-width: 22em; }
+.ai-battle { margin-top: 4px; color: var(--accent); }
+/* a price or shown-in-menu box per game mode, its mode's name above it */
+.mode-box { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; margin-right: 4px; }
+.mode-box > small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.ai-bonus-summary { margin: 0 0 8px; font-weight: 600; }
 .group td.edited .boxes input[type="number"] { border-color: var(--accent); }
 .group tr:has(> td.edited) th { box-shadow: inset 3px 0 0 var(--accent); }
 .ai-scripts-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
@@ -261,6 +271,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .values-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .group table.values-table { max-width: 900px; }
 .group table.values-table th { width: 34%; }
+/* what a value does (the number guide), under its name */
+.values-table th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; color: var(--muted); }
 .values-table input.values-text, .values-table input.values-key { width: 100%; max-width: 520px; padding: 3px 7px;
   background: var(--panel-hi); border: 1px solid var(--line); border-radius: 6px; font: 12px Consolas, monospace; }
 .values-table input:disabled, .values-table textarea:disabled { opacity: 0.6; }
@@ -506,6 +519,13 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .typed-number { width: 4.6em; margin-left: 6px; padding: 1px 4px; background: var(--panel-hi); border: 1px solid var(--line);
                 border-radius: 6px; font-size: 12px; }
 /* the Economy tab's Depots on the maps (app.js renderEconomyDepots): all maps or one, then how much */
+/* the Economy tab: what each value does under its name; Normal and Nuclear boxes apart where the game has them apart */
+#economy-view .group th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; max-width: 46em; }
+#economy-view .boxes { align-items: center; }
+.economy-mode + .economy-mode { margin-top: 6px; }
+.economy-mode .mode-name { display: inline-block; min-width: 5.5em; color: var(--muted); }
+.economy-atomic .mode-name { color: var(--accent); }
 .economy-depots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .economy-depots h3 { margin: 0 0 4px; font-size: 13px; }
 .economy-depots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }

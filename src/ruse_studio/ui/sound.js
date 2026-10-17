@@ -188,6 +188,9 @@
       const head = el("h2", { textContent: w[`music_group_${g.id.replace(/\d$/, "")}`] ? fill(w[`music_group_${g.id.replace(/\d$/, "")}`], { n: Number(g.id.slice(-1)) + 1 }) : g.id });
       const first = g.id === "playlist0" || !battle;  // the three lists share one help line
       const help = first ? w[`music_help_${g.id.replace(/\d$/, "")}`] : null;
+      // and each says when it plays (the game's battle music: building up, shots hitting and ruse cards played each
+      // fill one list's gauge; lists 1 and 2 heard in the game 2026-10-07)
+      const when = battle ? w[`music_help_list${Number(g.id.slice(-1)) + 1}`] : null;
       const extra = [];
       if (battle && data.mod) {  // a new song of the mod's own in this list (files/music/list<N>)
         const n = Number(g.id.slice(-1)) + 1;
@@ -196,7 +199,8 @@
           channels: 2, rate: 48000, seconds: 0, also: [], maps: [], reference: reference && reference.member }));
         extra.push(el("div", { className: "music-actions music-add" }, add));
       }
-      return el("div", { className: "group" }, head, ...(help ? [el("p", { className: "muted small", textContent: help })] : []), list, ...extra);
+      return el("div", { className: "group" }, head, ...(help ? [el("p", { className: "muted small", textContent: help })] : []),
+        ...(when ? [el("p", { className: "small", textContent: when })] : []), list, ...extra);
     }) : [el("p", { className: "muted", textContent: w.music_none })]));
   }
 

@@ -22,8 +22,8 @@ class Guide(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_each_entry_says_what_it_is_and_how_to_read_it(self):
-        units = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share",
-                 "level", "choice", "yesno", "id", "mask", "frame", "raw"}
+        units = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share", "pct",
+                 "min", "level", "choice", "yesno", "id", "mask", "frame", "raw", "link", "text", "name"}
         for key, e in numberinfo.guide().items():
             with self.subTest(key=key):
                 self.assertIn(e["group"], numberinfo.GROUPS)
@@ -55,10 +55,33 @@ class Guide(unittest.TestCase):
                 self.assertNotEqual(g["SeuilMort"]["does"], english["SeuilMort"]["does"])
                 self.assertEqual(g["SeuilMort"]["unit"], english["SeuilMort"]["unit"])  # unit and sure stay English's
 
+    def test_settled_from_the_game(self):
+        # a unit's price and shown-in-menu lists hold one value per game mode, in the game's order (its lobby's table;
+        # its late-war tanks are shown at 0, 3 and 4 only)
+        self.assertEqual(numberinfo.MODES, ("1945", "1942", "1939", "Total War", "Nuclear"))
+        g = numberinfo.guide()
+        for key in ("ProductionTime", "MaxAcceleration", "MaxDeceleration", "ProductionPrice", "ShowInMenu"):
+            self.assertEqual(g[key]["sure"], "known", key)
+        self.assertIn("1945, 1942, 1939, Total War, Nuclear", g["ShowInMenu"]["does"])
+        self.assertNotIn("accel", numberinfo.PLAIN)  # shown as seconds to full speed instead
+
     def test_a_class_s_own_meaning_comes_first(self):
         self.assertEqual(numberinfo.lookup("TAvionDescriptor", "VitesseLineaire")["unit"], "kmh_air")
         self.assertEqual(numberinfo.lookup("TUniteAuSolDescriptor", "VitesseLineaire")["unit"], "kmh")
         self.assertIsNone(numberinfo.lookup("TUniteAuSolDescriptor", "NoSuchThing"))
+
+    def test_a_name_other_kinds_share_with_another_meaning(self):
+        """The All values tab shows every kind of object: a unit's words aren't shown on another kind's value of the
+        same name (the main menu's Factory, a map shape's Radius, a cutscene's Key)."""
+        for cls in numberinfo.UNIT_CLASSES:
+            self.assertEqual(numberinfo.lookup(cls, "Factory")["what"], "Factory")
+        for cls, prop in (("TMainMenuInfos", "Factory"), ("TMainMenuInfos", "PositionInMenu"),
+                          ("TSceneryDescriptorFillRegularPolygon", "Radius"), ("TCutsceneDescriptor", "Key"),
+                          ("TViewVariantDescriptor", "Category"), ("TMultiMapInfo", "TrackingId")):
+            self.assertIsNone(numberinfo.lookup(cls, prop), (cls, prop))
+        self.assertEqual(numberinfo.lookup("TPawnDescriptor", "Radius")["what"], "Token size on the table")
+        self.assertIsNotNone(numberinfo.lookup("TMetaCircleDrawer", "MaxWidth"))
+        self.assertIn("classes", numberinfo.guide("fr")["Radius"])  # every language
 
     def test_plain_units(self):
         self.assertAlmostEqual(numberinfo.plain("m", 104000), 400)
@@ -76,11 +99,15 @@ class Page(unittest.TestCase):
         words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         for key in ("number_about_value", "unit_m", "unit_kmh", "unit_ms2", "unit_deg", "unit_degs", "unit_s",
                     "unit_money", "unit_pct", "number_base", "number_from_base", "number_slider", "tip_number_slider",
-                    "number_this_unit", "number_among", "number_scale_unmeasured",
+                    "number_this_unit", "number_among", "number_scale_unmeasured", "number_full_speed",
+                    "number_full_stop", "price_dates",
                     *[f"number_sure_{s}" for s in numberinfo.SURE]):
             self.assertEqual(len(words[key]), 10, key)
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
-        for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider"):
+        for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider",
+                       "MODE_LISTS", "mode-box", "number_full_speed",
+                       "const entry = numberEntry(p.class, r.prop);",  # the All values tab: what each value does
+                       "e.classes && !e.classes.includes(cls)"):
             self.assertIn(needle, app)
         fake = (ROOT / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ("numbers: async", "number_scale: async"):

@@ -8064,8 +8064,33 @@ async function loadStrokes(pack, ask) {
 // The size slider's name; the Erase brush's says how wide its circle is.
 function sizeLabel() {
   const w = mv.words;
-  $("brush-size-label").textContent = (erasing() || PAINT_KINDS.has(mv.brush.name)) && mv.edit
+  // every brush's size in metres across on this map (the slider's number is a share of the map's width)
+  $("brush-size-label").textContent = mv.edit
     ? fill(w.erase_size, { m: Math.round(2 * brushRadius(mv.brush.name) / METRE).toLocaleString() }) : w.brush_size;
+}
+
+// The strength slider in what it does: Map Paint's opacity; for Hill, Raise, Lower, Crater, Plateau and Water a
+// height on this map (lift(): its share of the map's height range); for Flatten, Level, Smooth and Ramp how much of the
+// way to the level one stroke goes
+function strengthLabel() {
+  const w = mv.words, name = mv.brush.name, [kind] = BRUSHES[name] || [], set = settingsOf(name);
+  const label = $("brush-strength-label"), slider = $("brush-strength");
+  const bounds = mv.edit && mv.edit.bounds;
+  if (PAINT_KINDS.has(kind)) {
+    label.textContent = fill(w.brush_opacity, { n: set.strength });
+    slider.title = w.tip_brush_opacity;
+  } else if ((kind === "add" || kind === "water" || name === "plateau") && bounds) {
+    const m = lift(set.strength, bounds[2], bounds[5]) / METRE;
+    label.textContent = fill(w.brush_strength_m || w.brush_strength,
+      { m: (m >= 10 ? Math.round(m) : Math.round(m * 10) / 10).toLocaleString() });
+    slider.title = w.tip_brush_strength_m || w.tip_brush_strength;
+  } else if (kind === "level" || kind === "smooth" || kind === "ramp") {
+    label.textContent = fill(w.brush_strength_pct || w.brush_strength, { n: set.strength });
+    slider.title = w.tip_brush_strength_pct || w.tip_brush_strength;
+  } else {
+    label.textContent = w.brush_strength;
+    slider.title = w.tip_brush_strength;
+  }
 }
 
 // What the circles take when the mod is built, counted by the Studio the way the build erases
@@ -8127,9 +8152,8 @@ function renderBrushes() {
   $("brush-strength").value = set.strength;
   $("brush-strength-row").classList.toggle("hidden",
     ["cover", "town", "block", "open", "forest", "erase"].includes(BRUSHES[b.name][0]));
-  // Map Paint's strength is how much each dab covers the ground's picture
-  $("brush-strength-label").textContent = painting ? fill(w.brush_opacity, { n: set.strength }) : w.brush_strength;
-  $("brush-strength").title = painting ? w.tip_brush_opacity : w.tip_brush_strength;
+  strengthLabel();  // (Map Paint's strength is how much each dab covers the ground's picture)
+  sizeLabel();
   renderPaintPanel();
   $("brush-erase").classList.toggle("hidden", !erase);  // what the Erase brush's new circles take
   if (erase) {
@@ -9655,6 +9679,8 @@ function renderWords() {
   $("brush-size").title = w.tip_brush_size;
   $("brush-strength-label").textContent = w.brush_strength;
   $("brush-strength").title = w.tip_brush_strength;
+  if (mv.brush.name && BRUSHES[mv.brush.name]) { sizeLabel(); strengthLabel(); }  // (in the new language, with numbers)
+  $("brush-angle").title = w.tip_brush_angle;
   $("brush-undo").textContent = w.brush_undo;
   $("brush-undo").title = w.tip_brush_undo;
   $("brush-redo").textContent = w.brush_redo;
@@ -10176,9 +10202,7 @@ function wire() {
   $("brush-size").addEventListener("input", (e) => { settingsOf(mv.brush.name).size = Number(e.target.value); sizeLabel(); });
   $("brush-strength").addEventListener("input", (e) => {
     settingsOf(mv.brush.name).strength = Number(e.target.value);
-    if (PAINT_KINDS.has(BRUSHES[mv.brush.name][0])) {  // Map Paint's opacity says its number as it moves
-      $("brush-strength-label").textContent = fill(mv.words.brush_opacity, { n: e.target.value });
-    }
+    strengthLabel();  // (says what it comes to as it moves: an opacity, a height in metres, a share of the way)
   });
   // Map Paint: the colour wheel (drag round the ring for the colour, in the square for how strong and how light), the
   // colour as #rrggbb, the eyedropper, and Texture's spot to copy from

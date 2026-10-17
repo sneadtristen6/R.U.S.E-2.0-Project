@@ -688,6 +688,9 @@ async function refreshList() {
     state.edited = new Set(await api().edited());
   } catch (err) { problem(err); return; }
   if (state.onlyMod && state.mod) res.units = res.units.filter((u) => u.new || state.edited.has(u.address));
+  // New unit starts from a unit with a model: those the Studio can't read a model for are left out (the owner,
+  // 2026-10-17: "if those units don't have models, just don't include them")
+  if (state.start === "new") res.units = res.units.filter((u) => !u.no_model);
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   renderGroups(res.groups || [], res.types || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {
@@ -787,23 +790,42 @@ function rangeSlider(box, game) {
   return { node: el("span", { className: "range" }, slider, far), sync };
 }
 
+// The lists that hold one value per game mode, and the modes' names (api.numbers modes: the game's lobby's own words;
+// English until they're loaded)
+const MODE_LISTS = new Set(["ProductionPrice", "ShowInMenu"]);
+const MODES_EN = ["1945", "1942", "1939", "Total War", "Nuclear"];
+function modeNames() {
+  return (knownNumbers && knownNumbers.modes && knownNumbers.modes.length === 5) ? knownNumbers.modes : MODES_EN;
+}
+
 function row(u, r, mode) {
   const w = state.words;
-  const th = el("th", { textContent: r.label });
-  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
-  if (!r.editable) return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
+  // a value with no name of its own in labels.toml is called by the number guide's ("Statistics id", not TrackingId)
+  const entry = numberEntry(u.class, r.prop);
+  const label = r.label === r.prop && entry && state.lang !== "base" ? entry.what : r.label;
+  const th = el("th", { textContent: label });
+  if (state.lang !== "base" && label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  if (!r.editable) {  // (one that can't be changed still says what it is)
+    if (entry) { th.title = numberTip(entry); th.classList.add("has-meaning"); }
+    return el("tr", {}, th, el("td", { textContent: r.values.join(" · ") }));
+  }
   if (FLAG_LISTS.has(r.prop)) return flagRow(u, r, mode, th);
   const via = state.page.via;
   const st = rowState(r, mode);
   const shown = st.mine || st.base;
-  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  // a price or shown-in-menu list holds one value per game mode (1945, 1942, 1939, Total War, Nuclear: the game's own
+  // order): each box gets its mode's name, as the game's lobby says it
+  const modes = MODE_LISTS.has(r.prop) && r.list && shown.length === 5 ? modeNames() : null;
+  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
+  const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" },
+    el("small", { textContent: modes[i] }), b)) : boxes;
   const ranged = RANGE_PROPS.has(r.prop) && !r.list && r.type !== "bool";
   if (ranged) boxes[0].title = w.tip_range_box;
-  // A list whose values are all the same (a unit's five prices, one per battle date) gets one box that changes them
+  // A list whose values are all the same (a unit's five prices, one per game mode) gets one box that changes them
   // all, so a modder can't change one of five by accident; "set each" shows every box.
   let one = r.list && shown.length > 1 && r.type !== "bool" && shown.every((n) => n === shown[0])
     ? numberBox(r, shown[0], `${r.label} (${w.all_values.replace("{n}", shown.length)})`) : null;
-  const holder = el("div", { className: "boxes" }, ...(one ? [one] : boxes));
+  const holder = el("div", { className: "boxes" }, ...(one ? [one] : cells));
   const slider = ranged ? rangeSlider(boxes[0], r.numbers[0]) : null;
   if (slider) holder.append(slider.node);
   if (one) {
@@ -811,7 +833,7 @@ function row(u, r, mode) {
     each.addEventListener("click", () => {
       boxes.forEach((b) => { b.value = one.value; });
       one = null;
-      holder.replaceChildren(...boxes);
+      holder.replaceChildren(...cells);
       boxes[0].focus();
     });
     holder.append(el("span", { className: "muted small", textContent: w.all_values.replace("{n}", shown.length) }), each);
@@ -886,7 +908,8 @@ const BASE_LEAST = -90, BASE_MOST = 300;  // the base-stat slider: % of the game
 
 function numberEntry(cls, prop) {
   if (!knownNumbers) return null;
-  return knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+  const e = knownNumbers.numbers[`${cls}.${prop}`] || knownNumbers.numbers[prop] || null;
+  return e && e.classes && !e.classes.includes(cls) ? null : e;  // (its words are about other kinds of object)
 }
 
 // A number in plain units ("about 35 km/h"), or "" when its unit has none.
@@ -917,9 +940,24 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
     const amount = knownNumbers.amounts.includes(entry.unit) && r.type !== "bool";
     const base = Number(st.base[0]);
     const plainNote = el("span", { className: "muted small number-plain" });
+    // acceleration and braking: the game adds a fifth of the value to the speed every 0.2 s, so the unit's own speed
+    // divided by it is the seconds to full speed (or to a stop)
+    const speedOf = () => {
+      const s = (u.groups || []).flatMap((g) => g.rows).find((x) => x.prop === "VitesseLineaire");
+      if (!s) return null;
+      const mine = s.edited === null || s.edited === undefined ? null : Array.isArray(s.edited) ? s.edited[0] : s.edited;
+      return Number(mine === null ? s.numbers[0] : mine);
+    };
+    const plainOf = (v) => {
+      if (r.prop !== "MaxAcceleration" && r.prop !== "MaxDeceleration") return numberPlain(entry, v);
+      const speed = speedOf();
+      if (!speed || !(v > 0)) return "";
+      return fill(w[r.prop === "MaxAcceleration" ? "number_full_speed" : "number_full_stop"],
+        { s: Number((speed / v).toPrecision(2)).toLocaleString() });
+    };
     const sync = () => {
       const v = Number(getBoxes()[0].value);
-      plainNote.textContent = numberPlain(entry, v);
+      plainNote.textContent = plainOf(v);
       if (slider && Number.isFinite(v) && base) {
         const pct = Math.round((v / base - 1) * 100);
         slider.value = String(Math.max(BASE_LEAST, Math.min(BASE_MOST, pct)));
@@ -942,7 +980,7 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
           const v = own * (1 + pct / 100);
           b.value = String(whole ? Math.round(v) : Number(v.toPrecision(6)));
         }
-        plainNote.textContent = numberPlain(entry, Number(getBoxes()[0].value));
+        plainNote.textContent = plainOf(Number(getBoxes()[0].value));
         pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
       });
       slider.addEventListener("change", () => getBoxes()[0].dispatchEvent(new Event("change")));
@@ -971,7 +1009,8 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
       }).catch(() => {});
     }
     help.replaceChildren(row, scale);
-    if (entry.sure === "community" && knownNumbers.plain[entry.unit]) {  // a scale from others, not measured by us
+    // a scale from others, not measured by us (the metre is ours, measured on the game's maps)
+    if (entry.sure === "community" && knownNumbers.plain[entry.unit] && entry.unit !== "m") {
       row.append(el("span", { className: "muted small number-sure", textContent: w.number_scale_unmeasured }));
     }
   };
@@ -1008,6 +1047,8 @@ function flagRow(u, r, mode, th) {
   let checked = { problems: [], blocked: false, adding: {} };  // api.flag_check: what's wrong with this unit's flags
   const chips = el("div", { className: "flags" });
   const was = el("div", { className: "was" });
+  const entry = numberEntry(u.class, r.prop);  // (what the flags are, on the name, as the other rows have it)
+  if (entry) th.title = numberTip(entry);
   // what flags are and what the Studio does with them (the owner, 2026-10-15: "it has to tell the modder what the
   // thinking is going to be doing"), the guide to all of them, and what it found on this unit
   const guideButton = el("button", { type: "button", className: "link", textContent: w.flag_guide, title: w.tip_flag_guide });
@@ -1266,7 +1307,7 @@ function roleGroup(u) {
   const was = el("div", { className: "was" });
   const why = el("p", { className: "notice hidden" });
   const moved = el("p", { className: "muted small hidden", textContent: w.role_bombs_moved });
-  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.role_title, title: w.tip_role_pick }), el("td", {}, pick, was));
   const name = (id) => w["role_" + id] || id;
   const show = (info) => {
     // an armed plane made a scout keeps its attacks (the fighter's behaviour: a scout's crashes the game on attack)
@@ -1311,7 +1352,7 @@ function groundRoleGroup(u) {
   pick.setAttribute("aria-label", w.role_title);
   const was = el("div", { className: "was" });
   const why = el("p", { className: "notice hidden" });
-  const head = el("tr", {}, el("th", { textContent: w.role_title }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.role_title, title: w.tip_ground_role }), el("td", {}, pick, was));
   const name = (id) => id === "recon" ? w.ground_role_recon : w.ground_role_game;
   const show = (info) => {
     pick.replaceChildren(...["game", "recon"].map((id) => el("option", { value: id, selected: id === info.role,
@@ -1349,7 +1390,7 @@ function weaponsGroup(u) {
     if (!res.weapons.length) return;
     const table = el("table");
     res.weapons.forEach((wp, i) => {
-      const th = el("th", { textContent: fill(w.weapon_n, { n: i + 1 }) }, el("small", { textContent: wp.name }));
+      const th = el("th", { textContent: fill(w.weapon_n, { n: i + 1 }), title: w.tip_weapon_n }, el("small", { textContent: wp.name }));
       const pick = el("select", { disabled: !state.mod, title: w.fires });
       for (const c of res.choices) {
         pick.append(el("option", { value: c.address, textContent: (c.new ? `${w.new_mark} ` : "") + c.name +
@@ -1891,7 +1932,14 @@ function lookBox(u, brought, startNew) {
   const body = el("div", { className: "muted small", textContent: w.look_working });
   const box = el("div", { className: "group look" }, el("h2", { textContent: w.unit_look, title: w.tip_unit_look }), body);
   const draw = (info) => {
-    if (!info.models || !info.models.length) { box.remove(); return; }
+    if (!info.models || !info.models.length) {
+      // a new unit's box stays, saying why it has no model to change (a modder's report, 2026-10-17: "the window for
+      // changing the model never opens"; it was taken away without a word). Ammo, weapons and the like: no box
+      if (!info.new_unit) { box.remove(); return; }
+      body.className = "new-unit";
+      body.replaceChildren(el("p", { className: "notice warn", textContent: w.model_none }));
+      return;
+    }
     const parts = [];
     // a squad's look is its uniform: the game's (Default, worn by other squads and the gun and vehicle crews too, so
     // never repainted here) or its own (Custom: its own copy of its soldiers), which Blender paints (the owner,
@@ -2313,7 +2361,8 @@ function upgradeGroup(u) {
   const was = el("div", { className: "was" });
   const kids = el("p", { className: "muted small" });
   const table = el("table");
-  const head = el("tr", {}, el("th", { textContent: w.upgrade_from }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.upgrade_from,
+    title: numberTip(numberEntry(u.class, "UpgradeRequire")) || w.tip_upgrade_from }), el("td", {}, pick, was));
   const gone = el("p", { className: "notice warn hidden", textContent: w.upgrade_parent_gone });
   const researchRow = (prop, r) => {
     // the research time in the unit picked beside it (the game keeps whole seconds); the price as it is
@@ -2355,7 +2404,10 @@ function upgradeGroup(u) {
       } catch (err) { problem(err); }
     });
     mark(r.value);
-    return el("tr", {}, el("th", { textContent: r.label }), cell);
+    // what it is, from the number guide, on the name (as the unit's other numbers have it)
+    const entry = numberEntry(u.class, prop);
+    return el("tr", {}, el("th", { textContent: r.label, title: numberTip(entry),
+      className: entry ? "has-meaning" : "" }), cell);
   };
   const show = (info) => {
     const current = info.parent ? info.parent.address : "", game = info.game_parent ? info.game_parent.address : "";
@@ -2400,7 +2452,7 @@ function armourGroup(u) {
   const pick = el("select", { disabled: !can, title: w.tip_armour_pick });
   const was = el("div", { className: "was" });
   const old = el("p", { className: "notice warn hidden", textContent: w.armour_old_way });
-  const head = el("tr", {}, el("th", { textContent: w.armour_level }), el("td", {}, pick, was));
+  const head = el("tr", {}, el("th", { textContent: w.armour_level, title: w.tip_armour_pick }), el("td", {}, pick, was));
   const label = (levels, value) => {
     const l = levels.find((x) => x.value === value);
     return l ? fill(w[l.word], { n: l.n }) : w.armour_building;
@@ -2444,6 +2496,9 @@ async function showUnit(address, via) {
   }
   let u;
   try { u = await api().unit(address, state.lang, via); } catch (err) { problem(err); return; }
+  if (!knownNumbers) {  // each number's meaning and the game modes' names, before the rows are drawn
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   state.page = { address, via };
   const inside = u.named ? u.address : via;  // the named unit its parts are opened from
   const mode = u.share ? (u.share.via ? state.mode : "shared") : "";
@@ -2846,12 +2901,16 @@ function showView(view) {
 
 // --- the Economy tab (StudioApi.economy, rusemod.economy; LittleGroove's Economy editor brought over): starting money,
 // income, supply depots, production limits, ruse cards and the computer players'. A change is saved in the current
-// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode) ---
+// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode), or for
+// one of the two where they're shown apart (economyRow) ---
 async function renderEconomy() {
   const w = state.words;
   $("economy-title").textContent = w.economy_title;
   $("economy-help").textContent = state.mod ? w.economy_help : w.no_mod;
   $("economy-buildings").textContent = w.economy_buildings;
+  if (!knownNumbers) {  // each value's meaning, from the number guide (rusemod/numberinfo.toml)
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   let data;
   try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
   if (state.view !== "economy") return;  // another tab was picked meanwhile
@@ -2948,57 +3007,88 @@ async function showEconomyDepot(line) {
     .replace("{money}", Math.round(m.usual * m.per_convoy * m.per_truck).toLocaleString()) : "";
 }
 
+// One economy value: its name, what it does (the number guide, rusemod/numberinfo.toml) and its boxes. Where the game's
+// usual modes and the Nuclear mode have it apart (r.split: the game's two copies differ, or the mod's do), each mode
+// has its own boxes (the owner, 2026-10-17: "separate normal and nuclear for sure"); elsewhere one change sets both.
 function economyRow(r, saved = null) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
-  const game = r.list ? r.game : [r.game];
-  let mine = r.value === null ? null : r.list ? r.value : [r.value];
-  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
-  const was = el("div", { className: "was" });
-  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was);
-  if (r.atomic !== null) {  // the Nuclear mode's own value, as the game has it: a change sets both
-    cell.append(el("div", { className: "muted small",
-      textContent: w.economy_atomic.replace("{v}", (r.list ? r.atomic : [r.atomic]).join(" · ")) }));
+  const entry = numberEntry("TTunableConstante", r.prop);
+  if (entry) {
+    th.title = numberTip(entry);
+    th.append(el("small", { className: "about", textContent: entry.does }));
   }
-  const tr = el("tr", {}, th, cell);
-  const show = (numbers) => boxes.forEach((b, i) => {
-    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
-    b.setAttribute("aria-invalid", "false");
-  });
-  const showWas = () => {
-    tr.classList.toggle("edited", mine !== null);
-    if (mine === null) { was.replaceChildren(); return; }
-    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_economy_reset });
-    undo.addEventListener("click", async () => {
+  const tr = el("tr", {}, th);
+  const cell = el("td");
+  const edited = new Set();  // the modes the mod changes
+  const part = (mode, game, value) => {
+    game = r.list ? game : [game];
+    let mine = value === null || value === undefined ? null : r.list ? value : [value];
+    const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+    const plain = el("span", { className: "muted small number-plain" });
+    const was = el("div", { className: "was" });
+    // in plain units only where that says more than the number ("25%" for 0.25; not "about 200 $" for 200)
+    const scale = entry && knownNumbers && knownNumbers.plain[entry.unit];
+    const showPlain = (numbers) => {
+      plain.textContent = r.list || !scale || scale[0] === 1 ? "" : numberPlain(entry, Number(numbers[0]));
+    };
+    const show = (numbers) => {
+      boxes.forEach((b, i) => {
+        if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+        b.setAttribute("aria-invalid", "false");
+      });
+      showPlain(numbers);
+    };
+    const showWas = () => {
+      if (mine === null) edited.delete(mode); else edited.add(mode);
+      tr.classList.toggle("edited", edited.size > 0);
+      if (mine === null) { was.replaceChildren(); return; }
+      const undo = el("button", { type: "button", className: "link", textContent: w.reset,
+        title: mode ? w.tip_economy_reset_one : w.tip_economy_reset });
+      undo.addEventListener("click", async () => {
+        try {
+          await api().economy_reset(r.prop, mode);
+          mine = null;
+          show(game);
+          showWas();
+          say("");
+          if (saved) saved();
+        } catch (err) { problem(err); }
+      });
+      was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+    };
+    const save = async (box) => {
+      const numbers = boxes.map(readBox);
+      const bad = numbers.findIndex((n) => !Number.isFinite(n));
+      boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
+      if (bad >= 0) { box.focus(); return; }
       try {
-        await api().economy_reset(r.prop);
-        mine = null;
-        show(game);
+        const res = await api().economy_edit(r.prop, r.list ? numbers : numbers[0], mode);
+        const got = r.list ? res.value : [res.value];
+        show(got);
+        mine = sameNumbers(got, game) ? null : got;
         showWas();
-        say("");
+        say(w.saved.replace("{file}", res.saved), "ok");
         if (saved) saved();
       } catch (err) { problem(err); }
-    });
-    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+    };
+    for (const box of boxes) box.addEventListener("change", () => save(box));
+    showPlain(mine || game);
+    showWas();
+    const row = el("div", { className: "boxes" }, ...boxes, plain);
+    if (mode) {
+      row.prepend(el("span", { className: "mode-name small", textContent: mode === "atomic" ? w.economy_nuclear : w.economy_normal,
+        title: mode === "atomic" ? w.tip_economy_nuclear : w.tip_economy_normal }));
+    }
+    return el("div", { className: mode ? `economy-mode economy-${mode}` : "economy-mode" }, row, was);
   };
-  const save = async (box) => {
-    const numbers = boxes.map(readBox);
-    const bad = numbers.findIndex((n) => !Number.isFinite(n));
-    boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
-    if (bad >= 0) { box.focus(); return; }
-    try {
-      const res = await api().economy_edit(r.prop, r.list ? numbers : numbers[0]);
-      const value = r.list ? res.value : [res.value];
-      show(value);
-      mine = sameNumbers(value, game) ? null : value;
-      showWas();
-      say(w.saved.replace("{file}", res.saved), "ok");
-      if (saved) saved();
-    } catch (err) { problem(err); }
-  };
-  for (const box of boxes) box.addEventListener("change", () => save(box));
-  showWas();
+  if (r.split) {
+    cell.append(part("normal", r.game, r.value), part("atomic", r.atomic === null ? r.game : r.atomic, r.atomic_value));
+  } else {
+    cell.append(part(null, r.game, r.value));
+  }
+  tr.append(cell);
   return tr;
 }
 
@@ -3028,20 +3118,70 @@ async function renderAI() {
     return;
   }
   if (!data.profiles.some((p) => p.id === state.aiProfile)) state.aiProfile = data.profiles.length ? data.profiles[0].id : null;
+  state.aiData = data;  // the battle values and the bonus lists' names, for each row (aiRow, aiValue)
+  if (!knownNumbers) {  // each value's meaning, from the number guide (rusemod/numberinfo.toml)
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+    if (state.view !== "ai") return;
+  }
   renderAIPick(data);
   renderAIProfile(data);
   $("ai-bonuses").replaceChildren(...data.bonuses.map((b) => {
     const table = el("table");
     for (const r of b.rows) table.append(aiRow(b.id, r, r.list ? renderAI : null));
-    return el("div", { className: "group" }, table);
+    return el("div", { className: "group" }, aiBonusSummary(b), table);
   }));
   renderAICards(data);
+}
+
+// A bonus in one sentence: in which battles (game modes, difficulties, profiles) which units get how much more
+// preference (the owner, 2026-10-17: "not very clear what profile goes to what number ... or the unit by number").
+// An empty list matches any.
+function aiBonusSummary(b) {
+  const w = state.words;
+  const row = (prop) => b.rows.find((r) => r.prop === prop);
+  const all = (state.aiData && state.aiData.choices) || {};
+  const names = (prop, any) => {  // an empty list, or one holding every choice there is: "any difficulty"
+    const r = row(prop);
+    const now = r ? (r.value === null ? r.game : r.value) : [];
+    const every = all[prop] && all[prop].length && all[prop].every((c) => now.includes(c.n));
+    return r && r.names && r.names.length && !every ? r.names.join(", ") : w[any];
+  };
+  const value = row("BonusValue");
+  const v = value ? (value.value === null ? value.game : value.value) : 0;
+  return el("p", { className: "ai-bonus-summary", textContent: fill(w.ai_bonus_summary, {
+    modes: names("WarModes", "ai_bonus_any_mode"), difficulties: names("AIDifficulties", "ai_bonus_any_difficulty"),
+    profiles: names("AIProfiles", "ai_bonus_any_profile"), v: (v > 0 ? "+" : "") + Number(v).toLocaleString(),
+    units: names("UnitIDs", "ai_bonus_any_unit") }) });
+}
+
+// A value as its unit shows it: "3,000 m", "5 min", "$100", "50%", else the number.
+function aiShown(entry, v) {
+  const w = state.words, p = entry && knownNumbers && knownNumbers.plain[entry.unit];
+  if (!p || !Number.isFinite(Number(v))) return Number(v).toLocaleString();
+  const x = Number(v) / p[0];
+  const n = Math.abs(x) >= 100 ? Math.round(x).toLocaleString() : Number(x.toPrecision(3)).toLocaleString();
+  return entry.unit === "money" ? `$${n}` : `${n} ${w[p[1]] || ""}`.trim();
+}
+
+// What a value comes to in a battle (StudioApi.ai battle: the game's rule mixing Default, the difficulty and the
+// personality): each difficulty's, and the personalities whose own value wins on any difficulty.
+function aiBattleLine(r) {
+  const w = state.words, data = state.aiData;
+  const b = data && data.battle && data.battle[r.prop];
+  if (!b || r.cls !== "TIAProfil") return null;
+  const entry = numberEntry(r.cls, r.prop);
+  const parts = b.difficulties.map(([name, v]) => `${name} ${aiShown(entry, v)}`).join(" · ");
+  const wins = b.personalities.map(([name, v]) => `${name} ${aiShown(entry, v)}`).join(", ");
+  return el("div", { className: "small ai-battle", title: w.tip_ai_battle,
+    textContent: fill(w.ai_battle, { values: parts }) + (wins ? ` — ${fill(w.ai_battle_wins, { list: wins })}` : "") });
 }
 
 function renderAIPick(data) {
   const w = state.words, words = data.words || {};
   const button = (p) => {
-    const b = el("button", { type: "button", className: "chip", textContent: p.kind === "default" ? w.ai_default : p.name || p.index });
+    // the number the game gives it (a bonus's lists name them by it), beside its name
+    const b = el("button", { type: "button", className: "chip",
+      textContent: p.kind === "default" ? w.ai_default : `${p.name || ""} (${p.index})`.trim() });
     b.setAttribute("aria-pressed", String(p.id === state.aiProfile));
     b.addEventListener("click", () => { state.aiProfile = p.id; renderAI(); });  // fresh: another set may have changed
     return b;
@@ -3063,7 +3203,7 @@ function renderAIProfile(data) {
   if (!p) { $("ai-groups").replaceChildren(); return; }
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(aiRow(p.id, r, r.added ? renderAI : null));
+    for (const r of g.rows) table.append(aiRow(p.id, r, renderAI));  // drawn again: what it comes to in a battle
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
   }), ...aiMissing(p), notesBox(`obj:${p.id}`));
 }
@@ -3117,7 +3257,12 @@ function renderAICards(data) {
   if (!cards.length) { $("ai-cards").replaceChildren(); return; }
   const props = ["LifeDuration", "ShowInMenu", "PositionInMenu"];
   const label = (prop) => (cards.flatMap((c) => c.rows).find((r) => r.prop === prop) || {}).label || prop;
-  const head = el("tr", {}, el("th"), ...props.map((prop) => el("th", { textContent: label(prop) })));
+  const head = el("tr", {}, el("th"), ...props.map((prop) => {
+    const entry = numberEntry("TBluffCardDescriptor", prop);  // what it does, from the number guide
+    const th = el("th", { textContent: label(prop), title: numberTip(entry) });
+    if (entry) th.classList.add("has-meaning");
+    return th;
+  }));
   const table = el("table", { className: "ai-cards" }, head);
   for (const c of cards) {
     const th = el("th", { textContent: c.name });
@@ -3137,21 +3282,51 @@ function renderAICards(data) {
 // list's numbers (units, game modes, difficulties, profiles), and for a difficulty's or profile's value whether it is
 // Default's (then it doesn't count: StudioApi.ai). `after`: called once a change is saved (a list's names come from
 // the game index again).
+// A bonus's list item picked by name (difficulty, profile, game mode, unit: StudioApi.ai choices), the number the
+// game uses beside it; a number with no name stays as itself.
+function aiChoiceBox(r, value, label, choices) {
+  const box = el("select", { disabled: !state.mod, title: state.words.tip_ai_choice });
+  const option = (c) => el("option", { value: String(c.n),
+    textContent: c.nation ? `${c.name} · ${c.nation} (${c.n})` : `${c.name} (${c.n})` });
+  box.append(...choices.map(option));
+  const ensure = (n) => {
+    if (![...box.options].some((o) => o.value === String(n))) box.append(option({ n, name: String(n) }));
+    box.value = String(n);
+  };
+  ensure(value);
+  box.ensure = ensure;
+  box.setAttribute("aria-label", label);
+  return box;
+}
+
 function aiValue(target, r, after = null) {
   const w = state.words;
   const game = r.list ? r.game : [r.game];
   let mine = r.value === null ? null : r.list ? r.value : [r.value];
-  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const choices = state.aiData && state.aiData.choices && state.aiData.choices[r.prop];
+  const boxes = (mine || game).map((n, i) => {
+    const label = r.list ? `${r.label} [${i}]` : r.label;
+    return choices ? aiChoiceBox(r, n, label, choices) : numberBox(r, n, label);
+  });
   const was = el("div", { className: "was" });
   const note = el("div", { className: "muted small" });
-  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was, note);
+  const entry = numberEntry(r.cls, r.prop);
+  const plain = el("span", { className: "muted small number-plain" });  // "about 3,000 m"
+  const showPlain = () => { plain.textContent = r.list || choices ? "" : numberPlain(entry, readBox(boxes[0])); };
+  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes, plain), was, note);
   const showNote = (same) => {
-    note.textContent = [r.names ? r.names.join(" · ") : "", same ? w.ai_same_default : ""].filter(Boolean).join(" — ");
+    // a picker already shows the names; a plain list of numbers gets them below
+    note.textContent = [r.names && !choices ? r.names.join(" · ") : "", same ? w.ai_same_default : ""]
+      .filter(Boolean).join(" — ");
   };
   const show = (numbers) => boxes.forEach((b, i) => {
-    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+    if (b.type === "checkbox") b.checked = Boolean(numbers[i]);
+    else if (b.ensure) b.ensure(numbers[i]);
+    else b.value = String(numbers[i]);
     b.setAttribute("aria-invalid", "false");
   });
+  for (const b of boxes) b.addEventListener("input", showPlain);
+  showPlain();
   const showWas = () => {
     cell.classList.toggle("edited", mine !== null);
     if (mine === null) { was.replaceChildren(); return; }
@@ -3161,6 +3336,7 @@ function aiValue(target, r, after = null) {
         const res = await api().ai_reset(target, r.prop);
         mine = null;
         show(game);
+        showPlain();
         showWas();
         showNote(res.same_default);
         say("");
@@ -3178,6 +3354,7 @@ function aiValue(target, r, after = null) {
       const res = await api().ai_edit(target, r.prop, r.list ? numbers : numbers[0]);
       const value = r.list ? res.value : [res.value];
       show(value);
+      showPlain();
       mine = sameNumbers(value, game) && !r.added ? null : value;  // (a value the mod added stays until taken out)
       showWas();
       showNote(res.same_default);
@@ -3191,12 +3368,24 @@ function aiValue(target, r, after = null) {
   return { cell };
 }
 
+// One row of the AI tab: the value's name, what it does in the game (the number guide; its name shows the whole
+// entry and how sure we are when hovered), its box, and for a profile's value what it comes to in a battle.
 function aiRow(target, r, after = null) {
+  const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
   // its own value the mod gave it (StudioApi.ai_add): Game's value takes it out again, so the list is drawn again
-  if (r.added) th.append(el("small", { className: "ai-added", textContent: state.words.ai_added, title: state.words.tip_ai_added }));
-  return el("tr", {}, th, aiValue(target, r, after).cell);
+  if (r.added) th.append(el("small", { className: "ai-added", textContent: w.ai_added, title: w.tip_ai_added }));
+  const entry = numberEntry(r.cls, r.prop);
+  if (entry) {
+    th.title = numberTip(entry);  // (no dotted underline: the meaning is written out below the name)
+    th.append(el("small", { className: "about", textContent: entry.does }));
+    if (entry.sure === "name") th.append(el("small", { className: "muted ai-sure", textContent: w.ai_sure_name }));
+  }
+  const { cell } = aiValue(target, r, after);
+  const battle = aiBattleLine(r);
+  if (battle) cell.append(battle);
+  return el("tr", {}, th, cell);
 }
 
 // The game's map and mission scripts, shown as Python to read (StudioApi.ai_scripts / ai_script; LittleGroove's
@@ -3568,6 +3757,9 @@ async function renderValues() {
     "values-prop": "tip_values_prop", "values-value": "tip_values_value", "values-go": "tip_values_go" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   renderValuesNew();
+  if (!knownNumbers) {  // what each value does (the number guide), for the lines under the values' names
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   if (!state.valueFiles) {
     try { state.valueFiles = (await api().values_files()).files; } catch (err) { problem(err); return; }
   }
@@ -3726,8 +3918,18 @@ function valueGameText(r) {
 function valueRow(p, r) {
   const w = state.words;
   const kindTip = w[VALUE_KIND_TIPS[r.kind] || "values_kind_fixed"] || "";
-  const th = el("th", { textContent: r.label, title: `${kindTip}\n(${r.prop} · ${r.type})` });
-  if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  // what it does, from the number guide (rusemod/numberinfo.toml), as the Units, Economy and AI tabs say it; a value
+  // with no name of its own in labels.toml is called by the guide's ("Weapons", not WeaponDescriptor)
+  const entry = numberEntry(p.class, r.prop);
+  const label = r.label === r.prop && entry && state.lang !== "base" ? entry.what : r.label;
+  const th = el("th", { textContent: label, title: `${kindTip}\n(${r.prop} · ${r.type})` });
+  if (state.lang !== "base" && label !== r.prop) th.append(el("small", { textContent: r.prop }));
+  if (entry) {
+    th.title = `${numberTip(entry)}\n\n${kindTip}\n(${r.prop} · ${r.type})`;
+    th.append(el("small", { className: "about", textContent: entry.does }));
+  }
+  const scale = entry && knownNumbers && knownNumbers.plain[entry.unit];
+  const plainOf = (v) => scale && scale[0] !== 1 ? numberPlain(entry, Number(v)) : "";  // ("25%" for 0.25, "about 400 m")
   const now = r.edited && !r.edited.removed ? r.edited : null;  // the mod's value: what the box shows
   const shown = now ? now.value : r.value;
   const text = now ? now.text : r.text;
@@ -3741,7 +3943,9 @@ function valueRow(p, r) {
     const b = box({ type: "number", value: String(shown), step: WHOLE.has(r.type) ? "1" : "any" });
     b.setAttribute("aria-label", r.label);
     b.addEventListener("change", () => { if (b.value.trim() === "") { b.value = String(shown); return; } save(Number(b.value)); });
-    td.append(el("div", { className: "boxes" }, b));
+    const plain = el("span", { className: "muted small number-plain", textContent: plainOf(shown) });
+    b.addEventListener("input", () => { plain.textContent = b.value.trim() === "" ? "" : plainOf(b.value); });
+    td.append(el("div", { className: "boxes" }, b, plain));
   } else if (r.kind === "bool") {
     const b = box({ type: "checkbox", checked: Boolean(shown) });
     b.setAttribute("aria-label", r.label);
@@ -3846,7 +4050,12 @@ function valueRow(p, r) {
         (state.valuesAsText = state.valuesAsText || new Set()).add(key);
         showValueObject(p.address, { keep: true });
       });
-      td.append(el("div", { className: "boxes" }, ...boxes), asText);
+      // a price or shown-in-menu list: one value per game mode, each box with its mode's name (as on the Units tab)
+      const modes = MODE_LISTS.has(r.prop) && items.length === 5 ? modeNames() : null;
+      if (modes) boxes.forEach((b, i) => { b.title = `${tip}\n${modes[i]}`; b.setAttribute("aria-label", `${r.label} [${modes[i]}]`); });
+      const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" }, el("small", { textContent: modes[i] }), b))
+        : boxes;
+      td.append(el("div", { className: "boxes" }, ...cells), asText);
     }
   } else if (r.kind === "link") {
     td.append(valueLink(p, r, shown, can, tip, save));

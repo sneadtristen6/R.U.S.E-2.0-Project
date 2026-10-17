@@ -525,6 +525,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._value_files: dict[tuple, object] = {}  # the All values tab's last data files read (_value_file)
         self._value_files_lock = threading.Lock()
         self._listed: tuple | None = None  # (ZZ_Win.dat's path, time and size, the units its unit list names)
+        self._no_model: tuple | None = None  # (the index and game, the units with no model to start from: _modelless)
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -618,6 +619,35 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._units = ix.units(ALL_CLASSES)
         return self._units
 
+    def _modelless(self, ix: Index) -> frozenset[str]:
+        """The game's units (not buildings) with no model the Studio can read (_unit_models' files not in the mesh
+        packs): the SOLO 57 mm gun names a file the game hasn't got, the SOLO paratroopers' graphics only an effect.
+        They aren't offered to start a new unit from (the owner, 2026-10-17: "if those units don't have models, just
+        don't include them because they're not going to be modeled"). Buildings stay: their look is a layout of
+        pieces, not a model (a building editor of its own). Worked out once a session, about a second."""
+        game = self._game()
+        key = (str(ix.path), str(game))
+        if self._no_model is not None and self._no_model[0] == key:
+            return self._no_model[1]
+        found: frozenset[str] = frozenset()
+        if game is not None:
+            from rusemod import models
+            try:
+                lib = models.Library(game)
+            except (OSError, ValueError):  # not a game rule: the mesh packs can't be read; nothing is left out
+                lib = None
+            if lib is not None and not lib.where:  # no mesh pack read at all: nothing is known, so nothing is left out
+                lib.close()
+                lib = None
+            if lib is not None:
+                try:
+                    found = frozenset(u["address"] for u in self._all_units(ix) if KIND_OF.get(u["class"]) != "buildings"
+                                      and not any(lib.find(m, lighter=False) for m in self._unit_models(ix, u["address"])))
+                finally:
+                    lib.close()
+        self._no_model = (key, found)
+        return found
+
     def _new_units(self) -> dict[str, NewUnit]:
         """The current mod's new units (none when there's no mod, or its files can't be read: browsing goes on)."""
         try:
@@ -644,6 +674,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             type_names = {k: html.unescape(t).strip() for k, t in ix.names([u["type_key"] for u in rows], told).items()}
             game_names = names if lang != schema.BASE else ix.names([u["key"] for u in rows], told)
             descs = ix.names([u.get("desc_key") for u in rows], told)
+            modelless = self._modelless(ix)
         finally:
             ix.close()
         by_address = {u["address"]: u for u in rows}
@@ -695,7 +726,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
                         "source": u.get("source"), "group": g, "type": utype, "game_name": game_name, "desc": desc,
-                        "decoy": g == "fake"})
+                        "decoy": g == "fake", "no_model": u["address"] in modelless})  # (not a new unit's start)
         return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present],
                 "types": _type_order(kinds) if kind in UNIT_KINDS else []}
 
@@ -790,9 +821,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # larger", "give them perspective on the scale of what the numbers mean") ---
     def numbers(self, lang: str = schema.BASE) -> dict:
         """{"numbers": {key: {group, unit, sure, what, does}}, "plain": {unit: [game units to one plain unit, its
-        word]}, "amounts": the units the base-stat slider changes}; a key is "Property" or "Class.Property"."""
+        word]}, "amounts": the units the base-stat slider changes, "modes": the game's five game modes by number, as
+        its lobby names them in `lang` (a unit's ProductionPrice and ShowInMenu hold one value for each, in this
+        order: 1945, 1942, 1939, Total War, Nuclear)}; a key is "Property" or "Class.Property"."""
+        modes = list(numberinfo.MODES)
+        try:
+            ix = self._open()
+        except FileNotFoundError:  # not a game rule: no game, so the English names
+            ix = None
+        if ix is not None:
+            try:
+                texts = ix.names(ai.WAR_MODES, "us" if lang == schema.BASE else lang)
+                modes = [texts.get(key) or name for key, name in zip(ai.WAR_MODES, modes)]
+            finally:
+                ix.close()
         return {"numbers": numberinfo.guide(lang), "plain": {k: list(v) for k, v in numberinfo.PLAIN.items()},
-                "amounts": sorted(numberinfo.AMOUNTS)}
+                "amounts": sorted(numberinfo.AMOUNTS), "modes": modes}
 
     def number_scale(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
         """Where the game's value of `prop` on the object at `address` sits among the game's objects of its class:
@@ -1282,6 +1326,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             about = ix.names([k for k in (key, dkey) if k], told)
             game_name, desc = (about.get(key) or "").strip(), (about.get(dkey) or "").strip()
             source_name = self._names(ix, [new.source], lang)[new.source] if new else None
+            modelless = real in self._modelless(ix)
         finally:
             ix.close()
         editable, why = self._editable(o)
@@ -1338,7 +1383,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "parts": parts, "uses": uses, "used_by": used_by, "editable": editable, "why_not": why,
                 "named": bool(o["export"]), "share": share,
                 "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0,
-                "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
+                # (a unit with no model of its own the Studio can read isn't offered to start from: _modelless)
+                "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None and not modelless,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 # a unit with an armour: the page then asks for armour(address), its level picked there
@@ -5710,8 +5756,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def economy(self, lang: str = schema.BASE) -> dict:
         """The economy's values (rusemod.economy.GROUPS) as the Economy tab shows them: per group, each value's name
-        in `lang`, the game's value for its usual modes, the Nuclear mode's when it differs, and the current mod's
-        change (None: no change). `ready` is False when the game index has none of them."""
+        in `lang`, the game's value for its usual modes ("game") and the Nuclear mode's ("atomic", None when the same),
+        and the current mod's change to each ("value", "atomic_value"; None: no change). "split": the two modes are
+        shown and changed apart, when the game's or the mod's values for them differ (the owner, 2026-10-17: "separate
+        normal and nuclear for sure"). `ready` is False when the game index has none of them."""
         found, types = self._economy_copies()
         try:
             edits = self._edits()
@@ -5728,22 +5776,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 game = p["numbers"] if p["list"] else p["numbers"][0]
                 a = copy.get("atomic", {}).get(prop)
                 atomic = (a["numbers"] if a["list"] else a["numbers"][0]) if a else None
-                mine = None
-                if edits is not None:
-                    mine = edits.get(economy.TARGETS["normal"], prop)
-                    if mine is None:
-                        mine = edits.get(economy.TARGETS["atomic"], prop)
+                mine = {mode: edits.get(target, prop) if edits is not None else None
+                        for mode, target in economy.TARGETS.items()}
+                split = "atomic" in found and "normal" in found and (
+                    atomic != game or (mine["normal"] if mine["normal"] is not None else game)
+                    != (mine["atomic"] if mine["atomic"] is not None else atomic))
                 rows.append({"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
                              "type": types.get(prop + "[]" if p["list"] else prop, ""), "game": game,
-                             "atomic": atomic if atomic != game else None, "value": mine})
+                             "atomic": atomic if atomic != game else None, "split": split,
+                             "value": mine["normal"] if split or mine["normal"] is not None else mine["atomic"],
+                             "atomic_value": mine["atomic"] if split else None})
             groups.append({"id": group, "rows": rows})
         return {"ready": bool(found), "groups": groups}
 
-    def economy_edit(self, prop: str, value) -> dict:
+    def economy_edit(self, prop: str, value, mode: str | None = None) -> dict:
         """Change one economy value in the current mod: in both copies of the game's constants, so it holds in every
-        game mode. Saved at once; a copy given its own value back loses its change."""
+        game mode, or in one (`mode`: "normal", the game's usual modes, or "atomic", the Nuclear mode). Saved at once;
+        a copy given its own value back loses its change."""
         if prop not in economy.PROPS:
             raise StudioError(f"{prop} isn't one of the economy's values")
+        if mode is not None and mode not in economy.TARGETS:
+            # not a game rule: the Studio's own names for the game's two copies
+            raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
@@ -5753,8 +5807,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         values = value if isinstance(value, list) else [value]
         if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
             raise StudioError(f"{prop}: numbers only")
+        if mode is not None and mode not in found:  # not a game rule: this game build has no such copy
+            raise StudioError(f"The game index has no {mode} copy of the economy's values.")
         new = {}
-        for mode, o in found.items():  # every copy checked before anything is saved
+        for mode_, o in found.items():  # every copy checked before anything is saved
+            if mode is not None and mode_ != mode:
+                continue
             p = _props(o).get(prop)
             if p is None or not _can_edit(prop, p):
                 raise StudioError(f"{prop} can't be changed here")
@@ -5762,26 +5820,30 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = types.get(prop + "[]" if p["list"] else prop, "")
             got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
-            new[mode] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
+            new[mode_] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            for mode, (value_, game) in new.items():
+            for mode_, (value_, game) in new.items():
                 if value_ == game:
-                    edits.reset(economy.TARGETS[mode], prop)
+                    edits.reset(economy.TARGETS[mode_], prop)
                 else:
-                    edits.set(economy.TARGETS[mode], prop, value_)
-        shown = new.get("normal", next(iter(new.values())))[0]
+                    edits.set(economy.TARGETS[mode_], prop, value_)
+        shown = new.get(mode or "normal", next(iter(new.values())))[0]
         return {"saved": str(edits.file), "value": shown}
 
-    def economy_reset(self, prop: str) -> dict:
-        """Take one economy value's change out of the current mod (both copies)."""
+    def economy_reset(self, prop: str, mode: str | None = None) -> dict:
+        """Take one economy value's change out of the current mod: both copies, or one (`mode`, as economy_edit)."""
+        if mode is not None and mode not in economy.TARGETS:
+            # not a game rule: the Studio's own names for the game's two copies
+            raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
             return {"saved": None}
         with self._saving:
             edits = ModEdits(edits.folder)
-            for target in economy.TARGETS.values():
-                edits.reset(target, prop)
+            for mode_, target in economy.TARGETS.items():
+                if mode is None or mode_ == mode:
+                    edits.reset(target, prop)
         return {"saved": str(edits.file)}
 
     # --- the computer players (rusemod.ai; LittleGroove's AI editor brought over): their profiles, the units they're
@@ -5853,8 +5915,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"prop": prop, "value": base[prop]}
 
     @staticmethod
-    def _ai_row(prop: str, p: dict, types: dict, lang: str, mine) -> dict:
-        return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
+    def _ai_row(prop: str, p: dict, types: dict, lang: str, mine, cls: str = "") -> dict:
+        """One value of the AI tab; `cls` its object's class, for the number guide (rusemod.numberinfo)."""
+        return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"], "cls": cls,
                 "type": types.get(prop + "[]" if p["list"] else prop, ""),
                 "game": p["numbers"] if p["list"] else p["numbers"][0], "value": mine}
 
@@ -5864,7 +5927,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         the current mod's change (None: no change); a difficulty's or personality's value also says whether it is
         Default's (`same_default`: then it doesn't count, rusemod.ai). `bonuses`: what makes the computer players
         keener to build certain units, each list's numbers also by name. `cards`: the ruse cards that have a name in
-        the game, in its menu's order, each with its line. `words`: the game's own words for its lobby. `ready` is
+        the game, in its menu's order, each with its line. `words`: the game's own words for its lobby. `battle`:
+        what each profile value comes to in a battle (rusemod.ai.battle_values: by difficulty, and the personalities
+        whose own value wins). `choices`: for a bonus's lists, every difficulty, personality, game mode and unit by
+        number with its name. Each row's `cls` finds its meaning in the number guide (api.numbers). `ready` is
         False when the game index has none of them."""
         try:
             edits = self._edits()
@@ -5888,12 +5954,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for o in bonuses:
                 allowed = self._ai_allowed("bonus", o)
                 bonus_rows.append((o["address"], [self._ai_row(prop, allowed[prop], types[ai.BONUS], lang,
-                                                               mine(o["address"], prop))
+                                                               mine(o["address"], prop), ai.BONUS)
                                                   for prop in ai.BONUS_PROPS if prop in allowed]))
             now = {(a, r["prop"]): r["game"] if r["value"] is None else r["value"] for a, rows in bonus_rows for r in rows}
-            units = ix.named_by("DescriptorId", {n for (_a, prop), v in now.items() if prop == "UnitIDs" for n in v})
-            unit_names = self._names(ix, list(units.values()), lang)
-            keys = ([c["key"] for c in configs] + list(ai.WORDS.values())
+            # every unit by its number, to pick a bonus's units by name (the owner, 2026-10-17: "not very clear what
+            # profile goes to what number ... or the unit by number")
+            numbered = ix.numbered("DescriptorId")
+            all_units = [u for u in self._all_units(ix) if u["address"] in numbered]
+            shown = self._names(ix, [u["address"] for u in all_units], lang)
+            unit_choices = sorted(({"n": numbered[u["address"]], "name": shown[u["address"]],
+                                    "nation": schema.nation(u["nation"], lang)} for u in all_units),
+                                  key=lambda c: (c["name"].casefold(), c["nation"], c["n"]))
+            units = {numbered[u["address"]]: u["address"] for u in all_units}
+            listed = {int(n) for (_a, prop), v in now.items() if prop == "UnitIDs" for n in v}
+            units.update(ix.named_by("DescriptorId", listed - set(units)))  # one of another kind, named by its address
+            unit_names = {**shown, **self._names(ix, [a for a in units.values() if a not in shown], lang)}
+            keys = ([c["key"] for c in configs] + list(ai.WORDS.values()) + list(ai.WAR_MODES)
                     + [ai.HINT.format(c["index"]) for c in configs if c["kind"] == "personality"]
                     + [k for v in card_keys.values() for k in v.values()])
             texts = ix.names(keys, text_lang)
@@ -5916,10 +5992,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 for prop in props:
                     if prop in added:
                         row = self._ai_row(prop, {"list": False, "numbers": [base[prop]]}, types[ai.PROFILE], lang,
-                                           added[prop])
+                                           added[prop], ai.PROFILE)
                         row["added"] = True
                     elif prop in allowed:
-                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
+                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop),
+                                           ai.PROFILE)
                     else:
                         continue
                     if c["kind"] != "default":
@@ -5937,7 +6014,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
-        nuclear = texts.get(ai.WORDS["nuclear"])
+        modes = {n: texts.get(key) for n, key in enumerate(ai.WAR_MODES)}
+        # what each value comes to in a battle, by the game's rule (rusemod.ai.battle_values), with the mod's changes
+        def values_of(p):
+            return {r["prop"]: r["game"] if r["value"] is None else r["value"]
+                    for g in p["groups"] for r in g["rows"] if not r["list"]}
+        default_p = next((p for p in profiles if p["kind"] == "default"), None)
+        every = {prop for p in profiles for prop in values_of(p)}  # Default counts 0 for one it doesn't list
+        battle = ai.battle_values(
+            {prop: (values_of(default_p) if default_p else {}).get(prop, 0) for prop in every},
+            [(p["name"] or str(p["index"]), values_of(p)) for p in profiles if p["kind"] == "difficulty"],
+            [(p["name"] or str(p["index"]), values_of(p)) for p in profiles if p["kind"] == "personality"])
         out_bonuses = []
         for address, rows in bonus_rows:
             for r in rows:
@@ -5945,11 +6032,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if r["prop"] == "UnitIDs":
                     r["names"] = [unit_names.get(units.get(int(n))) or str(n) for n in v]
                 elif r["prop"] == "WarModes":
-                    r["names"] = [nuclear if n == ai.NUCLEAR_MODE and nuclear else str(n) for n in v]
+                    r["names"] = [modes.get(int(n)) or str(n) for n in v]
                 elif r["prop"] in ("AIDifficulties", "AIProfiles"):
                     kind = "difficulty" if r["prop"] == "AIDifficulties" else "personality"
                     r["names"] = [named[kind].get(int(n)) or str(n) for n in v]
             out_bonuses.append({"id": address, "rows": rows})
+        # a bonus's lists picked by name: each number with what the game calls it
+        choices = {"AIDifficulties": [{"n": i, "name": t or str(i)} for i, t in sorted(named["difficulty"].items())],
+                   "AIProfiles": [{"n": i, "name": t or str(i)} for i, t in sorted(named["personality"].items())],
+                   "WarModes": [{"n": i, "name": t or str(i)} for i, t in sorted(modes.items())],
+                   "UnitIDs": unit_choices}
         out_cards = []
         for o in cards:
             name = texts.get(card_keys[o["address"]].get("Title"))
@@ -5959,11 +6051,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             out_cards.append({"id": o["address"], "name": name,
                               "about": texts.get(card_keys[o["address"]].get("Description")),
                               "in_menu": "ShowInMenu" in allowed,
-                              "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop))
+                              "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop),
+                                                    ai.CARD)
                                        for prop in ai.CARD_PROPS if prop in allowed]})
         return {"ready": bool(profiles or out_cards or out_bonuses),
                 "words": {k: texts.get(key) for k, key in ai.WORDS.items()},
-                "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards}
+                "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards, "battle": battle,
+                "choices": choices}
 
     def ai_edit(self, address: str, prop: str, value) -> dict:
         """Change one value of a computer players' profile, bonus or ruse card (rusemod.ai) in the current mod. Saved
@@ -7285,6 +7379,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if not files:  # (a wreck the game reuses for fallen soldiers, the M36 Jackson's, is no soldier)
             files = {f for f in under([w for p, w in links if p != "GfxDescriptor" and w.startswith(address + ":")],
                                       True) if "_dest" not in f.rsplit("\\", 1)[-1]}
+        if not files:
+            # its parts' meshes may be another unit's objects (the King Tiger's are KingTigerAS's): followed last, or
+            # the unit has no models and its page no model box (a modder's report, 2026-10-17: "the window for
+            # changing the model never opens"). Only last: a gun's crew is a shared mesh too (walked for every gun,
+            # a gun's repaint would recolour every crew), and a squad's graphics reach a building's effect mesh
+            files = {f for f in under([w for p, w in links if p == "GfxDescriptor"], True)
+                     if "\\nonclasse\\" not in f}
+            files = {f for f in files if "\\infanterie\\" not in f} or files  # (the atomic guns: their crews)
         return sorted(files)
 
     @staticmethod

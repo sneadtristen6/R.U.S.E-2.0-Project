@@ -34,10 +34,10 @@ what = "Bonus rychlosti na silnici"
 does = "O kolik rychleji jede po silnici než mimo ni: 0,6 je asi o 60 % rychleji. Družstva a děla ho dostávají jako nákladní auto, ve které se mění. Letadla a nákladní auta mají 1."
 [MaxAcceleration]
 what = "Zrychlení"
-does = "Jak rychle nabere rychlost. Většina tanků má 3 900."
+does = "Jak rychle nabere rychlost: hra každých 0,2 sekundy přičte k její rychlosti pětinu této hodnoty, takže její rychlost dělená touto hodnotou je počet sekund do plné rychlosti (zobrazeno vedle pole). Většina tanků má 3 900: Sherman (4 550) je na plné rychlosti asi za 1,2 s."
 [MaxDeceleration]
 what = "Brzdění"
-does = "Jak rychle zpomalí a zastaví."
+does = "Jak rychle zpomalí a zastaví: její rychlost dělená touto hodnotou je počet sekund do zastavení z plné rychlosti (zobrazeno vedle pole)."
 [TempsDemiTour]
 what = "Doba otočení"
 does = "Kolik sekund trvá otočit se opačným směrem. Pěchota 0,01 (hned), vozidla 0,5, tanky 1, nejpomalejší 6."
@@ -76,10 +76,10 @@ what = "Nesené bomby nebo rakety"
 does = "Kolik ran své druhé zbraně (bomby, rakety) letadlo nese, než letí domů přezbrojit: 1 až 4 ve hře."
 [ProductionPrice]
 what = "Cena"
-does = "Kolik stojí stavba, v $, v každém z pěti dat bitvy (hra drží jednu cenu na datum)."
+does = "Kolik stojí stavba, v $, v každém z pěti herních režimů, v pořadí hry: 1945, 1942, 1939, Totální válka, Nukleární (hra bere cenu režimu bitvy)."
 [ProductionTime]
 what = "Doba stavby"
-does = "Kolik sekund trvá stavba. S více továrnami jejího druhu se dělí mezi ně."
+does = "Kolik sekund trvá stavba. Staví-li ji více továren jejího druhu, čas se mezi ně dělí, ale nikdy neklesne pod nejkratší dobu výroby hry (z karty Ekonomika)."
 [UpgradePrice]
 what = "Cena výzkumu"
 does = "Kolik stojí výzkum, v $, než ji lze stavět (jednotky vyzkoumané z jiné)."
@@ -91,7 +91,7 @@ what = "Je vylepšení"
 does = "1: jednotka je vylepšením té, ze které se zkoumá (po výzkumu ji nahradí v nabídce stavby)."
 [ShowInMenu]
 what = "Zobrazena v nabídce stavby"
-does = "1: zobrazena ve své nabídce stavby v tom datu bitvy (jedna hodnota pro každé z pěti dat)."
+does = "1: zobrazena v nabídce stavby v tom herním režimu; jedna hodnota pro každý z pěti, v pořadí hry: 1945, 1942, 1939, Totální válka, Nukleární. Pozdní tanky hry jsou zobrazeny jen v 1945, Totální válce a Nukleárním režimu."
 [PositionInMenu]
 what = "Místo v nabídce"
 does = "Kde stojí ve své nabídce stavby: jednotky stejné linie sdílejí místo, vylepšení se na něj vrší."
@@ -743,3 +743,444 @@ does = "Jen zvuk: jak rychle utichne zvuk motoru na volnoběh, když se jednotka
 [Dive_Out_Fade_Velocity]
 what = "Doznění zvuku střemhlavého letu"
 does = "Jen zvuk: jak rychle utichne zvuk střemhlavého letu letadla, když vybírá."
+
+# --- počítačoví hráči (karta Počítač) ---
+[AttaqueTempsActivation]
+what = "Sekundy před zahájením útoků"
+does = "Kolik sekund bitvy čeká, než vůbec zaútočí; do té doby ani neobtěžuje a neposílá pomoc ohroženému skladu. Výchozí 30; Nízká 300 (5 minut); Želva 600 (10 minut). Vysoká a Blitzkrieg ji neuvádějí, takže počítají 0: útočí od první sekundy."
+[OffensiveNbMissionMax]
+what = "Nejvíc útoků najednou"
+does = "Nejvíc útoků (a odvet), které vede současně. -1 znamená bez omezení, což používají všechny sady hry."
+[MissionFacteurLancementAttaque]
+what = "Agresivita (práh útoku)"
+does = "To, čemu návrháři misí hry říkají jeho agresivita (Agressivite, kterou skripty kampaně mění během mise): hra ji násobí pevným činitelem a porovnává síly na místě, než tam zaútočí. Sady hry: Výchozí 0,7; Nízká a Blitzkrieg 0,2; Vysoká 0,9; Želva 1. Kterým směrem ho vyšší číslo posouvá, zatím není změřeno: vyzkoušejte ve hře."
+[MissionFacteurEnoughToDestroy]
+what = "Síla proti nepříteli"
+does = "Kolik síly pošle do útoku, jako násobek síly nepřítele na místě (návrháři misí tomu říkají posila pro útok, Renfort_pour_attaque). Výchozí 1,2; Nízká 0,2; Střední 1,4; Vysoká 1,8; Blitzkrieg 1,5; Želva 1."
+[DefenseDistanceMenace]
+what = "Vzdálenost hrozby"
+does = "Jak daleko od místa, které brání, se nepřítel počítá jako hrozba; hra udělá hlídanou zónu asi 1,4krát větší (vzdálenost krát odmocnina ze 2). 312 000 (1 200 m) v sadách hry; Želva 26 000 000 (100 km: vše na mapě je hrozba)."
+[DefenseDistanceUrgent]
+what = "Vzdálenost naléhavé hrozby"
+does = "Jak blízko k místu, které brání, musí nepřítel přijít, aby byla obrana naléhavá (Distance_Defense_Urgente návrhářů misí, vedle vzdálenosti hrozby). Výchozí 156 000 (600 m); Vysoká 208 000 (800 m); Blitzkrieg 78 000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Jednotky posílané k nenaléhavé obraně"
+does = "Kolik svých jednotek pošle k obraně, která není naléhavá (Nbre_Unit_Defense_Non_Urgente návrhářů misí). Výchozí 1; Střední 2; Vysoká 3; Želva 6."
+[DefenseNbMissionMax]
+what = "Nejvíc míst bráněných najednou"
+does = "Nejvíc obranných misí (míst, která hlídá), které vede současně. Výchozí 2; Nízká a Vysoká 4; Želva 10. Blitzkrieg ji neuvádí, takže počítá 0 a nehlídá nic."
+[HarcelementActif]
+what = "Obtěžuje nepřítele"
+does = "1: obtěžuje (malé nájezdy, jakmile skončí jeho čekání před útokem). 0: nikdy. Nízká a Želva ji neuvádějí, takže počítají 0 a nikdy neobtěžují."
+[UpgradeActifPourHarcelement]
+what = "Vylepšení pro obtěžování"
+does = "Zda smí na nájezdy použít vylepšené jednotky. Nízká a Blitzkrieg ji neuvádějí (0)."
+[CashReserveTempsActivation]
+what = "Sekundy před držením peněžní rezervy"
+does = "Kolik sekund bitvy smí utratit všechny peníze; potom odkládá peníze, které potřebují objednané budovy, než koupí jednotky. 240 (4 minuty) ve všech sadách hry."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% peněz na administrativní budovy"
+does = "Podíl jeho peněz, v %, který drží na administrativní budovy (zvyšují příjem). 20 % v sadách hry; Vysoká 25 %. Kde ho hra čte, zatím není nalezeno."
+[PercentMoneyToUseForIdle]
+what = "% peněz utracených v nečinnosti"
+does = "Podíl jeho peněz, v %, který smí utratit za jednotky, když nemá nic jiného na práci: čísla Staví v nečinnosti níže. Při 0 v nečinnosti nikdy nestaví a ta čísla nic nedělají. Výchozí a Nízká 0; Střední 50 %; Vysoká 100 %."
+[DeviseBonusIA]
+what = "Peníze navíc na začátku (podvod)"
+does = "Peníze navíc, které dostane na začátku bitvy, v $. Má je jen Vysoká: 150 $ k 200 $, se kterými začíná každý hráč."
+[IncomeBonusIA]
+what = "Příjem navíc při každé platbě (podvod)"
+does = "Peníze navíc, v $, přidané ke každé jeho výplatě příjmu. Má je jen Vysoká: 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Administrativní budovy navíc před zastavením"
+does = "Kolik administrativních budov nad potřebu postaví, než přestane; -1 znamená bez omezení. Výchozí a profily -1; Vysoká 2; Nízká a Střední ji neuvádějí, takže počítají 0: žádné nad potřebu."
+[DepotNbEnPlusAvantDesactivation]
+what = "Sklady navíc před zastavením"
+does = "Kolik zásobovacích skladů se snaží získat navíc k těm, co má, dokud jsou místa pro sklady k zabrání. Výchozí 2; Střední 3; Vysoká 4; Blitzkrieg 1; Nízká ji neuvádí (0)."
+[ValueDepotMinForTruckFactory]
+what = "Nejmenší hodnota skladů pro továrnu na nákladní auta"
+does = "Než postaví továrnu na nákladní auta u skupiny skladů, musí ty sklady ještě mít aspoň tolik zásob, v $: zbývající náklady nákladních aut krát 3 $ za náklad (6 $ v Nukleárním režimu), což hra nazývá dostupnými penězi skladu. 100 $ ve všech sadách: pět Shermanů, polovina 200 $ na začátku hráče."
+[MinutesLeftMinForTruckFactory]
+what = "Nejméně zbývajících minut pro továrnu na nákladní auta"
+does = "V bitvě s časovým limitem postaví továrnu na nákladní auta, jen dokud zbývá aspoň tolik minut. 5 ve všech sadách."
+[NbDepotMinForTruckFactory]
+what = "Nejméně skladů pro továrnu na nákladní auta"
+does = "Kolik skladů potřebuje skupina (jeho vlastní a jiné ve vzdálenosti skupiny skladů), než u ní postaví továrnu na nákladní auta. 2 ve všech sadách."
+[NbUnitsDangerousDepot]
+what = "Jednotky, kvůli nimž je sklad nebezpečný"
+does = "Kolik jednotek napočítá kolem jednoho ze svých skladů, než ho bere jako ohrožený a pošle pomoc. Výchozí 1; Želva 4; Vysoká a Blitzkrieg ji neuvádějí (0)."
+[SeuilDistanceGroupeDepot]
+what = "Vzdálenost skupiny skladů"
+does = "Když vybírá, kam dát novou továrnu na nákladní auta, sklady v této vzdálenosti od středu jeho vzdálených skladů, měřené cestou, kudy jdou jednotky, se počítají jako jedna skupina; továrna stane u skladu skupiny nejblíže jeho základně. 234 000 (900 m) ve všech sadách."
+[SeuilDistanceTruckFactory]
+what = "Vzdálenost továrny na nákladní auta"
+does = "Postaví další továrnu na nákladní auta, když je některý jeho sklad aspoň tak daleko od jeho nejbližší továrny na nákladní auta, měřeno cestou, kudy jezdí nákladní auta, ne vzdušnou čarou (jen když už továrnu na nákladní auta má). Výchozí a profily 520 000 (2 000 m); každá obtížnost 780 000 (3 000 m), a protože to žádný profil nemění, v bitvě platí 3 000 m."
+[NbMaxProductionForEnnemyUnit]
+what = "Nejvíc jednotek postavených proti jedné nepřátelské"
+does = "Nejvíc jednotek, které postaví jako odpověď na jednu nepřátelskou jednotku. 1 ve všech sadách. Kde ho hra čte, zatím není nalezeno."
+[NbProdIdleInfanterie]
+what = "Staví v nečinnosti: pěchota"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti (% peněz utracených v nečinnosti není 0), staví pěchotu, dokud jí nemá tolik. Standardní 2; Houfnice a Prototyp 1."
+[NbProdIdleTank]
+what = "Staví v nečinnosti: tanky"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví tanky, dokud jich nemá tolik. Standardní a Prototyp 3; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Staví v nečinnosti: protitankové"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví protitankové jednotky, dokud jich nemá tolik. Prototyp 1; Želva 2."
+[NbProdIdleArti]
+what = "Staví v nečinnosti: dělostřelectvo"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví dělostřelectvo, dokud ho nemá tolik. Houfnice 5; Želva 2."
+[NbProdIdleDCA]
+what = "Staví v nečinnosti: protiletadlové"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví protiletadlové jednotky, dokud jich nemá tolik. Želva 2."
+[NbProdIdleChasseur]
+what = "Staví v nečinnosti: stíhačky"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví stíhačky, dokud jich nemá tolik. Letectvo 2."
+[NbProdIdleBomber]
+what = "Staví v nečinnosti: bombardéry"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví bombardéry, dokud jich nemá tolik. Letectvo 1."
+[NbProdIdleChasseurBomber]
+what = "Staví v nečinnosti: stíhací bombardéry"
+does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti, staví stíhací bombardéry, dokud jich nemá tolik. Letectvo 2; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Zkoumá v nečinnosti"
+does = "1: když nemá nic jiného na práci, smí také spustit výzkum. Má to jen Prototyp."
+[BonusUnitesAvions]
+what = "Preference: letadla"
+does = "Body preference přidané každému letadlu, které může postavit. Preference se sčítají pro každou jednotku a počítají se jen rozdíly mezi jeho jednotkami: hodnotí každou jednotku podle toho, jak daleko je pod jeho nejoblíbenější. Letectvo +500 dělá z letadel jeho jasného favorita."
+[BonusUnitesArtillerie]
+what = "Preference: dělostřelectvo"
+does = "Body preference přidané každé dělostřelecké jednotce, kterou může postavit (jak se sčítají, viz Preference: letadla). Houfnice +8 000 staví dělostřelectvo daleko před vše ostatní."
+[BonusUnitesExperimentales]
+what = "Preference: prototypy"
+does = "Body preference přidané každému prototypu, který může postavit (jednotky kategorie 12 hry). Prototyp +400."
+[BonusUnitesRecherche]
+what = "Preference: výzkum"
+does = "Body preference přidané každé jednotce, kterou ještě musí vyzkoumat (seznam výzkumu hry ji ještě nevede jako hotovou), takže víc zkoumá. Prototyp +400."
+[BonusUnitesTank]
+what = "Preference: tanky"
+does = "Body preference přidané každému tanku, který může postavit. Žádná sada hry ji nepoužívá, takže ji karta Počítač nemůže nabídnout (Přidat nabízí jen hodnoty, které uvádí Výchozí); skripty kampaně ano (Bonus_Tank, 150 až 200)."
+[BonusBatimentOTF]
+what = "Preference: obranné budovy"
+does = "Body preference přidané každé obranné budově (bunkry a dělostřelecká postavení: flag 6). Také ho víc vedou stavět obranu na místech, která hlídá: hra to váží jako 0,5 + tato hodnota / 200, tedy 1,5 při +200 Želvy proti 0,5 při 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% šance zahrát manipulační lest na začátku"
+does = "Šance, v %, že na začátku bitvy zahraje manipulační lest. Výchozí 40 %; Střední 60 %; Vysoká 80 %."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Karty lsti v záloze (obtížnost)"
+does = "Karty lsti, které drží v ruce místo zahrání; hra sčítá číslo obtížnosti a číslo profilu. Střední a Vysoká 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Karty lsti v záloze (profil)"
+does = "Karty lsti, které drží v ruce místo zahrání; hra přičítá toto číslo k číslu obtížnosti. Prototyp a Želva 1."
+[TempsActivationBatimentCamoufle]
+what = "Sekundy před maskováním budov"
+does = "Kolik sekund bitvy, než použije lest maskování na své budovy. Nastavuje ji jen Nízká: 600 (10 minut); jinde 0, od začátku."
+[RepresailleFacteurUniteCombattante]
+what = "Faktor odvety: bojové jednotky"
+does = "Jak tvrdě odpoví po ztrátě bojových jednotek, jako násobek; skripty kampaně ho nastavují spolu s faktorem pro nebojové jako jedno nastavení odvety (Represailles, 1 nebo 2). Výchozí 1; Nízká 0,5; Vysoká 2; Želva ho neuvádí (0: žádná odveta za ně)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Faktor odvety: nebojové jednotky"
+does = "Jak tvrdě odpoví po ztrátě jednotek, které nebojují (nákladní auta, budovy), jako násobek; skripty kampaně ho nastavují spolu s faktorem pro bojové. Výchozí 2; Nízká 1; Vysoká 4; Želva ho neuvádí (0)."
+[TimeOutRepresailles]
+what = "Časový limit odvety"
+does = "Kolik sekund drží odvetu, než ji vzdá. Výchozí 120 (2 minuty); Vysoká 240."
+[ProbaRepereFake]
+what = "Šance odhalit makety"
+does = "Šance, od 0 do 1, že prohlédne maketu na místě, které brání nebo napadá; hra ji losuje každých 24 sekund. Výchozí 0,5 (50 %); Nízká 0,1; Vysoká 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Sekundy, po které si pamatuje neviditelné jednotky"
+does = "Kolik sekund si pamatuje nepřátelskou jednotku, kterou už nevidí. Výchozí 300 (5 minut); Nízká 60; Vysoká 360."
+[BonusValue]
+what = "Preference navíc pro tyto jednotky"
+does = "Body preference přidané uvedeným jednotkám v bitvě, jejíž herní režim, obtížnost a profil jsou každý v seznamech (prázdný seznam odpovídá všemu). Sčítají se s vlastními preferencemi sady (Preference: letadla…). Záznam hry: +400 pro jaderná děla v Nukleárním režimu, na každé obtížnosti a s každým profilem."
+[ConsiderStackAsOneEnnemy]
+what = "Počítá hromádku jako jednoho nepřítele"
+does = "1: počítá hromádku těchto jednotek jako jednoho nepřítele. Záznam hry má 1."
+[UnitIDs]
+what = "Jednotky (podle čísla)"
+does = "Jednotky, kterých se záznam týká, podle vlastního čísla každé jednotky (jejího Id); karta Počítač je nechá vybrat podle názvu. Prázdný seznam by znamenal všechny jednotky."
+[WarModes]
+what = "Herní režimy (podle čísla)"
+does = "Herní režimy, ve kterých záznam platí, podle čísla, které jim dává hra: 0 Rok 1945, 1 Rok 1942, 2 Rok 1939, 3 Režim totální války, 4 Nukleární režim (pořadí seznamu hry)."
+[AIDifficulties]
+what = "Obtížnosti (podle čísla)"
+does = "Obtížnosti, na kterých záznam platí: 0 Nízká, 1 Střední, 2 Vysoká."
+[AIProfiles]
+what = "Profily (podle čísla)"
+does = "Profily, se kterými záznam platí: 0 Standardní, 1 Letectvo, 2 Houfnice, 3 Prototyp, 4 Blitzkrieg, 5 Želva, 6 Náhodné."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Trvání"
+does = "Jak dlouho lest po zahrání trvá, v sekundách: 240 až 360 ve hře (4 až 6 minut)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Zobrazit v nabídce lstí"
+does = "1: karta je v nabídce lstí, takže ji hráči i počítač mohou zahrát."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Pozice v nabídce lstí"
+does = "Kde karta stojí v nabídce lstí: nižší je první."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Počáteční peníze"
+does = "Peníze, se kterými každý hráč začíná bitvu, v $. 200 ve hře: deset Shermanů po 20 $."
+[TempsGenAutoDevises]
+what = "Sekundy mezi automatickými platbami"
+does = "Jak často, v sekundách, platí budovy, které vydělávají samy (automatické peníze hry); příjem navíc počítačových hráčů (podvod) se vyplácí ve stejném rytmu. 4 ve hře."
+[QuantiteGenAutoDevises]
+what = "Automatická platba"
+does = "Kolik činí jedna automatická platba, v $. 1 ve hře: při platbě každé 4 sekundy 15 $ za minutu."
+[StockDeviseSupplementaireFacile]
+what = "Zásoby navíc pro sklady na Nízké (kampaň)"
+does = "V kampani na obtížnost Nízká zásoby navíc, které skripty misí přidávají skladům (žádají o ně hru). 72 ve hře. Bitvy je nepoužívají."
+[QteDeviseParCamion]
+what = "Peníze za náklad auta"
+does = "Kolik přiveze ze skladu jedno zásobovací auto, v $. Běžné režimy hry 3, nukleární režim 6. Zbývající peníze skladu jsou počet jeho zbývajících nákladů krát tato hodnota."
+[NbCamionParConvoi]
+what = "Aut v konvoji"
+does = "Kolik aut vyjede ze skladu společně v jednom konvoji. 3 ve hře: konvoj přiveze v běžných režimech 3 x 3 $ = 9 $."
+[TempsENtreDeuxConvois]
+what = "Sekundy mezi konvoji"
+does = "Jak dlouho, v sekundách, sklad čeká mezi dvěma konvoji. 30 ve hře: asi 18 $ za minutu z jednoho skladu v běžných režimech, nepočítaje samotnou cestu."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Rozestup aut v konvoji (min.)"
+does = "Nejkratší doba, v sekundách, mezi výjezdem dvou aut téhož konvoje. 1,5 ve hře."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Rozestup aut v konvoji (max.)"
+does = "Nejdelší doba, v sekundách, mezi výjezdem dvou aut téhož konvoje. 1,5 ve hře."
+[RatioForDepotNearlyDepleted]
+what = "Sklad téměř prázdný při"
+does = "Sklad se počítá jako téměř prázdný, když jeho zbývající náklady jsou tento podíl počátečních nebo méně (počítačoví hráči pak hledají jiný). 0,25 (25 %) ve hře."
+[MinProductionTime]
+what = "Nejkratší doba výroby"
+does = "Žádná jednotka se nepostaví rychleji než za tuto dobu, v sekundách, ať ji staví kolik chce továren jejího druhu. 1 ve hře."
+[MaximumBatimentProduction]
+what = "Budov ve stavbě najednou (max.)"
+does = "Kolik budov počítačoví hráči staví najednou. 2 ve hře."
+[MaxProductionQueueSize]
+what = "Nejdelší výrobní fronta"
+does = "Nejvíce jednotek, které počítačový hráč zařadí do své výrobní fronty. 30 ve hře."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Budovy a výzkumy najednou"
+does = "Kolik budov a výzkumů má počítačový hráč rozběhnutých najednou. 2 ve hře."
+[VirtualFactoryQueueMaximumSlot]
+what = "Místa ve frontě továrny"
+does = "Kolik míst má fronta továrny. 2 ve hře."
+[NbAvionsParAeroport]
+what = "Letadla na letiště"
+does = "Kolik letadel smí hráč mít na každé své letiště: jakmile jejich počet dosáhne této hodnoty krát počet letišť, další letadla postavit nelze. 8 ve hře."
+[NbMaxCardsInPool]
+what = "Karty lsti v ruce (max.)"
+does = "Nejvíce karet lsti, které strana může držet. 99 ve hře: v praxi bez omezení."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Karty lsti na začátku (1 hráč na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 1 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Karty lsti na začátku (2 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 2 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Karty lsti na začátku (3 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 3 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Karty lsti na začátku (4 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 4 hráče. Běžné režimy hry 2, nukleární režim 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Kdy přicházejí nové karty lsti (1 hráč na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana s 1 hráčem dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315 (každou 1 min 45 s); nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Kdy přicházejí nové karty lsti (2 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 2 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Kdy přicházejí nové karty lsti (3 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 3 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Kdy přicházejí nové karty lsti (4 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 4 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Hodnota armády, která vynutí útok"
+does = "Počítačoví hráči před útokem porovnávají hodnotu armády s touto: hra prověří síly, když je hodnota na místě nižší. 600 ve hře."
+[MinArmyValueToUseManipulationCard]
+what = "Nejmenší hodnota armády pro manipulační lest"
+does = "Počítačový hráč zahraje manipulační lest jen tehdy, když má jeho armáda aspoň tuto hodnotu. 120 ve hře."
+[MaxWaitingRequest]
+what = "Čekající příkazy (max.)"
+does = "Nejvíce výrobních příkazů, které počítačový hráč nechá čekat. 30 ve hře."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Čekající příkazy před novou továrnou"
+does = "Když má počítačový hráč tolik čekajících výrobních příkazů, postaví další továrnu, místo aby zařazoval další. 8 ve hře."
+[MaxTimeWaitingRequest]
+what = "Nejdelší čekání příkazu"
+does = "Jak dlouho, v sekundách, smí výrobní příkaz počítačového hráče čekat, než se zruší (když je zapnuto Rušit čekající příkazy). 60 ve hře."
+[CheckAndCancelWaitingRequest]
+what = "Rušit čekající příkazy"
+does = "1: počítačový hráč ruší výrobní příkazy, které čekaly déle než nejdelší čekání. 1 ve hře."
+[BP_DepotAddedValue]
+what = "Hodnota skladu k ochraně"
+does = "Jakou hodnotu má zásobovací sklad pro počítačového hráče, když rozhoduje, co chránit. 50 ve hře, proti 150 za jeho velitelství."
+[BP_HqValue]
+what = "Hodnota velitelství k ochraně"
+does = "Jakou hodnotu má jeho velitelství pro počítačového hráče, když rozhoduje, co chránit. 150 ve hře, proti 50 za sklad."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Makety v předstírané ofenzivě (min.)"
+does = "Nejméně maket, které pošle předstíraná ofenziva počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Makety v předstírané ofenzivě (max.)"
+does = "Nejvíce maket, které pošle předstíraná ofenziva počítačového hráče. 5 ve hře."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Letadla-makety v předstíraném leteckém útoku (min.)"
+does = "Nejméně letadel-maket, které pošle předstíraný letecký útok počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Letadla-makety v předstíraném leteckém útoku (max.)"
+does = "Nejvíce letadel-maket, které pošle předstíraný letecký útok počítačového hráče. 5 ve hře."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Tanky-makety v předstíraném tankovém útoku (min.)"
+does = "Nejméně tanků-maket, které pošle předstíraný tankový útok počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Tanky-makety v předstíraném tankovém útoku (max.)"
+does = "Nejvíce tanků-maket, které pošle předstíraný tankový útok počítačového hráče. 5 ve hře."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Prodleva mezi budovami-maketami (min.)"
+does = "Nejkratší doba, v sekundách, kterou počítačový hráč čeká mezi dvěma budovami-maketami, které staví lstí budov-maket. 5 ve hře."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Prodleva mezi budovami-maketami (max.)"
+does = "Nejdelší doba, v sekundách, kterou počítačový hráč čeká mezi dvěma budovami-maketami, které staví lstí budov-maket. 10 ve hře."
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "Ladicí název"
+does = "Název jednotky v chybových hlášeních a protokolech hry (Unit_M4_Sherman). Hráči ho nikdy nevidí."
+[NameInMenuToken]
+what = "Název"
+does = "Který text hry je jejím názvem, ve výrobní nabídce a na její kartě (N_UNI_137 u Shermana). Změnit text… pod polem mění samotná slova, ve všech jazycích."
+[TypeUnitHintToken]
+what = "Řádek typu"
+does = "Který text karta ukazuje jako druh jednotky, pod názvem (TANK_madv u Shermana). vide: žádný."
+[DescriptionUnitHintToken]
+what = "Popis na kartě"
+does = "Který text karta ukazuje jako krátký popis (DTANK_madv u Shermana). vide: žádný."
+[EfficaceHintToken]
+what = "Účinná proti"
+does = "Který text karta ukazuje jako to, proti čemu je dobrá (E_ground: všechny pozemní cíle; unarmed: neozbrojená). vide: žádný."
+[LongDescriptionUnitHintToken]
+what = "Historický text"
+does = "Který text je jejím dlouhým popisem: historií skutečné jednotky (LD_UNI_137 vypráví příběh Shermana)."
+[WeaponDescriptor]
+what = "Zbraně"
+does = "Její zbraně: část s jejími věžemi a děly na nich, každé se svou municí. Pole Zbraně na kartě Jednotky je mění. Prázdné: neozbrojená."
+[ArmorDescriptor]
+what = "Pancéřování"
+does = "Její úroveň pancéřování: objekt, který sdílí více jednotek (Sherman ukazuje na pancéřování M4 Skink). Pancéřování na kartě Jednotky vybírá jednu z úrovní hry."
+[GfxDescriptor]
+what = "Vzhled"
+does = "Jen vzhled: její 3D model a jak se pohybují jeho části (pásy, kola, věž). U budovy: její vzhled na mapě, sestava mnoha dílů, které hra přidá tam, kde stojí."
+[GfxDescriptorIcone]
+what = "Vzhled zdálky"
+does = "Jen vzhled: co ji zastupuje, když je kamera vysoko: kulatý žeton pozemní jednotky na stole s mapou, malý model letadla."
+[GfxDescriptorIconeJeton]
+what = "Žeton"
+does = "Jen vzhled: kulatý žeton letadla na stole s mapou, když je kamera vysoko."
+[GfxDescriptorCadavre]
+what = "Vrak"
+does = "Jen vzhled: co z ní zbude po zničení (model jejího vraku)."
+[GfxDescriptorIconeCadavre]
+what = "Postava vojáka"
+does = "Jen vzhled: jeden z modelů vojáků jednotky (podle názvu ten kreslený pro padlého vojáka). Studio jím jednotku ukazuje a přebarvuje."
+[GfxDescriptorFusilier]
+what = "Střelec"
+does = "Jen vzhled: model střelců jednotky."
+[GfxDescriptorBazooka]
+what = "Voják s bazukou"
+does = "Jen vzhled: model vojáka s bazukou v jednotce."
+[SoundMotorDescriptor]
+what = "Zvuk pohybu"
+does = "Jen zvuk: jak zní, když se pohybuje (motor, motory letadla), často zvuk jiné jednotky (Sherman používá zvuk ARL 40)."
+[TextureForInterface]
+what = "Obrázek karty"
+does = "Její obrázek ve výrobní nabídce a na kartě. Na kartě Jednotky vytvoří Použít tento pohled jako kartu nový z jejího 3D modelu."
+[UpgradeRequire]
+what = "Zkoumá se z"
+does = "Jednotka, ze které se zkoumá: lze ji stavět po dokončení toho výzkumu (Sherman potřebuje M3 Lee). Prázdné: bez výzkumu."
+[UnitIdleManager]
+what = "Chování při čekání"
+does = "Co dělá, když čeká: její dělo nebo věž se rozhlíží. Často chování jiné jednotky (Sherman používá chování ARL 44)."
+[TransportPourMorphe]
+what = "Jezdí v"
+does = "Nákladní auto, ve které se mění, aby jela po silnicích (jednotka pěchoty nebo dělo). Pole Jezdí v na kartě Jednotky ho vybírá."
+[MouvementHandlerInfo]
+what = "Let"
+does = "Jak letadlo létá: část s jeho letovými hodnotami (otevři ji, abys je viděl)."
+[UniteTransportee]
+what = "Shazuje"
+does = "Jednotka, kterou shazuje transportní letadlo (C47 shazuje americké výsadkáře). Letadlo s příznakem výsadku a ničím zde shodí hru."
+[AmmoDeath]
+what = "Výbuch při pádu"
+does = "Výbuch, když je letadlo sestřeleno: lehkého nebo středního letadla."
+[UniteDefense]
+what = "Obranná jednotka"
+does = "Jednotka, která bojuje za obranné postavení: děla bunkru (věž bunkru Maginotovy linie)."
+[BatimentPaths]
+what = "Cesty"
+does = "Kudy jednotky budovu obcházejí, vcházejí a vycházejí: její výjezdy, vjezdy, parkovací místa a vzletová dráha letiště."
+["TBatimentPaths.FactoryExit"]
+what = "Výjezd"
+does = "Cesta, kterou jí vyrobená jednotka vyjede k silnici (viděno ve hře: branou na silnici)."
+["TBatimentPaths.FactoryEntry"]
+what = "Vjezd"
+does = "Cesta, kterou do ní jednotky vjíždějí."
+["TBatimentPaths.ByPass"]
+what = "Objížďka"
+does = "Cesta, kterou ji jednotky objíždějí."
+["TBatimentPaths.Vision"]
+what = "Body výhledu"
+does = "Podle názvu: body, ze kterých budova vyhlíží."
+["TBatimentPaths.ParkingEntryLarge"]
+what = "Vjezd na stání (velká letadla)"
+does = "Cesta letiště pro jeho větší letadla na parkovací místa."
+["TBatimentPaths.ParkingEntrySmall"]
+what = "Vjezd na stání (malá letadla)"
+does = "Cesta letiště pro jeho menší letadla na parkovací místa."
+["TBatimentPaths.ParkingExit"]
+what = "Výjezd ze stání"
+does = "Cesta letiště pro jeho letadla z parkovacích míst."
+["TBatimentPaths.MultiPathParking"]
+what = "Parkovací místa"
+does = "Parkovací místa letiště a cesty mezi nimi."
+["TBatimentPaths.Runway"]
+what = "Vzletová dráha"
+does = "Vzletová dráha letiště: kde jeho letadla vzlétají a přistávají."
+[TurretDescriptorList]
+what = "Věže"
+does = "Věže zbraně (nebo lafety), každá s děly, která nese. Pole Zbraně na kartě Jednotky je ukazuje krok za krokem."
+[MountedWeaponDescriptorList]
+what = "Děla"
+does = "Děla na této věži, každé se svou municí."
+[EffectTag]
+what = "Efekt výstřelu"
+does = "Který efekt se přehraje, když toto dělo vystřelí (záblesk a kouř), podle názvu efektu."
+["TAmmunition.Name"]
+what = "Název"
+does = "Který text pojmenovává munici (N_AR_lc: malá ráže)."
+[TypeName]
+what = "Druh"
+does = "Který text pojmenovává její druh (T_ARM_0: průbojný granát)."
+["TAmmunition.Icon"]
+what = "Obrázek"
+does = "Malý obrázek munice, často jiné munice (20mm průbojný granát používá obrázek bazuky)."
+[StressManager]
+what = "Tabulka stresu"
+does = "Podle názvu: tabulka, jak moc zásah stresuje (přišpendlí k zemi) cíl, podle jeho úrovně pancéřování. Všechny munice hry používají tutéž."
+["TArmorDescriptor.Name"]
+what = "Název"
+does = "Který text pojmenovává tuto úroveň pancéřování (N_ARMU_1: letadlo)."
+["TArmorDescriptor.Icon"]
+what = "Obrázek"
+does = "Malý obrázek úrovně pancéřování."
+[_Filename]
+what = "Zdrojový soubor"
+does = "Soubor ve zdrojích Eugenu, ve kterém byl tento objekt napsán (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Jejich vnitřní evidence: nic ke změně."
+[_Line]
+what = "Zdrojový řádek"
+does = "Řádek zdrojového souboru Eugenu, na kterém tento objekt začíná. Jejich vnitřní evidence: nic ke změně."
+[_Column]
+what = "Zdrojový sloupec"
+does = "Sloupec na tom řádku zdrojového souboru Eugenu. Jejich vnitřní evidence: nic ke změně."
+[_ShortDatabaseName]
+what = "Krátký název"
+does = "Krátký název, který tomuto objektu daly nástroje Eugenu. Jejich vnitřní evidence: nic ke změně."

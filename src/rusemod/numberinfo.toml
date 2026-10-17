@@ -12,14 +12,23 @@
 #   kmh     = a ground speed, 130 game units to 1 km/h: the km/h the game's own unit panel shows (its
 #             UnitDescriptorResource speed factor for ground units, 18), which LittleGroove's figure matches;
 #   kmh_air = a plane's speed, 57.78 game units to 1 km/h: the same panel's km/h for planes (its plane factor, 8);
-#   accel   = an acceleration, 260 game units to 1 m/s per second (LittleGroove; not timed by us yet);
+#   accel   = an acceleration: the game adds a fifth of it to the speed every 0.2 s (the Units tab shows the
+#             unit's speed divided by it: the seconds to full speed, or to a stop);
 #   s       = seconds; deg = an angle in radians, shown in degrees; degs = radians a second, shown in degrees a second;
 #   money   = dollars, as the build menu shows them; pts = points the game counts with, no real-world unit;
-#   count = how many; times = a multiplier; share = a share from 0 to 1, shown as a %; level = a level the game
-#   compares; choice = one of a list of kinds; yesno = 1 yes, 0 no; id = a number that names something; mask = bits,
-#   each one a switch; frame = an animation frame; raw = a number with no known unit yet.
-# sure: tried = seen in the game; known = certain from the game's own data and menus; community = from the community
-#   or LittleGroove's work, not checked by us; name = from its name and the values the game's units have; not tried.
+#   count = how many; times = a multiplier; share = a share from 0 to 1, shown as a %; pct = a percent, 0 to 100;
+#   min = minutes; level = a level the game compares; choice = one of a list of kinds; yesno = 1 yes, 0 no; id = a
+#   number that names something; mask = bits, each one a switch; frame = an animation frame; raw = a number with no
+#   known unit yet. Values that aren't numbers (the All values tab shows them too): link = it points at another
+#   object (or a list of them); text = which of the game's texts is shown (a text key, like N_UNI_137); name = a name
+#   or a file the game or Eugen's tools go by.
+# sure: tried = seen in the game; known = certain from the game's own data, menus and workings; community = from the
+#   community or LittleGroove's work, not checked by us; name = from its name and the values the game's units have;
+#   not tried.
+# classes (some keys): the only kinds of object a property-name key is about, where other kinds have a value of that
+#   name meaning something else (the main menu's Factory, a map shape's Radius); "units" = the game's units and
+#   buildings (rusemod.numberinfo.UNIT_CLASSES). The All values tab shows every kind of object.
+# The computer players' numbers (the AI tab: TIAProfil, TAISpecificBonus, TBluffCardDescriptor) are at the end.
 
 # --- health and toughness ---
 [SeuilMort]
@@ -103,16 +112,16 @@ does = "How much faster it goes on a road than off it: 0.6 is about 60% faster. 
 [MaxAcceleration]
 group = "movement"
 unit = "accel"
-sure = "community"
+sure = "known"
 what = "Acceleration"
-does = "How quickly it gets up to speed. Most tanks have 3,900."
+does = "How quickly it gets up to speed: the game adds a fifth of this to its speed every 0.2 seconds, so its speed divided by this is how many seconds it takes to reach full speed (shown beside the box). Most tanks have 3,900: a Sherman (4,550) is at full speed in about 1.2 s."
 
 [MaxDeceleration]
 group = "movement"
 unit = "accel"
-sure = "community"
+sure = "known"
 what = "Braking"
-does = "How quickly it slows down and stops."
+does = "How quickly it slows down and stops: its speed divided by this is how many seconds it takes to stop from full speed (shown beside the box)."
 
 [TempsDemiTour]
 group = "movement"
@@ -125,6 +134,7 @@ does = "How many seconds it takes to turn round to face the other way. Infantry 
 group = "movement"
 unit = "m"
 sure = "name"
+classes = ["units"]
 what = "Size on the ground"
 does = "How much room the unit takes: other units keep this far from its middle when they steer round it. Infantry 104-130 (about 0.5 m), tanks 520-780 (2-3 m), guns 390-650, trucks 2,000, buildings 7,800-13,000 (30-50 m)."
 
@@ -146,6 +156,7 @@ does = "1: the unit tilts with the slope it stands on. Every ground unit and bui
 group = "looks"
 unit = "times"
 sure = "name"
+classes = ["units"]
 what = "Model size"
 does = "Looks only: the unit's 3D model drawn this many times its size. Units have 1; infantry 0.2; buildings 0.1. The Studio's Size slider on an imported model changes the model itself instead."
 
@@ -206,14 +217,14 @@ group = "production"
 unit = "money"
 sure = "known"
 what = "Price"
-does = "What it costs to build, in $, at each of the five battle dates (the game keeps one price per date)."
+does = "What it costs to build, in $, in each of the game's five game modes, in its order: 1945, 1942, 1939, Total War, Nuclear (the game uses the one of the battle's mode)."
 
 [ProductionTime]
 group = "production"
 unit = "s"
-sure = "community"
+sure = "known"
 what = "Build time"
-does = "How many seconds it takes to build. With more than one factory of its kind it's shared between them."
+does = "How many seconds it takes to build. With more than one factory of its kind building it, the time is divided between them, but never below the game's shortest build time (the Economy tab's Shortest build time)."
 
 [UpgradePrice]
 group = "production"
@@ -241,12 +252,13 @@ group = "menu"
 unit = "yesno"
 sure = "known"
 what = "Shown in the build menu"
-does = "1: shown in its build menu at that battle date (one value for each of the five dates)."
+does = "1: shown in its build menu in that game mode; one value for each of the five, in the game's order: 1945, 1942, 1939, Total War, Nuclear. The game's late-war tanks are shown in 1945, Total War and Nuclear only."
 
 [PositionInMenu]
 group = "menu"
 unit = "id"
 sure = "known"
+classes = ["units"]
 what = "Menu slot"
 does = "Where it sits in its build menu: units of the same line share a slot, upgrades stack on it."
 
@@ -254,6 +266,7 @@ does = "Where it sits in its build menu: units of the same line share a slot, up
 group = "menu"
 unit = "choice"
 sure = "known"
+classes = ["units"]
 what = "Factory"
 does = "Which build menu it's in (the Studio shows each menu by its name, and lets you move a unit to another nation's)."
 
@@ -268,6 +281,7 @@ does = "Which page of the building menu the building is on."
 group = "identity"
 unit = "choice"
 sure = "known"
+classes = ["units"]
 what = "Nation"
 does = "Which country it belongs to: 0 USA, 1 Germany, 2 UK, 3 France, 4 Italy, 5 USSR, 6 Japan."
 
@@ -289,6 +303,7 @@ does = "The unit's own number: each unit has a different one, and the game and s
 group = "identity"
 unit = "id"
 sure = "name"
+classes = ["units"]
 what = "Statistics id"
 does = "The number the end-of-game statistics and the game's own tracking know the unit by."
 
@@ -296,6 +311,7 @@ does = "The number the end-of-game statistics and the game's own tracking know t
 group = "identity"
 unit = "id"
 sure = "name"
+classes = ["units"]
 what = "Key"
 does = "A number a few units carry (8 tanks, 7 planes, 2 squads); its use isn't known yet."
 
@@ -303,6 +319,7 @@ does = "A number a few units carry (8 tanks, 7 planes, 2 squads); its use isn't 
 group = "identity"
 unit = "choice"
 sure = "name"
+classes = ["units"]
 what = "Voice type"
 does = "Which set of voice lines the unit answers orders with."
 
@@ -324,6 +341,7 @@ does = "Which icon the unit shows on the map table when zoomed out."
 group = "computer"
 unit = "choice"
 sure = "tried"
+classes = ["units"]
 what = "Category"
 does = "What kind of unit the game counts it as: 1 recon (the recon Role sets it; seen in the game), 7 planes, 8 and 9 buildings; the others aren't all named yet."
 
@@ -1095,6 +1113,7 @@ does = "Looks only: how far away the circles under units are still drawn."
 group = "interface"
 unit = "raw"
 sure = "name"
+classes = ["TMetaCircleDrawer"]
 what = "Circle texture stretch"
 does = "Looks only: how far the circle's picture is stretched along it."
 
@@ -1102,6 +1121,7 @@ does = "Looks only: how far the circle's picture is stretched along it."
 group = "interface"
 unit = "m"
 sure = "name"
+classes = ["TMetaCircleDrawer"]
 what = "Circle line width (most)"
 does = "Looks only: the widest the circle's line gets when zoomed out."
 
@@ -1109,6 +1129,7 @@ does = "Looks only: the widest the circle's line gets when zoomed out."
 group = "interface"
 unit = "m"
 sure = "name"
+classes = ["TMetaCircleDrawer"]
 what = "Circle line width (least)"
 does = "Looks only: the narrowest the circle's line gets up close."
 
@@ -1652,6 +1673,7 @@ does = "Looks only: from how far away each building-site look is drawn."
 group = "looks"
 unit = "id"
 sure = "name"
+classes = ["TGfxLevelBuildStateGeoDatabaseModificationActionStateModifier", "TUnitLevelBuildViewDescriptor"]
 what = "Build view piece"
 does = "Looks only: which piece of the building site this view shows."
 
@@ -1680,6 +1702,7 @@ does = "Looks only: which pieces of the building stay drawn during the build."
 group = "looks"
 unit = "mask"
 sure = "name"
+classes = ["TUnitLevelBuildViewDescriptor"]
 what = "Destroyed look"
 does = "Looks only: which pieces show when the building is destroyed."
 
@@ -1708,6 +1731,7 @@ does = "1: the building's change to the map is taken back when it's destroyed."
 group = "looks"
 unit = "mask"
 sure = "name"
+classes = ["TGfxLevelBuildStateGeoDatabaseModificationActionStateModifier"]
 what = "Map change mode"
 does = "How the building's change to the map is applied."
 
@@ -1722,6 +1746,7 @@ does = "Looks only: which variant of the animation set a part uses."
 group = "looks"
 unit = "id"
 sure = "name"
+classes = ["TGdcFastAccessKey"]
 what = "Animation set version"
 does = "Looks only: the version of the animation set's quick-access table."
 
@@ -1774,3 +1799,1052 @@ unit = "raw"
 sure = "name"
 what = "Dive sound fade-out"
 does = "Sound only: how fast a plane's dive sound fades when it pulls out."
+
+# --- the computer players (the AI tab) ---
+# A computer player mixes three sets: Default, its difficulty and its personality. For each value the game takes the
+# personality's when it isn't Default's, else the difficulty's when it isn't Default's, else Default's; a value a set
+# doesn't list counts as 0, and a 0 that isn't Default's wins like any other. The AI tab shows what each value comes
+# to in a battle. Distances are in game units, 260 to a metre, measured along the way units travel where said.
+[AttaqueTempsActivation]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Seconds before it starts attacking"
+does = "How many seconds into the battle it waits before it attacks at all; until then it also doesn't harass or send help to a threatened depot. Default 30; Easy 300 (5 minutes); Turtle 600 (10 minutes). Hard and Blitzkrieg don't list it, so they count 0: they attack from the first second."
+
+[OffensiveNbMissionMax]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Most attacks at once"
+does = "The most attacks (and retaliations) it runs at the same time. -1 means no limit, which every set of the game uses."
+
+[MissionFacteurLancementAttaque]
+group = "computer"
+unit = "times"
+sure = "known"
+what = "Aggressiveness (attack threshold)"
+does = "What the game's mission designers call its aggressiveness (Agressivite, which the campaign's scripts change mid-mission): the game multiplies it by a fixed factor and weighs the forces at a place against it before it launches an attack there. The game's sets: Default 0.7; Easy and Blitzkrieg 0.2; Hard 0.9; Turtle 1. Which way a higher number pushes it isn't measured yet: try it in the game."
+
+[MissionFacteurEnoughToDestroy]
+group = "computer"
+unit = "times"
+sure = "known"
+what = "Force it gathers against an enemy"
+does = "How much force it sends to an attack, as a multiple of the enemy's strength there (the mission designers call it reinforcement for an attack, Renfort_pour_attaque). Default 1.2; Easy 0.2; Medium 1.4; Hard 1.8; Blitzkrieg 1.5; Turtle 1."
+
+[DefenseDistanceMenace]
+group = "computer"
+unit = "m"
+sure = "known"
+what = "Threat distance"
+does = "How far from a place it defends an enemy counts as a threat to it; the game makes the watched zone about 1.4 times this (the distance times the square root of 2). 312,000 (1,200 m) in the game's sets; Turtle 26,000,000 (100 km: anything on the map is a threat)."
+
+[DefenseDistanceUrgent]
+group = "computer"
+unit = "m"
+sure = "known"
+what = "Urgent threat distance"
+does = "How close an enemy must come to a place it defends before the defence is urgent (the mission designers' Distance_Defense_Urgente, beside the threat distance). Default 156,000 (600 m); Hard 208,000 (800 m); Blitzkrieg 78,000 (300 m)."
+
+[DefenseMaxUnitOnPosition]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Units sent to a defence that isn't urgent"
+does = "How many of its units it sends to a defence that isn't urgent (the mission designers' Nbre_Unit_Defense_Non_Urgente). Default 1; Medium 2; Hard 3; Turtle 6."
+
+[DefenseNbMissionMax]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Most places it defends at once"
+does = "The most defence missions (places it guards) it runs at the same time. Default 2; Easy and Hard 4; Turtle 10. Blitzkrieg doesn't list it, so it counts 0 and guards nothing."
+
+[HarcelementActif]
+group = "computer"
+unit = "yesno"
+sure = "known"
+what = "Harasses the enemy"
+does = "1: it harasses (small raids, once its wait before attacking is over). 0: never. Easy and Turtle don't list it, so they count 0 and never harass."
+
+[UpgradeActifPourHarcelement]
+group = "computer"
+unit = "yesno"
+sure = "name"
+what = "Upgrades for harassing"
+does = "Whether it may use upgraded units for its raids. Easy and Blitzkrieg don't list it (0)."
+
+[CashReserveTempsActivation]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Seconds before it keeps a cash reserve"
+does = "How many seconds into the battle it may spend all its money; after that it keeps aside the money its ordered buildings need before it buys units. 240 (4 minutes) in every set of the game."
+
+[PercentMoneyToReserveForBatimentAdmin]
+group = "computer"
+unit = "pct"
+sure = "name"
+what = "% of money kept for admin buildings"
+does = "The share of its money, in %, it keeps for admin buildings (which raise income). 20% in the game's sets; Hard 25%. Where the game reads it isn't found yet."
+
+[PercentMoneyToUseForIdle]
+group = "computer"
+unit = "pct"
+sure = "known"
+what = "% of money used when idle"
+does = "The share of its money, in %, it may spend on units when it has nothing else to do: the Built when idle numbers below. At 0 it never builds idle and those numbers do nothing. Default and Easy 0; Medium 50%; Hard 100%."
+
+[DeviseBonusIA]
+group = "computer"
+unit = "money"
+sure = "known"
+what = "Extra money at the start (cheat)"
+does = "Extra money it gets when the battle starts, in $. Only Hard has it: $150 on top of the $200 every player starts with."
+
+[IncomeBonusIA]
+group = "computer"
+unit = "money"
+sure = "known"
+what = "Extra income each payment (cheat)"
+does = "Extra money, in $, added to each of its income payments. Only Hard has it: $1."
+
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Extra admin buildings before it stops"
+does = "How many admin buildings beyond what it needs it builds before it stops building them; -1 means no limit. Default and the personalities -1; Hard 2; Easy and Medium don't list it, so they count 0: none beyond what they need."
+
+[DepotNbEnPlusAvantDesactivation]
+group = "computer"
+unit = "count"
+sure = "name"
+what = "Extra depots before it stops"
+does = "How many supply depots it goes for beyond the ones it has, as far as there are depot sites to take. Default 2; Medium 3; Hard 4; Blitzkrieg 1; Easy doesn't list it (0)."
+
+[ValueDepotMinForTruckFactory]
+group = "computer"
+unit = "money"
+sure = "known"
+what = "Least depot value for a truck factory"
+does = "Before it builds a truck factory near a group of depots, the depots there must still hold at least this much supply, in $: the truckloads they have left times $3 a truckload ($6 in Nuclear mode), what the game calls the money a depot has available. $100 in every set: five Shermans' worth, half the $200 a player starts with."
+
+[MinutesLeftMinForTruckFactory]
+group = "computer"
+unit = "min"
+sure = "known"
+what = "Least minutes left for a truck factory"
+does = "In a battle with a time limit it only builds a truck factory while at least this many minutes are left. 5 in every set."
+
+[NbDepotMinForTruckFactory]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Least depots for a truck factory"
+does = "How many depots a group needs (its own and the others within the depot group distance) before it builds a truck factory there. 2 in every set."
+
+[NbUnitsDangerousDepot]
+group = "computer"
+unit = "count"
+sure = "name"
+what = "Units that make a depot dangerous"
+does = "How many units it counts around one of its depots before it treats that depot as in danger and sends help. Default 1; Turtle 4; Hard and Blitzkrieg don't list it (0)."
+
+[SeuilDistanceGroupeDepot]
+group = "computer"
+unit = "m"
+sure = "known"
+what = "Depot group distance"
+does = "When it picks where a new truck factory goes, the depots within this distance of the centre of its far depots, measured along the way units travel, count as one group; the factory goes beside the group's depot nearest its base. 234,000 (900 m) in every set."
+
+[SeuilDistanceTruckFactory]
+group = "computer"
+unit = "m"
+sure = "known"
+what = "Truck factory distance"
+does = "It builds another truck factory when one of its depots is at least this far from its nearest truck factory, measured along the way trucks drive, not in a straight line (only once it has a truck factory already). Default and the personalities 520,000 (2,000 m); every difficulty 780,000 (3,000 m), and as no personality changes it, 3,000 m is what counts in a battle."
+
+[NbMaxProductionForEnnemyUnit]
+group = "computer"
+unit = "count"
+sure = "name"
+what = "Most units built against one enemy unit"
+does = "The most units it builds to answer one enemy unit. 1 in every set. Where the game reads it isn't found yet."
+
+[NbProdIdleInfanterie]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: infantry"
+does = "When it has nothing else to do and may spend money idle (% of money used when idle isn't 0), it builds infantry until it has this many. Regular 2; Howitzer and Prototype 1."
+
+[NbProdIdleTank]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: tanks"
+does = "When it has nothing else to do and may spend money idle, it builds tanks until it has this many. Regular and Prototype 3; Blitzkrieg 4."
+
+[NbProdIdleAntitank]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: anti-tank"
+does = "When it has nothing else to do and may spend money idle, it builds anti-tank units until it has this many. Prototype 1; Turtle 2."
+
+[NbProdIdleArti]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: artillery"
+does = "When it has nothing else to do and may spend money idle, it builds artillery until it has this many. Howitzer 5; Turtle 2."
+
+[NbProdIdleDCA]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: anti-air"
+does = "When it has nothing else to do and may spend money idle, it builds anti-air until it has this many. Turtle 2."
+
+[NbProdIdleChasseur]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: fighters"
+does = "When it has nothing else to do and may spend money idle, it builds fighters until it has this many. Air Force 2."
+
+[NbProdIdleBomber]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: bombers"
+does = "When it has nothing else to do and may spend money idle, it builds bombers until it has this many. Air Force 1."
+
+[NbProdIdleChasseurBomber]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Built when idle: fighter-bombers"
+does = "When it has nothing else to do and may spend money idle, it builds fighter-bombers until it has this many. Air Force 2; Blitzkrieg 1."
+
+[ProdIdleCanLaunchResearch]
+group = "computer"
+unit = "yesno"
+sure = "known"
+what = "Researches when idle"
+does = "1: when it has nothing else to do it may also start research. Only Prototype has it."
+
+[BonusUnitesAvions]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: planes"
+does = "Preference points added to every plane it can build. Preferences add up per unit and only the differences between its units count: it rates each unit by how far it sits below its most preferred one. Air Force +500 makes planes its clear favourite."
+
+[BonusUnitesArtillerie]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: artillery"
+does = "Preference points added to every artillery unit it can build (see Preference: planes for how they add up). Howitzer +8,000 puts artillery far ahead of everything else."
+
+[BonusUnitesExperimentales]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: prototypes"
+does = "Preference points added to every prototype it can build (the units the game's category 12 holds). Prototype +400."
+
+[BonusUnitesRecherche]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: research"
+does = "Preference points added to every unit it still has to research (the game's research list doesn't hold it as done yet), so it researches more. Prototype +400."
+
+[BonusUnitesTank]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: tanks"
+does = "Preference points added to every tank it can build. No set of the game uses it, so the AI tab can't offer it (Add only offers the values Default lists); the campaign's scripts do (Bonus_Tank, 150 to 200)."
+
+[BonusBatimentOTF]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Preference: defensive buildings"
+does = "Preference points added to every defensive building (bunkers and gun positions: flag 6). It also makes it keener to put defences up at the places it guards: the game weighs that by 0.5 + this / 200, so 1.5 at Turtle's +200 against 0.5 at 0."
+
+[PourcentChanceUtiliserCarteManipAuDebut]
+group = "computer"
+unit = "pct"
+sure = "known"
+what = "% chance to play a manipulation ruse at the start"
+does = "The chance, in %, that it plays a manipulation ruse when the battle starts. Default 40%; Medium 60%; Hard 80%."
+
+[NbCarteDansLaReservePourLaDifficulte]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Ruse cards kept back (difficulty)"
+does = "Ruse cards it keeps in hand instead of playing; the game adds the difficulty's number and the personality's. Medium and Hard 1."
+
+[NbCarteDansLaReservePourLeProfil]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Ruse cards kept back (profile)"
+does = "Ruse cards it keeps in hand instead of playing; the game adds this to the difficulty's number. Prototype and Turtle 1."
+
+[TempsActivationBatimentCamoufle]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Seconds before it camouflages buildings"
+does = "How many seconds into the battle before it uses the camouflage ruse on its buildings. Only Easy sets it: 600 (10 minutes); elsewhere 0, from the start."
+
+[RepresailleFacteurUniteCombattante]
+group = "computer"
+unit = "times"
+sure = "name"
+what = "Retaliation factor: fighting units"
+does = "How hard it hits back after losing fighting units, as a multiple; the campaign's scripts set it and the non-fighting one together as one retaliation setting (Represailles, 1 or 2). Default 1; Easy 0.5; Hard 2; Turtle doesn't list it (0: no retaliation for them)."
+
+[RepresailleFacteurUniteNonCombattante]
+group = "computer"
+unit = "times"
+sure = "name"
+what = "Retaliation factor: non-fighting units"
+does = "How hard it hits back after losing units that don't fight (trucks, buildings), as a multiple; the campaign's scripts set it with the fighting one as one retaliation setting. Default 2; Easy 1; Hard 4; Turtle doesn't list it (0)."
+
+[TimeOutRepresailles]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Retaliation time limit"
+does = "How many seconds it keeps up a retaliation before it drops it. Default 120 (2 minutes); Hard 240."
+
+[ProbaRepereFake]
+group = "computer"
+unit = "share"
+sure = "known"
+what = "Chance to spot decoys"
+does = "The chance, from 0 to 1, that it sees through a decoy at a place it defends or attacks; the game rolls it every 24 seconds. Default 0.5 (50%); Easy 0.1; Hard 0.8."
+
+[TempsMemorisationUnitInvisible]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Seconds it remembers units it can't see"
+does = "How long, in seconds, it remembers an enemy unit it can no longer see. Default 300 (5 minutes); Easy 60; Hard 360."
+
+[BonusValue]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Extra preference for these units"
+does = "Preference points added to the units listed, in a battle whose game mode, difficulty and personality are each in the lists (an empty list matches any). They add to the set's own preferences (Preference: planes...). The game's own entry: +400 for the nuclear guns in Nuclear mode, on every difficulty and personality."
+
+[ConsiderStackAsOneEnnemy]
+group = "computer"
+unit = "yesno"
+sure = "name"
+what = "Counts a stack as one enemy"
+does = "1: it counts a stack of these units as one enemy. The game's entry has 1."
+
+[UnitIDs]
+group = "computer"
+unit = "id"
+sure = "known"
+what = "Units (by number)"
+does = "The units the entry is for, by each unit's own number (its Id); the AI tab lets you pick them by name. An empty list would mean every unit."
+
+[WarModes]
+group = "computer"
+unit = "choice"
+sure = "known"
+what = "Game modes (by number)"
+does = "The game modes the entry works in, by the number the game gives them: 0 1945, 1 1942, 2 1939, 3 Total War mode, 4 Nuclear mode (the order of the game's own list)."
+
+[AIDifficulties]
+group = "computer"
+unit = "choice"
+sure = "known"
+what = "Difficulties (by number)"
+does = "The difficulties the entry works on: 0 Easy, 1 Medium, 2 Hard."
+
+[AIProfiles]
+group = "computer"
+unit = "choice"
+sure = "known"
+what = "Profiles (by number)"
+does = "The personalities the entry works with: 0 Regular, 1 Air Force, 2 Howitzer, 3 Prototype, 4 Blitzkrieg, 5 Turtle, 6 Random."
+
+["TBluffCardDescriptor.LifeDuration"]
+group = "computer"
+unit = "s"
+sure = "tried"
+what = "How long it lasts"
+does = "How long the ruse lasts once played, in seconds: 240 to 360 in the game (4 to 6 minutes)."
+
+["TBluffCardDescriptor.ShowInMenu"]
+group = "computer"
+unit = "yesno"
+sure = "tried"
+what = "Shown in the ruse menu"
+does = "1: the card is in the ruse menu, so players and the computer can play it."
+
+["TBluffCardDescriptor.PositionInMenu"]
+group = "computer"
+unit = "id"
+sure = "tried"
+what = "Ruse menu slot"
+does = "Where the card sits in the ruse menu: lower comes first."
+
+# --- the economy (the Economy tab: the game's constants, TTunableConstante) ---
+# The game keeps these twice, for its usual modes and for the Nuclear mode; the tab says when Nuclear's differs.
+[QteDeviseInitiale]
+group = "production"
+unit = "money"
+sure = "tried"
+what = "Starting money"
+does = "The money every player starts a battle with, in $. 200 in the game: ten Shermans at $20."
+
+[TempsGenAutoDevises]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Seconds between automatic payments"
+does = "How often, in seconds, the buildings that make money by themselves pay out (the game's automatic money); the computer players' income cheat is paid on the same beat. 4 in the game."
+
+[QuantiteGenAutoDevises]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Automatic payment"
+does = "How much one automatic payment is, in $. 1 in the game: with a payment every 4 seconds, $15 a minute."
+
+[StockDeviseSupplementaireFacile]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Extra depot supply on Easy (campaign)"
+does = "In the campaign on Easy, the extra supply the missions' scripts add to depots (they ask the game for it). 72 in the game. Battles don't use it."
+
+[QteDeviseParCamion]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Money per truckload"
+does = "What one supply truck brings from a depot, in $. The game's usual modes 3, the Nuclear mode 6. A depot's money left is its truckloads left times this."
+
+[NbCamionParConvoi]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Trucks per convoy"
+does = "How many trucks leave a depot together in one convoy. 3 in the game: a convoy brings 3 x $3 = $9 in the usual modes."
+
+[TempsENtreDeuxConvois]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Seconds between convoys"
+does = "How long, in seconds, a depot waits between two convoys. 30 in the game: about $18 a minute from one depot in the usual modes, before the trip itself."
+
+[TempsENtreDeuxCamionsEnConvoiMin]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Gap between trucks in a convoy (least)"
+does = "The shortest time, in seconds, between two trucks of the same convoy leaving. 1.5 in the game."
+
+[TempsENtreDeuxCamionsEnConvoiMax]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Gap between trucks in a convoy (most)"
+does = "The longest time, in seconds, between two trucks of the same convoy leaving. 1.5 in the game."
+
+[RatioForDepotNearlyDepleted]
+group = "production"
+unit = "share"
+sure = "known"
+what = "Depot nearly empty at"
+does = "A depot counts as nearly empty when the truckloads it has left are this share of what it started with or less (the computer players then look for another). 0.25 (25%) in the game."
+
+[MinProductionTime]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Shortest build time"
+does = "No unit takes less time to build than this, in seconds, however many factories of its kind build it. 1 in the game."
+
+[MaximumBatimentProduction]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Most buildings in production at once"
+does = "How many buildings the computer players build at the same time. 2 in the game."
+
+[MaxProductionQueueSize]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Longest production queue"
+does = "The most units a computer player queues for production. 30 in the game."
+
+[MaxBatimentAndTechnoProductionSimultaneous]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Buildings and research at once"
+does = "How many buildings and researches a computer player has going at the same time. 2 in the game."
+
+[VirtualFactoryQueueMaximumSlot]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Factory queue slots"
+does = "How many places a factory's queue has. 2 in the game."
+
+[NbAvionsParAeroport]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Planes per airfield"
+does = "How many planes a player may have for each airfield they own: no more planes can be built once the count reaches this times the airfields. 8 in the game."
+
+[NbMaxCardsInPool]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Most ruse cards in hand"
+does = "The most ruse cards a side can hold. 99 in the game: no limit in practice."
+
+[NbInitialCardsInPoolForAllianceTaille_1]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (1 player a side)"
+does = "How many ruse cards a side starts with when it has 1 player. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_2]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (2 players a side)"
+does = "How many ruse cards a side starts with when it has 2 players. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_3]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (3 players a side)"
+does = "How many ruse cards a side starts with when it has 3 players. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_4]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (4 players a side)"
+does = "How many ruse cards a side starts with when it has 4 players. The game's usual modes 2, the Nuclear mode 4."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (1 player a side)"
+does = "The battle times, in seconds, at which a side with 1 player gets a new ruse card to pick. The game's usual modes 105, 210, 315 (every 1 3/4 minutes); the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (2 players a side)"
+does = "The battle times, in seconds, at which a side with 2 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (3 players a side)"
+does = "The battle times, in seconds, at which a side with 3 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (4 players a side)"
+does = "The battle times, in seconds, at which a side with 4 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[ArmyValueForceLaunchAttack]
+group = "computer"
+unit = "pts"
+sure = "name"
+what = "Army value that forces an attack"
+does = "The computer players weigh an army's value against this before an attack: the game checks the forces when the value there is under it. 600 in the game."
+
+[MinArmyValueToUseManipulationCard]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Least army value for a manipulation ruse"
+does = "A computer player only plays a manipulation ruse when its army is worth at least this much. 120 in the game."
+
+[MaxWaitingRequest]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Most waiting orders"
+does = "The most production orders a computer player keeps waiting. 30 in the game."
+
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Waiting orders before a new factory"
+does = "When a computer player has this many production orders waiting, it builds another factory instead of queueing more. 8 in the game."
+
+[MaxTimeWaitingRequest]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Longest wait for an order"
+does = "How long, in seconds, a computer player's production order may wait before it's cancelled (when Cancel waiting orders is on). 60 in the game."
+
+[CheckAndCancelWaitingRequest]
+group = "computer"
+unit = "yesno"
+sure = "known"
+what = "Cancel waiting orders"
+does = "1: a computer player cancels production orders that waited longer than the longest wait. 1 in the game."
+
+[BP_DepotAddedValue]
+group = "computer"
+unit = "pts"
+sure = "name"
+what = "Value of a depot to protect"
+does = "How much a supply depot is worth to a computer player when it decides what to protect. 50 in the game, against 150 for its HQ."
+
+[BP_HqValue]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Value of the HQ to protect"
+does = "How much its HQ is worth to a computer player when it decides what to protect. 150 in the game, against 50 for a depot."
+
+[NbMin_UniteLeurre_OffensiveGenerale]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy units in a decoy offensive (least)"
+does = "The fewest decoy units a computer player's decoy offensive sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveGenerale]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy units in a decoy offensive (most)"
+does = "The most decoy units a computer player's decoy offensive sends. 5 in the game."
+
+[NbMin_UniteLeurre_OffensiveAerienne]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy planes in a decoy air attack (least)"
+does = "The fewest decoy planes a computer player's decoy air attack sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveAerienne]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy planes in a decoy air attack (most)"
+does = "The most decoy planes a computer player's decoy air attack sends. 5 in the game."
+
+[NbMin_UniteLeurre_OffensiveBlinde]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy tanks in a decoy armoured attack (least)"
+does = "The fewest decoy tanks a computer player's decoy armoured attack sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveBlinde]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy tanks in a decoy armoured attack (most)"
+does = "The most decoy tanks a computer player's decoy armoured attack sends. 5 in the game."
+
+[ConstructionDelayForFakeBuildingsMin]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Decoy building delay (least)"
+does = "The shortest time, in seconds, a computer player waits between decoy buildings it puts up with the decoy building ruse. 5 in the game."
+
+[ConstructionDelayForFakeBuildingsMax]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Decoy building delay (most)"
+does = "The longest time, in seconds, a computer player waits between decoy buildings it puts up with the decoy building ruse. 10 in the game."
+
+# --- what isn't a number: a unit's names, texts and links, a building's paths, the parts' names (the All values tab) ---
+[ClassNameForDebug]
+group = "identity"
+unit = "name"
+sure = "name"
+classes = ["units"]
+what = "Debug name"
+does = "The unit's name in the game's own error messages and logs (Unit_M4_Sherman). Players never see it."
+
+[NameInMenuToken]
+group = "interface"
+unit = "text"
+sure = "known"
+classes = ["units"]
+what = "Name"
+does = "Which of the game's texts is its name, in the build menu and on its card (N_UNI_137 shows SHERMAN). Change the words... under the box changes the words themselves, in every language."
+
+[TypeUnitHintToken]
+group = "interface"
+unit = "text"
+sure = "known"
+classes = ["units"]
+what = "Type line"
+does = "Which text the card shows as the kind of unit it is, under its name (TANK_madv shows Advanced Medium Tank). vide: none."
+
+[DescriptionUnitHintToken]
+group = "interface"
+unit = "text"
+sure = "known"
+classes = ["units"]
+what = "Card description"
+does = "Which text the card shows as its short description (DTANK_madv shows Enjoys greater firepower than common medium tanks...). vide: none."
+
+[EfficaceHintToken]
+group = "interface"
+unit = "text"
+sure = "known"
+classes = ["units"]
+what = "Effective against"
+does = "Which text the card shows as what it's good against (E_ground shows Effective against all ground targets; unarmed shows Unarmed). vide: none."
+
+[LongDescriptionUnitHintToken]
+group = "interface"
+unit = "text"
+sure = "name"
+classes = ["units"]
+what = "History text"
+does = "Which text is its longer description: the real unit's history (LD_UNI_137 tells the Sherman's story)."
+
+[WeaponDescriptor]
+group = "combat"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Weapons"
+does = "Its weapons: the part that holds its turrets and the guns on them, each gun with its ammunition. The Units tab's Weapons box changes them. Empty: unarmed."
+
+[ArmorDescriptor]
+group = "combat"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Armour"
+does = "Its armour level: one object several units share (the Sherman points at the M4 Skink's). The Units tab's Armour picks one of the game's levels."
+
+[GfxDescriptor]
+group = "looks"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Look"
+does = "Looks only: its 3D model and how its parts move (tracks, wheels, turret). A building's is its look on the map: a layout of many pieces the game adds where it stands."
+
+[GfxDescriptorIcone]
+group = "looks"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Far look"
+does = "Looks only: what stands for it when the camera is far up: a ground unit's round token on the map table, a plane's small model."
+
+[GfxDescriptorIconeJeton]
+group = "looks"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Token"
+does = "Looks only: a plane's round token on the map table when the camera is far up."
+
+[GfxDescriptorCadavre]
+group = "looks"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Wreck"
+does = "Looks only: what's left of it when it's destroyed (its wreck's model)."
+
+[GfxDescriptorIconeCadavre]
+group = "looks"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Soldier figure"
+does = "Looks only: one of a squad's soldier models (by its name, the one drawn for a fallen soldier). The Studio shows and repaints a squad with it."
+
+[GfxDescriptorFusilier]
+group = "looks"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Rifleman"
+does = "Looks only: the model a squad's riflemen are drawn with."
+
+[GfxDescriptorBazooka]
+group = "looks"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Bazooka man"
+does = "Looks only: the model a squad's bazooka man is drawn with."
+
+[SoundMotorDescriptor]
+group = "sound"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Moving sound"
+does = "Sound only: what it sounds like as it moves (an engine, a plane's motors), often another unit's (the Sherman uses the ARL 40's)."
+
+[TextureForInterface]
+group = "interface"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Card picture"
+does = "Its picture in the build menu and on its card. On the Units tab, Use this view as the card makes a new one from its 3D model."
+
+[UpgradeRequire]
+group = "production"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Researched from"
+does = "The unit it's researched from: it can be built once that research is done (the Sherman needs the M3 Lee). Empty: no research."
+
+[UnitIdleManager]
+group = "turret"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Waiting behaviour"
+does = "What it does while it waits: its gun or turret looking around. Often another unit's (the Sherman uses the ARL 44's)."
+
+[TransportPourMorphe]
+group = "movement"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Rides in"
+does = "The truck it turns into to travel on roads (a squad's or a gun's). The Units tab's Rides in box picks it."
+
+[MouvementHandlerInfo]
+group = "flight"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Flight"
+does = "How the plane flies: the part with its flight values (open it to see them)."
+
+[UniteTransportee]
+group = "flight"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Drops"
+does = "The unit a transport plane drops (the C47 drops US paratroopers). A plane with the paratroop flag and nothing here crashes the game."
+
+[AmmoDeath]
+group = "flight"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Crash explosion"
+does = "The explosion when the plane is shot down: a light or medium plane's."
+
+[UniteDefense]
+group = "combat"
+unit = "link"
+sure = "name"
+classes = ["units"]
+what = "Defending unit"
+does = "The unit that does a defence's fighting: a bunker's guns (the Maginot bunker's turret)."
+
+[BatimentPaths]
+group = "movement"
+unit = "link"
+sure = "known"
+classes = ["units"]
+what = "Paths"
+does = "Where units go round the building and in and out of it: its exits, entries, parking places and an airfield's runway."
+
+["TBatimentPaths.FactoryExit"]
+group = "movement"
+unit = "link"
+sure = "tried"
+what = "Way out"
+does = "The path a unit it makes takes out of it, to the road (seen in the game: out of the gate onto the road)."
+
+["TBatimentPaths.FactoryEntry"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Way in"
+does = "The path units take into it."
+
+["TBatimentPaths.ByPass"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Way round"
+does = "The path units take round it."
+
+["TBatimentPaths.Vision"]
+group = "sight"
+unit = "link"
+sure = "name"
+what = "Sight points"
+does = "By its name: the points the building looks out from."
+
+["TBatimentPaths.ParkingEntryLarge"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Parking way in (big planes)"
+does = "An airfield's path for its bigger planes into their parking places."
+
+["TBatimentPaths.ParkingEntrySmall"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Parking way in (small planes)"
+does = "An airfield's path for its smaller planes into their parking places."
+
+["TBatimentPaths.ParkingExit"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Parking way out"
+does = "An airfield's path for its planes out of their parking places."
+
+["TBatimentPaths.MultiPathParking"]
+group = "movement"
+unit = "link"
+sure = "name"
+what = "Parking places"
+does = "An airfield's parking places and the paths between them."
+
+["TBatimentPaths.Runway"]
+group = "flight"
+unit = "link"
+sure = "name"
+what = "Runway"
+does = "An airfield's runway: where its planes take off and land."
+
+[TurretDescriptorList]
+group = "combat"
+unit = "link"
+sure = "known"
+what = "Turrets"
+does = "The weapon's turrets (or gun mounts), each with the guns it carries. The Units tab's Weapons box shows them step by step."
+
+[MountedWeaponDescriptorList]
+group = "combat"
+unit = "link"
+sure = "known"
+what = "Guns"
+does = "The guns on this turret, each with its ammunition."
+
+[EffectTag]
+group = "effects"
+unit = "name"
+sure = "name"
+what = "Firing effect"
+does = "Which effect plays when this gun fires (its flash and smoke), by the effect's name."
+
+["TAmmunition.Name"]
+group = "ammo"
+unit = "text"
+sure = "known"
+what = "Name"
+does = "Which text names the ammunition (N_AR_lc shows Small cal.)."
+
+[TypeName]
+group = "ammo"
+unit = "text"
+sure = "known"
+what = "Kind"
+does = "Which text names its kind (T_ARM_0 shows AP shell)."
+
+["TAmmunition.Icon"]
+group = "ammo"
+unit = "link"
+sure = "name"
+what = "Picture"
+does = "The ammunition's small picture, often another ammunition's (the 20 mm AP shell uses the bazooka's)."
+
+[StressManager]
+group = "ammo"
+unit = "link"
+sure = "name"
+what = "Stress table"
+does = "By its name: the table of how much a hit stresses (pins down) a target, by the target's armour level. Every ammunition of the game uses the same one."
+
+["TArmorDescriptor.Name"]
+group = "combat"
+unit = "text"
+sure = "known"
+what = "Name"
+does = "Which text names this armour level (N_ARMU_1 shows Aircraft)."
+
+["TArmorDescriptor.Icon"]
+group = "combat"
+unit = "link"
+sure = "name"
+what = "Picture"
+does = "The armour level's small picture."
+
+# Eugen's own bookkeeping, on most objects: where their tools wrote it
+[_Filename]
+group = "identity"
+unit = "name"
+sure = "name"
+what = "Source file"
+does = "The file in Eugen's own sources this object was written in (DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf). Their bookkeeping: nothing to change."
+
+[_Line]
+group = "identity"
+unit = "id"
+sure = "name"
+what = "Source line"
+does = "The line of Eugen's source file this object starts at. Their bookkeeping: nothing to change."
+
+[_Column]
+group = "identity"
+unit = "id"
+sure = "name"
+what = "Source column"
+does = "The column on that line of Eugen's source file. Their bookkeeping: nothing to change."
+
+[_ShortDatabaseName]
+group = "identity"
+unit = "name"
+sure = "name"
+what = "Short name"
+does = "The short name Eugen's tools gave this object. Their bookkeeping: nothing to change."

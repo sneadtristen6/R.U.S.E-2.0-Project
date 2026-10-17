@@ -34,10 +34,10 @@ what = "道路速度加成"
 does = "在道路上比道路外快多少：0.6 约为快 60%。班组和火炮以它们变成的卡车获得此加成。飞机和卡车为 1。"
 [MaxAcceleration]
 what = "加速度"
-does = "达到速度有多快。大多数坦克为 3,900。"
+does = "达到速度有多快：游戏每 0.2 秒把此值的五分之一加到它的速度上，所以它的速度除以此值就是达到全速所需的秒数（显示在框旁）。大多数坦克为 3,900：谢尔曼（4,550）约 1.2 秒达到全速。"
 [MaxDeceleration]
 what = "制动"
-does = "减速并停下有多快。"
+does = "减速并停下有多快：它的速度除以此值就是从全速停下所需的秒数（显示在框旁）。"
 [TempsDemiTour]
 what = "掉头时间"
 does = "转向反方向需要多少秒。步兵 0.01（立即），车辆 0.5，坦克 1，最慢的 6。"
@@ -76,10 +76,10 @@ what = "携带的炸弹或火箭"
 does = "飞机飞回补给前携带多少发第二武器（炸弹、火箭）：游戏中 1 到 4。"
 [ProductionPrice]
 what = "价格"
-does = "建造费用，单位 $，五个战役日期各一个（游戏每个日期保存一个价格）。"
+does = "在五个游戏模式中各自的建造费用（$），按游戏的顺序：1945、1942、1939、全面战争、核战争（游戏使用对战模式对应的那个）。"
 [ProductionTime]
 what = "建造时间"
-does = "建造需要多少秒。若有多个同类工厂，会在它们之间分担。"
+does = "建造需要多少秒。若有多个同类工厂建造它，时间会在它们之间分担，但不会低于游戏的最短生产时间（经济选项卡上的值）。"
 [UpgradePrice]
 what = "研究价格"
 does = "能建造之前研究它要花多少，单位 $（从另一单位研究出的单位）。"
@@ -91,7 +91,7 @@ what = "是升级"
 does = "1：该单位是其研究来源单位的升级（研究后在建造菜单中取代它）。"
 [ShowInMenu]
 what = "在建造菜单中显示"
-does = "1：在该战役日期显示在其建造菜单中（五个日期各一个值）。"
+does = "1：在该游戏模式下显示在建造菜单中；五个模式各一个值，按游戏的顺序：1945、1942、1939、全面战争、核战争。游戏中的战争后期坦克只在 1945、全面战争和核战争中显示。"
 [PositionInMenu]
 what = "菜单位置"
 does = "它在建造菜单中的位置：同一系列的单位共享一个位置，升级叠放在上面。"
@@ -743,3 +743,444 @@ does = "仅声音：单位起步或消失时怠速发动机声消失有多快。
 [Dive_Out_Fade_Velocity]
 what = "俯冲声淡出"
 does = "仅声音：飞机拉起时俯冲声消失有多快。"
+
+# --- 电脑玩家（AI 选项卡） ---
+[AttaqueTempsActivation]
+what = "开始进攻前的秒数"
+does = "对战开始后等待多少秒才进攻；在此之前它也不骚扰，也不向受威胁的补给站派援军。默认 30；简单 300（5 分钟）；龟缩流 600（10 分钟）。困难和闪击战没有列出此值，所以计为 0：从第一秒就进攻。"
+[OffensiveNbMissionMax]
+what = "同时进攻的最多次数"
+does = "同时进行的进攻（和报复）的最多次数。-1 表示无限制，游戏的所有组都用它。"
+[MissionFacteurLancementAttaque]
+what = "进攻性（进攻阈值）"
+does = "游戏的任务设计者称之为它的进攻性（Agressivite，战役脚本会在任务中途修改）：游戏把它乘以一个固定系数，在某处发起进攻前用它来比较双方兵力。游戏各组：默认 0.7；简单和闪击战 0.2；困难 0.9；龟缩流 1。较大的数让它往哪个方向变，尚未测量：请在游戏中试验。"
+[MissionFacteurEnoughToDestroy]
+what = "针对敌人集结的兵力（敌方的几倍）"
+does = "它向一次进攻派出多少兵力（该处敌方兵力的倍数；任务设计者称之为进攻增援，Renfort_pour_attaque）。默认 1.2；简单 0.2；标准 1.4；困难 1.8；闪击战 1.5；龟缩流 1。"
+[DefenseDistanceMenace]
+what = "威胁距离"
+does = "离它防守的地点多远的敌人算作威胁；游戏把监视区域设为此距离的约 1.4 倍（距离乘以 2 的平方根）。游戏各组为 312,000（1,200 m）；龟缩流 26,000,000（100 km：地图上的一切都是威胁）。"
+[DefenseDistanceUrgent]
+what = "紧急威胁距离"
+does = "敌人要离它防守的地点多近，防守才变得紧急（任务设计者的 Distance_Defense_Urgente，与威胁距离成对）。默认 156,000（600 m）；困难 208,000（800 m）；闪击战 78,000（300 m）。"
+[DefenseMaxUnitOnPosition]
+what = "派往非紧急防守的单位数"
+does = "它向不紧急的防守派出多少自己的单位（任务设计者的 Nbre_Unit_Defense_Non_Urgente）。默认 1；标准 2；困难 3；龟缩流 6。"
+[DefenseNbMissionMax]
+what = "同时防守的最多地点数"
+does = "同时进行的防御任务（它守卫的地点）的最多数量。默认 2；简单和困难 4；龟缩流 10。闪击战没有列出此值，所以计为 0，什么也不守。"
+[HarcelementActif]
+what = "骚扰敌人"
+does = "1：它会骚扰（小规模袭击，在进攻前的等待结束之后）。0：从不。简单和龟缩流没有列出此值，所以计为 0，从不骚扰。"
+[UpgradeActifPourHarcelement]
+what = "用于骚扰的升级"
+does = "它能否用升级过的单位进行袭击。简单和闪击战没有列出此值（0）。"
+[CashReserveTempsActivation]
+what = "开始保留资金储备前的秒数"
+does = "对战开始后多少秒内它可以花掉全部资金；之后它会先留出已下单建筑所需的资金，再购买单位。游戏所有组都是 240（4 分钟）。"
+[PercentMoneyToReserveForBatimentAdmin]
+what = "为行政建筑保留的资金（%）"
+does = "它为行政建筑（提高收入）保留的资金比例（%）。游戏各组为 20%；困难 25%。尚未找到游戏在哪里读取它。"
+[PercentMoneyToUseForIdle]
+what = "空闲时使用的资金（%）"
+does = "没有别的事可做时它可以花在单位上的资金比例（%）：即下面的“空闲时生产”各数。为 0 时它从不在空闲时生产，那些数也不起作用。默认和简单 0；标准 50%；困难 100%。"
+[DeviseBonusIA]
+what = "开局额外资金（作弊）"
+does = "对战开始时它额外得到的资金（$）。只有困难有：在每个玩家开局的 200 $ 之外再加 150 $。"
+[IncomeBonusIA]
+what = "每次发放的额外收入（作弊）"
+does = "每次发放收入时额外加的资金（$）。只有困难有：1 $。"
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "停止前额外的行政建筑"
+does = "它在所需之外再建多少座行政建筑后停止建造；-1 表示无限制。默认和各档案为 -1；困难 2；简单和标准没有列出此值，所以计为 0：不建超出所需的。"
+[DepotNbEnPlusAvantDesactivation]
+what = "停止前额外的补给站"
+does = "只要还有可占的补给站位置，它在已有的之外再争取多少个补给站。默认 2；标准 3；困难 4；闪击战 1；简单没有列出此值（0）。"
+[ValueDepotMinForTruckFactory]
+what = "建造卡车工厂所需的最低补给站价值"
+does = "在一组补给站旁建卡车工厂之前，这些补给站至少还要存有这么多补给（$）：剩余的卡车运量乘以每车 3 $（核战争模式下 6 $），游戏称之为补给站的可用资金。所有组都是 100 $：五辆谢尔曼的价钱，玩家开局 200 $ 的一半。"
+[MinutesLeftMinForTruckFactory]
+what = "建造卡车工厂所需的最少剩余分钟"
+does = "在有时间限制的对战中，只有剩余时间至少还有这么多分钟时它才建卡车工厂。所有组都是 5。"
+[NbDepotMinForTruckFactory]
+what = "建造卡车工厂所需的最少补给站数"
+does = "一组（它自己的补给站，以及补给站组距离内的其他补给站）需要有多少个补给站，它才在那里建卡车工厂。所有组都是 2。"
+[NbUnitsDangerousDepot]
+what = "使补给站被视为危险的单位数"
+does = "它在自己某个补给站周围数到多少个单位，才认为该补给站有危险并派出援军。默认 1；龟缩流 4；困难和闪击战没有列出此值（0）。"
+[SeuilDistanceGroupeDepot]
+what = "补给站组距离"
+does = "在为新的卡车工厂选址时，离它远处补给站中心此距离之内（按单位行走的路线测量）的补给站算作一组；工厂建在该组中离它基地最近的补给站旁。所有组都是 234,000（900 m）。"
+[SeuilDistanceTruckFactory]
+what = "卡车工厂距离"
+does = "当它的某个补给站离它最近的卡车工厂至少这么远时（按卡车行驶的路线测量，而不是直线），它再建一座卡车工厂（仅在它已有卡车工厂时）。默认和各档案 520,000（2,000 m）；每个难度 780,000（3,000 m），而且没有档案改变它，所以对战中按 3,000 m 计算。"
+[NbMaxProductionForEnnemyUnit]
+what = "针对一个敌方单位最多生产的单位数"
+does = "为应对一个敌方单位它最多生产多少单位。所有组都是 1。尚未找到游戏在哪里读取它。"
+[NbProdIdleInfanterie]
+what = "空闲时生产：步兵"
+does = "当没有别的事可做且可以在空闲时花钱（“空闲时使用的资金”不为 0）时，它生产步兵直到有这么多。常规 2；榴弹炮和原型 1。"
+[NbProdIdleTank]
+what = "空闲时生产：坦克"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产坦克直到有这么多。常规和原型 3；闪击战 4。"
+[NbProdIdleAntitank]
+what = "空闲时生产：反坦克"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产反坦克单位直到有这么多。原型 1；龟缩流 2。"
+[NbProdIdleArti]
+what = "空闲时生产：火炮"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产火炮直到有这么多。榴弹炮 5；龟缩流 2。"
+[NbProdIdleDCA]
+what = "空闲时生产：防空"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产防空单位直到有这么多。龟缩流 2。"
+[NbProdIdleChasseur]
+what = "空闲时生产：战斗机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产战斗机直到有这么多。航空 2。"
+[NbProdIdleBomber]
+what = "空闲时生产：轰炸机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产轰炸机直到有这么多。航空 1。"
+[NbProdIdleChasseurBomber]
+what = "空闲时生产：战斗轰炸机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产战斗轰炸机直到有这么多。航空 2；闪击战 1。"
+[ProdIdleCanLaunchResearch]
+what = "空闲时进行研究"
+does = "1：没有别的事可做时，它也可以开始研究。只有原型有。"
+[BonusUnitesAvions]
+what = "偏好：飞机"
+does = "加给它能生产的每架飞机的偏好分。偏好按单位相加，只有它的单位之间的差别才有意义：它按每个单位比最偏好的单位低多少来评价。航空的 +500 让飞机成为它明显的首选。"
+[BonusUnitesArtillerie]
+what = "偏好：火炮"
+does = "加给它能生产的每个火炮单位的偏好分（如何相加见“偏好：飞机”）。榴弹炮的 +8,000 让火炮远远领先于其他一切。"
+[BonusUnitesExperimentales]
+what = "偏好：原型单位"
+does = "加给它能生产的每个原型单位（游戏第 12 类单位）的偏好分。原型 +400。"
+[BonusUnitesRecherche]
+what = "偏好：研究"
+does = "加给它还需研究的每个单位的偏好分（游戏的研究列表尚未将其记为完成），因此它研究得更多。原型 +400。"
+[BonusUnitesTank]
+what = "偏好：坦克"
+does = "加给它能生产的每辆坦克的偏好分。游戏的任何组都不用它，所以 AI 选项卡无法提供（“添加”只提供默认列出的值）；战役脚本会用（Bonus_Tank，150 到 200）。"
+[BonusBatimentOTF]
+what = "偏好：防御建筑"
+does = "加给每座防御建筑（碉堡和炮位：旗标 6）的偏好分。它们还让它更愿意在守卫的地点修筑防御：游戏按 0.5 + 此值 / 200 加权，龟缩流的 +200 时为 1.5，为 0 时为 0.5。"
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "开局使用操控类计谋的几率（%）"
+does = "对战开始时它使用操控类计谋的几率（%）。默认 40%；标准 60%；困难 80%。"
+[NbCarteDansLaReservePourLaDifficulte]
+what = "保留的计谋卡（难度）"
+does = "它留在手中而不使用的计谋卡；游戏把难度的数与档案的数相加。标准和困难 1。"
+[NbCarteDansLaReservePourLeProfil]
+what = "保留的计谋卡（档案）"
+does = "它留在手中而不使用的计谋卡；游戏把此数加到难度的数上。原型和龟缩流 1。"
+[TempsActivationBatimentCamoufle]
+what = "开始伪装建筑前的秒数"
+does = "对战开始后多少秒它才对自己的建筑使用伪装计谋。只有简单设置了：600（10 分钟）；其他为 0，从一开始。"
+[RepresailleFacteurUniteCombattante]
+what = "报复系数：战斗单位"
+does = "失去战斗单位后它反击的力度（倍数）；战役脚本把它与非战斗单位的系数作为一个报复设置一起设定（Represailles，1 或 2）。默认 1；简单 0.5；困难 2；龟缩流没有列出此值（0：不为它们报复）。"
+[RepresailleFacteurUniteNonCombattante]
+what = "报复系数：非战斗单位"
+does = "失去不作战的单位（卡车、建筑）后它反击的力度（倍数）；战役脚本把它与战斗单位的系数一起设定。默认 2；简单 1；困难 4；龟缩流没有列出此值（0）。"
+[TimeOutRepresailles]
+what = "报复时限（秒）"
+does = "它把一次报复维持多少秒后放弃。默认 120（2 分钟）；困难 240。"
+[ProbaRepereFake]
+what = "识破诱饵的几率（0 到 1）"
+does = "它在防守或进攻的地点识破诱饵的几率（0 到 1）；游戏每 24 秒判定一次。默认 0.5（50%）；简单 0.1；困难 0.8。"
+[TempsMemorisationUnitInvisible]
+what = "记住看不见的单位的秒数"
+does = "它记住一个已看不见的敌方单位多少秒。默认 300（5 分钟）；简单 60；困难 360。"
+[BonusValue]
+what = "对这些单位的额外偏好"
+does = "在游戏模式、难度和档案都在列表中的对战里，加给所列单位的偏好分（空列表适用于所有）。它们加在该组自身的偏好上（“偏好：飞机”等）。游戏自带的条目：核战争模式下核火炮 +400，所有难度和所有档案。"
+[ConsiderStackAsOneEnnemy]
+what = "将堆叠视为一个敌人"
+does = "1：把这些单位的堆叠算作一个敌人。游戏的条目为 1。"
+[UnitIDs]
+what = "单位（编号）"
+does = "该条目针对的单位，按每个单位自己的编号（其 Id）；AI 选项卡可以按名称选择。空列表将表示所有单位。"
+[WarModes]
+what = "游戏模式（编号）"
+does = "该条目生效的游戏模式，按游戏给它们的编号：0 1945年时代，1 1942年时代，2 1939年时代，3 全面战争模式，4 核战争模式（游戏列表的顺序）。"
+[AIDifficulties]
+what = "难度（编号）"
+does = "该条目生效的难度：0 简单，1 标准，2 困难。"
+[AIProfiles]
+what = "档案（编号）"
+does = "该条目生效的档案：0 常规，1 航空，2 榴弹炮，3 原型，4 闪击战，5 龟缩流，6 随机。"
+["TBluffCardDescriptor.LifeDuration"]
+what = "持续时间（秒）"
+does = "计谋使出后持续多少秒：游戏中为 240 到 360（4 到 6 分钟）。"
+["TBluffCardDescriptor.ShowInMenu"]
+what = "在计谋菜单中显示"
+does = "1：该卡在计谋菜单中，玩家和电脑都能使用。"
+["TBluffCardDescriptor.PositionInMenu"]
+what = "计谋菜单位置"
+does = "该卡在计谋菜单中的位置：越小越靠前。"
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "初始资金"
+does = "每个玩家开始一场战斗时的资金（$）。游戏中为 200：相当于十辆 20 $ 的谢尔曼。"
+[TempsGenAutoDevises]
+what = "自动付款的间隔（秒）"
+does = "能自行产生资金的建筑每隔多少秒付款一次（游戏的自动收入）；电脑玩家的额外收入（作弊）也按同样的节奏发放。游戏中为 4。"
+[QuantiteGenAutoDevises]
+what = "自动付款额"
+does = "一次自动付款的金额（$）。游戏中为 1：每 4 秒一次，每分钟 15 $。"
+[StockDeviseSupplementaireFacile]
+what = "简单难度下补给站的额外补给（战役）"
+does = "在战役的简单难度下，任务脚本为补给站增加的额外补给（向游戏申请）。游戏中为 72。对战不使用。"
+[QteDeviseParCamion]
+what = "每车货物的资金"
+does = "一辆补给卡车从补给站运回的资金（$）。游戏普通模式为 3，核战争模式为 6。补给站剩余的资金等于剩余车次乘以此值。"
+[NbCamionParConvoi]
+what = "每个车队的卡车数"
+does = "一个车队中一起离开补给站的卡车数。游戏中为 3：普通模式下一个车队运回 3 x 3 $ = 9 $。"
+[TempsENtreDeuxConvois]
+what = "车队之间的间隔（秒）"
+does = "补给站在两个车队之间等待的秒数。游戏中为 30：普通模式下一个补给站每分钟约 18 $（不算路程）。"
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "车队内卡车的间隔（最少）"
+does = "同一车队两辆卡车出发之间的最短时间（秒）。游戏中为 1.5。"
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "车队内卡车的间隔（最多）"
+does = "同一车队两辆卡车出发之间的最长时间（秒）。游戏中为 1.5。"
+[RatioForDepotNearlyDepleted]
+what = "补给站将空的比例"
+does = "当补给站剩余车次不超过初始车次的这个比例时，它被视为将空（电脑玩家随后会另找一个）。游戏中为 0.25（25%）。"
+[MinProductionTime]
+what = "最短生产时间"
+does = "无论有多少同类工厂在建造，任何单位的建造时间都不会短于这个秒数。游戏中为 1。"
+[MaximumBatimentProduction]
+what = "同时建造的建筑（最多）"
+does = "电脑玩家同时建造的建筑数量。游戏中为 2。"
+[MaxProductionQueueSize]
+what = "最长生产队列"
+does = "电脑玩家放入生产队列的最多单位数。游戏中为 30。"
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "同时进行的建筑和研究"
+does = "电脑玩家同时进行的建筑和研究数量。游戏中为 2。"
+[VirtualFactoryQueueMaximumSlot]
+what = "工厂队列的位置"
+does = "工厂队列有多少个位置。游戏中为 2。"
+[NbAvionsParAeroport]
+what = "每个机场的飞机数"
+does = "玩家每拥有一个机场可以拥有多少架飞机：飞机数达到此值乘以机场数后，就不能再建造飞机。游戏中为 8。"
+[NbMaxCardsInPool]
+what = "手中计谋卡（最多）"
+does = "一方最多能持有的计谋卡数。游戏中为 99：实际上没有限制。"
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "开局计谋卡（每方 1 名玩家）"
+does = "一方有 1 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "开局计谋卡（每方 2 名玩家）"
+does = "一方有 2 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "开局计谋卡（每方 3 名玩家）"
+does = "一方有 3 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "开局计谋卡（每方 4 名玩家）"
+does = "一方有 4 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "新计谋卡到来的时间（每方 1 名玩家）"
+does = "有 1 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315（每 1 分 45 秒）；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "新计谋卡到来的时间（每方 2 名玩家）"
+does = "有 2 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "新计谋卡到来的时间（每方 3 名玩家）"
+does = "有 3 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "新计谋卡到来的时间（每方 4 名玩家）"
+does = "有 4 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[ArmyValueForceLaunchAttack]
+what = "迫使进攻的军队价值"
+does = "电脑玩家在进攻前会把军队价值与此值比较：当那里的价值低于它时，游戏会检查兵力。游戏中为 600。"
+[MinArmyValueToUseManipulationCard]
+what = "使用操控类计谋的最低军队价值"
+does = "只有当电脑玩家的军队价值至少达到此值时，它才会使用操控类计谋。游戏中为 120。"
+[MaxWaitingRequest]
+what = "等待中的指令（最多）"
+does = "电脑玩家保持等待的最多生产指令数。游戏中为 30。"
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "建造新工厂前的等待指令数"
+does = "当电脑玩家有这么多生产指令在等待时，它会再建一座工厂，而不是继续排队。游戏中为 8。"
+[MaxTimeWaitingRequest]
+what = "指令的最长等待"
+does = "电脑玩家的生产指令在被取消前可以等待的秒数（当“取消等待中的指令”开启时）。游戏中为 60。"
+[CheckAndCancelWaitingRequest]
+what = "取消等待中的指令"
+does = "1：电脑玩家会取消等待时间超过最长等待的生产指令。游戏中为 1。"
+[BP_DepotAddedValue]
+what = "要保护的补给站价值"
+does = "电脑玩家决定保护什么时，一个补给站对它的价值。游戏中为 50，而指挥部为 150。"
+[BP_HqValue]
+what = "要保护的指挥部价值"
+does = "电脑玩家决定保护什么时，它的指挥部对它的价值。游戏中为 150，而补给站为 50。"
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "诱饵攻势中的诱饵单位（最少）"
+does = "电脑玩家的诱饵攻势派出的诱饵单位最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "诱饵攻势中的诱饵单位（最多）"
+does = "电脑玩家的诱饵攻势派出的诱饵单位最多数量。游戏中为 5。"
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "诱饵空袭中的诱饵飞机（最少）"
+does = "电脑玩家的诱饵空袭派出的诱饵飞机最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "诱饵空袭中的诱饵飞机（最多）"
+does = "电脑玩家的诱饵空袭派出的诱饵飞机最多数量。游戏中为 5。"
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "诱饵装甲进攻中的诱饵坦克（最少）"
+does = "电脑玩家的诱饵装甲进攻派出的诱饵坦克最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "诱饵装甲进攻中的诱饵坦克（最多）"
+does = "电脑玩家的诱饵装甲进攻派出的诱饵坦克最多数量。游戏中为 5。"
+[ConstructionDelayForFakeBuildingsMin]
+what = "诱饵建筑的间隔（最少）"
+does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等待的最短秒数。游戏中为 5。"
+[ConstructionDelayForFakeBuildingsMax]
+what = "诱饵建筑的间隔（最多）"
+does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等待的最长秒数。游戏中为 10。"
+
+# --- what isn't a number (the All values tab) ---
+[ClassNameForDebug]
+what = "调试名称"
+does = "单位在游戏错误信息和日志中的名称（Unit_M4_Sherman）。玩家看不到它。"
+[NameInMenuToken]
+what = "名称"
+does = "哪条游戏文本是它在建造菜单和卡片上的名称（谢尔曼为 N_UNI_137）。框下方的“修改文字…”可在所有语言中修改文字本身。"
+[TypeUnitHintToken]
+what = "类型行"
+does = "卡片在名称下方显示为单位类型的文本（谢尔曼为 TANK_madv）。vide：无。"
+[DescriptionUnitHintToken]
+what = "卡片说明"
+does = "卡片显示为简短说明的文本（谢尔曼为 DTANK_madv）。vide：无。"
+[EfficaceHintToken]
+what = "有效对象"
+does = "卡片显示它擅长对付什么的文本（E_ground：所有地面目标；unarmed：无武装）。vide：无。"
+[LongDescriptionUnitHintToken]
+what = "历史文本"
+does = "哪条文本是它的长说明：真实单位的历史（LD_UNI_137 讲述谢尔曼的历史）。"
+[WeaponDescriptor]
+what = "武器"
+does = "它的武器：带有炮塔及其上火炮的部分，每门火炮都有弹药。“单位”标签页的“武器”框可修改。空：无武装。"
+[ArmorDescriptor]
+what = "装甲"
+does = "它的装甲等级：多个单位共用的对象（谢尔曼指向 M4 Skink 的）。“单位”标签页的“装甲”从游戏的等级中选择。"
+[GfxDescriptor]
+what = "外观"
+does = "仅外观：它的3D模型及其部件的运动方式（履带、车轮、炮塔）。对建筑而言：它在地图上的外观，即游戏在其所在位置添加的许多部件的布局。"
+[GfxDescriptorIcone]
+what = "远处外观"
+does = "仅外观：镜头很高时代表它的东西：地面单位在地图桌上的圆形棋子，飞机的小模型。"
+[GfxDescriptorIconeJeton]
+what = "棋子"
+does = "仅外观：镜头很高时飞机在地图桌上的圆形棋子。"
+[GfxDescriptorCadavre]
+what = "残骸"
+does = "仅外观：被摧毁后留下的东西（残骸模型）。"
+[GfxDescriptorIconeCadavre]
+what = "士兵形象"
+does = "仅外观：小队的士兵模型之一（从名称看，是为阵亡士兵绘制的那个）。Studio 用它显示和重新涂装小队。"
+[GfxDescriptorFusilier]
+what = "步枪兵"
+does = "仅外观：小队步枪兵的模型。"
+[GfxDescriptorBazooka]
+what = "火箭筒兵"
+does = "仅外观：小队火箭筒兵的模型。"
+[SoundMotorDescriptor]
+what = "移动声音"
+does = "仅声音：它移动时的声音（发动机、飞机发动机），常用其他单位的（谢尔曼使用 ARL 40 的）。"
+[TextureForInterface]
+what = "卡片图片"
+does = "它在建造菜单和卡片上的图片。在“单位”标签页中，“将此视角用作卡片”会根据它的3D模型制作新图片。"
+[UpgradeRequire]
+what = "研究自"
+does = "它研究自哪个单位：该研究完成后即可建造（谢尔曼需要 M3 Lee）。空：无需研究。"
+[UnitIdleManager]
+what = "等待行为"
+does = "它等待时做什么：火炮或炮塔四处张望。常用其他单位的（谢尔曼使用 ARL 44 的）。"
+[TransportPourMorphe]
+what = "乘坐"
+does = "它在道路上行进时变成的卡车（小队或火炮）。“单位”标签页的“乘坐”框可选择。"
+[MouvementHandlerInfo]
+what = "飞行"
+does = "飞机如何飞行：包含其飞行数值的部分（打开可查看）。"
+[UniteTransportee]
+what = "空投"
+does = "运输机空投的单位（C47 空投美军伞兵）。带有伞兵标志而此处为空的飞机会使游戏崩溃。"
+[AmmoDeath]
+what = "坠毁爆炸"
+does = "飞机被击落时的爆炸：轻型或中型飞机的。"
+[UniteDefense]
+what = "防御单位"
+does = "为防御工事作战的单位：碉堡的火炮（马奇诺碉堡的炮塔）。"
+[BatimentPaths]
+what = "路径"
+does = "单位绕过建筑、进出建筑的路线：出口、入口、停机位和机场跑道。"
+["TBatimentPaths.FactoryExit"]
+what = "出口"
+does = "它建造的单位驶出到道路的路径（游戏中已确认：从大门驶上道路）。"
+["TBatimentPaths.FactoryEntry"]
+what = "入口"
+does = "单位进入它的路径。"
+["TBatimentPaths.ByPass"]
+what = "绕行"
+does = "单位绕过它的路径。"
+["TBatimentPaths.Vision"]
+what = "视点"
+does = "从名称看：建筑向外观察的点。"
+["TBatimentPaths.ParkingEntryLarge"]
+what = "停机位入口（大型飞机）"
+does = "机场供大型飞机进入停机位的路径。"
+["TBatimentPaths.ParkingEntrySmall"]
+what = "停机位入口（小型飞机）"
+does = "机场供小型飞机进入停机位的路径。"
+["TBatimentPaths.ParkingExit"]
+what = "停机位出口"
+does = "机场供飞机驶出停机位的路径。"
+["TBatimentPaths.MultiPathParking"]
+what = "停机位"
+does = "机场的停机位及其间的路径。"
+["TBatimentPaths.Runway"]
+what = "跑道"
+does = "机场的跑道：飞机起降的地方。"
+[TurretDescriptorList]
+what = "炮塔"
+does = "武器的炮塔（或炮架），每个都带有其火炮。“单位”标签页的“武器”框会逐步显示。"
+[MountedWeaponDescriptorList]
+what = "火炮"
+does = "这个炮塔上的火炮，每门都有弹药。"
+[EffectTag]
+what = "开火效果"
+does = "这门火炮开火时播放的效果（炮口闪光和烟），按效果名称指定。"
+["TAmmunition.Name"]
+what = "名称"
+does = "为弹药命名的文本（N_AR_lc：小口径）。"
+[TypeName]
+what = "种类"
+does = "为其种类命名的文本（T_ARM_0：穿甲弹）。"
+["TAmmunition.Icon"]
+what = "图片"
+does = "弹药的小图片，常用其他弹药的（20毫米穿甲弹使用火箭筒的）。"
+[StressManager]
+what = "压制表"
+does = "从名称看：按目标装甲等级规定一次命中对目标造成多少压制（使其趴下）的表。游戏的所有弹药都用同一个。"
+["TArmorDescriptor.Name"]
+what = "名称"
+does = "为这个装甲等级命名的文本（N_ARMU_1：飞机）。"
+["TArmorDescriptor.Icon"]
+what = "图片"
+does = "装甲等级的小图片。"
+[_Filename]
+what = "源文件"
+does = "Eugen 自己的源文件中写入此对象的文件（DataDir:\\CodeIA\\NDF\\...\\Gfx_M4_Sherman.ndf）。他们的内部记录：无需修改。"
+[_Line]
+what = "源文件行"
+does = "此对象在 Eugen 源文件中开始的行。他们的内部记录：无需修改。"
+[_Column]
+what = "源文件列"
+does = "在 Eugen 源文件该行中的列。他们的内部记录：无需修改。"
+[_ShortDatabaseName]
+what = "短名称"
+does = "Eugen 的工具给此对象起的短名称。他们的内部记录：无需修改。"
