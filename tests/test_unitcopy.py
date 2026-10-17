@@ -125,6 +125,35 @@ class Models(unittest.TestCase):
     def test_an_effect_mesh_is_no_model(self):
         self.assertEqual(StudioApi._unit_models(SHARED, SOLO), [])
 
+    def test_units_with_no_model_are_not_a_new_unit_s_start(self):
+        """The owner, 2026-10-17: "if those units don't have models, just don't include them": a unit whose models
+        aren't in the mesh packs (the SOLO gun names a file the game hasn't got) or that has none (the SOLO
+        paratroopers) is left out of New unit; a building isn't (its look is a layout of pieces, not a model)."""
+        from unittest import mock
+        from rusemod import models
+
+        class Library:  # the mesh packs: the King Tiger's model is there, the gun's file isn't
+            def __init__(self, game):
+                pass
+
+            def find(self, name, lighter=False):
+                return name if "tigre_ii" in name else None
+
+            def close(self):
+                pass
+
+        index = FakeIndex({**SHARED._uses, GUN + ":GfxDescriptor.MeshDescriptor": [
+            ("FileName", "file", "ww2/res3d/units/us/canon/gun/canon_fire_reloadlod0.ase2ndfbin")]})
+        index.path = "index.sqlite"
+        api = object.__new__(StudioApi)
+        api._no_model, api._units = None, [{"address": a, "class": c} for a, c in (
+            (KING, "TUniteAuSolDescriptor"), (GUN, "TUniteAuSolDescriptor"), (SOLO, "TInfanterieDescriptor"),
+            (E + "Descriptor_Building_Depot", "TBatimentDescriptor"))]
+        with mock.patch.object(StudioApi, "_game", return_value=Path("game")), \
+                mock.patch.object(models, "Library", Library):
+            self.assertEqual(api._modelless(index), {GUN, SOLO})
+            self.assertIs(api._modelless(index), api._modelless(index))  # worked out once
+
 
 # --- a new unit's own copy of its model ---
 MEMBER = unitmodel.texture_member(TEX)             # the Panzer's texture in ZZ_Win.dat

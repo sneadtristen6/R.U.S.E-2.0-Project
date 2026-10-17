@@ -688,6 +688,9 @@ async function refreshList() {
     state.edited = new Set(await api().edited());
   } catch (err) { problem(err); return; }
   if (state.onlyMod && state.mod) res.units = res.units.filter((u) => u.new || state.edited.has(u.address));
+  // New unit starts from a unit with a model: those the Studio can't read a model for are left out (the owner,
+  // 2026-10-17: "if those units don't have models, just don't include them")
+  if (state.start === "new") res.units = res.units.filter((u) => !u.no_model);
   $("count").textContent = state.words.units.replace("{n}", res.units.length);
   renderGroups(res.groups || [], res.types || []);
   $("unit-list").replaceChildren(...res.units.map((u) => {

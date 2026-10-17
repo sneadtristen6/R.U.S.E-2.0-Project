@@ -525,6 +525,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._value_files: dict[tuple, object] = {}  # the All values tab's last data files read (_value_file)
         self._value_files_lock = threading.Lock()
         self._listed: tuple | None = None  # (ZZ_Win.dat's path, time and size, the units its unit list names)
+        self._no_model: tuple | None = None  # (the index and game, the units with no model to start from: _modelless)
 
     # --- where things are ---
     def _game(self) -> Path | None:
@@ -618,6 +619,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             self._units = ix.units(ALL_CLASSES)
         return self._units
 
+    def _modelless(self, ix: Index) -> frozenset[str]:
+        """The game's units (not buildings) with no model the Studio can read (_unit_models' files not in the mesh
+        packs): the SOLO 57 mm gun names a file the game hasn't got, the SOLO paratroopers' graphics only an effect.
+        They aren't offered to start a new unit from (the owner, 2026-10-17: "if those units don't have models, just
+        don't include them because they're not going to be modeled"). Buildings stay: their look is a layout of
+        pieces, not a model (a building editor of its own). Worked out once a session, about a second."""
+        game = self._game()
+        key = (str(ix.path), str(game))
+        if self._no_model is not None and self._no_model[0] == key:
+            return self._no_model[1]
+        found: frozenset[str] = frozenset()
+        if game is not None:
+            from rusemod import models
+            try:
+                lib = models.Library(game)
+            except (OSError, ValueError):  # not a game rule: the mesh packs can't be read; nothing is left out
+                lib = None
+            if lib is not None:
+                try:
+                    found = frozenset(u["address"] for u in self._all_units(ix) if KIND_OF.get(u["class"]) != "buildings"
+                                      and not any(lib.find(m, lighter=False) for m in self._unit_models(ix, u["address"])))
+                finally:
+                    lib.close()
+        self._no_model = (key, found)
+        return found
+
     def _new_units(self) -> dict[str, NewUnit]:
         """The current mod's new units (none when there's no mod, or its files can't be read: browsing goes on)."""
         try:
@@ -644,6 +671,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             type_names = {k: html.unescape(t).strip() for k, t in ix.names([u["type_key"] for u in rows], told).items()}
             game_names = names if lang != schema.BASE else ix.names([u["key"] for u in rows], told)
             descs = ix.names([u.get("desc_key") for u in rows], told)
+            modelless = self._modelless(ix)
         finally:
             ix.close()
         by_address = {u["address"]: u for u in rows}
@@ -695,7 +723,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         "nation": u["nation"], "nation_name": schema.nation(u["nation"], lang),
                         "factory": u["factory"], "slot": u["slot"], "new": u.get("new", False),
                         "source": u.get("source"), "group": g, "type": utype, "game_name": game_name, "desc": desc,
-                        "decoy": g == "fake"})
+                        "decoy": g == "fake", "no_model": u["address"] in modelless})  # (not a new unit's start)
         return {"units": out, "total": len(rows) + len(new), "groups": [g for g in GROUPS if g in present],
                 "types": _type_order(kinds) if kind in UNIT_KINDS else []}
 
@@ -1295,6 +1323,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             about = ix.names([k for k in (key, dkey) if k], told)
             game_name, desc = (about.get(key) or "").strip(), (about.get(dkey) or "").strip()
             source_name = self._names(ix, [new.source], lang)[new.source] if new else None
+            modelless = real in self._modelless(ix)
         finally:
             ix.close()
         editable, why = self._editable(o)
@@ -1351,7 +1380,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "parts": parts, "uses": uses, "used_by": used_by, "editable": editable, "why_not": why,
                 "named": bool(o["export"]), "share": share,
                 "users": users if o["export"] and o["class"] not in KIND_OF and users > 1 else 0,
-                "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None,
+                # (a unit with no model of its own the Studio can read isn't offered to start from: _modelless)
+                "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None and not modelless,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 # a unit with an armour: the page then asks for armour(address), its level picked there
