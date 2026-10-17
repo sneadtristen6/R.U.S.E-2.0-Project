@@ -732,7 +732,7 @@ def grow_clone(clone, read_glad, cx: int, cy: int, clouds: float | None, room: s
         n = _swap_strings(cluster, _renamer(
             re.compile(r"^(Patchable[\\/]map[\\/])(" + mf + r")([\\/]" + name + r")$", re.I),
             re.compile(r"^(map[\\/])(" + mf + r")([\\/]" + name + r"\.ndfbin)$", re.I))(new))
-        if n < 1:
+        if n < 1:  # not a game rule: our resizing only knows the game's own maps' layout of their cluster
             raise BigMapError(f"maps/{new}: {clone.source}'s map cluster doesn't load its {name} the way the game's "
                               f"maps do, so the new size can't be given to it")
     clone.glad[cm] = cluster.to_member(compress=bool(cluster.flags & 0x80))
