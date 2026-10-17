@@ -25,6 +25,8 @@ from .kdt import Kdt, Q_MASK
 from .scenario import Scenario, Zone
 
 LEVEL = 10000.0     # a sector's height in the zone map: its number times this (every shipped zone map)
+ZONE_EDGE_MOST = 1310720.0   # a zone map triangle's edges at most this long (four cells, 5 km; the shipped zone maps'
+                             # longest is 1,346,950)
 BAND = 20000.0      # the border band: the inner ring this far inside the outline (the shipped zones' median)
 MITER = 2.5         # an inner ring's point at most this many band widths from its outline's point (a sharp corner)
 MOST_CELLS = 4096   # the grid: at most this many cells along the map's longer side (D-Day: 3,840 x 2,560, 4 m each)
@@ -842,7 +844,12 @@ def zone_mesh(old: Zone, ring: list, height_at, band: float = BAND, w: float | N
 
 def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes:
     """The zone map (`template`: the scenario's own) made again over `rings` (number -> counter-clockwise outline):
-    each sector's outline cut into triangles at its number x LEVEL, over the whole map (rusemod.kdt_edit.rebuild)."""
+    each sector's outline cut into triangles at its number x LEVEL, over the whole map (rusemod.kdt_edit.rebuild).
+
+    Made the way the shipped zone maps are, of many small triangles: no edge longer than ZONE_EDGE_MOST (every
+    triangle cut in four, all at once, until none is), so the tree has many leaves. On a map four times D-Day's size
+    with four sectors, a zone map of eight triangles a quarter of the map wide had the game light up the same sector
+    wherever the player pointed; cut into small triangles in a tree of several leaves, every sector worked."""
     from . import kdt_edit
     k = Kdt(template)
     k.subtrees = k.subtrees[:1]
@@ -863,6 +870,7 @@ def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes
         zq = k.to_quant(2, number * LEVEL)
         positions += [(x, y, zq) for x, y in q]
         tris += [(base + a, base + b, base + c) for a, b, c in triangulate(q)]
+    positions, tris = _cut_small(positions, tris, width / Q_MASK, height / Q_MASK)
     k.set_mesh(0, positions, [v for t in tris for v in t], [(0.0, 0.0, 1.0)] * len(positions))
     kdt_edit.rebuild(k, 0, positions, tris)
     k.set_main_entries([(0, 0, 0, float(width)), (2, 0, 0, 0.0), (0, 1, 0, float(height)), (2, 1, 0, 0.0),
@@ -871,6 +879,38 @@ def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes
     if problems:
         raise SectorError(f"the new zone map's tree is wrong: {problems[0]}")
     return k.to_bytes()
+
+
+def _cut_small(positions: list, tris: list, sx: float, sy: float) -> tuple[list, list]:
+    """`tris` (vertex triples into `positions`, quantized (x, y, z); `sx`, `sy`: map units a step) each cut in four at
+    its edges' middles, every triangle at once, until no edge is longer than ZONE_EDGE_MOST map units. An edge's
+    middle is worked out from its two ends' places alone, so the sectors on either side of a border cut it at the
+    same point (no gaps); a triangle's corners stay counter-clockwise."""
+    positions = list(positions)
+
+    def longest():
+        most = 0.0
+        for a, b, c in tris:
+            for u, v in ((a, b), (b, c), (c, a)):
+                pu, pv = positions[u], positions[v]
+                most = max(most, math.hypot((pu[0] - pv[0]) * sx, (pu[1] - pv[1]) * sy))
+        return most
+    while tris and longest() > ZONE_EDGE_MOST:
+        middle: dict = {}
+
+        def mid(u, v):
+            key = (min(u, v), max(u, v))
+            if key not in middle:
+                pu, pv = positions[u], positions[v]
+                middle[key] = len(positions)
+                positions.append(((pu[0] + pv[0]) // 2, (pu[1] + pv[1]) // 2, pu[2]))
+            return middle[key]
+        cut = []
+        for a, b, c in tris:
+            ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
+            cut += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
+        tris = cut
+    return positions, tris
 
 
 # --- all of it ---

@@ -73,6 +73,26 @@ class KdtRoot(unittest.TestCase):
         self.assertEqual(level_at(k, 70000.0, 80000.0), 0)
         self.assertEqual(level_at(k, 150000.0, 80000.0), 1)
 
+    def test_a_big_map_is_cut_into_small_triangles_and_small_leaves(self):
+        # four quarter-map sectors on a map 80 km across: no edge over ZONE_EDGE_MOST, a tree of many leaves, every
+        # place still in its own sector
+        size = 64 * 327680.0
+        h = size / 2
+        rings = {n: [(h * (n % 2), h * (n // 2)), (h * (n % 2) + h, h * (n // 2)), (h * (n % 2) + h, h * (n // 2) + h),
+                     (h * (n % 2), h * (n // 2) + h)] for n in range(4)}
+        k = Kdt(S.zone_map(template(), rings, size, size))
+        pos = [(k.to_world(0, p[0]), k.to_world(1, p[1])) for p in k.positions(0)]
+        idx = k.indices(0)
+        longest = max(((pos[idx[t + i]][0] - pos[idx[t + (i + 1) % 3]][0]) ** 2
+                       + (pos[idx[t + i]][1] - pos[idx[t + (i + 1) % 3]][1]) ** 2) ** 0.5
+                      for t in range(0, len(idx), 3) for i in range(3))
+        self.assertLessEqual(longest, S.ZONE_EDGE_MOST + 2 * size / 32767)
+        self.assertGreater(len(idx) // 3, 8)
+        self.assertGreaterEqual(len(k.trilists(0)), 5)        # the 80 km test's working zone map had 5
+        self.assertEqual(kdt_edit.check(k, 0), [])
+        for n in range(4):
+            self.assertEqual(level_at(k, h * (n % 2) + h / 3, h * (n // 2) + h / 3), n)
+
     def test_every_triangle_is_listed_on_a_side_it_touches(self):
         k = Kdt(S.zone_map(template(), {0: list(RING_A), 1: list(RING_B)}, W, H))
         listed = {t for lst in k.trilists(0) for t in lst}

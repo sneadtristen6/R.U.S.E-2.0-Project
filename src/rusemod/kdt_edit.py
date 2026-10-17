@@ -94,9 +94,8 @@ def refit(kdt: Kdt, s: int, moved: set[int]) -> str:
 def rebuild(kdt: Kdt, s: int, pos=None, tris=None) -> None:
     """Give subtree `s` a new tree over its triangles: x/y splits at the median of the triangles' centres (on the
     wider axis), a triangle going to each side it touches (the first child: max >= v; the second: min <= v), leaves
-    of at most MAX_LEAF triangles. The root is always a split, even over a handful of triangles: every shipped
-    tree starts with one, and on a zone map of four sectors whose tree was a single leaf the game picked the same
-    sector wherever the player pointed."""
+    of at most MAX_LEAF triangles. The root is always a split, even over a handful of triangles: every shipped tree
+    starts with one."""
     if pos is None or tris is None:
         pos, tris = triangles(kdt, s)
     box = []
