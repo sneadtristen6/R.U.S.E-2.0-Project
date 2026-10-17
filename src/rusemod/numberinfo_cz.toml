@@ -34,10 +34,10 @@ what = "Bonus rychlosti na silnici"
 does = "O kolik rychleji jede po silnici než mimo ni: 0,6 je asi o 60 % rychleji. Družstva a děla ho dostávají jako nákladní auto, ve které se mění. Letadla a nákladní auta mají 1."
 [MaxAcceleration]
 what = "Zrychlení"
-does = "Jak rychle nabere rychlost. Většina tanků má 3 900."
+does = "Jak rychle nabere rychlost: hra každých 0,2 sekundy přičte k její rychlosti pětinu této hodnoty, takže její rychlost dělená touto hodnotou je počet sekund do plné rychlosti (zobrazeno vedle pole). Většina tanků má 3 900: Sherman (4 550) je na plné rychlosti asi za 1,2 s."
 [MaxDeceleration]
 what = "Brzdění"
-does = "Jak rychle zpomalí a zastaví."
+does = "Jak rychle zpomalí a zastaví: její rychlost dělená touto hodnotou je počet sekund do zastavení z plné rychlosti (zobrazeno vedle pole)."
 [TempsDemiTour]
 what = "Doba otočení"
 does = "Kolik sekund trvá otočit se opačným směrem. Pěchota 0,01 (hned), vozidla 0,5, tanky 1, nejpomalejší 6."
@@ -76,10 +76,10 @@ what = "Nesené bomby nebo rakety"
 does = "Kolik ran své druhé zbraně (bomby, rakety) letadlo nese, než letí domů přezbrojit: 1 až 4 ve hře."
 [ProductionPrice]
 what = "Cena"
-does = "Kolik stojí stavba, v $, v každém z pěti dat bitvy (hra drží jednu cenu na datum)."
+does = "Kolik stojí stavba, v $, v každém z pěti herních režimů, v pořadí hry: 1945, 1942, 1939, Totální válka, Nukleární (hra bere cenu režimu bitvy)."
 [ProductionTime]
 what = "Doba stavby"
-does = "Kolik sekund trvá stavba. S více továrnami jejího druhu se dělí mezi ně."
+does = "Kolik sekund trvá stavba. Staví-li ji více továren jejího druhu, čas se mezi ně dělí, ale nikdy neklesne pod nejkratší dobu výroby hry (z karty Ekonomika)."
 [UpgradePrice]
 what = "Cena výzkumu"
 does = "Kolik stojí výzkum, v $, než ji lze stavět (jednotky vyzkoumané z jiné)."
@@ -91,7 +91,7 @@ what = "Je vylepšení"
 does = "1: jednotka je vylepšením té, ze které se zkoumá (po výzkumu ji nahradí v nabídce stavby)."
 [ShowInMenu]
 what = "Zobrazena v nabídce stavby"
-does = "1: zobrazena ve své nabídce stavby v tom datu bitvy (jedna hodnota pro každé z pěti dat)."
+does = "1: zobrazena v nabídce stavby v tom herním režimu; jedna hodnota pro každý z pěti, v pořadí hry: 1945, 1942, 1939, Totální válka, Nukleární. Pozdní tanky hry jsou zobrazeny jen v 1945, Totální válce a Nukleárním režimu."
 [PositionInMenu]
 what = "Místo v nabídce"
 does = "Kde stojí ve své nabídce stavby: jednotky stejné linie sdílejí místo, vylepšení se na něj vrší."
@@ -752,20 +752,20 @@ does = "Kolik sekund bitvy čeká, než vůbec zaútočí; do té doby ani neobt
 what = "Nejvíc útoků najednou"
 does = "Nejvíc útoků (a odvet), které vede současně. -1 znamená bez omezení, což používají všechny sady hry."
 [MissionFacteurLancementAttaque]
-what = "Útočí, když je jeho síla tolikrát větší než nepřítelova"
-does = "Jak silné musí být jeho síly proti tomu, co má nepřítel na daném místě, jako násobek nepřátelské síly, než tam zaútočí (hra to nejdřív násobí pevným činitelem). Nižší útočí dřív a s menšími silami. Výchozí 0,7; Nízká a Blitzkrieg 0,2; Vysoká 0,9; Želva 1."
+what = "Agresivita (práh útoku)"
+does = "To, čemu návrháři misí hry říkají jeho agresivita (Agressivite, kterou skripty kampaně mění během mise): hra ji násobí pevným činitelem a porovnává síly na místě, než tam zaútočí. Sady hry: Výchozí 0,7; Nízká a Blitzkrieg 0,2; Vysoká 0,9; Želva 1. Kterým směrem ho vyšší číslo posouvá, zatím není změřeno: vyzkoušejte ve hře."
 [MissionFacteurEnoughToDestroy]
 what = "Síla proti nepříteli"
-does = "Kolik síly shromáždí, než usoudí, že stačí ke zničení nepřítele, jako násobek nepřátelské síly. Výchozí 1,2; Nízká 0,2; Střední 1,4; Vysoká 1,8; Blitzkrieg 1,5; Želva 1."
+does = "Kolik síly pošle do útoku, jako násobek síly nepřítele na místě (návrháři misí tomu říkají posila pro útok, Renfort_pour_attaque). Výchozí 1,2; Nízká 0,2; Střední 1,4; Vysoká 1,8; Blitzkrieg 1,5; Želva 1."
 [DefenseDistanceMenace]
 what = "Vzdálenost hrozby"
 does = "Jak daleko od místa, které brání, se nepřítel počítá jako hrozba; hra udělá hlídanou zónu asi 1,4krát větší (vzdálenost krát odmocnina ze 2). 312 000 (1 200 m) v sadách hry; Želva 26 000 000 (100 km: vše na mapě je hrozba)."
 [DefenseDistanceUrgent]
 what = "Vzdálenost naléhavé hrozby"
-does = "Jak blízko k místu, které brání, musí nepřítel přijít, aby hrozbu bral jako naléhavou. Výchozí 156 000 (600 m); Vysoká 208 000 (800 m); Blitzkrieg 78 000 (300 m)."
+does = "Jak blízko k místu, které brání, musí nepřítel přijít, aby byla obrana naléhavá (Distance_Defense_Urgente návrhářů misí, vedle vzdálenosti hrozby). Výchozí 156 000 (600 m); Vysoká 208 000 (800 m); Blitzkrieg 78 000 (300 m)."
 [DefenseMaxUnitOnPosition]
-what = "Nejvíc jednotek na obranné pozici"
-does = "Nejvíc svých jednotek, které postaví na jednu obrannou pozici. Výchozí 1; Střední 2; Vysoká 3; Želva 6."
+what = "Jednotky posílané k nenaléhavé obraně"
+does = "Kolik svých jednotek pošle k obraně, která není naléhavá (Nbre_Unit_Defense_Non_Urgente návrhářů misí). Výchozí 1; Střední 2; Vysoká 3; Želva 6."
 [DefenseNbMissionMax]
 what = "Nejvíc míst bráněných najednou"
 does = "Nejvíc obranných misí (míst, která hlídá), které vede současně. Výchozí 2; Nízká a Vysoká 4; Želva 10. Blitzkrieg ji neuvádí, takže počítá 0 a nehlídá nic."
@@ -777,10 +777,10 @@ what = "Vylepšení pro obtěžování"
 does = "Zda smí na nájezdy použít vylepšené jednotky. Nízká a Blitzkrieg ji neuvádějí (0)."
 [CashReserveTempsActivation]
 what = "Sekundy před držením peněžní rezervy"
-does = "Kolik sekund bitvy, než začne odkládat peníze místo utrácení všeho. 240 (4 minuty) ve všech sadách hry."
+does = "Kolik sekund bitvy smí utratit všechny peníze; potom odkládá peníze, které potřebují objednané budovy, než koupí jednotky. 240 (4 minuty) ve všech sadách hry."
 [PercentMoneyToReserveForBatimentAdmin]
 what = "% peněz na administrativní budovy"
-does = "Podíl jeho peněz, v %, který drží na administrativní budovy (zvyšují příjem). 20 % v sadách hry; Vysoká 25 %."
+does = "Podíl jeho peněz, v %, který drží na administrativní budovy (zvyšují příjem). 20 % v sadách hry; Vysoká 25 %. Kde ho hra čte, zatím není nalezeno."
 [PercentMoneyToUseForIdle]
 what = "% peněz utracených v nečinnosti"
 does = "Podíl jeho peněz, v %, který smí utratit za jednotky, když nemá nic jiného na práci: čísla Staví v nečinnosti níže. Při 0 v nečinnosti nikdy nestaví a ta čísla nic nedělají. Výchozí a Nízká 0; Střední 50 %; Vysoká 100 %."
@@ -816,7 +816,7 @@ what = "Vzdálenost továrny na nákladní auta"
 does = "Postaví další továrnu na nákladní auta, když je některý jeho sklad aspoň tak daleko od jeho nejbližší továrny na nákladní auta, měřeno cestou, kudy jezdí nákladní auta, ne vzdušnou čarou (jen když už továrnu na nákladní auta má). Výchozí a profily 520 000 (2 000 m); každá obtížnost 780 000 (3 000 m), a protože to žádný profil nemění, v bitvě platí 3 000 m."
 [NbMaxProductionForEnnemyUnit]
 what = "Nejvíc jednotek postavených proti jedné nepřátelské"
-does = "Nejvíc jednotek, které postaví jako odpověď na jednu nepřátelskou jednotku. 1 ve všech sadách."
+does = "Nejvíc jednotek, které postaví jako odpověď na jednu nepřátelskou jednotku. 1 ve všech sadách. Kde ho hra čte, zatím není nalezeno."
 [NbProdIdleInfanterie]
 what = "Staví v nečinnosti: pěchota"
 does = "Když nemá nic jiného na práci a smí utrácet v nečinnosti (% peněz utracených v nečinnosti není 0), staví pěchotu, dokud jí nemá tolik. Standardní 2; Houfnice a Prototyp 1."
@@ -855,10 +855,10 @@ what = "Preference: prototypy"
 does = "Body preference přidané každému prototypu, který může postavit (jednotky kategorie 12 hry). Prototyp +400."
 [BonusUnitesRecherche]
 what = "Preference: výzkum"
-does = "Body preference, které přidává za výzkum. Prototyp +400."
+does = "Body preference přidané každé jednotce, kterou ještě musí vyzkoumat (seznam výzkumu hry ji ještě nevede jako hotovou), takže víc zkoumá. Prototyp +400."
 [BonusUnitesTank]
 what = "Preference: tanky"
-does = "Body preference přidané každému tanku, který může postavit. Žádná sada hry ji nepoužívá, takže ji karta Počítač nemůže nabídnout: Přidat nabízí jen hodnoty, které uvádí Výchozí."
+does = "Body preference přidané každému tanku, který může postavit. Žádná sada hry ji nepoužívá, takže ji karta Počítač nemůže nabídnout (Přidat nabízí jen hodnoty, které uvádí Výchozí); skripty kampaně ano (Bonus_Tank, 150 až 200)."
 [BonusBatimentOTF]
 what = "Preference: obranné budovy"
 does = "Body preference přidané každé obranné budově (bunkry a dělostřelecká postavení: flag 6). Také ho víc vedou stavět obranu na místech, která hlídá: hra to váží jako 0,5 + tato hodnota / 200, tedy 1,5 při +200 Želvy proti 0,5 při 0."
@@ -876,10 +876,10 @@ what = "Sekundy před maskováním budov"
 does = "Kolik sekund bitvy, než použije lest maskování na své budovy. Nastavuje ji jen Nízká: 600 (10 minut); jinde 0, od začátku."
 [RepresailleFacteurUniteCombattante]
 what = "Faktor odvety: bojové jednotky"
-does = "Jak tvrdě odpoví po ztrátě bojových jednotek, jako násobek. Výchozí 1; Nízká 0,5; Vysoká 2; Želva ji neuvádí (0: žádná odveta za ně)."
+does = "Jak tvrdě odpoví po ztrátě bojových jednotek, jako násobek; skripty kampaně ho nastavují spolu s faktorem pro nebojové jako jedno nastavení odvety (Represailles, 1 nebo 2). Výchozí 1; Nízká 0,5; Vysoká 2; Želva ho neuvádí (0: žádná odveta za ně)."
 [RepresailleFacteurUniteNonCombattante]
 what = "Faktor odvety: nebojové jednotky"
-does = "Jak tvrdě odpoví po ztrátě jednotek, které nebojují (nákladní auta, budovy), jako násobek. Výchozí 2; Nízká 1; Vysoká 4; Želva ji neuvádí (0)."
+does = "Jak tvrdě odpoví po ztrátě jednotek, které nebojují (nákladní auta, budovy), jako násobek; skripty kampaně ho nastavují spolu s faktorem pro bojové. Výchozí 2; Nízká 1; Vysoká 4; Želva ho neuvádí (0)."
 [TimeOutRepresailles]
 what = "Časový limit odvety"
 does = "Kolik sekund drží odvetu, než ji vzdá. Výchozí 120 (2 minuty); Vysoká 240."

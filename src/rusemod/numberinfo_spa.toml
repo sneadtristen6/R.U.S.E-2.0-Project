@@ -34,10 +34,10 @@ what = "Bonificación de velocidad en carretera"
 does = "Cuánto más rápido va por carretera que fuera de ella: 0,6 es un 60 % más rápido. Las escuadras y los cañones la reciben como el camión en que se convierten. Aviones y camiones tienen 1."
 [MaxAcceleration]
 what = "Aceleración"
-does = "Lo rápido que alcanza su velocidad. La mayoría de los tanques tienen 3.900."
+does = "Lo rápido que alcanza su velocidad: el juego suma una quinta parte de este valor a su velocidad cada 0,2 segundos, así que su velocidad dividida por este valor da los segundos que tarda en llegar a toda velocidad (se muestra junto a la casilla). La mayoría de los tanques tienen 3.900: un Sherman (4.550) va a toda velocidad en 1,2 s aproximadamente."
 [MaxDeceleration]
 what = "Frenado"
-does = "Lo rápido que frena y se detiene."
+does = "Lo rápido que frena y se detiene: su velocidad dividida por este valor da los segundos que tarda en detenerse desde toda velocidad (se muestra junto a la casilla)."
 [TempsDemiTour]
 what = "Tiempo de media vuelta"
 does = "Cuántos segundos tarda en darse la vuelta. Infantería 0,01 (al instante), vehículos 0,5, tanques 1, los más lentos 6."
@@ -76,10 +76,10 @@ what = "Bombas o cohetes que lleva"
 does = "Cuántos disparos de su segunda arma (bombas, cohetes) lleva un avión antes de volver a rearmarse: de 1 a 4 en el juego."
 [ProductionPrice]
 what = "Precio"
-does = "Lo que cuesta construirla, en $, en cada una de las cinco fechas de batalla (el juego guarda un precio por fecha)."
+does = "Lo que cuesta producirla, en $, en cada uno de los cinco modos de juego, en el orden del juego: 1945, 1942, 1939, Guerra total, Nuclear (el juego usa el del modo de la batalla)."
 [ProductionTime]
 what = "Tiempo de construcción"
-does = "Cuántos segundos tarda en construirse. Con más de una fábrica de su tipo, se reparte entre ellas."
+does = "Cuántos segundos tarda en construirse. Si varias fábricas de su tipo la construyen, el tiempo se reparte entre ellas, pero nunca baja del tiempo de producción mínimo del juego (el de la pestaña Economía)."
 [UpgradePrice]
 what = "Precio de investigación"
 does = "Lo que cuesta investigarla, en $, antes de poder construirla (unidades que se investigan a partir de otra)."
@@ -91,7 +91,7 @@ what = "Es una mejora"
 does = "1: la unidad es una mejora de aquella desde la que se investiga (la sustituye en el menú de construcción una vez investigada)."
 [ShowInMenu]
 what = "Mostrada en el menú de construcción"
-does = "1: mostrada en su menú de construcción en esa fecha de batalla (un valor por cada una de las cinco fechas)."
+does = "1: visible en su menú de construcción en ese modo de juego; un valor para cada uno de los cinco, en el orden del juego: 1945, 1942, 1939, Guerra total, Nuclear. Los tanques de final de guerra del juego solo aparecen en 1945, Guerra total y Nuclear."
 [PositionInMenu]
 what = "Hueco en el menú"
 does = "Dónde está en su menú de construcción: las unidades de la misma línea comparten un hueco y las mejoras se apilan en él."
@@ -752,20 +752,20 @@ does = "Cuántos segundos de batalla espera antes de atacar; hasta entonces tamp
 what = "Máximo de ataques a la vez"
 does = "El máximo de ataques (y represalias) que lleva a la vez. -1 significa sin límite, lo que usan todos los conjuntos del juego."
 [MissionFacteurLancementAttaque]
-what = "Ataca cuando su fuerza es tantas veces la del enemigo"
-does = "Lo fuerte que debe ser su fuerza frente a lo que el enemigo tiene en un lugar, como múltiplo de la fuerza enemiga, antes de lanzar allí un ataque (el juego la multiplica antes por un factor fijo). Más bajo ataca antes con menos. Predeterminado 0,7; Fácil y Blitzkrieg 0,2; Difícil 0,9; Tortuga 1."
+what = "Agresividad (umbral de ataque)"
+does = "Lo que los diseñadores de misiones del juego llaman su agresividad (Agressivite, que los scripts de la campaña cambian en plena misión): el juego la multiplica por un factor fijo y compara las fuerzas en un lugar antes de lanzar allí un ataque. Los conjuntos del juego: Predeterminado 0,7; Fácil y Blitzkrieg 0,2; Difícil 0,9; Tortuga 1. Hacia qué lado lo empuja un número más alto aún no está medido: pruébalo en el juego."
 [MissionFacteurEnoughToDestroy]
 what = "Fuerza reunida contra un enemigo"
-does = "Cuánta fuerza reúne antes de creer que tiene bastante para destruir a un enemigo, como múltiplo de la fuerza enemiga. Predeterminado 1,2; Fácil 0,2; Medio 1,4; Difícil 1,8; Blitzkrieg 1,5; Tortuga 1."
+does = "Cuánta fuerza manda a un ataque, como múltiplo de la fuerza enemiga allí (los diseñadores de misiones lo llaman refuerzo para el ataque, Renfort_pour_attaque). Predeterminado 1,2; Fácil 0,2; Medio 1,4; Difícil 1,8; Blitzkrieg 1,5; Tortuga 1."
 [DefenseDistanceMenace]
 what = "Distancia de amenaza"
 does = "A qué distancia de un lugar que defiende un enemigo cuenta como amenaza; el juego hace la zona vigilada unas 1,4 veces esta distancia (la distancia por la raíz de 2). 312.000 (1.200 m) en los conjuntos del juego; Tortuga 26.000.000 (100 km: todo en el mapa es una amenaza)."
 [DefenseDistanceUrgent]
 what = "Distancia de amenaza urgente"
-does = "Lo cerca de un lugar que defiende que debe llegar un enemigo para que trate la amenaza como urgente. Predeterminado 156.000 (600 m); Difícil 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+does = "Lo cerca de un lugar que defiende que debe llegar un enemigo para que la defensa sea urgente (la Distance_Defense_Urgente de los diseñadores de misiones, junto a la distancia de amenaza). Predeterminado 156.000 (600 m); Difícil 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
 [DefenseMaxUnitOnPosition]
-what = "Máximo de unidades por posición defensiva"
-does = "El máximo de sus unidades que pone en una posición defensiva. Predeterminado 1; Medio 2; Difícil 3; Tortuga 6."
+what = "Unidades enviadas a una defensa no urgente"
+does = "Cuántas de sus unidades manda a una defensa que no es urgente (el Nbre_Unit_Defense_Non_Urgente de los diseñadores de misiones). Predeterminado 1; Medio 2; Difícil 3; Tortuga 6."
 [DefenseNbMissionMax]
 what = "Máximo de lugares defendidos a la vez"
 does = "El máximo de misiones defensivas (lugares que guarda) que lleva a la vez. Predeterminado 2; Fácil y Difícil 4; Tortuga 10. Blitzkrieg no lo lista, así que cuenta 0 y no guarda nada."
@@ -777,10 +777,10 @@ what = "Mejoras para hostigar"
 does = "Si puede usar unidades mejoradas para sus incursiones. Fácil y Blitzkrieg no lo listan (0)."
 [CashReserveTempsActivation]
 what = "Segundos antes de guardar una reserva de dinero"
-does = "Cuántos segundos de batalla antes de empezar a apartar dinero en vez de gastarlo todo. 240 (4 minutos) en todos los conjuntos del juego."
+does = "Durante cuántos segundos de batalla puede gastar todo su dinero; después aparta el dinero que necesitan los edificios que ha encargado antes de comprar unidades. 240 (4 minutos) en todos los conjuntos del juego."
 [PercentMoneyToReserveForBatimentAdmin]
 what = "% de dinero reservado para edificios administrativos"
-does = "La parte de su dinero, en %, que guarda para edificios administrativos (que suben los ingresos). 20 % en los conjuntos del juego; Difícil 25 %."
+does = "La parte de su dinero, en %, que guarda para edificios administrativos (que suben los ingresos). 20 % en los conjuntos del juego; Difícil 25 %. Dónde lo lee el juego aún no se ha encontrado."
 [PercentMoneyToUseForIdle]
 what = "% de dinero usado en reposo"
 does = "La parte de su dinero, en %, que puede gastar en unidades cuando no tiene otra cosa que hacer: los números Producido en reposo de abajo. En 0 nunca produce en reposo y esos números no hacen nada. Predeterminado y Fácil 0; Medio 50 %; Difícil 100 %."
@@ -816,7 +816,7 @@ what = "Distancia de la fábrica de camiones"
 does = "Construye otra fábrica de camiones cuando uno de sus depósitos está al menos a esta distancia de su fábrica de camiones más cercana, medida por el camino de los camiones, no en línea recta (solo si ya tiene una fábrica de camiones). Predeterminado y los perfiles 520.000 (2.000 m); cada dificultad 780.000 (3.000 m), y como ningún perfil la cambia, en batalla cuentan 3.000 m."
 [NbMaxProductionForEnnemyUnit]
 what = "Máximo de unidades producidas contra una unidad enemiga"
-does = "El máximo de unidades que produce para responder a una unidad enemiga. 1 en todos los conjuntos."
+does = "El máximo de unidades que produce para responder a una unidad enemiga. 1 en todos los conjuntos. Dónde lo lee el juego aún no se ha encontrado."
 [NbProdIdleInfanterie]
 what = "Producido en reposo: infantería"
 does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo (% de dinero usado en reposo no es 0), produce infantería hasta tener tantas. F. regulares 2; Obús y Prototipo 1."
@@ -855,10 +855,10 @@ what = "Preferencia: prototipos"
 does = "Puntos de preferencia sumados a cada prototipo que puede producir (las unidades de la categoría 12 del juego). Prototipo +400."
 [BonusUnitesRecherche]
 what = "Preferencia: investigación"
-does = "Puntos de preferencia que suma para la investigación. Prototipo +400."
+does = "Puntos de preferencia sumados a cada unidad que aún tiene que investigar (la lista de investigación del juego aún no la da por hecha), así que investiga más. Prototipo +400."
 [BonusUnitesTank]
 what = "Preferencia: tanques"
-does = "Puntos de preferencia sumados a cada tanque que puede producir. Ningún conjunto del juego lo usa, así que la pestaña IA no puede ofrecerlo: Añadir solo ofrece los valores que lista Predeterminado."
+does = "Puntos de preferencia sumados a cada tanque que puede producir. Ningún conjunto del juego lo usa, así que la pestaña IA no puede ofrecerlo (Añadir solo ofrece los valores que lista Predeterminado); los scripts de la campaña sí (Bonus_Tank, de 150 a 200)."
 [BonusBatimentOTF]
 what = "Preferencia: edificios defensivos"
 does = "Puntos de preferencia sumados a cada edificio defensivo (búnkeres y posiciones de cañones: bandera 6). También le hacen más dado a levantar defensas en los lugares que guarda: el juego lo pondera con 0,5 + este valor / 200, es decir 1,5 con el +200 de Tortuga frente a 0,5 en 0."
@@ -876,10 +876,10 @@ what = "Segundos antes de camuflar edificios"
 does = "Cuántos segundos de batalla antes de usar el engaño de camuflaje en sus edificios. Solo Fácil lo fija: 600 (10 minutos); en los demás 0, desde el principio."
 [RepresailleFacteurUniteCombattante]
 what = "Factor de represalia: unidades de combate"
-does = "Con qué dureza responde tras perder unidades de combate, como múltiplo. Predeterminado 1; Fácil 0,5; Difícil 2; Tortuga no lo lista (0: sin represalias por ellas)."
+does = "Con qué dureza responde tras perder unidades de combate, como múltiplo; los scripts de la campaña lo fijan junto con el de las unidades no combatientes como un solo ajuste de represalia (Represailles, 1 o 2). Predeterminado 1; Fácil 0,5; Difícil 2; Tortuga no lo lista (0: sin represalias por ellas)."
 [RepresailleFacteurUniteNonCombattante]
 what = "Factor de represalia: unidades no combatientes"
-does = "Con qué dureza responde tras perder unidades que no combaten (camiones, edificios), como múltiplo. Predeterminado 2; Fácil 1; Difícil 4; Tortuga no lo lista (0)."
+does = "Con qué dureza responde tras perder unidades que no combaten (camiones, edificios), como múltiplo; los scripts de la campaña lo fijan junto con el de las unidades de combate. Predeterminado 2; Fácil 1; Difícil 4; Tortuga no lo lista (0)."
 [TimeOutRepresailles]
 what = "Límite de tiempo de la represalia"
 does = "Cuántos segundos mantiene una represalia antes de abandonarla. Predeterminado 120 (2 minutos); Difícil 240."

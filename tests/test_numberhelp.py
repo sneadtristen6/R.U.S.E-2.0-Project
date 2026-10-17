@@ -55,6 +55,16 @@ class Guide(unittest.TestCase):
                 self.assertNotEqual(g["SeuilMort"]["does"], english["SeuilMort"]["does"])
                 self.assertEqual(g["SeuilMort"]["unit"], english["SeuilMort"]["unit"])  # unit and sure stay English's
 
+    def test_settled_from_the_game(self):
+        # a unit's price and shown-in-menu lists hold one value per game mode, in the game's order (its lobby's table;
+        # its late-war tanks are shown at 0, 3 and 4 only)
+        self.assertEqual(numberinfo.MODES, ("1945", "1942", "1939", "Total War", "Nuclear"))
+        g = numberinfo.guide()
+        for key in ("ProductionTime", "MaxAcceleration", "MaxDeceleration", "ProductionPrice", "ShowInMenu"):
+            self.assertEqual(g[key]["sure"], "known", key)
+        self.assertIn("1945, 1942, 1939, Total War, Nuclear", g["ShowInMenu"]["does"])
+        self.assertNotIn("accel", numberinfo.PLAIN)  # shown as seconds to full speed instead
+
     def test_a_class_s_own_meaning_comes_first(self):
         self.assertEqual(numberinfo.lookup("TAvionDescriptor", "VitesseLineaire")["unit"], "kmh_air")
         self.assertEqual(numberinfo.lookup("TUniteAuSolDescriptor", "VitesseLineaire")["unit"], "kmh")
@@ -76,11 +86,13 @@ class Page(unittest.TestCase):
         words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         for key in ("number_about_value", "unit_m", "unit_kmh", "unit_ms2", "unit_deg", "unit_degs", "unit_s",
                     "unit_money", "unit_pct", "number_base", "number_from_base", "number_slider", "tip_number_slider",
-                    "number_this_unit", "number_among", "number_scale_unmeasured",
+                    "number_this_unit", "number_among", "number_scale_unmeasured", "number_full_speed",
+                    "number_full_stop", "price_dates",
                     *[f"number_sure_{s}" for s in numberinfo.SURE]):
             self.assertEqual(len(words[key]), 10, key)
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
-        for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider"):
+        for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider",
+                       "MODE_LISTS", "mode-box", "number_full_speed"):
             self.assertIn(needle, app)
         fake = (ROOT / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ("numbers: async", "number_scale: async"):

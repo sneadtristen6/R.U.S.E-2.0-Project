@@ -34,10 +34,10 @@ what = "Bonus di velocità su strada"
 does = "Quanto va più veloce su strada che fuori: 0,6 è circa il 60% più veloce. Squadre e cannoni lo ricevono come il camion in cui si trasformano. Aerei e camion hanno 1."
 [MaxAcceleration]
 what = "Accelerazione"
-does = "Quanto rapidamente prende velocità. La maggior parte dei carri ha 3.900."
+does = "Quanto rapidamente prende velocità: il gioco aggiunge un quinto di questo valore alla sua velocità ogni 0,2 secondi, quindi la sua velocità divisa per questo valore dà i secondi per arrivare alla velocità massima (mostrati accanto alla casella). La maggior parte dei carri ha 3.900: uno Sherman (4.550) è alla velocità massima in circa 1,2 s."
 [MaxDeceleration]
 what = "Frenata"
-does = "Quanto rapidamente rallenta e si ferma."
+does = "Quanto rapidamente rallenta e si ferma: la sua velocità divisa per questo valore dà i secondi per fermarsi dalla velocità massima (mostrati accanto alla casella)."
 [TempsDemiTour]
 what = "Tempo d'inversione"
 does = "Quanti secondi impiega a girarsi dall'altra parte. Fanteria 0,01 (subito), veicoli 0,5, carri 1, i più lenti 6."
@@ -76,10 +76,10 @@ what = "Bombe o razzi trasportati"
 does = "Quanti colpi della sua seconda arma (bombe, razzi) un aereo porta prima di tornare a riarmarsi: da 1 a 4 nel gioco."
 [ProductionPrice]
 what = "Prezzo"
-does = "Quanto costa costruirla, in $, a ciascuna delle cinque date di battaglia (il gioco tiene un prezzo per data)."
+does = "Quanto costa produrla, in $, in ciascuna delle cinque modalità di gioco, nell'ordine del gioco: 1945, 1942, 1939, Guerra totale, Nucleare (il gioco usa quello della modalità della battaglia)."
 [ProductionTime]
 what = "Tempo di costruzione"
-does = "Quanti secondi servono a costruirla. Con più di una fabbrica del suo tipo, il lavoro si divide tra loro."
+does = "Quanti secondi servono a costruirla. Se più fabbriche del suo tipo la costruiscono, il tempo si divide tra loro, ma mai sotto il tempo di produzione minimo del gioco (quello della scheda Economia)."
 [UpgradePrice]
 what = "Prezzo della ricerca"
 does = "Quanto costa ricercarla, in $, prima di poterla costruire (unità ricercate a partire da un'altra)."
@@ -91,7 +91,7 @@ what = "È un miglioramento"
 does = "1: l'unità è un miglioramento di quella da cui è ricercata (la sostituisce nel menu di costruzione una volta ricercata)."
 [ShowInMenu]
 what = "Mostrata nel menu di costruzione"
-does = "1: mostrata nel suo menu di costruzione a quella data di battaglia (un valore per ciascuna delle cinque date)."
+does = "1: mostrata nel suo menu di costruzione in quella modalità di gioco; un valore per ciascuna delle cinque, nell'ordine del gioco: 1945, 1942, 1939, Guerra totale, Nucleare. I carri di fine guerra del gioco sono mostrati solo in 1945, Guerra totale e Nucleare."
 [PositionInMenu]
 what = "Posto nel menu"
 does = "Dove sta nel suo menu di costruzione: le unità della stessa linea condividono un posto, i miglioramenti vi si impilano."
@@ -752,20 +752,20 @@ does = "Quanti secondi di battaglia aspetta prima di attaccare; fino ad allora n
 what = "Attacchi contemporanei al massimo"
 does = "Il massimo di attacchi (e rappresaglie) che conduce insieme. -1 vuol dire nessun limite, ciò che usano tutti gli insiemi del gioco."
 [MissionFacteurLancementAttaque]
-what = "Attacca quando la sua forza è tante volte quella del nemico"
-does = "Quanto deve essere forte la sua forza rispetto a ciò che il nemico ha in un punto, come multiplo della forza nemica, prima che lanci lì un attacco (il gioco la moltiplica prima per un fattore fisso). Più basso attacca prima con meno. Predefinito 0,7; Facile e Blitzkrieg 0,2; Difficile 0,9; Testuggine 1."
+what = "Aggressività (soglia d'attacco)"
+does = "Ciò che i progettisti di missioni del gioco chiamano la sua aggressività (Agressivite, che gli script della campagna cambiano durante la missione): il gioco la moltiplica per un fattore fisso e confronta le forze in un luogo prima di lanciarvi un attacco. Gli insiemi del gioco: Predefinito 0,7; Facile e Blitzkrieg 0,2; Difficile 0,9; Testuggine 1. In che direzione lo spinga un numero più alto non è ancora misurato: provalo in gioco."
 [MissionFacteurEnoughToDestroy]
 what = "Forza radunata contro un nemico"
-does = "Quanta forza raduna prima di ritenere di averne abbastanza per distruggere un nemico, come multiplo della forza nemica. Predefinito 1,2; Facile 0,2; Medio 1,4; Difficile 1,8; Blitzkrieg 1,5; Testuggine 1."
+does = "Quanta forza manda a un attacco, come multiplo della forza nemica lì (i progettisti di missioni lo chiamano rinforzo per l'attacco, Renfort_pour_attaque). Predefinito 1,2; Facile 0,2; Medio 1,4; Difficile 1,8; Blitzkrieg 1,5; Testuggine 1."
 [DefenseDistanceMenace]
 what = "Distanza di minaccia"
 does = "A che distanza da un luogo che difende un nemico conta come minaccia; il gioco rende la zona sorvegliata circa 1,4 volte questa distanza (la distanza per la radice di 2). 312.000 (1.200 m) negli insiemi del gioco; Testuggine 26.000.000 (100 km: tutto sulla mappa è una minaccia)."
 [DefenseDistanceUrgent]
 what = "Distanza di minaccia urgente"
-does = "Quanto vicino a un luogo che difende deve arrivare un nemico perché tratti la minaccia come urgente. Predefinito 156.000 (600 m); Difficile 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+does = "Quanto vicino a un luogo che difende deve arrivare un nemico perché la difesa diventi urgente (la Distance_Defense_Urgente dei progettisti di missioni, accanto alla distanza di minaccia). Predefinito 156.000 (600 m); Difficile 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
 [DefenseMaxUnitOnPosition]
-what = "Unità al massimo per posizione difensiva"
-does = "Il massimo delle sue unità che mette su una posizione difensiva. Predefinito 1; Medio 2; Difficile 3; Testuggine 6."
+what = "Unità mandate a una difesa non urgente"
+does = "Quante delle sue unità manda a una difesa che non è urgente (la Nbre_Unit_Defense_Non_Urgente dei progettisti di missioni). Predefinito 1; Medio 2; Difficile 3; Testuggine 6."
 [DefenseNbMissionMax]
 what = "Luoghi difesi insieme, al massimo"
 does = "Il massimo di missioni difensive (luoghi che sorveglia) che conduce insieme. Predefinito 2; Facile e Difficile 4; Testuggine 10. Blitzkrieg non lo elenca, quindi conta 0 e non sorveglia nulla."
@@ -777,10 +777,10 @@ what = "Potenziamenti per le molestie"
 does = "Se può usare unità potenziate per le sue incursioni. Facile e Blitzkrieg non lo elencano (0)."
 [CashReserveTempsActivation]
 what = "Secondi prima di tenere una riserva di denaro"
-does = "Quanti secondi di battaglia prima che inizi a mettere da parte denaro invece di spenderlo tutto. 240 (4 minuti) in tutti gli insiemi del gioco."
+does = "Per quanti secondi di battaglia può spendere tutto il suo denaro; poi mette da parte il denaro che servono agli edifici ordinati prima di comprare unità. 240 (4 minuti) in tutti gli insiemi del gioco."
 [PercentMoneyToReserveForBatimentAdmin]
 what = "% di denaro tenuto per gli edifici amministrativi"
-does = "La quota del suo denaro, in %, che tiene per gli edifici amministrativi (che alzano le entrate). 20% negli insiemi del gioco; Difficile 25%."
+does = "La quota del suo denaro, in %, che tiene per gli edifici amministrativi (che alzano le entrate). 20% negli insiemi del gioco; Difficile 25%. Dove il gioco la legga non è ancora trovato."
 [PercentMoneyToUseForIdle]
 what = "% di denaro usato quando inattivo"
 does = "La quota del suo denaro, in %, che può spendere in unità quando non ha altro da fare: i numeri Prodotto quando inattivo più sotto. A 0 non produce mai quando inattivo e quei numeri non fanno nulla. Predefinito e Facile 0; Medio 50%; Difficile 100%."
@@ -816,7 +816,7 @@ what = "Distanza della fabbrica di camion"
 does = "Costruisce un'altra fabbrica di camion quando uno dei suoi depositi è almeno a questa distanza dalla sua fabbrica di camion più vicina, misurata lungo la strada dei camion, non in linea d'aria (solo se ha già una fabbrica di camion). Predefinito e i profili 520.000 (2.000 m); ogni difficoltà 780.000 (3.000 m), e poiché nessun profilo la cambia, in battaglia contano 3.000 m."
 [NbMaxProductionForEnnemyUnit]
 what = "Unità prodotte al massimo contro un'unità nemica"
-does = "Il massimo di unità che produce per rispondere a un'unità nemica. 1 in tutti gli insiemi."
+does = "Il massimo di unità che produce per rispondere a un'unità nemica. 1 in tutti gli insiemi. Dove il gioco la legga non è ancora trovato."
 [NbProdIdleInfanterie]
 what = "Prodotto quando inattivo: fanteria"
 does = "Quando non ha altro da fare e può spendere da inattivo (% di denaro usato quando inattivo non è 0), produce fanteria finché non ne ha tanta. Regolare 2; Obice e Prototipo 1."
@@ -855,10 +855,10 @@ what = "Preferenza: prototipi"
 does = "Punti di preferenza aggiunti a ogni prototipo che può produrre (le unità della categoria 12 del gioco). Prototipo +400."
 [BonusUnitesRecherche]
 what = "Preferenza: ricerca"
-does = "Punti di preferenza che aggiunge per la ricerca. Prototipo +400."
+does = "Punti di preferenza aggiunti a ogni unità che deve ancora ricercare (la lista delle ricerche del gioco non la dà ancora per fatta), così ricerca di più. Prototipo +400."
 [BonusUnitesTank]
 what = "Preferenza: carri"
-does = "Punti di preferenza aggiunti a ogni carro che può produrre. Nessun insieme del gioco lo usa, quindi la scheda IA non può proporlo: Aggiungi propone solo i valori che Predefinito elenca."
+does = "Punti di preferenza aggiunti a ogni carro che può produrre. Nessun insieme del gioco lo usa, quindi la scheda IA non può proporlo (Aggiungi propone solo i valori che Predefinito elenca); gli script della campagna sì (Bonus_Tank, da 150 a 200)."
 [BonusBatimentOTF]
 what = "Preferenza: edifici difensivi"
 does = "Punti di preferenza aggiunti a ogni edificio difensivo (bunker e postazioni di cannoni: flag 6). Lo rendono anche più propenso a erigere difese nei luoghi che sorveglia: il gioco lo pesa con 0,5 + questo valore / 200, cioè 1,5 con il +200 di Testuggine contro 0,5 a 0."
@@ -876,10 +876,10 @@ what = "Secondi prima di mimetizzare gli edifici"
 does = "Quanti secondi di battaglia prima che usi l'inganno della mimetizzazione sui suoi edifici. Solo Facile lo imposta: 600 (10 minuti); altrove 0, dall'inizio."
 [RepresailleFacteurUniteCombattante]
 what = "Fattore di rappresaglia: unità combattenti"
-does = "Quanto duramente risponde dopo aver perso unità combattenti, come multiplo. Predefinito 1; Facile 0,5; Difficile 2; Testuggine non lo elenca (0: nessuna rappresaglia per esse)."
+does = "Quanto duramente risponde dopo aver perso unità combattenti, come multiplo; gli script della campagna lo impostano insieme a quello delle unità non combattenti come un'unica rappresaglia (Represailles, 1 o 2). Predefinito 1; Facile 0,5; Difficile 2; Testuggine non lo elenca (0: nessuna rappresaglia per esse)."
 [RepresailleFacteurUniteNonCombattante]
 what = "Fattore di rappresaglia: unità non combattenti"
-does = "Quanto duramente risponde dopo aver perso unità che non combattono (camion, edifici), come multiplo. Predefinito 2; Facile 1; Difficile 4; Testuggine non lo elenca (0)."
+does = "Quanto duramente risponde dopo aver perso unità che non combattono (camion, edifici), come multiplo; gli script della campagna lo impostano insieme a quello delle unità combattenti. Predefinito 2; Facile 1; Difficile 4; Testuggine non lo elenca (0)."
 [TimeOutRepresailles]
 what = "Limite di tempo della rappresaglia"
 does = "Quanti secondi mantiene una rappresaglia prima di abbandonarla. Predefinito 120 (2 minuti); Difficile 240."

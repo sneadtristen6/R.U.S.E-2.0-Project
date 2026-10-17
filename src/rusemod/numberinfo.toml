@@ -12,7 +12,8 @@
 #   kmh     = a ground speed, 130 game units to 1 km/h: the km/h the game's own unit panel shows (its
 #             UnitDescriptorResource speed factor for ground units, 18), which LittleGroove's figure matches;
 #   kmh_air = a plane's speed, 57.78 game units to 1 km/h: the same panel's km/h for planes (its plane factor, 8);
-#   accel   = an acceleration, 260 game units to 1 m/s per second (LittleGroove; not timed by us yet);
+#   accel   = an acceleration: the game adds a fifth of it to the speed every 0.2 s (the Units tab shows the
+#             unit's speed divided by it: the seconds to full speed, or to a stop);
 #   s       = seconds; deg = an angle in radians, shown in degrees; degs = radians a second, shown in degrees a second;
 #   money   = dollars, as the build menu shows them; pts = points the game counts with, no real-world unit;
 #   count = how many; times = a multiplier; share = a share from 0 to 1, shown as a %; pct = a percent, 0 to 100;
@@ -106,16 +107,16 @@ does = "How much faster it goes on a road than off it: 0.6 is about 60% faster. 
 [MaxAcceleration]
 group = "movement"
 unit = "accel"
-sure = "community"
+sure = "known"
 what = "Acceleration"
-does = "How quickly it gets up to speed. Most tanks have 3,900."
+does = "How quickly it gets up to speed: the game adds a fifth of this to its speed every 0.2 seconds, so its speed divided by this is how many seconds it takes to reach full speed (shown beside the box). Most tanks have 3,900: a Sherman (4,550) is at full speed in about 1.2 s."
 
 [MaxDeceleration]
 group = "movement"
 unit = "accel"
-sure = "community"
+sure = "known"
 what = "Braking"
-does = "How quickly it slows down and stops."
+does = "How quickly it slows down and stops: its speed divided by this is how many seconds it takes to stop from full speed (shown beside the box)."
 
 [TempsDemiTour]
 group = "movement"
@@ -209,14 +210,14 @@ group = "production"
 unit = "money"
 sure = "known"
 what = "Price"
-does = "What it costs to build, in $, at each of the five battle dates (the game keeps one price per date)."
+does = "What it costs to build, in $, in each of the game's five game modes, in its order: 1945, 1942, 1939, Total War, Nuclear (the game uses the one of the battle's mode)."
 
 [ProductionTime]
 group = "production"
 unit = "s"
-sure = "community"
+sure = "known"
 what = "Build time"
-does = "How many seconds it takes to build. With more than one factory of its kind it's shared between them."
+does = "How many seconds it takes to build. With more than one factory of its kind building it, the time is divided between them, but never below the game's shortest build time (the Economy tab's Shortest build time)."
 
 [UpgradePrice]
 group = "production"
@@ -244,7 +245,7 @@ group = "menu"
 unit = "yesno"
 sure = "known"
 what = "Shown in the build menu"
-does = "1: shown in its build menu at that battle date (one value for each of the five dates)."
+does = "1: shown in its build menu in that game mode; one value for each of the five, in the game's order: 1945, 1942, 1939, Total War, Nuclear. The game's late-war tanks are shown in 1945, Total War and Nuclear only."
 
 [PositionInMenu]
 group = "menu"
@@ -1800,16 +1801,16 @@ does = "The most attacks (and retaliations) it runs at the same time. -1 means n
 [MissionFacteurLancementAttaque]
 group = "computer"
 unit = "times"
-sure = "name"
-what = "Attacks once its force is this many times the enemy's"
-does = "How strong its force must be against what the enemy has at a place, as a multiple of the enemy's strength, before it launches an attack there (the game scales it by a fixed factor first). Lower attacks sooner with less. Default 0.7; Easy and Blitzkrieg 0.2; Hard 0.9; Turtle 1."
+sure = "known"
+what = "Aggressiveness (attack threshold)"
+does = "What the game's mission designers call its aggressiveness (Agressivite, which the campaign's scripts change mid-mission): the game multiplies it by a fixed factor and weighs the forces at a place against it before it launches an attack there. The game's sets: Default 0.7; Easy and Blitzkrieg 0.2; Hard 0.9; Turtle 1. Which way a higher number pushes it isn't measured yet: try it in the game."
 
 [MissionFacteurEnoughToDestroy]
 group = "computer"
 unit = "times"
-sure = "name"
+sure = "known"
 what = "Force it gathers against an enemy"
-does = "How much force it gathers before it thinks it has enough to destroy an enemy, as a multiple of the enemy's strength. Default 1.2; Easy 0.2; Medium 1.4; Hard 1.8; Blitzkrieg 1.5; Turtle 1."
+does = "How much force it sends to an attack, as a multiple of the enemy's strength there (the mission designers call it reinforcement for an attack, Renfort_pour_attaque). Default 1.2; Easy 0.2; Medium 1.4; Hard 1.8; Blitzkrieg 1.5; Turtle 1."
 
 [DefenseDistanceMenace]
 group = "computer"
@@ -1821,16 +1822,16 @@ does = "How far from a place it defends an enemy counts as a threat to it; the g
 [DefenseDistanceUrgent]
 group = "computer"
 unit = "m"
-sure = "name"
+sure = "known"
 what = "Urgent threat distance"
-does = "How close an enemy must come to a place it defends before it treats the threat as urgent. Default 156,000 (600 m); Hard 208,000 (800 m); Blitzkrieg 78,000 (300 m)."
+does = "How close an enemy must come to a place it defends before the defence is urgent (the mission designers' Distance_Defense_Urgente, beside the threat distance). Default 156,000 (600 m); Hard 208,000 (800 m); Blitzkrieg 78,000 (300 m)."
 
 [DefenseMaxUnitOnPosition]
 group = "computer"
 unit = "count"
 sure = "known"
-what = "Most units on one defence position"
-does = "The most of its units it puts on one defence position. Default 1; Medium 2; Hard 3; Turtle 6."
+what = "Units sent to a defence that isn't urgent"
+does = "How many of its units it sends to a defence that isn't urgent (the mission designers' Nbre_Unit_Defense_Non_Urgente). Default 1; Medium 2; Hard 3; Turtle 6."
 
 [DefenseNbMissionMax]
 group = "computer"
@@ -1856,16 +1857,16 @@ does = "Whether it may use upgraded units for its raids. Easy and Blitzkrieg don
 [CashReserveTempsActivation]
 group = "computer"
 unit = "s"
-sure = "name"
+sure = "known"
 what = "Seconds before it keeps a cash reserve"
-does = "How many seconds into the battle before it starts keeping money aside instead of spending it all. 240 (4 minutes) in every set of the game."
+does = "How many seconds into the battle it may spend all its money; after that it keeps aside the money its ordered buildings need before it buys units. 240 (4 minutes) in every set of the game."
 
 [PercentMoneyToReserveForBatimentAdmin]
 group = "computer"
 unit = "pct"
 sure = "name"
 what = "% of money kept for admin buildings"
-does = "The share of its money, in %, it keeps for admin buildings (which raise income). 20% in the game's sets; Hard 25%."
+does = "The share of its money, in %, it keeps for admin buildings (which raise income). 20% in the game's sets; Hard 25%. Where the game reads it isn't found yet."
 
 [PercentMoneyToUseForIdle]
 group = "computer"
@@ -1949,7 +1950,7 @@ group = "computer"
 unit = "count"
 sure = "name"
 what = "Most units built against one enemy unit"
-does = "The most units it builds to answer one enemy unit. 1 in every set."
+does = "The most units it builds to answer one enemy unit. 1 in every set. Where the game reads it isn't found yet."
 
 [NbProdIdleInfanterie]
 group = "computer"
@@ -2038,16 +2039,16 @@ does = "Preference points added to every prototype it can build (the units the g
 [BonusUnitesRecherche]
 group = "computer"
 unit = "pts"
-sure = "name"
+sure = "known"
 what = "Preference: research"
-does = "Preference points it adds for research. Prototype +400."
+does = "Preference points added to every unit it still has to research (the game's research list doesn't hold it as done yet), so it researches more. Prototype +400."
 
 [BonusUnitesTank]
 group = "computer"
 unit = "pts"
 sure = "known"
 what = "Preference: tanks"
-does = "Preference points added to every tank it can build. No set of the game uses it, so the AI tab can't offer it: Add only offers the values Default lists."
+does = "Preference points added to every tank it can build. No set of the game uses it, so the AI tab can't offer it (Add only offers the values Default lists); the campaign's scripts do (Bonus_Tank, 150 to 200)."
 
 [BonusBatimentOTF]
 group = "computer"
@@ -2089,14 +2090,14 @@ group = "computer"
 unit = "times"
 sure = "name"
 what = "Retaliation factor: fighting units"
-does = "How hard it hits back after losing fighting units, as a multiple. Default 1; Easy 0.5; Hard 2; Turtle doesn't list it (0: no retaliation for them)."
+does = "How hard it hits back after losing fighting units, as a multiple; the campaign's scripts set it and the non-fighting one together as one retaliation setting (Represailles, 1 or 2). Default 1; Easy 0.5; Hard 2; Turtle doesn't list it (0: no retaliation for them)."
 
 [RepresailleFacteurUniteNonCombattante]
 group = "computer"
 unit = "times"
 sure = "name"
 what = "Retaliation factor: non-fighting units"
-does = "How hard it hits back after losing units that don't fight (trucks, buildings), as a multiple. Default 2; Easy 1; Hard 4; Turtle doesn't list it (0)."
+does = "How hard it hits back after losing units that don't fight (trucks, buildings), as a multiple; the campaign's scripts set it with the fighting one as one retaliation setting. Default 2; Easy 1; Hard 4; Turtle doesn't list it (0)."
 
 [TimeOutRepresailles]
 group = "computer"
@@ -2164,20 +2165,20 @@ does = "The personalities the entry works with: 0 Regular, 1 Air Force, 2 Howitz
 ["TBluffCardDescriptor.LifeDuration"]
 group = "computer"
 unit = "s"
-sure = "name"
+sure = "tried"
 what = "How long it lasts"
 does = "How long the ruse lasts once played, in seconds: 240 to 360 in the game (4 to 6 minutes)."
 
 ["TBluffCardDescriptor.ShowInMenu"]
 group = "computer"
 unit = "yesno"
-sure = "name"
+sure = "tried"
 what = "Shown in the ruse menu"
 does = "1: the card is in the ruse menu, so players and the computer can play it."
 
 ["TBluffCardDescriptor.PositionInMenu"]
 group = "computer"
 unit = "id"
-sure = "name"
+sure = "tried"
 what = "Ruse menu slot"
 does = "Where the card sits in the ruse menu: lower comes first."

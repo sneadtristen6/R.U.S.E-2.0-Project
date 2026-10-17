@@ -790,9 +790,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # larger", "give them perspective on the scale of what the numbers mean") ---
     def numbers(self, lang: str = schema.BASE) -> dict:
         """{"numbers": {key: {group, unit, sure, what, does}}, "plain": {unit: [game units to one plain unit, its
-        word]}, "amounts": the units the base-stat slider changes}; a key is "Property" or "Class.Property"."""
+        word]}, "amounts": the units the base-stat slider changes, "modes": the game's five game modes by number, as
+        its lobby names them in `lang` (a unit's ProductionPrice and ShowInMenu hold one value for each, in this
+        order: 1945, 1942, 1939, Total War, Nuclear)}; a key is "Property" or "Class.Property"."""
+        modes = list(numberinfo.MODES)
+        try:
+            ix = self._open()
+        except FileNotFoundError:  # not a game rule: no game, so the English names
+            ix = None
+        if ix is not None:
+            try:
+                texts = ix.names(ai.WAR_MODES, "us" if lang == schema.BASE else lang)
+                modes = [texts.get(key) or name for key, name in zip(ai.WAR_MODES, modes)]
+            finally:
+                ix.close()
         return {"numbers": numberinfo.guide(lang), "plain": {k: list(v) for k, v in numberinfo.PLAIN.items()},
-                "amounts": sorted(numberinfo.AMOUNTS)}
+                "amounts": sorted(numberinfo.AMOUNTS), "modes": modes}
 
     def number_scale(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
         """Where the game's value of `prop` on the object at `address` sits among the game's objects of its class:

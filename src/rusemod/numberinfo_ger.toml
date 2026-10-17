@@ -34,10 +34,10 @@ what = "Straßen-Geschwindigkeitsbonus"
 does = "Wie viel schneller sie auf der Straße fährt als abseits: 0,6 ist etwa 60 % schneller. Trupps und Geschütze bekommen ihn als der Lastwagen, in den sie sich verwandeln. Flugzeuge und Lastwagen haben 1."
 [MaxAcceleration]
 what = "Beschleunigung"
-does = "Wie schnell sie auf Geschwindigkeit kommt. Die meisten Panzer haben 3.900."
+does = "Wie schnell sie auf Geschwindigkeit kommt: Das Spiel addiert alle 0,2 Sekunden ein Fünftel dieses Werts zu ihrer Geschwindigkeit, also ist ihre Geschwindigkeit geteilt durch diesen Wert die Zahl der Sekunden bis zur Höchstgeschwindigkeit (neben dem Feld gezeigt). Die meisten Panzer haben 3.900: Ein Sherman (4.550) ist nach etwa 1,2 s auf Höchstgeschwindigkeit."
 [MaxDeceleration]
 what = "Bremsen"
-does = "Wie schnell sie langsamer wird und anhält."
+does = "Wie schnell sie langsamer wird und anhält: Ihre Geschwindigkeit geteilt durch diesen Wert ist die Zahl der Sekunden, um aus voller Fahrt anzuhalten (neben dem Feld gezeigt)."
 [TempsDemiTour]
 what = "Wendezeit"
 does = "Wie viele Sekunden sie braucht, um sich umzudrehen. Infanterie 0,01 (sofort), Fahrzeuge 0,5, Panzer 1, die langsamsten 6."
@@ -76,10 +76,10 @@ what = "Mitgeführte Bomben oder Raketen"
 does = "Wie viele Schuss seiner zweiten Waffe (Bomben, Raketen) ein Flugzeug trägt, bevor es zum Aufmunitionieren heimfliegt: 1 bis 4 im Spiel."
 [ProductionPrice]
 what = "Preis"
-does = "Was der Bau kostet, in $, zu jedem der fünf Schlachtdaten (das Spiel hat einen Preis pro Datum)."
+does = "Was der Bau kostet, in $, in jedem der fünf Spielmodi, in der Reihenfolge des Spiels: 1945, 1942, 1939, Totaler Krieg, Atommodus (das Spiel nimmt den des Modus der Schlacht)."
 [ProductionTime]
 what = "Bauzeit"
-does = "Wie viele Sekunden der Bau dauert. Mit mehreren Fabriken ihrer Art wird sie zwischen ihnen geteilt."
+does = "Wie viele Sekunden der Bau dauert. Bauen mehrere Fabriken ihrer Art sie, wird die Zeit zwischen ihnen geteilt, aber nie unter die kürzeste Bauzeit des Spiels (die des Reiters Wirtschaft)."
 [UpgradePrice]
 what = "Forschungspreis"
 does = "Was die Forschung kostet, in $, bevor sie gebaut werden kann (Einheiten, die aus einer anderen erforscht werden)."
@@ -91,7 +91,7 @@ what = "Ist eine Verbesserung"
 does = "1: Die Einheit ist eine Verbesserung der Einheit, aus der sie erforscht wird (sie ersetzt sie nach der Forschung im Baumenü)."
 [ShowInMenu]
 what = "Im Baumenü gezeigt"
-does = "1: zu diesem Schlachtdatum in ihrem Baumenü gezeigt (ein Wert für jedes der fünf Daten)."
+does = "1: im Baumenü in diesem Spielmodus gezeigt; ein Wert für jeden der fünf, in der Reihenfolge des Spiels: 1945, 1942, 1939, Totaler Krieg, Atommodus. Die späten Panzer des Spiels werden nur in 1945, Totaler Krieg und Atommodus gezeigt."
 [PositionInMenu]
 what = "Menüplatz"
 does = "Wo sie in ihrem Baumenü steht: Einheiten derselben Linie teilen sich einen Platz, Verbesserungen stapeln sich darauf."
@@ -752,20 +752,20 @@ does = "Wie viele Sekunden der Schlacht er wartet, bevor er überhaupt angreift;
 what = "Höchstens gleichzeitige Angriffe"
 does = "Die meisten Angriffe (und Vergeltungen), die er gleichzeitig führt. -1 heißt unbegrenzt, was jeder Satz des Spiels nutzt."
 [MissionFacteurLancementAttaque]
-what = "Greift an, sobald seine Stärke so viel mal die des Gegners ist"
-does = "Wie stark seine Truppe gegenüber dem sein muss, was der Gegner an einer Stelle hat, als Vielfaches der gegnerischen Stärke, bevor er dort angreift (das Spiel multipliziert ihn zuerst mit einem festen Faktor). Niedriger greift früher mit weniger an. Standard 0,7; Leicht und Blitzkrieg 0,2; Schwer 0,9; Schildkröte 1."
+what = "Aggressivität (Angriffsschwelle)"
+does = "Was die Missionsdesigner des Spiels seine Aggressivität nennen (Agressivite, das die Skripte der Kampagne mitten in der Mission ändern): Das Spiel multipliziert sie mit einem festen Faktor und wägt die Kräfte an einem Ort dagegen ab, bevor er dort angreift. Die Sätze des Spiels: Standard 0,7; Leicht und Blitzkrieg 0,2; Schwer 0,9; Schildkröte 1. In welche Richtung eine höhere Zahl ihn treibt, ist noch nicht gemessen: im Spiel ausprobieren."
 [MissionFacteurEnoughToDestroy]
 what = "Stärke gegen einen Gegner"
-does = "Wie viel Stärke er sammelt, bevor er meint, genug zu haben, um einen Gegner zu vernichten, als Vielfaches der gegnerischen Stärke. Standard 1,2; Leicht 0,2; Mittel 1,4; Schwer 1,8; Blitzkrieg 1,5; Schildkröte 1."
+does = "Wie viel Stärke er zu einem Angriff schickt, als Vielfaches der gegnerischen Stärke dort (die Missionsdesigner nennen es Verstärkung für den Angriff, Renfort_pour_attaque). Standard 1,2; Leicht 0,2; Mittel 1,4; Schwer 1,8; Blitzkrieg 1,5; Schildkröte 1."
 [DefenseDistanceMenace]
 what = "Bedrohungsdistanz"
 does = "Wie weit von einem Ort, den er verteidigt, ein Gegner als Bedrohung zählt; das Spiel macht die überwachte Zone etwa 1,4-mal so groß (die Distanz mal Wurzel aus 2). 312.000 (1.200 m) in den Sätzen des Spiels; Schildkröte 26.000.000 (100 km: alles auf der Karte ist eine Bedrohung)."
 [DefenseDistanceUrgent]
 what = "Distanz für dringende Bedrohung"
-does = "Wie nah ein Gegner einem Ort, den er verteidigt, kommen muss, bevor er die Bedrohung als dringend behandelt. Standard 156.000 (600 m); Schwer 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+does = "Wie nah ein Gegner einem Ort, den er verteidigt, kommen muss, bevor die Verteidigung dringend wird (die Distance_Defense_Urgente der Missionsdesigner, neben der Bedrohungsdistanz). Standard 156.000 (600 m); Schwer 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
 [DefenseMaxUnitOnPosition]
-what = "Höchstens Einheiten pro Verteidigungsstellung"
-does = "Die meisten seiner Einheiten, die er auf eine Verteidigungsstellung setzt. Standard 1; Mittel 2; Schwer 3; Schildkröte 6."
+what = "Einheiten für eine nicht dringende Verteidigung"
+does = "Wie viele seiner Einheiten er zu einer Verteidigung schickt, die nicht dringend ist (die Nbre_Unit_Defense_Non_Urgente der Missionsdesigner). Standard 1; Mittel 2; Schwer 3; Schildkröte 6."
 [DefenseNbMissionMax]
 what = "Höchstens gleichzeitig verteidigte Orte"
 does = "Die meisten Verteidigungseinsätze (Orte, die er bewacht), die er gleichzeitig führt. Standard 2; Leicht und Schwer 4; Schildkröte 10. Blitzkrieg führt ihn nicht auf, zählt also 0 und bewacht nichts."
@@ -777,10 +777,10 @@ what = "Verbesserungen fürs Belästigen"
 does = "Ob er verbesserte Einheiten für seine Überfälle nutzen darf. Leicht und Blitzkrieg führen ihn nicht auf (0)."
 [CashReserveTempsActivation]
 what = "Sekunden bis zur Geldreserve"
-does = "Wie viele Sekunden der Schlacht, bevor er beginnt, Geld zurückzulegen, statt alles auszugeben. 240 (4 Minuten) in jedem Satz des Spiels."
+does = "Wie viele Sekunden der Schlacht er sein ganzes Geld ausgeben darf; danach legt er das Geld zurück, das seine bestellten Gebäude brauchen, bevor er Einheiten kauft. 240 (4 Minuten) in jedem Satz des Spiels."
 [PercentMoneyToReserveForBatimentAdmin]
 what = "% des Geldes für Verwaltungsgebäude"
-does = "Der Anteil seines Geldes, in %, den er für Verwaltungsgebäude (die das Einkommen erhöhen) zurückhält. 20 % in den Sätzen des Spiels; Schwer 25 %."
+does = "Der Anteil seines Geldes, in %, den er für Verwaltungsgebäude (die das Einkommen erhöhen) zurückhält. 20 % in den Sätzen des Spiels; Schwer 25 %. Wo das Spiel ihn liest, ist noch nicht gefunden."
 [PercentMoneyToUseForIdle]
 what = "% des Geldes im Leerlauf ausgegeben"
 does = "Der Anteil seines Geldes, in %, den er für Einheiten ausgeben darf, wenn er nichts anderes zu tun hat: die Zahlen Im Leerlauf gebaut weiter unten. Bei 0 baut er nie im Leerlauf, und diese Zahlen bewirken nichts. Standard und Leicht 0; Mittel 50 %; Schwer 100 %."
@@ -816,7 +816,7 @@ what = "Distanz zur LKW-Fabrik"
 does = "Er baut eine weitere LKW-Fabrik, wenn eines seiner Depots mindestens so weit von seiner nächsten LKW-Fabrik entfernt ist, gemessen entlang des Weges der LKW, nicht in Luftlinie (nur wenn er schon eine LKW-Fabrik hat). Standard und die Profile 520.000 (2.000 m); jeder Schwierigkeitsgrad 780.000 (3.000 m), und da kein Profil ihn ändert, zählen im Gefecht 3.000 m."
 [NbMaxProductionForEnnemyUnit]
 what = "Höchstens gebaute Einheiten gegen eine feindliche Einheit"
-does = "Die meisten Einheiten, die er als Antwort auf eine feindliche Einheit baut. 1 in jedem Satz."
+does = "Die meisten Einheiten, die er als Antwort auf eine feindliche Einheit baut. 1 in jedem Satz. Wo das Spiel ihn liest, ist noch nicht gefunden."
 [NbProdIdleInfanterie]
 what = "Im Leerlauf gebaut: Infanterie"
 does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf (% des Geldes im Leerlauf ausgegeben ist nicht 0), baut er Infanterie, bis er so viele hat. Normal 2; Haubitze und Prototyp 1."
@@ -855,10 +855,10 @@ what = "Vorliebe: Prototypen"
 does = "Vorliebepunkte für jeden Prototyp, den er bauen kann (die Einheiten der Kategorie 12 des Spiels). Prototyp +400."
 [BonusUnitesRecherche]
 what = "Vorliebe: Forschung"
-does = "Vorliebepunkte, die er für Forschung vergibt. Prototyp +400."
+does = "Vorliebepunkte für jede Einheit, die er noch erforschen muss (die Forschungsliste des Spiels führt sie noch nicht als fertig), sodass er mehr forscht. Prototyp +400."
 [BonusUnitesTank]
 what = "Vorliebe: Panzer"
-does = "Vorliebepunkte für jeden Panzer, den er bauen kann. Kein Satz des Spiels nutzt sie, daher kann der Reiter KI sie nicht anbieten: Hinzufügen bietet nur die Werte an, die Standard aufführt."
+does = "Vorliebepunkte für jeden Panzer, den er bauen kann. Kein Satz des Spiels nutzt sie, daher kann der Reiter KI sie nicht anbieten (Hinzufügen bietet nur die Werte an, die Standard aufführt); die Skripte der Kampagne schon (Bonus_Tank, 150 bis 200)."
 [BonusBatimentOTF]
 what = "Vorliebe: Verteidigungsgebäude"
 does = "Vorliebepunkte für jedes Verteidigungsgebäude (Bunker und Geschützstellungen: Flag 6). Sie machen ihn auch eifriger, an den Orten, die er bewacht, Verteidigungen zu errichten: Das Spiel gewichtet das mit 0,5 + dieser Wert / 200, also 1,5 bei den +200 der Schildkröte gegen 0,5 bei 0."
@@ -876,10 +876,10 @@ what = "Sekunden bis zum Tarnen von Gebäuden"
 does = "Wie viele Sekunden der Schlacht, bevor er die Tarnlist auf seine Gebäude anwendet. Nur Leicht setzt sie: 600 (10 Minuten); sonst 0, von Anfang an."
 [RepresailleFacteurUniteCombattante]
 what = "Vergeltungsfaktor: Kampfeinheiten"
-does = "Wie hart er zurückschlägt, nachdem er Kampfeinheiten verloren hat, als Vielfaches. Standard 1; Leicht 0,5; Schwer 2; Schildkröte führt ihn nicht auf (0: keine Vergeltung für sie)."
+does = "Wie hart er zurückschlägt, nachdem er Kampfeinheiten verloren hat, als Vielfaches; die Skripte der Kampagne setzen ihn zusammen mit dem für Nichtkampfeinheiten als eine Vergeltungseinstellung (Represailles, 1 oder 2). Standard 1; Leicht 0,5; Schwer 2; Schildkröte führt ihn nicht auf (0: keine Vergeltung für sie)."
 [RepresailleFacteurUniteNonCombattante]
 what = "Vergeltungsfaktor: Nichtkampfeinheiten"
-does = "Wie hart er zurückschlägt, nachdem er Einheiten verloren hat, die nicht kämpfen (LKW, Gebäude), als Vielfaches. Standard 2; Leicht 1; Schwer 4; Schildkröte führt ihn nicht auf (0)."
+does = "Wie hart er zurückschlägt, nachdem er Einheiten verloren hat, die nicht kämpfen (LKW, Gebäude), als Vielfaches; die Skripte der Kampagne setzen ihn zusammen mit dem für Kampfeinheiten. Standard 2; Leicht 1; Schwer 4; Schildkröte führt ihn nicht auf (0)."
 [TimeOutRepresailles]
 what = "Zeitlimit der Vergeltung"
 does = "Wie viele Sekunden er eine Vergeltung aufrechterhält, bevor er sie aufgibt. Standard 120 (2 Minuten); Schwer 240."

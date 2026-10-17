@@ -14,14 +14,20 @@ from pathlib import Path
 
 TEXTS = ("what", "does")  # the words of a number: numberinfo_<lang>.toml has them in that language
 # how each unit is shown in plain units: (game units to one plain unit, the plain unit's word in words.toml)
+# (no plain form for an acceleration: the game adds a fifth of it to the speed every 0.2 s, so the Units tab shows the
+# unit's speed divided by it, the seconds to full speed or to a stop)
 PLAIN = {"m": (260.0, "unit_m"), "kmh": (130.0, "unit_kmh"), "kmh_air": (57.78, "unit_kmh"),
-         "accel": (260.0, "unit_ms2"), "deg": (math.pi / 180, "unit_deg"), "degs": (math.pi / 180, "unit_degs"),
+         "deg": (math.pi / 180, "unit_deg"), "degs": (math.pi / 180, "unit_degs"),
          "s": (1.0, "unit_s"), "money": (1.0, "unit_money"), "share": (0.01, "unit_pct"), "pct": (1.0, "unit_pct"),
          "min": (1.0, "unit_min")}
 # units a modder changes as an amount (the base-stat slider makes them smaller or larger); the rest name a kind, a
 # switch or an id, typed as they are
 AMOUNTS = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share", "level",
            "raw", "pct", "min"}
+# the game's five game modes, by number: a unit's ProductionPrice and ShowInMenu hold one value for each, in this order
+# (the game picks the item at the battle's mode; its lobby's own table names them; the game's late-war tanks are shown
+# at 0, 3 and 4 only). English here; the Studio shows the game's own names in each language.
+MODES = ("1945", "1942", "1939", "Total War", "Nuclear")
 GROUPS = ("health", "movement", "sight", "combat", "ammo", "production", "menu", "identity", "computer", "flight",
           "turret", "looks", "sound", "interface", "effects")
 SURE = ("tried", "known", "community", "name")

@@ -34,10 +34,10 @@ what = "Premia prędkości na drodze"
 does = "O ile szybciej jedzie po drodze niż poza nią: 0,6 to ok. 60% szybciej. Oddziały i działa dostają ją jako ciężarówka, w którą się zamieniają. Samoloty i ciężarówki mają 1."
 [MaxAcceleration]
 what = "Przyspieszenie"
-does = "Jak szybko się rozpędza. Większość czołgów ma 3900."
+does = "Jak szybko się rozpędza: gra co 0,2 sekundy dodaje jedną piątą tej wartości do jej prędkości, więc jej prędkość podzielona przez tę wartość to liczba sekund do pełnej prędkości (pokazana obok pola). Większość czołgów ma 3900: Sherman (4550) osiąga pełną prędkość w około 1,2 s."
 [MaxDeceleration]
 what = "Hamowanie"
-does = "Jak szybko zwalnia i się zatrzymuje."
+does = "Jak szybko zwalnia i się zatrzymuje: jej prędkość podzielona przez tę wartość to liczba sekund do zatrzymania z pełnej prędkości (pokazana obok pola)."
 [TempsDemiTour]
 what = "Czas zawracania"
 does = "Ile sekund zajmuje jej obrót w przeciwną stronę. Piechota 0,01 (od razu), pojazdy 0,5, czołgi 1, najwolniejsze 6."
@@ -76,10 +76,10 @@ what = "Zabierane bomby lub rakiety"
 does = "Ile strzałów drugiej broni (bomb, rakiet) zabiera samolot, zanim wróci się dozbroić: od 1 do 4 w grze."
 [ProductionPrice]
 what = "Cena"
-does = "Ile kosztuje budowa, w $, w każdej z pięciu dat bitwy (gra trzyma jedną cenę na datę)."
+does = "Ile kosztuje budowa, w $, w każdym z pięciu trybów gry, w kolejności gry: 1945, 1942, 1939, Wojna totalna, Atomowy (gra bierze cenę trybu bitwy)."
 [ProductionTime]
 what = "Czas budowy"
-does = "Ile sekund trwa budowa. Przy więcej niż jednej fabryce danego rodzaju jest dzielona między nie."
+does = "Ile sekund trwa budowa. Gdy buduje ją kilka fabryk jej rodzaju, czas dzieli się między nie, ale nigdy nie spada poniżej najkrótszego czasu produkcji gry (z karty Ekonomia)."
 [UpgradePrice]
 what = "Cena badania"
 does = "Ile kosztuje zbadanie jej, w $, zanim będzie można ją budować (jednostki badane z innej)."
@@ -91,7 +91,7 @@ what = "Jest ulepszeniem"
 does = "1: jednostka jest ulepszeniem tej, z której się ją bada (zastępuje ją w menu budowy po zbadaniu)."
 [ShowInMenu]
 what = "Widoczna w menu budowy"
-does = "1: pokazana w swoim menu budowy w tej dacie bitwy (jedna wartość na każdą z pięciu dat)."
+does = "1: widoczna w menu budowy w tym trybie gry; jedna wartość na każdy z pięciu, w kolejności gry: 1945, 1942, 1939, Wojna totalna, Atomowy. Czołgi z końca wojny są w grze widoczne tylko w 1945, Wojnie totalnej i trybie Atomowym."
 [PositionInMenu]
 what = "Miejsce w menu"
 does = "Gdzie stoi w swoim menu budowy: jednostki tej samej linii dzielą miejsce, a ulepszenia układają się na nim."
@@ -752,20 +752,20 @@ does = "Ile sekund bitwy czeka, zanim w ogóle zaatakuje; do tego czasu nie nęk
 what = "Najwięcej ataków naraz"
 does = "Najwięcej ataków (i odwetów), które prowadzi jednocześnie. -1 oznacza bez limitu, czego używają wszystkie zestawy gry."
 [MissionFacteurLancementAttaque]
-what = "Atakuje, gdy jego siła to tyle razy siła wroga"
-does = "Jak silne muszą być jego wojska wobec tego, co wróg ma w danym miejscu, jako wielokrotność siły wroga, zanim tam zaatakuje (gra najpierw mnoży to przez stały współczynnik). Niżej atakuje wcześniej i mniejszymi siłami. Domyślny 0,7; Łatwa i Szturmowa 0,2; Trudna 0,9; Żółw 1."
+what = "Agresywność (próg ataku)"
+does = "To, co projektanci misji gry nazywają jego agresywnością (Agressivite, którą skrypty kampanii zmieniają w trakcie misji): gra mnoży ją przez stały współczynnik i porównuje siły w danym miejscu, zanim tam zaatakuje. Zestawy gry: Domyślny 0,7; Łatwa i Szturmowa 0,2; Trudna 0,9; Żółw 1. W którą stronę popycha go wyższa liczba, jeszcze nie zmierzono: wypróbuj w grze."
 [MissionFacteurEnoughToDestroy]
 what = "Siła zbierana na wroga"
-does = "Ile siły zbiera, zanim uzna, że wystarczy, by zniszczyć wroga, jako wielokrotność siły wroga. Domyślny 1,2; Łatwa 0,2; Średnia 1,4; Trudna 1,8; Szturmowa 1,5; Żółw 1."
+does = "Ile siły wysyła do ataku, jako wielokrotność siły wroga w tym miejscu (projektanci misji nazywają to wsparciem ataku, Renfort_pour_attaque). Domyślny 1,2; Łatwa 0,2; Średnia 1,4; Trudna 1,8; Szturmowa 1,5; Żółw 1."
 [DefenseDistanceMenace]
 what = "Odległość zagrożenia"
 does = "Jak daleko od miejsca, którego broni, wróg liczy się jako zagrożenie; gra robi z obserwowanej strefy około 1,4 tej odległości (odległość razy pierwiastek z 2). 312 000 (1200 m) w zestawach gry; Żółw 26 000 000 (100 km: wszystko na mapie jest zagrożeniem)."
 [DefenseDistanceUrgent]
 what = "Odległość pilnego zagrożenia"
-does = "Jak blisko miejsca, którego broni, musi podejść wróg, by uznał zagrożenie za pilne. Domyślny 156 000 (600 m); Trudna 208 000 (800 m); Szturmowa 78 000 (300 m)."
+does = "Jak blisko miejsca, którego broni, musi podejść wróg, by obrona stała się pilna (Distance_Defense_Urgente projektantów misji, obok odległości zagrożenia). Domyślny 156 000 (600 m); Trudna 208 000 (800 m); Szturmowa 78 000 (300 m)."
 [DefenseMaxUnitOnPosition]
-what = "Najwięcej jednostek na pozycję obronną"
-does = "Najwięcej jego jednostek, które stawia na jednej pozycji obronnej. Domyślny 1; Średnia 2; Trudna 3; Żółw 6."
+what = "Jednostki wysyłane do niepilnej obrony"
+does = "Ile swoich jednostek wysyła do obrony, która nie jest pilna (Nbre_Unit_Defense_Non_Urgente projektantów misji). Domyślny 1; Średnia 2; Trudna 3; Żółw 6."
 [DefenseNbMissionMax]
 what = "Najwięcej miejsc bronionych naraz"
 does = "Najwięcej misji obronnych (miejsc, których pilnuje), które prowadzi jednocześnie. Domyślny 2; Łatwa i Trudna 4; Żółw 10. Szturmowa jej nie podaje, więc liczy 0 i niczego nie pilnuje."
@@ -777,10 +777,10 @@ what = "Ulepszenia do nękania"
 does = "Czy może używać ulepszonych jednostek do rajdów. Łatwa i Szturmowa jej nie podają (0)."
 [CashReserveTempsActivation]
 what = "Sekundy do odkładania rezerwy pieniędzy"
-does = "Ile sekund bitwy, zanim zacznie odkładać pieniądze zamiast wydawać wszystko. 240 (4 minuty) we wszystkich zestawach gry."
+does = "Przez ile sekund bitwy może wydać wszystkie pieniądze; potem odkłada pieniądze potrzebne zamówionym budynkom, zanim kupi jednostki. 240 (4 minuty) we wszystkich zestawach gry."
 [PercentMoneyToReserveForBatimentAdmin]
 what = "% pieniędzy na budynki administracyjne"
-does = "Część jego pieniędzy, w %, którą trzyma na budynki administracyjne (podnoszą dochód). 20% w zestawach gry; Trudna 25%."
+does = "Część jego pieniędzy, w %, którą trzyma na budynki administracyjne (podnoszą dochód). 20% w zestawach gry; Trudna 25%. Gdzie gra ją czyta, jeszcze nie znaleziono."
 [PercentMoneyToUseForIdle]
 what = "% pieniędzy wydawanych w bezczynności"
 does = "Część jego pieniędzy, w %, którą może wydać na jednostki, gdy nie ma nic innego do roboty: liczby Budowane w bezczynności niżej. Przy 0 nigdy nie buduje w bezczynności, a te liczby nic nie robią. Domyślny i Łatwa 0; Średnia 50%; Trudna 100%."
@@ -816,7 +816,7 @@ what = "Odległość fabryki ciężarówek"
 does = "Buduje kolejną fabrykę ciężarówek, gdy jeden z jego magazynów jest co najmniej tak daleko od najbliższej jego fabryki ciężarówek, mierząc drogą, którą jadą ciężarówki, a nie w linii prostej (tylko gdy ma już fabrykę ciężarówek). Domyślny i profile 520 000 (2000 m); każdy poziom trudności 780 000 (3000 m), a że żaden profil tego nie zmienia, w bitwie liczy się 3000 m."
 [NbMaxProductionForEnnemyUnit]
 what = "Najwięcej jednostek budowanych na jedną wrogą"
-does = "Najwięcej jednostek, które buduje w odpowiedzi na jedną wrogą jednostkę. 1 we wszystkich zestawach."
+does = "Najwięcej jednostek, które buduje w odpowiedzi na jedną wrogą jednostkę. 1 we wszystkich zestawach. Gdzie gra ją czyta, jeszcze nie znaleziono."
 [NbProdIdleInfanterie]
 what = "Budowane w bezczynności: piechota"
 does = "Gdy nie ma nic innego do roboty i może wydawać w bezczynności (% pieniędzy wydawanych w bezczynności nie jest 0), buduje piechotę, aż ma jej tyle. Zwykła 2; Artyleryjska i Prototypowa 1."
@@ -855,10 +855,10 @@ what = "Preferencja: prototypy"
 does = "Punkty preferencji dodawane do każdego prototypu, który może zbudować (jednostki kategorii 12 gry). Prototypowa +400."
 [BonusUnitesRecherche]
 what = "Preferencja: badania"
-does = "Punkty preferencji, które dodaje za badania. Prototypowa +400."
+does = "Punkty preferencji dodawane do każdej jednostki, którą musi jeszcze zbadać (lista badań gry nie uznaje jej jeszcze za gotową), więc bada więcej. Prototypowa +400."
 [BonusUnitesTank]
 what = "Preferencja: czołgi"
-does = "Punkty preferencji dodawane do każdego czołgu, który może zbudować. Żaden zestaw gry jej nie używa, więc karta SI nie może jej zaproponować: Dodaj proponuje tylko wartości podane przez Domyślny."
+does = "Punkty preferencji dodawane do każdego czołgu, który może zbudować. Żaden zestaw gry jej nie używa, więc karta SI nie może jej zaproponować (Dodaj proponuje tylko wartości podane przez Domyślny); skrypty kampanii tak (Bonus_Tank, od 150 do 200)."
 [BonusBatimentOTF]
 what = "Preferencja: budynki obronne"
 does = "Punkty preferencji dodawane do każdego budynku obronnego (bunkry i stanowiska dział: flaga 6). Sprawiają też, że chętniej stawia obronę w miejscach, których pilnuje: gra waży to jako 0,5 + ta wartość / 200, czyli 1,5 przy +200 Żółwia wobec 0,5 przy 0."
@@ -876,10 +876,10 @@ what = "Sekundy do maskowania budynków"
 does = "Ile sekund bitwy, zanim użyje podstępu maskowania na swoich budynkach. Ustawia to tylko Łatwa: 600 (10 minut); gdzie indziej 0, od początku."
 [RepresailleFacteurUniteCombattante]
 what = "Współczynnik odwetu: jednostki bojowe"
-does = "Jak mocno odpowiada po utracie jednostek bojowych, jako wielokrotność. Domyślny 1; Łatwa 0,5; Trudna 2; Żółw jej nie podaje (0: bez odwetu za nie)."
+does = "Jak mocno odpowiada po utracie jednostek bojowych, jako wielokrotność; skrypty kampanii ustawiają go razem z tym dla jednostek niebojowych jako jedno ustawienie odwetu (Represailles, 1 lub 2). Domyślny 1; Łatwa 0,5; Trudna 2; Żółw go nie podaje (0: bez odwetu za nie)."
 [RepresailleFacteurUniteNonCombattante]
 what = "Współczynnik odwetu: jednostki niebojowe"
-does = "Jak mocno odpowiada po utracie jednostek, które nie walczą (ciężarówki, budynki), jako wielokrotność. Domyślny 2; Łatwa 1; Trudna 4; Żółw jej nie podaje (0)."
+does = "Jak mocno odpowiada po utracie jednostek, które nie walczą (ciężarówki, budynki), jako wielokrotność; skrypty kampanii ustawiają go razem z tym dla jednostek bojowych. Domyślny 2; Łatwa 1; Trudna 4; Żółw go nie podaje (0)."
 [TimeOutRepresailles]
 what = "Limit czasu odwetu"
 does = "Ile sekund utrzymuje odwet, zanim go porzuci. Domyślny 120 (2 minuty); Trudna 240."

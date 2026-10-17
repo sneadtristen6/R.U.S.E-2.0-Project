@@ -787,6 +787,14 @@ function rangeSlider(box, game) {
   return { node: el("span", { className: "range" }, slider, far), sync };
 }
 
+// The lists that hold one value per game mode, and the modes' names (api.numbers modes: the game's lobby's own words;
+// English until they're loaded)
+const MODE_LISTS = new Set(["ProductionPrice", "ShowInMenu"]);
+const MODES_EN = ["1945", "1942", "1939", "Total War", "Nuclear"];
+function modeNames() {
+  return (knownNumbers && knownNumbers.modes && knownNumbers.modes.length === 5) ? knownNumbers.modes : MODES_EN;
+}
+
 function row(u, r, mode) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
@@ -796,14 +804,19 @@ function row(u, r, mode) {
   const via = state.page.via;
   const st = rowState(r, mode);
   const shown = st.mine || st.base;
-  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  // a price or shown-in-menu list holds one value per game mode (1945, 1942, 1939, Total War, Nuclear: the game's own
+  // order): each box gets its mode's name, as the game's lobby says it
+  const modes = MODE_LISTS.has(r.prop) && r.list && shown.length === 5 ? modeNames() : null;
+  const boxes = shown.map((n, i) => numberBox(r, n, r.list ? `${r.label} [${modes ? modes[i] : i}]` : r.label));
+  const cells = modes ? boxes.map((b, i) => el("label", { className: "mode-box" },
+    el("small", { textContent: modes[i] }), b)) : boxes;
   const ranged = RANGE_PROPS.has(r.prop) && !r.list && r.type !== "bool";
   if (ranged) boxes[0].title = w.tip_range_box;
-  // A list whose values are all the same (a unit's five prices, one per battle date) gets one box that changes them
+  // A list whose values are all the same (a unit's five prices, one per game mode) gets one box that changes them
   // all, so a modder can't change one of five by accident; "set each" shows every box.
   let one = r.list && shown.length > 1 && r.type !== "bool" && shown.every((n) => n === shown[0])
     ? numberBox(r, shown[0], `${r.label} (${w.all_values.replace("{n}", shown.length)})`) : null;
-  const holder = el("div", { className: "boxes" }, ...(one ? [one] : boxes));
+  const holder = el("div", { className: "boxes" }, ...(one ? [one] : cells));
   const slider = ranged ? rangeSlider(boxes[0], r.numbers[0]) : null;
   if (slider) holder.append(slider.node);
   if (one) {
@@ -811,7 +824,7 @@ function row(u, r, mode) {
     each.addEventListener("click", () => {
       boxes.forEach((b) => { b.value = one.value; });
       one = null;
-      holder.replaceChildren(...boxes);
+      holder.replaceChildren(...cells);
       boxes[0].focus();
     });
     holder.append(el("span", { className: "muted small", textContent: w.all_values.replace("{n}", shown.length) }), each);
@@ -917,9 +930,24 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
     const amount = knownNumbers.amounts.includes(entry.unit) && r.type !== "bool";
     const base = Number(st.base[0]);
     const plainNote = el("span", { className: "muted small number-plain" });
+    // acceleration and braking: the game adds a fifth of the value to the speed every 0.2 s, so the unit's own speed
+    // divided by it is the seconds to full speed (or to a stop)
+    const speedOf = () => {
+      const s = (u.groups || []).flatMap((g) => g.rows).find((x) => x.prop === "VitesseLineaire");
+      if (!s) return null;
+      const mine = s.edited === null || s.edited === undefined ? null : Array.isArray(s.edited) ? s.edited[0] : s.edited;
+      return Number(mine === null ? s.numbers[0] : mine);
+    };
+    const plainOf = (v) => {
+      if (r.prop !== "MaxAcceleration" && r.prop !== "MaxDeceleration") return numberPlain(entry, v);
+      const speed = speedOf();
+      if (!speed || !(v > 0)) return "";
+      return fill(w[r.prop === "MaxAcceleration" ? "number_full_speed" : "number_full_stop"],
+        { s: Number((speed / v).toPrecision(2)).toLocaleString() });
+    };
     const sync = () => {
       const v = Number(getBoxes()[0].value);
-      plainNote.textContent = numberPlain(entry, v);
+      plainNote.textContent = plainOf(v);
       if (slider && Number.isFinite(v) && base) {
         const pct = Math.round((v / base - 1) * 100);
         slider.value = String(Math.max(BASE_LEAST, Math.min(BASE_MOST, pct)));
@@ -942,7 +970,7 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
           const v = own * (1 + pct / 100);
           b.value = String(whole ? Math.round(v) : Number(v.toPrecision(6)));
         }
-        plainNote.textContent = numberPlain(entry, Number(getBoxes()[0].value));
+        plainNote.textContent = plainOf(Number(getBoxes()[0].value));
         pctNote.textContent = fill(w.number_from_base, { pct: (pct > 0 ? "+" : "") + pct });
       });
       slider.addEventListener("change", () => getBoxes()[0].dispatchEvent(new Event("change")));
@@ -971,7 +999,8 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
       }).catch(() => {});
     }
     help.replaceChildren(row, scale);
-    if (entry.sure === "community" && knownNumbers.plain[entry.unit]) {  // a scale from others, not measured by us
+    // a scale from others, not measured by us (the metre is ours, measured on the game's maps)
+    if (entry.sure === "community" && knownNumbers.plain[entry.unit] && entry.unit !== "m") {
       row.append(el("span", { className: "muted small number-sure", textContent: w.number_scale_unmeasured }));
     }
   };
@@ -2444,6 +2473,9 @@ async function showUnit(address, via) {
   }
   let u;
   try { u = await api().unit(address, state.lang, via); } catch (err) { problem(err); return; }
+  if (!knownNumbers) {  // each number's meaning and the game modes' names, before the rows are drawn
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   state.page = { address, via };
   const inside = u.named ? u.address : via;  // the named unit its parts are opened from
   const mode = u.share ? (u.share.via ? state.mode : "shared") : "";
