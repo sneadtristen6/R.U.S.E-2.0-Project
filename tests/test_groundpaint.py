@@ -784,6 +784,38 @@ class MapPaint(unittest.TestCase):
         # only its edge is worked out pixel by pixel: a hard edge fades over its outer 15%, a quarter of the patch
         self.assertLess(took, slow_took * 0.75)
 
+    def test_a_tile_a_hard_colour_covers_all_over_is_one_record_and_the_same(self):
+        """A blank map's whole-map paint (full opacity, hard edge, past every corner) covers every tile: each is that
+        colour's flat record (groundpaint.flat_tile), made once and the tile never read, the same bytes as working it
+        out, on whole grids and pixel by pixel; a tile with a stroke laid after it is worked out as before (2026-10-17:
+        a 40 x 24 cell map's 25,202 tiles took half an hour)."""
+        from unittest import mock
+        from rusemod import groundpaint
+        s = store()
+        whole = {"brush": "paint", "x": 1000.0, "y": 500.0, "radius": 1300.0, "colour": "#5f6f3a", "shape": "square",
+                 "edge": "hard"}
+        first = {"brush": "paint", "x": 400.0, "y": 400.0, "radius": 200.0, "colour": "#e61e1e", "weight": 0.7}
+        after = {"brush": "paint", "x": 1500.0, "y": 300.0, "radius": 120.0, "colour": "#c8aa6e", "weight": 0.5}
+        for made in (strokes(whole), strokes(first, whole), strokes(first, whole, after)):
+            for grids in (True, False):
+                with mock.patch.object(groundpaint, "whole_arrays", (lambda: None) if not grids else
+                                       groundpaint.whole_arrays):
+                    quick = paint_strokes_of(s, made)
+                    with mock.patch.object(groundpaint, "flat_tile", return_value=None):
+                        slow = paint_strokes_of(s, made)
+                self.assertEqual(quick, slow, (len(made), grids))
+            flat = groundpaint.flat_tiles(s, BOUNDS, made, [t.index for t in s.tiles])
+            self.assertEqual({i: quick[i] for i in flat}, flat)   # what the workers are spared is what they'd make
+            if len(made) < 3:
+                self.assertEqual(sorted(flat), sorted(t.index for t in s.tiles))   # every tile flat
+            else:   # the tiles the last stroke reaches are worked out, the rest flat
+                boxes = groundpaint._laying(made)[0]
+                reached = {t.index for t in s.tiles if 2 in groundpaint._near(boxes, groundpaint._tile_rect(s, t, BOUNDS))}
+                self.assertTrue(reached)
+                self.assertEqual(set(flat), {t.index for t in s.tiles} - reached)
+        same_size = [t.index for t in s.tiles if t.level != s.depth][:3]   # (the overview is another size)
+        self.assertEqual(len(set(groundpaint.flat_tiles(s, BOUNDS, strokes(whole), same_size).values())), 1)
+
     def test_a_stamp_copies_the_close_up_map_too(self):
         from rusemod.groundpaint import stamp_detail
         raw = div_map(road_row={4, 5})  # the map's road mark along y = 140 .. 170

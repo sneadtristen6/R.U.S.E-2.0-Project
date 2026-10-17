@@ -641,6 +641,66 @@ def _solid_over(stroke, colour, x0: float, y0: float, x1: float, y1: float) -> b
     return all(f.t2(x, y) <= most for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)))
 
 
+FLAT_KEPT = 64      # flat tile records _FLAT_TILES keeps at most (a colour and a tile size each)
+_FLAT_TILES: dict = {}   # (colour, width, height) -> the record of a tile all that colour
+
+
+def flat_tile(store: Tmst, tile, rect, strokes: list, near: list, colours: list, hard: list) -> bytes | None:
+    """The tile's new record when the last of the strokes reaching it (`near`, in order) covers all of it its one
+    colour (_solid_over on the tile's whole `rect`: full opacity, a hard edge): every block is that colour's, as
+    paint_strokes and paintnp lay it, whatever the tile held. So it's the same record for every such tile of its
+    size, made once, and the tile isn't even read. A blank map's whole-map paint covers every tile this way: 25,202
+    tiles on a 40 x 24 cell map, half an hour on three cores read and painted one by one (2026-10-17). None for any
+    other tile."""
+    if not near:
+        return None
+    last = near[-1]
+    if not hard[last] or not _solid_over(strokes[last], colours[last], *rect):
+        return None
+    w, h = _dims(store, tile)
+    key = (colours[last], w, h)
+    if key not in _FLAT_TILES:
+        if len(_FLAT_TILES) >= FLAT_KEPT:
+            _FLAT_TILES.clear()
+        _FLAT_TILES[key] = zipo_tile(dxt.encode_block([colours[last]] * 16) * ((w // 4) * (h // 4)), w, h)
+    return _FLAT_TILES[key]
+
+
+def _laying(strokes: list) -> tuple[list, list, list]:
+    """paint_strokes's own look at the strokes, made once: each one's box (x min, x max, y min, y max), its colour
+    (a colour stroke's, else None) and whether it can cover a block whole (_solid_over's first look)."""
+    from .brush import colour_rgb
+    boxes = [s.box() for s in strokes]
+    colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
+    hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" and not s.mask for s, c in zip(strokes, colours)]
+    return boxes, colours, hard
+
+
+def _near(boxes: list, rect) -> list:
+    """The strokes whose boxes reach the tile at `rect` (x0, y0, x1, y1), in order."""
+    rx0, ry0, rx1, ry1 = rect
+    return [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
+
+
+def flat_tiles(store: Tmst, bounds, strokes: list, indices) -> dict[int, bytes]:
+    """{tile index: record} for the tiles of `indices` a stroke paints all over its one colour (flat_tile): worked
+    out here, before any tile is shared out to the workers (thousands of them take a moment)."""
+    if not strokes:
+        return {}
+    boxes, colours, hard = _laying(strokes)
+    if not any(hard):
+        return {}
+    by_index = {t.index: t for t in store.tiles}
+    out = {}
+    for i in indices:
+        tile = by_index[i]
+        rect = _tile_rect(store, tile, bounds)
+        record = flat_tile(store, tile, rect, strokes, _near(boxes, rect), colours, hard)
+        if record is not None:
+            out[i] = record
+    return out
+
+
 CLEAR_AT = 0.5  # how strong Map Paint must be (its opacity times its fall-off) for what hides it up close to go
 
 
@@ -730,7 +790,6 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swa
     With numpy there, every tile is painted on whole grids (rusemod.paintnp): these same sums in this same order, so
     the same record, many times sooner. The pixel-by-pixel way below is what it is checked against, and what paints
     everything without numpy."""
-    from .brush import colour_rgb
     if not strokes:
         return {}
     swatches = swatches or {}
@@ -738,10 +797,7 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swa
     if missing:
         raise PaintError(f"the texture {missing[0]} wasn't made ready to paint with")
     arrays = whole_arrays()
-    boxes = [s.box() for s in strokes]  # x min, x max, y min, y max
-    colours = [colour_rgb(s.colour) if s.kind.kind == "paint" else None for s in strokes]
-    # the strokes that can cover a block whole (_solid_over's own first look, made once)
-    hard = [c is not None and s.weight >= 1.0 and s.edge == "hard" and not s.mask for s, c in zip(strokes, colours)]
+    boxes, colours, hard = _laying(strokes)
     solid_blocks: dict = {}  # colour -> its 4x4 block, encoded once
     samplers: dict = {}
     pictures: dict = {}  # paintnp's own samplers, a level each
@@ -751,8 +807,12 @@ def paint_strokes(store: Tmst, bounds, strokes: list, cache=None, only=None, swa
         if only is not None and tile.index not in only:
             continue
         rx0, ry0, rx1, ry1 = _tile_rect(store, tile, bounds)
-        near = [k for k, (bx0, bx1, by0, by1) in enumerate(boxes) if bx0 < rx1 and bx1 > rx0 and by0 < ry1 and by1 > ry0]
+        near = _near(boxes, (rx0, ry0, rx1, ry1))
         if not near:
+            continue
+        record = flat_tile(store, tile, (rx0, ry0, rx1, ry1), strokes, near, colours, hard)
+        if record is not None:   # a stroke's colour all over: one record for all such tiles, the tile not read
+            out[tile.index] = record
             continue
         if arrays is not None:
             record = arrays.paint_tile(sys.modules[__name__], store, tile, (rx0, ry0, rx1, ry1), near, strokes, boxes,
@@ -1082,9 +1142,13 @@ def _paint_tiles(store: Tmst, bounds, strokes: list, cache, workers: int, alone:
     kept = mapkeep.read_tiles(cache, names.values()) if cache is not None else {}
     have = {i: kept[name] for i, name in names.items() if name in kept}  # tile -> its record (b"": left as it is)
     rest = [i for i in todo if i not in have]
+    flat = flat_tiles(store, bounds, strokes, rest)   # a stroke's colour all over: no worker needed (flat_tile)
+    rest = [i for i in rest if i not in flat]
 
     def whole(got: dict) -> dict:
-        mapkeep.write_tiles(cache, {names[i]: got.get(i, b"") for i in rest if i in names})  # for the next painting
+        got = {**flat, **got}
+        painted = list(flat) + rest   # kept for the next painting
+        mapkeep.write_tiles(cache, {names[i]: got.get(i, b"") for i in painted if i in names})
         both = {i: have.get(i) or got.get(i) for i in todo}
         return {i: record for i, record in both.items() if record}
     if not rest:
