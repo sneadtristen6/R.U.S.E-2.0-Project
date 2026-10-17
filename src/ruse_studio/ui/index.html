@@ -257,7 +257,7 @@
                   <div id="tex-now" class="tex-now hidden"><span id="tex-now-pic" class="tex-now-pic"></span>
                     <span id="tex-now-name" class="small"></span></div>
                   <label id="tex-size-row" class="brush-slider small hidden"><span id="tex-size-label"></span>
-                    <input id="tex-size" type="range" min="-2" max="4" step="1" value="0"></label>
+                    <input id="tex-size" type="range" data-stepper="buttons" min="-2" max="4" step="1" value="0"></label>
                   <label id="tex-turn-row" class="brush-slider small hidden"><span id="tex-turn-label"></span>
                     <input id="tex-turn" type="range" min="0" max="179" step="1" value="0"></label>
                   <div id="tex-used-label" class="muted small"></div>
@@ -275,7 +275,7 @@
             </div>
             <div class="tray-side">
               <label class="brush-slider small"><span id="brush-size-label"></span>
-                <input id="brush-size" type="range" min="1" max="15" step="1" value="6"></label>
+                <input id="brush-size" type="range" data-stepper="buttons" min="1" max="15" step="1" value="6"></label>
               <label id="brush-strength-row" class="brush-slider small"><span id="brush-strength-label"></span>
                 <input id="brush-strength" type="range" min="1" max="100" step="1" value="50"></label>
               <!-- the brush types (2026-10-03): round, square (turned by the angle) or line; a soft or hard edge

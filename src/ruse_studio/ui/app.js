@@ -773,6 +773,7 @@ function rangeSlider(box, game) {
   const w = state.words;
   const slider = el("input", { type: "range", min: "0", step: String(METRE), disabled: box.disabled,
     title: w.tip_range_slider });
+  Object.assign(slider.dataset, { stepper: "buttons", click: String(RANGE_STEP) });   // (the box is its number: 50 m a click)
   slider.setAttribute("aria-label", w.range_slider);
   const far = el("span", { className: "muted small range-m", title: w.tip_range_box });
   const sync = () => {
@@ -971,6 +972,7 @@ function numberHelp(u, r, th, cell, getBoxes, st, ranged) {
     if (amount && !ranged && base && state.mod) {
       slider = el("input", { type: "range", min: String(BASE_LEAST), max: String(BASE_MOST), step: "5",
         className: "base-slider", title: fill(w.tip_number_slider, { base: base.toLocaleString() }) });
+      slider.dataset.stepper = "buttons";   // (its % is said beside it, the value in the boxes)
       slider.setAttribute("aria-label", fill(w.number_slider, { name: r.label }));
       const whole = WHOLE.has(r.type);
       slider.addEventListener("input", () => {
@@ -2020,6 +2022,7 @@ function sizeSlider(box, marks) {
   const sizeAt = (p) => Math.exp(lo + (p / SIZE_STEPS) * (hi - lo));
   const range = el("input", { type: "range", min: "0", max: String(SIZE_STEPS), step: "1", className: "size-range",
     title: w.tip_size_slider });
+  Object.assign(range.dataset, { stepper: "beside", click: "20" });   // (its marks are drawn along it)
   range.setAttribute("aria-label", w.model_size);
   const follow = () => { const v = Number(box.value); if (Number.isFinite(v) && v > 0) range.value = String(at(v)); };
   const take = (s) => { box.value = String(sizeRound(s)); follow(); box.dispatchEvent(new Event("input")); };
@@ -4940,6 +4943,145 @@ window.addEventListener("beforeunload", (e) => {
   e.preventDefault();
   e.returnValue = "";  // the browser asks "Leave site?" (its own words)
 });
+
+// --- number rows: every slider shown as [−] number [+] (the owner's Studio 1.0 list, item 11: "+/- number rows instead
+// of sliders"; the design: studio-tools-design §11.1, rows typed or stepped, steps landing on round numbers). The
+// slider stays, hidden, so the code that reads it, sets it and listens to it is unchanged: typing or stepping sets its
+// value and sends it the input and change events a drag would, and a value set by code shows in the row. A slider's
+// data-stepper: "buttons", − and + alone (its value is a place on a scale, or it has a number box of its own beside
+// it); "beside", the slider kept with − and + round it (its marks are drawn along it); "none", left alone.
+// data-click: a click's step when the slider's own is too fine (a step of 1 m on a range of kilometres).
+const STEP_HOLD_MS = 400, STEP_REPEAT_MS = 70;   // held: one step, then a step every 70 ms after 0.4 s
+const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+
+function holdToRepeat(button, act, end) {
+  let timer = null;
+  const stop = () => {
+    if (timer === null) return;
+    clearTimeout(timer);
+    timer = null;
+    window.removeEventListener("pointerup", stop);
+    end();
+  };
+  button.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || button.disabled) return;
+    e.preventDefault();
+    act();
+    const again = () => { act(); timer = setTimeout(again, STEP_REPEAT_MS); };
+    timer = setTimeout(again, STEP_HOLD_MS);
+    window.addEventListener("pointerup", stop);   // (a button turned off at the end of its range gets no pointerup)
+  });
+  button.addEventListener("pointerleave", stop);
+  button.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    act();
+    end();
+  });
+}
+
+function stepperOf(range) {
+  const how = range.dataset.stepper || "";
+  if (range.dataset.stepped || how === "none") return;
+  range.dataset.stepped = "1";
+  const less = el("button", { type: "button", className: "step-btn", textContent: "−" });
+  const more = el("button", { type: "button", className: "step-btn", textContent: "+" });
+  const box = how ? null : el("input", { type: "number", className: "step-value" });
+  const row = el("span", { className: "stepper" + (how === "beside" ? " beside" : "") });
+  range.after(row);
+  row.append(less);
+  if (how === "beside") row.append(range);   // the slider between the two
+  else range.classList.add("stepped");       // (hidden: the row stands for it)
+  if (box) row.append(box);
+  row.append(more);
+  const read = () => NATIVE_VALUE.get.call(range);
+  const num = (v, d) => (v !== "" && Number.isFinite(Number(v)) ? Number(v) : d);
+  const lim = () => ({ lo: num(range.min, 0), hi: num(range.max, 100), step: num(range.step, 1) || 1 });
+  const places = (s) => { const t = String(s); return t.includes(".") ? t.length - t.indexOf(".") - 1 : 0; };
+  const sync = () => {
+    const w = state.words || {}, { lo, hi, step } = lim(), t = typed();
+    const v = t ? num(t.value, Number(read())) : Number(read());
+    less.disabled = range.disabled || v <= (t ? num(t.min, lo) : lo);
+    more.disabled = range.disabled || v >= (t ? num(t.max, hi) : hi);
+    const what = range.title || (range.closest("[title]") || {}).title || range.getAttribute("aria-label") || "";
+    less.title = w.tip_step_less || "";
+    more.title = w.tip_step_more || "";
+    less.setAttribute("aria-label", w.step_less || "−");
+    more.setAttribute("aria-label", w.step_more || "+");
+    if (box && box.isConnected) {
+      Object.assign(box, { min: String(lo), max: String(hi), step: String(step), disabled: range.disabled, title: what });
+      if (document.activeElement !== box) box.value = read();
+    }
+  };
+  Object.defineProperty(range, "value", {   // a value set by code shows in the row
+    configurable: true,
+    get() { return NATIVE_VALUE.get.call(this); },
+    set(v) { NATIVE_VALUE.set.call(this, v); sync(); } });
+  const put = (v, done) => {
+    const { lo, hi, step } = lim();
+    const kept = Math.min(hi, Math.max(lo, Number((Math.round((v - lo) / step) * step + lo).toFixed(places(step)))));
+    if (String(kept) !== read()) {
+      NATIVE_VALUE.set.call(range, String(kept));
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (done) range.dispatchEvent(new Event("change", { bubbles: true }));
+    sync();
+  };
+  // the tool's own typed box (maps.js typedBeside: a value past the slider's ends, the owner's "all of them",
+  // 2026-10-10), when it has one: it's the row's number, and the steps go through it (as far as it takes)
+  const typed = () => row.querySelector("input.typed-number");
+  const next = (v, dir) => {   // the next round number of the click's step (7 + 5 -> 10, not 12)
+    const c = num(range.dataset.click, lim().step);
+    return dir > 0 ? (Math.floor(v / c + 1e-9) + 1) * c : (Math.ceil(v / c - 1e-9) - 1) * c;
+  };
+  const by = (dir) => {
+    const t = typed();
+    if (!t) { put(next(Number(read()), dir), false); return; }
+    const lo = num(t.min, -Infinity), hi = num(t.max, Infinity);
+    t.value = String(Math.min(hi, Math.max(lo, Number(next(num(t.value, 0), dir).toFixed(6)))));
+    t.dispatchEvent(new Event("change"));   // (its own check, then the tool's value: maps.js typedBeside)
+    sync();
+  };
+  const changed = () => { if (!typed()) range.dispatchEvent(new Event("change", { bubbles: true })); };
+  holdToRepeat(less, () => by(-1), changed);
+  holdToRepeat(more, () => by(1), changed);
+  range._adoptTyped = (t) => {   // its typed box comes in between − and +, in the place of the row's own
+    if (box) box.remove();
+    more.before(t);
+    t.addEventListener("change", sync);
+    sync();
+  };
+  if (box) {
+    box.addEventListener("input", () => {   // live while it's a number in range; kept in range when done
+      const { lo, hi } = lim(), v = num(box.value, NaN);
+      if (v >= lo && v <= hi) put(v, false);
+    });
+    box.addEventListener("change", () => put(num(box.value, Number(read())), true));
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter") box.blur(); });
+  }
+  new MutationObserver(sync).observe(range, { attributes: true, attributeFilter: ["min", "max", "step", "disabled", "title"] });
+  sync();
+}
+
+function steppersIn(root) {
+  for (const r of root.querySelectorAll('input[type="range"]')) stepperOf(r);
+}
+// a typed box put beside a slider that has its row (maps.js typedBeside: slider.after(box)): taken into the row
+function adoptTyped(t) {
+  const range = t.previousElementSibling;
+  if (range && range.matches('input[type="range"]') && range._adoptTyped) range._adoptTyped(t);
+}
+steppersIn(document);
+new MutationObserver((changes) => {   // sliders made later (a tray, a unit's page, a dialog) get their rows too
+  for (const c of changes) {
+    for (const n of c.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches('input[type="range"]')) stepperOf(n);
+      else if (n.matches("input.typed-number")) adoptTyped(n);
+      else steppersIn(n);
+    }
+  }
+}).observe(document.body, { childList: true, subtree: true });
 
 let started = false;
 function startOnce() {

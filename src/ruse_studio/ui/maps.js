@@ -745,6 +745,7 @@ function renderLayers() {
     const value = el("span", { className: "muted", textContent: `${Math.round(alpha[k] * 100)} %` });
     const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(alpha[k] * 100)),
       title: w.tip_layer_alpha });
+    range.dataset.stepper = "buttons";   // (its % is said beside it)
     range.setAttribute("aria-label", name[k] || k);
     range.addEventListener("input", () => {
       alpha[k] = Number(range.value) / 100;
@@ -761,6 +762,7 @@ function zoneFillRow() {
   const w = mv.words, value = el("span", { className: "muted", textContent: `${Math.round(zoneFill * 100)} %` });
   const range = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(zoneFill * 100)),
     title: w.tip_zone_fill || "" });
+  range.dataset.stepper = "buttons";   // (its % is said beside it)
   range.setAttribute("aria-label", w.zone_fill || "Zones' fill");
   range.addEventListener("input", () => {
     zoneFill = Number(range.value) / 100;
