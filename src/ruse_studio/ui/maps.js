@@ -20,9 +20,15 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
   place: { on: false, group: "building", type: null, turn: 0, size: 1, solid: true, objects: [], meshes: {}, mod: null,
-    // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: the objects each
-    // click, area or line placed this session (for Undo); lineStart: a line's first click; painting: an area being dragged
-    how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null } };
+    // how: one, area, line, grid, box or select; area: the area brush's radius and spacing: per kind, in metres; groups:
+    // the objects each click, area, line, grid or box placed this session (for Undo); lineStart: a line's or a grid's
+    // first click; grid: a grid's first row once its end is clicked ({ b }); box: a box being dragged ({ a, b });
+    // painting: an area being dragged; rows: a grid's or a box's gap between rows, per kind, in metres; roads: Face the
+    // roads (kept with the view); seed: the variety of the line, grid or box being made, so its preview is what's placed
+    // path: a path being clicked ({ pts }); lastPath: the last one placed (its clicks); width: a path's width per kind
+    // (metres; 0 one line); cover: a path of trees hides units (pathCover)
+    how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null, grid: null, box: null, rows: {},
+    roads: true, seed: 1, path: null, lastPath: null, width: {}, cover: true } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -2680,15 +2686,19 @@ function placeScenery() {
   const { THREE } = mv.gl, grid = makeGrid(mv.edit);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
+  // the map's own objects this mod moved or took away (Select's [[own]] rows) aren't drawn where they were
+  const hidden = ownHidden(), types = mv.scenery.data ? mv.scenery.data.types : [];
   for (const mesh of shapes.concat(models)) {
     const { group, flat, rows, real } = mesh.userData, [, width, height] = SCENERY_LOOK[group];
     const n = rows ? rows.length : flat.length / 5;
     for (let j = 0; j < n; j++) {
       const k = rows ? rows[j] : j;
       const x = flat[5 * k + 1], y = flat[5 * k + 2], size = Math.max(0.3, Math.min(flat[5 * k + 4], 4));
+      const gone = hidden.size > 0 && types[flat[5 * k]] && hidden.has(`${types[flat[5 * k]][0]}|${x}|${y}`);
       p.set(x * SCALE, groundAt(grid, x, y) * SCALE, y * SCALE);
       q.setFromAxisAngle(up, -flat[5 * k + 3]);  // the game turns from east toward south; the scene's Y turns the other way
-      if (real) s.set(size * SCALE, size * SCALE, size * SCALE);
+      if (gone) s.set(0, 0, 0);
+      else if (real) s.set(size * SCALE, size * SCALE, size * SCALE);
       else s.set(width * size * SCALE, height * size * SCALE, width * size * SCALE);
       mesh.setMatrixAt(j, m.compose(p, q, s));
     }
@@ -2814,6 +2824,7 @@ function keptScenView(view) {
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
   if (typeof view.road_trees === "boolean") road.keepTrees = view.road_trees;  // and its "Keep the trees"
+  if (typeof view.place_roads === "boolean") mv.place.roads = view.place_roads;  // the place trays' "Face the roads"
   if (view.map_mode === "map" || view.map_mode === "scenario") mv.mode = view.map_mode;  // the side the bar was on
 }
 
@@ -5333,15 +5344,19 @@ function sceneryAt(ev) {
 // maps/<map>/scenery.toml (StudioApi.scenery_add); drawn in gold until "Test in game" builds them into the map ---
 const PLACEABLE = ["building", "prop", "vegetation"];
 const PLACED_COLOUR = 0xe8c14f;
-// How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); or a line
-// between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses).
-const PLACE_HOW = ["one", "area", "line"];
+// How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); a line
+// between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses); a grid (a
+// line, then rows moved out from it: gridOf); a box dragged on the ground, filled in rows (fillBox); or a path
+// clicked along the way, curving through the clicks (pathOf: hedges, tree belts).
+const PLACE_HOW = ["one", "area", "line", "path", "grid", "box", "select"];  // select: pick what stands on the map (sel)
 const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
 const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
 const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
 // the trees Forest strokes placed: the brushes' Undo takes them back with their cover, not the Place panel's
 const forestTrees = new WeakSet();
-const around = (turn, spread) => (turn + Math.round((Math.random() * 2 - 1) * spread) + 360) % 360;
+// the dice for the objects' variety: Math.random, or a line's, grid's or box's own while it's made (withSeed)
+let placeRand = Math.random;
+const around = (turn, spread) => (turn + Math.round((placeRand() * 2 - 1) * spread) + 360) % 360;
 
 function placeNote(text, kind) {
   const note = $("place-note");
@@ -5477,21 +5492,39 @@ function renderPlace() {
   $("place-size-label").textContent = `${w.brush_size} ${p.size.toFixed(1)}×`;
   $("place-size").title = w.tip_place_size;
   typedBeside("place-size", TYPED.place, () => p.size, (n) => { p.size = n; renderPlace(); }, w.tip_place_size);
-  $("place-solid-row").classList.toggle("hidden", p.group !== "building");  // only buildings stop units
+  $("place-solid-row").classList.toggle("hidden", p.group !== "building" || p.how === "select");  // only buildings stop units
   $("place-solid").checked = p.solid;
   $("place-solid-label").textContent = w.place_solid;
   $("place-solid-row").title = w.tip_place_solid;
+  const picking = p.how === "select";
+  if (picking && sel.items.length) {  // Turn and Size say the first picked one's, and set every picked one's
+    const first = selPose(sel.items[0]);
+    if (first) {
+      $("place-turn-label").textContent = `${w.place_turn} ${Math.round(((first.turn % 360) + 360) % 360)}°`;
+      $("place-size-label").textContent = `${w.brush_size} ${first.size.toFixed(2)}×`;
+    }
+  }
   $("place-undo").textContent = w.brush_undo;
-  $("place-undo").title = w.tip_place_undo;
-  $("place-undo").disabled = !p.objects.length;
+  $("place-undo").title = picking ? w.tip_sel_undo : w.tip_place_undo;
+  $("place-undo").disabled = picking ? !sel.undo.length || sel.busy : !p.objects.length;
+  $("place-redo").textContent = w.brush_redo;
+  $("place-redo").title = picking ? w.tip_sel_redo : w.tip_place_redo;
+  $("place-redo").disabled = picking ? !sel.redo.length || sel.busy : !redo.place.length || !p.mod;
+  renderSel();
   $("place-count").textContent = p.objects.length ? fill(w.place_count, { n: p.objects.length.toLocaleString() }) : "";
   $("place-how").replaceChildren(...PLACE_HOW.map((how) => {
     const chip = el("button", { type: "button", className: "chip", textContent: w[`place_${how}`], title: w[`tip_place_${how}`] });
     chip.setAttribute("aria-pressed", String(p.how === how));
-    chip.addEventListener("click", () => { p.how = how; p.lineStart = null; showPlaceGuide(null); if (!p.on) setPlaceMode(true); else renderPlace(); });
+    chip.addEventListener("click", () => {
+      p.how = how;
+      dropPlaceGesture();
+      showPlaceGhost(null);
+      if (!p.on) setPlaceMode(true); else renderPlace();
+      drawSelection();  // the picks' rings show in Select (and stay picked when another way is tried)
+    });
     return chip;
   }));
-  $("place-spacing-row").classList.toggle("hidden", p.how === "one");
+  $("place-spacing-row").classList.toggle("hidden", p.how === "one" || p.how === "select");
   $("place-area-row").classList.toggle("hidden", p.how !== "area");
   $("place-spacing").value = spacingOf(p.group);
   $("place-spacing-label").textContent = fill(w.place_spacing, { m: spacingOf(p.group) });
@@ -5502,7 +5535,40 @@ function renderPlace() {
   $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
   $("place-area").title = w.tip_place_area_size;
   typedBeside("place-area", TYPED.area, () => p.area, (n) => { p.area = n; renderPlace(); }, w.tip_place_area_size);
-  if (p.on) $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help : w.place_help;
+  $("place-rows-row").classList.toggle("hidden", p.how !== "grid" && p.how !== "box");
+  $("place-rows").value = rowsOf(p.group);
+  $("place-rows-label").textContent = fill(w.place_rows, { m: rowsOf(p.group) });
+  $("place-rows").title = w.tip_place_rows;
+  typedBeside("place-rows", TYPED.spacing, () => rowsOf(p.group), (n) => { p.rows[p.group] = n; renderPlace(); },
+    w.tip_place_rows);
+  // Face the roads: what stands (buildings, props), placed one by one or in rows; an area scatters, Select moves
+  $("place-roads-row").classList.toggle("hidden", p.group === "vegetation" || p.how === "area" || p.how === "select");
+  $("place-roads").checked = p.roads;
+  $("place-roads-label").textContent = w.place_roads;
+  $("place-roads-row").title = w.tip_place_roads;
+  // Path: its width, its cover (trees), Finish, and Along the last path
+  const path = p.how === "path";
+  $("place-width-row").classList.toggle("hidden", !path);
+  $("place-width").value = widthOf(p.group);
+  $("place-width-label").textContent = widthOf(p.group) ? fill(w.place_width, { m: widthOf(p.group) }) : w.place_width_line;
+  $("place-width").title = w.tip_place_width;
+  typedBeside("place-width", [0, 1000], () => widthOf(p.group), (n) => { p.width[p.group] = n; renderPlace(); },
+    w.tip_place_width);
+  $("place-cover-row").classList.toggle("hidden", !path || p.group !== "vegetation");
+  $("place-cover").checked = p.cover;
+  $("place-cover-label").textContent = w.place_cover;
+  $("place-cover-row").title = w.tip_place_cover;
+  $("place-path-row").classList.toggle("hidden", !path);
+  $("place-finish").textContent = w.road_finish || "Finish";
+  $("place-finish").title = w.tip_place_finish;
+  $("place-finish").disabled = !(p.path && p.path.pts.length >= 2);
+  $("place-again").textContent = w.place_again;
+  $("place-again").title = w.tip_place_again;
+  $("place-again").disabled = !p.lastPath || !p.type || !p.mod;
+  if (p.on) {
+    $("map-help").textContent = { area: w.place_area_help, line: w.place_line_help, grid: w.place_grid_help,
+      box: w.place_box_help, path: w.place_path_help, select: w.sel_help }[p.how] || w.place_help;
+  }
 }
 
 function spacingOf(group) {
@@ -5513,13 +5579,14 @@ function setPlaceMode(on) {
   mv.place.on = on;
   if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-  if (!on) { mv.place.lineStart = null; showPlaceGuide(null); showPlaceGhost(null); }
+  if (!on) { dropPlaceGesture(); showPlaceGhost(null); }
   if (on && mv.brush.on) setBrushMode(false);
   pointerMode();
   if (on) placeNote(!mv.place.mod ? mv.words.no_mod : !mv.place.type ? whyNoType() : "", "error");
   if (!on) $("map-help").textContent = mv.brush.on ? mv.words.brush_help : mv.words.map_help;
   renderPlace();
   renderDock();
+  drawSelection();  // Select's rings show only while the place tools are open
 }
 
 // Nothing to place yet: the map's types are still being read (a second or two on a real map), or the kind picked has
@@ -5539,9 +5606,14 @@ function drawPlaced() {
   for (const list of Object.values(p.meshes)) for (const m of list) forget(m);
   p.meshes = {};
   const bridges = bridgeTypes();  // drawn as decks (drawBridges)
-  if (mv.edit && p.objects.length) {
+  // what the mod placed (where a drag is carrying the picked ones), and the map's own it moved (Select)
+  const dragging = sel.drag && sel.drag.moved ? new Map(sel.items.filter((it) => it.kind === "placed")
+    .map((it) => [it.obj, shownPose(it)])) : null;
+  const shown = (dragging ? p.objects.map((o) => (dragging.has(o) ? { ...o, ...dragging.get(o) } : o)) : p.objects)
+    .concat(ownMovedObjects());
+  if (mv.edit && shown.length) {
     const lists = new Map();  // a type with a model, or a group's shape: its objects
-    for (const o of p.objects) {
+    for (const o of shown) {
       if (bridges.has(o.type)) continue;
       const group = groupOfType(o.type), t = typeNumber(o.type), model = lib && t !== null && lib.has(t);
       const key = model ? t : group;
@@ -5589,14 +5661,15 @@ function drawPlaced() {
   drawBridges();  // (draws the view)
 }
 
-// The picked type at the pointer before a click places it (One, and a Line's start): its real model, see-through,
-// turned and sized as it will stand; a gold shape until the models are in. The owner, 2026-10-15: "how do I know what
-// they look like?"
+// The picked type at the pointer before a click places it (One, and a Line's or a Grid's start): its real model, see-
+// through, turned and sized as it will stand (beside a road, with Face the roads); a gold shape until the models are
+// in. The owner, 2026-10-15: "how do I know what they look like?" A line or a grid under way shows its preview instead.
 const GHOST_ALPHA = 0.6;
 function showPlaceGhost(hit) {
   const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
   if (!gl) return;
-  const type = hit && p.on && p.how !== "area" && p.type && mv.edit ? p.type : null;
+  const first = p.how === "one" || ((p.how === "line" || p.how === "grid") && !p.lineStart) || (p.how === "path" && !p.path);
+  const type = hit && p.on && first && p.type && mv.edit ? p.type : null;
   if (!type) {
     if (gl.ghost && gl.ghost.visible) { gl.ghost.visible = false; gl.draw(); }
     return;
@@ -5610,14 +5683,7 @@ function showPlaceGhost(hit) {
     }
     const ghost = new THREE.Group(), [shape, width, height] = SCENERY_LOOK[group];
     if (model) {
-      for (const part of lib.parts(t)) {
-        const mat = lib.material(group, part);
-        if (mat.alphaTest || !mat.map) {  // (a picture whose alpha isn't see-through would come out patchy: it stays solid)
-          Object.assign(mat, { transparent: true, opacity: GHOST_ALPHA, depthWrite: false });
-          mat.alphaTest *= GHOST_ALPHA;  // the leaves' cut-out at the faded opacity (as fade does)
-        }
-        ghost.add(new THREE.Mesh(part.geo, mat));
-      }
+      for (const part of lib.parts(t)) ghost.add(new THREE.Mesh(part.geo, ghostLook(lib.material(group, part))));
     } else {
       const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
       geo.translate(0, 0.5, 0);
@@ -5630,9 +5696,10 @@ function showPlaceGhost(hit) {
     gl.ghost = ghost;
     gl.scene.add(ghost);
   }
-  const ghost = gl.ghost, k = p.size * SCALE;
-  ghost.position.set(hit.x, hit.y, hit.z);
-  ghost.rotation.set(0, -p.turn * Math.PI / 180, 0);
+  const ghost = gl.ghost, k = p.size * SCALE, pose = placePose(hit.x / SCALE, hit.z / SCALE);
+  const y = pose.x === hit.x / SCALE && pose.y === hit.z / SCALE ? hit.y : groundAt(makeGrid(mv.edit), pose.x, pose.y) * SCALE;
+  ghost.position.set(pose.x * SCALE, y, pose.y * SCALE);
+  ghost.rotation.set(0, -pose.turn * Math.PI / 180, 0);
   ghost.scale.set(k, k, k);
   ghost.visible = true;
   gl.draw();
@@ -5643,8 +5710,12 @@ async function loadPlaced(pack, ask) {
   if (ask !== mv.ask) return;
   mv.place.objects = res.objects;
   mv.place.groups = [];
-  mv.place.lineStart = null;
+  dropPlaceGesture();
+  mv.place.lastPath = null;
   mv.place.mod = res.mod;
+  forgetSel(res.own || []);  // the map's own objects this mod moves or takes away ([[own]]): Select's, not drawn
+  if (sel.own.length && mv.edit && Object.keys(mv.scenery.meshes).length) placeScenery();  // where they were
+  drawSelection();
   mv.brush.erase = res.erase || [];  // the Erase brush's circles: the same file's [[erase]] tables
   mv.brush.eraseGroups = [];
   refreshErased();
@@ -5666,14 +5737,15 @@ async function placeAt(ev) {
   if (!p.type) { placeNote(whyNoType(), "error"); return; }
   const hit = hitGround(ev);
   if (!hit) { placeNote(w.place_ground, "error"); return; }
-  const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size,
-    solid: p.solid };
+  const pose = placePose(hit.x / SCALE, hit.z / SCALE);  // beside a road, facing it (Face the roads)
+  const obj = { type: p.type, x: Math.round(pose.x), y: Math.round(pose.y), turn: pose.turn, size: p.size, solid: p.solid };
   p.objects.push(obj);
   drawPlaced();
   try {
     await mv.api.scenery_add(pack, [obj]);
     if (pack !== mv.current) return;
     p.groups.push([obj]);
+    redo.place = [];
     placeNote(w.brush_note);
   } catch (err) {
     if (pack !== mv.current) return;
@@ -5694,6 +5766,7 @@ async function placeMany(objs) {
     await mv.api.scenery_add(pack, objs);
     if (pack !== mv.current) return;
     p.groups.push(objs);
+    redo.place = [];
     placeNote(fill(w.place_placed, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
   } catch (err) {
     if (pack !== mv.current) return;
@@ -5705,11 +5778,12 @@ async function placeMany(objs) {
 }
 
 // The next object of an area or a line at world (x, y): the kind's own look, with a little variety for trees and props
-// (their turn, and a tree's size) so a painted wood doesn't look stamped; buildings keep the turn they're given.
-function objectAt(x, y, turn) {
-  const p = mv.place, varied = p.group !== "building";
-  const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + Math.random() * 0.3) * 100) / 100 : p.size;
-  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(Math.random() * 360) : turn, size,
+// (their turn, and a tree's size) so a painted wood doesn't look stamped; buildings keep the turn they're given, and so
+// does anything set beside a road (`keep`: a fence or a wall along it).
+function objectAt(x, y, turn, keep = false) {
+  const p = mv.place, varied = p.group !== "building" && !keep;
+  const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + placeRand() * 0.3) * 100) / 100 : p.size;
+  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(placeRand() * 360) : turn, size,
     solid: p.solid };
 }
 
@@ -5745,17 +5819,535 @@ function scatter(stroke, x, y, how) {
 }
 
 // A line between two clicks: an object every `spacing`, both ends included, turned along the line (buildings then
-// face the same way, like houses along a street; the turn slider adds to that).
+// face the same way, like houses along a street; the turn slider adds to that). Started near a road with Face the
+// roads, it follows the road instead (rowOf).
 function lineOf(a, b) {
+  return withSeed(() => {
+    const row = rowOf(a, b);
+    return row.map((q) => objectAt(q.x, q.y, q.turn, row.road));
+  });
+}
+
+// --- Grid, Box and Face the roads (the owner, 2026-10-16: "buildings snap to roads", a Cities: Skylines drag-out grid,
+// "length, then rows, spacing", and "fill a box with a building type at a spacing"). A grid is a line (its first row)
+// and rows moved out from it; a box is dragged on the ground and filled in rows. Both show what they'll place, see-
+// through, with how many, until the click (or the button let go) places it, and both go back with one Undo. ---
+const ROWS = { building: 25, prop: 8, vegetation: 6 };  // metres between a grid's or a box's rows to start with, per kind
+const ROAD_REACH = 40;  // metres: with Face the roads, an object clicked this near a road's line goes beside the road
+const ROW_STEP = 2;     // metres: a row along a road is found by following it in steps this long
+const roadHalf = () => ROAD_WIDTH / 2 + 2 * METRE;  // a road's line to the side of what stands beside it (map units)
+const facesRoads = () => mv.place.roads && mv.place.group !== "vegetation";  // (trees don't face anything)
+const newSeed = () => Math.floor(Math.random() * 2 ** 32);
+
+function rowsOf(group) {
+  return mv.place.rows[group] ?? ROWS[group] ?? 10;
+}
+
+// make() with the dice of the gesture being made (mulberry32 from mv.place.seed): every preview of a line, a grid or a
+// box comes out the same, and the click places just that.
+function withSeed(make) {
+  let s = mv.place.seed >>> 0;
+  const keep = placeRand;
+  placeRand = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  try { return make(); } finally { placeRand = keep; }
+}
+
+// The roads as short straight pieces (the map's own Béziers about 10 m a piece, and the mod's new roads point to
+// point), in squares of 100 m to find the nearest quickly; made again when the map or the mod's roads change.
+let roadIndex = null;
+function roadPieces() {
+  const P = roads.pieces || [], mine = road.mine || [];
+  if (roadIndex && roadIndex.P === P && roadIndex.mine === mine && roadIndex.n === mine.length) return roadIndex;
+  const cell = 100 * METRE, cells = new Map(), seg = [];
+  const add = (ax, ay, bx, by) => {
+    const k = seg.length / 4;
+    seg.push(ax, ay, bx, by);
+    for (let i = Math.floor(Math.min(ax, bx) / cell); i <= Math.floor(Math.max(ax, bx) / cell); i++) {
+      for (let j = Math.floor(Math.min(ay, by) / cell); j <= Math.floor(Math.max(ay, by) / cell); j++) {
+        (cells.get(`${i},${j}`) || cells.set(`${i},${j}`, []).get(`${i},${j}`)).push(k);
+      }
+    }
+  };
+  for (let o = 0; o < P.length; o += 8) {
+    const len = Math.hypot(P[o + 2] - P[o], P[o + 3] - P[o + 1]) + Math.hypot(P[o + 4] - P[o + 2], P[o + 5] - P[o + 3])
+      + Math.hypot(P[o + 6] - P[o + 4], P[o + 7] - P[o + 5]);
+    const n = Math.min(64, Math.max(2, Math.ceil(len / (10 * METRE))));
+    let px = P[o], py = P[o + 1];
+    for (let s = 1; s <= n; s++) {
+      const t = s / n, u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      const x = a * P[o] + b * P[o + 2] + c * P[o + 4] + d * P[o + 6], y = a * P[o + 1] + b * P[o + 3] + c * P[o + 5] + d * P[o + 7];
+      add(px, py, x, y);
+      px = x; py = y;
+    }
+  }
+  for (const r of mine) for (let i = 0; i + 1 < r.points.length; i++) add(...r.points[i], ...r.points[i + 1]);
+  return (roadIndex = { P, mine, n: mine.length, cell, cells, seg });
+}
+
+// The nearest point of a road's line to (x, y) within `reach` map units, and the road's way there (a unit vector):
+// { x, y, tx, ty, d }, or null.
+function nearestRoad(x, y, reach) {
+  const I = roadPieces(), c = I.cell, span = Math.ceil(reach / c), cx = Math.floor(x / c), cy = Math.floor(y / c);
+  const seen = new Set(), S = I.seg;
+  let best = reach * reach, out = null;
+  for (let i = cx - span; i <= cx + span; i++) for (let j = cy - span; j <= cy + span; j++) {
+    for (const k of I.cells.get(`${i},${j}`) || []) {
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const ax = S[4 * k], ay = S[4 * k + 1], ex = S[4 * k + 2] - ax, ey = S[4 * k + 3] - ay, l2 = ex * ex + ey * ey;
+      if (l2 <= 1e-9) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / l2)), px = ax + t * ex, py = ay + t * ey;
+      const d2 = (x - px) ** 2 + (y - py) ** 2;
+      if (d2 < best) { const l = Math.sqrt(l2); best = d2; out = { x: px, y: py, tx: ex / l, ty: ey / l, d: Math.sqrt(d2) }; }
+    }
+  }
+  return out;
+}
+
+// Half the depth of what's being placed (map units, across a row: its model's z), from its model; else its kind's shape
+function halfDepth() {
+  const p = mv.place, lib = mv.scenery.lib, t = typeNumber(p.type);
+  let d = 0;
+  if (lib && t !== null && lib.has(t)) {
+    for (const part of lib.parts(t)) {
+      const b = part.geo.boundingBox;
+      if (b) d = Math.max(d, Math.abs(b.min.z), Math.abs(b.max.z));
+    }
+  }
+  return (d || SCENERY_LOOK[groupOfType(p.type)][1] / 2) * p.size;
+}
+
+// Where an object at (x, y) stands with Face the roads: beside the nearest road within `reach`, on the side (x, y) is
+// on (or `side`, 1 left of the road's way `along`, -1 right), its back to the road, so a row on each side of a street
+// faces the street; the turn slider adds to that (a model that faces the other way: 180°). { x, y, turn, back, side,
+// along }, or null with no road that near.
+function besideRoad(x, y, reach, side = 0, along = null) {
+  const r = nearestRoad(x, y, reach);
+  if (!r) return null;
+  let tx = r.tx, ty = r.ty;
+  if (along && tx * along[0] + ty * along[1] < 0) { tx = -tx; ty = -ty; }  // the road's pieces run either way
+  const nx = -ty, ny = tx, s = side || ((x - r.x) * nx + (y - r.y) * ny >= 0 ? 1 : -1), off = roadHalf() + halfDepth();
+  const heading = Math.atan2(ty, tx) * 180 / Math.PI + (s > 0 ? 0 : 180);
+  return { x: r.x + nx * s * off, y: r.y + ny * s * off, turn: Math.round(heading + mv.place.turn + 720) % 360,
+    back: [nx * s, ny * s], side: s, along: [tx, ty] };
+}
+
+// Where a click at (x, y) puts the next object: beside a road (Face the roads), else where it was clicked
+function placePose(x, y) {
+  const q = facesRoads() && besideRoad(x, y, ROAD_REACH * METRE);
+  return q || { x, y, turn: mv.place.turn };
+}
+
+// A row from a to b: each spot and turn ({ x, y, turn, back }). Along a road (a starts within ROAD_REACH of one, with
+// Face the roads): the road is followed from beside a to beside b, ROW_STEP at a time, an object every spacing along
+// it, each facing it; the row stops where the road leaves a's line by more than twice ROAD_REACH (`road` set on the
+// list). Else straight, both ends included.
+function rowOf(a, b) {
   const p = mv.place, gap = spacingOf(p.group) * METRE, len = Math.hypot(b.x - a.x, b.y - a.y);
+  const first = facesRoads() && besideRoad(a.x, a.y, ROAD_REACH * METRE);
+  if (first) {
+    const out = [first], steps = Math.min(20000, Math.ceil(len / (ROW_STEP * METRE)));
+    let last = first, run = 0;
+    for (let k = 1; k <= steps && out.length < MOST; k++) {
+      const t = k / steps, q = besideRoad(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, 2 * ROAD_REACH * METRE,
+        first.side, last.along);
+      if (!q) break;
+      run += Math.hypot(q.x - last.x, q.y - last.y);
+      last = q;
+      if (run >= gap) { out.push(q); run = 0; }
+    }
+    out.road = true;
+    return out;
+  }
   const n = Math.min(MOST, Math.max(1, Math.floor(len / gap) + 1));
-  const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 360) % 360;
+  const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 360) % 360, turn = Math.round(heading + p.turn) % 360;
   const out = [];
   for (let k = 0; k < n; k++) {
     const t = n === 1 ? 0 : k / (n - 1);
-    out.push(objectAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, Math.round(heading + p.turn) % 360));
+    out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, turn });
   }
   return out;
+}
+
+// A grid: the row from a to b, and rows behind it out to `pt` (the pointer; none yet: the first row alone), rows apart.
+// A row along a road gets its rows behind it (away from the road); a straight one on the pointer's side. With Face the
+// roads, a spot on a road is left out (the first row along a road stands beside it already). `per` and `rows` are set
+// on the list.
+function gridOf(a, b, pt) {
+  return withSeed(() => {
+    const p = mv.place, row = rowOf(a, b), gap = rowsOf(p.group) * METRE, out = [];
+    let rows = 1, backs;
+    if (row.road) {
+      backs = row.map((q) => q.back);
+      if (pt) {
+        let q = row[0], best = Infinity;
+        for (const r of row) { const d = (r.x - pt.x) ** 2 + (r.y - pt.y) ** 2; if (d < best) { best = d; q = r; } }
+        rows = 1 + Math.floor(Math.max(0, (pt.x - q.x) * q.back[0] + (pt.y - q.y) * q.back[1]) / gap);
+      }
+    } else {
+      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+      const d = pt ? (pt.x - a.x) * nx + (pt.y - a.y) * ny : 0, s = d < 0 ? -1 : 1;
+      rows = 1 + Math.floor(Math.abs(d) / gap);
+      backs = row.map(() => [nx * s, ny * s]);
+    }
+    const avoid = facesRoads(), clear = roadHalf() + halfDepth() * 0.8, [x0, y0, , x1, y1] = mv.edit.bounds;
+    for (let r = 0; r < rows && out.length < MOST; r++) {
+      for (let i = 0; i < row.length && out.length < MOST; i++) {
+        const x = row[i].x + backs[i][0] * gap * r, y = row[i].y + backs[i][1] * gap * r;
+        if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        if (avoid && (r > 0 || !row.road) && nearestRoad(x, y, clear)) continue;
+        out.push(objectAt(x, y, row[i].turn, row.road));
+      }
+    }
+    return Object.assign(out, { per: row.length, rows });
+  });
+}
+
+// A box from corner a to corner b (the map's own axes): filled in rows, spacing apart along a row and rows apart, the
+// rows centred in it, each turned by the turn slider (trees and props varied as in an area). With Face the roads, a
+// spot on a road is left out. `cols`, `rows`, `w` and `h` (metres) are set on the list.
+function fillBox(a, b) {
+  return withSeed(() => {
+    const p = mv.place, gx = spacingOf(p.group) * METRE, gy = rowsOf(p.group) * METRE, out = [];
+    const bx0 = Math.min(a.x, b.x), bx1 = Math.max(a.x, b.x), by0 = Math.min(a.y, b.y), by1 = Math.max(a.y, b.y);
+    const cols = Math.floor((bx1 - bx0) / gx) + 1, rows = Math.floor((by1 - by0) / gy) + 1;
+    const ox = bx0 + (bx1 - bx0 - (cols - 1) * gx) / 2, oy = by0 + (by1 - by0 - (rows - 1) * gy) / 2;
+    const avoid = facesRoads(), clear = roadHalf() + halfDepth() * 0.8, [x0, y0, , x1, y1] = mv.edit.bounds;
+    for (let j = 0; j < rows && out.length < MOST; j++) {
+      for (let i = 0; i < cols && out.length < MOST; i++) {
+        const x = ox + i * gx, y = oy + j * gy;
+        if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        if (avoid && nearestRoad(x, y, clear)) continue;
+        out.push(objectAt(x, y, p.turn));
+      }
+    }
+    return Object.assign(out, { cols, rows, w: Math.round((bx1 - bx0) / METRE), h: Math.round((by1 - by0) / METRE) });
+  });
+}
+
+// What a line, a grid or a box being made will place, at the pointer `hit` (none: nothing shown), with how many in
+// the note.
+function placePreview(hit) {
+  const p = mv.place, w = mv.words, pt = hit && { x: hit.x / SCALE, y: hit.z / SCALE };
+  let objs = null, note = "";
+  if (pt && p.on && p.type && mv.edit) {
+    if (p.how === "line" && p.lineStart) {
+      objs = lineOf(p.lineStart, pt);
+      note = fill(w.place_line_count, { n: objs.length.toLocaleString(),
+        m: Math.round(Math.hypot(pt.x - p.lineStart.x, pt.y - p.lineStart.y) / METRE) });
+    } else if (p.how === "grid" && p.lineStart) {
+      objs = p.grid ? gridOf(p.lineStart, p.grid.b, pt) : gridOf(p.lineStart, pt, null);
+      note = fill(w.place_grid_count, { n: objs.length.toLocaleString(), per: objs.per, rows: objs.rows });
+    } else if (p.how === "box" && p.box) {
+      p.box.b = pt;
+      objs = fillBox(p.box.a, pt);
+      note = fill(w.place_box_count, { n: objs.length.toLocaleString(), cols: objs.cols, rows: objs.rows, w: objs.w, h: objs.h });
+    } else if (p.how === "path" && p.path) {
+      objs = pathOf(p.path.pts.concat([[pt.x, pt.y]]));
+      note = fill(w.place_line_count, { n: objs.length.toLocaleString(), m: objs.m });
+    }
+  }
+  showPathLine(objs && objs.path);
+  showPlacePreview(objs);
+  showPlaceBox(p.how === "box" ? p.box : null);
+  if (note) placeNote(note + (objs.length >= MOST ? " " + w.place_most : ""));
+}
+
+// A line, a path, a grid or a box half made is dropped: by Esc, another way or kind picked, the tools closed, another
+// map
+function dropPlaceGesture() {
+  const p = mv.place;
+  p.lineStart = null;
+  p.grid = null;
+  p.box = null;
+  p.path = null;
+  showPlaceGuide(null);
+  showPlacePreview(null);
+  showPlaceBox(null);
+  showPathLine(null);
+}
+
+// --- Path: rows of hedges and forests (the owner, 2026-10-16: "I would like to be able to have rows of hedges and
+// forests"). Clicked along the way (a double-click, Enter or Finish ends it): a smooth line through the clicks, as a
+// Freeform road's (roadLine), with an object every spacing along it, turned along it; with a Width, a belt of them
+// at least the spacing apart (a tree belt, a wood's edge); a path of trees with Cover hides units as the Forest
+// brush's woods do (cover strokes along it, saved with the trees: the place tray's Undo takes both). "Along the last
+// path" lays the picked object along the last path again: a hedge's bushes, then its trees. ---
+const COVER_HALF = 10;   // metres: the least a path's cover reaches either side of its line (the cover grid is coarse)
+const COVER_STEP = 40;   // metres of path per cover stroke (a line-shaped Cover stroke each)
+
+function widthOf(group) {
+  return mv.place.width[group] ?? 0;
+}
+
+const pathCovers = () => mv.place.group === "vegetation" && mv.place.cover;
+
+// The smooth line through a path's clicks ([x, y] each), its points ~ROAD_SAMPLE apart, and the distance to each
+function pathLine(pts) {
+  const line = roadLine("free", pts), cum = [0];
+  for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]));
+  return { line, cum, len: cum[cum.length - 1] };
+}
+
+// The spot `d` along a path line and its way there: [x, y, ux, uy]
+function alongPath({ line, cum }, d) {
+  let lo = 0, hi = cum.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+  const seg = cum[hi] - cum[lo] || 1, t = Math.max(0, Math.min(1, (d - cum[lo]) / seg));
+  const [ax, ay] = line[lo], [bx, by] = line[hi];
+  return [ax + (bx - ax) * t, ay + (by - ay) * t, (bx - ax) / seg, (by - ay) / seg];
+}
+
+// What a path through `pts` places: one line of objects every spacing (both ends included), or with a Width at least
+// the spacing, a belt of them scattered along it no closer than the spacing (to each other and to what the mod
+// placed before, as an area). `m` (metres long) and `path` (pathLine) are set on the list.
+function pathOf(pts) {
+  return withSeed(() => {
+    const p = mv.place, path = pathLine(pts), gap = spacingOf(p.group) * METRE, wide = widthOf(p.group) * METRE;
+    const out = [], heading = (ux, uy) => Math.round(Math.atan2(uy, ux) * 180 / Math.PI + p.turn + 720) % 360;
+    if (pts.length >= 2 && path.len > 0) {
+      if (wide < gap) {
+        const n = Math.min(MOST, Math.floor(path.len / gap) + 1);
+        for (let k = 0; k < n; k++) {
+          const [x, y, ux, uy] = alongPath(path, n === 1 ? 0 : k * path.len / (n - 1));
+          out.push(objectAt(x, y, heading(ux, uy)));
+        }
+      } else {
+        const key = (a, b) => `${Math.floor(a / gap)},${Math.floor(b / gap)}`, grid = new Map();
+        const put = (o) => (grid.get(key(o.x, o.y)) || grid.set(key(o.x, o.y), []).get(key(o.x, o.y))).push(o);
+        for (const o of p.objects) put(o);
+        const free = (a, b) => {
+          const cx = Math.floor(a / gap), cy = Math.floor(b / gap);
+          for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+            for (const o of grid.get(`${cx + i},${cy + j}`) || []) if (Math.hypot(o.x - a, o.y - b) < gap) return false;
+          }
+          return true;
+        };
+        const [x0, y0, , x1, y1] = mv.edit.bounds, tries = Math.ceil(path.len * wide / (gap * gap) * 3);
+        for (let t = 0; t < tries && out.length < MOST; t++) {
+          const [x, y, ux, uy] = alongPath(path, placeRand() * path.len), off = (placeRand() - 0.5) * wide;
+          const ox = x - uy * off, oy = y + ux * off;
+          if (ox < x0 || ox > x1 || oy < y0 || oy > y1 || !free(ox, oy)) continue;
+          const o = objectAt(ox, oy, heading(ux, uy));
+          out.push(o);
+          put(o);
+        }
+      }
+    }
+    return Object.assign(out, { m: Math.round(path.len / METRE), path });
+  });
+}
+
+// The cover a path of trees gives: line-shaped Cover strokes along it, COVER_STEP apart, reaching half its width
+// either side (COVER_HALF at least), as the Forest brush gives its woods cover
+function pathCover(path) {
+  const r = Math.round(Math.max(widthOf(mv.place.group) * METRE / 2, COVER_HALF * METRE)), out = [];
+  const n = Math.max(1, Math.ceil(path.len / (COVER_STEP * METRE)));
+  let [ax, ay] = alongPath(path, 0);
+  for (let k = 1; k <= n; k++) {
+    const [bx, by] = alongPath(path, k * path.len / n);
+    out.push({ brush: "cover", x: Math.round(ax), y: Math.round(ay), radius: r, shape: "line", x2: Math.round(bx),
+      y2: Math.round(by) });
+    [ax, ay] = [bx, by];
+  }
+  return out;
+}
+
+// A path being clicked ends: placed (with its cover, for trees with Cover), and kept for "Along the last path"
+async function finishPath() {
+  const p = mv.place, pts = p.path ? p.path.pts : [];
+  if (pts.length < 2 || !p.type) return;
+  const objs = pathOf(pts);
+  p.lastPath = pts;
+  dropPlaceGesture();
+  await placePath(objs);
+}
+
+// "Along the last path": the picked object, at its spacing and width, along the last path placed
+async function placeAgain() {
+  const p = mv.place;
+  if (!p.lastPath || !p.type || !p.mod) return;
+  p.seed = newSeed();
+  await placePath(pathOf(p.lastPath));
+}
+
+async function placePath(objs) {
+  if (pathCovers() && objs.length) await placeCovered(objs, pathCover(objs.path));
+  else await placeMany(objs);
+}
+
+// Trees and their cover in one go: the trees saved, then the cover strokes (both or neither); one place group, which
+// the place tray's Undo takes back with its cover (the cover is also the brushes' last group, `cover`).
+async function placeCovered(objs, strokes) {
+  const p = mv.place, b = mv.brush, pack = mv.current, w = mv.words;
+  p.objects.push(...objs);
+  drawPlaced();
+  let placed = false;
+  try {
+    await mv.api.scenery_add(pack, objs);
+    placed = true;
+    await mv.api.terrain_add(pack, strokes);
+    if (pack !== mv.current) return;
+    addCover(objs, strokes);
+    p.groups.push(objs);
+    redo.place = [];
+    placeNote(fill(w.place_placed_cover, { n: objs.length.toLocaleString() }) + (objs.length >= MOST ? " " + w.place_most : ""));
+  } catch (err) {
+    if (placed) { try { await mv.api.scenery_undo(pack, objs.length, objs); } catch (_) { /* said below */ } }
+    if (pack !== mv.current) return;
+    p.objects.splice(p.objects.length - objs.length, objs.length);
+    drawPlaced();
+    placeNote((err && err.message) || String(err), "error");
+  }
+  renderPlace();
+}
+
+// A path's cover strokes, saved: on the view and on the brushes' list, as the group `objs.cover`
+function addCover(objs, strokes) {
+  const b = mv.brush;
+  b.strokes.push(...strokes);
+  for (const s of strokes) applyStroke(mv.edit, s);
+  objs.cover = { n: strokes.length };
+  objs.strokes = strokes;
+  b.groups.push(objs.cover);
+  redo.brush = [];
+  showCount();
+  if (mv.gl) mv.gl.draw();
+}
+
+// Undo of a path with cover: its cover goes too while it's still the brushes' last group; after other brush strokes
+// it stays (and Redo won't lay it twice), and the note says so.
+async function undoCover(group) {
+  const b = mv.brush, pack = mv.current;
+  if (b.groups[b.groups.length - 1] !== group.cover) {
+    group.coverLeft = true;
+    placeNote(mv.words.place_cover_left, "error");
+    return;
+  }
+  const res = await mv.api.terrain_undo(pack, group.cover.n);
+  if (pack !== mv.current) return;
+  b.groups.pop();
+  b.strokes.splice(b.strokes.length - res.removed, res.removed);
+  reapply();
+  showCount();
+}
+
+// The path being clicked, drawn over the ground (none: hidden)
+function showPathLine(path) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (!path || path.line.length < 2 || !mv.edit) {
+    if (gl.pathLine && gl.pathLine.visible) { gl.pathLine.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, grid = makeGrid(mv.edit), pos = new Float32Array(path.line.length * 3);
+  path.line.forEach(([x, y], k) => pos.set([x * SCALE, (groundAt(grid, x, y) + ROAD_LIFT) * SCALE, y * SCALE], 3 * k));
+  if (!gl.pathLine) {
+    gl.pathLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: PLACED_COLOUR, depthTest: false }));
+    gl.pathLine.renderOrder = 10;
+    gl.pathLine.frustumCulled = false;
+    gl.scene.add(gl.pathLine);
+  }
+  gl.pathLine.geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  gl.pathLine.visible = true;
+  gl.draw();
+}
+
+// A model's material see-through, as the picked type shows at the pointer (showPlaceGhost) and in a preview
+function ghostLook(mat) {
+  if (mat.alphaTest || !mat.map) {  // (a picture whose alpha isn't see-through would come out patchy: it stays solid)
+    Object.assign(mat, { transparent: true, opacity: GHOST_ALPHA, depthWrite: false });
+    mat.alphaTest *= GHOST_ALPHA;  // the leaves' cut-out at the faded opacity (as fade does)
+  }
+  return mat;
+}
+
+// The objects a line, a grid or a box will place, see-through (their real model once the models are in, else gold
+// shapes), MOST at most, made once per type.
+function showPlacePreview(objs) {
+  const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
+  if (!gl) return;
+  if (!objs || !objs.length || !mv.edit || !p.type) {
+    if (gl.preview && gl.preview.visible) { gl.preview.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, t = typeNumber(p.type), group = groupOfType(p.type), model = Boolean(lib && t !== null && lib.has(t));
+  const key = `${p.type}|${model}`, [shape, width, height] = SCENERY_LOOK[group];
+  if (!gl.preview || gl.preview.userData.key !== key) {
+    if (gl.preview) {
+      gl.scene.remove(gl.preview);
+      for (const o of gl.preview.children) {
+        o.material.dispose();
+        if (!o.userData.model) o.geometry.dispose();
+        if (o.dispose) o.dispose();
+      }
+    }
+    const g = new THREE.Group();
+    if (model) {
+      for (const part of lib.parts(t)) {
+        const mesh = new THREE.InstancedMesh(part.geo, ghostLook(lib.material(group, part)), MOST);
+        mesh.userData.model = true;
+        g.add(mesh);
+      }
+    } else {
+      const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+      geo.translate(0, 0.5, 0);
+      g.add(new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR, transparent: true,
+        opacity: GHOST_ALPHA, depthWrite: false }), MOST));
+    }
+    for (const o of g.children) { o.renderOrder = 9; o.frustumCulled = false; }
+    g.userData.key = key;
+    gl.preview = g;
+    gl.scene.add(g);
+  }
+  const grid = makeGrid(mv.edit), m = new THREE.Matrix4(), q = new THREE.Quaternion(), at = new THREE.Vector3();
+  const s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), n = Math.min(objs.length, MOST);
+  for (const mesh of gl.preview.children) {
+    for (let k = 0; k < n; k++) {
+      const o = objs[k];
+      at.set(o.x * SCALE, groundAt(grid, o.x, o.y) * SCALE, o.y * SCALE);
+      q.setFromAxisAngle(up, -o.turn * Math.PI / 180);
+      if (model) s.set(o.size * SCALE, o.size * SCALE, o.size * SCALE);
+      else s.set(width * o.size * SCALE, height * o.size * SCALE, width * o.size * SCALE);
+      mesh.setMatrixAt(k, m.compose(at, q, s));
+    }
+    mesh.count = n;
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+  gl.preview.visible = true;
+  gl.draw();
+}
+
+// A box being dragged: its edges, drawn over the ground (none: hidden)
+function showPlaceBox(box) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (!box || !box.b || !mv.edit) {
+    if (gl.placeBox && gl.placeBox.visible) { gl.placeBox.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl;
+  if (!gl.placeBox) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(12), 3));
+    gl.placeBox = new THREE.LineLoop(geo, new THREE.LineBasicMaterial({ color: PLACED_COLOUR, depthTest: false }));
+    gl.placeBox.renderOrder = 10;
+    gl.placeBox.frustumCulled = false;
+    gl.scene.add(gl.placeBox);
+  }
+  const grid = makeGrid(mv.edit), pos = gl.placeBox.geometry.attributes.position, { a, b } = box;
+  [[a.x, a.y], [b.x, a.y], [b.x, b.y], [a.x, b.y]].forEach(([x, y], k) => {
+    pos.setXYZ(k, x * SCALE, (groundAt(grid, x, y) + ROAD_LIFT) * SCALE, y * SCALE);
+  });
+  pos.needsUpdate = true;
+  gl.placeBox.visible = true;
+  gl.draw();
 }
 
 // What the area brush covers, or where a line would go, drawn with the terrain brush's own ring and guide.
@@ -5765,7 +6357,8 @@ function showPlaceGuide(pt) {
   const r = p.area * METRE * SCALE;
   gl.ring.visible = Boolean(pt && p.on && p.how === "area");
   if (gl.ring.visible) { gl.ring.position.set(pt.x, pt.y + r * 0.02, pt.z); gl.ring.scale.set(r, r, r); }
-  const start = p.on && p.how === "line" ? p.lineStart : null, mark = spacingOf(p.group) * METRE * SCALE;
+  const start = p.on && (p.how === "line" || (p.how === "grid" && !p.grid)) ? p.lineStart : null;
+  const mark = spacingOf(p.group) * METRE * SCALE;
   gl.startRing.visible = Boolean(start);
   if (start) { gl.startRing.position.set(start.sx, start.sy + mark * 0.1, start.sz); gl.startRing.scale.set(mark, mark, mark); }
   gl.guide.visible = Boolean(start && pt);
@@ -5777,6 +6370,18 @@ function showPlaceGuide(pt) {
     gl.guide.geometry.computeBoundingSphere();
   }
   gl.draw();
+}
+
+// Redo puts back what Undo took, with the same call that saved it the first time. Each tool keeps its own list, as
+// its Undo does; a new step in a tool empties that tool's list (what was taken back can't follow a new step), and so
+// does Start over and opening another map.
+const redo = { place: [], brush: [], erase: [], road: [] };
+
+function forgetRedo() {
+  redo.place = [];
+  redo.brush = [];
+  redo.erase = [];
+  redo.road = [];
 }
 
 // Undo takes back the last click, area or line placed, by the objects themselves: a Forest stroke's trees (the
@@ -5791,8 +6396,40 @@ async function undoPlace() {
     await mv.api.scenery_undo(pack, group.length, group);
     if (pack !== mv.current) return;
     takeOff(group);
+    redo.place.push(group);
+    if (group.cover && !group.coverLeft) await undoCover(group);  // a path of trees: its cover too
     renderPlace();
-  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+    renderBridgeTray();
+  } catch (err) {
+    if (!redo.place.includes(group)) p.groups.push(group);  // not taken back: it stays Undo's
+    placeNote((err && err.message) || String(err), "error");
+  }
+}
+
+// Redo in a place tray: the last click, area or line Undo took back, placed again in one go.
+async function redoPlace() {
+  const p = mv.place, pack = mv.current;
+  if (!p.mod || p.painting || !redo.place.length) return;
+  const group = redo.place.pop();
+  try {
+    await mv.api.scenery_add(pack, group);
+    if (pack !== mv.current) return;
+    p.objects.push(...group);
+    p.groups.push(group);
+    if (group.cover && !group.coverLeft) {  // a path of trees: its cover laid again
+      await mv.api.terrain_add(pack, group.strokes);
+      if (pack !== mv.current) return;
+      addCover(group, group.strokes);
+    }
+    drawPlaced();
+    renderPlace();
+    renderBridgeTray();
+  } catch (err) {
+    if (pack !== mv.current) return;
+    if (!p.groups.includes(group)) redo.place.push(group);  // (placed but its cover not: the objects stay)
+    else { group.coverLeft = true; drawPlaced(); renderPlace(); }
+    placeNote((err && err.message) || String(err), "error");
+  }
 }
 
 // Objects taken off the map: out of the list and the view.
@@ -5802,10 +6439,450 @@ function takeOff(objs) {
   drawPlaced();
 }
 
+// --- Select, the place trays' fourth way (the owner, 2026-10-16: "select move and delete things already placed,
+// including what's on the map"): a click picks what stands nearest, what this mod placed or the map's own
+// (StudioApi.map_objects_at); Shift+click adds one or takes it off; a box dragged on the ground picks all in it
+// (map_objects_in). Dragging a picked one moves them all, Turn and Size set theirs, Delete (the button or the key)
+// takes them away. What the mod placed changes in its own rows (scenery_change); the map's own become [[own]] rows
+// (scenery_own: taken away there, placed again where they went). Each step goes back with Undo and forth with Redo.
+// An item: { kind: "placed", obj } (one of mv.place.objects) or { kind: "own", orig } (where the map's file has it:
+// type, group, x, y, turn, size, lift). ---
+const SEL_PICK = 8 * METRE;     // how far from a click an object is picked (8 m; further when zoomed out: SEL_PIXELS)
+const SEL_PIXELS = 18;          // ...as far as this many pixels round the click
+const SEL_RING = [90, 220, 255];
+const sel = { items: [], own: [], undo: [], redo: [], drag: null, box: null, busy: false, origs: new Map() };
+
+// The map's own object as its file has it (type, group, x, y, turn, size, lift), kept by type and place: an [[own]]
+// row holds only where it was and where it went, so its first turn and size come from the map (map_objects_at)
+const origKey = (o) => `${o.type}|${Math.round(o.x)}|${Math.round(o.y)}`;
+
+function keepOrig(o) {
+  sel.origs.set(origKey(o), o);
+  return o;
+}
+
+async function origOf(row) {
+  const kept = sel.origs.get(origKey(row));
+  if (kept) return kept;
+  const pack = mv.current;
+  try {
+    const res = await mv.api.map_objects_at(pack, Math.round(row.x), Math.round(row.y), 60);
+    const o = res.objects.find((x) => sameOrig(row, x));
+    if (o) return keepOrig(o);
+  } catch (_) { /* below: as the row has it */ }
+  return { type: row.type, group: groupOfType(row.type), x: row.x, y: row.y, turn: row.turn || 0, size: row.size || 1,
+    lift: row.lift || 0 };
+}
+
+function selecting() {
+  return mv.place.on && mv.place.how === "select";
+}
+
+function sameOrig(r, o) {
+  return r.type === o.type && Math.abs(r.x - o.x) < 1 && Math.abs(r.y - o.y) < 1;
+}
+
+function ownRow(orig) {
+  return sel.own.find((r) => sameOrig(r, orig)) || null;
+}
+
+// Where an item stands now (map units; turn in degrees, as a placed object's), or null when it's taken away
+function selPose(it) {
+  if (it.kind === "placed") return { x: it.obj.x, y: it.obj.y, turn: it.obj.turn, size: it.obj.size };
+  const r = ownRow(it.orig);
+  if (r && r.gone) return null;
+  return r ? { x: r.to_x, y: r.to_y, turn: r.turn, size: r.size } : { x: it.orig.x, y: it.orig.y, turn: it.orig.turn,
+    size: it.orig.size };
+}
+
+// ...and while a drag moves the picked ones, where it would put them
+function shownPose(it) {
+  const p = selPose(it), d = sel.drag;
+  return p && d && d.moved && sel.items.includes(it) ? { ...p, x: p.x + d.dx, y: p.y + d.dy } : p;
+}
+
+function selType(it) {
+  return it.kind === "placed" ? it.obj.type : it.orig.type;
+}
+
+// What the game's own editor calls a type, in the Studio's language (the palette's names), else its short name
+function typeLabel(type) {
+  const r = ((mv.scenery.data && mv.scenery.data.palette) || []).find((x) => x[0] === type);
+  if (!r) return type.slice(type.indexOf("/") + 1);
+  return (mv.lang !== "base" && r[5] && (r[5][mv.lang] || r[5].us)) || r[1];
+}
+
+// The map's own objects drawn somewhere else now: moved ones, and the ones a drag is carrying
+function ownMovedObjects() {
+  const out = [];
+  for (const r of sel.own) if (!r.gone) out.push({ type: r.type, x: r.to_x, y: r.to_y, turn: r.turn, size: r.size, own: r });
+  const d = sel.drag;
+  if (d && d.moved) {
+    for (const it of sel.items) {
+      if (it.kind !== "own") continue;
+      const p = shownPose(it), r = ownRow(it.orig);
+      const at = r ? out.findIndex((o) => o.own === r) : -1;
+      const o = { type: it.orig.type, x: p.x, y: p.y, turn: p.turn, size: p.size, own: r || it.orig };
+      if (at >= 0) out[at] = o; else out.push(o);
+    }
+  }
+  return out;
+}
+
+// The map's own objects not drawn where its file has them (taken away, moved, or carried by a drag): the keys
+// placeScenery hides them by (its short name and place, rounded as the view's are)
+function ownHidden() {
+  const keys = new Set(), add = (o) => {
+    const short = o.type.slice(o.type.indexOf("/") + 1), x = Math.round(o.x), y = Math.round(o.y);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) keys.add(`${short}|${x + i}|${y + j}`);
+  };
+  for (const r of sel.own) add(r);
+  if (sel.drag && sel.drag.moved) for (const it of sel.items) if (it.kind === "own") add(it.orig);
+  return keys;
+}
+
+// A ring on each picked object, the colour of a selection
+function drawSelection() {
+  const gl = mv.gl;
+  if (!gl || !gl.THREE) return;
+  const { THREE } = gl, n = sel.items.length;
+  if (!gl.selRings || gl.selRings.userData.most < n) {
+    if (gl.selRings) forget(gl.selRings);
+    const geo = new THREE.RingGeometry(0.8, 1, 32);
+    geo.rotateX(-Math.PI / 2);
+    const most = Math.max(64, n);
+    gl.selRings = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(
+      ...SEL_RING.map((v) => v / 255), THREE.SRGBColorSpace), transparent: true, opacity: 0.95, depthTest: false }), most);
+    gl.selRings.userData.most = most;
+    gl.selRings.renderOrder = 11;
+    gl.selRings.frustumCulled = false;
+    gl.scene.add(gl.selRings);
+  }
+  const rings = gl.selRings, grid = mv.edit ? heightGrid() : null, m = new THREE.Matrix4();
+  let k = 0;
+  for (const it of sel.items) {
+    const p = shownPose(it);
+    if (!p || !grid) continue;
+    const r = (groupOfType(selType(it)) === "building" ? 1400 : 500) * Math.max(0.5, Math.min(p.size, 4)) * SCALE;
+    m.makeScale(r, r, r);
+    m.setPosition(p.x * SCALE, (groundAt(grid, p.x, p.y) + 200) * SCALE, p.y * SCALE);
+    rings.setMatrixAt(k++, m);
+  }
+  rings.count = k;
+  rings.visible = k > 0 && mv.place.on;
+  rings.instanceMatrix.needsUpdate = true;
+  gl.draw();
+}
+
+function selRedraw() {
+  placeScenery();   // the map's own: the ones moved or taken away hidden where they were (and drawPlaced: where they went)
+  drawSelection();
+  renderPlace();
+}
+
+function clearSel() {
+  if (!sel.items.length) return;
+  sel.items = [];
+  drawSelection();
+  renderPlace();
+}
+
+// Forget the picks and the steps: another map, or the mod's file read again
+function forgetSel(own) {
+  sel.items = [];
+  sel.own = own || [];
+  sel.undo = [];
+  sel.redo = [];
+  sel.drag = null;
+  sel.origs = new Map();
+}
+
+// What can be picked round (x, y), nearest first: what this mod placed, the map's own moved by it, and the map's own
+// where its file has them (unless this mod moved or took them away). `reach` in map units.
+async function selCandidates(x, y, reach) {
+  const pack = mv.current, out = [];
+  const near = (p) => p && Math.hypot(p.x - x, p.y - y) <= reach;
+  for (const obj of mv.place.objects) {
+    if (bridgeTypes().has(obj.type) || forestTrees.has(obj)) continue;  // bridges and a Forest's trees have their own Undo
+    if (near(obj)) out.push({ it: { kind: "placed", obj }, d: Math.hypot(obj.x - x, obj.y - y) });
+  }
+  for (const r of sel.own) {
+    if (r.gone || !near({ x: r.to_x, y: r.to_y })) continue;
+    out.push({ it: { kind: "own", orig: await origOf(r) }, d: Math.hypot(r.to_x - x, r.to_y - y) });
+  }
+  if (!blankMap(pack)) {
+    const res = await mv.api.map_objects_at(pack, Math.round(x), Math.round(y), Math.round(reach));
+    if (pack !== mv.current) return [];
+    for (const o of res.objects) if (!ownRow(o)) out.push({ it: { kind: "own", orig: keepOrig(o) }, d: o.distance });
+  }
+  return out.sort((a, b) => a.d - b.d).map((c) => c.it);
+}
+
+function sameItem(a, b) {
+  return a.kind === b.kind && (a.kind === "placed" ? a.obj === b.obj : sameOrig(a.orig, b.orig));
+}
+
+// A click: the nearest thing there picked (Shift: added, or taken off when it's already picked)
+async function selPickAt(ev, add) {
+  const w = mv.words, hit = hitGround(ev);
+  if (!hit) { placeNote(w.place_ground, "error"); return; }
+  const x = hit.x / SCALE, y = hit.z / SCALE, reach = Math.min(Math.max(SEL_PICK, pixelsAt(hit, SEL_PIXELS)), 26000);
+  try {
+    const found = await selCandidates(x, y, reach);
+    const it = found[0];
+    if (!it) { if (!add) clearSel(); placeNote(w.sel_nothing); return; }
+    const at = sel.items.findIndex((s) => sameItem(s, it));
+    if (add) { if (at >= 0) sel.items.splice(at, 1); else sel.items.push(it); }
+    else sel.items = [at >= 0 ? sel.items[at] : it];
+    placeNote("");
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  drawSelection();
+  renderPlace();
+}
+
+// A box dragged on the screen: everything inside it picked (x0, y0, x1, y1 in the page's pixels)
+async function selPickBox(b) {
+  const gl = mv.gl, pack = mv.current, w = mv.words;
+  const rect = gl.renderer.domElement.getBoundingClientRect(), v = new gl.THREE.Vector3();
+  const [l, r, t, bt] = [Math.min(b.x0, b.x1), Math.max(b.x0, b.x1), Math.min(b.y0, b.y1), Math.max(b.y0, b.y1)];
+  const corners = [[l, t], [r, t], [l, bt], [r, bt]].map(([cx, cy]) => hitGround({ clientX: cx, clientY: cy }))
+    .filter(Boolean);
+  if (corners.length < 4) { placeNote(w.sel_box_ground, "error"); return; }
+  const xs = corners.map((p) => p.x / SCALE), ys = corners.map((p) => p.z / SCALE);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const grid = heightGrid();
+  const onScreen = (p) => {  // its place on the ground, seen inside the box
+    v.set(p.x * SCALE, groundAt(grid, p.x, p.y) * SCALE, p.y * SCALE).project(gl.camera);
+    if (v.z > 1) return false;
+    const sx = rect.left + (v.x + 1) / 2 * rect.width, sy = rect.top + (1 - v.y) / 2 * rect.height;
+    return sx >= l && sx <= r && sy >= t && sy <= bt;
+  };
+  const got = [];
+  for (const obj of mv.place.objects) {
+    if (!bridgeTypes().has(obj.type) && !forestTrees.has(obj) && onScreen(obj)) got.push({ kind: "placed", obj });
+  }
+  let more = false;
+  try {
+    for (const row of sel.own) {
+      if (!row.gone && onScreen({ x: row.to_x, y: row.to_y })) got.push({ kind: "own", orig: await origOf(row) });
+    }
+    if (!blankMap(pack)) {
+      const res = await mv.api.map_objects_in(pack, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
+      if (pack !== mv.current) return;
+      for (const o of res.objects) if (!ownRow(o) && onScreen(o)) got.push({ kind: "own", orig: keepOrig(o) });
+      more = res.more;
+    }
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); return; }
+  const keep = b.add ? sel.items.slice() : [];
+  for (const it of got) if (!keep.some((s) => sameItem(s, it))) keep.push(it);
+  sel.items = keep;
+  placeNote(more ? w.sel_more : got.length ? "" : w.sel_nothing);
+  drawSelection();
+  renderPlace();
+}
+
+// One step, saved: `placed` [[old, new or null]] for what the mod placed, `own` the [[own]] list before and after.
+// forward: as made (and Redo); else back (Undo).
+async function selApply(step, forward) {
+  const pack = mv.current, p = mv.place;
+  const pairs = step.placed.map(([a, b]) => (forward ? [a, b] : [b, a]));
+  const adds = pairs.filter(([a]) => a === null).map(([, b]) => b);       // a deleted one put back (Undo of Delete)
+  const changes = pairs.filter(([a]) => a !== null);
+  if (changes.length) await mv.api.scenery_change(pack, changes);
+  if (adds.length) await mv.api.scenery_add(pack, adds);
+  const own = forward ? step.after : step.before;
+  if (step.after !== step.before) {
+    const res = await mv.api.scenery_own(pack, own);
+    if (pack !== mv.current) return;
+    sel.own = res.own;
+  }
+  // the view's lists: each object in its row's place, Undo's groups following it
+  const swap = new Map(changes.map(([a, b]) => [a, b]));
+  const turn = (o) => (swap.has(o) ? swap.get(o) : o);
+  p.objects = p.objects.map(turn).filter(Boolean).concat(adds);
+  p.groups = p.groups.map((g) => (Array.isArray(g) ? g.map(turn).filter(Boolean) : g)).filter((g) => !Array.isArray(g) || g.length);
+  // what was picked when the step was made stays picked, each where it is now (an object taken away, not)
+  sel.items = step.picked.map((it) => {
+    if (it.kind !== "placed") return it;
+    const pair = step.placed.find(([a, b]) => a === it.obj || b === it.obj);
+    return pair ? { kind: "placed", obj: forward ? pair[1] : pair[0] } : it;
+  }).filter((it) => (it.kind === "placed" ? it.obj && p.objects.includes(it.obj) : selPose(it)));
+}
+
+// A change to every picked thing: change(pose) gives its new pose, or null to take it away
+async function selChange(change) {
+  if (sel.busy || !sel.items.length) return;
+  const w = mv.words;
+  if (!mv.place.mod) { placeNote(w.no_mod, "error"); return; }
+  const placed = [];
+  let own = sel.own.slice();
+  for (const it of sel.items) {
+    const now = selPose(it);
+    if (!now) continue;
+    const next = change(now);
+    if (it.kind === "placed") {
+      placed.push([it.obj, next ? { ...it.obj, x: Math.round(next.x), y: Math.round(next.y), turn: next.turn,
+        size: next.size } : null]);
+      continue;
+    }
+    const o = it.orig;
+    own = own.filter((r) => !sameOrig(r, o));
+    if (!next) { own.push({ type: o.type, x: o.x, y: o.y, gone: true }); continue; }
+    const back = Math.hypot(next.x - o.x, next.y - o.y) < 1 && Math.abs(next.turn - o.turn) < 0.01
+      && Math.abs(next.size - o.size) < 1e-4;
+    if (!back) {
+      own.push({ type: o.type, x: o.x, y: o.y, to_x: Math.round(next.x), to_y: Math.round(next.y), turn: next.turn,
+        size: next.size, lift: o.lift || 0 });
+    }
+  }
+  const step = { placed, before: sel.own, after: own, picked: sel.items.slice() };
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+    sel.redo = [];
+    placeNote(w.brush_note);
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+function selDelete() {
+  return selChange(() => null);
+}
+
+// The map's own picked objects put back as the map has them (their rows dropped); what the mod placed stays
+async function selRestore() {
+  if (sel.busy) return;
+  const origs = sel.items.filter((it) => it.kind === "own").map((it) => it.orig);
+  const own = sel.own.filter((r) => !origs.some((o) => sameOrig(r, o)));
+  if (own.length === sel.own.length) return;
+  const step = { placed: [], before: sel.own, after: own, picked: sel.items.slice() };
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+    sel.redo = [];
+  } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+async function selUndo() {
+  if (sel.busy || !sel.undo.length) return;
+  const step = sel.undo.pop();
+  sel.busy = true;
+  try {
+    await selApply(step, false);
+    sel.redo.push(step);
+  } catch (err) { sel.undo.push(step); placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+async function selRedo() {
+  if (sel.busy || !sel.redo.length) return;
+  const step = sel.redo.pop();
+  sel.busy = true;
+  try {
+    await selApply(step, true);
+    sel.undo.push(step);
+  } catch (err) { sel.redo.push(step); placeNote((err && err.message) || String(err), "error"); }
+  sel.busy = false;
+  selRedraw();
+}
+
+// The press of the left button in Select: on a picked object a drag moves them all; elsewhere a box (or a click)
+function selPointerDown(ev) {
+  const hit = hitGround(ev);
+  if (hit && sel.items.length && mv.place.mod) {
+    const x = hit.x / SCALE, y = hit.z / SCALE, reach = Math.max(SEL_PICK, pixelsAt(hit, SEL_PIXELS));
+    const on = sel.items.some((it) => { const p = selPose(it); return p && Math.hypot(p.x - x, p.y - y) <= reach; });
+    if (on && !ev.shiftKey) {
+      sel.drag = { x, y, dx: 0, dy: 0, moved: false };
+      return true;
+    }
+  }
+  sel.box = { x0: ev.clientX, y0: ev.clientY, x1: ev.clientX, y1: ev.clientY, add: ev.shiftKey, shown: false, ev };
+  return true;
+}
+
+function selPointerMove(ev) {
+  if (sel.drag) {
+    const hit = hitGround(ev);
+    if (!hit) return;
+    const d = sel.drag;
+    d.dx = hit.x / SCALE - d.x;
+    d.dy = hit.z / SCALE - d.y;
+    const was = d.moved;
+    d.moved = d.moved || Math.hypot(d.dx, d.dy) > 0.5 * METRE;
+    if (!d.moved) return;
+    if (!was) placeScenery(); else drawPlaced();  // the map's own picked ones leave their place once, then follow
+    drawSelection();
+    return;
+  }
+  const b = sel.box;
+  if (!b) return;
+  b.x1 = ev.clientX;
+  b.y1 = ev.clientY;
+  if (!b.shown && Math.abs(b.x1 - b.x0) + Math.abs(b.y1 - b.y0) < 6) return;  // a click, not a box (yet)
+  b.shown = true;
+  let box = $("sel-box");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "sel-box";
+    box.className = "scen-box";
+    document.body.append(box);
+  }
+  box.style.left = `${Math.min(b.x0, b.x1)}px`;
+  box.style.top = `${Math.min(b.y0, b.y1)}px`;
+  box.style.width = `${Math.abs(b.x1 - b.x0)}px`;
+  box.style.height = `${Math.abs(b.y1 - b.y0)}px`;
+}
+
+async function selPointerUp() {
+  if (sel.drag) {
+    const d = sel.drag;
+    if (!d.moved) { sel.drag = null; return; }
+    const { dx, dy } = d;
+    sel.drag = null;
+    await selChange((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
+    return;
+  }
+  const b = sel.box;
+  sel.box = null;
+  const box = $("sel-box");
+  if (box) box.remove();
+  if (!b) return;
+  if (b.shown) await selPickBox(b); else await selPickAt(b.ev, b.add);
+}
+
+// The tray's part for Select: what's picked, and what can be done with it
+function renderSel() {
+  const w = mv.words, p = mv.place, on = selecting();
+  $("place-sel").classList.toggle("hidden", !on);
+  $("place-search").classList.toggle("hidden", on);
+  $("place-grid").classList.toggle("hidden", on);
+  if (!on) return;
+  const own = sel.items.filter((it) => it.kind === "own").length, n = sel.items.length;
+  $("place-sel-what").textContent = !n ? w.sel_hint
+    : n === 1 ? fill(w.sel_one, { name: typeLabel(selType(sel.items[0])), whose: own ? w.sel_whose_map : w.sel_whose_mod })
+      : fill(w.sel_many, { n: n.toLocaleString(), own: own.toLocaleString(), placed: (n - own).toLocaleString() });
+  const moved = sel.items.some((it) => it.kind === "own" && ownRow(it.orig));
+  for (const [id, text, tip, off] of [["place-sel-delete", w.sel_delete, w.tip_sel_delete, !n || !p.mod],
+    ["place-sel-restore", w.sel_restore, w.tip_sel_restore, !moved || !p.mod],
+    ["place-sel-clear", w.sel_clear, w.tip_sel_clear, !n]]) {
+    $(id).textContent = text;
+    $(id).title = tip;
+    $(id).disabled = off || sel.busy;
+  }
+}
+
 // --- showing one map ---
 async function show(pack, keepCamera) {
   const w = mv.words, ask = ++mv.ask;
   if (mv.current !== pack && window.MissionView) window.MissionView.forget();  // another map: its own mission
+  if (mv.current !== pack) forgetRedo();  // what was taken back on one map can't be put back on another
   mv.current = pack;
   renderList();
   $("map-pick").textContent = w.map_loading;
@@ -6078,8 +7155,7 @@ function openKind(kind) {
     return;
   }
   mv.place.group = kind;
-  mv.place.lineStart = null;
-  showPlaceGuide(null);
+  dropPlaceGesture();
   placeOptions();
   setPlaceMode(true);
 }
@@ -6419,6 +7495,9 @@ function renderRoadTray() {
   $("road-undo").textContent = w.brush_undo;
   $("road-undo").title = w.tip_road_undo;
   $("road-undo").disabled = !road.mine.length;
+  $("road-redo").textContent = w.brush_redo;
+  $("road-redo").title = w.tip_road_redo;
+  $("road-redo").disabled = !redo.road.length || !road.mod;
   $("road-snap").checked = road.snapOn;
   $("road-snap-label").textContent = w.road_snap || "Snap ends to roads and bridges";
   $("road-snap-row").title = w.tip_road_snap || "";
@@ -6477,6 +7556,7 @@ async function finishRoad() {
     await mv.api.road_add(pack, line, 3000, keep);
     if (pack !== mv.current) return;
     road.mine.push({ points: line, join: 3000, crossings: [], keep_trees: keep });
+    redo.road = [];
     road.samples = null;  // the new road's points snap too
     drawModRoads();
     renderRoadTray();
@@ -6496,12 +7576,32 @@ async function undoRoad() {
   try {
     const res = await mv.api.road_undo(pack, 1);
     if (pack !== mv.current) return;
-    road.mine.splice(road.mine.length - res.removed, res.removed);
+    redo.road.push(...road.mine.splice(road.mine.length - res.removed, res.removed));
     road.samples = null;
     drawModRoads();
     renderRoadTray();
     renderBridgeTray();
   } catch (err) { roadNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo in the Roads tray: the last road Undo took back, drawn again along the same line.
+async function redoRoad() {
+  const pack = mv.current;
+  if (!road.mod || !redo.road.length) return;
+  const r = redo.road.pop();
+  try {
+    await mv.api.road_add(pack, r.points, r.join, Boolean(r.keep_trees));
+    if (pack !== mv.current) return;
+    road.mine.push({ points: r.points, join: r.join, crossings: [], keep_trees: Boolean(r.keep_trees) });
+    road.samples = null;
+    drawModRoads();
+    renderRoadTray();
+    refreshCrossings(pack);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    redo.road.push(r);
+    roadNote((err && err.message) || String(err), "error");
+  }
 }
 
 // A click while drawing a road: the next point (snapped); Straight ends at its second, Curve at its third.
@@ -6656,6 +7756,9 @@ function renderBridgeTray() {
   $("bridge-undo").textContent = w.brush_undo;
   $("bridge-undo").title = w.tip_bridges_undo;
   $("bridge-undo").disabled = !(last && types.has(last.type)) || !mv.place.mod;
+  $("bridge-redo").textContent = w.brush_redo;
+  $("bridge-redo").title = w.tip_bridges_redo;
+  $("bridge-redo").disabled = !bridgeRedoNext() || !mv.place.mod;
   $("bridge-count").textContent = mine ? fill(w.bridges_count, { n: mine }) : "";
   if (bridge.on) $("map-help").textContent = w.bridges_help;
 }
@@ -6697,7 +7800,8 @@ async function bridgeAt(ev) {
       bridgeLength(k));
     if (pack !== mv.current) return;
     mv.place.objects.push(res.object);
-    mv.place.groups.push(1);
+    mv.place.groups.push([res.object]);  // a group is the objects Undo takes back (a bare count took nothing back)
+    redo.place = [];
     drawPlaced();
     renderPlace();
     bridgeNote(w.brush_note);
@@ -6713,6 +7817,18 @@ async function undoBridge() {
   const last = mv.place.objects[mv.place.objects.length - 1];
   if (!last || !bridgeTypes().has(last.type)) return;
   await undoPlace();
+  renderBridgeTray();
+}
+
+// Redo in the Bridges tray: the last bridge Undo took back (while what's next to redo is a bridge).
+function bridgeRedoNext() {
+  const group = redo.place[redo.place.length - 1];
+  return Boolean(group && group.length === 1 && bridgeTypes().has(group[0].type));
+}
+
+async function redoBridge() {
+  if (!bridgeRedoNext()) return;
+  await redoPlace();
   renderBridgeTray();
 }
 
@@ -6913,6 +8029,7 @@ function showCount() {
   const w = mv.words, n = (erasing() ? mv.brush.erase : mv.brush.strokes).length;
   $("brush-count").textContent = n ? fill(erasing() ? w.erase_count : w.brush_count, { n: n.toLocaleString() }) : "";
   $("brush-undo").disabled = !n || !mv.brush.mod;
+  $("brush-redo").disabled = !(erasing() ? redo.erase : redo.brush).length || !mv.brush.mod;
   $("brush-clear").disabled = !n || !mv.brush.mod;
   if (!n) $("brush-sure").classList.add("hidden");
 }
@@ -7023,6 +8140,7 @@ function renderBrushes() {
   $("brush-repaint-beach").title = w.tip_repaint_beach;
   $("brush-repaint-beach").setAttribute("aria-pressed", String(paint.beach));
   $("brush-undo").title = erase ? w.tip_erase_undo : w.tip_brush_undo;
+  $("brush-redo").title = erase ? w.tip_erase_redo : w.tip_brush_redo;
   $("brush-clear").title = erase ? w.tip_erase_clear : w.tip_brush_clear;
   renderBrushTip();
   sizeLabel();
@@ -7248,6 +8366,7 @@ async function finishStroke() {
     } else {
       mv.brush.groups.push(g.strokes.length);
     }
+    redo.brush = [];
     // cover or movement painted where an Erase circle clears a wood: the build clears it after, so the view does too
     if (g.strokes.some((s) => PAINTS[s.brush]) && mv.brush.erase.some(clearsWood)) refreshErased();
     showCount();
@@ -7278,6 +8397,7 @@ async function finishErase(g) {
     await mv.api.scenery_erase(pack, g.erase);
     if (pack !== mv.current) return;
     b.eraseGroups.push(g.erase.length);
+    redo.erase = [];
     showCount();
     countTakes(pack);
   } catch (err) {
@@ -7333,11 +8453,32 @@ async function undoErase() {
   try {
     const res = await mv.api.scenery_erase_undo(pack, n);
     if (pack !== mv.current) return;
-    b.erase.splice(b.erase.length - res.removed, res.removed);
+    const gone = b.erase.splice(b.erase.length - res.removed, res.removed);
+    if (gone.length) redo.erase.push(gone);
     refreshErased();
     showCount();
     countTakes(pack);
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo under the Erase brush: the last drag's circles Undo took back, saved again.
+async function redoErase() {
+  const b = mv.brush, pack = mv.current;
+  if (!b.mod || b.painting || !redo.erase.length) return;
+  const circles = redo.erase.pop();
+  try {
+    await mv.api.scenery_erase(pack, circles);
+    if (pack !== mv.current) return;
+    b.erase.push(...circles);
+    b.eraseGroups.push(circles.length);
+    refreshErased();
+    showCount();
+    countTakes(pack);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    redo.erase.push(circles);
+    brushNote((err && err.message) || String(err), "error");
+  }
 }
 
 // "Start over" under the Erase brush: every circle on this map goes; the map keeps all its own scenery.
@@ -7349,6 +8490,7 @@ async function clearErase() {
     if (pack !== mv.current) return;
     b.erase = [];
     b.eraseGroups = [];
+    redo.erase = [];
     refreshErased();
     showCount();
     countTakes(pack);
@@ -7364,16 +8506,53 @@ async function undoStroke() {
   try {
     const res = await mv.api.terrain_undo(pack, n);
     if (pack !== mv.current) return;
-    b.strokes.splice(b.strokes.length - res.removed, res.removed);
-    if (last.objects && last.objects.length) {
-      await mv.api.scenery_undo(pack, last.objects.length, last.objects);
+    const strokes = b.strokes.splice(b.strokes.length - res.removed, res.removed);
+    const trees = last.objects && last.objects.length ? last.objects : null;
+    if (trees) {
+      await mv.api.scenery_undo(pack, trees.length, trees);
       if (pack !== mv.current) return;
-      takeOff(last.objects);
+      takeOff(trees);
       renderPlace();
     }
+    if (strokes.length) redo.brush.push({ strokes, objects: trees });
     reapply();
     showCount();
   } catch (err) { brushNote((err && err.message) || String(err), "error"); }
+}
+
+// Redo under a brush: the last stroke or drag Undo took back, saved again (a Forest stroke's trees with its cover,
+// both or neither, as when it was painted).
+async function redoStroke() {
+  const b = mv.brush, pack = mv.current;
+  if (erasing()) { redoErase(); return; }
+  if (!b.mod || b.painting || !redo.brush.length) return;
+  const g = redo.brush.pop(), trees = g.objects || [];
+  let placed = false;
+  try {
+    if (trees.length) {
+      await mv.api.scenery_add(pack, trees);
+      placed = true;
+    }
+    await mv.api.terrain_add(pack, g.strokes);
+    if (pack !== mv.current) return;
+    b.strokes.push(...g.strokes);
+    if (trees.length) {
+      for (const o of trees) forestTrees.add(o);
+      mv.place.objects.push(...trees);
+      b.groups.push({ n: g.strokes.length, objects: trees });
+      drawPlaced();
+      renderPlace();
+    } else {
+      b.groups.push(g.strokes.length);
+    }
+    reapply();
+    showCount();
+  } catch (err) {
+    if (placed) { try { await mv.api.scenery_undo(pack, trees.length, trees); } catch (_) { /* said below */ } }
+    if (pack !== mv.current) return;
+    redo.brush.push(g);
+    brushNote((err && err.message) || String(err), "error");
+  }
 }
 
 // "Start over": every stroke on this map goes (after the question under the button).
@@ -7387,6 +8566,7 @@ async function clearStrokes() {
     if (pack !== mv.current) return;
     b.strokes = [];
     b.groups = [];
+    redo.brush = [];
     reapply();
     showCount();
     brushNote(b.name === "ramp" ? mv.words.ramp_help : "");
@@ -7548,6 +8728,13 @@ function watchPointer() {
     roadMove = ev;
     if (!roadFrame) roadFrame = requestAnimationFrame(() => { roadFrame = 0; if (road.on && roadMove) roadPointerMove(roadMove); });
   });
+  canvas.addEventListener("dblclick", () => {  // a place tray's Path ends with a double-click (its clicks: one point)
+    const pp = mv.place.on && mv.place.how === "path" && mv.place.path;
+    if (!pp) return;
+    const q = pp.pts;
+    if (q.length >= 2 && Math.hypot(q[q.length - 1][0] - q[q.length - 2][0], q[q.length - 1][1] - q[q.length - 2][1]) < ROAD_SAMPLE) q.pop();
+    finishPath();
+  });
   canvas.addEventListener("dblclick", () => {  // Freeform ends with a double-click (its two clicks add one point)
     if (!road.on || road.tool !== "free") return;
     const p = road.pts;
@@ -7558,6 +8745,7 @@ function watchPointer() {
     const p = mv.place;
     if (!p.on || ev.button !== 0 || !gl.ground || !mv.edit) return;
     ev.preventDefault();
+    if (p.how === "select") { if (selPointerDown(ev)) canvas.setPointerCapture(ev.pointerId); return; }
     if (p.how === "one") { placeAt(ev); return; }
     const w = mv.words;
     if (!p.mod) { placeNote(w.no_mod, "error"); return; }
@@ -7565,12 +8753,42 @@ function watchPointer() {
     const hit = hitGround(ev);
     if (!hit) { placeNote(w.place_ground, "error"); return; }
     const x = hit.x / SCALE, y = hit.z / SCALE;
-    if (p.how === "line") {  // two clicks: where it starts, then where it ends
-      if (!p.lineStart) { p.lineStart = { x, y, sx: hit.x, sy: hit.y, sz: hit.z }; placeNote(w.place_line_next); showPlaceGuide(hit); return; }
-      const start = p.lineStart;
-      p.lineStart = null;
-      showPlaceGuide(null);
-      placeMany(lineOf(start, { x, y }));
+    if (p.how === "line" || p.how === "grid") {  // where it starts, where it ends (a grid: then how far its rows go)
+      if (!p.lineStart) {
+        p.lineStart = { x, y, sx: hit.x, sy: hit.y, sz: hit.z };
+        p.seed = newSeed();
+        placeNote(p.how === "grid" ? w.place_grid_next : w.place_line_next);
+        showPlaceGhost(null);
+        showPlaceGuide(hit);
+        placePreview(hit);
+        return;
+      }
+      if (p.how === "grid" && !p.grid) {
+        p.grid = { b: { x, y } };
+        showPlaceGuide(hit);
+        placePreview(hit);
+        placeNote(w.place_grid_rows);
+        return;
+      }
+      const objs = p.how === "grid" ? gridOf(p.lineStart, p.grid.b, { x, y }) : lineOf(p.lineStart, { x, y });
+      dropPlaceGesture();
+      placeMany(objs);
+      return;
+    }
+    if (p.how === "path") {  // a path: a point each click, until a double-click, Enter or Finish
+      if (!p.path) { p.path = { pts: [] }; p.seed = newSeed(); }
+      p.path.pts.push([Math.round(x), Math.round(y)]);
+      showPlaceGhost(null);
+      placePreview(hit);
+      placeNote(w.place_path_next);
+      renderPlace();
+      return;
+    }
+    if (p.how === "box") {  // a box: from here to where the button's let go
+      p.box = { a: { x, y }, b: { x, y } };
+      p.seed = newSeed();
+      placePreview(hit);
+      canvas.setPointerCapture(ev.pointerId);
       return;
     }
     p.painting = { objects: [], last: null };  // an area: scatter here, then wherever the pointer is dragged
@@ -7593,10 +8811,12 @@ function watchPointer() {
     if (placeFrame) return;
     placeFrame = requestAnimationFrame(() => {
       placeFrame = 0;
+      if (p.how === "select") { if (placeMove) selPointerMove(placeMove); return; }  // a drag moving, or a box
       const hit = placeMove && hitGround(placeMove);
       showPlaceGhost(hit);  // what a click places, where it would stand
       if (p.how === "one") return;
       showPlaceGuide(hit);
+      if (p.lineStart || p.box || p.path) { if (hit) placePreview(hit); return; }  // a line, path, grid or box under way
       const stroke = p.painting;
       if (!hit || !stroke || !stroke.last) return;
       const x = hit.x / SCALE, y = hit.z / SCALE, step = p.area * METRE / 2;
@@ -7607,7 +8827,14 @@ function watchPointer() {
   });
   for (const type of ["pointerup", "pointercancel"]) {
     canvas.addEventListener(type, () => {
+      if (sel.drag || sel.box) { selPointerUp(); return; }  // Select's drag or box ends
       const p = mv.place, stroke = p.painting;
+      if (p.box) {  // a box let go: filled
+        const objs = fillBox(p.box.a, p.box.b);
+        dropPlaceGesture();
+        placeMany(objs);
+        return;
+      }
       if (!stroke) return;
       p.painting = null;
       placeMany(stroke.objects);
@@ -8268,6 +9495,8 @@ function renderWords() {
   $("brush-strength").title = w.tip_brush_strength;
   $("brush-undo").textContent = w.brush_undo;
   $("brush-undo").title = w.tip_brush_undo;
+  $("brush-redo").textContent = w.brush_redo;
+  $("brush-redo").title = w.tip_brush_redo;
   $("brush-clear").textContent = w.brush_clear;
   $("brush-clear").title = w.tip_brush_clear;
   $("brush-clear-yes").textContent = w.remove_all;
@@ -8496,8 +9725,7 @@ function lookAround() {
   stopBridge();
   if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); drawMissionCameras(); }
   cancelRamp();
-  mv.place.lineStart = null;
-  showPlaceGuide(null);
+  dropPlaceGesture();
   mv.place.on = false;
   setBrushMode(false);
 }
@@ -8509,13 +9737,26 @@ function onKey(e) {
   const held = HELD.has(e.code);
   if (e.type === "keyup") { if (held) keys.down.delete(e.code); return; }
   const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && !e.altKey && (e.code === "KeyY" || (e.code === "KeyZ" && e.shiftKey))) {  // Redo, as other editors
+    if (fieldFocused(false)) return;                                                   // have it
+    e.preventDefault();
+    if (mv.brush.on) redoStroke(); else if (selecting()) selRedo(); else if (mv.place.on) redoPlace();
+    else if (road.on) redoRoad(); else if (bridge.on) redoBridge();
+    return;
+  }
   if (ctrl && !e.altKey && e.code === "KeyZ") {  // the one shortcut that works with a modifier
     if (fieldFocused(false)) return;              // a text box has its own undo
     e.preventDefault();
-    if (mv.brush.on) undoStroke(); else if (mv.place.on) undoPlace(); else if (road.on) undoRoad(); else if (bridge.on) undoBridge();
+    if (mv.brush.on) undoStroke(); else if (selecting()) selUndo(); else if (mv.place.on) undoPlace();
+    else if (road.on) undoRoad(); else if (bridge.on) undoBridge();
     return;
   }
   if (ctrl || e.altKey) return;
+  if ((e.key === "Delete" || e.key === "Backspace") && selecting() && sel.items.length && !fieldFocused(false)) {
+    e.preventDefault();  // Select: what's picked goes, as the game's editor and every other one does it
+    selDelete();
+    return;
+  }
   if (e.key === "Escape") {
     if (fieldFocused(true)) { document.activeElement.blur(); return; }  // first out of the box, then back to Look
     if (road.on && road.pts.length) {  // then the road being drawn
@@ -8525,11 +9766,18 @@ function onKey(e) {
       drawRoadPreview();
       return;
     }
+    if (mv.place.on && (mv.place.lineStart || mv.place.box || mv.place.path)) {  // then a line, path, grid or box half made
+      dropPlaceGesture();
+      placeNote("");
+      return;
+    }
     if (scen.sel.size) { clearSelection(); return; }  // then what's selected, as in the game
+    if (selecting() && sel.items.length) { clearSel(); return; }  // (Select's picks the same)
     lookAround();
     return;
   }
   if (e.key === "Enter" && road.on && road.tool === "free" && !fieldFocused(false)) { finishRoad(); return; }
+  if (e.key === "Enter" && mv.place.on && mv.place.path && !fieldFocused(false)) { finishPath(); return; }  // a Path
   if (held) {
     if (fieldFocused(e.code.startsWith("Arrow"))) return;  // arrows in a slider are the slider's; letters in a box, the box's
     e.preventDefault();  // the arrows would scroll the page
@@ -8847,13 +10095,33 @@ function wire() {
     }
   });
   $("brush-look").addEventListener("click", () => lookAround());
-  $("place-undo").addEventListener("click", () => undoPlace());
+  $("place-undo").addEventListener("click", () => (selecting() ? selUndo() : undoPlace()));
+  $("place-redo").addEventListener("click", () => (selecting() ? selRedo() : redoPlace()));
+  $("place-sel-delete").addEventListener("click", () => selDelete());
+  $("place-sel-restore").addEventListener("click", () => selRestore());
+  $("place-sel-clear").addEventListener("click", () => clearSel());
+  // in Select, Turn and Size set every picked one's when let go (the first picked one's shown on the label)
+  $("place-turn").addEventListener("change", (e) => {
+    if (selecting() && sel.items.length) selChange((p) => ({ ...p, turn: Number(e.target.value) }));
+  });
+  $("place-size").addEventListener("change", (e) => {
+    if (selecting() && sel.items.length) selChange((p) => ({ ...p, size: Number(e.target.value) }));
+  });
+  $("brush-redo").addEventListener("click", () => redoStroke());
+  $("road-redo").addEventListener("click", () => redoRoad());
+  $("bridge-redo").addEventListener("click", () => redoBridge());
   $("place-search").addEventListener("input", () => { placeOptions(); if (mv.place.on) placeNote(mv.place.type ? "" : whyNoType(), "error"); });
   $("place-turn").addEventListener("input", (e) => { mv.place.turn = Number(e.target.value); renderPlace(); });
   $("place-size").addEventListener("input", (e) => { mv.place.size = Number(e.target.value); renderPlace(); });
   $("place-solid").addEventListener("change", (e) => { mv.place.solid = e.target.checked; });
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
+  $("place-rows").addEventListener("input", (e) => { mv.place.rows[mv.place.group] = Number(e.target.value); renderPlace(); });
+  $("place-roads").addEventListener("change", (e) => { mv.place.roads = e.target.checked; saveView(); });
+  $("place-width").addEventListener("input", (e) => { mv.place.width[mv.place.group] = Number(e.target.value); renderPlace(); });
+  $("place-cover").addEventListener("change", (e) => { mv.place.cover = e.target.checked; });
+  $("place-finish").addEventListener("click", () => finishPath());
+  $("place-again").addEventListener("click", () => placeAgain());
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-erase-whole").addEventListener("click", () => eraseWhole());
   $("brush-water-whole").addEventListener("click", () => waterWhole());
@@ -8915,11 +10183,13 @@ function foldMaps(folded) {
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
     scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
-    road_snap: road.snapOn, road_trees: road.keepTrees, map_mode: mv.mode }).catch(() => {});
+    road_snap: road.snapOn, road_trees: road.keepTrees, place_roads: mv.place.roads, map_mode: mv.mode }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
 window.MapView = {
+  // a stroke, an area or a Select step not saved yet (app.js unsavedReasons: closing the Studio asks first)
+  busy() { return Boolean(mv.brush.painting || mv.place.painting || sel.busy || sel.drag); },
   async open(api, words, lang) {
     mv.api = api;
     mv.words = words;

@@ -30,7 +30,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from rusemod import doctor, mod_index, startlog
+from rusemod import buildtext, doctor, mod_index, startlog
 from rusemod import play as game_start, schema
 from rusemod.backup import BackupCalls
 from rusemod.community import APP_NAMES, CommunityCalls
@@ -776,7 +776,8 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         return busy is not None and busy.state == "running"
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        return self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        return buildtext.worded_view(view, self.prefs().get("lang") or "us")  # Play's lines in the player's language
 
     def _play(self, chosen: dict, say) -> None:
         if chosen["id"] == VANILLA:

@@ -163,6 +163,7 @@ function renderMods() {
   $("map-project").title = w.tip_pick_map || "";
   $("map-project-label").textContent = w.map_project || "Map changes";
   $("test").disabled = !(state.mod || state.map) || $("test").dataset.running === "1";
+  renderFormat();  // the format bar follows the mod and the map being edited (and the words)
 }
 
 function useMods(res) {
@@ -178,6 +179,40 @@ function useMods(res) {
   renderMods();
   renderChips();  // "In this mod" shows only while a mod is being edited
   checkMod();
+}
+
+// --- the mod format (StudioApi.mod_format, update_mod; rusemod.modformat; the owner, 2026-10-16: a mod mustn't be
+// destroyed between updates, and an old one gets a way to be updated): a bar under the header for the mod or map being
+// edited when it's of an older format with something to rewrite (Update this mod, a backup first), or a newer Studio
+// saved it (opened anyway); a newer one is asked about before it's opened (pickMod). ---
+async function renderFormat() {
+  const w = state.words, bar = $("format-bar"), rows = [];
+  for (const kind of ["mod", "map"]) {
+    let f;
+    try { f = await api().mod_format(kind); } catch { continue; }
+    if (!f || (f.state !== "older" && f.state !== "newer")) continue;
+    if (kind === "map" && f.path === state.mod) continue;  // (one folder for both: said once)
+    const text = el("span", { textContent: fillText(f.state === "older" ? w.format_older : w.format_newer,
+      { name: f.name, have: f.format, now: f.current }) });
+    const row = el("div", { className: "check-row" }, text);
+    if (f.state === "older") {
+      const button = el("button", { type: "button", className: "small", textContent: w.format_update, title: w.tip_format_update });
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const res = await api().update_mod(kind);
+          say(fillText(w.format_updated, { name: f.name, backup: res.backup || "" }), "ok");
+          if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
+          else await modChanged();
+        } catch (err) { problem(err); }
+        renderFormat();
+      });
+      row.append(button);
+    }
+    rows.push(row);
+  }
+  bar.classList.toggle("hidden", !rows.length);
+  bar.replaceChildren(...rows);
 }
 
 // --- the mod check (StudioApi.check_mod): every file of the mod read as the build reads it, as soon as the mod is
@@ -345,7 +380,13 @@ async function pickMod(e, kind = "mod") {
     if (value === EXPORT) { await openExport(kind); return; }
     if (value === SHARE) { await openShare(state.exported); return; }
     if (value === EDIT) { await openEditMods(); return; }
-    useMods(value === OPEN ? await api().open_mod_folder(kind) : await api().choose_mod(value, kind));
+    if (value !== OPEN) {  // a mod a newer Studio saved: asked first (this one could drop what it doesn't know)
+      const f = await api().mod_format(kind, value);
+      if (f && f.state === "newer" && !window.confirm(fillText(state.words.format_newer_ask, { name: f.name }))) return;
+      useMods(await api().choose_mod(value, kind, Boolean(f && f.state === "newer")));
+    } else {
+      useMods(await api().open_mod_folder(kind));
+    }
     if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
     else await modChanged();
   } catch (err) { problem(err); }
@@ -4646,6 +4687,50 @@ async function firstBackup(show) {
   await loadBackup();
   makeBackup();
 }
+
+// --- closing with something not saved yet (the owner, 2026-10-16: "a warning before closing with unsaved
+// changes"): most of the Studio saves each change as it's made, so what can be lost is a script edited and not saved,
+// text typed in a box and not yet entered (a box takes its text on Enter or when the focus leaves it, and closing
+// the window does neither), the music editor holding a sound not used yet, and a save or a Test in game still running.
+// The page says which to the window (StudioApi.unsaved), which asks before closing (rusemod.webui); in a web browser
+// the browser's own "Leave site?" asks. ---
+let typedAt = null;  // the box being typed in, with its text when the focus came to it (or when it last took it)
+document.addEventListener("focusin", (e) => {
+  const t = e.target;
+  const box = t && (t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && ["text", "number", ""].includes(t.type)));
+  typedAt = box && !t.readOnly && !t.disabled ? { el: t, value: t.value } : null;
+});
+document.addEventListener("change", (e) => { if (typedAt && e.target === typedAt.el) typedAt.value = e.target.value; });
+
+function unsavedReasons() {
+  const w = state.words, out = [], area = $("ai-script-area");
+  if (area && area.value !== scriptSaved && !area.disabled && area.value.trim()) out.push(w.unsaved_script);
+  const t = typedAt;
+  if (t && t.el.isConnected && document.activeElement === t.el && t.el.value !== t.value && t.el !== area) {
+    out.push(w.unsaved_typed);
+  }
+  if (window.SoundView && SoundView.editing && SoundView.editing()) out.push(w.unsaved_music);
+  if ((window.MapView && MapView.busy && MapView.busy()) || (window.MissionView && MissionView.busy && MissionView.busy())
+    || (window.SoundView && SoundView.busy && SoundView.busy())) out.push(w.unsaved_saving);
+  if ($("test") && $("test").dataset.running === "1") out.push(w.unsaved_test);
+  return out.filter(Boolean);
+}
+
+let unsavedSaid = "";
+function tellUnsaved() {
+  if (!started || !window.pywebview || !window.pywebview.api || !window.pywebview.api.unsaved) return;
+  const w = state.words, reasons = unsavedReasons(), key = reasons.join("\n");
+  if (key === unsavedSaid) return;
+  unsavedSaid = key;
+  const ask = reasons.length ? { title: w.unsaved_title, text: `${w.unsaved_text}\n\n${reasons.map((r) => `• ${r}`).join("\n")}\n\n${w.unsaved_close}` } : null;
+  Promise.resolve(api().unsaved(ask)).catch(() => { unsavedSaid = ""; });  // (said again on the next look)
+}
+setInterval(tellUnsaved, 700);
+window.addEventListener("beforeunload", (e) => {
+  if (!unsavedReasons().length) return;
+  e.preventDefault();
+  e.returnValue = "";  // the browser asks "Leave site?" (its own words)
+});
 
 let started = false;
 function startOnce() {

@@ -1925,6 +1925,231 @@ class MapAndScenarioSides(unittest.TestCase):
             self.assertEqual(len(words[key]), 10, key)
 
 
+class Redo(unittest.TestCase):
+    """The owner, 2026-10-16: "Redo should be put in." Every map tool with an Undo has a Redo beside it (Ctrl+Y or
+    Ctrl+Shift+Z) that puts back what Undo took with the call that saved it; a new step in that tool, Start over, or
+    another map empties what's left to redo. Tried in the Studio's page (?fake, Blitz): place, bridges, roads, a hill
+    stroke and Erase circles each went off with Undo and came back with Redo, and Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z did
+    the same."""
+
+    maps = staticmethod(ZonesOnTheGround.maps)
+    function = ZonesOnTheGround.function
+
+    def test_every_undo_has_a_redo(self):
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for tray in ("brush", "place", "road", "bridge"):
+            self.assertLess(page.index(f'id="{tray}-undo"'), page.index(f'id="{tray}-redo"'), tray)
+        maps = self.maps()
+        for redo, adds in (("redoPlace(", "mv.api.scenery_add(pack, group)"),
+                           ("redoStroke(", "mv.api.terrain_add(pack, g.strokes)"),
+                           ("redoErase(", "mv.api.scenery_erase(pack, circles)"),
+                           ("redoRoad(", "mv.api.road_add(pack, r.points, r.join, Boolean(r.keep_trees))")):
+            self.assertIn(adds, self.function(redo), redo)
+        for undo, keeps in (("undoPlace(", "redo.place.push(group)"),
+                            ("undoStroke(", "redo.brush.push({ strokes, objects: trees })"),
+                            ("undoErase(", "redo.erase.push(gone)"),
+                            ("undoRoad(", "redo.road.push(...road.mine.splice(")):
+            self.assertIn(keeps, self.function(undo), undo)
+        keys = self.function("onKey(")
+        self.assertIn('e.code === "KeyY" || (e.code === "KeyZ" && e.shiftKey)', keys)
+        self.assertLess(keys.index('"KeyY"'), keys.index('if (ctrl && !e.altKey && e.code === "KeyZ")'))  # before Undo
+        words = _words()
+        for key in ("brush_redo", "tip_place_redo", "tip_road_redo", "tip_bridges_redo", "tip_brush_redo",
+                    "tip_erase_redo"):
+            self.assertEqual(len(words[key]), 10, key)
+        self.assertIn("Ctrl+Y", words["keys_undo"]["us"])
+
+    def test_a_new_step_empties_what_is_left_to_redo(self):
+        for fn, empties in (("placeAt(", "redo.place = []"), ("placeMany(", "redo.place = []"),
+                            ("bridgeAt(", "redo.place = []"), ("finishStroke(", "redo.brush = []"),
+                            ("finishErase(", "redo.erase = []"), ("finishRoad(", "redo.road = []"),
+                            ("clearStrokes(", "redo.brush = []"), ("clearErase(", "redo.erase = []")):
+            self.assertIn(empties, self.function(fn), fn)
+        self.assertIn("if (mv.current !== pack) forgetRedo()", self.function("show("))
+
+    def test_select_picks_moves_and_takes_away(self):
+        """The owner, 2026-10-16: "select move and delete things already placed, including what's on the map". Select
+        is the place trays' fourth way: a click picks the nearest (what the mod placed, or the map's own through
+        map_objects_at), a box picks all in it (map_objects_in), a drag moves the picked ones, Turn and Size set
+        theirs, Delete takes them away; the map's own become [[own]] rows (scenery_own), what the mod placed changes
+        in place (scenery_change); Undo and Redo walk the steps. Tried in the Studio's page (?fake, Blitz): a house
+        of the map's own picked with the mouse and dragged (drawn where it went, hidden where it was, its ring
+        there), 73 oaks picked with a box, taken away with the Delete key and put back with Ctrl+Z, still picked."""
+        maps = self.maps()
+        self.assertIn('const PLACE_HOW = ["one", "area", "line", "path", "grid", "box", "select"]', maps)
+        self.assertIn("mv.api.map_objects_at(pack,", self.function("selCandidates("))
+        self.assertIn("mv.api.map_objects_in(pack,", self.function("selPickBox("))
+        apply = self.function("selApply(")
+        for call in ("mv.api.scenery_change(pack, changes)", "mv.api.scenery_add(pack, adds)",
+                     "mv.api.scenery_own(pack, own)"):
+            self.assertIn(call, apply)
+        self.assertIn("if (gone) s.set(0, 0, 0);", self.function("placeScenery("))  # moved or taken away: not where it was
+        self.assertIn(".concat(ownMovedObjects())", self.function("drawPlaced("))      # ...but where it went
+        keys = self.function("onKey(")
+        self.assertIn("else if (selecting()) selUndo();", keys)
+        self.assertIn("else if (selecting()) selRedo();", keys)
+        self.assertIn('(e.key === "Delete" || e.key === "Backspace") && selecting()', keys)
+        self.assertIn("forgetSel(res.own || [])", self.function("loadPlaced("))
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-sel"', 'id="place-sel-what"', 'id="place-sel-delete"', 'id="place-sel-restore"',
+                       'id="place-sel-clear"'):
+            self.assertIn(needle, page)
+        words = _words()
+        for key in ("place_select", "tip_place_select", "sel_help", "sel_hint", "sel_one", "sel_whose_map",
+                    "sel_whose_mod", "sel_many", "sel_delete", "tip_sel_delete", "sel_restore", "tip_sel_restore",
+                    "sel_clear", "tip_sel_clear", "sel_nothing", "sel_more", "sel_box_ground", "tip_sel_undo",
+                    "tip_sel_redo"):
+            self.assertEqual(len(words[key]), 10, key)
+        fake = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
+        for call in ("map_objects_at: async", "map_objects_in: async", "scenery_own: async", "scenery_change: async"):
+            self.assertIn(call, fake)
+
+    def test_a_bridge_is_undone_by_its_object(self):
+        """A bridge was saved in the place tray's groups as a bare 1, so its Undo took nothing back (seen while adding
+        Redo, 2026-10-16): a group is the objects Undo takes."""
+        self.assertIn("mv.place.groups.push([res.object])", self.function("bridgeAt("))
+
+
+class GridBoxAndRoads(unittest.TestCase):
+    """The owner, 2026-10-16: "buildings snap to roads", a Cities: Skylines drag-out grid ("length, then rows,
+    spacing") and "fill a box with a building type at a spacing". Grid: the first row's two clicks, then the rows moved
+    out and a click; Box: dragged corner to corner; both show what they'll place (see-through, with how many) and go
+    in one placeMany (one Undo). Face the roads: a click near a road goes beside it facing it, a row started near one
+    follows it, a grid's or a box's spots on a road are left out. Tried in the Studio's page (?fake, Blitz): a grid of
+    36 x 6 along the ring road's curve 3,420 units (13 m) from its line, placed, Undo and Redo; a box of 41 x 19 across
+    the straight road with that road kept clear; one house clicked 19 m off a road set beside it, facing it."""
+
+    maps = staticmethod(ZonesOnTheGround.maps)
+    function = ZonesOnTheGround.function
+
+    def test_grid_and_box(self):
+        maps = self.maps()
+        down = maps[maps.index('if (p.how === "line" || p.how === "grid") {'):]
+        self.assertIn("const objs = p.how === \"grid\" ? gridOf(p.lineStart, p.grid.b, { x, y }) : lineOf(", down)
+        self.assertIn("placeMany(objs);", down)
+        self.assertIn("const objs = fillBox(p.box.a, p.box.b);", maps)  # the button let go
+        self.assertIn("placePreview(hit)", maps)
+        self.assertIn("mesh.count = n;", self.function("showPlacePreview("))
+        for fn in ("gridOf(", "fillBox(", "lineOf("):
+            self.assertIn("withSeed(", self.function(fn), fn)  # the preview is what's placed
+        self.assertIn("dropPlaceGesture();", self.function("onKey("))  # Esc drops a grid or a box half made
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-rows"', 'id="place-rows-label"', 'id="place-roads"', 'id="place-roads-label"'):
+            self.assertIn(needle, page)
+
+    def test_face_the_roads(self):
+        self.assertIn("placePose(hit.x / SCALE, hit.z / SCALE)", self.function("placeAt("))
+        self.assertIn("placePose(hit.x / SCALE, hit.z / SCALE)", self.function("showPlaceGhost("))
+        self.assertIn("besideRoad(a.x, a.y, ROAD_REACH * METRE)", self.function("rowOf("))
+        self.assertIn("if (along && tx * along[0] + ty * along[1] < 0)", self.function("besideRoad("))
+        for fn in ("gridOf(", "fillBox("):
+            self.assertIn("nearestRoad(x, y, clear)", self.function(fn), fn)
+        self.assertIn("place_roads: mv.place.roads", self.function("saveView("))
+
+    def test_path_for_hedges_and_tree_belts(self):
+        """The owner, 2026-10-16: "rows of hedges and forests". Path: clicks along the way, a smooth line through them
+        (roadLine "free"), objects every spacing along it or a belt Width across; trees with Cover get line-shaped
+        Cover strokes along it, saved with them and taken back with them by the place tray's Undo (while they're the
+        brushes' last group); Along the last path lays another object on the same line. Tried in the Studio's page
+        (?fake, Blitz): an S-curve of 4 clicks, 2,078 m: 347 oaks in a line, then a 40 m belt of 340 with 52 cover
+        strokes, Undo took trees and cover, Redo put both back; 260 carts along the last path."""
+        self.assertIn('roadLine("free", pts)', self.function("pathLine("))
+        self.assertIn("await placeCovered(objs, pathCover(objs.path))", self.function("placePath("))
+        self.assertIn('brush: "cover"', self.function("pathCover("))
+        self.assertIn('shape: "line"', self.function("pathCover("))
+        self.assertIn("await mv.api.terrain_add(pack, strokes)", self.function("placeCovered("))
+        self.assertIn("if (group.cover && !group.coverLeft) await undoCover(group)", self.function("undoPlace("))
+        self.assertIn("if (b.groups[b.groups.length - 1] !== group.cover)", self.function("undoCover("))
+        self.assertIn("await mv.api.terrain_add(pack, group.strokes)", self.function("redoPlace("))
+        self.assertIn("finishPath()", self.function("onKey("))
+        self.assertIn("pathOf(p.lastPath)", self.function("placeAgain("))
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-width"', 'id="place-cover"', 'id="place-finish"', 'id="place-again"'):
+            self.assertIn(needle, page)
+        words = _words()
+        for key in ("place_path", "tip_place_path", "place_path_help", "place_path_next", "place_width",
+                    "place_width_line", "tip_place_width", "place_cover", "tip_place_cover", "tip_place_finish",
+                    "place_again", "tip_place_again", "place_placed_cover", "place_cover_left"):
+            self.assertEqual(len(words[key]), 10, key)
+
+    def test_words(self):
+        words = _words()
+        for key in ("place_grid", "tip_place_grid", "place_grid_help", "place_grid_next", "place_grid_rows",
+                    "place_grid_count", "place_box", "tip_place_box", "place_box_help", "place_box_count",
+                    "place_rows", "tip_place_rows", "place_roads", "tip_place_roads", "place_line_count"):
+            self.assertEqual(len(words[key]), 10, key)
+
+
+class AskBeforeClosing(unittest.TestCase):
+    """The owner, 2026-10-16: a warning before closing with unsaved changes. The page tells the app what isn't saved
+    (StudioApi.unsaved); closing the window asks then (rusemod.webui.ask_before_closing), Yes closes, No keeps it
+    open, and with nothing unsaved it closes at once. Tried in the Studio's page (?fake): the AI script edited and
+    not saved, and a box typed in with the real keyboard and not entered, each made the question; Enter and a click
+    elsewhere took it away again."""
+
+    class Window:
+        class Events:
+            def __init__(self):
+                self.closing = self.Handlers()
+
+            class Handlers(list):
+                def __iadd__(self, fn):
+                    self.append(fn)
+                    return self
+
+        def __init__(self):
+            self.events = self.Events()
+
+    def test_the_window_asks_only_while_something_is_unsaved(self):
+        from rusemod import webui
+        api = StudioApi(game_dir=Path("Z:/nowhere"), home=Path(tempfile.mkdtemp(dir=os.environ.get("TEMP"))),
+                        index_path=Path("Z:/none.sqlite"))
+        window = self.Window()
+        webui.ask_before_closing(window, api.closing_check)
+        closing = window.events.closing[0]
+        with mock.patch.object(webui.browsermode, "message_box", return_value=7) as box, \
+                mock.patch.object(webui.sys, "platform", "win32"):
+            self.assertTrue(closing())                     # nothing unsaved: closes at once, no question
+            box.assert_not_called()
+            self.assertEqual(api.unsaved({"title": "Close RUSE Studio?", "text": "Not everything is saved yet"}),
+                             {"asking": True})
+            self.assertFalse(closing())                    # No: the window stays open
+            text, title, flags = box.call_args.args
+            self.assertEqual((text, title), ("Not everything is saved yet", "Close RUSE Studio?"))
+            self.assertEqual(flags & 0x0F, 0x04)            # Yes / No
+            self.assertTrue(flags & 0x100)                  # No picked first: Enter keeps the work
+            box.return_value = 6
+            self.assertTrue(closing())                     # Yes: closes
+            self.assertEqual(api.unsaved(None), {"asking": False})
+            box.reset_mock()
+            self.assertTrue(closing())
+            box.assert_not_called()
+        api.unsaved({"text": "x"})
+        with mock.patch.object(webui.browsermode, "message_box", side_effect=OSError("no box")), \
+                mock.patch.object(webui.sys, "platform", "win32"):
+            self.assertTrue(closing())  # the box can't be shown: it closes, as before it asked
+        window = self.Window()
+        webui.ask_before_closing(window, lambda: 1 / 0)  # a fault of ours never keeps the window open
+        self.assertTrue(window.events.closing[0]())
+
+    def test_the_page_says_what_isnt_saved(self):
+        app = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
+        body = app[app.index("function unsavedReasons("):]
+        body = body[:body.index("\n}\n")]
+        for reason in ("w.unsaved_script", "w.unsaved_typed", "w.unsaved_music", "w.unsaved_saving", "w.unsaved_test"):
+            self.assertIn(reason, body)
+        self.assertIn("setInterval(tellUnsaved, 700)", app)
+        self.assertIn('window.addEventListener("beforeunload"', app)  # in a web browser, the browser asks
+        for view, fn in (("maps.js", "busy() {"), ("mission.js", "busy() {"), ("sound.js", "busy() {"),
+                         ("sound.js", "editing() {")):
+            self.assertIn(fn, (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / view).read_text(
+                encoding="utf-8"), view)
+        words = _words()
+        for key in ("unsaved_title", "unsaved_text", "unsaved_close", "unsaved_script", "unsaved_typed",
+                    "unsaved_music", "unsaved_saving", "unsaved_test"):
+            self.assertEqual(len(words[key]), 10, key)
+
+
 class MapIcons(unittest.TestCase):
     """Each kind of building and unit gets its own icon on the map (the owner, 2026-10-03), by the game's own names."""
 

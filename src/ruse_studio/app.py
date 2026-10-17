@@ -47,6 +47,19 @@ def _script_saves() -> str:
     return f"a script of ours made ({len(made)} bytes) and read back"
 
 
+def _errors_worded() -> str:
+    """The errors' words came with the app (errors.toml beside its code): an error said again in French."""
+    from rusemod import buildtext
+    from .errortext import worded
+    said = worded("Pick or make a mod first.", "fr")
+    if said == "Pick or make a mod first.":
+        raise RuntimeError("errors.toml isn't beside the app's code: every error would stay English")
+    line = buildtext.worded("Starting Steam…", "fr")
+    if line == "Starting Steam…":
+        raise RuntimeError("rusemod's buildtext.toml isn't beside the app's code: the build's lines would stay English")
+    return f"{said!r}, {line!r}"
+
+
 def _beside_the_code() -> str:
     """The files the app hands to others as files: the scripts Blender runs (Open in Blender, Make in Blender) and
     the blank maps' pictures (rusemod.presets): Studio 0.9.7's install had no Blender script beside its code."""
@@ -80,6 +93,7 @@ def main(argv=None) -> int:
         return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
+            ("the Studio's errors in the player's language", _errors_worded),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),

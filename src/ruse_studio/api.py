@@ -32,9 +32,9 @@ from dataclasses import asdict, replace
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
-from rusemod import (ai, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions, mod_index,
-                     newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
-                     values as every_value)
+from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions,
+                     mod_index, modformat, newmap, numberinfo, package, packfiles, scenario, scenery, schema,
+                     startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -318,6 +318,11 @@ def _object_dict(o) -> dict:
     return out
 
 
+def _own_dict(e) -> dict:
+    """One of the map's own objects moved or taken away (rusemod.scenery.OwnEdit) as the Maps view takes it."""
+    return asdict(e)
+
+
 def _erase_dict(a) -> dict:
     """An erase area (rusemod.scenery.EraseArea) as the Maps view takes it."""
     out = {"x": a.x, "y": a.y, "radius": a.radius, "what": list(a.what), "types": list(a.types)}
@@ -326,9 +331,51 @@ def _erase_dict(a) -> dict:
     return out
 
 
-def _save_checked(path: Path, text: str, read) -> None:
+def _toml_any(v) -> str:
+    """A value read from a mod's TOML file, written back: a text, number, true/false, list or table (inline)."""
+    if isinstance(v, dict):
+        return "{" + ", ".join(f"{json.dumps(k)} = {_toml_any(x)}" for k, x in v.items()) + "}"
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(_toml_any(x) for x in v) + "]"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    return json.dumps(str(v), ensure_ascii=False)
+
+
+def _kept_tables(old: dict, keeps) -> tuple[list[str], list[str]]:
+    """(the plain values, the tables) of a file's TOML (`old`) that a rewrite managing only the keys `keeps` doesn't
+    write, as lines: what a newer Studio or a hand put there (the owner, 2026-10-16: a mod's builds mustn't be
+    destroyed between updates; Studio 0.9.8.6 dropped a scenery file's [[preset]] and [[fieldbrush]] tables)."""
+    plain, tables = [], []
+    for k, v in old.items():
+        if k in keeps:
+            continue
+        if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+            for row in v:
+                tables += [f"[[{k}]]"] + [f"{kk} = {_toml_any(vv)}" for kk, vv in row.items()] + [""]
+        elif isinstance(v, dict):
+            tables += [f"[{k}]"] + [f"{kk} = {_toml_any(vv)}" for kk, vv in v.items()] + [""]
+        else:
+            plain.append(f"{k} = {_toml_any(v)}")
+    return plain, tables
+
+
+def _save_checked(path: Path, text: str, read, keeps=None) -> None:
     """Save `text` into `path` only when `read(its TOML)` takes it: the Studio never writes a file that it, or the
-    build, can't read back (Studio 0.7.0 once saved water strokes without their level)."""
+    build, can't read back (Studio 0.7.0 once saved water strokes without their level). `keeps`: the keys this rewrite
+    manages; every other table and value already in the file is written back after (plain values first), so a
+    rewrite never drops what it doesn't know (rusemod.modformat)."""
+    if keeps is not None and path.is_file():
+        try:
+            old = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            old = {}  # (a file that can't be read is the mod check's to set aside; the writers refuse it before this)
+        plain, tables = _kept_tables(old, set(keeps))
+        if plain or tables:
+            body = text if text.endswith("\n") else text + "\n"
+            text = "\n".join(plain + ([""] if plain else [])) + body + ("\n" if tables else "") + "\n".join(tables)
     try:
         read(tomllib.loads(text))
     except _FILE_MISTAKES as exc:
@@ -456,6 +503,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         self._grounds_lock = threading.Lock()
         self._ground_jobs: dict[str, str] = {}  # picture being made -> its job, so asking twice doesn't make it twice
         self._sceneries: dict[tuple, dict] = {}  # the last maps' scenery (map_scenery)
+        self._picks: dict[tuple, tuple] = {}     # the last two maps' scenery read for picking (_pick_index)
+        self._close_ask: dict | None = None     # what the window asks before closing while something isn't saved (unsaved)
+        self._reaches: dict[str, float] = {}     # a building type's reach, measured on its model (_building_reach)
         self._scenario_owners: dict[tuple, list[dict]] = {}  # mission CampList owners, for the spawn picker
         self._descriptors: tuple = (None, {})    # (unit pack, its scenery types), read once per game build
         self._models_done: dict[str, dict] = {}  # map -> the index of its 3D models (map_models), once made
@@ -522,6 +572,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def nations(self, lang: str = schema.BASE) -> list[str]:
         return [schema.nation(n, lang) for n in range(NATIONS)]
+
+    # --- closing the window with something not saved yet (the owner, 2026-10-16): the page says what (app.js
+    # unsavedReasons), and the window asks before it closes (rusemod.webui.ask_before_closing) ---
+    def unsaved(self, ask=None) -> dict:
+        """What isn't saved yet, as the page words it: {"title", "text"} in the Studio's language, or None when all
+        is. Kept for closing_check."""
+        self._close_ask = ({"title": str(ask.get("title") or "RUSE Studio"), "text": str(ask["text"])}
+                           if isinstance(ask, dict) and ask.get("text") else None)
+        return {"asking": self._close_ask is not None}
+
+    def closing_check(self):
+        """What the window asks before it closes: unsaved's last words, or None to close at once."""
+        return self._close_ask
+
+    # --- errors in the player's language (ruse_studio.errortext): every page call's StudioError, and a job's ---
+    def _worded(self, text: str) -> str:
+        from .errortext import worded
+        return worded(text, self.prefs().get("lang") or schema.BASE)
+
+    def page_error(self, exc):
+        """A page call's StudioError said again in the Studio's language (rusemod.webui page_api), or None to pass it
+        on as it is."""
+        if not isinstance(exc, StudioError):
+            return None
+        said = self._worded(str(exc))
+        return StudioError(said) if said != str(exc) else None
 
     def status(self) -> dict:
         path = self._path()
@@ -1774,7 +1850,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                   "roads.toml": lambda data: (roadnet.parse_roads(data.get("road", []), "roads.toml"),
                                               roadnet.parse_take_out(data.get("take_out"), "roads.toml")),
                   "scenery.toml": lambda data: (scenery.parse_objects(data.get("object", []), "scenery.toml")
-                                                + scenery.parse_erase(data.get("erase", []), "scenery.toml"))}
+                                                + scenery.parse_erase(data.get("erase", []), "scenery.toml")
+                                                + scenery.parse_own(data.get("own", []), "scenery.toml"))}
         with self._saving:
             target.mkdir(parents=True)
             for fname, text in files.items():  # a blank start: the preset's files, each checked as the build reads it
@@ -3956,25 +4033,36 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     @staticmethod
     def _read_objects(path: Path, table: str = "object") -> list:
-        """The file's objects, or with `table` "erase" its erase areas (kept as they are when the Studio rewrites it)."""
+        """The file's objects, or with `table` "erase" its erase areas, "own" the map's own objects it moves or takes
+        away (each kept as it is when the Studio rewrites another)."""
         if not path.is_file():
             return []
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
-            parse = scenery.parse_erase if table == "erase" else scenery.parse_objects
+            parse = {"erase": scenery.parse_erase, "own": scenery.parse_own}.get(table, scenery.parse_objects)
             return parse(data.get(table, []), str(path))
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, scenery.SceneryEditError) as exc:
             raise StudioError(f"{path} can't be read ({exc}). The mod check at the top can set it aside, or fix it by "
                               f"hand: the Studio won't write over it.") from None
 
-    def _write_objects(self, path: Path, objects: list, erase: list | None = None) -> None:
-        """The file with `objects` and `erase` (default: its erase areas as they are); gone when both are empty."""
+    def _write_objects(self, path: Path, objects: list, erase: list | None = None, own: list | None = None) -> None:
+        """The file with `objects`, `erase` and `own` (default: its erase areas, and the map's own objects it moves,
+        as they are); gone when all are empty."""
         if erase is None:
             erase = self._read_objects(path, "erase")
-        if objects or erase:
-            _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER, erase),
+        if own is None:
+            own = self._read_objects(path, "own")
+        try:  # what else the file holds (copies, presets, field brushes): it stays when the Studio's own rows go
+            others = path.is_file() and any(k not in ("object", "erase", "own")
+                                            for k in tomllib.loads(path.read_text(encoding="utf-8")))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            others = True  # (never delete a file that can't be read: the mod check sets it aside)
+        if objects or erase or own or others:
+            _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER, erase, own),
                           lambda data: (scenery.parse_objects(data.get("object", []), str(path))
-                                        + scenery.parse_erase(data.get("erase", []), str(path))))
+                                        + scenery.parse_erase(data.get("erase", []), str(path))
+                                        + scenery.parse_own(data.get("own", []), str(path))),
+                          keeps=("object", "erase", "own"))  # its copies, presets and field brushes stay
             return
         if path.is_file():
             path.unlink()
@@ -3989,13 +4077,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         size}], "erase": [{x, y, radius, what, types}], "saved": the file or None, "mod": the mod or None}."""
         folder = self._map_dir()
         if folder is None:
-            return {"objects": [], "erase": [], "saved": None, "mod": None}
+            return {"objects": [], "erase": [], "own": [], "saved": None, "mod": None}
         path = self._scenery_file(pack)
         with self._saving:
             objects = self._read_objects(path)
             erase = self._read_objects(path, "erase")
+            own = self._read_objects(path, "own")
         return {"objects": [_object_dict(o) for o in objects], "erase": [_erase_dict(a) for a in erase],
-                "saved": str(path) if objects or erase else None, "mod": str(folder)}
+                "own": [_own_dict(e) for e in own], "saved": str(path) if objects or erase or own else None,
+                "mod": str(folder)}
 
     def scenery_erase(self, pack: str, areas: list) -> dict:
         """The Erase tool's circles (dicts: x, y, radius, and what: the groups it takes, default trees and props),
@@ -4118,6 +4208,165 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 n = len(every) - len(left)
             self._write_objects(path, left)
         return {"count": len(left), "removed": n, "saved": str(path) if path.is_file() else None}
+
+    # --- picking, moving, turning and taking away what stands on a map: what this mod placed ([[object]], changed
+    # where it is in the file) and the map's own ([[own]], rusemod.scenery.OwnEdit); the owner, 2026-10-16: "select
+    # move and delete things already placed, including what's on the map" ---
+    PICK_MOST = 2000      # objects one pick or box gives at most
+    PICK_REACH = 26000.0  # map units (100 m) a pick may reach round its point
+    BOX_MOST = 130000.0   # map units (500 m) a box may reach from its middle to a corner
+
+    def _pick_index(self, pack: str) -> tuple:
+        """(the map's scenery, its placed items read once (scenery._placed_items), {name index: (type name, group)} of
+        what can be picked: buildings, props and trees, not the low plants, stones, ground stickers or bridges) for
+        the map's own scenery: about a second on D-Day, kept for the last two maps."""
+        pack = self._game_pack(pack)
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no maps to show.")
+        map_path, unit_path = find_pack(game, pack_file(pack)), find_pack(game, "ZZ_GladPatchableWin.dat")
+        if map_path is None or unit_path is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError(f"{pack_file(pack) if map_path is None else 'ZZ_GladPatchableWin.dat'} isn't in the game "
+                              f"folder.")
+        key = (str(map_path), map_path.stat().st_mtime)
+        picks = self._picks
+        with self._grounds_lock:
+            if key in picks:
+                return picks[key]
+        with Edat.open(str(unit_path)) as unit_arc, Edat.open(str(map_path)) as map_arc:
+            descs = self._scenery_types(unit_path, unit_arc)
+            try:
+                sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
+            except (KeyError, scenery.SceneryError) as exc:
+                raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+        low = set(scenery.low_cover(descs, sc.names))
+        kinds = {i: (n, descs[n].group) for i, n in enumerate(sc.names[:len(sc.flags)])
+                 if n in descs and descs[n].group in scenery.PLACEABLE and n not in low and not descs[n].bridge}
+        out = (sc, scenery._placed_items(sc), kinds)
+        with self._grounds_lock:
+            picks[key] = out
+            while len(picks) > 2:
+                picks.pop(next(iter(picks)))
+        return out
+
+    @staticmethod
+    def _picked(kinds: dict, hits: list) -> list:
+        out = []
+        for d, sym, m in hits:
+            name, group = kinds[sym]
+            x, y, turn, size = scenery.placement(m)
+            out.append({"type": name, "group": group, "x": x, "y": y, "turn": math.degrees(turn), "size": size,
+                        "lift": m[11], "distance": d})
+        return out
+
+    def map_objects_at(self, pack: str, x: float, y: float, radius: float = 2600.0) -> dict:
+        """The map's own buildings, props and trees whose middles lie within `radius` of (x, y) (map units, at most
+        PICK_REACH), nearest first: {"objects": [{type, group, x, y, turn (degrees, as a placed object's), size, lift,
+        distance}]}, where the map's file has them (what an [[own]] row names)."""
+        sc, placed, kinds = self._pick_index(pack)
+        r = min(max(float(radius), 1.0), self.PICK_REACH)
+        hits = scenery.objects_near(sc, float(x), float(y), r, only=set(kinds), placed=placed)
+        return {"objects": self._picked(kinds, hits[:self.PICK_MOST])}
+
+    def map_objects_in(self, pack: str, x0: float, y0: float, x1: float, y1: float) -> dict:
+        """The map's own buildings, props and trees inside a box (a drag on the map): {"objects": [as map_objects_at],
+        "more": whether there were more than PICK_MOST (the nearest the box's middle are given)}."""
+        xa, xb = sorted((float(x0), float(x1)))
+        ya, yb = sorted((float(y0), float(y1)))
+        cx, cy, reach = (xa + xb) / 2, (ya + yb) / 2, math.hypot(xb - xa, yb - ya) / 2
+        if reach > self.BOX_MOST:
+            raise StudioError(f"That box is too big to pick from: at most {2 * self.BOX_MOST / 260:,.0f} m corner to "
+                              f"corner. Drag a smaller one, or use the Erase brush for a whole area.")
+        sc, placed, kinds = self._pick_index(pack)
+        hits = [h for h in scenery.objects_near(sc, cx, cy, reach, only=set(kinds), placed=placed)
+                if xa <= h[2][3] <= xb and ya <= h[2][7] <= yb]
+        return {"objects": self._picked(kinds, hits[:self.PICK_MOST]), "more": len(hits) > self.PICK_MOST}
+
+    def _building_reach(self, game: Path, descs: dict, types: set) -> dict:
+        """How far each of `types` (buildings) reaches from its middle at size 1, measured on its model as a placed
+        building's footprint is (rusemod.nav.solid_blocks), or nav.FOOTPRINT when it can't be."""
+        from rusemod.models import Library
+        from rusemod.nav import FOOTPRINT
+        kept = self._reaches
+        todo = [t for t in types if t not in kept]
+        if todo:
+            try:
+                lib = Library(Path(game))
+            except OSError:  # not a game rule: the models' archive isn't found; the footprint placed buildings fall back to
+                return {t: kept.get(t, FOOTPRINT) for t in types}
+            try:
+                for t in todo:
+                    kept[t] = scenery.model_reach(lib, descs[t]) or FOOTPRINT
+            finally:
+                lib.close()
+        return {t: kept[t] for t in types}
+
+    def scenery_own(self, pack: str, rows: list) -> dict:
+        """Save the map's own objects this mod moves, turns, resizes or takes away: the whole list, as the Maps view
+        keeps it ([[own]] rows: type, x, y where the map has it; gone, or to_x, to_y, turn, size, lift). Only the
+        map's own buildings, props and trees. A building is solid where it goes, and its old ground is opened to every
+        unit as far as it reaches (its `open`, worked out here when a row has none). Returns {"own": the rows as
+        saved, "saved": the file or None}."""
+        path = self._scenery_file(pack)
+        try:
+            edits = scenery.parse_own(list(rows or []), "the map's own objects")
+        except scenery.SceneryEditError as exc:
+            raise StudioError(str(exc)) from None
+        if edits:
+            _sc, _placed, kinds = self._pick_index(pack)
+            group = {name: g for name, g in kinds.values()}
+            for e in edits:
+                if e.type not in group:
+                    raise StudioError(f"{e.type} isn't one of this map's own buildings, props or trees, so it can't be "
+                                      f"moved or taken away here.")
+            buildings = {e.type for e in edits if group[e.type] == "building"}
+            if any(e.type in buildings and not e.open for e in edits):
+                game = self._game()
+                unit_path = find_pack(game, "ZZ_GladPatchableWin.dat")
+                with Edat.open(str(unit_path)) as unit_arc:
+                    descs = self._scenery_types(unit_path, unit_arc)
+                reach = self._building_reach(game, descs, {e.type for e in edits if e.type in buildings and not e.open})
+                edits = [replace(e, open=round(reach[e.type] * e.size, 1)) if e.type in reach and not e.open else e
+                         for e in edits]
+            edits = [replace(e, solid=group[e.type] == "building" and not e.gone) for e in edits]
+        with self._saving:
+            self._write_objects(path, self._read_objects(path), own=edits)
+        return {"own": [_own_dict(e) for e in edits], "saved": str(path) if path.is_file() else None}
+
+    def scenery_change(self, pack: str, changes: list) -> dict:
+        """Change objects this mod placed: each [old, new] pair (dicts with the scenery file's keys) puts `new` in the
+        place of the last object like `old` in the file (it keeps its place in the file, so Undo still takes it back
+        in turn), or takes it off when `new` is None. Returns {"count": objects placed now, "changed": how many pairs
+        found their object, "saved": the file or None}."""
+        path = self._scenery_file(pack)
+        if not isinstance(changes, list) or not all(isinstance(c, (list, tuple)) and len(c) == 2 for c in changes):
+            raise StudioError("the changes must be a list of [old, new] pairs")
+        try:
+            olds = scenery.parse_objects([c[0] for c in changes], "the objects to change")
+            news = [scenery.parse_objects([c[1]], "the changed objects")[0] if c[1] is not None else None
+                    for c in changes]
+        except scenery.SceneryEditError as exc:
+            raise StudioError(str(exc)) from None
+        if any(n is not None for n in news):
+            known = {row[0] for row in self.map_scenery(pack)["palette"]}
+            for n in news:
+                if n is not None and n.type not in known:
+                    raise StudioError(f"{n.type} isn't one of this map's own types, so the map can't take it.")
+        with self._saving:
+            every, changed = self._read_objects(path), 0
+            for old, new in zip(olds, news):
+                at = next((i for i in range(len(every) - 1, -1, -1) if every[i] == old), None)
+                if at is None:
+                    continue
+                changed += 1
+                if new is None:
+                    del every[at]
+                else:
+                    every[at] = new
+            self._write_objects(path, every)
+        return {"count": len(every), "changed": changed, "saved": str(path) if path.is_file() else None}
 
     # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
     # --- new roads: maps/<pack>/roads.toml in the current mod (MOD_FORMAT §8, rusemod.roadnet) ---
@@ -4922,12 +5171,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         (folder / "mod.toml").write_text(
             f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
+        modformat.stamp(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"])  # in this Studio's mod format
         return self.choose_mod(str(folder), kind)
 
-    def choose_mod(self, path: str, kind: str = "mod") -> dict:
+    def choose_mod(self, path: str, kind: str = "mod", anyway: bool = False) -> dict:
+        """Start editing the mod (or map) at `path`. One a newer Studio saved (a newer mod format: rusemod.modformat)
+        is refused unless `anyway`: this Studio could drop what it doesn't know when it rewrites a file. One of an
+        older format with nothing to rewrite gets the new number at once; one with something to rewrite waits for
+        Update this mod (update_mod)."""
         kind = self._kind(kind)
         if not Path(path, "mod.toml").is_file():
             raise StudioError(f"{path} isn't a mod folder (it has no mod.toml)")
+        st = modformat.state(path)
+        if st["state"] == "newer" and not anyway:
+            raise StudioError(f"{Path(path).name} was saved by a newer RUSE Studio (mod format {st['format']}; this "
+                              f"one knows {st['current']}). Update the Studio before changing it: this version could "
+                              f"drop what it doesn't know when it saves.")
+        if st["state"] == "quiet":
+            modformat.stamp(path, self.MADE_WITH["tool"], self.MADE_WITH["version"])
         settings = self._settings()
         settings[kind] = str(path)
         recent_key = self.KINDS[kind][1]
@@ -4935,6 +5196,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         settings[recent_key] = [str(path)] + recent[:9]
         self._save_settings(settings)
         return self.mods(kind)
+
+    def mod_format(self, kind: str = "mod", path: str = "") -> dict:
+        """The current mod's (or map's), or the mod folder `path`'s, mod format against this Studio's
+        (rusemod.modformat.state), with "name" and "path"; {"state": "none"} when there's none."""
+        folder = Path(path) if path else self._mod_dir(self._kind(kind))
+        if folder is None or not (folder / "mod.toml").is_file():
+            return {"state": "none"}
+        return modformat.state(folder) | {"name": folder.name, "path": str(folder)}
+
+    def update_mod(self, kind: str = "mod") -> dict:
+        """Update this mod: bring the current mod (or map) of an older mod format up to this Studio's, a backup of the
+        whole folder taken first into the Studio's mod-backups folder (rusemod.modformat.upgrade). Returns what
+        upgrade says, and the format state after."""
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        if modformat.state(folder)["state"] == "newer":
+            raise StudioError(f"{folder.name} was saved by a newer RUSE Studio: update the Studio, not the mod.")
+        with self._saving:
+            done = modformat.upgrade(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"],
+                                     self._home / "mod-backups")
+        return done | {"format": self.mod_format(kind)}
 
     def open_mod_folder(self, kind: str = "mod") -> dict:
         if self._window is None:
@@ -7708,7 +7991,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if game is None:
                 # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
-            self._starter.modded(game, folders, instance, name, say, words=said)
+            self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True)
             say(f"Built in {instance}. To see your changes in the game:")
             for line in look or ["Your unit changes show in every game mode."]:
                 say(f"  {line}")
@@ -7745,7 +8028,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             except Exception:  # noqa: BLE001 - a folder that can't be read just gets no fix
                 continue
         order = [by_id[i] for i in job.order if i in by_id] or folders
-        return {"problems": [self._problem(text, folders, order) for text in job.errors]}
+        lang = self.prefs().get("lang") or schema.BASE  # each found by its English words, said in the player's
+        return {"problems": [self._problem(text, folders, order) | {"text": buildtext.worded(text, lang)}
+                             for text in job.errors]}
 
     def _problem(self, text: str, folders: list, order: list) -> dict:
         fixes, mod = [], ""
@@ -8078,4 +8363,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return job.start(work, "The game index is ready.")
 
     def job(self, job_id: str, since: int = 0) -> dict:
-        return self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        view = self._with_result(job_view(self._jobs, job_id, since))  # a backup job's result too
+        if view.get("state") == "failed" and isinstance(view.get("message"), str):
+            view["message"] = self._worded(view["message"])  # a StudioError in the Studio's language
+        # and the build's lines, message and errors (rusemod.buildtext)
+        return buildtext.worded_view(view, self.prefs().get("lang") or schema.BASE)

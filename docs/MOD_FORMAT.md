@@ -63,6 +63,10 @@ fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Expor
 tool    = "RUSE Studio"
 version = "0.9.8"
 page    = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
+format  = 1                         # the mod format its files are in (rusemod.modformat); none means 0. The Studio
+                                    # writes it on a new mod and when it opens or updates one; one a newer Studio
+                                    # saved isn't opened without a yes, and Update this mod brings an older one up
+                                    # to date, a zip of the whole mod kept first
 
 [dependencies]                      # hard dependencies: id = version range
 # "ruse2-assets" = "^0.3"
@@ -829,8 +833,8 @@ lift    = -225.0                        # its height against the ground the game
   game. Nothing else moves.
 - **For looks only:** scenery doesn't block units, give cover or change the AI's map (those are other layers).
   Objects stand on the ground wherever the ground is, also after a terrain edit.
-- **Only types the map already uses**: a type from another theatre isn't loaded on that map. Moving shipped objects
-  isn't offered yet.
+- **Only types the map already uses**: a type from another theatre isn't loaded on that map. Moving the map's own
+  objects: `[[own]]`, below.
 - Several mods' objects are added in load order.
 - **Seen from far:** the game draws a scenery type only out to the distances its descriptor has a mode for (close
   20,000 map units from the camera, middle 100,000, far 500,000 or more by the graphics settings), and most props and
@@ -879,6 +883,35 @@ types = ["TypeWarrior/Pont_Normandie"]  # and these types, whatever they are (th
 - Most of a map's trees are in blocks it places many times, so the build copies each such block for the erased spot
   (`rusemod.scenery.erase_objects`; a 200 m circle in a wood adds about 300 KB). A map's scenery holds at most
   16 MB of blocks (D-Day: about 6 MB left); a build past that is refused: erase smaller areas.
+
+And it moves, turns, resizes or takes away one of the map's own objects, one table each:
+
+```toml
+[[own]]
+type  = "TypeWarrior/MairieNormande"    # the map's own building, prop or tree
+x     = 1000.0                          # where the map has it (map units), as the Studio reads it from the map
+y     = 2000.0
+# either
+gone  = true                            # taken away
+# or where it goes now:
+to_x  = 1500.0
+to_y  = 2500.0
+turn  = 45.0                            # degrees, as a placed object's
+size  = 2.0
+lift  = 0.0                             # optional, as a placed object's
+solid = true                            # units go round it (the Studio sets it for a building)
+open  = 1600.0                          # optional: how far round its old place the ground opens to every unit and
+                                        # loses its blocked mark (the Studio sets a building's reach times its size)
+```
+
+- The build makes two things of a row, both already proven in the game: an erase of that one object (a circle of a
+  tenth of a metre at its place, taking only its type), and, unless it's `gone`, the same type placed again where it
+  went, as a `[[object]]`. So a moved object is a placed one from then on.
+- A building's old ground opens as far as `open` reaches, and its blocked mark goes there (`rusemod.build.
+  cleared_woods`), so units can drive where it stood; a building in a town's closed block may still be shut in by its
+  neighbours' ground. **Not tried in the game yet.**
+- The Studio's **Select** (Maps view, the place trays' fourth way) writes these rows: click or box what to pick, drag
+  to move, Turn and Size, Delete.
 
 ### Starting points, spawns and names: `maps/<map pack>/scenario.toml`
 

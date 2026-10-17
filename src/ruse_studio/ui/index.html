@@ -60,6 +60,8 @@
   <div id="update-changes" class="update-changes hidden"></div>
   <!-- the mod check (app.js checkMod): what the build would stop at, and a way out for each broken map file -->
   <div id="check-bar" class="check-bar hidden" role="alert"></div>
+  <!-- the mod format (app.js renderFormat; rusemod.modformat): an older mod's Update, a newer Studio's mod -->
+  <div id="format-bar" class="format-bar hidden" role="status"></div>
 
   <form id="new-mod" class="new-mod hidden">
     <input id="new-mod-name" autocomplete="off" maxlength="60" required>
@@ -299,6 +301,7 @@
               </div>
               <div class="map-controls">
                 <button id="brush-undo" type="button" class="ghost" disabled></button>
+                <button id="brush-redo" type="button" class="ghost" disabled></button>
                 <button id="brush-clear" type="button" class="ghost danger" disabled></button>
                 <span id="brush-count" class="muted small"></span>
               </div>
@@ -313,6 +316,15 @@
               <input id="place-search" type="search" class="place-search">
               <!-- each type as a picture of its model, Cities: Skylines style (maps.js placeOptions, renderThumb) -->
               <div id="place-grid" class="place-grid" role="listbox"></div>
+              <!-- Select (maps.js sel): what's picked, and what can be done with it -->
+              <div id="place-sel" class="place-sel hidden">
+                <div id="place-sel-what" class="small"></div>
+                <div class="map-controls">
+                  <button id="place-sel-delete" type="button" class="ghost danger" disabled></button>
+                  <button id="place-sel-restore" type="button" class="ghost" disabled></button>
+                  <button id="place-sel-clear" type="button" class="ghost" disabled></button>
+                </div>
+              </div>
               <!-- cover and movement live in other map files: placed scenery gives no cover, but buildings stop units (Solid) -->
               <div id="place-scenery-note" class="muted small"></div>
             </div>
@@ -326,10 +338,23 @@
                 <input id="place-spacing" type="range" min="2" max="100" step="1" value="8"></label>
               <label id="place-area-row" class="brush-slider small hidden"><span id="place-area-label"></span>
                 <input id="place-area" type="range" min="10" max="300" step="5" value="40"></label>
+              <label id="place-rows-row" class="brush-slider small hidden"><span id="place-rows-label"></span>
+                <input id="place-rows" type="range" min="2" max="100" step="1" value="25"></label>
+              <label id="place-width-row" class="brush-slider small hidden"><span id="place-width-label"></span>
+                <input id="place-width" type="range" min="0" max="200" step="1" value="0"></label>
+              <label id="place-cover-row" class="small check-row hidden"><input id="place-cover" type="checkbox" checked>
+                <span id="place-cover-label"></span></label>
+              <div id="place-path-row" class="map-controls hidden">
+                <button id="place-finish" type="button" class="small" disabled></button>
+                <button id="place-again" type="button" class="ghost small" disabled></button>
+              </div>
               <label id="place-solid-row" class="small check-row"><input id="place-solid" type="checkbox" checked>
                 <span id="place-solid-label"></span></label>
+              <label id="place-roads-row" class="small check-row"><input id="place-roads" type="checkbox" checked>
+                <span id="place-roads-label"></span></label>
               <div class="map-controls">
                 <button id="place-undo" type="button" class="ghost" disabled></button>
+                <button id="place-redo" type="button" class="ghost" disabled></button>
                 <span id="place-count" class="muted small"></span>
               </div>
               <div id="place-note" class="small"></div>
@@ -345,6 +370,7 @@
               <div class="map-controls">
                 <button id="road-finish" type="button" class="small hidden" disabled></button>
                 <button id="road-undo" type="button" class="ghost" disabled></button>
+                <button id="road-redo" type="button" class="ghost" disabled></button>
                 <span id="road-count" class="muted small"></span>
               </div>
               <label id="road-snap-row" class="small"><input id="road-snap" type="checkbox"> <span id="road-snap-label"></span></label>
@@ -368,6 +394,7 @@
                 <input id="bridge-turn" type="range" min="0" max="355" step="5" value="0"></label>
               <div class="map-controls">
                 <button id="bridge-undo" type="button" class="ghost" disabled></button>
+                <button id="bridge-redo" type="button" class="ghost" disabled></button>
                 <span id="bridge-count" class="muted small"></span>
               </div>
               <div id="bridge-note" class="small"></div>

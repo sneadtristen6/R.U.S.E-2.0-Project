@@ -1134,6 +1134,9 @@ class EraseArea:
     mask: object = field(default=None, compare=False)  # with by_size: `mask(x, y, reach)` says whether an object
                            # reaching that far from (x, y) goes, inside the shape (the filled riverbeds of a reshaped
                            # map: rusemod.mend.Filled.touches); the shape only narrows the search
+    opens: float = 0.0     # how far round its middle the ground opens to every unit and loses its blocked mark,
+                           # though `what` names no group: one of the map's own buildings taken away or moved ([[own]],
+                           # OwnEdit), its own reach (build.cleared_woods)
 
     def footprint(self):
         """Its shape (rusemod.brush.Footprint), made once: an erase over a big map asks it millions of times."""
@@ -4988,7 +4991,124 @@ def parse_objects(rows: list, where: str = "scenery.toml") -> list[NewObject]:
     return out
 
 
-def objects_toml(objects: list[NewObject], header: str = "", erase: list[EraseArea] = ()) -> str:
+# --- the map's own objects moved, turned, resized or taken away ([[own]], MOD_FORMAT §8; the owner, 2026-10-16:
+# "select move and delete things already placed, including what's on the map") ---
+OWN_PICK = 26.0   # map units (a tenth of a metre): how near an [[own]] row's place an object of its type must stand to
+                  # be the one it means; the row holds the place the map's file has, read by the Studio (objects_near)
+
+
+@dataclass(frozen=True)
+class OwnEdit:
+    """One of the map's own objects: the one of `type` standing at (x, y) in the map's file goes (an erase of that
+    object alone), and unless `gone` the same type is placed again at (to_x, to_y), turned and sized, as a placed
+    object (units go round it when `solid`: a building). `open`: how far round its old place the ground opens to every
+    unit and loses its blocked mark (a building's reach times its size, worked out by the Studio as a placed
+    building's footprint is: nav.solid_blocks); 0 for anything else. Made of the two things the game already takes
+    from a mod (an erase, a placed object), so a moved object is a placed one."""
+    type: str
+    x: float
+    y: float
+    gone: bool = False
+    to_x: float = 0.0
+    to_y: float = 0.0
+    turn: float = 0.0     # degrees, as a placed object's
+    size: float = 1.0
+    lift: float = 0.0
+    solid: bool = False
+    open: float = 0.0
+
+    def expand(self) -> list:
+        """What the build makes of it: the erase, then the object placed again (unless it's gone)."""
+        out: list = [EraseArea(self.x, self.y, OWN_PICK, (), (self.type,), opens=self.open)]
+        if not self.gone:
+            out.append(NewObject(self.type, self.to_x, self.to_y, self.turn, self.size, self.solid, lift=self.lift))
+        return out
+
+
+OWN_KEYS = ("type", "x", "y", "gone", "to_x", "to_y", "turn", "size", "lift", "solid", "open")
+
+
+def parse_own(rows: list, where: str = "scenery.toml") -> list[OwnEdit]:
+    out = []
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - set(OWN_KEYS))
+        if extra:
+            raise SceneryEditError(f"{where}: own object {k + 1}: unknown key {extra[0]!r}")
+        for flag in ("gone", "solid"):
+            if not isinstance(row.get(flag, False), bool):
+                raise SceneryEditError(f"{where}: own object {k + 1}: {flag} must be true or false")
+        gone = row.get("gone", False)
+        if not gone and ("to_x" not in row or "to_y" not in row):
+            raise SceneryEditError(f"{where}: own object {k + 1}: say where it goes (to_x, to_y), or gone = true")
+        try:
+            e = OwnEdit(str(row["type"]), float(row["x"]), float(row["y"]), gone, float(row.get("to_x", 0.0)),
+                        float(row.get("to_y", 0.0)), float(row.get("turn", 0.0)), float(row.get("size", 1.0)),
+                        float(row.get("lift", 0.0)), row.get("solid", False), float(row.get("open", 0.0)))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: own object {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: own object {k + 1}: x, y, to_x, to_y, turn, size, lift and open must be "
+                                   f"numbers") from None
+        nums = (e.x, e.y, e.to_x, e.to_y, e.turn, e.size, e.lift, e.open)
+        if (not e.type or not all(math.isfinite(v) for v in nums) or not 0.05 <= e.size <= 50 or abs(e.lift) > 100000
+                or not 0 <= e.open <= ERASE_MAX):
+            raise SceneryEditError(f"{where}: own object {k + 1}: a number is out of range (size: 0.05 to 50, lift: "
+                                   f"within 100,000, open: 0 to {ERASE_MAX:,.0f})")
+        out.append(e)
+    return out
+
+
+def _own_lines(e: OwnEdit) -> list[str]:
+    lines = ["[[own]]", f'type = "{e.type}"', f"x = {e.x!r}", f"y = {e.y!r}"]
+    if e.gone:
+        lines.append("gone = true")
+    else:
+        lines += [f"to_x = {e.to_x!r}", f"to_y = {e.to_y!r}", f"turn = {e.turn!r}", f"size = {e.size!r}"]
+        lines += ([f"lift = {e.lift!r}"] if e.lift else []) + (["solid = true"] if e.solid else [])
+    return lines + ([f"open = {e.open!r}"] if e.open else []) + [""]
+
+
+def objects_near(sc: Scenery, x: float, y: float, radius: float, only=None, placed=None) -> list[tuple]:
+    """(distance, name index, transform in map coordinates) of every object whose middle lies within `radius` of
+    (x, y), nearest first. Only the blocks whose box reaches the circle are opened (a map places millions of objects:
+    D-Day 13.6 million trees, props and buildings, 45 s to walk all of them). `only`: name indexes; `placed`:
+    _placed_items(sc) made once for the map (it reads every block)."""
+    items, boxes = placed if placed is not None else _placed_items(sc)
+    r2, out = radius * radius, []
+    todo = [(r, IDENTITY) for r in sc.roots()]
+    while todo:
+        bi, m = todo.pop()
+        box = boxes[bi]
+        if box is None:
+            continue
+        xs = [m[0] * bx + m[1] * by + m[3] for bx, by in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]),
+                                                          (box[2], box[3]))]
+        ys = [m[4] * bx + m[5] * by + m[7] for bx, by in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]),
+                                                          (box[2], box[3]))]
+        if x + radius < min(xs) or x - radius > max(xs) or y + radius < min(ys) or y - radius > max(ys):
+            continue
+        hits = []
+        for entry in items[bi]:
+            if entry[1] == -1:
+                todo.append((entry[2], compose(m, entry[3])))
+                continue
+            at, sym, ox, oy, oz = entry[:5]
+            if only is not None and sym not in only:
+                continue
+            wx = m[0] * ox + m[1] * oy + m[2] * oz + m[3]
+            wy = m[4] * ox + m[5] * oy + m[6] * oz + m[7]
+            d2 = (wx - x) ** 2 + (wy - y) ** 2
+            if d2 <= r2:
+                hits.append((d2, at, sym))
+        if hits:
+            by_at = {it.at: it for it in sc.blocks[bi].items}
+            out += [(math.sqrt(d2), sym, compose(m, by_at[at].matrix())) for d2, at, sym in hits]
+    out.sort(key=lambda h: h[0])
+    return out
+
+
+def objects_toml(objects: list[NewObject], header: str = "", erase: list[EraseArea] = (),
+                 own: list[OwnEdit] = ()) -> str:
     lines = [f"# {ln}" if ln else "#" for ln in header.splitlines()] + ([""] if header else [])
     for a in erase:
         lines += ["[[erase]]", f"x = {a.x!r}", f"y = {a.y!r}", f"radius = {a.radius!r}"]
@@ -5004,6 +5124,8 @@ def objects_toml(objects: list[NewObject], header: str = "", erase: list[EraseAr
         lines += ["[[object]]", f'type = "{o.type}"', f"x = {o.x!r}", f"y = {o.y!r}", f"turn = {o.turn!r}",
                   f"size = {o.size!r}"] + ([] if o.solid else ["solid = false"])
         lines += ([f"stretch = {o.stretch!r}"] if o.stretch != 1.0 else []) + ([f"lift = {o.lift!r}"] if o.lift else []) + [""]
+    for e in own:
+        lines += _own_lines(e)
     return "\n".join(lines) + "\n" if lines else "\n"
 
 

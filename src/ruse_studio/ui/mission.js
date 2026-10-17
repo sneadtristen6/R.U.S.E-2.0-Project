@@ -468,6 +468,7 @@
       render();
     },
     forget() { MS.pack = null; MS.data = null; MS.draft = null; },
+    busy() { return Boolean(MS.busy); },  // the mission being saved (app.js unsavedReasons)
     render,
     data: () => MS.data,
     draft: () => MS.draft,
