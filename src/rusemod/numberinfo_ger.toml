@@ -916,3 +916,128 @@ does = "1: Die Karte ist im Listenmenü, sodass Spieler und Computer sie spielen
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "Platz im Listenmenü"
 does = "Wo die Karte im Listenmenü steht: niedriger kommt zuerst."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Startgeld"
+does = "Das Geld, mit dem jeder Spieler eine Schlacht beginnt, in $. 200 im Spiel: zehn Shermans zu 20 $."
+[TempsGenAutoDevises]
+what = "Sekunden zwischen automatischen Zahlungen"
+does = "Wie oft, in Sekunden, die Gebäude, die von selbst Geld bringen, auszahlen (das automatische Geld des Spiels); das Zusatzeinkommen der Computerspieler (Schummeln) wird im selben Takt gezahlt. 4 im Spiel."
+[QuantiteGenAutoDevises]
+what = "Automatische Zahlung"
+does = "Wie viel eine automatische Zahlung ist, in $. 1 im Spiel: bei einer Zahlung alle 4 Sekunden 15 $ pro Minute."
+[StockDeviseSupplementaireFacile]
+what = "Zusätzlicher Depotnachschub auf Leicht (Kampagne)"
+does = "In der Kampagne auf Leicht der zusätzliche Nachschub, den die Skripte der Missionen den Depots geben (sie fordern ihn beim Spiel an). 72 im Spiel. Schlachten nutzen ihn nicht."
+[QteDeviseParCamion]
+what = "Geld pro LKW-Ladung"
+does = "Was ein Versorgungs-LKW aus einem Depot bringt, in $. Die üblichen Modi des Spiels 3, der Atommodus 6. Das restliche Geld eines Depots ist die Zahl seiner restlichen Ladungen mal diesen Wert."
+[NbCamionParConvoi]
+what = "LKW pro Konvoi"
+does = "Wie viele LKW ein Depot zusammen in einem Konvoi verlassen. 3 im Spiel: Ein Konvoi bringt in den üblichen Modi 3 x 3 $ = 9 $."
+[TempsENtreDeuxConvois]
+what = "Sekunden zwischen Konvois"
+does = "Wie lange, in Sekunden, ein Depot zwischen zwei Konvois wartet. 30 im Spiel: etwa 18 $ pro Minute aus einem Depot in den üblichen Modi, ohne die Fahrt selbst."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Abstand zwischen den LKW eines Konvois (min.)"
+does = "Die kürzeste Zeit, in Sekunden, zwischen der Abfahrt zweier LKW desselben Konvois. 1,5 im Spiel."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Abstand zwischen den LKW eines Konvois (max.)"
+does = "Die längste Zeit, in Sekunden, zwischen der Abfahrt zweier LKW desselben Konvois. 1,5 im Spiel."
+[RatioForDepotNearlyDepleted]
+what = "Depot fast leer bei"
+does = "Ein Depot gilt als fast leer, wenn seine restlichen Ladungen höchstens dieser Anteil seiner Anfangsladungen sind (die Computerspieler suchen dann ein anderes). 0,25 (25 %) im Spiel."
+[MinProductionTime]
+what = "Kürzeste Bauzeit"
+does = "Keine Einheit wird schneller gebaut als in dieser Zeit, in Sekunden, egal wie viele Fabriken ihrer Art sie bauen. 1 im Spiel."
+[MaximumBatimentProduction]
+what = "Gleichzeitig gebaute Gebäude (max.)"
+does = "Wie viele Gebäude die Computerspieler gleichzeitig bauen. 2 im Spiel."
+[MaxProductionQueueSize]
+what = "Längste Bauschlange"
+does = "Die meisten Einheiten, die ein Computerspieler in seine Bauschlange stellt. 30 im Spiel."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Gebäude und Forschung gleichzeitig"
+does = "Wie viele Gebäude und Forschungen ein Computerspieler gleichzeitig laufen hat. 2 im Spiel."
+[VirtualFactoryQueueMaximumSlot]
+what = "Plätze in der Schlange einer Fabrik"
+does = "Wie viele Plätze die Schlange einer Fabrik hat. 2 im Spiel."
+[NbAvionsParAeroport]
+what = "Flugzeuge pro Flugfeld"
+does = "Wie viele Flugzeuge ein Spieler für jedes eigene Flugfeld haben darf: Erreicht ihre Zahl diesen Wert mal die Flugfelder, können keine weiteren gebaut werden. 8 im Spiel."
+[NbMaxCardsInPool]
+what = "Täuschungskarten auf der Hand (max.)"
+does = "Die meisten Täuschungskarten, die eine Seite halten kann. 99 im Spiel: praktisch keine Grenze."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Täuschungskarten zu Beginn (1 Spieler pro Seite)"
+does = "Wie viele Täuschungskarten eine Seite zu Beginn hat, wenn sie 1 Spieler hat. Die üblichen Modi des Spiels 2, der Atommodus 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Täuschungskarten zu Beginn (2 Spieler pro Seite)"
+does = "Wie viele Täuschungskarten eine Seite zu Beginn hat, wenn sie 2 Spieler hat. Die üblichen Modi des Spiels 2, der Atommodus 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Täuschungskarten zu Beginn (3 Spieler pro Seite)"
+does = "Wie viele Täuschungskarten eine Seite zu Beginn hat, wenn sie 3 Spieler hat. Die üblichen Modi des Spiels 2, der Atommodus 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Täuschungskarten zu Beginn (4 Spieler pro Seite)"
+does = "Wie viele Täuschungskarten eine Seite zu Beginn hat, wenn sie 4 Spieler hat. Die üblichen Modi des Spiels 2, der Atommodus 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Wann neue Täuschungskarten kommen (1 Spieler pro Seite)"
+does = "Die Zeitpunkte der Schlacht, in Sekunden, zu denen eine Seite mit 1 Spieler eine neue Täuschungskarte zur Wahl bekommt. Die üblichen Modi des Spiels 105, 210, 315 (alle 1 Minute 45); der Atommodus 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Wann neue Täuschungskarten kommen (2 Spieler pro Seite)"
+does = "Die Zeitpunkte der Schlacht, in Sekunden, zu denen eine Seite mit 2 Spielern eine neue Täuschungskarte zur Wahl bekommt. Die üblichen Modi des Spiels 105, 210, 315; der Atommodus 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Wann neue Täuschungskarten kommen (3 Spieler pro Seite)"
+does = "Die Zeitpunkte der Schlacht, in Sekunden, zu denen eine Seite mit 3 Spielern eine neue Täuschungskarte zur Wahl bekommt. Die üblichen Modi des Spiels 105, 210, 315; der Atommodus 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Wann neue Täuschungskarten kommen (4 Spieler pro Seite)"
+does = "Die Zeitpunkte der Schlacht, in Sekunden, zu denen eine Seite mit 4 Spielern eine neue Täuschungskarte zur Wahl bekommt. Die üblichen Modi des Spiels 105, 210, 315; der Atommodus 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Armeewert, der einen Angriff erzwingt"
+does = "Die Computerspieler messen den Wert einer Armee vor einem Angriff an diesem Wert: Das Spiel prüft die Kräfte, wenn der Wert dort darunter liegt. 600 im Spiel."
+[MinArmyValueToUseManipulationCard]
+what = "Mindestarmeewert für eine Manipulationslist"
+does = "Ein Computerspieler spielt eine Manipulationslist nur, wenn seine Armee mindestens so viel wert ist. 120 im Spiel."
+[MaxWaitingRequest]
+what = "Wartende Aufträge (max.)"
+does = "Die meisten Bauaufträge, die ein Computerspieler warten lässt. 30 im Spiel."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Wartende Aufträge vor einer neuen Fabrik"
+does = "Hat ein Computerspieler so viele wartende Bauaufträge, baut er eine weitere Fabrik, statt noch mehr in die Schlange zu stellen. 8 im Spiel."
+[MaxTimeWaitingRequest]
+what = "Längste Wartezeit eines Auftrags"
+does = "Wie lange, in Sekunden, ein Bauauftrag eines Computerspielers warten darf, bevor er abgebrochen wird (wenn Wartende Aufträge abbrechen an ist). 60 im Spiel."
+[CheckAndCancelWaitingRequest]
+what = "Wartende Aufträge abbrechen"
+does = "1: Ein Computerspieler bricht Bauaufträge ab, die länger als die längste Wartezeit gewartet haben. 1 im Spiel."
+[BP_DepotAddedValue]
+what = "Wert eines zu schützenden Depots"
+does = "Wie viel ein Versorgungsdepot einem Computerspieler wert ist, wenn er entscheidet, was er schützt. 50 im Spiel, gegenüber 150 für sein Hauptquartier."
+[BP_HqValue]
+what = "Wert des zu schützenden Hauptquartiers"
+does = "Wie viel sein Hauptquartier einem Computerspieler wert ist, wenn er entscheidet, was er schützt. 150 im Spiel, gegenüber 50 für ein Depot."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Attrappen in einer Scheinoffensive (min.)"
+does = "Die wenigsten Attrappen, die die Scheinoffensive eines Computerspielers schickt. 4 im Spiel."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Attrappen in einer Scheinoffensive (max.)"
+does = "Die meisten Attrappen, die die Scheinoffensive eines Computerspielers schickt. 5 im Spiel."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Attrappen-Flugzeuge in einem Scheinluftangriff (min.)"
+does = "Die wenigsten Attrappen-Flugzeuge, die der Scheinluftangriff eines Computerspielers schickt. 4 im Spiel."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Attrappen-Flugzeuge in einem Scheinluftangriff (max.)"
+does = "Die meisten Attrappen-Flugzeuge, die der Scheinluftangriff eines Computerspielers schickt. 5 im Spiel."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Attrappen-Panzer in einem Schein-Panzerangriff (min.)"
+does = "Die wenigsten Attrappen-Panzer, die der Schein-Panzerangriff eines Computerspielers schickt. 4 im Spiel."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Attrappen-Panzer in einem Schein-Panzerangriff (max.)"
+does = "Die meisten Attrappen-Panzer, die der Schein-Panzerangriff eines Computerspielers schickt. 5 im Spiel."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Wartezeit bei Attrappengebäuden (min.)"
+does = "Die kürzeste Zeit, in Sekunden, die ein Computerspieler zwischen zwei Attrappengebäuden wartet, die er mit der List der Attrappengebäude aufstellt. 5 im Spiel."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Wartezeit bei Attrappengebäuden (max.)"
+does = "Die längste Zeit, in Sekunden, die ein Computerspieler zwischen zwei Attrappengebäuden wartet, die er mit der List der Attrappengebäude aufstellt. 10 im Spiel."

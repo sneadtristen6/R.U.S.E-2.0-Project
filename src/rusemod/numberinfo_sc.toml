@@ -916,3 +916,128 @@ does = "1：该卡在计谋菜单中，玩家和电脑都能使用。"
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "计谋菜单位置"
 does = "该卡在计谋菜单中的位置：越小越靠前。"
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "初始资金"
+does = "每个玩家开始一场战斗时的资金（$）。游戏中为 200：相当于十辆 20 $ 的谢尔曼。"
+[TempsGenAutoDevises]
+what = "自动付款的间隔（秒）"
+does = "能自行产生资金的建筑每隔多少秒付款一次（游戏的自动收入）；电脑玩家的额外收入（作弊）也按同样的节奏发放。游戏中为 4。"
+[QuantiteGenAutoDevises]
+what = "自动付款额"
+does = "一次自动付款的金额（$）。游戏中为 1：每 4 秒一次，每分钟 15 $。"
+[StockDeviseSupplementaireFacile]
+what = "简单难度下补给站的额外补给（战役）"
+does = "在战役的简单难度下，任务脚本为补给站增加的额外补给（向游戏申请）。游戏中为 72。对战不使用。"
+[QteDeviseParCamion]
+what = "每车货物的资金"
+does = "一辆补给卡车从补给站运回的资金（$）。游戏普通模式为 3，核战争模式为 6。补给站剩余的资金等于剩余车次乘以此值。"
+[NbCamionParConvoi]
+what = "每个车队的卡车数"
+does = "一个车队中一起离开补给站的卡车数。游戏中为 3：普通模式下一个车队运回 3 x 3 $ = 9 $。"
+[TempsENtreDeuxConvois]
+what = "车队之间的间隔（秒）"
+does = "补给站在两个车队之间等待的秒数。游戏中为 30：普通模式下一个补给站每分钟约 18 $（不算路程）。"
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "车队内卡车的间隔（最少）"
+does = "同一车队两辆卡车出发之间的最短时间（秒）。游戏中为 1.5。"
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "车队内卡车的间隔（最多）"
+does = "同一车队两辆卡车出发之间的最长时间（秒）。游戏中为 1.5。"
+[RatioForDepotNearlyDepleted]
+what = "补给站将空的比例"
+does = "当补给站剩余车次不超过初始车次的这个比例时，它被视为将空（电脑玩家随后会另找一个）。游戏中为 0.25（25%）。"
+[MinProductionTime]
+what = "最短生产时间"
+does = "无论有多少同类工厂在建造，任何单位的建造时间都不会短于这个秒数。游戏中为 1。"
+[MaximumBatimentProduction]
+what = "同时建造的建筑（最多）"
+does = "电脑玩家同时建造的建筑数量。游戏中为 2。"
+[MaxProductionQueueSize]
+what = "最长生产队列"
+does = "电脑玩家放入生产队列的最多单位数。游戏中为 30。"
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "同时进行的建筑和研究"
+does = "电脑玩家同时进行的建筑和研究数量。游戏中为 2。"
+[VirtualFactoryQueueMaximumSlot]
+what = "工厂队列的位置"
+does = "工厂队列有多少个位置。游戏中为 2。"
+[NbAvionsParAeroport]
+what = "每个机场的飞机数"
+does = "玩家每拥有一个机场可以拥有多少架飞机：飞机数达到此值乘以机场数后，就不能再建造飞机。游戏中为 8。"
+[NbMaxCardsInPool]
+what = "手中计谋卡（最多）"
+does = "一方最多能持有的计谋卡数。游戏中为 99：实际上没有限制。"
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "开局计谋卡（每方 1 名玩家）"
+does = "一方有 1 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "开局计谋卡（每方 2 名玩家）"
+does = "一方有 2 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "开局计谋卡（每方 3 名玩家）"
+does = "一方有 3 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "开局计谋卡（每方 4 名玩家）"
+does = "一方有 4 名玩家时开局拥有的计谋卡数。游戏普通模式为 2，核战争模式为 4。"
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "新计谋卡到来的时间（每方 1 名玩家）"
+does = "有 1 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315（每 1 分 45 秒）；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "新计谋卡到来的时间（每方 2 名玩家）"
+does = "有 2 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "新计谋卡到来的时间（每方 3 名玩家）"
+does = "有 3 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "新计谋卡到来的时间（每方 4 名玩家）"
+does = "有 4 名玩家的一方获得一张可选新计谋卡的战斗时间（秒）。游戏普通模式为 105、210、315；核战争模式为 80、160、240。"
+[ArmyValueForceLaunchAttack]
+what = "迫使进攻的军队价值"
+does = "电脑玩家在进攻前会把军队价值与此值比较：当那里的价值低于它时，游戏会检查兵力。游戏中为 600。"
+[MinArmyValueToUseManipulationCard]
+what = "使用操控类计谋的最低军队价值"
+does = "只有当电脑玩家的军队价值至少达到此值时，它才会使用操控类计谋。游戏中为 120。"
+[MaxWaitingRequest]
+what = "等待中的指令（最多）"
+does = "电脑玩家保持等待的最多生产指令数。游戏中为 30。"
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "建造新工厂前的等待指令数"
+does = "当电脑玩家有这么多生产指令在等待时，它会再建一座工厂，而不是继续排队。游戏中为 8。"
+[MaxTimeWaitingRequest]
+what = "指令的最长等待"
+does = "电脑玩家的生产指令在被取消前可以等待的秒数（当“取消等待中的指令”开启时）。游戏中为 60。"
+[CheckAndCancelWaitingRequest]
+what = "取消等待中的指令"
+does = "1：电脑玩家会取消等待时间超过最长等待的生产指令。游戏中为 1。"
+[BP_DepotAddedValue]
+what = "要保护的补给站价值"
+does = "电脑玩家决定保护什么时，一个补给站对它的价值。游戏中为 50，而指挥部为 150。"
+[BP_HqValue]
+what = "要保护的指挥部价值"
+does = "电脑玩家决定保护什么时，它的指挥部对它的价值。游戏中为 150，而补给站为 50。"
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "诱饵攻势中的诱饵单位（最少）"
+does = "电脑玩家的诱饵攻势派出的诱饵单位最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "诱饵攻势中的诱饵单位（最多）"
+does = "电脑玩家的诱饵攻势派出的诱饵单位最多数量。游戏中为 5。"
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "诱饵空袭中的诱饵飞机（最少）"
+does = "电脑玩家的诱饵空袭派出的诱饵飞机最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "诱饵空袭中的诱饵飞机（最多）"
+does = "电脑玩家的诱饵空袭派出的诱饵飞机最多数量。游戏中为 5。"
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "诱饵装甲进攻中的诱饵坦克（最少）"
+does = "电脑玩家的诱饵装甲进攻派出的诱饵坦克最少数量。游戏中为 4。"
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "诱饵装甲进攻中的诱饵坦克（最多）"
+does = "电脑玩家的诱饵装甲进攻派出的诱饵坦克最多数量。游戏中为 5。"
+[ConstructionDelayForFakeBuildingsMin]
+what = "诱饵建筑的间隔（最少）"
+does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等待的最短秒数。游戏中为 5。"
+[ConstructionDelayForFakeBuildingsMax]
+what = "诱饵建筑的间隔（最多）"
+does = "电脑玩家用诱饵建筑计谋建造诱饵建筑时，两座之间等待的最长秒数。游戏中为 10。"

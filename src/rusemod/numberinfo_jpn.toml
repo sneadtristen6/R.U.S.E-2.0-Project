@@ -916,3 +916,128 @@ does = "1：カードが計略メニューにあり、プレイヤーもコン�
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "計略メニューの位置"
 does = "計略メニューでのカードの位置：小さいほど先に並びます。"
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "初期資金"
+does = "各プレイヤーが対戦を始めるときの資金（$）。ゲームでは 200：20 $ のシャーマン10両分。"
+[TempsGenAutoDevises]
+what = "自動支払いの間隔（秒）"
+does = "自分でお金を生む建物が支払う間隔（秒、ゲームの自動収入）。コンピュータープレイヤーの追加収入（チート）も同じ間隔で払われます。ゲームでは 4。"
+[QuantiteGenAutoDevises]
+what = "自動支払い額"
+does = "1回の自動支払いの額（$）。ゲームでは 1：4秒ごとの支払いで、1分に 15 $。"
+[StockDeviseSupplementaireFacile]
+what = "イージーでのデポの追加補給（キャンペーン）"
+does = "キャンペーンのイージーで、ミッションのスクリプトがデポに加える追加補給（ゲームに要求します）。ゲームでは 72。対戦では使われません。"
+[QteDeviseParCamion]
+what = "トラック1台分の資金"
+does = "補給トラック1台がデポから運ぶ資金（$）。ゲームの通常のモードでは 3、戦略兵器モードでは 6。デポの残り資金は、残りの積み荷の数×この値です。"
+[NbCamionParConvoi]
+what = "1つの輸送隊のトラック数"
+does = "1つの輸送隊としてデポを一緒に出るトラックの数。ゲームでは 3：通常のモードで輸送隊1つが 3 x 3 $ = 9 $ を運びます。"
+[TempsENtreDeuxConvois]
+what = "輸送隊の間隔（秒）"
+does = "デポが次の輸送隊を出すまで待つ秒数。ゲームでは 30：通常のモードで1つのデポから1分に約 18 $（移動時間は別）。"
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "輸送隊内のトラックの間隔（最小）"
+does = "同じ輸送隊の2台のトラックが出発する最短の間隔（秒）。ゲームでは 1.5。"
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "輸送隊内のトラックの間隔（最大）"
+does = "同じ輸送隊の2台のトラックが出発する最長の間隔（秒）。ゲームでは 1.5。"
+[RatioForDepotNearlyDepleted]
+what = "デポがほぼ空になる残量"
+does = "残りの積み荷が最初の数のこの割合以下になると、デポはほぼ空とみなされます（コンピュータープレイヤーは別のデポを探します）。ゲームでは 0.25（25%）。"
+[MinProductionTime]
+what = "最短の生産時間"
+does = "同じ種類の工場がいくつ作っても、どのユニットもこの秒数より早くは完成しません。ゲームでは 1。"
+[MaximumBatimentProduction]
+what = "同時に建てる建物の数（最大）"
+does = "コンピュータープレイヤーが同時に建てる建物の数。ゲームでは 2。"
+[MaxProductionQueueSize]
+what = "最長の生産キュー"
+does = "コンピュータープレイヤーが生産キューに入れるユニットの最大数。ゲームでは 30。"
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "同時に進める建設と研究"
+does = "コンピュータープレイヤーが同時に進める建設と研究の数。ゲームでは 2。"
+[VirtualFactoryQueueMaximumSlot]
+what = "工場のキューの枠"
+does = "工場のキューにある枠の数。ゲームでは 2。"
+[NbAvionsParAeroport]
+what = "飛行場ごとの航空機数"
+does = "持っている飛行場1つにつき持てる航空機の数。航空機の数がこの値×飛行場の数に達すると、それ以上は作れません。ゲームでは 8。"
+[NbMaxCardsInPool]
+what = "手持ちの計略カード（最大）"
+does = "1つの陣営が持てる計略カードの最大数。ゲームでは 99：実質的に制限なし。"
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "開始時の計略カード（1陣営1人）"
+does = "陣営のプレイヤーが1人のとき、開始時に持つ計略カードの数。ゲームの通常のモードでは 2、戦略兵器モードでは 4。"
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "開始時の計略カード（1陣営2人）"
+does = "陣営のプレイヤーが2人のとき、開始時に持つ計略カードの数。ゲームの通常のモードでは 2、戦略兵器モードでは 4。"
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "開始時の計略カード（1陣営3人）"
+does = "陣営のプレイヤーが3人のとき、開始時に持つ計略カードの数。ゲームの通常のモードでは 2、戦略兵器モードでは 4。"
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "開始時の計略カード（1陣営4人）"
+does = "陣営のプレイヤーが4人のとき、開始時に持つ計略カードの数。ゲームの通常のモードでは 2、戦略兵器モードでは 4。"
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "新しい計略カードが来る時（1陣営1人）"
+does = "プレイヤー1人の陣営が、選べる新しい計略カードを受け取る対戦中の時刻（秒）。ゲームの通常のモードでは 105、210、315（1分45秒ごと）、戦略兵器モードでは 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "新しい計略カードが来る時（1陣営2人）"
+does = "プレイヤー2人の陣営が、選べる新しい計略カードを受け取る対戦中の時刻（秒）。ゲームの通常のモードでは 105、210、315、戦略兵器モードでは 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "新しい計略カードが来る時（1陣営3人）"
+does = "プレイヤー3人の陣営が、選べる新しい計略カードを受け取る対戦中の時刻（秒）。ゲームの通常のモードでは 105、210、315、戦略兵器モードでは 80、160、240。"
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "新しい計略カードが来る時（1陣営4人）"
+does = "プレイヤー4人の陣営が、選べる新しい計略カードを受け取る対戦中の時刻（秒）。ゲームの通常のモードでは 105、210、315、戦略兵器モードでは 80、160、240。"
+[ArmyValueForceLaunchAttack]
+what = "攻撃を強いる軍の価値"
+does = "コンピュータープレイヤーは攻撃の前に軍の価値をこの値と比べます。その場の価値がこれより低いと、ゲームは戦力を確認します。ゲームでは 600。"
+[MinArmyValueToUseManipulationCard]
+what = "操作系の計略に必要な軍の価値"
+does = "コンピュータープレイヤーは、軍の価値が少なくともこの値あるときだけ操作系の計略を使います。ゲームでは 120。"
+[MaxWaitingRequest]
+what = "待機中の指示（最大）"
+does = "コンピュータープレイヤーが待たせておく生産指示の最大数。ゲームでは 30。"
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "新しい工場を建てるまでの待機中の指示"
+does = "待機中の生産指示がこの数になると、コンピュータープレイヤーはキューに足す代わりに別の工場を建てます。ゲームでは 8。"
+[MaxTimeWaitingRequest]
+what = "指示の最長の待ち時間"
+does = "コンピュータープレイヤーの生産指示が取り消されるまで待てる秒数（「待機中の指示を取り消す」がオンのとき）。ゲームでは 60。"
+[CheckAndCancelWaitingRequest]
+what = "待機中の指示を取り消す"
+does = "1：コンピュータープレイヤーは、最長の待ち時間より長く待った生産指示を取り消します。ゲームでは 1。"
+[BP_DepotAddedValue]
+what = "守るデポの価値"
+does = "何を守るか決めるとき、コンピュータープレイヤーにとって補給デポがどれだけの価値か。ゲームでは 50（司令部は 150）。"
+[BP_HqValue]
+what = "守る司令部の価値"
+does = "何を守るか決めるとき、コンピュータープレイヤーにとって自分の司令部がどれだけの価値か。ゲームでは 150（デポは 50）。"
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "囮の総攻撃の囮部隊（最小）"
+does = "コンピュータープレイヤーの囮の総攻撃が送る囮部隊の最小数。ゲームでは 4。"
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "囮の総攻撃の囮部隊（最大）"
+does = "コンピュータープレイヤーの囮の総攻撃が送る囮部隊の最大数。ゲームでは 5。"
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "囮の空襲の囮の航空機（最小）"
+does = "コンピュータープレイヤーの囮の空襲が送る囮の航空機の最小数。ゲームでは 4。"
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "囮の空襲の囮の航空機（最大）"
+does = "コンピュータープレイヤーの囮の空襲が送る囮の航空機の最大数。ゲームでは 5。"
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "囮の戦車攻撃の囮の戦車（最小）"
+does = "コンピュータープレイヤーの囮の戦車攻撃が送る囮の戦車の最小数。ゲームでは 4。"
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "囮の戦車攻撃の囮の戦車（最大）"
+does = "コンピュータープレイヤーの囮の戦車攻撃が送る囮の戦車の最大数。ゲームでは 5。"
+[ConstructionDelayForFakeBuildingsMin]
+what = "囮の建物の間隔（最小）"
+does = "コンピュータープレイヤーが囮の建物の計略で囮の建物を建てるとき、次の建物までに待つ最短の秒数。ゲームでは 5。"
+[ConstructionDelayForFakeBuildingsMax]
+what = "囮の建物の間隔（最大）"
+does = "コンピュータープレイヤーが囮の建物の計略で囮の建物を建てるとき、次の建物までに待つ最長の秒数。ゲームでは 10。"

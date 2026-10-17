@@ -916,3 +916,128 @@ does = "1 : la carte est dans le menu des ruses, donc les joueurs et l'ordinateu
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "Place dans le menu des ruses"
 does = "Où la carte se place dans le menu des ruses : plus bas vient en premier."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Argent de départ"
+does = "L'argent avec lequel chaque joueur commence une bataille, en $. 200 dans le jeu : dix Sherman à 20 $."
+[TempsGenAutoDevises]
+what = "Secondes entre les paiements automatiques"
+does = "Toutes les combien de secondes les bâtiments qui rapportent de l'argent tout seuls paient (l'argent automatique du jeu) ; le revenu en plus des joueurs ordinateur (triche) est payé au même rythme. 4 dans le jeu."
+[QuantiteGenAutoDevises]
+what = "Paiement automatique"
+does = "Le montant d'un paiement automatique, en $. 1 dans le jeu : avec un paiement toutes les 4 secondes, 15 $ par minute."
+[StockDeviseSupplementaireFacile]
+what = "Ravitaillement en plus des dépôts en Facile (campagne)"
+does = "Dans la campagne en Facile, le ravitaillement en plus que les scripts des missions ajoutent aux dépôts (ils le demandent au jeu). 72 dans le jeu. Les batailles ne l'utilisent pas."
+[QteDeviseParCamion]
+what = "Argent par chargement de camion"
+does = "Ce qu'un camion de ravitaillement rapporte d'un dépôt, en $. Modes habituels du jeu 3, mode Nucléaire 6. L'argent qui reste à un dépôt est le nombre de chargements qui lui restent fois cette valeur."
+[NbCamionParConvoi]
+what = "Camions par convoi"
+does = "Combien de camions quittent un dépôt ensemble en un convoi. 3 dans le jeu : un convoi rapporte 3 x 3 $ = 9 $ dans les modes habituels."
+[TempsENtreDeuxConvois]
+what = "Secondes entre deux convois"
+does = "Combien de temps, en secondes, un dépôt attend entre deux convois. 30 dans le jeu : environ 18 $ par minute pour un dépôt dans les modes habituels, sans compter le trajet."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Écart entre les camions d'un convoi (min.)"
+does = "Le temps le plus court, en secondes, entre les départs de deux camions du même convoi. 1,5 dans le jeu."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Écart entre les camions d'un convoi (max.)"
+does = "Le temps le plus long, en secondes, entre les départs de deux camions du même convoi. 1,5 dans le jeu."
+[RatioForDepotNearlyDepleted]
+what = "Dépôt presque vide à"
+does = "Un dépôt compte comme presque vide quand les chargements qui lui restent sont cette part de ceux du départ, ou moins (les joueurs ordinateur en cherchent alors un autre). 0,25 (25 %) dans le jeu."
+[MinProductionTime]
+what = "Temps de production le plus court"
+does = "Aucune unité ne se construit en moins de temps que celui-ci, en secondes, quel que soit le nombre d'usines de son type qui la construisent. 1 dans le jeu."
+[MaximumBatimentProduction]
+what = "Bâtiments en construction en même temps (max.)"
+does = "Combien de bâtiments les joueurs ordinateur construisent en même temps. 2 dans le jeu."
+[MaxProductionQueueSize]
+what = "File de production la plus longue"
+does = "Le plus d'unités qu'un joueur ordinateur met dans sa file de production. 30 dans le jeu."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Bâtiments et recherches en même temps"
+does = "Combien de bâtiments et de recherches un joueur ordinateur a en cours en même temps. 2 dans le jeu."
+[VirtualFactoryQueueMaximumSlot]
+what = "Places dans la file d'une usine"
+does = "Combien de places a la file d'une usine. 2 dans le jeu."
+[NbAvionsParAeroport]
+what = "Avions par aérodrome"
+does = "Combien d'avions un joueur peut avoir pour chaque aérodrome qu'il possède : plus aucun avion ne peut être construit quand leur nombre atteint cette valeur fois les aérodromes. 8 dans le jeu."
+[NbMaxCardsInPool]
+what = "Cartes de ruse en main (max.)"
+does = "Le plus de cartes de ruse qu'un camp peut avoir. 99 dans le jeu : pas de limite en pratique."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Cartes de ruse au départ (1 joueur par camp)"
+does = "Combien de cartes de ruse un camp a au départ quand il a 1 joueur. Modes habituels du jeu 2, mode Nucléaire 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Cartes de ruse au départ (2 joueurs par camp)"
+does = "Combien de cartes de ruse un camp a au départ quand il a 2 joueurs. Modes habituels du jeu 2, mode Nucléaire 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Cartes de ruse au départ (3 joueurs par camp)"
+does = "Combien de cartes de ruse un camp a au départ quand il a 3 joueurs. Modes habituels du jeu 2, mode Nucléaire 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Cartes de ruse au départ (4 joueurs par camp)"
+does = "Combien de cartes de ruse un camp a au départ quand il a 4 joueurs. Modes habituels du jeu 2, mode Nucléaire 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Quand arrivent de nouvelles cartes de ruse (1 joueur par camp)"
+does = "Les moments de la bataille, en secondes, où un camp de 1 joueur reçoit une nouvelle carte de ruse à choisir. Modes habituels du jeu 105, 210, 315 (toutes les 1 min 45) ; mode Nucléaire 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Quand arrivent de nouvelles cartes de ruse (2 joueurs par camp)"
+does = "Les moments de la bataille, en secondes, où un camp de 2 joueurs reçoit une nouvelle carte de ruse à choisir. Modes habituels du jeu 105, 210, 315 ; mode Nucléaire 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Quand arrivent de nouvelles cartes de ruse (3 joueurs par camp)"
+does = "Les moments de la bataille, en secondes, où un camp de 3 joueurs reçoit une nouvelle carte de ruse à choisir. Modes habituels du jeu 105, 210, 315 ; mode Nucléaire 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Quand arrivent de nouvelles cartes de ruse (4 joueurs par camp)"
+does = "Les moments de la bataille, en secondes, où un camp de 4 joueurs reçoit une nouvelle carte de ruse à choisir. Modes habituels du jeu 105, 210, 315 ; mode Nucléaire 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Valeur d'armée qui force une attaque"
+does = "Les joueurs ordinateur comparent la valeur d'une armée à celle-ci avant une attaque : le jeu vérifie les forces quand la valeur sur place est en dessous. 600 dans le jeu."
+[MinArmyValueToUseManipulationCard]
+what = "Valeur d'armée minimale pour une ruse de manipulation"
+does = "Un joueur ordinateur ne joue une ruse de manipulation que si son armée vaut au moins autant. 120 dans le jeu."
+[MaxWaitingRequest]
+what = "Ordres en attente (max.)"
+does = "Le plus d'ordres de production qu'un joueur ordinateur garde en attente. 30 dans le jeu."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Ordres en attente avant une nouvelle usine"
+does = "Quand un joueur ordinateur a autant d'ordres de production en attente, il construit une autre usine au lieu d'en mettre plus en file. 8 dans le jeu."
+[MaxTimeWaitingRequest]
+what = "Attente la plus longue d'un ordre"
+does = "Combien de temps, en secondes, un ordre de production d'un joueur ordinateur peut attendre avant d'être annulé (quand Annuler les ordres en attente est actif). 60 dans le jeu."
+[CheckAndCancelWaitingRequest]
+what = "Annuler les ordres en attente"
+does = "1 : un joueur ordinateur annule les ordres de production qui ont attendu plus longtemps que l'attente la plus longue. 1 dans le jeu."
+[BP_DepotAddedValue]
+what = "Valeur d'un dépôt à protéger"
+does = "Ce que vaut un dépôt de ravitaillement pour un joueur ordinateur quand il décide quoi protéger. 50 dans le jeu, contre 150 pour son QG."
+[BP_HqValue]
+what = "Valeur du QG à protéger"
+does = "Ce que vaut son QG pour un joueur ordinateur quand il décide quoi protéger. 150 dans le jeu, contre 50 pour un dépôt."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Unités leurres dans une offensive leurre (min.)"
+does = "Le moins d'unités leurres qu'envoie l'offensive leurre d'un joueur ordinateur. 4 dans le jeu."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Unités leurres dans une offensive leurre (max.)"
+does = "Le plus d'unités leurres qu'envoie l'offensive leurre d'un joueur ordinateur. 5 dans le jeu."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Avions leurres dans une attaque aérienne leurre (min.)"
+does = "Le moins d'avions leurres qu'envoie l'attaque aérienne leurre d'un joueur ordinateur. 4 dans le jeu."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Avions leurres dans une attaque aérienne leurre (max.)"
+does = "Le plus d'avions leurres qu'envoie l'attaque aérienne leurre d'un joueur ordinateur. 5 dans le jeu."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Chars leurres dans une attaque blindée leurre (min.)"
+does = "Le moins de chars leurres qu'envoie l'attaque blindée leurre d'un joueur ordinateur. 4 dans le jeu."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Chars leurres dans une attaque blindée leurre (max.)"
+does = "Le plus de chars leurres qu'envoie l'attaque blindée leurre d'un joueur ordinateur. 5 dans le jeu."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Délai des bâtiments leurres (min.)"
+does = "Le temps le plus court, en secondes, qu'un joueur ordinateur attend entre deux bâtiments leurres qu'il pose avec la ruse des bâtiments leurres. 5 dans le jeu."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Délai des bâtiments leurres (max.)"
+does = "Le temps le plus long, en secondes, qu'un joueur ordinateur attend entre deux bâtiments leurres qu'il pose avec la ruse des bâtiments leurres. 10 dans le jeu."

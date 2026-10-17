@@ -1,5 +1,5 @@
 """The economy (rusemod.economy, the Studio's Economy tab): values the game has twice (its usual game modes and the
-Nuclear mode), changed in both from one value, on a made-up game."""
+Nuclear mode), changed in both from one value, or in one mode (shown apart where the two differ), on a made-up game."""
 import struct
 import tempfile
 import tomllib
@@ -76,12 +76,26 @@ class Labels(unittest.TestCase):
             with self.subTest(group=group):
                 self.assertEqual(set(words[f"economy_group_{group}"]), LANGS)
         for key in ("economy_tab", "economy_title", "economy_help", "economy_buildings", "economy_none",
-                    "economy_atomic", "tip_tab_economy", "tip_economy_reset", "economy_depot_money",
+                    "economy_normal", "economy_nuclear", "tip_economy_normal", "tip_economy_nuclear",
+                    "tip_tab_economy", "tip_economy_reset", "tip_economy_reset_one", "economy_depot_money",
                     "tip_economy_depot"):
             with self.subTest(key=key):
                 self.assertEqual(set(words[key]), LANGS)
-        self.assertTrue(all("{v}" in text for text in words["economy_atomic"].values()))
         self.assertTrue(all("{trucks}" in text and "{money}" in text for text in words["economy_depot_money"].values()))
+
+    def test_every_value_is_explained_in_every_language(self):
+        """The number guide (rusemod/numberinfo.toml) says what each economy value does, in all ten languages: the
+        Economy tab writes it under the value's name (as the AI tab does)."""
+        from rusemod import numberinfo
+        english = numberinfo.guide("us")
+        for lang in LANGS:
+            guide = numberinfo.guide(lang)
+            for prop in economy.PROPS:
+                with self.subTest(lang=lang, prop=prop):
+                    self.assertIn(prop, guide)
+                    self.assertTrue(guide[prop]["what"] and guide[prop]["does"])
+                    if lang != "us":  # its own words, not the English fallen back to
+                        self.assertNotEqual(guide[prop]["does"], english[prop]["does"])
 
     def test_the_tab_is_on_the_page(self):
         html = (ROOT / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
@@ -137,6 +151,10 @@ class Tab(unittest.TestCase):
         self.assertEqual((rows["QteDeviseParCamion"]["game"], rows["QteDeviseParCamion"]["atomic"]), (3, 6))
         cards = rows["PaliersTempsToChooseNewCardForAllianceTaille_1"]
         self.assertEqual((cards["list"], cards["game"], cards["atomic"]), (True, [105, 210, 315], [80, 160, 240]))
+        # Normal and Nuclear apart where the game has them apart; one value for both elsewhere
+        self.assertEqual({p for p, r in rows.items() if r["split"]},
+                         {"QteDeviseParCamion", "PaliersTempsToChooseNewCardForAllianceTaille_1"})
+        self.assertEqual((money["split"], money["atomic_value"]), (False, None))
         self.assertEqual(rows["CheckAndCancelWaitingRequest"]["type"], "bool")
         self.assertEqual(self.rows("base")["QteDeviseInitiale"]["label"], "QteDeviseInitiale")  # the code names
 
@@ -169,6 +187,39 @@ class Tab(unittest.TestCase):
                 self.assertEqual((o.get(0).scalar(), o.get(1).scalar(), o.get(2).scalar()), (813, per_truck, 0))
                 self.assertEqual([round(x) for x in floats(o.get(3))], [60, 120, 180])
                 self.assertEqual(o.get(4).scalar(), 30)  # untouched
+
+    def test_one_mode_at_a_time(self):
+        """The owner, 2026-10-17: "separate normal and nuclear for sure". A value changed for the Nuclear mode only
+        (or the usual modes only) goes to that copy alone, and the tab shows the two apart from then on."""
+        self.api.new_mod("Rich")
+        folder = self.home / "mods" / "rich"
+        self.assertEqual(self.api.economy_edit("QteDeviseParCamion", 9, "atomic")["value"], 9)
+        self.api.economy_edit("QteDeviseInitiale", 300, "atomic")  # the same in both in the game: apart now
+        self.api.economy_edit("PaliersTempsToChooseNewCardForAllianceTaille_1", [100, 200, 300], "normal")
+        rows = self.rows()
+        per_truck, money = rows["QteDeviseParCamion"], rows["QteDeviseInitiale"]
+        self.assertEqual((per_truck["split"], per_truck["value"], per_truck["atomic_value"]), (True, None, 9))
+        self.assertEqual((money["split"], money["value"], money["atomic_value"]), (True, None, 300))
+        cards = rows["PaliersTempsToChooseNewCardForAllianceTaille_1"]
+        self.assertEqual((cards["value"], cards["atomic_value"]), ([100, 200, 300], None))
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        for name, start, per_truck_, cards_ in (("gdconstanteoriginal", 200, 3, [100, 200, 300]),
+                                                ("gdconstanteatomic", 300, 9, [80, 160, 240])):
+            with self.subTest(copy=name):
+                o = Ndf(new.read(new.find(f"{name}.cpp.gladndfbin"))).objects[0]
+                self.assertEqual((o.get(0).scalar(), o.get(1).scalar()), (start, per_truck_))
+                self.assertEqual([round(x) for x in floats(o.get(3))], cards_)
+        self.api.economy_reset("QteDeviseInitiale", "atomic")  # one mode's change out: the same in both again
+        self.assertEqual((self.rows()["QteDeviseInitiale"]["split"], self.rows()["QteDeviseInitiale"]["value"]),
+                         (False, None))
+        self.assertEqual(self.rows()["QteDeviseParCamion"]["atomic_value"], 9)  # the other values keep theirs
+        with self.assertRaisesRegex(StudioError, "isn't a game mode"):
+            self.api.economy_edit("QteDeviseInitiale", 300, "1945")
+        with self.assertRaisesRegex(StudioError, "isn't a game mode"):
+            self.api.economy_reset("QteDeviseInitiale", "1945")
 
     def test_back_to_the_game_s_value(self):
         self.api.new_mod("Rich")

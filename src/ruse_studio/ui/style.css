@@ -516,6 +516,13 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .typed-number { width: 4.6em; margin-left: 6px; padding: 1px 4px; background: var(--panel-hi); border: 1px solid var(--line);
                 border-radius: 6px; font-size: 12px; }
 /* the Economy tab's Depots on the maps (app.js renderEconomyDepots): all maps or one, then how much */
+/* the Economy tab: what each value does under its name; Normal and Nuclear boxes apart where the game has them apart */
+#economy-view .group th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; max-width: 46em; }
+#economy-view .boxes { align-items: center; }
+.economy-mode + .economy-mode { margin-top: 6px; }
+.economy-mode .mode-name { display: inline-block; min-width: 5.5em; color: var(--muted); }
+.economy-atomic .mode-name { color: var(--accent); }
 .economy-depots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .economy-depots h3 { margin: 0 0 4px; font-size: 13px; }
 .economy-depots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0; }

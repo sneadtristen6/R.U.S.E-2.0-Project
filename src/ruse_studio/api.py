@@ -5540,8 +5540,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def economy(self, lang: str = schema.BASE) -> dict:
         """The economy's values (rusemod.economy.GROUPS) as the Economy tab shows them: per group, each value's name
-        in `lang`, the game's value for its usual modes, the Nuclear mode's when it differs, and the current mod's
-        change (None: no change). `ready` is False when the game index has none of them."""
+        in `lang`, the game's value for its usual modes ("game") and the Nuclear mode's ("atomic", None when the same),
+        and the current mod's change to each ("value", "atomic_value"; None: no change). "split": the two modes are
+        shown and changed apart, when the game's or the mod's values for them differ (the owner, 2026-10-17: "separate
+        normal and nuclear for sure"). `ready` is False when the game index has none of them."""
         found, types = self._economy_copies()
         try:
             edits = self._edits()
@@ -5558,22 +5560,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 game = p["numbers"] if p["list"] else p["numbers"][0]
                 a = copy.get("atomic", {}).get(prop)
                 atomic = (a["numbers"] if a["list"] else a["numbers"][0]) if a else None
-                mine = None
-                if edits is not None:
-                    mine = edits.get(economy.TARGETS["normal"], prop)
-                    if mine is None:
-                        mine = edits.get(economy.TARGETS["atomic"], prop)
+                mine = {mode: edits.get(target, prop) if edits is not None else None
+                        for mode, target in economy.TARGETS.items()}
+                split = "atomic" in found and "normal" in found and (
+                    atomic != game or (mine["normal"] if mine["normal"] is not None else game)
+                    != (mine["atomic"] if mine["atomic"] is not None else atomic))
                 rows.append({"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
                              "type": types.get(prop + "[]" if p["list"] else prop, ""), "game": game,
-                             "atomic": atomic if atomic != game else None, "value": mine})
+                             "atomic": atomic if atomic != game else None, "split": split,
+                             "value": mine["normal"] if split or mine["normal"] is not None else mine["atomic"],
+                             "atomic_value": mine["atomic"] if split else None})
             groups.append({"id": group, "rows": rows})
         return {"ready": bool(found), "groups": groups}
 
-    def economy_edit(self, prop: str, value) -> dict:
+    def economy_edit(self, prop: str, value, mode: str | None = None) -> dict:
         """Change one economy value in the current mod: in both copies of the game's constants, so it holds in every
-        game mode. Saved at once; a copy given its own value back loses its change."""
+        game mode, or in one (`mode`: "normal", the game's usual modes, or "atomic", the Nuclear mode). Saved at once;
+        a copy given its own value back loses its change."""
         if prop not in economy.PROPS:
             raise StudioError(f"{prop} isn't one of the economy's values")
+        if mode is not None and mode not in economy.TARGETS:
+            raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
@@ -5583,8 +5590,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         values = value if isinstance(value, list) else [value]
         if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
             raise StudioError(f"{prop}: numbers only")
+        if mode is not None and mode not in found:  # not a game rule: this game build has no such copy
+            raise StudioError(f"The game index has no {mode} copy of the economy's values.")
         new = {}
-        for mode, o in found.items():  # every copy checked before anything is saved
+        for mode_, o in found.items():  # every copy checked before anything is saved
+            if mode is not None and mode_ != mode:
+                continue
             p = _props(o).get(prop)
             if p is None or not _can_edit(prop, p):
                 raise StudioError(f"{prop} can't be changed here")
@@ -5592,26 +5603,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 raise StudioError(f"{prop}: expected {len(p['numbers'])} numbers" if p["list"] else f"{prop}: one number")
             kind = types.get(prop + "[]" if p["list"] else prop, "")
             got = [_whole(v, kind, prop) for v in values] if kind in INT_RANGES else list(values)
-            new[mode] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
+            new[mode_] = (got if p["list"] else got[0], p["numbers"] if p["list"] else p["numbers"][0])
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            for mode, (value_, game) in new.items():
+            for mode_, (value_, game) in new.items():
                 if value_ == game:
-                    edits.reset(economy.TARGETS[mode], prop)
+                    edits.reset(economy.TARGETS[mode_], prop)
                 else:
-                    edits.set(economy.TARGETS[mode], prop, value_)
-        shown = new.get("normal", next(iter(new.values())))[0]
+                    edits.set(economy.TARGETS[mode_], prop, value_)
+        shown = new.get(mode or "normal", next(iter(new.values())))[0]
         return {"saved": str(edits.file), "value": shown}
 
-    def economy_reset(self, prop: str) -> dict:
-        """Take one economy value's change out of the current mod (both copies)."""
+    def economy_reset(self, prop: str, mode: str | None = None) -> dict:
+        """Take one economy value's change out of the current mod: both copies, or one (`mode`, as economy_edit)."""
+        if mode is not None and mode not in economy.TARGETS:
+            raise StudioError(f"{mode} isn't a game mode the economy has ({', '.join(economy.TARGETS)})")
         edits = self._edits()
         if edits is None:
             return {"saved": None}
         with self._saving:
             edits = ModEdits(edits.folder)
-            for target in economy.TARGETS.values():
-                edits.reset(target, prop)
+            for mode_, target in economy.TARGETS.items():
+                if mode is None or mode_ == mode:
+                    edits.reset(target, prop)
         return {"saved": str(edits.file)}
 
     # --- the computer players (rusemod.ai; LittleGroove's AI editor brought over): their profiles, the units they're
@@ -7147,6 +7161,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         if not files:  # (a wreck the game reuses for fallen soldiers, the M36 Jackson's, is no soldier)
             files = {f for f in under([w for p, w in links if p != "GfxDescriptor" and w.startswith(address + ":")],
                                       True) if "_dest" not in f.rsplit("\\", 1)[-1]}
+        if not files:
+            # its parts' meshes may be another unit's objects (the King Tiger's are KingTigerAS's): followed last, or
+            # the unit has no models and its page no model box (a modder's report, 2026-10-17: "the window for
+            # changing the model never opens"). Only last: a gun's crew is a shared mesh too (walked for every gun,
+            # a gun's repaint would recolour every crew), and a squad's graphics reach a building's effect mesh
+            files = {f for f in under([w for p, w in links if p == "GfxDescriptor"], True)
+                     if "\\nonclasse\\" not in f}
+            files = {f for f in files if "\\infanterie\\" not in f} or files  # (the atomic guns: their crews)
         return sorted(files)
 
     @staticmethod

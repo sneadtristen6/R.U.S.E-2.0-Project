@@ -1,6 +1,12 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**Next version (not released yet; its number and the other languages are written at release):**
+
+- **Fixed, reported by a modder:** on a new unit made from one of 17 of the game's units, the box for changing its model never appeared, because the Studio didn't find the copied unit's 3D model. The 17: the King Tiger, the atomic guns, the Long Tom nuke, the V2 launcher, the TransportHQ, the Wurfrahmen half-track, the atomic OI, Type 1 and Type 4, and three campaign versions. The Studio finds those models now, and if it ever can't find a model, the box says so instead of disappearing. The report was about the Panther, which worked on our PC, so that case isn't confirmed fixed yet.
+- **The AI tab explained:** each computer-player value says what it does, in plain units (metres, $, minutes) where it has them, and which value wins in a battle for each difficulty and profile. Game modes, difficulties, profiles and units are picked by name instead of by number.
+- **The Economy tab, Normal and Nuclear apart:** the game keeps its economy twice, once for its usual modes and once for the Nuclear mode. Where the two differ (money per truckload, ruse cards at the start, when new ruse cards come), each mode now has its own boxes, so the Nuclear mode can be changed alone; elsewhere one change still sets both. Each value also says what it does, under its name. A Nuclear-only change hasn't been tried in the game yet.
+
 **0.9.8.6:** every unit flag and number explained, the map tools show what they did, and blank maps drawn right.
 
 - **Unit flags explained:** each flag on a unit's page shows its name, and hovering it says what it does, how to use it and how sure we are. **Flag guide: every flag explained** lists all 105, with a search. The Studio checks a unit's flags: a known crash (a truck's flags on something that isn't a truck, an armed plane given the recon flag without the fighter flag) shows its fix, and the Studio won't start the game until it's fixed; flags expected to break a unit get a warning.

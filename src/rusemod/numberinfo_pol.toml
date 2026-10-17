@@ -916,3 +916,128 @@ does = "1: karta jest w menu podstępów, więc gracze i komputer mogą ją zagr
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "Pozycja w menu podstępów"
 does = "Gdzie karta stoi w menu podstępów: niższa jest pierwsza."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Pieniądze na start"
+does = "Pieniądze, z którymi każdy gracz zaczyna bitwę, w $. 200 w grze: dziesięć Shermanów po 20 $."
+[TempsGenAutoDevises]
+what = "Sekundy między automatycznymi wypłatami"
+does = "Co ile sekund wypłacają budynki, które same dają pieniądze (automatyczne pieniądze gry); dodatkowy dochód graczy komputerowych (oszustwo) jest wypłacany w tym samym rytmie. 4 w grze."
+[QuantiteGenAutoDevises]
+what = "Automatyczna wypłata"
+does = "Ile wynosi jedna automatyczna wypłata, w $. 1 w grze: przy wypłacie co 4 sekundy 15 $ na minutę."
+[StockDeviseSupplementaireFacile]
+what = "Dodatkowe zaopatrzenie magazynów na Łatwej (kampania)"
+does = "W kampanii na poziomie Łatwa dodatkowe zaopatrzenie, które skrypty misji dodają magazynom (proszą o nie grę). 72 w grze. Bitwy go nie używają."
+[QteDeviseParCamion]
+what = "Pieniądze za ładunek ciężarówki"
+does = "Ile przywozi z magazynu jedna ciężarówka zaopatrzenia, w $. Zwykłe tryby gry 3, Tryb Atomowy 6. Pieniądze pozostałe w magazynie to liczba jego pozostałych ładunków razy ta wartość."
+[NbCamionParConvoi]
+what = "Ciężarówki w konwoju"
+does = "Ile ciężarówek wyjeżdża razem z magazynu w jednym konwoju. 3 w grze: konwój przywozi 3 x 3 $ = 9 $ w zwykłych trybach."
+[TempsENtreDeuxConvois]
+what = "Sekundy między konwojami"
+does = "Ile sekund magazyn czeka między dwoma konwojami. 30 w grze: około 18 $ na minutę z jednego magazynu w zwykłych trybach, nie licząc samej drogi."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Odstęp między ciężarówkami konwoju (min.)"
+does = "Najkrótszy czas, w sekundach, między wyjazdem dwóch ciężarówek tego samego konwoju. 1,5 w grze."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Odstęp między ciężarówkami konwoju (maks.)"
+does = "Najdłuższy czas, w sekundach, między wyjazdem dwóch ciężarówek tego samego konwoju. 1,5 w grze."
+[RatioForDepotNearlyDepleted]
+what = "Magazyn prawie pusty przy"
+does = "Magazyn uznaje się za prawie pusty, gdy pozostałe mu ładunki to ta część początkowych lub mniej (gracze komputerowi szukają wtedy innego). 0,25 (25%) w grze."
+[MinProductionTime]
+what = "Najkrótszy czas produkcji"
+does = "Żadna jednostka nie powstaje szybciej niż w tym czasie, w sekundach, bez względu na to, ile fabryk jej rodzaju ją buduje. 1 w grze."
+[MaximumBatimentProduction]
+what = "Budynki budowane naraz (maks.)"
+does = "Ile budynków gracze komputerowi budują naraz. 2 w grze."
+[MaxProductionQueueSize]
+what = "Najdłuższa kolejka produkcji"
+does = "Najwięcej jednostek, które gracz komputerowy ustawia w swojej kolejce produkcji. 30 w grze."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Budynki i badania naraz"
+does = "Ile budynków i badań gracz komputerowy prowadzi naraz. 2 w grze."
+[VirtualFactoryQueueMaximumSlot]
+what = "Miejsca w kolejce fabryki"
+does = "Ile miejsc ma kolejka fabryki. 2 w grze."
+[NbAvionsParAeroport]
+what = "Samoloty na lotnisko"
+does = "Ile samolotów gracz może mieć na każde swoje lotnisko: gdy ich liczba dojdzie do tej wartości razy liczba lotnisk, nie można budować kolejnych. 8 w grze."
+[NbMaxCardsInPool]
+what = "Karty podstępu w ręce (maks.)"
+does = "Najwięcej kart podstępu, jakie może mieć strona. 99 w grze: w praktyce bez limitu."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Karty podstępu na start (1 gracz na stronę)"
+does = "Ile kart podstępu ma na start strona z 1 graczem. Zwykłe tryby gry 2, Tryb Atomowy 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Karty podstępu na start (2 graczy na stronę)"
+does = "Ile kart podstępu ma na start strona z 2 graczami. Zwykłe tryby gry 2, Tryb Atomowy 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Karty podstępu na start (3 graczy na stronę)"
+does = "Ile kart podstępu ma na start strona z 3 graczami. Zwykłe tryby gry 2, Tryb Atomowy 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Karty podstępu na start (4 graczy na stronę)"
+does = "Ile kart podstępu ma na start strona z 4 graczami. Zwykłe tryby gry 2, Tryb Atomowy 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Kiedy przychodzą nowe karty podstępu (1 gracz na stronę)"
+does = "Chwile bitwy, w sekundach, w których strona z 1 graczem dostaje nową kartę podstępu do wyboru. Zwykłe tryby gry 105, 210, 315 (co 1 minutę 45 s); Tryb Atomowy 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Kiedy przychodzą nowe karty podstępu (2 graczy na stronę)"
+does = "Chwile bitwy, w sekundach, w których strona z 2 graczami dostaje nową kartę podstępu do wyboru. Zwykłe tryby gry 105, 210, 315; Tryb Atomowy 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Kiedy przychodzą nowe karty podstępu (3 graczy na stronę)"
+does = "Chwile bitwy, w sekundach, w których strona z 3 graczami dostaje nową kartę podstępu do wyboru. Zwykłe tryby gry 105, 210, 315; Tryb Atomowy 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Kiedy przychodzą nowe karty podstępu (4 graczy na stronę)"
+does = "Chwile bitwy, w sekundach, w których strona z 4 graczami dostaje nową kartę podstępu do wyboru. Zwykłe tryby gry 105, 210, 315; Tryb Atomowy 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Wartość armii wymuszająca atak"
+does = "Gracze komputerowi porównują z nią wartość armii przed atakiem: gra sprawdza siły, gdy wartość na miejscu jest niższa. 600 w grze."
+[MinArmyValueToUseManipulationCard]
+what = "Najmniejsza wartość armii do podstępu manipulacji"
+does = "Gracz komputerowy zagrywa podstęp manipulacji tylko wtedy, gdy jego armia jest warta co najmniej tyle. 120 w grze."
+[MaxWaitingRequest]
+what = "Oczekujące zlecenia (maks.)"
+does = "Najwięcej zleceń produkcji, które gracz komputerowy trzyma w oczekiwaniu. 30 w grze."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Oczekujące zlecenia przed nową fabryką"
+does = "Gdy gracz komputerowy ma tyle oczekujących zleceń produkcji, buduje kolejną fabrykę, zamiast dokładać do kolejki. 8 w grze."
+[MaxTimeWaitingRequest]
+what = "Najdłuższe oczekiwanie zlecenia"
+does = "Ile sekund zlecenie produkcji gracza komputerowego może czekać, zanim zostanie anulowane (gdy Anuluj oczekujące zlecenia jest włączone). 60 w grze."
+[CheckAndCancelWaitingRequest]
+what = "Anuluj oczekujące zlecenia"
+does = "1: gracz komputerowy anuluje zlecenia produkcji, które czekały dłużej niż najdłuższe oczekiwanie. 1 w grze."
+[BP_DepotAddedValue]
+what = "Wartość magazynu do obrony"
+does = "Ile magazyn zaopatrzenia jest wart dla gracza komputerowego, gdy decyduje, czego bronić. 50 w grze, wobec 150 za jego kwaterę główną."
+[BP_HqValue]
+what = "Wartość kwatery głównej do obrony"
+does = "Ile jego kwatera główna jest warta dla gracza komputerowego, gdy decyduje, czego bronić. 150 w grze, wobec 50 za magazyn."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Jednostki-atrapy w pozorowanej ofensywie (min.)"
+does = "Najmniej jednostek-atrap, jakie wysyła pozorowana ofensywa gracza komputerowego. 4 w grze."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Jednostki-atrapy w pozorowanej ofensywie (maks.)"
+does = "Najwięcej jednostek-atrap, jakie wysyła pozorowana ofensywa gracza komputerowego. 5 w grze."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Samoloty-atrapy w pozorowanym ataku lotniczym (min.)"
+does = "Najmniej samolotów-atrap, jakie wysyła pozorowany atak lotniczy gracza komputerowego. 4 w grze."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Samoloty-atrapy w pozorowanym ataku lotniczym (maks.)"
+does = "Najwięcej samolotów-atrap, jakie wysyła pozorowany atak lotniczy gracza komputerowego. 5 w grze."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Czołgi-atrapy w pozorowanym ataku pancernym (min.)"
+does = "Najmniej czołgów-atrap, jakie wysyła pozorowany atak pancerny gracza komputerowego. 4 w grze."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Czołgi-atrapy w pozorowanym ataku pancernym (maks.)"
+does = "Najwięcej czołgów-atrap, jakie wysyła pozorowany atak pancerny gracza komputerowego. 5 w grze."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Odstęp między budynkami-atrapami (min.)"
+does = "Najkrótszy czas, w sekundach, jaki gracz komputerowy czeka między dwoma budynkami-atrapami stawianymi podstępem budynków-atrap. 5 w grze."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Odstęp między budynkami-atrapami (maks.)"
+does = "Najdłuższy czas, w sekundach, jaki gracz komputerowy czeka między dwoma budynkami-atrapami stawianymi podstępem budynków-atrap. 10 w grze."

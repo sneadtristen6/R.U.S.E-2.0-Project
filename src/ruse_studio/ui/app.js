@@ -1920,7 +1920,14 @@ function lookBox(u, brought, startNew) {
   const body = el("div", { className: "muted small", textContent: w.look_working });
   const box = el("div", { className: "group look" }, el("h2", { textContent: w.unit_look, title: w.tip_unit_look }), body);
   const draw = (info) => {
-    if (!info.models || !info.models.length) { box.remove(); return; }
+    if (!info.models || !info.models.length) {
+      // a new unit's box stays, saying why it has no model to change (a modder's report, 2026-10-17: "the window for
+      // changing the model never opens"; it was taken away without a word). Ammo, weapons and the like: no box
+      if (!info.new_unit) { box.remove(); return; }
+      body.className = "new-unit";
+      body.replaceChildren(el("p", { className: "notice warn", textContent: w.model_none }));
+      return;
+    }
     const parts = [];
     // a squad's look is its uniform: the game's (Default, worn by other squads and the gun and vehicle crews too, so
     // never repainted here) or its own (Custom: its own copy of its soldiers), which Blender paints (the owner,
@@ -2878,12 +2885,16 @@ function showView(view) {
 
 // --- the Economy tab (StudioApi.economy, rusemod.economy; LittleGroove's Economy editor brought over): starting money,
 // income, supply depots, production limits, ruse cards and the computer players'. A change is saved in the current
-// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode) ---
+// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode), or for
+// one of the two where they're shown apart (economyRow) ---
 async function renderEconomy() {
   const w = state.words;
   $("economy-title").textContent = w.economy_title;
   $("economy-help").textContent = state.mod ? w.economy_help : w.no_mod;
   $("economy-buildings").textContent = w.economy_buildings;
+  if (!knownNumbers) {  // each value's meaning, from the number guide (rusemod/numberinfo.toml)
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+  }
   let data;
   try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
   if (state.view !== "economy") return;  // another tab was picked meanwhile
@@ -2980,57 +2991,88 @@ async function showEconomyDepot(line) {
     .replace("{money}", Math.round(m.usual * m.per_convoy * m.per_truck).toLocaleString()) : "";
 }
 
+// One economy value: its name, what it does (the number guide, rusemod/numberinfo.toml) and its boxes. Where the game's
+// usual modes and the Nuclear mode have it apart (r.split: the game's two copies differ, or the mod's do), each mode
+// has its own boxes (the owner, 2026-10-17: "separate normal and nuclear for sure"); elsewhere one change sets both.
 function economyRow(r, saved = null) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
-  const game = r.list ? r.game : [r.game];
-  let mine = r.value === null ? null : r.list ? r.value : [r.value];
-  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
-  const was = el("div", { className: "was" });
-  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was);
-  if (r.atomic !== null) {  // the Nuclear mode's own value, as the game has it: a change sets both
-    cell.append(el("div", { className: "muted small",
-      textContent: w.economy_atomic.replace("{v}", (r.list ? r.atomic : [r.atomic]).join(" · ")) }));
+  const entry = numberEntry("TTunableConstante", r.prop);
+  if (entry) {
+    th.title = numberTip(entry);
+    th.append(el("small", { className: "about", textContent: entry.does }));
   }
-  const tr = el("tr", {}, th, cell);
-  const show = (numbers) => boxes.forEach((b, i) => {
-    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
-    b.setAttribute("aria-invalid", "false");
-  });
-  const showWas = () => {
-    tr.classList.toggle("edited", mine !== null);
-    if (mine === null) { was.replaceChildren(); return; }
-    const undo = el("button", { type: "button", className: "link", textContent: w.reset, title: w.tip_economy_reset });
-    undo.addEventListener("click", async () => {
+  const tr = el("tr", {}, th);
+  const cell = el("td");
+  const edited = new Set();  // the modes the mod changes
+  const part = (mode, game, value) => {
+    game = r.list ? game : [game];
+    let mine = value === null || value === undefined ? null : r.list ? value : [value];
+    const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+    const plain = el("span", { className: "muted small number-plain" });
+    const was = el("div", { className: "was" });
+    // in plain units only where that says more than the number ("25%" for 0.25; not "about 200 $" for 200)
+    const scale = entry && knownNumbers && knownNumbers.plain[entry.unit];
+    const showPlain = (numbers) => {
+      plain.textContent = r.list || !scale || scale[0] === 1 ? "" : numberPlain(entry, Number(numbers[0]));
+    };
+    const show = (numbers) => {
+      boxes.forEach((b, i) => {
+        if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+        b.setAttribute("aria-invalid", "false");
+      });
+      showPlain(numbers);
+    };
+    const showWas = () => {
+      if (mine === null) edited.delete(mode); else edited.add(mode);
+      tr.classList.toggle("edited", edited.size > 0);
+      if (mine === null) { was.replaceChildren(); return; }
+      const undo = el("button", { type: "button", className: "link", textContent: w.reset,
+        title: mode ? w.tip_economy_reset_one : w.tip_economy_reset });
+      undo.addEventListener("click", async () => {
+        try {
+          await api().economy_reset(r.prop, mode);
+          mine = null;
+          show(game);
+          showWas();
+          say("");
+          if (saved) saved();
+        } catch (err) { problem(err); }
+      });
+      was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+    };
+    const save = async (box) => {
+      const numbers = boxes.map(readBox);
+      const bad = numbers.findIndex((n) => !Number.isFinite(n));
+      boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
+      if (bad >= 0) { box.focus(); return; }
       try {
-        await api().economy_reset(r.prop);
-        mine = null;
-        show(game);
+        const res = await api().economy_edit(r.prop, r.list ? numbers : numbers[0], mode);
+        const got = r.list ? res.value : [res.value];
+        show(got);
+        mine = sameNumbers(got, game) ? null : got;
         showWas();
-        say("");
+        say(w.saved.replace("{file}", res.saved), "ok");
         if (saved) saved();
       } catch (err) { problem(err); }
-    });
-    was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+    };
+    for (const box of boxes) box.addEventListener("change", () => save(box));
+    showPlain(mine || game);
+    showWas();
+    const row = el("div", { className: "boxes" }, ...boxes, plain);
+    if (mode) {
+      row.prepend(el("span", { className: "mode-name small", textContent: mode === "atomic" ? w.economy_nuclear : w.economy_normal,
+        title: mode === "atomic" ? w.tip_economy_nuclear : w.tip_economy_normal }));
+    }
+    return el("div", { className: mode ? `economy-mode economy-${mode}` : "economy-mode" }, row, was);
   };
-  const save = async (box) => {
-    const numbers = boxes.map(readBox);
-    const bad = numbers.findIndex((n) => !Number.isFinite(n));
-    boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
-    if (bad >= 0) { box.focus(); return; }
-    try {
-      const res = await api().economy_edit(r.prop, r.list ? numbers : numbers[0]);
-      const value = r.list ? res.value : [res.value];
-      show(value);
-      mine = sameNumbers(value, game) ? null : value;
-      showWas();
-      say(w.saved.replace("{file}", res.saved), "ok");
-      if (saved) saved();
-    } catch (err) { problem(err); }
-  };
-  for (const box of boxes) box.addEventListener("change", () => save(box));
-  showWas();
+  if (r.split) {
+    cell.append(part("normal", r.game, r.value), part("atomic", r.atomic === null ? r.game : r.atomic, r.atomic_value));
+  } else {
+    cell.append(part(null, r.game, r.value));
+  }
+  tr.append(cell);
   return tr;
 }
 

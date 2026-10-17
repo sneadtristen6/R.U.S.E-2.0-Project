@@ -59,6 +59,41 @@ INDEX = FakeIndex({
     HEAVY + ":GfxDescriptorIconeCadavre": [("MeshDescriptor", "object", SOLDIERS + ":GfxDescriptorIconeCadavre.MeshDescriptor")],
 })
 
+# the King Tiger (Panzer_VI_B_Tigre_II): its parts' meshes are another unit's objects (KingTigerAS's); a gun: its own
+# mesh and a shared crew; an atomic gun: only shared meshes (the Long Tom's and the crew); a squad whose graphics reach
+# only a building's effect mesh (Soldat_US_Para_SOLO)
+KING, GUN, ATOMIC, SOLO = (E + "Descriptor_Unit_" + n for n in ("Panzer_VI_B_Tigre_II", "Gun", "Canon_atomique_US",
+                                                              "Soldat_US_Para_SOLO"))
+CREW = E + "Descriptor_Unit_Crew:GfxDescriptor.MeshDescriptor"
+CREW_FILE = "ww2/res3d/units/us/infanterie/us_servant_modellod0.ase2ndfbin"
+SHARED = FakeIndex({
+    KING: [("GfxDescriptor", "object", KING + ":GfxDescriptor"),
+           ("GfxDescriptorIcone", "object", E + "Descriptor_Unit_KingTigerAS:GfxDescriptorIcone")],
+    KING + ":GfxDescriptor": [("SousElements[0].v", "object", KING + ":GfxDescriptor.SousElements[0].v")],
+    KING + ":GfxDescriptor.SousElements[0].v": [
+        ("MeshDescriptor", "object", E + "Descriptor_Unit_KingTigerAS:GfxDescriptor.MeshDescriptor")],
+    E + "Descriptor_Unit_KingTigerAS:GfxDescriptor.MeshDescriptor": [
+        ("FileName", "file", "ww2/res3d/units/ger/char/ger_tigre_ii/ger_tigre_iilod0.ase2ndfbin")],
+    GUN: [("GfxDescriptor", "object", GUN + ":GfxDescriptor")],
+    GUN + ":GfxDescriptor": [("MeshDescriptor", "object", GUN + ":GfxDescriptor.MeshDescriptor"),
+                             ("SousElements[0].v", "object", GUN + ":GfxDescriptor.SousElements[0].v")],
+    GUN + ":GfxDescriptor.MeshDescriptor": [("FileName", "file", "ww2/res3d/units/us/canon/gunlod0.ase2ndfbin")],
+    GUN + ":GfxDescriptor.SousElements[0].v": [("MeshDescriptor", "object", CREW)],
+    CREW: [("FileName", "file", CREW_FILE)],
+    ATOMIC: [("GfxDescriptor", "object", ATOMIC + ":GfxDescriptor")],
+    ATOMIC + ":GfxDescriptor": [("SousElements[0].v", "object", ATOMIC + ":GfxDescriptor.SousElements[0].v"),
+                                ("SousElements[1].v", "object", ATOMIC + ":GfxDescriptor.SousElements[1].v")],
+    ATOMIC + ":GfxDescriptor.SousElements[0].v": [
+        ("MeshDescriptor", "object", E + "Descriptor_Unit_Long_Tom:GfxDescriptor.MeshDescriptor")],
+    E + "Descriptor_Unit_Long_Tom:GfxDescriptor.MeshDescriptor": [
+        ("FileName", "file", "ww2/res3d/units/us/canon/us155mm_long_tomlod0.ase2ndfbin")],
+    ATOMIC + ":GfxDescriptor.SousElements[1].v": [("MeshDescriptor", "object", CREW)],
+    SOLO: [("GfxDescriptor", "object", SOLO + ":GfxDescriptor")],
+    SOLO + ":GfxDescriptor": [("SousElements[0].v", "object", SOLO + ":GfxDescriptor.SousElements[0].v")],
+    SOLO + ":GfxDescriptor.SousElements[0].v": [("MeshDescriptor", "object", E + "Fx:MeshDescriptor")],
+    E + "Fx:MeshDescriptor": [("FileName", "file", "ww2/res3d/nonclasse/fxbatimentlod0.ase2ndfbin")],
+})
+
 
 class Models(unittest.TestCase):
     def test_a_vehicle_keeps_its_own(self):
@@ -72,6 +107,23 @@ class Models(unittest.TestCase):
     def test_a_soldier_model_part_shared_with_other_infantry(self):
         self.assertEqual(StudioApi._unit_models(INDEX, HEAVY),
                          ["ww2\\res3d\\units\\us\\infanterie\\us_soldier_modellod0.ase2ndfbin"])
+
+    # a modder's report, 2026-10-17: "the window for changing the model never opens" (no models: no model box). 17 of
+    # the game's units drew only other units' meshes; those are followed when nothing of the unit's own is found
+    def test_parts_drawn_with_another_units_mesh(self):
+        self.assertEqual(StudioApi._unit_models(SHARED, KING),
+                         ["ww2\\res3d\\units\\ger\\char\\ger_tigre_ii\\ger_tigre_iilod0.ase2ndfbin"])
+
+    def test_a_gun_with_its_own_mesh_keeps_the_crew_out(self):
+        # (the crew's uniform in every gun's paint: a gun's repaint would recolour every crew)
+        self.assertEqual(StudioApi._unit_models(SHARED, GUN), ["ww2\\res3d\\units\\us\\canon\\gunlod0.ase2ndfbin"])
+
+    def test_only_shared_meshes_the_gun_not_its_crew(self):
+        self.assertEqual(StudioApi._unit_models(SHARED, ATOMIC),
+                         ["ww2\\res3d\\units\\us\\canon\\us155mm_long_tomlod0.ase2ndfbin"])
+
+    def test_an_effect_mesh_is_no_model(self):
+        self.assertEqual(StudioApi._unit_models(SHARED, SOLO), [])
 
 
 # --- a new unit's own copy of its model ---

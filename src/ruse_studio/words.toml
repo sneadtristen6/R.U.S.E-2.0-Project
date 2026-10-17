@@ -11835,6 +11835,18 @@ cz = "Používá model kopírované jednotky. Importuj 3D model (.3ds, nebo .glb
 jpn = "コピー元のユニットのモデルを使っています。3Dモデル（.3ds、またはBlenderなど多くの3Dツールの.glb）を読み込むと独自のモデルになります。コピー元の長さ（×サイズ）に合わせ、砲塔をコピー元の砲塔の位置に置くので、同じように回転し走行します。"
 sc = "它使用所复制单位的模型。导入一个3D模型（.3ds，或Blender及多数3D工具导出的.glb）即可拥有自己的模型：会按该单位的长度（乘以尺寸）调整，炮塔放在该单位的炮塔位置，转动和行驶方式相同。"
 
+[model_none]
+us = "The Studio can't find the 3D model of the unit this one copies, so it can't give this unit a model of its own here (a new model is fitted to the copied one). Everything else on this page still works. To change the model, make the new unit from another unit, and please tell us this unit's name so we can fix it."
+fr = "Le Studio ne trouve pas le modèle 3D de l'unité que celle-ci copie : il ne peut donc pas lui donner un modèle à elle ici (un nouveau modèle est ajusté sur celui de l'unité copiée). Tout le reste de cette page fonctionne. Pour changer le modèle, créez la nouvelle unité à partir d'une autre unité, et dites-nous le nom de celle-ci pour que nous puissions corriger."
+ger = "Das Studio findet das 3D-Modell der kopierten Einheit nicht und kann dieser Einheit hier deshalb kein eigenes geben (ein neues Modell wird an das der kopierten angepasst). Alles andere auf dieser Seite funktioniert. Um das Modell zu ändern, erstelle die neue Einheit aus einer anderen Einheit, und sag uns bitte den Namen dieser Einheit, damit wir es beheben können."
+ita = "Lo Studio non trova il modello 3D dell'unità che questa copia, quindi qui non può darle un modello suo (un nuovo modello viene adattato a quello dell'unità copiata). Tutto il resto di questa pagina funziona. Per cambiare il modello, crea la nuova unità partendo da un'altra unità, e per favore dicci il nome di questa unità così possiamo correggerlo."
+spa = "El Studio no encuentra el modelo 3D de la unidad que esta copia, así que aquí no puede darle un modelo propio (un modelo nuevo se ajusta al de la unidad copiada). Todo lo demás de esta página funciona. Para cambiar el modelo, crea la nueva unidad a partir de otra unidad, y dinos el nombre de esta unidad para que podamos arreglarlo."
+pol = "Studio nie znajduje modelu 3D kopiowanej jednostki, więc nie może tu dać tej jednostce własnego (nowy model jest dopasowywany do modelu kopiowanej). Cała reszta tej strony działa. Aby zmienić model, utwórz nową jednostkę z innej jednostki i podaj nam nazwę tej jednostki, żebyśmy mogli to naprawić."
+ru = "Studio не находит 3D-модель копируемого юнита, поэтому не может дать этому юниту свою модель здесь (новая модель подгоняется под модель копируемого). Всё остальное на этой странице работает. Чтобы сменить модель, создайте новый юнит из другого юнита и сообщите нам название этого юнита, чтобы мы могли это исправить."
+cz = "Studio nenachází 3D model kopírované jednotky, takže jí tu nemůže dát vlastní (nový model se přizpůsobuje modelu kopírované jednotky). Vše ostatní na této stránce funguje. Chceš-li změnit model, vytvoř novou jednotku z jiné jednotky a napiš nám prosím název této jednotky, ať to můžeme opravit."
+jpn = "コピー元のユニットの3Dモデルが見つからないため、ここではこのユニットに独自のモデルを付けられません（新しいモデルはコピー元のモデルに合わせて調整されます）。このページの他の機能はすべて使えます。モデルを変えるには別のユニットから新しいユニットを作ってください。また、修正できるようにこのユニットの名前をお知らせください。"
+sc = "Studio找不到所复制单位的3D模型，因此无法在这里给这个单位一个自己的模型（新模型是按所复制单位的模型调整的）。此页面的其他功能都正常。要更换模型，请从另一个单位创建新单位，并告诉我们这个单位的名字，以便我们修复。"
+
 [model_import]
 us = "Import model…"
 fr = "Importer un modèle…"
@@ -12177,16 +12189,16 @@ jpn = "このMODでのすべての戦いの資金、収入、補給トラック�
 sc = "使用此模组的每场战斗的资金、收入、补给卡车、生产上限和计谋卡。"
 
 [economy_help]
-us = "A change here is saved in the current mod at once, for every game mode (the game keeps these values twice: for its usual modes and for the Nuclear mode). From LittleGroove's Economy editor in RUSE Mod Manager. Tried in the game: the starting money and the ruse cards at the start; the rest not yet."
-fr = "Un changement fait ici est enregistré tout de suite dans le mod actuel, pour tous les modes de jeu (le jeu garde ces valeurs deux fois : pour ses modes habituels et pour le mode Nucléaire). Repris de l'éditeur d'économie de LittleGroove dans RUSE Mod Manager. Essayé en jeu : l'argent de départ et les cartes de ruse au départ ; le reste pas encore."
-ger = "Eine Änderung hier wird sofort im aktuellen Mod gespeichert, für jeden Spielmodus (das Spiel hat diese Werte zweimal: für seine üblichen Modi und für den Atommodus). Aus LittleGrooves Wirtschaftseditor in RUSE Mod Manager. Im Spiel ausprobiert: das Startgeld und die Täuschungskarten zu Beginn; der Rest noch nicht."
-ita = "Una modifica fatta qui viene salvata subito nella mod attuale, per ogni modalità di gioco (il gioco tiene questi valori due volte: per le modalità solite e per la modalità Nucleare). Dall'editor dell'economia di LittleGroove in RUSE Mod Manager. Provato in gioco: il denaro iniziale e le carte d'inganno all'inizio; il resto non ancora."
-spa = "Un cambio hecho aquí se guarda al momento en el mod actual, para todos los modos de juego (el juego guarda estos valores dos veces: para sus modos habituales y para el modo Nuclear). Del editor de economía de LittleGroove en RUSE Mod Manager. Probado en el juego: el dinero inicial y las cartas de engaño al empezar; el resto aún no."
-pol = "Zmiana tutaj jest od razu zapisywana w bieżącym modzie, dla każdego trybu gry (gra trzyma te wartości dwa razy: dla zwykłych trybów i dla Trybu Atomowego). Z edytora ekonomii LittleGroove'a w RUSE Mod Manager. Sprawdzone w grze: pieniądze na start i karty podstępu na start; reszta jeszcze nie."
-ru = "Изменение здесь сразу сохраняется в текущем моде, для всех режимов игры (игра хранит эти значения дважды: для обычных режимов и для ядерного режима). Из редактора экономики LittleGroove в RUSE Mod Manager. Проверено в игре: начальные деньги и карты уловки в начале; остальное ещё нет."
-cz = "Změna zde se hned uloží do aktuálního modu, pro každý herní režim (hra má tyto hodnoty dvakrát: pro běžné režimy a pro nukleární režim). Z editoru ekonomiky od LittleGroove v RUSE Mod Manageru. Vyzkoušeno ve hře: počáteční peníze a karty lsti na začátku; zbytek zatím ne."
-jpn = "ここでの変更は、すべてのゲームモード向けにすぐ現在のMODに保存されます（ゲームはこの値を2つ持っています：通常のモード用と戦略兵器モード用）。RUSE Mod Manager の LittleGroove のエコノミーエディターより。ゲーム内で試したもの：初期資金と開始時の計略カード。ほかはまだです。"
-sc = "此处的更改会立即保存到当前模组中，适用于所有游戏模式（游戏把这些数值存了两份：普通模式一份，核战争模式一份）。来自 RUSE Mod Manager 中 LittleGroove 的经济编辑器。已在游戏中试过：初始资金和开局计谋卡；其余尚未试过。"
+us = "A change here is saved in the current mod at once. The game keeps these values twice, once for its usual modes and once for the Nuclear mode: where the two differ, each has its own boxes (Normal and Nuclear); elsewhere one change sets both. Hover a value's name, or read the line under it, for what it does. From LittleGroove's Economy editor in RUSE Mod Manager. Tried in the game: the starting money and the ruse cards at the start; the rest not yet."
+fr = "Un changement fait ici est enregistré tout de suite dans le mod actuel. Le jeu garde ces valeurs deux fois, pour ses modes habituels et pour le mode Nucléaire : là où les deux diffèrent, chacun a ses cases (Normal et Nucléaire) ; ailleurs, un changement règle les deux. Survolez le nom d'une valeur, ou lisez la ligne dessous, pour savoir ce qu'elle fait. Repris de l'éditeur d'économie de LittleGroove dans RUSE Mod Manager. Essayé en jeu : l'argent de départ et les cartes de ruse au départ ; le reste pas encore."
+ger = "Eine Änderung hier wird sofort im aktuellen Mod gespeichert. Das Spiel hat diese Werte zweimal, für seine üblichen Modi und für den Atommodus: Wo sich beide unterscheiden, hat jeder eigene Felder (Normal und Atom); sonst gilt eine Änderung für beide. Was ein Wert tut, zeigt sein Name beim Darüberfahren und die Zeile darunter. Aus LittleGrooves Wirtschaftseditor in RUSE Mod Manager. Im Spiel ausprobiert: das Startgeld und die Täuschungskarten zu Beginn; der Rest noch nicht."
+ita = "Una modifica fatta qui viene salvata subito nella mod attuale. Il gioco tiene questi valori due volte, per le modalità solite e per la modalità Nucleare: dove i due sono diversi, ognuno ha le sue caselle (Normale e Nucleare); altrove una modifica vale per entrambi. Passa sul nome di un valore, o leggi la riga sotto, per sapere cosa fa. Dall'editor dell'economia di LittleGroove in RUSE Mod Manager. Provato in gioco: il denaro iniziale e le carte d'inganno all'inizio; il resto non ancora."
+spa = "Un cambio hecho aquí se guarda al momento en el mod actual. El juego guarda estos valores dos veces, para sus modos habituales y para el modo Nuclear: donde los dos difieren, cada uno tiene sus casillas (Normal y Nuclear); en lo demás, un cambio ajusta ambos. Pasa el ratón por el nombre de un valor, o lee la línea de debajo, para saber qué hace. Del editor de economía de LittleGroove en RUSE Mod Manager. Probado en el juego: el dinero inicial y las cartas de engaño al empezar; el resto aún no."
+pol = "Zmiana tutaj jest od razu zapisywana w bieżącym modzie. Gra trzyma te wartości dwa razy, dla zwykłych trybów i dla Trybu Atomowego: gdzie się różnią, każdy ma własne pola (Zwykłe i Atomowy); gdzie indziej jedna zmiana ustawia oba. Najedź na nazwę wartości albo przeczytaj wiersz pod nią, by wiedzieć, co robi. Z edytora ekonomii LittleGroove'a w RUSE Mod Manager. Sprawdzone w grze: pieniądze na start i karty podstępu na start; reszta jeszcze nie."
+ru = "Изменение здесь сразу сохраняется в текущем моде. Игра хранит эти значения дважды, для обычных режимов и для ядерного режима: где они различаются, у каждого свои поля (Обычные и Ядерный); в остальном одно изменение задаёт оба. Что делает значение, видно при наведении на его название и в строке под ним. Из редактора экономики LittleGroove в RUSE Mod Manager. Проверено в игре: начальные деньги и карты уловки в начале; остальное ещё нет."
+cz = "Změna zde se hned uloží do aktuálního modu. Hra má tyto hodnoty dvakrát, pro běžné režimy a pro nukleární režim: kde se liší, má každý vlastní pole (Běžné a Nukleární); jinde jedna změna nastaví oba. Co hodnota dělá, ukáže najetí na její název a řádek pod ním. Z editoru ekonomiky od LittleGroove v RUSE Mod Manageru. Vyzkoušeno ve hře: počáteční peníze a karty lsti na začátku; zbytek zatím ne."
+jpn = "ここでの変更はすぐ現在のMODに保存されます。ゲームはこの値を2つ持っています（通常のモード用と戦略兵器モード用）。2つが違う値には別々の欄（通常と戦略兵器）があり、ほかは1回の変更で両方に適用されます。値の名前にカーソルを合わせるか、その下の行を読むと、何をするかが分かります。RUSE Mod Manager の LittleGroove のエコノミーエディターより。ゲーム内で試したもの：初期資金と開始時の計略カード。ほかはまだです。"
+sc = "此处的更改会立即保存到当前模组中。游戏把这些数值存了两份：普通模式一份，核战争模式一份。两者不同的地方各有自己的框（普通和核战争）；其他地方一次更改同时设置两者。将鼠标悬停在数值名称上，或阅读其下方的说明，即可了解它的作用。来自 RUSE Mod Manager 中 LittleGroove 的经济编辑器。已在游戏中试过：初始资金和开局计谋卡；其余尚未试过。"
 
 [economy_buildings]
 us = "Supply depots and administration buildings are buildings: change their price, build time and strength on the Units tab, under Buildings."
@@ -12404,17 +12416,65 @@ cz = "Index hry nemá žádnou z hodnot ekonomiky. Sestav ho znovu v Nastavení.
 jpn = "ゲームの索引に経済の値がありません。設定で作り直してください。"
 sc = "游戏索引中没有任何经济数值。请在设置中重新生成。"
 
-[economy_atomic]
-us = "Nuclear mode: {v} as the game has it (a change sets both)"
-fr = "Mode Nucléaire : {v} dans le jeu (un changement règle les deux)"
-ger = "Atommodus: {v} im Spiel (eine Änderung gilt für beide)"
-ita = "Modalità Nucleare: {v} nel gioco (una modifica vale per entrambe)"
-spa = "Modo Nuclear: {v} en el juego (un cambio ajusta ambos)"
-pol = "Tryb Atomowy: {v} w grze (zmiana ustawia oba)"
-ru = "Ядерный режим: {v} в игре (изменение задаёт оба)"
-cz = "Nukleární režim: {v} ve hře (změna nastaví oba)"
-jpn = "戦略兵器モード：ゲームでは {v}（変更すると両方に適用）"
-sc = "核战争模式：游戏中为 {v}（更改会同时设置两者）"
+[economy_normal]
+us = "Normal"
+fr = "Normal"
+ger = "Normal"
+ita = "Normale"
+spa = "Normal"
+pol = "Zwykłe"
+ru = "Обычные"
+cz = "Běžné"
+jpn = "通常"
+sc = "普通"
+
+[economy_nuclear]
+us = "Nuclear"
+fr = "Nucléaire"
+ger = "Atom"
+ita = "Nucleare"
+spa = "Nuclear"
+pol = "Atomowy"
+ru = "Ядерный"
+cz = "Nukleární"
+jpn = "戦略兵器"
+sc = "核战争"
+
+[tip_economy_normal]
+us = "The value in the game's usual modes. The Nuclear mode has its own, in the boxes below."
+fr = "La valeur dans les modes habituels du jeu. Le mode Nucléaire a la sienne, dans les cases en dessous."
+ger = "Der Wert in den üblichen Modi des Spiels. Der Atommodus hat seinen eigenen, in den Feldern darunter."
+ita = "Il valore nelle modalità solite del gioco. La modalità Nucleare ha il suo, nelle caselle sotto."
+spa = "El valor en los modos habituales del juego. El modo Nuclear tiene el suyo, en las casillas de abajo."
+pol = "Wartość w zwykłych trybach gry. Tryb Atomowy ma własną, w polach poniżej."
+ru = "Значение в обычных режимах игры. У ядерного режима своё, в полях ниже."
+cz = "Hodnota v běžných herních režimech. Nukleární režim má vlastní, v polích níže."
+jpn = "ゲームの通常のモードでの値です。戦略兵器モードには下の欄に別の値があります。"
+sc = "游戏普通模式中的数值。核战争模式有自己的数值，在下方的框中。"
+
+[tip_economy_nuclear]
+us = "The value in the Nuclear mode only. The game keeps it apart from its usual modes' value."
+fr = "La valeur dans le mode Nucléaire seulement. Le jeu la garde à part de celle des modes habituels."
+ger = "Der Wert nur im Atommodus. Das Spiel hält ihn getrennt vom Wert der üblichen Modi."
+ita = "Il valore solo nella modalità Nucleare. Il gioco lo tiene separato da quello delle modalità solite."
+spa = "El valor solo en el modo Nuclear. El juego lo guarda aparte del de los modos habituales."
+pol = "Wartość tylko w Trybie Atomowym. Gra trzyma ją osobno od wartości zwykłych trybów."
+ru = "Значение только в ядерном режиме. Игра хранит его отдельно от значения обычных режимов."
+cz = "Hodnota jen v nukleárním režimu. Hra ji drží odděleně od hodnoty běžných režimů."
+jpn = "戦略兵器モードだけの値です。ゲームは通常のモードの値とは別に持っています。"
+sc = "仅核战争模式中的数值。游戏把它与普通模式的数值分开保存。"
+
+[tip_economy_reset_one]
+us = "Put this mode's value back as the game has it."
+fr = "Remettre la valeur du jeu pour ce mode."
+ger = "Den Wert dieses Modus wie im Spiel wiederherstellen."
+ita = "Rimetti il valore del gioco per questa modalità."
+spa = "Volver al valor del juego en este modo."
+pol = "Przywróć wartość z gry dla tego trybu."
+ru = "Вернуть значение игры для этого режима."
+cz = "Vrátit hodnotu ze hry pro tento režim."
+jpn = "このモードの値をゲームの値に戻します。"
+sc = "将此模式的数值恢复为游戏原有的数值。"
 
 [tip_economy_reset]
 us = "Put the value back as the game has it, in every game mode."

@@ -2182,3 +2182,292 @@ unit = "id"
 sure = "tried"
 what = "Ruse menu slot"
 does = "Where the card sits in the ruse menu: lower comes first."
+
+# --- the economy (the Economy tab: the game's constants, TTunableConstante) ---
+# The game keeps these twice, for its usual modes and for the Nuclear mode; the tab says when Nuclear's differs.
+[QteDeviseInitiale]
+group = "production"
+unit = "money"
+sure = "tried"
+what = "Starting money"
+does = "The money every player starts a battle with, in $. 200 in the game: ten Shermans at $20."
+
+[TempsGenAutoDevises]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Seconds between automatic payments"
+does = "How often, in seconds, the buildings that make money by themselves pay out (the game's automatic money); the computer players' income cheat is paid on the same beat. 4 in the game."
+
+[QuantiteGenAutoDevises]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Automatic payment"
+does = "How much one automatic payment is, in $. 1 in the game: with a payment every 4 seconds, $15 a minute."
+
+[StockDeviseSupplementaireFacile]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Extra depot supply on Easy (campaign)"
+does = "In the campaign on Easy, the extra supply the missions' scripts add to depots (they ask the game for it). 72 in the game. Battles don't use it."
+
+[QteDeviseParCamion]
+group = "production"
+unit = "money"
+sure = "known"
+what = "Money per truckload"
+does = "What one supply truck brings from a depot, in $. The game's usual modes 3, the Nuclear mode 6. A depot's money left is its truckloads left times this."
+
+[NbCamionParConvoi]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Trucks per convoy"
+does = "How many trucks leave a depot together in one convoy. 3 in the game: a convoy brings 3 x $3 = $9 in the usual modes."
+
+[TempsENtreDeuxConvois]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Seconds between convoys"
+does = "How long, in seconds, a depot waits between two convoys. 30 in the game: about $18 a minute from one depot in the usual modes, before the trip itself."
+
+[TempsENtreDeuxCamionsEnConvoiMin]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Gap between trucks in a convoy (least)"
+does = "The shortest time, in seconds, between two trucks of the same convoy leaving. 1.5 in the game."
+
+[TempsENtreDeuxCamionsEnConvoiMax]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Gap between trucks in a convoy (most)"
+does = "The longest time, in seconds, between two trucks of the same convoy leaving. 1.5 in the game."
+
+[RatioForDepotNearlyDepleted]
+group = "production"
+unit = "share"
+sure = "known"
+what = "Depot nearly empty at"
+does = "A depot counts as nearly empty when the truckloads it has left are this share of what it started with or less (the computer players then look for another). 0.25 (25%) in the game."
+
+[MinProductionTime]
+group = "production"
+unit = "s"
+sure = "known"
+what = "Shortest build time"
+does = "No unit takes less time to build than this, in seconds, however many factories of its kind build it. 1 in the game."
+
+[MaximumBatimentProduction]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Most buildings in production at once"
+does = "How many buildings the computer players build at the same time. 2 in the game."
+
+[MaxProductionQueueSize]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Longest production queue"
+does = "The most units a computer player queues for production. 30 in the game."
+
+[MaxBatimentAndTechnoProductionSimultaneous]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Buildings and research at once"
+does = "How many buildings and researches a computer player has going at the same time. 2 in the game."
+
+[VirtualFactoryQueueMaximumSlot]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Factory queue slots"
+does = "How many places a factory's queue has. 2 in the game."
+
+[NbAvionsParAeroport]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Planes per airfield"
+does = "How many planes a player may have for each airfield they own: no more planes can be built once the count reaches this times the airfields. 8 in the game."
+
+[NbMaxCardsInPool]
+group = "production"
+unit = "count"
+sure = "known"
+what = "Most ruse cards in hand"
+does = "The most ruse cards a side can hold. 99 in the game: no limit in practice."
+
+[NbInitialCardsInPoolForAllianceTaille_1]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (1 player a side)"
+does = "How many ruse cards a side starts with when it has 1 player. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_2]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (2 players a side)"
+does = "How many ruse cards a side starts with when it has 2 players. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_3]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (3 players a side)"
+does = "How many ruse cards a side starts with when it has 3 players. The game's usual modes 2, the Nuclear mode 4."
+
+[NbInitialCardsInPoolForAllianceTaille_4]
+group = "production"
+unit = "count"
+sure = "tried"
+what = "Ruse cards at the start (4 players a side)"
+does = "How many ruse cards a side starts with when it has 4 players. The game's usual modes 2, the Nuclear mode 4."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (1 player a side)"
+does = "The battle times, in seconds, at which a side with 1 player gets a new ruse card to pick. The game's usual modes 105, 210, 315 (every 1 3/4 minutes); the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (2 players a side)"
+does = "The battle times, in seconds, at which a side with 2 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (3 players a side)"
+does = "The battle times, in seconds, at which a side with 3 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+group = "production"
+unit = "s"
+sure = "name"
+what = "When new ruse cards come (4 players a side)"
+does = "The battle times, in seconds, at which a side with 4 players gets a new ruse card to pick. The game's usual modes 105, 210, 315; the Nuclear mode 80, 160, 240."
+
+[ArmyValueForceLaunchAttack]
+group = "computer"
+unit = "pts"
+sure = "name"
+what = "Army value that forces an attack"
+does = "The computer players weigh an army's value against this before an attack: the game checks the forces when the value there is under it. 600 in the game."
+
+[MinArmyValueToUseManipulationCard]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Least army value for a manipulation ruse"
+does = "A computer player only plays a manipulation ruse when its army is worth at least this much. 120 in the game."
+
+[MaxWaitingRequest]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Most waiting orders"
+does = "The most production orders a computer player keeps waiting. 30 in the game."
+
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Waiting orders before a new factory"
+does = "When a computer player has this many production orders waiting, it builds another factory instead of queueing more. 8 in the game."
+
+[MaxTimeWaitingRequest]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Longest wait for an order"
+does = "How long, in seconds, a computer player's production order may wait before it's cancelled (when Cancel waiting orders is on). 60 in the game."
+
+[CheckAndCancelWaitingRequest]
+group = "computer"
+unit = "yesno"
+sure = "known"
+what = "Cancel waiting orders"
+does = "1: a computer player cancels production orders that waited longer than the longest wait. 1 in the game."
+
+[BP_DepotAddedValue]
+group = "computer"
+unit = "pts"
+sure = "name"
+what = "Value of a depot to protect"
+does = "How much a supply depot is worth to a computer player when it decides what to protect. 50 in the game, against 150 for its HQ."
+
+[BP_HqValue]
+group = "computer"
+unit = "pts"
+sure = "known"
+what = "Value of the HQ to protect"
+does = "How much its HQ is worth to a computer player when it decides what to protect. 150 in the game, against 50 for a depot."
+
+[NbMin_UniteLeurre_OffensiveGenerale]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy units in a decoy offensive (least)"
+does = "The fewest decoy units a computer player's decoy offensive sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveGenerale]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy units in a decoy offensive (most)"
+does = "The most decoy units a computer player's decoy offensive sends. 5 in the game."
+
+[NbMin_UniteLeurre_OffensiveAerienne]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy planes in a decoy air attack (least)"
+does = "The fewest decoy planes a computer player's decoy air attack sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveAerienne]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy planes in a decoy air attack (most)"
+does = "The most decoy planes a computer player's decoy air attack sends. 5 in the game."
+
+[NbMin_UniteLeurre_OffensiveBlinde]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy tanks in a decoy armoured attack (least)"
+does = "The fewest decoy tanks a computer player's decoy armoured attack sends. 4 in the game."
+
+[NbMax_UniteLeurre_OffensiveBlinde]
+group = "computer"
+unit = "count"
+sure = "known"
+what = "Decoy tanks in a decoy armoured attack (most)"
+does = "The most decoy tanks a computer player's decoy armoured attack sends. 5 in the game."
+
+[ConstructionDelayForFakeBuildingsMin]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Decoy building delay (least)"
+does = "The shortest time, in seconds, a computer player waits between decoy buildings it puts up with the decoy building ruse. 5 in the game."
+
+[ConstructionDelayForFakeBuildingsMax]
+group = "computer"
+unit = "s"
+sure = "known"
+what = "Decoy building delay (most)"
+does = "The longest time, in seconds, a computer player waits between decoy buildings it puts up with the decoy building ruse. 10 in the game."

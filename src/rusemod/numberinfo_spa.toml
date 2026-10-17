@@ -916,3 +916,128 @@ does = "1: la carta está en el menú de engaños, así que los jugadores y el o
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "Posición en el menú de engaños"
 does = "Dónde va la carta en el menú de engaños: más bajo va primero."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Dinero inicial"
+does = "El dinero con que cada jugador empieza una batalla, en $. 200 en el juego: diez Sherman a 20 $."
+[TempsGenAutoDevises]
+what = "Segundos entre pagos automáticos"
+does = "Cada cuántos segundos pagan los edificios que dan dinero por sí solos (el dinero automático del juego); los ingresos extra de los jugadores del ordenador (trampa) se pagan al mismo ritmo. 4 en el juego."
+[QuantiteGenAutoDevises]
+what = "Pago automático"
+does = "Cuánto es un pago automático, en $. 1 en el juego: con un pago cada 4 segundos, 15 $ por minuto."
+[StockDeviseSupplementaireFacile]
+what = "Suministro extra de depósitos en Fácil (campaña)"
+does = "En la campaña en Fácil, el suministro extra que los scripts de las misiones añaden a los depósitos (se lo piden al juego). 72 en el juego. Las batallas no lo usan."
+[QteDeviseParCamion]
+what = "Dinero por carga de camión"
+does = "Lo que trae un camión de suministros desde un depósito, en $. Modos habituales del juego 3, modo Nuclear 6. El dinero que le queda a un depósito es el número de cargas que le quedan por este valor."
+[NbCamionParConvoi]
+what = "Camiones por convoy"
+does = "Cuántos camiones salen juntos de un depósito en un convoy. 3 en el juego: un convoy trae 3 x 3 $ = 9 $ en los modos habituales."
+[TempsENtreDeuxConvois]
+what = "Segundos entre convoyes"
+does = "Cuánto espera, en segundos, un depósito entre dos convoyes. 30 en el juego: unos 18 $ por minuto de un depósito en los modos habituales, sin contar el viaje."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Separación entre los camiones de un convoy (mín.)"
+does = "El tiempo más corto, en segundos, entre la salida de dos camiones del mismo convoy. 1,5 en el juego."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Separación entre los camiones de un convoy (máx.)"
+does = "El tiempo más largo, en segundos, entre la salida de dos camiones del mismo convoy. 1,5 en el juego."
+[RatioForDepotNearlyDepleted]
+what = "Depósito casi vacío al"
+does = "Un depósito cuenta como casi vacío cuando las cargas que le quedan son esta parte de las iniciales, o menos (los jugadores del ordenador buscan entonces otro). 0,25 (25 %) en el juego."
+[MinProductionTime]
+what = "Tiempo de producción más corto"
+does = "Ninguna unidad se construye en menos tiempo que este, en segundos, por muchas fábricas de su tipo que la construyan. 1 en el juego."
+[MaximumBatimentProduction]
+what = "Edificios en construcción a la vez (máx.)"
+does = "Cuántos edificios construyen a la vez los jugadores del ordenador. 2 en el juego."
+[MaxProductionQueueSize]
+what = "Cola de producción más larga"
+does = "Lo máximo de unidades que un jugador del ordenador pone en su cola de producción. 30 en el juego."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Edificios e investigaciones a la vez"
+does = "Cuántos edificios e investigaciones tiene en marcha a la vez un jugador del ordenador. 2 en el juego."
+[VirtualFactoryQueueMaximumSlot]
+what = "Puestos en la cola de una fábrica"
+does = "Cuántos puestos tiene la cola de una fábrica. 2 en el juego."
+[NbAvionsParAeroport]
+what = "Aviones por aeródromo"
+does = "Cuántos aviones puede tener un jugador por cada aeródromo suyo: no se pueden construir más aviones cuando su número llega a este valor por los aeródromos. 8 en el juego."
+[NbMaxCardsInPool]
+what = "Cartas de engaño en la mano (máx.)"
+does = "Lo máximo de cartas de engaño que puede tener un bando. 99 en el juego: sin límite en la práctica."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Cartas de engaño al empezar (1 jugador por bando)"
+does = "Cuántas cartas de engaño tiene al empezar un bando de 1 jugador. Modos habituales del juego 2, modo Nuclear 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Cartas de engaño al empezar (2 jugadores por bando)"
+does = "Cuántas cartas de engaño tiene al empezar un bando de 2 jugadores. Modos habituales del juego 2, modo Nuclear 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Cartas de engaño al empezar (3 jugadores por bando)"
+does = "Cuántas cartas de engaño tiene al empezar un bando de 3 jugadores. Modos habituales del juego 2, modo Nuclear 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Cartas de engaño al empezar (4 jugadores por bando)"
+does = "Cuántas cartas de engaño tiene al empezar un bando de 4 jugadores. Modos habituales del juego 2, modo Nuclear 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Cuándo llegan nuevas cartas de engaño (1 jugador por bando)"
+does = "Los momentos de la batalla, en segundos, en que un bando de 1 jugador recibe una nueva carta de engaño para elegir. Modos habituales del juego 105, 210, 315 (cada 1 minuto y 45); modo Nuclear 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Cuándo llegan nuevas cartas de engaño (2 jugadores por bando)"
+does = "Los momentos de la batalla, en segundos, en que un bando de 2 jugadores recibe una nueva carta de engaño para elegir. Modos habituales del juego 105, 210, 315; modo Nuclear 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Cuándo llegan nuevas cartas de engaño (3 jugadores por bando)"
+does = "Los momentos de la batalla, en segundos, en que un bando de 3 jugadores recibe una nueva carta de engaño para elegir. Modos habituales del juego 105, 210, 315; modo Nuclear 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Cuándo llegan nuevas cartas de engaño (4 jugadores por bando)"
+does = "Los momentos de la batalla, en segundos, en que un bando de 4 jugadores recibe una nueva carta de engaño para elegir. Modos habituales del juego 105, 210, 315; modo Nuclear 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Valor del ejército que fuerza un ataque"
+does = "Los jugadores del ordenador comparan el valor de un ejército con este antes de un ataque: el juego revisa las fuerzas cuando el valor allí está por debajo. 600 en el juego."
+[MinArmyValueToUseManipulationCard]
+what = "Valor mínimo del ejército para un engaño de manipulación"
+does = "Un jugador del ordenador solo juega un engaño de manipulación cuando su ejército vale al menos esto. 120 en el juego."
+[MaxWaitingRequest]
+what = "Órdenes en espera (máx.)"
+does = "Lo máximo de órdenes de producción que un jugador del ordenador mantiene en espera. 30 en el juego."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Órdenes en espera antes de una nueva fábrica"
+does = "Cuando un jugador del ordenador tiene tantas órdenes de producción en espera, construye otra fábrica en vez de poner más en cola. 8 en el juego."
+[MaxTimeWaitingRequest]
+what = "Espera más larga de una orden"
+does = "Cuánto, en segundos, puede esperar una orden de producción de un jugador del ordenador antes de cancelarse (cuando Cancelar órdenes en espera está activo). 60 en el juego."
+[CheckAndCancelWaitingRequest]
+what = "Cancelar órdenes en espera"
+does = "1: un jugador del ordenador cancela las órdenes de producción que esperaron más que la espera más larga. 1 en el juego."
+[BP_DepotAddedValue]
+what = "Valor de un depósito que proteger"
+does = "Cuánto vale un depósito de suministros para un jugador del ordenador cuando decide qué proteger. 50 en el juego, frente a 150 para su cuartel general."
+[BP_HqValue]
+what = "Valor del cuartel general que proteger"
+does = "Cuánto vale su cuartel general para un jugador del ordenador cuando decide qué proteger. 150 en el juego, frente a 50 para un depósito."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Unidades señuelo en una ofensiva señuelo (mín.)"
+does = "Lo mínimo de unidades señuelo que envía la ofensiva señuelo de un jugador del ordenador. 4 en el juego."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Unidades señuelo en una ofensiva señuelo (máx.)"
+does = "Lo máximo de unidades señuelo que envía la ofensiva señuelo de un jugador del ordenador. 5 en el juego."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Aviones señuelo en un ataque aéreo señuelo (mín.)"
+does = "Lo mínimo de aviones señuelo que envía el ataque aéreo señuelo de un jugador del ordenador. 4 en el juego."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Aviones señuelo en un ataque aéreo señuelo (máx.)"
+does = "Lo máximo de aviones señuelo que envía el ataque aéreo señuelo de un jugador del ordenador. 5 en el juego."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Tanques señuelo en un ataque blindado señuelo (mín.)"
+does = "Lo mínimo de tanques señuelo que envía el ataque blindado señuelo de un jugador del ordenador. 4 en el juego."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Tanques señuelo en un ataque blindado señuelo (máx.)"
+does = "Lo máximo de tanques señuelo que envía el ataque blindado señuelo de un jugador del ordenador. 5 en el juego."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Espera entre edificios señuelo (mín.)"
+does = "El tiempo más corto, en segundos, que un jugador del ordenador espera entre dos edificios señuelo que levanta con el engaño de edificios señuelo. 5 en el juego."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Espera entre edificios señuelo (máx.)"
+does = "El tiempo más largo, en segundos, que un jugador del ordenador espera entre dos edificios señuelo que levanta con el engaño de edificios señuelo. 10 en el juego."

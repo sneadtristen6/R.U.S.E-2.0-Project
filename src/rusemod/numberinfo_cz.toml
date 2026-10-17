@@ -916,3 +916,128 @@ does = "1: karta je v nabídce lstí, takže ji hráči i počítač mohou zahr�
 ["TBluffCardDescriptor.PositionInMenu"]
 what = "Pozice v nabídce lstí"
 does = "Kde karta stojí v nabídce lstí: nižší je první."
+
+# --- the economy (the Economy tab) ---
+[QteDeviseInitiale]
+what = "Počáteční peníze"
+does = "Peníze, se kterými každý hráč začíná bitvu, v $. 200 ve hře: deset Shermanů po 20 $."
+[TempsGenAutoDevises]
+what = "Sekundy mezi automatickými platbami"
+does = "Jak často, v sekundách, platí budovy, které vydělávají samy (automatické peníze hry); příjem navíc počítačových hráčů (podvod) se vyplácí ve stejném rytmu. 4 ve hře."
+[QuantiteGenAutoDevises]
+what = "Automatická platba"
+does = "Kolik činí jedna automatická platba, v $. 1 ve hře: při platbě každé 4 sekundy 15 $ za minutu."
+[StockDeviseSupplementaireFacile]
+what = "Zásoby navíc pro sklady na Nízké (kampaň)"
+does = "V kampani na obtížnost Nízká zásoby navíc, které skripty misí přidávají skladům (žádají o ně hru). 72 ve hře. Bitvy je nepoužívají."
+[QteDeviseParCamion]
+what = "Peníze za náklad auta"
+does = "Kolik přiveze ze skladu jedno zásobovací auto, v $. Běžné režimy hry 3, nukleární režim 6. Zbývající peníze skladu jsou počet jeho zbývajících nákladů krát tato hodnota."
+[NbCamionParConvoi]
+what = "Aut v konvoji"
+does = "Kolik aut vyjede ze skladu společně v jednom konvoji. 3 ve hře: konvoj přiveze v běžných režimech 3 x 3 $ = 9 $."
+[TempsENtreDeuxConvois]
+what = "Sekundy mezi konvoji"
+does = "Jak dlouho, v sekundách, sklad čeká mezi dvěma konvoji. 30 ve hře: asi 18 $ za minutu z jednoho skladu v běžných režimech, nepočítaje samotnou cestu."
+[TempsENtreDeuxCamionsEnConvoiMin]
+what = "Rozestup aut v konvoji (min.)"
+does = "Nejkratší doba, v sekundách, mezi výjezdem dvou aut téhož konvoje. 1,5 ve hře."
+[TempsENtreDeuxCamionsEnConvoiMax]
+what = "Rozestup aut v konvoji (max.)"
+does = "Nejdelší doba, v sekundách, mezi výjezdem dvou aut téhož konvoje. 1,5 ve hře."
+[RatioForDepotNearlyDepleted]
+what = "Sklad téměř prázdný při"
+does = "Sklad se počítá jako téměř prázdný, když jeho zbývající náklady jsou tento podíl počátečních nebo méně (počítačoví hráči pak hledají jiný). 0,25 (25 %) ve hře."
+[MinProductionTime]
+what = "Nejkratší doba výroby"
+does = "Žádná jednotka se nepostaví rychleji než za tuto dobu, v sekundách, ať ji staví kolik chce továren jejího druhu. 1 ve hře."
+[MaximumBatimentProduction]
+what = "Budov ve stavbě najednou (max.)"
+does = "Kolik budov počítačoví hráči staví najednou. 2 ve hře."
+[MaxProductionQueueSize]
+what = "Nejdelší výrobní fronta"
+does = "Nejvíce jednotek, které počítačový hráč zařadí do své výrobní fronty. 30 ve hře."
+[MaxBatimentAndTechnoProductionSimultaneous]
+what = "Budovy a výzkumy najednou"
+does = "Kolik budov a výzkumů má počítačový hráč rozběhnutých najednou. 2 ve hře."
+[VirtualFactoryQueueMaximumSlot]
+what = "Místa ve frontě továrny"
+does = "Kolik míst má fronta továrny. 2 ve hře."
+[NbAvionsParAeroport]
+what = "Letadla na letiště"
+does = "Kolik letadel smí hráč mít na každé své letiště: jakmile jejich počet dosáhne této hodnoty krát počet letišť, další letadla postavit nelze. 8 ve hře."
+[NbMaxCardsInPool]
+what = "Karty lsti v ruce (max.)"
+does = "Nejvíce karet lsti, které strana může držet. 99 ve hře: v praxi bez omezení."
+[NbInitialCardsInPoolForAllianceTaille_1]
+what = "Karty lsti na začátku (1 hráč na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 1 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_2]
+what = "Karty lsti na začátku (2 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 2 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_3]
+what = "Karty lsti na začátku (3 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 3 hráče. Běžné režimy hry 2, nukleární režim 4."
+[NbInitialCardsInPoolForAllianceTaille_4]
+what = "Karty lsti na začátku (4 hráči na stranu)"
+does = "Kolik karet lsti má strana na začátku, když má 4 hráče. Běžné režimy hry 2, nukleární režim 4."
+[PaliersTempsToChooseNewCardForAllianceTaille_1]
+what = "Kdy přicházejí nové karty lsti (1 hráč na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana s 1 hráčem dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315 (každou 1 min 45 s); nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_2]
+what = "Kdy přicházejí nové karty lsti (2 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 2 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_3]
+what = "Kdy přicházejí nové karty lsti (3 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 3 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[PaliersTempsToChooseNewCardForAllianceTaille_4]
+what = "Kdy přicházejí nové karty lsti (4 hráči na stranu)"
+does = "Časy bitvy, v sekundách, kdy strana se 4 hráči dostane novou kartu lsti k výběru. Běžné režimy hry 105, 210, 315; nukleární režim 80, 160, 240."
+[ArmyValueForceLaunchAttack]
+what = "Hodnota armády, která vynutí útok"
+does = "Počítačoví hráči před útokem porovnávají hodnotu armády s touto: hra prověří síly, když je hodnota na místě nižší. 600 ve hře."
+[MinArmyValueToUseManipulationCard]
+what = "Nejmenší hodnota armády pro manipulační lest"
+does = "Počítačový hráč zahraje manipulační lest jen tehdy, když má jeho armáda aspoň tuto hodnotu. 120 ve hře."
+[MaxWaitingRequest]
+what = "Čekající příkazy (max.)"
+does = "Nejvíce výrobních příkazů, které počítačový hráč nechá čekat. 30 ve hře."
+[NbMaxWaitingRequestBeforeRequestingNewFactory]
+what = "Čekající příkazy před novou továrnou"
+does = "Když má počítačový hráč tolik čekajících výrobních příkazů, postaví další továrnu, místo aby zařazoval další. 8 ve hře."
+[MaxTimeWaitingRequest]
+what = "Nejdelší čekání příkazu"
+does = "Jak dlouho, v sekundách, smí výrobní příkaz počítačového hráče čekat, než se zruší (když je zapnuto Rušit čekající příkazy). 60 ve hře."
+[CheckAndCancelWaitingRequest]
+what = "Rušit čekající příkazy"
+does = "1: počítačový hráč ruší výrobní příkazy, které čekaly déle než nejdelší čekání. 1 ve hře."
+[BP_DepotAddedValue]
+what = "Hodnota skladu k ochraně"
+does = "Jakou hodnotu má zásobovací sklad pro počítačového hráče, když rozhoduje, co chránit. 50 ve hře, proti 150 za jeho velitelství."
+[BP_HqValue]
+what = "Hodnota velitelství k ochraně"
+does = "Jakou hodnotu má jeho velitelství pro počítačového hráče, když rozhoduje, co chránit. 150 ve hře, proti 50 za sklad."
+[NbMin_UniteLeurre_OffensiveGenerale]
+what = "Makety v předstírané ofenzivě (min.)"
+does = "Nejméně maket, které pošle předstíraná ofenziva počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveGenerale]
+what = "Makety v předstírané ofenzivě (max.)"
+does = "Nejvíce maket, které pošle předstíraná ofenziva počítačového hráče. 5 ve hře."
+[NbMin_UniteLeurre_OffensiveAerienne]
+what = "Letadla-makety v předstíraném leteckém útoku (min.)"
+does = "Nejméně letadel-maket, které pošle předstíraný letecký útok počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveAerienne]
+what = "Letadla-makety v předstíraném leteckém útoku (max.)"
+does = "Nejvíce letadel-maket, které pošle předstíraný letecký útok počítačového hráče. 5 ve hře."
+[NbMin_UniteLeurre_OffensiveBlinde]
+what = "Tanky-makety v předstíraném tankovém útoku (min.)"
+does = "Nejméně tanků-maket, které pošle předstíraný tankový útok počítačového hráče. 4 ve hře."
+[NbMax_UniteLeurre_OffensiveBlinde]
+what = "Tanky-makety v předstíraném tankovém útoku (max.)"
+does = "Nejvíce tanků-maket, které pošle předstíraný tankový útok počítačového hráče. 5 ve hře."
+[ConstructionDelayForFakeBuildingsMin]
+what = "Prodleva mezi budovami-maketami (min.)"
+does = "Nejkratší doba, v sekundách, kterou počítačový hráč čeká mezi dvěma budovami-maketami, které staví lstí budov-maket. 5 ve hře."
+[ConstructionDelayForFakeBuildingsMax]
+what = "Prodleva mezi budovami-maketami (max.)"
+does = "Nejdelší doba, v sekundách, kterou počítačový hráč čeká mezi dvěma budovami-maketami, které staví lstí budov-maket. 10 ve hře."
