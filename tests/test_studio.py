@@ -2329,6 +2329,37 @@ class Labels(unittest.TestCase):
         self.assertIn("parts.push(modelWant(startNew))", app)
         self.assertIn("(import a model)", _words()["start_new"]["us"])
 
+    def test_menus_and_feel(self):
+        """The owner's Studio 1.0 list, item 11 (studio-tools-design §11): number rows instead of sliders, search with
+        tags, pop-ups for jobs and problems, and key rebinding that offers a swap: each one in the page, in every
+        language."""
+        ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
+        app, maps = (ui / "app.js").read_text(encoding="utf-8"), (ui / "maps.js").read_text(encoding="utf-8")
+        page = (ui / "index.html").read_text(encoding="utf-8")
+        words = _words()
+        # every slider, the page's and every one made later, becomes a row; the slider stays for the tools' code
+        self.assertIn("steppersIn(document);", app)
+        self.assertIn('if (n.matches(\'input[type="range"]\')) stepperOf(n);', app)
+        self.assertIn('input[type="range"].stepped { display: none !important; }', (ui / "style.css").read_text(encoding="utf-8"))
+        for slider in ("tex-size", "brush-size"):   # a place on a scale: − and + alone, the label says the size
+            self.assertIn(f'<input id="{slider}" type="range" data-stepper="buttons"', page)
+        # the search's hints and recent searches (kept by the Studio)
+        self.assertIn('id="search-hints"', page)
+        from rusemod.home import PREF_KEYS
+        self.assertIn("searches", PREF_KEYS)
+        # the cards: a problem stays until closed, a job's card becomes its result
+        self.assertIn('<div id="status" class="toasts"', page)
+        self.assertNotIn("<footer id=\"status\"", page)
+        self.assertIn("const card = jobCard(w.test_running);", app)
+        # a key another action has: asked, never taken quietly
+        self.assertIn("keys.clash = { action, code: e.code, other };", maps)
+        self.assertNotIn("if (other && other !== action) keys.map[other] = null;", maps)
+        for key in ("step_less", "step_more", "tip_step_less", "tip_step_more", "tip_search_tags", "search_tags",
+                    "search_recent", "tip_search_tag", "tip_search_recent", "tag_new", "test_running", "toast_log",
+                    "tip_toast_log", "keys_clash", "keys_swap", "tip_keys_swap", "tip_keys_swap_none", "keys_take",
+                    "tip_keys_take"):
+            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+
     def test_each_word_has_the_same_blanks_in_every_language(self):  # a {name} lost in a translation stays empty
         for name, entry in _words().items():
             blanks = {lang: set(re.findall(r"\{(\w+)\}", text)) for lang, text in entry.items()}
