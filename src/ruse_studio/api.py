@@ -636,6 +636,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 lib = models.Library(game)
             except (OSError, ValueError):  # not a game rule: the mesh packs can't be read; nothing is left out
                 lib = None
+            if lib is not None and not lib.where:  # no mesh pack read at all: nothing is known, so nothing is left out
+                lib.close()
+                lib = None
             if lib is not None:
                 try:
                     found = frozenset(u["address"] for u in self._all_units(ix) if KIND_OF.get(u["class"]) != "buildings"

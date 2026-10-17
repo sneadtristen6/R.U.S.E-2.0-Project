@@ -134,7 +134,7 @@ class Models(unittest.TestCase):
 
         class Library:  # the mesh packs: the King Tiger's model is there, the gun's file isn't
             def __init__(self, game):
-                pass
+                self.where = {"tigre_ii": None}   # some mesh pack was read (with none, nothing is left out)
 
             def find(self, name, lighter=False):
                 return name if "tigre_ii" in name else None
