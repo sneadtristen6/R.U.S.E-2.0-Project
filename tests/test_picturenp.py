@@ -123,6 +123,30 @@ class WholeArrays(unittest.TestCase):
                 self.assertEqual(unitlook.halve(px, w, h, channels), want)
         self.assertIsNone(picturenp.halve(b"\0" * 11, 2, 2, 3))
 
+    def test_new_textures_the_same(self):
+        """A texture of our own (the model importer's, the map asset importer's) made every block at once: the same
+        bytes as block by block, in blocks of one colour or one alpha, and across the alpha sums' chunks."""
+        from rusemod import dxtnp, unitmodel
+        rnd = random.Random(5)
+        for w, h in ((4, 4), (8, 4), (4, 12), (16, 8), (64, 32)):
+            px = bytearray(rnd.randbytes(w * h * 4))
+            for o in range(0, w * h * 4, 4 * 7):        # (some pixels as their neighbour: flat blocks come up)
+                px[o:o + 4] = px[max(0, o - 4):max(0, o - 4) + 4] if o % 3 else bytes(4)
+            for o in range(3, w * h * 4, 4 * 5):        # (alphas of only 0 and 255 here and there)
+                px[o] = 255 * (o % 2)
+            px = bytes(px)
+            with loops():
+                want = unitmodel.dxt5_blocks(px, w, h)
+                tex = unitmodel.new_texture(px, w, h)
+            self.assertEqual(unitmodel.dxt5_blocks(px, w, h), want, (w, h))
+            self.assertEqual(unitmodel.new_texture(px, w, h), tex, (w, h))
+            with mock.patch.object(dxtnp, "CHUNK", 1):  # (16 blocks a chunk)
+                self.assertEqual(unitmodel.dxt5_blocks(px, w, h), want, (w, h))
+        one = bytes([10, 20, 30, 40]) * 64
+        with loops():
+            want = unitmodel.dxt5_blocks(one, 16, 4)
+        self.assertEqual(unitmodel.dxt5_blocks(one, 16, 4), want)
+
 
 if __name__ == "__main__":
     unittest.main()

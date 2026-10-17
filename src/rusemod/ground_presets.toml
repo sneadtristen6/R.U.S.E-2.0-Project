@@ -49,25 +49,30 @@ sources = [[1010557.6, 740617.5, -0.866032, -0.499989, 6956.4], [3911752.0, 2428
 
 # The field kinds: ONE real field of the map laid over the whole area, as Eugen's editor laid a field
 # (its rows all one way, along the area's direction). Each source is a window inside one field:
-# [x, y (its middle), the rows' direction (degrees), window along and across, sticker pitch along and
-# across the rows] (map units); an area takes one by its seed. Found on D-Day (2026-10-14).
+# [x, y (its middle), its row stickers' own axis (degrees: the rows' picture runs square to it), window along and
+# across, sticker pitch along and across] (map units); an area takes one by its seed. Found on D-Day (2026-10-14).
+# `swatch`: the palette swatch the kind's ground picture is laid with (the named palette at the end of this file),
+# so it lays the same on any map.
 
 [[field]]
 name = "Wheat field"
 description = "A ripe wheat field as on D-Day's farms: the rows of one of the map's own fields laid over the whole area in one direction, wheat in clumps, stubble under it."
 map = "M04_Cotentin"
+swatch = "swatch:dday:wheat"
 sources = [[1113503.0, 951925.8, 149.39, 8365.3, 6240.0, 1394.2, 1560.0], [1216725.8, 1367288.5, 89.18, 5507.3, 4160.0, 917.9, 1040.0], [1181592.5, 1629833.9, 100.92, 16757.3, 2080.0, 2792.9, 520.0], [1831582.6, 2308429.6, 92.22, 5560.6, 2080.0, 926.8, 520.0], [1820279.2, 2193037.9, 152.22, 5559.6, 2080.0, 926.6, 520.0], [3579826.0, 2462320.0, 97.51, 11715.7, 2080.0, 3905.2, 520.0]]
 
 [[field]]
 name = "Ploughed field"
 description = "A field between crops: one of the map's own ploughed fields, its dark rows laid over the whole area in one direction, stones turned up along them."
 map = "M04_Cotentin"
+swatch = "swatch:dday:ploughed"
 sources = [[2158447.1, 2402571.0, 34.11, 11910.1, 2080.0, 1985.0, 520.0], [3333172.0, 2373082.5, 34.11, 10511.5, 2080.0, 1751.9, 520.0], [1840527.3, 2098800.5, 94.11, 10511.4, 2080.0, 1751.9, 520.0], [3026722.0, 2550011.8, 34.11, 11268.7, 2080.0, 1878.1, 520.0], [2413822.0, 957650.8, 34.11, 12148.1, 2080.0, 2024.7, 520.0], [1593451.0, 1126822.7, 154.11, 12147.9, 2080.0, 2024.7, 520.0]]
 
 [[field]]
 name = "Stubble field"
 description = "A harvested field: one of the map's own stubble fields, pale straw rows laid over the whole area in one direction."
 map = "M04_Cotentin"
+swatch = "swatch:dday:wheat"
 sources = [[2184472.8, 1874245.4, 29.41, 8368.3, 6240.0, 1394.7, 1560.0], [2164217.2, 1666299.9, 89.15, 6135.1, 8320.0, 1022.5, 2080.0], [2436318.3, 2547322.2, 149.41, 6233.2, 8320.0, 1038.9, 2080.0], [2232018.1, 1131890.7, 149.41, 6233.2, 8320.0, 1038.9, 2080.0], [1711698.1, 2286643.4, 149.39, 5545.6, 8320.0, 924.3, 2080.0], [3492145.8, 2197059.3, 89.41, 5549.7, 8320.0, 925.0, 2080.0]]
 
 # What a field's hedge carries besides its strip (`border = "hedge"`), per map: trees along the
@@ -245,3 +250,175 @@ default = 5.46
 "VillageHouse_ToitB_5" = 7.46
 "VillageHouse_ToitC_3" = 0.0
 "VillageHouse_ToitC_4" = 11.89
+
+# Map Paint's named palette (the Texture brush's Palette): each material a square of one map's ground picture, made
+# seamless and laid repeating, each column of repeats mirrored or not along its columns' way (a field's
+# rows, which keep running one way) and each row of repeats across it, so the same repeat doesn't show
+# over and over (rusemod.groundtex: swatch:<theme>:<name>). x, y the square's middle, side its side (map units, 260 a
+# metre); facing the way a field's rows run (degrees from +x toward +y). Measured on D-Day (2026-10-16):
+# a plain material where its own ground stickers are most of the decals and no building, road or water
+# lies, the most even picture picked; a field inside one of its [[look]] sources; sand on its beach. detail
+# the game's own texture its stickers lay on that ground near the camera, detail_side how big (map units):
+# its grain under the swatch's colour, finer than the map's picture can hold.
+
+[themes]
+dday = "D-Day"
+
+[[swatch]]
+theme = "dday"
+name = "wheat"
+label = "Wheat"
+map = "M04_Cotentin"
+x = 3859686.7
+y = 2484005.4
+side = 9830.1
+facing = 64.08
+kind = "rows"
+why = "inside one of D-Day's own wheat fields (its [[look]] source at 3859687, 2484005), 85% of its inside, so its edge stays out; of 2 squares found, the other's edge shows a green strip"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\traces_terreclaire.tgv"
+detail_side = 8192.0
+
+[[swatch]]
+theme = "dday"
+name = "ploughed"
+label = "Ploughed"
+map = "M04_Cotentin"
+x = 1776570.7
+y = 2235110.4
+side = 10784.8
+facing = 30.72
+kind = "rows"
+why = "inside one of D-Day's own ploughed fields (its [[look]] source at 1776571, 2235110), 85% of its inside, so its edge stays out"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\terre.tgv"
+detail_side = 8192.0
+
+[[swatch]]
+theme = "dday"
+name = "green_crop"
+label = "Green crop"
+map = "M04_Cotentin"
+x = 2742568.3
+y = 2560397.7
+side = 11911.9
+facing = 60.37
+kind = "rows"
+why = "inside one of D-Day's own green crop fields (its [[look]] source at 2742568, 2560398), 85% of its inside, so its edge stays out; of 5 squares found, the first three show a track, a field's edge or a bare patch"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\herbe_verte.tgv"
+detail_side = 4096.0
+
+[[swatch]]
+theme = "dday"
+name = "grass"
+label = "Grass"
+map = "M04_Cotentin"
+x = 1924000.0
+y = 1253200.0
+side = 10400.0
+kind = "plain"
+why = "83% of the decals over it are D-Day's own grass stickers; no building, road or water"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\herbe_verte.tgv"
+detail_side = 4096.0
+
+[[swatch]]
+theme = "dday"
+name = "dark_grass"
+label = "Dark grass"
+map = "M04_Cotentin"
+x = 1963000.0
+y = 1651000.0
+side = 10400.0
+kind = "plain"
+why = "92% of the decals over it are D-Day's own dark grass stickers; no building, road or water; of 6 squares found, the first is ordinary grass's shade"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\herbe_fonce.tgv"
+detail_side = 4096.0
+
+[[swatch]]
+theme = "dday"
+name = "light_grass"
+label = "Light grass"
+map = "M04_Cotentin"
+x = 2416700.0
+y = 1621100.0
+side = 7800.0
+kind = "plain"
+why = "100% of the decals over it are D-Day's own light grass stickers; no building, road or water; of 6 squares found, the third shows a field's edge"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\herbe_vertvif.tgv"
+detail_side = 4096.0
+
+[[swatch]]
+theme = "dday"
+name = "earth"
+label = "Earth"
+map = "M04_Cotentin"
+x = 2251600.0
+y = 1736800.0
+side = 5200.0
+kind = "plain"
+why = "85% of the decals over it are D-Day's own earth stickers; no building, road or water; of 6 squares found, the first is sand-coloured; the second and third show stones"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\terre.tgv"
+detail_side = 8192.0
+
+[[swatch]]
+theme = "dday"
+name = "dark_earth"
+label = "Dark earth"
+map = "M04_Cotentin"
+x = 1963000.0
+y = 2087800.0
+side = 5200.0
+kind = "plain"
+why = "100% of the decals over it are D-Day's own dark earth stickers; no building, road or water"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\terre_detailsfonce.tgv"
+detail_side = 6000.0
+
+[[swatch]]
+theme = "dday"
+name = "sand"
+label = "Sand"
+map = "M04_Cotentin"
+x = 2830896.2
+y = 1515334.9
+side = 7800.0
+kind = "plain"
+why = "D-Day's own beach in its picture (mean 178, 142, 94; its beach by the player's HQ averages 177, 145, 90), the most even dry 30 m of it near the HQ; the squares under its sand stickers were brown earth"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\sable.tgv"
+detail_side = 8192.0
+
+[[swatch]]
+theme = "dday"
+name = "mud"
+label = "Mud"
+map = "M04_Cotentin"
+x = 2519400.0
+y = 1791400.0
+side = 10400.0
+kind = "plain"
+why = "73% of the decals over it are D-Day's own mud stickers; no building, road or water; of 6 squares found, laid repeating, the first four show reddish patches in a grid"
+detail = "gen\\ww2\\res2d\\decors\\france\\stickers02\\marais_solsec_02_d.tgv"
+detail_side = 6000.0
+
+[[swatch]]
+theme = "dday"
+name = "forest_floor"
+label = "Forest floor"
+map = "M04_Cotentin"
+x = 1859000.0
+y = 1955200.0
+side = 5200.0
+kind = "plain"
+why = "69% of the decals over it are D-Day's own forest floor stickers; no building, road or water; of 6 squares found, laid repeating, the others show dark or light patches in a grid"
+detail = "gen\\ww2\\res2d\\decors\\italie\\stickers\\terre_detailsfonce.tgv"
+detail_side = 6000.0
+
+[[swatch]]
+theme = "dday"
+name = "rock"
+label = "Rock"
+map = "M04_Cotentin"
+x = 2354300.0
+y = 1340300.0
+side = 7800.0
+kind = "plain"
+why = "92% of the decals over it are D-Day's own rock stickers; no building, road or water"
+detail = "gen\\ww2\\res2d\\stickers_sol\\stickers_france\\color_1.tgv"
+detail_side = 12000.0

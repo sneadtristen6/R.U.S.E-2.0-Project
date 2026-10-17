@@ -99,10 +99,15 @@ BRUSHES = {
     # the map's own picture where it lies, some of its texture kept (groundpaint.TINT_KEEP) and its mean under the
     # stroke made `colour` (the field brush's picture: groundpaint._tint_shift), `weight` its opacity
     "tint": Brush("tint", "soft"),
+    # Map Paint plan step 8: the ground the other brushes moved, inside it, painted by its new shape with a theme's
+    # palette (rusemod.repaint: rock where steep, mud on a lake bed, sand on a new shore with `beach`, grass
+    # elsewhere); `height` how far the ground must have moved (map units; 0: repaint.MOVED), `theme` the palette's
+    # theme ("": dday)
+    "repaint": Brush("repaint", "soft"),
 }
 WATER_KINDS = ("water", "drain")
 PAINT_KINDS = ("paint", "stamp", "texture", "tint")
-GROUND_UNCHANGED = WATER_KINDS + ("cover", "block", "open") + PAINT_KINDS  # kinds that never move the ground
+GROUND_UNCHANGED = WATER_KINDS + ("cover", "block", "open", "repaint") + PAINT_KINDS  # kinds that never move the ground
 CRATER_RIM = 0.35      # the crater's rim rises by this share of the bowl's depth
 
 
@@ -335,7 +340,9 @@ class Stroke:
     turn: float = 0.0     # stamp: its copy turned this many degrees (anticlockwise) round the stroke's middle: a point
                           # reads the ground at the middle + (sx, sy) + its own offset from the middle turned back by
                           # `turn` (source_of); 0 = a plain shift. The field brush's picture of a real field, turned onto
-                          # the rows it paints over (scenery.expand_field_brush)
+                          # the rows it paints over (scenery.expand_field_brush). texture: the texture turned this many
+                          # degrees round the map's corner (0, 0), so strokes of one texture and turn line up; a palette
+                          # field swatch's rows run along it (groundtex.Swatch.sampler)
 
     fold: float = 0.0     # stamp: where it reads past the square of this half size round (fx, fy), its sides along
     fx: float = 0.0       # `fturn` degrees, it reads folded back into it as in a mirror (source_of): a field bigger
@@ -345,6 +352,16 @@ class Stroke:
                           # by row from (x0, y0), 1 = inside): a plot's painted outline as the map's own picture draws
                           # it (scenery.field_outline); () = everywhere its footprint reaches. Made by the build, never
                           # written to a terrain file
+    mask: str = ""        # paint, stamp, texture, tint: a brush that is a picture (rusemod.brushmask.MASKS): it lays
+                          # as much as the mask shows, times its fall-off; "" = its fall-off alone
+    theme: str = ""       # repaint: the palette theme it paints with (rusemod.groundtex.palette; "" = dday)
+    beach: bool = False   # repaint: sand round the mod's new lakes (their first repaint.SHORE over the water), as
+                          # D-Day's beaches; off, grass down to the water, as its rivers and marshes (sand by hand)
+    rocks: bool = True    # texture (a palette's rock) and repaint (the rock of its steep ground): the map's own 3D
+                          # rocks laid over that rock, for detail up close (rusemod.rocks); not tried in the game yet
+    dither: bool = False  # paint, stamp, texture, tint: where it fades, each pixel of the finest level takes it whole
+                          # or not at all, by a chance that follows the fall-off (brushmask.dither_at): a speckled edge
+                          # instead of a blend (Map Paint plan step 6)
 
     def clip_at(self, x: float, y: float) -> bool:
         """Whether the clip lets (x, y) be painted (no clip: everywhere)."""
@@ -394,9 +411,12 @@ class Stroke:
             return Footprint("square", self.x, self.y, self.radius, self.dx, self.dy, along=self.length)
         return Footprint("round", self.x, self.y, self.radius)
 
-    def strength_at(self, x: float, y: float) -> float:
-        """How strongly the brush acts at (x, y): its fall-off over the footprint (0 outside it)."""
+    def strength_at(self, x: float, y: float, reach: float = 1.0) -> float:
+        """How strongly the brush acts at (x, y): its fall-off over the footprint (0 outside it). `reach` (an edge
+        mask's, brushmask.reach_scale) multiplies how far out the point lies first."""
         t2 = self.footprint().t2(x, y)
+        if reach != 1.0:
+            t2 = t2 * reach
         return edge_weight(self.edge, self.kind.shape, t2) if t2 < 1.0 else 0.0
 
     def along(self, x: float, y: float) -> tuple[float, float]:
@@ -480,7 +500,7 @@ class Stroke:
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
           "water": ("level",), "drain": (), "cover": (), "block": (), "open": (), "paint": ("colour",),
-          "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",)}
+          "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",), "repaint": ()}
 _NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "turn",
             "fold", "fx", "fy", "fturn", "size", "length")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -566,8 +586,9 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             values["colour"] = item["colour"].lower()
         if ("sx" in values or "sy" in values) and kind != "stamp":
             raise BrushError(f"{at}: sx and sy (where a stamp copies from) are for the stamp brush")
-        if "turn" in values and kind != "stamp":
-            raise BrushError(f"{at}: turn (how far a stamp's copy is turned) is for the stamp brush")
+        if "turn" in values and kind not in ("stamp", "texture"):
+            raise BrushError(f"{at}: turn (how far a stamp's copy or a texture is turned) is for the stamp and "
+                             f"texture brushes")
         if any(k in values for k in ("fold", "fx", "fy", "fturn")):
             if kind != "stamp":
                 raise BrushError(f"{at}: fold, fx, fy and fturn (the square a stamp reads folded into) are for the "
@@ -586,6 +607,43 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
                 raise BrushError(f"{at}: {exc}") from None
             if values.get("size", 0.0) < 0.0:
                 raise BrushError(f"{at}: size can't be below 0 (0 lays the texture at its own size)")
+        if "mask" in item:
+            from .brushmask import MASKS
+            if kind not in PAINT_KINDS:  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: mask (a brush that is a picture) is for the paint, stamp, texture and tint "
+                                 f"brushes")
+            if item["mask"] not in MASKS + ("",):
+                raise BrushError(f"{at}: mask must be one of {', '.join(MASKS)}, not {item['mask']!r}")
+            values["mask"] = item["mask"]
+        if "dither" in item:
+            if kind not in PAINT_KINDS:  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: dither (a speckled edge) is for the paint, stamp, texture and tint brushes")
+            if not isinstance(item["dither"], bool):
+                raise BrushError(f"{at}: dither must be true or false")
+            values["dither"] = item["dither"]
+        if "theme" in item:
+            if kind != "repaint":  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: theme (the palette a repaint paints with) is for the repaint brush")
+            from .groundtex import palette
+            themes = sorted({p.theme for p in palette().values()})
+            if item["theme"] not in themes:
+                raise BrushError(f"{at}: theme must be one of {', '.join(themes)}, not {item['theme']!r}")
+            values["theme"] = item["theme"]
+        if "beach" in item:
+            if kind != "repaint":  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: beach (sand round a new lake) is for the repaint brush")
+            if not isinstance(item["beach"], bool):
+                raise BrushError(f"{at}: beach must be true or false")
+            values["beach"] = item["beach"]
+        if "rocks" in item:
+            if kind not in ("texture", "repaint"):  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: rocks (the game's 3D rocks over painted rock) are for the texture and "
+                                 f"repaint brushes")
+            if not isinstance(item["rocks"], bool):
+                raise BrushError(f"{at}: rocks must be true or false")
+            values["rocks"] = item["rocks"]
+        if kind == "repaint" and values.get("height", 0.0) < 0.0:
+            raise BrushError(f"{at}: height (how far the ground must have moved to be repainted) can't be below 0")
         if "clear" in item:
             if kind not in PAINT_KINDS:
                 raise BrushError(f"{at}: clear (taking off what hides the paint up close) is for the paint, stamp, "
@@ -622,8 +680,14 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
         kind = s.kind.kind
         lines += ["", "[[stroke]]", f'brush = "{s.brush}"', f"x = {_num_text(s.x)}", f"y = {_num_text(s.y)}",
                   f"radius = {_num_text(s.radius)}"]
-        if kind == "add":
+        if kind == "add" or (kind == "repaint" and s.height):
             lines.append(f"height = {_num_text(s.height)}")
+        if kind == "repaint" and s.theme:
+            lines.append(f'theme = "{s.theme}"')
+        if kind == "repaint" and s.beach:
+            lines.append("beach = true")
+        if kind in ("texture", "repaint") and not s.rocks:
+            lines.append("rocks = false")
         if kind in ("level", "water"):  # a lake's surface is its level
             lines.append(f"level = {_num_text(s.level)}")
         if kind == "ramp":
@@ -642,12 +706,18 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f'texture = "{s.texture}"')
             if s.size > 0.0:
                 lines.append(f"size = {_num_text(s.size)}")
+            if s.turn:
+                lines.append(f"turn = {_num_text(s.turn)}")
             if not s.decals:
                 lines.append("decals = false")
         if kind in ("level", "smooth", "ramp") + PAINT_KINDS:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:
             lines.append("clear = false")
+        if kind in PAINT_KINDS and s.mask:
+            lines.append(f'mask = "{s.mask}"')
+        if kind in PAINT_KINDS and s.dither:
+            lines.append("dither = true")
         if s.brush == "water" and not s.block:
             lines.append("block = false")
         if s.square:

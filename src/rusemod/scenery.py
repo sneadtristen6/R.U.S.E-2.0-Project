@@ -547,13 +547,28 @@ class NewObject:
                          # 0 = drawn by every level, far included (what placed buildings and trees get)
     height: float = 0.0  # its scale upward when not its size (a shipped plant is often flatter or taller than it is
                          # wide: copy_objects keeps it); 0 = its size
+    up: tuple = ()       # its own up direction when it is tilted (a unit vector x, y, z: a rock laid to its slope,
+                         # rusemod.rocks); () = upright. The game draws a tilted full transform (the shipped maps'
+                         # leaning ladders) and still sets it on the ground by its `lift` (measured 2026-10-16)
 
     def matrix(self) -> tuple:
-        """Where it goes, in map coordinates: turned, sized, stretched along its own y, lifted."""
+        """Where it goes, in map coordinates: turned, sized, stretched along its own y, tilted to `up`, lifted."""
         t = math.radians(self.turn)
-        c, s = math.cos(t) * self.size, math.sin(t) * self.size
         k = self.stretch
-        return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.height or self.size, self.lift)
+        if not self.up:
+            c, s = math.cos(t) * self.size, math.sin(t) * self.size
+            return (c, -s * k, 0.0, self.x, s, c * k, 0.0, self.y, 0.0, 0.0, self.height or self.size, self.lift)
+        # its own x: the turn's direction laid into the plane square to `up`; its own y: up across that
+        ux, uy, uz = self.up
+        ax, ay = math.cos(t), math.sin(t)
+        d = ax * ux + ay * uy
+        xx, xy, xz = ax - d * ux, ay - d * uy, -d * uz
+        n = math.sqrt(xx * xx + xy * xy + xz * xz) or 1.0
+        xx, xy, xz = xx / n, xy / n, xz / n
+        yx, yy, yz = uy * xz - uz * xy, uz * xx - ux * xz, ux * xy - uy * xx
+        s, h = self.size, self.height or self.size
+        return (xx * s, yx * s * k, ux * h, self.x, xy * s, yy * s * k, uy * h, self.y, xz * s, yz * s * k, uz * h,
+                self.lift)
 
 
 ROAD_PIECE = 4000.0   # map units a new road's sticker pieces run (the shipped ones: 1,300 to 73,000, about 4,100 typical)
@@ -2224,7 +2239,8 @@ def parse_presets(rows: list, where: str = "scenery.toml") -> list[PresetArea]:
 
 def preset_library(path=None) -> dict[str, dict]:
     """The ground presets, by name: {"description", "map" (the pack whose squares they are), "sources" [(x, y)...]
-    (50 m squares' middles), "aligned" (rows run one way)}. From ground_presets.toml beside this module."""
+    (50 m squares' middles), "aligned" (rows run one way)}; a field kind's also its "swatch" (the palette swatch its
+    picture is laid with, groundtex: swatch:<theme>:<name>; "" none). From ground_presets.toml beside this module."""
     import tomllib
     from pathlib import Path
     file = Path(path) if path else Path(__file__).with_name(PRESET_FILE)
@@ -2249,8 +2265,15 @@ def preset_library(path=None) -> dict[str, dict]:
             raise SceneryEditError(f"{file.name}: a field needs a name, a map and sources")
         if any(s.pitch_u <= 0 or s.pitch_v <= 0 or s.window_u < s.pitch_u or s.window_v < s.pitch_v for s in sources):
             raise SceneryEditError(f"{file.name}: field {name!r}: a window must hold whole pitches above 0")
+        swatch = str(row.get("swatch", ""))
+        if swatch:
+            from .groundtex import TextureError, check_ref
+            try:
+                check_ref(swatch)
+            except TextureError as exc:
+                raise SceneryEditError(f"{file.name}: field {name!r}: {exc}") from None
         out[name] = {"type": "field", "description": str(row.get("description", "")), "map": str(row["map"]),
-                     "sources": sources, "aligned": True}
+                     "sources": sources, "aligned": True, "swatch": swatch}
     return out
 
 
@@ -2345,9 +2368,12 @@ def expand_field(area: PresetArea, kind: dict, group: int = 1) -> tuple[list[Cop
     across), laid edge to edge: the rows run on from tile to tile both ways, nothing is laid twice (2026-10-14:
     square tiles overlapping by a pitch along the rows laid a ploughed field's crops and stones twice in every
     overlap, 360 tiles on a 100 m square). Every tile copies the same window, turned from the source's row
-    direction to the area's (CopyArea.turn), clipped to the area, with the preset's group. The ground picture is
-    stamped from the window too, squares as wide as a tile along it (unturned: a stamp copies by offset; the rows in
-    the picture are faint, the stickers carry them)."""
+    direction to the area's (CopyArea.turn), clipped to the area, with the preset's group. The ground picture is the
+    kind's palette swatch (kind["swatch"], groundtex.palette: a square of the same map's picture, so it lays the same
+    on any map) as ONE texture stroke over the area, its rows turned with the copied stickers' (a source's angle is its
+    row stickers' own axis, which lies across the rows: the rows run at the angle + 90); a kind without one stamps
+    the window, squares as wide as a tile along it (unturned: a stamp copies by offset, so from the map it is laid on:
+    right only on the kind's own map)."""
     from .brush import HARD_EDGE, Stroke
     sources = kind["sources"]
     src = sources[area.seed % len(sources)]
@@ -2362,7 +2388,14 @@ def expand_field(area: PresetArea, kind: dict, group: int = 1) -> tuple[list[Cop
     steps_u = int(math.ceil(area.radius / long)) + 1
     steps_v = int(math.ceil(area.radius / wide)) + 1
     dabs = max(1, int(math.ceil(long / wide)))   # stamps along a tile, each `wide` across
+    swatch = kind.get("swatch") or ""
     copies, stamps = [], []
+    if swatch:   # the rows: the area's direction (the stickers' axis, turned to it) + 90
+        rows = (math.degrees(math.atan2(uy, ux)) + 90.0) % 180.0
+        square = area.shape == "square"
+        stamps.append(Stroke("texture", area.x, area.y, area.radius / HARD_EDGE, shape=area.shape, edge="hard",
+                             dx=area.dx if square else 1.0, dy=area.dy if square else 0.0, texture=swatch, turn=rows,
+                             clear=False))
     for j in range(-steps_v, steps_v + 1):
         for i in range(-steps_u, steps_u + 1):
             du, dv = (i + 0.5) * long, (j + 0.5) * wide
@@ -2374,7 +2407,7 @@ def expand_field(area: PresetArea, kind: dict, group: int = 1) -> tuple[list[Cop
                 continue
             copies.append(CopyArea(cx, cy, wide / 2, src.x - cx, src.y - cy, turn, COPY_LAYERS, "square", area.dx,
                                    area.dy, kind["map"], within, area.mode == "add", group, along=long / 2))
-            for k in range(dabs):
+            for k in range(0 if swatch else dabs):
                 a = (k + 0.5) * long / dabs - long / 2
                 stamps.append(Stroke("stamp", cx + a * ux, cy + a * uy, wide / 2 / HARD_EDGE, sx=src.x - cx,
                                      sy=src.y - cy, shape="square", edge="hard", dx=area.dx, dy=area.dy, clear=False))

@@ -6,6 +6,16 @@
                                    the mod, or in this repository
   map:<map pack>:<x>:<y>           a square of a map's ground picture, MAP_SIDE across, centred at (x, y) on it
   file:<name>.png                  the mod's own picture, files/ground/<name>.png (any PNG: its middle square is used)
+  swatch:<theme>:<name>            one material of a theme's palette (palette(): "D-Day: wheat"), a patch of ONE
+                                   material measured on the theme's own map ([[swatch]] in ground_presets.toml), taken
+                                   turned so a field's rows run along it; it travels to any map (Map Paint plan step 4)
+
+A palette swatch's repeats are not all the same: each is mirrored along and/or across its columns' way (a field's
+rows), chosen per repeat by mirror_of, so the same repeat doesn't show over and over from afar. Made seamless as any
+texture is (its left edge runs on into its right, its top into its bottom), it meets a mirrored neighbour with no
+seam too: the two show the same edge. (Not turned a quarter: a seamless picture's sides don't join its top and
+bottom; and its border isn't blended toward the mean of its turnings: on D-Day's swatches that showed as a blurred
+grid, 2026-10-16.)
 
 Each is laid repeating across the ground, from the map's corner (0, 0), `size` map units a repeat (0: its own size,
 Swatch.period: for a game texture the size the game itself lays it at; for the mod's own picture the metres its
@@ -26,7 +36,7 @@ import hashlib
 import math
 import re
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import dxt, tgu1
@@ -34,7 +44,14 @@ from .tmst import Tgv, zipo_unpack
 
 GAME_DIR = "gen\\ww2\\res2d\\decors\\"
 SCENERY_DIR = "genglad\\patchable\\scenery\\"
-FINEST = 160.0        # map units across a pixel of the ground's finest tiles: the same on all 32 maps (2026-10-09)
+FINEST = 160.0        # map units across a pixel of the ground's finest tiles: the same on all 32 maps (2026-10-09);
+                      # a test copy whose tile set goes deeper paints for its own finer pixels (it sets this)
+PICTURE = 160.0       # map units across a pixel of a shipped map's finest ground picture, what a palette swatch is cut
+                      # from (FINEST as shipped, whatever FINEST is set to)
+DETAIL_SPLIT = 4.0 * PICTURE   # a palette swatch with a detail texture: its own colour from this size up, the
+                               # detail's grain below it (with_detail)
+DETAIL_MOST = (0.35, 2.2)      # how far the detail may darken or lighten a pixel against its neighbourhood
+GRAIN_UNIT = 100.0             # a grain pixel's byte for 1 (no change): 35 darkens to 0.35, 220 lightens to 2.2
 OWN_PERIOD = 8192.0   # a game texture's repeat where the game's data doesn't say it (32 m: the most common)
 MAP_SIDE = 81920.0    # a map square: 512 of its finest pixels across (320 m)
 FILE_PERIOD = 8192.0  # the mod's own picture: one repeat 32 m across until the stroke says otherwise
@@ -44,7 +61,7 @@ GROUND = Path("files") / "ground"  # the mod's own pictures to paint with
 SEAM = 8              # seamless: the strip blended along each edge is 1/SEAM of the texture across
 NEAREST_MIP = 2 ** 0.5  # a ground pixel samples the mip whose pixels are nearest its size: up to this many times it
 _REF = re.compile(r"^(game):([a-z0-9_]+/[a-z0-9_]+/[a-z0-9_]+)$|^(map):([A-Za-z0-9_]+):(-?[0-9.]+):(-?[0-9.]+)$"
-                  r"|^(file):([A-Za-z0-9_][A-Za-z0-9_ .-]{0,80}\.png)$")
+                  r"|^(file):([A-Za-z0-9_][A-Za-z0-9_ .-]{0,80}\.png)$|^(swatch):([a-z0-9_]+):([a-z0-9_]+)$")
 _NOT_COLOUR = re.compile(r"(?i)_(nm|p)$")
 _FOLDERS = re.compile(r"(?i)^gen\\ww2\\res2d\\decors\\([^\\]+)\\(stickers[^\\]*)\\([^\\]+)\.tgv$")
 
@@ -56,8 +73,8 @@ class TextureError(ValueError):
 def check_ref(ref: str) -> str:
     """`ref` if it names a texture the way this module reads them (the module's words), else TextureError."""
     if not isinstance(ref, str) or not _REF.match(ref):  # not a game rule: how this module names a texture
-        raise TextureError(f"texture {ref!r} isn't one: game:<set>/<folder>/<name>, map:<map>:<x>:<y> or "
-                           f"file:<name>.png")
+        raise TextureError(f"texture {ref!r} isn't one: game:<set>/<folder>/<name>, map:<map>:<x>:<y>, "
+                           f"file:<name>.png or swatch:<theme>:<name>")
     return ref
 
 
@@ -165,6 +182,27 @@ def seamless(n: int, px: bytes) -> bytes:
     return bytes(out)
 
 
+def coin(k: int, salt: int) -> int:
+    """0 or 1 for a whole number k, as by a coin: whole-number sums that stay under 2^53, so Python, numpy and the
+    Studio page's JavaScript all give the same (squared twice modulo the prime MIX: each as often, the next k's alike
+    as often as chance)."""
+    h = (k * 92821 + salt) % MIX
+    h = (h * h + 12345) % MIX
+    h = (h * h + 54321) % MIX
+    return h * 2 // MIX
+
+
+def mirror_of(ci: int, cj: int) -> int:
+    """How the repeat at column ci, row cj (each floor(coordinate / repeat)) of a palette swatch is laid: bit 1
+    mirrored along the columns' way (i: a field's rows), the same all down its column of repeats; bit 2 across it
+    (j), the same all along its row. (A repeat mirrored along i beside one above it that isn't would meet it with a
+    seam: their shared edge read one way and the other.)"""
+    return coin(ci, 7) | coin(cj, 68917) << 1
+
+
+MIX = 65521  # the largest prime under 2^16: coin's squares stay under 2^32
+
+
 def halve(n: int, px: bytes) -> bytes:
     """An n x n RGBA picture at half its size: each pixel the mean of the four under it, rounded half up."""
     h = n // 2
@@ -187,17 +225,51 @@ class Swatch:
     period: float
     mips: list
     digest: str = ""
+    mirrored: bool = False  # a palette swatch: each repeat mirrored its own way (mirror_of); else all the same
+    grain: list = field(default_factory=list)   # a palette swatch's grain (grain_of): its mips (n x n, one byte a
+    grain_period: float = 0.0                   # pixel, GRAIN_UNIT = 1), laid this many map units a repeat
+                                                # unmirrored and unturned over the colour (so no fold line shows)
 
     @classmethod
-    def make(cls, ref: str, n: int, px: bytes, period: float) -> "Swatch":
+    def make(cls, ref: str, n: int, px: bytes, period: float, mirrored: bool = False, grain=None) -> "Swatch":
+        """`grain`: (n, its pixels, map units a repeat) from grain_of, or None."""
         px = seamless(n, px)
         mips = [(n, px)]
         while n > 1:
             px = halve(n, px)
             n //= 2
             mips.append((n, px))
-        digest = hashlib.blake2b(mips[0][1] + struct.pack("<Id", mips[0][0], period), digest_size=16).hexdigest()
-        return cls(ref, period, mips, digest)
+        said = struct.pack("<IdB", mips[0][0], period, 1) if mirrored else struct.pack("<Id", mips[0][0], period)
+        gmips, gperiod = [], 0.0
+        if grain is not None:
+            gn, gpx, gperiod = grain
+            gmips = [(gn, gpx)]
+            while gn > 1:
+                gpx = _halve_plane(gn, gpx)
+                gn //= 2
+                gmips.append((gn, gpx))
+            said += struct.pack("<Id", gmips[0][0], gperiod) + gmips[0][1]
+        digest = hashlib.blake2b(mips[0][1] + said, digest_size=16).hexdigest()
+        return cls(ref, period, mips, digest, mirrored, gmips, gperiod)
+
+    def grain_sampler(self, rep: float, pixel: float):
+        """(x, y) -> how much the grain lightens (over 1) or darkens the colour there, or None without a grain: laid
+        from (0, 0) as the colour, its repeat scaled as the stroke scales the colour's (`rep` against the period),
+        neither turned nor mirrored, at the mip whose pixels are nearest `pixel`."""
+        if not self.grain:
+            return None
+        grep = self.grain_period * rep / self.period
+        m, most = 0, pixel * NEAREST_MIP
+        while m + 1 < len(self.grain) and grep / self.grain[m + 1][0] <= most:
+            m += 1
+        n, g = self.grain[m]
+        last = n - 1
+
+        def at(x: float, y: float) -> float:
+            i = int((x / grep) % 1.0 * n)
+            j = int((y / grep) % 1.0 * n)
+            return g[(j if j < last else last) * n + (i if i < last else last)] / GRAIN_UNIT
+        return at
 
     def mip_for(self, rep: float, pixel: float) -> int:
         """The mip a ground pixel `pixel` map units across samples, the texture laid `rep` map units a repeat: the one
@@ -208,16 +280,34 @@ class Swatch:
             m += 1
         return m
 
-    def sampler(self, rep: float, pixel: float):
-        """(x, y) -> (r, g, b, a): the texture laid `rep` map units a repeat from (0, 0), at the mip for `pixel`."""
+    def sampler(self, rep: float, pixel: float, turn: float = 0.0):
+        """(x, y) -> (r, g, b, a): the texture laid `rep` map units a repeat from (0, 0), at the mip for `pixel`,
+        turned `turn` degrees round (0, 0) (anticlockwise, as a stamp's turn: a point reads the texture at itself
+        turned back by it), so its columns' way runs along `turn`."""
         n, px = self.mips[self.mip_for(rep, pixel)]
         last = n - 1
+        mirrored = self.mirrored
+        c, s = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+        grain = self.grain_sampler(rep, pixel)
 
         def at(x: float, y: float) -> tuple[int, int, int, int]:
+            g = grain(x, y) if grain else 1.0
+            if turn:
+                x, y = x * c + y * s, y * c - x * s
             i = int((x / rep) % 1.0 * n)
             j = int((y / rep) % 1.0 * n)
-            k = 4 * ((j if j < last else last) * n + (i if i < last else last))
-            return px[k], px[k + 1], px[k + 2], px[k + 3]
+            i, j = (i if i < last else last), (j if j < last else last)
+            if mirrored:   # this repeat's own way (mirror_of)
+                v = mirror_of(math.floor(x / rep), math.floor(y / rep))
+                if v & 1:
+                    i = last - i
+                if v & 2:
+                    j = last - j
+            k = 4 * (j * n + i)
+            if g == 1.0:
+                return px[k], px[k + 1], px[k + 2], px[k + 3]
+            return (min(255, int(px[k] * g + 0.5)), min(255, int(px[k + 1] * g + 0.5)),
+                    min(255, int(px[k + 2] * g + 0.5)), px[k + 3])
         return at
 
 
@@ -620,6 +710,186 @@ def map_square(read, x: float, y: float, cache=None, n: int = 512) -> tuple[int,
     return n, bytes(out)
 
 
+def map_patch(read, x: float, y: float, side: float, facing: float, n: int, cache=None) -> tuple[int, bytes]:
+    """A palette swatch's pixels: the square `side` map units across centred at (x, y) on a map's ground picture,
+    turned so the direction `facing` (degrees, from +x toward +y: a field's rows) runs along its columns' way (i), as
+    n x n RGBA (opaque). Each pixel is the picture between its four nearest pixels' middles (PICTURE apart, from the
+    ground's corner), weighed by nearness: the patch's pixels lie turned across the picture's. `read(member)`: the
+    map pack's."""
+    from .groundpaint import _picture_sampler, map_bounds
+    from .tmst import Tmst
+    mesh = read("output\\highdef.tms")
+    index, chunk = read("output\\highdef.tmst_pc"), read("output\\highdef.tmst_chunk_pc")
+    if mesh is None or index is None or chunk is None:
+        raise TextureError("that map has no ground picture to take a swatch of")
+    bounds = map_bounds(mesh)
+    at = _picture_sampler(Tmst(index, chunk), bounds, 0, cache)
+    x0, y0, x1, y1 = bounds
+    c, s = math.cos(math.radians(facing)), math.sin(math.radians(facing))
+    step = side / n
+    out = bytearray(n * n * 4)
+    for j in range(n):
+        b = (j + 0.5) * step - side / 2.0
+        for i in range(n):
+            a = (i + 0.5) * step - side / 2.0
+            fx, fy = (x + a * c - b * s - x0) / PICTURE - 0.5, (y + a * s + b * c - y0) / PICTURE - 0.5
+            gx, gy = math.floor(fx), math.floor(fy)
+            tx, ty = fx - gx, fy - gy
+            sums = [0.0, 0.0, 0.0]
+            for dx, dy, w in ((0, 0, (1 - tx) * (1 - ty)), (1, 0, tx * (1 - ty)), (0, 1, (1 - tx) * ty),
+                              (1, 1, tx * ty)):
+                px = min(max(x0 + (gx + dx + 0.5) * PICTURE, x0 + 1.0), x1 - 1.0)
+                py = min(max(y0 + (gy + dy + 0.5) * PICTURE, y0 + 1.0), y1 - 1.0)
+                got = at(px, py) or (0, 0, 0)
+                for ch in range(3):
+                    sums[ch] += w * got[ch]
+            k = 4 * (j * n + i)
+            out[k:k + 4] = bytes((int(sums[0] + 0.5), int(sums[1] + 0.5), int(sums[2] + 0.5), 255))
+    return n, bytes(out)
+
+
+def _blur_wrap(n: int, plane: list[float], r: int) -> list[float]:
+    """A tiling n x n plane averaged over the (2r + 1)-pixel square round each pixel, wrapping at its edges (its
+    repeats meet): two passes of running sums."""
+    if r <= 0:
+        return list(plane)
+    w = 2 * r + 1
+    tmp = [0.0] * (n * n)
+    for j in range(n):
+        row = plane[j * n:(j + 1) * n]
+        s = sum(row[i % n] for i in range(-r, r + 1))
+        for i in range(n):
+            tmp[j * n + i] = s / w
+            s += row[(i + r + 1) % n] - row[(i - r) % n]
+    out = [0.0] * (n * n)
+    for i in range(n):
+        s = sum(tmp[(j % n) * n + i] for j in range(-r, r + 1))
+        for j in range(n):
+            out[j * n + i] = s / w
+            s += tmp[((j + r + 1) % n) * n + i] - tmp[((j - r) % n) * n + i]
+    return out
+
+
+def detail_repeats(side: float, detail_side: float) -> int:
+    """How many times a swatch `side` across lays its detail texture across it: the whole number nearest the detail's
+    own size (`detail_side`), so the two repeat together."""
+    return max(1, round(side / detail_side))
+
+
+def low_pass(n: int, px: bytes, side: float, split: float) -> bytes:
+    """A tiling n x n RGBA picture `side` map units across averaged over squares `split` across (wrapping): what a
+    palette swatch with a grain keeps of its own picture, the grain giving what's finer (grain_of)."""
+    r = max(0, int(round(split / (side / n) / 2.0)))
+    chans = [_blur_wrap(n, [float(px[4 * q + c]) for q in range(n * n)], r) for c in range(3)]
+    out = bytearray(n * n * 4)
+    for q in range(n * n):
+        out[4 * q:4 * q + 4] = bytes((int(chans[0][q] + 0.5), int(chans[1][q] + 0.5), int(chans[2][q] + 0.5), 255))
+    return bytes(out)
+
+
+def grain_of(dn: int, dpx: bytes, rep: float, split: float) -> bytes:
+    """A detail texture's grain (F-56): dn x dn of it (RGBA, `rep` map units across) as how much each pixel lightens
+    or darkens against its own average over `split` (its brightness over that, DETAIL_MOST at most each way), one
+    byte a pixel, GRAIN_UNIT = 1, made to repeat without a seam. Averaged over `split` it is about 1: laid over a
+    colour averaged that way (low_pass), the colour is the same from afar and the grain shows up close."""
+    lum = [0.299 * dpx[4 * q] + 0.587 * dpx[4 * q + 1] + 0.114 * dpx[4 * q + 2] for q in range(dn * dn)]
+    low = _blur_wrap(dn, lum, max(0, int(round(split / (rep / dn) / 2.0))))
+    lo, hi = DETAIL_MOST
+    out = bytearray(4 * dn * dn)
+    for q in range(dn * dn):
+        f = lum[q] / low[q] if low[q] > 0.5 else 1.0
+        v = int(round((lo if f < lo else hi if f > hi else f) * GRAIN_UNIT))
+        out[4 * q:4 * q + 4] = bytes((v, v, v, 255))
+    return seamless(dn, bytes(out))[0::4]
+
+
+def _halve_plane(n: int, g: bytes) -> bytes:
+    """An n x n one-byte picture at half its size: each pixel the mean of the four under it, rounded half up."""
+    h = n // 2
+    return bytes((g[2 * j * n + 2 * i] + g[2 * j * n + 2 * i + 1] + g[(2 * j + 1) * n + 2 * i]
+                  + g[(2 * j + 1) * n + 2 * i + 1] + 2) // 4 for j in range(h) for i in range(h))
+
+
+def swatch_pixels(got, read, n: int, zz=None, cache=None) -> tuple[int, bytes, tuple | None]:
+    """A palette swatch as the build lays it: (n, its n x n pixels, its grain or None). Its square of its map's
+    picture (map_patch, `read` that map pack's members); when it names a detail and `zz` (the game's ZZ_Win.dat) is
+    there, that picture averaged over DETAIL_SPLIT (a field's over PICTURE: its rows are finer) and the detail's
+    grain (grain_of: (pixels across, its bytes, map units a repeat), the detail laid detail_repeats times across the
+    swatch, at the pixels the ground's finest level needs). The grain is laid by itself, unmirrored (Swatch.make):
+    baked into the mirrored colour, each mirrored repeat's fold showed as a line (2026-10-16). The Studio's preview
+    and the build both make them here."""
+    side, px = map_patch(read, got.x, got.y, got.side, got.facing, n, cache)
+    if not got.detail or zz is None:
+        return side, px, None
+    e = zz.entry(got.detail)
+    if e is None:  # not a game rule: the palette names a file the game doesn't have
+        raise TextureError(f"the game has no texture {got.detail} for the palette's {got.label}")
+    split = PICTURE if got.kind == "rows" else DETAIL_SPLIT
+    rep = got.side / detail_repeats(got.side, got.detail_side)
+    # the game's own mip about as fine as the ground's pixels (a finer one sampled coarser aliases: a kaleidoscope)
+    dw, dh, dpx = tgv_rgba(bytes(zz.read(e)), need(rep))
+    dn, dpx = square(dw, dh, dpx, need(rep))
+    return side, low_pass(side, px, got.side, split), (dn, grain_of(dn, dpx, rep, split), rep)
+
+
+# --- the named palette (Map Paint plan step 4) -------------------------------------------------------------------
+PALETTE_FILE = "ground_presets.toml"   # beside this module: its [themes] table and [[swatch]] tables
+SWATCH_KINDS = ("rows", "plain")  # a field's rows (laid turned to run with the field's) or a material with no way
+
+
+@dataclass(frozen=True)
+class PaletteSwatch:
+    """One material of a theme's palette: a square of its own map's ground picture (middle x, y and side in map
+    units; `facing` the way its rows run, degrees from +x toward +y, for a field), its kind (rows or plain) and why
+    that spot (what was measured there). `detail`: the game's own texture its stickers give that ground near the
+    camera (a ZZ_Win.dat member) and `detail_side` how big the game lays it (map units): its grain under the
+    swatch's colour (with_detail)."""
+    theme: str
+    name: str
+    label: str
+    theme_label: str
+    map: str
+    x: float
+    y: float
+    side: float
+    facing: float = 0.0
+    kind: str = "plain"
+    why: str = ""
+    detail: str = ""
+    detail_side: float = 0.0
+
+    @property
+    def ref(self) -> str:
+        return f"swatch:{self.theme}:{self.name}"
+
+
+def palette(path=None) -> dict[str, PaletteSwatch]:
+    """{ref: PaletteSwatch} of every theme's palette, from the [themes] table ({theme: its label}) and the [[swatch]]
+    tables of ground_presets.toml beside this module, in the file's order (TextureError for a swatch that doesn't
+    read: its theme listed, a name, a map, a side above 0, a kind of SWATCH_KINDS)."""
+    import tomllib
+    file = Path(path) if path else Path(__file__).with_name(PALETTE_FILE)
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    themes = {str(k): str(v) for k, v in data.get("themes", {}).items()}
+    out: dict[str, PaletteSwatch] = {}
+    for k, row in enumerate(data.get("swatch", [])):
+        theme, name = str(row.get("theme", "")), str(row.get("name", ""))
+        try:
+            got = PaletteSwatch(theme, name, str(row.get("label", name)), themes.get(theme, ""), str(row["map"]),
+                                float(row["x"]), float(row["y"]), float(row["side"]), float(row.get("facing", 0.0)),
+                                str(row.get("kind", "plain")), str(row.get("why", "")), str(row.get("detail", "")),
+                                float(row.get("detail_side", 0.0)))
+        except (KeyError, TypeError, ValueError):
+            got = None
+        if (got is None or theme not in themes or not _REF.match(got.ref) or got.kind not in SWATCH_KINDS
+                or not got.side > 0.0 or got.ref in out or (got.detail and not got.detail_side > 0.0)):
+            raise TextureError(f"{file.name}: swatch {k + 1}: it needs a listed theme, a name (a-z, 0-9, _) not used "
+                               f"before in it, a map, x, y, a side above 0, a kind ({' or '.join(SWATCH_KINDS)}) "
+                               f"and, with a detail, its detail_side above 0")
+        out[got.ref] = got
+    return out
+
+
 # --- the mod's own pictures -------------------------------------------------------------------------------------
 def picture_rgba(data: bytes) -> tuple[int, int, bytes]:
     """A PNG's pixels as RGBA (grey, grey + alpha and RGB made RGBA)."""
@@ -704,16 +974,27 @@ class Library:
     reader (or None for a map that isn't there); `files` maps a mod's own picture (file:<mod id>/<name>, as the build
     names them) to its path (its sidecar, when it has one, beside it: read_credit). `cache`: groundpaint's."""
 
-    def __init__(self, zz=None, glad=None, map_reader=None, files=None, cache=None, periods=None):
+    def __init__(self, zz=None, glad=None, map_reader=None, files=None, cache=None, periods=None, swatches=None):
         self.zz, self.glad, self.map_reader, self.files, self.cache = zz, glad, map_reader, files or {}, cache
         self._periods = periods  # (own_periods's answer when it's already known: the Studio's list has it)
+        self._palette = swatches  # palette()'s answer (read when first wanted)
         self._made: dict = {}
+
+    def palette_swatch(self, ref: str) -> PaletteSwatch:
+        if self._palette is None:
+            self._palette = palette()
+        got = self._palette.get(ref)
+        if got is None:  # not a game rule: the palette's own list
+            raise TextureError(f"the palette has no {ref[7:]}")
+        return got
 
     def period_of(self, ref: str) -> float:
         """Map units a texture repeats every at its own size."""
         kind = ref.split(":", 1)[0]
         if kind == "map":
             return MAP_SIDE
+        if kind == "swatch":
+            return self.palette_swatch(ref).side
         if kind == "file":
             return file_period(self.files.get(ref))  # (its sidecar beside the picture, files/ground/<name>.toml)
         if self._periods is None:
@@ -743,6 +1024,13 @@ class Library:
                 raise TextureError(f"the map {pack} isn't in this game")
             side, px = map_square(read, float(x), float(y), self.cache)
             made = Swatch.make(ref, side, px, MAP_SIDE)
+        elif kind == "swatch":
+            got = self.palette_swatch(ref)
+            read = self.map_reader(got.map) if self.map_reader else None
+            if read is None:  # not a game rule: the map's file isn't in the game folder
+                raise TextureError(f"the map {got.map} ({got.theme_label or got.theme}) isn't in this game")
+            side, px, grain = swatch_pixels(got, read, min(MOST, max(8, n)), self.zz, self.cache)
+            made = Swatch.make(ref, side, px, got.side, mirrored=True, grain=grain)
         elif kind == "file":
             path = self.files.get(ref)
             if path is None or not Path(path).is_file():

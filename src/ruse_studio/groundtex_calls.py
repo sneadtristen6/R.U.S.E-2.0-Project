@@ -23,6 +23,7 @@ import hashlib
 import json
 import math
 import re
+from contextlib import nullcontext
 
 from rusemod import groundtex as gt
 from rusemod.build import find_pack
@@ -172,10 +173,185 @@ class GroundTextureCalls:
                 finally:
                     if glad is not None:
                         glad.close()
+        elif kind == "swatch":
+            made = self._palette_swatch(ref)
         else:
             made = self._map_square(ref)
         n, px = _small(*made.mips[0], PREVIEW)
-        return {"ref": ref, "period": made.period, "n": n, "png": _png_url(n, px)}
+        out = {"ref": ref, "period": made.period, "n": n, "png": _png_url(n, px), "mirrored": made.mirrored}
+        if made.grain:   # a palette swatch's grain, laid by itself over the colour (groundtex.Swatch.grain_sampler)
+            gn, g = next(((k, g) for k, g in made.grain if k <= PREVIEW), made.grain[-1])
+            out.update(grain=_png_url(gn, bytes(v for b in g for v in (b, b, b, 255))), grain_n=gn,
+                       grain_period=made.grain_period, grain_unit=gt.GRAIN_UNIT)
+        return out
+
+    def repaint_preview(self, pack: str) -> dict:
+        """What the build paints for the current mod's repaint strokes on a map (rusemod.repaint, Map Paint plan step
+        8), for the page to show: the map's ground with the mod's ground brushes applied as the build applies them
+        (terrain_edit.edit_map; a new map whose ground is drawn as our own, map.toml ground = "generated", drawn the
+        same way: rusemod.groundgen), then the rules, what moved measured from the flat start on a map that starts
+        flat (repaint.start_level): {"strokes": [the texture strokes, the terrain file's keys], "said": what was laid
+        in words} once worked out (seconds to a minute; kept in the cache by the strokes and the map), else
+        {"job": id}; ask again when the job is done. {"strokes": []} without a repaint stroke."""
+        from dataclasses import asdict
+        from rusemod.brush import PAINT_KINDS
+        from rusemod.groundgen import GroundGenError, generate
+        from rusemod.repaint import RepaintError, expand, start_level
+        from rusemod.terrain_edit import edit_map
+        with self._saving:
+            strokes = self._read_strokes(self._terrain_file(pack))
+        repaints = [s for s in strokes if s.kind.kind == "repaint"]
+        if not repaints:
+            return {"strokes": [], "said": ""}
+        ground = [s for s in strokes if s.kind.kind not in PAINT_KINDS + ("repaint", "cover", "block", "open")]
+        game = self._game()
+        source = self._game_pack(pack)
+        path = find_pack(game, pack_file(source)) if game is not None else None
+        if path is None:  # not a game rule: the map's file isn't in the game folder
+            raise gt.TextureError(f"The map {source} isn't in this game.")
+        st = path.stat()
+        spec = self._new_maps().get(pack.lower())
+        drawn = spec is not None and spec[1].ground == "generated"
+        said = json.dumps([asdict(s) for s in strokes if s.kind.kind not in PAINT_KINDS], sort_keys=True, default=str)
+        key = hashlib.sha1(f"{source}|{st.st_size}|{int(st.st_mtime)}|{drawn}|{said}".encode()).hexdigest()[:24]
+        kept = self.cache_dir / "repaint" / f"{key}.json"
+        if kept.is_file():
+            return json.loads(kept.read_text(encoding="utf-8"))
+        name = f"repaint:{key}"
+        with self._grounds_lock:
+            running = self._ground_jobs.get(name)
+            if running and running in self._jobs and self._jobs[running].state == "running":
+                return {"job": running}
+            job = Job()
+            self._jobs[job.id] = job
+            self._ground_jobs[name] = job.id
+
+        def work(say):
+            say("the ground brushes")
+            with Edat.open(str(path)) as arc:
+                def read(member):
+                    try:
+                        return bytes(arc.read(arc.find(member)))
+                    except KeyError:
+                        return None
+                old = read("output\\highdef.tms")
+                changed = None
+                if drawn:
+                    try:
+                        changed, _notes = generate(read, ground, source, None)
+                    except GroundGenError:   # (the build draws it the usual way too)
+                        changed = None
+                if changed is None:
+                    changed, _notes = edit_map(read, ground, source)
+            new = next((v for k, v in changed.items() if k.lower().endswith("highdef.tms")), old)
+            say("the rules")
+            try:
+                laid, words = expand(repaints, old, new, [s for s in ground if s.kind.kind == "water"],
+                                     start_level(ground, old))
+            except RepaintError as exc:
+                raise gt.TextureError(str(exc)) from None
+            keys = ("brush", "x", "y", "radius", "shape", "edge", "texture", "mask")
+            by_shape = {"line": ("x2", "y2"), "square": ("dx", "dy", "length")}   # (the terrain file's own keys)
+            out = {"strokes": [{k: getattr(s, k) for k in keys + by_shape.get(s.shape, ())} for s in laid],
+                   "said": words}
+            kept.parent.mkdir(parents=True, exist_ok=True)
+            kept.write_text(json.dumps(out), encoding="utf-8")
+
+        return job.start(work, "What moved is worked out.")
+
+    def brush_masks(self) -> dict:
+        """The brushes that are pictures (rusemod.brushmask), for the page to preview strokes with the build's own
+        values: {"size": values across, "turns": a round dab's turnings [[ax, ay]], "edge": the masks that set how far
+        a stroke reaches, "rag_in": the reach where such a mask is 0, "masks": {name: its values as base64}} in
+        brushmask.MASKS's order."""
+        from rusemod import brushmask
+        return {"size": brushmask.SIZE, "turns": [list(t) for t in brushmask.TURNS],
+                "edge": list(brushmask.EDGE_MASKS), "rag_in": brushmask.RAG_IN,
+                "masks": {n: base64.b64encode(brushmask.make(n)).decode("ascii") for n in brushmask.MASKS}}
+
+    def _palette_kept(self, ref: str, pal: dict):
+        """(the swatch's row, its map's pack, its pixels across, where its picture is kept): the build's pixels across
+        or PREVIEW if fewer; TextureError for a swatch the palette hasn't or a map the game hasn't."""
+        got = pal.get(ref)
+        if got is None:  # not a game rule: the palette's own list
+            raise gt.TextureError(f"The palette has no {ref[7:]}.")
+        game = self._game()
+        path = find_pack(game, pack_file(got.map)) if game is not None else None
+        if path is None:  # not a game rule: the map's file isn't in the game folder
+            raise gt.TextureError(f"The map {got.map} isn't in this game.")
+        n = min(PREVIEW, gt.need(got.side))
+        st = path.stat()
+        said = (f"{ref}|{got.x}|{got.y}|{got.side}|{got.facing}|{n}|{st.st_size}|{int(st.st_mtime)}|{got.detail}|"
+                f"{got.detail_side}")
+        key = hashlib.sha1(said.encode()).hexdigest()[:20]
+        return got, path, n, self.cache_dir / "groundtex" / "palette" / f"{key}.png"
+
+    def _palette_swatch(self, ref: str, pal: dict | None = None) -> gt.Swatch:
+        """A palette swatch as the build makes it (its map's square read turned to its rows, with the game's own
+        grain where it names it: groundtex.swatch_pixels), at the build's pixels across or PREVIEW if fewer; its
+        picture kept in the cache (reading the map takes seconds)."""
+        got, path, n, kept = self._palette_kept(ref, pal if pal is not None else gt.palette())
+        grained = kept.with_name(kept.stem + "-grain.png")   # (its grain beside it: one byte a pixel, kept as grey)
+        if kept.is_file():
+            _w, _h, px = gt.picture_rgba(kept.read_bytes())
+            grain = None
+            if grained.is_file():
+                gn, _h, gpx = gt.picture_rgba(grained.read_bytes())
+                grain = (gn, gpx[0::4], got.side / gt.detail_repeats(got.side, got.detail_side))
+            return gt.Swatch.make(ref, n, px, got.side, mirrored=True, grain=grain)
+        game = self._game()
+        zz_path = find_pack(game, "ZZ_Win.dat") if game is not None and got.detail else None
+        with Edat.open(str(path)) as arc, (Edat.open(str(zz_path)) if zz_path else nullcontext()) as zz:
+            def read(member):
+                try:
+                    return bytes(arc.read(arc.find(member)))
+                except KeyError:
+                    return None
+            n, px, grain = gt.swatch_pixels(got, read, n, zz, self.cache_dir / "groundtex" / "tiles")
+        kept.parent.mkdir(parents=True, exist_ok=True)
+        if grain is not None:
+            gn, gpx, _rep = grain
+            grained.write_bytes(png_bytes(bytes(v for b in gpx for v in (b, b, b, 255)), gn, gn, 4))
+        kept.write_bytes(png_bytes(px, n, n, 4))
+        return gt.Swatch.make(ref, n, px, got.side, mirrored=True, grain=grain)
+
+    def ground_palette(self) -> dict:
+        """The named palette (groundtex.palette: materials measured on the game's own maps) to paint with:
+        {"swatches": [{"ref", "theme", "name", "label" (English: the page says its own words), "map" (whose ground),
+        "kind" (rows: a field's, laid turned with Turn; plain), "period" (map units a repeat), "thumb": a small picture
+        as a data URL}]} once their pictures are made (a few seconds the first time; kept), else {"job": id}; ask again
+        when the job is done."""
+        pal = gt.palette()
+        rows = []
+
+        def row(p, made):
+            n, px = _small(*made.mips[0], THUMB)
+            return {"ref": p.ref, "theme": p.theme, "name": p.name, "label": p.label, "map": p.map, "kind": p.kind,
+                    "period": p.side, "thumb": _png_url(n, px)}
+        try:
+            for p in pal.values():
+                if not self._palette_kept(p.ref, pal)[3].is_file():
+                    break
+                rows.append(row(p, self._palette_swatch(p.ref, pal)))
+            else:
+                return {"swatches": rows}
+        except gt.TextureError as exc:
+            return {"swatches": [], "error": str(exc)}
+        name = "groundtex:palette"
+        with self._grounds_lock:
+            running = self._ground_jobs.get(name)
+            if running and running in self._jobs and self._jobs[running].state == "running":
+                return {"job": running}
+            job = Job()
+            self._jobs[job.id] = job
+            self._ground_jobs[name] = job.id
+
+        def work(say):
+            for k, p in enumerate(pal.values(), 1):
+                self._palette_swatch(p.ref, pal)
+                say(f"{k}/{len(pal)}")
+
+        return job.start(work, "The palette's pictures are ready.")
 
     def _map_square(self, ref: str) -> gt.Swatch:
         _, pack, _x, _y = ref.split(":")

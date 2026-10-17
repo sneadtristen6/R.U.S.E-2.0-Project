@@ -10,7 +10,7 @@ from __future__ import annotations
 import struct
 import zlib
 
-from . import tgu1
+from . import tgu1, tgu1nb
 from .numpy2 import np
 
 _I = np.int64
@@ -38,6 +38,9 @@ def _stream(mode: int, data: bytes, nbits: int, want: int):
         return np.zeros(0, dtype=_I) if nbits == 0 else None
     if nbits > len(data) * 8:
         return None
+    if tgu1nb.values is not None:   # the same walk compiled (Numba), bit after bit
+        ok, got = tgu1nb.values(np.frombuffer(data, dtype=np.uint8), nbits, mode, want, _MOST_BITS)
+        return got if ok else None
     bits = np.unpackbits(np.frombuffer(data, dtype=np.uint8), bitorder="little")[:nbits]
     ones = np.flatnonzero(bits)
     if not len(ones):

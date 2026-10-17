@@ -214,7 +214,11 @@
                      square of any map's ground, your own pictures, or this map's ground from a spot -->
                 <div id="paint-stamp" class="paint-stamp hidden">
                   <div id="tex-from" class="chips" role="group"></div>
-                  <div id="tex-game" class="tex-pane">
+                  <!-- the palette (maps.js renderPalette; groundtex.palette): materials measured on the game's maps -->
+                  <div id="tex-palette" class="tex-pane">
+                    <div id="tex-palette-grid"></div>
+                  </div>
+                  <div id="tex-game" class="tex-pane hidden">
                     <input id="tex-search" class="tex-search" type="search" spellcheck="false" autocomplete="off">
                     <div id="tex-groups" class="chips tex-groups" role="group"></div>
                     <div id="tex-grid" class="tex-grid" role="group"></div>
@@ -250,10 +254,16 @@
                     <span id="tex-now-name" class="small"></span></div>
                   <label id="tex-size-row" class="brush-slider small hidden"><span id="tex-size-label"></span>
                     <input id="tex-size" type="range" min="-2" max="4" step="1" value="0"></label>
+                  <label id="tex-turn-row" class="brush-slider small hidden"><span id="tex-turn-label"></span>
+                    <input id="tex-turn" type="range" min="0" max="179" step="1" value="0"></label>
                   <div id="tex-used-label" class="muted small"></div>
                   <div id="tex-used" class="tex-grid tex-used" role="group"></div>
                   <div id="stamp-state" class="muted small"></div>
                 </div>
+                <!-- the brush's pattern (maps.js renderMaskPicker; rusemod.brushmask) -->
+                <div id="paint-mask-label" class="muted small"></div>
+                <div id="paint-mask" class="chips" role="group"></div>
+                <button id="paint-dither" type="button" class="chip" aria-pressed="false"></button>
                 <button id="paint-clear" type="button" class="chip" aria-pressed="true"></button>
                 <button id="paint-decals" type="button" class="chip hidden" aria-pressed="true"></button>
                 <div id="paint-note" class="muted small"></div>
@@ -282,6 +292,10 @@
               <!-- the Water brush: a thin layer over the whole map (maps.js waterWhole) -->
               <div id="brush-water" class="tray-erase hidden">
                 <button id="brush-water-whole" type="button" class="small"></button>
+              </div>
+              <!-- Paint by shape: sand round the new lakes or not (maps.js paint.beach; rusemod.repaint, beach) -->
+              <div id="brush-repaint" class="tray-erase hidden">
+                <button id="brush-repaint-beach" type="button" class="chip" aria-pressed="false"></button>
               </div>
               <div class="map-controls">
                 <button id="brush-undo" type="button" class="ghost" disabled></button>
