@@ -1974,7 +1974,7 @@ class Redo(unittest.TestCase):
         of the map's own picked with the mouse and dragged (drawn where it went, hidden where it was, its ring
         there), 73 oaks picked with a box, taken away with the Delete key and put back with Ctrl+Z, still picked."""
         maps = self.maps()
-        self.assertIn('const PLACE_HOW = ["one", "area", "line", "select"]', maps)
+        self.assertIn('const PLACE_HOW = ["one", "area", "line", "grid", "box", "select"]', maps)
         self.assertIn("mv.api.map_objects_at(pack,", self.function("selCandidates("))
         self.assertIn("mv.api.map_objects_in(pack,", self.function("selPickBox("))
         apply = self.function("selApply(")
@@ -2006,6 +2006,50 @@ class Redo(unittest.TestCase):
         """A bridge was saved in the place tray's groups as a bare 1, so its Undo took nothing back (seen while adding
         Redo, 2026-10-16): a group is the objects Undo takes."""
         self.assertIn("mv.place.groups.push([res.object])", self.function("bridgeAt("))
+
+
+class GridBoxAndRoads(unittest.TestCase):
+    """The owner, 2026-10-16: "buildings snap to roads", a Cities: Skylines drag-out grid ("length, then rows,
+    spacing") and "fill a box with a building type at a spacing". Grid: the first row's two clicks, then the rows moved
+    out and a click; Box: dragged corner to corner; both show what they'll place (see-through, with how many) and go
+    in one placeMany (one Undo). Face the roads: a click near a road goes beside it facing it, a row started near one
+    follows it, a grid's or a box's spots on a road are left out. Tried in the Studio's page (?fake, Blitz): a grid of
+    36 x 6 along the ring road's curve 3,420 units (13 m) from its line, placed, Undo and Redo; a box of 41 x 19 across
+    the straight road with that road kept clear; one house clicked 19 m off a road set beside it, facing it."""
+
+    maps = staticmethod(ZonesOnTheGround.maps)
+    function = ZonesOnTheGround.function
+
+    def test_grid_and_box(self):
+        maps = self.maps()
+        down = maps[maps.index('if (p.how === "line" || p.how === "grid") {'):]
+        self.assertIn("const objs = p.how === \"grid\" ? gridOf(p.lineStart, p.grid.b, { x, y }) : lineOf(", down)
+        self.assertIn("placeMany(objs);", down)
+        self.assertIn("const objs = fillBox(p.box.a, p.box.b);", maps)  # the button let go
+        self.assertIn("placePreview(hit)", maps)
+        self.assertIn("mesh.count = n;", self.function("showPlacePreview("))
+        for fn in ("gridOf(", "fillBox(", "lineOf("):
+            self.assertIn("withSeed(", self.function(fn), fn)  # the preview is what's placed
+        self.assertIn("dropPlaceGesture();", self.function("onKey("))  # Esc drops a grid or a box half made
+        page = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
+        for needle in ('id="place-rows"', 'id="place-rows-label"', 'id="place-roads"', 'id="place-roads-label"'):
+            self.assertIn(needle, page)
+
+    def test_face_the_roads(self):
+        self.assertIn("placePose(hit.x / SCALE, hit.z / SCALE)", self.function("placeAt("))
+        self.assertIn("placePose(hit.x / SCALE, hit.z / SCALE)", self.function("showPlaceGhost("))
+        self.assertIn("besideRoad(a.x, a.y, ROAD_REACH * METRE)", self.function("rowOf("))
+        self.assertIn("if (along && tx * along[0] + ty * along[1] < 0)", self.function("besideRoad("))
+        for fn in ("gridOf(", "fillBox("):
+            self.assertIn("nearestRoad(x, y, clear)", self.function(fn), fn)
+        self.assertIn("place_roads: mv.place.roads", self.function("saveView("))
+
+    def test_words(self):
+        words = _words()
+        for key in ("place_grid", "tip_place_grid", "place_grid_help", "place_grid_next", "place_grid_rows",
+                    "place_grid_count", "place_box", "tip_place_box", "place_box_help", "place_box_count",
+                    "place_rows", "tip_place_rows", "place_roads", "tip_place_roads", "place_line_count"):
+            self.assertEqual(len(words[key]), 10, key)
 
 
 class AskBeforeClosing(unittest.TestCase):

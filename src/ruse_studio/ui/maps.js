@@ -20,9 +20,13 @@ const mv = { api: null, words: {}, lang: "base", maps: [], current: null, lod: "
   scenery: { show: { building: true, prop: true, vegetation: true }, data: null, meshes: {}, models: {} },
   // placing: on or not, the group and type picked, the next object's turn and size, what the mod places on this map
   place: { on: false, group: "building", type: null, turn: 0, size: 1, solid: true, objects: [], meshes: {}, mod: null,
-    // how: one, area or line; area: the area brush's radius and spacing: per kind, in metres; groups: the objects each
-    // click, area or line placed this session (for Undo); lineStart: a line's first click; painting: an area being dragged
-    how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null } };
+    // how: one, area, line, grid, box or select; area: the area brush's radius and spacing: per kind, in metres; groups:
+    // the objects each click, area, line, grid or box placed this session (for Undo); lineStart: a line's or a grid's
+    // first click; grid: a grid's first row once its end is clicked ({ b }); box: a box being dragged ({ a, b });
+    // painting: an area being dragged; rows: a grid's or a box's gap between rows, per kind, in metres; roads: Face the
+    // roads (kept with the view); seed: the variety of the line, grid or box being made, so its preview is what's placed
+    how: "one", area: 40, spacing: {}, groups: [], lineStart: null, painting: null, grid: null, box: null, rows: {},
+    roads: true, seed: 1 } };
 
 // --- brushes: the same shapes and rules as rusemod/brush.py (the build's own copy decides; this one only draws) ---
 // name: [kind, shape, sign, one dab per click (else dabs along a drag), size %, strength %]
@@ -2411,6 +2415,7 @@ function keptScenView(view) {
   if (typeof view.stick_roads === "boolean") snapRoads = view.stick_roads;  // the Scenario tray's "Stick to roads"
   if (typeof view.road_snap === "boolean") road.snapOn = view.road_snap;     // the Roads tray's "Snap ends"
   if (typeof view.road_trees === "boolean") road.keepTrees = view.road_trees;  // and its "Keep the trees"
+  if (typeof view.place_roads === "boolean") mv.place.roads = view.place_roads;  // the place trays' "Face the roads"
   if (view.map_mode === "map" || view.map_mode === "scenario") mv.mode = view.map_mode;  // the side the bar was on
 }
 
@@ -4930,15 +4935,18 @@ function sceneryAt(ev) {
 // maps/<map>/scenery.toml (StudioApi.scenery_add); drawn in gold until "Test in game" builds them into the map ---
 const PLACEABLE = ["building", "prop", "vegetation"];
 const PLACED_COLOUR = 0xe8c14f;
-// How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); or a line
-// between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses).
-const PLACE_HOW = ["one", "area", "line", "select"];  // select: pick what stands on the map (sel)
+// How a click places: one object; an area, painted by dragging (objects scattered at least `spacing` apart); a line
+// between two clicks (objects every `spacing`, turned along it: a hedgerow, a tree line, a row of houses); a grid (a
+// line, then rows moved out from it: gridOf); or a box dragged on the ground, filled in rows (fillBox).
+const PLACE_HOW = ["one", "area", "line", "grid", "box", "select"];  // select: pick what stands on the map (sel)
 const METRE = 260;  // world units in a metre (the game's distances: 260,000 to a kilometre)
 const SPACING = { building: 20, prop: 8, vegetation: 6 };  // metres between objects to start with, per kind
 const MOST = 800;  // objects one area or line may place at most, so a slip of the mouse can't bury a map
 // the trees Forest strokes placed: the brushes' Undo takes them back with their cover, not the Place panel's
 const forestTrees = new WeakSet();
-const around = (turn, spread) => (turn + Math.round((Math.random() * 2 - 1) * spread) + 360) % 360;
+// the dice for the objects' variety: Math.random, or a line's, grid's or box's own while it's made (withSeed)
+let placeRand = Math.random;
+const around = (turn, spread) => (turn + Math.round((placeRand() * 2 - 1) * spread) + 360) % 360;
 
 function placeNote(text, kind) {
   const note = $("place-note");
@@ -5099,8 +5107,7 @@ function renderPlace() {
     chip.setAttribute("aria-pressed", String(p.how === how));
     chip.addEventListener("click", () => {
       p.how = how;
-      p.lineStart = null;
-      showPlaceGuide(null);
+      dropPlaceGesture();
       showPlaceGhost(null);
       if (!p.on) setPlaceMode(true); else renderPlace();
       drawSelection();  // the picks' rings show in Select (and stay picked when another way is tried)
@@ -5118,9 +5125,20 @@ function renderPlace() {
   $("place-area-label").textContent = fill(w.place_area_size, { m: p.area });
   $("place-area").title = w.tip_place_area_size;
   typedBeside("place-area", TYPED.area, () => p.area, (n) => { p.area = n; renderPlace(); }, w.tip_place_area_size);
+  $("place-rows-row").classList.toggle("hidden", p.how !== "grid" && p.how !== "box");
+  $("place-rows").value = rowsOf(p.group);
+  $("place-rows-label").textContent = fill(w.place_rows, { m: rowsOf(p.group) });
+  $("place-rows").title = w.tip_place_rows;
+  typedBeside("place-rows", TYPED.spacing, () => rowsOf(p.group), (n) => { p.rows[p.group] = n; renderPlace(); },
+    w.tip_place_rows);
+  // Face the roads: what stands (buildings, props), placed one by one or in rows; an area scatters, Select moves
+  $("place-roads-row").classList.toggle("hidden", p.group === "vegetation" || p.how === "area" || p.how === "select");
+  $("place-roads").checked = p.roads;
+  $("place-roads-label").textContent = w.place_roads;
+  $("place-roads-row").title = w.tip_place_roads;
   if (p.on) {
-    $("map-help").textContent = p.how === "area" ? w.place_area_help : p.how === "line" ? w.place_line_help
-      : p.how === "select" ? w.sel_help : w.place_help;
+    $("map-help").textContent = { area: w.place_area_help, line: w.place_line_help, grid: w.place_grid_help,
+      box: w.place_box_help, select: w.sel_help }[p.how] || w.place_help;
   }
 }
 
@@ -5132,7 +5150,7 @@ function setPlaceMode(on) {
   mv.place.on = on;
   if (on) { toMode("map"); dock.check = false; stopRoad(); stopBridge(); }
   if (on && scen.tool) { scen.tool = null; scen.selected = null; renderScenTools(); drawScenario(); }
-  if (!on) { mv.place.lineStart = null; showPlaceGuide(null); showPlaceGhost(null); }
+  if (!on) { dropPlaceGesture(); showPlaceGhost(null); }
   if (on && mv.brush.on) setBrushMode(false);
   pointerMode();
   if (on) placeNote(!mv.place.mod ? mv.words.no_mod : !mv.place.type ? whyNoType() : "", "error");
@@ -5214,14 +5232,15 @@ function drawPlaced() {
   drawBridges();  // (draws the view)
 }
 
-// The picked type at the pointer before a click places it (One, and a Line's start): its real model, see-through,
-// turned and sized as it will stand; a gold shape until the models are in. The owner, 2026-10-15: "how do I know what
-// they look like?"
+// The picked type at the pointer before a click places it (One, and a Line's or a Grid's start): its real model, see-
+// through, turned and sized as it will stand (beside a road, with Face the roads); a gold shape until the models are
+// in. The owner, 2026-10-15: "how do I know what they look like?" A line or a grid under way shows its preview instead.
 const GHOST_ALPHA = 0.6;
 function showPlaceGhost(hit) {
   const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
   if (!gl) return;
-  const type = hit && p.on && p.how !== "area" && p.how !== "select" && p.type && mv.edit ? p.type : null;
+  const first = p.how === "one" || ((p.how === "line" || p.how === "grid") && !p.lineStart);
+  const type = hit && p.on && first && p.type && mv.edit ? p.type : null;
   if (!type) {
     if (gl.ghost && gl.ghost.visible) { gl.ghost.visible = false; gl.draw(); }
     return;
@@ -5235,14 +5254,7 @@ function showPlaceGhost(hit) {
     }
     const ghost = new THREE.Group(), [shape, width, height] = SCENERY_LOOK[group];
     if (model) {
-      for (const part of lib.parts(t)) {
-        const mat = lib.material(group, part);
-        if (mat.alphaTest || !mat.map) {  // (a picture whose alpha isn't see-through would come out patchy: it stays solid)
-          Object.assign(mat, { transparent: true, opacity: GHOST_ALPHA, depthWrite: false });
-          mat.alphaTest *= GHOST_ALPHA;  // the leaves' cut-out at the faded opacity (as fade does)
-        }
-        ghost.add(new THREE.Mesh(part.geo, mat));
-      }
+      for (const part of lib.parts(t)) ghost.add(new THREE.Mesh(part.geo, ghostLook(lib.material(group, part))));
     } else {
       const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
       geo.translate(0, 0.5, 0);
@@ -5255,9 +5267,10 @@ function showPlaceGhost(hit) {
     gl.ghost = ghost;
     gl.scene.add(ghost);
   }
-  const ghost = gl.ghost, k = p.size * SCALE;
-  ghost.position.set(hit.x, hit.y, hit.z);
-  ghost.rotation.set(0, -p.turn * Math.PI / 180, 0);
+  const ghost = gl.ghost, k = p.size * SCALE, pose = placePose(hit.x / SCALE, hit.z / SCALE);
+  const y = pose.x === hit.x / SCALE && pose.y === hit.z / SCALE ? hit.y : groundAt(makeGrid(mv.edit), pose.x, pose.y) * SCALE;
+  ghost.position.set(pose.x * SCALE, y, pose.y * SCALE);
+  ghost.rotation.set(0, -pose.turn * Math.PI / 180, 0);
   ghost.scale.set(k, k, k);
   ghost.visible = true;
   gl.draw();
@@ -5268,7 +5281,7 @@ async function loadPlaced(pack, ask) {
   if (ask !== mv.ask) return;
   mv.place.objects = res.objects;
   mv.place.groups = [];
-  mv.place.lineStart = null;
+  dropPlaceGesture();
   mv.place.mod = res.mod;
   forgetSel(res.own || []);  // the map's own objects this mod moves or takes away ([[own]]): Select's, not drawn
   if (sel.own.length && mv.edit && Object.keys(mv.scenery.meshes).length) placeScenery();  // where they were
@@ -5294,8 +5307,8 @@ async function placeAt(ev) {
   if (!p.type) { placeNote(whyNoType(), "error"); return; }
   const hit = hitGround(ev);
   if (!hit) { placeNote(w.place_ground, "error"); return; }
-  const obj = { type: p.type, x: Math.round(hit.x / SCALE), y: Math.round(hit.z / SCALE), turn: p.turn, size: p.size,
-    solid: p.solid };
+  const pose = placePose(hit.x / SCALE, hit.z / SCALE);  // beside a road, facing it (Face the roads)
+  const obj = { type: p.type, x: Math.round(pose.x), y: Math.round(pose.y), turn: pose.turn, size: p.size, solid: p.solid };
   p.objects.push(obj);
   drawPlaced();
   try {
@@ -5335,11 +5348,12 @@ async function placeMany(objs) {
 }
 
 // The next object of an area or a line at world (x, y): the kind's own look, with a little variety for trees and props
-// (their turn, and a tree's size) so a painted wood doesn't look stamped; buildings keep the turn they're given.
-function objectAt(x, y, turn) {
-  const p = mv.place, varied = p.group !== "building";
-  const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + Math.random() * 0.3) * 100) / 100 : p.size;
-  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(Math.random() * 360) : turn, size,
+// (their turn, and a tree's size) so a painted wood doesn't look stamped; buildings keep the turn they're given, and so
+// does anything set beside a road (`keep`: a fence or a wall along it).
+function objectAt(x, y, turn, keep = false) {
+  const p = mv.place, varied = p.group !== "building" && !keep;
+  const size = p.group === "vegetation" ? Math.round(p.size * (0.85 + placeRand() * 0.3) * 100) / 100 : p.size;
+  return { type: p.type, x: Math.round(x), y: Math.round(y), turn: varied ? Math.floor(placeRand() * 360) : turn, size,
     solid: p.solid };
 }
 
@@ -5375,17 +5389,342 @@ function scatter(stroke, x, y, how) {
 }
 
 // A line between two clicks: an object every `spacing`, both ends included, turned along the line (buildings then
-// face the same way, like houses along a street; the turn slider adds to that).
+// face the same way, like houses along a street; the turn slider adds to that). Started near a road with Face the
+// roads, it follows the road instead (rowOf).
 function lineOf(a, b) {
+  return withSeed(() => {
+    const row = rowOf(a, b);
+    return row.map((q) => objectAt(q.x, q.y, q.turn, row.road));
+  });
+}
+
+// --- Grid, Box and Face the roads (the owner, 2026-10-16: "buildings snap to roads", a Cities: Skylines drag-out grid,
+// "length, then rows, spacing", and "fill a box with a building type at a spacing"). A grid is a line (its first row)
+// and rows moved out from it; a box is dragged on the ground and filled in rows. Both show what they'll place, see-
+// through, with how many, until the click (or the button let go) places it, and both go back with one Undo. ---
+const ROWS = { building: 25, prop: 8, vegetation: 6 };  // metres between a grid's or a box's rows to start with, per kind
+const ROAD_REACH = 40;  // metres: with Face the roads, an object clicked this near a road's line goes beside the road
+const ROW_STEP = 2;     // metres: a row along a road is found by following it in steps this long
+const roadHalf = () => ROAD_WIDTH / 2 + 2 * METRE;  // a road's line to the side of what stands beside it (map units)
+const facesRoads = () => mv.place.roads && mv.place.group !== "vegetation";  // (trees don't face anything)
+const newSeed = () => Math.floor(Math.random() * 2 ** 32);
+
+function rowsOf(group) {
+  return mv.place.rows[group] ?? ROWS[group] ?? 10;
+}
+
+// make() with the dice of the gesture being made (mulberry32 from mv.place.seed): every preview of a line, a grid or a
+// box comes out the same, and the click places just that.
+function withSeed(make) {
+  let s = mv.place.seed >>> 0;
+  const keep = placeRand;
+  placeRand = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  try { return make(); } finally { placeRand = keep; }
+}
+
+// The roads as short straight pieces (the map's own Béziers about 10 m a piece, and the mod's new roads point to
+// point), in squares of 100 m to find the nearest quickly; made again when the map or the mod's roads change.
+let roadIndex = null;
+function roadPieces() {
+  const P = roads.pieces || [], mine = road.mine || [];
+  if (roadIndex && roadIndex.P === P && roadIndex.mine === mine && roadIndex.n === mine.length) return roadIndex;
+  const cell = 100 * METRE, cells = new Map(), seg = [];
+  const add = (ax, ay, bx, by) => {
+    const k = seg.length / 4;
+    seg.push(ax, ay, bx, by);
+    for (let i = Math.floor(Math.min(ax, bx) / cell); i <= Math.floor(Math.max(ax, bx) / cell); i++) {
+      for (let j = Math.floor(Math.min(ay, by) / cell); j <= Math.floor(Math.max(ay, by) / cell); j++) {
+        (cells.get(`${i},${j}`) || cells.set(`${i},${j}`, []).get(`${i},${j}`)).push(k);
+      }
+    }
+  };
+  for (let o = 0; o < P.length; o += 8) {
+    const len = Math.hypot(P[o + 2] - P[o], P[o + 3] - P[o + 1]) + Math.hypot(P[o + 4] - P[o + 2], P[o + 5] - P[o + 3])
+      + Math.hypot(P[o + 6] - P[o + 4], P[o + 7] - P[o + 5]);
+    const n = Math.min(64, Math.max(2, Math.ceil(len / (10 * METRE))));
+    let px = P[o], py = P[o + 1];
+    for (let s = 1; s <= n; s++) {
+      const t = s / n, u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      const x = a * P[o] + b * P[o + 2] + c * P[o + 4] + d * P[o + 6], y = a * P[o + 1] + b * P[o + 3] + c * P[o + 5] + d * P[o + 7];
+      add(px, py, x, y);
+      px = x; py = y;
+    }
+  }
+  for (const r of mine) for (let i = 0; i + 1 < r.points.length; i++) add(...r.points[i], ...r.points[i + 1]);
+  return (roadIndex = { P, mine, n: mine.length, cell, cells, seg });
+}
+
+// The nearest point of a road's line to (x, y) within `reach` map units, and the road's way there (a unit vector):
+// { x, y, tx, ty, d }, or null.
+function nearestRoad(x, y, reach) {
+  const I = roadPieces(), c = I.cell, span = Math.ceil(reach / c), cx = Math.floor(x / c), cy = Math.floor(y / c);
+  const seen = new Set(), S = I.seg;
+  let best = reach * reach, out = null;
+  for (let i = cx - span; i <= cx + span; i++) for (let j = cy - span; j <= cy + span; j++) {
+    for (const k of I.cells.get(`${i},${j}`) || []) {
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const ax = S[4 * k], ay = S[4 * k + 1], ex = S[4 * k + 2] - ax, ey = S[4 * k + 3] - ay, l2 = ex * ex + ey * ey;
+      if (l2 <= 1e-9) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / l2)), px = ax + t * ex, py = ay + t * ey;
+      const d2 = (x - px) ** 2 + (y - py) ** 2;
+      if (d2 < best) { const l = Math.sqrt(l2); best = d2; out = { x: px, y: py, tx: ex / l, ty: ey / l, d: Math.sqrt(d2) }; }
+    }
+  }
+  return out;
+}
+
+// Half the depth of what's being placed (map units, across a row: its model's z), from its model; else its kind's shape
+function halfDepth() {
+  const p = mv.place, lib = mv.scenery.lib, t = typeNumber(p.type);
+  let d = 0;
+  if (lib && t !== null && lib.has(t)) {
+    for (const part of lib.parts(t)) {
+      const b = part.geo.boundingBox;
+      if (b) d = Math.max(d, Math.abs(b.min.z), Math.abs(b.max.z));
+    }
+  }
+  return (d || SCENERY_LOOK[groupOfType(p.type)][1] / 2) * p.size;
+}
+
+// Where an object at (x, y) stands with Face the roads: beside the nearest road within `reach`, on the side (x, y) is
+// on (or `side`, 1 left of the road's way `along`, -1 right), its back to the road, so a row on each side of a street
+// faces the street; the turn slider adds to that (a model that faces the other way: 180°). { x, y, turn, back, side,
+// along }, or null with no road that near.
+function besideRoad(x, y, reach, side = 0, along = null) {
+  const r = nearestRoad(x, y, reach);
+  if (!r) return null;
+  let tx = r.tx, ty = r.ty;
+  if (along && tx * along[0] + ty * along[1] < 0) { tx = -tx; ty = -ty; }  // the road's pieces run either way
+  const nx = -ty, ny = tx, s = side || ((x - r.x) * nx + (y - r.y) * ny >= 0 ? 1 : -1), off = roadHalf() + halfDepth();
+  const heading = Math.atan2(ty, tx) * 180 / Math.PI + (s > 0 ? 0 : 180);
+  return { x: r.x + nx * s * off, y: r.y + ny * s * off, turn: Math.round(heading + mv.place.turn + 720) % 360,
+    back: [nx * s, ny * s], side: s, along: [tx, ty] };
+}
+
+// Where a click at (x, y) puts the next object: beside a road (Face the roads), else where it was clicked
+function placePose(x, y) {
+  const q = facesRoads() && besideRoad(x, y, ROAD_REACH * METRE);
+  return q || { x, y, turn: mv.place.turn };
+}
+
+// A row from a to b: each spot and turn ({ x, y, turn, back }). Along a road (a starts within ROAD_REACH of one, with
+// Face the roads): the road is followed from beside a to beside b, ROW_STEP at a time, an object every spacing along
+// it, each facing it; the row stops where the road leaves a's line by more than twice ROAD_REACH (`road` set on the
+// list). Else straight, both ends included.
+function rowOf(a, b) {
   const p = mv.place, gap = spacingOf(p.group) * METRE, len = Math.hypot(b.x - a.x, b.y - a.y);
+  const first = facesRoads() && besideRoad(a.x, a.y, ROAD_REACH * METRE);
+  if (first) {
+    const out = [first], steps = Math.min(20000, Math.ceil(len / (ROW_STEP * METRE)));
+    let last = first, run = 0;
+    for (let k = 1; k <= steps && out.length < MOST; k++) {
+      const t = k / steps, q = besideRoad(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, 2 * ROAD_REACH * METRE,
+        first.side, last.along);
+      if (!q) break;
+      run += Math.hypot(q.x - last.x, q.y - last.y);
+      last = q;
+      if (run >= gap) { out.push(q); run = 0; }
+    }
+    out.road = true;
+    return out;
+  }
   const n = Math.min(MOST, Math.max(1, Math.floor(len / gap) + 1));
-  const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 360) % 360;
+  const heading = (Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 360) % 360, turn = Math.round(heading + p.turn) % 360;
   const out = [];
   for (let k = 0; k < n; k++) {
     const t = n === 1 ? 0 : k / (n - 1);
-    out.push(objectAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, Math.round(heading + p.turn) % 360));
+    out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, turn });
   }
   return out;
+}
+
+// A grid: the row from a to b, and rows behind it out to `pt` (the pointer; none yet: the first row alone), rows apart.
+// A row along a road gets its rows behind it (away from the road); a straight one on the pointer's side. With Face the
+// roads, a spot on a road is left out (the first row along a road stands beside it already). `per` and `rows` are set
+// on the list.
+function gridOf(a, b, pt) {
+  return withSeed(() => {
+    const p = mv.place, row = rowOf(a, b), gap = rowsOf(p.group) * METRE, out = [];
+    let rows = 1, backs;
+    if (row.road) {
+      backs = row.map((q) => q.back);
+      if (pt) {
+        let q = row[0], best = Infinity;
+        for (const r of row) { const d = (r.x - pt.x) ** 2 + (r.y - pt.y) ** 2; if (d < best) { best = d; q = r; } }
+        rows = 1 + Math.floor(Math.max(0, (pt.x - q.x) * q.back[0] + (pt.y - q.y) * q.back[1]) / gap);
+      }
+    } else {
+      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+      const d = pt ? (pt.x - a.x) * nx + (pt.y - a.y) * ny : 0, s = d < 0 ? -1 : 1;
+      rows = 1 + Math.floor(Math.abs(d) / gap);
+      backs = row.map(() => [nx * s, ny * s]);
+    }
+    const avoid = facesRoads(), clear = roadHalf() + halfDepth() * 0.8, [x0, y0, , x1, y1] = mv.edit.bounds;
+    for (let r = 0; r < rows && out.length < MOST; r++) {
+      for (let i = 0; i < row.length && out.length < MOST; i++) {
+        const x = row[i].x + backs[i][0] * gap * r, y = row[i].y + backs[i][1] * gap * r;
+        if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        if (avoid && (r > 0 || !row.road) && nearestRoad(x, y, clear)) continue;
+        out.push(objectAt(x, y, row[i].turn, row.road));
+      }
+    }
+    return Object.assign(out, { per: row.length, rows });
+  });
+}
+
+// A box from corner a to corner b (the map's own axes): filled in rows, spacing apart along a row and rows apart, the
+// rows centred in it, each turned by the turn slider (trees and props varied as in an area). With Face the roads, a
+// spot on a road is left out. `cols`, `rows`, `w` and `h` (metres) are set on the list.
+function fillBox(a, b) {
+  return withSeed(() => {
+    const p = mv.place, gx = spacingOf(p.group) * METRE, gy = rowsOf(p.group) * METRE, out = [];
+    const bx0 = Math.min(a.x, b.x), bx1 = Math.max(a.x, b.x), by0 = Math.min(a.y, b.y), by1 = Math.max(a.y, b.y);
+    const cols = Math.floor((bx1 - bx0) / gx) + 1, rows = Math.floor((by1 - by0) / gy) + 1;
+    const ox = bx0 + (bx1 - bx0 - (cols - 1) * gx) / 2, oy = by0 + (by1 - by0 - (rows - 1) * gy) / 2;
+    const avoid = facesRoads(), clear = roadHalf() + halfDepth() * 0.8, [x0, y0, , x1, y1] = mv.edit.bounds;
+    for (let j = 0; j < rows && out.length < MOST; j++) {
+      for (let i = 0; i < cols && out.length < MOST; i++) {
+        const x = ox + i * gx, y = oy + j * gy;
+        if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        if (avoid && nearestRoad(x, y, clear)) continue;
+        out.push(objectAt(x, y, p.turn));
+      }
+    }
+    return Object.assign(out, { cols, rows, w: Math.round((bx1 - bx0) / METRE), h: Math.round((by1 - by0) / METRE) });
+  });
+}
+
+// What a line, a grid or a box being made will place, at the pointer `hit` (none: nothing shown), with how many in
+// the note.
+function placePreview(hit) {
+  const p = mv.place, w = mv.words, pt = hit && { x: hit.x / SCALE, y: hit.z / SCALE };
+  let objs = null, note = "";
+  if (pt && p.on && p.type && mv.edit) {
+    if (p.how === "line" && p.lineStart) {
+      objs = lineOf(p.lineStart, pt);
+      note = fill(w.place_line_count, { n: objs.length.toLocaleString(),
+        m: Math.round(Math.hypot(pt.x - p.lineStart.x, pt.y - p.lineStart.y) / METRE) });
+    } else if (p.how === "grid" && p.lineStart) {
+      objs = p.grid ? gridOf(p.lineStart, p.grid.b, pt) : gridOf(p.lineStart, pt, null);
+      note = fill(w.place_grid_count, { n: objs.length.toLocaleString(), per: objs.per, rows: objs.rows });
+    } else if (p.how === "box" && p.box) {
+      p.box.b = pt;
+      objs = fillBox(p.box.a, pt);
+      note = fill(w.place_box_count, { n: objs.length.toLocaleString(), cols: objs.cols, rows: objs.rows, w: objs.w, h: objs.h });
+    }
+  }
+  showPlacePreview(objs);
+  showPlaceBox(p.how === "box" ? p.box : null);
+  if (note) placeNote(note + (objs.length >= MOST ? " " + w.place_most : ""));
+}
+
+// A line, a grid or a box half made is dropped: by Esc, another way or kind picked, the tools closed, another map
+function dropPlaceGesture() {
+  const p = mv.place;
+  p.lineStart = null;
+  p.grid = null;
+  p.box = null;
+  showPlaceGuide(null);
+  showPlacePreview(null);
+  showPlaceBox(null);
+}
+
+// A model's material see-through, as the picked type shows at the pointer (showPlaceGhost) and in a preview
+function ghostLook(mat) {
+  if (mat.alphaTest || !mat.map) {  // (a picture whose alpha isn't see-through would come out patchy: it stays solid)
+    Object.assign(mat, { transparent: true, opacity: GHOST_ALPHA, depthWrite: false });
+    mat.alphaTest *= GHOST_ALPHA;  // the leaves' cut-out at the faded opacity (as fade does)
+  }
+  return mat;
+}
+
+// The objects a line, a grid or a box will place, see-through (their real model once the models are in, else gold
+// shapes), MOST at most, made once per type.
+function showPlacePreview(objs) {
+  const gl = mv.gl, p = mv.place, lib = mv.scenery.lib;
+  if (!gl) return;
+  if (!objs || !objs.length || !mv.edit || !p.type) {
+    if (gl.preview && gl.preview.visible) { gl.preview.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl, t = typeNumber(p.type), group = groupOfType(p.type), model = Boolean(lib && t !== null && lib.has(t));
+  const key = `${p.type}|${model}`, [shape, width, height] = SCENERY_LOOK[group];
+  if (!gl.preview || gl.preview.userData.key !== key) {
+    if (gl.preview) {
+      gl.scene.remove(gl.preview);
+      for (const o of gl.preview.children) {
+        o.material.dispose();
+        if (!o.userData.model) o.geometry.dispose();
+        if (o.dispose) o.dispose();
+      }
+    }
+    const g = new THREE.Group();
+    if (model) {
+      for (const part of lib.parts(t)) {
+        const mesh = new THREE.InstancedMesh(part.geo, ghostLook(lib.material(group, part)), MOST);
+        mesh.userData.model = true;
+        g.add(mesh);
+      }
+    } else {
+      const geo = shape === "cone" ? new THREE.ConeGeometry(0.5, 1, 6) : new THREE.BoxGeometry(1, 1, 1);
+      geo.translate(0, 0.5, 0);
+      g.add(new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: PLACED_COLOUR, transparent: true,
+        opacity: GHOST_ALPHA, depthWrite: false }), MOST));
+    }
+    for (const o of g.children) { o.renderOrder = 9; o.frustumCulled = false; }
+    g.userData.key = key;
+    gl.preview = g;
+    gl.scene.add(g);
+  }
+  const grid = makeGrid(mv.edit), m = new THREE.Matrix4(), q = new THREE.Quaternion(), at = new THREE.Vector3();
+  const s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), n = Math.min(objs.length, MOST);
+  for (const mesh of gl.preview.children) {
+    for (let k = 0; k < n; k++) {
+      const o = objs[k];
+      at.set(o.x * SCALE, groundAt(grid, o.x, o.y) * SCALE, o.y * SCALE);
+      q.setFromAxisAngle(up, -o.turn * Math.PI / 180);
+      if (model) s.set(o.size * SCALE, o.size * SCALE, o.size * SCALE);
+      else s.set(width * o.size * SCALE, height * o.size * SCALE, width * o.size * SCALE);
+      mesh.setMatrixAt(k, m.compose(at, q, s));
+    }
+    mesh.count = n;
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+  gl.preview.visible = true;
+  gl.draw();
+}
+
+// A box being dragged: its edges, drawn over the ground (none: hidden)
+function showPlaceBox(box) {
+  const gl = mv.gl;
+  if (!gl) return;
+  if (!box || !box.b || !mv.edit) {
+    if (gl.placeBox && gl.placeBox.visible) { gl.placeBox.visible = false; gl.draw(); }
+    return;
+  }
+  const { THREE } = gl;
+  if (!gl.placeBox) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(12), 3));
+    gl.placeBox = new THREE.LineLoop(geo, new THREE.LineBasicMaterial({ color: PLACED_COLOUR, depthTest: false }));
+    gl.placeBox.renderOrder = 10;
+    gl.placeBox.frustumCulled = false;
+    gl.scene.add(gl.placeBox);
+  }
+  const grid = makeGrid(mv.edit), pos = gl.placeBox.geometry.attributes.position, { a, b } = box;
+  [[a.x, a.y], [b.x, a.y], [b.x, b.y], [a.x, b.y]].forEach(([x, y], k) => {
+    pos.setXYZ(k, x * SCALE, (groundAt(grid, x, y) + ROAD_LIFT) * SCALE, y * SCALE);
+  });
+  pos.needsUpdate = true;
+  gl.placeBox.visible = true;
+  gl.draw();
 }
 
 // What the area brush covers, or where a line would go, drawn with the terrain brush's own ring and guide.
@@ -5395,7 +5734,8 @@ function showPlaceGuide(pt) {
   const r = p.area * METRE * SCALE;
   gl.ring.visible = Boolean(pt && p.on && p.how === "area");
   if (gl.ring.visible) { gl.ring.position.set(pt.x, pt.y + r * 0.02, pt.z); gl.ring.scale.set(r, r, r); }
-  const start = p.on && p.how === "line" ? p.lineStart : null, mark = spacingOf(p.group) * METRE * SCALE;
+  const start = p.on && (p.how === "line" || (p.how === "grid" && !p.grid)) ? p.lineStart : null;
+  const mark = spacingOf(p.group) * METRE * SCALE;
   gl.startRing.visible = Boolean(start);
   if (start) { gl.startRing.position.set(start.sx, start.sy + mark * 0.1, start.sz); gl.startRing.scale.set(mark, mark, mark); }
   gl.guide.visible = Boolean(start && pt);
@@ -6184,8 +6524,7 @@ function openKind(kind) {
     return;
   }
   mv.place.group = kind;
-  mv.place.lineStart = null;
-  showPlaceGuide(null);
+  dropPlaceGesture();
   placeOptions();
   setPlaceMode(true);
 }
@@ -7758,12 +8097,33 @@ function watchPointer() {
     const hit = hitGround(ev);
     if (!hit) { placeNote(w.place_ground, "error"); return; }
     const x = hit.x / SCALE, y = hit.z / SCALE;
-    if (p.how === "line") {  // two clicks: where it starts, then where it ends
-      if (!p.lineStart) { p.lineStart = { x, y, sx: hit.x, sy: hit.y, sz: hit.z }; placeNote(w.place_line_next); showPlaceGuide(hit); return; }
-      const start = p.lineStart;
-      p.lineStart = null;
-      showPlaceGuide(null);
-      placeMany(lineOf(start, { x, y }));
+    if (p.how === "line" || p.how === "grid") {  // where it starts, where it ends (a grid: then how far its rows go)
+      if (!p.lineStart) {
+        p.lineStart = { x, y, sx: hit.x, sy: hit.y, sz: hit.z };
+        p.seed = newSeed();
+        placeNote(p.how === "grid" ? w.place_grid_next : w.place_line_next);
+        showPlaceGhost(null);
+        showPlaceGuide(hit);
+        placePreview(hit);
+        return;
+      }
+      if (p.how === "grid" && !p.grid) {
+        p.grid = { b: { x, y } };
+        showPlaceGuide(hit);
+        placePreview(hit);
+        placeNote(w.place_grid_rows);
+        return;
+      }
+      const objs = p.how === "grid" ? gridOf(p.lineStart, p.grid.b, { x, y }) : lineOf(p.lineStart, { x, y });
+      dropPlaceGesture();
+      placeMany(objs);
+      return;
+    }
+    if (p.how === "box") {  // a box: from here to where the button's let go
+      p.box = { a: { x, y }, b: { x, y } };
+      p.seed = newSeed();
+      placePreview(hit);
+      canvas.setPointerCapture(ev.pointerId);
       return;
     }
     p.painting = { objects: [], last: null };  // an area: scatter here, then wherever the pointer is dragged
@@ -7791,6 +8151,7 @@ function watchPointer() {
       showPlaceGhost(hit);  // what a click places, where it would stand
       if (p.how === "one") return;
       showPlaceGuide(hit);
+      if (p.lineStart || p.box) { if (hit) placePreview(hit); return; }  // a line, a grid or a box under way
       const stroke = p.painting;
       if (!hit || !stroke || !stroke.last) return;
       const x = hit.x / SCALE, y = hit.z / SCALE, step = p.area * METRE / 2;
@@ -7803,6 +8164,12 @@ function watchPointer() {
     canvas.addEventListener(type, () => {
       if (sel.drag || sel.box) { selPointerUp(); return; }  // Select's drag or box ends
       const p = mv.place, stroke = p.painting;
+      if (p.box) {  // a box let go: filled
+        const objs = fillBox(p.box.a, p.box.b);
+        dropPlaceGesture();
+        placeMany(objs);
+        return;
+      }
       if (!stroke) return;
       p.painting = null;
       placeMany(stroke.objects);
@@ -8693,8 +9060,7 @@ function lookAround() {
   stopBridge();
   if (scen.tool) { scen.tool = null; scen.selected = null; pointerMode(); renderScenTools(); drawScenario(); drawMissionCameras(); }
   cancelRamp();
-  mv.place.lineStart = null;
-  showPlaceGuide(null);
+  dropPlaceGesture();
   mv.place.on = false;
   setBrushMode(false);
 }
@@ -8733,6 +9099,11 @@ function onKey(e) {
       showRoadLength(null);
       renderRoadTray();
       drawRoadPreview();
+      return;
+    }
+    if (mv.place.on && (mv.place.lineStart || mv.place.box)) {  // then a line, a grid or a box half made
+      dropPlaceGesture();
+      placeNote("");
       return;
     }
     if (scen.sel.size) { clearSelection(); return; }  // then what's selected, as in the game
@@ -9074,6 +9445,8 @@ function wire() {
   $("place-solid").addEventListener("change", (e) => { mv.place.solid = e.target.checked; });
   $("place-spacing").addEventListener("input", (e) => { mv.place.spacing[mv.place.group] = Number(e.target.value); renderPlace(); });
   $("place-area").addEventListener("input", (e) => { mv.place.area = Number(e.target.value); renderPlace(); });
+  $("place-rows").addEventListener("input", (e) => { mv.place.rows[mv.place.group] = Number(e.target.value); renderPlace(); });
+  $("place-roads").addEventListener("change", (e) => { mv.place.roads = e.target.checked; saveView(); });
   $("brush-undo").addEventListener("click", () => undoStroke());
   $("brush-erase-whole").addEventListener("click", () => eraseWhole());
   $("brush-water-whole").addEventListener("click", () => waterWhole());
@@ -9131,7 +9504,7 @@ function foldMaps(folded) {
 function saveView() {
   if (mv.api && mv.api.set_pref) mv.api.set_pref("view", { map_kind: mv.kind, maps_folded: Boolean(mv.folded),
     scen_layers: scen.layers, icon_size: scen.iconSize, zone_fill: zoneFill, stick_roads: snapRoads,
-    road_snap: road.snapOn, road_trees: road.keepTrees, map_mode: mv.mode }).catch(() => {});
+    road_snap: road.snapOn, road_trees: road.keepTrees, place_roads: mv.place.roads, map_mode: mv.mode }).catch(() => {});
 }
 
 // app.js opens the view when its tab is picked, and passes the words and the language on every language change.
