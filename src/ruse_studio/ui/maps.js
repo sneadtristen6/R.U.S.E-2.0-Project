@@ -9727,7 +9727,7 @@ const KEY_DEFAULTS = { forward: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD
 const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 const MOVES = { forward: [0, -1], back: [0, 1], left: [-1, 0], right: [1, 0] };
 const HELD_ACTIONS = ["forward", "back", "left", "right", "turn_left", "turn_right", "zoom_in", "zoom_out"];
-const keys = { down: new Set(), shift: false, frame: 0, at: 0, map: loadKeys(), by: {}, arming: null };
+const keys = { down: new Set(), shift: false, frame: 0, at: 0, map: loadKeys(), by: {}, arming: null, clash: null };
 let MOVE = {}, HELD = new Set();
 rebuildKeys();
 
@@ -9814,12 +9814,46 @@ function renderKeys() {
     const key = el("button", { type: "button", className: "key" + (keys.arming === action ? " arming" : ""),
       textContent: keys.arming === action ? w.keys_press : keyName(codeOf(action)), title: w.tip_key_button });
     key.setAttribute("aria-label", w["key_" + action]);
-    key.addEventListener("click", () => { keys.arming = keys.arming === action ? null : action; renderKeys(); });
+    key.addEventListener("click", () => { keys.arming = keys.arming === action ? null : action; keys.clash = null; renderKeys(); });
     rows.append(el("span", { className: "small", textContent: w["key_" + action] }), key);
   }
   const reset = el("button", { type: "button", className: "small ghost", textContent: w.keys_reset, title: w.tip_keys_defaults });
-  reset.addEventListener("click", () => { keys.map = { ...KEY_DEFAULTS }; keys.arming = null; saveKeys(); rebuildKeys(); renderKeys(); });
-  panel.append(el("div", { className: "muted small", textContent: w.keys_fixed }), rows, el("div", { className: "actions" }, reset));
+  reset.addEventListener("click", () => {
+    keys.map = { ...KEY_DEFAULTS };
+    keys.arming = null;
+    keys.clash = null;
+    saveKeys();
+    rebuildKeys();
+    renderKeys();
+  });
+  panel.append(el("div", { className: "muted small", textContent: w.keys_fixed }), rows);
+  if (keys.clash) panel.append(keysClash());
+  panel.append(el("div", { className: "actions" }, reset));
+}
+
+// A key pressed for one action that another already has (armKey): Swap gives the other one this action's key, Take
+// it leaves the other one without a key, Cancel changes nothing.
+function keysClash() {
+  const w = mv.words, { action, code, other } = keys.clash, old = codeOf(action);
+  const names = { key: keyName(code), action: w["key_" + action], other: w["key_" + other], old: keyName(old) };
+  const done = (otherGets) => {
+    keys.map[other] = otherGets;
+    keys.map[action] = code;
+    keys.clash = null;
+    saveKeys();
+    rebuildKeys();
+    renderKeys();
+  };
+  const button = (word, tip, act, className = "small") => {
+    const b = el("button", { type: "button", className, textContent: fill(word, names), title: fill(tip || "", names) });
+    b.addEventListener("click", act);
+    return b;
+  };
+  return el("div", { className: "keys-clash small", role: "alert" },
+    el("span", { textContent: fill(w.keys_clash, names) }),
+    button(w.keys_swap, old ? w.tip_keys_swap : w.tip_keys_swap_none, () => done(old), "small primary"),
+    button(w.keys_take, w.tip_keys_take, () => done(null)),
+    button(w.cancel, w.tip_cancel, () => { keys.clash = null; renderKeys(); }, "small ghost"));
 }
 
 function armKey(e) {
@@ -9829,7 +9863,12 @@ function armKey(e) {
   if (e.key === "Escape") { keys.arming = null; renderKeys(); return; }
   if (/^(Shift|Control|Alt|Meta)/.test(e.code) || !e.code) return;  // a modifier alone isn't a key
   const other = keys.by[e.code];
-  if (other && other !== action) keys.map[other] = null;
+  if (other && other !== action) {   // another action's key: asked, Swap or take it (the owner's Studio 1.0 list, item
+    keys.clash = { action, code: e.code, other };   // 11: "key rebinding that offers a swap"), never taken quietly
+    keys.arming = null;
+    renderKeys();
+    return;
+  }
   keys.map[action] = e.code;
   keys.arming = null;
   saveKeys();
