@@ -11,8 +11,8 @@ the click lands on nothing (the order is refused) and the camera falls through. 
                          triangle no longer touches exactly the sides of one it's listed on, the subtree's tree is
                          built again (`rebuild`)
   rebuild(kdt, s)        a new tree over the same triangles, split on x and y only (at the median of the triangles'
-                         centres), leaves of at most MAX_LEAF triangles. The game accepts trees with no z clips; they
-                         are only a little slower
+                         centres), leaves of at most MAX_LEAF triangles, the root always a split. The game accepts
+                         trees with no z clips; they are only a little slower
   widen_main(kdt, subs)  the MainNode, the tree over the subtrees: every z clip on a moved subtree's path is widened to
                          the subtree's new height range. Its x and y are unchanged
   check(kdt, s)          the rule a written tree must keep: every triangle a leaf lists touches the leaf's cell
@@ -94,7 +94,9 @@ def refit(kdt: Kdt, s: int, moved: set[int]) -> str:
 def rebuild(kdt: Kdt, s: int, pos=None, tris=None) -> None:
     """Give subtree `s` a new tree over its triangles: x/y splits at the median of the triangles' centres (on the
     wider axis), a triangle going to each side it touches (the first child: max >= v; the second: min <= v), leaves
-    of at most MAX_LEAF triangles."""
+    of at most MAX_LEAF triangles. The root is always a split, even over a handful of triangles: every shipped
+    tree starts with one, and on a zone map of four sectors whose tree was a single leaf the game picked the same
+    sector wherever the player pointed."""
     if pos is None or tris is None:
         pos, tris = triangles(kdt, s)
     box = []
@@ -103,7 +105,15 @@ def rebuild(kdt: Kdt, s: int, pos=None, tris=None) -> None:
         box.append(((min(xs), max(xs)), (min(ys), max(ys))))
     lists: list[list[int]] = []
 
-    def build(ts: list[int]):
+    def build(ts: list[int], root: bool = False):
+        if root and 0 < len(ts) <= MAX_LEAF:
+            # few triangles: still one split at the root, at the median of the centres on the wider axis, each
+            # side a leaf of the triangles touching it (it may list them all)
+            axis = _axes(ts, box)[0]
+            centres = sorted(box[t][axis][0] + box[t][axis][1] for t in ts)
+            v = centres[len(centres) // 2] // 2
+            return Split(axis, v, build([t for t in ts if box[t][axis][1] >= v]),
+                         build([t for t in ts if box[t][axis][0] <= v]))
         if len(ts) <= MAX_LEAF:
             lists.append(ts or [0])        # an empty leaf lists triangle 0, as the game's do
             return Leaf(max(1, len(ts)))
@@ -122,7 +132,7 @@ def rebuild(kdt: Kdt, s: int, pos=None, tris=None) -> None:
             return Leaf(len(ts))
         raise ValueError(f"subtree {s}: {len(ts)} triangles overlap too much to split into leaves")
 
-    root = build(list(range(len(tris))))
+    root = build(list(range(len(tris))), root=True)
     kdt.set_tree(s, root, lists)
 
 

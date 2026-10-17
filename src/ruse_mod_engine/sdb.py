@@ -85,7 +85,18 @@ def decode_grid(sdb: bytes):
 
 def build_ents(grid, R):
     """Region quadtree over grid -> u32 entry list (DFS layout, leaf-merge of uniform quadrants).
-    Matches the game's exact serialization (byte-identical round-trip on sample maps)."""
+    Matches the game's exact serialization (byte-identical round-trip on sample maps).
+
+    The root is always a node, never one leaf: a grid whose four quarters are each one value (a whole layer erased
+    or painted, say) would merge into a single leaf, and the game reads the root of this tree as a node without
+    looking: its check of the ground round a new building took a one-leaf root's four bytes for an address and
+    crashed. Every shipped map's tree starts with a node (entry 0x20). A grid under 4 x 4 is first doubled up to 4 x 4
+    (each cell repeated), so the root's quarters hold a leaf each."""
+    if R < 4:
+        k = 4 // R
+        grid = bytearray(grid[(y // k) * R + (x // k)] for y in range(4) for x in range(4))
+        R = 4
+
     def uniform(cx, cy, sz):
         v = grid[cy * R + cx]
         for yy in range(cy, cy + sz):
@@ -115,7 +126,12 @@ def build_ents(grid, R):
         # byte has bit0=0 doesn't make the node decode as internal. Eugen's leaves already set it, so
         # this stays byte-identical on a no-op edit.
         ents[idx] = (b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24)) | 1
-    fill(0, 0, 0, R)
+    # the root: always a node over its four quarters (what fill does whenever they aren't all one value each)
+    h = R >> 1
+    ents[0] = (1 << 2) + 0x1C
+    ents.extend([None, None, None, None])
+    for q, (qx, qy) in enumerate(((0, 0), (h, 0), (0, h), (h, h))):
+        fill(1 + q, qx, qy, h)
     return ents
 
 
