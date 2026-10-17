@@ -274,13 +274,30 @@ def picture_size(cx: int, cy: int, per: int) -> tuple[int, int]:
     return max(1, round(w * k)), max(1, round(h * k))
 
 
-def grow_water_lookup(raw: bytes, size: tuple) -> tuple[bytes, str]:
-    """The water's lookup (riverindirectionsurface) over `size`, all dry: a power of two each way covering the map's
-    water cells (D-Day's 256 x 128, Hollande's 64 x 128)."""
+def dry_tile(lookup: bytes, inputs: bytes) -> bytes:
+    """The water lookup's pixel for a dry cell: of the atlas tiles its cells use, the most used whose middle texel
+    has no depth (the test groundgen.water_pictures and rusemod.water make), with no flags. Not just the most used
+    tile: on a map with a lot of sea (D-Day) that's the sea's, and a map grown all sea has no dry tile for the
+    build's own ground to start from (it fell back to its slow way, 2026-10-17)."""
+    from . import water as W
+    _t, ind = W._pixels(lookup)
+    tw, inp = W._pixels(inputs)
+    cols = tw.width // W.TILE
+    uses = Counter((ind[i + 1], ind[i + 2]) for i in range(0, len(ind), 4))
+    for (row, col), _n in uses.most_common():
+        o = (row * W.TILE + 8) * tw.width * 4 + (col * W.TILE + 8) * 4
+        if col < cols and o + 2 < len(inp) and inp[o + 2] == 0:
+            return bytes((0, row, col, 0))
+    raise BigMapError("the copied map's water has no dry tile")
+
+
+def grow_water_lookup(raw: bytes, size: tuple, inputs: bytes) -> tuple[bytes, str]:
+    """The water's lookup (riverindirectionsurface) over `size`, all dry (dry_tile, from the copied map's water
+    `inputs`): a power of two each way covering the map's water cells (D-Day's 256 x 128, Hollande's 64 x 128)."""
     from . import water as W
     from .tmst import make_tgv, zipo_pack
-    t, px = W._pixels(raw)
-    dry = Counter(bytes(px[i:i + 4]) for i in range(0, len(px), 4)).most_common(1)[0][0]
+    t, _px = W._pixels(raw)
+    dry = dry_tile(raw, inputs)
     ax, ay = (math.ceil(s / W.CASE) for s in size)
     sx, sy = (1 << (a - 1).bit_length() for a in (ax, ay))
     out = make_tgv(sx, sy, t.format, [zipo_pack(dry * (sx * sy))])
@@ -362,7 +379,8 @@ def grow_pack(arc, cx: int, cy: int) -> tuple[dict, dict, list[str]]:
         w, h = picture_size(gx, gy, per)
         new[m] = png_bytes(w, h, rgb)
         notes.append(f"{m.split(chr(92))[-1]}: {w} x {h}")
-    new[W.TEXTURES["indirection"]], said = grow_water_lookup(rd(W.TEXTURES["indirection"]), size)
+    new[W.TEXTURES["indirection"]], said = grow_water_lookup(rd(W.TEXTURES["indirection"]), size,
+                                                              rd(W.TEXTURES["inputs"]))
     notes.append(said)
     side = max(size)
     new["output\\output.sdb"] = uniform_sdb(rd("output\\output.sdb"), (0.0, 0.0, side, side), 0x01, grid_r(side))

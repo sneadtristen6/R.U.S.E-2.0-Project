@@ -56,6 +56,41 @@ class Trees(unittest.TestCase):
                 self.assertEqual((g["bboxX"], g["bboxY"]), (2.0e7, 1.0e7))
 
 
+class Water(unittest.TestCase):
+    """A grown map's water lookup, all dry: the dry tile is the one whose middle texel has no depth, not the most used
+    one. D-Day's most used is a deep tile (its padding past the map, then its sea); filled with it, the build's own
+    ground found no dry tile and fell back to its slow way (2026-10-17)."""
+
+    @staticmethod
+    def texture(width, height, px):
+        from rusemod.tmst import make_tgv, zipo_pack
+        return make_tgv(width, height, "A8R8G8B8_LIN", [zipo_pack(bytes(px))])
+
+    def made_up(self, dry_depth=0):
+        from rusemod import water as W
+        cells = [(0, 0)] * 5 + [(1, 1)] * 2 + [(1, 0)]     # padding x5, sea x2, dry x1
+        lookup = self.texture(4, 2, [b for row, col in cells for b in (0, row, col, 0)])
+        side = 2 * W.TILE
+        inp = bytearray(side * side * 4)
+        for (row, col), depth in (((0, 0), 255), ((1, 1), 255), ((1, 0), dry_depth), ((0, 1), 0)):
+            inp[((row * W.TILE + 8) * side + col * W.TILE + 8) * 4 + 2] = depth
+        return lookup, self.texture(side, side, inp)
+
+    def test_the_dry_tile_by_its_depth(self):
+        from rusemod import water as W
+        lookup, inputs = self.made_up()
+        self.assertEqual(bigmap.dry_tile(lookup, inputs), bytes((0, 1, 0, 0)))
+        out, _said = bigmap.grow_water_lookup(lookup, (3 * W.CASE, 2 * W.CASE), inputs)
+        t, px = W._pixels(out)
+        self.assertEqual((t.width, t.height, set(bytes(px[i:i + 4]) for i in range(0, len(px), 4))),
+                         (4, 2, {bytes((0, 1, 0, 0))}))
+
+    def test_no_dry_tile_is_said(self):
+        lookup, inputs = self.made_up(dry_depth=40)
+        with self.assertRaises(bigmap.BigMapError):
+            bigmap.dry_tile(lookup, inputs)
+
+
 class Movement(unittest.TestCase):
     def test_a_lattice_over_a_map_wider_than_it_is_deep(self):
         from rusemod.nav import Graph
