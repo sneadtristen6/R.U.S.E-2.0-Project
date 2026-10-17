@@ -189,6 +189,13 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-pick-row > span:empty { display: none; }
 .group table.ai-cards th { width: 34%; }
 .ai-cards th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; color: var(--muted); }
+/* the AI tab: what each value does (the number guide), what it comes to in a battle, a bonus in one sentence */
+#ai-view .group th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; font-weight: normal;
+  margin-top: 3px; max-width: 46em; }
+#ai-view .group th small.ai-sure { font-family: inherit; font-style: italic; font-weight: normal; margin-top: 2px; }
+#ai-view .boxes select { max-width: 22em; }
+.ai-battle { margin-top: 4px; color: var(--accent); }
+.ai-bonus-summary { margin: 0 0 8px; font-weight: 600; }
 .group td.edited .boxes input[type="number"] { border-color: var(--accent); }
 .group tr:has(> td.edited) th { box-shadow: inset 3px 0 0 var(--accent); }
 .ai-scripts-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }

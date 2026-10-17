@@ -5670,8 +5670,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"prop": prop, "value": base[prop]}
 
     @staticmethod
-    def _ai_row(prop: str, p: dict, types: dict, lang: str, mine) -> dict:
-        return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"],
+    def _ai_row(prop: str, p: dict, types: dict, lang: str, mine, cls: str = "") -> dict:
+        """One value of the AI tab; `cls` its object's class, for the number guide (rusemod.numberinfo)."""
+        return {"prop": prop, "label": schema.label(prop, lang), "list": p["list"], "cls": cls,
                 "type": types.get(prop + "[]" if p["list"] else prop, ""),
                 "game": p["numbers"] if p["list"] else p["numbers"][0], "value": mine}
 
@@ -5681,7 +5682,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         the current mod's change (None: no change); a difficulty's or personality's value also says whether it is
         Default's (`same_default`: then it doesn't count, rusemod.ai). `bonuses`: what makes the computer players
         keener to build certain units, each list's numbers also by name. `cards`: the ruse cards that have a name in
-        the game, in its menu's order, each with its line. `words`: the game's own words for its lobby. `ready` is
+        the game, in its menu's order, each with its line. `words`: the game's own words for its lobby. `battle`:
+        what each profile value comes to in a battle (rusemod.ai.battle_values: by difficulty, and the personalities
+        whose own value wins). `choices`: for a bonus's lists, every difficulty, personality, game mode and unit by
+        number with its name. Each row's `cls` finds its meaning in the number guide (api.numbers). `ready` is
         False when the game index has none of them."""
         try:
             edits = self._edits()
@@ -5705,12 +5709,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             for o in bonuses:
                 allowed = self._ai_allowed("bonus", o)
                 bonus_rows.append((o["address"], [self._ai_row(prop, allowed[prop], types[ai.BONUS], lang,
-                                                               mine(o["address"], prop))
+                                                               mine(o["address"], prop), ai.BONUS)
                                                   for prop in ai.BONUS_PROPS if prop in allowed]))
             now = {(a, r["prop"]): r["game"] if r["value"] is None else r["value"] for a, rows in bonus_rows for r in rows}
-            units = ix.named_by("DescriptorId", {n for (_a, prop), v in now.items() if prop == "UnitIDs" for n in v})
-            unit_names = self._names(ix, list(units.values()), lang)
-            keys = ([c["key"] for c in configs] + list(ai.WORDS.values())
+            # every unit by its number, to pick a bonus's units by name (the owner, 2026-10-17: "not very clear what
+            # profile goes to what number ... or the unit by number")
+            numbered = ix.numbered("DescriptorId")
+            all_units = [u for u in self._all_units(ix) if u["address"] in numbered]
+            shown = self._names(ix, [u["address"] for u in all_units], lang)
+            unit_choices = sorted(({"n": numbered[u["address"]], "name": shown[u["address"]],
+                                    "nation": schema.nation(u["nation"], lang)} for u in all_units),
+                                  key=lambda c: (c["name"].casefold(), c["nation"], c["n"]))
+            units = {numbered[u["address"]]: u["address"] for u in all_units}
+            listed = {int(n) for (_a, prop), v in now.items() if prop == "UnitIDs" for n in v}
+            units.update(ix.named_by("DescriptorId", listed - set(units)))  # one of another kind, named by its address
+            unit_names = {**shown, **self._names(ix, [a for a in units.values() if a not in shown], lang)}
+            keys = ([c["key"] for c in configs] + list(ai.WORDS.values()) + list(ai.WAR_MODES)
                     + [ai.HINT.format(c["index"]) for c in configs if c["kind"] == "personality"]
                     + [k for v in card_keys.values() for k in v.values()])
             texts = ix.names(keys, text_lang)
@@ -5733,10 +5747,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 for prop in props:
                     if prop in added:
                         row = self._ai_row(prop, {"list": False, "numbers": [base[prop]]}, types[ai.PROFILE], lang,
-                                           added[prop])
+                                           added[prop], ai.PROFILE)
                         row["added"] = True
                     elif prop in allowed:
-                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop))
+                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop),
+                                           ai.PROFILE)
                     else:
                         continue
                     if c["kind"] != "default":
@@ -5754,7 +5769,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
-        nuclear = texts.get(ai.WORDS["nuclear"])
+        modes = {n: texts.get(key) for n, key in enumerate(ai.WAR_MODES)}
+        # what each value comes to in a battle, by the game's rule (rusemod.ai.battle_values), with the mod's changes
+        def values_of(p):
+            return {r["prop"]: r["game"] if r["value"] is None else r["value"]
+                    for g in p["groups"] for r in g["rows"] if not r["list"]}
+        default_p = next((p for p in profiles if p["kind"] == "default"), None)
+        every = {prop for p in profiles for prop in values_of(p)}  # Default counts 0 for one it doesn't list
+        battle = ai.battle_values(
+            {prop: (values_of(default_p) if default_p else {}).get(prop, 0) for prop in every},
+            [(p["name"] or str(p["index"]), values_of(p)) for p in profiles if p["kind"] == "difficulty"],
+            [(p["name"] or str(p["index"]), values_of(p)) for p in profiles if p["kind"] == "personality"])
         out_bonuses = []
         for address, rows in bonus_rows:
             for r in rows:
@@ -5762,11 +5787,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 if r["prop"] == "UnitIDs":
                     r["names"] = [unit_names.get(units.get(int(n))) or str(n) for n in v]
                 elif r["prop"] == "WarModes":
-                    r["names"] = [nuclear if n == ai.NUCLEAR_MODE and nuclear else str(n) for n in v]
+                    r["names"] = [modes.get(int(n)) or str(n) for n in v]
                 elif r["prop"] in ("AIDifficulties", "AIProfiles"):
                     kind = "difficulty" if r["prop"] == "AIDifficulties" else "personality"
                     r["names"] = [named[kind].get(int(n)) or str(n) for n in v]
             out_bonuses.append({"id": address, "rows": rows})
+        # a bonus's lists picked by name: each number with what the game calls it
+        choices = {"AIDifficulties": [{"n": i, "name": t or str(i)} for i, t in sorted(named["difficulty"].items())],
+                   "AIProfiles": [{"n": i, "name": t or str(i)} for i, t in sorted(named["personality"].items())],
+                   "WarModes": [{"n": i, "name": t or str(i)} for i, t in sorted(modes.items())],
+                   "UnitIDs": unit_choices}
         out_cards = []
         for o in cards:
             name = texts.get(card_keys[o["address"]].get("Title"))
@@ -5776,11 +5806,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             out_cards.append({"id": o["address"], "name": name,
                               "about": texts.get(card_keys[o["address"]].get("Description")),
                               "in_menu": "ShowInMenu" in allowed,
-                              "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop))
+                              "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop),
+                                                    ai.CARD)
                                        for prop in ai.CARD_PROPS if prop in allowed]})
         return {"ready": bool(profiles or out_cards or out_bonuses),
                 "words": {k: texts.get(key) for k, key in ai.WORDS.items()},
-                "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards}
+                "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards, "battle": battle,
+                "choices": choices}
 
     def ai_edit(self, address: str, prop: str, value) -> dict:
         """Change one value of a computer players' profile, bonus or ruse card (rusemod.ai) in the current mod. Saved

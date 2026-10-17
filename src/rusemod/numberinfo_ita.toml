@@ -743,3 +743,176 @@ does = "Solo suono: quanto rapidamente si spegne il suono del motore al minimo q
 [Dive_Out_Fade_Velocity]
 what = "Dissolvenza del suono di picchiata"
 does = "Solo suono: quanto rapidamente si spegne il suono di picchiata di un aereo quando richiama."
+
+# --- i giocatori del computer (la scheda IA) ---
+[AttaqueTempsActivation]
+what = "Secondi prima di iniziare ad attaccare"
+does = "Quanti secondi di battaglia aspetta prima di attaccare; fino ad allora non molesta né manda aiuto a un deposito minacciato. Predefinito 30; Facile 300 (5 minuti); Testuggine 600 (10 minuti). Difficile e Blitzkrieg non lo elencano, quindi contano 0: attaccano dal primo secondo."
+[OffensiveNbMissionMax]
+what = "Attacchi contemporanei al massimo"
+does = "Il massimo di attacchi (e rappresaglie) che conduce insieme. -1 vuol dire nessun limite, ciò che usano tutti gli insiemi del gioco."
+[MissionFacteurLancementAttaque]
+what = "Attacca quando la sua forza è tante volte quella del nemico"
+does = "Quanto deve essere forte la sua forza rispetto a ciò che il nemico ha in un punto, come multiplo della forza nemica, prima che lanci lì un attacco (il gioco la moltiplica prima per un fattore fisso). Più basso attacca prima con meno. Predefinito 0,7; Facile e Blitzkrieg 0,2; Difficile 0,9; Testuggine 1."
+[MissionFacteurEnoughToDestroy]
+what = "Forza radunata contro un nemico"
+does = "Quanta forza raduna prima di ritenere di averne abbastanza per distruggere un nemico, come multiplo della forza nemica. Predefinito 1,2; Facile 0,2; Medio 1,4; Difficile 1,8; Blitzkrieg 1,5; Testuggine 1."
+[DefenseDistanceMenace]
+what = "Distanza di minaccia"
+does = "A che distanza da un luogo che difende un nemico conta come minaccia; il gioco rende la zona sorvegliata circa 1,4 volte questa distanza (la distanza per la radice di 2). 312.000 (1.200 m) negli insiemi del gioco; Testuggine 26.000.000 (100 km: tutto sulla mappa è una minaccia)."
+[DefenseDistanceUrgent]
+what = "Distanza di minaccia urgente"
+does = "Quanto vicino a un luogo che difende deve arrivare un nemico perché tratti la minaccia come urgente. Predefinito 156.000 (600 m); Difficile 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Unità al massimo per posizione difensiva"
+does = "Il massimo delle sue unità che mette su una posizione difensiva. Predefinito 1; Medio 2; Difficile 3; Testuggine 6."
+[DefenseNbMissionMax]
+what = "Luoghi difesi insieme, al massimo"
+does = "Il massimo di missioni difensive (luoghi che sorveglia) che conduce insieme. Predefinito 2; Facile e Difficile 4; Testuggine 10. Blitzkrieg non lo elenca, quindi conta 0 e non sorveglia nulla."
+[HarcelementActif]
+what = "Molesta il nemico"
+does = "1: molesta (piccole incursioni, finita la sua attesa prima di attaccare). 0: mai. Facile e Testuggine non lo elencano, quindi contano 0 e non molestano mai."
+[UpgradeActifPourHarcelement]
+what = "Potenziamenti per le molestie"
+does = "Se può usare unità potenziate per le sue incursioni. Facile e Blitzkrieg non lo elencano (0)."
+[CashReserveTempsActivation]
+what = "Secondi prima di tenere una riserva di denaro"
+does = "Quanti secondi di battaglia prima che inizi a mettere da parte denaro invece di spenderlo tutto. 240 (4 minuti) in tutti gli insiemi del gioco."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% di denaro tenuto per gli edifici amministrativi"
+does = "La quota del suo denaro, in %, che tiene per gli edifici amministrativi (che alzano le entrate). 20% negli insiemi del gioco; Difficile 25%."
+[PercentMoneyToUseForIdle]
+what = "% di denaro usato quando inattivo"
+does = "La quota del suo denaro, in %, che può spendere in unità quando non ha altro da fare: i numeri Prodotto quando inattivo più sotto. A 0 non produce mai quando inattivo e quei numeri non fanno nulla. Predefinito e Facile 0; Medio 50%; Difficile 100%."
+[DeviseBonusIA]
+what = "Denaro extra all'inizio (trucco)"
+does = "Il denaro extra che riceve all'inizio della battaglia, in $. Solo Difficile lo ha: 150 $ oltre ai 200 $ con cui inizia ogni giocatore."
+[IncomeBonusIA]
+what = "Entrate extra a ogni pagamento (trucco)"
+does = "Denaro extra, in $, aggiunto a ciascuno dei suoi pagamenti di entrate. Solo Difficile lo ha: 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Edifici amministrativi in più prima di fermarsi"
+does = "Quanti edifici amministrativi oltre il necessario costruisce prima di smettere; -1 vuol dire nessun limite. Predefinito e i profili -1; Difficile 2; Facile e Medio non lo elencano, quindi contano 0: nessuno oltre il necessario."
+[DepotNbEnPlusAvantDesactivation]
+what = "Depositi in più prima di fermarsi"
+does = "Quanti depositi di rifornimento punta oltre a quelli che ha, finché ci sono posti per depositi da prendere. Predefinito 2; Medio 3; Difficile 4; Blitzkrieg 1; Facile non lo elenca (0)."
+[ValueDepotMinForTruckFactory]
+what = "Valore minimo dei depositi per una fabbrica di camion"
+does = "Prima di costruire una fabbrica di camion vicino a un gruppo di depositi, quei depositi devono avere ancora almeno questi rifornimenti, in $: i carichi di camion che restano loro per 3 $ a carico (6 $ in modalità Nucleare), ciò che il gioco chiama il denaro disponibile di un deposito. 100 $ in tutti gli insiemi: cinque Sherman, metà dei 200 $ iniziali di un giocatore."
+[MinutesLeftMinForTruckFactory]
+what = "Minuti rimasti minimi per una fabbrica di camion"
+does = "In una battaglia con limite di tempo costruisce una fabbrica di camion solo se restano almeno questi minuti. 5 in tutti gli insiemi."
+[NbDepotMinForTruckFactory]
+what = "Depositi minimi per una fabbrica di camion"
+does = "Quanti depositi deve contare un gruppo (i suoi e gli altri entro la distanza del gruppo di depositi) prima che vi costruisca una fabbrica di camion. 2 in tutti gli insiemi."
+[NbUnitsDangerousDepot]
+what = "Unità che rendono pericoloso un deposito"
+does = "Quante unità conta attorno a uno dei suoi depositi prima di considerarlo in pericolo e mandare aiuto. Predefinito 1; Testuggine 4; Difficile e Blitzkrieg non lo elencano (0)."
+[SeuilDistanceGroupeDepot]
+what = "Distanza del gruppo di depositi"
+does = "Quando sceglie dove mettere una nuova fabbrica di camion, i depositi entro questa distanza dal centro dei suoi depositi lontani, misurata lungo il percorso delle unità, contano come un gruppo; la fabbrica va accanto al deposito del gruppo più vicino alla sua base. 234.000 (900 m) in tutti gli insiemi."
+[SeuilDistanceTruckFactory]
+what = "Distanza della fabbrica di camion"
+does = "Costruisce un'altra fabbrica di camion quando uno dei suoi depositi è almeno a questa distanza dalla sua fabbrica di camion più vicina, misurata lungo la strada dei camion, non in linea d'aria (solo se ha già una fabbrica di camion). Predefinito e i profili 520.000 (2.000 m); ogni difficoltà 780.000 (3.000 m), e poiché nessun profilo la cambia, in battaglia contano 3.000 m."
+[NbMaxProductionForEnnemyUnit]
+what = "Unità prodotte al massimo contro un'unità nemica"
+does = "Il massimo di unità che produce per rispondere a un'unità nemica. 1 in tutti gli insiemi."
+[NbProdIdleInfanterie]
+what = "Prodotto quando inattivo: fanteria"
+does = "Quando non ha altro da fare e può spendere da inattivo (% di denaro usato quando inattivo non è 0), produce fanteria finché non ne ha tanta. Regolare 2; Obice e Prototipo 1."
+[NbProdIdleTank]
+what = "Prodotto quando inattivo: carri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce carri finché non ne ha tanti. Regolare e Prototipo 3; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Prodotto quando inattivo: anticarro"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce anticarro finché non ne ha tanti. Prototipo 1; Testuggine 2."
+[NbProdIdleArti]
+what = "Prodotto quando inattivo: artiglieria"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce artiglieria finché non ne ha tanta. Obice 5; Testuggine 2."
+[NbProdIdleDCA]
+what = "Prodotto quando inattivo: contraerea"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce contraerea finché non ne ha tanta. Testuggine 2."
+[NbProdIdleChasseur]
+what = "Prodotto quando inattivo: caccia"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce caccia finché non ne ha tanti. Dal cielo 2."
+[NbProdIdleBomber]
+what = "Prodotto quando inattivo: bombardieri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce bombardieri finché non ne ha tanti. Dal cielo 1."
+[NbProdIdleChasseurBomber]
+what = "Prodotto quando inattivo: cacciabombardieri"
+does = "Quando non ha altro da fare e può spendere da inattivo, produce cacciabombardieri finché non ne ha tanti. Dal cielo 2; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Avvia ricerche quando inattivo"
+does = "1: quando non ha altro da fare può anche avviare ricerche. Solo Prototipo lo ha."
+[BonusUnitesAvions]
+what = "Preferenza: aerei"
+does = "Punti di preferenza aggiunti a ogni aereo che può produrre. Le preferenze si sommano per unità e contano solo le differenze tra le sue unità: valuta ogni unità per quanto sta sotto la sua preferita. Dal cielo +500 fa degli aerei il suo netto favorito."
+[BonusUnitesArtillerie]
+what = "Preferenza: artiglieria"
+does = "Punti di preferenza aggiunti a ogni unità d'artiglieria che può produrre (vedi Preferenza: aerei per come si sommano). Obice +8.000 mette l'artiglieria molto davanti a tutto il resto."
+[BonusUnitesExperimentales]
+what = "Preferenza: prototipi"
+does = "Punti di preferenza aggiunti a ogni prototipo che può produrre (le unità della categoria 12 del gioco). Prototipo +400."
+[BonusUnitesRecherche]
+what = "Preferenza: ricerca"
+does = "Punti di preferenza che aggiunge per la ricerca. Prototipo +400."
+[BonusUnitesTank]
+what = "Preferenza: carri"
+does = "Punti di preferenza aggiunti a ogni carro che può produrre. Nessun insieme del gioco lo usa, quindi la scheda IA non può proporlo: Aggiungi propone solo i valori che Predefinito elenca."
+[BonusBatimentOTF]
+what = "Preferenza: edifici difensivi"
+does = "Punti di preferenza aggiunti a ogni edificio difensivo (bunker e postazioni di cannoni: flag 6). Lo rendono anche più propenso a erigere difese nei luoghi che sorveglia: il gioco lo pesa con 0,5 + questo valore / 200, cioè 1,5 con il +200 di Testuggine contro 0,5 a 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% di probabilità di giocare un inganno di manipolazione all'inizio"
+does = "La probabilità, in %, che giochi un inganno di manipolazione all'inizio della battaglia. Predefinito 40%; Medio 60%; Difficile 80%."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Carte d'inganno tenute da parte (difficoltà)"
+does = "Carte d'inganno che tiene in mano invece di giocarle; il gioco somma il numero della difficoltà e quello del profilo. Medio e Difficile 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Carte d'inganno tenute da parte (profilo)"
+does = "Carte d'inganno che tiene in mano invece di giocarle; il gioco somma questo numero a quello della difficoltà. Prototipo e Testuggine 1."
+[TempsActivationBatimentCamoufle]
+what = "Secondi prima di mimetizzare gli edifici"
+does = "Quanti secondi di battaglia prima che usi l'inganno della mimetizzazione sui suoi edifici. Solo Facile lo imposta: 600 (10 minuti); altrove 0, dall'inizio."
+[RepresailleFacteurUniteCombattante]
+what = "Fattore di rappresaglia: unità combattenti"
+does = "Quanto duramente risponde dopo aver perso unità combattenti, come multiplo. Predefinito 1; Facile 0,5; Difficile 2; Testuggine non lo elenca (0: nessuna rappresaglia per esse)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Fattore di rappresaglia: unità non combattenti"
+does = "Quanto duramente risponde dopo aver perso unità che non combattono (camion, edifici), come multiplo. Predefinito 2; Facile 1; Difficile 4; Testuggine non lo elenca (0)."
+[TimeOutRepresailles]
+what = "Limite di tempo della rappresaglia"
+does = "Quanti secondi mantiene una rappresaglia prima di abbandonarla. Predefinito 120 (2 minuti); Difficile 240."
+[ProbaRepereFake]
+what = "Probabilità di scoprire le esche"
+does = "La probabilità, da 0 a 1, che smascheri un'esca in un luogo che difende o attacca; il gioco la tira ogni 24 secondi. Predefinito 0,5 (50%); Facile 0,1; Difficile 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Secondi in cui ricorda le unità che non vede"
+does = "Per quanti secondi ricorda un'unità nemica che non vede più. Predefinito 300 (5 minuti); Facile 60; Difficile 360."
+[BonusValue]
+what = "Preferenza extra per queste unità"
+does = "Punti di preferenza aggiunti alle unità elencate, in una battaglia la cui modalità di gioco, difficoltà e profilo sono ciascuno nelle liste (una lista vuota va bene per tutti). Si sommano alle preferenze proprie dell'insieme (Preferenza: aerei…). La voce del gioco: +400 per i cannoni nucleari in modalità Nucleare, a ogni difficoltà e con ogni profilo."
+[ConsiderStackAsOneEnnemy]
+what = "Conta una pila come un solo nemico"
+does = "1: conta una pila di queste unità come un solo nemico. La voce del gioco ha 1."
+[UnitIDs]
+what = "Unità (per numero)"
+does = "Le unità a cui si applica la voce, per il numero proprio di ogni unità (il suo Id); la scheda IA le fa scegliere per nome. Una lista vuota vorrebbe dire tutte le unità."
+[WarModes]
+what = "Modalità di gioco (per numero)"
+does = "Le modalità di gioco in cui vale la voce, per il numero che il gioco dà loro: 0 1945, 1 1942, 2 1939, 3 Guerra totale, 4 Nucleare (l'ordine della lista del gioco)."
+[AIDifficulties]
+what = "Difficoltà (per numero)"
+does = "Le difficoltà in cui vale la voce: 0 Facile, 1 Medio, 2 Difficile."
+[AIProfiles]
+what = "Profili (per numero)"
+does = "I profili con cui vale la voce: 0 Regolare, 1 Dal cielo, 2 Obice, 3 Prototipo, 4 Blitzkrieg, 5 Testuggine, 6 Casuale."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Durata"
+does = "Quanto dura l'inganno una volta giocato, in secondi: da 240 a 360 nel gioco (da 4 a 6 minuti)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Mostrato nel menu degli inganni"
+does = "1: la carta è nel menu degli inganni, così giocatori e computer possono giocarla."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Posto nel menu degli inganni"
+does = "Dove sta la carta nel menu degli inganni: più basso viene prima."

@@ -743,3 +743,176 @@ does = "Nur Ton: wie schnell das Leerlaufgeräusch ausklingt, wenn die Einheit l
 [Dive_Out_Fade_Velocity]
 what = "Ausblenden des Sturzfluggeräuschs"
 does = "Nur Ton: wie schnell das Sturzfluggeräusch eines Flugzeugs ausklingt, wenn es abfängt."
+
+# --- die Computerspieler (der Reiter KI) ---
+[AttaqueTempsActivation]
+what = "Sekunden bis zum ersten Angriff"
+does = "Wie viele Sekunden der Schlacht er wartet, bevor er überhaupt angreift; bis dahin belästigt er auch nicht und schickt keine Hilfe zu einem bedrohten Depot. Standard 30; Leicht 300 (5 Minuten); Schildkröte 600 (10 Minuten). Schwer und Blitzkrieg führen ihn nicht auf, zählen also 0: Sie greifen ab der ersten Sekunde an."
+[OffensiveNbMissionMax]
+what = "Höchstens gleichzeitige Angriffe"
+does = "Die meisten Angriffe (und Vergeltungen), die er gleichzeitig führt. -1 heißt unbegrenzt, was jeder Satz des Spiels nutzt."
+[MissionFacteurLancementAttaque]
+what = "Greift an, sobald seine Stärke so viel mal die des Gegners ist"
+does = "Wie stark seine Truppe gegenüber dem sein muss, was der Gegner an einer Stelle hat, als Vielfaches der gegnerischen Stärke, bevor er dort angreift (das Spiel multipliziert ihn zuerst mit einem festen Faktor). Niedriger greift früher mit weniger an. Standard 0,7; Leicht und Blitzkrieg 0,2; Schwer 0,9; Schildkröte 1."
+[MissionFacteurEnoughToDestroy]
+what = "Stärke gegen einen Gegner"
+does = "Wie viel Stärke er sammelt, bevor er meint, genug zu haben, um einen Gegner zu vernichten, als Vielfaches der gegnerischen Stärke. Standard 1,2; Leicht 0,2; Mittel 1,4; Schwer 1,8; Blitzkrieg 1,5; Schildkröte 1."
+[DefenseDistanceMenace]
+what = "Bedrohungsdistanz"
+does = "Wie weit von einem Ort, den er verteidigt, ein Gegner als Bedrohung zählt; das Spiel macht die überwachte Zone etwa 1,4-mal so groß (die Distanz mal Wurzel aus 2). 312.000 (1.200 m) in den Sätzen des Spiels; Schildkröte 26.000.000 (100 km: alles auf der Karte ist eine Bedrohung)."
+[DefenseDistanceUrgent]
+what = "Distanz für dringende Bedrohung"
+does = "Wie nah ein Gegner einem Ort, den er verteidigt, kommen muss, bevor er die Bedrohung als dringend behandelt. Standard 156.000 (600 m); Schwer 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Höchstens Einheiten pro Verteidigungsstellung"
+does = "Die meisten seiner Einheiten, die er auf eine Verteidigungsstellung setzt. Standard 1; Mittel 2; Schwer 3; Schildkröte 6."
+[DefenseNbMissionMax]
+what = "Höchstens gleichzeitig verteidigte Orte"
+does = "Die meisten Verteidigungseinsätze (Orte, die er bewacht), die er gleichzeitig führt. Standard 2; Leicht und Schwer 4; Schildkröte 10. Blitzkrieg führt ihn nicht auf, zählt also 0 und bewacht nichts."
+[HarcelementActif]
+what = "Belästigt den Gegner"
+does = "1: Er belästigt (kleine Überfälle, sobald seine Wartezeit vor dem Angriff um ist). 0: nie. Leicht und Schildkröte führen ihn nicht auf, zählen also 0 und belästigen nie."
+[UpgradeActifPourHarcelement]
+what = "Verbesserungen fürs Belästigen"
+does = "Ob er verbesserte Einheiten für seine Überfälle nutzen darf. Leicht und Blitzkrieg führen ihn nicht auf (0)."
+[CashReserveTempsActivation]
+what = "Sekunden bis zur Geldreserve"
+does = "Wie viele Sekunden der Schlacht, bevor er beginnt, Geld zurückzulegen, statt alles auszugeben. 240 (4 Minuten) in jedem Satz des Spiels."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% des Geldes für Verwaltungsgebäude"
+does = "Der Anteil seines Geldes, in %, den er für Verwaltungsgebäude (die das Einkommen erhöhen) zurückhält. 20 % in den Sätzen des Spiels; Schwer 25 %."
+[PercentMoneyToUseForIdle]
+what = "% des Geldes im Leerlauf ausgegeben"
+does = "Der Anteil seines Geldes, in %, den er für Einheiten ausgeben darf, wenn er nichts anderes zu tun hat: die Zahlen Im Leerlauf gebaut weiter unten. Bei 0 baut er nie im Leerlauf, und diese Zahlen bewirken nichts. Standard und Leicht 0; Mittel 50 %; Schwer 100 %."
+[DeviseBonusIA]
+what = "Zusätzliches Startgeld (Schummeln)"
+does = "Zusätzliches Geld, das er zu Beginn der Schlacht bekommt, in $. Nur Schwer hat es: 150 $ zusätzlich zu den 200 $, mit denen jeder Spieler beginnt."
+[IncomeBonusIA]
+what = "Zusätzliches Einkommen je Zahlung (Schummeln)"
+does = "Zusätzliches Geld, in $, das zu jeder seiner Einkommenszahlungen kommt. Nur Schwer hat es: 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Zusätzliche Verwaltungsgebäude, bevor es aufhört"
+does = "Wie viele Verwaltungsgebäude über seinen Bedarf hinaus er baut, bevor er damit aufhört; -1 heißt unbegrenzt. Standard und die Profile -1; Schwer 2; Leicht und Mittel führen ihn nicht auf, zählen also 0: keine über den Bedarf hinaus."
+[DepotNbEnPlusAvantDesactivation]
+what = "Zusätzliche Depots, bevor es aufhört"
+does = "Wie viele Versorgungsdepots er über die vorhandenen hinaus anstrebt, solange es Depotplätze zu nehmen gibt. Standard 2; Mittel 3; Schwer 4; Blitzkrieg 1; Leicht führt ihn nicht auf (0)."
+[ValueDepotMinForTruckFactory]
+what = "Mindestwert der Depots für eine LKW-Fabrik"
+does = "Bevor er bei einer Gruppe von Depots eine LKW-Fabrik baut, müssen die Depots dort noch mindestens so viel Nachschub halten, in $: ihre verbleibenden LKW-Ladungen mal 3 $ je Ladung (6 $ im Atommodus), was das Spiel das verfügbare Geld eines Depots nennt. 100 $ in jedem Satz: fünf Sherman, die Hälfte der 200 $ Startgeld eines Spielers."
+[MinutesLeftMinForTruckFactory]
+what = "Mindestens verbleibende Minuten für eine LKW-Fabrik"
+does = "In einer Schlacht mit Zeitlimit baut er eine LKW-Fabrik nur, solange noch mindestens so viele Minuten übrig sind. 5 in jedem Satz."
+[NbDepotMinForTruckFactory]
+what = "Mindestens Depots für eine LKW-Fabrik"
+does = "Wie viele Depots eine Gruppe braucht (seine eigenen und die anderen innerhalb der Distanz für Depotgruppen), bevor er dort eine LKW-Fabrik baut. 2 in jedem Satz."
+[NbUnitsDangerousDepot]
+what = "Einheiten, die ein Depot gefährlich machen"
+does = "Wie viele Einheiten er um eines seiner Depots zählt, bevor er es als gefährdet behandelt und Hilfe schickt. Standard 1; Schildkröte 4; Schwer und Blitzkrieg führen ihn nicht auf (0)."
+[SeuilDistanceGroupeDepot]
+what = "Distanz für Depotgruppen"
+does = "Wenn er wählt, wohin eine neue LKW-Fabrik kommt, zählen die Depots innerhalb dieser Distanz vom Mittelpunkt seiner fernen Depots, gemessen entlang des Weges der Einheiten, als eine Gruppe; die Fabrik kommt neben das Depot der Gruppe, das seiner Basis am nächsten ist. 234.000 (900 m) in jedem Satz."
+[SeuilDistanceTruckFactory]
+what = "Distanz zur LKW-Fabrik"
+does = "Er baut eine weitere LKW-Fabrik, wenn eines seiner Depots mindestens so weit von seiner nächsten LKW-Fabrik entfernt ist, gemessen entlang des Weges der LKW, nicht in Luftlinie (nur wenn er schon eine LKW-Fabrik hat). Standard und die Profile 520.000 (2.000 m); jeder Schwierigkeitsgrad 780.000 (3.000 m), und da kein Profil ihn ändert, zählen im Gefecht 3.000 m."
+[NbMaxProductionForEnnemyUnit]
+what = "Höchstens gebaute Einheiten gegen eine feindliche Einheit"
+does = "Die meisten Einheiten, die er als Antwort auf eine feindliche Einheit baut. 1 in jedem Satz."
+[NbProdIdleInfanterie]
+what = "Im Leerlauf gebaut: Infanterie"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf (% des Geldes im Leerlauf ausgegeben ist nicht 0), baut er Infanterie, bis er so viele hat. Normal 2; Haubitze und Prototyp 1."
+[NbProdIdleTank]
+what = "Im Leerlauf gebaut: Panzer"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Panzer, bis er so viele hat. Normal und Prototyp 3; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Im Leerlauf gebaut: Panzerabwehr"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Panzerabwehr, bis er so viele hat. Prototyp 1; Schildkröte 2."
+[NbProdIdleArti]
+what = "Im Leerlauf gebaut: Artillerie"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Artillerie, bis er so viele hat. Haubitze 5; Schildkröte 2."
+[NbProdIdleDCA]
+what = "Im Leerlauf gebaut: Flugabwehr"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Flugabwehr, bis er so viele hat. Schildkröte 2."
+[NbProdIdleChasseur]
+what = "Im Leerlauf gebaut: Jäger"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Jäger, bis er so viele hat. Luftstreitkräfte 2."
+[NbProdIdleBomber]
+what = "Im Leerlauf gebaut: Bomber"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Bomber, bis er so viele hat. Luftstreitkräfte 1."
+[NbProdIdleChasseurBomber]
+what = "Im Leerlauf gebaut: Jagdbomber"
+does = "Wenn er nichts anderes zu tun hat und im Leerlauf Geld ausgeben darf, baut er Jagdbomber, bis er so viele hat. Luftstreitkräfte 2; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Forscht im Leerlauf"
+does = "1: Wenn er nichts anderes zu tun hat, darf er auch Forschung starten. Nur Prototyp hat es."
+[BonusUnitesAvions]
+what = "Vorliebe: Flugzeuge"
+does = "Vorliebepunkte für jedes Flugzeug, das er bauen kann. Vorlieben addieren sich je Einheit, und nur die Unterschiede zwischen seinen Einheiten zählen: Er bewertet jede Einheit danach, wie weit sie unter seiner liebsten liegt. Luftstreitkräfte +500 macht Flugzeuge zu seinem klaren Favoriten."
+[BonusUnitesArtillerie]
+what = "Vorliebe: Artillerie"
+does = "Vorliebepunkte für jede Artillerieeinheit, die er bauen kann (wie sie sich addieren, siehe Vorliebe: Flugzeuge). Haubitze +8.000 stellt Artillerie weit vor alles andere."
+[BonusUnitesExperimentales]
+what = "Vorliebe: Prototypen"
+does = "Vorliebepunkte für jeden Prototyp, den er bauen kann (die Einheiten der Kategorie 12 des Spiels). Prototyp +400."
+[BonusUnitesRecherche]
+what = "Vorliebe: Forschung"
+does = "Vorliebepunkte, die er für Forschung vergibt. Prototyp +400."
+[BonusUnitesTank]
+what = "Vorliebe: Panzer"
+does = "Vorliebepunkte für jeden Panzer, den er bauen kann. Kein Satz des Spiels nutzt sie, daher kann der Reiter KI sie nicht anbieten: Hinzufügen bietet nur die Werte an, die Standard aufführt."
+[BonusBatimentOTF]
+what = "Vorliebe: Verteidigungsgebäude"
+does = "Vorliebepunkte für jedes Verteidigungsgebäude (Bunker und Geschützstellungen: Flag 6). Sie machen ihn auch eifriger, an den Orten, die er bewacht, Verteidigungen zu errichten: Das Spiel gewichtet das mit 0,5 + dieser Wert / 200, also 1,5 bei den +200 der Schildkröte gegen 0,5 bei 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% Chance, zu Beginn eine Manipulationskarte zu spielen"
+does = "Die Chance, in %, dass er zu Beginn der Schlacht eine Manipulationslist spielt. Standard 40 %; Mittel 60 %; Schwer 80 %."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Zurückgehaltene Täuschungskarten (Schwierigkeit)"
+does = "Täuschungskarten, die er auf der Hand behält, statt sie zu spielen; das Spiel addiert die Zahl des Schwierigkeitsgrads und die des Profils. Mittel und Schwer 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Zurückgehaltene Täuschungskarten (Profil)"
+does = "Täuschungskarten, die er auf der Hand behält, statt sie zu spielen; das Spiel addiert diese Zahl zu der des Schwierigkeitsgrads. Prototyp und Schildkröte 1."
+[TempsActivationBatimentCamoufle]
+what = "Sekunden bis zum Tarnen von Gebäuden"
+does = "Wie viele Sekunden der Schlacht, bevor er die Tarnlist auf seine Gebäude anwendet. Nur Leicht setzt sie: 600 (10 Minuten); sonst 0, von Anfang an."
+[RepresailleFacteurUniteCombattante]
+what = "Vergeltungsfaktor: Kampfeinheiten"
+does = "Wie hart er zurückschlägt, nachdem er Kampfeinheiten verloren hat, als Vielfaches. Standard 1; Leicht 0,5; Schwer 2; Schildkröte führt ihn nicht auf (0: keine Vergeltung für sie)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Vergeltungsfaktor: Nichtkampfeinheiten"
+does = "Wie hart er zurückschlägt, nachdem er Einheiten verloren hat, die nicht kämpfen (LKW, Gebäude), als Vielfaches. Standard 2; Leicht 1; Schwer 4; Schildkröte führt ihn nicht auf (0)."
+[TimeOutRepresailles]
+what = "Zeitlimit der Vergeltung"
+does = "Wie viele Sekunden er eine Vergeltung aufrechterhält, bevor er sie aufgibt. Standard 120 (2 Minuten); Schwer 240."
+[ProbaRepereFake]
+what = "Chance, Attrappen zu erkennen"
+does = "Die Chance, von 0 bis 1, dass er eine Attrappe an einem Ort durchschaut, den er verteidigt oder angreift; das Spiel würfelt sie alle 24 Sekunden. Standard 0,5 (50 %); Leicht 0,1; Schwer 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Sekunden, die es sich unsichtbare Einheiten merkt"
+does = "Wie lange, in Sekunden, er sich an eine feindliche Einheit erinnert, die er nicht mehr sieht. Standard 300 (5 Minuten); Leicht 60; Schwer 360."
+[BonusValue]
+what = "Zusätzliche Vorliebe für diese Einheiten"
+does = "Vorliebepunkte für die aufgeführten Einheiten, in einer Schlacht, deren Spielmodus, Schwierigkeitsgrad und Profil jeweils in den Listen stehen (eine leere Liste passt zu allem). Sie kommen zu den eigenen Vorlieben des Satzes hinzu (Vorliebe: Flugzeuge…). Der Eintrag des Spiels: +400 für die Atomgeschütze im Atommodus, auf jedem Schwierigkeitsgrad und mit jedem Profil."
+[ConsiderStackAsOneEnnemy]
+what = "Zählt einen Stapel als einen Gegner"
+does = "1: Er zählt einen Stapel dieser Einheiten als einen Gegner. Der Eintrag des Spiels hat 1."
+[UnitIDs]
+what = "Einheiten (nach Nummer)"
+does = "Die Einheiten, für die der Eintrag gilt, nach der eigenen Nummer jeder Einheit (ihrer Id); der Reiter KI lässt sie nach Namen wählen. Eine leere Liste hieße: alle Einheiten."
+[WarModes]
+what = "Spielmodi (nach Nummer)"
+does = "Die Spielmodi, in denen der Eintrag gilt, nach der Nummer, die das Spiel ihnen gibt: 0 1945, 1 1942, 2 1939, 3 Totaler-Krieg-Modus, 4 Atommodus (die Reihenfolge der Liste des Spiels)."
+[AIDifficulties]
+what = "Schwierigkeitsgrade (nach Nummer)"
+does = "Die Schwierigkeitsgrade, auf denen der Eintrag gilt: 0 Leicht, 1 Mittel, 2 Schwer."
+[AIProfiles]
+what = "Profile (nach Nummer)"
+does = "Die Profile, mit denen der Eintrag gilt: 0 Normal, 1 Luftstreitkräfte, 2 Haubitze, 3 Prototyp, 4 Blitzkrieg, 5 Schildkröte, 6 Zufällig."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Dauer"
+does = "Wie lange die List nach dem Ausspielen wirkt, in Sekunden: 240 bis 360 im Spiel (4 bis 6 Minuten)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Im Listenmenü angezeigt"
+does = "1: Die Karte ist im Listenmenü, sodass Spieler und Computer sie spielen können."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Platz im Listenmenü"
+does = "Wo die Karte im Listenmenü steht: niedriger kommt zuerst."

@@ -743,3 +743,176 @@ does = "仅声音：单位起步或消失时怠速发动机声消失有多快。
 [Dive_Out_Fade_Velocity]
 what = "俯冲声淡出"
 does = "仅声音：飞机拉起时俯冲声消失有多快。"
+
+# --- 电脑玩家（AI 选项卡） ---
+[AttaqueTempsActivation]
+what = "开始进攻前的秒数"
+does = "对战开始后等待多少秒才进攻；在此之前它也不骚扰，也不向受威胁的补给站派援军。默认 30；简单 300（5 分钟）；龟缩流 600（10 分钟）。困难和闪击战没有列出此值，所以计为 0：从第一秒就进攻。"
+[OffensiveNbMissionMax]
+what = "同时进攻的最多次数"
+does = "同时进行的进攻（和报复）的最多次数。-1 表示无限制，游戏的所有组都用它。"
+[MissionFacteurLancementAttaque]
+what = "兵力达到敌方几倍时进攻"
+does = "在某处它的兵力相对敌方在那里的兵力要强到多少（敌方兵力的倍数），才会在那里发起进攻（游戏先乘以一个固定系数）。越低越早、以越少兵力进攻。默认 0.7；简单和闪击战 0.2；困难 0.9；龟缩流 1。"
+[MissionFacteurEnoughToDestroy]
+what = "针对敌人集结的兵力（敌方的几倍）"
+does = "它集结多少兵力才认为足以消灭敌人（敌方兵力的倍数）。默认 1.2；简单 0.2；标准 1.4；困难 1.8；闪击战 1.5；龟缩流 1。"
+[DefenseDistanceMenace]
+what = "威胁距离"
+does = "离它防守的地点多远的敌人算作威胁；游戏把监视区域设为此距离的约 1.4 倍（距离乘以 2 的平方根）。游戏各组为 312,000（1,200 m）；龟缩流 26,000,000（100 km：地图上的一切都是威胁）。"
+[DefenseDistanceUrgent]
+what = "紧急威胁距离"
+does = "敌人要离它防守的地点多近，它才把威胁当作紧急。默认 156,000（600 m）；困难 208,000（800 m）；闪击战 78,000（300 m）。"
+[DefenseMaxUnitOnPosition]
+what = "每个防御阵地的最多单位数"
+does = "它在一个防御阵地上最多放多少自己的单位。默认 1；标准 2；困难 3；龟缩流 6。"
+[DefenseNbMissionMax]
+what = "同时防守的最多地点数"
+does = "同时进行的防御任务（它守卫的地点）的最多数量。默认 2；简单和困难 4；龟缩流 10。闪击战没有列出此值，所以计为 0，什么也不守。"
+[HarcelementActif]
+what = "骚扰敌人"
+does = "1：它会骚扰（小规模袭击，在进攻前的等待结束之后）。0：从不。简单和龟缩流没有列出此值，所以计为 0，从不骚扰。"
+[UpgradeActifPourHarcelement]
+what = "用于骚扰的升级"
+does = "它能否用升级过的单位进行袭击。简单和闪击战没有列出此值（0）。"
+[CashReserveTempsActivation]
+what = "开始保留资金储备前的秒数"
+does = "对战开始后多少秒才开始存钱，而不是全部花掉。游戏所有组都是 240（4 分钟）。"
+[PercentMoneyToReserveForBatimentAdmin]
+what = "为行政建筑保留的资金（%）"
+does = "它为行政建筑（提高收入）保留的资金比例（%）。游戏各组为 20%；困难 25%。"
+[PercentMoneyToUseForIdle]
+what = "空闲时使用的资金（%）"
+does = "没有别的事可做时它可以花在单位上的资金比例（%）：即下面的“空闲时生产”各数。为 0 时它从不在空闲时生产，那些数也不起作用。默认和简单 0；标准 50%；困难 100%。"
+[DeviseBonusIA]
+what = "开局额外资金（作弊）"
+does = "对战开始时它额外得到的资金（$）。只有困难有：在每个玩家开局的 200 $ 之外再加 150 $。"
+[IncomeBonusIA]
+what = "每次发放的额外收入（作弊）"
+does = "每次发放收入时额外加的资金（$）。只有困难有：1 $。"
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "停止前额外的行政建筑"
+does = "它在所需之外再建多少座行政建筑后停止建造；-1 表示无限制。默认和各档案为 -1；困难 2；简单和标准没有列出此值，所以计为 0：不建超出所需的。"
+[DepotNbEnPlusAvantDesactivation]
+what = "停止前额外的补给站"
+does = "只要还有可占的补给站位置，它在已有的之外再争取多少个补给站。默认 2；标准 3；困难 4；闪击战 1；简单没有列出此值（0）。"
+[ValueDepotMinForTruckFactory]
+what = "建造卡车工厂所需的最低补给站价值"
+does = "在一组补给站旁建卡车工厂之前，这些补给站至少还要存有这么多补给（$）：剩余的卡车运量乘以每车 3 $（核战争模式下 6 $），游戏称之为补给站的可用资金。所有组都是 100 $：五辆谢尔曼的价钱，玩家开局 200 $ 的一半。"
+[MinutesLeftMinForTruckFactory]
+what = "建造卡车工厂所需的最少剩余分钟"
+does = "在有时间限制的对战中，只有剩余时间至少还有这么多分钟时它才建卡车工厂。所有组都是 5。"
+[NbDepotMinForTruckFactory]
+what = "建造卡车工厂所需的最少补给站数"
+does = "一组（它自己的补给站，以及补给站组距离内的其他补给站）需要有多少个补给站，它才在那里建卡车工厂。所有组都是 2。"
+[NbUnitsDangerousDepot]
+what = "使补给站被视为危险的单位数"
+does = "它在自己某个补给站周围数到多少个单位，才认为该补给站有危险并派出援军。默认 1；龟缩流 4；困难和闪击战没有列出此值（0）。"
+[SeuilDistanceGroupeDepot]
+what = "补给站组距离"
+does = "在为新的卡车工厂选址时，离它远处补给站中心此距离之内（按单位行走的路线测量）的补给站算作一组；工厂建在该组中离它基地最近的补给站旁。所有组都是 234,000（900 m）。"
+[SeuilDistanceTruckFactory]
+what = "卡车工厂距离"
+does = "当它的某个补给站离它最近的卡车工厂至少这么远时（按卡车行驶的路线测量，而不是直线），它再建一座卡车工厂（仅在它已有卡车工厂时）。默认和各档案 520,000（2,000 m）；每个难度 780,000（3,000 m），而且没有档案改变它，所以对战中按 3,000 m 计算。"
+[NbMaxProductionForEnnemyUnit]
+what = "针对一个敌方单位最多生产的单位数"
+does = "为应对一个敌方单位它最多生产多少单位。所有组都是 1。"
+[NbProdIdleInfanterie]
+what = "空闲时生产：步兵"
+does = "当没有别的事可做且可以在空闲时花钱（“空闲时使用的资金”不为 0）时，它生产步兵直到有这么多。常规 2；榴弹炮和原型 1。"
+[NbProdIdleTank]
+what = "空闲时生产：坦克"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产坦克直到有这么多。常规和原型 3；闪击战 4。"
+[NbProdIdleAntitank]
+what = "空闲时生产：反坦克"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产反坦克单位直到有这么多。原型 1；龟缩流 2。"
+[NbProdIdleArti]
+what = "空闲时生产：火炮"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产火炮直到有这么多。榴弹炮 5；龟缩流 2。"
+[NbProdIdleDCA]
+what = "空闲时生产：防空"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产防空单位直到有这么多。龟缩流 2。"
+[NbProdIdleChasseur]
+what = "空闲时生产：战斗机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产战斗机直到有这么多。航空 2。"
+[NbProdIdleBomber]
+what = "空闲时生产：轰炸机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产轰炸机直到有这么多。航空 1。"
+[NbProdIdleChasseurBomber]
+what = "空闲时生产：战斗轰炸机"
+does = "当没有别的事可做且可以在空闲时花钱时，它生产战斗轰炸机直到有这么多。航空 2；闪击战 1。"
+[ProdIdleCanLaunchResearch]
+what = "空闲时进行研究"
+does = "1：没有别的事可做时，它也可以开始研究。只有原型有。"
+[BonusUnitesAvions]
+what = "偏好：飞机"
+does = "加给它能生产的每架飞机的偏好分。偏好按单位相加，只有它的单位之间的差别才有意义：它按每个单位比最偏好的单位低多少来评价。航空的 +500 让飞机成为它明显的首选。"
+[BonusUnitesArtillerie]
+what = "偏好：火炮"
+does = "加给它能生产的每个火炮单位的偏好分（如何相加见“偏好：飞机”）。榴弹炮的 +8,000 让火炮远远领先于其他一切。"
+[BonusUnitesExperimentales]
+what = "偏好：原型单位"
+does = "加给它能生产的每个原型单位（游戏第 12 类单位）的偏好分。原型 +400。"
+[BonusUnitesRecherche]
+what = "偏好：研究"
+does = "它为研究加的偏好分。原型 +400。"
+[BonusUnitesTank]
+what = "偏好：坦克"
+does = "加给它能生产的每辆坦克的偏好分。游戏的任何组都不用它，所以 AI 选项卡无法提供：“添加”只提供默认列出的值。"
+[BonusBatimentOTF]
+what = "偏好：防御建筑"
+does = "加给每座防御建筑（碉堡和炮位：旗标 6）的偏好分。它们还让它更愿意在守卫的地点修筑防御：游戏按 0.5 + 此值 / 200 加权，龟缩流的 +200 时为 1.5，为 0 时为 0.5。"
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "开局使用操控类计谋的几率（%）"
+does = "对战开始时它使用操控类计谋的几率（%）。默认 40%；标准 60%；困难 80%。"
+[NbCarteDansLaReservePourLaDifficulte]
+what = "保留的计谋卡（难度）"
+does = "它留在手中而不使用的计谋卡；游戏把难度的数与档案的数相加。标准和困难 1。"
+[NbCarteDansLaReservePourLeProfil]
+what = "保留的计谋卡（档案）"
+does = "它留在手中而不使用的计谋卡；游戏把此数加到难度的数上。原型和龟缩流 1。"
+[TempsActivationBatimentCamoufle]
+what = "开始伪装建筑前的秒数"
+does = "对战开始后多少秒它才对自己的建筑使用伪装计谋。只有简单设置了：600（10 分钟）；其他为 0，从一开始。"
+[RepresailleFacteurUniteCombattante]
+what = "报复系数：战斗单位"
+does = "失去战斗单位后它反击的力度（倍数）。默认 1；简单 0.5；困难 2；龟缩流没有列出此值（0：不为它们报复）。"
+[RepresailleFacteurUniteNonCombattante]
+what = "报复系数：非战斗单位"
+does = "失去不作战的单位（卡车、建筑）后它反击的力度（倍数）。默认 2；简单 1；困难 4；龟缩流没有列出此值（0）。"
+[TimeOutRepresailles]
+what = "报复时限（秒）"
+does = "它把一次报复维持多少秒后放弃。默认 120（2 分钟）；困难 240。"
+[ProbaRepereFake]
+what = "识破诱饵的几率（0 到 1）"
+does = "它在防守或进攻的地点识破诱饵的几率（0 到 1）；游戏每 24 秒判定一次。默认 0.5（50%）；简单 0.1；困难 0.8。"
+[TempsMemorisationUnitInvisible]
+what = "记住看不见的单位的秒数"
+does = "它记住一个已看不见的敌方单位多少秒。默认 300（5 分钟）；简单 60；困难 360。"
+[BonusValue]
+what = "对这些单位的额外偏好"
+does = "在游戏模式、难度和档案都在列表中的对战里，加给所列单位的偏好分（空列表适用于所有）。它们加在该组自身的偏好上（“偏好：飞机”等）。游戏自带的条目：核战争模式下核火炮 +400，所有难度和所有档案。"
+[ConsiderStackAsOneEnnemy]
+what = "将堆叠视为一个敌人"
+does = "1：把这些单位的堆叠算作一个敌人。游戏的条目为 1。"
+[UnitIDs]
+what = "单位（编号）"
+does = "该条目针对的单位，按每个单位自己的编号（其 Id）；AI 选项卡可以按名称选择。空列表将表示所有单位。"
+[WarModes]
+what = "游戏模式（编号）"
+does = "该条目生效的游戏模式，按游戏给它们的编号：0 1945年时代，1 1942年时代，2 1939年时代，3 全面战争模式，4 核战争模式（游戏列表的顺序）。"
+[AIDifficulties]
+what = "难度（编号）"
+does = "该条目生效的难度：0 简单，1 标准，2 困难。"
+[AIProfiles]
+what = "档案（编号）"
+does = "该条目生效的档案：0 常规，1 航空，2 榴弹炮，3 原型，4 闪击战，5 龟缩流，6 随机。"
+["TBluffCardDescriptor.LifeDuration"]
+what = "持续时间（秒）"
+does = "计谋使出后持续多少秒：游戏中为 240 到 360（4 到 6 分钟）。"
+["TBluffCardDescriptor.ShowInMenu"]
+what = "在计谋菜单中显示"
+does = "1：该卡在计谋菜单中，玩家和电脑都能使用。"
+["TBluffCardDescriptor.PositionInMenu"]
+what = "计谋菜单位置"
+does = "该卡在计谋菜单中的位置：越小越靠前。"

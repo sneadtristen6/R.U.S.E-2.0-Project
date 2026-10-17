@@ -743,3 +743,176 @@ does = "Son seulement : la vitesse à laquelle le bruit du moteur au ralenti s'�
 [Dive_Out_Fade_Velocity]
 what = "Fin du bruit de piqué"
 does = "Son seulement : la vitesse à laquelle le bruit de piqué d'un avion s'éteint quand il se redresse."
+
+# --- les joueurs ordinateur (l'onglet IA) ---
+[AttaqueTempsActivation]
+what = "Secondes avant de commencer à attaquer"
+does = "Combien de secondes de bataille il attend avant d'attaquer ; d'ici là il ne harcèle pas non plus et n'envoie pas d'aide à un dépôt menacé. Défaut 30 ; Facile 300 (5 minutes) ; Tortue 600 (10 minutes). Difficile et Blitzkrieg ne la listent pas, donc elles comptent 0 : elles attaquent dès la première seconde."
+[OffensiveNbMissionMax]
+what = "Attaques simultanées au plus"
+does = "Le plus d'attaques (et de représailles) qu'il mène en même temps. -1 veut dire sans limite, ce qu'utilisent tous les ensembles du jeu."
+[MissionFacteurLancementAttaque]
+what = "Attaque dès que sa force vaut ce nombre de fois celle de l'ennemi"
+does = "Combien sa force doit être forte face à ce que l'ennemi a à un endroit, en multiple de la force ennemie, avant qu'il y lance une attaque (le jeu la multiplie d'abord par un facteur fixe). Plus bas, il attaque plus tôt avec moins. Défaut 0,7 ; Facile et Blitzkrieg 0,2 ; Difficile 0,9 ; Tortue 1."
+[MissionFacteurEnoughToDestroy]
+what = "Force réunie contre un ennemi"
+does = "Combien de force il réunit avant de juger qu'il en a assez pour détruire un ennemi, en multiple de la force ennemie. Défaut 1,2 ; Facile 0,2 ; Normale 1,4 ; Difficile 1,8 ; Blitzkrieg 1,5 ; Tortue 1."
+[DefenseDistanceMenace]
+what = "Distance de menace"
+does = "À quelle distance d'un endroit qu'il défend un ennemi compte comme une menace ; le jeu fait de la zone surveillée environ 1,4 fois cette distance (la distance fois la racine de 2). 312 000 (1 200 m) dans les ensembles du jeu ; Tortue 26 000 000 (100 km : tout sur la carte est une menace)."
+[DefenseDistanceUrgent]
+what = "Distance de menace urgente"
+does = "À quelle distance d'un endroit qu'il défend un ennemi doit venir pour qu'il traite la menace comme urgente. Défaut 156 000 (600 m) ; Difficile 208 000 (800 m) ; Blitzkrieg 78 000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Unités au plus par position de défense"
+does = "Le plus de ses unités qu'il met sur une position de défense. Défaut 1 ; Normale 2 ; Difficile 3 ; Tortue 6."
+[DefenseNbMissionMax]
+what = "Endroits défendus en même temps, au plus"
+does = "Le plus de missions de défense (endroits qu'il garde) qu'il mène en même temps. Défaut 2 ; Facile et Difficile 4 ; Tortue 10. Blitzkrieg ne la liste pas, donc il compte 0 et ne garde rien."
+[HarcelementActif]
+what = "Harcèle l'ennemi"
+does = "1 : il harcèle (petits raids, une fois son attente avant d'attaquer finie). 0 : jamais. Facile et Tortue ne la listent pas, donc ils comptent 0 et ne harcèlent jamais."
+[UpgradeActifPourHarcelement]
+what = "Améliorations pour le harcèlement"
+does = "S'il peut utiliser des unités améliorées pour ses raids. Facile et Blitzkrieg ne la listent pas (0)."
+[CashReserveTempsActivation]
+what = "Secondes avant de garder une réserve d'argent"
+does = "Combien de secondes de bataille avant qu'il commence à mettre de l'argent de côté au lieu de tout dépenser. 240 (4 minutes) dans tous les ensembles du jeu."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% d'argent gardé pour les bâtiments administratifs"
+does = "La part de son argent, en %, qu'il garde pour les bâtiments administratifs (qui augmentent le revenu). 20 % dans les ensembles du jeu ; Difficile 25 %."
+[PercentMoneyToUseForIdle]
+what = "% d'argent dépensé au repos"
+does = "La part de son argent, en %, qu'il peut dépenser en unités quand il n'a rien d'autre à faire : les nombres Produit au repos plus bas. À 0 il ne produit jamais au repos et ces nombres ne font rien. Défaut et Facile 0 ; Normale 50 % ; Difficile 100 %."
+[DeviseBonusIA]
+what = "Argent en plus au départ (triche)"
+does = "L'argent en plus qu'il reçoit au début de la bataille, en $. Seule Difficile l'a : 150 $ en plus des 200 $ avec lesquels chaque joueur commence."
+[IncomeBonusIA]
+what = "Revenu en plus à chaque versement (triche)"
+does = "L'argent en plus, en $, ajouté à chacun de ses versements de revenu. Seule Difficile l'a : 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Bâtiments administratifs en plus avant d'arrêter"
+does = "Combien de bâtiments administratifs au-delà de ce qu'il lui faut il construit avant d'arrêter d'en construire ; -1 veut dire sans limite. Défaut et les profils -1 ; Difficile 2 ; Facile et Normale ne la listent pas, donc elles comptent 0 : aucun au-delà du nécessaire."
+[DepotNbEnPlusAvantDesactivation]
+what = "Dépôts en plus avant d'arrêter"
+does = "Combien de dépôts de ravitaillement il vise au-delà de ceux qu'il a, tant qu'il y a des emplacements de dépôt à prendre. Défaut 2 ; Normale 3 ; Difficile 4 ; Blitzkrieg 1 ; Facile ne la liste pas (0)."
+[ValueDepotMinForTruckFactory]
+what = "Valeur de dépôt minimale pour une usine de camions"
+does = "Avant de construire une usine de camions près d'un groupe de dépôts, ces dépôts doivent encore contenir au moins ce ravitaillement, en $ : les chargements de camion qu'il leur reste fois 3 $ le chargement (6 $ en Mode Nucléaire), ce que le jeu appelle l'argent disponible d'un dépôt. 100 $ dans tous les ensembles : cinq Sherman, la moitié des 200 $ de départ d'un joueur."
+[MinutesLeftMinForTruckFactory]
+what = "Minutes restantes minimales pour une usine de camions"
+does = "Dans une bataille à durée limitée, il ne construit une usine de camions que s'il reste au moins ce nombre de minutes. 5 dans tous les ensembles."
+[NbDepotMinForTruckFactory]
+what = "Dépôts minimum pour une usine de camions"
+does = "Combien de dépôts un groupe doit compter (les siens et les autres à moins de la distance de groupe de dépôts) avant qu'il y construise une usine de camions. 2 dans tous les ensembles."
+[NbUnitsDangerousDepot]
+what = "Unités qui rendent un dépôt dangereux"
+does = "Combien d'unités il compte autour d'un de ses dépôts avant de le considérer en danger et d'envoyer de l'aide. Défaut 1 ; Tortue 4 ; Difficile et Blitzkrieg ne la listent pas (0)."
+[SeuilDistanceGroupeDepot]
+what = "Distance de groupe de dépôts"
+does = "Quand il choisit où mettre une nouvelle usine de camions, les dépôts à moins de cette distance du centre de ses dépôts lointains, mesurée par le chemin que suivent les unités, comptent comme un groupe ; l'usine va à côté du dépôt du groupe le plus proche de sa base. 234 000 (900 m) dans tous les ensembles."
+[SeuilDistanceTruckFactory]
+what = "Distance de l'usine de camions"
+does = "Il construit une autre usine de camions quand un de ses dépôts est au moins à cette distance de son usine de camions la plus proche, mesurée par la route que suivent les camions, pas à vol d'oiseau (seulement s'il a déjà une usine de camions). Défaut et les profils 520 000 (2 000 m) ; chaque difficulté 780 000 (3 000 m), et comme aucun profil ne la change, c'est 3 000 m qui compte en bataille."
+[NbMaxProductionForEnnemyUnit]
+what = "Unités produites au plus contre une unité ennemie"
+does = "Le plus d'unités qu'il produit pour répondre à une unité ennemie. 1 dans tous les ensembles."
+[NbProdIdleInfanterie]
+what = "Produit au repos : infanterie"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos (% d'argent dépensé au repos n'est pas 0), il produit de l'infanterie jusqu'à en avoir autant. Standard 2 ; Obusier et Prototype 1."
+[NbProdIdleTank]
+what = "Produit au repos : chars"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit des chars jusqu'à en avoir autant. Standard et Prototype 3 ; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Produit au repos : antichars"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit des antichars jusqu'à en avoir autant. Prototype 1 ; Tortue 2."
+[NbProdIdleArti]
+what = "Produit au repos : artillerie"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit de l'artillerie jusqu'à en avoir autant. Obusier 5 ; Tortue 2."
+[NbProdIdleDCA]
+what = "Produit au repos : DCA"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit de la DCA jusqu'à en avoir autant. Tortue 2."
+[NbProdIdleChasseur]
+what = "Produit au repos : chasseurs"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit des chasseurs jusqu'à en avoir autant. Air Force 2."
+[NbProdIdleBomber]
+what = "Produit au repos : bombardiers"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit des bombardiers jusqu'à en avoir autant. Air Force 1."
+[NbProdIdleChasseurBomber]
+what = "Produit au repos : chasseurs-bombardiers"
+does = "Quand il n'a rien d'autre à faire et peut dépenser au repos, il produit des chasseurs-bombardiers jusqu'à en avoir autant. Air Force 2 ; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Lance des recherches au repos"
+does = "1 : quand il n'a rien d'autre à faire, il peut aussi lancer une recherche. Seul Prototype l'a."
+[BonusUnitesAvions]
+what = "Préférence : avions"
+does = "Points de préférence ajoutés à chaque avion qu'il peut produire. Les préférences s'additionnent par unité et seules les différences entre ses unités comptent : il note chaque unité selon l'écart avec son unité préférée. Air Force +500 fait des avions son favori net."
+[BonusUnitesArtillerie]
+what = "Préférence : artillerie"
+does = "Points de préférence ajoutés à chaque unité d'artillerie qu'il peut produire (voir Préférence : avions pour leur addition). Obusier +8 000 met l'artillerie loin devant tout le reste."
+[BonusUnitesExperimentales]
+what = "Préférence : prototypes"
+does = "Points de préférence ajoutés à chaque prototype qu'il peut produire (les unités de la catégorie 12 du jeu). Prototype +400."
+[BonusUnitesRecherche]
+what = "Préférence : recherche"
+does = "Points de préférence qu'il ajoute pour la recherche. Prototype +400."
+[BonusUnitesTank]
+what = "Préférence : chars"
+does = "Points de préférence ajoutés à chaque char qu'il peut produire. Aucun ensemble du jeu ne l'utilise, donc l'onglet IA ne peut pas la proposer : Ajouter ne propose que les valeurs que Défaut liste."
+[BonusBatimentOTF]
+what = "Préférence : bâtiments défensifs"
+does = "Points de préférence ajoutés à chaque bâtiment défensif (bunkers et positions de canons : drapeau 6). Ils le rendent aussi plus enclin à poser des défenses aux endroits qu'il garde : le jeu pèse cela par 0,5 + cette valeur / 200, soit 1,5 avec le +200 de Tortue contre 0,5 à 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% de chances de jouer une ruse de manipulation au début"
+does = "La chance, en %, qu'il joue une ruse de manipulation au début de la bataille. Défaut 40 % ; Normale 60 % ; Difficile 80 %."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Cartes de ruse gardées en réserve (difficulté)"
+does = "Cartes de ruse qu'il garde en main au lieu de les jouer ; le jeu additionne le nombre de la difficulté et celui du profil. Normale et Difficile 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Cartes de ruse gardées en réserve (profil)"
+does = "Cartes de ruse qu'il garde en main au lieu de les jouer ; le jeu ajoute ce nombre à celui de la difficulté. Prototype et Tortue 1."
+[TempsActivationBatimentCamoufle]
+what = "Secondes avant de camoufler des bâtiments"
+does = "Combien de secondes de bataille avant qu'il utilise la ruse de camouflage sur ses bâtiments. Seule Facile la règle : 600 (10 minutes) ; ailleurs 0, dès le début."
+[RepresailleFacteurUniteCombattante]
+what = "Facteur de représailles : unités combattantes"
+does = "La force de sa riposte après la perte d'unités combattantes, en multiple. Défaut 1 ; Facile 0,5 ; Difficile 2 ; Tortue ne la liste pas (0 : pas de représailles pour elles)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Facteur de représailles : unités non combattantes"
+does = "La force de sa riposte après la perte d'unités qui ne combattent pas (camions, bâtiments), en multiple. Défaut 2 ; Facile 1 ; Difficile 4 ; Tortue ne la liste pas (0)."
+[TimeOutRepresailles]
+what = "Délai des représailles"
+does = "Combien de secondes il maintient des représailles avant de les abandonner. Défaut 120 (2 minutes) ; Difficile 240."
+[ProbaRepereFake]
+what = "Chance de repérer les leurres"
+does = "La chance, de 0 à 1, qu'il voie à travers un leurre à un endroit qu'il défend ou attaque ; le jeu la tire toutes les 24 secondes. Défaut 0,5 (50 %) ; Facile 0,1 ; Difficile 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Secondes pendant lesquelles il se souvient des unités qu'il ne voit plus"
+does = "Combien de secondes il se souvient d'une unité ennemie qu'il ne voit plus. Défaut 300 (5 minutes) ; Facile 60 ; Difficile 360."
+[BonusValue]
+what = "Préférence en plus pour ces unités"
+does = "Points de préférence ajoutés aux unités listées, dans une bataille dont le mode de jeu, la difficulté et le profil sont chacun dans les listes (une liste vide correspond à tous). Ils s'ajoutent aux préférences propres de l'ensemble (Préférence : avions…). L'entrée du jeu : +400 pour les canons nucléaires en Mode Nucléaire, à toute difficulté et avec tout profil."
+[ConsiderStackAsOneEnnemy]
+what = "Compte une pile comme un seul ennemi"
+does = "1 : il compte une pile de ces unités comme un seul ennemi. L'entrée du jeu a 1."
+[UnitIDs]
+what = "Unités (par numéro)"
+does = "Les unités que vise l'entrée, par le numéro propre de chaque unité (son Id) ; l'onglet IA permet de les choisir par leur nom. Une liste vide voudrait dire toutes les unités."
+[WarModes]
+what = "Modes de jeu (par numéro)"
+does = "Les modes de jeu où l'entrée joue, par le numéro que le jeu leur donne : 0 1945, 1 1942, 2 1939, 3 Mode Guerre totale, 4 Mode Nucléaire (l'ordre de la liste du jeu)."
+[AIDifficulties]
+what = "Difficultés (par numéro)"
+does = "Les difficultés où l'entrée joue : 0 Facile, 1 Normale, 2 Difficile."
+[AIProfiles]
+what = "Profils (par numéro)"
+does = "Les profils avec lesquels l'entrée joue : 0 Standard, 1 Air Force, 2 Obusier, 3 Prototype, 4 Blitzkrieg, 5 Tortue, 6 Aléatoire."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Durée"
+does = "Combien de temps dure la ruse une fois jouée, en secondes : 240 à 360 dans le jeu (4 à 6 minutes)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Affiché dans le menu des ruses"
+does = "1 : la carte est dans le menu des ruses, donc les joueurs et l'ordinateur peuvent la jouer."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Place dans le menu des ruses"
+does = "Où la carte se place dans le menu des ruses : plus bas vient en premier."

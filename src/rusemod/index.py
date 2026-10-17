@@ -577,6 +577,13 @@ class Index:
             out.setdefault(int(num), address)
         return out
 
+    def numbered(self, path: str) -> dict:
+        """{address: number} of every named object whose `path` holds a number: each unit's DescriptorId, for picking
+        units by name where the game lists them by number (the computer players' bonus, rusemod.ai)."""
+        return {a: int(n) for a, n in self.db.execute("""SELECT o.address, v.num FROM value v JOIN object o
+                                                         ON o.id = v.object WHERE v.path = ? AND v.num IS NOT NULL
+                                                         AND o.shadow = 0 AND o.export IS NOT NULL""", (path,))}
+
     def prop_types(self, cls: str) -> dict:
         """Property -> the value type objects of `cls` use for it ("int32", "float32", "list"…), the most common one."""
         return dict(self.db.execute("SELECT prop, type FROM prop_seen WHERE class = ? ORDER BY count, type", (cls,)))

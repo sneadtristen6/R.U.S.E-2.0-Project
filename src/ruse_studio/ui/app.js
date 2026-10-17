@@ -3028,20 +3028,70 @@ async function renderAI() {
     return;
   }
   if (!data.profiles.some((p) => p.id === state.aiProfile)) state.aiProfile = data.profiles.length ? data.profiles[0].id : null;
+  state.aiData = data;  // the battle values and the bonus lists' names, for each row (aiRow, aiValue)
+  if (!knownNumbers) {  // each value's meaning, from the number guide (rusemod/numberinfo.toml)
+    try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
+    if (state.view !== "ai") return;
+  }
   renderAIPick(data);
   renderAIProfile(data);
   $("ai-bonuses").replaceChildren(...data.bonuses.map((b) => {
     const table = el("table");
     for (const r of b.rows) table.append(aiRow(b.id, r, r.list ? renderAI : null));
-    return el("div", { className: "group" }, table);
+    return el("div", { className: "group" }, aiBonusSummary(b), table);
   }));
   renderAICards(data);
+}
+
+// A bonus in one sentence: in which battles (game modes, difficulties, profiles) which units get how much more
+// preference (the owner, 2026-10-17: "not very clear what profile goes to what number ... or the unit by number").
+// An empty list matches any.
+function aiBonusSummary(b) {
+  const w = state.words;
+  const row = (prop) => b.rows.find((r) => r.prop === prop);
+  const all = (state.aiData && state.aiData.choices) || {};
+  const names = (prop, any) => {  // an empty list, or one holding every choice there is: "any difficulty"
+    const r = row(prop);
+    const now = r ? (r.value === null ? r.game : r.value) : [];
+    const every = all[prop] && all[prop].length && all[prop].every((c) => now.includes(c.n));
+    return r && r.names && r.names.length && !every ? r.names.join(", ") : w[any];
+  };
+  const value = row("BonusValue");
+  const v = value ? (value.value === null ? value.game : value.value) : 0;
+  return el("p", { className: "ai-bonus-summary", textContent: fill(w.ai_bonus_summary, {
+    modes: names("WarModes", "ai_bonus_any_mode"), difficulties: names("AIDifficulties", "ai_bonus_any_difficulty"),
+    profiles: names("AIProfiles", "ai_bonus_any_profile"), v: (v > 0 ? "+" : "") + Number(v).toLocaleString(),
+    units: names("UnitIDs", "ai_bonus_any_unit") }) });
+}
+
+// A value as its unit shows it: "3,000 m", "5 min", "$100", "50%", else the number.
+function aiShown(entry, v) {
+  const w = state.words, p = entry && knownNumbers && knownNumbers.plain[entry.unit];
+  if (!p || !Number.isFinite(Number(v))) return Number(v).toLocaleString();
+  const x = Number(v) / p[0];
+  const n = Math.abs(x) >= 100 ? Math.round(x).toLocaleString() : Number(x.toPrecision(3)).toLocaleString();
+  return entry.unit === "money" ? `$${n}` : `${n} ${w[p[1]] || ""}`.trim();
+}
+
+// What a value comes to in a battle (StudioApi.ai battle: the game's rule mixing Default, the difficulty and the
+// personality): each difficulty's, and the personalities whose own value wins on any difficulty.
+function aiBattleLine(r) {
+  const w = state.words, data = state.aiData;
+  const b = data && data.battle && data.battle[r.prop];
+  if (!b || r.cls !== "TIAProfil") return null;
+  const entry = numberEntry(r.cls, r.prop);
+  const parts = b.difficulties.map(([name, v]) => `${name} ${aiShown(entry, v)}`).join(" · ");
+  const wins = b.personalities.map(([name, v]) => `${name} ${aiShown(entry, v)}`).join(", ");
+  return el("div", { className: "small ai-battle", title: w.tip_ai_battle,
+    textContent: fill(w.ai_battle, { values: parts }) + (wins ? ` — ${fill(w.ai_battle_wins, { list: wins })}` : "") });
 }
 
 function renderAIPick(data) {
   const w = state.words, words = data.words || {};
   const button = (p) => {
-    const b = el("button", { type: "button", className: "chip", textContent: p.kind === "default" ? w.ai_default : p.name || p.index });
+    // the number the game gives it (a bonus's lists name them by it), beside its name
+    const b = el("button", { type: "button", className: "chip",
+      textContent: p.kind === "default" ? w.ai_default : `${p.name || ""} (${p.index})`.trim() });
     b.setAttribute("aria-pressed", String(p.id === state.aiProfile));
     b.addEventListener("click", () => { state.aiProfile = p.id; renderAI(); });  // fresh: another set may have changed
     return b;
@@ -3063,7 +3113,7 @@ function renderAIProfile(data) {
   if (!p) { $("ai-groups").replaceChildren(); return; }
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
-    for (const r of g.rows) table.append(aiRow(p.id, r, r.added ? renderAI : null));
+    for (const r of g.rows) table.append(aiRow(p.id, r, renderAI));  // drawn again: what it comes to in a battle
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
   }), ...aiMissing(p), notesBox(`obj:${p.id}`));
 }
@@ -3117,7 +3167,12 @@ function renderAICards(data) {
   if (!cards.length) { $("ai-cards").replaceChildren(); return; }
   const props = ["LifeDuration", "ShowInMenu", "PositionInMenu"];
   const label = (prop) => (cards.flatMap((c) => c.rows).find((r) => r.prop === prop) || {}).label || prop;
-  const head = el("tr", {}, el("th"), ...props.map((prop) => el("th", { textContent: label(prop) })));
+  const head = el("tr", {}, el("th"), ...props.map((prop) => {
+    const entry = numberEntry("TBluffCardDescriptor", prop);  // what it does, from the number guide
+    const th = el("th", { textContent: label(prop), title: numberTip(entry) });
+    if (entry) th.classList.add("has-meaning");
+    return th;
+  }));
   const table = el("table", { className: "ai-cards" }, head);
   for (const c of cards) {
     const th = el("th", { textContent: c.name });
@@ -3137,21 +3192,51 @@ function renderAICards(data) {
 // list's numbers (units, game modes, difficulties, profiles), and for a difficulty's or profile's value whether it is
 // Default's (then it doesn't count: StudioApi.ai). `after`: called once a change is saved (a list's names come from
 // the game index again).
+// A bonus's list item picked by name (difficulty, profile, game mode, unit: StudioApi.ai choices), the number the
+// game uses beside it; a number with no name stays as itself.
+function aiChoiceBox(r, value, label, choices) {
+  const box = el("select", { disabled: !state.mod, title: state.words.tip_ai_choice });
+  const option = (c) => el("option", { value: String(c.n),
+    textContent: c.nation ? `${c.name} · ${c.nation} (${c.n})` : `${c.name} (${c.n})` });
+  box.append(...choices.map(option));
+  const ensure = (n) => {
+    if (![...box.options].some((o) => o.value === String(n))) box.append(option({ n, name: String(n) }));
+    box.value = String(n);
+  };
+  ensure(value);
+  box.ensure = ensure;
+  box.setAttribute("aria-label", label);
+  return box;
+}
+
 function aiValue(target, r, after = null) {
   const w = state.words;
   const game = r.list ? r.game : [r.game];
   let mine = r.value === null ? null : r.list ? r.value : [r.value];
-  const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+  const choices = state.aiData && state.aiData.choices && state.aiData.choices[r.prop];
+  const boxes = (mine || game).map((n, i) => {
+    const label = r.list ? `${r.label} [${i}]` : r.label;
+    return choices ? aiChoiceBox(r, n, label, choices) : numberBox(r, n, label);
+  });
   const was = el("div", { className: "was" });
   const note = el("div", { className: "muted small" });
-  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes), was, note);
+  const entry = numberEntry(r.cls, r.prop);
+  const plain = el("span", { className: "muted small number-plain" });  // "about 3,000 m"
+  const showPlain = () => { plain.textContent = r.list || choices ? "" : numberPlain(entry, readBox(boxes[0])); };
+  const cell = el("td", {}, el("div", { className: "boxes" }, ...boxes, plain), was, note);
   const showNote = (same) => {
-    note.textContent = [r.names ? r.names.join(" · ") : "", same ? w.ai_same_default : ""].filter(Boolean).join(" — ");
+    // a picker already shows the names; a plain list of numbers gets them below
+    note.textContent = [r.names && !choices ? r.names.join(" · ") : "", same ? w.ai_same_default : ""]
+      .filter(Boolean).join(" — ");
   };
   const show = (numbers) => boxes.forEach((b, i) => {
-    if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
+    if (b.type === "checkbox") b.checked = Boolean(numbers[i]);
+    else if (b.ensure) b.ensure(numbers[i]);
+    else b.value = String(numbers[i]);
     b.setAttribute("aria-invalid", "false");
   });
+  for (const b of boxes) b.addEventListener("input", showPlain);
+  showPlain();
   const showWas = () => {
     cell.classList.toggle("edited", mine !== null);
     if (mine === null) { was.replaceChildren(); return; }
@@ -3161,6 +3246,7 @@ function aiValue(target, r, after = null) {
         const res = await api().ai_reset(target, r.prop);
         mine = null;
         show(game);
+        showPlain();
         showWas();
         showNote(res.same_default);
         say("");
@@ -3178,6 +3264,7 @@ function aiValue(target, r, after = null) {
       const res = await api().ai_edit(target, r.prop, r.list ? numbers : numbers[0]);
       const value = r.list ? res.value : [res.value];
       show(value);
+      showPlain();
       mine = sameNumbers(value, game) && !r.added ? null : value;  // (a value the mod added stays until taken out)
       showWas();
       showNote(res.same_default);
@@ -3191,12 +3278,24 @@ function aiValue(target, r, after = null) {
   return { cell };
 }
 
+// One row of the AI tab: the value's name, what it does in the game (the number guide; its name shows the whole
+// entry and how sure we are when hovered), its box, and for a profile's value what it comes to in a battle.
 function aiRow(target, r, after = null) {
+  const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
   // its own value the mod gave it (StudioApi.ai_add): Game's value takes it out again, so the list is drawn again
-  if (r.added) th.append(el("small", { className: "ai-added", textContent: state.words.ai_added, title: state.words.tip_ai_added }));
-  return el("tr", {}, th, aiValue(target, r, after).cell);
+  if (r.added) th.append(el("small", { className: "ai-added", textContent: w.ai_added, title: w.tip_ai_added }));
+  const entry = numberEntry(r.cls, r.prop);
+  if (entry) {
+    th.title = numberTip(entry);  // (no dotted underline: the meaning is written out below the name)
+    th.append(el("small", { className: "about", textContent: entry.does }));
+    if (entry.sure === "name") th.append(el("small", { className: "muted ai-sure", textContent: w.ai_sure_name }));
+  }
+  const { cell } = aiValue(target, r, after);
+  const battle = aiBattleLine(r);
+  if (battle) cell.append(battle);
+  return el("tr", {}, th, cell);
 }
 
 // The game's map and mission scripts, shown as Python to read (StudioApi.ai_scripts / ai_script; LittleGroove's

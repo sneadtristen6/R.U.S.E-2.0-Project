@@ -22,8 +22,8 @@ class Guide(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_each_entry_says_what_it_is_and_how_to_read_it(self):
-        units = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share",
-                 "level", "choice", "yesno", "id", "mask", "frame", "raw"}
+        units = {"m", "kmh", "kmh_air", "accel", "s", "deg", "degs", "money", "pts", "count", "times", "share", "pct",
+                 "min", "level", "choice", "yesno", "id", "mask", "frame", "raw"}
         for key, e in numberinfo.guide().items():
             with self.subTest(key=key):
                 self.assertIn(e["group"], numberinfo.GROUPS)

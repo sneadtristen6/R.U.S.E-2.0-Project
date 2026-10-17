@@ -743,3 +743,176 @@ does = "Solo sonido: lo rápido que se apaga el sonido del motor al ralentí cua
 [Dive_Out_Fade_Velocity]
 what = "Salida del sonido de picado"
 does = "Solo sonido: lo rápido que se apaga el sonido de picado de un avión cuando recupera."
+
+# --- los jugadores del ordenador (la pestaña IA) ---
+[AttaqueTempsActivation]
+what = "Segundos antes de empezar a atacar"
+does = "Cuántos segundos de batalla espera antes de atacar; hasta entonces tampoco hostiga ni manda ayuda a un depósito amenazado. Predeterminado 30; Fácil 300 (5 minutos); Tortuga 600 (10 minutos). Difícil y Blitzkrieg no lo listan, así que cuentan 0: atacan desde el primer segundo."
+[OffensiveNbMissionMax]
+what = "Máximo de ataques a la vez"
+does = "El máximo de ataques (y represalias) que lleva a la vez. -1 significa sin límite, lo que usan todos los conjuntos del juego."
+[MissionFacteurLancementAttaque]
+what = "Ataca cuando su fuerza es tantas veces la del enemigo"
+does = "Lo fuerte que debe ser su fuerza frente a lo que el enemigo tiene en un lugar, como múltiplo de la fuerza enemiga, antes de lanzar allí un ataque (el juego la multiplica antes por un factor fijo). Más bajo ataca antes con menos. Predeterminado 0,7; Fácil y Blitzkrieg 0,2; Difícil 0,9; Tortuga 1."
+[MissionFacteurEnoughToDestroy]
+what = "Fuerza reunida contra un enemigo"
+does = "Cuánta fuerza reúne antes de creer que tiene bastante para destruir a un enemigo, como múltiplo de la fuerza enemiga. Predeterminado 1,2; Fácil 0,2; Medio 1,4; Difícil 1,8; Blitzkrieg 1,5; Tortuga 1."
+[DefenseDistanceMenace]
+what = "Distancia de amenaza"
+does = "A qué distancia de un lugar que defiende un enemigo cuenta como amenaza; el juego hace la zona vigilada unas 1,4 veces esta distancia (la distancia por la raíz de 2). 312.000 (1.200 m) en los conjuntos del juego; Tortuga 26.000.000 (100 km: todo en el mapa es una amenaza)."
+[DefenseDistanceUrgent]
+what = "Distancia de amenaza urgente"
+does = "Lo cerca de un lugar que defiende que debe llegar un enemigo para que trate la amenaza como urgente. Predeterminado 156.000 (600 m); Difícil 208.000 (800 m); Blitzkrieg 78.000 (300 m)."
+[DefenseMaxUnitOnPosition]
+what = "Máximo de unidades por posición defensiva"
+does = "El máximo de sus unidades que pone en una posición defensiva. Predeterminado 1; Medio 2; Difícil 3; Tortuga 6."
+[DefenseNbMissionMax]
+what = "Máximo de lugares defendidos a la vez"
+does = "El máximo de misiones defensivas (lugares que guarda) que lleva a la vez. Predeterminado 2; Fácil y Difícil 4; Tortuga 10. Blitzkrieg no lo lista, así que cuenta 0 y no guarda nada."
+[HarcelementActif]
+what = "Hostiga al enemigo"
+does = "1: hostiga (pequeñas incursiones, cuando acaba su espera antes de atacar). 0: nunca. Fácil y Tortuga no lo listan, así que cuentan 0 y nunca hostigan."
+[UpgradeActifPourHarcelement]
+what = "Mejoras para hostigar"
+does = "Si puede usar unidades mejoradas para sus incursiones. Fácil y Blitzkrieg no lo listan (0)."
+[CashReserveTempsActivation]
+what = "Segundos antes de guardar una reserva de dinero"
+does = "Cuántos segundos de batalla antes de empezar a apartar dinero en vez de gastarlo todo. 240 (4 minutos) en todos los conjuntos del juego."
+[PercentMoneyToReserveForBatimentAdmin]
+what = "% de dinero reservado para edificios administrativos"
+does = "La parte de su dinero, en %, que guarda para edificios administrativos (que suben los ingresos). 20 % en los conjuntos del juego; Difícil 25 %."
+[PercentMoneyToUseForIdle]
+what = "% de dinero usado en reposo"
+does = "La parte de su dinero, en %, que puede gastar en unidades cuando no tiene otra cosa que hacer: los números Producido en reposo de abajo. En 0 nunca produce en reposo y esos números no hacen nada. Predeterminado y Fácil 0; Medio 50 %; Difícil 100 %."
+[DeviseBonusIA]
+what = "Dinero extra al empezar (trampa)"
+does = "El dinero extra que recibe al empezar la batalla, en $. Solo Difícil lo tiene: 150 $ además de los 200 $ con que empieza cada jugador."
+[IncomeBonusIA]
+what = "Ingresos extra en cada pago (trampa)"
+does = "Dinero extra, en $, sumado a cada uno de sus pagos de ingresos. Solo Difícil lo tiene: 1 $."
+[NbBatimentAdministratifEnPlusAvantDesactivation]
+what = "Edificios administrativos extra antes de parar"
+does = "Cuántos edificios administrativos más allá de lo que necesita construye antes de dejar de construirlos; -1 significa sin límite. Predeterminado y los perfiles -1; Difícil 2; Fácil y Medio no lo listan, así que cuentan 0: ninguno más allá de lo necesario."
+[DepotNbEnPlusAvantDesactivation]
+what = "Depósitos extra antes de parar"
+does = "Cuántos depósitos de suministros busca más allá de los que tiene, mientras haya sitios de depósito que tomar. Predeterminado 2; Medio 3; Difícil 4; Blitzkrieg 1; Fácil no lo lista (0)."
+[ValueDepotMinForTruckFactory]
+what = "Valor mínimo de depósitos para una fábrica de camiones"
+does = "Antes de construir una fábrica de camiones junto a un grupo de depósitos, esos depósitos deben guardar aún al menos estos suministros, en $: las cargas de camión que les quedan por 3 $ la carga (6 $ en Modo Nuclear), lo que el juego llama el dinero disponible de un depósito. 100 $ en todos los conjuntos: cinco Sherman, la mitad de los 200 $ iniciales de un jugador."
+[MinutesLeftMinForTruckFactory]
+what = "Minutos restantes mínimos para una fábrica de camiones"
+does = "En una batalla con límite de tiempo solo construye una fábrica de camiones si quedan al menos estos minutos. 5 en todos los conjuntos."
+[NbDepotMinForTruckFactory]
+what = "Depósitos mínimos para una fábrica de camiones"
+does = "Cuántos depósitos necesita un grupo (los suyos y los demás dentro de la distancia de grupo de depósitos) antes de construir allí una fábrica de camiones. 2 en todos los conjuntos."
+[NbUnitsDangerousDepot]
+what = "Unidades que hacen peligroso un depósito"
+does = "Cuántas unidades cuenta alrededor de uno de sus depósitos antes de considerarlo en peligro y mandar ayuda. Predeterminado 1; Tortuga 4; Difícil y Blitzkrieg no lo listan (0)."
+[SeuilDistanceGroupeDepot]
+what = "Distancia de grupo de depósitos"
+does = "Cuando elige dónde va una nueva fábrica de camiones, los depósitos a menos de esta distancia del centro de sus depósitos lejanos, medida por el camino de las unidades, cuentan como un grupo; la fábrica va junto al depósito del grupo más cercano a su base. 234.000 (900 m) en todos los conjuntos."
+[SeuilDistanceTruckFactory]
+what = "Distancia de la fábrica de camiones"
+does = "Construye otra fábrica de camiones cuando uno de sus depósitos está al menos a esta distancia de su fábrica de camiones más cercana, medida por el camino de los camiones, no en línea recta (solo si ya tiene una fábrica de camiones). Predeterminado y los perfiles 520.000 (2.000 m); cada dificultad 780.000 (3.000 m), y como ningún perfil la cambia, en batalla cuentan 3.000 m."
+[NbMaxProductionForEnnemyUnit]
+what = "Máximo de unidades producidas contra una unidad enemiga"
+does = "El máximo de unidades que produce para responder a una unidad enemiga. 1 en todos los conjuntos."
+[NbProdIdleInfanterie]
+what = "Producido en reposo: infantería"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo (% de dinero usado en reposo no es 0), produce infantería hasta tener tantas. F. regulares 2; Obús y Prototipo 1."
+[NbProdIdleTank]
+what = "Producido en reposo: tanques"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce tanques hasta tener tantos. F. regulares y Prototipo 3; Blitzkrieg 4."
+[NbProdIdleAntitank]
+what = "Producido en reposo: antitanques"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce antitanques hasta tener tantos. Prototipo 1; Tortuga 2."
+[NbProdIdleArti]
+what = "Producido en reposo: artillería"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce artillería hasta tener tanta. Obús 5; Tortuga 2."
+[NbProdIdleDCA]
+what = "Producido en reposo: antiaéreos"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce antiaéreos hasta tener tantos. Tortuga 2."
+[NbProdIdleChasseur]
+what = "Producido en reposo: cazas"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce cazas hasta tener tantos. Fuerza aérea 2."
+[NbProdIdleBomber]
+what = "Producido en reposo: bombarderos"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce bombarderos hasta tener tantos. Fuerza aérea 1."
+[NbProdIdleChasseurBomber]
+what = "Producido en reposo: cazabombarderos"
+does = "Cuando no tiene otra cosa que hacer y puede gastar en reposo, produce cazabombarderos hasta tener tantos. Fuerza aérea 2; Blitzkrieg 1."
+[ProdIdleCanLaunchResearch]
+what = "Investiga en reposo"
+does = "1: cuando no tiene otra cosa que hacer, también puede empezar investigaciones. Solo Prototipo lo tiene."
+[BonusUnitesAvions]
+what = "Preferencia: aviones"
+does = "Puntos de preferencia sumados a cada avión que puede producir. Las preferencias se suman por unidad y solo cuentan las diferencias entre sus unidades: valora cada unidad por lo que queda por debajo de su preferida. Fuerza aérea +500 hace de los aviones su claro favorito."
+[BonusUnitesArtillerie]
+what = "Preferencia: artillería"
+does = "Puntos de preferencia sumados a cada unidad de artillería que puede producir (ver Preferencia: aviones para cómo se suman). Obús +8.000 pone la artillería muy por delante de todo lo demás."
+[BonusUnitesExperimentales]
+what = "Preferencia: prototipos"
+does = "Puntos de preferencia sumados a cada prototipo que puede producir (las unidades de la categoría 12 del juego). Prototipo +400."
+[BonusUnitesRecherche]
+what = "Preferencia: investigación"
+does = "Puntos de preferencia que suma para la investigación. Prototipo +400."
+[BonusUnitesTank]
+what = "Preferencia: tanques"
+does = "Puntos de preferencia sumados a cada tanque que puede producir. Ningún conjunto del juego lo usa, así que la pestaña IA no puede ofrecerlo: Añadir solo ofrece los valores que lista Predeterminado."
+[BonusBatimentOTF]
+what = "Preferencia: edificios defensivos"
+does = "Puntos de preferencia sumados a cada edificio defensivo (búnkeres y posiciones de cañones: bandera 6). También le hacen más dado a levantar defensas en los lugares que guarda: el juego lo pondera con 0,5 + este valor / 200, es decir 1,5 con el +200 de Tortuga frente a 0,5 en 0."
+[PourcentChanceUtiliserCarteManipAuDebut]
+what = "% de probabilidad de jugar un engaño de manipulación al principio"
+does = "La probabilidad, en %, de que juegue un engaño de manipulación al empezar la batalla. Predeterminado 40 %; Medio 60 %; Difícil 80 %."
+[NbCarteDansLaReservePourLaDifficulte]
+what = "Cartas de engaño guardadas (dificultad)"
+does = "Cartas de engaño que guarda en la mano en vez de jugarlas; el juego suma el número de la dificultad y el del perfil. Medio y Difícil 1."
+[NbCarteDansLaReservePourLeProfil]
+what = "Cartas de engaño guardadas (perfil)"
+does = "Cartas de engaño que guarda en la mano en vez de jugarlas; el juego suma este número al de la dificultad. Prototipo y Tortuga 1."
+[TempsActivationBatimentCamoufle]
+what = "Segundos antes de camuflar edificios"
+does = "Cuántos segundos de batalla antes de usar el engaño de camuflaje en sus edificios. Solo Fácil lo fija: 600 (10 minutos); en los demás 0, desde el principio."
+[RepresailleFacteurUniteCombattante]
+what = "Factor de represalia: unidades de combate"
+does = "Con qué dureza responde tras perder unidades de combate, como múltiplo. Predeterminado 1; Fácil 0,5; Difícil 2; Tortuga no lo lista (0: sin represalias por ellas)."
+[RepresailleFacteurUniteNonCombattante]
+what = "Factor de represalia: unidades no combatientes"
+does = "Con qué dureza responde tras perder unidades que no combaten (camiones, edificios), como múltiplo. Predeterminado 2; Fácil 1; Difícil 4; Tortuga no lo lista (0)."
+[TimeOutRepresailles]
+what = "Límite de tiempo de la represalia"
+does = "Cuántos segundos mantiene una represalia antes de abandonarla. Predeterminado 120 (2 minutos); Difícil 240."
+[ProbaRepereFake]
+what = "Probabilidad de detectar señuelos"
+does = "La probabilidad, de 0 a 1, de que vea a través de un señuelo en un lugar que defiende o ataca; el juego la tira cada 24 segundos. Predeterminado 0,5 (50 %); Fácil 0,1; Difícil 0,8."
+[TempsMemorisationUnitInvisible]
+what = "Segundos que recuerda las unidades que no ve"
+does = "Cuántos segundos recuerda una unidad enemiga que ya no ve. Predeterminado 300 (5 minutos); Fácil 60; Difícil 360."
+[BonusValue]
+what = "Preferencia extra por estas unidades"
+does = "Puntos de preferencia sumados a las unidades listadas, en una batalla cuyo modo de juego, dificultad y perfil están cada uno en las listas (una lista vacía vale para todos). Se suman a las preferencias propias del conjunto (Preferencia: aviones…). La entrada del juego: +400 para los cañones nucleares en Modo Nuclear, en cualquier dificultad y con cualquier perfil."
+[ConsiderStackAsOneEnnemy]
+what = "Cuenta una pila como un solo enemigo"
+does = "1: cuenta una pila de estas unidades como un solo enemigo. La entrada del juego tiene 1."
+[UnitIDs]
+what = "Unidades (por número)"
+does = "Las unidades a las que se aplica la entrada, por el número propio de cada unidad (su Id); la pestaña IA deja elegirlas por su nombre. Una lista vacía querría decir todas las unidades."
+[WarModes]
+what = "Modos de juego (por número)"
+does = "Los modos de juego en que vale la entrada, por el número que el juego les da: 0 Era 1945, 1 Era 1942, 2 Era 1939, 3 Modo Guerra Total, 4 Modo Nuclear (el orden de la lista del juego)."
+[AIDifficulties]
+what = "Dificultades (por número)"
+does = "Las dificultades en que vale la entrada: 0 Fácil, 1 Medio, 2 Difícil."
+[AIProfiles]
+what = "Perfiles (por número)"
+does = "Los perfiles con que vale la entrada: 0 F. regulares, 1 Fuerza aérea, 2 Obús, 3 Prototipo, 4 Blitzkrieg, 5 Tortuga, 6 Aleatoria."
+["TBluffCardDescriptor.LifeDuration"]
+what = "Duración"
+does = "Cuánto dura el engaño una vez jugado, en segundos: de 240 a 360 en el juego (de 4 a 6 minutos)."
+["TBluffCardDescriptor.ShowInMenu"]
+what = "Visible en el menú de engaños"
+does = "1: la carta está en el menú de engaños, así que los jugadores y el ordenador pueden jugarla."
+["TBluffCardDescriptor.PositionInMenu"]
+what = "Posición en el menú de engaños"
+does = "Dónde va la carta en el menú de engaños: más bajo va primero."
