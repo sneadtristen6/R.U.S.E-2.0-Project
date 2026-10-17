@@ -284,7 +284,8 @@ def saved(text, ops, files, cache):
 
 
 class KeptModel(unittest.TestCase):
-    """With a cache folder the loaded model is kept, by a fingerprint of the files and the code, and read back."""
+    """With a cache folder the loaded model is kept, by a fingerprint of the files and its format number
+    (rusemod.keptformat), and read back."""
 
     def test_a_kept_model_is_the_model_loaded_afresh(self):
         fresh = model_text(*load(KEPT_FILES))
@@ -324,9 +325,10 @@ class KeptModel(unittest.TestCase):
             game, loaded = load(changed, d)
             self.assertEqual(game.objects[f"{UNITS}#2"].props["Puissance"].value, 41)  # the new bytes, not the kept
             self.assertEqual(model_text(game, loaded), model_text(*load(changed)))
-            with mock.patch.object(model, "code_version", return_value=model.code_version() + b"another"):
-                other_code = model.kept_path(KEPT_FILES, d)
-            self.assertNotIn(other_code, paths)  # other code: another name
+            from rusemod import keptformat
+            with mock.patch.dict(keptformat.FORMATS, {"model": keptformat.FORMATS["model"] + 1}):
+                other_format = model.kept_path(KEPT_FILES, d)
+            self.assertNotIn(other_format, paths)  # another format number (code making other models): another name
 
     def test_a_damaged_kept_file_is_ignored_and_kept_again(self):
         game, loaded = load(KEPT_FILES)

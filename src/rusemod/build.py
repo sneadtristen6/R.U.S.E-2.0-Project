@@ -648,9 +648,10 @@ def _kept_movement(read_data, name: str, blocks: list, idle: list, cache, given:
                    answers: dict | None = None, ahead=None) -> tuple[dict, list[str]]:
     """nav.apply_blocks for a map, its answer kept between builds (rusemod.mapkeep, kind "movement"): named by
     _movement_key (what the step reads of the movement file, its blocks and opens in their order, the answers given,
-    the code), the new graphs kept and put back into the movement file as the build has it then. A map whose blocks
-    and opens are the same as an earlier build's takes its movement from there: opening a drained sea takes minutes
-    (the owner's M04_Cotentin, 2026-10-04), and every build made it again. A refusal isn't kept.
+    the kept movement's format number: rusemod.keptformat), the new graphs kept and put back into the movement file as
+    the build has it then. A map whose blocks and opens are the same as an earlier build's takes its movement from
+    there: opening a drained sea takes minutes (the owner's M04_Cotentin, 2026-10-04), and every build made it again.
+    A refusal isn't kept.
     `given`: the answers the mods brought for this map (rusemod.solved), taken where they hold; `answers` is filled
     with the ones this map's movement asked for (taken and worked out): what an export carries. `ahead`: the step
     started earlier (nav.Ahead, _movement_ahead), taken when it was asked the same."""
@@ -688,8 +689,8 @@ def _kept_movement(read_data, name: str, blocks: list, idle: list, cache, given:
 def _movement_key(cache, name: str, win: bytes | None, blocks: list, given: dict | None) -> str | None:
     """The build cache's name for a map's movement (rusemod.mapkeep, kind "movement"): a fingerprint of what the
     movement step reads of the movement file (its road network and its two graphs, not the cover grid the cover step
-    may have changed before), its blocks and opens in their order, the answers given, and the code. None without a
-    cache or a movement file."""
+    may have changed before), its blocks and opens in their order, the answers given, and its format number
+    (rusemod.keptformat). None without a cache or a movement file."""
     import hashlib
     from . import mapkeep, solved
     from ruse_mod_engine import sdb
@@ -702,7 +703,7 @@ def _movement_key(cache, name: str, win: bytes | None, blocks: list, given: dict
     for b in parts[1][:3]:
         h.update(len(b).to_bytes(8, "little") + b)
     about = ["movement graphs", h.hexdigest()]
-    return mapkeep.key(name, about + ([solved.digest(given)] if given else []), blocks, None)
+    return mapkeep.key(name, about + ([solved.digest(given)] if given else []), blocks, None, "movement")
 
 
 def _movement_ahead(game: Path, open_pack, order: list, mods: list, cache, erasing: dict, beds: dict, flooded: dict,
@@ -3157,7 +3158,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             # (kind "paint": a build of three painted maps used to throw out the terrain it was about to use); a
             # texture's own pixels count
             made_from = ["paint", paint_inputs(read_map)] + sorted(f"{r} {s.digest}" for r, s in (swatches or {}).items())
-            paint_k = mapkeep.key(name, made_from, strokes, None) if cache is not None else None
+            paint_k = mapkeep.key(name, made_from, strokes, None, "paint") if cache is not None else None
             kept = mapkeep.read(cache, paint_k, "paint")
             if kept is not None and isinstance(kept.get("notes"), list):   # (its notes are that build's: said so)
                 painted = kept["members"]

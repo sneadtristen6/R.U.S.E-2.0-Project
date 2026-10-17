@@ -1084,14 +1084,11 @@ def _stamp_sources(store: Tmst, bounds, tile, rect, box, stroke, whole: bool = F
 def _tile_names(store: Tmst, bounds, strokes: list, swatches=None) -> tuple[list, dict]:
     """(the tiles a stroke's box reaches, in the set's order; a fingerprint for each of what its painted record is
     made from): the tile as packed, its place and size, the strokes whose boxes reach it in their order (_paints; a
-    texture stroke with its texture's own fingerprint, a stamp with the tiles it copies from as packed), and the code.
-    None has one when the code can't be read to tell."""
+    texture stroke with its texture's own fingerprint, a stamp with the tiles it copies from as packed), and the
+    kept tiles' format number (rusemod.keptformat "tile")."""
     import hashlib
-    from .model import code_version
-    try:
-        code = code_version()
-    except OSError:
-        code = None
+    from .keptformat import stamp
+    code = stamp("tile")
     boxes = [s.box() for s in strokes]
     made = swatches or {}
     said = [(_paints(s) + (f" {getattr(made.get(s.texture), 'digest', '')}" if s.kind.kind == "texture" else ""))
@@ -1104,8 +1101,6 @@ def _tile_names(store: Tmst, bounds, strokes: list, swatches=None) -> tuple[list
         if not near:
             continue
         todo.append(tile.index)
-        if code is None:
-            continue
         tex = store.texture(tile)
         payload = tex.payload(0)
         h = hashlib.blake2b(code, digest_size=20)

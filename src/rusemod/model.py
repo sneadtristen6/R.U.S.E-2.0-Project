@@ -23,12 +23,10 @@ import io
 import os
 import pickle
 import struct
-import sys
 import threading
 import zlib
 from contextlib import contextmanager
 from decimal import Decimal
-from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 
@@ -336,37 +334,13 @@ KEPT_MOST = 8    # kept models a cache folder holds at most, the most recently u
 KEPT_DIGEST = 20  # bytes of the fingerprint at the start of a kept file, over the rest of it
 
 
-@lru_cache(maxsize=1)
-def code_version() -> bytes:
-    """A fingerprint of the code that makes models: the platform's own Python files, or in an app built from them
-    (which has none beside it) the app's program file. Any change to the code gives kept models other names. OSError
-    when neither can be read (then nothing is kept)."""
-    h = hashlib.blake2b(digest_size=20)
-    h.update(sys.version.encode())
-    here = Path(__file__).resolve().parent
-    if Path(__file__).is_file():
-        for f in sorted(here.rglob("*.py")):
-            data = f.read_bytes()
-            name = f.relative_to(here).as_posix().encode()
-            h.update(struct.pack("<QQ", len(name), len(data)) + name)
-            h.update(data)
-    elif getattr(sys, "frozen", False) or "__compiled__" in globals():  # a built app: the code is in its program
-        h.update(Path(sys.executable).read_bytes())
-    else:
-        raise OSError(f"the code at {here} can't be read")
-    return h.digest()
-
-
-def kept_path(files: dict[str, bytes], cache) -> Path | None:
+def kept_path(files: dict[str, bytes], cache) -> Path:
     """Where the model of `files` is kept in the folder `cache`: named by a fingerprint of the files' paths and bytes
-    in their order (which file comes first counts, for names two files share) and of the code (code_version). None
-    when the code can't be read to tell."""
-    try:
-        code = code_version()
-    except OSError:
-        return None
+    in their order (which file comes first counts, for names two files share) and of the kept models' format numbers
+    (KEPT_FORMAT, the file's layout; rusemod.keptformat "model", what the loading makes of the files)."""
+    from .keptformat import stamp
     h = hashlib.blake2b(digest_size=20)
-    h.update(f"model v{KEPT_FORMAT}".encode() + code)
+    h.update(f"model v{KEPT_FORMAT}".encode() + stamp("model"))
     for p, raw in files.items():
         name = p.encode("utf-8", "surrogatepass")
         h.update(struct.pack("<QQ", len(name), len(raw)) + name)

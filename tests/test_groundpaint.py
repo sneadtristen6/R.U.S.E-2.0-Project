@@ -583,8 +583,9 @@ class MapPaint(unittest.TestCase):
                 kept.write_bytes(b"XXXX" + kept.read_bytes()[4:])
             painted(*layers)
             self.assertEqual(len(asked[0]), len(real(s, BOUNDS, strokes(*layers))))  # nothing taken from them
-            with mock.patch("rusemod.model.code_version", side_effect=OSError("no code to read")):
-                painted(*layers)                                   # the code can't be told: nothing kept or taken
+            from rusemod import keptformat
+            with mock.patch.dict(keptformat.FORMATS, {"tile": keptformat.FORMATS["tile"] + 1}):
+                painted(*layers)                                   # another tile format: nothing taken from them
             self.assertEqual(len(asked[0]), len(real(s, BOUNDS, strokes(*layers))))
         with tempfile.TemporaryDirectory() as cache:   # a damaged record: that tile alone is left out
             mapkeep.write_tiles(cache, {b"a" * 20: b"first record", b"b" * 20: b"second record", b"c" * 20: b""})

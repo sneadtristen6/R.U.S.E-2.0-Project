@@ -7,7 +7,8 @@ What is kept for a map: the ground files the terrain step made, with what the ri
 new water's blocks and the drained beds, the filled hollows (the build takes their low cover off) and the lines the
 build said. It is named by a fingerprint of everything those are made from: the map's pack (its file's path, size
 and time; a new map's shipped pack and its id; .rmod changes to it), the strokes in load order, the map's water
-depth, and the code (rusemod.model.code_version: another version of the app makes it again). A kept file starts
+depth, and its kind's format number (rusemod.keptformat: bumped when that kind comes out different, so an app
+update that doesn't change it keeps what was kept). A kept file starts
 with a fingerprint of the rest of it; one that doesn't match, can't be read back, or holds anything but what is
 kept here is ignored and the map made again. Written to a .part file first, then renamed; a cache keeps the
 KEEP_MOST most recently used."""
@@ -68,17 +69,14 @@ def plain_file(arc) -> str | None:
     return str(where) if where and os.path.isfile(where) else None
 
 
-def key(name: str, identity: list, strokes: list, depth) -> str | None:
-    """The fingerprint a map's kept ground is named by; None when the code can't be read to tell (then nothing is
-    kept)."""
-    from .model import code_version
-    try:
-        code = code_version()
-    except OSError:
-        return None
+def key(name: str, identity: list, strokes: list, depth, kind: str = "map") -> str:
+    """The fingerprint a map's kept `kind` ("map", "paint", "movement": read's) is named by: its inputs, the kept
+    files' layout (KEEP_FORMAT) and the kind's format number (rusemod.keptformat)."""
+    from .keptformat import stamp
     parts = {"format": KEEP_FORMAT, "map": name.lower(), "pack": identity, "strokes": [repr(s) for s in strokes],
              "depth": repr(depth)}
-    h = hashlib.blake2b(json.dumps(parts, sort_keys=True).encode("utf-8", "surrogatepass") + code, digest_size=20)
+    h = hashlib.blake2b(json.dumps(parts, sort_keys=True).encode("utf-8", "surrogatepass") + stamp(kind),
+                        digest_size=20)
     return h.hexdigest()
 
 
