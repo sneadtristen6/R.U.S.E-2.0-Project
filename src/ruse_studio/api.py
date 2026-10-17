@@ -33,8 +33,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path, PurePosixPath
 
 from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identity, loc, mapscripts, missions,
-                     mod_index, newmap, numberinfo, package, packfiles, scenario, scenery, schema, startlog,
-                     values as every_value)
+                     mod_index, modformat, newmap, numberinfo, package, packfiles, scenario, scenery, schema,
+                     startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
@@ -330,9 +330,51 @@ def _erase_dict(a) -> dict:
     return out
 
 
-def _save_checked(path: Path, text: str, read) -> None:
+def _toml_any(v) -> str:
+    """A value read from a mod's TOML file, written back: a text, number, true/false, list or table (inline)."""
+    if isinstance(v, dict):
+        return "{" + ", ".join(f"{json.dumps(k)} = {_toml_any(x)}" for k, x in v.items()) + "}"
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(_toml_any(x) for x in v) + "]"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    return json.dumps(str(v), ensure_ascii=False)
+
+
+def _kept_tables(old: dict, keeps) -> tuple[list[str], list[str]]:
+    """(the plain values, the tables) of a file's TOML (`old`) that a rewrite managing only the keys `keeps` doesn't
+    write, as lines: what a newer Studio or a hand put there (the owner, 2026-10-16: a mod's builds mustn't be
+    destroyed between updates; Studio 0.9.8.6 dropped a scenery file's [[preset]] and [[fieldbrush]] tables)."""
+    plain, tables = [], []
+    for k, v in old.items():
+        if k in keeps:
+            continue
+        if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+            for row in v:
+                tables += [f"[[{k}]]"] + [f"{kk} = {_toml_any(vv)}" for kk, vv in row.items()] + [""]
+        elif isinstance(v, dict):
+            tables += [f"[{k}]"] + [f"{kk} = {_toml_any(vv)}" for kk, vv in v.items()] + [""]
+        else:
+            plain.append(f"{k} = {_toml_any(v)}")
+    return plain, tables
+
+
+def _save_checked(path: Path, text: str, read, keeps=None) -> None:
     """Save `text` into `path` only when `read(its TOML)` takes it: the Studio never writes a file that it, or the
-    build, can't read back (Studio 0.7.0 once saved water strokes without their level)."""
+    build, can't read back (Studio 0.7.0 once saved water strokes without their level). `keeps`: the keys this rewrite
+    manages; every other table and value already in the file is written back after (plain values first), so a
+    rewrite never drops what it doesn't know (rusemod.modformat)."""
+    if keeps is not None and path.is_file():
+        try:
+            old = tomllib.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            old = {}  # (a file that can't be read is the mod check's to set aside; the writers refuse it before this)
+        plain, tables = _kept_tables(old, set(keeps))
+        if plain or tables:
+            body = text if text.endswith("\n") else text + "\n"
+            text = "\n".join(plain + ([""] if plain else [])) + body + ("\n" if tables else "") + "\n".join(tables)
     try:
         read(tomllib.loads(text))
     except _FILE_MISTAKES as exc:
@@ -4009,11 +4051,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             erase = self._read_objects(path, "erase")
         if own is None:
             own = self._read_objects(path, "own")
-        if objects or erase or own:
+        try:  # what else the file holds (copies, presets, field brushes): it stays when the Studio's own rows go
+            others = path.is_file() and any(k not in ("object", "erase", "own")
+                                            for k in tomllib.loads(path.read_text(encoding="utf-8")))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            others = True  # (never delete a file that can't be read: the mod check sets it aside)
+        if objects or erase or own or others:
             _save_checked(path, scenery.objects_toml(objects, self.SCENERY_HEADER, erase, own),
                           lambda data: (scenery.parse_objects(data.get("object", []), str(path))
                                         + scenery.parse_erase(data.get("erase", []), str(path))
-                                        + scenery.parse_own(data.get("own", []), str(path))))
+                                        + scenery.parse_own(data.get("own", []), str(path))),
+                          keeps=("object", "erase", "own"))  # its copies, presets and field brushes stay
             return
         if path.is_file():
             path.unlink()
@@ -5122,12 +5170,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         (folder / "mod.toml").write_text(
             f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
+        modformat.stamp(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"])  # in this Studio's mod format
         return self.choose_mod(str(folder), kind)
 
-    def choose_mod(self, path: str, kind: str = "mod") -> dict:
+    def choose_mod(self, path: str, kind: str = "mod", anyway: bool = False) -> dict:
+        """Start editing the mod (or map) at `path`. One a newer Studio saved (a newer mod format: rusemod.modformat)
+        is refused unless `anyway`: this Studio could drop what it doesn't know when it rewrites a file. One of an
+        older format with nothing to rewrite gets the new number at once; one with something to rewrite waits for
+        Update this mod (update_mod)."""
         kind = self._kind(kind)
         if not Path(path, "mod.toml").is_file():
             raise StudioError(f"{path} isn't a mod folder (it has no mod.toml)")
+        st = modformat.state(path)
+        if st["state"] == "newer" and not anyway:
+            raise StudioError(f"{Path(path).name} was saved by a newer RUSE Studio (mod format {st['format']}; this "
+                              f"one knows {st['current']}). Update the Studio before changing it: this version could "
+                              f"drop what it doesn't know when it saves.")
+        if st["state"] == "quiet":
+            modformat.stamp(path, self.MADE_WITH["tool"], self.MADE_WITH["version"])
         settings = self._settings()
         settings[kind] = str(path)
         recent_key = self.KINDS[kind][1]
@@ -5135,6 +5195,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         settings[recent_key] = [str(path)] + recent[:9]
         self._save_settings(settings)
         return self.mods(kind)
+
+    def mod_format(self, kind: str = "mod", path: str = "") -> dict:
+        """The current mod's (or map's), or the mod folder `path`'s, mod format against this Studio's
+        (rusemod.modformat.state), with "name" and "path"; {"state": "none"} when there's none."""
+        folder = Path(path) if path else self._mod_dir(self._kind(kind))
+        if folder is None or not (folder / "mod.toml").is_file():
+            return {"state": "none"}
+        return modformat.state(folder) | {"name": folder.name, "path": str(folder)}
+
+    def update_mod(self, kind: str = "mod") -> dict:
+        """Update this mod: bring the current mod (or map) of an older mod format up to this Studio's, a backup of the
+        whole folder taken first into the Studio's mod-backups folder (rusemod.modformat.upgrade). Returns what
+        upgrade says, and the format state after."""
+        folder = self._mod_dir(self._kind(kind))
+        if folder is None:
+            raise StudioError("Pick or make a mod first.")
+        if modformat.state(folder)["state"] == "newer":
+            raise StudioError(f"{folder.name} was saved by a newer RUSE Studio: update the Studio, not the mod.")
+        with self._saving:
+            done = modformat.upgrade(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"],
+                                     self._home / "mod-backups")
+        return done | {"format": self.mod_format(kind)}
 
     def open_mod_folder(self, kind: str = "mod") -> dict:
         if self._window is None:

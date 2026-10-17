@@ -105,6 +105,12 @@
       tip_bridges_redo: "Put back the last bridge Undo took off the map (Ctrl+Y).",
       tip_brush_redo: "Put back the last stroke Undo took back (Ctrl+Y).",
       tip_erase_redo: "Put back the last circles Undo took back (Ctrl+Y).",
+      format_older: "{name} is in an older mod format ({have}; this Studio writes {now}). Update this mod brings its files up to date; a backup of the whole mod is kept first.",
+      format_newer: "{name} was saved by a newer RUSE Studio (mod format {have}; this one knows {now}). Update the Studio before changing it: this one could drop what it doesn't know.",
+      format_update: "Update this mod",
+      tip_format_update: "Rewrite this mod's files the way this Studio reads them, keeping what they mean. A zip of the whole mod goes into the Studio's mod-backups folder first.",
+      format_updated: "{name} is up to date. Its backup: {backup}",
+      format_newer_ask: "{name} was saved by a newer RUSE Studio. This one could drop what it doesn't know when it saves. Open it anyway?",
       unsaved_title: "Close RUSE Studio?", unsaved_text: "Not everything is saved yet:",
       unsaved_close: "Close anyway? Yes closes it and loses that; No keeps the Studio open.",
       unsaved_script: "the AI tab's script has changes you haven't saved",
@@ -274,6 +280,12 @@
       tip_bridges_redo: "Remettre le dernier pont retiré par l'annulation (Ctrl+Y).",
       tip_brush_redo: "Rétablir le dernier coup de pinceau annulé (Ctrl+Y).",
       tip_erase_redo: "Rétablir les derniers cercles annulés (Ctrl+Y).",
+      format_older: "{name} est dans un format de mod plus ancien ({have} ; ce Studio écrit le {now}). Mettre ce mod à jour remet ses fichiers à niveau ; une sauvegarde du mod entier est gardée avant.",
+      format_newer: "{name} a été enregistré par un RUSE Studio plus récent (format de mod {have} ; celui-ci connaît le {now}). Mettez le Studio à jour avant de le modifier : celui-ci pourrait perdre ce qu'il ne connaît pas.",
+      format_update: "Mettre ce mod à jour",
+      tip_format_update: "Réécrire les fichiers de ce mod comme ce Studio les lit, en gardant leur sens. Un zip du mod entier va d'abord dans le dossier mod-backups du Studio.",
+      format_updated: "{name} est à jour. Sa sauvegarde : {backup}",
+      format_newer_ask: "{name} a été enregistré par un RUSE Studio plus récent. Celui-ci pourrait perdre ce qu'il ne connaît pas en enregistrant. L'ouvrir quand même ?",
       unsaved_title: "Fermer RUSE Studio ?", unsaved_text: "Tout n'est pas encore enregistré :",
       unsaved_close: "Fermer quand même ? Oui ferme et perd cela ; Non garde le Studio ouvert.",
       unsaved_script: "le script de l'onglet IA a des changements non enregistrés",
@@ -479,6 +491,11 @@
       tip_bridges_redo: "放回被“撤销”移除的最后一座桥（Ctrl+Y）。",
       tip_brush_redo: "重做最后撤销的一笔（Ctrl+Y）。",
       tip_erase_redo: "重做最后撤销的圆圈（Ctrl+Y）。",
+      format_older: "{name} 使用较旧的模组格式（{have}；此 Studio 写入 {now}）。“更新此模组”会让其文件跟上新格式；会先保留整个模组的备份。",
+      format_newer: "{name} 是由较新的 RUSE Studio 保存的（模组格式 {have}；此版本只认识 {now}）。请先更新 Studio 再修改它：此版本可能会丢失它不认识的内容。",
+      format_update: "更新此模组", tip_format_update: "按此 Studio 读取的方式重写此模组的文件，含义保持不变。会先把整个模组的 zip 放入 Studio 的 mod-backups 文件夹。",
+      format_updated: "{name} 已是最新。其备份：{backup}",
+      format_newer_ask: "{name} 是由较新的 RUSE Studio 保存的。此版本保存时可能会丢失它不认识的内容。仍要打开吗？",
       unsaved_title: "关闭 RUSE Studio？", unsaved_text: "还有内容尚未保存：",
       unsaved_close: "仍要关闭吗？“是”将关闭并丢失这些内容；“否”保持 Studio 打开。",
       unsaved_script: "AI 标签页的脚本有未保存的更改", unsaved_typed: "某个输入框中有尚未确认的文字（按 Enter 或点击别处）",
@@ -763,6 +780,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const placed = new Map();    // `${mod}|${map pack}` -> placed objects, like the mod's maps/<pack>/scenery.toml
   const erased = new Map();    // `${mod}|${map pack}` -> its circles to erase, the same file's [[erase]] tables
   const owned = new Map();     // `${mod}|${map pack}` -> the map's own objects it moves or takes away ([[own]] tables)
+  const fakeFormats = new Map();  // a mod folder -> its mod format (rusemod.modformat; 1 = this Studio's)
+  const fakeFormat = (path) => {
+    let f = fakeFormats.get(path);
+    if (f === undefined) f = mode === "oldmod" ? 0 : mode === "newmod" && path.endsWith("another-mod") ? 2 : 1;
+    return { format: f, current: 1, state: f > 1 ? "newer" : f < 1 ? "older" : "same", steps: f < 1 ? 1 : 0 };
+  };
   // The made-up village's objects as the real map_objects_at gives the map's own (every one, where the file has it)
   const fakeOwnObjects = (pack) => {
     const d = fakeScenery(pack), full = new Map(d.palette.map((row) => [row[7], row[0]])), out = [];
@@ -2509,7 +2532,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         current = home + slug;
         return modsView();
       },
-      choose_mod: async (path, kind) => kind === "map" ? (currentMap = path, mapsView()) : (current = path, modsView()),
+      choose_mod: async (path, kind, anyway = false) => {
+        if (fakeFormat(path).state === "newer" && !anyway) {
+          throw new Error(`${path.split("/").pop()} was saved by a newer RUSE Studio (mod format 2; this one knows 1). Update the Studio before changing it: this version could drop what it doesn't know when it saves.`);
+        }
+        return kind === "map" ? (currentMap = path, mapsView()) : (current = path, modsView());
+      },
+      // the mod format (rusemod.modformat): ?fake=oldmod has the mod being edited in an older one with a step to run,
+      // ?fake=newmod has "another-mod" saved by a newer Studio
+      mod_format: async (kind, path = "") => {
+        const p = path || (kind === "map" ? currentMap : current);
+        return p ? { ...fakeFormat(p), name: p.split("/").pop(), path: p } : { state: "none" };
+      },
+      update_mod: async (kind) => {
+        const p = kind === "map" ? currentMap : current;
+        fakeFormats.set(p, 1);
+        return { from: 0, to: 1, backup: `${home}mod-backups/${p.split("/").pop()}-2026-10-16-120000-format0.zip`, changed: [],
+          format: { ...fakeFormat(p), name: p.split("/").pop(), path: p } };
+      },
       open_mod_folder: async () => {
         const path = "D:/Mods/another-mod";
         if (!mods.some((m) => m.path === path)) mods.push({ path, name: "another-mod" });

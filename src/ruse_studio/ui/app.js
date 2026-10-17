@@ -163,6 +163,7 @@ function renderMods() {
   $("map-project").title = w.tip_pick_map || "";
   $("map-project-label").textContent = w.map_project || "Map changes";
   $("test").disabled = !(state.mod || state.map) || $("test").dataset.running === "1";
+  renderFormat();  // the format bar follows the mod and the map being edited (and the words)
 }
 
 function useMods(res) {
@@ -178,6 +179,40 @@ function useMods(res) {
   renderMods();
   renderChips();  // "In this mod" shows only while a mod is being edited
   checkMod();
+}
+
+// --- the mod format (StudioApi.mod_format, update_mod; rusemod.modformat; the owner, 2026-10-16: a mod mustn't be
+// destroyed between updates, and an old one gets a way to be updated): a bar under the header for the mod or map being
+// edited when it's of an older format with something to rewrite (Update this mod, a backup first), or a newer Studio
+// saved it (opened anyway); a newer one is asked about before it's opened (pickMod). ---
+async function renderFormat() {
+  const w = state.words, bar = $("format-bar"), rows = [];
+  for (const kind of ["mod", "map"]) {
+    let f;
+    try { f = await api().mod_format(kind); } catch { continue; }
+    if (!f || (f.state !== "older" && f.state !== "newer")) continue;
+    if (kind === "map" && f.path === state.mod) continue;  // (one folder for both: said once)
+    const text = el("span", { textContent: fillText(f.state === "older" ? w.format_older : w.format_newer,
+      { name: f.name, have: f.format, now: f.current }) });
+    const row = el("div", { className: "check-row" }, text);
+    if (f.state === "older") {
+      const button = el("button", { type: "button", className: "small", textContent: w.format_update, title: w.tip_format_update });
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const res = await api().update_mod(kind);
+          say(fillText(w.format_updated, { name: f.name, backup: res.backup || "" }), "ok");
+          if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
+          else await modChanged();
+        } catch (err) { problem(err); }
+        renderFormat();
+      });
+      row.append(button);
+    }
+    rows.push(row);
+  }
+  bar.classList.toggle("hidden", !rows.length);
+  bar.replaceChildren(...rows);
 }
 
 // --- the mod check (StudioApi.check_mod): every file of the mod read as the build reads it, as soon as the mod is
@@ -345,7 +380,13 @@ async function pickMod(e, kind = "mod") {
     if (value === EXPORT) { await openExport(kind); return; }
     if (value === SHARE) { await openShare(state.exported); return; }
     if (value === EDIT) { await openEditMods(); return; }
-    useMods(value === OPEN ? await api().open_mod_folder(kind) : await api().choose_mod(value, kind));
+    if (value !== OPEN) {  // a mod a newer Studio saved: asked first (this one could drop what it doesn't know)
+      const f = await api().mod_format(kind, value);
+      if (f && f.state === "newer" && !window.confirm(fillText(state.words.format_newer_ask, { name: f.name }))) return;
+      useMods(await api().choose_mod(value, kind, Boolean(f && f.state === "newer")));
+    } else {
+      useMods(await api().open_mod_folder(kind));
+    }
     if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
     else await modChanged();
   } catch (err) { problem(err); }

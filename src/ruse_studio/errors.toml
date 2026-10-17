@@ -988,6 +988,30 @@ cz = "{0} není složka modu (nemá mod.toml)"
 jpn = "{0} は Mod フォルダーではありません（mod.toml がありません）"
 sc = "{0} 不是模组文件夹（没有 mod.toml）"
 
+[ea42b5f5296]
+us = "{0} was saved by a newer RUSE Studio (mod format {1}; this one knows {2}). Update the Studio before changing it: this version could drop what it doesn't know when it saves."
+fr = "{0} a été enregistré par un RUSE Studio plus récent (format de mod {1} ; celui-ci connaît le {2}). Mettez le Studio à jour avant de le modifier : cette version pourrait perdre ce qu'elle ne connaît pas en enregistrant."
+ger = "{0} wurde von einem neueren RUSE Studio gespeichert (Mod-Format {1}; dieses kennt {2}). Aktualisiere das Studio, bevor du ihn änderst: diese Version könnte beim Speichern verwerfen, was sie nicht kennt."
+ita = "{0} è stata salvata da un RUSE Studio più recente (formato di mod {1}; questo conosce il {2}). Aggiorna lo Studio prima di modificarla: questa versione potrebbe perdere ciò che non conosce quando salva."
+spa = "{0} lo guardó un RUSE Studio más nuevo (formato de mod {1}; este conoce el {2}). Actualiza el Studio antes de cambiarlo: esta versión podría perder lo que no conoce al guardar."
+pol = "{0} zapisało nowsze RUSE Studio (format moda {1}; to zna {2}). Zaktualizuj Studio przed zmianami: ta wersja przy zapisie mogłaby zgubić to, czego nie zna."
+ru = "{0} сохранён более новой RUSE Studio (формат модов {1}; эта знает {2}). Обновите Studio, прежде чем менять его: эта версия при сохранении может потерять то, чего не знает."
+cz = "{0} uložilo novější RUSE Studio (formát modu {1}; toto zná {2}). Před změnami Studio aktualizujte: tato verze by při ukládání mohla zahodit, co nezná."
+jpn = "{0} は新しい RUSE Studio で保存されています（Mod 形式 {1}。この Studio は {2} まで）。変更する前に Studio を更新してください。このバージョンは保存時に知らない内容を失うおそれがあります。"
+sc = "{0} 是由较新的 RUSE Studio 保存的（模组格式 {1}；此版本只认识 {2}）。请先更新 Studio 再修改它：此版本保存时可能会丢失它不认识的内容。"
+
+[e2192c0f69b]
+us = "{0} was saved by a newer RUSE Studio: update the Studio, not the mod."
+fr = "{0} a été enregistré par un RUSE Studio plus récent : mettez à jour le Studio, pas le mod."
+ger = "{0} wurde von einem neueren RUSE Studio gespeichert: aktualisiere das Studio, nicht den Mod."
+ita = "{0} è stata salvata da un RUSE Studio più recente: aggiorna lo Studio, non la mod."
+spa = "{0} lo guardó un RUSE Studio más nuevo: actualiza el Studio, no el mod."
+pol = "{0} zapisało nowsze RUSE Studio: zaktualizuj Studio, nie mod."
+ru = "{0} сохранён более новой RUSE Studio: обновите Studio, а не мод."
+cz = "{0} uložilo novější RUSE Studio: aktualizujte Studio, ne mod."
+jpn = "{0} は新しい RUSE Studio で保存されています。Mod ではなく Studio を更新してください。"
+sc = "{0} 是由较新的 RUSE Studio 保存的：请更新 Studio，而不是模组。"
+
 [ee6f7689cfe]
 us = "That mod isn't installed any more. Add it in the Launcher, then try again."
 fr = "Ce mod n'est plus installé. Ajoutez-le dans le Launcher, puis réessayez."

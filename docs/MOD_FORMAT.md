@@ -63,6 +63,10 @@ fingerprint   = "K7Q2-M9XD"         # this mod alone on that build (§12); Expor
 tool    = "RUSE Studio"
 version = "0.9.8"
 page    = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project"
+format  = 1                         # the mod format its files are in (rusemod.modformat); none means 0. The Studio
+                                    # writes it on a new mod and when it opens or updates one; one a newer Studio
+                                    # saved isn't opened without a yes, and Update this mod brings an older one up
+                                    # to date, a zip of the whole mod kept first
 
 [dependencies]                      # hard dependencies: id = version range
 # "ruse2-assets" = "^0.3"

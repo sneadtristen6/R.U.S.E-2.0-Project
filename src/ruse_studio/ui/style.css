@@ -753,6 +753,10 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .check-bar { display: flex; flex-direction: column; gap: 4px; padding: 6px 20px; font-size: 13px;
              background: #3a2424; border-bottom: 1px solid var(--error, #e8836f); }
 .check-bar.hidden { display: none; }
+/* the mod format (app.js renderFormat): a mod of an older format waiting for Update, or one a newer Studio saved */
+.format-bar { display: flex; flex-direction: column; gap: 4px; padding: 6px 20px; font-size: 13px;
+              background: #2a3346; border-bottom: 1px solid #6f9be8; }
+.format-bar.hidden { display: none; }
 .check-title { color: var(--error, #e8836f); font-weight: 600; }
 .check-row { display: flex; align-items: center; gap: 10px; }
 .check-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
