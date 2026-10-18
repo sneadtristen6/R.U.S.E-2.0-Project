@@ -1,12 +1,21 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**Next version (not released yet; its number and the other languages are written at release):**
+**0.9.8.7:** Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, and every value explained.
 
 - **Fixed, reported by a modder:** on a new unit made from one of 17 of the game's units, the box for changing its model never appeared, because the Studio didn't find the copied unit's 3D model. The 17: the King Tiger, the atomic guns, the Long Tom nuke, the V2 launcher, the TransportHQ, the Wurfrahmen half-track, the atomic OI, Type 1 and Type 4, and three campaign versions. The Studio finds those models now, and if it ever can't find a model, the box says so instead of disappearing. The report was about the Panther, which worked on our PC, so that case isn't confirmed fixed yet.
 - **The AI tab explained:** each computer-player value says what it does, in plain units (metres, $, minutes) where it has them, and which value wins in a battle for each difficulty and profile. Game modes, difficulties, profiles and units are picked by name instead of by number.
 - **Every value explained, everywhere:** All values says what each value does under its name (what a unit links to and the texts it shows too, not only numbers), in plain units, with the price's five boxes named by game mode; a value with no name of its own gets a plain one instead of its code name. On the Units tab every row says what it is, the ones that can't be changed too. The Maps tab's ground brushes say their size in metres and their strength as what it does on that map (a height in metres for Hill, Raise, Lower, Crater, Plateau and Water; a share of the way for Flatten, Level, Smooth and Ramp). The Music tab says when each battle list plays: calm while players build up, fighting once shots land (both heard in the game), and ruse music when a ruse card is played (from the game's workings; not heard in a test yet).
 - **The Economy tab, Normal and Nuclear apart:** the game keeps its economy twice, once for its usual modes and once for the Nuclear mode. Where the two differ (money per truckload, ruse cards at the start, when new ruse cards come), each mode now has its own boxes, so the Nuclear mode can be changed alone; elsewhere one change still sets both. Each value also says what it does, under its name. A Nuclear-only change hasn't been tried in the game yet.
+- **Redo and select:** Redo in every map tool (Ctrl+Y or Ctrl+Shift+Z, and a Redo button); in the Buildings and Props & trees trays, select what's placed (click, Shift+click or a box), drag to move it, turn it, resize it or delete it, the map's own objects too.
+- **Grid, Box and Path:** place rows of objects in a grid or a box, buildings facing the roads, and hedges, tree lines and tree belts along a path, with cover.
+- **Bigger blank maps:** a new blank map's Map size window adds or takes strips of ground on any side, and Make sectors fills it with sectors.
+- **Menus and feel:** number rows instead of sliders, a search with #tags and your recent searches, pop-up cards, and keys you can rebind (Swap, Take it, Cancel).
+- **Safer:** closing the Studio with unsaved work asks first; a map with new cut-off ground is refused before Test in game; a mod made with an older Studio is updated with a backup first (Update this mod); kept build results stay good after a Studio update.
+- **Every message in ten languages:** the Studio's errors and the build's lines.
+- **New unit** leaves out the two units with no model to start from (the SOLO 57 mm gun and the SOLO paratroopers).
+- Not tried in the game yet: what's placed with Grid, Box and Path, moved objects, and a bigger map made in the Studio.
+- **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank Ocean).
 
 **0.9.8.6:** every unit flag and number explained, the map tools show what they did, and blank maps drawn right.
 

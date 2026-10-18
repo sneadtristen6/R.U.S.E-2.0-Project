@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.7:** uruchamia mody zrobione w Studio 0.9.8.7.
+
+- **Mody zrobione w Studio 0.9.8.7 działają:** obiekty przesunięte lub postawione w siatce, prostokącie i wzdłuż ścieżek, większe puste mapy z ich sektorami oraz zmiany ekonomii tylko trybu Nuklearnego.
+- **Wiersze budowania w Twoim języku**, we wszystkich dziesięciu.
+- **Zachowane wyniki budowania pozostają dobre po aktualizacji.**
+- **Wciąż z błędami, grasz na własną odpowiedzialność:** mapy zrobione z teksturami Map Paint i puste mapy (Pusty teren, Pusty ocean).
+
 **0.4.8.6:** uruchamia mody zrobione w Studio 0.9.8.6.
 
 - **Mody zrobione w Studio 0.9.8.6 działają:** puste mapy z cieniami na płaskim terenie, to, co postawione tam, gdzie kopiowana mapa miała morze, narysowane, i podłoga kamery na nowym terenie.

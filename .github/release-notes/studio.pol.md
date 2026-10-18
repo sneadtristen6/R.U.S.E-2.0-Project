@@ -1,6 +1,22 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.7:** Ponów i zaznaczaj to, co postawione, stawianie siatką / prostokątem / ścieżką, większe puste mapy, i każda wartość wyjaśniona.
+
+- **Poprawione, zgłoszone przez moddera:** w nowej jednostce zrobionej z jednej z 17 jednostek gry (Królewski Tygrys, działa atomowe, V2...) pole zmiany modelu nigdy się nie pojawiało. Studio znajduje teraz te modele, a jeśli któregoś nie znajdzie, pole to mówi, zamiast znikać.
+- **Zakładka SI wyjaśniona:** każda wartość graczy komputerowych mówi, co robi, w prostych jednostkach, i która liczy się w bitwie dla każdego poziomu trudności i profilu; tryby, poziomy, profile i jednostki wybierane po nazwie.
+- **Każda wartość wyjaśniona, wszędzie:** Wszystkie wartości, zakładka Jednostki, pędzle zakładki Mapy (rozmiar w metrach, siła według tego, co robi) i zakładka Muzyka (kiedy gra każda lista bitewna).
+- **Zakładka Ekonomia, Normalny i Nuklearny osobno:** tam, gdzie oba tryby się różnią, każdy ma własne pola. Zmiana tylko trybu Nuklearnego nie była jeszcze testowana w grze.
+- **Ponów i zaznacz:** Ponów w każdym narzędziu mapy (Ctrl+Y lub Ctrl+Shift+Z, i przycisk); w panelach Budynki oraz Obiekty i drzewa zaznacz to, co postawione (klik, Shift+klik lub ramka), przeciągnij, obróć, zmień rozmiar lub usuń, także obiekty samej mapy.
+- **Siatka, Prostokąt i Ścieżka:** rzędy obiektów w siatce lub prostokącie, budynki frontem do dróg, oraz żywopłoty, szpalery i pasy drzew wzdłuż ścieżki, z osłoną.
+- **Większe puste mapy:** okno Rozmiar mapy nowej pustej mapy dodaje lub zabiera pasy terenu z każdej strony, a Utwórz sektory wypełnia ją sektorami.
+- **Menu i wygoda:** wiersze liczb zamiast suwaków, wyszukiwanie z #tagami i ostatnimi wyszukiwaniami, wyskakujące karty, i klawisze do zmiany (Zamień, Weź, Anuluj).
+- **Bezpieczniej:** zamknięcie z niezapisaną pracą najpierw pyta; mapa z nowym odciętym terenem jest odrzucana przed Testem w grze; mod zrobiony starszym Studio jest aktualizowany po kopii zapasowej (Zaktualizuj ten mod); zachowane wyniki budowania pozostają dobre po aktualizacji Studio.
+- **Każdy komunikat w dziesięciu językach:** błędy Studio i wiersze budowania.
+- **Nowa jednostka** pomija dwie jednostki bez modelu do startu (działo SOLO 57 mm i spadochroniarzy SOLO).
+- Jeszcze nie testowane w grze: to, co postawione Siatką, Prostokątem i Ścieżką, przesunięte obiekty i większa mapa zrobiona w Studio.
+- **Wciąż z błędami, używasz na własną odpowiedzialność:** tekstury Map Paint i obie puste mapy (Pusty teren i Pusty ocean).
+
 **0.9.8.6:** każda flaga i każda liczba jednostek wyjaśnione, narzędzia mapy pokazują, co zrobiły, a puste mapy rysują się poprawnie.
 
 - **Flagi jednostek wyjaśnione:** każda flaga na stronie jednostki pokazuje swoją nazwę, a po najechaniu widać, co robi, jak jej używać i jak bardzo jesteśmy pewni. **Przewodnik po flagach: wszystkie wyjaśnione** wymienia wszystkie 105, z wyszukiwaniem. Studio sprawdza flagi jednostki: znany crash (flagi ciężarówki na czymś, co nie jest ciężarówką, uzbrojony samolot z flagą zwiadu bez flagi myśliwca) pokazuje swoją poprawkę, a Studio nie uruchomi gry, dopóki nie zostanie poprawiony; flagi, które mogą zepsuć jednostkę, dają ostrzeżenie.

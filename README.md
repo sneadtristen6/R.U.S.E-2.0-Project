@@ -19,7 +19,7 @@
 > [!TIP]
 > **How to install and play (5 minutes):**
 > 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), take the
->    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.6.exe**.
+>    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.7.exe**.
 > 2. Run it. If Windows says "Windows protected your PC": **More info**, then **Run anyway**.
 > 3. Open **RUSE Launcher**: it finds R.U.S.E. through Steam by itself.
 > 4. Click **Supported mods**, tick the mods you want and press **Install**.
@@ -30,96 +30,29 @@
 > [studio releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) and start with
 > [Your first mod](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Your-First-Mod).
 
+## What R.U.S.E. is
+
+**R.U.S.E.** (2010) is Eugen Systems' real-time strategy game of the Second World War. The whole front lies on a
+map table you can zoom from the war room down to a single tank, and battles are won as much by deception as by
+force: **ruse cards** hide your units, fake an attack, crack the enemy's plans or speed your troops up. It has a
+campaign, Operations, and skirmish and multiplayer battles on maps from Normandy to Tunisia.
+
 ## What R.U.S.E. 2.0 is
 
 **New maps, new units and one-press modded play for R.U.S.E.** Two free apps:
 
 - **RUSE Launcher, for players.** Pick a set of mods and press **Play**. That's it.
-- **RUSE Studio, for modders.** Change any unit, make new ones with 3D models of their own, reshape a map's ground,
-  draw roads and bridges, then press **Test in game**.
+- **RUSE Studio, for modders.** Change any unit, make new ones with 3D models of their own, build maps from a blank
+  sheet or reshape the game's own, then press **Test in game**.
 
-**A game that plays a game with R.U.S.E.** It checks your mod the way the game will read it, before the game ever
-starts: anything that would break in the game is stopped first, with a note saying what to change. The goal: what you
-make works in the game every time, the first time.
+**Checked before the game starts.** The Studio reads your mod the way the game will: anything that would break in
+the game is stopped first, with a note saying what to change. The goal: what you make works in the game every time,
+the first time.
 
-**Data only.** A mod here changes data, in a separate copy of the game, and that is all of it: this project is about
-what changing strictly data can do. Anything beyond data is outside what we want to do with it. Your Steam install
-is never changed.
+**Data only.** A mod here changes the game's data, in a separate copy of the game, and that is all of it. Your Steam
+install is never changed.
 
-**366 units from WWI to today, in the Studio.** WWI, WWII+, Cold War and modern tanks and planes, all in one game:
-each another maker's free 3D model, credited, at its real size, researched like the game's own units, with its own
-card in the build menu. Pick an era in the Studio's Units tab and it downloads; add any of its units to your mod
-(RUSE Studio 0.9.8.2).
-
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: new bombers parked beside an airfield's runway, added to a mod from RUSE Studio's units from other eras" width="260"><br>
-      <sub><b>New bombers</b> on a R.U.S.E. airfield.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/era-mark-v-field.jpg" alt="R.U.S.E. in game: two WWI tanks in a ploughed field" width="260"><br>
-      <sub><b>WWI tanks</b> in the fields of R.U.S.E.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/era-airfield-three-eras.jpg" alt="R.U.S.E. in game: WWI biplanes, WWII-era bombers and modern jets on one airfield" width="260"><br>
-      <sub><b>WWI, WWII and modern, all in one.</b> Biplanes, bombers and jets on one airfield.</sub>
-    </td>
-  </tr>
-</table>
-
-**New in 0.9.8.6: every unit flag and number explained, and map tools that show what they did.** Each flag on a
-unit's page says what it does and how to use it, the **Flag guide** lists all 105, and the Studio won't start the game
-with a flag known to crash it (it shows the fix). Every number of a unit or building says what it means, shows its
-value in metres, km/h or seconds, has a slider from its base stat and shows where it sits among the game's units. On
-the map, the cover and movement brushes and Town show what each stroke changed, placed buildings and trees show their
-real models, and the place list is a grid of pictures. Blank maps get shadows over flat ground (seen in the game).
-
-**New in 0.9.8.5: planes in any role, weapons that hit planes, and a library for Map Paint's textures.** A plane's
-new **Role** box makes it a fighter, fighter-bomber, bomber or scout: a fighter-bomber given a bomber's carpet bombs
-now drops them from a bomb bay once it's made a bomber (a player's report, seen in the game), and a scout can keep its
-guns. A tank can be made a recon unit, and each weapon's **Hits** picks the ground, planes or both (tank rounds at
-planes, seen in the game). Map Paint's Texture brush paints with the game's own ground textures, any map's ground,
-your own pictures or free ones online, with the game's detail up close; a map painted again comes back in seconds.
-
-**New in 0.9.8.4: missions of your own, blank maps you build up, and much more to customise.** A new Operation or
-campaign chapter gets its own mission (goals, events, camera moves) on the map screen's Scenario side; blank maps show
-nothing of the copied map and you place each player's HQ and paint the sectors; supply depots get more trucks on every
-map; a nation's units hide or fill in one go; any installed mod opens in the Studio (someone else's as a copy of your
-own); the mod check speaks plain words with fix buttons; units get their own look, a squad its own uniform, armour its
-real level; imported planes keep their propellers; and mods and updates download on every PC.
-
-**Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
-Ocean). 
-What's new, step by step: [Make a mission](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Make-a-Mission),
-[Edit a scenario](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Edit-a-Scenario).
-
-**Coming next.** Map Paint's **field brush**, which turns whole fields into wheat, ploughed earth, stubble or a green
-crop the way the game's own maps paint them; **towns you draw** (lay out the streets, mark them as homes, shops or
-industry, and the Studio fills them with the game's own buildings, in rows the way R.U.S.E.'s villages are built);
-roads that curve and meet at proper junctions; faster map builds; and the Studio and the Launcher in every language
-they offer, their messages included.
-
-**LittleGroove's tools are in the Studio.** RUSE Studio 0.9.8.1 brings over the tools of his RUSE-Mod-Manager (the
-Economy and AI tabs, All values, the game's files, missions), adds a **Music** tab for songs and voice lines, and a
-**Nations** tab that makes one of the game's nations into another, with a name and a flag of its own.
-
-**New maps can start blank.** RUSE Studio 0.9.8 starts a new map as flat land or open sea, and gives any map its own
-pictures in the game's menus, from a PNG or made in Blender from the map itself. Since 0.9.8.1, Blank Terrain's ground
-is made as its own.
-
-**Very large map mods now build in minutes.** Before, they took a very long time to build, and that's why this
-update was needed: our most extreme map mod went from about four hours to under 10 minutes. It's in RUSE Studio
-0.9.7, we're still working on optimizations, and how we got there is under [How we got here](#how-we-got-here).
-
-**What's in this repository.** The two apps, and what players and modders need to use them. Our working notes on the
-game's own files are kept private until we have an explicit OK from the developers, Eugen Systems. I've reached out
-to them in hopes of working with them, and of making sure there's maximum security on this project.
-
-Everything we do here is to help the community and bring this game to a better place. R.U.S.E. is one of my favorite
-games ever, and I just want to make it better.
-
-## See it in the game
+**Open source** (GPL-3.0), in the game's ten languages.
 
 <table>
   <tr>
@@ -128,26 +61,113 @@ games ever, and I just want to make it better.
       <sub><b>A tank of your own.</b> An M1 Abrams, modelled in another 3D program, in the game.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks in the fields beside a farm" width="260"><br>
-      <sub><b>Out in the fields.</b> Two M1 Abrams beside a farm.</sub>
+      <img src="docs/images/era-airfield-three-eras.jpg" alt="R.U.S.E. in game: WWI biplanes, WWII-era bombers and modern jets on one airfield" width="260"><br>
+      <sub><b>WWI to today, all in one.</b> Biplanes, bombers and jets on one airfield.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. in game on D-Day: a new road up close, asphalt with a dashed centre line and gravel shoulders" width="260"><br>
       <sub><b>Roads you draw.</b> Like the map's own, from high up and right down at the ground.</sub>
     </td>
   </tr>
+</table>
+
+## What R.U.S.E. 2.0 changes
+
+### Units
+
+- **Change any unit:** its price, armour, speed, weapons and every other number, with Undo, then **Test in game**.
+- **Every flag and number explained**, in plain words and plain units (metres, km/h, seconds): what it does, where
+  the game's units sit, and a slider from its base stat. Flags known to crash the game are stopped, with the fix.
+- **New units:** start from any unit, put it in any nation's build menu, behind research or buyable from the start.
+- **Planes in any role** (fighter, fighter-bomber, bomber with its bomb bay, scout), **recon vehicles**, and
+  **weapons that hit the ground, planes or both**.
+- **Your own 3D models:** bring a model in from Blender or any 3D tool, repaint any unit in Blender, give a squad its
+  own uniform, pick the truck a squad rides in, and make its card for the build menu.
+- **366 units from WWI to today:** other makers' free models, each credited, at their real size, researched like the
+  game's own units.
+- **Nations:** make one of the game's seven nations into another, with a name and a flag of its own; hide or fill a
+  nation's units in one go.
+
+### Maps
+
+- **New maps** listed in BATTLES beside the game's own. Start from **blank land or open sea**, at the game's size or
+  bigger, give them their own pictures in the menus, and paint their sectors.
+- **Shape the ground:** hills, craters, plateaus, ramps, levelled and smoothed ground; lakes and drained rivers. Units
+  drive and fight on it.
+- **Roads and bridges:** straight, curved or freehand roads that supply trucks follow; where one crosses water, the
+  map's own kind of bridge that tanks, infantry and trucks cross.
+- **Buildings, props and trees:** place them one by one, in a grid, a box, or along a path (hedges and tree belts),
+  buildings facing the roads; select, move, turn, resize and delete them, the map's own too; clear the map's woods
+  and props.
+- **Cover and movement:** paint the towns and woods units hide in, and close ground to all units, infantry or
+  vehicles. The map shows what each stroke changed.
+- **Map Paint:** paint the ground's picture with a colour, the map's own ground from another spot, the game's
+  textures, pictures of your own or free textures online.
+- **Scenarios and missions:** move starting points, add the units a battle starts with, and missions of your own
+  with goals, events and camera moves, for Operations and campaign chapters.
+
+### The game's rules
+
+- **Economy:** starting money and income, supply depots and their trucks, the ruse cards each side starts with, for
+  normal and nuclear battles apart.
+- **The computer players:** how they play, the units they prefer and their ruse cards, every value explained.
+- **All values:** every object and value of the game's data, changed in your mod.
+
+### Music and sound
+
+- Every song by where it plays, replaced in the Studio's own small editor (cut, fade, volume); new songs added to the
+  battle lists; a unit's voice lines; a map's background sound.
+
+### For players
+
+- **One press:** pick a mod set and press **Play**; the Launcher builds a separate modded copy and starts it.
+- **Community mods as they are** (RUSE-Mod-Manager's `.rmod` too), a list of supported mods to tick, load orders
+  shared both ways with RUSE-Mod-Manager, and a troubleshooter that finds what stops Play and fixes it.
+- **Updates itself**, in the game's ten languages.
+
+## See it in the game
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks in the fields beside a farm" width="260"><br>
+      <sub><b>Out in the fields.</b> Two M1 Abrams beside a farm.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: new bombers parked beside an airfield's runway" width="260"><br>
+      <sub><b>New bombers</b> on a R.U.S.E. airfield.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="260"><br>
+      <sub><b>Units with their own look.</b> Repaint any unit in Blender and bring it back.</sub>
+    </td>
+  </tr>
   <tr>
     <td width="33%" valign="top">
       <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge" width="260"><br>
-      <sub><b>Bridges units cross.</b> Where your road meets water, the build puts the map's own kind of bridge.</sub>
+      <sub><b>Bridges units cross.</b> Where your road meets water, the map's own kind of bridge.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="260"><br>
       <sub><b>Ground you shape.</b> Hills, craters, lakes and dried rivers that units drive and fight on.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="260"><br>
-      <sub><b>Units with their own look.</b> Repaint any unit in Blender and bring it back.</sub>
+      <img src="docs/images/blank-ocean-menu.jpg" alt="R.U.S.E. choose map screen: Blank Ocean, a new map that starts as open sea, with its own menu picture" width="260"><br>
+      <sub><b>New maps</b>, started blank, with their own menu pictures.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. in game on Blitz: infantry on top of a painted cover patch, shown as hidden" width="260"><br>
+      <sub><b>Painted cover.</b> Infantry on it are hidden.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers" width="260"><br>
+      <sub><b>Placed buildings are solid.</b> Tanks go around.</sub>
+    </td>
+    <td width="33%" valign="top">
+      <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. in game on D-Day: infantry and a tank walking along a river bed a mod drained" width="260"><br>
+      <sub><b>A river drained.</b> Units walk its bed.</sub>
     </td>
   </tr>
 </table>
@@ -162,311 +182,52 @@ games ever, and I just want to make it better.
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/studio-unit-page.jpg" alt="RUSE Studio's Units page: a unit's weapons, its 3D model, its build-menu card and Repaint in Blender" width="400"><br>
-      <sub><b>Units.</b> Change a unit's weapons and numbers, see it in 3D, make its card, repaint it in Blender or give
-      it a model of its own.</sub>
+      <sub><b>Units.</b> A unit's numbers, flags and weapons, its 3D model and its card.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <img src="docs/images/studio-map-paint.jpg" alt="RUSE Studio's Map Paint: a colour wheel, the map's own colours, size and opacity" width="400"><br>
-      <sub><b>Map Paint.</b> Paint the ground's picture with a colour, or with the map's own ground from another
-      spot.</sub>
+      <sub><b>Map Paint.</b> Paint the ground's picture.</sub>
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/studio-roads-bridges.jpg" alt="RUSE Studio's Roads and Bridges tools: straight, curve and freeform roads" width="400"><br>
-      <sub><b>Roads and bridges.</b> Straight, curved or freehand; supply trucks follow them, and a road over water gets
-      a bridge.</sub>
+      <sub><b>Roads and bridges.</b> Straight, curved or freehand.</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-ground-water.jpg" alt="RUSE Studio's Ground and Water brushes: hill, raise, lower, crater, plateau, flatten, level, smooth and ramp" width="400"><br>
-      <sub><b>Ground and water.</b> Hills, craters, plateaus, flattened ground and ramps, round or square, soft or
-      hard edged.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, a modern tank's page with its model and its maker credited" width="400"><br>
+      <sub><b>Units from other eras</b>, each model's maker credited.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, zones and starting points, and the map tools along the bottom" width="400"><br>
-      <sub><b>Any map the game lists.</b> D-Day in the map view, with its towns, zones and starting points.</sub>
+      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: a set of 75 mods, with which mods overwrite which" width="400"><br>
+      <sub><b>RUSE Launcher:</b> a set of 75 community mods, and which overwrite which.</sub>
     </td>
   </tr>
 </table>
+
+## Coming next
+
+- **Towns you draw:** lay out the streets, mark blocks as homes, shops or industry, and the Studio fills them with
+  the game's own buildings.
+- **Map assets of your own:** trees, rocks, cliffs and props brought into maps, with an importer in the Maps tab.
+- **Generated mountains and our own high-resolution ground textures**, and Map Paint's field brush, which turns whole
+  fields into wheat, ploughed earth or a green crop the way the game's own maps paint them.
+
+Everything that changed, version by version: the
+[Studio notes](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) and the
+[Launcher notes](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/launcher.md).
 
 **About the name:** R.U.S.E. 2.0 is a placeholder. Before the full version (1.0) comes out, we'll consult Eugen
 Systems, the makers of R.U.S.E., and the project will take a name they're okay with. Name ideas and constructive
 criticism are welcome in [the name discussion](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions/18).
 
-## What you can do
+**What's in this repository.** The two apps, and what players and modders need to use them. Our working notes on the
+game's own files are kept private until we have an explicit OK from the developers, Eugen Systems.
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. in game on Blitz: a hill raised with the Studio's brushes, units driving up it" width="260"><br>
-      <sub>A hill raised with brushes. Units drive up it.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/terrain-ingame-units.jpg" alt="R.U.S.E. in game: units on top of the raised hill, the town of Cahir lifted with it" width="260"><br>
-      <sub>The town and its trees rise with the ground.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. in game on Blitz: infantry on top of a painted cover patch, shown as hidden" width="260"><br>
-      <sub>Painted cover. Infantry on it are hidden.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/map-placed-buildings.jpg" alt="R.U.S.E. in game on Blitz: water towers at 8 times their size around a hill, barns at 6 times around a pit" width="260"><br>
-      <sub>Buildings placed by a mod, up to 8x size.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers instead of driving through them" width="260"><br>
-      <sub>Placed buildings are solid. Tanks go around.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/roads-bridges-ingame.jpg" alt="R.U.S.E. in game on D-Day: new roads drawn in the Studio, painted on the ground, with a new bridge where each crosses the river" width="260"><br>
-      <sub>Roads drawn in the Studio, bridges over water.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/cleared-wood-infantry-not-hidden.jpg" alt="R.U.S.E. in game on D-Day: a round hole cleared in a dense wood by a mod, an infantry squad standing in it, not hidden" width="260"><br>
-      <sub>A wood cleared by a mod. Tanks drive in, infantry aren't hidden there.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. in game on D-Day: infantry and a tank walking along a river bed a mod drained" width="260"><br>
-      <sub>A river drained by a mod. Units walk its bed.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/blank-ocean-menu.jpg" alt="R.U.S.E. choose map screen: Blank Ocean, a new map that starts as open sea, with its own menu picture and its 3D map showing six start dots" width="260"><br>
-      <sub>A new map started blank, with its own menu pictures.</sub>
-    </td>
-  </tr>
-</table>
-
-| For players | For modders |
-|---|---|
-| Pick a mod set and press Play | Change any unit's numbers, then test in game |
-| Drop mod files on the window to add them | Make new units |
-| Run community mods as they are | Shape the ground with brushes |
-| Share a load order with a friend | Draw roads with bridges over water |
-| New versions install themselves | Place buildings, cover, and starting points |
-| Tick mods from our supported list | Clear the map's own woods and props |
-| Troubleshoot finds what stops Play, and fixes it | Check a map before you test it |
-| Play new maps that start blank | Start a new map as flat land or open sea, with its own menu pictures |
-| Hear a mod's own songs | Replace songs and voice lines in the Music tab |
-| Play a nation with a new name and flag | Make one of the game's nations into another |
-| Play units from WWI to today | Add any of 366 era units, with their models, at their real size |
-
-<details>
-<summary><b>Everything the apps can do</b></summary>
-
-A modding platform for R.U.S.E. Its aim, step by step: new units, maps, models, missions and one-click modded
-multiplayer (today: units, and the first map tools). The content goals on top are RUSE 2.0 and Pacific Island
-Defense.
-
-**Your Steam install is never changed.** Mods are built into a separate modded copy of the game (hard links to the
-game's packs, plus the packs a mod rebuilds), and Play starts that copy.
-
-<p align="center">
-  <img src="docs/images/studio-maps.jpg" alt="RUSE Studio's Maps view: D-Day in 3D with its towns, the battle's zones and starting points, and the map tools along the bottom" width="800">
-  <br>
-  <sub>RUSE Studio's Maps view: every map the game ships, in 3D, with its real ground, water and towns. Here, D-Day
-  with its battle's zones and starting points, and the map tools along the bottom.</sub>
-</p>
-
-**Players, with RUSE Launcher**
-
-- Pick a mod set and press **Play**: the launcher builds a modded copy of the game and starts it.
-- Add a mod file (a `.rusemod` from the Studio, a community `.rmod` used as it is, or a `.zip`), or drop it on the
-  window.
-- Make and reorder mod sets in the window.
-- Share a mod set's load order with a friend, or import one. It's the same text RUSE-Mod-Manager copies and reads,
-  so load orders go both ways.
-- **Supported mods:** tick mods from our list and they're downloaded and checked; cheat mods are kept apart and
-  never ticked for you (Launcher 0.3.0).
-- **Troubleshoot** checks in one go what can stop **Play** and fixes what it can, and a **clean game backup** puts
-  back game files another mod manager changed (Launcher 0.3.0, Studio 0.8.0).
-- Get new versions without downloading by hand: the launcher offers them, checks the file and installs it (from
-  0.2.0 on).
-- **Mod sets** and the **Mod library** in two tabs, each with the window's whole height: the whole library in reach,
-  with a search and a count (Launcher 0.3.1).
-- **Convert an old mod…** (Launcher 0.4.8.1, LittleGroove's Convert brought over): an older mod that comes as the
-  game's own packs, made to be copied into the game folder, becomes a mod your library plays beside others (not tried
-  with a real old mod yet). When two mods change the same game file, the Launcher says so before Play, and **Use the
-  one from…** picks which.
-- **Linux and Steam Deck (through Proton)** (Launcher 0.4.8.2, Studio 0.9.8.2): the apps open in your web browser
-  when their own window can't (not tried on Linux yet).
-
-**Modders, with RUSE Studio**
-
-- Browse every unit and building by its code name or in any of the game's ten languages.
-- Change a unit's numbers in your own mod, with Undo, then **Test in game**.
-- See every map in 3D with its real ground, listed by the name players know (in any of the ten languages) next to
-  its code name, with the game's own 3D models of its buildings and trees.
-- Make new units, and give a weapon another unit's ammo (its muzzle flash and sound come with it). A new unit can go
-  in any nation's build menu: a German Tiger or a Japanese Zero for the US works in any match (2026-10-02, Studio 0.8.1).
-- Shape a map's ground with brushes (hills, craters, ramps, level, lakes) that **work in the game**: units drive on
-  it and take orders there (checked on Blitz, 2026-09-30).
-- **Make towns and woods units hide in:** the map view shows where units hide (in green), and the Cover, Uncover and
-  Town brushes paint it (Town: click a town, cover goes around all its buildings). Infantry on painted cover are
-  hidden in the game (2026-09-30).
-- See each map's scenarios, grouped as the game uses them (skirmish, Operations, campaign): zones, starting points,
-  spawns and town names. **Move** starting points and spawns, and **add units and buildings** a scenario starts with
-  (pick the kind, the type, the unit and its side).
-- Place buildings, props and trees, up to 10× their size, and export a mod as one file. Placed buildings show in the
-  game (2026-09-30, Studio 0.6.9).
-- **Say where units can go:** the map view shows it (red: no unit, yellow: infantry only), the Block brushes close
-  ground to every unit, to infantry or to vehicles, and placed buildings stop units (Solid). Proven in the game
-  (2026-09-30, Studio 0.7.0).
-- The map tools sit in a bar along the bottom, Cities: Skylines style (Studio 0.7.0), grouped since 0.8.1: Ground &
-  water, Cover & movement, Roads & bridges, Buildings, Props & trees, Erase, Scenario and Check, a tab for each tool
-  in a group.
-- **Draw roads**, Cities: Skylines style (straight, curved, freeform; ends snap onto roads; their length shown as
-  you draw): supply routes use them, they're painted on the ground, and a road over water gets a bridge units drive
-  across, all in the game (2026-09-30, Studio 0.7.2 to 0.7.6). Tanks, infantry and supply trucks cross a new
-  bridge on its deck, and infantry follow new roads (2026-10-01, Studio 0.8.0).
-- **Clear woods and props** with the **Erase** tool (Studio 0.8.1; `[[erase]]` in scenery.toml): units drive into a
-  cleared wood and infantry there are no longer hidden; a **Bridges dock** places a bridge by hand; **Check this map** lists what would go wrong before you
-  test; Open and Forest brushes (2026-10-01, Studio 0.8.0).
-- **More players on a map, up to 8:** a Players count and an Add starting point tool (D-Day as a 4v4; built, the
-  in-game check is next).
-- **Start a new map blank** (Studio 0.9.8): **Duplicate map** starts it as **Blank Terrain** (flat land with nothing
-  on it but the starting points) or **Blank Ocean** (the sea over the whole map). Under them: **take out** the map's
-  own roads, bridges, depots, units and names, **sectors over the whole map**, and a thin layer of **water over the
-  whole map**. **Menu pictures…** gives any map its own pictures in the game's menus, from a PNG of yours or made in
-  Blender from the map's own 3D model, with the start dots where its players start. Seen in the game (2026-10-05).
-  Since 0.9.8.1, Blank Terrain's ground is made from your terrain strokes (seen in the game on test maps), and Blank
-  Ocean carries a warning: separate islands aren't ready for full-scale battles, so join the islands with land or an
-  underwater road.
-- **LittleGroove's tools** (Studio 0.9.8.1), from his RUSE-Mod-Manager: an **Economy** tab (starting money and
-  income, supply depots, the ruse cards each side starts with), an **AI** tab (how the computer players play, the
-  units they prefer and their ruse cards, and the game's map and mission scripts, shown read only), an **Upgrade box**
-  on a unit's page, **All values** (add or take out a value, make or delete an object), a **Files** tab (see a file
-  of the game's packs, save it out, or change it in your mod), and the missions' scripts, checks and menu order. Seen
-  in the game: the starting money and cards, and the AI tab.
-- **A Music tab** (Studio 0.9.8.1): every song by where it plays, each replaced in a small editor in the Studio (cut,
-  fade, volume), new songs added to the battle lists, a unit's voice lines on its page, and a map's background sound.
-  Seen in the game: the songs, the new songs and the voice lines.
-- **Make a nation into another** (Studio 0.9.8.1): the **Nations** tab gives one of the game's seven nations a new
-  name, in the lobby and for its army, and a new flag from any picture: China in Italy's place, say. Seen in the
-  game: the new name in the lobby, the new flag beside the player's name in a match.
-- **Units from other eras** (Studio 0.9.8.2): the Units tab's WWI, WWII+, Cold War and Modern eras hold 366 units,
-  each another maker's free model (CC0 or CC BY), credited. Each era downloads in the Studio when you pick it, from
-  our GitHub (each file checked), and updates itself as more are finished. Add one to your mod: it's a new unit at
-  its real size, with its own card, researched from any unit of its nation's building (chains too: a Cold War tank, then
-  a modern one). Seen in the game: they load at once, their own cards, research and a chain, their own models, the
-  sizes.
-- **Add units in formations:** 1 to 10 at once, in a line, column, wedge, box or circle (Studio 0.7.1).
-- A **mod check** reads every file of your mod the way the game build does, names each problem and offers the fix
-  (set a broken file aside, rename a map folder to the map's pack name) (Studio 0.7.1).
-- **Help at hand:** both apps open the wiki, Discussions and a ready-filled bug report (Studio 0.7.1, Launcher
-  0.2.7).
-- Units, buildings and ammunition sorted by type (factories, money, forts, decoys; AP, HE, anti-aircraft...).
-- A Settings tab (keys, game folder, updates), kept through updates. The Studio offers its own new versions.
-- The language is a button at the top of both apps, and the first start opens "Choose your language": each of the
-  ten languages in its own words, with the one R.U.S.E. is set to in Steam (else the PC's) marked.
-
-Modders who write mods by hand can also use the `ruse` command-line tool, from the source (see
-[For contributors](#for-contributors) below).
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/launcher.jpg" alt="RUSE Launcher: mod sets on the left, how to play with mods in three steps, and Play" width="380"><br>
-      <sub>RUSE Launcher: pick a mod set and press Play. It builds a separate modded copy of the game; your Steam
-      game stays as it is.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: a set of 75 mods, with why it can't be played and which mods overwrite which" width="380"><br>
-      <sub>A set of 75 community mods: the launcher says which can't go together, and which overwrite which.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-unit.jpg" alt="RUSE Studio: a unit's values, ready to edit" width="380"><br>
-      <sub>RUSE Studio: a unit's values, flags and price, ready to edit.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-units.jpg" alt="RUSE Studio: the unit list, with filters by type and nation" width="380"><br>
-      <sub>RUSE Studio: the unit list, with filters by type and nation.</sub>
-    </td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, 124 units listed, a modern tank's page with its model, its maker credited, and the form that adds it to a mod: name, start unit, price, size, build menu and research" width="380"><br>
-      <sub>The Units tab's eras: WWI, WWII+, Cold War and Modern, each model's maker credited, ready to add to a mod at its real size and behind research.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-nations.jpg" alt="RUSE Studio: the Nations tab, the game's seven nations with their flags, armies and a Change button each" width="380"><br>
-      <sub>The Nations tab: any of the game's seven nations made into another, with a name and a flag of its own.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-music.jpg" alt="RUSE Studio: the Music tab, every song by where it plays, each with Play and Replace" width="380"><br>
-      <sub>The Music tab: every song by where it plays, each replaced in the Studio's own small editor.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/studio-economy.jpg" alt="RUSE Studio: the Economy tab, starting money, income, supply depots and production limits" width="380"><br>
-      <sub>The Economy tab, from LittleGroove's RUSE-Mod-Manager: starting money, income, supply depots and more.</sub>
-    </td>
-  </tr>
-</table>
-
-**Map making, in the game, in more detail:**
-
-- Blitz, in the game: a hill raised with the Studio's brushes. Units drive up it and take orders on it, and the
-  player's HQ starts at a place the mod moved it to.
-- On top of the hill: the town of Cahir and its trees rise with the ground (2026-09-30). The recipe is
-  DomesticNukes and his Claude's.
-- Cover painted on open ground (here on a test hill): the infantry standing on it are hidden, as in a wood. That's
-  how new towns and woods hide units.
-- Buildings placed by a mod: water towers at 8× their size ring the hill, barns at 6× ring a pit next to it
-  (2026-09-30).
-- Movement, later the same day: placed buildings are solid (the tank threads between the towers), and a pit is
-  blocked for every unit. The map's own movement data is read and written now.
-- D-Day: roads drawn in the Studio, painted into the ground, and a bridge where each crosses the river: the map's own
-  kind, one piece stretched bank to bank as the game's own are (2026-09-30).
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/movement-building-on-hill.jpg" alt="R.U.S.E. in game on Blitz: a building being placed by the player on the edited hill" width="380"><br>
-      <sub>Building on the edited ground in the game works too. Four crashes on the way were fixed the same
-      evening.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-tanks-ingame.jpg" alt="R.U.S.E. in game on D-Day: tanks driving across a new bridge, on its deck" width="380"><br>
-      <sub>Tanks crossing on a new bridge. Each gets the floor of a shipped bridge of its kind, so units drive on the
-      deck, not the riverbed under it (2026-09-30).</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-tank-and-squad.jpg" alt="R.U.S.E. in game on D-Day: a tank and an infantry squad crossing a new bridge the build placed where a road drawn in the Studio meets the river" width="380"><br>
-      <sub>A road drawn in the Studio meets the river, the build puts the map's own kind of bridge across it, and units
-      take it: a tank and a squad on the deck (D-Day, in the game, 2026-10-01).</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-tank-column.jpg" alt="R.U.S.E. in game on D-Day: a column of tanks crossing a new bridge" width="380"><br>
-      <sub>A tank column on its way over.</sub>
-    </td>
-  </tr>
-</table>
-
-**The bridge night (2026-10-01).** One night, twelve hours, six rounds of building a bridge and testing it in the
-game. Five rounds changed where units may *walk*. What settled it was working out how the game places a unit: its
-position comes from the map's movement circles, its height from the floor under it, and nothing ties the two. An
-infantry squad is five men spread 11 m wide, each standing on whatever floor is under his own feet. The game's metal
-bridges carry invisible floor 47 to 66 m out over the river beside the deck; ours had the deck alone, so the men
-beside it stood on the riverbed. New bridges now get floor 12 m out each side, over water only, in the deck's own
-plane. On the way: decks joined to the roads units already use, never through a farmyard; a mod's buildings no
-longer open the water beside the map's own bridges; the floor file keeps the game's own rules (men stopped lying
-sideways). The movement-map reading is shared with DomesticNukes and his Claude.
-
-</details>
+Everything we do here is to help the community and bring this game to a better place. R.U.S.E. is one of my favorite
+games ever, and I just want to make it better.
 
 ## Install in three steps
 
@@ -474,300 +235,29 @@ sideways). The movement-map reading is shared with DomesticNukes and his Claude.
    `RUSE-Launcher-Setup-<version>.exe` for players, `RUSE-Studio-Setup-<version>.exe` for modders. Windows only. You
    need R.U.S.E. in your Steam library, installed.
 2. **Run it.** No admin rights and no Python needed. The installers are not code-signed yet, so Windows may warn once
-   ("Windows protected your PC"): click **More info**, then **Run anyway**. Your browser may also warn about a new
-   download. To check you have the real file, compare its SHA-256 with the one in the release notes.
-3. **Start it** from the Start menu. It finds R.U.S.E. through Steam. In the launcher, pick a mod set and press
+   ("Windows protected your PC"): click **More info**, then **Run anyway**. To check you have the real file, compare
+   its SHA-256 with the one in the release notes.
+3. **Start it** from the Start menu. It finds R.U.S.E. through Steam. In the Launcher, pick a mod set and press
    **Play**. In the Studio, build the game index once when it asks (about a minute), then pick or make a mod.
 
-Uninstalling keeps your mods and settings. The apps need Microsoft Edge WebView2, which Windows 11 has; if a PC
-doesn't, the app says so. The Studio's 3D map view needs the internet the first time it opens (it loads its 3D
-library from the web). To try what is merged but not released yet: the repo's **Actions** tab, the latest **apps**
-run, **Artifacts** (needs a GitHub login; the files expire after 90 days). More in
-[installers/README.md](installers/README.md), including what to do about browser warnings.
-
-Stuck on something? See [Questions? Ask any AI](#questions-ask-any-ai) at the bottom of this page.
-
-## How we got here
-
-The big steps so far, newest first. Each one was played in the game before it went out.
+Uninstalling keeps your mods and settings. The apps need Microsoft Edge WebView2, which Windows 11 has. More in
+[installers/README.md](installers/README.md).
 
 <details>
-<summary><b>Units from other eras, at their real size and behind research (Studio 0.9.8.2)</b></summary>
-
-<p align="center">
-  <img src="docs/images/era-amx13-research.jpg" alt="R.U.S.E. in game: the Armor Base's build menu, a unit from another era researched after the game's own tanks, with its own card" width="640">
-  <br>
-  <sub>A unit from another era in the Armor Base's research row, after the game's own tanks, with its own card.</sub>
-</p>
-
-The Units tab's eras have their units: 366 from WWI to today, every one another maker's 3D model shared for free
-(CC0 or CC BY), credited, fitted to the game and given its nation's markings. Each era downloads in the Studio when
-you pick it, from our GitHub, every file checked, and updates itself as more are finished.
-
-Added to a mod, an era unit is a new unit at its real size (its width, or a plane's wingspan, at the game's own
-scale), with its own card, researched from any unit of its nation's building, the mod's own era units too: a Cold War
-tank, then a modern one. Seen in the game: they load at once, their own cards in the build menus, the research
-tabs and a chain, their own models, the sizes. Not tried yet: towed guns.
-
-On the way: a unit researched from another army's unit left the game on an endless loading screen; **New unit…** now
-drops that link, and the build refuses one. And the apps open in the player's web browser where their own window
-can't, for Linux and Steam Deck through Proton (not tried on Linux yet).
-
-</details>
-
-<details>
-<summary><b>LittleGroove's tools, music, and a nation made into another (Studio 0.9.8.1)</b></summary>
-
-LittleGroove's RUSE-Mod-Manager had tools ours didn't. They're in the Studio now: the **Economy** tab (starting money,
-income, supply depots and starting ruse cards), the **AI** tab (how the computer players play, and the game's map and
-mission scripts to read), the **Upgrade box**, **All values**, the **Files** tab, and the missions' scripts, checks and
-menu order. The starting money and cards and the AI tab were seen in the game; the rest isn't tried there yet.
-
-The **Music** tab lists every song by where it plays. Replace one in a small editor (cut, fade, volume), add new songs
-to the battle lists, change a unit's voice lines on its page, or give a map its own background sound. The songs, the
-new songs and the voice lines were heard in the game.
-
-The **Nations** tab makes one of the game's seven nations into another: China in Italy's place, with its name in the
-lobby and for its army, and a flag made from any picture. Seen in the game: "China" in the lobby's list, and its flag
-beside the player's name in a match. The lobby's own flag button still shows the game's flag.
-
-Blank Terrain's ground is now made from the terrain strokes, not the game map's ground pushed about: round shores up
-close and from high up, no dents in hilltops, buildings and tanks sitting right on it. Seen in the game on test maps.
-
-**Why there are no navy maps yet.** We tried maps of islands for full-scale battles with ships, and the game itself
-stands in the way: a land unit sent to an island it can't reach crashes the game; joining the islands with a strip of
-land stops the crash, but then the computer just sends its infantry across it; with no road between the islands, no
-building can be placed anywhere; and with the game's own weapons, ships and land units can barely hurt each other.
-Map data alone can't fix the crash, so navy maps wait. Blank Ocean stays in the Studio, with that warning on it.
-
-</details>
-
-<details>
-<summary><b>New maps start blank, with their own menu pictures (Studio 0.9.8)</b></summary>
-
-A new map no longer has to start as a full copy of a game map. **Duplicate map** can start it as **Blank Terrain**,
-flat land with nothing on it but the starting points, or as **Blank Ocean**, the sea over the whole map. The tools
-under them work on any map: take out the map's own roads, bridges, depots, units and names, let its sectors cover the
-whole map so all of it can be taken, and lay a thin layer of water over all of it.
-
-And every map can have its own pictures in the game's menus: a PNG of yours, or a picture made in Blender from the
-map's own 3D model, with the white start dots drawn where its players start. Seen in the game on BATTLES > Blank
-Ocean, Blank Terrain, and a copy of D-Day with pictures made in Blender beside the game's own D-Day.
-
-Fixed on the way, each seen in the game: a unit built on a drained sea crashed the game, old river water stood as
-walls along a map's edge, and erased lighthouses still shone over the sea. Not tried yet: units under Blank Ocean's
-water.
-
-</details>
-
-<details>
-<summary><b>Very large map mods now build in minutes (Studio 0.9.7)</b></summary>
-
-The most extreme map mod we have drains the whole sea off BATTLES > D-Day: 154 flatten strokes, 135 paint strokes
-and 33,385 buildings erased. Its first build took about four hours. Now it builds in **under 10 minutes**, with the
-same game files as before: every step was checked byte for byte against the old one on that map. It took us roughly
-15 hours.
-
-Where it was stuck, and why:
-
-- **One cause for three problems.** The build opens dried ground to units in zones, and it made them 15 m wide, the
-  size that suits a river. A drained sea is a quarter of a million of those: more than a map's movement can hold, so
-  the build was refused as too big, or ran for hours, or used up 14 GB of memory and stopped the PC. A wide dried bed
-  now gets zones as big as it has room for.
-- **Where units can go, worked out in parallel.** Infantry and vehicles each have their own movement, and nothing ties
-  the two, so they're worked out on two cores at once, while the ground is being painted. Their heaviest sums now run
-  on whole grids at once instead of point by point.
-- **Painting the ground.** That mod's paint strokes reach about 2,500 of the ground's picture tiles, and each tile was
-  worked out pixel by pixel. Now a run of strokes of one colour is worked out at once, a tile painted over completely
-  forgets what was under it, the tiles are shared across the PC's cores, and painted tiles are kept between builds:
-  an unchanged map repaints in half a second.
-- **Mending riverbeds.** A dried riverbed's banks get painted over from both sides. That used to search the whole
-  map; now it looks only where the old water was, on whole grids, across the cores.
-- **The rest.** Reshaping the ground went from over three minutes to about 25 s, erasing most of a map's scenery from
-  about four minutes to seconds, and the check that warns when an open takes in water from 34 s to 7.5 s.
-
-Everything the build works out is kept between builds, so a rebuild after a small change takes a fraction of the first
-one. And the Studio's **Export mod…** puts what the build worked out for a map's movement into the mod, so a player's
-first build of it is shorter. Not tried in the game yet: units on a drained sea. And navy maps aren't worked out yet:
-a drained or painted sea builds and loads, but the water still shows. We're still working on making it faster.
-
-</details>
-
-<details>
-<summary><b>Import your own models: an M1 Abrams in R.U.S.E. (Studio 0.9.6)</b></summary>
-
-RUSE Studio can now give a new unit a 3D model of its own, from Blender or any 3D tool. On the new unit's page, pick a
-**.3ds** or **.glb** with **Import model…**: the Studio fits it to the unit it copies (its size, its turret on that
-unit's turret, its pictures as textures of its own) and the game drives and turns it like the original. How:
-[Import a model](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Import-a-Model).
-
-**The first model brought into R.U.S.E. from another 3D program:** an M1 Abrams, a new US tank beside the Sherman.
-Seen in the game: bought at the Armor Base with its own card, built, turning its turret. Get it as a mod in
-[Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods) (model: "Tank Abrams" by ags, free at
-[downloadfree3d.com](https://downloadfree3d.com/3d-models/vehicles/tank/tank-abrams/)). Early: its tracks and wheels
-don't turn yet.
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-abrams-two-at-base.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks at a US base, imported with RUSE Studio" width="400"><br>
-      <sub>Two M1 Abrams at the base: a model from another 3D program, in the game.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-abrams-on-road.jpg" alt="R.U.S.E. in game: an M1 Abrams just built, by a farm track near the base" width="400"><br>
-      <sub>Just built, with its own card in the Armor Base menu.</sub>
-    </td>
-  </tr>
-</table>
-
-Also in 0.9.6: **Test in game** (and the Launcher's **Play**) start at once when nothing changed, builds reuse what
-they made last time, **Delete map** for the maps you make, and **Erase the whole map**.
-
-</details>
-
-<details>
-<summary><b>Units get their own look, and our first new unit (Studio 0.9.5)</b></summary>
-
-See any unit in 3D on its page in RUSE Studio, repaint it in Blender, and make its card in the build menu from the
-3D view. Our firsts, all seen in the game:
-
-- **The first unit repainted by a mod:** a red Sherman, up close and from far.
-- **The first unit painted in Blender** and brought back into the game.
-- **The first build-menu card made in the Studio,** in the game's own Armor Base menu.
-- **The first new unit with a 3D model of its own,** beside the game's: the Tall Sherman, next to the Sherman. Made in
-  testing; making your own models in the Studio came in 0.9.6 (above).
-- **The first mission of our own** played to a victory: a new Operation with its own goals, units and an artillery
-  strike. Made in testing.
-
-<img src="docs/images/studio-unit-3d.jpg" alt="RUSE Studio: the Sherman's page with its values, its 3D model turning on the right, and Repaint in Blender under it" width="800">
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-two-shermans.jpg" alt="R.U.S.E. in game: two Shermans side by side, the left one a new unit with a taller model of its own" width="400"><br>
-      <sub>Two Shermans: the game's, and a new unit with a model of its own.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-tall-sherman-menu.jpg" alt="R.U.S.E. in game: the Armor Base build menu with the new Tall Sherman under the Sherman" width="400"><br>
-      <sub>The new unit in the Armor Base's build menu.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="400"><br>
-      <sub>Repainted by a mod.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/units-card-in-menu.jpg" alt="R.U.S.E. in game: the Sherman's build-menu card replaced by one made from RUSE Studio's 3D view" width="400"><br>
-      <sub>A card made from the Studio's 3D view, in the game's build menu.</sub>
-    </td>
-  </tr>
-</table>
-
-</details>
-
-<details>
-<summary><b>Roads that look like the map's own (Studio 0.9)</b></summary>
-
-A road you draw in RUSE Studio now looks like the map's own roads, from high up and right down at the ground: the
-map's own asphalt with its dashed centre line, gravel shoulders fading into the grass, nothing growing through it.
-Tested in the game on D-Day.
-
-<table>
-  <tr>
-    <th width="50%">Before</th>
-    <th width="50%">After</th>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/roads-2-pale.jpg" alt="R.U.S.E. in game: an earlier try, the new roads pale and blotchy up close" width="400">
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. in game on D-Day: a new road up close, asphalt with a dashed centre line and gravel shoulders" width="400">
-    </td>
-  </tr>
-</table>
-
-It took a lot of time and a lot of tests, longer than the bridges.
-
-</details>
-
-<details>
-<summary><b>Bridges work. Map making starts here.</b></summary>
-
-Reshape any R.U.S.E. map. Hills, towns, roads, and bridges your units actually cross. Draw a road in RUSE Studio.
-Where it meets water, the build puts the map's own kind of bridge across it, and tanks, infantry, and supply trucks
-cross on the deck. Roads and bridges are what new maps get built on, so this is the piece everything else stands on.
-
-<p align="center">
-  <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. in game: two infantry squads and a supply truck crossing a new bridge, every man standing at the deck's height" width="800">
-  <br>
-  <sub>Infantry and a supply truck crossing a new bridge at deck height, in the game.</sub>
-</p>
-
-<table>
-  <tr>
-    <th width="50%">Before</th>
-    <th width="50%">After</th>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-before-in-the-river.jpg" alt="R.U.S.E. in game: the new bridges before the fix, a tank and squads standing in the river under the decks" width="400">
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/images/bridge-two-crossings.jpg" alt="R.U.S.E. in game on D-Day: two new bridges over the same river, units crossing both" width="400">
-    </td>
-  </tr>
-</table>
-
-Twelve hours, six rounds of testing.
-
-</details>
-
-<details>
-<summary><b>Status</b></summary>
+<summary><b>Status, docs and contributing</b></summary>
 
 [![Launcher release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=launcher-v*&label=launcher)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
 [![Studio release](https://img.shields.io/github/v/release/sneadtristen6/R.U.S.E-2.0-Project?filter=studio-v*&include_prereleases&label=studio)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio)
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.6) &middot; **Studio** for modders, a preview (latest: 0.9.8.6) &middot; Windows &middot; needs R.U.S.E. on Steam
-
-Early, and moving fast. **Proven in the game:** value and text mods, new names in all ten languages, new units that
-are built and fight, maps with their own pack, terrain texture tiles we write ourselves, a first `.rmod` check
-(two community mods in one modded copy), and on 2026-09-30: terrain brushes (hills, pits, level
-ground that units drive on and take orders on), a moved starting point, painted cover that hides infantry, placed
-buildings (at up to 8× their size), and both apps updating themselves; on 2026-10-01, roads with new bridges
-that tanks, infantry and supply trucks cross, infantry following new roads, a bridge placed by hand, a building at
-10× standing on the ground, a dried riverbed units walk, and a cleared wood tanks drive into and infantry no longer
-hide in; on 2026-10-03 and 04, units repainted by a mod and in Blender, a build-menu card made in the Studio, a
-second Sherman with a 3D model of its own, a mission of our own played to a victory, a new Operation, another nation's
-units in a campaign map, erased buildings opening their ground, a new unit's own card, and an M1 Abrams imported from
-another 3D program; on 2026-10-05, a drained sea units are built and move on, new maps that start blank (Blank
-Terrain, Blank Ocean) with sectors over the whole map, and a map's own pictures in the game's menus, made in Blender
-or from a PNG, with the start dots where its players start; by 2026-10-08, the Economy tab's starting money and cards,
-the AI tab, replaced and new songs and voice lines, a nation with a new name in the lobby and a new flag in a match,
-and Blank Terrain's own ground; by 2026-10-09, units from other eras that load at once, are researched in a chain,
-stand at their real size, with their own models. **Not yet checked in the game:** a new unit made in the Studio's window, mod sets made
-in the launcher's window, a mod exported as one file, sharing a load order, units a skirmish spawns, Browse mods, and
-from 0.9.8.1 the Upgrade box, All values, Files, the missions' tools and background sounds, and from 0.9.8.2 towed
-guns from other eras and the apps on Linux.
-
-</details>
-
-<details>
-<summary><b>Docs</b></summary>
+**Launcher** for players (latest: 0.4.8.7) &middot; **Studio** for modders, a preview (latest: 0.9.8.7) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
-**[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)**: questions, ideas, bug reports and
-mods to show &middot; **[Discord](https://discord.gg/DbufY4Jfg)**: talk with the community and the makers &middot;
-**[Contributing](CONTRIBUTING.md)** &middot; **[Code of conduct](CODE_OF_CONDUCT.md)**
-
-| Doc | What it covers |
-|---|---|
-| [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md) | draft spec of the mod package format |
-| [docs/ANNOUNCEMENTS.md](docs/ANNOUNCEMENTS.md) | what we post to the community, newest first |
+**[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;
+**[Discord](https://discord.gg/DbufY4Jfg)** &middot; **[Contributing](CONTRIBUTING.md)** &middot;
+**[Code of conduct](CODE_OF_CONDUCT.md)** &middot; [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md): everything a mod can do,
+file by file.
 
 </details>
 
@@ -849,7 +339,7 @@ py -3 -m unittest discover -s tests
 
 ## Credits
 
-R.U.S.E. 2.0 stands on three people's work. None of it would be here without them.
+R.U.S.E. 2.0 stands on other people's work. None of it would be here without them.
 
 ### ProLution: the godfather of R.U.S.E. modding
 
@@ -858,19 +348,18 @@ R.U.S.E. 2.0 stands on three people's work. None of it would be here without the
   [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on ProLution's terrain
   format work (released CC0), and its encoder is ported from ProLution's reference encoder.
 
-### LittleGroove: the first
+### LittleGroove: the first mod manager
 
-- **LittleGroove was the first to give R.U.S.E. a real mod manager:** RUSE-Mod-Manager and its `.rmod` format.
-  Every community mod in the Launcher works because of it.
-- **LittleGroove's engine is in ours,** used as it is: [`src/ruse_mod_engine`](src/ruse_mod_engine/) applies
-  `.rmod` mods in every build, and moves a mod made for another game build with LittleGroove's version maps. It's
-  why the whole program is GPL-3.0.
-- **LittleGroove's map editor led the way for ours:** supply depots and HQs sticking to roads (LittleGroove's
-  measured distances), the opening camera each match starts on, and turning it round the HQ all come from that work.
-  So does saving a changed scenario so the game loads it, and the units editor's ammo types and flag lists.
-- **LittleGroove's tools are in the Studio and the Launcher** (Studio 0.9.8.1, Launcher 0.4.8.1): the Economy and AI
-  tabs, the script viewer, the Upgrade box, All values, the game's files, the missions' tools, and Convert an old mod
-  all come from his RUSE-Mod-Manager.
+- **The first real mod manager for R.U.S.E.:** RUSE-Mod-Manager and its `.rmod` format. Every community mod in the
+  Launcher plays because of it.
+- **His engine is in ours,** used as it is: [`src/ruse_mod_engine`](src/ruse_mod_engine/) applies `.rmod` mods in
+  every build, and moves a mod made for another game build with his version maps. It's why the whole program is
+  GPL-3.0.
+- **His map editor led the way for ours:** supply depots and HQs sticking to roads (his measured distances), the
+  opening camera each match starts on, and saving a changed scenario so the game loads it; and in the units editor,
+  the ammo types and flag lists.
+- **His tools, brought into the Studio and the Launcher:** the Economy and AI tabs, the script viewer, the Upgrade
+  box, All values, the game's files, the missions' tools, and Convert an old mod.
 
 ### DomesticNukes: the map maker's groundwork
 
@@ -894,19 +383,27 @@ each was fitted to the game (turned and scaled) and given its nation's markings.
 
 **sneadtristen6 is the mind behind R.U.S.E. 2.0.** The ideas are his, he decides what it becomes, and he plays
 every change in the game before it goes out. **Claude**, Anthropic's AI, helps shape his ideas into plans and writes
-the code. Side by side since September 2026, in its first weeks they got the game to do this:
+the code. Side by side since September 2026, they built:
 
+- **New 3D models in the game:** the model importer that brings a unit's model in from Blender or any 3D tool (an M1
+  Abrams was the first), units repainted in Blender, squads' own uniforms, build-menu cards, and 366 units from other
+  eras at their real size.
+- **Texture work:** Map Paint and its texture library: a map's ground painted with the game's own textures, ground
+  from anywhere on the map, or pictures of your own.
 - **New maps.** On 3 October 2026 R.U.S.E. got new maps: listed in BATTLES beside the game's own, each playing its
   own ground. To find the limit, 101 went in at once; all of them showed and played. As far as we know, they're the
-  first new maps the game has had since D-Day.
+  first new maps the game has had since D-Day. New maps start blank, as land or open sea, with their own menu
+  pictures.
 - **A map editor that works in the game:** ground that units drive and fight on, lakes and dried rivers, roads that
   look like the map's own from high up and right down at the ground, bridges that tanks, infantry and supply trucks
   cross, buildings, props and trees that show at every distance, cover, and where units can go.
-- **Units:** change any of them, make new ones, and give a nation another army's tanks and planes.
+- **Units:** change any of them, make new ones, give a nation another army's tanks and planes, planes in any role,
+  recon vehicles, weapons that hit planes, every flag and number explained, and a nation made into another.
+- **Music and missions:** songs and voice lines replaced in the Studio, and missions of your own.
 - **Two apps in the game's ten languages,** the Studio for modders and the Launcher for players, that never touch
-  the game's own folder.
+  the game's own folder, with a check that stops a mod that would break the game before it starts.
 
-It's early, and there's much more to come. Thank you to the three above, without whom none of it would have started.
+It's early, and there's much more to come. Thank you to everyone above, without whom none of it would have started.
 
 ### (Anonyme) Oozaru: testing and debugging
 

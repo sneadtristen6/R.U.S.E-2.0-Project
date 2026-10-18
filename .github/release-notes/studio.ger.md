@@ -1,6 +1,22 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.7:** Wiederherstellen und Platziertes auswählen, Platzieren als Raster / Kasten / Pfad, größere leere Karten, und jeder Wert erklärt.
+
+- **Behoben, von einem Modder gemeldet:** bei einer neuen Einheit aus einer von 17 Einheiten des Spiels (Königstiger, Atomgeschütze, V2...) erschien das Feld zum Ändern ihres Modells nie. Das Studio findet diese Modelle jetzt, und findet es eines nicht, sagt das Feld es, statt zu verschwinden.
+- **Der KI-Reiter erklärt:** jeder Wert der Computerspieler sagt, was er tut, in einfachen Einheiten, und welcher in einer Schlacht für jede Schwierigkeit und jedes Profil gilt; Modi, Schwierigkeiten, Profile und Einheiten werden nach Namen gewählt.
+- **Jeder Wert erklärt, überall:** Alle Werte, der Einheiten-Reiter, die Pinsel des Karten-Reiters (Größe in Metern, Stärke nach dem, was sie tut) und der Musik-Reiter (wann jede Schlachtliste spielt).
+- **Der Wirtschaft-Reiter, Normal und Nuklear getrennt:** wo sich die beiden Modi unterscheiden, hat jeder eigene Felder. Eine Änderung nur am Nuklear-Modus wurde im Spiel noch nicht getestet.
+- **Wiederherstellen und auswählen:** Wiederherstellen in jedem Kartenwerkzeug (Strg+Y oder Strg+Umschalt+Z, und eine Schaltfläche); in den Leisten Gebäude und Objekte & Bäume Platziertes auswählen (Klick, Umschalt+Klick oder ein Rahmen), verschieben, drehen, in der Größe ändern oder löschen, auch die der Karte selbst.
+- **Raster, Kasten und Pfad:** Reihen von Objekten als Raster oder Kasten, Gebäude zur Straße ausgerichtet, und Hecken, Baumreihen und Baumstreifen entlang eines Pfads, mit Deckung.
+- **Größere leere Karten:** das Fenster Kartengröße einer neuen leeren Karte fügt an jeder Seite Geländestreifen hinzu oder nimmt sie weg, und Sektoren erstellen füllt sie mit Sektoren.
+- **Menüs und Bedienung:** Zahlenzeilen statt Schiebereglern, eine Suche mit #Tags und den letzten Suchen, aufklappende Karten, und neu belegbare Tasten (Tauschen, Übernehmen, Abbrechen).
+- **Sicherer:** Schließen mit ungespeicherter Arbeit fragt zuerst; eine Karte mit neu abgeschnittenem Gelände wird vor Im Spiel testen abgelehnt; ein Mod aus einem älteren Studio wird nach einer Sicherung aktualisiert (Diesen Mod aktualisieren); behaltene Build-Ergebnisse bleiben nach einem Studio-Update gültig.
+- **Jede Meldung in zehn Sprachen:** die Fehler des Studios und die Zeilen des Builds.
+- **Neue Einheit** lässt die zwei Einheiten ohne Modell als Vorlage weg (das SOLO-57-mm-Geschütz und die SOLO-Fallschirmjäger).
+- Noch nicht im Spiel getestet: mit Raster, Kasten und Pfad Platziertes, verschobene Objekte und eine größere im Studio gemachte Karte.
+- **Noch fehlerhaft, Nutzung auf eigene Verantwortung:** die Texturen von Map Paint und beide leeren Karten (Leeres Gelände und Leerer Ozean).
+
 **0.9.8.6:** jede Flag und jede Zahl der Einheiten erklärt, die Kartenwerkzeuge zeigen, was sie getan haben, und leere Karten richtig dargestellt.
 
 - **Einheiten-Flags erklärt:** jede Flag auf der Seite einer Einheit zeigt ihren Namen, und beim Darüberfahren sieht man, was sie tut, wie man sie benutzt und wie sicher wir sind. **Flag-Handbuch: alle Flags erklärt** listet alle 105, mit Suche. Das Studio prüft die Flags einer Einheit: ein bekannter Absturz (die Flags eines Lastwagens an etwas, das kein Lastwagen ist, ein bewaffnetes Flugzeug mit der Aufklärer-Flag ohne die Jäger-Flag) zeigt seine Lösung, und das Studio startet das Spiel nicht, bis er behoben ist; Flags, die eine Einheit voraussichtlich kaputt machen, geben eine Warnung.

@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.7:** it plays mods made with Studio 0.9.8.7.
+
+- **Mods made with Studio 0.9.8.7 play:** objects moved or placed in grids, boxes and along paths, bigger blank maps with their sectors, and Nuclear-only economy changes.
+- **The build's lines in your language**, in all ten.
+- **Kept build results stay good after an update.**
+- **Still buggy, play at your own discretion:** maps made with Map Paint's textures, and blank maps (Blank Terrain, Blank Ocean).
+
 **0.4.8.6:** it plays mods made with Studio 0.9.8.6.
 
 - **Mods made with Studio 0.9.8.6 play:** blank maps with shadows over flat ground, what's placed where the copied map had sea drawn, and the camera's floor on the new ground.

@@ -1,6 +1,22 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.7:** Ripeti e seleziona ciò che è piazzato, piazzamento a Griglia / Riquadro / Percorso, mappe vuote più grandi, e ogni valore spiegato.
+
+- **Corretto, segnalato da un modder:** su una nuova unità fatta da una di 17 unità del gioco (il Tigre reale, i cannoni atomici, la V2...), la casella per cambiarne il modello non compariva mai. Lo Studio ora trova quei modelli, e se non ne trova uno la casella lo dice invece di sparire.
+- **La scheda IA spiegata:** ogni valore dei giocatori del computer dice cosa fa, in unità semplici, e quale vale in battaglia per ogni difficoltà e profilo; modalità, difficoltà, profili e unità scelti per nome.
+- **Ogni valore spiegato, ovunque:** Tutti i valori, la scheda Unità, i pennelli della scheda Mappe (dimensione in metri, forza secondo ciò che fa) e la scheda Musica (quando suona ogni lista di battaglia).
+- **La scheda Economia, Normale e Nucleare separate:** dove le due modalità differiscono, ognuna ha le sue caselle. Una modifica solo alla Nucleare non è ancora stata provata in gioco.
+- **Ripeti e seleziona:** Ripeti in ogni strumento della mappa (Ctrl+Y o Ctrl+Maiusc+Z, e un pulsante); nei riquadri Edifici e Oggetti & alberi seleziona ciò che è piazzato (clic, Maiusc+clic o un riquadro), trascinalo, ruotalo, ridimensionalo o eliminalo, anche quelli della mappa.
+- **Griglia, Riquadro e Percorso:** file di oggetti a griglia o a riquadro, edifici rivolti alle strade, e siepi, filari e fasce d'alberi lungo un percorso, con copertura.
+- **Mappe vuote più grandi:** la finestra Dimensione mappa di una nuova mappa vuota aggiunge o toglie strisce di terreno su ogni lato, e Crea settori la riempie di settori.
+- **Menu e sensazioni:** righe di numeri invece dei cursori, una ricerca con #tag e le ricerche recenti, schede a comparsa, e tasti da riassegnare (Scambia, Prendilo, Annulla).
+- **Più sicuro:** chiudere con lavoro non salvato chiede prima; una mappa con nuovo terreno tagliato fuori è rifiutata prima di Prova in gioco; una mod fatta con uno Studio più vecchio viene aggiornata dopo un backup (Aggiorna questa mod); i risultati di build tenuti restano validi dopo un aggiornamento dello Studio.
+- **Ogni messaggio in dieci lingue:** gli errori dello Studio e le righe della build.
+- **Nuova unità** lascia fuori le due unità senza modello di partenza (il cannone SOLO da 57 mm e i paracadutisti SOLO).
+- Non ancora provato in gioco: ciò che è piazzato con Griglia, Riquadro e Percorso, gli oggetti spostati e una mappa più grande fatta nello Studio.
+- **Ancora con bug, usale a tua discrezione:** le texture di Map Paint e tutte e due le mappe vuote (Terreno vuoto e Oceano vuoto).
+
 **0.9.8.6:** ogni flag e ogni numero delle unità spiegati, gli strumenti della mappa mostrano cosa hanno fatto, e le mappe vuote disegnate bene.
 
 - **I flag delle unità spiegati:** ogni flag nella pagina di un'unità mostra il suo nome, e passandoci sopra si vede cosa fa, come usarlo e quanto ne siamo sicuri. **Guida ai flag: tutti spiegati** li elenca tutti e 105, con una ricerca. Lo Studio controlla i flag di un'unità: un crash noto (i flag di un camion su qualcosa che non è un camion, un aereo armato con il flag da ricognizione senza quello da caccia) mostra la sua correzione, e lo Studio non avvia il gioco finché non è corretto; i flag che dovrebbero rompere un'unità danno un avviso.

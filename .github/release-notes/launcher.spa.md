@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.7:** ejecuta los mods hechos con Studio 0.9.8.7.
+
+- **Los mods hechos con Studio 0.9.8.7 se juegan:** objetos movidos o colocados en cuadrícula, en caja y a lo largo de caminos, mapas en blanco más grandes con sus sectores, y cambios de economía solo del modo Nuclear.
+- **Las líneas de la construcción en tu idioma**, en los diez.
+- **Los resultados de construcción guardados siguen valiendo tras una actualización.**
+- **Todavía con fallos, juégalo bajo tu propio criterio:** los mapas hechos con las texturas de Map Paint, y los mapas en blanco (Terreno en blanco, Océano en blanco).
+
 **0.4.8.6:** ejecuta los mods hechos con Studio 0.9.8.6.
 
 - **Los mods hechos con Studio 0.9.8.6 se juegan:** mapas en blanco con sombras sobre el suelo llano, lo colocado donde el mapa copiado tenía mar dibujado, y el suelo de la cámara sobre el nuevo terreno.

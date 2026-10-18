@@ -1,6 +1,22 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.7:** Rehacer y seleccionar lo colocado, colocar en Cuadrícula / Caja / Camino, mapas en blanco más grandes, y cada valor explicado.
+
+- **Corregido, avisado por un modder:** en una unidad nueva hecha a partir de 17 unidades del juego (el Tigre Real, los cañones atómicos, la V2...), la casilla para cambiar su modelo nunca aparecía. El Studio encuentra ahora esos modelos, y si no encuentra uno, la casilla lo dice en vez de desaparecer.
+- **La pestaña IA explicada:** cada valor de los jugadores del ordenador dice qué hace, en unidades sencillas, y cuál cuenta en una batalla para cada dificultad y perfil; modos, dificultades, perfiles y unidades elegidos por su nombre.
+- **Cada valor explicado, en todas partes:** Todos los valores, la pestaña Unidades, los pinceles de la pestaña Mapas (tamaño en metros, fuerza según lo que hace) y la pestaña Música (cuándo suena cada lista de batalla).
+- **La pestaña Economía, Normal y Nuclear por separado:** donde los dos modos difieren, cada uno tiene sus propias casillas. Un cambio solo del modo Nuclear aún no se ha probado en el juego.
+- **Rehacer y seleccionar:** Rehacer en cada herramienta del mapa (Ctrl+Y o Ctrl+Mayús+Z, y un botón); en las bandejas Edificios y Objetos y árboles, selecciona lo colocado (clic, Mayús+clic o un recuadro), arrástralo, gíralo, cambia su tamaño o bórralo, también lo del propio mapa.
+- **Cuadrícula, Caja y Camino:** filas de objetos en cuadrícula o en caja, edificios de cara a las carreteras, y setos, hileras y franjas de árboles a lo largo de un camino, con cobertura.
+- **Mapas en blanco más grandes:** la ventana Tamaño del mapa de un mapa en blanco nuevo añade o quita franjas de terreno en cualquier lado, y Hacer sectores lo llena de sectores.
+- **Menús y manejo:** filas de números en vez de deslizadores, una búsqueda con #etiquetas y tus búsquedas recientes, tarjetas emergentes, y teclas reasignables (Cambiar, Quedársela, Cancelar).
+- **Más seguro:** cerrar con trabajo sin guardar pregunta antes; un mapa con terreno nuevo aislado se rechaza antes de Probar en el juego; un mod hecho con un Studio más antiguo se actualiza tras una copia de seguridad (Actualizar este mod); los resultados de construcción guardados siguen valiendo tras una actualización del Studio.
+- **Cada mensaje en diez idiomas:** los errores del Studio y las líneas de la construcción.
+- **Unidad nueva** deja fuera las dos unidades sin modelo del que partir (el cañón SOLO de 57 mm y los paracaidistas SOLO).
+- Aún no probado en el juego: lo colocado con Cuadrícula, Caja y Camino, los objetos movidos y un mapa más grande hecho en el Studio.
+- **Todavía con fallos, úsalo bajo tu propio criterio:** las texturas de Map Paint y los dos mapas en blanco (Terreno en blanco y Océano en blanco).
+
 **0.9.8.6:** cada bandera y cada número de las unidades explicados, las herramientas del mapa muestran lo que hicieron, y los mapas en blanco bien dibujados.
 
 - **Las banderas de las unidades explicadas:** cada bandera en la página de una unidad muestra su nombre, y al pasar el ratón se ve qué hace, cómo usarla y lo seguros que estamos. **Guía de banderas: todas explicadas** lista las 105, con una búsqueda. El Studio revisa las banderas de una unidad: un cierre conocido del juego (las banderas de un camión en algo que no es un camión, un avión armado con la bandera de reconocimiento sin la de caza) muestra su arreglo, y el Studio no inicia el juego hasta que esté arreglado; las banderas que se espera que rompan una unidad dan un aviso.

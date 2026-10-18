@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.6 and Launcher 0.4.8.6: every unit flag and number explained, and map tools that show what they did"
 category: Announcements
 order: 11
+skip: never posted; 0.9.8.7's announcement covers it (the owner, 2026-10-18: "Push to GitHub. Public and private.")
 ---
 **RUSE Studio 0.9.8.6** and **RUSE Launcher 0.4.8.6** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

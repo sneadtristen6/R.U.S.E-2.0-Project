@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.7:** spouští mody vytvořené ve Studiu 0.9.8.7.
+
+- **Mody ze Studia 0.9.8.7 hrají:** objekty přesunuté nebo umístěné mřížkou, obdélníkem a podél cest, větší prázdné mapy s jejich sektory a změny ekonomiky jen Jaderného režimu.
+- **Řádky sestavení ve vašem jazyce**, ve všech deseti.
+- **Uchované výsledky sestavení zůstanou platné i po aktualizaci.**
+- **Stále chybové, hrajte na vlastní uvážení:** mapy vytvořené s texturami Map Paint a prázdné mapy (Prázdný terén, Prázdný oceán).
+
 **0.4.8.6:** spouští mody vytvořené ve Studiu 0.9.8.6.
 
 - **Mody ze Studia 0.9.8.6 hrají:** prázdné mapy se stíny na rovném terénu, umístěné věci tam, kde kopírovaná mapa měla moře, nakreslené, a podlaha kamery na novém terénu.

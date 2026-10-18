@@ -1,6 +1,22 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.7:** Znovu a výběr umístěného, umisťování mřížkou / obdélníkem / cestou, větší prázdné mapy, a každá hodnota vysvětlená.
+
+- **Opraveno, nahlášeno modderem:** u nové jednotky vytvořené z jedné ze 17 jednotek hry (Královský tygr, atomová děla, V2...) se pole pro změnu modelu nikdy neobjevilo. Studio teď tyto modely najde, a když některý nenajde, pole to řekne místo toho, aby zmizelo.
+- **Záložka AI vysvětlená:** každá hodnota počítačových hráčů říká, co dělá, v jednoduchých jednotkách, a která platí v bitvě pro každou obtížnost a profil; režimy, obtížnosti, profily a jednotky se vybírají podle jména.
+- **Každá hodnota vysvětlená, všude:** Všechny hodnoty, záložka Jednotky, štětce záložky Mapy (velikost v metrech, síla podle toho, co dělá) a záložka Hudba (kdy hraje který bitevní seznam).
+- **Záložka Ekonomika, Normální a Jaderný zvlášť:** kde se oba režimy liší, má každý svá pole. Změna jen Jaderného režimu ještě nebyla ve hře vyzkoušena.
+- **Znovu a výběr:** Znovu v každém nástroji mapy (Ctrl+Y nebo Ctrl+Shift+Z a tlačítko); v panelech Budovy a Předměty a stromy vyberte umístěné (klik, Shift+klik nebo rámeček), přetáhněte, otočte, změňte velikost nebo smažte, i objekty samotné mapy.
+- **Mřížka, Obdélník a Cesta:** řady objektů v mřížce nebo obdélníku, budovy čelem k silnicím, a živé ploty, stromořadí a pásy stromů podél cesty, s krytem.
+- **Větší prázdné mapy:** okno Velikost mapy nové prázdné mapy přidá nebo ubere pruhy terénu na kterékoli straně a Vytvořit sektory ji vyplní sektory.
+- **Nabídky a ovládání:** řádky čísel místo posuvníků, hledání s #štítky a nedávnými hledáními, vyskakovací karty, a klávesy k přeřazení (Prohodit, Vzít, Zrušit).
+- **Bezpečněji:** zavření s neuloženou prací se nejdřív zeptá; mapa s nově odříznutým terénem se odmítne před Testem ve hře; mod ze staršího Studia se aktualizuje po záloze (Aktualizovat tento mod); uchované výsledky sestavení zůstanou platné i po aktualizaci Studia.
+- **Každá zpráva v deseti jazycích:** chyby Studia a řádky sestavení.
+- **Nová jednotka** vynechá dvě jednotky bez modelu, ze kterého začít (57mm dělo SOLO a výsadkáře SOLO).
+- Zatím nevyzkoušeno ve hře: co se umístí Mřížkou, Obdélníkem a Cestou, přesunuté objekty a větší mapa vytvořená ve Studiu.
+- **Stále chybové, používejte na vlastní uvážení:** textury Map Paint a obě prázdné mapy (Prázdný terén a Prázdný oceán).
+
 **0.9.8.6:** každý flag a každé číslo jednotek vysvětlené, nástroje mapy ukazují, co udělaly, a prázdné mapy se kreslí správně.
 
 - **Flagy jednotek vysvětlené:** každý flag na stránce jednotky ukazuje svůj název a po najetí myší je vidět, co dělá, jak ho použít a jak moc si jsme jistí. **Průvodce flagy: všechny vysvětlené** vypíše všech 105, s hledáním. Studio kontroluje flagy jednotky: známý pád hry (flagy nákladního auta na něčem, co není nákladní auto, ozbrojené letadlo s flagem průzkumu bez flagu stíhačky) ukáže svou opravu a Studio nespustí hru, dokud není opraven; flagy, které asi rozbijí jednotku, dají varování.

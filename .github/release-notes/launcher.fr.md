@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.7:** il joue les mods faits avec Studio 0.9.8.7.
+
+- **Les mods faits avec Studio 0.9.8.7 se jouent :** objets déplacés ou placés en grille, en boîte et le long de chemins, cartes vierges plus grandes avec leurs secteurs, et changements d'économie du seul mode Nucléaire.
+- **Les lignes de la construction dans votre langue**, dans les dix.
+- **Les résultats de construction gardés restent bons après une mise à jour.**
+- **Encore buggé, à jouer à vos risques :** les cartes faites avec les textures de Map Paint, et les cartes vierges (Terrain vierge, Océan vierge).
+
 **0.4.8.6:** il joue les mods faits avec Studio 0.9.8.6.
 
 - **Les mods faits avec Studio 0.9.8.6 se jouent :** des cartes vierges avec des ombres sur le sol plat, ce qui est placé là où la carte copiée avait la mer dessiné, et le plancher de la caméra sur le nouveau sol.

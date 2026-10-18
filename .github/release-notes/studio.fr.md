@@ -1,6 +1,22 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.7:** Rétablir et sélectionner ce qui est placé, placement en Grille / Boîte / Chemin, des cartes vierges plus grandes, et chaque valeur expliquée.
+
+- **Corrigé, signalé par un moddeur :** sur une nouvelle unité faite à partir de 17 des unités du jeu (le Tigre royal, les canons atomiques, le V2...), la case pour changer son modèle n'apparaissait jamais. Le Studio trouve ces modèles maintenant, et s'il n'en trouve pas un, la case le dit au lieu de disparaître.
+- **L'onglet IA expliqué :** chaque valeur des joueurs de l'ordinateur dit ce qu'elle fait, en unités simples, et laquelle l'emporte en bataille pour chaque difficulté et profil ; modes, difficultés, profils et unités choisis par leur nom.
+- **Chaque valeur expliquée, partout :** Toutes les valeurs, l'onglet Unités, les pinceaux de l'onglet Cartes (taille en mètres, force selon ce qu'elle fait) et l'onglet Musique (quand chaque liste de bataille joue).
+- **L'onglet Économie, Normal et Nucléaire à part :** là où les deux modes diffèrent, chacun a ses propres cases. Un changement du seul mode Nucléaire n'a pas encore été essayé en jeu.
+- **Rétablir et sélectionner :** Rétablir dans chaque outil de carte (Ctrl+Y ou Ctrl+Maj+Z, et un bouton) ; dans les plateaux Bâtiments et Objets & arbres, sélectionnez ce qui est placé (clic, Maj+clic ou un cadre), faites-le glisser, tournez-le, redimensionnez-le ou supprimez-le, ceux de la carte aussi.
+- **Grille, Boîte et Chemin :** placez des rangées d'objets en grille ou en boîte, des bâtiments face aux routes, et des haies, alignements et bandes d'arbres le long d'un chemin, avec couvert.
+- **Des cartes vierges plus grandes :** la fenêtre Taille de la carte d'une nouvelle carte vierge ajoute ou retire des bandes de terrain de chaque côté, et Faire les secteurs la remplit de secteurs.
+- **Menus et confort :** des lignes de nombres au lieu de curseurs, une recherche avec #étiquettes et vos recherches récentes, des fiches qui s'ouvrent, et des touches à réassigner (Échanger, La prendre, Annuler).
+- **Plus sûr :** fermer le Studio avec du travail non enregistré demande d'abord ; une carte avec un nouveau terrain coupé est refusée avant Tester en jeu ; un mod fait avec un ancien Studio est mis à jour après une sauvegarde (Mettre à jour ce mod) ; les résultats de construction gardés restent bons après une mise à jour du Studio.
+- **Chaque message dans les dix langues :** les erreurs du Studio et les lignes de la construction.
+- **Nouvelle unité** laisse de côté les deux unités sans modèle de départ (le canon SOLO de 57 mm et les parachutistes SOLO).
+- Pas encore essayé en jeu : ce qui est placé avec Grille, Boîte et Chemin, les objets déplacés, et une plus grande carte faite dans le Studio.
+- **Encore buggé, à utiliser à vos risques :** les textures de Map Paint, et les deux cartes vierges (Terrain vierge et Océan vierge).
+
 **0.9.8.6:** chaque drapeau et chaque nombre des unités expliqués, les outils de carte montrent ce qu'ils ont fait, et les cartes vierges bien dessinées.
 
 - **Les drapeaux des unités expliqués :** chaque drapeau sur la page d'une unité montre son nom, et en le survolant on voit ce qu'il fait, comment s'en servir et à quel point nous en sommes sûrs. **Guide des drapeaux : tous expliqués** liste les 105, avec une recherche. Le Studio vérifie les drapeaux d'une unité : un plantage connu (les drapeaux d'un camion sur autre chose qu'un camion, un avion armé avec le drapeau de reconnaissance sans celui de chasseur) montre sa correction, et le Studio ne lance pas le jeu tant qu'il n'est pas corrigé ; les drapeaux qui devraient casser une unité donnent un avertissement.
