@@ -227,33 +227,41 @@ def parse_roads(items, where: str = "roads.toml") -> list[Road]:
     return out
 
 
-TAKE_OUT = ("roads", "bridges")
+TAKE_OUT = ("roads", "bridges", "crossings")
 
 
 @dataclass(frozen=True)
 class TakeOut:
-    """The map's own roads and bridges a mod takes out (roads.toml `take_out`; docs/MOD_FORMAT.md §8)."""
+    """The map's own roads and bridges a mod takes out (roads.toml `take_out`; docs/MOD_FORMAT.md §8). `crossings`
+    goes with `bridges`: each old bridge's deck over water is also closed to units and its road links are cut, so
+    nothing crosses where it stood (without it, units still cross there on the ground under the deck and supply
+    trucks keep the road across)."""
     roads: bool = False
     bridges: bool = False
+    crossings: bool = False
 
     def names(self) -> list[str]:
         return [n for n in TAKE_OUT if getattr(self, n)]
 
 
 def parse_take_out(value, where: str = "roads.toml") -> list[TakeOut]:
-    """A roads.toml's `take_out` (a list naming "roads", "bridges" or both) as a row for the build ([] when absent)."""
+    """A roads.toml's `take_out` (a list naming "roads", "bridges", "crossings" or any of them) as a row for the
+    build ([] when absent). "crossings" needs "bridges" beside it."""
     if value is None:
         return []
     if not isinstance(value, list) or any(v not in TAKE_OUT for v in value):
-        raise RoadNetError(f"{where}: take_out lists what of the map's own goes: \"roads\", \"bridges\" or both "
-                           f"(got {value!r})")
-    return [TakeOut("roads" in value, "bridges" in value)]
+        raise RoadNetError(f"{where}: take_out lists what of the map's own goes: \"roads\", \"bridges\", "
+                           f"\"crossings\" or several (got {value!r})")
+    if "crossings" in value and "bridges" not in value:
+        raise RoadNetError(f"{where}: take_out \"crossings\" closes where the old bridges stood, so it goes with "
+                           f"\"bridges\" (got {value!r})")
+    return [TakeOut("roads" in value, "bridges" in value, "crossings" in value)]
 
 
 def take_out_of(rows: list) -> TakeOut:
     """What a map's mods take out between them (every mod's take_out, in load order: each adds to the others)."""
     found = [r for r in rows if isinstance(r, TakeOut)]
-    return TakeOut(any(r.roads for r in found), any(r.bridges for r in found))
+    return TakeOut(any(r.roads for r in found), any(r.bridges for r in found), any(r.crossings for r in found))
 
 
 def take_out_roads(win: bytes) -> tuple[bytes, list[str]]:

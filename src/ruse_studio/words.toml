@@ -9653,6 +9653,30 @@ cz = "Mosty mapy zmizí i s podlahou, na které jednotky stály. Jednotky tam d�
 jpn = "マップ本来の橋と、部隊が立っていた床がなくなります。部隊はその場所で下の地面を渡れます。どこでも渡れるようにするには川を干上がらせてください（水、排水）。新しく架けた橋は残ります。ゲーム内ではまだ未確認です。"
 sc = "地图自带的桥会消失，部队站立的桥面也一并移除。部队仍可从原桥位置经下方地面通过：要随处过河，请把河流排干（水、排干）。你新建的桥会保留。尚未在游戏中测试。"
 
+[road_take_out_crossings]
+us = "Close the old bridges' crossings"
+fr = "Fermer les passages des anciens ponts"
+ger = "Übergänge der alten Brücken sperren"
+ita = "Chiudi i passaggi dei vecchi ponti"
+spa = "Cerrar los cruces de los puentes viejos"
+pol = "Zamknij przejścia po dawnych mostach"
+ru = "Закрыть переправы старых мостов"
+cz = "Uzavřít přechody po starých mostech"
+jpn = "旧橋の渡り口を塞ぐ"
+sc = "封闭旧桥的通行处"
+
+[tip_road_take_out_crossings]
+us = "With the bridges out, also close the ground where each old bridge stood over water to units, and cut the road links through it: nothing crosses there, supply trucks included, and the rest of the road network stays. A new road of yours that crosses at the same place gets its own bridge there. If closing them would cut ground off from the rest of the map, the build says so: leave a way across."
+fr = "Les ponts retirés, ferme aussi le sol où chaque ancien pont franchissait l'eau (les unités n'y passent plus) et coupe les liens de route qui le traversent : plus rien ne traverse là, camions de ravitaillement compris, et le reste du réseau routier reste. Une nouvelle route de votre part au même endroit y reçoit son propre pont. Si cela isolait une partie de la carte, la construction le signale : laissez un passage."
+ger = "Bei entfernten Brücken wird zusätzlich der Boden gesperrt, wo jede alte Brücke über Wasser stand (Einheiten kommen dort nicht mehr durch), und die Straßenverbindungen dort werden gekappt: nichts quert mehr, auch keine Versorgungslaster; das übrige Straßennetz bleibt. Eine neue Straße von dir an derselben Stelle bekommt dort ihre eigene Brücke. Würde Gelände vom Rest der Karte abgeschnitten, meldet das der Bau: lass einen Weg offen."
+ita = "Con i ponti tolti, chiude anche il terreno dove ogni vecchio ponte stava sull'acqua (le unità non passano più) e taglia i collegamenti stradali: non attraversa più nulla, camion dei rifornimenti compresi, e il resto della rete stradale resta. Una tua nuova strada nello stesso punto riceve il suo ponte. Se si isolasse una parte della mappa, la build lo segnala: lascia un passaggio."
+spa = "Con los puentes quitados, también cierra el suelo donde cada puente viejo cruzaba el agua (las unidades ya no pasan) y corta los enlaces de carretera: ya no cruza nada, camiones de suministros incluidos, y el resto de la red de carreteras se queda. Una carretera nueva tuya en el mismo sitio recibe su propio puente. Si quedara aislada una parte del mapa, la compilación lo avisa: deja un paso."
+pol = "Gdy mosty są usunięte, zamyka także grunt tam, gdzie każdy stary most stał nad wodą (jednostki już tamtędy nie przejdą), i przecina połączenia drogowe: nic tam nie przekracza rzeki, także ciężarówki zaopatrzenia, a reszta sieci dróg zostaje. Twoja nowa droga w tym samym miejscu dostaje własny most. Jeśli odcięłoby to część mapy, kompilacja to zgłosi: zostaw przejście."
+ru = "При убранных мостах также закрывается земля там, где каждый старый мост стоял над водой (войска там больше не пройдут), и обрываются дорожные связи: ничто не переправляется, включая грузовики снабжения, а остальная сеть дорог остаётся. Ваша новая дорога в том же месте получит свой мост. Если часть карты окажется отрезанной, сборка сообщит об этом: оставьте проход."
+cz = "Při odebraných mostech se také uzavře terén tam, kde každý starý most stál nad vodou (jednotky tudy už neprojdou), a přeruší se silniční spojení: nic tam nepřejde, ani zásobovací náklaďáky, a zbytek silniční sítě zůstane. Vaše nová silnice na stejném místě dostane vlastní most. Pokud by se tím část mapy odřízla, sestavení to ohlásí: nechte průchod."
+jpn = "橋を取り除いた状態で、各旧橋が水上にあった場所の地面も部隊が通れないよう塞ぎ、そこを通る道路のつながりも断ちます。補給トラックを含め、そこは誰も渡れなくなり、道路網のほかの部分は残ります。同じ場所にあなたが引いた新しい道路には専用の橋が架かります。マップの一部が孤立する場合はビルドが知らせます。通り道を残してください。"
+sc = "移除桥后，同时封闭每座旧桥原来跨水的地面（部队无法通过），并切断经过该处的道路连接：包括补给卡车在内，任何东西都无法在此过河，其余道路网保留。你在同一位置新修的道路会得到自己的桥。如果这会使地图的一部分被孤立，构建会提示：请留出通路。"
+
 # a building or unit the game gives no name (StudioApi.units' game_name): what it's for instead
 [no_game_name]
 us = "{group}: no name in the game"

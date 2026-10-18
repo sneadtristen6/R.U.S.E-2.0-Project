@@ -1116,6 +1116,18 @@ class Terrain(WithMod):
         self.assertEqual(self.api.road_take_out("Blitz", False, False)["take_out"], [])
         self.assertFalse(file.exists())
 
+    def test_closing_the_old_bridges_crossings_goes_with_the_bridges(self):
+        """The Roads dock's third switch: roads.toml take_out "crossings", kept only with the bridges."""
+        folder = Path(self.api.new_mod("x")["current"])
+        file = folder / "maps" / "Blitz" / "roads.toml"
+        self.assertEqual(self.api.road_take_out("Blitz", False, True, True)["take_out"], ["bridges", "crossings"])
+        self.assertEqual(tomllib.loads(file.read_text(encoding="utf-8"))["take_out"], ["bridges", "crossings"])
+        self.assertEqual(self.api.road_take_out("Blitz", True, True, True)["take_out"], ["roads", "bridges", "crossings"])
+        self.assertEqual(self.api.road_take_out("Blitz", False, False, True)["take_out"], [])  # no bridges out: no crossings
+        self.assertEqual(self.api.road_take_out("Blitz", False, True)["take_out"], ["bridges"])  # (the old two-switch call)
+        self.api.road_take_out("Blitz", False, False)
+        self.assertFalse(file.exists())
+
     def test_new_roads_added_and_taken_back(self):
         self.assertEqual(self.api.roads("Blitz"), {"roads": [], "bridge": None, "saved": None, "mod": None,
                                                    "take_out": []})

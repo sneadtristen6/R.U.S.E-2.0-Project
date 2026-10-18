@@ -588,6 +588,24 @@ def _closing(water: Water, old: tuple, new_decks: list) -> list[tuple]:
     return out
 
 
+def old_crossings(shipped: list, water: Water, new_decks: list = (), skip=()) -> tuple[list[tuple], int]:
+    """Circles (x, y, CLOSE) that close the deck of every bridge in `shipped` over water and off the `new_decks`, for a
+    mod that takes the map's own bridges out and their crossings with them (roads.toml `take_out = ["bridges",
+    "crossings"]`): the same closing a replaced bridge gets (`_closing`), so units can't cross where it stood and the
+    road network's links through it are cut (apply_spans). A bridge in `skip` (a place already sunk and closed because
+    a new bridge replaces it: Plan.hide) is left to that. Returns (the circles, how many bridges they close)."""
+    out, seen, bridges = [], set(), 0
+    for b in shipped:
+        if b.place is not None and b.place in skip:
+            continue
+        circles = [c for c in _closing(water, b.deck, list(new_decks)) if (round(c[0]), round(c[1])) not in seen]
+        if circles:
+            bridges += 1
+            seen.update((round(c[0]), round(c[1])) for c in circles)
+            out += circles
+    return out, bridges
+
+
 def _end_name(dx: float, dy: float) -> str:
     """The compass end of a deck its outward direction (dx, dy) points to (map x grows east, y south)."""
     return ("east" if dx > 0 else "west") if abs(dx) >= abs(dy) else ("south" if dy > 0 else "north")

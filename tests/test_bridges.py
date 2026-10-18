@@ -216,6 +216,21 @@ class Crossings(unittest.TestCase):
         self.assertEqual(_closing(water, (100.0, 60.0, 400.0, 60.0), [(250.0, 0.0, 250.0, 125.0)]), [])  # the new deck
         self.assertEqual(_closing(water, (100.0, 400.0, 400.0, 400.0), []), [])  # over dry land
 
+    def test_every_old_bridge_can_be_closed_for_a_take_out(self):
+        """take_out "crossings": the closing a replaced bridge gets, for every old bridge over water."""
+        from rusemod.bridges import Shipped, old_crossings
+        water = Water(Tms(MESH))
+        over = Shipped("TypeWarrior/Pont", (100.0, 60.0, 400.0, 60.0), 0.0, (3, 8))
+        dry = Shipped("TypeWarrior/Pont", (100.0, 400.0, 400.0, 400.0), 0.0, (4, 8))
+        self.assertEqual(old_crossings([over, dry], water),
+                         ([(100.0, 60.0, CLOSE), (400.0, 60.0, CLOSE)], 1))  # only the deck over water
+        self.assertEqual(old_crossings([over, dry], water, [(250.0, 0.0, 250.0, 125.0)]), ([], 0))  # a new deck stays open
+        self.assertEqual(old_crossings([over], water, skip=[(3, 8)]), ([], 0))  # a replaced bridge: its replacement's job
+        several = Shipped("TypeWarrior/Pont", (100.0, 60.0, 400.0, 60.0), 0.0, None)  # placed in several places at once
+        self.assertEqual(old_crossings([several], water, skip=[(3, 8)])[1], 1)  # (never skipped: it can't be sunk)
+        twice = old_crossings([over, dataclasses.replace(over, place=(5, 8))], water)
+        self.assertEqual((len(twice[0]), twice[1]), (2, 1))  # the same deck found twice is closed once
+
     def test_opened_and_closed_in_the_maps_movement_and_roads(self):
         from rusemod.cover import member
         from rusemod import nav as navmod

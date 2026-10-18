@@ -4949,16 +4949,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "bridge": kind, "saved": str(path) if roads or taken.names() else None, "mod": str(folder),
                 "take_out": taken.names()}
 
-    def road_take_out(self, pack: str, roads: bool, bridges: bool) -> dict:
+    def road_take_out(self, pack: str, roads: bool, bridges: bool, crossings: bool = False) -> dict:
         """Take the map's own roads (its road network, the roads drawn from high up and on the map table, its road
         stickers) and its own bridges (their models, their floors sunk under the ground) out in the current mod, or
-        keep them: roads.toml take_out (rusemod.roadnet.TakeOut). The mod's own new roads stay. Returns roads(pack)."""
+        keep them: roads.toml take_out (rusemod.roadnet.TakeOut). `crossings` (only with bridges) also closes each old
+        bridge's deck over water to units and cuts the road links through it, so nothing crosses where it stood; it is
+        dropped when the bridges stay. The mod's own new roads stay. Returns roads(pack)."""
         from rusemod import roadnet
         if self._map_dir() is None:
             raise StudioError("Pick or make a mod first: the change is saved in it.")
         path = self._roads_file(pack)
         with self._saving:
-            self._write_roads(path, self._read_roads(path), roadnet.TakeOut(bool(roads), bool(bridges)))
+            self._write_roads(path, self._read_roads(path),
+                              roadnet.TakeOut(bool(roads), bool(bridges), bool(crossings) and bool(bridges)))
         return self.roads(pack)
 
     def map_road_graph(self, pack: str) -> dict:

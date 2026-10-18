@@ -276,6 +276,23 @@ class ModRoads(unittest.TestCase):
         self.assertEqual(take_out_of([TakeOut(True, False), "a road", TakeOut(False, True)]), TakeOut(True, True))
         self.assertNotIn("take_out", roads_toml([], "", TakeOut()))
 
+    def test_crossings_go_with_the_bridges(self):
+        """take_out "crossings" (the old bridges' decks closed and their road links cut) needs "bridges" beside it."""
+        import tomllib
+        from rusemod.roadnet import Road, TakeOut, parse_take_out, roads_toml, take_out_of
+        both = TakeOut(False, True, True)
+        self.assertEqual((both.names(), TakeOut(True, True, True).names()), (["bridges", "crossings"], ["roads", "bridges", "crossings"]))
+        text = roads_toml([Road([(1.0, 2.0), (3.0, 4.0)])], "", both)
+        self.assertEqual(parse_take_out(tomllib.loads(text)["take_out"]), [both])
+        self.assertEqual(parse_take_out(["bridges", "crossings"]), [both])
+        self.assertEqual(parse_take_out(["bridges"]), [TakeOut(False, True, False)])  # what files said before: unchanged
+        with self.assertRaisesRegex(RoadNetError, "goes with"):
+            parse_take_out(["crossings"])
+        with self.assertRaises(RoadNetError):
+            parse_take_out(["roads", "crossings"])
+        self.assertEqual(take_out_of([TakeOut(False, True), TakeOut(False, True, True)]), both)  # one mod's counts for all
+        self.assertFalse(take_out_of([TakeOut(True, False), TakeOut(False, True)]).crossings)
+
     def test_the_file(self):
         from rusemod.roadnet import Road, parse_roads, roads_toml
         import tomllib

@@ -7816,11 +7816,14 @@ async function loadModRoads(pack, ask) {
 }
 
 // The map's own roads and bridges taken out, or kept (StudioApi.road_take_out: roads.toml take_out), one switch each.
+// "crossings" (close where the old bridges stood) goes with the bridges: it turns them on, and goes when they stay.
 async function setTakeOut(what) {
   const pack = mv.current, now = new Set(road.takeOut || []);
   if (now.has(what)) now.delete(what); else now.add(what);
+  if (what === "crossings" && now.has("crossings")) now.add("bridges");
+  if (what === "bridges" && !now.has("bridges")) now.delete("crossings");
   try {
-    const res = await mv.api.road_take_out(pack, now.has("roads"), now.has("bridges"));
+    const res = await mv.api.road_take_out(pack, now.has("roads"), now.has("bridges"), now.has("crossings"));
     if (pack !== mv.current) return;
     road.takeOut = res.take_out || [];
     renderRoadTray();
@@ -7859,7 +7862,7 @@ function renderRoadTray() {
   $("road-trees-label").textContent = w.road_trees || "Keep the trees on new roads";
   $("road-trees-row").title = w.tip_road_trees || "";
   const taken = new Set(road.takeOut || []);
-  $("road-takeout").replaceChildren(...(road.mod ? ["roads", "bridges"].map((what) =>
+  $("road-takeout").replaceChildren(...(road.mod ? ["roads", "bridges", "crossings"].map((what) =>
     chipOf(w["road_take_out_" + what], w["tip_road_take_out_" + what], taken.has(what), () => setTakeOut(what))) : []));
   const all = road.mine.reduce((n, r) => n + lineLength(r.points), 0);
   $("road-count").textContent = road.mine.length

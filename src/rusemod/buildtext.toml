@@ -724,6 +724,18 @@ cz = "  vlastní mosty mapy odebrány: {0} smazáno, jejich podlahy zapuštěny 
 jpn = "  マップ本来の橋を取り除き：{0} 本消去、床は地面の下に沈めました。橋の上の移動は残ります（ユニットはその下の地面を渡ります）"
 sc = "  已移除地图自带的桥：擦除 {0} 座，其桥面沉入地下；桥面上的移动保留（单位在其下方的地面上通过）"
 
+[e50aa94f019]
+us = "  the map's own bridges taken out: {0} erased, their floors sunk under the ground; their decks over water are closed to units and cut from the road network (take_out crossings)"
+fr = "  les ponts propres à la carte retirés : {0} effacé(s), leurs planchers enfoncés sous le sol ; leurs tabliers au-dessus de l'eau sont fermés aux unités et coupés du réseau routier (take_out crossings)"
+ger = "  die eigenen Brücken der Karte herausgenommen: {0} gelöscht, ihre Böden unter den Boden versenkt; ihre Decks über dem Wasser sind für Einheiten gesperrt und vom Straßennetz getrennt (take_out crossings)"
+ita = "  i ponti della mappa tolti: {0} cancellati, i loro pavimenti affondati sotto il terreno; i loro impalcati sull'acqua sono chiusi alle unità e staccati dalla rete stradale (take_out crossings)"
+spa = "  los puentes propios del mapa quitados: {0} borrado(s), sus suelos hundidos bajo el terreno; sus tableros sobre el agua quedan cerrados a las unidades y cortados de la red de carreteras (take_out crossings)"
+pol = "  usunięto własne mosty mapy: {0} skasowanych, ich podłogi zatopione pod ziemią; ich pomosty nad wodą są zamknięte dla jednostek i odcięte od sieci dróg (take_out crossings)"
+ru = "  собственные мосты карты убраны: стёрто {0}, их настилы опущены под землю; их пролёты над водой закрыты для юнитов и отрезаны от дорожной сети (take_out crossings)"
+cz = "  vlastní mosty mapy odebrány: {0} smazáno, jejich podlahy zapuštěny pod zem; jejich mostovky nad vodou jsou pro jednotky uzavřeny a odříznuty od silniční sítě (take_out crossings)"
+jpn = "  マップ本来の橋を取り除き：{0} 本消去、床は地面の下に沈めました。水上の橋の上はユニットが通れないよう閉じ、道路網から切り離しました (take_out crossings)"
+sc = "  已移除地图自带的桥：擦除 {0} 座，其桥面沉入地下；水上的桥面对单位关闭，并与道路网断开 (take_out crossings)"
+
 [e823ab19b8d]
 us = "lighthouses: {0}, from {1}"
 fr = "phares : {0}, de {1}"
@@ -1275,6 +1287,18 @@ ru = "{0}: {1}: мосты дорог создать нельзя ({2})"
 cz = "{0}: {1}: mosty silnic nelze vytvořit ({2})"
 jpn = "{0}：{1}：道路の橋を作れません（{2}）"
 sc = "{0}：{1}：无法创建道路的桥（{2}）"
+
+[e922059657d]
+us = "{0}: {1}: the old bridges' crossings can't be closed ({2})"
+fr = "{0} : {1} : les passages des anciens ponts ne peuvent pas être fermés ({2})"
+ger = "{0}: {1}: die Übergänge der alten Brücken können nicht gesperrt werden ({2})"
+ita = "{0}: {1}: i passaggi dei vecchi ponti non possono essere chiusi ({2})"
+spa = "{0}: {1}: no se pueden cerrar los cruces de los puentes viejos ({2})"
+pol = "{0}: {1}: nie da się zamknąć przejść po dawnych mostach ({2})"
+ru = "{0}: {1}: переправы старых мостов закрыть нельзя ({2})"
+cz = "{0}: {1}: přechody po starých mostech nelze uzavřít ({2})"
+jpn = "{0}：{1}：旧橋の渡り口を塞げません（{2}）"
+sc = "{0}：{1}：无法封闭旧桥的通行处（{2}）"
 
 [e196390757e]
 us = "{0}: {1}: {2} would have no floor (no bridge of its kind on this map has one to copy), so units would walk on the riverbed under it: use the map's own bridge kind{3} or take it out"

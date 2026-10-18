@@ -2768,6 +2768,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             who.extend(i for i in ids if i not in who)
         road_edits = scenario_edits(result.order, mods, "roads")
         from .bridges import BridgeError, model_length, placed_spans, plan
+        crossings_out = {name: ids for name, (rows, ids) in scenario_edits(result.order, mods, "take_out").items()
+                         if take_out_of(rows).crossings}  # maps whose old bridges' crossings close too (take_out)
         from .scenery import MEMBER as SCENERY, Scenery, SceneryError, descriptors
         descs, lengths = None, {}
 
@@ -2775,17 +2777,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if kind not in lengths:
                 lengths[kind] = model_length(game, descs, kind)
             return lengths[kind]
-        for name in sorted(set(road_edits) | set(placed), key=str.lower):
+        for name in sorted(set(road_edits) | set(placed) | set(crossings_out), key=str.lower):
             map_roads, road_ids = road_edits.get(name, ([], []))
             objects_here, object_ids = placed.get(name, ([], []))
             wanted = [r.points for r in map_roads if r.bridges]
-            if descs is None and (wanted or objects_here):
+            if descs is None and (wanted or objects_here or name in crossings_out):
                 descs = descriptors(arc)
             by_hand = [o for o in objects_here if o.type in descs and descs[o.type].bridge] if descs else []
-            map_path = find_map(name) if wanted or by_hand else None
+            map_path = find_map(name) if wanted or by_hand or name in crossings_out else None
             if map_path is None:
                 continue  # (a missing map is said with the road network and the scenery below)
-            ids = list(dict.fromkeys(road_ids + (object_ids if by_hand else [])))
+            ids = list(dict.fromkeys(road_ids + (object_ids if by_hand else []) + crossings_out.get(name, [])))
             spans = placed_spans(by_hand, descs, length_of) if by_hand else []
             objects, notes, gone = [], [], []
             if by_hand:
@@ -2818,6 +2820,27 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     bridge_closed[name] = made.closed
                 if made.kept:
                     bridge_decks[name] = list(made.kept)
+            closed_here = []
+            if name in crossings_out:  # take_out "crossings": every old bridge's deck closed too (bridges.old_crossings)
+                from .bridges import Water, old_crossings, shipped_bridges
+                from .tms import Tms
+                try:
+                    sc_raw, mesh = read_map(SCENERY), read_map("output\\highdef.tms")
+                    if sc_raw is None or mesh is None:
+                        raise BridgeError("the map has no scenery or no ground mesh")
+                    water_here = made.water if wanted else Water(Tms(mesh))
+                    closed_here, shut = old_crossings(shipped_bridges(Scenery(sc_raw), descs, length_of), water_here,
+                                                      spans, made.hide if wanted else [])
+                except (BridgeError, SceneryError, ValueError, KeyError, struct.error, zlib.error) as exc:
+                    result.findings.append(Finding("error", f"{', '.join(ids)}: {name}: the old bridges' crossings can't "
+                                                            f"be closed ({exc})"))
+                    continue
+                if closed_here:
+                    bridge_closed[name] = bridge_closed.get(name, []) + closed_here
+                    notes.append(f"{shut} old bridge deck(s) over water closed to units and cut from the road network "
+                                 f"(take_out crossings): nothing crosses where they stood")
+                else:
+                    notes.append("take_out crossings: no old bridge deck over water to close")
             if spans:  # the map's buildings and props by the new decks' roads: the decks' approaches never cover the
                 # holes the map's movement leaves for them (rusemod.bridges.near_ends; the owner's D-Day test, 2026-09-30:
                 # an approach through a farm, "end of bridge hits buildings causing pathing issue")
@@ -2887,6 +2910,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     from .tms import Tms
                     ground = read_map("output\\highdef.tms")
                     bridge_water[name] = Water(Tms(ground)).at if ground is not None else None
+            if closed_here and name not in bridge_spans:  # nothing new to open, old decks to close
+                bridge_spans[name] = []
+                bridge_roads[name] = [r.points for r in map_roads]
+                bridge_water[name] = water_here.at
             if notes:
                 say(f"bridges: {name}, from {', '.join(ids)}")
                 for note in notes:
@@ -3449,7 +3476,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         f"ground closed to units: the map's movement still has them. Name \"building\" in that area's "
                         f"what to open its ground too")))
             taken_bridges = take_outs.get(name, (None, []))[0] is not None and take_outs[name][0].bridges
-            if erased.get("bridge") and taken_bridges:
+            if erased.get("bridge") and taken_bridges and take_outs[name][0].crossings:
+                say(f"  the map's own bridges taken out: {erased['bridge']} erased, their floors sunk under the "
+                    f"ground; their decks over water are closed to units and cut from the road network "
+                    f"(take_out crossings)")
+            elif erased.get("bridge") and taken_bridges:
                 say(f"  the map's own bridges taken out: {erased['bridge']} erased, their floors sunk under the "
                     f"ground; the movement over their decks stays (units cross there, on the ground under them)")
             elif erased.get("bridge"):

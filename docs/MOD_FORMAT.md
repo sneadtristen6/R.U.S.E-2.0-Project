@@ -1556,7 +1556,7 @@ A mod also takes the map's own roads and bridges out (the Studio's Roads dock: T
 the map's bridges), a line before the `[[road]]` tables:
 
 ```toml
-take_out = ["roads", "bridges"]   # either, or both
+take_out = ["roads", "bridges", "crossings"]   # any of them ("crossings" goes with "bridges")
 ```
 
 - `"roads"`: the map's road network goes, with every link the movement has to it (supply trucks and units should
@@ -1564,8 +1564,16 @@ take_out = ["roads", "bridges"]   # either, or both
   table, and the road stickers up close (asphalt, cobbles, dirt tracks, their edges and junctions). The mod's own
   `[[road]]` go in afterwards, in the look the map's own had, and must still make one network between them.
 - `"bridges"`: the map's own bridges are erased, both the objects and the model the map draws them with, and the
-  floors units stood on are sunk under the ground. The movement over their decks stays: units still cross there, on
-  the ground under them. Drain the rivers (the water brushes) to cross anywhere.
+  floors units stood on are sunk under the ground. The movement over their decks stays (unless `"crossings"`, below,
+  closes it): units still cross there, on the ground under them. Drain the rivers (the water brushes) to cross anywhere.
+- `"crossings"` (needs `"bridges"` beside it; the Studio's "Close the old bridges' crossings", which turns the bridges
+  on too): where each old bridge stood over water, the deck is also **closed** to units and the **road network's links
+  through it are cut**, the same closing a replaced bridge gets (`rusemod.bridges.old_crossings`). So nothing crosses
+  where the bridges were, supply trucks included, and the rest of the road network stays: the way to remove a bridge
+  and the road over it without taking every road out. A new road of the mod's own that crosses at the same place
+  gets its own bridge there (its deck stays open). If closing the old decks would cut ground off from the rest of
+  the map, the build says so (`take_out ... crossings: ... would cut ground off`) instead of writing movement an order
+  could crash on: leave a way across (a road of your own over water gets a bridge). Not tried in the game yet.
 - Every mod's `take_out` counts: one taking the roads out and another the bridges takes both.
 - Seen in the game (2026-10-05, a drained D-Day): the map's road lines gone. Not tried yet: supply trucks and units
   planning across country without them, and the bridges checked one by one.
