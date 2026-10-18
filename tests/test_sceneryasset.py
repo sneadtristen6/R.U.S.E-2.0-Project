@@ -387,6 +387,7 @@ class ModFiles(unittest.TestCase):
         self.assertEqual(got["Fern"].size, 1.0)
         self.assertEqual({k: v.name for k, v in got["Fern"].versions.items()}, {"medium": "model_2k.gltf"})
 
+    @unittest.skipIf(_np is None, NO_NUMPY)
     def test_versions_saved_beside_the_model(self):
         """save_versions: each version as <model>_<ring>.glb beside the model, named in asset.toml, read back by the
         build; a version the modder named is left as it is unless forced."""

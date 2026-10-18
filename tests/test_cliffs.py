@@ -9,8 +9,13 @@ from pathlib import Path
 from rusemod import cliffs
 from rusemod.scenery import CliffArea, SceneryEditError, parse_cliffs
 
+try:
+    import numpy as _np  # noqa: F401
+except ImportError:
+    _np = None
+
 M = 260.0
-TMP = "D:/RUSE-2.0/scratch/tmp"
+TMP = None   # the system's temp folder (TEMP)
 WALL = cliffs.Shape(width=5.0, height=4.0, front=90.0, rise=0.0)     # a scan facing its own +y, upright
 LEANING = cliffs.Shape(width=8.0, height=10.0, front=90.0, rise=30.0)
 
@@ -79,6 +84,7 @@ class Laid(unittest.TestCase):
         self.assertEqual(said["unknown"], ["TypeWarrior/Rock_01"])
         self.assertEqual({o.type for o in laid}, {"TypeWarrior/R2_Wall"})
 
+    @unittest.skipIf(_np is None, "numpy isn't here: a model's shape needs it (the apps carry it)")
     def test_shape_of_a_model(self):
         """A wall 4 m across (x) and 3 m up, its triangles facing +y: front 90 degrees, rise 0."""
         pos = [(0, 0, 0), (4, 0, 0), (4, 0, 3), (0, 0, 3)]

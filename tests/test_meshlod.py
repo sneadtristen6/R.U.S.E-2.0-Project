@@ -6,12 +6,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from rusemod import meshlod
 from rusemod.dxt import png_bytes
 from rusemod.modelin import Material, Mesh, Model, read_model
-from rusemod.numpy2 import np
 
-TMP = "D:/RUSE-2.0/scratch/tmp"
+try:  # a model's medium and far versions are made on whole arrays
+    from rusemod import meshlod
+    from rusemod.numpy2 import np
+except ImportError:
+    meshlod = np = None
+
+TMP = None   # the system's temp folder (TEMP)
 
 
 def grid(n: int, size: float, bump: float = 0.0, u0: float = 0.0):
@@ -46,6 +50,7 @@ def area(pos, tri):
     return float(0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1).sum())
 
 
+@unittest.skipIf(meshlod is None, "numpy isn't here: rusemod.meshlod needs it (the apps carry it)")
 class Pixels(unittest.TestCase):
     def test_one_pixel_where_each_ring_starts(self):
         self.assertAlmostEqual(meshlod.pixel(77.0), 0.0591, delta=1e-4)   # 5.9 cm
@@ -53,6 +58,7 @@ class Pixels(unittest.TestCase):
         self.assertEqual(meshlod.RINGS, {"medium": 77.0, "far": 385.0})
 
 
+@unittest.skipIf(meshlod is None, "numpy isn't here: rusemod.meshlod needs it (the apps carry it)")
 class Merged(unittest.TestCase):
     def test_fewer_triangles_within_a_cell(self):
         pos, nrm, uv, tri = grid(60, 3.0, bump=0.4)
@@ -99,6 +105,7 @@ class Merged(unittest.TestCase):
         self.assertEqual(set(m.tolist()), {0, 1})
 
 
+@unittest.skipIf(meshlod is None, "numpy isn't here: rusemod.meshlod needs it (the apps carry it)")
 class Thinned(unittest.TestCase):
     def test_cards_kept_whole_and_grown(self):
         pos, nrm, uv, tri = cards(400, 0.05)
@@ -145,6 +152,7 @@ class Thinned(unittest.TestCase):
         self.assertEqual(meshlod.card_keep(big, tri2, 77.0), 1.0)   # (never shrunk)
 
 
+@unittest.skipIf(meshlod is None, "numpy isn't here: rusemod.meshlod needs it (the apps carry it)")
 class BothSides(unittest.TestCase):
     def test_every_triangle_also_the_other_way(self):
         """A surface with no back gets one: each triangle again, turned round, on points of its own facing back."""
@@ -167,6 +175,7 @@ class BothSides(unittest.TestCase):
                                     np.array(mesh.positions) - [0.0, 0.0, meshlod.BACK_OFFSET * 1.0]))
 
 
+@unittest.skipIf(meshlod is None, "numpy isn't here: rusemod.meshlod needs it (the apps carry it)")
 class Versions(unittest.TestCase):
     def model(self):
         pos, nrm, uv, tri = grid(40, 2.0, bump=0.3)

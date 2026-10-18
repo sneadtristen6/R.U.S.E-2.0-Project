@@ -7,7 +7,7 @@ top row on the side to the left of that way (+y for a stroke along +x, as a map'
 the height `level`, 65535 is `level2` (world z). Each ground point inside the square goes toward the heightmap's
 height there by `weight`, out to the square's edge with no fall-off of the brush's own: a heightmap made by a terrain
 tool (or the Studio's generator) is the ground, and its own rim meets the ground round it (a fall-off on top of a rim
-that already fades squashed the mountains near it into steep walls the game threw into shadow: F-68).
+that already fades squashed the mountains near it into steep walls the game threw into shadow, seen 10-17).
 
 With files/terrain/<relief>-ground.png beside it (an RGB picture over the same square), that picture is laid on the
 map's ground picture there, at every level of both tile sets, under the mods' own Map Paint (lay_pictures): the

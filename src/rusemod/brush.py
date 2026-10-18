@@ -467,7 +467,7 @@ class Stroke:
             return z + (self.level - z) * (self.weight * p)
         if b.kind == "relief":   # the heightmap is the ground over its whole square: no fall-off of the brush's own
             from .relief import height_of   # (its rim meets the ground round it; a fall-off on top squashed the
-            return z + (height_of(self, x, y) - z) * self.weight   # mountains near it into walls: relief3, F-68)
+            return z + (height_of(self, x, y) - z) * self.weight   # mountains near it into walls: relief3)
         if average is None:
             raise ValueError("the smooth brush needs the local average height")
         return z + (average(x, y) - z) * (self.weight * p)

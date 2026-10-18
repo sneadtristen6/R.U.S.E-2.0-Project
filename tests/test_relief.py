@@ -14,7 +14,12 @@ from rusemod.brush import BrushError, Stroke, parse_strokes, strokes_toml
 from rusemod.relief import Picture, ReliefError, height_of, lay_pictures, place, read_grid
 from rusemod.tmst import Tmst
 
-TMP = "D:/RUSE-2.0/scratch/tmp"
+try:
+    import numpy as _np  # noqa: F401
+except ImportError:
+    _np = None
+
+TMP = None   # the system's temp folder (TEMP)
 
 
 def grey16_png(w, h, values):
@@ -107,6 +112,7 @@ class Room(unittest.TestCase):
         self.assertAlmostEqual(shape.top(), 450.0 + 30.0)
 
 
+@unittest.skipIf(_np is None, "numpy isn't here: a relief's picture needs it (the apps carry it)")
 class Picture_(unittest.TestCase):
     def test_laid_on_every_level_with_its_edge(self):
         """A red picture over the first cell (1,000 x 1,000, a hard edge): red inside on the overview, the cell's

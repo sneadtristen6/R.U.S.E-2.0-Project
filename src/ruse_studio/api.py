@@ -5149,8 +5149,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         path = self._terrain_file(pack)
         with self._saving:
             strokes = self._read_strokes(path)
-        # (a stroke's clip is the build's own mask, bytes, for the field brush: never in a saved stroke, never sent)
-        return {"strokes": [{k: v for k, v in asdict(s).items() if k != "clip"} for s in strokes],
+        # (a stroke's clip, the build's own mask for the field brush, and its grid, the relief's heightmap as the build
+        # read it: never in a saved stroke, never sent)
+        return {"strokes": [{k: v for k, v in asdict(s).items() if k not in ("clip", "grid")} for s in strokes],
                 "saved": str(path) if strokes else None, "mod": str(folder)}
 
     def terrain_add(self, pack: str, strokes: list) -> dict:
