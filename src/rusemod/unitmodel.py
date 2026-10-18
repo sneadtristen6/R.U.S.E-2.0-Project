@@ -128,9 +128,24 @@ def read_skeleton(blob: bytes) -> Skeleton:
     pivots = []
     for k in range(n):
         m = struct.unpack_from("<12f", blob, mats + 48 * k)
-        rot, t = (m[0:3], m[4:7], m[8:11]), (m[3], m[7], m[11])
-        pivots.append(tuple(-sum(rot[r][c] * t[r] for r in range(3)) for c in range(3)))
+        pivots.append(bone_point((m[0:3], m[4:7], m[8:11]), (m[3], m[7], m[11])))
     return Skeleton(names, par, pivots)
+
+
+def bone_point(rot, t) -> tuple:
+    """Where a bone sits in the model: the point its model -> bone matrix (3 x 3 `rot`, then `t`) takes to the bone's
+    origin, -rot⁻¹ t. The matrix isn't always a plain turn: 185 of the 261 skeletons of the game's units scale a bone
+    (the Panther's turret 100 times, the Carro Veloce's about 3.9 one way and 3.1 the others), and a turn's inverse
+    (its rows read as columns) put the Panther's turret 354,000 units off and an imported model with it (a modder's
+    Panther A, 2026-10-18). A matrix with no inverse (none in the game) is read as a plain turn."""
+    (a, b, c), (d, e, f), (g, h, i) = rot
+    det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+    if abs(det) < 1e-12:
+        return tuple(-sum(rot[r][col] * t[r] for r in range(3)) for col in range(3))
+    inv = ((e * i - f * h, c * h - b * i, b * f - c * e),
+           (f * g - d * i, a * i - c * g, c * d - a * f),
+           (d * h - e * g, b * g - a * h, a * e - b * d))
+    return tuple(-sum(inv[row][r] * t[r] for r in range(3)) / det for row in range(3))
 
 
 # --- where the copied unit's model is ---

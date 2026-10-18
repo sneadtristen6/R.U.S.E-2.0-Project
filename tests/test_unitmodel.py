@@ -86,13 +86,14 @@ def skinned_materials() -> bytes:
                     strings=strings, topo=(0,))
 
 
-def skeleton(names, parents, pivots) -> bytes:
+def skeleton(names, parents, pivots, scales=None) -> bytes:
     """A skeleton entry laid out as the game's: header, name lengths at 0x24, 3 x 4 matrices (model -> bone: here
-    a move by -pivot), parents, a second table, the names."""
+    a move by -pivot, then scaled as `scales` says, 1 each by default), parents, a second table, the names."""
     n = len(names)
     lens = struct.pack(f"<{n}H", *(len(x) for x in names))
     mats_at = (0x24 + len(lens) + 3) & ~3
-    mats = b"".join(struct.pack("<12f", 1, 0, 0, -x, 0, 1, 0, -y, 0, 0, 1, -z) for x, y, z in pivots)
+    mats = b"".join(struct.pack("<12f", s, 0, 0, -s * x, 0, s, 0, -s * y, 0, 0, s, -s * z)
+                    for (x, y, z), s in zip(pivots, scales or [1] * n))
     parents_at = mats_at + len(mats)
     second_at = parents_at + 4 * n
     names_at = second_at + 4 * n
@@ -450,6 +451,23 @@ class ModFile(unittest.TestCase):
 def _unit_vec(v):
     n = math.sqrt(sum(c * c for c in v))
     return tuple(c / n for c in v)
+
+
+class Skeletons(unittest.TestCase):
+    def test_a_scaled_bone_sits_where_it_is(self):  # the Panther's turret: 100 times, at (-35.4, 0, 425.6)
+        s = unitmodel.read_skeleton(skeleton(["chassis", "tourelle_01"], [-1, 0],
+                                             [(0.0, 0.0, 0.8), (-35.4, 0.0, 425.6)], [1, 100]))
+        for got, want in zip(s.pivots, [(0.0, 0.0, 0.8), (-35.4, 0.0, 425.6)]):
+            for g, w in zip(got, want):
+                self.assertAlmostEqual(g, w, places=2)
+
+    def test_a_bone_scaled_unevenly(self):  # the Carro Veloce's turret, as the game stores it
+        p = unitmodel.bone_point(((3.8872, 0, 0), (0, 3.1487, 0), (0, 0, 3.1487)), (-518.5766, 184.3661, -705.816))
+        self.assertEqual(tuple(round(x, 1) for x in p), (133.4, -58.6, 224.2))
+
+    def test_a_plain_turn_is_as_before(self):  # a quarter turn round z, then a move
+        p = unitmodel.bone_point(((0, 1, 0), (-1, 0, 0), (0, 0, 1)), (-5.0, 7.0, -3.0))
+        self.assertEqual(tuple(round(x, 6) for x in p), (7.0, 5.0, 3.0))
 
 
 class Packs(unittest.TestCase):

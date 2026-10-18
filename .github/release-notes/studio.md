@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**Next version (not released yet; its number and the other languages are written at release):**
+
+- **Fixed, reported by a modder:** a model imported on a new unit made from the Panther landed far away from the unit. On new units made from 85 other units it sat off the unit's turret, some by a lot (the 155 mm GPF, the SU-85, the Carro Veloce, the StuG III, the M7 Priest), most by a little. The Studio misread where those units' turrets turn, because their skeletons scale the turret bone; it reads them right now. A model imported before this fix keeps its old place: use Import model again on that unit.
+
 **0.9.8.7:** Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, and every value explained.
 
 - **Fixed, reported by a modder:** on a new unit made from one of 17 of the game's units, the box for changing its model never appeared, because the Studio didn't find the copied unit's 3D model. The 17: the King Tiger, the atomic guns, the Long Tom nuke, the V2 launcher, the TransportHQ, the Wurfrahmen half-track, the atomic OI, Type 1 and Type 4, and three campaign versions. The Studio finds those models now, and if it ever can't find a model, the box says so instead of disappearing. The report was about the Panther, which worked on our PC, so that case isn't confirmed fixed yet.
