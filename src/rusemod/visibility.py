@@ -5,7 +5,8 @@ vanished as soon as the camera left close range (a tester's rocks, 2026-10-03; t
 The owner chose (2026-10-03): only what a mod places changes; the map's own objects stay as they are. So for each type
 a mod places that isn't drawn from far, the build makes a copy of the type named <type>_R2Seen, drawn at every
 distance, and the mod's objects of that type use the copy (rusemod.scenery.add_names). Seen in the game at middle
-distances (2026-10-03: the game loads the copies and draws them); the far distance not yet tried."""
+distances (2026-10-03: the game loads the copies and draws them). Far needs the placed object to ask for it too
+(type_levels: 2026-10-17, none past 385 m while they asked for nothing)."""
 from __future__ import annotations
 
 from .patch import Inline, ListV, Num, Ref, Text
@@ -45,6 +46,32 @@ def needs_copy(masks: list[int] | None) -> bool:
     """A type with modes but none for the far pass (whatever it has for the middle ones), and a close or middle one
     to widen: a type drawn by other passes alone (an effect's, 0x1000 and up) gains nothing from a copy."""
     return bool(masks) and not any(m & FAR for m in masks) and bool(widened(masks))
+
+
+TIERS = 0x1F   # the draw tree's levels (rusemod.scenery.ALL_TIERS): close 1|2, middle 4|0x10, far 8
+
+
+def type_levels(game, names: set[str]) -> dict[str, int]:
+    """{type: the draw tree's levels it is drawn at}: the bits of its entries' ModeMasks (in every game file defining
+    it), for scenery.NewObject.levels. A placed object is drawn only at the levels the block it hangs on is listed at,
+    and one asking for none (0) hangs on any block listed from middle in (rusemod.scenery._needs): never drawn far,
+    whatever its type has for far (the second asset test, 2026-10-17: nothing past 385 m, the game's own oak and rock
+    copies placed beside ours neither). A type with no modes (one model, a sticker) or an entry that can't be read is
+    left out: placed as before."""
+    found = descriptors_named(game, set(names))
+    out = {}
+    for t, objs in found.items():
+        bits = 0
+        for _n, _f, o in objs:
+            masks = modes(o, game.objects)
+            if masks is None:
+                break
+            for m in masks:
+                bits |= m
+        else:
+            if bits & TIERS:
+                out[t] = bits & TIERS
+    return out
 
 
 def widened(masks: list[int]) -> dict[int, int]:

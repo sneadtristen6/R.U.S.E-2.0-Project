@@ -33,6 +33,8 @@ class ModInfo:
     erase: dict = field(default_factory=dict)                # map pack name -> [scenery.EraseArea] (§8, scenery.toml)
     copy: dict = field(default_factory=dict)                 # map pack name -> [scenery.CopyArea] (§8, scenery.toml)
     fields: dict = field(default_factory=dict)               # map pack name -> [scenery.FieldBrush] (§8, scenery.toml)
+    cliffs: dict = field(default_factory=dict)               # map pack name -> [scenery.CliffArea] (§8, scenery.toml)
+    sections: dict = field(default_factory=dict)             # map pack name -> [scenery.SectionArea] (§8, scenery.toml)
     scenario: dict = field(default_factory=dict)             # map pack name -> [scenario.Move] (§8)
     cover: dict = field(default_factory=dict)                # map pack name -> [cover.Paint] (§8)
     movement: dict = field(default_factory=dict)             # map pack name -> [nav.Block] (§8)
@@ -42,6 +44,8 @@ class ModInfo:
     repaint: dict = field(default_factory=dict)              # map pack name -> [brush.Stroke] repaint (§8: the ground
     # the other brushes moved, painted by its new shape: rusemod.repaint)
     ground_pictures: dict = field(default_factory=dict)      # file:<mod id>/<name>.png -> its path (files/ground, §8)
+    relief_pictures: dict = field(default_factory=dict)      # map pack name -> [(brush.Stroke relief, its picture's
+    # path)]: laid on the ground picture under the mods' own paint (rusemod.relief)
     players: dict = field(default_factory=dict)              # map pack name -> [players.Players] (§8, map.toml)
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
     menu_pictures: dict = field(default_factory=dict)        # map pack name -> [menupicture.MenuPictures] (§8)

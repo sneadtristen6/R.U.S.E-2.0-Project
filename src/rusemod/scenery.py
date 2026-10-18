@@ -1052,6 +1052,190 @@ def add_names(data: bytes, new: list[str]) -> bytes:
     return bytes(out)
 
 
+SECTION_PART = 100   # places one new block lists at most (add_sections): neighbours, about 300 m across for 30 m
+                     # sections, each block hung on a carrier of its own as add_objects hangs WIDEN_MOST objects
+
+
+@dataclass(frozen=True)
+class _Place:
+    section: int   # which section (its index in add_sections' list)
+    x: float
+    y: float
+    turn: float
+
+
+def _placed(x: float, y: float, turn: float) -> tuple:
+    """A section's place: turned `turn` degrees (as NewObject.turn) round its middle, that middle at (x, y)."""
+    t = math.radians(turn)
+    c, s = math.cos(t), math.sin(t)
+    return (c, -s, 0.0, x, s, c, 0.0, y, 0.0, 0.0, 1.0, 0.0)
+
+
+def _box_through(box: tuple, m: tuple) -> tuple:
+    """A box (x0, y0, x1, y1) through transform `m`: the box round its four corners."""
+    xs, ys = [], []
+    for x, y in ((box[0], box[1]), (box[2], box[1]), (box[0], box[3]), (box[2], box[3])):
+        xs.append(m[0] * x + m[1] * y + m[3])
+        ys.append(m[4] * x + m[5] * y + m[7])
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def add_sections(data: bytes, sections: list[tuple[str, list, tuple]]) -> tuple[bytes, list[str]]:
+    """The scenery file with each section ((name, its NewObjects about its middle (0, 0), its places ((x, y, turn),
+    ...)): SectionArea, copy_objects) written ONCE, as a block of its own, and placed at each of its places by a
+    reference to that block, as the shipped maps place their landscape tiles. The references go in new blocks of at
+    most SECTION_PART neighbouring places each, each new block wrapping a reference of the top block (it places the
+    old block where it was, then the sections' references), as add_objects wraps one for new objects in open ground:
+    the reference listed at the sections' levels nearest them, a free one while there is one, its box in the draw
+    tree widened over them (_widen). New blocks go right after the top block (a reference must point forward): the
+    wrapping blocks, then the sections' own; every later reference moves by their size. The grids' cells under the
+    placed sections are marked as holding something (_grids_hold). Types must be ones the map already uses. Returns
+    (new file, notes)."""
+    sections = [(n, list(objs), tuple(places)) for n, objs, places in sections if objs and places]
+    if not sections:
+        return bytes(data), []
+    sc = Scenery(data)
+    index = {name: i for i, name in enumerate(sc.names[:len(sc.flags)]) if sc.flags[i] == 1}
+    words: dict[int, int] = {}
+    for b in sc.blocks:
+        for it in b.items:
+            if it.kind == "object":
+                words.setdefault(it.symbol, it.word & WORD_KEEP)
+    own: list[bytes] = []   # each section's block
+    made: list[tuple] = []  # each section's (box, levels it asks but far, whether it asks far, its points for the grids)
+    step = GRID_CELL[2] / 4
+    for name, objects, _places in sections:
+        if len(objects) > BLOCK_MOST:
+            raise SceneryEditError(f"section {name}: {len(objects):,} objects, more than one block holds "
+                                   f"({BLOCK_MOST:,}): copy a smaller square")
+        items, boxes, levels = [], [], []
+        need, far = 0, False
+        for o in objects:
+            sym = index.get(o.type)
+            if sym is None:
+                raise SceneryEditError(f"section {name}: {o.type} isn't used on this map, so the map can't take it "
+                                       f"(only types its scenery already lists)")
+            if not 0.05 <= o.size <= 50:
+                raise SceneryEditError(f"section {name}: {o.type}: size {o.size} is outside 0.05 to 50")
+            m = o.matrix()
+            kind, tdata = encode_transform(m)
+            items.append(struct.pack("<I", 0x80000000 | words.get(sym, 0) | (sym << 4) | kind) + tdata)
+            pad = MARGIN * o.size * max(1.0, o.stretch)
+            boxes.append((m[3] - pad, m[7] - pad, m[3] + pad, m[7] + pad))
+            levels.append(o.levels)
+            need |= _needs(o)
+            far = far or not o.levels or bool(o.levels & 0x08)
+        box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+        own.append(_new_block(items, box, boxes, levels))
+        points = sorted({(round(o.x / step) * step, round(o.y / step) * step) for o in objects})
+        made.append((box, need, far, points))
+    places = [_Place(k, x, y, t) for k, (_n, _o, ps) in enumerate(sections) for x, y, t in ps]
+    notes: list[str] = []
+    hung: dict[int, list[_Place]] = {}   # the top block's reference's `at` -> the places its new block lists
+    widened = 0
+    for part in _chunks(places, SECTION_PART):
+        need, far = 0, False
+        corners = []
+        for p in part:
+            box, n, f, _pts = made[p.section]
+            need, far = need | n, far or f
+            x0, y0, x1, y1 = _box_through(box, _placed(p.x, p.y, p.turn))
+            corners += [NewObject("", x, y, levels=n) for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
+        data, at, more = _widen(Scenery(data), data, corners, need, far, avoid=set(hung))
+        if at is None and far:   # no far-listed reference listed at their levels: drawn from middle in
+            data, at, more = _widen(Scenery(data), data, corners, need, avoid=set(hung))
+        if at is None:
+            data, at, more = _widen(Scenery(data), data, corners, avoid=set(hung))
+        if at is None:
+            raise SceneryEditError("the map's top block has no draw tree to hang the sections on")
+        widened += bool(more)
+        hung.setdefault(at, []).extend(part)
+    sc = Scenery(data)
+    top = sc.blocks[0]
+    ins = top.offset + len(top.raw)  # the new blocks go right after the top block
+    if len(sc.blocks) > 1 and sc.blocks[1].offset != ins:
+        raise SceneryError("the scenery file's blocks aren't in the order this writer knows")
+    by_at = {it.at: it for it in top.items}
+
+    def wrapper(at: int, part: list[_Place], shift: int, own_at: list[int]) -> bytes:
+        """The new block wrapping reference `at`: the old block where it was (the reference to the new block keeps
+        the old one's transform), then a reference to each place's section (`own_at`: where each section's block
+        starts; `shift`: how far the old blocks move)."""
+        carrier = by_at[at]
+        inner = sc.block_at(carrier.child_offset)
+        to_local = _inverse(carrier.matrix())
+        items = [struct.pack("<I", link_word(carrier.word & 0xFF000000, carrier.child_offset + shift) | T_IDENTITY)]
+        boxes, levels = [tuple(inner.bbox)], [0]
+        for p in part:
+            box, n, f, _pts = made[p.section]
+            m = compose(to_local, _placed(p.x, p.y, p.turn))
+            kind, tdata = encode_transform(m)
+            items.append(struct.pack("<I", link_word(0, own_at[p.section]) | kind) + tdata)
+            boxes.append(_box_through(box, m))
+            levels.append(n | (0x08 if f else 0))
+        whole = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes),
+                 max(b[3] for b in boxes))
+        return _new_block(items, whole, boxes, levels)
+    ats = list(hung)
+    sizes = [len(wrapper(at, hung[at], 0, [0] * len(own))) for at in ats]   # (their sizes don't hang on offsets)
+    wrap_at = [ins + sum(sizes[:j]) for j in range(len(ats))]
+    own_at = [ins + sum(sizes) + sum(len(b) for b in own[:k]) for k in range(len(own))]
+    shift = sum(sizes) + sum(len(b) for b in own)
+    if sc.fields[3] + shift > DATA_LIMIT:
+        raise SceneryEditError(f"the map's scenery is too big for the sections ({shift:,} bytes more) to be "
+                               f"referenced")
+    news = [wrapper(at, hung[at], shift, own_at) for at in ats]
+    if [len(b) for b in news] != sizes:
+        raise SceneryError("a new block came out a different size than measured")
+    goes_to = dict(zip(ats, wrap_at))
+    f = list(sc.fields)
+    tab_off, tab_n, data_off, data_len = f[0], f[1], f[2], f[3]
+    if tab_off != 124 or data_off != tab_off + 4 * tab_n:
+        raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+    parts = []
+    for b in sc.blocks:
+        raw = bytearray(b.raw)
+        for it in b.items:
+            if it.kind != "child":
+                continue
+            if b.index == 0 and it.at in goes_to:
+                target = goes_to[it.at]
+            else:
+                target = it.child_offset + shift if it.child_offset >= ins else it.child_offset
+            struct.pack_into("<I", raw, b.items_start + it.at, link_word(it.word, target))
+        parts.append(bytes(raw))
+        if b.index == 0:
+            parts += news + own
+    body_data = b"".join(parts)
+    if len(body_data) != data_len + shift:
+        raise SceneryError("the scenery file's blocks don't fill its data exactly")
+    added = len(news) + len(own)
+    end = data_off + data_len
+    for k in (4, 6, 8, 10, 12, 20, 22, 24):  # the tables after the data move by the table's new entries and blocks
+        if f[k] < end:
+            raise SceneryError("the scenery file's tables aren't in the order this writer knows")
+        f[k] += 4 * added + shift
+    f[1], f[2], f[3] = tab_n + added, data_off + 4 * added, data_len + shift
+    table = list(struct.unpack_from(f"<{tab_n}I", data, tab_off))  # the offsets, then the end marker
+    table = [table[0]] + wrap_at + own_at + [v + shift for v in table[1:]]
+    body = VERSION + struct.pack("<26I", *f) + struct.pack(f"<{len(table)}I", *table) + body_data + data[end:]
+    out = hashlib.md5(body).digest() + body
+    points = []
+    for p in places:
+        m = _placed(p.x, p.y, p.turn)
+        points += [(m[0] * x + m[1] * y + m[3], m[4] * x + m[5] * y + m[7]) for x, y in made[p.section][3]]
+    out, cells = _grids_hold(out, points)
+    total = sum(len(objs) for _n, objs, _p in sections)
+    notes.append(f"{len(sections)} section(s) ({total:,} objects) written once and placed {len(places):,} times "
+                 f"({sum(len(objs) * len(ps) for _n, objs, ps in sections):,} objects on the map) by "
+                 f"{len(news)} new block(s), each hung on a block of the map's draw tree"
+                 + (f" ({widened} of their boxes widened to reach them)" if widened else ""))
+    if cells:
+        notes.append(f"{cells} cell(s) of the scenery's grids marked as holding something, so the game draws the "
+                     f"sections there")
+    return out, notes
+
+
 BURY = 200000.0  # map units an object sunk out of sight goes under the ground (about 770 m)
 SHRINK = 0.05    # and the size it shrinks to, in case the game sets it on the ground whatever its height
 
@@ -2539,6 +2723,192 @@ def parse_field_brushes(rows: list, where: str = "scenery.toml") -> list[FieldBr
             raise SceneryEditError(f"{where}: fieldbrush {k + 1}: the square's direction dx, dy can't be 0, 0")
         out.append(FieldBrush(look.strip(), x, y, r, shape, dx, dy, seed))
     return out
+
+
+@dataclass(frozen=True)
+class CliffArea:
+    """Cliff faces made of rock scans ([[cliffs]] in scenery.toml, MOD_FORMAT §8; the owner, 2026-10-17: "try ... the
+    generation test with some of these rock faces. Automatically generating maybe inside of each other all together,
+    mixed around ... on these mountain sides or cliff faces"): the steep ground inside the circle (x, y, radius, map
+    units) covered with `types` (scans: their fronts turned to face downhill), mixed, `size` times their own size,
+    overlapping (a scan every `spacing` times its width), leaned back toward the slope (`lean`: 0 upright, 1 square
+    to the ground) and sunk by `sink` times their height. Laid by the build on the ground as built
+    (rusemod.cliffs.cliff_layer)."""
+    types: tuple
+    x: float
+    y: float
+    radius: float
+    size: tuple = (1.0, 2.0)
+    steep: float = 30.0      # degrees: the least slope a scan stands on
+    spacing: float = 0.6     # times a scan's width between neighbours (under 1: they overlap)
+    lean: float = 0.5
+    sink: float = 0.2
+    seed: int = 0
+
+
+def parse_cliffs(rows: list, where: str = "scenery.toml") -> list[CliffArea]:
+    out = []
+    keys = {"types", "x", "y", "radius", "size", "steep", "spacing", "lean", "sink", "seed"}
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - keys)
+        if extra:
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: unknown key {extra[0]!r}")
+        types = row.get("types")
+        if not isinstance(types, list) or not types or not all(isinstance(t, str) and t.strip() for t in types):
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: types is a list of scenery types (the rock scans)")
+        try:
+            x, y, r = float(row["x"]), float(row["y"]), float(row["radius"])
+            size = tuple(float(v) for v in row.get("size", (1.0, 2.0)))
+            steep, spacing = float(row.get("steep", 30.0)), float(row.get("spacing", 0.6))
+            lean, sink, seed = float(row.get("lean", 0.5)), float(row.get("sink", 0.2)), int(row.get("seed", 0))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: cliffs {k + 1} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: x, y, radius, size, steep, spacing, lean, sink and seed "
+                                   f"must be numbers") from None
+        if not all(math.isfinite(v) for v in (x, y, r)) or not 0 < r <= ERASE_MAX:
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: the radius must be above 0 and at most "
+                                   f"{ERASE_MAX:,.0f} map units")
+        if len(size) != 2 or not 0.05 <= size[0] <= size[1] <= 50:
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: size is [least, most], 0.05 to 50")
+        if not (0.0 <= steep < 90.0 and 0.1 <= spacing <= 5.0 and 0.0 <= lean <= 1.0 and 0.0 <= sink <= 1.0):
+            raise SceneryEditError(f"{where}: cliffs {k + 1}: steep is 0 to 90 degrees, spacing 0.1 to 5, lean and "
+                                   f"sink 0 to 1")
+        out.append(CliffArea(tuple(t.strip() for t in types), x, y, r, size, steep, spacing, lean, sink, seed))
+    return out
+
+
+SECTION_NAME = re.compile(r"^[a-z0-9_\-]{1,64}$")
+SECTION_SIDE_MOST = 2000.0 * 260.0   # map units: a section's square at most 2 km a side (D-Day's tiles: ~280 m)
+SECTION_PLACES_MOST = 200000         # places one [[section]] lists at most
+
+
+@dataclass(frozen=True)
+class SectionArea:
+    """A square of a map's scenery copied ONCE and placed again many times ([[section]] in scenery.toml, MOD_FORMAT
+    §8; the owner, 2026-10-17: the game's own stickers, plants and stones up close on generated ground; a town's
+    blocks copied and put back together): what `layers` (COPY_LAYERS, trees, props) lay in the square of side `side`
+    round (sx, sy) on the map as it comes in (or on `source`, another map's shipped scenery), each object kept at its
+    place about the square's middle and at the levels its shipped copy is drawn at; placed with that middle at each of
+    `places` ((x, y, turn): map units, and degrees as NewObject.turn), every place a reference to the one copy, as the
+    shipped maps place their landscape tiles (D-Day: tiles of about 280 m, each placed 37 to 56 times turned; 15.2
+    million placements in 10 MB). Written by add_sections."""
+    name: str
+    sx: float
+    sy: float
+    side: float
+    places: tuple            # ((x, y, turn), ...)
+    layers: tuple = COPY_LAYERS
+    source: str = ""
+    objects: tuple = ()      # instead of a square copied: its objects listed, each (type, x, y, turn, size, levels,
+                             # height) about its middle (map units, degrees; levels as NewObject.levels, 0 = all;
+                             # height 0 = its size): a section made elsewhere (the dressing a mod generates)
+
+    def new_objects(self) -> list:
+        """Its listed objects as NewObjects (drawn only: solid = false)."""
+        return [NewObject(t, x, y, turn, size, solid=False, levels=lv, height=hgt)
+                for t, x, y, turn, size, lv, hgt in self.objects]
+
+    def copy_area(self, group: int = 0) -> "CopyArea":
+        """What copy_objects reads for it: the square, its middle laid at (0, 0) (the copy's own coordinates), its
+        objects kept off by nothing but each other's fill rule within `group` (so all of the square comes)."""
+        return CopyArea(0.0, 0.0, self.side / 2, self.sx, self.sy, layers=self.layers, shape="square",
+                        source=self.source, group=group)
+
+
+def _section_objects(rows, where: str, name: str) -> tuple:
+    """A [[section]]'s `objects`: each [type, x, y, turn, size, levels] or with a height after them."""
+    if not isinstance(rows, list) or not rows or len(rows) > BLOCK_MOST:
+        raise SceneryEditError(f"{where}: section {name}: objects is a list of [type, x, y, turn, size, levels] or "
+                               f"[..., height] (1 to {BLOCK_MOST:,})")
+    out = []
+    for r in rows:
+        try:
+            if not isinstance(r, list) or len(r) not in (6, 7) or not isinstance(r[0], str) or not r[0].strip():
+                raise ValueError
+            t, x, y, turn, size, lv = r[0].strip(), float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5])
+            hgt = float(r[6]) if len(r) == 7 else 0.0
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: section {name}: each object is [type, x, y, turn, size, levels] or "
+                                   f"[..., height] (found {r!r})") from None
+        if not all(math.isfinite(v) for v in (x, y, turn, size, hgt)) or not 0.05 <= size <= 50 \
+                or not 0 <= lv <= ALL_TIERS or not 0.0 <= hgt <= 50:
+            raise SceneryEditError(f"{where}: section {name}: an object's size is 0.05 to 50, its levels 0 to "
+                                   f"{ALL_TIERS} and its height 0 to 50 ({r!r})")
+        out.append((t, x, y, turn, size, lv, hgt))
+    return tuple(out)
+
+
+def parse_sections(rows: list, where: str = "scenery.toml") -> list[SectionArea]:
+    out = []
+    keys = {"name", "sx", "sy", "side", "places", "layers", "map", "objects"}
+    for k, row in enumerate(rows):
+        extra = sorted(set(row) - keys)
+        if extra:
+            raise SceneryEditError(f"{where}: section {k + 1}: unknown key {extra[0]!r}")
+        name = row.get("name", "")
+        if not isinstance(name, str) or not SECTION_NAME.match(name):
+            raise SceneryEditError(f"{where}: section {k + 1}: name is 1 to 64 of a-z, 0-9, _ and -")
+        objects = _section_objects(row["objects"], where, name) if "objects" in row else ()
+        if objects and any(key in row for key in ("sx", "sy", "side", "layers", "map")):
+            raise SceneryEditError(f"{where}: section {name}: a section lists its objects or copies a square "
+                                   f"(sx, sy, side), not both")
+        try:
+            sx, sy, side = (0.0, 0.0, 0.0) if objects else (float(row["sx"]), float(row["sy"]), float(row["side"]))
+        except KeyError as exc:
+            raise SceneryEditError(f"{where}: section {name} has no {exc.args[0]}") from None
+        except (TypeError, ValueError):
+            raise SceneryEditError(f"{where}: section {name}: sx, sy and side must be numbers") from None
+        if not objects and (not all(math.isfinite(v) for v in (sx, sy, side)) or not 0 < side <= SECTION_SIDE_MOST):
+            raise SceneryEditError(f"{where}: section {name}: side must be above 0 and at most "
+                                   f"{SECTION_SIDE_MOST:,.0f} map units")
+        layers = row.get("layers", list(COPY_LAYERS))
+        if not isinstance(layers, list) or not layers or any(g not in FIELD_COPY_LAYERS for g in layers):
+            raise SceneryEditError(f"{where}: section {name}: layers is a list of {', '.join(FIELD_COPY_LAYERS)}")
+        source = row.get("map", "")
+        if not isinstance(source, str):
+            raise SceneryEditError(f"{where}: section {name}: map is a map pack's name")
+        places = row.get("places")
+        if not isinstance(places, list) or not places or len(places) > SECTION_PLACES_MOST:
+            raise SceneryEditError(f"{where}: section {name}: places is a list of [x, y] or [x, y, turn] (1 to "
+                                   f"{SECTION_PLACES_MOST:,})")
+        got = []
+        for p in places:
+            try:
+                if not isinstance(p, list) or len(p) not in (2, 3):
+                    raise ValueError
+                x, y, turn = float(p[0]), float(p[1]), float(p[2]) if len(p) == 3 else 0.0
+            except (TypeError, ValueError):
+                raise SceneryEditError(f"{where}: section {name}: each place is [x, y] or [x, y, turn], numbers "
+                                       f"(found {p!r})") from None
+            if not all(math.isfinite(v) for v in (x, y, turn)):
+                raise SceneryEditError(f"{where}: section {name}: a place isn't a finite number ({p!r})")
+            got.append((x, y, turn))
+        out.append(SectionArea(name, sx, sy, side, tuple(got), tuple(dict.fromkeys(layers)), source.strip(), objects))
+    return out
+
+
+def sections_toml(sections: list[SectionArea], header: str = "") -> str:
+    """[[section]] tables for a mod's scenery.toml (parse_sections reads them back), places 3 to a line."""
+    out = [f"# {line}" for line in header.splitlines()] + ([""] if header else [])
+    for s in sections:
+        out += ["[[section]]", f"name = {json.dumps(s.name)}"]
+        if s.objects:
+            out.append("objects = [")
+            out += [f"  [{json.dumps(t)}, {x:.1f}, {y:.1f}, {turn:.1f}, {size:.3f}, {lv}"
+                    + (f", {hgt:.3f}]," if hgt else "],") for t, x, y, turn, size, lv, hgt in s.objects]
+            out.append("]")
+        else:
+            out += [f"sx = {s.sx!r}", f"sy = {s.sy!r}", f"side = {s.side!r}"]
+        if s.layers != COPY_LAYERS and not s.objects:
+            out.append("layers = [" + ", ".join(json.dumps(g) for g in s.layers) + "]")
+        if s.source:
+            out.append(f"map = {json.dumps(s.source)}")
+        rows = [f"[{x:.1f}, {y:.1f}, {t:.1f}]" for x, y, t in s.places]
+        out.append("places = [")
+        out += ["  " + ", ".join(rows[i:i + 3]) + "," for i in range(0, len(rows), 3)]
+        out += ["]", ""]
+    return "\n".join(out)
 
 
 @dataclass(frozen=True)

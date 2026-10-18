@@ -19,6 +19,8 @@ order, each to the ground the ones before it left.
   ramp      an even slope from one point to another: flat across the    level (z at the start), x2, y2 and
             middle half of its width, sloping back to the old ground     level2 (the end and z there), weight;
             at its sides and beyond its ends                             radius is half its width
+  relief    the ground made whole from the mod's heightmap over a       relief (files/terrain/<relief>.png),
+            square (rusemod.relief), its picture laid with it            level, level2 (z of 0 and 65535), weight
   water     sets the water surface inside its circle to a level: the    level (world z of the water surface)
             ground below it floods, a lake (the ground is unchanged)
   drain     puts the water surface inside its circle back to the        -
@@ -104,6 +106,11 @@ BRUSHES = {
     # elsewhere); `height` how far the ground must have moved (map units; 0: repaint.MOVED), `theme` the palette's
     # theme ("": dday)
     "repaint": Brush("repaint", "soft"),
+    # ground made whole, not stamped (the owner, 2026-10-17: "throw up a cool mountain valley ... flat plains ... some
+    # hills"): a square (or rectangle, `length`) whose ground goes toward the mod's heightmap files/terrain/<relief>.png
+    # laid over it (0 = `level`, 65535 = `level2`, world z), `weight` how far; with files/terrain/<relief>-ground.png
+    # beside it, that picture is laid on the ground there too (rusemod.relief)
+    "relief": Brush("relief", "flat"),
 }
 WATER_KINDS = ("water", "drain")
 PAINT_KINDS = ("paint", "stamp", "texture", "tint")
@@ -362,6 +369,9 @@ class Stroke:
     dither: bool = False  # paint, stamp, texture, tint: where it fades, each pixel of the finest level takes it whole
                           # or not at all, by a chance that follows the fall-off (brushmask.dither_at): a speckled edge
                           # instead of a blend (Map Paint plan step 6)
+    relief: str = ""      # relief: the mod's heightmap, files/terrain/<relief>.png (and its picture <relief>-ground.png)
+    grid: tuple = ()      # relief: the heightmap as read (columns, rows, its 16-bit samples, rows from the high y side
+                          # as the picture's top): made by the build (rusemod.relief), never written to a terrain file
 
     def clip_at(self, x: float, y: float) -> bool:
         """Whether the clip lets (x, y) be painted (no clip: everywhere)."""
@@ -455,6 +465,9 @@ class Stroke:
             return z + b.sign * self.height * p
         if b.kind == "level":
             return z + (self.level - z) * (self.weight * p)
+        if b.kind == "relief":   # the heightmap is the ground over its whole square: no fall-off of the brush's own
+            from .relief import height_of   # (its rim meets the ground round it; a fall-off on top squashed the
+            return z + (height_of(self, x, y) - z) * self.weight   # mountains near it into walls: relief3, F-68)
         if average is None:
             raise ValueError("the smooth brush needs the local average height")
         return z + (average(x, y) - z) * (self.weight * p)
@@ -467,6 +480,8 @@ class Stroke:
         b = self.kind
         if b.kind in GROUND_UNCHANGED or b.kind == "add":
             return 1.0
+        if b.kind == "relief":   # (the whole square at its weight: height_at)
+            return 1.0 - self.weight if self.footprint().t2(x, y) < 1.0 else 1.0
         return 1.0 - self.weight * self.strength_at(x, y)
 
     def kept_function(self):
@@ -500,7 +515,9 @@ class Stroke:
 # --- the mod file: maps/<map pack>/terrain.toml -------------------------------------------------------------------
 _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", "y2", "level", "level2"),
           "water": ("level",), "drain": (), "cover": (), "block": (), "open": (), "paint": ("colour",),
-          "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",), "repaint": ()}
+          "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",), "repaint": (),
+          "relief": ("level", "level2", "relief")}
+_RELIEF_NAME = re.compile(r"^[a-z0-9_\-]{1,64}$")
 _NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "turn",
             "fold", "fx", "fy", "fturn", "size", "length")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -658,6 +675,17 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             if not isinstance(item["decals"], bool):
                 raise BrushError(f"{at}: decals must be true or false")
             values["decals"] = item["decals"]
+        if "relief" in item:
+            if kind != "relief":  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: relief (the mod's heightmap) is for the relief brush")
+            if not isinstance(item["relief"], str) or not _RELIEF_NAME.match(item["relief"]):
+                raise BrushError(f"{at}: relief must be the heightmap's name in files/terrain (a-z, 0-9, _ and -, "
+                                 f"without .png), not {item['relief']!r}")
+            values["relief"] = item["relief"]
+        if kind == "relief" and shape != "square":  # not a game rule: a heightmap is laid over a square
+            raise BrushError(f"{at}: a relief stroke is a square (shape = \"square\"; `length` makes it a rectangle)")
+        if "grid" in item:  # not a game rule: the build's own field
+            raise BrushError(f"{at}: grid is made by the build from the relief's heightmap, never written")
         if "block" in item:
             if brush != "water":
                 raise BrushError(f"{at}: block (whether its water keeps units out) is for the water brush")
@@ -693,6 +721,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
         if kind == "ramp":
             lines += [f"x2 = {_num_text(s.x2)}", f"y2 = {_num_text(s.y2)}", f"level = {_num_text(s.level)}",
                       f"level2 = {_num_text(s.level2)}"]
+        if kind == "relief":
+            lines += [f'relief = "{s.relief}"', f"level = {_num_text(s.level)}", f"level2 = {_num_text(s.level2)}"]
         if kind in ("paint", "tint"):
             lines.append(f'colour = "{s.colour}"')
         if kind == "stamp":
@@ -710,7 +740,7 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
                 lines.append(f"turn = {_num_text(s.turn)}")
             if not s.decals:
                 lines.append("decals = false")
-        if kind in ("level", "smooth", "ramp") + PAINT_KINDS:
+        if kind in ("level", "smooth", "ramp", "relief") + PAINT_KINDS:
             lines.append(f"weight = {_num_text(s.weight)}")
         if kind in PAINT_KINDS and not s.clear:
             lines.append("clear = false")
