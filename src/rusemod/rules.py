@@ -82,6 +82,16 @@ RULES: dict[str, Rule] = {
         "Two units with one DescriptorId: orders for one build the other.",
         "studied", "the game keeps the first unit with an id and skips the next without a word; production orders "
                    "name the unit by id (2026-10-01 audit, checked again 2026-10-02)"),
+    "own-units-menu": Rule(
+        "A building with units of its own (kind 6, 4 or 7) needs its kind's own build menu (8, 9, 10): a click on a "
+        "building opens the first tab of its build menu.",
+        "game", "buildings1 run 2 (owner, 2026-10-18): three such buildings all in menu 8, each clicked opened the "
+                "first one's tab; run 3, in menus 8, 9 and 10, each opened its own (owner: 'works')"),
+    "own-units-three": Rule(
+        "At most three kinds of buildings with units of their own: 6, and 4 and 7 with the game patch.",
+        "studied", "the game keeps room for 23 building kinds per player, and every other kind is the game's own or "
+                   "its decoys' (the details are in the project's private notes); the three were seen working "
+                   "together in buildings1 run 3 (2026-10-18). A fourth wasn't tried"),
     "unit-research-parent": Rule(
         "A unit researched from (UpgradeRequire) another nation's unit: the match never loads (one researched "
         "from a missing unit is refused with it, not tried in the game).",

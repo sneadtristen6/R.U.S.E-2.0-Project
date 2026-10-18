@@ -9,7 +9,8 @@
 // showView, renderChips and refreshList.
 (function () {
   "use strict";
-  const N = { words: {}, lang: "base", data: null, open: null };
+  const N = { words: {}, lang: "base", data: null, open: null,
+    flow: false, empty: new Set() };  // a new mod's Nations step (startflow.js): each nation kept or started empty
   const W = () => N.words;
   // the era library's eras and nations, by the Units tab's words for them (eraunits.js)
   const ERA_WORD = { WWI: "eras_era_ww1", WWII: "eras_era_ww2", "Cold War": "eras_era_cold", Modern: "eras_era_modern" };
@@ -57,15 +58,45 @@
     const toggle = el("button", { type: "button", className: "small", textContent: N.open === x.nation ? w.nations_close : w.nations_change,
       title: fill(w.tip_nations_change, { nation: name.now }) });
     toggle.addEventListener("click", () => { N.open = N.open === x.nation ? null : x.nation; render(); });
+    if (N.flow) head.append(keepOrEmpty(x, name));
     head.append(toggle);
     const box = el("div", { className: "nation" + (changed ? " changed" : "") }, head);
     if (N.open === x.nation) box.append(details(x, name));
     return box;
   }
 
+  // A new mod's Nations step: Keep its units (its build menus as in the game) or Start it empty (all its units out of
+  // them, as Hide all does: StudioApi.nation_units_hide), beside its name and flag
+  function keepOrEmpty(x, name) {
+    const w = W(), group = el("span", { className: "flow-keep", role: "radiogroup" });
+    for (const [key, word, tip] of [["keep", "flow_keep", "tip_flow_keep"], ["empty", "flow_empty", "tip_flow_empty"]]) {
+      const r = el("input", { type: "radio", name: `flow-keep-${x.nation}`, value: key,
+        checked: (key === "empty") === N.empty.has(x.nation), title: fill(w[tip], { nation: name.now }) });
+      r.addEventListener("change", async () => {
+        const empty = key === "empty";
+        let res;
+        try { res = await api().nation_units_hide(x.nation, empty, N.lang); } catch (err) { problem(err); render(); return; }
+        if (empty) N.empty.add(x.nation); else N.empty.delete(x.nation);
+        say(fill(empty ? w.nations_units_hidden : w.nations_units_shown, { nation: name.now })
+          + (res && res.unlinked && res.unlinked.length ? " " + fill(w.nations_units_unlinked, { list: res.unlinked.join(", ") }) : ""), "ok");
+      });
+      group.append(el("label", { className: "small", title: fill(w[tip], { nation: name.now }) }, r, " " + w[word]));
+    }
+    return group;
+  }
+
+  // Its buildings and their units (board.js): each building a row like its build menu in the game
+  function boardBlock(x, name) {
+    const w = W(), holder = el("div", { className: "board" });
+    window.BoardView.mount(holder, x.nation, name.now);
+    return [el("h3", { textContent: w.board_head, title: w.tip_board_head }),
+      el("p", { className: "muted small", textContent: fill(w.board_help, { nation: name.now }) }), holder];
+  }
+
   function details(x, name) {
     const w = W(), has = Boolean(N.data && N.data.mod);
     const parts = [];
+    if (window.BoardView) parts.push(...boardBlock(x, name));
     parts.push(el("h3", { textContent: w.nations_name_head, title: w.tip_nations_name_head }),
       el("p", { className: "muted small", textContent: w.nations_name_help }), wordsPanel(x.name_key, render));
     if (x.army_key) {
@@ -294,6 +325,17 @@
   window.NationsView = {
     open(words, lang) { N.words = words; N.lang = lang; render(); },
     setWords(words, lang) { N.words = words; N.lang = lang; render(); },
-    modChanged() { render(); },
+    modChanged() { N.empty.clear(); render(); },
+    setFlow(on) { N.flow = Boolean(on); if (!$("nations-view").classList.contains("hidden")) render(); },
+    // a unit's page in the Units tab, "Show on the board": its nation opened, its building's row brought into sight
+    async openNation(n, factory) {
+      N.open = n;
+      showView("nations");  // (drawn once: two at once would race for the same flag pictures)
+      for (let tries = 0; tries < 60; tries++) {  // (the board reads the build menus after the page is drawn)
+        const line = $("nations-list").querySelector(`.board-line[data-factory="${factory}"]`);
+        if (line) { line.closest(".board-row").scrollIntoView({ block: "start", behavior: "smooth" }); return; }
+        await new Promise((ok) => setTimeout(ok, 150));
+      }
+    },
   };
 })();

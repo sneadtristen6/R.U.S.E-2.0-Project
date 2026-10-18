@@ -66,6 +66,8 @@ from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
+from .board import BoardCalls
+from .startscreen import StartScreenCalls
 from . import __version__
 
 KINDS = {"ground": ("TUniteAuSolDescriptor",), "infantry": ("TInfanterieDescriptor",),
@@ -505,7 +507,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls):
+                NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, BoardCalls, StartScreenCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -8149,10 +8151,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return {"url": DOWNLOAD}
 
     # --- new units ---
-    def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1) -> dict:
+    def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1, unique: bool = False) -> dict:
         """A new unit in the current mod: a copy of `source` called `name` (in every language), costing `price` at
         every battle date, in the source's build menu or in another nation's (`nation` and `factory`, both given).
-        Returns its address, so the page can open it."""
+        `unique`: when a unit already has the address its name makes, the copy takes the next free one (_2, _3...)
+        and keeps the name (the board's copy of another nation's unit, named as the game names it). Returns its
+        address, so the page can open it."""
         name = (name or "").strip()
         if not name:
             raise StudioError("Give the new unit a name.")
@@ -8176,6 +8180,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             types = ix.prop_types(o["class"])
             all_units = self._all_units(ix)
             menus = {(u["nation"], u["factory"]) for u in all_units if u["factory"] is not None}
+            menus |= self._own_menus(ix, edits)  # the mod's buildings with units of their own (board.py)
             parent = ix.links(UPGRADE).get(source)      # the unit the source is researched from, if any
             parent_menu = next(((u["nation"], u["factory"]) for u in all_units if u["address"] == parent), None)
             namespace, tail = source.rsplit("/", 1)
@@ -8194,6 +8199,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             stem = safe_name(name)
             if stem:
                 target = f"{namespace}/{prefix}{stem}"
+                n = 2
+                while unique and taken(target):
+                    target, n = f"{namespace}/{prefix}{stem}_{n}", n + 1
                 if taken(target):
                     raise StudioError(f"There's already a unit called {prefix}{stem} (from {name!r}). Pick another "
                                       f"name.")

@@ -28,7 +28,7 @@ from .brush import BrushError, parse_strokes
 from .edat import Edat
 from .lock import fingerprint, fingerprint_text
 from .model import ModelError, collector_paused, game_path, load, save
-from .patch import Engine, Finding, Text, _walk_obj
+from .patch import Engine, Finding, MapV, Num, Text, _walk_obj
 from .visibility import SUFFIX as SEEN_SUFFIX
 from .resolve import ModInfo, ResolveError, load_order
 from .rndf import parse
@@ -922,6 +922,8 @@ class BuildResult:
     type_levels: dict = field(default_factory=dict)  # a placed type -> the draw tree's levels it's drawn at (its objects
     # ask them of the blocks they hang on: rusemod.visibility.type_levels)
     solved: dict = field(default_factory=dict)  # map pack name -> its answers, a locked file (rusemod.solved)
+    own_kinds: list = field(default_factory=list)  # the kinds of the buildings with units of their own (ownbuildings)
+    game_patch: str | None = None  # the game patch the modded copy needs (rusemod.gamepatch), or None
     fingerprint: bytes | None = None
 
     @property
@@ -1477,9 +1479,11 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
     return source
 
 
-def unit_classes(base, run, zz_win, result: BuildResult) -> None:
+def unit_classes(base, run, zz_win, result: BuildResult, scripts: dict | None = None) -> None:
     """Give every new unit a class in the game's Python unit list (ZZ_Win.dat), like the unit it copies. Units the
-    list can't take (made from scratch, or copies of units it doesn't list) get a warning: the game ignores them."""
+    list can't take (made from scratch, or copies of units it doesn't list) get a warning: the game ignores them.
+    The new list goes into `scripts` ({script pack: (the pack, {module: new bytes})}, written once per pack by the
+    caller); without it, straight into result.script_changed."""
     wanted = [(name, op) for name, op in run.created.items() if name in run.game.objects]
     found = pyscript.find_unit_list(zz_win) if zz_win is not None else None
     if found is None:
@@ -1528,12 +1532,68 @@ def unit_classes(base, run, zz_win, result: BuildResult) -> None:
         result.findings.append(Finding("error", f"the new units' classes can't be added: {exc}"))
         return
     new_xyz = pyscript.write_xyz(pyscript.Xyz(xyz.source_md5, added))
-    result.script_changed = {entry.path: pack.to_bytes({member.path: new_xyz})}
+    if scripts is None:
+        result.script_changed = {entry.path: pack.to_bytes({member.path: new_xyz})}
+    else:
+        scripts.setdefault(entry.path, (pack, {}))[1][member.path] = new_xyz
     result.new_classes = [n.name for n in new]
     for n in new:
         base_name = ".".join(ul.classes[n.like].base)
         result.findings.append(Finding("note", f"{n.path} gets its class {n.name}(front.{base_name}) in the game's "
                                                f"Python unit list, like {n.like}"))
+
+
+def _own_kinds_planned(ops_lists) -> dict:
+    """The kinds of buildings with units of their own (ownbuildings.KINDS) the mods' files give a building: {kind: the
+    loc key of the first such building's name (its tab's title), or None}. Read from the files before the build runs,
+    so the tabs go in with the mods; checked against what the build made (_own_kinds_made)."""
+    from . import ownbuildings
+    found: dict = {}
+    for ops in ops_lists:
+        for op in ops:
+            if op.kind in ("clone", "create"):
+                body = op.body
+            elif op.kind == "set" and op.target:
+                body = [op]
+            else:
+                continue
+            kind = next((b.value for b in body if b.kind == "set" and b.path == "TypeBatiment"), None)
+            if not isinstance(kind, Num) or int(kind.value) not in ownbuildings.KINDS:
+                continue
+            name = next((b.value for b in body if b.kind == "set" and b.path == "NameInMenuToken"), None)
+            if found.get(int(kind.value)) is None:
+                found[int(kind.value)] = name.value if isinstance(name, Text) and name.kind == "loc" else None
+    return found
+
+
+def _own_kinds_made(game, result: BuildResult) -> list[int]:
+    """The kinds of buildings with units of their own the built unit data has, each building checked: in its kind's
+    own build menu."""
+    from . import ownbuildings
+    kinds = set()
+    for name, obj in game.objects.items():
+        kind = obj.props.get("TypeBatiment")
+        if not isinstance(kind, Num) or int(kind.value) not in ownbuildings.KINDS:
+            continue
+        k = int(kind.value)
+        kinds.add(k)
+        menu = obj.props.get("Menu")
+        if not isinstance(menu, Num) or int(menu.value) != ownbuildings.MENU_OF[k]:
+            # rule: own-units-menu
+            result.findings.append(Finding("error", f"{name}: a building with units of its own of kind {k} needs build "
+                                                    f"menu {ownbuildings.MENU_OF[k]} (Menu), its kind's own: a click "
+                                                    f"on it opens the first tab of its menu"))
+    return [k for k in ownbuildings.KINDS if k in kinds]
+
+
+def _game_tab_keys(base) -> list[str]:
+    """The build bar's list keys in the game's order (ownbuildings.tabs_rndf), or [] when the data has no such list."""
+    from . import ownbuildings
+    obj = base.objects.get(ownbuildings.TABS_OBJECT)
+    value = obj.props.get(ownbuildings.TABS_PROP) if obj is not None else None
+    if not isinstance(value, MapV):
+        return []
+    return [k.value if isinstance(k, Text) else str(k) for k, _v in value.pairs]
 
 
 def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None = None,
@@ -1580,6 +1640,19 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
             result.findings.append(Finding("error", str(exc)))
             return result
         first = [(ModInfo("r2-assets"), parse(text, file="files/assets", mod="r2-assets"))]
+    # the build bar's tabs of the buildings with units of their own (rusemod.ownbuildings), after the mods
+    own_planned = _own_kinds_planned(by_id[m.id][1] for m in order)
+    if own_planned:
+        from . import ownbuildings
+        game_keys = _game_tab_keys(base)
+        if ownbuildings.COPIED_TAB not in game_keys:
+            # not a game rule: what the build copies each new tab from
+            result.findings.append(Finding("error", "these mods have buildings with units of their own, but the unit "
+                                                    "data has no build bar list with the Prototypes tab to copy"))
+            return result
+        tabs = [(k, own_planned[k]) for k in ownbuildings.KINDS if k in own_planned]
+        extra = extra + [(ModInfo("r2-own-buildings"), parse(ownbuildings.tabs_rndf(tabs, game_keys),
+                                                             file="own buildings", mod="r2-own-buildings"))]
     run = Engine(base).run(first + [by_id[m.id] for m in order] + extra)
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     # the levels each placed type is drawn at (its far copy's too), for its objects to ask of the blocks they hang on
@@ -1640,8 +1713,50 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
             return result
         result.findings += [Finding("note", n) for n in text_notes]
         result.text_changed = {entries[p.lower()].path: data for p, data in text_changed.items()}
-    unit_classes(base, run, text_arc, result)
+    scripts: dict = {}  # script pack in ZZ_Win.dat -> (the pack, {module: new bytes})
+    unit_classes(base, run, text_arc, result, scripts)
+    own_buildings(run, text_arc, own_planned, result, scripts)
+    if result.errors:
+        return result
+    result.script_changed = {path: pack.to_bytes(members) for path, (pack, members) in scripts.items()}
     return result
+
+
+def own_buildings(run, zz_win, planned: dict, result: BuildResult, scripts: dict) -> None:
+    """The buildings with units of their own (rusemod.ownbuildings): each checked in its kind's own build menu, the
+    game's tab, bar-place and production-queue scripts with the templates run after them (into `scripts`), and the
+    game patch the copy needs for kinds 4 and 7."""
+    from . import ownbuildings
+    kinds = _own_kinds_made(run.game, result)
+    if sorted(kinds) != sorted(planned):
+        # not a game rule: the tabs are planned from the mods' files before the build runs
+        result.findings.append(Finding("error", f"the mods' files give buildings with units of their own of kinds "
+                                                f"{sorted(planned)}, but the built data has kinds {sorted(kinds)} "
+                                                f"(a later change to TypeBatiment?): keep each such building's kind "
+                                                f"in the block that makes it"))
+        return
+    if not kinds or result.errors:
+        return
+    if zz_win is None:
+        result.findings.append(Finding("error", "these mods have buildings with units of their own, whose tabs go "
+                                                "into ZZ_Win.dat's scripts; it wasn't given"))
+        return
+    try:
+        changes = ownbuildings.script_changes(zz_win, kinds)
+    except (ownbuildings.OwnBuildingsError, pyscript.ScriptError) as exc:
+        # not a game rule: what our writer supports, or a script it can't read or join
+        result.findings.append(Finding("error", f"the tabs of the buildings with units of their own can't be added "
+                                                f"to the game's scripts: {exc}"))
+        return
+    for path, (pack, members) in changes.items():
+        scripts.setdefault(path, (pack, {}))[1].update(members)
+    result.own_kinds = kinds
+    if set(kinds) & ownbuildings.PATCHED:
+        result.game_patch = ownbuildings.PATCH
+    result.findings.append(Finding("note", f"buildings with units of their own: kinds {', '.join(map(str, kinds))}, "
+                                           f"each with its tab on the build bar"
+                                   + (f"; the modded copy gets the game patch {ownbuildings.PATCH}"
+                                      if result.game_patch else "")))
 
 
 def terrain_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
@@ -4224,6 +4339,23 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             return result
         if result.fingerprint is None:
             result.fingerprint = fingerprint(build_id, result.changed)
+        patched_exe = None
+        if result.game_patch:  # the modded copy's own RUSE.exe, patched (rusemod.gamepatch); the game's is only read
+            from . import gamepatch
+            exe = Path(game) / gamepatch.EXE
+            try:
+                patch = gamepatch.fetch(result.game_patch, cache, say=say)
+                patched_exe = gamepatch.apply(patch, exe.read_bytes()) if instance is not None else None
+            except OSError as exc:
+                # not a game rule: the game's file can't be read
+                raise BuildError(f"{exe} can't be read for the game patch ({exc.strerror or exc})") from None
+            except gamepatch.GamePatchError as exc:
+                raise BuildError(str(exc)) from None
+            # players only play together with the same patch
+            result.fingerprint = hashlib.sha256(result.fingerprint + b"\ngame patch " + result.game_patch.encode()
+                                                + b" " + patch.sha256.encode()).digest()
+            say(f"game patch {result.game_patch}: " + ("applied to the modded copy's RUSE.exe" if instance is not None
+                                                        else "only a modded copy gets it (--instance)"))
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
         if out is not None:
             out = Path(out)
@@ -4246,6 +4378,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 rel = str(path.resolve().relative_to(Path(game).resolve()))
                 # a new map's pack isn't in the game: the copy gets it as a file of its own
                 (replace if path.exists() else add)[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
+            if patched_exe is not None:
+                replace[gamepatch.EXE] = patched_exe  # written into the copy as a file of its own
             copied = build_instance(str(game), str(instance), replace=replace, add=add, built_from=built_from)
             say(f"modded copy ready: {instance}  {copied}")
             locked = copied.get("read-only packs", 0)

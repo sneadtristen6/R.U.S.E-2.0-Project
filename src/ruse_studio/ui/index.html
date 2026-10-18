@@ -53,6 +53,19 @@
       <p id="lang-pick-help" class="muted small"></p>
     </div>
   </div>
+  <!-- the start screen (startflow.js, StudioApi.start_mods): carry on with a mod, start a new one, or skip; a tick
+       skips it always (prefs "start_skip", Settings > Start screen) -->
+  <div id="start-screen" class="start-screen hidden" role="dialog" aria-modal="true" aria-labelledby="ss-title">
+    <div class="start-screen-box">
+      <img src="logo.png" alt="" width="48" height="48">
+      <h1 id="ss-title"></h1>
+      <div id="ss-body"></div>
+    </div>
+  </div>
+  <!-- a new mod's steps (startflow.js): their bar over the Studio while they're taken, and (#flow-page, above the
+       tabs) the steps' own pages: its name, research, the board, what it will change, done; the Nations step and the
+       ticked tabs are the tabs themselves -->
+  <nav id="flow-bar" class="flow-bar hidden"></nav>
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
@@ -78,6 +91,7 @@
     <span id="export-help" class="muted small"></span>
   </form>
 
+  <div id="flow-page" class="flow-page hidden"></div>
   <main id="units-view" class="layout">
     <aside class="browser">
       <!-- the two ways in (app.js renderStart): change a unit, or start a new one from it to import a model into -->
@@ -684,6 +698,12 @@
         <p id="research-gone-note" class="muted small"></p>
         <label class="setting-pick"><span id="research-unit-label"></span> <select id="research-unit"></select></label>
       </section>
+      <!-- the start screen (startflow.js renderSetting): shown when the Studio opens, or skipped; and open it now -->
+      <section class="setting" id="set-start">
+        <h2 id="set-start-title"></h2><p id="set-start-help" class="muted small"></p>
+        <label class="setting-pick"><input id="set-start-show" type="checkbox"> <span id="set-start-show-label"></span></label>
+        <div class="actions"><button id="set-start-open" type="button" class="small"></button></div>
+      </section>
       <section class="setting" id="set-game">
         <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
         <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
@@ -985,6 +1005,8 @@
   <script src="app.js"></script>
   <script src="sound.js"></script>
   <script src="nations.js"></script>
+  <script src="board.js"></script>
+  <script src="startflow.js"></script>
   <script src="eraunits.js"></script>
   <script src="files.js"></script>
   <script src="mission.js"></script>
