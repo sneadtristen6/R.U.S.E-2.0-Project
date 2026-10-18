@@ -50,6 +50,7 @@ SNAP_STEPS = 2.5      # a water's edge this many of the file's steps from a grid
 REUSE_WITHIN = 8000   # the gameplay ground's index list stores steps of at most 16,383: a point is shared only among
                       # the last this many written
 STILL = bytes((0, 128, 128, 0))   # a flow texel of still water (rusemod.water: a dry cell given water)
+HEADROOM = 10.0 * 260.0   # a height range made taller (ground higher than the copied map's) ends this far over the top
 
 
 def hilbert(n: int) -> list[tuple[int, int]]:
@@ -99,6 +100,25 @@ class Shape:
         self.rest = [(s, s.box()) for s in heights[1:]]
         self.water = [(s, s.box()) for s in strokes if s.brush in WATER_KINDS]
         self.base_water = base_water
+
+    def top(self) -> float:
+        """A height the ground can't rise above (world z): the highest level any stroke goes to, plus everything the
+        hills, raises and craters could add on top. For making the meshes' height range room enough."""
+        from .brush import CRATER_RIM
+        from .relief import grid_range
+        z, added = self.base, 0.0
+        for s, _box in self.rest:
+            kind = s.kind.kind
+            if kind == "level":
+                z = max(z, s.level)
+            elif kind == "ramp":
+                z = max(z, s.level, s.level2)
+            elif kind == "relief" and s.grid:
+                lo, hi = grid_range(s.grid)
+                z = max(z, s.level + (s.level2 - s.level) * lo / 65535.0, s.level + (s.level2 - s.level) * hi / 65535.0)
+            elif kind == "add":
+                added += abs(s.height) * (CRATER_RIM if s.kind.shape == "crater" else 1.0)
+        return z + added
 
     def h(self, x: float, y: float) -> float:
         z = self.base
@@ -434,6 +454,10 @@ def _fill_tree(k: Kdt, tris: list, what: str) -> tuple[bytes, list, int]:
     """`k` (a .kdt) holding `tris` (world triangles): each subtree the ones that touch its region, normals from the
     faces, its trees built again, its MainNode's height clips widened. Returns (file, triangles per part, clips
     widened)."""
+    top = max(p[2] for t_ in tris for p in t_)
+    if top > k.bounds_max[2]:   # ground higher than the copied map's: the tree's box (its points' steps) made taller
+        k.bounds_max = (k.bounds_max[0], k.bounds_max[1], top + HEADROOM)   # (every part is written again below)
+
     def qp(p):
         return k.to_quant(0, p[0]), k.to_quant(1, p[1]), k.to_quant(2, p[2])
     acc: dict = {}
@@ -643,6 +667,12 @@ def generate(read, strokes: list, name: str, max_depth: float | None) -> tuple[d
     offset = base - far.to_world(2, far.base_water())
     shape = Shape(strokes, bounds, base)
     notes = []
+    top = shape.top() + HEADROOM
+    if top > near.bounds[5] or top > far.bounds[5]:   # mountains past the copied map's highest point: both meshes'
+        was = near.bounds[5]                          # height range made taller (every point is made again here)
+        near.bounds[5], far.bounds[5] = max(near.bounds[5], top), max(far.bounds[5], top)
+        notes.append(f"{name}: the meshes' height range raised from {was / 260.0:.0f} to {near.bounds[5] / 260.0:.0f} m "
+                     f"for the ground the strokes raise")
     fine_near = fine_cells(near, shape)
     near.cells, ni = make_mesh(near, shape.h, shape.w, PER_CELL_NEAR, fine_near, PATCHES_NEAR)
     moved = fit_skirt(near, shape.h, shape.w)

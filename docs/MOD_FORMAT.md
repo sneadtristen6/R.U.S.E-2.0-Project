@@ -301,16 +301,31 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   model   = "rock_face_01_2k.gltf"
   size    = 1.0               # times the model's own size, 0.01 to 100 (1: as modelled, a metre a metre)
   source  = "polyhaven.com"   # optional, kept for the credits: source, author, licence
+  # optional:
+  medium  = "rock_face_01_2k_medium.glb"   # its own middle and far versions (below)
+  far     = "rock_face_01_2k_far.glb"
+  two_sided = true            # every triangle also facing the other way: a scan with no back (a rock face) seen
+                              # from behind too (twice its triangles)
   ```
 
   The type is a copy of one of the game's of that kind (`RocherNormandie_01`, `TasPlanchesBois`,
   `BuissonSec03_France`, `Chene_01`) with the model ours; the model goes into every model pack holding that type's
-  model, so it loads wherever that one does, at full detail (no size cap). A rock or prop is drawn the same at every
-  distance; a plant close and in its middle-distance picture; a tree is its leaves (the see-through materials:
-  glTF's `alphaMode` MASK or BLEND, the mask in the picture's alpha, or a `<name>_alpha_<size>.png` beside a
-  `<name>_diff_<size>` picture as Poly Haven's come) and its wood (the rest), with a far picture of its own made of
-  them. Each picture (PNG or TGA; at most 2048 a side) becomes a texture of its own in the game model's picture group.
-  Not seen in the game yet.
+  model, so it loads wherever that one does, at full detail up close (no size cap). A tree is its leaves (the
+  see-through materials: glTF's `alphaMode` MASK or BLEND, the mask in the picture's alpha, or a
+  `<name>_alpha_<size>.png` beside a `<name>_diff_<size>` picture as Poly Haven's come) and its wood (the rest). Each
+  picture (PNG or TGA; at most 2048 a side) becomes a texture of its own in the game model's picture group.
+
+  Further out it is drawn lighter, as the game's buildings are: by its **middle** and **far** versions (the game draws
+  scenery in rings: close to 77 m, middle to 385 m, far beyond), 3D models all (a tree or bush too, not the flat
+  picture the game draws its own of: of ours it showed only the trunk).
+  Each placed one asks to be drawn at its type's rings, far included. The versions are the asset's own when its
+  asset.toml names them
+  (`medium = "rock_medium.glb"`, `far = "rock_far.glb"`: model files in its folder, sharing its pictures material by
+  material); otherwise the build makes them from the model, each off by at most a pixel where its ring starts, so a
+  big cliff keeps more than a small stone; see-through leaves are thinned, each kept leaf grown so the foliage covers
+  what it did. Made ones can be saved beside the model (`<model>_medium.glb`, `<model>_far.glb`, named in asset.toml)
+  to look at and change in Blender (the Maps tab's importer will do it; not in the Studio yet). Seen in the game
+  (2026-10-17): with every model full at every distance, 8 fps; with the versions, loading at once and 150-200+ fps.
 - **A squad's uniform:** the game's soldiers of a nation wear one picture (the US's: its GIs, Rangers and paratroopers,
   and the crews of its guns and open vehicles), so a repaint of it in `files/replace/` changes them all. The Studio
   repaints a squad only as a custom uniform (its own copy, above). Seen in the game (T48: one squad repainted in
@@ -679,6 +694,7 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `flatten` | ground toward `level`, most at the centre | round hump weighting |
 | `smooth` | ground toward its local average (the mean over about a third of the radius) | round hump weighting |
 | `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
+| `relief` | ground made whole from the mod's heightmap `files/terrain/<relief>.png` (a greyscale PNG; 16-bit keeps every step): laid over the square (`shape = "square"`, `length` for a rectangle, `dx`, `dy` to turn it: its columns run that way, its top row on the left of it, +y for a square along +x), a sample of 0 is the height `level`, 65535 is `level2` (world z); the ground goes toward it by `weight`. With `files/terrain/<relief>-ground.png` beside it (an RGB picture over the same square), that picture is laid on the ground's picture there, on every level of both tile sets, over a blank map's coat and under the mod's own paint. Seen in the game (2026-10-17) | the whole square at `weight`, no fall-off: the heightmap's own rim must meet the ground round it; its picture fades over the edge (a hard edge: full to 0.85 of the way out) |
 | `water` | the water surface to `level`: wherever the ground is lower, it floods (a lake); the ground doesn't move | the whole circle; end it on higher ground so the shore follows the ground |
 | `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
 | `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move. `square = true` paints a square along the map's axes instead, `radius` from its middle to each side | the cells whose centres are inside |
@@ -837,7 +853,61 @@ lift    = -225.0                        # its height against the ground the game
   bushes have a close or middle mode alone. So a mod's object of such a type is drawn with a copy of its type named
   `<type>_R2Seen`, which also serves the farther distances (rusemod.visibility); the map's own objects keep the shipped
   types. Seen in the game 2026-10-03: placed rocks shown at every height while the map's own vanish. The build notes
-  name every type that got a copy.
+  name every type that got a copy. Each placed object also asks to be drawn at every distance its type has a mode
+  for, far included, so it hangs on a part of the map's draw tree listed there (before 2026-10-17 none was drawn past
+  the middle distance, 385 m: seen in the game).
+- **Cliff faces** (`[[cliffs]]`): the steep ground inside a circle covered with rock scans (a mod's own map assets,
+  above), their fronts turned downhill, mixed, overlapping and sunk into the slope; laid by the build on the ground as
+  built, the same every build:
+
+  ```toml
+  [[cliffs]]
+  types   = ["TypeWarrior/R2_RockFace01", "TypeWarrior/R2_Mountainside", "TypeWarrior/R2_NamaqualandCliff01"]
+  x       = 3106000.0          # the circle (map units)
+  y       = 1954000.0
+  radius  = 36400.0
+  size    = [1.5, 3.5]         # times each scan's own size, at random between
+  steep   = 25.0               # degrees: the least slope a scan stands on
+  spacing = 0.6                # a scan every 0.6 times their width: under 1 they overlap
+  lean    = 0.5                # 0: upright; 1: each leaned until its front leans as the slope does
+  sink    = 0.2                # times its height, into the ground
+  seed    = 1
+  ```
+
+  Not seen in the game yet.
+- **Sections** (`[[section]]`): a square of a map's scenery copied ONCE and placed again many times, as the shipped
+  maps place their own landscape tiles (D-Day's are about 280 m, each placed 37 to 56 times, turned). What the
+  square holds on the map as it comes in (before this build erases anything; `map`: another map's shipped scenery)
+  of the layers asked (`stickers`, `plants`, `stones`, `trees`, `props`; by default the first three) is kept at its
+  place about the square's middle, at the detail levels its shipped copy is drawn at; each place lays that middle at
+  (x, y), turned (degrees, as an object's `turn`). Every place is a reference to the one copy, so a section placed
+  10,000 times costs the scenery file about 30 bytes a place, not its objects again (the file's limit: 16 MB):
+
+  ```toml
+  [[section]]
+  name   = "grass"             # a-z, 0-9, _ and -
+  sx     = 1924000.0           # the copied square's middle (map units)
+  sy     = 1253200.0
+  side   = 7800.0              # its side (map units: 30 m)
+  layers = ["stickers", "plants", "stones"]
+  places = [[2400000.0, 1300000.0, 90.0], [2407800.0, 1300000.0, 0.0]]   # [x, y] or [x, y, turn]
+  ```
+
+  A section may list its objects instead of copying a square (dressing made by a tool): each `[type, x, y, turn,
+  size, levels]` about its middle (map units, degrees; `levels` as the game draws that type, 0 for every distance),
+  with an optional height after them (a plant taller or flatter than it is wide):
+
+  ```toml
+  [[section]]
+  name    = "heath-1"
+  objects = [["TypeWarrior/trace_herbe_vive", 1200.0, -3400.5, 41.0, 0.73, 21],
+             ["TypeWarrior/HerbeHaute_02", -500.0, 220.0, 300.0, 1.0, 5]]
+  places  = [[2400000.0, 1300000.0, 90.0]]
+  ```
+
+  A section holds at most 12,000 objects, its types ones the map's scenery already lists. Up close the build fits the
+  map's sticker tint under the stickers sections lay to the ground painted there, so they draw its colour. Not seen in
+  the game yet.
 
 The same file takes the map's own scenery away, one circle each:
 

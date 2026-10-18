@@ -74,6 +74,47 @@ def _unfilter(raw: bytes, width: int, height: int, bpp: int) -> bytearray:
     return out
 
 
+def read_grey16(data: bytes) -> tuple[int, int, bytes]:
+    """A greyscale PNG's bytes -> (width, height, its samples as 16-bit numbers: 2 bytes each, high byte first, rows
+    top to bottom): a heightmap, every step kept (read_png keeps only the high byte). An 8-bit grey picture reads as
+    its values times 257 (0..255 -> 0..65535)."""
+    width, height, depth, ctype, pixels = _decoded(data)
+    if ctype != 0:
+        raise PngError(f"a heightmap must be a greyscale PNG (16-bit is best), not colour type {ctype}")
+    if depth == 16:
+        return width, height, bytes(pixels)
+    out = bytearray(2 * len(pixels))
+    out[0::2] = out[1::2] = pixels
+    return width, height, bytes(out)
+
+
+def _decoded(data: bytes):
+    """(width, height, bit depth, colour type, the rows' samples with their filters undone) of a PNG that isn't a
+    palette picture."""
+    if data[:8] != SIGNATURE:
+        raise PngError("not a PNG picture")
+    pos, head, idat = 8, None, bytearray()
+    while pos + 8 <= len(data):
+        length, kind = struct.unpack_from(">I4s", data, pos)
+        body = data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+        if kind == b"IHDR":
+            head = struct.unpack(">IIBBBBB", body)
+        elif kind == b"IDAT":
+            idat += body
+        elif kind == b"IEND":
+            break
+    if head is None:
+        raise PngError("the PNG has no header")
+    width, height, depth, ctype, _compression, _filter, interlace = head
+    if interlace:
+        raise PngError("interlaced PNGs aren't read: save it without interlacing")
+    if ctype not in CHANNELS or ctype == 3 or depth not in (8, 16):
+        raise PngError(f"PNG of colour type {ctype} at {depth} bits isn't read here")
+    bpp = CHANNELS[ctype] * depth // 8
+    return width, height, depth, ctype, _unfilter(zlib.decompress(bytes(idat)), width, height, bpp)
+
+
 def read_png(data: bytes) -> tuple[int, int, bytes]:
     """A PNG file's bytes -> (width, height, RGBA pixels: 4 bytes each, rows top to bottom)."""
     if data[:8] != SIGNATURE:

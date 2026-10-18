@@ -939,6 +939,123 @@ def stamp_detail(raw: bytes, bounds, strokes: list) -> tuple[bytes, list[str]]:
     return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [f"close-up map: {painted} block(s) copied with the stamps"]
 
 
+# The tint the game lays its stickers over: the close-up map's four channels, A its brightness, R and G two colour axes
+# about 128 (their reach scaled by B: TINT_K), B 24 on every shipped map. A sticker's own colour d over tint t is an
+# overlay (t up to 0.5: 2 d t, else 1 - 2 (1 - d)(1 - t); 128 grey leaves d as it is), then lit by the scene's lights,
+# while the ground shows its picture as painted: an untinted sticker doesn't draw the colour of the ground under it.
+TINT_B = 24
+TINT_K = 1.0 / (TINT_B / 255.0 * 31.875 + 1.0)   # 0.25
+STICKER_LIGHT = (0.66, 0.70, 0.76)   # how bright the scene's light draws a sticker on level ground against the ground
+                                     # as painted (D-Day's lighting: measured on the owner's shots, 2026-10-10)
+DDAY_LIGHTS = (((0.7804, 0.7451, 0.6784), 1.5, (-0.354, -0.612, -0.707)),   # the sun: hue, power, the way it shines
+               ((0.6902, 0.6588, 0.5569), 0.31, (0.8627, 0.0755, -0.5)),     # the two back lights
+               ((0.4157, 0.4745, 0.5843), 0.40, (0.0, 0.866, -0.5)))
+DDAY_AMBIENT = (0.2, 0.1686, 0.1373)
+TINT_CLOSE = 8.0   # of 255: a fitted pixel's sticker drawn within this of the ground's colour counts as matching
+
+
+def sticker_light(normal, lights=DDAY_LIGHTS, ambient=DDAY_AMBIENT, flat=STICKER_LIGHT):
+    """How bright the scene's lights draw a sticker lying on ground facing `normal` (x, y, z, unit), per channel,
+    against the ground as painted: `flat` on level ground, more on ground facing the lights, less facing away."""
+    def lit(n):
+        return [a + sum(h[c] * p * max(0.0, -(n[0] * d[0] + n[1] * d[1] + n[2] * d[2])) for h, p, d in lights)
+                for c, a in enumerate(ambient)]
+    here, level = lit(normal), lit((0.0, 0.0, 1.0))
+    return tuple(f * a / b for f, a, b in zip(flat, here, level))
+
+
+def _overlay(d: float, t: float) -> float:
+    return 2 * d * t if t <= 0.5 else 1 - 2 * (1 - d) * (1 - t)
+
+
+def _tint_for(d: float, want: float) -> float:
+    """The tint t whose overlay over `d` gives `want` (0-1, clamped to what a tint can do)."""
+    d = min(max(d, 1e-3), 1 - 1e-3)
+    want = min(max(want, 0.0), 1.0)
+    return min(max(want / (2 * d) if want <= d else 1 - (1 - want) / (2 * (1 - d)), 0.0), 1.0)
+
+
+def _packed_tint(t: tuple) -> tuple[int, int, int, int]:
+    """A tint (r, g, b, 0-1) as the close-up map's (R, G, B, A), as near as its channels hold it."""
+    y = (t[0] + 2 * t[1] + t[2]) / 4
+    co, cg = (t[0] - t[2]) / 2 / TINT_K, (t[1] - y) / TINT_K
+    return (round(min(max(0.50196 + co, 0.0), 1.0) * 255), round(min(max(0.50196 + cg, 0.0), 1.0) * 255), TINT_B,
+            round(min(max(y, 0.0), 1.0) * 255))
+
+
+def _tint_of(r: int, g: int, a: int) -> tuple:
+    """The tint (r, g, b, 0-1) the close-up map's R, G and A give."""
+    rr, gg, aa = r / 255 - 0.50196, g / 255 - 0.50196, a / 255
+    return aa + (rr - gg) * TINT_K, aa + gg * TINT_K, aa - (rr + gg) * TINT_K
+
+
+def fit_sticker_tint(raw: bytes, bounds, stickers: list, ground_at, normal_at=None, lights=DDAY_LIGHTS,
+                     ambient=DDAY_AMBIENT, flat=STICKER_LIGHT) -> tuple[bytes, list[str]]:
+    """The close-up map `raw` (`output\\div_map.tgv_pc`, one DXT5 picture stretched over `bounds`, grid_bounds) with the
+    tint under `stickers` [(x, y, half, turn, (r, g, b))]: map units, half the side it is laid at, degrees, its colour
+    picture's mean 0-1] set so that each draws the colour of the ground painted under it (`ground_at(x, y)`: r, g, b
+    0-255, or None), lit as the scene lights it there (`normal_at(x, y)`: the ground's unit up direction, or None:
+    level; sticker_light): up close (stickers) and from afar (the picture alone) one look. A pixel under several
+    stickers takes their mean colour; every other pixel is left as it is. Returns (the new record, notes), or
+    (b"", notes) when no sticker lies on it."""
+    if not stickers:
+        return b"", []
+    tex = Tgv(raw)
+    payload = tex.payload(0)
+    if not tex.format.upper().startswith("DXT5") or payload[:4] != b"ZIPO":
+        return b"", [f"close-up map: {tex.format} {payload[:4]!r} can't be tinted yet"]
+    blocks = bytearray(zipo_unpack(payload))
+    w, h = tex.width, tex.height
+    if len(blocks) != w * h:
+        raise PaintError(f"the close-up map holds {len(blocks)} bytes, not {w}x{h} DXT5")
+    x0, y0, x1, y1 = bounds
+    pw, ph = (x1 - x0) / w, (y1 - y0) / h
+    acc: dict[tuple[int, int], list] = {}   # pixel -> [r, g, b, how many stickers]
+    for sx, sy, half, turn, colour in stickers:
+        reach = half * math.sqrt(2.0)
+        c, s = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+        for py in range(max(0, int((sy - reach - y0) / ph)), min(h, int((sy + reach - y0) / ph) + 1)):
+            cy = y0 + (py + 0.5) * ph - sy
+            for px in range(max(0, int((sx - reach - x0) / pw)), min(w, int((sx + reach - x0) / pw) + 1)):
+                cx = x0 + (px + 0.5) * pw - sx
+                if abs(cx * c + cy * s) > half or abs(-cx * s + cy * c) > half:
+                    continue
+                a = acc.setdefault((px, py), [0.0, 0.0, 0.0, 0])
+                a[0] += colour[0]
+                a[1] += colour[1]
+                a[2] += colour[2]
+                a[3] += 1
+    nx = w // 4
+    by_block: dict[int, list] = {}   # block -> [(pixel in it, packed tint, d, lit, ground)]
+    for (px, py), (r, g, b, n) in acc.items():
+        x, y = x0 + (px + 0.5) * pw, y0 + (py + 0.5) * ph
+        ground = ground_at(x, y)
+        if ground is None:
+            continue
+        lit = sticker_light(normal_at(x, y) if normal_at else (0.0, 0.0, 1.0), lights, ambient, flat)
+        d = (r / n, g / n, b / n)
+        packed = _packed_tint(tuple(_tint_for(d[k], ground[k] / 255 / lit[k]) for k in range(3)))
+        by_block.setdefault((py // 4) * nx + px // 4, []).append(((py % 4) * 4 + px % 4, packed, d, lit, ground))
+    if not by_block:
+        return b"", []
+    close = reached = 0
+    for k, pixels in by_block.items():
+        rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))
+        for i, packed, _d, _lit, _ground in pixels:
+            rgb[i], alpha[i] = packed[:3], packed[3]
+        blocks[16 * k:16 * k + 16] = dxt.encode_dxt5_block(rgb, alpha)
+        rgb, alpha = dxt.dxt5_block(bytes(blocks[16 * k:16 * k + 16]))   # what the game reads: how near it comes
+        for i, _packed, d, lit, ground in pixels:
+            got = _tint_of(rgb[i][0], rgb[i][1], alpha[i])
+            drawn = [_overlay(d[c], min(max(got[c], 0.0), 1.0)) * lit[c] * 255 for c in range(3)]
+            close += max(abs(drawn[c] - ground[c]) for c in range(3)) <= TINT_CLOSE
+            reached += 1
+    return _tgv_with_payload(raw, zipo_pack(bytes(blocks))), [
+        f"close-up map: the tint under {len(stickers):,} sticker(s) fitted to the ground painted there ({reached:,} "
+        f"pixel(s) in {len(by_block):,} block(s)), so up close they draw its colour; {close / max(1, reached):.0%} "
+        f"of them within {TINT_CLOSE:.0f} of 255 of it (the rest as near as a tint can bring them)"]
+
+
 def paint_inputs(read) -> str:
     """A fingerprint of everything paint_ground reads from a map (`read`, the build's chain): the ground mesh (where
     the tiles lie), both tile sets and the close-up map; for keeping the painted pictures between builds."""

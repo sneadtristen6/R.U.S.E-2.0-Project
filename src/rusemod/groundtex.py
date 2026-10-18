@@ -131,6 +131,25 @@ def tgv_rgba(raw: bytes, want: int = MOST) -> tuple[int, int, bytes]:
     return w, h, bytes(dxt.decode_rgba(bytes(blocks), w, h, "DXT5" if dxt5 else "DXT1"))
 
 
+def tgv_grey(raw: bytes, want: int = MOST) -> tuple[int, int, bytes]:
+    """A one-channel game texture's pixels (L8 or A8: width, height, a byte each, rows top to bottom) at its smallest
+    mip at least `want` across (a sticker's separate alpha texture: its shape). TextureError for other formats."""
+    tex = Tgv(raw)
+    if not tex.format.upper().startswith(("L8", "A8")):
+        raise TextureError(f"a {tex.format} picture isn't a one-channel picture")
+    n = len(tex.mips)
+
+    def size(k):   # the mips run smallest first, each twice the one before
+        return max(1, tex.width >> (n - 1 - k)), max(1, tex.height >> (n - 1 - k))
+    pick = next((k for k in range(n) if min(size(k)) >= min(want, tex.width, tex.height)), n - 1)
+    w, h = size(pick)
+    payload = tex.payload(pick)
+    data = zipo_unpack(payload) if payload[:4] == b"ZIPO" else payload
+    if len(data) < w * h:
+        raise TextureError(f"a {tex.format} mip holds {len(data)} bytes, not {w} x {h}")
+    return w, h, bytes(data[:w * h])
+
+
 def square(w: int, h: int, rgba: bytes, most: int = MOST) -> tuple[int, bytes]:
     """The middle square of a picture, as n x n RGBA pixels, n the largest power of two no more than its side or
     `most`: each pixel the picture's pixel under its middle."""
@@ -509,6 +528,7 @@ class DecalType:
     theatre: str   # the decor set's folder it is defined in (france, communs, ...)
     half: float    # map units from its middle to its side at size 1
     colour: str    # its colour picture (the texture member, lower case)
+    alpha: str = ""  # its shape when the colour picture has none (its material's SeparateAlpha: a member, lower case)
 
 
 def decal_types(glad_arc) -> dict[str, list[DecalType]]:
@@ -546,8 +566,35 @@ def decal_types(glad_arc) -> dict[str, list[DecalType]]:
             half = struct.unpack("<f", hi.payload[:4])[0]
             if not colour or not half > 0:
                 continue
-            member = "gen\\" + colour.replace("/", "\\").lower().rsplit(".", 1)[0] + ".tgv"
-            out.setdefault(member, []).append(DecalType(reg, theatre, half, member))
+            alpha = next((_string(nd, sub_values(items[k + 1])[0]) for k in range(0, len(items) - 1, 2)
+                          if _string(nd, items[k]) == "SeparateAlpha" and items[k + 1].tc == 0x22), None)
+            member = _texture_member(colour)
+            out.setdefault(member, []).append(DecalType(reg, theatre, half, member,
+                                                        _texture_member(alpha) if alpha else ""))
+    return out
+
+
+def _texture_member(path: str) -> str:
+    """A material's texture (ww2/res2d/.../x.tga) as its member in the texture pack (gen\\ww2\\res2d\\...\\x.tgv). Some
+    sets name theirs "DataDir:/ww2/res2d/decors/..." (Italy's and the Ardennes' stickers): the pack has no such part."""
+    path = re.sub(r"^datadir:[\\/]*", "", path.replace("/", "\\"), flags=re.I)
+    return "gen\\" + path.lower().rsplit(".", 1)[0] + ".tgv"
+
+
+def decal_kinds(types: dict[str, list[DecalType]], sets: set[str]) -> dict[str, DecalType]:
+    """{scenery type name: its DecalType} as a map that loads `sets` (map_sets) draws it: each theatre's set defines
+    its own Herbe_verte, traces_terre, ... with its own picture (D-Day's: France's; Tunisia's are Africa's), so the
+    definition from a loaded set, a theatre's before the common one's. Names no loaded set defines are left out;
+    with no sets known, every name with the first definition found."""
+    out: dict[str, DecalType] = {}
+    rank = {}
+    for ds in types.values():
+        for d in ds:
+            if sets and d.theatre not in sets:
+                continue
+            r = 1 if d.theatre == "communs" else 0
+            if d.name not in out or r < rank[d.name]:
+                out[d.name], rank[d.name] = d, r
     return out
 
 

@@ -107,7 +107,8 @@ class TerrainFile(unittest.TestCase):
     def test_every_brush_read_back(self):  # the Studio saved water strokes without their level once (0.7.0)
         every = [Stroke(name, 1.0, 2.0, 3.0, height=4.0, level=5.0, weight=0.5, x2=6.0, y2=7.0, level2=8.0,
                         colour="#808080", sx=9.0, sy=1.0,  # (a paint stroke's colour, a stamp's spot, a texture)
-                        texture="game:france/stickers01/paille", size=2048.0)
+                        texture="game:france/stickers01/paille", size=2048.0, relief="hills",   # (a relief's square)
+                        shape="square" if name == "relief" else "round")
                  for name in BRUSHES]
         read = parse_strokes(tomllib.loads(strokes_toml(every))["stroke"])
         self.assertEqual([s.brush for s in read], list(BRUSHES))
@@ -146,7 +147,7 @@ class TerrainFile(unittest.TestCase):
         self.assertEqual(set(BRUSHES), {"hill", "raise", "lower", "crater", "plateau", "flatten", "level", "smooth", "ramp",
                                         "water", "drain", "cover", "town", "uncover", "block", "block_infantry", "block_vehicles",
                                         "open", "open_infantry", "open_vehicles", "paint", "stamp", "texture", "tint",
-                                        "repaint"})
+                                        "repaint", "relief"})
         self.assertEqual(parse_strokes([{"brush": "smooth", "x": 1, "y": 2, "radius": 3}])[0].weight, 0.5)
         self.assertEqual(parse_strokes([{"brush": "flatten", "x": 1, "y": 2, "radius": 3, "level": 4}])[0].weight, 1.0)
 

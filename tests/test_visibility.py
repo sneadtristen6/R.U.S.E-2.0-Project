@@ -84,6 +84,20 @@ class TheCopies(unittest.TestCase):
             (_n, _f, o), = v.descriptors_named(after, {f"TypeWarrior/{name}"})[f"TypeWarrior/{name}"]
             self.assertEqual(v.modes(o, after.objects), [2, 4])
 
+    def test_the_levels_placed_objects_ask_for(self):
+        """type_levels: the bits of a type's entries (a shared one read through its name), its copy's too: far
+        included for the copies, so their objects hang on blocks listed for far (2026-10-17: none drawn past 385 m
+        while they asked for nothing). A type whose entry can't be read is left out."""
+        from rusemod import visibility as v
+        plan, after = self.run_copies({"TypeWarrior/Pebble", "TypeWarrior/Cart"})
+        names = {"TypeWarrior/Pebble", "TypeWarrior/Cart", "TypeWarrior/Barrow", *plan.values()}
+        self.assertEqual(v.type_levels(after, names), {"TypeWarrior/Pebble": 1, "TypeWarrior/Cart": 6,
+                                                       "TypeWarrior/Barrow": 6, "TypeWarrior/Pebble_R2Seen": 13,
+                                                       "TypeWarrior/Cart_R2Seen": 14})
+        game = _game()
+        del game.objects["props.cpp#9"]
+        self.assertEqual(v.type_levels(game, {"TypeWarrior/Cart", "TypeWarrior/Pebble"}), {"TypeWarrior/Pebble": 1})
+
     def test_an_entry_that_cant_be_read_means_no_copy(self):
         from rusemod import visibility as v
         game = _game()
