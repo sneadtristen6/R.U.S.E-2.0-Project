@@ -201,6 +201,7 @@ class ModFiles(unittest.TestCase):
             (s2, path), = info.relief_pictures["M04_Cotentin"]
             self.assertEqual((s2, path.name), (s, "hills-ground.png"))
 
+    @unittest.skipIf(_np is None, "numpy isn't installed: an area picture is read with it (the apps carry it)")
     def test_paint_within_an_area_gets_its_clip(self):
         from rusemod.build import BuildError, load_mod
         with tempfile.TemporaryDirectory(dir=TMP) as d:
