@@ -173,10 +173,13 @@ def fine_cells(t: Tms, shape: Shape) -> set:
     return out
 
 
-def make_mesh(t: Tms, h, w, per_cell: int, fine: set, div: int = 8) -> tuple[list, dict]:
+def make_mesh(t: Tms, h, w, per_cell: int, fine: set, div: int = 8, shore_dip: float = 0.0) -> tuple[list, dict]:
     """Every cell of mesh `t` (its grid, bounds and storage as they are) from the ground's height `h(x, y)` and the
     water's level `w(x, y)` (world z); `fine`: the cells drawn as the whole grid; `div`: a cell's patches each way
-    (t.patch_div is set to it). Returns (cells, counts)."""
+    (t.patch_div is set to it). `shore_dip` (world units): the points the shoreline cuts and the corners pulled onto
+    it go this far under the water instead of level with it: level, a triangle of three such points counts as dry
+    (the game draws water only where a corner lies under it) and the game drew it as a flat wedge of ground over the
+    river (the white spikes of the real-place maps, found in Blender, 2026-10-19). Returns (cells, counts)."""
     q = t.to_quant
     assert per_cell % div == 0 and div & (div - 1) == 0
     t.patch_div = div
@@ -207,12 +210,27 @@ def make_mesh(t: Tms, h, w, per_cell: int, fine: set, div: int = 8) -> tuple[lis
         return z < lv
 
     snap_at = SNAP_STEPS * max(t.bounds[3] - t.bounds[0], t.bounds[4] - t.bounds[1]) / Q_MAX
+    dip_q = int(round(shore_dip / ((t.bounds[5] - t.bounds[2]) / Q_MAX))) if shore_dip else 0
 
-    def snap(v):   # onto the water: its height the water's own
-        z, lv = heights(*v)
-        hq[v] = lv
-        zq[node(*v)] = lv
-        return node(*v)
+    fcache: dict = {}
+
+    def frac(a, b):
+        """Where along a -> b (0 at a) the ground meets the water, worked out once per edge (bisection on the shape)."""
+        k = (a, b) if a < b else (b, a)
+        if k not in fcache:
+            (ax, ay), (bx, by) = (k[0][0] * s, k[0][1] * s), (k[1][0] * s, k[1][1] * s)
+            lo, hi = 0.0, 1.0
+            wet_a = h(ax, ay) < w(ax, ay)
+            for _ in range(40):
+                mid = (lo + hi) / 2
+                px, py = ax + mid * (bx - ax), ay + mid * (by - ay)
+                if (h(px, py) < w(px, py)) == wet_a:
+                    lo = mid
+                else:
+                    hi = mid
+            fcache[k] = (lo + hi) / 2
+        f = fcache[k]
+        return f if k[0] == a else 1.0 - f
 
     def crossing(a, b):
         za, la = heights(*a)
@@ -224,28 +242,49 @@ def make_mesh(t: Tms, h, w, per_cell: int, fine: set, div: int = 8) -> tuple[lis
         key = ("c",) + tuple(sorted((a, b)))
         if key not in index:
             (ax, ay), (bx, by) = (a[0] * s, a[1] * s), (b[0] * s, b[1] * s)
-            lo, hi = 0.0, 1.0
-            wet_a = h(ax, ay) < w(ax, ay)
-            for _ in range(40):
-                mid = (lo + hi) / 2
-                px, py = ax + mid * (bx - ax), ay + mid * (by - ay)
-                if (h(px, py) < w(px, py)) == wet_a:
-                    lo = mid
-                else:
-                    hi = mid
-            f = (lo + hi) / 2
-            near = snap_at / math.hypot(bx - ax, by - ay)
-            if f < near:
-                return snap(a)
-            if f > 1 - near:
-                return snap(b)
+            f = frac(a, b)
             px, py = ax + f * (bx - ax), ay + f * (by - ay)
             level = q(2, w(px, py))
             index[key] = len(pts)
             pts.append((px, py))
-            zq.append(level)
+            zq.append(level - dip_q)
             wq.append(level)
         return index[key]
+
+    def fine_edges():
+        for row_ in range(t.grid_h):
+            for col_ in range(t.grid_w):
+                if row_ * t.grid_w + col_ not in fine:
+                    continue
+                i0_, j0_ = col_ * per_cell, row_ * per_cell
+                for j in range(j0_, j0_ + per_cell):
+                    for i in range(i0_, i0_ + per_cell):
+                        yield (i, j), (i + 1, j)
+                        yield (i + 1, j), (i + 1, j + 1)
+                        yield (i, j), (i + 1, j + 1)
+                        yield (i, j + 1), (i + 1, j + 1)
+                        yield (i, j), (i, j + 1)
+
+    # the corners a shoreline passes within snap_at of are pulled onto it (their height the water's own), all decided
+    # here before any triangle is cut: decided while cutting, a corner was wet to the triangles cut before it was
+    # pulled and level to those after, so a shared edge got a shoreline point on one side only, and the crack showed the
+    # sky (the pale "spikes" over the real-place rivers, found in Blender, 2026-10-19)
+    pulled = set()
+    for a, b in fine_edges():
+        za, la = heights(*a)
+        zb, lb = heights(*b)
+        if za == la or zb == lb or (za < la) == (zb < lb):
+            continue
+        f = frac(a, b)
+        near = snap_at / math.hypot((b[0] - a[0]) * s, (b[1] - a[1]) * s)
+        if f < near:
+            pulled.add(a)
+        elif f > 1 - near:
+            pulled.add(b)
+    for v in pulled:
+        z, lv = heights(*v)
+        hq[v] = lv
+        zq[node(*v)] = lv - dip_q
 
     tris = []
 
@@ -513,13 +552,22 @@ def _fill_tree(k: Kdt, tris: list, what: str) -> tuple[bytes, list, int]:
 
 
 # --- the water's pictures -------------------------------------------------------------------------------------------
-def water_pictures(raws: dict, near_t: Tms, far_t: Tms, shape: Shape, fine_near: set, max_depth: float) -> tuple[dict, str]:
+def water_pictures(raws: dict, near_t: Tms, far_t: Tms, shape: Shape, fine_near: set, max_depth: float,
+                   sea_at=None, own_tiles: bool = False) -> tuple[dict, str]:
     """The three water textures (rusemod.water.TEXTURES' keys -> bytes) for the meshes as drawn: every water cell of
     the map given its tile again. A cell the close-up mesh draws flat is worked out from the shape at once (one depth
     all over: the shared tile of about that depth, as rusemod.water shares one, or the shared dry tile); a cell the
     strokes change is sampled from the meshes' water as rusemod.water samples it, and gets a shared tile when it's of
     about one depth, else its own with every texel's depth. Every tile not kept is free again first: the shared dry
-    and sea tiles stay, the rest of the atlas is ours."""
+    and sea tiles stay, the rest of the atlas is ours.
+
+    `own_tiles`: every wet cell gets its own tile with each texel's depth from the shape (unless all its texels are
+    of one depth), so the depth runs on smoothly from cell to cell: one depth per 105 m cell made the real-place
+    bay a checkerboard the game shaded as tiles of glass (mont9, 2026-10-19, seen in the water pictures themselves;
+    3,104 wet cells there against 4,094 free tiles). Past the atlas's free tiles a cell shares one by its depth.
+    `sea_at(x, y)` (map units): whether the cell is the sea's; when given, a wet cell is shaded as sea or as a river
+    or lake (the flag) by that, not by whether its level is the base one: by level, the river near the sea flipped
+    from one to the other cell by cell (the blue patches of mont9)."""
     (ti, ind), (tw, inp), (tf, flow) = (W._pixels(raws[k]) for k in ("indirection", "inputs", "flow"))
     cols = tw.width // W.TILE
     ntiles = cols * (tw.height // W.TILE)
@@ -570,11 +618,49 @@ def water_pictures(raws: dict, near_t: Tms, far_t: Tms, shape: Shape, fine_near:
         return alike[shade]
 
     ncw = near_t.grid_w
+    tx_ = [(i + 0.5) * W.CASE / W.TILE for i in range(W.TILE)]
     for cy in range(down):
         for cx in range(across):
             mx, my = (cx + 0.5) * W.CASE, (cy + 0.5) * W.CASE
             cell = min(near_t.grid_h - 1, int(my // near_t.cell_h)) * ncw + min(ncw - 1, int(mx // near_t.cell_w))
             x0, y0 = cx * W.CASE, cy * W.CASE
+            if own_tiles:
+                # every texel's depth from the shape (texel i: row i // TILE down the cell's y, column i % TILE)
+                depth = [shape.w(x0 + tx_[i % W.TILE], y0 + tx_[i // W.TILE])
+                         - shape.h(x0 + tx_[i % W.TILE], y0 + tx_[i // W.TILE]) for i in range(W.TILE * W.TILE)]
+                if max(depth) <= 0:
+                    put(cx, cy, dry)
+                    counts["dry"] += 1
+                    continue
+                red = [int(255.0 * min(max(d / max_depth, 0.0), 1.0) + 0.5) if d > 0 else 0 for d in depth]
+                # inland water is shaded as a river or lake whatever its level; the sea's cells by their level as
+                # before (a sea cell above the base level keeps the river's shading and its own water height)
+                at_base_ = abs(shape.w(mx, my) - base) < 2 * step
+                if sea_at is not None:
+                    # by most of its water: a cell on the coast is the sea's when most of its wet texels are (by its
+                    # middle alone, the coast's cells took the river's shading in a stepped strip, mont10)
+                    n_sea = sum(1 for i in range(W.TILE * W.TILE) if depth[i] > 0
+                                and sea_at(x0 + tx_[i % W.TILE], y0 + tx_[i // W.TILE]))
+                    n_wet = sum(1 for d_ in depth if d_ > 0)
+                    flag = 0 if (2 * n_sea >= n_wet and at_base_) else 255
+                else:
+                    flag = 0 if at_base_ else 255
+                if min(depth) > 0 and max(red) - min(red) <= 1 and flag == 0:
+                    put(cx, cy, tile_for_shade(W._shade(red)))
+                    counts["shared"] += 1
+                    continue
+                if not free:
+                    put(cx, cy, tile_for_shade(W._shade([r for r in red if r] or [0])), flag)
+                    counts["shared"] += 1
+                    continue
+                t_ = free.pop()
+                for i in range(W.TILE * W.TILE):
+                    d, f_ = texel(tw.width, t_, i), texel(tf.width, t_, i)
+                    inp[d:d + 4] = bytes((cx, 0, red[i], cy))
+                    flow[f_:f_ + 4] = STILL
+                put(cx, cy, t_, flag)
+                counts["own"] += 1
+                continue
             if cell not in fine_near and not shape.varies_over(x0, y0, x0 + W.CASE, y0 + W.CASE):
                 depth = shape.w(mx, my) - shape.h(mx, my)
                 if depth <= 0:

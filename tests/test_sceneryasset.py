@@ -412,6 +412,36 @@ class ModFiles(unittest.TestCase):
             self.asset(Path(d), "Fern", 'kind = "plant"\nmodel = "model_2k.gltf"\n')
             self.assertEqual(list(sa.save_versions(plant)), ["medium", "far"])
 
+    def test_solid_ones_block_units(self):
+        """solid = true: every placed one a block as wide as its model reaches from its middle (1 m here) times its
+        size and its placed size, so units go around it; not solid, or placed with solid false: none (units drive
+        through and knock it over, as the game's own small rocks and props, seen in the game 2026-10-18)."""
+        from rusemod.scenery import NewObject
+        with tempfile.TemporaryDirectory(dir=TMP) as d:
+            self.asset(Path(d), "Stone", 'kind = "rock"\nmodel = "model_2k.gltf"\nsize = 3\nsolid = true\n')
+            self.asset(Path(d), "Crate", 'kind = "prop"\nmodel = "model_2k.gltf"\n')
+            got = sa.mod_assets(d)
+            self.assertEqual((got["Stone"].solid, got["Crate"].solid), (True, False))
+            self.assertEqual([round(v, 3) for v in sa.extent(got["Stone"])], [1.0, 0.0, 2.0, 1.0])
+            placed = [NewObject("TypeWarrior/R2_Stone", 100.0, 200.0, 0.0, 2.0),
+                      NewObject("TypeWarrior/R2_Crate", 5.0, 5.0),
+                      NewObject("TypeWarrior/R2_Stone", 7.0, 8.0, solid=False),
+                      NewObject("TypeWarrior/Chene_01", 1.0, 1.0)]
+            blocks, notes = sa.solid_blocks({n: (a, "m") for n, a in got.items()}, placed)
+        self.assertEqual([(b.x, b.y, b.units, b.open) for b in blocks], [(100.0, 200.0, "all", False)])
+        self.assertAlmostEqual(blocks[0].radius, 1.0 * sa.M * 3 * 2.0, places=3)
+        self.assertIn("1 placed model", notes[0])
+        self.assertEqual(sa.solid_blocks({"Crate": (got["Crate"], "m")}, placed), ([], []))
+        self.assertIn("solid = true\n", sa.asset_toml("rock", "m.glb", solid=True))
+        self.assertNotIn("solid", sa.asset_toml("rock", "m.glb"))
+
+    def test_solid_ones_reach_the_movement(self):
+        """The build hands the mods' solid models' blocks to the map's movement with the placed buildings'."""
+        src = (Path(__file__).resolve().parents[1] / "src/rusemod/build.py").read_text(encoding="utf-8")
+        walls = src.index("walls, wall_notes = solid_blocks(game, ")
+        mine = src.index("own_solid_blocks(result.own_assets,", walls)
+        self.assertLess(mine, src.index("solid[name] = (walls, ids)", walls))
+
     def test_refused(self):
         for text, why in (('kind = "house"\nmodel = "model_2k.gltf"\n', "kind must be"),
                           ('kind = "rock"\n', "model must"),
@@ -421,6 +451,7 @@ class ModFiles(unittest.TestCase):
                           ('kind = "rock"\nmodel = "model_2k.gltf"\nsize = true\n', "size is"),
                           ('kind = "rock"\nmodel = "model_2k.gltf"\nfar = "none.glb"\n', "far must"),
                           ('kind = "rock"\nmodel = "model_2k.gltf"\ntwo_sided = "yes"\n', "two_sided is true or"),
+                          ('kind = "rock"\nmodel = "model_2k.gltf"\nsolid = 1\n', "solid is true or"),
                           ('kind = "rock"\nmodel = \n', "asset.toml")):
             with tempfile.TemporaryDirectory(dir=TMP) as d:
                 outside = Path(d) / "files" / "assets" / "outside"
@@ -644,11 +675,195 @@ class TheType(unittest.TestCase):
         self.assertIn("result.type_levels = visibility.type_levels(run.game, ", src)
         self.assertLess(named.end(), src.index("changed_members[member], notes = add_objects(raw, objects)"))
 
+    def test_a_map_mod_of_assets_alone_gets_zz_win(self):
+        """A map mod that only adds assets opens ZZ_Win.dat, where their models go (the props test copy of 2026-10-18
+        refused to build: the first test's units mod had opened it); a building look the same."""
+        from rusemod.build import needs_zz_win
+        from rusemod.resolve import ModInfo
+        mod = ModInfo("m")
+        self.assertFalse(needs_zz_win([(mod, [])]))
+        mod.assets = {"Stone": sa.Asset("Stone", "rock", None)}
+        self.assertTrue(needs_zz_win([(mod, [])]))
+        mod.assets, mod.looks = {}, {"Descriptor_Building_Foundry": object()}
+        self.assertTrue(needs_zz_win([(mod, [])]))
+
     def test_no_type_to_copy(self):
         from rusemod.patch import Game
         with self.assertRaisesRegex(sa.AssetError, "no TypeWarrior/RocherNormandie_01"):
             sa.rules(Game(objects={}), [sa.Asset("Rock", "rock", None)])
 
 
-if __name__ == "__main__":
-    unittest.main()
+@unittest.skipIf(_np is None, NO_NUMPY)
+class Importing(unittest.TestCase):
+    """The Studio's Import model: a model file made a mod's asset (import_asset) and drawn by the 3D view
+    (studio_models)."""
+
+    def test_a_model_made_the_mods_asset(self):
+        from rusemod.modelin import read_model
+        with tempfile.TemporaryDirectory(dir=TMP) as d:
+            src = Path(d) / "download"
+            src.mkdir()
+            gltf = write_gltf(src, [("rock", False)])
+            mod = Path(d) / "mod"
+            got = sa.import_asset(gltf, mod, "rock", "my rock!", size=2, two_sided=True,
+                                  credit={"source": "polyhaven.com", "author": "someone", "licence": "CC0"})
+            folder = mod / "files" / "assets" / "MyRock"
+            self.assertEqual((got.name, got.kind, got.size, got.two_sided, got.model.name),
+                             ("MyRock", "rock", 2.0, True, "MyRock.glb"))
+            self.assertEqual(got.credit, {"source": "polyhaven.com", "author": "someone", "licence": "CC0"})
+            self.assertEqual({k: v.name for k, v in got.versions.items()},
+                             {"medium": "MyRock_medium.glb", "far": "MyRock_far.glb"})
+            # one file with its picture inside: nothing else in the folder but its versions and asset.toml
+            self.assertEqual(sorted(p.name for p in folder.iterdir()),
+                             ["MyRock.glb", "MyRock_far.glb", "MyRock_medium.glb", "asset.toml"])
+            back = read_model(folder / "MyRock.glb")
+            self.assertTrue(back.materials[0].data.startswith(b"\x89PNG"))
+            # importing the name again replaces it
+            again = sa.import_asset(gltf, mod, "plant", "My Rock", size=1)
+            self.assertEqual((again.kind, again.size, again.credit), ("plant", 1.0, {}))
+
+    def test_a_jpg_picture_turned_into_png(self):
+        with tempfile.TemporaryDirectory(dir=TMP) as d:
+            gltf = write_gltf(Path(d), [("leaf", False)])
+            jpg = Path(d) / "leaf_diff_2k.png"
+            png = jpg.read_bytes()
+            jpg.write_bytes(b"\xff\xd8\xff\xe0 a JPG the Studio converts")
+            with self.assertRaisesRegex(sa.AssetError, "is a JPG"):
+                sa.import_asset(gltf, Path(d) / "mod", "plant")
+            asked = []
+            got = sa.import_asset(gltf, Path(d) / "mod", "plant", convert=lambda b: asked.append(b) or png)
+            self.assertEqual(len(asked), 1)
+            self.assertEqual(got.name, "Model")   # (model_2k.gltf: the picture size sites add left off)
+            self.assertEqual(sa.name_of_file("boulder_01_2k.gltf"), "Boulder01")
+            self.assertEqual(sa.name_of_file("rock-4K.glb"), "Rock")
+            self.assertEqual(sa.name_of_file("t34_85.3ds"), "T3485")
+
+    def test_refused(self):
+        with tempfile.TemporaryDirectory(dir=TMP) as d:
+            gltf = write_gltf(Path(d), [("a", False)])
+            for kwargs, why in (({"kind": "house"}, "the kind is one of"),
+                                ({"kind": "rock", "credit": {"licence": "CC-BY-NC"}}, "CC0 or CC-BY"),
+                                ({"kind": "rock", "size": 500}, "size is a number")):
+                with self.subTest(kwargs=kwargs), self.assertRaisesRegex(sa.AssetError, why):
+                    sa.import_asset(gltf, Path(d) / "mod", **kwargs)
+            bad = Path(d) / "broken.glb"
+            bad.write_bytes(b"not a model")
+            with self.assertRaisesRegex(sa.AssetError, "broken.glb"):
+                sa.import_asset(bad, Path(d) / "mod", "rock")
+
+    def test_drawn_by_the_studio(self):
+        with tempfile.TemporaryDirectory(dir=TMP) as d:
+            gltf = write_gltf(Path(d), [("a", False), ("b", True)])
+            mod = Path(d) / "mod"
+            sa.import_asset(gltf, mod, "tree", "Oakish")
+            assets = sa.mod_assets(mod)
+            out = Path(d) / "cache"
+            index = sa.studio_models(assets, out)
+            parts = index["models"]["TypeWarrior/R2_Oakish"]
+            self.assertEqual(len(parts), 2)   # its leaves and its wood, each its own picture
+            blob = (out / index["bin"]).read_bytes()
+            for p in parts:
+                self.assertEqual((p["vertices"], p["triangles"]), (3, 1))
+                xyz = struct.unpack_from("<9f", blob, p["positions"])
+                self.assertAlmostEqual(max(abs(v) for v in xyz), 2 * 260.0, places=2)   # metres -> map units
+                # (the game's axes mirror the model, so each triangle's corners turn round, as the game's own)
+                self.assertEqual(struct.unpack_from("<3I", blob, p["indices"]), (0, 2, 1))
+                self.assertTrue((out / index["textures"][p["texture"]]).is_file())
+            self.assertEqual(sa.studio_models(assets, out), index)   # made once
+            self.assertEqual(sa.GROUPS["tree"], "vegetation")
+
+
+@unittest.skipIf(_np is None, NO_NUMPY)
+class StudioCalls(unittest.TestCase):
+    """The Maps tab's Import model (StudioApi.assets, asset_import, asset_change, asset_remove, asset_models): the map
+    mod's own models listed, imported, changed, placed like the map's own types and removed."""
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        tmp = tempfile.TemporaryDirectory(dir=TMP)
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.mod = self.root / "mymap"
+        self.mod.mkdir()
+        (self.mod / "mod.toml").write_text('id = "mymap"\n', encoding="utf-8")
+        home = self.root / "home"
+        home.mkdir()
+        (home / "studio.json").write_text(json.dumps({"map": str(self.mod)}), encoding="utf-8")
+        self.api = StudioApi(home=home, game_dir=self.root / "game")
+        palette = [["TypeWarrior/TasPlanchesBois", "TasPlanchesBois", "prop", "Props", 3, {}, {}, 0]]
+        for name, value in (("map_scenery", {"palette": palette, "types": []}),):
+            patch = mock.patch.object(StudioApi, name, return_value=value)
+            patch.start()
+            self.addCleanup(patch.stop)
+        gone = mock.patch("rusemod.recycle.to_recycle_bin", side_effect=lambda p: __import__("shutil").rmtree(p))
+        gone.start()
+        self.addCleanup(gone.stop)
+        self.gltf = write_gltf(self.root, [("rock", False)])
+
+    def test_imported_listed_and_changed(self):
+        from ruse_studio.api import StudioError
+        self.assertEqual(self.api.assets()["assets"], [])
+        got = self.api.asset_import("rock", str(self.gltf), "my rock", 2, False, "polyhaven.com", "someone", "CC0")
+        a = got["asset"]
+        self.assertEqual((a["name"], a["type"], a["kind"], a["group"], a["size"]),
+                         ("MyRock", "TypeWarrior/R2_MyRock", "rock", "prop", 2.0))
+        self.assertEqual(a["credit"], {"source": "polyhaven.com", "author": "someone", "licence": "CC0"})
+        self.assertEqual(a["triangles"], 1)
+        self.assertEqual(sorted(a["versions"]), ["far", "medium"])
+        self.assertEqual([x["name"] for x in got["assets"]], ["MyRock"])
+        # the same name again: asked first, nothing changed until it's said yes to
+        again = self.api.asset_import("plant", str(self.gltf), "My Rock")
+        self.assertEqual((again["exists"], again["asset"]), ("MyRock", None))
+        self.assertEqual(self.api.assets()["assets"][0]["kind"], "rock")
+        self.assertEqual(self.api.asset_import("plant", str(self.gltf), "My Rock", replace_it=True)["asset"]["kind"],
+                         "plant")
+        # its size and credit changed, its model and versions kept
+        changed = self.api.asset_change("MyRock", size=0.5, licence="CC-BY", author="them")["assets"][0]
+        self.assertEqual((changed["size"], changed["credit"]["licence"], changed["credit"]["author"]),
+                         (0.5, "CC-BY", "them"))
+        self.assertEqual(sorted(changed["versions"]), ["far", "medium"])
+        # solid (units go around it) set and kept by a change of something else; its size in metres as modelled
+        self.assertFalse(changed["solid"])
+        self.assertTrue(self.api.asset_change("MyRock", solid=True)["assets"][0]["solid"])
+        kept = self.api.asset_change("MyRock", size=0.75)["assets"][0]
+        self.assertEqual((kept["solid"], kept["size"]), (True, 0.75))
+        self.assertEqual(kept["metres"], [1.0, 0.0, 2.0])   # the triangle 1 m across, 2 m high
+        self.assertTrue(self.api.asset_import("rock", str(self.gltf), "Wall", solid=True)["asset"]["solid"])
+        for kwargs, why in (({"licence": "CC-BY-NC"}, "CC0 or CC-BY"), ({"size": 500}, "from 0.01 to 100")):
+            with self.subTest(kwargs=kwargs), self.assertRaisesRegex(StudioError, why):
+                self.api.asset_change("MyRock", **kwargs)
+        with self.assertRaisesRegex(StudioError, "rock, prop, plant or tree"):
+            self.api.asset_import("house", str(self.gltf))
+
+    def test_placed_like_the_maps_own_and_removed(self):
+        from ruse_studio.api import StudioError
+        self.api.asset_import("rock", str(self.gltf), "Boulder")
+        obj = {"type": "TypeWarrior/R2_Boulder", "x": 1000.0, "y": 2000.0, "turn": 0.0, "size": 1.0}
+        self.assertEqual(self.api.scenery_add("M04_cotentin", [obj])["count"], 1)
+        with self.assertRaisesRegex(StudioError, "isn't one of this map's own types"):
+            self.api.scenery_add("M04_cotentin", [dict(obj, type="TypeWarrior/R2_Nothing")])
+        # placed: asked, then taken off the map with it
+        asked = self.api.asset_remove("Boulder")
+        self.assertEqual(asked["placed"], {"M04_cotentin": 1})
+        self.assertTrue((self.mod / "files" / "assets" / "Boulder").is_dir())
+        self.assertEqual(self.api.asset_remove("Boulder", placed_too=True)["assets"], [])
+        self.assertFalse((self.mod / "files" / "assets" / "Boulder").exists())
+        self.assertEqual(self.api.scenery("M04_cotentin")["objects"], [])
+
+    def test_drawn_by_the_maps_tab(self):
+        self.assertEqual(self.api.asset_models()["index"]["models"], {})
+        self.api.asset_import("rock", str(self.gltf), "Boulder")
+        first = self.api.asset_models()
+        self.assertEqual(first["base"], "cache/assets/")
+        self.assertEqual(list(first["index"]["models"]), ["TypeWarrior/R2_Boulder"])
+        self.api.asset_import("prop", str(self.gltf), "Crate")
+        second = self.api.asset_models()["index"]
+        self.assertEqual(sorted(second["models"]), ["TypeWarrior/R2_Boulder", "TypeWarrior/R2_Crate"])
+        kept = {p.name.split("-")[0].split(".")[0] for p in (self.api.cache_dir / "assets").iterdir()}
+        self.assertEqual(kept, {Path(second["bin"]).stem})   # the bundle from before is gone
+
+    @unittest.skipUnless(__import__("shutil").which("powershell"), "Windows' picture reader isn't here")
+    def test_a_picture_that_isnt_one_refused(self):
+        from ruse_studio.api import _jpg_to_png
+        with self.assertRaisesRegex(sa.AssetError, "save it as PNG"):
+            _jpg_to_png(b"\xff\xd8\xff not a picture")

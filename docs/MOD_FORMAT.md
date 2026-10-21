@@ -310,7 +310,14 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   far     = "rock_face_01_2k_far.glb"
   two_sided = true            # every triangle also facing the other way: a scan with no back (a rock face) seen
                               # from behind too (twice its triangles)
+  solid   = true              # units go around it where it's placed (below)
   ```
+
+  Like the game's own small rocks, props and trees, units drive through a placed asset and knock it over: the rock
+  and the prop types it copies have no broken look, so they vanish; the tree falls to the game's broken oak (seen in
+  the game, 2026-10-18). With `solid = true`, every placed one becomes a `movement.toml`-style block (below) as wide
+  as its model reaches from its middle, times its size and its placed size, so units go around it as around a placed
+  building (`rusemod.sceneryasset.solid_blocks`); `solid = false` on a placed object leaves that one walk-through.
 
   The type is a copy of one of the game's of that kind (`RocherNormandie_01`, `TasPlanchesBois`,
   `BuissonSec03_France`, `Chene_01`) with the model ours; the model goes into every model pack holding that type's
@@ -328,8 +335,38 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   material); otherwise the build makes them from the model, each off by at most a pixel where its ring starts, so a
   big cliff keeps more than a small stone; see-through leaves are thinned, each kept leaf grown so the foliage covers
   what it did. Made ones can be saved beside the model (`<model>_medium.glb`, `<model>_far.glb`, named in asset.toml)
-  to look at and change in Blender (the Maps tab's importer will do it; not in the Studio yet). Seen in the game
-  (2026-10-17): with every model full at every distance, 8 fps; with the versions, loading at once and 150-200+ fps.
+  to look at and change in Blender. Seen in the game (2026-10-17): with every model full at every distance, 8 fps;
+  with the versions, loading at once and 150-200+ fps.
+
+  The Studio makes all of this: the Maps tab's **Import model…** (in the Props and Trees lists) takes a model file,
+  saves it as `files/assets/<name>/<name>.glb` with every picture inside it (a JPG turned into PNG), writes its
+  asset.toml (kind, size, solid, two_sided, and source, author and licence: a model taken from others must be CC0 or
+  CC-BY) and saves its middle and far versions beside it. The model then shows first in its list, marked as yours,
+  drawn in 3D, and is placed like the map's own types; *Your model…* changes its size (a slider, 0.1 to 10 times, its
+  size in the game in metres beside it; letting go saves it and the map shows it), whether it's solid, and its
+  credit, replaces its file, or removes it (its folder to the Recycle Bin, and where it's placed, those too once
+  asked).
+- **A new building's look of its own:** a building's look is a layout of pieces the game puts down where it's built
+  (a main hall, hangars, trucks, walls, ground stickers, and the markers for its construction and damage effects),
+  named twice in its `GfxDescriptor`. `files/buildings/<the new building's name>/building.toml` beside its model makes
+  one piece of the copied look the mod's own model:
+
+  ```toml
+  piece = "Prototype_building"   # the piece of the copied look the model takes the place of (its scenery type)
+  model = "Descriptor_Building_R2_Foundry.glb"
+  size  = 1.0                    # times that piece's size (its longer side on the ground), 0.01 to 100
+  # optional, as a map asset's: medium, far (its own versions), two_sided, source, author, licence
+  ```
+
+  The build copies the building's look under the building's own name (`R2_<its name without Descriptor_>`) with
+  every placing of that piece given a scenery type of our own (a copy of the piece's type: its close, middle and far
+  models ours, its destroyed state the piece's), stands our model where the piece's stands, sized to it (its +x side
+  faces the gate units come out of), and points the building's two look names at the copy; the building it copies
+  keeps its own look. The model goes into the packs holding the piece's (a nation's base-building pack: loaded when
+  that nation plays). A look the game's file doesn't have is refused (the game would stop with an error). The
+  Studio's building page (Units tab) lists the copied look's pieces biggest first (for a factory or a headquarters the
+  first is its main building) and makes all of this with *Import model…*; its *picture in the build menu* is a
+  building's card, as a unit's (`files/cards/<name>.png` for a new one, `files/replace/` for the game's).
 - **A squad's uniform:** the game's soldiers of a nation wear one picture (the US's: its GIs, Rangers and paratroopers,
   and the crews of its guns and open vehicles), so a repaint of it in `files/replace/` changes them all. The Studio
   repaints a squad only as a custom uniform (its own copy, above). Seen in the game (T48: one squad repainted in
@@ -698,7 +735,7 @@ level  = 23500.0     # water: the water surface (world z); the ground under it f
 | `flatten` | ground toward `level`, most at the centre | round hump weighting |
 | `smooth` | ground toward its local average (the mean over about a third of the radius) | round hump weighting |
 | `ramp` | an even slope from `level` at (`x`, `y`) to `level2` at (`x2`, `y2`); `radius` is half its width | flat across the middle half of the width, then an S-curve back to the old ground at the sides and beyond the ends |
-| `relief` | ground made whole from the mod's heightmap `files/terrain/<relief>.png` (a greyscale PNG; 16-bit keeps every step): laid over the square (`shape = "square"`, `length` for a rectangle, `dx`, `dy` to turn it: its columns run that way, its top row on the left of it, +y for a square along +x), a sample of 0 is the height `level`, 65535 is `level2` (world z); the ground goes toward it by `weight`. With `files/terrain/<relief>-ground.png` beside it (an RGB picture over the same square), that picture is laid on the ground's picture there, on every level of both tile sets, over a blank map's coat and under the mod's own paint. Seen in the game (2026-10-17) | the whole square at `weight`, no fall-off: the heightmap's own rim must meet the ground round it; its picture fades over the edge (a hard edge: full to 0.85 of the way out) |
+| `relief` | ground made whole from the mod's heightmap `files/terrain/<relief>.png` (a greyscale PNG; 16-bit keeps every step): laid over the square (`shape = "square"`, `length` for a rectangle, `dx`, `dy` to turn it: its columns run that way, its top row on the left of it, +y for a square along +x), a sample of 0 is the height `level`, 65535 is `level2` (world z); the ground goes toward it by `weight`. With `files/terrain/<relief>-ground.png` beside it (an RGB picture over the same square), that picture is laid on the ground's picture there, on every level of both tile sets, over a blank map's coat and under the mod's own paint. Seen in the game (2026-10-17) | the whole square at `weight`, no fall-off: the heightmap's own rim must meet the ground round it; its picture fades over the edge (a hard edge: full to 0.85 of the way out; `edge = "none"`, the relief brush's own: no fade at all, a real place's picture over the whole map) |
 | `water` | the water surface to `level`: wherever the ground is lower, it floods (a lake); the ground doesn't move | the whole circle; end it on higher ground so the shore follows the ground |
 | `drain` | the water surface back to the map's base level: lakes and rivers inside dry up | the whole circle |
 | `cover` | cover (units there are hidden, as in a wood; proven in the game): the build paints the circle on the map's cover grid, as a `cover.toml` circle after the mod's own; the ground doesn't move. `square = true` paints a square along the map's axes instead, `radius` from its middle to each side | the cells whose centres are inside |
@@ -759,6 +796,28 @@ Studio's tooltips and kept with the picture; the game never reads it. Every fiel
 
 Paint strokes apply in their order, each over what's below it (a stroke on the same place again builds up), before
 the mod's new roads are painted, so a road drawn over paint shows on top.
+
+**Painting inside an area** (`within`, `rusemod.relief.area_clip`): a `paint`, `stamp`, `texture` or `tint` stroke
+with `within = "<relief>:<area>"` paints only where that relief's area picture holds that number, inside its own
+circle or square: a field, a wood or a marsh laid with its own ground, edge to edge with the next one. The relief is
+one of the same map's `relief` strokes in the mod, along the map's axes (`dx = 1`, `dy = 0`); its area picture is
+`files/terrain/<relief>-areas.png`, a 16-bit greyscale PNG over the relief's square with square pixels (laid as its
+heightmap is: its top row on the high y side), each pixel the number of its area (1 to 65,535; 0 is none). A real place
+made a map (`rusemod.realplace`) writes one, and one texture stroke within each of its areas:
+
+```toml
+[[stroke]]
+brush   = "texture"
+x       = 1314256.0
+y       = 822532.0
+radius  = 31720.0
+shape   = "square"
+edge    = "hard"
+texture = "swatch:dday:ploughed"
+turn    = 63.4       # a field's rows run along it
+clear   = false
+within  = "mont:412" # only where files/terrain/mont-areas.png holds 412
+```
 
 **What hides paint up close** (`clear`, `rusemod.groundpaint.paint_clearing`): near the camera the game draws the map's
 ground stickers, low plants (crops, grass, bushes, flowers) and stones over the ground's picture, so paint under them
@@ -1324,7 +1383,8 @@ units = "all"        # or "infantry" or "vehicles"
 - The ground inside a block is closed to those units, and the ground around it is given back, so only the block
   itself is lost.
 - **Placed buildings are solid:** every building in the mod's `scenery.toml` becomes a block as wide as its model
-  reaches, times its size (`rusemod.nav.solid_blocks`); `solid = false` on an object leaves it walk-through.
+  reaches, times its size (`rusemod.nav.solid_blocks`); `solid = false` on an object leaves it walk-through. So does
+  every placed model of a mod's own whose asset.toml says `solid = true` (§ map assets).
 - Proven in the game (Blitz, 2026-09-30): units can't enter a blocked pit.
 
 A mod gives ground back the same way (the reverse of a block; the Studio's Open brushes):

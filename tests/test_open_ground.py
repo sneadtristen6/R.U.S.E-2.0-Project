@@ -225,6 +225,20 @@ class Water(unittest.TestCase):
         self.assertTrue(river(x, y))
         self.assertLess(((x - 10000.0) ** 2 + (y - 2000.0) ** 2) ** 0.5, 3000.0)
 
+    def test_water_a_later_block_closes_is_no_news(self):
+        from rusemod.build import _closing, _open_runs
+        early = nav.Block(10000.0, 2000.0, 3000.0, open=True)
+        spare = nav.Block(12000.0, 2000.0, 3000.0, open=True, spare=True)
+        sea = nav.Block(13500.0, 2000.0, 2500.0)       # the new water's own block, after the opens
+        late = nav.Block(14000.0, 2000.0, 3000.0, open=True)   # an open after it wins over it
+        some = nav.Block(14000.0, 2000.0, 9000.0, "vehicles")  # infantry could still stand there
+        runs = _open_runs([early, spare, sea, late, some])
+        self.assertEqual(runs, [([early], [sea]), ([late], [])])
+        closed = _closing(runs[0][1])
+        self.assertTrue(closed(12000.0, 2000.0))
+        self.assertFalse(closed(10500.0, 2000.0))
+        self.assertFalse(_closing([])(13500.0, 2000.0))
+
 
 class Files(unittest.TestCase):
     def test_movement_toml_blocks_and_opens(self):

@@ -149,6 +149,11 @@ RULES: dict[str, Rule] = {
         "The game refuses a scenery file whose MD5 is wrong.",
         "studied", "the game checks a map's scenery file against the 16 bytes at its start and stops with a "
                    "'Quit game?' box when they differ (2026-10-02); LittleGroove's rule, and the shipped files match it"),
+    "building-symbol": Rule(
+        "A building whose look names a symbol the base-building scenery file doesn't have stops the game.",
+        "studied", "the game looks a building's look up by its name in the base-building file's symbol table and "
+                   "shows an error with 'Quit game?' when the name isn't there (study of the game, 2026-10-17); a "
+                   "new look of our own was seen in a match (the shipyard, 2026-10-07/08)"),
     "scenery-grid": Rule(
         "The game draws nothing placed outside a map's scenery grid.",
         "studied", "up close, the game draws only the grid's cells that hold objects, and none outside it (2026-10-01 "

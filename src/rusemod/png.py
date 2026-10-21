@@ -74,6 +74,28 @@ def _unfilter(raw: bytes, width: int, height: int, bpp: int) -> bytearray:
     return out
 
 
+def grey16_bytes(width: int, height: int, samples: bytes) -> bytes:
+    """A 16-bit greyscale PNG of `samples` (2 bytes each, high byte first, rows top to bottom): a heightmap or an area
+    picture (rusemod.relief) as read_grey16 reads it back. Each row filtered by its left neighbour (a run of one value
+    packs to almost nothing)."""
+    stride = 2 * width
+    if len(samples) != stride * height:
+        raise PngError(f"{len(samples)} bytes aren't {width} x {height} 16-bit samples")
+    arrays = whole_arrays()
+    raw = arrays.sub_filtered(samples, width, height, 2) if arrays else None
+    if raw is None:
+        rows = []
+        for y in range(height):
+            line = samples[y * stride:(y + 1) * stride]
+            rows.append(b"\x01" + line[:2] + bytes((line[i] - line[i - 2]) & 0xFF for i in range(2, stride)))
+        raw = b"".join(rows)
+
+    def chunk(tag: bytes, body: bytes) -> bytes:
+        return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
+    head = struct.pack(">IIBBBBB", width, height, 16, 0, 0, 0, 0)
+    return SIGNATURE + chunk(b"IHDR", head) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
+
+
 def read_grey16(data: bytes) -> tuple[int, int, bytes]:
     """A greyscale PNG's bytes -> (width, height, its samples as 16-bit numbers: 2 bytes each, high byte first, rows
     top to bottom): a heightmap, every step kept (read_png keeps only the high byte). An 8-bit grey picture reads as

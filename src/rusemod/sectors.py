@@ -916,6 +916,7 @@ def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes
         positions += [(x, y, zq) for x, y in q]
         tris += [(base + a, base + b, base + c) for a, b, c in triangulate(q)]
     positions, tris = _cut_small(positions, tris, width / Q_MASK, height / Q_MASK)
+    positions, tris = _by_first_use(positions, tris)
     k.set_mesh(0, positions, [v for t in tris for v in t], [(0.0, 0.0, 1.0)] * len(positions))
     kdt_edit.rebuild(k, 0, positions, tris)
     k.set_main_entries([(0, 0, 0, float(width)), (2, 0, 0, 0.0), (0, 1, 0, float(height)), (2, 1, 0, 0.0),
@@ -926,21 +927,44 @@ def zone_map(template: bytes, rings: dict, width: float, height: float) -> bytes
     return k.to_bytes()
 
 
+def _by_first_use(positions: list, tris: list) -> tuple[list, list]:
+    """The points numbered in the order the triangles first use them (the triangles and shapes unchanged), so each
+    sector's points are numbered together: the index chunk keeps a triangle's corners as steps from the last one, of at
+    most 16,383 (rusemod.kdt.encode_indices). _cut_small numbers every middle point after all the sectors' corners, so
+    on a big map with many sectors (64 over 80 km, the new-map test 2026-10-18) a corner was more than that away."""
+    order: dict = {}
+    for t in tris:
+        for v in t:
+            if v not in order:
+                order[v] = len(order)
+    return [positions[v] for v in order], [tuple(order[v] for v in t) for t in tris]
+
+
+CUT_ROUNDS_MOST = 40   # _cut_small's rounds at most (each halves every long edge; a map's longest edge needs about 6)
+
+
 def _cut_small(positions: list, tris: list, sx: float, sy: float) -> tuple[list, list]:
-    """`tris` (vertex triples into `positions`, quantized (x, y, z); `sx`, `sy`: map units a step) each cut in four at
-    its edges' middles, every triangle at once, until no edge is longer than ZONE_EDGE_MOST map units. An edge's
-    middle is worked out from its two ends' places alone, so the sectors on either side of a border cut it at the
-    same point (no gaps); a triangle's corners stay counter-clockwise."""
+    """`tris` (vertex triples into `positions`, quantized (x, y, z); `sx`, `sy`: map units a step) cut until no edge
+    is longer than ZONE_EDGE_MOST map units: each round, every edge longer than that is cut at its middle and each
+    triangle split along its cut edges (one: in two; two: in three; three: in four), the short ones left whole. An
+    edge's middle and whether it's cut come from its two ends' places alone, so the sectors on either side of a border
+    cut it at the same point (no gaps); a triangle's corners stay counter-clockwise; a triangle with no area (its
+    corners on one line once quantized) is left out (it covers nothing).
+    (Cutting every triangle in four each round, as at first, made a million triangles of 64 wavy sectors over 80 km,
+    many of them shrunk to one point: the new-map test 2026-10-18.)"""
     positions = list(positions)
 
-    def longest():
-        most = 0.0
-        for a, b, c in tris:
-            for u, v in ((a, b), (b, c), (c, a)):
-                pu, pv = positions[u], positions[v]
-                most = max(most, math.hypot((pu[0] - pv[0]) * sx, (pu[1] - pv[1]) * sy))
-        return most
-    while tris and longest() > ZONE_EDGE_MOST:
+    def long(u, v) -> bool:
+        pu, pv = positions[u], positions[v]
+        return math.hypot((pu[0] - pv[0]) * sx, (pu[1] - pv[1]) * sy) > ZONE_EDGE_MOST
+
+    def flat(t) -> bool:
+        (ax, ay, _), (bx, by, _), (cx, cy, _) = (positions[v] for v in t)
+        return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) == 0
+    tris = [t for t in tris if not flat(t)]
+    for _round in range(CUT_ROUNDS_MOST):
+        if not any(long(u, v) for a, b, c in tris for u, v in ((a, b), (b, c), (c, a))):
+            break
         middle: dict = {}
 
         def mid(u, v):
@@ -951,10 +975,31 @@ def _cut_small(positions: list, tris: list, sx: float, sy: float) -> tuple[list,
                 positions.append(((pu[0] + pv[0]) // 2, (pu[1] + pv[1]) // 2, pu[2]))
             return middle[key]
         cut = []
-        for a, b, c in tris:
-            ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
-            cut += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
-        tris = cut
+        for t in tris:
+            flags = [long(t[i], t[(i + 1) % 3]) for i in range(3)]
+            n = sum(flags)
+            if n == 0:
+                cut.append(t)
+                continue
+            if n == 3:
+                a, b, c = t
+                ab, bc, ca = mid(a, b), mid(b, c), mid(c, a)
+                cut += [(a, ab, ca), (ab, b, bc), (ca, bc, c), (ab, bc, ca)]
+                continue
+            if n == 1:   # turned so the cut edge is the first (a, b)
+                k = flags.index(True)
+                a, b, c = t[k], t[(k + 1) % 3], t[(k + 2) % 3]
+                m = mid(a, b)
+                cut += [(a, m, c), (m, b, c)]
+                continue
+            k = flags.index(False)   # two cut: turned so the whole edge is the last (c, a)
+            a, b, c = t[(k + 1) % 3], t[(k + 2) % 3], t[k]
+            m1, m2 = mid(a, b), mid(b, c)
+            cut += [(m1, b, m2), (a, m1, m2), (a, m2, c)]
+        tris = [t for t in cut if not flat(t)]
+    else:
+        raise SectorError(f"the zone map's triangles are still longer than {ZONE_EDGE_MOST:,.0f} after "
+                          f"{CUT_ROUNDS_MOST} rounds of cutting")
     return positions, tris
 
 

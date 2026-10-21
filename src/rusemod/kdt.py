@@ -107,35 +107,51 @@ def encode_positions(positions: list, parents: list[int] | None = None) -> bytes
 # --- the normals
 
 
+# One 32-bit word per normal: bits 0-3 the dominant axis k (tag >> 1) and its sign (tag & 1); bits 4-17 b and bits
+# 18-31 a, two 14-bit fields centred on 8192 in steps of 1/8192 (-1 .. 8191/8192), a = n[k+1] / |n[k]|,
+# b = n[k+2] / |n[k]|. Seen 2026-10-21: D-Day's ground tree read so lies within 0.32 deg of its close mesh's normals at
+# the same points (p99, all 59,967 points), and the normals the game drew on our ground pieces (RenderDoc captures of
+# tf-utah9) are our tree read so (93% within 2 deg); the ground pieces (grass, fields) take their normals from this
+# tree. Until then we read a as 16 bits (16-31) and b as 12 bits (4-15): that agrees with this for |b| < 0.25 when
+# the two bits between are b's sign, as in the game's own files, but our writer filled them from a, so the game read
+# a random 0, +-0.5 or +-1 more in b on every normal we wrote (tf-utah9's dark and light blotches, 10-20).
+FIELD = 0x3FFF
+CENTRE = 8192
+
+
 def decode_normal(word: int) -> tuple[float, float, float]:
     """One packed normal -> unit (nx, ny, nz)."""
     tag = word & 15
     if tag > 5:
         raise ValueError(f"normal {word:#010x}: unknown axis tag {tag}")
     k = tag >> 1
-    a = ((word >> 16) - 32768) / 32768
-    b = (word >> 4) & 0xFFF
-    b = (b - 4096 if b & 0x800 else b) / 8192
+    a = ((word >> 18) - CENTRE) / CENTRE
+    b = (((word >> 4) & FIELD) - CENTRE) / CENTRE
     n = [0.0, 0.0, 0.0]
-    n[k] = 1.0 if tag & 1 else -1.0
+    n[k] = KEEP if tag & 1 else -KEEP
     n[(k + 1) % 3] = a
     n[(k + 2) % 3] = b
-    length = math.sqrt(1.0 + a * a + b * b)
+    length = math.sqrt(KEEP * KEEP + a * a + b * b)
     return (n[0] / length, n[1] / length, n[2] / length)
 
 
-AXIS_NUDGE = (0x7FFD, 0xFFF)   # a, b fields written for a normal exactly along an axis (see encode_normal)
+# The stored axis a hair longer than the others, so a word whose a or b is -1 (the axes tied) keeps its axis when it
+# is encoded again: the game's packer chose it from values that tie only once rounded (25 shipped words, both ways).
+KEEP = 1.0 + 1e-9
+
+
+AXIS_NUDGE = (0x1FFF, 0x1FFF)   # a, b fields written for a normal exactly along an axis (see encode_normal)
 
 
 def encode_normal(n) -> int:
-    """(nx, ny, nz), any length -> packed normal. On a tie the later axis is the dominant one (what the shipped
-    data does); a is clamped to the 16-bit field; b wraps like the game's own packer.
+    """(nx, ny, nz), any length -> packed normal. On a tie the later axis is the dominant one; a and b are clamped to
+    their 14-bit fields. Decoded words keep their axis (KEEP): the 2.96 million distinct words of the 32 shipped maps'
+    trees all come back the same but D-Day's exact straight-up word, nudged.
 
-    A normal exactly along an axis (a and b both 0) is written a hair off it, AXIS_NUDGE (a = -3/32768,
-    b = -1/8192: the commonest word under D-Day's level ground, 0x7ffdfff5). Rule (seen in the game): a map whose gameplay
-    ground stores its normals exactly straight up (0x80000005) casts no shadows in the game; the same flat ground
-    with the nudged word casts them (seen in the game 2026-10-15, shadow split rounds 1-3). None of the 3.5 million
-    normals in the 32 shipped maps' three trees is exactly along an axis."""
+    A normal exactly along an axis (a and b both 0) is written a hair off it, AXIS_NUDGE (a = b = -1/8192: the
+    commonest word under D-Day's level ground, 0x7ffdfff5). Seen in the game (shadow split rounds 1-3, 2026-10-15): a
+    ground stored 0x80000005 casts no shadows, the nudged word casts them; read with the layout above, 0x80000005 is
+    no straight-up normal but b = -1, a 45 deg tilt. The nudge is kept: it is D-Day's own word for level ground."""
     k = 0
     for i in (1, 2):
         if abs(n[i]) >= abs(n[k]):
@@ -145,11 +161,11 @@ def encode_normal(n) -> int:
         raise ValueError("normal has no length")
     a = n[(k + 1) % 3] / d
     b = n[(k + 2) % 3] / d
-    hi = min(max(int(round(a * 32768)) + 32768, 0), 0xFFFF)
-    mid = int(round(b * 8192)) & 0xFFF
-    if hi == 0x8000 and mid == 0:
-        hi, mid = AXIS_NUDGE
-    return hi << 16 | mid << 4 | 2 * k + (1 if n[k] > 0 else 0)
+    qa = min(max(int(round(a * CENTRE)) + CENTRE, 0), FIELD)
+    qb = min(max(int(round(b * CENTRE)) + CENTRE, 0), FIELD)
+    if qa == CENTRE and qb == CENTRE:
+        qa, qb = AXIS_NUDGE
+    return qa << 18 | qb << 4 | 2 * k + (1 if n[k] > 0 else 0)
 
 
 def decode_normals(data: bytes) -> list[tuple[float, float, float]]:

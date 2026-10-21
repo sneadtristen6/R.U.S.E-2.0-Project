@@ -154,7 +154,7 @@ def shape_weight(shape: str, t2: float) -> float:
 # fall-off) or a hard one (full strength out to HARD_EDGE of the way, then a short S-curve to nothing). A square's turn
 # is a direction (dx, dy), never an angle: only + - * / and square roots, so every PC builds the same bytes.
 SHAPES = ("round", "square", "line")
-EDGES = ("soft", "hard")
+EDGES = ("soft", "hard", "none")   # none: the relief brush only, its picture full to the very edge (a whole map's)
 HARD_EDGE = 0.85
 
 
@@ -372,6 +372,10 @@ class Stroke:
     relief: str = ""      # relief: the mod's heightmap, files/terrain/<relief>.png (and its picture <relief>-ground.png)
     grid: tuple = ()      # relief: the heightmap as read (columns, rows, its 16-bit samples, rows from the high y side
                           # as the picture's top): made by the build (rusemod.relief), never written to a terrain file
+    within: str = ""      # paint, stamp, texture, tint: "<relief>:<area>", it paints only where that relief's area
+                          # picture (files/terrain/<relief>-areas.png, 16-bit, over the relief's square) holds <area>:
+                          # a field, a wood, a marsh of a real place (rusemod.realplace). The build makes it the
+                          # stroke's clip (rusemod.relief.area_clip); "" = everywhere its footprint reaches
 
     def clip_at(self, x: float, y: float) -> bool:
         """Whether the clip lets (x, y) be painted (no clip: everywhere)."""
@@ -518,6 +522,7 @@ _NEEDS = {"add": ("height",), "level": ("level",), "smooth": (), "ramp": ("x2", 
           "stamp": ("sx", "sy"), "texture": ("texture",), "tint": ("colour",), "repaint": (),
           "relief": ("level", "level2", "relief")}
 _RELIEF_NAME = re.compile(r"^[a-z0-9_\-]{1,64}$")
+_WITHIN = re.compile(r"^([a-z0-9_\-]{1,64}):([0-9]{1,5})$")
 _NUMBERS = ("x", "y", "radius", "height", "level", "weight", "x2", "y2", "level2", "dx", "dy", "sx", "sy", "turn",
             "fold", "fx", "fy", "fturn", "size", "length")
 _COLOUR = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -582,6 +587,9 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
                 if item[key] not in allowed:
                     raise BrushError(f"{at}: {key} must be one of {', '.join(allowed)}, not {item[key]!r}")
                 values[key] = item[key]
+        if values.get("edge") == "none" and brush != "relief":   # not a game rule: the stroke file's own field
+            raise BrushError(f"{at}: edge = \"none\" (no fall-off at all) is for the relief brush: a real place's "
+                             f"picture over the whole map")
         shape = "square" if values.get("square") else values.get("shape", "round")
         if brush == "ramp" and shape == "square":
             raise BrushError(f"{at}: a ramp runs along its line; it can't be square")
@@ -686,6 +694,15 @@ def parse_strokes(items, where: str = "terrain.toml") -> list[Stroke]:
             raise BrushError(f"{at}: a relief stroke is a square (shape = \"square\"; `length` makes it a rectangle)")
         if "grid" in item:  # not a game rule: the build's own field
             raise BrushError(f"{at}: grid is made by the build from the relief's heightmap, never written")
+        if "within" in item:
+            if kind not in PAINT_KINDS:  # not a game rule: the stroke file's own field
+                raise BrushError(f"{at}: within (paint only inside a relief's area) is for the paint, stamp, texture "
+                                 f"and tint brushes")
+            got = _WITHIN.match(item["within"]) if isinstance(item["within"], str) else None
+            if got is None or not 1 <= int(got.group(2)) <= 65535:
+                raise BrushError(f"{at}: within must be \"<relief>:<area>\" (the relief's name, an area from 1 to "
+                                 f"65535), not {item['within']!r}")
+            values["within"] = item["within"]
         if "block" in item:
             if brush != "water":
                 raise BrushError(f"{at}: block (whether its water keeps units out) is for the water brush")
@@ -748,6 +765,8 @@ def strokes_toml(strokes: list[Stroke], header: str = "") -> str:
             lines.append(f'mask = "{s.mask}"')
         if kind in PAINT_KINDS and s.dither:
             lines.append("dither = true")
+        if kind in PAINT_KINDS and s.within:
+            lines.append(f'within = "{s.within}"')
         if s.brush == "water" and not s.block:
             lines.append("block = false")
         if s.square:

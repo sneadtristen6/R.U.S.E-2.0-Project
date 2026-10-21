@@ -27,6 +27,9 @@ LOCAL_RADIUS = 640.0   # a new deck's circles in its local map: units keep withi
                        # floor they stand on (663 either side on the bridge kinds the build places; the shipped decks'
                        # local circles are mostly 640)
 LOCAL_SPACING = 640.0  # between them along the deck (a link needs an overlap of STEP: at most 960 apart for 640)
+LOCAL_CUT_MOST = 40     # the most main circles one piece cut off by the towns' local maps may have (more: refused)
+LOCAL_RIM = 2 * STEP   # how far the main circles round a new town's owner reach into its rim, to link to it (they keep
+                       # clear of all but this; their middles stay outside, as on every shipped owner)
 LEAF = 4               # the most circles in a leaf of an index built here (the shipped ones hold 1 to 7)
 MAX_DEPTH = 24         # the deepest an index may go: the game walks it with a fixed stack of 32 entries and no test of
                        # running past it (the deepest shipped index is 18 levels; one built here, balanced, about 14)
@@ -96,7 +99,8 @@ class Graph:
         return head + struct.pack(f"<{len(offsets)}I", *offsets) + b"".join(body)
 
     # --- changing it ---
-    def block(self, zones: list[tuple[float, float, float]], refill: bool = True, keep_owners: bool = False) -> dict:
+    def block(self, zones: list[tuple[float, float, float]], refill: bool = True, keep_owners: bool = False,
+              least: float = MIN_RADIUS) -> dict:
         """Take the ground inside `zones` (circles: x, y, radius) away, here and in the local graphs: units plan
         around it (proven in the game, 2026-09-30). With `keep_owners`, the circles that own a local map stay as they
         are: their ground is taken away in the local map only (an old bridge's deck, whose owner then takes the new
@@ -110,16 +114,19 @@ class Graph:
         gave up outside the zones gets new circles (the largest first, centres on the STEP grid), linked to every
         circle they overlap by STEP or more, and to each other; the shrunk circles are linked again where they still
         overlap. New circles are numbered after the old ones and listed in the index as one more tree (a leaf), so
-        the old numbers and the old trees stay. Returns what changed."""
+        the old numbers and the old trees stay. `least`: the smallest circle the refill puts down (MIN_RADIUS, the
+        smallest on any shipped map; a map with thousands of holes, a real place's rivers, woods and farms, fills
+        coarser, as Eugen's graphs keep few circles: D-Day's vehicles 7,293 in the main graph). Returns what
+        changed."""
         counts = {"emptied": 0, "shrunk": 0, "links": 0, "crossings": 0, "added": 0, "linked": 0}
         if zones:
-            self._block(zones, refill, counts, len(self.subs) if keep_owners else 0)
+            self._block(zones, refill, counts, len(self.subs) if keep_owners else 0, least)
         for s in self.subs:
             for k, v in s.block(zones, refill).items():
                 counts[k] += v
         return counts
 
-    def _block(self, zones, refill, counts, keep: int = 0) -> None:
+    def _block(self, zones, refill, counts, keep: int = 0, least: float = MIN_RADIUS) -> None:
         n = len(self.circles) - 1
         old = [c[:3] for c in self.circles[:-1]]
         radius = []
@@ -153,9 +160,10 @@ class Graph:
             # as our own would be (_fits_fill); what a block cuts off from the rest is taken out below either way
             sources, keeps = [old[i] for i in changed], [radius[i] for i in changed]
             zones = list(zones)
-            filled = solved.answer(solved.name("fill", sources, zones, now, keeps),
-                                   lambda: _fill(sources, zones, now, kept=keeps),
-                                   lambda a: _fits_fill(a, sources, zones, now))
+            name = solved.name("fill", sources, zones, now, keeps) if least == MIN_RADIUS else \
+                solved.name("fill", sources, zones, now, keeps, least)
+            filled = solved.answer(name, lambda: _fill(sources, zones, now, least=least, kept=keeps),
+                                   lambda a: _fits_fill(a, sources, zones, now, least))
         added = [c[:3] for c in filled]
         allc = now + added
         counts["added"] += len(added)
@@ -974,6 +982,22 @@ class Graph:
         cross = [self.crossings[28 * i:28 * i + 28] for i in range(len(self.crossings) // 28)]
         mine = [cross[self.circles[c][4]:self.circles[c + 1][4]] for c in range(n)]
         total = len(cross)
+        # the zones by place: a road is weighed against those whose box meets its own only (every zone that can come
+        # within its radius of the road does; on a real place's map, thousands of houses, each crossing was weighed
+        # against all of them: 261 s of a 494 s build, 2026-10-19)
+        zl = list(zones)
+        zoned = _Buckets(zl) if zl else None
+
+        def through_zone(line) -> bool:
+            if zoned is None:
+                return False
+            xs, ys = [p[0] for p in line], [p[1] for p in line]
+            x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+            for k in zoned.near((x0 + x1) / 2, (y0 + y1) / 2, max(x1 - x0, y1 - y0) / 2 + 1.0):
+                zx, zy, zr = zl[k]
+                if any(_seg_dist(zx, zy, (*p0, *p1)) < zr for p0, p1 in zip(line, line[1:])):
+                    return True
+            return False
         for c in todo:
             cx, cy, r = circles[c]
             # where the roads cross each gate's line: (gate link, road link, how far along it, x, y)
@@ -1051,7 +1075,7 @@ class Graph:
                     if not (_heads_in(line, (cx, cy), self._other_middle(c, ga))
                             and _heads_in(line[::-1], (cx, cy), self._other_middle(c, gb))):
                         continue
-                    if any(_seg_dist(zx, zy, (*p0, *p1)) < zr for zx, zy, zr in zones for p0, p1 in zip(line, line[1:])):
+                    if through_zone(line):
                         continue
                     if not _open_along(self.walkable, line):
                         continue
@@ -1081,6 +1105,146 @@ class Graph:
             self.circles = [rec[:4] + (s,) for rec, s in zip(self.circles, starts)]
             self.crossings = b"".join(rec for recs in mine for rec in recs)
         return out
+
+    def add_local_maps(self, areas: list, least: float = MIN_RADIUS, local_least: float = MIN_RADIUS) -> dict:
+        """Give each of `areas` [(x, y, r, blocks, opens[, decks])] (map units; `blocks` and `opens` the zones (x, y, r) that
+        take ground away and give it back inside the area, for this graph's units) a local map of its own, the way the
+        game's towns have one (findings ledger F-95: D-Day's 44 local maps, 625 on the 32 shipped maps). The main graph
+        stays coarse; the area's detail (houses, blocks, streets, yards) lives in its local map, which has its own 16-bit
+        counts. As every shipped owner is laid out:
+        - the owner: a main circle (x, y, r) on the STEP grid, after the old owners (local map k is circle k's: the
+          game finds it by number), owners largest first among the new ones; the old circles after it renumbered;
+        - no other main circle's middle in it: the main graph's ground inside it is taken away (a block of r less
+          LOCAL_RIM, so the circles round it keep clear of all but its rim and overlap that, to link to it; any whose
+          middle is still inside goes);
+        - its local map: the disc as one circle, the area's blocks taken out of it (filled back down to `local_least`),
+          then its opens grown in (down to STEP, the smallest a shipped local map has), all inside the disc, kept in
+          one piece (the largest; every shipped local map is one);
+        - its bridges (`decks`: spans x0, y0, x1, y1 all inside the disc) laid in it as Graph.open_narrow lays a deck,
+          before it is kept in one piece, so a town a river runs through stays one piece through them;
+        - linked to every main circle it overlaps by STEP or more where its local map has ground in the overlap: at
+          the meeting point, else the point across the overlap nearest it with ground (_meeting_on; a route comes
+          into the local map there).
+        The areas must lie apart from each other and from the old owners, and inside the map. Checked before returning
+        (NavError): every new local map one piece with ground, every owner linked, no main circle's middle in an owner,
+        the main graph in no more pieces than before. Returns {"owners": [(circle number, radius, local circles, links)],
+        "emptied": main circles emptied inside the owners, "cut": local circles left out (not reached), "cut_main": main
+        circles the discs cut off from the rest, taken out (a piece of more than LOCAL_CUT_MOST is refused)}."""
+        n0, nx = len(self.circles) - 1, len(self.subs)
+        x0, y0, size = self.box[0], self.box[1], float(self.box[2])
+        discs = [(round(x / STEP) * STEP, round(y / STEP) * STEP, math.ceil(r / STEP) * STEP)
+                 for x, y, r, *_rest in areas]
+        for i, (x, y, r) in enumerate(discs):
+            if x - r < x0 or y - r < y0 or x + r > x0 + size or y + r > y0 + size:
+                raise NavError(f"the local map at ({x:.0f}, {y:.0f}) would reach off the map")
+            for j in range(i):
+                if math.hypot(x - discs[j][0], y - discs[j][1]) < r + discs[j][2]:
+                    raise NavError(f"the local maps at ({x:.0f}, {y:.0f}) and ({discs[j][0]:.0f}, {discs[j][1]:.0f}) "
+                                   f"would overlap")
+            for k in range(nx):
+                ox, oy, orad = self.circles[k][:3]
+                if orad > 0 and math.hypot(x - ox, y - oy) < r + orad:
+                    raise NavError(f"the local map at ({x:.0f}, {y:.0f}) would overlap the map's own at "
+                                   f"({ox:.0f}, {oy:.0f})")
+        counts = {"owners": [], "emptied": 0, "cut": 0, "cut_main": 0}
+        if not discs:
+            return counts
+        parts_before = len(self._labels()[1])
+        # the main graph's ground inside each disc taken away; the circles round it keep clear of all but its rim
+        self.block([(x, y, r - LOCAL_RIM) for x, y, r in discs], keep_owners=True, least=least)
+        gone = {i for i, c in enumerate(self.circles[:-1])
+                if i >= nx and c[2] > 0 and any(math.hypot(c[0] - x, c[1] - y) < r for x, y, r in discs)}
+        if gone:
+            self._empty(gone)
+        counts["emptied"] = len(gone)
+        # each local map: the disc, the area's blocks taken out, its opens grown in; one piece
+        local_maps = []
+        for (x, y, r), area in zip(discs, areas):
+            blocks, opens = area[3], area[4]
+            decks = area[5] if len(area) > 5 else ()
+            g = _local_graph(self.box, [(x, y, r)])
+            inside = [z for z in blocks if math.hypot(z[0] - x, z[1] - y) < r + z[2]]
+            if inside:
+                g.block(inside, least=local_least)
+            wanted = [z for z in opens if math.hypot(z[0] - x, z[1] - y) < r + z[2]]
+            if wanted:
+                g._open_here(wanted, STEP, (x - r, y - r, x + r, y + r),
+                             lambda px, py, x=x, y=y, r=r: math.hypot(px - x, py - y) < r)
+            # its bridges' decks (all inside the disc), before it is kept in one piece: a town a river runs through is
+            # one piece through them (Graph.open_narrow's deck: DECK_RADIUS circles along it, units on the deck only)
+            for x0_, y0_, x1_, y1_ in decks:
+                length = math.hypot(x1_ - x0_, y1_ - y0_)
+                steps = max(1, int(-(-length // DECK_RADIUS)))
+                _with_circles(g, [(x0_ + (x1_ - x0_) * k / steps, y0_ + (y1_ - y0_) * k / steps, DECK_RADIUS)
+                                  for k in range(steps + 1)])
+            counts["cut"] += g.drop_cut_off()
+            if not g.parts():
+                raise NavError(f"the local map at ({x:.0f}, {y:.0f}) would have no ground left")
+            local_maps.append(g)
+        # the owners, after the old ones, largest first, each linked where its local map has ground
+        order = sorted(range(len(discs)), key=lambda i: (-discs[i][2], i))
+        m = len(discs)
+        allc = [c[:3] for c in self.circles[:-1]]
+        n = len(allc)
+
+        def num(i):
+            return i if i < nx else i + m
+        circles = allc[:nx] + [discs[i] for i in order] + allc[nx:]
+        old_of = list(range(nx)) + [None] * m + list(range(nx, n))
+        kept = [(i, (num(a), num(b), px, py)) for i, (a, b, px, py) in enumerate(self.links)]
+        near = _Buckets(list(allc))
+        new_links, links_of = [], {}
+        for j, i in enumerate(order):
+            x, y, r = discs[i]
+            for d in sorted(near.near(x, y, r)):
+                if d < nx or allc[d][2] <= 0:
+                    continue
+                point = _meeting_on(local_maps[i], (x, y, r), allc[d])
+                if point is None:
+                    continue
+                new_links.append((None, (nx + j, num(d)) + point))
+                links_of[i] = links_of.get(i, 0) + 1
+        missing = [discs[i] for i in order if not links_of.get(i)]
+        if missing:
+            x, y, _r = missing[0]
+            raise NavError(f"the local map at ({x:.0f}, {y:.0f}) has no way in from the ground around it")
+        self._finish(circles, kept, new_links, n, old_of)
+        self.points = _index_more(_index_renumber(self.points, num), allc, [(nx + j, discs[i]) for j, i in enumerate(order)],
+                                  num)
+        self.subs = self.subs + [local_maps[i] for i in order]
+        for j, i in enumerate(order):
+            x, y, r = discs[i]
+            counts["owners"].append((nx + j, r, len(local_maps[i].circles) - 1, links_of[i]))
+        # checks
+        live = self.circles[:-1]
+        for k in range(nx, nx + m):
+            ox, oy, orad = live[k][:3]
+            if len(self.subs[k].parts()) != 1:
+                # rule: ground-reach
+                raise NavError(f"the local map at ({ox:.0f}, {oy:.0f}) would be in pieces")
+            if any(i != k and c[2] > 0 and math.hypot(c[0] - ox, c[1] - oy) < orad for i, c in enumerate(live)):
+                raise NavError(f"a circle's middle would lie in the local map at ({ox:.0f}, {oy:.0f})")
+        lab, sizes = self._labels()
+        if len(sizes) > parts_before:
+            # ground the towns' discs cut off from the rest (a sliver between a disc and the water, a field reached only
+            # through the town's own ground where its local map has a house at the rim): no unit could reach it, and
+            # an order onto it crashes the game, so it goes, as a block's cut-off pieces do (drop_cut_off). A big piece
+            # cut off is refused: that would be a real way through lost.
+            main = max(sizes, key=lambda part: (sizes[part], -part))
+            off = {}
+            for i, c in enumerate(live):
+                if c[2] > 0 and lab[i] != main:
+                    off.setdefault(lab[i], []).append(i)
+            big = [p for p in off.values() if len(p) > LOCAL_CUT_MOST]
+            if big:
+                x, y = live[big[0][0]][:2]
+                # rule: ground-reach
+                raise NavError(f"the local maps would cut {len(big[0])} circles of ground off from the rest, near "
+                               f"({x:.0f}, {y:.0f}): a way through the town is lost")
+            gone = {i for p in off.values() for i in p}
+            self._empty(gone)
+            counts["cut_main"] = len(gone)
+        return counts
 
     def _other_middle(self, c: int, link: int) -> tuple[float, float]:
         """The middle of the circle that link `link` joins circle `c` to."""
@@ -1416,7 +1580,8 @@ PARALLEL_FROM = 400  # blocks and opens in each graph from which the two graphs 
 
 
 def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
-                 workers: int | None = None, ahead: "Ahead | None" = None) -> tuple[dict, list[str]]:
+                 workers: int | None = None, ahead: "Ahead | None" = None,
+                 least: float = MIN_RADIUS) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map; `read(member)` gives a DataMap_Win.dat file's bytes or None.
     Blocks and opens (Block.open) apply in order, a run of blocks at once (Graph.block), then a run of opens
     (Graph.open_ground), and so on: where two meet, the later one wins. The opens that opened nothing in any graph
@@ -1425,7 +1590,8 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
     The two graphs (infantry, vehicles) share nothing, so on a big map they are worked on at once, the infantry's in a
     worker program (`workers`: 2 or more lets it, 1 doesn't; None: when each graph has PARALLEL_FROM blocks and opens
     or more). The bytes, the notes and the answers kept (rusemod.solved) are the same as one after the other.
-    `ahead`: the same question started earlier (Ahead), whose answer is taken when it is the same question."""
+    `ahead`: the same question started earlier (Ahead), whose answer is taken when it is the same question.
+    `least`: the smallest circle the blocks' refill puts down (Graph.block)."""
     from ruse_mod_engine import sdb
     from .cover import PACK, member
     name = member(pack)
@@ -1433,16 +1599,16 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
     if win is None:
         raise NavError(f"{pack} has no {name} in {PACK}, so its movement can't be changed")
     bufs = sdb.split_mapinfo(win)[1]
-    jobs = _jobs(bufs, blocks)
+    jobs = _jobs(bufs, blocks, least)
     big = min((len(j[4]) for j in jobs), default=0) >= PARALLEL_FROM and (os.cpu_count() or 1) > 1
     both = len(jobs) == 2 and (big if workers is None else workers >= 2)
     store = solved._ACTIVE[-1] if solved._ACTIVE else None
-    if ahead is not None and ahead.fits(bufs, blocks, store.given if store is not None else None):
+    if ahead is not None and ahead.fits(bufs, blocks, store.given if store is not None else None, least):
         done = ahead.take(jobs)
     else:
         done = _two_graphs(jobs) if both else [_one_graph(*job) for job in jobs]
     new, notes, opened = {}, [], set()  # opened: the opens (their numbers in `blocks`) that opened something
-    for (_raw, _roads, k, _what, _mine), (data, said, opened_here) in zip(jobs, done):
+    for (_raw, _roads, k, _what, _mine, _least), (data, said, opened_here) in zip(jobs, done):
         new[k] = data
         notes += said
         opened |= opened_here
@@ -1451,14 +1617,14 @@ def apply_blocks(read, pack: str, blocks: list[Block], idle: list | None = None,
     return {name: replace_buffers(win, new)}, notes
 
 
-def _jobs(bufs, blocks: list) -> list[tuple]:
+def _jobs(bufs, blocks: list, least: float = MIN_RADIUS) -> list[tuple]:
     """_one_graph's work for each graph the blocks and opens name: (its buffer, the roads' buffer, its number, who
-    uses it, [(number, Block)] in order)."""
+    uses it, [(number, Block)] in order, the refill's smallest circle)."""
     jobs = []
     for k, what in ((1, "infantry"), (2, "vehicles")):
         mine = [(i, b) for i, b in enumerate(blocks) if k in UNITS[b.units]]
         if mine:
-            jobs.append((bufs[k], bufs[0], k, what, mine))
+            jobs.append((bufs[k], bufs[0], k, what, mine, least))
     return jobs
 
 
@@ -1469,13 +1635,13 @@ class Ahead:
     holds, its cover grid, may have changed since: it isn't asked), with the same answers given (rusemod.solved).
     Asked anything else, the build works it out as before. `close` lets the worker programs go."""
 
-    def __init__(self, win: bytes, blocks: list, given: dict | None):
+    def __init__(self, win: bytes, blocks: list, given: dict | None, least: float = MIN_RADIUS):
         from concurrent.futures import ProcessPoolExecutor
         from ruse_mod_engine import sdb
         bufs = sdb.split_mapinfo(win)[1]
-        self.blocks, self.given = list(blocks), (dict(given) if given is not None else None)
+        self.blocks, self.given, self.least = list(blocks), (dict(given) if given is not None else None), least
         self.bufs = tuple(bufs[:3])
-        self.jobs = _jobs(bufs, self.blocks)
+        self.jobs = _jobs(bufs, self.blocks, least)
         self.pool, self.futures = None, []
         try:
             self.pool = ProcessPoolExecutor(max_workers=max(1, len(self.jobs)))
@@ -1483,9 +1649,9 @@ class Ahead:
         except (OSError, RuntimeError):  # worker programs that can't start: the build works it out when it comes to it
             self.close()
 
-    def fits(self, bufs, blocks: list, given: dict | None) -> bool:
+    def fits(self, bufs, blocks: list, given: dict | None, least: float = MIN_RADIUS) -> bool:
         return bool(self.futures) and tuple(bufs[:3]) == self.bufs and list(blocks) == self.blocks \
-            and given == self.given
+            and given == self.given and least == self.least
 
     def take(self, jobs: list) -> list:
         """_one_graph's answers for `jobs` (the same as this was started with), from the worker programs; the answers
@@ -1517,7 +1683,8 @@ class Ahead:
         self.futures = []
 
 
-def _one_graph(raw: bytes, roads_raw: bytes, k: int, what: str, mine: list) -> tuple[bytes, list[str], set[int]]:
+def _one_graph(raw: bytes, roads_raw: bytes, k: int, what: str, mine: list,
+               least: float = MIN_RADIUS) -> tuple[bytes, list[str], set[int]]:
     """apply_blocks for one graph (buffer `k` of mapinfo.win, `raw`): its new bytes, its notes and the numbers of the
     opens that opened something in it. `roads_raw`: buffer 0, the road network, read only if a crossing's road needs
     following."""
@@ -1556,7 +1723,7 @@ def _one_graph(raw: bytes, roads_raw: bytes, k: int, what: str, mine: list) -> t
         # closed, water beside the map's own bridges included (seen in the game, 2026-10-01: an infantry squad
         # standing in the river beside a bridge of the map's own, on a map where the mod had only placed
         # buildings). The block goes into those local maps instead (Graph.block walks them).
-        c = g.block(zones, keep_owners=True)
+        c = g.block(zones, keep_owners=True, least=least)
         notes.append(f"{what}: {len(zones)} block(s); {c['emptied']} circle(s) emptied, {c['shrunk']} shrunk, "
                      f"{c['links']} link(s) and {c['crossings']} crossing(s) taken out; {c['added']} circle(s) "
                      f"and {c['linked']} link(s) added to fill the ground back")
@@ -1847,6 +2014,37 @@ def _meeting(p, q) -> tuple[float, float] | None:
         return None
     t = (d - br + ar) / 2 / d
     return (ax + (bx - ax) * t, ay + (by - ay) * t)
+
+
+def _meeting_on(local: "Graph", p, q) -> tuple[float, float] | None:
+    """Where an owner circle `p` and a main circle `q` meet on the owner's local map's ground, for a way in: the middle
+    of their overlap (_meeting) when the local map has ground there, else the point across the overlap nearest it
+    that has (a town's ground may reach its rim only along a road, the woods round it closed to vehicles: a corner
+    of a real map, 2026-10-19), inside both circles by half a STEP; None when the overlap holds no such point. Eugen's
+    links into owners lie near the line between the centres (D-Day: median 8 % of the overlap's half-width off it,
+    90 % within 21 %, scratch/realplace/dday_owner_links.py), so the nearest is taken."""
+    mid = _meeting(p, q)
+    if mid is None or local.find(*mid) is not None:
+        return mid
+    (ax, ay, ar), (bx, by, br) = p, q
+    d = math.hypot(bx - ax, by - ay)
+    ux, uy = (bx - ax) / d, (by - ay) / d
+    tm = (d - br + ar) / 2           # the overlap's middle along the line from p's centre
+    margin = STEP / 2
+    for k in range(1, 1 + int(min(ar, br) // STEP)):
+        inside = False               # (the overlap is the same either side of the line: past its width, done)
+        for s in (k * STEP, -k * STEP):
+            for dt in (0.0, -STEP / 2, STEP / 2):
+                t = tm + dt
+                if math.hypot(t, s) > ar - margin or math.hypot(d - t, s) > br - margin:
+                    continue
+                inside = True
+                x, y = ax + ux * t - uy * s, ay + uy * t + ux * s
+                if local.find(x, y) is not None:
+                    return (x, y)
+        if not inside:
+            return None
+    return None
 
 
 def _seg_dist(x: float, y: float, span) -> float:
@@ -2769,6 +2967,26 @@ def _try_owner(owner, deck, near, anchors, chains, first: int, extra=()) -> dict
         return None
     return {"circle": owner, "local": list(deck) + inner + [c for _i, c in kept], "linked": linked,
             "left_out": len(over) - len(kept), "main": [c for _i, c in tails]}
+
+
+def _with_circles(g: Graph, circles: list) -> None:
+    """`circles` (x, y, r) added to graph `g` (one with no local maps) as they are, each linked to every circle it
+    overlaps by STEP or more (the new ones to each other too), numbered after the old ones and listed in the index under
+    the nearest old one (_index_more)."""
+    n = len(g.circles) - 1
+    old = [c[:3] for c in g.circles[:-1]]
+    allc = old + [tuple(c) for c in circles]
+    near = _Buckets(list(allc))
+    links = []
+    for c in range(n, len(allc)):
+        for d in near.around(c):
+            if d == c or allc[d][2] <= 0 or n <= d < c:   # (two new circles: once, from the later one)
+                continue
+            point = _meeting(allc[c], allc[d])
+            if point is not None:
+                links.append((min(c, d), max(c, d)) + point)
+    g._finish(allc, list(enumerate(g.links)), [(None, lk) for lk in links], n)
+    g.points = _index_more(g.points, old, [(n + j, c) for j, c in enumerate(allc[n:])])
 
 
 def _local_graph(box, circles) -> Graph:

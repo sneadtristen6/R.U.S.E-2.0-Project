@@ -2444,9 +2444,10 @@ async function realGround(pack, ask) {
 // kept in the cache; from DomesticNukes and his Claude's notes). Until they're in, and for a type without a model,
 // the simple shapes below stand in. Each type is one instanced mesh per part (a part: one atlas), drawn where the
 // shapes stand; the shapes stay, unseen, for pointing at things (sceneryAt). ---
-async function loadModels(pack, ask) {
+// `blank`: a map started blank has none of the map's models to load, only the mod's own (ownModels).
+async function loadModels(pack, ask, blank) {
   const w = mv.words, note = $("map-ground");
-  let res = await mv.api.map_models(pack);
+  let res = blank ? null : await mv.api.map_models(pack);
   while (res && res.job) {
     let view, since = 0;
     do {
@@ -2459,11 +2460,19 @@ async function loadModels(pack, ask) {
     if (view.state !== "done") { note.textContent = view.message; return; }
     res = await mv.api.map_models(pack);
   }
-  if (!res || !res.index || ask !== mv.ask || !mv.scenery.data) return;
+  if ((!blank && (!res || !res.index)) || ask !== mv.ask || !mv.scenery.data) return;
   note.textContent = fill(w.models_loading, { progress: "" });
-  const buf = await (await fetch(res.base + res.index.bin)).arrayBuffer();
+  const sources = [], kept = mv.scenery.mapSource;  // (the map's, kept: the mod's own are loaded again on a change)
+  if (!blank) {
+    const url = res.base + res.index.bin;
+    const buf = kept && kept.url === url ? kept.buf : await (await fetch(url)).arrayBuffer();
+    sources.push(mv.scenery.mapSource = { url, base: res.base, index: res.index, buf });
+  }
+  const mine = await ownModels(ask);
   if (ask !== mv.ask) return;
-  const lib = modelLibrary(res, buf);
+  if (mine) sources.push(mine);
+  if (!sources.length) { note.textContent = ""; return; }  // a blank map, and the mod has no models of its own
+  const lib = modelLibrary(sources);
   clearModels();
   mv.scenery.lib = lib;
   const { THREE } = mv.gl, models = {};
@@ -2512,14 +2521,18 @@ function clearModels() {
   }
 }
 
-// The models once in (map_models' index and buffers), for everything that draws a type: the map's own objects, what
-// the mod places, the ghost at the pointer and the place list's pictures. parts(t): a type's parts ({ geo, texture }),
+// The models once in, for everything that draws a type: the map's own objects, what the mod places, the ghost at the
+// pointer and the place list's pictures. `sources`: [{ base, index, buf }], map_models' and the mod's own (ownModels:
+// numbered after the map's types), an index's models by type number. parts(t): a type's parts ({ geo, texture, src }),
 // made once; material(group, part): a new material on the part's shared picture; ready(t): its pictures loaded.
-function modelLibrary(res, buf) {
-  const { THREE } = mv.gl, idx = res.index, types = mv.scenery.data.types, textures = {}, geometries = {};
-  const textureOf = (key) => {
-    if (!key || !idx.textures[key]) return null;
-    if (!textures[key]) {
+function modelLibrary(sources) {
+  const { THREE } = mv.gl, types = mv.scenery.data.types, textures = new Map(), geometries = {};
+  const sourceOf = (t) => sources.find((s) => s.index.models[t] && s.index.models[t].length) || null;
+  const textureOf = (key, src) => {
+    if (!key || !src || !src.index.textures[key]) return null;
+    if (!textures.has(src)) textures.set(src, {});
+    const mine = textures.get(src);
+    if (!mine[key]) {
       const tex = new THREE.Texture();
       tex.flipY = false;  // the game's UVs start at the picture's top
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -2528,20 +2541,20 @@ function modelLibrary(res, buf) {
         const img = new Image();
         img.onload = () => { tex.image = bleed(img); tex.needsUpdate = true; if (mv.gl) mv.gl.draw(); done(); };
         img.onerror = () => done();
-        img.src = res.base + idx.textures[key];
+        img.src = src.base + src.index.textures[key];
       });
-      textures[key] = { tex, ready };
+      mine[key] = { tex, ready };
     }
-    return textures[key];
+    return mine[key];
   };
-  const has = (t) => Boolean(idx.models[t] && idx.models[t].length);
+  const has = (t) => sourceOf(t) !== null;
   const parts = (t) => {
     if (geometries[t]) return geometries[t];
     // a tree's leaves are cards whose normals point out of the crown, lit the same from either side: each gets a face
     // both ways round (drawn front side only), as one face seen from behind turned its normal away from the light and
     // the leaves came out black (the owner, 2026-10-15: the trees were flat "sprites")
-    const twoWay = (types[t] || [])[1] === "vegetation";
-    return (geometries[t] = (idx.models[t] || []).map((p) => {
+    const twoWay = (types[t] || [])[1] === "vegetation", src = sourceOf(t), buf = src && src.buf;
+    return (geometries[t] = ((src && src.index.models[t]) || []).map((p) => {
       const n = p.vertices;
       const src = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
       for (let i = 0; i < n; i++) {  // map units, x east, y south, z up -> the scene's x east, y up, z south
@@ -2565,20 +2578,20 @@ function modelLibrary(res, buf) {
       geo.setIndex(new THREE.BufferAttribute(index, 1));
       geo.computeBoundingBox();
       geo.userData.keep = true;  // shared: forget() leaves it, the library's dispose() frees it
-      return { geo, texture: p.texture, twoWay };
+      return { geo, texture: p.texture, twoWay, src };
     }));
   };
   // A "CombinedDS" picture's alpha isn't see-through: on Kasserine Pass's map most of it is under half (89 % of one
   // atlas) while its models (baskets, barrels, fences, cushions) are solid, and cutting at half left them all but
   // invisible, in the view and in the place list. Those are drawn solid; the others cut their leaves and windows out.
   const material = (group, part) => {
-    const t = textureOf(part.texture), side = part.twoWay ? THREE.FrontSide : THREE.DoubleSide;
+    const t = textureOf(part.texture, part.src), side = part.twoWay ? THREE.FrontSide : THREE.DoubleSide;
     const cut = /CombinedDSTexture/i.test(part.texture || "") ? 0 : 0.5;
     return new THREE.MeshLambertMaterial(t ? { map: t.tex, alphaTest: cut, side } : { color: SCENERY_LOOK[group][3], side });
   };
-  const ready = (t) => Promise.all(parts(t).map((p) => (textureOf(p.texture) || {}).ready));
+  const ready = (t) => Promise.all(parts(t).map((p) => (textureOf(p.texture, p.src) || {}).ready));
   const dispose = () => {
-    for (const { tex } of Object.values(textures)) tex.dispose();
+    for (const mine of textures.values()) for (const { tex } of Object.values(mine)) tex.dispose();
     for (const list of Object.values(geometries)) for (const p of list) p.geo.dispose();
   };
   return { has, parts, material, ready, dispose };
@@ -5332,6 +5345,8 @@ async function loadScenery(pack, ask) {
     data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };
   }
   mv.scenery.data = data;
+  await loadOwn(ask);  // the mod's own models join its types (numbered after the map's) and the place list
+  if (ask !== mv.ask || mv.scenery.data !== data) return;
   mv.scenery.meshes = sceneryMeshes(data);
   for (const mesh of Object.values(mv.scenery.meshes)) mv.gl.scene.add(mesh);
   placeScenery();
@@ -5393,26 +5408,350 @@ function placeOptions() {
   // a tile each: a picture of its model (rendered once the models are in: renderThumb), its name, how many the map has
   const w = mv.words;
   $("place-grid").replaceChildren(...rows.map((r) => {
-    const name = said(r[5]) || r[1], what = said(r[6]), pic = thumbOf(r[0]);
-    const tile = el("button", { type: "button", className: "place-tile", title: `${name}${what ? " · " + what : ""}`
+    const name = said(r[5]) || r[1], what = said(r[6]), pic = thumbOf(r[0]), mine = r[8];  // mine: the mod's own model
+    const tile = el("button", { type: "button", className: mine ? "place-tile own" : "place-tile",
+      title: `${name}${what ? " · " + what : ""}`
       + (r[4] ? `\n${fill(w.place_used, { n: r[4].toLocaleString() })}` : "")
-      + (pic === false ? `\n${w.place_no_picture}` : "") + `\n${w.place_code || "In the game's files"}: ${r[1]} (${r[3]})` });
+      + (pic === false ? `\n${w.place_no_picture}` : "")
+      + (mine ? `\n${assetInfo(mine)}` : `\n${w.place_code || "In the game's files"}: ${r[1]} (${r[3]})`) });
     tile.dataset.type = r[0];
     tile.setAttribute("role", "option");
     tile.setAttribute("aria-selected", String(r[0] === p.type));
     tile.append(el("span", { className: "place-pic" }, pic ? el("img", { src: pic, alt: "" }) : kindIcon(p.group)),
       el("span", { className: "place-name", textContent: name }));
     if (r[4]) tile.append(el("span", { className: "place-count", textContent: r[4].toLocaleString() }));
+    if (mine) tile.append(el("span", { className: "place-own-tag", textContent: w.asset_tag }));
     tile.addEventListener("click", () => pickType(r[0]));
+    if (mine) tile.addEventListener("dblclick", () => openAsset(mine));
     return tile;
   }));
+  renderOwnRow();
 }
 
 // Picking a type starts placing, as picking a brush starts painting
 function pickType(type) {
   mv.place.type = type;
   for (const tile of $("place-grid").children) tile.setAttribute("aria-selected", String(tile.dataset.type === type));
+  renderOwnRow();
   if (!mv.place.on) setPlaceMode(true); else placeNote("");
+}
+
+// --- the mod's own models (StudioApi.assets, asset_import, asset_change, asset_remove, asset_models; rusemod.sceneryasset;
+// the owner, 2026-10-18: "let's start working on the importers. The asset importer and building importers, and then the
+// map importer"): a model file made one of the map mod's rocks, props, plants or trees, first in the Props and Trees
+// lists with a "yours" mark. Each joins the map's types after the map's own (its number follows theirs), so it's drawn,
+// pictured and placed as they are; the build puts it in the game on every map of the mod. ---
+const OWN_KINDS = { prop: ["rock", "prop"], vegetation: ["plant", "tree"] };  // the kinds each list imports
+const LICENCES = ["", "CC0", "CC-BY"];  // "": a model of one's own (the build takes others' only under these two)
+// the mod's models (StudioApi.assets); the dialog: the model shown (null: a new one), its kind, a file waiting on
+// "replace it?" or a model waiting on "remove it?" (sure), busy while the Studio imports
+const own = { list: [], editing: null, kind: "prop", sure: null, busy: false };
+
+async function loadOwn(ask) {
+  let res = null;
+  try { res = await mv.api.assets(); } catch (err) { placeNote((err && err.message) || String(err), "error"); }
+  if (ask !== mv.ask) return;
+  own.list = (res && res.assets) || [];
+  mergeOwn(mv.scenery.data);
+}
+
+// The mod's models into the map's types and place list (the ones from before taken out first)
+function mergeOwn(d) {
+  if (!d) return;
+  if (d.ownFrom !== undefined) {
+    d.types.length = d.ownFrom;
+    d.palette = d.palette.filter((r) => !r[8]);
+  }
+  d.ownFrom = d.types.length;
+  const rows = own.list.map((a) => {
+    d.types.push([a.name, a.group, a.label, a.file, [a.file], false]);
+    return [a.type, a.name, a.group, a.label, 0, { us: a.name }, fill(mv.words.asset_what, { kind: kindWord(a.kind) }),
+      d.types.length - 1, a];
+  });
+  d.palette = rows.concat(d.palette);
+  d.numbers = null;  // (typeNumber reads them again)
+}
+
+function kindWord(kind) {
+  return mv.words[`asset_kind_${kind}`] || kind;
+}
+
+// The mod's models as the 3D view draws them (StudioApi.asset_models): a source for modelLibrary, its models by their
+// numbers in the map's types; null when the mod has none
+async function ownModels(ask) {
+  if (!own.list.length) return null;
+  let res;
+  try { res = await mv.api.asset_models(); } catch (err) { placeNote((err && err.message) || String(err), "error"); return null; }
+  if (ask !== mv.ask || !res || !res.index || !res.index.bin) return null;
+  const models = {};
+  for (const [type, parts] of Object.entries(res.index.models)) {
+    const t = typeNumber(type);
+    if (t !== null) models[t] = parts;
+  }
+  const buf = await (await fetch(res.base + res.index.bin)).arrayBuffer();
+  return { base: res.base, index: { ...res.index, models }, buf };
+}
+
+// After an import, a change or a removal: the list, the place list and the models again
+async function refreshOwn(res) {
+  own.list = (res && res.assets) || [];
+  const d = mv.scenery.data;
+  mergeOwn(d);
+  thumbs.lib = null;  // (the pictures are drawn again with the new models)
+  placeOptions();
+  if (d && mv.current) await loadModels(mv.current, mv.ask, blankMap(mv.current));
+  drawPlaced();
+}
+
+// "file: 1,234 triangles; middle: 600; far: 120 · From <source> by <author> (licence)"
+function assetInfo(a) {
+  const w = mv.words, n = (v) => (v === null || v === undefined ? "?" : v.toLocaleString());
+  const v = a.versions || {};
+  let text = fill(w.asset_info, { file: a.file, triangles: n(a.triangles), middle: n((v.medium || {}).triangles),
+    far: n((v.far || {}).triangles) });
+  const c = a.credit || {};
+  if (c.source || c.author || c.licence) {
+    text += "\n" + fill(w.asset_credit_line, { source: c.source || "?", author: c.author || "?",
+      licence: c.licence || w.asset_licence_own });
+  }
+  return text;
+}
+
+// Import model under the search in the Props and Trees lists; Your model… when one of the mod's is picked
+function renderOwnRow() {
+  const w = mv.words, p = mv.place, kinds = OWN_KINDS[p.group];
+  $("place-own").classList.toggle("hidden", !kinds);
+  const imp = $("place-import");
+  imp.textContent = w.asset_import;
+  imp.title = mv.place.mod ? w.tip_asset_import : w.no_mod;
+  imp.disabled = !mv.place.mod;
+  const mine = ownOf(p.type), edit = $("place-own-edit");
+  edit.classList.toggle("hidden", !kinds || !mine);
+  edit.textContent = w.asset_edit;
+  edit.title = w.tip_asset_edit;
+}
+
+function ownOf(type) {
+  return own.list.find((a) => a.type === type) || null;
+}
+
+// The dialog: a new model (`a` null: Choose the model file… imports it) or one of the mod's (its settings saved,
+// replaced by another file, or removed)
+function openAsset(a) {
+  own.editing = a || null;
+  own.kind = a ? a.kind : (OWN_KINDS[mv.place.group] || OWN_KINDS.prop)[0];
+  own.sure = null;
+  $("asset-name").value = a ? a.name : "";
+  $("asset-size").value = a ? a.size : 1;
+  slideTo(a ? a.size : 1);
+  $("asset-solid").checked = a ? Boolean(a.solid) : false;
+  $("asset-two").checked = a ? a.two_sided : false;
+  const c = (a && a.credit) || {};
+  $("asset-licence").value = LICENCES.includes(c.licence || "") ? c.licence || "" : "";
+  $("asset-source").value = c.source || "";
+  $("asset-author").value = c.author || "";
+  assetNote("");
+  renderAsset();
+  if (!$("asset-box").open) $("asset-box").showModal();
+}
+
+function assetNote(text, bad) {
+  const note = $("asset-note");
+  note.textContent = text || "";
+  note.className = bad ? "small error-text" : "small";
+}
+
+function renderAsset() {
+  const w = mv.words, a = own.editing;
+  $("asset-title").textContent = a ? fill(w.asset_title_edit, { name: a.name }) : w.asset_title_new;
+  $("asset-lead").textContent = w.asset_lead;
+  // a new one: its kind (rock or prop, plant or tree); one of the mod's keeps its own (its type is made of it)
+  const kinds = a ? [a.kind] : OWN_KINDS[mv.place.group] || [...OWN_KINDS.prop, ...OWN_KINDS.vegetation];
+  $("asset-kinds").replaceChildren(...kinds.map((k) => {
+    const chip = el("button", { type: "button", className: "chip", textContent: kindWord(k), title: w[`tip_asset_kind_${k}`] || "" });
+    chip.setAttribute("aria-pressed", String(own.kind === k));
+    chip.disabled = Boolean(a) || own.busy;
+    chip.addEventListener("click", () => { own.kind = k; renderAsset(); });
+    return chip;
+  }));
+  $("asset-name-label").textContent = w.asset_name;
+  $("asset-name").placeholder = w.asset_name_from_file;
+  $("asset-name").title = w.tip_asset_name;
+  $("asset-name").disabled = Boolean(a);  // (placed ones name it: a new name is a new model)
+  if (a) $("asset-name").value = a.name;
+  $("asset-size-label").textContent = w.asset_size;
+  $("asset-size").title = w.tip_asset_size;
+  $("asset-size-slide").title = w.tip_asset_size_slide;
+  $("asset-size-slide").disabled = own.busy;
+  renderMetres();
+  $("asset-solid-label").textContent = w.asset_solid;
+  $("asset-solid").parentElement.title = w.tip_asset_solid;
+  $("asset-solid").disabled = own.busy;
+  $("asset-two-label").textContent = w.asset_two_sided;
+  $("asset-two").parentElement.title = w.tip_asset_two_sided;
+  $("asset-credit-title").textContent = w.asset_credit;
+  $("asset-licence-label").textContent = w.asset_licence;
+  const lic = $("asset-licence"), was = lic.value;
+  lic.replaceChildren(...LICENCES.map((l) => el("option", { value: l,
+    textContent: { "": w.asset_licence_own, CC0: w.asset_licence_free, "CC-BY": w.asset_licence_credit }[l] })));
+  lic.value = was;
+  lic.title = w.tip_asset_licence;
+  $("asset-source-label").textContent = w.asset_source;
+  $("asset-source").title = w.tip_asset_source;
+  $("asset-author-label").textContent = w.asset_author;
+  $("asset-author").title = w.tip_asset_author;
+  $("asset-info").textContent = a ? assetInfo(a) : w.asset_files;
+  const s = own.sure;
+  $("asset-sure").classList.toggle("hidden", !s);
+  if (s) {
+    $("asset-sure-text").textContent = s.kind === "replace" ? fill(w.asset_exists, { name: s.name })
+      : s.placed ? fill(w.asset_placed, { n: Object.values(s.placed).reduce((x, y) => x + y, 0).toLocaleString(),
+        maps: Object.keys(s.placed).map(mapName).join(", ") }) : fill(w.asset_remove_sure, { name: s.name });
+    $("asset-sure-yes").textContent = s.kind === "replace" ? w.asset_replace : w.asset_remove_yes;
+    $("asset-sure-no").textContent = w.asset_keep;
+  }
+  const pick = $("asset-pick");
+  pick.textContent = a ? w.asset_pick_again : w.asset_pick;
+  pick.title = mv.place.mod ? w.tip_asset_pick : w.no_mod;
+  pick.disabled = own.busy || !mv.place.mod || Boolean(s);
+  const save = $("asset-save");
+  save.classList.toggle("hidden", !a);
+  save.textContent = w.asset_save;
+  save.disabled = own.busy || Boolean(s);
+  const remove = $("asset-remove");
+  remove.classList.toggle("hidden", !a);
+  remove.textContent = w.asset_remove;
+  remove.title = w.tip_asset_remove;
+  remove.disabled = own.busy || Boolean(s);
+  $("asset-close").textContent = w.close;
+}
+
+function assetForm() {
+  return { size: Number($("asset-size").value) || 1, two: $("asset-two").checked, solid: $("asset-solid").checked,
+    licence: $("asset-licence").value, source: $("asset-source").value.trim(), author: $("asset-author").value.trim() };
+}
+
+// The size slider runs 0.1 to 10 times, even steps either side of 1 (its value is the size's power of ten); the number
+// beside it is the exact size (0.01 to 100)
+function slideTo(size) {
+  $("asset-size-slide").value = String(Math.max(-1, Math.min(1, Math.log10(Number(size) || 1))));
+}
+
+function slidSize() {
+  const v = 10 ** Number($("asset-size-slide").value);
+  return Number(v < 1 ? v.toFixed(2) : v.toFixed(1));
+}
+
+// "About 8 × 11 m across and 6 m high" at the size set now (one of the mod's models: measured by the Studio)
+function renderMetres() {
+  const a = own.editing, m = a && a.metres, out = $("asset-metres");
+  const size = Number($("asset-size").value) || 1;
+  if (!m) { out.textContent = ""; return; }
+  const n = (v) => { const x = v * size; return (x < 10 ? x.toFixed(1) : Math.round(x)).toLocaleString(); };
+  out.textContent = fill(mv.words.asset_metres, { across: n(m[0]), deep: n(m[1]), high: n(m[2]) });
+}
+
+// Choose the model file… (or, after "replace it?", the file picked then): imported into the mod
+async function importAsset(file, replaceIt) {
+  const a = own.editing, f = assetForm(), w = mv.words;
+  const name = a ? a.name : $("asset-name").value.trim();
+  own.busy = true;
+  own.sure = null;
+  assetNote(w.asset_importing);
+  renderAsset();
+  try {
+    const res = await mv.api.asset_import(a ? a.kind : own.kind, file || null, name, f.size, f.two, f.source, f.author,
+      f.licence, Boolean(replaceIt || a), f.solid);
+    if (res.exists) {  // the mod has a model of that name: asked before it's replaced
+      own.sure = { kind: "replace", name: res.exists, file: res.file };
+      assetNote("");
+      return;
+    }
+    if (!res.asset) { assetNote(""); return; }  // (no file picked)
+    own.editing = res.asset;
+    await refreshOwn(res);
+    own.editing = ownOf(res.asset.type) || res.asset;
+    pickType(res.asset.type);
+    assetNote(fill(w.asset_done, { name: res.asset.name }));
+  } catch (err) {
+    assetNote((err && err.message) || String(err), true);
+  } finally {
+    own.busy = false;
+    renderAsset();
+  }
+}
+
+async function saveAsset() {
+  const a = own.editing, f = assetForm();
+  if (!a) return;
+  own.busy = true;
+  renderAsset();
+  try {
+    const res = await mv.api.asset_change(a.name, f.size, f.two, f.source, f.author, f.licence, f.solid);
+    await refreshOwn(res);
+    own.editing = ownOf(a.type);
+    assetNote(mv.words.asset_saved);
+  } catch (err) {
+    assetNote((err && err.message) || String(err), true);
+  } finally {
+    own.busy = false;
+    renderAsset();
+  }
+}
+
+// Remove this model: asked first; where it's placed, those go too once that's said yes to
+async function removeAsset(sure) {
+  const a = own.editing;
+  if (!a) return;
+  if (!sure) {
+    own.sure = { kind: "remove", name: a.name, placed: null };
+    renderAsset();
+    return;
+  }
+  own.busy = true;
+  renderAsset();
+  try {
+    const res = await mv.api.asset_remove(a.name, Boolean(own.sure && own.sure.placed));
+    if (res.placed) {  // placed on maps: asked again, saying where
+      own.sure = { kind: "remove", name: a.name, placed: res.placed };
+      return;
+    }
+    own.sure = null;
+    await refreshOwn(res);
+    if (mv.current) await loadPlaced(mv.current, mv.ask);  // (those placed of it are gone from the file)
+    if (mv.place.type === a.type) mv.place.type = null;
+    placeOptions();
+    $("asset-box").close();
+  } catch (err) {
+    own.sure = null;
+    assetNote((err && err.message) || String(err), true);
+  } finally {
+    own.busy = false;
+    if ($("asset-box").open) renderAsset();
+  }
+}
+
+function wireAsset() {
+  $("place-import").addEventListener("click", () => openAsset(null));
+  $("place-own-edit").addEventListener("click", () => { const a = ownOf(mv.place.type); if (a) openAsset(a); });
+  $("asset-pick").addEventListener("click", () => importAsset(null, false));
+  $("asset-save").addEventListener("click", () => saveAsset());
+  // the slider and the number follow each other; letting go of the slider, or ticking Solid, saves one of the mod's
+  // models at once, so the map behind shows its new size
+  $("asset-size-slide").addEventListener("input", () => { $("asset-size").value = slidSize(); renderMetres(); });
+  $("asset-size-slide").addEventListener("change", () => { if (own.editing && !own.busy) saveAsset(); });
+  $("asset-size").addEventListener("input", () => { slideTo($("asset-size").value); renderMetres(); });
+  $("asset-solid").addEventListener("change", () => { if (own.editing && !own.busy) saveAsset(); });
+  $("asset-remove").addEventListener("click", () => removeAsset(false));
+  $("asset-sure-yes").addEventListener("click", () => {
+    const s = own.sure;
+    if (!s) return;
+    if (s.kind === "replace") importAsset(s.file, true);
+    else removeAsset(true);
+  });
+  $("asset-sure-no").addEventListener("click", () => { own.sure = null; renderAsset(); });
+  $("asset-close").addEventListener("click", () => $("asset-box").close());
+  $("asset-box").addEventListener("keydown", (e) => e.stopPropagation());  // keys never move the map behind it
 }
 
 function kindIcon(kind) {
@@ -5498,6 +5837,7 @@ function renderThumb(lib, t, group) {
 function renderPlace() {
   const w = mv.words, p = mv.place;
   $("place-scenery-note").textContent = w.scenery_note;  // no cover from placed scenery; buildings stop units
+  renderOwnRow();
   $("place-search").placeholder = w.search || "";
   $("place-search").title = w.tip_place_search;
   $("place-grid").title = w.tip_place_type;
@@ -6956,7 +7296,7 @@ async function show(pack, keepCamera) {
   $("map-dock").classList.remove("hidden");
   loadStrokes(pack, ask).catch((err) => brushNote((err && err.message) || String(err), "error"));
   const blank = blankMap(pack);  // nothing of the map it copies is drawn: no models for its objects, no ground pictures
-  loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask).catch((err) => {  // the shapes stay when
+  loadScenery(pack, ask).then(() => loadModels(pack, ask, blank).catch((err) => {  // the shapes stay when
     $("map-ground").textContent = (err && err.message) || String(err);  // models can't be had
   })).catch((err) => {  // no types to place then: the place panel says so too
     $("scenery-stats").textContent = (err && err.message) || String(err);
@@ -10375,6 +10715,7 @@ function wire() {
   $("map-picture").addEventListener("click", openMenuPictures);
   wireMenuPictures();
   wireMapSize();
+  wireAsset();
   wireMission();
   $("map-sound").addEventListener("click", () => {  // the map's background sound (sound.js; StudioApi.map_sound)
     if (mv.current) window.SoundView.openAmbience(mv.current, mapName(mv.current), mv.words, mv.lang);

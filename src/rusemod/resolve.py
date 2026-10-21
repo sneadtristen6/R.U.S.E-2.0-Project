@@ -59,6 +59,8 @@ class ModInfo:
     # rusemod.unitmodel.write_unit_copy)
     assets: dict = field(default_factory=dict)               # its own map assets: name -> rusemod.sceneryasset.Asset
     # (files/assets/<name>/asset.toml and its model): each a scenery type TypeWarrior/R2_<name> the maps can place
+    looks: dict = field(default_factory=dict)                # its new buildings' own looks: building name ->
+    # rusemod.buildinglook.Look (files/buildings/<name>/building.toml and its model)
     solved: dict = field(default_factory=dict)               # map pack name -> its solved.bin's bytes, locked (§8)
     scripts: dict = field(default_factory=dict)              # the game's mission scripts it changes (§9, scripts/):
     # (map, part, file) in lower case -> {"rel", "text", "xyz"} (rusemod.mapscripts.read_mod)

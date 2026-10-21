@@ -361,6 +361,46 @@ def _erase_dict(a) -> dict:
     return out
 
 
+_JPG_TO_PNG = ("Add-Type -AssemblyName System.Drawing;"
+               "$b = [Convert]::FromBase64String([Console]::In.ReadToEnd());"
+               "$i = [System.Drawing.Image]::FromStream([IO.MemoryStream]::new($b));"
+               "$o = [IO.MemoryStream]::new(); $i.Save($o, [System.Drawing.Imaging.ImageFormat]::Png);"
+               "[Console]::Out.Write([Convert]::ToBase64String($o.ToArray()))")
+
+
+def _jpg_to_png(data: bytes) -> bytes:
+    """A JPG picture as PNG (the game reads PNG and TGA, not JPG), by Windows' own picture reader (System.Drawing,
+    through PowerShell: nothing written to disk). AssetError when it can't be read."""
+    import subprocess
+    from rusemod.sceneryasset import AssetError
+    try:
+        done = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", _JPG_TO_PNG],
+                              input=base64.b64encode(data), capture_output=True, timeout=120,
+                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        png = base64.b64decode(done.stdout.strip()) if done.returncode == 0 else b""
+    except (OSError, subprocess.SubprocessError, ValueError):
+        png = b""
+    if not png.startswith(b"\x89PNG"):
+        raise AssetError("a JPG picture of the model can't be read: save it as PNG and import the model again")
+    return png
+
+
+@functools.lru_cache(maxsize=256)
+def _triangles(path: str, _when: int) -> int:
+    """The triangles of a model file (read once per change: `_when` its time)."""
+    from rusemod.modelin import read_model
+    return read_model(Path(path)).counts()[1]
+
+
+@functools.lru_cache(maxsize=256)
+def _extent(path: str, _when: int, far: str) -> list:
+    """A map asset's model's size in metres as modelled: [across, across, high] (rusemod.sceneryasset.extent; read
+    once per change: `_when` its time). `far`: its far version's file, or ""."""
+    from rusemod.sceneryasset import Asset, extent
+    a = Asset("", "rock", Path(path), versions={"far": Path(far)} if far else {})
+    return [round(v, 2) for v in extent(a)[:3]]
+
+
 def _toml_any(v) -> str:
     """A value read from a mod's TOML file, written back: a text, number, true/false, list or table (inline)."""
     if isinstance(v, dict):
@@ -4445,13 +4485,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def scenery_add(self, pack: str, objects: list) -> dict:
         """Place objects (dicts with the scenery file's keys) after the ones already there, in the current mod. Only
-        types the map already uses. Returns {"count": objects placed on the map now, "saved": the file}."""
+        types the map already uses, and the mod's own models (assets()). Returns {"count": objects placed on the map
+        now, "saved": the file}."""
         path = self._scenery_file(pack)
         try:
             new = scenery.parse_objects(list(objects or []), "the new objects")
         except scenery.SceneryEditError as exc:
             raise StudioError(str(exc)) from None
-        known = {row[0] for row in self.map_scenery(pack)["palette"]}
+        known = self._placeable(pack)
         for o in new:
             if o.type not in known:
                 raise StudioError(f"{o.type} isn't one of this map's own types, so the map can't take it.")
@@ -4627,7 +4668,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except scenery.SceneryEditError as exc:
             raise StudioError(str(exc)) from None
         if any(n is not None for n in news):
-            known = {row[0] for row in self.map_scenery(pack)["palette"]}
+            known = self._placeable(pack)
             for n in news:
                 if n is not None and n.type not in known:
                     raise StudioError(f"{n.type} isn't one of this map's own types, so the map can't take it.")
@@ -4644,6 +4685,190 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     every[at] = new
             self._write_objects(path, every)
         return {"count": len(every), "changed": changed, "saved": str(path) if path.is_file() else None}
+
+    # --- the map mod's own models (the Maps tab's Import model, rusemod.sceneryasset; the owner, 2026-10-18: "let's
+    # start working on the importers. The asset importer and building importers, and then the map importer"): a model
+    # file made a rock, prop, plant or tree of the mod (files/assets/<name>/), placed like the game's on every map ---
+    ASSET_FILES = ("3D model (*.glb;*.gltf;*.3ds)",)
+
+    def _assets(self) -> dict:
+        """The map mod's assets ({name: rusemod.sceneryasset.Asset}); none without a map mod."""
+        from rusemod.sceneryasset import AssetError, mod_assets
+        folder = self._map_dir()
+        if folder is None:
+            return {}
+        try:
+            return mod_assets(folder)
+        except AssetError as exc:
+            raise StudioError(f"{exc}. Fix it by hand, or remove that model's folder.") from None
+
+    def _placeable(self, pack: str) -> set:
+        """The types the Maps tab may place on a map: the map's own (its palette) and the mod's own models."""
+        from rusemod.sceneryasset import type_name
+        known = {row[0] for row in self.map_scenery(pack)["palette"]}
+        try:
+            known |= {type_name(n) for n in self._assets()}
+        except StudioError:
+            pass   # (a broken asset.toml: the map's own types can still be placed)
+        return known
+
+    @staticmethod
+    def _asset_view(a) -> dict:
+        from rusemod.sceneryasset import GROUPS, KINDS, type_name
+
+        def tris(p):
+            try:
+                return _triangles(str(p), Path(p).stat().st_mtime_ns)
+            except (OSError, ValueError):
+                return None
+
+        def metres():
+            far = a.versions.get("far")
+            try:
+                return _extent(str(a.model), Path(far or a.model).stat().st_mtime_ns, str(far or ""))
+            except (OSError, ValueError):
+                return None
+        return {"name": a.name, "type": type_name(a.name), "kind": a.kind, "group": GROUPS.get(a.kind, a.kind),
+                "label": KINDS[a.kind].label if a.kind in KINDS else a.kind, "size": a.size, "two_sided": a.two_sided,
+                "solid": a.solid, "metres": metres(), "credit": dict(a.credit),
+                "file": Path(a.model).name, "triangles": tris(a.model),
+                "versions": {ring: {"file": p.name, "triangles": tris(p)} for ring, p in a.versions.items()}}
+
+    def assets(self) -> dict:
+        """The map mod's own models: {"assets": [{"name", "type": its scenery type, "kind" (rock, prop, plant, tree),
+        "group": the place tray it's in, "label", "size", "two_sided", "credit": {source, author, licence}, "file",
+        "triangles", "versions": {ring: {"file", "triangles"}}}], "mod": the map mod or None}."""
+        with self._saving:
+            found = self._assets()
+        folder = self._map_dir()
+        return {"assets": [self._asset_view(a) for _n, a in sorted(found.items())],
+                "mod": str(folder) if folder else None}
+
+    def asset_import(self, kind: str, file: str | None = None, name: str = "", size: float = 1.0,
+                     two_sided: bool = False, source: str = "", author: str = "", licence: str = "",
+                     replace_it: bool = False, solid: bool = False) -> dict:
+        """A model file (`file`: .glb, .gltf, or .3ds with its pictures beside it; asked for when not given) made the
+        map mod's own `kind` (rock, prop, plant, tree) called `name` (its file's name when empty): one .glb with its
+        pictures inside (a JPG turned into PNG), its asset.toml and its middle and far versions
+        (rusemod.sceneryasset.import_asset). `source`, `author`, `licence` (CC0 or CC-BY; empty for a model of your
+        own) are kept with it; `solid`: units go around it where it's placed. A name the mod has already is replaced
+        only with `replace_it`; else the answer is {"exists": name, "file"} and nothing changes. Returns {"asset": the
+        new one or None, **assets()}."""
+        from rusemod.sceneryasset import KINDS, AssetError, asset_name, import_asset, name_of_file
+        folder = self._map_dir()
+        if folder is None:
+            raise StudioError("Pick or make a mod first: the model is saved in it.")
+        if kind not in KINDS:
+            raise StudioError(f"{kind!r} isn't a kind of model: rock, prop, plant or tree.")
+        if file is None:
+            if self._window is None:
+                return {"asset": None, **self.assets()}
+            file = pick_file(self._window, self.ASSET_FILES)
+            if not file:
+                return {"asset": None, **self.assets()}
+        try:
+            size = float(size)
+            name = asset_name(name) if name else name_of_file(file)
+        except (TypeError, ValueError):
+            raise StudioError("The size is a number: 1 is as the model was made.") from None
+        except AssetError as exc:
+            raise StudioError(f"{exc}.") from None
+        if not replace_it and name in self._assets():
+            return {"exists": name, "file": str(file), "asset": None, **self.assets()}
+        credit = {"source": source, "author": author, "licence": licence}
+        with self._saving:
+            try:
+                a = import_asset(file, folder, kind, name, size, bool(two_sided), credit, convert=_jpg_to_png,
+                                 solid=bool(solid))
+            except (AssetError, OSError, ValueError) as exc:
+                text = str(exc)
+                raise StudioError(text if text.startswith(Path(file).name) else f"{Path(file).name}: {text}") from None
+        return {"asset": self._asset_view(a), **self.assets()}
+
+    def asset_change(self, name: str, size: float | None = None, two_sided: bool | None = None,
+                     source: str | None = None, author: str | None = None, licence: str | None = None,
+                     solid: bool | None = None) -> dict:
+        """Change one of the map mod's own models: its size, whether it's two-sided, its source, author or licence,
+        whether it's solid (None: as it is). Its model and versions stay. Returns assets()."""
+        from rusemod.sceneryasset import LICENCES, asset_toml
+        a = self._assets().get(name)
+        if a is None:
+            raise StudioError(f"The mod has no model called {name!r}.")
+        if size is not None:
+            try:
+                size = float(size)
+            except (TypeError, ValueError):
+                raise StudioError("The size is a number: 1 is as the model was made.") from None
+            if not 0.01 <= size <= 100:
+                raise StudioError("Give a size from 0.01 to 100 (1 is as the model was made).")
+        credit = dict(a.credit)
+        for k, v in (("source", source), ("author", author), ("licence", licence)):
+            if v is not None:
+                credit[k] = str(v).strip()
+        if credit.get("licence") and credit["licence"].upper() not in LICENCES:
+            # not a game rule: the project takes others' models under CC0 or CC-BY only (credited)
+            raise StudioError(f"A model taken from others must be CC0 or CC-BY, not {credit['licence']}; leave the "
+                              f"licence empty for a model of your own.")
+        folder = Path(a.model).parent
+        text = asset_toml(a.kind, Path(a.model).name, a.size if size is None else size,
+                          a.two_sided if two_sided is None else bool(two_sided), credit,
+                          {ring: p.name for ring, p in a.versions.items()}, a.solid if solid is None else bool(solid))
+        with self._saving:
+            (folder / "asset.toml").write_text(text, encoding="utf-8", newline="")
+        return self.assets()
+
+    def _placed_assets(self, type_: str) -> dict:
+        """{pack: how many} of the map mod's placed objects of `type_` ([[object]] of maps/<pack>/scenery.toml)."""
+        folder = self._map_dir()
+        out = {}
+        for path in sorted((folder / "maps").glob("*/scenery.toml")) if folder else []:
+            n = sum(1 for o in self._read_objects(path) if o.type == type_)
+            if n:
+                out[path.parent.name] = n
+        return out
+
+    def asset_remove(self, name: str, placed_too: bool = False) -> dict:
+        """One of the map mod's own models to the Recycle Bin (its folder: the model, its versions, its asset.toml).
+        Where it's placed, `placed_too` takes those off as well; without it the answer is {"placed": {pack: how
+        many}} and nothing changes. Returns assets()."""
+        from rusemod.recycle import to_recycle_bin
+        from rusemod.sceneryasset import type_name
+        a = self._assets().get(name)
+        if a is None:
+            raise StudioError(f"The mod has no model called {name!r}.")
+        t = type_name(name)
+        with self._saving:
+            placed = self._placed_assets(t)
+            if placed and not placed_too:
+                return {"placed": placed, **self.assets()}
+            for pack in placed:
+                path = self._scenery_file(pack)
+                self._write_objects(path, [o for o in self._read_objects(path) if o.type != t])
+            try:
+                to_recycle_bin(Path(a.model).parent)
+            except OSError as exc:
+                raise StudioError(f"{name} can't be moved to the Recycle Bin ({exc}).") from None
+        return self.assets()
+
+    def asset_models(self) -> dict:
+        """The map mod's own models as the Maps tab's 3D view draws them (rusemod.sceneryasset.studio_models, made
+        once per change and kept in the cache): {"base": "cache/assets/", "index": {"bin", "models": {its scenery
+        type: [part]}, "textures"}}; an empty index without any."""
+        from rusemod.modelin import ModelError
+        from rusemod.sceneryasset import studio_models
+        found = self._assets()
+        if not found:
+            return {"base": "cache/assets/", "index": {"bin": None, "models": {}, "textures": {}}}
+        out = self.cache_dir / "assets"
+        try:
+            index = studio_models(found, out)
+        except (ModelError, OSError, ValueError) as exc:
+            raise StudioError(f"The mod's models can't be drawn ({exc}).") from None
+        keep = Path(index["bin"]).stem
+        for old in out.iterdir():   # the bundles of models as they were before
+            if not old.name.startswith(keep):
+                old.unlink(missing_ok=True)
+        return {"base": "cache/assets/", "index": index}
 
     # --- shaping a map's ground: maps/<pack>/terrain.toml in the current mod (MOD_FORMAT §8, rusemod.brush) ---
     # --- new roads: maps/<pack>/roads.toml in the current mod (MOD_FORMAT §8, rusemod.roadnet) ---
@@ -7782,6 +8007,177 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             (self._own_card_file(address) or mod / REPLACE / (card["texture"].replace("\\", "/") + ".png")).unlink(
                 missing_ok=True)
         return {"card": self._card_view(address), "message": "The game's own card is back."}
+
+    # --- a building's look (the Units tab's building page, rusemod.buildinglook; the owner, 2026-10-18: "The asset
+    # importer and building importers" ... "For buildings, you also need to be able to change the icon in the in-game
+    # menu"): its picture in the build menu (look_card, as a unit's card), and a new building's 3D model in the place of
+    # one piece of the look it copies ---
+    def _building_symbol(self, address: str) -> str | None:
+        """The look a building names (its GfxDescriptor's symbol; a new building's is its source's), or None for
+        anything that isn't a building."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        real, _unit = self._resolve(edits, address)
+        ix = self._open()
+        try:
+            gfx = next((w for p, k, w in ix.uses(real) if p == "GfxDescriptor" and k == "object"), None)
+            part = next((w for p, k, w in ix.uses(gfx) if p == "LevelBuildGeoDatabaseModification"
+                         and k == "object"), None) if gfx else None
+            return next((t for p, _n, t in ix.show(part)["values"] if p == "SymbolName"), None) if part else None
+        except KeyError:
+            return None
+        finally:
+            ix.close()
+
+    def _piece_table(self) -> dict:
+        """rusemod.buildinglook.piece_table, made once per game build and kept in the cache (seconds)."""
+        from rusemod.buildinglook import piece_table
+        game = self._game()
+        if game is None:
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("We couldn't find R.U.S.E., so there are no buildings' looks to show.")
+        paths = [find_pack(game, n) for n in ("DataMap_Win.dat", "ZZ_Win.dat", "ZZ_GladPatchableWin.dat")]
+        if any(p is None for p in paths):
+            # not a game rule: the game or one of its files isn't found
+            raise StudioError("A file of the game holding the buildings' looks isn't in the game folder.")
+        data_path, zz_path, unit_path = paths
+
+        def make():
+            with Edat.open(str(data_path)) as data_arc, Edat.open(str(zz_path)) as zz, \
+                    Edat.open(str(unit_path)) as unit_arc:
+                def read(member):
+                    e = data_arc.entry(member)
+                    return bytes(data_arc.read(e)) if e is not None else None
+                return piece_table(read, zz, self._scenery_types(unit_path, unit_arc))
+        return self._kept_on_disk("buildingpieces", "all", paths, make)
+
+    def _own_look_folder(self, address: str) -> Path | None:
+        """A new building's look folder in the current mod (files/buildings/<its name>/), whether made yet or not;
+        None for the game's own buildings and without a mod."""
+        from rusemod.buildinglook import LOOKS
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return None
+        unit = edits.new_unit_of(address) if edits else None
+        mod = self._mod_dir()
+        return mod / LOOKS / _tail(unit.target) if unit is not None and mod is not None else None
+
+    def _own_look(self, address: str):
+        """A new building's look of its own (rusemod.buildinglook.Look), or None."""
+        from rusemod.buildinglook import BuildingLookError, mod_looks
+        folder = self._own_look_folder(address)
+        if folder is None or not (folder / "building.toml").is_file():
+            return None
+        try:
+            return mod_looks(folder.parent.parent.parent).get(folder.name)
+        except BuildingLookError as exc:
+            raise StudioError(f"{exc}. Fix it by hand, or remove that building's look folder.") from None
+
+    def building_look(self, address: str) -> dict:
+        """A building page's Look: {"building": whether it's a building, "card": its picture in the build menu
+        (_card_view), "new_unit": whether the current mod makes it, "symbol": the look it copies, "pieces": [{"type",
+        "name", "count", "size": [width, depth, height] metres}] of that look's 3D pieces, biggest first (what a model
+        can take the place of), "own": its look of its own ({"piece", "file", "size", "two_sided", "credit",
+        "triangles", "versions"}) or None}."""
+        symbol = self._building_symbol(address)
+        out = {"building": symbol is not None, "card": None, "new_unit": self._own_look_folder(address) is not None,
+               "symbol": symbol, "pieces": [], "own": None}
+        if symbol is None:
+            return out
+        out["card"] = self._card_view(address)
+        out["pieces"] = [{"type": t, "name": t.split("/", 1)[-1], "count": n, "size": [w, d, h]}
+                         for t, n, w, d, h in self._piece_table().get(symbol, [])]
+        look = self._own_look(address)
+        if look is not None:
+            view = self._asset_view(look.asset)
+            out["own"] = {"piece": look.piece, **{k: view[k] for k in ("file", "size", "two_sided", "credit",
+                                                                        "triangles", "versions")}}
+        return out
+
+    def building_look_import(self, address: str, piece: str, file: str | None = None, size: float = 1.0,
+                             two_sided: bool = False, source: str = "", author: str = "", licence: str = "") -> dict:
+        """Give a new building a 3D model of its own in the place of `piece` (a piece of the look it copies: one of
+        building_look's pieces): `file` (.glb, .gltf, or .3ds with its pictures beside it; asked for when not given)
+        saved in the mod's files/buildings/<its name>/ (rusemod.buildinglook.import_look), sized to that piece (`size`
+        times it) and standing where it stands; the build gives the building a copy of its look with the model in.
+        Returns {"done": whether a file was imported, **building_look()}."""
+        from rusemod.buildinglook import BuildingLookError, import_look
+        from rusemod.sceneryasset import AssetError
+        folder = self._own_look_folder(address)
+        if folder is None:
+            # not a game rule: the Studio gives a look of its own only to the buildings a mod makes
+            raise StudioError("Only a new building made in this mod can get a model of its own: copy the building "
+                              "first.")
+        info = self.building_look(address)
+        if piece not in {p["type"] for p in info["pieces"]}:
+            raise StudioError(f"{piece} isn't one of the pieces of this building's look.")
+        if file is None:
+            if self._window is None:
+                return {"done": False, **info}
+            file = pick_file(self._window, self.ASSET_FILES)
+            if not file:
+                return {"done": False, **info}
+        try:
+            size = float(size)
+        except (TypeError, ValueError):
+            raise StudioError("The size is a number: 1 is as big as the piece it takes the place of.") from None
+        with self._saving:
+            try:
+                import_look(file, folder.parent.parent.parent, folder.name, piece, size, bool(two_sided),
+                            {"source": source, "author": author, "licence": licence}, convert=_jpg_to_png)
+            except (BuildingLookError, AssetError, OSError, ValueError) as exc:
+                text = str(exc)
+                raise StudioError(text if text.startswith(Path(file).name) else f"{Path(file).name}: {text}") from None
+        return {"done": True, **self.building_look(address)}
+
+    def building_look_change(self, address: str, size: float | None = None, two_sided: bool | None = None,
+                             source: str | None = None, author: str | None = None, licence: str | None = None
+                             ) -> dict:
+        """Change a new building's look of its own: its size (times the piece's), whether it's two-sided, its source,
+        author or licence (None: as it is). Returns building_look()."""
+        from rusemod.buildinglook import look_toml
+        from rusemod.sceneryasset import LICENCES
+        look = self._own_look(address)
+        if look is None:
+            raise StudioError("This building has no model of its own yet.")
+        a = look.asset
+        if size is not None:
+            try:
+                size = float(size)
+            except (TypeError, ValueError):
+                raise StudioError("The size is a number: 1 is as big as the piece it takes the place of.") from None
+            if not 0.01 <= size <= 100:
+                raise StudioError("Give a size from 0.01 to 100 (1 is as big as the piece it takes the place of).")
+        credit = dict(a.credit)
+        for k, v in (("source", source), ("author", author), ("licence", licence)):
+            if v is not None:
+                credit[k] = str(v).strip()
+        if credit.get("licence") and credit["licence"].upper() not in LICENCES:
+            # not a game rule: the project takes others' models under CC0 or CC-BY only (credited)
+            raise StudioError(f"A model taken from others must be CC0 or CC-BY, not {credit['licence']}; leave the "
+                              f"licence empty for a model of your own.")
+        text = look_toml(look.piece, Path(a.model).name, a.size if size is None else size,
+                         a.two_sided if two_sided is None else bool(two_sided), credit,
+                         {ring: p.name for ring, p in a.versions.items()})
+        with self._saving:
+            (Path(a.model).parent / "building.toml").write_text(text, encoding="utf-8", newline="")
+        return self.building_look(address)
+
+    def building_look_remove(self, address: str) -> dict:
+        """A new building's look of its own to the Recycle Bin (its folder): it looks like the building it copies
+        again. Returns building_look()."""
+        from rusemod.recycle import to_recycle_bin
+        folder = self._own_look_folder(address)
+        if folder is not None and folder.is_dir():
+            with self._saving:
+                try:
+                    to_recycle_bin(folder)
+                except OSError as exc:
+                    raise StudioError(f"The building's model can't be moved to the Recycle Bin ({exc}).") from None
+        return self.building_look(address)
 
     def _look_folder(self, address: str) -> Path:
         mod = self._mod_dir()

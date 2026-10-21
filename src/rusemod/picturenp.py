@@ -40,6 +40,20 @@ def unfilter(raw: bytes, width: int, height: int, bpp: int):
     return bytearray(_diagonals(rows, kinds, width, height, bpp))
 
 
+def sub_filtered(samples: bytes, width: int, height: int, bpp: int):
+    """png.grey16_bytes's rows: each filtered by Sub (its byte minus the one bpp left, & 0xFF; the first pixel as it
+    is) behind its filter byte 1, as the loops write them, or None."""
+    stride = width * bpp
+    if width <= 0 or height <= 0 or bpp <= 0 or len(samples) != height * stride:
+        return None
+    px = np.frombuffer(samples, dtype=np.uint8).reshape(height, stride)
+    out = np.empty((height, stride + 1), dtype=np.uint8)
+    out[:, 0] = 1
+    out[:, 1:1 + bpp] = px[:, :bpp]
+    out[:, 1 + bpp:] = px[:, bpp:] - px[:, :-bpp]   # (uint8: wraps as & 0xFF)
+    return out.tobytes()
+
+
 def _predict(kind: int, a, b, c):
     """What a filter adds to a byte: None 0, Sub the byte left (a), Up the one above (b), Average their mean rounded
     down, Paeth whichever of a, b and c (above-left) is nearest a + b - c (a first, then b, on a tie)."""

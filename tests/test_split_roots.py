@@ -2,6 +2,7 @@
 build_ents: the game reads their root as a node without looking, and a one-leaf root crashed it when a building was
 placed) and the k-d trees made again by rusemod.kdt_edit.rebuild (a zone map of four sectors whose tree was one leaf
 picked the same sector wherever the player pointed)."""
+import math
 import struct
 import unittest
 
@@ -92,6 +93,43 @@ class KdtRoot(unittest.TestCase):
         self.assertEqual(kdt_edit.check(k, 0), [])
         for n in range(4):
             self.assertEqual(level_at(k, h * (n % 2) + h / 3, h * (n // 2) + h / 3), n)
+
+    def test_many_sectors_over_a_big_map_keep_their_corners_near_each_other(self):
+        # on a map 80 km across, sector 0 a 20 km square (cut into small triangles) and 85 small round ones of 200
+        # corners each (over 16,384 corners in all; the new-map test 2026-10-18 had 64 sectors of about 10 km with
+        # wandering borders): the corners cut into sector 0 were numbered after every other sector's, a step the
+        # index chunk can't hold
+        size = 64 * 327680.0
+        big = 20000 * 260.0
+        rings = {0: [(0.0, 0.0), (big, 0.0), (big, big), (0.0, big)]}
+        centres = {}
+        for n in range(1, 86):
+            cx, cy = big + 100000.0 + 150000.0 * ((n - 1) % 9), 100000.0 + 150000.0 * ((n - 1) // 9)
+            centres[n] = (cx, cy)
+            rings[n] = [(cx + (50000.0, 40000.0)[i % 2] * math.cos(2 * math.pi * i / 200),   # a star, like a wavy
+                         cy + (50000.0, 40000.0)[i % 2] * math.sin(2 * math.pi * i / 200))   # border: small ears,
+                        for i in range(200)]                                                 # not one long fan
+        k = Kdt(S.zone_map(template(), rings, size, size))
+        self.assertEqual(kdt_edit.check(k, 0), [])
+        idx = k.indices(0)
+        self.assertGreater(len(k.positions(0)), 1 << 14)
+        self.assertLess(max(abs(b - a) for a, b in zip(idx, idx[1:])), 1 << 14)
+        q = k.positions(0)
+        self.assertFalse([t for t in range(0, len(idx), 3)   # no triangle shrunk to a line or a point
+                          if (q[idx[t + 1]][0] - q[idx[t]][0]) * (q[idx[t + 2]][1] - q[idx[t]][1])
+                          == (q[idx[t + 1]][1] - q[idx[t]][1]) * (q[idx[t + 2]][0] - q[idx[t]][0])])
+        self.assertLess(len(idx) // 3, 4 * 86 * 200)          # the small sectors left whole (all-at-once: 1,071,000)
+        self.assertEqual(level_at(k, big / 3, big / 3), 0)
+        for n in (1, 40, 85):
+            self.assertEqual(level_at(k, *centres[n]), n)
+
+    def test_numbering_by_first_use_keeps_every_triangle(self):
+        pos = [(0, 0, 0), (9, 9, 9), (1, 0, 0), (0, 1, 0), (1, 1, 0)]
+        tris = [(4, 2, 3), (2, 0, 3)]
+        p2, t2 = S._by_first_use(pos, tris)
+        self.assertEqual([tuple(p2[v] for v in t) for t in t2], [tuple(pos[v] for v in t) for t in tris])
+        self.assertEqual(t2[0], (0, 1, 2))
+        self.assertNotIn((9, 9, 9), p2)   # a point no triangle uses is left out
 
     def test_every_triangle_is_listed_on_a_side_it_touches(self):
         k = Kdt(S.zone_map(template(), {0: list(RING_A), 1: list(RING_B)}, W, H))

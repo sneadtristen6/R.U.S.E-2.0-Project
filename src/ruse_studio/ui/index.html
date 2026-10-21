@@ -319,6 +319,11 @@
           <div id="tray-place" class="tray-body hidden">
             <div class="tray-main">
               <input id="place-search" type="search" class="place-search">
+              <!-- the mod's own models (maps.js openAsset): Import model in the Props and Trees lists -->
+              <div id="place-own" class="place-own hidden">
+                <button id="place-import" type="button" class="small"></button>
+                <button id="place-own-edit" type="button" class="small ghost hidden"></button>
+              </div>
               <!-- each type as a picture of its model, Cities: Skylines style (maps.js placeOptions, renderThumb) -->
               <div id="place-grid" class="place-grid" role="listbox"></div>
               <!-- Select (maps.js sel): what's picked, and what can be done with it -->
@@ -800,6 +805,40 @@
 
   <!-- Duplicate map (maps.js openDuplicate, StudioApi.duplicate_map): what a new map is and how it works, then its
        name; the copy opens once it's made -->
+  <!-- a model of the mod's own (maps.js openAsset; StudioApi.asset_import, asset_change, asset_remove;
+       rusemod.sceneryasset): a model file made one of the map mod's rocks, props, plants or trees -->
+  <dialog id="asset-box" class="doctor" aria-labelledby="asset-title">
+    <h2 id="asset-title"></h2>
+    <p id="asset-lead" class="small"></p>
+    <div id="asset-kinds" class="chips" role="group"></div>
+    <label class="small asset-row"><span id="asset-name-label"></span><input id="asset-name" type="text" maxlength="40"></label>
+    <!-- its size: the slider (0.1 to 10 times, even steps either side of 1; the owner, 2026-10-18: "have their size
+         changed ... through a slider"), kept between − and + (app.js stepperOf "beside"), and the exact number; its
+         size in metres -->
+    <label class="small asset-row"><span id="asset-size-label"></span>
+      <span class="asset-size-pair"><input id="asset-size-slide" type="range" min="-1" max="1" step="0.01" value="0"
+        data-stepper="beside" data-click="0.1">
+      <input id="asset-size" type="number" min="0.01" max="100" step="0.05" value="1"></span></label>
+    <p id="asset-metres" class="muted small asset-metres"></p>
+    <label class="small check-row"><input id="asset-solid" type="checkbox"> <span id="asset-solid-label"></span></label>
+    <label class="small check-row"><input id="asset-two" type="checkbox"> <span id="asset-two-label"></span></label>
+    <h3 id="asset-credit-title" class="dup-how-title"></h3>
+    <label class="small asset-row"><span id="asset-licence-label"></span><select id="asset-licence"></select></label>
+    <label class="small asset-row"><span id="asset-source-label"></span><input id="asset-source" type="text"></label>
+    <label class="small asset-row"><span id="asset-author-label"></span><input id="asset-author" type="text"></label>
+    <p id="asset-info" class="muted small"></p>
+    <div id="asset-sure" class="sure hidden"><span id="asset-sure-text" class="small"></span>
+      <button id="asset-sure-yes" type="button" class="small danger"></button>
+      <button id="asset-sure-no" type="button" class="small ghost"></button></div>
+    <p id="asset-note" class="small" role="status"></p>
+    <div class="actions">
+      <button id="asset-pick" type="button" class="small primary"></button>
+      <button id="asset-save" type="button" class="small"></button>
+      <button id="asset-remove" type="button" class="small ghost danger"></button>
+      <button id="asset-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
   <dialog id="duplicate" class="doctor" aria-labelledby="dup-title">
     <h2 id="dup-title"></h2>
     <p id="dup-lead" class="small"></p>

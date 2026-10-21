@@ -482,7 +482,9 @@ class MenuPictures(WithAMapProject):
         self.assertIn("data = { ...data, items: {}, groups: { building: none, prop: none, vegetation: none } };", js)
         self.assertIn("const res = blankMap(pack) ? { pieces: [] } : await mv.api.map_roads(pack);", js)
         self.assertIn("if (blank && it.gone) continue;", js)
-        self.assertIn("loadScenery(pack, ask).then(() => blank ? null : loadModels(pack, ask)", js)
+        # none of the copied map's models; the mod's own (Import model) are drawn on a blank map too
+        self.assertIn("loadScenery(pack, ask).then(() => loadModels(pack, ask, blank)", js)
+        self.assertIn("let res = blank ? null : await mv.api.map_models(pack);", js)
         self.assertIn("else realGround(pack, ask)", js)
         self.assertIn("return p ? zoneAt(p.point.x / SCALE, p.point.z / SCALE) : \"\";", js)
         fake = (ui / "fake-api.js").read_text(encoding="utf-8")
