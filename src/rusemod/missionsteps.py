@@ -1,5 +1,5 @@
-"""A mission's three steps from LittleGroove's mission editor (his menu_entry_tab, load_files_tab and text_tab, the
-owner's ask of 2026-10-07: "every feature he has"), on his engine's own code (ruse_mod_engine.scenario_registry,
+"""A mission's three steps as LittleGroove's mission editor has them (his menu_entry_tab, load_files_tab and text_tab,
+the owner's ask of 2026-10-07: "every feature he has"): our own code on his engine's (ruse_mod_engine.scenario_registry,
 scenario_chain, edits), so they say what his say:
 
 - **In the menus** (his Menu Entry): whether the game lists the mission at all, which menu, where in it, and the

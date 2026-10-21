@@ -1,5 +1,5 @@
-"""The computer players, as LittleGroove's AI editor (RUSE-Mod-Manager) offers them, for the Studio: their profiles,
-the units they're keener to build, and the ruse cards (every player's).
+"""The computer players for the Studio, in our own code (LittleGroove's AI editor in RUSE-Mod-Manager had them first):
+their profiles, the units they're keener to build, and the ruse cards (every player's).
 
 A computer player in a battle has three profiles: Default, its difficulty and its personality (the two the game's
 lobby picks). For each value the game takes the personality's when it isn't Default's, else the difficulty's when it

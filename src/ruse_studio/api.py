@@ -1484,7 +1484,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 "new": {"source": new.source, "source_name": source_name} if top else None,
                 "in_game": new is None}  # one of the game's own objects: the All values tab shows it too
 
-    # --- upgrades (LittleGroove's "Upgrade chain" brought over): the unit a unit is researched from ---
+    # --- upgrades (our own code; LittleGroove's "Upgrade chain" had it first): the unit a unit is researched from ---
     @staticmethod
     def _upgrade_links(ix: Index, edits: ModEdits | None) -> dict:
         """{unit: the unit it's researched from} as the current mod has it: the game's links, a new unit starting with
@@ -6122,8 +6122,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                     edits.reset(target, prop)
         return {"saved": str(edits.file)}
 
-    # --- the computer players (rusemod.ai; LittleGroove's AI editor brought over): their profiles, the units they're
-    # keener to build, and the ruse cards (every player's) ---
+    # --- the computer players (rusemod.ai, our own code; LittleGroove's AI editor had them first): their profiles, the
+    # units they're keener to build, and the ruse cards (every player's) ---
     @staticmethod
     def _ai_allowed(what: str, o: dict) -> dict[str, dict]:
         """prop -> its values (_props) for each value the AI tab changes on one of its objects: a profile's numbers, a
@@ -6583,8 +6583,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     OUTLINE_SHOWN = 400  # the most steps the outline lists (a campaign chapter has 1,500)
 
-    # --- the Files tab (rusemod.packfiles; LittleGroove's Raw / Asset Editor, Browse / Files): every file of the game's
-    # packs and of the packs inside them, shown as what it is, saved out, changed or added in a mod ---
+    # --- the Files tab (rusemod.packfiles, our own code; LittleGroove's Raw / Asset Editor's Browse / Files had it
+    # first): every file of the game's packs and of the packs inside them, shown as what it is, saved out, changed or
+    # added in a mod ---
     def _files_game(self) -> Path:
         game = self._game()
         if game is None:
@@ -6749,8 +6750,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except packfiles.PackFileError as exc:
             raise StudioError(str(exc)) from None
 
-    # --- the All values tab (rusemod.values; LittleGroove's raw value editor brought over): any object of the unit
-    # data, every value it has as the game's file has it, each changed in the current mod ---
+    # --- the All values tab (rusemod.values, our own code; LittleGroove's raw value editor had it first): any object
+    # of the unit data, every value it has as the game's file has it, each changed in the current mod ---
     NAME_KEYS = ("NameInMenuToken", "Title", "TypeName", "Name")  # a text key naming an object in game, first found
     VALUES_SHOWN = 300  # the most objects a look-up lists (the count says how many there are in all)
     VALUE_USERS = 40    # the most users an object's page lists

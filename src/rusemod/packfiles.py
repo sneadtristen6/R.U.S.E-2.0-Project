@@ -1,9 +1,9 @@
-"""Every file of the game's packs, read only: LittleGroove's Raw / Asset Editor's Browse / Files brought over (the Studio's
-Files tab). The six packs of the game's data revision and each map's own pack (Maps/PC), their files listed by path
-with a kind and a size, a pack stored inside a pack opened as one (as deep as they go), one file shown as what it is
-(a summary of an NDF file, a texture or a picture as a PNG, a text table's rows, a mission script as text, a text, or
-its first bytes), and any of them saved out. Nothing here writes into the game: changing a file is the build's
-(mods change the game through the formats of docs/MOD_FORMAT.md)."""
+"""Every file of the game's packs, read only, for the Studio's Files tab: our own code for what LittleGroove's Raw /
+Asset Editor's Browse / Files does. The six packs of the game's data revision and each map's own pack (Maps/PC), their
+files listed by path with a kind and a size, a pack stored inside a pack opened as one (as deep as they go), one file
+shown as what it is (a summary of an NDF file, a texture or a picture as a PNG, a text table's rows, a mission script
+as text, a text, or its first bytes), and any of them saved out. Nothing here writes into the game: changing a file is
+the build's (mods change the game through the formats of docs/MOD_FORMAT.md)."""
 from __future__ import annotations
 
 import struct

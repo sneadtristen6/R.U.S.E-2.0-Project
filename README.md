@@ -346,20 +346,34 @@ R.U.S.E. 2.0 stands on other people's work. None of it would be here without the
 - Built the **RUSE Modding Database** and wrote the guides people learned from, custom Operations among them.
 - **ProLution's code is in ours:** the map terrain codec in
   [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) is built on ProLution's terrain
-  format work (released CC0), and its encoder is ported from ProLution's reference encoder.
+  format work (released CC0), and its encoder is ported from ProLution's reference encoder. Our own reader of the
+  game's compressed textures ([`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)) uses his codec too.
 
 ### LittleGroove: the first mod manager
 
-- **The first real mod manager for R.U.S.E.:** RUSE-Mod-Manager and its `.rmod` format. Every community mod in the
-  Launcher plays because of it.
-- **His engine is in ours,** used as it is: [`src/ruse_mod_engine`](src/ruse_mod_engine/) applies `.rmod` mods in
-  every build, and moves a mod made for another game build with his version maps. It's why the whole program is
-  GPL-3.0.
-- **His map editor led the way for ours:** supply depots and HQs sticking to roads (his measured distances), the
-  opening camera each match starts on, and saving a changed scenario so the game loads it; and in the units editor,
-  the ammo types and flag lists.
-- **His tools, brought into the Studio and the Launcher:** the Economy and AI tabs, the script viewer, the Upgrade
-  box, All values, the game's files, the missions' tools, and Convert an old mod.
+LittleGroove paved the way for much of what R.U.S.E. 2.0 does: he built the first real mod manager for R.U.S.E., and
+his engine is still part of ours.
+
+- **RUSE-Mod-Manager and its `.rmod` format:** a mod as a list of changes to the game's data, so several mods play
+  together. Mods made with it play in the Launcher, and load orders are shared in his text format, so they move
+  between his Mod Manager and the Launcher.
+- **His engine is part of ours** ([`src/ruse_mod_engine`](src/ruse_mod_engine/), written in Python), and it's why the
+  whole program is GPL-3.0:
+  - it applies `.rmod` mods in our builds, and carries a mod made for another game build across with his version
+    maps; the Launcher's Convert an old mod is his converter;
+  - our map tools read and write the game's cover, the computer's grid, bridges, roads and movement with his `sdb`
+    module;
+  - the Studio shows the game's scripts as Python with his script reader, his outline of what a mission does and his
+    catalogue of the scripts' parts, compiles a changed script with his compiler and the game's Python 2.5.1 his engine
+    carries, and checks a mission's files and texts with his scenario chain;
+  - our changes to it: a SpatialDB tree's root is always split (a one-leaf root crashed the game), and small
+    additions to his terrain reader and script compiler.
+- **What his tools taught us:** the distances that keep supply depots and HQs on the roads and what a depot holds
+  (both measured by him in the game), the opening camera each match starts on, the checksum that lets the game load a
+  changed scenario, how new files go into the game's packs, and copying an ammunition to give a weapon its own.
+- **His Mod Manager had these first; the Studio has them in its own code:** the Economy and AI editors, the raw value
+  editor (All values), the upgrade chain, the file browser, a mission's menus, files and texts, and the map editor's
+  names, zones and item details.
 
 ### DomesticNukes: the map maker's groundwork
 
@@ -402,6 +416,9 @@ the code. Side by side since September 2026, they built:
 - **Music and missions:** songs and voice lines replaced in the Studio, and missions of your own.
 - **Two apps in the game's ten languages,** the Studio for modders and the Launcher for players, that never touch
   the game's own folder, with a check that stops a mod that would break the game before it starts.
+- **The code:** everything in `src/rusemod`, `src/ruse_studio` and `src/ruse_launcher` is our own, written for
+  R.U.S.E. 2.0. The others whose work it builds on are credited above and in
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 It's early, and there's much more to come. Thank you to everyone above, without whom none of it would have started.
 

@@ -3115,10 +3115,10 @@ function showView(view) {
   else window.addEventListener("mapview-ready", open, { once: true });
 }
 
-// --- the Economy tab (StudioApi.economy, rusemod.economy; LittleGroove's Economy editor brought over): starting money,
-// income, supply depots, production limits, ruse cards and the computer players'. A change is saved in the current
-// mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear mode), or for
-// one of the two where they're shown apart (economyRow) ---
+// --- the Economy tab (StudioApi.economy, rusemod.economy, our own code; LittleGroove's Economy editor had it first):
+// starting money, income, supply depots, production limits, ruse cards and the computer players'. A change is saved in
+// the current mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear
+// mode), or for one of the two where they're shown apart (economyRow) ---
 async function renderEconomy() {
   const w = state.words;
   $("economy-title").textContent = w.economy_title;
@@ -3308,9 +3308,10 @@ function economyRow(r, saved = null) {
   return tr;
 }
 
-// --- the AI tab (StudioApi.ai, rusemod.ai; LittleGroove's AI editor brought over): how the computer players play
-// (Default, the difficulties and the profiles the game's lobby picks: a set of values each, mixed in a battle), the
-// units they're keener to build, and the ruse cards (every player's). A change is saved in the current mod at once ---
+// --- the AI tab (StudioApi.ai, rusemod.ai, our own code; LittleGroove's AI editor had it first): how the computer
+// players play (Default, the difficulties and the profiles the game's lobby picks: a set of values each, mixed in a
+// battle), the units they're keener to build, and the ruse cards (every player's). A change is saved in the current
+// mod at once ---
 async function renderAI() {
   const w = state.words;
   $("ai-title").textContent = w.ai_title;
@@ -3867,10 +3868,10 @@ function scriptEvents() {
 }
 
 // --- the All values tab (StudioApi.values_files / values_find / value_object / value_edit / value_reset / value_links,
-// rusemod.values; LittleGroove's raw value editor brought over): any object of the unit data and every value it has,
-// as the game's file has it, each changed in the current mod at once; values added and taken out, objects made and
-// deleted (value_prop_add / value_prop_delete / value_object_new / value_object_delete, each delete asked first with
-// what points at it, value_pointing). For whatever the other tabs don't show. Every
+// rusemod.values, our own code; LittleGroove's raw value editor had it first): any object of the unit data and every
+// value it has, as the game's file has it, each changed in the current mod at once; values added and taken out,
+// objects made and deleted (value_prop_add / value_prop_delete / value_object_new / value_object_delete, each delete
+// asked first with what points at it, value_pointing). For whatever the other tabs don't show. Every
 // control says in its tooltip what it is and what changing it does (the owner, 2026-10-07: "everything needs to work
 // as if someone not very smart was playing, lots of tooltips") ---
 const VALUE_KIND_TIPS = { number: "values_kind_number", bool: "values_kind_bool", text: "values_kind_text",

@@ -1,5 +1,5 @@
-"""Whole game files changed or added by a mod (MOD_FORMAT §7: LittleGroove's Raw / Asset Editor's Import / Replace
-and Add File, brought over the safe way the owner asked for, 2026-10-08):
+"""Whole game files changed or added by a mod (MOD_FORMAT §7), in our own code: what LittleGroove's Raw / Asset
+Editor's Import / Replace and Add File do, the safe way the owner asked for (2026-10-08):
 
 - A mod never carries a copy of a game file: a changed file is kept as a delta against the game's own file
   (`files/game/<pack>/<path in the pack>.rdelta`: what to copy from the game's file and what's new), made for that one

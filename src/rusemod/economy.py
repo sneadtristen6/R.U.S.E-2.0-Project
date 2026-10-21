@@ -1,4 +1,4 @@
-"""The game's economy, as LittleGroove's Economy editor (RUSE-Mod-Manager) offers it, for the Studio: starting money
+"""The game's economy for the Studio, in our own code (LittleGroove's Economy editor had it first): starting money
 and income, the depots' supply trucks, production limits, the ruse cards, and the computer players' production and
 decoys. The game has these values twice (its usual game modes, and the Nuclear mode's: not tried in the game yet), so
 the Studio changes both copies from one value, each reached by the file it's in, and a change holds in every mode; or

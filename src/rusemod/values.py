@@ -1,6 +1,7 @@
-"""Every value of the game's unit data, for the Studio's Values tab (LittleGroove's raw value editor in RUSE Mod Manager,
-brought over): the data files a mod can change, the objects in them, one object's values as the game's file has them,
-and what the modder types turned into a value of the mod file (rusemod.rndf.literal), checked against the game's.
+"""Every value of the game's unit data, for the Studio's Values tab, in our own code (LittleGroove's raw value editor in
+RUSE Mod Manager had it first): the data files a mod can change, the objects in them, one object's values as the game's
+file has them, and what the modder types turned into a value of the mod file (rusemod.rndf.literal), checked against
+the game's.
 
 A mod changes the unit data pack (rusemod.build.DEFAULT_PACK), so that's what the tab offers: its files, without the
 debug-info copies the build leaves as shipped. An object is shown from the file itself, not the game index: the index

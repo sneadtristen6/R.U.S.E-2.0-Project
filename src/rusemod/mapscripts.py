@@ -1,5 +1,5 @@
-"""The game's map and mission scripts: shown as Python to read (the script viewer of LittleGroove's AI editor), and
-changed in a mod (his Mission Script editor), both brought over through his engine (src/ruse_mod_engine). They are the
+"""The game's map and mission scripts: shown as Python to read, and changed in a mod, as LittleGroove's AI editor and
+Mission Script editor do: our own code on his engine's reader and compiler (src/ruse_mod_engine). They are the
 scripts the game runs on its maps: the campaign's chapters, challenges, Operations and its own tests (IA_Common.dat).
 The Studio lists them by map and turns one into text when it is picked (a big one takes a few seconds).
 

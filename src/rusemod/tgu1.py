@@ -2,7 +2,11 @@
 
 `decode` gives a picture's plain blocks; decoded tiles match each map's own overview picture, and the Studio's map
 view draws the ground with them. `encode` is experimental (lossy, and a second pass isn't guaranteed to give the same
-blocks); writing the ground doesn't need it, since the game takes plain tiles."""
+blocks); writing the ground doesn't need it, since the game takes plain tiles.
+
+The codec is ProLution's work on the game's terrain textures (RUSE Modding Database, released CC0): its tables
+(QUANT, ZIGZAG, BASIS) and its layout are his, as in src/ruse_mod_engine/terrain_codec.py. This file is our own reader
+and writer of it (tgu1np and tgu1nb do the same sums on whole arrays)."""
 from __future__ import annotations
 
 import struct
