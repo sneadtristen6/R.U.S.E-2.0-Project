@@ -177,6 +177,7 @@ async function setLanguage(lang) {
   if (state.view === "music") window.SoundView.setWords(w, lang);
   if (state.view === "nations") window.NationsView.setWords(w, lang);
   if (state.view === "files") window.FilesView.setWords(w);
+  if (window.StartFlow) window.StartFlow.setWords();  // the start screen and a new mod's steps, when they're up
   $("lang-name").textContent = lang === "base" ? w.game_names
     : (state.languages.find((l) => l.code === lang) || {}).name || "";
   renderLangPick();
@@ -2723,6 +2724,7 @@ async function showUnit(address, via) {
     ...(u.desc ? [el("p", { className: "unit-desc", textContent: u.desc })] : []),
     el("div", { className: "address" }, el("code", { textContent: u.address }), copy, allValues),
     el("div", { className: "meta", textContent: u.class })];
+  if ((u.named || u.new) && window.BoardView) parts.push(window.BoardView.unitLink(u));  // its building (board.js)
   const head = parts.length;  // the name, address and class: above the page's columns
   if (u.new) parts.push(copyNotice(u));
   let copyForm = null;  // New unit…: open at once when the Units tab's way in is New unit
@@ -4655,6 +4657,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     gone.onchange = () => { note.textContent = w[`tip_research_gone_${gone.value}`]; keepPref("research_gone", gone.value); };
     unit.onchange = () => keepPref("research_time_unit", unit.value);
   } },
+  { id: "start", render() { if (window.StartFlow) return window.StartFlow.renderSetting(); } },  // (startflow.js)
   { id: "game", async render() {
     const w = state.words, g = await api().game_folder();
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
@@ -5102,6 +5105,9 @@ async function start() {
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
   firstBackup(status.ready).catch(problem);
+  // the start screen (startflow.js, loaded after this file: the page's scripts all read first)
+  if (document.readyState === "loading") await new Promise((ok) => document.addEventListener("DOMContentLoaded", ok, { once: true }));
+  if (window.StartFlow) await window.StartFlow.atStart(status.ready);
 }
 
 // The installer's "Keep a clean copy of my game's files" (rusemod.backup.BackupCalls.backup_requested): made on this

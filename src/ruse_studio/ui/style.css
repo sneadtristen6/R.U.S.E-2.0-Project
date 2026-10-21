@@ -1062,3 +1062,89 @@ th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); t
 .nation-details h3 { margin: 12px 0 2px; font-size: 14px; }
 .nation-details .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
 .nation-reset { margin-top: 14px; }
+
+/* the start screen (startflow.js openStart): over the whole Studio, like "Choose your language" */
+.start-screen { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 16px;
+                background: rgba(6, 16, 30, 0.88); }
+.start-screen-box { width: min(560px, 100%); max-height: 100%; overflow: auto; padding: 26px 28px 20px; text-align: center;
+                    background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent);
+                    border-radius: 12px; box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5); }
+.start-screen-box h1 { margin: 8px 0 18px; font-size: 22px; }
+.start-screen-box h2 { margin: 0 0 10px; font-size: 16px; text-align: left; }
+.ss-choices { display: grid; gap: 10px; }
+.ss-choice { display: grid; gap: 3px; padding: 14px 16px; text-align: left; background: var(--panel-hi);
+             border: 1px solid var(--line); }
+.ss-choice strong { font-size: 16px; }
+.ss-choice:hover { border-color: var(--accent); }
+.ss-choice.primary { padding: 14px 16px; background: linear-gradient(180deg, #4aa8f5, var(--accent-dark));
+                     border-color: var(--accent); }
+.ss-choice.primary .muted { color: var(--text); }
+.ss-always { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 16px; color: var(--muted); }
+.ss-mods { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; max-height: 50vh; overflow: auto; }
+.ss-mods li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px;
+              background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--radius); }
+
+/* a new mod's steps (startflow.js): the bar over every tab while they're taken, and their own pages */
+.flow-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 20px; background: var(--panel-hi);
+            border-bottom: 2px solid var(--accent); }
+.flow-title { font-weight: 600; margin-right: 6px; }
+.flow-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-right: auto; }
+.flow-chip { padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--muted); }
+.flow-chip.done { color: var(--text); }
+.flow-chip.now { border-color: var(--accent); color: var(--accent); }
+.flow-help { flex-basis: 100%; }
+body.flow-page-on main { display: none !important; }
+.flow-page { flex: 1; overflow: auto; padding: 24px; }
+.flow-inner { max-width: 1180px; }
+.flow-inner input.wide { max-width: 420px; padding: 8px 10px; background: var(--panel-hi); border: 1px solid var(--line);
+                         border-radius: var(--radius); }
+.flow-option { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; background: var(--panel);
+               border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.flow-option:hover { border-color: var(--accent); }
+.flow-nations { display: flex; flex-wrap: wrap; gap: 6px; }
+.flow-keep { display: inline-flex; gap: 10px; margin-left: auto; margin-right: 8px; }
+
+/* the board (board.js): one nation's buildings, each a row of boxes like its build menu in the game */
+.board { display: grid; gap: 12px; }
+.board.busy { opacity: 0.6; pointer-events: none; }
+.board-row { padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.board-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.board-line { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.board-group { display: flex; flex-direction: column; gap: 4px; padding: 2px; border: 1px dashed transparent;
+               border-radius: var(--radius); }
+.board-group.drop, .board-add.drop { border-color: var(--accent); background: rgba(92, 184, 255, 0.08); }
+.board-box { display: flex; flex-direction: column; gap: 3px; width: 132px; padding: 6px; background: var(--panel-hi);
+             border: 1px solid var(--line); border-radius: var(--radius); cursor: grab; }
+.board-box.researched { margin-left: calc(var(--depth, 1) * 14px); border-left: 3px solid var(--shared); }
+.board-box.new { border-color: var(--ok); }
+.board-box.target { border-color: var(--accent); }
+.board-box.picked { outline: 2px solid var(--accent); }
+.board-box-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; min-height: 18px; }
+.board-card { width: 96px; height: 49px; object-fit: cover; border-radius: 4px; background: var(--bg); }
+.board-x { padding: 0 6px; line-height: 1.4; margin-left: auto; }
+.board-name { padding: 0; text-align: left; font-size: 12px; font-weight: 600; color: var(--text); text-decoration: none; }
+.board-name:hover { color: var(--accent); text-decoration: underline; }
+.board-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.board-tag { padding: 0 5px; border: 1px solid var(--line); border-radius: 999px; font-size: 10px; color: var(--muted); }
+.board-tag.mine { border-color: var(--ok); color: var(--ok); }
+.board-tag.warn { border-color: var(--accent); color: var(--accent); }
+.board-cost { display: grid; gap: 2px; }
+.board-cost input { width: 5em; padding: 1px 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.board-research, .board-under { padding: 2px 6px; font-size: 11px; }
+.board-add { width: 48px; min-height: 60px; font-size: 22px; background: var(--panel-hi); border: 1px dashed var(--line); }
+.board-add:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.board-picking { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+                 max-width: none; background: var(--panel-hi); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+.board-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-top: 10px; }
+.board-buildings { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+.board-buildings .board-x { padding: 0 4px; margin-left: 2px; }
+#board-bld label { display: block; margin: 8px 0; }
+#board-bld select, #board-bld input[type="text"] { width: 100%; margin-top: 4px; padding: 6px 8px; background: var(--panel-hi);
+                                                 border: 1px solid var(--line); border-radius: var(--radius); }
+.board-bld-choice input { margin-right: 4px; }
+.board-pick { width: min(820px, 96vw); }
+.board-pick-search { width: 100%; margin: 6px 0 10px; padding: 7px 10px; background: var(--panel-hi);
+                     border: 1px solid var(--line); border-radius: var(--radius); }
+.board-pick-list { max-height: 60vh; overflow: auto; }
+.board-pick-list h3 { margin: 10px 0 4px; font-size: 13px; }
+.board-pick-units { display: flex; flex-wrap: wrap; gap: 5px; }

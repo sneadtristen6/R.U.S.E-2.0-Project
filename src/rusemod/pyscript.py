@@ -169,6 +169,9 @@ def dump(v) -> bytes:
         return b"i" + struct.pack("<i", v)
     if isinstance(v, bytes):
         return b"s" + struct.pack("<i", len(v)) + v
+    if isinstance(v, str):  # a unicode text (u'...')
+        raw = v.encode("utf-8")
+        return b"u" + struct.pack("<i", len(raw)) + raw
     if isinstance(v, tuple):
         return b"(" + struct.pack("<i", len(v)) + b"".join(dump(x) for x in v)
     if isinstance(v, Code):
@@ -372,6 +375,107 @@ def check_added(old: bytes, new: bytes, added: list[NewClass]) -> None:
         c = after.classes.get(n.name)
         if c is None or not (c.standard and c.registered) or c.path != n.path or c.base != ul.classes[n.like].base:
             raise ScriptError(f"{n.name} doesn't read back as a registered class for {n.path}")
+
+
+# --- a fixed template run after one of the game's modules (rusemod.ownbuildings) ---
+
+# Python 2.5 instructions whose argument is a constant's number, a name's number, or a place in the code
+_CONST_ARGS = {LOAD_CONST}
+_NAME_ARGS = {90, 91, 95, 96, 97, 98, 101, 105, 107, 108, 116}  # STORE/DELETE_NAME, STORE/DELETE_ATTR, STORE/DELETE_
+# GLOBAL, LOAD_NAME, LOAD_ATTR, IMPORT_NAME, IMPORT_FROM, LOAD_GLOBAL
+_PLACE_ARGS = {113, 119}  # JUMP_ABSOLUTE, CONTINUE_LOOP
+EXTENDED_ARG, LOAD_GLOBAL, IMPORT_NAME, STORE_GLOBAL = 143, 116, 107, 97
+BUILTINS = {b"True", b"False", b"None", b"getattr"}  # the built-in names the templates use
+
+
+def _ends_return_none(code: Code) -> bool:
+    tail = instructions(code.code)[-2:]
+    return (len(tail) == 2 and tail[0][1] == LOAD_CONST and code.consts[tail[0][2]] is None
+            and tail[1][1] == RETURN_VALUE)
+
+
+def stored_names(code: Code) -> set:
+    """The names a module's top-level code sets (assigned, imported, defined)."""
+    return {code.names[a] for _p, op, a in instructions(code.code) if op in (STORE_NAME, IMPORT_NAME, STORE_GLOBAL)}
+
+
+def _read_names(code: Code, top: bool = True) -> set:
+    """The names the code reads from the module or the built-ins: its top level's LOAD_NAME and LOAD_GLOBAL, and
+    every function's LOAD_GLOBAL (a class body's own names are its own)."""
+    out = {code.names[a] for _p, op, a in instructions(code.code)
+           if op == LOAD_GLOBAL or (top and op == LOAD_NAME)}
+    for c in code.consts:
+        if isinstance(c, Code):
+            out |= _read_names(c, top=False)
+    return out
+
+
+def with_value(code: Code, name: bytes, value) -> Code:
+    """The template `code` with the constant its top level assigns to `name` (`name = <constant>`, once) replaced by
+    `value`: what the build fills in (rusemod.ownbuildings: which tabs the mods have)."""
+    ins = instructions(code.code)
+    at = [ins[k - 1][2] for k in range(1, len(ins)) if ins[k][1] == STORE_NAME and code.names[ins[k][2]] == name
+          and ins[k - 1][1] == LOAD_CONST]
+    if len(at) != 1 or sum(1 for _p, op, a in ins if op == STORE_NAME and code.names[a] == name) != 1:
+        raise ScriptError(f"the template doesn't set {name.decode()} to a constant exactly once")
+    consts = list(code.consts)
+    consts[at[0]] = value
+    return Code(code.argcount, code.nlocals, code.stacksize, code.flags, code.code, tuple(consts), code.names,
+                code.varnames, code.freevars, code.cellvars, code.filename, code.name, code.firstlineno, code.lnotab)
+
+
+def append_module(data: bytes, template: Code) -> bytes:
+    """The game's module `data` (marshal) with the template's top-level code run after its own: one module, the game's
+    code first and unchanged (its closing `return None` left out), then the template's with its constants', names' and
+    places' numbers moved past the game's (the game's scripts can't run code given apart: no `exec`). Refused unless
+    every name the template reads is one the game's module or the template sets, or a built-in it uses."""
+    mod = load(data)
+    if not isinstance(mod, Code) or not _ends_return_none(mod) or not _ends_return_none(template):
+        # not a game rule: what our joining of a template supports
+        raise ScriptError("the game's script or the template doesn't end with 'return None' as expected")
+    base = mod.code[:-4]
+    for p, op, a in instructions(mod.code):
+        if op == EXTENDED_ARG or (op in _PLACE_ARGS and a >= len(base)):
+            # not a game rule: what our joining of a template supports
+            raise ScriptError(f"the game's script jumps where the template goes ({p})")
+        if op in (110, 111, 112, 120, 121, 122, 93) and p + 3 + a > len(base):  # relative jumps past its end
+            # not a game rule: what our joining of a template supports
+            raise ScriptError(f"the game's script jumps where the template goes ({p})")
+    missing = _read_names(template) - stored_names(mod) - stored_names(template) - BUILTINS
+    if missing:
+        # not a game rule: what our joining of a template supports
+        raise ScriptError(f"the template reads {', '.join(sorted(n.decode() for n in missing))}, which the game's "
+                          f"script doesn't set")
+    kc, kn, nb = len(mod.consts), len(mod.names), len(base)
+    tail = b""
+    for _p, op, a in instructions(template.code):
+        if op == EXTENDED_ARG:
+            raise ScriptError("the template is too long for one instruction's number")
+        if a is None:
+            tail += bytes([op])
+            continue
+        a += kc if op in _CONST_ARGS else kn if op in _NAME_ARGS else nb if op in _PLACE_ARGS else 0
+        if a >= 65536:
+            raise ScriptError(f"number {a} is too big for one instruction")
+        tail += bytes([op, a & 255, a >> 8])
+    (c0, _c1), (k0, k1), (n0, n1) = _module_spans(data)
+    if data[c0:c0 + 1] != b"s" or data[k0:k0 + 1] != b"(" or data[n0:n0 + 1] != b"(":
+        # not a game rule: what our joining of a template supports
+        raise ScriptError("the game's script's compiled code, constants or names aren't stored the usual way")
+    stack = max(mod.stacksize, template.stacksize)
+    head = data[:1] + struct.pack("<4i", mod.argcount, mod.nlocals, stack, mod.flags)
+    out = (head + dump(base + tail)
+           + b"(" + struct.pack("<i", kc + len(template.consts)) + data[k0 + 5:k1]
+           + b"".join(dump(c) for c in template.consts)
+           + b"(" + struct.pack("<i", kn + len(template.names)) + data[n0 + 5:n1]
+           + b"".join(dump(n) for n in template.names)
+           + data[n1:])
+    back = load(out)
+    if back.code[:nb] != base or back.consts[:kc] != mod.consts or back.names[:kn] != mod.names \
+            or back.consts[kc:] != template.consts or back.names[kn:] != template.names:
+        # not a game rule: what our joining of a template supports
+        raise ScriptError("the joined script doesn't read back as the game's then the template's")
+    return out
 
 
 def find_unit_list(arc):
