@@ -2007,7 +2007,133 @@ function unitView(u) {
 // Blender to save it first, rusemod.blender.ask_to_save). `brought` is called after paint came back. A game unit's
 // model can't be swapped: a model of one's own goes on a new unit, so a game unit's box says so, and `startNew` (its
 // page's New unit form, when it can be copied) makes one.
+// --- a building's look (StudioApi.building_look, building_look_import, building_look_change, building_look_remove,
+// look_card; rusemod.buildinglook; the owner, 2026-10-18: "The asset importer and building importers" ... "For
+// buildings, you also need to be able to change the icon in the in-game menu"): its picture in the build menu, and a
+// new building's 3D model in the place of one piece of the look it copies (biggest first: the main building, for a
+// factory or a headquarters). A building has no one model of its own the 3D view could show: its look is a layout of
+// pieces the game puts down where it's built ---
+function buildingLookBox(u, startNew) {
+  const w = state.words, address = u.address;
+  const body = el("div", { className: "muted small", textContent: w.building_look_working });
+  const box = el("div", { className: "group look" }, el("h2", { textContent: w.building_look_title }), body);
+  const draw = (info) => {
+    if (!info.building) { box.remove(); return; }
+    const parts = [];
+    if (info.card) parts.push(buildingCardRow(u, info.card));
+    if (info.new_unit && state.mod) parts.push(buildingModelBox(address, info, draw));
+    else if (!info.new_unit && u.can_copy && u.editable) {
+      const go = el("button", { type: "button", textContent: w.model_want_button, title: w.tip_model_want,
+        disabled: !startNew });
+      if (startNew) go.addEventListener("click", startNew);
+      parts.push(el("div", { className: "model-own" }, el("h3", { textContent: w.building_model_title }),
+        el("p", { className: "muted small", textContent: w.building_model_want }), el("div", { className: "actions" }, go)));
+    }
+    body.className = "new-unit";
+    body.replaceChildren(...parts);
+  };
+  api().building_look(address).then(draw).catch((err) => { body.textContent = (err && err.message) || String(err); });
+  return box;
+}
+
+// Its picture in the build menu: Choose a picture… (fitted to the menu's size), or the game's again
+function buildingCardRow(u, card) {
+  const w = state.words;
+  const thumb = el("img", { className: "card-thumb", src: card.url, alt: w.card_now, title: w.card_now });
+  const reset = el("button", { type: "button", className: "ghost", textContent: w.card_reset, title: w.tip_card_reset });
+  const file = el("input", { type: "file", accept: "image/png,image/jpeg", className: "hidden" });
+  const choose = el("button", { type: "button", textContent: w.card_choose, title: w.tip_card_choose });
+  const show = (c) => { thumb.src = c.url; reset.classList.toggle("hidden", !c.own); };
+  choose.addEventListener("click", () => {
+    if (!state.mod) { say(w.no_mod, "error"); return; }
+    file.click();
+  });
+  file.addEventListener("change", async () => {
+    const f = file.files && file.files[0];
+    file.value = "";
+    if (!f) return;
+    choose.disabled = true;
+    try {
+      const r = await api().look_card(u.address, await cardFromFile(f, card));
+      show(r.card);
+      say(r.message, "ok");
+    } catch (err) { problem(err); } finally { choose.disabled = false; }
+  });
+  reset.addEventListener("click", async () => {
+    try { const r = await api().look_card_reset(u.address); show(r.card); say(r.message, "ok"); }
+    catch (err) { problem(err); }
+  });
+  show(card);
+  return el("div", { className: "model-own" }, el("h3", { textContent: w.building_card_title }),
+    el("div", { className: "card-row" }, thumb, el("div", {},
+      el("p", { className: "muted small", textContent: w.building_card_how }),
+      el("div", { className: "actions" }, choose, reset, file))));
+}
+
+// A new building's 3D model: which piece of the copied look it takes the place of, its size (times that piece's), and
+// Import model…; once it has one, what it is, Replace…, Save size and Remove
+function buildingModelBox(address, info, draw) {
+  const w = state.words, own = info.own;
+  const piece = el("select", { className: "building-piece", title: w.tip_building_piece });
+  for (const p of info.pieces) {
+    piece.append(el("option", { value: p.type, textContent: fill(w.building_piece_row, { name: p.name,
+      w: p.size[0], d: p.size[1], h: p.size[2], n: p.count }) }));
+  }
+  if (own) piece.value = own.piece;
+  piece.disabled = Boolean(own);  // (another piece: Remove first)
+  const size = el("input", { type: "number", min: "0.01", max: "100", step: "0.05", value: String(own ? own.size : 1),
+    className: "model-size", title: w.tip_building_size });
+  const licence = el("select", { title: w.tip_asset_licence });
+  for (const [v, t] of [["", w.asset_licence_own], ["CC0", w.asset_licence_free], ["CC-BY", w.asset_licence_credit]]) {
+    licence.append(el("option", { value: v, textContent: t }));
+  }
+  const credit = (own && own.credit) || {};
+  licence.value = ["CC0", "CC-BY"].includes(credit.licence) ? credit.licence : "";
+  const author = el("input", { type: "text", value: credit.author || "", placeholder: w.asset_author, title: w.tip_asset_author });
+  const source = el("input", { type: "text", value: credit.source || "", placeholder: w.asset_source, title: w.tip_asset_source });
+  const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
+    title: w.tip_building_import, disabled: !info.pieces.length });
+  pick.addEventListener("click", async () => {
+    pick.disabled = true;
+    say(w.building_importing);
+    try {
+      const r = await api().building_look_import(address, own ? own.piece : piece.value, null, Number(size.value) || 1,
+        false, source.value.trim(), author.value.trim(), licence.value);
+      if (r.done) say(w.building_done, "ok");
+      draw(r);
+    } catch (err) { problem(err); } finally { pick.disabled = false; }
+  });
+  const box = el("div", { className: "model-own" }, el("h3", { textContent: w.building_model_title }),
+    el("p", { className: "muted small", textContent: w.building_model_how }),
+    el("label", { className: "small" }, w.building_piece, " ", piece),
+    el("label", { className: "small" }, w.asset_size, " ", size),
+    el("label", { className: "small" }, w.asset_licence, " ", licence), author, source,
+    el("div", { className: "actions" }, pick));
+  if (!info.pieces.length) box.append(el("p", { className: "notice warn", textContent: w.building_no_pieces }));
+  if (own) {
+    const v = own.versions || {}, n = (x) => (x === null || x === undefined ? "?" : x.toLocaleString());
+    box.append(el("p", { className: "small", textContent: fill(w.building_own, { file: own.file,
+      triangles: n(own.triangles), middle: n((v.medium || {}).triangles), far: n((v.far || {}).triangles) }) }));
+    const save = el("button", { type: "button", className: "ghost", textContent: w.asset_save, title: w.tip_building_save });
+    save.addEventListener("click", async () => {
+      try {
+        draw(await api().building_look_change(address, Number(size.value) || 1, null, source.value.trim(),
+          author.value.trim(), licence.value));
+        say(w.asset_saved, "ok");
+      } catch (err) { problem(err); }
+    });
+    const remove = el("button", { type: "button", className: "ghost danger", textContent: w.building_remove,
+      title: w.tip_building_remove });
+    remove.addEventListener("click", async () => {
+      try { draw(await api().building_look_remove(address)); say(w.building_removed, "ok"); } catch (err) { problem(err); }
+    });
+    box.append(el("div", { className: "actions" }, save, remove));
+  }
+  return box;
+}
+
 function lookBox(u, brought, startNew) {
+  if (u.kind === "buildings" || u.class === "TBatimentDescriptor") return buildingLookBox(u, startNew);
   const w = state.words;
   const address = u.address;
   const body = el("div", { className: "muted small", textContent: w.look_working });

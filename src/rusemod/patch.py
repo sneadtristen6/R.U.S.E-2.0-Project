@@ -29,6 +29,7 @@ from operator import itemgetter
 
 INT_RANGES = {"bool": (0, 255), "int8": (-2**7, 2**7 - 1), "int16": (-2**15, 2**15 - 1), "uint16": (0, 2**16 - 1),
               "int32": (-2**31, 2**31 - 1), "uint32": (0, 2**32 - 1), "int64": (-2**63, 2**63 - 1)}
+CHECK_INDEX = False   # the tests: the find index kept as objects are made checked against a rebuild each time
 
 
 # --- the game model ---
@@ -370,9 +371,12 @@ class Engine:
             placed.source = src  # the new object goes into its source's file (model.save)
         else:
             obj = Obj(op.cls or "?")
+        fresh_index = self._index_gen == self._gen
         self.game.objects[name] = obj
         self.created[name] = placed
         self._gen += 1
+        if fresh_index:
+            self._index_add(name, obj)
         for sub in op.body:
             body_op = copy.copy(sub)
             body_op.target, body_op.mod = name, body_op.mod or op.mod
@@ -452,6 +456,8 @@ class Engine:
             target_val = old.items[idx]
         category = {"set": "set", "mul": "math", "add": "math", "delprop": "delprop"}.get(op.kind, op.kind)
         self._check_conflict(op, key, category, target_val)
+        # the parts under the value before (a list op may change it in place): the find index changes only if they do
+        parts_before = list(_parts_in(target_val, ""))
 
         if op.kind == "delprop":
             obj.props.pop(prop, None)
@@ -479,8 +485,12 @@ class Engine:
                 old.items[idx] = new
             else:
                 obj.props[prop] = new
-        if any(isinstance(x, Inline) for v in (target_val, new) for x in _walk_value(v)):
-            self._gen += 1  # a part came or went: the object index is rebuilt before the next find
+        parts_after = list(_parts_in(new, ""))
+        if len(parts_before) != len(parts_after) or any(
+                pa != pb or oa is not ob for (pb, ob), (pa, oa) in zip(parts_before, parts_after)):
+            # a part came, went or moved: the object index is rebuilt before the next find (a list grown at its end,
+            # its parts where they were, keeps it: a map's own scenery types each add two entries to a list of parts)
+            self._gen += 1
         self.touch[key].append((op, category, op.value))
         self.trail[key].append((op, copy.deepcopy(new)))
         self._done.append((owner, path, op))
@@ -587,9 +597,42 @@ class Engine:
         return hits[0]
 
     # --- finding objects (MOD_FORMAT §4) ---
+    def _index_add(self, name: str, obj: Obj) -> None:
+        """A new top-level object's parts into the find index where a rebuild would put them (in name order, its parts
+        together in _parts order), so the next find needn't rebuild it: a mod making hundreds of objects (a map's own
+        scenery types, one per house) rebuilt the whole index, 1.7 s on the game's data, after each one. Only when
+        the index was current before the object came (_create checks)."""
+        rows = [(name, path, o) for path, o in _parts(obj)]
+        at = bisect_left(self._all, name, key=itemgetter(0))
+        self._all[at:at] = rows
+        for cls in dict.fromkeys(o.cls for _n, _p, o in rows):
+            found = self._by_class[cls] if cls in self._by_class else self._by_class.setdefault(cls, [])
+            mine = [r for r in rows if r[2].cls == cls]
+            at = bisect_left(found, name, key=itemgetter(0))
+            found[at:at] = mine
+        self._index_gen = self._gen
+        if CHECK_INDEX:
+            self._index_check()
+
+    def _index_check(self) -> None:
+        """The kept index against a rebuild (CHECK_INDEX, the tests): the same rows, the same objects, in order."""
+        by_class, all_ = defaultdict(list), []
+        for name in sorted(self.game.objects):
+            for path, o in _parts(self.game.objects[name]):
+                by_class[o.cls].append((name, path, o))
+                all_.append((name, path, o))
+
+        def same(a, b):
+            return len(a) == len(b) and all(x[0] == y[0] and x[1] == y[1] and x[2] is y[2] for x, y in zip(a, b))
+        if not same(self._all, all_) or set(k for k, v in self._by_class.items() if v) != set(by_class) or \
+                not all(same(self._by_class[k], v) for k, v in by_class.items()):
+            raise AssertionError("the kept object index differs from a rebuild")
+
     def _objects_of(self, cls: str | None, filter_: str | None) -> list:
         """[(top-level name, path to the part or "", Obj)] of every object of class `cls` (any class when None)
         whose property matches `filter_` ("Prop=value"), unnamed parts included; in name, then path order."""
+        if self._index_gen == self._gen and CHECK_INDEX:
+            self._index_check()
         if self._index_gen != self._gen:
             by_class, all_ = defaultdict(list), []
             for name in sorted(self.game.objects):
@@ -608,8 +651,12 @@ class Engine:
             field_, want = field_.strip(), want.strip()
             if field_ == "file":
                 found = [t for t in found if _unquote(want).lower() in self._file_of(t[0], t[2]).lower()]
-            else:
+            elif field_ == "class":
                 found = [t for t in found if _matches(t[2], field_, want)]
+            else:
+                # a part without the property never matches (_matches): left out before the call, as most parts
+                # are (a find over every object, [RegistrationName=...], went through the game's whole data)
+                found = [t for t in found if field_ in t[2].props and _matches(t[2], field_, want)]
         return found
 
     def _file_of(self, name: str, obj: Obj) -> str:

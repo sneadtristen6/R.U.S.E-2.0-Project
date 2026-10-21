@@ -682,6 +682,19 @@
              own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address),
              soldiers: fakeSquad(address) };
   }
+  // a building's look (building_look): a made-up factory look's pieces, biggest first; a new building's own model
+  const fakeBuildingModels = new Map();
+  function fakeBuildingLook(address) {
+    const made = mine().find((n) => address === newAddress(n.id));
+    if (!/Building_/.test(made ? made.source : address)) {
+      return { building: false, card: null, new_unit: false, symbol: null, pieces: [], own: null };
+    }
+    return { building: true, card: fakeCard(address), new_unit: Boolean(made), symbol: "US_Prototype_Factory",
+      pieces: [["Prototype_building", 1, 33.4, 29.2, 12.8], ["US_Research_Center", 1, 16.5, 17.8, 18.6],
+        ["Maintenance_Hangar_simple_ouvert", 2, 22.2, 8.3, 5.3], ["Tour_radio", 2, 10.1, 10.1, 11.8]]
+        .map(([name, count, w, d, h]) => ({ type: `TypeWarrior/${name}`, name, count, size: [w, d, h] })),
+      own: fakeBuildingModels.get(address) || null };
+  }
   // a squad (its look is its uniform: Default or Custom) and the truck it rides in (rides_in): the GI squad and its copies
   const fakeSquad = (address) => /Soldat/.test(address)
     || mine().some((n) => address === newAddress(n.id) && /Soldat/.test(n.source));
@@ -1349,7 +1362,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     }
     const nationName = (nations[lang] || nations.base)[u.nation];
     return view(E + u.id, lang, u.kind === "air" ? "TAvionDescriptor" : u.kind === "infantry" ? "TInfanterieDescriptor" :
-      "TUniteAuSolDescriptor", nameOf(u, lang), true, "", 0, [
+      u.kind === "buildings" ? "TBatimentDescriptor" : "TUniteAuSolDescriptor", nameOf(u, lang), true, "", 0, [
       ["identity", [["Nationalite", u.nation, { text: `${u.nation} (${nationName})` }], ["DescriptorId", 187],
         ["ClassNameForDebug", 0, { text: "Unit_" + u.id }],
         ["NameInMenuToken", 0, { text: lang === "base" ? u.key : `${u.key} (${nameOf(u, lang)})` }],
@@ -1515,6 +1528,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { types, items, palette, groups: { building: { shown: 40, total: 40 }, prop: { shown: 30, total: 30 },
       vegetation: { shown: 900, total: 12000 } } };
   }
+
+  // the map mod's own models (asset_import), per mod
+  const fakeAssets = new Map();
+  function fakeAssetList() { return { assets: current ? (fakeAssets.get(current) || []) : [], mod: current }; }
 
   // Made-up models for the made-up types (a town hall, a tall house, a cart, an oak, a basket), as map_models gives
   // them (an index and one buffer, map units, x east, y south, z up), so the preview draws models: the map's objects,
@@ -1986,6 +2003,18 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ai_group_attack: "Attaque", ai_group_money: "Argent", ai_not_in_menu: "Pas dans le menu des ruses" });
   Object.assign(words.sc, { ai_tab: "AI", ai_title: "AI：电脑玩家", ai_default: "默认", ai_group_attack: "进攻",
     ai_group_money: "资金", ai_not_in_menu: "不在计谋菜单中" });
+  // the Maps tab's Import model (words.toml asset_*, tip_asset_*)
+  Object.assign(words.us, {"asset_import": "Import model…", "tip_asset_import": "Make a 3D model (.glb, .gltf or .3ds) one of your map mod's own rocks, props, plants or trees. It's placed like the game's own; Test in game shows it.", "asset_edit": "Your model…", "tip_asset_edit": "The picked model is one of your own: see or change its size and where it's from, replace its file, or remove it.", "asset_tag": "Yours", "asset_what": "Your own model · {kind}", "asset_kind_rock": "Rock or cliff", "asset_kind_prop": "Prop", "asset_kind_plant": "Bush or plant", "asset_kind_tree": "Tree", "tip_asset_kind_rock": "Stands like the game's rocks: big ones can be cliffs and walls of stone.", "tip_asset_kind_prop": "Stands like the game's props: crates, carts, fences, anything small that isn't a building.", "tip_asset_kind_plant": "Stands like the game's bushes: low plants, drawn close up and thinned out further away.", "tip_asset_kind_tree": "Stands like the game's trees: its see-through pictures (leaves) and the rest (trunk) are kept apart, as the game's are.", "asset_title_new": "Import a model", "asset_title_edit": "Your model {name}", "asset_lead": "The model is saved in your map mod, with smaller versions for the middle and far distances made for it. The game gets it on every map of the mod, placed like its own.", "asset_name": "Name", "asset_name_from_file": "From the file's name", "tip_asset_name": "Letters and digits; spaces and other signs join the words (rock face 01 becomes RockFace01). A name your mod has already is asked about before it's replaced.", "asset_size": "Size", "tip_asset_size": "1 is as the model was made, a unit in the file a metre. Placing it can still make each one bigger or smaller.", "asset_two_sided": "Seen from both sides", "tip_asset_two_sided": "For a model with no back, such as a scanned rock face: its faces show from behind too (twice the triangles).", "asset_credit": "Where it's from", "asset_licence": "Licence", "tip_asset_licence": "A model someone else made can go in a mod under CC0 or CC-BY only. With CC-BY, give its author and where you found it.", "asset_licence_own": "My own model", "asset_licence_free": "CC0 (free for anyone)", "asset_licence_credit": "CC-BY (its author credited)", "asset_source": "Found at", "tip_asset_source": "The web page you took the model from (kept with it in your mod).", "asset_author": "Author", "tip_asset_author": "Who made the model (kept with it in your mod; give it for CC-BY).", "asset_files": "A .glb or .gltf brings its pictures inside it or beside it; a .3ds needs its pictures (PNG, TGA or JPG) in the same folder.", "asset_info": "{file}: {triangles} triangles; middle distance {middle}, far {far}.", "asset_credit_line": "From {source} by {author} ({licence}).", "asset_pick": "Choose the model file…", "asset_pick_again": "Replace with another file…", "tip_asset_pick": "Pick the model file. It's saved in your mod at once, with its middle and far versions; Test in game shows it.", "asset_save": "Save changes", "asset_saved": "Saved. Test in game shows it.", "asset_remove": "Remove this model", "tip_asset_remove": "Its folder goes to the Recycle Bin. Where it's placed, you're asked before those go too.", "asset_remove_sure": "Remove {name} from your mod?", "asset_placed": "Placed on your maps: {n} ({maps}). Remove those too?", "asset_remove_yes": "Remove", "asset_exists": "Your mod already has a model called {name}. Replace it with this file?", "asset_replace": "Replace it", "asset_keep": "Keep it", "asset_importing": "Importing the model and making its middle and far versions…", "asset_done": "{name} is in your mod and picked in the list: click the map to place it. Test in game shows it."});
+  Object.assign(words.fr, {"asset_import": "Importer un modèle…", "tip_asset_import": "Faites d'un modèle 3D (.glb, .gltf ou .3ds) un rocher, un objet, une plante ou un arbre de votre mod de carte. Il se place comme ceux du jeu ; Tester en jeu l'affiche.", "asset_edit": "Votre modèle…", "tip_asset_edit": "Le modèle choisi est l'un des vôtres : voyez ou changez sa taille et sa provenance, remplacez son fichier ou retirez-le.", "asset_tag": "À vous", "asset_what": "Votre propre modèle · {kind}", "asset_kind_rock": "Rocher ou falaise", "asset_kind_prop": "Objet", "asset_kind_plant": "Buisson ou plante", "asset_kind_tree": "Arbre", "tip_asset_kind_rock": "Se comporte comme les rochers du jeu : les grands peuvent faire des falaises et des murs de pierre.", "tip_asset_kind_prop": "Se comporte comme les objets du jeu : caisses, charrettes, clôtures, tout ce qui est petit et n'est pas un bâtiment.", "tip_asset_kind_plant": "Se comporte comme les buissons du jeu : plantes basses, détaillées de près et simplifiées plus loin.", "tip_asset_kind_tree": "Se comporte comme les arbres du jeu : ses images transparentes (feuilles) et le reste (tronc) sont séparés, comme ceux du jeu.", "asset_title_new": "Importer un modèle", "asset_title_edit": "Votre modèle {name}", "asset_lead": "Le modèle est enregistré dans votre mod de carte, avec des versions plus légères faites pour la moyenne et la longue distance. Le jeu le reçoit sur chaque carte du mod, placé comme les siens.", "asset_name": "Nom", "asset_name_from_file": "D'après le nom du fichier", "tip_asset_name": "Lettres et chiffres ; espaces et autres signes joignent les mots (rock face 01 devient RockFace01). Un nom que votre mod a déjà est demandé avant d'être remplacé.", "asset_size": "Taille", "tip_asset_size": "1 : tel que le modèle a été fait, une unité du fichier valant un mètre. En le plaçant, chacun peut encore être agrandi ou réduit.", "asset_two_sided": "Visible des deux côtés", "tip_asset_two_sided": "Pour un modèle sans dos, comme une paroi rocheuse scannée : ses faces se voient aussi de derrière (deux fois plus de triangles).", "asset_credit": "Provenance", "asset_licence": "Licence", "tip_asset_licence": "Un modèle fait par quelqu'un d'autre ne peut aller dans un mod que sous CC0 ou CC-BY. Avec CC-BY, indiquez son auteur et où vous l'avez trouvé.", "asset_licence_own": "Mon propre modèle", "asset_licence_free": "CC0 (libre pour tous)", "asset_licence_credit": "CC-BY (auteur crédité)", "asset_source": "Trouvé sur", "tip_asset_source": "La page web d'où vient le modèle (gardée avec lui dans votre mod).", "asset_author": "Auteur", "tip_asset_author": "Qui a fait le modèle (gardé avec lui dans votre mod ; à indiquer pour CC-BY).", "asset_files": "Un .glb ou .gltf a ses images à l'intérieur ou à côté ; un .3ds a besoin de ses images (PNG, TGA ou JPG) dans le même dossier.", "asset_info": "{file} : {triangles} triangles ; moyenne distance {middle}, loin {far}.", "asset_credit_line": "De {source}, par {author} ({licence}).", "asset_pick": "Choisir le fichier du modèle…", "asset_pick_again": "Remplacer par un autre fichier…", "tip_asset_pick": "Choisissez le fichier du modèle. Il est aussitôt enregistré dans votre mod, avec ses versions moyenne et lointaine ; Tester en jeu l'affiche.", "asset_save": "Enregistrer les changements", "asset_saved": "Enregistré. Tester en jeu l'affiche.", "asset_remove": "Retirer ce modèle", "tip_asset_remove": "Son dossier va à la Corbeille. S'il est placé sur des cartes, on vous demande avant de les retirer aussi.", "asset_remove_sure": "Retirer {name} de votre mod ?", "asset_placed": "Placés sur vos cartes : {n} ({maps}). Les retirer aussi ?", "asset_remove_yes": "Retirer", "asset_exists": "Votre mod a déjà un modèle appelé {name}. Le remplacer par ce fichier ?", "asset_replace": "Le remplacer", "asset_keep": "Le garder", "asset_importing": "Import du modèle et création de ses versions moyenne et lointaine…", "asset_done": "{name} est dans votre mod et choisi dans la liste : cliquez sur la carte pour le placer. Tester en jeu l'affiche."});
+  Object.assign(words.sc, {"asset_import": "导入模型…", "tip_asset_import": "把一个3D模型（.glb、.gltf或.3ds）变成你地图模组自己的岩石、物件、植物或树木。它像游戏自带的一样放置；游戏内测试即可看到。", "asset_edit": "你的模型…", "tip_asset_edit": "所选模型是你自己的：查看或更改它的大小和来源、替换文件，或将其移除。", "asset_tag": "自制", "asset_what": "你自己的模型 · {kind}", "asset_kind_rock": "岩石或悬崖", "asset_kind_prop": "物件", "asset_kind_plant": "灌木或植物", "asset_kind_tree": "树木", "tip_asset_kind_rock": "像游戏中的岩石一样摆放：大的可以做悬崖和石墙。", "tip_asset_kind_prop": "像游戏中的物件一样摆放：箱子、推车、栅栏等不是建筑的小东西。", "tip_asset_kind_plant": "像游戏中的灌木一样摆放：低矮植物，近处细致，远处简化。", "tip_asset_kind_tree": "像游戏中的树木一样摆放：透明图片（树叶）和其余部分（树干）像游戏的树一样分开。", "asset_title_new": "导入模型", "asset_title_edit": "你的模型 {name}", "asset_lead": "模型保存在你的地图模组中，并为中距离和远距离生成更简化的版本。模组的每张地图都能用它，像游戏自带的一样放置。", "asset_name": "名称", "asset_name_from_file": "取自文件名", "tip_asset_name": "字母和数字；空格和其他符号会把单词连起来（rock face 01 变成 RockFace01）。如果模组里已有同名模型，替换前会先询问。", "asset_size": "大小", "tip_asset_size": "1 表示按模型原样，文件中1个单位为1米。放置时每一个仍可放大或缩小。", "asset_two_sided": "双面可见", "tip_asset_two_sided": "适用于没有背面的模型，例如扫描的岩壁：从背后也能看到它的面（三角形数量翻倍）。", "asset_credit": "来源", "asset_licence": "许可", "tip_asset_licence": "别人制作的模型只有在 CC0 或 CC-BY 许可下才能放进模组。若为 CC-BY，请填写作者和获取地址。", "asset_licence_own": "我自己的模型", "asset_licence_free": "CC0（任何人可自由使用）", "asset_licence_credit": "CC-BY（需署名作者）", "asset_source": "获取地址", "tip_asset_source": "你获取该模型的网页（与模型一起保存在模组中）。", "asset_author": "作者", "tip_asset_author": "模型的制作者（与模型一起保存在模组中；CC-BY 必须填写）。", "asset_files": ".glb 或 .gltf 的图片在文件内或旁边；.3ds 需要它的图片（PNG、TGA 或 JPG）在同一文件夹中。", "asset_info": "{file}：{triangles} 个三角形；中距离 {middle}，远距离 {far}。", "asset_credit_line": "来自 {source}，作者 {author}（{licence}）。", "asset_pick": "选择模型文件…", "asset_pick_again": "换成另一个文件…", "tip_asset_pick": "选择模型文件。它会立即连同中、远距离版本保存到你的模组中；游戏内测试即可看到。", "asset_save": "保存更改", "asset_saved": "已保存。游戏内测试即可看到。", "asset_remove": "移除此模型", "tip_asset_remove": "它的文件夹会移到回收站。如果已放置在地图上，移除那些之前会先询问。", "asset_remove_sure": "要从模组中移除 {name} 吗？", "asset_placed": "已放置在你的地图上：{n}（{maps}）。也一起移除吗？", "asset_remove_yes": "移除", "asset_exists": "你的模组中已有名为 {name} 的模型。用这个文件替换它吗？", "asset_replace": "替换", "asset_keep": "保留", "asset_importing": "正在导入模型并生成中、远距离版本…", "asset_done": "{name} 已加入你的模组并在列表中选中：点击地图即可放置。游戏内测试即可看到。"});
+  // a building's look on its Units page (words.toml building_*, tip_building_*)
+  Object.assign(words.us, {"building_look_working": "Reading the building's look…", "building_look_title": "Look", "building_card_title": "Its picture in the build menu", "building_card_how": "Choose any picture (PNG or JPG): it's fitted to the menu's size, cut at the edges if it has to be. Test in game shows it in the build menu.", "building_model_title": "Its own 3D model", "building_model_want": "A model of your own goes on a new building: make one from this building, then Import model on its page. This building stays as it is.", "building_model_how": "A building's look is a layout of pieces: a main hall, hangars, trucks, walls. Your model takes the place of the piece you pick, sized to it and standing where it stands; the rest of the look stays. Its +x side (in Blender) faces the gate units come out of.", "building_piece": "In place of", "tip_building_piece": "The pieces of the look this building copies, biggest on the ground first: for a factory or a headquarters the first is its main building.", "building_piece_row": "{name}: {w} × {d} m, {h} m high (×{n})", "tip_building_size": "1 is as big as the piece it takes the place of (its longer side on the ground).", "tip_building_import": "Pick a .glb, .gltf or .3ds. It's saved in your mod with its middle and far versions; Test in game shows the building with it.", "building_importing": "Importing the building's model and making its middle and far versions…", "building_done": "The building has its own model now. Click Test in game to see it.", "building_own": "{file}: {triangles} triangles; middle distance {middle}, far {far}.", "tip_building_save": "Keep the size and where the model is from as set here (its model stays).", "building_remove": "Use the copied look", "tip_building_remove": "Its model goes to the Recycle Bin: the building looks like the one it copies again.", "building_removed": "The building looks like the one it copies again.", "building_no_pieces": "The Studio found no 3D pieces in this look to take the place of. Please tell us this building's name so we can fix it."});
+  Object.assign(words.fr, {"building_look_working": "Lecture de l'apparence du bâtiment…", "building_look_title": "Apparence", "building_card_title": "Son image dans le menu de construction", "building_card_how": "Choisissez n'importe quelle image (PNG ou JPG) : elle est ajustée à la taille du menu, rognée sur les bords si besoin. Tester en jeu l'affiche dans le menu de construction.", "building_model_title": "Son propre modèle 3D", "building_model_want": "Un modèle à vous se met sur un nouveau bâtiment : créez-en un à partir de celui-ci, puis Importer un modèle sur sa page. Ce bâtiment reste tel quel.", "building_model_how": "L'apparence d'un bâtiment est un agencement de pièces : un bâtiment principal, des hangars, des camions, des murs. Votre modèle prend la place de la pièce choisie, à sa taille et à sa place ; le reste de l'apparence reste. Son côté +x (dans Blender) fait face à la sortie des unités.", "building_piece": "À la place de", "tip_building_piece": "Les pièces de l'apparence que ce bâtiment copie, la plus grande au sol d'abord : pour une usine ou un QG, la première est son bâtiment principal.", "building_piece_row": "{name} : {w} × {d} m, {h} m de haut (×{n})", "tip_building_size": "1 : aussi grand que la pièce remplacée (son plus grand côté au sol).", "tip_building_import": "Choisissez un .glb, .gltf ou .3ds. Il est enregistré dans votre mod avec ses versions moyenne et lointaine ; Tester en jeu montre le bâtiment avec.", "building_importing": "Import du modèle du bâtiment et création de ses versions moyenne et lointaine…", "building_done": "Le bâtiment a maintenant son propre modèle. Cliquez sur Tester en jeu pour le voir.", "building_own": "{file} : {triangles} triangles ; moyenne distance {middle}, loin {far}.", "tip_building_save": "Garder la taille et la provenance du modèle telles qu'indiquées ici (le modèle reste).", "building_remove": "Reprendre l'apparence copiée", "tip_building_remove": "Son modèle va à la Corbeille : le bâtiment ressemble de nouveau à celui qu'il copie.", "building_removed": "Le bâtiment ressemble de nouveau à celui qu'il copie.", "building_no_pieces": "Le Studio n'a trouvé aucune pièce 3D à remplacer dans cette apparence. Merci de nous donner le nom de ce bâtiment pour que nous corrigions cela."});
+  Object.assign(words.sc, {"building_look_working": "正在读取建筑外观…", "building_look_title": "外观", "building_card_title": "它在建造菜单中的图片", "building_card_how": "选择任意图片（PNG 或 JPG）：会按菜单大小调整，必要时裁掉边缘。游戏内测试即可在建造菜单中看到。", "building_model_title": "自己的3D模型", "building_model_want": "自己的模型要放在新建筑上：先以此建筑创建一个新建筑，再在其页面上导入模型。此建筑保持不变。", "building_model_how": "建筑的外观是各部件的布置：主楼、机库、卡车、围墙。你的模型会以所选部件的大小、在它的位置上取代它；其余保持不变。模型的 +x 面（在 Blender 中）朝向单位出来的大门。", "building_piece": "取代", "tip_building_piece": "此建筑所复制外观的各部件，占地最大的在前：工厂或司令部的第一个就是主楼。", "building_piece_row": "{name}：{w} × {d} 米，高 {h} 米（×{n}）", "tip_building_size": "1 表示与被取代的部件一样大（其在地面上的长边）。", "tip_building_import": "选择 .glb、.gltf 或 .3ds。它会连同中、远距离版本保存到你的模组中；游戏内测试即可看到带它的建筑。", "building_importing": "正在导入建筑模型并生成中、远距离版本…", "building_done": "该建筑现在有了自己的模型。点击游戏内测试即可查看。", "building_own": "{file}：{triangles} 个三角形；中距离 {middle}，远距离 {far}。", "tip_building_save": "按此处设置保存大小和来源（模型不变）。", "building_remove": "使用复制的外观", "tip_building_remove": "其模型会移到回收站：建筑恢复为所复制建筑的外观。", "building_removed": "建筑已恢复为所复制建筑的外观。", "building_no_pieces": "Studio 在此外观中没有找到可取代的3D部件。请告诉我们这个建筑的名称，以便修复。"});
+  // the model's size slider and Solid (10-18)
+  Object.assign(words.us, {"tip_asset_size_slide": "Drag to make it smaller (left, down to a tenth) or bigger (right, up to 10 times). Letting go saves it, and the map shows the new size.", "asset_metres": "In the game: about {across} × {deep} m across and {high} m high", "asset_solid": "Solid: units go around it", "tip_asset_solid": "Ticked: wherever it's placed, units drive and walk around it (a circle as wide as the model, times its size), as around a building. Not ticked: as the game's own small rocks, props and trees, units drive through it and knock it over."});
+  Object.assign(words.fr, {"tip_asset_size_slide": "Faites glisser pour le rendre plus petit (à gauche, jusqu'au dixième) ou plus grand (à droite, jusqu'à 10 fois). En relâchant, c'est enregistré et la carte montre la nouvelle taille.", "asset_metres": "Dans le jeu : environ {across} × {deep} m au sol et {high} m de haut", "asset_solid": "Solide : les unités le contournent", "tip_asset_solid": "Coché : partout où il est placé, les unités le contournent (un cercle aussi large que le modèle, fois sa taille), comme un bâtiment. Décoché : comme les petits rochers, objets et arbres du jeu, les unités passent au travers et le renversent."});
+  Object.assign(words.sc, {"tip_asset_size_slide": "拖动可缩小（向左，最小到十分之一）或放大（向右，最大到 10 倍）。松开即保存，地图会显示新的大小。", "asset_metres": "游戏中：约 {across} × {deep} 米，高 {high} 米", "asset_solid": "实体：单位会绕开它", "tip_asset_solid": "勾选：无论放在哪里，单位都会像绕开建筑一样绕开它（与模型同宽的圆，乘以其大小）。不勾选：与游戏自带的小石头、道具和树木一样，单位会直接穿过并撞倒它。"});
   // [address, kind, number in the lobby, name, lobby line, [[group, [[prop, its name, type, the game's value]]]]]: some of
   // the game's sets of values, as the real index has them (rusemod.ai)
   const AI_SETS = "$/GFX/Everything/AIConfiguration";
@@ -2646,6 +2675,27 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         fakeCards.delete(address);
         return { card: fakeCard(address), message: "The game's own card is back." };
       },
+      // a building's look (StudioApi.building_look, ...): a made-up look's pieces, a new building's model kept here
+      building_look: async (address) => fakeBuildingLook(address),
+      building_look_import: async (address, piece, file, size = 1, twoSided = false, source = "", author = "",
+        licence = "") => {
+        const made = mine().find((n) => address === newAddress(n.id));
+        if (!made) throw new Error("Only a new building made in this mod can get a model of its own: copy the building first.");
+        if (licence && !["CC0", "CC-BY"].includes(licence)) throw new Error(`hall.glb: a model taken from others must be CC0 or CC-BY (this one says ${licence})`);
+        await new Promise((r) => setTimeout(r, 400));
+        fakeBuildingModels.set(address, { piece, file: `${made.id}.glb`, size: Number(size) || 1, two_sided: false,
+          credit: Object.fromEntries(Object.entries({ source, author, licence }).filter(([, v]) => v)), triangles: 5120,
+          versions: { medium: { file: `${made.id}_medium.glb`, triangles: 1400 }, far: { file: `${made.id}_far.glb`, triangles: 160 } } });
+        return { done: true, ...fakeBuildingLook(address) };
+      },
+      building_look_change: async (address, size, twoSided, source, author, licence) => {
+        const own = fakeBuildingModels.get(address);
+        if (!own) throw new Error("This building has no model of its own yet.");
+        Object.assign(own, { size: Number(size) || own.size,
+          credit: Object.fromEntries(Object.entries({ source, author, licence }).filter(([, v]) => v)) });
+        return fakeBuildingLook(address);
+      },
+      building_look_remove: async (address) => { fakeBuildingModels.delete(address); return fakeBuildingLook(address); },
       choose_blender: async () => ({ blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe" }),
       get_blender: async () => ({ url: "https://www.blender.org/download/" }),
       mods: async (kind) => kind === "map" ? mapsView() : modsView(),
@@ -3439,6 +3489,49 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const key = `${current}|${pack}`, list = (placed.get(key) || []).concat(objects);
         placed.set(key, list);
         return { count: list.length, saved: `${current}/maps/${pack}/scenery.toml` };
+      },
+      // the map mod's own models (StudioApi.assets, asset_import, …): kept per mod; "picking a file" picks a made-up
+      // boulder.glb, drawn as the made-up basket
+      assets: async () => fakeAssetList(),
+      asset_import: async (kind, file, name, size = 1, twoSided = false, source = "", author = "", licence = "",
+        replaceIt = false, solid = false) => {
+        if (!current) throw new Error("Pick or make a mod first: the model is saved in it.");
+        await new Promise((r) => setTimeout(r, 400));  // the real one reads the file and makes its versions
+        const n = (name || "boulder").split(/[^A-Za-z0-9]+/).filter(Boolean).map((p) => p[0].toUpperCase() + p.slice(1)).join("");
+        const list = fakeAssets.get(current) || [];
+        if (!replaceIt && list.some((a) => a.name === n)) return { exists: n, file: file || "D:/models/boulder.glb", asset: null, ...fakeAssetList() };
+        if (licence && !["CC0", "CC-BY"].includes(licence)) throw new Error(`boulder.glb: a model taken from others must be CC0 or CC-BY (this one says ${licence}); leave the licence empty for a model of your own`);
+        const group = { rock: "prop", prop: "prop", plant: "vegetation", tree: "vegetation" }[kind];
+        const asset = { name: n, type: `TypeWarrior/R2_${n}`, kind, group, label: kind, size: Number(size) || 1,
+          two_sided: Boolean(twoSided), solid: Boolean(solid), metres: [1.3, 1.8, 1.0],
+          credit: Object.fromEntries(Object.entries({ source, author, licence }).filter(([, v]) => v)),
+          file: `${n}.glb`, triangles: 1180, versions: { medium: { file: `${n}_medium.glb`, triangles: 590 },
+            far: { file: `${n}_far.glb`, triangles: 118 } } };
+        fakeAssets.set(current, list.filter((a) => a.name !== n).concat([asset]));
+        return { asset, ...fakeAssetList() };
+      },
+      asset_change: async (name, size, twoSided, source, author, licence, solid = null) => {
+        const a = (fakeAssets.get(current) || []).find((x) => x.name === name);
+        if (!a) throw new Error(`The mod has no model called '${name}'.`);
+        Object.assign(a, { size: Number(size) || a.size, two_sided: Boolean(twoSided), solid: solid === null ? a.solid : Boolean(solid),
+          credit: Object.fromEntries(Object.entries({ source, author, licence }).filter(([, v]) => v)) });
+        return fakeAssetList();
+      },
+      asset_remove: async (name, placedToo = false) => {
+        const t = `TypeWarrior/R2_${name}`, where = {};
+        for (const [key, list] of placed) {
+          const [mod, pack] = key.split("|"), n = list.filter((o) => o.type === t).length;
+          if (mod === current && n) where[pack] = n;
+        }
+        if (Object.keys(where).length && !placedToo) return { placed: where, ...fakeAssetList() };
+        for (const pack of Object.keys(where)) placed.set(`${current}|${pack}`, placed.get(`${current}|${pack}`).filter((o) => o.type !== t));
+        fakeAssets.set(current, (fakeAssets.get(current) || []).filter((a) => a.name !== name));
+        return fakeAssetList();
+      },
+      asset_models: async () => {
+        const made = fakeMapModels(), models = {};
+        for (const a of fakeAssetList().assets) models[a.type] = made.index.models[4];
+        return { base: "", index: { bin: made.index.bin, models, textures: {} } };
       },
       scenery_undo: async (pack, count = 1, objects = null) => {
         const key = `${current}|${pack}`, list = placed.get(key) || [];

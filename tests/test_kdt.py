@@ -17,7 +17,6 @@ BOUNDS = ((0.0, 0.0, 9.0), (491520.0, 491520.0, 117000.0))
 # subtree 0: four vertices, one stored relative to an earlier vertex; subtree 1: two vertices
 POSITIONS = [[(10, 20, 30), (40, 20, 35), (12, 25, 33), (39, 21, 36)], [(100, 200, 300), (0, 32767, 5)]]
 PARENTS = [[0, 0, 0, 1], [0, 0]]
-# normals with |b| <= 0.25, so they survive the 12-bit field (the wrap has its own test)
 NORMALS = [[(0.0, 0.0, 1.0), (0.1, -0.2, 0.9), (-0.9, 0.1, 0.2), (0.15, 0.7, 0.1)],
            [(0.0, 0.0, -1.0), (0.3, 0.05, 0.9)]]
 
@@ -41,14 +40,14 @@ def hand_positions(positions, parents, fill=0xDD) -> bytes:
 
 
 def hand_normal(n) -> int:
-    """The packed normal laid out by hand: dominant axis tag, a in the top 16 bits, b in 12 bits (wrapping); exactly
-    along an axis, a hair off it (a field 0x7FFD, b field 0xFFF: the game casts no shadows over 0x80000005)."""
+    """The packed normal laid out by hand: dominant axis tag, then b and a in two 14-bit fields (bits 4-17, 18-31)
+    centred on 8192; exactly along an axis, a hair off it (both fields 0x1FFF: D-Day's level-ground word)."""
     k = max(range(3), key=lambda i: abs(n[i]))
     a, b = n[(k + 1) % 3] / abs(n[k]), n[(k + 2) % 3] / abs(n[k])
-    hi, mid = round(a * 32768) + 32768, round(b * 8192) % 4096
-    if (hi, mid) == (0x8000, 0):
-        hi, mid = 0x7FFD, 0xFFF
-    return hi << 16 | mid << 4 | 2 * k + (n[k] > 0)
+    qa, qb = round(a * 8192) + 8192, round(b * 8192) + 8192
+    if (qa, qb) == (8192, 8192):
+        qa, qb = 0x1FFF, 0x1FFF
+    return qa << 18 | qb << 4 | 2 * k + (n[k] > 0)
 
 
 def hand_storage(positions=POSITIONS, parents=PARENTS, normals=NORMALS, opaque=None):
@@ -205,48 +204,59 @@ class Positions(unittest.TestCase):
 
 class Normals(unittest.TestCase):
     def test_word_layout(self):
-        # exactly along an axis (a = b = 0) is written a hair off it (AXIS_NUDGE): the game casts no shadows over a
-        # ground stored 0x80000005, and no shipped map stores such a word
+        # exactly along an axis (a = b = 0) is written a hair off it (AXIS_NUDGE): D-Day's word for level ground
         self.assertEqual(encode_normal((0.0, 0.0, 1.0)), 0x7FFDFFF5)         # +z
         self.assertEqual(encode_normal((0.0, 0.0, -1.0)), 0x7FFDFFF4)
         self.assertEqual(encode_normal((1.0, 0.0, 0.0)), 0x7FFDFFF1)
         self.assertEqual(encode_normal((0.0, -1.0, 0.0)), 0x7FFDFFF2)
         self.assertEqual(encode_normal((1e-6, 0.0, 1.0)), 0x7FFDFFF5)        # rounds to the axis: nudged too
-        self.assertEqual(encode_normal((0.0001, 0.0, 1.0)) >> 16, 32771)      # off the axis: as it is
+        self.assertEqual(encode_normal((0.001, 0.0, 1.0)) >> 18, 8200)        # off the axis: as it is
         w = encode_normal((0.5, -0.25, 1.0))                                  # +z: a = 0.5, b = -0.25
-        self.assertEqual(w >> 16, 32768 + 16384)
-        self.assertEqual((w >> 4) & 0xFFF, (-2048) & 0xFFF)
+        self.assertEqual(w >> 18, 8192 + 4096)
+        self.assertEqual((w >> 4) & 0x3FFF, 8192 - 2048)
         self.assertEqual(w & 15, 5)
         self.assertEqual(encode_normal((0.2, 0.7, 0.1)), hand_normal((0.2, 0.7, 0.1)))   # +y: a = z/y, b = x/y
 
+    def test_a_shipped_word(self):
+        # D-Day's ground tree, a hillside: a = (0x2139 - 8192) / 8192, b = (0x1D05 - 8192) / 8192 (its close mesh
+        # has the same normal there); the two bits between the fields belong to b
+        n = decode_normal(0x84E5D055)
+        a, b = (0x2139 - 8192) / 8192, (0x1D05 - 8192) / 8192
+        self.assertTrue(close(n, unit((a, b, 1.0)), 1e-6))
+        self.assertEqual(encode_normal(n), 0x84E5D055)
+
     def test_decode_gives_the_unit_normal_back(self):
-        for n in [(0.1, -0.2, 0.9), (-0.9, 0.1, 0.2), (0.15, 0.7, 0.1), (0.7, 0.1, -0.7)]:
+        for n in [(0.1, -0.2, 0.9), (-0.9, 0.1, 0.2), (0.15, 0.7, 0.1), (0.7, 0.1, -0.7), (0.1, 0.4, 1.0),
+                  (0.1, -0.9, 1.0)]:
             self.assertTrue(close(decode_normal(encode_normal(n)), unit(n), 1e-4), n)
         self.assertTrue(close(decode_normal(encode_normal((0.0, 0.0, -1.0))), (0.0, 0.0, -1.0), 2e-4))   # nudged
 
-    def test_b_wraps_when_it_exceeds_a_quarter(self):
-        n = (0.1, 0.4, 1.0)                                    # +z, b = 0.4: round(0.4 * 8192) = 3277 > 2047
+    def test_a_steep_b_keeps_its_value(self):
+        # b past a quarter is stored as it is (the 12-bit reading we had made it wrap)
+        n = (0.1, 0.4, 1.0)                                    # +z, b = 0.4
         w = encode_normal(n)
-        self.assertEqual((w >> 4) & 0xFFF, 3277 & 0xFFF)      # stored as the 12-bit wrap, not clamped
-        wrapped = decode_normal(w)                             # reads back as b = (3277 - 4096) / 8192
-        self.assertTrue(close(wrapped, unit((0.1, (3277 - 4096) / 8192, 1.0)), 1e-4))
-        self.assertEqual(encode_normal(wrapped), w)            # and re-encodes to the same word
-        m = (-0.3, 1.0, 0.0)                                   # +y, b = x/y = -0.3 wraps the other way
-        self.assertEqual((encode_normal(m) >> 4) & 0xFFF, (-2458) & 0xFFF)
+        self.assertEqual((w >> 4) & 0x3FFF, 8192 + 3277)
+        self.assertTrue(close(decode_normal(w), unit(n), 1e-4))
+        self.assertEqual((encode_normal((-0.3, 1.0, 0.0)) >> 4) & 0x3FFF, 8192 - 2458)   # +y, b = x/y = -0.3
 
     def test_every_word_survives_decode_then_encode(self):
-        # 0x8635 is the shipped tie (a = -1: x and z equal, tagged z); 0xFF5 is the same tie at the other end of b
-        for w in [0x8635, 0x1234_5675, 0xFFFF_FFF0, 0x0000_0FF5, 0x7FFF_8003, 0x7FFD_FFF5, 0x8001_FFF5]:
+        for w in [0x84E5D055, 0x1234_5675, 0x7FFF_8003, 0x7FFD_FFF5, 0x8001_FFF5, 0x80650005, 0x0000_0005 | 1 << 18]:
             self.assertEqual(encode_normal(decode_normal(w)), w, hex(w))
-        for w in [0x8000_0001, 0x8000_0004, 0x8000_0005]:         # exactly along an axis: comes back nudged
+        for w in [0x8002_0001, 0x8002_0004, 0x8002_0005]:         # exactly along an axis: comes back nudged
             self.assertEqual(encode_normal(decode_normal(w)), 0x7FFD_FFF0 | (w & 15), hex(w))
 
     def test_tie_picks_the_later_axis(self):
         self.assertEqual(encode_normal((-0.7, -0.1, 0.7)) & 15, 5)
         self.assertEqual(encode_normal((0.5, 0.5, 0.1)) & 15, 3)
 
+    def test_a_decoded_tie_keeps_its_axis(self):
+        # a or b at -1 ties two axes once decoded; the shipped trees tag either of them (0x0002_82F0 x over y,
+        # 0xBD5C_0002 y over x, both negative): the word comes back with its own axis
+        for w in [0x0000_8635, 0x0003_B611, 0x0002_82F0, 0xBD5C_0002, 0x4D3C_0005, 0x0004_0005, 0xD0100002]:
+            self.assertEqual(encode_normal(decode_normal(w)), w, hex(w))
+
     def test_a_at_one_is_clamped_to_the_field(self):
-        self.assertEqual(encode_normal((0.7, 0.1, 0.7)) >> 16, 0xFFFF)
+        self.assertEqual(encode_normal((0.7, 0.1, 0.7)) >> 18, 0x3FFF)
 
     def test_chunk_and_bad_input(self):
         data = encode_normals(NORMALS[0])

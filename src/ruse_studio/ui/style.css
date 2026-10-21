@@ -368,6 +368,13 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .model-own p { margin: 0; }
 .model-own .actions { flex-wrap: wrap; align-items: center; }
 .model-own input.model-size { width: 5em; }
+/* a building's own model (app.js buildingModelBox): which piece it takes the place of, its size and credit */
+.model-own { min-width: 0; }
+.model-own > * { min-width: 0; }
+.model-own > label.small { display: flex; align-items: center; gap: 8px; }
+.model-own select.building-piece { flex: 1; min-width: 0; width: 100%; text-overflow: ellipsis; }
+.model-own > input[type="text"] { width: 100%; box-sizing: border-box; }
+.model-own .card-row > div { min-width: 0; }
 /* a model's size slider (app.js sizeSlider): Tiny to Huge on a log scale, its points named under it */
 .size-slider { display: grid; gap: 2px; min-width: 0; }
 .size-slider .size-range { width: 100%; margin: 0; accent-color: var(--accent); }
@@ -537,6 +544,20 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .place-name { font-size: 11px; line-height: 1.2; max-height: 2.4em; overflow: hidden; overflow-wrap: anywhere; }
 .place-count { position: absolute; top: 5px; right: 5px; padding: 0 4px; font-size: 10px; border-radius: 2px;
                background: rgba(4, 12, 24, 0.75); color: var(--muted); }
+/* the mod's own models (maps.js placeOptions, openAsset): first in the Props and Trees lists, marked "yours" */
+.place-tile.own { border-style: dashed; border-color: var(--gold, #e8c14f); }
+.place-own-tag { position: absolute; top: 5px; left: 5px; padding: 0 4px; font-size: 10px; border-radius: 2px;
+                 background: rgba(4, 12, 24, 0.75); color: #e8c14f; }
+.place-own { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.asset-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.asset-row > span { min-width: 10em; }
+.asset-row input[type="text"], .asset-row select { flex: 1; min-width: 0; }
+.asset-row input[type="number"] { width: 7em; }
+.asset-row > .asset-size-pair { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.asset-size-pair > .stepper { flex: 1 1 auto; }
+.asset-metres { margin: -2px 0 6px calc(10em + 8px); }
+#asset-box .sure { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px;
+                   background: var(--panel-hi); }
 /* what's selected on the map (maps.js renderSelection), above the tray as the game shows a selection above its build
    bar: the map's own icons, how many of each, the count by kind */
 /* the picked item's own values (maps.js renderItemDetails) */

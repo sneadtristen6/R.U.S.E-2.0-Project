@@ -97,6 +97,38 @@ class Meshes(unittest.TestCase):
         step = 2000.0 / Q_MAX * 2
         self.assertTrue(all(abs(d - target) < 4 * step for d in near_shore), (target, min(near_shore), max(near_shore)))
 
+    def test_no_crack_where_the_shore_cuts_the_triangles(self):
+        """Every edge inside a cell is shared by two of its triangles: a shoreline point put on one triangle's edge is
+        on its neighbour's too. (A corner the cutting snapped onto the shore once turned from wet to dry for the
+        triangles after it: an edge got a shoreline point on one side only, and the crack showed the sky, the pale
+        spikes over the real-place rivers, 2026-10-19.)"""
+        from collections import Counter
+        for c in self.t.cells:
+            pos = c.positions()
+            tri = c.triangles(0)
+            key = [(p[0], p[1]) for p in pos]
+            edges = Counter()
+            for k in range(0, len(tri), 3):
+                a, b, d = (key[v] for v in tri[k:k + 3])
+                for e in ((a, b), (b, d), (d, a)):
+                    edges[tuple(sorted(e))] += 1
+            lo_x, hi_x = min(p[0] for p in key), max(p[0] for p in key)
+            lo_y, hi_y = min(p[1] for p in key), max(p[1] for p in key)
+            inner = [e for e, n in edges.items() if n == 1
+                     and not all(p[0] in (lo_x, hi_x) for p in e) and not all(p[1] in (lo_y, hi_y) for p in e)]
+            self.assertEqual(inner, [])
+
+    def test_a_shore_dip_puts_the_shoreline_under_the_water(self):
+        """With shore_dip, the points on the shoreline lie under the water, so a triangle of only such points counts as
+        under water (the game draws water where a corner lies under it); the outlines stay as without it."""
+        t = Tms(make_tms(gw=2, gh=2))
+        t.cells, _info = make_mesh(t, self.shape.h, self.shape.w, 16, fine_cells(t, self.shape), shore_dip=5.0)
+        t = Tms(t.to_bytes())
+        self.assertFalse(any(p[2] == p[3] for c in t.cells for p in c.positions() if p[3] > p[2] - 1 and p[3] < p[2] + 1))
+        flat = [p for c in self.t.cells for p in c.positions()]
+        dipped = [p for c in t.cells for p in c.positions()]
+        self.assertEqual(sorted((p[0], p[1]) for p in flat), sorted((p[0], p[1]) for p in dipped))
+
     def test_neighbouring_cells_share_their_edge_points(self):
         t = self.t
         for k, nk, axis in ((0, 1, 0), (2, 3, 0), (0, 2, 1), (1, 3, 1)):

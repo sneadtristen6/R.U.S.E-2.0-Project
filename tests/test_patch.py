@@ -324,6 +324,31 @@ class FindingObjects(unittest.TestCase):
         r = run(("m", [Op("set", "@TAmmunition[AmmunitionId=1]", "Puissance", num(1))]), game=named())
         self.assertIn("patches TAmmunition with [AmmunitionId=1], which doesn't exist in this game build", r.errors[0].message)
 
+    def test_finds_after_many_copies_see_each_copy_and_its_parts(self):
+        # the find index is kept as copies are made and lists grow (a map's own scenery types: one per house, each
+        # found by its name and given two entries at the end of a list of parts); CHECK_INDEX compares it with a
+        # rebuild at every find and every copy
+        import rusemod.patch as P
+        was, P.CHECK_INDEX = P.CHECK_INDEX, True
+        try:
+            ops = []
+            for i in range(4):
+                ops += [Op("clone", f"$/C{i}", source="@[ClassNameForDebug='Unit_M4_Sherman']",
+                           body=[Op("set", path="ClassNameForDebug", value=Text("string", f"Copy_{i}"))]),
+                        Op("append", f"@[ClassNameForDebug='Copy_{i}']", "InitialFlagSet", [num(70 + i)]),
+                        Op("append", f"$/C{i}", "Weapons", [Ref("#ammo")]),
+                        Op("set", f"@[ClassNameForDebug='Copy_{i}']", "Nationalite", num(i + 2))]
+            # the last copy's own part, through the copy found; and every copy's part of that kind, by class
+            ops += [Op("set", "@[ClassNameForDebug='Copy_3']", "Weapons[0].Ammunition.Puissance", num(9)),
+                    Op("add", path="AmmunitionId", value=0, every="TAmmunition")]
+            r = run(("m", ops), game=named())
+        finally:
+            P.CHECK_INDEX = was
+        self.assertEqual([lv for lv in levels(r) if lv != "note"], [])
+        self.assertEqual([int(r.game.objects[f"$/C{i}"].props["Nationalite"].value) for i in range(4)], [2, 3, 4, 5])
+        self.assertEqual([len(r.game.objects[f"$/C{i}"].props["Weapons"].items) for i in range(4)], [2] * 4)
+        self.assertEqual(puissance(r, "$/C3"), 9)
+
     def test_a_designator_with_a_path_reaches_a_part(self):
         r = run(("m", [Op("set", "@[ClassNameForDebug='Unit_M4_Sherman']", "Weapons[0].Ammunition.Puissance", num(7))]),
                 game=named())

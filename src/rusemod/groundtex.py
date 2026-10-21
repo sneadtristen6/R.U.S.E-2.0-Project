@@ -529,6 +529,9 @@ class DecalType:
     half: float    # map units from its middle to its side at size 1
     colour: str    # its colour picture (the texture member, lower case)
     alpha: str = ""  # its shape when the colour picture has none (its material's SeparateAlpha: a member, lower case)
+    zorder: float = 0.0  # its descriptor's ZOrder: overlapping stickers draw lowest first (France's grass 11-13, its
+    # dirt track 20, its asphalt road 56; D-Day lays roads and grass in mixed order inside its blocks, so the game
+    # orders them by this, not by the scenery's order: research of 2026-10-20, Ruse Terraform sticker_order.py)
 
 
 def decal_types(glad_arc) -> dict[str, list[DecalType]]:
@@ -569,8 +572,10 @@ def decal_types(glad_arc) -> dict[str, list[DecalType]]:
             alpha = next((_string(nd, sub_values(items[k + 1])[0]) for k in range(0, len(items) - 1, 2)
                           if _string(nd, items[k]) == "SeparateAlpha" and items[k + 1].tc == 0x22), None)
             member = _texture_member(colour)
+            zo = p.get("ZOrder")
+            zorder = struct.unpack("<f", zo.payload[:4])[0] if zo is not None and len(zo.payload) >= 4 else 0.0
             out.setdefault(member, []).append(DecalType(reg, theatre, half, member,
-                                                        _texture_member(alpha) if alpha else ""))
+                                                        _texture_member(alpha) if alpha else "", zorder))
     return out
 
 

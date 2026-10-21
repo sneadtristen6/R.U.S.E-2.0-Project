@@ -35,6 +35,49 @@ def files_of(mod: Path, name: str) -> tuple[Path, Path]:
     return mod / TERRAIN / f"{name}.png", mod / TERRAIN / f"{name}-ground.png"
 
 
+# --- its areas: where a stroke `within` it paints (a real place's fields, woods, marshes: rusemod.realplace) --------
+def areas_file(mod: Path, name: str) -> Path:
+    """Relief `name`'s area picture in a mod's folder: files/terrain/<name>-areas.png, a 16-bit greyscale PNG over the
+    relief's square (laid as its heightmap is: its top row on the high y side), each pixel the number of the area it
+    belongs to (0: none)."""
+    return mod / TERRAIN / f"{name}-areas.png"
+
+
+def read_areas(data: bytes):
+    """An area picture's bytes -> its numbers as a [row, column] uint16 array, rows top to bottom."""
+    from .numpy2 import np
+    from .png import PngError, read_grey16
+    try:
+        w, h, samples = read_grey16(data)
+    except (PngError, ValueError) as exc:
+        raise ReliefError(str(exc)) from None
+    return np.frombuffer(samples, dtype=">u2").reshape(h, w).astype(np.uint16)
+
+
+def area_clip(s, areas, area: int, box: tuple) -> tuple:
+    """The clip (brush.Stroke.clip: x0, y0, cell, columns, rows, one byte a cell, rows from y0 up) of `area` over the
+    box (x min, x max, y min, y max) a stroke reaches: the cells of relief stroke `s`'s area picture `areas` (read_areas)
+    holding that number. The relief must lie along the map's axes (dx, dy = 1, 0) with square pixels: an imported
+    place's does. () when the box misses the picture (the stroke then paints nothing: a clip of no cells)."""
+    from .numpy2 import np
+    ux, uy, along, across = _frame(s)
+    rows, cols = areas.shape
+    cell = 2.0 * along / cols
+    if (ux, uy) != (1.0, 0.0) or abs(2.0 * across / rows - cell) > cell * 1e-9:
+        raise ReliefError(f"relief {s.relief!r}: an area picture needs the relief along the map's axes (dx = 1, dy = 0) "
+                          f"and its pixels square ({cols} x {rows} over {2 * along:g} x {2 * across:g})")
+    x0, y0 = s.x - along, s.y - across
+    bx0, bx1, by0, by1 = box
+    i0, i1 = max(0, math.floor((bx0 - x0) / cell)), min(cols, math.ceil((bx1 - x0) / cell))
+    j0, j1 = max(0, math.floor((by0 - y0) / cell)), min(rows, math.ceil((by1 - y0) / cell))
+    if i0 >= i1 or j0 >= j1:
+        return (x0, y0, cell, 1, 1, b"\0")
+    # the picture's top row is the high y side: grid row j (from y0 up) is picture row rows - 1 - j
+    sub = areas[rows - j1:rows - j0, i0:i1][::-1]
+    bits = np.ascontiguousarray((sub == area).astype(np.uint8))
+    return (x0 + i0 * cell, y0 + j0 * cell, cell, i1 - i0, j1 - j0, bits.tobytes())
+
+
 def read_grid(data: bytes) -> tuple:
     """A heightmap PNG -> the stroke's `grid`: (columns, rows, its 16-bit samples, 2 bytes each, high byte first,
     rows top to bottom)."""
@@ -97,16 +140,28 @@ def height_of(s, x: float, y: float) -> float:
 
 # --- the picture ---------------------------------------------------------------------------------------------------
 class Picture:
-    """A relief's picture ready to lay: its mips (each half the last, averaged 2 x 2, as float RGB arrays [row,
-    column, 3], rows from the top) and the map units one of the largest mip's pixels covers each way."""
+    """A relief's picture ready to lay: its mips (each half the last, averaged 2 x 2, as RGB arrays [row, column, 3],
+    rows from the top: the picture itself as its bytes, the rest as floats) and the map units one of the largest mip's
+    pixels covers each way. (A real place's photo at the ground's own detail is some 16,000 pixels a side: as floats
+    it alone would take 6 GB; as bytes 0.8 GB, the same values.)"""
+
+    ROWS = 512   # the second mip made this many of the picture's rows at a time
 
     def __init__(self, stroke, width: int, height: int, rgb: bytes):
         from .numpy2 import np
         self.stroke = stroke
         _ux, _uy, along, across = _frame(stroke)
         self.size = (2.0 * along / width, 2.0 * across / height)
-        px = np.frombuffer(rgb, dtype=np.uint8).reshape(height, width, -1)[:, :, :3].astype(np.float64)
+        px = np.ascontiguousarray(np.frombuffer(rgb, dtype=np.uint8).reshape(height, width, -1)[:, :, :3])
         self.mips = [px]
+        if min(height, width) >= 2:
+            h2, w2 = height // 2, width // 2
+            half = np.empty((h2, w2, 3))
+            for r in range(0, h2, self.ROWS // 2):
+                q = px[2 * r:2 * min(h2, r + self.ROWS // 2), :2 * w2].astype(np.float64)
+                half[r:r + q.shape[0] // 2] = (q[0::2, 0::2] + q[1::2, 0::2] + q[0::2, 1::2] + q[1::2, 1::2]) * 0.25
+            px = half
+            self.mips.append(px)
         while min(px.shape[0], px.shape[1]) >= 2:
             h2, w2 = px.shape[0] // 2, px.shape[1] // 2
             px = (px[0:2 * h2:2, 0:2 * w2:2] + px[1:2 * h2:2, 0:2 * w2:2] + px[0:2 * h2:2, 1:2 * w2:2]
@@ -132,8 +187,10 @@ class Picture:
         i, j = fx.astype(np.int64), fy.astype(np.int64)
         i1, j1 = np.minimum(i + 1, w - 1), np.minimum(j + 1, h - 1)
         tx, ty = (fx - i)[:, None], (fy - j)[:, None]
-        top = px[j, i] + (px[j, i1] - px[j, i]) * tx
-        bottom = px[j1, i] + (px[j1, i1] - px[j1, i]) * tx
+        a, b = px[j, i].astype(np.float64), px[j, i1].astype(np.float64)
+        c, d = px[j1, i].astype(np.float64), px[j1, i1].astype(np.float64)
+        top = a + (b - a) * tx
+        bottom = c + (d - c) * tx
         return top + (bottom - top) * ty
 
 
@@ -146,7 +203,9 @@ def _strength(s, xs, ys):
     a = ox * ux + oy * uy
     b = oy * ux - ox * uy
     m = np.maximum(np.abs(a) / along, np.abs(b) / across)
-    if s.edge == "hard":
+    if s.edge == "none":   # full to the very edge: a real place's picture over the whole map
+        t = np.zeros_like(m)
+    elif s.edge == "hard":
         t = np.clip((m - HARD_EDGE) / (1.0 - HARD_EDGE), 0.0, 1.0)
     else:   # the flat shape: full across the middle half
         t = np.clip((m - 0.5) * 2.0, 0.0, 1.0)

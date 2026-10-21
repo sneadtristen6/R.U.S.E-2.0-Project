@@ -68,10 +68,19 @@ def rings(kind: str) -> tuple:
     return ("medium", "far")
 
 
-def model_names(kind: str, name: str, ring: str = "") -> dict:
+def model_names(kind: str, name: str, ring: str = "", like: str = "") -> dict:
     """{role: our model's name in the packs} for the asset `name` of `kind` (what its scenery type names); `ring`:
-    one of its versions (rings), "" for the full model."""
-    return {r: model_name(KINDS[kind].like, name, r, ring) for r in roles(kind)}
+    one of its versions (rings), "" for the full model; `like`: the game model ours go beside (a building piece's:
+    the piece's; default its kind's)."""
+    return {r: model_name(like or KINDS[kind].like, name, r, ring) for r in roles(kind)}
+
+
+BUILDING = "building"   # a building's own look (rusemod.buildinglook): the kind of the model that takes a piece's place
+
+
+def kind_of(asset) -> Kind:
+    """The game type and model an asset follows: its kind's (KINDS), or a building piece's own (Asset.piece)."""
+    return asset.piece if asset.piece is not None else KINDS[asset.kind]
 
 
 @dataclass
@@ -132,12 +141,14 @@ def _arrays(model: Model):
             np.concatenate(mat))
 
 
-def parts(model: Model, size: float = 1.0, leaves: set | None = None) -> dict[str, Part]:
+def parts(model: Model, size: float = 1.0, leaves: set | None = None, offset: tuple = (0.0, 0.0, 0.0)
+          ) -> dict[str, Part]:
     """The model as the game's models: {"main": Part}, or with `leaves` (the material numbers that are see-through)
-    {"leaves": Part, "wood": Part} for a tree. `size`: times its own size (1: as modelled, a metre a metre)."""
+    {"leaves": Part, "wood": Part} for a tree. `size`: times its own size (1: as modelled, a metre a metre);
+    `offset`: game units added after (a building piece's place: fit_to)."""
     from .numpy2 import np
     pos, nrm, uvs, tri, mat = _arrays(model)
-    pos = pos * (M * size)
+    pos = pos * (M * size) + np.asarray(offset, dtype=np.float64)
     groups = {"main": np.ones(len(tri), dtype=bool)} if leaves is None else {
         "leaves": np.isin(mat, sorted(leaves)), "wood": ~np.isin(mat, sorted(leaves))}
     out = {}
@@ -164,6 +175,22 @@ def parts(model: Model, size: float = 1.0, leaves: set | None = None) -> dict[st
     if not out:
         raise AssetError(f"{model.source}: no triangles to draw")
     return out
+
+
+def fit_to(model: Model, box: tuple, size: float = 1.0) -> tuple[float, tuple]:
+    """(size for parts(), offset) that stand `model` where a game model of box `box` (min x, y, z, max x, y, z, game
+    units) stands: its longer side on the ground as long as the box's times `size`, the middle of its footprint on
+    the box's, its foot on the box's floor."""
+    pos = _arrays(model)[0]
+    lo, hi = pos.min(axis=0), pos.max(axis=0)
+    ours = max(float(hi[0] - lo[0]), float(hi[1] - lo[1]))
+    theirs = max(box[3] - box[0], box[4] - box[1])
+    if ours <= 0 or theirs <= 0:
+        raise AssetError(f"{model.source}: the model, or the piece it takes the place of, has no size on the ground")
+    s = theirs * size / (ours * M)
+    k = M * s
+    return s, ((box[0] + box[3]) / 2 - k * float(lo[0] + hi[0]) / 2,
+               (box[1] + box[4]) / 2 - k * float(lo[1] + hi[1]) / 2, box[2] - k * float(lo[2]))
 
 
 def pictures(model: Model) -> list[Picture | None]:
@@ -285,6 +312,10 @@ class Asset:
     two_sided: bool = False  # every triangle also facing the other way (rusemod.meshlod.both_sides): a scan with no
     # back (a rock face) seen from behind. (Drawing it in the game's leaves' bucket didn't: its backs stayed unseen,
     # 2026-10-17.)
+    piece: Kind | None = None   # kind BUILDING: the game's building piece it takes the place of (its type and model);
+    # `size` is then times that piece's size (its longer side), and the model stands where the piece's does
+    solid: bool = False  # units go around it where it's placed (solid_blocks), as around a placed building; false:
+    # as the game's own scenery, units drive through it and knock it over (seen in the game, 2026-10-18)
 
 
 ASSETS = "files/assets"   # a mod's assets: files/assets/<name>/asset.toml beside its model
@@ -319,25 +350,28 @@ def mod_assets(folder) -> dict:
         size = data.get("size", 1.0)
         if isinstance(size, bool) or not isinstance(size, (int, float)) or not 0.01 <= size <= 100:
             raise AssetError(f"{where}: size is a number from 0.01 to 100 (1: as modelled)")
-        two_sided = data.get("two_sided", False)
+        two_sided, solid = data.get("two_sided", False), data.get("solid", False)
         if not isinstance(two_sided, bool):
             raise AssetError(f"{where}: two_sided is true or false")
+        if not isinstance(solid, bool):
+            raise AssetError(f"{where}: solid is true or false")
         model = files.pop("model")
         out[name] = Asset(name, kind, model, float(size), {k: data[k] for k in ("source", "author", "licence")
-                                                           if k in data}, files, two_sided)
+                                                           if k in data}, files, two_sided, solid=solid)
     return out
 
 
-def save_versions(folder, force: bool = False) -> dict:
+def save_versions(folder, force: bool = False, asset: Asset | None = None) -> dict:
     """An asset folder's (files/assets/<name>/) versions made (rusemod.meshlod) and saved beside its model as
     <model>_<ring>.glb (its pictures the model's own files: editable in Blender, read back by the build), and named in
     its asset.toml (medium = ..., far = ...). A version the asset.toml already names is the modder's and left as it is,
-    unless `force`. Returns {ring: (file name, triangles, made: bool)}."""
+    unless `force`. Returns {ring: (file name, triangles, made: bool)}. `asset`: the folder's asset, read with its
+    .toml (a building look's: rusemod.buildinglook), when it isn't a map asset's."""
     from . import meshlod
     from .modelin import read_model
     folder = Path(folder)
-    toml = folder / "asset.toml"
-    asset = next(iter(mod_assets_in(folder).values()))
+    asset = asset or next(iter(mod_assets_in(folder).values()))
+    toml = folder / ("asset.toml" if asset.kind != BUILDING else "building.toml")
     model = read_model(asset.model)
     leaves = leaf_materials(model) if asset.kind == "tree" else None
     text = toml.read_text(encoding="utf-8")
@@ -383,37 +417,12 @@ def write_asset(zz, asset: Asset, earlier: dict | None = None):
     from .unitmodel import Written, new_standin, new_texture, standin_key, standin_member, texture_member
     from .unitpacks import PROXY_MAGIC, Proxy, ProxyPack
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
-    kind = KINDS[asset.kind]
+    kind = kind_of(asset)
     model = read_model(asset.model)
     leaves = leaf_materials(model) if asset.kind == "tree" else None
     if asset.kind == "tree" and not leaves:
         raise AssetError(f"{asset.name}: a tree needs leaves (a see-through material); one without is a prop")
-    from . import meshlod
-    sides = meshlod.both_sides if asset.two_sided else (lambda m: m)   # (the full model and each version)
-    made = parts(sides(model), asset.size, leaves)
-    if asset.kind == "tree" and "wood" not in made:
-        raise AssetError(f"{asset.name}: a tree needs wood (a material that isn't see-through); one all leaves is a "
-                         f"plant")
-    pics = pictures(model)
-    names = model_names(asset.kind, asset.name)   # (every one its scenery type names)
-    models = {names[r]: made[r] for r in names}
-    lighter, how = {}, {}
-    for ring in rings(asset.kind):   # its versions: the mod's own, or made from the full model (rusemod.meshlod)
-        own_file = asset.versions.get(ring)
-        v = sides(read_model(own_file) if own_file else meshlod.version(model, ring, leaves))
-        if len(v.materials) > len(model.materials):
-            raise AssetError(f"{asset.name}: its {ring} version has {len(v.materials)} materials, the model "
-                             f"{len(model.materials)} (a version shares the model's pictures, material by material)")
-        try:
-            v_made = parts(v, asset.size, leaves)
-        except AssetError:
-            v_made = {}
-        ring_names = model_names(asset.kind, asset.name, ring)
-        for r, n in ring_names.items():   # (a part the version lost, its leaves thinned away say: the full one)
-            models[n] = v_made.get(r) or made[r]
-        lighter[ring] = {r: (v_made.get(r) or made[r]).counts[1] for r in ring_names}
-        how[ring] = Path(own_file).name if own_file else "made"
-    holders = []   # (member, pack bytes, the game's model in it, its picture)
+    holders, box = [], None   # (member, pack bytes, the game's model in it, its picture); that model's box
     own = "\\" + kind.like.rsplit("\\", 1)[-1]
     for e in zz.entries:
         p = e.path.lower()
@@ -430,9 +439,37 @@ def write_asset(zz, asset: Asset, earlier: dict | None = None):
         if like is not None:
             first = spk.meshes[spk.items[like].mesh][0]
             holders.append((e.path, raw, like, next(iter(spk.materials()[spk.draws[first][0]]["textures"].values()))))
+            box = box or spk.items[like].box
     if not holders:
         # not a game rule: ours go beside the kind's game model, so they load wherever it does; none, nowhere to go
         raise AssetError(f"{asset.name}: no mesh pack holds the game's {kind.like} (its kind's model)")
+    from . import meshlod
+    sides = meshlod.both_sides if asset.two_sided else (lambda m: m)   # (the full model and each version)
+    # a building piece stands where the game's piece does, sized to it; the others as modelled, times their size
+    size, offset = fit_to(model, box, asset.size) if asset.piece is not None else (asset.size, (0.0, 0.0, 0.0))
+    made = parts(sides(model), size, leaves, offset)
+    if asset.kind == "tree" and "wood" not in made:
+        raise AssetError(f"{asset.name}: a tree needs wood (a material that isn't see-through); one all leaves is a "
+                         f"plant")
+    pics = pictures(model)
+    names = model_names(asset.kind, asset.name, like=kind.like)   # (every one its scenery type names)
+    models = {names[r]: made[r] for r in names}
+    lighter, how = {}, {}
+    for ring in rings(asset.kind):   # its versions: the mod's own, or made from the full model (rusemod.meshlod)
+        own_file = asset.versions.get(ring)
+        v = sides(read_model(own_file) if own_file else meshlod.version(model, ring, leaves))
+        if len(v.materials) > len(model.materials):
+            raise AssetError(f"{asset.name}: its {ring} version has {len(v.materials)} materials, the model "
+                             f"{len(model.materials)} (a version shares the model's pictures, material by material)")
+        try:
+            v_made = parts(v, size, leaves, offset)
+        except AssetError:
+            v_made = {}
+        ring_names = model_names(asset.kind, asset.name, ring, like=kind.like)
+        for r, n in ring_names.items():   # (a part the version lost, its leaves thinned away say: the full one)
+            models[n] = v_made.get(r) or made[r]
+        lighter[ring] = {r: (v_made.get(r) or made[r]).counts[1] for r in ring_names}
+        how[ring] = Path(own_file).name if own_file else "made"
     # our pictures beside the picture of the very model our type copies (whichever pack comes first)
     like_picture = next((pic for _p, _r, like, pic in holders if like == kind.like), holders[0][3])
     images = {m: image_path(like_picture, f"{PREFIX}{asset.name}{m + 1:02d}") for m, pic in enumerate(pics)
@@ -484,7 +521,7 @@ def type_name(name: str) -> str:
 MIDDLE, FAR = 4, 8   # the ModeMask bits of the middle and far rings (the game's buildings: 2 / 4 / 8)
 
 
-def rndf(kind: str, name: str, models: dict, files: list, switched_off=frozenset()) -> str:
+def rndf(kind: str, name: str, models: dict, files: list, switched_off=frozenset(), piece: Kind | None = None) -> str:
     """The rules making our scenery type `TypeWarrior/R2_<name>`, a copy of the kind's game type (once per game file
     that defines it: `files`), its models ours (`models`: {ring: {role: pack name}}, ring "" the full model and each
     of rings(kind); role "main", or a tree's "leaves" and "wood"), each ring its own version, as the game's buildings:
@@ -495,8 +532,11 @@ def rndf(kind: str, name: str, models: dict, files: list, switched_off=frozenset
       tree: its two full models (leaves, wood) close, its middle and far versions (copies of that pair) in the entries
       the game's oak draws its picture with (that picture is shared by the game's oaks: left as it is).
     `switched_off`: the files (their place in `files`) whose game type's close entry a graphics option can switch off
-    (stones): ours never are."""
-    k = KINDS[kind]
+    (stones): ours never are.
+      building (`piece`: the game's piece it takes the place of): its three entries (close, middle, far) each given a
+      copy of its own model part naming ours (the full model and its middle and far versions); its destroyed state
+      stays the piece's, renamed so no two types share a name."""
+    k = piece or KINDS[kind]
     t = type_name(name)
     q = "'"
 
@@ -509,7 +549,14 @@ def rndf(kind: str, name: str, models: dict, files: list, switched_off=frozenset
                 f"    RegistrationName = {q}{t}{q}", ")"]
         if j in switched_off:
             out.append(f"patch ~/{local}:SDFalse.ModeEntry[0] ( delete GraphicOptionDeactivated )")
-        if kind in ("rock", "prop"):
+        if kind == BUILDING:
+            out.append(f"patch ~/{local}:SDTrue ( RegistrationName = {q}{t}_Dest{q} )")
+            for e, ring in enumerate(("",) + rings(kind)):
+                part = f"{local}_{ring or 'close'}"
+                out += [f"{part} is clone ~/{local}:SDFalse.ModeEntry[{e}].SceneryDescriptor "
+                        f"( ModelASE = {model(ring, 'main')} )",
+                        f"patch ~/{local}:SDFalse.ModeEntry[{e}] ( SceneryDescriptor = ~/{part} )"]
+        elif kind in ("rock", "prop"):
             out.append(f"patch ~/{local}:SDFalse.ModeEntry[0].SceneryDescriptor ( ModelASE = {model('', 'main')} )")
             added = []
             for ring, bit in (("medium", MIDDLE), ("far", FAR)):
@@ -549,11 +596,12 @@ def all_model_names(kind: str, name: str) -> dict:
 def rules(game, assets: list) -> str:
     """The rules for every asset's scenery type (rndf), from the game's data `game` (rusemod.patch's: where each
     kind's type is defined)."""
+    from .patch import Inline
     from .visibility import descriptors_named, entries
-    found = descriptors_named(game, {KINDS[a.kind].template for a in assets})
+    found = descriptors_named(game, {kind_of(a).template for a in assets})
     out = []
     for a in assets:
-        template = KINDS[a.kind].template
+        template = kind_of(a).template
         files = sorted({f for _n, f, _o in found.get(template, [])})
         if not files:
             # not a game rule: our type is a copy of the kind's game type; without it there's nothing to copy
@@ -566,7 +614,211 @@ def rules(game, assets: list) -> str:
                 # not a game rule: the close entry is changed in our copy; one shared with other types would change
                 # them too (an entry the shipped prop sets share), so it must be the type's own
                 raise AssetError(f"{a.name}: {template} in {file} has no close entry of its own to copy")
+            if a.kind == BUILDING and (len(got) != 3 or not all(own for _m, _o, own in got)
+                                       or not isinstance(obj.props.get("SDTrue"), Inline)):
+                # not a game rule: what our copy changes (close, middle and far, and its destroyed state's name), as
+                # every building piece of the game has them; one laid out otherwise isn't copied
+                raise AssetError(f"{a.name}: {template} in {file} isn't laid out as building pieces are (three detail "
+                                 f"entries and a destroyed state of its own)")
             if "GraphicOptionDeactivated" in got[0][1].props:
                 off.add(j)
-        out.append(rndf(a.kind, a.name, all_model_names(a.kind, a.name), files, off))
+        names = {ring: model_names(a.kind, a.name, ring, like=kind_of(a).like) for ring in ("",) + rings(a.kind)}
+        out.append(rndf(a.kind, a.name, names, files, off, a.piece))
     return "\n".join(out)
+
+
+# --- the Studio's Import model (the Maps tab, 2026-10-18; the owner: "a custom like asset importer for the map section
+# of the studio. Similarly to how the unit section has theirs for the model importer"): a model file made a mod's
+# asset, and the mod's assets as the Studio's 3D view draws them ---
+GROUPS = {"rock": "prop", "prop": "prop", "plant": "vegetation", "tree": "vegetation"}   # the Maps tab's place trays
+LICENCES = ("CC0", "CC-BY")   # what a model taken from others may be under (CC-BY: its author credited)
+
+
+def asset_toml(kind: str, model: str, size: float = 1.0, two_sided: bool = False, credit: dict | None = None,
+               versions: dict | None = None, solid: bool = False) -> str:
+    """An asset.toml (mod_assets reads it back)."""
+    import json
+    lines = [f'kind = "{kind}"', f"model = {json.dumps(model)}"]
+    if size != 1.0:
+        lines.append(f"size = {size:g}")
+    if two_sided:
+        lines.append("two_sided = true")
+    if solid:
+        lines.append("solid = true")
+    for k in ("source", "author", "licence"):
+        if (credit or {}).get(k):
+            lines.append(f"{k} = {json.dumps(str(credit[k]))}")
+    for ring, file in (versions or {}).items():
+        lines.append(f"{ring} = {json.dumps(file)}")
+    return "\n".join(lines) + "\n"
+
+
+def name_of_file(src) -> str:
+    """An asset's name from its model file's: the picture size sites add left off (boulder_01_2k.gltf -> Boulder01)."""
+    stem = Path(src).stem
+    return asset_name(re.sub(r"[_\- ]\d+k$", "", stem, flags=re.I) or stem)
+
+
+def _picture_data(name: str, folder: Path) -> bytes:
+    """A picture a model names (a .3ds keeps only its file name), from beside the model: by its own name (any kind,
+    a JPG too), else as rusemod.modelin.find_picture finds a PNG or TGA. b"" when none is there."""
+    from .modelin import find_picture
+    want = Path(name.replace("\\", "/")).name
+    if not want:
+        return b""
+    for p in [folder / want] + sorted(folder.glob("*")):
+        if p.is_file() and p.name.lower() == want.lower():
+            return p.read_bytes()
+    found = find_picture(name, folder)
+    return found.read_bytes() if found is not None else b""
+
+
+def import_asset(src, mod_folder, kind: str, name: str = "", size: float = 1.0, two_sided: bool = False,
+                 credit: dict | None = None, convert=None, solid: bool = False) -> Asset:
+    """The model file `src` (.glb; .gltf with its files beside it; .3ds with its pictures beside it) made the mod's
+    asset `name` (its file's name when none) of `kind`: saved as files/assets/<name>/<name>.glb, one file with every
+    picture in it (editable in Blender; a JPG picture turned into PNG by `convert`, bytes -> PNG bytes, as the game
+    reads PNG and TGA), its asset.toml written (`size`, `two_sided`, `credit`: source, author, licence; `solid`) and
+    its medium and far versions made (save_versions). Importing a name again replaces its model and versions.
+    AssetError for a kind not in KINDS, a licence other than LICENCES, or a model that can't be read or drawn."""
+    src, mod_folder = Path(src), Path(mod_folder)
+    if kind not in KINDS:
+        raise AssetError(f"the kind is one of {', '.join(KINDS)}, not {kind!r}")
+    name = asset_name(name) if name else name_of_file(src)
+    credit = checked_credit(src, credit)
+    if not 0.01 <= float(size) <= 100:
+        raise AssetError("size is a number from 0.01 to 100 (1: as modelled)")
+    folder = mod_folder / ASSETS / name
+    save_model(src, folder / f"{name}.glb", kind == "tree", convert)
+    (folder / "asset.toml").write_text(asset_toml(kind, f"{name}.glb", float(size), bool(two_sided), credit,
+                                                  solid=bool(solid)), encoding="utf-8", newline="")
+    save_versions(folder)
+    return mod_assets(mod_folder)[name]
+
+
+def extent(asset: Asset) -> tuple[float, float, float, float]:
+    """(across x, across y, height, reach) of the asset's model in metres as modelled (size 1): its box, and how far it
+    reaches from its middle (where it's placed) across the ground. Read from its smallest version (the far one, else
+    the model: a tree's full model can be ~100 MB)."""
+    import math
+    from .modelin import read_model
+    model = read_model(Path(asset.versions.get("far") or asset.model))
+    x0, y0, z0, x1, y1, z1 = model.box()
+    reach = max((math.hypot(p[0], p[1]) for m in model.meshes for p in m.positions), default=0.0)
+    return x1 - x0, y1 - y0, z1 - z0, reach
+
+
+def solid_blocks(assets: dict, objects) -> tuple[list, list[str]]:
+    """Blocks (rusemod.nav.Block) for the placed objects of the mods' solid assets (`assets`: {name: (Asset, mod
+    id)}), each as far as its model reaches from its middle times its own size and its placed size: units go around
+    them, as around a placed building (rusemod.nav.solid_blocks: the shipped maps keep units off by their movement,
+    never by their objects). An object placed with `solid` false stays walk-through. Returns (blocks, notes)."""
+    from .nav import Block
+    by_type = {type_name(n): a for n, (a, _mod) in assets.items() if a.solid}
+    out, reach = [], {}
+    for o in objects:
+        a = by_type.get(getattr(o, "type", None))
+        if a is None or not getattr(o, "solid", True):
+            continue
+        if o.type not in reach:
+            reach[o.type] = extent(a)[3] * M * a.size
+        if reach[o.type] > 0:
+            out.append(Block(o.x, o.y, reach[o.type] * o.size, "all"))
+    return out, [f"{len(out)} placed model(s) of the mods' own made solid"] if out else []
+
+
+def checked_credit(src, credit: dict | None) -> dict:
+    """A model's source, author and licence, as kept (empty ones left out). AssetError for a licence other than
+    LICENCES."""
+    credit = {k: str(v).strip() for k, v in (credit or {}).items() if str(v or "").strip()}
+    if credit.get("licence") and credit["licence"].upper() not in LICENCES:
+        # not a game rule: the project takes others' models under CC0 or CC-BY only (credited)
+        raise AssetError(f"{Path(src).name}: a model taken from others must be CC0 or CC-BY (this one says "
+                         f"{credit['licence']}); leave the licence empty for a model of your own")
+    return credit
+
+
+def save_model(src, out, tree: bool = False, convert=None) -> None:
+    """The model file `src` saved as one .glb `out` with every picture inside it (a JPG turned into PNG by `convert`),
+    after checking the game can be given it (triangles to draw, pictures that can be read; `tree`: its leaves apart)."""
+    from . import meshlod
+    from .modelin import read_model
+    src, out = Path(src), Path(out)
+    try:
+        model = read_model(src)
+    except (ModelError, OSError) as exc:
+        raise AssetError(f"{src.name}: {exc}") from None
+    for m in model.materials:   # every picture inside the one file, as PNG where it was a JPG
+        if not m.data and m.picture:
+            m.data = _picture_data(m.picture, src.parent)
+        for key in ("data", "mask"):
+            data = getattr(m, key)
+            if data[:3] == b"\xff\xd8\xff":
+                if convert is None:
+                    raise AssetError(f"{src.name}: {m.picture or m.name} is a JPG: the Studio turns it into PNG as "
+                                     f"it imports the model")
+                setattr(m, key, convert(data))
+        if m.picture:
+            m.picture = Path(m.picture.replace("\\", "/")).stem + ".png"
+    parts(model, 1.0, leaf_materials(model) if tree else None)   # (refused here, not at the build: nothing to draw)
+    pictures(model)                                             # (and pictures that can't be read)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(meshlod.glb_bytes(model, out.parent / "(every picture inside)"))
+
+
+def studio_models(assets: dict, out_dir) -> dict:
+    """The mod's assets ({name: Asset}) as the Studio's 3D view draws models (the index rusemod.models.map_models
+    makes: {"bin": file, "models": {type name: [part]}, "textures": {key: PNG file}}, a part {"texture", "vertices",
+    "triangles", "positions", "normals", "uvs", "indices"} with byte offsets into the .bin: positions 3 f32, normals 4
+    i8, uvs 2 f32 a point; indices u32), each its full model as the game gets it (parts(): its size, the game's axes).
+    Written into `out_dir`, named by the assets' files and settings, so the same assets are made once."""
+    import hashlib
+    import json
+    from array import array
+
+    from .dxt import png_bytes
+    from .modelin import read_model
+    from .numpy2 import np
+    out_dir = Path(out_dir)
+    h = hashlib.sha1()
+    for n in sorted(assets):
+        a = assets[n]
+        st = Path(a.model).stat()
+        h.update(f"{n}|{a.kind}|{a.size}|{Path(a.model).name}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+    key = h.hexdigest()[:16]
+    index_file = out_dir / f"{key}.json"
+    if index_file.is_file():
+        return json.loads(index_file.read_text(encoding="utf-8"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    blob, models, textures = bytearray(), {}, {}
+    for n in sorted(assets):
+        a = assets[n]
+        model = read_model(a.model)
+        pics = pictures(model)
+        found = []
+        for role, part in parts(model, a.size, leaf_materials(model) if a.kind == "tree" else None).items():
+            for d in part.draws:
+                rec = np.frombuffer(d.vertices, dtype=[("p", "<f4", 3), ("n", "u1", 4), ("uv", "<f4", 2),
+                                                       ("a", "u1", 4)])
+                nrm = np.zeros((d.points, 4), dtype=np.int8)
+                nrm[:, :3] = np.clip(np.rint((rec["n"][:, :3].astype(np.float32) - 127.5) / 127.5 * 127), -127, 127)
+                tex = f"{n}/{d.material}" if d.material < len(pics) and pics[d.material] is not None else None
+                rec_out = {"texture": tex, "vertices": d.points, "triangles": d.triangles}
+                for field_, data in (("positions", np.ascontiguousarray(rec["p"], dtype="<f4").tobytes()),
+                                     ("normals", nrm.tobytes()),
+                                     ("uvs", np.ascontiguousarray(rec["uv"], dtype="<f4").tobytes()),
+                                     ("indices", array("I", struct.unpack(f"<{3 * d.triangles}H", d.indices)).tobytes())):
+                    rec_out[field_] = len(blob)
+                    blob += data
+                    blob += bytes(-len(blob) % 4)
+                found.append(rec_out)
+                if tex is not None and tex not in textures:
+                    p = pics[d.material]
+                    png = f"{key}-{n}-{d.material}.png"
+                    (out_dir / png).write_bytes(png_bytes(p.rgba, p.width, p.height, channels=4))
+                    textures[tex] = png
+        models[type_name(n)] = found
+    (out_dir / f"{key}.bin").write_bytes(bytes(blob))
+    index = {"bin": f"{key}.bin", "models": models, "textures": textures}
+    index_file.write_text(json.dumps(index), encoding="utf-8")
+    return index

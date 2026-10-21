@@ -134,6 +134,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         _block_brushes(info)
         _paint_brushes(info)
         _ground_pictures(info, path)
+        _area_clips(info, path)
         info.roads = _read_maps(path, "roads.toml")
         _take_outs(info)
         info.players = _read_maps(path, "map.toml")
@@ -160,6 +161,8 @@ def load_mod(path) -> tuple[ModInfo, list]:
         from .sceneryasset import AssetError, mod_assets
         try:
             info.assets = mod_assets(path)  # files/assets/<name>/asset.toml: its own rocks, props, plants, trees
+            from .buildinglook import mod_looks
+            info.looks = mod_looks(path)    # files/buildings/<name>/building.toml: its new buildings' own looks
         except AssetError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
         from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
@@ -520,6 +523,43 @@ def _reliefs(info, path: Path) -> None:
         info.terrain[pack] = out
 
 
+def _area_clips(info, path: Path) -> None:
+    """A paint stroke `within` a relief's area (`<relief>:<area>`: a real place's field, wood or marsh,
+    rusemod.realplace) given its clip: the cells of that relief's area picture (files/terrain/<relief>-areas.png) holding
+    that number, over the box the stroke reaches (rusemod.relief.area_clip). The relief must be one of the same map's
+    strokes in this mod; a picture that isn't there, or doesn't read, is an error that says where it should be."""
+    from dataclasses import replace
+    from .relief import TERRAIN, ReliefError, area_clip, areas_file, read_areas
+    read: dict = {}   # (pack, relief) -> (its stroke, its area picture)
+    for pack, strokes in info.paint.items():
+        if not any(s.within for s in strokes):
+            continue
+        reliefs = {s.relief: s for s in info.terrain.get(pack, []) if s.kind.kind == "relief"}
+        out = []
+        for s in strokes:
+            if s.within:
+                name, area = s.within.rsplit(":", 1)
+                if (pack, name) not in read:
+                    if name not in reliefs:
+                        raise BuildError(f"{info.id}: maps/{pack}/terrain.toml paints within relief {name!r}, which "
+                                         f"isn't one of that map's relief strokes in the mod")
+                    file = areas_file(path, name)
+                    if not file.is_file():
+                        raise BuildError(f"{info.id}: maps/{pack}/terrain.toml paints within relief {name!r}'s areas, "
+                                         f"but {file.name} isn't in the mod's {TERRAIN.as_posix()} folder")
+                    try:
+                        read[pack, name] = (reliefs[name], read_areas(file.read_bytes()))
+                    except ReliefError as exc:
+                        raise BuildError(f"{info.id}: {TERRAIN.as_posix()}/{file.name}: {exc}") from None
+                relief, areas = read[pack, name]
+                try:
+                    s = replace(s, clip=area_clip(relief, areas, int(area), s.box()))
+                except ReliefError as exc:
+                    raise BuildError(f"{info.id}: maps/{pack}/terrain.toml: {exc}") from None
+            out.append(s)
+        info.paint[pack] = out
+
+
 def _ground_pictures(info, path: Path) -> None:
     """The mod's own pictures its texture strokes lay (texture = "file:<name>.png": files/ground/<name>.png), named
     with the mod (file:<mod id>/<name>.png) so two mods' pictures of one name stay apart; one that isn't there is an
@@ -833,8 +873,10 @@ def _given_answers(order: list, mods: list, name: str, shipped: bytes | None) ->
 def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=None, thin=()) -> list:
     """nav.wet_opens for a map's opens, on its ground as the terrain edits left it (map_packs: (pack path, archive,
     changed members); `open_pack(path)` opens a map pack, `find_map(name)` finds it, a new map's too); none when the
-    map has no opens or its ground can't be read. `thin`: water strokes units go under (block = false): their place
-    counts as dry."""
+    map has no opens or its ground can't be read. `blocks`: the map's blocks and opens in the order they apply
+    (_open_runs). `thin`: water strokes units go under (block = false): their place counts as dry, and so does a
+    place a later block closes to every unit (new water's own blocks come after every open: a Blank Terrain map's
+    opens over a real place's sea, 2026-10-18, 116 warnings of nothing)."""
     from .bridges import Water
     from .nav import wet_opens
     from .terrain import pack_file
@@ -850,15 +892,54 @@ def _wet_opens(open_pack, game: Path, name: str, blocks, map_packs, find_map=Non
         e = map_arc.find("output\\highdef.tms")
         ground = (entry[2].get(e.path) if entry else None) or bytes(map_arc.read(e))
         water = Water(Tms(ground))
-        if not thin:
-            return wet_opens(blocks, water.at, many=water.at_many)
+        out = []
+        for opens, later in _open_runs(blocks):
+            if not thin and not later:
+                out += wet_opens(opens, water.at, many=water.at_many)
+                continue
+            closed = _closing(later)
 
-        def dry(x, y):
-            return any(s.covers(x, y) for s in thin)
-        return wet_opens(blocks, lambda x, y: water.at(x, y) and not dry(x, y),
-                         many=lambda xs, ys: [w and not dry(x, y) for w, x, y in zip(water.at_many(xs, ys), xs, ys)])
+            def dry(x, y, closed=closed):
+                return closed(x, y) or any(s.covers(x, y) for s in thin)
+            out += wet_opens(opens, lambda x, y, dry=dry: water.at(x, y) and not dry(x, y),
+                             many=lambda xs, ys, dry=dry: [w and not dry(x, y)
+                                                           for w, x, y in zip(water.at_many(xs, ys), xs, ys)])
+        return out
     except (KeyError, ValueError, struct.error, zlib.error):
         return []
+
+
+def _open_runs(blocks) -> list:
+    """`blocks` (in the order they apply: the later one wins) as runs of the opens drawn (not spare: the build's own
+    over a dried bed keep off the water), each with the blocks after it that close the ground to every unit."""
+    runs, run = [], []
+    for k, b in enumerate(blocks):
+        if b.open:
+            if not b.spare:
+                run.append(b)
+        elif run:
+            runs.append((run, k))
+            run = []
+    if run:
+        runs.append((run, len(blocks)))
+    return [(run, [c for c in blocks[k:] if not c.open and c.units == "all"]) for run, k in runs]
+
+
+def _closing(closes):
+    """`at(x, y)`: whether one of `closes` (blocks) covers (x, y); looked up by squares as wide as the widest."""
+    if not closes:
+        return lambda x, y: False
+    cell = max(c.radius for c in closes) or 1.0
+    grid: dict = {}
+    for c in closes:
+        for i in range(int((c.x - c.radius) // cell), int((c.x + c.radius) // cell) + 1):
+            for j in range(int((c.y - c.radius) // cell), int((c.y + c.radius) // cell) + 1):
+                grid.setdefault((i, j), []).append(c)
+
+    def at(x, y):
+        return any((x - c.x) ** 2 + (y - c.y) ** 2 < c.radius ** 2
+                   for c in grid.get((int(x // cell), int(y // cell)), ()))
+    return at
 
 
 def read_cover(folder: Path) -> dict:
@@ -916,6 +997,8 @@ class BuildResult:
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
     own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
     own_assets: dict = field(default_factory=dict)  # mods' map assets: name -> (sceneryasset.Asset, mod id)
+    own_looks: dict = field(default_factory=dict)   # new buildings' looks: building -> (buildinglook.Look, mod id)
+    look_symbols: dict = field(default_factory=dict)  # new buildings' looks: building -> (the symbol it copies, its own)
     model_imports: dict = field(default_factory=dict)  # member path in ZZ_Win.dat (packs the new models go in) -> bytes
     new_files: dict = field(default_factory=dict)  # new members of ZZ_Win.dat (new cards, new models' textures) -> bytes
     visibility: dict = field(default_factory=dict)  # a placed type drawn up close only -> its copy (rusemod.visibility)
@@ -958,10 +1041,12 @@ def load_pack(arc: Edat, cache=None) -> PackModel:
 def needs_zz_win(mods: list) -> bool:
     """Whether building `mods` [(ModInfo, ops)] needs ZZ_Win.dat: some mod adds texts or a new map (its name in the
     menus), changes a map's menu pictures, repaints a texture or replaces a sound (files/replace, rusemod.unitlook,
-    rusemod.sound), or new objects (a new unit needs a class in the Python unit list, which lives there), or moves a unit to
-    another nation or model (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
+    rusemod.sound), adds map assets or building looks (their models go there: rusemod.sceneryasset), or new objects
+    (a new unit needs a class in the Python unit list, which lives there), or moves a unit to another nation or model
+    (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
+               or getattr(m, "assets", None) or getattr(m, "looks", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
@@ -1322,6 +1407,46 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     return out
 
 
+def building_looks(run, result: BuildResult) -> dict:
+    """New buildings' own looks (a mod's files/buildings/<name>/; rusemod.buildinglook): each building's two symbol
+    names (its GfxDescriptor's) point at a symbol of its own, the copy the build makes of the one they named. Returns
+    {building: (the symbol it copies, its own)}; an error said for a building no mod makes or whose look part names no
+    symbol."""
+    from .buildinglook import SYMBOL_NAMES, symbol_name
+    from .patch import Inline, Ref, _fresh
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    for unit, (_look, mod_id) in sorted(result.own_looks.items()):
+        where = f"{mod_id}: files/buildings/{unit}"
+        name = by_name.get(unit)
+        if name is None:
+            # not a game rule: a look for a building no mod in the set makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a new building {unit}"))
+            continue
+        gfx = run.game.objects[name].props.get("GfxDescriptor")
+        found = []
+        for path in SYMBOL_NAMES:
+            obj = gfx.obj if isinstance(gfx, Inline) else None
+            for step in path:
+                v = obj.props.get(step) if obj is not None else None
+                if isinstance(v, Ref) and v.target in run.game.objects:  # a part shared with another: a copy of it
+                    v = obj.props[step] = Inline(_fresh(run.game.objects[v.target]))  # (every game building's is
+                obj = v.obj if isinstance(v, Inline) else None                        # its own, 2026-10-18)
+            found.append((obj, obj.props.get("SymbolName") if obj is not None else None))
+        if any(not isinstance(s, Text) for _o, s in found):
+            # not a game rule: what a building's look is made of (a symbol named twice in its GfxDescriptor)
+            result.findings.append(Finding("error", f"{where}: {unit} names no look (GfxDescriptor "
+                                                    f"{'.'.join(SYMBOL_NAMES[0])}.SymbolName), so it can't get one"))
+            continue
+        source, own = found[0][1].value, symbol_name(unit)
+        for obj, s in found:
+            obj.props["SymbolName"] = Text(s.kind, own)
+        out[unit] = (source, own)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets a look of its own, {own}: a copy of {source} "
+                                               f"with its {_look.piece.split('/', 1)[-1]} our model"))
+    return out
+
+
 def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     """Units' own copies of the models they draw (a mod's files/models/<the unit's name>.copy.toml, its paint in
     files/models/<the unit's name>/; rusemod.unitmodel.write_unit_copy): every model part of the unit that names one
@@ -1566,16 +1691,31 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
                 result.findings.append(Finding("error", f"{m.id}: files/assets/{name}: {result.own_assets[name][1]} "
                                                         f"has an asset of that name too"))
             result.own_assets[name] = (asset, m.id)
+        for unit, look in sorted(getattr(m, "looks", {}).items()):   # new buildings' own looks (rusemod.buildinglook)
+            if unit in result.own_looks:
+                result.findings.append(Finding("error", f"{m.id}: files/buildings/{unit}: {result.own_looks[unit][1]} "
+                                                        f"gives that building a look too"))
+            result.own_looks[unit] = (look, m.id)
     if result.errors:
         return result
-    if result.own_assets and text_arc is None:
-        result.findings.append(Finding("error", "these mods add map assets, whose models go into ZZ_Win.dat; it wasn't "
-                                                "given"))
+    if (result.own_assets or result.own_looks) and text_arc is None:
+        result.findings.append(Finding("error", "these mods add map assets or building looks, whose models go into "
+                                                "ZZ_Win.dat; it wasn't given"))
         return result
-    if result.own_assets:
+    if result.own_looks:
+        from .buildinglook import BuildingLookError, piece_kind
+        for unit, (look, mod_id) in sorted(result.own_looks.items()):
+            try:   # the piece of the copied look the model takes the place of: its type and its model
+                look.asset.piece = piece_kind(base, look.piece)
+            except BuildingLookError as exc:
+                result.findings.append(Finding("error", f"{mod_id}: files/buildings/{unit}: {exc}"))
+        if result.errors:
+            return result
+    if result.own_assets or result.own_looks:
         from .sceneryasset import AssetError, rules as asset_rules
         try:
-            text = asset_rules(base, [a for a, _mod in result.own_assets.values()])
+            text = asset_rules(base, [a for a, _mod in result.own_assets.values()]
+                               + [look.asset for look, _mod in result.own_looks.values()])
         except AssetError as exc:
             result.findings.append(Finding("error", str(exc)))
             return result
@@ -1621,6 +1761,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_cards = unit_cards(run, order, result)
     result.own_models = unit_own_models(run, order, result)
     result.own_copies = unit_own_copies(run, order, result)
+    result.look_symbols = building_looks(run, result)
     if result.errors:
         return result
     notes: list = []
@@ -3198,6 +3339,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             # by the placed types, not their far-drawn copies (rusemod.visibility), which the game's descriptors list
             # under the copies' names only: a copied building stays solid to units
             walls, wall_notes = solid_blocks(game, [o for o in as_placed if not isinstance(o, RoadPiece)])
+            if result.own_assets:  # the mods' own models marked solid: units go around them too
+                from .sceneryasset import solid_blocks as own_solid_blocks
+                mine, mine_notes = own_solid_blocks(result.own_assets,
+                                                    [o for o in as_placed if not isinstance(o, RoadPiece)])
+                walls, wall_notes = walls + mine, wall_notes + mine_notes
             for note in wall_notes:
                 say(f"  {note}")
             if walls:
@@ -3594,7 +3740,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         players = scenario_edits(result.order, mods, "players")
         roads_out = {name: ids for name, (what, ids) in take_outs.items() if what.roads}
         depots, depot_ids = depot_rules(result.order, mods)
-        if moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out or depots:
+        if (moves or paints or blocks or new_roads or bridge_spans or players or data_new or roads_out or depots
+                or result.look_symbols):
             from .bridges import BridgeError, apply_spans
             from .cover import CoverError, apply_paints
             from .nav import NavError, closing
@@ -3825,10 +3972,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) opened nothing: units "
                             f"could already go there, or it is too small (an open needs a radius of 5 m or more) or "
                             f"out of reach of the ground they use")))
-                    drawn = [b for b in map_blocks if not b.spare]  # (the build's own bed opens keep off the water)
                     thin = [s for s in terrain_edits(result.order, mods).get(name, ([], []))[0]
                             if s.brush == "water" and not s.block]
-                    for b, (wx, wy) in _wet_opens(open_pack, game, name, drawn, map_packs, find_map, thin):
+                    for b, (wx, wy) in _wet_opens(open_pack, game, name, map_blocks, map_packs, find_map, thin):
                         result.findings.append(Finding("warning", (
                             f"{', '.join(ids)}: {name}: the open at ({b.x:.0f}, {b.y:.0f}) takes in water (at "
                             f"({wx:.0f}, {wy:.0f})): units there stand on the ground under it, on the riverbed or "
@@ -3948,6 +4094,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     say(f"players: {name}, from {', '.join(ids)}")
                     for note in notes:
                         say(f"  {note}")
+                for unit, (source, own) in sorted(result.look_symbols.items()):  # new buildings' own looks
+                    from .buildinglook import BuildingLookError, check_clone, clone_symbol, symbol_file_of
+                    from .sceneryasset import type_name
+                    look, mod_id = result.own_looks[unit]
+                    try:
+                        found = symbol_file_of(read_data, source)
+                        if found is None:
+                            # rule: building-symbol (a look the base-building file doesn't have stops the game)
+                            raise BuildingLookError(f"the game's base-building file has no look {source} for "
+                                                    f"{unit}'s to be a copy of")
+                        member, raw = found
+                        swap = {look.piece: type_name(look.asset.name)}
+                        changed_members[member] = clone_symbol(raw, source, own, swap)
+                        say(f"look: {check_clone(raw, changed_members[member], source, own, swap)}")
+                    except BuildingLookError as exc:
+                        result.findings.append(Finding("error", f"{mod_id}: files/buildings/{unit}: {exc}"))
                 from .aigrid import AiGridError, refresh
                 for member in [m for m in changed_members if m.lower().endswith("mapinfo.win")]:
                     try:  # the AI's grid follows the cover, blocks, bridges and water (rusemod.aigrid)
@@ -4149,6 +4311,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     + "".join(f"; {ring} " + ", ".join(f"{n:,}" for n in tris.values())
                               + f" ({r['versions_from'][ring]})" for ring, tris in r["versions"].items())
                     + f", {r['pictures']} texture(s); into {len(r['mesh_packs'])} mesh pack(s)")
+        if result.look_symbols and text_arc is not None:  # new buildings' own looks' models (rusemod.buildinglook)
+            from .sceneryasset import AssetError, type_name, write_asset
+            for unit in sorted(result.look_symbols):
+                look, mod_id = result.own_looks[unit]
+                try:
+                    written = write_asset(text_arc, look.asset, earlier={
+                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                except (AssetError, ValueError, OSError, struct.error) as exc:
+                    raise BuildError(f"{mod_id}: files/buildings/{unit}: {exc}") from None
+                result.model_imports.update(written.changed)
+                result.new_files.update(written.added)
+                r = written.report
+                say(f"look of {unit}: {type_name(look.asset.name)} in place of {look.piece}, "
+                    f"{r['triangles']['main']:,} triangles in {r['draws']['main']} draw(s)"
+                    + "".join(f"; {ring} {tris['main']:,}" for ring, tris in r["versions"].items())
+                    + f", {r['pictures']} texture(s); into {', '.join(p.rsplit(chr(92), 1)[-1] for p in r['mesh_packs'])}")
         sounds: dict = {}  # mods' own sounds (MOD_FORMAT §7, rusemod.sound): a later mod's WAV wins
         for mod_id in result.order:
             sounds.update(getattr(by_id.get(mod_id), "sounds", None) or {})
