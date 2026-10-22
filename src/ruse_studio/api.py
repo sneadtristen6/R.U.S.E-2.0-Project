@@ -43,9 +43,10 @@ from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, l
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
-from rusemod.patch import INT_RANGES
+from rusemod.patch import INT_RANGES, Text
 from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
+from rusemod.rndf import literal as rndf_literal
 from rusemod.rndf import parse as rndf_parse
 from rusemod.steam import build_of, data_revisions, find_game
 from rusemod.uilang import LanguageCalls
@@ -846,12 +847,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             ix.close()
         by_address = {a["address"]: a for a in rows}
         new = []
+        own_names = self._ammo_own_names(lang)
         for unit in self._new_units().values():
             src = by_address.get(unit.source)
             if src is None:
                 continue
             new.append({"address": unit.target, "id": None, "users": [], "new": True, "source": unit.source,
-                        "name": unit.name, "source_name": names[unit.source]})
+                        "name": own_names.get(unit.target) or unit.name, "source_name": names[unit.source]})
         group_of = {a["address"]: AMMO_GROUP_OF.get(english.get(a["type_key"], ""), "other") for a in rows}
         order = {g: n for n, g in enumerate(AMMO_GROUP_ORDER)}
         # by group, then the game's kind (MG turrets apart from machine-guns), then the game's own order
@@ -878,6 +880,47 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                         "source_name": a.get("source_name"), "group": g})
         return {"units": out, "total": len(rows) + len(new), "groups": [g for g in AMMO_GROUP_ORDER if g in present],
                 "tags": [{"tag": k, "label": v} for k, v in sorted(tags.items())]}
+
+    def _ammo_own_names(self, lang: str) -> dict:
+        """{copy's address: its name in game, in `lang`} for the current mod's copies of an ammunition whose Name is a
+        text of the mod's own (ammo_text_set)."""
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return {}
+        if edits is None:
+            return {}
+        mine, text_lang, out = self._mod_words(), "us" if lang == schema.BASE else lang, {}
+        for target in edits.new_units:
+            now = edits.get(target, "Name")
+            key = self._value_shown(now)["value"] if isinstance(now, Literal) else None
+            said = mine.get(key, (None, {}))[1] if isinstance(key, str) else {}
+            if said.get(text_lang) or said.get("us"):
+                out[target] = said.get(text_lang) or said["us"]
+        return out
+
+    def _ammo_texts(self, game_keys: dict, changes: dict, lang: str) -> list[dict]:
+        """An ammunition's name and kind in game as its page shows them (ammo_text_set): [{prop, key, words, own,
+        changed}] (`own`: a text of the mod's own, whose words the words panel changes; `changed`: the mod points it
+        at another text than the game's)."""
+        text_lang = "us" if lang == schema.BASE else lang
+        mine = self._mod_words()
+        keys = {}
+        for prop in self.AMMO_TEXTS:
+            if prop in game_keys:
+                now = changes.get(prop)
+                keys[prop] = self._value_shown(now)["value"] if isinstance(now, Literal) else game_keys[prop]
+        ix = self._open()
+        try:
+            game_words = ix.names([k for k in keys.values() if isinstance(k, str)], text_lang)
+        finally:
+            ix.close()
+        out = []
+        for prop, key in keys.items():
+            said = mine.get(key, (None, {}))[1] if isinstance(key, str) else {}
+            out.append({"prop": prop, "key": key, "words": said.get(text_lang) or game_words.get(key) or said.get("us")
+                        or "", "own": key not in game_words and bool(said), "changed": key != game_keys[prop]})
+        return out
 
     @staticmethod
     def _nations_of(users, nation_of: dict, lang: str) -> list[str]:
@@ -1219,8 +1262,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def new_ammo(self, source: str, name: str) -> dict:
         """A copy of an ammunition in the current mod, for a weapon of its own (Groove's recipe: copy the ammo,
-        change the copy, point one weapon at it). In game it keeps its source's name; `name` is what the Studio
-        calls it. The copy gets a fresh AmmunitionId when built (rusemod.identity)."""
+        change the copy, point one weapon at it), called `name` in the Studio and in game: its Name text is a new
+        one of the mod's own showing `name` (ammo_text_set; its kind stays its source's). The copy gets a fresh
+        AmmunitionId when built (rusemod.identity)."""
         name = (name or "").strip()
         if not name:
             raise StudioError("Give the copy a name.")
@@ -1251,7 +1295,80 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if target in edits.new_units:
                 raise StudioError(f"There's already a copy at {target}. Pick another name.")
             edits.add_unit(target, source, name, {}, named=False)
+        try:
+            self.ammo_text_set(target, "Name", name)
+        except StudioError:
+            pass  # (its source has no name text to copy the kind of: it keeps its source's name in game)
         return {"address": target, "name": name, "saved": str(edits.file)}
+
+    # an ammunition's two texts in game, both in the game's table of unit words (baseunite): its name ("MG 42",
+    # "Medium cal.") and its kind ("AP shell"); several of the game's ammunitions share one text
+    AMMO_TEXTS = ("Name", "TypeName")
+
+    def ammo_text_set(self, address: str, prop: str, words: str, lang: str = schema.BASE) -> dict:
+        """Call ammunition `address` (one of the game's, or a copy of the current mod's) `words` in game: its name
+        (`prop` "Name") or its kind ("TypeName"), a new text of the mod's own (_new_text: the same words in every
+        language until the words panel changes one) its value points at; when it points at one of the mod's own
+        already, that text gets the new words, in every language. Empty `words`: its game text again (a copy: its
+        source's), the mod's own text taken out when nothing else of the mod uses it. Returns unit(address)."""
+        if prop not in self.AMMO_TEXTS:
+            raise StudioError(f"{prop} isn't one of an ammunition's texts")
+        words = str(words or "").strip()
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        real, new = self._resolve(edits, address)
+        if ":" in address:
+            raise StudioError(f"{address} is a part, not an ammunition")
+        ix = self._open()
+        try:
+            try:
+                o = ix.show(real)
+            except KeyError:
+                # not a game rule: the game or one of its files isn't found
+                raise StudioError(f"There's nothing at {address} in this game build.") from None
+        finally:
+            ix.close()
+        if o["class"] != AMMO or not o["export"]:
+            raise StudioError(f"{_tail(address)} isn't an ammunition")
+        editable, why = self._editable(o)
+        if not editable:
+            raise StudioError(f"{_tail(address)} can't be changed by a mod ({why})")
+        nd, _changeable = self._value_file(o["file"])
+        old = nd.obj(o["index"]).props.get(prop)
+        game_key = getattr(old, "value", None)
+        if getattr(old, "kind", None) not in ("key", "loc") or not isinstance(game_key, str):
+            # not a game rule: the new text is made like the game's own, and this one has none to go by
+            raise StudioError(f"{_tail(address)} has no {prop} text in the game's data to give new words")
+        keyed = address if new else o["address"]
+        now = edits.get(keyed, prop)
+        own = self._value_shown(now)["value"] if isinstance(now, Literal) else None
+        mine = self._mod_words()
+        table = self.value_words(game_key)["table"]
+        if not table:
+            # not a game rule: which of the game's text tables the new text goes in comes from the game's text now
+            raise StudioError(f"The game has no words under {_tail(address)}'s {prop} text, so it isn't known which "
+                              f"of its text tables a new one goes in.")
+        if words and any(c in words for c in "\r\n\t"):
+            raise StudioError("Type the name on one line.")
+        with self._saving:
+            edits = ModEdits(edits.folder)
+            ours = own if own and own != game_key and own in mine and self._words_row_there(
+                mine[own][0], self.TEXT_ROW + own, "mod") else None
+            if not words:
+                edits.reset(keyed, prop)
+                used = re.compile(r"(?<![\w])" + re.escape(ours) + r"(?![\w])") if ours else None
+                if ours and not any(isinstance(e.value, Literal) and used.search(str(e.value))
+                                    for e in edits.edits.values()):
+                    self._words_rows_set(mine[ours][0], {self.TEXT_ROW + ours: None})
+            elif ours:
+                if len(words) > scenario.TEXT_MOST:
+                    raise StudioError(f"The words are too long: at most {scenario.TEXT_MOST} letters.")
+                self._words_rows_set(mine[ours][0], {self.TEXT_ROW + ours: (ours, {lang_: words for lang_ in loc.LANGS})})
+            else:
+                key = self._new_text(words, table, "mod", self.TEXT_ROW)
+                edits.set(keyed, prop, Literal(rndf_literal(Text(old.kind, key))))
+        return self.unit(address, lang)
 
     @staticmethod
     def _exists(ix: Index, address: str) -> bool:
@@ -1418,6 +1535,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             game_name, desc = (about.get(key) or "").strip(), (about.get(dkey) or "").strip()
             source_name = self._names(ix, [new.source], lang)[new.source] if new else None
             modelless = real in self._modelless(ix)
+            # an ammunition's name and kind in game (the ammunition itself, not a part of a unit's)
+            ammo_keys = {p: t for p, _n, t in o["values"] if p in self.AMMO_TEXTS and isinstance(t, str)} \
+                if o["class"] == AMMO and o["export"] and ":" not in address else {}
         finally:
             ix.close()
         editable, why = self._editable(o)
@@ -1429,6 +1549,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         keyed = address if new else o["address"]  # a copy's edits by its own address, anything else by the index's
         edits = mod.of(keyed, "shared" if share else None) if mod else {}
         own = mod.of(f"{via}:{share['via']['path']}", "own") if mod and share and share["via"] else {}
+        ammo_texts = self._ammo_texts(ammo_keys, edits, lang) if ammo_keys else []
+        if top and o["class"] == AMMO:  # a copy called something of its own in game: that's its name here too
+            shown = next((t["words"] for t in ammo_texts if t["prop"] == "Name" and t["own"] and t["words"]), shown)
         users = len({a.split(":")[0] for a, _p in all_users})
         rows: dict[str, dict] = {}
         for prop, p in _props(o).items():
@@ -1477,6 +1600,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                 # (a unit with no model of its own the Studio can read isn't offered to start from: _modelless)
                 "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None and not modelless,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
+                "ammo_texts": ammo_texts,  # its name and kind in game, each changed with ammo_text_set
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 # a unit with an armour: the page then asks for armour(address), its level picked there
                 "has_armour": (bool(o["export"]) or top) and ARMOUR in types,

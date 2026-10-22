@@ -7,6 +7,8 @@ your own, and test it in the game. Your Steam install is never changed.
 
 - **Fixed, reported by a player:** a model whose pictures are JPG or WebP (most downloaded .glb files) was refused; it imports now. A model the importer still can't read (compressed meshes, KTX2 pictures) says so and how to fix it in Blender.
 - **Fixed, reported by a player:** one of the game's own tanks, opened in Blender and imported back, kept its turret still. Open in Blender now names each part's bone as the game does, and Import model turns a part on the turret's bone with the turret. A model exported before this keeps its old names: open it in Blender again.
+- **Name your ammo:** a copied ammo is called by the name you give it in game too, and every ammo's page has **Its name in game**: type a new name or kind for it, in every language at once, then change one language on its own. Not tried in the game yet.
+- **Shot speed explained right:** the number guide said an ammo's shot speed, drag, "without physics" switch and the time before it flies were looks only. They decide when the hit lands: a slower shot hits later, and a moving target is aimed ahead by the flight time (from the game's workings; not tried in a test yet).
 
 **0.9.8.7:** Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, and every value explained.
 

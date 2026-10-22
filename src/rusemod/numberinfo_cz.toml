@@ -213,20 +213,20 @@ does = "Vlastní číslo munice (1000–1138): každá má jiné. Studio dá kop
 what = "Mění model při výstřelu"
 does = "Jen vzhled: 1 u protitankových zbraní družstev: voják při výstřelu přepne na model, který ji drží."
 [TempsAnimation]
-what = "Délka animace výstřelu"
-does = "Jen vzhled: jak dlouho trvá animace výstřelu vojáka (1,6 s u protitankových zbraní družstev)."
+what = "Čas před výstřelem"
+does = "Sekundy přidané k letu střely: zásah dorazí o tolik později a kreslená střela letí o tolik déle (1,6 s u granátů a náloží, podle názvu doba hodu vojáka)."
 [FX_vitesse_de_depart]
-what = "Rychlost výstřelu (kresleného)"
-does = "Jen vzhled: jak rychle kreslený výstřel opouští zbraň, v jednotkách hry za sekundu: 150 až 520 000 (2 000 m za sekundu)."
+what = "Rychlost střely"
+does = "Jak rychle střela letí, a tedy kdy dopadne: zásah se počítá, až když dopadne, na pohyblivý cíl se míří s předstihem o dobu letu a kreslená střela letí stejně dlouho. Střela s fyzikou letí tolik jednotek hry za sekundu, brzděná odporem: 9 000 až 520 000 (35 až 2 000 m za sekundu; 75mm průrazný náboj 120 000, asi 460 m za sekundu). Střela bez fyziky (Střela bez fyziky) letí přímo 26krát rychleji. Každý let se zaokrouhlí nahoru na dalších 0,2 s. Střela příliš pomalá na to, aby cíl zasáhla, se zrychluje po 5 %, dokud to nejde: doletí tedy vždy, jen později."
 [FX_frottement]
-what = "Odpor výstřelu (kresleného)"
-does = "Jen vzhled: jak rychle kreslený výstřel zpomaluje ve vzduchu."
+what = "Odpor střely"
+does = "Jak rychle střela s fyzikou zpomaluje ve vzduchu: větší odpor, delší let na stejnou vzdálenost, tedy pozdější zásah. Střely ve hře mají 0,001 (většina) až 0,08. Střela bez fyziky ho nebere v úvahu."
 [FX_tir_tendu]
 what = "Plochá dráha (kreslená)"
 does = "Jen vzhled: 1 kreslí výstřel plochý a rovný místo oblouku."
 [FX_tir_sans_physic]
-what = "Výstřel kreslený bez fyziky"
-does = "Jen vzhled: 1 kreslí výstřel bez gravitace a odporu."
+what = "Střela bez fyziky"
+does = "1: střela letí přímo do místa dopadu 26krát rychleji, než je její Rychlost střely, bez gravitace a odporu (ruční zbraně, kulomety, většina protiletadlových děl, bomby a granáty ve hře); 0: letí s gravitací a odporem (granáty děl, minomety, rakety)."
 [AltitudeDeVol]
 what = "Výška letu"
 does = "Jak vysoko letadlo letí: 52 000 až 208 000 (200 až 800 m)."

@@ -213,20 +213,20 @@ does = "Die eigene Nummer der Munition (1000-1138): Jede hat eine andere. Das St
 what = "Wechselt beim Feuern das Modell"
 does = "Nur Aussehen: 1 bei den Panzerabwehrwaffen der Trupps: Der Soldat wechselt beim Feuern zum Modell, das sie hält."
 [TempsAnimation]
-what = "Dauer der Feueranimation"
-does = "Nur Aussehen: wie lange die Feueranimation des Soldaten dauert (1,6 s bei den Panzerabwehrwaffen der Trupps)."
+what = "Zeit vor dem Abschuss"
+does = "Sekunden, die zum Flug des Schusses hinzukommen: Der Treffer kommt so viel später an, und der gezeichnete Schuss braucht so viel länger (1,6 s bei Granaten und Sprengladungen, dem Namen nach die Wurfzeit des Soldaten)."
 [FX_vitesse_de_depart]
-what = "Schussgeschwindigkeit (gezeichnet)"
-does = "Nur Aussehen: wie schnell der gezeichnete Schuss die Waffe verlässt, in Spieleinheiten pro Sekunde: 150 bis 520.000 (2.000 m pro Sekunde)."
+what = "Schussgeschwindigkeit"
+does = "Wie schnell der Schuss fliegt, also wann er ankommt: Der Treffer zählt erst, wenn er ankommt, auf ein fahrendes Ziel wird um die Flugzeit vorgehalten, und der gezeichnete Schuss braucht dieselbe Zeit. Ein Schuss mit Physik fliegt so viele Spieleinheiten pro Sekunde, gebremst von seinem Luftwiderstand: 9.000 bis 520.000 (35 bis 2.000 m pro Sekunde; die 75-mm-Panzergranate 120.000, etwa 460 m pro Sekunde). Ein Schuss ohne Physik (Schuss ohne Physik) fliegt gerade mit dem 26-Fachen. Jeder Flug wird auf die nächsten 0,2 s aufgerundet. Ein Schuss, der zu langsam ist, um sein Ziel zu erreichen, wird um je 5 % schneller, bis er es kann: Er kommt trotzdem an, nur später."
 [FX_frottement]
-what = "Luftwiderstand des Schusses (gezeichnet)"
-does = "Nur Aussehen: wie schnell der gezeichnete Schuss in der Luft langsamer wird."
+what = "Luftwiderstand des Schusses"
+does = "Wie schnell ein Schuss mit Physik in der Luft langsamer wird: mehr Widerstand, ein längerer Flug über dieselbe Strecke, also ein späterer Treffer. Die Schüsse des Spiels haben 0,001 (die meisten) bis 0,08. Ein Schuss ohne Physik beachtet ihn nicht."
 [FX_tir_tendu]
 what = "Gestreckter Schuss (gezeichnet)"
 does = "Nur Aussehen: 1 zeichnet den Schuss flach und gerade statt im Bogen."
 [FX_tir_sans_physic]
-what = "Schuss ohne Physik gezeichnet"
-does = "Nur Aussehen: 1 zeichnet den Schuss ohne Schwerkraft und Luftwiderstand."
+what = "Schuss ohne Physik"
+does = "1: Der Schuss fliegt gerade bis zu seinem Ziel, mit dem 26-Fachen seiner Schussgeschwindigkeit, ohne Schwerkraft und Luftwiderstand (Handwaffen, Maschinengewehre, die meisten Flak, Bomben und Granaten des Spiels); 0: Er fliegt mit Schwerkraft und Luftwiderstand (Granaten der Geschütze, Mörser, Raketen)."
 [AltitudeDeVol]
 what = "Flughöhe"
 does = "Wie hoch das Flugzeug fliegt: 52.000 bis 208.000 (200 bis 800 m)."

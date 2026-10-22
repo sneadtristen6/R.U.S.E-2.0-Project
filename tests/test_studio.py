@@ -798,12 +798,20 @@ class AmmoAndFlags(WithMod):
     """The ammunition list, a weapon firing another ammo, a copied ammo of a unit's own, and a unit's flag list."""
 
     def build(self, folder):
+        """The unit data's main file after building the mod in `folder`; the built texts in self.texts."""
         rev = self.game / "Data" / "PC" / "190852"
-        arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes())
-        result = build_pack(arc, [load_mod(folder)])
+        arc, texts = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes()), Edat((rev / "ZZ_Win.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)], text_arc=texts)
         self.assertEqual(result.errors, [])
         new = Edat(arc.to_bytes(result.changed))
+        self.texts = Edat(texts.to_bytes(result.text_changed))
         return Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+
+    def built_text(self, key: str, lang: str = "us") -> str:
+        """What text `key` says in `lang` in the texts the last build made."""
+        from rusemod.dic import Dic, name_to_key
+        dic = Dic(self.texts.read(self.texts.find(f"genlocalisation\\ww2\\localisation\\translations\\{lang}\\baseunite.dic")))
+        return dic.text(name_to_key(key))
 
     def test_ammunition_listed_with_its_users_and_names(self):
         listed = self.api.units("us", kind="ammo")
@@ -861,8 +869,11 @@ class AmmoAndFlags(WithMod):
         made = self.api.new_ammo(AMMO_75, "Hot 75")
         self.assertEqual(made["address"], "$/GFX/Everything/Ammo_Hot_75")
         rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
-        self.assertIn("\nexport Ammo_Hot_75 is clone $/GFX/Everything/Ammo_Canon_75\n(\n)\n", rndf)
-        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # it keeps its source's name in game
+        # called Hot 75 in game too: a text of the mod's own, in the game's table of unit words
+        key = re.search(r"\nexport Ammo_Hot_75 is clone \$/GFX/Everything/Ammo_Canon_75\n\(\n    Name = key\((Hot75_[0-9a-z]{3})\)\n\)\n",
+                        rndf).group(1)
+        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # (not a unit's name row)
+        self.assertIn(f"text.{key},{key},Hot 75,Hot 75,", (folder / "text" / "studio-words.baseunite.csv").read_text(encoding="utf-8"))
         listed = self.api.ammo("us")["units"]
         self.assertEqual((listed[0]["address"], listed[0]["name"], listed[0]["new"], listed[0]["source_name"],
                           listed[0]["nations"]), (made["address"], "Hot 75", True, "AP shell · Medium cal.", ["Germany"]))
@@ -880,6 +891,9 @@ class AmmoAndFlags(WithMod):
         copy = find_export(ndf, "$/GFX/Everything/Ammo_Hot_75")
         obj = ndf.objects[copy]
         self.assertEqual((obj.get(15).scalar(), obj.get(9).scalar()), (1003, 80))  # a fresh id, its own damage
+        from rusemod.dic import name_to_key
+        self.assertEqual(struct.unpack("<Q", obj.get(16).payload[-8:])[0], name_to_key(key))  # its own name
+        self.assertEqual((self.built_text(key), self.built_text(key, "fr")), ("Hot 75", "Hot 75"))
         self.assertEqual(struct.unpack("<III", ndf.objects[9].get(19).payload)[1], copy)
         with self.assertRaises(StudioError):
             self.api.new_ammo(made["address"], "Hotter")  # a copy of a copy
@@ -888,6 +902,43 @@ class AmmoAndFlags(WithMod):
         gone = self.api.delete_unit(made["address"])
         self.assertEqual(gone["source"], AMMO_75)
         self.assertEqual(self.api.ammo()["total"], 2)
+
+    def test_an_ammos_name_and_kind_in_game_of_the_mods_own(self):
+        """The owner, 2026-10-22: "make it to where we can name ammo to whatever we want": a copy's name again (its
+        text gets the new words), one of the game's ammo's kind (a text of its own; the other ammo keep theirs), each
+        built into the game's texts, and the game's words again."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.ammo_text_set(AMMO_75, "Name", "Hot")
+        folder = Path(self.api.new_mod("Names")["current"])
+        rndf = lambda: (folder / "src" / "studio.rndf").read_text(encoding="utf-8")  # noqa: E731
+        made = self.api.new_ammo(AMMO_75, "Hot 75")["address"]
+        texts = lambda page: {t["prop"]: t for t in page["ammo_texts"]}  # noqa: E731
+        first = texts(self.api.unit(made, "us"))
+        self.assertEqual((first["Name"]["words"], first["Name"]["own"], first["TypeName"]["words"],
+                          first["TypeName"]["changed"]), ("Hot 75", True, "AP shell", False))
+        page = self.api.ammo_text_set(made, "Name", "Hotter 75", "us")
+        self.assertEqual((page["name"], texts(page)["Name"]["key"]), ("Hotter 75", first["Name"]["key"]))  # same text
+        self.assertEqual([a["name"] for a in self.api.ammo("us")["units"] if a["new"]], ["Hotter 75"])
+        game = texts(self.api.ammo_text_set(AMMO_88, "TypeName", "Tungsten core", "fr"))["TypeName"]
+        self.assertEqual((game["words"], game["own"], game["changed"]), ("Tungsten core", True, True))
+        self.assertIn(f"\npatch $/GFX/Everything/Ammo_Canon_88\n(\n    TypeName = key({game['key']})\n)\n", rndf())
+        self.assertEqual(texts(self.api.unit(AMMO_75, "us"))["TypeName"]["words"], "AP shell")  # its own text only
+        self.api.set_ammo(PANZER_IV, PANZER_MOUNT, made)
+        self.build(folder)
+        self.assertEqual((self.built_text(first["Name"]["key"]), self.built_text(game["key"], "fr")),
+                         ("Hotter 75", "Tungsten core"))
+        self.api.value_words_set(game["key"], {"fr": "Noyau de tungstène"})  # one language on its own
+        self.assertEqual(texts(self.api.unit(AMMO_88, "fr"))["TypeName"]["words"], "Noyau de tungstène")
+        self.api.ammo_text_set(AMMO_88, "TypeName", "")  # the game's words again: its text goes with it
+        self.assertNotIn("Ammo_Canon_88", rndf())
+        self.assertNotIn(game["key"], (folder / "text" / "studio-words.baseunite.csv").read_text(encoding="utf-8"))
+        back = texts(self.api.ammo_text_set(made, "Name", "", "us"))["Name"]  # a copy: its source's name again
+        self.assertEqual((back["words"], back["own"], back["changed"]), ("Medium cal.", False, False))
+        self.assertFalse((folder / "text" / "studio-words.baseunite.csv").exists())
+        self.assertEqual(self.api.unit(made, "us")["name"], "Hot 75")  # what the Studio called it
+        for address, prop in ((PANZER_IV, "Name"), (made, "Puissance"), (PANZER_MOUNT, "Name")):
+            with self.subTest(address=address, prop=prop), self.assertRaises(StudioError):
+                self.api.ammo_text_set(address, prop, "Hot")
 
     def test_a_weapons_range_from_its_units_page(self):
         with self.assertRaises(StudioError):

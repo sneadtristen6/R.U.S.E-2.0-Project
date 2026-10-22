@@ -1546,6 +1546,57 @@ function newAmmoForm(u) {
   return el("div", { className: "copy" }, open, form);
 }
 
+// An ammunition's name and kind in game (StudioApi.ammo_text_set): words of the mod's own in every language, then each
+// language on its own in the words panel (the owner, 2026-10-22: "make it to where we can name ammo to whatever we want")
+function ammoTextsGroup(u) {
+  const w = state.words, can = u.editable && Boolean(state.mod);
+  const table = el("table");
+  for (const t of u.ammo_texts) {
+    const label = w["ammo_text_" + t.prop] || t.prop;
+    const input = el("input", { type: "text", value: t.words, maxLength: 200, className: "values-text",
+      title: w.tip_ammo_text, disabled: !can });
+    input.setAttribute("aria-label", label);
+    const save = el("button", { type: "button", className: "small primary", textContent: w.ammo_text_save,
+      title: w.tip_ammo_text_save, disabled: !can });
+    const send = async (words) => {
+      save.disabled = true;
+      try {
+        await api().ammo_text_set(u.address, t.prop, words, state.lang);
+        if (state.kind === "ammo") await refreshList();
+        await showUnit(u.address);
+        say(words ? fill(w.ammo_text_saved, { words }) : w.ammo_text_backed, "ok");
+      } catch (err) { problem(err); save.disabled = false; }
+    };
+    save.addEventListener("click", () => {
+      const words = input.value.trim();
+      if (words) send(words); else input.focus();
+    });
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") save.click(); });
+    const cell = el("td", {}, input, " ", save);
+    if (t.changed && can) {
+      const back = el("button", { type: "button", className: "small ghost", textContent: w.ammo_text_back,
+        title: w.tip_ammo_text_back });
+      back.addEventListener("click", () => send(""));
+      cell.append(" ", back);
+    }
+    if (t.own && can) {  // the mod's own text: each language on its own
+      const edit = el("button", { type: "button", className: "link", textContent: w.values_words_edit,
+        title: w.tip_values_words_edit });
+      let panel = null;
+      edit.addEventListener("click", () => {
+        if (panel) { panel.remove(); panel = null; return; }
+        panel = wordsPanel(t.key, () => showUnit(u.address), "mod", w.ammo_words_help_new);
+        cell.append(panel);
+      });
+      cell.append(" ", edit);
+    }
+    table.append(el("tr", {}, el("th", { textContent: label, title: w.tip_ammo_text }), cell));
+  }
+  return el("div", { className: "group" }, el("h2", { textContent: w.ammo_texts }), table,
+    el("p", { className: "muted small", textContent: w.ammo_texts_help }),
+    ...(u.in_game ? [el("p", { className: "muted small", textContent: w.ammo_texts_game })] : []));
+}
+
 // A part several units share: say who, and let the modder pick for whom a change is.
 function shareChoice(u) {
   const w = state.words;
@@ -2732,6 +2783,7 @@ async function showUnit(address, via) {
   if (u.editable && u.users) parts.push(el("p", { className: "notice warn",
     textContent: w.users_warning.replace("{n}", u.users) }));
   if (u.editable && u.share) parts.push(shareChoice(u));
+  if (u.ammo_texts && u.ammo_texts.length) parts.push(ammoTextsGroup(u));
   for (const g of u.groups) {
     const table = el("table");
     for (const r of g.rows) table.append(row(u, r, mode));
@@ -4494,14 +4546,15 @@ function valueDeleteAsk(p, close) {
 // The words a game text key shows, one box per language, each named in its own words (StudioApi.value_words /
 // value_words_set, LittleGroove's "Save text": rename a unit in every language). Languages left as they are keep the
 // game's words. `saved()`: what to show again once saved (the All values page; the Maps tab's town name). `kind`
-// "map": kept in the map project, as the Maps tab's changes are (a town's name), else in the unit mod.
-function wordsPanel(key, saved, kind = "mod") {
+// "map": kept in the map project, as the Maps tab's changes are (a town's name), else in the unit mod. `helpNew`: what
+// the box says over a text of the mod's own (a new label's, by default).
+function wordsPanel(key, saved, kind = "mod", helpNew = null) {
   const w = state.words, has = kind === "map" ? Boolean(state.map || state.mod) : Boolean(state.mod);
   const box = el("div", { className: "values-words-box" },
     el("p", { className: "muted small", textContent: w.values_words_help }));
   api().value_words(key, kind).then((res) => {
     if (!res.table) { box.append(el("p", { className: "muted small", textContent: w.values_words_no_text })); return; }
-    if (res.new) box.firstChild.textContent = w.values_words_help_new;  // the mod's own text (a new label's): no game words
+    if (res.new) box.firstChild.textContent = helpNew || w.values_words_help_new;  // the mod's own text: no game words
     const inputs = {}, grid = el("div", { className: "values-words-grid" });
     for (const x of res.words) {
       const name = (state.languages.find((l) => l.code === x.lang) || {}).name || x.lang;

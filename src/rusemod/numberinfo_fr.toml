@@ -213,20 +213,20 @@ does = "Le numéro propre de la munition (1000-1138) : chacune en a un différen
 what = "Change de modèle au tir"
 does = "Apparence seulement : 1 sur les armes antichars des escouades : le soldat passe au modèle qui la tient quand il tire."
 [TempsAnimation]
-what = "Durée de l'animation de tir"
-does = "Apparence seulement : la durée de l'animation de tir du soldat (1,6 s sur les armes antichars des escouades)."
+what = "Délai avant le départ du tir"
+does = "Secondes ajoutées au vol du tir : le coup arrive d'autant plus tard, et le tir dessiné met d'autant plus longtemps (1,6 s sur les grenades et les charges, d'après son nom le temps du lancer du soldat)."
 [FX_vitesse_de_depart]
-what = "Vitesse du tir (dessiné)"
-does = "Apparence seulement : la vitesse à laquelle le tir dessiné quitte l'arme, en unités du jeu par seconde : de 150 à 520 000 (2 000 m par seconde)."
+what = "Vitesse du tir"
+does = "La vitesse du tir, donc quand il arrive : le coup ne compte qu'à son arrivée, une cible qui bouge est visée en avance du temps de vol, et le tir dessiné met le même temps. Un tir avec physique parcourt ce nombre d'unités du jeu par seconde, freiné par son freinage : de 9 000 à 520 000 (35 à 2 000 m par seconde ; l'obus perforant de 75 mm 120 000, environ 460 m par seconde). Un tir sans physique (Tir sans physique) va tout droit à 26 fois cette vitesse. Chaque vol est arrondi aux 0,2 s suivantes. Un tir trop lent pour atteindre sa cible est accéléré de 5 % à la fois jusqu'à pouvoir l'atteindre : il arrive quand même, seulement plus tard."
 [FX_frottement]
-what = "Freinage du tir (dessiné)"
-does = "Apparence seulement : la vitesse à laquelle le tir dessiné ralentit dans l'air."
+what = "Freinage du tir"
+does = "À quelle vitesse un tir avec physique ralentit dans l'air : plus de freinage, un vol plus long sur la même distance, donc un coup qui arrive plus tard. Les tirs du jeu ont de 0,001 (la plupart) à 0,08. Un tir sans physique l'ignore."
 [FX_tir_tendu]
 what = "Tir tendu (dessiné)"
 does = "Apparence seulement : 1 dessine le tir en vol droit et tendu au lieu d'une courbe."
 [FX_tir_sans_physic]
-what = "Tir dessiné sans physique"
-does = "Apparence seulement : 1 dessine le tir sans gravité ni freinage."
+what = "Tir sans physique"
+does = "1 : le tir va tout droit jusqu'à son point d'arrivée à 26 fois sa Vitesse du tir, sans gravité ni freinage (les armes légères, mitrailleuses, la plupart des canons antiaériens, bombes et grenades du jeu) ; 0 : il vole avec gravité et freinage (obus, mortiers, roquettes)."
 [AltitudeDeVol]
 what = "Altitude de vol"
 does = "L'altitude à laquelle vole l'avion : de 52 000 à 208 000 (200 à 800 m)."

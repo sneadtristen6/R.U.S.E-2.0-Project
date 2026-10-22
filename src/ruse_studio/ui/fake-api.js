@@ -187,8 +187,16 @@
       paint_note: "Shown here on the map's picture; the build paints every level of the game's ground tiles (seen in the game).", paint_clear: "Clear the ground under it", tip_paint_clear: "Up close the game draws the map's grass, crops, stones and ground stickers over its picture, so paint shows only from afar. With this on, the build takes those off where the paint is at least half strength, so it shows at every height (seen in the game). Trees, buildings, cover and movement stay.",
       paint_took: "Colour taken: {hex}", paint_pick_help: "Click the ground to take its colour.", paint_hex_bad: "A colour is # and six hex digits, like #8a7a4e.",
       fires: "What this weapon fires", open_ammo: "Open the ammo", copy_ammo: "Copy this ammo…",
-      copy_name: "Name of the copy (only shown here)",
-      copy_ammo_help: "The copy starts the same as the original and keeps its name in game. Change its numbers, then pick it for a weapon on the unit's page.",
+      copy_name: "Name of the copy (in game too)",
+      copy_ammo_help: "The copy starts the same as the original, called by the name you give it, in game too. Change its numbers, then pick it for a weapon on the unit's page.",
+      ammo_texts: "Its name in game", ammo_text_Name: "Name", ammo_text_TypeName: "Kind",
+      ammo_texts_help: "What the game calls this ammo: its name (Medium cal., MG 42) and its kind (AP shell). Type new words and save: every language shows them until you change one with Change the words…",
+      ammo_texts_game: "One of the game's own ammo: new words here are its own, and every unit that fires it shows them. Other ammo with the same words keep theirs.",
+      ammo_text_save: "Save", ammo_text_back: "Game's words", ammo_text_saved: "Saved: in game it's called “{words}” now.",
+      ammo_text_backed: "Back to the game's words.", tip_ammo_text: "The words players see for this ammo in game. Type new ones, then Save.",
+      tip_ammo_text_save: "Give this ammo these words in game, in every language.",
+      tip_ammo_text_back: "Take the mod's words out: the game's again (a copy: its original's).",
+      ammo_words_help_new: "This is this ammo's own text, one box per language. A box you leave empty gets the English words. Not tried in the game yet.",
       copy_made: "{name} is in the mod. Pick it for a weapon on a unit's page.", delete_copy: "Delete this copy",
       flag_add: "Add a flag…", flag_add_number: "Another number…", flag_remove: "Take this flag off",
       flag_used_by: "{n} units have it, e.g. {names}", flag_count: "{n} units",
@@ -357,8 +365,16 @@
       paint_note: "Montré ici sur l'image de la carte ; la compilation peint chaque niveau des tuiles de sol du jeu (vérifié en jeu).", paint_clear: "Dégager le sol dessous", tip_paint_clear: "De près, le jeu dessine l'herbe, les cultures, les pierres et les autocollants de sol de la carte par-dessus son image : la peinture ne se voit alors que de loin. Activé, la compilation les retire là où la peinture est au moins à moitié de sa force, pour qu'elle se voie à toute hauteur (vérifié en jeu). Arbres, bâtiments, couvert et déplacement restent.",
       paint_took: "Couleur prise : {hex}", paint_pick_help: "Cliquez sur le sol pour prendre sa couleur.", paint_hex_bad: "Une couleur s'écrit # suivi de six chiffres hexadécimaux, comme #8a7a4e.",
       fires: "Ce que tire cette arme", open_ammo: "Ouvrir la munition", copy_ammo: "Copier cette munition…",
-      copy_name: "Nom de la copie (affiché ici seulement)",
-      copy_ammo_help: "La copie part identique à l'originale et garde son nom en jeu. Changez ses valeurs, puis choisissez-la pour une arme sur la page de l'unité.",
+      copy_name: "Nom de la copie (aussi en jeu)",
+      copy_ammo_help: "La copie part identique à l'originale, avec le nom que vous lui donnez, en jeu aussi. Changez ses valeurs, puis choisissez-la pour une arme sur la page de l'unité.",
+      ammo_texts: "Son nom en jeu", ammo_text_Name: "Nom", ammo_text_TypeName: "Type",
+      ammo_texts_help: "Ce que le jeu appelle cette munition : son nom (Calibre moyen, MG 42) et son type (Obus perforant). Tapez de nouveaux mots et enregistrez : toutes les langues les affichent jusqu'à ce que vous en changiez une avec Changer le texte…",
+      ammo_texts_game: "Une munition du jeu : de nouveaux mots ici sont les siens, et toutes les unités qui la tirent les affichent. Les autres munitions aux mêmes mots gardent les leurs.",
+      ammo_text_save: "Enregistrer", ammo_text_back: "Mots du jeu", ammo_text_saved: "Enregistré : en jeu, elle s'appelle maintenant « {words} ».",
+      ammo_text_backed: "Retour aux mots du jeu.", tip_ammo_text: "Les mots que les joueurs voient pour cette munition en jeu. Tapez-en de nouveaux, puis Enregistrer.",
+      tip_ammo_text_save: "Donner ces mots à cette munition en jeu, dans toutes les langues.",
+      tip_ammo_text_back: "Retirer les mots du mod : ceux du jeu à nouveau (une copie : ceux de l'originale).",
+      ammo_words_help_new: "C'est un texte propre à cette munition, une case par langue. Une case laissée vide reçoit le texte anglais. Pas encore essayé dans le jeu.",
       copy_made: "{name} est dans le mod. Choisissez-la pour une arme sur la page d'une unité.", delete_copy: "Supprimer cette copie",
       flag_add: "Ajouter un drapeau…", flag_add_number: "Un autre numéro…", flag_remove: "Retirer ce drapeau",
       flag_used_by: "{n} unités l'ont, p. ex. {names}", flag_count: "{n} unités",
@@ -468,8 +484,15 @@
       stamp_same: "这里就是复制来源：请在别处涂抹。",
       paint_note: "这里在地图图像上显示；构建会绘制游戏地面瓦片的每一级（已在游戏中验证）。", paint_clear: "清理下方地面", tip_paint_clear: "近处时，游戏会在地图图像上绘制草、作物、石头和地面贴花，所以颜料只能从远处看到。开启后，构建会在颜料强度至少一半的地方移除它们，使其在任何高度都可见（已在游戏中验证）。树木、建筑、掩护和移动保持不变。",
       paint_took: "已取色：{hex}", paint_pick_help: "点击地面以吸取其颜色。", paint_hex_bad: "颜色写作 # 加六位十六进制数字，例如 #8a7a4e。",
-      fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（仅在此显示）",
-      copy_ammo_help: "副本初始与原版相同，游戏内沿用原名。修改数值后，在单位页面为某件武器选用它。",
+      fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（游戏内也显示）",
+      copy_ammo_help: "副本初始与原版相同，使用你起的名称，游戏内也一样。修改数值后，在单位页面为某件武器选用它。",
+      ammo_texts: "游戏内名称", ammo_text_Name: "名称", ammo_text_TypeName: "类型",
+      ammo_texts_help: "游戏对这种弹药的称呼：名称（中口径、MG 42）和类型（反坦克弹）。输入新文字并保存：所有语言都会显示它，直到你用“修改文字…”单独修改某种语言。",
+      ammo_texts_game: "这是游戏自带的弹药：这里的新文字只属于它，所有发射它的单位都会显示。使用相同文字的其他弹药保持不变。",
+      ammo_text_save: "保存", ammo_text_back: "游戏原文", ammo_text_saved: "已保存：游戏内现在叫“{words}”。",
+      ammo_text_backed: "已恢复游戏原文。", tip_ammo_text: "玩家在游戏中看到的这种弹药的文字。输入新文字后点“保存”。",
+      tip_ammo_text_save: "在游戏中为这种弹药使用这些文字，所有语言。", tip_ammo_text_back: "移除mod的文字：恢复游戏原文（副本则恢复原版的）。",
+      ammo_words_help_new: "这是这种弹药自己的文字，每种语言一个框。留空的框会使用英文文字。尚未在游戏中试过。",
       copy_made: "{name} 已加入mod。请在单位页面为某件武器选用它。", delete_copy: "删除此副本",
       flag_add: "添加标志位…", flag_add_number: "其他编号…", flag_remove: "移除此标志位",
       flag_used_by: "{n} 个单位具有，例如 {names}", flag_count: "{n} 个单位",
@@ -878,6 +901,34 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const ammoAddress = (id) => A + id;
   const myAmmo = () => newAmmo.filter((n) => n.mod === current);
   const ammoName = (a, lang) => lang === "base" ? "Ammo_" + a.id : (a.names[lang] || a.names.us);
+  // an ammunition's name and kind in game (StudioApi.ammo_text_set): `${address}|${prop}` -> the mod's own text key,
+  // its words in newWords (the words panel changes them)
+  const ammoTexts = new Map();
+  const ownWords = (key, lang) => { const row = newWords.get(key) || {}; return row[lang === "base" ? "us" : lang] || row.us || ""; };
+  function ammoTextsOf(address, a, lang) {
+    const [kind, name] = (a.names[lang === "base" ? "us" : lang] || a.names.us).split(" · ");
+    const game = { Name: name || "", TypeName: kind || "" };
+    return ["Name", "TypeName"].map((prop) => {
+      const key = ammoTexts.get(`${address}|${prop}`);
+      return { prop, key: key || `${prop === "Name" ? "N" : "T"}_${a.id}`.slice(0, 10), words: key ? ownWords(key, lang) : game[prop],
+        own: Boolean(key), changed: Boolean(key) };
+    });
+  }
+  function ammoTextSet(address, prop, words) {
+    const k = `${address}|${prop}`;
+    if (!words) {
+      ammoTexts.delete(k);
+      return;
+    }
+    if (!ammoTexts.has(k)) {
+      const base = safeName(words).replace(/_/g, "").slice(0, 6) || "Text";
+      let key = "";
+      for (let n = 0; !key || newWords.has(key); n++) key = `${base}_${(n + 36 * 36).toString(36).slice(-3)}`;
+      ammoTexts.set(k, key);
+    }
+    newWords.set(ammoTexts.get(k), Object.fromEntries(VALUE_LANGS.map((lang) => [lang, words])));
+  }
+  const copyName = (n, lang) => ownWords(ammoTexts.get(`${ammoAddress(n.id)}|Name`), lang) || n.name;
   const nationsOf = (a, lang) => [...new Set(a.users.map((id) => units.find((x) => x.id === id).nation))].sort()
     .map((n) => (nations[lang] || nations.us)[n]);
   const flags = { M4_Sherman: [10, 11, 21, 22, 55], M3A1_Stuart: [10, 11, 21, 22, 55], Panzer_IV_G: [10, 11, 21, 22, 55],
@@ -1331,14 +1382,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     const copy = myAmmo().find((n) => ammoAddress(n.id) === address);
     const a = ammo.find((x) => ammoAddress(x.id) === (copy ? copy.source : address));
     if (a) {
-      const page = view(address, lang, "TAmmunition", copy ? copy.name : ammoName(a, lang), true, "", copy ? 0 : a.users.length,
+      const page = view(address, lang, "TAmmunition", copy ? copyName(copy, lang) : ammoName(a, lang), true, "", copy ? 0 : a.users.length,
         [["identity", [["AmmunitionId", a.ammoId]]],
          ["weapon", [["Puissance", a.power], ["PorteeMaximale", a.range], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
         [], [], copy ? [] : a.users.map((id) => ({ address: E + id + ":MountedWeapon", path: "Ammunition" })));
       for (const r of page.groups.flatMap((g) => g.rows)) if (r.prop === "AmmunitionId") { r.editable = false; r.locked = true; }
       page.can_copy = false;
       page.can_copy_ammo = Boolean(current) && !copy;
+      page.ammo_texts = ammoTextsOf(address, a, lang);
       if (copy) page.new = { source: copy.source, source_name: ammoName(a, lang) };
+      if (copy) page.in_game = false;
       return page;
     }
     if (address === AMMO) {
@@ -1386,7 +1439,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     const weapon = address + ":MountedWeapon";
     const chosen = edits.get(editKey(weapon, "Ammunition", ""));
     const names = new Map(ammo.map((a) => [ammoAddress(a.id), ammoName(a, lang)]));
-    for (const n of myAmmo()) names.set(ammoAddress(n.id), n.name);
+    for (const n of myAmmo()) names.set(ammoAddress(n.id), copyName(n, lang));
     const current_ = chosen || ammoAddress(game.id);
     const whose = (addr) => { const c = myAmmo().find((n) => ammoAddress(n.id) === addr);
       const a = ammo.find((x) => ammoAddress(x.id) === (c ? c.source : addr)); return a ? nationsOf(a, lang) : []; };
@@ -2478,7 +2531,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         : mode === "oldindex" ? { ready: false, can_build: true, old: true } : { ready: true, build: "24687178" },
       units: async (lang, kind = "all", nation = -1, search = "", group = "all") => {
         if (kind === "ammo") {
-          const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: n.name, base_name: "Ammo_" + n.id, kind: "ammo",
+          const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: copyName(n, lang), base_name: "Ammo_" + n.id, kind: "ammo",
             id: null, users: [], nations: nationsOf(ammo.find((a) => ammoAddress(a.id) === n.source), lang), nation: -1, nation_name: "", factory: null, slot: null, new: true, source: n.source,
             source_name: ammoName(ammo.find((a) => ammoAddress(a.id) === n.source), lang),
             group: ammo.find((a) => ammoAddress(a.id) === n.source).group }));
@@ -2587,7 +2640,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const stem = safeName(name) || `New_${myAmmo().length + 1}`;
         if (ammo.some((a) => a.id === stem) || myAmmo().some((n) => n.id === stem)) throw new Error(`There's already a copy at Ammo_${stem}. Pick another name.`);
         newAmmo.push({ mod: current, id: stem, source, name });
+        ammoTextSet(ammoAddress(stem), "Name", name);  // called `name` in game too
         return { address: ammoAddress(stem), name, saved: current + "/src/studio.rndf" };
+      },
+      ammo_text_set: async (address, prop, words, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (!["Name", "TypeName"].includes(prop)) throw new Error(`${prop} isn't one of an ammunition's texts`);
+        const copy = myAmmo().find((n) => ammoAddress(n.id) === address);
+        if (!copy && !ammo.some((a) => ammoAddress(a.id) === address)) throw new Error(`${address.split("/").pop()} isn't an ammunition`);
+        ammoTextSet(address, prop, String(words || "").trim());
+        return unit(address, lang);
       },
       flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null,
         ...(FAKE_FLAG_GUIDE[f.flag] || {}) })), groups: ["kind", "combat", "movement", "sight", "player", "preview", "state", "unused"] }),

@@ -213,20 +213,20 @@ does = "Il numero proprio della munizione (1000-1138): ognuna ne ha uno diverso.
 what = "Cambia modello quando spara"
 does = "Solo aspetto: 1 sulle armi anticarro delle squadre: il soldato passa al modello che la impugna quando spara."
 [TempsAnimation]
-what = "Durata dell'animazione di tiro"
-does = "Solo aspetto: quanto dura l'animazione di tiro del soldato (1,6 s sulle armi anticarro delle squadre)."
+what = "Tempo prima del colpo"
+does = "Secondi aggiunti al volo del colpo: il colpo arriva tanto più tardi, e il colpo disegnato ci mette tanto di più (1,6 s su granate e cariche, dal nome il tempo di lancio del soldato)."
 [FX_vitesse_de_depart]
-what = "Velocità del colpo (disegnato)"
-does = "Solo aspetto: quanto veloce il colpo disegnato lascia l'arma, in unità di gioco al secondo: da 150 a 520.000 (2.000 m al secondo)."
+what = "Velocità del colpo"
+does = "Quanto veloce vola il colpo, quindi quando arriva: il colpo conta solo quando arriva, un bersaglio in movimento viene mirato in anticipo del tempo di volo, e il colpo disegnato ci mette lo stesso tempo. Un colpo con fisica vola questo numero di unità di gioco al secondo, frenato dal suo attrito: da 9.000 a 520.000 (da 35 a 2.000 m al secondo; il proiettile perforante da 75 mm 120.000, circa 460 m al secondo). Un colpo senza fisica (Colpo senza fisica) va dritto a 26 volte questa velocità. Ogni volo è arrotondato ai 0,2 s successivi. Un colpo troppo lento per raggiungere il bersaglio viene accelerato del 5 % alla volta finché ci riesce: arriva comunque, solo più tardi."
 [FX_frottement]
-what = "Attrito del colpo (disegnato)"
-does = "Solo aspetto: quanto rapidamente il colpo disegnato rallenta nell'aria."
+what = "Attrito del colpo"
+does = "Quanto rapidamente un colpo con fisica rallenta nell'aria: più attrito, un volo più lungo sulla stessa distanza, quindi un colpo che arriva più tardi. I colpi del gioco hanno da 0,001 (la maggior parte) a 0,08. Un colpo senza fisica lo ignora."
 [FX_tir_tendu]
 what = "Tiro teso (disegnato)"
 does = "Solo aspetto: 1 disegna il colpo piatto e dritto invece che ad arco."
 [FX_tir_sans_physic]
-what = "Colpo disegnato senza fisica"
-does = "Solo aspetto: 1 disegna il colpo senza gravità né attrito."
+what = "Colpo senza fisica"
+does = "1: il colpo va dritto fino al punto d'arrivo a 26 volte la sua Velocità del colpo, senza gravità né attrito (armi leggere, mitragliatrici, quasi tutta la contraerea, bombe e granate del gioco); 0: vola con gravità e attrito (proiettili, mortai, razzi)."
 [AltitudeDeVol]
 what = "Quota di volo"
 does = "Quanto in alto vola l'aereo: da 52.000 a 208.000 (da 200 a 800 m)."
