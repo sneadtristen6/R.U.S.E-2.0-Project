@@ -348,7 +348,7 @@ class DecoyCalls:
         """What a clip's page needs: its bones (to make one bigger or turn it) and the clips that can stand in for it
         (the same bones: rusemod.baf.same_skeleton), each with the names the game's models give it."""
         r = self._decoy_clip_row(member)
-        if r is None:
+        if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
         from rusemod import mocap
         same = [{"member": x["member"], "name": x["name"], "names": x["names"]} for x in self._decoy_clips()
@@ -385,7 +385,7 @@ class DecoyCalls:
         when no unit's model plays it (the HQ's figures, scenery: the page says so)."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
-        if r is None:
+        if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
         model = self._decoy_preview_model(r)
         if model is None:
@@ -557,7 +557,7 @@ class DecoyCalls:
     def _decoy_mocap_clip(self, member: str, mid: str, start, length, in_place, loop) -> tuple:
         from rusemod import baf, mocap
         r = self._decoy_clip_row(member)
-        if r is None:
+        if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
         got = getattr(self, "_decoy_mocap", {}).get(mid)
         if got is None:
@@ -611,7 +611,7 @@ class DecoyCalls:
         and no turn take the bone out). What's not given is kept."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
-        if r is None:
+        if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
         mod = self._mod_dir()
         if mod is None:
@@ -705,7 +705,7 @@ class DecoyCalls:
         """Take every change the mod makes to a clip out (its line in clips.toml; a whole clip of its own too)."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
-        if r is None:
+        if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
         mod = self._mod_dir()
         if mod is None:

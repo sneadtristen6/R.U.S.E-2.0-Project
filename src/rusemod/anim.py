@@ -55,7 +55,7 @@ def mod_clips(folder: Path) -> dict:
             raise AnimError(f"{CLIPS}: [clip.\"<path>\"] tables, one a clip")
         for key, v in table.items():
             m = _member(key)
-            if not m.endswith(".baf") or not isinstance(v, dict):
+            if not m.endswith(".baf") or not isinstance(v, dict):  # not a game rule: a clip is named by its pack path
                 raise AnimError(f"{CLIPS}: {key}: name a clip by its path in the game's packs, ending .baf")
             entry = {"speed": 100.0, "from": None, "bones": {}, "file": None}
             if "speed" in v:
@@ -95,7 +95,7 @@ def made(base: bytes, edit: dict, source=None) -> bytes:
         raw = Path(edit["file"]).read_bytes()
     elif edit.get("from"):
         got = source(edit["from"]) if source else None
-        if got is None:
+        if got is None:  # not a game rule: no such clip in the game's packs
             raise AnimError(f"the game has no clip {clip_key(edit['from'])}")
         other, mine = baf.parse(got), baf.parse(base)
         if not baf.same_skeleton(mine, other):
