@@ -1184,3 +1184,36 @@ does = "La columna en esa línea del archivo fuente de Eugen. Su registro intern
 [_ShortDatabaseName]
 what = "Nombre corto"
 does = "El nombre corto que las herramientas de Eugen dieron a este objeto. Su registro interno: nada que cambiar."
+[TimeLimitTable]
+what = "Límites de tiempo de batalla para elegir"
+does = "Los límites de tiempo, en minutos, que se pueden dar a una batalla en la sala. 10, 15, 20, 25, 30, 40, 50 y 60 en el juego."
+[TimeMaxForSurrender]
+what = "Rendición: segundos como máximo para volarlo todo"
+does = "Cuando un jugador se rinde, el juego vuela sus edificios uno tras otro: lo máximo que tarda, en segundos. 10 en el juego."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Rendición: segundos entre dos edificios que vuelan"
+does = "Cuando un jugador se rinde, los segundos entre que vuela uno de sus edificios y el siguiente. 1 en el juego."
+[EliminationWarningsDuration]
+what = "Mensaje de derrota: segundos en pantalla"
+does = "Cuánto tiempo, en segundos, queda en pantalla el mensaje de que un jugador fue eliminado o se rindió (el script de batalla del juego lo muestra ese tiempo). 5 en el juego."
+[DureeDecompteLaunchGameMulti]
+what = "Cuenta atrás del inicio multijugador (s)"
+does = "La cuenta atrás, en segundos, antes de que una batalla multijugador empiece desde la sala. 10 en el juego."
+[PopCapPerPlayer]
+what = "Unidades como máximo por jugador"
+does = "Las unidades máximas que un jugador puede tener a la vez (el límite de población). 100 en el juego. Los scripts de los mapas del juego lo usan; aún no se ha probado si una batalla en PC obliga a cada jugador a cumplirlo."
+[PopCapPerAlliance]
+what = "Unidades como máximo por bando"
+does = "Las unidades máximas que un bando (todos sus jugadores aliados juntos) puede tener a la vez. 100 en el juego. Aún no se ha probado si una batalla en PC lo cumple."
+[PopCapTotal]
+what = "Unidades como máximo en la batalla"
+does = "Las unidades máximas que puede tener toda la batalla a la vez, todos los bandos juntos. 200 en el juego. Aún no se ha probado si una batalla en PC lo cumple."
+[RF_TypeRapportDeForceInIaStrat]
+what = "Los jugadores del ordenador comparan fuerzas (1: sí)"
+does = "1: antes de atacar, un jugador del ordenador compara cuánto tardaría cada bando en destruir al otro. Cualquier otro número hace que esa comparación diga siempre que no. 1 en el juego."
+[RF_NbMetreMaxAParcourir]
+what = "Comparación de fuerzas: unidades contadas como máximo"
+does = "Cuánto pueden tener que recorrer las unidades y aun así contar al comparar fuerzas, en m. 700 m en el juego."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Proporción de infantería de una ofensiva señuelo"
+does = "Qué parte de la ofensiva general señuelo de un jugador del ordenador puede ser infantería, como proporción de sus unidades señuelo. 50 % en el juego."

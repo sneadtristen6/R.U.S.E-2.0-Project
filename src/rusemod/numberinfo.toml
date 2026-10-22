@@ -2848,3 +2848,80 @@ unit = "name"
 sure = "name"
 what = "Short name"
 does = "The short name Eugen's tools gave this object. Their bookkeeping: nothing to change."
+
+[TimeLimitTable]
+group = "interface"
+unit = "min"
+sure = "name"
+what = "Battle time limits to choose from"
+does = "The time limits, in minutes, a battle can be given in the lobby. 10, 15, 20, 25, 30, 40, 50 and 60 in the game."
+
+[TimeMaxForSurrender]
+group = "interface"
+unit = "s"
+sure = "name"
+what = "Surrender: most seconds to blow up"
+does = "When a player surrenders, the game blows up their buildings one after another: the longest that takes, in seconds. 10 in the game."
+
+[TimeBetweenBuildingDestructionForSurrender]
+group = "interface"
+unit = "s"
+sure = "name"
+what = "Surrender: seconds between two buildings blowing up"
+does = "When a player surrenders, the seconds between one of their buildings blowing up and the next. 1 in the game."
+
+[EliminationWarningsDuration]
+group = "interface"
+unit = "s"
+sure = "known"
+what = "Defeat message: seconds on screen"
+does = "How long, in seconds, the message that a player was knocked out or surrendered stays on screen (the game's battle script shows it for this long). 5 in the game."
+
+[DureeDecompteLaunchGameMulti]
+group = "interface"
+unit = "s"
+sure = "name"
+what = "Multiplayer start countdown (s)"
+does = "The countdown, in seconds, before a multiplayer battle starts from the lobby. 10 in the game."
+
+[PopCapPerPlayer]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Most units per player"
+does = "The most units one player may have at once (the population cap). 100 in the game. The game's map scripts work with it; whether a PC battle holds every player to it isn't tried yet."
+
+[PopCapPerAlliance]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Most units per side"
+does = "The most units one side (all its allied players together) may have at once. 100 in the game. Whether a PC battle holds to it isn't tried yet."
+
+[PopCapTotal]
+group = "production"
+unit = "count"
+sure = "name"
+what = "Most units in the battle"
+does = "The most units the whole battle may have at once, every side together. 200 in the game. Whether a PC battle holds to it isn't tried yet."
+
+[RF_TypeRapportDeForceInIaStrat]
+group = "computer"
+unit = "raw"
+sure = "known"
+what = "Computer players weigh forces (1: yes)"
+does = "1: before it attacks, a computer player compares how long each side would need to destroy the other. Any other number makes that comparison always come out no. 1 in the game."
+
+[RF_NbMetreMaxAParcourir]
+group = "computer"
+unit = "m"
+sure = "name"
+what = "Force comparison: farthest units counted"
+does = "How far units may have to travel and still count when forces are compared, in m. 700 m in the game."
+
+[Ratio_Infanterie_OffensiveGenerale]
+group = "computer"
+unit = "share"
+sure = "known"
+what = "Infantry share of a decoy offensive"
+does = "How much of a computer player's decoy general offensive may be infantry, as a share of its decoy units. 50% in the game."

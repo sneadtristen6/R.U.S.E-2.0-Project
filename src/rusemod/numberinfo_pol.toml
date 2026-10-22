@@ -1184,3 +1184,36 @@ does = "Kolumna w tym wierszu pliku źródłowego Eugen. Ich wewnętrzna ewidenc
 [_ShortDatabaseName]
 what = "Krótka nazwa"
 does = "Krótka nazwa, którą narzędzia Eugen nadały temu obiektowi. Ich wewnętrzna ewidencja: nic do zmiany."
+[TimeLimitTable]
+what = "Limity czasu bitwy do wyboru"
+does = "Limity czasu w minutach, które można nadać bitwie w poczekalni. W grze 10, 15, 20, 25, 30, 40, 50 i 60."
+[TimeMaxForSurrender]
+what = "Kapitulacja: najwyżej sekund na wysadzenie"
+does = "Gdy gracz się poddaje, gra wysadza jego budynki jeden po drugim: najdłuższy czas, jaki to trwa, w sekundach. W grze 10."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Kapitulacja: sekund między wysadzeniem dwóch budynków"
+does = "Gdy gracz się poddaje, sekundy między wysadzeniem jednego z jego budynków a następnego. W grze 1."
+[EliminationWarningsDuration]
+what = "Komunikat o porażce: sekund na ekranie"
+does = "Jak długo, w sekundach, na ekranie zostaje komunikat, że gracz odpadł lub się poddał (skrypt bitwy gry pokazuje go tak długo). W grze 5."
+[DureeDecompteLaunchGameMulti]
+what = "Odliczanie do startu gry wieloosobowej (s)"
+does = "Odliczanie w sekundach, zanim bitwa wieloosobowa wystartuje z poczekalni. W grze 10."
+[PopCapPerPlayer]
+what = "Najwięcej jednostek na gracza"
+does = "Najwięcej jednostek, które gracz może mieć naraz (limit populacji). W grze 100. Skrypty map gry z niego korzystają; czy bitwa na PC trzyma każdego gracza w tym limicie, jeszcze nie sprawdzono."
+[PopCapPerAlliance]
+what = "Najwięcej jednostek na stronę"
+does = "Najwięcej jednostek, które strona (wszyscy sprzymierzeni gracze razem) może mieć naraz. W grze 100. Czy bitwa na PC go przestrzega, jeszcze nie sprawdzono."
+[PopCapTotal]
+what = "Najwięcej jednostek w bitwie"
+does = "Najwięcej jednostek, które cała bitwa może mieć naraz, wszystkie strony razem. W grze 200. Czy bitwa na PC go przestrzega, jeszcze nie sprawdzono."
+[RF_TypeRapportDeForceInIaStrat]
+what = "Gracze komputerowi porównują siły (1: tak)"
+does = "1: przed atakiem gracz komputerowy porównuje, ile czasu każda strona potrzebowałaby, by zniszczyć drugą. Każda inna liczba sprawia, że to porównanie zawsze wypada na nie. W grze 1."
+[RF_NbMetreMaxAParcourir]
+what = "Porównanie sił: najdalej liczone jednostki"
+does = "Jak daleko jednostki mogą mieć do przejechania i nadal liczyć się przy porównaniu sił, w m. W grze 700 m."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Udział piechoty w pozorowanej ofensywie"
+does = "Jaka część pozorowanej ofensywy ogólnej gracza komputerowego może być piechotą, jako udział jego jednostek wabików. W grze 50%."

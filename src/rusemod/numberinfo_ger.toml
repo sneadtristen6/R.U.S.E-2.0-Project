@@ -1184,3 +1184,36 @@ does = "Die Spalte in dieser Zeile der Quelldatei von Eugen. Ihre Buchführung: 
 [_ShortDatabaseName]
 what = "Kurzname"
 does = "Der Kurzname, den Eugens Werkzeuge diesem Objekt gaben. Ihre Buchführung: nichts zu ändern."
+[TimeLimitTable]
+what = "Wählbare Zeitlimits einer Schlacht"
+does = "Die Zeitlimits in Minuten, die man einer Schlacht in der Lobby geben kann. Im Spiel 10, 15, 20, 25, 30, 40, 50 und 60."
+[TimeMaxForSurrender]
+what = "Kapitulation: höchstens Sekunden bis alles gesprengt ist"
+does = "Wenn ein Spieler kapituliert, sprengt das Spiel seine Gebäude eines nach dem anderen: wie lange das höchstens dauert, in Sekunden. Im Spiel 10."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Kapitulation: Sekunden zwischen zwei Sprengungen"
+does = "Wenn ein Spieler kapituliert, die Sekunden zwischen der Sprengung eines seiner Gebäude und der nächsten. Im Spiel 1."
+[EliminationWarningsDuration]
+what = "Niederlage-Meldung: Sekunden auf dem Bildschirm"
+does = "Wie lange in Sekunden die Meldung, dass ein Spieler ausgeschieden ist oder kapituliert hat, auf dem Bildschirm bleibt (das Schlachtskript des Spiels zeigt sie so lange). Im Spiel 5."
+[DureeDecompteLaunchGameMulti]
+what = "Countdown vor dem Mehrspielerstart (s)"
+does = "Der Countdown in Sekunden, bevor eine Mehrspielerschlacht aus der Lobby startet. Im Spiel 10."
+[PopCapPerPlayer]
+what = "Höchstens Einheiten je Spieler"
+does = "Die meisten Einheiten, die ein Spieler gleichzeitig haben darf (die Bevölkerungsgrenze). Im Spiel 100. Die Kartenskripte des Spiels arbeiten damit; ob eine PC-Schlacht jeden Spieler daran hält, ist noch nicht ausprobiert."
+[PopCapPerAlliance]
+what = "Höchstens Einheiten je Seite"
+does = "Die meisten Einheiten, die eine Seite (alle verbündeten Spieler zusammen) gleichzeitig haben darf. Im Spiel 100. Ob eine PC-Schlacht sich daran hält, ist noch nicht ausprobiert."
+[PopCapTotal]
+what = "Höchstens Einheiten in der Schlacht"
+does = "Die meisten Einheiten, die die ganze Schlacht gleichzeitig haben darf, alle Seiten zusammen. Im Spiel 200. Ob eine PC-Schlacht sich daran hält, ist noch nicht ausprobiert."
+[RF_TypeRapportDeForceInIaStrat]
+what = "Computerspieler wägen Kräfte ab (1: ja)"
+does = "1: Vor einem Angriff vergleicht ein Computerspieler, wie lange jede Seite bräuchte, um die andere zu vernichten. Jede andere Zahl lässt diesen Vergleich immer mit Nein ausgehen. Im Spiel 1."
+[RF_NbMetreMaxAParcourir]
+what = "Kräftevergleich: am weitesten gezählte Einheiten"
+does = "Wie weit Einheiten noch zu fahren haben dürfen und beim Kräftevergleich trotzdem zählen, in m. Im Spiel 700 m."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Infanterieanteil einer Scheinoffensive"
+does = "Wie viel der Scheinoffensive eines Computerspielers Infanterie sein darf, als Anteil seiner Attrappen. Im Spiel 50 %."

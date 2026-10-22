@@ -12921,6 +12921,30 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_battle]
+us = "Battle and surrender"
+fr = "Bataille et reddition"
+ger = "Schlacht und Kapitulation"
+ita = "Battaglia e resa"
+spa = "Batalla y rendición"
+pol = "Bitwa i kapitulacja"
+ru = "Бой и капитуляция"
+cz = "Bitva a kapitulace"
+jpn = "戦闘と降伏"
+sc = "战斗与投降"
+
+[economy_group_population]
+us = "Population"
+fr = "Population"
+ger = "Bevölkerung"
+ita = "Popolazione"
+spa = "Población"
+pol = "Populacja"
+ru = "Численность"
+cz = "Populace"
+jpn = "人口"
+sc = "人口"
+
 [ai_title]
 us = "AI and player settings"
 fr = "Réglages de l'IA et des joueurs"
@@ -12968,6 +12992,30 @@ ru = "Настройки игроков"
 cz = "Nastavení hráčů"
 jpn = "プレイヤーの設定"
 sc = "玩家设置"
+
+[play_rules_title]
+us = "Game rules"
+fr = "Règles du jeu"
+ger = "Spielregeln"
+ita = "Regole del gioco"
+spa = "Reglas del juego"
+pol = "Zasady gry"
+ru = "Правила игры"
+cz = "Pravidla hry"
+jpn = "ゲームのルール"
+sc = "游戏规则"
+
+[play_rules_help]
+us = "Every other rule the game keeps for all players, by what it is about. A change here is saved in the current mod at once; where the Nuclear mode has its own value, it has its own box."
+fr = "Toutes les autres règles que le jeu garde pour tous les joueurs, selon leur sujet. Un changement ici est enregistré tout de suite dans le mod actuel ; là où le mode Nucléaire a sa propre valeur, il a sa propre case."
+ger = "Alle anderen Regeln, die das Spiel für alle Spieler hat, nach Thema geordnet. Eine Änderung hier wird sofort im aktuellen Mod gespeichert; wo der Nuklearmodus einen eigenen Wert hat, hat er ein eigenes Feld."
+ita = "Tutte le altre regole che il gioco tiene per tutti i giocatori, per argomento. Una modifica qui viene salvata subito nella mod attuale; dove la modalità Nucleare ha un valore suo, ha la sua casella."
+spa = "Todas las demás reglas que el juego tiene para todos los jugadores, según de qué tratan. Un cambio aquí se guarda al momento en el mod actual; donde el modo Nuclear tiene su propio valor, tiene su propia casilla."
+pol = "Wszystkie pozostałe zasady, które gra ma dla wszystkich graczy, według tematu. Zmiana tutaj jest od razu zapisywana w bieżącym modzie; tam, gdzie tryb nuklearny ma własną wartość, ma własne pole."
+ru = "Все остальные правила, которые игра держит для всех игроков, по темам. Изменение здесь сразу сохраняется в текущем моде; где у ядерного режима своё значение, у него своё поле."
+cz = "Všechna ostatní pravidla, která hra drží pro všechny hráče, podle toho, čeho se týkají. Změna zde se hned uloží do aktuálního modu; kde má jaderný režim vlastní hodnotu, má vlastní pole."
+jpn = "ゲームが全プレイヤーに適用するその他すべてのルールを、内容ごとに分けています。ここでの変更はすぐ現在のMODに保存されます。核モードに独自の値がある場合は、専用の欄があります。"
+sc = "游戏对所有玩家通用的其他全部规则，按内容分组。此处的更改会立即保存到当前模组；核战模式有自己数值的地方，会有自己的输入框。"
 
 [play_ai_title]
 us = "Computer players"

@@ -1184,3 +1184,36 @@ does = "在 Eugen 源文件该行中的列。他们的内部记录：无需修�
 [_ShortDatabaseName]
 what = "短名称"
 does = "Eugen 的工具给此对象起的短名称。他们的内部记录：无需修改。"
+[TimeLimitTable]
+what = "可选的战斗时间限制"
+does = "大厅中可为战斗设置的时间限制（分钟）。游戏中为 10、15、20、25、30、40、50 和 60。"
+[TimeMaxForSurrender]
+what = "投降：全部炸毁的最长秒数"
+does = "玩家投降时，游戏会一座接一座炸毁其建筑：这最长需要多少秒。游戏中为 10。"
+[TimeBetweenBuildingDestructionForSurrender]
+what = "投降：两座建筑炸毁的间隔秒数"
+does = "玩家投降时，其一座建筑炸毁到下一座之间的秒数。游戏中为 1。"
+[EliminationWarningsDuration]
+what = "失败消息：显示秒数"
+does = "玩家被淘汰或投降的消息在屏幕上停留的秒数（游戏的战斗脚本按此时长显示）。游戏中为 5。"
+[DureeDecompteLaunchGameMulti]
+what = "多人游戏开始倒计时（秒）"
+does = "多人战斗从大厅开始前的倒计时（秒）。游戏中为 10。"
+[PopCapPerPlayer]
+what = "每名玩家的最多单位数"
+does = "一名玩家同时最多可拥有的单位数（人口上限）。游戏中为 100。游戏的地图脚本会用到它；PC 战斗是否对每名玩家执行尚未测试。"
+[PopCapPerAlliance]
+what = "每方的最多单位数"
+does = "一方（所有盟友玩家合计）同时最多可拥有的单位数。游戏中为 100。PC 战斗是否执行尚未测试。"
+[PopCapTotal]
+what = "整场战斗的最多单位数"
+does = "整场战斗（所有阵营合计）同时最多可有的单位数。游戏中为 200。PC 战斗是否执行尚未测试。"
+[RF_TypeRapportDeForceInIaStrat]
+what = "电脑玩家比较兵力（1：是）"
+does = "1：进攻前，电脑玩家会比较双方摧毁对方各需多久。任何其他数字都会让这次比较总是得出否。游戏中为 1。"
+[RF_NbMetreMaxAParcourir]
+what = "兵力比较：计入的最远单位"
+does = "比较兵力时，单位仍被计入所能需要行进的最远距离（米）。游戏中为 700 米。"
+[Ratio_Infanterie_OffensiveGenerale]
+what = "佯攻中步兵的比例"
+does = "电脑玩家的全面佯攻中步兵可占的比例（占其诱饵单位的份额）。游戏中为 50%。"

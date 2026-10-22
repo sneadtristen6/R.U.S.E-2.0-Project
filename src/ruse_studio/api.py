@@ -6066,7 +6066,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                              "atomic": atomic if atomic != game else None, "split": split,
                              "value": mine["normal"] if split or mine["normal"] is not None else mine["atomic"],
                              "atomic_value": mine["atomic"] if split else None})
-            groups.append({"id": group, "rows": rows})
+            groups.append({"id": group, "rows": rows, "section": economy.SECTIONS.get(group, "rules")})
         return {"ready": bool(found), "groups": groups}
 
     def economy_edit(self, prop: str, value, mode: str | None = None) -> dict:

@@ -3136,11 +3136,11 @@ function showView(view) {
 // "computer" values) go in the computer players' half. A change is saved in the current mod at once, for every game
 // mode (the game has these values twice: its usual modes and the Nuclear mode), or for one of the two where they're
 // shown apart (economyRow) ---
-const ECONOMY_AI_GROUPS = ["computer", "decoys"];
-
 async function renderEconomy() {
   const w = state.words;
   $("play-players-title").textContent = w.play_players_title;
+  $("play-rules-title").textContent = w.play_rules_title;
+  $("play-rules-help").textContent = w.play_rules_help;
   $("economy-help").textContent = state.mod ? w.economy_help : w.no_mod;
   $("economy-buildings").textContent = w.economy_buildings;
   $("ai-all-title").textContent = w.ai_all_title;
@@ -3161,11 +3161,12 @@ async function renderEconomy() {
     if (g.id === "supply") group.append(depotLine, depotMaps);
     return group;
   };
-  const players = groups.filter((g) => !ECONOMY_AI_GROUPS.includes(g.id));
-  const computers = groups.filter((g) => ECONOMY_AI_GROUPS.includes(g.id));
+  // each group in its part of the tab (StudioApi.economy section): what players get, the game rules, the computers'
   const none = () => [el("p", { className: "muted", textContent: w.economy_none })];
-  $("economy-groups").replaceChildren(...(data.ready && players.length ? players.map(drawn) : none()));
-  $("ai-economy-groups").replaceChildren(...(data.ready && computers.length ? computers.map(drawn) : none()));
+  for (const [section, box] of [["players", "economy-groups"], ["rules", "rules-groups"], ["computers", "ai-economy-groups"]]) {
+    const mine = groups.filter((g) => (g.section || "players") === section);
+    $(box).replaceChildren(...(data.ready && mine.length ? mine.map(drawn) : none()));
+  }
   showEconomyDepot(depotLine);
   renderEconomyDepots(depotMaps);
 }

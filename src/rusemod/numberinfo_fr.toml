@@ -1184,3 +1184,36 @@ does = "La colonne sur cette ligne du fichier source d'Eugen. Leur suivi interne
 [_ShortDatabaseName]
 what = "Nom court"
 does = "Le nom court que les outils d'Eugen ont donné à cet objet. Leur suivi interne : rien à changer."
+[TimeLimitTable]
+what = "Limites de temps de bataille au choix"
+does = "Les limites de temps, en minutes, qu'on peut donner à une bataille dans le salon. 10, 15, 20, 25, 30, 40, 50 et 60 dans le jeu."
+[TimeMaxForSurrender]
+what = "Reddition : secondes au plus pour tout faire sauter"
+does = "Quand un joueur se rend, le jeu fait sauter ses bâtiments l'un après l'autre : le temps que cela prend au plus, en secondes. 10 dans le jeu."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Reddition : secondes entre deux bâtiments qui sautent"
+does = "Quand un joueur se rend, les secondes entre un de ses bâtiments qui saute et le suivant. 1 dans le jeu."
+[EliminationWarningsDuration]
+what = "Message de défaite : secondes à l'écran"
+does = "Combien de temps, en secondes, reste à l'écran le message qu'un joueur a été éliminé ou s'est rendu (le script de bataille du jeu l'affiche aussi longtemps). 5 dans le jeu."
+[DureeDecompteLaunchGameMulti]
+what = "Compte à rebours du lancement multijoueur (s)"
+does = "Le compte à rebours, en secondes, avant qu'une bataille multijoueur parte du salon. 10 dans le jeu."
+[PopCapPerPlayer]
+what = "Unités au plus par joueur"
+does = "Le plus d'unités qu'un joueur peut avoir à la fois (la limite de population). 100 dans le jeu. Les scripts des cartes du jeu s'en servent ; on n'a pas encore essayé si une bataille sur PC y tient chaque joueur."
+[PopCapPerAlliance]
+what = "Unités au plus par camp"
+does = "Le plus d'unités qu'un camp (tous ses joueurs alliés ensemble) peut avoir à la fois. 100 dans le jeu. On n'a pas encore essayé si une bataille sur PC y tient."
+[PopCapTotal]
+what = "Unités au plus dans la bataille"
+does = "Le plus d'unités que toute la bataille peut avoir à la fois, tous les camps ensemble. 200 dans le jeu. On n'a pas encore essayé si une bataille sur PC y tient."
+[RF_TypeRapportDeForceInIaStrat]
+what = "Les joueurs ordinateur comparent les forces (1 : oui)"
+does = "1 : avant d'attaquer, un joueur ordinateur compare combien de temps chaque camp mettrait à détruire l'autre. Tout autre nombre fait toujours répondre non à cette comparaison. 1 dans le jeu."
+[RF_NbMetreMaxAParcourir]
+what = "Comparaison des forces : unités comptées au plus loin"
+does = "Jusqu'à quelle distance les unités peuvent avoir à parcourir et compter encore quand on compare les forces, en m. 700 m dans le jeu."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Part d'infanterie d'une offensive leurre"
+does = "Quelle part de l'offensive générale leurre d'un joueur ordinateur peut être de l'infanterie, en part de ses unités leurres. 50 % dans le jeu."

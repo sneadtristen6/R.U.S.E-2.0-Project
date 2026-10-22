@@ -1184,3 +1184,36 @@ does = "La colonna su quella riga del file sorgente di Eugen. Loro registrazione
 [_ShortDatabaseName]
 what = "Nome breve"
 does = "Il nome breve che gli strumenti di Eugen hanno dato a questo oggetto. Loro registrazione interna: niente da cambiare."
+[TimeLimitTable]
+what = "Limiti di tempo della battaglia tra cui scegliere"
+does = "I limiti di tempo, in minuti, che si possono dare a una battaglia nella sala. 10, 15, 20, 25, 30, 40, 50 e 60 nel gioco."
+[TimeMaxForSurrender]
+what = "Resa: secondi al massimo per far saltare tutto"
+does = "Quando un giocatore si arrende, il gioco fa saltare i suoi edifici uno dopo l'altro: quanto ci vuole al massimo, in secondi. 10 nel gioco."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Resa: secondi tra due edifici che saltano"
+does = "Quando un giocatore si arrende, i secondi tra un suo edificio che salta e il successivo. 1 nel gioco."
+[EliminationWarningsDuration]
+what = "Messaggio di sconfitta: secondi sullo schermo"
+does = "Quanto resta sullo schermo, in secondi, il messaggio che un giocatore è stato eliminato o si è arreso (lo script di battaglia del gioco lo mostra per questo tempo). 5 nel gioco."
+[DureeDecompteLaunchGameMulti]
+what = "Conto alla rovescia dell'avvio multigiocatore (s)"
+does = "Il conto alla rovescia, in secondi, prima che una battaglia multigiocatore parta dalla sala. 10 nel gioco."
+[PopCapPerPlayer]
+what = "Unità al massimo per giocatore"
+does = "Il massimo di unità che un giocatore può avere insieme (il limite di popolazione). 100 nel gioco. Gli script delle mappe del gioco lo usano; se una battaglia su PC lo fa rispettare a ogni giocatore non è ancora provato."
+[PopCapPerAlliance]
+what = "Unità al massimo per schieramento"
+does = "Il massimo di unità che uno schieramento (tutti i suoi giocatori alleati insieme) può avere insieme. 100 nel gioco. Se una battaglia su PC lo rispetta non è ancora provato."
+[PopCapTotal]
+what = "Unità al massimo nella battaglia"
+does = "Il massimo di unità che l'intera battaglia può avere insieme, tutti gli schieramenti uniti. 200 nel gioco. Se una battaglia su PC lo rispetta non è ancora provato."
+[RF_TypeRapportDeForceInIaStrat]
+what = "I giocatori del computer confrontano le forze (1: sì)"
+does = "1: prima di attaccare, un giocatore del computer confronta quanto tempo ciascuno schieramento impiegherebbe a distruggere l'altro. Qualunque altro numero fa sempre rispondere no al confronto. 1 nel gioco."
+[RF_NbMetreMaxAParcourir]
+what = "Confronto delle forze: unità contate al più lontano"
+does = "Quanta strada le unità possono dover fare e contare ancora quando si confrontano le forze, in m. 700 m nel gioco."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Quota di fanteria di un'offensiva esca"
+does = "Quanta parte dell'offensiva generale esca di un giocatore del computer può essere fanteria, come quota delle sue unità esca. 50% nel gioco."

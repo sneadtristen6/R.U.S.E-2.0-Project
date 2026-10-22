@@ -1184,3 +1184,36 @@ does = "Sloupec na tom řádku zdrojového souboru Eugenu. Jejich vnitřní evid
 [_ShortDatabaseName]
 what = "Krátký název"
 does = "Krátký název, který tomuto objektu daly nástroje Eugenu. Jejich vnitřní evidence: nic ke změně."
+[TimeLimitTable]
+what = "Časové limity bitvy na výběr"
+does = "Časové limity v minutách, které lze bitvě dát v předsálí. Ve hře 10, 15, 20, 25, 30, 40, 50 a 60."
+[TimeMaxForSurrender]
+what = "Kapitulace: nejvýš sekund na vyhození do vzduchu"
+does = "Když se hráč vzdá, hra vyhodí jeho budovy do vzduchu jednu po druhé: jak dlouho to nejvýš trvá, v sekundách. Ve hře 10."
+[TimeBetweenBuildingDestructionForSurrender]
+what = "Kapitulace: sekund mezi vyhozením dvou budov"
+does = "Když se hráč vzdá, sekundy mezi vyhozením jedné jeho budovy a další. Ve hře 1."
+[EliminationWarningsDuration]
+what = "Zpráva o porážce: sekund na obrazovce"
+does = "Jak dlouho, v sekundách, zůstane na obrazovce zpráva, že hráč vypadl nebo se vzdal (bitevní skript hry ji ukazuje tak dlouho). Ve hře 5."
+[DureeDecompteLaunchGameMulti]
+what = "Odpočet před spuštěním hry více hráčů (s)"
+does = "Odpočet v sekundách, než se bitva více hráčů spustí z předsálí. Ve hře 10."
+[PopCapPerPlayer]
+what = "Nejvíc jednotek na hráče"
+does = "Nejvíc jednotek, které hráč může mít naráz (limit populace). Ve hře 100. Skripty map hry s ním pracují; zda bitva na PC každého hráče v tom limitu drží, ještě není vyzkoušeno."
+[PopCapPerAlliance]
+what = "Nejvíc jednotek na stranu"
+does = "Nejvíc jednotek, které strana (všichni spojenečtí hráči dohromady) může mít naráz. Ve hře 100. Zda ho bitva na PC dodržuje, ještě není vyzkoušeno."
+[PopCapTotal]
+what = "Nejvíc jednotek v bitvě"
+does = "Nejvíc jednotek, které celá bitva může mít naráz, všechny strany dohromady. Ve hře 200. Zda ho bitva na PC dodržuje, ještě není vyzkoušeno."
+[RF_TypeRapportDeForceInIaStrat]
+what = "Počítačoví hráči porovnávají síly (1: ano)"
+does = "1: před útokem počítačový hráč porovná, jak dlouho by každá strana potřebovala ke zničení té druhé. Jakékoli jiné číslo způsobí, že toto porovnání vždy dopadne ne. Ve hře 1."
+[RF_NbMetreMaxAParcourir]
+what = "Porovnání sil: nejvzdálenější započtené jednotky"
+does = "Jak daleko mohou mít jednotky ještě cestovat a přesto se počítat při porovnání sil, v m. Ve hře 700 m."
+[Ratio_Infanterie_OffensiveGenerale]
+what = "Podíl pěchoty v klamné ofenzivě"
+does = "Jaká část klamné všeobecné ofenzivy počítačového hráče smí být pěchota, jako podíl jeho klamných jednotek. Ve hře 50 %."

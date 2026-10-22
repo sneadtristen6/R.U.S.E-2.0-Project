@@ -102,14 +102,19 @@ class Labels(unittest.TestCase):
         # should be in one comprehensive name"): its own tab is gone, its computer players' groups are in the second half
         html = (ROOT / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
-        for needle in ('id="economy-groups"', 'id="ai-economy-groups"', 'id="play-players-title"'):
+        for needle in ('id="economy-groups"', 'id="rules-groups"', 'id="ai-economy-groups"', 'id="play-players-title"',
+                       'id="play-rules-title"'):
             self.assertIn(needle, html)
         for needle in ('id="tab-economy"', 'id="economy-view"'):
             self.assertNotIn(needle, html)
         for needle in ("function renderEconomy", "api().economy(", "api().economy_edit(", "api().economy_reset(",
-                       'const ECONOMY_AI_GROUPS = ["computer", "decoys"]', "function renderPlay"):
+                       '[["players", "economy-groups"], ["rules", "rules-groups"], ["computers", "ai-economy-groups"]]',
+                       "function renderPlay"):
             self.assertIn(needle, app)
-        self.assertLessEqual({"computer", "decoys"}, {g for g, _props in economy.GROUPS})  # the groups the page moves
+        # each group in one part of the tab: what players get, the game rules (the rest), the computer players'
+        self.assertLessEqual(set(economy.SECTIONS.values()), {"players", "rules", "computers"})
+        self.assertLessEqual(set(economy.SECTIONS), {g for g, _props in economy.GROUPS})
+        self.assertEqual({g for g, s in economy.SECTIONS.items() if s == "computers"}, {"computer", "decoys"})
 
 
 class Copies(unittest.TestCase):

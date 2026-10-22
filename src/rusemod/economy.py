@@ -4,10 +4,14 @@ decoys. The game has these values twice (its usual game modes, and the Nuclear m
 the Studio changes both copies from one value, each reached by the file it's in, and a change holds in every mode; or
 one copy alone, where the two are shown apart (the owner, 2026-10-17: "separate normal and nuclear for sure").
 
+Since 2026-10-22 every other value of these constants is offered too, as the game rules (battle, population, movement,
+fighting and the rest; the owner: "all game rules keep it nice and organized though"). Whether the PC game holds
+players to the population cap isn't tried yet.
+
 Depots, admin buildings and truck factories themselves (price, build time, strength) are buildings: the Studio's
-Units page changes them. The population cap isn't offered: it is a console setting, off in the PC game (not tested).
-Nor are the most ruse cards on one sector: more than two crashes the game (rusemod.rules, ruses-per-sector, which the
-build refuses from any mod), and the owner wants it left as the game has it for now (2026-10-06).
+Units page changes them. The most ruse cards on one sector isn't offered: more than two crashes the game
+(rusemod.rules, ruses-per-sector, which the build refuses from any mod), and the owner wants it left as the game has it
+for now (2026-10-06).
 """
 from __future__ import annotations
 
@@ -26,14 +30,25 @@ GROUPS = (
     ("cards", ("NbMaxCardsInPool",
                *(f"NbInitialCardsInPoolForAllianceTaille_{n}" for n in _SIZES),
                *(f"PaliersTempsToChooseNewCardForAllianceTaille_{n}" for n in _SIZES))),
+    # the game rules (the owner, 2026-10-22: "all game rules keep it nice and organized though"): every other value of
+    # the game's constants, by what it is about
+    ("battle", ("TimeLimitTable", "TimeMaxForSurrender", "TimeBetweenBuildingDestructionForSurrender",
+                "EliminationWarningsDuration", "DureeDecompteLaunchGameMulti")),
+    ("population", ("PopCapPerPlayer", "PopCapPerAlliance", "PopCapTotal")),
     ("computer", ("ArmyValueForceLaunchAttack", "MinArmyValueToUseManipulationCard", "MaxWaitingRequest",
                   "NbMaxWaitingRequestBeforeRequestingNewFactory",
-                  "MaxTimeWaitingRequest", "CheckAndCancelWaitingRequest", "BP_DepotAddedValue", "BP_HqValue")),
+                  "MaxTimeWaitingRequest", "CheckAndCancelWaitingRequest", "BP_DepotAddedValue", "BP_HqValue",
+                  "RF_TypeRapportDeForceInIaStrat", "RF_NbMetreMaxAParcourir")),
     ("decoys", ("NbMin_UniteLeurre_OffensiveGenerale", "NbMax_UniteLeurre_OffensiveGenerale",
                 "NbMin_UniteLeurre_OffensiveAerienne", "NbMax_UniteLeurre_OffensiveAerienne",
                 "NbMin_UniteLeurre_OffensiveBlinde", "NbMax_UniteLeurre_OffensiveBlinde",
-                "ConstructionDelayForFakeBuildingsMin", "ConstructionDelayForFakeBuildingsMax")),
+                "ConstructionDelayForFakeBuildingsMin", "ConstructionDelayForFakeBuildingsMax",
+                "Ratio_Infanterie_OffensiveGenerale")),
 )
+# where each group shows in AI and player settings: what players start with and get, the game rules, and the
+# computer players' (a group not named here is a game rule)
+SECTIONS = {"money": "players", "supply": "players", "production": "players", "cards": "players",
+            "computer": "computers", "decoys": "computers"}
 PROPS = tuple(p for _group, props in GROUPS for p in props)
 RUSES_PER_SECTOR, RUSES_PER_SECTOR_MOST = "MaxNbCardsPerZoneByAlliance", 2  # each sector has room for two ruses
 
