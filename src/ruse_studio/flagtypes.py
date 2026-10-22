@@ -175,6 +175,7 @@ class FlagTypeCalls:
         try:
             on, off = [list(dict.fromkeys(int(n) for n in xs)) for xs in (on or [], off or [])]
         except (TypeError, ValueError):
+            # not a game rule: the page sends the flags as numbers; anything else is a call made wrong
             raise StudioError("A flag type's flags are the game's flag numbers.") from None
         bad = [n for n in on + off if n not in known]
         if bad:
