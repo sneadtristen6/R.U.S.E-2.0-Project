@@ -167,23 +167,25 @@
     : `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
 
   // --- the list ---
+  // the game's songs by where they play, into RUSE Decoy's list (decoy.js: S.target = {box, extra, shown}); `extra(s)`
+  // adds a game song's own controls (its volume) to its row
   async function render() {
     const w = W();
-    $("music-title").textContent = w.music_title;
-    $("music-help").textContent = w.music_help;
+    const t = S.target;
+    if (!t) return;
     let data;
     try { data = await api().music(S.lang); } catch (err) { problem(err); return; }
-    if (!$("music-view") || $("music-view").classList.contains("hidden")) return;  // another tab meanwhile
+    if (t.shown && !t.shown()) return;  // another kind or tab meanwhile
     S.data = data;
-    $("music-nomod").textContent = data.mod ? "" : w.no_mod;
-    $("music-nomod").classList.toggle("hidden", data.mod);
-    $("music-groups").replaceChildren(...(data.groups.length ? data.groups.map((g) => {
+    t.box.replaceChildren(...(data.groups.length ? data.groups.map((g) => {
       const list = el("div", { className: "music-list" });
       const battle = g.id.startsWith("playlist");
       const reference = battle ? g.songs.find((x) => !x.new) : null;  // the list's first game song: loudness
       for (const s of g.songs) {
         if (s.new) s.reference = reference && reference.member;
-        list.append(row(s));
+        const r = row(s);
+        if (t.extra && !s.new) r.querySelector(".music-actions").append(...t.extra(s));
+        list.append(r);
       }
       const head = el("h2", { textContent: w[`music_group_${g.id.replace(/\d$/, "")}`] ? fill(w[`music_group_${g.id.replace(/\d$/, "")}`], { n: Number(g.id.slice(-1)) + 1 }) : g.id });
       const first = g.id === "playlist0" || !battle;  // the three lists share one help line
@@ -202,6 +204,7 @@
       return el("div", { className: "group" }, head, ...(help ? [el("p", { className: "muted small", textContent: help })] : []),
         ...(when ? [el("p", { className: "small", textContent: when })] : []), list, ...extra);
     }) : [el("p", { className: "muted", textContent: w.music_none })]));
+    if (t.after) t.after(data);   // RUSE Decoy: the music files no song names (jingles), after the songs
   }
 
   function where(s) {
@@ -333,6 +336,9 @@
     } else if (s.new) {
       $("me-title").textContent = fill(w.music_editor_title, { name: s.name });
       $("me-lead").textContent = w.music_add_lead;
+    } else if (s.decoy) {  // any other of the game's sounds, from RUSE Decoy (decoy.js)
+      $("me-title").textContent = fill(w.decoy_editor_title, { name: s.name });
+      $("me-lead").textContent = fill(w.decoy_editor_lead, { len: clock(s.seconds, true) });
     } else if (s.pair) {  // a layer of a map's background (openAmbience)
       $("me-title").textContent = fill(w.map_sound_editor_title, { n: s.pair, map: s.mapName });
       $("me-lead").textContent = fill(w.map_sound_editor_lead, { len: clock(s.seconds, true) });
@@ -696,13 +702,43 @@
     $("music-editor").addEventListener("keydown", (e) => e.stopPropagation());  // (over the map: keys stay here)
   }
 
+  // RUSE Decoy (decoy.js): a sound played at `percent` of its volume, louder ones through a limiter as the build
+  // makes them (rusemod.sound.louder), so what is heard is near what the game will play; one sound at a time, with
+  // the Music tab's
+  function playAt(buffer, percent, done) {
+    stop();
+    const c = ctx();
+    const node = c.createBufferSource();
+    node.buffer = buffer;
+    const gain = c.createGain();
+    gain.gain.value = Math.max(0, percent) / 100;
+    let last = gain;
+    if (percent > 100) {
+      const lim = c.createDynamicsCompressor();
+      lim.threshold.value = -2.5; lim.knee.value = 2; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.1;
+      gain.connect(lim);
+      last = lim;
+    }
+    node.connect(gain);
+    last.connect(c.destination);
+    node.start(c.currentTime + 0.05);
+    const me = { node, done };
+    node.onended = () => { if (S.playing === me) { S.playing = null; if (done) done(); } };
+    S.playing = me;
+    return me;
+  }
+
   window.SoundView = {
     decodeEss,
     voicesGroup,
     openAmbience,
-    open(words, lang) { S.words = words; S.lang = lang; render(); },
-    setWords(words, lang) { S.words = words; S.lang = lang; render(); },
-    modChanged() { render(); },
+    gameBuffer,
+    modBuffer,
+    playAt,
+    stop,
+    openEditor(s, after, words, lang) { if (words) { S.words = words; S.lang = lang; } openEditor(s, after); },
+    // RUSE Decoy's "Music and jingles": the songs by where they play into `box`, `extra(s)` beside each game song
+    musicInto(box, words, lang, extra, shown, after) { S.words = words; S.lang = lang; S.target = { box, extra, shown, after }; render(); },
     leave() { stop(); },
     busy() { return Boolean(S.saving); },                            // a sound being saved (app.js unsavedReasons)
     editing() { const d = $("music-editor"); return Boolean(d && d.open && !S.saving); },  // a sound cut, not used yet

@@ -389,21 +389,99 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `files/replace/gen_sound/ww2/sons/atp_music/battle1.ess.wav` for the battle song "Battle 1". A 16-bit WAV, any
   length; one channel, two or six (as the game's own sounds have), at its own rate. The build makes the game's kind
   of file from it, once (the build cache keeps it), and updates what the game reads about the sound wherever the game
-  keeps that. A later mod's WAV wins over an earlier one's. Music and most unit voices can be replaced this way; the
-  short sound effects of the other kind can't yet (the build says so). The Studio's **Music** tab lists every song
-  the game plays by where it plays (the menus, the three lists battles play from, the end of a match, mission goals,
-  the campaign chapters and Operations that name them, and the few no part of the game plays), plays each one, and
-  replaces it in a small editor of its own: a sound file dropped or chosen (the Studio's window reads WAV, MP3, OGG
-  and FLAC itself), cut with two handles, faded in and out, made louder or quieter (or as loud as the game's), heard,
-  then *Use this* saves it in the mod as above, in the game song's own format. Nothing to install. A unit's page has
-  a **Voice** section the same way: what the unit says in the game, by moment (the game's own words for them: Move,
-  Attack, Spawn...), each line heard and replaced in the same editor. A unit speaks the lines of its nation and kind,
-  so the page names the units that share them (a line changed there is heard from all of them); a copied unit speaks
-  its source's.
+  keeps that. A later mod's WAV wins over an earlier one's. Any of the game's 17,462 sounds can be replaced this way
+  (2026-10-21: the short effects too, guns, impacts, engines and the ruse cards; for those the build also makes the
+  small loudness track the game keeps beside them, which only decides which sounds keep playing when too many play at
+  once; heard in the game 2026-10-21: a ruse card's sound and a mission's lines replaced).
+- **How loud each of the game's sounds plays (2026-10-21, `rusemod.sound`; heard in the game 2026-10-21: the menu
+  song at 30%, a tank's sounds at 200%, guns at 0% near and as the game far away):**
+  `files/sound/volume.toml` gives a sound its own volume, in percent of the game's (100 = as the game, 0 = silent, up
+  to 200):
+
+  ```toml
+  [volume]
+  "gen_sound/ww2/sons/sfx_ruse/sfx_tir/sfx_tir_obusap_leger_01.ess" = 150
+  ```
+
+  The build makes that sound again at its volume (above 100% the loudest parts are rounded off smoothly, so it never
+  crackles), keeping its length and loop, and updates what the game reads about it. A sound the mod also replaces gets
+  its volume on the mod's own sound. Every other setting the game has for the sound stays as it was (how far it's
+  heard, its group, the game's own volume options): the game itself can't play a sound louder than its settings say,
+  so the sound file is what changes. A later mod's volume for a sound wins.
+- **RUSE Decoy (2026-10-21), the Studio's sound and animation designer**, is where all of this is done (it took the
+  Music tab's place): every sound the game has by kind (weapons near and far, impacts and destruction, engines,
+  surroundings, the maps' backgrounds, the interface, the ruse cards, unit voices, the HQ's and intelligence lines,
+  radio, the missions' dialogue, music and jingles), each played, given a volume with a slider (or a whole kind at
+  once) and replaced in a small editor: a sound file dropped or chosen (the Studio's window reads WAV, MP3, OGG and
+  FLAC itself), cut with two handles, faded in and out, made louder or quieter (or as loud as the game's), heard, then
+  *Use this* saves it in the mod as above, in the game sound's own format. Nothing to install. A mission's lines show
+  what they say, in every language the game has, picked by mission and language: a whole campaign can be voiced
+  again. Its music is the game's songs by where they play (the menus, the three lists battles play from, the end of a
+  match, mission goals, the campaign chapters and Operations that name them, and the few no part of the game plays),
+  with *Add a song* under each battle list. A unit's page has a **Sounds and animation** section: how many voice
+  lines and engine sounds the unit has, and a button that opens RUSE Decoy on just those. A unit speaks the lines of
+  its nation and kind, so a line changed there is heard from every unit that shares it; a copied unit speaks its
+  source's. The same section lists the unit's animations, each opening RUSE Decoy's animation editor.
+- **Animations (2026-10-21, `rusemod.baf`, `rusemod.anim`; seen in the game 2026-10-21: a clip in another's place,
+  slower clips, a bone made bigger and turned):** the game's units, crews, horses and HQ figures move by animation
+  clips (`.baf`, 351 of them in the `genanim_15` packs); a clip belongs to the skeleton it was made for, and one clip
+  is often played by many units (the riflemen's run by all 30 kinds of infantry, every nation's). `files/anim/clips.toml`
+  changes them, each named by its path in the game's packs:
+
+  ```toml
+  [clip."genanim_15/ww2/res3d/units/common/fusilier_courselod0.baf"]
+  speed = 150                     # percent of the game's, 1 to 1000: the game plays a clip over its own length
+  from = "genanim_15/ww2/res3d/units/common/fusilier_deroutelod0.baf"   # another clip of the same bones in its place
+  [clip."genanim_15/ww2/res3d/units/common/fusilier_courselod0.baf".bone."bip01 head"]
+  size = 2.5                      # the bone this many times its size all along the clip, 0.01 to 20
+  turn = ["z", 30]                # and turned this many degrees about its own x, y or z
+  ```
+
+  `files/replace/<clip path>` (a `.baf` made elsewhere, or by RUSE Decoy's motion capture) takes a clip's place whole,
+  and the toml's changes then apply on top of it. The build makes each clip once and writes it into every pack of the
+  game that holds it (one clip can be in up to seven). RUSE Decoy's **Animations** list every clip by kind (infantry,
+  gun crews, vehicles and guns, HQ figures, animals and scenery) with the names the game's models give it and how many
+  units play it; *Watch and change* plays it in 3D on a model that uses it, as the mod makes it, with its speed, *Use
+  instead* (only the clips of the same bones are offered) and a bone's size and turn.
+- **Motion capture (2026-10-21, `rusemod.mocap`; seen in the game 2026-10-21: 100STYLE's waving as the riflemen's
+  standing, every standing rifleman waving his rifle):** a real
+  person's movement put on a soldiers' clip (the clips on the `bip01` skeleton: infantry, crews, drivers). The
+  animation editor's **motion library** (`rusemod.motionlib`) lists 3,205 free moves by kind (walking and marching,
+  running, standing still, crouching and crawling, falling, fighting and throwing, signals and gestures, jumping,
+  climbing, carrying, everyday work, sitting and lying, sport, dancing, acting), searchable by what each move is (the
+  sets describe them in English): the CMU database's 2,505 moves, each fetched from the internet the first time it's
+  picked (most under 1 MB; the row says how big), and 100STYLE's 700 (100 walking styles, each forwards, backwards and
+  sideways, walking and running, and standing still), which come as one 1.4 GB download (*Get the 100 walking
+  styles*, in the background; its moves are kept, about 2.8 GB, and the download deleted). Whatever is fetched is kept
+  in the platform folder (`library/motions/`) only when it is exactly the listed file (size and SHA-256), so a picked
+  move opens at once the next time; a 100STYLE move opens on the stretch the set marks for its way of moving. Or,
+  *Pick a motion capture file…* reads a `.bvh` of the modder's own (100STYLE's 100 walking styles and the CMU database's
+  2,500 moves are free; Mixamo's, Blender's and most programs' exports work: the body's parts are found by their
+  joints' usual names, and a file whose joints don't show them says which). *From* and *How long* pick the stretch
+  (seconds), *Keep on the spot* holds the soldier where he stands (the game moves the unit itself), *Make it loop*
+  eases the last pose into the first (ticked when the game's own clip loops). *Watch it* plays it on the soldier
+  without saving; *Use it* writes it to `files/replace/<clip path>` with a sidecar beside it,
+  `files/replace/<clip path minus .baf>.toml`, that keeps where it came from and its credit (filled in for 100STYLE,
+  CC BY 4.0, and the CMU database; for any other file the modder writes who made it and its licence, and it can't be
+  used without one):
+
+  ```toml
+  source = "Neutral_FW.bvh"
+  start = 10
+  length = 1.1
+  in_place = true
+  loop = true
+  credit = "100STYLE dataset by Ian Mason, Sebastian Starke and Taku Komura (2022), CC BY 4.0, ..."
+  ```
+
+  How it is made: the file's axes turned into the game's, each body part's rest pose laid against the soldier's (a
+  T-pose against arms down), every part's turn carried over frame by frame at the game's 30 a second, the hips made
+  the soldier's size by the length of the legs and stood on the ground where the game's clip stands. The fingers, the
+  weapons and the helper bones keep the game clip's own keys, so the rifle stays in the hand.
 - **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
   song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at
-  the end of the list. The name is letters, digits and `_`. The Music tab's **Add a song…** under each list writes it
+  the end of the list. The name is letters, digits and `_`. RUSE Decoy's **Add a song…** under each battle list writes it
   there (the editor asks for its name); the song then shows in that list, marked New, with Change… and Remove.
 - **A map's background sound (2026-10-07; not tried in the game yet):** under the battle each map plays one long
   sound over and over, made of three stereo layers played together (how loud the game plays each, and when, isn't
@@ -413,7 +491,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the maps that shared the old one keep it. `maps/<map pack>/sound.toml` with `background = '<another background, as
   the Studio names it>'` starts the map from the one another map plays instead (its layers then come from that one).
   A new map gets its own the same way. The Maps tab's **Background sound…** shows the map's: what it starts from (its
-  own, or the one another map plays), and its three layers, each heard and replaced in the Music tab's editor; *Hear
+  own, or the one another map plays), and its three layers, each heard and replaced in RUSE Decoy's editor; *Hear
   all three together* plays them as the build will put them together.
 - **A nation given a new name and flag (2026-10-08, `rusemod.nations`; seen in the game: Italy made China, its new
   name in the lobby's nation list and its new flag beside the player's name in a match, no crash):** one of the game's
@@ -1868,7 +1946,8 @@ Built: `tools/rmod_to_mod.py` rebuilds an `.rmod` as a mod of ours, for editing.
 
 ## 14. Not yet
 
-- The game's short sound effects of the second kind can't be replaced yet (songs and most unit voices can: §7).
+- Which of the game's guns and hits a unit sets off isn't read yet, so a unit's page sends to its voice lines and
+  engine only; its weapons' sounds are changed by kind in RUSE Decoy (§7). Animations come to RUSE Decoy next.
 - The gameplay and cosmetic split (§10.8) is cautious on purpose; the two-PC tests will tell where it can relax.
 
 ## 15. The mod index (Supported mods)

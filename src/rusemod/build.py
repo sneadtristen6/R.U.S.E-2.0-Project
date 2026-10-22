@@ -165,9 +165,15 @@ def load_mod(path) -> tuple[ModInfo, list]:
             info.looks = mod_looks(path)    # files/buildings/<name>/building.toml: its new buildings' own looks
         except AssetError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
-        from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, new_songs_rndf
+        from .sound import SoundError, mod_ambience, mod_new_songs, mod_sounds, mod_volumes, new_songs_rndf
         info.sounds = mod_sounds(path)
         try:
+            info.volumes = mod_volumes(path)  # files/sound/volume.toml: how loud it plays each of the game's sounds
+            from .anim import AnimError, mod_clips
+            try:
+                info.clips = mod_clips(path)  # files/anim/clips.toml and files/replace/**/*.baf: its animations
+            except AnimError as exc:
+                raise SoundError(str(exc)) from None
             info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
         except SoundError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
@@ -1048,6 +1054,7 @@ def needs_zz_win(mods: list) -> bool:
     (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
+               or getattr(m, "volumes", None) or getattr(m, "clips", None)
                or getattr(m, "assets", None) or getattr(m, "looks", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
@@ -4452,6 +4459,31 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.sound_changed = sound_changes(text_arc, sounds, cache, say=say, before={
                     **result.model_changed, **result.texture_changed, **result.model_imports})
             except SoundError as exc:
+                raise BuildError(str(exc)) from None
+        volumes: dict = {}  # how loud mods play the game's sounds (files/sound/volume.toml): a later mod's wins
+        for mod_id in result.order:
+            volumes.update(getattr(by_id.get(mod_id), "volumes", None) or {})
+        if volumes and text_arc is not None:
+            from .sound import SoundError, volume_changes
+            say(f"sound volumes: {len(volumes)}")
+            try:
+                result.sound_changed.update(volume_changes(text_arc, volumes, cache, say=say, before={
+                    **result.model_changed, **result.texture_changed, **result.model_imports,
+                    **result.sound_changed}))
+            except SoundError as exc:
+                raise BuildError(str(exc)) from None
+        clips: dict = {}  # mods' animations (files/anim/clips.toml, files/replace/*.baf; rusemod.anim): a later mod's wins
+        for mod_id in result.order:
+            clips.update(getattr(by_id.get(mod_id), "clips", None) or {})
+        if clips and text_arc is not None:
+            from .anim import AnimError, changes as anim_changes
+            say(f"animations: {len(clips)}")
+            try:
+                # (kept with the sounds: members of ZZ_Win.dat the build replaces, its genanim_15 packs here)
+                result.sound_changed.update(anim_changes(text_arc, clips, cache, say=say, before={
+                    **result.model_changed, **result.texture_changed, **result.model_imports,
+                    **result.sound_changed}))
+            except AnimError as exc:
                 raise BuildError(str(exc)) from None
         new_songs: dict = {}  # mods' new songs (files/music/list<N>, rusemod.sound): new files and descriptions
         for mod_id in result.order:

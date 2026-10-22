@@ -361,6 +361,71 @@ def description(b: bytes) -> bytes:
                        h["loop_start"], h["loop_end"])
 
 
+# --- the loudness track of the short effects (flag 0: guns, impacts, engines, the ruse cards...) ---
+# The game uses a window's track only to rank which sounds keep a voice when too many play at once, never for how
+# loud a sound plays: one byte of five, the further away the sound (the more its high notes are cut), the lower the
+# byte it takes, so byte k is the window's level below (k + 1) x 8,820 Hz. How the game's own tracks were made isn't
+# known exactly; measured on 30 of them, the bytes follow the level in a straight line (byte = TRACK_SLOPE[k] x the
+# level below that cutoff), which this follows. Every one of the game's 230 tracks has ceil(frames / step) windows,
+# the step 1024 at 11,025 a second, 2048 at 22,050, 4096 at 44,100 and 48,000.
+TRACK_SLOPE = (0.00977, 0.01187, 0.01284, 0.01336, 0.01365)
+
+
+def track_step(rate: int) -> int:
+    """The track's window, in samples, for a sound at `rate` (as every one of the game's tracks has it)."""
+    return 1024 if rate <= 16000 else 2048 if rate <= 32000 else 4096
+
+
+def loudness_track(pcm, channels: int, rate: int, step: int | None = None) -> bytes:
+    """Five rising bytes per window of `step` samples: the window's level below 8.8, 17.6, 26.5, 35.3 and 44.1 kHz
+    (one-pole low-pass filters; a cutoff at or past half the rate is the whole sound)."""
+    import math
+    step = step or track_step(rate)
+    frames = len(pcm) // channels
+    mono = [sum(pcm[i * channels:(i + 1) * channels]) / channels for i in range(frames)]
+    coefs = []
+    for k in range(5):
+        cut = (k + 1) * 8820
+        coefs.append(None if cut >= rate / 2 else 1.0 - math.exp(-2 * math.pi * cut / rate))
+    out = bytearray()
+    state = [0.0] * 5
+    for start in range(0, frames, step):
+        sums = [0.0] * 5
+        n = min(step, frames - start)
+        for x in mono[start:start + n]:
+            for k, a in enumerate(coefs):
+                if a is None:
+                    y = x
+                else:
+                    state[k] += a * (x - state[k])
+                    y = state[k]
+                sums[k] += y * y
+        level = 0
+        for k in range(5):
+            v = int(round(TRACK_SLOPE[k] * math.sqrt(sums[k] / n)))
+            level = max(level, min(255, v))   # rising, as every one of the game's is
+            out.append(level)
+    return bytes(out)
+
+
+def description_like(game_desc: bytes, made: bytes) -> bytes:
+    """The description of a sound made to stand in for one of the game's with a loudness track (flag 0): the game's
+    own field 12, the new sound's format, length, loop and size, and a loudness track made from the new sound."""
+    h = header(made)
+    if len(game_desc) < 36 or game_desc[2] != 0:
+        return description(made)
+    ch = h["channels"]
+    step = 0 if ch == 6 else track_step(h["rate"])
+    if step:
+        pcm, _ = decode(made)
+        track = loudness_track(pcm, ch, h["rate"], step)
+    else:
+        track = b""   # the maps' 6-channel backgrounds: every one of the game's has an empty track
+    field12 = struct.unpack_from("<I", game_desc, 12)[0]
+    return struct.pack("<HBBBBHIIIIIIHBB", 0x0106, 0, ch, 0, 2 * ch, h["rate"], h["frames"], field12, len(made),
+                       h["loop_start"], h["loop_end"], len(track) // 5, step, 10, 5) + track
+
+
 # --- WAV files ---
 def read_wav(raw: bytes) -> tuple[array, int, int]:
     """(16-bit PCM, channels, rate) of a WAV file; 16-bit PCM WAVs only."""
@@ -799,14 +864,14 @@ def changes(zz, sounds: dict, cache: Path | None = None, say=print, before: dict
             # not a game rule: the WAV is named for a sound this game doesn't have (a typo, another game build)
             raise SoundError(f"{REPLACE}/{member.replace(chr(92), '/')}.wav: the game has no sound {member}")
         game = header(bytes(zz.read(e)))
-        if game["flag"] != 1:
-            raise SoundError(f"{member}: this kind of sound (one with a loudness track) can't be replaced yet")
         try:
             raw = Path(wav).read_bytes()
         except OSError as exc:
             raise SoundError(f"{wav}: {exc.strerror or exc}") from None
-        out[e.path] = _cooked(raw, 1, cache)
-        made[member] = description(out[e.path])
+        # made the game's sound's own kind: flag 1 (music, voices) or flag 0 (effects, with a loudness track that
+        # description_like makes from the new sound, bank by bank, below)
+        out[e.path] = _cooked(raw, game["flag"], cache)
+        made[member] = description(out[e.path]) if game["flag"] == 1 else None
         h = header(out[e.path])
         say(f"sound: {member} from {Path(wav).name} ({h['frames'] / h['rate']:.1f} s, {h['channels']} channel(s), "
             f"{h['rate']} a second)")
@@ -822,7 +887,142 @@ def changes(zz, sounds: dict, cache: Path | None = None, say=print, before: dict
         for member, desc in made.items():
             d = bank.entry(member[:-len(".ess")] + ".sformat")
             if d is not None:
+                if desc is None:   # a flag-0 sound: its description made from the game's and the new sound
+                    new = out[zz.entry(member).path]
+                    desc = description_like(bytes(bank.read(d)), new)
                 replace[d.path] = desc
+        if replace:
+            out[e.path] = bank.to_bytes(replace)
+    return out
+
+
+# --- how loud a mod plays each of the game's sounds ---
+# The game can't play a sound louder than its own settings say: a sound's volume, the volume group it hangs from and
+# the voice playing it each go from 0 to 1 at most, and the 45 shared settings most sounds take their volume from are
+# in a pack the build doesn't write. So a sound's own volume here is its own sound made louder or quieter: every one of the game's settings for it
+# (distance, its group, the game's own volume options) stays as it was.
+VOLUMES = "files/sound/volume.toml"
+MOST_VOLUME = 200       # not a game rule: the Studio's slider goes to twice the game's (louder is limited, below)
+VOLUME_VERSION = 1      # part of the cache key, with CODEC_VERSION
+_LIMIT_FROM = 24575     # 0.75 of full scale: louder than this is rounded off smoothly instead of cut (no crackle)
+_LIMIT_TOP = 30934      # and never past -0.5 dBFS: the codec's own small error near the top would otherwise reach the
+                        # rail (seen: 101 samples clipped at 150% of a cannon shot with the limit at full scale)
+
+
+def volume_key(member: str) -> str:
+    """How volume.toml names a sound: its path in ZZ_Win.dat with forward slashes, lower case."""
+    return member.replace("\\", "/").lower()
+
+
+def mod_volumes(folder: Path) -> dict:
+    """{sound path in ZZ_Win.dat (backslashes, lower case): percent} from a mod's files/sound/volume.toml:
+
+        [volume]
+        "gen_sound/ww2/sons/sfx_ruse/sfx_tir/sfx_tir_obusap_leger_01.ess" = 150
+
+    0 is silent, 100 the game's own (left out), up to MOST_VOLUME."""
+    import tomllib
+    f = Path(folder) / VOLUMES
+    if not f.is_file():
+        return {}
+    try:
+        table = tomllib.loads(f.read_text(encoding="utf-8")).get("volume", {})
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise SoundError(f"{VOLUMES}: {exc}") from None
+    if not isinstance(table, dict):
+        raise SoundError(f"{VOLUMES}: [volume] should be a table of sound = percent")
+    out = {}
+    for key, v in table.items():
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 <= v <= MOST_VOLUME:
+            # not a game rule: the slider's range (louder than twice the game's would mostly be rounded off)
+            raise SoundError(f"{VOLUMES}: {key} = {v!r}: a volume is a percent from 0 to {MOST_VOLUME}")
+        key = key.strip().replace("/", "\\").lower()
+        if not key.endswith(".ess"):
+            raise SoundError(f"{VOLUMES}: {key}: name a sound by its path in ZZ_Win.dat, ending .ess")
+        if round(v) != 100:
+            out[key] = int(round(v))
+    return out
+
+
+def louder(pcm, percent: int) -> array:
+    """16-bit PCM at `percent` of its volume. Quieter: each sample scaled. Louder: what passes 0.75 of full scale is
+    rounded off smoothly towards -0.5 dBFS (a soft limiter), so nothing is cut flat."""
+    import math
+    g = percent / 100.0
+    out = array("h", bytes(2 * len(pcm)))
+    top = _LIMIT_TOP - _LIMIT_FROM
+    for i, x in enumerate(pcm):
+        y = x * g
+        if g > 1.0 and abs(y) > _LIMIT_FROM:
+            m = _LIMIT_FROM + top * math.tanh((abs(y) - _LIMIT_FROM) / top)
+            y = m if y > 0 else -m
+        out[i] = max(-32768, min(32767, int(round(y))))
+    return out
+
+
+def with_volume(raw: bytes, percent: int, cache: Path | None = None) -> bytes:
+    """A game sound (the .ess bytes) made again at `percent` of its volume: the same kind, channels, rate, length and
+    loop as the game's (its header's loop words are kept)."""
+    key = hashlib.sha256(raw + struct.pack("<HBB", percent, CODEC_VERSION, VOLUME_VERSION)).hexdigest()
+    file = Path(cache) / "sound" / "volume" / f"{key}.ess" if cache is not None else None
+    if file is not None and file.is_file():
+        return file.read_bytes()
+    pcm, h = decode(raw)
+    made = bytearray(encode(louder(pcm, percent), h["channels"], h["rate"], h["flag"]))
+    made[12:20] = raw[12:20]   # the game's loop start and end (encode writes 0 .. the last sample)
+    made = bytes(made)
+    if file is not None:
+        file.parent.mkdir(parents=True, exist_ok=True)
+        tmp = file.with_suffix(".part")
+        tmp.write_bytes(made)
+        tmp.replace(file)
+    return made
+
+
+def volume_description(desc: bytes, made: bytes, percent: int) -> bytes:
+    """A sound's description (as a bank holds it) for the sound made again by with_volume: its file size, and for a
+    sound with a loudness track (flag 0), the track's bytes times the same amount (at most 255): they follow the
+    sound's level in a straight line (see the loudness track, above), so scaling them is the closest known."""
+    out = bytearray(desc)
+    struct.pack_into("<I", out, 16, len(made))
+    if len(desc) >= 36 and desc[2] == 0:
+        count = struct.unpack_from("<I", desc, 28)[0]
+        g = percent / 100.0
+        for i in range(36, min(len(out), 36 + 5 * count)):
+            out[i] = min(255, int(round(desc[i] * g)))
+    return bytes(out)
+
+
+def volume_changes(zz, volumes: dict, cache: Path | None = None, say=print, before: dict | None = None) -> dict:
+    """{member path in ZZ_Win.dat: new bytes} for a mod's `volumes` ({sound path: percent}): each sound made again
+    at its volume, from the mod's own sound when an earlier step replaced it (`before`, as for `changes`), and its
+    description updated in every sound bank that has one."""
+    from .edat import Edat
+    earlier = {k.lower().replace("/", "\\"): v for k, v in (before or {}).items()}
+    out: dict = {}
+    made: dict = {}   # sound path -> (its new bytes, percent)
+    for member, percent in sorted(volumes.items()):
+        e = zz.entry(member)
+        if e is None:
+            # not a game rule: the mod names a sound this game build doesn't have (a typo, another game build)
+            raise SoundError(f"{VOLUMES}: the game has no sound {volume_key(member)}")
+        raw = earlier.get(e.path.lower()) or bytes(zz.read(e))
+        out[e.path] = with_volume(raw, percent, cache)
+        made[member] = (out[e.path], percent)
+        say(f"sound volume: {volume_key(member)} at {percent}%")
+    if not made:
+        return out
+    for e in zz.entries:
+        p = e.path.lower()
+        if not (p.startswith(BANKS) and p.endswith(".mpk")):
+            continue
+        raw = earlier.get(p) or bytes(zz.read(e))
+        bank = Edat(raw)
+        replace = {}
+        for member, (new, percent) in made.items():
+            d = bank.entry(member[:-len(".ess")] + ".sformat")
+            if d is not None:
+                replace[d.path] = volume_description(bytes(bank.read(d)), new, percent)
         if replace:
             out[e.path] = bank.to_bytes(replace)
     return out

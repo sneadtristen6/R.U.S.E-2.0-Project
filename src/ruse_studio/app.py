@@ -60,6 +60,13 @@ def _errors_worded() -> str:
     return f"{said!r}, {line!r}"
 
 
+def _motion_list() -> str:
+    """RUSE Decoy's motion library list (rusemod's motions.json.gz beside its code) reads, every set in it."""
+    from rusemod import motionlib
+    cat = motionlib.catalogue()
+    return f"{len(cat['moves'])} moves of {', '.join(s['name'] for s in cat['sets'].values())}"
+
+
 def _beside_the_code() -> str:
     """The files the app hands to others as files: the scripts Blender runs (Open in Blender, Make in Blender) and
     the blank maps' pictures (rusemod.presets): Studio 0.9.7's install had no Blender script beside its code."""
@@ -94,6 +101,7 @@ def main(argv=None) -> int:
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the Studio's errors in the player's language", _errors_worded),
+            ("RUSE Decoy's motion library list came with the app", _motion_list),
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),

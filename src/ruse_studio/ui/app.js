@@ -166,7 +166,7 @@ async function setLanguage(lang) {
   $("tab-economy").textContent = w.economy_tab;
   $("tab-ai").textContent = w.ai_tab;
   $("tab-values").textContent = w.values_tab;
-  $("tab-music").textContent = w.music_tab;
+  $("tab-decoy").textContent = w.decoy_tab;
   $("tab-files").textContent = w.files_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
@@ -174,7 +174,7 @@ async function setLanguage(lang) {
   if (state.view === "economy") renderEconomy();
   if (state.view === "ai") renderAI();
   if (state.view === "values") renderValues();
-  if (state.view === "music") window.SoundView.setWords(w, lang);
+  if (state.view === "decoy") window.DecoyView.setWords(w, lang);
   if (state.view === "nations") window.NationsView.setWords(w, lang);
   if (state.view === "files") window.FilesView.setWords(w);
   if (window.StartFlow) window.StartFlow.setWords();  // the start screen and a new mod's steps, when they're up
@@ -198,7 +198,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-music": "tip_tab_music", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-decoy": "tip_tab_decoy", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -439,7 +439,7 @@ async function modChanged() {
   if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
   if (state.view === "values") renderValuesNew();  // New object… needs a mod
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
-  if (state.view === "music") window.SoundView.modChanged();  // and the songs of its own
+  if (state.view === "decoy") window.DecoyView.modChanged();  // and its sounds' volumes and replacements
   if (state.view === "nations") window.NationsView.modChanged();  // and the nations' new names and flags
   if (state.view === "files") window.FilesView.modChanged();  // and the game files it changes
 }
@@ -2747,7 +2747,7 @@ async function showUnit(address, via) {
   if (u.class === "TUniteAuSolDescriptor" && (u.named || u.new) && u.editable) parts.push(groundRoleGroup(u));
   if (u.has_weapons && u.editable) parts.push(weaponsGroup(u));
   if (u.can_upgrade) parts.push(upgradeGroup(u));
-  if (u.named || u.new) parts.push(window.SoundView.voicesGroup(u, w, state.lang));  // what it says (sound.js)
+  if (u.named || u.new) parts.push(unitSoundsGroup(u));  // its sounds, each changed in RUSE Decoy (decoy.js)
   if (u.parts.length) {
     const list = el("ul", { className: "parts" });
     for (const p of u.parts) {
@@ -3075,6 +3075,26 @@ function unitKeys(e) {
 }
 
 // --- the tabs: units, or maps (maps.js, a module: it may still be loading) ---
+// A unit's "Sounds and animation": what it has (its engine's sounds, its voice lines) and one button that opens
+// RUSE Decoy on exactly those (StudioApi.decoy_unit, DecoyView.unit). Its animations come to RUSE Decoy next.
+function unitSoundsGroup(u) {
+  const w = state.words;
+  const name = u.name || u.address.split("/").pop();
+  const says = el("p", { className: "small", textContent: w.decoy_unit_reading });
+  const go = el("button", { type: "button", className: "primary", textContent: w.decoy_unit_open_all, title: w.tip_decoy_unit_open });
+  const group = el("div", { className: "group" }, el("h2", { textContent: w.decoy_unit_title }), says,
+    el("p", { className: "muted small", textContent: w.decoy_unit_more_all }), el("div", { className: "music-actions" }, go));
+  let count = 0;
+  api().decoy_unit(u.address).then((d) => {
+    count = d.count + (d.clips || 0);
+    says.textContent = count ? fill(w.decoy_unit_has_all, { voices: d.voices, engine: d.engine, clips: d.clips || 0 })
+      : w.decoy_unit_none;
+    go.disabled = !count;
+  }).catch((err) => { says.textContent = (err && err.message) || String(err); });
+  go.addEventListener("click", () => { window.DecoyView.unit(u.address, name, count); showView("decoy"); });
+  return group;
+}
+
 function showView(view) {
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
@@ -3082,7 +3102,7 @@ function showView(view) {
   $("economy-view").classList.toggle("hidden", view !== "economy");
   $("ai-view").classList.toggle("hidden", view !== "ai");
   $("values-view").classList.toggle("hidden", view !== "values");
-  $("music-view").classList.toggle("hidden", view !== "music");
+  $("decoy-view").classList.toggle("hidden", view !== "decoy");
   $("files-view").classList.toggle("hidden", view !== "files");
   $("maps-view").classList.toggle("hidden", view !== "maps");
   $("settings-view").classList.toggle("hidden", view !== "settings");
@@ -3091,22 +3111,22 @@ function showView(view) {
   $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-values").setAttribute("aria-selected", String(view === "values"));
-  $("tab-music").setAttribute("aria-selected", String(view === "music"));
+  $("tab-decoy").setAttribute("aria-selected", String(view === "decoy"));
   $("tab-files").setAttribute("aria-selected", String(view === "files"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI, All values and Music edit a mod, Maps a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI, All values and RUSE Decoy edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
   // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI, All
-  // values and Music: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used
+  // values and RUSE Decoy: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used
   // meanwhile
-  $("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "music"].includes(view));
-  if (view !== "music") window.SoundView.leave();  // a song playing stops with its tab
+  $("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "decoy"].includes(view));
+  if (view !== "decoy") window.SoundView.leave();  // a sound playing stops with its tab
   if (view === "nations") { window.NationsView.open(state.words, state.lang); return; }
   if (view === "economy") { renderEconomy(); return; }
   if (view === "ai") { renderAI(); return; }
   if (view === "values") { renderValues(); return; }
-  if (view === "music") { window.SoundView.open(state.words, state.lang); return; }
+  if (view === "decoy") { window.DecoyView.open(state.words, state.lang); return; }
   if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
   if (view === "settings") { renderSettings(); loadBackup(); return; }
   if (view !== "maps") return;
@@ -5008,7 +5028,7 @@ async function start() {
   $("tab-ai").addEventListener("click", () => showView("ai"));
   $("tab-values").addEventListener("click", () => showView("values"));
   valuesEvents();
-  $("tab-music").addEventListener("click", () => showView("music"));
+  $("tab-decoy").addEventListener("click", () => showView("decoy"));
   $("tab-files").addEventListener("click", () => showView("files"));
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);

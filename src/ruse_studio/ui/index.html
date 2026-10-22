@@ -22,7 +22,7 @@
       <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
-      <button id="tab-music" type="button" role="tab" aria-selected="false"></button>
+      <button id="tab-decoy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-files" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
@@ -567,16 +567,98 @@
       <p id="nations-lobby" class="muted small"></p>
     </div>
   </main>
-  <!-- the Music tab (sound.js, StudioApi.music, rusemod.sound): every song the game plays, by where it plays, each heard
-       and replaced in the small editor below; saved in the current mod as files/replace/<the song>.wav -->
-  <main id="music-view" class="settings-view hidden">
-    <div class="settings">
-      <h1 id="music-title"></h1>
-      <p id="music-help" class="muted small"></p>
-      <p id="music-nomod" class="small"></p>
-      <div id="music-groups"></div>
+  <!-- RUSE Decoy, the sound and animation designer (decoy.js, StudioApi.decoy*, rusemod.soundlist): every sound the
+       game has by kind, each heard, its volume set (files/sound/volume.toml) and replaced (sound.js's editor); its
+       "Music and jingles" are the game's songs by where they play (sound.js musicInto, StudioApi.music), where the
+       Music tab was -->
+  <main id="decoy-view" class="settings-view hidden">
+    <div class="decoy">
+      <aside class="decoy-side">
+        <h1 id="decoy-title"></h1>
+        <p id="decoy-sub" class="muted small decoy-sub"></p>
+        <div id="decoy-kinds" class="decoy-kinds"></div>
+      </aside>
+      <section class="decoy-main">
+        <p id="decoy-help" class="muted small"></p>
+        <p id="decoy-nomod" class="small"></p>
+        <div class="decoy-tools">
+          <input id="decoy-search" type="search">
+          <select id="decoy-mission" class="hidden"></select>
+          <select id="decoy-lang" class="hidden"></select>
+          <span id="decoy-count" class="muted small"></span>
+          <label class="decoy-slider decoy-all"><span id="decoy-all-label" class="small"></span>
+            <input id="decoy-all" type="range" min="0" max="200" step="5" value="100" data-stepper="beside">
+            <span id="decoy-all-value" class="decoy-pct">100%</span></label>
+          <button id="decoy-all-set" type="button" class="small"></button>
+        </div>
+        <p id="decoy-kind-help" class="small"></p>
+        <!-- an animation: watched in 3D on a unit that plays it, and changed (decoy.js openAnim, StudioApi.decoy_anim_*) -->
+        <dialog id="decoy-anim" class="decoy-anim">
+          <h2 id="da-title"></h2>
+          <p id="da-lead" class="muted small"></p>
+          <div class="decoy-anim-body">
+            <div class="da-view-box"><div id="da-view" class="da-view"></div><p id="da-note" class="small muted"></p></div>
+            <div class="da-controls">
+              <label class="decoy-slider" id="da-speed-row"><span id="da-speed-label" class="small"></span>
+                <input id="da-speed" type="range" min="25" max="400" step="5" value="100" data-stepper="beside">
+                <span id="da-speed-value" class="decoy-pct">100%</span></label>
+              <label class="da-row"><span id="da-use-label" class="small"></span><select id="da-use"></select></label>
+              <fieldset class="da-bones"><legend id="da-bones-label" class="small"></legend>
+                <select id="da-bone"></select>
+                <label class="decoy-slider"><span id="da-size-label" class="small"></span>
+                  <input id="da-size" type="range" min="10" max="400" step="5" value="100" data-stepper="beside">
+                  <span id="da-size-value" class="decoy-pct">100%</span></label>
+                <label class="da-row"><span id="da-axis-label" class="small"></span>
+                  <select id="da-axis"><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>
+                <label class="decoy-slider"><span id="da-turn-label" class="small"></span>
+                  <input id="da-turn" type="range" min="-180" max="180" step="5" value="0" data-stepper="beside">
+                  <span id="da-turn-value" class="decoy-pct">0°</span></label>
+                <p id="da-tweaks" class="small muted"></p>
+              </fieldset>
+              <!-- motion capture (decoy.js mocap*, StudioApi.decoy_mocap_open / _preview / _use, rusemod.mocap) -->
+              <fieldset class="da-bones da-mocap"><legend id="da-mc-label" class="small"></legend>
+                <p id="da-mc-help" class="small muted"></p>
+                <!-- the motion library (decoy.js lib*, StudioApi.decoy_motions / decoy_motion_open / decoy_motion_set_fetch) -->
+                <div class="da-lib">
+                  <strong id="da-lib-title" class="small"></strong>
+                  <div class="da-lib-bar"><select id="da-lib-kind"></select>
+                    <input id="da-lib-search" type="search"></div>
+                  <p id="da-lib-sets" class="small muted"></p>
+                  <button id="da-lib-get" type="button" class="small hidden"></button>
+                  <div id="da-lib-rows" class="da-lib-rows"></div>
+                  <button id="da-lib-more" type="button" class="small hidden"></button>
+                </div>
+                <p id="da-lib-or" class="small"></p>
+                <button id="da-mc-pick" type="button" class="small"></button>
+                <input id="da-mc-file" type="file" accept=".bvh" class="hidden">
+                <p id="da-mc-about" class="small"></p>
+                <div id="da-mc-controls" class="hidden">
+                  <label class="decoy-slider"><span id="da-mc-from-label" class="small"></span>
+                    <input id="da-mc-from" type="range" min="0" max="10" step="0.1" value="0" data-stepper="beside">
+                    <span id="da-mc-from-value" class="decoy-pct">0 s</span></label>
+                  <label class="decoy-slider"><span id="da-mc-len-label" class="small"></span>
+                    <input id="da-mc-len" type="range" min="0.2" max="10" step="0.1" value="1" data-stepper="beside">
+                    <span id="da-mc-len-value" class="decoy-pct">1 s</span></label>
+                  <label class="da-check"><input id="da-mc-place" type="checkbox" checked> <span id="da-mc-place-label" class="small"></span></label>
+                  <label class="da-check"><input id="da-mc-loop" type="checkbox"> <span id="da-mc-loop-label" class="small"></span></label>
+                  <label class="da-row"><span id="da-mc-credit-label" class="small"></span>
+                    <input id="da-mc-credit" type="text" class="da-credit"></label>
+                  <p id="da-mc-tip" class="small muted"></p>
+                  <div class="music-actions"><button id="da-mc-watch" type="button" class="small"></button>
+                    <button id="da-mc-use" type="button" class="small primary"></button></div>
+                </div>
+              </fieldset>
+              <div class="music-actions"><button id="da-reset" type="button" class="link small"></button>
+                <button id="da-close" type="button" class="primary"></button></div>
+            </div>
+          </div>
+        </dialog>
+        <div id="decoy-rows" class="music-list decoy-rows"></div>
+        <button id="decoy-more" type="button" class="small hidden"></button>
+      </section>
     </div>
   </main>
+
 
   <main id="ai-view" class="settings-view hidden">
     <div class="settings">
@@ -1045,6 +1127,7 @@
   <script src="fake-api.js"></script>
   <script src="app.js"></script>
   <script src="sound.js"></script>
+  <script src="decoy.js"></script>
   <script src="nations.js"></script>
   <script src="board.js"></script>
   <script src="startflow.js"></script>
