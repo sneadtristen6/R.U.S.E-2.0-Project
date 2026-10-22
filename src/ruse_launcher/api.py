@@ -42,6 +42,7 @@ from rusemod.package import PackageError
 from rusemod.rmod import best_order as rmod_best_order, clashes as rmod_clashes, data_layout, overwritten as rmod_overwritten, sizes as rmod_sizes
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir, save_settings, settings
 from rusemod.play import Starter, copies_view, instances_choice, keep_instances_dir, shared_copy
+from rusemod.signature import keep_title, title_on
 from rusemod.rndf import RndfError
 from rusemod.steam import build_of, find_game
 from rusemod.uilang import LanguageCalls, language_code, pc_language, suggest
@@ -189,6 +190,16 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         if not self._instances:
             keep_instances_dir(self._home, None)
         return self.copies_folder()
+
+    # --- the game's title in the copies (rusemod.signature): R.U.S.E. 2.0's gold title, or the game's own ---
+    def game_title(self) -> dict:
+        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the default)."""
+        return {"ruse20": title_on(self._home)}
+
+    def set_game_title(self, ruse20: bool) -> dict:
+        """Keep the choice (settings.json, the Studio's too); the next Play builds the copy with it."""
+        keep_title(self._home, bool(ruse20))
+        return self.game_title()
 
     # --- the troubleshooter (rusemod.doctor): what can stop Play, checked in one go ---
     def _doctor_places(self) -> tuple[Path | None, Path | None, str]:
@@ -790,4 +801,5 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         instance = shared_copy(game, self._instances, self._home)  # one modded copy on the PC, both apps', where
         # Settings says (rusemod.play.instances_dir)
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
-                             words=words(self.prefs().get("lang") or "us"))  # the lines for the player, in theirs
+                             words=words(self.prefs().get("lang") or "us"),  # the lines for the player, in theirs
+                             title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's

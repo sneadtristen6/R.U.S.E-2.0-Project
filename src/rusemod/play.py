@@ -69,11 +69,12 @@ def _code_id() -> dict:
 CODE = _code_id()  # taken once, as the program starts: an edit made to the code later shows after a restart
 
 
-def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK) -> dict:
+def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK, title: bool = True) -> dict:
     """What a modded copy is built from, for rusemod.instance.needs_build: the mods in their order (every file of
-    each), the game (its Steam build, and every file's size and time), the pack the units come from and the app's code
-    (CODE). Taken before the mods are read and again after the build (Starter.modded): a copy whose mods changed in
-    between keeps no record, so the next Play builds. `key` is the SHA-256 of all of it."""
+    each), the game (its Steam build, and every file's size and time), the pack the units come from, the app's code
+    (CODE) and whether it has R.U.S.E. 2.0's title (rusemod.signature, Settings). Taken before the mods are read and
+    again after the build (Starter.modded): a copy whose mods changed in between keeps no record, so the next Play
+    builds. `key` is the SHA-256 of all of it."""
     game = Path(game)
     files = []
     for root, _dirs, names in os.walk(game):
@@ -100,7 +101,7 @@ def built_from(game: Path, mod_paths, pack: str = DEFAULT_PACK) -> dict:
         build = None
     parts = {"game": os.path.normcase(str(game.resolve())), "build": build,
              "game_files": hashlib.sha256(json.dumps(sorted(files, key=lambda f: f[0])).encode()).hexdigest(),
-             "mods": mods, "pack": pack, "code": CODE}
+             "mods": mods, "pack": pack, "code": CODE, "title": "R.U.S.E. 2.0" if title else "game"}
     return {"key": hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest(), **parts}
 
 
@@ -262,7 +263,7 @@ class Starter:
         self.open_url(STEAM_PLAY)
 
     def modded(self, game: Path, mod_folders, instance: Path, name: str, say, words: dict | None = None,
-               cut_off_errors: bool = False) -> None:
+               cut_off_errors: bool = False, title: bool = True) -> None:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
@@ -274,7 +275,8 @@ class Starter:
         mod changed while the build read it leaves the copy with no record, so the next Play builds again.
         `words`: the app's words in the player's language, for the lines meant for the player (in_words).
         `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
-        instead of being a warning (build_and_write)."""
+        instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
+        default), or the game's own (Settings: rusemod.signature.title_on)."""
         from .backup import _claim, _release
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
@@ -288,7 +290,7 @@ class Starter:
                              "for it to finish, then try again.")
         result = None
         try:
-            made_from = built_from(game, mod_folders)  # before the mods are read, and again after the build
+            made_from = built_from(game, mod_folders, title=title)  # before the mods are read, and again after
             stamps = mod_stamps(mod_folders)
             if needs_build(str(game), str(instance), made_from) and \
                     not take_back(str(game), str(instance), made_from):
@@ -296,9 +298,10 @@ class Starter:
                 keep_order(mods)
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),
-                                         cut_off_errors=cut_off_errors,
+                                         cut_off_errors=cut_off_errors, signature=title,
                                          built_from=made_from)
-                if built_from(game, mod_folders)["key"] != made_from["key"] or mod_stamps(mod_folders) != stamps:
+                if built_from(game, mod_folders, title=title)["key"] != made_from["key"] \
+                        or mod_stamps(mod_folders) != stamps:
                     forget(str(instance))  # changed while the build read it: the copy may hold some of each
             else:
                 say(Note("play_unchanged"))

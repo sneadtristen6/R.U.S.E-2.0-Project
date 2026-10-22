@@ -4,6 +4,7 @@ with your mods and starts it. Your Steam install is never changed.
 **Next version (not released yet; its number and the other languages are written at release):**
 
 - **Fixed, reported by a player:** on the Supported mods page, "New mod set…" did nothing. It opens the new set now.
+- **R.U.S.E. 2.0 in gold:** your modded game's title on the main menu, the loading screens and the start-up video is R.U.S.E. 2.0 in gold, made on your PC from your own game's files the first time (a few minutes once, then kept). Settings has a tick box to keep the game's own title.
 
 **0.4.8.7:** it plays mods made with Studio 0.9.8.7.
 

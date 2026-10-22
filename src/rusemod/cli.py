@@ -250,7 +250,7 @@ def cmd_build(args) -> int:
     try:
         result = build_and_write(game, mods, pack=pack, out=Path(args.out) if args.out else None,
                                  instance=Path(args.instance) if args.instance else None, show_all=args.all,
-                                 cache=build_cache())
+                                 cache=build_cache(), signature=bool(args.instance) and not args.game_title)
     except (BuildError, InstanceError) as exc:  # (a game still running from the copy is said plainly, not dumped)
         raise UserError(str(exc)) from None
     return 2 if result.errors else 0
@@ -388,6 +388,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", help="write the rebuilt pack to this .dat file, or every rebuilt pack into this folder")
     p.add_argument("--instance", help="build a modded copy of the game in this folder (never the Steam install)")
     p.add_argument("--all", action="store_true", help="show every note, without collapsing similar ones")
+    p.add_argument("--game-title", action="store_true",
+                   help="a modded copy keeps the game's own title (default: R.U.S.E. 2.0's gold title, as the apps')")
     p.set_defaults(fn=cmd_build)
     p = sub.add_parser("index", help="the game index: find anything in the game data, and where it's used")
     p.add_argument("--index", help="the index file (default: the one for this game build, in the platform folder)")

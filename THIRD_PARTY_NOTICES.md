@@ -142,6 +142,8 @@ what they don't say.
 | bottle (for pywebview) | 0.13.4 | MIT | Marcel Hellkamp | https://github.com/bottlepy/bottle/tree/0.13.4 |
 | proxy_tools (for pywebview) | 0.1.0 | Not known: the package says MIT, its code and its repository say BSD; the package carries no licence text | Armin Ronacher, Jonathan Tushman | https://github.com/jtushman/proxy_tools |
 | typing_extensions (for pywebview) | 4.16.0 | PSF-2.0 | Python Software Foundation, and the others named in its licence file | https://github.com/python/typing_extensions/tree/4.16.0 |
+| shapely (R.U.S.E. 2.0's title: the menu logo's new letters, rusemod.menulogo) | 2.2.0 | BSD-3-Clause | Sean C. Gillies, Casper van der Wel, Shapely Contributors | https://github.com/shapely/shapely/tree/2.2.0 |
+| PyAV (R.U.S.E. 2.0's title: the gold loading video, rusemod.signature) | 19.0.1 | BSD-3-Clause | Its licence names no holder ("Copyright retained by original committers") | https://github.com/PyAV-Org/PyAV/tree/v19.0.1 |
 | Nuitka's runtime (the C code Nuitka builds into each program) | 4.2.2 | GNU AGPL v3 with the Nuitka Runtime Library Exception 1.0, which lets the programs it builds be given out under any licence | Kay Hayen | https://github.com/Nuitka/Nuitka/tree/4.2.2 |
 
 What those carry inside them:
@@ -165,6 +167,10 @@ What those carry inside them:
 | domJSON | 0.1.2 | `webview\js\lib\dom_json.js` (from pywebview) | MIT | Alex Zaslavsky | Not stated in the file |
 | Python.Runtime | 3.1.0 | `pythonnet\runtime\Python.Runtime.dll` (from pythonnet) | MIT (pythonnet's) | The contributors of the Python.NET project | https://github.com/pythonnet/pythonnet/tree/v3.1.0 |
 | ClrLoader | 0.3.1 | `clr_loader\ffi\dlls\amd64\ClrLoader.dll` (from clr_loader) | MIT (clr_loader's) | Benedikt Reinartz | https://github.com/pythonnet/clr-loader/tree/v0.3.1 |
+| GEOS | 3.14.1 | `shapely.libs\geos-*.dll`, `geos_c-*.dll` (from shapely) | LGPL-2.1 (shapely's `LICENSE_GEOS`) | Not stated in shapely's copy | https://libgeos.org |
+| Microsoft C++ runtime | Not stated | `shapely.libs\msvcp140-*.dll` (from shapely) | Microsoft Distributable Code (shapely's `LICENSE_win32`) | Microsoft Corporation | Not open source |
+| FFmpeg | 9.0.2 | `av.libs\avcodec-*.dll`, `avdevice-*.dll`, `avfilter-*.dll`, `avformat-*.dll`, `avutil-*.dll`, `swresample-*.dll`, `swscale-*.dll` (from PyAV) | "LGPL version 3 or later", as the build itself reports; its build includes libx264 and libx265 (below) | The FFmpeg developers | https://github.com/FFmpeg/FFmpeg |
+| The libraries PyAV's FFmpeg is built with | Not stated | `av.libs\`: `libvpx-1-*.dll`, `libx264-165-*.dll`, `libx265-*.dll`, `libSvtAv1Enc-*.dll`, `libdav1d-*.dll`, `libopus-0-*.dll`, `libvmaf-*.dll`, `libvpl-*.dll`, `libwebp-*.dll`, `libwebpmux-*.dll`, `libsharpyuv-*.dll`, `libiconv-2-*.dll`, `zlib1-*.dll`, `libgcc_s_seh-1-*.dll`, `libstdc++-6-*.dll`, `libwinpthread-1-*.dll` | Not known: PyAV carries no licence for them | Not known | Not stated in PyAV |
 | zlib's CRC-32 code | Not stated in the copy | Built into each app's program by Nuitka (its `inline_copy/zlib/crc32.c`) | Zlib | Jean-loup Gailly and Mark Adler | https://github.com/Nuitka/Nuitka/tree/4.2.2/nuitka/build/inline_copy/zlib |
 
 Used to build the apps but not carried by them: the Nuitka compiler itself (only its runtime goes into the programs),

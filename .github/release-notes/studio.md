@@ -4,6 +4,7 @@ your own, and test it in the game. Your Steam install is never changed.
 **Next version (not released yet; its number and the other languages are written at release):**
 
 - **Fixed, reported by a modder:** a model imported on a new unit made from the Panther landed far away from the unit. On new units made from 85 other units it sat off the unit's turret, some by a lot (the 155 mm GPF, the SU-85, the Carro Veloce, the StuG III, the M7 Priest), most by a little. The Studio misread where those units' turrets turn, because their skeletons scale the turret bone; it reads them right now. A model imported before this fix keeps its old place: use Import model again on that unit.
+- **R.U.S.E. 2.0 in gold:** the modded game Test in game builds shows its title on the main menu, the loading screens and the start-up video as R.U.S.E. 2.0 in gold, made on your PC from your own game's files the first time (a few minutes once, then kept). Settings has a tick box to keep the game's own title.
 
 **0.9.8.7:** Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, and every value explained.
 

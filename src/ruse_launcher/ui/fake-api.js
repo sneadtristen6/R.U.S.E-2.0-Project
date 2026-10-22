@@ -129,6 +129,8 @@
   // "Choose your language" (?fake=lang: the game set to French in Steam; it also opens on the first-run modes)
   Object.assign(words.us, {"convert_mod": "Convert an old mod…", "tip_convert_mod": "For an old mod that comes as the game's own files (.dat packs) to copy into the game folder: makes it a mod the library can play beside others.", "convert_title": "Convert an old mod", "convert_help": "Some older mods come as the game's own packs (.dat files) with the changes inside, made to be copied into the game folder. Pick the folder the mod came in: the Launcher compares each pack with your game's clean one, keeps only what the mod changes, and adds it to your library. Your game folder isn't touched. Uses LittleGroove's converter.", "convert_pick": "Pick the mod's folder…", "tip_convert_pick": "Choose the folder the old mod came in (the one holding its .dat files, or a Data or PC folder with them inside).", "tip_convert_cancel": "Close this without converting anything.", "convert_found": "{n} game pack(s) found in {folder}:", "convert_none": "There's no game pack in {folder} (a .dat file the game has too). Pick the folder the old mod came in.", "convert_ref_backup": "Compared with your clean backup of the game, so mods already copied into the game folder don't get mixed in.", "convert_ref_game": "Compared with your game folder, as there's no clean backup. If you ever copied mods into the game folder, make a clean backup first (Settings) after letting Steam repair the game, or their changes end up in this mod too.", "convert_name": "Name", "tip_convert_name": "The mod's name in your library and in mod sets.", "convert_version": "Version", "tip_convert_version": "Numbers with dots, like 1.0.0. Converting it again with a higher one replaces the old copy.", "convert_author": "Author", "tip_convert_author": "Who made the old mod (shown in your library, to give them credit).", "convert_description": "Description", "tip_convert_description": "A line about what the mod does (shown in your library).", "convert_go": "Convert and add to the library", "tip_convert_go": "Compare the packs and make the mod. A big mod takes a minute or two; the lines below say how far it is.", "convert_running": "Converting…", "convert_failed": "The mod couldn't be converted."});
   Object.assign(words.us, {"clash_gamefile": "{a} and {b} both change the same game file, {file}. The one from {b} is used, because {b} is lower in the list.", "clash_use": "Use the one from {a}", "tip_clash_use": "Moves {a} just below {b} in this mod set, so the {file} from {a} is used. If the two mods change other things too, {a} wins those as well.", "clash_use_done": "{name}: {a} is now below {b}, so the {file} from {a} is used."});
+  // Settings' title switch (words.toml set_title_*, title_*: R.U.S.E. 2.0's gold title or the game's own)
+  Object.assign(words.us, {"set_title_title": "The game's title", "set_title_help": "Your modded game shows its title as R.U.S.E. 2.0 in gold: on the main menu, on the loading screens and in the video as the game starts. It's made on your PC from your own game's files. Untick it to have the game's own R.U.S.E. title. The next Play builds the copy your way.", "title_gold": "Gold R.U.S.E. 2.0 title", "title_on_note": "The next Play gives your modded game the gold R.U.S.E. 2.0 title.", "title_off_note": "The next Play gives your modded game the game's own R.U.S.E. title.", "tip_title_gold": "Show R.U.S.E. 2.0 in gold on the menu and the loading screens of your modded game. Untick for the game's own title."});
   Object.assign(words.us, { lang_pick_title: "Choose your language", lang_from_steam: "Your game's language in Steam",
     lang_from_pc: "Your PC's language", lang_pick_close: "Close", tip_lang_open: "Change the language.",
     set_in_this: "In this set ({n})", set_none_yet: "No mods yet: tick them below.", set_add_mods: "Add mods from your library",
@@ -251,6 +253,7 @@
   };
   let chosen = !["first", "firstoffline"].includes(mode);  // the first run's "Choose your mods" was done or skipped
   let fakeCopies = null;  // the folder chosen for modded copies, or null: the recommended place
+  let fakeTitle = true;   // the copies get R.U.S.E. 2.0's gold title (Settings)
   const copiesView = () => mode === "notfound"
     ? { path: fakeCopies, how: fakeCopies ? "chosen" : "recommended", recommended: null, drive: null, other_drive: false }
     : { path: fakeCopies || "D:\\RUSE-Instances", how: fakeCopies ? "chosen" : "recommended", recommended: "D:\\RUSE-Instances",
@@ -334,6 +337,8 @@
       copies_folder: async () => copiesView(),
       choose_copies_folder: async () => { fakeCopies = "E:\\Games\\RUSE-Instances"; return copiesView(); },
       use_recommended_copies: async () => { fakeCopies = null; return copiesView(); },
+      game_title: async () => ({ ruse20: fakeTitle }),
+      set_game_title: async (on) => { fakeTitle = Boolean(on); return { ruse20: fakeTitle }; },
       troubleshoot: async () => {
         await new Promise((done) => setTimeout(done, 600));  // the real checks take a moment
         const list = findings();

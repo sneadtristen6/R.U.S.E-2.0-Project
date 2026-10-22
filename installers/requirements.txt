@@ -27,3 +27,9 @@ click==8.5.0
 # THIRD_PARTY_NOTICES.md. The same pins as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
 pillow==12.2.0
 scipy==1.18.1
+# What both apps carry for R.U.S.E. 2.0's title in the copies they build (rusemod.signature; the owner, 2026-10-22:
+# "we should have a small encoder ... on everything", then "yes install"): shapely makes the menu logo's new letters
+# (rusemod.menulogo), PyAV (with its FFmpeg) encodes the gold loading video. Licences: THIRD_PARTY_NOTICES.md. The
+# same pins as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
+shapely==2.2.0
+av==19.0.1

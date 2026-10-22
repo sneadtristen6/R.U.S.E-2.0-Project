@@ -2362,13 +2362,15 @@ def report_lines(findings, show_all: bool = False, keep: int = 3):
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
                     cache: Path | None = None, built_from: dict | None = None,
-                    cut_off_errors: bool = False) -> BuildResult:
+                    cut_off_errors: bool = False, signature: bool = False) -> BuildResult:
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
     Play. `say` gets every report line as it comes. Nothing is written when the build has errors. Problems the user
     can fix raise BuildError. `cache`: a folder for what can be measured once and kept between builds (BUILD_CACHE
-    under the platform's folder for the apps and `ruse build`; none in the tests). `built_from`: what the mods were
-    read from (rusemod.play.built_from), kept in the copy's record so the next Play can start it without a build.
+    under the platform's folder for the apps and `ruse build`; none in the tests). `signature`: the copy gets R.U.S.E.
+    2.0's gold title (rusemod.signature; the apps' Play and Test in game, unless Settings says the game's own title,
+    signature.title_on). `built_from`: what the mods were read from (rusemod.play.built_from), kept in the copy's
+    record so the next Play can start it without a build.
 
     .rmod mods (rusemod.rmod) are applied first, in their order in `mods`, and the other mods on top of them. Two
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
@@ -2411,9 +2413,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             run = rmod.apply(game, [m.rmod for m in rmods], build_of(game), say)
             stack.callback(run.close)
         game_files = [(m.id, m.game_files) for m, _ops in mods if getattr(m, "game_files", None)]
-        if game_files:  # whole game files the mods change or add (rusemod.gamefiles, MOD_FORMAT §7): into the packs
-            from . import gamefiles, rmod as layers  # before anything else, so later changes go on top of them
-            if run is None:
+        if game_files or signature:  # whole game files the mods change or add (rusemod.gamefiles, MOD_FORMAT §7)
+            from . import gamefiles, rmod as layers  # into the packs before anything else, so later changes go on
+            if run is None:                          # top of them
                 run = layers.RmodRun()
                 stack.callback(run.close)
 
@@ -2425,6 +2427,17 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     run.packs[p] = layers.Layered(base, p)
                 return run.packs[p]
 
+            if signature:  # R.U.S.E. 2.0's title (rusemod.signature), read as the .rmod mods left the game, and
+                from . import signature as sig  # under every mod's game files: a mod changing one has its own
+                theirs = {(g.pack.lower(), g.path.lower()): mod_id for mod_id, files in game_files for g in files}
+                mine = []
+                for g in sig.game_files(layered, lambda name: find_pack(game, name), cache, say):
+                    mod_id = theirs.get((g.pack.lower(), g.path.lower()))
+                    if mod_id is None:
+                        mine.append(g)
+                    else:
+                        say(f"{sig.TITLE}: {mod_id} changes {g.pack}: {g.path}, so {mod_id}'s is used")
+                game_files = ([(sig.TITLE, mine)] if mine else []) + game_files
             _touched, said = gamefiles.changes(layered, lambda name: find_pack(game, name), game_files, say)
             run.findings += [Finding(level, message) for level, message in said]
 

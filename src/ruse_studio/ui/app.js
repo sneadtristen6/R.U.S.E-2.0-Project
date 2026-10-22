@@ -4742,6 +4742,22 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     $("set-game-change").textContent = w.set_game_change;
   } },
   { id: "copies", async render() { renderCopies(await api().copies_folder()); } },
+  // the game's title in the modded copies (rusemod.signature): R.U.S.E. 2.0's gold title (the default) or the game's
+  // own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"); the Launcher's too
+  { id: "title", async render() {
+    const w = state.words, box = $("title-gold"), line = $("set-title-note");
+    $("title-gold-label").textContent = w.title_gold;
+    box.title = w.tip_title_gold;
+    box.checked = (await api().game_title()).ruse20 !== false;
+    line.textContent = "";
+    box.onchange = async () => {
+      try {
+        box.checked = (await api().set_game_title(box.checked)).ruse20 !== false;
+        line.textContent = box.checked ? w.title_on_note : w.title_off_note;
+        line.className = "small good";
+      } catch (err) { problem(err); }
+    };
+  } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};

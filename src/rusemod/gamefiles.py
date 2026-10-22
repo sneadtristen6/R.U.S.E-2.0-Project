@@ -136,12 +136,13 @@ def apply_delta(base: bytes, delta: bytes) -> bytes:
 
 
 # --- what a file must be ---
-def taken(path: str) -> str:
-    """What a file of this name is ("texture"...) when its kind is taken (CHECKED), else GameFileError saying why."""
+def taken(path: str, ours: bool = False) -> str:
+    """What a file of this name is ("texture"...) when its kind is taken (CHECKED), else GameFileError saying why.
+    `ours`: the platform's own change (rusemod.signature), which NOT_YET doesn't hold back."""
     ext = PurePosixPath(path.replace("\\", "/")).suffix.lower()
     if ext in ELSEWHERE:
         raise GameFileError(f"{path} is {ELSEWHERE[ext]}")
-    if ext in NOT_YET:
+    if ext in NOT_YET and not ours:
         # not a game rule: the owner, 2026-10-08 (what needs RUSE 2.0's approval isn't included yet)
         raise GameFileError(f"{path}: {NOT_YET[ext]}")
     kind = CHECKED.get(ext)
@@ -153,11 +154,12 @@ def taken(path: str) -> str:
     return kind
 
 
-def check_kind(path: str, data: bytes, base: bytes | None = None) -> str:
+def check_kind(path: str, data: bytes, base: bytes | None = None, ours: bool = False) -> str:
     """Check `data` is a good file of the kind its name says (CHECKED): GameFileError saying why when it isn't, or when
     its kind isn't taken. `base` is the game's own file it changes (None for a file a mod adds): a Flash menu's code
-    and the shaders must be its (rusemod.filechecks). Returns what it is ("texture"...)."""
-    kind = taken(path)
+    and the shaders must be its (rusemod.filechecks). `ours`: the platform's own change (taken). Returns what it is
+    ("texture"...)."""
+    kind = taken(path, ours)
     if len(data) > FILE_MOST:
         # not a game rule: the hard limit for now (the owner, 2026-10-08)
         raise GameFileError(f"{path} is {len(data) // 1_000_000} MB: a mod's game file can be {FILE_MOST // 1_000_000} "
@@ -206,8 +208,9 @@ class GameFile:
     rel: str        # its file in the mod (files/game/...)
     pack: str       # the game's pack it goes in (ZZ_Win.dat, DataMapAlpha_v09.dat...)
     path: str       # its path in the pack, with / (a nested pack's files through it: gen/pack/x.ppk/gen/a.tgv)
-    data: bytes     # the delta (a changed file) or the file (an added one)
+    data: bytes     # the delta (a changed file) or the file (an added one); ours: the changed file itself
     added: bool     # added (under mods/<mod id>/), or a change of the game's file
+    ours: bool = False  # the platform's own change (rusemod.signature), not a mod's: its kinds aren't held back
 
 
 def mod_path(pack: str, path: str, added: bool = False) -> PurePosixPath:
@@ -345,8 +348,8 @@ def changes(open_pack, find_pack, mods: list, say=print) -> tuple[dict, list]:
                     # not a game rule: the file the mod changes isn't in the game
                     raise GameFileError(f"the game has no {inner} in {g.pack}")
                 base = bytes(arc.read(e))
-                new = apply_delta(base, g.data)
-            check_kind(inner, new, base)
+                new = g.data if g.ours else apply_delta(base, g.data)
+            check_kind(inner, new, base, g.ours)
             # put it in, then each pack it went through back into the one before
             data, member, added = new, inner, g.added
             for parent, name in zip(reversed(chain[:-1]), reversed(nested)):
