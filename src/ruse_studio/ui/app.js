@@ -1134,7 +1134,8 @@ function flagRow(u, r, mode, th) {
   guideButton.addEventListener("click", () => openFlagGuide(current));
   const about = el("p", { className: "muted small flags-about" }, `${w.flags_about} `, guideButton);
   const found = el("div", { className: "flag-problems" });
-  const cell = el("td", {}, chips, found, about, was);
+  const typesLine = el("div", { className: "flag-types-line small" });
+  const cell = el("td", {}, chips, found, typesLine, about, was);
   const tr = el("tr", {}, th, cell);
   const info = (n) => knownFlags && knownFlags.find((f) => f.flag === n);
   const setMine = (value) => {
@@ -1236,9 +1237,167 @@ function flagRow(u, r, mode, th) {
       was.append(el("span", { textContent: w.was.replace("{v}", st.base.join(" · ")) }), undo);
     }
   };
+  // the mod's flag types (api.flag_types, flagtypes.py): the ones this unit has, each taken off with its cross, one
+  // given from the list, and the window that makes and changes them (the owner, 2026-10-22: "make a new flag type.
+  // Select from the existing flags ... You're just checking boxes")
+  const giveType = async (name, on) => {
+    try {
+      const res = await api().flag_type_give(u.address, name, on, state.lang);
+      current = res.flags.slice();
+      setMine(sameNumbers(current, st.base) ? null : current);
+      checked = res.check;
+      render();
+      renderTypes(res.types);
+      await refreshMarks();
+      say(fill(on ? w.flag_type_given : w.flag_type_taken, { name }), "ok");
+    } catch (err) { problem(err); }
+  };
+  const renderTypes = (res) => {
+    if (!state.mod) return;
+    const types = res ? res.types : [];
+    const has = types.filter((t) => t.here), others = types.filter((t) => !t.here);
+    const typeTip = (t) => [t.about, fill(w.flag_type_turns, { on: t.on.join(" · ") || "—", off: t.off.join(" · ") || "—" })]
+      .filter(Boolean).join("\n");
+    const parts = [el("span", { className: "muted", textContent: w.flag_types_on_unit })];
+    for (const t of has) {
+      const x = el("button", { type: "button", className: "x", textContent: "×", title: w.flag_type_take });
+      x.addEventListener("click", () => giveType(t.name, false));
+      parts.push(el("span", { className: "flag flag-type", title: typeTip(t) }, el("span", { className: "flag-name", textContent: t.name }), x));
+    }
+    if (!has.length) parts.push(el("span", { className: "muted", textContent: w.flag_types_none_here }));
+    if (others.length) {
+      const pick = el("select", { title: w.flag_type_give });
+      pick.append(el("option", { value: "", textContent: w.flag_type_give }),
+        ...others.map((t) => el("option", { value: t.name, title: typeTip(t), textContent: t.name })));
+      pick.addEventListener("change", () => { if (pick.value) giveType(pick.value, true); });
+      parts.push(pick);
+    }
+    const edit = el("button", { type: "button", className: "link", textContent: w.flag_types_edit, title: w.tip_flag_types_edit });
+    // (a type saved or deleted changes the flags of every unit that has it: this page drawn again)
+    edit.addEventListener("click", () => openFlagTypes(() => showUnit(state.page.address, state.page.via)));
+    parts.push(edit);
+    typesLine.replaceChildren(...parts);
+  };
+  const loadTypes = () => {
+    if (!state.mod) { typesLine.replaceChildren(); return; }
+    api().flag_types(u.address).then(renderTypes).catch(() => typesLine.replaceChildren());
+  };
   if (knownFlags) { render(); check(); }
   else api().flags(state.lang).then((res) => { knownFlags = res.flags; render(); check(); }).catch((err) => { problem(err); render(); });
+  loadTypes();
   return tr;
+}
+
+// The mod's flag types (flagtypes.py): a list of them, and a form for one: its name, what it's for, and every game flag
+// with an On and an Off box, by what the flags are for, with the flag guide's words on each. `changed()`: what to
+// draw again once one is saved or deleted (the unit's flag row).
+async function openFlagTypes(changed) {
+  const w = state.words;
+  if (!knownFlags) {
+    try { knownFlags = (await api().flags(state.lang)).flags; } catch (err) { problem(err); return; }
+  }
+  let dlg = $("flag-types");
+  if (!dlg) {
+    dlg = el("dialog", { id: "flag-types", className: "doctor flag-guide" });
+    dlg.addEventListener("keydown", (e) => e.stopPropagation());  // typing in it never reaches the page behind
+    document.body.append(dlg);
+  }
+  let list = [], editing = null;  // editing: the type the form shows (null: a new one)
+  const name = el("input", { type: "text", maxLength: 40, autocomplete: "off", className: "values-text", title: w.flag_type_name });
+  name.setAttribute("aria-label", w.flag_type_name);
+  const about = el("input", { type: "text", maxLength: 400, autocomplete: "off", className: "values-text flag-type-about", title: w.flag_type_about });
+  about.setAttribute("aria-label", w.flag_type_about);
+  const search = el("input", { type: "search", autocomplete: "off", className: "edit-mods-search", placeholder: w.flag_guide_search });
+  const boxes = new Map();  // flag -> { on, off } checkboxes
+  const flagList = el("div", { className: "flag-guide-list flag-types-list" });
+  const typeList = el("div", { className: "flag-types-mine" });
+  const save = el("button", { type: "button", className: "small primary", textContent: w.flag_type_save });
+  const del = el("button", { type: "button", className: "small ghost danger", textContent: w.flag_type_delete });
+  const close = el("button", { type: "button", className: "small ghost", textContent: w.close });
+  close.addEventListener("click", () => dlg.close());
+  const fold = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const drawFlags = () => {
+    const words = fold(search.value).split(/\s+/).filter(Boolean), out = [];
+    for (const g of FLAG_GROUP_ORDER) {
+      const flags = knownFlags.filter((f) => (f.group || "unused") === g && words.every((x) =>
+        fold([f.flag, f.what, f.meaning, f.does, f.use].join(" ")).includes(x)));
+      if (!flags.length) continue;
+      out.push(el("h3", { className: "flag-guide-group", textContent: w["flag_group_" + g] || g }));
+      for (const f of flags) {
+        const b = boxes.get(f.flag);
+        out.push(el("div", { className: "flag-type-row" + (f.danger ? ` flag-card-${f.danger}` : ""), title: flagTip(f) },
+          el("label", { title: w.tip_flag_type_on }, b.on, ` ${w.flag_type_on}`),
+          el("label", { title: w.tip_flag_type_off }, b.off, ` ${w.flag_type_off}`),
+          el("span", { className: "flag-num", textContent: String(f.flag) }),
+          el("strong", { textContent: f.what || f.meaning || "" }),
+          f.does ? el("span", { className: "muted", textContent: ` ${f.does}` }) : ""));
+      }
+    }
+    flagList.replaceChildren(...(out.length ? out : [el("p", { className: "muted small", textContent: w.flag_guide_none })]));
+  };
+  for (const f of knownFlags) {
+    const on = el("input", { type: "checkbox" }), off = el("input", { type: "checkbox" });
+    on.addEventListener("change", () => { if (on.checked) off.checked = false; });
+    off.addEventListener("change", () => { if (off.checked) on.checked = false; });
+    boxes.set(f.flag, { on, off });
+  }
+  const show = (t) => {
+    editing = t;
+    name.value = t ? t.name : "";
+    about.value = t ? t.about : "";
+    for (const [n, b] of boxes) { b.on.checked = Boolean(t && t.on.includes(n)); b.off.checked = Boolean(t && t.off.includes(n)); }
+    del.classList.toggle("hidden", !t);
+    drawTypes();
+  };
+  const drawTypes = () => {
+    const fresh = el("button", { type: "button", className: "small" + (editing ? " ghost" : ""), textContent: w.flag_type_new });
+    fresh.addEventListener("click", () => { show(null); name.focus(); });
+    typeList.replaceChildren(...list.map((t) => {
+      const b = el("button", { type: "button", className: "small" + (editing && editing.name === t.name ? "" : " ghost"),
+        textContent: t.name, title: [t.about, fill(w.flag_type_units, { n: t.units })].filter(Boolean).join("\n") });
+      b.addEventListener("click", () => show(t));
+      return b;
+    }), fresh);
+  };
+  const reload = async (pick) => {
+    const res = await api().flag_types();
+    list = res.types;
+    show(list.find((t) => t.name === pick) || null);
+  };
+  save.addEventListener("click", async () => {
+    const on = [], off = [];
+    for (const [n, b] of boxes) { if (b.on.checked) on.push(n); if (b.off.checked) off.push(n); }
+    save.disabled = true;
+    try {
+      await api().flag_type_save(name.value, about.value, on, off, editing ? editing.name : "");
+      const saved = name.value.trim();
+      await reload(saved);
+      say(fill(w.flag_type_saved, { name: saved }), "ok");
+      if (changed) changed();
+    } catch (err) { problem(err); }
+    save.disabled = false;
+  });
+  del.addEventListener("click", async () => {
+    if (!editing || !window.confirm(fill(w.flag_type_really_delete, { name: editing.name }))) return;
+    const gone = editing.name;
+    try {
+      await api().flag_type_delete(gone);
+      await reload(null);
+      say(fill(w.flag_type_deleted, { name: gone }), "ok");
+      if (changed) changed();
+    } catch (err) { problem(err); }
+  });
+  search.addEventListener("input", drawFlags);
+  dlg.replaceChildren(el("h2", { textContent: w.flag_types_title }),
+    el("p", { className: "muted small", textContent: w.flag_types_lead }), typeList,
+    el("label", { className: "small flag-type-field" }, el("span", { textContent: w.flag_type_name }), name),
+    el("label", { className: "small flag-type-field" }, el("span", { textContent: w.flag_type_about }), about),
+    el("p", { className: "muted small", textContent: w.flag_type_pick }), search, flagList,
+    el("div", { className: "actions" }, save, del, close));
+  drawFlags();
+  try { await reload(null); } catch (err) { problem(err); return; }
+  if (!dlg.open) dlg.showModal();
+  name.focus();
 }
 
 // The flag guide (api.flags: rusemod/flaginfo.toml): every flag, by what it's for, each with what it is, what it does,

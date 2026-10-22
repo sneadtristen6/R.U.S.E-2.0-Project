@@ -32,6 +32,8 @@ ruse2-core/
   maps/<MapId>/            map sources (see §8)
   menus.toml               where missions show in their menus (see §8)
   depots.toml              every supply depot's trucks, on every map or the ones named (see §8)
+  flag-types.toml          the Studio's flag types: names for some of the game's flags turned on and off, and what
+                           giving each changed on its units (the build doesn't read it; the flags are in src/)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
   README.md, LICENSE, CHANGELOG.md
 ```

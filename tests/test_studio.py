@@ -1007,6 +1007,65 @@ class AmmoAndFlags(WithMod):
         self.api.edit(PANZER_IV, "InitialFlagSet", [4, 10])  # the game's own: no change left
         self.assertEqual(self.rows(PANZER_IV)["InitialFlagSet"]["edited"], None)
 
+    def test_flag_types_of_the_modders_own(self):
+        """advolt284 (Discord, 2026-10-22) asked for a unit flag made from scratch; the owner: "make a new flag type.
+        Select from the existing flags and how they work ... You're just checking boxes". A named type turning game
+        flags on and off, given to units as an ordinary change of their flags, taken off again exactly, changed and
+        deleted on every unit at once, and kept when the mod is exported."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.flag_type_save("Spotter", "", [72], [])
+        self.assertEqual(self.api.flag_types(), {"types": [], "can": False})
+        folder = Path(self.api.new_mod("Types")["current"])
+        now = lambda: (self.rows(PANZER_IV)["InitialFlagSet"]["edited"]  # noqa: E731
+                       or self.rows(PANZER_IV)["InitialFlagSet"]["numbers"])
+        made = self.api.flag_type_save("Spotter", "Sees over hills, isn't a building", [72], [4])
+        self.assertEqual(made["types"], [{"name": "Spotter", "about": "Sees over hills, isn't a building", "on": [72],
+                                          "off": [4], "units": 0, "here": False}])
+        given = self.api.flag_type_give(PANZER_IV, "spotter", True, "us")  # (any case)
+        self.assertEqual((given["flags"], now(), given["types"]["types"][0]["here"]), ([10, 72], [10, 72], True))
+        self.assertIn("    InitialFlagSet = [10, 72]\n", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.assertIn("problems", given["check"])
+        self.api.flag_type_save("Quiet", "", [5], [72])  # a second type undoes part of the first
+        self.assertEqual(self.api.flag_type_give(PANZER_IV, "Quiet")["flags"], [10, 5])
+        self.assertEqual(self.api.flag_type_give(PANZER_IV, "Spotter", False)["flags"], [10, 4, 5])  # 4 back, 72 out
+        self.api.flag_type_give(PANZER_IV, "Spotter")
+        self.api.flag_type_save("Spotter", "", [72, 9], [], old_name="Spotter")  # changed: every unit that has it too
+        self.assertEqual(now(), [10, 4, 9, 5])  # (Quiet given again after it: its 72 off, its 5 on)
+        saved = tomllib.loads((folder / "flag-types.toml").read_text(encoding="utf-8"))
+        self.assertEqual([t["name"] for t in saved["type"]], ["Spotter", "Quiet"])
+        self.api.flag_type_delete("Spotter")
+        self.api.flag_type_give(PANZER_IV, "Quiet", False)
+        self.assertEqual(now(), [4, 10])  # all taken off: the game's flags, no change left
+        self.assertIsNone(self.rows(PANZER_IV)["InitialFlagSet"]["edited"])
+        self.assertNotIn("InitialFlagSet", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.api.flag_type_give(PANZER_IV, "Quiet")
+        self.assertEqual(self.build(folder).objects[1].get(14).int_list(), [4, 10, 5])
+        from rusemod import package
+        self.assertIn("flag-types.toml", package.TOP_FILES)
+        for args, says in ((("", "", [72], []), "a name"), (("X" * 41, "", [72], []), "at most 40"),
+                           (("Odd", "", [105], []), "isn't one of the game's flags"), (("None", "", [], []), "at least one"),
+                           (("Both", "", [72], [72]), "on and off"), (("quiet", "", [9], []), "already a flag type")):
+            with self.subTest(args=args), self.assertRaisesRegex(StudioError, says):
+                self.api.flag_type_save(*args)
+        for unit, name in ((M4 + ":Weapon", "Quiet"), (PANZER_IV, "Nope")):
+            with self.subTest(unit=unit), self.assertRaises(StudioError):
+                self.api.flag_type_give(unit, name)
+        (folder / "flag-types.toml").write_text("[[type]]\nname = 3\n", encoding="utf-8")
+        with self.assertRaisesRegex(StudioError, "has a mistake"):
+            self.api.flag_type_give(PANZER_IV, "Quiet")
+        # the window: its words in every language, its calls on the page and in the browser preview's stand-in
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
+        app, fake = (ui / "app.js").read_text(encoding="utf-8"), (ui / "fake-api.js").read_text(encoding="utf-8")
+        said = tomllib.loads((ui.parent / "words.toml").read_text(encoding="utf-8"))
+        used = sorted(set(re.findall(r"\bw\.((?:tip_)?flag_types?_\w+)", app)))
+        self.assertGreater(len(used), 20)
+        for key in used:
+            with self.subTest(key=key):
+                self.assertEqual(set(said[key]), set(schema.LANGS))
+        for call in ("flag_types", "flag_type_save", "flag_type_delete", "flag_type_give"):
+            self.assertIn(f"api().{call}(", app)
+            self.assertIn(f"{call}: async", fake)
+
     def test_an_index_from_an_older_studio_is_built_again(self):
         import sqlite3
         old = Path(self.home, "old.sqlite")
@@ -2366,6 +2425,26 @@ class Labels(unittest.TestCase):
         used |= {k for m in marks for k in (m, "tip_" + m, m + "_help")}
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
+
+    def test_the_browser_preview_answers_every_call_the_pages_make(self):
+        # the preview's stand-in (fake-api.js) once had none of RUSE Decoy's calls, so every unit page there stopped at
+        # its Sounds and animation box (decoy_unit); each api().<call>( of the pages needs a <call>: of its own there
+        ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
+        fake = (ui / "fake-api.js").read_text(encoding="utf-8")
+        made = set(re.findall(r"(?:^|[\s,{])([a-z_0-9]+): (?:async\b|\()", fake, re.M))
+        calls = {(f.name, c) for f in sorted(ui.glob("*.js")) if f.name != "fake-api.js"
+                 for c in re.findall(r"\bapi\(\)\.([a-z_0-9]+)\(", f.read_text(encoding="utf-8"))}
+        self.assertGreater(len(calls), 150)
+        self.assertIn(("app.js", "decoy_unit"), calls)
+        self.assertEqual(sorted((f, c) for f, c in calls if c not in made), [])
+        # RUSE Decoy's words in the preview are the Studio's own, word for word (copied by fake_decoy_words.py)
+        said = _words()
+        copied = re.findall(r"\b((?:tip_)?decoy_[a-z_0-9]+): (\"(?:[^\"\\]|\\.)*\")",
+                            fake[fake.index("const DECOY_WORDS"):fake.index("(end of RUSE Decoy's words)")])
+        self.assertGreater(len(copied), 200)
+        for key, text in copied:
+            with self.subTest(key=key):
+                self.assertEqual(json.loads(text), said[key]["us"])
 
     def test_import_model_has_a_way_in_from_the_units_tab(self):
         # The owner (2026-10-04) didn't find Import model: it shows on a new unit's page only. The Units tab starts

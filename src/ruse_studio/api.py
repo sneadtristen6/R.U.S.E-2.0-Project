@@ -68,6 +68,7 @@ from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
+from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .startscreen import StartScreenCalls
 from . import __version__
@@ -549,7 +550,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, BoardCalls, StartScreenCalls):
+                DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, FlagTypeCalls, BoardCalls,
+                StartScreenCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
