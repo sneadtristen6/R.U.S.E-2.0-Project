@@ -138,9 +138,7 @@ class Words(unittest.TestCase):
                   "ai_not_in_menu", "tip_ai_reset", "ai_bonus_summary", "ai_bonus_any_mode", "ai_bonus_any_difficulty",
                   "ai_bonus_any_profile", "ai_bonus_any_unit", "ai_battle", "ai_battle_wins", "tip_ai_battle",
                   "tip_ai_choice", "ai_sure_name", "unit_min", "ai_intro", "play_ai_title", "ai_all_title",
-                  "ai_all_help", "ai_improved_title", "ai_improved_help", "ai_improved_on", "tip_ai_improved",
-                  "ai_improved_money", "tip_ai_improved_money", "ai_improved_keeps_attack",
-                  "ai_improved_keeps_artillery", "ai_improved_done_on", "ai_improved_done_off"):
+                  "ai_all_help", "ai_unlisted", "tip_ai_unlisted"):
             with self.subTest(key=k):
                 self.assertEqual(set(words[k]), LANGS)
 
@@ -170,14 +168,16 @@ class Words(unittest.TestCase):
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         fake = (ROOT / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ('id="tab-ai"', 'id="ai-view"', 'id="ai-pick"', 'id="ai-groups"', 'id="ai-bonuses"',
-                       'id="ai-cards"', 'id="ai-improved"', 'id="ai-intro"', 'id="play-ai-title"'):
+                       'id="ai-cards"', 'id="ai-intro"', 'id="play-ai-title"'):
             self.assertIn(needle, html)
         for needle in ("function renderAI", "api().ai(", "api().ai_edit(", "api().ai_reset(", 'showView("ai")',
-                       "function aiBattleLine", "function aiChoiceBox", "function aiBonusSummary",
-                       "function aiImprovedBox", "api().ai_improved("):
+                       "function aiBattleLine", "function aiChoiceBox", "function aiBonusSummary", "r.unlisted"):
             self.assertIn(needle, app)
-        for needle in ("ai: async", "ai_edit: async", "ai_reset: async", "ai_improved: async", "improved_keeps"):
+        for needle in ("ai: async", "ai_edit: async", "ai_reset: async"):
             self.assertIn(needle, fake)
+        # no preset and no Add a value: every value is a row on every set (the owner, 2026-10-22)
+        for gone in ("ai_improved", "aiImprovedBox", "aiMissing", "api().ai_add("):
+            self.assertNotIn(gone, app + fake + html)
 
 
 class Tab(unittest.TestCase):
@@ -227,15 +227,29 @@ class Tab(unittest.TestCase):
         self.assertEqual({p: (r["label"], r["type"], r["game"], r["value"]) for p, r in default.items()},
                          {"AttaqueTempsActivation": ("Seconds before it starts attacking", "float32", 30, None),
                           "OffensiveNbMissionMax": ("Most attacks at once (-1: no limit)", "int32", -1, None),
-                          "HarcelementActif": ("Harasses the enemy", "bool", 1, None)})
+                          "HarcelementActif": ("Harasses the enemy", "bool", 1, None),
+                          "DeviseBonusIA": ("Extra money at the start (cheat)", "int32", 0, None)})
         self.assertNotIn("same_default", default["AttaqueTempsActivation"])
+        # every value is a row on every set (the owner, 2026-10-22: every aspect of the computer players): one a set
+        # doesn't list in the game shows the 0 the game counts, marked so
+        for address, unlisted in ((DEFAULT, {"DeviseBonusIA"}), (EASY, {"HarcelementActif", "DeviseBonusIA"}),
+                                  (HARD, {"AttaqueTempsActivation"}), (REGULAR, {"HarcelementActif", "DeviseBonusIA"})):
+            with self.subTest(address=address):
+                rows = self.rows(page, address)
+                self.assertEqual(set(rows), {"AttaqueTempsActivation", "OffensiveNbMissionMax", "HarcelementActif",
+                                             "DeviseBonusIA"})
+                self.assertEqual({p for p, r in rows.items() if r.get("unlisted")}, unlisted)
+                self.assertTrue(all(rows[p]["game"] == 0 for p in unlisted))
         # a difficulty's or profile's value the same as Default's doesn't count; one Default doesn't list counts as 0
         self.assertEqual({p: r["same_default"] for p, r in self.rows(page, EASY).items()},
-                         {"AttaqueTempsActivation": False, "OffensiveNbMissionMax": True})
+                         {"AttaqueTempsActivation": False, "OffensiveNbMissionMax": True, "HarcelementActif": False,
+                          "DeviseBonusIA": True})
         self.assertEqual({p: r["same_default"] for p, r in self.rows(page, HARD).items()},
-                         {"OffensiveNbMissionMax": True, "HarcelementActif": True, "DeviseBonusIA": False})
+                         {"AttaqueTempsActivation": False, "OffensiveNbMissionMax": True, "HarcelementActif": True,
+                          "DeviseBonusIA": False})
         self.assertEqual({p: r["same_default"] for p, r in self.rows(page, REGULAR).items()},
-                         {"AttaqueTempsActivation": True, "OffensiveNbMissionMax": False})
+                         {"AttaqueTempsActivation": True, "OffensiveNbMissionMax": False, "HarcelementActif": False,
+                          "DeviseBonusIA": True})
         groups = [g["id"] for g in page["profiles"][2]["groups"] if g["rows"]]
         self.assertEqual(groups, ["attack", "harass", "money"])
         self.assertEqual(self.rows(self.api.ai("base"), DEFAULT)["AttaqueTempsActivation"]["label"],
@@ -356,13 +370,43 @@ class Tab(unittest.TestCase):
         text = (self.home / "mods" / "tough" / "src" / "studio.rndf").read_text(encoding="utf-8")
         self.assertNotIn("patch", text)
 
+    def test_a_value_a_set_doesn_t_list(self):
+        # the owner, 2026-10-22: the modder sets every aspect of the computer players. Easy lists neither its start
+        # money nor whether it harasses, Hard no first-attack time: each is set like any other value, added to the set
+        # in the build, counted in a battle, and the 0 the game counts takes it out again
+        self.api.new_mod("Every value")
+        folder = self.api._mod_dir()
+        self.assertEqual(self.api.ai_edit(EASY, "DeviseBonusIA", 400)["value"], 400)
+        self.api.ai_edit(EASY, "HarcelementActif", 1)
+        self.api.ai_edit(HARD, "AttaqueTempsActivation", 45)
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn(f"\npatch {EASY}\n(\n    DeviseBonusIA = 400\n    HarcelementActif = 1\n)\n", text)
+        page = self.api.ai("us")
+        row = self.rows(page, EASY)["DeviseBonusIA"]
+        self.assertEqual((row["game"], row["value"], row["unlisted"]), (0, 400, True))
+        self.assertEqual(page["battle"]["DeviseBonusIA"]["difficulties"], [("Easy", 400), ("Hard", 150)])
+        self.assertEqual(page["battle"]["AttaqueTempsActivation"]["difficulties"], [("Easy", 300), ("Hard", 45)])
+
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        nd = Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+        self.assertEqual(nd.objects[6].get(P["DeviseBonusIA"]).scalar(), 400)  # Easy
+        self.assertEqual(nd.objects[6].get(P["HarcelementActif"]).scalar(), 1)
+        self.assertEqual(nd.objects[8].get(P["AttaqueTempsActivation"]).scalar(), 45)  # Hard
+
+        self.api.ai_edit(EASY, "DeviseBonusIA", 0)  # the game's 0: nothing of it left in the mod
+        self.assertNotIn("DeviseBonusIA", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.assertIsNone(self.rows(self.api.ai("us"), EASY)["DeviseBonusIA"]["value"])
+
     def test_what_is_refused(self):
         self.api.new_mod("Tough")
         for address, prop, value, why in (
                 ("$/GFX/Everything/Nothing", "BonusValue", 1, "isn't one of the AI tab's"),
                 (f"{LISTS}/AIDescriptorList:Items[1]", "Name", 1, "isn't one of the AI tab's"),  # Random: no values
-                (EASY, "DeviseBonusIA", 100, "can't be changed here"),  # one Easy doesn't list
                 (EASY, "NoSuchValue", 1, "can't be changed here"),
+                (EASY, "BonusUnitesTank", 1, "can't be changed here"),  # a profile value no profile in the file has
                 (SPY, "TypeForAcknow", 1, "can't be changed here"),  # not one the tab offers
                 (SPY, "PlacementSound", 1, "can't be changed here"),
                 (DECOY_AT, "ShowInMenu", 1, "can't be changed here"),  # a card out of the menu stays out

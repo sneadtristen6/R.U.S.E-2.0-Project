@@ -1096,30 +1096,6 @@ cz = "Index hry nemá žádné hodnoty ekonomiky: sestavte ho znovu v Nastavení
 jpn = "ゲームのインデックスに経済の値がありません。設定で作り直してください。"
 sc = "游戏索引中没有经济数值：请在设置中重新构建。"
 
-[ee51d2db334]
-us = "Default has no {0}, so there's nothing to start it from."
-fr = "Default n'a pas de {0} : il n'y a donc rien d'où partir."
-ger = "Default hat kein {0}, also gibt es nichts als Ausgangspunkt."
-ita = "Default non ha {0}, quindi non c'è nulla da cui partire."
-spa = "Default no tiene {0}, así que no hay nada de lo que partir."
-pol = "Default nie ma {0}, więc nie ma od czego zacząć."
-ru = "В Default нет {0}, поэтому начинать не с чего."
-cz = "Default nemá {0}, takže není z čeho začít."
-jpn = "Default に {0} がないため、元にするものがありません。"
-sc = "Default 中没有 {0}，因此没有可作为起点的内容。"
-
-[ecc9bd4ba4e]
-us = "It has {0} already: change it on its row."
-fr = "Il a déjà {0} : changez-le sur sa ligne."
-ger = "Es hat schon {0}: ändere es in seiner Zeile."
-ita = "Ha già {0}: cambialo sulla sua riga."
-spa = "Ya tiene {0}: cámbialo en su fila."
-pol = "Ma już {0}: zmień to w jego wierszu."
-ru = "У него уже есть {0}: измените это в его строке."
-cz = "Už má {0}: změňte to na jeho řádku."
-jpn = "すでに {0} があります。その行で変更してください。"
-sc = "它已有 {0}：请在其所在行更改。"
-
 [ecf27aec8d2]
 us = "We couldn't find R.U.S.E., so there are no scripts to show."
 fr = "R.U.S.E. est introuvable : il n'y a donc aucun script à afficher."
@@ -2307,18 +2283,6 @@ ru = "{0} здесь изменить нельзя ({1})"
 cz = "{0} tu nelze upravit ({1})"
 jpn = "{0} はここでは編集できません（{1}）"
 sc = "{0} 不能在此编辑（{1}）"
-
-[ee7cf5ec56a]
-us = "Only a difficulty or a profile gets its own value here (Default has them all)."
-fr = "Seuls une difficulté ou un profil ont leur propre valeur ici (Default les a toutes)."
-ger = "Nur ein Schwierigkeitsgrad oder ein Profil bekommt hier einen eigenen Wert (Default hat sie alle)."
-ita = "Solo una difficoltà o un profilo hanno un valore proprio qui (Default li ha tutti)."
-spa = "Solo una dificultad o un perfil tienen aquí su propio valor (Default los tiene todos)."
-pol = "Tylko poziom trudności lub profil dostaje tu własną wartość (Default ma je wszystkie)."
-ru = "Своё значение здесь бывает только у сложности или профиля (в Default есть все)."
-cz = "Vlastní hodnotu tu dostane jen obtížnost nebo profil (Default je má všechny)."
-jpn = "ここで独自の値を持てるのは難易度かプロファイルだけです（Default はすべて持っています）。"
-sc = "只有难度或配置在此拥有自己的数值（Default 拥有全部）。"
 
 [ebc72dbd629]
 us = "{0} isn't one of the AI tab's"
@@ -3675,38 +3639,3 @@ cz = "Jednotku nelze vyzkoumat z jednotky, která se vyzkoumává z ní."
 jpn = "あるユニットを、そのユニットから研究されるユニットから研究することはできません。"
 sc = "单位不能从由它研发而来的单位研发。"
 
-[e92819477d2]
-us = "Only a difficulty gets the improved computer player."
-fr = "Seule une difficulté peut recevoir le joueur ordinateur amélioré."
-ger = "Nur ein Schwierigkeitsgrad kann den verbesserten Computerspieler bekommen."
-ita = "Solo una difficoltà può avere il giocatore del computer migliorato."
-spa = "Solo una dificultad puede recibir el jugador del ordenador mejorado."
-pol = "Ulepszonego gracza komputerowego może dostać tylko poziom trudności."
-ru = "Улучшенного игрока-компьютера может получить только уровень сложности."
-cz = "Vylepšeného počítačového hráče může dostat jen obtížnost."
-jpn = "改良版コンピューターを設定できるのは難易度だけです。"
-sc = "只有难度可以使用改进的电脑玩家。"
-
-[e392da976ca]
-us = "No profile in the game's data has {0}, so the improved computer player can't be written."
-fr = "Aucun profil dans les données du jeu n'a {0} : le joueur ordinateur amélioré ne peut donc pas être écrit."
-ger = "Kein Profil in den Spieldaten hat {0}, daher kann der verbesserte Computerspieler nicht geschrieben werden."
-ita = "Nessun profilo nei dati del gioco ha {0}, quindi il giocatore del computer migliorato non si può scrivere."
-spa = "Ningún perfil de los datos del juego tiene {0}, así que no se puede escribir el jugador del ordenador mejorado."
-pol = "Żaden profil w danych gry nie ma {0}, więc nie da się zapisać ulepszonego gracza komputerowego."
-ru = "Ни у одного профиля в данных игры нет {0}, поэтому улучшенного игрока-компьютера записать нельзя."
-cz = "Žádný profil v datech hry nemá {0}, takže vylepšeného počítačového hráče nelze zapsat."
-jpn = "ゲームのデータのどのプロファイルにも {0} がないため、改良版コンピューターを書き込めません。"
-sc = "游戏数据中没有任何配置包含 {0}，因此无法写入改进的电脑玩家。"
-
-[e5b20d3702a]
-us = "Give the start money as a whole number of dollars from 1 to {0}."
-fr = "Donnez l'argent de départ en dollars, un nombre entier de 1 à {0}."
-ger = "Das Startgeld als ganze Zahl in Dollar von 1 bis {0} angeben."
-ita = "Indica il denaro iniziale in dollari, un numero intero da 1 a {0}."
-spa = "Indica el dinero inicial en dólares, un número entero de 1 a {0}."
-pol = "Podaj pieniądze na start w dolarach, liczbą całkowitą od 1 do {0}."
-ru = "Укажите стартовые деньги в долларах, целым числом от 1 до {0}."
-cz = "Zadejte počáteční peníze v dolarech, celým číslem od 1 do {0}."
-jpn = "開始資金はドル単位の整数で、1 から {0} の間で指定してください。"
-sc = "请以美元整数给出起始资金，从 1 到 {0}。"

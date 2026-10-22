@@ -3364,7 +3364,6 @@ async function renderAI() {
   if (!data.ready) {
     $("ai-pick").replaceChildren();
     $("ai-hint").textContent = "";
-    $("ai-improved").replaceChildren();
     $("ai-groups").replaceChildren(el("p", { className: "muted", textContent: w.ai_none }));
     $("ai-bonuses").replaceChildren();
     $("ai-cards").replaceChildren();
@@ -3453,63 +3452,13 @@ function renderAIProfile(data) {
   const w = state.words;
   const p = data.profiles.find((x) => x.id === state.aiProfile);
   $("ai-hint").textContent = (p && p.hint) || "";
-  $("ai-improved").replaceChildren(...(p && p.improved ? [aiImprovedBox(p, data)] : []));
   if (!p) { $("ai-groups").replaceChildren(); return; }
+  // every value of the set (StudioApi.ai): one it doesn't list in the game shows the 0 the game counts (aiRow)
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
     for (const r of g.rows) table.append(aiRow(p.id, r, renderAI));  // drawn again: what it comes to in a battle
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
-  }), ...aiMissing(p), notesBox(`obj:${p.id}`));
-}
-
-// A difficulty's improved computer player (StudioApi.ai_improved, rusemod.ai.IMPROVED; the owner's AI test 5 on Hard,
-// 2026-10-22: "test worked well"): ticked, it attacks whatever the odds, never buys artillery and starts with the
-// money in the box (changing the money while ticked saves it); the personalities whose own values win over a
-// difficulty's keep them (StudioApi.ai improved_keeps), said under it by their names in the game
-function aiImprovedBox(p, data) {
-  const w = state.words, imp = p.improved, name = p.name || String(p.index);
-  const tick = el("input", { type: "checkbox", checked: imp.on, disabled: !state.mod, title: w.tip_ai_improved });
-  const money = el("input", { type: "number", min: "1", max: String(imp.most_money), step: "1",
-    className: "ai-improved-money", value: String(imp.on && imp.money !== null ? imp.money : imp.default_money),
-    disabled: !state.mod, title: w.tip_ai_improved_money });
-  const save = async (on) => {
-    try { await api().ai_improved(p.id, on, Number(money.value)); } catch (err) { tick.checked = imp.on; problem(err); return; }
-    say(fillText(on ? w.ai_improved_done_on : w.ai_improved_done_off, { name }), "ok");
-    renderAI();  // the battle values change with it
-  };
-  tick.addEventListener("change", () => save(tick.checked));
-  money.addEventListener("change", () => { if (tick.checked) save(true); });
-  const keeps = data.improved_keeps || {};
-  const notes = [];
-  if (keeps.attack && keeps.attack.length) notes.push(fillText(w.ai_improved_keeps_attack, { list: keeps.attack.join(", ") }));
-  if (keeps.artillery && keeps.artillery.length) notes.push(fillText(w.ai_improved_keeps_artillery, { list: keeps.artillery.join(", ") }));
-  return el("div", { className: "group ai-improved" },
-    el("h2", { textContent: fillText(w.ai_improved_title, { name }), title: w.tip_ai_improved }),
-    el("p", { className: "muted small", textContent: w.ai_improved_help }),
-    el("div", { className: "ai-improved-row" },
-      el("label", { title: w.tip_ai_improved }, tick, " ", fillText(w.ai_improved_on, { name })),
-      el("label", { className: "small", title: w.tip_ai_improved_money }, w.ai_improved_money, " ", money)),
-    ...notes.map((t) => el("p", { className: "muted small", textContent: t })),
-    state.mod ? "" : el("p", { className: "muted small", textContent: w.no_mod }));
-}
-
-// A difficulty's or profile's own value for one only Default lists (StudioApi.ai_add; the owner, 2026-10-10, "all of
-// them": the AI tab only changed the values a set lists): picked from Default's, it starts as Default's, then it's a
-// row like the others
-function aiMissing(p) {
-  const w = state.words;
-  if (!p.missing || !p.missing.length) return [];
-  const name = p.name || p.index;
-  const pick = el("select", { className: "small", title: w.tip_ai_add, disabled: !state.mod },
-    ...p.missing.map((m) => el("option", { value: m.prop, textContent: `${m.label} (${w.ai_default}: ${m.default})` })));
-  const add = el("button", { type: "button", className: "small", textContent: w.ai_add, title: w.tip_ai_add, disabled: !state.mod });
-  add.addEventListener("click", async () => {
-    try { await api().ai_add(p.id, pick.value, state.lang); } catch (err) { problem(err); return; }
-    say(fillText(w.ai_add_done, { name }), "ok");
-    renderAI();
-  });
-  return [el("div", { className: "group" }, el("h2", { textContent: fillText(w.ai_add_title, { name }), title: w.tip_ai_add }),
-    el("p", { className: "muted small", textContent: w.ai_add_help }), el("div", { className: "actions" }, pick, add))];
+  }), notesBox(`obj:${p.id}`));
 }
 
 // A private Notes box (LittleGroove's): the modder's own words about this unit, object or profile, kept in the mod's
@@ -3640,7 +3589,7 @@ function aiValue(target, r, after = null) {
       const value = r.list ? res.value : [res.value];
       show(value);
       showPlain();
-      mine = sameNumbers(value, game) && !r.added ? null : value;  // (a value the mod added stays until taken out)
+      mine = sameNumbers(value, game) ? null : value;
       showWas();
       showNote(res.same_default);
       say(w.saved.replace("{file}", res.saved), "ok");
@@ -3659,8 +3608,8 @@ function aiRow(target, r, after = null) {
   const w = state.words;
   const th = el("th", { textContent: r.label });
   if (state.lang !== "base" && r.label !== r.prop) th.append(el("small", { textContent: r.prop }));
-  // its own value the mod gave it (StudioApi.ai_add): Game's value takes it out again, so the list is drawn again
-  if (r.added) th.append(el("small", { className: "ai-added", textContent: w.ai_added, title: w.tip_ai_added }));
+  // a value the game doesn't set for this set (StudioApi.ai unlisted): it counts as 0 until the mod gives it a number
+  if (r.unlisted) th.append(el("small", { className: "ai-added", textContent: w.ai_unlisted, title: w.tip_ai_unlisted }));
   const entry = numberEntry(r.cls, r.prop);
   if (entry) {
     th.title = numberTip(entry);  // (no dotted underline: the meaning is written out below the name)

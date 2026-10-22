@@ -4,8 +4,8 @@ their profiles, the units they're keener to build, and the ruse cards (every pla
 A computer player in a battle has three profiles: Default, its difficulty and its personality (the two the game's
 lobby picks). For each value the game takes the personality's when it isn't Default's, else the difficulty's when it
 isn't Default's, else Default's; a value a profile doesn't list counts as 0, and a 0 that isn't Default's wins like any
-other (the game's own code does this when the battle starts; battle_values gives the outcome). Like LittleGroove's
-editor, the Studio changes the values each profile lists, and Add a value gives a profile one only Default lists.
+other (the game's own code does this when the battle starts; battle_values gives the outcome). The Studio changes
+every value on every profile: one a profile doesn't list starts at that 0 and is added when the mod gives it a number.
 
 The "units they're keener to build" entries (BONUS) apply in a battle whose game mode, the computer player's
 difficulty and its personality are each in the entry's lists (an empty list matches any); the entry's BonusValue is
@@ -50,17 +50,6 @@ NUCLEAR_MODE = 4  # the game mode the game's texts call "Nuclear mode" (DLC_GML_
 # the game modes by number (WarModes), as the game's lobby names them: its own table, in this order
 WAR_MODES = ("Btn1945", "Btn1942", "Btn1939", "DLC_GML_01", "DLC_GML_02")
 CHOICE_PROPS = ("UnitIDs", "WarModes", "AIDifficulties", "AIProfiles")  # a bonus's lists: picked by name
-
-# The improved computer player (the Studio's AI and player settings; the owner's AI tests 1-5 of 2026-10-22, test 5 on
-# Hard "worked well": it rushes). A difficulty given these attacks whatever the odds: the game sends an attack, and
-# calls the army gathered for it enough, when its forces compare well enough by these two factors, and the smaller the
-# factor the weaker it may be (0.9 and 1.8 on Hard; at 0.01 a much bigger army still held it back, the gap counting
-# about twice over). It never buys artillery: every unit type's score takes the gap between the highest type weight and
-# its own, and the lowest score is bought. And it starts with extra money (DeviseBonusIA, paid once when the battle
-# starts), so it has an army to send. A personality with its own value of one of these keeps it (the rule above).
-IMPROVED = {"MissionFacteurLancementAttaque": 0.000001, "MissionFacteurEnoughToDestroy": 0.000001,
-            "BonusUnitesArtillerie": -100000.0}
-IMPROVED_MONEY, IMPROVED_MONEY_DEFAULT, IMPROVED_MONEY_MOST = "DeviseBonusIA", 50000, 1000000
 
 # the game's own words for the AI's lobby, by text key
 WORDS = {"ai": "NAME_AI", "difficulty": "BtnAIDiff", "profile": "BtnAIType", "nuclear": "DLC_GML_02"}

@@ -6159,37 +6159,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         return out
 
     @staticmethod
-    def _ai_added(edits: ModEdits | None, config: dict, allowed: dict, base: dict) -> dict:
-        """{prop: the mod's value} of the values a difficulty or profile (`config`, as ai.configurations gives it)
-        doesn't list in the game and the mod gives it (ai_add): Default's numbers only."""
-        if edits is None or config["kind"] == "default" or not config["address"]:
-            return {}
-        return {prop: v for prop, v in edits.of(config["address"]).items()
-                if prop in base and prop not in allowed and isinstance(v, (int, float)) and not isinstance(v, bool)}
-
-    def ai_add(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
-        """Give a difficulty or profile (`address`) its own value `prop`, one only Default lists in the game, in the
-        current mod: it starts as Default's (so nothing changes until it's changed) and is then changed on its row
-        like the others (the owner, 2026-10-10: "all of them", the AI tab's "only the values a set lists can be
-        changed"). Written as All values' Add a value writes it (value_prop_add). Not tried in the game yet."""
-        edits = self._edits()
-        if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
-        ix = self._open()
-        try:
-            config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
-            if config is None or config["kind"] == "default":
-                raise StudioError("Only a difficulty or a profile gets its own value here (Default has them all).")
-            allowed = self._ai_allowed("profile", ix.show(address))
-            base = self._ai_base(ix, edits)
-        finally:
-            ix.close()
-        if prop not in base:
-            raise StudioError(f"Default has no {prop}, so there's nothing to start it from.")
-        if prop in allowed or prop in edits.of(address):
-            raise StudioError(f"It has {prop} already: change it on its row.")
-        self.value_prop_add(address, prop, str(base[prop]), lang)
-        return {"prop": prop, "value": base[prop]}
+    def _ai_unlisted(types: dict) -> dict[str, dict]:
+        """prop -> its values (as _props gives them) for every profile value (rusemod.ai.PROFILE_PROPS) a set may not
+        list: the game counts one a set doesn't list as 0 (rusemod.ai), so its row starts at 0 and a number the mod
+        gives it is written as All values' Add a value writes one. Only names some profile in the game's file uses
+        (`types`, the index's profile values): the build writes a new value only under a name of its file. The owner,
+        2026-10-22: the modder sets every aspect of the computer players (it replaced Add a value, which offered only
+        the values Default lists and started them at Default's number, not the 0 the game counted)."""
+        return {prop: {"list": False, "numbers": [0]} for prop in ai.PROFILE_PROPS if prop in types}
 
     @staticmethod
     def _ai_row(prop: str, p: dict, types: dict, lang: str, mine, cls: str = "") -> dict:
@@ -6259,37 +6236,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if not c["address"]:
                 continue
             allowed = self._ai_allowed("profile", objects[c["address"]])
-            # a difficulty's or profile's own value for one only Default lists, added by the mod (ai_add): shown in
-            # its group with Default's value as the one it had, "Game's value" taking it out again
-            added = self._ai_added(edits, c, allowed, base)
-            others = tuple(sorted(p for p in (*allowed, *added) if p not in ai.PROFILE_PROPS))
+            # every value of every set, listed in the game or not: one it doesn't list shows the 0 the game counts
+            # (`unlisted` on its row) until the mod gives it a number (_ai_unlisted)
+            unlisted = {prop: p for prop, p in self._ai_unlisted(types[ai.PROFILE]).items() if prop not in allowed}
+            others = tuple(sorted(p for p in allowed if p not in ai.PROFILE_PROPS))
             groups = []
             for group, props in ai.PROFILE_GROUPS + (("other", others),):
                 rows = []
                 for prop in props:
-                    if prop in added:
-                        row = self._ai_row(prop, {"list": False, "numbers": [base[prop]]}, types[ai.PROFILE], lang,
-                                           added[prop], ai.PROFILE)
-                        row["added"] = True
-                    elif prop in allowed:
-                        row = self._ai_row(prop, allowed[prop], types[ai.PROFILE], lang, mine(c["address"], prop),
-                                           ai.PROFILE)
-                    else:
+                    p = allowed.get(prop) or unlisted.get(prop)
+                    if p is None:
                         continue
+                    row = self._ai_row(prop, p, types[ai.PROFILE], lang, mine(c["address"], prop), ai.PROFILE)
+                    if prop not in allowed:
+                        row["unlisted"] = True
                     if c["kind"] != "default":
                         row["same_default"] = (row["game"] if row["value"] is None else row["value"]) == base.get(prop, 0)
                     rows.append(row)
                 groups.append({"id": group, "rows": rows})
-            missing = [] if c["kind"] == "default" else [
-                {"prop": prop, "label": schema.label(prop, lang), "default": v}
-                for prop, v in base.items() if prop not in allowed and prop not in added]
-            missing.sort(key=lambda m: m["label"].casefold())
             profiles.append({"id": c["address"], "kind": c["kind"], "index": c["index"],
                              "name": texts.get(c["key"]) if c["kind"] != "default" else None,
                              "hint": texts.get(ai.HINT.format(c["index"])) if c["kind"] == "personality" else None,
-                             "groups": groups, "missing": missing})
-            if c["kind"] == "difficulty":
-                profiles[-1]["improved"] = self._ai_improved_state(edits, c["address"])
+                             "groups": groups})
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
@@ -6339,64 +6307,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                               "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop),
                                                     ai.CARD)
                                        for prop in ai.CARD_PROPS if prop in allowed]})
-        # the personalities whose own value of one of the improved computer player's wins over a difficulty's
-        def keeps(*props):
-            return sorted({name for prop in props for name, _v in battle.get(prop, {}).get("personalities", [])})
-        improved_keeps = {"attack": keeps("MissionFacteurLancementAttaque", "MissionFacteurEnoughToDestroy"),
-                          "artillery": keeps("BonusUnitesArtillerie")}
         return {"ready": bool(profiles or out_cards or out_bonuses),
                 "words": {k: texts.get(key) for k, key in ai.WORDS.items()},
                 "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards, "battle": battle,
-                "choices": choices, "improved_keeps": improved_keeps}
-
-    @staticmethod
-    def _ai_improved_state(edits: ModEdits | None, address: str) -> dict:
-        """Whether the current mod gives the difficulty at `address` the improved computer player (every value of
-        rusemod.ai.IMPROVED as it is there), and its start money then."""
-        mine = edits.of(address) if edits is not None else {}
-        on = all(isinstance(mine.get(prop), (int, float)) and math.isclose(mine[prop], v, rel_tol=1e-6)
-                 for prop, v in ai.IMPROVED.items())
-        return {"on": on, "money": mine.get(ai.IMPROVED_MONEY) if on else None,
-                "default_money": ai.IMPROVED_MONEY_DEFAULT, "most_money": ai.IMPROVED_MONEY_MOST}
-
-    def ai_improved(self, address: str, on: bool, money=None) -> dict:
-        """The improved computer player (rusemod.ai.IMPROVED: attacks whatever the odds, never buys artillery, starts
-        with extra money) on one difficulty, in the current mod: `on` writes its values and `money` (whole dollars;
-        None: rusemod.ai.IMPROVED_MONEY_DEFAULT) as the start money, written as All values' Add a value writes a value
-        the difficulty doesn't list; off takes them all out again, each back to the game's. Tried in the game on Hard,
-        2026-10-22 (the owner's AI test 5: "test worked well")."""
-        edits = self._edits()
-        if edits is None:
-            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
-        ix = self._open()
-        try:
-            config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
-            if config is None or config["kind"] != "difficulty":
-                # not a game rule: the Studio offers it on a difficulty, where a personality's own values still win
-                raise StudioError("Only a difficulty gets the improved computer player.")
-            types = ix.prop_types(ai.PROFILE)
-        finally:
-            ix.close()
-        for prop in (*ai.IMPROVED, ai.IMPROVED_MONEY):
-            if prop not in types:
-                # not a game rule: the build writes a new value only under a name some profile in the game's file uses
-                raise StudioError(f"No profile in the game's data has {prop}, so the improved computer player can't "
-                                  f"be written.")
-        cash = ai.IMPROVED_MONEY_DEFAULT if money is None else money
-        if on and (isinstance(cash, bool) or not isinstance(cash, (int, float)) or cash != int(cash)
-                   or not 1 <= cash <= ai.IMPROVED_MONEY_MOST):
-            # not a game rule: the money a player holds is kept x 840 in a 32-bit number, so the Studio keeps it well
-            # under that
-            raise StudioError(f"Give the start money as a whole number of dollars from 1 to "
-                              f"{ai.IMPROVED_MONEY_MOST:,}.")
-        with self._saving:
-            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-            for prop, v in (*ai.IMPROVED.items(), (ai.IMPROVED_MONEY, int(cash))):
-                if on:
-                    edits.set(address, prop, v)
-                else:
-                    edits.reset(address, prop)
-        return {"saved": str(edits.file), **self._ai_improved_state(edits, address)}
+                "choices": choices}
 
     def ai_edit(self, address: str, prop: str, value) -> dict:
         """Change one value of a computer players' profile, bonus or ruse card (rusemod.ai) in the current mod. Saved
@@ -6411,13 +6325,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if found is None:
                 raise StudioError(f"{address} isn't one of the AI tab's")
             p = self._ai_allowed(*found).get(prop)
-            added = False
-            if p is None and found[0] == "profile" and prop in edits.of(address):
-                # a value the mod added (ai_add): changed on its row too; it stays until Game's value takes it out
-                config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
-                base = self._ai_base(ix, edits)
-                if config is not None and prop in self._ai_added(edits, config, {}, base):
-                    p, added = {"list": False, "numbers": [base[prop]]}, True
+            if p is None and found[0] == "profile":  # one the set doesn't list: the 0 the game counts, until set
+                p = self._ai_unlisted(ix.prop_types(ai.PROFILE)).get(prop)
             if p is None:
                 raise StudioError(f"{prop} of {address} can't be changed here")
             values = value if isinstance(value, list) else [value]
@@ -6430,7 +6339,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             new, game = (got, p["numbers"]) if p["list"] else (got[0], p["numbers"][0])
             with self._saving:
                 edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
-                if new == game and not added:
+                if new == game:
                     edits.reset(address, prop)
                 else:
                     edits.set(address, prop, new)
