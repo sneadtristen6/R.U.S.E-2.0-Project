@@ -1538,3 +1538,102 @@ does = "Por su nombre, un valor para el editor de los creadores: el mayor alcanc
 [AverageOnPeriod]
 what = "Promedio sobre"
 does = "El juego lleva una media móvil de una cifra sobre un último tramo de tiempo así de largo (en la medida propia del juego); qué cifra aún no se conoce. 120 en el juego."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Opacidad: el contorno de una unidad encargada, mientras la mueve"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 120 en el juego."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Opacidad: el contorno de una unidad encargada, con el menú de producción abierto"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 50 en el juego."
+[AlphaGhostProdBatimentDeplace]
+what = "Opacidad: el contorno de un edificio previsto, mientras lo mueve"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaGhostProdBatimentPose]
+what = "Opacidad: el contorno de un edificio previsto, una vez colocado"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaGhostProdUniteDeplace]
+what = "Opacidad: el contorno de una unidad prevista, mientras la mueve"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaGhostProdUnitePose]
+what = "Opacidad: el contorno de una unidad prevista, una vez colocada"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaFlecheOrdreAllie]
+what = "Opacidad: las flechas de órdenes de un aliado"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 50 en el juego."
+[AlphaGhostOrdreAllie]
+what = "Opacidad: los contornos de órdenes de un aliado"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 120 en el juego."
+[AlphaGhostProdUniteAllie]
+what = "Opacidad: las unidades previstas de un aliado"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaGhostProdBatimentAllie]
+what = "Opacidad: los edificios previstos de un aliado"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 100 en el juego."
+[AlphaGhostSelection]
+what = "Opacidad: el contorno de su selección"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 220 en el juego."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Opacidad: el contorno de la selección cuando el ratón pasa sobre otra unidad"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 50 en el juego."
+[AlphaCerclePorteeVisionSelection]
+what = "Opacidad: el círculo de alcance de visión de su selección"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 130 en el juego."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Opacidad: ese círculo cuando el ratón pasa sobre otra unidad"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 30 en el juego."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Opacidad: los contornos y flechas enemigos que muestra Descifrado, como máximo"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 80 en el juego."
+[ColorAlphaForTeamInZone]
+what = "Opacidad: el color de un bando en un sector"
+does = "Solo aspecto: 0 = invisible, 255 = sólido (por su nombre). 64 en el juego."
+[AlphaConcretizeGhost]
+what = "Contorno que se vuelve real: opacidad"
+does = "Solo aspecto: por su nombre, lo opaco que es un contorno cuando el edificio o la unidad que representa se vuelve real. 70 % en el juego."
+[TempsConcretizeGhost]
+what = "Contorno que se vuelve real (s)"
+does = "Solo aspecto: por su nombre, cuánto tarda un contorno en volverse el edificio o la unidad real, en segundos. 0,1 en el juego."
+[TempsFadeGhost]
+what = "Desvanecimiento de un contorno (s)"
+does = "Solo aspecto: por su nombre, cuánto tarda un contorno en desvanecerse, en segundos. 1,5 en el juego."
+[FumigeneAlphaGhost]
+what = "Contorno en el humo: opacidad"
+does = "Solo aspecto: por su nombre, lo opaco que se ve un contorno en una cortina de humo. 30 % en el juego."
+[OffsetZOmbreGhost]
+what = "Sombra del contorno elevada (m)"
+does = "Solo aspecto: por su nombre, a qué altura sobre el suelo se dibuja la sombra de un contorno, en m. 1 m en el juego."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Rutas de producción con el color del bando"
+does = "Solo aspecto: por su nombre, si la línea de una fábrica al destino de su nueva unidad se dibuja con el color del bando. Sí en el juego."
+[TempsFadeChemins]
+what = "Desvanecimiento de una ruta de producción (s)"
+does = "Solo aspecto: cuánto tarda en desvanecerse la línea de una fábrica al destino de su nueva unidad, en segundos. 1 en el juego."
+[Seuil_CampColor_Avion]
+what = "Color del bando en los aviones desde"
+does = "Solo aspecto: el umbral desde el que los aviones se dibujan con el color de su bando (por su nombre; el juego lo pasa al dibujo de cada avión, en su propia medida). 60.000 en el juego."
+[Seuil_CampColor_Batiment]
+what = "Color del bando en los edificios desde"
+does = "Solo aspecto: lo mismo para los edificios. 130.000 en el juego."
+[Seuil_CampColor_Unit]
+what = "Color del bando en las unidades de tierra desde"
+does = "Solo aspecto: lo mismo para las unidades de tierra. 180.000 en el juego."
+[FxRuseSpacing]
+what = "Marcas de artimaña: separación"
+does = "Solo aspecto: por su nombre, lo separadas que se dibujan las marcas del efecto de una artimaña, en la medida propia del juego. 800 en el juego."
+[FxRuseHeight]
+what = "Marcas de artimaña: altura"
+does = "Solo aspecto: por su nombre, a qué altura se dibujan las marcas del efecto de una artimaña, en la medida propia del juego. 1.000 en el juego."
+[FxDerouteTimeout]
+what = "Duración del efecto de desbandada (s)"
+does = "Solo aspecto: por su nombre, cuánto dura el efecto sobre las unidades en desbandada, en segundos. 5 en el juego."
+[TempsPulseDecryptageFadeIn]
+what = "Pulso de Descifrado: aparición (s)"
+does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas enemigos laten; esta fase (aparición) dura tantos segundos. 0,4 en el juego."
+[TempsPulseDecryptageWait]
+what = "Pulso de Descifrado: visible (s)"
+does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas enemigos laten; esta fase (visible) dura tantos segundos. 2 en el juego."
+[TempsPulseDecryptageFadeOut]
+what = "Pulso de Descifrado: desvanecimiento (s)"
+does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas enemigos laten; esta fase (desvanecimiento) dura tantos segundos. 2 en el juego."
+[TempsPulseDecryptagePause]
+what = "Pulso de Descifrado: pausa antes de la siguiente (s)"
+does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas enemigos laten; esta fase (pausa antes de la siguiente) dura tantos segundos. 1,5 en el juego."

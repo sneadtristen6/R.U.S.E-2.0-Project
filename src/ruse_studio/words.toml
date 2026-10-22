@@ -12921,6 +12921,30 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_outlines]
+us = "Outlines, arrows and paths"
+fr = "Contours, flèches et trajets"
+ger = "Umrisse, Pfeile und Wege"
+ita = "Sagome, frecce e percorsi"
+spa = "Contornos, flechas y rutas"
+pol = "Zarysy, strzałki i trasy"
+ru = "Контуры, стрелки и пути"
+cz = "Obrysy, šipky a cesty"
+jpn = "輪郭・矢印・経路"
+sc = "轮廓、箭头和路径"
+
+[economy_group_screen]
+us = "Effects and colours on screen"
+fr = "Effets et couleurs à l'écran"
+ger = "Effekte und Farben am Bildschirm"
+ita = "Effetti e colori sullo schermo"
+spa = "Efectos y colores en pantalla"
+pol = "Efekty i kolory na ekranie"
+ru = "Эффекты и цвета на экране"
+cz = "Efekty a barvy na obrazovce"
+jpn = "画面の効果と色"
+sc = "屏幕效果与颜色"
+
 [economy_group_placing]
 us = "Placing buildings with the mouse"
 fr = "Placer des bâtiments à la souris"

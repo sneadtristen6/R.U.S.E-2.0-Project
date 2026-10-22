@@ -1538,3 +1538,102 @@ does = "名前から、制作者のエディター用の値：表示する最大
 [AverageOnPeriod]
 what = "平均をとる期間"
 does = "ゲームはある数値の移動平均をこの長さの直近の期間（ゲーム独自の単位）でとります。どの数値かはまだわかっていません。ゲームでは 120。"
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "不透明度：移動中の発注ユニットの輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 120。"
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "不透明度：生産メニューを開いているときの発注ユニットの輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 50。"
+[AlphaGhostProdBatimentDeplace]
+what = "不透明度：移動中の予定の建物の輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaGhostProdBatimentPose]
+what = "不透明度：置いた後の予定の建物の輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaGhostProdUniteDeplace]
+what = "不透明度：移動中の予定のユニットの輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaGhostProdUnitePose]
+what = "不透明度：置いた後の予定のユニットの輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaFlecheOrdreAllie]
+what = "不透明度：味方の命令の矢印"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 50。"
+[AlphaGhostOrdreAllie]
+what = "不透明度：味方の命令の輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 120。"
+[AlphaGhostProdUniteAllie]
+what = "不透明度：味方の予定のユニット"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaGhostProdBatimentAllie]
+what = "不透明度：味方の予定の建物"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 100。"
+[AlphaGhostSelection]
+what = "不透明度：選択中のものの輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 220。"
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "不透明度：マウスが別のユニットの上にあるときの選択の輪郭"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 50。"
+[AlphaCerclePorteeVisionSelection]
+what = "不透明度：選択中のものの視界範囲の円"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 130。"
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "不透明度：マウスが別のユニットの上にあるときのその円"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 30。"
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "不透明度：解読が見せる敵の輪郭と矢印（最大）"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 80。"
+[ColorAlphaForTeamInZone]
+what = "不透明度：セクター上の陣営の色"
+does = "見た目のみ：0 は見えない、255 は不透明（名前から）。ゲームでは 64。"
+[AlphaConcretizeGhost]
+what = "輪郭が実体になるとき：不透明度"
+does = "見た目のみ：名前から、輪郭が表す建物やユニットが実体になるときの輪郭の不透明度。ゲームでは 70%。"
+[TempsConcretizeGhost]
+what = "輪郭が実体になる時間（秒）"
+does = "見た目のみ：名前から、輪郭が本物の建物やユニットになるまでの秒数。ゲームでは 0.1。"
+[TempsFadeGhost]
+what = "輪郭が消える時間（秒）"
+does = "見た目のみ：名前から、輪郭が消えるまでの秒数。ゲームでは 1.5。"
+[FumigeneAlphaGhost]
+what = "煙の中の輪郭：不透明度"
+does = "見た目のみ：名前から、煙幕の中の輪郭の不透明度。ゲームでは 30%。"
+[OffsetZOmbreGhost]
+what = "輪郭の影の高さ（m）"
+does = "見た目のみ：名前から、輪郭の影を地面からどれだけ上に描くか（m）。ゲームでは 1 m。"
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "生産経路を陣営の色で"
+does = "見た目のみ：名前から、工場から新しいユニットの行き先までの線を陣営の色で描くかどうか。ゲームでははい。"
+[TempsFadeChemins]
+what = "生産経路が消える時間（秒）"
+does = "見た目のみ：工場から新しいユニットの行き先までの線が消えるまでの秒数。ゲームでは 1。"
+[Seuil_CampColor_Avion]
+what = "航空機に陣営の色を出す境目"
+does = "見た目のみ：航空機が陣営の色で描かれる境目（名前から。ゲームは各航空機の描画に独自の単位で渡します）。ゲームでは 60,000。"
+[Seuil_CampColor_Batiment]
+what = "建物に陣営の色を出す境目"
+does = "見た目のみ：建物の場合。ゲームでは 130,000。"
+[Seuil_CampColor_Unit]
+what = "地上ユニットに陣営の色を出す境目"
+does = "見た目のみ：地上ユニットの場合。ゲームでは 180,000。"
+[FxRuseSpacing]
+what = "計略の印：間隔"
+does = "見た目のみ：名前から、計略の効果の印を描く間隔（ゲーム独自の単位）。ゲームでは 800。"
+[FxRuseHeight]
+what = "計略の印：高さ"
+does = "見た目のみ：名前から、計略の効果の印を描く高さ（ゲーム独自の単位）。ゲームでは 1,000。"
+[FxDerouteTimeout]
+what = "敗走エフェクトの持続（秒）"
+does = "見た目のみ：名前から、敗走中のユニットの上のエフェクトが残る秒数。ゲームでは 5。"
+[TempsPulseDecryptageFadeIn]
+what = "解読の点滅：フェードイン（秒）"
+does = "見た目のみ：名前から、解読の下では敵の輪郭と矢印が点滅します。この段階（フェードイン）の秒数。ゲームでは 0.4。"
+[TempsPulseDecryptageWait]
+what = "解読の点滅：表示（秒）"
+does = "見た目のみ：名前から、解読の下では敵の輪郭と矢印が点滅します。この段階（表示）の秒数。ゲームでは 2。"
+[TempsPulseDecryptageFadeOut]
+what = "解読の点滅：フェードアウト（秒）"
+does = "見た目のみ：名前から、解読の下では敵の輪郭と矢印が点滅します。この段階（フェードアウト）の秒数。ゲームでは 2。"
+[TempsPulseDecryptagePause]
+what = "解読の点滅：次までの休止（秒）"
+does = "見た目のみ：名前から、解読の下では敵の輪郭と矢印が点滅します。この段階（次までの休止）の秒数。ゲームでは 1.5。"

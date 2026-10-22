@@ -1538,3 +1538,102 @@ does = "Dal nome, un valore per l'editor degli autori: la gittata massima che mo
 [AverageOnPeriod]
 what = "Media su"
 does = "Il gioco tiene una media mobile di un valore su un ultimo tratto di tempo così lungo (nella misura propria del gioco); quale valore non è ancora noto. 120 nel gioco."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Opacità: la sagoma di un'unità ordinata, mentre la spostate"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 120 nel gioco."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Opacità: la sagoma di un'unità ordinata, con il menu di produzione aperto"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 50 nel gioco."
+[AlphaGhostProdBatimentDeplace]
+what = "Opacità: la sagoma di un edificio previsto, mentre la spostate"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaGhostProdBatimentPose]
+what = "Opacità: la sagoma di un edificio previsto, una volta posata"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaGhostProdUniteDeplace]
+what = "Opacità: la sagoma di un'unità prevista, mentre la spostate"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaGhostProdUnitePose]
+what = "Opacità: la sagoma di un'unità prevista, una volta posata"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaFlecheOrdreAllie]
+what = "Opacità: le frecce degli ordini di un alleato"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 50 nel gioco."
+[AlphaGhostOrdreAllie]
+what = "Opacità: le sagome degli ordini di un alleato"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 120 nel gioco."
+[AlphaGhostProdUniteAllie]
+what = "Opacità: le unità previste di un alleato"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaGhostProdBatimentAllie]
+what = "Opacità: gli edifici previsti di un alleato"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 100 nel gioco."
+[AlphaGhostSelection]
+what = "Opacità: la sagoma della vostra selezione"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 220 nel gioco."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Opacità: la sagoma della selezione quando il mouse passa su un'altra unità"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 50 nel gioco."
+[AlphaCerclePorteeVisionSelection]
+what = "Opacità: il cerchio del raggio visivo della vostra selezione"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 130 nel gioco."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Opacità: quel cerchio quando il mouse passa su un'altra unità"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 30 nel gioco."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Opacità: le sagome e frecce nemiche mostrate da Decrittazione, al massimo"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 80 nel gioco."
+[ColorAlphaForTeamInZone]
+what = "Opacità: il colore di uno schieramento su un settore"
+does = "Solo aspetto: 0 = invisibile, 255 = pieno (dal nome). 64 nel gioco."
+[AlphaConcretizeGhost]
+what = "Sagoma che diventa reale: opacità"
+does = "Solo aspetto: dal nome, quanto è opaca una sagoma quando l'edificio o l'unità che rappresenta diventa reale. 70% nel gioco."
+[TempsConcretizeGhost]
+what = "Sagoma che diventa reale (s)"
+does = "Solo aspetto: dal nome, quanto impiega una sagoma a diventare l'edificio o l'unità vera, in secondi. 0,1 nel gioco."
+[TempsFadeGhost]
+what = "Dissolvenza di una sagoma (s)"
+does = "Solo aspetto: dal nome, quanto impiega una sagoma a svanire, in secondi. 1,5 nel gioco."
+[FumigeneAlphaGhost]
+what = "Sagoma nel fumo: opacità"
+does = "Solo aspetto: dal nome, quanto è opaca una sagoma in una cortina fumogena. 30% nel gioco."
+[OffsetZOmbreGhost]
+what = "Ombra della sagoma sollevata (m)"
+does = "Solo aspetto: dal nome, a che altezza dal suolo viene disegnata l'ombra di una sagoma, in m. 1 m nel gioco."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Percorsi di produzione nel colore dello schieramento"
+does = "Solo aspetto: dal nome, se la linea da una fabbrica alla destinazione della sua nuova unità è disegnata nel colore dello schieramento. Sì nel gioco."
+[TempsFadeChemins]
+what = "Dissolvenza di un percorso di produzione (s)"
+does = "Solo aspetto: quanto impiega a svanire la linea da una fabbrica alla destinazione della sua nuova unità, in secondi. 1 nel gioco."
+[Seuil_CampColor_Avion]
+what = "Colore dello schieramento sugli aerei da"
+does = "Solo aspetto: la soglia da cui gli aerei sono disegnati nel colore del loro schieramento (dal nome; il gioco la passa al disegno di ogni aereo, nella sua misura). 60.000 nel gioco."
+[Seuil_CampColor_Batiment]
+what = "Colore dello schieramento sugli edifici da"
+does = "Solo aspetto: lo stesso per gli edifici. 130.000 nel gioco."
+[Seuil_CampColor_Unit]
+what = "Colore dello schieramento sulle unità di terra da"
+does = "Solo aspetto: lo stesso per le unità di terra. 180.000 nel gioco."
+[FxRuseSpacing]
+what = "Segni dello stratagemma: spaziatura"
+does = "Solo aspetto: dal nome, quanto distano i segni dell'effetto di uno stratagemma, nella misura propria del gioco. 800 nel gioco."
+[FxRuseHeight]
+what = "Segni dello stratagemma: altezza"
+does = "Solo aspetto: dal nome, a che altezza sono disegnati i segni dell'effetto di uno stratagemma, nella misura propria del gioco. 1.000 nel gioco."
+[FxDerouteTimeout]
+what = "Durata dell'effetto di rotta (s)"
+does = "Solo aspetto: dal nome, quanto resta l'effetto sulle unità in rotta, in secondi. 5 nel gioco."
+[TempsPulseDecryptageFadeIn]
+what = "Impulso di Decrittazione: comparsa (s)"
+does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche pulsano; questa fase (comparsa) dura tanti secondi. 0,4 nel gioco."
+[TempsPulseDecryptageWait]
+what = "Impulso di Decrittazione: visibile (s)"
+does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche pulsano; questa fase (visibile) dura tanti secondi. 2 nel gioco."
+[TempsPulseDecryptageFadeOut]
+what = "Impulso di Decrittazione: dissolvenza (s)"
+does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche pulsano; questa fase (dissolvenza) dura tanti secondi. 2 nel gioco."
+[TempsPulseDecryptagePause]
+what = "Impulso di Decrittazione: pausa prima della successiva (s)"
+does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche pulsano; questa fase (pausa prima della successiva) dura tanti secondi. 1,5 nel gioco."

@@ -1538,3 +1538,102 @@ does = "Podle názvu hodnota pro editor tvůrců: největší dostřel, který u
 [AverageOnPeriod]
 what = "Průměr za"
 does = "Hra vede klouzavý průměr nějaké hodnoty za poslední úsek času této délky (ve vlastní míře hry); jaké, zatím není známo. Ve hře 120."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Krytí: obrys objednané jednotky, když jím pohybujete"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 120."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Krytí: obrys objednané jednotky při otevřené nabídce výroby"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 50."
+[AlphaGhostProdBatimentDeplace]
+what = "Krytí: obrys plánované budovy, když jím pohybujete"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaGhostProdBatimentPose]
+what = "Krytí: obrys plánované budovy po položení"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaGhostProdUniteDeplace]
+what = "Krytí: obrys plánované jednotky, když jím pohybujete"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaGhostProdUnitePose]
+what = "Krytí: obrys plánované jednotky po položení"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaFlecheOrdreAllie]
+what = "Krytí: šipky rozkazů spojence"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 50."
+[AlphaGhostOrdreAllie]
+what = "Krytí: obrysy rozkazů spojence"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 120."
+[AlphaGhostProdUniteAllie]
+what = "Krytí: plánované jednotky spojence"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaGhostProdBatimentAllie]
+what = "Krytí: plánované budovy spojence"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 100."
+[AlphaGhostSelection]
+what = "Krytí: obrys výběru"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 220."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Krytí: obrys výběru, když je myš nad jinou jednotkou"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 50."
+[AlphaCerclePorteeVisionSelection]
+what = "Krytí: kruh dohledu výběru"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 130."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Krytí: ten kruh, když je myš nad jinou jednotkou"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 30."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Krytí: nepřátelské obrysy a šipky ukázané Dešifrováním, nejvýše"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 80."
+[ColorAlphaForTeamInZone]
+what = "Krytí: barva strany na sektoru"
+does = "Jen vzhled: 0 = neviditelné, 255 = plné (podle názvu). Ve hře 64."
+[AlphaConcretizeGhost]
+what = "Obrys se stává skutečným: krytí"
+does = "Jen vzhled: podle názvu jak krycí je obrys, když se budova nebo jednotka, kterou znázorňuje, stane skutečnou. Ve hře 70 %."
+[TempsConcretizeGhost]
+what = "Obrys se stává skutečným (s)"
+does = "Jen vzhled: podle názvu jak dlouho trvá, než se obrys stane skutečnou budovou či jednotkou, v sekundách. Ve hře 0,1."
+[TempsFadeGhost]
+what = "Mizení obrysu (s)"
+does = "Jen vzhled: podle názvu jak dlouho obrys mizí, v sekundách. Ve hře 1,5."
+[FumigeneAlphaGhost]
+what = "Obrys v kouři: krytí"
+does = "Jen vzhled: podle názvu jak krycí je obrys v kouřové cloně. Ve hře 30 %."
+[OffsetZOmbreGhost]
+what = "Stín obrysu zvednutý (m)"
+does = "Jen vzhled: podle názvu jak vysoko nad zemí se kreslí stín obrysu, v m. Ve hře 1 m."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Cesty výroby v barvě strany"
+does = "Jen vzhled: podle názvu zda se čára od továrny k cíli její nové jednotky kreslí v barvě strany. Ve hře ano."
+[TempsFadeChemins]
+what = "Mizení cesty výroby (s)"
+does = "Jen vzhled: jak dlouho mizí čára od továrny k cíli její nové jednotky, v sekundách. Ve hře 1."
+[Seuil_CampColor_Avion]
+what = "Barva strany na letadlech od"
+does = "Jen vzhled: práh, od kterého se letadla kreslí v barvě své strany (podle názvu; hra ho předává kreslení každého letadla, ve vlastní míře). Ve hře 60 000."
+[Seuil_CampColor_Batiment]
+what = "Barva strany na budovách od"
+does = "Jen vzhled: totéž pro budovy. Ve hře 130 000."
+[Seuil_CampColor_Unit]
+what = "Barva strany na pozemních jednotkách od"
+does = "Jen vzhled: totéž pro pozemní jednotky. Ve hře 180 000."
+[FxRuseSpacing]
+what = "Značky lsti: rozestup"
+does = "Jen vzhled: podle názvu jak daleko od sebe se kreslí značky účinku lsti, ve vlastní míře hry. Ve hře 800."
+[FxRuseHeight]
+what = "Značky lsti: výška"
+does = "Jen vzhled: podle názvu jak vysoko se kreslí značky účinku lsti, ve vlastní míře hry. Ve hře 1 000."
+[FxDerouteTimeout]
+what = "Trvání efektu útěku (s)"
+does = "Jen vzhled: podle názvu jak dlouho zůstává efekt nad prchajícími jednotkami, v sekundách. Ve hře 5."
+[TempsPulseDecryptageFadeIn]
+what = "Puls Dešifrování: objevení (s)"
+does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a šipky pulzují; tato fáze (objevení) trvá tolik sekund. Ve hře 0,4."
+[TempsPulseDecryptageWait]
+what = "Puls Dešifrování: zobrazení (s)"
+does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a šipky pulzují; tato fáze (zobrazení) trvá tolik sekund. Ve hře 2."
+[TempsPulseDecryptageFadeOut]
+what = "Puls Dešifrování: zmizení (s)"
+does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a šipky pulzují; tato fáze (zmizení) trvá tolik sekund. Ve hře 2."
+[TempsPulseDecryptagePause]
+what = "Puls Dešifrování: pauza před dalším (s)"
+does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a šipky pulzují; tato fáze (pauza před dalším) trvá tolik sekund. Ve hře 1,5."

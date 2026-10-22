@@ -1538,3 +1538,102 @@ does = "D'après son nom, une valeur pour l'éditeur des créateurs : la plus gr
 [AverageOnPeriod]
 what = "Moyenne sur"
 does = "Le jeu tient une moyenne glissante d'une valeur sur une dernière durée de cette longueur (dans la mesure propre au jeu) ; laquelle n'est pas encore connue. 120 dans le jeu."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Opacité : le contour d'une unité commandée, pendant que vous la déplacez"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 120 dans le jeu."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Opacité : le contour d'une unité commandée, menu de production ouvert"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 50 dans le jeu."
+[AlphaGhostProdBatimentDeplace]
+what = "Opacité : le contour d'un bâtiment prévu, pendant que vous le déplacez"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaGhostProdBatimentPose]
+what = "Opacité : le contour d'un bâtiment prévu, une fois posé"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaGhostProdUniteDeplace]
+what = "Opacité : le contour d'une unité prévue, pendant que vous la déplacez"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaGhostProdUnitePose]
+what = "Opacité : le contour d'une unité prévue, une fois posée"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaFlecheOrdreAllie]
+what = "Opacité : les flèches d'ordre d'un allié"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 50 dans le jeu."
+[AlphaGhostOrdreAllie]
+what = "Opacité : les contours d'ordre d'un allié"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 120 dans le jeu."
+[AlphaGhostProdUniteAllie]
+what = "Opacité : les unités prévues d'un allié"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaGhostProdBatimentAllie]
+what = "Opacité : les bâtiments prévus d'un allié"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 100 dans le jeu."
+[AlphaGhostSelection]
+what = "Opacité : le contour de votre sélection"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 220 dans le jeu."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Opacité : le contour de la sélection quand la souris passe sur une autre unité"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 50 dans le jeu."
+[AlphaCerclePorteeVisionSelection]
+what = "Opacité : le cercle de portée de vue de votre sélection"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 130 dans le jeu."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Opacité : ce cercle quand la souris passe sur une autre unité"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 30 dans le jeu."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Opacité : les contours et flèches ennemis montrés par Décryptage, au plus"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 80 dans le jeu."
+[ColorAlphaForTeamInZone]
+what = "Opacité : la couleur d'un camp sur un secteur"
+does = "Apparence seulement : 0 = invisible, 255 = plein (d'après son nom). 64 dans le jeu."
+[AlphaConcretizeGhost]
+what = "Contour qui devient réel : opacité"
+does = "Apparence seulement : d'après son nom, l'opacité d'un contour quand le bâtiment ou l'unité qu'il représente devient réel. 70 % dans le jeu."
+[TempsConcretizeGhost]
+what = "Contour qui devient réel (s)"
+does = "Apparence seulement : d'après son nom, le temps qu'un contour met à devenir le vrai bâtiment ou la vraie unité, en secondes. 0,1 dans le jeu."
+[TempsFadeGhost]
+what = "Disparition d'un contour (s)"
+does = "Apparence seulement : d'après son nom, le temps qu'un contour met à s'effacer, en secondes. 1,5 dans le jeu."
+[FumigeneAlphaGhost]
+what = "Contour dans la fumée : opacité"
+does = "Apparence seulement : d'après son nom, l'opacité d'un contour dans un écran de fumée. 30 % dans le jeu."
+[OffsetZOmbreGhost]
+what = "Ombre du contour surélevée (m)"
+does = "Apparence seulement : d'après son nom, à quelle hauteur au-dessus du sol l'ombre d'un contour est dessinée, en m. 1 m dans le jeu."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Trajets de production aux couleurs du camp"
+does = "Apparence seulement : d'après son nom, si la ligne d'une usine jusqu'à la destination de sa nouvelle unité est dessinée aux couleurs du camp. Oui dans le jeu."
+[TempsFadeChemins]
+what = "Disparition d'un trajet de production (s)"
+does = "Apparence seulement : le temps que met à s'effacer la ligne d'une usine jusqu'à la destination de sa nouvelle unité, en secondes. 1 dans le jeu."
+[Seuil_CampColor_Avion]
+what = "Couleur du camp sur les avions à partir de"
+does = "Apparence seulement : le seuil où les avions sont dessinés aux couleurs de leur camp (d'après son nom ; le jeu le transmet au dessin de chaque avion, dans sa propre mesure). 60 000 dans le jeu."
+[Seuil_CampColor_Batiment]
+what = "Couleur du camp sur les bâtiments à partir de"
+does = "Apparence seulement : pareil pour les bâtiments. 130 000 dans le jeu."
+[Seuil_CampColor_Unit]
+what = "Couleur du camp sur les unités au sol à partir de"
+does = "Apparence seulement : pareil pour les unités au sol. 180 000 dans le jeu."
+[FxRuseSpacing]
+what = "Marques de ruse : espacement"
+does = "Apparence seulement : d'après son nom, l'écart entre les marques de l'effet d'une ruse, dans la mesure propre au jeu. 800 dans le jeu."
+[FxRuseHeight]
+what = "Marques de ruse : hauteur"
+does = "Apparence seulement : d'après son nom, la hauteur des marques de l'effet d'une ruse, dans la mesure propre au jeu. 1 000 dans le jeu."
+[FxDerouteTimeout]
+what = "Durée de l'effet de déroute (s)"
+does = "Apparence seulement : d'après son nom, combien de temps reste l'effet sur les unités en déroute, en secondes. 5 dans le jeu."
+[TempsPulseDecryptageFadeIn]
+what = "Pulsation de Décryptage : apparition (s)"
+does = "Apparence seulement : d'après son nom, sous Décryptage les contours et flèches ennemis apparaissent et disparaissent ; cette phase (apparition) dure ce nombre de secondes. 0,4 dans le jeu."
+[TempsPulseDecryptageWait]
+what = "Pulsation de Décryptage : affichage (s)"
+does = "Apparence seulement : d'après son nom, sous Décryptage les contours et flèches ennemis apparaissent et disparaissent ; cette phase (affichage) dure ce nombre de secondes. 2 dans le jeu."
+[TempsPulseDecryptageFadeOut]
+what = "Pulsation de Décryptage : disparition (s)"
+does = "Apparence seulement : d'après son nom, sous Décryptage les contours et flèches ennemis apparaissent et disparaissent ; cette phase (disparition) dure ce nombre de secondes. 2 dans le jeu."
+[TempsPulseDecryptagePause]
+what = "Pulsation de Décryptage : pause avant la suivante (s)"
+does = "Apparence seulement : d'après son nom, sous Décryptage les contours et flèches ennemis apparaissent et disparaissent ; cette phase (pause avant la suivante) dure ce nombre de secondes. 1,5 dans le jeu."

@@ -1538,3 +1538,102 @@ does = "Z nazwy: wartość dla edytora twórców — największy zasięg ognia, 
 [AverageOnPeriod]
 what = "Średnia z"
 does = "Gra prowadzi bieżącą średnią pewnej wartości z ostatniego okresu tej długości (we własnej mierze gry); której — jeszcze nie wiadomo. W grze 120."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Krycie: zarys zamówionej jednostki, gdy go przesuwasz"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 120."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Krycie: zarys zamówionej jednostki przy otwartym menu produkcji"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 50."
+[AlphaGhostProdBatimentDeplace]
+what = "Krycie: zarys planowanego budynku, gdy go przesuwasz"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaGhostProdBatimentPose]
+what = "Krycie: zarys planowanego budynku po postawieniu"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaGhostProdUniteDeplace]
+what = "Krycie: zarys planowanej jednostki, gdy go przesuwasz"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaGhostProdUnitePose]
+what = "Krycie: zarys planowanej jednostki po postawieniu"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaFlecheOrdreAllie]
+what = "Krycie: strzałki rozkazów sojusznika"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 50."
+[AlphaGhostOrdreAllie]
+what = "Krycie: zarysy rozkazów sojusznika"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 120."
+[AlphaGhostProdUniteAllie]
+what = "Krycie: planowane jednostki sojusznika"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaGhostProdBatimentAllie]
+what = "Krycie: planowane budynki sojusznika"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 100."
+[AlphaGhostSelection]
+what = "Krycie: zarys zaznaczenia"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 220."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Krycie: zarys zaznaczenia, gdy mysz jest nad inną jednostką"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 50."
+[AlphaCerclePorteeVisionSelection]
+what = "Krycie: okrąg zasięgu widzenia zaznaczenia"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 130."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Krycie: ten okrąg, gdy mysz jest nad inną jednostką"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 30."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Krycie: wrogie zarysy i strzałki pokazane przez Odszyfrowanie, najwyżej"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 80."
+[ColorAlphaForTeamInZone]
+what = "Krycie: kolor strony na sektorze"
+does = "Tylko wygląd: 0 = niewidoczne, 255 = pełne (z nazwy). W grze 64."
+[AlphaConcretizeGhost]
+what = "Zarys staje się prawdziwy: krycie"
+does = "Tylko wygląd: z nazwy: jak kryjący jest zarys, gdy budynek lub jednostka, którą oznacza, staje się prawdziwa. W grze 70%."
+[TempsConcretizeGhost]
+what = "Zarys staje się prawdziwy (s)"
+does = "Tylko wygląd: z nazwy: ile trwa, zanim zarys stanie się prawdziwym budynkiem lub jednostką, w sekundach. W grze 0,1."
+[TempsFadeGhost]
+what = "Znikanie zarysu (s)"
+does = "Tylko wygląd: z nazwy: ile trwa znikanie zarysu, w sekundach. W grze 1,5."
+[FumigeneAlphaGhost]
+what = "Zarys w dymie: krycie"
+does = "Tylko wygląd: z nazwy: jak kryjąco wygląda zarys w zasłonie dymnej. W grze 30%."
+[OffsetZOmbreGhost]
+what = "Cień zarysu podniesiony (m)"
+does = "Tylko wygląd: z nazwy: jak wysoko nad ziemią rysuje się cień zarysu, w m. W grze 1 m."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Trasy produkcji w kolorze strony"
+does = "Tylko wygląd: z nazwy: czy linia od fabryki do celu jej nowej jednostki jest rysowana w kolorze strony. W grze tak."
+[TempsFadeChemins]
+what = "Znikanie trasy produkcji (s)"
+does = "Tylko wygląd: ile trwa znikanie linii od fabryki do celu jej nowej jednostki, w sekundach. W grze 1."
+[Seuil_CampColor_Avion]
+what = "Kolor strony na samolotach od"
+does = "Tylko wygląd: próg, od którego samoloty są rysowane w kolorze swojej strony (z nazwy; gra przekazuje go do rysowania każdego samolotu, we własnej mierze). W grze 60 000."
+[Seuil_CampColor_Batiment]
+what = "Kolor strony na budynkach od"
+does = "Tylko wygląd: to samo dla budynków. W grze 130 000."
+[Seuil_CampColor_Unit]
+what = "Kolor strony na jednostkach naziemnych od"
+does = "Tylko wygląd: to samo dla jednostek naziemnych. W grze 180 000."
+[FxRuseSpacing]
+what = "Znaki podstępu: odstęp"
+does = "Tylko wygląd: z nazwy: jak daleko od siebie rysowane są znaki efektu podstępu, we własnej mierze gry. W grze 800."
+[FxRuseHeight]
+what = "Znaki podstępu: wysokość"
+does = "Tylko wygląd: z nazwy: jak wysoko rysowane są znaki efektu podstępu, we własnej mierze gry. W grze 1000."
+[FxDerouteTimeout]
+what = "Czas efektu ucieczki (s)"
+does = "Tylko wygląd: z nazwy: jak długo trwa efekt nad uciekającymi jednostkami, w sekundach. W grze 5."
+[TempsPulseDecryptageFadeIn]
+what = "Puls Odszyfrowania: pojawianie (s)"
+does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pulsują; ta faza (pojawianie) trwa tyle sekund. W grze 0,4."
+[TempsPulseDecryptageWait]
+what = "Puls Odszyfrowania: widoczne (s)"
+does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pulsują; ta faza (widoczne) trwa tyle sekund. W grze 2."
+[TempsPulseDecryptageFadeOut]
+what = "Puls Odszyfrowania: znikanie (s)"
+does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pulsują; ta faza (znikanie) trwa tyle sekund. W grze 2."
+[TempsPulseDecryptagePause]
+what = "Puls Odszyfrowania: przerwa przed następnym (s)"
+does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pulsują; ta faza (przerwa przed następnym) trwa tyle sekund. W grze 1,5."

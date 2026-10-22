@@ -3674,3 +3674,234 @@ unit = "raw"
 sure = "name"
 what = "Averaged over"
 does = "The game keeps a running average of a figure over a last stretch of time this long (in the game's own measure); which figure isn't known yet. 120 in the game."
+
+[AlphaGhostCheminDeProduction_MoveGhost]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the outline of a unit on order, while you move it"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 120 in the game."
+
+[AlphaGhostCheminDeProduction_OpenMenu]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the outline of a unit on order, while the build menu is open"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 50 in the game."
+
+[AlphaGhostProdBatimentDeplace]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: a planned building's outline, while you move it"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaGhostProdBatimentPose]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: a planned building's outline, once set down"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaGhostProdUniteDeplace]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: a planned unit's outline, while you move it"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaGhostProdUnitePose]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: a planned unit's outline, once set down"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaFlecheOrdreAllie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: an ally's order arrows"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 50 in the game."
+
+[AlphaGhostOrdreAllie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: an ally's order outlines"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 120 in the game."
+
+[AlphaGhostProdUniteAllie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: an ally's planned units"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaGhostProdBatimentAllie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: an ally's planned buildings"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 100 in the game."
+
+[AlphaGhostSelection]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the outline of what you have selected"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 220 in the game."
+
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the selection's outline while the mouse is over another unit"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 50 in the game."
+
+[AlphaCerclePorteeVisionSelection]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the sight-range circle of what you have selected"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 130 in the game."
+
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: that circle while the mouse is over another unit"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 30 in the game."
+
+[AlphaGhostEtFlechePourDecryptageMax]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: the enemy outlines and arrows Decryption shows, at most"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 80 in the game."
+
+[ColorAlphaForTeamInZone]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "How solid: a side's colour on a sector"
+does = "Looks only: 0 is unseen, 255 is solid (from its name). 64 in the game."
+
+[AlphaConcretizeGhost]
+group = "looks"
+unit = "share"
+sure = "name"
+what = "Outline turning real: how solid"
+does = "Looks only: from its name, how solid an outline is when the building or unit it stands for becomes real. 70% in the game."
+
+[TempsConcretizeGhost]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Outline turning real (s)"
+does = "Looks only: from its name, how long an outline takes to turn into the real building or unit, in seconds. 0.1 in the game."
+
+[TempsFadeGhost]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Outline fading (s)"
+does = "Looks only: from its name, how long an outline takes to fade away, in seconds. 1.5 in the game."
+
+[FumigeneAlphaGhost]
+group = "looks"
+unit = "share"
+sure = "name"
+what = "Outline in smoke: how solid"
+does = "Looks only: from its name, how solid an outline looks in a smoke screen. 30% in the game."
+
+[OffsetZOmbreGhost]
+group = "looks"
+unit = "m"
+sure = "name"
+what = "Outline's shadow raised (m)"
+does = "Looks only: from its name, how far above the ground an outline's shadow is drawn, in m. 1 m in the game."
+
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+group = "looks"
+unit = "yesno"
+sure = "name"
+what = "Production paths in the side's colour"
+does = "Looks only: from its name, whether the line from a factory to where its new unit goes is drawn in the side's colour. Yes in the game."
+
+[TempsFadeChemins]
+group = "looks"
+unit = "s"
+sure = "known"
+what = "Production path fading (s)"
+does = "Looks only: how long the line from a factory to where its new unit goes takes to fade away, in seconds. 1 in the game."
+
+[Seuil_CampColor_Avion]
+group = "looks"
+unit = "raw"
+sure = "known"
+what = "Side colour on planes from"
+does = "Looks only: the point at which planes are drawn in their side's colour (from its name; the game hands it to the drawing of each plane, in its own measure). 60,000 in the game."
+
+[Seuil_CampColor_Batiment]
+group = "looks"
+unit = "raw"
+sure = "known"
+what = "Side colour on buildings from"
+does = "Looks only: the same for buildings. 130,000 in the game."
+
+[Seuil_CampColor_Unit]
+group = "looks"
+unit = "raw"
+sure = "known"
+what = "Side colour on ground units from"
+does = "Looks only: the same for ground units. 180,000 in the game."
+
+[FxRuseSpacing]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Ruse marks: spacing"
+does = "Looks only: from its name, how far apart the marks of a ruse's effect are drawn, in the game's own measure. 800 in the game."
+
+[FxRuseHeight]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Ruse marks: height"
+does = "Looks only: from its name, how high the marks of a ruse's effect are drawn, in the game's own measure. 1,000 in the game."
+
+[FxDerouteTimeout]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Rout effect lasts (s)"
+does = "Looks only: from its name, how long the effect over routing units stays, in seconds. 5 in the game."
+
+[TempsPulseDecryptageFadeIn]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Decryption pulse: fading in (s)"
+does = "Looks only: from its name, under Decryption the enemy's outlines and arrows pulse in and out; this part (fading in) lasts this many seconds. 0.4 in the game."
+
+[TempsPulseDecryptageWait]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Decryption pulse: shown (s)"
+does = "Looks only: from its name, under Decryption the enemy's outlines and arrows pulse in and out; this part (shown) lasts this many seconds. 2 in the game."
+
+[TempsPulseDecryptageFadeOut]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Decryption pulse: fading out (s)"
+does = "Looks only: from its name, under Decryption the enemy's outlines and arrows pulse in and out; this part (fading out) lasts this many seconds. 2 in the game."
+
+[TempsPulseDecryptagePause]
+group = "looks"
+unit = "s"
+sure = "name"
+what = "Decryption pulse: pause before the next (s)"
+does = "Looks only: from its name, under Decryption the enemy's outlines and arrows pulse in and out; this part (pause before the next) lasts this many seconds. 1.5 in the game."

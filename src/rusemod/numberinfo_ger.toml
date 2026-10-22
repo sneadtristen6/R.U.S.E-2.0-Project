@@ -1538,3 +1538,102 @@ does = "Laut Name ein Wert für den eigenen Editor der Macher: die größte Schu
 [AverageOnPeriod]
 what = "Gemittelt über"
 does = "Das Spiel führt einen laufenden Mittelwert einer Größe über eine letzte Zeitspanne dieser Länge (im eigenen Maß des Spiels); welche Größe, ist noch nicht bekannt. Im Spiel 120."
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "Deckkraft: der Umriss einer bestellten Einheit, während Sie ihn verschieben"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 120."
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "Deckkraft: der Umriss einer bestellten Einheit bei offenem Baumenü"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 50."
+[AlphaGhostProdBatimentDeplace]
+what = "Deckkraft: der Umriss eines geplanten Gebäudes, während Sie ihn verschieben"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaGhostProdBatimentPose]
+what = "Deckkraft: der Umriss eines geplanten Gebäudes, wenn er abgesetzt ist"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaGhostProdUniteDeplace]
+what = "Deckkraft: der Umriss einer geplanten Einheit, während Sie ihn verschieben"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaGhostProdUnitePose]
+what = "Deckkraft: der Umriss einer geplanten Einheit, wenn er abgesetzt ist"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaFlecheOrdreAllie]
+what = "Deckkraft: die Befehlspfeile eines Verbündeten"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 50."
+[AlphaGhostOrdreAllie]
+what = "Deckkraft: die Befehlsumrisse eines Verbündeten"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 120."
+[AlphaGhostProdUniteAllie]
+what = "Deckkraft: die geplanten Einheiten eines Verbündeten"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaGhostProdBatimentAllie]
+what = "Deckkraft: die geplanten Gebäude eines Verbündeten"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 100."
+[AlphaGhostSelection]
+what = "Deckkraft: der Umriss Ihrer Auswahl"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 220."
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "Deckkraft: der Umriss der Auswahl, wenn die Maus über einer anderen Einheit ist"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 50."
+[AlphaCerclePorteeVisionSelection]
+what = "Deckkraft: der Sichtweitenkreis Ihrer Auswahl"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 130."
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "Deckkraft: dieser Kreis, wenn die Maus über einer anderen Einheit ist"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 30."
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "Deckkraft: die von Entschlüsselung gezeigten feindlichen Umrisse und Pfeile, höchstens"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 80."
+[ColorAlphaForTeamInZone]
+what = "Deckkraft: die Farbe einer Seite auf einem Sektor"
+does = "Nur Aussehen: 0 = unsichtbar, 255 = deckend (laut Name). Im Spiel 64."
+[AlphaConcretizeGhost]
+what = "Umriss wird echt: Deckkraft"
+does = "Nur Aussehen: Laut Name, wie deckend ein Umriss ist, wenn das Gebäude oder die Einheit, für die er steht, echt wird. Im Spiel 70 %."
+[TempsConcretizeGhost]
+what = "Umriss wird echt (s)"
+does = "Nur Aussehen: Laut Name, wie lange ein Umriss braucht, um zum echten Gebäude oder zur echten Einheit zu werden, in Sekunden. Im Spiel 0,1."
+[TempsFadeGhost]
+what = "Ausblenden eines Umrisses (s)"
+does = "Nur Aussehen: Laut Name, wie lange ein Umriss zum Ausblenden braucht, in Sekunden. Im Spiel 1,5."
+[FumigeneAlphaGhost]
+what = "Umriss im Rauch: Deckkraft"
+does = "Nur Aussehen: Laut Name, wie deckend ein Umriss in einer Rauchwand aussieht. Im Spiel 30 %."
+[OffsetZOmbreGhost]
+what = "Schatten des Umrisses angehoben (m)"
+does = "Nur Aussehen: Laut Name, wie hoch über dem Boden der Schatten eines Umrisses gezeichnet wird, in m. Im Spiel 1 m."
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "Produktionswege in der Farbe der Seite"
+does = "Nur Aussehen: Laut Name, ob die Linie von einer Fabrik zum Ziel ihrer neuen Einheit in der Farbe der Seite gezeichnet wird. Im Spiel ja."
+[TempsFadeChemins]
+what = "Ausblenden eines Produktionswegs (s)"
+does = "Nur Aussehen: Wie lange die Linie von einer Fabrik zum Ziel ihrer neuen Einheit zum Ausblenden braucht, in Sekunden. Im Spiel 1."
+[Seuil_CampColor_Avion]
+what = "Farbe der Seite auf Flugzeugen ab"
+does = "Nur Aussehen: Die Schwelle, ab der Flugzeuge in der Farbe ihrer Seite gezeichnet werden (laut Name; das Spiel gibt sie an die Darstellung jedes Flugzeugs, im eigenen Maß). Im Spiel 60.000."
+[Seuil_CampColor_Batiment]
+what = "Farbe der Seite auf Gebäuden ab"
+does = "Nur Aussehen: Dasselbe für Gebäude. Im Spiel 130.000."
+[Seuil_CampColor_Unit]
+what = "Farbe der Seite auf Bodeneinheiten ab"
+does = "Nur Aussehen: Dasselbe für Bodeneinheiten. Im Spiel 180.000."
+[FxRuseSpacing]
+what = "Listzeichen: Abstand"
+does = "Nur Aussehen: Laut Name, wie weit die Zeichen eines Listeffekts auseinander gezeichnet werden, im eigenen Maß des Spiels. Im Spiel 800."
+[FxRuseHeight]
+what = "Listzeichen: Höhe"
+does = "Nur Aussehen: Laut Name, wie hoch die Zeichen eines Listeffekts gezeichnet werden, im eigenen Maß des Spiels. Im Spiel 1.000."
+[FxDerouteTimeout]
+what = "Dauer des Flucht-Effekts (s)"
+does = "Nur Aussehen: Laut Name, wie lange der Effekt über fliehenden Einheiten bleibt, in Sekunden. Im Spiel 5."
+[TempsPulseDecryptageFadeIn]
+what = "Entschlüsselungs-Puls: Einblenden (s)"
+does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen Umrisse und Pfeile; dieser Teil (Einblenden) dauert so viele Sekunden. Im Spiel 0,4."
+[TempsPulseDecryptageWait]
+what = "Entschlüsselungs-Puls: Anzeige (s)"
+does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen Umrisse und Pfeile; dieser Teil (Anzeige) dauert so viele Sekunden. Im Spiel 2."
+[TempsPulseDecryptageFadeOut]
+what = "Entschlüsselungs-Puls: Ausblenden (s)"
+does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen Umrisse und Pfeile; dieser Teil (Ausblenden) dauert so viele Sekunden. Im Spiel 2."
+[TempsPulseDecryptagePause]
+what = "Entschlüsselungs-Puls: Pause bis zum nächsten (s)"
+does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen Umrisse und Pfeile; dieser Teil (Pause bis zum nächsten) dauert so viele Sekunden. Im Spiel 1,5."

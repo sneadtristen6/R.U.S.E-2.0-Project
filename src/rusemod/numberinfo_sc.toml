@@ -1538,3 +1538,102 @@ does = "从名称看，制作方编辑器用的数值：显示的最大射程。
 [AverageOnPeriod]
 what = "平均时段"
 does = "游戏对某个数值在最近这么长的一段时间内（游戏自身的单位）取滑动平均；是哪个数值尚不清楚。游戏中为 120。"
+[AlphaGhostCheminDeProduction_MoveGhost]
+what = "不透明度：移动中的已下单单位轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 120。"
+[AlphaGhostCheminDeProduction_OpenMenu]
+what = "不透明度：生产菜单打开时已下单单位的轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 50。"
+[AlphaGhostProdBatimentDeplace]
+what = "不透明度：移动中的计划建筑轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaGhostProdBatimentPose]
+what = "不透明度：放下后的计划建筑轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaGhostProdUniteDeplace]
+what = "不透明度：移动中的计划单位轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaGhostProdUnitePose]
+what = "不透明度：放下后的计划单位轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaFlecheOrdreAllie]
+what = "不透明度：盟友的命令箭头"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 50。"
+[AlphaGhostOrdreAllie]
+what = "不透明度：盟友的命令轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 120。"
+[AlphaGhostProdUniteAllie]
+what = "不透明度：盟友的计划单位"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaGhostProdBatimentAllie]
+what = "不透明度：盟友的计划建筑"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 100。"
+[AlphaGhostSelection]
+what = "不透明度：所选对象的轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 220。"
+[AlphaGhostSelectionQuandPasseSurAutreUnite]
+what = "不透明度：鼠标悬停在其他单位上时选择的轮廓"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 50。"
+[AlphaCerclePorteeVisionSelection]
+what = "不透明度：所选对象的视野范围圆"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 130。"
+[AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
+what = "不透明度：鼠标悬停在其他单位上时的该圆"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 30。"
+[AlphaGhostEtFlechePourDecryptageMax]
+what = "不透明度：解密显示的敌方轮廓和箭头（最大）"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 80。"
+[ColorAlphaForTeamInZone]
+what = "不透明度：扇区上阵营的颜色"
+does = "仅外观：0 为看不见，255 为实心（从名称看）。游戏中为 64。"
+[AlphaConcretizeGhost]
+what = "轮廓变为实体：不透明度"
+does = "仅外观：从名称看，轮廓所代表的建筑或单位变为实体时轮廓的不透明度。游戏中为 70%。"
+[TempsConcretizeGhost]
+what = "轮廓变为实体（秒）"
+does = "仅外观：从名称看，轮廓变成真实建筑或单位所需的秒数。游戏中为 0.1。"
+[TempsFadeGhost]
+what = "轮廓淡出（秒）"
+does = "仅外观：从名称看，轮廓淡出所需的秒数。游戏中为 1.5。"
+[FumigeneAlphaGhost]
+what = "烟雾中的轮廓：不透明度"
+does = "仅外观：从名称看，烟幕中轮廓的不透明度。游戏中为 30%。"
+[OffsetZOmbreGhost]
+what = "轮廓阴影抬高（米）"
+does = "仅外观：从名称看，轮廓的阴影画在离地多高处（米）。游戏中为 1 米。"
+[CheminDeProductionDeBatimentDeCouleurDeCamp]
+what = "生产路径使用阵营颜色"
+does = "仅外观：从名称看，工厂到其新单位目的地的线是否用阵营颜色绘制。游戏中为是。"
+[TempsFadeChemins]
+what = "生产路径淡出（秒）"
+does = "仅外观：工厂到其新单位目的地的线淡出所需的秒数。游戏中为 1。"
+[Seuil_CampColor_Avion]
+what = "飞机显示阵营颜色的阈值"
+does = "仅外观：飞机以其阵营颜色绘制的阈值（从名称看；游戏以自身单位将其交给每架飞机的绘制）。游戏中为 60,000。"
+[Seuil_CampColor_Batiment]
+what = "建筑显示阵营颜色的阈值"
+does = "仅外观：建筑同理。游戏中为 130,000。"
+[Seuil_CampColor_Unit]
+what = "地面单位显示阵营颜色的阈值"
+does = "仅外观：地面单位同理。游戏中为 180,000。"
+[FxRuseSpacing]
+what = "计谋标记：间距"
+does = "仅外观：从名称看，计谋效果标记绘制的间距（游戏自身的单位）。游戏中为 800。"
+[FxRuseHeight]
+what = "计谋标记：高度"
+does = "仅外观：从名称看，计谋效果标记绘制的高度（游戏自身的单位）。游戏中为 1,000。"
+[FxDerouteTimeout]
+what = "溃逃效果持续（秒）"
+does = "仅外观：从名称看，溃逃单位上方效果停留的秒数。游戏中为 5。"
+[TempsPulseDecryptageFadeIn]
+what = "解密脉冲：淡入（秒）"
+does = "仅外观：从名称看，在解密下敌方轮廓和箭头会闪烁；这一阶段（淡入）持续的秒数。游戏中为 0.4。"
+[TempsPulseDecryptageWait]
+what = "解密脉冲：显示（秒）"
+does = "仅外观：从名称看，在解密下敌方轮廓和箭头会闪烁；这一阶段（显示）持续的秒数。游戏中为 2。"
+[TempsPulseDecryptageFadeOut]
+what = "解密脉冲：淡出（秒）"
+does = "仅外观：从名称看，在解密下敌方轮廓和箭头会闪烁；这一阶段（淡出）持续的秒数。游戏中为 2。"
+[TempsPulseDecryptagePause]
+what = "解密脉冲：下一次前的暂停（秒）"
+does = "仅外观：从名称看，在解密下敌方轮廓和箭头会闪烁；这一阶段（下一次前的暂停）持续的秒数。游戏中为 1.5。"
