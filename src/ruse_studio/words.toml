@@ -12921,6 +12921,30 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_damage]
+us = "Damage, pinning and recovery"
+fr = "Dégâts, clouage et récupération"
+ger = "Schaden, Niederhalten und Erholung"
+ita = "Danni, inchiodamento e recupero"
+spa = "Daño, inmovilización y recuperación"
+pol = "Obrażenia, przyszpilenie i regeneracja"
+ru = "Урон, подавление и восстановление"
+cz = "Poškození, přišpendlení a zotavení"
+jpn = "ダメージ、制圧、回復"
+sc = "伤害、压制与恢复"
+
+[economy_group_forest]
+us = "Woods, cover and sight"
+fr = "Bois, couvert et vue"
+ger = "Wald, Deckung und Sicht"
+ita = "Boschi, copertura e vista"
+spa = "Bosques, cobertura y visión"
+pol = "Lasy, osłona i widoczność"
+ru = "Лес, укрытие и обзор"
+cz = "Lesy, kryt a výhled"
+jpn = "森、遮蔽、視界"
+sc = "树林、掩护与视野"
+
 [economy_group_firing]
 us = "Firing and targets"
 fr = "Tir et cibles"

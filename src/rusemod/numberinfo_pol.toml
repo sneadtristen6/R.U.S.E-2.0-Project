@@ -1355,3 +1355,87 @@ does = "To samo dla jednostki bez broni (np. ciężarówki) po każdym rozkazie,
 [ReglesActives_TirReflexSilenceRadio]
 what = "Cisza radiowa wstrzymuje ogień odruchowy"
 does = "Włączone: jednostki pod podstępem Cisza radiowa nie odpowiadają same ogniem, więc pozostają ukryte. W grze 1 (włączone)."
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "Obrażenia gracza na poziomie Łatwy (x)"
+does = "Obrażenia zadawane przez jednostki gracza na poziomie Łatwy, razy ich zwykłe obrażenia. W grze 1."
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "Obrażenia gracza na poziomie Średni (x)"
+does = "To samo na poziomie Średni. W grze 1."
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "Obrażenia gracza na poziomie Trudny (x)"
+does = "To samo na poziomie Trudny. W grze 1."
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "Jednostki gracza: wytrzymałość na poziomie Łatwy (x)"
+does = "Ile jednostki gracza wytrzymają, zanim zostaną przyszpilone lub zabite na poziomie Łatwy, razy normalnie (w jednym trybie gry, zapewne kampanii). W grze 1,5."
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "Jednostki gracza: wytrzymałość na poziomie Średni (x)"
+does = "To samo na poziomie Średni. W grze 1."
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "Jednostki gracza: wytrzymałość na poziomie Trudny (x)"
+does = "To samo na poziomie Trudny. W grze 0,75."
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "Jednostki komputera: wytrzymałość na poziomie Łatwy (x)"
+does = "Ile jednostki gracza komputerowego wytrzymają, zanim zostaną przyszpilone lub zabite na poziomie Łatwy, razy normalnie (w jednym trybie gry, zapewne kampanii). W grze 0,75."
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "Jednostki komputera: wytrzymałość na poziomie Średni (x)"
+does = "To samo na poziomie Średni. W grze 1."
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "Jednostki komputera: wytrzymałość na poziomie Trudny (x)"
+does = "To samo na poziomie Trudny. W grze 1,25."
+[FacteurRegenerationPinnedAvion]
+what = "Regeneracja samolotów z przyszpilenia (x)"
+does = "Jak szybko samoloty otrząsają się z przyszpilenia, razy zwykłe tempo. W grze 0,75."
+[FacteurRegenerationPinnedBatiment]
+what = "Regeneracja budynków z przyszpilenia (x)"
+does = "To samo dla budynków (np. obsady bunkra). W grze 1."
+[RegenerationPinnedHorsCombat]
+what = "Regeneracja z przyszpilenia poza walką"
+does = "Jak szybko jednostka poza walką otrząsa się z przyszpilenia (we własnej mierze gry). W grze 10."
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "Sekund spokoju, by być poza walką"
+does = "Jednostka liczy się jako poza walką, gdy przez tyle sekund ani nie strzelała, ani nie była trafiona. W grze 2."
+[TempsSansTirNiDamagePourRegen]
+what = "Sekund spokoju przed regeneracją"
+does = "Jednostka zaczyna się regenerować, gdy przez tyle sekund ani nie strzelała, ani nie była trafiona. W grze 15."
+[MultiplicateurPinnedEmbuscade]
+what = "Przyszpilenie z zasadzki (x)"
+does = "O ile mocniej ogień z zasadzki przyszpila cele, razy normalnie. W grze 3."
+[UbserstressEmpecheCapture]
+what = "Załamane jednostki nie mogą zdobywać"
+does = "Włączone: jednostka pod największym stresem (załamana) nie może zdobyć budynku. W grze 1 (włączone)."
+[CouvertBonusForet]
+what = "Osłona w lesie (m)"
+does = "O ile bliżej wróg musi podejść, by zobaczyć jednostkę w lesie, w m. W grze 300 m."
+[DistanceEnfoncementForet]
+what = "Jak głęboko jednostki wchodzą w las (m)"
+does = "Jak daleko za skraj lasu jednostki wchodzą, by się ukryć, w m. W grze 50 m."
+[DistanceIgnoreForet]
+what = "Las nie ukrywa tego, co tak blisko (m)"
+does = "Bliżej niż tyle jednostka w lesie i tak jest widoczna, w m. W grze 100 m."
+[EmbuscadeAutomatiqueEnForet]
+what = "Jednostki szukają miejsca na zasadzkę w lesie"
+does = "Włączone: jednostka zostawiona w lesie sama raz wybiera tam miejsce na zasadzkę. W grze 1 (włączone)."
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "Szukanie miejsca na zasadzkę: najdalej (m)"
+does = "Jak daleko od swojego miejsca jednostka szuka tej zasadzki, w m. W grze 50 m."
+[PorteeObligationDeclenchementTirEnForet]
+what = "Ukryty w lesie: zawsze strzela w odległości (m)"
+does = "Jednostka ukryta w lesie zawsze otwiera ogień do wroga bliżej niż tyle, w m. W grze 300 m."
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "Ukryty w lesie: strzela przy tej części zasięgu"
+does = "Jednostka ukryta w lesie otwiera ogień, gdy wróg znajdzie się w tej części jej zasięgu. W grze 100%."
+[RatioMultiplicateurPinnedProtectionForet]
+what = "Las chroni przed przyszpileniem (x)"
+does = "Jak mocno ogień przyszpila jednostkę w lesie, razy tyle co na otwartym terenie. W grze 0,6."
+[DistanceMinimumVision]
+what = "Najkrótszy zasięg widzenia jednostki (m)"
+does = "Każda jednostka widzi co najmniej tak daleko, niezależnie od własnego zasięgu, w m. W grze 100 m."
+[DistanceMinimumVisionBatimentReco]
+what = "Najkrótszy zasięg widzenia budynku zwiadu (m)"
+does = "To samo dla budynków zwiadu (np. punktu obserwacyjnego), w m. W grze 800 m."
+[NouveauCercleDeVision]
+what = "Nowszy krąg widzenia"
+does = "Włączone: gra używa nowszego sposobu rysowania i liczenia kręgu widzenia jednostki. W grze 1 (włączone)."
+[TimeToBeStealthedAfterReveal]
+what = "Sekund do ponownego ukrycia po wykryciu"
+does = "Jak długo ukryta jednostka, którą wykryto, pozostaje widoczna, zanim znów może się ukryć, w sekundach. W grze 10."

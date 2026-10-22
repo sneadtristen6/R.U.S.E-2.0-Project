@@ -1355,3 +1355,87 @@ does = "无武装单位（如卡车）在任何命令后同理（秒）。游戏
 [ReglesActives_TirReflexSilenceRadio]
 what = "无线电静默阻止本能射击"
 does = "开：处于无线电静默计谋下的单位不会自行还击，因此保持隐蔽。游戏中为 1（开）。"
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "“简单”时玩家造成的伤害（倍）"
+does = "“简单”难度下玩家单位造成的伤害，为正常伤害的倍数。游戏中为 1。"
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "“中等”时玩家造成的伤害（倍）"
+does = "“中等”难度同理。游戏中为 1。"
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "“困难”时玩家造成的伤害（倍）"
+does = "“困难”难度同理。游戏中为 1。"
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "玩家单位：“简单”时的耐受（倍）"
+does = "“简单”时玩家单位被压制或击毁前能承受的量，为正常值的倍数（在某一游戏模式中，可能是战役）。游戏中为 1.5。"
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "玩家单位：“中等”时的耐受（倍）"
+does = "“中等”同理。游戏中为 1。"
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "玩家单位：“困难”时的耐受（倍）"
+does = "“困难”同理。游戏中为 0.75。"
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "电脑单位：“简单”时的耐受（倍）"
+does = "“简单”时电脑单位被压制或击毁前能承受的量，为正常值的倍数（在某一游戏模式中，可能是战役）。游戏中为 0.75。"
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "电脑单位：“中等”时的耐受（倍）"
+does = "“中等”同理。游戏中为 1。"
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "电脑单位：“困难”时的耐受（倍）"
+does = "“困难”同理。游戏中为 1.25。"
+[FacteurRegenerationPinnedAvion]
+what = "飞机从压制中恢复（倍）"
+does = "飞机摆脱压制的速度，为通常速度的倍数。游戏中为 0.75。"
+[FacteurRegenerationPinnedBatiment]
+what = "建筑从压制中恢复（倍）"
+does = "建筑（如碉堡的射手）同理。游戏中为 1。"
+[RegenerationPinnedHorsCombat]
+what = "脱离战斗时从压制中恢复"
+does = "脱离战斗的单位摆脱压制的速度（按游戏自身的度量）。游戏中为 10。"
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "脱离战斗所需的平静秒数"
+does = "单位在这么多秒内既未开火也未被击中，即视为脱离战斗。游戏中为 2。"
+[TempsSansTirNiDamagePourRegen]
+what = "开始恢复前的平静秒数"
+does = "单位在这么多秒内既未开火也未被击中后开始恢复。游戏中为 15。"
+[MultiplicateurPinnedEmbuscade]
+what = "伏击造成的压制（倍）"
+does = "伏击火力压制目标的强度，为正常值的倍数。游戏中为 3。"
+[UbserstressEmpecheCapture]
+what = "崩溃的单位无法占领"
+does = "开：处于最大压力（崩溃）的单位无法占领建筑。游戏中为 1（开）。"
+[CouvertBonusForet]
+what = "林中掩护（米）"
+does = "敌人需要多靠近才能看到林中的单位（米）。游戏中为 300 米。"
+[DistanceEnfoncementForet]
+what = "单位进入树林的深度（米）"
+does = "单位为隐蔽而进入林缘以内的距离（米）。游戏中为 50 米。"
+[DistanceIgnoreForet]
+what = "这么近时树林无法隐藏（米）"
+does = "比这更近时，林中的单位照样会被看到（米）。游戏中为 100 米。"
+[EmbuscadeAutomatiqueEnForet]
+what = "单位在林中寻找伏击点"
+does = "开：留在林中的单位会自行在那里选择一次伏击点。游戏中为 1（开）。"
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "寻找伏击点：最远（米）"
+does = "单位在离所在位置多远的范围内寻找伏击点（米）。游戏中为 50 米。"
+[PorteeObligationDeclenchementTirEnForet]
+what = "林中隐蔽：在此距离内必定开火（米）"
+does = "隐藏在林中的单位对比这更近的敌人一定会开火（米）。游戏中为 300 米。"
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "林中隐蔽：在射程的此比例内开火"
+does = "隐藏在林中的单位在敌人进入其射程此比例内时开火。游戏中为 100%。"
+[RatioMultiplicateurPinnedProtectionForet]
+what = "树林减轻压制（倍）"
+does = "林中单位受火力压制的程度，为开阔地时的倍数。游戏中为 0.6。"
+[DistanceMinimumVision]
+what = "单位的最短视野（米）"
+does = "无论自身视野如何，每个单位至少能看这么远（米）。游戏中为 100 米。"
+[DistanceMinimumVisionBatimentReco]
+what = "侦察建筑的最短视野（米）"
+does = "侦察类建筑（如观察哨）同理（米）。游戏中为 800 米。"
+[NouveauCercleDeVision]
+what = "新版视野圈"
+does = "开：游戏使用较新的方式绘制和计算单位的视野圈。游戏中为 1（开）。"
+[TimeToBeStealthedAfterReveal]
+what = "被发现后重新隐蔽所需秒数"
+does = "被发现的隐蔽单位在能再次隐蔽前保持可见的秒数。游戏中为 10。"

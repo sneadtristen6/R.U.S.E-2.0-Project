@@ -3247,3 +3247,199 @@ unit = "yesno"
 sure = "known"
 what = "Radio Silence stops reflex fire"
 does = "On: units under the Radio Silence ruse don't fire back on their own, so they stay hidden. 1 (on) in the game."
+
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Damage the player deals on Easy (x)"
+does = "The damage the player's units deal on the Easy difficulty, times their normal damage. 1 in the game."
+
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Damage the player deals on Medium (x)"
+does = "The same on the Medium difficulty. 1 in the game."
+
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Damage the player deals on Hard (x)"
+does = "The same on the Hard difficulty. 1 in the game."
+
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Player's units: toughness on Easy (x)"
+does = "How much the player's units can take before they're pinned or killed on Easy, times normal (in one game mode, probably the campaign). 1.5 in the game."
+
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Player's units: toughness on Medium (x)"
+does = "The same on Medium. 1 in the game."
+
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Player's units: toughness on Hard (x)"
+does = "The same on Hard. 0.75 in the game."
+
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Computer's units: toughness on Easy (x)"
+does = "How much a computer player's units can take before they're pinned or killed on Easy, times normal (in one game mode, probably the campaign). 0.75 in the game."
+
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Computer's units: toughness on Medium (x)"
+does = "The same on Medium. 1 in the game."
+
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+group = "health"
+unit = "times"
+sure = "known"
+what = "Computer's units: toughness on Hard (x)"
+does = "The same on Hard. 1.25 in the game."
+
+[FacteurRegenerationPinnedAvion]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Planes recovering from pinning (x)"
+does = "How fast planes shake off being pinned, times the usual rate. 0.75 in the game."
+
+[FacteurRegenerationPinnedBatiment]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Buildings recovering from pinning (x)"
+does = "The same for buildings (a bunker's gunners, say). 1 in the game."
+
+[RegenerationPinnedHorsCombat]
+group = "health"
+unit = "raw"
+sure = "name"
+what = "Recovering from pinning out of a fight"
+does = "How fast a unit out of the fight shakes off being pinned (in the game's own measure). 10 in the game."
+
+[TempsSansTirNiDamagePourPasserHorsCombat]
+group = "health"
+unit = "s"
+sure = "name"
+what = "Seconds of quiet to be out of the fight"
+does = "A unit counts as out of the fight once it has neither fired nor been hit for this many seconds. 2 in the game."
+
+[TempsSansTirNiDamagePourRegen]
+group = "health"
+unit = "s"
+sure = "name"
+what = "Seconds of quiet before recovering"
+does = "A unit starts to recover once it has neither fired nor been hit for this many seconds. 15 in the game."
+
+[MultiplicateurPinnedEmbuscade]
+group = "health"
+unit = "times"
+sure = "name"
+what = "Pinning from an ambush (x)"
+does = "How much harder fire from an ambush pins its targets, times normal. 3 in the game."
+
+[UbserstressEmpecheCapture]
+group = "health"
+unit = "yesno"
+sure = "name"
+what = "Broken units can't capture"
+does = "On: a unit under the heaviest stress (broken) can't capture a building. 1 (on) in the game."
+
+[CouvertBonusForet]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Cover in woods (m)"
+does = "How much closer an enemy must come to see a unit in woods, in m. 300 m in the game."
+
+[DistanceEnfoncementForet]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "How deep into woods units go (m)"
+does = "How far inside the edge of a wood units go to hide, in m. 50 m in the game."
+
+[DistanceIgnoreForet]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Woods don't hide what's this close (m)"
+does = "Closer than this, a unit in woods is seen anyway, in m. 100 m in the game."
+
+[EmbuscadeAutomatiqueEnForet]
+group = "sight"
+unit = "yesno"
+sure = "known"
+what = "Units find an ambush spot in woods"
+does = "On: a unit left in woods picks an ambush spot there by itself, once. 1 (on) in the game."
+
+[DistanceMaxDeRechercheDePointEmbuscade]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Looking for an ambush spot: farthest (m)"
+does = "How far from where it stands a unit looks for that ambush spot, in m. 50 m in the game."
+
+[PorteeObligationDeclenchementTirEnForet]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Hidden in woods: always fire within (m)"
+does = "A unit hiding in woods always opens fire on an enemy closer than this, in m. 300 m in the game."
+
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+group = "sight"
+unit = "share"
+sure = "name"
+what = "Hidden in woods: fire at this share of range"
+does = "A unit hiding in woods opens fire once an enemy is within this share of its range. 100% in the game."
+
+[RatioMultiplicateurPinnedProtectionForet]
+group = "sight"
+unit = "times"
+sure = "name"
+what = "Woods protect from pinning (x)"
+does = "How much a unit in woods is pinned by fire, times what it would be in the open. 0.6 in the game."
+
+[DistanceMinimumVision]
+group = "sight"
+unit = "m"
+sure = "known"
+what = "Shortest sight any unit has (m)"
+does = "Every unit sees at least this far, whatever its own sight, in m. 100 m in the game."
+
+[DistanceMinimumVisionBatimentReco]
+group = "sight"
+unit = "m"
+sure = "name"
+what = "Shortest sight of a recon building (m)"
+does = "The same for buildings that scout (an observation post, say), in m. 800 m in the game."
+
+[NouveauCercleDeVision]
+group = "sight"
+unit = "yesno"
+sure = "name"
+what = "The newer sight circle"
+does = "On: the game uses its newer way of drawing and working out a unit's sight circle. 1 (on) in the game."
+
+[TimeToBeStealthedAfterReveal]
+group = "sight"
+unit = "s"
+sure = "name"
+what = "Seconds to hide again after being seen"
+does = "How long a hidden unit that was spotted stays seen before it can hide again, in seconds. 10 in the game."

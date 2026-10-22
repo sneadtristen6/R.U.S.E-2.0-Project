@@ -1355,3 +1355,87 @@ does = "Totéž pro neozbrojenou jednotku (třeba náklaďák) po jakémkoli roz
 [ReglesActives_TirReflexSilenceRadio]
 what = "Rádiové ticho zastaví reflexní palbu"
 does = "Zapnuto: jednotky pod lstí Rádiové ticho samy neopětují palbu, a tak zůstanou skryté. Ve hře 1 (zapnuto)."
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "Poškození od hráče na Nízké (x)"
+does = "Poškození, které jednotky hráče způsobují na obtížnosti Nízká, krát jejich běžné poškození. Ve hře 1."
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "Poškození od hráče na Střední (x)"
+does = "Totéž na obtížnosti Střední. Ve hře 1."
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "Poškození od hráče na Vysoké (x)"
+does = "Totéž na obtížnosti Vysoká. Ve hře 1."
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "Jednotky hráče: odolnost na Nízké (x)"
+does = "Kolik jednotky hráče vydrží, než jsou přišpendleny nebo zabity, na Nízké, krát běžně (v jednom herním režimu, nejspíš kampani). Ve hře 1,5."
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "Jednotky hráče: odolnost na Střední (x)"
+does = "Totéž na Střední. Ve hře 1."
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "Jednotky hráče: odolnost na Vysoké (x)"
+does = "Totéž na Vysoké. Ve hře 0,75."
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "Jednotky počítače: odolnost na Nízké (x)"
+does = "Kolik jednotky počítačového hráče vydrží, než jsou přišpendleny nebo zabity, na Nízké, krát běžně (v jednom herním režimu, nejspíš kampani). Ve hře 0,75."
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "Jednotky počítače: odolnost na Střední (x)"
+does = "Totéž na Střední. Ve hře 1."
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "Jednotky počítače: odolnost na Vysoké (x)"
+does = "Totéž na Vysoké. Ve hře 1,25."
+[FacteurRegenerationPinnedAvion]
+what = "Zotavení letadel z přišpendlení (x)"
+does = "Jak rychle se letadla vzpamatují z přišpendlení, krát obvyklé tempo. Ve hře 0,75."
+[FacteurRegenerationPinnedBatiment]
+what = "Zotavení budov z přišpendlení (x)"
+does = "Totéž pro budovy (třeba osádku bunkru). Ve hře 1."
+[RegenerationPinnedHorsCombat]
+what = "Zotavení z přišpendlení mimo boj"
+does = "Jak rychle se jednotka mimo boj vzpamatuje z přišpendlení (ve vlastní míře hry). Ve hře 10."
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "Sekund klidu, aby byla mimo boj"
+does = "Jednotka se počítá jako mimo boj, když tolik sekund nestřílela ani nebyla zasažena. Ve hře 2."
+[TempsSansTirNiDamagePourRegen]
+what = "Sekund klidu před zotavením"
+does = "Jednotka se začne zotavovat, když tolik sekund nestřílela ani nebyla zasažena. Ve hře 15."
+[MultiplicateurPinnedEmbuscade]
+what = "Přišpendlení ze zálohy (x)"
+does = "O kolik silněji palba ze zálohy přišpendlí cíle, krát běžně. Ve hře 3."
+[UbserstressEmpecheCapture]
+what = "Zlomené jednotky nemohou dobývat"
+does = "Zapnuto: jednotka pod největším stresem (zlomená) nemůže dobýt budovu. Ve hře 1 (zapnuto)."
+[CouvertBonusForet]
+what = "Kryt v lese (m)"
+does = "O kolik blíž musí nepřítel přijít, aby jednotku v lese uviděl, v m. Ve hře 300 m."
+[DistanceEnfoncementForet]
+what = "Jak hluboko jednotky vejdou do lesa (m)"
+does = "Jak daleko za okraj lesa jednotky vejdou, aby se skryly, v m. Ve hře 50 m."
+[DistanceIgnoreForet]
+what = "Les neskryje, co je takhle blízko (m)"
+does = "Blíž než tohle je jednotka v lese stejně vidět, v m. Ve hře 100 m."
+[EmbuscadeAutomatiqueEnForet]
+what = "Jednotky najdou místo pro zálohu v lese"
+does = "Zapnuto: jednotka ponechaná v lese si tam sama jednou vybere místo pro zálohu. Ve hře 1 (zapnuto)."
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "Hledání místa pro zálohu: nejvýš (m)"
+does = "Jak daleko od svého místa jednotka hledá to místo pro zálohu, v m. Ve hře 50 m."
+[PorteeObligationDeclenchementTirEnForet]
+what = "Skrytý v lese: vždy střílí do (m)"
+does = "Jednotka skrytá v lese vždy zahájí palbu na nepřítele blíž než tohle, v m. Ve hře 300 m."
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "Skrytý v lese: střílí od tohoto podílu dostřelu"
+does = "Jednotka skrytá v lese zahájí palbu, jakmile je nepřítel v tomto podílu jejího dostřelu. Ve hře 100 %."
+[RatioMultiplicateurPinnedProtectionForet]
+what = "Les chrání před přišpendlením (x)"
+does = "Jak moc palba přišpendlí jednotku v lese, krát kolik by to bylo v otevřeném terénu. Ve hře 0,6."
+[DistanceMinimumVision]
+what = "Nejkratší výhled jednotky (m)"
+does = "Každá jednotka vidí aspoň takhle daleko, ať má výhled jakýkoli, v m. Ve hře 100 m."
+[DistanceMinimumVisionBatimentReco]
+what = "Nejkratší výhled průzkumné budovy (m)"
+does = "Totéž pro budovy, které pozorují (třeba pozorovatelna), v m. Ve hře 800 m."
+[NouveauCercleDeVision]
+what = "Novější kruh výhledu"
+does = "Zapnuto: hra kreslí a počítá kruh výhledu jednotky novějším způsobem. Ve hře 1 (zapnuto)."
+[TimeToBeStealthedAfterReveal]
+what = "Sekund do opětovného skrytí po odhalení"
+does = "Jak dlouho zůstane skrytá jednotka, která byla odhalena, vidět, než se může znovu skrýt, v sekundách. Ve hře 10."

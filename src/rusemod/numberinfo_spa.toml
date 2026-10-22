@@ -1355,3 +1355,87 @@ does = "Lo mismo para una unidad sin armas (un camión, por ejemplo) tras cualqu
 [ReglesActives_TirReflexSilenceRadio]
 what = "El Silencio de radio detiene el disparo reflejo"
 does = "Activado: las unidades bajo la artimaña Silencio de radio no responden al fuego por su cuenta y siguen ocultas. 1 (activado) en el juego."
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "Daño que hace el jugador en Fácil (x)"
+does = "El daño que hacen las unidades del jugador en dificultad Fácil, por su daño normal. 1 en el juego."
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "Daño que hace el jugador en Medio (x)"
+does = "Lo mismo en dificultad Medio. 1 en el juego."
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "Daño que hace el jugador en Difícil (x)"
+does = "Lo mismo en dificultad Difícil. 1 en el juego."
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "Unidades del jugador: resistencia en Fácil (x)"
+does = "Lo que aguantan las unidades del jugador antes de quedar inmovilizadas o morir en Fácil, por lo normal (en un modo de juego, probablemente la campaña). 1,5 en el juego."
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "Unidades del jugador: resistencia en Medio (x)"
+does = "Lo mismo en Medio. 1 en el juego."
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "Unidades del jugador: resistencia en Difícil (x)"
+does = "Lo mismo en Difícil. 0,75 en el juego."
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "Unidades del ordenador: resistencia en Fácil (x)"
+does = "Lo que aguantan las unidades de un jugador del ordenador antes de quedar inmovilizadas o morir en Fácil, por lo normal (en un modo de juego, probablemente la campaña). 0,75 en el juego."
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "Unidades del ordenador: resistencia en Medio (x)"
+does = "Lo mismo en Medio. 1 en el juego."
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "Unidades del ordenador: resistencia en Difícil (x)"
+does = "Lo mismo en Difícil. 1,25 en el juego."
+[FacteurRegenerationPinnedAvion]
+what = "Recuperación de los aviones de la inmovilización (x)"
+does = "Lo rápido que los aviones se recuperan de la inmovilización, por el ritmo habitual. 0,75 en el juego."
+[FacteurRegenerationPinnedBatiment]
+what = "Recuperación de los edificios de la inmovilización (x)"
+does = "Lo mismo para los edificios (los artilleros de un búnker, por ejemplo). 1 en el juego."
+[RegenerationPinnedHorsCombat]
+what = "Recuperación de la inmovilización fuera de combate"
+does = "Lo rápido que una unidad fuera de combate se recupera de la inmovilización (en la medida propia del juego). 10 en el juego."
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "Segundos de calma para estar fuera de combate"
+does = "Una unidad cuenta como fuera de combate cuando lleva estos segundos sin disparar ni recibir impactos. 2 en el juego."
+[TempsSansTirNiDamagePourRegen]
+what = "Segundos de calma antes de recuperarse"
+does = "Una unidad empieza a recuperarse cuando lleva estos segundos sin disparar ni recibir impactos. 15 en el juego."
+[MultiplicateurPinnedEmbuscade]
+what = "Inmovilización por una emboscada (x)"
+does = "Cuánto más inmoviliza a sus objetivos el fuego desde una emboscada, por lo normal. 3 en el juego."
+[UbserstressEmpecheCapture]
+what = "Las unidades quebradas no pueden capturar"
+does = "Activado: una unidad bajo el mayor estrés (quebrada) no puede capturar un edificio. 1 (activado) en el juego."
+[CouvertBonusForet]
+what = "Cobertura en el bosque (m)"
+does = "Cuánto más cerca debe llegar un enemigo para ver una unidad en el bosque, en m. 300 m en el juego."
+[DistanceEnfoncementForet]
+what = "Cuánto se adentran las unidades en el bosque (m)"
+does = "Cuánto se adentran las unidades desde el borde de un bosque para esconderse, en m. 50 m en el juego."
+[DistanceIgnoreForet]
+what = "El bosque no oculta lo que está así de cerca (m)"
+does = "Más cerca que esto, una unidad en el bosque se ve igualmente, en m. 100 m en el juego."
+[EmbuscadeAutomatiqueEnForet]
+what = "Las unidades buscan un punto de emboscada en el bosque"
+does = "Activado: una unidad dejada en el bosque elige por sí misma un punto de emboscada, una vez. 1 (activado) en el juego."
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "Búsqueda de un punto de emboscada: como máximo (m)"
+does = "A qué distancia de donde está busca una unidad ese punto de emboscada, en m. 50 m en el juego."
+[PorteeObligationDeclenchementTirEnForet]
+what = "Oculto en el bosque: dispara siempre a menos de (m)"
+does = "Una unidad oculta en el bosque abre siempre fuego sobre un enemigo más cerca que esto, en m. 300 m en el juego."
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "Oculto en el bosque: dispara a esta parte del alcance"
+does = "Una unidad oculta en el bosque abre fuego en cuanto un enemigo está dentro de esta parte de su alcance. 100 % en el juego."
+[RatioMultiplicateurPinnedProtectionForet]
+what = "El bosque protege de la inmovilización (x)"
+does = "Cuánto queda inmovilizada por el fuego una unidad en el bosque, por lo que quedaría a campo abierto. 0,6 en el juego."
+[DistanceMinimumVision]
+what = "Visión más corta de una unidad (m)"
+does = "Toda unidad ve al menos hasta aquí, sea cual sea su propia visión, en m. 100 m en el juego."
+[DistanceMinimumVisionBatimentReco]
+what = "Visión más corta de un edificio de reconocimiento (m)"
+does = "Lo mismo para los edificios que observan (un puesto de observación, por ejemplo), en m. 800 m en el juego."
+[NouveauCercleDeVision]
+what = "El círculo de visión nuevo"
+does = "Activado: el juego usa su forma más nueva de dibujar y calcular el círculo de visión de una unidad. 1 (activado) en el juego."
+[TimeToBeStealthedAfterReveal]
+what = "Segundos para volver a ocultarse tras ser visto"
+does = "Cuánto sigue visible una unidad oculta que fue descubierta antes de poder ocultarse de nuevo, en segundos. 10 en el juego."

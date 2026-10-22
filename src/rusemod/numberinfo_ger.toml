@@ -1355,3 +1355,87 @@ does = "Dasselbe für eine unbewaffnete Einheit (etwa einen LKW) nach jedem Befe
 [ReglesActives_TirReflexSilenceRadio]
 what = "Funkstille stoppt Reflexfeuer"
 does = "An: Einheiten unter der List Funkstille schießen nicht von selbst zurück und bleiben so verborgen. Im Spiel 1 (an)."
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "Schaden des Spielers auf Leicht (x)"
+does = "Der Schaden, den die Einheiten des Spielers auf Leicht anrichten, mal ihrem normalen Schaden. Im Spiel 1."
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "Schaden des Spielers auf Mittel (x)"
+does = "Dasselbe auf Mittel. Im Spiel 1."
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "Schaden des Spielers auf Schwer (x)"
+does = "Dasselbe auf Schwer. Im Spiel 1."
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "Einheiten des Spielers: Zähigkeit auf Leicht (x)"
+does = "Wie viel die Einheiten des Spielers auf Leicht einstecken, bevor sie niedergehalten oder getötet werden, mal normal (in einem Spielmodus, wohl der Kampagne). Im Spiel 1,5."
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "Einheiten des Spielers: Zähigkeit auf Mittel (x)"
+does = "Dasselbe auf Mittel. Im Spiel 1."
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "Einheiten des Spielers: Zähigkeit auf Schwer (x)"
+does = "Dasselbe auf Schwer. Im Spiel 0,75."
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "Einheiten des Computers: Zähigkeit auf Leicht (x)"
+does = "Wie viel die Einheiten eines Computerspielers auf Leicht einstecken, bevor sie niedergehalten oder getötet werden, mal normal (in einem Spielmodus, wohl der Kampagne). Im Spiel 0,75."
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "Einheiten des Computers: Zähigkeit auf Mittel (x)"
+does = "Dasselbe auf Mittel. Im Spiel 1."
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "Einheiten des Computers: Zähigkeit auf Schwer (x)"
+does = "Dasselbe auf Schwer. Im Spiel 1,25."
+[FacteurRegenerationPinnedAvion]
+what = "Erholung von Flugzeugen vom Niederhalten (x)"
+does = "Wie schnell Flugzeuge das Niederhalten abschütteln, mal der üblichen Rate. Im Spiel 0,75."
+[FacteurRegenerationPinnedBatiment]
+what = "Erholung von Gebäuden vom Niederhalten (x)"
+does = "Dasselbe für Gebäude (etwa die Schützen eines Bunkers). Im Spiel 1."
+[RegenerationPinnedHorsCombat]
+what = "Erholung vom Niederhalten außerhalb des Gefechts"
+does = "Wie schnell eine Einheit außerhalb des Gefechts das Niederhalten abschüttelt (im eigenen Maß des Spiels). Im Spiel 10."
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "Sekunden Ruhe, um außerhalb des Gefechts zu sein"
+does = "Eine Einheit gilt als außerhalb des Gefechts, wenn sie so viele Sekunden weder gefeuert hat noch getroffen wurde. Im Spiel 2."
+[TempsSansTirNiDamagePourRegen]
+what = "Sekunden Ruhe vor der Erholung"
+does = "Eine Einheit beginnt sich zu erholen, wenn sie so viele Sekunden weder gefeuert hat noch getroffen wurde. Im Spiel 15."
+[MultiplicateurPinnedEmbuscade]
+what = "Niederhalten aus dem Hinterhalt (x)"
+does = "Wie viel stärker Feuer aus dem Hinterhalt seine Ziele niederhält, mal normal. Im Spiel 3."
+[UbserstressEmpecheCapture]
+what = "Gebrochene Einheiten können nicht erobern"
+does = "An: Eine Einheit unter stärkstem Druck (gebrochen) kann kein Gebäude erobern. Im Spiel 1 (an)."
+[CouvertBonusForet]
+what = "Deckung im Wald (m)"
+does = "Um wie viel näher ein Feind kommen muss, um eine Einheit im Wald zu sehen, in m. Im Spiel 300 m."
+[DistanceEnfoncementForet]
+what = "Wie tief Einheiten in den Wald gehen (m)"
+does = "Wie weit hinter den Waldrand Einheiten gehen, um sich zu verstecken, in m. Im Spiel 50 m."
+[DistanceIgnoreForet]
+what = "Wald verbirgt nicht, was so nah ist (m)"
+does = "Näher als das wird eine Einheit im Wald trotzdem gesehen, in m. Im Spiel 100 m."
+[EmbuscadeAutomatiqueEnForet]
+what = "Einheiten suchen einen Hinterhalt im Wald"
+does = "An: Eine im Wald gelassene Einheit wählt dort selbst einmal einen Hinterhalt. Im Spiel 1 (an)."
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "Suche nach einem Hinterhalt: höchstens (m)"
+does = "Wie weit von ihrem Standort eine Einheit nach diesem Hinterhalt sucht, in m. Im Spiel 50 m."
+[PorteeObligationDeclenchementTirEnForet]
+what = "Im Wald versteckt: feuert immer unter (m)"
+does = "Eine im Wald versteckte Einheit eröffnet immer das Feuer auf einen Feind, der näher ist, in m. Im Spiel 300 m."
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "Im Wald versteckt: feuert ab diesem Anteil der Reichweite"
+does = "Eine im Wald versteckte Einheit eröffnet das Feuer, sobald ein Feind innerhalb dieses Anteils ihrer Reichweite ist. Im Spiel 100 %."
+[RatioMultiplicateurPinnedProtectionForet]
+what = "Wald schützt vor Niederhalten (x)"
+does = "Wie stark eine Einheit im Wald durch Feuer niedergehalten wird, mal so stark wie im Freien. Im Spiel 0,6."
+[DistanceMinimumVision]
+what = "Kürzeste Sicht einer Einheit (m)"
+does = "Jede Einheit sieht mindestens so weit, egal wie ihre eigene Sicht ist, in m. Im Spiel 100 m."
+[DistanceMinimumVisionBatimentReco]
+what = "Kürzeste Sicht eines Aufklärungsgebäudes (m)"
+does = "Dasselbe für Gebäude, die aufklären (etwa ein Beobachtungsposten), in m. Im Spiel 800 m."
+[NouveauCercleDeVision]
+what = "Der neuere Sichtkreis"
+does = "An: Das Spiel nutzt seine neuere Art, den Sichtkreis einer Einheit zu zeichnen und zu berechnen. Im Spiel 1 (an)."
+[TimeToBeStealthedAfterReveal]
+what = "Sekunden, um nach Entdeckung wieder verborgen zu sein"
+does = "Wie lange eine versteckte Einheit, die entdeckt wurde, sichtbar bleibt, bevor sie sich wieder verbergen kann, in Sekunden. Im Spiel 10."

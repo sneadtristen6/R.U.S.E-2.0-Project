@@ -1355,3 +1355,87 @@ does = "Pareil pour une unité sans arme (un camion, par exemple) après n'impor
 [ReglesActives_TirReflexSilenceRadio]
 what = "Le Silence radio empêche le tir réflexe"
 does = "Activé : les unités sous la ruse Silence radio ne ripostent pas d'elles-mêmes et restent donc cachées. 1 (activé) dans le jeu."
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "Dégâts infligés par le joueur en Facile (x)"
+does = "Les dégâts infligés par les unités du joueur en difficulté Facile, fois leurs dégâts normaux. 1 dans le jeu."
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "Dégâts infligés par le joueur en Moyen (x)"
+does = "Pareil en difficulté Moyen. 1 dans le jeu."
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "Dégâts infligés par le joueur en Difficile (x)"
+does = "Pareil en difficulté Difficile. 1 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "Unités du joueur : résistance en Facile (x)"
+does = "Ce que les unités du joueur peuvent encaisser avant d'être clouées ou tuées en Facile, fois la normale (dans un mode de jeu, sans doute la campagne). 1,5 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "Unités du joueur : résistance en Moyen (x)"
+does = "Pareil en Moyen. 1 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "Unités du joueur : résistance en Difficile (x)"
+does = "Pareil en Difficile. 0,75 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "Unités de l'ordinateur : résistance en Facile (x)"
+does = "Ce que les unités d'un joueur ordinateur peuvent encaisser avant d'être clouées ou tuées en Facile, fois la normale (dans un mode de jeu, sans doute la campagne). 0,75 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "Unités de l'ordinateur : résistance en Moyen (x)"
+does = "Pareil en Moyen. 1 dans le jeu."
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "Unités de l'ordinateur : résistance en Difficile (x)"
+does = "Pareil en Difficile. 1,25 dans le jeu."
+[FacteurRegenerationPinnedAvion]
+what = "Récupération du clouage des avions (x)"
+does = "À quelle vitesse les avions se remettent d'être cloués, fois le rythme habituel. 0,75 dans le jeu."
+[FacteurRegenerationPinnedBatiment]
+what = "Récupération du clouage des bâtiments (x)"
+does = "Pareil pour les bâtiments (les servants d'un bunker, par exemple). 1 dans le jeu."
+[RegenerationPinnedHorsCombat]
+what = "Récupération du clouage hors combat"
+does = "À quelle vitesse une unité hors combat se remet d'être clouée (dans la mesure propre au jeu). 10 dans le jeu."
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "Secondes de calme pour être hors combat"
+does = "Une unité compte comme hors combat une fois qu'elle n'a ni tiré ni été touchée depuis ce nombre de secondes. 2 dans le jeu."
+[TempsSansTirNiDamagePourRegen]
+what = "Secondes de calme avant de récupérer"
+does = "Une unité commence à récupérer une fois qu'elle n'a ni tiré ni été touchée depuis ce nombre de secondes. 15 dans le jeu."
+[MultiplicateurPinnedEmbuscade]
+what = "Clouage par une embuscade (x)"
+does = "Combien plus fort le tir d'une embuscade cloue ses cibles, fois la normale. 3 dans le jeu."
+[UbserstressEmpecheCapture]
+what = "Les unités brisées ne peuvent pas capturer"
+does = "Activé : une unité sous le plus fort stress (brisée) ne peut pas capturer un bâtiment. 1 (activé) dans le jeu."
+[CouvertBonusForet]
+what = "Couvert en forêt (m)"
+does = "De combien plus près un ennemi doit venir pour voir une unité en forêt, en m. 300 m dans le jeu."
+[DistanceEnfoncementForet]
+what = "Jusqu'où les unités entrent dans un bois (m)"
+does = "Jusqu'où les unités entrent sous la lisière d'un bois pour se cacher, en m. 50 m dans le jeu."
+[DistanceIgnoreForet]
+what = "Les bois ne cachent pas ce qui est si près (m)"
+does = "Plus près que cela, une unité en forêt est vue quand même, en m. 100 m dans le jeu."
+[EmbuscadeAutomatiqueEnForet]
+what = "Les unités trouvent un point d'embuscade en forêt"
+does = "Activé : une unité laissée en forêt y choisit d'elle-même un point d'embuscade, une fois. 1 (activé) dans le jeu."
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "Recherche d'un point d'embuscade : au plus loin (m)"
+does = "Jusqu'où une unité cherche ce point d'embuscade autour d'elle, en m. 50 m dans le jeu."
+[PorteeObligationDeclenchementTirEnForet]
+what = "Caché en forêt : tire toujours à moins de (m)"
+does = "Une unité cachée en forêt ouvre toujours le feu sur un ennemi plus proche que cela, en m. 300 m dans le jeu."
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "Caché en forêt : tire à cette part de la portée"
+does = "Une unité cachée en forêt ouvre le feu dès qu'un ennemi est à cette part de sa portée. 100 % dans le jeu."
+[RatioMultiplicateurPinnedProtectionForet]
+what = "Les bois protègent du clouage (x)"
+does = "À quel point une unité en forêt est clouée par le tir, fois ce qu'elle le serait à découvert. 0,6 dans le jeu."
+[DistanceMinimumVision]
+what = "Vue la plus courte d'une unité (m)"
+does = "Chaque unité voit au moins aussi loin, quelle que soit sa propre vue, en m. 100 m dans le jeu."
+[DistanceMinimumVisionBatimentReco]
+what = "Vue la plus courte d'un bâtiment de reconnaissance (m)"
+does = "Pareil pour les bâtiments qui observent (un poste d'observation, par exemple), en m. 800 m dans le jeu."
+[NouveauCercleDeVision]
+what = "Le nouveau cercle de vue"
+does = "Activé : le jeu utilise sa façon plus récente de dessiner et calculer le cercle de vue d'une unité. 1 (activé) dans le jeu."
+[TimeToBeStealthedAfterReveal]
+what = "Secondes pour se recacher après avoir été vu"
+does = "Combien de temps une unité cachée qui a été repérée reste visible avant de pouvoir se recacher, en secondes. 10 dans le jeu."

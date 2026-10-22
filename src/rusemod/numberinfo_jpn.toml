@@ -1355,3 +1355,87 @@ does = "非武装ユニット（トラックなど）の場合、どの命令の
 [ReglesActives_TirReflexSilenceRadio]
 what = "無線封鎖で反射射撃を止める"
 does = "オン：無線封鎖の計略下のユニットは自分から撃ち返さないので、隠れたままでいます。ゲームでは 1（オン）。"
+[MultiplicateurDegatInfligeParLeJoueur_Facile]
+what = "「易しい」でプレイヤーが与えるダメージ（倍）"
+does = "難易度「易しい」でプレイヤーのユニットが与えるダメージ（通常の倍率）。ゲームでは 1。"
+[MultiplicateurDegatInfligeParLeJoueur_Moyen]
+what = "「普通」でプレイヤーが与えるダメージ（倍）"
+does = "難易度「普通」の場合。ゲームでは 1。"
+[MultiplicateurDegatInfligeParLeJoueur_Difficile]
+what = "「難しい」でプレイヤーが与えるダメージ（倍）"
+does = "難易度「難しい」の場合。ゲームでは 1。"
+[MultiplicateurSeuilPinnedEtMortJoueurFacile]
+what = "プレイヤーのユニット：「易しい」での耐久（倍）"
+does = "「易しい」でプレイヤーのユニットが制圧・撃破されるまでに耐えられる量（通常の倍率。あるゲームモード、おそらくキャンペーンで）。ゲームでは 1.5。"
+[MultiplicateurSeuilPinnedEtMortJoueurMoyen]
+what = "プレイヤーのユニット：「普通」での耐久（倍）"
+does = "「普通」の場合。ゲームでは 1。"
+[MultiplicateurSeuilPinnedEtMortJoueurDifficile]
+what = "プレイヤーのユニット：「難しい」での耐久（倍）"
+does = "「難しい」の場合。ゲームでは 0.75。"
+[MultiplicateurSeuilPinnedEtMortIAFacile]
+what = "コンピューターのユニット：「易しい」での耐久（倍）"
+does = "「易しい」でコンピューターのユニットが制圧・撃破されるまでに耐えられる量（通常の倍率。あるゲームモード、おそらくキャンペーンで）。ゲームでは 0.75。"
+[MultiplicateurSeuilPinnedEtMortIAMoyen]
+what = "コンピューターのユニット：「普通」での耐久（倍）"
+does = "「普通」の場合。ゲームでは 1。"
+[MultiplicateurSeuilPinnedEtMortIADifficile]
+what = "コンピューターのユニット：「難しい」での耐久（倍）"
+does = "「難しい」の場合。ゲームでは 1.25。"
+[FacteurRegenerationPinnedAvion]
+what = "航空機の制圧からの回復（倍）"
+does = "航空機が制圧から立ち直る速さ（通常の倍率）。ゲームでは 0.75。"
+[FacteurRegenerationPinnedBatiment]
+what = "建物の制圧からの回復（倍）"
+does = "建物（掩蔽壕の射手など）の場合。ゲームでは 1。"
+[RegenerationPinnedHorsCombat]
+what = "戦闘外での制圧からの回復"
+does = "戦闘から離れたユニットが制圧から立ち直る速さ（ゲーム独自の尺度）。ゲームでは 10。"
+[TempsSansTirNiDamagePourPasserHorsCombat]
+what = "戦闘外になるまでの静かな秒数"
+does = "この秒数のあいだ撃ちも被弾もしなければ、ユニットは戦闘外とみなされます。ゲームでは 2。"
+[TempsSansTirNiDamagePourRegen]
+what = "回復が始まるまでの静かな秒数"
+does = "この秒数のあいだ撃ちも被弾もしなければ、ユニットは回復を始めます。ゲームでは 15。"
+[MultiplicateurPinnedEmbuscade]
+what = "待ち伏せによる制圧（倍）"
+does = "待ち伏せからの射撃が目標を制圧する強さ（通常の倍率）。ゲームでは 3。"
+[UbserstressEmpecheCapture]
+what = "崩れたユニットは占領できない"
+does = "オン：最大のストレス下にある（崩れた）ユニットは建物を占領できません。ゲームでは 1（オン）。"
+[CouvertBonusForet]
+what = "森での遮蔽（m）"
+does = "森にいるユニットを見つけるために、敵がどれだけ近づく必要があるか（m）。ゲームでは 300 m。"
+[DistanceEnfoncementForet]
+what = "ユニットが森に入る深さ（m）"
+does = "ユニットが隠れるために森の縁からどれだけ中へ入るか（m）。ゲームでは 50 m。"
+[DistanceIgnoreForet]
+what = "これほど近いと森でも隠れない（m）"
+does = "これより近いと、森の中のユニットでも見えます（m）。ゲームでは 100 m。"
+[EmbuscadeAutomatiqueEnForet]
+what = "ユニットが森で待ち伏せ地点を探す"
+does = "オン：森に置かれたユニットは、自分でそこに待ち伏せ地点を1度選びます。ゲームでは 1（オン）。"
+[DistanceMaxDeRechercheDePointEmbuscade]
+what = "待ち伏せ地点の探索：最大距離（m）"
+does = "ユニットがその待ち伏せ地点を探す、今いる場所からの距離（m）。ゲームでは 50 m。"
+[PorteeObligationDeclenchementTirEnForet]
+what = "森に潜伏：この距離内なら必ず撃つ（m）"
+does = "森に隠れたユニットは、これより近い敵には必ず射撃を始めます（m）。ゲームでは 300 m。"
+[PourcentagePorteeMaxPourDeclencherTirEnForet]
+what = "森に潜伏：射程のこの割合で撃つ"
+does = "森に隠れたユニットは、敵が射程のこの割合以内に入ると射撃を始めます。ゲームでは 100%。"
+[RatioMultiplicateurPinnedProtectionForet]
+what = "森は制圧から守る（倍）"
+does = "森の中のユニットが射撃で制圧される度合い（開けた場所での倍率）。ゲームでは 0.6。"
+[DistanceMinimumVision]
+what = "ユニットの最短の視界（m）"
+does = "ユニット自身の視界にかかわらず、すべてのユニットは少なくともこの距離まで見えます（m）。ゲームでは 100 m。"
+[DistanceMinimumVisionBatimentReco]
+what = "偵察用建物の最短の視界（m）"
+does = "偵察を行う建物（監視所など）の場合（m）。ゲームでは 800 m。"
+[NouveauCercleDeVision]
+what = "新しい視界円"
+does = "オン：ユニットの視界円の描画と計算に、ゲームの新しい方式を使います。ゲームでは 1（オン）。"
+[TimeToBeStealthedAfterReveal]
+what = "発見された後、再び隠れるまでの秒数"
+does = "発見された隠れユニットが、再び隠れられるようになるまで見えたままの秒数。ゲームでは 10。"
