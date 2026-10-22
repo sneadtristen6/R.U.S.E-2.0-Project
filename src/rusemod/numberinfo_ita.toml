@@ -1637,3 +1637,66 @@ does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche p
 [TempsPulseDecryptagePause]
 what = "Impulso di Decrittazione: pausa prima della successiva (s)"
 does = "Solo aspetto: dal nome, sotto Decrittazione le sagome e frecce nemiche pulsano; questa fase (pausa prima della successiva) dura tanti secondi. 1,5 nel gioco."
+[Color_01_Blue]
+what = "Colore giocatore 1 (blu)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (blu nel gioco)."
+[Color_02_Red]
+what = "Colore giocatore 2 (rosso)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (rosso nel gioco)."
+[Color_03_Teal]
+what = "Colore giocatore 3 (verde acqua)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (verde acqua nel gioco)."
+[Color_04_Purple]
+what = "Colore giocatore 4 (viola)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (viola nel gioco)."
+[Color_05_Orange]
+what = "Colore giocatore 5 (arancione)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (arancione nel gioco)."
+[Color_06_Pink]
+what = "Colore giocatore 6 (rosa)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (rosa nel gioco)."
+[Color_07_Green]
+what = "Colore giocatore 7 (verde)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (verde nel gioco)."
+[Color_08_Brown]
+what = "Colore giocatore 8 (marrone)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (marrone nel gioco)."
+[Color_09_Black]
+what = "Colore giocatore 9 (nero)"
+does = "Solo aspetto: dal nome, uno dei nove colori dei giocatori (nero nel gioco)."
+[Color_Alliance_Self]
+what = "Per alleanza: voi"
+does = "Solo aspetto: dal nome, il colore di questo schieramento quando sono colorati per alleanza (blu nel gioco)."
+[Color_Alliance_Allie]
+what = "Per alleanza: un alleato"
+does = "Solo aspetto: dal nome, il colore di questo schieramento quando sono colorati per alleanza (verde nel gioco)."
+[Color_Alliance_Ennemi1]
+what = "Per alleanza: nemico 1"
+does = "Solo aspetto: dal nome, il colore di questo schieramento quando sono colorati per alleanza (rosso nel gioco)."
+[Color_Alliance_Ennemi2]
+what = "Per alleanza: nemico 2"
+does = "Solo aspetto: dal nome, il colore di questo schieramento quando sono colorati per alleanza (arancione nel gioco)."
+[Color_Alliance_Ennemi3]
+what = "Per alleanza: nemico 3"
+does = "Solo aspetto: dal nome, il colore di questo schieramento quando sono colorati per alleanza (viola nel gioco)."
+[Color_Neutre]
+what = "Neutrale"
+does = "Solo aspetto: dal nome, il colore di ciò che non appartiene a nessuno schieramento (grigio nel gioco)."
+[Color_Camp_Surrended]
+what = "Schieramento arreso"
+does = "Solo aspetto: dal nome, il colore di uno schieramento arreso (grigio nel gioco)."
+[Color_Invisible]
+what = "Invisibile"
+does = "Solo aspetto: dal nome, il colore di ciò che non si vede (grigio nel gioco)."
+[ColorZoneStandard]
+what = "Settore: colore abituale"
+does = "Solo aspetto: dal nome, il colore abituale di un settore (grigio nel gioco)."
+[ColorZone]
+what = "Colore del settore"
+does = "Solo aspetto: dal nome, il colore di un settore (bianco, quasi trasparente nel gioco)."
+[ColorZoneAssombrie]
+what = "Settore: scurito"
+does = "Solo aspetto: dal nome, il colore di un settore scurito (grigio scuro nel gioco)."
+[ColorZoneHighlight]
+what = "Settore: evidenziato"
+does = "Solo aspetto: dal nome, il colore di un settore evidenziato (grigio chiaro nel gioco)."

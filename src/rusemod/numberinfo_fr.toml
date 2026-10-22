@@ -1637,3 +1637,66 @@ does = "Apparence seulement : d'après son nom, sous Décryptage les contours et
 [TempsPulseDecryptagePause]
 what = "Pulsation de Décryptage : pause avant la suivante (s)"
 does = "Apparence seulement : d'après son nom, sous Décryptage les contours et flèches ennemis apparaissent et disparaissent ; cette phase (pause avant la suivante) dure ce nombre de secondes. 1,5 dans le jeu."
+[Color_01_Blue]
+what = "Couleur de joueur 1 (bleu)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (bleu dans le jeu)."
+[Color_02_Red]
+what = "Couleur de joueur 2 (rouge)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (rouge dans le jeu)."
+[Color_03_Teal]
+what = "Couleur de joueur 3 (bleu canard)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (bleu canard dans le jeu)."
+[Color_04_Purple]
+what = "Couleur de joueur 4 (violet)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (violet dans le jeu)."
+[Color_05_Orange]
+what = "Couleur de joueur 5 (orange)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (orange dans le jeu)."
+[Color_06_Pink]
+what = "Couleur de joueur 6 (rose)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (rose dans le jeu)."
+[Color_07_Green]
+what = "Couleur de joueur 7 (vert)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (vert dans le jeu)."
+[Color_08_Brown]
+what = "Couleur de joueur 8 (marron)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (marron dans le jeu)."
+[Color_09_Black]
+what = "Couleur de joueur 9 (noir)"
+does = "Apparence seulement : d'après son nom, une des neuf couleurs des joueurs (noir dans le jeu)."
+[Color_Alliance_Self]
+what = "Par alliance : vous"
+does = "Apparence seulement : d'après son nom, la couleur de ce camp quand les camps sont colorés par alliance (bleu dans le jeu)."
+[Color_Alliance_Allie]
+what = "Par alliance : un allié"
+does = "Apparence seulement : d'après son nom, la couleur de ce camp quand les camps sont colorés par alliance (vert dans le jeu)."
+[Color_Alliance_Ennemi1]
+what = "Par alliance : ennemi 1"
+does = "Apparence seulement : d'après son nom, la couleur de ce camp quand les camps sont colorés par alliance (rouge dans le jeu)."
+[Color_Alliance_Ennemi2]
+what = "Par alliance : ennemi 2"
+does = "Apparence seulement : d'après son nom, la couleur de ce camp quand les camps sont colorés par alliance (orange dans le jeu)."
+[Color_Alliance_Ennemi3]
+what = "Par alliance : ennemi 3"
+does = "Apparence seulement : d'après son nom, la couleur de ce camp quand les camps sont colorés par alliance (violet dans le jeu)."
+[Color_Neutre]
+what = "Neutre"
+does = "Apparence seulement : d'après son nom, la couleur de ce qui n'appartient à aucun camp (gris dans le jeu)."
+[Color_Camp_Surrended]
+what = "Camp qui s'est rendu"
+does = "Apparence seulement : d'après son nom, la couleur d'un camp qui s'est rendu (gris dans le jeu)."
+[Color_Invisible]
+what = "Invisible"
+does = "Apparence seulement : d'après son nom, la couleur de ce qu'on ne voit pas (gris dans le jeu)."
+[ColorZoneStandard]
+what = "Secteur : couleur habituelle"
+does = "Apparence seulement : d'après son nom, la couleur habituelle d'un secteur (gris dans le jeu)."
+[ColorZone]
+what = "Couleur de secteur"
+does = "Apparence seulement : d'après son nom, la couleur d'un secteur (blanc, très transparent dans le jeu)."
+[ColorZoneAssombrie]
+what = "Secteur : assombri"
+does = "Apparence seulement : d'après son nom, la couleur d'un secteur assombri (gris foncé dans le jeu)."
+[ColorZoneHighlight]
+what = "Secteur : en surbrillance"
+does = "Apparence seulement : d'après son nom, la couleur d'un secteur en surbrillance (gris clair dans le jeu)."

@@ -1637,3 +1637,66 @@ does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a ši
 [TempsPulseDecryptagePause]
 what = "Puls Dešifrování: pauza před dalším (s)"
 does = "Jen vzhled: podle názvu pod Dešifrováním nepřátelské obrysy a šipky pulzují; tato fáze (pauza před dalším) trvá tolik sekund. Ve hře 1,5."
+[Color_01_Blue]
+what = "Barva hráče 1 (modrá)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře modrá)."
+[Color_02_Red]
+what = "Barva hráče 2 (červená)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře červená)."
+[Color_03_Teal]
+what = "Barva hráče 3 (modrozelená)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře modrozelená)."
+[Color_04_Purple]
+what = "Barva hráče 4 (fialová)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře fialová)."
+[Color_05_Orange]
+what = "Barva hráče 5 (oranžová)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře oranžová)."
+[Color_06_Pink]
+what = "Barva hráče 6 (růžová)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře růžová)."
+[Color_07_Green]
+what = "Barva hráče 7 (zelená)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře zelená)."
+[Color_08_Brown]
+what = "Barva hráče 8 (hnědá)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře hnědá)."
+[Color_09_Black]
+what = "Barva hráče 9 (černá)"
+does = "Jen vzhled: podle názvu jedna z devíti barev hráčů (ve hře černá)."
+[Color_Alliance_Self]
+what = "Podle aliance: vy"
+does = "Jen vzhled: podle názvu barva této strany, když jsou strany barveny podle aliancí (ve hře modrá)."
+[Color_Alliance_Allie]
+what = "Podle aliance: spojenec"
+does = "Jen vzhled: podle názvu barva této strany, když jsou strany barveny podle aliancí (ve hře zelená)."
+[Color_Alliance_Ennemi1]
+what = "Podle aliance: nepřítel 1"
+does = "Jen vzhled: podle názvu barva této strany, když jsou strany barveny podle aliancí (ve hře červená)."
+[Color_Alliance_Ennemi2]
+what = "Podle aliance: nepřítel 2"
+does = "Jen vzhled: podle názvu barva této strany, když jsou strany barveny podle aliancí (ve hře oranžová)."
+[Color_Alliance_Ennemi3]
+what = "Podle aliance: nepřítel 3"
+does = "Jen vzhled: podle názvu barva této strany, když jsou strany barveny podle aliancí (ve hře fialová)."
+[Color_Neutre]
+what = "Neutrální"
+does = "Jen vzhled: podle názvu barva toho, co nepatří žádné straně (ve hře šedá)."
+[Color_Camp_Surrended]
+what = "Strana, která se vzdala"
+does = "Jen vzhled: podle názvu barva strany, která se vzdala (ve hře šedá)."
+[Color_Invisible]
+what = "Neviditelné"
+does = "Jen vzhled: podle názvu barva toho, co není vidět (ve hře šedá)."
+[ColorZoneStandard]
+what = "Sektor: obvyklá barva"
+does = "Jen vzhled: podle názvu obvyklá barva sektoru (ve hře šedá)."
+[ColorZone]
+what = "Barva sektoru"
+does = "Jen vzhled: podle názvu barva sektoru (ve hře bílá, z velké části průhledná)."
+[ColorZoneAssombrie]
+what = "Sektor: ztmavený"
+does = "Jen vzhled: podle názvu barva ztmaveného sektoru (ve hře tmavě šedá)."
+[ColorZoneHighlight]
+what = "Sektor: zvýrazněný"
+does = "Jen vzhled: podle názvu barva zvýrazněného sektoru (ve hře světle šedá)."

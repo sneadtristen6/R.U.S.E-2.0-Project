@@ -43,7 +43,7 @@ from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, l
 from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
-from rusemod.patch import INT_RANGES
+from rusemod.patch import INT_RANGES, Raw
 from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
 from rusemod.rndf import parse as rndf_parse
@@ -6034,6 +6034,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         finally:
             ix.close()
 
+    def _economy_colours(self, found: dict) -> dict[str, dict]:
+        """{game mode: {colour value: its 4 bytes as the file has them (a model value)}}, read from each copy's file
+        (_value_file): the game index doesn't keep colours (rusemod.economy.COLOUR)."""
+        out = {}
+        for mode, o in found.items():
+            nd, _ = self._value_file(o["file"])
+            out[mode] = {p: v for p, v in nd.obj(o["index"]).props.items()
+                         if isinstance(v, Raw) and v.tc in every_value.VECTORS
+                         and every_value.VECTORS[v.tc][0] == "RGBA" and len(v.payload) == 4}
+        return out
+
+    @staticmethod
+    def _colour(v) -> list[int] | None:
+        """A colour (a model value, or the mod's change: its text) as [red, green, blue, how solid]; None if not one."""
+        if isinstance(v, str):
+            try:
+                v = parse_value(v)
+            except RndfError:
+                return None
+        if isinstance(v, Raw) and len(v.payload) == 4:
+            return economy.rgba(bytes(v.payload))
+        return None
+
     def economy(self, lang: str = schema.BASE) -> dict:
         """The economy's values (rusemod.economy.GROUPS) as the Economy tab shows them: per group, each value's name
         in `lang`, the game's value for its usual modes ("game") and the Nuclear mode's ("atomic", None when the same),
@@ -6046,10 +6069,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         except EditsFileError:
             edits = None
         copy = {mode: _props(o) for mode, o in found.items()}
+        colours = self._economy_colours(found) if any(t == economy.COLOUR for t in types.values()) else {}
         groups = []
         for group, props in economy.GROUPS:
             rows = []
             for prop in props:
+                if types.get(prop) == economy.COLOUR:  # [red, green, blue, how solid], from the file
+                    row = self._economy_colour_row(prop, lang, colours, edits)
+                    if row:
+                        rows.append(row)
+                    continue
                 p = copy.get("normal", {}).get(prop) or copy.get("atomic", {}).get(prop)
                 if p is None or not _can_edit(prop, p):
                     continue
@@ -6069,6 +6098,51 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             groups.append({"id": group, "rows": rows, "section": economy.SECTIONS.get(group, "rules")})
         return {"ready": bool(found), "groups": groups}
 
+    def _economy_colour_row(self, prop: str, lang: str, colours: dict, edits) -> dict | None:
+        """One colour of the economy as economy() shows a value, `colour` set: its values are [red, green, blue, how
+        solid (0 to 255)]."""
+        game = self._colour(colours.get("normal", {}).get(prop)) or self._colour(colours.get("atomic", {}).get(prop))
+        if game is None:
+            return None
+        atomic = self._colour(colours.get("atomic", {}).get(prop))
+        mine = {mode: self._colour(edits.get(target, prop)) if edits is not None else None
+                for mode, target in economy.TARGETS.items()}
+        split = "atomic" in colours and "normal" in colours and (
+            atomic != game or (mine["normal"] or game) != (mine["atomic"] or atomic))
+        return {"prop": prop, "label": schema.label(prop, lang), "list": True, "colour": True, "type": economy.COLOUR,
+                "game": game, "atomic": atomic if atomic != game else None, "split": split,
+                "value": mine["normal"] if split or mine["normal"] is not None else mine["atomic"],
+                "atomic_value": mine["atomic"] if split else None}
+
+    def _economy_colour_edit(self, prop: str, value, mode: str | None, found: dict, edits: ModEdits) -> dict:
+        """economy_edit for a colour: `value` [red, green, blue, how solid], each 0 to 255."""
+        if not (isinstance(value, list) and len(value) == 4 and all(
+                isinstance(v, int) and not isinstance(v, bool) for v in value)):
+            raise StudioError(f"{prop}: a colour is 4 whole numbers (red, green, blue, how solid)")
+        colours = self._economy_colours(found)
+        new = {}
+        for mode_, by_prop in colours.items():  # every copy checked before anything is saved
+            if mode is not None and mode_ != mode:
+                continue
+            old = by_prop.get(prop)
+            if old is None:
+                raise StudioError(f"{prop} can't be changed here")
+            try:
+                spelled, same = every_value.typed(old, economy.file_bytes(value), prop, lambda _s: False)
+            except every_value.TypedError as exc:
+                raise StudioError(str(exc)) from None
+            new[mode_] = (Literal(spelled), same)
+        if not new:  # not a game rule: this game build has no such copy
+            raise StudioError(f"The game index has no {mode} copy of the economy's values.")
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            for mode_, (spelled, same) in new.items():
+                if same:
+                    edits.reset(economy.TARGETS[mode_], prop)
+                else:
+                    edits.set(economy.TARGETS[mode_], prop, spelled)
+        return {"saved": str(edits.file), "value": list(value)}
+
     def economy_edit(self, prop: str, value, mode: str | None = None) -> dict:
         """Change one economy value in the current mod: in both copies of the game's constants, so it holds in every
         game mode, or in one (`mode`: "normal", the game's usual modes, or "atomic", the Nuclear mode). Saved at once;
@@ -6084,6 +6158,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
         found, types = self._economy_copies()
         if not found:  # not a game rule: our index of the game has no copy of the constants (an older index)
             raise StudioError("The game index has none of the economy's values: build it again in Settings.")
+        if types.get(prop) == economy.COLOUR:
+            return self._economy_colour_edit(prop, value, mode, found, edits)
         values = value if isinstance(value, list) else [value]
         if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values):
             raise StudioError(f"{prop}: numbers only")

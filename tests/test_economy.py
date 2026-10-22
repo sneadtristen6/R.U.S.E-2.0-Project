@@ -44,14 +44,20 @@ def floats(v) -> list[float]:
     return [struct.unpack_from("<f", v.payload, 4 + 8 * i + 4)[0] for i in range(count)]
 
 
+def colour(*file_bytes):
+    """A 4-byte colour (0x0D) as the file has it: blue, green, red, how solid."""
+    return val(0x0D, bytes(file_bytes))
+
+
 PROPS = ["QteDeviseInitiale", "QteDeviseParCamion", "CheckAndCancelWaitingRequest",
          "PaliersTempsToChooseNewCardForAllianceTaille_1", "MaxProductionQueueSize", "UsePopCap",
-         "MaxNbCardsPerZoneByAlliance", "NbCamionParConvoi"]
+         "MaxNbCardsPerZoneByAlliance", "NbCamionParConvoi", "Color_01_Blue", "ColorZone"]
 
 
 def constants(per_truck: int, card_times) -> bytes:
-    """One copy of the constants as the game has it: one named object, a few of its values."""
-    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0), i32(2), i32(3)]
+    """One copy of the constants as the game has it: one named object, a few of its values (its blue as the game's)."""
+    values = [i32(200), i32(per_truck), flag(1), lst(*(f32(t) for t in card_times)), u32(30), flag(0), i32(2), i32(3),
+              colour(255, 66, 0, 255), colour(255, 255, 255, 96)]
     return make_ndf(objects=[(0, list(enumerate(values)))], classes=["TTunableConstante"],
                     props=[(p, 0) for p in PROPS], exports={0: "GFX/Everything/Constantes"}, topo=[0])
 
@@ -167,6 +173,41 @@ class Tab(unittest.TestCase):
         self.assertEqual((money["split"], money["atomic_value"]), (False, None))
         self.assertEqual(rows["CheckAndCancelWaitingRequest"]["type"], "bool")
         self.assertEqual(self.rows("base")["QteDeviseInitiale"]["label"], "QteDeviseInitiale")  # the code names
+        # a colour, read from the file (the index doesn't keep it): red, green, blue, how solid
+        blue = rows["Color_01_Blue"]
+        self.assertEqual((blue["colour"], blue["list"], blue["type"], blue["game"], blue["atomic"], blue["split"]),
+                         (True, True, "color32", [0, 66, 255, 255], None, False))
+        self.assertEqual(rows["ColorZone"]["game"], [255, 255, 255, 96])
+
+    def test_a_colour(self):
+        """The game rules' colours (the owner, 2026-10-22: "all game rules"): picked as red, green, blue and how
+        solid, written in the file's order (blue first), in both copies or one; the game's own colour again takes the
+        change out."""
+        self.api.new_mod("Colours")
+        folder = self.home / "mods" / "colours"
+        self.assertEqual(self.api.economy_edit("Color_01_Blue", [10, 20, 30, 200])["value"], [10, 20, 30, 200])
+        self.api.economy_edit("ColorZone", [0, 0, 0, 50], "atomic")
+        text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
+        self.assertIn(f"\npatch {NORMAL}\n(\n    Color_01_Blue = RGBA[30, 20, 10, 200]\n)\n", text)
+        self.assertIn(f"\npatch {ATOMIC}\n(\n    Color_01_Blue = RGBA[30, 20, 10, 200]\n    ColorZone = RGBA[0, 0, 0, 50]\n)\n",
+                      text)
+        rows = self.rows()
+        self.assertEqual((rows["Color_01_Blue"]["value"], rows["Color_01_Blue"]["split"]), ([10, 20, 30, 200], False))
+        zone = rows["ColorZone"]
+        self.assertEqual((zone["split"], zone["value"], zone["atomic_value"]), (True, None, [0, 0, 0, 50]))
+        arc = Edat((self.game / "Data" / "PC" / "190852" / "ZZ_GladPatchableWin.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)])
+        self.assertEqual(result.errors, [])
+        new = Edat(arc.to_bytes(result.changed))
+        for name, zone_bytes in (("gdconstanteoriginal", b"\xff\xff\xff\x60"), ("gdconstanteatomic", bytes([0, 0, 0, 50]))):
+            with self.subTest(copy=name):
+                o = Ndf(new.read(new.find(f"{name}.cpp.gladndfbin"))).objects[0]
+                self.assertEqual((bytes(o.get(8).payload), bytes(o.get(9).payload)), (bytes([30, 20, 10, 200]), zone_bytes))
+        self.api.economy_edit("Color_01_Blue", [0, 66, 255, 255])  # the game's own colour: no change left
+        self.assertIsNone(self.rows()["Color_01_Blue"]["value"])
+        for bad in ([0, 0, 300, 255], [0, 0, 255], [0.5, 0, 0, 255], "#0042ff", [0, 0, 0, True]):
+            with self.subTest(bad=bad), self.assertRaises(StudioError):
+                self.api.economy_edit("Color_01_Blue", bad)
 
     def test_a_change_goes_to_both_copies_and_builds(self):
         with self.assertRaises(StudioError):

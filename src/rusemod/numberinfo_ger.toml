@@ -1637,3 +1637,66 @@ does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen
 [TempsPulseDecryptagePause]
 what = "Entschlüsselungs-Puls: Pause bis zum nächsten (s)"
 does = "Nur Aussehen: Laut Name pulsieren unter Entschlüsselung die feindlichen Umrisse und Pfeile; dieser Teil (Pause bis zum nächsten) dauert so viele Sekunden. Im Spiel 1,5."
+[Color_01_Blue]
+what = "Spielerfarbe 1 (Blau)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Blau)."
+[Color_02_Red]
+what = "Spielerfarbe 2 (Rot)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Rot)."
+[Color_03_Teal]
+what = "Spielerfarbe 3 (Blaugrün)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Blaugrün)."
+[Color_04_Purple]
+what = "Spielerfarbe 4 (Lila)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Lila)."
+[Color_05_Orange]
+what = "Spielerfarbe 5 (Orange)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Orange)."
+[Color_06_Pink]
+what = "Spielerfarbe 6 (Rosa)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Rosa)."
+[Color_07_Green]
+what = "Spielerfarbe 7 (Grün)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Grün)."
+[Color_08_Brown]
+what = "Spielerfarbe 8 (Braun)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Braun)."
+[Color_09_Black]
+what = "Spielerfarbe 9 (Schwarz)"
+does = "Nur Aussehen: Laut Name eine der neun Farben, in denen Spieler gezeigt werden (im Spiel Schwarz)."
+[Color_Alliance_Self]
+what = "Nach Bündnis: Sie"
+does = "Nur Aussehen: Laut Name die Farbe dieser Seite, wenn Seiten nach Bündnis gefärbt werden (im Spiel Blau)."
+[Color_Alliance_Allie]
+what = "Nach Bündnis: Verbündeter"
+does = "Nur Aussehen: Laut Name die Farbe dieser Seite, wenn Seiten nach Bündnis gefärbt werden (im Spiel Grün)."
+[Color_Alliance_Ennemi1]
+what = "Nach Bündnis: Feind 1"
+does = "Nur Aussehen: Laut Name die Farbe dieser Seite, wenn Seiten nach Bündnis gefärbt werden (im Spiel Rot)."
+[Color_Alliance_Ennemi2]
+what = "Nach Bündnis: Feind 2"
+does = "Nur Aussehen: Laut Name die Farbe dieser Seite, wenn Seiten nach Bündnis gefärbt werden (im Spiel Orange)."
+[Color_Alliance_Ennemi3]
+what = "Nach Bündnis: Feind 3"
+does = "Nur Aussehen: Laut Name die Farbe dieser Seite, wenn Seiten nach Bündnis gefärbt werden (im Spiel Lila)."
+[Color_Neutre]
+what = "Neutral"
+does = "Nur Aussehen: Laut Name die Farbe dessen, was keiner Seite gehört (im Spiel Grau)."
+[Color_Camp_Surrended]
+what = "Seite, die aufgegeben hat"
+does = "Nur Aussehen: Laut Name die Farbe einer Seite, die aufgegeben hat (im Spiel Grau)."
+[Color_Invisible]
+what = "Unsichtbar"
+does = "Nur Aussehen: Laut Name die Farbe dessen, was man nicht sieht (im Spiel Grau)."
+[ColorZoneStandard]
+what = "Sektor: übliche Farbe"
+does = "Nur Aussehen: Laut Name die übliche Farbe eines Sektors (im Spiel Grau)."
+[ColorZone]
+what = "Sektorfarbe"
+does = "Nur Aussehen: Laut Name die Farbe eines Sektors (im Spiel Weiß, größtenteils durchsichtig)."
+[ColorZoneAssombrie]
+what = "Sektor: abgedunkelt"
+does = "Nur Aussehen: Laut Name die Farbe eines abgedunkelten Sektors (im Spiel Dunkelgrau)."
+[ColorZoneHighlight]
+what = "Sektor: hervorgehoben"
+does = "Nur Aussehen: Laut Name die Farbe eines hervorgehobenen Sektors (im Spiel Hellgrau)."

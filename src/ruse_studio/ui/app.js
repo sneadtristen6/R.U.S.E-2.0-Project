@@ -813,6 +813,35 @@ function numberBox(r, value, label) {
   return box;
 }
 
+// A colour of the game's constants (StudioApi.economy, r.colour): [red, green, blue, how solid], 0 to 255 each
+function colourBoxes(r) {
+  const w = state.words;
+  const pick = el("input", { type: "color", disabled: !state.mod, title: w.tip_colour_pick });
+  pick.setAttribute("aria-label", r.label);
+  const solid = el("input", { type: "number", min: "0", max: "255", step: "1", inputMode: "numeric",
+    disabled: !state.mod, title: w.tip_colour_solid });
+  solid.setAttribute("aria-label", `${r.label}: ${w.colour_solid}`);
+  return [pick, solid];
+}
+
+function colourHex(c) {
+  return "#" + c.slice(0, 3).map((n) => Number(n).toString(16).padStart(2, "0")).join("");
+}
+
+function hexColour(hex) {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+}
+
+function colourText(c) {
+  return colourHex(c) + (c[3] === 255 ? "" : ` · ${state.words.colour_solid} ${c[3]}`);
+}
+
+function colourSwatch(c) {
+  const swatch = el("span", { className: "colour-swatch" });
+  swatch.style.background = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${c[3] / 255})`;
+  return swatch;
+}
+
 function readBox(box) {
   if (box.type === "checkbox") return box.checked ? 1 : 0;
   return box.value.trim() === "" ? NaN : Number(box.value);
@@ -3268,7 +3297,9 @@ function economyRow(r, saved = null) {
   const part = (mode, game, value) => {
     game = r.list ? game : [game];
     let mine = value === null || value === undefined ? null : r.list ? value : [value];
-    const boxes = (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+    // a colour (r.colour: [red, green, blue, how solid]) is a colour picker and a 0 to 255 box; other values a box each
+    const boxes = r.colour ? colourBoxes(r) : (mine || game).map((n, i) => numberBox(r, n, r.list ? `${r.label} [${i}]` : r.label));
+    const read = () => r.colour ? [...hexColour(boxes[0].value), readBox(boxes[1])] : boxes.map(readBox);
     const plain = el("span", { className: "muted small number-plain" });
     const was = el("div", { className: "was" });
     // in plain units only where that says more than the number ("25%" for 0.25; not "about 200 $" for 200)
@@ -3277,10 +3308,13 @@ function economyRow(r, saved = null) {
       plain.textContent = r.list || !scale || scale[0] === 1 ? "" : numberPlain(entry, Number(numbers[0]));
     };
     const show = (numbers) => {
-      boxes.forEach((b, i) => {
-        if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]);
-        b.setAttribute("aria-invalid", "false");
-      });
+      if (r.colour) {
+        boxes[0].value = colourHex(numbers);
+        boxes[1].value = String(numbers[3]);
+      } else {
+        boxes.forEach((b, i) => { if (b.type === "checkbox") b.checked = Boolean(numbers[i]); else b.value = String(numbers[i]); });
+      }
+      boxes.forEach((b) => b.setAttribute("aria-invalid", "false"));
       showPlain(numbers);
     };
     const showWas = () => {
@@ -3299,11 +3333,14 @@ function economyRow(r, saved = null) {
           if (saved) saved();
         } catch (err) { problem(err); }
       });
-      was.replaceChildren(el("span", { textContent: w.was.replace("{v}", game.join(" · ")) }), undo);
+      const gameText = r.colour ? colourText(game) : game.join(" · ");
+      was.replaceChildren(...(r.colour ? [colourSwatch(game), " "] : []),
+        el("span", { textContent: w.was.replace("{v}", gameText) }), undo);
     };
     const save = async (box) => {
-      const numbers = boxes.map(readBox);
-      const bad = numbers.findIndex((n) => !Number.isFinite(n));
+      const numbers = read();
+      const bad = r.colour ? (Number.isInteger(numbers[3]) && numbers[3] >= 0 && numbers[3] <= 255 ? -1 : 1)
+        : numbers.findIndex((n) => !Number.isFinite(n));
       boxes.forEach((b, i) => b.setAttribute("aria-invalid", String(i === bad)));
       if (bad >= 0) { box.focus(); return; }
       try {
@@ -3317,7 +3354,7 @@ function economyRow(r, saved = null) {
       } catch (err) { problem(err); }
     };
     for (const box of boxes) box.addEventListener("change", () => save(box));
-    showPlain(mine || game);
+    if (r.colour) show(mine || game); else showPlain(mine || game);
     showWas();
     const row = el("div", { className: "boxes" }, ...boxes, plain);
     if (mode) {

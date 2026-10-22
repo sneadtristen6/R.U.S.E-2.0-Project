@@ -89,6 +89,11 @@ GROUPS = (
                 "AlphaGhostEtFlechePourDecryptageMax", "TempsPulseDecryptageFadeIn", "TempsPulseDecryptageWait",
                 "TempsPulseDecryptageFadeOut", "TempsPulseDecryptagePause", "FxRuseSpacing", "FxRuseHeight",
                 "FxDerouteTimeout")),
+    ("colours", ("Color_01_Blue", "Color_02_Red", "Color_03_Teal", "Color_04_Purple", "Color_05_Orange",
+                 "Color_06_Pink", "Color_07_Green", "Color_08_Brown", "Color_09_Black", "Color_Alliance_Self",
+                 "Color_Alliance_Allie", "Color_Alliance_Ennemi1", "Color_Alliance_Ennemi2", "Color_Alliance_Ennemi3",
+                 "Color_Neutre", "Color_Camp_Surrended", "Color_Invisible", "ColorZoneStandard", "ColorZone",
+                 "ColorZoneAssombrie", "ColorZoneHighlight")),
     # values whose use isn't known yet, last
     ("other", ("DefaultValueAlignTolerance", "OffsetBord", "DistanceMaxForProjection", "EditeurPorteeTirMax",
                "AverageOnPeriod")),
@@ -107,6 +112,22 @@ GROUPS = (
 SECTIONS = {"money": "players", "supply": "players", "production": "players", "cards": "players",
             "computer": "computers", "decoys": "computers"}
 PROPS = tuple(p for _group, props in GROUPS for p in props)
+# the colours are the game's 4-byte colour values (the game index doesn't keep them: they're read from the file). The
+# file has a colour's bytes blue, green, red, then how solid (0 to 255): the colours' names show it, Color_01_Blue
+# being 255, 66, 0 and Color_02_Red 0, 0, 255
+COLOUR = "color32"
+
+
+def rgba(file_bytes) -> list[int]:
+    """A colour's 4 bytes as the file has them -> [red, green, blue, how solid]."""
+    b, g, r, a = file_bytes
+    return [r, g, b, a]
+
+
+def file_bytes(colour) -> list[int]:
+    """[red, green, blue, how solid] -> the 4 bytes as the file has them."""
+    r, g, b, a = colour
+    return [b, g, r, a]
 RUSES_PER_SECTOR, RUSES_PER_SECTOR_MOST = "MaxNbCardsPerZoneByAlliance", 2  # each sector has room for two ruses
 
 

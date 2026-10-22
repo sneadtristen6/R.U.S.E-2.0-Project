@@ -194,6 +194,11 @@ input[type="range"].stepped { display: none !important; }
 .boxes input[type="checkbox"] { width: 16px; height: 16px; margin: 3px 0; accent-color: var(--accent); }
 tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .boxes input[aria-invalid="true"] { border-color: var(--error); outline-color: var(--error); }
+.boxes input[type="color"] { width: 3em; height: 24px; padding: 1px; background: var(--panel-hi);
+  border: 1px solid var(--line); border-radius: 4px; }
+tr.edited .boxes input[type="color"] { border-color: var(--accent); }
+.colour-swatch { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; border: 1px solid var(--line);
+  border-radius: 2px; }
 .was { margin-top: 3px; font-size: 12px; color: var(--muted); }
 .was:empty { display: none; }
 /* the AI tab (app.js renderAI): its sets of values to pick, and the ruse cards' table, a value per cell */

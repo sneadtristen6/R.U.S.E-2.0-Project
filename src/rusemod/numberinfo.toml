@@ -3905,3 +3905,150 @@ unit = "s"
 sure = "name"
 what = "Decryption pulse: pause before the next (s)"
 does = "Looks only: from its name, under Decryption the enemy's outlines and arrows pulse in and out; this part (pause before the next) lasts this many seconds. 1.5 in the game."
+
+[Color_01_Blue]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 1 (blue)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (blue in the game)."
+
+[Color_02_Red]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 2 (red)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (red in the game)."
+
+[Color_03_Teal]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 3 (teal)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (teal in the game)."
+
+[Color_04_Purple]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 4 (purple)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (purple in the game)."
+
+[Color_05_Orange]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 5 (orange)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (orange in the game)."
+
+[Color_06_Pink]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 6 (pink)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (pink in the game)."
+
+[Color_07_Green]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 7 (green)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (green in the game)."
+
+[Color_08_Brown]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 8 (brown)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (brown in the game)."
+
+[Color_09_Black]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Player colour 9 (black)"
+does = "Looks only: from its name, one of the nine colours players are drawn in (black in the game)."
+
+[Color_Alliance_Self]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "By alliance: you"
+does = "Looks only: from its name, this side's colour when sides are coloured by alliance (blue in the game)."
+
+[Color_Alliance_Allie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "By alliance: an ally"
+does = "Looks only: from its name, this side's colour when sides are coloured by alliance (green in the game)."
+
+[Color_Alliance_Ennemi1]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "By alliance: enemy 1"
+does = "Looks only: from its name, this side's colour when sides are coloured by alliance (red in the game)."
+
+[Color_Alliance_Ennemi2]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "By alliance: enemy 2"
+does = "Looks only: from its name, this side's colour when sides are coloured by alliance (orange in the game)."
+
+[Color_Alliance_Ennemi3]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "By alliance: enemy 3"
+does = "Looks only: from its name, this side's colour when sides are coloured by alliance (purple in the game)."
+
+[Color_Neutre]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Neutral"
+does = "Looks only: from its name, the colour of what belongs to no side (grey in the game)."
+
+[Color_Camp_Surrended]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "A side that surrendered"
+does = "Looks only: from its name, the colour of a side that surrendered (grey in the game)."
+
+[Color_Invisible]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Unseen"
+does = "Looks only: from its name, the colour of what can't be seen (grey in the game)."
+
+[ColorZoneStandard]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Sector: usual colour"
+does = "Looks only: from its name, a sector's usual colour (grey in the game)."
+
+[ColorZone]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Sector colour"
+does = "Looks only: from its name, a sector's colour (white, mostly see-through in the game)."
+
+[ColorZoneAssombrie]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Sector: darkened"
+does = "Looks only: from its name, a darkened sector's colour (dark grey in the game)."
+
+[ColorZoneHighlight]
+group = "looks"
+unit = "raw"
+sure = "name"
+what = "Sector: highlighted"
+does = "Looks only: from its name, a highlighted sector's colour (light grey in the game)."

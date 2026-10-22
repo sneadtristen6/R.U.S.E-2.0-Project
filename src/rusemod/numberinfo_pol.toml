@@ -1637,3 +1637,66 @@ does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pul
 [TempsPulseDecryptagePause]
 what = "Puls Odszyfrowania: przerwa przed następnym (s)"
 does = "Tylko wygląd: z nazwy: pod Odszyfrowaniem wrogie zarysy i strzałki pulsują; ta faza (przerwa przed następnym) trwa tyle sekund. W grze 1,5."
+[Color_01_Blue]
+what = "Kolor gracza 1 (niebieski)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze niebieski)."
+[Color_02_Red]
+what = "Kolor gracza 2 (czerwony)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze czerwony)."
+[Color_03_Teal]
+what = "Kolor gracza 3 (morski)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze morski)."
+[Color_04_Purple]
+what = "Kolor gracza 4 (fioletowy)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze fioletowy)."
+[Color_05_Orange]
+what = "Kolor gracza 5 (pomarańczowy)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze pomarańczowy)."
+[Color_06_Pink]
+what = "Kolor gracza 6 (różowy)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze różowy)."
+[Color_07_Green]
+what = "Kolor gracza 7 (zielony)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze zielony)."
+[Color_08_Brown]
+what = "Kolor gracza 8 (brązowy)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze brązowy)."
+[Color_09_Black]
+what = "Kolor gracza 9 (czarny)"
+does = "Tylko wygląd: z nazwy jeden z dziewięciu kolorów graczy (w grze czarny)."
+[Color_Alliance_Self]
+what = "Według sojuszu: ty"
+does = "Tylko wygląd: z nazwy kolor tej strony, gdy strony są barwione według sojuszu (w grze niebieski)."
+[Color_Alliance_Allie]
+what = "Według sojuszu: sojusznik"
+does = "Tylko wygląd: z nazwy kolor tej strony, gdy strony są barwione według sojuszu (w grze zielony)."
+[Color_Alliance_Ennemi1]
+what = "Według sojuszu: wróg 1"
+does = "Tylko wygląd: z nazwy kolor tej strony, gdy strony są barwione według sojuszu (w grze czerwony)."
+[Color_Alliance_Ennemi2]
+what = "Według sojuszu: wróg 2"
+does = "Tylko wygląd: z nazwy kolor tej strony, gdy strony są barwione według sojuszu (w grze pomarańczowy)."
+[Color_Alliance_Ennemi3]
+what = "Według sojuszu: wróg 3"
+does = "Tylko wygląd: z nazwy kolor tej strony, gdy strony są barwione według sojuszu (w grze fioletowy)."
+[Color_Neutre]
+what = "Neutralny"
+does = "Tylko wygląd: z nazwy kolor tego, co nie należy do żadnej strony (w grze szary)."
+[Color_Camp_Surrended]
+what = "Strona, która się poddała"
+does = "Tylko wygląd: z nazwy kolor strony, która się poddała (w grze szary)."
+[Color_Invisible]
+what = "Niewidoczne"
+does = "Tylko wygląd: z nazwy kolor tego, czego nie widać (w grze szary)."
+[ColorZoneStandard]
+what = "Sektor: zwykły kolor"
+does = "Tylko wygląd: z nazwy zwykły kolor sektora (w grze szary)."
+[ColorZone]
+what = "Kolor sektora"
+does = "Tylko wygląd: z nazwy kolor sektora (w grze biały, prawie przezroczysty)."
+[ColorZoneAssombrie]
+what = "Sektor: przyciemniony"
+does = "Tylko wygląd: z nazwy kolor przyciemnionego sektora (w grze ciemnoszary)."
+[ColorZoneHighlight]
+what = "Sektor: podświetlony"
+does = "Tylko wygląd: z nazwy kolor podświetlonego sektora (w grze jasnoszary)."

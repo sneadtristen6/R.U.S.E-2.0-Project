@@ -12788,6 +12788,42 @@ cz = "Nukleární"
 jpn = "戦略兵器"
 sc = "核战争"
 
+[colour_solid]
+us = "solid"
+fr = "opacité"
+ger = "Deckkraft"
+ita = "opacità"
+spa = "opacidad"
+pol = "krycie"
+ru = "плотность"
+cz = "krytí"
+jpn = "不透明度"
+sc = "不透明度"
+
+[tip_colour_pick]
+us = "Pick a colour: it's saved in the mod at once."
+fr = "Choisissez une couleur : elle est enregistrée aussitôt dans le mod."
+ger = "Eine Farbe wählen: Sie wird sofort in der Mod gespeichert."
+ita = "Scegli un colore: viene salvato subito nella mod."
+spa = "Elige un color: se guarda en el mod al instante."
+pol = "Wybierz kolor: od razu zapisuje się w modzie."
+ru = "Выберите цвет: он сразу сохраняется в моде."
+cz = "Vyberte barvu: hned se uloží do módu."
+jpn = "色を選ぶと、すぐにMODへ保存されます。"
+sc = "选择一种颜色：会立即保存到模组。"
+
+[tip_colour_solid]
+us = "How solid the colour is drawn, from 0 (unseen) to 255 (solid): saved in the mod at once."
+fr = "L'opacité de la couleur, de 0 (invisible) à 255 (plein) : enregistrée aussitôt dans le mod."
+ger = "Wie deckend die Farbe gezeichnet wird, von 0 (unsichtbar) bis 255 (deckend): sofort in der Mod gespeichert."
+ita = "Quanto è opaco il colore, da 0 (invisibile) a 255 (pieno): salvato subito nella mod."
+spa = "Lo opaco que se dibuja el color, de 0 (invisible) a 255 (sólido): se guarda en el mod al instante."
+pol = "Jak kryjący jest kolor, od 0 (niewidoczny) do 255 (pełny): od razu zapisuje się w modzie."
+ru = "Насколько плотно рисуется цвет, от 0 (не видно) до 255 (сплошной): сразу сохраняется в моде."
+cz = "Jak krycí je barva, od 0 (neviditelná) do 255 (plná): hned se uloží do módu."
+jpn = "色の不透明度、0（見えない）から 255（不透明）まで：すぐにMODへ保存されます。"
+sc = "颜色的不透明度，从 0（看不见）到 255（实心）：会立即保存到模组。"
+
 [tip_economy_normal]
 us = "The value in the game's usual modes. The Nuclear mode has its own, in the boxes below."
 fr = "La valeur dans les modes habituels du jeu. Le mode Nucléaire a la sienne, dans les cases en dessous."
@@ -12920,6 +12956,18 @@ ru = "Настройки ИИ и игроков"
 cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
+
+[economy_group_colours]
+us = "Side and sector colours"
+fr = "Couleurs des camps et des secteurs"
+ger = "Farben der Seiten und Sektoren"
+ita = "Colori degli schieramenti e dei settori"
+spa = "Colores de bandos y sectores"
+pol = "Kolory stron i sektorów"
+ru = "Цвета сторон и секторов"
+cz = "Barvy stran a sektorů"
+jpn = "陣営とセクターの色"
+sc = "阵营和扇区的颜色"
 
 [economy_group_outlines]
 us = "Outlines, arrows and paths"

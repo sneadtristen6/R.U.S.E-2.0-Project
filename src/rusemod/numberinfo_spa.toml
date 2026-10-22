@@ -1637,3 +1637,66 @@ does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas ene
 [TempsPulseDecryptagePause]
 what = "Pulso de Descifrado: pausa antes de la siguiente (s)"
 does = "Solo aspecto: por su nombre, bajo Descifrado los contornos y flechas enemigos laten; esta fase (pausa antes de la siguiente) dura tantos segundos. 1,5 en el juego."
+[Color_01_Blue]
+what = "Color de jugador 1 (azul)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (azul en el juego)."
+[Color_02_Red]
+what = "Color de jugador 2 (rojo)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (rojo en el juego)."
+[Color_03_Teal]
+what = "Color de jugador 3 (verde azulado)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (verde azulado en el juego)."
+[Color_04_Purple]
+what = "Color de jugador 4 (morado)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (morado en el juego)."
+[Color_05_Orange]
+what = "Color de jugador 5 (naranja)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (naranja en el juego)."
+[Color_06_Pink]
+what = "Color de jugador 6 (rosa)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (rosa en el juego)."
+[Color_07_Green]
+what = "Color de jugador 7 (verde)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (verde en el juego)."
+[Color_08_Brown]
+what = "Color de jugador 8 (marrón)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (marrón en el juego)."
+[Color_09_Black]
+what = "Color de jugador 9 (negro)"
+does = "Solo aspecto: por su nombre, uno de los nueve colores de los jugadores (negro en el juego)."
+[Color_Alliance_Self]
+what = "Por alianza: usted"
+does = "Solo aspecto: por su nombre, el color de este bando cuando los bandos se colorean por alianza (azul en el juego)."
+[Color_Alliance_Allie]
+what = "Por alianza: un aliado"
+does = "Solo aspecto: por su nombre, el color de este bando cuando los bandos se colorean por alianza (verde en el juego)."
+[Color_Alliance_Ennemi1]
+what = "Por alianza: enemigo 1"
+does = "Solo aspecto: por su nombre, el color de este bando cuando los bandos se colorean por alianza (rojo en el juego)."
+[Color_Alliance_Ennemi2]
+what = "Por alianza: enemigo 2"
+does = "Solo aspecto: por su nombre, el color de este bando cuando los bandos se colorean por alianza (naranja en el juego)."
+[Color_Alliance_Ennemi3]
+what = "Por alianza: enemigo 3"
+does = "Solo aspecto: por su nombre, el color de este bando cuando los bandos se colorean por alianza (morado en el juego)."
+[Color_Neutre]
+what = "Neutral"
+does = "Solo aspecto: por su nombre, el color de lo que no pertenece a ningún bando (gris en el juego)."
+[Color_Camp_Surrended]
+what = "Bando rendido"
+does = "Solo aspecto: por su nombre, el color de un bando rendido (gris en el juego)."
+[Color_Invisible]
+what = "Invisible"
+does = "Solo aspecto: por su nombre, el color de lo que no se ve (gris en el juego)."
+[ColorZoneStandard]
+what = "Sector: color habitual"
+does = "Solo aspecto: por su nombre, el color habitual de un sector (gris en el juego)."
+[ColorZone]
+what = "Color del sector"
+does = "Solo aspecto: por su nombre, el color de un sector (blanco, casi transparente en el juego)."
+[ColorZoneAssombrie]
+what = "Sector: oscurecido"
+does = "Solo aspecto: por su nombre, el color de un sector oscurecido (gris oscuro en el juego)."
+[ColorZoneHighlight]
+what = "Sector: resaltado"
+does = "Solo aspecto: por su nombre, el color de un sector resaltado (gris claro en el juego)."
