@@ -172,6 +172,12 @@ class InTheBuild(unittest.TestCase):
         self.assertEqual(loose, OTHER)                       # the mod's
         self.assertEqual(pixels(inside), GOLD_BACKGROUND)    # the other copy, which the mod leaves alone: ours
         self.assertIn(f"{signature.TITLE}: paint changes ZZ_Win.dat: {LOADING}, so paint's is used", lines)
+        # the title is looks only (pictures, a video, menu packs: rusemod.lock's cosmetic kinds): players with it on
+        # and off have the same fingerprint
+        off, lines_off, _arc = self.built([mod], on=False)
+        self.assertEqual(off.errors, [], lines_off)
+        self.assertIsNotNone(result.fingerprint)
+        self.assertEqual(result.fingerprint, off.fingerprint)
 
 
 def real_game():
