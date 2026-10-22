@@ -3037,3 +3037,213 @@ unit = "s"
 sure = "name"
 what = "Seconds to change back into moving pose"
 does = "How long a unit's model takes to change back from its firing pose to its moving pose, in seconds. 1.25 in the game."
+
+[DistToOpenFire]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Distance to open fire (m)"
+does = "How close an enemy must be before units open fire on their own, in m. 400 m in the game."
+
+[DistanceFriendlyFire]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Friendly fire distance (m)"
+does = "Units hold their fire when friends are within this of the target, so they don't hit them, in m. 100 m in the game."
+
+[DistanceMaxPourAttackWhileMoving]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Firing on the move: farthest (m)"
+does = "The farthest a unit given an attack-while-moving order fires at, in m. 650 m in the game."
+
+[MultiplicateurDispersionQdTireurEnMouvement]
+group = "combat"
+unit = "times"
+sure = "name"
+what = "Spread when firing on the move (x)"
+does = "How much wider a moving unit's shots spread, times their spread standing still: more misses. 1.5 in the game."
+
+[ToleranceTirTouche]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "How near a shot counts as a hit (m)"
+does = "How close to its target a shot must land to count as a hit, in m. 23 m in the game."
+
+[WaitingTimeToFocusTargetWithMainOrientation]
+group = "combat"
+unit = "s"
+sure = "name"
+what = "Seconds before turning to face a target"
+does = "How long a unit waits before it turns its whole body (not just its turret) to face a target, in seconds. 10 in the game."
+
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+group = "combat"
+unit = "s"
+sure = "name"
+what = "Seconds before turning, when it can already fire"
+does = "The same wait when the unit can already fire at the target as it stands, in seconds. 2 in the game."
+
+[PorteeMinArmeEstConsidereCommeArtillerie]
+group = "combat"
+unit = "m"
+sure = "known"
+what = "Range from which a weapon counts as artillery (m)"
+does = "A weapon that reaches farther than this counts as artillery when units weigh how dangerous an enemy is, in m. 650 m in the game."
+
+[LongueurParcourueBombe]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "How far a bomb travels as it falls (m)"
+does = "How far forward a dropped bomb travels before it lands, so a bomber lets go this far before the target, in m. 70 m in the game."
+
+[CombatZoneRadius]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Size of a fight (m)"
+does = "The radius around a fight that the game counts as one battle zone, in m. 100 m in the game."
+
+[RF_TypeRapportDeForceFeedback]
+group = "combat"
+unit = "raw"
+sure = "name"
+what = "Force balance shown to the player (1: on)"
+does = "Which way the game works out the balance of forces it shows the player when ordering an attack. 1 in the game."
+
+[ActivateShootToKillDCA]
+group = "combat"
+unit = "yesno"
+sure = "name"
+what = "Anti-aircraft fires to kill"
+does = "On: anti-aircraft guns shoot to bring planes down. 1 (on) in the game."
+
+[SeuilDecrocheDCA]
+group = "combat"
+unit = "raw"
+sure = "name"
+what = "Anti-aircraft: when planes break off"
+does = "How much anti-aircraft fire a plane takes before it breaks off its attack (in the game's own measure). 100 in the game."
+
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Anti-aircraft weapons spot farther (m)"
+does = "How much farther than their reach anti-aircraft weapons look for enemies to engage, in m. 400 m in the game."
+
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Other weapons spot farther (m)"
+does = "The same for every other weapon: how much farther than its reach it looks for enemies, in m. 100 m in the game."
+
+[DistanceInfanterieEnnemiDectection]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Spotting enemy infantry close by (m)"
+does = "Enemy infantry closer than this is noticed whatever else, in m. 20 m in the game."
+
+[DistanceMaxPourAttaquerCibleComportementAuto]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Attacking on their own: farthest (m)"
+does = "The farthest a unit goes after a target on its own, without an order, in m. 50 m in the game."
+
+[DistancePourchasse]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Chasing: how far (m)"
+does = "How far a unit chases an enemy that pulls back, in m. 250 m in the game."
+
+[DistancePourchasseIncrement]
+group = "combat"
+unit = "m"
+sure = "name"
+what = "Chasing: step (m)"
+does = "How much the chase reaches farther each time the enemy pulls away again, in m. 10 m in the game."
+
+[DistanceZoneAlerte]
+group = "combat"
+unit = "raw"
+sure = "known"
+what = "Going to help a friend: how near"
+does = "An armed unit with no target of its own goes for whoever is attacking a friend this near to it (in the game's own measure). 78 in the game."
+
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+group = "combat"
+unit = "raw"
+sure = "known"
+what = "Going to help a friend: farthest to travel"
+does = "It goes to help only when the gap to the attacker is no more than this (in the game's own measure). 52 in the game."
+
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+group = "combat"
+unit = "s"
+sure = "known"
+what = "Going to help a friend: hit within (s)"
+does = "A friend counts as under attack when it was hit within this many seconds. 2 in the game."
+
+[DistanceRepliQuandTireurInvisible]
+group = "combat"
+unit = "m"
+sure = "known"
+what = "Pulling back from an unseen shooter (m)"
+does = "How far a unit runs from a shooter it can't see, in m. 100 m in the game."
+
+[TempsEntreDeuxRepliApresOrdreDeStop]
+group = "combat"
+unit = "s"
+sure = "name"
+what = "After Stop: seconds between pull-backs"
+does = "Once a unit has been told to stop, the seconds before it may pull back on its own again. 10 in the game."
+
+[RetourSurPositionApresAttackAutoActif]
+group = "combat"
+unit = "yesno"
+sure = "known"
+what = "Back to its post after chasing on its own"
+does = "On: a unit that went after an enemy on its own goes back to where it was once it's over 20 m away. 1 (on) in the game."
+
+[RetourSurPositionDesRecosActif]
+group = "combat"
+unit = "yesno"
+sure = "known"
+what = "Recon units go back to their post"
+does = "On: recon units go back to where they were put once they're over 20 m away. 1 (on) in the game."
+
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+group = "combat"
+unit = "s"
+sure = "known"
+what = "Keeping to an attack order (s)"
+does = "After an attack order, the seconds before the unit may react on its own again. 30 in the game."
+
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+group = "combat"
+unit = "s"
+sure = "known"
+what = "Keeping to a move-and-attack order (s)"
+does = "The same after a move-and-attack order, in seconds. 30 in the game."
+
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+group = "combat"
+unit = "s"
+sure = "known"
+what = "Unarmed units keeping to an order (s)"
+does = "The same for an unarmed unit (a truck, say) after any order, in seconds. 10 in the game."
+
+[ReglesActives_TirReflexSilenceRadio]
+group = "combat"
+unit = "yesno"
+sure = "known"
+what = "Radio Silence stops reflex fire"
+does = "On: units under the Radio Silence ruse don't fire back on their own, so they stay hidden. 1 (on) in the game."

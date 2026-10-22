@@ -1265,3 +1265,93 @@ does = "单位模型从行进姿态变为开火姿态所需的秒数。游戏中
 [MorphTimeToGoToMovePosition]
 what = "恢复行进姿态的秒数"
 does = "单位模型从开火姿态恢复为行进姿态所需的秒数。游戏中为 1.25。"
+[DistToOpenFire]
+what = "开火距离（米）"
+does = "敌人需靠近到多近单位才会自行开火（米）。游戏中为 400 米。"
+[DistanceFriendlyFire]
+what = "误伤距离（米）"
+does = "友军离目标在此距离内时，单位会停火以免误伤（米）。游戏中为 100 米。"
+[DistanceMaxPourAttackWhileMoving]
+what = "行进间射击：最远（米）"
+does = "收到行进间攻击命令的单位所射击的最远距离（米）。游戏中为 650 米。"
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "行进间射击散布（倍）"
+does = "移动中单位射击的散布，为静止时的倍数：脱靶更多。游戏中为 1.5。"
+[ToleranceTirTouche]
+what = "视为命中的距离（米）"
+does = "炮弹落点距目标多近才算命中（米）。游戏中为 23 米。"
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "转向目标前的秒数"
+does = "单位将整个车身（而不只是炮塔）转向目标前等待的秒数。游戏中为 10。"
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "已能开火时转向前的秒数"
+does = "单位按当前朝向已能射击目标时的同样等待秒数。游戏中为 2。"
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "武器算作炮兵的射程（米）"
+does = "单位评估敌人威胁时，射程超过此值的武器视为炮兵（米）。游戏中为 650 米。"
+[LongueurParcourueBombe]
+what = "炸弹下落时前进的距离（米）"
+does = "投下的炸弹落地前向前飞行的距离，轰炸机因此在目标前这么远投弹（米）。游戏中为 70 米。"
+[CombatZoneRadius]
+what = "交战范围（米）"
+does = "游戏把交战周围多大半径算作一个战区（米）。游戏中为 100 米。"
+[RF_TypeRapportDeForceFeedback]
+what = "向玩家显示兵力对比（1：开）"
+does = "游戏计算下达进攻命令时向玩家显示的兵力对比的方式。游戏中为 1。"
+[ActivateShootToKillDCA]
+what = "防空炮以击落为目的"
+does = "开：防空炮以击落飞机为目的开火。游戏中为 1（开）。"
+[SeuilDecrocheDCA]
+what = "防空：飞机何时脱离"
+does = "飞机放弃攻击前所承受的防空火力（按游戏自身的度量）。游戏中为 100。"
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "防空武器的额外探测距离（米）"
+does = "防空武器在射程之外再向远处搜寻交战敌人的距离（米）。游戏中为 400 米。"
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "其他武器的额外探测距离（米）"
+does = "其他所有武器同理：在射程之外再向远处搜寻敌人的距离（米）。游戏中为 100 米。"
+[DistanceInfanterieEnnemiDectection]
+what = "近处敌方步兵探测（米）"
+does = "比这更近的敌方步兵无论如何都会被发现（米）。游戏中为 20 米。"
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "自行攻击：最远（米）"
+does = "单位在无命令时自行追击目标的最远距离（米）。游戏中为 50 米。"
+[DistancePourchasse]
+what = "追击：多远（米）"
+does = "单位追击后撤敌人的距离（米）。游戏中为 250 米。"
+[DistancePourchasseIncrement]
+what = "追击：步长（米）"
+does = "每当敌人再次拉开距离时追击延伸的距离（米）。游戏中为 10 米。"
+[DistanceZoneAlerte]
+what = "支援友军：多近"
+does = "没有自己目标的武装单位会去攻击正在攻击这么近的友军的敌人（按游戏自身的度量）。游戏中为 78。"
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "支援友军：最远行程"
+does = "只有与攻击者的距离不超过此值时才会去支援（按游戏自身的度量）。游戏中为 52。"
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "支援友军：被击中后多少秒内"
+does = "友军在这么多秒内被击中即视为正在遭受攻击。游戏中为 2。"
+[DistanceRepliQuandTireurInvisible]
+what = "躲避看不见的射手（米）"
+does = "单位躲开看不见的射手的距离（米）。游戏中为 100 米。"
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "停止命令后：两次后撤间隔（秒）"
+does = "单位收到停止命令后，再次可以自行后撤前的秒数。游戏中为 10。"
+[RetourSurPositionApresAttackAutoActif]
+what = "自行追击后返回原位"
+does = "开：自行追击敌人的单位离开原位超过 20 米后会返回。游戏中为 1（开）。"
+[RetourSurPositionDesRecosActif]
+what = "侦察单位返回原位"
+does = "开：侦察单位离开所放位置超过 20 米后会返回。游戏中为 1（开）。"
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "坚持攻击命令（秒）"
+does = "攻击命令后，单位再次可以自行反应前的秒数。游戏中为 30。"
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "坚持行进间攻击命令（秒）"
+does = "行进间攻击命令后同理（秒）。游戏中为 30。"
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "无武装单位坚持命令（秒）"
+does = "无武装单位（如卡车）在任何命令后同理（秒）。游戏中为 10。"
+[ReglesActives_TirReflexSilenceRadio]
+what = "无线电静默阻止本能射击"
+does = "开：处于无线电静默计谋下的单位不会自行还击，因此保持隐蔽。游戏中为 1（开）。"

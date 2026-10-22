@@ -12921,6 +12921,30 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_firing]
+us = "Firing and targets"
+fr = "Tir et cibles"
+ger = "Feuer und Ziele"
+ita = "Tiro e bersagli"
+spa = "Disparo y objetivos"
+pol = "Ogień i cele"
+ru = "Стрельба и цели"
+cz = "Palba a cíle"
+jpn = "射撃と目標"
+sc = "射击与目标"
+
+[economy_group_reactions]
+us = "Units on their own"
+fr = "Les unités d'elles-mêmes"
+ger = "Einheiten von selbst"
+ita = "Le unità da sole"
+spa = "Las unidades por su cuenta"
+pol = "Jednostki same z siebie"
+ru = "Юниты сами по себе"
+cz = "Jednotky samy od sebe"
+jpn = "ユニットの自発的な行動"
+sc = "单位的自主行为"
+
 [economy_group_movement]
 us = "Movement and roads"
 fr = "Déplacement et routes"

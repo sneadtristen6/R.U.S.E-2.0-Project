@@ -1265,3 +1265,93 @@ does = "ユニットのモデルが移動姿勢から射撃姿勢に変わるま
 [MorphTimeToGoToMovePosition]
 what = "移動姿勢に戻る変形秒数"
 does = "ユニットのモデルが射撃姿勢から移動姿勢に戻るまでの秒数。ゲームでは 1.25。"
+[DistToOpenFire]
+what = "射撃開始距離（m）"
+does = "ユニットが自分から射撃を始めるまでに敵が近づく距離（m）。ゲームでは 400 m。"
+[DistanceFriendlyFire]
+what = "友軍誤射の距離（m）"
+does = "味方が目標からこの距離内にいるとき、当てないようにユニットは射撃を控えます（m）。ゲームでは 100 m。"
+[DistanceMaxPourAttackWhileMoving]
+what = "移動しながらの射撃：最大距離（m）"
+does = "移動攻撃の命令を受けたユニットが撃つ最大距離（m）。ゲームでは 650 m。"
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "移動中の射撃のばらつき（倍）"
+does = "移動中のユニットの弾のばらつき（停止時の倍率。外れが増えます）。ゲームでは 1.5。"
+[ToleranceTirTouche]
+what = "命中とみなす距離（m）"
+does = "命中とみなされるために弾が目標の近くに落ちる必要がある距離（m）。ゲームでは 23 m。"
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "目標に向き直るまでの秒数"
+does = "ユニットが（砲塔だけでなく）車体ごと目標に向き直るまで待つ秒数。ゲームでは 10。"
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "すでに撃てるときの向き直りまでの秒数"
+does = "その向きのままですでに目標を撃てるときの同じ待ち時間（秒）。ゲームでは 2。"
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "砲兵とみなす射程（m）"
+does = "ユニットが敵の危険度を見積もるとき、これより遠くまで届く武器は砲兵とみなされます（m）。ゲームでは 650 m。"
+[LongueurParcourueBombe]
+what = "爆弾が落下中に進む距離（m）"
+does = "投下された爆弾が着弾までに前へ進む距離。爆撃機は目標のこれだけ手前で投下します（m）。ゲームでは 70 m。"
+[CombatZoneRadius]
+what = "戦闘の範囲（m）"
+does = "戦闘の周りでゲームが1つの戦場とみなす半径（m）。ゲームでは 100 m。"
+[RF_TypeRapportDeForceFeedback]
+what = "プレイヤーに見せる戦力比（1：オン）"
+does = "攻撃を命じるときにプレイヤーに見せる戦力比の計算方法。ゲームでは 1。"
+[ActivateShootToKillDCA]
+what = "対空砲が撃墜を狙う"
+does = "オン：対空砲は航空機を撃墜するために撃ちます。ゲームでは 1（オン）。"
+[SeuilDecrocheDCA]
+what = "対空砲：航空機が離脱するとき"
+does = "航空機が攻撃を打ち切るまでに受ける対空砲火の量（ゲーム独自の尺度）。ゲームでは 100。"
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "対空兵器の発見距離の上乗せ（m）"
+does = "対空兵器が交戦する敵を射程より先までさがす距離（m）。ゲームでは 400 m。"
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "その他の兵器の発見距離の上乗せ（m）"
+does = "その他の兵器の場合：射程より先まで敵をさがす距離（m）。ゲームでは 100 m。"
+[DistanceInfanterieEnnemiDectection]
+what = "近くの敵歩兵の発見（m）"
+does = "これより近い敵歩兵は何があっても気づかれます（m）。ゲームでは 20 m。"
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "自発的な攻撃：最大距離（m）"
+does = "ユニットが命令なしに自分から目標を追う最大距離（m）。ゲームでは 50 m。"
+[DistancePourchasse]
+what = "追撃：距離（m）"
+does = "ユニットが後退する敵を追う距離（m）。ゲームでは 250 m。"
+[DistancePourchasseIncrement]
+what = "追撃：刻み（m）"
+does = "敵が再び離れるたびに追撃が延びる距離（m）。ゲームでは 10 m。"
+[DistanceZoneAlerte]
+what = "味方を助けに行く：距離"
+does = "自分の目標がない武装ユニットは、これだけ近くの味方を攻撃している敵に向かいます（ゲーム独自の尺度）。ゲームでは 78。"
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "味方を助けに行く：最長の移動"
+does = "攻撃側までの距離がこれ以下のときだけ助けに行きます（ゲーム独自の尺度）。ゲームでは 52。"
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "味方を助けに行く：被弾からの秒数"
+does = "この秒数以内に被弾した味方は攻撃を受けているとみなされます。ゲームでは 2。"
+[DistanceRepliQuandTireurInvisible]
+what = "見えない射手からの後退（m）"
+does = "ユニットが見えない射手から離れる距離（m）。ゲームでは 100 m。"
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "停止命令後：後退の間隔（秒）"
+does = "停止を命じられたユニットが、再び自分から後退できるまでの秒数。ゲームでは 10。"
+[RetourSurPositionApresAttackAutoActif]
+what = "自発的な追撃後に持ち場へ戻る"
+does = "オン：自分から敵を追ったユニットは、20 m 以上離れると元の場所に戻ります。ゲームでは 1（オン）。"
+[RetourSurPositionDesRecosActif]
+what = "偵察ユニットが持ち場へ戻る"
+does = "オン：偵察ユニットは 20 m 以上離れると、置かれた場所に戻ります。ゲームでは 1（オン）。"
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "攻撃命令の維持（秒）"
+does = "攻撃命令の後、ユニットが再び自分から反応できるまでの秒数。ゲームでは 30。"
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "移動攻撃命令の維持（秒）"
+does = "移動攻撃命令の後の同じ秒数。ゲームでは 30。"
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "非武装ユニットの命令維持（秒）"
+does = "非武装ユニット（トラックなど）の場合、どの命令の後でも同じ秒数。ゲームでは 10。"
+[ReglesActives_TirReflexSilenceRadio]
+what = "無線封鎖で反射射撃を止める"
+does = "オン：無線封鎖の計略下のユニットは自分から撃ち返さないので、隠れたままでいます。ゲームでは 1（オン）。"

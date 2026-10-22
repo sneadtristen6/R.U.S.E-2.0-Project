@@ -1265,3 +1265,93 @@ does = "Le temps que met le modèle d'une unité pour passer de sa position de m
 [MorphTimeToGoToMovePosition]
 what = "Secondes pour repasser en position de marche"
 does = "Le temps que met le modèle d'une unité pour repasser de sa position de tir à sa position de marche, en secondes. 1,25 dans le jeu."
+[DistToOpenFire]
+what = "Distance d'ouverture du feu (m)"
+does = "À quelle distance un ennemi doit être pour que les unités ouvrent le feu d'elles-mêmes, en m. 400 m dans le jeu."
+[DistanceFriendlyFire]
+what = "Distance de tir ami (m)"
+does = "Les unités retiennent leur tir quand des alliés sont à moins de cela de la cible, pour ne pas les toucher, en m. 100 m dans le jeu."
+[DistanceMaxPourAttackWhileMoving]
+what = "Tir en mouvement : au plus loin (m)"
+does = "Le plus loin auquel tire une unité qui a l'ordre d'attaquer en avançant, en m. 650 m dans le jeu."
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "Dispersion en tirant en mouvement (x)"
+does = "Combien les tirs d'une unité en mouvement se dispersent plus, fois leur dispersion à l'arrêt : plus de coups manqués. 1,5 dans le jeu."
+[ToleranceTirTouche]
+what = "À quelle distance un tir compte comme touché (m)"
+does = "À quelle distance de sa cible un tir doit tomber pour compter comme touché, en m. 23 m dans le jeu."
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "Secondes avant de se tourner vers une cible"
+does = "Combien de temps une unité attend avant de tourner tout son corps (pas seulement sa tourelle) vers une cible, en secondes. 10 dans le jeu."
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "Secondes avant de se tourner, quand il peut déjà tirer"
+does = "La même attente quand l'unité peut déjà tirer sur la cible sans bouger, en secondes. 2 dans le jeu."
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "Portée à partir de laquelle une arme compte comme artillerie (m)"
+does = "Une arme qui porte plus loin que cela compte comme artillerie quand les unités jugent le danger d'un ennemi, en m. 650 m dans le jeu."
+[LongueurParcourueBombe]
+what = "Distance parcourue par une bombe en tombant (m)"
+does = "Jusqu'où une bombe larguée avance avant de toucher le sol : un bombardier la lâche donc à cette distance avant la cible, en m. 70 m dans le jeu."
+[CombatZoneRadius]
+what = "Taille d'un combat (m)"
+does = "Le rayon autour d'un combat que le jeu compte comme une seule zone de bataille, en m. 100 m dans le jeu."
+[RF_TypeRapportDeForceFeedback]
+what = "Rapport de forces montré au joueur (1 : oui)"
+does = "La façon dont le jeu calcule le rapport de forces qu'il montre au joueur quand il ordonne une attaque. 1 dans le jeu."
+[ActivateShootToKillDCA]
+what = "La DCA tire pour abattre"
+does = "Activé : les canons antiaériens tirent pour abattre les avions. 1 (activé) dans le jeu."
+[SeuilDecrocheDCA]
+what = "DCA : quand les avions décrochent"
+does = "Combien de tir antiaérien un avion encaisse avant de rompre son attaque (dans la mesure propre au jeu). 100 dans le jeu."
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "Les armes antiaériennes repèrent plus loin (m)"
+does = "Combien plus loin que leur portée les armes antiaériennes cherchent des ennemis à engager, en m. 400 m dans le jeu."
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "Les autres armes repèrent plus loin (m)"
+does = "Pareil pour toutes les autres armes : combien plus loin que sa portée elle cherche des ennemis, en m. 100 m dans le jeu."
+[DistanceInfanterieEnnemiDectection]
+what = "Repérage de l'infanterie ennemie proche (m)"
+does = "L'infanterie ennemie plus proche que cela est remarquée quoi qu'il arrive, en m. 20 m dans le jeu."
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "Attaque d'elles-mêmes : au plus loin (m)"
+does = "Le plus loin qu'une unité va chercher une cible d'elle-même, sans ordre, en m. 50 m dans le jeu."
+[DistancePourchasse]
+what = "Poursuite : jusqu'où (m)"
+does = "Jusqu'où une unité poursuit un ennemi qui se replie, en m. 250 m dans le jeu."
+[DistancePourchasseIncrement]
+what = "Poursuite : pas (m)"
+does = "De combien la poursuite va plus loin chaque fois que l'ennemi s'éloigne de nouveau, en m. 10 m dans le jeu."
+[DistanceZoneAlerte]
+what = "Aller aider un allié : à quelle distance"
+does = "Une unité armée sans cible à elle s'en prend à celui qui attaque un allié à cette distance d'elle (dans la mesure propre au jeu). 78 dans le jeu."
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "Aller aider un allié : trajet au plus long"
+does = "Elle ne va aider que si l'écart jusqu'à l'attaquant ne dépasse pas cela (dans la mesure propre au jeu). 52 dans le jeu."
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "Aller aider un allié : touché depuis moins de (s)"
+does = "Un allié compte comme attaqué s'il a été touché depuis moins de ce nombre de secondes. 2 dans le jeu."
+[DistanceRepliQuandTireurInvisible]
+what = "Repli devant un tireur invisible (m)"
+does = "Jusqu'où une unité s'éloigne d'un tireur qu'elle ne voit pas, en m. 100 m dans le jeu."
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "Après Stop : secondes entre deux replis"
+does = "Une fois qu'une unité a reçu l'ordre de s'arrêter, les secondes avant qu'elle puisse de nouveau se replier d'elle-même. 10 dans le jeu."
+[RetourSurPositionApresAttackAutoActif]
+what = "Retour à son poste après une poursuite d'elle-même"
+does = "Activé : une unité partie d'elle-même après un ennemi revient où elle était une fois à plus de 20 m. 1 (activé) dans le jeu."
+[RetourSurPositionDesRecosActif]
+what = "Les unités de reconnaissance reviennent à leur poste"
+does = "Activé : les unités de reconnaissance reviennent où on les a placées une fois à plus de 20 m. 1 (activé) dans le jeu."
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "Maintien d'un ordre d'attaque (s)"
+does = "Après un ordre d'attaque, les secondes avant que l'unité puisse de nouveau réagir d'elle-même. 30 dans le jeu."
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "Maintien d'un ordre d'avancer en attaquant (s)"
+does = "Pareil après un ordre d'avancer en attaquant, en secondes. 30 dans le jeu."
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "Unités sans arme : maintien d'un ordre (s)"
+does = "Pareil pour une unité sans arme (un camion, par exemple) après n'importe quel ordre, en secondes. 10 dans le jeu."
+[ReglesActives_TirReflexSilenceRadio]
+what = "Le Silence radio empêche le tir réflexe"
+does = "Activé : les unités sous la ruse Silence radio ne ripostent pas d'elles-mêmes et restent donc cachées. 1 (activé) dans le jeu."

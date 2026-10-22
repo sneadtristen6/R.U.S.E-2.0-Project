@@ -1265,3 +1265,93 @@ does = "Wie lange das Modell einer Einheit braucht, um von der Fahrhaltung in di
 [MorphTimeToGoToMovePosition]
 what = "Sekunden zurück in die Fahrhaltung"
 does = "Wie lange das Modell einer Einheit braucht, um von der Feuerhaltung zurück in die Fahrhaltung zu wechseln, in Sekunden. Im Spiel 1,25."
+[DistToOpenFire]
+what = "Entfernung zum Feuereröffnen (m)"
+does = "Wie nah ein Feind sein muss, bevor Einheiten von selbst das Feuer eröffnen, in m. Im Spiel 400 m."
+[DistanceFriendlyFire]
+what = "Entfernung für Eigenbeschuss (m)"
+does = "Einheiten halten das Feuer zurück, wenn Verbündete so nah am Ziel sind, damit sie sie nicht treffen, in m. Im Spiel 100 m."
+[DistanceMaxPourAttackWhileMoving]
+what = "Feuern in der Bewegung: höchstens (m)"
+does = "Die größte Entfernung, auf die eine Einheit mit dem Befehl Angriff in der Bewegung feuert, in m. Im Spiel 650 m."
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "Streuung beim Feuern in der Bewegung (x)"
+does = "Wie viel stärker die Schüsse einer fahrenden Einheit streuen, mal ihrer Streuung im Stand: mehr Fehlschüsse. Im Spiel 1,5."
+[ToleranceTirTouche]
+what = "Wie nah ein Schuss als Treffer zählt (m)"
+does = "Wie nah am Ziel ein Schuss einschlagen muss, um als Treffer zu zählen, in m. Im Spiel 23 m."
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "Sekunden, bevor sich eine Einheit einem Ziel zuwendet"
+does = "Wie lange eine Einheit wartet, bevor sie sich ganz (nicht nur den Turm) einem Ziel zuwendet, in Sekunden. Im Spiel 10."
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "Sekunden vor dem Zuwenden, wenn sie schon feuern kann"
+does = "Dieselbe Wartezeit, wenn die Einheit schon so auf das Ziel feuern kann, in Sekunden. Im Spiel 2."
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "Reichweite, ab der eine Waffe als Artillerie zählt (m)"
+does = "Eine Waffe, die weiter reicht, zählt als Artillerie, wenn Einheiten abwägen, wie gefährlich ein Feind ist, in m. Im Spiel 650 m."
+[LongueurParcourueBombe]
+what = "Wie weit eine Bombe im Fallen fliegt (m)"
+does = "Wie weit eine abgeworfene Bombe nach vorn fliegt, bevor sie einschlägt: Ein Bomber lässt sie so weit vor dem Ziel los, in m. Im Spiel 70 m."
+[CombatZoneRadius]
+what = "Größe eines Gefechts (m)"
+does = "Der Umkreis um ein Gefecht, den das Spiel als eine Kampfzone zählt, in m. Im Spiel 100 m."
+[RF_TypeRapportDeForceFeedback]
+what = "Kräfteverhältnis für den Spieler (1: an)"
+does = "Wie das Spiel das Kräfteverhältnis berechnet, das es dem Spieler beim Angriffsbefehl zeigt. Im Spiel 1."
+[ActivateShootToKillDCA]
+what = "Flak schießt zum Abschuss"
+does = "An: Flakgeschütze schießen, um Flugzeuge abzuschießen. Im Spiel 1 (an)."
+[SeuilDecrocheDCA]
+what = "Flak: wann Flugzeuge abdrehen"
+does = "Wie viel Flakfeuer ein Flugzeug abbekommt, bevor es den Angriff abbricht (im eigenen Maß des Spiels). Im Spiel 100."
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "Flugabwehrwaffen erkennen weiter (m)"
+does = "Wie viel weiter als ihre Reichweite Flugabwehrwaffen nach Feinden suchen, die sie bekämpfen, in m. Im Spiel 400 m."
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "Andere Waffen erkennen weiter (m)"
+does = "Dasselbe für jede andere Waffe: wie viel weiter als ihre Reichweite sie nach Feinden sucht, in m. Im Spiel 100 m."
+[DistanceInfanterieEnnemiDectection]
+what = "Erkennen feindlicher Infanterie in der Nähe (m)"
+does = "Feindliche Infanterie, die näher ist, wird in jedem Fall bemerkt, in m. Im Spiel 20 m."
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "Angriff von selbst: höchstens (m)"
+does = "Wie weit eine Einheit höchstens von selbst, ohne Befehl, einem Ziel nachgeht, in m. Im Spiel 50 m."
+[DistancePourchasse]
+what = "Verfolgung: wie weit (m)"
+does = "Wie weit eine Einheit einen zurückweichenden Feind verfolgt, in m. Im Spiel 250 m."
+[DistancePourchasseIncrement]
+what = "Verfolgung: Schritt (m)"
+does = "Um wie viel die Verfolgung jedes Mal weiter reicht, wenn sich der Feind wieder absetzt, in m. Im Spiel 10 m."
+[DistanceZoneAlerte]
+what = "Einem Verbündeten helfen: wie nah"
+does = "Eine bewaffnete Einheit ohne eigenes Ziel geht auf den los, der einen so nahen Verbündeten angreift (im eigenen Maß des Spiels). Im Spiel 78."
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "Einem Verbündeten helfen: weitester Weg"
+does = "Sie hilft nur, wenn der Abstand zum Angreifer nicht größer ist (im eigenen Maß des Spiels). Im Spiel 52."
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "Einem Verbündeten helfen: getroffen vor höchstens (s)"
+does = "Ein Verbündeter gilt als angegriffen, wenn er vor höchstens so vielen Sekunden getroffen wurde. Im Spiel 2."
+[DistanceRepliQuandTireurInvisible]
+what = "Rückzug vor einem unsichtbaren Schützen (m)"
+does = "Wie weit eine Einheit vor einem Schützen davonläuft, den sie nicht sieht, in m. Im Spiel 100 m."
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "Nach Stopp: Sekunden zwischen zwei Rückzügen"
+does = "Nachdem einer Einheit Stopp befohlen wurde, die Sekunden, bevor sie wieder von selbst zurückweichen darf. Im Spiel 10."
+[RetourSurPositionApresAttackAutoActif]
+what = "Nach eigener Verfolgung zurück auf den Posten"
+does = "An: Eine Einheit, die von selbst einem Feind nachgegangen ist, kehrt zurück, sobald sie über 20 m entfernt ist. Im Spiel 1 (an)."
+[RetourSurPositionDesRecosActif]
+what = "Aufklärer kehren auf ihren Posten zurück"
+does = "An: Aufklärer kehren an ihren Platz zurück, sobald sie über 20 m entfernt sind. Im Spiel 1 (an)."
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "Festhalten an einem Angriffsbefehl (s)"
+does = "Nach einem Angriffsbefehl die Sekunden, bevor die Einheit wieder von selbst reagieren darf. Im Spiel 30."
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "Festhalten an einem Befehl Bewegen und Angreifen (s)"
+does = "Dasselbe nach einem Befehl Bewegen und Angreifen, in Sekunden. Im Spiel 30."
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "Unbewaffnete Einheiten: Festhalten am Befehl (s)"
+does = "Dasselbe für eine unbewaffnete Einheit (etwa einen LKW) nach jedem Befehl, in Sekunden. Im Spiel 10."
+[ReglesActives_TirReflexSilenceRadio]
+what = "Funkstille stoppt Reflexfeuer"
+does = "An: Einheiten unter der List Funkstille schießen nicht von selbst zurück und bleiben so verborgen. Im Spiel 1 (an)."

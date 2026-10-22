@@ -1265,3 +1265,93 @@ does = "Jak dlouho model jednotky přechází z pochodové polohy do palebné, v
 [MorphTimeToGoToMovePosition]
 what = "Sekund na návrat do pochodové polohy"
 does = "Jak dlouho se model jednotky vrací z palebné polohy do pochodové, v sekundách. Ve hře 1,25."
+[DistToOpenFire]
+what = "Vzdálenost zahájení palby (m)"
+does = "Jak blízko musí nepřítel být, aby jednotky samy zahájily palbu, v m. Ve hře 400 m."
+[DistanceFriendlyFire]
+what = "Vzdálenost palby do vlastních (m)"
+does = "Jednotky drží palbu, když jsou spojenci tak blízko cíle, aby je nezasáhly, v m. Ve hře 100 m."
+[DistanceMaxPourAttackWhileMoving]
+what = "Palba za pohybu: nejvýš (m)"
+does = "Nejdál, kam střílí jednotka s rozkazem útoku za pohybu, v m. Ve hře 650 m."
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "Rozptyl při palbě za pohybu (x)"
+does = "O kolik víc se rozptylují rány jednotky za pohybu, krát rozptyl na místě: víc minutí. Ve hře 1,5."
+[ToleranceTirTouche]
+what = "Jak blízko se rána počítá jako zásah (m)"
+does = "Jak blízko cíle musí rána dopadnout, aby se počítala jako zásah, v m. Ve hře 23 m."
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "Sekund před otočením k cíli"
+does = "Jak dlouho jednotka čeká, než se celá (nejen věží) otočí k cíli, v sekundách. Ve hře 10."
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "Sekund před otočením, když už může střílet"
+does = "Stejné čekání, když jednotka už na cíl může střílet, jak stojí, v sekundách. Ve hře 2."
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "Dostřel, od kterého se zbraň počítá jako dělostřelectvo (m)"
+does = "Zbraň dosahující dál se počítá jako dělostřelectvo, když jednotky posuzují nebezpečnost nepřítele, v m. Ve hře 650 m."
+[LongueurParcourueBombe]
+what = "Jak daleko bomba při pádu doletí (m)"
+does = "Jak daleko dopředu shozená bomba doletí, než dopadne: bombardér ji pustí tolik před cílem, v m. Ve hře 70 m."
+[CombatZoneRadius]
+what = "Velikost střetu (m)"
+does = "Poloměr kolem střetu, který hra počítá jako jednu bojovou zónu, v m. Ve hře 100 m."
+[RF_TypeRapportDeForceFeedback]
+what = "Poměr sil ukázaný hráči (1: ano)"
+does = "Jak hra počítá poměr sil, který ukazuje hráči při rozkazu k útoku. Ve hře 1."
+[ActivateShootToKillDCA]
+what = "Protiletadlová obrana střílí k sestřelení"
+does = "Zapnuto: protiletadlová děla střílejí k sestřelení letadel. Ve hře 1 (zapnuto)."
+[SeuilDecrocheDCA]
+what = "Protiletadlová obrana: kdy letadla odbočí"
+does = "Kolik protiletadlové palby letadlo snese, než přeruší útok (ve vlastní míře hry). Ve hře 100."
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "Protiletadlové zbraně odhalí dál (m)"
+does = "O kolik dál než jejich dostřel protiletadlové zbraně hledají nepřátele k boji, v m. Ve hře 400 m."
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "Ostatní zbraně odhalí dál (m)"
+does = "Totéž pro každou jinou zbraň: o kolik dál než její dostřel hledá nepřátele, v m. Ve hře 100 m."
+[DistanceInfanterieEnnemiDectection]
+what = "Odhalení blízké nepřátelské pěchoty (m)"
+does = "Nepřátelská pěchota blíž než tohle je zpozorována vždy, v m. Ve hře 20 m."
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "Útok samy od sebe: nejvýš (m)"
+does = "Nejdál, kam jednotka sama, bez rozkazu, jde po cíli, v m. Ve hře 50 m."
+[DistancePourchasse]
+what = "Pronásledování: jak daleko (m)"
+does = "Jak daleko jednotka pronásleduje ustupujícího nepřítele, v m. Ve hře 250 m."
+[DistancePourchasseIncrement]
+what = "Pronásledování: krok (m)"
+does = "O kolik dál pronásledování sahá pokaždé, když se nepřítel znovu vzdálí, v m. Ve hře 10 m."
+[DistanceZoneAlerte]
+what = "Pomoc spojenci: jak blízko"
+does = "Ozbrojená jednotka bez vlastního cíle jde po tom, kdo útočí na takto blízkého spojence (ve vlastní míře hry). Ve hře 78."
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "Pomoc spojenci: nejdelší cesta"
+does = "Jde pomoci, jen když vzdálenost k útočníkovi není větší (ve vlastní míře hry). Ve hře 52."
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "Pomoc spojenci: zasažen nejdéle před (s)"
+does = "Spojenec se počítá jako napadený, když byl zasažen nejdéle před tolika sekundami. Ve hře 2."
+[DistanceRepliQuandTireurInvisible]
+what = "Ústup před neviditelným střelcem (m)"
+does = "Jak daleko jednotka uteče od střelce, kterého nevidí, v m. Ve hře 100 m."
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "Po Stop: sekund mezi dvěma ústupy"
+does = "Když jednotka dostala rozkaz zastavit, sekundy, než smí zase sama ustoupit. Ve hře 10."
+[RetourSurPositionApresAttackAutoActif]
+what = "Návrat na stanoviště po vlastním pronásledování"
+does = "Zapnuto: jednotka, která sama šla po nepříteli, se vrátí, jakmile je přes 20 m daleko. Ve hře 1 (zapnuto)."
+[RetourSurPositionDesRecosActif]
+what = "Průzkum se vrací na stanoviště"
+does = "Zapnuto: průzkumné jednotky se vrátí, kam byly postaveny, jakmile jsou přes 20 m daleko. Ve hře 1 (zapnuto)."
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "Držení rozkazu k útoku (s)"
+does = "Po rozkazu k útoku sekundy, než jednotka smí zase sama reagovat. Ve hře 30."
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "Držení rozkazu k pohybu s útokem (s)"
+does = "Totéž po rozkazu k pohybu s útokem, v sekundách. Ve hře 30."
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "Neozbrojené jednotky: držení rozkazu (s)"
+does = "Totéž pro neozbrojenou jednotku (třeba náklaďák) po jakémkoli rozkazu, v sekundách. Ve hře 10."
+[ReglesActives_TirReflexSilenceRadio]
+what = "Rádiové ticho zastaví reflexní palbu"
+does = "Zapnuto: jednotky pod lstí Rádiové ticho samy neopětují palbu, a tak zůstanou skryté. Ve hře 1 (zapnuto)."

@@ -1265,3 +1265,93 @@ does = "Ile czasu model jednostki przechodzi z pozycji marszowej do strzeleckiej
 [MorphTimeToGoToMovePosition]
 what = "Sekund na powrót do pozycji marszowej"
 does = "Ile czasu model jednostki wraca z pozycji strzeleckiej do marszowej, w sekundach. W grze 1,25."
+[DistToOpenFire]
+what = "Odległość otwarcia ognia (m)"
+does = "Jak blisko musi być wróg, by jednostki same otworzyły ogień, w m. W grze 400 m."
+[DistanceFriendlyFire]
+what = "Odległość ostrzału własnych (m)"
+does = "Jednostki wstrzymują ogień, gdy sojusznicy są tak blisko celu, by ich nie trafić, w m. W grze 100 m."
+[DistanceMaxPourAttackWhileMoving]
+what = "Strzelanie w ruchu: najdalej (m)"
+does = "Najdalej, gdzie strzela jednostka z rozkazem ataku w ruchu, w m. W grze 650 m."
+[MultiplicateurDispersionQdTireurEnMouvement]
+what = "Rozrzut przy strzelaniu w ruchu (x)"
+does = "O ile bardziej rozrzucają się strzały jednostki w ruchu, razy rozrzut na postoju: więcej pudeł. W grze 1,5."
+[ToleranceTirTouche]
+what = "Jak blisko strzał liczy się jako trafienie (m)"
+does = "Jak blisko celu musi upaść strzał, by liczył się jako trafienie, w m. W grze 23 m."
+[WaitingTimeToFocusTargetWithMainOrientation]
+what = "Sekund przed obróceniem się do celu"
+does = "Jak długo jednostka czeka, zanim obróci cały kadłub (nie tylko wieżę) do celu, w sekundach. W grze 10."
+[WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
+what = "Sekund przed obróceniem, gdy już może strzelać"
+does = "To samo czekanie, gdy jednostka już może strzelać do celu bez ruchu, w sekundach. W grze 2."
+[PorteeMinArmeEstConsidereCommeArtillerie]
+what = "Zasięg, od którego broń liczy się jako artyleria (m)"
+does = "Broń sięgająca dalej liczy się jako artyleria, gdy jednostki oceniają, jak groźny jest wróg, w m. W grze 650 m."
+[LongueurParcourueBombe]
+what = "Jak daleko leci spadająca bomba (m)"
+does = "Jak daleko do przodu leci zrzucona bomba, zanim spadnie: bombowiec zrzuca ją tyle przed celem, w m. W grze 70 m."
+[CombatZoneRadius]
+what = "Rozmiar starcia (m)"
+does = "Promień wokół starcia, który gra liczy jako jedną strefę walki, w m. W grze 100 m."
+[RF_TypeRapportDeForceFeedback]
+what = "Stosunek sił pokazany graczowi (1: tak)"
+does = "Sposób, w jaki gra liczy stosunek sił pokazywany graczowi przy rozkazie ataku. W grze 1."
+[ActivateShootToKillDCA]
+what = "Obrona przeciwlotnicza strzela, by zestrzelić"
+does = "Włączone: działa przeciwlotnicze strzelają, by strącać samoloty. W grze 1 (włączone)."
+[SeuilDecrocheDCA]
+what = "Obrona przeciwlotnicza: kiedy samoloty zawracają"
+does = "Ile ognia przeciwlotniczego przyjmuje samolot, zanim przerwie atak (we własnej mierze gry). W grze 100."
+[DistanceToAddToEnnemiDectectionForAAWeapon]
+what = "Broń przeciwlotnicza wykrywa dalej (m)"
+does = "O ile dalej niż ich zasięg broń przeciwlotnicza szuka wrogów do zwalczenia, w m. W grze 400 m."
+[DistanceToAddToEnnemiDectectionForOtherWeapon]
+what = "Inna broń wykrywa dalej (m)"
+does = "To samo dla każdej innej broni: o ile dalej niż jej zasięg szuka wrogów, w m. W grze 100 m."
+[DistanceInfanterieEnnemiDectection]
+what = "Wykrywanie bliskiej piechoty wroga (m)"
+does = "Piechota wroga bliżej niż tyle jest zauważana zawsze, w m. W grze 20 m."
+[DistanceMaxPourAttaquerCibleComportementAuto]
+what = "Atak samodzielny: najdalej (m)"
+does = "Najdalej, jak jednostka sama, bez rozkazu, rusza na cel, w m. W grze 50 m."
+[DistancePourchasse]
+what = "Pościg: jak daleko (m)"
+does = "Jak daleko jednostka ściga wycofującego się wroga, w m. W grze 250 m."
+[DistancePourchasseIncrement]
+what = "Pościg: krok (m)"
+does = "O ile pościg sięga dalej za każdym razem, gdy wróg znów się oddala, w m. W grze 10 m."
+[DistanceZoneAlerte]
+what = "Pomoc sojusznikowi: jak blisko"
+does = "Uzbrojona jednostka bez własnego celu rusza na tego, kto atakuje tak bliskiego sojusznika (we własnej mierze gry). W grze 78."
+[DistanceMaxAParcourirPourSupportAttaqueEnnemi]
+what = "Pomoc sojusznikowi: najdłuższa droga"
+does = "Rusza na pomoc tylko wtedy, gdy odległość do atakującego nie jest większa (we własnej mierze gry). W grze 52."
+[TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
+what = "Pomoc sojusznikowi: trafiony nie dawniej niż (s)"
+does = "Sojusznik liczy się jako atakowany, gdy został trafiony nie dawniej niż tyle sekund temu. W grze 2."
+[DistanceRepliQuandTireurInvisible]
+what = "Wycofanie przed niewidocznym strzelcem (m)"
+does = "Jak daleko jednostka ucieka od strzelca, którego nie widzi, w m. W grze 100 m."
+[TempsEntreDeuxRepliApresOrdreDeStop]
+what = "Po Stop: sekund między dwoma wycofaniami"
+does = "Gdy jednostka dostała rozkaz zatrzymania, sekundy, zanim znów może sama się wycofać. W grze 10."
+[RetourSurPositionApresAttackAutoActif]
+what = "Powrót na stanowisko po samodzielnym pościgu"
+does = "Włączone: jednostka, która sama ruszyła na wroga, wraca na miejsce, gdy oddali się o ponad 20 m. W grze 1 (włączone)."
+[RetourSurPositionDesRecosActif]
+what = "Zwiadowcy wracają na stanowisko"
+does = "Włączone: zwiadowcy wracają tam, gdzie ich postawiono, gdy oddalą się o ponad 20 m. W grze 1 (włączone)."
+[TempsMinimumDeMaintienOrdre_OrdreAttack]
+what = "Trzymanie się rozkazu ataku (s)"
+does = "Po rozkazie ataku sekundy, zanim jednostka znów może sama reagować. W grze 30."
+[TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
+what = "Trzymanie się rozkazu ruchu z atakiem (s)"
+does = "To samo po rozkazie ruchu z atakiem, w sekundach. W grze 30."
+[TempsMinimumDeMaintienOrdre_UniteSansArme]
+what = "Jednostki bez broni: trzymanie się rozkazu (s)"
+does = "To samo dla jednostki bez broni (np. ciężarówki) po każdym rozkazie, w sekundach. W grze 10."
+[ReglesActives_TirReflexSilenceRadio]
+what = "Cisza radiowa wstrzymuje ogień odruchowy"
+does = "Włączone: jednostki pod podstępem Cisza radiowa nie odpowiadają same ogniem, więc pozostają ukryte. W grze 1 (włączone)."
