@@ -61,8 +61,6 @@ button:disabled { cursor: default; opacity: 0.45; }
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.06em; font-size: 18px; }
 .brand img { width: 34px; height: 34px; flex: none; border-radius: 8px; }
-/* R.U.S.E. 2.0 Project in gold: 24 px keeps the game's line beside it on one line in the window's own size */
-.brand img.brand-title { width: auto; height: 24px; border-radius: 0; }
 .brand span { color: var(--accent); font-weight: 600; }
 .status {
   margin-left: auto;

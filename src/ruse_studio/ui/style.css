@@ -60,8 +60,6 @@ input[type="range"].stepped { display: none !important; }
        border-bottom: 2px solid var(--accent-dark); }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: 0.06em; font-size: 17px; }
 .brand img { width: 30px; height: 30px; flex: none; border-radius: 7px; }
-/* R.U.S.E. 2.0 Project in gold: 20 px keeps the tabs beside it in a 1280-wide window (taller pushes them a row down) */
-.brand img.brand-title { width: auto; height: 20px; border-radius: 0; }
 .brand span { color: var(--accent); }
 .pick-mod { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 /* the two menus told apart at a glance (issue #15: "the Mod and Map menus look the same"): a tank for the unit mod, a
