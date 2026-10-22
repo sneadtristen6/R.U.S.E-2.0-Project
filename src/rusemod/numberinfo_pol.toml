@@ -213,20 +213,20 @@ does = "Własny numer amunicji (1000-1138): każda ma inny. Studio daje kopii wo
 what = "Zmienia model przy strzale"
 does = "Tylko wygląd: 1 przy broni przeciwpancernej oddziałów: żołnierz przełącza się przy strzale na model, który ją trzyma."
 [TempsAnimation]
-what = "Czas animacji strzału"
-does = "Tylko wygląd: jak długo trwa animacja strzału żołnierza (1,6 s przy broni przeciwpancernej oddziałów)."
+what = "Czas przed wystrzałem"
+does = "Sekundy dodane do lotu pocisku: trafienie przychodzi o tyle później, a rysowany pocisk leci o tyle dłużej (1,6 s przy granatach i ładunkach, z nazwy czas rzutu żołnierza)."
 [FX_vitesse_de_depart]
-what = "Prędkość strzału (rysowanego)"
-does = "Tylko wygląd: jak szybko rysowany strzał opuszcza broń, w jednostkach gry na sekundę: od 150 do 520 000 (2000 m na sekundę)."
+what = "Prędkość pocisku"
+does = "Jak szybko leci pocisk, a więc kiedy dolatuje: trafienie liczy się dopiero, gdy doleci, w ruchomy cel celuje się z wyprzedzeniem o czas lotu, a rysowany pocisk leci tyle samo. Pocisk z fizyką leci tyle jednostek gry na sekundę, hamowany przez opór: od 9 000 do 520 000 (od 35 do 2 000 m na sekundę; pocisk przeciwpancerny 75 mm 120 000, około 460 m na sekundę). Pocisk bez fizyki (Pocisk bez fizyki) leci prosto z prędkością 26 razy większą. Każdy lot jest zaokrąglany w górę do kolejnych 0,2 s. Pocisk zbyt wolny, by dolecieć do celu, jest przyspieszany o 5 % naraz, aż doleci: dolatuje i tak, tylko później."
 [FX_frottement]
-what = "Opór strzału (rysowanego)"
-does = "Tylko wygląd: jak szybko rysowany strzał zwalnia w powietrzu."
+what = "Opór pocisku"
+does = "Jak szybko pocisk z fizyką zwalnia w powietrzu: większy opór, dłuższy lot na tej samej odległości, więc trafienie przychodzi później. Pociski w grze mają od 0,001 (większość) do 0,08. Pocisk bez fizyki go pomija."
 [FX_tir_tendu]
 what = "Strzał płaski (rysowany)"
 does = "Tylko wygląd: 1 rysuje strzał płasko i prosto zamiast łukiem."
 [FX_tir_sans_physic]
-what = "Strzał rysowany bez fizyki"
-does = "Tylko wygląd: 1 rysuje strzał bez grawitacji i oporu."
+what = "Pocisk bez fizyki"
+does = "1: pocisk leci prosto do miejsca upadku z prędkością 26 razy większą niż jego Prędkość pocisku, bez grawitacji i oporu (broń strzelecka, karabiny maszynowe, większość działek przeciwlotniczych, bomby i granaty w grze); 0: leci z grawitacją i oporem (pociski artyleryjskie, moździerze, rakiety)."
 [AltitudeDeVol]
 what = "Wysokość lotu"
 does = "Jak wysoko leci samolot: od 52 000 do 208 000 (od 200 do 800 m)."

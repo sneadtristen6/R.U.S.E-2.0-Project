@@ -187,8 +187,31 @@
       paint_note: "Shown here on the map's picture; the build paints every level of the game's ground tiles (seen in the game).", paint_clear: "Clear the ground under it", tip_paint_clear: "Up close the game draws the map's grass, crops, stones and ground stickers over its picture, so paint shows only from afar. With this on, the build takes those off where the paint is at least half strength, so it shows at every height (seen in the game). Trees, buildings, cover and movement stay.",
       paint_took: "Colour taken: {hex}", paint_pick_help: "Click the ground to take its colour.", paint_hex_bad: "A colour is # and six hex digits, like #8a7a4e.",
       fires: "What this weapon fires", open_ammo: "Open the ammo", copy_ammo: "Copy this ammo…",
-      copy_name: "Name of the copy (only shown here)",
-      copy_ammo_help: "The copy starts the same as the original and keeps its name in game. Change its numbers, then pick it for a weapon on the unit's page.",
+      copy_name: "Name of the copy (in game too)",
+      copy_ammo_help: "The copy starts the same as the original, called by the name you give it, in game too. Change its numbers, then pick it for a weapon on the unit's page.",
+      ammo_texts: "Its name in game", ammo_text_Name: "Name", ammo_text_TypeName: "Kind",
+      ammo_texts_help: "What the game calls this ammo: its name (Medium cal., MG 42) and its kind (AP shell). Type new words and save: every language shows them until you change one with Change the words…",
+      ammo_texts_game: "One of the game's own ammo: new words here are its own, and every unit that fires it shows them. Other ammo with the same words keep theirs.",
+      ammo_text_save: "Save", ammo_text_back: "Game's words", ammo_text_saved: "Saved: in game it's called “{words}” now.",
+      ammo_text_backed: "Back to the game's words.", tip_ammo_text: "The words players see for this ammo in game. Type new ones, then Save.",
+      tip_ammo_text_save: "Give this ammo these words in game, in every language.",
+      tip_ammo_text_back: "Take the mod's words out: the game's again (a copy: its original's).",
+      ammo_words_help_new: "This is this ammo's own text, one box per language. A box you leave empty gets the English words. Not tried in the game yet.",
+      flag_types_on_unit: "Flag types:", flag_types_none_here: "none", flag_type_give: "Give a flag type…",
+      flag_type_take: "Take this flag type off: the flags it changed go back as they were.",
+      flag_types_edit: "Make or change flag types…",
+      tip_flag_types_edit: "Make a flag type of your own: a name for some of the game's flags turned on and off, given to a unit in one go.",
+      flag_type_turns: "Turns on: {on}. Turns off: {off}.", flag_type_given: "{name} given: its flags are on this unit.",
+      flag_type_taken: "{name} taken off: this unit's flags are back as they were.", flag_types_title: "Flag types",
+      flag_types_lead: "A flag type is a name of your own for some of the game's flags, each turned on or off. Give it to a unit and its flags change; take it off and they go back. The game only acts on its own flags, so a type can only combine what they already do. Change a type and every unit that has it changes too. Not tried in the game yet.",
+      flag_type_new: "New flag type", flag_type_name: "Name", flag_type_about: "What it's for (shown when you point at it)",
+      flag_type_pick: "Tick the flags it turns on or off. Point at a flag to see what it does.", flag_type_on: "On",
+      flag_type_off: "Off", tip_flag_type_on: "Units given this type get this flag.",
+      tip_flag_type_off: "Units given this type lose this flag.", flag_type_save: "Save the flag type",
+      flag_type_delete: "Delete the flag type",
+      flag_type_really_delete: "Delete the flag type {name}? Every unit that has it gets its flags back as they were.",
+      flag_type_saved: "Flag type {name} saved: every unit that has it has it as it is now.",
+      flag_type_deleted: "Flag type {name} deleted: its units got their flags back.", flag_type_units: "{n} units have it",
       copy_made: "{name} is in the mod. Pick it for a weapon on a unit's page.", delete_copy: "Delete this copy",
       flag_add: "Add a flag…", flag_add_number: "Another number…", flag_remove: "Take this flag off",
       flag_used_by: "{n} units have it, e.g. {names}", flag_count: "{n} units",
@@ -357,8 +380,31 @@
       paint_note: "Montré ici sur l'image de la carte ; la compilation peint chaque niveau des tuiles de sol du jeu (vérifié en jeu).", paint_clear: "Dégager le sol dessous", tip_paint_clear: "De près, le jeu dessine l'herbe, les cultures, les pierres et les autocollants de sol de la carte par-dessus son image : la peinture ne se voit alors que de loin. Activé, la compilation les retire là où la peinture est au moins à moitié de sa force, pour qu'elle se voie à toute hauteur (vérifié en jeu). Arbres, bâtiments, couvert et déplacement restent.",
       paint_took: "Couleur prise : {hex}", paint_pick_help: "Cliquez sur le sol pour prendre sa couleur.", paint_hex_bad: "Une couleur s'écrit # suivi de six chiffres hexadécimaux, comme #8a7a4e.",
       fires: "Ce que tire cette arme", open_ammo: "Ouvrir la munition", copy_ammo: "Copier cette munition…",
-      copy_name: "Nom de la copie (affiché ici seulement)",
-      copy_ammo_help: "La copie part identique à l'originale et garde son nom en jeu. Changez ses valeurs, puis choisissez-la pour une arme sur la page de l'unité.",
+      copy_name: "Nom de la copie (aussi en jeu)",
+      copy_ammo_help: "La copie part identique à l'originale, avec le nom que vous lui donnez, en jeu aussi. Changez ses valeurs, puis choisissez-la pour une arme sur la page de l'unité.",
+      ammo_texts: "Son nom en jeu", ammo_text_Name: "Nom", ammo_text_TypeName: "Type",
+      ammo_texts_help: "Ce que le jeu appelle cette munition : son nom (Calibre moyen, MG 42) et son type (Obus perforant). Tapez de nouveaux mots et enregistrez : toutes les langues les affichent jusqu'à ce que vous en changiez une avec Changer le texte…",
+      ammo_texts_game: "Une munition du jeu : de nouveaux mots ici sont les siens, et toutes les unités qui la tirent les affichent. Les autres munitions aux mêmes mots gardent les leurs.",
+      ammo_text_save: "Enregistrer", ammo_text_back: "Mots du jeu", ammo_text_saved: "Enregistré : en jeu, elle s'appelle maintenant « {words} ».",
+      ammo_text_backed: "Retour aux mots du jeu.", tip_ammo_text: "Les mots que les joueurs voient pour cette munition en jeu. Tapez-en de nouveaux, puis Enregistrer.",
+      tip_ammo_text_save: "Donner ces mots à cette munition en jeu, dans toutes les langues.",
+      tip_ammo_text_back: "Retirer les mots du mod : ceux du jeu à nouveau (une copie : ceux de l'originale).",
+      ammo_words_help_new: "C'est un texte propre à cette munition, une case par langue. Une case laissée vide reçoit le texte anglais. Pas encore essayé dans le jeu.",
+      flag_types_on_unit: "Types de drapeaux :", flag_types_none_here: "aucun", flag_type_give: "Donner un type de drapeaux…",
+      flag_type_take: "Retirer ce type de drapeaux : les drapeaux qu'il a changés redeviennent comme avant.",
+      flag_types_edit: "Créer ou changer des types de drapeaux…",
+      tip_flag_types_edit: "Créer votre propre type de drapeaux : un nom pour quelques drapeaux du jeu activés et désactivés, donnés à une unité d'un coup.",
+      flag_type_turns: "Active : {on}. Désactive : {off}.", flag_type_given: "{name} donné : ses drapeaux sont sur cette unité.",
+      flag_type_taken: "{name} retiré : les drapeaux de cette unité sont revenus comme avant.", flag_types_title: "Types de drapeaux",
+      flag_types_lead: "Un type de drapeaux est un nom à vous pour quelques drapeaux du jeu, chacun activé ou désactivé. Donnez-le à une unité et ses drapeaux changent ; retirez-le et ils reviennent. Le jeu n'agit que sur ses propres drapeaux, donc un type ne peut que combiner ce qu'ils font déjà. Changez un type et toutes les unités qui l'ont changent aussi. Pas encore essayé dans le jeu.",
+      flag_type_new: "Nouveau type de drapeaux", flag_type_name: "Nom", flag_type_about: "À quoi il sert (affiché au survol)",
+      flag_type_pick: "Cochez les drapeaux qu'il active ou désactive. Survolez un drapeau pour voir ce qu'il fait.", flag_type_on: "Activé",
+      flag_type_off: "Désactivé", tip_flag_type_on: "Les unités qui reçoivent ce type ont ce drapeau.",
+      tip_flag_type_off: "Les unités qui reçoivent ce type perdent ce drapeau.", flag_type_save: "Enregistrer le type",
+      flag_type_delete: "Supprimer le type",
+      flag_type_really_delete: "Supprimer le type {name} ? Toutes les unités qui l'ont retrouvent leurs drapeaux d'avant.",
+      flag_type_saved: "Type {name} enregistré : toutes les unités qui l'ont l'ont tel qu'il est maintenant.",
+      flag_type_deleted: "Type {name} supprimé : ses unités ont retrouvé leurs drapeaux.", flag_type_units: "{n} unités l'ont",
       copy_made: "{name} est dans le mod. Choisissez-la pour une arme sur la page d'une unité.", delete_copy: "Supprimer cette copie",
       flag_add: "Ajouter un drapeau…", flag_add_number: "Un autre numéro…", flag_remove: "Retirer ce drapeau",
       flag_used_by: "{n} unités l'ont, p. ex. {names}", flag_count: "{n} unités",
@@ -468,8 +514,28 @@
       stamp_same: "这里就是复制来源：请在别处涂抹。",
       paint_note: "这里在地图图像上显示；构建会绘制游戏地面瓦片的每一级（已在游戏中验证）。", paint_clear: "清理下方地面", tip_paint_clear: "近处时，游戏会在地图图像上绘制草、作物、石头和地面贴花，所以颜料只能从远处看到。开启后，构建会在颜料强度至少一半的地方移除它们，使其在任何高度都可见（已在游戏中验证）。树木、建筑、掩护和移动保持不变。",
       paint_took: "已取色：{hex}", paint_pick_help: "点击地面以吸取其颜色。", paint_hex_bad: "颜色写作 # 加六位十六进制数字，例如 #8a7a4e。",
-      fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（仅在此显示）",
-      copy_ammo_help: "副本初始与原版相同，游戏内沿用原名。修改数值后，在单位页面为某件武器选用它。",
+      fires: "此武器使用的弹药", open_ammo: "打开弹药", copy_ammo: "复制此弹药…", copy_name: "副本名称（游戏内也显示）",
+      copy_ammo_help: "副本初始与原版相同，使用你起的名称，游戏内也一样。修改数值后，在单位页面为某件武器选用它。",
+      ammo_texts: "游戏内名称", ammo_text_Name: "名称", ammo_text_TypeName: "类型",
+      ammo_texts_help: "游戏对这种弹药的称呼：名称（中口径、MG 42）和类型（反坦克弹）。输入新文字并保存：所有语言都会显示它，直到你用“修改文字…”单独修改某种语言。",
+      ammo_texts_game: "这是游戏自带的弹药：这里的新文字只属于它，所有发射它的单位都会显示。使用相同文字的其他弹药保持不变。",
+      ammo_text_save: "保存", ammo_text_back: "游戏原文", ammo_text_saved: "已保存：游戏内现在叫“{words}”。",
+      ammo_text_backed: "已恢复游戏原文。", tip_ammo_text: "玩家在游戏中看到的这种弹药的文字。输入新文字后点“保存”。",
+      tip_ammo_text_save: "在游戏中为这种弹药使用这些文字，所有语言。", tip_ammo_text_back: "移除mod的文字：恢复游戏原文（副本则恢复原版的）。",
+      ammo_words_help_new: "这是这种弹药自己的文字，每种语言一个框。留空的框会使用英文文字。尚未在游戏中试过。",
+      flag_types_on_unit: "旗标类型：", flag_types_none_here: "无", flag_type_give: "添加旗标类型…",
+      flag_type_take: "移除此旗标类型：它改动的旗标会恢复原样。", flag_types_edit: "创建或修改旗标类型…",
+      tip_flag_types_edit: "创建你自己的旗标类型：给游戏中一些开启和关闭的旗标起个名字，一次就能加到单位上。",
+      flag_type_turns: "开启：{on}。关闭：{off}。", flag_type_given: "已添加{name}：它的旗标已在这个单位上。",
+      flag_type_taken: "已移除{name}：这个单位的旗标已恢复原样。", flag_types_title: "旗标类型",
+      flag_types_lead: "旗标类型是你给游戏中一些旗标起的名字，每个旗标都设为开启或关闭。把它加到单位上，单位的旗标就会改变；移除它，旗标就会恢复。游戏只对它自己的旗标起反应，所以一个类型只能组合这些旗标本来就能做的事。修改一个类型，拥有它的每个单位也会跟着改变。尚未在游戏中试过。",
+      flag_type_new: "新建旗标类型", flag_type_name: "名称", flag_type_about: "用途（鼠标移上去时显示）",
+      flag_type_pick: "勾选它开启或关闭的旗标。把鼠标移到旗标上可查看它的作用。", flag_type_on: "开", flag_type_off: "关",
+      tip_flag_type_on: "加了此类型的单位会获得这个旗标。", tip_flag_type_off: "加了此类型的单位会失去这个旗标。",
+      flag_type_save: "保存类型", flag_type_delete: "删除类型",
+      flag_type_really_delete: "删除类型{name}？拥有它的每个单位的旗标都会恢复原样。",
+      flag_type_saved: "已保存类型{name}：拥有它的每个单位都按现在的内容更新。",
+      flag_type_deleted: "已删除类型{name}：它的单位已恢复各自的旗标。", flag_type_units: "{n}个单位拥有它",
       copy_made: "{name} 已加入mod。请在单位页面为某件武器选用它。", delete_copy: "删除此副本",
       flag_add: "添加标志位…", flag_add_number: "其他编号…", flag_remove: "移除此标志位",
       flag_used_by: "{n} 个单位具有，例如 {names}", flag_count: "{n} 个单位",
@@ -878,6 +944,60 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const ammoAddress = (id) => A + id;
   const myAmmo = () => newAmmo.filter((n) => n.mod === current);
   const ammoName = (a, lang) => lang === "base" ? "Ammo_" + a.id : (a.names[lang] || a.names.us);
+  // an ammunition's name and kind in game (StudioApi.ammo_text_set): `${address}|${prop}` -> the mod's own text key,
+  // its words in newWords (the words panel changes them)
+  const ammoTexts = new Map();
+  const ownWords = (key, lang) => { const row = newWords.get(key) || {}; return row[lang === "base" ? "us" : lang] || row.us || ""; };
+  function ammoTextsOf(address, a, lang) {
+    const [kind, name] = (a.names[lang === "base" ? "us" : lang] || a.names.us).split(" · ");
+    const game = { Name: name || "", TypeName: kind || "" };
+    return ["Name", "TypeName"].map((prop) => {
+      const key = ammoTexts.get(`${address}|${prop}`);
+      return { prop, key: key || `${prop === "Name" ? "N" : "T"}_${a.id}`.slice(0, 10), words: key ? ownWords(key, lang) : game[prop],
+        own: Boolean(key), changed: Boolean(key) };
+    });
+  }
+  function ammoTextSet(address, prop, words) {
+    const k = `${address}|${prop}`;
+    if (!words) {
+      ammoTexts.delete(k);
+      return;
+    }
+    if (!ammoTexts.has(k)) {
+      const base = safeName(words).replace(/_/g, "").slice(0, 6) || "Text";
+      let key = "";
+      for (let n = 0; !key || newWords.has(key); n++) key = `${base}_${(n + 36 * 36).toString(36).slice(-3)}`;
+      ammoTexts.set(k, key);
+    }
+    newWords.set(ammoTexts.get(k), Object.fromEntries(VALUE_LANGS.map((lang) => [lang, words])));
+  }
+  const copyName = (n, lang) => ownWords(ammoTexts.get(`${ammoAddress(n.id)}|Name`), lang) || n.name;
+  // the mod's flag types (StudioApi.flag_types): { mod, name, about, on, off, units: address -> [added, removed] }
+  const flagTypes = [];
+  const myFlagTypes = () => flagTypes.filter((t) => t.mod === current);
+  // a unit's flags with its types taken off (the last given first) and the ones `change(its types)` keeps given again,
+  // in the list's order, as flagtypes._regive does; saved as the unit's flag change
+  function fakeRegive(address, change) {
+    const key = editKey(address, "InitialFlagSet", "");
+    const game = (unit(address, "us").groups.flatMap((g) => g.rows).find((r) => r.prop === "InitialFlagSet") || { numbers: [] }).numbers;
+    let flags = (edits.get(key) || game).slice();
+    const had = myFlagTypes().filter((t) => t.units.has(address));
+    for (const t of had.slice().reverse()) {
+      const [added, removed] = t.units.get(address);
+      t.units.delete(address);
+      flags = flags.filter((n) => !added.includes(n)).concat(removed.filter((n) => !flags.includes(n)));
+    }
+    const keep = change(had);
+    for (const t of myFlagTypes()) {
+      if (!keep.includes(t)) continue;
+      const added = t.on.filter((n) => !flags.includes(n)), removed = t.off.filter((n) => flags.includes(n));
+      flags = flags.filter((n) => !t.off.includes(n)).concat(added);
+      t.units.set(address, [added, removed]);
+    }
+    if (flags.slice().sort((a, b) => a - b).join() === game.slice().sort((a, b) => a - b).join()) { edits.delete(key); return game.slice(); }
+    edits.set(key, flags);
+    return flags;
+  }
   const nationsOf = (a, lang) => [...new Set(a.users.map((id) => units.find((x) => x.id === id).nation))].sort()
     .map((n) => (nations[lang] || nations.us)[n]);
   const flags = { M4_Sherman: [10, 11, 21, 22, 55], M3A1_Stuart: [10, 11, 21, 22, 55], Panzer_IV_G: [10, 11, 21, 22, 55],
@@ -1219,7 +1339,151 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     zone_open_done: "已开放 {m2} 平方米：单位现在可以去那里。",
     zone_open_none: "单位本来就能到这里：没有变化（已用蓝色条纹标记 {m2} 平方米）。",
     place_used: "本地图上有 {n} 个", place_no_picture: "无图片：Studio 暂时无法显示它的模型。仍会照常放置。" });
-  const words_ = (lang) => words[lang] || words.us;
+  // RUSE Decoy's words in English, copied from words.toml (scratch/tmp/fake_decoy_words.py)
+  const DECOY_WORDS = { decoy_akind_crews: "Gun crews", decoy_akind_hq: "HQ figures",
+    decoy_akind_infantry: "Infantry", decoy_akind_other: "Other", decoy_akind_scenery: "Animals and scenery",
+    decoy_akind_vehicles: "Vehicles and guns", decoy_all: "All shown:",
+    decoy_all_confirm: "Set {n} sounds ({kind}) to {pct}%?", decoy_all_done: "{n} sounds now at {pct}%.",
+    decoy_all_langs: "Every language", decoy_all_missions: "Every mission", decoy_all_set: "Set",
+    decoy_anim_axis: "Turn about", decoy_anim_bones: "A bone", decoy_anim_bones_mark: "{n} bone(s) changed",
+    decoy_anim_done: "Done", decoy_anim_from_mark: "another clip", decoy_anim_loading: "Getting it ready in 3D…",
+    decoy_anim_names: "the game calls it {names}",
+    decoy_anim_no_3d: "The 3D view needs the internet once (three.js); the changes still save.",
+    decoy_anim_no_model: "No unit plays this animation, so there's no model to show it on; you can still change it.",
+    decoy_anim_no_units: "played by no unit (a map's or a mission's)",
+    decoy_anim_on: "On {model}, {sec} s long, as your mod makes it. Drag to turn, wheel to zoom.",
+    decoy_anim_open: "Watch and change…", decoy_anim_reset: "Back to the game's",
+    decoy_anim_reset_done: "{name}: the game's animation again.", decoy_anim_saved: "{name}: saved in your mod.",
+    decoy_anim_size: "Size", decoy_anim_speed: "Speed", decoy_anim_speed_mark: "{pct}% speed",
+    decoy_anim_turn: "Turn", decoy_anim_tweaked: "Changed: {bones}", decoy_anim_units: "played by {n} units",
+    decoy_anim_use: "Use instead", decoy_anim_use_own: "Its own moves", decoy_anims_head: "Animations",
+    decoy_back_100: "Back to 100%", decoy_back_done: "{name}: the game's sound again.", decoy_changed: "{n} changed",
+    decoy_count: "{n} of {total}",
+    decoy_editor_lead: "The game's sound is {len} long. Drop or choose your own; the build makes it the game's own kind of sound.",
+    decoy_editor_title: "Replace: {name}", decoy_group: "The game plays it at {pct}% of its volume",
+    decoy_group_shared: "The game plays it at {pct}% of its volume, with {n} other sounds of its kind",
+    decoy_group_shared_one: "The game plays it at {pct}% of its volume, like 1 other sound of its kind",
+    decoy_help: "Every sound and animation the game has. Pick a kind on the left. A sound: play it, drag its volume (100% is the game's own, up to 200%) or replace it with your own. An animation: watch it in 3D, change its speed, use another in its place, or make a bone bigger or turn it. Changes are saved in your mod and go into the game when you test or export it.",
+    decoy_kind_backgrounds: "Map backgrounds", decoy_kind_dialogue: "Mission dialogue",
+    decoy_kind_engines: "Engines and footsteps", decoy_kind_hq_voices: "HQ and intelligence",
+    decoy_kind_impacts: "Impacts and destruction", decoy_kind_interface: "Interface",
+    decoy_kind_music: "Music and jingles", decoy_kind_other: "Other", decoy_kind_radio: "Radio chatter",
+    decoy_kind_ruses: "Ruse cards", decoy_kind_surroundings: "Surroundings", decoy_kind_unit_voices: "Unit voices",
+    decoy_kind_weapons: "Weapons, near", decoy_kind_weapons_far: "Weapons, far away", decoy_lang_fr: "French",
+    decoy_lang_ger: "German", decoy_lang_ita: "Italian", decoy_lang_jpn: "Japanese", decoy_lang_pol: "Polish",
+    decoy_lang_ru: "Russian", decoy_lang_spa: "Spanish", decoy_lang_us: "English",
+    decoy_lib: "Motion library: 3,205 free moves", decoy_lib_all_kinds: "Every kind",
+    decoy_lib_cmu_state: "CMU (2,505 moves of every kind): {have} of {total} on this PC; the rest come one at a time when picked.",
+    decoy_lib_fetch_mark: "fetched when picked", decoy_lib_have: "on this PC",
+    decoy_lib_in_set: "comes with the 100 walking styles", decoy_lib_kind_carry: "Carrying, lifting, pushing",
+    decoy_lib_kind_climb: "Climbing and hanging", decoy_lib_kind_crawl: "Crouching and crawling",
+    decoy_lib_kind_dance: "Dancing", decoy_lib_kind_fall: "Falling", decoy_lib_kind_fight: "Fighting and throwing",
+    decoy_lib_kind_jump: "Jumping and flips", decoy_lib_kind_other: "Acting and other", decoy_lib_kind_run: "Running",
+    decoy_lib_kind_signal: "Signals and gestures", decoy_lib_kind_sit_lie: "Sitting, kneeling, lying",
+    decoy_lib_kind_sport: "Sport and exercise", decoy_lib_kind_stand: "Standing still",
+    decoy_lib_kind_walk: "Walking and marching", decoy_lib_kind_work: "Everyday work", decoy_lib_more: "More moves",
+    decoy_lib_needs_set: "This move comes with the 100 walking styles: get them first (the button above).",
+    decoy_lib_opening: "Getting {name}…", decoy_lib_or: "Or your own motion capture file:",
+    decoy_lib_search: "Search moves (march, crouch, wounded…)",
+    decoy_lib_style_failed: "100STYLE couldn't be got: {why}",
+    decoy_lib_style_fetching: "Getting 100STYLE: {done} of {total} MB…",
+    decoy_lib_style_get: "Get the 100 walking styles (1.4 GB, once)",
+    decoy_lib_style_have: "100STYLE (100 walking styles): {have} of {total} moves on this PC.",
+    decoy_lib_style_none: "100STYLE (100 walking styles, 700 moves) isn't on this PC yet: it comes as one download of 1.4 GB.",
+    decoy_lib_style_started: "Getting the 100 walking styles in the background.",
+    decoy_lib_way_BR: "running backwards", decoy_lib_way_BW: "walking backwards",
+    decoy_lib_way_FR: "running forwards", decoy_lib_way_FW: "walking forwards", decoy_lib_way_ID: "standing still",
+    decoy_lib_way_SR: "running sideways", decoy_lib_way_SW: "walking sideways", decoy_mc: "Motion capture",
+    decoy_mc_about: "{name}: {sec} s, {fps} frames a second, every body part found.",
+    decoy_mc_credit: "Credit (who made the motion)",
+    decoy_mc_credit_needed: "Write who made the motion first: it goes wherever your mod goes.", decoy_mc_from: "From",
+    decoy_mc_help: "Put a real person's movement on this animation: pick a move from the motion library below (or your own .bvh file), choose the part to use, watch it on the soldier, then use it.",
+    decoy_mc_len: "How long", decoy_mc_loop: "Make it loop",
+    decoy_mc_missing: "{name} can't be used: its joints don't show the {parts}. Its joints may be named in a way RUSE Decoy doesn't know: rename them in Blender (Hips, LeftUpLeg, LeftLeg, LeftFoot, LeftArm, LeftForeArm, Head...) and export the .bvh again.",
+    decoy_mc_on: "Motion capture on {model}, {sec} s long, not saved yet. Drag to turn, wheel to zoom.",
+    decoy_mc_part_head: "head", decoy_mc_part_hips: "hips", decoy_mc_part_l_calf: "left shin",
+    decoy_mc_part_l_foot: "left foot", decoy_mc_part_l_forearm: "left forearm", decoy_mc_part_l_thigh: "left thigh",
+    decoy_mc_part_l_upperarm: "left upper arm", decoy_mc_part_r_calf: "right shin",
+    decoy_mc_part_r_foot: "right foot", decoy_mc_part_r_forearm: "right forearm",
+    decoy_mc_part_r_thigh: "right thigh", decoy_mc_part_r_upperarm: "right upper arm",
+    decoy_mc_pick: "Pick a motion capture file…", decoy_mc_place: "Keep on the spot",
+    decoy_mc_tip: "Tip: for a walk or run, pick one whole step with each foot; for a death, start just before the fall. The fingers and the rifle keep the game's own grip.",
+    decoy_mc_use: "Use it", decoy_mc_used: "{name}: the motion capture is in your mod.", decoy_mc_watch: "Watch it",
+    decoy_more: "Show more", decoy_music_other: "Other music files",
+    decoy_nomod: "Pick or make a mod at the top first: volumes and replaced sounds are saved in a mod. You can listen to everything meanwhile.",
+    decoy_none: "No sounds here.", decoy_replace: "Replace…", decoy_role_engine_dive: "Engine, diving",
+    decoy_role_engine_idle: "Engine, standing and stopping", decoy_role_engine_run: "Engine, moving",
+    decoy_role_voice: "Voice line", decoy_search: "Search sounds or words said…", decoy_sounds_head: "Sounds",
+    decoy_subtitle: "RUSE sound and animation designer", decoy_tab: "RUSE Decoy", decoy_title: "RUSE Decoy",
+    decoy_unit_anims: "Its animations ({n})",
+    decoy_unit_has: "This unit has {voices} voice lines and {engine} engine sounds of its own.",
+    decoy_unit_has_all: "This unit has {voices} voice lines, {engine} engine sounds and {clips} animations of its own.",
+    decoy_unit_help: "Only {name}'s own sounds: its engine and its voice lines. Other units of the same nation and kind say the same lines.",
+    decoy_unit_help_all: "Only {name}'s own sounds and animations: its engine, its voice lines and the moves its models play. Other units of the same nation and kind say the same lines.",
+    decoy_unit_kind: "{name}'s sounds",
+    decoy_unit_more: "Its guns and hits are under Weapons and Impacts in RUSE Decoy (which gun plays which isn't read yet); its animations come to RUSE Decoy next.",
+    decoy_unit_more_all: "Its guns and hits are under Weapons and Impacts in RUSE Decoy (which gun plays which isn't read yet). Tanks turn their turret and wheels without animations.",
+    decoy_unit_none: "This unit has no voice lines or engine sounds of its own.",
+    decoy_unit_open: "Change its sounds in RUSE Decoy",
+    decoy_unit_open_all: "Change its sounds and animations in RUSE Decoy",
+    decoy_unit_reading: "Reading this unit's sounds…", decoy_unit_title: "Sounds and animation",
+    decoy_volume: "Volume", decoy_volume_back: "{name}: back to the game's volume.",
+    decoy_volume_saved: "{name}: {pct}% saved in your mod.",
+    tip_decoy_akind_crews: "The men round a gun: idling, walking it, getting it ready, firing and reloading",
+    tip_decoy_akind_hq: "The officers at the HQ table in a mission's scenes (played by no unit)",
+    tip_decoy_akind_infantry: "Riflemen, bazookas, paratroopers and drivers: standing, walking, running, aiming, firing, reloading, fleeing, hit and dying (the top and bottom of the body each have their own)",
+    tip_decoy_akind_other: "Animations that fit no other kind",
+    tip_decoy_akind_scenery: "Cows, horses, goats, chickens, seagulls and windmills on the maps",
+    tip_decoy_akind_vehicles: "Guns unlimbering and limbering, idling and firing, and other moving parts (tanks turn their turrets and wheels without clips)",
+    tip_decoy_all: "Set the volume of every sound of this kind at once (of this mission and language, when one is picked)",
+    tip_decoy_anim_axis: "Which of the bone's own three directions it turns about",
+    tip_decoy_anim_bone: "The part of the body to change (bip01 head is the head, r hand the right hand...)",
+    tip_decoy_anim_open: "See this animation in 3D on a unit that plays it, and change its speed, use another in its place, or make a bone bigger or turn it",
+    tip_decoy_anim_reset: "Take every change your mod makes to this animation out",
+    tip_decoy_anim_size: "That bone this many times its size, all along the animation (what's attached to it grows with it)",
+    tip_decoy_anim_speed: "How fast it plays: 100% is the game's, 200% twice as fast, 50% half as fast. Saved when you let go.",
+    tip_decoy_anim_turn: "How many degrees that bone turns, all along the animation (0 is the game's)",
+    tip_decoy_anim_use: "Play another animation of the same body in its place: riflemen could run the way they flee, for instance",
+    tip_decoy_anims_head: "How units move: running, firing, reloading, dying, a gun's crew at work; watch each in 3D and change it",
+    tip_decoy_back_100: "Play this sound at the game's own volume again",
+    tip_decoy_kind_backgrounds: "The long sound each map plays under the battle (a map's own can also be set on the Maps tab)",
+    tip_decoy_kind_dialogue: "Every spoken line of the campaign, by mission and language, each with what it says: re-voice or rewrite a whole campaign",
+    tip_decoy_kind_engines: "Tanks, jeeps, trucks and planes moving and idling, dives, and infantry on the march",
+    tip_decoy_kind_hq_voices: "Your HQ's announcements: buildings captured or lost, goals, victory and intelligence reports, in each language",
+    tip_decoy_kind_impacts: "Shells landing, hits on vehicles, ricochets, and units and planes being destroyed",
+    tip_decoy_kind_interface: "Clicks, menus opening and closing, placing, the radar echo, countdowns and level-ups",
+    tip_decoy_kind_music: "The game's songs by where they play, and its victory, defeat and capture jingles; Add a song under each battle list",
+    tip_decoy_kind_other: "Sounds that fit no other kind",
+    tip_decoy_kind_radio: "Radio voices and their short jingles",
+    tip_decoy_kind_ruses: "The sound each ruse card makes when it's placed on the map",
+    tip_decoy_kind_surroundings: "Animals, sea, rivers, fire, alarms, storms and other sounds of the map",
+    tip_decoy_kind_unit_voices: "What units say when picked, moved, attacking or hit, by nation and kind (a unit's page shows its own)",
+    tip_decoy_kind_weapons: "Guns, cannons, machine guns, artillery, rockets and bombs as heard close by",
+    tip_decoy_kind_weapons_far: "The same weapons as heard from far away (the game swaps to these when the camera is far)",
+    tip_decoy_lang: "Spoken lines come in each language the game has: pick which one to hear and change",
+    tip_decoy_lib_kind: "Show one kind of move: walking, running, standing, crawling, falling, fighting and more.",
+    tip_decoy_lib_row: "Click to put this move on the soldier. The first time it's fetched from the internet (the row says how big; most are under 1 MB) and kept for next time.",
+    tip_decoy_lib_search: "Words from what each move is (the sets describe them in English): march, crouch, wounded, salute, fall, rifle…",
+    tip_decoy_lib_style_get: "Downloads 100STYLE from Zenodo (CC BY 4.0) in the background, keeps its 700 moves (about 2.8 GB unpacked) and deletes the download. You can keep working meanwhile.",
+    tip_decoy_mc_credit: "Kept beside the animation in your mod and needed wherever you share it. Filled in for 100STYLE and the CMU database; for any other file, write who made it and its licence.",
+    tip_decoy_mc_from: "Where in the file the animation starts, in seconds.",
+    tip_decoy_mc_len: "How many seconds of the file the animation takes. The game's own is shown when you pick the file: a run is under a second (one step with each foot).",
+    tip_decoy_mc_loop: "Eases the last pose into the first, so an animation the game plays over and over (standing, walking, running) has no jump. Ticked when the game's own loops.",
+    tip_decoy_mc_pick: "A .bvh file: from 100STYLE, the CMU database, Mixamo, Blender or any motion capture program. Nothing is changed until you press Use it.",
+    tip_decoy_mc_place: "The game moves the unit itself, so walks and runs stay on the spot (on) or carry the soldier away from where he stands (off).",
+    tip_decoy_mc_use: "Puts the motion in your mod in place of this animation (its speed and bone changes still apply on top). Back to the game's takes it out.",
+    tip_decoy_mc_watch: "Plays the chosen part on the soldier in the 3D view. Nothing is saved yet.",
+    tip_decoy_mission: "Show the lines of one mission (by its name in the game's menus)",
+    tip_decoy_music_other: "Short jingles the game plays from its scripts (a building captured or lost, a new goal) rather than from a song list",
+    tip_decoy_play: "Hear the game's sound at the volume set beside it",
+    tip_decoy_replace: "Put a sound of your own in its place: drop or choose a file (WAV, MP3, OGG, FLAC), cut it, fade it, set its volume, then Use this",
+    tip_decoy_search: "Type part of a sound's name or, for a mission's lines, words the line says",
+    tip_decoy_unit: "The sounds of the unit whose page sent you here; pick a kind below to see every sound of the game",
+    tip_decoy_unit_open: "Open RUSE Decoy on just this unit's sounds: hear each, set its volume or replace it",
+    tip_decoy_volume: "How loud your mod plays this sound: 100% is the game's own, 0% silent, 200% twice as loud (the loudest parts are rounded off so it never crackles). Saved when you let go." };
+  // (end of RUSE Decoy's words)
+  // a word French or Chinese hasn't got here shows in English, as RUSE Decoy's do (the real Studio has every one)
+  const words_ = (lang) => ({ ...words.us, ...DECOY_WORDS, ...(words[lang] || {}) });
   const modsView = () => ({ mods: mods.slice(), current });
 
   // one object's values, as StudioApi.unit() gives them
@@ -1331,14 +1595,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     const copy = myAmmo().find((n) => ammoAddress(n.id) === address);
     const a = ammo.find((x) => ammoAddress(x.id) === (copy ? copy.source : address));
     if (a) {
-      const page = view(address, lang, "TAmmunition", copy ? copy.name : ammoName(a, lang), true, "", copy ? 0 : a.users.length,
+      const page = view(address, lang, "TAmmunition", copy ? copyName(copy, lang) : ammoName(a, lang), true, "", copy ? 0 : a.users.length,
         [["identity", [["AmmunitionId", a.ammoId]]],
          ["weapon", [["Puissance", a.power], ["PorteeMaximale", a.range], ["TempsEntreDeuxTirs", 3.5, { type: "float32" }]]]],
         [], [], copy ? [] : a.users.map((id) => ({ address: E + id + ":MountedWeapon", path: "Ammunition" })));
       for (const r of page.groups.flatMap((g) => g.rows)) if (r.prop === "AmmunitionId") { r.editable = false; r.locked = true; }
       page.can_copy = false;
       page.can_copy_ammo = Boolean(current) && !copy;
+      page.ammo_texts = ammoTextsOf(address, a, lang);
       if (copy) page.new = { source: copy.source, source_name: ammoName(a, lang) };
+      if (copy) page.in_game = false;
       return page;
     }
     if (address === AMMO) {
@@ -1386,7 +1652,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     const weapon = address + ":MountedWeapon";
     const chosen = edits.get(editKey(weapon, "Ammunition", ""));
     const names = new Map(ammo.map((a) => [ammoAddress(a.id), ammoName(a, lang)]));
-    for (const n of myAmmo()) names.set(ammoAddress(n.id), n.name);
+    for (const n of myAmmo()) names.set(ammoAddress(n.id), copyName(n, lang));
     const current_ = chosen || ammoAddress(game.id);
     const whose = (addr) => { const c = myAmmo().find((n) => ammoAddress(n.id) === addr);
       const a = ammo.find((x) => ammoAddress(x.id) === (c ? c.source : addr)); return a ? nationsOf(a, lang) : []; };
@@ -1959,6 +2225,94 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     ["unused", [[MUSIC_DIR + "lose1.ess", "Lose", 11.8, [], []]]]];
   const VOICE_DIR = "gen_sound\\ww2\\sons\\generated\\acknows\\";
   const VOICES = [["Stop", 1, 1.2], ["Move", 4, 1.6], ["Attack", 4, 1.8], ["Fire", 4, 1.1], ["Spawn", 3, 2.0]];
+  // RUSE Decoy (StudioApi.decoy and the calls after it, ruse_studio/decoy.py): a few made-up sounds of each kind,
+  // [file under DECOY_DIR, kind, name, seconds, channels, the game's volume for its group (0-1), how many others share
+  // it, language, mission, the line's words]; heard as made-up tones like the songs
+  const DECOY_DIR = "gen_sound\\ww2\\sons\\decoy\\";
+  const DECOY_SOUNDS = [
+    ["weapons\\canon_75_tir_1.ess", "weapons", "canon 75 tir 1", 1.4, 1, 0.9, 3],
+    ["weapons\\mg42_rafale_2.ess", "weapons", "mg42 rafale 2", 2.1, 1, 0.8, 5],
+    ["weapons_far\\canon_lointain_1.ess", "weapons_far", "canon lointain 1", 2.6, 1, 0.6, 2],
+    ["impacts\\impact_obus_terre_3.ess", "impacts", "impact obus terre 3", 1.8, 1, 1.0, 7],
+    ["engines\\moteur_char_moyen_run.ess", "engines", "moteur char moyen run", 6.0, 1, 0.7, 0],
+    ["engines\\moteur_char_moyen_idle.ess", "engines", "moteur char moyen idle", 5.0, 1, 0.7, 0],
+    ["surroundings\\oiseaux_1.ess", "surroundings", "oiseaux 1", 9.5, 2, 0.5, 1],
+    ["backgrounds\\ambiance_campagne.ess", "backgrounds", "ambiance campagne", 60.0, 2, 0.4, 0],
+    ["interface\\clic_bouton.ess", "interface", "clic bouton", 0.2, 1, 1.0, 12],
+    ["ruses\\ruse_radio_silence.ess", "ruses", "ruse radio silence", 3.2, 2, 1.0, 0],
+    ["hq\\us\\hq_enemy_spotted_1.ess", "hq_voices", "hq enemy spotted 1", 2.2, 1, 1.0, 0, "us", "", "Enemy units spotted!"],
+    ["hq\\fr\\hq_enemy_spotted_1.ess", "hq_voices", "hq enemy spotted 1", 2.4, 1, 1.0, 0, "fr", "", "Unités ennemies repérées !"],
+    ["radio\\radio_bruit_2.ess", "radio", "radio bruit 2", 4.0, 1, 0.8, 0],
+    ["dialogue\\us\\chapter1_sheridan_04.ess", "dialogue", "chapter1 sheridan 04", 5.1, 1, 1.0, 0, "us", "chapter1",
+      "Keep the bridge, whatever it takes."],
+    ["dialogue\\us\\chapter1_sheridan_05.ess", "dialogue", "chapter1 sheridan 05", 3.7, 1, 1.0, 0, "us", "chapter1",
+      "Their armour is coming down the valley."],
+    ["dialogue\\fr\\chapter1_sheridan_04.ess", "dialogue", "chapter1 sheridan 04", 5.6, 1, 1.0, 0, "fr", "chapter1",
+      "Tenez le pont, coûte que coûte."],
+    ["other\\divers_1.ess", "other", "divers 1", 1.0, 1, 1.0, 0]];
+  const DECOY_KINDS = ["weapons", "weapons_far", "impacts", "engines", "surroundings", "backgrounds", "interface", "ruses",
+    "unit_voices", "hq_voices", "radio", "dialogue", "music", "other"];
+  // animations: [path, kind, name, seconds, frames, the names the game's models give it, how many units play it, bones]
+  const DECOY_CLIPS = [
+    ["anims\\fusilier_course.baf", "infantry", "fusilier course", 0.9, 27, ["t_course", "run"], 64, ["bip01", "bip01 pelvis", "bip01 head"]],
+    ["anims\\fusilier_marche.baf", "infantry", "fusilier marche", 1.2, 36, ["t_marche", "walk"], 64, ["bip01", "bip01 pelvis", "bip01 head"]],
+    ["anims\\servant_canon_tir.baf", "crews", "servant canon tir", 2.0, 60, ["fire"], 12, ["bip01", "bip01 pelvis", "bip01 head"]],
+    ["anims\\char_chenilles.baf", "vehicles", "char chenilles", 1.0, 30, ["idle1"], 40, ["chassis", "chenille_droite", "chenille_gauche"]],
+    ["anims\\qg_officier_salut.baf", "hq", "qg officier salut", 2.5, 75, [], 0, ["bip01", "bip01 head"]],
+    ["anims\\moulin_pales.baf", "scenery", "moulin pales", 4.0, 120, [], 0, ["pales"]]];
+  const DECOY_AKINDS = ["infantry", "crews", "vehicles", "hq", "scenery", "other"];
+  const decoyVolumes = new Map();  // `${mod}|${member}` -> percent (StudioApi.decoy_volume)
+  const decoyClipEdits = new Map();  // `${mod}|${member}` -> { speed, from, mine, tweaks } (StudioApi.decoy_anim_set)
+  const decoyMember = (s) => DECOY_DIR + s[0];
+  const decoySound = (s) => ({ member: decoyMember(s), kind: s[1], name: s[2], seconds: s[3], channels: s[4], rate: 44100,
+    group_volume: Math.round(s[5] * 100), grouped: s[1] !== "dialogue" && s[1] !== "hq_voices", shared: s[6], lang: s[7] || "",
+    mission: s[8] || "", words: s[9] || "" });
+  // every sound RUSE Decoy lists: the made-up ones, the songs (music) and the US medium tanks' voice lines (unit_voices)
+  function decoyAll() {
+    const songs = MUSIC.flatMap(([, s]) => s).map(([member, name, seconds]) => ({ member, kind: "music", name, seconds,
+      channels: 2, rate: 48000, group_volume: 100, grouped: false, shared: 0, lang: "", mission: "", words: "" }));
+    const voices = VOICES.flatMap(([id, n, seconds]) => Array.from({ length: n }, (_, i) => ({
+      member: `${VOICE_DIR}eu_mediumtank_${id.toLowerCase()}_${i + 1}.ess`, kind: "unit_voices", name: `${id} ${i + 1}`,
+      seconds, channels: 1, rate: 44100, group_volume: 100, grouped: false, shared: 0, lang: "us", mission: "", words: "",
+      moment: id })));
+    return [...DECOY_SOUNDS.map(decoySound), ...songs, ...voices];
+  }
+  const decoyOut = (s) => ({ member: s.member, kind: s.kind, name: s.name, seconds: s.seconds, channels: s.channels,
+    rate: s.rate, volume: decoyVolumes.get(`${current}|${s.member}`) ?? 100, mine: musicMine.has(s.member),
+    group_volume: s.group_volume, grouped: s.grouped, shared: s.shared, said: s.words, lang: s.lang, mission: s.mission });
+  function decoySetVolumes(members, pct) {
+    if (!current) throw new Error("Pick or make a mod first: a sound's volume is saved in a mod.");
+    if (typeof pct !== "number" || pct < 0 || pct > 200) throw new Error("a volume is a percent from 0 to 200");
+    for (const m of members) {
+      if (Math.round(pct) === 100) decoyVolumes.delete(`${current}|${m}`); else decoyVolumes.set(`${current}|${m}`, Math.round(pct));
+    }
+    return `${current}/files/sound/volume.toml`;
+  }
+  // a unit's own sounds: its engine (every unit here) and, for the US medium tanks, their voice lines by moment
+  function decoyUnitSounds(address) {
+    const engine = decoyAll().filter((s) => s.kind === "engines").map((s, i) => ({ ...s, role: i ? "engine_idle" : "engine_run", moment: null }));
+    const voices = /Sherman|Lee|M4|M3/.test(address) ? decoyAll().filter((s) => s.kind === "unit_voices").map((s) => ({ ...s, role: "voice" })) : [];
+    return [...engine, ...voices];
+  }
+  const decoyClip = (c) => ({ member: c[0], kind: c[1], name: c[2], seconds: c[3], frames: c[4], names: c[5], units: c[6], bones: c[7].length, skeleton: c[7] });
+  function decoyClipOut(c) {
+    const e = decoyClipEdits.get(`${current}|${c.member}`) || {};
+    return { member: c.member, kind: c.kind, name: c.name, seconds: c.seconds, frames: c.frames, bones: c.bones, names: c.names,
+      units: c.units, speed: e.speed ?? 100, from: e.from || null, mine: Boolean(e.mine), tweaks: e.tweaks || {},
+      changed: Object.keys(e).length > 0 };
+  }
+  const decoyClipOf = (member) => {
+    const c = DECOY_CLIPS.map(decoyClip).find((x) => x.member === member);
+    if (!c) throw new Error(`${member} isn't one of the game's animations`);
+    return c;
+  };
+  // the motion library (StudioApi.decoy_motions): a few made-up moves of the two free sets
+  const DECOY_MOVES = [["cmu-02_01", "cmu", "walk", "Walk", "02", 3.4], ["cmu-09_01", "cmu", "run", "Run", "09", 2.6],
+    ["cmu-13_29", "cmu", "jump", "Jump", "13", 2.0], ["style-Akimbo_FW", "100style", "walk", "Akimbo", "Akimbo", 6.0, "FW"],
+    ["style-Akimbo_FR", "100style", "run", "Akimbo", "Akimbo", 5.0, "FR"]];
+  const decoyMovesHave = new Set(["cmu-02_01"]);
+  let decoyStyleFetched = false;
+  const decoyMocap = new Map();  // id -> what decoy_mocap_open read
   // the game's map backgrounds (StudioApi.map_sound): [file, name, the maps they're heard on, seconds], made up
   const BACKGROUNDS = [["WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Tunisie.wav", "Tunisie", ["Blitz", "Valley", "Gamma", "Beta"], 60.0],
     ["WW2\\Sons\\SFX_ENV\\MultiPiste_Ambiance_Swamp.wav", "Swamp", ["Swamps"], 45.0]];
@@ -2486,7 +2840,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         : mode === "oldindex" ? { ready: false, can_build: true, old: true } : { ready: true, build: "24687178" },
       units: async (lang, kind = "all", nation = -1, search = "", group = "all") => {
         if (kind === "ammo") {
-          const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: n.name, base_name: "Ammo_" + n.id, kind: "ammo",
+          const copies = myAmmo().map((n) => ({ address: ammoAddress(n.id), name: copyName(n, lang), base_name: "Ammo_" + n.id, kind: "ammo",
             id: null, users: [], nations: nationsOf(ammo.find((a) => ammoAddress(a.id) === n.source), lang), nation: -1, nation_name: "", factory: null, slot: null, new: true, source: n.source,
             source_name: ammoName(ammo.find((a) => ammoAddress(a.id) === n.source), lang),
             group: ammo.find((a) => ammoAddress(a.id) === n.source).group }));
@@ -2595,7 +2949,48 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const stem = safeName(name) || `New_${myAmmo().length + 1}`;
         if (ammo.some((a) => a.id === stem) || myAmmo().some((n) => n.id === stem)) throw new Error(`There's already a copy at Ammo_${stem}. Pick another name.`);
         newAmmo.push({ mod: current, id: stem, source, name });
+        ammoTextSet(ammoAddress(stem), "Name", name);  // called `name` in game too
         return { address: ammoAddress(stem), name, saved: current + "/src/studio.rndf" };
+      },
+      // the mod's flag types (StudioApi.flag_types and the calls after it, flagtypes.py): a name for some flags
+      // turned on and off; giving one changes the unit's flags, taking it off puts back what it changed
+      flag_types: async (address) => ({ can: Boolean(current), types: myFlagTypes().map((t) => ({ name: t.name,
+        about: t.about, on: t.on, off: t.off, units: t.units.size, here: Boolean(address) && t.units.has(address) })) }),
+      flag_type_save: async (name, about, on, off, oldName) => {
+        if (!current) throw new Error("Pick or make a mod first: flag types are saved in a mod.");
+        name = String(name || "").trim();
+        if (!name) throw new Error("Give the flag type a name (one line).");
+        if (!on.length && !off.length) throw new Error("Tick at least one flag to turn on or off.");
+        const old = oldName ? myFlagTypes().find((t) => t.name.toLowerCase() === oldName.toLowerCase()) : null;
+        if (myFlagTypes().some((t) => t !== old && t.name.toLowerCase() === name.toLowerCase())) throw new Error(`There's already a flag type called ${name}. Pick another name.`);
+        if (old) {
+          for (const address of [...old.units.keys()]) fakeRegive(address, (ts) => ts.filter((t) => t !== old));
+          Object.assign(old, { name, about, on: on.slice(), off: off.slice() });
+          for (const address of [...old.units.keys()]) fakeRegive(address, (ts) => ts);
+        } else flagTypes.push({ mod: current, name, about, on: on.slice(), off: off.slice(), units: new Map() });
+        return { can: true, types: myFlagTypes().map((t) => ({ name: t.name, about: t.about, on: t.on, off: t.off, units: t.units.size, here: false })) };
+      },
+      flag_type_delete: async (name) => {
+        const gone = myFlagTypes().find((t) => t.name.toLowerCase() === String(name).toLowerCase());
+        if (!gone) throw new Error(`There's no flag type called ${name} in this mod any more.`);
+        for (const address of [...gone.units.keys()]) fakeRegive(address, (ts) => ts.filter((t) => t !== gone));
+        flagTypes.splice(flagTypes.indexOf(gone), 1);
+        return { can: true, types: myFlagTypes().map((t) => ({ name: t.name, about: t.about, on: t.on, off: t.off, units: t.units.size, here: false })) };
+      },
+      flag_type_give: async (address, name, on, lang) => {
+        const t = myFlagTypes().find((x) => x.name.toLowerCase() === String(name).toLowerCase());
+        if (!t) throw new Error(`There's no flag type called ${name} in this mod any more.`);
+        const flags = fakeRegive(address, (ts) => on ? [...ts, t] : ts.filter((x) => x !== t));
+        return { saved: current + "/src/studio.rndf", flags, check: { problems: [], blocked: false, adding: {} },
+          types: { can: true, types: myFlagTypes().map((x) => ({ name: x.name, about: x.about, on: x.on, off: x.off, units: x.units.size, here: x.units.has(address) })) } };
+      },
+      ammo_text_set: async (address, prop, words, lang) => {
+        if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        if (!["Name", "TypeName"].includes(prop)) throw new Error(`${prop} isn't one of an ammunition's texts`);
+        const copy = myAmmo().find((n) => ammoAddress(n.id) === address);
+        if (!copy && !ammo.some((a) => ammoAddress(a.id) === address)) throw new Error(`${address.split("/").pop()} isn't an ammunition`);
+        ammoTextSet(address, prop, String(words || "").trim());
+        return unit(address, lang);
       },
       flags: async (lang) => ({ flags: knownFlags.map((f) => ({ ...f, meaning: f.meaning ? (f.meaning[lang] || f.meaning.us) : null,
         ...(FAKE_FLAG_GUIDE[f.flag] || {}) })), groups: ["kind", "combat", "movement", "sight", "player", "preview", "state", "unused"] }),
@@ -2909,7 +3304,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
               mine: musicMine.has(member), also: [], maps: [] }; }) })) };
       },
       music_sound: async (member, which = "game") => {
-        const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member)
+        const made = member.startsWith(DECOY_DIR) ? decoyAll().find((s) => s.member === member) : null;  // RUSE Decoy's
+        const song = MUSIC.flatMap(([, s]) => s).find((s) => s[0] === member) || (made ? [member, made.name, made.seconds] : null)
           || (member.startsWith(VOICE_DIR) || member.startsWith("new:") || member.startsWith("layer:")
             ? [member, member.slice(VOICE_DIR.length), 2] : null);
         if (!song) throw new Error(`${member} isn't one of the game's songs`);
@@ -2953,6 +3349,142 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { saved: `${current}/files/replace/${member.split("\\").join("/")}.wav`, seconds: 0 };
       },
       music_reset: async (member) => { musicMine.delete(member); return { saved: current }; },
+      // RUSE Decoy (StudioApi.decoy and the calls after it): the made-up sounds above by kind, each one's volume in
+      // the mod, a unit's own sounds and clips, the animations (no 3D model here: the page says so) and the motion
+      // library (nothing is fetched: a set "fetched" here is done at once)
+      decoy: async (lang) => {
+        const all = decoyAll();
+        const kinds = DECOY_KINDS.map((id) => {
+          const mine = all.filter((s) => s.kind === id);
+          return { id, count: mine.length, changed: mine.filter((s) => decoyVolumes.has(`${current}|${s.member}`) || musicMine.has(s.member)).length };
+        }).filter((k) => k.count);
+        const missions = {};
+        for (const s of all) if (s.kind === "dialogue") missions[s.mission] = (missions[s.mission] || 0) + 1;
+        return { kinds, missions: Object.entries(missions).map(([id, count]) => ({ id, name: lang === "fr" ? "2. PRENDRE LE COMMANDEMENT !" : "2. TAKING COMMAND!", count })),
+          langs: [...new Set(all.filter((s) => s.kind === "dialogue").map((s) => s.lang))].sort(), mod: Boolean(current) };
+      },
+      decoy_list: async (kind, words = "", mission = null, inLang = null, lang = "base", start = 0, count = 100) => {
+        if (!DECOY_KINDS.includes(kind)) throw new Error(`${kind} isn't one of the kinds of sound`);
+        const want = String(words || "").toLowerCase().split(/\s+/).filter(Boolean);
+        const picked = decoyAll().filter((s) => s.kind === kind && (!mission || s.mission === mission) && (!inLang || s.lang === inLang)
+          && want.every((w) => `${s.name} ${s.member} ${s.words}`.toLowerCase().includes(w)));
+        return { rows: picked.slice(start, start + Math.max(1, Math.min(count, 500))).map(decoyOut), total: picked.length, start };
+      },
+      decoy_volumes: async () => Object.fromEntries([...decoyVolumes].filter(([k]) => k.startsWith(`${current}|`))
+        .map(([k, v]) => [k.slice(String(current).length + 1), v])),
+      decoy_volume: async (member, percent) => {
+        if (!decoyAll().some((s) => s.member === member)) throw new Error(`${member} isn't one of the game's sounds`);
+        return { member, volume: Math.round(percent), saved: decoySetVolumes([member], percent) };
+      },
+      decoy_volume_all: async (kind, percent, mission = null, inLang = null) => {
+        const rows = decoyAll().filter((s) => s.kind === kind && (!mission || s.mission === mission) && (!inLang || s.lang === inLang));
+        if (!rows.length) throw new Error(`no sounds of the kind ${kind} here`);
+        return { count: rows.length, volume: Math.round(percent), saved: decoySetVolumes(rows.map((s) => s.member), percent) };
+      },
+      // a unit's page: how many sounds and clips are its own (StudioApi.decoy_unit), then the list RUSE Decoy opens on
+      decoy_unit: async (address) => {
+        const items = decoyUnitSounds(address);
+        return { count: items.length, voices: items.filter((s) => s.role === "voice").length,
+          engine: items.filter((s) => s.role.startsWith("engine")).length, clips: 2 };
+      },
+      decoy_unit_list: async (address) => {
+        const rows = decoyUnitSounds(address).map((s) => ({ ...decoyOut(s), said: "", role: s.role, moment: s.moment }));
+        return { rows, total: rows.length, start: 0 };
+      },
+      decoy_unit_volume: async (address, percent) => {
+        const members = decoyUnitSounds(address).map((s) => s.member);
+        if (!members.length) throw new Error("this unit has no sounds of its own here");
+        return { count: members.length, volume: Math.round(percent), saved: decoySetVolumes(members, percent) };
+      },
+      decoy_unit_anims: async () => {
+        const rows = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === "vehicles" || c.kind === "crews")
+          .map((c) => ({ ...decoyClipOut(c), role: c.names[0] || c.name }));
+        return { rows, total: rows.length, start: 0 };
+      },
+      decoy_anims: async () => ({ mod: Boolean(current), kinds: DECOY_AKINDS.map((id) => {
+        const clips = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === id);
+        return { id, count: clips.length, changed: clips.filter((c) => decoyClipEdits.has(`${current}|${c.member}`)).length };
+      }).filter((k) => k.count) }),
+      decoy_anim_list: async (kind, words = "", start = 0, count = 100) => {
+        if (!DECOY_AKINDS.includes(kind)) throw new Error(`${kind} isn't one of the kinds of animation`);
+        const want = String(words || "").toLowerCase().split(/\s+/).filter(Boolean);
+        const picked = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === kind
+          && want.every((w) => `${c.name} ${c.member} ${c.names.join(" ")}`.toLowerCase().includes(w)));
+        return { rows: picked.slice(start, start + Math.max(1, Math.min(count, 500))).map(decoyClipOut), total: picked.length, start };
+      },
+      decoy_anim_info: async (member) => {
+        const c = decoyClipOf(member);
+        return { bones: c.skeleton, units: [], loops: c.kind !== "hq", mocap: c.skeleton.includes("bip01"),
+          same: DECOY_CLIPS.map(decoyClip).filter((x) => x.member !== c.member && x.skeleton.join("|") === c.skeleton.join("|"))
+            .map((x) => ({ member: x.member, name: x.name, names: x.names })) };
+      },
+      decoy_anim_preview: async (member) => { decoyClipOf(member); return { url: null }; },
+      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null) => {
+        const c = decoyClipOf(member);
+        if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        const key = `${current}|${c.member}`, e = { ...(decoyClipEdits.get(key) || {}) };
+        if (speed !== null) {
+          if (typeof speed !== "number" || speed < 1 || speed > 1000) throw new Error("a speed is a percent from 1 to 1000");
+          if (speed === 100) delete e.speed; else e.speed = speed;
+        }
+        if (use !== null) { if (use) e.from = decoyClipOf(use).member; else delete e.from; }
+        if (bone !== null) {
+          const t = { ...(e.tweaks || {}) }, b = { ...(t[bone] || {}) };
+          if (size !== null) b.size = size;
+          if (turn !== null) b.turn = turn.length ? turn : null;
+          if ((b.size ?? 1) === 1 && !b.turn) delete t[bone]; else t[bone] = { size: b.size ?? 1, turn: b.turn || null };
+          if (Object.keys(t).length) e.tweaks = t; else delete e.tweaks;
+        }
+        if (Object.keys(e).length) decoyClipEdits.set(key, e); else decoyClipEdits.delete(key);
+        return decoyClipOut(c);
+      },
+      decoy_anim_reset: async (member) => { decoyClipEdits.delete(`${current}|${decoyClipOf(member).member}`); return { member }; },
+      // motion capture: a picked .bvh read for its length (its "Frames:" and "Frame Time:" lines), never retargeted here
+      decoy_mocap_open: async (name, text) => {
+        const frames = Number((/Frames:\s*(\d+)/.exec(text) || [])[1] || 60), dt = Number((/Frame Time:\s*([\d.]+)/.exec(text) || [])[1] || 1 / 30);
+        if (!/HIERARCHY/.test(text)) throw new Error(`${name}: not a motion capture file (.bvh)`);
+        const got = { id: `mc${decoyMocap.size + 1}`, name, seconds: Math.round(frames * dt * 1000) / 1000, fps: Math.round(100 / dt) / 100,
+          parts: 15, missing: [], credit: "" };
+        decoyMocap.set(got.id, got);
+        return got;
+      },
+      decoy_mocap_preview: async (member) => { decoyClipOf(member); return { url: null, frames: 60, loop: false, scale: 1 }; },
+      decoy_mocap_use: async (member) => {
+        const c = decoyClipOf(member);
+        if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        decoyClipEdits.set(`${current}|${c.member}`, { ...(decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });
+        return { ...decoyClipOut(c), frames: 60, loop: false, scale: 1 };
+      },
+      decoy_motions: async (kind = "", words = "", set = "") => {
+        const want = String(words || "").toLowerCase().split(/\s+/).filter(Boolean);
+        const rows = DECOY_MOVES.filter(([id, s, k, name, group]) => (!kind || k === kind) && (!set || s === set)
+          && want.every((w) => `${name} ${group} ${id}`.toLowerCase().includes(w)))
+          .map(([id, s, k, name, group, seconds, way]) => ({ id, set: s, name, group, kind: k, way: way || null, seconds,
+            size: s === "cmu" ? 120000 : 2500000, alone: s === "cmu", have: decoyMovesHave.has(id) || (s === "100style" && decoyStyleFetched) }));
+        const kinds = [...new Set(DECOY_MOVES.map((m) => m[2]))].map((id) => ({ id, count: DECOY_MOVES.filter((m) => m[2] === id).length }));
+        return { kinds, sets: await window.pywebview.api.decoy_motion_sets(), rows, total: rows.length, start: 0 };
+      },
+      decoy_motion_sets: async () => ({
+        cmu: { name: "CMU Graphics Lab Motion Capture Database", licence: "free to use", site: "mocap.cs.cmu.edu", whole: false,
+          size: null, have: [...decoyMovesHave].filter((id) => id.startsWith("cmu")).length, total: 3, job: {} },
+        "100style": { name: "100STYLE", licence: "CC BY 4.0", site: "ianxmason.github.io/100style", whole: true, size: 1400000000,
+          have: decoyStyleFetched ? 2 : 0, total: 2, job: decoyStyleFetched ? { state: "done", done: 1400000000, total: 1400000000, message: "" } : {} } }),
+      decoy_motion_open: async (id) => {
+        const m = DECOY_MOVES.find((x) => x[0] === id);
+        if (!m) throw new Error(`${id} isn't in the motion library`);
+        if (m[1] === "100style" && !decoyStyleFetched) return { fetch_set: "100style" };
+        decoyMovesHave.add(id);
+        const got = { id: `lib:${id}`, name: `${m[3]} (${id})`, seconds: m[5], fps: 30, parts: 15, missing: [], credit: "", from: 0,
+          length: Math.min(m[5], 2), move: id };
+        got.credit = m[1] === "cmu" ? "Motion capture from mocap.cs.cmu.edu (CMU Graphics Lab)" : "100STYLE (CC BY 4.0)";
+        decoyMocap.set(got.id, got);
+        return got;
+      },
+      decoy_motion_set_fetch: async (set) => {
+        if (set !== "100style") throw new Error(`${set} isn't a set that comes whole`);
+        decoyStyleFetched = true;
+        return { state: "done", done: 1400000000, total: 1400000000, message: "" };
+      },
       // the AI tab (StudioApi.ai): a few of the game's sets of values, the bonus and some ruse cards
       ai: async (lang) => ({ ready: mode !== "noindex",
         words: { ai: "AI", difficulty: "Difficulty", profile: "Profile", nuclear: "Nuclear mode" },

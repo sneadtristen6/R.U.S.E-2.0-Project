@@ -798,12 +798,20 @@ class AmmoAndFlags(WithMod):
     """The ammunition list, a weapon firing another ammo, a copied ammo of a unit's own, and a unit's flag list."""
 
     def build(self, folder):
+        """The unit data's main file after building the mod in `folder`; the built texts in self.texts."""
         rev = self.game / "Data" / "PC" / "190852"
-        arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes())
-        result = build_pack(arc, [load_mod(folder)])
+        arc, texts = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes()), Edat((rev / "ZZ_Win.dat").read_bytes())
+        result = build_pack(arc, [load_mod(folder)], text_arc=texts)
         self.assertEqual(result.errors, [])
         new = Edat(arc.to_bytes(result.changed))
+        self.texts = Edat(texts.to_bytes(result.text_changed))
         return Ndf(new.read(new.find("everything.cpp.gladndfbin")))
+
+    def built_text(self, key: str, lang: str = "us") -> str:
+        """What text `key` says in `lang` in the texts the last build made."""
+        from rusemod.dic import Dic, name_to_key
+        dic = Dic(self.texts.read(self.texts.find(f"genlocalisation\\ww2\\localisation\\translations\\{lang}\\baseunite.dic")))
+        return dic.text(name_to_key(key))
 
     def test_ammunition_listed_with_its_users_and_names(self):
         listed = self.api.units("us", kind="ammo")
@@ -861,8 +869,11 @@ class AmmoAndFlags(WithMod):
         made = self.api.new_ammo(AMMO_75, "Hot 75")
         self.assertEqual(made["address"], "$/GFX/Everything/Ammo_Hot_75")
         rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
-        self.assertIn("\nexport Ammo_Hot_75 is clone $/GFX/Everything/Ammo_Canon_75\n(\n)\n", rndf)
-        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # it keeps its source's name in game
+        # called Hot 75 in game too: a text of the mod's own, in the game's table of unit words
+        key = re.search(r"\nexport Ammo_Hot_75 is clone \$/GFX/Everything/Ammo_Canon_75\n\(\n    Name = key\((Hot75_[0-9a-z]{3})\)\n\)\n",
+                        rndf).group(1)
+        self.assertFalse((folder / "text" / "studio.baseunite.csv").exists())  # (not a unit's name row)
+        self.assertIn(f"text.{key},{key},Hot 75,Hot 75,", (folder / "text" / "studio-words.baseunite.csv").read_text(encoding="utf-8"))
         listed = self.api.ammo("us")["units"]
         self.assertEqual((listed[0]["address"], listed[0]["name"], listed[0]["new"], listed[0]["source_name"],
                           listed[0]["nations"]), (made["address"], "Hot 75", True, "AP shell · Medium cal.", ["Germany"]))
@@ -880,6 +891,9 @@ class AmmoAndFlags(WithMod):
         copy = find_export(ndf, "$/GFX/Everything/Ammo_Hot_75")
         obj = ndf.objects[copy]
         self.assertEqual((obj.get(15).scalar(), obj.get(9).scalar()), (1003, 80))  # a fresh id, its own damage
+        from rusemod.dic import name_to_key
+        self.assertEqual(struct.unpack("<Q", obj.get(16).payload[-8:])[0], name_to_key(key))  # its own name
+        self.assertEqual((self.built_text(key), self.built_text(key, "fr")), ("Hot 75", "Hot 75"))
         self.assertEqual(struct.unpack("<III", ndf.objects[9].get(19).payload)[1], copy)
         with self.assertRaises(StudioError):
             self.api.new_ammo(made["address"], "Hotter")  # a copy of a copy
@@ -888,6 +902,43 @@ class AmmoAndFlags(WithMod):
         gone = self.api.delete_unit(made["address"])
         self.assertEqual(gone["source"], AMMO_75)
         self.assertEqual(self.api.ammo()["total"], 2)
+
+    def test_an_ammos_name_and_kind_in_game_of_the_mods_own(self):
+        """The owner, 2026-10-22: "make it to where we can name ammo to whatever we want": a copy's name again (its
+        text gets the new words), one of the game's ammo's kind (a text of its own; the other ammo keep theirs), each
+        built into the game's texts, and the game's words again."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.ammo_text_set(AMMO_75, "Name", "Hot")
+        folder = Path(self.api.new_mod("Names")["current"])
+        rndf = lambda: (folder / "src" / "studio.rndf").read_text(encoding="utf-8")  # noqa: E731
+        made = self.api.new_ammo(AMMO_75, "Hot 75")["address"]
+        texts = lambda page: {t["prop"]: t for t in page["ammo_texts"]}  # noqa: E731
+        first = texts(self.api.unit(made, "us"))
+        self.assertEqual((first["Name"]["words"], first["Name"]["own"], first["TypeName"]["words"],
+                          first["TypeName"]["changed"]), ("Hot 75", True, "AP shell", False))
+        page = self.api.ammo_text_set(made, "Name", "Hotter 75", "us")
+        self.assertEqual((page["name"], texts(page)["Name"]["key"]), ("Hotter 75", first["Name"]["key"]))  # same text
+        self.assertEqual([a["name"] for a in self.api.ammo("us")["units"] if a["new"]], ["Hotter 75"])
+        game = texts(self.api.ammo_text_set(AMMO_88, "TypeName", "Tungsten core", "fr"))["TypeName"]
+        self.assertEqual((game["words"], game["own"], game["changed"]), ("Tungsten core", True, True))
+        self.assertIn(f"\npatch $/GFX/Everything/Ammo_Canon_88\n(\n    TypeName = key({game['key']})\n)\n", rndf())
+        self.assertEqual(texts(self.api.unit(AMMO_75, "us"))["TypeName"]["words"], "AP shell")  # its own text only
+        self.api.set_ammo(PANZER_IV, PANZER_MOUNT, made)
+        self.build(folder)
+        self.assertEqual((self.built_text(first["Name"]["key"]), self.built_text(game["key"], "fr")),
+                         ("Hotter 75", "Tungsten core"))
+        self.api.value_words_set(game["key"], {"fr": "Noyau de tungstène"})  # one language on its own
+        self.assertEqual(texts(self.api.unit(AMMO_88, "fr"))["TypeName"]["words"], "Noyau de tungstène")
+        self.api.ammo_text_set(AMMO_88, "TypeName", "")  # the game's words again: its text goes with it
+        self.assertNotIn("Ammo_Canon_88", rndf())
+        self.assertNotIn(game["key"], (folder / "text" / "studio-words.baseunite.csv").read_text(encoding="utf-8"))
+        back = texts(self.api.ammo_text_set(made, "Name", "", "us"))["Name"]  # a copy: its source's name again
+        self.assertEqual((back["words"], back["own"], back["changed"]), ("Medium cal.", False, False))
+        self.assertFalse((folder / "text" / "studio-words.baseunite.csv").exists())
+        self.assertEqual(self.api.unit(made, "us")["name"], "Hot 75")  # what the Studio called it
+        for address, prop in ((PANZER_IV, "Name"), (made, "Puissance"), (PANZER_MOUNT, "Name")):
+            with self.subTest(address=address, prop=prop), self.assertRaises(StudioError):
+                self.api.ammo_text_set(address, prop, "Hot")
 
     def test_a_weapons_range_from_its_units_page(self):
         with self.assertRaises(StudioError):
@@ -955,6 +1006,65 @@ class AmmoAndFlags(WithMod):
         self.assertEqual(self.build(folder).objects[1].get(14).int_list(), [10])
         self.api.edit(PANZER_IV, "InitialFlagSet", [4, 10])  # the game's own: no change left
         self.assertEqual(self.rows(PANZER_IV)["InitialFlagSet"]["edited"], None)
+
+    def test_flag_types_of_the_modders_own(self):
+        """advolt284 (Discord, 2026-10-22) asked for a unit flag made from scratch; the owner: "make a new flag type.
+        Select from the existing flags and how they work ... You're just checking boxes". A named type turning game
+        flags on and off, given to units as an ordinary change of their flags, taken off again exactly, changed and
+        deleted on every unit at once, and kept when the mod is exported."""
+        with self.assertRaisesRegex(StudioError, "Pick or make a mod first"):
+            self.api.flag_type_save("Spotter", "", [72], [])
+        self.assertEqual(self.api.flag_types(), {"types": [], "can": False})
+        folder = Path(self.api.new_mod("Types")["current"])
+        now = lambda: (self.rows(PANZER_IV)["InitialFlagSet"]["edited"]  # noqa: E731
+                       or self.rows(PANZER_IV)["InitialFlagSet"]["numbers"])
+        made = self.api.flag_type_save("Spotter", "Sees over hills, isn't a building", [72], [4])
+        self.assertEqual(made["types"], [{"name": "Spotter", "about": "Sees over hills, isn't a building", "on": [72],
+                                          "off": [4], "units": 0, "here": False}])
+        given = self.api.flag_type_give(PANZER_IV, "spotter", True, "us")  # (any case)
+        self.assertEqual((given["flags"], now(), given["types"]["types"][0]["here"]), ([10, 72], [10, 72], True))
+        self.assertIn("    InitialFlagSet = [10, 72]\n", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.assertIn("problems", given["check"])
+        self.api.flag_type_save("Quiet", "", [5], [72])  # a second type undoes part of the first
+        self.assertEqual(self.api.flag_type_give(PANZER_IV, "Quiet")["flags"], [10, 5])
+        self.assertEqual(self.api.flag_type_give(PANZER_IV, "Spotter", False)["flags"], [10, 4, 5])  # 4 back, 72 out
+        self.api.flag_type_give(PANZER_IV, "Spotter")
+        self.api.flag_type_save("Spotter", "", [72, 9], [], old_name="Spotter")  # changed: every unit that has it too
+        self.assertEqual(now(), [10, 4, 9, 5])  # (Quiet given again after it: its 72 off, its 5 on)
+        saved = tomllib.loads((folder / "flag-types.toml").read_text(encoding="utf-8"))
+        self.assertEqual([t["name"] for t in saved["type"]], ["Spotter", "Quiet"])
+        self.api.flag_type_delete("Spotter")
+        self.api.flag_type_give(PANZER_IV, "Quiet", False)
+        self.assertEqual(now(), [4, 10])  # all taken off: the game's flags, no change left
+        self.assertIsNone(self.rows(PANZER_IV)["InitialFlagSet"]["edited"])
+        self.assertNotIn("InitialFlagSet", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
+        self.api.flag_type_give(PANZER_IV, "Quiet")
+        self.assertEqual(self.build(folder).objects[1].get(14).int_list(), [4, 10, 5])
+        from rusemod import package
+        self.assertIn("flag-types.toml", package.TOP_FILES)
+        for args, says in ((("", "", [72], []), "a name"), (("X" * 41, "", [72], []), "at most 40"),
+                           (("Odd", "", [105], []), "isn't one of the game's flags"), (("None", "", [], []), "at least one"),
+                           (("Both", "", [72], [72]), "on and off"), (("quiet", "", [9], []), "already a flag type")):
+            with self.subTest(args=args), self.assertRaisesRegex(StudioError, says):
+                self.api.flag_type_save(*args)
+        for unit, name in ((M4 + ":Weapon", "Quiet"), (PANZER_IV, "Nope")):
+            with self.subTest(unit=unit), self.assertRaises(StudioError):
+                self.api.flag_type_give(unit, name)
+        (folder / "flag-types.toml").write_text("[[type]]\nname = 3\n", encoding="utf-8")
+        with self.assertRaisesRegex(StudioError, "has a mistake"):
+            self.api.flag_type_give(PANZER_IV, "Quiet")
+        # the window: its words in every language, its calls on the page and in the browser preview's stand-in
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
+        app, fake = (ui / "app.js").read_text(encoding="utf-8"), (ui / "fake-api.js").read_text(encoding="utf-8")
+        said = tomllib.loads((ui.parent / "words.toml").read_text(encoding="utf-8"))
+        used = sorted(set(re.findall(r"\bw\.((?:tip_)?flag_types?_\w+)", app)))
+        self.assertGreater(len(used), 20)
+        for key in used:
+            with self.subTest(key=key):
+                self.assertEqual(set(said[key]), set(schema.LANGS))
+        for call in ("flag_types", "flag_type_save", "flag_type_delete", "flag_type_give"):
+            self.assertIn(f"api().{call}(", app)
+            self.assertIn(f"{call}: async", fake)
 
     def test_an_index_from_an_older_studio_is_built_again(self):
         import sqlite3
@@ -2327,6 +2437,26 @@ class Labels(unittest.TestCase):
         used |= {k for m in marks for k in (m, "tip_" + m, m + "_help")}
         self.assertGreater(len(used), 25)
         self.assertEqual(sorted(used - set(_words())), [])
+
+    def test_the_browser_preview_answers_every_call_the_pages_make(self):
+        # the preview's stand-in (fake-api.js) once had none of RUSE Decoy's calls, so every unit page there stopped at
+        # its Sounds and animation box (decoy_unit); each api().<call>( of the pages needs a <call>: of its own there
+        ui = Path(__file__).parents[1] / "src" / "ruse_studio" / "ui"
+        fake = (ui / "fake-api.js").read_text(encoding="utf-8")
+        made = set(re.findall(r"(?:^|[\s,{])([a-z_0-9]+): (?:async\b|\()", fake, re.M))
+        calls = {(f.name, c) for f in sorted(ui.glob("*.js")) if f.name != "fake-api.js"
+                 for c in re.findall(r"\bapi\(\)\.([a-z_0-9]+)\(", f.read_text(encoding="utf-8"))}
+        self.assertGreater(len(calls), 150)
+        self.assertIn(("app.js", "decoy_unit"), calls)
+        self.assertEqual(sorted((f, c) for f, c in calls if c not in made), [])
+        # RUSE Decoy's words in the preview are the Studio's own, word for word (copied by fake_decoy_words.py)
+        said = _words()
+        copied = re.findall(r"\b((?:tip_)?decoy_[a-z_0-9]+): (\"(?:[^\"\\]|\\.)*\")",
+                            fake[fake.index("const DECOY_WORDS"):fake.index("(end of RUSE Decoy's words)")])
+        self.assertGreater(len(copied), 200)
+        for key, text in copied:
+            with self.subTest(key=key):
+                self.assertEqual(json.loads(text), said[key]["us"])
 
     def test_import_model_has_a_way_in_from_the_units_tab(self):
         # The owner (2026-10-04) didn't find Import model: it shows on a new unit's page only. The Units tab starts

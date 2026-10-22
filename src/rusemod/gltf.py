@@ -204,7 +204,11 @@ def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes]
     summary["propellers"] = len(propellers)
     if skinned:
         first = len(g.doc["nodes"])
-        g.doc["nodes"] += [{"name": f"bone_{b}"} for b in joints]
+        # each bone named as the game names it (tourelle_01, canon_01...), so a model brought back into the Studio
+        # knows its turret (modelin.by_bones); bone_<number> where its skeleton isn't found
+        bones = lib.bone_names(name) if hasattr(lib, "bone_names") else None
+        g.doc["nodes"] += [{"name": bones[b] if bones and b < len(bones) and bones[b] else f"bone_{b}"}
+                           for b in joints]
         rig = len(g.doc["nodes"])
         g.doc["nodes"].append({"name": f"{stem}_bones", "children": list(range(first, first + len(joints)))})
         identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]

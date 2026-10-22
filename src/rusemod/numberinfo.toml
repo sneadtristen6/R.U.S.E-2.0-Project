@@ -545,25 +545,25 @@ what = "Changes the model when fired"
 does = "Looks only: 1 on the squads' anti-tank weapons: the soldier switches to the model holding it when it fires."
 
 [TempsAnimation]
-group = "looks"
+group = "ammo"
 unit = "s"
-sure = "name"
-what = "Firing animation time"
-does = "Looks only: how long the soldier's firing animation lasts (1.6 s on the squads' anti-tank weapons)."
+sure = "known"
+what = "Time before the shot flies"
+does = "Seconds added to the shot's flight: the hit lands this much later, and the drawn shot takes this much longer (1.6 s on grenades and satchel charges, by its name the soldier's throwing time)."
 
 [FX_vitesse_de_depart]
-group = "effects"
+group = "ammo"
 unit = "m"
-sure = "name"
-what = "Shot speed (drawn)"
-does = "Looks only: how fast the drawn shot leaves the gun, in game units a second: 150 to 520,000 (2,000 m a second)."
+sure = "known"
+what = "Shot speed"
+does = "How fast the shot flies, so how soon it lands: the hit only counts when it lands, a moving target is aimed ahead by the flight time, and the drawn shot takes the same time. A shot with physics flies this many game units a second, slowed by its drag: 9,000 to 520,000 (35 to 2,000 m a second; the 75 mm AP shell 120,000, about 460 m a second). A shot without physics (Shot without physics) flies straight at 26 times this. Every flight is rounded up to the next 0.2 s. A shot too slow to reach its target is sped up 5 % at a time until it can, so it still reaches, only later."
 
 [FX_frottement]
-group = "effects"
+group = "ammo"
 unit = "raw"
-sure = "name"
-what = "Shot drag (drawn)"
-does = "Looks only: how fast the drawn shot slows down in the air."
+sure = "known"
+what = "Shot drag"
+does = "How fast a shot with physics slows down in the air: more drag, a longer flight over the same distance, so the hit lands later. The game's shots have 0.001 (most) to 0.08. A shot without physics ignores it."
 
 [FX_tir_tendu]
 group = "effects"
@@ -573,11 +573,11 @@ what = "Flat shot (drawn)"
 does = "Looks only: 1 draws the shot flying flat and straight instead of arcing."
 
 [FX_tir_sans_physic]
-group = "effects"
+group = "ammo"
 unit = "yesno"
-sure = "name"
-what = "Shot drawn without physics"
-does = "Looks only: 1 draws the shot without gravity and drag."
+sure = "known"
+what = "Shot without physics"
+does = "1: the shot flies straight to where it lands at 26 times its Shot speed, no gravity or drag (the game's small arms, machine-guns, most anti-aircraft guns, bombs and grenades); 0: it flies with gravity and drag (shells, mortars, rockets)."
 
 # --- plane flight ---
 [AltitudeDeVol]

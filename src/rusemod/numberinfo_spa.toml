@@ -213,20 +213,20 @@ does = "El número propio de la munición (1000-1138): cada una tiene uno distin
 what = "Cambia de modelo al disparar"
 does = "Solo aspecto: 1 en las armas antitanque de las escuadras: el soldado pasa al modelo que la empuña al disparar."
 [TempsAnimation]
-what = "Duración de la animación de disparo"
-does = "Solo aspecto: cuánto dura la animación de disparo del soldado (1,6 s en las armas antitanque de las escuadras)."
+what = "Tiempo antes del disparo"
+does = "Segundos añadidos al vuelo del disparo: el impacto llega ese tiempo más tarde, y el disparo dibujado tarda eso más (1,6 s en granadas y cargas, por su nombre el tiempo de lanzamiento del soldado)."
 [FX_vitesse_de_depart]
-what = "Velocidad del disparo (dibujado)"
-does = "Solo aspecto: lo rápido que sale el disparo dibujado del arma, en unidades del juego por segundo: de 150 a 520.000 (2.000 m por segundo)."
+what = "Velocidad del disparo"
+does = "Lo rápido que vuela el disparo, y por tanto cuándo llega: el impacto solo cuenta al llegar, a un objetivo en movimiento se le apunta por delante según el tiempo de vuelo, y el disparo dibujado tarda lo mismo. Un disparo con física recorre este número de unidades del juego por segundo, frenado por su resistencia: de 9.000 a 520.000 (de 35 a 2.000 m por segundo; el proyectil perforante de 75 mm 120.000, unos 460 m por segundo). Un disparo sin física (Disparo sin física) va en línea recta a 26 veces esto. Cada vuelo se redondea a los 0,2 s siguientes. Un disparo demasiado lento para alcanzar su objetivo se acelera un 5 % cada vez hasta que puede: llega igualmente, solo que más tarde."
 [FX_frottement]
-what = "Rozamiento del disparo (dibujado)"
-does = "Solo aspecto: lo rápido que se frena el disparo dibujado en el aire."
+what = "Resistencia del disparo"
+does = "Lo rápido que un disparo con física se frena en el aire: más resistencia, un vuelo más largo en la misma distancia, así que el impacto llega más tarde. Los disparos del juego tienen de 0,001 (la mayoría) a 0,08. Un disparo sin física la ignora."
 [FX_tir_tendu]
 what = "Tiro tenso (dibujado)"
 does = "Solo aspecto: 1 dibuja el disparo plano y recto en vez de en arco."
 [FX_tir_sans_physic]
-what = "Disparo dibujado sin física"
-does = "Solo aspecto: 1 dibuja el disparo sin gravedad ni rozamiento."
+what = "Disparo sin física"
+does = "1: el disparo va en línea recta hasta donde cae a 26 veces su Velocidad del disparo, sin gravedad ni resistencia (armas ligeras, ametralladoras, casi todos los antiaéreos, bombas y granadas del juego); 0: vuela con gravedad y resistencia (proyectiles, morteros, cohetes)."
 [AltitudeDeVol]
 what = "Altura de vuelo"
 does = "A qué altura vuela el avión: de 52.000 a 208.000 (de 200 a 800 m)."

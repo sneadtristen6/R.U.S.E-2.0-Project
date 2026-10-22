@@ -329,7 +329,7 @@ def gltf_document(path: Path) -> tuple[dict, bytes]:
         older = (m.get("extensions") or {}).get("KHR_materials_pbrSpecularGlossiness") or {}
         tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture") or older.get("diffuseTexture")
         if tex is not None:
-            used.add(doc["textures"][tex["index"]]["source"])
+            used.add(texture_source(doc, tex["index"]))
     for k, img in enumerate(doc.get("images", [])):
         if "uri" not in img:
             continue
@@ -345,7 +345,7 @@ def gltf_document(path: Path) -> tuple[dict, bytes]:
         tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
         if tex is None:
             continue
-        name = doc["images"][doc["textures"][tex["index"]]["source"]].get("name", "")
+        name = doc["images"][texture_source(doc, tex["index"])].get("name", "")
         for diff in ("_diff_", "_diffuse_", "_col_"):
             if diff in name:
                 stem = name[:name.rindex(diff)] + "_alpha_" + name[name.rindex(diff) + len(diff):].rsplit(".", 1)[0]
@@ -375,7 +375,31 @@ def read_gltf(path: Path) -> Model:
     return _read_document(*gltf_document(path), path)
 
 
+COMPRESSED = ("KHR_draco_mesh_compression", "EXT_meshopt_compression", "KHR_mesh_quantization")
+
+
+def texture_source(doc: dict, index: int) -> int:
+    """The image a texture shows: its own `source`, or (a .glb saved with WebP pictures) the one EXT_texture_webp
+    names."""
+    tex = doc["textures"][index]
+    if "source" in tex:
+        return tex["source"]
+    for ext in ("EXT_texture_webp", "KHR_texture_basisu", "MSFT_texture_dds"):
+        source = ((tex.get("extensions") or {}).get(ext) or {}).get("source")
+        if source is not None:
+            if ext != "EXT_texture_webp":
+                raise ModelError(f"its pictures are saved as {ext.split('_', 2)[-1]}, which the importer can't read: "
+                                 "open it in Blender and export it again with PNG or JPEG pictures")
+            return source
+    raise ModelError("a texture with no picture")
+
+
 def _read_document(doc: dict, binary: bytes, path) -> Model:
+    squeezed = [e for e in doc.get("extensionsRequired", []) if e in COMPRESSED]
+    if squeezed:   # (a player's report, 2026-10-22: some downloaded .glb files were refused with no reason given)
+        raise ModelError(f"{Path(path).name}: its meshes are compressed ({', '.join(squeezed)}), which the importer "
+                         "can't read: open it in Blender and export it again with compression off "
+                         "(File > Export > glTF 2.0, Data > Compression unticked)")
     materials = []
     for m in doc.get("materials", []):
         pic, data, alpha = "", b"", b""
@@ -385,7 +409,7 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
         older = (m.get("extensions") or {}).get("KHR_materials_pbrSpecularGlossiness") or {}
         tex = pbr.get("baseColorTexture") or older.get("diffuseTexture")
         if tex is not None:
-            source = doc["textures"][tex["index"]]["source"]
+            source = texture_source(doc, tex["index"])
             img = doc["images"][source]
             pic = img.get("uri") or img.get("name") or f"image{source}"
             data = glb_image(doc, binary, source)
@@ -432,7 +456,7 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
                     tris = [tuple(idx[i:i + 3]) for i in range(0, len(idx) - 2, 3)]
                     mesh = Mesh(name, pos, tris, [(u, 1.0 - v) for u, v in uvs],  # glTF's v runs down the picture
                                 [prim.get("material", -1)] * len(tris), nrm)
-                meshes.append(mesh)
+                meshes.extend(by_bones(doc, binary, node, prim, mesh))
         for c in node.get("children", []):
             visit(c, matrix)
 
@@ -442,6 +466,49 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
     if not meshes:
         raise ModelError(f"{Path(path).name}: no meshes in it")
     return Model(meshes, materials, str(path))
+
+
+def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> list[Mesh]:
+    """A skinned part split by the bone each triangle leans on most, when one of its bones is named as a turret or a
+    gun (roles' words): the game's own models come out of the Studio's Open in Blender as one mesh per picture, the
+    turret in the same mesh as the hull, with each bone named as the game names it (tourelle_01, canon_01: rusemod.
+    gltf). Read back, the turret's triangles become a part of their own, named after their bone, so it turns again (a
+    player's report, 2026-10-22: the game's own Firefly, exported and imported, kept its turret still). Any other
+    part, and a model whose bones aren't named so, is left as it is."""
+    attrs = prim.get("attributes", {})
+    if "skin" not in node or "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs:
+        return [mesh]
+    skin = doc.get("skins", [])[node["skin"]]
+    names = [doc["nodes"][j].get("name", "") for j in skin.get("joints", [])]
+    moving = {k: n for k, n in enumerate(names) if named_role(n) in (TURRET, GUN)}
+    if not moving:
+        return [mesh]
+    joints = glb_accessor(doc, binary, attrs["JOINTS_0"])
+    weights = glb_accessor(doc, binary, attrs["WEIGHTS_0"])
+    if len(joints) != len(mesh.positions):
+        return [mesh]
+    bone_of = []    # each point's heaviest bone, if it's a turret's or gun's; "" for the rest
+    for js, ws in zip(joints, weights):
+        heaviest = max(range(len(ws)), key=lambda i: ws[i])
+        bone_of.append(moving.get(js[heaviest], ""))
+    groups: dict = {}
+    for t, tri in enumerate(mesh.triangles):
+        votes = [bone_of[i] for i in tri]
+        bone = max(set(votes), key=votes.count)
+        groups.setdefault(bone, []).append(t)
+    if set(groups) == {""}:
+        return [mesh]
+    out = []
+    for bone, picked in groups.items():
+        keep = sorted({i for t in picked for i in mesh.triangles[t]})
+        new_of = {old: k for k, old in enumerate(keep)}
+        out.append(Mesh(f"{mesh.name}.{bone}" if bone else mesh.name,
+                        [mesh.positions[i] for i in keep],
+                        [tuple(new_of[i] for i in mesh.triangles[t]) for t in picked],
+                        [mesh.uvs[i] for i in keep] if mesh.uvs else [],
+                        [mesh.face_materials[t] for t in picked] if mesh.face_materials else [],
+                        [mesh.normals[i] for i in keep] if mesh.normals else []))
+    return out
 
 
 def read_model(path: Path) -> Model:
@@ -458,11 +525,11 @@ def read_model(path: Path) -> Model:
 
 
 # --- pictures ---
-PICTURES = (".png", ".tga")
+PICTURES = (".png", ".tga", ".jpg", ".jpeg", ".webp", ".bmp")
 
 
 def _pictures_in(folder: Path, depth: int = 3) -> list[Path]:
-    """The .png and .tga files in `folder` and up to `depth` folders below it."""
+    """The picture files (PICTURES) in `folder` and up to `depth` folders below it."""
     out, level = [], [Path(folder)]
     for _ in range(depth + 1):
         below = []
@@ -496,14 +563,28 @@ def find_picture(name: str, folder: Path) -> Path | None:
 
 
 def load_picture(data: bytes, name: str = "") -> tuple[int, int, bytes]:
-    """A .png or .tga picture's bytes -> (width, height, RGBA)."""
+    """A picture's bytes -> (width, height, RGBA): .png and .tga read here; .jpg, .webp and the rest through Pillow,
+    which the apps carry (a player's report, 2026-10-22: models whose pictures are JPGs, as most downloaded .glb files
+    have, were refused)."""
     from .png import read_png
     from .tga import read_tga
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         return read_png(data)
     if name.lower().endswith(".tga") or data[2:3] in (b"\x02", b"\x03", b"\x0a", b"\x0b"):
         return read_tga(data)
-    raise ModelError(f"{name or 'a picture'}: only .png and .tga pictures are read")
+    try:
+        from io import BytesIO
+
+        from PIL import Image
+    except ImportError:
+        raise ModelError(f"{name or 'a picture'}: this copy of the Studio reads only .png and .tga pictures; save it "
+                         "as .png (in Blender: Image > Save As) and import again") from None
+    try:
+        with Image.open(BytesIO(data)) as im:
+            im = im.convert("RGBA")
+            return im.width, im.height, im.tobytes()
+    except (OSError, ValueError, Image.DecompressionBombError) as exc:
+        raise ModelError(f"{name or 'a picture'}: not a picture the importer can read ({exc})") from None
 
 
 def _sized(w: int, h: int, px: bytes, side: int) -> tuple[int, int, bytes]:

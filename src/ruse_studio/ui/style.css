@@ -909,6 +909,20 @@ tr.edited .flag { border-color: var(--accent); }
 .flag-danger-breaks { border-color: var(--accent); }
 .flag-mine { border-color: var(--accent); }
 .flag-danger-why { color: var(--text); }
+/* the mod's flag types (openFlagTypes): the ones a unit has under its flags, and their window: the types, a name, what
+   it's for and every flag with an On and an Off box */
+.flag-types-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.flag-types-line select { max-width: 18em; font-size: 12px; }
+.flag.flag-type { border-style: dashed; }
+.flag.flag-type .flag-name { margin-left: 0; color: var(--text); }
+.flag-types-mine { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.flag-type-field { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.flag-type-field > span { flex: 0 0 15em; }
+.flag-type-field input { flex: 1; }
+.flag-types-list { max-height: 46vh; }
+.flag-type-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.flag-type-row label { white-space: nowrap; cursor: pointer; }
+.flag-type-row .muted { flex-basis: 100%; padding-left: 9.5em; font-size: 12px; }
 /* what a number means (numberHelp): its plain value, the base-stat slider, and where it sits among its kind */
 th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 3px; }
 .number-help { display: grid; gap: 3px; margin-top: 4px; max-width: 520px; }
