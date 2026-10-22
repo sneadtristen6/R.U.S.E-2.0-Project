@@ -199,6 +199,66 @@ class Pictures(unittest.TestCase):
         self.assertEqual([round(c * 255) for c in mats[1].colour], [188, 137, 255])   # sRGB of the linear factor
         self.assertEqual([round(c * 255) for c in mats[2].colour], [89, 124, 149])    # the newer form's own first
 
+    def test_a_game_model_read_back_keeps_its_turret(self):
+        """The game's own models come out of Open in Blender as one mesh, each bone named as the game names it: read
+        back, the triangles leaning on a turret's or gun's bone become parts of their own and turn (a player's report,
+        2026-10-22: the Firefly, exported and imported, kept its turret still). Bones not so named leave it whole."""
+        from rusemod.gltf import FLOAT, USHORT, _Glb
+
+        def model(bone_names):
+            g = _Glb()
+            pts = [(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (0.0, 0.0, 2.0), (0.0, 1.0, 0.0), (1.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
+            attrs = {"POSITION": g.accessor(pts, "VEC3", FLOAT),
+                     "JOINTS_0": g.accessor([(0, 0, 0, 0)] * 3 + [(1, 0, 0, 0)] * 3, "VEC4", USHORT),
+                     "WEIGHTS_0": g.accessor([(1.0, 0.0, 0.0, 0.0)] * 6, "VEC4", FLOAT)}
+            idx = g.accessor([0, 1, 2, 3, 4, 5], "SCALAR", USHORT, 34963)
+            g.doc["meshes"].append({"name": "tank", "primitives": [{"attributes": attrs, "indices": idx}]})
+            g.doc["nodes"] += [{"name": "tank", "mesh": 0, "skin": 0}, {"name": bone_names[0]}, {"name": bone_names[1]}]
+            g.doc["skins"] = [{"joints": [1, 2]}]
+            g.doc["scenes"], g.doc["scene"] = [{"nodes": [0]}], 0
+            with tempfile.TemporaryDirectory() as d:
+                path = Path(d, "tank.glb")
+                path.write_bytes(g.to_bytes())
+                return modelin.read_model(path)
+        named = model(["chassis", "tourelle_01"])
+        self.assertEqual([(m.name, len(m.positions), len(m.triangles)) for m in named.meshes],
+                         [("tank", 3, 1), ("tank.tourelle_01", 3, 1)])
+        self.assertEqual(modelin.roles(named), ["hull", "turret"])
+        self.assertEqual([m.name for m in model(["bone_0", "bone_12"]).meshes], ["tank"])
+
+    def test_jpg_pictures_and_what_can_t_be_read(self):
+        """A .glb's JPG or WebP picture is read (through Pillow, which the apps carry); what the importer can't read
+        says so and how to fix it, never a bare failure (a player's report, 2026-10-22)."""
+        try:
+            from io import BytesIO
+
+            from PIL import Image
+        except ImportError:
+            with self.assertRaisesRegex(modelin.ModelError, "save it as .png"):
+                modelin.load_picture(b"\xff\xd8\xff\xe0 not a png", "paint.jpg")
+        else:
+            buf = BytesIO()
+            Image.new("RGB", (4, 2), (200, 30, 10)).save(buf, "JPEG", quality=100)
+            w, h, px = modelin.load_picture(buf.getvalue(), "paint.jpg")
+            self.assertEqual((w, h, len(px)), (4, 2, 32))
+            self.assertTrue(all(abs(a - b) <= 8 for a, b in zip(px[:4], (200, 30, 10, 255))))
+            with self.assertRaisesRegex(modelin.ModelError, "not a picture the importer can read"):
+                modelin.load_picture(b"\x00\x01 neither", "broken.jpg")
+        from rusemod.gltf import _Glb
+        g = _Glb()
+        g.doc["extensionsRequired"] = ["KHR_draco_mesh_compression"]
+        g.doc["meshes"].append({"primitives": [{"attributes": {}}]})
+        g.doc["nodes"].append({"mesh": 0})
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d, "squeezed.glb")
+            path.write_bytes(g.to_bytes())
+            with self.assertRaisesRegex(modelin.ModelError, "compressed .*Compression unticked"):
+                modelin.read_model(path)
+        with self.assertRaisesRegex(modelin.ModelError, "can't read: open it in Blender"):
+            modelin.texture_source({"textures": [{"extensions": {"KHR_texture_basisu": {"source": 0}}}]}, 0)
+        self.assertEqual(modelin.texture_source({"textures": [{"extensions": {"EXT_texture_webp": {"source": 3}}}]},
+                                                0), 3)
+
     def test_a_glb_colour_is_linear(self):
         """glTF's colour factors are linear, a picture's bytes sRGB (2026-10-09: the Rapier's mustard, linear (0.138,
         0.112, 0.008), was written (35, 29, 2) and drew black; sRGB it is about (104, 94, 22))."""

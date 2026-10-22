@@ -5,6 +5,9 @@ your own, and test it in the game. Your Steam install is never changed.
 
 - **Fixed, reported by a modder:** a model imported on a new unit made from the Panther landed far away from the unit. On new units made from 85 other units it sat off the unit's turret, some by a lot (the 155 mm GPF, the SU-85, the Carro Veloce, the StuG III, the M7 Priest), most by a little. The Studio misread where those units' turrets turn, because their skeletons scale the turret bone; it reads them right now. A model imported before this fix keeps its old place: use Import model again on that unit.
 
+- **Fixed, reported by a player:** a model whose pictures are JPG or WebP (most downloaded .glb files) was refused; it imports now. A model the importer still can't read (compressed meshes, KTX2 pictures) says so and how to fix it in Blender.
+- **Fixed, reported by a player:** one of the game's own tanks, opened in Blender and imported back, kept its turret still. Open in Blender now names each part's bone as the game does, and Import model turns a part on the turret's bone with the turret. A model exported before this keeps its old names: open it in Blender again.
+
 **0.9.8.7:** Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, and every value explained.
 
 - **Fixed, reported by a modder:** on a new unit made from one of 17 of the game's units, the box for changing its model never appeared, because the Studio didn't find the copied unit's 3D model. The 17: the King Tiger, the atomic guns, the Long Tom nuke, the V2 launcher, the TransportHQ, the Wurfrahmen half-track, the atomic OI, Type 1 and Type 4, and three campaign versions. The Studio finds those models now, and if it ever can't find a model, the box says so instead of disappearing. The report was about the Panther, which worked on our PC, so that case isn't confirmed fixed yet.

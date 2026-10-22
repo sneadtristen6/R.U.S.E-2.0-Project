@@ -58,6 +58,8 @@ class Library:
             raise FileNotFoundError(f"ZZ_Win.dat isn't in {game}")
         self.arc = Edat.open(str(path))
         self.where: dict[str, Spk] = {}
+        self._skeleton_packs = []      # the skeleton packs' entries, read only when bone names are asked for
+        self._skeletons: dict | None = None
         for e in self.arc.entries:
             p = e.path.lower()
             if not (p.startswith(PACKS) and p.endswith(".spk")):
@@ -65,9 +67,33 @@ class Library:
             try:
                 spk = Spk(bytes(self.arc.read(e)))
             except SpkError:  # a skeleton pack
+                self._skeleton_packs.append(e)
                 continue
             for name in spk.items:
                 self.where.setdefault(name, spk)
+
+    def bone_names(self, model: str) -> list[str] | None:
+        """A model's bones by their numbers, as its skeleton names them (chassis, tourelle_01, canon_01...); None when
+        no skeleton pack has it. The skeleton packs are read the first time this is asked."""
+        if self._skeletons is None:
+            from .unitpacks import NONE, MeshPack
+            self._skeletons = {}
+            for e in self._skeleton_packs:
+                try:
+                    pack = MeshPack.read(bytes(self.arc.read(e)))
+                except ValueError:
+                    continue
+                for name, item in pack.items.items():
+                    if item[2] != NONE:
+                        self._skeletons.setdefault(name, pack.skeletons[item[2]])
+        blob = self._skeletons.get(model.replace("/", "\\").lower())
+        if blob is None:
+            return None
+        from .unitmodel import UnitModelError, read_skeleton
+        try:
+            return read_skeleton(blob).names
+        except (UnitModelError, struct.error, UnicodeDecodeError):
+            return None
 
     def close(self) -> None:
         self.arc.close()
