@@ -379,7 +379,7 @@ class Page(unittest.TestCase):
             used |= set(re.findall(r"\bw\.([a-z_0-9]+)", js))
             used |= {k for k in re.findall(r'"((?:flow|board|ss|set)_[a-z_0-9]+)"', js) if not k.endswith("_")}
         used |= {f"flow_step_{s}" for s in ("name", "nations", "research", "board", "change", "done")}
-        used |= {f"flow_help_{s}" for s in ("nations", "units", "economy", "ai", "decoy", "values")}
+        used |= {f"flow_help_{s}" for s in ("nations", "units", "ai", "decoy", "values")}
         used |= {"set_start_title", "set_start_help"}
         self.assertEqual(sorted(k for k in used if k not in words), [])
         for key in used:

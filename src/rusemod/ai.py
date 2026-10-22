@@ -51,6 +51,17 @@ NUCLEAR_MODE = 4  # the game mode the game's texts call "Nuclear mode" (DLC_GML_
 WAR_MODES = ("Btn1945", "Btn1942", "Btn1939", "DLC_GML_01", "DLC_GML_02")
 CHOICE_PROPS = ("UnitIDs", "WarModes", "AIDifficulties", "AIProfiles")  # a bonus's lists: picked by name
 
+# The improved computer player (the Studio's AI and player settings; the owner's AI tests 1-5 of 2026-10-22, test 5 on
+# Hard "worked well": it rushes). A difficulty given these attacks whatever the odds: the game sends an attack, and
+# calls the army gathered for it enough, when its forces compare well enough by these two factors, and the smaller the
+# factor the weaker it may be (0.9 and 1.8 on Hard; at 0.01 a much bigger army still held it back, the gap counting
+# about twice over). It never buys artillery: every unit type's score takes the gap between the highest type weight and
+# its own, and the lowest score is bought. And it starts with extra money (DeviseBonusIA, paid once when the battle
+# starts), so it has an army to send. A personality with its own value of one of these keeps it (the rule above).
+IMPROVED = {"MissionFacteurLancementAttaque": 0.000001, "MissionFacteurEnoughToDestroy": 0.000001,
+            "BonusUnitesArtillerie": -100000.0}
+IMPROVED_MONEY, IMPROVED_MONEY_DEFAULT, IMPROVED_MONEY_MOST = "DeviseBonusIA", 50000, 1000000
+
 # the game's own words for the AI's lobby, by text key
 WORDS = {"ai": "NAME_AI", "difficulty": "BtnAIDiff", "profile": "BtnAIType", "nuclear": "DLC_GML_02"}
 HINT = "AI_HPROF{}"  # personality n's line in the lobby ("This AI will use rush tactics to defeat you")

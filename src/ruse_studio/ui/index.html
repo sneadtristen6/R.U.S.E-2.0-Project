@@ -19,7 +19,6 @@
     <div class="tabs" role="tablist">
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
       <button id="tab-nations" type="button" role="tab" aria-selected="false"></button>
-      <button id="tab-economy" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-decoy" type="button" role="tab" aria-selected="false"></button>
@@ -542,20 +541,6 @@
     </div>
   </section>
   <!-- Settings (app.js SETTINGS: one section per setting, so a new one is one more entry) -->
-  <!-- the Economy tab (app.js renderEconomy, StudioApi.economy, rusemod.economy): money, income, supply depots,
-       production limits, ruse cards and the computer players', changed in the current mod for every game mode, or
-       for the usual modes and the Nuclear mode apart where the game has them apart -->
-  <main id="economy-view" class="settings-view hidden">
-    <div class="settings">
-      <h1 id="economy-title"></h1>
-      <p id="economy-help" class="muted small"></p>
-      <div id="economy-groups"></div>
-      <p id="economy-buildings" class="muted small"></p>
-    </div>
-  </main>
-  <!-- the AI tab (app.js renderAI, StudioApi.ai, rusemod.ai, our own code; LittleGroove's AI editor had it first):
-       how the computer players play (their sets of values), the units they're keener to build, and the ruse cards
-       (every player's) -->
   <!-- the Nations tab (nations.js, StudioApi.nations_view, rusemod.nations): one of the game's seven nations given a
        new name and flag, China in Italy's place say; its units on the Units tab, what they say on each unit's page -->
   <main id="nations-view" class="settings-view hidden">
@@ -660,16 +645,40 @@
   </main>
 
 
+  <!-- AI and player settings (the owner, 2026-10-21: "the economy AI and just those settings should be in one
+       comprehensive name", then "Think AI and player settings"; built 10-22): the Economy tab's money, supply,
+       production and ruse cards for every player (app.js renderEconomy, StudioApi.economy, rusemod.economy: changed in
+       the current mod for every game mode, or for the usual modes and the Nuclear mode apart where the game has them
+       apart), then the AI tab's computer players (app.js renderAI, StudioApi.ai, rusemod.ai, our own code;
+       LittleGroove's AI editor had it first): how they play with the improved computer player, the economy's values
+       for every computer player, the units they're keener to build, the ruse cards and the mission scripts -->
   <main id="ai-view" class="settings-view hidden">
     <div class="settings">
       <h1 id="ai-title"></h1>
-      <p id="ai-help" class="muted small"></p>
+      <p id="ai-intro" class="muted small"></p>
+      <section class="setting">
+        <h2 id="play-players-title"></h2>
+        <p id="economy-help" class="muted small"></p>
+        <div id="economy-groups"></div>
+        <p id="economy-buildings" class="muted small"></p>
+      </section>
+      <section class="setting">
+        <h2 id="play-ai-title"></h2>
+        <p id="ai-help" class="muted small"></p>
+      </section>
       <section class="setting">
         <h2 id="ai-how-title"></h2>
         <p id="ai-mix" class="muted small"></p>
         <div id="ai-pick" class="ai-pick"></div>
         <p id="ai-hint" class="muted small"></p>
+        <!-- a difficulty's improved computer player (app.js aiImprovedBox, StudioApi.ai_improved) -->
+        <div id="ai-improved"></div>
         <div id="ai-groups"></div>
+      </section>
+      <section class="setting">
+        <h2 id="ai-all-title"></h2>
+        <p id="ai-all-help" class="muted small"></p>
+        <div id="ai-economy-groups"></div>
       </section>
       <section class="setting">
         <h2 id="ai-bonus-title"></h2>

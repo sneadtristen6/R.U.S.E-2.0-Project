@@ -137,7 +137,10 @@ class Words(unittest.TestCase):
                   "ai_same_default", "ai_none", "ai_bonus_title", "ai_bonus_help", "ai_cards_title", "ai_cards_help",
                   "ai_not_in_menu", "tip_ai_reset", "ai_bonus_summary", "ai_bonus_any_mode", "ai_bonus_any_difficulty",
                   "ai_bonus_any_profile", "ai_bonus_any_unit", "ai_battle", "ai_battle_wins", "tip_ai_battle",
-                  "tip_ai_choice", "ai_sure_name", "unit_min"):
+                  "tip_ai_choice", "ai_sure_name", "unit_min", "ai_intro", "play_ai_title", "ai_all_title",
+                  "ai_all_help", "ai_improved_title", "ai_improved_help", "ai_improved_on", "tip_ai_improved",
+                  "ai_improved_money", "tip_ai_improved_money", "ai_improved_keeps_attack",
+                  "ai_improved_keeps_artillery", "ai_improved_done_on", "ai_improved_done_off"):
             with self.subTest(key=k):
                 self.assertEqual(set(words[k]), LANGS)
 
@@ -167,12 +170,13 @@ class Words(unittest.TestCase):
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         fake = (ROOT / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ('id="tab-ai"', 'id="ai-view"', 'id="ai-pick"', 'id="ai-groups"', 'id="ai-bonuses"',
-                       'id="ai-cards"'):
+                       'id="ai-cards"', 'id="ai-improved"', 'id="ai-intro"', 'id="play-ai-title"'):
             self.assertIn(needle, html)
         for needle in ("function renderAI", "api().ai(", "api().ai_edit(", "api().ai_reset(", 'showView("ai")',
-                       "function aiBattleLine", "function aiChoiceBox", "function aiBonusSummary"):
+                       "function aiBattleLine", "function aiChoiceBox", "function aiBonusSummary",
+                       "function aiImprovedBox", "api().ai_improved("):
             self.assertIn(needle, app)
-        for needle in ("ai: async", "ai_edit: async", "ai_reset: async"):
+        for needle in ("ai: async", "ai_edit: async", "ai_reset: async", "ai_improved: async", "improved_keeps"):
             self.assertIn(needle, fake)
 
 

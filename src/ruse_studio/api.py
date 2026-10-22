@@ -6288,14 +6288,22 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                              "name": texts.get(c["key"]) if c["kind"] != "default" else None,
                              "hint": texts.get(ai.HINT.format(c["index"])) if c["kind"] == "personality" else None,
                              "groups": groups, "missing": missing})
+            if c["kind"] == "difficulty":
+                profiles[-1]["improved"] = self._ai_improved_state(edits, c["address"])
 
         named = {kind: {c["index"]: texts.get(c["key"]) for c in configs if c["kind"] == kind}
                  for kind in ("difficulty", "personality")}
         modes = {n: texts.get(key) for n, key in enumerate(ai.WAR_MODES)}
         # what each value comes to in a battle, by the game's rule (rusemod.ai.battle_values), with the mod's changes
         def values_of(p):
-            return {r["prop"]: r["game"] if r["value"] is None else r["value"]
-                    for g in p["groups"] for r in g["rows"] if not r["list"]}
+            got = {r["prop"]: r["game"] if r["value"] is None else r["value"]
+                   for g in p["groups"] for r in g["rows"] if not r["list"]}
+            # a number the mod gives a set that isn't one of its rows (All values' Add a value; the improved computer
+            # player's artillery weight) counts in a battle too
+            for prop, v in (edits.of(p["id"]) if edits is not None else {}).items():
+                if prop not in got and isinstance(v, (int, float)) and not isinstance(v, bool):
+                    got[prop] = v
+            return got
         default_p = next((p for p in profiles if p["kind"] == "default"), None)
         every = {prop for p in profiles for prop in values_of(p)}  # Default counts 0 for one it doesn't list
         battle = ai.battle_values(
@@ -6331,10 +6339,64 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
                               "rows": [self._ai_row(prop, allowed[prop], types[ai.CARD], lang, mine(o["address"], prop),
                                                     ai.CARD)
                                        for prop in ai.CARD_PROPS if prop in allowed]})
+        # the personalities whose own value of one of the improved computer player's wins over a difficulty's
+        def keeps(*props):
+            return sorted({name for prop in props for name, _v in battle.get(prop, {}).get("personalities", [])})
+        improved_keeps = {"attack": keeps("MissionFacteurLancementAttaque", "MissionFacteurEnoughToDestroy"),
+                          "artillery": keeps("BonusUnitesArtillerie")}
         return {"ready": bool(profiles or out_cards or out_bonuses),
                 "words": {k: texts.get(key) for k, key in ai.WORDS.items()},
                 "profiles": profiles, "bonuses": out_bonuses, "cards": out_cards, "battle": battle,
-                "choices": choices}
+                "choices": choices, "improved_keeps": improved_keeps}
+
+    @staticmethod
+    def _ai_improved_state(edits: ModEdits | None, address: str) -> dict:
+        """Whether the current mod gives the difficulty at `address` the improved computer player (every value of
+        rusemod.ai.IMPROVED as it is there), and its start money then."""
+        mine = edits.of(address) if edits is not None else {}
+        on = all(isinstance(mine.get(prop), (int, float)) and math.isclose(mine[prop], v, rel_tol=1e-6)
+                 for prop, v in ai.IMPROVED.items())
+        return {"on": on, "money": mine.get(ai.IMPROVED_MONEY) if on else None,
+                "default_money": ai.IMPROVED_MONEY_DEFAULT, "most_money": ai.IMPROVED_MONEY_MOST}
+
+    def ai_improved(self, address: str, on: bool, money=None) -> dict:
+        """The improved computer player (rusemod.ai.IMPROVED: attacks whatever the odds, never buys artillery, starts
+        with extra money) on one difficulty, in the current mod: `on` writes its values and `money` (whole dollars;
+        None: rusemod.ai.IMPROVED_MONEY_DEFAULT) as the start money, written as All values' Add a value writes a value
+        the difficulty doesn't list; off takes them all out again, each back to the game's. Tried in the game on Hard,
+        2026-10-22 (the owner's AI test 5: "test worked well")."""
+        edits = self._edits()
+        if edits is None:
+            raise StudioError("Pick or make a mod first: changes are saved in a mod.")
+        ix = self._open()
+        try:
+            config = next((c for c in ai.configurations(ix) if c["address"] == address), None)
+            if config is None or config["kind"] != "difficulty":
+                # not a game rule: the Studio offers it on a difficulty, where a personality's own values still win
+                raise StudioError("Only a difficulty gets the improved computer player.")
+            types = ix.prop_types(ai.PROFILE)
+        finally:
+            ix.close()
+        for prop in (*ai.IMPROVED, ai.IMPROVED_MONEY):
+            if prop not in types:
+                # not a game rule: the build writes a new value only under a name some profile in the game's file uses
+                raise StudioError(f"No profile in the game's data has {prop}, so the improved computer player can't "
+                                  f"be written.")
+        cash = ai.IMPROVED_MONEY_DEFAULT if money is None else money
+        if on and (isinstance(cash, bool) or not isinstance(cash, (int, float)) or cash != int(cash)
+                   or not 1 <= cash <= ai.IMPROVED_MONEY_MOST):
+            # not a game rule: the money a player holds is kept x 840 in a 32-bit number, so the Studio keeps it well
+            # under that
+            raise StudioError(f"Give the start money as a whole number of dollars from 1 to "
+                              f"{ai.IMPROVED_MONEY_MOST:,}.")
+        with self._saving:
+            edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            for prop, v in (*ai.IMPROVED.items(), (ai.IMPROVED_MONEY, int(cash))):
+                if on:
+                    edits.set(address, prop, v)
+                else:
+                    edits.reset(address, prop)
+        return {"saved": str(edits.file), **self._ai_improved_state(edits, address)}
 
     def ai_edit(self, address: str, prop: str, value) -> dict:
         """Change one value of a computer players' profile, bonus or ruse card (rusemod.ai) in the current mod. Saved

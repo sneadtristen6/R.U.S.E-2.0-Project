@@ -201,6 +201,9 @@ tr.edited .boxes input[type="number"] { border-color: var(--accent); }
 .ai-pick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ai-pick-row > span { min-width: 6.5em; }
 .ai-pick-row > span:empty { display: none; }
+/* AI and player settings: a difficulty's improved computer player (app.js aiImprovedBox) */
+.ai-improved-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 6px 0; }
+.ai-improved-money { width: 9em; }
 .group table.ai-cards th { width: 34%; }
 .ai-cards th small.about { font-family: inherit; font-size: 12px; line-height: 1.35; color: var(--muted); }
 /* the AI tab: what each value does (the number guide), what it comes to in a battle, a bonus in one sentence */

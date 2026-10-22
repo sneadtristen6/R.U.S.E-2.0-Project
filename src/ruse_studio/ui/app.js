@@ -163,16 +163,14 @@ async function setLanguage(lang) {
   const w = state.words;
   $("tab-units").textContent = w.units_tab;
   $("tab-nations").textContent = w.nations_tab;
-  $("tab-economy").textContent = w.economy_tab;
-  $("tab-ai").textContent = w.ai_tab;
+  $("tab-ai").textContent = w.ai_tab;  // AI and player settings: the Economy tab's values are in it too
   $("tab-values").textContent = w.values_tab;
   $("tab-decoy").textContent = w.decoy_tab;
   $("tab-files").textContent = w.files_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
-  if (state.view === "economy") renderEconomy();
-  if (state.view === "ai") renderAI();
+  if (state.view === "ai") renderPlay();  // AI and player settings: both halves
   if (state.view === "values") renderValues();
   if (state.view === "decoy") window.DecoyView.setWords(w, lang);
   if (state.view === "nations") window.NationsView.setWords(w, lang);
@@ -198,7 +196,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-economy": "tip_tab_economy", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-decoy": "tip_tab_decoy", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-decoy": "tip_tab_decoy", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -435,8 +433,7 @@ async function modChanged() {
   state.aiScripts = null;  // which scripts the mod changes: the other mod's now (read again when the AI tab shows)
   $("ai-script").dataset.lang = "";
   closeScriptEditor();
-  if (state.view === "economy") await renderEconomy();  // the economy shown is the mod's
-  if (state.view === "ai") await renderAI();  // and so are the computer players, and its scripts
+  if (state.view === "ai") await renderPlay();  // the economy shown is the mod's, and so are the computer players and scripts
   if (state.view === "values") renderValuesNew();  // New object… needs a mod
   if (state.view === "values" && state.valuePage) await showValueObject(state.valuePage.address, { keep: true });  // and its changes
   if (state.view === "decoy") window.DecoyView.modChanged();  // and its sounds' volumes and replacements
@@ -3096,10 +3093,10 @@ function unitSoundsGroup(u) {
 }
 
 function showView(view) {
+  if (view === "economy") view = "ai";  // the Economy tab is the first half of AI and player settings now
   state.view = view;
   $("units-view").classList.toggle("hidden", view !== "units");
   $("nations-view").classList.toggle("hidden", view !== "nations");
-  $("economy-view").classList.toggle("hidden", view !== "economy");
   $("ai-view").classList.toggle("hidden", view !== "ai");
   $("values-view").classList.toggle("hidden", view !== "values");
   $("decoy-view").classList.toggle("hidden", view !== "decoy");
@@ -3108,23 +3105,21 @@ function showView(view) {
   $("settings-view").classList.toggle("hidden", view !== "settings");
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-nations").setAttribute("aria-selected", String(view === "nations"));
-  $("tab-economy").setAttribute("aria-selected", String(view === "economy"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
   $("tab-values").setAttribute("aria-selected", String(view === "values"));
   $("tab-decoy").setAttribute("aria-selected", String(view === "decoy"));
   $("tab-files").setAttribute("aria-selected", String(view === "files"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
-  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, Economy, AI, All values and RUSE Decoy edit a mod, Maps a map
+  $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, AI and player settings, All values and RUSE Decoy edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
-  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, Economy, AI, All
-  // values and RUSE Decoy: the Maps tab and Settings (where the installer's clean backup shows how far it is) can be used
-  // meanwhile
-  $("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "decoy"].includes(view));
+  // "No game index yet" (and the index's build, a minute or more) covers the tabs that read it, Units, AI and player
+  // settings, All values and RUSE Decoy: the Maps tab and Settings (where the installer's clean backup shows how far it
+  // is) can be used meanwhile
+  $("no-index").classList.toggle("off-tab", !["units", "nations", "ai", "values", "decoy"].includes(view));
   if (view !== "decoy") window.SoundView.leave();  // a sound playing stops with its tab
   if (view === "nations") { window.NationsView.open(state.words, state.lang); return; }
-  if (view === "economy") { renderEconomy(); return; }
-  if (view === "ai") { renderAI(); return; }
+  if (view === "ai") { renderPlay(); return; }
   if (view === "values") { renderValues(); return; }
   if (view === "decoy") { window.DecoyView.open(state.words, state.lang); return; }
   if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
@@ -3135,31 +3130,42 @@ function showView(view) {
   else window.addEventListener("mapview-ready", open, { once: true });
 }
 
-// --- the Economy tab (StudioApi.economy, rusemod.economy, our own code; LittleGroove's Economy editor had it first):
-// starting money, income, supply depots, production limits, ruse cards and the computer players'. A change is saved in
-// the current mod at once, for every game mode (the game has these values twice: its usual modes and the Nuclear
-// mode), or for one of the two where they're shown apart (economyRow) ---
+// --- AI and player settings, its players' half (the Economy tab before 10-22; StudioApi.economy, rusemod.economy, our
+// own code; LittleGroove's Economy editor had it first): starting money, income, supply depots, production limits and
+// ruse cards; the economy's values for every computer player (its computer and decoys groups: the number guide's
+// "computer" values) go in the computer players' half. A change is saved in the current mod at once, for every game
+// mode (the game has these values twice: its usual modes and the Nuclear mode), or for one of the two where they're
+// shown apart (economyRow) ---
+const ECONOMY_AI_GROUPS = ["computer", "decoys"];
+
 async function renderEconomy() {
   const w = state.words;
-  $("economy-title").textContent = w.economy_title;
+  $("play-players-title").textContent = w.play_players_title;
   $("economy-help").textContent = state.mod ? w.economy_help : w.no_mod;
   $("economy-buildings").textContent = w.economy_buildings;
+  $("ai-all-title").textContent = w.ai_all_title;
+  $("ai-all-help").textContent = w.ai_all_help;
   if (!knownNumbers) {  // each value's meaning, from the number guide (rusemod/numberinfo.toml)
     try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
   }
   let data;
   try { data = await api().economy(state.lang); } catch (err) { problem(err); return; }
-  if (state.view !== "economy") return;  // another tab was picked meanwhile
+  if (state.view !== "ai") return;  // another tab was picked meanwhile
   const groups = data.groups.filter((g) => g.rows.length);
   const depotLine = el("p", { className: "muted small", title: w.tip_economy_depot });
   const depotMaps = el("div", { className: "economy-depots" });  // Depots on the maps (renderEconomyDepots)
-  $("economy-groups").replaceChildren(...(data.ready && groups.length ? groups.map((g) => {
+  const drawn = (g) => {
     const table = el("table");
     for (const r of g.rows) table.append(economyRow(r, g.id === "supply" ? () => showEconomyDepot(depotLine) : null));
     const group = el("div", { className: "group" }, el("h2", { textContent: w[`economy_group_${g.id}`] || g.id }), table);
     if (g.id === "supply") group.append(depotLine, depotMaps);
     return group;
-  }) : [el("p", { className: "muted", textContent: w.economy_none })]));
+  };
+  const players = groups.filter((g) => !ECONOMY_AI_GROUPS.includes(g.id));
+  const computers = groups.filter((g) => ECONOMY_AI_GROUPS.includes(g.id));
+  const none = () => [el("p", { className: "muted", textContent: w.economy_none })];
+  $("economy-groups").replaceChildren(...(data.ready && players.length ? players.map(drawn) : none()));
+  $("ai-economy-groups").replaceChildren(...(data.ready && computers.length ? computers.map(drawn) : none()));
   showEconomyDepot(depotLine);
   renderEconomyDepots(depotMaps);
 }
@@ -3332,9 +3338,18 @@ function economyRow(r, saved = null) {
 // players play (Default, the difficulties and the profiles the game's lobby picks: a set of values each, mixed in a
 // battle), the units they're keener to build, and the ruse cards (every player's). A change is saved in the current
 // mod at once ---
+// The whole AI and player settings tab: the players' half (renderEconomy) and the computer players' (renderAI, which
+// alone is drawn again after a change of the computer players': what each value comes to in a battle)
+async function renderPlay() {
+  renderEconomy();
+  await renderAI();
+}
+
 async function renderAI() {
   const w = state.words;
   $("ai-title").textContent = w.ai_title;
+  $("ai-intro").textContent = w.ai_intro;
+  $("play-ai-title").textContent = w.play_ai_title;
   $("ai-help").textContent = state.mod ? w.ai_help : w.no_mod;
   $("ai-how-title").textContent = w.ai_how_title;
   $("ai-mix").textContent = w.ai_mix;
@@ -3349,6 +3364,7 @@ async function renderAI() {
   if (!data.ready) {
     $("ai-pick").replaceChildren();
     $("ai-hint").textContent = "";
+    $("ai-improved").replaceChildren();
     $("ai-groups").replaceChildren(el("p", { className: "muted", textContent: w.ai_none }));
     $("ai-bonuses").replaceChildren();
     $("ai-cards").replaceChildren();
@@ -3437,12 +3453,44 @@ function renderAIProfile(data) {
   const w = state.words;
   const p = data.profiles.find((x) => x.id === state.aiProfile);
   $("ai-hint").textContent = (p && p.hint) || "";
+  $("ai-improved").replaceChildren(...(p && p.improved ? [aiImprovedBox(p, data)] : []));
   if (!p) { $("ai-groups").replaceChildren(); return; }
   $("ai-groups").replaceChildren(...p.groups.filter((g) => g.rows.length).map((g) => {
     const table = el("table");
     for (const r of g.rows) table.append(aiRow(p.id, r, renderAI));  // drawn again: what it comes to in a battle
     return el("div", { className: "group" }, el("h2", { textContent: w[`ai_group_${g.id}`] || g.id }), table);
   }), ...aiMissing(p), notesBox(`obj:${p.id}`));
+}
+
+// A difficulty's improved computer player (StudioApi.ai_improved, rusemod.ai.IMPROVED; the owner's AI test 5 on Hard,
+// 2026-10-22: "test worked well"): ticked, it attacks whatever the odds, never buys artillery and starts with the
+// money in the box (changing the money while ticked saves it); the personalities whose own values win over a
+// difficulty's keep them (StudioApi.ai improved_keeps), said under it by their names in the game
+function aiImprovedBox(p, data) {
+  const w = state.words, imp = p.improved, name = p.name || String(p.index);
+  const tick = el("input", { type: "checkbox", checked: imp.on, disabled: !state.mod, title: w.tip_ai_improved });
+  const money = el("input", { type: "number", min: "1", max: String(imp.most_money), step: "1",
+    className: "ai-improved-money", value: String(imp.on && imp.money !== null ? imp.money : imp.default_money),
+    disabled: !state.mod, title: w.tip_ai_improved_money });
+  const save = async (on) => {
+    try { await api().ai_improved(p.id, on, Number(money.value)); } catch (err) { tick.checked = imp.on; problem(err); return; }
+    say(fillText(on ? w.ai_improved_done_on : w.ai_improved_done_off, { name }), "ok");
+    renderAI();  // the battle values change with it
+  };
+  tick.addEventListener("change", () => save(tick.checked));
+  money.addEventListener("change", () => { if (tick.checked) save(true); });
+  const keeps = data.improved_keeps || {};
+  const notes = [];
+  if (keeps.attack && keeps.attack.length) notes.push(fillText(w.ai_improved_keeps_attack, { list: keeps.attack.join(", ") }));
+  if (keeps.artillery && keeps.artillery.length) notes.push(fillText(w.ai_improved_keeps_artillery, { list: keeps.artillery.join(", ") }));
+  return el("div", { className: "group ai-improved" },
+    el("h2", { textContent: fillText(w.ai_improved_title, { name }), title: w.tip_ai_improved }),
+    el("p", { className: "muted small", textContent: w.ai_improved_help }),
+    el("div", { className: "ai-improved-row" },
+      el("label", { title: w.tip_ai_improved }, tick, " ", fillText(w.ai_improved_on, { name })),
+      el("label", { className: "small", title: w.tip_ai_improved_money }, w.ai_improved_money, " ", money)),
+    ...notes.map((t) => el("p", { className: "muted small", textContent: t })),
+    state.mod ? "" : el("p", { className: "muted small", textContent: w.no_mod }));
 }
 
 // A difficulty's or profile's own value for one only Default lists (StudioApi.ai_add; the owner, 2026-10-10, "all of
@@ -5024,7 +5072,6 @@ async function installUpdate() {
 async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-nations").addEventListener("click", () => showView("nations"));
-  $("tab-economy").addEventListener("click", () => showView("economy"));
   $("tab-ai").addEventListener("click", () => showView("ai"));
   $("tab-values").addEventListener("click", () => showView("values"));
   valuesEvents();

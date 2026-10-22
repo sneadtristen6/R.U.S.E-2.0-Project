@@ -75,9 +75,9 @@ class Labels(unittest.TestCase):
         for group, _props in economy.GROUPS:
             with self.subTest(group=group):
                 self.assertEqual(set(words[f"economy_group_{group}"]), LANGS)
-        for key in ("economy_tab", "economy_title", "economy_help", "economy_buildings", "economy_none",
+        for key in ("play_players_title", "economy_help", "economy_buildings", "economy_none",
                     "economy_normal", "economy_nuclear", "tip_economy_normal", "tip_economy_nuclear",
-                    "tip_tab_economy", "tip_economy_reset", "tip_economy_reset_one", "economy_depot_money",
+                    "tip_economy_reset", "tip_economy_reset_one", "economy_depot_money",
                     "tip_economy_depot"):
             with self.subTest(key=key):
                 self.assertEqual(set(words[key]), LANGS)
@@ -98,13 +98,18 @@ class Labels(unittest.TestCase):
                         self.assertNotEqual(guide[prop]["does"], english[prop]["does"])
 
     def test_the_tab_is_on_the_page(self):
+        # the first half of AI and player settings since 2026-10-22 (the owner: "the economy AI and just those settings
+        # should be in one comprehensive name"): its own tab is gone, its computer players' groups are in the second half
         html = (ROOT / "src" / "ruse_studio" / "ui" / "index.html").read_text(encoding="utf-8")
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
-        for needle in ('id="tab-economy"', 'id="economy-view"', 'id="economy-groups"'):
+        for needle in ('id="economy-groups"', 'id="ai-economy-groups"', 'id="play-players-title"'):
             self.assertIn(needle, html)
+        for needle in ('id="tab-economy"', 'id="economy-view"'):
+            self.assertNotIn(needle, html)
         for needle in ("function renderEconomy", "api().economy(", "api().economy_edit(", "api().economy_reset(",
-                       'showView("economy")'):
+                       'const ECONOMY_AI_GROUPS = ["computer", "decoys"]', "function renderPlay"):
             self.assertIn(needle, app)
+        self.assertLessEqual({"computer", "decoys"}, {g for g, _props in economy.GROUPS})  # the groups the page moves
 
 
 class Copies(unittest.TestCase):
