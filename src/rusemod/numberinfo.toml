@@ -3443,3 +3443,101 @@ unit = "s"
 sure = "name"
 what = "Seconds to hide again after being seen"
 does = "How long a hidden unit that was spotted stays seen before it can hide again, in seconds. 10 in the game."
+
+[AltitudeVol]
+group = "flight"
+unit = "m"
+sure = "name"
+what = "Planes' flying height (m)"
+does = "How high above the ground planes fly, in m. 200 m in the game."
+
+[SecondesEntreDeuxAtterrissages]
+group = "flight"
+unit = "s"
+sure = "name"
+what = "Seconds between two landings"
+does = "How long an airfield waits between one plane landing and the next, in seconds. 1.67 in the game."
+
+[SecondesEntreDeuxDecollages]
+group = "flight"
+unit = "s"
+sure = "name"
+what = "Seconds between two take-offs"
+does = "How long an airfield waits between one plane taking off and the next, in seconds. 3 in the game."
+
+[BlitzAccelerationRatio]
+group = "effects"
+unit = "times"
+sure = "name"
+what = "Blitz: speeding up (x)"
+does = "Under the Blitz ruse, how fast units speed up, times their own acceleration. 1.5 in the game."
+
+[BlitzMaxSpeed]
+group = "effects"
+unit = "kmh"
+sure = "name"
+what = "Blitz: top speed (km/h)"
+does = "Under the Blitz ruse, no unit goes faster than this. 500 km/h in the game."
+
+[EnemyPlanRevealTime]
+group = "effects"
+unit = "s"
+sure = "name"
+what = "Seconds an enemy plan is shown"
+does = "How long an enemy's revealed orders (by a ruse that shows them) stay on screen, in seconds. 5 in the game."
+
+[SR_RefreshPositionEnnemi]
+group = "effects"
+unit = "s"
+sure = "name"
+what = "Seconds between enemy position updates"
+does = "How often an enemy position shown by a ruse is brought up to date, in seconds. 60 in the game."
+
+[MultiplicateurScoreFanatisme]
+group = "effects"
+unit = "times"
+sure = "name"
+what = "Fanaticism: score (x)"
+does = "How much the Fanaticism ruse counts in its score, times normal. 1 in the game."
+
+[MultiplicateurScorePropagande]
+group = "effects"
+unit = "times"
+sure = "name"
+what = "Propaganda: score (x)"
+does = "The same for the Propaganda ruse. 1 in the game."
+
+[RatioPinnedPropagande]
+group = "effects"
+unit = "share"
+sure = "name"
+what = "Propaganda: pinning"
+does = "How far the Propaganda ruse pins the enemy units it reaches, as a share. 75% in the game."
+
+[FumigeneTimeout]
+group = "effects"
+unit = "s"
+sure = "name"
+what = "Smoke lasts (s)"
+does = "How long a smoke screen lasts, in seconds. 30 in the game."
+
+[JoystickPuissanceVariationDeplacementInMenu]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Stick: how fast it moves through menus"
+does = "How strongly pushing a controller's stick further speeds up moving through a menu. 3 in the game."
+
+[JoystickTimeMinBeforeNewAxeEvent]
+group = "interface"
+unit = "s"
+sure = "name"
+what = "Stick: shortest repeat (s)"
+does = "Holding the stick, the shortest time between two steps through a menu, in seconds. 0.14 in the game."
+
+[JoystickTimeMaxBeforeNewAxeEvent]
+group = "interface"
+unit = "s"
+sure = "name"
+what = "Stick: longest repeat (s)"
+does = "Holding the stick, the longest time between two steps through a menu, in seconds. 0.5 in the game."

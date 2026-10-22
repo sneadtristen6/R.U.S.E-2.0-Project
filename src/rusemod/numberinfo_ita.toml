@@ -1439,3 +1439,45 @@ does = "Attivo: il gioco usa il suo modo più recente di disegnare e calcolare i
 [TimeToBeStealthedAfterReveal]
 what = "Secondi per tornare nascosti dopo essere stati visti"
 does = "Quanto resta visibile un'unità nascosta che è stata scoperta prima di potersi nascondere di nuovo, in secondi. 10 nel gioco."
+[AltitudeVol]
+what = "Quota di volo degli aerei (m)"
+does = "A che altezza dal suolo volano gli aerei, in m. 200 m nel gioco."
+[SecondesEntreDeuxAtterrissages]
+what = "Secondi tra due atterraggi"
+does = "Quanto aspetta un aeroporto tra l'atterraggio di un aereo e il successivo, in secondi. 1,67 nel gioco."
+[SecondesEntreDeuxDecollages]
+what = "Secondi tra due decolli"
+does = "Quanto aspetta un aeroporto tra il decollo di un aereo e il successivo, in secondi. 3 nel gioco."
+[BlitzAccelerationRatio]
+what = "Blitz: accelerazione (x)"
+does = "Sotto lo stratagemma Blitz, quanto in fretta accelerano le unità, per la loro accelerazione. 1,5 nel gioco."
+[BlitzMaxSpeed]
+what = "Blitz: velocità massima (km/h)"
+does = "Sotto lo stratagemma Blitz, nessuna unità va più veloce di così. 500 km/h nel gioco."
+[EnemyPlanRevealTime]
+what = "Secondi in cui si vede un piano nemico"
+does = "Quanto restano sullo schermo gli ordini rivelati di un nemico (da uno stratagemma che li mostra), in secondi. 5 nel gioco."
+[SR_RefreshPositionEnnemi]
+what = "Secondi tra due aggiornamenti della posizione nemica"
+does = "Ogni quanto una posizione nemica mostrata da uno stratagemma viene aggiornata, in secondi. 60 nel gioco."
+[MultiplicateurScoreFanatisme]
+what = "Fanatismo: punteggio (x)"
+does = "Quanto conta lo stratagemma Fanatismo nel suo punteggio, per il normale. 1 nel gioco."
+[MultiplicateurScorePropagande]
+what = "Propaganda: punteggio (x)"
+does = "Lo stesso per lo stratagemma Propaganda. 1 nel gioco."
+[RatioPinnedPropagande]
+what = "Propaganda: inchiodamento"
+does = "Quanto lo stratagemma Propaganda inchioda le unità nemiche che raggiunge, come quota. 75% nel gioco."
+[FumigeneTimeout]
+what = "Durata del fumo (s)"
+does = "Quanto dura una cortina fumogena, in secondi. 30 nel gioco."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Levetta: velocità nei menu"
+does = "Quanto spingere di più la levetta di un controller accelera lo spostamento in un menu. 3 nel gioco."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Levetta: ripetizione più breve (s)"
+does = "Tenendo la levetta, il tempo più breve tra due passi in un menu, in secondi. 0,14 nel gioco."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Levetta: ripetizione più lunga (s)"
+does = "Tenendo la levetta, il tempo più lungo tra due passi in un menu, in secondi. 0,5 nel gioco."

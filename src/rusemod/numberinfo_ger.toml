@@ -1439,3 +1439,45 @@ does = "An: Das Spiel nutzt seine neuere Art, den Sichtkreis einer Einheit zu ze
 [TimeToBeStealthedAfterReveal]
 what = "Sekunden, um nach Entdeckung wieder verborgen zu sein"
 does = "Wie lange eine versteckte Einheit, die entdeckt wurde, sichtbar bleibt, bevor sie sich wieder verbergen kann, in Sekunden. Im Spiel 10."
+[AltitudeVol]
+what = "Flughöhe der Flugzeuge (m)"
+does = "Wie hoch über dem Boden Flugzeuge fliegen, in m. Im Spiel 200 m."
+[SecondesEntreDeuxAtterrissages]
+what = "Sekunden zwischen zwei Landungen"
+does = "Wie lange ein Flugplatz zwischen einer Landung und der nächsten wartet, in Sekunden. Im Spiel 1,67."
+[SecondesEntreDeuxDecollages]
+what = "Sekunden zwischen zwei Starts"
+does = "Wie lange ein Flugplatz zwischen einem Start und dem nächsten wartet, in Sekunden. Im Spiel 3."
+[BlitzAccelerationRatio]
+what = "Blitz: Beschleunigung (x)"
+does = "Unter der List Blitz, wie schnell Einheiten beschleunigen, mal ihrer eigenen Beschleunigung. Im Spiel 1,5."
+[BlitzMaxSpeed]
+what = "Blitz: Höchstgeschwindigkeit (km/h)"
+does = "Unter der List Blitz fährt keine Einheit schneller. Im Spiel 500 km/h."
+[EnemyPlanRevealTime]
+what = "Sekunden, die ein feindlicher Plan gezeigt wird"
+does = "Wie lange die aufgedeckten Befehle eines Feindes (durch eine List, die sie zeigt) auf dem Bildschirm bleiben, in Sekunden. Im Spiel 5."
+[SR_RefreshPositionEnnemi]
+what = "Sekunden zwischen Aktualisierungen der Feindposition"
+does = "Wie oft eine durch eine List gezeigte Feindposition aktualisiert wird, in Sekunden. Im Spiel 60."
+[MultiplicateurScoreFanatisme]
+what = "Fanatismus: Wertung (x)"
+does = "Wie viel die List Fanatismus in ihrer Wertung zählt, mal normal. Im Spiel 1."
+[MultiplicateurScorePropagande]
+what = "Propaganda: Wertung (x)"
+does = "Dasselbe für die List Propaganda. Im Spiel 1."
+[RatioPinnedPropagande]
+what = "Propaganda: Niederhalten"
+does = "Wie stark die List Propaganda die erreichten Feindeinheiten niederhält, als Anteil. Im Spiel 75 %."
+[FumigeneTimeout]
+what = "Dauer des Rauchs (s)"
+does = "Wie lange eine Rauchwand anhält, in Sekunden. Im Spiel 30."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Stick: wie schnell er durch Menüs geht"
+does = "Wie stark ein weiter gedrückter Controller-Stick das Bewegen durch ein Menü beschleunigt. Im Spiel 3."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Stick: kürzeste Wiederholung (s)"
+does = "Bei gehaltenem Stick die kürzeste Zeit zwischen zwei Schritten durch ein Menü, in Sekunden. Im Spiel 0,14."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Stick: längste Wiederholung (s)"
+does = "Bei gehaltenem Stick die längste Zeit zwischen zwei Schritten durch ein Menü, in Sekunden. Im Spiel 0,5."

@@ -1439,3 +1439,45 @@ does = "Activado: el juego usa su forma más nueva de dibujar y calcular el cír
 [TimeToBeStealthedAfterReveal]
 what = "Segundos para volver a ocultarse tras ser visto"
 does = "Cuánto sigue visible una unidad oculta que fue descubierta antes de poder ocultarse de nuevo, en segundos. 10 en el juego."
+[AltitudeVol]
+what = "Altura de vuelo de los aviones (m)"
+does = "A qué altura sobre el suelo vuelan los aviones, en m. 200 m en el juego."
+[SecondesEntreDeuxAtterrissages]
+what = "Segundos entre dos aterrizajes"
+does = "Cuánto espera un aeródromo entre el aterrizaje de un avión y el siguiente, en segundos. 1,67 en el juego."
+[SecondesEntreDeuxDecollages]
+what = "Segundos entre dos despegues"
+does = "Cuánto espera un aeródromo entre el despegue de un avión y el siguiente, en segundos. 3 en el juego."
+[BlitzAccelerationRatio]
+what = "Blitz: aceleración (x)"
+does = "Bajo la artimaña Blitz, lo rápido que aceleran las unidades, por su propia aceleración. 1,5 en el juego."
+[BlitzMaxSpeed]
+what = "Blitz: velocidad máxima (km/h)"
+does = "Bajo la artimaña Blitz, ninguna unidad va más rápido que esto. 500 km/h en el juego."
+[EnemyPlanRevealTime]
+what = "Segundos que se muestra un plan enemigo"
+does = "Cuánto siguen en pantalla las órdenes reveladas de un enemigo (por una artimaña que las muestra), en segundos. 5 en el juego."
+[SR_RefreshPositionEnnemi]
+what = "Segundos entre actualizaciones de la posición enemiga"
+does = "Cada cuánto se actualiza una posición enemiga mostrada por una artimaña, en segundos. 60 en el juego."
+[MultiplicateurScoreFanatisme]
+what = "Fanatismo: puntuación (x)"
+does = "Cuánto cuenta la artimaña Fanatismo en su puntuación, por lo normal. 1 en el juego."
+[MultiplicateurScorePropagande]
+what = "Propaganda: puntuación (x)"
+does = "Lo mismo para la artimaña Propaganda. 1 en el juego."
+[RatioPinnedPropagande]
+what = "Propaganda: inmovilización"
+does = "Cuánto inmoviliza la artimaña Propaganda a las unidades enemigas que alcanza, como proporción. 75 % en el juego."
+[FumigeneTimeout]
+what = "Duración del humo (s)"
+does = "Cuánto dura una cortina de humo, en segundos. 30 en el juego."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Palanca: rapidez en los menús"
+does = "Cuánto acelera el movimiento por un menú empujar más la palanca de un mando. 3 en el juego."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Palanca: repetición más corta (s)"
+does = "Manteniendo la palanca, el tiempo más corto entre dos pasos por un menú, en segundos. 0,14 en el juego."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Palanca: repetición más larga (s)"
+does = "Manteniendo la palanca, el tiempo más largo entre dos pasos por un menú, en segundos. 0,5 en el juego."

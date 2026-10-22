@@ -1439,3 +1439,45 @@ does = "Włączone: gra używa nowszego sposobu rysowania i liczenia kręgu widz
 [TimeToBeStealthedAfterReveal]
 what = "Sekund do ponownego ukrycia po wykryciu"
 does = "Jak długo ukryta jednostka, którą wykryto, pozostaje widoczna, zanim znów może się ukryć, w sekundach. W grze 10."
+[AltitudeVol]
+what = "Wysokość lotu samolotów (m)"
+does = "Jak wysoko nad ziemią latają samoloty, w m. W grze 200 m."
+[SecondesEntreDeuxAtterrissages]
+what = "Sekund między dwoma lądowaniami"
+does = "Jak długo lotnisko czeka między lądowaniem jednego samolotu a następnego, w sekundach. W grze 1,67."
+[SecondesEntreDeuxDecollages]
+what = "Sekund między dwoma startami"
+does = "Jak długo lotnisko czeka między startem jednego samolotu a następnego, w sekundach. W grze 3."
+[BlitzAccelerationRatio]
+what = "Blitz: przyspieszanie (x)"
+does = "Pod podstępem Blitz jak szybko jednostki przyspieszają, razy ich własne przyspieszenie. W grze 1,5."
+[BlitzMaxSpeed]
+what = "Blitz: prędkość maksymalna (km/h)"
+does = "Pod podstępem Blitz żadna jednostka nie jedzie szybciej. W grze 500 km/h."
+[EnemyPlanRevealTime]
+what = "Sekund pokazywania planu wroga"
+does = "Jak długo ujawnione rozkazy wroga (przez podstęp, który je pokazuje) zostają na ekranie, w sekundach. W grze 5."
+[SR_RefreshPositionEnnemi]
+what = "Sekund między aktualizacjami pozycji wroga"
+does = "Jak często pozycja wroga pokazana przez podstęp jest odświeżana, w sekundach. W grze 60."
+[MultiplicateurScoreFanatisme]
+what = "Fanatyzm: wynik (x)"
+does = "Ile podstęp Fanatyzm liczy się w swoim wyniku, razy normalnie. W grze 1."
+[MultiplicateurScorePropagande]
+what = "Propaganda: wynik (x)"
+does = "To samo dla podstępu Propaganda. W grze 1."
+[RatioPinnedPropagande]
+what = "Propaganda: przyszpilenie"
+does = "Jak mocno podstęp Propaganda przyszpila osiągnięte jednostki wroga, jako udział. W grze 75%."
+[FumigeneTimeout]
+what = "Czas trwania dymu (s)"
+does = "Jak długo trwa zasłona dymna, w sekundach. W grze 30."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Gałka: szybkość w menu"
+does = "Jak mocno dalsze wychylenie gałki kontrolera przyspiesza ruch po menu. W grze 3."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Gałka: najkrótsze powtórzenie (s)"
+does = "Przy przytrzymanej gałce najkrótszy czas między dwoma krokami w menu, w sekundach. W grze 0,14."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Gałka: najdłuższe powtórzenie (s)"
+does = "Przy przytrzymanej gałce najdłuższy czas między dwoma krokami w menu, w sekundach. W grze 0,5."

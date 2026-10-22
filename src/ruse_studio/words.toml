@@ -12921,6 +12921,42 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_air]
+us = "Aircraft"
+fr = "Avions"
+ger = "Flugzeuge"
+ita = "Aerei"
+spa = "Aviones"
+pol = "Samoloty"
+ru = "Авиация"
+cz = "Letadla"
+jpn = "航空機"
+sc = "飞机"
+
+[economy_group_ruses]
+us = "Ruse cards at work"
+fr = "Les cartes de ruse en action"
+ger = "Täuschungskarten im Einsatz"
+ita = "Le carte d'inganno all'opera"
+spa = "Las cartas de engaño en acción"
+pol = "Karty podstępu w działaniu"
+ru = "Карты уловки в действии"
+cz = "Karty lsti v akci"
+jpn = "計略カードの効果"
+sc = "计谋卡的效果"
+
+[economy_group_controls]
+us = "Game controller"
+fr = "Manette"
+ger = "Controller"
+ita = "Controller"
+spa = "Mando"
+pol = "Kontroler"
+ru = "Геймпад"
+cz = "Ovladač"
+jpn = "コントローラー"
+sc = "手柄"
+
 [economy_group_damage]
 us = "Damage, pinning and recovery"
 fr = "Dégâts, clouage et récupération"

@@ -1439,3 +1439,45 @@ does = "开：游戏使用较新的方式绘制和计算单位的视野圈。游
 [TimeToBeStealthedAfterReveal]
 what = "被发现后重新隐蔽所需秒数"
 does = "被发现的隐蔽单位在能再次隐蔽前保持可见的秒数。游戏中为 10。"
+[AltitudeVol]
+what = "飞机飞行高度（米）"
+does = "飞机离地面飞行的高度（米）。游戏中为 200 米。"
+[SecondesEntreDeuxAtterrissages]
+what = "两次降落间隔（秒）"
+does = "机场在一架飞机降落到下一架之间等待的秒数。游戏中为 1.67。"
+[SecondesEntreDeuxDecollages]
+what = "两次起飞间隔（秒）"
+does = "机场在一架飞机起飞到下一架之间等待的秒数。游戏中为 3。"
+[BlitzAccelerationRatio]
+what = "闪电战：加速（倍）"
+does = "闪电战计谋下单位加速的快慢，为其自身加速度的倍数。游戏中为 1.5。"
+[BlitzMaxSpeed]
+what = "闪电战：最高速度（公里/时）"
+does = "闪电战计谋下，没有单位能比这更快。游戏中为 500 公里/时。"
+[EnemyPlanRevealTime]
+what = "敌方计划显示秒数"
+does = "（由显示敌方命令的计谋）揭示的敌方命令在屏幕上停留的秒数。游戏中为 5。"
+[SR_RefreshPositionEnnemi]
+what = "敌方位置更新间隔（秒）"
+does = "计谋显示的敌方位置多久更新一次（秒）。游戏中为 60。"
+[MultiplicateurScoreFanatisme]
+what = "狂热：分数（倍）"
+does = "狂热计谋在其分数中所占的分量，为正常值的倍数。游戏中为 1。"
+[MultiplicateurScorePropagande]
+what = "宣传：分数（倍）"
+does = "宣传计谋同理。游戏中为 1。"
+[RatioPinnedPropagande]
+what = "宣传：压制"
+does = "宣传计谋对波及的敌方单位的压制程度（比例）。游戏中为 75%。"
+[FumigeneTimeout]
+what = "烟雾持续（秒）"
+does = "烟幕持续的秒数。游戏中为 30。"
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "摇杆：菜单中移动快慢"
+does = "手柄摇杆推得越远菜单移动越快的程度。游戏中为 3。"
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "摇杆：最短重复（秒）"
+does = "按住摇杆时菜单中两步之间的最短时间（秒）。游戏中为 0.14。"
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "摇杆：最长重复（秒）"
+does = "按住摇杆时菜单中两步之间的最长时间（秒）。游戏中为 0.5。"

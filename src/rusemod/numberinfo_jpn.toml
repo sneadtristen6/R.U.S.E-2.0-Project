@@ -1439,3 +1439,45 @@ does = "オン：ユニットの視界円の描画と計算に、ゲームの新
 [TimeToBeStealthedAfterReveal]
 what = "発見された後、再び隠れるまでの秒数"
 does = "発見された隠れユニットが、再び隠れられるようになるまで見えたままの秒数。ゲームでは 10。"
+[AltitudeVol]
+what = "航空機の飛行高度（m）"
+does = "航空機が地面からどれだけの高さを飛ぶか（m）。ゲームでは 200 m。"
+[SecondesEntreDeuxAtterrissages]
+what = "着陸の間隔（秒）"
+does = "飛行場が1機の着陸から次の着陸まで待つ秒数。ゲームでは 1.67。"
+[SecondesEntreDeuxDecollages]
+what = "離陸の間隔（秒）"
+does = "飛行場が1機の離陸から次の離陸まで待つ秒数。ゲームでは 3。"
+[BlitzAccelerationRatio]
+what = "電撃戦：加速（倍）"
+does = "電撃戦の計略下で、ユニットが加速する速さ（自身の加速の倍率）。ゲームでは 1.5。"
+[BlitzMaxSpeed]
+what = "電撃戦：最高速度（km/h）"
+does = "電撃戦の計略下で、これより速く進むユニットはありません。ゲームでは 500 km/h。"
+[EnemyPlanRevealTime]
+what = "敵の作戦が表示される秒数"
+does = "（それを見せる計略で）明かされた敵の命令が画面に残る秒数。ゲームでは 5。"
+[SR_RefreshPositionEnnemi]
+what = "敵の位置の更新間隔（秒）"
+does = "計略で示された敵の位置が更新される間隔（秒）。ゲームでは 60。"
+[MultiplicateurScoreFanatisme]
+what = "狂信：スコア（倍）"
+does = "狂信の計略がスコアでどれだけ数えられるか（通常の倍率）。ゲームでは 1。"
+[MultiplicateurScorePropagande]
+what = "プロパガンダ：スコア（倍）"
+does = "プロパガンダの計略の場合。ゲームでは 1。"
+[RatioPinnedPropagande]
+what = "プロパガンダ：制圧"
+does = "プロパガンダの計略が届いた敵ユニットをどれだけ制圧するか（割合）。ゲームでは 75%。"
+[FumigeneTimeout]
+what = "煙の持続（秒）"
+does = "煙幕が続く秒数。ゲームでは 30。"
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "スティック：メニューの移動の速さ"
+does = "コントローラーのスティックを深く倒すほどメニューの移動が速くなる度合い。ゲームでは 3。"
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "スティック：最短のリピート（秒）"
+does = "スティックを倒し続けたとき、メニューで次の項目へ進む最短の間隔（秒）。ゲームでは 0.14。"
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "スティック：最長のリピート（秒）"
+does = "スティックを倒し続けたとき、メニューで次の項目へ進む最長の間隔（秒）。ゲームでは 0.5。"

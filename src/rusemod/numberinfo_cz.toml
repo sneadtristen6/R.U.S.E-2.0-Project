@@ -1439,3 +1439,45 @@ does = "Zapnuto: hra kreslí a počítá kruh výhledu jednotky novějším způ
 [TimeToBeStealthedAfterReveal]
 what = "Sekund do opětovného skrytí po odhalení"
 does = "Jak dlouho zůstane skrytá jednotka, která byla odhalena, vidět, než se může znovu skrýt, v sekundách. Ve hře 10."
+[AltitudeVol]
+what = "Letová výška letadel (m)"
+does = "Jak vysoko nad zemí letadla létají, v m. Ve hře 200 m."
+[SecondesEntreDeuxAtterrissages]
+what = "Sekund mezi dvěma přistáními"
+does = "Jak dlouho letiště čeká mezi přistáním jednoho letadla a dalšího, v sekundách. Ve hře 1,67."
+[SecondesEntreDeuxDecollages]
+what = "Sekund mezi dvěma vzlety"
+does = "Jak dlouho letiště čeká mezi vzletem jednoho letadla a dalšího, v sekundách. Ve hře 3."
+[BlitzAccelerationRatio]
+what = "Blitz: zrychlení (x)"
+does = "Pod lstí Blitz jak rychle jednotky zrychlují, krát jejich vlastní zrychlení. Ve hře 1,5."
+[BlitzMaxSpeed]
+what = "Blitz: nejvyšší rychlost (km/h)"
+does = "Pod lstí Blitz žádná jednotka nejede rychleji. Ve hře 500 km/h."
+[EnemyPlanRevealTime]
+what = "Sekund zobrazení nepřátelského plánu"
+does = "Jak dlouho odhalené rozkazy nepřítele (lstí, která je ukazuje) zůstanou na obrazovce, v sekundách. Ve hře 5."
+[SR_RefreshPositionEnnemi]
+what = "Sekund mezi aktualizacemi pozice nepřítele"
+does = "Jak často se pozice nepřítele ukázaná lstí aktualizuje, v sekundách. Ve hře 60."
+[MultiplicateurScoreFanatisme]
+what = "Fanatismus: skóre (x)"
+does = "Kolik lest Fanatismus počítá ve svém skóre, krát běžně. Ve hře 1."
+[MultiplicateurScorePropagande]
+what = "Propaganda: skóre (x)"
+does = "Totéž pro lest Propaganda. Ve hře 1."
+[RatioPinnedPropagande]
+what = "Propaganda: přišpendlení"
+does = "Jak moc lest Propaganda přišpendlí zasažené nepřátelské jednotky, jako podíl. Ve hře 75 %."
+[FumigeneTimeout]
+what = "Trvání kouře (s)"
+does = "Jak dlouho trvá kouřová clona, v sekundách. Ve hře 30."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Páčka: rychlost v nabídkách"
+does = "Jak moc další vychýlení páčky ovladače zrychlí pohyb nabídkou. Ve hře 3."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Páčka: nejkratší opakování (s)"
+does = "Při držení páčky nejkratší doba mezi dvěma kroky nabídkou, v sekundách. Ve hře 0,14."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Páčka: nejdelší opakování (s)"
+does = "Při držení páčky nejdelší doba mezi dvěma kroky nabídkou, v sekundách. Ve hře 0,5."

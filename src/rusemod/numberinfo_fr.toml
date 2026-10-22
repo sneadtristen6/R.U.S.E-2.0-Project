@@ -1439,3 +1439,45 @@ does = "Activé : le jeu utilise sa façon plus récente de dessiner et calculer
 [TimeToBeStealthedAfterReveal]
 what = "Secondes pour se recacher après avoir été vu"
 does = "Combien de temps une unité cachée qui a été repérée reste visible avant de pouvoir se recacher, en secondes. 10 dans le jeu."
+[AltitudeVol]
+what = "Altitude de vol des avions (m)"
+does = "À quelle hauteur au-dessus du sol volent les avions, en m. 200 m dans le jeu."
+[SecondesEntreDeuxAtterrissages]
+what = "Secondes entre deux atterrissages"
+does = "Combien de temps un aérodrome attend entre l'atterrissage d'un avion et le suivant, en secondes. 1,67 dans le jeu."
+[SecondesEntreDeuxDecollages]
+what = "Secondes entre deux décollages"
+does = "Combien de temps un aérodrome attend entre le décollage d'un avion et le suivant, en secondes. 3 dans le jeu."
+[BlitzAccelerationRatio]
+what = "Blitz : accélération (x)"
+does = "Sous la ruse Blitz, à quelle vitesse les unités accélèrent, fois leur propre accélération. 1,5 dans le jeu."
+[BlitzMaxSpeed]
+what = "Blitz : vitesse maximale (km/h)"
+does = "Sous la ruse Blitz, aucune unité ne va plus vite que cela. 500 km/h dans le jeu."
+[EnemyPlanRevealTime]
+what = "Secondes d'affichage d'un plan ennemi"
+does = "Combien de temps les ordres révélés d'un ennemi (par une ruse qui les montre) restent à l'écran, en secondes. 5 dans le jeu."
+[SR_RefreshPositionEnnemi]
+what = "Secondes entre deux mises à jour de la position ennemie"
+does = "Tous les combien une position ennemie montrée par une ruse est mise à jour, en secondes. 60 dans le jeu."
+[MultiplicateurScoreFanatisme]
+what = "Fanatisme : score (x)"
+does = "Combien compte la ruse Fanatisme dans son score, fois la normale. 1 dans le jeu."
+[MultiplicateurScorePropagande]
+what = "Propagande : score (x)"
+does = "Pareil pour la ruse Propagande. 1 dans le jeu."
+[RatioPinnedPropagande]
+what = "Propagande : clouage"
+does = "À quel point la ruse Propagande cloue les unités ennemies qu'elle atteint, en part. 75 % dans le jeu."
+[FumigeneTimeout]
+what = "Durée de la fumée (s)"
+does = "Combien de temps dure un écran de fumée, en secondes. 30 dans le jeu."
+[JoystickPuissanceVariationDeplacementInMenu]
+what = "Stick : vitesse dans les menus"
+does = "À quel point pousser plus loin le stick d'une manette accélère le déplacement dans un menu. 3 dans le jeu."
+[JoystickTimeMinBeforeNewAxeEvent]
+what = "Stick : répétition la plus courte (s)"
+does = "En tenant le stick, le temps le plus court entre deux pas dans un menu, en secondes. 0,14 dans le jeu."
+[JoystickTimeMaxBeforeNewAxeEvent]
+what = "Stick : répétition la plus longue (s)"
+does = "En tenant le stick, le temps le plus long entre deux pas dans un menu, en secondes. 0,5 dans le jeu."
