@@ -15,7 +15,7 @@
   const CHANGES = [  // "What will your mod change?": each tick's tab (the economy is in AI and player settings, 10-22)
     ["units", "flow_change_units", "tip_flow_change_units"], ["ai", "flow_change_ai", "tip_flow_change_ai"],
     ["decoy", "flow_change_music", "tip_flow_change_music"], ["values", "flow_change_values", "tip_flow_change_values"]];
-  const TAB_WORD = { units: "units_tab", ai: "ai_tab", decoy: "decoy_tab", values: "values_tab" };
+  const TAB_WORD = { units: "units_tab", ai: "ai_tab", decoy: "decoy_tab", values: "values_files_tab" };
   const RESEARCH = [["keep", "flow_research_keep", "flow_research_keep_help"],
     ["none", "flow_research_none", "flow_research_none_help"],
     ["custom", "flow_research_custom", "flow_research_custom_help"]];

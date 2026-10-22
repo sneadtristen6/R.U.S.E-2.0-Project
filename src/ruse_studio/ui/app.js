@@ -164,9 +164,9 @@ async function setLanguage(lang) {
   $("tab-units").textContent = w.units_tab;
   $("tab-nations").textContent = w.nations_tab;
   $("tab-ai").textContent = w.ai_tab;  // AI and player settings: the Economy tab's values are in it too
-  $("tab-values").textContent = w.values_tab;
+  $("tab-values").textContent = w.values_files_tab;  // All values and files: its two parts by partSwitches
+  partSwitches();
   $("tab-decoy").textContent = w.decoy_tab;
-  $("tab-files").textContent = w.files_tab;
   $("tab-maps").textContent = w.maps_tab;
   $("tab-settings").textContent = w.settings_tab;
   if (state.view === "maps" && window.MapView) window.MapView.setWords(w, lang);
@@ -196,7 +196,7 @@ async function setLanguage(lang) {
   $("test-log-close").textContent = w.close;
   $("test-log-copy").textContent = w.doc_copy;
   // tooltips: one sentence on every control, from words.toml (tip_*)
-  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values", "tab-decoy": "tip_tab_decoy", "tab-files": "tip_tab_files", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
+  const tips = { "tab-units": "tip_tab_units", "tab-nations": "tip_tab_nations", "tab-ai": "tip_tab_ai", "tab-values": "tip_tab_values_files", "tab-decoy": "tip_tab_decoy", "tab-maps": "tip_tab_maps", "tab-settings": "tip_tab_settings", mod: "tip_mod", test: "tip_test", "lang-open": "tip_lang_open",
     "update-now": "tip_update_now", "update-info": "tip_update_info", "new-mod-create": "tip_create_mod",
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
@@ -3121,6 +3121,25 @@ function unitSoundsGroup(u) {
   return group;
 }
 
+// All values and files (the owner, 2026-10-22: "all values and files should be put together and just called all
+// values and files"): one tab, its two parts (the All values tab and the Files tab they were) picked by the switch on
+// top of each part's list
+const PARTS = [["values", "values_tab", "tip_tab_values"], ["files", "files_tab", "tip_tab_files"]];
+
+function partSwitches() {
+  const w = state.words || {};
+  for (const box of document.querySelectorAll(".part-switch")) {
+    box.setAttribute("aria-label", w.values_files_tab || "");
+    box.replaceChildren(...PARTS.map(([view, word, tip]) => {
+      const b = el("button", { type: "button", className: "mode-chip", textContent: w[word] || view, title: w[tip] || "" });
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(state.view === view));
+      b.addEventListener("click", () => { if (state.view !== view) showView(view); });
+      return b;
+    }));
+  }
+}
+
 function showView(view) {
   if (view === "economy") view = "ai";  // the Economy tab is the first half of AI and player settings now
   state.view = view;
@@ -3135,10 +3154,13 @@ function showView(view) {
   $("tab-units").setAttribute("aria-selected", String(view === "units"));
   $("tab-nations").setAttribute("aria-selected", String(view === "nations"));
   $("tab-ai").setAttribute("aria-selected", String(view === "ai"));
-  $("tab-values").setAttribute("aria-selected", String(view === "values"));
+  $("tab-values").setAttribute("aria-selected", String(view === "values" || view === "files"));  // its two parts
   $("tab-decoy").setAttribute("aria-selected", String(view === "decoy"));
-  $("tab-files").setAttribute("aria-selected", String(view === "files"));
   $("tab-maps").setAttribute("aria-selected", String(view === "maps"));
+  if (view === "values" || view === "files") {
+    state.valuesPart = view;  // the tab opens again on the part last used
+    partSwitches();
+  }
   $("tab-settings").setAttribute("aria-selected", String(view === "settings"));
   $("pick-mod").classList.toggle("hidden", view === "maps");  // Units, AI and player settings, All values and RUSE Decoy edit a mod, Maps a map
   $("pick-map").classList.toggle("hidden", view !== "maps");
@@ -5060,10 +5082,9 @@ async function start() {
   $("tab-units").addEventListener("click", () => showView("units"));
   $("tab-nations").addEventListener("click", () => showView("nations"));
   $("tab-ai").addEventListener("click", () => showView("ai"));
-  $("tab-values").addEventListener("click", () => showView("values"));
+  $("tab-values").addEventListener("click", () => showView(state.valuesPart || "values"));
   valuesEvents();
   $("tab-decoy").addEventListener("click", () => showView("decoy"));
-  $("tab-files").addEventListener("click", () => showView("files"));
   $("ai-script").addEventListener("change", (e) => { if (e.target.value) showAIScript(e.target.value); });
   $("ai-script-copy").addEventListener("click", copyAIScript);
   scriptEvents();

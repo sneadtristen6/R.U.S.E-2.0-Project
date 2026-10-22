@@ -507,6 +507,8 @@ tr.edited .boxes input[type="color"] { border-color: var(--accent); }
             background: linear-gradient(180deg, #16304f, #1b3a5e 50%, #17324f); font-size: 11px; letter-spacing: 0.06em;
             text-transform: uppercase; white-space: nowrap; cursor: pointer; }
 .mode-chip:hover { border-color: #7fb4e6; color: #fff; }
+.part-switch { display: flex; gap: 3px; }  /* All values and files: its two parts (app.js partSwitches) */
+.part-switch .mode-chip { padding: 5px 10px; }
 .mode-chip[aria-checked="true"] { color: #fff; border-color: #9fd2ff;
             background: linear-gradient(180deg, #4aa8f5 0, #2a85d8 55%, #1f6fc4 100%);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 8px rgba(74, 168, 245, 0.55); }

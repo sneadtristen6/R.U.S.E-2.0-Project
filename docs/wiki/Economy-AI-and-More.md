@@ -5,11 +5,16 @@
 LittleGroove's RUSE-Mod-Manager had tools the Studio didn't. They're in the Studio now, each in your own mod: a change
 is saved there at once, and the game's files are never touched.
 
-## Economy tab
+## AI and player settings tab
+
+One tab in three parts: **Player settings**, **Game rules** and **Computer players**.
+
+### Player settings
 
 Starting money and income, supply depots (money per truck, trucks per convoy, the time between convoys), production
-limits, decoys, and the ruse cards each side starts with. A change counts for every game mode. Supply depots and
-administration buildings are buildings: their price, build time and strength are on the **Units** tab.
+limits, and the ruse cards each side starts with. A change counts for every game mode; where the Nuclear mode has a
+value of its own, it gets a box of its own. Supply depots and administration buildings are buildings: their price, build
+time and strength are on the **Units** tab.
 Seen in the game: the starting money and the ruse cards at the start.
 
 **Depots on the maps** (under Supply depots): give every supply depot more trucks, so more money, on **All maps** or
@@ -18,16 +23,23 @@ Seen in the game: the starting money and the ruse cards at the start.
 Maps tab keeps them. Play mods with more than 1,000 trucks a depot with Launcher 0.4.8.4 or newer. Seen in the game
 (D-Day's depots with 500 trucks; other maps three times theirs).
 
-## AI tab
+### Game rules
+
+Every other rule the game keeps for all players, in groups: battle and surrender, population, movement and roads,
+firing and targets, units on their own, damage and pinning, woods and sight, aircraft, ruse cards at work, the game
+controller, placing buildings, online ranked play, outlines and arrows, effects on screen, the side and sector colours
+(a colour picker each), and last a few values whose use isn't known yet. Each one says what it does and what the game
+has. Not tried in the game yet.
+
+### Computer players
 
 How the computer players play. A computer player mixes three sets of values: **Default**, its difficulty and its
-profile (both picked in the game's lobby); pick one to see and change what it lists: when it starts attacking, how
-strong it waits to be, how it defends, the units it prefers, and its ruse cards.
+profile (both picked in the game's lobby); pick one to see and change its values: when it starts attacking, how
+strong it waits to be, how it defends, the units it prefers, and its ruse cards. Every value can be changed on every
+set: one a set doesn't list counts as 0 in the game, and giving it a number adds it to your mod. Below them, what
+holds for every computer player (the army worth that makes it attack, its decoys...).
 Seen in the game: a ruse card taken out of the menu, one moved in it, a card's length, and when Easy starts attacking.
-
-A difficulty or profile lists only some values; the rest come from **Default**. To give it its own value for one only
-Default lists, pick it under **Give <name> its own value** and click **Add**: it starts as Default's (nothing changes yet), then change it on its row.
-Not tried in the game yet.
+The rest not tried in the game yet.
 
 **Map and mission scripts**, below it: the scripts the game runs on its maps (the campaign's chapters, challenges,
 Operations), shown as Python to read. **Copy** copies one.
@@ -37,17 +49,17 @@ Operations), shown as Python to read. **Copy** copies one.
 On a unit's page: the unit it's an upgrade of (**Upgrade of**), its own upgrades, and its research price and time.
 Pick another unit, or **None: a unit of its own**. See [[Edit units|Edit-Units]].
 
-## All values tab
+## All values and files tab
 
-Any object and value of the game's, changed in your mod: add or take out a value, make or delete an object, give a
-text value words of its own. Not tried in the game yet.
+Two parts, picked with the switch at the top of the list.
 
-## Files tab
+**All values:** any object and value of the game's, changed in your mod: add or take out a value, make or delete an
+object, give a text value words of its own. Not tried in the game yet.
 
-Any file inside the game's packs: pick a pack, then a file to see it as what it is (a picture, a text table, a mission
-script...). **Save a copy…** saves it out; **Change it with a file of mine…** puts yours in your mod; **Add a file of
-mine to this pack…** adds a new one. Your mod keeps only what you change, never a copy of the game's file. Not tried in
-the game yet.
+**Files:** any file inside the game's packs: pick a pack, then a file to see it as what it is (a picture, a text table,
+a mission script...). **Save a copy…** saves it out; **Change it with a file of mine…** puts yours in your mod; **Add a
+file of mine to this pack…** adds a new one. Your mod keeps only what you change, never a copy of the game's file. Not
+tried in the game yet.
 
 ## Missions and maps
 

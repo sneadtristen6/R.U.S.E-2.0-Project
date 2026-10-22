@@ -27,7 +27,7 @@ ruse2-core/
   files/
     replace/<game path>    replaces an existing game file (cooked from a source format)
     add/<new path>         adds a new file (under mods/<mod id>/...)
-    game/<pack>/<path>.rdelta  a game file changed whole, as a delta (the Studio's Files tab; see §7)
+    game/<pack>/<path>.rdelta  a game file changed whole, as a delta (the Studio's All values and files; see §7)
     game/<pack>/mods/<mod id>/<path>  a file added to a game pack (§7)
   maps/<MapId>/            map sources (see §8)
   menus.toml               where missions show in their menus (see §8)
@@ -245,7 +245,7 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the same on every PC (`R2000001`, `R2000002`, …). A key the game or another mod in the set already uses is an error
   that names both.
 - Existing game texts can be overridden by name, `game:M_D_01`, or by number, `game:0x…`, for a key that isn't a name.
-- The Studio keeps the game texts it changes (the All values tab's "Change the words…", a town's name on the Maps tab)
+- The Studio keeps the game texts it changes (All values and files' "Change the words…", a town's name on the Maps tab)
   in `text/studio-words.<table>.csv`, a `game:<key>` row each with every language written: a missing cell would give
   that language the English words.
 
@@ -507,8 +507,8 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   keeps the game's. Its units are changed as any units (New unit puts a copy of any unit in its build menus), and what
   they say on each unit's page (Voice, above).
 - `files/add/mods/<mod id>/<name>.<source ext>` adds a new file, referenced from `.rndf` by its game path.
-- **Any game file, whole (2026-10-08, `rusemod.gamefiles`; not tried in the game yet):** the Studio's **Files** tab
-  shows every file in the game's packs; *Change it with a file of mine…* puts a file of the modder's in place of the
+- **Any game file, whole (2026-10-08, `rusemod.gamefiles`; not tried in the game yet):** the Studio's **All values and
+  files** tab (its Files part) shows every file in the game's packs; *Change it with a file of mine…* puts a file of the modder's in place of the
   game's, and *Add a file of mine to this pack…* adds a new one. The safeguards the owner asked for:
   - The game's packs are never written: the build puts the files into the modded copy only.
   - A changed file is kept in the mod as a **delta**, `files/game/<pack>/<its path in the pack>.rdelta`, never as

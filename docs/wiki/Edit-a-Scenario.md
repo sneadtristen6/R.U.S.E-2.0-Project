@@ -93,7 +93,7 @@ piece haven't been tried in the game yet.
 
 Pick a supply depot to give it more trucks (more trucks, more money in it), or use **Every depot here**: multiply
 every depot's trucks (**times their trucks**) or give them all the same number (**trucks each**), then **Apply**.
-**Back to the game's** undoes it. To change every map at once, use the Economy tab's **Depots on the maps**
+**Back to the game's** undoes it. To change every map at once, use **AI and player settings**' **Depots on the maps**
 ([[Economy, AI and more|Economy-AI-and-More]]). Depots with more than 1,000 trucks need Launcher 0.4.8.4 or newer.
 
 ## A mission of its own

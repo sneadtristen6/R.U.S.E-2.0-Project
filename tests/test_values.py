@@ -287,8 +287,20 @@ class Words(unittest.TestCase):
             self.assertIn(needle, html)
         for needle in ("function renderValues", "api().values_files(", "api().values_find(", "api().value_object(",
                        "api().value_edit(", "api().value_reset(", "api().value_links(", 'showView("values")',
-                       '"tab-values": "tip_tab_values"'):
+                       '"tab-values": "tip_tab_values_files"'):
             self.assertIn(needle, app)
+        # All values and files (the owner, 2026-10-22: "all values and files should be put together and just called
+        # all values and files"): one tab button; each part's list starts with the switch between the two
+        self.assertNotIn('id="tab-files"', html)
+        self.assertEqual(html.count('<div class="part-switch" role="radiogroup"></div>'), 2)
+        self.assertIn('const PARTS = [["values", "values_tab", "tip_tab_values"], ["files", "files_tab", "tip_tab_files"]];',
+                      app)
+        self.assertIn('$("tab-values").textContent = w.values_files_tab;', app)
+        words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
+        for key in ("values_files_tab", "tip_tab_values_files", "values_tab", "tip_tab_values", "files_tab",
+                    "tip_tab_files"):
+            self.assertEqual(len(words[key]), 10, key)
+        self.assertNotIn("All values tab)", (ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         added = ("value_prop_choices", "value_prop_add", "value_prop_delete", "value_pointing", "value_classes",
                  "value_object_new", "value_object_delete", "value_object_restore")
         for name in added:  # adding and taking out values and objects: a button on the page, a stand-in in the preview

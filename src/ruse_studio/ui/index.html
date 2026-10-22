@@ -20,9 +20,10 @@
       <button id="tab-units" type="button" role="tab" aria-selected="true"></button>
       <button id="tab-nations" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-ai" type="button" role="tab" aria-selected="false"></button>
+      <!-- All values and files (the owner, 2026-10-22: "all values and files should be put together and just called
+           all values and files"): one tab, its two parts picked by the switch on top of each (app.js partSwitches) -->
       <button id="tab-values" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-decoy" type="button" role="tab" aria-selected="false"></button>
-      <button id="tab-files" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-maps" type="button" role="tab" aria-selected="false"></button>
       <button id="tab-settings" type="button" role="tab" aria-selected="false"></button>
     </div>
@@ -730,14 +731,15 @@
       </section>
     </div>
   </main>
-  <!-- the All values tab (app.js renderValues, StudioApi.values_find / value_object / value_edit, rusemod.values;
-       our own code; LittleGroove's raw value editor had it first): any object of the unit data, every value it has,
-       each changed in the mod;
+  <!-- All values and files, its All values part (app.js renderValues, StudioApi.values_find / value_object /
+       value_edit, rusemod.values; our own code; LittleGroove's raw value editor had it first): any object of the unit
+       data, every value it has, each changed in the mod;
        values added and taken out, objects made and deleted -->
   <main id="values-view" class="layout hidden">
     <!-- the owner, 2026-10-08: "that menu sucks make it look a little better" (it scrolled sideways on long names):
          the help set off, the search in one card like the AI tab's, the results in rows that wrap their names -->
     <aside class="browser values-browser">
+      <div class="part-switch" role="radiogroup"></div>
       <p id="values-intro" class="muted small values-intro"></p>
       <div class="values-search">
         <label class="values-field"><span id="values-file-label" class="small"></span>
@@ -767,11 +769,12 @@
     </section>
   </main>
 
-  <!-- the Files tab (files.js, StudioApi.files_*, rusemod.packfiles, our own code; LittleGroove's Raw / Asset Editor's
-       Browse / Files had it first): every file of the game's packs and of the packs inside them, shown as what it is
-       and saved out; read only -->
+  <!-- All values and files, its Files part (files.js, StudioApi.files_*, rusemod.packfiles, our own code;
+       LittleGroove's Raw / Asset Editor's Browse / Files had it first): every file of the game's packs and of the packs
+       inside them, shown as what it is and saved out; read only -->
   <main id="files-view" class="layout hidden">
     <aside class="browser values-browser">
+      <div class="part-switch" role="radiogroup"></div>
       <p id="files-intro" class="muted small"></p>
       <label class="values-field"><span id="files-pack-label" class="small"></span>
         <select id="files-pack"></select></label>
