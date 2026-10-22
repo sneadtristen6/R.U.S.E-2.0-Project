@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from rusemod import schema, startlog
+from rusemod.gamefont import copy_fonts
 from rusemod.webui import open_window, self_test
 
 from . import __version__
@@ -115,5 +116,10 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
+    try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
+        copy_fonts(api._game(), api.cache_dir)
+    except Exception:  # any trouble reading the game: the pages keep their usual font
+        pass
+    log.mark("gamefont")
     page = "spike3d.html" if args.spike else "index.html"
     return open_window("RUSE Studio", UI, page, api, extra={"cache": api.cache_dir}, words=words, browser=args.browser)

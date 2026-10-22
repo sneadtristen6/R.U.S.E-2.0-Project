@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from rusemod import startlog
+from rusemod.gamefont import copy_fonts
 from rusemod.webui import on_file_drop, open_window, pick_file, pick_folder, self_test
 
 from . import __version__
@@ -70,6 +71,11 @@ def main(argv=None) -> int:
         log.mark("app_list")
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
+    try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
+        copy_fonts(api._game()[0], api.cache_dir)
+    except Exception:  # any trouble reading the game: the pages keep their usual font
+        pass
+    log.mark("gamefont")
     return open_window("RUSE Launcher", UI, "index.html", api, width=1120, height=740,
                        setup=lambda window: on_file_drop(window, lambda paths: dropped(api, window, paths)),
-                       words=words, browser=args.browser)
+                       extra={"cache": api.cache_dir}, words=words, browser=args.browser)
