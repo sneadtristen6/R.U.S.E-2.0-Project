@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**Next version (not released yet; its number and the other languages are written at release):**
+
+- **Fixed, reported by a player:** on the Supported mods page, "New mod set…" did nothing. It opens the new set now.
+
 **0.4.8.7:** it plays mods made with Studio 0.9.8.7.
 
 - **Mods made with Studio 0.9.8.7 play:** objects moved or placed in grids, boxes and along paths, bigger blank maps with their sectors, and Nuclear-only economy changes.

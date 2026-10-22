@@ -822,6 +822,7 @@ async function runConvert() {
 
 // --- the editor: a new mod set, or a set's mods and their order ---
 function openEditor(set) {
+  state.browse = null;  // a player's report (2026-10-22): from Supported mods, New mod set… did nothing (render shows browse first)
   state.settings = false;
   state.converting = null;
   state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
