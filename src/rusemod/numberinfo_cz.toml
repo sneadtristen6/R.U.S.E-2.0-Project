@@ -1217,3 +1217,51 @@ does = "Jak daleko mohou mít jednotky ještě cestovat a přesto se počítat p
 [Ratio_Infanterie_OffensiveGenerale]
 what = "Podíl pěchoty v klamné ofenzivě"
 does = "Jaká část klamné všeobecné ofenzivy počítačového hráče smí být pěchota, jako podíl jeho klamných jednotek. Ve hře 50 %."
+[AccelerationSurRoute]
+what = "Zrychlení na silnicích (x)"
+does = "Jak rychle jednotky zrychlují na silnici, krát jejich vlastní zrychlení. Ve hře 1."
+[AccelerationSurRouteCamion]
+what = "Zrychlení náklaďáků na silnicích (x)"
+does = "Totéž pro zásobovací auta: jak rychle zrychlují na silnici, krát jejich vlastní zrychlení. Ve hře 1."
+[LargeurRoute]
+what = "Šířka silnic"
+does = "Jak široké hra své silnice bere, v jejích vlastních jednotkách (ukázáno tak, jak je: kolik je tu jednotka, není známo). Ve hře 312."
+[DecalageRoute]
+what = "Odsazení od středu silnice (m)"
+does = "Jak daleko stranou od středu silnice jednotky jedou, v m (aby se dvě kolony minuly). Ve hře 7,7 m."
+[TailleMinimumDeRoute]
+what = "Nejkratší použitá silnice (m)"
+does = "Nejkratší úsek silnice, kvůli kterému jednotky zajedou, v m. Ve hře 70 m."
+[AngleArrierePourMarcheArriere]
+what = "Couvání: úhel vzadu (°)"
+does = "Vozidlo couvá místo otáčení, když cíl leží v tomto úhlu za ním. Ve hře 120°."
+[DistancePourDeclencherMarcheArriere]
+what = "Couvání: nejvýš (m)"
+does = "Vozidlo couvá, jen když je cíl blíž než tohle, v m. Ve hře 100 m."
+[DistancePourDeclencherMarcheArriereEnCombat]
+what = "Couvání v boji: nejvýš (m)"
+does = "Totéž v boji, aby tank déle držel čelo k nepříteli, v m. Ve hře 500 m."
+[LongueurDeDetectionPourEvitement]
+what = "Pohled dopředu při objíždění (m)"
+does = "Jak daleko dopředu jednotky hledají jiné v cestě, aby je objely, v m. Ve hře 60 m."
+[DistanceCoherence]
+what = "Udržení skupiny pohromadě (m)"
+does = "Jak daleko se jednotky postupující ve skupině smějí rozejít, než na sebe počkají, v m. Ve hře 500 m."
+[WorldBorderMarginForMouvement]
+what = "Jednotky se drží od okraje mapy (m)"
+does = "Jednotky se nemohou přiblížit k okraji mapy víc než na tohle, v m. Ve hře 30 m."
+[WorldBorderMarginForOrder]
+what = "Rozkazy se drží od okraje mapy (m)"
+does = "Rozkaz k pohybu nemůže poslat jednotky blíž k okraji mapy než na tohle, v m. Ve hře 120 m."
+[MultiplicateurVitesseDeroute]
+what = "Rychlost na útěku (x)"
+does = "Jak rychle jede jednotka na útěku (která se zlomí a ustupuje), krát její vlastní rychlost. Ve hře 0,5."
+[TempsDeploiement]
+what = "Sekund na rozvinutí"
+does = "Jak dlouho se rozvíjí jednotka, která se ke střelbě rozkládá (třeba tažené dělo), v sekundách. Ve hře 5."
+[MorphTimeToGoToAttackPosition]
+what = "Sekund na přechod do palebné polohy"
+does = "Jak dlouho model jednotky přechází z pochodové polohy do palebné, v sekundách. Ve hře 1,25."
+[MorphTimeToGoToMovePosition]
+what = "Sekund na návrat do pochodové polohy"
+does = "Jak dlouho se model jednotky vrací z palebné polohy do pochodové, v sekundách. Ve hře 1,25."

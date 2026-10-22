@@ -2925,3 +2925,115 @@ unit = "share"
 sure = "known"
 what = "Infantry share of a decoy offensive"
 does = "How much of a computer player's decoy general offensive may be infantry, as a share of its decoy units. 50% in the game."
+
+[AccelerationSurRoute]
+group = "movement"
+unit = "times"
+sure = "name"
+what = "Speeding up on roads (x)"
+does = "How fast units speed up on a road, times their own acceleration. 1 in the game."
+
+[AccelerationSurRouteCamion]
+group = "movement"
+unit = "times"
+sure = "name"
+what = "Trucks speeding up on roads (x)"
+does = "The same for supply trucks: how fast they speed up on a road, times their own acceleration. 1 in the game."
+
+[LargeurRoute]
+group = "movement"
+unit = "raw"
+sure = "name"
+what = "Road width"
+does = "How wide the game takes its roads to be, in its own units (shown as it is: what one unit is here isn't known). 312 in the game."
+
+[DecalageRoute]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Keeping to the side of the road (m)"
+does = "How far to one side of a road's middle units drive, in m (so two lines can pass). 7.7 m in the game."
+
+[TailleMinimumDeRoute]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Shortest road used (m)"
+does = "The shortest stretch of road units go out of their way to drive on, in m. 70 m in the game."
+
+[AngleArrierePourMarcheArriere]
+group = "movement"
+unit = "deg"
+sure = "name"
+what = "Reversing: angle behind (°)"
+does = "A vehicle backs up instead of turning round when where it's going lies within this angle behind it. 120° in the game."
+
+[DistancePourDeclencherMarcheArriere]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Reversing: farthest (m)"
+does = "A vehicle backs up only when where it's going is closer than this, in m. 100 m in the game."
+
+[DistancePourDeclencherMarcheArriereEnCombat]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Reversing in a fight: farthest (m)"
+does = "The same in a fight, so a tank keeps its front to the enemy for longer, in m. 500 m in the game."
+
+[LongueurDeDetectionPourEvitement]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Looking ahead to steer around (m)"
+does = "How far ahead units look for others in their way to steer around them, in m. 60 m in the game."
+
+[DistanceCoherence]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Keeping a group together (m)"
+does = "How far apart units moving as one group may get before they wait for each other, in m. 500 m in the game."
+
+[WorldBorderMarginForMouvement]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Units keep off the map's edge (m)"
+does = "Units can't move closer than this to the edge of the map, in m. 30 m in the game."
+
+[WorldBorderMarginForOrder]
+group = "movement"
+unit = "m"
+sure = "name"
+what = "Orders keep off the map's edge (m)"
+does = "A move order can't send units closer than this to the edge of the map, in m. 120 m in the game."
+
+[MultiplicateurVitesseDeroute]
+group = "movement"
+unit = "times"
+sure = "name"
+what = "Speed when routed (x)"
+does = "How fast a routed unit (one that breaks and falls back) moves, times its own speed. 0.5 in the game."
+
+[TempsDeploiement]
+group = "movement"
+unit = "s"
+sure = "name"
+what = "Seconds to deploy"
+does = "How long a unit that sets up to fire (a towed gun, say) takes to deploy, in seconds. 5 in the game."
+
+[MorphTimeToGoToAttackPosition]
+group = "movement"
+unit = "s"
+sure = "name"
+what = "Seconds to change into firing pose"
+does = "How long a unit's model takes to change from its moving pose into its firing pose, in seconds. 1.25 in the game."
+
+[MorphTimeToGoToMovePosition]
+group = "movement"
+unit = "s"
+sure = "name"
+what = "Seconds to change back into moving pose"
+does = "How long a unit's model takes to change back from its firing pose to its moving pose, in seconds. 1.25 in the game."

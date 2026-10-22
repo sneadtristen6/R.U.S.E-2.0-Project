@@ -12921,6 +12921,18 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_movement]
+us = "Movement and roads"
+fr = "Déplacement et routes"
+ger = "Bewegung und Straßen"
+ita = "Movimento e strade"
+spa = "Movimiento y carreteras"
+pol = "Ruch i drogi"
+ru = "Движение и дороги"
+cz = "Pohyb a silnice"
+jpn = "移動と道路"
+sc = "移动与道路"
+
 [economy_group_battle]
 us = "Battle and surrender"
 fr = "Bataille et reddition"

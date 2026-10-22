@@ -1217,3 +1217,51 @@ does = "Wie weit Einheiten noch zu fahren haben dürfen und beim Kräftevergleic
 [Ratio_Infanterie_OffensiveGenerale]
 what = "Infanterieanteil einer Scheinoffensive"
 does = "Wie viel der Scheinoffensive eines Computerspielers Infanterie sein darf, als Anteil seiner Attrappen. Im Spiel 50 %."
+[AccelerationSurRoute]
+what = "Beschleunigung auf Straßen (x)"
+does = "Wie schnell Einheiten auf einer Straße beschleunigen, mal ihrer eigenen Beschleunigung. Im Spiel 1."
+[AccelerationSurRouteCamion]
+what = "Beschleunigung von Lastwagen auf Straßen (x)"
+does = "Dasselbe für Versorgungs-LKW: wie schnell sie auf einer Straße beschleunigen, mal ihrer eigenen Beschleunigung. Im Spiel 1."
+[LargeurRoute]
+what = "Straßenbreite"
+does = "Wie breit das Spiel seine Straßen nimmt, in seinen eigenen Einheiten (wie sie ist gezeigt: was eine Einheit hier ist, ist nicht bekannt). Im Spiel 312."
+[DecalageRoute]
+what = "Abstand zur Straßenmitte (m)"
+does = "Wie weit seitlich der Straßenmitte Einheiten fahren, in m (damit zwei Kolonnen aneinander vorbeikommen). Im Spiel 7,7 m."
+[TailleMinimumDeRoute]
+what = "Kürzeste genutzte Straße (m)"
+does = "Das kürzeste Straßenstück, für das Einheiten einen Umweg fahren, in m. Im Spiel 70 m."
+[AngleArrierePourMarcheArriere]
+what = "Rückwärtsfahren: Winkel nach hinten (°)"
+does = "Ein Fahrzeug fährt rückwärts statt zu wenden, wenn sein Ziel innerhalb dieses Winkels hinter ihm liegt. Im Spiel 120°."
+[DistancePourDeclencherMarcheArriere]
+what = "Rückwärtsfahren: höchstens (m)"
+does = "Ein Fahrzeug fährt nur rückwärts, wenn sein Ziel näher als das ist, in m. Im Spiel 100 m."
+[DistancePourDeclencherMarcheArriereEnCombat]
+what = "Rückwärtsfahren im Gefecht: höchstens (m)"
+does = "Dasselbe im Gefecht, damit ein Panzer länger die Front zum Feind behält, in m. Im Spiel 500 m."
+[LongueurDeDetectionPourEvitement]
+what = "Vorausschau zum Ausweichen (m)"
+does = "Wie weit voraus Einheiten nach anderen im Weg suchen, um ihnen auszuweichen, in m. Im Spiel 60 m."
+[DistanceCoherence]
+what = "Eine Gruppe zusammenhalten (m)"
+does = "Wie weit Einheiten, die als Gruppe ziehen, auseinandergeraten dürfen, bevor sie aufeinander warten, in m. Im Spiel 500 m."
+[WorldBorderMarginForMouvement]
+what = "Einheiten bleiben vom Kartenrand weg (m)"
+does = "Einheiten können nicht näher als das an den Kartenrand, in m. Im Spiel 30 m."
+[WorldBorderMarginForOrder]
+what = "Befehle bleiben vom Kartenrand weg (m)"
+does = "Ein Bewegungsbefehl kann Einheiten nicht näher als das an den Kartenrand schicken, in m. Im Spiel 120 m."
+[MultiplicateurVitesseDeroute]
+what = "Geschwindigkeit bei Flucht (x)"
+does = "Wie schnell eine fliehende Einheit (die bricht und zurückweicht) ist, mal ihrer eigenen Geschwindigkeit. Im Spiel 0,5."
+[TempsDeploiement]
+what = "Sekunden zum Aufbauen"
+does = "Wie lange eine Einheit, die sich zum Feuern aufbaut (etwa ein gezogenes Geschütz), zum Aufbauen braucht, in Sekunden. Im Spiel 5."
+[MorphTimeToGoToAttackPosition]
+what = "Sekunden in die Feuerhaltung"
+does = "Wie lange das Modell einer Einheit braucht, um von der Fahrhaltung in die Feuerhaltung zu wechseln, in Sekunden. Im Spiel 1,25."
+[MorphTimeToGoToMovePosition]
+what = "Sekunden zurück in die Fahrhaltung"
+does = "Wie lange das Modell einer Einheit braucht, um von der Feuerhaltung zurück in die Fahrhaltung zu wechseln, in Sekunden. Im Spiel 1,25."

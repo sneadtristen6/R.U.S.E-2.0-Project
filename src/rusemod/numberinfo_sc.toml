@@ -1217,3 +1217,51 @@ does = "比较兵力时，单位仍被计入所能需要行进的最远距离（
 [Ratio_Infanterie_OffensiveGenerale]
 what = "佯攻中步兵的比例"
 does = "电脑玩家的全面佯攻中步兵可占的比例（占其诱饵单位的份额）。游戏中为 50%。"
+[AccelerationSurRoute]
+what = "道路上的加速（倍）"
+does = "单位在道路上加速的快慢，为其自身加速度的倍数。游戏中为 1。"
+[AccelerationSurRouteCamion]
+what = "卡车在道路上的加速（倍）"
+does = "补给卡车同理：在道路上加速的快慢，为其自身加速度的倍数。游戏中为 1。"
+[LargeurRoute]
+what = "道路宽度"
+does = "游戏认定的道路宽度，以游戏自身的单位计（按原样显示：此处一个单位是多少尚不清楚）。游戏中为 312。"
+[DecalageRoute]
+what = "偏离道路中线（米）"
+does = "单位行驶时偏离道路中线的距离（米，使两列能相向通过）。游戏中为 7.7 米。"
+[TailleMinimumDeRoute]
+what = "使用的最短道路（米）"
+does = "单位愿意绕道去走的最短路段（米）。游戏中为 70 米。"
+[AngleArrierePourMarcheArriere]
+what = "倒车：后方角度（°）"
+does = "当目的地位于车辆身后此角度内时，车辆会倒车而不是掉头。游戏中为 120°。"
+[DistancePourDeclencherMarcheArriere]
+what = "倒车：最远（米）"
+does = "只有目的地比这更近时车辆才会倒车（米）。游戏中为 100 米。"
+[DistancePourDeclencherMarcheArriereEnCombat]
+what = "战斗中倒车：最远（米）"
+does = "战斗中同理，使坦克更长时间正面朝敌（米）。游戏中为 500 米。"
+[LongueurDeDetectionPourEvitement]
+what = "绕行时向前探测（米）"
+does = "单位为绕开路上其他单位而向前探测的距离（米）。游戏中为 60 米。"
+[DistanceCoherence]
+what = "保持编队集中（米）"
+does = "作为一组移动的单位在互相等待前可拉开的距离（米）。游戏中为 500 米。"
+[WorldBorderMarginForMouvement]
+what = "单位远离地图边缘（米）"
+does = "单位不能比这更靠近地图边缘（米）。游戏中为 30 米。"
+[WorldBorderMarginForOrder]
+what = "命令远离地图边缘（米）"
+does = "移动命令不能把单位派到比这更靠近地图边缘的地方（米）。游戏中为 120 米。"
+[MultiplicateurVitesseDeroute]
+what = "溃逃时的速度（倍）"
+does = "溃逃单位（崩溃后撤）的移动速度，为其自身速度的倍数。游戏中为 0.5。"
+[TempsDeploiement]
+what = "展开秒数"
+does = "需要架设才能开火的单位（如牵引火炮）展开所需的秒数。游戏中为 5。"
+[MorphTimeToGoToAttackPosition]
+what = "转为开火姿态的秒数"
+does = "单位模型从行进姿态变为开火姿态所需的秒数。游戏中为 1.25。"
+[MorphTimeToGoToMovePosition]
+what = "恢复行进姿态的秒数"
+does = "单位模型从开火姿态恢复为行进姿态所需的秒数。游戏中为 1.25。"

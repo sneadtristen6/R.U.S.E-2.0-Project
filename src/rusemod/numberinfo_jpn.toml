@@ -1217,3 +1217,51 @@ does = "戦力を比べるとき、まだ数に入る移動距離の上限（m�
 [Ratio_Infanterie_OffensiveGenerale]
 what = "囮の総攻撃の歩兵の割合"
 does = "コンピューターの囮の総攻撃のうち歩兵にできる割合（囮ユニットに対する割合）。ゲームでは 50%。"
+[AccelerationSurRoute]
+what = "道路での加速（倍）"
+does = "道路上でユニットが加速する速さ（ユニット自身の加速の倍率）。ゲームでは 1。"
+[AccelerationSurRouteCamion]
+what = "トラックの道路での加速（倍）"
+does = "補給トラックの場合：道路上で加速する速さ（自身の加速の倍率）。ゲームでは 1。"
+[LargeurRoute]
+what = "道路の幅"
+does = "ゲームが道路の幅とみなす値（ゲーム独自の単位。ここでの1単位の大きさは不明なのでそのまま表示）。ゲームでは 312。"
+[DecalageRoute]
+what = "道路の中央からのずれ（m）"
+does = "ユニットが道路の中央から片側へ寄って走る距離（m。2列がすれ違えるように）。ゲームでは 7.7 m。"
+[TailleMinimumDeRoute]
+what = "使われる最短の道路（m）"
+does = "ユニットがわざわざ寄って走る道路の最短区間（m）。ゲームでは 70 m。"
+[AngleArrierePourMarcheArriere]
+what = "後退：後方の角度（°）"
+does = "行き先が後方のこの角度内にあるとき、車両は向きを変えずに後退します。ゲームでは 120°。"
+[DistancePourDeclencherMarcheArriere]
+what = "後退：最大距離（m）"
+does = "行き先がこれより近いときだけ車両は後退します（m）。ゲームでは 100 m。"
+[DistancePourDeclencherMarcheArriereEnCombat]
+what = "戦闘中の後退：最大距離（m）"
+does = "戦闘中の場合（戦車が長く正面を敵に向けていられるように）（m）。ゲームでは 500 m。"
+[LongueurDeDetectionPourEvitement]
+what = "回避のための前方確認（m）"
+does = "ユニットが進路上のほかのユニットを避けるために前方を確認する距離（m）。ゲームでは 60 m。"
+[DistanceCoherence]
+what = "グループのまとまり（m）"
+does = "1つのグループで移動するユニットが、互いを待つまでに離れてよい距離（m）。ゲームでは 500 m。"
+[WorldBorderMarginForMouvement]
+what = "ユニットがマップ端から離れる距離（m）"
+does = "ユニットはマップの端にこれ以上近づけません（m）。ゲームでは 30 m。"
+[WorldBorderMarginForOrder]
+what = "命令がマップ端から離れる距離（m）"
+does = "移動命令でユニットをマップの端にこれ以上近づけることはできません（m）。ゲームでは 120 m。"
+[MultiplicateurVitesseDeroute]
+what = "敗走時の速度（倍）"
+does = "敗走したユニット（崩れて後退する）の移動速度（自身の速度の倍率）。ゲームでは 0.5。"
+[TempsDeploiement]
+what = "展開の秒数"
+does = "射撃のために据え付けるユニット（牽引砲など）が展開にかかる秒数。ゲームでは 5。"
+[MorphTimeToGoToAttackPosition]
+what = "射撃姿勢への変形秒数"
+does = "ユニットのモデルが移動姿勢から射撃姿勢に変わるまでの秒数。ゲームでは 1.25。"
+[MorphTimeToGoToMovePosition]
+what = "移動姿勢に戻る変形秒数"
+does = "ユニットのモデルが射撃姿勢から移動姿勢に戻るまでの秒数。ゲームでは 1.25。"

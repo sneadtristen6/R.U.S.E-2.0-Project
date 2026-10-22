@@ -1217,3 +1217,51 @@ does = "Cuánto pueden tener que recorrer las unidades y aun así contar al comp
 [Ratio_Infanterie_OffensiveGenerale]
 what = "Proporción de infantería de una ofensiva señuelo"
 does = "Qué parte de la ofensiva general señuelo de un jugador del ordenador puede ser infantería, como proporción de sus unidades señuelo. 50 % en el juego."
+[AccelerationSurRoute]
+what = "Aceleración en carretera (x)"
+does = "Lo rápido que aceleran las unidades en carretera, por su propia aceleración. 1 en el juego."
+[AccelerationSurRouteCamion]
+what = "Aceleración de los camiones en carretera (x)"
+does = "Lo mismo para los camiones de suministros: lo rápido que aceleran en carretera, por su propia aceleración. 1 en el juego."
+[LargeurRoute]
+what = "Anchura de las carreteras"
+does = "Lo anchas que el juego considera sus carreteras, en sus propias unidades (se muestra tal cual: no se sabe qué es aquí una unidad). 312 en el juego."
+[DecalageRoute]
+what = "Separación del centro de la carretera (m)"
+does = "A qué distancia a un lado del centro de la carretera circulan las unidades, en m (para que dos filas se crucen). 7,7 m en el juego."
+[TailleMinimumDeRoute]
+what = "Carretera más corta usada (m)"
+does = "El tramo de carretera más corto por el que las unidades se desvían, en m. 70 m en el juego."
+[AngleArrierePourMarcheArriere]
+what = "Marcha atrás: ángulo detrás (°)"
+does = "Un vehículo da marcha atrás en vez de girar cuando su destino está dentro de este ángulo detrás de él. 120° en el juego."
+[DistancePourDeclencherMarcheArriere]
+what = "Marcha atrás: como máximo (m)"
+does = "Un vehículo solo da marcha atrás si su destino está más cerca que esto, en m. 100 m en el juego."
+[DistancePourDeclencherMarcheArriereEnCombat]
+what = "Marcha atrás en combate: como máximo (m)"
+does = "Lo mismo en combate, para que un tanque mantenga más tiempo el frente hacia el enemigo, en m. 500 m en el juego."
+[LongueurDeDetectionPourEvitement]
+what = "Vista hacia delante para esquivar (m)"
+does = "A qué distancia por delante buscan las unidades a otras en su camino para esquivarlas, en m. 60 m en el juego."
+[DistanceCoherence]
+what = "Mantener un grupo unido (m)"
+does = "Cuánto pueden separarse las unidades que avanzan en grupo antes de esperarse, en m. 500 m en el juego."
+[WorldBorderMarginForMouvement]
+what = "Las unidades se alejan del borde del mapa (m)"
+does = "Las unidades no pueden acercarse más que esto al borde del mapa, en m. 30 m en el juego."
+[WorldBorderMarginForOrder]
+what = "Las órdenes se alejan del borde del mapa (m)"
+does = "Una orden de movimiento no puede enviar unidades más cerca que esto del borde del mapa, en m. 120 m en el juego."
+[MultiplicateurVitesseDeroute]
+what = "Velocidad en desbandada (x)"
+does = "Lo rápido que va una unidad en desbandada (que cede y se retira), por su propia velocidad. 0,5 en el juego."
+[TempsDeploiement]
+what = "Segundos para desplegarse"
+does = "Lo que tarda en desplegarse una unidad que se monta para disparar (un cañón remolcado, por ejemplo), en segundos. 5 en el juego."
+[MorphTimeToGoToAttackPosition]
+what = "Segundos para pasar a posición de tiro"
+does = "Lo que tarda el modelo de una unidad en pasar de su posición de marcha a la de tiro, en segundos. 1,25 en el juego."
+[MorphTimeToGoToMovePosition]
+what = "Segundos para volver a posición de marcha"
+does = "Lo que tarda el modelo de una unidad en volver de su posición de tiro a la de marcha, en segundos. 1,25 en el juego."
