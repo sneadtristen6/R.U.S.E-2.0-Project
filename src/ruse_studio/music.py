@@ -204,8 +204,14 @@ class MusicCalls:
             return song
         line = next((x for x in self._voice_table()["lines"] if x["member"] == member), None)
         if line is None:
-            # not a game rule: the page asked for a song the game hasn't got
-            raise MusicError(f"{member} isn't one of the game's songs")
+            # any other of the game's sounds (RUSE Decoy: guns, engines, the interface, mission dialogue...)
+            row = self._decoy_row(member) if hasattr(self, "_decoy_row") else None
+            if row is None:
+                # not a game rule: the page asked for a sound the game hasn't got
+                raise MusicError(f"{member} isn't one of the game's sounds")
+            frames = row.get("frames") or (int(round(row["seconds"] * row["rate"])) if row["rate"] else 0)
+            return {"member": member, "name": row["name"], "channels": row["channels"], "rate": row["rate"],
+                    "frames": frames, "seconds": row["seconds"], "also": [], "maps": [], "decoy": True}
         _game, zz, _key = self._music_game()
         with Edat.open(str(zz)) as arc:
             e = arc.entry(member)

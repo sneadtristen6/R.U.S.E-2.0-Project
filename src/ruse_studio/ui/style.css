@@ -979,6 +979,47 @@ th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); t
 .map-dock.compact .scen-selection .sel-name, .map-dock.compact .scen-selection .muted { display: none; }
 .map-dock.compact .scen-selection .sel-unit { width: 56px; }
 
+/* RUSE Decoy (decoy.js): the kinds down the left, the sounds of one on the right, each with its volume slider */
+.decoy { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; max-width: 1180px; margin: 0 auto; }
+.decoy-side h1 { margin: 0; }
+.decoy-sub { margin: 2px 0 12px; }
+.decoy-kinds { display: grid; gap: 4px; }
+.decoy-kind { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; text-align: left;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); cursor: pointer; }
+.decoy-kind span:first-child { flex: 1; }
+.decoy-kind.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); background: var(--panel-hi); }
+.decoy-main { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.decoy-main > p { margin: 0; }
+.decoy-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.decoy-tools input[type=search] { flex: 1 1 220px; min-width: 160px; }
+.decoy-rows { max-width: none; }
+.decoy-slider { display: inline-flex; gap: 6px; align-items: center; }
+.decoy-slider input[type=range] { width: 160px; }
+.decoy-pct { min-width: 3.4em; text-align: right; font-variant-numeric: tabular-nums; }
+.decoy-head { margin: 14px 0 4px; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.75; }
+.decoy-anim { width: min(1040px, calc(100% - 40px)); }
+.decoy-anim-body { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); gap: 16px; }
+.da-view-box { display: grid; gap: 6px; }
+.da-view { height: 420px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
+.da-controls { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.da-controls select, .da-controls fieldset { min-width: 0; max-width: 100%; }   /* long clip names stay inside */
+.da-row { display: grid; gap: 4px; }
+.da-bones { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; }
+.decoy-anim .decoy-slider input[type=range] { width: 140px; }
+.da-check { display: flex; align-items: center; gap: 6px; }
+.da-credit { width: 100%; box-sizing: border-box; }
+.da-mocap p { margin: 0; }
+.da-lib { display: grid; gap: 6px; }
+.da-lib-bar { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 6px; }
+.da-lib-rows { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.da-lib-row { display: grid; gap: 2px; width: 100%; text-align: left; padding: 6px 8px; border: 0;
+              border-bottom: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; }
+.da-lib-row:hover, .da-lib-row:focus-visible { background: var(--bg); }
+.da-lib-row.picked { outline: 2px solid var(--accent, #4a90d9); outline-offset: -2px; }
+.da-lib-row .muted { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .decoy { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .decoy-anim-body { grid-template-columns: 1fr; } .da-view { height: 300px; } }
+
 /* the Music tab (sound.js): one row a song, then its editor */
 .music-list { display: grid; gap: 6px; max-width: 820px; }
 .music-row { padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }

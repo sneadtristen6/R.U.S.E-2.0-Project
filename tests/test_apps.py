@@ -76,7 +76,7 @@ class TwoApps(unittest.TestCase):
         self.assertIn(".no-index.off-tab { display: none; }", (ui / "style.css").read_text(encoding="utf-8"))
         script = (ui / "app.js").read_text(encoding="utf-8")
         show_view = script[script.index("function showView(view) {"):script.index("\n}\n", script.index("function showView"))]
-        self.assertIn('$("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "music"]'
+        self.assertIn('$("no-index").classList.toggle("off-tab", !["units", "nations", "economy", "ai", "values", "decoy"]'
                       '.includes(view));',
                       show_view)
 
