@@ -3541,3 +3541,136 @@ unit = "s"
 sure = "name"
 what = "Stick: longest repeat (s)"
 does = "Holding the stick, the longest time between two steps through a menu, in seconds. 0.5 in the game."
+
+[RayonRechercheDalleEtBatiment]
+group = "interface"
+unit = "m"
+sure = "known"
+what = "Search for a building spot (m)"
+does = "For buildings that go on set spots: how far around the cursor the game looks for the nearest spot, in m, with the camera 385 m away. The farther the camera, the farther it looks. 500 m in the game."
+
+[PrecisionCursorGhost]
+group = "interface"
+unit = "m"
+sure = "known"
+what = "Snap to a building spot (m)"
+does = "A building's outline jumps to a spot found this near the cursor, in m, with the camera 385 m away. The farther the camera, the farther it reaches. 100 m in the game."
+
+[SeuilSnapRouteBatimentsDefense]
+group = "interface"
+unit = "m"
+sure = "known"
+what = "Defences: second search beyond (m)"
+does = "Placing a defence: when the first spot found is farther than this from the cursor, in m, the game searches a second way (from its name, along a road). 50 m in the game."
+
+[ShrinkRatioForPlacement]
+group = "interface"
+unit = "share"
+sure = "known"
+what = "Size counted when fitting a building"
+does = "When the game checks whether a building fits a spot, its outline counts at this share of its size, so it fits a little more easily. 80% in the game."
+
+[RayonCercleSnapMouse]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Mouse snap circle (m)"
+does = "From its name, how near the mouse has to be to something for the cursor to snap to it, in m. 77 m in the game."
+
+[GhostCap]
+group = "interface"
+unit = "count"
+sure = "known"
+what = "Planned outlines at once (consoles only)"
+does = "The most planned buildings and units waiting as outlines at once, for the game's console versions. The PC game keeps this limit switched off (the game warns if it is on for PC), so changing it does nothing here. 25 in the game."
+
+[NbLeague]
+group = "menu"
+unit = "count"
+sure = "name"
+what = "Leagues"
+does = "How many leagues online ranked play has. 7 in the game."
+
+[NbLevelsPerLeague]
+group = "menu"
+unit = "count"
+sure = "name"
+what = "Levels in each league"
+does = "How many levels each league has. 10 in the game."
+
+[DefaultCote]
+group = "menu"
+unit = "raw"
+sure = "name"
+what = "Starting rating"
+does = "A new player's rating in ranked play. 1500 in the game."
+
+[ScoreBaseLevel]
+group = "menu"
+unit = "raw"
+sure = "name"
+what = "Points for each level"
+does = "From its name, the score each level is based on in ranked play. 500 in the game."
+
+[TempsEntreDeuxScan]
+group = "menu"
+unit = "s"
+sure = "name"
+what = "Seconds between two opponent searches"
+does = "Looking for a ranked opponent, how long between two searches, in seconds. 30 in the game."
+
+[ToleranceCoteInitiale]
+group = "menu"
+unit = "raw"
+sure = "name"
+what = "Rating gap allowed at first"
+does = "Looking for a ranked opponent, how far apart two players' ratings may be at first. 100 in the game."
+
+[IncrementToleranceCote]
+group = "menu"
+unit = "raw"
+sure = "name"
+what = "Rating gap grows by"
+does = "When no opponent is found, how much wider the allowed rating gap gets each time. 50 in the game."
+
+[NbScansAvantToleranceLeague]
+group = "menu"
+unit = "count"
+sure = "name"
+what = "Searches before other leagues"
+does = "From its name, how many searches go by before an opponent from another league is allowed. 3 in the game."
+
+[DefaultValueAlignTolerance]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Default lining-up leeway"
+does = "From its name, how loosely things line up by default. Not known to change anything in play yet. 5 in the game."
+
+[OffsetBord]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Distance from the map's edge (m)"
+does = "From its name, a margin along the map's edge, in m; the game uses it with the map's own outline, for what isn't known yet. 1,000 m in the game."
+
+[DistanceMaxForProjection]
+group = "interface"
+unit = "m"
+sure = "name"
+what = "Farthest projection along a path (m)"
+does = "The farthest the game reaches ahead along a path, in m, and never more than 30% of the path's length; what it reaches for isn't known yet. 1,000 m in the game."
+
+[EditeurPorteeTirMax]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Editor: longest firing range"
+does = "From its name, a value for the makers' own editor: the longest firing range it shows. -1 in the game (none set)."
+
+[AverageOnPeriod]
+group = "interface"
+unit = "raw"
+sure = "name"
+what = "Averaged over"
+does = "The game keeps a running average of a figure over a last stretch of time this long (in the game's own measure); which figure isn't known yet. 120 in the game."

@@ -1481,3 +1481,60 @@ does = "按住摇杆时菜单中两步之间的最短时间（秒）。游戏中
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "摇杆：最长重复（秒）"
 does = "按住摇杆时菜单中两步之间的最长时间（秒）。游戏中为 0.5。"
+[RayonRechercheDalleEtBatiment]
+what = "寻找建筑位置（米）"
+does = "对于建在固定位置的建筑：镜头距离 385 米时，游戏在光标周围多远范围内寻找最近的位置（米）。镜头越远，找得越远。游戏中为 500 米。"
+[PrecisionCursorGhost]
+what = "吸附到建筑位置（米）"
+does = "镜头距离 385 米时，在光标这么近（米）范围内找到的位置，建筑轮廓会吸附过去。镜头越远，范围越大。游戏中为 100 米。"
+[SeuilSnapRouteBatimentsDefense]
+what = "防御工事：超过此距离二次搜索（米）"
+does = "放置防御工事时，若首个找到的位置离光标超过此距离（米），游戏改用第二种方式搜索（从名称看是沿道路）。游戏中为 50 米。"
+[ShrinkRatioForPlacement]
+what = "判断建筑能否放下时计算的大小"
+does = "游戏检查建筑能否放进某位置时，轮廓按此比例的大小计算，因此更容易放下。游戏中为 80%。"
+[RayonCercleSnapMouse]
+what = "鼠标吸附圆（米）"
+does = "从名称看，鼠标要离某物多近，光标才会吸附上去（米）。游戏中为 77 米。"
+[GhostCap]
+what = "同时存在的计划轮廓（仅限主机版）"
+does = "游戏主机版中，同时以轮廓形式等待的计划建筑和单位的上限。PC 版游戏保持此限制关闭（在 PC 上开启时游戏会发出警告），因此在这里修改不起作用。游戏中为 25。"
+[NbLeague]
+what = "联赛数"
+does = "在线排位赛有多少个联赛。游戏中为 7。"
+[NbLevelsPerLeague]
+what = "每个联赛的等级数"
+does = "每个联赛有多少个等级。游戏中为 10。"
+[DefaultCote]
+what = "初始积分"
+does = "新玩家在排位赛中的积分。游戏中为 1500。"
+[ScoreBaseLevel]
+what = "每级积分"
+does = "从名称看，排位赛中每个等级所基于的分数。游戏中为 500。"
+[TempsEntreDeuxScan]
+what = "两次寻找对手的间隔（秒）"
+does = "寻找排位对手时两次搜索之间的时间（秒）。游戏中为 30。"
+[ToleranceCoteInitiale]
+what = "起初允许的积分差"
+does = "寻找排位对手时，起初两名玩家的积分可以相差多少。游戏中为 100。"
+[IncrementToleranceCote]
+what = "积分差每次增加"
+does = "找不到对手时，允许的积分差每次增加多少。游戏中为 50。"
+[NbScansAvantToleranceLeague]
+what = "扩展到其他联赛前的搜索次数"
+does = "从名称看，经过多少次搜索后允许匹配其他联赛的对手。游戏中为 3。"
+[DefaultValueAlignTolerance]
+what = "默认对齐容差"
+does = "从名称看，默认对齐有多宽松。目前尚不清楚它对游戏有何影响。游戏中为 5。"
+[OffsetBord]
+what = "距地图边缘的距离（米）"
+does = "从名称看，沿地图边缘的一段边距（米）；游戏将其与地图轮廓一起使用，用途尚不清楚。游戏中为 1,000 米。"
+[DistanceMaxForProjection]
+what = "沿路径的最远投射距离（米）"
+does = "游戏沿路径向前延伸的最远距离（米），且不超过路径长度的 30%；它在找什么尚不清楚。游戏中为 1,000 米。"
+[EditeurPorteeTirMax]
+what = "编辑器：最大射程"
+does = "从名称看，制作方编辑器用的数值：显示的最大射程。游戏中为 -1（未设置）。"
+[AverageOnPeriod]
+what = "平均时段"
+does = "游戏对某个数值在最近这么长的一段时间内（游戏自身的单位）取滑动平均；是哪个数值尚不清楚。游戏中为 120。"

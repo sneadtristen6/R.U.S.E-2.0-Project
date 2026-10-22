@@ -1481,3 +1481,60 @@ does = "Tenendo la levetta, il tempo più breve tra due passi in un menu, in sec
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Levetta: ripetizione più lunga (s)"
 does = "Tenendo la levetta, il tempo più lungo tra due passi in un menu, in secondi. 0,5 nel gioco."
+[RayonRechercheDalleEtBatiment]
+what = "Ricerca di un posto per edificio (m)"
+does = "Per gli edifici che vanno su posti fissi: fin dove intorno al cursore il gioco cerca il posto più vicino, in m, con la telecamera a 385 m. Più la telecamera è lontana, più lontano cerca. 500 m nel gioco."
+[PrecisionCursorGhost]
+what = "Aggancio a un posto per edificio (m)"
+does = "La sagoma di un edificio salta su un posto trovato a questa distanza dal cursore, in m, con la telecamera a 385 m. Più la telecamera è lontana, più arriva lontano. 100 m nel gioco."
+[SeuilSnapRouteBatimentsDefense]
+what = "Difese: seconda ricerca oltre (m)"
+does = "Piazzando una difesa: quando il primo posto trovato è più lontano di così dal cursore, in m, il gioco cerca in un secondo modo (dal nome, lungo una strada). 50 m nel gioco."
+[ShrinkRatioForPlacement]
+what = "Dimensione contata per far entrare un edificio"
+does = "Quando il gioco controlla se un edificio entra in un posto, la sua sagoma conta per questa quota della sua dimensione, così entra un po' più facilmente. 80% nel gioco."
+[RayonCercleSnapMouse]
+what = "Cerchio di aggancio del mouse (m)"
+does = "Dal nome, quanto vicino deve essere il mouse a qualcosa perché il cursore vi si agganci, in m. 77 m nel gioco."
+[GhostCap]
+what = "Sagome previste insieme (solo console)"
+does = "Il massimo di edifici e unità previsti che attendono come sagoma insieme, per le versioni console del gioco. Il gioco PC tiene questo limite spento (il gioco avvisa se è attivo su PC), quindi cambiarlo qui non fa nulla. 25 nel gioco."
+[NbLeague]
+what = "Leghe"
+does = "Quante leghe hanno le partite classificate online. 7 nel gioco."
+[NbLevelsPerLeague]
+what = "Livelli per lega"
+does = "Quanti livelli ha ogni lega. 10 nel gioco."
+[DefaultCote]
+what = "Punteggio iniziale"
+does = "Il punteggio di un nuovo giocatore nelle partite classificate. 1500 nel gioco."
+[ScoreBaseLevel]
+what = "Punti per livello"
+does = "Dal nome, il punteggio su cui si basa ogni livello nelle partite classificate. 500 nel gioco."
+[TempsEntreDeuxScan]
+what = "Secondi tra due ricerche di avversario"
+does = "Cercando un avversario classificato, il tempo tra due ricerche, in secondi. 30 nel gioco."
+[ToleranceCoteInitiale]
+what = "Scarto di punteggio ammesso all'inizio"
+does = "Cercando un avversario classificato, quanto possono differire all'inizio i punteggi di due giocatori. 100 nel gioco."
+[IncrementToleranceCote]
+what = "Lo scarto di punteggio cresce di"
+does = "Quando non si trova un avversario, di quanto si allarga ogni volta lo scarto di punteggio ammesso. 50 nel gioco."
+[NbScansAvantToleranceLeague]
+what = "Ricerche prima delle altre leghe"
+does = "Dal nome, quante ricerche passano prima che sia ammesso un avversario di un'altra lega. 3 nel gioco."
+[DefaultValueAlignTolerance]
+what = "Margine di allineamento predefinito"
+does = "Dal nome, quanto liberamente si allineano le cose per impostazione predefinita. Non se ne conosce ancora alcun effetto in gioco. 5 nel gioco."
+[OffsetBord]
+what = "Distanza dal bordo della mappa (m)"
+does = "Dal nome, un margine lungo il bordo della mappa, in m; il gioco lo usa con il contorno della mappa, per uno scopo non ancora noto. 1.000 m nel gioco."
+[DistanceMaxForProjection]
+what = "Proiezione più lontana lungo un percorso (m)"
+does = "Il punto più lontano a cui il gioco arriva lungo un percorso, in m, e mai oltre il 30% della sua lunghezza; cosa cerchi non è ancora noto. 1.000 m nel gioco."
+[EditeurPorteeTirMax]
+what = "Editor: gittata massima"
+does = "Dal nome, un valore per l'editor degli autori: la gittata massima che mostra. -1 nel gioco (nessuna)."
+[AverageOnPeriod]
+what = "Media su"
+does = "Il gioco tiene una media mobile di un valore su un ultimo tratto di tempo così lungo (nella misura propria del gioco); quale valore non è ancora noto. 120 nel gioco."

@@ -1481,3 +1481,60 @@ does = "Bei gehaltenem Stick die kürzeste Zeit zwischen zwei Schritten durch ei
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Stick: längste Wiederholung (s)"
 does = "Bei gehaltenem Stick die längste Zeit zwischen zwei Schritten durch ein Menü, in Sekunden. Im Spiel 0,5."
+[RayonRechercheDalleEtBatiment]
+what = "Suche nach einem Bauplatz (m)"
+does = "Für Gebäude auf festen Plätzen: wie weit um den Mauszeiger das Spiel nach dem nächsten Platz sucht, in m, bei 385 m Kameraabstand. Je weiter die Kamera, desto weiter sucht es. Im Spiel 500 m."
+[PrecisionCursorGhost]
+what = "Einrasten auf einen Bauplatz (m)"
+does = "Der Umriss eines Gebäudes springt auf einen Platz, der so nah am Mauszeiger gefunden wird, in m, bei 385 m Kameraabstand. Je weiter die Kamera, desto weiter reicht es. Im Spiel 100 m."
+[SeuilSnapRouteBatimentsDefense]
+what = "Verteidigung: zweite Suche ab (m)"
+does = "Beim Platzieren einer Verteidigung: Ist der erste gefundene Platz weiter als das vom Mauszeiger entfernt, in m, sucht das Spiel auf eine zweite Art (laut Name entlang einer Straße). Im Spiel 50 m."
+[ShrinkRatioForPlacement]
+what = "Gezählte Größe beim Einpassen eines Gebäudes"
+does = "Prüft das Spiel, ob ein Gebäude auf einen Platz passt, zählt sein Umriss mit diesem Anteil seiner Größe, so passt es etwas leichter. Im Spiel 80 %."
+[RayonCercleSnapMouse]
+what = "Einrastkreis der Maus (m)"
+does = "Laut Name, wie nah die Maus an etwas sein muss, damit der Zeiger dort einrastet, in m. Im Spiel 77 m."
+[GhostCap]
+what = "Geplante Umrisse gleichzeitig (nur Konsolen)"
+does = "Die meisten geplanten Gebäude und Einheiten, die gleichzeitig als Umriss warten, für die Konsolenfassungen des Spiels. Das PC-Spiel lässt diese Grenze ausgeschaltet (das Spiel warnt, wenn sie am PC an ist), eine Änderung bewirkt hier also nichts. Im Spiel 25."
+[NbLeague]
+what = "Ligen"
+does = "Wie viele Ligen das Ranglistenspiel online hat. Im Spiel 7."
+[NbLevelsPerLeague]
+what = "Stufen je Liga"
+does = "Wie viele Stufen jede Liga hat. Im Spiel 10."
+[DefaultCote]
+what = "Anfangswertung"
+does = "Die Wertung eines neuen Spielers im Ranglistenspiel. Im Spiel 1500."
+[ScoreBaseLevel]
+what = "Punkte je Stufe"
+does = "Laut Name die Punktzahl, auf der jede Stufe im Ranglistenspiel beruht. Im Spiel 500."
+[TempsEntreDeuxScan]
+what = "Sekunden zwischen zwei Gegnersuchen"
+does = "Bei der Suche nach einem Ranglistengegner die Zeit zwischen zwei Suchen, in Sekunden. Im Spiel 30."
+[ToleranceCoteInitiale]
+what = "Anfangs erlaubter Wertungsabstand"
+does = "Bei der Suche nach einem Ranglistengegner, wie weit die Wertungen zweier Spieler anfangs auseinanderliegen dürfen. Im Spiel 100."
+[IncrementToleranceCote]
+what = "Wertungsabstand wächst um"
+does = "Wird kein Gegner gefunden, um wie viel der erlaubte Wertungsabstand jedes Mal wächst. Im Spiel 50."
+[NbScansAvantToleranceLeague]
+what = "Suchen vor anderen Ligen"
+does = "Laut Name, wie viele Suchen vergehen, bevor ein Gegner aus einer anderen Liga erlaubt ist. Im Spiel 3."
+[DefaultValueAlignTolerance]
+what = "Standard-Ausrichtungsspielraum"
+does = "Laut Name, wie locker Dinge standardmäßig ausgerichtet werden. Noch keine Wirkung im Spiel bekannt. Im Spiel 5."
+[OffsetBord]
+what = "Abstand zum Kartenrand (m)"
+does = "Laut Name ein Rand entlang der Kartenkante, in m; das Spiel nutzt ihn mit dem Umriss der Karte, wofür, ist noch nicht bekannt. Im Spiel 1.000 m."
+[DistanceMaxForProjection]
+what = "Weiteste Projektion entlang eines Weges (m)"
+does = "Wie weit das Spiel höchstens entlang eines Weges vorausgreift, in m, und nie mehr als 30 % der Weglänge; wonach, ist noch nicht bekannt. Im Spiel 1.000 m."
+[EditeurPorteeTirMax]
+what = "Editor: größte Schussweite"
+does = "Laut Name ein Wert für den eigenen Editor der Macher: die größte Schussweite, die er zeigt. Im Spiel -1 (keine gesetzt)."
+[AverageOnPeriod]
+what = "Gemittelt über"
+does = "Das Spiel führt einen laufenden Mittelwert einer Größe über eine letzte Zeitspanne dieser Länge (im eigenen Maß des Spiels); welche Größe, ist noch nicht bekannt. Im Spiel 120."

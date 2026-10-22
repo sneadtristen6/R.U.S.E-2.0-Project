@@ -1481,3 +1481,60 @@ does = "Při držení páčky nejkratší doba mezi dvěma kroky nabídkou, v se
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Páčka: nejdelší opakování (s)"
 does = "Při držení páčky nejdelší doba mezi dvěma kroky nabídkou, v sekundách. Ve hře 0,5."
+[RayonRechercheDalleEtBatiment]
+what = "Hledání místa pro budovu (m)"
+does = "Pro budovy na pevných místech: jak daleko kolem kurzoru hra hledá nejbližší místo, v m, s kamerou 385 m daleko. Čím dál kamera, tím dál hledá. Ve hře 500 m."
+[PrecisionCursorGhost]
+what = "Přichycení k místu pro budovu (m)"
+does = "Obrys budovy skočí na místo nalezené takto blízko kurzoru, v m, s kamerou 385 m daleko. Čím dál kamera, tím dál sahá. Ve hře 100 m."
+[SeuilSnapRouteBatimentsDefense]
+what = "Obrana: druhé hledání nad (m)"
+does = "Při stavění obrany: když je první nalezené místo dál od kurzoru, v m, hra hledá druhým způsobem (podle názvu podél silnice). Ve hře 50 m."
+[ShrinkRatioForPlacement]
+what = "Počítaná velikost při umisťování budovy"
+does = "Když hra zkoumá, zda se budova vejde na místo, její obrys se počítá tímto podílem velikosti, takže se vejde o něco snáz. Ve hře 80 %."
+[RayonCercleSnapMouse]
+what = "Kruh přichycení myši (m)"
+does = "Podle názvu jak blízko musí být myš něčemu, aby se k tomu kurzor přichytil, v m. Ve hře 77 m."
+[GhostCap]
+what = "Plánované obrysy najednou (jen konzole)"
+does = "Nejvíce plánovaných budov a jednotek čekajících najednou jako obrys, pro konzolové verze hry. Hra na PC má tento limit vypnutý (hra varuje, když je na PC zapnutý), takže jeho změna tu nic nedělá. Ve hře 25."
+[NbLeague]
+what = "Ligy"
+does = "Kolik lig mají hodnocené hry online. Ve hře 7."
+[NbLevelsPerLeague]
+what = "Úrovní v lize"
+does = "Kolik úrovní má každá liga. Ve hře 10."
+[DefaultCote]
+what = "Počáteční hodnocení"
+does = "Hodnocení nového hráče v hodnocených hrách. Ve hře 1500."
+[ScoreBaseLevel]
+what = "Body na úroveň"
+does = "Podle názvu skóre, na kterém stojí každá úroveň v hodnocených hrách. Ve hře 500."
+[TempsEntreDeuxScan]
+what = "Sekund mezi dvěma hledáními soupeře"
+does = "Při hledání hodnoceného soupeře doba mezi dvěma hledáními, v sekundách. Ve hře 30."
+[ToleranceCoteInitiale]
+what = "Povolený rozdíl hodnocení na začátku"
+does = "Při hledání hodnoceného soupeře, o kolik se smí hodnocení dvou hráčů zpočátku lišit. Ve hře 100."
+[IncrementToleranceCote]
+what = "Rozdíl hodnocení roste o"
+does = "Když se soupeř nenajde, o kolik se pokaždé zvětší povolený rozdíl hodnocení. Ve hře 50."
+[NbScansAvantToleranceLeague]
+what = "Hledání před jinými ligami"
+does = "Podle názvu kolik hledání uplyne, než je povolen soupeř z jiné ligy. Ve hře 3."
+[DefaultValueAlignTolerance]
+what = "Výchozí tolerance zarovnání"
+does = "Podle názvu jak volně se věci ve výchozím stavu zarovnávají. Zatím není znám žádný vliv na hru. Ve hře 5."
+[OffsetBord]
+what = "Vzdálenost od okraje mapy (m)"
+does = "Podle názvu okraj podél hrany mapy, v m; hra ho používá s obrysem mapy, k čemu, zatím není známo. Ve hře 1 000 m."
+[DistanceMaxForProjection]
+what = "Nejdelší průmět podél cesty (m)"
+does = "Nejdál, kam hra sahá dopředu podél cesty, v m, a nikdy víc než 30 % její délky; co tam hledá, zatím není známo. Ve hře 1 000 m."
+[EditeurPorteeTirMax]
+what = "Editor: největší dostřel"
+does = "Podle názvu hodnota pro editor tvůrců: největší dostřel, který ukazuje. Ve hře -1 (žádný)."
+[AverageOnPeriod]
+what = "Průměr za"
+does = "Hra vede klouzavý průměr nějaké hodnoty za poslední úsek času této délky (ve vlastní míře hry); jaké, zatím není známo. Ve hře 120."

@@ -1481,3 +1481,60 @@ does = "En tenant le stick, le temps le plus court entre deux pas dans un menu, 
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Stick : répétition la plus longue (s)"
 does = "En tenant le stick, le temps le plus long entre deux pas dans un menu, en secondes. 0,5 dans le jeu."
+[RayonRechercheDalleEtBatiment]
+what = "Recherche d'un emplacement de bâtiment (m)"
+does = "Pour les bâtiments posés sur des emplacements prévus : jusqu'où autour du curseur le jeu cherche l'emplacement le plus proche, en m, avec la caméra à 385 m. Plus la caméra est loin, plus il cherche loin. 500 m dans le jeu."
+[PrecisionCursorGhost]
+what = "Accrochage à un emplacement (m)"
+does = "Le contour d'un bâtiment saute sur un emplacement trouvé à cette distance du curseur, en m, avec la caméra à 385 m. Plus la caméra est loin, plus il porte loin. 100 m dans le jeu."
+[SeuilSnapRouteBatimentsDefense]
+what = "Défenses : seconde recherche au-delà de (m)"
+does = "En plaçant une défense : quand le premier emplacement trouvé est plus loin que cela du curseur, en m, le jeu cherche d'une seconde façon (d'après son nom, le long d'une route). 50 m dans le jeu."
+[ShrinkRatioForPlacement]
+what = "Taille comptée pour caser un bâtiment"
+does = "Quand le jeu vérifie si un bâtiment tient sur un emplacement, son contour compte pour cette part de sa taille, il tient donc un peu plus facilement. 80 % dans le jeu."
+[RayonCercleSnapMouse]
+what = "Cercle d'accrochage de la souris (m)"
+does = "D'après son nom, à quelle distance la souris doit être de quelque chose pour que le curseur s'y accroche, en m. 77 m dans le jeu."
+[GhostCap]
+what = "Contours prévus à la fois (consoles seulement)"
+does = "Le plus de bâtiments et d'unités prévus qui attendent en contour à la fois, pour les versions console du jeu. Le jeu PC garde cette limite désactivée (le jeu avertit si elle est active sur PC), la changer ne fait donc rien ici. 25 dans le jeu."
+[NbLeague]
+what = "Ligues"
+does = "Combien de ligues comptent les parties classées en ligne. 7 dans le jeu."
+[NbLevelsPerLeague]
+what = "Niveaux par ligue"
+does = "Combien de niveaux compte chaque ligue. 10 dans le jeu."
+[DefaultCote]
+what = "Cote de départ"
+does = "La cote d'un nouveau joueur en parties classées. 1500 dans le jeu."
+[ScoreBaseLevel]
+what = "Points par niveau"
+does = "D'après son nom, le score sur lequel repose chaque niveau en parties classées. 500 dans le jeu."
+[TempsEntreDeuxScan]
+what = "Secondes entre deux recherches d'adversaire"
+does = "En cherchant un adversaire classé, le temps entre deux recherches, en secondes. 30 dans le jeu."
+[ToleranceCoteInitiale]
+what = "Écart de cote admis au début"
+does = "En cherchant un adversaire classé, de combien les cotes de deux joueurs peuvent différer au début. 100 dans le jeu."
+[IncrementToleranceCote]
+what = "L'écart de cote s'élargit de"
+does = "Quand aucun adversaire n'est trouvé, de combien l'écart de cote admis s'élargit à chaque fois. 50 dans le jeu."
+[NbScansAvantToleranceLeague]
+what = "Recherches avant les autres ligues"
+does = "D'après son nom, combien de recherches passent avant qu'un adversaire d'une autre ligue soit admis. 3 dans le jeu."
+[DefaultValueAlignTolerance]
+what = "Marge d'alignement par défaut"
+does = "D'après son nom, la souplesse d'alignement par défaut. On ne lui connaît encore aucun effet en jeu. 5 dans le jeu."
+[OffsetBord]
+what = "Distance au bord de la carte (m)"
+does = "D'après son nom, une marge le long du bord de la carte, en m ; le jeu s'en sert avec le contour de la carte, pour un usage pas encore connu. 1 000 m dans le jeu."
+[DistanceMaxForProjection]
+what = "Projection la plus lointaine le long d'un trajet (m)"
+does = "Le plus loin que le jeu porte en avant le long d'un trajet, en m, et jamais plus de 30 % de sa longueur ; ce qu'il y cherche n'est pas encore connu. 1 000 m dans le jeu."
+[EditeurPorteeTirMax]
+what = "Éditeur : portée de tir maximale"
+does = "D'après son nom, une valeur pour l'éditeur des créateurs : la plus grande portée de tir qu'il affiche. -1 dans le jeu (aucune)."
+[AverageOnPeriod]
+what = "Moyenne sur"
+does = "Le jeu tient une moyenne glissante d'une valeur sur une dernière durée de cette longueur (dans la mesure propre au jeu) ; laquelle n'est pas encore connue. 120 dans le jeu."

@@ -73,6 +73,13 @@ GROUPS = (
                "FumigeneTimeout")),
     ("controls", ("JoystickPuissanceVariationDeplacementInMenu", "JoystickTimeMinBeforeNewAxeEvent",
                   "JoystickTimeMaxBeforeNewAxeEvent")),
+    ("placing", ("RayonRechercheDalleEtBatiment", "PrecisionCursorGhost", "SeuilSnapRouteBatimentsDefense",
+                 "ShrinkRatioForPlacement", "RayonCercleSnapMouse", "GhostCap")),
+    ("ranked", ("NbLeague", "NbLevelsPerLeague", "DefaultCote", "ScoreBaseLevel", "TempsEntreDeuxScan",
+                "ToleranceCoteInitiale", "IncrementToleranceCote", "NbScansAvantToleranceLeague")),
+    # values whose use isn't known yet, last
+    ("other", ("DefaultValueAlignTolerance", "OffsetBord", "DistanceMaxForProjection", "EditeurPorteeTirMax",
+               "AverageOnPeriod")),
     ("computer", ("ArmyValueForceLaunchAttack", "MinArmyValueToUseManipulationCard", "MaxWaitingRequest",
                   "NbMaxWaitingRequestBeforeRequestingNewFactory",
                   "MaxTimeWaitingRequest", "CheckAndCancelWaitingRequest", "BP_DepotAddedValue", "BP_HqValue",

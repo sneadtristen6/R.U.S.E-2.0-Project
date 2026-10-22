@@ -1481,3 +1481,60 @@ does = "Przy przytrzymanej gałce najkrótszy czas między dwoma krokami w menu,
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Gałka: najdłuższe powtórzenie (s)"
 does = "Przy przytrzymanej gałce najdłuższy czas między dwoma krokami w menu, w sekundach. W grze 0,5."
+[RayonRechercheDalleEtBatiment]
+what = "Szukanie miejsca na budynek (m)"
+does = "Dla budynków stawianych w wyznaczonych miejscach: jak daleko wokół kursora gra szuka najbliższego miejsca, w m, przy kamerze 385 m dalej. Im dalej kamera, tym dalej szuka. W grze 500 m."
+[PrecisionCursorGhost]
+what = "Przyciąganie do miejsca budowy (m)"
+does = "Zarys budynku przeskakuje na miejsce znalezione tak blisko kursora, w m, przy kamerze 385 m dalej. Im dalej kamera, tym dalej sięga. W grze 100 m."
+[SeuilSnapRouteBatimentsDefense]
+what = "Obrona: drugie szukanie powyżej (m)"
+does = "Przy stawianiu obrony: gdy pierwsze znalezione miejsce jest dalej od kursora, w m, gra szuka drugim sposobem (z nazwy: wzdłuż drogi). W grze 50 m."
+[ShrinkRatioForPlacement]
+what = "Rozmiar liczony przy mieszczeniu budynku"
+does = "Gdy gra sprawdza, czy budynek zmieści się w miejscu, jego zarys liczy się jako taki udział rozmiaru, więc mieści się nieco łatwiej. W grze 80%."
+[RayonCercleSnapMouse]
+what = "Okrąg przyciągania myszy (m)"
+does = "Z nazwy: jak blisko czegoś musi być mysz, by kursor się do tego przyciągnął, w m. W grze 77 m."
+[GhostCap]
+what = "Planowane zarysy naraz (tylko konsole)"
+does = "Najwięcej planowanych budynków i jednostek czekających naraz jako zarys, dla konsolowych wersji gry. Gra na PC ma ten limit wyłączony (gra ostrzega, gdy jest włączony na PC), więc zmiana nic tu nie daje. W grze 25."
+[NbLeague]
+what = "Ligi"
+does = "Ile lig mają rozgrywki rankingowe online. W grze 7."
+[NbLevelsPerLeague]
+what = "Poziomy w każdej lidze"
+does = "Ile poziomów ma każda liga. W grze 10."
+[DefaultCote]
+what = "Ranking początkowy"
+does = "Ranking nowego gracza w rozgrywkach rankingowych. W grze 1500."
+[ScoreBaseLevel]
+what = "Punkty na poziom"
+does = "Z nazwy: wynik, na którym opiera się każdy poziom w rozgrywkach rankingowych. W grze 500."
+[TempsEntreDeuxScan]
+what = "Sekund między dwoma szukaniami przeciwnika"
+does = "Przy szukaniu przeciwnika rankingowego czas między dwoma szukaniami, w sekundach. W grze 30."
+[ToleranceCoteInitiale]
+what = "Dopuszczalna różnica rankingu na początku"
+does = "Przy szukaniu przeciwnika rankingowego, o ile mogą się na początku różnić rankingi dwóch graczy. W grze 100."
+[IncrementToleranceCote]
+what = "Różnica rankingu rośnie o"
+does = "Gdy nie ma przeciwnika, o ile za każdym razem rośnie dopuszczalna różnica rankingu. W grze 50."
+[NbScansAvantToleranceLeague]
+what = "Szukania przed innymi ligami"
+does = "Z nazwy: ile szukań mija, zanim dopuszczony zostanie przeciwnik z innej ligi. W grze 3."
+[DefaultValueAlignTolerance]
+what = "Domyślny margines wyrównania"
+does = "Z nazwy: jak luźno rzeczy domyślnie się wyrównują. Nie znamy jeszcze żadnego jej skutku w grze. W grze 5."
+[OffsetBord]
+what = "Odległość od krawędzi mapy (m)"
+does = "Z nazwy: margines wzdłuż krawędzi mapy, w m; gra używa go z obrysem mapy, do czego — jeszcze nie wiadomo. W grze 1000 m."
+[DistanceMaxForProjection]
+what = "Najdalszy rzut wzdłuż trasy (m)"
+does = "Najdalej, jak gra sięga naprzód wzdłuż trasy, w m, i nigdy ponad 30% jej długości; czego tam szuka, jeszcze nie wiadomo. W grze 1000 m."
+[EditeurPorteeTirMax]
+what = "Edytor: największy zasięg ognia"
+does = "Z nazwy: wartość dla edytora twórców — największy zasięg ognia, jaki pokazuje. W grze -1 (brak)."
+[AverageOnPeriod]
+what = "Średnia z"
+does = "Gra prowadzi bieżącą średnią pewnej wartości z ostatniego okresu tej długości (we własnej mierze gry); której — jeszcze nie wiadomo. W grze 120."

@@ -12921,6 +12921,42 @@ cz = "Nastavení počítače a hráčů"
 jpn = "AIとプレイヤーの設定"
 sc = "AI 与玩家设置"
 
+[economy_group_placing]
+us = "Placing buildings with the mouse"
+fr = "Placer des bâtiments à la souris"
+ger = "Gebäude mit der Maus platzieren"
+ita = "Piazzare edifici con il mouse"
+spa = "Colocar edificios con el ratón"
+pol = "Stawianie budynków myszą"
+ru = "Размещение зданий мышью"
+cz = "Stavění budov myší"
+jpn = "マウスでの建物の配置"
+sc = "用鼠标放置建筑"
+
+[economy_group_ranked]
+us = "Online ranked play"
+fr = "Parties classées en ligne"
+ger = "Ranglistenspiele online"
+ita = "Partite classificate online"
+spa = "Partidas clasificatorias en línea"
+pol = "Rozgrywki rankingowe online"
+ru = "Рейтинговые игры по сети"
+cz = "Hodnocené hry online"
+jpn = "オンラインのランクマッチ"
+sc = "在线排位赛"
+
+[economy_group_other]
+us = "Other values"
+fr = "Autres valeurs"
+ger = "Weitere Werte"
+ita = "Altri valori"
+spa = "Otros valores"
+pol = "Inne wartości"
+ru = "Прочие значения"
+cz = "Další hodnoty"
+jpn = "その他の値"
+sc = "其他数值"
+
 [economy_group_air]
 us = "Aircraft"
 fr = "Avions"

@@ -1481,3 +1481,60 @@ does = "Manteniendo la palanca, el tiempo más corto entre dos pasos por un men�
 [JoystickTimeMaxBeforeNewAxeEvent]
 what = "Palanca: repetición más larga (s)"
 does = "Manteniendo la palanca, el tiempo más largo entre dos pasos por un menú, en segundos. 0,5 en el juego."
+[RayonRechercheDalleEtBatiment]
+what = "Búsqueda de un lugar para edificio (m)"
+does = "Para los edificios que van en lugares fijos: hasta dónde alrededor del cursor busca el juego el lugar más cercano, en m, con la cámara a 385 m. Cuanto más lejos la cámara, más lejos busca. 500 m en el juego."
+[PrecisionCursorGhost]
+what = "Ajuste a un lugar para edificio (m)"
+does = "El contorno de un edificio salta a un lugar hallado a esta distancia del cursor, en m, con la cámara a 385 m. Cuanto más lejos la cámara, más lejos llega. 100 m en el juego."
+[SeuilSnapRouteBatimentsDefense]
+what = "Defensas: segunda búsqueda más allá de (m)"
+does = "Al colocar una defensa: cuando el primer lugar hallado está más lejos que esto del cursor, en m, el juego busca de una segunda forma (por su nombre, a lo largo de una carretera). 50 m en el juego."
+[ShrinkRatioForPlacement]
+what = "Tamaño contado al encajar un edificio"
+does = "Cuando el juego comprueba si un edificio cabe en un lugar, su contorno cuenta con esta proporción de su tamaño, así cabe un poco más fácil. 80 % en el juego."
+[RayonCercleSnapMouse]
+what = "Círculo de ajuste del ratón (m)"
+does = "Por su nombre, lo cerca que debe estar el ratón de algo para que el cursor se ajuste a ello, en m. 77 m en el juego."
+[GhostCap]
+what = "Contornos previstos a la vez (solo consolas)"
+does = "El máximo de edificios y unidades previstos que esperan como contorno a la vez, para las versiones de consola del juego. El juego de PC mantiene este límite apagado (el juego avisa si está activo en PC), así que cambiarlo aquí no hace nada. 25 en el juego."
+[NbLeague]
+what = "Ligas"
+does = "Cuántas ligas tienen las partidas clasificatorias en línea. 7 en el juego."
+[NbLevelsPerLeague]
+what = "Niveles por liga"
+does = "Cuántos niveles tiene cada liga. 10 en el juego."
+[DefaultCote]
+what = "Puntuación inicial"
+does = "La puntuación de un jugador nuevo en partidas clasificatorias. 1500 en el juego."
+[ScoreBaseLevel]
+what = "Puntos por nivel"
+does = "Por su nombre, la puntuación en la que se basa cada nivel en partidas clasificatorias. 500 en el juego."
+[TempsEntreDeuxScan]
+what = "Segundos entre dos búsquedas de rival"
+does = "Al buscar un rival clasificatorio, el tiempo entre dos búsquedas, en segundos. 30 en el juego."
+[ToleranceCoteInitiale]
+what = "Diferencia de puntuación admitida al principio"
+does = "Al buscar un rival clasificatorio, cuánto pueden diferir al principio las puntuaciones de dos jugadores. 100 en el juego."
+[IncrementToleranceCote]
+what = "La diferencia de puntuación crece en"
+does = "Cuando no se encuentra rival, cuánto se amplía cada vez la diferencia de puntuación admitida. 50 en el juego."
+[NbScansAvantToleranceLeague]
+what = "Búsquedas antes de otras ligas"
+does = "Por su nombre, cuántas búsquedas pasan antes de admitir un rival de otra liga. 3 en el juego."
+[DefaultValueAlignTolerance]
+what = "Margen de alineación predeterminado"
+does = "Por su nombre, lo holgado que se alinean las cosas por defecto. Aún no se le conoce efecto en el juego. 5 en el juego."
+[OffsetBord]
+what = "Distancia al borde del mapa (m)"
+does = "Por su nombre, un margen a lo largo del borde del mapa, en m; el juego lo usa con el contorno del mapa, para algo aún no conocido. 1.000 m en el juego."
+[DistanceMaxForProjection]
+what = "Proyección más lejana a lo largo de una ruta (m)"
+does = "Lo más lejos que el juego alcanza por delante a lo largo de una ruta, en m, y nunca más del 30 % de su longitud; lo que busca aún no se conoce. 1.000 m en el juego."
+[EditeurPorteeTirMax]
+what = "Editor: alcance de tiro máximo"
+does = "Por su nombre, un valor para el editor de los creadores: el mayor alcance de tiro que muestra. -1 en el juego (ninguno)."
+[AverageOnPeriod]
+what = "Promedio sobre"
+does = "El juego lleva una media móvil de una cifra sobre un último tramo de tiempo así de largo (en la medida propia del juego); qué cifra aún no se conoce. 120 en el juego."
