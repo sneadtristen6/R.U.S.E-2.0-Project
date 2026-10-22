@@ -412,6 +412,30 @@ cz = "malované textury: {0}"
 jpn = "塗装したテクスチャ：{0}"
 sc = "已涂装的纹理：{0}"
 
+[ebbd20734b8]
+us = "sound volumes: {0}"
+fr = "volumes des sons : {0}"
+ger = "Lautstärken der Klänge: {0}"
+ita = "volumi dei suoni: {0}"
+spa = "volúmenes de sonido: {0}"
+pol = "głośności dźwięków: {0}"
+ru = "громкость звуков: {0}"
+cz = "hlasitosti zvuků: {0}"
+jpn = "サウンドの音量：{0}"
+sc = "声音音量：{0}"
+
+[ed92ea81ccb]
+us = "animations: {0}"
+fr = "animations : {0}"
+ger = "Animationen: {0}"
+ita = "animazioni: {0}"
+spa = "animaciones: {0}"
+pol = "animacje: {0}"
+ru = "анимации: {0}"
+cz = "animace: {0}"
+jpn = "アニメーション：{0}"
+sc = "动画：{0}"
+
 [e1b519e9f9b]
 us = "sounds: {0}"
 fr = "sons : {0}"
