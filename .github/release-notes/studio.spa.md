@@ -5,6 +5,7 @@ idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de
 
 - **Corregido, avisado por un jugador:** en un PC cuyo Windows no tiene el certificado con el que se comprueban las descargas de GitHub y no puede obtenerlo, las descargas fallaban («unable to get issuer certificate»). Las descargas del Studio (sus actualizaciones, los parches del juego, los modelos de las unidades de época y las texturas en línea de Map Paint) ahora también lo intentan con la lista de certificados de Firefox, que el Studio lleva consigo.
 - **Imágenes más seguras:** la biblioteca con la que el Studio lee las imágenes (Pillow) pasa a la versión 13.0.0, con sus correcciones contra archivos de imagen hechos a propósito que podían cerrar la aplicación, agotar su memoria o algo peor.
+- **Código más estricto:** los 12 avisos de la revisión de código de GitHub sobre este proyecto están resueltos. Cuando el Studio muestra sus páginas en tu navegador, solo abren sus propios archivos, comprobados de una forma que esa revisión reconoce; las descargas piden TLS 1.2 o más reciente, como ya hacían; y la lectura de los errores de carreteras de una prueba fallida sigue siendo rápida con cualquier mensaje. Nada más cambia en cómo funciona el Studio.
 
 **0.9.8.8:** una pantalla de inicio y un tablero de edificios, edificios propios, RUSE Decoy para sonidos y animaciones, cada regla del juego en una pestaña, y R.U.S.E. 2.0 en oro.
 

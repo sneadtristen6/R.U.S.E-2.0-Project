@@ -5,6 +5,7 @@ sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird n
 
 - **Behoben, von einem Spieler gemeldet:** auf einem PC, dessen Windows das Zertifikat nicht hat, mit dem GitHubs Downloads geprüft werden, und es nicht holen kann, schlugen Downloads fehl („unable to get issuer certificate“). Die Downloads des Studios (seine Updates, die Spiel-Patches, die Modelle der Epocheneinheiten und die Online-Texturen von Map Paint) versuchen es jetzt auch mit der Zertifikatsliste von Firefox, die es mitbringt.
 - **Sicherere Bilder:** die Bibliothek, mit der das Studio Bilder liest (Pillow), ist jetzt Version 13.0.0, mit ihren Korrekturen gegen präparierte Bilddateien, die die App abstürzen lassen, ihren Speicher aufbrauchen oder Schlimmeres anrichten konnten.
+- **Strengerer Code:** die 12 Warnungen der Code-Prüfung von GitHub zu diesem Projekt sind erledigt. Zeigt das Studio seine Seiten in deinem Webbrowser, öffnen sie nur seine eigenen Dateien, geprüft auf eine Weise, die diese Prüfung erkennt; Downloads verlangen TLS 1.2 oder neuer, wie schon bisher; und das Lesen der Straßenfehler eines fehlgeschlagenen Tests bleibt bei jeder Meldung schnell. Sonst ändert sich an der Arbeitsweise des Studios nichts.
 
 **0.9.8.8:** ein Startbildschirm und eine Gebäudetafel, eigene Gebäude, RUSE Decoy für Sounds und Animationen, jede Spielregel in einem Reiter, und R.U.S.E. 2.0 in Gold.
 

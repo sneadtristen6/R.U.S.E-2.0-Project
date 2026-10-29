@@ -5,6 +5,7 @@ spustí ji. Vaše instalace Steamu se nikdy nemění.
 
 - **Opraveno, nahlášeno hráčem:** na některých PC se nenainstaloval žádný mód: „tento PC nedůvěřuje bezpečnostnímu certifikátu webu (unable to get issuer certificate)“. Windows na těchto PC nemá certifikát, kterým se ověřuje stahování z GitHubu, a nedokáže ho získat. Launcher teď zkouší i seznam certifikátů Firefoxu, který nese s sebou. Do té doby se mód stažený v prohlížeči ze seznamu módů nainstaluje přes **Přidat soubor módu…**.
 - **Bezpečnější obrázky:** knihovna, kterou Launcher čte obrázky (Pillow), je teď ve verzi 13.0.0, s opravami proti schválně upraveným souborům obrázků, které mohly aplikaci shodit, vyčerpat její paměť nebo hůř.
+- **Pečlivější kód:** 12 varování kontroly kódu GitHubu k tomuto projektu je vyřešeno. Když Launcher ukazuje své stránky ve vašem prohlížeči, otevírají jen jeho vlastní soubory, ověřené způsobem, který ta kontrola rozpozná, a stahování vyžaduje TLS 1.2 nebo novější, jako už dřív. Na tom, jak Launcher funguje, se nic nemění.
 
 **0.4.8.8:** spouští mody vytvořené ve Studiu 0.9.8.8 a vaše upravená hra říká R.U.S.E. 2.0 ve zlaté.
 

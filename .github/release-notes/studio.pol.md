@@ -5,6 +5,7 @@ zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy 
 
 - **Poprawione, zgłoszone przez gracza:** na PC, którego Windows nie ma certyfikatu, którym sprawdzane są pobrania z GitHuba, i nie może go pobrać, pobieranie się nie udawało („unable to get issuer certificate”). Pobrania Studio (jego aktualizacje, łatki gry, modele jednostek epok i tekstury online Map Paint) próbują teraz także z listą certyfikatów Firefoksa, którą Studio ma ze sobą.
 - **Bezpieczniejsze obrazy:** biblioteka, którą Studio wczytuje obrazy (Pillow), ma teraz wersję 13.0.0, z poprawkami chroniącymi przed specjalnie spreparowanymi plikami obrazów, które mogły zawiesić aplikację, wyczerpać jej pamięć lub gorzej.
+- **Staranniejszy kod:** 12 ostrzeżeń kontroli kodu GitHuba dla tego projektu zostało załatwionych. Gdy Studio pokazuje swoje strony w twojej przeglądarce, otwierają one tylko jego własne pliki, sprawdzane w sposób, który ta kontrola rozpoznaje; pobieranie wymaga TLS 1.2 lub nowszego, jak już wcześniej; a odczyt błędów dróg z nieudanego testu pozostaje szybki przy każdym komunikacie. Poza tym w działaniu Studia nic się nie zmienia.
 
 **0.9.8.8:** ekran startowy i tablica budynków, własne budynki, RUSE Decoy do dźwięków i animacji, każda zasada gry w jednej zakładce, oraz R.U.S.E. 2.0 w złocie.
 

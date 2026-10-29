@@ -15,6 +15,8 @@ A small fix-up update:
   also try with the list of certificates Firefox uses, which they carry.
 - **Safer pictures:** the library both apps read pictures with (Pillow) is now version 13.0.0, with its fixes for
   specially made picture files that could crash the app, use up its memory, or worse.
+- **Tighter code:** the 12 warnings GitHub's code check gave on this project are answered. Nothing changes in how
+  the apps work.
 
 Everything that changed:
 [Studio notes](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) ·

@@ -12,6 +12,8 @@ description = "Read and write R.U.S.E. game data: the engine of the R.U.S.E. mod
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-only" }
 
+# What the built apps carry, each at the version they ship: installers/requirements.txt. GitHub's dependency list
+# reads this file and that one; this one names only what `pip install -e .[apps]` needs.
 [project.optional-dependencies]
 apps = ["pywebview"]  # the apps' windows
 

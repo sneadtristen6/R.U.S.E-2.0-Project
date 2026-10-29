@@ -5,6 +5,7 @@ con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
 - **Corregido, avisado por un jugador:** en algunos PC no se instalaba ningún mod: «este PC no confía en el certificado de seguridad del sitio (unable to get issuer certificate)». Windows en esos PC no tiene el certificado con el que se comprueban las descargas de GitHub y no puede obtenerlo. El Launcher ahora también lo intenta con la lista de certificados de Firefox, que lleva consigo. Mientras tanto, un mod descargado en el navegador desde la lista de mods se instala con **Añadir un archivo de mod…**.
 - **Imágenes más seguras:** la biblioteca con la que el Launcher lee las imágenes (Pillow) pasa a la versión 13.0.0, con sus correcciones contra archivos de imagen hechos a propósito que podían cerrar la aplicación, agotar su memoria o algo peor.
+- **Código más estricto:** los 12 avisos de la revisión de código de GitHub sobre este proyecto están resueltos. Cuando el Launcher muestra sus páginas en tu navegador, solo abren sus propios archivos, comprobados de una forma que esa revisión reconoce, y las descargas piden TLS 1.2 o más reciente, como ya hacían. Nada cambia en cómo funciona el Launcher.
 
 **0.4.8.8:** ejecuta los mods hechos con Studio 0.9.8.8, y tu juego con mods dice R.U.S.E. 2.0 en oro.
 

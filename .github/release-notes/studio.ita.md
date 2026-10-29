@@ -5,6 +5,7 @@ modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non v
 
 - **Corretto, segnalato da un giocatore:** su un PC il cui Windows non ha il certificato con cui vengono controllati i download di GitHub e non riesce a recuperarlo, i download fallivano («unable to get issuer certificate»). I download dello Studio (i suoi aggiornamenti, le patch del gioco, i modelli delle unità d'epoca e le texture online di Map Paint) ora provano anche con l'elenco di certificati di Firefox, che lo Studio porta con sé.
 - **Immagini più sicure:** la libreria con cui lo Studio legge le immagini (Pillow) passa alla versione 13.0.0, con le sue correzioni contro file d'immagine fatti apposta che potevano far chiudere l'app, esaurirne la memoria o peggio.
+- **Codice più rigoroso:** i 12 avvisi del controllo del codice di GitHub su questo progetto sono risolti. Quando lo Studio mostra le sue pagine nel tuo browser, aprono solo i suoi file, controllati in un modo che quel controllo riconosce; i download chiedono TLS 1.2 o più recente, come già prima; e la lettura degli errori di strade di un test fallito resta rapida con qualsiasi messaggio. Per il resto, nel funzionamento dello Studio non cambia nulla.
 
 **0.9.8.8:** una schermata iniziale e una tavola degli edifici, edifici tuoi, RUSE Decoy per suoni e animazioni, ogni regola del gioco in una scheda, e R.U.S.E. 2.0 in oro.
 

@@ -5,6 +5,7 @@ with your mods and starts it. Your Steam install is never changed.
 
 - **Fixed, reported by a player:** on some PCs no mod would install: "this PC doesn't trust the site's security certificate (unable to get issuer certificate)". Windows on those PCs hasn't got the certificate GitHub's downloads are checked against and can't fetch it. The Launcher now also tries with the list of certificates Firefox uses, which it carries. Until then, a mod downloaded in your browser from the mod list installs with **Add a mod file…**.
 - **Safer pictures:** the library the Launcher reads pictures with (Pillow) is now version 13.0.0, with its fixes for specially made picture files that could crash the app, use up its memory, or worse.
+- **Tighter code:** the 12 warnings GitHub's code check gave on this project are answered. When the Launcher shows its pages in your web browser, they open only its own files, checked in a way that check recognises, and downloads ask for TLS 1.2 or newer, as they already did. Nothing changes in how the Launcher works.
 
 **0.4.8.8:** it plays mods made with Studio 0.9.8.8, and your modded game says R.U.S.E. 2.0 in gold.
 
