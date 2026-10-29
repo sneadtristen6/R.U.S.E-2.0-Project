@@ -13,7 +13,7 @@ from rusemod import keptformat
 # kind -> (its format number, the fingerprint of what it makes from the inputs below)
 RECORDED = {
     "model": (1, "4acee01f8354daa04ccd754f2a9609ac"),
-    "map": (1, "fefca6ec3484235d8553737f1b8cbb90"),
+    "map": (2, "a20c40310c9b8067f2c877cfe210b3c8"),
     "paint": (1, "03428b5ee3145603020f8b7e5c5d4e39"),
     "movement": (1, "ff56e3139dc5b087adf9f75977c69e0f"),
     "tile": (1, "eb940f3d474c4113c9135f0b16691508"),
