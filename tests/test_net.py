@@ -146,6 +146,8 @@ class EveryDownload(unittest.TestCase):
         for path in sorted(src.rglob("*.py")):
             if path.name in ("net.py", "webui.py") and path.parent.name == "rusemod":
                 continue
+            if "python251" in path.parts:
+                continue  # Python 2.5.1's own library where a PC has unpacked it: Python 2 code, not the apps'
             for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if re.search(r"\burllib\.request\.urlopen\(|\bfrom urllib\.request import\b.*\burlopen\b", line):
                     direct.append(f"{path.relative_to(src)}:{n}")

@@ -180,7 +180,7 @@ what they don't say.
 | typing_extensions (for pywebview) | 4.16.0 | PSF-2.0 | Python Software Foundation, and the others named in its licence file | https://github.com/python/typing_extensions/tree/4.16.0 |
 | shapely (R.U.S.E. 2.0's title: the menu logo's new letters, rusemod.menulogo) | 2.2.0 | BSD-3-Clause | Sean C. Gillies, Casper van der Wel, Shapely Contributors | https://github.com/shapely/shapely/tree/2.2.0 |
 | PyAV (R.U.S.E. 2.0's title: the gold loading video, rusemod.signature) | 19.0.1 | BSD-3-Clause | Its licence names no holder ("Copyright retained by original committers") | https://github.com/PyAV-Org/PyAV/tree/v19.0.1 |
-| Pillow (reads pictures: imported models' textures, ground pictures, the title's pictures) | 12.2.0 | MIT-CMU | Jeffrey A. Clark and contributors; Secret Labs AB and Fredrik Lundh (PIL) | https://github.com/python-pillow/Pillow/tree/12.2.0 |
+| Pillow (reads pictures: imported models' textures, ground pictures, the title's pictures) | 13.0.0 | MIT-CMU | Jeffrey A. Clark and contributors; Secret Labs AB and Fredrik Lundh (PIL) | https://github.com/python-pillow/Pillow/tree/13.0.0 |
 | certifi (Mozilla's root certificate list: downloads on a PC whose Windows lacks a site's root, rusemod.net) | 2026.10.19 | MPL-2.0 (its `cacert.pem`, made from Mozilla's `certdata.txt`) | Its licence file names no holder (its author: Kenneth Reitz; the list: Mozilla) | https://github.com/certifi/python-certifi/tree/2026.10.19 |
 | Nuitka's runtime (the C code Nuitka builds into each program) | 4.2.2 | GNU AGPL v3 with the Nuitka Runtime Library Exception 1.0, which lets the programs it builds be given out under any licence | Kay Hayen | https://github.com/Nuitka/Nuitka/tree/4.2.2 |
 
@@ -221,7 +221,7 @@ What those carry inside them:
 | zlib | Not stated in the file | `av.libs\`: `zlib1-*.dll` (from PyAV; PyAV carries no licence for it: the licence is its project's) | Zlib | Jean-loup Gailly and Mark Adler | https://github.com/madler/zlib |
 | GCC runtime library and libstdc++ | Not stated in the files | `av.libs\`: `libgcc_s_seh-1-*.dll`, `libstdc++-6-*.dll` (from PyAV; PyAV carries no licence for it: the licence is its project's) | GPL-3.0-or-later WITH GCC-exception-3.1 | Free Software Foundation, Inc | https://gcc.gnu.org/git/?p=gcc.git |
 | mingw-w64 winpthreads | Not stated in the file | `av.libs\`: `libwinpthread-1-*.dll` (from PyAV; PyAV carries no licence for it: the licence is its project's) | MIT (winpthreads' COPYING) | The mingw-w64 project (the file says: MinGW-W64 Project Members) | https://github.com/mingw-w64/mingw-w64/tree/master/mingw-w64-libraries/winpthreads |
-| The libraries built into Pillow | brotli 1.2.0, FreeType 2.14.3, HarfBuzz 13.2.1, Little CMS 2.18, libavif 1.4.1, libjpeg-turbo 3.1.4.1, libpng 1.6.56, libwebp 1.6.0, OpenJPEG 2.5.4, LibTIFF 4.7.1, xz 5.8.3, zlib-ng 2.3.3 (as Pillow's licence file names them) | Inside `PIL\_imaging*.pyd` and Pillow's other modules | Each one's licence, all in Pillow's licence file (below): FreeType's FTL, HarfBuzz's MIT-style licence, libjpeg-turbo's IJG and BSD-3-Clause, libpng's, LibTIFF's, Little CMS's MIT, OpenJPEG's BSD-2-Clause, libwebp's and libavif's BSD, brotli's MIT, zlib-ng's Zlib, xz's 0BSD | The holders named there | https://github.com/python-pillow/Pillow/tree/12.2.0 |
+| The libraries built into Pillow | brotli 1.2.0, FreeType 2.14.3, HarfBuzz 14.5.0, Little CMS 2.19.1, libavif 1.4.2, libjpeg-turbo 3.2.0, libpng 1.6.58, libwebp 1.6.0, OpenJPEG 2.5.4, LibTIFF 4.7.2, xz 5.8.4, zlib-ng 2.3.3 (as Pillow's licence file names them) | Inside `PIL\_imaging*.pyd` and Pillow's other modules | Each one's licence, all in Pillow's licence file (below): FreeType's FTL, HarfBuzz's MIT-style licence, libjpeg-turbo's IJG and BSD-3-Clause, libpng's, LibTIFF's, Little CMS's MIT, OpenJPEG's BSD-2-Clause, libwebp's and libavif's BSD, brotli's MIT, zlib-ng's Zlib, xz's 0BSD | The holders named there | https://github.com/python-pillow/Pillow/tree/13.0.0 |
 | zlib's CRC-32 code | Not stated in the copy | Built into each app's program by Nuitka (its `inline_copy/zlib/crc32.c`) | Zlib | Jean-loup Gailly and Mark Adler | https://github.com/Nuitka/Nuitka/tree/4.2.2/nuitka/build/inline_copy/zlib |
 
 Used to build the apps but not carried by them: the Nuitka compiler itself (only its runtime goes into the programs),
@@ -3371,7 +3371,7 @@ DEALINGS IN THE SOFTWARE.
  */
 ```
 
-### Pillow 12.2.0 (MIT-CMU), with the licences of the libraries built into it
+### Pillow 13.0.0 (MIT-CMU), with the licences of the libraries built into it
 
 Pillow's own licence file, as it carries it, but for FreeType's second choice of licence (the GNU GPL v2), left out.
 
@@ -3650,7 +3650,7 @@ Legal Terms
 
 (FreeType's other choice of licence, the GNU GPL v2, is left out here: FreeType is used under the FTL above.)
 
-===== harfbuzz-13.2.1 =====
+===== harfbuzz-14.5.0 =====
 
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
 For parts of HarfBuzz that are licensed under different licenses see individual
@@ -3695,7 +3695,7 @@ FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
 ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
 PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-===== lcms2-2.18 =====
+===== lcms2-2.19.1 =====
 
 MIT License
 
@@ -3720,7 +3720,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-===== libavif-1.4.1 =====
+===== libavif-1.4.2 =====
 
 Copyright 2019 Joe Drago. All rights reserved.
 
@@ -4110,7 +4110,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-===== libjpeg-turbo-3.1.4.1 =====
+===== libjpeg-turbo-3.2.0 =====
 
 LEGAL ISSUES
 ============
@@ -4171,18 +4171,46 @@ libjpeg-turbo is covered by two compatible BSD-style open source licenses:
 
   This license applies to the libjpeg API library and associated programs,
   including any code inherited from libjpeg and any modifications to that
-  code.  Note that the libjpeg-turbo SIMD source code bears the
-  [zlib License](https://opensource.org/licenses/Zlib), but in the context of
-  the overall libjpeg API library, the terms of the zlib License are subsumed
-  by the terms of the IJG License.
+  code.
 
 - The Modified (3-clause) BSD License, which is listed below
 
-  This license applies to the TurboJPEG API library and associated programs, as
-  well as the build system.  Note that the TurboJPEG API library wraps the
-  libjpeg API library, so in the context of the overall TurboJPEG API library,
-  both the terms of the IJG License and the terms of the Modified (3-clause)
-  BSD License apply.
+  This license applies to the TurboJPEG API library and associated programs,
+  [libspng](https://libspng.org) (which is used by cjpeg and djpeg), and the
+  build/test system.
+
+  * The TurboJPEG API library wraps the libjpeg API library, so in the context
+    of the overall TurboJPEG API library, both the terms of the IJG License and
+    the terms of the Modified (3-clause) BSD License apply.
+  * cjpeg and djpeg use libspng, so in the context of those programs, both the
+    terms of the IJG License and the terms of the Modified (3-clause) BSD
+    License apply.
+
+
+Component Licenses
+==================
+
+Some of libjpeg-turbo's modules and internal dependencies are covered by less
+restrictive licenses, but in the context of libjpeg-turbo as a whole, the terms
+of the less restrictive licenses are subsumed by either the IJG License or the
+Modified BSD License.  (In other words, the terms of the less restrictive
+licenses are satisfied if the terms of the IJG and Modified BSD Licenses are
+satisfied.)
+
+- The libjpeg-turbo SIMD source code and zlib are covered by the
+  [zlib License](https://spdx.org/licenses/Zlib.html), which is subsumed by the
+  IJG License in the context of the cjpeg and djpeg programs and the libjpeg
+  API library.
+
+- Some of the libspng source code is covered by the
+  [PNG Reference Library License v2](https://spdx.org/licenses/libpng-2.0.html),
+  which is subsumed by the IJG License in the context of the cjpeg and djpeg
+  programs and the TurboJPEG API library.
+
+- Most of the libspng source code is covered by the
+  [Simplified (2-clause) BSD License](https://spdx.org/licenses/BSD-2-Clause.html),
+  which is subsumed by the Modified BSD License in the context of the cjpeg and
+  djpeg programs and the TurboJPEG API library.
 
 
 Complying with the libjpeg-turbo Licenses
@@ -4201,7 +4229,6 @@ intended solely for clarification.
         **Origin**
         - Clause 1 of the IJG License
         - Clause 1 of the Modified BSD License
-        - Clauses 1 and 3 of the zlib License
 
     2.  You must add your own copyright notice to the header of each source
         file you modified, so others can tell that you modified that file.  (If
@@ -4210,7 +4237,6 @@ intended solely for clarification.
 
         **Origin**
         - Clause 1 of the IJG License
-        - Clause 2 of the zlib License
 
     3.  You must include the IJG README file, and you must not alter any of the
         copyright or license text in that file.
@@ -4230,9 +4256,9 @@ intended solely for clarification.
         **Origin**
         - Clause 2 of the IJG license
 
-    2.  If your binary distribution includes or uses the TurboJPEG API, then
-        your product documentation must include the text of the Modified BSD
-        License (see below.)
+    2.  If your binary distribution includes or uses the TurboJPEG API or
+        associated programs, cjpeg, or djpeg, then your product documentation
+        must include the text of the Modified BSD License (see below.)
 
         **Origin**
         - Clause 2 of the Modified BSD License
@@ -4244,21 +4270,20 @@ intended solely for clarification.
     - IJG License
     - Clause 3 of the Modified BSD License
 
-4.  The IJG and The libjpeg-turbo Project do not warrant libjpeg-turbo to be
-    free of defects, nor do we accept any liability for undesirable
-    consequences resulting from your use of the software.
+4.  The authors and distributors do not warrant libjpeg-turbo to be free of
+    defects, nor do we accept any liability for undesirable consequences
+    resulting from your use of the software.
 
     **Origin**
     - IJG License
     - Modified BSD License
-    - zlib License
 
 
 The Modified (3-clause) BSD License
 ===================================
 
-Copyright (C) 2009-2026 D. R. Commander.  All Rights Reserved.<br>
-Copyright (C) 2015 Viktor Szathmáry.  All Rights Reserved.
+Copyright (C) 2009-2026 D. R. Commander<br>
+Copyright (C) 2018-2023 Randy <randy408@protonmail.com>
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -4284,20 +4309,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-
-Why Two Licenses?
-=================
-
-The zlib License could have been used instead of the Modified (3-clause) BSD
-License, and since the IJG License effectively subsumes the distribution
-conditions of the zlib License, this would have effectively placed
-libjpeg-turbo binary distributions under the IJG License.  However, the IJG
-License specifically refers to the Independent JPEG Group and does not extend
-attribution and endorsement protections to other entities.  Thus, it was
-desirable to choose a license that granted us the same protections for new code
-that were granted to the IJG for code derived from their software.
-
-===== libpng-1.6.56 =====
+===== libpng-1.6.58 =====
 
 COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 =========================================
@@ -4509,7 +4521,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-===== tiff-4.7.1 =====
+===== tiff-4.7.2 =====
 
 # LibTIFF license
 
@@ -4561,7 +4573,7 @@ THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
 IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
 WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-===== xz-5.8.3 =====
+===== xz-5.8.4 =====
 
 
 XZ Utils Licensing
