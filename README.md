@@ -19,7 +19,7 @@
 > [!TIP]
 > **How to install and play (5 minutes):**
 > 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), take the
->    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.8.exe**.
+>    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.9.exe**.
 > 2. Run it. If Windows says "Windows protected your PC": **More info**, then **Run anyway**.
 > 3. Open **RUSE Launcher**: it finds R.U.S.E. through Steam by itself.
 > 4. Click **Supported mods**, tick the mods you want and press **Install**.
@@ -288,7 +288,7 @@ Uninstalling keeps your mods and settings. The apps need Microsoft Edge WebView2
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.8) &middot; **Studio** for modders, a preview (latest: 0.9.8.8) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.9) &middot; **Studio** for modders, a preview (latest: 0.9.8.9) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;

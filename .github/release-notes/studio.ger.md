@@ -1,6 +1,10 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.9:** sichereres Lesen von Bildern.
+
+- **Sicherere Bilder:** die Bibliothek, mit der das Studio Bilder liest (Pillow), ist jetzt Version 13.0.0, mit ihren Korrekturen gegen präparierte Bilddateien, die die App abstürzen lassen, ihren Speicher aufbrauchen oder Schlimmeres anrichten konnten. Sonst ändert sich nichts.
+
 **0.9.8.8:** ein Startbildschirm und eine Gebäudetafel, eigene Gebäude, RUSE Decoy für Sounds und Animationen, jede Spielregel in einem Reiter, und R.U.S.E. 2.0 in Gold.
 
 - **Ein Startbildschirm:** mit deinem Mod weitermachen, einen neuen beginnen oder ihn überspringen (auch immer). Die Schritte eines neuen Mods: sein Name, ob jede Nation ihre Einheiten behält oder leer beginnt, die Forschung (die des Spiels, keine oder deine eigene), die Gebäudetafel, dann was der Mod ändert. Im Spiel gesehen.

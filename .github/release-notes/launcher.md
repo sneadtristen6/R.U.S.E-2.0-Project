@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.9:** a safer picture reader.
+
+- **Safer pictures:** the library the Launcher reads pictures with (Pillow) is now version 13.0.0, with its fixes for specially made picture files that could crash the app, use up its memory, or worse. Nothing else changes.
+
 **0.4.8.8:** it plays mods made with Studio 0.9.8.8, and your modded game says R.U.S.E. 2.0 in gold.
 
 - **Mods made with Studio 0.9.8.8 play:** buildings of their own (the second and third a nation need a small game patch, downloaded once and applied only to your modded copy, never to the game in your Steam folder), new buildings' own looks and props, sounds and animations changed with RUSE Decoy, the computer players' values and the game rules, and old bridge crossings closed.

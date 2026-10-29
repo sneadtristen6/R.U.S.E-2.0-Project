@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.8 and Launcher 0.4.8.8: a start screen, buildings of your own, RUSE Decoy, every game rule, and R.U.S.E. 2.0 in gold"
 category: Announcements
 order: 13
+skip: never posted; no Discussions posts for now (the owner, 2026-10-29: "no need for discussion posts")
 ---
 **RUSE Studio 0.9.8.8** and **RUSE Launcher 0.4.8.8** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

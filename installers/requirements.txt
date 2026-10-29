@@ -25,7 +25,7 @@ click==8.5.0
 # What the Studio carries for a real place made a map (rusemod.realplace; the owner, 2026-10-18: "install"): Pillow
 # reads the aerial photos (JPEG), scipy does the place's whole-grid steps (the sea's reach, smoothing). Licences:
 # THIRD_PARTY_NOTICES.md. The same pins as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
-pillow==12.2.0
+pillow==13.0.0
 scipy==1.18.1
 # What both apps carry for R.U.S.E. 2.0's title in the copies they build (rusemod.signature; the owner, 2026-10-22:
 # "we should have a small encoder ... on everything", then "yes install"): shapely makes the menu logo's new letters

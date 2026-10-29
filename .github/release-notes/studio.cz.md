@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.9:** bezpečnější čtení obrázků.
+
+- **Bezpečnější obrázky:** knihovna, kterou Studio čte obrázky (Pillow), je teď ve verzi 13.0.0, s opravami proti schválně upraveným souborům obrázků, které mohly aplikaci shodit, vyčerpat její paměť nebo hůř. Nic jiného se nemění.
+
 **0.9.8.8:** úvodní obrazovka a tabule budov, vlastní budovy, RUSE Decoy pro zvuky a animace, každé pravidlo hry v jedné záložce, a R.U.S.E. 2.0 ve zlaté.
 
 - **Úvodní obrazovka:** pokračujte ve svém módu, začněte nový, nebo ji přeskočte (i natrvalo). Kroky nového módu: jeho název, zda si každý národ ponechá své jednotky, nebo začne prázdný, výzkum (ze hry, žádný, nebo vlastní), tabule budov, pak co mód změní. Viděno ve hře.
