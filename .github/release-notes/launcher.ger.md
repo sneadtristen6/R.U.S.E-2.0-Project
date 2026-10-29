@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.8:** es spielt Mods, die mit Studio 0.9.8.8 gemacht wurden, und dein gemoddetes Spiel zeigt R.U.S.E. 2.0 in Gold.
+
+- **Mods aus Studio 0.9.8.8 laufen:** eigene Gebäude (das zweite und dritte einer Nation brauchen einen kleinen Spiel-Patch, einmal heruntergeladen und nur auf deine gemoddete Kopie angewandt, nie auf das Spiel in deinem Steam-Ordner), das eigene Aussehen neuer Gebäude und eigene Objekte, mit RUSE Decoy geänderte Sounds und Animationen, die Werte der Computerspieler und die Spielregeln, und gesperrte Übergänge alter Brücken.
+- **R.U.S.E. 2.0 in Gold:** dein gemoddetes Spiel beginnt mit einer Schlachtszene und einem startenden Motor, und sein Hauptmenü, der kleine Titel jedes Menüs, die Umrisse der Menüs und die Ladebildschirme zeigen R.U.S.E. 2.0 in Gold. Es wird beim ersten Mal auf deinem PC aus den Dateien deines eigenen Spiels gemacht (einmal ein paar Minuten, dann behalten). In den Einstellungen behält ein Kästchen den eigenen Titel des Spiels.
+- **Behoben: dunkle und helle Flecken auf Karten aus dem Studio** (leere, vergrößerte, Relief- und Sektorkarten): eine solche Karte ist richtig beleuchtet, sobald sie mit dieser Version gebaut wird (ihr Boden wird beim ersten Mal neu gemacht).
+- **Behoben, von einem Spieler gemeldet:** auf der Seite Unterstützte Mods tat „Neues Mod-Set…“ nichts. Es öffnet jetzt das neue Set. In der App selbst noch nicht getestet.
+- **Die Schrift des Spiels:** der Launcher ist in der Menüschrift des Spiels geschrieben, bei jedem Start aus deinem Spiel genommen.
+- **Noch fehlerhaft, Spielen auf eigene Verantwortung:** Karten mit den Texturen von Map Paint und leere Karten (Leeres Gelände, Leerer Ozean).
+
 **0.4.8.7:** es spielt Mods, die mit Studio 0.9.8.7 gemacht wurden.
 
 - **Mods aus Studio 0.9.8.7 laufen:** verschobene oder als Raster, Kasten und entlang von Pfaden platzierte Objekte, größere leere Karten mit ihren Sektoren, und Wirtschaftsänderungen nur für den Nuklear-Modus.

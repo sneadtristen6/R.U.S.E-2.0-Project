@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.8:** ejecuta los mods hechos con Studio 0.9.8.8, y tu juego con mods dice R.U.S.E. 2.0 en oro.
+
+- **Los mods hechos con Studio 0.9.8.8 se juegan:** edificios propios (el segundo y el tercero de una nación necesitan un pequeño parche del juego, descargado una vez y aplicado solo a tu copia del juego con mods, nunca al juego de tu carpeta de Steam), el aspecto propio de los edificios nuevos y los objetos, sonidos y animaciones cambiados con RUSE Decoy, los valores de los jugadores del ordenador y las reglas del juego, y los cruces de los puentes viejos cerrados.
+- **R.U.S.E. 2.0 en oro:** tu juego con mods se abre con una escena de batalla y un motor que arranca, y su menú principal, el título pequeño de cada menú, los contornos de los menús y las pantallas de carga dicen R.U.S.E. 2.0 en oro. Se hace en tu PC con los archivos de tu propio juego la primera vez (unos minutos una vez, luego se guarda). Ajustes tiene una casilla para conservar el título del juego.
+- **Corregido: manchas oscuras y claras en los mapas hechos con el Studio** (mapas en blanco, ampliados, de relieve y de sectores): un mapa así se ilumina bien una vez construido con esta versión (su suelo se rehace la primera vez).
+- **Corregido, avisado por un jugador:** en la página Mods compatibles, «Nuevo conjunto de mods…» no hacía nada. Ahora abre el conjunto nuevo. Aún no probado en la propia aplicación.
+- **Las letras del juego:** el Launcher está escrito con la fuente de los menús del juego, tomada de tu juego cada vez que arranca.
+- **Todavía con fallos, juégalo bajo tu propio criterio:** los mapas hechos con las texturas de Map Paint, y los mapas en blanco (Terreno en blanco, Océano en blanco).
+
 **0.4.8.7:** ejecuta los mods hechos con Studio 0.9.8.7.
 
 - **Los mods hechos con Studio 0.9.8.7 se juegan:** objetos movidos o colocados en cuadrícula, en caja y a lo largo de caminos, mapas en blanco más grandes con sus sectores, y cambios de economía solo del modo Nuclear.

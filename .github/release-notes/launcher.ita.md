@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.8:** avvia le mod fatte con Studio 0.9.8.8, e il tuo gioco moddato dice R.U.S.E. 2.0 in oro.
+
+- **Le mod fatte con Studio 0.9.8.8 si giocano:** edifici propri (il secondo e il terzo di una nazione richiedono una piccola patch del gioco, scaricata una volta e applicata solo alla tua copia moddata, mai al gioco nella tua cartella di Steam), l'aspetto proprio dei nuovi edifici e gli oggetti, suoni e animazioni cambiati con RUSE Decoy, i valori dei giocatori del computer e le regole del gioco, e i passaggi dei vecchi ponti chiusi.
+- **R.U.S.E. 2.0 in oro:** il tuo gioco moddato si apre su una scena di battaglia con un motore che si avvia, e il suo menu principale, il piccolo titolo di ogni menu, i contorni dei menu e le schermate di caricamento dicono R.U.S.E. 2.0 in oro. È fatto sul tuo PC dai file del tuo gioco la prima volta (qualche minuto una volta, poi tenuto). Impostazioni ha una casella per tenere il titolo del gioco.
+- **Corretto: macchie scure e chiare sulle mappe fatte con lo Studio** (mappe vuote, ingrandite, a rilievo e a settori): una mappa così è illuminata bene una volta costruita con questa versione (il suo terreno viene rifatto la prima volta).
+- **Corretto, segnalato da un giocatore:** nella pagina Mod supportate, «Nuovo set di mod…» non faceva niente. Ora apre il nuovo set. Non ancora provato nell'app vera e propria.
+- **Le lettere del gioco:** il Launcher è scritto con il font dei menu del gioco, preso dal tuo gioco a ogni avvio.
+- **Ancora con bug, giocale a tua discrezione:** le mappe fatte con le texture di Map Paint e le mappe vuote (Terreno vuoto, Oceano vuoto).
+
 **0.4.8.7:** avvia le mod fatte con Studio 0.9.8.7.
 
 - **Le mod fatte con Studio 0.9.8.7 si giocano:** oggetti spostati o piazzati a griglia, a riquadro e lungo percorsi, mappe vuote più grandi con i loro settori, e modifiche all'economia solo della Nucleare.

@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.7 and Launcher 0.4.8.7: Redo and select what's placed, Grid / Box / Path placing, bigger blank maps, every value explained"
 category: Announcements
 order: 12
+skip: never posted; no Discussions posts for now (the owner, 2026-10-29: "no need for discussion posts")
 ---
 **RUSE Studio 0.9.8.7** and **RUSE Launcher 0.4.8.7** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

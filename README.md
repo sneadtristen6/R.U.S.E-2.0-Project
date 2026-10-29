@@ -19,7 +19,7 @@
 > [!TIP]
 > **How to install and play (5 minutes):**
 > 1. Open the [launcher releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), take the
->    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.7.exe**.
+>    newest one (marked **Latest**), and under **Assets** click **RUSE-Launcher-Setup-0.4.8.8.exe**.
 > 2. Run it. If Windows says "Windows protected your PC": **More info**, then **Run anyway**.
 > 3. Open **RUSE Launcher**: it finds R.U.S.E. through Steam by itself.
 > 4. Click **Supported mods**, tick the mods you want and press **Install**.
@@ -87,6 +87,11 @@ install is never changed.
   game's own units.
 - **Nations:** make one of the game's seven nations into another, with a name and a flag of its own; hide or fill a
   nation's units in one go.
+- **Buildings and what they make:** each nation's buildings as rows of the units their build menus offer; put units
+  in, move them, copy another nation's, research them from another unit. **Add a building:** a copy of one of the
+  game's, or a building with units of its own, its own tab on the build bar, its own 3D look and build-menu picture.
+- **Ammo names and flag types of your own:** rename a copied ammo in every language; make a named set of the game's
+  flags and give it to any unit.
 
 ### Maps
 
@@ -95,10 +100,11 @@ install is never changed.
 - **Shape the ground:** hills, craters, plateaus, ramps, levelled and smoothed ground; lakes and drained rivers. Units
   drive and fight on it.
 - **Roads and bridges:** straight, curved or freehand roads that supply trucks follow; where one crosses water, the
-  map's own kind of bridge that tanks, infantry and trucks cross.
+  map's own kind of bridge that tanks, infantry and trucks cross. Take out the map's own bridges and close their
+  crossings.
 - **Buildings, props and trees:** place them one by one, in a grid, a box, or along a path (hedges and tree belts),
   buildings facing the roads; select, move, turn, resize and delete them, the map's own too; clear the map's woods
-  and props.
+  and props. **Import model** makes a 3D model one of your map's own rocks, props, plants or trees.
 - **Cover and movement:** paint the towns and woods units hide in, and close ground to all units, infantry or
   vehicles. The map shows what each stroke changed.
 - **Map Paint:** paint the ground's picture with a colour, the map's own ground from another spot, the game's
@@ -108,19 +114,27 @@ install is never changed.
 
 ### The game's rules
 
-- **Economy:** starting money and income, supply depots and their trucks, the ruse cards each side starts with, for
-  normal and nuclear battles apart.
-- **The computer players:** how they play, the units they prefer and their ruse cards, every value explained.
-- **All values:** every object and value of the game's data, changed in your mod.
+- **AI and player settings**, one tab:
+  - **Player settings:** starting money and income, supply depots and their trucks, the ruse cards each side starts
+    with, for normal and nuclear battles apart.
+  - **Computer players:** every one of their values on every difficulty and personality, the units they prefer and
+    their ruse cards, every value explained.
+  - **Game rules:** 172 more of the game's values in 16 groups (battle and surrender, population, movement, firing,
+    damage, woods and cover, aircraft, ruse cards at work, the colours of sides and sectors, and more), each explained.
+- **All values and files:** every object and value of the game's data, changed in your mod.
 
-### Music and sound
+### Sound and animation: RUSE Decoy
 
-- Every song by where it plays, replaced in the Studio's own small editor (cut, fade, volume); new songs added to the
-  battle lists; a unit's voice lines; a map's background sound.
+- **Every sound in the game** by kind: played, made louder or quieter, or replaced; new songs in the battle lists;
+  mission lines re-voiced.
+- **Animations:** swap a clip for another, slow it or speed it up, make a bone bigger or turn it, and put motion
+  capture on the soldiers from a library of 3,205 free moves (the CMU database and 100STYLE, credited).
 
 ### For players
 
 - **One press:** pick a mod set and press **Play**; the Launcher builds a separate modded copy and starts it.
+- **R.U.S.E. 2.0 in gold:** the modded game opens on a battle scene, and its menus and loading screens say R.U.S.E. 2.0
+  in gold (Settings keeps the game's own title if you'd rather).
 - **Community mods as they are** (RUSE-Mod-Manager's `.rmod` too), a list of supported mods to tick, load orders
   shared both ways with RUSE-Mod-Manager, and a troubleshooter that finds what stops Play and fixes it.
 - **Updates itself**, in the game's ten languages.
@@ -211,9 +225,32 @@ install is never changed.
 
 - **Towns you draw:** lay out the streets, mark blocks as homes, shops or industry, and the Studio fills them with
   the game's own buildings.
-- **Map assets of your own:** trees, rocks, cliffs and props brought into maps, with an importer in the Maps tab.
+- **A real place as a map:** the map importer (below).
 - **Generated mountains and our own high-resolution ground textures**, and Map Paint's field brush, which turns whole
   fields into wheat, ploughed earth or a green crop the way the game's own maps paint them.
+
+### The map importer: where it stands
+
+The map importer turns a real place into a R.U.S.E. map: its ground and hills, fields, woods, rivers, ditches, beach
+and sea, and, if you want them, its roads and buildings, all made from the game's own pieces so the map looks and
+plays like the game's own. You'll pick a place, and the Studio makes it a map you can keep editing.
+
+The Studio can already build a small piece of a real place (part of Utah Beach) into a map that opens in the game.
+It isn't right yet: the beach, the water and the ground up close still don't look the way they should. Why it's
+taking a while:
+
+- **A map is many layers that have to agree:** the ground's shape, its look up close, the picture seen from high up,
+  the water, where units can drive and hide, roads and bridges. A real place has to come out right in every one of
+  them at once, and a fault in one shows in the others.
+- **Up close and from far away:** the game draws its ground two ways, and they have to match. Making a real place's
+  colours look like the game's, both up close and from the sky, is most of the work.
+- **Water decides where units go:** rivers, ditches and the coast set where tanks and infantry can move. One wrong
+  spot and tanks drive through a ditch, or can't reach a beach.
+- **Every change is checked in the game:** that's the only proof that counts, and each check means building the map
+  and looking at it from many places.
+- **We'd rather wait** until a real place looks and plays like a real R.U.S.E. map than put out something half done.
+
+Next: the small test map right, then a whole map, then the Studio's Import map button.
 
 Everything that changed, version by version: the
 [Studio notes](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) and the
@@ -251,7 +288,7 @@ Uninstalling keeps your mods and settings. The apps need Microsoft Edge WebView2
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.7) &middot; **Studio** for modders, a preview (latest: 0.9.8.7) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.8) &middot; **Studio** for modders, a preview (latest: 0.9.8.8) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;

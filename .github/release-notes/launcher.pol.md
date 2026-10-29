@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.8:** uruchamia mody zrobione w Studio 0.9.8.8, a twoja zmodowana gra mówi R.U.S.E. 2.0 w złocie.
+
+- **Mody zrobione w Studio 0.9.8.8 działają:** własne budynki (drugi i trzeci nacji potrzebują małej łatki gry, pobieranej raz i nakładanej tylko na twoją zmodowaną kopię, nigdy na grę w twoim folderze Steam), własny wygląd nowych budynków i obiekty, dźwięki i animacje zmienione w RUSE Decoy, wartości graczy komputerowych i zasady gry, oraz zamknięte przejścia po dawnych mostach.
+- **R.U.S.E. 2.0 w złocie:** twoja zmodowana gra otwiera się sceną bitwy z uruchamianym silnikiem, a jej menu główne, mały tytuł każdego menu, obramowania menu i ekrany ładowania mówią R.U.S.E. 2.0 w złocie. Powstaje na twoim PC z plików twojej własnej gry za pierwszym razem (raz kilka minut, potem zachowane). Ustawienia mają pole, by zachować tytuł gry.
+- **Poprawione: ciemne i jasne plamy na mapach zrobionych w Studio** (pustych, powiększonych, z rzeźbą terenu i z sektorami): taka mapa jest dobrze oświetlona, gdy zostanie zbudowana tą wersją (jej grunt jest robiony od nowa za pierwszym razem).
+- **Poprawione, zgłoszone przez gracza:** na stronie Obsługiwane mody „Nowy zestaw modów…” nic nie robił. Teraz otwiera nowy zestaw. Jeszcze nie testowane w samej aplikacji.
+- **Litery gry:** Launcher jest pisany czcionką menu gry, braną z twojej gry przy każdym starcie.
+- **Wciąż z błędami, grasz na własną odpowiedzialność:** mapy zrobione z teksturami Map Paint i puste mapy (Pusty teren, Pusty ocean).
+
 **0.4.8.7:** uruchamia mody zrobione w Studio 0.9.8.7.
 
 - **Mody zrobione w Studio 0.9.8.7 działają:** obiekty przesunięte lub postawione w siatce, prostokącie i wzdłuż ścieżek, większe puste mapy z ich sektorami oraz zmiany ekonomii tylko trybu Nuklearnego.

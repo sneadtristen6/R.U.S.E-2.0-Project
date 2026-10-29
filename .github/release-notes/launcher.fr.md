@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.8:** il joue les mods faits avec Studio 0.9.8.8, et votre jeu moddé dit R.U.S.E. 2.0 en or.
+
+- **Les mods faits avec Studio 0.9.8.8 se jouent :** des bâtiments à eux (le deuxième et le troisième d'une nation demandent un petit patch du jeu, téléchargé une fois et appliqué seulement à votre copie moddée, jamais au jeu de votre dossier Steam), l'apparence propre des nouveaux bâtiments et leurs objets, les sons et animations changés avec RUSE Decoy, les valeurs des joueurs ordinateur et les règles du jeu, et les passages des anciens ponts fermés.
+- **R.U.S.E. 2.0 en or :** votre jeu moddé s'ouvre sur une scène de bataille avec un moteur qui démarre, et son menu principal, le petit titre de chaque menu, les contours des menus et les écrans de chargement disent R.U.S.E. 2.0 en or. Il est fait sur votre PC à partir des fichiers de votre propre jeu la première fois (quelques minutes une fois, puis gardé). Réglages a une case pour garder le titre du jeu.
+- **Corrigé : des taches sombres et claires sur les cartes faites avec le Studio** (cartes vierges, agrandies, en relief et à secteurs) : une telle carte est bien éclairée une fois construite avec cette version (son sol est refait la première fois).
+- **Corrigé, signalé par un joueur :** sur la page Mods compatibles, « Nouvel ensemble de mods… » ne faisait rien. Il ouvre le nouvel ensemble maintenant. Pas encore essayé dans l'application elle-même.
+- **Les lettres du jeu :** le Launcher est écrit dans la police des menus du jeu, prise dans votre jeu à chaque démarrage.
+- **Encore buggé, à jouer à vos risques :** les cartes faites avec les textures de Map Paint, et les cartes vierges (Terrain vierge, Océan vierge).
+
 **0.4.8.7:** il joue les mods faits avec Studio 0.9.8.7.
 
 - **Les mods faits avec Studio 0.9.8.7 se jouent :** objets déplacés ou placés en grille, en boîte et le long de chemins, cartes vierges plus grandes avec leurs secteurs, et changements d'économie du seul mode Nucléaire.

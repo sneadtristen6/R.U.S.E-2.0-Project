@@ -1,10 +1,14 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
-**Next version (not released yet; its number and the other languages are written at release):**
+**0.4.8.8:** it plays mods made with Studio 0.9.8.8, and your modded game says R.U.S.E. 2.0 in gold.
 
-- **Fixed, reported by a player:** on the Supported mods page, "New mod set…" did nothing. It opens the new set now.
-- **R.U.S.E. 2.0 in gold:** your modded game's title on the main menu, the loading screens and the start-up video is R.U.S.E. 2.0 in gold, made on your PC from your own game's files the first time (a few minutes once, then kept). Settings has a tick box to keep the game's own title.
+- **Mods made with Studio 0.9.8.8 play:** buildings of their own (the second and third a nation need a small game patch, downloaded once and applied only to your modded copy, never to the game in your Steam folder), new buildings' own looks and props, sounds and animations changed with RUSE Decoy, the computer players' values and the game rules, and old bridge crossings closed.
+- **R.U.S.E. 2.0 in gold:** your modded game opens on a battle scene with an engine starting, and its main menu, every menu's small title, the menus' outlines and the loading screens say R.U.S.E. 2.0 in gold. It's made on your PC from your own game's files the first time (a few minutes once, then kept). Settings has a tick box to keep the game's own title.
+- **Fixed: dark and light blotches on maps made with the Studio** (blank, bigger, relief and sector maps): such a map is lit right once it's built with this version (its ground is made again the first time).
+- **Fixed, reported by a player:** on the Supported mods page, "New mod set…" did nothing. It opens the new set now. Not tried in the app itself yet.
+- **The game's lettering:** the Launcher is written in the game's own menu font, taken from your game each time it starts.
+- **Still buggy, play at your own discretion:** maps made with Map Paint's textures, and blank maps (Blank Terrain, Blank Ocean).
 
 **0.4.8.7:** it plays mods made with Studio 0.9.8.7.
 

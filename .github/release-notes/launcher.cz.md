@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.8:** spouští mody vytvořené ve Studiu 0.9.8.8 a vaše upravená hra říká R.U.S.E. 2.0 ve zlaté.
+
+- **Mody ze Studia 0.9.8.8 hrají:** vlastní budovy (druhá a třetí národa potřebují malou záplatu hry, jednou staženou a použitou jen na vaši upravenou kopii, nikdy na hru ve vaší složce Steamu), vlastní vzhled nových budov a předměty, zvuky a animace změněné v RUSE Decoy, hodnoty počítačových hráčů a pravidla hry, a uzavřené přechody po starých mostech.
+- **R.U.S.E. 2.0 ve zlaté:** vaše upravená hra začne bitevní scénou se startujícím motorem a její hlavní nabídka, malý název každé nabídky, obrysy nabídek a načítací obrazovky říkají R.U.S.E. 2.0 ve zlaté. Udělá se na vašem PC ze souborů vaší vlastní hry napoprvé (jednou pár minut, pak se uchová). Nastavení má zaškrtávací pole pro zachování názvu hry.
+- **Opraveno: tmavé a světlé skvrny na mapách vytvořených ve Studiu** (prázdné, zvětšené, reliéfní a sektorové mapy): taková mapa je osvětlená správně, jakmile se sestaví touto verzí (její terén se poprvé udělá znovu).
+- **Opraveno, nahlášeno hráčem:** na stránce Podporované módy „Nová sada módů…“ nic nedělala. Teď otevře novou sadu. Zatím nevyzkoušeno v aplikaci samotné.
+- **Písmo hry:** Launcher je psaný písmem nabídek hry, vzatým z vaší hry při každém spuštění.
+- **Stále chybové, hrajte na vlastní uvážení:** mapy vytvořené s texturami Map Paint a prázdné mapy (Prázdný terén, Prázdný oceán).
+
 **0.4.8.7:** spouští mody vytvořené ve Studiu 0.9.8.7.
 
 - **Mody ze Studia 0.9.8.7 hrají:** objekty přesunuté nebo umístěné mřížkou, obdélníkem a podél cest, větší prázdné mapy s jejich sektory a změny ekonomiky jen Jaderného režimu.
