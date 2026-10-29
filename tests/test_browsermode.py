@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import socket
 import sys
 import tempfile
@@ -165,6 +166,20 @@ class Pieces(unittest.TestCase):
         self.assertEqual(browsermode.safe_name("C:\\x\\..\\a.zip"), "a.zip")
         self.assertEqual(browsermode.safe_name('a<b>:"c|?*.rmod'), "a_b___c___.rmod")
         self.assertEqual(browsermode.safe_name(" .. "), "dropped")
+
+    def test_only_what_is_under_the_folder(self):
+        # every file the server opens or writes comes through inside(): a page's address and a dropped file's name
+        # (GitHub's code check, 2026-10-09)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = Path(os.path.realpath(root))
+            self.assertEqual(browsermode.inside(root, "sub/x.png"), real / "sub" / "x.png")
+            self.assertEqual(browsermode.inside(root, "sub/../a.txt"), real / "a.txt")
+            out = ["", "..", "../a.txt", "sub/../../a.txt", "/a.txt", str(real.parent / "a.txt")]
+            if sys.platform == "win32":
+                out += ["..\\a.txt", "\\a.txt", "C:/a.txt"]
+            for rel in out:
+                self.assertIsNone(browsermode.inside(root, rel), rel)
 
     def test_filters_from_pywebviews_file_types(self):
         self.assertEqual(browsermode.filters(("Mods (*.rusemod;*.zip)", "All files (*.*)")),

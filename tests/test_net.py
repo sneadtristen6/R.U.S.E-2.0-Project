@@ -2,6 +2,7 @@
 2026-10-10, could open the Launcher but no mod would download ("unable to get local issuer certificate"); a player on
 Reddit, 2026-10-29, whose Windows couldn't fetch it either ("unable to get issuer certificate"): Mozilla's root list
 is the third try."""
+import contextlib
 import ssl
 import sys
 import unittest
@@ -132,6 +133,25 @@ class SecondTry(Fresh):
         why = mod_index.plain(cert_error(20))
         self.assertIn("doesn't trust the site's security certificate (unable to get local issuer certificate)", why)
         self.assertIn("antivirus", why)
+
+
+class Tls(Fresh):
+    def test_net_s_own_connections_ask_for_tls_1_2_or_newer(self):
+        # GitHub's code check (2026-10-11): the certificate reader's context allowed TLS 1.0 and 1.1 by its words
+        # (Python 3.12's own lowest is 1.2 already). Both contexts net makes for a connection say 1.2; the first try
+        # is urllib's own, Python's lowest
+        used = []
+
+        def wrapping(context, raw, server_hostname=None):
+            used.append(context)
+            raise OSError("no answer")
+        with mock.patch("socket.create_connection", return_value=contextlib.nullcontext()), \
+                mock.patch.object(ssl.SSLContext, "wrap_socket", autospec=True, side_effect=wrapping):
+            with self.assertRaises(OSError):
+                net.server_chain("github.com")
+        with net._lock:
+            used.append(net._widened())
+        self.assertEqual([c.minimum_version for c in used], [ssl.TLSVersion.TLSv1_2] * 2)
 
 
 class EveryDownload(unittest.TestCase):

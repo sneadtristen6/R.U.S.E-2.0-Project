@@ -8940,8 +8940,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
     # buried in the log, and the Studio offered no way out) ---
     _SPAWN_MISTAKE = re.compile(r"(?P<pack>[A-Za-z0-9_]+): scenario\.toml: the spawn of (?P<what>\S+) at "
                                 r"\((?P<x>-?\d+), (?P<y>-?\d+)\) in (?P<file>\S+?\.scenario) is for camp")
-    _ROAD_MISTAKE = re.compile(r"(?P<pack>[A-Za-z0-9_]+): (?P<roads>road \d+ \(.*?\)(?:, road \d+ \(.*?\))*) would "
-                               r"be cut off")
+    # each road's words in brackets hold no ")" (roadnet.apply_roads): [^)]* keeps the search short on any text
+    # (GitHub's code check, 2026-10-02: ".*?" there could take very long on a strange message)
+    _ROAD_MISTAKE = re.compile(r"(?P<pack>[A-Za-z0-9_]+): (?P<roads>road \d+ \([^)]*\)(?:, road \d+ \([^)]*\))*) "
+                               r"would be cut off")
 
     def test_problems(self) -> dict:
         """The last Test in game's mistakes, when its build stopped on them: {"problems": [{"text": the build's words,

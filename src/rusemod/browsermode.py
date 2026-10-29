@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import http.server
 import json
+import os
 import re
 import secrets
 import shutil
@@ -234,6 +235,16 @@ def safe_name(name: str) -> str:
     return name or "dropped"
 
 
+def inside(root: Path, rel: str) -> Path | None:
+    """`rel` under the folder `root`, links followed; None when it leads out of it (a way up, a drive, a path from the
+    top). Written the way GitHub's code check reads as a check (2026-10-09: it couldn't see Path.parents as one)."""
+    base = os.path.realpath(root)
+    full = os.path.realpath(os.path.join(base, rel))
+    if not full.startswith(os.path.join(base, "")):
+        return None
+    return Path(full)
+
+
 def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: BrowserWindow, closed: str = "",
           port: int = 0) -> tuple[http.server.ThreadingHTTPServer, str, str]:
     """Serve `folder` (and `extra`, as webui.serve) on 127.0.0.1 under a new random key, with `page_side`'s public
@@ -273,8 +284,16 @@ def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: Browse
         def _file(self, rest: str) -> Path | None:
             head, _, tail = rest.partition("/")
             root, rel = (extra[head], tail) if head in extra else (folder, rest)
-            target = (root / rel).resolve()
-            return target if (target == root or root in target.parents) and target.is_file() else None
+            target = inside(root, rel)
+            return target if target is not None and target.is_file() else None
+
+        def _skip(self, length: int) -> None:
+            """Read what was sent and not used (up to 1 MB), so Windows doesn't cut the answer off (WinError 10053 in
+            the tests, 2026-10-09); a bigger body is left and the connection closed."""
+            if 0 < length <= 1 << 20:
+                self.rfile.read(length)
+            else:
+                self.close_connection = True
 
         def do_GET(self):
             rest = self._inside()
@@ -307,12 +326,7 @@ def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: Browse
             if rest == DROP_PATH and kind == "application/octet-stream" and window.drop_handler is not None:
                 query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
                 return self._drop(safe_name((query.get("name") or [""])[0]), length)
-            # refused: what was sent is read first (up to 1 MB), so Windows doesn't cut the answer off (WinError 10053
-            # in the tests, 2026-10-09); a bigger body is left and the connection closed
-            if 0 < length <= 1 << 20:
-                self.rfile.read(length)
-            else:
-                self.close_connection = True
+            self._skip(length)  # refused: what was sent is read first
             self._send(404, b"not found", TYPES[".txt"])
 
         def _call(self, name: str, body: bytes) -> None:
@@ -334,15 +348,16 @@ def serve(folder: Path, extra: dict[str, Path] | None, page_side, window: Browse
                 # a mod.toml stands for its folder (library.Library.add): sent alone, it would be a mod with nothing
                 # in it, put in place of the library's whole copy. The page says what a dropped folder gets instead
                 # (the 0.9.8.2 review)
-                if length <= 1 << 20:
-                    self.rfile.read(length)
-                else:
-                    self.close_connection = True
+                self._skip(length)
                 window.evaluate_js('window.dispatchEvent(new CustomEvent("folder-dropped"))')
                 return self._json({"scripts": window.take_scripts()})
             work = Path(tempfile.mkdtemp(prefix="ruse-drop-"))
+            path = inside(work, name)  # safe_name leaves no folders in it: checked here as well
+            if path is None:
+                shutil.rmtree(work, ignore_errors=True)
+                self._skip(length)
+                return self._json({"scripts": window.take_scripts()})
             try:
-                path = work / name
                 left = length
                 with open(path, "wb") as f:
                     while left > 0:

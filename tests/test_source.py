@@ -22,7 +22,7 @@ TEXT_SUFFIXES = {".py", ".md", ".toml", ".js", ".html", ".css", ".rndf", ".csv",
 SKIP_DIRS = {".git", ".claude", ".enola", "node_modules", "__pycache__", "build", "dist"}
 VENDORED = {"ruse_mod_engine"}  # LittleGroove's engine, kept as he wrote it (PLAN decision 26)
 GOOD = set("nrt0\\'\"xuN\n")
-BAD_CONTROL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+BAD_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")  # the pattern's own escapes, which GitHub's check reads
 
 
 def files(dirs, suffixes):

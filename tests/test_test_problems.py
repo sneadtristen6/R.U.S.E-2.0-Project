@@ -127,6 +127,15 @@ class Problems(unittest.TestCase):
             self.api.test_fix(fix)
         self.assertTrue((self.outside / "maps" / "M04_cotentin" / "roads.toml").exists())
 
+    def test_several_roads_read_and_a_strange_message_quickly(self):
+        two = self.api._ROAD_MISTAKE.search("test: M04_cotentin: road 2 (its ends joined no road within 12 m), road 7 "
+                                            "(its ends joined no road within 9 m) would be cut off from the rest")
+        self.assertEqual(two["roads"], "road 2 (its ends joined no road within 12 m), road 7 (its ends joined no road "
+                                       "within 9 m)")
+        # GitHub's code check (2026-10-02): its example text. The old pattern took 0.36 s at 20 repeats, four times
+        # longer for each 2 more (about 6 minutes at 30); this one, 0.1 s at 100,000
+        self.assertIsNone(self.api._ROAD_MISTAKE.search("0: road 0 (" + "), road 0 (" * 30))
+
     def test_no_failed_test_no_problems(self):
         self.api._test_job = None
         self.assertEqual(self.api.test_problems(), {"problems": []})

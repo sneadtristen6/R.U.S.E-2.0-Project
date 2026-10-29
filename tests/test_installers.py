@@ -122,6 +122,13 @@ class WorkflowGuards(unittest.TestCase):
             with self.subTest(pin=pin):
                 self.assertIn(f'"{pin}"', text)
 
+    def test_every_workflow_says_what_its_token_may_do(self):
+        # GitHub's code check (2026-10-01): tests, apps and sync-private said nothing, so their token had the repo's
+        # default. Each says it at the top: read, or write where a job must (release.yml makes the release)
+        for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+            with self.subTest(path.name):
+                self.assertRegex(path.read_text(encoding="utf-8"), r"(?m)^permissions:\n  contents: (read|write)\b")
+
     def test_the_release_page_is_made_in_utf8(self):
         # the page's links name each language in its own script; GitHub's Windows runner prints in a Western code
         # page, and the first release with notes in ten languages stopped on a UnicodeEncodeError in notes_json's

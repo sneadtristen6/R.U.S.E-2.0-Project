@@ -10,6 +10,9 @@ on:
     paths: ["src/**", "installers/**", ".github/workflows/apps.yml"]
   workflow_dispatch:
 
+permissions:
+  contents: read  # read the code, nothing more (the installers go up as the run's artifacts)
+
 jobs:
   build:
     # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited).

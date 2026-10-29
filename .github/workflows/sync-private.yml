@@ -13,6 +13,9 @@ on:
     tags: ["launcher-v*", "studio-v*"]
   workflow_dispatch:
 
+permissions:
+  contents: read  # read this repo; the shared repo is written with SHARED_REPO_TOKEN, never this run's own token
+
 concurrency:
   group: sync-private
   cancel-in-progress: false

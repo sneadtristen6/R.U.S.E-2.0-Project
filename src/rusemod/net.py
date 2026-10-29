@@ -134,6 +134,7 @@ def _widened() -> ssl.SSLContext:
     """Python's usual roots (Windows' on disk), with the roots Windows trusted when asked and Mozilla's list once added.
     Call it holding _lock."""
     context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     if _roots:
         context.load_verify_locations(cadata=b"".join(_roots))
     if _mozilla:
@@ -152,6 +153,7 @@ def server_chain(host: str, port: int = 443, timeout: float = ASK_TIMEOUT) -> li
     """The certificates `host` sends (DER, its own first), read without checking them: only Windows' check of them
     is used, never the certificates themselves."""
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2  # Python 3.12's own lowest, said here (GitHub's code check)
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     with socket.create_connection((host, port), timeout=timeout) as raw, \

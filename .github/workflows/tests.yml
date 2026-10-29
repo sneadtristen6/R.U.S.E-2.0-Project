@@ -6,6 +6,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read  # read the code, nothing more
+
 jobs:
   test:
     # the shared private repo mirrors main and the tags: it doesn't build or test (its Actions minutes are limited).
