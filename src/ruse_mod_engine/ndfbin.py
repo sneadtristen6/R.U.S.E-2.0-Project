@@ -61,7 +61,7 @@ class T:
     Reference  = 0x09   # object ref (0xBBBBBBBB) or trans ref (0xAAAAAAAA)
     Vector3    = 0x0B   # 3 × float32
     Color128   = 0x0C   # 4 × float32 ARGB
-    Color32    = 0x0D   # 4 × uint8  ARGB
+    Color32    = 0x0D   # 4 × uint8  ARGB as one little-endian number: the bytes are blue, green, red, alpha
     TripleInt  = 0x0E   # 3 × int32
     Matrix     = 0x0F   # 16 × float32
     List       = 0x11   # uint32 count, then count × NdfValue

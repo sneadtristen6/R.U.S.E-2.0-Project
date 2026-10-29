@@ -7106,7 +7106,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def _value_typed(self, old, value, prop: str, edits: ModEdits, location: str | None, game_to: str | None):
         """What the modder typed for `prop` as the mod file's value (rusemod.values.typed against `old`): (a number,
-        a list of numbers, a Link or a Literal, whether it's `old` again)."""
+        a list of numbers, a Link or a Literal, whether it's `old` again). A colour comes red first, as the tab shows
+        it (rusemod.values.row), and is stored blue first."""
+        if every_value.is_colour(old):
+            value = every_value.shown_to_stored(value, prop)
         try:
             new, same = every_value.typed(old, value, prop, self._value_target(edits, location), game_to)
         except every_value.TypedError as exc:

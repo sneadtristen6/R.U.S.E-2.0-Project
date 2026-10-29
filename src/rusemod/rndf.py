@@ -35,7 +35,7 @@ _TOKENS = [
 _LEXER = re.compile("|".join(f"(?P<{k}>{v})" for k, v in _TOKENS), re.S)
 _INT_TYPES = {"int8", "int16", "uint16", "uint32", "int64"}
 _VECTORS = {"Float2": (0x21, "<ff", 2), "Float3": (0x0B, "<fff", 3), "Float4": (0x0C, "<ffff", 4),
-            "Int2": (0x1F, "<ii", 2), "RGBA": (0x0D, "<BBBB", 4)}
+            "Int2": (0x1F, "<ii", 2), "RGBA": (0x0D, "<BBBB", 4)}   # RGBA: as stored, blue first (MOD_FORMAT.md)
 
 
 class RndfError(Exception):
