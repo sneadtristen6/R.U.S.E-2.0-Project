@@ -55,7 +55,9 @@ class Processes(unittest.TestCase):
                 f.write(b"x")
             ready = os.path.join(tmp, "ready")
             code = f"f = open({path!r}, 'rb'); open({ready!r}, 'w').close(); import time; time.sleep(30)"
-            helper = subprocess.Popen([sys.executable, "-c", code], creationflags=subprocess.CREATE_NO_WINDOW)
+            # the real python.exe: a venv's is a launcher whose own child would be the one holding the file
+            python = getattr(sys, "_base_executable", None) or sys.executable
+            helper = subprocess.Popen([python, "-c", code], creationflags=subprocess.CREATE_NO_WINDOW)
             try:
                 for _ in range(100):
                     if os.path.exists(ready):

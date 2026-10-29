@@ -276,7 +276,7 @@ class NewPieces(unittest.TestCase):
         play = (Path(build.__file__).with_name("play.py")).read_text(encoding="utf-8")
         self.assertIn("cut_off_errors=cut_off_errors,", play)
         studio = (Path(build.__file__).parents[1] / "ruse_studio" / "api.py").read_text(encoding="utf-8")
-        self.assertIn("words=said, cut_off_errors=True)", studio)
+        self.assertIn("words=said, cut_off_errors=True,", studio)
 
 
 class Words(unittest.TestCase):

@@ -2043,3 +2043,15 @@ ru = "вкладки зданий со своими юнитами нельзя 
 cz = "karty budov s vlastními jednotkami nelze přidat do skriptů hry: {0}"
 jpn = "独自のユニットを持つ建物のタブをゲームのスクリプトに追加できません：{0}"
 sc = "无法将拥有自己单位的建筑的标签页添加到游戏脚本中：{0}"
+
+[e1fc21fee7c]
+us = "{0}: {1} changes {2}: {3}, so {4}'s is used"
+fr = "{0} : {1} modifie {2} : {3}, donc celui de {4} est utilisé"
+ger = "{0}: {1} ändert {2}: {3}, daher wird das von {4} verwendet"
+ita = "{0}: {1} cambia {2}: {3}, quindi si usa quello di {4}"
+spa = "{0}: {1} cambia {2}: {3}, así que se usa el de {4}"
+pol = "{0}: {1} zmienia {2}: {3}, więc używany jest ten z {4}"
+ru = "{0}: {1} меняет {2}: {3}, поэтому используется вариант {4}"
+cz = "{0}: {1} mění {2}: {3}, takže se použije ten z {4}"
+jpn = "{0}：{1} が {2}：{3} を変更するため、{4} のものを使います"
+sc = "{0}：{1} 修改了 {2}：{3}，因此使用 {4} 的版本"

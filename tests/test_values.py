@@ -456,7 +456,7 @@ class Tab(unittest.TestCase):
         self.assertEqual(got["Wide"].payload[4:].decode("utf-16-le"), "Größe")
         self.assertEqual(got["NameInMenuToken"].payload, struct.pack("<Q", name_to_key("N_B")))
         self.assertEqual(got["Pos"].payload, struct.pack("<fff", 1, 2, 3))
-        self.assertEqual(got["Col"].payload, bytes([1, 2, 3, 4]))
+        self.assertEqual(got["Col"].payload, bytes([3, 2, 1, 4]))  # given red first, kept blue first as the game does
         self.assertEqual(got["Size"].payload, struct.pack("<ii", 5, 6))
         self.assertEqual(got["Big"].payload, struct.pack("<b", -3))
         self.assertEqual(got["Guid"].payload, uuid.UUID(int=1).bytes_le)

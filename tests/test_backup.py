@@ -141,7 +141,9 @@ class Backups(Base):
         self.assertEqual([p.name for p in self.folder.iterdir()], [BUILD])  # its lock went with it
 
     def test_the_default_place_is_on_the_games_drive(self):
-        self.assertEqual(backup.backups_dir(self.game), Path(self.game.anchor) / "RUSE-Backup")
+        with mock.patch.dict(os.environ):  # the default: no $RUSE_INSTANCES (a developer's PC may have one)
+            os.environ.pop("RUSE_INSTANCES", None)
+            self.assertEqual(backup.backups_dir(self.game), Path(self.game.anchor) / "RUSE-Backup")
         self.assertEqual(backup.backup_path(self.folder, BUILD), self.dest)
         self.assertEqual(backup.backup_path(self.folder, None), self.folder / "no-build")
         self.assertEqual(steam_verify_url(), "steam://validate/21970")
