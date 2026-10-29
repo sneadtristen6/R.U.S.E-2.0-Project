@@ -134,6 +134,24 @@ class SecondTry(Fresh):
         self.assertIn("antivirus", why)
 
 
+class EveryDownload(unittest.TestCase):
+    def test_every_web_address_is_opened_through_net(self):
+        # the Reddit player's fault (2026-10-29) wherever the apps download: the era units and Map Paint's online
+        # textures opened their addresses with urllib's own urlopen, so neither Windows nor Mozilla's list was tried
+        # there. Only net itself and the self-test's look at its own local server (webui) may call it
+        import re
+        from pathlib import Path
+        src = Path(net.__file__).resolve().parents[1]
+        direct = []
+        for path in sorted(src.rglob("*.py")):
+            if path.name in ("net.py", "webui.py") and path.parent.name == "rusemod":
+                continue
+            for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                if re.search(r"\burllib\.request\.urlopen\(|\bfrom urllib\.request import\b.*\burlopen\b", line):
+                    direct.append(f"{path.relative_to(src)}:{n}")
+        self.assertEqual(direct, [])
+
+
 class MozillaList(Fresh):
     PEM = ssl.DER_cert_to_PEM_cert(windows_store("ROOT")[0]) if sys.platform == "win32" else None
 

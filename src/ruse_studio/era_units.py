@@ -157,9 +157,11 @@ def parse_list(data: bytes) -> list[dict]:
 
 
 def _open(url: str):
-    """A file of the list's place: over HTTPS, or from a folder (RUSE_ERA_UNITS_URL set to one)."""
+    """A file of the list's place: over HTTPS (the apps' certificate handling, rusemod.net), or from a folder
+    (RUSE_ERA_UNITS_URL set to one)."""
     if url.startswith(("https://", "http://127.0.0.1", "http://localhost")):
-        return urllib.request.urlopen(urllib.request.Request(url, headers=_HEADERS), timeout=TIMEOUT)
+        from rusemod.net import urlopen
+        return urlopen(urllib.request.Request(url, headers=_HEADERS), timeout=TIMEOUT)
     return open(url, "rb")
 
 
