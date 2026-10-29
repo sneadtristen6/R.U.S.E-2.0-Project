@@ -153,6 +153,7 @@ function problem(err) {
 // --- words ---
 async function setLanguage(lang) {
   state.lang = lang;
+  document.documentElement.dataset.lang = lang;  // the game's font for it (style.css: Japanese and Chinese have theirs)
   knownFlags = null;  // the flags' meanings are in the language
   knownNumbers = null;  // and the numbers' (rusemod/numberinfo.toml)
   saveLang(lang);

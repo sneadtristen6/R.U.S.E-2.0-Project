@@ -16,6 +16,14 @@
   color-scheme: dark;
 }
 
+/* the game's own lettering (the owner, 2026-10-22: the Studio's and the Launcher's text in R.U.S.E.'s font): its
+   menus' UbiGame Text, its Japanese and Chinese fonts, copied from the player's game into the cache at each start
+   (rusemod.gamefont); a page without the copies keeps Segoe UI */
+@font-face { font-family: "RUSE"; src: url("cache/gamefont/ruse-regular.ttf"); font-weight: 100 500; }
+@font-face { font-family: "RUSE"; src: url("cache/gamefont/ruse-bold.ttf"); font-weight: 600 900; }
+@font-face { font-family: "RUSE Japanese"; src: url("cache/gamefont/ruse-japanese.ttf"); }
+@font-face { font-family: "RUSE Chinese"; src: url("cache/gamefont/ruse-chinese.ttc"); }
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -23,8 +31,10 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+  font: 15px/1.45 "RUSE", "Segoe UI", system-ui, sans-serif;
 }
+html[data-lang="jpn"], html[data-lang="jpn"] body { font-family: "RUSE Japanese", "Segoe UI", system-ui, sans-serif; }
+html[data-lang="sc"], html[data-lang="sc"] body { font-family: "RUSE Chinese", "Segoe UI", system-ui, sans-serif; }
 
 body { display: flex; flex-direction: column; }
 

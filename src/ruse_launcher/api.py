@@ -493,6 +493,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, Backup
         self._open_url(str(url))
         return {"opened": str(url)}
 
+    @property
+    def cache_dir(self) -> Path:
+        """Made files the window loads by address (served as `cache/...` by the window's own server): the game's
+        lettering (rusemod.gamefont), the same folder as the Studio's."""
+        return self._home / "cache"
+
     # --- mod sets ---
     def _sets_dir(self) -> Path:
         return self._home / "sets"

@@ -70,6 +70,7 @@ function problem(err) {
 // --- words ---
 async function setLanguage(lang) {
   state.lang = lang;
+  document.documentElement.dataset.lang = lang;  // the game's font for it (style.css: Japanese and Chinese have theirs)
   saveLang(lang);
   state.words = await api().strings(lang);
   renderUpdate();

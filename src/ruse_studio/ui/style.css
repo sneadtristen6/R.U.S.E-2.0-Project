@@ -19,9 +19,19 @@
   color-scheme: dark;
 }
 
+/* the game's own lettering (the owner, 2026-10-22: "I want the studio font to be ruse font"): its menus' UbiGame Text,
+   its Japanese and Chinese fonts, copied from the player's game into the cache at each start (rusemod.gamefont); a
+   page without the copies keeps Segoe UI */
+@font-face { font-family: "RUSE"; src: url("cache/gamefont/ruse-regular.ttf"); font-weight: 100 500; }
+@font-face { font-family: "RUSE"; src: url("cache/gamefont/ruse-bold.ttf"); font-weight: 600 900; }
+@font-face { font-family: "RUSE Japanese"; src: url("cache/gamefont/ruse-japanese.ttf"); }
+@font-face { font-family: "RUSE Chinese"; src: url("cache/gamefont/ruse-chinese.ttc"); }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
-             font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+             font: 14px/1.45 "RUSE", "Segoe UI", system-ui, sans-serif; }
+html[data-lang="jpn"], html[data-lang="jpn"] body { font-family: "RUSE Japanese", "Segoe UI", system-ui, sans-serif; }
+html[data-lang="sc"], html[data-lang="sc"] body { font-family: "RUSE Chinese", "Segoe UI", system-ui, sans-serif; }
 body { display: flex; flex-direction: column; }
 button, select, input { font: inherit; color: inherit; }
 button { cursor: pointer; border-radius: var(--radius); }
@@ -122,7 +132,7 @@ input[type="range"].stepped { display: none !important; }
 .unit-list button[aria-current="true"] { background: var(--panel-hi); border-color: var(--line);
                                          box-shadow: inset 3px 0 0 var(--accent); }
 .unit-list .name { display: block; }
-.unit-list .sub { display: block; font-size: 11px; color: var(--muted); }
+.unit-list .sub { display: block; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
 
 .detail { padding: 24px 32px; overflow: auto; }
 .detail h1 { margin: 0; font-size: 26px; }
