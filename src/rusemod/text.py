@@ -58,7 +58,8 @@ class NdfText:
                           .replace('"', '\\"') + '")',
             0x0B: lambda: "Float3[" + ", ".join(_f32(b[i:i + 4]) for i in range(0, 12, 4)) + "]",
             0x0C: lambda: "Float4[" + ", ".join(_f32(b[i:i + 4]) for i in range(0, 16, 4)) + "]",
-            0x0D: lambda: "RGBA[" + ", ".join(str(c) for c in b) + "]",
+            0x0D: lambda: "RGBA[" + ", ".join(str(c) for c in b) + "]",   # as stored: blue, green, red, alpha
+            #                                                               (docs/MOD_FORMAT.md: kept so for mod files)
             0x13: lambda: f"int64({struct.unpack('<q', b)[0]})",
             0x14: lambda: f"blob({struct.unpack_from('<I', b)[0]} bytes)",
             0x18: lambda: f"int16({struct.unpack('<h', b)[0]})",

@@ -45,6 +45,7 @@ from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES, Raw, Text
 from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
+from rusemod.signature import keep_title, title_on
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
 from rusemod.rndf import literal as rndf_literal
 from rusemod.rndf import parse as rndf_parse
@@ -6071,6 +6072,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             keep_instances_dir(self._home, None)
         return self.copies_folder()
 
+    # the game's title in the copies (rusemod.signature): R.U.S.E. 2.0's gold title, or the game's own
+    def game_title(self) -> dict:
+        """Settings' title switch: {"ruse20": True} when the copies get R.U.S.E. 2.0's gold title (the default)."""
+        return {"ruse20": title_on(self._home)}
+
+    def set_game_title(self, ruse20: bool) -> dict:
+        """Keep the choice (settings.json, the Launcher's too); the next Test in game builds the copy with it."""
+        keep_title(self._home, bool(ruse20))
+        return self.game_title()
+
     def edited(self) -> list[str]:
         """The named objects the current mod changes: a part changed for all its users marks every one of them. New
         units aren't in it: the list marks them as new instead (nor are the objects the All values tab makes)."""
@@ -7221,7 +7232,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
 
     def _value_typed(self, old, value, prop: str, edits: ModEdits, location: str | None, game_to: str | None):
         """What the modder typed for `prop` as the mod file's value (rusemod.values.typed against `old`): (a number,
-        a list of numbers, a Link or a Literal, whether it's `old` again)."""
+        a list of numbers, a Link or a Literal, whether it's `old` again). A colour comes red first, as the tab shows
+        it (rusemod.values.row), and is stored blue first."""
+        if every_value.is_colour(old):
+            value = every_value.shown_to_stored(value, prop)
         try:
             new, same = every_value.typed(old, value, prop, self._value_target(edits, location), game_to)
         except every_value.TypedError as exc:
@@ -8907,7 +8921,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, BackupCa
             if game is None:
                 # not a game rule: the game or one of its files isn't found
                 raise BuildError("We couldn't find R.U.S.E.")
-            self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True)
+            self._starter.modded(game, folders, instance, name, say, words=said, cut_off_errors=True,
+                                 title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
             say(f"Built in {instance}. To see your changes in the game:")
             for line in look or ["Your unit changes show in every game mode."]:
                 say(f"  {line}")

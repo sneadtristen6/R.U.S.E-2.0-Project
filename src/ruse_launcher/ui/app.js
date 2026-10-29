@@ -113,7 +113,7 @@ async function setLanguage(lang) {
     "add-mod": "tip_add_mod", "settings-back": "tip_settings_back", lang: "tip_lang", "set-game-change": "tip_game_change",
     "convert-mod": "tip_convert_mod", "convert-pick": "tip_convert_pick", "convert-cancel": "tip_convert_cancel",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
-    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
+    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check", "title-gold": "tip_title_gold" };
   for (const [id, key] of Object.entries(tips)) if ($(id)) $(id).title = w[key] || "";
   text($("browse-title"), w.browse);
   $("browse-search").placeholder = w.search_mods;
@@ -172,6 +172,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     text($("set-game-change"), w.set_game_change);
   } },
   { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
+  { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
@@ -227,6 +228,32 @@ async function changeCopies(choose) {
   } catch (err) { Object.assign(c, { note: errorText(err), noteKind: "bad" }); }
   renderCopies();
   loadBackup();  // the clean backup goes beside the copies
+}
+
+// --- the game's title in the modded copies (rusemod.signature through api.game_title): R.U.S.E. 2.0's gold title
+// (the default) or the game's own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic
+// ruse"). Kept in settings.json, the Studio's too; the next Play builds the copy with it ---
+async function loadTitle() {
+  try { state.title = await api().game_title(); } catch (err) { state.title = { note: errorText(err), bad: true }; }
+  if (state.settings) renderTitle();
+}
+
+function renderTitle() {
+  const w = state.words, t = state.title || {}, box = $("title-gold");
+  text($("set-title-help"), w.set_title_help);
+  text($("title-gold-label"), w.title_gold);
+  box.checked = t.ruse20 !== false;
+  box.disabled = t.ruse20 === undefined;  // (not read yet)
+  const note = $("set-title-note");
+  text(note, t.note || "");
+  note.className = "message" + (t.note ? (t.bad ? " bad" : " good") : "");
+}
+
+async function changeTitle() {
+  const w = state.words, on = $("title-gold").checked;
+  try { state.title = { ...(await api().set_game_title(on)), note: on ? w.title_on_note : w.title_off_note }; }
+  catch (err) { state.title = { ...(state.title || {}), note: errorText(err), bad: true }; }
+  renderTitle();
 }
 
 // --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
@@ -1415,7 +1442,10 @@ async function start() {
   $("lang-open").addEventListener("click", () => openLangPick(false).catch(problem));
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
-  $("settings-open").addEventListener("click", () => { state.settings = true; render(); loadCopies(); loadBackup(); });
+  $("settings-open").addEventListener("click", () => {
+    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup();
+  });
+  $("title-gold").addEventListener("change", changeTitle);
   $("set-copies-change").addEventListener("click", () => changeCopies(true));
   $("set-copies-default").addEventListener("click", () => changeCopies(false));
   $("backup-make").addEventListener("click", makeBackup);

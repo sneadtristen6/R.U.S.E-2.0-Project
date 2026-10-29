@@ -24,6 +24,11 @@ PACK = DEFAULT_PACK
 WHOLE = set(INT_RANGES) - {"bool"}
 VECTORS = {0x21: ("Float2", 2, "f"), 0x0B: ("Float3", 3, "f"), 0x0C: ("Float4", 4, "f"), 0x1F: ("Int2", 2, "i"),
            0x0D: ("RGBA", 4, "B")}
+# A colour (0x0D) is stored blue, green, red, how solid (seen in game 2026-10-22: gold written red first showed light
+# blue; and the game's own player colours read as their names only blue first: Color_01_Blue is 255, 66, 0). The
+# Values tab shows and takes it red, green, blue, how solid (row(), shown_to_stored()); a mod file's RGBA[...] keeps
+# the four numbers as stored, as it always has.
+COLOUR = 0x0D
 GUID = 0x1A
 CONTAINERS = {ListV: "list", MapV: "map", PairV: "pair"}
 _SPLIT = re.compile(r"[\s,;]+")
@@ -147,6 +152,8 @@ def row(prop: str, v, links: dict[str, str]) -> dict:
         if len(v.payload) == struct.calcsize(f"<{n}{fmt}"):
             items = struct.unpack(f"<{n}{fmt}", v.payload)
             out["value"] = [number(Num("float32", Decimal(x))) for x in items] if fmt == "f" else list(items)
+            if v.tc == COLOUR:   # red first, as it's seen
+                out["value"] = _swapped(out["value"])
     elif isinstance(v, Raw) and v.tc == GUID:
         out.update(kind="guid", type="guid")
         if len(v.payload) == 16:
@@ -215,6 +222,26 @@ def start_text(r: dict) -> str:
     if kind == "link":
         return r.get("to") or ""
     return r["text"] or ""
+
+
+def _swapped(four: list) -> list:
+    """A colour's four numbers with the first and the third swapped: stored (blue first) <-> seen (red first)."""
+    b, g, r, a = four
+    return [r, g, b, a]
+
+
+def is_colour(v) -> bool:
+    return isinstance(v, Raw) and v.tc == COLOUR and len(v.payload) == 4
+
+
+def shown_to_stored(text, what: str):
+    """What the modder typed for a colour, red first as the Values tab shows it, as the four numbers as stored (blue
+    first), for typed(); what isn't four numbers is given back as it is, for typed() to say what's wrong with it."""
+    try:
+        got = _numbers(text, what)
+    except TypedError:
+        return text
+    return ", ".join(str(x) for x in _swapped(got)) if len(got) == 4 else text
 
 
 # --- what the modder types, as a value of the mod file ---

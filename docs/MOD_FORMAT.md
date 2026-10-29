@@ -211,9 +211,12 @@ when mod better-ai
 **Values**
 - **Type follows the schema:** when you patch an existing property, the literal is converted to that property's
   type, so `ProductionTime = 10` just works. Explicit forms are spelled the way Eugen's own text NDF (WARNO) spells
-  them wherever it has one: `Float2[a, b]`, `Float3[x, y, z]`, `Float4[a, b, c, d]`, `Int2[a, b]`, `RGBA[r, g, b, a]`,
+  them wherever it has one: `Float2[a, b]`, `Float3[x, y, z]`, `Float4[a, b, c, d]`, `Int2[a, b]`, `RGBA[b, g, r, a]`,
   `GUID:{…}`. Ours cover the types WARNO's text doesn't tell apart: `int8() int16() uint16() uint32() int64() f64()
   str('…') wstr("…") path('…')`, and text keys `key(M_D_01)` (or `key(0x…)` for one that isn't a name).
+- **A colour's four numbers are in the order R.U.S.E. stores them: blue, green, red, then how solid (0 to 255
+  each)**, whatever the word `RGBA` says: the game's own player colour 1, "blue", is `RGBA[255, 66, 0, 255]`
+  (seen in game, 2026-10-22). The Studio's tabs show and take colours red first and write them in this order.
 - Lists are `[a, b]`, maps `MAP [ (k, v), … ]`, pairs `(a, b)`, booleans `true` / `false`.
 - References are `$/…` export paths, `~/Name` for mod-local objects, and `nil`.
 - `loc('key')` refers to a row in `text/*.csv` (§6).

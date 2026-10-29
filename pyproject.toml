@@ -26,7 +26,7 @@ ruse-studio = "ruse_studio.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"rusemod" = ["labels.toml", "buildtext.toml", "motions.json.gz", "flaginfo*.toml", "numberinfo*.toml", "ground_presets.toml", "pictures/*.png"]
+"rusemod" = ["labels.toml", "buildtext.toml", "motions.json.gz", "flaginfo*.toml", "numberinfo*.toml", "ground_presets.toml", "pictures/*.png", "sounds/*.ogg"]
 "ruse_mod_engine" = ["data/*.json", "data/migrations/*.json", "data/version_maps/*.json.gz"]
 "ruse_launcher" = ["ui/*", "words.toml"]
 "ruse_studio" = ["ui/*", "words.toml", "errors.toml"]

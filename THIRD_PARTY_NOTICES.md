@@ -122,6 +122,30 @@ scenarios (`dic.py`, `scenario.py`), follow moddingSuite: enohka's Wargame moddi
 for R.U.S.E. (https://github.com/RugnirViking/moddingSuite; copyright enohka, as its program says). Its README says it
 is released under GPL 3.0 (its LICENSE file holds the text of GPL version 2). The apps are GPL-3.0 ([LICENSE](LICENSE)).
 
+## The start-up video's scene: 3D models (CC BY 4.0)
+
+The battle scene behind R.U.S.E. 2.0's start-up video ([src/rusemod/pictures/startup_scene.png](src/rusemod/pictures/startup_scene.png))
+is our own render of these models from Sketchfab, each under the Creative Commons Attribution 4.0 licence
+(https://creativecommons.org/licenses/by/4.0/). Changed: scaled to real size, placed, the plain ones and some others
+painted grey, lit and rendered together in Blender into one picture.
+
+| Model | Maker | Source |
+|---|---|---|
+| USS Arizona | martyn169 | https://sketchfab.com/models/ce2862b9e3994c2ea108c2cf2419b5c5 |
+| Lowpoly USS Missouri (BB63) | SIpriv | https://sketchfab.com/models/c30eb462b4cb4e2d820f27ece4ecf0c7 |
+| USS NC Battleship | h1ggs | https://sketchfab.com/models/1565aa9d76784fffb0659e4a246a15aa |
+| USS Nevada - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/40b6f56f6d454bbcb3da80efc350972f |
+| USS South Dakota - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/662dccefc8414a4eabdd26555f159ad0 |
+| HMS Nelson - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/e4b0a8f08f984e21a3544a129099e384 |
+| USS Haskell - Model for small scale printing | KTKloss | https://sketchfab.com/models/aeaf904911674cea82d6e7629a8546c9 |
+| Fletcher | JZHU | https://sketchfab.com/models/5cddc3309139413e8c08462c8741b884 |
+| Liberty ship | AlanTinka | https://sketchfab.com/models/a1db8e8414464c5d8b11383e202fcf26 |
+| LCVP Higgins Boat | Thomas Visonà | https://sketchfab.com/models/e2edab27282d415db2351a47d164744b |
+| LCVP Higgins boat (1945) | RedC130 | https://sketchfab.com/models/92b2ec48991545f7baea8b0954489be8 |
+| Douglas C-47 Skytrain | Spark_Customs | https://sketchfab.com/models/bd01ee417416492f919a4b988f03bc8b |
+| B-17 Flying Formation | Planefrog69 | https://sketchfab.com/models/769966de4d2340f1b7d54ea8a386ae15 |
+| Supermarine Spitfire Mk.IIa | barking_dogo | https://sketchfab.com/models/a49be5ab6d624e75b55231948a31b1b3 |
+
 ## The other libraries the apps carry
 
 Nuitka makes each app into a Windows program with Python 3.12 ([installers/build_app.py](installers/build_app.py)), so
@@ -142,6 +166,8 @@ what they don't say.
 | bottle (for pywebview) | 0.13.4 | MIT | Marcel Hellkamp | https://github.com/bottlepy/bottle/tree/0.13.4 |
 | proxy_tools (for pywebview) | 0.1.0 | Not known: the package says MIT, its code and its repository say BSD; the package carries no licence text | Armin Ronacher, Jonathan Tushman | https://github.com/jtushman/proxy_tools |
 | typing_extensions (for pywebview) | 4.16.0 | PSF-2.0 | Python Software Foundation, and the others named in its licence file | https://github.com/python/typing_extensions/tree/4.16.0 |
+| shapely (R.U.S.E. 2.0's title: the menu logo's new letters, rusemod.menulogo) | 2.2.0 | BSD-3-Clause | Sean C. Gillies, Casper van der Wel, Shapely Contributors | https://github.com/shapely/shapely/tree/2.2.0 |
+| PyAV (R.U.S.E. 2.0's title: the gold loading video, rusemod.signature) | 19.0.1 | BSD-3-Clause | Its licence names no holder ("Copyright retained by original committers") | https://github.com/PyAV-Org/PyAV/tree/v19.0.1 |
 | Nuitka's runtime (the C code Nuitka builds into each program) | 4.2.2 | GNU AGPL v3 with the Nuitka Runtime Library Exception 1.0, which lets the programs it builds be given out under any licence | Kay Hayen | https://github.com/Nuitka/Nuitka/tree/4.2.2 |
 
 What those carry inside them:
@@ -165,6 +191,10 @@ What those carry inside them:
 | domJSON | 0.1.2 | `webview\js\lib\dom_json.js` (from pywebview) | MIT | Alex Zaslavsky | Not stated in the file |
 | Python.Runtime | 3.1.0 | `pythonnet\runtime\Python.Runtime.dll` (from pythonnet) | MIT (pythonnet's) | The contributors of the Python.NET project | https://github.com/pythonnet/pythonnet/tree/v3.1.0 |
 | ClrLoader | 0.3.1 | `clr_loader\ffi\dlls\amd64\ClrLoader.dll` (from clr_loader) | MIT (clr_loader's) | Benedikt Reinartz | https://github.com/pythonnet/clr-loader/tree/v0.3.1 |
+| GEOS | 3.14.1 | `shapely.libs\geos-*.dll`, `geos_c-*.dll` (from shapely) | LGPL-2.1 (shapely's `LICENSE_GEOS`) | Not stated in shapely's copy | https://libgeos.org |
+| Microsoft C++ runtime | Not stated | `shapely.libs\msvcp140-*.dll` (from shapely) | Microsoft Distributable Code (shapely's `LICENSE_win32`) | Microsoft Corporation | Not open source |
+| FFmpeg | 9.0.2 | `av.libs\avcodec-*.dll`, `avdevice-*.dll`, `avfilter-*.dll`, `avformat-*.dll`, `avutil-*.dll`, `swresample-*.dll`, `swscale-*.dll` (from PyAV) | "LGPL version 3 or later", as the build itself reports; its build includes libx264 and libx265 (below) | The FFmpeg developers | https://github.com/FFmpeg/FFmpeg |
+| The libraries PyAV's FFmpeg is built with | Not stated | `av.libs\`: `libvpx-1-*.dll`, `libx264-165-*.dll`, `libx265-*.dll`, `libSvtAv1Enc-*.dll`, `libdav1d-*.dll`, `libopus-0-*.dll`, `libvmaf-*.dll`, `libvpl-*.dll`, `libwebp-*.dll`, `libwebpmux-*.dll`, `libsharpyuv-*.dll`, `libiconv-2-*.dll`, `zlib1-*.dll`, `libgcc_s_seh-1-*.dll`, `libstdc++-6-*.dll`, `libwinpthread-1-*.dll` | Not known: PyAV carries no licence for them | Not known | Not stated in PyAV |
 | zlib's CRC-32 code | Not stated in the copy | Built into each app's program by Nuitka (its `inline_copy/zlib/crc32.c`) | Zlib | Jean-loup Gailly and Mark Adler | https://github.com/Nuitka/Nuitka/tree/4.2.2/nuitka/build/inline_copy/zlib |
 
 Used to build the apps but not carried by them: the Nuitka compiler itself (only its runtime goes into the programs),

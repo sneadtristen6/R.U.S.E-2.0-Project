@@ -146,6 +146,20 @@ class Typed(unittest.TestCase):
         with self.assertRaises(values.TypedError):
             self.typed(Text("string", "A"), "line\nbreak")
 
+    def test_a_colour_is_seen_and_typed_red_first_and_stored_blue_first(self):
+        # the game stores a colour blue, green, red, how solid (its player colour 1, "blue", is 255, 66, 0)
+        blue = Raw(0x0D, bytes([255, 66, 0, 255]))
+        self.assertTrue(values.is_colour(blue))
+        self.assertFalse(values.is_colour(Raw(0x0B, bytes(12))))
+        self.assertEqual(values.row("Color_01_Blue", blue, {})["value"], [0, 66, 255, 255])   # seen: blue
+        self.assertEqual(values.row("Color_01_Blue", blue, {})["text"], "RGBA[255, 66, 0, 255]")  # the mod file's, as stored
+        self.assertEqual(values.shown_to_stored("10, 20, 30, 200", "C"), "30, 20, 10, 200")
+        self.assertEqual(values.shown_to_stored([10, 20, 30, 200], "C"), "30, 20, 10, 200")
+        self.assertEqual(values.shown_to_stored("1, 2", "C"), "1, 2")          # not four numbers: typed() says why
+        self.assertEqual(values.shown_to_stored("red", "C"), "red")
+        stored = values.shown_to_stored("255, 0, 0, 255", "C")                  # typed red ...
+        self.assertEqual(self.typed(Raw(0x0D, bytes(4)), stored), ("RGBA[0, 0, 255, 255]", False))  # ... stored blue first
+
     def test_vectors_ids_and_lists(self):
         pos = Raw(0x0B, struct.pack("<fff", 0, -0.7, 0.7))
         self.assertEqual(self.typed(pos, "0, -0.7, 0.7"), ("Float3[0.0, -0.7, 0.7]", True))
@@ -368,7 +382,7 @@ class Tab(unittest.TestCase):
             "Wide": ("text", "wstr", "Abc"), "NameInMenuToken": ("key", "key", "N_A"),
             "Weapon": ("part", "TPart", None), "ArmorDescriptor": ("link", "reference", E + "Unit_A:ArmorDescriptor"),
             "Upgrade": ("link", "reference", E + "Unit_B"), "Pos": ("vector", "Float3", [0, -0.7, 0.7]),
-            "Col": ("vector", "RGBA", [255, 230, 200, 255]), "Tags": ("map", "map", None),
+            "Col": ("vector", "RGBA", [200, 230, 255, 255]), "Tags": ("map", "map", None),   # stored blue first
             "Guid": ("guid", "guid", str(GUID)), "Blob": ("fixed", "0x14", "6 bytes"), "Pair": ("pair", "pair", None),
             "Size": ("vector", "Int2", [3, 4]), "Big": ("number", "int8", 5), "Other": ("link", "reference", E + "Other_C")})
         self.assertEqual(rows["Weapon"]["to"], E + "Unit_A:Weapon")
@@ -420,7 +434,7 @@ class Tab(unittest.TestCase):
         self.assertEqual(rows["ArmorDescriptor"]["edited"], {"value": None, "text": "nil"})
         text = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
         self.assertIn(f"\npatch shared {E}Unit_A:ArmorDescriptor\n(\n    Armour = 6\n)\n", text)
-        for line in ("ArmorDescriptor = nil", "Big = -3", "Col = RGBA[1, 2, 3, 4]", "DebugName = 'Unit_A2'",
+        for line in ("ArmorDescriptor = nil", "Big = -3", "Col = RGBA[3, 2, 1, 4]", "DebugName = 'Unit_A2'",
                      "Guid = GUID:{00000000-0000-0000-0000-000000000001}", "Health = 500", "Model = path('GameData:/b.png')",
                      "NameInMenuToken = key(N_B)", "Pair = (3, 4.5)", "Pos = Float3[1.0, 2.0, 3.0]", "Price = [20, 25, 30]",
                      "Size = Int2[5, 6]", "Stick = 0", "Tags = MAP [('night', 2)]", f"Upgrade = {E}Other_C",
