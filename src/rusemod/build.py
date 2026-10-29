@@ -26,7 +26,7 @@ from pathlib import Path
 from . import loc, pyscript, unitcheck, unitpacks
 from .brush import BrushError, parse_strokes
 from .edat import Edat
-from .lock import fingerprint, fingerprint_text
+from .lock import fingerprint, fingerprint_text, looks_only_change
 from .model import ModelError, collector_paused, game_path, load, save
 from .patch import Engine, Finding, MapV, Num, Text, _walk_obj
 from .visibility import SUFFIX as SEEN_SUFFIX
@@ -2359,6 +2359,12 @@ def report_lines(findings, show_all: bool = False, keep: int = 3):
     return out
 
 
+def _shipped(arc, member: str) -> bytes | None:
+    """A member of a layered pack (rmod.Layered) as the game ships it, under the changes on top."""
+    e = arc.entry(member)
+    return bytes(Edat.read(arc, e)) if e is not None else None
+
+
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
                     cache: Path | None = None, built_from: dict | None = None,
@@ -4378,7 +4384,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             gameplay = {}
             for p, a in rmod_packs.items():
                 where = f"Maps/PC/{p.name}/" if p.parent.parent.name.lower() == "maps" else ""
-                gameplay.update({where + m: d for m, d in {**a.changed, **a.added}.items()})
+                gameplay.update({where + m: d for m, d in {**a.changed, **a.added}.items()
+                                 if not (m in a.changed and looks_only_change(m, d, lambda a=a, m=m: _shipped(a, m)))})
             gameplay.update(result.changed)
             gameplay.update(result.added.get(pack_path.name, {}))
             for map_path, a, changed_members in map_packs:

@@ -122,6 +122,30 @@ scenarios (`dic.py`, `scenario.py`), follow moddingSuite: enohka's Wargame moddi
 for R.U.S.E. (https://github.com/RugnirViking/moddingSuite; copyright enohka, as its program says). Its README says it
 is released under GPL 3.0 (its LICENSE file holds the text of GPL version 2). The apps are GPL-3.0 ([LICENSE](LICENSE)).
 
+## The start-up video's scene: 3D models (CC BY 4.0)
+
+The battle scene behind R.U.S.E. 2.0's start-up video ([src/rusemod/pictures/startup_scene.png](src/rusemod/pictures/startup_scene.png))
+is our own render of these models from Sketchfab, each under the Creative Commons Attribution 4.0 licence
+(https://creativecommons.org/licenses/by/4.0/). Changed: scaled to real size, placed, the plain ones and some others
+painted grey, lit and rendered together in Blender into one picture.
+
+| Model | Maker | Source |
+|---|---|---|
+| USS Arizona | martyn169 | https://sketchfab.com/models/ce2862b9e3994c2ea108c2cf2419b5c5 |
+| Lowpoly USS Missouri (BB63) | SIpriv | https://sketchfab.com/models/c30eb462b4cb4e2d820f27ece4ecf0c7 |
+| USS NC Battleship | h1ggs | https://sketchfab.com/models/1565aa9d76784fffb0659e4a246a15aa |
+| USS Nevada - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/40b6f56f6d454bbcb3da80efc350972f |
+| USS South Dakota - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/662dccefc8414a4eabdd26555f159ad0 |
+| HMS Nelson - Model for 1/4000 printing | KTKloss | https://sketchfab.com/models/e4b0a8f08f984e21a3544a129099e384 |
+| USS Haskell - Model for small scale printing | KTKloss | https://sketchfab.com/models/aeaf904911674cea82d6e7629a8546c9 |
+| Fletcher | JZHU | https://sketchfab.com/models/5cddc3309139413e8c08462c8741b884 |
+| Liberty ship | AlanTinka | https://sketchfab.com/models/a1db8e8414464c5d8b11383e202fcf26 |
+| LCVP Higgins Boat | Thomas Visonà | https://sketchfab.com/models/e2edab27282d415db2351a47d164744b |
+| LCVP Higgins boat (1945) | RedC130 | https://sketchfab.com/models/92b2ec48991545f7baea8b0954489be8 |
+| Douglas C-47 Skytrain | Spark_Customs | https://sketchfab.com/models/bd01ee417416492f919a4b988f03bc8b |
+| B-17 Flying Formation | Planefrog69 | https://sketchfab.com/models/769966de4d2340f1b7d54ea8a386ae15 |
+| Supermarine Spitfire Mk.IIa | barking_dogo | https://sketchfab.com/models/a49be5ab6d624e75b55231948a31b1b3 |
+
 ## The other libraries the apps carry
 
 Nuitka makes each app into a Windows program with Python 3.12 ([installers/build_app.py](installers/build_app.py)), so

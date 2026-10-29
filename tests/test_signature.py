@@ -6,6 +6,7 @@ the other choice is built again; the menu logo's gold leaves the menu's code alo
 
 Checked our_tools.json: none of its program-reading tools apply; this test never reads the program (its fake game
 folder has a two-byte stand-in for the game's program, as tests/test_gamefiles.py's does)."""
+import io
 import json
 import struct
 import tempfile
@@ -95,6 +96,122 @@ class MenuGold(unittest.TestCase):
         plain = movie((26, place(12)), (1, b""))
         self.assertEqual(menulogo.tint(plain), (plain, 0))
 
+    def test_the_hover_frame_turns_gold_in_place(self):
+        # a shape with a black-to-white gradient (the hover frame), inside a sprite placed by the name the menus give
+        # it; another white shape not placed so stays white
+        bounds = menulogo.rect_bits(0, 4000, 0, 4000).bytes()
+        frame_fill = b"\x01\x10\x00\x02" + b"\x00\x00\x00\x00" + b"\xff\xff\xff\xff"  # count, linear, matrix, 2 stops
+        white_fill = b"\x01\x00\xff\xff\xff"
+        records = b"\x00\x10\x00"  # no lines; 1 fill bit, 0 line bits; the end record
+        frame = struct.pack("<H", 5) + bounds + frame_fill + records
+        white = struct.pack("<H", 8) + bounds + white_fill + records
+        inner = menulogo.tag_header(26, len(place(5))) + place(5) + menulogo.tag_header(1, 0) + menulogo.tag_header(0, 0)
+        named = b"\x22" + struct.pack("<HH", 1, 6) + menulogo.SELECTION.encode() + b"\x00"
+        outer = menulogo.tag_header(26, len(named)) + named + menulogo.tag_header(1, 0) + menulogo.tag_header(0, 0)
+        base = movie((2, frame), (2, white), (39, struct.pack("<HH", 6, 1) + inner), (39, struct.pack("<HH", 7, 1) + outer),
+                     (1, b""))
+        gold, n = menulogo.gold_selection(base)
+        self.assertEqual(n, 1)
+        self.assertEqual(len(gold), len(base))
+        code, body = menulogo.find_shape(gold, 5)
+        self.assertEqual([tuple(body[a:a + 3]) for a in menulogo._gradient_stops(body, code)],
+                         [(0, 0, 0), (255, 204, 102)])
+        self.assertEqual(menulogo.find_shape(gold, 8)[1], white)  # not a hover frame: untouched
+        self.assertEqual(sum(a != b for a, b in zip(gold, base)), 2)  # the white stop's green and blue, nothing else
+        plain = movie((2, white), (1, b""))
+        self.assertEqual(menulogo.gold_selection(plain), (plain, 0))
+
+    def test_grey_lines_turn_gold_but_not_the_troop_buttons_or_other_colours(self):
+        bounds = menulogo.rect_bits(0, 4000, 0, 4000).bytes()
+        no_fills, records = b"\x00", b"\x01\x00"   # no fills; 0 fill bits, 1 line bit; the end record
+
+        def lined(sid, *colours):  # a DefineShape with these line colours (1 px)
+            lines = bytes([len(colours)]) + b"".join(struct.pack("<H", 20) + bytes(c) for c in colours)
+            return struct.pack("<H", sid) + bounds + no_fills + lines + records
+
+        menu_box, troop_box = lined(5, (153, 153, 153), (200, 0, 0)), lined(8, (153, 153, 153))
+        troop = b"\x22" + struct.pack("<HH", 1, 8) + b"ie_Tank\x00"
+        holder = menulogo.tag_header(26, len(troop)) + troop + menulogo.tag_header(1, 0) + menulogo.tag_header(0, 0)
+        base = movie((2, menu_box), (2, troop_box), (39, struct.pack("<HH", 9, 1) + holder), (1, b""))
+        gold, n = menulogo.gold_outlines(base)
+        self.assertEqual(n, 1)
+        self.assertEqual(len(gold), len(base))
+        code, body = menulogo.find_shape(gold, 5)
+        self.assertEqual([tuple(body[a:a + 3]) for a in menulogo._line_colours(body, code)],
+                         [(153, 122, 61), (200, 0, 0)])  # the grey gold (its shade kept), the red as it was
+        self.assertEqual(menulogo.find_shape(gold, 8)[1], troop_box)  # a troop button's frame: untouched
+
+    def test_a_panels_frame_line_turns_gold_but_not_a_small_pictures(self):
+        if not have("numpy"):
+            self.skipTest("the pictures are read with numpy")
+
+        def picture(w, h):  # dark grey with a 1 px 238 grey line along its top (stored blue, green, red, alpha)
+            px = bytearray(bytes([40, 40, 40, 255]) * (w * h))
+            px[:w * 4] = bytes([238, 238, 238, 255]) * w
+            return make_tgv(w, h, "A8R8G8B8_LIN", [zipo_pack(bytes(px))])
+        panel = signature.gold_frames(picture(320, 20))
+        top = pixels(panel)[:320 * 4]
+        self.assertEqual(bytes(top[:4]), bytes([95, 190, 238, 255]))  # 238 times GOLD (stored blue, green, red)
+        self.assertEqual(bytes(pixels(panel)[320 * 4:320 * 4 + 4]), bytes([40, 40, 40, 255]))  # inside: as it was
+        self.assertEqual(signature.gold_frames(picture(120, 20)), b"")  # a button-sized picture: left alone
+
+    def test_the_small_logo_is_made_for_its_wider_picture_and_keeps_each_screens_alignment(self):
+        image = struct.pack("<HHHH", 386, 0, 258, 53) + b"\x00" + bytes([8]) + b"logo.tga"  # Scaleform's outside picture
+        w = menulogo.BitWriter()
+        w.ub(1, 4), w.ub(0, 4)                        # 1 fill bit, 0 line bits
+        w.ub(0, 1), w.ub(0b00101, 5), w.ub(1, 5), w.sb(0, 1), w.sb(0, 1), w.ub(1, 1)   # move to 0, 0; fill 1 right
+        for dx, dy in ((5160, 0), (0, 1060), (-5160, 0), (0, -1060)):
+            menulogo._edge(w, dx, dy)
+        w.ub(0, 6)
+        fill = b"\x01\x41" + struct.pack("<H", 386) + b"\x00"   # one bitmap fill, an empty matrix; no lines next
+        shape = struct.pack("<H", 387) + menulogo.rect_bits(0, 5160, 0, 1060).bytes() + fill + b"\x00" + w.bytes()
+
+        def holder(spid, char, x_px):  # a sprite placing `char` at x
+            p = menulogo.moved_place(place(char), round(x_px * 20))
+            return 39, struct.pack("<HH", spid, 1) + menulogo.tag_header(26, len(p)) + p + menulogo.tag_header(1, 0) \
+                + menulogo.tag_header(0, 0)
+        base = movie((1001, image), (2, shape), holder(388, 387, 0), holder(10, 388, 511), holder(11, 388, 16.5),
+                     (1, b""))
+        for scale, centred_x in ((1.0, 511 - 74), (258 / 406, 511)):
+            made, report = menulogo.small_logo(base, 406, scale)
+            self.assertEqual((report["centred"], report["left"]), ([10], [11]))
+            tags = {(c, struct.unpack_from("<H", b, 0)[0]): b for c, b, _l in
+                    menulogo.read_tags(made, menulogo.tags_start(made), len(made)) if c in (1001, 2, 39)}
+            self.assertEqual(struct.unpack_from("<HH", tags[1001, 386], 4), (406, 53))     # the picture's size
+            self.assertEqual(menulogo.read_shape(tags[2, 387], 2)["bounds"], [0, 8120, 0, 1060])   # widened
+            inner = lambda spid: menulogo.read_tags(tags[39, spid], 4, len(tags[39, spid]))[0][1]  # noqa: E731
+            self.assertAlmostEqual(menulogo._place_x(inner(388))[0], scale, places=4)       # drawn at the scale
+            self.assertAlmostEqual(menulogo._place_x(inner(10))[1], centred_x, places=1)    # centred screen: centred
+            self.assertAlmostEqual(menulogo._place_x(inner(11))[1], 16.5, places=1)         # the other: left edge kept
+        with self.assertRaisesRegex(menulogo.LogoError, "small logo"):
+            menulogo.small_logo(movie((26, place(12)), (1, b"")), 406)
+
+    def test_the_loading_popup_gets_our_picture_and_hides_its_globe_and_text(self):
+        def holder(spid, *places):
+            inner = b"".join(menulogo.tag_header(26, len(p)) + p for p in places)
+            return 39, struct.pack("<HH", spid, 1) + inner + menulogo.tag_header(1, 0) + menulogo.tag_header(0, 0)
+        backdrop = b"\x26" + struct.pack("<HH", 1, menulogo.BACKDROP) + b"\x00" + b"ie_FondNoir\x00"
+        globe = b"\x06" + struct.pack("<HH", 5, menulogo.GLOBE) + b"\x00"
+        text = b"\x06" + struct.pack("<HH", 3, menulogo.LOADING_TEXT) + b"\x00"
+        base = movie(holder(menulogo.WAIT, backdrop, text, globe), holder(77, backdrop), (1, b""))
+        made, report = menulogo.our_loading_popup(base)
+        self.assertEqual(report, {"hidden": 2, "backdrop": 1})
+        tags = menulogo.read_tags(made, menulogo.tags_start(made), len(made))
+        self.assertEqual([(c, struct.unpack_from("<H", b, 0)[0]) for c, b, _l in tags[:4]],
+                         [(1001, menulogo.BACKDROP_IMAGE), (2, menulogo.BACKDROP_IMAGE + 1),
+                          (39, menulogo.BACKDROP_IMAGE + 2), (39, menulogo.WAIT)])     # defined before it's used
+        self.assertIn(menulogo.backdrop_file().encode(), tags[0][1])
+        placed = [b for c, b, _l in menulogo.read_tags(tags[3][1], 4, len(tags[3][1])) if c == 26]
+        self.assertEqual(menulogo._placed(26, placed[0]), (menulogo.BACKDROP_IMAGE + 2, "ie_FondNoir"))  # same name
+        for p in placed[1:]:   # the text and the globe: see-through
+            self.assertTrue(p[0] & 0x08)
+            self.assertTrue(p.endswith(menulogo.cxform((1, 1, 1), 0.0)))
+        self.assertEqual(tags[4][1], holder(77, backdrop)[1])   # another popup with the same dark backdrop: as it was
+        code, body = menulogo.find_shape(made, menulogo.BACKDROP_IMAGE + 1)
+        self.assertEqual(menulogo.read_shape(body, code)["bounds"], [0, 1280 * 20, 0, 720 * 20])
+        with self.assertRaisesRegex(menulogo.LogoError, "loading popup"):
+            menulogo.our_loading_popup(movie((26, place(12)), (1, b"")))
+
     @unittest.skipIf(menulogo.unary_union is None, "the letters need shapely")
     def test_a_movie_without_its_logo_is_refused(self):
         with self.assertRaisesRegex(menulogo.LogoError, "fitted"):
@@ -116,6 +233,22 @@ def have(name: str) -> bool:
         return True
     except ImportError:
         return False
+
+
+@unittest.skipUnless(have("av") and have("numpy"), "the intro is made with PyAV")
+class TheIntroSound(unittest.TestCase):
+    def test_the_engine_start_ships_as_the_game_plays_it(self):
+        import av
+        import numpy as np
+        from importlib import resources
+        raw = (resources.files("rusemod") / "sounds" / signature.INTRO_SOUND).read_bytes()
+        with av.open(io.BytesIO(raw)) as f:
+            a = f.streams.audio[0]
+            self.assertEqual((a.codec_context.name, a.rate, a.channels), ("vorbis", 48000, 2))  # as the game's own
+            pcm = np.concatenate([fr.to_ndarray() for fr in f.decode(a)], axis=1)
+        self.assertAlmostEqual(pcm.shape[1] / 48000, 7.5, places=2)  # the intro's length
+        self.assertLess(np.abs(pcm).max(), 0.95)                       # its peaks held under full scale
+        self.assertAlmostEqual(20 * np.log10(np.sqrt((pcm ** 2).mean())), -20.0, delta=1.0)  # the game's level
 
 
 @unittest.skipUnless(have("numpy") and have("PIL"), "the gold pictures are made with numpy and Pillow")
@@ -207,6 +340,16 @@ class OnTheRealGame(unittest.TestCase):
                 self.skipTest("another version of the game's menu")
             new, report = menulogo.two_point_oh(menu)
             self.assertEqual(report["tinted"], 2)
+            self.assertEqual(report["selection frames"], 2)  # the tiles' frame and the buttons' and lists' frame
+            for sid in (403, 43):
+                code, body = menulogo.find_shape(new, sid)
+                stops = [tuple(body[a:a + 3]) for a in menulogo._gradient_stops(body, code)]
+                self.assertIn((255, 204, 102), stops)  # white is gold
+                self.assertNotIn((255, 255, 255), stops)
+            self.assertEqual(report["outline shapes"], 61)
+            for sid, want in ((412, (153, 122, 61)), (1100, (255, 204, 102)), (342, (153, 153, 153))):
+                code, body = menulogo.find_shape(new, sid)  # a label box, a highlighted button, a troop button
+                self.assertEqual(tuple(body[menulogo._line_colours(body, code)[0]:][:3]), want)
             self.assertEqual(gamefiles.check_kind("interface_outgame.gfx", new, menu), "Flash menu")
             area = menulogo.letters(new)
             self.assertAlmostEqual(area.bounds[2] - area.bounds[0], report["right"], delta=6)
@@ -215,6 +358,59 @@ class OnTheRealGame(unittest.TestCase):
             self.assertEqual(gamefiles.check_kind("ruse.tgv", picture, raw), "texture")
             alpha = pixels(picture)[3::4]
             self.assertGreater(sum(1 for a in alpha if a > 128), len(alpha) // 10)  # letters drawn
+            # the sub-menus' small logo: R.U.S.E. 2.0, its R.U.S.E. pixels the game's, as wide on screen as before
+            small = signature._in_pack(signature._read(opened, lambda name: zz_path, signature.ZZ, signature.OUTGAME),
+                                       signature.SMALL)
+            made = signature._new_menu(menu, small)
+            wide = signature.small_logo_picture(small, made)
+            self.assertEqual(gamefiles.check_kind("i182.tgv", wide, small), "texture")
+            self.assertEqual((Tgv(wide).width, Tgv(wide).height), (406, 53))
+            old, new = pixels(small), pixels(wide)
+            self.assertEqual(b"".join(new[y * 406 * 4:(y * 406 + 258) * 4] for y in range(53)), old)
+            self.assertTrue(signature._small_made(made))
+            self.assertEqual(gamefiles.check_kind("interface_outgame.gfx", made, menu), "Flash menu")
+            # the loading popup before the main menu: our picture behind it, its globe and text hidden
+            self.assertIsNone(signature._in_pack(signature._read(opened, lambda name: zz_path, signature.ZZ,
+                                                                 signature.OUTGAME), signature.BACKDROP))  # (new)
+            self.assertTrue(signature.BACKDROP.endswith(menulogo.backdrop_file().lower()[:-4] + ".tgv"))
+            popup, report = menulogo.our_loading_popup(menulogo.two_point_oh(menu)[0])
+            self.assertEqual(report, {"hidden": 2, "backdrop": 1})
+            self.assertEqual(gamefiles.check_kind("interface_outgame.gfx", popup, menu), "Flash menu")
+            self.assertEqual(signature._new_menu(menu, small, True), menulogo.our_loading_popup(made)[0])
+
+
+    def test_the_loading_screens_text_turns_gold_and_the_fingerprint_doesnt_change(self):
+        from rusemod import lock
+        from rusemod.build import find_pack
+        from rusemod.ndf import Ndf
+        where = find_pack(GAME, signature.GLAD)
+        with Edat.open(str(where)) as arc:
+            raw = signature._read(lambda path: arc, lambda name: where, signature.GLAD, signature.LOADING_SCREEN)
+        if signature._sha(raw) != signature.FITTED[signature.LOADING_SCREEN]:
+            self.skipTest("another version of the game's loading screen")
+        gold = signature.gold_loading_screen(raw)
+        self.assertEqual(gamefiles.check_kind("x.gladndfbin", gold, raw), "game data")
+        before, after = Ndf(raw), Ndf(gold)
+        changed = []
+        for i, (a, b) in enumerate(zip(before.objects, after.objects)):
+            for (pa, va), (pb, vb) in zip(a.props, b.props):
+                if va.payload != vb.payload:
+                    changed.append((i, before.prop_name(pa), tuple(va.payload), tuple(vb.payload)))
+        self.assertEqual(sorted(changed), [   # the tip's style (white) and the "LOADING" one (grey 200), nothing else;
+            (564, "ColorBottom", (255, 255, 255, 255), (102, 204, 255, 255)),   # stored blue, green, red, alpha
+            (564, "ColorUp", (255, 255, 255, 255), (102, 204, 255, 255)),
+            (568, "ColorBottom", (200, 200, 200, 255), (80, 160, 200, 255)),
+            (568, "ColorUp", (200, 200, 200, 255), (80, 160, 200, 255))])
+        path = f"{signature.GLAD}/{signature.LOADING_SCREEN}"
+        self.assertTrue(lock.is_gameplay(path))                                  # (a game data file counts)
+        self.assertEqual(lock.canonical(path, gold), lock.canonical(path, raw))  # but not its text colours
+        self.assertNotEqual(lock.canonical("other.gladndfbin", gold), lock.canonical("other.gladndfbin", raw))
+        self.assertTrue(lock.looks_only_change(path, gold, lambda: raw))         # left off the fingerprint's list
+        self.assertFalse(lock.looks_only_change("other.gladndfbin", gold, lambda: raw))
+        other = Ndf(gold)
+        size = next(v for pi, v in other.objects[564].props if other.prop_name(pi) == "FontSize")
+        size.payload = b"\x00\x00\x40\x42"                                       # the tip's size: not looks only
+        self.assertFalse(lock.looks_only_change(path, other.to_member(), lambda: raw))
 
 
 if __name__ == "__main__":

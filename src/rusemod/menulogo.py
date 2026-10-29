@@ -12,6 +12,12 @@ movie (interface_outgame.gfx), never shipped:
   (sprite 659 in sprite 660) moves left by half the added width, so the whole sits centred where R.U.S.E. was.
 - Gold: a colour change (Flash's multiply per channel, GOLD) on every placement of the big logo and of the
   sub-menus' small logo picture (shape 387); the menu's code and animation stay the game's.
+- The small logo made for its picture as R.U.S.E. 2.0 (small_logo; the picture is rusemod.signature's): the picture's
+  size, its shape widened, drawn at a scale; centred where a screen centres it, else at its left edge.
+- The loading popup before the main menu in our style (our_loading_popup): a new picture behind it, its globe and
+  text hidden.
+- The white frame round a hovered tile (every menu's tiles share it): its gradient's colours times GOLD, in place;
+  and every grey or white line in the menus (the boxes' and buttons' outlines, the thin lines) times GOLD, in place.
 
 `letters()` gives a shape's letters as an area (for drawing them as a picture: rusemod.signature)."""
 from __future__ import annotations
@@ -27,6 +33,7 @@ except ImportError:  # (the gold alone works without it; the letters need it: _n
 
 GOLD = (1.0, 0.80, 0.40)  # the owner's pick, 2026-10-22 ("I like the gold"): red, green, blue multiplied
 LOGOS = {659, 387}  # the big logo's sprite; the small logo's picture shape (placed inside sprite 388)
+SELECTION = "selection1"  # the hover frame's name on every menu tile (gold_selection)
 # the logo's letters, measured on shape 649, its own units (twips / 20)
 S_BOX = (478.9, 703.2)   # the S, x
 E_BOX = (722.2, 916.3)   # the E (and its full stop), x
@@ -164,17 +171,17 @@ def find_shape(data: bytes, shape_id: int) -> tuple[int, bytes]:
 
 
 # --- gold ---
-def cxform(mult) -> bytes:
-    """CXFORMWITHALPHA with multiply terms only (8.8 fixed point), alpha kept at 1."""
-    vals = [round(m * 256) for m in mult] + [256]
+def cxform(mult, alpha: float = 1.0) -> bytes:
+    """CXFORMWITHALPHA with multiply terms only (8.8 fixed point), alpha times `alpha` (kept at 1)."""
+    vals = [round(m * 256) for m in mult] + [round(alpha * 256)]
     nbits = max(v.bit_length() for v in vals) + 1  # signed
     bits = "0" + "1" + format(nbits, "04b") + "".join(format(v & ((1 << nbits) - 1), f"0{nbits}b") for v in vals)
     bits += "0" * (-len(bits) % 8)
     return bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
 
 
-def tinted_place(code: int, body: bytes, mult) -> bytes | None:
-    """A PlaceObject2/3 body with the colour change set, or None when it doesn't place one of LOGOS."""
+def tinted_place(code: int, body: bytes, mult, ids=LOGOS, alpha: float = 1.0) -> bytes | None:
+    """A PlaceObject2/3 body with the colour change set, or None when it doesn't place one of `ids`."""
     flags = body[0]
     q = 1
     if code == 70:
@@ -186,7 +193,7 @@ def tinted_place(code: int, body: bytes, mult) -> bytes | None:
     if not flags & 0x02:
         return None
     cid = struct.unpack_from("<H", body, q)[0]
-    if cid not in LOGOS:
+    if cid not in ids:
         return None
     q += 2
     if flags & 0x08:
@@ -195,7 +202,7 @@ def tinted_place(code: int, body: bytes, mult) -> bytes | None:
         r = BitReader(body, q)
         skip_matrix(r)
         q = r.end()
-    return bytes([flags | 0x08]) + body[1:q] + cxform(mult) + body[q:]
+    return bytes([flags | 0x08]) + body[1:q] + cxform(mult, alpha) + body[q:]
 
 
 def tint(data: bytes, mult=GOLD) -> tuple[bytes, int]:
@@ -532,8 +539,9 @@ def widen_rect_shape(body: bytes, code: int, grow: float) -> bytes:
     return head + body[sh["after_rect"]:sh["records_byte"]] + w.bytes()
 
 
-def moved_place(body: bytes, dx_twips: int) -> bytes:
-    """A PlaceObject2 placing a character with a matrix, the matrix moved `dx_twips` along x."""
+def moved_place(body: bytes, dx_twips: int, dy_twips: int = 0, scale: float | None = None) -> bytes:
+    """A PlaceObject2 placing a character with a matrix, the matrix moved `dx_twips` along x (and `dy_twips` down),
+    and with `scale` its size times that."""
     q = 5  # flags, depth, character
     r = BitReader(body, q)
     sc = rot = None
@@ -546,6 +554,12 @@ def moved_place(body: bytes, dx_twips: int) -> bytes:
     k = r.ub(5)
     tx, ty = r.sb(k), r.sb(k)
     end = r.end()
+    if scale is not None:
+        if rot is not None:
+            raise LogoError("a turned placement can't be resized here")
+        sx, sy = sc or (65536, 65536)
+        sc = (round(sx * scale), round(sy * scale))
+    ty += dy_twips
     w = BitWriter()
     for part in (sc, rot):
         if part is None:
@@ -562,6 +576,129 @@ def moved_place(body: bytes, dx_twips: int) -> bytes:
     w.sb(tx, n)
     w.sb(ty, n)
     return body[:q] + w.bytes() + body[end:]
+
+
+SMALL_SHAPE, SMALL_SPRITE, SMALL_IMAGE = 387, 388, 386   # the small logo: its shape, the sprite placing it, its picture
+SMALL_W, SMALL_H = 258.0, 53.0   # its picture's size, which the shape is drawn at (1 pixel a unit)
+SCREEN_MIDDLE = 640.0            # a screen whose small logo is centred here keeps it centred
+
+
+def small_logo(data: bytes, width: int, scale: float = 1.0) -> tuple[bytes, dict]:
+    """The movie with the sub-menus' small logo made for its wider picture (rusemod.signature.small_logo_picture,
+    `width` pixels): its picture's size, its shape widened to the right, drawn at `scale` of its size (top kept);
+    a screen that shows it centred keeps it centred, the others keep its left edge. (movie, what was done)."""
+    grow = width - SMALL_W
+    start = tags_start(data)
+    out = bytearray(data[:start])
+    report = {"picture": 0, "shape": 0, "sized": 0, "centred": [], "left": []}
+    for code, body, long_form in read_tags(data, start, len(data)):
+        if code == 1001 and struct.unpack_from("<H", body, 0)[0] == SMALL_IMAGE:   # Scaleform's outside picture
+            body = body[:4] + struct.pack("<H", width) + body[6:]
+            report["picture"] += 1
+        elif code in (2, 22, 32, 83) and struct.unpack_from("<H", body, 0)[0] == SMALL_SHAPE:
+            body = widen_rect_shape(body, code, grow)
+            report["shape"] += 1
+        elif code == 39:
+            spid = struct.unpack_from("<H", body, 0)[0]
+            inner = bytearray(body[:4])
+            for c2, b2, long2 in read_tags(body, 4, len(body)):
+                if c2 == 26 and b2[0] & 0x06 == 0x06 and not b2[0] & 0x01:
+                    cid = struct.unpack_from("<H", b2, 3)[0]
+                    if spid == SMALL_SPRITE and cid == SMALL_SHAPE and scale != 1.0:
+                        b2 = moved_place(b2, 0, scale=scale)
+                        report["sized"] += 1
+                    elif cid == SMALL_SPRITE:
+                        sx, tx = _place_x(b2)
+                        if abs(tx + SMALL_W * sx / 2 - SCREEN_MIDDLE) < 2:
+                            b2 = moved_place(b2, round((SMALL_W - width * scale) * sx / 2 * 20))
+                            report["centred"].append(spid)
+                        else:
+                            report["left"].append(spid)
+                inner += tag_header(c2, len(b2), long2) + b2
+            body = bytes(inner)
+        out += tag_header(code, len(body), long_form) + body
+    if report["picture"] != 1 or report["shape"] != 1 or (scale != 1.0 and report["sized"] != 1):
+        raise LogoError("the menu movie's small logo isn't the one the title was fitted to")
+    struct.pack_into("<I", out, 4, len(out))
+    return bytes(out), report
+
+
+def _place_x(body: bytes) -> tuple[float, float]:
+    """(its scale across, its x in pixels) of a PlaceObject2 with a matrix."""
+    r = BitReader(body, 5)
+    sx = 1.0
+    if r.ub(1):
+        k = r.ub(5)
+        sx = r.sb(k) / 65536
+        r.sb(k)
+    if r.ub(1):
+        k = r.ub(5)
+        r.sb(k), r.sb(k)
+    k = r.ub(5)
+    return sx, r.sb(k) / 20
+
+
+WAIT = 1925                       # the menus' loading popup ("EcranWait": before the main menu, "Connecting...")
+GLOBE, LOADING_TEXT = 1923, 1524  # in it: the spinning globe (ie_earth_anim), the "Loading..." text (ie_loading_anim)
+BACKDROP = 1034                   # the dark backdrop many popups share (ie_FondNoir; the screen's size at run time)
+BACKDROP_IMAGE = 2423             # the loading popup's own backdrop: a new picture (the next free id), its shape, its clip
+BACKDROP_SIZE = (1280, 720)       # (the movie's stage)
+
+
+def backdrop_file(image_id: int = BACKDROP_IMAGE) -> str:
+    """The picture's name as the movie names its pictures (its id in hex; in the menus' pack as .tgv, lower case)."""
+    return f"Interface_OutGame_I{image_id:X}.tga"
+
+
+def our_loading_popup(data: bytes) -> tuple[bytes, dict]:
+    """The menus' loading popup (the one that shows at the end of the intro, just before the main menu) in our style
+    (the owner, 2026-10-22: "I don't want the ... world logo randomly in the middle of the screen and the loading"):
+    its dark backdrop swapped for a clip showing a new picture (backdrop_file(), BACKDROP_SIZE: the start-up screen's
+    still, rusemod.signature), placed by the same name so the menu stretches it over the screen as it did the dark
+    one; its spinning globe and its text see-through (left in, so the menu's code still finds them). (movie, what was
+    done); LogoError when the popup isn't the one it was made for."""
+    image, shape, clip = BACKDROP_IMAGE, BACKDROP_IMAGE + 1, BACKDROP_IMAGE + 2
+    w, h = BACKDROP_SIZE
+    name = backdrop_file(image).encode()
+    picture = struct.pack("<HHHH", image, 13, w, h) + b"\x00" + bytes([len(name)]) + name   # as the movie's own
+    fill = b"\x01\x41" + struct.pack("<H", image)       # one smoothed picture fill, at 20 twips a pixel
+    m = BitWriter()
+    m.ub(1, 1), m.ub(sbits(20 << 16), 5), m.sb(20 << 16, sbits(20 << 16)), m.sb(20 << 16, sbits(20 << 16))
+    m.ub(0, 1), m.ub(0, 5)                             # not turned, not moved
+    r = BitWriter()
+    r.ub(1, 4), r.ub(0, 4)                             # 1 fill bit, 0 line bits
+    r.ub(0, 1), r.ub(0b00101, 5), r.ub(1, 5), r.sb(0, 1), r.sb(0, 1), r.ub(1, 1)   # move to 0, 0; the fill inside
+    for dx, dy in ((w * 20, 0), (0, h * 20), (-w * 20, 0), (0, -h * 20)):
+        _edge(r, dx, dy)
+    r.ub(0, 6)
+    rect = struct.pack("<H", shape) + rect_bits(0, w * 20, 0, h * 20).bytes() + fill + m.bytes() + b"\x00" + r.bytes()
+    put = b"\x06" + struct.pack("<HH", 1, shape) + b"\x00"
+    holder = struct.pack("<HH", clip, 1) + tag_header(26, len(put)) + put + tag_header(1, 0) + tag_header(0, 0)
+    start = tags_start(data)
+    out = bytearray(data[:start])
+    report = {"hidden": 0, "backdrop": 0}
+    for code, body, long_form in read_tags(data, start, len(data)):
+        if code in (2, 22, 32, 83, 39, 1001) and struct.unpack_from("<H", body, 0)[0] in (image, shape, clip):
+            raise LogoError("the menu movie already has the loading popup's backdrop ids")
+        if code == 39 and struct.unpack_from("<H", body, 0)[0] == WAIT:
+            for c2, b2 in ((1001, picture), (2, rect), (39, holder)):   # the new picture, shape and clip just before
+                out += tag_header(c2, len(b2)) + b2
+            inner = bytearray(body[:4])
+            for c2, b2, long2 in read_tags(body, 4, len(body)):
+                if c2 in (26, 70):
+                    t = tinted_place(c2, b2, (1, 1, 1), {GLOBE, LOADING_TEXT}, alpha=0.0)
+                    if t is not None:
+                        b2, report["hidden"] = t, report["hidden"] + 1
+                    elif c2 == 26 and b2[0] & 0x02 and struct.unpack_from("<H", b2, 3)[0] == BACKDROP:
+                        b2 = b2[:3] + struct.pack("<H", clip) + b2[5:]
+                        report["backdrop"] += 1
+                inner += tag_header(c2, len(b2), long2) + b2
+            body = bytes(inner)
+        out += tag_header(code, len(body), long_form) + body
+    if report["hidden"] != 2 or report["backdrop"] != 1:
+        raise LogoError("the menu movie's loading popup isn't the one the title was made for")
+    struct.pack_into("<I", out, 4, len(out))
+    return bytes(out), report
 
 
 def two_point_oh(data: bytes, mult=GOLD) -> tuple[bytes, dict]:
@@ -601,4 +738,242 @@ def two_point_oh(data: bytes, mult=GOLD) -> tuple[bytes, dict]:
         raise LogoError(f"the menu movie's logo isn't the one the title was fitted to (no {missing})")
     struct.pack_into("<I", out, 4, len(out))
     gold, report["tinted"] = tint(bytes(out), mult)
+    gold, report["selection frames"] = gold_selection(gold, mult)
+    gold, report["outline shapes"] = gold_outlines(gold, mult)
     return gold, report
+
+
+# --- the hover frame ---
+def _placed(code: int, body: bytes) -> tuple[int | None, str | None]:
+    """(what a PlaceObject2/3 places, its instance name)."""
+    flags = body[0]
+    q = 1
+    flags2 = 0
+    if code == 70:
+        flags2 = body[q]
+        q += 1
+    q += 2  # depth
+    if code == 70 and flags2 & 0x08:
+        q = body.index(0, q) + 1  # a class name
+    cid = None
+    if flags & 0x02:
+        cid = struct.unpack_from("<H", body, q)[0]
+        q += 2
+    if flags & 0x04:
+        r = BitReader(body, q)
+        skip_matrix(r)
+        q = r.end()
+    if flags & 0x08:  # a colour change (with alpha)
+        r = BitReader(body, q)
+        has_add, has_mult, n = r.ub(1), r.ub(1), r.ub(4)
+        r.ub(n * 4 * (has_add + has_mult))
+        q = r.end()
+    if flags & 0x10:
+        q += 2  # ratio
+    name = None
+    if flags & 0x20:
+        e = body.index(0, q)
+        name = body[q:e].decode("latin-1")
+    return cid, name
+
+
+def _gradient_stops(body: bytes, code: int) -> list[int]:
+    """Where each gradient stop's colour starts in a DefineShape's body (its first fill styles)."""
+    v = {2: 1, 22: 2, 32: 3, 83: 4}[code]
+    r = BitReader(body, 2)
+    n = r.ub(5)
+    [r.sb(n) for _ in range(4)]
+    p = r.end()
+    if v == 4:
+        r = BitReader(body, p)
+        n = r.ub(5)
+        [r.sb(n) for _ in range(4)]
+        p = r.end() + 1
+    count = body[p]
+    p += 1
+    if count == 0xFF:
+        count = struct.unpack_from("<H", body, p)[0]
+        p += 2
+    size = 4 if v >= 3 else 3
+    stops = []
+    for _ in range(count):
+        kind = body[p]
+        p += 1
+        if kind == 0x00:
+            p += size
+        elif kind in (0x10, 0x12, 0x13):
+            r = BitReader(body, p)
+            skip_matrix(r)
+            p = r.end()
+            g = body[p]
+            p += 1
+            for _ in range(g & 0x0F):
+                stops.append(p + 1)  # (after the stop's ratio)
+                p += 1 + size
+            if kind == 0x13:
+                p += 2
+        elif kind in (0x40, 0x41, 0x42, 0x43):
+            r = BitReader(body, p + 2)
+            skip_matrix(r)
+            p = r.end()
+        else:
+            raise LogoError(f"a fill of kind {kind:#x}")
+    return stops
+
+
+def _fill_colours(body: bytes, p: int, v: int) -> tuple[list[int], int]:
+    """One fill style at p: where its colours start (a solid's, or each gradient stop's), and the byte after it."""
+    size = 4 if v >= 3 else 3
+    kind = body[p]
+    p += 1
+    if kind == 0x00:
+        return [p], p + size
+    if kind in (0x10, 0x12, 0x13):
+        r = BitReader(body, p)
+        skip_matrix(r)
+        p = r.end()
+        g = body[p]
+        p += 1
+        at = []
+        for _ in range(g & 0x0F):
+            at.append(p + 1)
+            p += 1 + size
+        return at, p + (2 if kind == 0x13 else 0)
+    if kind in (0x40, 0x41, 0x42, 0x43):
+        r = BitReader(body, p + 2)
+        skip_matrix(r)
+        return [], r.end()
+    raise LogoError(f"a fill of kind {kind:#x}")
+
+
+def _line_colours(body: bytes, code: int) -> list[int]:
+    """Where each line style's colour starts in a DefineShape's body (its first styles; a DefineShape4's line can be a
+    fill: each of its colours)."""
+    v = {2: 1, 22: 2, 32: 3, 83: 4}[code]
+    r = BitReader(body, 2)
+    n = r.ub(5)
+    [r.sb(n) for _ in range(4)]
+    p = r.end()
+    if v == 4:
+        r = BitReader(body, p)
+        n = r.ub(5)
+        [r.sb(n) for _ in range(4)]
+        p = r.end() + 1
+    p = _skip_fills(body, p, v)
+    count = body[p]
+    p += 1
+    if count == 0xFF:
+        count = struct.unpack_from("<H", body, p)[0]
+        p += 2
+    at = []
+    for _ in range(count):
+        p += 2  # width
+        if v < 4:
+            at.append(p)
+            p += 4 if v == 3 else 3
+            continue
+        first = body[p]  # StartCapStyle 2, JoinStyle 2, HasFillFlag, NoHScale, NoVScale, PixelHinting
+        p += 2
+        if (first >> 4) & 0x03 == 2:  # a miter join: its limit
+            p += 2
+        if first & 0x08:
+            where, p = _fill_colours(body, p, v)
+            at += where
+        else:
+            at.append(p)
+            p += 4
+    return at
+
+
+def _grey(rgb) -> bool:
+    """Grey or white (the menus' outlines): the three within 10 of each other, not near black."""
+    return max(rgb) - min(rgb) <= 10 and max(rgb) >= 40
+
+
+# what keeps its own colours among the lines (the owner, 2026-10-22: "Don't change the actual in-game, like, troop
+# selection buttons. I just want the menu aesthetic to be gold"): the unit-type buttons' frames and the gamepad
+# buttons' pictures, by the names the menus place them under
+NOT_MENU = {"ie_Avion", "ie_Batiment", "ie_Infanterie", "ie_Tank", "ie_TextureArmor", "dsp_BoutonPad", "ie_LB",
+            "ie_RB", "ie_LT", "ie_RT", "ie_LStick", "ie_RStick"}
+
+
+def _not_menu_shapes(top) -> set:
+    """The shapes placed (directly, or inside what is placed) under one of NOT_MENU's names."""
+    inside, named = {}, set()
+    for code, body, _long in top:
+        if code == 39:
+            spid = struct.unpack_from("<H", body, 0)[0]
+            for c2, b2, _l2 in read_tags(body, 4, len(body)):
+                if c2 in (26, 70):
+                    cid, name = _placed(c2, b2)
+                    if cid is not None:
+                        inside.setdefault(spid, set()).add(cid)
+                        if name in NOT_MENU:
+                            named.add(cid)
+    out, todo = set(), list(named)
+    while todo:
+        cid = todo.pop()
+        if cid in out:
+            continue
+        out.add(cid)
+        todo += inside.get(cid, ())
+    return out
+
+
+def gold_outlines(data: bytes, mult=GOLD) -> tuple[bytes, int]:
+    """Every grey or white line in the menus in gold (the owner, 2026-10-22: "all of the just white outline should be
+    gold", "these little tiny lines in the screens should also be gold", the tiles' label boxes, the lobbies' boxes,
+    Launch and Back "when you're passively there"): each grey or white line colour times `mult`, so their shading
+    stays (a normal grey 153 a dim gold, a highlighted white the full gold); in place (no lengths change). Fills are
+    left alone (the logo's own letters and chrome, click zones, icons are fills); so are the troop and gamepad buttons
+    (NOT_MENU). (movie, how many shapes)."""
+    start = tags_start(data)
+    top = read_tags(data, start, len(data))
+    skip = _not_menu_shapes(top)
+    out = bytearray(data)
+    pos, changed = start, 0
+    for code, body, long_form in top:
+        head = 6 if long_form else 2
+        if code in (2, 22, 32, 83) and struct.unpack_from("<H", body, 0)[0] not in skip:
+            hit = False
+            for at in _line_colours(body, code):
+                if _grey(body[at:at + 3]):
+                    for c in range(3):
+                        out[pos + head + at + c] = min(255, round(body[at + c] * mult[c]))
+                    hit = True
+            changed += hit
+        pos += head + len(body)
+    return bytes(out), changed
+
+
+def gold_selection(data: bytes, mult=GOLD) -> tuple[bytes, int]:
+    """The white frame round a hovered menu tile in gold (the owner, 2026-10-22: "When you hover over a tutorial
+    campaign battles, there's a white outline ... I would like to make that gold ... matching it with the same gold").
+    Every tile (the main menu's seven, the campaign's, the nations', Extra's, My R.U.S.E.'s, multiplayer's) places
+    the same sprite named SELECTION, a black-to-white gradient frame; its gradients' colours are multiplied by `mult`,
+    in place (no lengths change). (movie, how many shapes); 0 when the movie has no such frame."""
+    start = tags_start(data)
+    top = read_tags(data, start, len(data))
+    frames, inside = set(), {}
+    for code, body, _long in top:
+        if code == 39:
+            spid = struct.unpack_from("<H", body, 0)[0]
+            for c2, b2, _l2 in read_tags(body, 4, len(body)):
+                if c2 in (26, 70):
+                    cid, name = _placed(c2, b2)
+                    if name == SELECTION and cid is not None:
+                        frames.add(cid)
+                    if cid is not None:
+                        inside.setdefault(spid, set()).add(cid)
+    shapes = set().union(*(inside.get(s, set()) for s in frames)) if frames else set()
+    out = bytearray(data)
+    pos, changed = start, 0
+    for code, body, long_form in top:
+        head = 6 if long_form else 2
+        if code in (2, 22, 32, 83) and struct.unpack_from("<H", body, 0)[0] in shapes:
+            for at in _gradient_stops(body, code):
+                for c in range(3):
+                    out[pos + head + at + c] = min(255, round(body[at + c] * mult[c]))
+            changed += 1
+        pos += head + len(body)
+    return bytes(out), changed

@@ -43,12 +43,41 @@ def is_gameplay(path: str) -> bool:
 
 def canonical(path: str, data: bytes) -> bytes:
     """NDF files are compared uncompressed, with the header's "compressed" flag cleared, so compression can't change
-    the fingerprint."""
+    the fingerprint. In the game's loading screen's file the text styles' colours are left out (_LOOKS_ONLY)."""
     if game_path(path).endswith(_NDF_EXT) and data[:4] == b"EUG0":
         logical = bytearray(decode(data))
         struct.pack_into("<I", logical, 12, struct.unpack_from("<I", logical, 12)[0] & ~0x80)
+        if game_path(path).endswith(_LOOKS_ONLY):
+            logical = bytearray(_without_text_colours(bytes(logical)))
         return bytes(logical)
     return data
+
+
+# the game's loading screen ("LOADING", the tip): its text colours are looks only, made gold by R.U.S.E. 2.0's title
+# (rusemod.signature), which never changes the fingerprint: players with the title on and off share one
+_LOOKS_ONLY = "genglad/nonpatchable/system3d/visualdebuginfohandler.cpp.gladndfbin"
+
+
+def looks_only_change(path: str, new: bytes, shipped) -> bool:
+    """Whether a changed file differs from the game's own (`shipped()`, read only when needed) only in what the
+    fingerprint leaves out (_LOOKS_ONLY's text colours): then it's left out of the fingerprint's list like an
+    unchanged one."""
+    if not game_path(path).endswith(_LOOKS_ONLY):
+        return False
+    old = shipped()
+    return old is not None and canonical(path, new) == canonical(path, old)
+
+
+def _without_text_colours(logical: bytes) -> bytes:
+    """The NDF with every text style's colours (TTextStyle ColorUp / ColorBottom / ColorStroke) zeroed."""
+    from .ndf import Ndf
+    ndf = Ndf.from_logical(logical)
+    for o in ndf.objects:
+        if ndf.classes[o.cls] == "TTextStyle":
+            for pi, v in o.props:
+                if ndf.prop_name(pi) in ("ColorUp", "ColorBottom", "ColorStroke") and v.tc == 0x0D:
+                    v.payload = bytes(4)
+    return ndf.to_logical()
 
 
 # --- fingerprint (MOD_FORMAT §12) ---
