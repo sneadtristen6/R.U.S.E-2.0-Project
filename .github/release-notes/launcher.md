@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**Next version (not released yet; its number and the other languages are written at release):**
+
+- **Fixed, reported by a player:** on some PCs no mod would install: "this PC doesn't trust the site's security certificate (unable to get issuer certificate)". Windows on those PCs hasn't got the certificate GitHub's downloads are checked against and can't fetch it. The Launcher now also tries with the list of certificates Firefox uses, which it carries. Until then, a mod downloaded in your browser from the mod list installs with **Add a mod file…**.
+
 **0.4.8.8:** it plays mods made with Studio 0.9.8.8, and your modded game says R.U.S.E. 2.0 in gold.
 
 - **Mods made with Studio 0.9.8.8 play:** buildings of their own (the second and third a nation need a small game patch, downloaded once and applied only to your modded copy, never to the game in your Steam folder), new buildings' own looks and props, sounds and animations changed with RUSE Decoy, the computer players' values and the game rules, and old bridge crossings closed.

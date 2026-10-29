@@ -1,5 +1,7 @@
 """Downloads on a PC whose Windows hasn't fetched GitHub's root certificate yet (rusemod.net): a player on Discord,
-2026-10-10, could open the Launcher but no mod would download ("unable to get local issuer certificate")."""
+2026-10-10, could open the Launcher but no mod would download ("unable to get local issuer certificate"); a player on
+Reddit, 2026-10-29, whose Windows couldn't fetch it either ("unable to get issuer certificate"): Mozilla's root list
+is the third try."""
 import ssl
 import sys
 import unittest
@@ -25,9 +27,11 @@ class Fresh(unittest.TestCase):
         net._asked.clear()
         net._roots.clear()
         net._context = None
+        net._mozilla = None
         self.addCleanup(net._asked.clear)
         self.addCleanup(net._roots.clear)
         self.addCleanup(setattr, net, "_context", None)
+        self.addCleanup(setattr, net, "_mozilla", None)
 
 
 class SecondTry(Fresh):
@@ -46,11 +50,66 @@ class SecondTry(Fresh):
 
     def test_no_second_try_when_windows_doesnt_trust_it_either(self):
         with mock.patch("urllib.request.urlopen", side_effect=cert_error(20)) as opened, \
-                mock.patch.object(net, "_ask_windows", return_value=False):
+                mock.patch.object(net, "_ask_windows", return_value=False), \
+                mock.patch.object(net, "_add_mozilla", return_value=False):
             with self.assertRaises(urllib.error.URLError) as caught:
                 net.urlopen("https://github.com/x", 10)
         self.assertEqual(caught.exception.reason.verify_code, 20)
         self.assertEqual(opened.call_count, 1)
+
+    def test_mozilla_s_list_when_windows_can_t_fetch_the_root(self):
+        # the Reddit player's PC: Windows had the certificate under GitHub's root (ISRG Root X1) but not the root, and
+        # couldn't fetch it: "unable to get issuer certificate"
+        def mozilla(host):
+            net._context = ssl.create_default_context()  # what _add_mozilla leaves
+            return True
+        answers = [cert_error(2, "unable to get issuer certificate"), "the mod"]
+        with mock.patch("urllib.request.urlopen", side_effect=answers) as opened, \
+                mock.patch.object(net, "_ask_windows", return_value=False) as windows, \
+                mock.patch.object(net, "_add_mozilla", side_effect=mozilla) as added:
+            self.assertEqual(net.urlopen("https://release-assets.githubusercontent.com/x.rusemod", 10), "the mod")
+        windows.assert_called_once_with("release-assets.githubusercontent.com")  # Windows first
+        added.assert_called_once_with("release-assets.githubusercontent.com")
+        self.assertEqual(opened.call_count, 2)
+        self.assertIs(opened.call_args_list[1].kwargs["context"], net._context)
+
+    def test_mozilla_s_list_after_windows_roots_still_lacked_one(self):
+        def widened(host):
+            net._context = ssl.create_default_context()
+            return True
+        answers = [cert_error(20), cert_error(2, "unable to get issuer certificate"), "the mod"]
+        with mock.patch("urllib.request.urlopen", side_effect=answers) as opened, \
+                mock.patch.object(net, "_ask_windows", side_effect=widened), \
+                mock.patch.object(net, "_add_mozilla", side_effect=widened) as added:
+            self.assertEqual(net.urlopen("https://github.com/x", 10), "the mod")
+        added.assert_called_once()
+        self.assertEqual(opened.call_count, 3)
+
+    def test_the_last_failure_is_what_the_player_reads(self):
+        def widened(host):
+            net._context = ssl.create_default_context()
+            return True
+        answers = [cert_error(20), cert_error(2, "unable to get issuer certificate"), cert_error(19, "self-signed")]
+        with mock.patch("urllib.request.urlopen", side_effect=answers) as opened, \
+                mock.patch.object(net, "_ask_windows", side_effect=widened), \
+                mock.patch.object(net, "_add_mozilla", side_effect=widened):
+            with self.assertRaises(urllib.error.URLError) as caught:
+                net.urlopen("https://github.com/x", 10)
+        self.assertEqual((caught.exception.reason.verify_code, opened.call_count), (19, 3))
+
+    def test_another_failure_on_a_later_try_isnt_tried_again(self):
+        def widened(host):
+            net._context = ssl.create_default_context()
+            return True
+        answers = [cert_error(20), urllib.error.URLError("timed out")]
+        with mock.patch("urllib.request.urlopen", side_effect=answers) as opened, \
+                mock.patch.object(net, "_ask_windows", side_effect=widened), \
+                mock.patch.object(net, "_add_mozilla") as added:
+            with self.assertRaises(urllib.error.URLError) as caught:
+                net.urlopen("https://github.com/x", 10)
+        self.assertEqual(str(caught.exception.reason), "timed out")
+        added.assert_not_called()
+        self.assertEqual(opened.call_count, 2)
 
     def test_other_failures_are_not_tried_again(self):
         for exc in (cert_error(10, "certificate has expired"), urllib.error.URLError("timed out"),
@@ -64,6 +123,7 @@ class SecondTry(Fresh):
 
     def test_which_failures_lack_a_root(self):
         self.assertTrue(net.missing_root(cert_error(20)))
+        self.assertTrue(net.missing_root(cert_error(2, "unable to get issuer certificate")))
         self.assertTrue(net.missing_root(cert_error(19, "self-signed certificate in certificate chain")))
         self.assertFalse(net.missing_root(cert_error(10, "certificate has expired")))
         self.assertFalse(net.missing_root(urllib.error.URLError("timed out")))
@@ -72,6 +132,41 @@ class SecondTry(Fresh):
         why = mod_index.plain(cert_error(20))
         self.assertIn("doesn't trust the site's security certificate (unable to get local issuer certificate)", why)
         self.assertIn("antivirus", why)
+
+
+class MozillaList(Fresh):
+    PEM = ssl.DER_cert_to_PEM_cert(windows_store("ROOT")[0]) if sys.platform == "win32" else None
+
+    def test_added_once_per_run_beside_windows_roots(self):
+        if self.PEM is None:
+            self.skipTest("a root to stand in for Mozilla's list comes from Windows here")
+        net._roots.append(windows_store("ROOT")[-1])  # one Windows trusted when asked: kept
+        self.assertTrue(net._add_mozilla("github.com", roots=self.PEM))
+        self.assertIsInstance(net._context, ssl.SSLContext)
+        self.assertEqual(net._mozilla, self.PEM)
+        self.assertFalse(net._add_mozilla("github.com", roots=self.PEM))  # once per run
+        net._asked.discard("example.org")
+        # a later root from Windows keeps Mozilla's list in the roots
+        with mock.patch.object(net, "server_chain", return_value=[b"x"]), \
+                mock.patch.object(net, "windows_roots", return_value=[windows_store("ROOT")[1]]):
+            self.assertTrue(net._ask_windows("example.org"))
+        self.assertEqual(net._mozilla, self.PEM)
+
+    def test_without_certifi_it_goes_on_without_it(self):
+        with mock.patch.object(net, "mozilla_roots", side_effect=ImportError("No module named 'certifi'")):
+            self.assertFalse(net._add_mozilla("github.com"))
+        self.assertIsNone(net._context)
+        self.assertEqual(net._mozilla, "")  # not asked again in this run
+        self.assertFalse(net._add_mozilla("github.com"))
+
+    def test_the_apps_list_holds_github_s_roots(self):
+        try:
+            roots = net.mozilla_roots()
+        except ImportError:
+            self.skipTest("certifi isn't installed here (the apps carry it: installers/requirements.txt)")
+        for name in ("ISRG Root X1", "USERTrust ECC Certification Authority"):  # GitHub's download sites, 2026-10-29
+            self.assertIn(f'# Label: "{name}"', roots)
+        self.assertRegex(net.mozilla_check(), r"^\d{3} roots, \d{3} read$")
 
 
 @unittest.skipUnless(sys.platform == "win32", "Windows' own certificate check")

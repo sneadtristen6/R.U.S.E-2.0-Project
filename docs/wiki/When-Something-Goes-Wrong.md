@@ -50,15 +50,18 @@ help.
 
 The apps are new to Windows' reputation check. Click **More info**, then **Run anyway**.
 
-## "certificate verify failed: unable to get local issuer certificate"
+## "certificate verify failed: unable to get local issuer certificate" (or "unable to get issuer certificate")
 
 No mod downloads, or the update doesn't. Windows hadn't fetched the certificate GitHub is checked against yet; since
-Launcher 0.4.8.4 and Studio 0.9.8.4 the apps ask Windows for it and try again. With an older app the update can't
-download either: get the installer from the
+Launcher 0.4.8.4 and Studio 0.9.8.4 the apps ask Windows for it and try again. Since Launcher 0.4.8.9 and Studio
+0.9.8.9 they also try with the list of certificates Firefox uses, which they carry, for a PC whose Windows can't fetch
+it (its certificate updates turned off or blocked: "unable to get issuer certificate", or "the PC doesn't trust the
+site's security certificate"). With an older app the update can't download either: get the installer from the
 [releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases) in your browser and run it (it installs
-over the old one, as the update does). If a new app still says it: an antivirus that scans secure (HTTPS)
-connections, a school or work network, or a wrong date on the PC can cause it; tell us in
-[Discussions > Help](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
+over the old one, as the update does). A mod can always be downloaded in your browser from the
+[mod list](https://github.com/sneadtristen6/Ruse-Mods) and added with **Add a mod file…** in the Launcher. If a new
+app still says it: an antivirus that scans secure (HTTPS) connections, a school or work network, or a wrong date on
+the PC can cause it; tell us in [Discussions > Help](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 
 ## "[WinError 5] Access is denied" when testing or playing
 

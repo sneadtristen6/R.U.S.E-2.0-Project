@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**Next version (not released yet; its number and the other languages are written at release):**
+
+- **Fixed, reported by a player:** on a PC whose Windows hasn't got the certificate GitHub's downloads are checked against and can't fetch it, downloads failed ("unable to get issuer certificate"). The Studio's updates and the game patches it downloads now also try with the list of certificates Firefox uses, which it carries.
+
 **0.9.8.8:** a start screen and a buildings board, buildings of your own, RUSE Decoy for sounds and animations, every game rule in one tab, and R.U.S.E. 2.0 in gold.
 
 - **A start screen:** carry on with your mod, start a new one, or skip it (or always skip it). A new mod's steps: its name, whether each nation keeps its units or starts empty, research (the game's, none, or your own), the buildings board, then what the mod will change. Seen in the game.

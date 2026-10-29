@@ -82,6 +82,7 @@ def nuitka_command(app: str, icon: Path, out: Path) -> list[str]:
             "--assume-yes-for-downloads", f"--output-dir={out}", "--output-folder-name=app",
             f"--output-filename={exe_name(app)}", f"--include-package-data={a['package']}",
             "--include-package-data=rusemod", "--include-package-data=ruse_mod_engine",
+            "--include-package-data=certifi",  # its cacert.pem: Mozilla's root list (rusemod.net's third try)
             f"--windows-icon-from-ico={icon}", "--company-name=RUSE Mod Platform",
             f"--product-name={a['name']}", f"--file-version={v}", f"--product-version={v}",
             f"--file-description={a['description']}", "--copyright=GPL-3.0 (C) 2026 sneadtristen6 and the RUSE Mod Platform contributors", f"--report={out / 'report.xml'}",
