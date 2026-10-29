@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from rusemod import schema, startlog
+from rusemod import net, schema, startlog
 from rusemod.gamefont import copy_fonts
 from rusemod.webui import open_window, self_test
 
@@ -106,6 +106,7 @@ def main(argv=None) -> int:
             ("the game's names", lambda: f"ProductionPrice in Chinese is {schema.label('ProductionPrice', 'sc')!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
+            ("Mozilla's root list (downloads on a PC whose Windows lacks a site's root)", net.mozilla_check),
             ("Blender's scripts and the blank maps' pictures beside the code", _beside_the_code),
             ("the game's scripts shown as Python (the AI tab)", _scripts),
             ("a changed mission script saved with the game's own Python", _script_saves),

@@ -221,7 +221,7 @@ def plain(exc: BaseException, timeout: float = TIMEOUT) -> str:
     if isinstance(exc, TimeoutError) or "timed out" in str(exc).lower():
         return f"no answer in {timeout:g} seconds"
     reason = getattr(exc, "reason", exc)
-    if isinstance(reason, ssl.SSLCertVerificationError):  # Windows was asked too (net.urlopen)
+    if isinstance(reason, ssl.SSLCertVerificationError):  # Windows and Mozilla's list were tried too (net.urlopen)
         return (f"this PC doesn't trust the site's security certificate ({reason.verify_message}): an antivirus that "
                 f"scans secure connections, a school or work network, or a wrong date on the PC can do that")
     if isinstance(exc, urllib.error.URLError):

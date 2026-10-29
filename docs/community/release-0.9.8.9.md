@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.9 and Launcher 0.4.8.9: a safer picture reader"
+title: "Studio 0.9.8.9 and Launcher 0.4.8.9: mods install on more PCs, and a safer picture reader"
 category: Announcements
 order: 14
 ---
@@ -8,9 +8,13 @@ order: 14
 
 ![R.U.S.E. 2.0](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/ruse-2-0-brand.png)
 
-A small safety update: the library both apps read pictures with (Pillow) is now version 13.0.0, with its fixes for
-specially made picture files that could crash the app, use up its memory, or worse. Nothing else changes; everything
-in 0.9.8.8 and 0.4.8.8 is as it was.
+A small fix-up update:
+
+- **Fixed, reported by a player:** on some PCs no mod would install ("unable to get issuer certificate"), because
+  Windows there hasn't got the certificate GitHub's downloads are checked against and can't fetch it. Both apps now
+  also try with the list of certificates Firefox uses, which they carry.
+- **Safer pictures:** the library both apps read pictures with (Pillow) is now version 13.0.0, with its fixes for
+  specially made picture files that could crash the app, use up its memory, or worse.
 
 Everything that changed:
 [Studio notes](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) ·

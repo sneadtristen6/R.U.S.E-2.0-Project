@@ -32,6 +32,7 @@ import zipfile
 from pathlib import Path
 
 from rusemod import groundtex as gt
+from rusemod import net
 from rusemod.mod_index import plain
 
 SOURCES = ("polyhaven", "ambientcg", "usgs")
@@ -122,7 +123,7 @@ def get(url: str, most: int, what: str) -> bytes:
         raise OnlineError(f"{what} isn't on a secure address, so it wasn't asked for")
     try:
         req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # noqa: S310 (https only, fixed hosts)
+        with net.urlopen(req, TIMEOUT) as r:  # (https only, fixed hosts; the apps' certificate handling)
             data = r.read(most + 1)
     except (OSError, ValueError, http.client.HTTPException) as exc:
         if isinstance(exc, urllib.error.HTTPError):

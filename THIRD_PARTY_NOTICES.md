@@ -181,6 +181,7 @@ what they don't say.
 | shapely (R.U.S.E. 2.0's title: the menu logo's new letters, rusemod.menulogo) | 2.2.0 | BSD-3-Clause | Sean C. Gillies, Casper van der Wel, Shapely Contributors | https://github.com/shapely/shapely/tree/2.2.0 |
 | PyAV (R.U.S.E. 2.0's title: the gold loading video, rusemod.signature) | 19.0.1 | BSD-3-Clause | Its licence names no holder ("Copyright retained by original committers") | https://github.com/PyAV-Org/PyAV/tree/v19.0.1 |
 | Pillow (reads pictures: imported models' textures, ground pictures, the title's pictures) | 12.2.0 | MIT-CMU | Jeffrey A. Clark and contributors; Secret Labs AB and Fredrik Lundh (PIL) | https://github.com/python-pillow/Pillow/tree/12.2.0 |
+| certifi (Mozilla's root certificate list: downloads on a PC whose Windows lacks a site's root, rusemod.net) | 2026.10.19 | MPL-2.0 (its `cacert.pem`, made from Mozilla's `certdata.txt`) | Its licence file names no holder (its author: Kenneth Reitz; the list: Mozilla) | https://github.com/certifi/python-certifi/tree/2026.10.19 |
 | Nuitka's runtime (the C code Nuitka builds into each program) | 4.2.2 | GNU AGPL v3 with the Nuitka Runtime Library Exception 1.0, which lets the programs it builds be given out under any licence | Kay Hayen | https://github.com/Nuitka/Nuitka/tree/4.2.2 |
 
 What those carry inside them:
@@ -4654,4 +4655,33 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 
 3. This notice may not be removed or altered from any source distribution.
+```
+
+### certifi 2026.10.19 (MPL-2.0): `LICENSE`
+
+The apps carry certifi's `cacert.pem` (`certifi\cacert.pem` beside each program) as certifi gives it, unchanged: that
+file is its source form. The Mozilla Public License 2.0 is at https://mozilla.org/MPL/2.0/, and certifi's source at
+https://github.com/certifi/python-certifi/tree/2026.10.19.
+
+```
+This package contains a modified version of ca-bundle.crt:
+
+ca-bundle.crt -- Bundle of CA Root Certificates
+
+This is a bundle of X.509 certificates of public Certificate Authorities
+(CA). These were automatically extracted from Mozilla's root certificates
+file (certdata.txt).  This file can be found in the mozilla source tree:
+https://hg.mozilla.org/mozilla-central/file/tip/security/nss/lib/ckfw/builtins/certdata.txt
+It contains the certificates in PEM format and therefore
+can be directly used with curl / libcurl / php_curl, or with
+an Apache+mod_ssl webserver for SSL client authentication.
+Just configure this file as the SSLCACertificateFile.#
+
+***** BEGIN LICENSE BLOCK *****
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain
+one at http://mozilla.org/MPL/2.0/.
+
+***** END LICENSE BLOCK *****
+@(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```

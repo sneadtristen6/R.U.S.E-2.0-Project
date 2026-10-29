@@ -74,6 +74,7 @@ installs over the old one and keeps your mods.
 | "Windows protected your PC" | **More info**, then **Run anyway** (Step 2). |
 | The Launcher can't find R.U.S.E. | **Settings > Game folder > Choose folder…**, the folder with `RUSE.exe`. |
 | "certificate verify failed: unable to get local issuer certificate" | Get Launcher 0.4.8.4 or newer (Step 1); see [[When something goes wrong|When-Something-Goes-Wrong]]. |
+| "unable to get issuer certificate" or "this PC doesn't trust the site's security certificate" when installing mods | Get Launcher 0.4.8.9 or newer (Step 1), or download the mod in your browser and use **Add a mod file…**; see [[When something goes wrong|When-Something-Goes-Wrong]]. |
 | The game starts without my mods | Start it with the Launcher's **Play**, not from Steam. |
 | Friends can't join my game | Everyone needs the same mods in the same order: [[Play with friends|Play-With-Friends]]. |
 | Anything else | [[When something goes wrong|When-Something-Goes-Wrong]], or ask in [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) or on the [Discord](https://discord.gg/DbufY4Jfg). |

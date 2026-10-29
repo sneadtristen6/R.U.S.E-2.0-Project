@@ -1,9 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
-**0.9.8.9:** bezpečnější čtení obrázků.
+**0.9.8.9:** stahování na více PC, a bezpečnější čtení obrázků.
 
-- **Bezpečnější obrázky:** knihovna, kterou Studio čte obrázky (Pillow), je teď ve verzi 13.0.0, s opravami proti schválně upraveným souborům obrázků, které mohly aplikaci shodit, vyčerpat její paměť nebo hůř. Nic jiného se nemění.
+- **Opraveno, nahlášeno hráčem:** na PC, jehož Windows nemá certifikát, kterým se ověřuje stahování z GitHubu, a nedokáže ho získat, stahování selhávalo („unable to get issuer certificate“). Stahování Studia (jeho aktualizace, záplaty hry, modely jednotek ér a online textury Map Paint) teď zkouší i seznam certifikátů Firefoxu, který Studio nese s sebou.
+- **Bezpečnější obrázky:** knihovna, kterou Studio čte obrázky (Pillow), je teď ve verzi 13.0.0, s opravami proti schválně upraveným souborům obrázků, které mohly aplikaci shodit, vyčerpat její paměť nebo hůř.
 
 **0.9.8.8:** úvodní obrazovka a tabule budov, vlastní budovy, RUSE Decoy pro zvuky a animace, každé pravidlo hry v jedné záložce, a R.U.S.E. 2.0 ve zlaté.
 

@@ -37,6 +37,9 @@ jobs:
       - name: The libraries both apps carry for R.U.S.E. 2.0's title (installers/requirements.txt)
         if: matrix.python == '3.12'
         run: python -m pip install "shapely==2.2.0" "av==19.0.1"
+      - name: Mozilla's root list both apps carry for downloads (installers/requirements.txt)
+        if: matrix.python == '3.12'
+        run: python -m pip install "certifi==2026.10.19"
       - name: Nothing private in the public repo (tools/check_public.py)
         if: github.repository_id == '1393317090'
         run: python tools/check_public.py

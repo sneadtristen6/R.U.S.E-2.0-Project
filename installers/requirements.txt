@@ -33,3 +33,8 @@ scipy==1.18.1
 # same pins as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
 shapely==2.2.0
 av==19.0.1
+# What both apps carry for downloads on a PC whose Windows lacks a site's root certificate and can't fetch it
+# (rusemod.net; a player on Reddit, 2026-10-29: no mod would download, "unable to get issuer certificate"; the owner:
+# "Mozilla's certificate list"): certifi, Mozilla's root list (MPL-2.0). Licence: THIRD_PARTY_NOTICES.md. The same pin
+# as .github/workflows/tests.yml (tests/test_installers.py WorkflowGuards).
+certifi==2026.10.19

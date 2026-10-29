@@ -1,9 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
-**0.9.8.9:** a safer picture reader.
+**0.9.8.9:** downloads on more PCs, and a safer picture reader.
 
-- **Safer pictures:** the library the Studio reads pictures with (Pillow) is now version 13.0.0, with its fixes for specially made picture files that could crash the app, use up its memory, or worse. Nothing else changes.
+- **Fixed, reported by a player:** on a PC whose Windows hasn't got the certificate GitHub's downloads are checked against and can't fetch it, downloads failed ("unable to get issuer certificate"). The Studio's downloads (its updates, the game patches, the era units' models and Map Paint's online textures) now also try with the list of certificates Firefox uses, which it carries.
+- **Safer pictures:** the library the Studio reads pictures with (Pillow) is now version 13.0.0, with its fixes for specially made picture files that could crash the app, use up its memory, or worse.
 
 **0.9.8.8:** a start screen and a buildings board, buildings of your own, RUSE Decoy for sounds and animations, every game rule in one tab, and R.U.S.E. 2.0 in gold.
 

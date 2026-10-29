@@ -1,9 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
-**0.4.8.9:** une lecture d'images plus sûre.
+**0.4.8.9:** les mods s'installent sur plus de PC, et une lecture d'images plus sûre.
 
-- **Des images plus sûres :** la bibliothèque avec laquelle le Launcher lit les images (Pillow) passe en version 13.0.0, avec ses corrections contre des fichiers d'image piégés qui pouvaient faire planter l'application, épuiser sa mémoire, ou pire. Rien d'autre ne change.
+- **Corrigé, signalé par un joueur :** sur certains PC, aucun mod ne s'installait : « ce PC ne fait pas confiance au certificat de sécurité du site (unable to get issuer certificate) ». Windows sur ces PC n'a pas le certificat avec lequel les téléchargements de GitHub sont vérifiés et ne peut pas le récupérer. Le Launcher essaie maintenant aussi avec la liste de certificats de Firefox, qu'il emporte. D'ici là, un mod téléchargé dans votre navigateur depuis la liste des mods s'installe avec **Ajouter un fichier de mod…**.
+- **Des images plus sûres :** la bibliothèque avec laquelle le Launcher lit les images (Pillow) passe en version 13.0.0, avec ses corrections contre des fichiers d'image piégés qui pouvaient faire planter l'application, épuiser sa mémoire, ou pire.
 
 **0.4.8.8:** il joue les mods faits avec Studio 0.9.8.8, et votre jeu moddé dit R.U.S.E. 2.0 en or.
 

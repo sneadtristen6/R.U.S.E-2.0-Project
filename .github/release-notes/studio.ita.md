@@ -1,9 +1,10 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
-**0.9.8.9:** una lettura delle immagini più sicura.
+**0.9.8.9:** download su più PC, e una lettura delle immagini più sicura.
 
-- **Immagini più sicure:** la libreria con cui lo Studio legge le immagini (Pillow) passa alla versione 13.0.0, con le sue correzioni contro file d'immagine fatti apposta che potevano far chiudere l'app, esaurirne la memoria o peggio. Nient'altro cambia.
+- **Corretto, segnalato da un giocatore:** su un PC il cui Windows non ha il certificato con cui vengono controllati i download di GitHub e non riesce a recuperarlo, i download fallivano («unable to get issuer certificate»). I download dello Studio (i suoi aggiornamenti, le patch del gioco, i modelli delle unità d'epoca e le texture online di Map Paint) ora provano anche con l'elenco di certificati di Firefox, che lo Studio porta con sé.
+- **Immagini più sicure:** la libreria con cui lo Studio legge le immagini (Pillow) passa alla versione 13.0.0, con le sue correzioni contro file d'immagine fatti apposta che potevano far chiudere l'app, esaurirne la memoria o peggio.
 
 **0.9.8.8:** una schermata iniziale e una tavola degli edifici, edifici tuoi, RUSE Decoy per suoni e animazioni, ogni regola del gioco in una scheda, e R.U.S.E. 2.0 in oro.
 

@@ -1,12 +1,19 @@
-"""Opening web addresses, for both apps: urllib's urlopen, and a second try with the root certificates Windows trusts.
+"""Opening web addresses, for both apps: urllib's urlopen, a second try with the root certificates Windows trusts, and
+a third with Mozilla's root list.
 
 Python checks a site's certificate against the root certificates Windows has on disk. Windows keeps only some of its
 roots there and fetches the others the first time one of its own programs needs one; Python can't ask for that. On a
 PC that never needed GitHub's root, every mod download failed with "certificate verify failed: unable to get local
-issuer certificate" (a player on Discord, 2026-10-10). Now, when Python finds no root for a site, Windows itself is
-asked to check the site's certificate (that fetches the missing root, as a browser would), and the request is tried
-once more with the roots Windows trusted. Only roots Windows trusts are added, and Python still checks everything else
-(the site's name, the dates, the chain), so nothing is trusted that Windows doesn't trust.
+issuer certificate" (a player on Discord, 2026-10-10). So when Python finds no root for a site, Windows itself is asked
+to check the site's certificate (that fetches the missing root, as a browser would), and the request is tried once more
+with the roots Windows trusted.
+
+On a PC whose Windows can't fetch the root either (its root updates turned off or blocked), the mod downloads still
+failed: "unable to get issuer certificate" (a player on Reddit, 2026-10-29; GitHub's download site's chain ends at ISRG
+Root X1, and that PC's Windows had the certificate under it but not that root). Then the request is tried once more
+with Mozilla's root list too: the roots Firefox trusts (the certifi package the apps carry), as a browser that brings
+its own list does. Python still checks everything else (the site's name, the dates, the chain), so only a root Windows
+or Mozilla trusts is ever trusted.
 """
 from __future__ import annotations
 
@@ -29,20 +36,34 @@ ASK_TIMEOUT = 10  # seconds for each site's certificate, and for Windows to chec
 _lock = threading.Lock()
 _asked: set[str] = set()     # the sites Windows was asked about in this run
 _roots: list[bytes] = []     # the roots Windows trusted for them (DER), added to Python's
+_mozilla: str | None = None  # Mozilla's root list (PEM) once it was added in this run ("": the apps haven't got it)
 _context: ssl.SSLContext | None = None
 
 
 def urlopen(req, timeout: float):
     """urllib.request.urlopen(req, timeout), and when Python found no root for the site's certificate, once more after
-    Windows has checked it (windows_roots). Raises what urlopen raises."""
+    Windows has checked it (windows_roots), and once more with Mozilla's root list when that didn't do it either
+    (_add_mozilla). Raises what urlopen raises."""
     used = _context
     try:
         return _open(req, timeout, used)
     except urllib.error.URLError as exc:
-        # another download may have had Windows' roots added meanwhile: then they're tried too
-        if not missing_root(exc) or not (_ask_windows(_host(req)) or _context is not used):
+        if not missing_root(exc):
             raise
-    return _open(req, timeout, _context)
+        failed = exc
+    host = _host(req)
+    for widen in (_ask_windows, _add_mozilla):
+        # (another download may have widened the roots meanwhile: then they're tried too)
+        if not (widen(host) or _context is not used):
+            continue
+        used = _context
+        try:
+            return _open(req, timeout, used)
+        except urllib.error.URLError as exc:
+            if not missing_root(exc):
+                raise
+            failed = exc
+    raise failed
 
 
 def _open(req, timeout: float, context: ssl.SSLContext | None):
@@ -82,10 +103,49 @@ def _ask_windows(host: str, chain=None, check=None) -> bool:
         if not new:
             return False
         _roots.extend(new)
-        context = ssl.create_default_context()
-        context.load_verify_locations(cadata=b"".join(_roots))
-        _context = context
+        _context = _widened()
         return True
+
+
+def mozilla_roots() -> str:
+    """Mozilla's root list (PEM): the roots Firefox trusts, from the certifi package the apps carry (its cacert.pem,
+    made from Mozilla's certdata.txt; MPL-2.0). ImportError or OSError when this copy hasn't got it."""
+    import certifi
+    return certifi.contents()
+
+
+def _add_mozilla(host: str = "", roots: str | None = None) -> bool:
+    """Add Mozilla's root list to Python's roots, once per run; True when it did, so another try can work. `roots` is
+    for tests. A run without certifi (from source, without the apps' libraries) goes on without it."""
+    global _context, _mozilla
+    with _lock:
+        if _mozilla is not None:
+            return False
+        try:
+            _mozilla = mozilla_roots() if roots is None else roots
+        except (ImportError, OSError):
+            _mozilla = ""
+            return False
+        _context = _widened()
+        return True
+
+
+def _widened() -> ssl.SSLContext:
+    """Python's usual roots (Windows' on disk), with the roots Windows trusted when asked and Mozilla's list once added.
+    Call it holding _lock."""
+    context = ssl.create_default_context()
+    if _roots:
+        context.load_verify_locations(cadata=b"".join(_roots))
+    if _mozilla:
+        context.load_verify_locations(cadata=_mozilla)
+    return context
+
+
+def mozilla_check() -> str:
+    """The apps' self-test: Mozilla's root list is in this copy and Python reads it."""
+    roots = mozilla_roots()
+    context = ssl.create_default_context(cadata=roots)
+    return f"{roots.count('-----BEGIN CERTIFICATE-----')} roots, {len(context.get_ca_certs())} read"
 
 
 def server_chain(host: str, port: int = 443, timeout: float = ASK_TIMEOUT) -> list[bytes]:

@@ -10,7 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
-from rusemod import startlog
+from rusemod import net, startlog
 from rusemod.gamefont import copy_fonts
 from rusemod.webui import on_file_drop, open_window, pick_file, pick_folder, self_test
 
@@ -62,6 +62,7 @@ def main(argv=None) -> int:
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
+            ("Mozilla's root list (downloads on a PC whose Windows lacks a site's root)", net.mozilla_check),
         ])
     log.mark("api")
     log.go()
