@@ -37,7 +37,7 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 | What changed in a version | [Studio release notes](../.github/release-notes/studio.md), [Launcher release notes](../.github/release-notes/launcher.md) |
 | What's planned | [docs/community/roadmap.md](../docs/community/roadmap.md); the big patch before 1.0: [docs/BIG_PATCH.md](../docs/BIG_PATCH.md) |
 | Helping out, reporting a bug, sending code | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| Talking to people | the [Discord](https://discord.gg/DbufY4Jfg), or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) |
+| Talking to people | the [Discord](https://discord.gg/h54t5baNsC), or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions) |
 
 ## The words the apps use
 
@@ -122,7 +122,7 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 - **Say what was seen in the game and what wasn't.** The docs mark each rule and feature "seen in the game", "tested"
   or "not yet tried". Keep that distinction in your answer; don't promise what isn't tested.
 - **Don't invent features, buttons or files.** If the docs don't say it, say you don't know, and point the user to the
-  [Discord](https://discord.gg/DbufY4Jfg) or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
+  [Discord](https://discord.gg/h54t5baNsC) or [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions).
 - **Never tell a user to change, replace or delete files in the game's own folder.** The project never does.
 - **Use the apps' own names** for tabs, buttons and boxes (above), so the user can find them.
 - **Paths:** write `%LOCALAPPDATA%\...`, not a path with someone's user name in it.

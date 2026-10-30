@@ -33,7 +33,7 @@ or a mod that installs although it doesn't match what was published; one of the 
 
 **Not ours to fix:** R.U.S.E. itself, its multiplayer service and Steam; please report those to their makers.
 Someone cheating in a match isn't a security problem in our apps: tell us on the
-[Discord](https://discord.gg/DbufY4Jfg). RUSE Guard, below, is how we mean to handle cheating.
+[Discord](https://discord.gg/h54t5baNsC). RUSE Guard, below, is how we mean to handle cheating.
 
 ## How the apps keep you safe today
 

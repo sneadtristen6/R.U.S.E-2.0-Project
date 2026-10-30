@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks! Ideas are also welcome on the project's [Discord](https://discord.gg/DbufY4Jfg) and in
+        Thanks! Ideas are also welcome on the project's [Discord](https://discord.gg/h54t5baNsC) and in
         [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions), where others can join in.
   - type: dropdown
     id: app

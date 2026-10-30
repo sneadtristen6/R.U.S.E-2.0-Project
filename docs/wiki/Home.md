@@ -10,7 +10,7 @@ Step-by-step guides for **RUSE Launcher** and **RUSE Studio**. For what the proj
   Launcher**, click **Supported mods**, tick a mod and press **Install**, put it in a mod set, then **Play**. Five minutes.
 - **To make mods:** install **RUSE Studio** (the same page, at the end), then [[Your first mod|Your-First-Mod]].
 - **Stuck?** [[When something goes wrong|When-Something-Goes-Wrong]], or ask on the
-  [Discord](https://discord.gg/DbufY4Jfg).
+  [Discord](https://discord.gg/h54t5baNsC).
 
 > [!WARNING]
 > **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank

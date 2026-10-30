@@ -2,7 +2,7 @@
 
 RUSE 2.0 is made by players and modders who want R.U.S.E. to live on. This page says how we treat each other in the
 project's spaces: this repository (issues, pull requests, Discussions, the wiki), the project's
-[Discord](https://discord.gg/DbufY4Jfg), and anywhere someone speaks for the project.
+[Discord](https://discord.gg/h54t5baNsC), and anywhere someone speaks for the project.
 
 ## What we expect
 
@@ -24,7 +24,7 @@ project's spaces: this repository (issues, pull requests, Discussions, the wiki)
 ## Reporting
 
 If someone breaks this code, or you feel unsafe or unwelcome, tell the maintainers privately: message a moderator on
-the project's [Discord](https://discord.gg/DbufY4Jfg), send a message to
+the project's [Discord](https://discord.gg/h54t5baNsC), send a message to
 [SneadTristen6 on Patreon](https://www.patreon.com/SneadTristen6), or use GitHub's **Report content** on the post.
 Say what happened, where, and when; links and screenshots help. Reports are kept private, and nobody is punished for
 making one in good faith.

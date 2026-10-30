@@ -7,7 +7,7 @@ R.U.S.E. (2010). There are many ways to help, and most of them need no code.
 
 - Use the apps' **Report a problem** button: it fills in the app and its version for you. Or post in
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions), whose form asks for
-  what we need. Quick questions about a problem are welcome on the [Discord](https://discord.gg/DbufY4Jfg) too.
+  what we need. Quick questions about a problem are welcome on the [Discord](https://discord.gg/h54t5baNsC) too.
 - Say what you did step by step, what happened and what you expected. Copy any message the app showed, and drag in
   screenshots. In-game screenshots from the game's own key keep the camera next to them, which helps a lot.
 - Please don't paste paths that show your Windows user name: `%LOCALAPPDATA%\...` is enough.
@@ -27,7 +27,7 @@ you can do.
 
 ## Ideas and questions
 
-Come and talk on the project's [Discord](https://discord.gg/DbufY4Jfg), or post them in
+Come and talk on the project's [Discord](https://discord.gg/h54t5baNsC), or post them in
 [Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). The
 [field manual](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki) explains the apps; the README's
 "Questions? Ask any AI" section shows how to get quick answers about the project.

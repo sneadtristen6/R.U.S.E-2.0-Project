@@ -301,7 +301,7 @@ Uninstalling keeps your mods and settings. The apps need Microsoft Edge WebView2
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;
-**[Discord](https://discord.gg/DbufY4Jfg)** &middot; **[Contributing](CONTRIBUTING.md)** &middot;
+**[Discord](https://discord.gg/h54t5baNsC)** &middot; **[Contributing](CONTRIBUTING.md)** &middot;
 **[Code of conduct](CODE_OF_CONDUCT.md)** &middot; [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md): everything a mod can do,
 file by file.
 
