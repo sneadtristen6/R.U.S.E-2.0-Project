@@ -282,6 +282,85 @@ class Calls(unittest.TestCase):
             self.assertEqual(quiet.update_check(), {"available": False, "version": "0.1.0", "current": "0.1.0"})
 
 
+class Required(unittest.TestCase):
+    """A required update (the owner, 2026-10-30: "a box it can't skip ... it should update by itself without
+    asking"): the line under a version marks it; the app keeps it, says it, and Play and Test in game wait."""
+
+    BODY = (f"compare its SHA-256 with `{SHA}`\n\n**0.4.0:** the newest\n\n- a change\n\n**0.3.0:** required\n"
+            "<!-- required update -->\n\n- the reason\n\n**0.2.0:** an old one\n<!-- Required Update -->\n")
+
+    def test_the_line_under_a_version_marks_it(self):
+        self.assertEqual(update.required_since(self.BODY, "0.1.0"), "0.3.0")  # the newest required one
+        self.assertEqual(update.required_since(self.BODY, "0.2.0"), "0.3.0")
+        self.assertIsNone(update.required_since(self.BODY, "0.3.0"))  # the running one has it: nothing to force
+        self.assertIsNone(update.required_since("**0.4.0:** plain\n- a change\n", "0.1.0"))
+        self.assertNotIn("required", json.dumps(update.changes_since(self.BODY, "0.1.0", "0.4.0")))  # not a change
+
+    def test_the_check_says_it_keeps_it_and_play_waits(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = App(d)
+            app.strings = lambda lang="us": {"update_required_refused": "{app} has a required update to install first."}
+            app.prefs = lambda: {}
+            app._starter = update_starter = mock.Mock(required=None)
+            app.use_required_updates()
+            self.assertEqual(update_starter.required, app._update_refusal)
+            rel = release("launcher-v0.4.0")
+            rel["body"] = self.BODY
+            app._update_fetch = lambda url: [rel]
+            said = app.update_check()
+            self.assertEqual((said["version"], said["required"]), ("0.4.0", True))
+            self.assertEqual(json.loads((Path(d) / "settings.json").read_text(encoding="utf-8"))["required_update"],
+                             {"launcher": "0.3.0"})
+            self.assertEqual(app._update_refusal(), "RUSE Launcher has a required update to install first.")
+            # a later start without the internet: still required, from what the app kept (the window can't change it)
+            offline = App(d)
+            offline.strings, offline.prefs = app.strings, app.prefs
+
+            def unreachable(url):
+                raise OSError("no connection")
+            offline._update_fetch = offline._update_fetch_text = unreachable
+            said = offline.update_check()
+            self.assertEqual((said["required"], said["offline"], said["version"]), (True, True, "0.3.0"))
+            self.assertTrue(offline._update_refusal())
+            # once it's in (the running version is the required one or newer), nothing is required or kept
+            done = App(d)
+            done.UPDATE_VERSION = "0.4.0"
+            done._update_fetch = lambda url: [rel]
+            self.assertEqual(done.update_check()["available"], False)
+            self.assertNotIn("launcher", json.loads((Path(d) / "settings.json").read_text(encoding="utf-8"))["required_update"])
+
+    def test_an_update_not_marked_is_offered_as_before(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = App(d)
+            said = app.update_check()
+            self.assertEqual((said["available"], said["required"]), (True, False))
+            self.assertIsNone(app._update_refusal())
+
+    def test_play_and_test_in_game_wait_for_it(self):
+        from rusemod.build import BuildError
+        from rusemod.play import Starter
+        starter = Starter()
+        starter.required = lambda: "RUSE Studio has a required update to install first."
+        starter.owned = mock.Mock(return_value=None)
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(BuildError, "required update"):
+                starter.modded(Path(d) / "game", [], Path(d) / "copies" / "Modded game", "set", lambda line: None)
+        starter.owned.assert_not_called()  # nothing else is looked at first
+
+    def test_both_apps_show_the_box_and_install_by_itself(self):
+        root = Path(__file__).resolve().parents[1] / "src"
+        self.assertEqual((root / "ruse_studio/ui/required.js").read_bytes(), (root / "ruse_launcher/ui/required.js").read_bytes())
+        for app in ("ruse_studio", "ruse_launcher"):
+            with self.subTest(app=app):
+                page = (root / app / "ui/index.html").read_text(encoding="utf-8")
+                self.assertLess(page.index('<script src="required.js"></script>'), page.index('<script src="app.js"></script>'))
+                js = (root / app / "ui/app.js").read_text(encoding="utf-8")
+                self.assertIn("window.requiredUpdate(", js)
+                self.assertIn("u.required && u.available && u.installed && !state.updating) installUpdate()", js)
+                self.assertIn("api.use_required_updates()", (root / app / "app.py").read_text(encoding="utf-8"))
+                self.assertIn('"required.js"', (root / app / "app.py").read_text(encoding="utf-8"))
+
+
 class FakeReg:
     """Just enough of winreg for fix_app_list_version: one HKCU with uninstall keys."""
     HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE, REG_SZ = "HKCU", 1, 2, 1

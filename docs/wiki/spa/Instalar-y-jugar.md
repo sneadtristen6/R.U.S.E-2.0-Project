@@ -82,6 +82,8 @@ El Launcher busca una versión nueva cada vez que arranca: haz clic en **Actuali
 actualización falla con "certificate verify failed", descarga el `RUSE-Launcher-Setup` más reciente del Paso 1 en tu
 navegador y ejecútalo: se instala sobre el antiguo y conserva tus mods.
 
+**Actualizaciones obligatorias:** una actualización marcada como obligatoria (una importante, como una corrección de seguridad) no se puede omitir. Un cuadro cubre el Launcher y la actualización se instala sola; luego el Launcher se vuelve a abrir. Hasta que esté instalada, **Jugar** sigue desactivado. Sin Internet, el cuadro lo dice: conéctate y pulsa **Reintentar**. El Studio hace lo mismo, con **Probar en el juego**.
+
 ## ¿Problemas?
 
 | Lo que ves | Qué hacer |

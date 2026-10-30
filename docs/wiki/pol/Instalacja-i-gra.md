@@ -80,6 +80,8 @@ Launcher sprawdza, czy jest nowa wersja, przy każdym uruchomieniu: kliknij **Za
 aktualizacja się nie uda z komunikatem „certificate verify failed”, pobierz najnowszy `RUSE-Launcher-Setup` z kroku 1
 w przeglądarce i uruchom go: instaluje się na starym i zachowuje twoje mody.
 
+**Wymagane aktualizacje:** aktualizacji oznaczonej jako wymagana (ważnej, na przykład poprawki bezpieczeństwa) nie da się pominąć. Okno zasłania Launcher, a aktualizacja instaluje się sama, po czym Launcher uruchamia się ponownie; dopóki nie zostanie zainstalowana, **Graj** pozostaje wyłączone. Bez internetu okno o tym informuje: połącz się i naciśnij **Spróbuj ponownie**. Studio robi to samo z **Testuj w grze**.
+
 ## Problemy?
 
 | Co widzisz | Co zrobić |

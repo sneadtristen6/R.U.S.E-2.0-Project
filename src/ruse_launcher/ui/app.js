@@ -1541,6 +1541,8 @@ async function checkUpdate() {
   try { $("app-version").textContent = `v${(await api().app_version()).version}`; } catch { /* an older back end */ }
   try { state.update = await api().update_check(state.lang); } catch { state.update = null; }
   renderUpdate();
+  const u = state.update;  // a required update installs by itself, at once (required.js shows its box meanwhile)
+  if (u && u.required && u.available && u.installed && !state.updating) installUpdate();
 }
 
 // The language changed: what's new again, in it (the release's notes in every language, English for one they lack)
@@ -1563,6 +1565,8 @@ function richText(s) {
 
 function renderUpdate() {
   const u = state.update, w = state.words, bar = $("update-bar");
+  window.requiredUpdate({ u, w, app: APP_NAME, note: state.updateNote, updating: state.updating,
+    again: () => (u && u.offline ? checkUpdate() : installUpdate()) });
   if (!u || !u.available || !w.update_out) { bar.classList.add("hidden"); return; }
   $("update-text").textContent = state.updateNote
     || fill(w.update_out, { app: APP_NAME, version: u.version }) + (u.installed ? "" : " " + w.update_repo);

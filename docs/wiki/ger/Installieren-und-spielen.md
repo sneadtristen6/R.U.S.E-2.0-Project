@@ -81,6 +81,8 @@ Der Launcher prüft bei jedem Start, ob es eine neue Version gibt: klicke auf **
 anbietet. Schlägt das Update mit „certificate verify failed“ fehl, lade das neueste `RUSE-Launcher-Setup` aus Schritt 1 in
 deinem Browser herunter und führe es aus: es installiert sich über das alte und behält deine Mods.
 
+**Notwendige Updates:** Ein als notwendig markiertes Update (ein wichtiges, etwa eine Sicherheitskorrektur) lässt sich nicht überspringen. Ein Fenster legt sich über den Launcher, das Update installiert sich von selbst, und der Launcher öffnet sich wieder; bis es installiert ist, bleibt **Spielen** gesperrt. Ohne Internet sagt das Fenster das: Verbinden Sie sich und klicken Sie auf **Erneut versuchen**. Das Studio macht es genauso, mit **Im Spiel testen**.
+
 ## Probleme?
 
 | Was du siehst | Was du tun kannst |

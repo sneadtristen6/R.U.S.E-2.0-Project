@@ -260,6 +260,8 @@ class Starter:
         # owned copies only (rusemod.owned): set by the app's window; given the game folder, the message when a
         # modded game mustn't start from it, else None
         self.owned = None
+        # a required update (rusemod.update.UpdateCalls.use_required_updates): the message while it isn't in, else None
+        self.required = None
 
     def vanilla(self, say) -> None:
         say("Starting R.U.S.E. through Steam…")
@@ -283,8 +285,9 @@ class Starter:
         from .backup import _claim, _release
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
-        refused = self.owned(game) if self.owned is not None else None
-        if refused:  # not a game rule: the project's (only a copy its player owns)
+        refused = (self.required() if self.required is not None else None) or (
+            self.owned(game) if self.owned is not None else None)
+        if refused:  # not a game rule: the project's (a required update first; only a copy its player owns)
             raise BuildError(refused)
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         lock = instance.parent / BUILDING

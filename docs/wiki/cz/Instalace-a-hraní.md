@@ -78,6 +78,8 @@ Launcher při každém spuštění hledá novou verzi: když ji nabídne, klikn�
 selže s „certificate verify failed“, stáhněte v prohlížeči nejnovější `RUSE-Launcher-Setup` z kroku 1 a spusťte ho:
 nainstaluje se přes starou verzi a vaše mody zachová.
 
+**Povinné aktualizace:** aktualizaci označenou jako povinnou (důležitou, například bezpečnostní opravu) nelze přeskočit. Launcher zakryje okno a aktualizace se nainstaluje sama, pak se Launcher znovu otevře; dokud není nainstalovaná, **Hrát** zůstává vypnuté. Bez internetu to okno řekne: připojte se a stiskněte **Zkusit znovu**. Studio dělá totéž s **Vyzkoušet ve hře**.
+
 ## Problémy?
 
 | Co vidíte | Co dělat |

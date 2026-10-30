@@ -78,6 +78,11 @@ The Launcher checks for a new version each time it starts: click **Update** when
 with "certificate verify failed", download the newest `RUSE-Launcher-Setup` from Step 1 in your browser and run it: it
 installs over the old one and keeps your mods.
 
+**Required updates:** an update marked required (an important one, such as a security fix) can't be skipped. A box
+covers the Launcher and the update installs by itself, then the Launcher opens again; until it's in, **Play** stays
+off. Without the internet, the box says so: connect and press **Try again**. The Studio does the same, with **Test in
+game**.
+
 ## Problems?
 
 | What you see | What to do |

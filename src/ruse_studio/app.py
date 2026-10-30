@@ -99,7 +99,7 @@ def main(argv=None) -> int:
     api = StudioApi(index_path=args.index, game_dir=args.game)
     if args.self_test:
         startlog.stop()  # the build's check, not a start
-        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js", "rtl.js"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js", "rtl.js", "required.js"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the Studio's errors in the player's language", _errors_worded),
@@ -120,6 +120,7 @@ def main(argv=None) -> int:
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
+    api.use_required_updates()  # a required update goes in before Test in game (rusemod.update): the same
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
         copy_fonts(api._game(), api.cache_dir)
     except Exception:  # any trouble reading the game: the pages keep their usual font

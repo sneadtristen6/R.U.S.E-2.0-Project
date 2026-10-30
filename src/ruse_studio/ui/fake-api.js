@@ -4176,8 +4176,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       app_version: async () => ({ app: "Studio", version: "0.8.1" }),
       // the start-up log: here, the page's moment kept in window.fakeStartMarks (ms since the page began loading)
       start_mark: async (what) => { (window.fakeStartMarks = window.fakeStartMarks || {})[what] = performance.now(); return {}; },
-      update_check: async () => mode === "update"
-        ? { available: true, version: "9.9.9", current: "0.8.1", installed: true, size: 60000000,
+      // ?fake=required: a required update (its box, installing by itself); ?fake=requiredoffline: one seen before, offline
+      update_check: async () => mode === "requiredoffline"
+        ? { available: false, required: true, offline: true, version: "9.9.9", current: "0.8.1",
+            error: "GitHub couldn't be reached to look for updates (no connection)." }
+        : mode === "update" || mode === "required"
+        ? { available: true, version: "9.9.9", current: "0.8.1", installed: true, size: 60000000, required: mode === "required",
             changes: [
               { version: "9.9.9", before: "A unit given to another nation crashed the game when built.",
                 now: "It's built, fights and can be selected in any match." },

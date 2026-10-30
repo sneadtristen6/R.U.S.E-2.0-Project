@@ -12,6 +12,13 @@ start, and offer it; Update downloads its installer, checks it, and runs it sile
 - **Installing:** the installer runs with /SILENT (no questions, for this Windows user, no admin rights), the app
   quits, the installer replaces it and starts it again (installers/installer.iss).
 - Only an installed app updates itself; from the repo (`py -3 -m ...`) the answer is "update with git pull".
+- **Required updates** (the owner, 2026-10-30: "a box it can't skip ... a feature that we can have for certain
+  updates, like 1.0 ... it should update by itself without asking"): a version whose notes have the line
+  `<!-- required update -->` under its `**x.y.z:**` line (the English notes, .github/release-notes/<app>.md; GitHub
+  doesn't show the line) is required: an app older than it shows a box it can't close and installs the newest
+  release by itself (ui/required.js), and Play and Test in game stay off until it has (rusemod.play.Starter.required).
+  The app keeps the required version in settings.json, where only it writes, so a start without the internet stays
+  blocked.
 """
 from __future__ import annotations
 
@@ -26,6 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import net
+from .home import save_settings, settings
 
 REPO = "sneadtristen6/R.U.S.E-2.0-Project"
 API = f"https://api.github.com/repos/{REPO}/releases?per_page=40"
@@ -51,6 +59,7 @@ class Release:
     sha256: str          # the checked-against hash (lowercase hex)
     changes: list = None  # before and after, per version newer than the running one (changes_since)
     notes_url: str = ""   # every language's notes (NOTES_ASSET), when the release has them
+    required: str = ""    # the newest required version newer than the running one (required_since), or ""
 
 
 # Every language's release notes, published beside the installer (.github/workflows/release.yml, installers/
@@ -98,6 +107,16 @@ def changes_since(body: str, current: str, newest: str) -> list[dict]:
 
 
 TAG_VERSION = r"\d+\.\d+\.\d+(?:\.\d+)?"  # a release's version: three numbers, or four (0.9.4.1, 0.9.8.1)
+REQUIRED = re.compile(r"^\s*<!--\s*required update\s*-->\s*$", re.M | re.I)  # under a version's line: it's required
+
+
+def required_since(body: str, current: str) -> str | None:
+    """The newest version after `current` whose notes (in a release's `body`, every version's, as changes_since
+    reads them) carry the required-update line, or None."""
+    parts = re.split(rf"^\*\*({TAG_VERSION}):\*\*", body or "", flags=re.M)
+    found = [v for v, text in zip(parts[1::2], parts[2::2])
+             if version_tuple(v) > version_tuple(current) and REQUIRED.search(text)]
+    return max(found, key=version_tuple) if found else None
 
 
 def version_tuple(v: str) -> tuple:
@@ -226,9 +245,10 @@ def latest(app: str, current: str, fetch=_get_json, fetch_text=_get_text) -> Rel
                           f"and the release notes), so it isn't installed.")
     book = next((a for a in rel.get("assets", []) if a.get("name") == NOTES_ASSET.format(app=APPS[app])), None)
     book_url = str((book or {}).get("browser_download_url", ""))
+    body = str(rel.get("body") or "")
     return Release(app, version, rel["tag_name"], str(rel.get("html_url", "")), name, url, int(asset.get("size", 0)),
-                   hashes.pop(), changes_since(str(rel.get("body") or ""), current, version),
-                   book_url if book_url.startswith("https://github.com/") else "")
+                   hashes.pop(), changes_since(body, current, version),
+                   book_url if book_url.startswith("https://github.com/") else "", required_since(body, current) or "")
 
 
 def changes_in(rel: Release, lang: str, current: str, opener=None) -> list:
@@ -322,6 +342,38 @@ class UpdateCalls:
     _update_installed = staticmethod(installed_app)
     _update_found: Release | None = None
 
+    def use_required_updates(self) -> None:
+        """Play and Test in game wait for a required update (each app's app.py turns it on; tests of made-up games
+        don't meet it)."""
+        self._starter.required = self._update_refusal
+
+    def _update_kept(self) -> str:
+        """The required version this app last saw, while it's newer than the running one, else "" (settings.json
+        "required_update", which only the app writes: the window can't take it off)."""
+        kept = settings(Path(self._home)).get("required_update")
+        version = kept.get(self.UPDATE_APP, "") if isinstance(kept, dict) else ""
+        return version if isinstance(version, str) and version_tuple(version) > version_tuple(self.UPDATE_VERSION) else ""
+
+    def _update_keep(self, version: str) -> None:
+        values = settings(Path(self._home))
+        kept = values.get("required_update") if isinstance(values.get("required_update"), dict) else {}
+        if kept.get(self.UPDATE_APP, "") == version:
+            return
+        if version:
+            kept[self.UPDATE_APP] = version
+        else:
+            kept.pop(self.UPDATE_APP, None)
+        values["required_update"] = kept
+        save_settings(Path(self._home), values)
+
+    def _update_refusal(self) -> str | None:
+        """For rusemod.play.Starter: the message when a required update must go in first, else None."""
+        if not ((self._update_found.required if self._update_found else "") or self._update_kept()):
+            return None
+        lang = (self.prefs() or {}).get("lang") or "us"
+        said = self.strings(lang).get("update_required_refused") or "{app} has a required update to install first."
+        return said.replace("{app}", f"RUSE {APPS[self.UPDATE_APP]}")
+
     def app_version(self) -> dict:
         """This app and the version running, shown beside its name."""
         return {"app": APPS.get(self.UPDATE_APP, ""), "version": self.UPDATE_VERSION}
@@ -329,18 +381,23 @@ class UpdateCalls:
     def update_check(self, lang: str = "us") -> dict:
         """Is there a newer release of this app? {"available", "version", "current" (the running one), "changes"
         (before and after, per version since the running one: changes_since; in `lang` when the release's notes
-        have it: changes_in), "page", "size", "installed" (False when running from the repo), "error"}. Asked once
-        per start, and again when the language changes."""
+        have it: changes_in), "page", "size", "installed" (False when running from the repo), "error", "required"
+        (it must go in: the window installs it by itself and can't be used meanwhile), "offline" (a required update
+        seen before, GitHub unreachable now)}. Asked once per start, and again when the language changes."""
         try:
             rel = latest(self.UPDATE_APP, self.UPDATE_VERSION, fetch=self._update_fetch, fetch_text=self._update_fetch_text)
         except UpdateError as exc:
-            return {"available": False, "error": str(exc), "current": self.UPDATE_VERSION}
+            kept = self._update_kept()
+            return {"available": False, "error": str(exc), "current": self.UPDATE_VERSION,
+                    **({"required": True, "offline": True, "version": kept} if kept else {})}
         self._update_found = rel
+        self._update_keep(rel.required if rel is not None else "")
         if rel is None:
             return {"available": False, "version": self.UPDATE_VERSION, "current": self.UPDATE_VERSION}
         changes = changes_in(rel, lang, self.UPDATE_VERSION, opener=self._update_opener)
         return {"available": True, "version": rel.version, "current": self.UPDATE_VERSION, "changes": changes,
-                "page": rel.page, "size": rel.size, "installed": bool(self._update_installed())}
+                "page": rel.page, "size": rel.size, "installed": bool(self._update_installed()),
+                "required": bool(rel.required)}
 
     def update_page(self) -> dict:
         """Open the newer release's page (what's new) in the browser."""
