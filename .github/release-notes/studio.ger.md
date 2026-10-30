@@ -220,3 +220,289 @@ bei einem Spieler geht schneller.
 
 Bekannt: **Marinekarten sind noch nicht ausgearbeitet.** Ein trockengelegtes oder bemaltes Meer wird gebaut und lädt,
 aber das Wasser ist weiterhin zu sehen.
+
+**0.9.6:** eine neue Einheit kann ein eigenes 3D-Modell haben, aus jedem 3D-Programm, und **Im Spiel testen** startet
+sofort, wenn sich nichts geändert hat. Und eine Premiere:
+
+- **Das erste Modell aus einem anderen 3D-Programm in R.U.S.E.:** ein M1 Abrams, als neue US-Einheit neben dem Sherman gemacht. Er wird in der Armor Base mit seiner eigenen Karte gekauft, gebaut und dreht seinen Turm wie die Panzer des Spiels. Im Spiel gesehen.
+
+| Vorher | Jetzt |
+|---|---|
+| Eine neue Einheit hatte das Modell der Einheit, die sie kopiert. | **Modell importieren…** auf der Seite einer neuen Einheit: wähle eine **.3ds** (ihre Bilder daneben oder im Ordner darüber) oder eine **.glb** (aus Blender und den meisten 3D-Programmen). Das Studio passt sie an die Einheit an, die sie kopiert: ihre Länge (mal **Größe**: 1 ist gleich lang, ein Abrams gegenüber einem Sherman ist 1,36), ihren Turm auf den Turm dieser Einheit, damit das Spiel ihn genauso dreht, ihre Bilder als eigene Texturen. Die Seite zeigt sie in 3D; **Modell der kopierten Einheit nutzen** nimmt sie wieder heraus. Sie kommt als `files/models/<the unit's name>.glb` in deinen Mod und lässt sich in Blender öffnen. **Im Spiel gesehen.** Noch früh: Ketten und Räder drehen sich noch nicht, das Mündungsfeuer erscheint dort, wo die Mündung der kopierten Einheit ist, und das Wrack ist das der kopierten Einheit. |
+| Eine neue Einheit mit eigener Karte ließ das Spiel abstürzen, wenn sie gebaut wurde (0.9.5). | Ihre Einheitenkarte liegt auch auf der Spielkarte dort, wo das Spiel sie liest. **Im Spiel gesehen.** |
+| Eine mit **Karte duplizieren** gemachte Karte ließ sich im Studio nicht löschen. | **Karte löschen**, unter Karte duplizieren auf einer neuen Karte: fragt einmal, dann kommt ihr Ordner in den Papierkorb, wo du ihn zurückholen kannst. Die eigenen Karten des Spiels lassen sich nicht löschen. |
+| Das Studio sagte, Blender sei nicht installiert, wenn es entpackt statt installiert war. | Es findet Blender, wo immer du es entpackt hast (im obersten Ordner eines Laufwerks oder eine Ebene darunter, Downloads, Desktop, Dokumente). |
+| Neu bemalte Einheiten kamen mit manchen Farben etwas daneben heraus (ein roter und blauer Fleck konnte lila werden). | Jedes 4 x 4-Feld behält seine eigenen Farben. Neu bemalte Einheiten und bemalter Boden kommen mit leicht anderen Bilddaten heraus als in 0.9.5 (gleiches Aussehen), daher ändern sich Fingerabdruck und Beitrittscode eines solchen Mods: alle Spieler sollten aktualisieren, bevor sie zusammen spielen. |
+| **Im Spiel testen** baute jedes Mal die ganze gemoddete Kopie neu, auch wenn sich nichts geändert hatte. | Seit dem letzten Build nichts geändert: das Spiel startet sofort, ohne Build (ein Test-Mod: von 21-29 s auf unter 0,1 s). Ein Build verwendet die unveränderten Dateien der letzten Kopie weiter, statt sie erneut zu kopieren. |
+| Jeder Build las die Einheitendaten des Spiels neu ein. | Sie bleiben zwischen Builds erhalten: ein großer Test-Mod brauchte jedes Mal 213 s; jetzt dauert der erste Build etwa so lange und die folgenden 68 s. Das Spiel kopiert vor einem Build nicht mehr alle seine Daten. |
+| Das Löschen des größten Teils einer großen Karte ließ dem Studio den Speicher ausgehen, und das Löschen der ganzen Karte wurde als zu groß abgelehnt. | Entfernen zählt in Sekunden, eins nach dem anderen; **Ganze Karte löschen** in der Leiste Entfernen (Rückgängig nimmt es zurück). Gelöschte Szenerie wird kompakt geschrieben. Neu: noch nicht im großen Maßstab im Spiel gesehen. |
+| Unter einer Straße eingeebneter Boden ließ die Straße der Fernansicht auf der alten Höhe. | Das Straßenmodell folgt dem neuen Boden. Neu: noch nicht im Spiel gesehen. |
+| Ein eingeebnetes Flussbett behielt aus der Nähe seine Fels- und Schluchtbilder. | Es wird von beiden Ufern aus aufgefüllt und sein niedriger Bewuchs entfernt. Neu: noch nicht im Spiel gesehen, wie der Build es macht. |
+| Während der Spielindex gebaut wurde (etwa eine Minute), konnte das Studio nur warten. | Karten und Einstellungen bleiben nutzbar; die Zeile unten sagt, wann er fertig ist. |
+| Ein langsamer Start hinterließ keinen Hinweis. | Die Schritte jedes Starts werden gestoppt; **Bericht kopieren** in der Fehlersuche listet die letzten fünf auf. |
+| Die Seite des Fensters konnte mehr von der App erreichen als ihre eigenen Aufrufe. | Sie bekommt nur die eigenen Aufrufe der App. |
+
+Außerdem macht `ruse import-model <file> --like <model> --unit <name>` dasselbe über die Befehlszeile.
+
+**0.9.5:** Einheiten bekommen ein eigenes Aussehen. Sieh dir jede Einheit in 3D an, bemale sie in Blender neu, gib ihr
+deine eigene Karte im Baumenü. Und unsere Premieren, alle im Spiel gesehen:
+
+- **Die erste von einem Mod neu bemalte Einheit:** ein roter Sherman, aus der Nähe und von fern.
+- **Die erste in Blender bemalte Einheit**, zurück ins Spiel gebracht.
+- **Die erste im Studio gemachte Karte fürs Baumenü,** gezeigt im eigenen Menü der Armor Base des Spiels.
+- **Die erste neue Einheit mit eigenem Modell,** neben denen des Spiels: der Tall Sherman, neben dem Sherman (beim Testen gemacht; eigene Modelle im Studio zu machen kommt als Nächstes).
+- **Die erste eigene Mission**, bis zum Sieg gespielt: eine neue Operation mit eigenen Zielen, Einheiten und einem Artillerieschlag (beim Testen gemacht).
+
+| Vorher | Jetzt |
+|---|---|
+| Die Seite einer Einheit zeigte nur ihre Werte. | **3D-Modell** auf der Seite der Einheit: dreh es, zoom hinein, sieh die Bemalung deines Mods darauf. |
+| Das Aussehen einer Einheit war das des Spiels. | **In Blender neu bemalen:** **In Blender öffnen** öffnet die Modelle der Einheit mit ihren Bildern; male auf das Modell, dann speichert **Zurückholen** deine Bemalung und legt sie in deinen Mod. **Im Spiel gesehen**, aus der Nähe und von fern. Blender ist kostenlos: findet das Studio es nicht, sind **Blender holen (kostenlos)** und **Blender auswählen…** gleich da. |
+| Das Bild einer Einheit im Baumenü war das des Spiels. | **Diese Ansicht als Karte nehmen:** dreh und zoome das 3D-Modell, bis es im gestrichelten Rahmen richtig aussieht; diese Ansicht wird die Karte der Einheit im Baumenü. **Im Spiel gesehen.** |
+| Eine neue Einheit zeigte dieselbe Karte wie die Einheit, die sie kopiert, sodass beide im Menü gleich aussahen. | Die Karte einer neuen Einheit ist ihre eigene (`files/cards/<the unit's name>.png`): ihre Karte zu machen ändert nie die des Originals. Noch nicht im Spiel gesehen. |
+| Ein gewachsenes Modellpaket für Einheiten wurde vom Spiel verworfen, jedes Modell darin fehlte: ein Absturz bei der ersten Fabrik. | Modellpakete werden so geschrieben, wie das Spiel sie prüft, gleich welche Größe sie haben. **Im Spiel gesehen:** ein zweiter Sherman mit eigenem Modell. |
+| Die Einheiten einer Nation, einer anderen Armee gegeben, hatten in Kampagnenkapiteln und Operationen kein Modell: ein Mod, der französische Einheiten auf Holland erscheinen ließ, stürzte beim Laden ab. | Ihre Modelle laden auch dort. **Im Spiel gesehen** (französische Einheiten auf Colditz). |
+| **Karte duplizieren** machte nur Karten für KÄMPFE. | Es macht auch eine neue **Operation** oder ein neues **Kampagnenkapitel** aus dem Eintrag jeder Karte. **Im Spiel gesehen:** eine neue Operation. Noch früh: ein neues Kampagnenkapitel wurde noch nicht ausprobiert. |
+| Das Einebnen der Berge am Rand einer Karte ließ dort eine Klippe zurück. | Der Rand der Karte folgt dem Boden. **Im Spiel gesehen** (Blitz Twin, flach bis zum Rand). |
+| Einheiten fuhren um die Stellen herum, wo gelöschte Stadtgebäude gestanden hatten. | Der Boden öffnet sich für jede Einheit, wo Gebäude entfernt werden, wie bei Bäumen. **Im Spiel gesehen.** |
+| Keine Möglichkeit, den Boden der Karte zu bemalen. | **Kartenmalerei:** male das Bild des Bodens mit einer Farbe (dem Farbrad, den eigenen Farben der Karte oder der Pipette) oder mit dem eigenen Boden der Karte, kopiert von einer anderen Stelle. **Boden darunter freiräumen** (standardmäßig an) nimmt Gras, Feldfrüchte und Steine unter der Bemalung weg, sodass sie in jeder Höhe zu sehen ist. Noch früh: im Spiel von hoch oben gesehen. |
+
+**0.9.4:** neue Karten, noch früh. **Karte duplizieren** macht aus jeder Karte von KÄMPFE eine neue Karte, und Karten
+öffnen sich in einer Sekunde.
+
+| Vorher | Jetzt |
+|---|---|
+| Kartenänderungen konnten nur die eigenen Karten des Spiels ändern. | **Karte duplizieren** (Reiter Karten, unter dem Namen der offenen Karte) macht eine **neue Karte**: eine vollständige Kopie mit eigenem Namen, in KÄMPFE neben dem Original aufgeführt, die du dann wie jede Karte änderst. Das Fenster sagt, was es tut und wie es funktioniert. **Im Spiel gesehen:** eine neue Karte spielt ihren eigenen Boden, und 101 neue Karten auf einmal wurden alle aufgeführt und gespielt. Noch früh: Kopien anderer Karten als Blitz werden gebaut, wurden aber noch nicht im Spiel ausprobiert, und das Einebnen der Berge am Rand einer Karte lässt dort eine Klippe. Bitte melde, was du findest. |
+| Eine Karte brauchte jedes Mal Sekunden zum Öffnen (M03_Italie: 7,6 s). | Ihre Daten bleiben zwischen Besuchen und Starts erhalten: 1,7 s beim zweiten Mal. |
+| „Mod“ und „Karte“ waren zwei gleich aussehende Menüs. | **Einheiten-Mod** (mit einem Panzer) und **Kartenänderungen** (mit einer Karte). |
+| Seiten und Zonen ließen sich leicht verwechseln. | **Wer bekommt es?** sagt, dass eine Seite die ist, die die Einheiten steuert (ein Land kann mehrere haben), und der Hover-Text einer Zone sagt, dass sie ein Gebiet der Karte ist, keine Seite. |
+| Updates kamen nur als ganze Versionen. | Kleine Korrekturen können zwischen Versionen kommen (0.9.4.1), angeboten wie jedes Update. |
+
+**0.9.3:** alles, was du platzierst, ist von fern zu sehen, neue Straßen durch Wälder sehen aus wie die eigenen der Karte,
+Bäume, die du auf einer Straße behalten kannst, Objekte und Bäume mit Namen in deiner Sprache, und Builds etwa dreimal
+schneller.
+
+| Vorher | Jetzt |
+|---|---|
+| Zu platzierende Objekte, Bäume und Gebäude waren unter französischen Codenamen aufgeführt: Caillou_10, ChampsPierres_02, Osier... | Mit Namen in der Sprache des Studios, in allen zehn, mit der Art jedes Dings: „Stony field 2“, „Champ de pierres 2“, „Steiniges Feld 2“. Sie wechseln mit dem Sprachknopf. Der Codename und sein Ordner stehen im Tooltip. |
+| Felsen und die meisten anderen Objekte, die du platziert hast, verschwanden, sobald die Kamera die Nähe verließ, und kamen und gingen, während du sie drehtest. | Alles, was ein Mod platziert, wird bis in die Ferne dargestellt, die eigenen Objekte der Karte unverändert. **Im Spiel gesehen:** platzierte Felsen sind in jeder Höhe zu sehen. |
+| Von hoch oben war eine neue Straße durch einen Wald ein heller Streifen, und nach einer ersten Korrektur war sie aus mittlerer bis großer Entfernung verschwunden. | Durch Wälder gemalt wie die eigenen Straßen der Karte, in jeder Höhe. **Im Spiel gesehen.** |
+| Eine neue Straße nahm immer die Bäume von ihrem Weg, etwa 6 m zu beiden Seiten. | **Bäume auf neuen Straßen behalten** in der Leiste Straßen: die Bäume und Büsche bleiben über der Straße, und im Wald zeigt sich die Straße blasser und grauer. **Im Spiel gesehen.** |
+| **Im Spiel testen** brauchte etwa 5 Minuten, um einen Mod mit neuen Straßen auf M03_Italie zu bauen. | Etwa 1½ Minuten: wie die Straßen einer Karte aussehen, wird einmal gemessen und behalten, und Kopien überspringen eine langsame Prüfung, die sie nicht brauchen. |
+
+**0.9.2:** Korrekturen aus der Kampagnenkarte eines Testers: Brücken für neue Straßen auf jeder Karte, Straßenenden, die
+an Brücken einrasten (oder gar nicht), die Namen, die ein Spieler kennt, Einheiten für den Spieler, Szenerie, die von fern
+zu sehen ist, und die Zonen des Szenarios als Grenzen auf dem Boden.
+
+| Vorher | Jetzt |
+|---|---|
+| Eine Straße über Wasser stoppte den Build auf 20 der 29 Karten mit Brücken (Italien, Deutschland, Holland...): ihre Brücke „hätte keinen Boden“. | Sie bekommt ihre Brücke und ihren Boden auf jeder Karte mit Brücken. Auf diesen Karten noch nicht im Spiel gesehen. |
+| Jeder Punkt einer Straße rastete an der nächsten Straße ein, sogar auf eine Straße, wenn du dort eine Brücke platziert hattest. | Nur die zwei Enden einer Straße rasten ein, zuerst am Ende einer platzierten Brücke. **Enden an Straßen und Brücken einrasten** in der Leiste Straßen schaltet es aus. |
+| Gebäude und Einheiten unter ihren Codenamen, wie „Descriptor_Building_VehiculeFactoryLeurre“. | Unter den Namen, die das Spiel ihnen gibt (DECOY ARMOR BASE), mit der eigenen Zeile des Spiels dazu, was jedes tut. |
+| Keine Möglichkeit, dem Spieler in einem Kampagnenkapitel Einheiten zu geben: die Seite des Spielers (0) wurde abgelehnt. | **Wer bekommt es?** listet die eigenen Seiten des Szenarios aus seiner Mission auf: „Spieler · USA (Seite 0)“, „Computer · Deutschland (Seite 1)“... |
+| Auf M03_Italie und anderen Karten verdeckte eine neue Straße im offenen Gelände von fern die Szenerie der Karte, und platzierte Objekte zeigten sich nur aus der Nähe. | Die Fernansicht der Karte bleibt, wie sie war, und platzierte Objekte zeigen sich von fern wie die eigenen der Karte. Noch nicht im Spiel gesehen. |
+| Die Zonen des Szenarios waren farbige Flächen, die über der Karte schwebten und ihren Boden und die Symbole verdeckten. | Jede Zone ist eine klare Linie entlang ihrer Grenze auf dem Boden, innen mit einer durchsichtigen Tönung, wie die Grenzen in Stellaris. **Füllung der Zonen** stellt das Innere ein (0 %: nur die Grenzen). |
+
+**0.9.1:** alles auf der Karte ziehen, klarere Symbole, die du in der Größe ändern und ausblenden kannst, deine Sprache vom
+ersten Start an, und die Art jeder Einheit so, wie das Spiel sie nennt.
+
+| Vorher | Jetzt |
+|---|---|
+| Startpunkte, Versorgungsdepots und gespawnte Einheiten ließen sich nur mit dem Werkzeug Verschieben bewegen, ein Klick und dann noch einer. | Greif eines davon auf der Karte und zieh es, ohne gewähltes Werkzeug, so wie sich die Eröffnungskameras schon drehen ließen. Depots und HQs haften beim Ziehen weiter an Straßen. |
+| Kartensymbole waren Strichmännchen und Kästchen, und jeder Bunker sah gleich aus. | Ein Symbol für jede Art: ein Soldat, ein Panzer, ein Lastwagen für Versorgungsdepots, ein Flugzeug, Geschütze, ein deutlich markiertes HQ, Armor Base und Flugplatz unterscheidbar, und jeder Bunker mit seinem eigenen (Panzerabwehr, Maschinengewehr, Flugabwehr, Artillerie, Festung, Beobachtungsposten). |
+| Symbole waren von hoch oben klobig, und man konnte sie nur ausblenden, indem man das ganze Szenario ausblendete. | Symbole werden kleiner, wenn die Kamera wegzieht, ein Regler stellt ihre Größe ein, und die Leiste Szenario zeigt oder verbirgt jede Art (Starts, Kameras, Depots, Gebäude, Einheiten, Zonen, Orte). Für das nächste Mal behalten. |
+| Das Studio startete mit den Codenamen, und die Sprache steckte in den Einstellungen, sodass Spieler nicht wussten, dass es ihre Sprache spricht. | Der erste Start fragt: „Wählen Sie Ihre Sprache“, jede Sprache in ihren eigenen Worten, die, auf die dein Spiel in Steam eingestellt ist, markiert. Danach ein Sprachknopf oben, immer im Blick. |
+| Einheiten waren nur „Boden“ oder „Luft“. | Unter Boden, Infanterie und Luft die eigenen Arten des Spiels: Leichter, Mittlerer und Schwerer Panzer, Jagdpanzer, Panzerspähwagen, Jäger, Jagdbomber, Leichter, Mittlerer und Schwerer Bomber, Aufklärungsflugzeug... auch in der Zeile jeder Einheit, in deiner Sprache. Die Suche findet sie („Bomber“, „Aufklärung“). |
+| Die Windows-Liste der installierten Apps zeigte die allererste installierte Version. | Sie zeigt die Version, die du hast. |
+
+**0.9.0:** Straßen sehen richtig aus. Eine Straße, die du zeichnest, sieht jetzt aus wie die eigenen Straßen der Karte, von
+hoch oben bis hinunter zum Boden. Es hat viel Zeit und viele Tests gekostet, dorthin zu kommen, länger als bei den
+Brücken. Im Spiel auf D-Day getestet.
+
+![Eine neue Straße aus der Nähe auf D-Day: Asphalt mit gestrichelter Mittellinie und Schotterbanketten, die ins Gras übergehen](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Vorher | Jetzt |
+|---|---|
+| Eine neue Straße verschwand, wenn die Kamera zu ihr herunterkam: nur ihre Bemalung war zu sehen, von hoch oben. | Aus der Nähe wird sie mit den eigenen Asphalt-Aufklebern der Karte gezeichnet, entlang der Straße so gelegt, wie die Karte sie legt, mit einem Rand-Aufkleber auf jeder Seite: Asphalt, eine gestrichelte Mittellinie, Schotterbankette. |
+| Die Bemalung war eine einzige flache Farbe, blasser und breiter als die Straßen der Karte. | Die Bemalung wird an den eigenen Straßen der Karte gemessen: ihre Farbe, ihre Bankette und wie sie in den Boden übergehen. Jede Karte bekommt ihre eigene. |
+| Gras, Büsche und die Bäume der Höfe wuchsen durch eine neue Straße. | Die Pflanzen und Objekte der Karte auf dem Weg der Straße werden entfernt (etwa 6 m zu beiden Seiten). Wälder behalten ihre Deckung und Bewegung, und Gebäude bleiben. |
+| Nur die Straßen-Aufkleber von D-Day waren bekannt. | Die eigenen Aufkleber der Wüstenkarten werden dort verwendet, auf dieselbe Weise gelegt (noch nicht im Spiel gesehen). |
+| Ein großes Entfernen (Tausende Kreise) brauchte viele Minuten zum Bauen. | Viel schneller: nur die Kreise nahe jedem Teil der Karte werden betrachtet. |
+
+![Drei neue Straßen, die von der Hauptstraße von D-Day abgehen](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-6-done-overview.jpg)
+
+**0.8.3:** die Szenario-Werkzeuge des Karteneditors aus LittleGrooves RUSE-Mod-Manager: Versorgungsdepots und HQs haften an
+Straßen, ein Symbol für jedes Gebäude und jede Einheit, und die Eröffnungskamera jedes Spielers gezeigt, mitgeführt und
+gedreht. Noch nicht im Spiel ausprobiert.
+
+| Vorher | Jetzt |
+|---|---|
+| Ein Platz für ein Versorgungsdepot ließ sich nicht setzen. | **Platz für ein Versorgungsdepot** steht als Erstes unter Einheit setzen → Gebäude → Geld. |
+| Ein Startpunkt kam genau dorthin, wo du geklickt hast, ob auf die Straße oder weit weg davon. | **An Straßen ausrichten** (standardmäßig an) setzt ihn neben die nächste Straße, so weit davon entfernt wie auf den eigenen Karten des Spiels (LittleGroove hat es gemessen). Nimm den Haken weg, um mitten auf ein Feld zu setzen. |
+| Spawnpunkte waren ein paar Symbole, mit Buchstaben für das Land. | Ein Symbol für das, was jeder ist (HQ, Versorgungsdepot, Fabrik, Festung, Attrappe, Soldat, Panzer, Panzerabwehr, Artillerie, Prototyp, Flugzeug, Geschützturm), und die Kokarde des Landes. |
+| Du konntest nicht sehen, wo das Match eines Spielers beginnt. | Jeder Startpunkt zeigt seine Eröffnungskamera: den Anflug (gepunktet), wo er endet, worauf sie blickt und den Teil der Karte, den der Bildschirm zeigt. |
+| Die Eröffnungskamera eines verschobenen Startpunkts blieb am alten Ort. | Die Kamera zieht mit; ein neuer Startpunkt bekommt eine eigene Kamera. |
+| Die Eröffnungskamera ließ sich nicht ändern. | Mit **Verschieben** die Kamera eines Starts um ihr HQ ziehen, um das Match von einer anderen Seite zu eröffnen; **Kamera zurück** macht es rückgängig. |
+| Ein Startpunkt in einem Wald wurde abgelehnt. | Erlaubt: ein HQ funktioniert dort, und Versorgungslastwagen fahren durch Wälder. Nur Wasser, Klippen und gesperrter Boden werden abgelehnt. |
+
+**0.8.2:** ein Test, der an einem Fehler in deinem Mod scheitert, sagt dir, an welchem, und behebt ihn, Mods und Karten
+getrennt, klarere Kartenfarben und Spawnpunkte, und eine Spielkopie für den ganzen PC.
+
+| Vorher | Jetzt |
+|---|---|
+| Ein Test, der an einem Fehler in deinem Mod scheiterte, vergrub den Grund im Log und verwies auf die Fehlersuche, die einen Mod nicht beheben kann. | Jeder Fehler wird über dem Log aufgeführt, mit einem Knopf, der ihn behebt: ein Team-Spawnpunkt auf einer Karte für KÄMPFE wird neutral gemacht oder herausgenommen (auch alle auf einmal), eine Straße, die nichts verbindet, herausgenommen. Die Fehlersuche erscheint nur bei anderen Fehlschlägen. |
+| Die Meldung unten ließ sich nicht schließen. | Jede Meldung hat ein ×, um sie zu schließen. |
+| Das Test-Log ließ sich nicht kopieren. | **Bericht kopieren** kopiert das Log und die Meldung, für einen Fehlerbericht oder Discord. |
+| Mods und Karten teilten sich ein Menü. | Mods und Karten haben jeweils ihr eigenes Menü, und Exportieren legt die Datei direkt in die Bibliothek des Launchers. |
+| Jeder Spawnpunkt auf der Karte sah gleich aus. | Jeder Spawnpunkt ist ein Gebäude-, Panzer-, Soldaten- oder Flugzeugsymbol in der Farbe seiner Seite, mit seinem Land. |
+| Die Farben der Karte wurden nicht erklärt. | Eine Farblegende für Deckung, wo Einheiten hinkommen und Entfernen; die Deckung des Werkzeugs Stadt hat eine eigene Farbe; ein Durchsichtigkeitsregler für jede Ebene. |
+| Hügel und Bäume ragten durch die Zonen eines Szenarios. | Zonen schweben über dem Boden, und ein Regler **Höhe der Zonen** stellt ein, wie hoch. |
+| Jeder Test behielt seine eigene Kopie des Spiels. | Eine gemoddete Kopie für den ganzen PC, geteilt mit dem Launcher. |
+| Die Version wurde nicht angezeigt, und Neuerungen war eine Liste. | Die Version steht neben dem Namen, und Neuerungen öffnet eine Vorher/Jetzt-Tabelle wie diese. |
+| Wenige Tooltips. | Tooltips an den wichtigsten Bedienelementen, geschrieben für Spieler, die neu im Modding sind. |
+| Neuen Straßen auf Twilight of the Gods, Alpha, Ostfriesland und Robert fehlte das Straßenmodell der Karte. | Sie bekommen es auch. |
+| Der Build sagte, neue Straßen würden „aus der Nähe gezeichnet“. | Er sagt, dass sie von fern zu sehen sind; aus der Nähe erscheinen sie noch nicht (weiterhin ein bekanntes Problem). |
+
+**0.8.1:** Einheiten aus jeder Nation, ein neuer Look, eine kürzere Werkzeugleiste und das Werkzeug Entfernen.
+- **Einheiten aus einer anderen Nation funktionieren.** Eine neue Einheit kann in das Baumenü jeder Nation, gleich aus welcher Armee ihr Modell kommt: ein deutscher Tiger oder eine Ju 87 für die USA, auch ein japanischer Zero oder Chi-Ha. Sie wird gebaut, kämpft, zeigt ihr Bild auf ihrer Karte und ihrer Markierung und lässt sich am Boden und in der Luft auswählen, sogar in einem Match, in dem niemand die Nation spielt, aus der sie kommt (im Spiel getestet, 2026-10-02). Der Build lässt die Modelle dieser Nation in jedem Match laden; ein Match braucht etwas mehr Speicher und Ladezeit.
+- **Ein neuer Look:** die Blautöne von R.U.S.E. statt Schwarz und Gold, und ein neues Logo: der Tisch des Lagezentrums.
+- **Die Werkzeugleiste des Karteneditors ist kürzer.** Werkzeuge, die zusammengehören, teilen sich eine Kachel, mit einem Reiter für jedes: Gelände & Wasser, Deckung & Bewegung, Straßen & Brücken, Gebäude, Objekte & Bäume, dann Entfernen, Szenario und Prüfen. Eine Kachel öffnet sich auf dem zuletzt benutzten Reiter.
+- **Werkzeug Entfernen:** zieh über die eigenen Bäume und Objekte der Karte (auch Gebäude, wenn du sie wählst), und sie sind weg, wenn der Mod gebaut wird. Die roten Kreise werden im Mod gespeichert, was sie abdecken, wird rot getönt, und die Leiste zählt, was sie wegnehmen werden. Wo Bäume verschwinden, öffnet sich der Boden für jede Einheit und verliert seine Walddeckung. Gebäude, Straßen, Sträucher und Felsen der Karte richtig zu entfernen kommt als Nächstes.
+- **Das Installationsprogramm bietet eine saubere Sicherung des Spiels an**, neben der Desktop-Verknüpfung, und sagt, warum: damit kann die Fehlersuche alles wiederherstellen, was ein anderer Mod-Manager geändert hat.
+
+**0.8.0:** der Karteneditor wird erwachsen: neue Pinsel und Docks, Brücken, die Einheiten wirklich überqueren, Wälder, die
+du roden kannst, und ein Build, der die Regeln des Spiels prüft, damit, was du machst, beim ersten Mal funktioniert. Dazu
+eine Fehlersuche und eine saubere Sicherung des Spiels.
+- **Neu im Karteneditor:**
+  - **Öffnen-Pinsel** (Bewegung): das Gegenteil von Sperren. Gib Einheiten Boden, von dem die Karte sie fernhält (alle Einheiten, Infanterie oder Fahrzeuge). Wasser zu öffnen ist erlaubt und wird gewarnt: Einheiten stehen dort auf dem Flussbett.
+  - **Wald-Pinsel** (Deckung): Bäume und Deckung in einem Strich; Rückgängig nimmt beides weg.
+  - **Dock Brücken:** die eigenen Brückenarten der Karte, und eine von Hand platzierte Brücke in der Länge und Drehung, die du wählst; die Wasserquerungen neuer Straßen in Gold gezeichnet.
+  - **Diese Karte prüfen:** listet auf, was schiefgehen würde, bevor du testest (abgeschnittener Boden, Straßen oder Brücken, die Einheiten nicht nutzen können, nicht verbundene Straßenenden, Gebäude auf Straßen), und ein Klick auf einen Eintrag zeigt, wo.
+  - Trockengelegte oder trocken angehobene Flussbetten werden vom Build für Einheiten geöffnet.
+- **Die eigenen Bäume und Objekte der Karte entfernen:** `[[erase]]`-Kreise in der `scenery.toml` eines Mods (vorerst von Hand geschrieben; ein Werkzeug Entfernen im Studio ist unterwegs). Panzer fahren in einen gerodeten Wald, und Infanterie dort ist nicht mehr versteckt.
+- **Platzierte Objekte stehen in jeder Größe auf dem Boden.** Ein 10× vergrößertes Gebäude schwebte in der Luft; jetzt sitzt es auf dem Boden wie die eigenen der Karte.
+- **Behoben: Deckung auf den Karten, die nicht quadratisch sind** (D-Day, Frontline, Djebel, Medjez, Handshake over the Elbe und die Kampagnenkarten Tunesien, Holland und Ardennen). Dort gemalte oder entfernte Deckung (die Pinsel Deckung, Freilegen, Stadt und Wald, `cover.toml`) landete bis zu einem Kilometer von dort entfernt, wo sie gezeichnet wurde, und die Kartenansicht zeigte sie auch an dieser falschen Stelle. Beides stimmt jetzt: wenn du auf einer dieser Karten Deckung gemalt hast, sieh sie dir in der Kartenansicht noch einmal an. Quadratische Karten (Blitz und die meisten anderen) waren immer richtig.
+- **Brücken funktionieren im Spiel.** Eine Straße, die du über Wasser zeichnest, bekommt die eigene Brückenart der Karte (auch die der niederländischen Karten), und Panzer, Infanterie und Versorgungslastwagen überqueren sie auf der Fahrbahn, Infanterie auf der Höhe der Fahrbahn. Brückenenden schließen an die Straßen an, die Einheiten schon nutzen, und halten Abstand zu den Gebäuden der Karte; eine Brücke, die sich nicht anschließen lässt, bleibt gesperrt, und die Notiz des Builds sagt, worauf die Straße traf und wo.
+- **Der Build prüft die Regeln des Spiels.** Bei jeder Datei, die ein Mod ändert, wurde geprüft, was das Spiel mit ihr macht, und ein Mod, der im Spiel kaputtgehen würde, wird abgelehnt, mit einer Notiz, die sagt, warum, bevor irgendetwas geschrieben wird:
+  - Straßen: Einheiten folgen jetzt neuen Straßen, nicht nur Versorgungslastwagen, und eine neue Straße, die an keine andere Straße anschließt, wird abgelehnt (das Straßennetz muss in einem Stück bleiben);
+  - platzierte Gebäude und Sperren: Einheiten können nicht mehr hindurchfahren; neue Gebäude, Brücken und Bäume sind in jeder Entfernung zu sehen;
+  - Gelände: neues Wasser ist für Einheiten gesperrt, die Karte der KI folgt deinen Wäldern, Sperren, Brücken und Gewässern, und ein Strich, der den Boden nicht ändern kann (oder den Boden einer Brücke erreicht), sagt es;
+  - Einheiten: eine falsche Salve, ID, Nation oder Menüliste wird abgelehnt, Einheiten-Flags werden geprüft, und jede Flag wird in der Flag-Auswahl erklärt (die Flags 62 und 63, die das Spiel bei einer Einheit, die kein Lastwagen ist, abstürzen lassen, sind ein Fehler); eine Einheit in der Fabrik einer anderen Nation wird vorerst abgelehnt (sie ließ das Spiel beim Bauen abstürzen; sie zum Laufen zu bringen kommt als Nächstes);
+  - Szenario: Spawnpunkte sind standardmäßig neutral, ein Spawnpunkt einer Einheit, deren Modelle das Match vielleicht nicht lädt, wird abgelehnt (er ließ das Spiel beim Start abstürzen), ein Start, wo Fahrzeuge nicht hinkommen, wird abgelehnt, ein verschobener Start nimmt seine Kamera mit, und Plätze werden pro Team gezählt.
+- **Der Bericht des Builds** zeigt jede Warnung (manche gingen verloren), und ein Neubau nimmt zuerst die alte Testkopie weg, sodass eine alte Kopie nicht aus Versehen gestartet werden kann.
+- **Quadratische Deckung:** `square = true` an einer Malung in `cover.toml` oder an einem Strich Deckung oder Freilegen in `terrain.toml` malt ein Quadrat entlang der Achsen der Karte (vorerst von Hand geschrieben; die Kartenansicht zeichnet es als Quadrat).
+- **Fehlersuche** (neben *Im Spiel testen* und unter Einstellungen > Hilfe): prüft auf einmal, was einen Test verhindern kann (das Spiel gefunden, Steam, ein Spiel, das noch aus einer gemoddeten Kopie läuft, das Laufwerk und sein freier Platz, übrig gebliebene Kopien, schreibgeschützte Dateien, ob die App dort schreiben darf, wo Kopien hinkommen), mit einem Knopf für jede Korrektur, die sie machen kann, und einem Bericht zum Einfügen in einen Fehlerbericht, ohne deinen Windows-Benutzernamen.
+- **Saubere Sicherung des Spiels** (Einstellungen): behalte eine saubere Kopie der Dateien deines Spiels, prüfe sie dagegen und stelle alles wieder her, was ein anderer Mod-Manager oder eine Bearbeitung von Hand geändert hat. Dateien, die nicht zum Spiel gehören, werden beiseitegelegt, nie gelöscht. Oder lass Steam das Spiel reparieren (*Mit Steam überprüfen*). Das ist der einzige Ort, an dem das Studio je in deinen Spielordner schreibt, und nur, wenn du darum bittest.
+- **Teile deinen Mod:** einen Mod gemacht? Nach dem Export zeigt das Studio seine Größe und SHA-256 und wie man ihn zur Mod-Liste auf GitHub hinzufügt und Mitwirkender wird.
+- **Bekanntes Problem: neue Straßen werden aus der Nähe noch nicht gezeichnet.** Sie sind auf den Boden gemalt und von fern zu sehen, und Einheiten nutzen sie, aber mit der Kamera nahe am Boden verschwindet eine neue Straße. Daran wird gearbeitet.
+
+**0.7.6:** ein zweites Im Spiel testen funktioniert, und Brücken, die Einheiten immer erreichen können.
+- **Behoben:** jedes zweite *Im Spiel testen* konnte mit „Eine alte gemoddete Kopie ... kann nicht entfernt werden ... (Access is denied)“ fehlschlagen. Eine Kopie, die Windows nicht löschen will (eine Datei, die eine ältere Version mit einer ersetzten Spieldatei verknüpft hat, ein Programm, das sie noch festhält), stoppt keinen Test mehr: sie wird nach `RUSE-Instances\.trash` beiseitegelegt und entfernt, sobald nichts sie mehr festhält. Läuft R.U.S.E. noch aus der Testkopie, wird es dir gesagt, mit dem Namen des Programms. Zweimal *Im Spiel testen* zu drücken startet einen Test, nicht zwei.
+- **Behoben:** die neue Brücke einer Straße konnte das Spiel abstürzen lassen, wenn Einheiten auf sie geschickt wurden: ihre Fahrbahn erreichte keinen Boden, den Einheiten nutzen. Jedes Ende einer Brücke schließt jetzt entlang der Straße an den Boden an (bis zu 62 m Zufahrt); eine Brücke, die sich nicht anschließen lässt, bleibt für Einheiten gesperrt, mit einer Notiz, und der Build schreibt nie Boden, den Bodeneinheiten nicht erreichen können.
+
+**0.7.4:** Im Spiel testen funktioniert, wenn die Dateien deines Spiels schreibgeschützt sind.
+- **Behoben:** *Im Spiel testen* schlug jedes Mal mit „[WinError 5] Access is denied“ fehl, wenn die Dateien von R.U.S.E. schreibgeschützt sind (eine Installation von Disc, eine wiederhergestellte Sicherung): die Testkopie behielt die Markierung, sodass eine halb gebaute Kopie nie entfernt werden konnte. Die Testkopie behält die Markierung jetzt nie, und ein Überbleibsel einer älteren Version wird von selbst entfernt (die Dateien deines Spiels bleiben genau so, wie sie waren). Läuft das Spiel noch aus der Testkopie, wird dir gesagt, es zu schließen, statt dass du einen Windows-Fehler bekommst.
+- **Eine Straße zeigt ihre Länge**, während du sie zeichnest, neben dem Zeiger (wie in Cities: Skylines); die Straßenwerkzeuge zeigen die Gesamtlänge deiner neuen Straßen.
+- **Neue Straßen werden auf den Boden gemalt**, in der eigenen Straßenfarbe der Karte (im Spiel nachgewiesen), und **eine Straße über Wasser bekommt eine Brücke**: die eigene Art der Karte, ein Stück von Ufer zu Ufer gestreckt, wie die eigenen Brücken des Spiels, damit Einheiten hinüberkommen. Eine Straße über eine der eigenen Brücken der Karte bekommt die neue Brücke an ihrer Stelle. (Brücken sind neu: noch nicht im Spiel geprüft.)
+
+**0.7.3:** ordne die Kartenansicht nach deinem Geschmack. Das Kartenfeld (oben links) und die Werkzeuge (unten) lassen
+sich an ihrem Griff (⠿) überallhin verschieben und mit dem Pfeil daneben einklappen: das Kartenfeld bis auf seinen Titel,
+die Werkzeuge bis auf ihre Leiste. Ein Doppelklick auf einen Griff setzt dieses Feld zurück. Deine Anordnung bleibt
+erhalten.
+
+**0.7.2:** Straßen, und klarere Tests.
+- **Straßen zeichnen**, wie in Cities: Skylines (die Art Straßen in der Leiste): **Gerade**, **Kurve** und **Freihand**. Ein Ende nahe einer Straße rastet an ihr ein und verbindet sich mit ihr. Neue Straßen erscheinen als blaue Bänder, und **Versorgungsrouten nutzen sie** (im Spiel nachgewiesen). Sie werden noch nicht auf den Boden gemalt.
+- Das Kästchen **Straßen** zeigt die eigenen Straßen der Karte in Gold.
+- Die eigenen Worte des Spiels: ein Szenario wird nach dem Knopf im Hauptmenü benannt, der es spielt (**Kämpfe**, Operation, Kampagne, aus dem Text deines Spiels in deiner Sprache gelesen), und eine goldene Zeile unter dem Szenario-Menü sagt, wo es gespielt wird, z. B. *Im Spiel: Kämpfe › D-Day (6 Spieler)*.
+- **Im Spiel testen** sagt, wo es gebaut hat und genau, was du öffnen musst, um deine Änderungen zu sehen (z. B. *KÄMPFE > D-Day*).
+- Die mittlere Maustaste dreht die Ansicht auch im Umschau-Modus (dort zoomte sie vorher).
+
+**0.7.1:** mehrere Einheiten auf einmal, eine Mod-Prüfung und Hilfe zur Hand.
+- **Einheit setzen** platziert 1, 2, 4, 6, 8 oder 10 auf einmal, in **Linie, Kolonne, Keil, Block oder Kreis**, zum oberen Bildschirmrand gerichtet, mit einem Abstandsregler und Ringen, die zeigen, wo jede stehen wird.
+- Die **Mod-Prüfung**: jede Datei deines Mods wird so gelesen, wie der Spiel-Build sie liest, wenn du den Mod wählst und vor **Im Spiel testen**. Eine rote Leiste nennt jedes Problem; eine kaputte Kartendatei kann **beiseitegelegt** werden (umbenannt, nie verloren), und ein Kartenordner, der nach dem Titel der Karte benannt ist (maps/Blitz), kann mit einem Klick in seinen Paketnamen (maps/SuperCrossRoads4) **umbenannt** werden.
+- Behoben: **Wasser**-Striche wurden ohne ihre Höhe gespeichert, sodass der Spiel-Build den Mod ablehnte. Jede Datei, die das Studio schreibt, wird jetzt zurückgelesen, bevor sie gespeichert wird.
+- Die Kartenliste **klappt weg** («) für mehr Platz.
+- **Einstellungen > Hilfe & Community**: das Wiki (das neue Handbuch), Discussions und **Problem melden**, das einen Fehlerbericht öffnet, in dem deine Version schon eingetragen ist. Ein Fehler unten hat einen eigenen Link **Melden**. Die App sendet nichts: du liest den Bericht und postest ihn.
+
+**0.7.0:** ein neuer Look und Bewegungswerkzeuge. Die Kartenwerkzeuge sind in eine Leiste am unteren Rand gewandert, wie in
+Cities: Skylines, im eigenen HUD-Stil von R.U.S.E.: wähle eine Art (Gelände, Wasser, Deckung, Bewegung, Gebäude, Objekte,
+Bäume, Szenario), und ihre Werkzeuge öffnen sich darüber; klick sie erneut an oder drück Esc, um dich nur umzusehen. Die
+Auswahlen des Szenarios sind jetzt Kacheln, keine Aufklapplisten. **Bewegung:** das Kästchen **Wo Einheiten hinkommen**
+zeigt es auf der Karte (rot: keine Einheit; gelb: nur Infanterie), und drei neue Pinsel sperren Boden: **Sperren** (jede
+Einheit), **Infanterie sperren** und **Fahrzeuge sperren**. Gebäude, die du platzierst, halten Einheiten auf (das Kästchen
+**Massiv**, standardmäßig an). Im Spiel nachgewiesen: Einheiten planen um eine gesperrte Grube herum und gehen zwischen
+platzierten Türmen hindurch.
+
+**0.6.9:** Gebäude, Objekte und Bäume, die du platzierst, sind jetzt im Spiel in jeder Zoomstufe zu sehen (nachgewiesen
+auf Blitz, bis zu 8× ihrer Größe): jede Gruppe kommt in einen neuen Block, der um das nächste Dorf oder den nächsten Hof
+gelegt wird, den die Karte von fern zeichnet. Auf allen 32 Karten geprüft: sonst bewegt sich nichts. Einheiten laufen noch
+durch platzierte Gebäude; sie massiv zu machen kommt als Nächstes.
+
+**0.6.8:** mach Städte und Wälder, in denen sich Einheiten verstecken können. Die Kartenansicht zeigt, wo sich Einheiten
+verstecken (das Kästchen **Deckung**, in Grün), und drei neue Pinsel malen es: **Deckung**, **Freilegen** und **Stadt**
+(klick auf eine Stadt: Deckung kommt um jedes ihrer Gebäude, auch um platzierte). Im Spiel nachgewiesen: Infanterie auf
+gemalter Deckung ist versteckt.
+
+**0.6.7:** platzierte Objekte gehen bis zu 10× ihrer Größe (der Größe-Regler des Werkzeugs Platzieren; [ und ] gehen in
+Schritten von 0,1 bis 3×, dann in Schritten von 0,5).
+
+**0.6.6:** die Munition ist auch nach Typ sortiert: Panzergranaten, Sprenggranaten, Flugabwehr, Maschinengewehre,
+Infanteriewaffen, Panzerabwehr der Infanterie, Bomben und Raketen (die Typ-Liste über der Munition). Mods können auch
+Deckung (wo sich Einheiten verstecken, wie in einem Wald) und gesperrten Boden auf eine Karte malen
+(`maps/<map>/cover.toml`); das Studio-Werkzeug dafür kommt als Nächstes.
+
+**0.6.5:** Szenarien lassen sich auf der Karte bearbeiten. **Verschieben** versetzt einen Startpunkt oder Spawnpunkt (klick
+ihn an, dann dorthin, wo er hin soll; Zurücksetzen macht es rückgängig). **Einheit setzen** lässt eine Einheit oder ein
+Gebäude erscheinen, wenn das Szenario beginnt: wähle ihre Art (Gebäude, Boden, Infanterie, Luft), dann ihren Typ (bei
+Gebäuden: HQ, Geld, Fabriken, Festungen und Verteidigung, Attrappen; bei Einheiten: die Fabrik, die sie baut), dann die
+Einheit (nach Nation) und ihre Seite. Gespeichert in der `maps/<map>/scenario.toml` des Mods. Die Einheitenliste hat
+denselben Typ-Filter.
+
+**0.6.4:** die Kartenliste hat einen Typ-Filter: alle Karten, oder nur die Gefechtskarten, Operationen, Kampagnen-, Demo-
+oder Testkarten (aus den eigenen Menüs des Spiels; eine Karte kann mehreres sein). Er wird gemerkt.
+
+**0.6.3:** ein Reiter **Einstellungen** (neben Einheiten und Karten): die Sprache, die Tasten der Kartenansicht, der
+Spielordner und Updates an einem Ort, bereit für mehr.
+
+**0.6.2:** Updates zu finden ist robuster: wenn GitHub die eine Prüfung beim Start abweist (es erlaubt 60 pro Stunde je
+Internetadresse, geteilt mit allem, was daran hängt), liest das Studio stattdessen die Release-Liste von GitHub. Mods
+können auch Einheiten und Gebäude in einem Szenario erscheinen lassen (`[[spawn]]` in `maps/<map>/scenario.toml`).
+
+**0.6.1:**
+
+- **Deine Sprache und Tasten bleiben erhalten**, über Neustarts, Updates und Neuinstallationen hinweg (sie gingen bei jedem Start verloren).
+- **Szenarien so gruppiert, wie das Spiel sie nutzt:** Gefecht, Operationen, Kampagne, Demo, Test und die, die kein Menü lädt, jedes so benannt, wie die Menüs des Spiels es nennen („10. UTAH BEACH“, „Anzio“).
+- **Mods können Startpunkte und Spawnpunkte verschieben** (`maps/<map>/scenario.toml`); im Spiel geprüft: das HQ startet dort, wo der Mod es hinsetzt.
+
+**Neu in 0.6:**
+
+- **Gelände, das im Spiel funktioniert:** Boden, den du anhebst, absenkst oder einebnest, nimmt jetzt Bewegungsbefehle an, die Kamera bleibt darüber, und Bäume und Gebäude stehen darauf. Das Rezept von DomesticNukes und seinem Claude: der Boden des Spielgeschehens bewegt sich zuerst, der gezeichnete Boden folgt ihm, und die versteckten Höhengrenzen des Spiels werden erweitert. Auf allen 32 Karten geprüft.
+- **Szenarien auf der Karte:** eine Zeile „Szenario“ wählt eines der Szenarien der Karte (Gefecht, Herausforderungen, Kampagnenkapitel) und zeigt seine Zonen, Startpunkte (Säulen in der Farbe jeder Allianz), Spawnpunkte (weiße Rauten) und Ortsnamen. Zeig auf eines, um zu sehen, was es ist. Der erste Schritt dazu, Karten zu machen.
+
+**0.5.2:**
+
+- **Pinsel Wasser und Trockenlegen** (Wasser auf Taste 0): flute den Boden unter einer Höhe zu einem See, oder leg einen See oder Fluss trocken. Von DomesticNukes und seinem Claude, im Spiel auf Blitz geprüft.
+- **Deine eigenen Tasten:** „Tasten ändern…“ unter der Hilfezeile der Kartenansicht: klick eine Aktion an, drück eine Taste. Standard setzt sie zurück.
+
+**0.5.1:**
+
+- **Eine Waffe behält ihr eigenes Mündungsfeuer und ihren eigenen Klang:** wenn eine Waffe die Munition einer anderen Einheit verschießt, übernimmt sie jetzt auch deren Mündungsfeuer und Schussgeräusch (die Kanone des Shermans an einem Schützen feuert wie ein Sherman). Die Waffe zeigt, welches sie abspielt.
+- **Pinsel Nivellieren** (Taste 7): malt den Boden flach auf die Höhe, an der du zu ziehen beginnst.
+- **WASD bewegt sich mit der Kamera**: W ist auf dem Bildschirm immer vorwärts, wie auch immer die Ansicht gedreht ist.
+- Der Spielindex wird einmal neu gebaut, beim ersten Öffnen von 0.5.1 (etwa eine halbe Minute).
+
+**Neu in 0.5:**
+
+- **Neue Einheiten:** kopiere eine Einheit von ihrer Seite aus, benenne sie, gib ihr einen Preis und setz sie in ein Baumenü.
+- **Munition und Flags:** eine Art Munition mit jeder Munition. Eine Waffe kann die Munition einer anderen Waffe verschießen (die Nation, aus der sie kommt, wird gezeigt) oder ihre eigene Kopie davon. Flag-Listen (was eine Einheit ist und tut) lassen sich bearbeiten, wie im Einheiten-Editor von RUSE Mod Manager.
+- **Karten:** jede Karte zeigt ihren Namen im Spiel, in deiner Sprache, neben ihrem Codenamen. Gebäude, Objekte und Bäume werden mit **den echten 3D-Modellen und Texturen des Spiels** gezeichnet, dank DomesticNukes und seinem Claude.
+- **Gelände-Pinsel:** Boden anheben, absenken, glätten und zur Rampe formen, im Mod gespeichert. **Von vorn** leert eine Karte.
+- **Werkzeug Platzieren:** ein Klick platziert ein Gebäude, ein Objekt oder einen Baum. Male eine Fläche, oder klick zweimal für eine Linie (eine Hecke, eine Straße). Rückgängig nimmt eine ganze Fläche oder Linie zurück. Szenerie ist vorerst nur fürs Aussehen: Einheiten fahren hindurch.
+- **Tasten:** WASD / Pfeiltasten bewegen die Ansicht, Q/E drehen sie, R/F zoomen. Fahr über einen beliebigen Knopf, um einen Tooltip zu sehen.
+- **.rusemod exportieren:** eine Datei, die der Launcher installiert.
+- **Es aktualisiert sich selbst:** ab dieser Version sagt eine Leiste, wenn ein neueres Studio da ist; **Jetzt aktualisieren** installiert es.
+
+Es ist neu und wurde außerhalb des PCs des Entwicklers kaum getestet, also melde bitte alles Seltsame auf GitHub Issues.
+
+![Die Karten von RUSE Studio: Centre of Gravity in 3D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-maps.jpg)
+
+![RUSE Studio in seinem Vorschaumodus, mit Beispieleinheiten](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-unit.jpg)

@@ -217,3 +217,245 @@ costruzione ha calcolato, così la prima costruzione di un mod simile da parte d
 
 Noto: **le mappe navali non sono ancora pronte.** Un mare prosciugato o dipinto si costruisce e si carica, ma l'acqua
 si vede ancora.
+
+**0.9.6:** una nuova unità può avere un modello 3D tutto suo, da qualsiasi programma 3D, e **Prova in gioco** parte subito quando non è cambiato nulla. E una prima volta:
+
+- **Il primo modello di un altro programma 3D in R.U.S.E.:** un M1 Abrams, diventato una nuova unità USA accanto allo Sherman. Si compra alla Armor Base con una sua carta, viene costruito e gira la torretta come i carri del gioco. Visto in gioco.
+
+| Prima | Ora |
+|---|---|
+| Una nuova unità aveva il modello dell'unità che copia. | **Importa modello…** nella pagina di una nuova unità: scegli un **.3ds** (con le sue immagini accanto, o nella cartella sopra) o un **.glb** (da Blender e dalla maggior parte dei programmi 3D). Lo Studio lo adatta all'unità che copia: la sua lunghezza (per **Dimensione**: 1 è lungo uguale, un Abrams rispetto a uno Sherman è 1,36), la sua torretta sulla torretta di quell'unità così che il gioco la giri allo stesso modo, le sue immagini come texture tutte sue. La pagina lo mostra in 3D; **Usa il modello dell'unità copiata** lo toglie di nuovo. Va nella tua mod come `files/models/<the unit's name>.glb`, che si apre in Blender. **Visto in gioco.** Ancora agli inizi: cingoli e ruote non girano ancora, la vampa del cannone compare dove sta la bocca dell'unità copiata, e il relitto è quello dell'unità copiata. |
+| Una nuova unità con una sua carta faceva crashare il gioco quando veniva costruita (0.9.5). | La sua carta sta anche dove il gioco la legge sulla mappa. **Visto in gioco.** |
+| Una mappa fatta con **Duplica mappa** non si poteva eliminare nello Studio. | **Elimina mappa**, sotto Duplica mappa su una nuova mappa: chiede una volta, poi la sua cartella va nel Cestino, da dove puoi riprenderla. Le mappe del gioco stesso non si possono eliminare. |
+| Lo Studio diceva che Blender non era installato se era stato estratto da uno zip invece che installato. | Trova Blender ovunque tu l'abbia estratto (la cartella principale di un'unità o una sotto, Download, Desktop, Documenti). |
+| Le ridipinture uscivano con alcuni colori un po' sbagliati (una zona rossa e blu poteva diventare viola). | Ogni zona di 4 x 4 tiene i suoi colori. Le unità ridipinte e il terreno dipinto escono con dati d'immagine leggermente diversi rispetto alla 0.9.5 (lo stesso aspetto), quindi l'impronta e il codice per unirsi alla partita di una mod così cambiano: tutti i giocatori dovrebbero aggiornare prima di giocare insieme. |
+| **Prova in gioco** ricostruiva ogni volta tutta la copia moddata, anche se non era cambiato nulla. | Non è cambiato nulla dall'ultima build: il gioco parte subito, senza build (una mod di prova: da 21-29 s a meno di 0,1 s). Una build riusa i file invariati dell'ultima copia invece di copiarli di nuovo. |
+| Ogni build rileggeva da capo i dati delle unità del gioco. | Vengono tenuti tra una build e l'altra: una grande mod di prova richiedeva 213 s ogni volta; ora la prima build richiede circa lo stesso tempo, e le successive 68 s. Il gioco non copia più tutti i suoi dati prima di una build. |
+| Cancellare la maggior parte di una grande mappa esauriva la memoria dello Studio, e una cancellazione di tutta la mappa veniva rifiutata perché troppo grande. | Le cancellazioni si contano in pochi secondi, una alla volta; **Cancella tutta la mappa** nel riquadro Rimuovi (Annulla la riprende). Lo scenario cancellato viene scritto in modo compatto. Nuovo: non ancora visto in gioco su larga scala. |
+| Il terreno spianato sotto una strada lasciava la strada della vista da lontano alla vecchia altezza. | Il modello della strada segue il nuovo terreno. Nuovo: non ancora visto in gioco. |
+| Il letto di un fiume spianato teneva da vicino le sue immagini di roccia e di gola. | Viene riempito da entrambe le sponde e la sua copertura bassa viene tolta. Nuovo: non ancora visto fatto dalla build in gioco. |
+| Mentre si costruiva l'indice del gioco (circa un minuto), lo Studio poteva solo aspettare. | Mappe e Impostazioni restano utilizzabili; la riga in basso dice quando è pronto. |
+| Un avvio lento non lasciava alcun indizio. | I passi di ogni avvio vengono cronometrati; **Copia il rapporto** in Risoluzione problemi elenca gli ultimi cinque. |
+| La pagina della finestra poteva arrivare a parti dell'app oltre alle sue chiamate. | Arriva solo alle chiamate dell'app stessa. |
+
+Inoltre `ruse import-model <file> --like <model> --unit <name>` fa lo stesso dalla riga di comando.
+
+**0.9.5:** le unità ricevono un aspetto tutto loro. Guarda qualsiasi unità in 3D, ridipingila in Blender, dalle una tua carta nel menu di costruzione. E le nostre prime volte, tutte viste in gioco:
+
+- **La prima unità ridipinta da una mod:** uno Sherman rosso, da vicino e da lontano.
+- **La prima unità dipinta in Blender** e riportata nel gioco.
+- **La prima carta del menu di costruzione fatta nello Studio,** mostrata nel menu della Armor Base del gioco stesso.
+- **La prima nuova unità con un modello tutto suo,** accanto a quelle del gioco: il Tall Sherman, vicino allo Sherman (fatto durante i test; fare i propri modelli nello Studio è il prossimo passo).
+- **La prima missione tutta nostra** giocata fino alla vittoria: una nuova Operazione con obiettivi, unità e un attacco d'artiglieria propri (fatta durante i test).
+
+| Prima | Ora |
+|---|---|
+| La pagina di un'unità mostrava solo i suoi valori. | **Modello 3D** nella pagina dell'unità: giralo, ingrandiscilo, guarda la pittura della tua mod sopra. |
+| L'aspetto di un'unità era quello del gioco. | **Ridipingere in Blender:** **Apri in Blender** apre i modelli dell'unità con le loro immagini; dipingi sul modello, poi **Riporta** salva la tua pittura e la mette nella tua mod. **Visto in gioco**, da vicino e da lontano. Blender è gratuito: se lo Studio non lo trova, **Scarica Blender (gratis)** e **Scegli Blender…** sono proprio lì. |
+| L'immagine di un'unità nel menu di costruzione era quella del gioco. | **Usa questa vista come scheda:** gira e ingrandisci il modello 3D finché sta bene nella cornice tratteggiata; quella vista diventa la carta dell'unità nel menu di costruzione. **Visto in gioco.** |
+| Una nuova unità mostrava la stessa carta dell'unità che copia, così le due sembravano uguali nel menu. | La carta di una nuova unità è solo sua (`files/cards/<the unit's name>.png`): fare la sua carta non cambia mai quella dell'originale. Non ancora visto in gioco. |
+| Un pacchetto di modelli delle unità diventato più grande veniva scartato dal gioco, con tutti i suoi modelli mancanti: un crash alla prima fabbrica. | I pacchetti di modelli vengono scritti nel modo in cui il gioco li controlla, qualunque sia la loro dimensione. **Visto in gioco:** un secondo Sherman con un modello tutto suo. |
+| Le unità di una nazione date a un altro esercito non avevano un modello nei capitoli di campagna e nelle Operazioni: una mod che faceva comparire unità francesi su Holland crashava durante il caricamento. | Anche lì i loro modelli si caricano. **Visto in gioco** (unità francesi su Colditz). |
+| **Duplica mappa** faceva solo mappe di BATTAGLIE. | Fa anche una nuova **Operazione** o un nuovo **Capitolo della campagna** dalla voce di qualsiasi mappa. **Visto in gioco:** una nuova Operazione. Ancora agli inizi: un nuovo capitolo di campagna non è ancora stato provato. |
+| Spianare le montagne al bordo di una mappa lasciava lì un dirupo. | Il bordo della mappa segue il terreno. **Visto in gioco** (Blitz Twin, piatta fino al bordo). |
+| Le unità giravano intorno ai posti dove stavano gli edifici cittadini cancellati. | Il terreno si apre a ogni unità dove spariscono gli edifici, come per gli alberi. **Visto in gioco.** |
+| Non c'era modo di dipingere il terreno della mappa. | **Map Paint:** dipingi l'immagine del terreno con un colore (la ruota, i colori della mappa stessa o il contagocce) o con il terreno della mappa stessa copiato da un altro punto. **Sgombra il terreno sotto** (attivo di default) toglie erba, colture e sassi sotto la pittura così che si veda a ogni altezza. Ancora agli inizi: visto in gioco dall'alto. |
+
+**0.9.4:** nuove mappe, ancora agli inizi. **Duplica mappa** fa una nuova mappa da qualsiasi mappa di BATTAGLIE, e le mappe si aprono in un secondo.
+
+| Prima | Ora |
+|---|---|
+| Le modifiche alle mappe potevano cambiare solo le mappe del gioco stesso. | **Duplica mappa** (scheda Mappe, sotto il nome della mappa aperta) fa una **nuova mappa**: una copia completa con un nome tutto suo, elencata in BATTAGLIE accanto all'originale, che poi cambi come qualsiasi mappa. La finestra dice cosa fa e come funziona. **Visto in gioco:** una nuova mappa si gioca sul suo terreno, e 101 nuove mappe insieme sono state tutte elencate e giocate. Ancora agli inizi: le copie di mappe diverse da Blitz si costruiscono ma non sono ancora state provate in gioco, e spianare le montagne al bordo di una mappa lascia lì un dirupo. Segnala ciò che trovi. |
+| Una mappa impiegava secondi per aprirsi, ogni volta (M03_Italie: 7,6 s). | I suoi dati vengono tenuti tra una visita e l'altra e tra un avvio e l'altro: 1,7 s la seconda volta. |
+| «Mod» e «Mappa» erano due menu simili. | **Mod delle unità** (con un carro) e **Modifiche alle mappe** (con una mappa). |
+| Schieramenti e zone si confondevano facilmente. | **A chi va?** dice che uno schieramento è chi controlla le unità (un paese può averne diversi), e passando sopra una zona si legge che è un'area della mappa, non uno schieramento. |
+| Gli aggiornamenti arrivavano solo come versioni intere. | Piccole correzioni possono arrivare tra una versione e l'altra (0.9.4.1), proposte come qualsiasi aggiornamento. |
+
+**0.9.3:** tutto ciò che piazzi si vede da lontano, le nuove strade attraverso i boschi sembrano quelle della mappa stessa, alberi che puoi tenere su una strada, oggetti e alberi con i loro nomi nella tua lingua, e build circa tre volte più veloci.
+
+| Prima | Ora |
+|---|---|
+| Oggetti, alberi ed edifici da piazzare erano elencati con nomi in codice francesi: Caillou_10, ChampsPierres_02, Osier... | Con nomi nella lingua dello Studio, in tutte e dieci, con il tipo di cosa che è ognuno: «Campo sassoso 2», «Champ de pierres 2», «Steiniges Feld 2». Cambiano con il pulsante della lingua. Il nome in codice e la sua cartella sono nel suggerimento. |
+| Le rocce e la maggior parte degli altri oggetti che piazzavi sparivano appena la telecamera si allontanava, e comparivano e sparivano mentre la giravi. | Tutto ciò che una mod piazza viene disegnato fino alla distanza massima, e gli oggetti della mappa stessa non cambiano. **Visto in gioco:** le rocce piazzate si vedono a ogni altezza. |
+| Dall'alto una nuova strada attraverso un bosco era una striscia chiara, e dopo una prima correzione spariva dalla media-lunga distanza. | Dipinta attraverso i boschi come le strade della mappa stessa, a ogni altezza. **Visto in gioco.** |
+| Una nuova strada toglieva sempre gli alberi dal suo percorso, circa 6 m per lato. | **Mantieni gli alberi sulle nuove strade** nel riquadro Strade: alberi e cespugli restano sopra la strada, e in un bosco la strada si vede più tenue e più grigia. **Visto in gioco.** |
+| **Prova in gioco** impiegava circa 5 minuti per costruire una mod con nuove strade su M03_Italie. | Circa 1½ minuti: l'aspetto delle strade di una mappa viene misurato una volta e tenuto, e le copie saltano un controllo lento che non serve loro. |
+
+**0.9.2:** correzioni dalla mappa di campagna di un tester: ponti per le nuove strade su ogni mappa, estremità delle strade che si agganciano ai ponti (o per niente), i nomi che un giocatore conosce, unità per il giocatore, elementi del paesaggio che si vedono da lontano, e le zone dello scenario come confini sul terreno.
+
+| Prima | Ora |
+|---|---|
+| Una strada sull'acqua fermava la build su 20 delle 29 mappe con ponti (Italia, Germania, Olanda...): il suo ponte «non avrebbe avuto un piano». | Riceve il suo ponte e il suo piano su ogni mappa con ponti. Non ancora visto in gioco su quelle mappe. |
+| Ogni punto di una strada si agganciava alla strada più vicina, finendo su una strada anche dove avevi messo un ponte. | Si agganciano solo le due estremità di una strada, prima all'estremità di un ponte piazzato. **Aggancia le estremità a strade e ponti** nel riquadro Strade lo disattiva. |
+| Edifici e unità con i loro nomi in codice, come «Descriptor_Building_VehiculeFactoryLeurre». | Con i nomi che dà loro il gioco (DECOY ARMOR BASE), con la riga del gioco stesso su cosa fa ognuno. |
+| Non c'era modo di dare unità al giocatore in un capitolo di campagna: lo schieramento del giocatore (0) veniva rifiutato. | **A chi va?** elenca gli schieramenti dello scenario stesso, presi dalla sua missione: «Giocatore · USA (schieramento 0)», «Computer · Germania (schieramento 1)»... |
+| Su M03_Italie e altre mappe, una nuova strada in campo aperto nascondeva da lontano lo scenario della mappa, e gli oggetti che piazzavi si vedevano solo da vicino. | La vista da lontano della mappa resta com'era, e gli oggetti piazzati si vedono da lontano come quelli della mappa stessa. Non ancora visto in gioco. |
+| Le zone dello scenario erano fogli colorati sospesi sopra la mappa, che ne coprivano il terreno e le icone. | Ogni zona è una linea netta lungo il suo confine sul terreno con una tinta trasparente all'interno, come i confini di Stellaris. **Riempimento delle zone** imposta l'interno (0 %: solo i confini). |
+
+**0.9.1:** trascina qualsiasi cosa sulla mappa, icone più chiare che puoi ridimensionare e nascondere, la tua lingua dal primo avvio, e il tipo di ogni unità come lo chiama il gioco.
+
+| Prima | Ora |
+|---|---|
+| Punti di partenza, depositi di rifornimento e unità iniziali si spostavano solo con lo strumento Sposta, un clic e poi un altro. | Afferrane uno qualsiasi sulla mappa e trascinalo, senza nessuno strumento scelto, come già si ruotavano le telecamere iniziali. Depositi e QG restano agganciati alle strade mentre trascini. |
+| Le icone della mappa erano omini stilizzati e scatole, e ogni bunker sembrava uguale. | Un'icona per ogni tipo: un soldato, un carro, un camion per i depositi di rifornimento, un aereo, cannoni, un QG ben segnato, la Armor Base e l'aeroporto distinti, e ogni bunker con la sua (anticarro, mitragliatrice, contraerea, artiglieria, forte, posto di osservazione). |
+| Le icone erano ingombranti dall'alto, e l'unico modo per nasconderle era nascondere tutto lo scenario. | Le icone si rimpiccioliscono mentre la telecamera si allontana, un cursore ne imposta la dimensione, e il riquadro Scenario mostra o nasconde ogni tipo (partenze, telecamere, depositi, edifici, unità, zone, città). Tenuto per la volta successiva. |
+| Lo Studio partiva con i nomi in codice, e la lingua stava nelle Impostazioni, così i giocatori non sapevano che parla la loro lingua. | Il primo avvio chiede: «Scegli la tua lingua», ogni lingua scritta con le sue parole, con segnata quella impostata per il tuo gioco in Steam. Poi un pulsante della lingua in alto, sempre in vista. |
+| Le unità erano solo «Terra» o «Aria». | Sotto Terra, Fanteria e Aria, i tipi del gioco stesso: Carro leggero, medio e pesante, Cacciacarri, Autoblindo da ricognizione, Caccia, Cacciabombardiere, Bombardiere leggero, medio e pesante, Ricognitore... anche sulla riga di ogni unità, nella tua lingua. La ricerca li trova («bombardiere», «ricognizione»). |
+| L'elenco delle app installate di Windows mostrava la prima versione mai installata. | Mostra la versione che hai. |
+
+**0.9.0:** le strade hanno l'aspetto giusto. Una strada che disegni ora sembra le strade della mappa stessa, dall'alto e fin giù al suolo. Arrivarci ha richiesto molto tempo e molti test, più dei ponti. Provato in gioco su D-Day.
+
+![Una nuova strada da vicino su D-Day: asfalto con una linea di mezzeria tratteggiata e banchine di ghiaia che sfumano nell'erba](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Prima | Ora |
+|---|---|
+| Una nuova strada spariva quando la telecamera scendeva verso di lei: si vedeva solo la sua pittura, dall'alto. | Da vicino è disegnata con le decal d'asfalto della mappa stessa, posate lungo di essa come le posa la mappa, con una decal di bordo per lato: asfalto, una linea di mezzeria tratteggiata, banchine di ghiaia. |
+| La pittura era un solo colore piatto, più chiaro e più largo delle strade della mappa. | La pittura viene misurata sulle strade della mappa stessa: il loro colore, le loro banchine e come sfumano nel terreno. Ogni mappa ha la sua. |
+| Erba, cespugli e alberi della fattoria crescevano attraverso una nuova strada. | Le piante e gli oggetti della mappa sul percorso della strada vengono tolti (circa 6 m per lato). I boschi tengono copertura e movimento, e gli edifici restano. |
+| Si conoscevano solo le decal stradali di D-Day. | Sulle mappe del deserto si usano le loro decal, posate allo stesso modo (non ancora visto in gioco). |
+| Una grande cancellazione (migliaia di cerchi) richiedeva molti minuti di build. | Molto più veloce: si guardano solo i cerchi vicini a ogni parte della mappa. |
+
+![Tre nuove strade che partono dalla strada principale di D-Day](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-6-done-overview.jpg)
+
+**0.8.3:** gli strumenti di scenario dell'editor di mappa dal RUSE-Mod-Manager di LittleGroove: depositi di rifornimento e QG agganciati alle strade, un'icona per ogni edificio e unità, e la telecamera iniziale di ogni giocatore mostrata, portata con sé e ruotata. Non ancora provato in gioco.
+
+| Prima | Ora |
+|---|---|
+| Non si poteva piazzare un punto per un deposito di rifornimento. | **Punto per deposito di rifornimenti** è il primo sotto Aggiungi unità → Edifici → Denaro. |
+| Un punto di partenza andava esattamente dove cliccavi, sulla strada o lontano da essa. | **Aggancia alle strade** (attivo di default) lo mette accanto alla strada più vicina, alla stessa distanza che usano le mappe del gioco stesso (l'ha misurata LittleGroove). Togli la spunta per piazzarlo in mezzo a un campo. |
+| Le unità iniziali erano poche icone, con lettere per il paese. | Un'icona per ciò che è ognuna (QG, deposito di rifornimento, fabbrica, forte, esca, soldato, carro, anticarro, artiglieria, prototipo, aereo, torretta) e la coccarda del paese. |
+| Non potevi vedere dove si apre la partita di un giocatore. | Ogni punto di partenza mostra la sua telecamera iniziale: il volo d'arrivo (tratteggiato), dove si ferma, cosa guarda, e la parte della mappa che mostra lo schermo. |
+| La telecamera iniziale di un punto di partenza spostato restava al vecchio posto. | La telecamera si sposta con lui; un nuovo punto di partenza riceve una telecamera tutta sua. |
+| La telecamera iniziale non si poteva cambiare. | Con **Sposta**, trascina la telecamera di una partenza intorno al suo QG per aprire la partita da un altro lato; **Telecamera com'era** lo annulla. |
+| Un punto di partenza in un bosco veniva rifiutato. | Permesso: lì un QG funziona, e i camion di rifornimento attraversano i boschi. Vengono rifiutati solo acqua, dirupi e terreno bloccato. |
+
+**0.8.2:** un test fermato da un errore nella tua mod ti dice quale e lo corregge, mod e mappe separate, colori della mappa e unità iniziali più chiari, e una sola copia del gioco per tutto il PC.
+
+| Prima | Ora |
+|---|---|
+| Un test fermato da un errore nella tua mod seppelliva il motivo nel log e rimandava a Risoluzione problemi, che non può correggere una mod. | Ogni errore è elencato sopra il log con un pulsante che lo corregge: un'unità iniziale di squadra su una mappa di BATTAGLIE resa neutrale o tolta (anche tutte insieme), una strada che non si collega a niente tolta. Risoluzione problemi compare solo per gli altri errori. |
+| Il messaggio in basso non si poteva chiudere. | Ogni messaggio ha una × per chiuderlo. |
+| Il log del test non si poteva copiare. | **Copia il rapporto** copia il log e il messaggio, per una segnalazione di bug o per Discord. |
+| Mod e mappe condividevano un solo menu. | Mod e mappe hanno ognuna il suo menu, ed Esporta mette il file direttamente nella libreria del Launcher. |
+| Ogni unità iniziale sulla mappa sembrava uguale. | Ogni unità iniziale è un'icona di edificio, carro, soldato o aereo nel colore del suo schieramento, con il suo paese. |
+| I colori della mappa non erano spiegati. | Una legenda dei colori per la copertura, per dove vanno le unità e per Rimuovi; la copertura dello strumento Città ha un suo colore; un cursore di trasparenza per ogni strato. |
+| Colline e alberi spuntavano attraverso le zone di uno scenario. | Le zone fluttuano sopra il terreno, e un cursore **Altezza delle zone** imposta quanto in alto. |
+| Ogni test teneva la sua copia del gioco. | Una sola copia moddata per tutto il PC, condivisa con il Launcher. |
+| La versione non si vedeva, e Novità era un elenco. | La versione è accanto al nome, e Novità apre una tabella prima/dopo come questa. |
+| Pochi suggerimenti. | Suggerimenti sui comandi principali, scritti per giocatori nuovi al modding. |
+| Le nuove strade su Twilight of the Gods, Alpha, Ostfriesland e Robert non avevano il modello stradale della mappa. | Ora lo ricevono anche loro. |
+| La build diceva che le nuove strade erano «disegnate da vicino». | Dice che si vedono da lontano; da vicino non si vedono ancora (resta un problema noto). |
+
+**0.8.1:** unità di qualsiasi nazione, un nuovo aspetto, una barra degli strumenti più corta, e lo strumento Rimuovi.
+- **Le unità di un'altra nazione funzionano.** Una nuova unità può andare nel menu di costruzione di qualsiasi nazione, qualunque sia l'esercito da cui viene il suo modello: un Tiger o uno Ju 87 tedesco per gli USA, anche uno Zero o un Chi-Ha giapponese. Viene costruita, combatte, mostra la sua immagine sulla sua carta e sul suo segnalino, e si può selezionare a terra e in aria, anche in una partita in cui nessuno gioca la nazione da cui viene (provato in gioco, 2026-10-02). La build fa caricare i modelli di quella nazione in ogni partita; una partita richiede un po' più di memoria e di tempo di caricamento.
+- **Un nuovo aspetto:** i blu di R.U.S.E. al posto del nero e oro, e un nuovo logo: il tavolo della sala di guerra.
+- **La barra degli strumenti dell'editor di mappa è più corta.** Gli strumenti che vanno insieme condividono una tessera, con una scheda per ciascuno: Terreno e acqua, Copertura e movimento, Strade e ponti, Edifici, Oggetti e alberi, poi Rimuovi, Scenario e Verifica. Una tessera si apre sulla scheda usata per ultima.
+- **Strumento Rimuovi:** trascina sopra gli alberi e gli oggetti della mappa stessa (anche gli edifici, se li scegli) e spariscono quando la mod viene costruita. I cerchi rossi vengono salvati nella mod, ciò che coprono è tinto di rosso, e il riquadro conta cosa toglieranno. Dove spariscono gli alberi, il terreno si apre a ogni unità e perde la copertura del bosco. Cancellare bene edifici, strade, arbusti e rocce della mappa stessa è il prossimo passo.
+- **Il programma di installazione propone un backup pulito del gioco** accanto al collegamento sul desktop, e dice perché: con esso, la risoluzione dei problemi può rimettere a posto tutto ciò che un altro gestore di mod ha cambiato.
+
+**0.8.0:** l'editor di mappa cresce: nuovi pennelli e pannelli, ponti che le unità attraversano davvero, boschi che puoi sgombrare, e una build che controlla le regole del gioco così che ciò che fai funzioni al primo colpo. In più una risoluzione dei problemi e un backup pulito del gioco.
+- **Novità nell'editor di mappa:**
+  - **Pennelli Apri** (Movimento): il contrario di Blocca. Dai alle unità il terreno da cui la mappa le tiene lontane (tutte le unità, fanteria o veicoli). Aprire l'acqua è permesso, con un avviso: lì le unità stanno sul fondo del fiume.
+  - **Pennello Foresta** (Copertura): alberi e copertura in un tratto solo; Annulla toglie entrambi.
+  - **Pannello Ponti:** i tipi di ponte della mappa stessa, e un ponte piazzato a mano con la lunghezza e la rotazione che scegli; gli attraversamenti d'acqua delle nuove strade disegnati in oro.
+  - **Verifica questa mappa:** elenca cosa andrebbe storto prima del test (terreno tagliato fuori, strade o ponti che le unità non possono usare, estremità di strade non collegate, edifici sulle strade), e cliccando su uno si vede dove.
+  - I letti dei fiumi prosciugati o rialzati all'asciutto vengono aperti alle unità dalla build.
+- **Togli gli alberi e gli oggetti della mappa stessa:** cerchi `[[erase]]` nel `scenery.toml` di una mod (scritti a mano per ora; uno strumento Rimuovi nello Studio è in arrivo). I carri entrano in un bosco sgombrato, e la fanteria lì non è più nascosta.
+- **Gli oggetti piazzati poggiano sul terreno a qualsiasi dimensione.** Un edificio ingrandito 10× fluttuava nell'aria; ora poggia sul terreno come quelli della mappa.
+- **Corretto: la copertura sulle mappe che non sono quadrate** (D-Day, Frontline, Djebel, Medjez, Handshake over the Elbe, e le mappe di campagna di Tunisia, Holland e Ardennes). La copertura dipinta o tolta lì (i pennelli Copertura, Scopri, Città e Foresta, `cover.toml`) finiva fino a un chilometro da dove era stata disegnata, e anche la vista mappa la mostrava in quel posto sbagliato. Ora sono giuste entrambe: se hai dipinto copertura su una di queste mappe, ricontrollala nella vista mappa. Le mappe quadrate (Blitz e la maggior parte delle altre) erano sempre giuste.
+- **I ponti funzionano in gioco.** Una strada che disegni sull'acqua riceve il tipo di ponte della mappa stessa (anche quello delle mappe olandesi), e carri, fanteria e camion di rifornimento lo attraversano sopra l'impalcato, la fanteria all'altezza dell'impalcato. Le estremità dei ponti si collegano alle strade che le unità usano già e stanno lontane dagli edifici della mappa; un ponte che non si può collegare resta chiuso, e la nota della build dice cosa ha incontrato la strada e dove.
+- **La build controlla le regole del gioco.** Ogni file che una mod cambia è stato confrontato con ciò che il gioco ne fa, e una mod che si romperebbe in gioco viene rifiutata con una nota che dice perché, prima che venga scritto qualsiasi cosa:
+  - strade: ora le unità seguono le nuove strade, non solo i camion di rifornimento, e una nuova strada che non si collega a nessun'altra strada viene rifiutata (la rete stradale deve restare in un pezzo solo);
+  - edifici e blocchi piazzati: le unità non possono più attraversarli; nuovi edifici, ponti e alberi si vedono a ogni distanza;
+  - terreno: la nuova acqua è chiusa alle unità, la mappa dell'IA segue i tuoi boschi, blocchi, ponti e acqua, e un tratto che non può cambiare il terreno (o che raggiunge il piano di un ponte) lo dice;
+  - unità: una salva, un ID, una nazione o un elenco di menu sbagliati vengono rifiutati, i flag delle unità vengono controllati, e ogni flag è spiegato nel selettore dei flag (i flag 62 e 63, che fanno crashare il gioco su un'unità che non è un camion, sono un errore); un'unità messa nella fabbrica di un'altra nazione viene rifiutata per ora (faceva crashare il gioco quando veniva costruita; farla funzionare è il prossimo passo);
+  - scenario: le unità iniziali sono neutrali di default, un'unità iniziale i cui modelli la partita potrebbe non caricare viene rifiutata (faceva crashare il gioco all'avvio), una partenza dove i veicoli non possono andare viene rifiutata, una partenza spostata si porta dietro la sua telecamera, e i posti vengono contati per squadra.
+- **Il rapporto della build** mostra ogni avviso (alcuni andavano persi), e una ricostruzione toglie prima la vecchia copia di prova, così una copia vecchia non si può avviare per sbaglio.
+- **Copertura quadrata:** `square = true` su una pittura di `cover.toml`, o su un tratto Copertura o Scopri in `terrain.toml`, dipinge un quadrato lungo gli assi della mappa (scritto a mano per ora; la vista mappa lo disegna come un quadrato).
+- **Risoluzione problemi** (accanto a *Prova in gioco*, e in Impostazioni > Aiuto): controlla in un colpo solo cosa può fermare un test (il gioco trovato, Steam, un gioco lasciato in esecuzione da una copia moddata, l'unità e il suo spazio libero, copie rimaste, file di sola lettura, se l'app può scrivere dove vanno le copie), con un pulsante per ogni correzione che può fare, e un rapporto da incollare in una segnalazione di bug, senza il tuo nome utente di Windows.
+- **Backup pulito del gioco** (Impostazioni): tieni una copia pulita dei file del tuo gioco, controllali rispetto a essa, e rimetti a posto tutto ciò che un altro gestore di mod o una modifica a mano ha cambiato. I file che non sono del gioco vengono messi da parte, mai eliminati. Oppure lascia che Steam ripari il gioco (*Verifica con Steam*). È l'unico posto in cui lo Studio scrive nella cartella del tuo gioco, e solo quando lo chiedi tu.
+- **Condividi la tua mod:** hai fatto una mod? Dopo l'esportazione, lo Studio mostra la sua dimensione e il suo SHA-256, e come aggiungerla all'elenco delle mod su GitHub e diventare un contributore.
+- **Problema noto: le nuove strade non sono ancora disegnate da vicino.** Sono dipinte sul terreno e si vedono da lontano, e le unità le usano, ma con la telecamera vicina al terreno una nuova strada sparisce. Ci stiamo lavorando.
+
+**0.7.6:** un secondo Prova in gioco funziona, e ponti che le unità possono sempre raggiungere.
+- **Corretto:** ogni secondo *Prova in gioco* poteva fallire con «An old modded copy ... can't be removed ... (Access is denied)». Una copia che Windows non vuole eliminare (un file che una versione più vecchia aveva collegato a un file del gioco sostituito, un programma che lo tiene ancora aperto) non ferma più un test: viene messa da parte in `RUSE-Instances\.trash` ed eliminata quando niente la tiene più. Se R.U.S.E. è ancora in esecuzione dalla copia di prova, ti viene detto, con il nome del programma. Premere due volte *Prova in gioco* avvia un test, non due.
+- **Corretto:** il nuovo ponte di una strada poteva far crashare il gioco quando le unità ricevevano l'ordine di salirci: il suo impalcato non raggiungeva nessun terreno usato dalle unità. Ora ogni estremità di un ponte si collega al terreno lungo la strada (fino a 62 m di accesso); un ponte che non si può collegare resta chiuso alle unità, con una nota, e la build non scrive mai terreno che le unità di terra non possono raggiungere.
+
+**0.7.4:** Prova in gioco funziona quando i file del tuo gioco sono segnati come di sola lettura.
+- **Corretto:** *Prova in gioco* falliva ogni volta con «[WinError 5] Access is denied» quando i file di R.U.S.E. sono segnati come di sola lettura (un'installazione da disco, un backup ripristinato): la copia di prova teneva il segno, così una copia lasciata costruita a metà non si poteva mai eliminare. Ora la copia di prova non tiene mai il segno, e un residuo di una versione più vecchia viene eliminato da solo (i file del tuo gioco restano esattamente com'erano). Se il gioco è ancora in esecuzione dalla copia di prova, ti viene detto di chiuderlo invece di ricevere un errore di Windows.
+- **Una strada mostra la sua lunghezza** mentre la disegni, accanto al puntatore (stile Cities: Skylines); gli strumenti Strade mostrano il totale delle tue nuove strade.
+- **Le nuove strade sono dipinte sul terreno** con il colore stradale della mappa stessa (dimostrato in gioco), e **una strada sull'acqua riceve un ponte**: il tipo della mappa stessa, un pezzo unico teso da sponda a sponda come i ponti del gioco stesso, così le unità possono attraversare. Una strada su uno dei ponti della mappa stessa riceve il nuovo ponte al suo posto. (I ponti sono nuovi: non ancora controllati in gioco.)
+
+**0.7.3:** disponi la vista mappa a modo tuo. Il pannello della mappa (in alto a sinistra) e gli strumenti (in basso) si spostano ovunque con la loro maniglia (⠿) e si ripiegano con la freccia accanto: il pannello della mappa fino al suo titolo, gli strumenti fino alla loro barra. Doppio clic su una maniglia per rimettere quel pannello al suo posto. La tua disposizione viene tenuta.
+
+**0.7.2:** strade, e test più chiari.
+- **Disegna strade**, stile Cities: Skylines (il tipo Strade nella barra): **Dritta**, **Curva** e **Libera**. Un'estremità vicina a una strada si aggancia a essa e la collega. Le nuove strade si disegnano come nastri blu e **le rotte di rifornimento le usano** (dimostrato in gioco). Non sono ancora dipinte sul terreno.
+- La casella **Strade** mostra in oro le strade della mappa stessa.
+- Le parole del gioco stesso: uno scenario prende il nome dal pulsante del menu principale che lo avvia (**Battaglie**, Operazione, Campagna, letti dal testo del tuo gioco nella tua lingua), e una riga dorata sotto il menu degli scenari dice dove si gioca, per es. *In gioco: Battaglie › D-Day (6 giocatori)*.
+- **Prova in gioco** dice dove ha costruito ed esattamente cosa aprire per vedere le tue modifiche (per es. *BATTAGLIE > D-Day*).
+- Il tasto centrale del mouse ruota la vista anche nella modalità per guardarsi intorno (prima lì zoomava).
+
+**0.7.1:** più unità alla volta, un controllo della mod, e aiuto a portata di mano.
+- **Aggiungi unità** piazza 1, 2, 4, 6, 8 o 10 unità alla volta, in **linea, colonna, cuneo, riquadro o cerchio** rivolte verso l'alto dello schermo, con un cursore della spaziatura e anelli che mostrano dove starà ognuna.
+- Il **controllo della mod**: ogni file della tua mod viene letto come lo legge la build del gioco, quando scegli la mod e prima di **Prova in gioco**. Una barra rossa nomina ogni problema; un file di mappa rotto si può **mettere da parte** (rinominato, mai perso), e una cartella di mappa chiamata come il titolo della mappa (maps/Blitz) si può **rinominare** con il nome del suo pacchetto (maps/SuperCrossRoads4) con un clic.
+- Corretto: i tratti **Acqua** venivano salvati senza il loro livello, così la build del gioco rifiutava la mod. Ora ogni file che lo Studio scrive viene riletto prima di essere salvato.
+- L'elenco delle mappe **si ripiega** («) per avere più spazio.
+- **Impostazioni > Aiuto e comunità**: la wiki (il nuovo manuale da campo), Discussions, e **Segnala un problema**, che apre una segnalazione di bug con la tua versione già compilata. Un errore in basso ha il suo link **Segnala**. L'app non invia nulla: leggi tu la segnalazione e la pubblichi.
+
+**0.7.0:** un nuovo aspetto e strumenti di movimento. Gli strumenti della mappa si sono spostati in una barra lungo il fondo, come in Cities: Skylines, nello stile dell'HUD di R.U.S.E. stesso: scegli un tipo (Terreno, Acqua, Copertura, Movimento, Edifici, Oggetti, Alberi, Scenario) e i suoi strumenti si aprono sopra; cliccalo di nuovo o premi Esc per guardarti solo intorno. I selettori dello scenario ora sono tessere, non menu a tendina. **Movimento:** la casella **Dove vanno le unità** lo mostra sulla mappa (rosso: nessuna unità; giallo: solo fanteria), e tre nuovi pennelli chiudono il terreno: **Blocca** (ogni unità), **Blocca la fanteria** e **Blocca i veicoli**. Gli edifici che piazzi fermano le unità (la casella **Solido**, attiva di default). Dimostrato in gioco: le unità pianificano il percorso intorno a una fossa bloccata e passano tra le torri piazzate.
+
+**0.6.9:** edifici, oggetti e alberi che piazzi ora si vedono in gioco a ogni zoom (dimostrato su Blitz, fino a 8× la loro dimensione): ogni gruppo va in un nuovo blocco avvolto intorno al villaggio o alla fattoria più vicini che la mappa disegna da lontano. Controllato su tutte le 32 mappe: nient'altro si sposta. Le unità attraversano ancora gli edifici piazzati; renderli solidi è il prossimo passo.
+
+**0.6.8:** crea città e boschi in cui le unità possono nascondersi. La vista mappa mostra dove si nascondono le unità (la casella **Copertura**, in verde), e tre nuovi pennelli la dipingono: **Copertura**, **Scopri** e **Città** (clicca su una città: la copertura va intorno a ogni suo edificio, anche a quelli piazzati). Dimostrato in gioco: la fanteria sulla copertura dipinta è nascosta.
+
+**0.6.7:** gli oggetti piazzati arrivano fino a 10× la loro dimensione (il cursore Dimensione dello strumento Piazza; [ e ] avanzano di 0,1 fino a 3×, poi di 0,5).
+
+**0.6.6:** anche le munizioni sono ordinate per tipo: proiettili perforanti, proiettili esplosivi, contraerea, mitragliatrici, armi di fanteria, anticarro della fanteria, bombe e razzi (l'elenco Tipo sopra le munizioni). Le mod possono anche dipingere su una mappa la copertura (dove le unità si nascondono, come in un bosco) e il terreno bloccato (`maps/<map>/cover.toml`); lo strumento dello Studio per farlo è il prossimo passo.
+
+**0.6.5:** gli scenari si possono modificare sulla mappa. **Sposta** un punto di partenza o un'unità iniziale (cliccalo, poi clicca dove deve andare; Rimetti lo annulla). **Aggiungi unità** fa comparire un'unità o un edificio quando lo scenario inizia: scegli il suo genere (edifici, terra, fanteria, aria), poi il suo tipo (per gli edifici: QG, denaro, fabbriche, forti e difese, esche finte; per le unità: la fabbrica che le costruisce), poi l'unità (per nazione) e il suo schieramento. Salvato nel `maps/<map>/scenario.toml` della mod. L'elenco delle unità ha lo stesso filtro Tipo.
+
+**0.6.4:** l'elenco delle mappe ha un filtro per tipo: tutte le mappe, o solo le mappe schermaglia, le Operazioni, la campagna, le mappe demo o di test (dai menu del gioco stesso; una mappa può essere di più tipi). Viene ricordato.
+
+**0.6.3:** una scheda **Impostazioni** (accanto a Unità e Mappe): la lingua, i tasti della vista mappa, la cartella del gioco e gli aggiornamenti in un solo posto, pronta per altro.
+
+**0.6.2:** trovare gli aggiornamenti è più affidabile: quando GitHub rifiuta l'unico controllo all'avvio (ne permette 60 all'ora per indirizzo internet, condivisi da tutto ciò che lo usa), lo Studio legge invece l'elenco delle release di GitHub. Le mod possono anche far comparire unità ed edifici in uno scenario (`[[spawn]]` in `maps/<map>/scenario.toml`).
+
+**0.6.1:**
+
+- **La tua lingua e i tuoi tasti vengono tenuti** attraverso riavvii, aggiornamenti e reinstallazioni (andavano persi a ogni avvio).
+- **Scenari raggruppati come li usa il gioco:** Schermaglia, Operazioni, Campagna, Demo, Test, e quelli che nessun menu carica, ognuno chiamato come lo chiamano i menu del gioco («10. UTAH BEACH», «Anzio»).
+- **Le mod possono spostare punti di partenza e unità iniziali** (`maps/<map>/scenario.toml`); controllato in gioco: il QG parte dove lo mette la mod.
+
+**Novità della 0.6:**
+
+- **Terreno che funziona in gioco:** il terreno che alzi, abbassi o spiani ora accetta gli ordini di movimento, la telecamera resta sopra di esso, e alberi ed edifici ci poggiano sopra. La ricetta di DomesticNukes e del suo Claude: il terreno di gioco si muove per primo, il terreno disegnato lo segue, e i limiti di altezza nascosti del gioco vengono allargati. Controllato su tutte le 32 mappe.
+- **Scenari sulla mappa:** una riga «Scenario» sceglie uno degli scenari della mappa (schermaglia, sfide, capitoli di campagna) e mostra le sue zone, i punti di partenza (colonne nel colore di ogni alleanza), le unità iniziali (rombi bianchi) e i nomi delle città. Punta su uno per vedere cos'è. Il primo passo verso la creazione di mappe.
+
+**0.5.2:**
+
+- **Pennelli Acqua e Prosciuga** (Acqua sul tasto 0): allaga il terreno sotto un livello per farne un lago, o prosciuga un lago o un fiume. Di DomesticNukes e del suo Claude, controllati in gioco su Blitz.
+- **Tasti tuoi:** «Cambia i tasti…» sotto la riga d'aiuto della vista mappa: clicca un'azione, premi un tasto. Predefiniti li rimette com'erano.
+
+**0.5.1:**
+
+- **Un cannone tiene la sua vampa e il suo suono:** quando un'arma spara le munizioni di un'altra unità, ora prende anche la vampa alla bocca e il suono di sparo di quell'unità (il cannone dello Sherman su un fuciliere spara come uno Sherman). L'arma mostra quali usa.
+- **Pennello Livella** (tasto 7): rende piatto il terreno all'altezza da cui inizi a trascinare.
+- **WASD si muove con la telecamera**: W è sempre avanti sullo schermo, comunque sia girata la vista.
+- L'indice del gioco viene ricostruito una volta, la prima volta che si apre la 0.5.1 (circa mezzo minuto).
+
+**Novità della 0.5:**
+
+- **Nuove unità:** copia un'unità dalla sua pagina, dalle un nome e un prezzo e mettila in un menu di costruzione.
+- **Munizioni e flag:** un tipo Munizioni con ogni munizione. Un'arma può sparare le munizioni di un'altra arma (si vede la nazione da cui vengono) o una sua copia di esse. Gli elenchi dei flag (cos'è e cosa fa un'unità) si possono modificare, come nell'editor delle unità di RUSE Mod Manager.
+- **Mappe:** ogni mappa mostra il suo nome in gioco, nella tua lingua, accanto al suo nome in codice. Edifici, oggetti e alberi sono disegnati con **i veri modelli 3D e le vere texture del gioco**, grazie a DomesticNukes e al suo Claude.
+- **Pennelli del terreno:** alza, abbassa, leviga e fai rampe nel terreno, salvato nella mod. **Ricomincia** azzera una mappa.
+- **Strumento Piazza:** un clic piazza un edificio, un oggetto o un albero. Dipingi un'area, o clicca due volte per una linea (una siepe, una via). Annulla riprende un'intera area o linea. Per ora gli elementi piazzati sono solo estetici: le unità ci passano attraverso.
+- **Tasti:** WASD / frecce muovono la vista, Q/E la ruotano, R/F zoomano. Passa sopra qualsiasi pulsante per un suggerimento.
+- **Esporta .rusemod:** un solo file che il Launcher installa.
+- **Si aggiorna da solo:** da questa versione in poi, una barra dice quando esce uno Studio più nuovo; **Aggiorna ora** lo installa.
+
+È nuovo ed è stato provato appena fuori dal PC dello sviluppatore, quindi segnala qualsiasi cosa strana su GitHub Issues.
+
+![Mappe di RUSE Studio: Centre of Gravity in 3D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-maps.jpg)
+
+![RUSE Studio in modalità anteprima, con unità di esempio](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-unit.jpg)

@@ -84,3 +84,154 @@ ve Studiu 0.9.7.
 | První sestavení velkého módu mapy počítalo všechno na vašem počítači. | Mód exportovaný ve Studiu 0.9.7 si nese to, co jeho sestavení spočítalo pro pohyb na mapě: vaše první sestavení je kratší. Každá odpověď se kontroluje a soubory hry vyjdou stejné. |
 
 Známé: **námořní mapy ještě nejsou vyřešené.** Vysušené nebo namalované moře se sestaví a načte, ale voda je stále vidět.
+
+**0.4.6:** **Hrát** spustí hru hned, když se nic nezměnilo, a hraje módy vytvořené ve Studiu 0.9.6: nové jednotky
+s vlastním 3D modelem.
+
+| Dřív | Teď |
+|---|---|
+| **Hrát** pokaždé znovu sestavilo celou upravenou kopii, i když se nic nezměnilo (hráč: „pokaždé čekám 30 minut“). | Nic se nezměnilo: hra se spustí hned. Změna kopii znovu sestaví, ale nezměněné soubory poslední kopie se použijí znovu, takže kopie na jiném disku, než je hra, už znovu nekopíruje každý balík. Hrát řekne, kolik zkopírovalo. |
+| Každé sestavení četlo data jednotek hry znovu od začátku. | Uchovávají se mezi sestaveními: velký testovací mód trval pokaždé 213 s; teď další sestavení po prvním trvají 68 s. |
+| Nová jednotka módu měla model jednotky, kterou kopíruje. | Její vlastní model z módu (`files/models`) je ve hře. **Viděno ve hře:** M1 Abrams vedle Shermana. |
+| Nová jednotka módu s vlastní kartou shodila hru, když byla postavena. | Opraveno. **Viděno ve hře.** |
+| Barvy přebarvených jednotek místy vycházely trochu jinak. | Blíž obrázku z módu. Mód s přebarvenými jednotkami nebo namalovaným terénem dostane nový otisk a kód pro připojení: všichni, kdo hrají spolu, by měli aktualizovat. |
+| Pomalé spuštění nezanechalo žádnou stopu. | **Kopírovat zprávu** vypíše kroky posledních pěti spuštění. |
+| — | Hraje módy s vymazáním celé mapy, silnicemi na přetvořeném terénu a vyplněním koryt řek ze Studia 0.9.6 (nové, ve hře zatím neviděno ve velkém). |
+
+**0.4.5:** hraje módy vytvořené ve Studiu 0.9.5: přebarvené jednotky, jejich vlastní karty a jednotky s vlastními modely.
+
+| Dřív | Teď |
+|---|---|
+| Mód nemohl změnit vzhled jednotky. | Přebarvené jednotky a karty z módu jsou vidět ve hře. **Viděno ve hře:** červený Sherman, karta vytvořená ve Studiu. |
+| Mód, jehož balíky modelů jednotek narostly, hra zahodila: pád u první továrny. | Sestavené tak, jak je hra kontroluje. **Viděno ve hře:** druhý Sherman s vlastním modelem. |
+| Mód, který v kapitole kampaně nebo Operaci nechá objevit jednotky jiného národa, spadl při načítání (francouzské jednotky na mapě Holland). | Jejich modely se načtou i tam. **Viděno ve hře.** |
+| Srovnání hor na okraji mapy tam nechalo útes. | Okraj sleduje terén. **Viděno ve hře.** |
+
+**0.4.4:** hraje módy s novými mapami, vytvořenými pomocí Duplikovat mapu ve Studiu 0.9.4.
+
+| Dřív | Teď |
+|---|---|
+| Nové mapy z módu nebyly ve hře vyzkoušené. | **Viděno ve hře:** nová mapa z módu je v nabídce BITVY a hraje se na vlastním terénu, 101 naráz. Raná verze: nahlaste, na co narazíte. |
+| Aktualizace přicházely jen jako celé verze. | Malé opravy mohou přijít mezi verzemi (0.4.4.1), nabízené jako každá aktualizace. |
+
+**0.4.3:** hraje módy vytvořené ve Studiu 0.9.3 a sestavuje je asi třikrát rychleji.
+
+| Dřív | Teď |
+|---|---|
+| Kameny a většina dalších předmětů umístěných módem zmizely, jakmile kamera opustila blízkou vzdálenost. | Kreslí se až do velké dálky; vlastní objekty mapy beze změny. **Viděno ve hře.** |
+| Nová silnice módu lesem byla shora světlým pruhem, nebo ze středně dlouhé vzdálenosti zmizela. | Malovaná lesem tak, jak jsou malované vlastní silnice mapy. **Viděno ve hře.** |
+| Silnice módu vždy odstranily stromy ze své cesty. | Silnice je může ponechat (`keep_trees`): vede pod stromy, v lese slabší a šedší. |
+| **Hrát** sestavovalo mód s novými silnicemi na M03_Italie asi 5 minut. | Asi 1½ minuty, když už se na mapě jednou sestavovalo. |
+
+**0.4.2:** hraje módy vytvořené ve Studiu 0.9.2.
+
+| Dřív | Teď |
+|---|---|
+| Mód se silnicí přes vodu na mapách Itálie, Německa, Holandska a dalších byl odmítnut: jeho most „by neměl podlahu“. | Sestaví se: most dostane vlastní podlahu mapy. Na těchto mapách ve hře zatím neviděno. |
+| Mód, který dává jednotky hráči v kapitole kampaně (strana 0), byl odmítnut a jednotky pro strany počítače dostaly varování „se možná nikdy neobjeví“. | Sestaví se; varování dostane jen strana, kterou mise kapitoly nemá. |
+| Na M03_Italie a dalších mapách nová silnice módu v otevřeném terénu skrývala scenérii mapy z dálky a předměty módu byly vidět jen zblízka. | Pohled na mapu z dálky zůstává, jak byl, a předměty módu jsou vidět z dálky. Ve hře zatím neviděno. |
+
+**0.4.1:** váš jazyk od prvního spuštění a editor sad módů, který najde módy podle názvu.
+
+| Dřív | Teď |
+|---|---|
+| Vytváření sady módů vypsalo celou vaši knihovnu s Vytvořit dole a mód se nedal najít podle názvu. | Vytvořit je nahoře, hned pod ním módy, které už v sadě jsou; níž „Přidat módy z knihovny“ s hledáním, které zužuje seznam, jak píšete. |
+| Jazyk byl schovaný v Nastavení, takže hráči nevěděli, že Launcher mluví jejich jazykem. | První spuštění se zeptá: „Vyberte jazyk“, každý jazyk vlastními slovy, s označeným jazykem, na který je vaše hra nastavená ve Steamu (hráči, kteří aktualizují, to uvidí jednou). Pak tlačítko jazyka nahoře, vždy na očích. |
+| Seznam nainstalovaných aplikací ve Windows ukazoval vůbec první nainstalovanou verzi. | Ukazuje verzi, kterou máte. |
+
+**0.4.0:** hraje módy s novými silnicemi tak, jak je sestavuje Studio 0.9: vypadají jako vlastní silnice mapy, shora
+i těsně u země (vyzkoušeno ve hře na mapě Den D).
+
+![Nová silnice zblízka na mapě Den D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Dřív | Teď |
+|---|---|
+| Nové silnice módu zblízka mizely. | Kreslí se vlastním asfaltem a okrajovými obtisky mapy, malované tak, jak jsou malované silnice mapy, a rostliny na jejich cestě se odstraní. |
+| Mód s mnoha mazacími kruhy se sestavoval minuty. | Mnohem rychleji. |
+
+**0.3.3:** hraje módy vytvořené ve Studiu 0.8.3.
+
+| Dřív | Teď |
+|---|---|
+| Mód s natočenou úvodní kamerou (Studio 0.8.3) byl odmítnut. | Sestaví se: kamera je natočená tak, jak říká mód. |
+| Úvodní kamera přesunutého startovního bodu zůstala na starém místě. | Kamera se přesune s ním; nový startovní bod dostane vlastní kameru. |
+| Mód se startovním bodem v lese byl odmítnut. | Sestaví se: velitelství tam funguje. |
+
+**0.3.2:** jedna kopie hry pro celé PC, zobrazená verze a přehlednější knihovna.
+
+| Dřív | Teď |
+|---|---|
+| Každá sada módů sestavovala vlastní kopii hry. | Jedna upravená kopie pro celé PC, sdílená se Studiem. |
+| Verze nebyla vidět a Co je nového byl seznam. | Verze je vedle názvu a Co je nového otevře tabulku dřív/teď, jako je tato. |
+| Mapy a módy vypadaly v knihovně stejně. | Mapa má štítek MAPA. |
+| Málo popisků. | Popisky u hlavních ovládacích prvků. |
+| Módům s novými silnicemi na mapách Twilight of the Gods, Alpha, Ostfriesland a Robert chyběl model silnic mapy. | Dostanou ho také. |
+
+**0.3.1:** módy s jednotkami z jiného národa (třeba německý Tiger pro USA) fungují, i v zápase, kde ten národ nikdo
+nehraje (vyzkoušeno ve hře, 2026-10-02). A nový vzhled: modré barvy R.U.S.E. místo černé a zlaté a nové logo: stíhačka
+stoupající mraky. Boční panel má dvě záložky, **Sady módů** a **Knihovna módů**, každou na celou výšku, takže se
+dostanete k celé knihovně (polovina byla schovaná za posuvníkem), s hledáním a počtem. Instalátor nabízí
+**čistou zálohu hry** vedle zástupce na ploše a říká proč.
+
+**0.3.0:** **Podporované módy:** Launcher ukazuje náš seznam módů
+([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)); zaškrtněte ty, které chcete, a stáhnou se a
+zkontrolují. Při prvním spuštění si módy vyberete; cheatovací módy jsou oddělené a nikdy se nezaškrtnou za vás.
+Tlačítko **Řešení potíží** (na spodní liště a u každé zprávy o problému) jedním během zkontroluje, co může zastavit
+**Hrát**, a opraví, co může, se zprávou k vložení do hlášení chyby. **Čistá záloha hry** v Nastavení uchová čistou
+kopii souborů vaší hry a vrátí cokoli, co změnil jiný správce módů (nebo nechte hru opravit Steamem). Módy vytvořené
+v novém Studiu fungují tak, jak byly vytvořeny: tanky a pěchota přejíždějí nové mosty po mostovce, pěchota sleduje nové
+silnice, vykácené lesy jsou pro jednotky otevřené, umístěné budovy stojí na zemi v jakékoli velikosti a kryt leží tam,
+kde byl namalován, na mapě Den D a dalších mapách, které nejsou čtvercové. Známý problém: nové silnice se zatím
+nekreslí zblízka (jsou vidět z dálky).
+
+**0.2.11:** **Hrát** funguje pokaždé: upravená kopie, kterou Windows nechce smazat (soubor, který propojila starší
+verze, program, který ho ještě drží), se odsune stranou do `RUSE-Instances\.trash`, místo aby zastavila hru, a hra,
+která z kopie ještě běží, se jmenuje. Módy s novými mosty už nikdy nevytvoří terén, kam se jednotky nedostanou (to
+shazovalo hru).
+
+**0.2.9:** **Hrát** funguje, když jsou soubory vaší hry označené jen pro čtení: selhávalo s „[WinError 5] Access is
+denied“, jakmile zůstala upravená kopie napůl sestavená. Pokud hra z upravené kopie ještě běží, dozvíte se, že ji máte
+zavřít, místo chyby Windows. Módy s novými silnicemi sestaví své namalované silnice a mosty.
+
+**0.2.8:** mód, který přidáte, se hned zkontroluje tak, jak ho přečte sestavení hry: poškozený soubor mapy nebo složka
+mapy pojmenovaná podle titulu mapy (maps/Blitz místo maps/SuperCrossRoads4) se jmenuje i s opravou dřív, než by se na
+tom Hrát zastavilo.
+
+**0.2.7:** **Nápověda** a **Nahlásit problém** na spodní liště: wiki (příručka pro hraní módů) a hlášení chyby ve
+vašem prohlížeči s vyplněnou verzí Launcheru. Zpráva o problému má vlastní odkaz **Nahlásit**. Launcher nic neodesílá:
+hlášení si přečtete a zveřejníte sami. Módy, jejichž složka mapy je pojmenovaná podle titulu mapy (maps/Blitz místo
+maps/SuperCrossRoads4), se teď dozví, jak to opravit.
+
+**0.2.6:** tlačítko **Nastavení** (vpravo nahoře): jazyk, složka hry a aktualizace na jednom místě, připravené na
+další.
+
+**0.2.5:** hledání aktualizací je spolehlivější: když GitHub odmítne jedinou kontrolu při spuštění (povoluje 60 za
+hodinu na internetovou adresu, sdílených vším, co ji používá), Launcher místo toho přečte seznam vydání na GitHubu.
+
+**0.2.4:** váš jazyk se zachová přes restarty, aktualizace a přeinstalace.
+
+**0.2.3:** červený rámeček se sbaluje jako žlutý (velká sada může vypsat desítky střetů).
+
+**0.2.2: Seřadit v nejlepším pořadí.** Když módy v sadě mění stejné hodnoty, má žlutý rámeček tlačítko **Seřadit
+v nejlepším pořadí**: módy, které mění víc, jdou první a menší po nich, aby si každý ponechal co nejvíc svých změn.
+Řekne, které módy tím zachrání, a módy se dají dál přesouvat ručně.
+
+**0.2.1: módy, které k sobě nepasují, nejde hrát, a Launcher řekne proč.** Když dva módy v sadě nahrazují stejný
+soubor nebo skript, červený rámeček jmenuje módy a co oba mění, a Hrát zůstane vypnuté, dokud se jeden nevyjme. Když
+pozdější mód jen přepisuje hodnoty dřívějšího (třeba rychlost lodi), žlutý rámeček je vypíše a sada se dá dál hrát.
+
+**Nové v 0.2:**
+
+- **Sady módů vytvořené v okně:** nová, upravit, přejmenovat, duplikovat, smazat a seřadit módy. Žádné další soubory
+  k ruční úpravě. Průvodce ve třech krocích na první obrazovce ukáže cestu.
+- **Přidat soubor módu…** (nebo ho pusťte na okno): `.rusemod` exportovaný z RUSE Studio, složka módu v `.zip`, nebo
+  **RUSE Mod Manager `.rmod`**, použitý tak, jak je (aplikovaný vlastním enginem LittleGroove).
+- **Sdílet pořadí načítání** jako text a **Importovat pořadí načítání…** od přítele: Launcher řekne, které módy máte,
+  které chybí a které jsou v jiné verzi, a pak vytvoří sadu. Je to stejný text, který kopíruje a čte RUSE Mod Manager,
+  takže pořadí načítání jdou oběma směry.
+- **Aktualizuje se sám:** od této verze, když vyjde novější Launcher, lišta to oznámí; **Aktualizovat** ho stáhne,
+  zkontroluje jeho SHA-256 a nainstaluje, a Launcher se sám znovu spustí.
+
+Vaše sady módů z 0.1 zůstanou zachované. Problémy a nápady: GitHub Issues.
+
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/launcher.jpg)

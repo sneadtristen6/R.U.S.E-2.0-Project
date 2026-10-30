@@ -212,3 +212,368 @@ takového módu u hráče je kratší.
 | Příznak lodi (76) říkal, že jednotka s ním se pohybuje po vodě. | Říká, že se jednotka vůbec nepohybuje, jako budova (zatím nevyzkoušeno ve hře). |
 
 Známé: **námořní mapy ještě nejsou vyřešené.** Vysušené nebo namalované moře se sestaví a načte, ale voda je stále vidět.
+
+**0.9.6:** nová jednotka může mít vlastní 3D model z jakéhokoli 3D nástroje a **Vyzkoušet ve hře** spustí hru hned,
+když se nic nezměnilo. A jedno prvenství:
+
+- **První model z jiného 3D programu v R.U.S.E.:** M1 Abrams, vytvořený jako nová jednotka USA vedle Shermana. Kupuje
+  se na Armor Base s vlastní kartou, staví se a otáčí věží jako tanky hry. Viděno ve hře.
+
+| Dřív | Teď |
+|---|---|
+| Nová jednotka měla model jednotky, kterou kopíruje. | **Importovat model…** na stránce nové jednotky: vyberte **.3ds** (jeho obrázky vedle něj nebo ve složce nad ním) nebo **.glb** (z Blenderu a většiny 3D nástrojů). Studio ho přizpůsobí jednotce, kterou kopíruje: její délku (krát **Velikost**: 1 je stejně dlouhý, Abrams oproti Shermanovi je 1,36), jeho věž na věž té jednotky, aby ji hra otáčela stejně, jeho obrázky jako vlastní textury. Stránka ho ukazuje ve 3D; **Použít model kopírované jednotky** ho zase odebere. Do vašeho módu jde jako `files/models/<the unit's name>.glb`, který se otevře v Blenderu. **Viděno ve hře.** Raná verze: pásy a kola se zatím neotáčejí, záblesk výstřelu je vidět tam, kde má ústí hlavně kopírovaná jednotka, a vrak je vrak kopírované jednotky. |
+| Nová jednotka s vlastní kartou shodila hru, když byla postavena (0.9.5). | Její karta je i na mapě tam, kde ji hra čte. **Viděno ve hře.** |
+| Mapu vytvořenou pomocí **Duplikovat mapu** nešlo ve Studiu smazat. | **Smazat mapu**, pod Duplikovat mapu na nové mapě: jednou se zeptá, pak její složka jde do Koše, odkud ji můžete vrátit. Vlastní mapy hry smazat nejde. |
+| Studio hlásilo, že Blender není nainstalovaný, když byl rozbalený, a ne nainstalovaný. | Najde Blender, ať jste ho rozbalili kamkoli (nejvyšší složka disku nebo o jednu níž, Stažené soubory, Plocha, Dokumenty). |
+| Přebarvení vycházela s některými barvami trochu jinak (červená a modrá skvrna mohla zfialovět). | Každý čtvereček 4 x 4 si drží vlastní barvy. Přebarvené jednotky a namalovaný terén vycházejí s mírně jinými daty obrázku než v 0.9.5 (stejný vzhled), takže se otisk a kód pro připojení takového módu změní: hráči by měli všichni aktualizovat, než budou hrát spolu. |
+| **Vyzkoušet ve hře** pokaždé znovu sestavilo celou upravenou kopii, i když se nic nezměnilo. | Od posledního sestavení se nic nezměnilo: hra se spustí hned, bez sestavení (testovací mód: z 21-29 s na méně než 0,1 s). Sestavení použije nezměněné soubory poslední kopie, místo aby je znovu kopírovalo. |
+| Každé sestavení četlo data jednotek hry znovu od začátku. | Uchovávají se mezi sestaveními: velký testovací mód trval pokaždé 213 s; teď první sestavení trvá zhruba stejně a další 68 s. Hra už před sestavením nekopíruje všechna svá data. |
+| Odstranění většiny velké mapy vyčerpalo paměť Studia a odstranění celé mapy bylo odmítnuto jako příliš velké. | Odstranění se spočítá během sekund, jedno po druhém; **Vymazat celou mapu** v panelu Odstranit (Zpět ho vezme zpět). Smazaná scenérie se zapisuje úsporně. Nové: ve hře zatím neviděno ve velkém. |
+| Terén srovnaný pod silnicí nechával silnici ve vzdáleném pohledu ve staré výšce. | Model silnice sleduje nový terén. Nové: ve hře zatím neviděno. |
+| Srovnané koryto řeky si zblízka nechávalo obrázky skal a soutěsky. | Vyplní se od obou břehů a jeho nízký porost se odstraní. Nové: ve hře zatím neviděno, jak to udělá sestavení. |
+| Zatímco se sestavoval index hry (asi minutu), Studio mohlo jen čekat. | Mapy a Nastavení zůstávají použitelné; řádek dole řekne, až bude hotový. |
+| Pomalé spuštění nezanechalo žádnou stopu. | Kroky každého spuštění se měří; **Kopírovat zprávu** v Řešení potíží vypíše posledních pět. |
+| Stránka v okně se mohla dostat k větší části aplikace, než jsou její vlastní volání. | Dostane jen vlastní volání aplikace. |
+
+Také `ruse import-model <file> --like <model> --unit <name>` dělá totéž z příkazového řádku.
+
+**0.9.5:** jednotky dostanou vlastní vzhled. Prohlédněte si jakoukoli jednotku ve 3D, přebarvěte ji v Blenderu, dejte
+jí vlastní kartu v nabídce stavby. A naše prvenství, všechna viděná ve hře:
+
+- **První jednotka přebarvená módem:** červený Sherman, zblízka i z dálky.
+- **První jednotka namalovaná v Blenderu** a přenesená zpět do hry.
+- **První karta nabídky stavby vytvořená ve Studiu,** ukázaná ve vlastní nabídce Armor Base hry.
+- **První nová jednotka s vlastním modelem,** vedle těch ze hry: Tall Sherman, vedle Shermana (vytvořený při
+  testování; vytváření vlastních modelů ve Studiu přijde příště).
+- **První vlastní mise** dohraná do vítězství: nová Operace s vlastními cíli, jednotkami a dělostřeleckým úderem
+  (vytvořená při testování).
+
+| Dřív | Teď |
+|---|---|
+| Stránka jednotky ukazovala jen její hodnoty. | **3D model** na stránce jednotky: otáčejte ho, přibližte ho, uvidíte na něm barvy svého módu. |
+| Vzhled jednotky byl ten ze hry. | **Přebarvit v Blenderu:** **Otevřít v Blenderu** otevře modely jednotky s jejich obrázky; malujte na model, pak **Přenést zpět** uloží vaše barvy a dá je do vašeho módu. **Viděno ve hře**, zblízka i z dálky. Blender je zdarma: když ho Studio nenajde, **Získat Blender (zdarma)** a **Vybrat Blender…** jsou hned tam. |
+| Obrázek jednotky v nabídce stavby byl ten ze hry. | **Použít tento pohled jako kartu:** otáčejte a přibližujte 3D model, dokud v čárkovaném rámečku nevypadá dobře; ten pohled se stane kartou jednotky v nabídce stavby. **Viděno ve hře.** |
+| Nová jednotka ukazovala stejnou kartu jako jednotka, kterou kopíruje, takže obě v nabídce vypadaly stejně. | Karta nové jednotky je její vlastní (`files/cards/<the unit's name>.png`): vytvoření její karty nikdy nezmění kartu originálu. Ve hře zatím neviděno. |
+| Balík modelů jednotek, který narostl, hra zahodila a chyběl každý model v něm: pád u první továrny. | Balíky modelů se zapisují tak, jak je hra kontroluje, ať jsou jakkoli velké. **Viděno ve hře:** druhý Sherman s vlastním modelem. |
+| Jednotky národa dané jiné armádě neměly v kapitolách kampaně a Operacích model: mód, který nechá objevit francouzské jednotky na mapě Holland, spadl při načítání. | Jejich modely se načtou i tam. **Viděno ve hře** (francouzské jednotky na mapě Colditz). |
+| **Duplikovat mapu** vytvářelo jen mapy BITVY. | Vytvoří také novou **Operaci** nebo **Kapitolu kampaně** ze záznamu jakékoli mapy. **Viděno ve hře:** nová Operace. Raná verze: nová kapitola kampaně zatím nebyla vyzkoušena. |
+| Srovnání hor na okraji mapy tam nechalo útes. | Okraj mapy sleduje terén. **Viděno ve hře** (Blitz Twin, rovný až k okraji). |
+| Jednotky obcházely místa, kde stály smazané budovy města. | Kde mizí budovy, otevře se terén všem jednotkám, jako u stromů. **Viděno ve hře.** |
+| Terén mapy nešlo malovat. | **Malování mapy:** malujte obrázek terénu barvou (barevné kolo, vlastní barvy mapy nebo kapátko) nebo vlastním terénem mapy zkopírovaným z jiného místa. **Vyčistit zem pod ní** (ve výchozím stavu zapnuto) odstraní trávu, plodiny a kameny pod malbou, aby byla vidět v každé výšce. Raná verze: ve hře viděno shora. |
+
+**0.9.4:** nové mapy, raná verze. **Duplikovat mapu** vytvoří novou mapu z jakékoli mapy BITVY a mapy se otevřou za
+vteřinu.
+
+| Dřív | Teď |
+|---|---|
+| Změny map mohly měnit jen vlastní mapy hry. | **Duplikovat mapu** (záložka Mapy, pod názvem otevřené mapy) vytvoří **novou mapu**: úplnou kopii s vlastním názvem, uvedenou v nabídce BITVY vedle originálu, kterou pak měníte jako kteroukoli mapu. Okno řekne, co dělá a jak to funguje. **Viděno ve hře:** nová mapa se hraje na vlastním terénu a 101 nových map naráz bylo všech uvedeno a hrálo se. Raná verze: kopie jiných map než Blitz se sestaví, ale ve hře zatím nebyly vyzkoušeny, a srovnání hor na okraji mapy tam nechá útes. Prosím nahlaste, na co narazíte. |
+| Mapa se pokaždé otevírala několik sekund (M03_Italie: 7,6 s). | Její data se uchovávají mezi návštěvami a spuštěními: 1,7 s podruhé. |
+| „Mód“ a „Mapa“ byly dvě podobné nabídky. | **Mód jednotek** (s tankem) a **Změny map** (s mapou). |
+| Strany a zóny se snadno pletly. | **Komu?** říká, že strana je ten, kdo ovládá jednotky (jedna země jich může mít několik), a popisek zóny po najetí myší říká, že je to oblast mapy, ne strana. |
+| Aktualizace přicházely jen jako celé verze. | Malé opravy mohou přijít mezi verzemi (0.9.4.1), nabízené jako každá aktualizace. |
+
+**0.9.3:** všechno, co umístíte, je vidět z dálky, nové silnice lesem vypadají jako vlastní silnice mapy, stromy, které
+můžete na silnici ponechat, předměty a stromy pod svými názvy ve vašem jazyce a sestavení asi třikrát rychlejší.
+
+| Dřív | Teď |
+|---|---|
+| Předměty, stromy a budovy k umístění byly vypsané pod francouzskými kódovými názvy: Caillou_10, ChampsPierres_02, Osier... | Pod názvy v jazyce Studia, ve všech deseti, s tím, jaký druh věci každá je: „Stony field 2“, „Champ de pierres 2“, „Steiniges Feld 2“. Mění se s tlačítkem jazyka. Kódový název a jeho složka jsou v popisku. |
+| Kameny a většina dalších předmětů, které jste umístili, zmizely, jakmile kamera opustila blízkou vzdálenost, a objevovaly se a mizely, jak jste ji otáčeli. | Všechno, co mód umístí, se kreslí až do velké dálky, vlastní objekty mapy beze změny. **Viděno ve hře:** umístěné kameny jsou vidět v každé výšce. |
+| Shora byla nová silnice lesem světlým pruhem a po první opravě zmizela ze středně dlouhé vzdálenosti. | Malovaná lesem tak, jak jsou malované vlastní silnice mapy, v každé výšce. **Viděno ve hře.** |
+| Nová silnice vždy odstranila stromy ze své cesty, asi 6 m na každou stranu. | **Ponechat stromy na nových silnicích** v panelu Silnice: stromy a keře zůstanou nad silnicí a v lese je silnice vidět slabší a šedší. **Viděno ve hře.** |
+| **Vyzkoušet ve hře** sestavovalo mód s novými silnicemi na M03_Italie asi 5 minut. | Asi 1½ minuty: jak vypadají silnice mapy, se změří jednou a uchová, a kopie vynechají pomalou kontrolu, kterou nepotřebují. |
+
+**0.9.2:** opravy z testerovy mapy kampaně: mosty pro nové silnice na každé mapě, konce silnic, které se přichytí
+k mostům (nebo vůbec ne), názvy, které hráč zná, jednotky pro hráče, scenérie viditelná z dálky a zóny scénáře jako
+hranice na zemi.
+
+| Dřív | Teď |
+|---|---|
+| Silnice přes vodu zastavila sestavení na 20 z 29 map s mosty (Itálie, Německo, Holandsko...): její most „by neměl podlahu“. | Dostane most a podlahu na každé mapě s mosty. Na těchto mapách ve hře zatím neviděno. |
+| Každý bod silnice se přichytil k nejbližší silnici, na silnici i tam, kde jste umístili most. | Přichytí se jen dva konce silnice, nejdřív ke konci umístěného mostu. **Přichytit konce k silnicím a mostům** v panelu Silnice to vypne. |
+| Budovy a jednotky pod kódovými názvy, jako „Descriptor_Building_VehiculeFactoryLeurre“. | Pod názvy, které jim dává hra (DECOY ARMOR BASE), s vlastním řádkem hry o tom, co každá dělá. |
+| Jednotky nešlo dát hráči v kapitole kampaně: strana hráče (0) byla odmítnuta. | **Komu?** vypíše vlastní strany scénáře z jeho mise: „Hráč · USA (strana 0)“, „Počítač · Německo (strana 1)“... |
+| Na M03_Italie a dalších mapách nová silnice v otevřeném terénu skrývala scenérii mapy z dálky a předměty, které jste umístili, byly vidět jen zblízka. | Pohled na mapu z dálky zůstává, jak byl, a umístěné předměty jsou vidět z dálky jako vlastní předměty mapy. Ve hře zatím neviděno. |
+| Zóny scénáře byly barevné plochy vznášející se nad mapou a zakrývaly její terén i ikony. | Každá zóna je jasná čára podél své hranice na zemi s průhledným odstínem uvnitř, jako hranice ve Stellaris. **Výplň zón** nastaví vnitřek (0 %: jen hranice). |
+
+**0.9.1:** přetáhněte cokoli na mapě, přehlednější ikony, kterým můžete nastavit velikost a které můžete skrýt, váš
+jazyk od prvního spuštění a typ každé jednotky tak, jak ho jmenuje hra.
+
+| Dřív | Teď |
+|---|---|
+| Startovní body, zásobovací sklady a jednotky, které se objeví, se přesouvaly jen nástrojem Přesunout, jedním kliknutím a pak dalším. | Chyťte kterýkoli z nich na mapě a přetáhněte ho, bez vybraného nástroje, tak jako se už otáčely úvodní kamery. Sklady a velitelství se při tažení dál přichytávají k silnicím. |
+| Ikony na mapě byly panáčci a krabičky a každý bunkr vypadal stejně. | Ikona pro každý druh: voják, tank, nákladní auto pro zásobovací sklady, letadlo, děla, jasně označené velitelství, rozlišená Armor Base a letiště a každý bunkr vlastní (protitankový, kulometný, protiletadlový, dělostřelecký, pevnost, pozorovatelna). |
+| Ikony byly shora objemné a jediný způsob, jak je skrýt, bylo skrýt celý scénář. | Ikony se zmenšují, jak se kamera vzdaluje, posuvník nastaví jejich velikost a panel Scénář ukáže nebo skryje každý druh (starty, kamery, sklady, budovy, jednotky, zóny, města). Uchová se na příště. |
+| Studio začínalo s kódovými názvy a jazyk byl schovaný v Nastavení, takže hráči nevěděli, že mluví jejich jazykem. | První spuštění se zeptá: „Vyberte jazyk“, každý jazyk vlastními slovy, s označeným jazykem, na který je vaše hra nastavená ve Steamu. Pak tlačítko jazyka nahoře, vždy na očích. |
+| Jednotky byly jen „Pozemní“ nebo „Letectvo“. | Pod Pozemní, Pěchota a Letectvo vlastní typy hry: Lehký, Střední a Těžký tank, Stíhač tanků, Obrněný průzkum, Stíhačka, Stíhací bombardér, Lehký, Střední a Těžký bombardér, Letecký průzkum... i na řádku každé jednotky, ve vašem jazyce. Hledání je najde („bombardér“, „průzkum“). |
+| Seznam nainstalovaných aplikací ve Windows ukazoval vůbec první nainstalovanou verzi. | Ukazuje verzi, kterou máte. |
+
+**0.9.0:** silnice vypadají správně. Silnice, kterou nakreslíte, teď vypadá jako vlastní silnice mapy, shora i těsně
+u země. Dostat se sem stálo hodně času a hodně testů, víc než mosty. Vyzkoušeno ve hře na mapě Den D.
+
+![Nová silnice zblízka na mapě Den D: asfalt s přerušovanou středovou čarou a štěrkovými krajnicemi, které přecházejí do trávy](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Dřív | Teď |
+|---|---|
+| Nová silnice mizela, jak se k ní kamera snášela: shora byla vidět jen její malba. | Zblízka se kreslí vlastními asfaltovými obtisky mapy, kladenými podél ní tak, jak je klade mapa, s okrajovým obtiskem na každé straně: asfalt, přerušovaná středová čára, štěrkové krajnice. |
+| Malba byla jednolitá barva, světlejší a širší než silnice mapy. | Malba se měří na vlastních silnicích mapy: jejich barva, jejich krajnice a to, jak přecházejí do terénu. Každá mapa dostane vlastní. |
+| Tráva, keře a stromy statku prorůstaly novou silnicí. | Rostliny a předměty mapy na cestě silnice se odstraní (asi 6 m na každou stranu). Lesy si ponechají kryt a pohyb a budovy zůstanou. |
+| Byly známé jen obtisky silnic mapy Den D. | Na pouštních mapách se používají jejich vlastní obtisky, kladené stejně (ve hře zatím neviděno). |
+| Velké mazání (tisíce kruhů) se sestavovalo mnoho minut. | Mnohem rychleji: prohlížejí se jen kruhy blízko každé části mapy. |
+
+![Tři nové silnice odbočující z hlavní silnice mapy Den D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-6-done-overview.jpg)
+
+**0.8.3:** nástroje scénáře editoru mapy z RUSE-Mod-Manageru od LittleGroove: zásobovací sklady a velitelství se
+přichytí k silnicím, ikona pro každou budovu a jednotku a úvodní kamera každého hráče ukázaná, přenášená a otáčená.
+Ve hře zatím nevyzkoušeno.
+
+| Dřív | Teď |
+|---|---|
+| Místo pro zásobovací sklad nešlo umístit. | **Místo pro zásobovací sklad** je první v Přidat jednotku → Budovy → Peníze. |
+| Startovní bod šel přesně tam, kam jste klikli, na silnici i daleko od ní. | **Přichytit k silnicím** (ve výchozím stavu zapnuto) ho dá vedle nejbližší silnice, tak daleko od ní jako vlastní mapy hry (změřil to LittleGroove). Zrušte zaškrtnutí, chcete-li umístit doprostřed pole. |
+| Místa příchodu byla pár ikon s písmeny pro zemi. | Ikona podle toho, co každé je (velitelství, zásobovací sklad, továrna, pevnost, návnada, voják, tank, protitankové, dělostřelectvo, prototyp, letadlo, věž), a výsostný znak země. |
+| Nebylo vidět, kde se hráčův zápas otevře. | Každý startovní bod ukazuje svou úvodní kameru: přílet (tečkovaně), kde se zastaví, na co se dívá a část mapy, kterou ukazuje obrazovka. |
+| Úvodní kamera přesunutého startovního bodu zůstala na starém místě. | Kamera se přesune s ním; nový startovní bod dostane vlastní kameru. |
+| Úvodní kameru nešlo změnit. | S **Přesunout** přetáhněte kameru startu kolem jeho velitelství, aby se zápas otevřel z jiné strany; **Vrátit kameru** to vrátí. |
+| Startovní bod v lese byl odmítnut. | Povoleno: velitelství tam funguje a zásobovací auta jezdí lesem. Odmítnuty jsou jen voda, útesy a zablokovaný terén. |
+
+**0.8.2:** test zastavený chybou ve vašem módu řekne kterou a opraví ji, módy a mapy zvlášť, přehlednější barvy mapy
+a místa příchodu a jedna kopie hry pro celé PC.
+
+| Dřív | Teď |
+|---|---|
+| Test zastavený chybou ve vašem módu pohřbil důvod v logu a odkazoval na Řešení potíží, které mód opravit neumí. | Každá chyba je vypsaná nad logem s tlačítkem, které ji opraví: místo příchodu týmu na mapě BITVY změněné na neutrální nebo vyjmuté (i všechna naráz), silnice, která se s ničím nespojuje, vyjmutá. Řešení potíží se ukáže jen u jiných selhání. |
+| Zprávu dole nešlo zavřít. | Každá zpráva má × k zavření. |
+| Log testu nešlo zkopírovat. | **Kopírovat zprávu** zkopíruje log a zprávu, pro hlášení chyby nebo Discord. |
+| Módy a mapy sdílely jednu nabídku. | Módy a mapy mají každé svou nabídku a Exportovat dá soubor rovnou do knihovny Launcheru. |
+| Každé místo příchodu na mapě vypadalo stejně. | Každé místo příchodu je ikona budovy, tanku, vojáka nebo letadla v barvě své strany, se svou zemí. |
+| Barvy mapy nebyly vysvětlené. | Legenda barev pro kryt, Kam jednotky mohou a Odstranit; kryt nástroje Město má vlastní barvu; posuvník průhlednosti pro každou vrstvu. |
+| Kopce a stromy prostupovaly zónami scénáře. | Zóny se vznášejí nad terénem a posuvník **Výška zón** nastaví jak vysoko. |
+| Každý test si držel vlastní kopii hry. | Jedna upravená kopie pro celé PC, sdílená s Launcherem. |
+| Verze nebyla vidět a Co je nového byl seznam. | Verze je vedle názvu a Co je nového otevře tabulku dřív/teď, jako je tato. |
+| Málo popisků. | Popisky u hlavních ovládacích prvků, psané pro hráče, kteří s módováním začínají. |
+| Novým silnicím na mapách Twilight of the Gods, Alpha, Ostfriesland a Robert chyběl model silnic mapy. | Dostanou ho také. |
+| Sestavení říkalo, že nové silnice jsou „kreslené zblízka“. | Říká, že jsou vidět z dálky; zblízka zatím vidět nejsou (pořád známý problém). |
+
+**0.8.1:** jednotky z jakéhokoli národa, nový vzhled, kratší lišta nástrojů a nástroj Odstranit.
+- **Jednotky z jiného národa fungují.** Nová jednotka může jít do nabídky stavby kteréhokoli národa, ať její model
+  pochází z jakékoli armády: německý Tiger nebo Ju 87 pro USA, i japonská Zero nebo Chi-Ha. Postaví se, bojuje,
+  ukazuje svůj obrázek na kartě a na značce a dá se vybrat na zemi i ve vzduchu, i v zápase, kde národ, ze kterého
+  pochází, nikdo nehraje (vyzkoušeno ve hře, 2026-10-02). Sestavení nechá modely toho národa načíst v každém zápase;
+  zápas zabere o něco víc paměti a doby načítání.
+- **Nový vzhled:** modré barvy R.U.S.E. místo černé a zlaté a nové logo: stůl štábní místnosti.
+- **Lišta nástrojů editoru mapy je kratší.** Nástroje, které patří k sobě, sdílejí jednu dlaždici se záložkou pro
+  každý: Terén a voda, Kryt a pohyb, Silnice a mosty, Budovy, Předměty a stromy, pak Odstranit, Scénář a Kontrola.
+  Dlaždice se otevře na záložce, kterou jste použili naposledy.
+- **Nástroj Odstranit:** přetáhněte přes vlastní stromy a předměty mapy (i budovy, když je vyberete) a při sestavení
+  módu zmizí. Červené kruhy se ukládají v módu, co pokrývají, je zabarvené červeně, a panel spočítá, co odstraní. Kde
+  mizí stromy, terén se otevře všem jednotkám a ztratí lesní kryt. Pořádné odstranění vlastních budov, silnic, keřů a
+  kamenů mapy přijde příště.
+- **Instalátor nabízí čistou zálohu hry** vedle zástupce na ploše a říká proč: s ní může řešení potíží vrátit cokoli,
+  co změnil jiný správce módů.
+
+**0.8.0:** editor mapy dospívá: nové štětce a panely, mosty, které jednotky opravdu přejdou, lesy, které můžete
+vykácet, a sestavení, které kontroluje pravidla hry, takže to, co vytvoříte, funguje napoprvé. K tomu řešení potíží a
+čistá záloha hry.
+- **Nové v editoru mapy:**
+  - **Štětce Otevřít** (Pohyb): opak Zablokovat. Dejte jednotkám terén, ze kterého je mapa drží pryč (všem jednotkám,
+    pěchotě nebo vozidlům). Otevření vody je povolené a s varováním: jednotky tam stojí na dně řeky.
+  - **Štětec Les** (Kryt): stromy a kryt jedním tahem; Zpět vezme obojí.
+  - **Panel Mosty:** vlastní druhy mostů mapy a most umístěný ručně v délce a natočení, které zvolíte; přechody nových
+    silnic přes vodu kreslené zlatě.
+  - **Zkontrolovat mapu:** vypíše, co by se pokazilo, než začnete testovat (odříznutý terén, silnice nebo mosty, které
+    jednotky nemůžou použít, nespojené konce silnic, budovy na silnicích), a kliknutí na položku ukáže kde.
+  - Vysušená nebo do sucha zvednutá koryta řek sestavení otevře jednotkám.
+- **Vykácejte vlastní stromy a předměty mapy:** kruhy `[[erase]]` v souboru `scenery.toml` módu (zatím psané ručně;
+  nástroj Odstranit ve Studiu je na cestě). Tanky vjedou do vykáceného lesa a pěchota tam už není skrytá.
+- **Umístěné objekty stojí na zemi v jakékoli velikosti.** Budova zvětšená 10× se vznášela ve vzduchu; teď sedí na
+  zemi jako vlastní budovy mapy.
+- **Opraveno: kryt na mapách, které nejsou čtvercové** (Den D, Frontline, Djebel, Medjez, Handshake over the Elbe a
+  mapy kampaně v Tunisku, Holandsku a Ardenách). Kryt tam namalovaný nebo odstraněný (štětce Kryt, Odkrýt, Město a Les,
+  `cover.toml`) přistál až kilometr od místa, kde byl nakreslen, a zobrazení mapy ho ukazovalo na stejném špatném
+  místě. Obojí je teď správně: pokud jste na jedné z těchto map malovali kryt, podívejte se na něj znovu v zobrazení
+  mapy. Čtvercové mapy (Blitz a většina ostatních) byly vždy správně.
+- **Mosty fungují ve hře.** Silnice, kterou nakreslíte přes vodu, dostane vlastní druh mostu mapy (i u holandských
+  map) a tanky, pěchota a zásobovací auta ho přejdou po mostovce, pěchota ve výšce mostovky. Konce mostu se napojí na
+  silnice, které už jednotky používají, a drží se stranou od budov mapy; most, který nejde napojit, zůstane uzavřený a
+  poznámka sestavení řekne, na co silnice narazila a kde.
+- **Sestavení kontroluje pravidla hry.** Každý soubor, který mód mění, byl porovnán s tím, co s ním dělá hra, a mód,
+  který by se ve hře rozbil, se odmítne s poznámkou proč, dřív než se cokoli zapíše:
+  - silnice: jednotky teď sledují nové silnice, nejen zásobovací auta, a nová silnice, která se nespojuje s žádnou
+    jinou, se odmítne (silniční síť musí zůstat v jednom kuse);
+  - umístěné budovy a bloky: jednotky jimi už neprojedou; nové budovy, mosty a stromy jsou vidět na každou
+    vzdálenost;
+  - terén: nová voda je pro jednotky uzavřená, mapa AI sleduje vaše lesy, bloky, mosty a vodu a tah, který nemůže
+    změnit terén (nebo dosáhne na podlahu mostu), to řekne;
+  - jednotky: špatná salva, ID, národ nebo seznam nabídky se odmítne, flagy jednotek se kontrolují a každý flag je
+    vysvětlený ve výběru flagů (flagy 62 a 63, které shodí hru na jednotce, která není nákladní auto, jsou chyba);
+    jednotka daná do továrny jiného národa se zatím odmítne (při stavbě shazovala hru; zprovoznit ji je další krok);
+  - scénář: místa příchodu jsou ve výchozím stavu neutrální, místo příchodu jednotky, jejíž modely zápas nemusí
+    načíst, se odmítne (shazovalo hru na začátku), start, kam nemůžou vozidla, se odmítne, přesunutý start si vezme
+    svou kameru s sebou a místa hráčů se počítají po týmech.
+- **Zpráva sestavení** ukazuje každé varování (některá se ztrácela) a nové sestavení nejdřív odstraní starou
+  testovací kopii, aby se stará kopie nedala omylem spustit.
+- **Čtvercový kryt:** `square = true` u malby v `cover.toml` nebo u tahu Kryt či Odkrýt v `terrain.toml` namaluje
+  čtverec podél os mapy (zatím psané ručně; zobrazení mapy ho kreslí jako čtverec).
+- **Řešení potíží** (vedle *Vyzkoušet ve hře* a v Nastavení > Nápověda): jedním během zkontroluje, co může zastavit
+  test (nalezená hra, Steam, hra ponechaná běžet z upravené kopie, disk a jeho volné místo, zbylé kopie, soubory jen
+  pro čtení, zda aplikace může zapisovat tam, kam jdou kopie), s tlačítkem pro každou opravu, kterou umí udělat, a
+  zprávou k vložení do hlášení chyby, bez vašeho uživatelského jména ve Windows.
+- **Čistá záloha hry** (Nastavení): uchovejte čistou kopii souborů vaší hry, porovnejte je s ní a vraťte cokoli, co
+  změnil jiný správce módů nebo ruční úprava. Soubory, které nepatří hře, se odsunou stranou, nikdy se nesmažou. Nebo
+  nechte hru opravit Steamem (*Ověřit ve Steamu*). Je to jediné místo, kde Studio kdy zapisuje do složky vaší hry, a
+  jen když o to požádáte.
+- **Sdílejte svůj mód:** vytvořili jste mód? Po exportu Studio ukáže jeho velikost a SHA-256 a jak ho přidat do
+  seznamu módů na GitHubu a stát se přispěvatelem.
+- **Známý problém: nové silnice se zatím nekreslí zblízka.** Jsou namalované na zemi a vidět z dálky a jednotky je
+  používají, ale s kamerou u země nová silnice zmizí. Pracujeme na tom.
+
+**0.7.6:** druhé Vyzkoušet ve hře funguje a mosty, ke kterým se jednotky vždy dostanou.
+- **Opraveno:** každé druhé *Vyzkoušet ve hře* mohlo selhat s „An old modded copy ... can't be removed ... (Access is
+  denied)“. Kopie, kterou Windows nechce smazat (soubor, který starší verze propojila s nahrazeným souborem hry,
+  program, který ho ještě drží), už nezastaví test: odsune se stranou do `RUSE-Instances\.trash` a odstraní se, jakmile
+  ji nic nedrží. Pokud R.U.S.E. ještě běží z testovací kopie, dozvíte se to i s názvem programu. Dvojí stisknutí
+  *Vyzkoušet ve hře* spustí jeden test, ne dva.
+- **Opraveno:** nový most silnice mohl shodit hru, když jednotky dostaly rozkaz na něj vjet: jeho mostovka
+  nedosahovala na žádný terén, který jednotky používají. Každý konec mostu se teď napojí na terén podél silnice (až
+  62 m nájezdu); most, který nejde napojit, zůstane pro jednotky uzavřený, s poznámkou, a sestavení nikdy nezapíše
+  terén, kam se jednotky nedostanou.
+
+**0.7.4:** Vyzkoušet ve hře funguje, když jsou soubory vaší hry označené jen pro čtení.
+- **Opraveno:** *Vyzkoušet ve hře* pokaždé selhalo s „[WinError 5] Access is denied“, když byly soubory R.U.S.E.
+  označené jen pro čtení (instalace z disku, obnovená záloha): testovací kopie si označení ponechala, takže kopii
+  ponechanou napůl sestavenou nešlo nikdy odstranit. Testovací kopie si teď označení nikdy neponechá a zbytek ze starší
+  verze se odstraní sám (soubory vaší hry skončí přesně tak, jak byly). Pokud hra z testovací kopie ještě běží,
+  dozvíte se, že ji máte zavřít, místo chyby Windows.
+- **Silnice ukazuje svou délku**, zatímco ji kreslíte, vedle ukazatele (jako v Cities: Skylines); nástroje Silnice
+  ukazují součet vašich nových silnic.
+- **Nové silnice jsou namalované na zemi** vlastní barvou silnic mapy (ověřeno ve hře) a **silnice přes vodu dostane
+  most**: vlastní druh mapy, jeden kus natažený od břehu ke břehu jako vlastní mosty hry, aby jednotky mohly přejít.
+  Silnice přes jeden z vlastních mostů mapy dostane nový most na jeho místo. (Mosty jsou nové: ve hře zatím
+  nezkontrolované.)
+
+**0.7.3:** uspořádejte si zobrazení mapy po svém. Panel mapy (vlevo nahoře) a nástroje (dole) se přesunou kamkoli za
+svůj úchyt (⠿) a sbalí se šipkou vedle něj: panel mapy až na svůj nadpis, nástroje až na svou lištu. Dvojklikem na
+úchyt vrátíte ten panel na místo. Vaše rozložení se uchová.
+
+**0.7.2:** silnice a přehlednější testy.
+- **Kreslete silnice**, ve stylu Cities: Skylines (druh Silnice na liště): **Rovná**, **Oblouk** a **Volná**. Konec
+  blízko silnice se k ní přichytí a napojí se na ni. Nové silnice se kreslí jako modré pásky a **zásobovací trasy je
+  používají** (ověřeno ve hře). Na zemi zatím namalované nejsou.
+- Pole **Silnice** ukazuje vlastní silnice mapy zlatě.
+- Vlastní slova hry: scénář je pojmenovaný podle tlačítka hlavní nabídky, které ho hraje (**Bitvy**, Operace, Kampaň,
+  přečtené z textů vaší hry ve vašem jazyce), a zlatý řádek pod nabídkou scénáře říká, kde se hraje, např. *Ve hře:
+  Bitvy › Den D (6 hráčů)*.
+- **Vyzkoušet ve hře** řekne, kde sestavilo, a přesně co otevřít, abyste uviděli své změny (např. *BITVY > Den D*).
+- Prostřední tlačítko myši otáčí pohled i v režimu rozhlížení (dřív tam přibližovalo).
+
+**0.7.1:** několik jednotek naráz, kontrola módu a nápověda po ruce.
+- **Přidat jednotku** umístí 1, 2, 4, 6, 8 nebo 10 naráz, v **řadě, koloně, klínu, obdélníku nebo kruhu** čelem
+  k horní straně obrazovky, s posuvníkem rozestupu a kroužky, které ukazují, kde každá bude stát.
+- **Kontrola módu**: každý soubor vašeho módu se přečte tak, jak ho čte sestavení hry, když mód vyberete a před
+  **Vyzkoušet ve hře**. Červená lišta jmenuje každý problém; poškozený soubor mapy jde **odložit** (přejmenovat, nikdy
+  se neztratí) a složku mapy pojmenovanou podle titulu mapy (maps/Blitz) jde jedním kliknutím **přejmenovat** na název
+  jejího balíku (maps/SuperCrossRoads4).
+- Opraveno: tahy **Voda** se ukládaly bez své hladiny, takže sestavení hry mód odmítlo. Každý soubor, který Studio
+  zapíše, se teď před uložením přečte zpět.
+- Seznam map se **sbalí** («) pro víc místa.
+- **Nastavení > Nápověda a komunita**: wiki (nová příručka), Discussions a **Nahlásit problém**, které otevře hlášení
+  chyby s vyplněnou verzí. Chyba dole má vlastní odkaz **Nahlásit**. Aplikace nic neodesílá: hlášení si přečtete a
+  zveřejníte sami.
+
+**0.7.0:** nový vzhled a nástroje pohybu. Nástroje mapy se přesunuly na lištu podél spodního okraje, jako v Cities:
+Skylines, ve vlastním stylu HUD R.U.S.E.: vyberte druh (Terén, Voda, Kryt, Pohyb, Budovy, Objekty, Stromy, Scénář) a
+jeho nástroje se otevřou nad ním; klikněte na něj znovu nebo stiskněte Esc a jen se rozhlížejte. Výběry scénáře jsou
+teď dlaždice, ne rozbalovací seznamy. **Pohyb:** pole **Kam jednotky mohou** to ukáže na mapě (červená: žádná jednotka;
+žlutá: jen pěchota) a tři nové štětce terén uzavřou: **Zablokovat** (každé jednotce), **Zablokovat pěchotě** a
+**Zablokovat vozidlům**. Budovy, které umístíte, zastaví jednotky (pole **Pevné**, ve výchozím stavu zapnuto). Ověřeno
+ve hře: jednotky naplánují cestu kolem zablokované jámy a projdou mezi umístěnými věžemi.
+
+**0.6.9:** budovy, předměty a stromy, které umístíte, jsou teď ve hře vidět při každém přiblížení (ověřeno na mapě
+Blitz, až do 8× jejich velikosti): každá skupina jde do nového bloku obaleného kolem nejbližší vesnice nebo statku,
+které mapa kreslí z dálky. Zkontrolováno na všech 32 mapách: nic jiného se nepohne. Jednotky umístěnými budovami pořád
+procházejí; udělat je pevnými je další krok.
+
+**0.6.8:** vytvořte města a lesy, ve kterých se jednotky mohou schovat. Zobrazení mapy ukazuje, kde se jednotky
+schovávají (pole **Kryt**, zeleně), a tři nové štětce to malují: **Kryt**, **Odkrýt** a **Město** (klikněte na město:
+kryt se položí kolem každé jeho budovy, i umístěných). Ověřeno ve hře: pěchota na namalovaném krytu je skrytá.
+
+**0.6.7:** umístěné objekty jdou až do 10× své velikosti (posuvník Velikost nástroje Umístit; [ a ] krokují po 0,1 až
+do 3×, pak po 0,5).
+
+**0.6.6:** munice je řazená i podle typu: průbojné granáty, tříštivo-trhavé granáty, protiletadlové, kulomety, pěchotní
+zbraně, pěchotní protitankové zbraně, pumy a rakety (seznam Typ nad municí). Módy také mohou na mapě malovat kryt (kde
+se jednotky schovávají, jako v lese) a zablokovaný terén (`maps/<map>/cover.toml`); nástroj Studia na to přijde
+příště.
+
+**0.6.5:** scénáře se dají upravovat na mapě. **Přesunout** startovní bod nebo místo příchodu (klikněte na něj, pak
+tam, kam má jít; Vrátit to vezme zpět). **Přidat jednotku** nechá objevit jednotku nebo budovu, když scénář začne:
+vyberte její druh (budovy, pozemní, pěchota, letectvo), pak její typ (u budov: velitelství, peníze, továrny, pevnosti a
+obrana, falešné návnady; u jednotek: továrna, která je staví), pak jednotku (podle národa) a její stranu. Uloženo
+v `maps/<map>/scenario.toml` módu. Seznam jednotek má stejný filtr Typ.
+
+**0.6.4:** seznam map má filtr typu: všechny mapy, nebo jen mapy pro šarvátky, Operace, kampaň, demo nebo testovací
+mapy (z vlastních nabídek hry; mapa může patřit k několika). Pamatuje si to.
+
+**0.6.3:** záložka **Nastavení** (vedle Jednotky a Mapy): jazyk, klávesy zobrazení mapy, složka hry a aktualizace na
+jednom místě, připravené na další.
+
+**0.6.2:** hledání aktualizací je spolehlivější: když GitHub odmítne jedinou kontrolu při spuštění (povoluje 60 za
+hodinu na internetovou adresu, sdílených vším, co ji používá), Studio místo toho přečte seznam vydání na GitHubu. Módy
+také mohou ve scénáři nechat objevit jednotky a budovy (`[[spawn]]` v `maps/<map>/scenario.toml`).
+
+**0.6.1:**
+
+- **Váš jazyk a klávesy se zachovají** přes restarty, aktualizace a přeinstalace (ztrácely se při každém spuštění).
+- **Scénáře seskupené tak, jak je používá hra:** Šarvátka, Operace, Kampaň, Demo, Test a ty, které nenačítá žádná
+  nabídka, každý pojmenovaný tak, jak ho pojmenovávají nabídky hry („10. UTAH BEACH“, „Anzio“).
+- **Módy mohou přesouvat startovní body a místa příchodu** (`maps/<map>/scenario.toml`); zkontrolováno ve hře:
+  velitelství začne tam, kam ho mód dá.
+
+**Nové v 0.6:**
+
+- **Terén, který funguje ve hře:** terén, který zvýšíte, snížíte nebo zarovnáte, teď přijímá rozkazy k pohybu, kamera
+  zůstává nad ním a stromy a budovy na něm stojí. Recept od DomesticNukes a jeho Claude: herní terén se pohne první,
+  kreslený terén ho následuje a skryté výškové limity hry se rozšíří. Zkontrolováno na všech 32 mapách.
+- **Scénáře na mapě:** řádek „Scénář“ vybere jeden ze scénářů mapy (šarvátka, výzvy, kapitoly kampaně) a ukáže jeho
+  zóny, startovní body (sloupy v barvě každé aliance), místa příchodu (bílé kosočtverce) a názvy měst. Najeďte na
+  jeden a uvidíte, co to je. První krok k vytváření map.
+
+**0.5.2:**
+
+- **Štětce Voda a Vysušit** (Voda na klávese 0): zaplavte terén pod hladinou do jezera, nebo vysušte jezero či řeku.
+  Od DomesticNukes a jeho Claude, zkontrolováno ve hře na mapě Blitz.
+- **Vlastní klávesy:** „Změnit klávesy…“ pod řádkem nápovědy zobrazení mapy: klikněte na akci, stiskněte klávesu.
+  Výchozí je vrátí.
+
+**0.5.1:**
+
+- **Zbraň si ponechá vlastní záblesk a zvuk:** když zbraň střílí munici jiné jednotky, teď si od té jednotky vezme i
+  záblesk z hlavně a zvuk výstřelu (dělo Shermana na střelci střílí jako Sherman). Zbraň ukazuje, který přehrává.
+- **Štětec Srovnat** (klávesa 7): maluje terén rovně ve výšce, kde začnete táhnout.
+- **WASD se pohybuje s kamerou**: W je na obrazovce vždy dopředu, ať je pohled otočený jakkoli.
+- Index hry se znovu sestaví jednou, při prvním otevření 0.5.1 (asi půl minuty).
+
+**Nové v 0.5:**
+
+- **Nové jednotky:** zkopírujte jednotku z její stránky, pojmenujte ji, dejte jí cenu a dejte ji do nabídky stavby.
+- **Munice a flagy:** druh Munice s veškerou municí. Zbraň může střílet munici jiné zbraně (ukazuje se národ, ze
+  kterého pochází) nebo její vlastní kopii. Seznamy flagů (co jednotka je a dělá) se dají upravovat, jako v editoru
+  jednotek RUSE Mod Manageru.
+- **Mapy:** každá mapa ukazuje svůj název ve hře, ve vašem jazyce, vedle svého kódového názvu. Budovy, předměty a
+  stromy se kreslí **skutečnými 3D modely a texturami hry**, díky DomesticNukes a jeho Claude.
+- **Štětce terénu:** zvyšujte, snižujte, vyhlazujte terén a dělejte z něj rampy, uloženo v módu. **Začít znovu**
+  vyčistí mapu.
+- **Nástroj Umístit:** jedno kliknutí umístí budovu, předmět nebo strom. Namalujte oblast, nebo klikněte dvakrát pro
+  řadu (živý plot, ulice). Zpět vezme zpět celou oblast nebo řadu. Scenérie je zatím jen na pohled: jednotky jí
+  projíždějí.
+- **Klávesy:** WASD / šipky posouvají pohled, Q/E ho otáčejí, R/F přibližují. Najeďte na jakékoli tlačítko a uvidíte
+  popisek.
+- **Exportovat .rusemod:** jeden soubor, který Launcher nainstaluje.
+- **Aktualizuje se samo:** od této verze lišta oznámí, když vyjde novější Studio; **Aktualizovat** ho nainstaluje.
+
+Je nové a mimo vývojářovo PC bylo sotva vyzkoušené, tak prosím nahlaste cokoli divného na GitHub Issues.
+
+![Mapy v RUSE Studio: Centre of Gravity ve 3D](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-maps.jpg)
+
+![RUSE Studio v režimu náhledu, s ukázkovými jednotkami](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/studio-unit.jpg)

@@ -90,3 +90,163 @@ longtemps), et il lance les mods faits avec Studio 0.9.7.
 
 Connu : **les cartes navales ne sont pas encore au point.** Une mer asséchée ou peinte se construit et se charge, mais
 l'eau s'affiche toujours.
+
+**0.4.6:** **Jouer** démarre tout de suite quand rien n'a changé, et il lance les mods faits avec Studio 0.9.6 : de
+nouvelles unités avec leur propre modèle 3D.
+
+| Avant | Maintenant |
+|---|---|
+| **Jouer** reconstruisait toute la copie moddée à chaque fois, même quand rien n'avait changé (un joueur : « 30 minutes d'attente à chaque fois »). | Rien n'a changé : le jeu démarre tout de suite. Un changement reconstruit, mais les fichiers inchangés de la dernière copie sont réutilisés, donc une copie sur un autre disque que le jeu ne recopie plus chaque pack. Jouer dit combien il a copié. |
+| Chaque construction relisait de zéro les données des unités du jeu. | Gardées d'une construction à l'autre : un gros mod de test prenait 213 s à chaque fois ; maintenant, les constructions qui suivent la première prennent 68 s. |
+| La nouvelle unité d'un mod avait le modèle de l'unité qu'elle copie. | Son propre modèle venu du mod (`files/models`) est dans le jeu. **Vu en jeu :** un M1 Abrams à côté du Sherman. |
+| La nouvelle unité d'un mod avec sa propre carte faisait planter le jeu quand elle était construite. | Corrigé. **Vu en jeu.** |
+| Les couleurs des unités repeintes sortaient un peu fausses par endroits. | Plus proches de l'image du mod. Un mod avec des unités repeintes ou du sol peint reçoit une nouvelle empreinte et un nouveau code pour rejoindre : tous ceux qui jouent ensemble doivent mettre à jour. |
+| Un démarrage lent ne laissait aucun indice. | **Copier le rapport** liste les étapes des cinq derniers démarrages. |
+| — | Lance les mods qui utilisent l'effacement de toute la carte, les routes sur un sol remodelé et le comblement des lits de rivière de Studio 0.9.6 (nouveau, pas encore vu en jeu à grande échelle). |
+
+**0.4.5:** il lance les mods faits avec Studio 0.9.5 : des unités repeintes, leurs propres cartes, et des unités avec leur
+propre modèle.
+
+| Avant | Maintenant |
+|---|---|
+| Un mod ne pouvait pas changer l'apparence d'une unité. | Les unités repeintes et les cartes d'un mod s'affichent dans le jeu. **Vu en jeu :** un Sherman rouge, une carte faite dans le Studio. |
+| Un mod dont les packs de modèles d'unités grossissaient était écarté par le jeu : un plantage à la première usine. | Construits comme le jeu les vérifie. **Vu en jeu :** un deuxième Sherman avec son propre modèle. |
+| Un mod qui faisait apparaître les unités d'une autre nation dans un chapitre de campagne ou une Opération plantait au chargement (des unités françaises sur Holland). | Leurs modèles s'y chargent aussi. **Vu en jeu.** |
+| Aplanir les montagnes au bord d'une carte y laissait une falaise. | Le bord suit le sol. **Vu en jeu.** |
+
+**0.4.4:** il lance les mods avec de nouvelles cartes, faites avec Dupliquer la carte de Studio 0.9.4.
+
+| Avant | Maintenant |
+|---|---|
+| Les nouvelles cartes d'un mod n'avaient pas été essayées en jeu. | **Vu en jeu :** la nouvelle carte d'un mod est listée dans BATAILLES et joue son propre sol, 101 à la fois. Encore à ses débuts : signalez ce que vous trouvez. |
+| Les mises à jour ne venaient que sous forme de versions complètes. | De petites corrections peuvent arriver entre deux versions (0.4.4.1), proposées comme n'importe quelle mise à jour. |
+
+**0.4.3:** il lance les mods faits avec Studio 0.9.3, et les construit environ trois fois plus vite.
+
+| Avant | Maintenant |
+|---|---|
+| Les rochers et la plupart des autres objets placés par un mod disparaissaient dès que la caméra s'éloignait un peu. | Dessinés jusqu'au plus loin ; les objets propres à la carte ne changent pas. **Vu en jeu.** |
+| La nouvelle route d'un mod à travers un bois était une bande claire vue de haut, ou disparaissait à moyenne et longue distance. | Peinte à travers les bois comme les routes de la carte. **Vu en jeu.** |
+| Les routes d'un mod retiraient toujours les arbres de leur tracé. | Une route peut les garder (`keep_trees`) : elle passe sous les arbres, plus pâle et plus grise dans un bois. |
+| **Jouer** prenait environ 5 minutes pour construire un mod avec de nouvelles routes sur M03_Italie. | Environ 1½ minute après la première fois sur une carte. |
+
+**0.4.2:** il lance les mods faits avec Studio 0.9.2.
+
+| Avant | Maintenant |
+|---|---|
+| Un mod avec une route sur l'eau sur les cartes d'Italie, d'Allemagne, de Hollande et d'autres était refusé : son pont « n'aurait pas de plancher ». | Construit : le pont reçoit le plancher propre à la carte. Pas encore vu en jeu sur ces cartes. |
+| Un mod qui donnait des unités au joueur dans un chapitre de campagne (camp 0) était refusé, et les unités des camps de l'ordinateur recevaient l'avertissement « pourraient ne jamais apparaître ». | Construit ; seul un camp que la mission du chapitre n'a pas reçoit un avertissement. |
+| Sur M03_Italie et d'autres cartes, la nouvelle route d'un mod en terrain dégagé cachait de loin le décor de la carte, et ses objets ne s'affichaient que de près. | La vue lointaine de la carte reste comme elle était, et les objets du mod s'affichent de loin. Pas encore vu en jeu. |
+
+**0.4.1:** votre langue dès le premier démarrage, et un éditeur d'ensembles de mods qui trouve les mods par leur nom.
+
+| Avant | Maintenant |
+|---|---|
+| Créer un ensemble de mods listait toute votre bibliothèque avec Créer tout en bas, et aucun moyen de trouver un mod par son nom. | Créer est en haut, avec les mods déjà dans l'ensemble juste en dessous ; plus bas, « Ajouter des mods de votre bibliothèque », avec une recherche qui réduit la liste à mesure que vous tapez. |
+| La langue se trouvait dans les Réglages, donc les joueurs ne savaient pas que le Launcher parle leur langue. | Le premier démarrage demande : « Choisissez votre langue », chaque langue dans ses propres mots, celle de votre jeu dans Steam marquée (les joueurs qui mettent à jour le voient une fois). Ensuite, un bouton de langue en haut, toujours visible. |
+| La liste des applications installées de Windows montrait la toute première version installée. | Elle montre la version que vous avez. |
+
+**0.4.0:** il lance les mods avec de nouvelles routes, telles que Studio 0.9 les construit : elles ressemblent aux routes
+de la carte, vues de haut comme au ras du sol (essayé en jeu sur la carte Le jour J).
+
+![Une nouvelle route vue de près sur Le jour J](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Avant | Maintenant |
+|---|---|
+| Les nouvelles routes d'un mod disparaissaient de près. | Elles sont dessinées avec l'asphalte et les décalques de bord de la carte, peintes comme les routes de la carte, et les plantes sur leur tracé sont retirées. |
+| Un mod avec beaucoup de cercles d'effacement mettait des minutes à se construire. | Bien plus rapide. |
+
+**0.3.3:** il lance les mods faits avec Studio 0.8.3.
+
+| Avant | Maintenant |
+|---|---|
+| Un mod avec une caméra d'ouverture tournée (Studio 0.8.3) était refusé. | Construit : la caméra est tournée comme le mod le dit. |
+| La caméra d'ouverture d'un point de départ déplacé restait à l'ancien endroit. | La caméra se déplace avec lui ; un nouveau point de départ reçoit sa propre caméra. |
+| Un mod avec un point de départ dans un bois était refusé. | Construit : un QG y fonctionne. |
+
+**0.3.2:** une seule copie du jeu pour tout le PC, la version affichée, et une bibliothèque plus claire.
+
+| Avant | Maintenant |
+|---|---|
+| Chaque ensemble de mods construisait sa propre copie du jeu. | Une seule copie moddée pour tout le PC, partagée avec le Studio. |
+| La version n'était pas affichée, et Nouveautés était une liste. | La version est à côté du nom, et Nouveautés ouvre un tableau avant/après comme celui-ci. |
+| Les cartes et les mods se ressemblaient dans la bibliothèque. | Une carte a un badge CARTE. |
+| Peu d'infobulles. | Des infobulles sur les principales commandes. |
+| Les mods avec de nouvelles routes sur Twilight of the Gods, Alpha, Ostfriesland et Robert n'avaient pas le modèle de route de la carte. | Ils l'ont aussi. |
+
+**0.3.1:** les mods avec des unités d'une autre nation (un Tiger allemand pour les États-Unis, par exemple) fonctionnent,
+même dans une partie où personne ne joue cette nation (essayé en jeu, 2026-10-02). Et un nouveau look : les bleus de
+R.U.S.E. au lieu du noir et or, et un nouveau logo : un chasseur qui monte à travers les nuages. La barre latérale a deux
+onglets, **Ensembles de mods** et **Bibliothèque de mods**, chacun sur toute la hauteur, donc toute votre bibliothèque
+est accessible (la moitié était cachée derrière la barre de défilement), avec une recherche et un compteur.
+L'installateur propose une **sauvegarde propre du jeu** à côté du raccourci sur le bureau, et dit pourquoi.
+
+**0.3.0:** **Mods compatibles :** le Launcher affiche notre liste de mods
+([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)) ; cochez ceux que vous voulez, et ils sont
+téléchargés et vérifiés. Au premier lancement, vous choisissez vos mods ; les mods de triche sont mis à part et jamais
+cochés pour vous. Un bouton **Dépannage** (dans la barre du bas, et sur chaque message de problème) vérifie en une fois
+ce qui peut empêcher **Jouer** et corrige ce qu'il peut, avec un rapport à coller dans un rapport de bug. Une
+**sauvegarde propre du jeu** dans les Réglages garde une copie propre des fichiers de votre jeu et remet en place tout ce
+qu'un autre gestionnaire de mods a changé (ou laisse Steam le réparer). Les mods faits avec le nouveau Studio
+fonctionnent comme prévu : les chars et l'infanterie franchissent les nouveaux ponts sur le tablier, l'infanterie suit
+les nouvelles routes, les bois dégagés sont ouverts aux unités, les bâtiments placés reposent sur le sol à n'importe
+quelle taille, et le couvert arrive là où il a été peint sur Le jour J et les autres cartes qui ne sont pas carrées.
+Problème connu : les nouvelles routes ne sont pas encore dessinées de près (elles s'affichent de loin).
+
+**0.2.11:** **Jouer** fonctionne à chaque fois : une copie moddée que Windows refuse de supprimer (un fichier qu'une
+ancienne version a lié, un programme qui le tient encore) est mise de côté dans `RUSE-Instances\.trash` au lieu
+d'arrêter le jeu, et un jeu qui tourne encore depuis la copie est nommé. Les mods avec de nouveaux ponts ne créent jamais
+de sol que les unités ne peuvent pas atteindre (cela faisait planter le jeu).
+
+**0.2.9:** **Jouer** fonctionne quand les fichiers de votre jeu sont en lecture seule : il échouait avec « [WinError 5]
+Access is denied » dès qu'une copie moddée restait à moitié construite. Si le jeu tourne encore depuis la copie moddée,
+on vous dit de le fermer au lieu de vous montrer une erreur de Windows. Les mods avec de nouvelles routes construisent
+leurs routes peintes et leurs ponts.
+
+**0.2.8:** un mod que vous ajoutez est vérifié tout de suite, de la façon dont la construction du jeu le lira : un
+fichier de carte cassé, ou un dossier de carte nommé d'après le titre de la carte (maps/Blitz au lieu de
+maps/SuperCrossRoads4), est signalé avec sa correction avant que Jouer ne s'arrête dessus.
+
+**0.2.7:** **Aide** et **Signaler un problème** dans la barre du bas : le wiki (un manuel pour jouer avec des mods), et
+un rapport de bug dans votre navigateur avec la version du Launcher déjà remplie. Un message de problème a son propre
+lien **Signaler**. Le Launcher n'envoie rien : vous lisez le rapport et vous le publiez. Les mods dont le dossier de
+carte porte le titre de la carte (maps/Blitz au lieu de maps/SuperCrossRoads4) reçoivent maintenant la correction.
+
+**0.2.6:** un bouton **Réglages** (en haut à droite) : la langue, le dossier du jeu et les mises à jour au même endroit,
+prêt pour la suite.
+
+**0.2.5:** la recherche de mises à jour est plus solide : quand GitHub refuse l'unique vérification au démarrage (il en
+permet 60 par heure par adresse internet, partagées par tout ce qui l'utilise), le Launcher lit à la place la liste des
+versions publiées sur GitHub.
+
+**0.2.4:** votre langue est gardée après les redémarrages, les mises à jour et les réinstallations.
+
+**0.2.3:** l'encadré rouge se replie comme le jaune (un grand ensemble peut lister des dizaines de conflits).
+
+**0.2.2: Mettre dans le meilleur ordre.** Quand des mods d'un ensemble changent les mêmes valeurs, l'encadré jaune a un
+bouton **Mettre dans le meilleur ordre** : les mods qui changent le plus passent d'abord et les plus petits après, pour
+que chacun garde le plus possible de ses changements. Il dit quels mods il sauve, et les mods peuvent toujours être
+déplacés à la main.
+
+**0.2.1: les mods qui ne vont pas ensemble ne peuvent pas être joués, et le Launcher dit pourquoi.** Quand deux mods
+d'un ensemble remplacent le même fichier ou script, un encadré rouge nomme les mods et ce qu'ils changent tous les deux,
+et Jouer reste désactivé jusqu'à ce que l'un d'eux soit retiré. Quand un mod placé après ne fait qu'écraser des valeurs
+d'un mod précédent (la vitesse d'un navire, par exemple), un encadré jaune les liste et l'ensemble se joue quand même.
+
+**Nouveau dans la 0.2 :**
+
+- **Des ensembles de mods créés dans la fenêtre :** nouveau, modifier, renommer, dupliquer, supprimer, et mettre les
+  mods dans l'ordre. Plus de fichiers à modifier à la main. Un guide en trois étapes sur le premier écran montre le
+  chemin.
+- **Ajouter un fichier de mod…** (ou déposez-le sur la fenêtre) : un `.rusemod` exporté par RUSE Studio, un dossier de
+  mod dans un `.zip`, ou un **`.rmod` de RUSE Mod Manager**, utilisé tel quel (appliqué par le propre moteur de
+  LittleGroove).
+- **Partager un ordre de chargement** sous forme de texte, et **Importer un ordre de chargement…** d'un ami : le
+  Launcher dit quels mods vous avez, lesquels manquent et lesquels sont dans une autre version, puis crée l'ensemble.
+  C'est le même texte que RUSE Mod Manager copie et lit, donc les ordres de chargement passent dans les deux sens.
+- **Il se met à jour tout seul :** à partir de cette version, quand un Launcher plus récent sort, une barre le dit ;
+  **Mettre à jour** le télécharge, vérifie son SHA-256 et l'installe, et le Launcher redémarre de lui-même.
+
+Vos ensembles de mods de la 0.1 sont gardés. Problèmes et idées : GitHub Issues.
+
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/launcher.jpg)

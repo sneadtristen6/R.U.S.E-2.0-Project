@@ -89,3 +89,159 @@ hechos con Studio 0.9.7.
 
 Conocido: **los mapas navales aún no están resueltos.** Un mar desecado o pintado se construye y se carga, pero el agua
 se sigue viendo.
+
+**0.4.6:** **Jugar** arranca al instante cuando nada ha cambiado, y juega los mods hechos con Studio 0.9.6: unidades nuevas
+con un modelo 3D propio.
+
+| Antes | Ahora |
+|---|---|
+| **Jugar** reconstruía toda la copia con mods cada vez, aunque nada hubiera cambiado (un jugador: «esperar 30 minutos cada vez»). | Sin cambios: el juego arranca al instante. Un cambio reconstruye, pero se reutilizan los archivos sin cambios de la última copia, así que una copia en otra unidad distinta de la del juego ya no vuelve a copiar todos los paquetes. Jugar dice cuánto copió. |
+| Cada construcción leía de nuevo los datos de las unidades del juego. | Se guardan entre construcciones: un mod de prueba grande tardaba 213 s cada vez; ahora las construcciones que siguen a la primera tardan 68 s. |
+| La unidad nueva de un mod tenía el modelo de la unidad que copia. | Su propio modelo del mod (`files/models`) está en el juego. **Visto en el juego:** un M1 Abrams junto al Sherman. |
+| La unidad nueva de un mod con su propia tarjeta cerraba el juego al construirse. | Corregido. **Visto en el juego.** |
+| Los colores de las unidades repintadas salían un poco desviados en algunos sitios. | Más cerca de la imagen del mod. Un mod con unidades repintadas o suelo pintado recibe una huella digital y un código para unirse nuevos: todos los que juegan juntos deberían actualizar. |
+| Un arranque lento no dejaba ninguna pista. | **Copiar el informe** lista los pasos de los cinco últimos arranques. |
+| — | Juega los mods con el borrado de todo el mapa, las carreteras sobre suelo remodelado y el relleno de cauces de Studio 0.9.6 (nuevo, aún no visto en el juego a gran escala). |
+
+**0.4.5:** juega los mods hechos con Studio 0.9.5: unidades repintadas, sus propias tarjetas y unidades con modelos propios.
+
+| Antes | Ahora |
+|---|---|
+| Un mod no podía cambiar el aspecto de una unidad. | Las unidades repintadas y las tarjetas de un mod se ven en el juego. **Visto en el juego:** un Sherman rojo, una tarjeta hecha en el Studio. |
+| El juego descartaba un mod cuyos paquetes de modelos de unidades crecían: un cierre en la primera fábrica. | Se construyen como el juego los comprueba. **Visto en el juego:** un segundo Sherman con un modelo propio. |
+| Un mod que hacía aparecer unidades de otra nación en un capítulo de campaña o en una Operación se cerraba al cargar (unidades francesas en Holanda). | Sus modelos también se cargan allí. **Visto en el juego.** |
+| Aplanar las montañas del borde de un mapa dejaba allí un acantilado. | El borde sigue al suelo. **Visto en el juego.** |
+
+**0.4.4:** juega los mods con mapas nuevos, hechos con Duplicar mapa de Studio 0.9.4.
+
+| Antes | Ahora |
+|---|---|
+| Los mapas nuevos de un mod no se habían probado en el juego. | **Visto en el juego:** el mapa nuevo de un mod aparece en BATALLAS y se juega con su propio suelo, 101 a la vez. Aún es pronto: cuéntanos lo que encuentres. |
+| Las actualizaciones llegaban solo como versiones completas. | Pequeñas correcciones pueden llegar entre versiones (0.4.4.1), ofrecidas como cualquier actualización. |
+
+**0.4.3:** juega los mods hechos con Studio 0.9.3, y los construye unas tres veces más rápido.
+
+| Antes | Ahora |
+|---|---|
+| Las rocas y la mayoría de los demás objetos que colocaba un mod desaparecían en cuanto la cámara salía de la distancia corta. | Se dibujan hasta la distancia lejana; los objetos propios del mapa no cambian. **Visto en el juego.** |
+| La carretera nueva de un mod a través de un bosque era una franja clara vista desde lo alto, o desaparecía a media-larga distancia. | Pintada a través de los bosques como las carreteras propias del mapa. **Visto en el juego.** |
+| Las carreteras de un mod siempre quitaban los árboles de su camino. | Una carretera puede conservarlos (`keep_trees`): pasa bajo los árboles, más tenue y más gris en un bosque. |
+| **Jugar** tardaba unos 5 minutos en construir un mod con carreteras nuevas en M03_Italie. | Alrededor de 1½ minutos después de la primera vez en un mapa. |
+
+**0.4.2:** juega los mods hechos con Studio 0.9.2.
+
+| Antes | Ahora |
+|---|---|
+| Un mod con una carretera sobre el agua en Italia, Alemania, Holanda y otros mapas se rechazaba: su puente «no tendría piso». | Se construye: el puente recibe el piso propio del mapa. Aún no visto en el juego en esos mapas. |
+| Un mod que daba unidades al jugador en un capítulo de campaña (bando 0) se rechazaba, y las unidades para los bandos del ordenador recibían el aviso «puede que nunca aparezcan». | Se construye; solo recibe aviso un bando que la misión del capítulo no tiene. |
+| En M03_Italie y otros mapas, la carretera nueva de un mod en campo abierto ocultaba de lejos el decorado del mapa, y sus objetos solo se veían de cerca. | La vista lejana del mapa queda como estaba, y los objetos del mod se ven de lejos. Aún no visto en el juego. |
+
+**0.4.1:** tu idioma desde el primer arranque, y un editor de conjuntos de mods que encuentra los mods por su nombre.
+
+| Antes | Ahora |
+|---|---|
+| Al crear un conjunto de mods se listaba toda tu biblioteca con Crear al final, y no había forma de encontrar un mod por su nombre. | Crear está arriba, con los mods que ya están en el conjunto justo debajo; más abajo, «Añadir mods de tu biblioteca» con una búsqueda que va acortando la lista mientras escribes. |
+| El idioma estaba en Ajustes, así que los jugadores no sabían que el Launcher habla su idioma. | El primer arranque pregunta: «Elige tu idioma», cada idioma en sus propias palabras, con el idioma de tu juego en Steam marcado (los jugadores que actualizan lo ven una vez). Luego, un botón de idioma arriba, siempre a la vista. |
+| La lista de aplicaciones instaladas de Windows mostraba la primera versión que se instaló. | Muestra la versión que tienes. |
+
+**0.4.0:** juega los mods con carreteras nuevas tal como las construye Studio 0.9: se parecen a las carreteras propias
+del mapa, desde lo alto y a ras de suelo (probado en el juego en «Día D»).
+
+![Una carretera nueva de cerca en «Día D»](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Antes | Ahora |
+|---|---|
+| Las carreteras nuevas de un mod desaparecían de cerca. | Se dibujan con el asfalto y las calcomanías de borde propios del mapa, pintadas como las carreteras del mapa, y se quitan las plantas de su camino. |
+| Un mod con muchos círculos de borrado tardaba minutos en construirse. | Mucho más rápido. |
+
+**0.3.3:** juega los mods hechos con Studio 0.8.3.
+
+| Antes | Ahora |
+|---|---|
+| Un mod con una cámara inicial girada (Studio 0.8.3) se rechazaba. | Se construye: la cámara gira como dice el mod. |
+| La cámara inicial de un punto de inicio movido se quedaba en el sitio antiguo. | La cámara se mueve con él; un punto de inicio nuevo recibe su propia cámara. |
+| Un mod con un punto de inicio en un bosque se rechazaba. | Se construye: allí funciona un CG. |
+
+**0.3.2:** una sola copia del juego para todo el PC, la versión a la vista y una biblioteca más clara.
+
+| Antes | Ahora |
+|---|---|
+| Cada conjunto de mods construía su propia copia del juego. | Una sola copia con mods para todo el PC, compartida con el Studio. |
+| La versión no se mostraba, y Novedades era una lista. | La versión está junto al nombre, y Novedades abre una tabla de antes/después como esta. |
+| Los mapas y los mods se veían iguales en la biblioteca. | Un mapa lleva una insignia MAPA. |
+| Pocas descripciones emergentes. | Descripciones emergentes en los controles principales. |
+| Los mods con carreteras nuevas en Twilight of the Gods, Alpha, Ostfriesland y Robert no tenían el modelo de carretera del mapa. | También lo reciben. |
+
+**0.3.1:** los mods con unidades de otra nación (un Tiger alemán para EE. UU., por ejemplo) funcionan, incluso en una
+partida en la que nadie juega esa nación (probado en el juego, 2026-10-02). Y un aspecto nuevo: los azules de R.U.S.E.
+en lugar de negro y oro, y un logotipo nuevo: un caza que sube entre las nubes. La barra lateral tiene dos pestañas,
+**Conjuntos de mods** y **Biblioteca de mods**, cada una con toda la altura, así que se llega a toda tu biblioteca (la
+mitad quedaba oculta tras la barra de desplazamiento), con una búsqueda y un recuento. El instalador ofrece una
+**copia de seguridad limpia del juego** junto al acceso directo del escritorio, y dice por qué.
+
+**0.3.0:** **Mods compatibles:** el Launcher muestra nuestra lista de mods
+([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)); marca los que quieras y se descargan y
+comprueban. En el primer arranque eliges tus mods; los mods de trucos se mantienen aparte y nunca se marcan por ti. Un
+botón **Solucionar problemas** (en la barra inferior y en cada mensaje de problema) comprueba de una vez lo que puede
+impedir **Jugar** y arregla lo que puede, con un informe para pegar en un informe de error. Una
+**copia de seguridad limpia del juego** en Ajustes guarda una copia limpia de los archivos de tu juego y devuelve todo lo que cambió otro
+gestor de mods (o deja que Steam lo repare). Los mods hechos con el nuevo Studio funcionan tal como se hicieron: los
+tanques y la infantería cruzan los puentes nuevos por el tablero, la infantería sigue las carreteras nuevas, los
+bosques despejados quedan abiertos a las unidades, los edificios colocados se asientan en el suelo a cualquier tamaño,
+y la cobertura cae donde se pintó en «Día D» y en los demás mapas que no son cuadrados. Problema conocido: las
+carreteras nuevas aún no se dibujan de cerca (se ven de lejos).
+
+**0.2.11:** **Jugar** funciona siempre: una copia con mods que Windows no deja borrar (un archivo que enlazó una
+versión anterior, un programa que aún lo tiene abierto) se aparta a `RUSE-Instances\.trash` en vez de detener el
+juego, y se nombra un juego que aún se ejecuta desde la copia. Los mods con puentes nuevos nunca crean suelo al que
+las unidades no pueden llegar (cerraba el juego).
+
+**0.2.9:** **Jugar** funciona cuando los archivos de tu juego están marcados como de solo lectura: fallaba con
+«[WinError 5] Access is denied» una vez que una copia con mods quedaba a medio construir. Si el juego aún se ejecuta
+desde la copia con mods, se te dice que lo cierres en lugar de recibir un error de Windows. Los mods con carreteras
+nuevas construyen sus carreteras pintadas y sus puentes.
+
+**0.2.8:** un mod que añades se comprueba al instante, tal como lo leerá la construcción del juego: un archivo de mapa
+roto, o una carpeta de mapa con el nombre del título del mapa (maps/Blitz en lugar de maps/SuperCrossRoads4), se
+nombra con su arreglo antes de que Jugar se detenga en él.
+
+**0.2.7:** **Ayuda** e **Informar de un problema** en la barra inferior: la wiki (un manual de campo para jugar con
+mods), y un informe de error en tu navegador con la versión del Launcher ya rellenada. Un mensaje de problema tiene su
+propio enlace **Informar**. El Launcher no envía nada: tú lees el informe y lo publicas. Los mods cuya carpeta de mapa
+lleva el nombre del título del mapa (maps/Blitz en lugar de maps/SuperCrossRoads4) ahora reciben el arreglo.
+
+**0.2.6:** un botón **Ajustes** (arriba a la derecha): el idioma, la carpeta del juego y las actualizaciones en un
+solo sitio, listo para más.
+
+**0.2.5:** buscar actualizaciones es más fiable: cuando GitHub rechaza la única comprobación del arranque (permite 60
+por hora por dirección de internet, compartidas por todo lo que la usa), el Launcher lee en su lugar la lista de
+versiones de GitHub.
+
+**0.2.4:** tu idioma se conserva tras reinicios, actualizaciones y reinstalaciones.
+
+**0.2.3:** el recuadro rojo se pliega como el amarillo (un conjunto grande puede listar docenas de conflictos).
+
+**0.2.2: Poner en el mejor orden.** Cuando los mods de un conjunto cambian los mismos valores, el recuadro amarillo
+tiene un botón **Poner en el mejor orden**: los mods que cambian más van primero y los más pequeños después, para que
+cada uno conserve tantos cambios como pueda. Dice qué mods salva, y los mods se pueden seguir moviendo a mano.
+
+**0.2.1: los mods que no van juntos no se pueden jugar, y el Launcher dice por qué.** Cuando dos mods de un conjunto
+sustituyen el mismo archivo o script, un recuadro rojo nombra los mods y lo que ambos cambian, y Jugar queda
+desactivado hasta que se quite uno. Cuando un mod posterior solo sobrescribe valores de uno anterior (la velocidad de
+un barco, por ejemplo), un recuadro amarillo los lista y el conjunto se sigue jugando.
+
+**Novedades de la 0.2:**
+
+- **Conjuntos de mods hechos en la ventana:** nuevo, editar, cambiar nombre, duplicar, eliminar y poner los mods en
+  orden. Ya no hay archivos que editar a mano. Una guía de tres pasos en la primera pantalla muestra el camino.
+- **Añadir un archivo de mod…** (o suéltalo en la ventana): un `.rusemod` exportado por RUSE Studio, una carpeta de mod
+  en un `.zip`, o un **`.rmod` de RUSE Mod Manager**, usado tal cual (aplicado por el propio motor de LittleGroove).
+- **Compartir un orden de carga** como texto, e **Importar un orden de carga…** de un amigo: el Launcher dice qué mods
+  tienes, cuáles faltan y cuáles son de otra versión, y luego crea el conjunto. Es el mismo texto que RUSE Mod Manager
+  copia y lee, así que los órdenes de carga van en ambos sentidos.
+- **Se actualiza solo:** a partir de esta versión, cuando sale un Launcher más nuevo, una barra lo dice;
+  **Actualizar ahora** lo descarga, comprueba su SHA-256 y lo instala, y el Launcher vuelve a arrancar solo.
+
+Tus conjuntos de mods de la 0.1 se conservan. Problemas e ideas: GitHub Issues.
+
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/launcher.jpg)

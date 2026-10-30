@@ -88,3 +88,157 @@ zrobione w Studio 0.9.7.
 
 Znane: **mapy morskie nie są jeszcze dopracowane.** Osuszone lub pomalowane morze buduje się i wczytuje, ale woda wciąż
 jest widoczna.
+
+**0.4.6:** **Graj** uruchamia grę od razu, gdy nic się nie zmieniło, i uruchamia mody zrobione w Studio 0.9.6: nowe
+jednostki z własnym modelem 3D.
+
+| Wcześniej | Teraz |
+|---|---|
+| **Graj** za każdym razem budowało od nowa całą zmodowaną kopię, nawet gdy nic się nie zmieniło (gracz: „za każdym razem 30 minut czekania”). | Nic się nie zmieniło: gra startuje od razu. Zmiana przebudowuje kopię, ale niezmienione pliki ostatniej kopii są używane ponownie, więc kopia na innym dysku niż gra nie kopiuje już od nowa każdej paczki. Graj mówi, ile skopiowało. |
+| Każde budowanie wczytywało dane jednostek gry od nowa. | Zachowane między budowaniami: duży testowy mod zajmował za każdym razem 213 s; teraz kolejne budowania po pierwszym zajmują 68 s. |
+| Nowa jednostka moda miała model jednostki, którą kopiuje. | Jej własny model z moda (`files/models`) jest w grze. **Widziane w grze:** M1 Abrams obok Shermana. |
+| Nowa jednostka moda z własną kartą powodowała awarię gry, gdy była budowana. | Naprawione. **Widziane w grze.** |
+| Kolory przemalowanych jednostek wychodziły miejscami trochę nie takie. | Bliżej obrazu z moda. Mod z przemalowanymi jednostkami lub pomalowanym terenem dostaje nowy odcisk i kod dołączenia: wszyscy, którzy grają razem, powinni zaktualizować. |
+| Powolny start nie zostawiał żadnej wskazówki. | **Kopiuj raport** wymienia kroki ostatnich pięciu startów. |
+| — | Uruchamia mody z czyszczeniem całej mapy, drogami na przekształconym terenie i wypełnianiem koryt rzek ze Studio 0.9.6 (nowe, jeszcze nie widziane w grze na dużą skalę). |
+
+**0.4.5:** uruchamia mody zrobione w Studio 0.9.5: przemalowane jednostki, ich własne karty i jednostki z własnymi
+modelami.
+
+| Wcześniej | Teraz |
+|---|---|
+| Mod nie mógł zmienić wyglądu jednostki. | Przemalowane jednostki i karty z moda pokazują się w grze. **Widziane w grze:** czerwony Sherman, karta zrobiona w Studio. |
+| Mod, którego paczki modeli jednostek urosły, był odrzucany przez grę: awaria przy pierwszej fabryce. | Budowane tak, jak gra je sprawdza. **Widziane w grze:** drugi Sherman z własnym modelem. |
+| Mod sprowadzający jednostki innej nacji w rozdziale kampanii lub Operacji powodował awarię podczas wczytywania (francuskie jednostki na mapie Holandii). | Ich modele wczytują się także tam. **Widziane w grze.** |
+| Spłaszczenie gór na krawędzi mapy zostawiało tam urwisko. | Krawędź idzie za terenem. **Widziane w grze.** |
+
+**0.4.4:** uruchamia mody z nowymi mapami, zrobionymi przez Duplikuj mapę w Studio 0.9.4.
+
+| Wcześniej | Teraz |
+|---|---|
+| Nowe mapy z moda nie były jeszcze próbowane w grze. | **Widziane w grze:** nowa mapa moda jest na liście w BITWY i gra się na jej własnym terenie, 101 naraz. Wczesna wersja: zgłoś, co znajdziesz. |
+| Aktualizacje przychodziły tylko jako całe wersje. | Małe poprawki mogą przychodzić między wersjami (0.4.4.1), oferowane jak każda aktualizacja. |
+
+**0.4.3:** uruchamia mody zrobione w Studio 0.9.3 i buduje je około trzy razy szybciej.
+
+| Wcześniej | Teraz |
+|---|---|
+| Skały i większość innych obiektów postawionych przez mod znikały, gdy tylko kamera oddaliła się z bliska. | Rysowane aż do dalekiej odległości; obiekty samej mapy bez zmian. **Widziane w grze.** |
+| Nowa droga moda przez las była z wysoka jasnym pasem albo znikała ze średnio-dalekiej odległości. | Malowana przez lasy tak, jak drogi samej mapy. **Widziane w grze.** |
+| Drogi moda zawsze usuwały drzewa ze swojej trasy. | Droga może je zachować (`keep_trees`): biegnie pod drzewami, bledsza i bardziej szara w lesie. |
+| **Graj** budowało mod z nowymi drogami na M03_Italie około 5 minut. | Około 1½ minuty po pierwszym razie na danej mapie. |
+
+**0.4.2:** uruchamia mody zrobione w Studio 0.9.2.
+
+| Wcześniej | Teraz |
+|---|---|
+| Mod z drogą nad wodą na mapach Włoch, Niemiec, Holandii i innych był odrzucany: jego most „nie miałby podłogi”. | Budowany: most dostaje podłogę samej mapy. Jeszcze nie widziane w grze na tych mapach. |
+| Mod dający jednostki graczowi w rozdziale kampanii (strona 0) był odrzucany, a jednostki dla stron komputera dostawały ostrzeżenie „mogą się nigdy nie pojawić”. | Budowany; ostrzeżenie dostaje tylko strona, której misja rozdziału nie ma. |
+| Na M03_Italie i innych mapach nowa droga moda na otwartym terenie ukrywała z daleka scenerię mapy, a obiekty moda były widoczne tylko z bliska. | Daleki widok mapy zostaje taki, jaki był, a obiekty moda widać z daleka. Jeszcze nie widziane w grze. |
+
+**0.4.1:** twój język od pierwszego startu i edytor zestawów modów, który znajduje mody po nazwie.
+
+| Wcześniej | Teraz |
+|---|---|
+| Tworzenie zestawu modów pokazywało całą twoją bibliotekę z Utwórz na dole i bez sposobu, by znaleźć mod po nazwie. | Utwórz jest na górze, z modami, które już są w zestawie, zaraz pod nim; poniżej „Dodaj mody z biblioteki” z wyszukiwaniem, które zawęża listę w trakcie pisania. |
+| Język był w Ustawieniach, więc gracze nie wiedzieli, że Launcher mówi w ich języku. | Pierwszy start pyta: „Wybierz język”, każdy język we własnych słowach, z zaznaczonym tym, na który twoja gra jest ustawiona w Steam (gracze po aktualizacji widzą to raz). Potem przycisk języka na górze, zawsze na widoku. |
+| Lista zainstalowanych aplikacji Windows pokazywała pierwszą kiedykolwiek zainstalowaną wersję. | Pokazuje wersję, którą masz. |
+
+**0.4.0:** uruchamia mody z nowymi drogami tak, jak buduje je Studio 0.9: wyglądają jak drogi samej mapy, z wysoka
+i tuż przy ziemi (przetestowane w grze na D-Day).
+
+![Nowa droga z bliska na D-Day](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/roads-5-done-close.jpg)
+
+| Wcześniej | Teraz |
+|---|---|
+| Nowe drogi moda znikały z bliska. | Są rysowane asfaltem i naklejkami krawędzi samej mapy, malowane tak jak drogi mapy, a rośliny z ich trasy są usuwane. |
+| Mod z wieloma okręgami usuwania budował się minutami. | Dużo szybciej. |
+
+**0.3.3:** uruchamia mody zrobione w Studio 0.8.3.
+
+| Wcześniej | Teraz |
+|---|---|
+| Mod z obróconą kamerą otwarcia (Studio 0.8.3) był odrzucany. | Budowany: kamera jest obrócona tak, jak mówi mod. |
+| Kamera otwarcia przesuniętego punktu startowego zostawała w starym miejscu. | Kamera przesuwa się razem z nim; nowy punkt startowy dostaje własną kamerę. |
+| Mod z punktem startowym w lesie był odrzucany. | Budowany: sztab tam działa. |
+
+**0.3.2:** jedna kopia gry na cały PC, widoczna wersja i czytelniejsza biblioteka.
+
+| Wcześniej | Teraz |
+|---|---|
+| Każdy zestaw modów budował własną kopię gry. | Jedna zmodowana kopia na cały PC, wspólna ze Studio. |
+| Wersja nie była pokazywana, a Co nowego było listą. | Wersja jest obok nazwy, a Co nowego otwiera tabelę wcześniej/teraz taką jak ta. |
+| Mapy i mody wyglądały w bibliotece tak samo. | Mapa ma plakietkę MAPA. |
+| Mało podpowiedzi. | Podpowiedzi przy głównych kontrolkach. |
+| Mody z nowymi drogami na Twilight of the Gods, Alpha, Ostfriesland i Robert nie dostawały modelu dróg mapy. | Też go dostają. |
+
+**0.3.1:** mody z jednostkami z innej nacji (na przykład niemiecki Tiger dla USA) działają, nawet w meczu, w którym nikt
+nie gra tą nacją (przetestowane w grze, 2026-10-02). I nowy wygląd: błękity R.U.S.E. zamiast czerni i złota, oraz nowe
+logo: myśliwiec wznoszący się przez chmury. Pasek boczny ma dwie zakładki, **Zestawy modów** i **Biblioteka modów**,
+każdą na całą wysokość, więc cała twoja biblioteka jest w zasięgu (połowa była schowana za paskiem przewijania), z
+wyszukiwaniem i licznikiem. Instalator proponuje **czystą kopię zapasową gry** obok skrótu na pulpicie i mówi dlaczego.
+
+**0.3.0:** **Obsługiwane mody:** Launcher pokazuje naszą listę modów
+([sneadtristen6/Ruse-Mods](https://github.com/sneadtristen6/Ruse-Mods)); zaznacz te, które chcesz, a zostaną pobrane i
+sprawdzone. Przy pierwszym uruchomieniu wybierasz swoje mody; mody z cheatami są trzymane osobno i nigdy nie są
+zaznaczane za ciebie. Przycisk **Rozwiązywanie problemów** (dolny pasek i każdy komunikat o problemie) sprawdza za
+jednym razem, co może zatrzymać **Graj**, i naprawia, co może, z raportem do wklejenia w zgłoszeniu błędu. **Czysta
+kopia zapasowa gry** w Ustawieniach trzyma czystą kopię plików twojej gry i przywraca wszystko, co zmienił inny menedżer
+modów (albo pozwala Steam to naprawić). Mody zrobione nowym Studio działają tak, jak je zrobiono: czołgi i piechota
+przechodzą przez nowe mosty po pomoście, piechota idzie nowymi drogami, wycięte lasy są otwarte dla jednostek,
+postawione budynki stoją na ziemi w każdym rozmiarze, a osłona trafia tam, gdzie ją namalowano, na D-Day i innych
+mapach, które nie są kwadratowe. Znany problem: nowe drogi nie są jeszcze rysowane z bliska (widać je z daleka).
+
+**0.2.11:** **Graj** działa za każdym razem: zmodowana kopia, której Windows nie chce usunąć (plik podlinkowany przez
+starszą wersję, program, który wciąż go trzyma), jest odsuwana do `RUSE-Instances\.trash` zamiast zatrzymywać grę, a
+gra wciąż uruchomiona z tej kopii jest podawana z nazwy. Mody z nowymi mostami nigdy nie tworzą terenu, do którego
+jednostki nie mogą dotrzeć (to powodowało awarię gry).
+
+**0.2.9:** **Graj** działa, gdy pliki twojej gry są oznaczone jako tylko do odczytu: kończyło się błędem „[WinError 5]
+Access is denied”, gdy zmodowana kopia została w połowie zbudowana. Jeśli gra wciąż działa ze zmodowanej kopii,
+dostajesz informację, by ją zamknąć, zamiast błędu Windows. Mody z nowymi drogami budują swoje malowane drogi i mosty.
+
+**0.2.8:** dodany mod jest sprawdzany od razu, tak jak przeczyta go budowanie gry: uszkodzony plik mapy albo folder mapy
+nazwany tytułem mapy (maps/Blitz zamiast maps/SuperCrossRoads4) jest wskazywany razem z poprawką, zanim Graj by się na
+nim zatrzymało.
+
+**0.2.7:** **Pomoc** i **Zgłoś problem** na dolnym pasku: wiki (podręcznik do grania w mody) i zgłoszenie błędu w twojej
+przeglądarce z już wpisaną wersją Launchera. Komunikat o problemie ma własny link **Zgłoś**. Launcher niczego nie
+wysyła: czytasz zgłoszenie i sam je publikujesz. Mody, których folder mapy jest nazwany tytułem mapy (maps/Blitz
+zamiast maps/SuperCrossRoads4), dostają teraz podpowiedź, jak to naprawić.
+
+**0.2.6:** przycisk **Ustawienia** (prawy górny róg): język, folder gry i aktualizacje w jednym miejscu, gotowe na
+więcej.
+
+**0.2.5:** wyszukiwanie aktualizacji jest solidniejsze: gdy GitHub odrzuci to jedno sprawdzenie przy starcie (pozwala
+na 60 na godzinę na adres internetowy, wspólny dla wszystkiego, co z niego korzysta), Launcher czyta zamiast tego listę
+wydań GitHuba.
+
+**0.2.4:** twój język zostaje zachowany po ponownym uruchomieniu, aktualizacjach i ponownej instalacji.
+
+**0.2.3:** czerwona ramka zwija się jak żółta (duży zestaw może wymieniać dziesiątki konfliktów).
+
+**0.2.2: Ustaw w najlepszej kolejności.** Gdy mody w zestawie zmieniają te same wartości, żółta ramka ma przycisk
+**Ustaw w najlepszej kolejności**: mody, które zmieniają więcej, idą pierwsze, a mniejsze po nich, więc każdy zachowuje
+tyle swoich zmian, ile może. Mówi, które mody ratuje, a mody nadal można przesuwać ręcznie.
+
+**0.2.1: mody, które do siebie nie pasują, nie mogą być uruchomione, a Launcher mówi dlaczego.** Gdy dwa mody w
+zestawie zastępują ten sam plik lub skrypt, czerwona ramka wymienia te mody i to, co oba zmieniają, a Graj pozostaje
+wyłączone, dopóki jeden nie zostanie usunięty. Gdy późniejszy mod tylko nadpisuje wartości wcześniejszego (na przykład
+prędkość okrętu), żółta ramka je wymienia, a zestaw nadal działa.
+
+**Nowe w 0.2:**
+
+- **Zestawy modów tworzone w oknie:** nowy, edycja, zmiana nazwy, powielenie, usunięcie i ustawienie modów w kolejności.
+  Koniec z ręczną edycją plików. Przewodnik w trzech krokach na pierwszym ekranie pokazuje drogę.
+- **Dodaj plik moda…** (albo upuść go na okno): `.rusemod` wyeksportowany przez RUSE Studio, folder moda w `.zip` albo
+  **`.rmod` z RUSE Mod Managera**, używany taki, jaki jest (stosowany przez własny silnik LittleGroove'a).
+- **Udostępnij kolejność ładowania** jako tekst i **Importuj kolejność ładowania…** od znajomego: Launcher mówi, które
+  mody masz, których brakuje, a które są w innej wersji, a potem tworzy zestaw. To ten sam tekst, który kopiuje i czyta
+  RUSE Mod Manager, więc kolejności ładowania działają w obie strony.
+- **Aktualizuje się sam:** od tej wersji, gdy wyjdzie nowszy Launcher, pasek o tym mówi; **Zaktualizuj** pobiera go,
+  sprawdza jego SHA-256 i instaluje, a Launcher sam uruchamia się ponownie.
+
+Twoje zestawy modów z 0.1 zostają zachowane. Problemy i pomysły: GitHub Issues.
+
+![RUSE Launcher](https://raw.githubusercontent.com/sneadtristen6/R.U.S.E-2.0-Project/main/docs/images/launcher.jpg)
