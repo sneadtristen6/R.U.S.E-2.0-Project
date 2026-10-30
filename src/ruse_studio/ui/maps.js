@@ -8215,7 +8215,10 @@ function renderBridgeLists() {
   }) : [el("div", { className: "muted small" }, w.bridges_mine_none)]));
   const own = (bridge.pack === mv.current && bridge.ends) ? bridge.ends.length / 2 : null;
   $("bridge-own-head").textContent = fill(w.bridges_own_head, { n: own === null ? "…" : own });
-  const taken = (road.takeOut || []).includes("bridges"), btn = $("bridge-take-out");
+  // taken out = the bridges and their crossings both (a map from 0.9.8.9's two switches may have only one: the button
+  // then takes out both)
+  const gone = road.takeOut || [], taken = gone.includes("bridges") && gone.includes("crossings");
+  const btn = $("bridge-take-out");
   btn.classList.toggle("hidden", own === 0);
   btn.disabled = !road.mod || own === null;
   btn.textContent = taken ? w.bridges_put_back : w.bridges_take_out;
@@ -8247,7 +8250,7 @@ async function deleteBridge(o) {
 // The one button: the map's own bridges out with their crossings, or both back (StudioApi.road_take_out; the map's own
 // roads keep their own switch in the Roads tab).
 async function toggleOwnBridges() {
-  const pack = mv.current, now = new Set(road.takeOut || []), out = !now.has("bridges");
+  const pack = mv.current, now = new Set(road.takeOut || []), out = !(now.has("bridges") && now.has("crossings"));
   try {
     const res = await mv.api.road_take_out(pack, now.has("roads"), out, out);
     if (pack !== mv.current) return;
