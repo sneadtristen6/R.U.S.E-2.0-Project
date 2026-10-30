@@ -10,6 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
+from rusemod.owned import words as owned_words
 from rusemod import net, startlog
 from rusemod.gamefont import copy_fonts
 from rusemod.webui import on_file_drop, open_window, pick_file, pick_folder, self_test
@@ -56,13 +57,14 @@ def main(argv=None) -> int:
     api = LauncherApi(game_dir=args.game)
     if args.self_test:
         startlog.stop()  # the build's check, not a start
-        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css", "owned.js"], [
             ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),
             ("worker programs start (a big map's riverbeds are mended by them)", _workers),
             ("the map sums on whole grids (a big map is painted by them)", _grids),
             ("Mozilla's root list (downloads on a PC whose Windows lacks a site's root)", net.mozilla_check),
+            ("the owned-copies box's words came with the app", lambda: owned_words("fr")["title"]),
         ])
     log.mark("api")
     log.go()
@@ -70,6 +72,7 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15: it said 0.1.0 when 0.3.1 was installed)
         fix_app_list_version("launcher", __version__)
         log.mark("app_list")
+    api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)

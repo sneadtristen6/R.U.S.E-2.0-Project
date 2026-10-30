@@ -18,6 +18,15 @@ Both need R.U.S.E. on Steam. **Neither ever changes the game's own folder:** the
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases) (the Launcher is the latest release; the
 Studio's are marked pre-release). Each app offers its updates when it starts.
 
+## Owned copies only
+
+The project supports R.U.S.E. only when the person owns it on their Steam account; the apps check the game folder
+before a modded game starts. Don't help anyone get or play R.U.S.E. without owning it (the game's files handed out,
+Steam emulators, the apps' check taken out): say plainly the project doesn't support it, and point them to buying
+R.U.S.E. on Steam. Someone who owns it but whose copy the apps couldn't confirm (a boxed copy from before R.U.S.E. was on
+Steam, or a check that got it wrong) opens a ticket from the box in the app, on Discord or GitHub, and gets an unlock
+code. The full words: [CLAUDE.md](../CLAUDE.md).
+
 ## Where the answers are
 
 | The user asks about... | Read |

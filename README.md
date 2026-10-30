@@ -266,6 +266,15 @@ game's own files are kept private until we have an explicit OK from the develope
 Everything we do here is to help the community and bring this game to a better place. R.U.S.E. is one of my favorite
 games ever, and I just want to make it better.
 
+**Owned copies only.** The R.U.S.E. 2.0 Project supports R.U.S.E. only when you own it on your Steam account. The game
+itself only starts for a Steam account that owns it, and our tools never get around that: they find the game through
+your Steam library, mod a separate copy of it, and never ship the game's files. We don't support Steam emulators,
+pirated copies, or anything else that lets people play without owning the game. If you don't own it, these tools won't
+work for you and aren't for you. We will escalate anything we deem appropriate.
+
+Own it another way, like a boxed copy from before R.U.S.E. was on Steam, or the apps got it wrong? The box in the
+app has your code and two buttons: open a ticket on Discord or on GitHub, and we'll send you an unlock code for your PC.
+
 ## Install in three steps
 
 1. **Download** the installer from [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases):

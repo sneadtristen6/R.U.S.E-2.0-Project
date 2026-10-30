@@ -257,6 +257,9 @@ class Starter:
 
     def __init__(self, open_url=open_url, start_game=start_game, steam_running=steam_running, wait=time.sleep):
         self.open_url, self.start_game, self.steam_running, self.wait = open_url, start_game, steam_running, wait
+        # owned copies only (rusemod.owned): set by the app's window; given the game folder, the message when a
+        # modded game mustn't start from it, else None
+        self.owned = None
 
     def vanilla(self, say) -> None:
         say("Starting R.U.S.E. through Steam…")
@@ -280,6 +283,9 @@ class Starter:
         from .backup import _claim, _release
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
+        refused = self.owned(game) if self.owned is not None else None
+        if refused:  # not a game rule: the project's (only a copy its player owns)
+            raise BuildError(refused)
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         lock = instance.parent / BUILDING
         lock.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,39 @@
+name: Unlock my copy of R.U.S.E.
+description: The Launcher or the Studio couldn't confirm your copy of R.U.S.E., and you own it.
+title: "[Unlock] "
+labels: ["unlock"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        R.U.S.E. 2.0 works only with a copy of the game you own. If the Launcher or the Studio couldn't confirm yours
+        (a boxed copy from before R.U.S.E. was on Steam, or the check got it wrong), we'll send you an unlock code here.
+        Your code works on your PC only, so it's safe to post. **Don't post receipts, keys or anything personal here:**
+        if we need proof, we'll ask you to open a ticket on our Discord instead.
+  - type: input
+    id: code
+    attributes:
+      label: Your code
+      description: From the box in the Launcher or the Studio (Copy), like K7Q2-M9XD-4T1B-ZP8C.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Which app and version
+      placeholder: RUSE Launcher 0.4.8.9
+  - type: dropdown
+    id: how
+    attributes:
+      label: How do you own R.U.S.E.?
+      options:
+        - On Steam
+        - A boxed copy (from before R.U.S.E. was on Steam)
+        - Another way (say below)
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else
+      description: What the box said, and what you tried (Steam's check of the game's files, for example).

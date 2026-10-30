@@ -364,6 +364,9 @@
       update_install: async () => { throw new Error("The preview can't install updates."); },
       update_page: async () => ({ opened: "" }),
       open_help: async (what) => ({ opened: what }),
+      owned_check: async () => ({ ok: true, reasons: [], code: "" }),  // owned copies: the preview's game is fine
+      owned_unlock: async () => ({ ok: true, reasons: [], code: "" }),
+      owned_open: async (what) => ({ opened: what }),
       report_problem: async (message) => ({ opened: `report: ${message}` }),
       library: async () => used(),
       mod_sets: async () => modSets(),

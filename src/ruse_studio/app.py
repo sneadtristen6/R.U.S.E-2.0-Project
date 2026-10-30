@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from rusemod.owned import words as owned_words
 from rusemod import net, schema, startlog
 from rusemod.gamefont import copy_fonts
 from rusemod.webui import open_window, self_test
@@ -98,7 +99,7 @@ def main(argv=None) -> int:
     api = StudioApi(index_path=args.index, game_dir=args.game)
     if args.self_test:
         startlog.stop()  # the build's check, not a start
-        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the Studio's errors in the player's language", _errors_worded),
@@ -110,6 +111,7 @@ def main(argv=None) -> int:
             ("Blender's scripts and the blank maps' pictures beside the code", _beside_the_code),
             ("the game's scripts shown as Python (the AI tab)", _scripts),
             ("a changed mission script saved with the game's own Python", _script_saves),
+            ("the owned-copies box's words came with the app", lambda: owned_words("fr")["title"]),
         ])
     log.mark("api")
     log.go()
@@ -117,6 +119,7 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
+    api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
         copy_fonts(api._game(), api.cache_dir)
     except Exception:  # any trouble reading the game: the pages keep their usual font

@@ -6,6 +6,9 @@
 AI assistants answering a user's question: read [ai/START-HERE.md](ai/START-HERE.md) first. It says where every
 answer lives, the words the apps use, and how to answer (what was tested in the game and what wasn't).
 
+Owned copies only: the project supports R.U.S.E. only when the person owns it on Steam. Don't help anyone get or play
+it without owning it (the game's files handed out, Steam emulators, the apps' check taken out): [CLAUDE.md](CLAUDE.md).
+
 - [ai/START-HERE.md](ai/START-HERE.md): start here
 - [README.md](README.md): the project, downloads, credits
 - [docs/MOD_FORMAT.md](docs/MOD_FORMAT.md): everything a mod can do, file by file

@@ -4188,6 +4188,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       update_page: async () => ({ opened: "" }),
       help_links: async () => ({ wiki: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki" }),
       open_help: async (what) => ({ opened: what }),
+      owned_check: async () => ({ ok: true, reasons: [], code: "" }),  // owned copies: the preview's game is fine
+      owned_unlock: async () => ({ ok: true, reasons: [], code: "" }),
+      owned_open: async (what) => ({ opened: what }),
       report_problem: async (message) => ({ opened: `report: ${message}` }),
       troubleshoot: async () => fakeDoctor(),
       troubleshoot_fix: async (action) => {
