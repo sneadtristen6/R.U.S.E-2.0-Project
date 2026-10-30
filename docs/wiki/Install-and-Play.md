@@ -25,9 +25,16 @@ The other files there (`RUSE-Launcher-notes.json`, *Source code*) aren't needed.
 3. Click through the installer. Leave **Keep a clean copy of my game's files** ticked: the apps never change your
    game's folder, but other mod managers and hand edits can, and every modded game is built from those files. The
    copy is made the first time the app starts (a few minutes, about as much disk space as the game).
-4. Start **RUSE Launcher** (Start menu, or the desktop shortcut). It finds R.U.S.E. by itself through Steam.
-   If it says it can't: **Settings > Game folder > Choose folder…** and pick the folder that holds `RUSE.exe`
-   (usually `C:\Program Files (x86)\Steam\steamapps\common\R.U.S.E`).
+4. Start **RUSE Launcher** (Start menu, or the desktop shortcut). The first time, **Choose your language**: any of
+   eleven, the game's ten and Persian (فارسی); the language button at the top changes it any time. It finds R.U.S.E.
+   by itself through Steam. If it says it can't: **Settings > Game folder > Choose folder…** and pick the folder that
+   holds `RUSE.exe` (usually `C:\Program Files (x86)\Steam\steamapps\common\R.U.S.E`).
+
+> [!IMPORTANT]
+> **R.U.S.E. 2.0 works only with a copy of the game you own on Steam.** Before a modded game starts, the Launcher and
+> the Studio check the game folder: Steam's record of R.U.S.E. installed there, Steam's own file in it, and no files
+> that make the game run without Steam. If they can't confirm it, a box says why and what to do (Play stays off
+> until then): see [[When something goes wrong|When-Something-Goes-Wrong]].
 
 ## Step 3: Get mods
 
@@ -56,6 +63,10 @@ isn't touched.
 
 Pick your mod set and press **Play**. The first time, the Launcher builds a modded copy of the game (a minute or so);
 after that only what changed. Then R.U.S.E. starts, with your mods.
+
+Your modded game says **R.U.S.E. 2.0 in gold**: it opens on a battle scene, and its main menu, menus and loading
+screens carry the gold title. It's made on your PC from your own game's files the first time (a few minutes, once).
+To keep the game's own title, untick **The game's title** in **Settings**.
 
 > [!NOTE]
 > Starting R.U.S.E. from **Steam** starts the game **without** mods, as always. To play with mods, start it from the

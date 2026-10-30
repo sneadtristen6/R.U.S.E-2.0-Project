@@ -72,6 +72,9 @@ A map started as **Blank Terrain** or **Blank Ocean** (the Maps tab's **Duplicat
 on it, its HQs neither. **Each player's HQ** (on the Scenario side) lists every HQ the map needs: click **Place**, then
 the ground where it goes. **Test in game** waits until every player has an HQ.
 
+**Map size** (Studio 0.9.8.7) makes a new blank map bigger or smaller, a strip at a time: press **+** on a side to add
+a strip of ground along it, or **−** to take one off, then **Make it this size**. Not tried in the game yet.
+
 > [!WARNING]
 > Both blank maps are still buggy: use them at your own discretion, and tell us what you find.
 
@@ -84,6 +87,9 @@ starts with none: you make them.
   sector should be. **Delete sector** gives all its ground to the sectors round it.
 - **Paint:** pick a sector, then drag on the ground to paint it; "No sector" takes ground out of every sector.
 - **Start from no sectors** or **Start from the map's sectors**; **Undo** takes back the last change.
+- **Make sectors** cuts the whole map into sectors about as wide as **Sectors about** says (the game's own maps have
+  sectors 1 to 3 km across), with wandering borders; **Another layout** cuts them another way. Then drag corners or
+  paint to reshape them.
 
 Seen in the game: painted sectors on a blank map, a new sector drawn on D-Day and lit up alone by a ruse card, ground
 in no sector (a gap on the map table that no ruse card lights). The thin lines the Studio cuts so a sector stays one

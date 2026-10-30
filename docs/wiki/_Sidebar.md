@@ -1,3 +1,5 @@
+**English** · [[Français|Manuel-de-terrain]] · [[Deutsch|Feldhandbuch]] · [[Italiano|Manuale-da-campo]] · [[Español|Manual-de-campaña]] · [[Polski|Podręcznik-polowy]] · [[Русский|Полевое-руководство]] · [[Čeština|Polní-příručka]] · [[日本語|フィールドマニュアル]] · [[简体中文|野战手册]] · [[فارسی|راهنمای-میدانی]]
+
 **[[Field manual|Home]]**
 
 **Play mods**
@@ -7,6 +9,7 @@
 **Make mods**
 - [[Your first mod|Your-First-Mod]]
 - [[Edit units|Edit-Units]]
+- [[Buildings and build menus|Buildings-and-Build-Menus]]
 - [[Import a model|Import-a-Model]]
 - [[Units from other eras|Units-From-Other-Eras]]
 - [[Make a nation into another|Make-a-Nation]]

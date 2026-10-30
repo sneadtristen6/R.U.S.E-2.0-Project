@@ -6,7 +6,9 @@
 
 The **Units** tab lists every unit and building. Narrow it down with:
 
-- the **search** box (code names or the names players see, in any of the game's ten languages: the language button at the top);
+- the **search** box (code names or the names players see, in any of the game's ten languages: the language button at the top).
+  Every word you type must match; **#tags** narrow it (`#us`, `#germany`, `#air`, `#armor`, `#new` for your mod's new
+  units; type `#` to see them all), and your recent searches are kept;
 - the **kind** and **nation** chips;
 - the **type** menu: what it's for, like HQ, money, factories, forts and decoys for buildings, or the factory that
   builds a unit.
@@ -46,6 +48,12 @@ cross takes one off; **Add a flag…** adds one, sorted by what the flags are fo
 
 Useful ones, tried in the game: take **11, 21 and 55** off together to let a vehicle into woods; **1** gives any unit
 indirect fire; **71** sees all around; **77** fires only when ordered.
+
+**Flag types of your own** (Studio 0.9.8.8): **Make or change flag types…** under a unit's flags makes a named set of
+the game's flags, each turned **On** or **Off**, with a line on what it's for. **Give a flag type…** on any unit turns
+those flags on and off in one go; taking it off puts the unit's flags back as they were. Change a type and every unit
+that has it changes too. The game only acts on its own flags, so a type combines what they already do. Not tried in
+the game yet.
 
 ## Make a new unit
 
@@ -119,6 +127,14 @@ it, has these steps too.
 4. **Hits** (under a weapon) picks the ground, planes or both. A plane's **Role** box sets how it attacks (below).
 5. **Adding or removing a weapon isn't possible yet:** weapons are tied to the model's animations, and we're not that
    far along yet.
+
+**Its name in game** (on an ammo's page, Studio 0.9.8.8): what the game calls the ammo, its **Name** (Medium cal.,
+MG 42) and its **Kind** (AP shell). Type new words and save: every language shows them until you change one on its own
+with **Change the words…**; **Game's words** takes yours out. A copied ammo is called by the name you give it. Not
+tried in the game yet.
+
+**Shot speed:** an ammo's shot speed and drag decide when the hit lands: a slower shot hits later, and a moving target
+is aimed ahead by the flight time (known from how the game works; not tried in a test yet).
 
 ## Change a plane's role (Studio 0.9.8.5)
 

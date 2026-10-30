@@ -1,15 +1,20 @@
 # Import a model
 
-> **For:** modders · **You need:** RUSE Studio 0.9.6 or later, a mod, and a 3D model (.3ds or .glb) · **Takes:** a few
-> minutes
+> **For:** modders · **You need:** RUSE Studio 0.9.6 or later, a mod, and a 3D model (.3ds, .glb or .gltf) ·
+> **Takes:** a few minutes
 
 Give a new unit a 3D model of its own, from Blender or any other 3D tool. That's how the
 [M1 Abrams mod](https://github.com/sneadtristen6/Ruse-Mods) was made: the first model brought into R.U.S.E. from
 another 3D program, seen in the game.
 
+A model can also go on a new building, in place of a piece of its look (see
+[[Buildings and build menus|Buildings-and-Build-Menus]]), or on your map as a rock, prop, bush or tree of your own
+(see [[Place buildings and trees|Place-Buildings-and-Trees]]). Both: Studio 0.9.8.8, seen in the game.
+
 ## 1. Get a model
 
-A **.3ds** with its pictures (.tga or .png), or a **.glb** (pictures inside it).
+A **.3ds** with its pictures (.tga or .png), or a **.glb** or **.gltf** (pictures inside it: PNG, JPG or WebP). A
+model the importer can't read (compressed meshes, KTX2 pictures) says so and how to fix it in Blender.
 
 - **From Blender:** File > Export > glTF 2.0, format **glTF Binary (.glb)**.
 - **From a free-model site:** many tanks come as .3ds with a folder of .tga pictures. Keep the folder as it came: the
@@ -65,6 +70,13 @@ Turn the 3D view until the new model looks right in the dashed frame and click *
 
 `files/models/<the unit's name>.glb` opens in Blender like any .glb. Keep the two object names (`chassis` for the
 hull, `tourelle_01` for the turret) and export it over the same file (glTF Binary): the next build uses it.
+
+**Open in Blender** on a unit's page names each part's bone as the game does, so one of the game's own tanks opened in
+Blender and imported back keeps its turret turning (Studio 0.9.8.8; a model exported before keeps its old names: open
+it in Blender again).
+
+**A model that sat in the wrong place** (Studio 0.9.8.7 and earlier, on new units made from the Panther and 85 other
+units whose turrets the Studio misread): use **Import model…** again on that unit, and it sits on the turret.
 
 ## Early
 

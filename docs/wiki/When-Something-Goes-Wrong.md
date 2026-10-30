@@ -83,6 +83,35 @@ Windows refused to remove a copy of the game the app made (in `RUSE-Instances`).
 **Settings > Game folder > Choose folder...** and pick the folder that holds `RUSE.exe` (on Steam:
 `steamapps\common\R.U.S.E`).
 
+## "We couldn't confirm this copy of R.U.S.E."
+
+R.U.S.E. 2.0 works only with a copy of the game you own. Until the game folder is confirmed, **Play** and **Test in
+game** stay off, and this box says why: Steam has no record of R.U.S.E. installed in that folder; Steam's own file in
+it (`steam_api64.dll`) is missing, changed, or not Valve's; or the folder has files that make the game run without
+Steam (it names them).
+
+- **You own it on Steam:** click **Check my files in Steam** (Steam puts back any of its files that are missing or
+  changed), remove any files the box names, then click **Check again**. A game folder you picked by hand must be the
+  one Steam installed.
+- **You own it another way** (a boxed copy from before R.U.S.E. was on Steam), **or you think the check got it
+  wrong:** the box shows **Your code** (made from this PC and the game folder). Click **Copy**, then **Open a ticket
+  on Discord** or **Open a ticket on GitHub** and paste it. We send you an unlock code: paste it under **Unlock code**
+  and click **Unlock**. It confirms that copy on that PC.
+
+The check is the same on Windows, Linux and Steam Deck. This project never helps anyone play R.U.S.E. without owning
+it: no game files handed out, no running it without Steam.
+
+## "In an older mod format" or "saved by a newer RUSE Studio"
+
+- **An older mod format:** the mod was made with an older Studio. **Update this mod** rewrites its files the way this
+  Studio reads them, keeping what they mean; a zip of the whole mod goes into the Studio's `mod-backups` folder first.
+- **A newer RUSE Studio:** update the Studio before changing that mod: an older one could drop what it doesn't know.
+
+## Closing the Studio asks "Close RUSE Studio?"
+
+Not everything is saved yet, and the box says what (a box with text typed but not entered, a change still being
+saved, Test in game still building...). **No** keeps the Studio open; **Yes** closes it and loses that.
+
 ## The game starts, but without my changes
 
 1. Was it started from **Play** (launcher) or **Test in game** (Studio)? From Steam, the game starts unmodded.

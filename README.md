@@ -4,6 +4,8 @@
 
 **Build the battlefield, then fight on it.**
 
+**English** · [Français](README.fr.md) · [Deutsch](README.ger.md) · [Italiano](README.ita.md) · [Español](README.spa.md) · [Polski](README.pol.md) · [Русский](README.ru.md) · [Čeština](README.cz.md) · [日本語](README.jpn.md) · [简体中文](README.sc.md) · [فارسی](README.fa.md)
+
 <img src="docs/images/ruse-2-0-brand.png" alt="R.U.S.E. 2.0 brand artwork: a detailed strategy map with a river, bridge, roads and unit markers" width="640">
 
 [![Download RUSE Launcher](https://img.shields.io/badge/Download-RUSE%20Launcher-1f6fc4?style=for-the-badge)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)
@@ -52,7 +54,7 @@ the first time.
 **Data only.** A mod here changes the game's data, in a separate copy of the game, and that is all of it. Your Steam
 install is never changed.
 
-**Open source** (GPL-3.0), in the game's ten languages.
+**Open source** (GPL-3.0), in eleven languages: the game's ten, and Persian.
 
 <table>
   <tr>
@@ -137,7 +139,7 @@ install is never changed.
   in gold (Settings keeps the game's own title if you'd rather).
 - **Community mods as they are** (RUSE-Mod-Manager's `.rmod` too), a list of supported mods to tick, load orders
   shared both ways with RUSE-Mod-Manager, and a troubleshooter that finds what stops Play and fixes it.
-- **Updates itself**, in the game's ten languages.
+- **Updates itself**, in eleven languages: the game's ten, and Persian.
 
 ## See it in the game
 
@@ -327,13 +329,13 @@ browser with made-up data: `src/ruse_launcher/ui/index.html?fake`, `src/ruse_stu
   folder on the window; each mod is checked first), mod sets made on screen (new, edit and reorder, rename,
   duplicate, delete), Share and "Import a load order…" for a mod set (RUSE-Mod-Manager's own text, so load orders
   go both ways; [`src/rusemod/loadorder.py`](src/rusemod/loadorder.py)), a three-step guide on Vanilla ("Playing
-  with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten). **Supported
+  with mods, in three steps"), and the launcher in the PC's own language (any of the game's ten, or Persian). **Supported
   mods** (0.3.0): our list of mods (a GitHub repository, MOD_FORMAT §15) with tick boxes, several installed at once,
   each file checked against the list before it goes into the library, cheat mods kept apart; offline, the last
   copy of the list.
 - **RUSE Studio** ([`src/ruse_studio/`](src/ruse_studio/)), for modders: browse every unit and
   building, see a unit's values, parts and what uses it, and pick a language: the game's own names by default, or
-  any of the game's ten languages. Pick or make a mod and change a unit's numbers right on its page: each change is
+  any of the game's ten languages, or Persian. Pick or make a mod and change a unit's numbers right on its page: each change is
   saved in the mod's `src/studio.rndf` (with Undo); a part several units share changes for one of them or all.
   "Test in game" builds the mod and starts the game. **Maps** (released in 0.4): every map the game lists, in 3D
   with its real ground mesh and ground textures (decoded once per map and kept). **Also:**
@@ -460,7 +462,7 @@ the code. Side by side since September 2026, they built:
 - **Units:** change any of them, make new ones, give a nation another army's tanks and planes, planes in any role,
   recon vehicles, weapons that hit planes, every flag and number explained, and a nation made into another.
 - **Music and missions:** songs and voice lines replaced in the Studio, and missions of your own.
-- **Two apps in the game's ten languages,** the Studio for modders and the Launcher for players, that never touch
+- **Two apps in eleven languages** (the game's ten, and Persian), the Studio for modders and the Launcher for players, that never touch
   the game's own folder, with a check that stops a mod that would break the game before it starts.
 - **The code:** everything in `src/rusemod`, `src/ruse_studio` and `src/ruse_launcher` is our own, written for
   R.U.S.E. 2.0. The others whose work it builds on are credited above and in

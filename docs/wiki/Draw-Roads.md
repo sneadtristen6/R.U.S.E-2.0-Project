@@ -22,7 +22,8 @@ Tick **Roads** at the top of the map: the map's own roads show in gold, on the g
 3. A blue ribbon follows the pointer, with the **road's length** beside it (Freeform also shows the part from your
    last click). An end near any road **snaps onto it** (a ring shows where), so the new road joins it: supply trucks
    can drive from one to the other. The Roads tools show how many new roads the map has, and their length in all.
-4. **Esc** drops a road you're drawing; **Undo** (or **Ctrl+Z**) takes back the last one.
+4. **Esc** drops a road you're drawing; **Undo** (or **Ctrl+Z**) takes back the last one, **Redo** (or **Ctrl+Y**)
+   draws it again.
 
 New roads are saved in your mod at once (`maps/<map>/roads.toml`).
 
@@ -38,6 +39,27 @@ New roads are saved in your mod at once (`maps/<map>/roads.toml`).
   in the game: tanks, infantry and supply trucks cross on the deck.)
 - The plants and props on its path are taken off; **Keep the trees on new roads** keeps the trees and bushes (a
   road under the trees).
+
+## Take out the map's own roads and bridges
+
+In the **Roads** tools:
+
+- **Take out the map's roads:** the map's own roads go: the network supply trucks follow (they drive across country
+  instead), and the roads drawn on the ground. Your new roads stay. Seen in the game: the roads go; supply trucks
+  driving across country aren't tried yet.
+- **Take out the map's bridges:** the map's own bridges go, with the decks units stood on. Units still cross where
+  they stood, on the ground under them, unless you also tick the next box. Your new bridges stay.
+- **Close the old bridges' crossings** (with the bridges out; from DomesticNukes): the ground where each old bridge
+  stood over water is closed to units, and the road links through it are cut: nothing crosses there, supply trucks
+  included, and the rest of the road network stays. A new road of yours that crosses at the same place gets its own
+  bridge there. If closing them would cut a piece of ground off from the rest, the Studio says so before the build.
+
+Not tried in the game yet: taking out bridges and closing their crossings.
+
+## Place a bridge of your own
+
+On the **Bridges** tab: pick a kind, set its length and turn, then click the ground where the bridge's middle goes.
+Both ends should rest on dry bank. **Undo** and **Redo** work here too.
 
 **See it:** **Test in game**, then in the game's main menu **BATTLES** and the map. Place a supply depot near your
 road and watch its route.

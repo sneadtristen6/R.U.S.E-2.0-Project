@@ -11,6 +11,11 @@ Step-by-step guides for **RUSE Launcher** and **RUSE Studio**. For what the proj
 - **To make mods:** install **RUSE Studio** (the same page, at the end), then [[Your first mod|Your-First-Mod]].
 - **Stuck?** [[When something goes wrong|When-Something-Goes-Wrong]], or ask on the
   [Discord](https://discord.gg/h54t5baNsC).
+- **Your copy:** both apps work only with a copy of R.U.S.E. you own on Steam. A boxed copy from before R.U.S.E. was
+  on Steam, or a copy the apps couldn't confirm: see [[When something goes wrong|When-Something-Goes-Wrong]].
+- **Your language:** both apps and this manual are in eleven languages: English, Français, Deutsch, Italiano,
+  Español, Polski, Русский, Čeština, 日本語, 简体中文 and فارسی (Persian). Each app has a language button at the top
+  right; the manual's other languages are on the top line of the sidebar.
 
 > [!WARNING]
 > **Still buggy, use at your own discretion:** Map Paint's textures, and both blank maps (Blank Terrain and Blank
@@ -41,15 +46,16 @@ starts a quick test copy on its own, to check your work as you go.
 |---|---|
 | Make my first mod (10 minutes, start here) | [[Your first mod|Your-First-Mod]] |
 | Change a unit, make a new one, swap its ammo | [[Edit units|Edit-Units]] |
-| Give a new unit a 3D model from Blender or any 3D tool | [[Import a model|Import-a-Model]] |
+| Give a new unit or building a 3D model from Blender or any 3D tool, or put one on a map | [[Import a model|Import-a-Model]] |
 | Add units from WWI to today (WWI, WWII+, Cold War, modern), at their real size and behind research | [[Units from other eras|Units-From-Other-Eras]] |
 | Give one of the game's nations a new name and flag (China in Italy's place) | [[Make a nation into another|Make-a-Nation]] |
-| Replace songs, add new ones, change what a unit says | [[Music and sounds|Music-and-Sounds]] |
+| Change what each building builds and in what order, research, add buildings of my own with their own look | [[Buildings and build menus|Buildings-and-Build-Menus]] |
+| Replace any sound or song, add songs, change and motion-capture animations (RUSE Decoy) | [[Music and sounds|Music-and-Sounds]] |
 | Change the economy, the computer players, any value or file of the game | [[Economy, AI and more|Economy-AI-and-More]] |
 | Raise hills, dig craters, make ramps, add lakes | [[Shape the ground|Shape-the-Ground]] |
 | Make a town or wood units can hide in; block ground | [[Cover and movement|Cover-and-Movement]] |
-| Draw new roads (supply trucks use them) | [[Draw roads|Draw-Roads]] |
-| Place buildings, props and trees | [[Place buildings and trees|Place-Buildings-and-Trees]] |
+| Draw new roads (supply trucks use them), take out bridges and their crossings | [[Draw roads|Draw-Roads]] |
+| Place buildings, props and trees one by one, in grids, boxes or along a path; select, move and turn them | [[Place buildings and trees|Place-Buildings-and-Trees]] |
 | Move starting points, add units in formation, paint sectors, place a blank map's HQs, more money in depots | [[Edit a scenario|Edit-a-Scenario]] |
 | Give a new Operation or campaign chapter a mission of its own: goals, events, camera moves | [[Make a mission|Make-a-Mission]] |
 | Put my mod out for others; edit a mod someone else made | [[Export and share|Export-and-Share]] |
@@ -59,6 +65,7 @@ starts a quick test copy on its own, to check your work as you go.
 | What's happening | Guide |
 |---|---|
 | A red bar under the Studio's header; the game starts without my changes; a crash | [[When something goes wrong|When-Something-Goes-Wrong]] |
+| The apps say my copy of R.U.S.E. isn't confirmed | [[When something goes wrong|When-Something-Goes-Wrong]] |
 | I found a bug | [[Report a bug|Report-a-Bug]] |
 | I have a question the manual doesn't answer | [[Ask a question|Ask-a-Question]] |
 
