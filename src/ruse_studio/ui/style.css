@@ -849,9 +849,11 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .layer-row { display: grid; grid-template-columns: 9em 1fr 3.5em; align-items: center; gap: 8px; }
 .layer-row input[type=range] { width: 100%; }
 
-/* what changes: the running version beside the new one, a row per change */
+/* what changes: the running version beside the new one, a row per change. It keeps its height (flex-shrink 0) and
+   the tab under it scrolls instead: the AI and Settings tabs squeezed it to a sliver, a mouse-wheel step taller than
+   the box (the owner, 2026-10-30: "the drop-down ... is super tiny"; the Launcher's main area takes all the squeeze) */
 .update-changes { padding: 8px 20px 12px; background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41);
-                  font-size: 13px; max-height: 40vh; overflow: auto; }
+                  font-size: 13px; max-height: 40vh; overflow: auto; flex-shrink: 0; }
 .update-changes.hidden { display: none; }
 .update-changes table { border-collapse: collapse; width: 100%; max-width: 1100px; }
 .update-changes th, .update-changes td { text-align: left; vertical-align: top; padding: 5px 10px;
