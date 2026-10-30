@@ -15,6 +15,7 @@ ru = "картинки меню: {0}, из {1} (файлов картинок: {
 cz = "obrázky nabídky: {0}, z {1} ({2} soubor(ů) obrázků)"
 jpn = "メニュー画像：{0}、{1} から（画像ファイル {2} 個）"
 sc = "菜单图片：{0}，来自 {1}（{2} 个图片文件）"
+fa = "تصویرهای منو: {0}، از {1} ({2} فایل تصویر)"
 
 [e35f7d2df62]
 us = "menu pictures: {0}: {1} start dot(s) on its 3D map picture, where its starting points are"
@@ -27,6 +28,7 @@ ru = "картинки меню: {0}: стартовых точек на 3D-ка
 cz = "obrázky nabídky: {0}: {1} startovní bod(ů) na 3D obrázku mapy, kde jsou její startovní body"
 jpn = "メニュー画像：{0}：3Dマップ画像の開始地点の位置に点 {1} 個"
 sc = "菜单图片：{0}：在其 3D 地图图片上起始点所在处画了 {1} 个起点"
+fa = "تصویرهای منو: {0}: {1} نقطهٔ شروع روی تصویر سه‌بعدی نقشه‌اش، جایی که نقطه‌های شروعش هستند"
 
 [e7bb1c1d4d4]
 us = "menus: {0}"
@@ -39,6 +41,7 @@ ru = "меню: {0}"
 cz = "nabídky: {0}"
 jpn = "メニュー：{0}"
 sc = "菜单：{0}"
+fa = "منوها: {0}"
 
 [e0e11e1419c]
 us = "the old copy at {0} is set aside until the new one is ready"
@@ -51,6 +54,7 @@ ru = "старая копия в {0} отложена, пока новая не 
 cz = "stará kopie v {0} je odložená, dokud nebude nová hotová"
 jpn = "{0} の古いコピーは新しいものができるまで退避しています"
 sc = "{0} 处的旧副本已暂放一边，直到新副本就绪"
+fa = "نسخهٔ قدیمی در {0} کنار گذاشته می‌شود تا نسخهٔ جدید آماده شود"
 
 [e6090bc0a56]
 us = "load order: {0}"
@@ -63,6 +67,7 @@ ru = "порядок загрузки: {0}"
 cz = "pořadí načítání: {0}"
 jpn = "読み込み順：{0}"
 sc = "加载顺序：{0}"
+fa = "ترتیب بارگذاری: {0}"
 
 [e93882af144]
 us = "{0} error(s), {1} warning(s), {2} note(s)"
@@ -75,6 +80,7 @@ ru = "ошибок: {0}, предупреждений: {1}, заметок: {2}"
 cz = "chyby: {0}, varování: {1}, poznámky: {2}"
 jpn = "エラー {0} 件、警告 {1} 件、注記 {2} 件"
 sc = "{0} 个错误，{1} 个警告，{2} 条备注"
+fa = "{0} خطا، {1} هشدار، {2} یادداشت"
 
 [e2174f50d24]
 us = "fingerprint: {0}"
@@ -87,6 +93,7 @@ ru = "отпечаток: {0}"
 cz = "otisk: {0}"
 jpn = "フィンガープリント：{0}"
 sc = "指纹：{0}"
+fa = "اثر انگشت: {0}"
 
 [ec328e2609d]
 us = "ZZ_Win.dat has no skirmish mesh packs, so whether the new or moved units' models load for their nation wasn't checked"
@@ -99,6 +106,7 @@ ru = "В ZZ_Win.dat нет пакетов моделей для сражений
 cz = "ZZ_Win.dat nemá balíky modelů pro potyčky, takže se nezkontrolovalo, zda se modely nových či přesunutých jednotek načtou pro jejich národ"
 jpn = "ZZ_Win.dat にスカーミッシュ用メッシュパックがないため、新規・移動したユニットのモデルが国ごとに読み込まれるかは確認していません"
 sc = "ZZ_Win.dat 没有遭遇战网格包，因此未检查新单位或移动单位的模型能否为其国家加载"
+fa = "ZZ_Win.dat هیچ بستهٔ مش نبرد آزاد ندارد، پس بررسی نشد که آیا مدل‌های یگان‌های جدید یا جابه‌جاشده برای کشورشان بارگذاری می‌شوند یا نه"
 
 [e984fde5df0]
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and the unit data has no cluster maps that could load {7}'s models in every match: the game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of {8}'s units instead, or leave it in {9}'s army"
@@ -111,6 +119,7 @@ ru = "{0}{1} в армии {2} (Nationalite {3}), но его модель {4}{5
 cz = "{0}{1} je v armádě {2} (Nationalite {3}), ale jeho model {4}{5} je jen v balíku modelů jednotek {6} a data jednotek nemají mapy clusterů, které by načetly modely {7} v každém zápase: hra načítá modely jednotek národa jen v zápasech, kde má některý hráč tento národ, takže v jiných zápasech nemá tato jednotka model, nebo shodí hru. Raději zkopírujte jednotku {8}, nebo ji nechte v armádě {9}"
 jpn = "{0}{1} は {2} の軍（Nationalite {3}）にいますが、モデル {4}{5} は {6} のユニットのメッシュパックにしかなく、{7} のモデルを全試合で読み込めるクラスターマップもユニットデータにありません。ゲームはその国を誰かが使う試合でしかその国のユニットモデルを読み込まないため、ほかの試合ではこのユニットにモデルがないか、ゲームが落ちます。代わりに {8} のユニットをコピーするか、{9} の軍に残してください"
 sc = "{0}{1} 在 {2} 的军队中（Nationalite {3}），但其模型 {4}{5} 只在 {6} 单位的网格包中，单位数据中也没有能在每场对局加载 {7} 模型的集群地图：游戏只在有玩家使用某国的对局中加载该国单位模型，因此在其他对局中此单位没有模型或会导致游戏崩溃。请改为复制 {8} 的单位，或把它留在 {9} 的军队中"
+fa = "{0}{1} در ارتش {2} است (Nationalite {3})، اما مدلش {4}{5} فقط در بستهٔ مش یگان‌های {6} است، و در داده‌های یگان‌ها هیچ cluster map وجود ندارد که بتواند مدل‌های {7} را در هر مسابقه بارگذاری کند: بازی مدل‌های یگان‌های یک کشور را فقط در مسابقه‌هایی بارگذاری می‌کند که بازیکنی آن کشور را دارد، پس در مسابقه‌های دیگر این یگان مدلی ندارد، یا بازی کرش می‌کند. به‌جای آن یکی از یگان‌های {8} را کپی کنید، یا آن را در ارتش {9} نگه دارید"
 
 [ef0300ff017]
 us = "{0}: {1} gets its own card, {2} (files/cards/{3}.png), made from {4}'s"
@@ -123,6 +132,7 @@ ru = "{0}: {1} получает свою карточку {2} (files/cards/{3}.p
 cz = "{0}: {1} dostává vlastní kartu {2} (files/cards/{3}.png), vytvořenou z karty {4}"
 jpn = "{0}：{1} に専用カード {2}（files/cards/{3}.png）を {4} のものから作成"
 sc = "{0}：{1} 获得自己的卡片 {2}（files/cards/{3}.png），由 {4} 的卡片制作"
+fa = "{0}: {1} کارت خودش را می‌گیرد، {2} (files/cards/{3}.png)، ساخته‌شده از کارت {4}"
 
 [e475120bf6b]
 us = "{0}: {1} gets its own model (files/models/{2}.glb), beside {3}"
@@ -135,6 +145,7 @@ ru = "{0}: {1} получает свою модель (files/models/{2}.glb) р�
 cz = "{0}: {1} dostává vlastní model (files/models/{2}.glb) vedle {3}"
 jpn = "{0}：{1} に専用モデル（files/models/{2}.glb）を {3} の隣に"
 sc = "{0}：{1} 获得自己的模型（files/models/{2}.glb），与 {3} 并列"
+fa = "{0}: {1} مدل خودش را می‌گیرد (files/models/{2}.glb)، کنار {3}"
 
 [ee93609d7d7]
 us = "{0}: {1} gets its own copy of {2}{3}"
@@ -147,6 +158,7 @@ ru = "{0}: {1} получает свою копию {2}{3}"
 cz = "{0}: {1} dostává vlastní kopii {2}{3}"
 jpn = "{0}：{1} に {2}{3} の専用コピー"
 sc = "{0}：{1} 获得 {2}{3} 的自有副本"
+fa = "{0}: {1} نسخهٔ خودش از {2}{3} را می‌گیرد"
 
 [e3ae6347b7c]
 us = "{0}: no mod in the set makes a new unit {1}"
@@ -159,6 +171,7 @@ ru = "{0}: ни один мод набора не создаёт новый юн
 cz = "{0}: žádný mod v sadě nevytváří novou jednotku {1}"
 jpn = "{0}：セット内のどの Mod も新しいユニット {1} を作っていません"
 sc = "{0}：组合中没有模组新建单位 {1}"
+fa = "{0}: هیچ مادی در مجموعه یگان جدیدی به نام {1} نمی‌سازد"
 
 [eebf698c99b]
 us = "{0}: {1} has no model part of its own (GfxDescriptor.MeshDescriptor) naming a model, so it can't get one"
@@ -171,6 +184,7 @@ ru = "{0}: у {1} нет своей части модели (GfxDescriptor.MeshD
 cz = "{0}: {1} nemá vlastní část modelu (GfxDescriptor.MeshDescriptor) s názvem modelu, takže žádný dostat nemůže"
 jpn = "{0}：{1} にはモデルを指す専用のモデル部品（GfxDescriptor.MeshDescriptor）がないため、モデルを持てません"
 sc = "{0}：{1} 没有指明模型的自有模型部件（GfxDescriptor.MeshDescriptor），因此无法获得模型"
+fa = "{0}: {1} هیچ بخش مدلی از آنِ خودش (GfxDescriptor.MeshDescriptor) ندارد که نام مدلی را ببرد، پس نمی‌تواند مدلی بگیرد"
 
 [ecf14623f39]
 us = "{0} gets its class {1}(front.{2}) in the game's Python unit list, like {3}"
@@ -183,6 +197,7 @@ ru = "{0} получает свой класс {1}(front.{2}) в Python-спис
 cz = "{0} dostává svou třídu {1}(front.{2}) v pythonovém seznamu jednotek hry, jako {3}"
 jpn = "{0} にゲームの Python ユニット一覧でクラス {1}(front.{2}) を付与（{3} と同様）"
 sc = "{0} 在游戏的 Python 单位列表中获得类 {1}(front.{2})，与 {3} 相同"
+fa = "{0} کلاس خودش، {1}(front.{2})، را در فهرست Python یگان‌های بازی می‌گیرد، مانند {3}"
 
 [e45e807a10c]
 us = "left {0} debug-info copies as shipped ({1})"
@@ -195,6 +210,7 @@ ru = "оставлено копий отладочной информации к
 cz = "{0} kopií ladicích informací ponecháno, jak jsou ({1})"
 jpn = "デバッグ情報のコピー {0} 件を出荷時のまま残しました（{1}）"
 sc = "保留了 {0} 份原样的调试信息副本（{1}）"
+fa = "{0} نسخهٔ اطلاعات اشکال‌زدایی همان‌طور که با بازی آمده‌اند دست‌نخورده ماندند ({1})"
 
 [eea383b4d74]
 us = "loc('{0}') has no text: no mod in the set defines {1} in its text/*.csv"
@@ -207,6 +223,7 @@ ru = "у loc('{0}') нет текста: ни один мод набора не 
 cz = "loc('{0}') nemá text: žádný mod v sadě nedefinuje {1} ve svém text/*.csv"
 jpn = "loc('{0}') にテキストがありません。セット内のどの Mod も text/*.csv で {1} を定義していません"
 sc = "loc('{0}') 没有文本：组合中没有模组在其 text/*.csv 中定义 {1}"
+fa = "loc('{0}') متنی ندارد: هیچ مادی در مجموعه {1} را در text/*.csv خود تعریف نمی‌کند"
 
 [e8d8bf157e4]
 us = "ZZ_Win.dat isn't in this game, so no map's menu pictures can change"
@@ -219,6 +236,7 @@ ru = "ZZ_Win.dat нет в этой игре, поэтому картинки м
 cz = "ZZ_Win.dat v této hře není, takže se žádný obrázek nabídky mapy změnit nemůže"
 jpn = "このゲームに ZZ_Win.dat がないため、マップのメニュー画像は変更できません"
 sc = "此游戏中没有 ZZ_Win.dat，因此无法更改任何地图的菜单图片"
+fa = "ZZ_Win.dat در این بازی نیست، پس تصویرهای منوی هیچ نقشه‌ای نمی‌توانند تغییر کنند"
 
 [ec178d3b75e]
 us = "{0}: maps/{1} copies a BATTLES map; a mission of its own is for a copy of an Operation or a campaign chapter (map.toml entry)"
@@ -231,6 +249,7 @@ ru = "{0}: maps/{1} копирует карту СРАЖЕНИЯ; своя ми�
 cz = "{0}: maps/{1} kopíruje mapu BITVY; vlastní mise je pro kopii Operace nebo kapitoly kampaně (položka v map.toml)"
 jpn = "{0}：maps/{1} はバトルのマップのコピーです。独自のミッションはオペレーションかキャンペーンの章のコピー用です（map.toml の entry）"
 sc = "{0}：maps/{1} 复制的是战役地图；自有任务用于行动或战役章节的副本（map.toml 中的 entry）"
+fa = "{0}: maps/{1} یک نقشهٔ BATTLES را کپی می‌کند؛ مأموریت اختصاصی برای کپیِ یک عملیات یا یک فصل کارزار است (مدخل map.toml)"
 
 [e7034737b34]
 us = ".rmod mods first: {0}"
@@ -243,6 +262,7 @@ ru = "сначала моды .rmod: {0}"
 cz = "nejprve mody .rmod: {0}"
 jpn = ".rmod の Mod を先に：{0}"
 sc = "先处理 .rmod 模组：{0}"
+fa = "اول مادهای .rmod: {0}"
 
 [eb464ce0899]
 us = "Nothing was written."
@@ -255,6 +275,7 @@ ru = "Ничего не записано."
 cz = "Nic se nezapsalo."
 jpn = "何も書き込んでいません。"
 sc = "什么也没写入。"
+fa = "چیزی نوشته نشد."
 
 [e8765491b63]
 us = "warning: {0}"
@@ -267,6 +288,7 @@ ru = "предупреждение: {0}"
 cz = "varování: {0}"
 jpn = "警告：{0}"
 sc = "警告：{0}"
+fa = "هشدار: {0}"
 
 [e5ce4c50ddf]
 us = "terrain: {0}, from {1}"
@@ -279,6 +301,7 @@ ru = "рельеф: {0}, из {1}"
 cz = "terén: {0}, z {1}"
 jpn = "地形：{0}、{1} から"
 sc = "地形：{0}，来自 {1}"
+fa = "زمین: {0}، از {1}"
 
 [e5f48041be0]
 us = "scenery: {0}, from {1}"
@@ -291,6 +314,7 @@ ru = "декорации: {0}, из {1}"
 cz = "scenérie: {0}, z {1}"
 jpn = "配置物：{0}、{1} から"
 sc = "场景物体：{0}，来自 {1}"
+fa = "اشیای صحنه: {0}، از {1}"
 
 [e947908a119]
 us = "take out: {0}, the map's own {1}, from {2}"
@@ -303,6 +327,7 @@ ru = "убрано: {0}, собственные {1} карты, из {2}"
 cz = "odebráno: {0}, vlastní {1} mapy, z {2}"
 jpn = "取り除き：{0}、マップ本来の{1}、{2} から"
 sc = "移除：{0}，地图自带的{1}，来自 {2}"
+fa = "برداشتن: {0}، {1} خود نقشه، از {2}"
 
 [e094d39318d]
 us = "paint: {0}, from {1}: {2} stroke(s) on the ground's picture"
@@ -315,6 +340,7 @@ ru = "окраска: {0}, из {1}: мазков на картинке земл
 cz = "malování: {0}, z {1}: {2} tah(ů) na obrázku země"
 jpn = "ペイント：{0}、{1} から：地面の画像にストローク {2} 本"
 sc = "绘制：{0}，来自 {1}：地面图片上 {2} 笔"
+fa = "رنگ: {0}، از {1}: {2} ضربهٔ قلم‌مو روی تصویر زمین"
 
 [eb5e0103b59]
 us = "roads: {0}, from {1}: painted into the ground as the map's own roads are (what shows from afar); up close the map's asphalt stickers draw them (see the scenery notes)"
@@ -327,6 +353,7 @@ ru = "дороги: {0}, из {1}: нарисованы на земле, как 
 cz = "silnice: {0}, z {1}: namalované do země jako vlastní silnice mapy (to, co je vidět zdálky); zblízka je kreslí asfaltové nálepky mapy (viz poznámky scenérie)"
 jpn = "道路：{0}、{1} から：マップ本来の道路と同じように地面に描画（遠くから見える部分）。近くではマップのアスファルトのステッカーが描きます（配置物の注記を参照）"
 sc = "道路：{0}，来自 {1}：像地图自带道路一样画进地面（远处可见部分）；近处由地图的沥青贴花绘制（见场景物体备注）"
+fa = "جاده‌ها: {0}، از {1}: مانند جاده‌های خود نقشه در زمین رنگ شدند (آنچه از دور دیده می‌شود)؛ از نزدیک، برچسب‌های آسفالت نقشه آن‌ها را می‌کشند (یادداشت‌های اشیای صحنه را ببینید)"
 
 [e22da8c9888]
 us = "mission scripts: {0} new in {1}"
@@ -339,6 +366,7 @@ ru = "скрипты миссий: новых в {1}: {0}"
 cz = "skripty misí: {0} nových v {1}"
 jpn = "ミッションスクリプト：{1} に新規 {0} 件"
 sc = "任务脚本：{1} 中新增 {0} 个"
+fa = "اسکریپت‌های مأموریت: {0} اسکریپت جدید در {1}"
 
 [e95357539f8]
 us = "changed by .rmod mods: {0} ({1} file(s) changed, {2} added)"
@@ -351,6 +379,7 @@ ru = "изменено модами .rmod: {0} (изменено файлов: {
 cz = "změněno mody .rmod: {0} ({1} souborů změněno, {2} přidáno)"
 jpn = ".rmod の Mod で変更：{0}（変更 {1} ファイル、追加 {2}）"
 sc = "被 .rmod 模组更改：{0}（更改 {1} 个文件，新增 {2} 个）"
+fa = "تغییرکرده با مادهای .rmod: {0} ({1} فایل تغییر کرد، {2} فایل اضافه شد)"
 
 [e9b9ea02fb4]
 us = "changed: {0}"
@@ -363,6 +392,7 @@ ru = "изменено: {0}"
 cz = "změněno: {0}"
 jpn = "変更：{0}"
 sc = "已更改：{0}"
+fa = "تغییرکرده: {0}"
 
 [e9fcee2bf8f]
 us = "texts: {0} file(s) in {1} ({2})"
@@ -375,6 +405,7 @@ ru = "тексты: файлов в {1}: {0} ({2})"
 cz = "texty: {0} soubor(ů) v {1} ({2})"
 jpn = "テキスト：{1} に {0} ファイル（{2}）"
 sc = "文本：{1} 中 {0} 个文件（{2}）"
+fa = "متن‌ها: {0} فایل در {1} ({2})"
 
 [ee329fd09df]
 us = "unit list: {0} class(es) added to {1} in {2} ({3})"
@@ -387,6 +418,7 @@ ru = "список юнитов: классов добавлено в {1} в {2}
 cz = "seznam jednotek: {0} tříd přidáno do {1} v {2} ({3})"
 jpn = "ユニット一覧：{2} の {1} にクラス {0} 件を追加（{3}）"
 sc = "单位列表：在 {2} 的 {1} 中新增 {0} 个类（{3}）"
+fa = "فهرست یگان‌ها: {0} کلاس به {1} در {2} اضافه شد ({3})"
 
 [e9e4946e640]
 us = "unit models: {0} skirmish pack(s) in {1} ({2})"
@@ -399,6 +431,7 @@ ru = "модели юнитов: пакетов для сражений в {1}: 
 cz = "modely jednotek: {0} balík(ů) pro potyčky v {1} ({2})"
 jpn = "ユニットモデル：{1} にスカーミッシュ用パック {0} 個（{2}）"
 sc = "单位模型：{1} 中 {0} 个遭遇战包（{2}）"
+fa = "مدل‌های یگان: {0} بستهٔ نبرد آزاد در {1} ({2})"
 
 [e1fffda8498]
 us = "painted textures: {0}"
@@ -411,6 +444,7 @@ ru = "раскрашенные текстуры: {0}"
 cz = "malované textury: {0}"
 jpn = "塗装したテクスチャ：{0}"
 sc = "已涂装的纹理：{0}"
+fa = "بافت‌های رنگ‌شده: {0}"
 
 [ebbd20734b8]
 us = "sound volumes: {0}"
@@ -423,6 +457,7 @@ ru = "громкость звуков: {0}"
 cz = "hlasitosti zvuků: {0}"
 jpn = "サウンドの音量：{0}"
 sc = "声音音量：{0}"
+fa = "بلندی صداها: {0}"
 
 [ed92ea81ccb]
 us = "animations: {0}"
@@ -435,6 +470,7 @@ ru = "анимации: {0}"
 cz = "animace: {0}"
 jpn = "アニメーション：{0}"
 sc = "动画：{0}"
+fa = "انیمیشن‌ها: {0}"
 
 [e1b519e9f9b]
 us = "sounds: {0}"
@@ -447,6 +483,7 @@ ru = "звуки: {0}"
 cz = "zvuky: {0}"
 jpn = "サウンド：{0}"
 sc = "声音：{0}"
+fa = "صداها: {0}"
 
 [ec9929ee89b]
 us = "added: {0} ({1} file(s): {2})"
@@ -459,6 +496,7 @@ ru = "добавлено: {0} (файлов: {1}: {2})"
 cz = "přidáno: {0} ({1} soubor(ů): {2})"
 jpn = "追加：{0}（{1} ファイル：{2}）"
 sc = "已添加：{0}（{1} 个文件：{2}）"
+fa = "اضافه‌شده: {0} ({1} فایل: {2})"
 
 [e82cb79b16a]
 us = "The mods change nothing in these packs."
@@ -471,6 +509,7 @@ ru = "Моды ничего не меняют в этих пакетах."
 cz = "Mody v těchto balících nic nemění."
 jpn = "Mod はこれらのパックを何も変更しません。"
 sc = "这些模组不会更改这些包中的任何内容。"
+fa = "مادها چیزی را در این بسته‌ها تغییر نمی‌دهند."
 
 [e358d551e43]
 us = "modded copy ready: {0}  {1}"
@@ -483,6 +522,7 @@ ru = "модифицированная копия готова: {0}  {1}"
 cz = "upravená kopie hotová: {0}  {1}"
 jpn = "Mod 入りのコピー完成：{0}  {1}"
 sc = "模组副本已就绪：{0}  {1}"
+fa = "نسخهٔ مادشده آماده است: {0}  {1}"
 
 [ec84ef3f83e]
 us = "{0}'s unit skeletons and card pictures load in every nation's matches too ({1} skeleton pack(s) and {2} card picture pack(s) added to the other nations' loaders)"
@@ -495,6 +535,7 @@ ru = "скелеты юнитов и картинки карточек {0} за�
 cz = "kostry jednotek a obrázky karet {0} se načtou i v zápasech každého národa ({1} balík(ů) koster a {2} balík(ů) obrázků karet přidáno do zavaděčů ostatních národů)"
 jpn = "{0} のユニットのスケルトンとカード画像を全国の試合でも読み込みます（他国のローダーにスケルトンパック {1} 個、カード画像パック {2} 個を追加）"
 sc = "{0} 的单位骨架和卡片图片也会在每个国家的对局中加载（向其他国家的加载器添加了 {1} 个骨架包和 {2} 个卡片图片包）"
+fa = "اسکلت‌ها و تصویرهای کارت یگان‌های {0} در مسابقه‌های همهٔ کشورها هم بارگذاری می‌شوند ({1} بستهٔ اسکلت و {2} بستهٔ تصویر کارت به بارگذارهای کشورهای دیگر اضافه شد)"
 
 [e6c3703e439]
 us = "{0}'s unit models load in campaign chapters and Operations too, which load only the nations they play ({1} loaders in {2} cluster maps)"
@@ -507,6 +548,7 @@ ru = "модели юнитов {0} загружаются и в главах к
 cz = "modely jednotek {0} se načtou i v kapitolách kampaně a Operacích, které načítají jen hrané národy ({1} zavaděčů v {2} mapách clusterů)"
 jpn = "{0} のユニットモデルを、登場国しか読み込まないキャンペーンの章やオペレーションでも読み込みます（クラスターマップ {2} 個にローダー {1} 個）"
 sc = "{0} 的单位模型也会在只加载出场国家的战役章节和行动中加载（{2} 个集群地图中的 {1} 个加载器）"
+fa = "مدل‌های یگان‌های {0} در فصل‌های کارزار و عملیات‌ها هم بارگذاری می‌شوند، که فقط کشورهایی را بارگذاری می‌کنند که در آن‌ها بازی می‌شوند ({1} بارگذار در {2} cluster map)"
 
 [ebd86c4c0bf]
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only: its models go into {7}'s skirmish packs too ({8}), so it loads with {9}'s own units"
@@ -519,6 +561,7 @@ ru = "{0}{1} в армии {2} (Nationalite {3}), но его модель {4}{5
 cz = "{0}{1} je v armádě {2} (Nationalite {3}), ale jeho model {4}{5} je jen v balíku modelů jednotek {6}: jeho modely jdou i do balíků pro potyčky {7} ({8}), takže se načte s jednotkami {9}"
 jpn = "{0}{1} は {2} の軍（Nationalite {3}）にいますが、モデル {4}{5} は {6} のユニットのメッシュパックにしかありません。モデルを {7} のスカーミッシュ用パックにも入れたので（{8}）、{9} のユニットと一緒に読み込まれます"
 sc = "{0}{1} 在 {2} 的军队中（Nationalite {3}），但其模型 {4}{5} 只在 {6} 单位的网格包中：其模型也放入了 {7} 的遭遇战包（{8}），因此会与 {9} 的单位一起加载"
+fa = "{0}{1} در ارتش {2} است (Nationalite {3})، اما مدلش {4}{5} فقط در بستهٔ مش یگان‌های {6} است: مدل‌هایش به بسته‌های نبرد آزاد {7} هم می‌روند ({8})، پس همراه یگان‌های خود {9} بارگذاری می‌شود"
 
 [edaa3b0d4e3]
 us = "{0}'s unit models and animations now load in every skirmish, beside those of the nations playing, for the units of other nations that use them ({1} loaders in {2} cluster maps; matches take a little more memory and loading time)"
@@ -531,6 +574,7 @@ ru = "модели и анимации юнитов {0} теперь загру�
 cz = "modely a animace jednotek {0} se teď načítají v každé potyčce vedle modelů hrajících národů, pro jednotky jiných národů, které je používají ({1} zavaděčů v {2} mapách clusterů; zápasy berou trochu víc paměti a času načítání)"
 jpn = "{0} のユニットモデルとアニメーションを、それを使う他国のユニットのために、すべてのスカーミッシュで参加国のものと一緒に読み込むようにしました（クラスターマップ {2} 個にローダー {1} 個。試合のメモリと読み込み時間が少し増えます）"
 sc = "{0} 的单位模型和动画现在会在每场遭遇战中与参战国家的一起加载，供使用它们的其他国家单位使用（{2} 个集群地图中的 {1} 个加载器；对局会多占一些内存和加载时间）"
+fa = "مدل‌ها و انیمیشن‌های یگان‌های {0} اکنون در هر نبرد آزاد، کنار مدل‌های کشورهایی که بازی می‌کنند، برای یگان‌های کشورهای دیگر که از آن‌ها استفاده می‌کنند بارگذاری می‌شوند ({1} بارگذار در {2} cluster map؛ مسابقه‌ها کمی حافظه و زمان بارگذاری بیشتری می‌گیرند)"
 
 [ebea6c95f00]
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units: {7}'s unit models now load in every skirmish, so it shows in matches where no player has {8} too"
@@ -543,6 +587,7 @@ ru = "{0}{1} в армии {2} (Nationalite {3}), но его модель {4}{5
 cz = "{0}{1} je v armádě {2} (Nationalite {3}), ale jeho model {4}{5} je v balíku modelů jednotek {6}: modely jednotek {7} se teď načítají v každé potyčce, takže se ukáže i v zápasech, kde žádný hráč nemá {8}"
 jpn = "{0}{1} は {2} の軍（Nationalite {3}）にいますが、モデル {4}{5} は {6} のユニットのメッシュパックにあります。{7} のユニットモデルを全スカーミッシュで読み込むようにしたので、誰も {8} を使わない試合でも表示されます"
 sc = "{0}{1} 在 {2} 的军队中（Nationalite {3}），但其模型 {4}{5} 在 {6} 单位的网格包中：{7} 的单位模型现在会在每场遭遇战中加载，因此在没有玩家使用 {8} 的对局中也会显示"
+fa = "{0}{1} در ارتش {2} است (Nationalite {3})، اما مدلش {4}{5} در بستهٔ مش یگان‌های {6} است: مدل‌های یگان‌های {7} اکنون در هر نبرد آزاد بارگذاری می‌شوند، پس در مسابقه‌هایی هم که هیچ بازیکنی {8} را ندارد دیده می‌شود"
 
 [e77bd2eee36]
 us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}: they now load in every skirmish ({4} loaders in {5} cluster maps)"
@@ -555,6 +600,7 @@ ru = "{0}: появляющиеся {1} используют модели юни
 cz = "{0}: objevující se {1} používají modely jednotek {2}, které potyčka načte jen tehdy, když má některý hráč {3}: teď se načítají v každé potyčce ({4} zavaděčů v {5} mapách clusterů)"
 jpn = "{0}：出現する {1} は {2} のユニットモデルを使いますが、スカーミッシュは誰かが {3} を使うときしかそれを読み込みません。すべてのスカーミッシュで読み込むようにしました（クラスターマップ {5} 個にローダー {4} 個）"
 sc = "{0}：生成的 {1} 使用 {2} 的单位模型，而遭遇战只在有玩家使用 {3} 时才加载它们：现在它们会在每场遭遇战中加载（{5} 个集群地图中的 {4} 个加载器）"
+fa = "{0}: {1} ظاهرشده از مدل‌های یگان‌های {2} استفاده می‌کنند، که نبرد آزاد فقط وقتی بارگذاری‌شان می‌کند که بازیکنی {3} را داشته باشد: اکنون در هر نبرد آزاد بارگذاری می‌شوند ({4} بارگذار در {5} cluster map)"
 
 [e47ebc5f2d9]
 us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}, and {4}: the game would crash as the match starts (a D-Day test with Japanese units spawned and no Japanese player did). Spawn units whose models every match has, or leave these out"
@@ -567,6 +613,7 @@ ru = "{0}: появляющиеся {1} используют модели юни
 cz = "{0}: objevující se {1} používají modely jednotek {2}, které potyčka načte jen tehdy, když má některý hráč {3}, a {4}: hra by spadla na začátku zápasu (stalo se to v testu na D-Day s japonskými jednotkami a bez japonského hráče). Nechte objevovat jednotky, jejichž modely má každý zápas, nebo tyto vynechte"
 jpn = "{0}：出現する {1} は {2} のユニットモデルを使いますが、スカーミッシュは誰かが {3} を使うときしかそれを読み込まず、{4}。試合開始時にゲームが落ちます（日本ユニットを出現させ日本のプレイヤーがいない D-Day のテストで実際に落ちました）。全試合にモデルがあるユニットを出現させるか、これらを外してください"
 sc = "{0}：生成的 {1} 使用 {2} 的单位模型，而遭遇战只在有玩家使用 {3} 时才加载它们，并且 {4}：游戏会在对局开始时崩溃（一次在 D-Day 生成日本单位且没有日本玩家的测试中发生过）。请生成每场对局都有模型的单位，或去掉这些"
+fa = "{0}: {1} ظاهرشده از مدل‌های یگان‌های {2} استفاده می‌کنند، که نبرد آزاد فقط وقتی بارگذاری‌شان می‌کند که بازیکنی {3} را داشته باشد، و {4}: بازی هنگام شروع مسابقه کرش می‌کند (یک آزمایش D-Day با یگان‌های ژاپنی ظاهرشده و بدون بازیکن ژاپنی همین‌طور شد). یگان‌هایی را ظاهر کنید که مدل‌هایشان در هر مسابقه هست، یا این‌ها را کنار بگذارید"
 
 [eeff5e2b815]
 us = "{0}: files/cards/{1}.png: no mod in the set makes a new unit {2} (a game unit's card is changed with files/replace/<its card>.tgv.png)"
@@ -579,6 +626,7 @@ ru = "{0}: files/cards/{1}.png: ни один мод набора не созд�
 cz = "{0}: files/cards/{1}.png: žádný mod v sadě nevytváří novou jednotku {2} (kartu jednotky hry změníte přes files/replace/<její karta>.tgv.png)"
 jpn = "{0}：files/cards/{1}.png：セット内のどの Mod も新しいユニット {2} を作っていません（ゲームのユニットのカードは files/replace/<そのカード>.tgv.png で変更します）"
 sc = "{0}：files/cards/{1}.png：组合中没有模组新建单位 {2}（游戏单位的卡片用 files/replace/<其卡片>.tgv.png 更改）"
+fa = "{0}: files/cards/{1}.png: هیچ مادی در مجموعه یگان جدیدی به نام {2} نمی‌سازد (کارت یک یگان بازی با files/replace/<its card>.tgv.png تغییر می‌کند)"
 
 [e905ca1ebba]
 us = "{0}: files/cards/{1}.png: {2} has no card of its own (TextureForInterface) naming a picture, so it can't get one"
@@ -591,6 +639,7 @@ ru = "{0}: files/cards/{1}.png: у {2} нет своей карточки (Textu
 cz = "{0}: files/cards/{1}.png: {2} nemá vlastní kartu (TextureForInterface) s názvem obrázku, takže žádnou dostat nemůže"
 jpn = "{0}：files/cards/{1}.png：{2} には画像を指す専用カード（TextureForInterface）がないため、カードを持てません"
 sc = "{0}：files/cards/{1}.png：{2} 没有指明图片的自有卡片（TextureForInterface），因此无法获得卡片"
+fa = "{0}: files/cards/{1}.png: {2} کارت خودش (TextureForInterface) را ندارد که نام تصویری را ببرد، پس نمی‌تواند کارتی بگیرد"
 
 [e651fc6d124]
 us = "{0}: {1} has an imported model too (files/models/{2}.glb); take one of the two out"
@@ -603,6 +652,7 @@ ru = "{0}: у {1} есть и импортированная модель (files
 cz = "{0}: {1} má i importovaný model (files/models/{2}.glb); jeden z nich odeberte"
 jpn = "{0}：{1} にはインポートしたモデル（files/models/{2}.glb）もあります。どちらかを外してください"
 sc = "{0}：{1} 还有一个导入的模型（files/models/{2}.glb）；请移除其中一个"
+fa = "{0}: {1} یک مدل واردشده هم دارد (files/models/{2}.glb)؛ یکی از این دو را بردارید"
 
 [e01d155d139]
 us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
@@ -615,6 +665,7 @@ ru = "{0}: ни один мод набора не создаёт юнит {1}, �
 cz = "{0}: žádný mod v sadě nevytváří jednotku {1} a hra žádnou takového jména nemá"
 jpn = "{0}：セット内のどの Mod もユニット {1} を作っておらず、ゲームにもその名前のユニットはありません"
 sc = "{0}：组合中没有模组创建单位 {1}，游戏中也没有该名称的单位"
+fa = "{0}: هیچ مادی در مجموعه یگانی به نام {1} نمی‌سازد، و بازی هم یگانی با این نام ندارد"
 
 [e4400f2cdb2]
 us = "{0}, so new objects got no class in it (the game only uses units that have one)"
@@ -627,6 +678,7 @@ ru = "{0}, поэтому новые объекты не получили в н�
 cz = "{0}, takže nové objekty v něm nedostaly třídu (hra používá jen jednotky, které ji mají)"
 jpn = "{0}。そのため新しいオブジェクトにクラスを付けていません（ゲームはクラスのあるユニットしか使いません）"
 sc = "{0}，因此新对象没有在其中获得类（游戏只使用有类的单位）"
+fa = "{0}، پس شیءهای جدید در آن کلاسی نگرفتند (بازی فقط از یگان‌هایی استفاده می‌کند که کلاس دارند)"
 
 [e7cc7b102b7]
 us = "the game's Python unit list can't be read: {0}"
@@ -639,6 +691,7 @@ ru = "Python-список юнитов игры прочитать нельзя:
 cz = "pythonový seznam jednotek hry nelze přečíst: {0}"
 jpn = "ゲームの Python ユニット一覧を読めません：{0}"
 sc = "无法读取游戏的 Python 单位列表：{0}"
+fa = "فهرست Python یگان‌های بازی خوانده نمی‌شود: {0}"
 
 [eb6bdd37b4c]
 us = "{0} is deleted, but it has a class in the game's Python unit list; deleting such units isn't supported yet (the game would fail to load its units)"
@@ -651,6 +704,7 @@ ru = "{0} удалён, но у него есть класс в Python-спис�
 cz = "{0} je smazaný, ale má třídu v pythonovém seznamu jednotek hry; mazání takových jednotek zatím není podporováno (hra by nenačetla své jednotky)"
 jpn = "{0} は削除されていますが、ゲームの Python ユニット一覧にクラスがあります。そのようなユニットの削除にはまだ対応していません（ゲームがユニットを読み込めなくなります）"
 sc = "{0} 已被删除，但它在游戏的 Python 单位列表中有类；暂不支持删除此类单位（游戏将无法加载单位）"
+fa = "{0} حذف شده است، اما در فهرست Python یگان‌های بازی کلاس دارد؛ حذف چنین یگان‌هایی هنوز پشتیبانی نمی‌شود (بازی در بارگذاری یگان‌هایش شکست می‌خورد)"
 
 [ef608ead9a1]
 us = "{0}: {1} has no ClassNameForDebug to name its class"
@@ -663,6 +717,7 @@ ru = "{0}: у {1} нет ClassNameForDebug для имени класса"
 cz = "{0}: {1} nemá ClassNameForDebug pro pojmenování třídy"
 jpn = "{0}：{1} にはクラス名を付ける ClassNameForDebug がありません"
 sc = "{0}：{1} 没有用于命名其类的 ClassNameForDebug"
+fa = "{0}: {1} هیچ ClassNameForDebug ندارد که نام کلاسش را تعیین کند"
 
 [e5050648c03]
 us = "the new units' classes can't be added: {0}"
@@ -675,6 +730,7 @@ ru = "классы новых юнитов добавить нельзя: {0}"
 cz = "třídy nových jednotek nelze přidat: {0}"
 jpn = "新しいユニットのクラスを追加できません：{0}"
 sc = "无法添加新单位的类：{0}"
+fa = "کلاس‌های یگان‌های جدید اضافه نمی‌شوند: {0}"
 
 [e6be155773d]
 us = "these mods add texts, which go into ZZ_Win.dat; it wasn't given"
@@ -687,6 +743,7 @@ ru = "эти моды добавляют тексты, которые идут �
 cz = "tyto mody přidávají texty, které patří do ZZ_Win.dat; nebyl zadán"
 jpn = "これらの Mod はテキストを追加し、それは ZZ_Win.dat に入りますが、渡されていません"
 sc = "这些模组添加了文本，需要放入 ZZ_Win.dat；但未提供该文件"
+fa = "این مادها متن اضافه می‌کنند که به ZZ_Win.dat می‌رود؛ این فایل داده نشده بود"
 
 [e2a34f7b047]
 us = "{0}: the mission couldn't be made: {1}"
@@ -699,6 +756,7 @@ ru = "{0}: миссию создать не удалось: {1}"
 cz = "{0}: misi se nepodařilo vytvořit: {1}"
 jpn = "{0}：ミッションを作れませんでした：{1}"
 sc = "{0}：无法创建任务：{1}"
+fa = "{0}: مأموریت ساخته نشد: {1}"
 
 [edd3d213073]
 us = "menus.toml: the menus couldn't be read ({0})"
@@ -711,6 +769,7 @@ ru = "menus.toml: меню прочитать не удалось ({0})"
 cz = "menus.toml: nabídky se nepodařilo přečíst ({0})"
 jpn = "menus.toml：メニューを読めませんでした（{0}）"
 sc = "menus.toml：无法读取菜单（{0}）"
+fa = "menus.toml: منوها خوانده نشدند ({0})"
 
 [e2455ce8ab7]
 us = "new map: {0}, from {1}"
@@ -723,6 +782,7 @@ ru = "новая карта: {0}, из {1}"
 cz = "nová mapa: {0}, z {1}"
 jpn = "新しいマップ：{0}、{1} から"
 sc = "新地图：{0}，来自 {1}"
+fa = "نقشهٔ جدید: {0}، از {1}"
 
 [e44283f6a6b]
 us = "bridges: {0}, from {1}"
@@ -735,6 +795,7 @@ ru = "мосты: {0}, из {1}"
 cz = "mosty: {0}, z {1}"
 jpn = "橋：{0}、{1} から"
 sc = "桥：{0}，来自 {1}"
+fa = "پل‌ها: {0}، از {1}"
 
 [e1da1d77cc7]
 us = "  the map's own bridges taken out: {0} erased, their floors sunk under the ground; the movement over their decks stays (units cross there, on the ground under them)"
@@ -747,6 +808,7 @@ ru = "  собственные мосты карты убраны: стёрто 
 cz = "  vlastní mosty mapy odebrány: {0} smazáno, jejich podlahy zapuštěny pod zem; pohyb po jejich mostovkách zůstává (jednotky tam přecházejí po zemi pod nimi)"
 jpn = "  マップ本来の橋を取り除き：{0} 本消去、床は地面の下に沈めました。橋の上の移動は残ります（ユニットはその下の地面を渡ります）"
 sc = "  已移除地图自带的桥：擦除 {0} 座，其桥面沉入地下；桥面上的移动保留（单位在其下方的地面上通过）"
+fa = "  پل‌های خود نقشه برداشته شدند: {0} پاک شد، کف‌هایشان زیر زمین فرو رفت؛ حرکت روی عرشه‌هایشان می‌ماند (یگان‌ها از آنجا، روی زمینِ زیرشان، عبور می‌کنند)"
 
 [e50aa94f019]
 us = "  the map's own bridges taken out: {0} erased, their floors sunk under the ground; their decks over water are closed to units and cut from the road network (take_out crossings)"
@@ -759,6 +821,7 @@ ru = "  собственные мосты карты убраны: стёрто 
 cz = "  vlastní mosty mapy odebrány: {0} smazáno, jejich podlahy zapuštěny pod zem; jejich mostovky nad vodou jsou pro jednotky uzavřeny a odříznuty od silniční sítě (take_out crossings)"
 jpn = "  マップ本来の橋を取り除き：{0} 本消去、床は地面の下に沈めました。水上の橋の上はユニットが通れないよう閉じ、道路網から切り離しました (take_out crossings)"
 sc = "  已移除地图自带的桥：擦除 {0} 座，其桥面沉入地下；水上的桥面对单位关闭，并与道路网断开 (take_out crossings)"
+fa = "  پل‌های خود نقشه برداشته شدند: {0} پاک شد، کف‌هایشان زیر زمین فرو رفت؛ عرشه‌هایشان روی آب به روی یگان‌ها بسته و از شبکهٔ جاده جدا شدند (گذرگاه‌های take_out)"
 
 [e823ab19b8d]
 us = "lighthouses: {0}, from {1}"
@@ -771,6 +834,7 @@ ru = "маяки: {0}, из {1}"
 cz = "majáky: {0}, z {1}"
 jpn = "灯台：{0}、{1} から"
 sc = "灯塔：{0}，来自 {1}"
+fa = "فانوس‌های دریایی: {0}، از {1}"
 
 [eb8600f5c73]
 us = "  close-up map: its copy in {0} kept the same"
@@ -783,6 +847,7 @@ ru = "  карта вблизи: её копия в {0} оставлена пр�
 cz = "  mapa zblízka: její kopie v {0} ponechána stejná"
 jpn = "  近景マップ：{0} のコピーは同じまま"
 sc = "  近景地图：{0} 中的副本保持不变"
+fa = "  نقشهٔ نمای نزدیک: کپی‌اش در {0} بدون تغییر ماند"
 
 [eda9649677e]
 us = "  {0}: blank: {1} town or bridge circle(s) opened whole (not tried in the game yet)"
@@ -795,6 +860,7 @@ ru = "  {0}: пустая: кругов городов или мостов от�
 cz = "  {0}: prázdná: {1} kruh(ů) měst či mostů otevřeno celé (ve hře zatím nevyzkoušeno)"
 jpn = "  {0}：空：町や橋の円 {1} 個をまるごと開放（ゲームではまだ未確認）"
 sc = "  {0}：空白：整体打开了 {1} 个城镇或桥梁圆（尚未在游戏中测试）"
+fa = "  {0}: خالی: {1} دایرهٔ شهر یا پل به‌طور کامل باز شد (هنوز در بازی امتحان نشده)"
 
 [e56a075fcf5]
 us = "new: {0}, a copy of {1}{2}"
@@ -807,6 +873,7 @@ ru = "новое: {0}, копия {1}{2}"
 cz = "nové: {0}, kopie {1}{2}"
 jpn = "新規：{0}、{1}{2} のコピー"
 sc = "新：{0}，{1}{2} 的副本"
+fa = "جدید: {0}، کپی‌ای از {1}{2}"
 
 [e6fcb81c0fb]
 us = "changed: {0} ({1} file(s): {2})"
@@ -819,6 +886,7 @@ ru = "изменено: {0} (файлов: {1}: {2})"
 cz = "změněno: {0} ({1} soubor(ů): {2})"
 jpn = "変更：{0}（{1} ファイル：{2}）"
 sc = "已更改：{0}（{1} 个文件：{2}）"
+fa = "تغییرکرده: {0} ({1} فایل: {2})"
 
 [ebf6ad969d3]
 us = "own model of {0}: {1} points, {2} triangles in {3} draw call(s), {4} texture(s); into {5} pack(s) beside {6}"
@@ -831,6 +899,7 @@ ru = "своя модель {0}: точек {1}, треугольников {2} 
 cz = "vlastní model {0}: {1} bodů, {2} trojúhelníků v {3} voláních kreslení, {4} textur; v {5} balících vedle {6}"
 jpn = "{0} の専用モデル：頂点 {1}、三角形 {2}、描画コール {3}、テクスチャ {4}。{6} の隣のパック {5} 個に"
 sc = "{0} 的自有模型：{1} 个点，{2} 个三角形，{3} 次绘制调用，{4} 张纹理；放入 {6} 旁的 {5} 个包"
+fa = "مدل اختصاصی {0}: {1} نقطه، {2} مثلث در {3} فراخوانی رسم، {4} بافت؛ در {5} بسته کنار {6}"
 
 [eb8159666d9]
 us = "own copy of {0} for {1}: {2} texture(s), {3} painted; into {4} pack(s)"
@@ -843,6 +912,7 @@ ru = "своя копия {0} для {1}: текстур {2}, раскрашен
 cz = "vlastní kopie {0} pro {1}: {2} textur, {3} malovaných; v {4} balících"
 jpn = "{1} 用の {0} の専用コピー：テクスチャ {2}、塗装 {3}。パック {4} 個に"
 sc = "为 {1} 制作的 {0} 自有副本：{2} 张纹理，{3} 张已涂装；放入 {4} 个包"
+fa = "نسخهٔ اختصاصی {0} برای {1}: {2} بافت، {3} رنگ‌شده؛ در {4} بسته"
 
 [ea84e90fbcf]
 us = "note: {0} of the game's packs are marked read-only, so they were copied rather than linked (a link would share the mark, and the copy couldn't be removed later). Unticking Read-only in the game folder's Properties would save that space."
@@ -855,6 +925,7 @@ ru = "заметка: паков игры только для чтения: {0},
 cz = "poznámka: {0} balíků hry je jen pro čtení, takže se zkopírovaly místo propojení (propojení by sdílelo příznak a kopii by pak nešlo odstranit). Zrušení volby Jen pro čtení ve Vlastnostech složky hry by to místo ušetřilo."
 jpn = "注記：ゲームのパック {0} 個が読み取り専用のため、リンクではなくコピーしました（リンクだと属性も共有され、後でコピーを消せません）。ゲームフォルダーのプロパティで読み取り専用を外すと、その分の容量を節約できます。"
 sc = "备注：游戏中有 {0} 个包被标记为只读，因此复制而不是链接它们（链接会共享该标记，之后无法删除副本）。在游戏文件夹属性中取消“只读”可节省这些空间。"
+fa = "یادداشت: {0} بسته از بسته‌های بازی «فقط‌خواندنی» علامت خورده‌اند، پس به‌جای پیوند داده شدن، کپی شدند (پیوند در این علامت شریک می‌شد و بعداً نمی‌شد آن نسخه را پاک کرد). برداشتن تیک «فقط‌خواندنی» (Read-only) در «ویژگی‌ها» (Properties) پوشهٔ بازی این فضا را آزاد نگه می‌دارد."
 
 [e6f6fa9e94a]
 us = "note: the previous copy at {0}.old couldn't be removed yet; the next build removes it."
@@ -867,6 +938,7 @@ ru = "заметка: прежнюю копию в {0}.old пока удалит
 cz = "poznámka: předchozí kopii v {0}.old se zatím nepodařilo odstranit; příští sestavení ji odstraní."
 jpn = "注記：以前のコピー {0}.old はまだ削除できませんでした。次のビルドで削除します。"
 sc = "备注：{0}.old 处的旧副本暂时无法删除；下次构建会将其删除。"
+fa = "یادداشت: نسخهٔ قبلی در {0}.old هنوز پاک نشد؛ ساخت بعدی پاکش می‌کند."
 
 [e088772a659]
 us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and it can't be copied into {7}'s skirmish packs: {8}{9}. The game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit would have no model, or crash the game. Copy one of {10}'s units instead, or leave it in {11}'s army"
@@ -879,6 +951,7 @@ ru = "{0}{1} в армии {2} (Nationalite {3}), но его модель {4}{5
 cz = "{0}{1} je v armádě {2} (Nationalite {3}), ale jeho model {4}{5} je jen v balíku modelů jednotek {6} a nelze ho zkopírovat do balíků pro potyčky {7}: {8}{9}. Hra načítá modely jednotek národa jen v zápasech, kde má některý hráč tento národ, takže v jiných zápasech by tato jednotka neměla model, nebo by shodila hru. Raději zkopírujte jednotku {10}, nebo ji nechte v armádě {11}"
 jpn = "{0}{1} は {2} の軍（Nationalite {3}）にいますが、モデル {4}{5} は {6} のユニットのメッシュパックにしかなく、{7} のスカーミッシュ用パックにもコピーできません：{8}{9}。ゲームはその国を誰かが使う試合でしかその国のユニットモデルを読み込まないため、ほかの試合ではこのユニットにモデルがないか、ゲームが落ちます。代わりに {10} のユニットをコピーするか、{11} の軍に残してください"
 sc = "{0}{1} 在 {2} 的军队中（Nationalite {3}），但其模型 {4}{5} 只在 {6} 单位的网格包中，且无法复制到 {7} 的遭遇战包：{8}{9}。游戏只在有玩家使用某国的对局中加载该国单位模型，因此在其他对局中此单位会没有模型或导致游戏崩溃。请改为复制 {10} 的单位，或把它留在 {11} 的军队中"
+fa = "{0}{1} در ارتش {2} است (Nationalite {3})، اما مدلش {4}{5} فقط در بستهٔ مش یگان‌های {6} است، و نمی‌شود آن را در بسته‌های نبرد آزاد {7} کپی کرد: {8}{9}. بازی مدل‌های یگان‌های یک کشور را فقط در مسابقه‌هایی بارگذاری می‌کند که بازیکنی آن کشور را دارد، پس در مسابقه‌های دیگر این یگان مدلی نخواهد داشت، یا بازی کرش می‌کند. به‌جای آن یکی از یگان‌های {10} را کپی کنید، یا آن را در ارتش {11} نگه دارید"
 
 [eebfdfe7461]
 us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}, and they can't be copied into the packs every skirmish loads: {4}{5}. The game would crash as the match starts (a D-Day test with Japanese units spawned and no Japanese player did). Spawn units whose models every match has, or leave these out"
@@ -891,6 +964,7 @@ ru = "{0}: появляющиеся {1} используют модели юни
 cz = "{0}: objevující se {1} používají modely jednotek {2}, které potyčka načte jen tehdy, když má některý hráč {3}, a nelze je zkopírovat do balíků, které načítá každá potyčka: {4}{5}. Hra by spadla na začátku zápasu (stalo se to v testu na D-Day s japonskými jednotkami a bez japonského hráče). Nechte objevovat jednotky, jejichž modely má každý zápas, nebo tyto vynechte"
 jpn = "{0}：出現する {1} は {2} のユニットモデルを使いますが、スカーミッシュは誰かが {3} を使うときしかそれを読み込まず、全スカーミッシュが読み込むパックにもコピーできません：{4}{5}。試合開始時にゲームが落ちます（日本ユニットを出現させ日本のプレイヤーがいない D-Day のテストで実際に落ちました）。全試合にモデルがあるユニットを出現させるか、これらを外してください"
 sc = "{0}：生成的 {1} 使用 {2} 的单位模型，而遭遇战只在有玩家使用 {3} 时才加载它们，并且无法复制到每场遭遇战都会加载的包中：{4}{5}。游戏会在对局开始时崩溃（一次在 D-Day 生成日本单位且没有日本玩家的测试中发生过）。请生成每场对局都有模型的单位，或去掉这些"
+fa = "{0}: {1} ظاهرشده از مدل‌های یگان‌های {2} استفاده می‌کنند، که نبرد آزاد فقط وقتی بارگذاری‌شان می‌کند که بازیکنی {3} را داشته باشد، و نمی‌شود آن‌ها را در بسته‌هایی که هر نبرد آزاد بارگذاری می‌کند کپی کرد: {4}{5}. بازی هنگام شروع مسابقه کرش می‌کند (یک آزمایش D-Day با یگان‌های ژاپنی ظاهرشده و بدون بازیکن ژاپنی همین‌طور شد). یگان‌هایی را ظاهر کنید که مدل‌هایشان در هر مسابقه هست، یا این‌ها را کنار بگذارید"
 
 [e5b99f3909d]
 us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}: they go into the skirmish packs every match loads too ({4})"
@@ -903,6 +977,7 @@ ru = "{0}: появляющиеся {1} используют модели юни
 cz = "{0}: objevující se {1} používají modely jednotek {2}, které potyčka načte jen tehdy, když má některý hráč {3}: jdou i do balíků pro potyčky, které načítá každý zápas ({4})"
 jpn = "{0}：出現する {1} は {2} のユニットモデルを使いますが、スカーミッシュは誰かが {3} を使うときしかそれを読み込みません。全試合が読み込むスカーミッシュ用パックにも入れました（{4}）"
 sc = "{0}：生成的 {1} 使用 {2} 的单位模型，而遭遇战只在有玩家使用 {3} 时才加载它们：它们也放入了每场对局都会加载的遭遇战包（{4}）"
+fa = "{0}: {1} ظاهرشده از مدل‌های یگان‌های {2} استفاده می‌کنند، که نبرد آزاد فقط وقتی بارگذاری‌شان می‌کند که بازیکنی {3} را داشته باشد: این مدل‌ها به بسته‌های نبرد آزادی هم می‌روند که هر مسابقه بارگذاری می‌کند ({4})"
 
 [e8d76c8438a]
 us = "{0}: {1} draws no {2} (none of its model parts names it)"
@@ -915,6 +990,7 @@ ru = "{0}: {1} не рисует ни одного {2} (ни одна часть
 cz = "{0}: {1} nekreslí žádný {2} (žádná část jeho modelu ho neuvádí)"
 jpn = "{0}：{1} は {2} を描きません（どのモデル部品もそれを指していません）"
 sc = "{0}：{1} 不绘制任何 {2}（其模型部件均未指明它）"
+fa = "{0}: {1} هیچ {2} نمی‌کشد (هیچ‌کدام از بخش‌های مدلش نام آن را نمی‌برد)"
 
 [e45f9e0f778]
 us = "{0}: {1} is a new {2} but isn't a copy of a unit in the game's Python unit list, so the game will ignore it; make it a clone of one"
@@ -927,6 +1003,7 @@ ru = "{0}: {1} — новый {2}, но не копия юнита из Python-�
 cz = "{0}: {1} je nový {2}, ale není kopií jednotky z pythonového seznamu jednotek hry, takže ho hra bude ignorovat; udělejte z něj klon některé z nich"
 jpn = "{0}：{1} は新しい {2} ですが、ゲームの Python ユニット一覧のユニットのコピーではないため、ゲームに無視されます。いずれかのクローンにしてください"
 sc = "{0}：{1} 是新的 {2}，但不是游戏 Python 单位列表中某个单位的副本，因此游戏会忽略它；请将其设为其中某个的克隆"
+fa = "{0}: {1} یک {2} جدید است اما کپیِ یگانی در فهرست Python یگان‌های بازی نیست، پس بازی آن را نادیده می‌گیرد؛ آن را از روی یکی از آن‌ها کلون کنید"
 
 [e1d09d12209]
 us = "the skirmish unit packs can't be written: {0}"
@@ -939,6 +1016,7 @@ ru = "пакеты юнитов для сражений записать нел�
 cz = "balíky jednotek pro potyčky nelze zapsat: {0}"
 jpn = "スカーミッシュ用ユニットパックを書き込めません：{0}"
 sc = "无法写入遭遇战单位包：{0}"
+fa = "بسته‌های یگان نبرد آزاد نوشته نمی‌شوند: {0}"
 
 [e7826ae113e]
 us = "{0}: maps/{1}: start_dots: its starting points couldn't be drawn ({2}), so its 3D map picture has no dots"
@@ -951,6 +1029,7 @@ ru = "{0}: maps/{1}: start_dots: стартовые точки нарисова�
 cz = "{0}: maps/{1}: start_dots: startovní body se nepodařilo nakreslit ({2}), takže 3D obrázek mapy nemá body"
 jpn = "{0}：maps/{1}：start_dots：開始地点を描けなかったため（{2}）、3Dマップ画像に点がありません"
 sc = "{0}：maps/{1}：start_dots：无法绘制其起始点（{2}），因此其 3D 地图图片上没有起点"
+fa = "{0}: maps/{1}: start_dots: نقطه‌های شروعش کشیده نشدند ({2})، پس تصویر سه‌بعدی نقشه‌اش نقطه‌ای ندارد"
 
 [e574e294314]
 us = "{0} isn't in this game, so no map can be added (the maps' scenarios and grids live there)"
@@ -963,6 +1042,7 @@ ru = "{0} нет в этой игре, поэтому добавить карт�
 cz = "{0} v této hře není, takže nelze přidat žádnou mapu (jsou tam scénáře a mřížky map)"
 jpn = "このゲームに {0} がないため、マップを追加できません（マップのシナリオとグリッドはそこにあります）"
 sc = "此游戏中没有 {0}，因此无法添加地图（地图的剧本和网格都在其中）"
+fa = "{0} در این بازی نیست، پس هیچ نقشه‌ای نمی‌شود اضافه کرد (سناریوها و شبکه‌های نقشه‌ها آنجا هستند)"
 
 [efbf347e7fa]
 us = "{0}: the map {1} isn't in this game ({2} is missing), so its ground can't be changed{3}"
@@ -975,6 +1055,7 @@ ru = "{0}: карты {1} нет в этой игре (не хватает {2}),
 cz = "{0}: mapa {1} v této hře není (chybí {2}), takže její terén nelze změnit{3}"
 jpn = "{0}：マップ {1} はこのゲームにないため（{2} がありません）、地形を変更できません{3}"
 sc = "{0}：此游戏中没有地图 {1}（缺少 {2}），因此无法更改其地面{3}"
+fa = "{0}: نقشهٔ {1} در این بازی نیست ({2} گم شده است)، پس زمینش را نمی‌شود تغییر داد{3}"
 
 [e060ea95b77]
 us = "{0}: the map {1} isn't in this game ({2} is missing), so nothing can be placed on it{3}"
@@ -987,6 +1068,7 @@ ru = "{0}: карты {1} нет в этой игре (не хватает {2}),
 cz = "{0}: mapa {1} v této hře není (chybí {2}), takže na ni nelze nic umístit{3}"
 jpn = "{0}：マップ {1} はこのゲームにないため（{2} がありません）、何も配置できません{3}"
 sc = "{0}：此游戏中没有地图 {1}（缺少 {2}），因此无法在其上放置任何东西{3}"
+fa = "{0}: نقشهٔ {1} در این بازی نیست ({2} گم شده است)، پس چیزی را نمی‌شود رویش گذاشت{3}"
 
 [e23510186f1]
 us = "  {0} of the map's buildings erased: the ground of the erase area(s) that take buildings is opened to every unit (cleared_woods; seen in the game)"
@@ -999,6 +1081,7 @@ ru = "  стёрто зданий карты: {0}; земля областей �
 cz = "  smazáno {0} budov mapy: země oblastí mazání, které berou budovy, je otevřená všem jednotkám (cleared_woods; viděno ve hře)"
 jpn = "  マップの建物 {0} 件を消去：建物を消す消去範囲の地面をすべてのユニットに開放（cleared_woods、ゲームで確認済み）"
 sc = "  擦除了地图上的 {0} 座建筑：擦除建筑的区域地面已对所有单位开放（cleared_woods；已在游戏中验证）"
+fa = "  {0} ساختمان از ساختمان‌های نقشه پاک شد: زمینِ ناحیه‌های پاک‌کردنی که ساختمان برمی‌دارند به روی همهٔ یگان‌ها باز شد (cleared_woods؛ در بازی دیده شده)"
 
 [ece3a1b5760]
 us = "{0}: the map {1} isn't in this game ({2} is missing), so it can't be painted{3}"
@@ -1011,6 +1094,7 @@ ru = "{0}: карты {1} нет в этой игре (не хватает {2}),
 cz = "{0}: mapa {1} v této hře není (chybí {2}), takže ji nelze malovat{3}"
 jpn = "{0}：マップ {1} はこのゲームにないため（{2} がありません）、塗れません{3}"
 sc = "{0}：此游戏中没有地图 {1}（缺少 {2}），因此无法绘制{3}"
+fa = "{0}: نقشهٔ {1} در این بازی نیست ({2} گم شده است)، پس نمی‌شود رویش رنگ زد{3}"
 
 [e604336ff9c]
 us = "{0} isn't in this game, so no starting point or spawn can be moved, and no cover painted"
@@ -1023,6 +1107,7 @@ ru = "{0} нет в этой игре, поэтому нельзя передв�
 cz = "{0} v této hře není, takže nelze přesunout startovní bod ani objevení a malovat kryt"
 jpn = "このゲームに {0} がないため、開始地点や出現地点の移動も遮蔽の塗りもできません"
 sc = "此游戏中没有 {0}，因此无法移动起始点或生成点，也无法绘制掩护"
+fa = "{0} در این بازی نیست، پس هیچ نقطهٔ شروع یا جای ظاهر شدنی را نمی‌شود جابه‌جا کرد، و هیچ پوششی را نمی‌شود رنگ زد"
 
 [ee14003768b]
 us = "scenario: {0}, from {1}"
@@ -1035,6 +1120,7 @@ ru = "сценарий: {0}, из {1}"
 cz = "scénář: {0}, z {1}"
 jpn = "シナリオ：{0}、{1} から"
 sc = "剧本：{0}，来自 {1}"
+fa = "سناریو: {0}، از {1}"
 
 [e70505b9186]
 us = "sectors: {0}, {1}, from {2}"
@@ -1047,6 +1133,7 @@ ru = "секторы: {0}, {1}, из {2}"
 cz = "sektory: {0}, {1}, z {2}"
 jpn = "セクター：{0}、{1}、{2} から"
 sc = "区块：{0}，{1}，来自 {2}"
+fa = "بخش‌ها: {0}، {1}، از {2}"
 
 [e03a540be07]
 us = "cover: {0}, from {1}"
@@ -1059,6 +1146,7 @@ ru = "укрытия: {0}, из {1}"
 cz = "kryt: {0}, z {1}"
 jpn = "遮蔽：{0}、{1} から"
 sc = "掩护：{0}，来自 {1}"
+fa = "پوشش: {0}، از {1}"
 
 [ec0999506b8]
 us = "movement: {0}, from {1}"
@@ -1071,6 +1159,7 @@ ru = "передвижение: {0}, из {1}"
 cz = "pohyb: {0}, z {1}"
 jpn = "移動：{0}、{1} から"
 sc = "移动：{0}，来自 {1}"
+fa = "حرکت: {0}، از {1}"
 
 [ebe39aeba81]
 us = "bridges open: {0}"
@@ -1083,6 +1172,7 @@ ru = "мосты открыты: {0}"
 cz = "mosty otevřeny: {0}"
 jpn = "橋を開放：{0}"
 sc = "桥已开放：{0}"
+fa = "باز شدن پل‌ها: {0}"
 
 [efbeeba6ef1]
 us = "roads: {0}, from {1}"
@@ -1095,6 +1185,7 @@ ru = "дороги: {0}, из {1}"
 cz = "silnice: {0}, z {1}"
 jpn = "道路：{0}、{1} から"
 sc = "道路：{0}，来自 {1}"
+fa = "جاده‌ها: {0}، از {1}"
 
 [e13d2e27a78]
 us = "players: {0}, from {1}"
@@ -1107,6 +1198,7 @@ ru = "игроки: {0}, из {1}"
 cz = "hráči: {0}, z {1}"
 jpn = "プレイヤー：{0}、{1} から"
 sc = "玩家：{0}，来自 {1}"
+fa = "بازیکنان: {0}، از {1}"
 
 [ea4f518019a]
 us = "the missions' own menu packs: the menus weren't changed"
@@ -1119,6 +1211,7 @@ ru = "собственные пакеты меню миссий: меню не �
 cz = "vlastní balíky nabídek misí: nabídky se nezměnily"
 jpn = "ミッション専用のメニューパック：メニューは変更していません"
 sc = "任务自有的菜单包：菜单未更改"
+fa = "بسته‌های منوی اختصاصی مأموریت‌ها: منوها تغییر نکردند"
 
 [e7e058bfd3b]
 us = "menus: {0} mission(s) of the mods' own, each in a pack of its own"
@@ -1131,6 +1224,7 @@ ru = "меню: собственных миссий модов: {0}, кажда�
 cz = "nabídky: {0} vlastních misí modů, každá ve vlastním balíku"
 jpn = "メニュー：Mod 独自のミッション {0} 件、それぞれ専用のパックに"
 sc = "菜单：{0} 个模组自有任务，每个在各自的包中"
+fa = "منوها: {0} مأموریت اختصاصی مادها، هر کدام در بستهٔ خودش"
 
 [e399bbe52c6]
 us = "{0} isn't in this game, so no mission script can be changed"
@@ -1143,6 +1237,7 @@ ru = "{0} нет в этой игре, поэтому скрипты мисси�
 cz = "{0} v této hře není, takže nelze změnit žádný skript mise"
 jpn = "このゲームに {0} がないため、ミッションスクリプトを変更できません"
 sc = "此游戏中没有 {0}，因此无法更改任何任务脚本"
+fa = "{0} در این بازی نیست، پس هیچ اسکریپت مأموریتی را نمی‌شود تغییر داد"
 
 [e2493e1141e]
 us = "mission scripts: {0} changed in {1}"
@@ -1155,6 +1250,7 @@ ru = "скрипты миссий: изменено в {1}: {0}"
 cz = "skripty misí: {0} změněno v {1}"
 jpn = "ミッションスクリプト：{1} で {0} 件変更"
 sc = "任务脚本：{1} 中更改了 {0} 个"
+fa = "اسکریپت‌های مأموریت: {0} اسکریپت در {1} تغییر کرد"
 
 [eb9d97eeec4]
 us = "{0}: `of` names no model to copy"
@@ -1167,6 +1263,7 @@ ru = "{0}: `of` не называет модель для копирования
 cz = "{0}: `of` neuvádí žádný model ke zkopírování"
 jpn = "{0}：`of` にコピーするモデルの名前がありません"
 sc = "{0}：`of` 未指明要复制的模型"
+fa = "{0}: `of` نام هیچ مدلی را برای کپی کردن نمی‌برد"
 
 [e90196b43de]
 us = "{0}: maps/{1}: {2}, the pack of {3}, isn't in this game, so it can't be copied"
@@ -1179,6 +1276,7 @@ ru = "{0}: maps/{1}: {2}, пакета {3}, нет в этой игре, поэ�
 cz = "{0}: maps/{1}: {2}, balík {3}, v této hře není, takže ho nelze zkopírovat"
 jpn = "{0}：maps/{1}：{3} のパック {2} はこのゲームにないため、コピーできません"
 sc = "{0}：maps/{1}：{3} 的包 {2} 不在此游戏中，因此无法复制"
+fa = "{0}: maps/{1}: {2}، بستهٔ {3}، در این بازی نیست، پس نمی‌شود کپی‌اش کرد"
 
 [eef429760c2]
 us = "{0} has no scenery file, so nothing can be placed on {1}"
@@ -1191,6 +1289,7 @@ ru = "У {0} нет файла декораций, поэтому на {1} ни�
 cz = "{0} nemá soubor scenérie, takže na {1} nelze nic umístit"
 jpn = "{0} には配置物のファイルがないため、{1} に何も配置できません"
 sc = "{0} 没有场景物体文件，因此无法在 {1} 上放置任何东西"
+fa = "{0} فایل اشیای صحنه ندارد، پس چیزی را نمی‌شود روی {1} گذاشت"
 
 [eb0a0d2484c]
 us = "{0}: {1}: buildings erased by name (an erase area's types) leave their ground closed to units: the map's movement still has them. Name \"building\" in that area's what to open its ground too"
@@ -1203,6 +1302,7 @@ ru = "{0}: {1}: здания, стёртые по имени (types област
 cz = "{0}: {1}: budovy smazané podle názvu (types oblasti mazání) nechávají svou zemi zavřenou pro jednotky: pohyb mapy je stále má. Uveďte \"building\" ve what té oblasti, aby se otevřela i jejich země"
 jpn = "{0}：{1}：名前で消した建物（消去範囲の types）は地面がユニットに閉じたままです。マップの移動データにまだ残っています。地面も開けるには、その範囲の what に \"building\" を指定してください"
 sc = "{0}：{1}：按名称擦除的建筑（擦除区域的 types）会让其地面对单位保持关闭：地图的移动数据中仍有它们。请在该区域的 what 中写上 \"building\" 以同时打开其地面"
+fa = "{0}: {1}: ساختمان‌هایی که با نام پاک شده‌اند (types یک ناحیهٔ پاک‌کردن) زمینشان را به روی یگان‌ها بسته می‌گذارند: حرکت نقشه هنوز آن‌ها را دارد. \"building\" را در what آن ناحیه نام ببرید تا زمینش هم باز شود"
 
 [e6e95c9629d]
 us = "{0}: {1}: {2} of the map's bridges erased: units can still cross the water where they stood (the map's movement still has the decks). Leave the bridges out of the erase areas' types, or place a bridge there again"
@@ -1215,6 +1315,7 @@ ru = "{0}: {1}: стёрто мостов карты: {2}; юниты всё е�
 cz = "{0}: {1}: smazáno {2} mostů mapy: jednotky mohou vodu tam, kde stály, stále přejít (pohyb mapy mostovky stále má). Nechte mosty mimo types oblastí mazání, nebo tam znovu umístěte most"
 jpn = "{0}：{1}：マップの橋 {2} 本を消去：橋があった場所の水はまだ渡れます（マップの移動データに橋が残っています）。消去範囲の types から橋を外すか、そこに橋を置き直してください"
 sc = "{0}：{1}：擦除了地图上的 {2} 座桥：单位仍可在桥原处渡水（地图的移动数据中仍有桥面）。请把桥从擦除区域的 types 中去掉，或在那里重新放一座桥"
+fa = "{0}: {1}: {2} پل از پل‌های نقشه پاک شد: یگان‌ها هنوز می‌توانند جایی که پل‌ها بودند از آب عبور کنند (حرکت نقشه هنوز عرشه‌ها را دارد). پل‌ها را از types ناحیه‌های پاک‌کردن بیرون بگذارید، یا دوباره آنجا یک پل بگذارید"
 
 [ec68b74926c]
 us = "{0}: {1}: the light of its erased lighthouse(s) stays: the map's effects couldn't be read ({2})"
@@ -1227,6 +1328,7 @@ ru = "{0}: {1}: свет стёртых маяков остаётся: эффе�
 cz = "{0}: {1}: světlo smazaných majáků zůstává: efekty mapy se nepodařilo přečíst ({2})"
 jpn = "{0}：{1}：消した灯台の光が残ります。マップのエフェクトを読めませんでした（{2}）"
 sc = "{0}：{1}：被擦除灯塔的灯光仍在：无法读取地图的特效（{2}）"
+fa = "{0}: {1}: نور فانوس‌های دریایی پاک‌شده‌اش می‌ماند: جلوه‌های نقشه خوانده نشدند ({2})"
 
 [e769cead779]
 us = "{0}: {1}: the map's own {2} can't be taken out ({3})"
@@ -1239,6 +1341,7 @@ ru = "{0}: {1}: собственные {2} карты убрать нельзя 
 cz = "{0}: {1}: vlastní {2} mapy nelze odebrat ({3})"
 jpn = "{0}：{1}：マップ本来の{2}を取り除けません（{3}）"
 sc = "{0}：{1}：无法移除地图自带的{2}（{3}）"
+fa = "{0}: {1}: {2} خود نقشه را نمی‌شود برداشت ({3})"
 
 [ed4a88a9208]
 us = "{0}: {1}: the new roads can't be drawn ({2})"
@@ -1251,6 +1354,7 @@ ru = "{0}: {1}: новые дороги нарисовать нельзя ({2})"
 cz = "{0}: {1}: nové silnice nelze nakreslit ({2})"
 jpn = "{0}：{1}：新しい道路を描けません（{2}）"
 sc = "{0}：{1}：无法绘制新道路（{2}）"
+fa = "{0}: {1}: جاده‌های جدید کشیده نمی‌شوند ({2})"
 
 [eac59aed719]
 us = "  {0} of its {1} worked-out answers came with the mod"
@@ -1263,6 +1367,7 @@ ru = "  из {1} просчитанных ответов с модом приш�
 cz = "  {0} z jeho {1} spočítaných odpovědí přišlo s modem"
 jpn = "  算出済みの答え {1} 件のうち {0} 件は Mod に同梱されていました"
 sc = "  其 {1} 个预算答案中有 {0} 个随模组提供"
+fa = "  {0} پاسخ از {1} پاسخ ازپیش‌محاسبه‌شده‌اش همراه ماد آمد"
 
 [e17253835b1]
 us = "roads out: {0}, from {1}"
@@ -1275,6 +1380,7 @@ ru = "дороги убраны: {0}, из {1}"
 cz = "silnice odebrány: {0}, z {1}"
 jpn = "道路の取り除き：{0}、{1} から"
 sc = "移除道路：{0}，来自 {1}"
+fa = "جاده‌های برداشته‌شده: {0}، از {1}"
 
 [e2337abdbde]
 us = "movement: {0}, every circle's links checked"
@@ -1287,6 +1393,7 @@ ru = "передвижение: {0}, связи каждого круга про
 cz = "pohyb: {0}, spojení každého kruhu zkontrolována"
 jpn = "移動：{0}、すべての円のつながりを確認"
 sc = "移动：{0}，已检查每个圆的连接"
+fa = "حرکت: {0}، پیوندهای همهٔ دایره‌ها بررسی شد"
 
 [e905960d446]
 us = "{0}: {1}: where the terrain edits put water can't be worked out ({2}), so units could walk on the bed of new water"
@@ -1299,6 +1406,7 @@ ru = "{0}: {1}: нельзя определить, куда изменения �
 cz = "{0}: {1}: nelze zjistit, kam úpravy terénu daly vodu ({2}), takže by jednotky mohly chodit po dně nové vody"
 jpn = "{0}：{1}：地形の変更で水を置いた場所を割り出せないため（{2}）、ユニットが新しい水の底を歩けてしまいます"
 sc = "{0}：{1}：无法算出地形修改在哪里放了水（{2}），因此单位可能会走在新水域的水底"
+fa = "{0}: {1}: نمی‌شود فهمید ویرایش‌های زمین کجا آب گذاشته‌اند ({2})، پس یگان‌ها ممکن است روی بستر آب جدید راه بروند"
 
 [e5e15e62517]
 us = "{0}: {1}: the roads' bridges can't be made ({2})"
@@ -1311,6 +1419,7 @@ ru = "{0}: {1}: мосты дорог создать нельзя ({2})"
 cz = "{0}: {1}: mosty silnic nelze vytvořit ({2})"
 jpn = "{0}：{1}：道路の橋を作れません（{2}）"
 sc = "{0}：{1}：无法创建道路的桥（{2}）"
+fa = "{0}: {1}: پل‌های جاده‌ها ساخته نمی‌شوند ({2})"
 
 [e922059657d]
 us = "{0}: {1}: the old bridges' crossings can't be closed ({2})"
@@ -1323,6 +1432,7 @@ ru = "{0}: {1}: переправы старых мостов закрыть не
 cz = "{0}: {1}: přechody po starých mostech nelze uzavřít ({2})"
 jpn = "{0}：{1}：旧橋の渡り口を塞げません（{2}）"
 sc = "{0}：{1}：无法封闭旧桥的通行处（{2}）"
+fa = "{0}: {1}: گذرگاه‌های پل‌های قدیمی بسته نمی‌شوند ({2})"
 
 [e196390757e]
 us = "{0}: {1}: {2} would have no floor (no bridge of its kind on this map has one to copy), so units would walk on the riverbed under it: use the map's own bridge kind{3} or take it out"
@@ -1335,6 +1445,7 @@ ru = "{0}: {1}: у {2} не было бы настила (ни у одного �
 cz = "{0}: {1}: {2} by neměl podlahu (žádný most jeho druhu na této mapě ji nemá ke zkopírování), takže by jednotky chodily po dně řeky pod ním: použijte druh mostu této mapy{3}, nebo ho odeberte"
 jpn = "{0}：{1}：{2} には床がありません（このマップに床をコピーできる同じ種類の橋がありません）。ユニットがその下の川底を歩いてしまいます。マップ本来の橋の種類を使うか{3}、取り除いてください"
 sc = "{0}：{1}：{2} 将没有桥面（此地图上没有同类桥可复制桥面），因此单位会走在下方河床上：请使用地图自带的桥类型{3}，或移除它"
+fa = "{0}: {1}: {2} کفی نخواهد داشت (هیچ پلی از نوع آن روی این نقشه کفی برای کپی کردن ندارد)، پس یگان‌ها روی بستر رود زیر آن راه می‌روند: از نوع پل خود نقشه{3} استفاده کنید یا آن را بردارید"
 
 [e160a56b586]
 us = "{0}: {1}: the new bridges' floors can't be made ({2}), so units would walk on the riverbed under them"
@@ -1347,6 +1458,7 @@ ru = "{0}: {1}: настилы новых мостов создать нельз
 cz = "{0}: {1}: podlahy nových mostů nelze vytvořit ({2}), takže by jednotky chodily po dně řeky pod nimi"
 jpn = "{0}：{1}：新しい橋の床を作れないため（{2}）、ユニットがその下の川底を歩いてしまいます"
 sc = "{0}：{1}：无法创建新桥的桥面（{2}），因此单位会走在下方河床上"
+fa = "{0}: {1}: کف پل‌های جدید ساخته نمی‌شود ({2})، پس یگان‌ها روی بستر رود زیر آن‌ها راه می‌روند"
 
 [e9239e380f2]
 us = "{0}: {1}: a texture to paint with can't be read ({2})"
@@ -1359,6 +1471,7 @@ ru = "{0}: {1}: текстуру для рисования прочитать н
 cz = "{0}: {1}: texturu k malování nelze přečíst ({2})"
 jpn = "{0}：{1}：塗るためのテクスチャを読めません（{2}）"
 sc = "{0}：{1}：无法读取用于绘制的纹理（{2}）"
+fa = "{0}: {1}: یک بافت برای رنگ زدن خوانده نمی‌شود ({2})"
 
 [e2e34e71766]
 us = "{0}: {1}: the paint can't be laid ({2})"
@@ -1371,6 +1484,7 @@ ru = "{0}: {1}: окраску нанести нельзя ({2})"
 cz = "{0}: {1}: malování nelze nanést ({2})"
 jpn = "{0}：{1}：ペイントを塗れません（{2}）"
 sc = "{0}：{1}：无法铺设绘制（{2}）"
+fa = "{0}: {1}: رنگ گذاشته نمی‌شود ({2})"
 
 [e3f1208e8ff]
 us = "{0}: {1}: cover.toml paints the blocked layer at ({2}, {3}) with no movement.toml block there. The blocked layer only tells the AI where it can't see or build; units still walk on it. To keep units off, add a [[block]] with the same x, y and radius to movement.toml"
@@ -1383,6 +1497,7 @@ ru = "{0}: {1}: cover.toml рисует заблокированный слой 
 cz = "{0}: {1}: cover.toml maluje blokovanou vrstvu v ({2}, {3}) bez bloku movement.toml na tom místě. Blokovaná vrstva jen říká AI, kde nemůže vidět ani stavět; jednotky po ní stále chodí. Chcete-li jednotky nepustit, přidejte do movement.toml [[block]] se stejnými x, y a radius"
 jpn = "{0}：{1}：cover.toml が ({2}, {3}) にブロック層を塗っていますが、そこに movement.toml のブロックがありません。ブロック層は AI に見えない・建てられない場所を伝えるだけで、ユニットはその上を歩けます。ユニットを入れないには、movement.toml に同じ x・y・radius の [[block]] を追加してください"
 sc = "{0}：{1}：cover.toml 在 ({2}, {3}) 绘制了阻挡层，但该处没有 movement.toml 的阻挡块。阻挡层只告诉 AI 哪里不能观察或建造；单位仍可在上面行走。要阻止单位进入，请在 movement.toml 中添加相同 x、y 和 radius 的 [[block]]"
+fa = "{0}: {1}: cover.toml لایهٔ blocked را در ({2}, {3}) رنگ می‌زند، بی‌آن‌که آنجا در movement.toml یک block باشد. لایهٔ blocked فقط به هوش مصنوعی می‌گوید کجا نمی‌تواند ببیند یا بسازد؛ یگان‌ها هنوز روی آن راه می‌روند. برای دور نگه داشتن یگان‌ها، یک [[block]] با همان x، y و radius به movement.toml اضافه کنید"
 
 [e66e31918d1]
 us = "{0}: {1}: the open at ({2}, {3}) opened nothing: units could already go there, or it is too small (an open needs a radius of 5 m or more) or out of reach of the ground they use"
@@ -1395,6 +1510,7 @@ ru = "{0}: {1}: открытие в ({2}, {3}) ничего не открыло:
 cz = "{0}: {1}: otevření v ({2}, {3}) nic neotevřelo: jednotky tam už mohly, nebo je příliš malé (otevření potřebuje poloměr 5 m nebo víc) či mimo dosah země, kterou používají"
 jpn = "{0}：{1}：({2}, {3}) の開放は何も開けませんでした。ユニットはもともと行けたか、小さすぎるか（開放には半径 5 m 以上が必要）、ユニットが使う地面から届きません"
 sc = "{0}：{1}：({2}, {3}) 处的开放没有打开任何区域：单位原本就能去，或它太小（开放需要 5 米或以上的半径），或超出了单位所用地面的范围"
+fa = "{0}: {1}: open در ({2}, {3}) چیزی را باز نکرد: یگان‌ها از قبل می‌توانستند به آنجا بروند، یا خیلی کوچک است (یک open به radius دست‌کم 5 متر نیاز دارد) یا از دسترس زمینی که یگان‌ها از آن استفاده می‌کنند دور است"
 
 [eceb6a0f007]
 us = "{0}: {1}: the open at ({2}, {3}) takes in water (at ({4}, {5})): units there stand on the ground under it, on the riverbed or the lake's floor. Leave the open off the water unless that is what you want"
@@ -1407,6 +1523,7 @@ ru = "{0}: {1}: открытие в ({2}, {3}) захватывает воду (
 cz = "{0}: {1}: otevření v ({2}, {3}) zahrnuje vodu (v ({4}, {5})): jednotky tam stojí na zemi pod ní, na dně řeky nebo jezera. Otevření nedávejte na vodu, pokud to tak nechcete"
 jpn = "{0}：{1}：({2}, {3}) の開放が水を含んでいます（({4}, {5})）。そこではユニットが川底や湖底など下の地面に立ちます。意図しない限り、開放を水にかけないでください"
 sc = "{0}：{1}：({2}, {3}) 处的开放包含水面（在 ({4}, {5})）：单位在那里会站在下方地面，即河床或湖底。除非有意如此，请让开放避开水面"
+fa = "{0}: {1}: open در ({2}, {3}) آب را هم در بر می‌گیرد (در ({4}, {5})): یگان‌های آنجا روی زمینِ زیر آب می‌ایستند، روی بستر رود یا کف دریاچه. open را از روی آب بیرون نگه دارید، مگر این‌که همین را بخواهید"
 
 [edc33929d65]
 us = "the missions' own menu packs couldn't be made: {0}"
@@ -1419,6 +1536,7 @@ ru = "собственные пакеты меню миссий создать �
 cz = "vlastní balíky nabídek misí se nepodařilo vytvořit: {0}"
 jpn = "ミッション専用のメニューパックを作れませんでした：{0}"
 sc = "无法创建任务自有的菜单包：{0}"
+fa = "بسته‌های منوی اختصاصی مأموریت‌ها ساخته نشدند: {0}"
 
 [e7a11ffe5a6]
 us = "{0}: its ground files can't be read ({1})"
@@ -1431,6 +1549,7 @@ ru = "{0}: файлы рельефа прочитать нельзя ({1})"
 cz = "{0}: jeho soubory terénu nelze přečíst ({1})"
 jpn = "{0}：地形ファイルを読めません（{1}）"
 sc = "{0}：无法读取其地面文件（{1}）"
+fa = "{0}: فایل‌های زمینش خوانده نمی‌شوند ({1})"
 
 [eb2774a9e3e]
 us = "{0}: {1}: the filled riverbeds' ground stickers, low plants and stones stay: taking them off would make the map's scenery bigger than a map can hold. Their pictures are mended all the same"
@@ -1443,6 +1562,7 @@ ru = "{0}: {1}: наклейки земли, низкие растения и к
 cz = "{0}: {1}: nálepky země, nízké rostliny a kameny zasypaných koryt zůstávají: jejich odebrání by udělalo scenérii mapy větší, než mapa unese. Jejich obrázky se přesto opraví"
 jpn = "{0}：{1}：埋めた川床の地面ステッカー・低い植物・石は残します。取り除くとマップの配置物が上限を超えるためです。画像は同じように補修しています"
 sc = "{0}：{1}：填平河床上的地面贴花、低矮植物和石头保留：移除它们会使地图的场景物体超过地图上限。其图片仍会照常修补"
+fa = "{0}: {1}: برچسب‌های زمین، گیاهان کوتاه و سنگ‌های بسترهای رودِ پرشده می‌مانند: برداشتنشان اشیای صحنهٔ نقشه را بزرگ‌تر از گنجایش یک نقشه می‌کرد. با این حال تصویرهایشان ترمیم می‌شوند"
 
 [e23f58198eb]
 us = "{0}: maps/{1}: {2} seats {3} players, and these HQs aren't placed yet: {4}. Place each in the Studio (Scenario, Each player's HQ), or set fewer players"
@@ -1455,6 +1575,7 @@ ru = "{0}: maps/{1}: {2} рассчитана на {3} игроков, а эти
 cz = "{0}: maps/{1}: {2} má místo pro {3} hráčů a tato velitelství ještě nejsou umístěna: {4}. Umístěte každé ve Studiu (Scénář, velitelství každého hráče), nebo nastavte méně hráčů"
 jpn = "{0}：maps/{1}：{2} は {3} 人用ですが、次の司令部がまだ配置されていません：{4}。Studio で配置するか（シナリオ、各プレイヤーの司令部）、人数を減らしてください"
 sc = "{0}：maps/{1}：{2} 可容纳 {3} 名玩家，但这些指挥部尚未放置：{4}。请在 Studio 中逐一放置（剧本，每位玩家的指挥部），或减少玩家数"
+fa = "{0}: maps/{1}: {2} جای {3} بازیکن دارد، و این مقرها هنوز گذاشته نشده‌اند: {4}. هر کدام را در استودیو بگذارید («سناریو»، «مقر هر بازیکن»)، یا تعداد بازیکنان را کمتر کنید"
 
 [e5028a79487]
 us = "{0}: the bridges' movement can't be opened ({1})"
@@ -1467,6 +1588,7 @@ ru = "{0}: передвижение по мостам открыть нельз�
 cz = "{0}: pohyb po mostech nelze otevřít ({1})"
 jpn = "{0}：橋の移動を開けません（{1}）"
 sc = "{0}：无法打开桥梁的移动（{1}）"
+fa = "{0}: حرکت روی پل‌ها باز نمی‌شود ({1})"
 
 [eab01a813f5]
 us = "{0}: {1}: the map's own road network can't be taken out ({2})"
@@ -1479,6 +1601,7 @@ ru = "{0}: {1}: собственную дорожную сеть карты уб
 cz = "{0}: {1}: vlastní silniční síť mapy nelze odebrat ({2})"
 jpn = "{0}：{1}：マップ本来の道路網を取り除けません（{2}）"
 sc = "{0}：{1}：无法移除地图自带的道路网（{2}）"
+fa = "{0}: {1}: شبکهٔ جادهٔ خود نقشه را نمی‌شود برداشت ({2})"
 
 [e13c1e571df]
 us = "{0}: map.toml: {1}"
@@ -1491,6 +1614,7 @@ ru = "{0}: map.toml: {1}"
 cz = "{0}: map.toml: {1}"
 jpn = "{0}：map.toml：{1}"
 sc = "{0}：map.toml：{1}"
+fa = "{0}: map.toml: {1}"
 
 [e73ac4d8f5f]
 us = "Starting R.U.S.E. through Steam…"
@@ -1503,6 +1627,7 @@ ru = "Запуск R.U.S.E. через Steam…"
 cz = "Spouštím R.U.S.E. přes Steam…"
 jpn = "Steam から R.U.S.E. を起動中…"
 sc = "正在通过 Steam 启动 R.U.S.E.…"
+fa = "در حال اجرای R.U.S.E. از طریق Steam…"
 
 [ef60996e623]
 us = "Starting R.U.S.E. from the modded copy…"
@@ -1515,6 +1640,7 @@ ru = "Запуск R.U.S.E. из модифицированной копии…"
 cz = "Spouštím R.U.S.E. z upravené kopie…"
 jpn = "Mod 入りのコピーから R.U.S.E. を起動中…"
 sc = "正在从模组副本启动 R.U.S.E.…"
+fa = "در حال اجرای R.U.S.E. از نسخهٔ مادشده…"
 
 [e0c05ed1bb6]
 us = "Starting Steam…"
@@ -1527,6 +1653,7 @@ ru = "Запуск Steam…"
 cz = "Spouštím Steam…"
 jpn = "Steam を起動中…"
 sc = "正在启动 Steam…"
+fa = "در حال اجرای Steam…"
 
 [e9ad24e305b]
 us = "Building the modded copy of R.U.S.E. for {0} in {1}…"
@@ -1539,6 +1666,7 @@ ru = "Сборка модифицированной копии R.U.S.E. для {
 cz = "Sestavuji upravenou kopii R.U.S.E. pro {0} v {1}…"
 jpn = "{1} に {0} 用の Mod 入り R.U.S.E. のコピーを作成中…"
 sc = "正在 {1} 中为 {0} 构建 R.U.S.E. 的模组副本…"
+fa = "در حال ساختن نسخهٔ مادشدهٔ R.U.S.E. برای {0} در {1}…"
 
 [eb411667ded]
 us = "Built in {0}. To see your changes in the game:"
@@ -1551,6 +1679,7 @@ ru = "Собрано в {0}. Чтобы увидеть изменения в и�
 cz = "Sestaveno v {0}. Jak uvidíte své změny ve hře:"
 jpn = "{0} に作成しました。ゲームで変更を見るには："
 sc = "已在 {0} 中构建。要在游戏中查看更改："
+fa = "در {0} ساخته شد. برای دیدن تغییراتتان در بازی:"
 
 [e4ddb15c053]
 us = "Saved as {0}"
@@ -1563,6 +1692,7 @@ ru = "Сохранено как {0}"
 cz = "Uloženo jako {0}"
 jpn = "{0} として保存しました"
 sc = "已另存为 {0}"
+fa = "ذخیره شد با نام {0}"
 
 [e1e303bf310]
 us = "Size: {0} bytes"
@@ -1575,6 +1705,7 @@ ru = "Размер: {0} байт"
 cz = "Velikost: {0} bajtů"
 jpn = "サイズ：{0} バイト"
 sc = "大小：{0} 字节"
+fa = "اندازه: {0} بایت"
 
 [e5999e588a9]
 us = "SHA-256: {0}"
@@ -1587,6 +1718,7 @@ ru = "SHA-256: {0}"
 cz = "SHA-256: {0}"
 jpn = "SHA-256：{0}"
 sc = "SHA-256：{0}"
+fa = "SHA-256: {0}"
 
 [e1cc6c59b77]
 us = "R.U.S.E. wasn't found, so the file carries no game build or fingerprint."
@@ -1599,6 +1731,7 @@ ru = "R.U.S.E. не найдена, поэтому в файле нет верс
 cz = "R.U.S.E. se nenašlo, takže soubor nenese verzi hry ani otisk."
 jpn = "R.U.S.E. が見つからないため、ファイルにゲームのバージョンもフィンガープリントも入っていません。"
 sc = "找不到 R.U.S.E.，因此该文件不含游戏版本和指纹。"
+fa = "R.U.S.E. پیدا نشد، پس فایل هیچ بیلد بازی یا اثر انگشتی همراه ندارد."
 
 [e65bfd1005c]
 us = "Building the mod on the game, to record the game build and the fingerprint…"
@@ -1611,6 +1744,7 @@ ru = "Сборка мода на игре, чтобы записать верс�
 cz = "Sestavuji mod na hře, aby se zaznamenala verze hry a otisk…"
 jpn = "ゲームのバージョンとフィンガープリントを記録するため、ゲーム上で Mod をビルド中…"
 sc = "正在基于游戏构建模组，以记录游戏版本和指纹…"
+fa = "در حال ساختن ماد روی بازی، برای ثبت بیلد بازی و اثر انگشت…"
 
 [eea3c0b83ae]
 us = "The file carries the worked-out answers for {0} map(s), locked: a player's build takes them instead of working them out again."
@@ -1623,6 +1757,7 @@ ru = "В файле просчитанные ответы для карт: {0}, 
 cz = "Soubor nese spočítané odpovědi pro {0} map, zamčené: sestavení hráče je převezme, místo aby je počítalo znovu."
 jpn = "ファイルには {0} マップ分の算出済みの答えがロックされて入っています。プレイヤーのビルドは計算し直さずにそれを使います。"
 sc = "该文件包含 {0} 张地图的预算答案并已锁定：玩家构建时直接使用，无需重新计算。"
+fa = "فایل پاسخ‌های ازپیش‌محاسبه‌شده برای {0} نقشه را، قفل‌شده، همراه دارد: ساختِ بازیکن به‌جای محاسبهٔ دوباره، همین‌ها را برمی‌دارد."
 
 [ef046b049f4]
 us = "In the Launcher's mod library as {0} {1}{2}: tick it in a mod set and press Play."
@@ -1635,6 +1770,7 @@ ru = "В библиотеке модов Launcher как {0} {1}{2}: отмет�
 cz = "V knihovně modů Launcheru jako {0} {1}{2}: zaškrtněte ho v sadě modů a stiskněte Hrát."
 jpn = "Launcher の Mod ライブラリーに {0} {1}{2} として追加：Mod セットでチェックを入れて「プレイ」を押してください。"
 sc = "已作为 {0} {1}{2} 加入 Launcher 的模组库：在模组组合中勾选它并点“开始游戏”。"
+fa = "در کتابخانهٔ ماد لانچر با نام {0} {1}{2}: آن را در یک مجموعهٔ ماد تیک بزنید و «بازی» را بزنید."
 
 [e5fd5eedd52]
 us = "resized\t{0}\t{1}"
@@ -1647,6 +1783,7 @@ ru = "изменён размер\t{0}\t{1}"
 cz = "změněna velikost\t{0}\t{1}"
 jpn = "サイズ変更\t{0}\t{1}"
 sc = "已调整大小\t{0}\t{1}"
+fa = "تغییر اندازه\t{0}\t{1}"
 
 [e205f2518a4]
 us = "Not added to the Launcher's library: {0}"
@@ -1659,6 +1796,7 @@ ru = "Не добавлено в библиотеку Launcher: {0}"
 cz = "Nepřidáno do knihovny Launcheru: {0}"
 jpn = "Launcher のライブラリーに追加していません：{0}"
 sc = "未加入 Launcher 的库：{0}"
+fa = "به کتابخانهٔ لانچر اضافه نشد: {0}"
 
 [e6799683046]
 us = "skipped\t{0}\t{1}"
@@ -1671,6 +1809,7 @@ ru = "пропущено\t{0}\t{1}"
 cz = "přeskočeno\t{0}\t{1}"
 jpn = "スキップ\t{0}\t{1}"
 sc = "已跳过\t{0}\t{1}"
+fa = "رد شد\t{0}\t{1}"
 
 [ed97d6b0a06]
 us = "skipped\t{0}\tno real-life size known"
@@ -1683,6 +1822,7 @@ ru = "пропущено\t{0}\tреальный размер неизвесте�
 cz = "přeskočeno\t{0}\tskutečná velikost neznámá"
 jpn = "スキップ\t{0}\t実物の大きさが不明"
 sc = "已跳过\t{0}\t真实尺寸未知"
+fa = "رد شد\t{0}\tاندازهٔ واقعی‌اش معلوم نیست"
 
 [e863511f9d1]
 us = "Downloading {0} {1} ({2})…"
@@ -1695,6 +1835,7 @@ ru = "Загрузка {0} {1} ({2})…"
 cz = "Stahuji {0} {1} ({2})…"
 jpn = "{0} {1} をダウンロード中（{2}）…"
 sc = "正在下载 {0} {1}（{2}）…"
+fa = "در حال دانلود {0} {1} ({2})…"
 
 [ec5bf6a4bad]
 us = "The file matches the mod list (size and checksum)."
@@ -1707,6 +1848,7 @@ ru = "Файл совпадает со списком модов (размер �
 cz = "Soubor odpovídá seznamu modů (velikost a kontrolní součet)."
 jpn = "ファイルは Mod リストと一致しています（サイズとチェックサム）。"
 sc = "该文件与模组列表一致（大小和校验和）。"
+fa = "فایل با فهرست مادها جور است (اندازه و چک‌سام)."
 
 [e304dd609f5]
 us = "{0} {1} is in the library{2}"
@@ -1719,6 +1861,7 @@ ru = "{0} {1} в библиотеке{2}"
 cz = "{0} {1} je v knihovně{2}"
 jpn = "{0} {1} はライブラリーにあります{2}"
 sc = "{0} {1} 已在库中{2}"
+fa = "{0} {1} در کتابخانه است{2}"
 
 [e49e80cb675]
 us = "repaint: {0}, from {1}: {2}"
@@ -1731,6 +1874,7 @@ ru = "перекраска: {0}, из {1}: {2}"
 cz = "přemalování: {0}, z {1}: {2}"
 jpn = "塗り直し：{0}、{1} から：{2}"
 sc = "重新涂刷：{0}，来自 {1}：{2}"
+fa = "رنگ‌آمیزی دوباره: {0}، از {1}: {2}"
 
 [e9470a6453b]
 us = "{0}: files/assets/{1}: {2} has an asset of that name too"
@@ -1743,6 +1887,7 @@ ru = "{0}: files/assets/{1}: у {2} тоже есть ассет с таким �
 cz = "{0}: files/assets/{1}: {2} má také prvek tohoto jména"
 jpn = "{0}：files/assets/{1}：{2} にも同じ名前のアセットがあります"
 sc = "{0}：files/assets/{1}：{2} 也有同名素材"
+fa = "{0}: files/assets/{1}: {2} هم منبعی با همین نام دارد"
 
 [e1945062575]
 us = "{0}: {1}: what moved can't be repainted ({2})"
@@ -1755,6 +1900,7 @@ ru = "{0}: {1}: то, что сдвинулось, нельзя перекрас
 cz = "{0}: {1}: co se pohnulo, nelze přemalovat ({2})"
 jpn = "{0}：{1}：動いた部分は塗り直せません（{2}）"
 sc = "{0}：{1}：移动过的部分无法重新涂刷（{2}）"
+fa = "{0}: {1}: آنچه جابه‌جا شد دوباره رنگ‌آمیزی نمی‌شود ({2})"
 
 [e78915de068]
 us = "{0}: maps/{1}: its size ({2} x {3} cells) needs numpy, which this Python hasn't got"
@@ -1767,6 +1913,7 @@ ru = "{0}: maps/{1}: для её размера ({2} x {3} клеток) нуж�
 cz = "{0}: maps/{1}: její velikost ({2} x {3} buněk) potřebuje numpy, které tento Python nemá"
 jpn = "{0}：maps/{1}：この大きさ（{2} x {3} セル）には numpy が必要ですが、この Python にはありません"
 sc = "{0}：maps/{1}：其大小（{2} x {3} 格）需要 numpy，而此 Python 没有"
+fa = "{0}: maps/{1}: اندازه‌اش ({2} x {3} خانه) به numpy نیاز دارد که این Python ندارد"
 
 [e617539d0ea]
 us = "{0}: maps/{1}: it can't be made {2} x {3} cells ({4})"
@@ -1779,6 +1926,7 @@ ru = "{0}: maps/{1}: её нельзя сделать размером {2} x {3}
 cz = "{0}: maps/{1}: nemůže mít {2} x {3} buněk ({4})"
 jpn = "{0}：maps/{1}：{2} x {3} セルにはできません（{4}）"
 sc = "{0}：maps/{1}：无法做成 {2} x {3} 格（{4}）"
+fa = "{0}: maps/{1}: نمی‌شود آن را {2} x {3} خانه کرد ({4})"
 
 [ecfa9eab977]
 us = "tint: {0}, from {1}"
@@ -1791,6 +1939,7 @@ ru = "оттенок: {0}, из {1}"
 cz = "odstín: {0}, z {1}"
 jpn = "色合い：{0}、{1} から"
 sc = "色调：{0}，来自 {1}"
+fa = "ته‌رنگ: {0}، از {1}"
 
 [e3f1b989371]
 us = "relief picture: {0}, from {1}: {2} picture(s)"
@@ -1803,6 +1952,7 @@ ru = "картинка рельефа: {0}, из {1}: картинок: {2}"
 cz = "obrázek reliéfu: {0}, z {1}: {2} obrázek/ů"
 jpn = "起伏の画像：{0}、{1} から：画像 {2} 枚"
 sc = "地形图片：{0}，来自 {1}：{2} 张图片"
+fa = "تصویر برجستگی: {0}، از {1}: {2} تصویر"
 
 [e6cf120f01e]
 us = "tint: {0}: the game's texture pack wasn't given, so its sections' stickers keep the tint the map has under them"
@@ -1815,6 +1965,7 @@ ru = "оттенок: {0}: пакет текстур игры не был ука
 cz = "odstín: {0}: balíček textur hry nebyl zadán, takže nálepky jeho sekcí si nechají odstín, který pod nimi má mapa"
 jpn = "色合い：{0}：ゲームのテクスチャパックが指定されていないため、セクションのステッカーはその下のマップの色合いのままです"
 sc = "色调：{0}：未提供游戏的纹理包，因此其分区的贴花保留地图在其下方的色调"
+fa = "ته‌رنگ: {0}: بستهٔ بافت بازی داده نشده بود، پس برچسب‌های قطعه‌هایش همان ته‌رنگی را نگه می‌دارند که نقشه زیرشان دارد"
 
 [ed2bbc8106e]
 us = "map asset {0} ({1}): {2}{3}, {4} texture(s); into {5} mesh pack(s)"
@@ -1827,6 +1978,7 @@ ru = "ассет карты {0} ({1}): {2}{3}, текстур: {4}; в паке�
 cz = "prvek mapy {0} ({1}): {2}{3}, {4} textur(a); do {5} balíčků sítí"
 jpn = "マップアセット {0}（{1}）：{2}{3}、テクスチャ {4} 枚、メッシュパック {5} 個へ"
 sc = "地图素材 {0}（{1}）：{2}{3}，{4} 张纹理；放入 {5} 个网格包"
+fa = "منبع نقشه {0} ({1}): {2}{3}، {4} بافت؛ در {5} بستهٔ مش"
 
 [e358f05e445]
 us = "paint: {0}: the coat under the relief's picture: {1}"
@@ -1839,6 +1991,7 @@ ru = "покраска: {0}: слой под картинкой рельефа: 
 cz = "malování: {0}: vrstva pod obrázkem reliéfu: {1}"
 jpn = "ペイント：{0}：起伏の画像の下の塗り：{1}"
 sc = "绘制：{0}：地形图片下方的底色：{1}"
+fa = "رنگ: {0}: لایهٔ زیر تصویر برجستگی: {1}"
 
 [ed8cb2a0861]
 us = "{0}: {1}: the tint under its sections' stickers can't be fitted ({2})"
@@ -1851,6 +2004,7 @@ ru = "{0}: {1}: оттенок под наклейками его секций �
 cz = "{0}: {1}: odstín pod nálepkami jeho sekcí nelze přizpůsobit ({2})"
 jpn = "{0}：{1}：セクションのステッカーの下の色合いを合わせられません（{2}）"
 sc = "{0}：{1}：其分区贴花下方的色调无法匹配（{2}）"
+fa = "{0}: {1}: ته‌رنگ زیر برچسب‌های قطعه‌هایش جا نمی‌افتد ({2})"
 
 [ef3affb9768]
 us = "{0}: {1}: [[cliffs]] names {2}: only the mods' own map assets (files/assets) can make cliffs, their shape known"
@@ -1863,6 +2017,7 @@ ru = "{0}: {1}: [[cliffs]] указывает {2}: обрывы могут де�
 cz = "{0}: {1}: [[cliffs]] jmenuje {2}: útesy umí jen vlastní prvky mapy modů (files/assets), jejichž tvar je známý"
 jpn = "{0}：{1}：[[cliffs]] が {2} を指定：崖を作れるのは形がわかっているモッド独自のマップアセット（files/assets）だけです"
 sc = "{0}：{1}：[[cliffs]] 指定了 {2}：只有形状已知的模组自有地图素材（files/assets）才能生成悬崖"
+fa = "{0}: {1}: [[cliffs]] نام {2} را می‌برد: فقط منابع نقشهٔ خود مادها (files/assets) می‌توانند صخره بسازند، که شکلشان معلوم است"
 
 [e6d1dcd8aeb]
 us = "{0}: {1}: the relief's picture can't be laid ({2})"
@@ -1875,6 +2030,7 @@ ru = "{0}: {1}: картинку рельефа нельзя наложить ({
 cz = "{0}: {1}: obrázek reliéfu nelze položit ({2})"
 jpn = "{0}：{1}：起伏の画像を敷けません（{2}）"
 sc = "{0}：{1}：地形图片无法铺设（{2}）"
+fa = "{0}: {1}: تصویر برجستگی گذاشته نمی‌شود ({2})"
 
 [e1a1a669b2e]
 us = "{0}: {1} gets a look of its own, {2}: a copy of {3} with its {4} our model"
@@ -1887,6 +2043,7 @@ ru = "{0}: {1} получает свой облик, {2}: копию {3} с на
 cz = "{0}: {1} dostává vlastní vzhled, {2}: kopii {3} s naším modelem místo {4}"
 jpn = "{0}: {1} に独自の外観 {2} を付けます：{3} のコピーで、{4} を私たちのモデルに置き換えたもの"
 sc = "{0}：{1} 获得自己的外观 {2}：{3} 的副本，其中 {4} 换成我们的模型"
+fa = "{0}: {1} ظاهر خودش را می‌گیرد، {2}: کپی‌ای از {3} که {4} آن مدل ماست"
 
 [e4af1e09230]
 us = "these mods add map assets or building looks, whose models go into ZZ_Win.dat; it wasn't given"
@@ -1899,6 +2056,7 @@ ru = "эти моды добавляют ассеты карты или обли
 cz = "tyto mody přidávají prvky mapy nebo vzhled budov, jejichž modely patří do ZZ_Win.dat; nebyl zadán"
 jpn = "これらのモッドはマップアセットまたは建物の外観を追加し、そのモデルは ZZ_Win.dat に入りますが、それが指定されていません"
 sc = "这些模组添加了地图素材或建筑外观，其模型要放入 ZZ_Win.dat，但没有提供该文件"
+fa = "این مادها منابع نقشه یا ظاهر ساختمان اضافه می‌کنند که مدل‌هایشان به ZZ_Win.dat می‌رود؛ این فایل داده نشده بود"
 
 [e0a7ab12630]
 us = "{0}: no mod in the set makes a new building {1}"
@@ -1911,6 +2069,7 @@ ru = "{0}: ни один мод в наборе не создаёт новое �
 cz = "{0}: žádný mod v sadě nevytváří novou budovu {1}"
 jpn = "{0}: このセットのどのモッドも新しい建物 {1} を作っていません"
 sc = "{0}：这组模组中没有一个创建新建筑 {1}"
+fa = "{0}: هیچ مادی در مجموعه ساختمان جدیدی به نام {1} نمی‌سازد"
 
 [e24aa1b587c]
 us = "{0}: {1} names no look (GfxDescriptor {2}.SymbolName), so it can't get one"
@@ -1923,6 +2082,7 @@ ru = "{0}: {1} не называет облика (GfxDescriptor {2}.SymbolName)
 cz = "{0}: {1} neuvádí žádný vzhled (GfxDescriptor {2}.SymbolName), takže ho nemůže dostat"
 jpn = "{0}: {1} は外観を指定していない（GfxDescriptor {2}.SymbolName）ため、外観を付けられません"
 sc = "{0}：{1} 没有指定外观（GfxDescriptor {2}.SymbolName），因此无法获得外观"
+fa = "{0}: {1} نام هیچ ظاهری را نمی‌برد (GfxDescriptor {2}.SymbolName)، پس نمی‌تواند ظاهری بگیرد"
 
 [efeb18fb5e2]
 us = "look of {0}: {1} in place of {2}, {3} triangles in {4} draw(s){5}, {6} texture(s); into {7}"
@@ -1935,6 +2095,7 @@ ru = "облик {0}: {1} вместо {2}, {3} треугольников в {4
 cz = "vzhled {0}: {1} místo {2}, {3} trojúhelníků v {4} vykresleních{5}, {6} textur; do {7}"
 jpn = "{0} の外観：{2} の代わりに {1}、三角形 {3} 個（描画 {4} 回）{5}、テクスチャ {6} 枚。格納先 {7}"
 sc = "{0} 的外观：用 {1} 替代 {2}，{3} 个三角形，{4} 次绘制{5}，{6} 张纹理；放入 {7}"
+fa = "ظاهر {0}: {1} به‌جای {2}، {3} مثلث در {4} رسم{5}، {6} بافت؛ در {7}"
 
 [ebff7dcf1b3]
 us = "{0}: files/buildings/{1}: {2} gives that building a look too"
@@ -1947,6 +2108,7 @@ ru = "{0}: files/buildings/{1}: {2} тоже задаёт этому здани�
 cz = "{0}: files/buildings/{1}: {2} té budově také dává vzhled"
 jpn = "{0}: files/buildings/{1}: {2} もその建物に外観を付けています"
 sc = "{0}：files/buildings/{1}：{2} 也给该建筑设定了外观"
+fa = "{0}: files/buildings/{1}: {2} هم به آن ساختمان ظاهری می‌دهد"
 
 [eb4daa0226d]
 us = "{0}: files/buildings/{1}: {2}"
@@ -1959,6 +2121,7 @@ ru = "{0}: files/buildings/{1}: {2}"
 cz = "{0}: files/buildings/{1}: {2}"
 jpn = "{0}: files/buildings/{1}: {2}"
 sc = "{0}：files/buildings/{1}：{2}"
+fa = "{0}: files/buildings/{1}: {2}"
 
 [e5573d18566]
 us = "buildings with units of their own: kinds {0}, each with its tab on the build bar{1}"
@@ -1971,6 +2134,7 @@ ru = "здания со своими юнитами: типы {0}, у каждо
 cz = "budovy s vlastními jednotkami: druhy {0}, každá se svou kartou na liště stavby{1}"
 jpn = "独自のユニットを持つ建物：種類 {0}、それぞれ建設バーに専用のタブ{1}"
 sc = "拥有自己单位的建筑：类型 {0}，每个在建造栏上都有自己的标签页{1}"
+fa = "ساختمان‌هایی با یگان‌های خودشان: نوع‌های {0}، هر کدام با زبانهٔ خودش در نوار ساخت{1}"
 
 [efb65896a95]
 us = "the mods' files give buildings with units of their own of kinds {0}, but the built data has kinds {1} (a later change to TypeBatiment?): keep each such building's kind in the block that makes it"
@@ -1983,6 +2147,7 @@ ru = "файлы модов задают здания со своими юнит
 cz = "soubory modů dávají budovy s vlastními jednotkami druhů {0}, ale sestavená data mají druhy {1} (pozdější změna TypeBatiment?): ponechte druh každé takové budovy v bloku, který ji vytváří"
 jpn = "Mod のファイルは種類 {0} の独自のユニットを持つ建物を指定していますが、ビルド後のデータの種類は {1} です（後から TypeBatiment を変更？）：そうした建物の種類は、それを作るブロックの中で保ってください"
 sc = "模组文件给出的拥有自己单位的建筑类型为 {0}，但构建出的数据中类型为 {1}（之后改动了 TypeBatiment？）：请在创建该建筑的块中保留其类型"
+fa = "فایل‌های مادها ساختمان‌هایی با یگان‌های خودشان از نوع‌های {0} می‌دهند، اما داده‌های ساخته‌شده نوع‌های {1} را دارند (تغییری بعدی در TypeBatiment؟): نوع هر چنین ساختمانی را در بلوکی که آن را می‌سازد نگه دارید"
 
 [eb198f3bcb5]
 us = "these mods have buildings with units of their own, whose tabs go into ZZ_Win.dat's scripts; it wasn't given"
@@ -1995,6 +2160,7 @@ ru = "в этих модах есть здания со своими юнита�
 cz = "tyto mody mají budovy s vlastními jednotkami, jejichž karty patří do skriptů ZZ_Win.dat; ZZ_Win.dat nebyl zadán"
 jpn = "これらの Mod には独自のユニットを持つ建物があり、そのタブは ZZ_Win.dat のスクリプトに入りますが、ZZ_Win.dat が指定されていません"
 sc = "这些模组有拥有自己单位的建筑，其标签页要写入 ZZ_Win.dat 的脚本；但未提供 ZZ_Win.dat"
+fa = "این مادها ساختمان‌هایی با یگان‌های خودشان دارند که زبانه‌هایشان به اسکریپت‌های ZZ_Win.dat می‌رود؛ این فایل داده نشده بود"
 
 [e26e3fd7ced]
 us = "game patch {0}: {1}"
@@ -2007,6 +2173,7 @@ ru = "патч игры {0}: {1}"
 cz = "záplata hry {0}: {1}"
 jpn = "ゲームパッチ {0}：{1}"
 sc = "游戏补丁 {0}：{1}"
+fa = "وصلهٔ بازی {0}: {1}"
 
 [e9e97b49e02]
 us = "{0}: a building with units of its own of kind {1} needs build menu {2} (Menu), its kind's own: a click on it opens the first tab of its menu"
@@ -2019,6 +2186,7 @@ ru = "{0}: зданию со своими юнитами типа {1} нужно
 cz = "{0}: budova s vlastními jednotkami druhu {1} potřebuje stavební nabídku {2} (Menu), tu svého druhu: kliknutí na ni otevře první kartu její nabídky"
 jpn = "{0}：種類 {1} の独自のユニットを持つ建物には、その種類専用の建設メニュー {2}（Menu）が必要です：クリックするとそのメニューの最初のタブが開きます"
 sc = "{0}：类型 {1} 的拥有自己单位的建筑需要其类型专用的建造菜单 {2}（Menu）：点击它会打开其菜单的第一个标签页"
+fa = "{0}: ساختمانی با یگان‌های خودش از نوع {1} به منوی ساخت {2} (Menu)، منوی مخصوص نوعش، نیاز دارد: کلیک روی آن نخستین زبانهٔ منویش را باز می‌کند"
 
 [e164d9afd00]
 us = "these mods have buildings with units of their own, but the unit data has no build bar list with the Prototypes tab to copy"
@@ -2031,6 +2199,7 @@ ru = "в этих модах есть здания со своими юнита�
 cz = "tyto mody mají budovy s vlastními jednotkami, ale data jednotek nemají seznam lišty stavby s kartou Prototypes ke zkopírování"
 jpn = "これらの Mod には独自のユニットを持つ建物がありますが、ユニットデータにコピー元となる Prototypes タブを含む建設バーのリストがありません"
 sc = "这些模组有拥有自己单位的建筑，但单位数据中没有包含可复制的 Prototypes 标签页的建造栏列表"
+fa = "این مادها ساختمان‌هایی با یگان‌های خودشان دارند، اما در داده‌های یگان‌ها هیچ فهرست نوار ساختی با زبانهٔ Prototypes برای کپی کردن نیست"
 
 [e6734328c0b]
 us = "the tabs of the buildings with units of their own can't be added to the game's scripts: {0}"
@@ -2043,6 +2212,7 @@ ru = "вкладки зданий со своими юнитами нельзя 
 cz = "karty budov s vlastními jednotkami nelze přidat do skriptů hry: {0}"
 jpn = "独自のユニットを持つ建物のタブをゲームのスクリプトに追加できません：{0}"
 sc = "无法将拥有自己单位的建筑的标签页添加到游戏脚本中：{0}"
+fa = "زبانه‌های ساختمان‌های دارای یگان‌های خودشان به اسکریپت‌های بازی اضافه نمی‌شوند: {0}"
 
 [e1fc21fee7c]
 us = "{0}: {1} changes {2}: {3}, so {4}'s is used"
@@ -2055,3 +2225,4 @@ ru = "{0}: {1} меняет {2}: {3}, поэтому используется в
 cz = "{0}: {1} mění {2}: {3}, takže se použije ten z {4}"
 jpn = "{0}：{1} が {2}：{3} を変更するため、{4} のものを使います"
 sc = "{0}：{1} 修改了 {2}：{3}，因此使用 {4} 的版本"
+fa = "{0}: {1}، {2} را تغییر می‌دهد: {3}، پس مالِ {4} استفاده می‌شود"

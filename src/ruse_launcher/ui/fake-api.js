@@ -324,7 +324,8 @@
     api: {
       languages: async () => [{ code: "us", name: "English" }, { code: "fr", name: "Français" }, { code: "ger", name: "Deutsch" },
         { code: "ita", name: "Italiano" }, { code: "spa", name: "Español" }, { code: "pol", name: "Polski" },
-        { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" }, { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }],
+        { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" }, { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" },
+        { code: "fa", name: "فارسی", rtl: true }],
       default_language: async () => "us",
       strings: async (lang) => wordsOf(lang),
       status: async () => mode === "notfound"

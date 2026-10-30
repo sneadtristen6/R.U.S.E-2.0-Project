@@ -207,7 +207,7 @@ class Words(unittest.TestCase):
         return tomllib.loads((ROOT / "src" / app / "words.toml").read_text(encoding="utf-8"))
 
     def test_both_apps_say_it_in_all_ten_languages(self):
-        langs = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+        langs = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
         for app in ("ruse_studio", "ruse_launcher"):
             words = self.words(app)
             for key in browsermode.ENGLISH:

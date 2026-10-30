@@ -33,9 +33,9 @@ class EveryType(unittest.TestCase):
 
 class EveryLanguage(unittest.TestCase):
     """The owner, 2026-10-03: "just quickly make it all languages. Make a switch with the language thing." The names
-    are in each of the Studio's ten languages, the Place list showing the Studio's own."""
+    are in each of the Studio's eleven languages, the Place list showing the Studio's own."""
 
-    def test_every_english_word_has_all_nine_others(self):
+    def test_every_english_word_has_all_ten_others(self):
         from rusemod import scenerynames as s
         from rusemod.scenerynames_lang import KEPT, LANGS, table
         t = table()
@@ -47,7 +47,7 @@ class EveryLanguage(unittest.TestCase):
 
     def test_names_in_each_language(self):
         from rusemod.scenerynames import LANGS, kinds, names
-        self.assertEqual(len(LANGS), 10)
+        self.assertEqual(len(LANGS), 11)
         n = names("Cotentin_PanierOsier1")
         self.assertEqual(sorted(n), sorted(LANGS))
         self.assertEqual((n["us"], n["fr"], n["ger"], n["ru"]), ("Wicker basket 1 (Cotentin)", "Panier en osier 1 (Cotentin)",

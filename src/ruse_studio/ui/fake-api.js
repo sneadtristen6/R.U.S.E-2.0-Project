@@ -2834,7 +2834,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       languages: async () => [{ code: "base", name: null }, { code: "us", name: "English" }, { code: "fr", name: "Français" },
         { code: "ger", name: "Deutsch" }, { code: "ita", name: "Italiano" }, { code: "spa", name: "Español" },
         { code: "pol", name: "Polski" }, { code: "ru", name: "Русский" }, { code: "cz", name: "Čeština" },
-        { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }],
+        { code: "jpn", name: "日本語" }, { code: "sc", name: "简体中文" }, { code: "fa", name: "فارسی", rtl: true }],
       strings: async (lang) => words_(lang),
       language_choice: async () => ({ suggested: mode === "lang" ? "fr" : "us", from: mode === "lang" ? "steam" : "pc",
         chosen: Boolean(prefs.lang_chosen) || !(mode === "lang" || mode === "noindex") }),

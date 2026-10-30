@@ -23,7 +23,7 @@ from ruse_studio.api import StudioApi, StudioError
 from ruse_studio.edits import Link, Literal, ModEdits
 
 ROOT = Path(__file__).resolve().parents[1]
-LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
 GUID = uuid.UUID("8a1f9c0e-35b2-4c55-9e7d-0d3e5f6a7b8c")
 
 
@@ -313,7 +313,7 @@ class Words(unittest.TestCase):
         words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         for key in ("values_files_tab", "tip_tab_values_files", "values_tab", "tip_tab_values", "files_tab",
                     "tip_tab_files"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(LANGS), key)
         self.assertNotIn("All values tab)", (ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
         added = ("value_prop_choices", "value_prop_add", "value_prop_delete", "value_pointing", "value_classes",
                  "value_object_new", "value_object_delete", "value_object_restore")

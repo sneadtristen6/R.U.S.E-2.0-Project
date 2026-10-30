@@ -1,5 +1,5 @@
 """Texts written in English in the code, said again in the player's language (the owner, 2026-10-16: the apps' errors
-and the build's lines in the game's ten languages).
+and the build's lines in the game's ten languages; 2026-10-30: and Persian).
 
 A text stays where it's made, in English (`raise StudioError(f"... {x} ...")`, `say(f"... {x} ...")`). A catalogue
 (a TOML file) holds each one as a template, its f-string's values as numbered blanks ({0}, {1}...), in the ten
@@ -17,7 +17,7 @@ import tomllib
 from functools import lru_cache
 from pathlib import Path
 
-LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")
+LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa")  # the apps' eleven (schema.APP_LANGS)
 MIN_TEXT = 6   # a template with fewer letters of its own than this (a bare "{0}") isn't matched: it would take any text
 BLANK = re.compile(r"(?<!\{)\{(\d+)\}(?!\})")
 

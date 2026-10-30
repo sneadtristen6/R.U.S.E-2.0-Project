@@ -8,7 +8,7 @@ import tomllib
 import unittest
 from pathlib import Path
 
-from rusemod import numberinfo
+from rusemod import numberinfo, schema
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -42,7 +42,7 @@ class Guide(unittest.TestCase):
         from rusemod import schema
         root = Path(numberinfo.__file__).parent
         english = numberinfo.guide("us")
-        for lang in schema.LANGS:
+        for lang in schema.APP_LANGS:
             if lang == "us":
                 continue
             with self.subTest(lang=lang):
@@ -102,7 +102,7 @@ class Page(unittest.TestCase):
                     "number_this_unit", "number_among", "number_scale_unmeasured", "number_full_speed",
                     "number_full_stop", "price_dates",
                     *[f"number_sure_{s}" for s in numberinfo.SURE]):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
         app = (ROOT / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         for needle in ("numberHelp(u, r, th, cell", "api().number_scale(", "api().numbers(", "base-slider",
                        "MODE_LISTS", "mode-box", "number_full_speed",

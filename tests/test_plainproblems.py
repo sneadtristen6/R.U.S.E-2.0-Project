@@ -11,7 +11,7 @@ from rusemod import plainproblems as pp
 from ruse_studio.api import StudioApi, StudioError
 
 ROOT = Path(__file__).resolve().parents[1]
-LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
 T = "maps/SuperCrossRoads4/terrain.toml"
 TERRAIN = """# made by the Studio
 [[stroke]]

@@ -13,6 +13,7 @@ ru = "Язык"
 cz = "Jazyk"
 jpn = "言語"
 sc = "语言"
+fa = "زبان"
 
 [looking]
 us = "Looking for R.U.S.E.…"
@@ -25,6 +26,7 @@ ru = "Поиск R.U.S.E.…"
 cz = "Hledání R.U.S.E.…"
 jpn = "R.U.S.E. を探しています…"
 sc = "正在查找 R.U.S.E.…"
+fa = "در جست‌وجوی R.U.S.E.…"
 
 [choose_folder]
 us = "Choose folder…"
@@ -37,6 +39,7 @@ ru = "Выбрать папку…"
 cz = "Vybrat složku…"
 jpn = "フォルダーを選ぶ…"
 sc = "选择文件夹…"
+fa = "انتخاب پوشه…"
 
 [mod_sets]
 us = "Mod sets"
@@ -49,6 +52,7 @@ ru = "Наборы модов"
 cz = "Sady módů"
 jpn = "MODセット"
 sc = "模组组合"
+fa = "مجموعه‌های ماد"
 
 [vanilla]
 us = "Vanilla"
@@ -61,6 +65,7 @@ ru = "Оригинал"
 cz = "Původní hra"
 jpn = "オリジナル"
 sc = "原版"
+fa = "بازی اصلی"
 
 [vanilla_desc]
 us = "The game as Steam installed it."
@@ -73,6 +78,7 @@ ru = "Игра такой, какой её установил Steam."
 cz = "Hra tak, jak ji nainstaloval Steam."
 jpn = "Steam がインストールしたままのゲームです。"
 sc = "Steam 安装的原始游戏。"
+fa = "بازی همان‌طور که Steam نصبش کرده است."
 
 [no_mods]
 us = "No mods"
@@ -85,6 +91,7 @@ ru = "Без модов"
 cz = "Žádné módy"
 jpn = "MODなし"
 sc = "无模组"
+fa = "بدون ماد"
 
 [one_mod]
 us = "1 mod"
@@ -97,6 +104,7 @@ ru = "1 мод"
 cz = "1 mód"
 jpn = "MOD 1 個"
 sc = "1 个模组"
+fa = "1 ماد"
 
 [n_mods]
 us = "{n} mods"
@@ -109,6 +117,7 @@ ru = "Модов: {n}"
 cz = "Módů: {n}"
 jpn = "MOD {n} 個"
 sc = "{n} 个模组"
+fa = "{n} ماد"
 
 [has_mistake]
 us = "Has a mistake"
@@ -121,6 +130,7 @@ ru = "Есть ошибка"
 cz = "Obsahuje chybu"
 jpn = "問題があります"
 sc = "有错误"
+fa = "اشکال دارد"
 
 [set_mistake]
 us = "This mod set has a mistake: {error}"
@@ -133,6 +143,7 @@ ru = "В этом наборе модов ошибка: {error}"
 cz = "Tato sada módů obsahuje chybu: {error}"
 jpn = "このMODセットには問題があります: {error}"
 sc = "此模组组合有错误:{error}"
+fa = "این مجموعهٔ ماد اشکالی دارد: {error}"
 
 [play]
 us = "Play"
@@ -145,6 +156,7 @@ ru = "Играть"
 cz = "Hrát"
 jpn = "プレイ"
 sc = "开始游戏"
+fa = "بازی"
 
 [play_set]
 us = "Play {name}"
@@ -157,6 +169,7 @@ ru = "Играть: {name}"
 cz = "Hrát {name}"
 jpn = "{name} でプレイ"
 sc = "以 {name} 开始游戏"
+fa = "بازی با {name}"
 
 [getting_ready]
 us = "Getting everything ready…"
@@ -169,6 +182,7 @@ ru = "Всё готовится…"
 cz = "Vše se připravuje…"
 jpn = "準備しています…"
 sc = "正在准备…"
+fa = "در حال آماده کردن همه‌چیز…"
 
 [details]
 us = "Details"
@@ -181,6 +195,7 @@ ru = "Подробности"
 cz = "Podrobnosti"
 jpn = "詳細"
 sc = "详情"
+fa = "جزئیات"
 
 [join]
 us = "Join a friend"
@@ -193,6 +208,7 @@ ru = "Присоединиться к другу"
 cz = "Připojit se k příteli"
 jpn = "友達に参加"
 sc = "加入好友"
+fa = "پیوستن به یک دوست"
 
 [browse]
 us = "Supported mods"
@@ -205,6 +221,7 @@ ru = "Поддерживаемые моды"
 cz = "Podporované módy"
 jpn = "対応MOD"
 sc = "支持的模组"
+fa = "مادهای پشتیبانی‌شده"
 
 [coming_soon]
 us = "Coming soon"
@@ -217,6 +234,7 @@ ru = "Скоро"
 cz = "Již brzy"
 jpn = "近日公開"
 sc = "即将推出"
+fa = "به‌زودی"
 
 [new_set]
 us = "New mod set…"
@@ -229,6 +247,7 @@ ru = "Новый набор модов…"
 cz = "Nová sada módů…"
 jpn = "新しいMODセット…"
 sc = "新建模组组合…"
+fa = "مجموعهٔ ماد جدید…"
 
 [set_name]
 us = "Name of the mod set"
@@ -241,6 +260,7 @@ ru = "Название набора модов"
 cz = "Název sady módů"
 jpn = "MODセットの名前"
 sc = "模组组合的名称"
+fa = "نام مجموعهٔ ماد"
 
 [tick_mods]
 us = "Tick the mods to use. They load in this order: when two change the same thing, the lower one wins."
@@ -253,6 +273,7 @@ ru = "Отметьте нужные моды. Они загружаются в �
 cz = "Zaškrtněte módy, které chcete použít. Načítají se v tomto pořadí: když dva mění totéž, vyhrává ten níže."
 jpn = "使うMODにチェックを入れてください。この順に読み込まれます。2つが同じ項目を変える場合は下のMODが優先されます。"
 sc = "勾选要使用的模组。按此顺序加载:两个模组修改同一项时,下面的优先。"
+fa = "مادهایی را که می‌خواهید استفاده شوند تیک بزنید. به همین ترتیب بارگذاری می‌شوند: وقتی دو ماد یک چیز را تغییر می‌دهند، آن که پایین‌تر است برنده می‌شود."
 
 [save]
 us = "Save"
@@ -265,6 +286,7 @@ ru = "Сохранить"
 cz = "Uložit"
 jpn = "保存"
 sc = "保存"
+fa = "ذخیره"
 
 [cancel]
 us = "Cancel"
@@ -277,6 +299,7 @@ ru = "Отмена"
 cz = "Zrušit"
 jpn = "キャンセル"
 sc = "取消"
+fa = "لغو"
 
 [create]
 us = "Create"
@@ -289,6 +312,7 @@ ru = "Создать"
 cz = "Vytvořit"
 jpn = "作成"
 sc = "创建"
+fa = "ساختن"
 
 [edit]
 us = "Edit"
@@ -301,6 +325,7 @@ ru = "Изменить"
 cz = "Upravit"
 jpn = "編集"
 sc = "编辑"
+fa = "ویرایش"
 
 [rename]
 us = "Rename"
@@ -313,6 +338,7 @@ ru = "Переименовать"
 cz = "Přejmenovat"
 jpn = "名前を変更"
 sc = "重命名"
+fa = "تغییر نام"
 
 [duplicate]
 us = "Duplicate"
@@ -325,6 +351,7 @@ ru = "Дублировать"
 cz = "Duplikovat"
 jpn = "複製"
 sc = "复制"
+fa = "تکثیر"
 
 [delete]
 us = "Delete"
@@ -337,6 +364,7 @@ ru = "Удалить"
 cz = "Smazat"
 jpn = "削除"
 sc = "删除"
+fa = "حذف"
 
 [really_delete_set]
 us = "Delete the mod set {name}? Its mods stay in the library."
@@ -349,6 +377,7 @@ ru = "Удалить набор модов {name}? Его моды остану�
 cz = "Smazat sadu módů {name}? Její módy zůstanou v knihovně."
 jpn = "MODセット {name} を削除しますか? MOD自体はライブラリに残ります。"
 sc = "删除模组组合 {name}?其中的模组仍保留在库中。"
+fa = "مجموعهٔ ماد {name} حذف شود؟ مادهایش در کتابخانه می‌مانند."
 
 [move_up]
 us = "Move up"
@@ -361,6 +390,7 @@ ru = "Выше"
 cz = "Nahoru"
 jpn = "上へ"
 sc = "上移"
+fa = "بالا بردن"
 
 [move_down]
 us = "Move down"
@@ -373,6 +403,7 @@ ru = "Ниже"
 cz = "Dolů"
 jpn = "下へ"
 sc = "下移"
+fa = "پایین بردن"
 
 [copy_name]
 us = "{name} (copy)"
@@ -385,6 +416,7 @@ ru = "{name} (копия)"
 cz = "{name} (kopie)"
 jpn = "{name}(コピー)"
 sc = "{name}(副本)"
+fa = "{name} (کپی)"
 
 [set_saved]
 us = "The mod set {name} was saved."
@@ -397,6 +429,7 @@ ru = "Набор модов {name} сохранён."
 cz = "Sada módů {name} byla uložena."
 jpn = "MODセット {name} を保存しました。"
 sc = "模组组合 {name} 已保存。"
+fa = "مجموعهٔ ماد {name} ذخیره شد."
 
 [set_deleted]
 us = "The mod set {name} was deleted."
@@ -409,6 +442,7 @@ ru = "Набор модов {name} удалён."
 cz = "Sada módů {name} byla smazána."
 jpn = "MODセット {name} を削除しました。"
 sc = "模组组合 {name} 已删除。"
+fa = "مجموعهٔ ماد {name} حذف شد."
 
 [from_folder]
 us = "from a folder"
@@ -421,6 +455,7 @@ ru = "из папки"
 cz = "ze složky"
 jpn = "フォルダーから"
 sc = "来自文件夹"
+fa = "از یک پوشه"
 
 [library_empty_for_set]
 us = "Add a mod to the library first: a mod set is made of the mods in it."
@@ -433,6 +468,7 @@ ru = "Сначала добавьте мод в библиотеку: набор
 cz = "Nejdřív přidejte mód do knihovny: sada módů se skládá z módů v ní."
 jpn = "まずライブラリにMODを追加してください。MODセットはライブラリ内のMODから作ります。"
 sc = "请先向库中添加模组:模组组合由库中的模组组成。"
+fa = "اول یک ماد به کتابخانه اضافه کنید: هر مجموعهٔ ماد از مادهای درون آن ساخته می‌شود."
 
 [library]
 us = "Mod library"
@@ -445,6 +481,7 @@ ru = "Библиотека модов"
 cz = "Knihovna módů"
 jpn = "MODライブラリ"
 sc = "模组库"
+fa = "کتابخانهٔ ماد"
 
 [add_mod]
 us = "Add a mod file…"
@@ -457,6 +494,7 @@ ru = "Добавить файл мода…"
 cz = "Přidat soubor módu…"
 jpn = "MODファイルを追加…"
 sc = "添加模组文件…"
+fa = "افزودن فایل ماد…"
 
 [drop_hint]
 us = "…or drop a mod file (.rusemod, .rmod or .zip) or a mod folder anywhere on this window."
@@ -469,6 +507,7 @@ ru = "…или перетащите файл мода (.rusemod, .rmod или .
 cz = "…nebo přetáhněte soubor módu (.rusemod, .rmod nebo .zip) či složku módu kamkoli do tohoto okna."
 jpn = "…またはMODファイル（.rusemod、.rmod か .zip）かMODのフォルダーをこのウィンドウにドロップしてください。"
 sc = "…或将模组文件（.rusemod、.rmod 或 .zip）或模组文件夹拖放到此窗口的任意位置。"
+fa = "…یا یک فایل ماد (.rusemod، .rmod یا .zip) یا یک پوشهٔ ماد را هر جای این پنجره رها کنید."
 
 [drop_here]
 us = "Drop it to add it to the library"
@@ -481,6 +520,7 @@ ru = "Отпустите, чтобы добавить в библиотеку"
 cz = "Pusťte a přidá se do knihovny"
 jpn = "ドロップするとライブラリに追加されます"
 sc = "松开即可添加到库中"
+fa = "رهایش کنید تا به کتابخانه اضافه شود"
 
 [adding]
 us = "Adding the mod…"
@@ -493,6 +533,7 @@ ru = "Мод добавляется…"
 cz = "Přidávání módu…"
 jpn = "MODを追加しています…"
 sc = "正在添加模组…"
+fa = "در حال افزودن ماد…"
 
 [remove]
 us = "Remove"
@@ -505,6 +546,7 @@ ru = "Убрать"
 cz = "Odebrat"
 jpn = "取り除く"
 sc = "移除"
+fa = "برداشتن"
 
 [really_remove_mod]
 us = "Remove {name} from the library? Mod sets that use it stop working until it's back."
@@ -517,6 +559,7 @@ ru = "Убрать {name} из библиотеки? Наборы модов, г
 cz = "Odebrat {name} z knihovny? Sady módů, které ho používají, přestanou fungovat, dokud se nevrátí."
 jpn = "{name} をライブラリから取り除きますか? それを使うMODセットは、戻すまで動きません。"
 sc = "从库中移除 {name}?使用它的模组组合在它重新添加之前无法使用。"
+fa = "{name} از کتابخانه برداشته شود؟ مجموعه‌های مادی که از آن استفاده می‌کنند تا وقتی برنگردد کار نمی‌کنند."
 
 [version_v]
 us = "version {v}"
@@ -529,6 +572,7 @@ ru = "версия {v}"
 cz = "verze {v}"
 jpn = "バージョン {v}"
 sc = "版本 {v}"
+fa = "نسخهٔ {v}"
 
 [by]
 us = "by {authors}"
@@ -541,6 +585,7 @@ ru = "автор: {authors}"
 cz = "autor: {authors}"
 jpn = "作者: {authors}"
 sc = "作者:{authors}"
+fa = "از {authors}"
 
 [made_for]
 us = "made for game build {builds}"
@@ -553,6 +598,7 @@ ru = "сделан для сборки игры {builds}"
 cz = "pro verzi hry {builds}"
 jpn = "ゲームビルド {builds} 向け"
 sc = "适用于游戏版本 {builds}"
+fa = "ساخته‌شده برای بیلد {builds} بازی"
 
 [your_build]
 us = "you have {build}, so it may not fit"
@@ -565,6 +611,7 @@ ru = "у вас {build}, поэтому он может не подойти"
 cz = "vy máte {build}, takže nemusí sedět"
 jpn = "お使いのビルドは {build} なので、合わない可能性があります"
 sc = "你的版本是 {build},可能不兼容"
+fa = "شما {build} را دارید، پس شاید جور نباشد"
 
 [used_in_one]
 us = "in 1 mod set"
@@ -577,6 +624,7 @@ ru = "в 1 наборе модов"
 cz = "v 1 sadě módů"
 jpn = "1 つのMODセットで使用中"
 sc = "用于 1 个模组组合"
+fa = "در 1 مجموعهٔ ماد"
 
 [used_in]
 us = "in {n} mod sets"
@@ -589,6 +637,7 @@ ru = "в наборах модов: {n}"
 cz = "v sadách módů: {n}"
 jpn = "{n} つのMODセットで使用中"
 sc = "用于 {n} 个模组组合"
+fa = "در {n} مجموعهٔ ماد"
 
 [library_empty]
 us = "No mods yet. Add a mod file, or drop one on this window."
@@ -601,6 +650,7 @@ ru = "Модов пока нет. Добавьте файл мода или пе
 cz = "Zatím žádné módy. Přidejte soubor módu, nebo ho přetáhněte do tohoto okna."
 jpn = "まだMODがありません。MODファイルを追加するか、このウィンドウにドロップしてください。"
 sc = "还没有模组。请添加模组文件,或将其拖放到此窗口。"
+fa = "هنوز هیچ مادی نیست. یک فایل ماد اضافه کنید، یا یکی را روی این پنجره رها کنید."
 
 [mod_added]
 us = "{name} was added to the library."
@@ -613,6 +663,7 @@ ru = "{name} добавлен в библиотеку."
 cz = "{name} byl přidán do knihovny."
 jpn = "{name} をライブラリに追加しました。"
 sc = "{name} 已添加到库中。"
+fa = "{name} به کتابخانه اضافه شد."
 
 [mod_updated]
 us = "{name} was replaced by version {v}."
@@ -625,6 +676,7 @@ ru = "{name} заменён версией {v}."
 cz = "{name} byl nahrazen verzí {v}."
 jpn = "{name} をバージョン {v} に置き換えました。"
 sc = "{name} 已替换为版本 {v}。"
+fa = "{name} با نسخهٔ {v} جایگزین شد."
 
 [mod_removed]
 us = "{name} was removed from the library."
@@ -637,6 +689,7 @@ ru = "{name} убран из библиотеки."
 cz = "{name} byl odebrán z knihovny."
 jpn = "{name} をライブラリから取り除きました。"
 sc = "已从库中移除 {name}。"
+fa = "{name} از کتابخانه برداشته شد."
 
 [search_mods]
 us = "Search mods"
@@ -649,6 +702,7 @@ ru = "Поиск модов"
 cz = "Hledat módy"
 jpn = "MODを検索"
 sc = "搜索模组"
+fa = "جست‌وجوی مادها"
 
 [back]
 us = "Back"
@@ -661,6 +715,7 @@ ru = "Назад"
 cz = "Zpět"
 jpn = "戻る"
 sc = "返回"
+fa = "بازگشت"
 
 [install]
 us = "Install"
@@ -673,6 +728,7 @@ ru = "Установить"
 cz = "Nainstalovat"
 jpn = "インストール"
 sc = "安装"
+fa = "نصب"
 
 [update_to]
 us = "Update to {v}"
@@ -685,6 +741,7 @@ ru = "Обновить до {v}"
 cz = "Aktualizovat na {v}"
 jpn = "{v} に更新"
 sc = "更新到 {v}"
+fa = "به‌روزرسانی به {v}"
 
 [installed]
 us = "Installed"
@@ -697,6 +754,7 @@ ru = "Установлен"
 cz = "Nainstalováno"
 jpn = "インストール済み"
 sc = "已安装"
+fa = "نصب‌شده"
 
 [installing]
 us = "Installing…"
@@ -709,6 +767,7 @@ ru = "Установка…"
 cz = "Instaluje se…"
 jpn = "インストール中…"
 sc = "正在安装…"
+fa = "در حال نصب…"
 
 [offline_note]
 us = "No connection to the mod list. This is the copy from {date}."
@@ -721,6 +780,7 @@ ru = "Нет связи со списком модов. Это копия от {
 cz = "Bez připojení k seznamu módů. Toto je kopie z {date}."
 jpn = "MODリストに接続できません。これは {date} の保存コピーです。"
 sc = "无法连接到模组列表。这是 {date} 的副本。"
+fa = "اتصالی به فهرست مادها نیست. این نسخهٔ فهرست از {date} است."
 
 [list_failed]
 us = "The mod list couldn't be loaded: {why}"
@@ -733,6 +793,7 @@ ru = "Не удалось загрузить список модов: {why}"
 cz = "Seznam módů se nepodařilo načíst: {why}"
 jpn = "MODリストを読み込めませんでした：{why}"
 sc = "无法加载模组列表：{why}"
+fa = "فهرست مادها بارگذاری نشد: {why}"
 
 [list_empty]
 us = "No mods match."
@@ -745,6 +806,7 @@ ru = "Подходящих модов нет."
 cz = "Žádný mód neodpovídá."
 jpn = "該当するMODはありません。"
 sc = "没有匹配的模组。"
+fa = "هیچ مادی پیدا نشد."
 
 [for_build]
 us = "for game build {build}"
@@ -757,6 +819,7 @@ ru = "для сборки игры {build}"
 cz = "pro sestavení hry {build}"
 jpn = "ゲームビルド {build} 向け"
 sc = "适用于游戏版本 {build}"
+fa = "برای بیلد {build} بازی"
 
 [more_info]
 us = "More about this mod"
@@ -769,6 +832,7 @@ ru = "Подробнее об этом моде"
 cz = "Více o tomto módu"
 jpn = "このMODについて詳しく"
 sc = "关于此模组的更多信息"
+fa = "دربارهٔ این ماد بیشتر بدانید"
 
 [browse_help]
 us = "These are the mods that work with the Launcher. Tick the ones you want and press Install: each file is checked against the list before it goes into your library. Then tick them in a mod set."
@@ -781,6 +845,7 @@ ru = "Это моды, которые работают с Launcher. Отметь
 cz = "Toto jsou módy, které fungují s Launcherem. Zaškrtněte ty, které chcete, a stiskněte Nainstalovat: každý soubor se před vstupem do knihovny ověří podle seznamu. Pak je zaškrtněte v sadě módů."
 jpn = "Launcherで動作するMODの一覧です。欲しいものにチェックを入れて「インストール」を押してください。各ファイルはライブラリに入る前にリストと照合されます。その後、MODセットでチェックしてください。"
 sc = "这些是可在 Launcher 中使用的模组。勾选你想要的，然后点击“安装”：每个文件在进入你的库之前都会与列表核对。然后在模组组合中勾选它们。"
+fa = "این‌ها مادهایی هستند که با لانچر کار می‌کنند. آن‌هایی را که می‌خواهید تیک بزنید و «نصب» را بزنید: هر فایل پیش از رفتن به کتابخانهٔ شما با فهرست مقایسه می‌شود. سپس آن‌ها را در یک مجموعهٔ ماد تیک بزنید."
 
 [refresh_list]
 us = "Refresh"
@@ -793,6 +858,7 @@ ru = "Обновить список"
 cz = "Obnovit"
 jpn = "更新"
 sc = "刷新"
+fa = "تازه‌سازی"
 
 [guide_title]
 us = "Playing with mods, in three steps"
@@ -805,6 +871,7 @@ ru = "Игра с модами в три шага"
 cz = "Hraní s módy ve třech krocích"
 jpn = "MODで遊ぶための3ステップ"
 sc = "使用模组游玩，只需三步"
+fa = "بازی با مادها، در سه گام"
 
 [guide_add]
 us = "Add mods: “Add a mod file…” on the left, or drop the file on this window. RUSE Studio mods (.rusemod), RUSE Mod Manager mods (.rmod) and .zip files all work. Or find one under “Supported mods”."
@@ -817,6 +884,7 @@ ru = "Добавьте моды: «Добавить файл мода…» сл�
 cz = "Přidejte módy: „Přidat soubor módu…“ vlevo, nebo přetáhněte soubor do tohoto okna. Fungují módy z RUSE Studio (.rusemod), módy z RUSE Mod Manager (.rmod) i soubory .zip. Nebo si nějaký najděte v sekci „Podporované módy“."
 jpn = "MODを追加：左の「MODファイルを追加…」を押すか、ファイルをこのウィンドウにドロップしてください。RUSE StudioのMOD（.rusemod）、RUSE Mod ManagerのMOD（.rmod）、.zipファイルのどれでも使えます。「対応MOD」から見つけることもできます。"
 sc = "添加模组：点击左侧的“添加模组文件…”，或将文件拖放到此窗口。RUSE Studio 模组（.rusemod）、RUSE Mod Manager 模组（.rmod）和 .zip 文件都可以使用。也可以在“支持的模组”中查找。"
+fa = "افزودن مادها: «افزودن فایل ماد…» در سمت چپ، یا فایل را روی این پنجره رها کنید. مادهای RUSE Studio (.rusemod)، مادهای RUSE Mod Manager (.rmod) و فایل‌های .zip همه کار می‌کنند. یا یکی را در «مادهای پشتیبانی‌شده» پیدا کنید."
 
 [guide_set]
 us = "Make a mod set: “New mod set…”, tick the mods and put them in order. Where two mods change the same thing, the lower one wins."
@@ -829,6 +897,7 @@ ru = "Создайте набор модов: «Новый набор модов
 cz = "Vytvořte sadu módů: „Nová sada módů…“, zaškrtněte módy a seřaďte je. Když dva módy mění totéž, vyhrává ten níže."
 jpn = "MODセットを作る：「新しいMODセット…」を押し、MODにチェックを入れて順番に並べてください。2つのMODが同じ項目を変える場合は、下のMODが優先されます。"
 sc = "创建模组组合：点击“新建模组组合…”，勾选模组并排好顺序。两个模组修改同一项时，下面的优先。"
+fa = "ساختن یک مجموعهٔ ماد: «مجموعهٔ ماد جدید…»، مادها را تیک بزنید و مرتبشان کنید. جایی که دو ماد یک چیز را تغییر می‌دهند، آن که پایین‌تر است برنده می‌شود."
 
 [guide_play]
 us = "Pick the set and press Play. The launcher builds a separate modded copy of the game and starts it; your Steam game stays as it is."
@@ -841,6 +910,7 @@ ru = "Выберите набор и нажмите «Играть». Лаунч
 cz = "Vyberte sadu a stiskněte Hrát. Launcher vytvoří samostatnou kopii hry s módy a spustí ji; vaše hra ze Steamu zůstane beze změny."
 jpn = "セットを選んで「プレイ」を押してください。ランチャーがMOD入りのゲームの別コピーを作って起動します。Steam のゲームはそのままです。"
 sc = "选择组合，然后点击“开始游戏”。启动器会创建一份单独的模组版游戏副本并启动它；你的 Steam 游戏保持原样。"
+fa = "مجموعه را انتخاب کنید و «بازی» را بزنید. لانچر یک نسخهٔ مادشدهٔ جداگانه از بازی می‌سازد و اجرایش می‌کند؛ بازی Steam شما همان‌طور که هست می‌ماند."
 
 [share]
 us = "Share"
@@ -853,6 +923,7 @@ ru = "Поделиться"
 cz = "Sdílet"
 jpn = "共有"
 sc = "分享"
+fa = "اشتراک‌گذاری"
 
 [share_title]
 us = "Share this load order"
@@ -865,6 +936,7 @@ ru = "Поделиться этим порядком загрузки"
 cz = "Sdílet toto pořadí načítání"
 jpn = "このロード順を共有"
 sc = "分享此加载顺序"
+fa = "اشتراک‌گذاری این ترتیب بارگذاری"
 
 [share_help]
 us = "Copy this and send it to a friend (Discord, a message…). They import it in RUSE Launcher (“Import a load order…”) or in RUSE Mod Manager and get the same mods in the same order. They need the mods too."
@@ -877,6 +949,7 @@ ru = "Скопируйте это и отправьте другу (Discord, с�
 cz = "Zkopírujte to a pošlete příteli (Discord, zpráva…). Ten si to naimportuje v RUSE Launcher („Importovat pořadí načítání…“) nebo v RUSE Mod Manager a dostane stejné módy ve stejném pořadí. Samotné módy ale musí mít také."
 jpn = "これをコピーして友達に送ってください（Discord やメッセージなど）。友達が RUSE Launcher（「ロード順をインポート…」）か RUSE Mod Manager で読み込むと、同じMODが同じ順番で入ります。MOD自体も友達が持っている必要があります。"
 sc = "复制这段内容并发送给好友（Discord、消息…）。对方在 RUSE Launcher（“导入加载顺序…”）或 RUSE Mod Manager 中导入，即可按相同顺序获得相同的模组。对方也需要拥有这些模组。"
+fa = "این را کپی کنید و برای یک دوست بفرستید (Discord، یک پیام…). او آن را در RUSE Launcher («وارد کردن ترتیب بارگذاری…») یا در RUSE Mod Manager وارد می‌کند و همان مادها را به همان ترتیب می‌گیرد. او هم به آن مادها نیاز دارد."
 
 [copy]
 us = "Copy"
@@ -889,6 +962,7 @@ ru = "Копировать"
 cz = "Kopírovat"
 jpn = "コピー"
 sc = "复制"
+fa = "کپی"
 
 [copied]
 us = "Copied."
@@ -901,6 +975,7 @@ ru = "Скопировано."
 cz = "Zkopírováno."
 jpn = "コピーしました。"
 sc = "已复制。"
+fa = "کپی شد."
 
 [import_order]
 us = "Import a load order…"
@@ -913,6 +988,7 @@ ru = "Импортировать порядок загрузки…"
 cz = "Importovat pořadí načítání…"
 jpn = "ロード順をインポート…"
 sc = "导入加载顺序…"
+fa = "وارد کردن ترتیب بارگذاری…"
 
 [import_help]
 us = "Paste a load order a friend shared, from RUSE Launcher or RUSE Mod Manager. The new mod set gets the mods you have, in the same order."
@@ -925,6 +1001,7 @@ ru = "Вставьте порядок загрузки, которым поде�
 cz = "Vložte pořadí načítání, které s vámi sdílel přítel, z RUSE Launcher nebo RUSE Mod Manager. Nová sada módů dostane módy, které máte, ve stejném pořadí."
 jpn = "友達が共有したロード順（RUSE Launcher または RUSE Mod Manager のもの）を貼り付けてください。新しいMODセットには、持っているMODが同じ順番で入ります。"
 sc = "粘贴好友分享的加载顺序（来自 RUSE Launcher 或 RUSE Mod Manager）。新的模组组合会按相同顺序包含你已有的模组。"
+fa = "ترتیب بارگذاری‌ای را که یک دوست از RUSE Launcher یا RUSE Mod Manager به اشتراک گذاشته اینجا بچسبانید. مجموعهٔ ماد جدید، مادهایی را که دارید به همان ترتیب می‌گیرد."
 
 [import_paste]
 us = "Paste the load order here"
@@ -937,6 +1014,7 @@ ru = "Вставьте сюда порядок загрузки"
 cz = "Sem vložte pořadí načítání"
 jpn = "ここにロード順を貼り付け"
 sc = "在此粘贴加载顺序"
+fa = "ترتیب بارگذاری را اینجا بچسبانید"
 
 [check_order]
 us = "Check"
@@ -949,6 +1027,7 @@ ru = "Проверить"
 cz = "Zkontrolovat"
 jpn = "確認"
 sc = "检查"
+fa = "بررسی"
 
 [make_set]
 us = "Make the mod set"
@@ -961,6 +1040,7 @@ ru = "Создать набор модов"
 cz = "Vytvořit sadu módů"
 jpn = "MODセットを作成"
 sc = "创建模组组合"
+fa = "ساختن مجموعهٔ ماد"
 
 [import_found]
 us = "{n} of {total} mods are in your library."
@@ -973,6 +1053,7 @@ ru = "Модов в вашей библиотеке: {n} из {total}."
 cz = "Módů ve vaší knihovně: {n} z {total}."
 jpn = "{total} 個中 {n} 個のMODがライブラリにあります。"
 sc = "{total} 个模组中有 {n} 个在你的库中。"
+fa = "{n} از {total} ماد در کتابخانهٔ شما هست."
 
 [import_missing]
 us = "Not in your library yet: {names}. Add them (Add a mod file… or Supported mods) and import again, or make the set without them."
@@ -985,6 +1066,7 @@ ru = "Пока нет в вашей библиотеке: {names}. Добавь�
 cz = "Zatím nejsou ve vaší knihovně: {names}. Přidejte je (Přidat soubor módu… nebo Podporované módy) a importujte znovu, nebo vytvořte sadu bez nich."
 jpn = "まだライブラリにないMOD：{names}。追加して（「MODファイルを追加…」または「対応MOD」）もう一度インポートするか、それらなしでセットを作成してください。"
 sc = "库中尚无：{names}。请添加它们（“添加模组文件…”或“支持的模组”）后重新导入，或不含它们直接创建组合。"
+fa = "هنوز در کتابخانهٔ شما نیستند: {names}. آن‌ها را اضافه کنید («افزودن فایل ماد…» یا «مادهای پشتیبانی‌شده») و دوباره وارد کنید، یا مجموعه را بدون آن‌ها بسازید."
 
 [import_version]
 us = "In your library in another version: {list}."
@@ -997,6 +1079,7 @@ ru = "В вашей библиотеке в другой версии: {list}."
 cz = "Ve vaší knihovně v jiné verzi: {list}."
 jpn = "ライブラリに別のバージョンで入っているMOD：{list}。"
 sc = "库中版本不同的模组：{list}。"
+fa = "با نسخه‌ای دیگر در کتابخانهٔ شما: {list}."
 
 [import_wrong_game]
 us = "Made for the other version of the game (R.U.S.E. or R.U.S.E. COMPAT): the mods may not fit yours."
@@ -1009,6 +1092,7 @@ ru = "Сделано для другой версии игры (R.U.S.E. или 
 cz = "Vytvořeno pro jinou verzi hry (R.U.S.E. nebo R.U.S.E. COMPAT): módy nemusí sedět k té vaší."
 jpn = "ゲームのもう一方のバージョン（R.U.S.E. または R.U.S.E. COMPAT）向けに作られています。お使いのゲームには合わない可能性があります。"
 sc = "为游戏的另一个版本（R.U.S.E. 或 R.U.S.E. COMPAT）制作：这些模组可能与你的版本不兼容。"
+fa = "ساخته‌شده برای نسخهٔ دیگر بازی (R.U.S.E. یا R.U.S.E. COMPAT): شاید مادها با بازی شما جور نباشند."
 
 [import_done]
 us = "Mod set “{name}” made from the shared load order."
@@ -1021,6 +1105,7 @@ ru = "Набор модов «{name}» создан из полученного 
 cz = "Sada módů „{name}“ vytvořena ze sdíleného pořadí načítání."
 jpn = "共有されたロード順からMODセット「{name}」を作成しました。"
 sc = "已根据分享的加载顺序创建模组组合“{name}”。"
+fa = "مجموعهٔ ماد «{name}» از ترتیب بارگذاری اشتراکی ساخته شد."
 
 [update_out]
 us = "{app} {version} is out."
@@ -1033,6 +1118,7 @@ ru = "Вышла новая версия: {app} {version}."
 cz = "Je k dispozici {app} {version}."
 jpn = "{app} {version} が公開されました。"
 sc = "{app} {version} 已发布。"
+fa = "{app} {version} منتشر شد."
 
 [update_now]
 us = "Update"
@@ -1045,6 +1131,7 @@ ru = "Обновить"
 cz = "Aktualizovat"
 jpn = "今すぐ更新"
 sc = "更新"
+fa = "به‌روزرسانی"
 
 [whats_new]
 us = "What's new"
@@ -1057,6 +1144,7 @@ ru = "Что нового"
 cz = "Co je nového"
 jpn = "更新内容"
 sc = "更新内容"
+fa = "تازه‌ها"
 
 [update_progress]
 us = "Downloading the update… {pct}"
@@ -1069,6 +1157,7 @@ ru = "Скачивание обновления… {pct}"
 cz = "Stahuje se aktualizace… {pct}"
 jpn = "更新をダウンロードしています… {pct}"
 sc = "正在下载更新… {pct}"
+fa = "در حال دانلود به‌روزرسانی… {pct}"
 
 [update_installing]
 us = "Installing: {app} closes and opens again by itself."
@@ -1081,6 +1170,7 @@ ru = "Установка: {app} закроется и снова откроет�
 cz = "Instalace: {app} se zavře a automaticky se znovu otevře."
 jpn = "インストール中：{app} は自動的に閉じて、もう一度開きます。"
 sc = "正在安装：{app} 会自动关闭并重新打开。"
+fa = "در حال نصب: {app} بسته می‌شود و خودش دوباره باز می‌شود."
 
 [update_repo]
 us = "(This copy runs from the repo: update it with git pull.)"
@@ -1093,6 +1183,7 @@ ru = "(Эта копия запущена из репозитория: обно�
 cz = "(Tato kopie běží z repozitáře: aktualizujte ji příkazem git pull.)"
 jpn = "（このコピーはリポジトリから実行されています。git pull で更新してください。）"
 sc = "（此副本从代码仓库运行：请用 git pull 更新。）"
+fa = "(این نسخه از مخزن اجرا می‌شود: با git pull به‌روزش کنید.)"
 
 [update_failed]
 us = "The update didn't work: {why}"
@@ -1105,6 +1196,7 @@ ru = "Не удалось выполнить обновление: {why}"
 cz = "Aktualizace se nezdařila: {why}"
 jpn = "更新できませんでした：{why}"
 sc = "更新失败：{why}"
+fa = "به‌روزرسانی انجام نشد: {why}"
 
 # --- mods that don't go together (rusemod.rmod.clashes), shown on the set screen and while a set is edited ---
 [clash_cant_play]
@@ -1118,6 +1210,7 @@ ru = "С этим набором играть нельзя:"
 cz = "Tuto sadu nelze hrát:"
 jpn = "このセットではプレイできません:"
 sc = "此组合无法游玩："
+fa = "این مجموعه را نمی‌شود بازی کرد:"
 
 [clash_overwrites]
 us = "Later mods overwrite earlier ones ({n}):"
@@ -1130,6 +1223,7 @@ ru = "Поздние моды перезаписывают ранние ({n}):"
 cz = "Pozdější módy přepisují dřívější ({n}):"
 jpn = "後のMODが前のMODを上書きします({n}):"
 sc = "后面的模组覆盖了前面的模组（{n}）："
+fa = "مادهای بعدی روی مادهای قبلی می‌نویسند ({n}):"
 
 [clash_file]
 us = "{a} and {b} both replace the same file, {file} ({kind}), with different contents. Only one of them can be in a set."
@@ -1142,6 +1236,7 @@ ru = "{a} и {b} заменяют один и тот же файл ({kind}), {fi
 cz = "{a} a {b} nahrazují stejný soubor ({kind}), {file}, různým obsahem. V sadě může být jen jeden z nich."
 jpn = "{a} と {b} は同じファイル({kind})の {file} を異なる内容で置き換えます。セットに入れられるのはどちらか一方だけです。"
 sc = "{a} 和 {b} 都用不同的内容替换了同一个文件（{kind}）{file}。组合中只能保留其中一个。"
+fa = "{a} و {b} هر دو یک فایل، {file} ({kind})، را با محتوای متفاوت جایگزین می‌کنند. فقط یکی از آن‌ها می‌تواند در یک مجموعه باشد."
 
 [clash_archive]
 us = "{a} replaces the whole archive {file}, and {b} changes files inside it; one of the two would be lost. Only one of them can be in a set."
@@ -1154,6 +1249,7 @@ ru = "{a} заменяет весь архив {file}, а {b} меняет фа�
 cz = "{a} nahrazuje celý archiv {file} a {b} mění soubory uvnitř něj; jedno z toho by se ztratilo. V sadě může být jen jeden z nich."
 jpn = "{a} はアーカイブ {file} 全体を置き換え、{b} はその中のファイルを変更します。どちらかが失われます。セットに入れられるのはどちらか一方だけです。"
 sc = "{a} 替换了整个归档 {file}，而 {b} 修改了其中的文件；两者之一会丢失。组合中只能保留其中一个。"
+fa = "{a} کل آرشیو {file} را جایگزین می‌کند، و {b} فایل‌هایی درون آن را تغییر می‌دهد؛ یکی از این دو از دست می‌رفت. فقط یکی از آن‌ها می‌تواند در یک مجموعه باشد."
 
 [clash_create]
 us = "{a} and {b} each add a new object called {example}; two objects can't share a name. Only one of them can be in a set."
@@ -1166,6 +1262,7 @@ ru = "{a} и {b} добавляют новый объект с именем {exa
 cz = "{a} a {b} přidávají nový objekt jménem {example}; dva objekty nemohou mít stejné jméno. V sadě může být jen jeden z nich."
 jpn = "{a} と {b} はそれぞれ {example} という新しいオブジェクトを追加します。同じ名前のオブジェクトは二つ存在できません。セットに入れられるのはどちらか一方だけです。"
 sc = "{a} 和 {b} 各自添加了一个名为 {example} 的新对象；两个对象不能同名。组合中只能保留其中一个。"
+fa = "{a} و {b} هر کدام شیء جدیدی به نام {example} اضافه می‌کنند؛ دو شیء نمی‌توانند هم‌نام باشند. فقط یکی از آن‌ها می‌تواند در یک مجموعه باشد."
 
 [clash_value]
 us = "{a} changes {n} values {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s values."
@@ -1178,6 +1275,7 @@ ru = "{a} меняет {n} значений, которые меняет и {b},
 cz = "{a} mění {n} hodnot, které mění i {b}, např. {example}; je později, takže vyhrává. Dejte {b} za {a}, pokud chcete hodnoty z {b}."
 jpn = "{a} は {b} も変更している {n} 個の値(例: {example})を変更します。後にあるので {a} が優先されます。{b} の値にしたい場合は {b} を {a} の後に置いてください。"
 sc = "{a} 修改了 {b} 也修改过的 {n} 个数值，例如 {example}；它在后面，所以它优先。如果想要 {b} 的数值，请把 {b} 放到 {a} 后面。"
+fa = "{a} تعداد {n} مقدار را تغییر می‌دهد که {b} هم تغییرشان داده بود، مثلاً {example}؛ چون بعدتر می‌آید، برنده می‌شود. اگر مقدارهای {b} را می‌خواهید، {b} را بعد از {a} بگذارید."
 
 [clash_value_one]
 us = "{a} changes a value {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s value."
@@ -1190,6 +1288,7 @@ ru = "{a} меняет значение, которое меняет и {b}: {ex
 cz = "{a} mění hodnotu, kterou mění i {b}: {example}; je později, takže vyhrává. Dejte {b} za {a}, pokud chcete hodnotu z {b}."
 jpn = "{a} は {b} も変更している値 {example} を変更します。後にあるので {a} が優先されます。{b} の値にしたい場合は {b} を {a} の後に置いてください。"
 sc = "{a} 修改了 {b} 也修改过的数值 {example}；它在后面，所以它优先。如果想要 {b} 的数值，请把 {b} 放到 {a} 后面。"
+fa = "{a} مقداری را تغییر می‌دهد که {b} هم تغییرش داده بود، {example}؛ چون بعدتر می‌آید، برنده می‌شود. اگر مقدار {b} را می‌خواهید، {b} را بعد از {a} بگذارید."
 
 [clash_text]
 us = "{a} changes {n} texts {b} changed too, e.g. {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s texts."
@@ -1202,6 +1301,7 @@ ru = "{a} меняет {n} текстов, которые меняет и {b}, �
 cz = "{a} mění {n} textů, které mění i {b}, např. {example}; je později, takže vyhrává. Dejte {b} za {a}, pokud chcete texty z {b}."
 jpn = "{a} は {b} も変更している {n} 個のテキスト(例: {example})を変更します。後にあるので {a} が優先されます。{b} のテキストにしたい場合は {b} を {a} の後に置いてください。"
 sc = "{a} 修改了 {b} 也修改过的 {n} 条文本，例如 {example}；它在后面，所以它优先。如果想要 {b} 的文本，请把 {b} 放到 {a} 后面。"
+fa = "{a} تعداد {n} متن را تغییر می‌دهد که {b} هم تغییرشان داده بود، مثلاً {example}؛ چون بعدتر می‌آید، برنده می‌شود. اگر متن‌های {b} را می‌خواهید، {b} را بعد از {a} بگذارید."
 
 [clash_text_one]
 us = "{a} changes a text {b} changed too, {example}; it comes later, so it wins. Put {b} after {a} if you want {b}'s text."
@@ -1214,6 +1314,7 @@ ru = "{a} меняет текст, который меняет и {b}: {example}
 cz = "{a} mění text, který mění i {b}: {example}; je později, takže vyhrává. Dejte {b} za {a}, pokud chcete text z {b}."
 jpn = "{a} は {b} も変更しているテキスト {example} を変更します。後にあるので {a} が優先されます。{b} のテキストにしたい場合は {b} を {a} の後に置いてください。"
 sc = "{a} 修改了 {b} 也修改过的文本 {example}；它在后面，所以它优先。如果想要 {b} 的文本，请把 {b} 放到 {a} 后面。"
+fa = "{a} متنی را تغییر می‌دهد که {b} هم تغییرش داده بود، {example}؛ چون بعدتر می‌آید، برنده می‌شود. اگر متن {b} را می‌خواهید، {b} را بعد از {a} بگذارید."
 
 # what kind of game file a clash is about ({kind} in clash_file)
 [kind_script]
@@ -1227,6 +1328,7 @@ ru = "скрипт"
 cz = "skript"
 jpn = "スクリプト"
 sc = "脚本"
+fa = "یک اسکریپت"
 
 [kind_script_archive]
 us = "a script archive"
@@ -1239,6 +1341,7 @@ ru = "архив скриптов"
 cz = "archiv skriptů"
 jpn = "スクリプトのアーカイブ"
 sc = "脚本归档"
+fa = "یک آرشیو اسکریپت"
 
 [kind_video]
 us = "a video"
@@ -1251,6 +1354,7 @@ ru = "видео"
 cz = "video"
 jpn = "動画"
 sc = "视频"
+fa = "یک ویدیو"
 
 [kind_sound]
 us = "a sound"
@@ -1263,6 +1367,7 @@ ru = "звук"
 cz = "zvuk"
 jpn = "サウンド"
 sc = "音效"
+fa = "یک صدا"
 
 [kind_sound_archive]
 us = "a sound archive"
@@ -1275,6 +1380,7 @@ ru = "архив звуков"
 cz = "archiv zvuků"
 jpn = "サウンドのアーカイブ"
 sc = "音效归档"
+fa = "یک آرشیو صدا"
 
 [kind_picture]
 us = "a picture"
@@ -1287,6 +1393,7 @@ ru = "изображение"
 cz = "obrázek"
 jpn = "画像"
 sc = "图片"
+fa = "یک تصویر"
 
 [kind_map_file]
 us = "a map file"
@@ -1299,6 +1406,7 @@ ru = "файл карты"
 cz = "soubor mapy"
 jpn = "マップファイル"
 sc = "地图文件"
+fa = "یک فایل نقشه"
 
 [kind_text_file]
 us = "a text file"
@@ -1311,6 +1419,7 @@ ru = "файл текстов"
 cz = "soubor textů"
 jpn = "テキストファイル"
 sc = "文本文件"
+fa = "یک فایل متنی"
 
 [kind_game_data]
 us = "game data"
@@ -1323,6 +1432,7 @@ ru = "игровые данные"
 cz = "herní data"
 jpn = "ゲームデータ"
 sc = "游戏数据"
+fa = "داده‌های بازی"
 
 [best_order]
 us = "Put in best order"
@@ -1335,6 +1445,7 @@ ru = "Расставить в лучшем порядке"
 cz = "Seřadit v nejlepším pořadí"
 jpn = "最適な順番に並べる"
 sc = "按最佳顺序排列"
+fa = "چیدن به بهترین ترتیب"
 
 [best_order_why]
 us = "Where two mods change the same thing, the lower one wins. The best order puts the mods that change more first and the smaller ones after, so each keeps as much as it can."
@@ -1347,6 +1458,7 @@ ru = "Где два мода меняют одно и то же, побежда�
 cz = "Kde dva módy mění totéž, vyhrává ten níže. Nejlepší pořadí dá napřed módy, které mění víc, a menší po nich, aby si každý ponechal co nejvíc."
 jpn = "2つのMODが同じものを変更する場合、下のMODが優先されます。最適な順番では変更の多いMODを先に、小さいMODを後に置き、それぞれができるだけ多くを保てるようにします。"
 sc = "当两个模组修改同一内容时，靠下的模组优先。最佳顺序会把修改多的模组放在前面、较小的放在后面，让每个模组尽量保留自己的修改。"
+fa = "جایی که دو ماد یک چیز را تغییر می‌دهند، آن که پایین‌تر است برنده می‌شود. بهترین ترتیب، مادهایی را که بیشتر تغییر می‌دهند اول می‌گذارد و کوچک‌ترها را بعد، تا هر کدام تا جای ممکن تغییراتش را نگه دارد."
 
 [best_order_helps]
 us = "{names} would keep most of their changes instead of losing them."
@@ -1359,6 +1471,7 @@ ru = "{names} сохранят большую часть своих измене
 cz = "{names} by si ponechaly většinu svých změn, místo aby o ně přišly."
 jpn = "{names} は変更の大部分を失わずに保てます。"
 sc = "{names} 将保留大部分修改，而不是失去它们。"
+fa = "{names} بیشتر تغییراتشان را نگه می‌داشتند، به‌جای این‌که از دستشان بدهند."
 
 [best_order_done]
 us = "{name}: mods put in the best order."
@@ -1371,6 +1484,7 @@ ru = "{name}: моды расставлены в лучшем порядке."
 cz = "{name}: módy seřazeny v nejlepším pořadí."
 jpn = "{name}: MODを最適な順番に並べました。"
 sc = "{name}：模组已按最佳顺序排列。"
+fa = "{name}: مادها به بهترین ترتیب چیده شدند."
 
 [settings_tab]
 us = "Settings"
@@ -1383,6 +1497,7 @@ ru = "Настройки"
 cz = "Nastavení"
 jpn = "設定"
 sc = "设置"
+fa = "تنظیمات"
 
 [settings_title]
 us = "Settings"
@@ -1395,6 +1510,7 @@ ru = "Настройки"
 cz = "Nastavení"
 jpn = "設定"
 sc = "设置"
+fa = "تنظیمات"
 
 [set_language_title]
 us = "Language"
@@ -1407,6 +1523,7 @@ ru = "Язык"
 cz = "Jazyk"
 jpn = "言語"
 sc = "语言"
+fa = "زبان"
 
 [set_game_title]
 us = "Game folder"
@@ -1419,6 +1536,7 @@ ru = "Папка игры"
 cz = "Složka hry"
 jpn = "ゲームフォルダ"
 sc = "游戏文件夹"
+fa = "پوشهٔ بازی"
 
 [set_game_path]
 us = "R.U.S.E. is in {path}."
@@ -1431,6 +1549,7 @@ ru = "R.U.S.E. находится в {path}."
 cz = "R.U.S.E. je v {path}."
 jpn = "R.U.S.E. は {path} にあります。"
 sc = "R.U.S.E. 位于 {path}。"
+fa = "R.U.S.E. در {path} است."
 
 [set_game_none]
 us = "R.U.S.E. wasn't found. Pick its folder."
@@ -1443,6 +1562,7 @@ ru = "R.U.S.E. не найдена. Выберите её папку."
 cz = "R.U.S.E. nebyl nalezen. Vyberte jeho složku."
 jpn = "R.U.S.E. が見つかりません。フォルダを選んでください。"
 sc = "未找到 R.U.S.E.，请选择其文件夹。"
+fa = "R.U.S.E. پیدا نشد. پوشه‌اش را انتخاب کنید."
 
 [set_game_change]
 us = "Choose folder…"
@@ -1455,6 +1575,7 @@ ru = "Выбрать папку…"
 cz = "Vybrat složku…"
 jpn = "フォルダを選ぶ…"
 sc = "选择文件夹…"
+fa = "انتخاب پوشه…"
 
 [set_copies_title]
 us = "Where modded copies go"
@@ -1467,6 +1588,7 @@ ru = "Куда идут копии с модами"
 cz = "Kam se ukládají kopie s módy"
 jpn = "MOD入りコピーの保存先"
 sc = "模组版副本的保存位置"
+fa = "جای نسخه‌های مادشده"
 
 [set_copies_help]
 us = "Play builds the modded copy of the game in this folder. The recommended place is RUSE-Instances on the game's drive: there the copy shares the game's files and is ready in seconds. On another drive it is a full copy of the game, slower and bigger. The game's clean backup goes beside it, in RUSE-Backup. After a change, the next Play builds in the new place; the old folder only takes up space and can be deleted by hand."
@@ -1479,6 +1601,7 @@ ru = "Играть собирает копию игры с модами в эт�
 cz = "Hrát sestaví kopii hry s módy v této složce. Doporučené místo je RUSE-Instances na disku hry: tam kopie sdílí soubory hry a je hotová za pár sekund. Na jiném disku je to úplná kopie hry, pomalejší a větší. Čistá záloha hry jde vedle, do RUSE-Backup. Po změně další Hrát sestaví na novém místě; stará složka jen zabírá místo a lze ji smazat ručně."
 jpn = "「プレイ」はこのフォルダーに MOD 入りのゲームコピーをビルドします。おすすめの場所はゲームのドライブにある RUSE-Instances です。そこではコピーがゲームのファイルを共有するので、数秒で用意できます。別のドライブではゲームの完全なコピーになり、遅くて大きくなります。ゲームのクリーンなバックアップはその隣の RUSE-Backup に入ります。変更後、次の「プレイ」は新しい場所にビルドします。古いフォルダーは場所を取るだけなので、手動で削除してかまいません。"
 sc = "“开始游戏”会在此文件夹中构建模组版游戏副本。推荐位置是游戏所在驱动器上的 RUSE-Instances：在那里副本与游戏共享文件，几秒钟即可就绪。放在其他驱动器上则是游戏的完整副本，更慢也更大。游戏的干净备份放在它旁边的 RUSE-Backup 中。更改后，下一次“开始游戏”会在新位置构建；旧文件夹只占空间，可以手动删除。"
+fa = "«بازی» نسخهٔ مادشدهٔ بازی را در این پوشه می‌سازد. جای پیشنهادی RUSE-Instances روی درایو بازی است: آنجا نسخه فایل‌های بازی را با خود بازی شریک می‌شود و در چند ثانیه آماده است. روی درایوی دیگر، یک نسخهٔ کامل از بازی است، کندتر و بزرگ‌تر. پشتیبان تمیز بازی کنارش می‌رود، در RUSE-Backup. پس از تغییر، «بازی» بعدی در جای جدید می‌سازد؛ پوشهٔ قدیمی فقط جا می‌گیرد و می‌شود آن را دستی حذف کرد."
 
 [set_copies_none]
 us = "R.U.S.E. wasn't found yet, so the recommended place isn't known. Pick the game folder first."
@@ -1491,6 +1614,7 @@ ru = "R.U.S.E. ещё не найдена, поэтому рекомендуем
 cz = "R.U.S.E. zatím nebyl nalezen, takže doporučené místo není známé. Nejprve vyberte složku hry."
 jpn = "R.U.S.E. がまだ見つかっていないため、おすすめの場所はわかりません。先にゲームフォルダーを選んでください。"
 sc = "尚未找到 R.U.S.E.，因此推荐位置未知。请先选择游戏文件夹。"
+fa = "R.U.S.E. هنوز پیدا نشده، پس جای پیشنهادی معلوم نیست. اول پوشهٔ بازی را انتخاب کنید."
 
 [set_copies_change]
 us = "Choose folder…"
@@ -1503,6 +1627,7 @@ ru = "Выбрать папку…"
 cz = "Vybrat složku…"
 jpn = "フォルダを選ぶ…"
 sc = "选择文件夹…"
+fa = "انتخاب پوشه…"
 
 [set_copies_default]
 us = "Use the recommended place"
@@ -1515,6 +1640,7 @@ ru = "Использовать рекомендуемое место"
 cz = "Použít doporučené místo"
 jpn = "おすすめの場所を使う"
 sc = "使用推荐位置"
+fa = "استفاده از جای پیشنهادی"
 
 [set_copies_changed]
 us = "Modded copies now go to {path}. The next Play builds there; the old folder only takes up space and can be deleted by hand."
@@ -1527,6 +1653,7 @@ ru = "Копии с модами теперь идут в {path}. Следующ
 cz = "Kopie s módy se teď ukládají do {path}. Další Hrát sestaví tam; stará složka jen zabírá místo a lze ji smazat ručně."
 jpn = "MOD入りコピーの保存先が {path} になりました。次の「プレイ」はそこにビルドします。古いフォルダーは場所を取るだけなので、手動で削除してかまいません。"
 sc = "模组版副本现在保存到 {path}。下一次“开始游戏”会在那里构建；旧文件夹只占空间，可以手动删除。"
+fa = "نسخه‌های مادشده اکنون به {path} می‌روند. «بازی» بعدی آنجا می‌سازد؛ پوشهٔ قدیمی فقط جا می‌گیرد و می‌شود آن را دستی حذف کرد."
 
 [set_copies_fixed]
 us = "Modded copies go to {path}, the folder given when the app started."
@@ -1539,6 +1666,7 @@ ru = "Копии с модами идут в {path} — папку, заданн
 cz = "Kopie s módy se ukládají do {path}, složky zadané při spuštění aplikace."
 jpn = "MOD入りコピーの保存先は {path} です（アプリ起動時に指定されたフォルダー）。"
 sc = "模组版副本保存在 {path}，即应用启动时指定的文件夹。"
+fa = "نسخه‌های مادشده به {path} می‌روند، پوشه‌ای که هنگام شروع برنامه داده شد."
 
 [set_updates_title]
 us = "Updates"
@@ -1551,6 +1679,7 @@ ru = "Обновления"
 cz = "Aktualizace"
 jpn = "更新"
 sc = "更新"
+fa = "به‌روزرسانی‌ها"
 
 [set_updates_latest]
 us = "This is RUSE Launcher {version}. It looks for a newer one each time it opens."
@@ -1563,6 +1692,7 @@ ru = "Это RUSE Launcher {version}. При каждом запуске он и
 cz = "Toto je RUSE Launcher {version}. Při každém otevření hledá novější verzi."
 jpn = "RUSE Launcher {version} です。起動するたびに新しいバージョンを確認します。"
 sc = "这是 RUSE Launcher {version}。每次打开时都会检查新版本。"
+fa = "این RUSE Launcher {version} است. هر بار که باز می‌شود، دنبال نسخهٔ جدیدتری می‌گردد."
 
 [set_updates_check]
 us = "Check now"
@@ -1575,6 +1705,7 @@ ru = "Проверить"
 cz = "Zkontrolovat"
 jpn = "今すぐ確認"
 sc = "立即检查"
+fa = "همین حالا بررسی کن"
 
 [set_updates_checking]
 us = "Looking for a newer version…"
@@ -1587,6 +1718,7 @@ ru = "Поиск новой версии…"
 cz = "Hledání novější verze…"
 jpn = "新しいバージョンを確認中…"
 sc = "正在查找新版本…"
+fa = "در جست‌وجوی نسخهٔ جدیدتر…"
 
 [report_problem]
 us = "Report a problem"
@@ -1599,6 +1731,7 @@ ru = "Сообщить о проблеме"
 cz = "Nahlásit problém"
 jpn = "問題を報告"
 sc = "报告问题"
+fa = "گزارش مشکل"
 
 [tip_report_problem]
 us = "Opens a bug report in your browser, with the app and its version filled in. You read it and post it yourself."
@@ -1611,6 +1744,7 @@ ru = "Открывает отчёт об ошибке в браузере с у�
 cz = "Otevře hlášení chyby v prohlížeči, s aplikací a verzí už vyplněnými. Přečtete si ho a zveřejníte sami."
 jpn = "ブラウザでバグ報告を開きます（アプリとバージョンは記入済み）。確認して自分で投稿します。"
 sc = "在浏览器中打开错误报告，已填好应用和版本。由你检查后自行发布。"
+fa = "یک گزارش باگ در مرورگرتان باز می‌کند که نام برنامه و نسخه‌اش در آن پر شده است. خودتان آن را می‌خوانید و ارسالش می‌کنید."
 
 [report]
 us = "Report"
@@ -1623,6 +1757,7 @@ ru = "Сообщить"
 cz = "Nahlásit"
 jpn = "報告"
 sc = "报告"
+fa = "گزارش"
 
 [tip_report]
 us = "Report this as a bug: your browser opens a report with this message filled in (paths without your user name)."
@@ -1635,6 +1770,7 @@ ru = "Сообщить об ошибке: браузер откроет отчё
 cz = "Nahlásit jako chybu: prohlížeč otevře hlášení s touto zprávou (cesty bez vašeho uživatelského jména)."
 jpn = "バグとして報告：このメッセージ入りの報告がブラウザで開きます（パスからユーザー名は除かれます）。"
 sc = "作为错误报告：浏览器会打开包含此消息的报告（路径中不含你的用户名）。"
+fa = "این را به‌عنوان باگ گزارش کنید: مرورگرتان گزارشی باز می‌کند که این پیام در آن پر شده است (مسیرها بدون نام کاربری شما)."
 
 [help]
 us = "Help"
@@ -1647,6 +1783,7 @@ ru = "Помощь"
 cz = "Nápověda"
 jpn = "ヘルプ"
 sc = "帮助"
+fa = "راهنما"
 
 [tip_help]
 us = "Opens the wiki in your browser: how to add mods, play and play with friends."
@@ -1659,6 +1796,7 @@ ru = "Открывает вики в браузере: как добавлять
 cz = "Otevře wiki v prohlížeči: přidávání modů, hraní, hraní s přáteli."
 jpn = "ブラウザでWikiを開きます：モッドの追加、プレイ、友達とのプレイ。"
 sc = "在浏览器中打开 Wiki：添加模组、游玩、与好友一起玩。"
+fa = "ویکی را در مرورگرتان باز می‌کند: چطور ماد اضافه کنید، بازی کنید و با دوستان بازی کنید."
 
 [mod_check_warn]
 us = "The mod check found {n} problem(s) Play would stop at; its author can fix them:"
@@ -1671,6 +1809,7 @@ ru = "Проверка нашла проблем: {n}, из-за них «Игр
 cz = "Kontrola našla {n} problém(y), na kterých by Hrát skončilo; autor je může opravit:"
 jpn = "モッドの検査で「プレイ」を止める問題が {n} 件見つかりました。作者が直せます："
 sc = "模组检查发现 {n} 个会让“开始游戏”停止的问题；作者可以修复："
+fa = "بررسی ماد {n} مشکل پیدا کرد که «بازی» به‌خاطرشان متوقف می‌شود؛ سازندهٔ ماد می‌تواند درستشان کند:"
 
 # --- the troubleshooter (rusemod.doctor): what can stop a test or Play, checked in one go. A finding's sentence is
 # its "say" word, filled with its data; a fix's button is doc_fix_<fix> ---
@@ -1685,6 +1824,7 @@ ru = "Устранение неполадок"
 cz = "Řešení potíží"
 jpn = "トラブルシューティング"
 sc = "故障排查"
+fa = "عیب‌یابی"
 
 [doc_title]
 us = "Troubleshooter"
@@ -1697,6 +1837,7 @@ ru = "Устранение неполадок"
 cz = "Řešení potíží"
 jpn = "トラブルシューティング"
 sc = "故障排查"
+fa = "عیب‌یاب"
 
 [doc_intro]
 us = "What can stop a test or Play, checked in one go."
@@ -1709,6 +1850,7 @@ ru = "Всё, что может помешать тесту или «Играт�
 cz = "Vše, co může zastavit test nebo Hrát, zkontrolováno najednou."
 jpn = "テストや「プレイ」を止める原因を、まとめてチェックします。"
 sc = "一次性检查所有可能妨碍测试或“开始游戏”的问题。"
+fa = "هر چه می‌تواند جلوی یک آزمایش یا «بازی» را بگیرد، یک‌جا بررسی می‌شود."
 
 [doc_checking]
 us = "Checking…"
@@ -1721,6 +1863,7 @@ ru = "Проверка…"
 cz = "Kontrola…"
 jpn = "チェック中…"
 sc = "正在检查…"
+fa = "در حال بررسی…"
 
 [doc_again]
 us = "Check again"
@@ -1733,6 +1876,7 @@ ru = "Проверить снова"
 cz = "Zkontrolovat znovu"
 jpn = "もう一度チェック"
 sc = "重新检查"
+fa = "بررسی دوباره"
 
 [doc_copy]
 us = "Copy report"
@@ -1745,6 +1889,7 @@ ru = "Копировать отчёт"
 cz = "Kopírovat zprávu"
 jpn = "レポートをコピー"
 sc = "复制报告"
+fa = "کپی گزارش"
 
 [doc_copied]
 us = "Report copied: paste it into your bug report or on Discord."
@@ -1757,6 +1902,7 @@ ru = "Отчёт скопирован: вставьте его в сообщен
 cz = "Zpráva zkopírována: vložte ji do hlášení chyby nebo na Discord."
 jpn = "レポートをコピーしました。バグ報告や Discord に貼り付けてください。"
 sc = "报告已复制：请粘贴到你的错误报告或 Discord 中。"
+fa = "گزارش کپی شد: آن را در گزارش باگ خود یا در Discord بچسبانید."
 
 [doc_close]
 us = "Close"
@@ -1769,6 +1915,7 @@ ru = "Закрыть"
 cz = "Zavřít"
 jpn = "閉じる"
 sc = "关闭"
+fa = "بستن"
 
 [doc_fix_close_game]
 us = "Close R.U.S.E."
@@ -1781,6 +1928,7 @@ ru = "Закрыть R.U.S.E."
 cz = "Zavřít R.U.S.E."
 jpn = "R.U.S.E. を閉じる"
 sc = "关闭 R.U.S.E."
+fa = "بستن R.U.S.E."
 
 [doc_fix_clear_leftovers]
 us = "Clear them"
@@ -1793,6 +1941,7 @@ ru = "Удалить их"
 cz = "Odstranit je"
 jpn = "削除する"
 sc = "清除它们"
+fa = "پاک کردنشان"
 
 [doc_fix_choose_game]
 us = "Choose folder…"
@@ -1805,6 +1954,7 @@ ru = "Выбрать папку…"
 cz = "Vybrat složku…"
 jpn = "フォルダーを選ぶ…"
 sc = "选择文件夹…"
+fa = "انتخاب پوشه…"
 
 [doc_fixed]
 us = "Done ({done})."
@@ -1817,6 +1967,7 @@ ru = "Готово ({done})."
 cz = "Hotovo ({done})."
 jpn = "完了しました（{done}）。"
 sc = "已完成（{done}）。"
+fa = "انجام شد ({done})."
 
 [doc_fix_left]
 us = "Not everything could be done: {left}"
@@ -1829,6 +1980,7 @@ ru = "Не всё удалось сделать: {left}"
 cz = "Ne vše se podařilo: {left}"
 jpn = "一部は完了できませんでした：{left}"
 sc = "部分操作未能完成：{left}"
+fa = "همه‌چیز انجام نشد: {left}"
 
 [doc_game_ok]
 us = "R.U.S.E. found: {path}"
@@ -1841,6 +1993,7 @@ ru = "R.U.S.E. найдена: {path}"
 cz = "Hra R.U.S.E. nalezena: {path}"
 jpn = "R.U.S.E. が見つかりました：{path}"
 sc = "已找到 R.U.S.E.：{path}"
+fa = "R.U.S.E. پیدا شد: {path}"
 
 [doc_game_missing]
 us = "R.U.S.E. wasn't found. Choose its folder (the one with RUSE.exe)."
@@ -1853,6 +2006,7 @@ ru = "R.U.S.E. не найдена. Выберите её папку (ту, гд
 cz = "Hra R.U.S.E. nebyla nalezena. Vyberte její složku (tu s RUSE.exe)."
 jpn = "R.U.S.E. が見つかりません。フォルダー（RUSE.exe があるもの）を選んでください。"
 sc = "未找到 R.U.S.E.。请选择其文件夹（包含 RUSE.exe 的那个）。"
+fa = "R.U.S.E. پیدا نشد. پوشه‌اش را انتخاب کنید (همان که RUSE.exe در آن است)."
 
 [doc_steam_ok]
 us = "Steam is running."
@@ -1865,6 +2019,7 @@ ru = "Steam запущен."
 cz = "Steam běží."
 jpn = "Steam は起動しています。"
 sc = "Steam 正在运行。"
+fa = "Steam در حال اجراست."
 
 [doc_steam_off]
 us = "Steam isn't running. It's started for you when you play."
@@ -1877,6 +2032,7 @@ ru = "Steam не запущен. Он запустится сам, когда в
 cz = "Steam neběží. Spustí se za vás, až budete hrát."
 jpn = "Steam は起動していません。プレイするときに自動で起動します。"
 sc = "Steam 未运行。开始游戏时会自动为你启动。"
+fa = "Steam اجرا نیست. وقتی بازی کنید، برایتان اجرا می‌شود."
 
 [doc_running_none]
 us = "No R.U.S.E. left running."
@@ -1889,6 +2045,7 @@ ru = "R.U.S.E. нигде не запущена."
 cz = "Žádná R.U.S.E. nezůstala spuštěná."
 jpn = "起動したままの R.U.S.E. はありません。"
 sc = "没有仍在运行的 R.U.S.E.。"
+fa = "هیچ نسخه‌ای از R.U.S.E. در حال اجرا نمانده است."
 
 [doc_running_copy]
 us = "R.U.S.E. is still running from a modded copy: {names}. Close it before the next test or Play."
@@ -1901,6 +2058,7 @@ ru = "R.U.S.E. всё ещё запущена из копии с модами: {
 cz = "R.U.S.E. stále běží z kopie s módy: {names}. Zavřete ji před dalším testem nebo Hrát."
 jpn = "MOD入りコピーの R.U.S.E. がまだ起動しています：{names}。次のテストや「プレイ」の前に閉じてください。"
 sc = "R.U.S.E. 仍在从模组版副本运行：{names}。请在下次测试或“开始游戏”前关闭它。"
+fa = "R.U.S.E. هنوز از یک نسخهٔ مادشده در حال اجراست: {names}. پیش از آزمایش یا «بازی» بعدی آن را ببندید."
 
 [doc_running_game]
 us = "R.U.S.E. is running (the Steam game): {names}. Close it before testing mods."
@@ -1913,6 +2071,7 @@ ru = "R.U.S.E. запущена (игра из Steam): {names}. Закройте
 cz = "R.U.S.E. běží (hra ze Steamu): {names}. Zavřete ji před testováním módů."
 jpn = "R.U.S.E.（Steam のゲーム）が起動しています：{names}。MOD をテストする前に閉じてください。"
 sc = "R.U.S.E.（Steam 游戏）正在运行：{names}。测试模组前请关闭它。"
+fa = "R.U.S.E. در حال اجراست (بازی Steam): {names}. پیش از آزمایش مادها آن را ببندید."
 
 [doc_drive_ok]
 us = "Modded copies go to {path} ({fs})."
@@ -1925,6 +2084,7 @@ ru = "Копии с модами создаются в {path} ({fs})."
 cz = "Kopie s módy se ukládají do {path} ({fs})."
 jpn = "MOD入りコピーの保存先：{path}（{fs}）。"
 sc = "模组版副本保存在 {path}（{fs}）。"
+fa = "نسخه‌های مادشده به {path} می‌روند ({fs})."
 
 [doc_drive_other]
 us = "Modded copies go to {path}, on a {fs} drive: each copy is a full copy, and Windows may refuse to delete one while R.U.S.E. runs. An NTFS drive is best."
@@ -1937,6 +2097,7 @@ ru = "Копии с модами создаются в {path}, на диске {
 cz = "Kopie s módy se ukládají do {path}, na disk {fs}: každá kopie je úplná a Windows ji nemusí dovolit smazat, dokud R.U.S.E. běží. Nejlepší je disk NTFS."
 jpn = "MOD入りコピーの保存先は {path}（{fs} ドライブ）です。コピーは毎回すべてのファイルを複製し、R.U.S.E. の実行中は Windows が削除を拒むことがあります。NTFS ドライブがおすすめです。"
 sc = "模组版副本保存在 {path}，位于 {fs} 驱动器：每个副本都是完整复制，且 R.U.S.E. 运行时 Windows 可能拒绝删除副本。最好使用 NTFS 驱动器。"
+fa = "نسخه‌های مادشده به {path} می‌روند، روی یک درایو {fs}: هر نسخه یک کپی کامل است، و ممکن است Windows تا وقتی R.U.S.E. اجراست اجازهٔ حذف آن را ندهد. یک درایو NTFS بهترین است."
 
 [doc_space_ok]
 us = "{gb} GB free for modded copies."
@@ -1949,6 +2110,7 @@ ru = "Свободно {gb} ГБ для копий с модами."
 cz = "Volných {gb} GB pro kopie s módy."
 jpn = "MOD入りコピー用の空き容量：{gb} GB。"
 sc = "模组版副本可用空间：{gb} GB。"
+fa = "{gb} GB فضای خالی برای نسخه‌های مادشده."
 
 [doc_space_low]
 us = "Only {gb} GB free where modded copies go: a copy may need {need} GB."
@@ -1961,6 +2123,7 @@ ru = "Там, где создаются копии с модами, свобод
 cz = "Tam, kam se ukládají kopie s módy, je volných jen {gb} GB: kopie může potřebovat {need} GB."
 jpn = "MOD入りコピーの保存先の空きは {gb} GB しかありません。コピーには {need} GB 必要な場合があります。"
 sc = "模组版副本所在位置仅剩 {gb} GB：一个副本可能需要 {need} GB。"
+fa = "جایی که نسخه‌های مادشده می‌روند فقط {gb} GB فضای خالی هست: یک نسخه ممکن است {need} GB لازم داشته باشد."
 
 [doc_left_none]
 us = "No leftover copies."
@@ -1973,6 +2136,7 @@ ru = "Оставшихся копий нет."
 cz = "Žádné zbylé kopie."
 jpn = "残ったコピーはありません。"
 sc = "没有残留的副本。"
+fa = "هیچ نسخهٔ جامانده‌ای نیست."
 
 [doc_left]
 us = "Leftover copies: {names}. They only take up space; you can clear them now."
@@ -1985,6 +2149,7 @@ ru = "Оставшиеся копии: {names}. Они только занима
 cz = "Zbylé kopie: {names}. Jen zabírají místo; můžete je odstranit hned teď."
 jpn = "残ったコピー：{names}。容量を使っているだけなので、今すぐ削除できます。"
 sc = "残留的副本：{names}。它们只占用空间；你可以现在就清除。"
+fa = "نسخه‌های جامانده: {names}. فقط جا می‌گیرند؛ می‌توانید همین حالا پاکشان کنید."
 
 [doc_left_held]
 us = "Leftover copies: {names}, held by {held}. Close that program, then clear them."
@@ -1997,6 +2162,7 @@ ru = "Оставшиеся копии: {names}, их удерживает {held}
 cz = "Zbylé kopie: {names}, drží je {held}. Zavřete ten program a pak je odstraňte."
 jpn = "残ったコピー：{names}（{held} が使用中）。そのプログラムを閉じてから削除してください。"
 sc = "残留的副本：{names}，被 {held} 占用。请关闭该程序，然后清除它们。"
+fa = "نسخه‌های جامانده: {names}، در اختیار {held}. آن برنامه را ببندید، سپس پاکشان کنید."
 
 [doc_readonly]
 us = "{n} of the game's files are marked read-only. That's fine: modded copies never keep the mark."
@@ -2009,6 +2175,7 @@ ru = "Файлов игры с пометкой «только чтение»: {
 cz = "Souborů hry označených jen pro čtení: {n}. To nevadí: kopie s módy toto označení nikdy nepřebírají."
 jpn = "ゲームのファイル {n} 個が読み取り専用になっています。問題ありません：MOD入りコピーにはこの設定は引き継がれません。"
 sc = "游戏中有 {n} 个文件被标记为只读。这没关系：模组版副本不会保留此标记。"
+fa = "{n} فایل از فایل‌های بازی «فقط‌خواندنی» علامت خورده‌اند. اشکالی ندارد: نسخه‌های مادشده هیچ‌وقت این علامت را نگه نمی‌دارند."
 
 [doc_write_ok]
 us = "The app can write where modded copies go."
@@ -2021,6 +2188,7 @@ ru = "Приложение может записывать туда, где со
 cz = "Aplikace může zapisovat tam, kam se ukládají kopie s módy."
 jpn = "アプリは MOD入りコピーの保存先に書き込めます。"
 sc = "应用可以写入模组版副本所在的位置。"
+fa = "برنامه می‌تواند در جای نسخه‌های مادشده بنویسد."
 
 [doc_write_fail]
 us = "The app can't write to {path} ({why}). Check that folder's permissions, or whether an antivirus blocks it, or choose another folder for modded copies in Settings."
@@ -2033,6 +2201,7 @@ ru = "Приложение не может записывать в {path} ({why}
 cz = "Aplikace nemůže zapisovat do {path} ({why}). Zkontrolujte oprávnění této složky, nebo zda ji neblokuje antivirus, nebo v Nastavení vyberte jinou složku pro kopie s módy."
 jpn = "アプリは {path} に書き込めません（{why}）。そのフォルダーのアクセス許可や、ウイルス対策ソフトがブロックしていないかを確認するか、設定で MOD 入りコピー用に別のフォルダーを選んでください。"
 sc = "应用无法写入 {path}（{why}）。请检查该文件夹的权限，或是否被杀毒软件拦截，或者在设置中为模组版副本选择另一个文件夹。"
+fa = "برنامه نمی‌تواند در {path} بنویسد ({why}). مجوزهای آن پوشه را بررسی کنید، یا ببینید آیا آنتی‌ویروسی جلویش را می‌گیرد، یا در «تنظیمات» پوشهٔ دیگری برای نسخه‌های مادشده انتخاب کنید."
 
 [doc_copies_recommended]
 us = "Modded copies go to {path}, the recommended place."
@@ -2045,6 +2214,7 @@ ru = "Копии с модами создаются в {path} — рекомен
 cz = "Kopie s módy se ukládají do {path}, doporučeného místa."
 jpn = "MOD入りコピーの保存先：{path}（おすすめの場所）。"
 sc = "模组版副本保存在 {path}（推荐位置）。"
+fa = "نسخه‌های مادشده به {path} می‌روند، جای پیشنهادی."
 
 [doc_copies_chosen]
 us = "Modded copies go to {path}, the folder chosen in Settings."
@@ -2057,6 +2227,7 @@ ru = "Копии с модами создаются в {path} — папке, в
 cz = "Kopie s módy se ukládají do {path}, složky vybrané v Nastavení."
 jpn = "MOD入りコピーの保存先：{path}（設定で選んだフォルダー）。"
 sc = "模组版副本保存在 {path}（在设置中选择的文件夹）。"
+fa = "نسخه‌های مادشده به {path} می‌روند، پوشه‌ای که در «تنظیمات» انتخاب شده است."
 
 [doc_copies_env]
 us = "Modded copies go to {path}, set by the RUSE_INSTANCES environment variable."
@@ -2069,6 +2240,7 @@ ru = "Копии с модами создаются в {path} — задано �
 cz = "Kopie s módy se ukládají do {path}, nastaveno proměnnou prostředí RUSE_INSTANCES."
 jpn = "MOD入りコピーの保存先：{path}（環境変数 RUSE_INSTANCES で指定）。"
 sc = "模组版副本保存在 {path}（由环境变量 RUSE_INSTANCES 指定）。"
+fa = "نسخه‌های مادشده به {path} می‌روند، که متغیر محیطی RUSE_INSTANCES تعیینش کرده است."
 
 [doc_copies_other_drive]
 us = "{path} is on another drive than the game ({drive}): each modded copy is a full copy of the game, slower to build and as big as the game. The recommended place is {recommended}."
@@ -2081,6 +2253,7 @@ ru = "{path} находится на другом диске, не на диск
 cz = "{path} je na jiném disku než hra ({drive}): každá kopie s módy je úplná kopie hry, sestavuje se déle a je velká jako hra. Doporučené místo je {recommended}."
 jpn = "{path} はゲーム（{drive}）とは別のドライブにあります。MOD入りコピーはそれぞれゲームの完全なコピーになり、ビルドが遅く、ゲームと同じ大きさになります。おすすめの場所は {recommended} です。"
 sc = "{path} 与游戏（{drive}）不在同一驱动器上：每个模组版副本都是游戏的完整副本，构建更慢，和游戏一样大。推荐位置是 {recommended}。"
+fa = "{path} روی درایوی غیر از درایو بازی ({drive}) است: هر نسخهٔ مادشده یک کپی کامل از بازی است، ساختنش کندتر است و به اندازهٔ خود بازی جا می‌گیرد. جای پیشنهادی {recommended} است."
 
 [doc_troubleshoot_link]
 us = "Troubleshoot"
@@ -2093,6 +2266,7 @@ ru = "Устранение неполадок"
 cz = "Řešení potíží"
 jpn = "トラブルシューティング"
 sc = "故障排查"
+fa = "عیب‌یابی"
 
 [set_backup_title]
 us = "Clean game backup"
@@ -2105,6 +2279,7 @@ ru = "Чистая резервная копия игры"
 cz = "Čistá záloha hry"
 jpn = "ゲームのクリーンなバックアップ"
 sc = "游戏的干净备份"
+fa = "پشتیبان تمیز بازی"
 
 [set_backup_help]
 us = "RUSE Launcher and RUSE Studio never change the game's own folder, but other mod managers and hand edits can. Make a backup while the game is clean, right after Steam installs or verifies it. Check game files then shows what has changed since, and Restore clean files puts the game's files back."
@@ -2117,6 +2292,7 @@ ru = "RUSE Launcher и RUSE Studio никогда не меняют папку �
 cz = "RUSE Launcher a RUSE Studio nikdy nemění složku hry, ale jiní správci módů a ruční úpravy ano. Udělejte zálohu, dokud je hra čistá, hned poté, co ji Steam nainstaluje nebo ověří. „Zkontrolovat soubory hry“ pak ukáže, co se od té doby změnilo, a „Obnovit čisté soubory“ vrátí soubory hry zpět."
 jpn = "RUSE Launcher と RUSE Studio はゲーム本体のフォルダーを変更しませんが、他の MOD マネージャーや手作業の編集は変更することがあります。ゲームがクリーンなうちに、Steam がインストールまたは検証した直後にバックアップを作成してください。その後「ゲームファイルを確認」でそれ以降に変わったものを確認でき、「クリーンなファイルを復元」でゲームのファイルを元に戻せます。"
 sc = "RUSE Launcher 和 RUSE Studio 从不修改游戏本身的文件夹，但其他模组管理器和手动修改可能会。请在游戏干净时（Steam 刚安装或验证完之后）创建备份。之后，“检查游戏文件”会显示自那以后改变了什么，“恢复干净文件”会把游戏文件还原。"
+fa = "RUSE Launcher و RUSE Studio هیچ‌وقت پوشهٔ خود بازی را تغییر نمی‌دهند، اما مدیرهای ماد دیگر و ویرایش‌های دستی ممکن است تغییرش دهند. وقتی بازی تمیز است، درست پس از این‌که Steam آن را نصب یا بررسی کرد، یک پشتیبان بسازید. سپس «بررسی فایل‌های بازی» نشان می‌دهد از آن زمان چه چیزهایی تغییر کرده، و «بازگرداندن فایل‌های تمیز» فایل‌های بازی را سر جایشان برمی‌گرداند."
 
 [backup_none]
 us = "No backup yet. It takes {need} GB; {free} GB is free on {drive}."
@@ -2129,6 +2305,7 @@ ru = "Резервной копии пока нет. Ей нужно {need} ГБ
 cz = "Zatím žádná záloha. Zabere {need} GB; na {drive} je volných {free} GB."
 jpn = "バックアップはまだありません。{need} GB 必要です。{drive} の空き容量は {free} GB です。"
 sc = "还没有备份。需要 {need} GB；{drive} 上有 {free} GB 可用。"
+fa = "هنوز پشتیبانی ساخته نشده. {need} GB جا می‌گیرد؛ {free} GB روی {drive} خالی است."
 
 [backup_have]
 us = "Backup of build {build}, made {date} ({size} GB): {path}"
@@ -2141,6 +2318,7 @@ ru = "Резервная копия сборки {build}, сделана {date} 
 cz = "Záloha sestavení {build}, vytvořena {date} ({size} GB): {path}"
 jpn = "ビルド {build} のバックアップ（{date} 作成、{size} GB）：{path}"
 sc = "版本 {build} 的备份，创建于 {date}（{size} GB）：{path}"
+fa = "پشتیبان بیلد {build}، ساخته‌شده در {date} ({size} GB): {path}"
 
 [backup_other]
 us = "The backup is of build {build} (made {date}), but Steam has updated the game since (build {now}), so it can't be used. Verify with Steam, then make a new backup."
@@ -2153,6 +2331,7 @@ ru = "Резервная копия сделана со сборки {build} ({d
 cz = "Záloha je ze sestavení {build} (vytvořena {date}), ale Steam od té doby hru aktualizoval (sestavení {now}), takže ji nelze použít. Ověřte hru ve Steamu a pak vytvořte novou zálohu."
 jpn = "バックアップはビルド {build} のもの（{date} 作成）ですが、その後 Steam がゲームを更新した（ビルド {now}）ため使えません。Steam で検証してから、新しいバックアップを作成してください。"
 sc = "备份来自版本 {build}（创建于 {date}），但 Steam 之后更新了游戏（版本 {now}），因此无法使用。请先通过 Steam 验证，然后创建新的备份。"
+fa = "پشتیبان از بیلد {build} است (ساخته‌شده در {date})، اما Steam از آن زمان بازی را به‌روز کرده است (بیلد {now})، پس نمی‌شود از آن استفاده کرد. «بررسی با Steam» را بزنید، سپس یک پشتیبان جدید بسازید."
 
 [backup_make]
 us = "Make backup"
@@ -2165,6 +2344,7 @@ ru = "Сделать резервную копию"
 cz = "Vytvořit zálohu"
 jpn = "バックアップを作成"
 sc = "创建备份"
+fa = "ساختن پشتیبان"
 
 [backup_make_again]
 us = "Make backup again"
@@ -2177,6 +2357,7 @@ ru = "Сделать копию заново"
 cz = "Vytvořit zálohu znovu"
 jpn = "バックアップを作り直す"
 sc = "重新创建备份"
+fa = "ساختن دوبارهٔ پشتیبان"
 
 [backup_replace_ask]
 us = "This replaces the backup made {date}. Do it only if the game is clean now (use Verify with Steam first). Replace it?"
@@ -2189,6 +2370,7 @@ ru = "Это заменит копию, сделанную {date}. Делайт�
 cz = "Tímto se nahradí záloha z {date}. Udělejte to jen tehdy, je-li hra teď čistá (nejdřív použijte „Ověřit ve Steamu“). Nahradit?"
 jpn = "{date} に作成したバックアップを置き換えます。ゲームが今クリーンな場合にのみ行ってください（先に「Steam で検証」を使用）。置き換えますか？"
 sc = "这将替换创建于 {date} 的备份。只有在游戏现在是干净的时候才这样做（请先使用“通过 Steam 验证”）。要替换吗？"
+fa = "این کار پشتیبانی را که در {date} ساخته شده جایگزین می‌کند. فقط اگر بازی الان تمیز است این کار را بکنید (اول از «بررسی با Steam» استفاده کنید). جایگزین شود؟"
 
 [backup_replace_yes]
 us = "Replace"
@@ -2201,6 +2383,7 @@ ru = "Заменить"
 cz = "Nahradit"
 jpn = "置き換える"
 sc = "替换"
+fa = "جایگزین کردن"
 
 [backup_check]
 us = "Check game files"
@@ -2213,6 +2396,7 @@ ru = "Проверить файлы игры"
 cz = "Zkontrolovat soubory hry"
 jpn = "ゲームファイルを確認"
 sc = "检查游戏文件"
+fa = "بررسی فایل‌های بازی"
 
 [backup_deep]
 us = "Compare every byte (slower)"
@@ -2225,6 +2409,7 @@ ru = "Сравнить каждый байт (медленнее)"
 cz = "Porovnat každý bajt (pomalejší)"
 jpn = "すべてのバイトを比較（遅い）"
 sc = "逐字节比较（较慢）"
+fa = "مقایسهٔ تک‌تک بایت‌ها (کندتر)"
 
 [backup_restore]
 us = "Restore clean files"
@@ -2237,6 +2422,7 @@ ru = "Восстановить чистые файлы"
 cz = "Obnovit čisté soubory"
 jpn = "クリーンなファイルを復元"
 sc = "恢复干净文件"
+fa = "بازگرداندن فایل‌های تمیز"
 
 [backup_restore_ask]
 us = "{n} file(s) will be copied back from the backup, and {m} file(s) that aren't the game's will be moved into a folder in {path}. Nothing is deleted. Restore?"
@@ -2249,6 +2435,7 @@ ru = "Файлов будет скопировано из резервной к�
 cz = "Ze zálohy se zkopíruje zpět souborů: {n}. Souborů, které nepatří hře, se přesune do složky v {path}: {m}. Nic se nemaže. Obnovit?"
 jpn = "{n} 個のファイルをバックアップから書き戻し、ゲームのものではない {m} 個のファイルを {path} 内のフォルダーへ移動します。何も削除されません。復元しますか？"
 sc = "将从备份复制回 {n} 个文件，并把 {m} 个不属于游戏的文件移到 {path} 中的一个文件夹。不会删除任何东西。要恢复吗？"
+fa = "{n} فایل از پشتیبان برگردانده می‌شود، و {m} فایل که مال بازی نیستند به پوشه‌ای در {path} منتقل می‌شوند. هیچ چیزی حذف نمی‌شود. بازگردانده شود؟"
 
 [backup_restore_yes]
 us = "Restore"
@@ -2261,6 +2448,7 @@ ru = "Восстановить"
 cz = "Obnovit"
 jpn = "復元"
 sc = "恢复"
+fa = "بازگرداندن"
 
 [backup_verify]
 us = "Verify with Steam"
@@ -2273,6 +2461,7 @@ ru = "Проверить через Steam"
 cz = "Ověřit ve Steamu"
 jpn = "Steam で検証"
 sc = "通过 Steam 验证"
+fa = "بررسی با Steam"
 
 [backup_verify_tip]
 us = "Steam's own repair: it checks every file and downloads the ones that changed. No backup needed."
@@ -2285,6 +2474,7 @@ ru = "Восстановление средствами Steam: он провер
 cz = "Oprava přes Steam: zkontroluje každý soubor a znovu stáhne ty, které se změnily. Záloha není potřeba."
 jpn = "Steam 自身の修復機能：すべてのファイルを確認し、変更されたものを再ダウンロードします。バックアップは不要です。"
 sc = "Steam 自带的修复：检查每个文件并重新下载有变化的文件。不需要备份。"
+fa = "تعمیر خود Steam: همهٔ فایل‌ها را بررسی می‌کند و آن‌هایی را که تغییر کرده‌اند دانلود می‌کند. پشتیبانی لازم نیست."
 
 [backup_verify_opened]
 us = "Steam is checking the game's files and downloads any that changed; Steam shows how far it is."
@@ -2297,6 +2487,7 @@ ru = "Steam проверяет файлы игры и заново скачив�
 cz = "Steam kontroluje soubory hry a znovu stahuje ty, které se změnily; průběh ukazuje Steam."
 jpn = "Steam がゲームのファイルを確認し、変更されたものを再ダウンロードしています。進行状況は Steam に表示されます。"
 sc = "Steam 正在检查游戏文件，并重新下载有变化的文件；进度显示在 Steam 中。"
+fa = "Steam دارد فایل‌های بازی را بررسی می‌کند و هر کدام را که تغییر کرده دانلود می‌کند؛ Steam نشان می‌دهد چقدر پیش رفته است."
 
 [backup_making]
 us = "Making the backup… {pct}"
@@ -2309,6 +2500,7 @@ ru = "Создание резервной копии… {pct}"
 cz = "Vytváření zálohy… {pct}"
 jpn = "バックアップを作成中… {pct}"
 sc = "正在创建备份… {pct}"
+fa = "در حال ساختن پشتیبان… {pct}"
 
 [backup_checking]
 us = "Checking the game's files… {pct}"
@@ -2321,6 +2513,7 @@ ru = "Проверка файлов игры… {pct}"
 cz = "Kontrola souborů hry… {pct}"
 jpn = "ゲームのファイルを確認中… {pct}"
 sc = "正在检查游戏文件… {pct}"
+fa = "در حال بررسی فایل‌های بازی… {pct}"
 
 [backup_restoring]
 us = "Restoring the game's files… {pct}"
@@ -2333,6 +2526,7 @@ ru = "Восстановление файлов игры… {pct}"
 cz = "Obnovování souborů hry… {pct}"
 jpn = "ゲームのファイルを復元中… {pct}"
 sc = "正在恢复游戏文件… {pct}"
+fa = "در حال بازگرداندن فایل‌های بازی… {pct}"
 
 [backup_made]
 us = "Backup made: {files} files, {size} GB."
@@ -2345,6 +2539,7 @@ ru = "Резервная копия готова: файлов: {files}, {size} 
 cz = "Záloha vytvořena: souborů: {files}, {size} GB."
 jpn = "バックアップを作成しました：{files} 個のファイル、{size} GB。"
 sc = "备份已创建：{files} 个文件，{size} GB。"
+fa = "پشتیبان ساخته شد: {files} فایل، {size} GB."
 
 [backup_clean]
 us = "The game's files match the backup: nothing has changed."
@@ -2357,6 +2552,7 @@ ru = "Файлы игры совпадают с резервной копией:
 cz = "Soubory hry odpovídají záloze: nic se nezměnilo."
 jpn = "ゲームのファイルはバックアップと一致しています。何も変わっていません。"
 sc = "游戏文件与备份一致：没有任何变化。"
+fa = "فایل‌های بازی با پشتیبان یکی هستند: چیزی تغییر نکرده است."
 
 [backup_differs]
 us = "{n} file(s) differ from the backup:"
@@ -2369,6 +2565,7 @@ ru = "Файлов отличается от резервной копии: {n}"
 cz = "Souborů, které se liší od zálohy: {n}"
 jpn = "バックアップと異なるファイル：{n} 個"
 sc = "与备份不同的文件：{n} 个"
+fa = "{n} فایل با پشتیبان فرق دارند:"
 
 [backup_changed]
 us = "Changed ({n})"
@@ -2381,6 +2578,7 @@ ru = "Изменены ({n})"
 cz = "Změněné ({n})"
 jpn = "変更 ({n})"
 sc = "已更改（{n}）"
+fa = "تغییرکرده ({n})"
 
 [backup_missing]
 us = "Missing ({n})"
@@ -2393,6 +2591,7 @@ ru = "Отсутствуют ({n})"
 cz = "Chybějící ({n})"
 jpn = "欠落 ({n})"
 sc = "缺失（{n}）"
+fa = "گم‌شده ({n})"
 
 [backup_added]
 us = "Not the game's ({n})"
@@ -2405,6 +2604,7 @@ ru = "Не из игры ({n})"
 cz = "Nepatří hře ({n})"
 jpn = "ゲーム外 ({n})"
 sc = "不属于游戏（{n}）"
+fa = "مال بازی نیستند ({n})"
 
 [backup_more]
 us = "…and {n} more"
@@ -2417,6 +2617,7 @@ ru = "…и ещё {n}"
 cz = "…a dalších {n}"
 jpn = "…ほか {n} 個"
 sc = "…还有 {n} 个"
+fa = "…و {n} مورد دیگر"
 
 [backup_nothing]
 us = "Nothing to restore: the game's files match the backup."
@@ -2429,6 +2630,7 @@ ru = "Восстанавливать нечего: файлы игры совп�
 cz = "Není co obnovit: soubory hry odpovídají záloze."
 jpn = "復元するものはありません。ゲームのファイルはバックアップと一致しています。"
 sc = "无需恢复：游戏文件与备份一致。"
+fa = "چیزی برای بازگرداندن نیست: فایل‌های بازی با پشتیبان یکی هستند."
 
 [backup_restored]
 us = "Done: {n} file(s) restored."
@@ -2441,6 +2643,7 @@ ru = "Готово: восстановлено файлов: {n}."
 cz = "Hotovo: obnovených souborů: {n}."
 jpn = "完了：{n} 個のファイルを復元しました。"
 sc = "完成：已恢复 {n} 个文件。"
+fa = "انجام شد: {n} فایل بازگردانده شد."
 
 [backup_set_aside]
 us = "{m} file(s) that weren't the game's are now in {path}."
@@ -2453,6 +2656,7 @@ ru = "Файлы, не принадлежавшие игре ({m}), теперь
 cz = "Soubory, které nepatřily hře ({m}), jsou teď v {path}."
 jpn = "ゲームのものではなかった {m} 個のファイルは {path} にあります。"
 sc = "{m} 个不属于游戏的文件现在位于 {path}。"
+fa = "{m} فایل که مال بازی نبودند اکنون در {path} هستند."
 
 [backup_kept]
 us = "The {k} changed file(s) that were replaced are kept in {path}."
@@ -2465,6 +2669,7 @@ ru = "Заменённые изменённые файлы ({k}) сохране�
 cz = "Nahrazené změněné soubory ({k}) jsou uložené v {path}."
 jpn = "置き換えられた変更済みの {k} 個のファイルは {path} に保管されています。"
 sc = "被替换的 {k} 个已更改文件保存在 {path}。"
+fa = "{k} فایل تغییرکرده‌ای که جایگزین شدند، در {path} نگه داشته شده‌اند."
 
 [see_list]
 us = "See the list on GitHub"
@@ -2477,6 +2682,7 @@ ru = "Открыть список на GitHub"
 cz = "Zobrazit seznam na GitHubu"
 jpn = "GitHubでリストを見る"
 sc = "在 GitHub 上查看列表"
+fa = "دیدن فهرست در GitHub"
 
 [install_ticked]
 us = "Install ticked mods ({n})"
@@ -2489,6 +2695,7 @@ ru = "Установить отмеченные моды ({n})"
 cz = "Nainstalovat zaškrtnuté módy ({n})"
 jpn = "チェックしたMODをインストール（{n}）"
 sc = "安装勾选的模组（{n}）"
+fa = "نصب مادهای تیک‌خورده ({n})"
 
 [cheats_group]
 us = "Cheats and test tools (optional)"
@@ -2501,6 +2708,7 @@ ru = "Читы и инструменты для тестов (по желани�
 cz = "Cheaty a testovací nástroje (volitelné)"
 jpn = "チートとテスト用ツール（任意）"
 sc = "作弊和测试工具（可选）"
+fa = "تقلب‌ها و ابزارهای آزمایشی (اختیاری)"
 
 [cheats_help]
 us = "These change the game for testing (units for free, instant building…). They're never ticked for you, and never downloaded unless you tick them."
@@ -2513,6 +2721,7 @@ ru = "Они меняют игру для тестов (бесплатные ю�
 cz = "Mění hru pro testování (jednotky zdarma, okamžitá stavba…). Nikdy se nezaškrtnou za vás a nikdy se nestáhnou, pokud je nezaškrtnete."
 jpn = "テスト用にゲームを変更します（ユニット無料、即時建設など）。自動でチェックされることはなく、チェックしない限りダウンロードもされません。"
 sc = "它们为测试而修改游戏（单位免费、瞬间建造…）。它们不会被自动勾选，除非你勾选，否则也不会被下载。"
+fa = "این‌ها بازی را برای آزمایش تغییر می‌دهند (یگان‌های رایگان، ساخت فوری…). هیچ‌وقت خودکار برایتان تیک نمی‌خورند، و تا تیکشان نزنید هرگز دانلود نمی‌شوند."
 
 [welcome_title]
 us = "Choose your mods"
@@ -2525,6 +2734,7 @@ ru = "Выберите моды"
 cz = "Vyberte si módy"
 jpn = "MODを選ぶ"
 sc = "选择你的模组"
+fa = "مادهایتان را انتخاب کنید"
 
 [welcome_help]
 us = "These are the mods that work with the Launcher. Everything is ticked except the cheats and test tools: untick what you don't want, then Install. You can add more later under “Supported mods”."
@@ -2537,6 +2747,7 @@ ru = "Это моды, которые работают с Launcher. Отмече
 cz = "Toto jsou módy, které fungují s Launcherem. Zaškrtnuto je vše kromě cheatů a testovacích nástrojů: odškrtněte, co nechcete, a pak Nainstalovat. Další můžete přidat později v sekci „Podporované módy“."
 jpn = "Launcherで動作するMODの一覧です。チートとテスト用ツール以外はすべてチェック済みです。不要なもののチェックを外して「インストール」を押してください。あとから「対応MOD」で追加することもできます。"
 sc = "这些是可在 Launcher 中使用的模组。除作弊和测试工具外均已勾选：取消勾选你不需要的，然后点击“安装”。以后也可以在“支持的模组”中添加更多。"
+fa = "این‌ها مادهایی هستند که با لانچر کار می‌کنند. همه‌چیز تیک خورده جز تقلب‌ها و ابزارهای آزمایشی: تیک هر چه را نمی‌خواهید بردارید، سپس «نصب». بعداً می‌توانید از «مادهای پشتیبانی‌شده» مادهای بیشتری اضافه کنید."
 
 [welcome_skip]
 us = "Skip"
@@ -2549,6 +2760,7 @@ ru = "Пропустить"
 cz = "Přeskočit"
 jpn = "スキップ"
 sc = "跳过"
+fa = "رد شدن"
 
 [welcome_offline]
 us = "Skip for now: the mods are under “Supported mods” whenever you're online."
@@ -2561,6 +2773,7 @@ ru = "Пока пропустите: моды есть в разделе «По�
 cz = "Zatím přeskočte: módy najdete v sekci „Podporované módy“, jakmile budete online."
 jpn = "いったんスキップしてください。オンラインになれば「対応MOD」からいつでも入手できます。"
 sc = "暂时跳过：联网后可随时在“支持的模组”中找到这些模组。"
+fa = "فعلاً رد شوید: هر وقت آنلاین باشید، مادها در «مادهای پشتیبانی‌شده» هستند."
 
 [loading_list]
 us = "Loading the list…"
@@ -2573,6 +2786,7 @@ ru = "Загрузка списка…"
 cz = "Načítání seznamu…"
 jpn = "リストを読み込み中…"
 sc = "正在加载列表…"
+fa = "در حال بارگذاری فهرست…"
 
 [library_search]
 us = "Search your mods"
@@ -2585,6 +2799,7 @@ ru = "Поиск по вашим модам"
 cz = "Hledat ve vašich módech"
 jpn = "MODを検索"
 sc = "搜索你的模组"
+fa = "جست‌وجو در مادهای شما"
 
 [library_count]
 us = "{n} mods"
@@ -2597,6 +2812,7 @@ ru = "Модов: {n}"
 cz = "Módů: {n}"
 jpn = "MOD {n} 個"
 sc = "{n} 个模组"
+fa = "{n} ماد"
 
 [library_no_match]
 us = "No mod matches “{q}”."
@@ -2609,6 +2825,7 @@ ru = "Нет модов по запросу «{q}»."
 cz = "Žádný mód neodpovídá „{q}“."
 jpn = "「{q}」に一致するMODはありません。"
 sc = "没有与“{q}”匹配的模组。"
+fa = "هیچ مادی با «{q}» جور نیست."
 
 [release_page]
 us = "Release page"
@@ -2621,6 +2838,7 @@ ru = "Страница выпуска"
 cz = "Stránka vydání"
 jpn = "リリースページ"
 sc = "发布页面"
+fa = "صفحهٔ انتشار"
 
 [changes_before]
 us = "In your version ({version})"
@@ -2633,6 +2851,7 @@ ru = "В вашей версии ({version})"
 cz = "Ve vaší verzi ({version})"
 jpn = "お使いのバージョン（{version}）"
 sc = "你的版本（{version}）"
+fa = "در نسخهٔ شما ({version})"
 
 [changes_now]
 us = "In {version}"
@@ -2645,6 +2864,7 @@ ru = "В версии {version}"
 cz = "Ve verzi {version}"
 jpn = "{version} では"
 sc = "{version} 中"
+fa = "در {version}"
 
 [changes_none]
 us = "The release notes list no changes: open the release page for them."
@@ -2657,6 +2877,7 @@ ru = "В примечаниях к выпуску нет списка измен
 cz = "Poznámky k vydání neuvádějí žádné změny: otevřete stránku vydání."
 jpn = "リリースノートに変更点がありません。リリースページを開いてください。"
 sc = "发布说明中没有列出更改：请打开发布页面。"
+fa = "یادداشت‌های انتشار هیچ تغییری را فهرست نکرده‌اند: برای دیدن تغییرات، صفحهٔ انتشار را باز کنید."
 
 [kind_map]
 us = "MAP"
@@ -2669,6 +2890,7 @@ ru = "КАРТА"
 cz = "MAPA"
 jpn = "マップ"
 sc = "地图"
+fa = "نقشه"
 
 [tip_kind_map]
 us = "A map made in the RUSE Studio: tick it in a mod set to play on it."
@@ -2681,6 +2903,7 @@ ru = "Карта, сделанная в RUSE Studio: отметьте её в н
 cz = "Mapa vytvořená v RUSE Studiu: zaškrtněte ji v sadě módů a hrajte na ní."
 jpn = "RUSE Studio で作ったマップ：MODセットでチェックすると、そのマップで遊べます。"
 sc = "在 RUSE Studio 中制作的地图：在模组组合中勾选它即可在其上游戏。"
+fa = "نقشه‌ای ساخته‌شده در RUSE Studio: آن را در یک مجموعهٔ ماد تیک بزنید تا رویش بازی کنید."
 
 [tip_game_change]
 us = "Pick the folder R.U.S.E. is installed in (the one with RUSE.exe), if it wasn't found by itself."
@@ -2693,6 +2916,7 @@ ru = "Выберите папку, где установлена R.U.S.E. (с ф
 cz = "Vyberte složku, kde je R.U.S.E. nainstalována (tu s RUSE.exe), pokud se nenašla sama."
 jpn = "R.U.S.E. のインストール先フォルダー（RUSE.exe があるもの）を選びます。自動で見つからない場合に使います。"
 sc = "如果没有自动找到，请选择 R.U.S.E. 的安装文件夹（包含 RUSE.exe 的文件夹）。"
+fa = "پوشه‌ای را که R.U.S.E. در آن نصب شده انتخاب کنید (همان که RUSE.exe در آن است)، اگر خودبه‌خود پیدا نشد."
 
 [tip_copies_change]
 us = "Pick the folder the modded copies of the game are built in; the old folder stays until you delete it."
@@ -2705,6 +2929,7 @@ ru = "Выберите папку, в которой собираются коп
 cz = "Vyberte složku, ve které se sestavují kopie hry s módy; stará složka zůstane, dokud ji nesmažete."
 jpn = "MOD入りのゲームコピーをビルドするフォルダーを選びます。古いフォルダーは削除するまで残ります。"
 sc = "选择构建模组版游戏副本的文件夹；旧文件夹会保留，直到你删除它。"
+fa = "پوشه‌ای را انتخاب کنید که نسخه‌های مادشدهٔ بازی در آن ساخته شوند؛ پوشهٔ قدیمی تا وقتی حذفش نکنید می‌ماند."
 
 [tip_copies_default]
 us = "Build the modded copies in RUSE-Instances on the game's drive again, the recommended place."
@@ -2717,6 +2942,7 @@ ru = "Снова собирать копии с модами в RUSE-Instances �
 cz = "Sestavovat kopie s módy zase v RUSE-Instances na disku hry, doporučeném místě."
 jpn = "MOD入りコピーを再びゲームのドライブの RUSE-Instances（おすすめの場所）にビルドします。"
 sc = "重新在游戏所在驱动器上的 RUSE-Instances（推荐位置）构建模组版副本。"
+fa = "نسخه‌های مادشده دوباره در RUSE-Instances روی درایو بازی ساخته شوند، جای پیشنهادی."
 
 [tip_copies_default_off]
 us = "Modded copies already go to the recommended place."
@@ -2729,6 +2955,7 @@ ru = "Копии с модами уже идут в рекомендуемое �
 cz = "Kopie s módy se už ukládají na doporučené místo."
 jpn = "MOD入りコピーはすでにおすすめの場所に保存されています。"
 sc = "模组版副本已经保存在推荐位置。"
+fa = "نسخه‌های مادشده همین حالا هم به جای پیشنهادی می‌روند."
 
 [tip_copies_fixed]
 us = "The folder was given when the app started, so it can't be changed here."
@@ -2741,6 +2968,7 @@ ru = "Папка задана при запуске приложения, поэ
 cz = "Složka byla zadána při spuštění aplikace, takže ji zde nelze změnit."
 jpn = "フォルダーはアプリ起動時に指定されたため、ここでは変更できません。"
 sc = "该文件夹在应用启动时指定，因此无法在此更改。"
+fa = "پوشه هنگام شروع برنامه داده شده، پس اینجا نمی‌شود تغییرش داد."
 
 [tip_backup_make]
 us = "Copy your game's files once, so they can be checked and put back later. One copy for the whole PC."
@@ -2753,6 +2981,7 @@ ru = "Один раз скопировать файлы игры, чтобы п�
 cz = "Jednou zkopírovat soubory hry, aby je šlo později zkontrolovat a vrátit. Jedna kopie pro celý počítač."
 jpn = "ゲームのファイルを一度コピーし、後で確認や復元ができるようにします。PC 全体で1つです。"
 sc = "复制一次游戏文件，以便以后检查和恢复。整台电脑只需一份。"
+fa = "فایل‌های بازی‌تان را یک بار کپی کنید تا بعداً بشود بررسی‌شان کرد و سر جایشان برگرداند. یک نسخه برای کل رایانه."
 
 [tip_backup_check]
 us = "Compare your game's files with the clean copy and list any another mod manager changed."
@@ -2765,6 +2994,7 @@ ru = "Сравнить файлы игры с чистой копией и по�
 cz = "Porovnat soubory hry s čistou kopií a vypsat ty, které změnil jiný správce módů."
 jpn = "ゲームのファイルをクリーンなコピーと比べ、他の MOD マネージャーが変えたものを一覧にします。"
 sc = "将游戏文件与干净副本比较，列出被其他模组管理器修改过的文件。"
+fa = "فایل‌های بازی‌تان را با نسخهٔ تمیز مقایسه کنید و هر فایلی را که یک مدیر ماد دیگر تغییر داده فهرست کنید."
 
 [tip_backup_restore]
 us = "Put back the files that changed, from the clean copy. Nothing is deleted: replaced files are moved aside."
@@ -2777,6 +3007,7 @@ ru = "Вернуть изменённые файлы из чистой копи�
 cz = "Vrátit změněné soubory z čisté kopie. Nic se nemaže: nahrazené soubory se odloží stranou."
 jpn = "変更されたファイルをクリーンなコピーから戻します。何も削除されず、置き換えたファイルは別の場所に移されます。"
 sc = "从干净副本中恢复被修改的文件。不会删除任何文件：被替换的文件会被移到一旁。"
+fa = "فایل‌هایی را که تغییر کرده‌اند از نسخهٔ تمیز برگردانید. هیچ چیزی حذف نمی‌شود: فایل‌های جایگزین‌شده کنار گذاشته می‌شوند."
 
 [tip_backup_deep]
 us = "Read every byte instead of only sizes and dates: slower, finds every change."
@@ -2789,6 +3020,7 @@ ru = "Читать каждый байт, а не только размеры и
 cz = "Číst každý bajt místo jen velikostí a dat: pomalejší, najde každou změnu."
 jpn = "サイズと日付だけでなく全バイトを読みます。遅くなりますが、すべての変更を見つけます。"
 sc = "逐字节读取，而不只看大小和日期：更慢，但能发现每处改动。"
+fa = "به‌جای فقط اندازه‌ها و تاریخ‌ها، تک‌تک بایت‌ها را بخوانید: کندتر است و هر تغییری را پیدا می‌کند."
 
 [tip_updates_check]
 us = "Look on GitHub for a newer version of this app now."
@@ -2801,6 +3033,7 @@ ru = "Проверить сейчас на GitHub, есть ли новая ве
 cz = "Zkontrolovat teď na GitHubu novější verzi této aplikace."
 jpn = "このアプリの新しいバージョンを今すぐ GitHub で確認します。"
 sc = "立即在 GitHub 上检查此应用是否有新版本。"
+fa = "همین حالا در GitHub دنبال نسخهٔ جدیدتری از این برنامه بگردید."
 
 [tip_lang]
 us = "The language of this app's words and of the game's names shown in it."
@@ -2813,6 +3046,7 @@ ru = "Язык текста приложения и названий из игр
 cz = "Jazyk textů aplikace a zobrazených názvů ze hry."
 jpn = "このアプリの表示言語と、表示されるゲーム内の名前の言語です。"
 sc = "本应用文字及其中显示的游戏名称所用的语言。"
+fa = "زبان واژه‌های این برنامه و نام‌هایی از بازی که در آن نشان داده می‌شوند."
 
 [tip_settings_open]
 us = "Language, the game's folder, the clean game backup and updates."
@@ -2825,6 +3059,7 @@ ru = "Язык, папка игры, чистая копия игры и обн�
 cz = "Jazyk, složka hry, čistá záloha hry a aktualizace."
 jpn = "言語、ゲームのフォルダー、クリーンなバックアップ、更新。"
 sc = "语言、游戏文件夹、干净的游戏备份和更新。"
+fa = "زبان، پوشهٔ بازی، پشتیبان تمیز بازی و به‌روزرسانی‌ها."
 
 [tip_side_sets]
 us = "Your mod sets: groups of mods you play together. Pick one, then Play."
@@ -2837,6 +3072,7 @@ ru = "Ваши наборы модов: моды, в которые вы игр�
 cz = "Vaše sady módů: módy hrané společně. Vyberte jednu a pak Hrát."
 jpn = "MODセット：一緒に遊ぶMODのまとまり。選んで「プレイ」を押します。"
 sc = "你的模组组合：一起游玩的模组。选择一个，然后点“开始游戏”。"
+fa = "مجموعه‌های ماد شما: گروه‌هایی از مادها که با هم بازی می‌کنید. یکی را انتخاب کنید، سپس «بازی»."
 
 [tip_side_library]
 us = "Every mod and map you've added, ready to put in a mod set."
@@ -2849,6 +3085,7 @@ ru = "Все добавленные моды и карты, готовые дл�
 cz = "Všechny přidané módy a mapy, připravené do sady."
 jpn = "追加したすべてのMODとマップ。MODセットに入れられます。"
 sc = "你添加的所有模组和地图，可放入模组组合。"
+fa = "همهٔ مادها و نقشه‌هایی که اضافه کرده‌اید، آماده برای گذاشتن در یک مجموعهٔ ماد."
 
 [tip_set_card]
 us = "Pick this set: Play starts the game with its mods, in this order."
@@ -2861,6 +3098,7 @@ ru = "Выбрать этот набор: «Играть» запустит иг
 cz = "Vybrat tuto sadu: Hrát spustí hru s jejími módy v tomto pořadí."
 jpn = "このセットを選ぶ：「プレイ」でこの順番のMODと一緒にゲームを起動します。"
 sc = "选择此组合：“开始游戏”会按此顺序带着其中的模组启动游戏。"
+fa = "این مجموعه را انتخاب کنید: «بازی» بازی را با مادهای آن، به همین ترتیب، اجرا می‌کند."
 
 [tip_new_set]
 us = "Make a new mod set: name it, tick mods, put them in order."
@@ -2873,6 +3111,7 @@ ru = "Создать новый набор: назовите, отметьте �
 cz = "Vytvořit novou sadu: pojmenujte ji, zaškrtněte módy, seřaďte je."
 jpn = "新しいMODセットを作る：名前を付け、MODをチェックして並べます。"
 sc = "新建模组组合：命名、勾选模组并排序。"
+fa = "یک مجموعهٔ ماد جدید بسازید: نامی برایش بگذارید، مادها را تیک بزنید و مرتبشان کنید."
 
 [tip_import_set]
 us = "Paste a load order a friend shared (or one from RUSE Mod Manager) to make the same set."
@@ -2885,6 +3124,7 @@ ru = "Вставьте порядок загрузки от друга (или �
 cz = "Vložte pořadí načítání od přítele (nebo z RUSE Mod Manageru) a vytvořte stejnou sadu."
 jpn = "友だちが共有したロード順（RUSE Mod Manager のものも可）を貼り付けて同じセットを作ります。"
 sc = "粘贴朋友分享的加载顺序（或来自 RUSE Mod Manager 的），创建相同的组合。"
+fa = "ترتیب بارگذاری‌ای را که یک دوست به اشتراک گذاشته (یا یکی از RUSE Mod Manager) بچسبانید تا همان مجموعه ساخته شود."
 
 [tip_play]
 us = "Build a modded copy of the game with the picked set and start it. Your Steam game isn't changed."
@@ -2897,6 +3137,7 @@ ru = "Собрать копию игры с выбранным набором и
 cz = "Sestavit kopii hry s vybranou sadou a spustit ji. Hra ze Steamu se nemění."
 jpn = "選んだセットでMOD入りのゲームのコピーを作って起動します。Steam のゲームは変わりません。"
 sc = "用所选组合构建一份模组版游戏副本并启动。你的 Steam 游戏不会被改动。"
+fa = "یک نسخهٔ مادشده از بازی با مجموعهٔ انتخاب‌شده می‌سازد و اجرایش می‌کند. بازی Steam شما تغییر نمی‌کند."
 
 [tip_browse]
 us = "Mods from our list on GitHub: tick the ones you want and they're downloaded and checked."
@@ -2909,6 +3150,7 @@ ru = "Моды из нашего списка на GitHub: отметьте ну
 cz = "Módy z našeho seznamu na GitHubu: zaškrtněte, které chcete, a stáhnou se a zkontrolují."
 jpn = "GitHub のリストにあるMOD：欲しいものをチェックすると、ダウンロードして確認します。"
 sc = "我们 GitHub 列表中的模组：勾选想要的，就会下载并检查。"
+fa = "مادهایی از فهرست ما در GitHub: آن‌هایی را که می‌خواهید تیک بزنید تا دانلود و بررسی شوند."
 
 [tip_doc_open]
 us = "Check in one go what can stop Play (game found, Steam, leftover copies, disk space) and fix what it can."
@@ -2921,6 +3163,7 @@ ru = "Разом проверить, что мешает «Играть» (иг�
 cz = "Najednou zkontrolovat, co může bránit Hrát (hra, Steam, zbylé kopie, místo na disku), a opravit, co jde."
 jpn = "「プレイ」を妨げるもの（ゲーム、Steam、残ったコピー、空き容量）をまとめて確認し、直せるものを直します。"
 sc = "一次检查可能阻止“开始游戏”的问题（游戏、Steam、残留副本、磁盘空间），并修复能修复的。"
+fa = "یک‌جا بررسی می‌کند چه چیزی می‌تواند جلوی «بازی» را بگیرد (پیدا شدن بازی، Steam، نسخه‌های جامانده، فضای دیسک) و هر چه از دستش برآید درست می‌کند."
 
 [tip_add_mod]
 us = "Add a mod file you downloaded or exported: .rusemod, .rmod or .zip. You can also drop it on the window."
@@ -2933,6 +3176,7 @@ ru = "Добавить скачанный или экспортированны�
 cz = "Přidat stažený nebo exportovaný soubor módu: .rusemod, .rmod nebo .zip. Můžete ho i přetáhnout do okna."
 jpn = "ダウンロードまたは書き出したMODファイル（.rusemod、.rmod、.zip）を追加します。ウィンドウにドロップしても追加できます。"
 sc = "添加下载或导出的模组文件：.rusemod、.rmod 或 .zip。也可以直接拖到窗口上。"
+fa = "فایل مادی را که دانلود کرده‌اید یا از آن خروجی گرفته‌اید اضافه کنید: .rusemod، .rmod یا .zip. می‌توانید آن را روی پنجره رها هم کنید."
 
 [tip_settings_back]
 us = "Back to your mod sets."
@@ -2945,6 +3189,7 @@ ru = "Назад к наборам модов."
 cz = "Zpět na sady módů."
 jpn = "MODセットに戻ります。"
 sc = "返回你的模组组合。"
+fa = "بازگشت به مجموعه‌های ماد شما."
 
 # "Choose your language" (rusemod.uilang): opens by itself until the player picks, then from the language button
 [lang_pick_title]
@@ -2958,6 +3203,7 @@ ru = "Выберите язык"
 cz = "Vyberte jazyk"
 jpn = "言語を選んでください"
 sc = "选择你的语言"
+fa = "زبانتان را انتخاب کنید"
 
 [lang_from_steam]
 us = "Your game's language in Steam"
@@ -2970,6 +3216,7 @@ ru = "Язык вашей игры в Steam"
 cz = "Jazyk vaší hry ve Steamu"
 jpn = "Steam でのゲームの言語"
 sc = "你在 Steam 中的游戏语言"
+fa = "زبان بازی شما در Steam"
 
 [lang_from_pc]
 us = "Your PC's language"
@@ -2982,6 +3229,7 @@ ru = "Язык вашего ПК"
 cz = "Jazyk vašeho počítače"
 jpn = "PC の言語"
 sc = "你的电脑语言"
+fa = "زبان رایانهٔ شما"
 
 [lang_pick_close]
 us = "Close"
@@ -2994,6 +3242,7 @@ ru = "Закрыть"
 cz = "Zavřít"
 jpn = "閉じる"
 sc = "关闭"
+fa = "بستن"
 
 [tip_lang_open]
 us = "Change the language."
@@ -3006,6 +3255,7 @@ ru = "Сменить язык."
 cz = "Změnit jazyk."
 jpn = "言語を変更します。"
 sc = "更改语言。"
+fa = "تغییر زبان."
 
 [lang_pick_help]
 us = "The Launcher in your language. You can change it any time with the language button at the top."
@@ -3018,6 +3268,7 @@ ru = "Launcher на вашем языке. Его можно сменить в �
 cz = "Launcher ve vašem jazyce. Kdykoli ho můžete změnit tlačítkem jazyka nahoře."
 jpn = "Launcher をあなたの言語で。上の言語ボタンでいつでも変更できます。"
 sc = "用你的语言显示 Launcher。随时可以用顶部的语言按钮更改。"
+fa = "لانچر به زبان شما. هر وقت بخواهید می‌توانید آن را با دکمهٔ زبان در بالا تغییر دهید."
 
 # the mod set editor: Create on top with the set's own mods, then the rest of the library to add (app.js renderEditor)
 [set_in_this]
@@ -3031,6 +3282,7 @@ ru = "В этом наборе ({n})"
 cz = "V této sadě ({n})"
 jpn = "このセットの MOD（{n}）"
 sc = "此组合中（{n}）"
+fa = "در این مجموعه ({n})"
 
 [set_none_yet]
 us = "No mods yet: tick them below."
@@ -3043,6 +3295,7 @@ ru = "Модов пока нет: отметьте их ниже."
 cz = "Zatím žádné módy: zaškrtněte je níže."
 jpn = "まだ MOD がありません。下でチェックしてください。"
 sc = "还没有模组：在下方勾选。"
+fa = "هنوز هیچ مادی نیست: پایین تیکشان بزنید."
 
 [set_add_mods]
 us = "Add mods from your library"
@@ -3055,6 +3308,7 @@ ru = "Добавить моды из библиотеки"
 cz = "Přidat módy z knihovny"
 jpn = "ライブラリから MOD を追加"
 sc = "从你的库中添加模组"
+fa = "افزودن مادها از کتابخانهٔ شما"
 
 # Lines the build says in Play's log (rusemod.instance.NOTES: the same English for "us")
 [play_unchanged]
@@ -3068,6 +3322,7 @@ ru = "С прошлого раза ничего не изменилось: ко�
 cz = "Od minula se nic nezměnilo: kopie s módy se použije tak, jak je."
 jpn = "前回から何も変わっていないため、MOD入りコピーをそのまま使います。"
 sc = "自上次以来没有任何变化：直接使用现有的模组版副本。"
+fa = "از آخرین ساخت چیزی تغییر نکرده است: نسخهٔ مادشده همان‌طور که هست استفاده می‌شود."
 
 [play_other_drive]
 us = "The modded copy is on another drive than the game, so the game's packs are copied into it, not shared: {gb} GB copied this time. With modded copies on the game's drive ({drive}), starting the game with mods is much faster."
@@ -3080,6 +3335,7 @@ ru = "Копия с модами находится не на том диске,
 cz = "Kopie s módy je na jiném disku než hra, takže se do ní soubory hry kopírují místo sdílení: tentokrát {gb} GB. S kopiemi s módy na disku hry ({drive}) se hra s módy spouští mnohem rychleji."
 jpn = "MOD入りコピーがゲームとは別のドライブにあるため、ゲームのファイルを共有できずコピーしています（今回 {gb} GB）。MOD入りコピーをゲームのドライブ（{drive}）に置くと、MOD入りのゲームがずっと速く起動します。"
 sc = "模组版副本与游戏不在同一驱动器上，因此游戏文件只能复制过去，无法共享：本次复制了 {gb} GB。把模组版副本放在游戏所在的驱动器（{drive}）上，启动模组版游戏会快很多。"
+fa = "نسخهٔ مادشده روی درایوی غیر از درایو بازی است، پس بسته‌های بازی در آن کپی می‌شوند، نه این‌که شریک شوند: این بار {gb} GB کپی شد. اگر نسخه‌های مادشده روی درایو بازی ({drive}) باشند، اجرای بازی با مادها خیلی سریع‌تر است."
 
 [convert_mod]
 us = "Convert an old mod…"
@@ -3092,6 +3348,7 @@ ru = "Преобразовать старый мод…"
 cz = "Převést starý mod…"
 jpn = "古いMODを変換…"
 sc = "转换旧模组…"
+fa = "تبدیل یک ماد قدیمی…"
 
 [tip_convert_mod]
 us = "For an old mod that comes as the game's own files (.dat packs) to copy into the game folder: makes it a mod the library can play beside others."
@@ -3104,6 +3361,7 @@ ru = "Для старого мода в виде файлов самой игр�
 cz = "Pro starý mod, který přichází jako soubory hry (balíky .dat) ke zkopírování do složky hry: udělá z něj mod, který knihovna může hrát spolu s jinými."
 jpn = "ゲームフォルダーにコピーする形（.datパック）で配られている古いMODを、ライブラリで他のMODと一緒に遊べるMODに変換します。"
 sc = "适用于以游戏文件（.dat 包）形式提供、需复制到游戏文件夹的旧模组：把它转换为可在库中与其他模组一起游玩的模组。"
+fa = "برای ماد قدیمی‌ای که به شکل فایل‌های خود بازی (بسته‌های .dat) می‌آید تا در پوشهٔ بازی کپی شود: آن را به مادی تبدیل می‌کند که کتابخانه می‌تواند کنار مادهای دیگر اجرا کند."
 
 [convert_title]
 us = "Convert an old mod"
@@ -3116,6 +3374,7 @@ ru = "Преобразовать старый мод"
 cz = "Převést starý mod"
 jpn = "古いMODを変換"
 sc = "转换旧模组"
+fa = "تبدیل یک ماد قدیمی"
 
 [convert_help]
 us = "Some older mods come as the game's own packs (.dat files) with the changes inside, made to be copied into the game folder. Pick the folder the mod came in: the Launcher compares each pack with your game's clean one, keeps only what the mod changes, and adds it to your library. Your game folder isn't touched. Uses LittleGroove's converter."
@@ -3128,6 +3387,7 @@ ru = "Некоторые старые моды поставляются как �
 cz = "Některé starší mody přicházejí jako balíky hry (soubory .dat) se změnami uvnitř, určené ke zkopírování do složky hry. Vyberte složku modu: launcher porovná každý balík s čistým balíkem vaší hry, ponechá jen to, co mod mění, a přidá ho do knihovny. Složka hry zůstane nedotčená. Používá převodník od LittleGroove."
 jpn = "古いMODの中には、変更入りのゲームのパック（.datファイル）として配られ、ゲームフォルダーにコピーするものがあります。MODのフォルダーを選ぶと、ランチャーが各パックをゲームのクリーンなパックと比べ、MODの変更だけを残してライブラリに追加します。ゲームフォルダーには触れません。LittleGrooveの変換ツールを使います。"
 sc = "一些旧模组以游戏自身的包（.dat 文件）形式提供，内含修改，需复制到游戏文件夹。选择模组所在的文件夹：启动器会把每个包与游戏的干净包比较，只保留模组改动的内容，并把它添加到你的库。不会改动游戏文件夹。使用 LittleGroove 的转换器。"
+fa = "برخی مادهای قدیمی‌تر به شکل بسته‌های خود بازی (فایل‌های .dat) می‌آیند که تغییرات درونشان است، و ساخته شده‌اند تا در پوشهٔ بازی کپی شوند. پوشه‌ای را که ماد در آن آمده انتخاب کنید: لانچر هر بسته را با بستهٔ تمیز بازی شما مقایسه می‌کند، فقط چیزی را که ماد تغییر می‌دهد نگه می‌دارد و آن را به کتابخانه‌تان اضافه می‌کند. به پوشهٔ بازی شما دست زده نمی‌شود. از مبدل LittleGroove استفاده می‌کند."
 
 [convert_pick]
 us = "Pick the mod's folder…"
@@ -3140,6 +3400,7 @@ ru = "Выбрать папку мода…"
 cz = "Vybrat složku modu…"
 jpn = "MODのフォルダーを選ぶ…"
 sc = "选择模组文件夹…"
+fa = "انتخاب پوشهٔ ماد…"
 
 [tip_convert_pick]
 us = "Choose the folder the old mod came in (the one holding its .dat files, or a Data or PC folder with them inside)."
@@ -3152,6 +3413,7 @@ ru = "Выберите папку старого мода (с его файла�
 cz = "Vyberte složku starého modu (tu s jeho soubory .dat, nebo složku Data či PC, ve které jsou)."
 jpn = "古いMODのフォルダー（.datファイルが入っているフォルダー、またはそれを含むData・PCフォルダー）を選びます。"
 sc = "选择旧模组所在的文件夹（包含其 .dat 文件的文件夹，或包含这些文件的 Data 或 PC 文件夹）。"
+fa = "پوشه‌ای را که ماد قدیمی در آن آمده انتخاب کنید (همان که فایل‌های .dat آن را دارد، یا یک پوشهٔ Data یا PC که آن‌ها درونش هستند)."
 
 [tip_convert_cancel]
 us = "Close this without converting anything."
@@ -3164,6 +3426,7 @@ ru = "Закрыть, ничего не преобразуя."
 cz = "Zavřít bez převodu."
 jpn = "何も変換せずに閉じます。"
 sc = "关闭，不转换任何内容。"
+fa = "این را بدون تبدیل چیزی ببندید."
 
 [convert_found]
 us = "{n} game pack(s) found in {folder}:"
@@ -3176,6 +3439,7 @@ ru = "Найдено архивов игры в {folder}: {n}"
 cz = "Nalezené balíky hry v {folder}: {n}"
 jpn = "{folder} にゲームのパックが {n} 個見つかりました："
 sc = "在 {folder} 中找到 {n} 个游戏包："
+fa = "{n} بستهٔ بازی در {folder} پیدا شد:"
 
 [convert_none]
 us = "There's no game pack in {folder} (a .dat file the game has too). Pick the folder the old mod came in."
@@ -3188,6 +3452,7 @@ ru = "В {folder} нет архивов игры (файлов .dat, котор�
 cz = "Ve {folder} není žádný balík hry (soubor .dat, který má i hra). Vyberte složku starého modu."
 jpn = "{folder} にゲームのパック（ゲームにもある.datファイル）がありません。古いMODのフォルダーを選んでください。"
 sc = "{folder} 中没有游戏包（游戏中也有的 .dat 文件）。请选择旧模组所在的文件夹。"
+fa = "در {folder} هیچ بستهٔ بازی‌ای نیست (یک فایل .dat که بازی هم دارد). پوشه‌ای را که ماد قدیمی در آن آمده انتخاب کنید."
 
 [convert_ref_backup]
 us = "Compared with your clean backup of the game, so mods already copied into the game folder don't get mixed in."
@@ -3200,6 +3465,7 @@ ru = "Сравнивается с вашей чистой резервной к�
 cz = "Porovnáno s vaší čistou zálohou hry, takže mody už zkopírované do složky hry se nepřimíchají."
 jpn = "ゲームのクリーンなバックアップと比べるので、ゲームフォルダーに既にコピーされたMODが混ざりません。"
 sc = "与你的游戏干净备份比较，因此已复制到游戏文件夹中的模组不会混入。"
+fa = "با پشتیبان تمیز بازی شما مقایسه شد، تا مادهایی که پیش‌تر در پوشهٔ بازی کپی شده‌اند قاطی نشوند."
 
 [convert_ref_game]
 us = "Compared with your game folder, as there's no clean backup. If you ever copied mods into the game folder, make a clean backup first (Settings) after letting Steam repair the game, or their changes end up in this mod too."
@@ -3212,6 +3478,7 @@ ru = "Сравнивается с папкой игры, так как чист�
 cz = "Porovnáno se složkou hry, protože čistá záloha chybí. Pokud jste někdy kopírovali mody do složky hry, nechte nejdřív Steam hru opravit a udělejte čistou zálohu (Nastavení), jinak se jejich změny dostanou i do tohoto modu."
 jpn = "クリーンなバックアップがないため、ゲームフォルダーと比べます。以前ゲームフォルダーにMODをコピーしたことがあるなら、先にSteamでゲームを修復し、クリーンなバックアップ（設定）を作ってください。そうしないと、それらの変更もこのMODに入ります。"
 sc = "由于没有干净备份，将与游戏文件夹比较。如果你曾把模组复制到游戏文件夹，请先让 Steam 修复游戏并制作干净备份（设置），否则它们的改动也会进入这个模组。"
+fa = "با پوشهٔ بازی شما مقایسه شد، چون پشتیبان تمیزی نیست. اگر زمانی مادهایی را در پوشهٔ بازی کپی کرده‌اید، اول بگذارید Steam بازی را تعمیر کند و بعد یک پشتیبان تمیز بسازید («تنظیمات»)، وگرنه تغییرات آن‌ها هم وارد این ماد می‌شود."
 
 [convert_name]
 us = "Name"
@@ -3224,6 +3491,7 @@ ru = "Название"
 cz = "Název"
 jpn = "名前"
 sc = "名称"
+fa = "نام"
 
 [tip_convert_name]
 us = "The mod's name in your library and in mod sets."
@@ -3236,6 +3504,7 @@ ru = "Название мода в вашей библиотеке и в наб�
 cz = "Název modu ve vaší knihovně a v sadách modů."
 jpn = "ライブラリとMODセットに表示されるMODの名前です。"
 sc = "模组在你的库和模组组合中的名称。"
+fa = "نام ماد در کتابخانهٔ شما و در مجموعه‌های ماد."
 
 [convert_version]
 us = "Version"
@@ -3248,6 +3517,7 @@ ru = "Версия"
 cz = "Verze"
 jpn = "バージョン"
 sc = "版本"
+fa = "نسخه"
 
 [tip_convert_version]
 us = "Numbers with dots, like 1.0.0. Converting it again with a higher one replaces the old copy."
@@ -3260,6 +3530,7 @@ ru = "Числа с точками, например 1.0.0. Повторное �
 cz = "Čísla s tečkami, třeba 1.0.0. Nový převod s vyšším číslem nahradí starou kopii."
 jpn = "1.0.0 のような点区切りの数字です。より大きい番号で変換し直すと古いものが置き換わります。"
 sc = "带点的数字，如 1.0.0。用更高的版本再次转换会替换旧的副本。"
+fa = "عددهایی با نقطه، مثل 1.0.0. اگر دوباره با عددی بالاتر تبدیلش کنید، نسخهٔ قدیمی جایگزین می‌شود."
 
 [convert_author]
 us = "Author"
@@ -3272,6 +3543,7 @@ ru = "Автор"
 cz = "Autor"
 jpn = "作者"
 sc = "作者"
+fa = "سازنده"
 
 [tip_convert_author]
 us = "Who made the old mod (shown in your library, to give them credit)."
@@ -3284,6 +3556,7 @@ ru = "Кто сделал старый мод (показывается в би�
 cz = "Kdo starý mod vytvořil (zobrazí se v knihovně jako poděkování)."
 jpn = "古いMODを作った人です（ライブラリに表示され、作者の名前が残ります）。"
 sc = "旧模组的作者（显示在你的库中，以示感谢）。"
+fa = "کسی که ماد قدیمی را ساخته (در کتابخانهٔ شما نشان داده می‌شود، تا اعتبارش به او برسد)."
 
 [convert_description]
 us = "Description"
@@ -3296,6 +3569,7 @@ ru = "Описание"
 cz = "Popis"
 jpn = "説明"
 sc = "说明"
+fa = "توضیح"
 
 [tip_convert_description]
 us = "A line about what the mod does (shown in your library)."
@@ -3308,6 +3582,7 @@ ru = "Строка о том, что делает мод (показываетс
 cz = "Řádek o tom, co mod dělá (zobrazí se v knihovně)."
 jpn = "MODの内容を1行で（ライブラリに表示されます）。"
 sc = "一行说明模组的作用（显示在你的库中）。"
+fa = "یک خط دربارهٔ کاری که ماد می‌کند (در کتابخانهٔ شما نشان داده می‌شود)."
 
 [convert_go]
 us = "Convert and add to the library"
@@ -3320,6 +3595,7 @@ ru = "Преобразовать и добавить в библиотеку"
 cz = "Převést a přidat do knihovny"
 jpn = "変換してライブラリに追加"
 sc = "转换并添加到库"
+fa = "تبدیل و افزودن به کتابخانه"
 
 [tip_convert_go]
 us = "Compare the packs and make the mod. A big mod takes a minute or two; the lines below say how far it is."
@@ -3332,6 +3608,7 @@ ru = "Сравнить архивы и создать мод. Большой м�
 cz = "Porovnat balíky a vytvořit mod. Velký mod trvá minutu či dvě; řádky níže ukazují postup."
 jpn = "パックを比べてMODを作ります。大きなMODは1〜2分かかります。進み具合は下の行に表示されます。"
 sc = "比较各个包并生成模组。大型模组需要一两分钟；下面的行会显示进度。"
+fa = "بسته‌ها را مقایسه می‌کند و ماد را می‌سازد. یک ماد بزرگ یکی دو دقیقه طول می‌کشد؛ خطوط پایین نشان می‌دهند چقدر پیش رفته است."
 
 [convert_running]
 us = "Converting…"
@@ -3344,6 +3621,7 @@ ru = "Преобразование…"
 cz = "Převádí se…"
 jpn = "変換中…"
 sc = "正在转换…"
+fa = "در حال تبدیل…"
 
 [convert_failed]
 us = "The mod couldn't be converted."
@@ -3356,6 +3634,7 @@ ru = "Мод не удалось преобразовать."
 cz = "Mod se nepodařilo převést."
 jpn = "MODを変換できませんでした。"
 sc = "无法转换该模组。"
+fa = "ماد تبدیل نشد."
 
 [clash_gamefile]
 us = "{a} and {b} both change the same game file, {file}. The one from {b} is used, because {b} is lower in the list."
@@ -3368,6 +3647,7 @@ ru = "{a} и {b} оба меняют один и тот же файл игры, 
 cz = "{a} i {b} mění stejný soubor hry, {file}. Použije se verze {b}, protože {b} je v seznamu níže."
 jpn = "{a} と {b} は同じゲームファイル {file} を変更します。{b} がリストの下にあるため、{b} の版が使われます。"
 sc = "{a} 和 {b} 都修改了同一个游戏文件 {file}。因为 {b} 在列表中更靠下，所以使用 {b} 的版本。"
+fa = "{a} و {b} هر دو یک فایل بازی، {file}، را تغییر می‌دهند. فایل {b} استفاده می‌شود، چون {b} در فهرست پایین‌تر است."
 
 [clash_use]
 us = "Use the one from {a}"
@@ -3380,6 +3660,7 @@ ru = "Взять версию {a}"
 cz = "Použít verzi {a}"
 jpn = "{a} の版を使う"
 sc = "使用 {a} 的版本"
+fa = "استفاده از فایل {a}"
 
 [tip_clash_use]
 us = "Moves {a} just below {b} in this mod set, so the {file} from {a} is used. If the two mods change other things too, {a} wins those as well."
@@ -3392,6 +3673,7 @@ ru = "Ставит {a} сразу под {b} в этом наборе модов
 cz = "Přesune {a} hned pod {b} v této sadě módů, aby se použila verze {file} z {a}. Pokud oba módy mění i jiné věci, i v nich pak vyhraje {a}."
 jpn = "このMODセットで {a} を {b} のすぐ下に移し、{file} は {a} の版が使われるようにします。2つのMODがほかにも同じものを変更している場合、それらも {a} が優先されます。"
 sc = "在这个模组组合中把 {a} 移到 {b} 正下方，使 {file} 使用 {a} 的版本。如果这两个模组还修改了其他相同的内容，那些也会改为以 {a} 为准。"
+fa = "{a} را در این مجموعهٔ ماد درست زیر {b} می‌برد، تا {file} مربوط به {a} استفاده شود. اگر این دو ماد چیزهای دیگری را هم تغییر می‌دهند، در آن‌ها هم {a} برنده می‌شود."
 
 [clash_use_done]
 us = "{name}: {a} is now below {b}, so the {file} from {a} is used."
@@ -3404,6 +3686,7 @@ ru = "{name}: {a} теперь под {b}, поэтому используетс
 cz = "{name}: {a} je teď pod {b}, takže se použije {file} z {a}."
 jpn = "{name}: {a} が {b} の下になったので、{a} の {file} が使われます。"
 sc = "{name}：{a} 现在位于 {b} 下方，因此使用 {a} 的 {file}。"
+fa = "{name}: {a} اکنون زیر {b} است، پس {file} مربوط به {a} استفاده می‌شود."
 
 # --- the app in the player's web browser, where its own window can't open (rusemod.browsermode; issue #21): the box
 # that keeps the app running, the page's note once it's closed, and the box on a PC without WebView2 ---
@@ -3418,6 +3701,7 @@ ru = "{app} открыт в вашем веб-браузере, потому ч�
 cz = "{app} je otevřený ve vašem webovém prohlížeči, protože jeho vlastní okno se na tomto PC nedá otevřít.\n\nPokud se žádná stránka neotevřela, vložte tuto adresu do prohlížeče (už je zkopírovaná):\n{address}\n\nNechte toto okno otevřené, dokud {app} používáte.\nOK: otevřít stránku znovu.   Storno: zavřít {app}."
 jpn = "このPCでは{app}自身のウィンドウを開けないため、Webブラウザーで開いています。\n\nページが開かない場合は、このアドレスをブラウザーに貼り付けてください（コピー済みです）：\n{address}\n\n{app}を使っている間は、このウィンドウを開いたままにしてください。\nOK：ページをもう一度開く   キャンセル：{app}を閉じる"
 sc = "{app} 已在你的网页浏览器中打开，因为它自己的窗口无法在这台电脑上打开。\n\n如果没有打开页面，请把这个地址粘贴到浏览器中（已经复制好了）：\n{address}\n\n使用 {app} 期间请不要关闭这个窗口。\n确定：再次打开页面。   取消：关闭 {app}。"
+fa = "{app} در مرورگر وب شما باز است، چون پنجرهٔ خودش روی این رایانه باز نمی‌شود.\n\nاگر صفحه‌ای باز نشد، این نشانی را در مرورگرتان بچسبانید (از قبل کپی شده است):\n{address}\n\nتا وقتی از {app} استفاده می‌کنید، این کادر را باز نگه دارید.\nتأیید: باز کردن دوبارهٔ صفحه.   لغو: بستن {app}."
 
 [browser_closed]
 us = "{app} is closed. Start it again to carry on."
@@ -3430,6 +3714,7 @@ ru = "{app} закрыт. Запустите его снова, чтобы пр�
 cz = "{app} je zavřený. Spusťte ho znovu a pokračujte."
 jpn = "{app}は終了しました。続けるにはもう一度起動してください。"
 sc = "{app} 已关闭。请重新启动它以继续。"
+fa = "{app} بسته شد. برای ادامه، دوباره اجرایش کنید."
 
 [browser_no_engine]
 us = "{app}'s own window needs Microsoft Edge WebView2 Runtime, which this PC doesn't have yet. It's free and small, from Microsoft.\n\nYes: open the download page (then start {app} again).\nNo: use {app} in your web browser now.\nCancel: close {app}."
@@ -3442,6 +3727,7 @@ ru = "Собственному окну {app} нужен Microsoft Edge WebView2
 cz = "Vlastní okno {app} potřebuje Microsoft Edge WebView2 Runtime, který tento PC zatím nemá. Je zdarma a malý, od Microsoftu.\n\nAno: otevřít stránku ke stažení (pak {app} spusťte znovu).\nNe: používat {app} hned ve webovém prohlížeči.\nStorno: zavřít {app}."
 jpn = "{app}自身のウィンドウにはMicrosoft Edge WebView2 Runtimeが必要ですが、このPCにはまだありません。Microsoftの無料で小さなソフトです。\n\nはい：ダウンロードページを開く（その後{app}をもう一度起動）\nいいえ：今すぐWebブラウザーで{app}を使う\nキャンセル：{app}を閉じる"
 sc = "{app} 自己的窗口需要 Microsoft Edge WebView2 Runtime，这台电脑还没有。它免费且很小，来自 Microsoft。\n\n是：打开下载页面（然后重新启动 {app}）。\n否：现在就在网页浏览器中使用 {app}。\n取消：关闭 {app}。"
+fa = "پنجرهٔ خود {app} به Microsoft Edge WebView2 Runtime نیاز دارد که این رایانه هنوز ندارد. رایگان و کوچک است و از Microsoft است.\n\nبله: باز کردن صفحهٔ دانلود (سپس {app} را دوباره اجرا کنید).\nخیر: استفاده از {app} در مرورگر وب، همین حالا.\nلغو: بستن {app}."
 
 [drop_folder_browser]
 us = "In the web browser a folder can't be dropped here: drop the mod's file instead, or click Add a mod file… and pick the mod.toml inside the folder."
@@ -3454,6 +3740,7 @@ ru = "В веб-браузере сюда нельзя перетащить па
 cz = "Ve webovém prohlížeči sem nejde přetáhnout složku: přetáhněte místo ní soubor módu, nebo klikněte na Přidat soubor módu… a vyberte mod.toml ve složce."
 jpn = "Webブラウザーではフォルダーをここにドロップできません。代わりにMODファイルをドロップするか、「MODファイルを追加…」をクリックしてフォルダー内のmod.tomlを選んでください。"
 sc = "在网页浏览器中不能把文件夹拖到这里：请改为拖入模组文件，或点击“添加模组文件…”并选择文件夹里的 mod.toml。"
+fa = "در مرورگر وب نمی‌شود پوشه را اینجا رها کرد: به‌جایش فایل ماد را رها کنید، یا روی «افزودن فایل ماد…» کلیک کنید و mod.toml درون پوشه را انتخاب کنید."
 
 [set_title_title]
 us = "The game's title"
@@ -3466,6 +3753,7 @@ ru = "Название игры"
 cz = "Název hry"
 jpn = "ゲームのタイトル"
 sc = "游戏标题"
+fa = "عنوان بازی"
 
 [set_title_help]
 us = "Your modded game shows its title as R.U.S.E. 2.0 in gold: on the main menu, on the loading screens and in the video as the game starts. It's made on your PC from your own game's files. Untick it to have the game's own R.U.S.E. title. The next Play builds the copy your way."
@@ -3478,6 +3766,7 @@ ru = "Ваша игра с модами показывает название к
 cz = "Vaše hra s módy ukazuje svůj název jako zlaté R.U.S.E. 2.0: v hlavním menu, na načítacích obrazovkách a ve videu při spuštění hry. Vzniká na vašem PC ze souborů vaší vlastní hry. Zrušte zaškrtnutí, chcete-li původní název R.U.S.E. Další Hrát sestaví kopii podle vaší volby."
 jpn = "MOD入りのゲームでは、タイトルが金色の R.U.S.E. 2.0 になります：メインメニュー、ロード画面、ゲーム起動時の動画です。あなたの PC 上で、あなた自身のゲームのファイルから作られます。チェックを外すと、ゲーム本来の R.U.S.E. のタイトルになります。次の「プレイ」で、選んだとおりにコピーがビルドされます。"
 sc = "你的模组版游戏会把标题显示为金色的 R.U.S.E. 2.0：在主菜单、载入画面以及游戏启动时的视频中。它在你的电脑上由你自己游戏的文件制作。取消勾选即可使用游戏原本的 R.U.S.E. 标题。下一次“开始游戏”会按你的选择构建副本。"
+fa = "بازی مادشدهٔ شما عنوانش را به شکل R.U.S.E. 2.0 طلایی نشان می‌دهد: در منوی اصلی، در صفحه‌های بارگذاری و در ویدیوی شروع بازی. این عنوان روی رایانهٔ شما از فایل‌های بازی خودتان ساخته می‌شود. تیکش را بردارید تا عنوان R.U.S.E. خود بازی را داشته باشید. «بازی» بعدی نسخه را به همان شکلی که خواسته‌اید می‌سازد."
 
 [title_gold]
 us = "Gold R.U.S.E. 2.0 title"
@@ -3490,6 +3779,7 @@ ru = "Золотое название R.U.S.E. 2.0"
 cz = "Zlatý název R.U.S.E. 2.0"
 jpn = "金色の R.U.S.E. 2.0 タイトル"
 sc = "金色 R.U.S.E. 2.0 标题"
+fa = "عنوان طلایی R.U.S.E. 2.0"
 
 [title_on_note]
 us = "The next Play gives your modded game the gold R.U.S.E. 2.0 title."
@@ -3502,6 +3792,7 @@ ru = "Следующее Играть даст вашей игре с модам
 cz = "Další Hrát dá vaší hře s módy zlatý název R.U.S.E. 2.0."
 jpn = "次の「プレイ」で、MOD入りのゲームに金色の R.U.S.E. 2.0 タイトルが付きます。"
 sc = "下一次“开始游戏”会给你的模组版游戏加上金色 R.U.S.E. 2.0 标题。"
+fa = "«بازی» بعدی به بازی مادشدهٔ شما عنوان طلایی R.U.S.E. 2.0 را می‌دهد."
 
 [title_off_note]
 us = "The next Play gives your modded game the game's own R.U.S.E. title."
@@ -3514,6 +3805,7 @@ ru = "Следующее Играть даст вашей игре с модам
 cz = "Další Hrát dá vaší hře s módy původní název R.U.S.E."
 jpn = "次の「プレイ」で、MOD入りのゲームはゲーム本来の R.U.S.E. タイトルになります。"
 sc = "下一次“开始游戏”会让你的模组版游戏使用游戏原本的 R.U.S.E. 标题。"
+fa = "«بازی» بعدی به بازی مادشدهٔ شما عنوان R.U.S.E. خود بازی را می‌دهد."
 
 [tip_title_gold]
 us = "Show R.U.S.E. 2.0 in gold on the menu and the loading screens of your modded game. Untick for the game's own title."
@@ -3526,3 +3818,4 @@ ru = "Показывать золотое R.U.S.E. 2.0 в меню и на эк�
 cz = "Ukazovat zlaté R.U.S.E. 2.0 v menu a na načítacích obrazovkách vaší hry s módy. Zrušte zaškrtnutí pro původní název."
 jpn = "MOD入りのゲームのメニューとロード画面に金色の R.U.S.E. 2.0 を表示します。チェックを外すとゲーム本来のタイトルになります。"
 sc = "在模组版游戏的菜单和载入画面显示金色 R.U.S.E. 2.0。取消勾选则使用游戏原本的标题。"
+fa = "R.U.S.E. 2.0 را به رنگ طلایی در منو و صفحه‌های بارگذاری بازی مادشده‌تان نشان دهید. برای عنوان خود بازی، تیکش را بردارید."

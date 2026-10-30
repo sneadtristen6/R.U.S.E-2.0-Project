@@ -185,7 +185,7 @@ class Apps(unittest.TestCase):
     def test_the_box_speaks_the_ten_languages(self):
         import tomllib
         table = tomllib.loads(owned._WORDS.read_text(encoding="utf-8"))
-        langs = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+        langs = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
         for key, values in table.items():
             self.assertEqual(set(values), langs, key)
             for lang, text in values.items():

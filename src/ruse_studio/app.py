@@ -99,7 +99,7 @@ def main(argv=None) -> int:
     api = StudioApi(index_path=args.index, game_dir=args.game)
     if args.self_test:
         startlog.stop()  # the build's check, not a start
-        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "maps.js", "style.css", "spike3d.html", "owned.js", "rtl.js"], [
             ("the Studio answers", lambda: api.status()),
             ("the Studio's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['search']!r}"),
             ("the Studio's errors in the player's language", _errors_worded),

@@ -35,6 +35,10 @@ html, body {
 }
 html[data-lang="jpn"], html[data-lang="jpn"] body { font-family: "RUSE Japanese", "Segoe UI", system-ui, sans-serif; }
 html[data-lang="sc"], html[data-lang="sc"] body { font-family: "RUSE Chinese", "Segoe UI", system-ui, sans-serif; }
+/* Persian: the game has no font for it; the game's font for Latin letters, then the PC's own Persian letters (Windows:
+   Segoe UI, Tahoma; Linux and Steam Deck: whichever of these it has) */
+html[data-lang="fa"], html[data-lang="fa"] body { font-family: "RUSE", "Vazirmatn", "Segoe UI", Tahoma, "Noto Sans Arabic",
+  "Noto Naskh Arabic", "DejaVu Sans", system-ui, sans-serif; }
 
 body { display: flex; flex-direction: column; }
 

@@ -22,13 +22,13 @@ CALLS = {"say": 0, "warn": 0, "Finding": 1}
 
 # how the build marks a finding in its lines: "warning: ..." (said at once) and "  error    ..." (the report)
 _MARKED = re.compile(r"(?P<lead>\s*)(?P<level>warning|error|note)(?P<gap>:\s+|\s+)(?P<rest>\S.*)", re.S)
-LEVELS = {  # the finding's level as the lines say it, in the ten languages
+LEVELS = {  # the finding's level as the lines say it, in the apps' languages
     "warning": {"fr": "avertissement", "ger": "Warnung", "ita": "avviso", "spa": "aviso", "pol": "ostrzeżenie",
-                "ru": "предупреждение", "cz": "varování", "jpn": "警告", "sc": "警告"},
+                "ru": "предупреждение", "cz": "varování", "jpn": "警告", "sc": "警告", "fa": "هشدار"},
     "error": {"fr": "erreur", "ger": "Fehler", "ita": "errore", "spa": "error", "pol": "błąd", "ru": "ошибка",
-              "cz": "chyba", "jpn": "エラー", "sc": "错误"},
+              "cz": "chyba", "jpn": "エラー", "sc": "错误", "fa": "خطا"},
     "note": {"fr": "remarque", "ger": "Hinweis", "ita": "nota", "spa": "nota", "pol": "uwaga", "ru": "заметка",
-             "cz": "poznámka", "jpn": "注記", "sc": "备注"},
+             "cz": "poznámka", "jpn": "注記", "sc": "备注", "fa": "یادداشت"},
 }
 
 

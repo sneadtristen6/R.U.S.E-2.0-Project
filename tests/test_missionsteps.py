@@ -13,7 +13,7 @@ from rusemod import missionsteps
 from ruse_mod_engine import scenario_chain as chain_mod
 
 WORDS = tomllib.loads((Path(__file__).parents[1] / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
-LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
 # every way a link can stand (missionsteps._why of what scenario_chain.walk makes)
 WHYS = ("scenario_file_ok", "scenario_file_missing", "scenario_cluster_ok", "scenario_cluster_missing",
         "cluster_scenario_ok", "cluster_scenario_missing", "script_ok", "script_missing", "script_unknown", "dico_ok",

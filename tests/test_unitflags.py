@@ -49,12 +49,13 @@ NOTHING = {"us": ("does nothing", "in a unit's flags it does nothing"),
            "pol": ("nic nie daje", "we flagach jednostki nic nie daje"),
            "ru": ("ничего не даёт", "во флагах юнита ничего не даёт"),
            "cz": ("nic nedělá", "v příznacích jednotky nic nedělá"),
-           "jpn": ("効果なし", "部隊のフラグに入れても効果なし"), "sc": ("无效", "放在单位的标志位里无效")}
+           "jpn": ("効果なし", "部隊のフラグに入れても効果なし"), "sc": ("无效", "放在单位的标志位里无效"),
+           "fa": ("کاری نمی‌کند", "در پرچم‌های یک یگان کاری نمی‌کند")}
 # In each language, the word that warns and a word of "crashes", in the texts of 62 and 63.
 CRASH_WORDS = {"us": ("WARNING", "crash"), "fr": ("ATTENTION", "planter"), "ger": ("ACHTUNG", "stürzt"),
                "ita": ("ATTENZIONE", "crash"), "spa": ("ATENCIÓN", "cuelga"), "pol": ("UWAGA", "wysypuje"),
                "ru": ("ВНИМАНИЕ", "вылетает"), "cz": ("POZOR", "spadne"), "jpn": ("警告", "クラッシュ"),
-               "sc": ("警告", "崩溃")}
+               "sc": ("警告", "崩溃"), "fa": ("هشدار", "از کار می‌اندازد")}
 WHY_62 = ("flag 62 (truck) on a unit that isn't a truck crashes R.U.S.E. at match start; take it off (only trucks, "
           "TTruckDescriptor units, can carry it)")
 
@@ -69,15 +70,15 @@ class Labels(unittest.TestCase):
     def test_ten_languages_each_ending_with_the_game_s_name(self):
         for n, name in {**GAME_NAMES, **RUNTIME_NAMES}.items():
             entry = schema._data()["flags"][str(n)]
-            self.assertEqual(sorted(entry), sorted(schema.LANGS), n)
-            for lang in schema.LANGS:
+            self.assertEqual(sorted(entry), sorted(schema.APP_LANGS), n)
+            for lang in schema.APP_LANGS:
                 with self.subTest(flag=n, lang=lang):
                     text = entry[lang]
                     self.assertTrue(text.endswith(f" ({name})"), text)
                     self.assertTrue(text[:-len(name) - 3].strip(), text)  # it says something before the name
 
     def test_the_ones_no_unit_carries_say_they_do_nothing_in_every_language(self):
-        self.assertEqual(sorted(NOTHING), sorted(schema.LANGS))
+        self.assertEqual(sorted(NOTHING), sorted(schema.APP_LANGS))
         for lang, (word, whole) in NOTHING.items():
             for n in range(105):
                 with self.subTest(flag=n, lang=lang):
@@ -93,7 +94,7 @@ class Labels(unittest.TestCase):
             self.assertIn(", tested (", schema.flag(n))
 
     def test_62_and_63_warn_of_the_crash_in_every_language(self):
-        self.assertEqual(sorted(CRASH_WORDS), sorted(schema.LANGS))
+        self.assertEqual(sorted(CRASH_WORDS), sorted(schema.APP_LANGS))
         for n in (62, 63):
             for lang, words in CRASH_WORDS.items():
                 with self.subTest(flag=n, lang=lang):

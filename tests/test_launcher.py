@@ -891,7 +891,7 @@ class Words(unittest.TestCase):
 
     def test_complete_and_used(self):
         for key, entry in _words().items():
-            self.assertEqual([lang for lang in schema.LANGS if not entry.get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not entry.get(lang)], [], key)
         app_js = (Path(__file__).parents[1] / "src" / "ruse_launcher" / "ui" / "app.js").read_text(encoding="utf-8")
         used = set(re.findall(r"\b(?:w|state\.words)\.([a-z_]+)", app_js))
         self.assertGreater(len(used), 40)
@@ -907,7 +907,7 @@ class Words(unittest.TestCase):
             self.assertEqual(LauncherApi(home=d, ui_language=lambda: "pl_PL", find=no_steam).default_language(), "pol")
             self.assertEqual(LauncherApi(home=d, ui_language=mock.Mock(side_effect=OSError),
                                          find=no_steam).default_language(), "us")
-            self.assertEqual([lang["code"] for lang in LauncherApi(home=d).languages()], list(schema.LANGS))
+            self.assertEqual([lang["code"] for lang in LauncherApi(home=d).languages()], list(schema.APP_LANGS))
 
     def test_starts_in_the_games_language_in_steam(self):
         # the game set to French in Steam beats an English PC; a language the game doesn't have falls to the PC's

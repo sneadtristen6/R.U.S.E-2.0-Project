@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from .mod_index import PAGE as MOD_LIST_PAGE
 
@@ -19,6 +19,11 @@ LINKS = {"wiki": f"{REPO_URL}/wiki", "discussions": f"{REPO_URL}/discussions",
          "help": f"{REPO_URL}/discussions/categories/help",
          "mods": MOD_LIST_PAGE,  # the supported-mods list (MOD_FORMAT §15): see it, or add a mod to it
          "guidelines": f"{MOD_LIST_PAGE}/blob/main/GUIDELINES.md"}  # what the list accepts
+# the wiki's first page in each of the apps' languages (the owner, 2026-10-30: "a wiki for every language we
+# support"; docs/wiki/<code>/, each page named by its title in that language); English is the wiki's Home
+WIKI_HOMES = {"fr": "Manuel-de-terrain", "ger": "Feldhandbuch", "ita": "Manuale-da-campo", "spa": "Manual-de-campaña",
+              "pol": "Podręcznik-polowy", "ru": "Полевое-руководство", "cz": "Polní-příručka",
+              "jpn": "フィールドマニュアル", "sc": "野战手册", "fa": "راهنمای-میدانی"}
 BUG_CATEGORY = "bug-reports"      # the category's slug: .github/DISCUSSION_TEMPLATE/bug-reports.yml is its form
 APP_NAMES = {"studio": "RUSE Studio", "launcher": "RUSE Launcher"}  # as the form's "Which app?" lists them
 MESSAGE_MOST = 1500               # characters of a message that go into the link (a long URL gets refused)
@@ -50,20 +55,32 @@ def report_url(app: str, version: str, message: str = "") -> str:
     return f"{REPO_URL}/discussions/new?{urlencode(fields)}"
 
 
+def wiki_url(lang: str | None) -> str:
+    """The wiki's first page in `lang` (the apps' codes), the English wiki for English or any other."""
+    home = WIKI_HOMES.get(lang or "")
+    return f"{REPO_URL}/wiki/{quote(home)}" if home else LINKS["wiki"]
+
+
 class CommunityCalls:
     """The window API's help calls, for both apps (a mixin beside rusemod.update.UpdateCalls, whose UPDATE_APP,
-    UPDATE_VERSION and `_update_open_url` it uses)."""
+    UPDATE_VERSION and `_update_open_url` it uses, and home.PrefsCalls, whose language it opens the wiki in)."""
+
+    def _community_lang(self) -> str | None:
+        try:
+            return (self.prefs() or {}).get("lang")
+        except Exception:  # noqa: BLE001  (no settings yet, or unreadable: the English wiki)
+            return None
 
     def help_links(self) -> dict:
-        """The wiki's and Discussions' addresses, for the window to show."""
-        return dict(LINKS)
+        """The wiki's (in the player's language) and Discussions' addresses, for the window to show."""
+        return dict(LINKS) | {"wiki": wiki_url(self._community_lang())}
 
     def open_help(self, what: str) -> dict:
-        """Open the wiki ("wiki"), Discussions ("discussions"), its Help category ("help") or the supported-mods
-        list's page ("mods") in the browser."""
+        """Open the wiki ("wiki", in the player's language), Discussions ("discussions"), its Help category ("help")
+        or the supported-mods list's page ("mods") in the browser."""
         if what not in LINKS:
             raise ValueError(f"There's no help page called {what!r}")
-        return self._community_open(LINKS[what])
+        return self._community_open(wiki_url(self._community_lang()) if what == "wiki" else LINKS[what])
 
     def report_problem(self, message: str = "") -> dict:
         """Open a new bug report in the browser, the app, its version and `message` (an error the window showed)

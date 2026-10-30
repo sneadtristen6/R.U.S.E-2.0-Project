@@ -121,7 +121,7 @@ class Studio(unittest.TestCase):
 
     def test_status_languages_and_words(self):
         self.assertTrue(self.api.status()["ready"])
-        self.assertEqual([lang["code"] for lang in self.api.languages()], ["base"] + list(schema.LANGS))
+        self.assertEqual([lang["code"] for lang in self.api.languages()], ["base"] + list(schema.APP_LANGS))
         self.assertEqual(self.api.strings("fr")["search"], "Rechercher")
         self.assertEqual(self.api.strings("base")["search"], "Search")  # the tool's words fall back to English
         self.assertEqual(self.api.nations("ru")[5], "СССР")
@@ -1061,7 +1061,7 @@ class AmmoAndFlags(WithMod):
         self.assertGreater(len(used), 20)
         for key in used:
             with self.subTest(key=key):
-                self.assertEqual(set(said[key]), set(schema.LANGS))
+                self.assertEqual(set(said[key]), set(schema.APP_LANGS))
         for call in ("flag_types", "flag_type_save", "flag_type_delete", "flag_type_give"):
             self.assertIn(f"api().{call}(", app)
             self.assertIn(f"{call}: async", fake)
@@ -1778,7 +1778,7 @@ class MapDocks(WithMod):
         words = _words()
         for key in ("new_map_scratch", "tip_new_map_scratch", "scratch_what", "dup_scratch_title", "dup_scratch_lead",
                     "dup_base", "dup_base_what", "dup_scratch_go", "dup_done_blank"):
-            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[key].get(lang)], [], key)
         self.assertIn("start from scratch", words["new_map_scratch"]["us"])
         self.assertIn("can't load a map made from nothing", words["dup_scratch_lead"]["us"])
         self.assertIn("Blank", words["tip_duplicate_map"]["us"])  # Duplicate map's tip names the blank starts too
@@ -1902,10 +1902,13 @@ class CleanBackup(unittest.TestCase):
         script = (Path(__file__).parents[1] / "installers" / "installer.iss").read_text(encoding="utf-8-sig")
         self.assertIn('Name: "gamebackup"; Description: "{cm:BackupTask}"; GroupDescription: "{cm:BackupGroup}"', script)
         languages = re.findall(r'^Name: "(\w+)"; MessagesFile:', script, re.M)
-        self.assertEqual(len(languages), 9)
+        self.assertEqual(len(languages), len(schema.APP_LANGS))  # the apps' eleven, Chinese and Persian kept here
         for lang in languages:
             for key in ("BackupGroup", "BackupTask", "BackupWhy"):
                 self.assertRegex(script, rf"(?m)^{lang}\.{key}=\S")
+        root = Path(__file__).parents[1] / "installers"
+        for file in re.findall(r'MessagesFile: "(languages\\[^"]+)"', script):  # ours: read as UTF-8 by their mark
+            self.assertTrue((root / file.replace("\\", "/")).read_bytes().startswith(b"\xef\xbb\xbf"), file)
         self.assertIn("CustomMessage('BackupWhy')", script)
         self.assertIn("(not WizardSilent) and WizardIsTaskSelected('gamebackup')", script)
         from rusemod import home
@@ -2065,7 +2068,7 @@ class MapAndScenarioSides(unittest.TestCase):
         self.assertIn("map_mode: mv.mode", self.function("saveView("))
         words = _words()
         for key in ("mode_map", "tip_mode_map", "tip_mode_scenario", "tip_scen_locked", "locked_scenario", "locked_map"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
 
 
 class Redo(unittest.TestCase):
@@ -2099,7 +2102,7 @@ class Redo(unittest.TestCase):
         words = _words()
         for key in ("brush_redo", "tip_place_redo", "tip_road_redo", "tip_bridges_redo", "tip_brush_redo",
                     "tip_erase_redo"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
         self.assertIn("Ctrl+Y", words["keys_undo"]["us"])
 
     def test_a_new_step_empties_what_is_left_to_redo(self):
@@ -2142,7 +2145,7 @@ class Redo(unittest.TestCase):
                     "sel_whose_mod", "sel_many", "sel_delete", "tip_sel_delete", "sel_restore", "tip_sel_restore",
                     "sel_clear", "tip_sel_clear", "sel_nothing", "sel_more", "sel_box_ground", "tip_sel_undo",
                     "tip_sel_redo"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
         fake = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for call in ("map_objects_at: async", "map_objects_in: async", "scenery_own: async", "scenery_change: async"):
             self.assertIn(call, fake)
@@ -2213,14 +2216,14 @@ class GridBoxAndRoads(unittest.TestCase):
         for key in ("place_path", "tip_place_path", "place_path_help", "place_path_next", "place_width",
                     "place_width_line", "tip_place_width", "place_cover", "tip_place_cover", "tip_place_finish",
                     "place_again", "tip_place_again", "place_placed_cover", "place_cover_left"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
 
     def test_words(self):
         words = _words()
         for key in ("place_grid", "tip_place_grid", "place_grid_help", "place_grid_next", "place_grid_rows",
                     "place_grid_count", "place_box", "tip_place_box", "place_box_help", "place_box_count",
                     "place_rows", "tip_place_rows", "place_roads", "tip_place_roads", "place_line_count"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
 
 
 class AskBeforeClosing(unittest.TestCase):
@@ -2290,7 +2293,7 @@ class AskBeforeClosing(unittest.TestCase):
         words = _words()
         for key in ("unsaved_title", "unsaved_text", "unsaved_close", "unsaved_script", "unsaved_typed",
                     "unsaved_music", "unsaved_saving", "unsaved_test"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
 
 
 class MapIcons(unittest.TestCase):
@@ -2408,7 +2411,7 @@ class Labels(unittest.TestCase):
         data = schema._data()
         for section, entries in (("props", data["props"]), ("groups", data["groups"]), ("Studio words", _words())):
             for name, entry in entries.items():
-                missing = [lang for lang in schema.LANGS if not entry.get(lang)]
+                missing = [lang for lang in schema.APP_LANGS if not entry.get(lang)]
                 self.assertEqual(missing, [], f"{section}: {name}")
         for name, entry in data["props"].items():
             self.assertIn(entry["group"], schema.GROUP_ORDER, name)
@@ -2500,7 +2503,7 @@ class Labels(unittest.TestCase):
                     "search_recent", "tip_search_tag", "tip_search_recent", "tag_new", "test_running", "toast_log",
                     "tip_toast_log", "keys_clash", "keys_swap", "tip_keys_swap", "tip_keys_swap_none", "keys_take",
                     "tip_keys_take"):
-            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[key].get(lang)], [], key)
 
     def test_each_word_has_the_same_blanks_in_every_language(self):  # a {name} lost in a translation stays empty
         for name, entry in _words().items():

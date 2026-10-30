@@ -4,7 +4,7 @@ flag explained, the Studio's judge of one unit's flags, and the build's new cras
 recon flag 99 without the fighter flag 100 (T53-T56). Made-up units, no game files needed."""
 import unittest
 
-from rusemod import flaginfo
+from rusemod import flaginfo, schema
 from rusemod.patch import Engine, Game, Inline, Obj, Op, Ref, Text, num, nums
 from rusemod.resolve import ModInfo
 from rusemod.unitflags import armed, crashes
@@ -30,7 +30,7 @@ class Guide(unittest.TestCase):
         from rusemod import schema
         root = Path(flaginfo.__file__).parent
         english = flaginfo.guide("us")
-        for lang in schema.LANGS:
+        for lang in schema.APP_LANGS:
             if lang == "us":
                 continue
             with self.subTest(lang=lang):
@@ -210,7 +210,7 @@ class Page(unittest.TestCase):
         keys += [f"flag_sure_{s}" for s in flaginfo.SURE]
         keys += [f"flag_group_{g}" for g in flaginfo.GROUPS] + [f"flag_group_{g}_help" for g in flaginfo.GROUPS]
         for key in keys:
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), len(schema.APP_LANGS), key)
         app = (root / "ui" / "app.js").read_text(encoding="utf-8")
         for needle in ("api().flag_check(", "openFlagGuide(", "renderFlagGuide()", "flagTip(", "weapons-how"):
             self.assertIn(needle, app)

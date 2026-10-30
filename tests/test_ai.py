@@ -16,7 +16,7 @@ from rusemod.play import Starter
 from ruse_studio.api import StudioApi, StudioError
 
 ROOT = Path(__file__).resolve().parents[1]
-LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc"}
+LANGS = {"us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"}
 
 
 def i32(v):

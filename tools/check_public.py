@@ -47,8 +47,11 @@ WORDING = re.compile(r"RUSE\.exe'?s\b|RUSE\.exe (?:does|reads|checks|holds|keeps
                      # and the words and tools that lead to it
                      r"bytecode|opcode|hex-?rays|binary ninja|x64dbg|ollydbg|cheat engine|\bdebugger\b|minidump|"
                      r"crash ?dumps?\b|hex[- ]?editor|"
-                     # the same in the other nine languages the apps and their pages speak (the owner, 2026-10-05:
-                     # "translated every language on the GitHub"): a translation mustn't say what the English can't
+                     # the same in the other ten languages the apps and their pages speak (the owner, 2026-10-05:
+                     # "translated every language on the GitHub"; 2026-10-30, Persian): a translation mustn't say what
+                     # the English can't
+                     r"دی‌?\s?کامپایل|واکامپایل|مهندسی معکوس|دیس‌?\s?اسمبل|دیباگر|اشکال‌?\s?زدا(?!یی)|بایت‌?\s?کد|دامپ|"
+                     r"ویرایشگر هگز|"
                      r"d[ée]compil|dekompil|descompil|декомпил|逆コンパイル|反编译|"
                      r"r[ée]tro-?ing[ée]nierie|ing[ée]nierie inverse|ingegneria inversa|ingenier[ií]a inversa|"
                      r"in[żz]ynieri\w* wsteczn|обратн\w* (?:разработк|инжиниринг)|реверс-?инжиниринг|zp[ěe]tn\w* in[žz]en[ýy]r|"

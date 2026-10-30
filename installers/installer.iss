@@ -37,7 +37,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 
 [Languages]
-; The game's languages that Inno Setup ships a translation for (Chinese isn't one of them: English then).
+; The apps' eleven languages, picked by Windows' own language. Inno Setup 6.7.1 ships nine; Chinese and Persian are
+; its volunteers' unofficial translations, kept here (installers/languages, from jrsoftware/issrc at is-6_7_1, a UTF-8
+; byte-order mark added; the owner, 2026-10-30: "those should switch depending on what language you have").
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
@@ -47,6 +49,8 @@ Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
+Name: "chinesesimplified"; MessagesFile: "languages\ChineseSimplified.isl"
+Name: "farsi"; MessagesFile: "languages\Farsi.isl"
 
 [CustomMessages]
 ; The clean game backup offered beside the desktop icon (the owner, 2026-10-01), with why under the list. The app
@@ -78,6 +82,12 @@ czech.BackupWhy=Proč: RUSE Launcher a RUSE Studio nikdy nemění složku hry, a
 japanese.BackupGroup=ゲーム
 japanese.BackupTask=ゲームファイルのクリーンなコピーを保存する（推奨）
 japanese.BackupWhy=理由：RUSE Launcher と RUSE Studio はゲームのフォルダーを変更しませんが、他の MOD マネージャーや手作業の編集は変更することがあり、MOD を入れたゲームはそのファイルから作られます。クリーンなコピーがあれば、アプリがゲームファイルを確認し、変更されたファイルを元に戻せます。コピーはアプリの初回起動時に作成されます。数分かかり、ゲームとほぼ同じ容量を使います（ゲームのドライブの RUSE-Backup）。
+chinesesimplified.BackupGroup=你的游戏
+chinesesimplified.BackupTask=保留游戏文件的干净备份（推荐）
+chinesesimplified.BackupWhy=原因：RUSE Launcher 和 RUSE Studio 从不修改游戏的文件夹，但其他模组管理器和手动修改可能会，而每个加载模组的游戏都是由这些文件构建的。有了干净备份，应用可以检查游戏文件，并把被修改的文件恢复原样。备份在应用第一次启动时创建：需要几分钟，占用的空间与游戏差不多（在游戏所在驱动器的 RUSE-Backup 中）。
+farsi.BackupGroup=بازی شما
+farsi.BackupTask=نگه داشتن یک پشتیبان تمیز از فایل‌های بازی (توصیه‌شده)
+farsi.BackupWhy=چرا: RUSE Launcher و RUSE Studio هیچ‌وقت پوشهٔ بازی شما را تغییر نمی‌دهند، اما مدیرهای ماد دیگر و ویرایش‌های دستی ممکن است تغییرش دهند، و هر بازی مادشده از همین فایل‌ها ساخته می‌شود. با یک پشتیبان تمیز، برنامه می‌تواند فایل‌های بازی را بررسی کند و هر فایلی را که تغییر کرده برگرداند. پشتیبان در اولین اجرای برنامه ساخته می‌شود: چند دقیقه طول می‌کشد و تقریباً به اندازهٔ خود بازی جا می‌گیرد (در RUSE-Backup، روی درایو بازی).
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"

@@ -505,7 +505,7 @@ class EraUnitsScreen(unittest.TestCase):
         self.assertEqual(sorted(used - set(words)), [])
         from rusemod import schema
         for key in sorted(used):
-            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[key].get(lang)], [], key)
         controls = []
         for m in re.finditer(r'el\("(?:button|input|select)", \{', js):     # each control's properties, braces paired
             depth, at = 0, m.end() - 1

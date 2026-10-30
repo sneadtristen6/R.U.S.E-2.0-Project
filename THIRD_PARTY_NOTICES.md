@@ -237,6 +237,8 @@ Inno Setup 6.7.1 makes the two installers. The setup program and the uninstaller
 | Inno Setup | 6.7.1 | Inno Setup License | Jordan Russell; portions Martijn Laan | https://github.com/jrsoftware/issrc/tree/is-6_7_1 |
 | RemObjects Pascal Script (runs the installer's own steps, the `[Code]` part of [installers/installer.iss](installers/installer.iss)) | The copy Inno Setup 6.7.1 pins (commit d6e25439080c37e15af23badb48c39760a2b8d4d) | Its own licence, which asks for the line below | Carlo Kok and RemObjects Software, LLC | https://github.com/remobjects/pascalscript |
 | LZMA decoder (unpacks the app; the installers use LZMA2) | Not stated | Public domain | Igor Pavlov | https://github.com/jrsoftware/issrc/tree/is-6_7_1/Components/Lzma2 |
+| The installers' Chinese (Simplified) words ([installers/languages/ChineseSimplified.isl](installers/languages/ChineseSimplified.isl)), one of Inno Setup's unofficial translations | For Inno Setup 6.5.0 and later, as kept at is-6_7_1 | Inno Setup License, with Inno Setup | Zhenghan Yang (maintainer) | https://github.com/jrsoftware/issrc/blob/is-6_7_1/Files/Languages/Unofficial/ChineseSimplified.isl |
+| The installers' Persian words ([installers/languages/Farsi.isl](installers/languages/Farsi.isl)), one of Inno Setup's unofficial translations | For Inno Setup 6.5.0 and later, as kept at is-6_7_1 | Inno Setup License, with Inno Setup | Peyman Mohammadi (translator) | https://github.com/jrsoftware/issrc/blob/is-6_7_1/Files/Languages/Unofficial/Farsi.isl |
 
 The installers are made using RemObjects Pascal Script, which can be found at https://github.com/remobjects/pascalscript.
 

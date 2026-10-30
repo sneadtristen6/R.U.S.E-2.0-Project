@@ -16,9 +16,12 @@ import sys
 STEAM_CODES = {"english": "us", "french": "fr", "german": "ger", "italian": "ita", "spanish": "spa", "latam": "spa",
                "polish": "pol", "russian": "ru", "czech": "cz", "japanese": "jpn", "schinese": "sc"}
 
-# A language tag's first part, as Windows or Python gives it ("fr-FR", "de_DE", "zh_CN") -> the game's folder
+# A language tag's first part, as Windows or Python gives it ("fr-FR", "de_DE", "zh_CN") -> the game's folder, or the
+# apps' code for a language the game hasn't got (Persian)
 _TAG_CODES = {"en": "us", "fr": "fr", "de": "ger", "it": "ita", "es": "spa", "pl": "pol", "ru": "ru", "cs": "cz",
-              "ja": "jpn", "zh": "sc"}
+              "ja": "jpn", "zh": "sc", "fa": "fa"}
+# the apps' languages the game hasn't got: a PC in one of them is the better clue, as the game in Steam can't be
+_NOT_THE_GAMES = {"fa"}
 
 
 def language_code(tag: str) -> str:
@@ -41,12 +44,14 @@ def pc_language() -> str:
 
 
 def suggest(steam_language: str | None, pc_tag: str | None) -> tuple[str, str]:
-    """(code, where it came from): "steam" (the game's language in Steam), "pc" (this PC's language, when the game
-    has it) or "default" (English)."""
+    """(code, where it came from): "steam" (the game's language in Steam), "pc" (this PC's language, when the apps
+    have it; first when the game hasn't got it, as Persian) or "default" (English)."""
+    head = re.split(r"[-_.@]", (pc_tag or "").strip().lower())[0]
+    if _TAG_CODES.get(head) in _NOT_THE_GAMES:
+        return _TAG_CODES[head], "pc"
     code = steam_code(steam_language)
     if code:
         return code, "steam"
-    head = re.split(r"[-_.@]", (pc_tag or "").strip().lower())[0]
     if head in _TAG_CODES:
         return _TAG_CODES[head], "pc"
     return "us", "default"

@@ -372,7 +372,7 @@ class Words(unittest.TestCase):
     """The build's lines for the player, in both apps' ten languages."""
 
     def test_both_apps_have_every_note_in_ten_languages(self):
-        langs = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")
+        langs = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa")
         for app in ("ruse_launcher", "ruse_studio"):
             words = tomllib.loads((ROOT / "src" / app / "words.toml").read_text(encoding="utf-8"))
             for name, english in NOTES.items():

@@ -1,8 +1,8 @@
 """Display names for the game's data (labels.toml, the start of the schema DB, PLAN.md L2), for every app and tool.
 
-The default is always the game's own names (`base`), which mods use. A modder can pick one of the game's ten
-languages to read the tools in: property names, groups and nations. Anything without a translation falls back to
-the game's name. Each app keeps its own screen words (the Studio's: ruse_studio/words.toml).
+The default is always the game's own names (`base`), which mods use. A modder can pick one of the apps' languages
+to read the tools in: property names, groups and nations. Anything without a translation falls back to the game's
+name. Each app keeps its own screen words (the Studio's: ruse_studio/words.toml).
 """
 from __future__ import annotations
 
@@ -11,7 +11,11 @@ import re
 import tomllib
 from pathlib import Path
 
-LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")
+LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")  # the game's ten: its texts, its names
+# the apps' own languages: the game's ten, and Persian (the owner, 2026-10-30), which the game hasn't got: its texts
+# and names in a Persian app are the English ones (each lookup in the game's data checks `lang in LANGS`)
+APP_LANGS = LANGS + ("fa",)
+RTL = ("fa",)  # written right to left (the apps' rtl.js)
 BASE = "base"
 
 
@@ -23,7 +27,8 @@ def _data() -> dict:
 def languages() -> list[dict]:
     """The choices for the language selector, the code names (`BASE`) first."""
     names = _data()["languages"]
-    return [{"code": BASE, "name": None}] + [{"code": c, "name": names[c]} for c in LANGS]
+    return [{"code": BASE, "name": None}] + [{"code": c, "name": names[c], **({"rtl": True} if c in RTL else {})}
+                                            for c in APP_LANGS]
 
 
 def _prop(path: str) -> str:

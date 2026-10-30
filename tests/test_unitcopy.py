@@ -534,7 +534,7 @@ class Page(unittest.TestCase):
                     "card_stale", "card_take", "tip_card_take", "card_choose", "tip_card_choose", "rides_in",
                     "tip_rides_in", "rides_in_how", "rides_in_game", "rides_in_mine", "rides_in_open",
                     "tip_rides_in_open"):
-            self.assertEqual(len(words[key]), 10, key)
+            self.assertEqual(len(words[key]), 11, key)  # the apps' eleven languages
         app = (root / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
         fake = (root / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
         for needle in ('copyAction("model_copy"', 'copyAction("model_copy_remove"', "info.own_copy", "uniformBox(",

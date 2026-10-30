@@ -383,7 +383,7 @@ class Page(unittest.TestCase):
         used |= {"set_start_title", "set_start_help"}
         self.assertEqual(sorted(k for k in used if k not in words), [])
         for key in used:
-            self.assertEqual([lang for lang in schema.LANGS if not words[key].get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[key].get(lang)], [], key)
 
     def test_the_page_has_its_parts(self):
         page = (UI / "index.html").read_text(encoding="utf-8")

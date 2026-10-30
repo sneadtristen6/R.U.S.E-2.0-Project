@@ -1,8 +1,8 @@
-# Display names for the game's data, in the game's own ten languages (schema DB annotations), for any app
+# Display names for the game's data, in the apps' eleven languages (schema DB annotations), for any app
 # or tool on the platform. The default everywhere is the game's own names (`base`): mods always use those. A modder can
 # pick a language to read the tools in; anything missing here falls back to the game's name. Starter translations:
 # corrections welcome. Each app keeps its own screen words (the Studio's are in ruse_studio/words.toml).
-# Language codes are the game's folders: us fr ger ita spa pol ru cz jpn sc.
+# Language codes are the game's folders: us fr ger ita spa pol ru cz jpn sc, and fa (Persian, which the game hasn't got).
 
 [languages]
 us = "English"
@@ -15,6 +15,7 @@ ru = "Русский"
 cz = "Čeština"
 jpn = "日本語"
 sc = "简体中文"
+fa = "فارسی"
 
 # Nation numbers (Nationalite; 0 is the default and isn't written). `base` is the game's own table.
 [nations]
@@ -29,6 +30,7 @@ ru = ["США", "Германия", "Великобритания", "Франц�
 cz = ["USA", "Německo", "Velká Británie", "Francie", "Itálie", "SSSR", "Japonsko"]
 jpn = ["アメリカ", "ドイツ", "イギリス", "フランス", "イタリア", "ソ連", "日本"]
 sc = ["美国", "德国", "英国", "法国", "意大利", "苏联", "日本"]
+fa = ["آمریکا", "آلمان", "بریتانیا", "فرانسه", "ایتالیا", "شوروی", "ژاپن"]
 
 [groups.cost]
 us = "Cost"
@@ -41,6 +43,7 @@ ru = "Стоимость"
 cz = "Cena"
 jpn = "コスト"
 sc = "成本"
+fa = "هزینه"
 
 [groups.movement]
 us = "Movement"
@@ -53,6 +56,7 @@ ru = "Передвижение"
 cz = "Pohyb"
 jpn = "移動"
 sc = "移动"
+fa = "حرکت"
 
 [groups.combat]
 us = "Combat"
@@ -65,6 +69,7 @@ ru = "Бой"
 cz = "Boj"
 jpn = "戦闘"
 sc = "战斗"
+fa = "رزم"
 
 [groups.vision]
 us = "Vision"
@@ -77,6 +82,7 @@ ru = "Обзор"
 cz = "Výhled"
 jpn = "視界"
 sc = "视野"
+fa = "دید"
 
 [groups.menu]
 us = "Build menu"
@@ -89,6 +95,7 @@ ru = "Меню производства"
 cz = "Nabídka výroby"
 jpn = "生産メニュー"
 sc = "生产菜单"
+fa = "منوی ساخت"
 
 [groups.identity]
 us = "Identity"
@@ -101,6 +108,7 @@ ru = "Идентификация"
 cz = "Identita"
 jpn = "識別"
 sc = "标识"
+fa = "هویت"
 
 [groups.weapon]
 us = "Weapon"
@@ -113,6 +121,7 @@ ru = "Оружие"
 cz = "Zbraň"
 jpn = "武器"
 sc = "武器"
+fa = "سلاح"
 
 [groups.other]
 us = "Other"
@@ -125,6 +134,7 @@ ru = "Прочее"
 cz = "Ostatní"
 jpn = "その他"
 sc = "其他"
+fa = "سایر"
 
 # --- properties: group, then one name per language ---
 [props.SeuilMort]
@@ -139,6 +149,7 @@ ru = "Прочность"
 cz = "Životy"
 jpn = "耐久力"
 sc = "生命值"
+fa = "سلامت"
 
 [props.SeuilPinned]
 group = "combat"
@@ -152,6 +163,7 @@ ru = "Порог подавления"
 cz = "Práh potlačení"
 jpn = "制圧しきい値"
 sc = "压制阈值"
+fa = "آستانهٔ زمین‌گیر شدن"
 
 [props.ArmorDescriptor]
 group = "combat"
@@ -165,6 +177,7 @@ ru = "Броня"
 cz = "Pancéřování"
 jpn = "装甲"
 sc = "装甲"
+fa = "زره"
 
 [props.PorteeAttackReflexSol]
 group = "combat"
@@ -178,6 +191,7 @@ ru = "Дальность автоатаки (земля)"
 cz = "Dosah automatického útoku (země)"
 jpn = "自動攻撃射程(地上)"
 sc = "自动攻击范围(地面)"
+fa = "برد حملهٔ خودکار (زمینی)"
 
 [props.PorteeAttackReflexAir]
 group = "combat"
@@ -191,6 +205,7 @@ ru = "Дальность автоатаки (воздух)"
 cz = "Dosah automatického útoku (vzduch)"
 jpn = "自動攻撃射程(空)"
 sc = "自动攻击范围(空中)"
+fa = "برد حملهٔ خودکار (هوایی)"
 
 [props.VitesseLineaire]
 group = "movement"
@@ -204,6 +219,7 @@ ru = "Скорость"
 cz = "Rychlost"
 jpn = "速度"
 sc = "速度"
+fa = "سرعت"
 
 [props.VitesseCombat]
 group = "movement"
@@ -217,6 +233,7 @@ ru = "Скорость в бою"
 cz = "Bojová rychlost"
 jpn = "戦闘速度"
 sc = "战斗速度"
+fa = "سرعت در نبرد"
 
 [props.MaxAcceleration]
 group = "movement"
@@ -230,6 +247,7 @@ ru = "Ускорение"
 cz = "Zrychlení"
 jpn = "加速"
 sc = "加速度"
+fa = "شتاب"
 
 [props.MaxDeceleration]
 group = "movement"
@@ -243,6 +261,7 @@ ru = "Торможение"
 cz = "Zpomalení"
 jpn = "減速"
 sc = "减速度"
+fa = "کاهش سرعت"
 
 [props.TempsDemiTour]
 group = "movement"
@@ -256,6 +275,7 @@ ru = "Время разворота"
 cz = "Doba otočení"
 jpn = "旋回時間"
 sc = "掉头时间"
+fa = "زمان دور زدن"
 
 [props.SpeedBonusOnRoad]
 group = "movement"
@@ -269,6 +289,7 @@ ru = "Бонус скорости на дороге"
 cz = "Bonus rychlosti na silnici"
 jpn = "道路速度ボーナス"
 sc = "道路速度加成"
+fa = "سرعت اضافه در جاده"
 
 [props.DetectionBase]
 group = "vision"
@@ -282,6 +303,7 @@ ru = "Дальность обзора"
 cz = "Dohled"
 jpn = "視認距離"
 sc = "视野范围"
+fa = "برد دید"
 
 [props.PorteeVisionVolant]
 group = "vision"
@@ -295,6 +317,7 @@ ru = "Дальность обзора воздуха"
 cz = "Dohled na letadla"
 jpn = "対空視認距離"
 sc = "对空视野范围"
+fa = "برد دید هوایی"
 
 [props.SignatureRadar]
 group = "vision"
@@ -308,6 +331,7 @@ ru = "Радарная заметность"
 cz = "Radarová stopa"
 jpn = "レーダー反射"
 sc = "雷达信号"
+fa = "ردپای راداری"
 
 [props.ProductionPrice]
 group = "cost"
@@ -321,6 +345,7 @@ ru = "Цена"
 cz = "Cena"
 jpn = "価格"
 sc = "价格"
+fa = "قیمت"
 
 [props.ProductionTime]
 group = "cost"
@@ -334,6 +359,7 @@ ru = "Время производства"
 cz = "Doba výroby"
 jpn = "生産時間"
 sc = "生产时间"
+fa = "زمان ساخت"
 
 [props.UpgradePrice]
 group = "cost"
@@ -347,6 +373,7 @@ ru = "Цена улучшения"
 cz = "Cena vylepšení"
 jpn = "改良価格"
 sc = "升级价格"
+fa = "قیمت ارتقا"
 
 [props.UpgradeTime]
 group = "cost"
@@ -360,6 +387,7 @@ ru = "Время улучшения"
 cz = "Doba vylepšení"
 jpn = "改良時間"
 sc = "升级时间"
+fa = "زمان ارتقا"
 
 [props.Factory]
 group = "menu"
@@ -373,6 +401,7 @@ ru = "Завод"
 cz = "Továrna"
 jpn = "生産施設"
 sc = "工厂"
+fa = "کارخانه"
 
 [props.PositionInMenu]
 group = "menu"
@@ -386,6 +415,7 @@ ru = "Позиция в меню"
 cz = "Pozice v nabídce"
 jpn = "メニュー位置"
 sc = "菜单位置"
+fa = "جایگاه در منو"
 
 [props.ShowInMenu]
 group = "menu"
@@ -399,6 +429,7 @@ ru = "Показывать в меню"
 cz = "Zobrazit v nabídce"
 jpn = "メニューに表示"
 sc = "在菜单中显示"
+fa = "نمایش در منو"
 
 [props.TypeBatiment]
 group = "menu"
@@ -412,6 +443,7 @@ ru = "Тип здания"
 cz = "Typ budovy"
 jpn = "建物の種類"
 sc = "建筑类型"
+fa = "نوع ساختمان"
 
 [props.UpgradeRequire]
 group = "menu"
@@ -425,6 +457,7 @@ ru = "Улучшение от"
 cz = "Vylepšení z"
 jpn = "改良元"
 sc = "升级自"
+fa = "ارتقای"
 
 [props.IsUpgrade]
 group = "menu"
@@ -438,6 +471,7 @@ ru = "Является улучшением"
 cz = "Je vylepšení"
 jpn = "改良型"
 sc = "是升级"
+fa = "ارتقا است"
 
 [props.Nationalite]
 group = "identity"
@@ -451,6 +485,7 @@ ru = "Нация"
 cz = "Národ"
 jpn = "国家"
 sc = "国家"
+fa = "کشور"
 
 [props.DescriptorId]
 group = "identity"
@@ -464,6 +499,7 @@ ru = "Идентификатор"
 cz = "Identifikátor"
 jpn = "ID"
 sc = "编号"
+fa = "شناسه"
 
 [props.ClassNameForDebug]
 group = "identity"
@@ -477,6 +513,7 @@ ru = "Отладочное имя"
 cz = "Ladicí název"
 jpn = "デバッグ名"
 sc = "调试名称"
+fa = "نام اشکال‌زدایی"
 
 [props.NameInMenuToken]
 group = "identity"
@@ -490,6 +527,7 @@ ru = "Имя (ключ текста)"
 cz = "Název (klíč textu)"
 jpn = "名前(テキストキー)"
 sc = "名称(文本键)"
+fa = "نام (کلید متن)"
 
 [props.Puissance]
 group = "weapon"
@@ -503,6 +541,7 @@ ru = "Урон"
 cz = "Poškození"
 jpn = "威力"
 sc = "伤害"
+fa = "آسیب"
 
 [props.PorteeMaximale]
 group = "weapon"
@@ -516,6 +555,7 @@ ru = "Максимальная дальность"
 cz = "Maximální dostřel"
 jpn = "最大射程"
 sc = "最大射程"
+fa = "بیشترین برد"
 
 [props.PorteeMinimale]
 group = "weapon"
@@ -529,6 +569,7 @@ ru = "Минимальная дальность"
 cz = "Minimální dostřel"
 jpn = "最小射程"
 sc = "最小射程"
+fa = "کمترین برد"
 
 [props.TempsEntreDeuxTirs]
 group = "weapon"
@@ -542,6 +583,7 @@ ru = "Время между выстрелами"
 cz = "Doba mezi výstřely"
 jpn = "射撃間隔"
 sc = "射击间隔"
+fa = "زمان بین شلیک‌ها"
 
 [props.NbTirParSalves]
 group = "weapon"
@@ -555,6 +597,7 @@ ru = "Выстрелов в залпе"
 cz = "Výstřelů na salvu"
 jpn = "斉射あたりの弾数"
 sc = "每轮齐射发数"
+fa = "شلیک در هر رگبار"
 
 [props.TempsEntreDeuxSalves]
 group = "weapon"
@@ -568,6 +611,7 @@ ru = "Время перезарядки"
 cz = "Doba přebíjení"
 jpn = "装填時間"
 sc = "装填时间"
+fa = "زمان پر کردن دوباره"
 
 [props.AngleDispersion]
 group = "weapon"
@@ -581,6 +625,7 @@ ru = "Разброс"
 cz = "Rozptyl"
 jpn = "散布"
 sc = "散布"
+fa = "پراکندگی"
 
 [props.RayonPinned]
 group = "weapon"
@@ -594,6 +639,7 @@ ru = "Радиус подавления"
 cz = "Poloměr potlačení"
 jpn = "制圧半径"
 sc = "压制半径"
+fa = "شعاع سرکوب"
 
 [props.PourcentageTirDirect]
 group = "weapon"
@@ -607,6 +653,7 @@ ru = "% прямого огня"
 cz = "% přímé palby"
 jpn = "直射率"
 sc = "直射百分比"
+fa = "آتش مستقیم %"
 
 [props.TirIndirect]
 group = "weapon"
@@ -620,6 +667,7 @@ ru = "Навесной огонь"
 cz = "Nepřímá palba"
 jpn = "間接射撃"
 sc = "间接射击"
+fa = "آتش غیرمستقیم"
 
 [props.AllowAmbushShot]
 group = "weapon"
@@ -633,6 +681,7 @@ ru = "Может атаковать из засады"
 cz = "Může útočit ze zálohy"
 jpn = "待ち伏せ可能"
 sc = "可伏击"
+fa = "می‌تواند کمین کند"
 
 [props.Arme]
 group = "weapon"
@@ -646,6 +695,7 @@ ru = "Тип оружия"
 cz = "Typ zbraně"
 jpn = "武器種別"
 sc = "武器类型"
+fa = "نوع سلاح"
 
 [props.Level]
 group = "weapon"
@@ -659,6 +709,7 @@ ru = "Уровень оружия"
 cz = "Úroveň zbraně"
 jpn = "武器レベル"
 sc = "武器等级"
+fa = "سطح سلاح"
 
 # The economy (rusemod.economy, the Studio's Economy tab): values of the game's constants, not of a unit.
 [props.QteDeviseInitiale]
@@ -673,6 +724,7 @@ ru = "Начальные деньги"
 cz = "Počáteční peníze"
 jpn = "初期資金"
 sc = "初始资金"
+fa = "پول آغازین"
 
 [props.TempsGenAutoDevises]
 group = "other"
@@ -686,6 +738,7 @@ ru = "Доход: секунд между выплатами"
 cz = "Příjem: sekundy mezi platbami"
 jpn = "収入：支払いの間隔（秒）"
 sc = "收入：每次发放的间隔（秒）"
+fa = "درآمد: ثانیه بین پرداخت‌ها"
 
 [props.QuantiteGenAutoDevises]
 group = "other"
@@ -699,6 +752,7 @@ ru = "Доход: деньги за каждую выплату"
 cz = "Příjem: peníze při každé platbě"
 jpn = "収入：1回の支払い額"
 sc = "收入：每次发放的金额"
+fa = "درآمد: پول در هر پرداخت"
 
 [props.StockDeviseSupplementaireFacile]
 group = "other"
@@ -712,6 +766,7 @@ ru = "Дополнительные деньги на лёгком уровне"
 cz = "Peníze navíc na lehkou obtížnost"
 jpn = "イージーでの追加資金"
 sc = "简单难度的额外资金"
+fa = "پول اضافه در سختی Easy"
 
 [props.QteDeviseParCamion]
 group = "other"
@@ -725,6 +780,7 @@ ru = "Деньги с каждого грузовика снабжения"
 cz = "Peníze z každého zásobovacího auta"
 jpn = "補給トラック1台が運ぶ資金"
 sc = "每辆补给卡车带来的资金"
+fa = "پولی که هر کامیون تدارکات می‌آورد"
 
 [props.NbCamionParConvoi]
 group = "other"
@@ -738,6 +794,7 @@ ru = "Грузовиков в колонне снабжения"
 cz = "Aut v zásobovacím konvoji"
 jpn = "補給車列のトラック数"
 sc = "每个补给车队的卡车数"
+fa = "کامیون‌های هر کاروان تدارکات"
 
 [props.TempsENtreDeuxConvois]
 group = "other"
@@ -751,6 +808,7 @@ ru = "Секунд между колоннами"
 cz = "Sekundy mezi konvoji"
 jpn = "車列の間隔（秒）"
 sc = "车队之间的间隔（秒）"
+fa = "ثانیه بین کاروان‌های تدارکات"
 
 [props.TempsENtreDeuxCamionsEnConvoiMin]
 group = "other"
@@ -764,6 +822,7 @@ ru = "Секунд между грузовиками колонны (мин.)"
 cz = "Sekundy mezi auty konvoje (min.)"
 jpn = "車列内のトラックの間隔（秒・最小）"
 sc = "车队内卡车的间隔（秒，最小）"
+fa = "ثانیه بین کامیون‌های یک کاروان (کمترین)"
 
 [props.TempsENtreDeuxCamionsEnConvoiMax]
 group = "other"
@@ -777,6 +836,7 @@ ru = "Секунд между грузовиками колонны (макс.)"
 cz = "Sekundy mezi auty konvoje (max.)"
 jpn = "車列内のトラックの間隔（秒・最大）"
 sc = "车队内卡车的间隔（秒，最大）"
+fa = "ثانیه بین کامیون‌های یک کاروان (بیشترین)"
 
 [props.RatioForDepotNearlyDepleted]
 group = "other"
@@ -790,6 +850,7 @@ ru = "Склад почти пуст при (доля остатка)"
 cz = "Sklad je téměř prázdný při (zbývající podíl)"
 jpn = "デポがほぼ空になる残量（割合）"
 sc = "补给站将空时的剩余比例"
+fa = "انبار تقریباً خالی است در (سهم باقی‌مانده)"
 
 [props.MinProductionTime]
 group = "other"
@@ -803,6 +864,7 @@ ru = "Наименьшее время производства (сек.)"
 cz = "Nejkratší doba výroby (sekundy)"
 jpn = "最短の生産時間（秒）"
 sc = "最短生产时间（秒）"
+fa = "کوتاه‌ترین زمان ساخت (ثانیه)"
 
 [props.MaximumBatimentProduction]
 group = "other"
@@ -816,6 +878,7 @@ ru = "Зданий, производящих одновременно (макс.
 cz = "Budovy vyrábějící současně (max.)"
 jpn = "同時に生産する建物（最大）"
 sc = "同时生产的建筑（最多）"
+fa = "ساختمان‌هایی که هم‌زمان تولید می‌کنند (بیشترین)"
 
 [props.MaxProductionQueueSize]
 group = "other"
@@ -829,6 +892,7 @@ ru = "Длина очереди производства (макс.)"
 cz = "Délka výrobní fronty (max.)"
 jpn = "生産キューの長さ（最大）"
 sc = "生产队列长度（最多）"
+fa = "طول صف تولید (بیشترین)"
 
 [props.MaxBatimentAndTechnoProductionSimultaneous]
 group = "other"
@@ -842,6 +906,7 @@ ru = "Зданий и улучшений одновременно (макс.)"
 cz = "Budovy a vylepšení současně (max.)"
 jpn = "同時に進める建物とアップグレード（最大）"
 sc = "同时进行的建筑与升级（最多）"
+fa = "ساختمان‌ها و ارتقاهای هم‌زمان (بیشترین)"
 
 [props.VirtualFactoryQueueMaximumSlot]
 group = "other"
@@ -855,6 +920,7 @@ ru = "Мест в очереди виртуального завода"
 cz = "Místa ve frontě virtuální továrny"
 jpn = "仮想工場のキューの枠"
 sc = "虚拟工厂队列的位置"
+fa = "جاهای صف کارخانهٔ مجازی"
 
 [props.NbAvionsParAeroport]
 group = "other"
@@ -868,6 +934,7 @@ ru = "Самолётов на аэродром"
 cz = "Letadla na letiště"
 jpn = "飛行場ごとの航空機数"
 sc = "每个机场的飞机数"
+fa = "هواپیما در هر فرودگاه"
 
 [props.NbMaxCardsInPool]
 group = "other"
@@ -881,6 +948,7 @@ ru = "Карт уловки в запасе (макс.)"
 cz = "Karty lsti v zásobě (max.)"
 jpn = "手持ちの計略カード（最大）"
 sc = "卡池中的计谋卡（最多）"
+fa = "کارت‌های ترفند در مجموعه (بیشترین)"
 
 [props.MaxNbCardsPerZoneByAlliance]
 group = "other"
@@ -894,6 +962,7 @@ ru = "Карт уловки на сектор для каждой стороны
 cz = "Karty lsti na sektor pro každou stranu (max.)"
 jpn = "各陣営のセクターごとの計略カード（最大）"
 sc = "每方每个扇区的计谋卡（最多）"
+fa = "کارت‌های ترفند در هر بخش برای هر طرف (بیشترین)"
 
 [props.NbInitialCardsInPoolForAllianceTaille_1]
 group = "other"
@@ -907,6 +976,7 @@ ru = "Карт уловки в начале: 1 игрок на сторону"
 cz = "Karty lsti na začátku: 1 hráč na stranu"
 jpn = "開始時の計略カード：1陣営1人"
 sc = "开局计谋卡：每方1名玩家"
+fa = "کارت‌های ترفند در شروع: 1 بازیکن در هر طرف"
 
 [props.NbInitialCardsInPoolForAllianceTaille_2]
 group = "other"
@@ -920,6 +990,7 @@ ru = "Карт уловки в начале: 2 игрока на сторону"
 cz = "Karty lsti na začátku: 2 hráči na stranu"
 jpn = "開始時の計略カード：1陣営2人"
 sc = "开局计谋卡：每方2名玩家"
+fa = "کارت‌های ترفند در شروع: 2 بازیکن در هر طرف"
 
 [props.NbInitialCardsInPoolForAllianceTaille_3]
 group = "other"
@@ -933,6 +1004,7 @@ ru = "Карт уловки в начале: 3 игрока на сторону"
 cz = "Karty lsti na začátku: 3 hráči na stranu"
 jpn = "開始時の計略カード：1陣営3人"
 sc = "开局计谋卡：每方3名玩家"
+fa = "کارت‌های ترفند در شروع: 3 بازیکن در هر طرف"
 
 [props.NbInitialCardsInPoolForAllianceTaille_4]
 group = "other"
@@ -946,6 +1018,7 @@ ru = "Карт уловки в начале: 4 игрока на сторону"
 cz = "Karty lsti na začátku: 4 hráči na stranu"
 jpn = "開始時の計略カード：1陣営4人"
 sc = "开局计谋卡：每方4名玩家"
+fa = "کارت‌های ترفند در شروع: 4 بازیکن در هر طرف"
 
 [props.PaliersTempsToChooseNewCardForAllianceTaille_1]
 group = "other"
@@ -959,6 +1032,7 @@ ru = "Новые карты уловки через (сек.): 1 игрок на
 cz = "Nové karty lsti po (sekundy): 1 hráč na stranu"
 jpn = "新しい計略カードまで（秒）：1陣営1人"
 sc = "获得新计谋卡的时间（秒）：每方1名玩家"
+fa = "کارت‌های ترفند جدید پس از (ثانیه): 1 بازیکن در هر طرف"
 
 [props.PaliersTempsToChooseNewCardForAllianceTaille_2]
 group = "other"
@@ -972,6 +1046,7 @@ ru = "Новые карты уловки через (сек.): 2 игрока н
 cz = "Nové karty lsti po (sekundy): 2 hráči na stranu"
 jpn = "新しい計略カードまで（秒）：1陣営2人"
 sc = "获得新计谋卡的时间（秒）：每方2名玩家"
+fa = "کارت‌های ترفند جدید پس از (ثانیه): 2 بازیکن در هر طرف"
 
 [props.PaliersTempsToChooseNewCardForAllianceTaille_3]
 group = "other"
@@ -985,6 +1060,7 @@ ru = "Новые карты уловки через (сек.): 3 игрока н
 cz = "Nové karty lsti po (sekundy): 3 hráči na stranu"
 jpn = "新しい計略カードまで（秒）：1陣営3人"
 sc = "获得新计谋卡的时间（秒）：每方3名玩家"
+fa = "کارت‌های ترفند جدید پس از (ثانیه): 3 بازیکن در هر طرف"
 
 [props.PaliersTempsToChooseNewCardForAllianceTaille_4]
 group = "other"
@@ -998,6 +1074,7 @@ ru = "Новые карты уловки через (сек.): 4 игрока н
 cz = "Nové karty lsti po (sekundy): 4 hráči na stranu"
 jpn = "新しい計略カードまで（秒）：1陣営4人"
 sc = "获得新计谋卡的时间（秒）：每方4名玩家"
+fa = "کارت‌های ترفند جدید پس از (ثانیه): 4 بازیکن در هر طرف"
 
 [props.ArmyValueForceLaunchAttack]
 group = "other"
@@ -1011,6 +1088,7 @@ ru = "Ценность армии, при которой компьютер ат
 cz = "Hodnota armády, při které počítač zaútočí"
 jpn = "コンピューターが攻撃を始める軍の価値"
 sc = "电脑发起进攻的军队价值"
+fa = "ارزش ارتشی که بازیکن رایانه‌ای را به حمله وامی‌دارد"
 
 [props.MinArmyValueToUseManipulationCard]
 group = "other"
@@ -1024,6 +1102,7 @@ ru = "Ценность армии, прежде чем компьютер сыг
 cz = "Hodnota armády, než počítač zahraje manipulační lest"
 jpn = "コンピューターが操作系の計略を使う前の軍の価値"
 sc = "电脑使用操控类计谋前的军队价值"
+fa = "ارزش ارتش پیش از آنکه بازیکن رایانه‌ای ترفند دست‌کاری به کار ببرد"
 
 [props.MaxWaitingRequest]
 group = "other"
@@ -1037,6 +1116,7 @@ ru = "Ожидающих заказов производства у компью
 cz = "Čekající výrobní příkazy počítače (max.)"
 jpn = "コンピューターの待機中の生産指示（最大）"
 sc = "电脑等待中的生产指令（最多）"
+fa = "سفارش‌های تولیدِ در انتظارِ بازیکن رایانه‌ای (بیشترین)"
 
 [props.NbMaxWaitingRequestBeforeRequestingNewFactory]
 group = "other"
@@ -1050,6 +1130,7 @@ ru = "Ожидающих заказов, прежде чем компьютер 
 cz = "Čekající příkazy, než počítač požádá o novou továrnu"
 jpn = "コンピューターが新しい工場を求めるまでの待機指示"
 sc = "电脑要求新工厂前的等待指令数"
+fa = "سفارش‌های در انتظار پیش از آنکه بازیکن رایانه‌ای کارخانهٔ جدیدی بخواهد"
 
 [props.MaxTimeWaitingRequest]
 group = "other"
@@ -1063,6 +1144,7 @@ ru = "Секунд ожидания заказа компьютера (макс.
 cz = "Sekundy, které smí příkaz počítače čekat (max.)"
 jpn = "コンピューターの指示が待てる時間（秒・最大）"
 sc = "电脑指令可等待的时间（秒，最多）"
+fa = "ثانیه‌هایی که سفارش بازیکن رایانه‌ای می‌تواند منتظر بماند (بیشترین)"
 
 [props.CheckAndCancelWaitingRequest]
 group = "other"
@@ -1076,6 +1158,7 @@ ru = "Компьютер отменяет слишком долго ждущие
 cz = "Počítač ruší příliš dlouho čekající příkazy"
 jpn = "コンピューターは長く待った指示を取り消す"
 sc = "电脑取消等待过久的指令"
+fa = "بازیکن رایانه‌ای سفارش‌هایی را که بیش از حد منتظر مانده‌اند لغو می‌کند"
 
 [props.BP_DepotAddedValue]
 group = "other"
@@ -1089,6 +1172,7 @@ ru = "Ценность склада для компьютера"
 cz = "Hodnota skladu pro počítač"
 jpn = "コンピューターにとってのデポの価値"
 sc = "补给站对电脑的价值"
+fa = "ارزش یک انبار برای بازیکن رایانه‌ای"
 
 [props.BP_HqValue]
 group = "other"
@@ -1102,6 +1186,7 @@ ru = "Ценность штаба для компьютера"
 cz = "Hodnota velitelství pro počítač"
 jpn = "コンピューターにとっての司令部の価値"
 sc = "指挥部对电脑的价值"
+fa = "ارزش یک مقر برای بازیکن رایانه‌ای"
 
 [props.NbMin_UniteLeurre_OffensiveGenerale]
 group = "other"
@@ -1115,6 +1200,7 @@ ru = "Макетов в общем наступлении (мин.)"
 cz = "Makety v celkové ofenzivě (min.)"
 jpn = "総攻撃での囮部隊（最小）"
 sc = "总攻中的诱饵单位（最少）"
+fa = "یگان‌های فریب در یک تهاجم همه‌جانبه (کمترین)"
 
 [props.NbMax_UniteLeurre_OffensiveGenerale]
 group = "other"
@@ -1128,6 +1214,7 @@ ru = "Макетов в общем наступлении (макс.)"
 cz = "Makety v celkové ofenzivě (max.)"
 jpn = "総攻撃での囮部隊（最大）"
 sc = "总攻中的诱饵单位（最多）"
+fa = "یگان‌های فریب در یک تهاجم همه‌جانبه (بیشترین)"
 
 [props.NbMin_UniteLeurre_OffensiveAerienne]
 group = "other"
@@ -1141,6 +1228,7 @@ ru = "Макетов в воздушном наступлении (мин.)"
 cz = "Makety v letecké ofenzivě (min.)"
 jpn = "航空攻勢での囮部隊（最小）"
 sc = "空中攻势中的诱饵单位（最少）"
+fa = "یگان‌های فریب در یک تهاجم هوایی (کمترین)"
 
 [props.NbMax_UniteLeurre_OffensiveAerienne]
 group = "other"
@@ -1154,6 +1242,7 @@ ru = "Макетов в воздушном наступлении (макс.)"
 cz = "Makety v letecké ofenzivě (max.)"
 jpn = "航空攻勢での囮部隊（最大）"
 sc = "空中攻势中的诱饵单位（最多）"
+fa = "یگان‌های فریب در یک تهاجم هوایی (بیشترین)"
 
 [props.NbMin_UniteLeurre_OffensiveBlinde]
 group = "other"
@@ -1167,6 +1256,7 @@ ru = "Макетов в танковом наступлении (мин.)"
 cz = "Makety v obrněné ofenzivě (min.)"
 jpn = "機甲攻勢での囮部隊（最小）"
 sc = "装甲攻势中的诱饵单位（最少）"
+fa = "یگان‌های فریب در یک تهاجم زرهی (کمترین)"
 
 [props.NbMax_UniteLeurre_OffensiveBlinde]
 group = "other"
@@ -1180,6 +1270,7 @@ ru = "Макетов в танковом наступлении (макс.)"
 cz = "Makety v obrněné ofenzivě (max.)"
 jpn = "機甲攻勢での囮部隊（最大）"
 sc = "装甲攻势中的诱饵单位（最多）"
+fa = "یگان‌های فریب در یک تهاجم زرهی (بیشترین)"
 
 [props.ConstructionDelayForFakeBuildingsMin]
 group = "other"
@@ -1193,6 +1284,7 @@ ru = "Здания-макеты: секунд до постройки (мин.)"
 cz = "Budovy-makety: sekundy před stavbou (min.)"
 jpn = "囮の建物：建設までの秒数（最小）"
 sc = "诱饵建筑：开始建造前的秒数（最少）"
+fa = "ساختمان‌های فریب: ثانیه پیش از ساختن (کمترین)"
 
 [props.ConstructionDelayForFakeBuildingsMax]
 group = "other"
@@ -1206,6 +1298,7 @@ ru = "Здания-макеты: секунд до постройки (макс.
 cz = "Budovy-makety: sekundy před stavbou (max.)"
 jpn = "囮の建物：建設までの秒数（最大）"
 sc = "诱饵建筑：开始建造前的秒数（最多）"
+fa = "ساختمان‌های فریب: ثانیه پیش از ساختن (بیشترین)"
 
 [props.AttaqueTempsActivation]
 group = "other"
@@ -1219,6 +1312,7 @@ ru = "Секунд до начала атак"
 cz = "Sekundy před zahájením útoků"
 jpn = "攻撃を始めるまでの秒数"
 sc = "开始进攻前的秒数"
+fa = "ثانیه پیش از آنکه حمله را شروع کند"
 
 [props.OffensiveNbMissionMax]
 group = "other"
@@ -1232,6 +1326,7 @@ ru = "Атак одновременно, не больше (-1: без пред�
 cz = "Nejvíc útoků najednou (-1: bez omezení)"
 jpn = "同時攻撃の最大数（-1：無制限）"
 sc = "同时进攻的最多次数（-1：无限制）"
+fa = "بیشترین حمله‌های هم‌زمان (-1: بدون محدودیت)"
 
 [props.MissionFacteurLancementAttaque]
 group = "other"
@@ -1245,6 +1340,7 @@ ru = "Агрессивность (порог атаки)"
 cz = "Agresivita (práh útoku)"
 jpn = "攻撃性（攻撃のしきい値）"
 sc = "进攻性（进攻阈值）"
+fa = "تهاجمی بودن (آستانهٔ حمله)"
 
 [props.MissionFacteurEnoughToDestroy]
 group = "other"
@@ -1258,6 +1354,7 @@ ru = "Силы против врага: во столько раз больше 
 cz = "Síla proti nepříteli: tolikrát jeho síla"
 jpn = "敵に対して集める戦力（敵の何倍か）"
 sc = "针对敌人集结的兵力（敌方的几倍）"
+fa = "نیرویی که در برابر دشمن جمع می‌کند: این تعداد برابرِ نیروی دشمن"
 
 [props.DefenseDistanceMenace]
 group = "other"
@@ -1271,6 +1368,7 @@ ru = "Дистанция угрозы"
 cz = "Vzdálenost hrozby"
 jpn = "脅威と判断する距離"
 sc = "威胁距离"
+fa = "فاصلهٔ تهدید"
 
 [props.DefenseDistanceUrgent]
 group = "other"
@@ -1284,6 +1382,7 @@ ru = "Дистанция срочной угрозы"
 cz = "Vzdálenost naléhavé hrozby"
 jpn = "緊急の脅威と判断する距離"
 sc = "紧急威胁距离"
+fa = "فاصلهٔ تهدید فوری"
 
 [props.DefenseMaxUnitOnPosition]
 group = "other"
@@ -1297,6 +1396,7 @@ ru = "Юнитов на несрочную оборону"
 cz = "Jednotky posílané k nenaléhavé obraně"
 jpn = "緊急でない防衛に送るユニット数"
 sc = "派往非紧急防守的单位数"
+fa = "یگان‌های فرستاده‌شده به دفاعی که فوری نیست"
 
 [props.DefenseNbMissionMax]
 group = "other"
@@ -1310,6 +1410,7 @@ ru = "Оборонительных задач одновременно, не б�
 cz = "Nejvíc obranných misí najednou"
 jpn = "同時防衛任務の最大数"
 sc = "同时防御任务的最多数量"
+fa = "بیشترین مأموریت‌های دفاعی هم‌زمان"
 
 [props.HarcelementActif]
 group = "other"
@@ -1323,6 +1424,7 @@ ru = "Изматывает противника"
 cz = "Obtěžuje nepřítele"
 jpn = "敵を妨害する"
 sc = "骚扰敌人"
+fa = "به دشمن حملهٔ ایذایی می‌کند"
 
 [props.UpgradeActifPourHarcelement]
 group = "other"
@@ -1336,6 +1438,7 @@ ru = "Улучшения для изматывания"
 cz = "Vylepšení pro obtěžování"
 jpn = "妨害用のアップグレード"
 sc = "用于骚扰的升级"
+fa = "ارتقاها برای حملهٔ ایذایی"
 
 [props.CashReserveTempsActivation]
 group = "other"
@@ -1349,6 +1452,7 @@ ru = "Секунд до создания денежного запаса"
 cz = "Sekundy před držením peněžní rezervy"
 jpn = "資金を蓄え始めるまでの秒数"
 sc = "开始保留资金储备前的秒数"
+fa = "ثانیه پیش از آنکه پول ذخیره نگه دارد"
 
 [props.PercentMoneyToReserveForBatimentAdmin]
 group = "other"
@@ -1362,6 +1466,7 @@ ru = "% денег на административные здания"
 cz = "% peněz na administrativní budovy"
 jpn = "管理施設用に残す資金（％）"
 sc = "为行政建筑保留的资金（%）"
+fa = "% پولی که برای ساختمان‌های اداری نگه داشته می‌شود"
 
 [props.PercentMoneyToUseForIdle]
 group = "other"
@@ -1375,6 +1480,7 @@ ru = "% денег, тратимых в простое"
 cz = "% peněz utracených v nečinnosti"
 jpn = "待機中に使う資金（％）"
 sc = "空闲时使用的资金（%）"
+fa = "% پولی که در زمان بیکاری خرج می‌شود"
 
 [props.DeviseBonusIA]
 group = "other"
@@ -1388,6 +1494,7 @@ ru = "Доп. деньги в начале (чит)"
 cz = "Peníze navíc na začátku (podvod)"
 jpn = "開始時の追加資金（チート）"
 sc = "开局额外资金（作弊）"
+fa = "پول اضافه در شروع (تقلب)"
 
 [props.IncomeBonusIA]
 group = "other"
@@ -1401,6 +1508,7 @@ ru = "Доп. доход с каждой выплаты (чит)"
 cz = "Příjem navíc při každé platbě (podvod)"
 jpn = "支払いごとの追加収入（チート）"
 sc = "每次发放的额外收入（作弊）"
+fa = "درآمد اضافه در هر پرداخت (تقلب)"
 
 [props.NbBatimentAdministratifEnPlusAvantDesactivation]
 group = "other"
@@ -1414,6 +1522,7 @@ ru = "Лишних административных зданий до остан
 cz = "Administrativní budovy navíc před zastavením"
 jpn = "停止までに追加する管理施設"
 sc = "停止前额外的行政建筑"
+fa = "ساختمان‌های اداری اضافه پیش از توقف"
 
 [props.DepotNbEnPlusAvantDesactivation]
 group = "other"
@@ -1427,6 +1536,7 @@ ru = "Лишних складов до остановки"
 cz = "Sklady navíc před zastavením"
 jpn = "停止までに追加する補給デポ"
 sc = "停止前额外的补给站"
+fa = "انبارهای اضافه پیش از توقف"
 
 [props.ValueDepotMinForTruckFactory]
 group = "other"
@@ -1440,6 +1550,7 @@ ru = "Мин. ценность складов для автозавода"
 cz = "Nejmenší hodnota skladů pro továrnu na nákladní auta"
 jpn = "トラック工場に必要な補給デポの最小価値"
 sc = "建造卡车工厂所需的最低补给站价值"
+fa = "کمترین ارزش انبار برای کارخانهٔ کامیون"
 
 [props.MinutesLeftMinForTruckFactory]
 group = "other"
@@ -1453,6 +1564,7 @@ ru = "Мин. оставшихся минут для автозавода"
 cz = "Nejméně zbývajících minut pro továrnu na nákladní auta"
 jpn = "トラック工場に必要な残り時間（分、最小）"
 sc = "建造卡车工厂所需的最少剩余分钟"
+fa = "کمترین دقیقه‌های باقی‌مانده برای کارخانهٔ کامیون"
 
 [props.NbDepotMinForTruckFactory]
 group = "other"
@@ -1466,6 +1578,7 @@ ru = "Мин. складов для автозавода"
 cz = "Nejméně skladů pro továrnu na nákladní auta"
 jpn = "トラック工場に必要な補給デポの最小数"
 sc = "建造卡车工厂所需的最少补给站数"
+fa = "کمترین تعداد انبار برای کارخانهٔ کامیون"
 
 [props.NbUnitsDangerousDepot]
 group = "other"
@@ -1479,6 +1592,7 @@ ru = "Юнитов, при которых склад опасен"
 cz = "Jednotky, kvůli nimž je sklad nebezpečný"
 jpn = "補給デポを危険とみなすユニット数"
 sc = "使补给站被视为危险的单位数"
+fa = "یگان‌هایی که یک انبار را خطرناک می‌کنند"
 
 [props.SeuilDistanceGroupeDepot]
 group = "other"
@@ -1492,6 +1606,7 @@ ru = "Дистанция группы складов"
 cz = "Vzdálenost skupiny skladů"
 jpn = "補給デポのグループの距離"
 sc = "补给站组距离"
+fa = "فاصلهٔ گروه انبارها"
 
 [props.SeuilDistanceTruckFactory]
 group = "other"
@@ -1505,6 +1620,7 @@ ru = "Дистанция автозавода"
 cz = "Vzdálenost továrny na nákladní auta"
 jpn = "トラック工場の距離"
 sc = "卡车工厂距离"
+fa = "فاصلهٔ کارخانهٔ کامیون"
 
 [props.NbMaxProductionForEnnemyUnit]
 group = "other"
@@ -1518,6 +1634,7 @@ ru = "Юнитов против одного вражеского, не боль
 cz = "Nejvíc jednotek postavených proti jedné nepřátelské"
 jpn = "敵ユニット1体に対する最大生産数"
 sc = "针对一个敌方单位最多生产的单位数"
+fa = "بیشترین یگان ساخته‌شده در برابر یک یگان دشمن"
 
 [props.NbProdIdleInfanterie]
 group = "other"
@@ -1531,6 +1648,7 @@ ru = "Строит в простое: пехота"
 cz = "Staví v nečinnosti: pěchota"
 jpn = "待機中の生産：歩兵"
 sc = "空闲时生产：步兵"
+fa = "ساخته‌شده در زمان بیکاری: پیاده‌نظام"
 
 [props.NbProdIdleTank]
 group = "other"
@@ -1544,6 +1662,7 @@ ru = "Строит в простое: танки"
 cz = "Staví v nečinnosti: tanky"
 jpn = "待機中の生産：戦車"
 sc = "空闲时生产：坦克"
+fa = "ساخته‌شده در زمان بیکاری: تانک‌ها"
 
 [props.NbProdIdleAntitank]
 group = "other"
@@ -1557,6 +1676,7 @@ ru = "Строит в простое: противотанковые"
 cz = "Staví v nečinnosti: protitankové"
 jpn = "待機中の生産：対戦車"
 sc = "空闲时生产：反坦克"
+fa = "ساخته‌شده در زمان بیکاری: ضدتانک"
 
 [props.NbProdIdleArti]
 group = "other"
@@ -1570,6 +1690,7 @@ ru = "Строит в простое: артиллерия"
 cz = "Staví v nečinnosti: dělostřelectvo"
 jpn = "待機中の生産：砲兵"
 sc = "空闲时生产：火炮"
+fa = "ساخته‌شده در زمان بیکاری: توپخانه"
 
 [props.NbProdIdleDCA]
 group = "other"
@@ -1583,6 +1704,7 @@ ru = "Строит в простое: ПВО"
 cz = "Staví v nečinnosti: protiletadlové"
 jpn = "待機中の生産：対空"
 sc = "空闲时生产：防空"
+fa = "ساخته‌شده در زمان بیکاری: پدافند هوایی"
 
 [props.NbProdIdleChasseur]
 group = "other"
@@ -1596,6 +1718,7 @@ ru = "Строит в простое: истребители"
 cz = "Staví v nečinnosti: stíhačky"
 jpn = "待機中の生産：戦闘機"
 sc = "空闲时生产：战斗机"
+fa = "ساخته‌شده در زمان بیکاری: جنگنده‌ها"
 
 [props.NbProdIdleBomber]
 group = "other"
@@ -1609,6 +1732,7 @@ ru = "Строит в простое: бомбардировщики"
 cz = "Staví v nečinnosti: bombardéry"
 jpn = "待機中の生産：爆撃機"
 sc = "空闲时生产：轰炸机"
+fa = "ساخته‌شده در زمان بیکاری: بمب‌افکن‌ها"
 
 [props.NbProdIdleChasseurBomber]
 group = "other"
@@ -1622,6 +1746,7 @@ ru = "Строит в простое: истребители-бомбардир�
 cz = "Staví v nečinnosti: stíhací bombardéry"
 jpn = "待機中の生産：戦闘爆撃機"
 sc = "空闲时生产：战斗轰炸机"
+fa = "ساخته‌شده در زمان بیکاری: جنگنده‌بمب‌افکن‌ها"
 
 [props.ProdIdleCanLaunchResearch]
 group = "other"
@@ -1635,6 +1760,7 @@ ru = "Ведёт исследования в простое"
 cz = "Zkoumá v nečinnosti"
 jpn = "待機中に研究する"
 sc = "空闲时进行研究"
+fa = "در زمان بیکاری تحقیق می‌کند"
 
 [props.BonusUnitesAvions]
 group = "other"
@@ -1648,6 +1774,7 @@ ru = "Предпочтение: самолёты"
 cz = "Preference: letadla"
 jpn = "優先度：航空機"
 sc = "偏好：飞机"
+fa = "ترجیح: هواپیماها"
 
 [props.BonusUnitesArtillerie]
 group = "other"
@@ -1661,6 +1788,7 @@ ru = "Предпочтение: артиллерия"
 cz = "Preference: dělostřelectvo"
 jpn = "優先度：砲兵"
 sc = "偏好：火炮"
+fa = "ترجیح: توپخانه"
 
 [props.BonusUnitesExperimentales]
 group = "other"
@@ -1674,6 +1802,7 @@ ru = "Предпочтение: прототипы"
 cz = "Preference: prototypy"
 jpn = "優先度：試作兵器"
 sc = "偏好：原型单位"
+fa = "ترجیح: نمونه‌های آزمایشی"
 
 [props.BonusUnitesRecherche]
 group = "other"
@@ -1687,6 +1816,7 @@ ru = "Предпочтение: исследования"
 cz = "Preference: výzkum"
 jpn = "優先度：研究"
 sc = "偏好：研究"
+fa = "ترجیح: تحقیق"
 
 [props.BonusBatimentOTF]
 group = "other"
@@ -1700,6 +1830,7 @@ ru = "Предпочтение: здания OTF"
 cz = "Preference: budovy OTF"
 jpn = "優先度：OTF施設"
 sc = "偏好：OTF 建筑"
+fa = "ترجیح: ساختمان‌های OTF"
 
 [props.PourcentChanceUtiliserCarteManipAuDebut]
 group = "other"
@@ -1713,6 +1844,7 @@ ru = "% шанса сыграть уловку-манипуляцию в нач�
 cz = "% šance zahrát manipulační lest na začátku"
 jpn = "序盤に操作系の計略を使う確率（％）"
 sc = "开局使用操控类计谋的几率（%）"
+fa = "% احتمال به کار بردن ترفند دست‌کاری در شروع"
 
 [props.NbCarteDansLaReservePourLaDifficulte]
 group = "other"
@@ -1726,6 +1858,7 @@ ru = "Карт уловки в резерве (сложность)"
 cz = "Karty lsti v záloze (obtížnost)"
 jpn = "温存する計略カード（難易度）"
 sc = "保留的计谋卡（难度）"
+fa = "کارت‌های ترفند نگه‌داشته‌شده (سختی)"
 
 [props.NbCarteDansLaReservePourLeProfil]
 group = "other"
@@ -1739,6 +1872,7 @@ ru = "Карт уловки в резерве (профиль)"
 cz = "Karty lsti v záloze (profil)"
 jpn = "温存する計略カード（AIタイプ）"
 sc = "保留的计谋卡（档案）"
+fa = "کارت‌های ترفند نگه‌داشته‌شده (پروفایل)"
 
 [props.TempsActivationBatimentCamoufle]
 group = "other"
@@ -1752,6 +1886,7 @@ ru = "Секунд до маскировки зданий"
 cz = "Sekundy před maskováním budov"
 jpn = "施設を偽装するまでの秒数"
 sc = "开始伪装建筑前的秒数"
+fa = "ثانیه پیش از آنکه ساختمان‌ها را استتار کند"
 
 [props.RepresailleFacteurUniteCombattante]
 group = "other"
@@ -1765,6 +1900,7 @@ ru = "Коэффициент возмездия: боевые юниты"
 cz = "Faktor odvety: bojové jednotky"
 jpn = "報復の係数：戦闘ユニット"
 sc = "报复系数：战斗单位"
+fa = "ضریب تلافی: یگان‌های رزمی"
 
 [props.RepresailleFacteurUniteNonCombattante]
 group = "other"
@@ -1778,6 +1914,7 @@ ru = "Коэффициент возмездия: небоевые юниты"
 cz = "Faktor odvety: nebojové jednotky"
 jpn = "報復の係数：非戦闘ユニット"
 sc = "报复系数：非战斗单位"
+fa = "ضریب تلافی: یگان‌های غیررزمی"
 
 [props.TimeOutRepresailles]
 group = "other"
@@ -1791,6 +1928,7 @@ ru = "Лимит времени возмездия (секунды)"
 cz = "Časový limit odvety (sekundy)"
 jpn = "報復の制限時間（秒）"
 sc = "报复时限（秒）"
+fa = "مهلت تلافی (ثانیه)"
 
 [props.ProbaRepereFake]
 group = "other"
@@ -1804,6 +1942,7 @@ ru = "Шанс распознать макеты (от 0 до 1)"
 cz = "Šance odhalit makety (0 až 1)"
 jpn = "囮を見破る確率（0～1）"
 sc = "识破诱饵的几率（0 到 1）"
+fa = "احتمال شناسایی فریب‌ها (0 تا 1)"
 
 [props.TempsMemorisationUnitInvisible]
 group = "other"
@@ -1817,6 +1956,7 @@ ru = "Секунд помнит невидимых юнитов"
 cz = "Sekundy, po které si pamatuje neviditelné jednotky"
 jpn = "見えないユニットを覚えている秒数"
 sc = "记住看不见的单位的秒数"
+fa = "ثانیه‌هایی که یگان‌های نادیده را به یاد می‌سپارد"
 
 [props.BonusValue]
 group = "other"
@@ -1830,6 +1970,7 @@ ru = "Дополнительное предпочтение этих юнито�
 cz = "Preference navíc pro tyto jednotky"
 jpn = "これらのユニットへの追加優先度"
 sc = "对这些单位的额外偏好"
+fa = "ترجیح اضافه برای این یگان‌ها"
 
 [props.ConsiderStackAsOneEnnemy]
 group = "other"
@@ -1843,6 +1984,7 @@ ru = "Считает стопку одним противником"
 cz = "Počítá hromádku jako jednoho nepřítele"
 jpn = "重なったユニットを1体の敵とみなす"
 sc = "将堆叠视为一个敌人"
+fa = "یک دسته را یک دشمن حساب می‌کند"
 
 [props.UnitIDs]
 group = "other"
@@ -1856,6 +1998,7 @@ ru = "Юниты (по номеру)"
 cz = "Jednotky (podle čísla)"
 jpn = "ユニット（番号）"
 sc = "单位（编号）"
+fa = "یگان‌ها (با شماره)"
 
 [props.WarModes]
 group = "other"
@@ -1869,6 +2012,7 @@ ru = "Режимы игры (по номеру)"
 cz = "Herní režimy (podle čísla)"
 jpn = "ゲームモード（番号）"
 sc = "游戏模式（编号）"
+fa = "حالت‌های بازی (با شماره)"
 
 [props.AIDifficulties]
 group = "other"
@@ -1882,6 +2026,7 @@ ru = "Уровни сложности (по номеру)"
 cz = "Obtížnosti (podle čísla)"
 jpn = "難易度（番号）"
 sc = "难度（编号）"
+fa = "سطح‌های سختی (با شماره)"
 
 [props.AIProfiles]
 group = "other"
@@ -1895,6 +2040,7 @@ ru = "Профили (по номеру)"
 cz = "Profily (podle čísla)"
 jpn = "AIタイプ（番号）"
 sc = "档案（编号）"
+fa = "پروفایل‌ها (با شماره)"
 
 [props.LifeDuration]
 group = "other"
@@ -1908,6 +2054,7 @@ ru = "Длительность (секунды)"
 cz = "Trvání (sekundy)"
 jpn = "効果時間（秒）"
 sc = "持续时间（秒）"
+fa = "مدت دوام (ثانیه)"
 
 # A unit's flags (InitialFlagSet): every number of 0-104. The name in brackets at the end of each line is the game's
 # own (81-89 all start with already_; 15 and 16 have none). What each one does comes from who carries it in the game's
@@ -1927,6 +2074,7 @@ ru = "Аэродром: здесь базируются и производят�
 cz = "Letiště: letadla tu mají základnu a vyrábějí se tu (aerodrome)"
 jpn = "飛行場：航空機の基地となり、ここで生産される (aerodrome)"
 sc = "机场：飞机以此为基地并在此生产 (aerodrome)"
+fa = "فرودگاه: هواپیماها اینجا مستقرند و از آن ساخته می‌شوند (aerodrome)"
 
 [flags.1]
 us = "Artillery: fires indirectly at what others spot; works on any unit, tested (artillerie)"
@@ -1939,6 +2087,7 @@ ru = "Артиллерия: навесной огонь по тому, что з
 cz = "Dělostřelectvo: nepřímá palba na to, co zaměří jiní; funguje na každé jednotce, ověřeno (artillerie)"
 jpn = "砲兵：味方が発見した目標を間接射撃する。どの部隊でも有効、検証済み (artillerie)"
 sc = "炮兵：对友军发现的目标进行间接射击；对任何单位都有效，已实测 (artillerie)"
+fa = "توپخانه: به آنچه دیگران می‌بینند غیرمستقیم شلیک می‌کند؛ روی هر یگانی کار می‌کند، آزموده‌شده (artillerie)"
 
 [flags.2]
 us = "Aircraft: built at the airfield, flies home to refuel, takes no ground orders (avion)"
@@ -1951,6 +2100,7 @@ ru = "Самолёт: производится на аэродроме, лета
 cz = "Letadlo: vyrábí se na letišti, vrací se tankovat, nepřijímá pozemní rozkazy (avion)"
 jpn = "航空機：飛行場で生産され、給油のため帰還し、地上命令は受けない (avion)"
 sc = "飞机：在机场生产，返航加油，不接受地面命令 (avion)"
+fa = "هواپیما: در فرودگاه ساخته می‌شود، برای سوخت‌گیری به پایگاه برمی‌گردد، دستور زمینی نمی‌پذیرد (avion)"
 
 [flags.3]
 us = "An aircraft may attack without being engaged first: the game sets it while playing; in a unit's flags it does nothing (avion_can_attack_without_engaged)"
@@ -1963,6 +2113,7 @@ ru = "Самолёт может атаковать, не вступив снач
 cz = "Letadlo smí útočit, aniž by se nejdřív zapojilo do boje: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (avion_can_attack_without_engaged)"
 jpn = "航空機が交戦前でも攻撃できる：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (avion_can_attack_without_engaged)"
 sc = "飞机无需先进入交战即可攻击：游戏在对局中设置；放在单位的标志位里无效 (avion_can_attack_without_engaged)"
+fa = "هواپیما می‌تواند بی‌آنکه اول درگیر شود حمله کند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (avion_can_attack_without_engaged)"
 
 [flags.4]
 us = "Building: building panel, placement and capture rules; left out of unit statistics (batiment)"
@@ -1975,6 +2126,7 @@ ru = "Здание: панель здания, размещение и прав�
 cz = "Budova: panel budovy, umisťování a pravidla dobývání; mimo statistiky jednotek (batiment)"
 jpn = "建物：建物パネル、配置、占領のルール。部隊の統計には含まれない (batiment)"
 sc = "建筑：建筑面板、放置和占领规则；不计入单位统计 (batiment)"
+fa = "ساختمان: پنل ساختمان، قواعد قرار دادن و تصرف؛ در آمار یگان‌ها حساب نمی‌شود (batiment)"
 
 [flags.5]
 us = "Production building: builds units; see 30 for decoys that build for real (batiment_de_production)"
@@ -1987,6 +2139,7 @@ ru = "Производственное здание: выпускает юнит
 cz = "Výrobní budova: vyrábí jednotky; makety, které vyrábějí doopravdy, viz 30 (batiment_de_production)"
 jpn = "生産建物：部隊を生産する。囮に本当に生産させるには30を参照 (batiment_de_production)"
 sc = "生产建筑：生产单位；让诱饵真正生产见 30 (batiment_de_production)"
+fa = "ساختمان تولیدی: یگان می‌سازد؛ برای فریب‌هایی که واقعاً می‌سازند، 30 را ببینید (batiment_de_production)"
 
 [flags.6]
 us = "Defensive building: bunkers and gun positions, with the defence panel (batiment_defense)"
@@ -1999,6 +2152,7 @@ ru = "Оборонительное здание: бункеры и орудий�
 cz = "Obranná budova: bunkry a palebná postavení, s panelem obrany (batiment_defense)"
 jpn = "防御建物：バンカーや砲座。防御パネル付き (batiment_defense)"
 sc = "防御建筑：地堡和炮位，带防御面板 (batiment_defense)"
+fa = "ساختمان دفاعی: سنگرهای بتنی و مواضع توپ، با پنل دفاع (batiment_defense)"
 
 [flags.7]
 us = "Supply depot: placed on a depot slab, with the depot panel (batiment_depot)"
@@ -2011,6 +2165,7 @@ ru = "Склад снабжения: ставится на плиту склад
 cz = "Zásobovací sklad: staví se na plochu skladu, s panelem skladu (batiment_depot)"
 jpn = "補給所：補給所の基礎の上に置かれ、補給所パネル付き (batiment_depot)"
 sc = "补给站：放在补给站地基上，带补给站面板 (batiment_depot)"
+fa = "انبار تدارکات: روی سکوی انبار قرار می‌گیرد، با پنل انبار (batiment_depot)"
 
 [flags.8]
 us = "Headquarters (batiment_hq)"
@@ -2023,6 +2178,7 @@ ru = "Штаб (batiment_hq)"
 cz = "Velitelství (batiment_hq)"
 jpn = "司令部 (batiment_hq)"
 sc = "总部 (batiment_hq)"
+fa = "مقر فرماندهی (batiment_hq)"
 
 [flags.9]
 us = "A super-weapon site: the game sets it while playing; in a unit's flags it does nothing (batiment_super_weapon)"
@@ -2035,6 +2191,7 @@ ru = "Объект супероружия: его ставит игра во в�
 cz = "Stanoviště superzbraně: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (batiment_super_weapon)"
 jpn = "超兵器の施設：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (batiment_super_weapon)"
 sc = "超级武器设施：游戏在对局中设置；放在单位的标志位里无效 (batiment_super_weapon)"
+fa = "محل یک ابرسلاح: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (batiment_super_weapon)"
 
 [flags.10]
 us = "Can take damage, so it can be picked as something to shoot (blessable)"
@@ -2047,6 +2204,7 @@ ru = "Может получать урон, поэтому может быть �
 cz = "Může utrpět poškození, a tak může být zvolen za cíl (blessable)"
 jpn = "損傷を受けるため、攻撃目標に選ばれる (blessable)"
 sc = "可受伤害，因此可被选为射击目标 (blessable)"
+fa = "می‌تواند آسیب ببیند، پس می‌توان آن را برای شلیک هدف گرفت (blessable)"
 
 [flags.11]
 us = "Can't enter woods; take 11, 21 and 55 off together to let a vehicle in, tested (blocage_foret)"
@@ -2059,6 +2217,7 @@ ru = "Не въезжает в лес; уберите вместе 11, 21 и 55,
 cz = "Nevjede do lesa; odeberte 11, 21 a 55 najednou a vozidlo do něj vjede, ověřeno (blocage_foret)"
 jpn = "森に入れない。11・21・55をまとめて外すと車両が森に入れる、検証済み (blocage_foret)"
 sc = "不能进入树林；同时去掉 11、21 和 55 可让车辆进入，已实测 (blocage_foret)"
+fa = "نمی‌تواند وارد جنگل شود؛ برای راه دادن یک خودرو، 11، 21 و 55 را با هم بردارید، آزموده‌شده (blocage_foret)"
 
 [flags.12]
 us = "An object made by a ruse card: the game sets it while playing; in a unit's flags it does nothing (bluff_card)"
@@ -2071,6 +2230,7 @@ ru = "Объект, созданный картой уловки: его ста�
 cz = "Objekt vytvořený kartou lsti: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (bluff_card)"
 jpn = "計略カードが作り出した物体：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (bluff_card)"
 sc = "由计谋卡生成的物体：游戏在对局中设置；放在单位的标志位里无效 (bluff_card)"
+fa = "شیئی که یک کارت ترفند ساخته است: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (bluff_card)"
 
 [flags.13]
 us = "Bomber (bombardier)"
@@ -2083,6 +2243,7 @@ ru = "Бомбардировщик (bombardier)"
 cz = "Bombardér (bombardier)"
 jpn = "爆撃機 (bombardier)"
 sc = "轰炸机 (bombardier)"
+fa = "بمب‌افکن (bombardier)"
 
 [flags.14]
 us = "Infantry that can capture buildings (can_capture_village)"
@@ -2095,6 +2256,7 @@ ru = "Пехота, которая может захватывать здани�
 cz = "Pěchota, která může dobývat budovy (can_capture_village)"
 jpn = "建物を占領できる歩兵 (can_capture_village)"
 sc = "能占领建筑的步兵 (can_capture_village)"
+fa = "پیاده‌نظامی که می‌تواند ساختمان تصرف کند (can_capture_village)"
 
 [flags.15]
 us = "Unused: the game has no name for it; does nothing"
@@ -2107,6 +2269,7 @@ ru = "Не используется: у игры нет для него имен
 cz = "Nepoužitý: hra mu nedává jméno; nic nedělá"
 jpn = "未使用：ゲーム上の名前がない。効果なし"
 sc = "未使用：游戏中没有名称；无效"
+fa = "استفاده‌نشده: بازی نامی برای آن ندارد؛ کاری نمی‌کند"
 
 [flags.16]
 us = "Unused: the game has no name for it; does nothing"
@@ -2119,6 +2282,7 @@ ru = "Не используется: у игры нет для него имен
 cz = "Nepoužitý: hra mu nedává jméno; nic nedělá"
 jpn = "未使用：ゲーム上の名前がない。効果なし"
 sc = "未使用：游戏中没有名称；无效"
+fa = "استفاده‌نشده: بازی نامی برای آن ندارد؛ کاری نمی‌کند"
 
 [flags.17]
 us = "Immune to reflex fire; scripts set and clear it: the game sets it while playing; in a unit's flags it does nothing (cannot_be_shoot_reflex)"
@@ -2131,6 +2295,7 @@ ru = "Невосприимчив к рефлекторному огню; скр�
 cz = "Imunní vůči reflexní palbě; skripty ho nastavují a ruší: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cannot_be_shoot_reflex)"
 jpn = "反射射撃を受けない。スクリプトが付け外しする：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cannot_be_shoot_reflex)"
 sc = "免疫反射射击；由脚本设置和清除：游戏在对局中设置；放在单位的标志位里无效 (cannot_be_shoot_reflex)"
+fa = "در برابر آتش واکنشی مصون است؛ اسکریپت‌ها آن را می‌گذارند و برمی‌دارند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cannot_be_shoot_reflex)"
 
 [flags.18]
 us = "Towed gun: anti-tank and field guns (canon)"
@@ -2143,6 +2308,7 @@ ru = "Буксируемое орудие: противотанковое или
 cz = "Tažené dělo: protitankové a polní (canon)"
 jpn = "牽引砲：対戦車砲と野砲 (canon)"
 sc = "牵引火炮：反坦克炮和野战炮 (canon)"
+fa = "توپ یدک‌کش: توپ‌های ضدتانک و صحرایی (canon)"
 
 [flags.19]
 us = "Can be captured: buildings only; on vehicles or infantry it does nothing, tested (capturable)"
@@ -2155,6 +2321,7 @@ ru = "Захватываемый: только здания; на технике
 cz = "Lze dobýt: jen budovy; na vozidlech či pěchotě nic nedělá, ověřeno (capturable)"
 jpn = "占領可能：建物のみ。車両や歩兵に付けても効果なし、検証済み (capturable)"
 sc = "可被占领：仅限建筑；加在车辆或步兵上无效，已实测 (capturable)"
+fa = "قابل تصرف: فقط ساختمان‌ها؛ روی خودروها یا پیاده‌نظام کاری نمی‌کند، آزموده‌شده (capturable)"
 
 [flags.20]
 us = "The invisible aim point that artillery fires at (cible_artillerie)"
@@ -2167,6 +2334,7 @@ ru = "Невидимая точка прицеливания, по которо�
 cz = "Neviditelný záměrný bod, na který střílí dělostřelectvo (cible_artillerie)"
 jpn = "砲兵が射撃する見えない照準点 (cible_artillerie)"
 sc = "炮兵射击的隐形瞄准点 (cible_artillerie)"
+fa = "نقطهٔ هدف نامرئی که توپخانه به آن شلیک می‌کند (cible_artillerie)"
 
 [flags.21]
 us = "Fighting unit: counted in end-of-game statistics; see 11 for woods (combattant)"
@@ -2179,6 +2347,7 @@ ru = "Боевой юнит: учитывается в статистике в �
 cz = "Bojová jednotka: počítá se do statistik na konci hry; k lesu viz 11 (combattant)"
 jpn = "戦闘部隊：終了時の統計に数えられる。森については11を参照 (combattant)"
 sc = "作战单位：计入战后统计；树林相关见 11 (combattant)"
+fa = "یگان رزمی: در آمار پایان بازی شمرده می‌شود؛ برای جنگل، 11 را ببینید (combattant)"
 
 [flags.22]
 us = "Takes the player's orders; scripts take it off to lock a unit (controlable)"
@@ -2191,6 +2360,7 @@ ru = "Слушается приказов игрока; скрипты сним�
 cz = "Přijímá rozkazy hráče; skripty ho odebírají, aby jednotku zamkly (controlable)"
 jpn = "プレイヤーの命令を受ける。スクリプトが外して部隊をロックする (controlable)"
 sc = "接受玩家命令；脚本去掉它来锁定单位 (controlable)"
+fa = "دستورهای بازیکن را می‌پذیرد؛ اسکریپت‌ها برای قفل کردن یک یگان آن را برمی‌دارند (controlable)"
 
 [flags.23]
 us = "The ground slab a supply depot is placed on (dalle_batiment_depot)"
@@ -2203,6 +2373,7 @@ ru = "Плита на земле, на которую ставится скла�
 cz = "Plocha na zemi, na kterou se staví zásobovací sklad (dalle_batiment_depot)"
 jpn = "補給所を置く地面の基礎 (dalle_batiment_depot)"
 sc = "放置补给站的地面地基 (dalle_batiment_depot)"
+fa = "سکوی زمینی که انبار تدارکات روی آن قرار می‌گیرد (dalle_batiment_depot)"
 
 [flags.24]
 us = "Seen as a ground contact: buildings, ground units, infantry; not aircraft (detectable)"
@@ -2215,6 +2386,7 @@ ru = "Обнаруживается как наземная цель: здани�
 cz = "Zjištěn jako pozemní kontakt: budovy, pozemní jednotky, pěchota; ne letadla (detectable)"
 jpn = "地上目標として探知される：建物、地上部隊、歩兵。航空機は除く (detectable)"
 sc = "作为地面目标被侦测：建筑、地面单位、步兵；不含飞机 (detectable)"
+fa = "به‌عنوان هدف زمینی دیده می‌شود: ساختمان‌ها، یگان‌های زمینی، پیاده‌نظام؛ نه هواپیماها (detectable)"
 
 [flags.25]
 us = "Seen as an air contact: aircraft and paratroopers in flight (detectable_volant)"
@@ -2227,6 +2399,7 @@ ru = "Обнаруживается как воздушная цель: само�
 cz = "Zjištěn jako vzdušný kontakt: letadla a výsadkáři v letu (detectable_volant)"
 jpn = "空中目標として探知される：航空機と降下中の空挺兵 (detectable_volant)"
 sc = "作为空中目标被侦测：飞机和空降中的伞兵 (detectable_volant)"
+fa = "به‌عنوان هدف هوایی دیده می‌شود: هواپیماها و چتربازانِ در حال پرواز (detectable_volant)"
 
 [flags.26]
 us = "In combat: the game sets it while playing; in a unit's flags it does nothing (en_combat)"
@@ -2239,6 +2412,7 @@ ru = "В бою: его ставит игра во время боя; во фл�
 cz = "V boji: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (en_combat)"
 jpn = "交戦中：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (en_combat)"
 sc = "交战中：游戏在对局中设置；放在单位的标志位里无效 (en_combat)"
+fa = "در نبرد: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (en_combat)"
 
 [flags.27]
 us = "In a wood: the wood's cover and ambush; the map's cover grid gives it, paint cover there: the game sets it while playing; in a unit's flags it does nothing (en_foret)"
@@ -2251,6 +2425,7 @@ ru = "В лесу: укрытие и засада леса; его даёт се
 cz = "V lese: krytí a léčka lesa; dává ho mřížka krytí mapy, krytí malujte tam: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (en_foret)"
 jpn = "森の中：森の遮蔽と待ち伏せ。マップの遮蔽グリッドが与えるので、遮蔽はそこに塗る：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (en_foret)"
 sc = "在树林中：树林的掩护和伏击；由地图的掩护网格给予，请在那里绘制掩护：游戏在对局中设置；放在单位的标志位里无效 (en_foret)"
+fa = "در جنگل: پوشش و کمینِ جنگل؛ شبکهٔ پوشش نقشه آن را می‌دهد، پوشش را همان‌جا رنگ کنید: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (en_foret)"
 
 [flags.28]
 us = "Acts as a factory: the game sets it while playing; in a unit's flags it does nothing (factory)"
@@ -2263,6 +2438,7 @@ ru = "Работает как завод: его ставит игра во вр
 cz = "Funguje jako továrna: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (factory)"
 jpn = "工場として働く：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (factory)"
 sc = "充当工厂：游戏在对局中设置；放在单位的标志位里无效 (factory)"
+fa = "مانند کارخانه عمل می‌کند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (factory)"
 
 [flags.29]
 us = "A decoy made by the decoy ruse: the game sets it while playing; in a unit's flags it does nothing (fake)"
@@ -2275,6 +2451,7 @@ ru = "Макет, созданный картой макетов: его ста�
 cz = "Maketa vytvořená kartou maket: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (fake)"
 jpn = "囮カードが作った囮：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (fake)"
 sc = "由诱饵卡生成的诱饵：游戏在对局中设置；放在单位的标志位里无效 (fake)"
+fa = "فریبی که ترفند فریب ساخته است: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (fake)"
 
 [flags.30]
 us = "Decoy building; with 5 instead and TypeBatiment -7, it builds units for real, tested (fake_batiment)"
@@ -2287,6 +2464,7 @@ ru = "Макет здания; с 5 вместо него и TypeBatiment -7 п�
 cz = "Budova-maketa; s 5 místo něj a TypeBatiment -7 vyrábí doopravdy, ověřeno (fake_batiment)"
 jpn = "囮の建物。代わりに5を付けTypeBatimentを-7すると本当に生産する、検証済み (fake_batiment)"
 sc = "诱饵建筑；改用 5 并将 TypeBatiment 减 7 后可真正生产，已实测 (fake_batiment)"
+fa = "ساختمان فریب؛ اگر به‌جای آن 5 و TypeBatiment -7 باشد، واقعاً یگان می‌سازد، آزموده‌شده (fake_batiment)"
 
 [flags.31]
 us = "Decoy truck: a fake construction or supply truck (fake_truck)"
@@ -2299,6 +2477,7 @@ ru = "Макет грузовика: ложный строительный гр�
 cz = "Maketa nákladního auta: falešné stavební nebo zásobovací auto (fake_truck)"
 jpn = "囮のトラック：偽の建設トラックまたは補給トラック (fake_truck)"
 sc = "诱饵卡车：假的工程卡车或补给卡车 (fake_truck)"
+fa = "کامیون فریب: کامیون ساخت‌وساز یا تدارکاتِ قلابی (fake_truck)"
 
 [flags.32]
 us = "Marker for the trucks' logic that hides buildings: the game sets it while playing; in a unit's flags it does nothing (flag_batiments_camoufles_for_truck)"
@@ -2311,6 +2490,7 @@ ru = "Метка для логики грузовиков, скрывающей 
 cz = "Značka pro logiku nákladních aut, která skrývá budovy: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (flag_batiments_camoufles_for_truck)"
 jpn = "建物を隠すトラックの処理のための目印：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (flag_batiments_camoufles_for_truck)"
 sc = "卡车隐藏建筑逻辑所用的标记：游戏在对局中设置；放在单位的标志位里无效 (flag_batiments_camoufles_for_truck)"
+fa = "نشانه‌ای برای منطق کامیون‌ها که ساختمان‌ها را پنهان می‌کند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (flag_batiments_camoufles_for_truck)"
 
 [flags.33]
 us = "Placement preview: the ghost shown while placing (ghost)"
@@ -2323,6 +2503,7 @@ ru = "Предпросмотр размещения: призрак, видим�
 cz = "Náhled umístění: přízrak zobrazený při umisťování (ghost)"
 jpn = "配置プレビュー：配置中に表示されるゴースト (ghost)"
 sc = "放置预览：放置时显示的虚影 (ghost)"
+fa = "پیش‌نمایش قرار دادن: طرحی که هنگام قرار دادن نشان داده می‌شود (ghost)"
 
 [flags.34]
 us = "The building placement preview (ghost_batiment)"
@@ -2335,6 +2516,7 @@ ru = "Предпросмотр размещения зданий (ghost_batiment
 cz = "Náhled umístění budov (ghost_batiment)"
 jpn = "建物の配置プレビュー (ghost_batiment)"
 sc = "建筑放置预览 (ghost_batiment)"
+fa = "پیش‌نمایش قرار دادن ساختمان (ghost_batiment)"
 
 [flags.35]
 us = "The supply depot's placement preview: the game sets it while playing; in a unit's flags it does nothing (ghost_batiment_depot)"
@@ -2347,6 +2529,7 @@ ru = "Превью размещения склада: его ставит игр
 cz = "Náhled umístění skladu: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (ghost_batiment_depot)"
 jpn = "補給所の配置プレビュー：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (ghost_batiment_depot)"
 sc = "补给站的放置预览：游戏在对局中设置；放在单位的标志位里无效 (ghost_batiment_depot)"
+fa = "پیش‌نمایش قرار دادن انبار تدارکات: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (ghost_batiment_depot)"
 
 [flags.36]
 us = "An order preview: the game sets it while playing; in a unit's flags it does nothing (ghost_order)"
@@ -2359,6 +2542,7 @@ ru = "Превью приказа: его ставит игра во время 
 cz = "Náhled rozkazu: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (ghost_order)"
 jpn = "命令のプレビュー：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (ghost_order)"
 sc = "命令预览：游戏在对局中设置；放在单位的标志位里无效 (ghost_order)"
+fa = "پیش‌نمایش یک دستور: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (ghost_order)"
 
 [flags.37]
 us = "The placement preview has been put down: the game sets it while playing; in a unit's flags it does nothing (ghost_placed)"
@@ -2371,6 +2555,7 @@ ru = "Превью размещения поставлено: его стави�
 cz = "Náhled umístění byl položen: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (ghost_placed)"
 jpn = "配置プレビューが置かれた：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (ghost_placed)"
 sc = "放置预览已放下：游戏在对局中设置；放在单位的标志位里无效 (ghost_placed)"
+fa = "پیش‌نمایش قرار دادن گذاشته شده است: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (ghost_placed)"
 
 [flags.38]
 us = "The preview used when placing something to be built (ghost_used_for_production)"
@@ -2383,6 +2568,7 @@ ru = "Предпросмотр при размещении того, что бу
 cz = "Náhled použitý při umisťování toho, co se má postavit (ghost_used_for_production)"
 jpn = "建設するものを配置するときのプレビュー (ghost_used_for_production)"
 sc = "放置待建造物时使用的预览 (ghost_used_for_production)"
+fa = "پیش‌نمایشی که هنگام قرار دادن چیزی برای ساخت به کار می‌رود (ghost_used_for_production)"
 
 [flags.39]
 us = "In a group: the game sets it while playing; in a unit's flags it does nothing (group)"
@@ -2395,6 +2581,7 @@ ru = "В группе: его ставит игра во время боя; во
 cz = "Ve skupině: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (group)"
 jpn = "グループ内：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (group)"
 sc = "在编组中：游戏在对局中设置；放在单位的标志位里无效 (group)"
+fa = "در یک گروه: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (group)"
 
 [flags.40]
 us = "Has at least one weapon (has_weapon)"
@@ -2407,6 +2594,7 @@ ru = "Имеет хотя бы одно оружие (has_weapon)"
 cz = "Má aspoň jednu zbraň (has_weapon)"
 jpn = "武器を1つ以上持つ (has_weapon)"
 sc = "至少有一件武器 (has_weapon)"
+fa = "دست‌کم یک سلاح دارد (has_weapon)"
 
 [flags.41]
 us = "Glows when hovered or selected (highlightable)"
@@ -2419,6 +2607,7 @@ ru = "Подсвечивается при наведении и выделени
 cz = "Zvýrazní se při najetí myší a při výběru (highlightable)"
 jpn = "マウスオーバーや選択で光る (highlightable)"
 sc = "鼠标悬停或选中时高亮 (highlightable)"
+fa = "وقتی ماوس رویش برود یا انتخاب شود می‌درخشد (highlightable)"
 
 [flags.42]
 us = "Infantry (infanterie)"
@@ -2431,6 +2620,7 @@ ru = "Пехота (infanterie)"
 cz = "Pěchota (infanterie)"
 jpn = "歩兵 (infanterie)"
 sc = "步兵 (infanterie)"
+fa = "پیاده‌نظام (infanterie)"
 
 [flags.43]
 us = "Seen by the missions' level-design scripts (ld_detectable)"
@@ -2443,6 +2633,7 @@ ru = "Виден скриптам дизайна уровней в миссия�
 cz = "Viditelný pro skripty level designu v misích (ld_detectable)"
 jpn = "ミッションのレベルデザイン用スクリプトから見える (ld_detectable)"
 sc = "可被任务的关卡设计脚本识别 (ld_detectable)"
+fa = "اسکریپت‌های طراحی مرحلهٔ مأموریت‌ها آن را می‌بینند (ld_detectable)"
 
 [flags.44]
 us = "Logistics vehicle: every truck has it; on a tank it does nothing, tested (logistique)"
@@ -2455,6 +2646,7 @@ ru = "Логистическая машина: есть у всех грузов
 cz = "Logistické vozidlo: má ho každé nákladní auto; na tanku nic nedělá, ověřeno (logistique)"
 jpn = "兵站車両：全トラックが持つ。戦車に付けても効果なし、検証済み (logistique)"
 sc = "后勤车辆：所有卡车都有；加在坦克上无效，已实测 (logistique)"
+fa = "خودروی پشتیبانی: همهٔ کامیون‌ها آن را دارند؛ روی تانک کاری نمی‌کند، آزموده‌شده (logistique)"
 
 [flags.45]
 us = "Super-weapon ammunition: the game sets it while playing; in a unit's flags it does nothing (munition_super_weapon)"
@@ -2467,6 +2659,7 @@ ru = "Боеприпас супероружия: его ставит игра в
 cz = "Munice superzbraně: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (munition_super_weapon)"
 jpn = "超兵器の弾薬：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (munition_super_weapon)"
 sc = "超级武器弹药：游戏在对局中设置；放在单位的标志位里无效 (munition_super_weapon)"
+fa = "مهمات ابرسلاح: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (munition_super_weapon)"
 
 [flags.46]
 us = "Left out of box selection (non_selectionnable_en_groupe)"
@@ -2479,6 +2672,7 @@ ru = "Не выделяется рамкой (non_selectionnable_en_groupe)"
 cz = "Vynechán při výběru tažením (non_selectionnable_en_groupe)"
 jpn = "範囲選択の対象外 (non_selectionnable_en_groupe)"
 sc = "框选时不会被选中 (non_selectionnable_en_groupe)"
+fa = "در انتخاب با کادر حساب نمی‌شود (non_selectionnable_en_groupe)"
 
 [flags.47]
 us = "Obstacle: other units steer around it; aircraft and trucks don't have it (obstacle_flocking)"
@@ -2491,6 +2685,7 @@ ru = "Препятствие: другие юниты его объезжают;
 cz = "Překážka: ostatní jednotky ji objíždějí; letadla a nákladní auta tento příznak nemají (obstacle_flocking)"
 jpn = "障害物：他の部隊がよけて進む。航空機とトラックは持たない (obstacle_flocking)"
 sc = "障碍物：其他单位会绕开它；飞机和卡车没有此标志 (obstacle_flocking)"
+fa = "مانع: یگان‌های دیگر از کنارش دور می‌زنند؛ هواپیماها و کامیون‌ها آن را ندارند (obstacle_flocking)"
 
 [flags.48]
 us = "Paratroopers on the ground, after the drop (parachutiste)"
@@ -2503,6 +2698,7 @@ ru = "Десантники на земле, после высадки (parachuti
 cz = "Výsadkáři na zemi, po seskoku (parachutiste)"
 jpn = "降下後、地上にいる空挺兵 (parachutiste)"
 sc = "着陆后的伞兵 (parachutiste)"
+fa = "چتربازان روی زمین، پس از فرود (parachutiste)"
 
 [flags.49]
 us = "Paratroopers in the air, during the drop (parachutiste_en_vol)"
@@ -2515,6 +2711,7 @@ ru = "Десантники в воздухе, во время высадки (pa
 cz = "Výsadkáři ve vzduchu, během seskoku (parachutiste_en_vol)"
 jpn = "降下中、空中にいる空挺兵 (parachutiste_en_vol)"
 sc = "空降途中的伞兵 (parachutiste_en_vol)"
+fa = "چتربازان در هوا، هنگام پرش (parachutiste_en_vol)"
 
 [flags.50]
 us = "Can be clicked on with the mouse (pickable)"
@@ -2527,6 +2724,7 @@ ru = "По нему можно щёлкнуть мышью (pickable)"
 cz = "Lze na něj kliknout myší (pickable)"
 jpn = "マウスでクリックできる (pickable)"
 sc = "可用鼠标点选 (pickable)"
+fa = "می‌توان با ماوس روی آن کلیک کرد (pickable)"
 
 [flags.51]
 us = "An aircraft flying home: the game sets it while playing; in a unit's flags it does nothing (plane_returning_to_base)"
@@ -2539,6 +2737,7 @@ ru = "Самолёт, летящий на базу: его ставит игра
 cz = "Letadlo vracející se na základnu: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (plane_returning_to_base)"
 jpn = "帰還中の航空機：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (plane_returning_to_base)"
 sc = "正在返航的飞机：游戏在对局中设置；放在单位的标志位里无效 (plane_returning_to_base)"
+fa = "هواپیمایی که به پایگاه برمی‌گردد: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (plane_returning_to_base)"
 
 [flags.52]
 us = "An aircraft busy with a task: the game sets it while playing; in a unit's flags it does nothing (avion_oqp)"
@@ -2551,6 +2750,7 @@ ru = "Самолёт, занятый заданием: его ставит иг�
 cz = "Letadlo zaměstnané úkolem: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (avion_oqp)"
 jpn = "任務中の航空機：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (avion_oqp)"
 sc = "正在执行任务的飞机：游戏在对局中设置；放在单位的标志位里无效 (avion_oqp)"
+fa = "هواپیمایی که مشغول کاری است: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (avion_oqp)"
 
 [flags.53]
 us = "Can be selected by the player (selectionnable)"
@@ -2563,6 +2763,7 @@ ru = "Игрок может его выделить (selectionnable)"
 cz = "Hráč ho může vybrat (selectionnable)"
 jpn = "プレイヤーが選択できる (selectionnable)"
 sc = "玩家可以选中 (selectionnable)"
+fa = "بازیکن می‌تواند آن را انتخاب کند (selectionnable)"
 
 [flags.54]
 us = "Under artillery fire: the game sets it while playing; in a unit's flags it does nothing (sous_tir_artillerie)"
@@ -2575,6 +2776,7 @@ ru = "Под артиллерийским огнём: его ставит игр
 cz = "Pod dělostřeleckou palbou: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (sous_tir_artillerie)"
 jpn = "砲撃を受けている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (sous_tir_artillerie)"
 sc = "正遭炮击：游戏在对局中设置；放在单位的标志位里无效 (sous_tir_artillerie)"
+fa = "زیر آتش توپخانه: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (sous_tir_artillerie)"
 
 [flags.55]
 us = "Tank; see 11 for letting a vehicle into woods (tank)"
@@ -2587,6 +2789,7 @@ ru = "Танк; как пустить машину в лес, см. 11 (tank)"
 cz = "Tank; jak pustit vozidlo do lesa, viz 11 (tank)"
 jpn = "戦車。車両を森に入れるには11を参照 (tank)"
 sc = "坦克；让车辆进入树林见 11 (tank)"
+fa = "تانک؛ برای راه دادن یک خودرو به جنگل، 11 را ببینید (tank)"
 
 [flags.56]
 us = "Still has all its ammunition: the game sets it while playing; in a unit's flags it does nothing (got_all_its_ammo)"
@@ -2599,6 +2802,7 @@ ru = "Ещё имеет весь боезапас: его ставит игра 
 cz = "Má ještě všechnu munici: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (got_all_its_ammo)"
 jpn = "弾薬をまだ全て持っている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (got_all_its_ammo)"
 sc = "弹药仍满：游戏在对局中设置；放在单位的标志位里无效 (got_all_its_ammo)"
+fa = "هنوز همهٔ مهماتش را دارد: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (got_all_its_ammo)"
 
 [flags.57]
 us = "A valid target for weapons (target)"
@@ -2611,6 +2815,7 @@ ru = "Допустимая цель для оружия (target)"
 cz = "Platný cíl pro zbraně (target)"
 jpn = "武器の有効な攻撃目標 (target)"
 sc = "武器的有效目标 (target)"
+fa = "هدفی معتبر برای سلاح‌ها (target)"
 
 [flags.58]
 us = "Never hidden by fog: buildings, trucks, ships; did nothing on a tank, tested (toujours_visible)"
@@ -2623,6 +2828,7 @@ ru = "Никогда не скрыт туманом: здания, грузов�
 cz = "Nikdy neskrytý mlhou: budovy, nákladní auta, lodě; na tanku nic neudělal, ověřeno (toujours_visible)"
 jpn = "霧に隠れない：建物、トラック、艦船。戦車に付けても効果なし、検証済み (toujours_visible)"
 sc = "永不被迷雾隐藏：建筑、卡车、舰船；加在坦克上无效，已实测 (toujours_visible)"
+fa = "هرگز در مه پنهان نمی‌شود: ساختمان‌ها، کامیون‌ها، کشتی‌ها؛ روی تانک کاری نکرد، آزموده‌شده (toujours_visible)"
 
 [flags.59]
 us = "Paratroop transport: the aircraft that drops paratroopers (transport_parachutiste)"
@@ -2635,6 +2841,7 @@ ru = "Транспорт десанта: самолёт, который сбра
 cz = "Transport výsadkářů: letadlo, které je shazuje (transport_parachutiste)"
 jpn = "空挺輸送機：空挺兵を降下させる航空機 (transport_parachutiste)"
 sc = "伞兵运输机：投放伞兵的飞机 (transport_parachutiste)"
+fa = "ترابری چترباز: هواپیمایی که چترباز می‌اندازد (transport_parachutiste)"
 
 [flags.60]
 us = "Turret of a building: shown with the building's panel (tourelle_de_batiment)"
@@ -2647,6 +2854,7 @@ ru = "Башня здания: показывается с панелью зда
 cz = "Věž budovy: zobrazuje se s panelem budovy (tourelle_de_batiment)"
 jpn = "建物の砲塔：建物のパネルで表示される (tourelle_de_batiment)"
 sc = "建筑的炮塔：以建筑面板显示 (tourelle_de_batiment)"
+fa = "برجک ساختمان: همراه پنل ساختمان نشان داده می‌شود (tourelle_de_batiment)"
 
 [flags.61]
 us = "An aircraft in an engagement: the game sets it while playing; in a unit's flags it does nothing (avion_dans_engagement)"
@@ -2659,6 +2867,7 @@ ru = "Самолёт в бою: его ставит игра во время б�
 cz = "Letadlo v boji: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (avion_dans_engagement)"
 jpn = "交戦中の航空機：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (avion_dans_engagement)"
 sc = "交战中的飞机：游戏在对局中设置；放在单位的标志位里无效 (avion_dans_engagement)"
+fa = "هواپیمایی در حال درگیری: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (avion_dans_engagement)"
 
 [flags.62]
 us = "Truck; WARNING: crashes the game at match start on anything but a truck (truck)"
@@ -2671,6 +2880,7 @@ ru = "Грузовик; ВНИМАНИЕ: на всём, кроме грузов
 cz = "Nákladní auto; POZOR: na čemkoli kromě nákladního auta hra na začátku bitvy spadne (truck)"
 jpn = "トラック。警告：トラック以外に付けると試合開始時にゲームがクラッシュする (truck)"
 sc = "卡车；警告：加在卡车以外的单位上，游戏会在对局开始时崩溃 (truck)"
+fa = "کامیون؛ هشدار: روی هر چیزی جز کامیون، بازی را در شروع مسابقه از کار می‌اندازد (truck)"
 
 [flags.63]
 us = "Construction truck; WARNING: crashes the game at match start on anything but a truck (truck_construction)"
@@ -2683,6 +2893,7 @@ ru = "Строительный грузовик; ВНИМАНИЕ: на всём
 cz = "Stavební nákladní auto; POZOR: na čemkoli kromě nákladního auta hra na začátku bitvy spadne (truck_construction)"
 jpn = "建設トラック。警告：トラック以外に付けると試合開始時にゲームがクラッシュする (truck_construction)"
 sc = "工程卡车；警告：加在卡车以外的单位上，游戏会在对局开始时崩溃 (truck_construction)"
+fa = "کامیون ساخت‌وساز؛ هشدار: روی هر چیزی جز کامیون، بازی را در شروع مسابقه از کار می‌اندازد (truck_construction)"
 
 [flags.64]
 us = "Supply truck: carries money; on a tank it does nothing, tested (truck_devise)"
@@ -2695,6 +2906,7 @@ ru = "Грузовик снабжения: возит деньги; на тан�
 cz = "Zásobovací auto: vozí peníze; na tanku nic nedělá, ověřeno (truck_devise)"
 jpn = "補給トラック：資金を運ぶ。戦車に付けても効果なし、検証済み (truck_devise)"
 sc = "补给卡车：运送资金；加在坦克上无效，已实测 (truck_devise)"
+fa = "کامیون تدارکات: پول حمل می‌کند؛ روی تانک کاری نمی‌کند، آزموده‌شده (truck_devise)"
 
 [flags.65]
 us = "Extreme suppression: the game sets it while playing; in a unit's flags it does nothing (uberstress)"
@@ -2707,6 +2919,7 @@ ru = "Крайнее подавление: его ставит игра во в�
 cz = "Extrémní potlačení: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (uberstress)"
 jpn = "極度の制圧状態：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (uberstress)"
 sc = "极度压制：游戏在对局中设置；放在单位的标志位里无效 (uberstress)"
+fa = "سرکوب شدید: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (uberstress)"
 
 [flags.66]
 us = "Uses model morphing: the game sets it while playing; in a unit's flags it does nothing (use_morphe)"
@@ -2719,6 +2932,7 @@ ru = "Использует морфинг модели: его ставит иг
 cz = "Používá morfing modelu: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (use_morphe)"
 jpn = "モデルのモーフィングを使う：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (use_morphe)"
 sc = "使用模型变形：游戏在对局中设置；放在单位的标志位里无效 (use_morphe)"
+fa = "از دگرشکلی مدل استفاده می‌کند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (use_morphe)"
 
 [flags.67]
 us = "Flying vehicle; ground units with it take off-map orders but stop at the edge, tested (vehicule_volant)"
@@ -2731,6 +2945,7 @@ ru = "Летательный аппарат; наземные юниты с ни
 cz = "Létající stroj; pozemní jednotky s ním přijímají rozkazy mimo mapu, ale zastaví se na okraji, ověřeno (vehicule_volant)"
 jpn = "飛行体。地上部隊に付けるとマップ外への命令を受けるが端で止まる、検証済み (vehicule_volant)"
 sc = "飞行器；地面单位加上后可接受地图外的命令，但会停在边缘，已实测 (vehicule_volant)"
+fa = "وسیلهٔ پرنده؛ یگان‌های زمینیِ دارای آن، دستورهای بیرون از نقشه را می‌پذیرند ولی در لبه می‌ایستند، آزموده‌شده (vehicule_volant)"
 
 [flags.68]
 us = "A flying vehicle on the ground: the game sets it while playing; in a unit's flags it does nothing (vehicule_volant_au_sol)"
@@ -2743,6 +2958,7 @@ ru = "Летательный аппарат на земле: его ставит
 cz = "Létající stroj na zemi: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (vehicule_volant_au_sol)"
 jpn = "地上にいる飛行体：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (vehicule_volant_au_sol)"
 sc = "停在地面的飞行器：游戏在对局中设置；放在单位的标志位里无效 (vehicule_volant_au_sol)"
+fa = "وسیلهٔ پرنده روی زمین: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (vehicule_volant_au_sol)"
 
 [flags.69]
 us = "Under attack: the game sets it while playing; in a unit's flags it does nothing (is_attacked)"
@@ -2755,6 +2971,7 @@ ru = "Атакован: его ставит игра во время боя; в�
 cz = "Napadený: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (is_attacked)"
 jpn = "攻撃を受けている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (is_attacked)"
 sc = "正遭攻击：游戏在对局中设置；放在单位的标志位里无效 (is_attacked)"
+fa = "زیر حمله: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (is_attacked)"
 
 [flags.70]
 us = "Vision centred on its patrol point, not on itself (vision_centre_patrouille)"
@@ -2767,6 +2984,7 @@ ru = "Обзор с центром в точке патрулирования, �
 cz = "Výhled se středem v bodě hlídky, ne v jednotce samé (vision_centre_patrouille)"
 jpn = "視界の中心が自身ではなく哨戒地点になる (vision_centre_patrouille)"
 sc = "视野以巡逻点为中心，而非单位自身 (vision_centre_patrouille)"
+fa = "دید با مرکزیت نقطهٔ گشتِ آن، نه خودش (vision_centre_patrouille)"
 
 [flags.71]
 us = "360° vision, whatever way it faces; works on any ground unit, tested (vision_circulaire)"
@@ -2779,6 +2997,7 @@ ru = "Круговой обзор 360°, куда бы ни смотрел; ра
 cz = "Výhled 360°, ať je otočen kamkoli; funguje na každé pozemní jednotce, ověřeno (vision_circulaire)"
 jpn = "向きに関係なく360°の視界。どの地上部隊でも有効、検証済み (vision_circulaire)"
 sc = "360° 视野，不受朝向影响；对任何地面单位都有效，已实测 (vision_circulaire)"
+fa = "دید 360°، به هر سو که رو کند؛ روی هر یگان زمینی کار می‌کند، آزموده‌شده (vision_circulaire)"
 
 [flags.72]
 us = "Sees through obstacles: terrain and scenery; aircraft have it, untried on ground units (vision_no_obstacle)"
@@ -2791,6 +3010,7 @@ ru = "Видит сквозь препятствия: рельеф и объек
 cz = "Vidí skrz překážky: terén a scenérie; letadla ho mají, na pozemních jednotkách nevyzkoušeno (vision_no_obstacle)"
 jpn = "障害物を透視する：地形と景観物。航空機が持つ。地上部隊では未検証 (vision_no_obstacle)"
 sc = "无视障碍物：地形和场景物体不挡视线；飞机具有，地面单位尚未测试 (vision_no_obstacle)"
+fa = "از میان موانع می‌بیند: زمین و اشیای صحنه؛ هواپیماها آن را دارند، روی یگان‌های زمینی آزموده نشده (vision_no_obstacle)"
 
 [flags.73]
 us = "Seen: the game sets it while playing; in a unit's flags it does nothing (vue)"
@@ -2803,6 +3023,7 @@ ru = "Замечен: его ставит игра во время боя; во 
 cz = "Viděn: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (vue)"
 jpn = "視認されている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (vue)"
 sc = "被看见：游戏在对局中设置；放在单位的标志位里无效 (vue)"
+fa = "دیده‌شده: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (vue)"
 
 [flags.74]
 us = "An aircraft's shadow: the game sets it while playing; in a unit's flags it does nothing (shadow_avion)"
@@ -2815,6 +3036,7 @@ ru = "Тень самолёта: его ставит игра во время б
 cz = "Stín letadla: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (shadow_avion)"
 jpn = "航空機の影：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (shadow_avion)"
 sc = "飞机的影子：游戏在对局中设置；放在单位的标志位里无效 (shadow_avion)"
+fa = "سایهٔ هواپیما: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (shadow_avion)"
 
 [flags.75]
 us = "An infantry corpse: the game sets it while playing; in a unit's flags it does nothing (cadavre_infanterie)"
@@ -2827,6 +3049,7 @@ ru = "Труп пехотинца: его ставит игра во время 
 cz = "Mrtvola pěšáka: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cadavre_infanterie)"
 jpn = "歩兵の死体：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cadavre_infanterie)"
 sc = "步兵尸体：游戏在对局中设置；放在单位的标志位里无效 (cadavre_infanterie)"
+fa = "جسد پیاده‌نظام: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cadavre_infanterie)"
 
 [flags.76]
 us = "Ship: the unit doesn't move at all, like a building (not tested in game); without it and with a tank's chassis a ship drives on land, tested (bateau)"
@@ -2839,6 +3062,7 @@ ru = "Корабль: юнит совсем не двигается, как зд
 cz = "Loď: jednotka se vůbec nepohybuje, jako budova (ve hře neověřeno); bez něj a s podvozkem tanku loď jezdí po souši, ověřeno (bateau)"
 jpn = "艦船：部隊はまったく移動しない、建物と同じ（ゲーム内では未検証）。外して戦車の車体を使うと艦船が陸を走る、検証済み (bateau)"
 sc = "舰船：单位完全不能移动，如同建筑（未在游戏中实测）；去掉它并换用坦克底盘后，舰船能在陆地行驶，已实测 (bateau)"
+fa = "کشتی: یگان اصلاً حرکت نمی‌کند، مانند ساختمان (در بازی آزموده نشده)؛ بدون آن و با شاسی تانک، کشتی روی خشکی حرکت می‌کند، آزموده‌شده (bateau)"
 
 [flags.77]
 us = "Never fires by reflex, only when ordered, tested; not for buildings (cannot_attack_en_reflexe)"
@@ -2851,6 +3075,7 @@ ru = "Никогда не стреляет автоатакой, только п
 cz = "Nikdy nestřílí automaticky, jen na rozkaz, ověřeno; ne pro budovy (cannot_attack_en_reflexe)"
 jpn = "自動攻撃をせず、命令時のみ射撃する、検証済み。建物には不向き (cannot_attack_en_reflexe)"
 sc = "从不自动攻击，只在命令时开火，已实测；不适用于建筑 (cannot_attack_en_reflexe)"
+fa = "هرگز واکنشی شلیک نمی‌کند، فقط با دستور، آزموده‌شده؛ نه برای ساختمان‌ها (cannot_attack_en_reflexe)"
 
 [flags.78]
 us = "An aircraft out of ammunition: the game sets it while playing; in a unit's flags it does nothing (avion_sans_munitions_restantes)"
@@ -2863,6 +3088,7 @@ ru = "Самолёт без боеприпасов: его ставит игра
 cz = "Letadlo bez munice: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (avion_sans_munitions_restantes)"
 jpn = "弾薬切れの航空機：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (avion_sans_munitions_restantes)"
 sc = "弹药耗尽的飞机：游戏在对局中设置；放在单位的标志位里无效 (avion_sans_munitions_restantes)"
+fa = "هواپیمایی که مهماتش تمام شده: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (avion_sans_munitions_restantes)"
 
 [flags.79]
 us = "Selected: the game sets it while playing; in a unit's flags it does nothing (selectionnee)"
@@ -2875,6 +3101,7 @@ ru = "Выделен: его ставит игра во время боя; во 
 cz = "Vybraná: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (selectionnee)"
 jpn = "選択されている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (selectionnee)"
 sc = "已选中：游戏在对局中设置；放在单位的标志位里无效 (selectionnee)"
+fa = "انتخاب‌شده: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (selectionnee)"
 
 [flags.80]
 us = "Can't be targeted; scripts set it: the game sets it while playing; in a unit's flags it does nothing (cannot_be_targeted)"
@@ -2887,6 +3114,7 @@ ru = "Не может быть целью; его ставят скрипты: �
 cz = "Nemůže být cílem; nastavují ho skripty: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cannot_be_targeted)"
 jpn = "標的にされない。スクリプトが付ける：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cannot_be_targeted)"
 sc = "不能被瞄准；由脚本设置：游戏在对局中设置；放在单位的标志位里无效 (cannot_be_targeted)"
+fa = "نمی‌توان آن را هدف گرفت؛ اسکریپت‌ها آن را می‌گذارند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cannot_be_targeted)"
 
 [flags.81]
 us = "Marker so a script doesn't apply this twice: reflex attack forbidden: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2899,6 +3127,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: reflexní útok zakázán: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：反射攻撃の禁止：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：禁止反射攻击：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: حملهٔ واکنشی ممنوع: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.82]
 us = "Marker so a script doesn't apply this twice: group fire range: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2911,6 +3140,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: dostřel skupiny: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：グループの射程：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：编组射程：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: برد آتش گروه: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.83]
 us = "Marker so a script doesn't apply this twice: can't be targeted: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2923,6 +3153,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: nemůže být cílem: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：標的にされない：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：不能被瞄准：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: هدف‌ناپذیر: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.84]
 us = "Marker so a script doesn't apply this twice: group disarmed: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2935,6 +3166,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: skupina odzbrojena: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：グループの武装解除：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：编组缴械：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: خلع سلاح گروه: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.85]
 us = "Marker so a script doesn't apply this twice: group can't be controlled: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2947,6 +3179,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: skupina neovladatelná: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：グループの操作不能：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：编组不可控制：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: گروه کنترل‌ناپذیر: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.86]
 us = "Marker so a script doesn't apply this twice: group vision limited: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2959,6 +3192,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: omezený výhled skupiny: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：グループの視界制限：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：编组视野受限：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: دید محدود گروه: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.87]
 us = "Marker so a script doesn't apply this twice: damage dealt: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2971,6 +3205,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: způsobené poškození: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：与えたダメージ：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：造成的伤害：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: آسیب واردشده: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.88]
 us = "Marker so a script doesn't apply this twice: stress taken: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2983,6 +3218,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: utrpěný stres: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：受けたストレス：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：承受的压力：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: فشار دریافتی: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.89]
 us = "Marker so a script doesn't apply this twice: unit speed: the game sets it while playing; in a unit's flags it does nothing (already_*)"
@@ -2995,6 +3231,7 @@ ru = "Метка, чтобы скрипт не применил это дваж�
 cz = "Značka, aby to skript nepoužil dvakrát: rychlost jednotky: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_*)"
 jpn = "スクリプトが二重に適用しないための目印：部隊の速度：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_*)"
 sc = "避免脚本重复施加的标记：单位速度：游戏在对局中设置；放在单位的标志位里无效 (already_*)"
+fa = "نشانه‌ای تا اسکریپت این را دو بار اعمال نکند: سرعت یگان: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_*)"
 
 [flags.90]
 us = "Radio silence, from the ruse card: the game sets it while playing; in a unit's flags it does nothing, tested (is_en_silence_radio)"
@@ -3007,6 +3244,7 @@ ru = "Радиомолчание, от карты уловки: его став�
 cz = "Rádiové ticho, z karty lsti: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá, ověřeno (is_en_silence_radio)"
 jpn = "無線封止、計略カードによる：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし、検証済み (is_en_silence_radio)"
 sc = "无线电静默，来自计谋卡：游戏在对局中设置；放在单位的标志位里无效，已实测 (is_en_silence_radio)"
+fa = "سکوت رادیویی، از کارت ترفند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند، آزموده‌شده (is_en_silence_radio)"
 
 [flags.91]
 us = "Camouflaged, by the ruse card: the game sets it while playing; in a unit's flags it does nothing, tested (is_camoufle)"
@@ -3019,6 +3257,7 @@ ru = "Замаскирован, картой уловки: его ставит �
 cz = "Maskovaný, kartou lsti: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá, ověřeno (is_camoufle)"
 jpn = "迷彩、計略カードによる：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし、検証済み (is_camoufle)"
 sc = "伪装，来自计谋卡：游戏在对局中设置；放在单位的标志位里无效，已实测 (is_camoufle)"
+fa = "استتارشده، با کارت ترفند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند، آزموده‌شده (is_camoufle)"
 
 [flags.92]
 us = "Woods don't hide it (cannot_hide_in_forest)"
@@ -3031,6 +3270,7 @@ ru = "Лес его не скрывает (cannot_hide_in_forest)"
 cz = "Les ho neskryje (cannot_hide_in_forest)"
 jpn = "森に隠れられない (cannot_hide_in_forest)"
 sc = "树林无法隐藏它 (cannot_hide_in_forest)"
+fa = "جنگل آن را پنهان نمی‌کند (cannot_hide_in_forest)"
 
 [flags.93]
 us = "Administrative building (batiment_administratif)"
@@ -3043,6 +3283,7 @@ ru = "Административное здание (batiment_administratif)"
 cz = "Administrativní budova (batiment_administratif)"
 jpn = "行政建物 (batiment_administratif)"
 sc = "行政建筑 (batiment_administratif)"
+fa = "ساختمان اداری (batiment_administratif)"
 
 [flags.94]
 us = "A vehicle wreck: the game sets it while playing; in a unit's flags it does nothing (cadavre_vehicle)"
@@ -3055,6 +3296,7 @@ ru = "Обломки машины: его ставит игра во время 
 cz = "Vrak vozidla: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cadavre_vehicle)"
 jpn = "車両の残骸：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cadavre_vehicle)"
 sc = "车辆残骸：游戏在对局中设置；放在单位的标志位里无效 (cadavre_vehicle)"
+fa = "لاشهٔ خودرو: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cadavre_vehicle)"
 
 [flags.95]
 us = "An aircraft wreck: the game sets it while playing; in a unit's flags it does nothing (cadavre_avion)"
@@ -3067,6 +3309,7 @@ ru = "Обломки самолёта: его ставит игра во вре�
 cz = "Vrak letadla: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cadavre_avion)"
 jpn = "航空機の残骸：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cadavre_avion)"
 sc = "飞机残骸：游戏在对局中设置；放在单位的标志位里无效 (cadavre_avion)"
+fa = "لاشهٔ هواپیما: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cadavre_avion)"
 
 [flags.96]
 us = "Holding fire to spring the forest ambush: the game sets it while playing; in a unit's flags it does nothing (holding_fire_for_ambush)"
@@ -3079,6 +3322,7 @@ ru = "Не открывает огонь ради засады в лесу: ег
 cz = "Drží palbu kvůli léčce v lese: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (holding_fire_for_ambush)"
 jpn = "森の待ち伏せのため射撃を控えている：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (holding_fire_for_ambush)"
 sc = "为树林伏击而暂停射击：游戏在对局中设置；放在单位的标志位里无效 (holding_fire_for_ambush)"
+fa = "نگه داشتن آتش برای اجرای کمین در جنگل: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (holding_fire_for_ambush)"
 
 [flags.97]
 us = "Can't be captured; scripts set it: the game sets it while playing; in a unit's flags it does nothing (cannot_be_captured)"
@@ -3091,6 +3335,7 @@ ru = "Не может быть захвачен; его ставят скрип�
 cz = "Nelze dobýt; nastavují ho skripty: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (cannot_be_captured)"
 jpn = "占領されない。スクリプトが付ける：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (cannot_be_captured)"
 sc = "不能被占领；由脚本设置：游戏在对局中设置；放在单位的标志位里无效 (cannot_be_captured)"
+fa = "نمی‌توان آن را تصرف کرد؛ اسکریپت‌ها آن را می‌گذارند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (cannot_be_captured)"
 
 [flags.98]
 us = "Marker for 97, so a script doesn't apply it twice: the game sets it while playing; in a unit's flags it does nothing (already_cannot_be_captured)"
@@ -3103,6 +3348,7 @@ ru = "Метка для 97, чтобы скрипт не применил его
 cz = "Značka pro 97, aby ho skript nepoužil dvakrát: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (already_cannot_be_captured)"
 jpn = "97の目印。スクリプトが二重に適用しないため：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (already_cannot_be_captured)"
 sc = "97 的标记，避免脚本重复施加：游戏在对局中设置；放在单位的标志位里无效 (already_cannot_be_captured)"
+fa = "نشانه‌ای برای 97، تا اسکریپت آن را دو بار اعمال نکند: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (already_cannot_be_captured)"
 
 [flags.99]
 us = "Recon aircraft (avion_reco)"
@@ -3115,6 +3361,7 @@ ru = "Самолёт-разведчик (avion_reco)"
 cz = "Průzkumný letoun (avion_reco)"
 jpn = "偵察機 (avion_reco)"
 sc = "侦察机 (avion_reco)"
+fa = "هواپیمای شناسایی (avion_reco)"
 
 [flags.100]
 us = "Fighter (avion_chasseur)"
@@ -3127,6 +3374,7 @@ ru = "Истребитель (avion_chasseur)"
 cz = "Stíhačka (avion_chasseur)"
 jpn = "戦闘機 (avion_chasseur)"
 sc = "战斗机 (avion_chasseur)"
+fa = "جنگنده (avion_chasseur)"
 
 [flags.101]
 us = "Fighter-bomber (avion_chasseur_bomber)"
@@ -3139,6 +3387,7 @@ ru = "Истребитель-бомбардировщик (avion_chasseur_bomber
 cz = "Stíhací bombardér (avion_chasseur_bomber)"
 jpn = "戦闘爆撃機 (avion_chasseur_bomber)"
 sc = "战斗轰炸机 (avion_chasseur_bomber)"
+fa = "جنگنده‌بمب‌افکن (avion_chasseur_bomber)"
 
 [flags.102]
 us = "Decoy airfield (aerodrome_fake)"
@@ -3151,6 +3400,7 @@ ru = "Ложный аэродром (aerodrome_fake)"
 cz = "Maketa letiště (aerodrome_fake)"
 jpn = "囮の飛行場 (aerodrome_fake)"
 sc = "诱饵机场 (aerodrome_fake)"
+fa = "فرودگاه فریب (aerodrome_fake)"
 
 [flags.103]
 us = "Can drop paratroopers: the game sets it while playing; in a unit's flags it does nothing (can_drop_para)"
@@ -3163,6 +3413,7 @@ ru = "Может сбрасывать десант: его ставит игра
 cz = "Může shazovat výsadkáře: nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (can_drop_para)"
 jpn = "空挺兵を降下させられる：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (can_drop_para)"
 sc = "可以空投伞兵：游戏在对局中设置；放在单位的标志位里无效 (can_drop_para)"
+fa = "می‌تواند چترباز بیندازد: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (can_drop_para)"
 
 [flags.104]
 us = "Has a scanner (radar): the game sets it while playing; in a unit's flags it does nothing (has_scanner)"
@@ -3175,6 +3426,7 @@ ru = "Имеет сканер (радар): его ставит игра во в
 cz = "Má skener (radar): nastavuje ho hra během bitvy; v příznacích jednotky nic nedělá (has_scanner)"
 jpn = "スキャナー（レーダー）を持つ：プレイ中にゲームが設定する。部隊のフラグに入れても効果なし (has_scanner)"
 sc = "拥有扫描器（雷达）：游戏在对局中设置；放在单位的标志位里无效 (has_scanner)"
+fa = "اسکنر (رادار) دارد: بازی در حین بازی آن را تنظیم می‌کند؛ در پرچم‌های یک یگان کاری نمی‌کند (has_scanner)"
 
 [props.InitialFlagSet]
 group = "identity"
@@ -3188,6 +3440,7 @@ ru = "Флаги"
 cz = "Příznaky"
 jpn = "フラグ"
 sc = "标志位"
+fa = "پرچم‌ها"
 [props.TimeLimitTable]
 group = "other"
 us = "Battle time limits to choose from"
@@ -3200,6 +3453,7 @@ ru = "Варианты ограничения времени боя"
 cz = "Časové limity bitvy na výběr"
 jpn = "選べる戦闘の制限時間"
 sc = "可选的战斗时间限制"
+fa = "محدودیت‌های زمانی نبرد برای انتخاب"
 [props.TimeMaxForSurrender]
 group = "other"
 us = "Surrender: most seconds to blow up"
@@ -3212,6 +3466,7 @@ ru = "Капитуляция: секунд на подрыв, не больше"
 cz = "Kapitulace: nejvýš sekund na vyhození do vzduchu"
 jpn = "降伏：爆破までの最長秒数"
 sc = "投降：全部炸毁的最长秒数"
+fa = "تسلیم: بیشترین ثانیه تا انفجار"
 [props.TimeBetweenBuildingDestructionForSurrender]
 group = "other"
 us = "Surrender: seconds between two buildings blowing up"
@@ -3224,6 +3479,7 @@ ru = "Капитуляция: секунд между подрывами дву�
 cz = "Kapitulace: sekund mezi vyhozením dvou budov"
 jpn = "降伏：建物の爆破の間隔（秒）"
 sc = "投降：两座建筑炸毁的间隔秒数"
+fa = "تسلیم: ثانیه بین انفجار دو ساختمان"
 [props.EliminationWarningsDuration]
 group = "other"
 us = "Defeat message: seconds on screen"
@@ -3236,6 +3492,7 @@ ru = "Сообщение о поражении: секунд на экране"
 cz = "Zpráva o porážce: sekund na obrazovce"
 jpn = "敗北メッセージ：表示秒数"
 sc = "失败消息：显示秒数"
+fa = "پیام شکست: ثانیه روی صفحه"
 [props.DureeDecompteLaunchGameMulti]
 group = "other"
 us = "Multiplayer start countdown (s)"
@@ -3248,6 +3505,7 @@ ru = "Отсчёт перед стартом сетевой игры (с)"
 cz = "Odpočet před spuštěním hry více hráčů (s)"
 jpn = "マルチプレイ開始のカウントダウン（秒）"
 sc = "多人游戏开始倒计时（秒）"
+fa = "شمارش معکوس شروع بازی چندنفره (ثانیه)"
 [props.PopCapPerPlayer]
 group = "other"
 us = "Most units per player"
@@ -3260,6 +3518,7 @@ ru = "Не больше юнитов на игрока"
 cz = "Nejvíc jednotek na hráče"
 jpn = "プレイヤーごとの最大ユニット数"
 sc = "每名玩家的最多单位数"
+fa = "بیشترین یگان برای هر بازیکن"
 [props.PopCapPerAlliance]
 group = "other"
 us = "Most units per side"
@@ -3272,6 +3531,7 @@ ru = "Не больше юнитов на сторону"
 cz = "Nejvíc jednotek na stranu"
 jpn = "陣営ごとの最大ユニット数"
 sc = "每方的最多单位数"
+fa = "بیشترین یگان برای هر طرف"
 [props.PopCapTotal]
 group = "other"
 us = "Most units in the battle"
@@ -3284,6 +3544,7 @@ ru = "Не больше юнитов в бою"
 cz = "Nejvíc jednotek v bitvě"
 jpn = "戦闘全体の最大ユニット数"
 sc = "整场战斗的最多单位数"
+fa = "بیشترین یگان در نبرد"
 [props.RF_TypeRapportDeForceInIaStrat]
 group = "other"
 us = "Computer players weigh forces (1: yes)"
@@ -3296,6 +3557,7 @@ ru = "Игроки-компьютеры сравнивают силы (1: да)"
 cz = "Počítačoví hráči porovnávají síly (1: ano)"
 jpn = "コンピューターが戦力を比べる（1：はい）"
 sc = "电脑玩家比较兵力（1：是）"
+fa = "بازیکنان رایانه‌ای نیروها را می‌سنجند (1: بله)"
 [props.RF_NbMetreMaxAParcourir]
 group = "other"
 us = "Force comparison: farthest units counted"
@@ -3308,6 +3570,7 @@ ru = "Сравнение сил: самые дальние учитываемы�
 cz = "Porovnání sil: nejvzdálenější započtené jednotky"
 jpn = "戦力比較：数に入れる最も遠いユニット"
 sc = "兵力比较：计入的最远单位"
+fa = "مقایسهٔ نیروها: دورترین یگان‌هایی که شمرده می‌شوند"
 [props.Ratio_Infanterie_OffensiveGenerale]
 group = "other"
 us = "Infantry share of a decoy offensive"
@@ -3320,6 +3583,7 @@ ru = "Доля пехоты в ложном наступлении"
 cz = "Podíl pěchoty v klamné ofenzivě"
 jpn = "囮の総攻撃の歩兵の割合"
 sc = "佯攻中步兵的比例"
+fa = "سهم پیاده‌نظام در یک تهاجم فریب"
 [props.AccelerationSurRoute]
 group = "other"
 us = "Speeding up on roads (x)"
@@ -3332,6 +3596,7 @@ ru = "Разгон на дорогах (x)"
 cz = "Zrychlení na silnicích (x)"
 jpn = "道路での加速（倍）"
 sc = "道路上的加速（倍）"
+fa = "افزایش سرعت در جاده (x)"
 [props.AccelerationSurRouteCamion]
 group = "other"
 us = "Trucks speeding up on roads (x)"
@@ -3344,6 +3609,7 @@ ru = "Разгон грузовиков на дорогах (x)"
 cz = "Zrychlení náklaďáků na silnicích (x)"
 jpn = "トラックの道路での加速（倍）"
 sc = "卡车在道路上的加速（倍）"
+fa = "افزایش سرعت کامیون‌ها در جاده (x)"
 [props.LargeurRoute]
 group = "other"
 us = "Road width"
@@ -3356,6 +3622,7 @@ ru = "Ширина дорог"
 cz = "Šířka silnic"
 jpn = "道路の幅"
 sc = "道路宽度"
+fa = "پهنای جاده"
 [props.DecalageRoute]
 group = "other"
 us = "Keeping to the side of the road (m)"
@@ -3368,6 +3635,7 @@ ru = "Смещение от середины дороги (м)"
 cz = "Odsazení od středu silnice (m)"
 jpn = "道路の中央からのずれ（m）"
 sc = "偏离道路中线（米）"
+fa = "حرکت در کنارهٔ جاده (متر)"
 [props.TailleMinimumDeRoute]
 group = "other"
 us = "Shortest road used (m)"
@@ -3380,6 +3648,7 @@ ru = "Самая короткая используемая дорога (м)"
 cz = "Nejkratší použitá silnice (m)"
 jpn = "使われる最短の道路（m）"
 sc = "使用的最短道路（米）"
+fa = "کوتاه‌ترین جادهٔ مورد استفاده (متر)"
 [props.AngleArrierePourMarcheArriere]
 group = "other"
 us = "Reversing: angle behind (°)"
@@ -3392,6 +3661,7 @@ ru = "Задний ход: угол сзади (°)"
 cz = "Couvání: úhel vzadu (°)"
 jpn = "後退：後方の角度（°）"
 sc = "倒车：后方角度（°）"
+fa = "دنده‌عقب: زاویهٔ پشت سر (°)"
 [props.DistancePourDeclencherMarcheArriere]
 group = "other"
 us = "Reversing: farthest (m)"
@@ -3404,6 +3674,7 @@ ru = "Задний ход: не дальше (м)"
 cz = "Couvání: nejvýš (m)"
 jpn = "後退：最大距離（m）"
 sc = "倒车：最远（米）"
+fa = "دنده‌عقب: بیشترین فاصله (متر)"
 [props.DistancePourDeclencherMarcheArriereEnCombat]
 group = "other"
 us = "Reversing in a fight: farthest (m)"
@@ -3416,6 +3687,7 @@ ru = "Задний ход в бою: не дальше (м)"
 cz = "Couvání v boji: nejvýš (m)"
 jpn = "戦闘中の後退：最大距離（m）"
 sc = "战斗中倒车：最远（米）"
+fa = "دنده‌عقب در نبرد: بیشترین فاصله (متر)"
 [props.LongueurDeDetectionPourEvitement]
 group = "other"
 us = "Looking ahead to steer around (m)"
@@ -3428,6 +3700,7 @@ ru = "Обзор вперёд для объезда (м)"
 cz = "Pohled dopředu při objíždění (m)"
 jpn = "回避のための前方確認（m）"
 sc = "绕行时向前探测（米）"
+fa = "نگاه به جلو برای دور زدن موانع (متر)"
 [props.DistanceCoherence]
 group = "other"
 us = "Keeping a group together (m)"
@@ -3440,6 +3713,7 @@ ru = "Держать группу вместе (м)"
 cz = "Udržení skupiny pohromadě (m)"
 jpn = "グループのまとまり（m）"
 sc = "保持编队集中（米）"
+fa = "کنار هم نگه داشتن گروه (متر)"
 [props.WorldBorderMarginForMouvement]
 group = "other"
 us = "Units keep off the map's edge (m)"
@@ -3452,6 +3726,7 @@ ru = "Юниты держатся от края карты (м)"
 cz = "Jednotky se drží od okraje mapy (m)"
 jpn = "ユニットがマップ端から離れる距離（m）"
 sc = "单位远离地图边缘（米）"
+fa = "فاصلهٔ یگان‌ها از لبهٔ نقشه (متر)"
 [props.WorldBorderMarginForOrder]
 group = "other"
 us = "Orders keep off the map's edge (m)"
@@ -3464,6 +3739,7 @@ ru = "Приказы держатся от края карты (м)"
 cz = "Rozkazy se drží od okraje mapy (m)"
 jpn = "命令がマップ端から離れる距離（m）"
 sc = "命令远离地图边缘（米）"
+fa = "فاصلهٔ دستورها از لبهٔ نقشه (متر)"
 [props.MultiplicateurVitesseDeroute]
 group = "other"
 us = "Speed when routed (x)"
@@ -3476,6 +3752,7 @@ ru = "Скорость при бегстве (x)"
 cz = "Rychlost na útěku (x)"
 jpn = "敗走時の速度（倍）"
 sc = "溃逃时的速度（倍）"
+fa = "سرعت هنگام فرار (x)"
 [props.TempsDeploiement]
 group = "other"
 us = "Seconds to deploy"
@@ -3488,6 +3765,7 @@ ru = "Секунд на развёртывание"
 cz = "Sekund na rozvinutí"
 jpn = "展開の秒数"
 sc = "展开秒数"
+fa = "ثانیه برای استقرار"
 [props.MorphTimeToGoToAttackPosition]
 group = "other"
 us = "Seconds to change into firing pose"
@@ -3500,6 +3778,7 @@ ru = "Секунд на переход в боевое положение"
 cz = "Sekund na přechod do palebné polohy"
 jpn = "射撃姿勢への変形秒数"
 sc = "转为开火姿态的秒数"
+fa = "ثانیه برای رفتن به حالت شلیک"
 [props.MorphTimeToGoToMovePosition]
 group = "other"
 us = "Seconds to change back into moving pose"
@@ -3512,6 +3791,7 @@ ru = "Секунд на возврат в походное положение"
 cz = "Sekund na návrat do pochodové polohy"
 jpn = "移動姿勢に戻る変形秒数"
 sc = "恢复行进姿态的秒数"
+fa = "ثانیه برای برگشتن به حالت حرکت"
 [props.DistToOpenFire]
 group = "other"
 us = "Distance to open fire (m)"
@@ -3524,6 +3804,7 @@ ru = "Дистанция открытия огня (м)"
 cz = "Vzdálenost zahájení palby (m)"
 jpn = "射撃開始距離（m）"
 sc = "开火距离（米）"
+fa = "فاصلهٔ آغاز آتش (متر)"
 [props.DistanceFriendlyFire]
 group = "other"
 us = "Friendly fire distance (m)"
@@ -3536,6 +3817,7 @@ ru = "Дистанция огня по своим (м)"
 cz = "Vzdálenost palby do vlastních (m)"
 jpn = "友軍誤射の距離（m）"
 sc = "误伤距离（米）"
+fa = "فاصلهٔ آتش خودی (متر)"
 [props.DistanceMaxPourAttackWhileMoving]
 group = "other"
 us = "Firing on the move: farthest (m)"
@@ -3548,6 +3830,7 @@ ru = "Стрельба на ходу: не дальше (м)"
 cz = "Palba za pohybu: nejvýš (m)"
 jpn = "移動しながらの射撃：最大距離（m）"
 sc = "行进间射击：最远（米）"
+fa = "شلیک در حال حرکت: بیشترین فاصله (متر)"
 [props.MultiplicateurDispersionQdTireurEnMouvement]
 group = "other"
 us = "Spread when firing on the move (x)"
@@ -3560,6 +3843,7 @@ ru = "Разброс при стрельбе на ходу (x)"
 cz = "Rozptyl při palbě za pohybu (x)"
 jpn = "移動中の射撃のばらつき（倍）"
 sc = "行进间射击散布（倍）"
+fa = "پراکندگی هنگام شلیک در حال حرکت (x)"
 [props.ToleranceTirTouche]
 group = "other"
 us = "How near a shot counts as a hit (m)"
@@ -3572,6 +3856,7 @@ ru = "Насколько близко выстрел считается попа
 cz = "Jak blízko se rána počítá jako zásah (m)"
 jpn = "命中とみなす距離（m）"
 sc = "视为命中的距离（米）"
+fa = "شلیک تا چه فاصله‌ای اصابت حساب می‌شود (متر)"
 [props.WaitingTimeToFocusTargetWithMainOrientation]
 group = "other"
 us = "Seconds before turning to face a target"
@@ -3584,6 +3869,7 @@ ru = "Секунд до разворота к цели"
 cz = "Sekund před otočením k cíli"
 jpn = "目標に向き直るまでの秒数"
 sc = "转向目标前的秒数"
+fa = "ثانیه پیش از چرخیدن به سمت هدف"
 [props.WaitingTimeToFocusTargetWithMainOrientationWhenShootable]
 group = "other"
 us = "Seconds before turning, when it can already fire"
@@ -3596,6 +3882,7 @@ ru = "Секунд до разворота, когда уже может стр�
 cz = "Sekund před otočením, když už může střílet"
 jpn = "すでに撃てるときの向き直りまでの秒数"
 sc = "已能开火时转向前的秒数"
+fa = "ثانیه پیش از چرخیدن، وقتی از قبل می‌تواند شلیک کند"
 [props.PorteeMinArmeEstConsidereCommeArtillerie]
 group = "other"
 us = "Range from which a weapon counts as artillery (m)"
@@ -3608,6 +3895,7 @@ ru = "Дальность, с которой оружие считается ар
 cz = "Dostřel, od kterého se zbraň počítá jako dělostřelectvo (m)"
 jpn = "砲兵とみなす射程（m）"
 sc = "武器算作炮兵的射程（米）"
+fa = "بردی که از آن به بعد سلاح توپخانه حساب می‌شود (متر)"
 [props.LongueurParcourueBombe]
 group = "other"
 us = "How far a bomb travels as it falls (m)"
@@ -3620,6 +3908,7 @@ ru = "Сколько пролетает бомба при падении (м)"
 cz = "Jak daleko bomba při pádu doletí (m)"
 jpn = "爆弾が落下中に進む距離（m）"
 sc = "炸弹下落时前进的距离（米）"
+fa = "مسافتی که بمب هنگام سقوط طی می‌کند (متر)"
 [props.CombatZoneRadius]
 group = "other"
 us = "Size of a fight (m)"
@@ -3632,6 +3921,7 @@ ru = "Размер боя (м)"
 cz = "Velikost střetu (m)"
 jpn = "戦闘の範囲（m）"
 sc = "交战范围（米）"
+fa = "اندازهٔ یک درگیری (متر)"
 [props.RF_TypeRapportDeForceFeedback]
 group = "other"
 us = "Force balance shown to the player (1: on)"
@@ -3644,6 +3934,7 @@ ru = "Соотношение сил для игрока (1: да)"
 cz = "Poměr sil ukázaný hráči (1: ano)"
 jpn = "プレイヤーに見せる戦力比（1：オン）"
 sc = "向玩家显示兵力对比（1：开）"
+fa = "توازن نیروها به بازیکن نشان داده می‌شود (1: روشن)"
 [props.ActivateShootToKillDCA]
 group = "other"
 us = "Anti-aircraft fires to kill"
@@ -3656,6 +3947,7 @@ ru = "ПВО стреляет на поражение"
 cz = "Protiletadlová obrana střílí k sestřelení"
 jpn = "対空砲が撃墜を狙う"
 sc = "防空炮以击落为目的"
+fa = "پدافند هوایی برای نابودی شلیک می‌کند"
 [props.SeuilDecrocheDCA]
 group = "other"
 us = "Anti-aircraft: when planes break off"
@@ -3668,6 +3960,7 @@ ru = "ПВО: когда самолёты выходят из атаки"
 cz = "Protiletadlová obrana: kdy letadla odbočí"
 jpn = "対空砲：航空機が離脱するとき"
 sc = "防空：飞机何时脱离"
+fa = "پدافند هوایی: زمانی که هواپیماها عقب می‌کشند"
 [props.DistanceToAddToEnnemiDectectionForAAWeapon]
 group = "other"
 us = "Anti-aircraft weapons spot farther (m)"
@@ -3680,6 +3973,7 @@ ru = "Зенитное оружие замечает дальше (м)"
 cz = "Protiletadlové zbraně odhalí dál (m)"
 jpn = "対空兵器の発見距離の上乗せ（m）"
 sc = "防空武器的额外探测距离（米）"
+fa = "سلاح‌های پدافند هوایی دورتر را می‌بینند (متر)"
 [props.DistanceToAddToEnnemiDectectionForOtherWeapon]
 group = "other"
 us = "Other weapons spot farther (m)"
@@ -3692,6 +3986,7 @@ ru = "Прочее оружие замечает дальше (м)"
 cz = "Ostatní zbraně odhalí dál (m)"
 jpn = "その他の兵器の発見距離の上乗せ（m）"
 sc = "其他武器的额外探测距离（米）"
+fa = "سلاح‌های دیگر دورتر را می‌بینند (متر)"
 [props.DistanceInfanterieEnnemiDectection]
 group = "other"
 us = "Spotting enemy infantry close by (m)"
@@ -3704,6 +3999,7 @@ ru = "Обнаружение вражеской пехоты рядом (м)"
 cz = "Odhalení blízké nepřátelské pěchoty (m)"
 jpn = "近くの敵歩兵の発見（m）"
 sc = "近处敌方步兵探测（米）"
+fa = "دیدن پیاده‌نظام دشمن در نزدیکی (متر)"
 [props.DistanceMaxPourAttaquerCibleComportementAuto]
 group = "other"
 us = "Attacking on their own: farthest (m)"
@@ -3716,6 +4012,7 @@ ru = "Атака по своей воле: не дальше (м)"
 cz = "Útok samy od sebe: nejvýš (m)"
 jpn = "自発的な攻撃：最大距離（m）"
 sc = "自行攻击：最远（米）"
+fa = "حمله به ابتکار خود: بیشترین فاصله (متر)"
 [props.DistancePourchasse]
 group = "other"
 us = "Chasing: how far (m)"
@@ -3728,6 +4025,7 @@ ru = "Преследование: как далеко (м)"
 cz = "Pronásledování: jak daleko (m)"
 jpn = "追撃：距離（m）"
 sc = "追击：多远（米）"
+fa = "تعقیب: تا چه فاصله‌ای (متر)"
 [props.DistancePourchasseIncrement]
 group = "other"
 us = "Chasing: step (m)"
@@ -3740,6 +4038,7 @@ ru = "Преследование: шаг (м)"
 cz = "Pronásledování: krok (m)"
 jpn = "追撃：刻み（m）"
 sc = "追击：步长（米）"
+fa = "تعقیب: گام (متر)"
 [props.DistanceZoneAlerte]
 group = "other"
 us = "Going to help a friend: how near"
@@ -3752,6 +4051,7 @@ ru = "Помощь своему: насколько близко"
 cz = "Pomoc spojenci: jak blízko"
 jpn = "味方を助けに行く：距離"
 sc = "支援友军：多近"
+fa = "رفتن به کمک نیروی خودی: تا چه نزدیکی"
 [props.DistanceMaxAParcourirPourSupportAttaqueEnnemi]
 group = "other"
 us = "Going to help a friend: farthest to travel"
@@ -3764,6 +4064,7 @@ ru = "Помощь своему: самый длинный путь"
 cz = "Pomoc spojenci: nejdelší cesta"
 jpn = "味方を助けに行く：最長の移動"
 sc = "支援友军：最远行程"
+fa = "رفتن به کمک نیروی خودی: بیشترین مسافت"
 [props.TempsDepuisDernierDegatPourConsiderAttaqueEnnemi]
 group = "other"
 us = "Going to help a friend: hit within (s)"
@@ -3776,6 +4077,7 @@ ru = "Помощь своему: попадание не раньше (с)"
 cz = "Pomoc spojenci: zasažen nejdéle před (s)"
 jpn = "味方を助けに行く：被弾からの秒数"
 sc = "支援友军：被击中后多少秒内"
+fa = "رفتن به کمک نیروی خودی: آسیب‌دیده در (ثانیه)"
 [props.DistanceRepliQuandTireurInvisible]
 group = "other"
 us = "Pulling back from an unseen shooter (m)"
@@ -3788,6 +4090,7 @@ ru = "Отход от невидимого стрелка (м)"
 cz = "Ústup před neviditelným střelcem (m)"
 jpn = "見えない射手からの後退（m）"
 sc = "躲避看不见的射手（米）"
+fa = "عقب‌نشینی از تیراندازِ نادیده (متر)"
 [props.TempsEntreDeuxRepliApresOrdreDeStop]
 group = "other"
 us = "After Stop: seconds between pull-backs"
@@ -3800,6 +4103,7 @@ ru = "После «Стоп»: секунд между отходами"
 cz = "Po Stop: sekund mezi dvěma ústupy"
 jpn = "停止命令後：後退の間隔（秒）"
 sc = "停止命令后：两次后撤间隔（秒）"
+fa = "پس از Stop: ثانیه بین عقب‌نشینی‌ها"
 [props.RetourSurPositionApresAttackAutoActif]
 group = "other"
 us = "Back to its post after chasing on its own"
@@ -3812,6 +4116,7 @@ ru = "Возврат на позицию после погони по своей
 cz = "Návrat na stanoviště po vlastním pronásledování"
 jpn = "自発的な追撃後に持ち場へ戻る"
 sc = "自行追击后返回原位"
+fa = "بازگشت به جایگاه پس از تعقیب به ابتکار خود"
 [props.RetourSurPositionDesRecosActif]
 group = "other"
 us = "Recon units go back to their post"
@@ -3824,6 +4129,7 @@ ru = "Разведчики возвращаются на позицию"
 cz = "Průzkum se vrací na stanoviště"
 jpn = "偵察ユニットが持ち場へ戻る"
 sc = "侦察单位返回原位"
+fa = "یگان‌های شناسایی به جایگاهشان برمی‌گردند"
 [props.TempsMinimumDeMaintienOrdre_OrdreAttack]
 group = "other"
 us = "Keeping to an attack order (s)"
@@ -3836,6 +4142,7 @@ ru = "Держаться приказа атаки (с)"
 cz = "Držení rozkazu k útoku (s)"
 jpn = "攻撃命令の維持（秒）"
 sc = "坚持攻击命令（秒）"
+fa = "پایبندی به دستور حمله (ثانیه)"
 [props.TempsMinimumDeMaintienOrdre_UniteMoveAndAttack]
 group = "other"
 us = "Keeping to a move-and-attack order (s)"
@@ -3848,6 +4155,7 @@ ru = "Держаться приказа движения с атакой (с)"
 cz = "Držení rozkazu k pohybu s útokem (s)"
 jpn = "移動攻撃命令の維持（秒）"
 sc = "坚持行进间攻击命令（秒）"
+fa = "پایبندی به دستور حرکت و حمله (ثانیه)"
 [props.TempsMinimumDeMaintienOrdre_UniteSansArme]
 group = "other"
 us = "Unarmed units keeping to an order (s)"
@@ -3860,6 +4168,7 @@ ru = "Безоружные юниты: держаться приказа (с)"
 cz = "Neozbrojené jednotky: držení rozkazu (s)"
 jpn = "非武装ユニットの命令維持（秒）"
 sc = "无武装单位坚持命令（秒）"
+fa = "پایبندی یگان‌های بی‌سلاح به دستور (ثانیه)"
 [props.ReglesActives_TirReflexSilenceRadio]
 group = "other"
 us = "Radio Silence stops reflex fire"
@@ -3872,6 +4181,7 @@ ru = "Радиомолчание отключает ответный огонь"
 cz = "Rádiové ticho zastaví reflexní palbu"
 jpn = "無線封鎖で反射射撃を止める"
 sc = "无线电静默阻止本能射击"
+fa = "Radio Silence آتش واکنشی را متوقف می‌کند"
 [props.MultiplicateurDegatInfligeParLeJoueur_Facile]
 group = "other"
 us = "Damage the player deals on Easy (x)"
@@ -3884,6 +4194,7 @@ ru = "Урон игрока на «Легко» (x)"
 cz = "Poškození od hráče na Nízké (x)"
 jpn = "「易しい」でプレイヤーが与えるダメージ（倍）"
 sc = "“简单”时玩家造成的伤害（倍）"
+fa = "آسیبی که بازیکن در سختی Easy وارد می‌کند (x)"
 [props.MultiplicateurDegatInfligeParLeJoueur_Moyen]
 group = "other"
 us = "Damage the player deals on Medium (x)"
@@ -3896,6 +4207,7 @@ ru = "Урон игрока на «Средне» (x)"
 cz = "Poškození od hráče na Střední (x)"
 jpn = "「普通」でプレイヤーが与えるダメージ（倍）"
 sc = "“中等”时玩家造成的伤害（倍）"
+fa = "آسیبی که بازیکن در سختی Medium وارد می‌کند (x)"
 [props.MultiplicateurDegatInfligeParLeJoueur_Difficile]
 group = "other"
 us = "Damage the player deals on Hard (x)"
@@ -3908,6 +4220,7 @@ ru = "Урон игрока на «Сложно» (x)"
 cz = "Poškození od hráče na Vysoké (x)"
 jpn = "「難しい」でプレイヤーが与えるダメージ（倍）"
 sc = "“困难”时玩家造成的伤害（倍）"
+fa = "آسیبی که بازیکن در سختی Hard وارد می‌کند (x)"
 [props.MultiplicateurSeuilPinnedEtMortJoueurFacile]
 group = "other"
 us = "Player's units: toughness on Easy (x)"
@@ -3920,6 +4233,7 @@ ru = "Юниты игрока: стойкость на «Легко» (x)"
 cz = "Jednotky hráče: odolnost na Nízké (x)"
 jpn = "プレイヤーのユニット：「易しい」での耐久（倍）"
 sc = "玩家单位：“简单”时的耐受（倍）"
+fa = "یگان‌های بازیکن: مقاومت در سختی Easy (x)"
 [props.MultiplicateurSeuilPinnedEtMortJoueurMoyen]
 group = "other"
 us = "Player's units: toughness on Medium (x)"
@@ -3932,6 +4246,7 @@ ru = "Юниты игрока: стойкость на «Средне» (x)"
 cz = "Jednotky hráče: odolnost na Střední (x)"
 jpn = "プレイヤーのユニット：「普通」での耐久（倍）"
 sc = "玩家单位：“中等”时的耐受（倍）"
+fa = "یگان‌های بازیکن: مقاومت در سختی Medium (x)"
 [props.MultiplicateurSeuilPinnedEtMortJoueurDifficile]
 group = "other"
 us = "Player's units: toughness on Hard (x)"
@@ -3944,6 +4259,7 @@ ru = "Юниты игрока: стойкость на «Сложно» (x)"
 cz = "Jednotky hráče: odolnost na Vysoké (x)"
 jpn = "プレイヤーのユニット：「難しい」での耐久（倍）"
 sc = "玩家单位：“困难”时的耐受（倍）"
+fa = "یگان‌های بازیکن: مقاومت در سختی Hard (x)"
 [props.MultiplicateurSeuilPinnedEtMortIAFacile]
 group = "other"
 us = "Computer's units: toughness on Easy (x)"
@@ -3956,6 +4272,7 @@ ru = "Юниты компьютера: стойкость на «Легко» (x
 cz = "Jednotky počítače: odolnost na Nízké (x)"
 jpn = "コンピューターのユニット：「易しい」での耐久（倍）"
 sc = "电脑单位：“简单”时的耐受（倍）"
+fa = "یگان‌های بازیکن رایانه‌ای: مقاومت در سختی Easy (x)"
 [props.MultiplicateurSeuilPinnedEtMortIAMoyen]
 group = "other"
 us = "Computer's units: toughness on Medium (x)"
@@ -3968,6 +4285,7 @@ ru = "Юниты компьютера: стойкость на «Средне» 
 cz = "Jednotky počítače: odolnost na Střední (x)"
 jpn = "コンピューターのユニット：「普通」での耐久（倍）"
 sc = "电脑单位：“中等”时的耐受（倍）"
+fa = "یگان‌های بازیکن رایانه‌ای: مقاومت در سختی Medium (x)"
 [props.MultiplicateurSeuilPinnedEtMortIADifficile]
 group = "other"
 us = "Computer's units: toughness on Hard (x)"
@@ -3980,6 +4298,7 @@ ru = "Юниты компьютера: стойкость на «Сложно» 
 cz = "Jednotky počítače: odolnost na Vysoké (x)"
 jpn = "コンピューターのユニット：「難しい」での耐久（倍）"
 sc = "电脑单位：“困难”时的耐受（倍）"
+fa = "یگان‌های بازیکن رایانه‌ای: مقاومت در سختی Hard (x)"
 [props.FacteurRegenerationPinnedAvion]
 group = "other"
 us = "Planes recovering from pinning (x)"
@@ -3992,6 +4311,7 @@ ru = "Восстановление самолётов после подавле�
 cz = "Zotavení letadel z přišpendlení (x)"
 jpn = "航空機の制圧からの回復（倍）"
 sc = "飞机从压制中恢复（倍）"
+fa = "بهبود هواپیماها از زمین‌گیری (x)"
 [props.FacteurRegenerationPinnedBatiment]
 group = "other"
 us = "Buildings recovering from pinning (x)"
@@ -4004,6 +4324,7 @@ ru = "Восстановление зданий после подавления 
 cz = "Zotavení budov z přišpendlení (x)"
 jpn = "建物の制圧からの回復（倍）"
 sc = "建筑从压制中恢复（倍）"
+fa = "بهبود ساختمان‌ها از زمین‌گیری (x)"
 [props.RegenerationPinnedHorsCombat]
 group = "other"
 us = "Recovering from pinning out of a fight"
@@ -4016,6 +4337,7 @@ ru = "Восстановление после подавления вне боя
 cz = "Zotavení z přišpendlení mimo boj"
 jpn = "戦闘外での制圧からの回復"
 sc = "脱离战斗时从压制中恢复"
+fa = "بهبود از زمین‌گیری بیرون از نبرد"
 [props.TempsSansTirNiDamagePourPasserHorsCombat]
 group = "other"
 us = "Seconds of quiet to be out of the fight"
@@ -4028,6 +4350,7 @@ ru = "Секунд затишья, чтобы выйти из боя"
 cz = "Sekund klidu, aby byla mimo boj"
 jpn = "戦闘外になるまでの静かな秒数"
 sc = "脱离战斗所需的平静秒数"
+fa = "ثانیه‌های آرامش تا بیرون از نبرد حساب شدن"
 [props.TempsSansTirNiDamagePourRegen]
 group = "other"
 us = "Seconds of quiet before recovering"
@@ -4040,6 +4363,7 @@ ru = "Секунд затишья до восстановления"
 cz = "Sekund klidu před zotavením"
 jpn = "回復が始まるまでの静かな秒数"
 sc = "开始恢复前的平静秒数"
+fa = "ثانیه‌های آرامش پیش از بهبود"
 [props.MultiplicateurPinnedEmbuscade]
 group = "other"
 us = "Pinning from an ambush (x)"
@@ -4052,6 +4376,7 @@ ru = "Подавление из засады (x)"
 cz = "Přišpendlení ze zálohy (x)"
 jpn = "待ち伏せによる制圧（倍）"
 sc = "伏击造成的压制（倍）"
+fa = "زمین‌گیری در کمین (x)"
 [props.UbserstressEmpecheCapture]
 group = "other"
 us = "Broken units can't capture"
@@ -4064,6 +4389,7 @@ ru = "Сломленные юниты не могут захватывать"
 cz = "Zlomené jednotky nemohou dobývat"
 jpn = "崩れたユニットは占領できない"
 sc = "崩溃的单位无法占领"
+fa = "یگان‌های درهم‌شکسته نمی‌توانند تصرف کنند"
 [props.CouvertBonusForet]
 group = "other"
 us = "Cover in woods (m)"
@@ -4076,6 +4402,7 @@ ru = "Укрытие в лесу (м)"
 cz = "Kryt v lese (m)"
 jpn = "森での遮蔽（m）"
 sc = "林中掩护（米）"
+fa = "پوشش در جنگل (متر)"
 [props.DistanceEnfoncementForet]
 group = "other"
 us = "How deep into woods units go (m)"
@@ -4088,6 +4415,7 @@ ru = "Насколько глубоко юниты заходят в лес (м)
 cz = "Jak hluboko jednotky vejdou do lesa (m)"
 jpn = "ユニットが森に入る深さ（m）"
 sc = "单位进入树林的深度（米）"
+fa = "یگان‌ها تا چه عمقی وارد جنگل می‌شوند (متر)"
 [props.DistanceIgnoreForet]
 group = "other"
 us = "Woods don't hide what's this close (m)"
@@ -4100,6 +4428,7 @@ ru = "Лес не скрывает то, что так близко (м)"
 cz = "Les neskryje, co je takhle blízko (m)"
 jpn = "これほど近いと森でも隠れない（m）"
 sc = "这么近时树林无法隐藏（米）"
+fa = "جنگل آنچه را تا این اندازه نزدیک است پنهان نمی‌کند (متر)"
 [props.EmbuscadeAutomatiqueEnForet]
 group = "other"
 us = "Units find an ambush spot in woods"
@@ -4112,6 +4441,7 @@ ru = "Юниты ищут место для засады в лесу"
 cz = "Jednotky najdou místo pro zálohu v lese"
 jpn = "ユニットが森で待ち伏せ地点を探す"
 sc = "单位在林中寻找伏击点"
+fa = "یگان‌ها در جنگل جای کمین پیدا می‌کنند"
 [props.DistanceMaxDeRechercheDePointEmbuscade]
 group = "other"
 us = "Looking for an ambush spot: farthest (m)"
@@ -4124,6 +4454,7 @@ ru = "Поиск места для засады: не дальше (м)"
 cz = "Hledání místa pro zálohu: nejvýš (m)"
 jpn = "待ち伏せ地点の探索：最大距離（m）"
 sc = "寻找伏击点：最远（米）"
+fa = "جست‌وجوی جای کمین: بیشترین فاصله (متر)"
 [props.PorteeObligationDeclenchementTirEnForet]
 group = "other"
 us = "Hidden in woods: always fire within (m)"
@@ -4136,6 +4467,7 @@ ru = "Скрыт в лесу: всегда стреляет ближе (м)"
 cz = "Skrytý v lese: vždy střílí do (m)"
 jpn = "森に潜伏：この距離内なら必ず撃つ（m）"
 sc = "林中隐蔽：在此距离内必定开火（米）"
+fa = "پنهان در جنگل: همیشه شلیک در این فاصله (متر)"
 [props.PourcentagePorteeMaxPourDeclencherTirEnForet]
 group = "other"
 us = "Hidden in woods: fire at this share of range"
@@ -4148,6 +4480,7 @@ ru = "Скрыт в лесу: стреляет с этой доли дально
 cz = "Skrytý v lese: střílí od tohoto podílu dostřelu"
 jpn = "森に潜伏：射程のこの割合で撃つ"
 sc = "林中隐蔽：在射程的此比例内开火"
+fa = "پنهان در جنگل: شلیک در این سهم از برد"
 [props.RatioMultiplicateurPinnedProtectionForet]
 group = "other"
 us = "Woods protect from pinning (x)"
@@ -4160,6 +4493,7 @@ ru = "Лес защищает от подавления (x)"
 cz = "Les chrání před přišpendlením (x)"
 jpn = "森は制圧から守る（倍）"
 sc = "树林减轻压制（倍）"
+fa = "جنگل از زمین‌گیری محافظت می‌کند (x)"
 [props.DistanceMinimumVision]
 group = "other"
 us = "Shortest sight any unit has (m)"
@@ -4172,6 +4506,7 @@ ru = "Самый малый обзор юнита (м)"
 cz = "Nejkratší výhled jednotky (m)"
 jpn = "ユニットの最短の視界（m）"
 sc = "单位的最短视野（米）"
+fa = "کوتاه‌ترین دیدِ هر یگان (متر)"
 [props.DistanceMinimumVisionBatimentReco]
 group = "other"
 us = "Shortest sight of a recon building (m)"
@@ -4184,6 +4519,7 @@ ru = "Самый малый обзор разведывательного зда
 cz = "Nejkratší výhled průzkumné budovy (m)"
 jpn = "偵察用建物の最短の視界（m）"
 sc = "侦察建筑的最短视野（米）"
+fa = "کوتاه‌ترین دیدِ ساختمان شناسایی (متر)"
 [props.NouveauCercleDeVision]
 group = "other"
 us = "The newer sight circle"
@@ -4196,6 +4532,7 @@ ru = "Новый круг обзора"
 cz = "Novější kruh výhledu"
 jpn = "新しい視界円"
 sc = "新版视野圈"
+fa = "دایرهٔ دید جدیدتر"
 [props.TimeToBeStealthedAfterReveal]
 group = "other"
 us = "Seconds to hide again after being seen"
@@ -4208,6 +4545,7 @@ ru = "Секунд, чтобы снова скрыться после обнар
 cz = "Sekund do opětovného skrytí po odhalení"
 jpn = "発見された後、再び隠れるまでの秒数"
 sc = "被发现后重新隐蔽所需秒数"
+fa = "ثانیه تا پنهان شدن دوباره پس از دیده شدن"
 [props.AltitudeVol]
 group = "other"
 us = "Planes' flying height (m)"
@@ -4220,6 +4558,7 @@ ru = "Высота полёта самолётов (м)"
 cz = "Letová výška letadel (m)"
 jpn = "航空機の飛行高度（m）"
 sc = "飞机飞行高度（米）"
+fa = "ارتفاع پرواز هواپیماها (متر)"
 [props.SecondesEntreDeuxAtterrissages]
 group = "other"
 us = "Seconds between two landings"
@@ -4232,6 +4571,7 @@ ru = "Секунд между двумя посадками"
 cz = "Sekund mezi dvěma přistáními"
 jpn = "着陸の間隔（秒）"
 sc = "两次降落间隔（秒）"
+fa = "ثانیه بین دو فرود"
 [props.SecondesEntreDeuxDecollages]
 group = "other"
 us = "Seconds between two take-offs"
@@ -4244,6 +4584,7 @@ ru = "Секунд между двумя взлётами"
 cz = "Sekund mezi dvěma vzlety"
 jpn = "離陸の間隔（秒）"
 sc = "两次起飞间隔（秒）"
+fa = "ثانیه بین دو برخاستن"
 [props.BlitzAccelerationRatio]
 group = "other"
 us = "Blitz: speeding up (x)"
@@ -4256,6 +4597,7 @@ ru = "Блиц: разгон (x)"
 cz = "Blitz: zrychlení (x)"
 jpn = "電撃戦：加速（倍）"
 sc = "闪电战：加速（倍）"
+fa = "Blitz: افزایش سرعت (x)"
 [props.BlitzMaxSpeed]
 group = "other"
 us = "Blitz: top speed (km/h)"
@@ -4268,6 +4610,7 @@ ru = "Блиц: наибольшая скорость (км/ч)"
 cz = "Blitz: nejvyšší rychlost (km/h)"
 jpn = "電撃戦：最高速度（km/h）"
 sc = "闪电战：最高速度（公里/时）"
+fa = "Blitz: بیشترین سرعت (km/h)"
 [props.EnemyPlanRevealTime]
 group = "other"
 us = "Seconds an enemy plan is shown"
@@ -4280,6 +4623,7 @@ ru = "Секунд показа вражеского плана"
 cz = "Sekund zobrazení nepřátelského plánu"
 jpn = "敵の作戦が表示される秒数"
 sc = "敌方计划显示秒数"
+fa = "ثانیه‌هایی که طرح دشمن نشان داده می‌شود"
 [props.SR_RefreshPositionEnnemi]
 group = "other"
 us = "Seconds between enemy position updates"
@@ -4292,6 +4636,7 @@ ru = "Секунд между обновлениями позиции врага
 cz = "Sekund mezi aktualizacemi pozice nepřítele"
 jpn = "敵の位置の更新間隔（秒）"
 sc = "敌方位置更新间隔（秒）"
+fa = "ثانیه بین به‌روزرسانی‌های موقعیت دشمن"
 [props.MultiplicateurScoreFanatisme]
 group = "other"
 us = "Fanaticism: score (x)"
@@ -4304,6 +4649,7 @@ ru = "Фанатизм: счёт (x)"
 cz = "Fanatismus: skóre (x)"
 jpn = "狂信：スコア（倍）"
 sc = "狂热：分数（倍）"
+fa = "Fanaticism: امتیاز (x)"
 [props.MultiplicateurScorePropagande]
 group = "other"
 us = "Propaganda: score (x)"
@@ -4316,6 +4662,7 @@ ru = "Пропаганда: счёт (x)"
 cz = "Propaganda: skóre (x)"
 jpn = "プロパガンダ：スコア（倍）"
 sc = "宣传：分数（倍）"
+fa = "Propaganda: امتیاز (x)"
 [props.RatioPinnedPropagande]
 group = "other"
 us = "Propaganda: pinning"
@@ -4328,6 +4675,7 @@ ru = "Пропаганда: подавление"
 cz = "Propaganda: přišpendlení"
 jpn = "プロパガンダ：制圧"
 sc = "宣传：压制"
+fa = "Propaganda: زمین‌گیری"
 [props.FumigeneTimeout]
 group = "other"
 us = "Smoke lasts (s)"
@@ -4340,6 +4688,7 @@ ru = "Длительность дыма (с)"
 cz = "Trvání kouře (s)"
 jpn = "煙の持続（秒）"
 sc = "烟雾持续（秒）"
+fa = "مدت دوام دود (ثانیه)"
 [props.JoystickPuissanceVariationDeplacementInMenu]
 group = "other"
 us = "Stick: how fast it moves through menus"
@@ -4352,6 +4701,7 @@ ru = "Стик: скорость в меню"
 cz = "Páčka: rychlost v nabídkách"
 jpn = "スティック：メニューの移動の速さ"
 sc = "摇杆：菜单中移动快慢"
+fa = "دستهٔ بازی: سرعت حرکت در منوها"
 [props.JoystickTimeMinBeforeNewAxeEvent]
 group = "other"
 us = "Stick: shortest repeat (s)"
@@ -4364,6 +4714,7 @@ ru = "Стик: самый быстрый повтор (с)"
 cz = "Páčka: nejkratší opakování (s)"
 jpn = "スティック：最短のリピート（秒）"
 sc = "摇杆：最短重复（秒）"
+fa = "دستهٔ بازی: کوتاه‌ترین تکرار (ثانیه)"
 [props.JoystickTimeMaxBeforeNewAxeEvent]
 group = "other"
 us = "Stick: longest repeat (s)"
@@ -4376,6 +4727,7 @@ ru = "Стик: самый медленный повтор (с)"
 cz = "Páčka: nejdelší opakování (s)"
 jpn = "スティック：最長のリピート（秒）"
 sc = "摇杆：最长重复（秒）"
+fa = "دستهٔ بازی: بلندترین تکرار (ثانیه)"
 [props.RayonRechercheDalleEtBatiment]
 group = "other"
 us = "Search for a building spot (m)"
@@ -4388,6 +4740,7 @@ ru = "Поиск места под здание (м)"
 cz = "Hledání místa pro budovu (m)"
 jpn = "建設地点の探索（m）"
 sc = "寻找建筑位置（米）"
+fa = "جست‌وجوی جای ساختمان (متر)"
 [props.PrecisionCursorGhost]
 group = "other"
 us = "Snap to a building spot (m)"
@@ -4400,6 +4753,7 @@ ru = "Привязка к месту под здание (м)"
 cz = "Přichycení k místu pro budovu (m)"
 jpn = "建設地点への吸着（m）"
 sc = "吸附到建筑位置（米）"
+fa = "چسبیدن به جای ساختمان (متر)"
 [props.SeuilSnapRouteBatimentsDefense]
 group = "other"
 us = "Defences: second search beyond (m)"
@@ -4412,6 +4766,7 @@ ru = "Оборона: второй поиск дальше (м)"
 cz = "Obrana: druhé hledání nad (m)"
 jpn = "防御施設：2 回目の探索の距離（m）"
 sc = "防御工事：超过此距离二次搜索（米）"
+fa = "استحکامات: جست‌وجوی دوم فراتر از (متر)"
 [props.ShrinkRatioForPlacement]
 group = "other"
 us = "Size counted when fitting a building"
@@ -4424,6 +4779,7 @@ ru = "Учитываемый размер при размещении здани
 cz = "Počítaná velikost při umisťování budovy"
 jpn = "建物が収まるか判定するときの大きさ"
 sc = "判断建筑能否放下时计算的大小"
+fa = "اندازهٔ محاسبه‌شده هنگام جا دادن ساختمان"
 [props.RayonCercleSnapMouse]
 group = "other"
 us = "Mouse snap circle (m)"
@@ -4436,6 +4792,7 @@ ru = "Круг привязки мыши (м)"
 cz = "Kruh přichycení myši (m)"
 jpn = "マウスの吸着円（m）"
 sc = "鼠标吸附圆（米）"
+fa = "دایرهٔ چسبیدن ماوس (متر)"
 [props.GhostCap]
 group = "other"
 us = "Planned outlines at once (consoles only)"
@@ -4448,6 +4805,7 @@ ru = "Запланированных контуров сразу (только �
 cz = "Plánované obrysy najednou (jen konzole)"
 jpn = "同時に出せる予定の輪郭（コンソール版のみ）"
 sc = "同时存在的计划轮廓（仅限主机版）"
+fa = "طرح‌های برنامه‌ریزی‌شدهٔ هم‌زمان (فقط کنسول)"
 [props.NbLeague]
 group = "other"
 us = "Leagues"
@@ -4460,6 +4818,7 @@ ru = "Лиги"
 cz = "Ligy"
 jpn = "リーグ数"
 sc = "联赛数"
+fa = "لیگ‌ها"
 [props.NbLevelsPerLeague]
 group = "other"
 us = "Levels in each league"
@@ -4472,6 +4831,7 @@ ru = "Уровней в лиге"
 cz = "Úrovní v lize"
 jpn = "リーグごとのレベル数"
 sc = "每个联赛的等级数"
+fa = "سطح‌های هر لیگ"
 [props.DefaultCote]
 group = "other"
 us = "Starting rating"
@@ -4484,6 +4844,7 @@ ru = "Начальный рейтинг"
 cz = "Počáteční hodnocení"
 jpn = "初期レーティング"
 sc = "初始积分"
+fa = "رتبهٔ آغازین"
 [props.ScoreBaseLevel]
 group = "other"
 us = "Points for each level"
@@ -4496,6 +4857,7 @@ ru = "Очков на уровень"
 cz = "Body na úroveň"
 jpn = "レベルごとのポイント"
 sc = "每级积分"
+fa = "امتیاز هر سطح"
 [props.TempsEntreDeuxScan]
 group = "other"
 us = "Seconds between two opponent searches"
@@ -4508,6 +4870,7 @@ ru = "Секунд между поисками соперника"
 cz = "Sekund mezi dvěma hledáními soupeře"
 jpn = "対戦相手の検索の間隔（秒）"
 sc = "两次寻找对手的间隔（秒）"
+fa = "ثانیه بین دو جست‌وجوی حریف"
 [props.ToleranceCoteInitiale]
 group = "other"
 us = "Rating gap allowed at first"
@@ -4520,6 +4883,7 @@ ru = "Допустимая разница рейтинга вначале"
 cz = "Povolený rozdíl hodnocení na začátku"
 jpn = "最初に許されるレーティングの差"
 sc = "起初允许的积分差"
+fa = "اختلاف رتبهٔ مجاز در آغاز"
 [props.IncrementToleranceCote]
 group = "other"
 us = "Rating gap grows by"
@@ -4532,6 +4896,7 @@ ru = "Разница рейтинга растёт на"
 cz = "Rozdíl hodnocení roste o"
 jpn = "レーティング差の広がり"
 sc = "积分差每次增加"
+fa = "افزایش اختلاف رتبهٔ مجاز"
 [props.NbScansAvantToleranceLeague]
 group = "other"
 us = "Searches before other leagues"
@@ -4544,6 +4909,7 @@ ru = "Поисков до других лиг"
 cz = "Hledání před jinými ligami"
 jpn = "他リーグに広げるまでの検索回数"
 sc = "扩展到其他联赛前的搜索次数"
+fa = "جست‌وجوها پیش از لیگ‌های دیگر"
 [props.DefaultValueAlignTolerance]
 group = "other"
 us = "Default lining-up leeway"
@@ -4556,6 +4922,7 @@ ru = "Допуск выравнивания по умолчанию"
 cz = "Výchozí tolerance zarovnání"
 jpn = "整列の既定の許容値"
 sc = "默认对齐容差"
+fa = "حاشیهٔ پیش‌فرض هم‌ترازی"
 [props.OffsetBord]
 group = "other"
 us = "Distance from the map's edge (m)"
@@ -4568,6 +4935,7 @@ ru = "Расстояние от края карты (м)"
 cz = "Vzdálenost od okraje mapy (m)"
 jpn = "マップの端からの距離（m）"
 sc = "距地图边缘的距离（米）"
+fa = "فاصله از لبهٔ نقشه (متر)"
 [props.DistanceMaxForProjection]
 group = "other"
 us = "Farthest projection along a path (m)"
@@ -4580,6 +4948,7 @@ ru = "Наибольшая проекция вдоль пути (м)"
 cz = "Nejdelší průmět podél cesty (m)"
 jpn = "経路に沿った最大の投影距離（m）"
 sc = "沿路径的最远投射距离（米）"
+fa = "دورترین پیش‌بینی در امتداد مسیر (متر)"
 [props.EditeurPorteeTirMax]
 group = "other"
 us = "Editor: longest firing range"
@@ -4592,6 +4961,7 @@ ru = "Редактор: наибольшая дальность стрельбы
 cz = "Editor: největší dostřel"
 jpn = "エディター：最大射程"
 sc = "编辑器：最大射程"
+fa = "ویرایشگر: بلندترین برد شلیک"
 [props.AverageOnPeriod]
 group = "other"
 us = "Averaged over"
@@ -4604,6 +4974,7 @@ ru = "Усреднение за"
 cz = "Průměr za"
 jpn = "平均をとる期間"
 sc = "平均时段"
+fa = "میانگین در طول"
 [props.AlphaGhostCheminDeProduction_MoveGhost]
 group = "other"
 us = "How solid: the outline of a unit on order, while you move it"
@@ -4616,6 +4987,7 @@ ru = "Непрозрачность: контур заказанного юнит
 cz = "Krytí: obrys objednané jednotky, když jím pohybujete"
 jpn = "不透明度：移動中の発注ユニットの輪郭"
 sc = "不透明度：移动中的已下单单位轮廓"
+fa = "میزان کدری: طرح یگانِ سفارش‌داده‌شده، هنگامی که آن را جابه‌جا می‌کنید"
 [props.AlphaGhostCheminDeProduction_OpenMenu]
 group = "other"
 us = "How solid: the outline of a unit on order, while the build menu is open"
@@ -4628,6 +5000,7 @@ ru = "Непрозрачность: контур заказанного юнит
 cz = "Krytí: obrys objednané jednotky při otevřené nabídce výroby"
 jpn = "不透明度：生産メニューを開いているときの発注ユニットの輪郭"
 sc = "不透明度：生产菜单打开时已下单单位的轮廓"
+fa = "میزان کدری: طرح یگانِ سفارش‌داده‌شده، وقتی منوی ساخت باز است"
 [props.AlphaGhostProdBatimentDeplace]
 group = "other"
 us = "How solid: a planned building's outline, while you move it"
@@ -4640,6 +5013,7 @@ ru = "Непрозрачность: контур запланированног�
 cz = "Krytí: obrys plánované budovy, když jím pohybujete"
 jpn = "不透明度：移動中の予定の建物の輪郭"
 sc = "不透明度：移动中的计划建筑轮廓"
+fa = "میزان کدری: طرح ساختمانِ برنامه‌ریزی‌شده، هنگامی که آن را جابه‌جا می‌کنید"
 [props.AlphaGhostProdBatimentPose]
 group = "other"
 us = "How solid: a planned building's outline, once set down"
@@ -4652,6 +5026,7 @@ ru = "Непрозрачность: контур запланированног�
 cz = "Krytí: obrys plánované budovy po položení"
 jpn = "不透明度：置いた後の予定の建物の輪郭"
 sc = "不透明度：放下后的计划建筑轮廓"
+fa = "میزان کدری: طرح ساختمانِ برنامه‌ریزی‌شده، پس از قرار گرفتن"
 [props.AlphaGhostProdUniteDeplace]
 group = "other"
 us = "How solid: a planned unit's outline, while you move it"
@@ -4664,6 +5039,7 @@ ru = "Непрозрачность: контур запланированног�
 cz = "Krytí: obrys plánované jednotky, když jím pohybujete"
 jpn = "不透明度：移動中の予定のユニットの輪郭"
 sc = "不透明度：移动中的计划单位轮廓"
+fa = "میزان کدری: طرح یگانِ برنامه‌ریزی‌شده، هنگامی که آن را جابه‌جا می‌کنید"
 [props.AlphaGhostProdUnitePose]
 group = "other"
 us = "How solid: a planned unit's outline, once set down"
@@ -4676,6 +5052,7 @@ ru = "Непрозрачность: контур запланированног�
 cz = "Krytí: obrys plánované jednotky po položení"
 jpn = "不透明度：置いた後の予定のユニットの輪郭"
 sc = "不透明度：放下后的计划单位轮廓"
+fa = "میزان کدری: طرح یگانِ برنامه‌ریزی‌شده، پس از قرار گرفتن"
 [props.AlphaFlecheOrdreAllie]
 group = "other"
 us = "How solid: an ally's order arrows"
@@ -4688,6 +5065,7 @@ ru = "Непрозрачность: стрелки приказов союзни
 cz = "Krytí: šipky rozkazů spojence"
 jpn = "不透明度：味方の命令の矢印"
 sc = "不透明度：盟友的命令箭头"
+fa = "میزان کدری: پیکان‌های دستورِ هم‌پیمان"
 [props.AlphaGhostOrdreAllie]
 group = "other"
 us = "How solid: an ally's order outlines"
@@ -4700,6 +5078,7 @@ ru = "Непрозрачность: контуры приказов союзни
 cz = "Krytí: obrysy rozkazů spojence"
 jpn = "不透明度：味方の命令の輪郭"
 sc = "不透明度：盟友的命令轮廓"
+fa = "میزان کدری: طرح‌های دستورِ هم‌پیمان"
 [props.AlphaGhostProdUniteAllie]
 group = "other"
 us = "How solid: an ally's planned units"
@@ -4712,6 +5091,7 @@ ru = "Непрозрачность: запланированные юниты с
 cz = "Krytí: plánované jednotky spojence"
 jpn = "不透明度：味方の予定のユニット"
 sc = "不透明度：盟友的计划单位"
+fa = "میزان کدری: یگان‌های برنامه‌ریزی‌شدهٔ هم‌پیمان"
 [props.AlphaGhostProdBatimentAllie]
 group = "other"
 us = "How solid: an ally's planned buildings"
@@ -4724,6 +5104,7 @@ ru = "Непрозрачность: запланированные здания 
 cz = "Krytí: plánované budovy spojence"
 jpn = "不透明度：味方の予定の建物"
 sc = "不透明度：盟友的计划建筑"
+fa = "میزان کدری: ساختمان‌های برنامه‌ریزی‌شدهٔ هم‌پیمان"
 [props.AlphaGhostSelection]
 group = "other"
 us = "How solid: the outline of what you have selected"
@@ -4736,6 +5117,7 @@ ru = "Непрозрачность: контур выделенного"
 cz = "Krytí: obrys výběru"
 jpn = "不透明度：選択中のものの輪郭"
 sc = "不透明度：所选对象的轮廓"
+fa = "میزان کدری: طرح آنچه انتخاب کرده‌اید"
 [props.AlphaGhostSelectionQuandPasseSurAutreUnite]
 group = "other"
 us = "How solid: the selection's outline while the mouse is over another unit"
@@ -4748,6 +5130,7 @@ ru = "Непрозрачность: контур выделения, когда 
 cz = "Krytí: obrys výběru, když je myš nad jinou jednotkou"
 jpn = "不透明度：マウスが別のユニットの上にあるときの選択の輪郭"
 sc = "不透明度：鼠标悬停在其他单位上时选择的轮廓"
+fa = "میزان کدری: طرح انتخاب، وقتی ماوس روی یگان دیگری است"
 [props.AlphaCerclePorteeVisionSelection]
 group = "other"
 us = "How solid: the sight-range circle of what you have selected"
@@ -4760,6 +5143,7 @@ ru = "Непрозрачность: круг дальности обзора в�
 cz = "Krytí: kruh dohledu výběru"
 jpn = "不透明度：選択中のものの視界範囲の円"
 sc = "不透明度：所选对象的视野范围圆"
+fa = "میزان کدری: دایرهٔ برد دیدِ آنچه انتخاب کرده‌اید"
 [props.AlphaCerclePorteeVisionSelectionQuandPasseSurAutreUnite]
 group = "other"
 us = "How solid: that circle while the mouse is over another unit"
@@ -4772,6 +5156,7 @@ ru = "Непрозрачность: этот круг, когда мышь на�
 cz = "Krytí: ten kruh, když je myš nad jinou jednotkou"
 jpn = "不透明度：マウスが別のユニットの上にあるときのその円"
 sc = "不透明度：鼠标悬停在其他单位上时的该圆"
+fa = "میزان کدری: همان دایره، وقتی ماوس روی یگان دیگری است"
 [props.AlphaGhostEtFlechePourDecryptageMax]
 group = "other"
 us = "How solid: the enemy outlines and arrows Decryption shows, at most"
@@ -4784,6 +5169,7 @@ ru = "Непрозрачность: вражеские контуры и стр�
 cz = "Krytí: nepřátelské obrysy a šipky ukázané Dešifrováním, nejvýše"
 jpn = "不透明度：解読が見せる敵の輪郭と矢印（最大）"
 sc = "不透明度：解密显示的敌方轮廓和箭头（最大）"
+fa = "میزان کدری: طرح‌ها و پیکان‌های دشمن که Decryption نشان می‌دهد، حداکثر"
 [props.ColorAlphaForTeamInZone]
 group = "other"
 us = "How solid: a side's colour on a sector"
@@ -4796,6 +5182,7 @@ ru = "Непрозрачность: цвет стороны на секторе"
 cz = "Krytí: barva strany na sektoru"
 jpn = "不透明度：セクター上の陣営の色"
 sc = "不透明度：扇区上阵营的颜色"
+fa = "میزان کدری: رنگ یک طرف روی یک بخش"
 [props.AlphaConcretizeGhost]
 group = "other"
 us = "Outline turning real: how solid"
@@ -4808,6 +5195,7 @@ ru = "Контур становится настоящим: непрозрачн
 cz = "Obrys se stává skutečným: krytí"
 jpn = "輪郭が実体になるとき：不透明度"
 sc = "轮廓变为实体：不透明度"
+fa = "واقعی شدن طرح: میزان کدری"
 [props.TempsConcretizeGhost]
 group = "other"
 us = "Outline turning real (s)"
@@ -4820,6 +5208,7 @@ ru = "Контур становится настоящим (с)"
 cz = "Obrys se stává skutečným (s)"
 jpn = "輪郭が実体になる時間（秒）"
 sc = "轮廓变为实体（秒）"
+fa = "واقعی شدن طرح (ثانیه)"
 [props.TempsFadeGhost]
 group = "other"
 us = "Outline fading (s)"
@@ -4832,6 +5221,7 @@ ru = "Исчезание контура (с)"
 cz = "Mizení obrysu (s)"
 jpn = "輪郭が消える時間（秒）"
 sc = "轮廓淡出（秒）"
+fa = "محو شدن طرح (ثانیه)"
 [props.FumigeneAlphaGhost]
 group = "other"
 us = "Outline in smoke: how solid"
@@ -4844,6 +5234,7 @@ ru = "Контур в дыму: непрозрачность"
 cz = "Obrys v kouři: krytí"
 jpn = "煙の中の輪郭：不透明度"
 sc = "烟雾中的轮廓：不透明度"
+fa = "طرح در دود: میزان کدری"
 [props.OffsetZOmbreGhost]
 group = "other"
 us = "Outline's shadow raised (m)"
@@ -4856,6 +5247,7 @@ ru = "Тень контура поднята (м)"
 cz = "Stín obrysu zvednutý (m)"
 jpn = "輪郭の影の高さ（m）"
 sc = "轮廓阴影抬高（米）"
+fa = "بالا بردن سایهٔ طرح (متر)"
 [props.CheminDeProductionDeBatimentDeCouleurDeCamp]
 group = "other"
 us = "Production paths in the side's colour"
@@ -4868,6 +5260,7 @@ ru = "Пути производства цветом стороны"
 cz = "Cesty výroby v barvě strany"
 jpn = "生産経路を陣営の色で"
 sc = "生产路径使用阵营颜色"
+fa = "مسیرهای تولید به رنگ طرف"
 [props.TempsFadeChemins]
 group = "other"
 us = "Production path fading (s)"
@@ -4880,6 +5273,7 @@ ru = "Исчезание пути производства (с)"
 cz = "Mizení cesty výroby (s)"
 jpn = "生産経路が消える時間（秒）"
 sc = "生产路径淡出（秒）"
+fa = "محو شدن مسیر تولید (ثانیه)"
 [props.Seuil_CampColor_Avion]
 group = "other"
 us = "Side colour on planes from"
@@ -4892,6 +5286,7 @@ ru = "Цвет стороны на самолётах с"
 cz = "Barva strany na letadlech od"
 jpn = "航空機に陣営の色を出す境目"
 sc = "飞机显示阵营颜色的阈值"
+fa = "رنگ طرف روی هواپیماها از"
 [props.Seuil_CampColor_Batiment]
 group = "other"
 us = "Side colour on buildings from"
@@ -4904,6 +5299,7 @@ ru = "Цвет стороны на зданиях с"
 cz = "Barva strany na budovách od"
 jpn = "建物に陣営の色を出す境目"
 sc = "建筑显示阵营颜色的阈值"
+fa = "رنگ طرف روی ساختمان‌ها از"
 [props.Seuil_CampColor_Unit]
 group = "other"
 us = "Side colour on ground units from"
@@ -4916,6 +5312,7 @@ ru = "Цвет стороны на наземных юнитах с"
 cz = "Barva strany na pozemních jednotkách od"
 jpn = "地上ユニットに陣営の色を出す境目"
 sc = "地面单位显示阵营颜色的阈值"
+fa = "رنگ طرف روی یگان‌های زمینی از"
 [props.FxRuseSpacing]
 group = "other"
 us = "Ruse marks: spacing"
@@ -4928,6 +5325,7 @@ ru = "Знаки уловки: интервал"
 cz = "Značky lsti: rozestup"
 jpn = "計略の印：間隔"
 sc = "计谋标记：间距"
+fa = "نشانه‌های ترفند: فاصله"
 [props.FxRuseHeight]
 group = "other"
 us = "Ruse marks: height"
@@ -4940,6 +5338,7 @@ ru = "Знаки уловки: высота"
 cz = "Značky lsti: výška"
 jpn = "計略の印：高さ"
 sc = "计谋标记：高度"
+fa = "نشانه‌های ترفند: ارتفاع"
 [props.FxDerouteTimeout]
 group = "other"
 us = "Rout effect lasts (s)"
@@ -4952,6 +5351,7 @@ ru = "Длительность эффекта бегства (с)"
 cz = "Trvání efektu útěku (s)"
 jpn = "敗走エフェクトの持続（秒）"
 sc = "溃逃效果持续（秒）"
+fa = "مدت دوام جلوهٔ فرار (ثانیه)"
 [props.TempsPulseDecryptageFadeIn]
 group = "other"
 us = "Decryption pulse: fading in (s)"
@@ -4964,6 +5364,7 @@ ru = "Пульс «Дешифровки»: появление (с)"
 cz = "Puls Dešifrování: objevení (s)"
 jpn = "解読の点滅：フェードイン（秒）"
 sc = "解密脉冲：淡入（秒）"
+fa = "تپش Decryption: ظاهر شدن تدریجی (ثانیه)"
 [props.TempsPulseDecryptageWait]
 group = "other"
 us = "Decryption pulse: shown (s)"
@@ -4976,6 +5377,7 @@ ru = "Пульс «Дешифровки»: показ (с)"
 cz = "Puls Dešifrování: zobrazení (s)"
 jpn = "解読の点滅：表示（秒）"
 sc = "解密脉冲：显示（秒）"
+fa = "تپش Decryption: نمایش (ثانیه)"
 [props.TempsPulseDecryptageFadeOut]
 group = "other"
 us = "Decryption pulse: fading out (s)"
@@ -4988,6 +5390,7 @@ ru = "Пульс «Дешифровки»: исчезание (с)"
 cz = "Puls Dešifrování: zmizení (s)"
 jpn = "解読の点滅：フェードアウト（秒）"
 sc = "解密脉冲：淡出（秒）"
+fa = "تپش Decryption: محو شدن (ثانیه)"
 [props.TempsPulseDecryptagePause]
 group = "other"
 us = "Decryption pulse: pause before the next (s)"
@@ -5000,6 +5403,7 @@ ru = "Пульс «Дешифровки»: пауза до следующего 
 cz = "Puls Dešifrování: pauza před dalším (s)"
 jpn = "解読の点滅：次までの休止（秒）"
 sc = "解密脉冲：下一次前的暂停（秒）"
+fa = "تپش Decryption: مکث پیش از تپش بعدی (ثانیه)"
 [props.Color_01_Blue]
 group = "other"
 us = "Player colour 1 (blue)"
@@ -5012,6 +5416,7 @@ ru = "Цвет игрока 1 (синий)"
 cz = "Barva hráče 1 (modrá)"
 jpn = "プレイヤーの色 1（青）"
 sc = "玩家颜色 1（蓝色）"
+fa = "رنگ بازیکن 1 (آبی)"
 [props.Color_02_Red]
 group = "other"
 us = "Player colour 2 (red)"
@@ -5024,6 +5429,7 @@ ru = "Цвет игрока 2 (красный)"
 cz = "Barva hráče 2 (červená)"
 jpn = "プレイヤーの色 2（赤）"
 sc = "玩家颜色 2（红色）"
+fa = "رنگ بازیکن 2 (قرمز)"
 [props.Color_03_Teal]
 group = "other"
 us = "Player colour 3 (teal)"
@@ -5036,6 +5442,7 @@ ru = "Цвет игрока 3 (бирюзовый)"
 cz = "Barva hráče 3 (modrozelená)"
 jpn = "プレイヤーの色 3（ティール）"
 sc = "玩家颜色 3（青绿色）"
+fa = "رنگ بازیکن 3 (سبزآبی)"
 [props.Color_04_Purple]
 group = "other"
 us = "Player colour 4 (purple)"
@@ -5048,6 +5455,7 @@ ru = "Цвет игрока 4 (фиолетовый)"
 cz = "Barva hráče 4 (fialová)"
 jpn = "プレイヤーの色 4（紫）"
 sc = "玩家颜色 4（紫色）"
+fa = "رنگ بازیکن 4 (بنفش)"
 [props.Color_05_Orange]
 group = "other"
 us = "Player colour 5 (orange)"
@@ -5060,6 +5468,7 @@ ru = "Цвет игрока 5 (оранжевый)"
 cz = "Barva hráče 5 (oranžová)"
 jpn = "プレイヤーの色 5（オレンジ）"
 sc = "玩家颜色 5（橙色）"
+fa = "رنگ بازیکن 5 (نارنجی)"
 [props.Color_06_Pink]
 group = "other"
 us = "Player colour 6 (pink)"
@@ -5072,6 +5481,7 @@ ru = "Цвет игрока 6 (розовый)"
 cz = "Barva hráče 6 (růžová)"
 jpn = "プレイヤーの色 6（ピンク）"
 sc = "玩家颜色 6（粉色）"
+fa = "رنگ بازیکن 6 (صورتی)"
 [props.Color_07_Green]
 group = "other"
 us = "Player colour 7 (green)"
@@ -5084,6 +5494,7 @@ ru = "Цвет игрока 7 (зелёный)"
 cz = "Barva hráče 7 (zelená)"
 jpn = "プレイヤーの色 7（緑）"
 sc = "玩家颜色 7（绿色）"
+fa = "رنگ بازیکن 7 (سبز)"
 [props.Color_08_Brown]
 group = "other"
 us = "Player colour 8 (brown)"
@@ -5096,6 +5507,7 @@ ru = "Цвет игрока 8 (коричневый)"
 cz = "Barva hráče 8 (hnědá)"
 jpn = "プレイヤーの色 8（茶）"
 sc = "玩家颜色 8（棕色）"
+fa = "رنگ بازیکن 8 (قهوه‌ای)"
 [props.Color_09_Black]
 group = "other"
 us = "Player colour 9 (black)"
@@ -5108,6 +5520,7 @@ ru = "Цвет игрока 9 (чёрный)"
 cz = "Barva hráče 9 (černá)"
 jpn = "プレイヤーの色 9（黒）"
 sc = "玩家颜色 9（黑色）"
+fa = "رنگ بازیکن 9 (سیاه)"
 [props.Color_Alliance_Self]
 group = "other"
 us = "By alliance: you"
@@ -5120,6 +5533,7 @@ ru = "По союзу: вы"
 cz = "Podle aliance: vy"
 jpn = "同盟別：自分"
 sc = "按联盟：自己"
+fa = "بر اساس اتحاد: شما"
 [props.Color_Alliance_Allie]
 group = "other"
 us = "By alliance: an ally"
@@ -5132,6 +5546,7 @@ ru = "По союзу: союзник"
 cz = "Podle aliance: spojenec"
 jpn = "同盟別：味方"
 sc = "按联盟：盟友"
+fa = "بر اساس اتحاد: هم‌پیمان"
 [props.Color_Alliance_Ennemi1]
 group = "other"
 us = "By alliance: enemy 1"
@@ -5144,6 +5559,7 @@ ru = "По союзу: враг 1"
 cz = "Podle aliance: nepřítel 1"
 jpn = "同盟別：敵 1"
 sc = "按联盟：敌人 1"
+fa = "بر اساس اتحاد: دشمن 1"
 [props.Color_Alliance_Ennemi2]
 group = "other"
 us = "By alliance: enemy 2"
@@ -5156,6 +5572,7 @@ ru = "По союзу: враг 2"
 cz = "Podle aliance: nepřítel 2"
 jpn = "同盟別：敵 2"
 sc = "按联盟：敌人 2"
+fa = "بر اساس اتحاد: دشمن 2"
 [props.Color_Alliance_Ennemi3]
 group = "other"
 us = "By alliance: enemy 3"
@@ -5168,6 +5585,7 @@ ru = "По союзу: враг 3"
 cz = "Podle aliance: nepřítel 3"
 jpn = "同盟別：敵 3"
 sc = "按联盟：敌人 3"
+fa = "بر اساس اتحاد: دشمن 3"
 [props.Color_Neutre]
 group = "other"
 us = "Neutral"
@@ -5180,6 +5598,7 @@ ru = "Нейтральный"
 cz = "Neutrální"
 jpn = "中立"
 sc = "中立"
+fa = "خنثی"
 [props.Color_Camp_Surrended]
 group = "other"
 us = "A side that surrendered"
@@ -5192,6 +5611,7 @@ ru = "Сдавшаяся сторона"
 cz = "Strana, která se vzdala"
 jpn = "降伏した陣営"
 sc = "已投降的阵营"
+fa = "طرفی که تسلیم شده"
 [props.Color_Invisible]
 group = "other"
 us = "Unseen"
@@ -5204,6 +5624,7 @@ ru = "Невидимое"
 cz = "Neviditelné"
 jpn = "見えないもの"
 sc = "不可见"
+fa = "دیده‌نشده"
 [props.ColorZoneStandard]
 group = "other"
 us = "Sector: usual colour"
@@ -5216,6 +5637,7 @@ ru = "Сектор: обычный цвет"
 cz = "Sektor: obvyklá barva"
 jpn = "セクター：通常の色"
 sc = "扇区：通常颜色"
+fa = "بخش: رنگ معمول"
 [props.ColorZone]
 group = "other"
 us = "Sector colour"
@@ -5228,6 +5650,7 @@ ru = "Цвет сектора"
 cz = "Barva sektoru"
 jpn = "セクターの色"
 sc = "扇区颜色"
+fa = "رنگ بخش"
 [props.ColorZoneAssombrie]
 group = "other"
 us = "Sector: darkened"
@@ -5240,6 +5663,7 @@ ru = "Сектор: затемнённый"
 cz = "Sektor: ztmavený"
 jpn = "セクター：暗くしたとき"
 sc = "扇区：变暗"
+fa = "بخش: تیره‌شده"
 [props.ColorZoneHighlight]
 group = "other"
 us = "Sector: highlighted"
@@ -5252,3 +5676,4 @@ ru = "Сектор: подсвеченный"
 cz = "Sektor: zvýrazněný"
 jpn = "セクター：強調したとき"
 sc = "扇区：高亮"
+fa = "بخش: برجسته‌شده"

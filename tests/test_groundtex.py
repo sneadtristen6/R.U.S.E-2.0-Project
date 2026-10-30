@@ -393,7 +393,7 @@ class TheStudio(unittest.TestCase):
                 | {f"gtex_theatre_{t}" for t in gt.THEATRES})
         self.assertEqual(sorted(keys - set(words)), [])
         for k in keys:
-            self.assertEqual([lang for lang in schema.LANGS if not words[k].get(lang)], [], k)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[k].get(lang)], [], k)
 
     def test_a_pictures_name_for_files_ground(self):
         from ruse_studio.groundtex_calls import _file_name
@@ -597,7 +597,7 @@ class Online(unittest.TestCase):
         for key, name, lat, lon, _kind in online.PLACES:
             self.assertTrue(online.US_LAT[0] <= lat <= online.US_LAT[1] and online.US_LON[0] <= lon <= online.US_LON[1])
             self.assertEqual(words[f"tex_place_{key}"]["us"], name)
-            self.assertEqual([lang for lang in schema.LANGS if not words[f"tex_place_{key}"].get(lang)], [], key)
+            self.assertEqual([lang for lang in schema.APP_LANGS if not words[f"tex_place_{key}"].get(lang)], [], key)
 
     def test_plain_words_when_a_site_cant_be_reached(self):
         import urllib.error

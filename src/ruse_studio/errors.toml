@@ -15,6 +15,7 @@ ru = "{0}: {1} не подходит (должно быть от {2} до {3})"
 cz = "{0}: {1} nesedí (musí být {2} až {3})"
 jpn = "{0}：{1} は範囲外です（{2}〜{3} にしてください）"
 sc = "{0}：{1} 不合适（必须在 {2} 到 {3} 之间）"
+fa = "{0}: {1} مناسب نیست (باید از {2} تا {3} باشد)"
 
 [eeb13536329]
 us = "The Studio would have saved {0}, which it can't read back ({1}), so nothing was saved. Please report this."
@@ -27,6 +28,7 @@ ru = "Studio сохранила бы {0}, который не может про�
 cz = "Studio by uložilo {0}, které nedokáže znovu přečíst ({1}), takže se nic neuložilo. Nahlaste to prosím."
 jpn = "Studio は {0} を保存しようとしましたが、読み戻せないため（{1}）何も保存していません。報告してください。"
 sc = "Studio 本要保存 {0}，但它无法读回（{1}），因此什么也没保存。请报告此问题。"
+fa = "استودیو می‌خواست {0} را ذخیره کند، اما نمی‌توانست دوباره آن را بخواند ({1})، پس چیزی ذخیره نشد. لطفاً این را گزارش کنید."
 
 [e43bba1da92]
 us = "For whom: own or shared, not {0}"
@@ -39,6 +41,7 @@ ru = "Для кого: своё или общее, не {0}"
 cz = "Pro koho: vlastní nebo sdílené, ne {0}"
 jpn = "対象：個別か共有で、{0} は使えません"
 sc = "适用对象：独有或共享，不能是 {0}"
+fa = "برای چه کسی: خودش یا مشترک، نه {0}"
 
 [e94a602336f]
 us = "Range: one number."
@@ -51,6 +54,7 @@ ru = "Дальность: одно число."
 cz = "Dostřel: jedno číslo."
 jpn = "射程：数値を1つ。"
 sc = "射程：一个数字。"
+fa = "برد: یک عدد."
 
 [e036438acb7]
 us = "Pick or make a mod first: changes are saved in a mod."
@@ -63,6 +67,7 @@ ru = "Сначала выберите или создайте мод: измен
 cz = "Nejprve vyberte nebo vytvořte mod: změny se ukládají do modu."
 jpn = "先にModを選ぶか作ってください。変更はModに保存されます。"
 sc = "请先选择或新建一个模组：更改保存在模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: تغییرها در ماد ذخیره می‌شوند."
 
 [ec2b71d086a]
 us = "{0} isn't a weapon of {1}"
@@ -75,6 +80,7 @@ ru = "{0} — не оружие {1}"
 cz = "{0} není zbraň {1}"
 jpn = "{0} は {1} の武器ではありません"
 sc = "{0} 不是 {1} 的武器"
+fa = "{0} از سلاح‌های {1} نیست"
 
 [ea4c377fa25]
 us = "{0} has no range to change"
@@ -87,6 +93,7 @@ ru = "У {0} нет дальности, которую можно изменит
 cz = "{0} nemá dostřel ke změně"
 jpn = "{0} には変更できる射程がありません"
 sc = "{0} 没有可更改的射程"
+fa = "{0} بردی برای تغییر ندارد"
 
 [e47aa5ee85f]
 us = "Give the copy a name."
@@ -99,6 +106,7 @@ ru = "Дайте копии имя."
 cz = "Pojmenujte kopii."
 jpn = "コピーに名前を付けてください。"
 sc = "请给副本起个名字。"
+fa = "به کپی یک نام بدهید."
 
 [e7fa0e73e51]
 us = "Pick or make a mod first: a copy is saved in a mod."
@@ -111,6 +119,7 @@ ru = "Сначала выберите или создайте мод: копия
 cz = "Nejprve vyberte nebo vytvořte mod: kopie se ukládá do modu."
 jpn = "先にModを選ぶか作ってください。コピーはModに保存されます。"
 sc = "请先选择或新建一个模组：副本保存在模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: کپی در ماد ذخیره می‌شود."
 
 [e1f5045ce97]
 us = "{0}: copy the ammunition {1} was made from instead"
@@ -123,6 +132,7 @@ ru = "{0}: скопируйте вместо этого боеприпас, из
 cz = "{0}: zkopírujte raději munici, ze které vzniklo {1}"
 jpn = "{0}：代わりに {1} の元になった弾薬をコピーしてください"
 sc = "{0}：请改为复制 {1} 所基于的弹药"
+fa = "{0}: به‌جای آن، مهماتی را کپی کنید که {1} از آن ساخته شده است"
 
 [e8972f6ad90]
 us = "{0} isn't a research price or time"
@@ -135,6 +145,7 @@ ru = "{0} — не цена и не время исследования"
 cz = "{0} není cena ani čas výzkumu"
 jpn = "{0} は研究の価格でも時間でもありません"
 sc = "{0} 不是研究价格或时间"
+fa = "{0} هزینه یا زمان تحقیق نیست"
 
 [ea4db427a90]
 us = "{0}: numbers only"
@@ -147,6 +158,7 @@ ru = "{0}: только числа"
 cz = "{0}: jen čísla"
 jpn = "{0}：数字のみ"
 sc = "{0}：只能是数字"
+fa = "{0}: فقط عدد"
 
 [e4d71fec25c]
 us = "{0}: {1} is below 0"
@@ -159,6 +171,7 @@ ru = "{0}: {1} меньше 0"
 cz = "{0}: {1} je pod 0"
 jpn = "{0}：{1} が 0 未満です"
 sc = "{0}：{1} 小于 0"
+fa = "{0}: {1} کمتر از 0 است"
 
 [ee7cbc5babb]
 us = "{0} can't be researched from {1} here"
@@ -171,6 +184,7 @@ ru = "{0} нельзя исследовать здесь из {1}"
 cz = "{0} zde nelze vyzkoumat z {1}"
 jpn = "{0} はここでは {1} から研究できません"
 sc = "{0} 无法在此由 {1} 研究得到"
+fa = "اینجا نمی‌توان {0} را از {1} تحقیق کرد"
 
 [e6cd730042c]
 us = "{0} has no armour"
@@ -183,6 +197,7 @@ ru = "У {0} нет брони"
 cz = "{0} nemá pancíř"
 jpn = "{0} には装甲がありません"
 sc = "{0} 没有装甲"
+fa = "{0} زره ندارد"
 
 [eaec3a960a9]
 us = "{0} is shared by several units: change it for one of them, or for all"
@@ -195,6 +210,7 @@ ru = "{0} общий для нескольких юнитов: измените 
 cz = "{0} sdílí několik jednotek: změňte ho pro jednu z nich, nebo pro všechny"
 jpn = "{0} は複数のユニットで共有されています。どれか1つ、またはすべてに対して変更してください"
 sc = "{0} 由多个单位共用：请为其中一个或全部更改"
+fa = "{0} میان چند یگان مشترک است: آن را برای یکی از آن‌ها یا برای همه تغییر دهید"
 
 [eb027e508a0]
 us = "{0} doesn't use {1}, so it can't get its own copy"
@@ -207,6 +223,7 @@ ru = "{0} не использует {1}, поэтому не может полу
 cz = "{0} nepoužívá {1}, takže nemůže dostat vlastní kopii"
 jpn = "{0} は {1} を使っていないため、専用のコピーを持てません"
 sc = "{0} 不使用 {1}，因此不能拥有自己的副本"
+fa = "{0} از {1} استفاده نمی‌کند، پس نمی‌تواند کپی مخصوص خودش را داشته باشد"
 
 [e6af1498909]
 us = "We couldn't find R.U.S.E., so there are no maps to show."
@@ -219,6 +236,7 @@ ru = "R.U.S.E. не найдена, поэтому показывать карт
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat za mapy."
 jpn = "R.U.S.E. が見つからないため、表示できるマップがありません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的地图。"
+fa = "R.U.S.E. را پیدا نکردیم، پس نقشه‌ای برای نشان دادن نیست."
 
 [e7cbf217232]
 us = "ZZ_GladPatchableWin.dat isn't in the game folder."
@@ -231,6 +249,7 @@ ru = "ZZ_GladPatchableWin.dat нет в папке игры."
 cz = "ZZ_GladPatchableWin.dat není ve složce hry."
 jpn = "ZZ_GladPatchableWin.dat がゲームフォルダーにありません。"
 sc = "游戏文件夹中没有 ZZ_GladPatchableWin.dat。"
+fa = "ZZ_GladPatchableWin.dat در پوشهٔ بازی نیست."
 
 [e89f3cb50bb]
 us = "There's no {0} to start from."
@@ -243,6 +262,7 @@ ru = "Нет {0}, с которого можно начать."
 cz = "Není žádné {0}, ze kterého začít."
 jpn = "元にする {0} がありません。"
 sc = "没有可作为起点的 {0}。"
+fa = "{0} برای شروع وجود ندارد."
 
 [e31e4502a10]
 us = "Give the new map a name."
@@ -255,6 +275,7 @@ ru = "Дайте новой карте имя."
 cz = "Pojmenujte novou mapu."
 jpn = "新しいマップに名前を付けてください。"
 sc = "请给新地图起个名字。"
+fa = "به نقشهٔ جدید یک نام بدهید."
 
 [ecfa5116332]
 us = "The name is {0} characters; the menus take {1}."
@@ -267,6 +288,7 @@ ru = "В имени {0} символов; меню принимают {1}."
 cz = "Název má {0} znaků; nabídky berou {1}."
 jpn = "名前は {0} 文字です。メニューに入るのは {1} 文字までです。"
 sc = "名称有 {0} 个字符；菜单最多接受 {1} 个。"
+fa = "نام {0} نویسه است؛ منوها {1} نویسه جا دارند."
 
 [e3c50f111c5]
 us = "{0} has no entry {1}."
@@ -279,6 +301,7 @@ ru = "У {0} нет записи {1}."
 cz = "{0} nemá položku {1}."
 jpn = "{0} に項目 {1} はありません。"
 sc = "{0} 没有条目 {1}。"
+fa = "{0} مدخل {1} را ندارد."
 
 [ede4964b8dc]
 us = "Pick what to copy: one of this map's BATTLES maps, Operations or campaign chapters."
@@ -291,6 +314,7 @@ ru = "Выберите, что копировать: карту СРАЖЕНИЯ
 cz = "Vyberte, co zkopírovat: mapu BITVY, Operaci nebo kapitolu kampaně této mapy."
 jpn = "コピー元を選んでください：このマップのバトル、オペレーション、キャンペーンの章のいずれか。"
 sc = "请选择要复制的内容：此地图的战役地图、行动或战役章节之一。"
+fa = "انتخاب کنید چه چیزی کپی شود: یکی از نقشه‌های BATTLES، عملیات‌ها یا فصل‌های کارزارِ این نقشه."
 
 [e99e9e12b1a]
 us = "Pick or make a map project first: a map's pictures are saved in it."
@@ -303,6 +327,7 @@ ru = "Сначала выберите или создайте проект ка�
 cz = "Nejprve vyberte nebo vytvořte projekt mapy: obrázky mapy se ukládají do něj."
 jpn = "先にマッププロジェクトを選ぶか作ってください。マップの画像はそこに保存されます。"
 sc = "请先选择或新建地图项目：地图的图片保存在其中。"
+fa = "اول یک پروژهٔ نقشه انتخاب کنید یا بسازید: تصویرهای نقشه در آن ذخیره می‌شوند."
 
 [ef1cfbf0786]
 us = "{0} isn't a map's pack name"
@@ -315,6 +340,7 @@ ru = "{0} — не имя пакета карты"
 cz = "{0} není název balíku mapy"
 jpn = "{0} はマップのパック名ではありません"
 sc = "{0} 不是地图包名称"
+fa = "{0} نام بستهٔ یک نقشه نیست"
 
 [e2ce72c3cc0]
 us = "No menu picture called {0}"
@@ -327,6 +353,7 @@ ru = "Нет картинки меню с именем {0}"
 cz = "Žádný obrázek nabídky jménem {0}"
 jpn = "{0} という名前のメニュー画像はありません"
 sc = "没有名为 {0} 的菜单图片"
+fa = "تصویر منویی به نام {0} وجود ندارد"
 
 [e8e13b85670]
 us = "The start dots go on the map's own 3D map picture: pick one or make it in Blender first. The game's own have their dots drawn in."
@@ -339,6 +366,7 @@ ru = "Стартовые точки ставятся на собственную
 cz = "Startovní body patří na vlastní 3D obrázek mapy: nejprve ho vyberte nebo vytvořte v Blenderu. Obrázky hry je mají už zakreslené."
 jpn = "開始地点はマップ専用の3Dマップ画像に置きます。先に選ぶか Blender で作ってください。ゲームの画像には最初から点が描かれています。"
 sc = "起始点放在地图自己的 3D 地图图片上：请先选择一张或在 Blender 中制作。游戏自带的图片已画好起始点。"
+fa = "نقطه‌های شروع روی تصویر سه‌بعدیِ خودِ نقشه قرار می‌گیرند: اول یکی انتخاب کنید یا آن را در Blender بسازید. نقطه‌های تصویرهای خودِ بازی از قبل روی آن‌ها کشیده شده‌اند."
 
 [e518cc1f08f]
 us = "Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is."
@@ -351,6 +379,7 @@ ru = "Blender на этом ПК не найден. Скачайте его бе
 cz = "Blender na tomto PC není. Stáhněte ho zdarma z blender.org (Get Blender) a pak tlačítkem „Vybrat Blender…“ ukažte Studiu, kde je blender.exe."
 jpn = "この PC に Blender が見つかりません。blender.org（Get Blender）から無料で入手し、「Blender を選ぶ…」で blender.exe の場所を Studio に教えてください。"
 sc = "此电脑上找不到 Blender。请从 blender.org（Get Blender）免费下载，然后用“选择 Blender…”告诉 Studio blender.exe 的位置。"
+fa = "Blender روی این رایانه پیدا نشد. آن را رایگان از blender.org بگیرید (Get Blender)، سپس با «انتخاب Blender…» به استودیو نشان دهید blender.exe کجاست."
 
 [e31649ee6aa]
 us = "{0} isn't a new map made in these map changes, so it can't be deleted here: the game's own maps stay."
@@ -363,6 +392,7 @@ ru = "{0} — не новая карта из этих изменений кар
 cz = "{0} není nová mapa z těchto změn map, takže ji tu nelze smazat: mapy hry zůstávají."
 jpn = "{0} はこのマップ変更で作った新しいマップではないため、ここでは削除できません。ゲーム本来のマップは残ります。"
 sc = "{0} 不是在这些地图更改中新建的地图，因此不能在此删除：游戏自带的地图会保留。"
+fa = "{0} نقشهٔ جدیدی نیست که در این تغییرات نقشه ساخته شده باشد، پس اینجا نمی‌توان آن را حذف کرد: نقشه‌های خودِ بازی می‌مانند."
 
 [ed22c59be82]
 us = "No detail level called {0}"
@@ -375,6 +405,7 @@ ru = "Нет уровня детализации с именем {0}"
 cz = "Žádná úroveň detailu jménem {0}"
 jpn = "{0} という詳細レベルはありません"
 sc = "没有名为 {0} 的细节等级"
+fa = "سطح جزئیاتی به نام {0} وجود ندارد"
 
 [e6c18a5d8c9]
 us = "{0} isn't in the game folder."
@@ -387,6 +418,7 @@ ru = "{0} нет в папке игры."
 cz = "{0} není ve složce hry."
 jpn = "{0} がゲームフォルダーにありません。"
 sc = "游戏文件夹中没有 {0}。"
+fa = "{0} در پوشهٔ بازی نیست."
 
 [e7dd31b7984]
 us = "Pick or make a mod first: scenario changes are saved in it."
@@ -399,6 +431,7 @@ ru = "Сначала выберите или создайте мод: измен
 cz = "Nejprve vyberte nebo vytvořte mod: změny scénáře se ukládají do něj."
 jpn = "先にModを選ぶか作ってください。シナリオの変更はそこに保存されます。"
 sc = "请先选择或新建一个模组：剧本更改保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: تغییرهای سناریو در آن ذخیره می‌شوند."
 
 [ef65231cf01]
 us = "{0} has no scenario {1}"
@@ -411,6 +444,7 @@ ru = "У {0} нет сценария {1}"
 cz = "{0} nemá scénář {1}"
 jpn = "{0} にシナリオ {1} はありません"
 sc = "{0} 没有剧本 {1}"
+fa = "{0} سناریوی {1} را ندارد"
 
 [e2d74eca24a]
 us = "{0} has no item {1}"
@@ -423,6 +457,7 @@ ru = "У {0} нет элемента {1}"
 cz = "{0} nemá položku {1}"
 jpn = "{0} に項目 {1} はありません"
 sc = "{0} 没有项目 {1}"
+fa = "{0} مورد {1} را ندارد"
 
 [e21fe1b3e9b]
 us = "a {0} can't be moved"
@@ -435,6 +470,7 @@ ru = "{0} нельзя передвинуть"
 cz = "{0} nelze přesunout"
 jpn = "{0} は移動できません"
 sc = "{0} 不能移动"
+fa = "{0} را نمی‌توان جابه‌جا کرد"
 
 [eff7d819ded]
 us = "this {0} has no turn of its own to change"
@@ -447,6 +483,7 @@ ru = "у этого {0} нет своего поворота, который м�
 cz = "toto {0} nemá vlastní otočení ke změně"
 jpn = "この {0} には変更できる向きがありません"
 sc = "此 {0} 没有可更改的朝向"
+fa = "این {0} چرخش جداگانه‌ای برای تغییر ندارد"
 
 [e0c90464438]
 us = "the turn must be a number"
@@ -459,6 +496,7 @@ ru = "поворот должен быть числом"
 cz = "otočení musí být číslo"
 jpn = "向きは数値にしてください"
 sc = "朝向必须是数字"
+fa = "چرخش باید یک عدد باشد"
 
 [e6dfda9ec64]
 us = "{0} has no starting point {1}"
@@ -471,6 +509,7 @@ ru = "У {0} нет стартовой точки {1}"
 cz = "{0} nemá startovní bod {1}"
 jpn = "{0} に開始地点 {1} はありません"
 sc = "{0} 没有起始点 {1}"
+fa = "{0} نقطهٔ شروع {1} را ندارد"
 
 [e4f73218f07]
 us = "the camera's turn must be a number"
@@ -483,6 +522,7 @@ ru = "поворот камеры должен быть числом"
 cz = "otočení kamery musí být číslo"
 jpn = "カメラの向きは数値にしてください"
 sc = "镜头朝向必须是数字"
+fa = "چرخش دوربین باید یک عدد باشد"
 
 [ef439df3568]
 us = "a {0}'s {1} can't be changed here"
@@ -495,6 +535,7 @@ ru = "{1} у {0} здесь изменить нельзя"
 cz = "{1} u {0} tu nelze změnit"
 jpn = "{0} の {1} はここでは変更できません"
 sc = "{0} 的 {1} 不能在此更改"
+fa = "اینجا نمی‌توان {1} یک {0} را تغییر داد"
 
 [e5f03dccf3e]
 us = "Only a supply depot has trucks."
@@ -507,6 +548,7 @@ ru = "Грузовики есть только у склада снабжени�
 cz = "Nákladní auta má jen zásobovací sklad."
 jpn = "トラックがあるのは補給所だけです。"
 sc = "只有补给站有卡车。"
+fa = "فقط انبار تدارکات کامیون دارد."
 
 [e3e04f7ead9]
 us = "A skirmish map's items stay neutral: a skirmish game spawns only neutral items, so the game would leave it out."
@@ -519,6 +561,7 @@ ru = "Элементы карты для сражения остаются не�
 cz = "Položky mapy pro potyčku zůstávají neutrální: potyčka vytváří jen neutrální položky, takže by ji hra vynechala."
 jpn = "スカーミッシュ用マップの項目は中立のままです。スカーミッシュでは中立の項目しか出現しないため、ゲームはそれを省きます。"
 sc = "遭遇战地图的项目保持中立：遭遇战只生成中立项目，因此游戏会将其忽略。"
+fa = "موارد یک نقشهٔ نبرد آزاد خنثی می‌مانند: بازیِ نبرد آزاد فقط موارد خنثی را ظاهر می‌کند، پس بازی آن را کنار می‌گذارد."
 
 [e21a76a019f]
 us = "a {0} can't be added here"
@@ -531,6 +574,7 @@ ru = "{0} нельзя добавить здесь"
 cz = "{0} sem nelze přidat"
 jpn = "{0} はここに追加できません"
 sc = "{0} 不能在此添加"
+fa = "اینجا نمی‌توان {0} اضافه کرد"
 
 [ecfd0027b23]
 us = "the place must be two finite numbers"
@@ -543,6 +587,7 @@ ru = "место должно быть задано двумя конечным�
 cz = "místo musí být dvě konečná čísla"
 jpn = "場所は2つの有限の数値にしてください"
 sc = "位置必须是两个有限数字"
+fa = "مکان باید دو عدد متناهی باشد"
 
 [e42dd23f361]
 us = "that name, point or zone isn't in the mod any more"
@@ -555,6 +600,7 @@ ru = "этого имени, точки или зоны в моде больше
 cz = "tento název, bod nebo zóna už v modu není"
 jpn = "その名前・地点・ゾーンはもう Mod にありません"
 sc = "该名称、地点或区域已不在模组中"
+fa = "آن نام، نقطه یا ناحیه دیگر در ماد نیست"
 
 [e11bbc39d88]
 us = "Type the name to show on the map first (one line)."
@@ -567,6 +613,7 @@ ru = "Сначала введите имя для карты (одна стро�
 cz = "Nejprve napište název, který se má ukázat na mapě (jeden řádek)."
 jpn = "先にマップに表示する名前を入力してください（1行）。"
 sc = "请先输入要在地图上显示的名称（一行）。"
+fa = "اول نامی را که باید روی نقشه نشان داده شود بنویسید (یک خط)."
 
 [ecc5a62226f]
 us = "Type the words first (one line)."
@@ -579,6 +626,7 @@ ru = "Сначала введите слова (одна строка)."
 cz = "Nejprve napište slova (jeden řádek)."
 jpn = "先に文字を入力してください（1行）。"
 sc = "请先输入文字（一行）。"
+fa = "اول متن را بنویسید (یک خط)."
 
 [ef81295640e]
 us = "The words are too long: at most {0} letters."
@@ -591,6 +639,7 @@ ru = "Слова слишком длинные: не больше {0} букв."
 cz = "Slova jsou příliš dlouhá: nejvýš {0} písmen."
 jpn = "文字が長すぎます：{0} 文字までです。"
 sc = "文字太长：最多 {0} 个字。"
+fa = "متن خیلی بلند است: حداکثر {0} حرف."
 
 [ed25d635f89]
 us = "No new text key was free for these words; try others."
@@ -603,6 +652,7 @@ ru = "Для этих слов не нашлось свободного ключ
 cz = "Pro tato slova nebyl volný žádný nový klíč textu; zkuste jiná."
 jpn = "この文字に使える新しいテキストキーがありませんでした。別の文字を試してください。"
 sc = "没有可用于这些文字的新文本键；请换别的文字。"
+fa = "هیچ کلید متن تازه‌ای برای این متن آزاد نبود؛ متن دیگری را امتحان کنید."
 
 [e474baa7a82]
 us = "We couldn't find R.U.S.E., so there are no sectors to paint."
@@ -615,6 +665,7 @@ ru = "R.U.S.E. не найдена, поэтому рисовать сектор
 cz = "R.U.S.E. jsme nenašli, takže není co malovat za sektory."
 jpn = "R.U.S.E. が見つからないため、塗れるセクターがありません。"
 sc = "找不到 R.U.S.E.，因此没有可绘制的区块。"
+fa = "R.U.S.E. را پیدا نکردیم، پس بخشی برای رنگ کردن نیست."
 
 [e654ed745f5]
 us = "A shape edit changes 1 to {0} sectors."
@@ -627,6 +678,7 @@ ru = "Изменение формы меняет от 1 до {0} секторо�
 cz = "Úprava tvaru mění 1 až {0} sektorů."
 jpn = "形の変更で変わるセクターは 1〜{0} 個です。"
 sc = "一次形状修改会改变 1 到 {0} 个区块。"
+fa = "هر ویرایش شکل 1 تا {0} بخش را تغییر می‌دهد."
 
 [e46ffba46c5]
 us = "A depot's trucks are a whole number from 0 to {0}."
@@ -639,6 +691,7 @@ ru = "Грузовики склада — целое число от 0 до {0}.
 cz = "Nákladní auta skladu jsou celé číslo od 0 do {0}."
 jpn = "補給所のトラックは 0〜{0} の整数です。"
 sc = "补给站的卡车数是 0 到 {0} 的整数。"
+fa = "تعداد کامیون‌های یک انبار عددی صحیح از 0 تا {0} است."
 
 [e67b33e09df]
 us = "a spawn takes 1 to {0} places, each two finite numbers"
@@ -651,6 +704,7 @@ ru = "появление занимает от 1 до {0} мест, каждое
 cz = "objevení bere 1 až {0} míst, každé dvě konečná čísla"
 jpn = "出現地点は 1〜{0} か所で、それぞれ2つの有限の数値です"
 sc = "一次生成占用 1 到 {0} 个位置，每个为两个有限数字"
+fa = "هر اسپاون 1 تا {0} مکان می‌گیرد، هر کدام دو عدد متناهی"
 
 [eceb19edf36]
 us = "{0} is a skirmish map's scenario: a skirmish game spawns only neutral items, so a unit for side {1} would never appear. Pick Neutral, or an Operation's scenario."
@@ -663,6 +717,7 @@ ru = "{0} — сценарий карты для сражения: в сраже
 cz = "{0} je scénář mapy pro potyčku: potyčka vytváří jen neutrální položky, takže jednotka strany {1} by se nikdy neobjevila. Vyberte Neutrální, nebo scénář Operace."
 jpn = "{0} はスカーミッシュ用マップのシナリオです。スカーミッシュでは中立の項目しか出現しないため、陣営 {1} のユニットは現れません。中立か、オペレーションのシナリオを選んでください。"
 sc = "{0} 是遭遇战地图的剧本：遭遇战只生成中立项目，因此 {1} 方的单位永远不会出现。请选择中立，或行动的剧本。"
+fa = "{0} سناریوی یک نقشهٔ نبرد آزاد است: بازیِ نبرد آزاد فقط موارد خنثی را ظاهر می‌کند، پس یگانی برای طرف {1} هرگز ظاهر نمی‌شود. «خنثی» یا سناریوی یک عملیات را انتخاب کنید."
 
 [ef482f84d15]
 us = "{0} has no class name for the game's scripts, so it can't be spawned"
@@ -675,6 +730,7 @@ ru = "У {0} нет имени класса для скриптов игры, п
 cz = "{0} nemá název třídy pro skripty hry, takže se nemůže objevit"
 jpn = "{0} にはゲームのスクリプト用のクラス名がないため、出現させられません"
 sc = "{0} 没有供游戏脚本使用的类名，因此无法生成"
+fa = "{0} نام کلاسی برای اسکریپت‌های بازی ندارد، پس نمی‌توان آن را اسپاون کرد"
 
 [e1bcb6b03f7]
 us = "a spawn's {0} can't be changed here"
@@ -687,6 +743,7 @@ ru = "{0} появления здесь изменить нельзя"
 cz = "{0} objevení tu nelze změnit"
 jpn = "出現地点の {0} はここでは変更できません"
 sc = "生成点的 {0} 不能在此更改"
+fa = "اینجا نمی‌توان {0} یک اسپاون را تغییر داد"
 
 [eeddbb153bb]
 us = "Give the depots a number of trucks, or a times, not both."
@@ -699,6 +756,7 @@ ru = "Задайте складам число грузовиков или мн�
 cz = "Dejte skladům počet nákladních aut, nebo násobek, ne obojí."
 jpn = "補給所にはトラックの数か倍率のどちらか一方を指定してください。"
 sc = "请给补给站设定卡车数量或倍数，不要同时设定。"
+fa = "به انبارها یا تعداد کامیون بدهید یا ضریب، نه هر دو."
 
 [efab18c9ba3]
 us = "a starting point needs a team from 1 to 8 and a place on the map"
@@ -711,6 +769,7 @@ ru = "стартовой точке нужна команда от 1 до 8 и �
 cz = "startovní bod potřebuje tým 1 až 8 a místo na mapě"
 jpn = "開始地点には 1〜8 のチームとマップ上の場所が必要です"
 sc = "起始点需要 1 到 8 的队伍和地图上的位置"
+fa = "نقطهٔ شروع به تیمی از 1 تا 8 و مکانی روی نقشه نیاز دارد"
 
 [e5eb1ce0d12]
 us = "Pick or make a mod first: what you place is saved in it."
@@ -723,6 +782,7 @@ ru = "Сначала выберите или создайте мод: то, чт
 cz = "Nejprve vyberte nebo vytvořte mod: co umístíte, uloží se do něj."
 jpn = "先にModを選ぶか作ってください。配置した物はそこに保存されます。"
 sc = "请先选择或新建一个模组：你放置的物体保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: هر چه قرار می‌دهید در آن ذخیره می‌شود."
 
 [e23f354eb41]
 us = "the circles to erase must be a list of tables (x, y, radius)"
@@ -735,6 +795,7 @@ ru = "круги для стирания должны быть списком т
 cz = "kruhy ke smazání musí být seznam tabulek (x, y, radius)"
 jpn = "消す円はテーブルのリストにしてください（x, y, radius）"
 sc = "要擦除的圆必须是表格列表（x, y, radius）"
+fa = "دایره‌هایی که باید پاک شوند باید فهرستی از جدول‌ها باشند (x, y, radius)"
 
 [e2bd1cd01a3]
 us = "That box is too big to pick from: at most {0} m corner to corner. Drag a smaller one, or use the Erase brush for a whole area."
@@ -747,6 +808,7 @@ ru = "Эта рамка слишком большая для выбора: не 
 cz = "Tento rámeček je na výběr příliš velký: nejvýš {0} m z rohu do rohu. Táhněte menší, nebo pro celou oblast použijte štětec Smazat."
 jpn = "その枠は大きすぎて選べません：対角で {0} m までです。小さい枠にするか、範囲全体なら消去ブラシを使ってください。"
 sc = "方框太大，无法选择：对角最多 {0} 米。请拖出更小的方框，或对整片区域使用擦除画笔。"
+fa = "این کادر برای انتخاب خیلی بزرگ است: حداکثر {0} متر از گوشه تا گوشه. کادر کوچک‌تری بکشید، یا برای یک ناحیهٔ کامل از قلم‌موی «پاک‌کن» استفاده کنید."
 
 [e38a2e763b4]
 us = "the changes must be a list of [old, new] pairs"
@@ -759,6 +821,7 @@ ru = "изменения должны быть списком пар [старо
 cz = "změny musí být seznam dvojic [staré, nové]"
 jpn = "変更は [旧, 新] の組のリストにしてください"
 sc = "更改必须是 [旧, 新] 对的列表"
+fa = "تغییرها باید فهرستی از جفت‌های [old, new] باشند"
 
 [eb3736810bc]
 us = "Pick or make a mod first: new roads are saved in it."
@@ -771,6 +834,7 @@ ru = "Сначала выберите или создайте мод: новые
 cz = "Nejprve vyberte nebo vytvořte mod: nové silnice se ukládají do něj."
 jpn = "先にModを選ぶか作ってください。新しい道路はそこに保存されます。"
 sc = "请先选择或新建一个模组：新道路保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: جاده‌های جدید در آن ذخیره می‌شوند."
 
 [e6cb5a7fc47]
 us = "Pick or make a mod first: the change is saved in it."
@@ -783,6 +847,7 @@ ru = "Сначала выберите или создайте мод: измен
 cz = "Nejprve vyberte nebo vytvořte mod: změna se uloží do něj."
 jpn = "先にModを選ぶか作ってください。変更はそこに保存されます。"
 sc = "请先选择或新建一个模组：更改保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: تغییر در آن ذخیره می‌شود."
 
 [e9f506f8cd2]
 us = "Pick or make a mod first: the check builds it."
@@ -795,6 +860,7 @@ ru = "Сначала выберите или создайте мод: прове
 cz = "Nejprve vyberte nebo vytvořte mod: kontrola ho sestaví."
 jpn = "先にModを選ぶか作ってください。チェックはそれをビルドします。"
 sc = "请先选择或新建一个模组：检查会构建它。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: بررسی، آن را می‌سازد."
 
 [efd03f55399]
 us = "We couldn't find R.U.S.E., so there's no map to check."
@@ -807,6 +873,7 @@ ru = "R.U.S.E. не найдена, поэтому проверять нечег
 cz = "R.U.S.E. jsme nenašli, takže není co kontrolovat."
 jpn = "R.U.S.E. が見つからないため、チェックするマップがありません。"
 sc = "找不到 R.U.S.E.，因此没有可检查的地图。"
+fa = "R.U.S.E. را پیدا نکردیم، پس نقشه‌ای برای بررسی نیست."
 
 [e3004f9ebbd]
 us = "The game's files are being restored: wait for it to finish."
@@ -819,6 +886,7 @@ ru = "Файлы игры восстанавливаются: дождитесь
 cz = "Soubory hry se obnovují: počkejte, až to skončí."
 jpn = "ゲームのファイルを復元中です。終わるまでお待ちください。"
 sc = "正在恢复游戏文件：请等待完成。"
+fa = "فایل‌های بازی در حال بازگردانی‌اند: صبر کنید تا تمام شود."
 
 [e1ccb556a1b]
 us = "We couldn't find R.U.S.E., so there are no missions to show."
@@ -831,6 +899,7 @@ ru = "R.U.S.E. не найдена, поэтому показывать мисс
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat za mise."
 jpn = "R.U.S.E. が見つからないため、表示できるミッションがありません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的任务。"
+fa = "R.U.S.E. را پیدا نکردیم، پس مأموریتی برای نشان دادن نیست."
 
 [e674363ccb9]
 us = "{0} isn't one of this map's own bridge kinds, so the map can't take it."
@@ -843,6 +912,7 @@ ru = "{0} — не один из типов мостов этой карты, п
 cz = "{0} není jeden z druhů mostů této mapy, takže ho mapa nepřijme."
 jpn = "{0} はこのマップ本来の橋の種類ではないため、このマップでは使えません。"
 sc = "{0} 不是此地图自带的桥类型，因此该地图无法使用它。"
+fa = "{0} از انواع پلِ خودِ این نقشه نیست، پس نقشه نمی‌تواند آن را بپذیرد."
 
 [e9a9e94f935]
 us = "This map places no {0} of its own, so there's no floor to copy for one: units would walk on the riverbed under it. Pick a kind the map places."
@@ -855,6 +925,7 @@ ru = "Эта карта не ставит своих {0}, поэтому коп�
 cz = "Tato mapa nemá vlastní {0}, takže není podlaha ke zkopírování: jednotky by chodily po dně řeky pod ním. Vyberte druh, který mapa používá."
 jpn = "このマップは {0} を置いていないため、コピーする床がありません。ユニットがその下の川底を歩いてしまいます。マップが置いている種類を選んでください。"
 sc = "此地图没有放置自己的 {0}，因此没有可复制的桥面：单位会走在下方的河床上。请选择地图放置过的类型。"
+fa = "این نقشه هیچ {0} از خودش قرار نمی‌دهد، پس کفی برای کپی کردن وجود ندارد: یگان‌ها روی بستر رودِ زیر آن راه می‌روند. نوعی را انتخاب کنید که نقشه قرار می‌دهد."
 
 [e31a06cbd1f]
 us = "A road's line holds 2 to {0} points"
@@ -867,6 +938,7 @@ ru = "Линия дороги содержит от 2 до {0} точек"
 cz = "Čára silnice má 2 až {0} bodů"
 jpn = "道路の線は 2〜{0} 点です"
 sc = "一条道路的线包含 2 到 {0} 个点"
+fa = "خط یک جاده 2 تا {0} نقطه دارد"
 
 [ea31d94221e]
 us = "Pick or make a mod first: the shaped ground is saved in it."
@@ -879,6 +951,7 @@ ru = "Сначала выберите или создайте мод: измен
 cz = "Nejprve vyberte nebo vytvořte mod: tvarovaný terén se ukládá do něj."
 jpn = "先にModを選ぶか作ってください。地形の変更はそこに保存されます。"
 sc = "请先选择或新建一个模组：塑形后的地面保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: زمینِ شکل‌داده‌شده در آن ذخیره می‌شود."
 
 [e732c9e536e]
 us = "We couldn't find R.U.S.E., so the map's water height can't be read."
@@ -891,6 +964,7 @@ ru = "R.U.S.E. не найдена, поэтому высоту воды на к
 cz = "R.U.S.E. jsme nenašli, takže výšku vody na mapě nelze přečíst."
 jpn = "R.U.S.E. が見つからないため、マップの水面の高さを読めません。"
 sc = "找不到 R.U.S.E.，因此无法读取地图的水面高度。"
+fa = "R.U.S.E. را پیدا نکردیم، پس ارتفاع آب نقشه را نمی‌توان خواند."
 
 [e90d83109d8]
 us = "The game has no map {0}, so its water height can't be read."
@@ -903,6 +977,7 @@ ru = "В игре нет карты {0}, поэтому высоту её вод
 cz = "Hra nemá mapu {0}, takže její výšku vody nelze přečíst."
 jpn = "ゲームにマップ {0} がないため、水面の高さを読めません。"
 sc = "游戏中没有地图 {0}，因此无法读取其水面高度。"
+fa = "بازی نقشهٔ {0} را ندارد، پس ارتفاع آب آن را نمی‌توان خواند."
 
 [e243b26e70a]
 us = "Pick or make a mod first."
@@ -915,6 +990,7 @@ ru = "Сначала выберите или создайте мод."
 cz = "Nejprve vyberte nebo vytvořte mod."
 jpn = "先にModを選ぶか作ってください。"
 sc = "请先选择或新建一个模组。"
+fa = "اول یک ماد انتخاب کنید یا بسازید."
 
 [e548891d38d]
 us = "{0} isn't one of this mod's map files"
@@ -927,6 +1003,7 @@ ru = "{0} — не один из файлов карт этого мода"
 cz = "{0} není jeden ze souborů map tohoto modu"
 jpn = "{0} はこの Mod のマップファイルではありません"
 sc = "{0} 不是此模组的地图文件"
+fa = "{0} از فایل‌های نقشهٔ این ماد نیست"
 
 [e769350394c]
 us = "A map folder's name is letters, digits and _ only"
@@ -939,6 +1016,7 @@ ru = "Имя папки карты — только буквы, цифры и _"
 cz = "Název složky mapy smí mít jen písmena, číslice a _"
 jpn = "マップフォルダーの名前は英字・数字・_ だけです"
 sc = "地图文件夹名称只能包含字母、数字和 _"
+fa = "نام پوشهٔ نقشه فقط از حروف، رقم‌ها و _ است"
 
 [eaabacb9457]
 us = "maps/{0} isn't in this mod"
@@ -951,6 +1029,7 @@ ru = "maps/{0} нет в этом моде"
 cz = "maps/{0} v tomto modu není"
 jpn = "maps/{0} はこの Mod にありません"
 sc = "此模组中没有 maps/{0}"
+fa = "maps/{0} در این ماد نیست"
 
 [ea7624e6c87]
 us = "{0} isn't one of this mod's files"
@@ -963,6 +1042,7 @@ ru = "{0} — не один из файлов этого мода"
 cz = "{0} není jeden ze souborů tohoto modu"
 jpn = "{0} はこの Mod のファイルではありません"
 sc = "{0} 不是此模组的文件"
+fa = "{0} از فایل‌های این ماد نیست"
 
 [eb3aad4e66a]
 us = "{0} is neither a mod nor a map"
@@ -975,6 +1055,7 @@ ru = "{0} — не мод и не карта"
 cz = "{0} není ani mod, ani mapa"
 jpn = "{0} は Mod でもマップでもありません"
 sc = "{0} 既不是模组也不是地图"
+fa = "{0} نه ماد است و نه نقشه"
 
 [e8ffd9a6906]
 us = "{0} isn't a mod folder (it has no mod.toml)"
@@ -987,6 +1068,7 @@ ru = "{0} — не папка мода (в ней нет mod.toml)"
 cz = "{0} není složka modu (nemá mod.toml)"
 jpn = "{0} は Mod フォルダーではありません（mod.toml がありません）"
 sc = "{0} 不是模组文件夹（没有 mod.toml）"
+fa = "{0} پوشهٔ ماد نیست (mod.toml ندارد)"
 
 [ea42b5f5296]
 us = "{0} was saved by a newer RUSE Studio (mod format {1}; this one knows {2}). Update the Studio before changing it: this version could drop what it doesn't know when it saves."
@@ -999,6 +1081,7 @@ ru = "{0} сохранён более новой RUSE Studio (формат мо�
 cz = "{0} uložilo novější RUSE Studio (formát modu {1}; toto zná {2}). Před změnami Studio aktualizujte: tato verze by při ukládání mohla zahodit, co nezná."
 jpn = "{0} は新しい RUSE Studio で保存されています（Mod 形式 {1}。この Studio は {2} まで）。変更する前に Studio を更新してください。このバージョンは保存時に知らない内容を失うおそれがあります。"
 sc = "{0} 是由较新的 RUSE Studio 保存的（模组格式 {1}；此版本只认识 {2}）。请先更新 Studio 再修改它：此版本保存时可能会丢失它不认识的内容。"
+fa = "{0} با یک RUSE Studio جدیدتر ذخیره شده است (قالب ماد {1}؛ این نسخه {2} را می‌شناسد). پیش از تغییر آن، استودیو را به‌روزرسانی کنید: این نسخه ممکن است هنگام ذخیره، چیزهایی را که نمی‌شناسد از دست بدهد."
 
 [e2192c0f69b]
 us = "{0} was saved by a newer RUSE Studio: update the Studio, not the mod."
@@ -1011,6 +1094,7 @@ ru = "{0} сохранён более новой RUSE Studio: обновите S
 cz = "{0} uložilo novější RUSE Studio: aktualizujte Studio, ne mod."
 jpn = "{0} は新しい RUSE Studio で保存されています。Mod ではなく Studio を更新してください。"
 sc = "{0} 是由较新的 RUSE Studio 保存的：请更新 Studio，而不是模组。"
+fa = "{0} با یک RUSE Studio جدیدتر ذخیره شده است: استودیو را به‌روزرسانی کنید، نه ماد را."
 
 [ee6f7689cfe]
 us = "That mod isn't installed any more. Add it in the Launcher, then try again."
@@ -1023,6 +1107,7 @@ ru = "Этот мод больше не установлен. Добавьте �
 cz = "Tento mod už není nainstalovaný. Přidejte ho v Launcheru a zkuste to znovu."
 jpn = "その Mod はもうインストールされていません。Launcher で追加してからもう一度お試しください。"
 sc = "该模组已不再安装。请在 Launcher 中添加后再试。"
+fa = "آن ماد دیگر نصب نیست. آن را در لانچر اضافه کنید، سپس دوباره امتحان کنید."
 
 [e33addb5f28]
 us = "Give your copy a name of its own: it can't be called {0}."
@@ -1035,6 +1120,7 @@ ru = "Дайте своей копии собственное имя: она н�
 cz = "Dejte své kopii vlastní název: nemůže se jmenovat {0}."
 jpn = "コピーには独自の名前を付けてください。{0} という名前にはできません。"
 sc = "请给你的副本起个自己的名字：不能叫 {0}。"
+fa = "به کپی خود نامی مخصوص خودش بدهید: نامش نمی‌تواند {0} باشد."
 
 [e2b2a975d8f]
 us = "{0} is {1}'s name for the mod. Give your copy a name of its own."
@@ -1047,6 +1133,7 @@ ru = "{0} — имя мода от {1}. Дайте своей копии соб�
 cz = "{0} je název modu od {1}. Dejte své kopii vlastní název."
 jpn = "{0} は {1} がこの Mod に付けた名前です。コピーには独自の名前を付けてください。"
 sc = "{0} 是 {1} 给该模组起的名字。请给你的副本起个自己的名字。"
+fa = "{0} نامی است که {1} برای این ماد گذاشته است. به کپی خود نامی مخصوص خودش بدهید."
 
 [e76ff1cce01]
 us = "There's already a mod called {0}. Pick another name."
@@ -1059,6 +1146,7 @@ ru = "Мод с именем {0} уже есть. Выберите другое 
 cz = "Mod jménem {0} už existuje. Vyberte jiný název."
 jpn = "{0} という Mod はもうあります。別の名前にしてください。"
 sc = "已有名为 {0} 的模组。请换个名字。"
+fa = "از قبل یک ماد به نام {0} وجود دارد. نام دیگری انتخاب کنید."
 
 [e8eba316169]
 us = "{0} of {1} can't be edited here"
@@ -1071,6 +1159,7 @@ ru = "{0} у {1} здесь изменить нельзя"
 cz = "{0} u {1} tu nelze upravit"
 jpn = "{1} の {0} はここでは編集できません"
 sc = "{1} 的 {0} 不能在此编辑"
+fa = "{0} از {1} را اینجا نمی‌توان ویرایش کرد"
 
 [e9126dab76b]
 us = "{0} isn't one of the economy's values"
@@ -1083,6 +1172,7 @@ ru = "{0} — не одно из значений экономики"
 cz = "{0} není jedna z hodnot ekonomiky"
 jpn = "{0} は経済の値ではありません"
 sc = "{0} 不是经济数值之一"
+fa = "{0} از مقدارهای اقتصاد نیست"
 
 [eed06113dd4]
 us = "The game index has none of the economy's values: build it again in Settings."
@@ -1095,6 +1185,7 @@ ru = "В индексе игры нет значений экономики: п�
 cz = "Index hry nemá žádné hodnoty ekonomiky: sestavte ho znovu v Nastavení."
 jpn = "ゲームのインデックスに経済の値がありません。設定で作り直してください。"
 sc = "游戏索引中没有经济数值：请在设置中重新构建。"
+fa = "نمایهٔ بازی هیچ‌کدام از مقدارهای اقتصاد را ندارد: آن را در «تنظیمات» دوباره بسازید."
 
 [ecf27aec8d2]
 us = "We couldn't find R.U.S.E., so there are no scripts to show."
@@ -1107,6 +1198,7 @@ ru = "R.U.S.E. не найдена, поэтому показывать скри
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat za skripty."
 jpn = "R.U.S.E. が見つからないため、表示できるスクリプトがありません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的脚本。"
+fa = "R.U.S.E. را پیدا نکردیم، پس اسکریپتی برای نشان دادن نیست."
 
 [effd725d1f3]
 us = "We couldn't find R.U.S.E., so there are no scripts to change."
@@ -1119,6 +1211,7 @@ ru = "R.U.S.E. не найдена, поэтому менять скрипты �
 cz = "R.U.S.E. jsme nenašli, takže není co měnit za skripty."
 jpn = "R.U.S.E. が見つからないため、変更できるスクリプトがありません。"
 sc = "找不到 R.U.S.E.，因此没有可更改的脚本。"
+fa = "R.U.S.E. را پیدا نکردیم، پس اسکریپتی برای تغییر نیست."
 
 [ec5169c46c4]
 us = "{0} isn't one of the game's mission scripts."
@@ -1131,6 +1224,7 @@ ru = "{0} — не один из скриптов миссий игры."
 cz = "{0} není jeden ze skriptů misí hry."
 jpn = "{0} はゲームのミッションスクリプトではありません。"
 sc = "{0} 不是游戏的任务脚本之一。"
+fa = "{0} از اسکریپت‌های مأموریتِ بازی نیست."
 
 [ed1eff34640]
 us = "We couldn't find R.U.S.E., so there are no files to show."
@@ -1143,6 +1237,7 @@ ru = "R.U.S.E. не найдена, поэтому показывать файл
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat za soubory."
 jpn = "R.U.S.E. が見つからないため、表示できるファイルがありません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的文件。"
+fa = "R.U.S.E. را پیدا نکردیم، پس فایلی برای نشان دادن نیست."
 
 [e97185feacd]
 us = "Give the new file a name of letters, digits, _, - and dots (folders with /), like pictures/my_flag.tgv."
@@ -1155,6 +1250,7 @@ ru = "Дайте новому файлу имя из букв, цифр, _, - и
 cz = "Dejte novému souboru název z písmen, číslic, _, - a teček (složky přes /), třeba pictures/my_flag.tgv."
 jpn = "新しいファイルの名前は英字・数字・_・-・ピリオドで付けてください（フォルダーは /）。例：pictures/my_flag.tgv。"
 sc = "请用字母、数字、_、- 和点为新文件命名（文件夹用 /），例如 pictures/my_flag.tgv。"
+fa = "به فایل جدید نامی از حروف، رقم‌ها، _، - و نقطه بدهید (پوشه‌ها با /)، مثل pictures/my_flag.tgv."
 
 [e5b2da1fafc]
 us = "The Studio can't read {0} here."
@@ -1167,6 +1263,7 @@ ru = "Studio не может прочитать {0} здесь."
 cz = "Studio tu {0} nedokáže přečíst."
 jpn = "Studio はここでは {0} を読めません。"
 sc = "Studio 无法在此读取 {0}。"
+fa = "استودیو اینجا نمی‌تواند {0} را بخواند."
 
 [e544192edd6]
 us = "{0} isn't in the game folder ({1})."
@@ -1179,6 +1276,7 @@ ru = "{0} нет в папке игры ({1})."
 cz = "{0} není ve složce hry ({1})."
 jpn = "{0} がゲームフォルダーにありません（{1}）。"
 sc = "游戏文件夹中没有 {0}（{1}）。"
+fa = "{0} در پوشهٔ بازی نیست ({1})."
 
 [e8e15dcada3]
 us = "{0} isn't changed here: the Studio keeps each of these numbers unique"
@@ -1191,6 +1289,7 @@ ru = "{0} здесь не меняется: Studio следит, чтобы ка
 cz = "{0} se tu nemění: Studio drží každé z těchto čísel jedinečné"
 jpn = "{0} はここでは変更しません。Studio はこれらの数値を重複させません"
 sc = "{0} 不在此更改：Studio 会保持这些数字各不相同"
+fa = "{0} اینجا تغییر داده نمی‌شود: استودیو هر یک از این عددها را یکتا نگه می‌دارد"
 
 [e6dec4eae6e]
 us = "{0} isn't in the unit data, so a mod can't change it"
@@ -1203,6 +1302,7 @@ ru = "{0} нет в данных юнитов, поэтому мод не мож
 cz = "{0} není v datech jednotek, takže ho mod nemůže změnit"
 jpn = "{0} はユニットデータにないため、Mod では変更できません"
 sc = "{0} 不在单位数据中，因此模组无法更改它"
+fa = "{0} در داده‌های یگان نیست، پس ماد نمی‌تواند آن را تغییر دهد"
 
 [e34ede844d6]
 us = "No named object leads to {0}, so a mod can't find it to change it"
@@ -1215,6 +1315,7 @@ ru = "Ни один именованный объект не ведёт к {0}, 
 cz = "K {0} nevede žádný pojmenovaný objekt, takže ho mod nemůže najít a změnit"
 jpn = "{0} にたどり着く名前付きオブジェクトがないため、Mod が見つけて変更できません"
 sc = "没有带名称的对象指向 {0}，因此模组找不到它来更改"
+fa = "هیچ شیء نام‌داری به {0} نمی‌رسد، پس ماد نمی‌تواند آن را برای تغییر پیدا کند"
 
 [ea772ae3254]
 us = "Your mod deletes {0}: put it back first to change it."
@@ -1227,6 +1328,7 @@ ru = "Ваш мод удаляет {0}: сначала верните его, ч
 cz = "Váš mod maže {0}: nejprve ho vraťte, abyste ho mohli změnit."
 jpn = "あなたの Mod は {0} を削除しています。変更するには先に戻してください。"
 sc = "你的模组删除了 {0}：请先恢复它再更改。"
+fa = "ماد شما {0} را حذف می‌کند: برای تغییر آن، اول آن را برگردانید."
 
 [e98b0ca958c]
 us = "{0} isn't one of {1}'s texts"
@@ -1239,6 +1341,7 @@ ru = "{0} — не один из текстов {1}"
 cz = "{0} není jeden z textů {1}"
 jpn = "{0} は {1} のテキストではありません"
 sc = "{0} 不是 {1} 的文本之一"
+fa = "{0} از متن‌های {1} نیست"
 
 [ea85a3c079c]
 us = "{0} can't be changed here"
@@ -1251,6 +1354,7 @@ ru = "{0} здесь изменить нельзя"
 cz = "{0} tu nelze změnit"
 jpn = "{0} はここでは変更できません"
 sc = "{0} 不能在此更改"
+fa = "{0} را اینجا نمی‌توان تغییر داد"
 
 [e42da0a1ebb]
 us = "The game has no words under this value's text now, so it isn't known which of its text tables a new one goes in. Point it at a text of the game's first."
@@ -1263,6 +1367,7 @@ ru = "Сейчас у игры нет слов под текстом этого 
 cz = "Hra teď pod textem této hodnoty nemá žádná slova, takže není jasné, do které tabulky textů nový patří. Nejprve ho nasměrujte na text hry."
 jpn = "この値のテキストには今ゲームの文字がないため、新しいテキストをどの表に入れるか分かりません。先にゲームのテキストを指すようにしてください。"
 sc = "游戏中此数值的文本下现在没有文字，因此不知道新文本应放入哪个文本表。请先让它指向游戏的某个文本。"
+fa = "بازی اکنون زیر متنِ این مقدار هیچ نوشته‌ای ندارد، پس معلوم نیست متن جدید در کدام یک از جدول‌های متنِ آن قرار می‌گیرد. اول آن را به یکی از متن‌های بازی وصل کنید."
 
 [e8c205c18cc]
 us = "A note needs what it's about."
@@ -1275,6 +1380,7 @@ ru = "В заметке нужно указать, о чём она."
 cz = "Poznámka musí říkat, čeho se týká."
 jpn = "メモには何についてかが必要です。"
 sc = "备注需要说明内容。"
+fa = "یادداشت باید بگوید دربارهٔ چیست."
 
 [e796657ea05]
 us = "A note can be at most {0} letters long."
@@ -1287,6 +1393,7 @@ ru = "Заметка может быть не длиннее {0} букв."
 cz = "Poznámka smí mít nejvýš {0} písmen."
 jpn = "メモは {0} 文字までです。"
 sc = "备注最多 {0} 个字。"
+fa = "یادداشت حداکثر می‌تواند {0} حرف باشد."
 
 [e5f3fef30ce]
 us = "The game has no text {0} to change."
@@ -1299,6 +1406,7 @@ ru = "В игре нет текста {0} для изменения."
 cz = "Hra nemá text {0} ke změně."
 jpn = "ゲームに変更できるテキスト {0} はありません。"
 sc = "游戏中没有可更改的文本 {0}。"
+fa = "بازی متن {0} را برای تغییر ندارد."
 
 [e64855796e6]
 us = "The English words can't be empty: the other languages fall back to them."
@@ -1311,6 +1419,7 @@ ru = "Английские слова не могут быть пустыми: �
 cz = "Anglická slova nesmí být prázdná: ostatní jazyky se k nim vracejí."
 jpn = "英語の文字は空にできません。ほかの言語はそれを代わりに使います。"
 sc = "英文文字不能为空：其他语言会以它为后备。"
+fa = "متن انگلیسی نمی‌تواند خالی باشد: زبان‌های دیگر در نبودِ ترجمه از آن استفاده می‌کنند."
 
 [e1e385bc6f7]
 us = "{0} isn't added here: the Studio keeps each of these numbers unique"
@@ -1323,6 +1432,7 @@ ru = "{0} здесь не добавляется: Studio следит, чтоб�
 cz = "{0} se tu nepřidává: Studio drží každé z těchto čísel jedinečné"
 jpn = "{0} はここでは追加しません。Studio はこれらの数値を重複させません"
 sc = "{0} 不在此添加：Studio 会保持这些数字各不相同"
+fa = "{0} اینجا اضافه نمی‌شود: استودیو هر یک از این عددها را یکتا نگه می‌دارد"
 
 [e455950f525]
 us = "No {0} in the game's data has {1} there, so it can't be added here."
@@ -1335,6 +1445,7 @@ ru = "Ни у одного {0} в данных игры там нет {1}, по�
 cz = "Žádný {0} v datech hry tam nemá {1}, takže to sem nelze přidat."
 jpn = "ゲームデータのどの {0} にもそこに {1} がないため、ここでは追加できません。"
 sc = "游戏数据中没有任何 {0} 在那里有 {1}，因此不能在此添加。"
+fa = "هیچ {0} در داده‌های بازی آنجا {1} ندارد، پس اینجا نمی‌توان آن را اضافه کرد."
 
 [ebf2af657fa]
 us = "{0} is a kind of value that can't be written here, so it can't be added here."
@@ -1347,6 +1458,7 @@ ru = "{0} — тип значения, который здесь нельзя з
 cz = "{0} je druh hodnoty, kterou sem nelze zapsat, takže ji sem nelze přidat."
 jpn = "{0} はここに書けない種類の値なので、ここでは追加できません。"
 sc = "{0} 是无法在此写入的数值类型，因此不能在此添加。"
+fa = "{0} نوعی مقدار است که اینجا نوشته نمی‌شود، پس اینجا نمی‌توان آن را اضافه کرد."
 
 [e0a5bf7bbb0]
 us = "{0} isn't taken out here: the Studio keeps each of these numbers unique"
@@ -1359,6 +1471,7 @@ ru = "{0} здесь не убирается: Studio следит, чтобы к
 cz = "{0} se tu neodebírá: Studio drží každé z těchto čísel jedinečné"
 jpn = "{0} はここでは取り除きません。Studio はこれらの数値を重複させません"
 sc = "{0} 不在此移除：Studio 会保持这些数字各不相同"
+fa = "{0} اینجا برداشته نمی‌شود: استودیو هر یک از این عددها را یکتا نگه می‌دارد"
 
 [e30f71ad58f]
 us = "A part can't be deleted on its own: take it out of the object it's part of (Take out, on that value's row)."
@@ -1371,6 +1484,7 @@ ru = "Часть нельзя удалить отдельно: уберите е
 cz = "Část nelze smazat samotnou: odeberte ji z objektu, jehož je součástí (Odebrat na řádku té hodnoty)."
 jpn = "部品だけを削除することはできません。それが属するオブジェクトから取り除いてください（その値の行の「取り除く」）。"
 sc = "部件不能单独删除：请从它所属的对象中移除（在该数值所在行点“移除”）。"
+fa = "یک جزء را نمی‌توان به‌تنهایی حذف کرد: آن را از شیئی که جزئی از آن است بردارید («برداشتن»، در ردیف همان مقدار)."
 
 [e83eae6f4a6]
 us = "{0} can't be deleted: the game's list of units names it, and the game fails to load its units when one of them is missing. Hide it from the build menus instead (ShowInMenu)."
@@ -1383,6 +1497,7 @@ ru = "{0} удалить нельзя: он есть в списке юнито�
 cz = "{0} nelze smazat: seznam jednotek hry ho uvádí a hra nenačte své jednotky, když některá chybí. Místo toho ho skryjte z nabídek stavby (ShowInMenu)."
 jpn = "{0} は削除できません。ゲームのユニット一覧に載っており、1つでも欠けるとゲームはユニットを読み込めません。代わりに建設メニューから隠してください（ShowInMenu）。"
 sc = "{0} 不能删除：游戏的单位列表中有它，缺少任何一个，游戏就无法加载单位。请改为在建造菜单中隐藏它（ShowInMenu）。"
+fa = "{0} را نمی‌توان حذف کرد: فهرست یگان‌های بازی نام آن را آورده است، و اگر یکی از آن‌ها نباشد، بازی نمی‌تواند یگان‌هایش را بارگذاری کند. به‌جای آن، آن را از منوهای ساخت پنهان کنید (ShowInMenu)."
 
 [ed6700933c8]
 us = "Give the new object a name of letters A-Z, digits and _, starting with a letter (like Ammo_My_Shell)."
@@ -1395,6 +1510,7 @@ ru = "Дайте новому объекту имя из букв A-Z, цифр 
 cz = "Dejte novému objektu název z písmen A-Z, číslic a _, začínající písmenem (třeba Ammo_My_Shell)."
 jpn = "新しいオブジェクトの名前は英字 A-Z・数字・_ で、英字で始めてください（例：Ammo_My_Shell）。"
 sc = "请用字母 A-Z、数字和 _ 为新对象命名，并以字母开头（例如 Ammo_My_Shell）。"
+fa = "به شیء جدید نامی از حروف A-Z، رقم‌ها و _ بدهید که با یک حرف شروع شود (مثل Ammo_My_Shell)."
 
 [e1c52b1ebc8]
 us = "{0} isn't a kind of object the game's unit data has: pick one from the list."
@@ -1407,6 +1523,7 @@ ru = "{0} — не тип объекта в данных юнитов игры: 
 cz = "{0} není druh objektu v datech jednotek hry: vyberte jeden ze seznamu."
 jpn = "{0} はゲームのユニットデータにあるオブジェクトの種類ではありません。一覧から選んでください。"
 sc = "{0} 不是游戏单位数据中的对象类型：请从列表中选择。"
+fa = "{0} از انواع شیء در داده‌های یگانِ بازی نیست: یکی را از فهرست انتخاب کنید."
 
 [edc335e687b]
 us = "There's already something called {0} in the game or your mod. Pick another name."
@@ -1419,6 +1536,7 @@ ru = "В игре или вашем моде уже есть что-то с им
 cz = "Ve hře nebo vašem modu se už něco jmenuje {0}. Vyberte jiný název."
 jpn = "ゲームかあなたの Mod に {0} という名前のものがすでにあります。別の名前にしてください。"
 sc = "游戏或你的模组中已有名为 {0} 的东西。请换个名字。"
+fa = "از قبل چیزی به نام {0} در بازی یا ماد شما وجود دارد. نام دیگری انتخاب کنید."
 
 [ec9e1568c46]
 us = "Only a new unit made in this mod can get a model of its own: copy the unit first."
@@ -1431,6 +1549,7 @@ ru = "Собственную модель может получить тольк
 cz = "Vlastní model může dostat jen nová jednotka z tohoto modu: nejprve jednotku zkopírujte."
 jpn = "専用のモデルを持てるのは、この Mod で作った新しいユニットだけです。先にユニットをコピーしてください。"
 sc = "只有在此模组中新建的单位才能拥有自己的模型：请先复制该单位。"
+fa = "فقط یگان جدیدی که در این ماد ساخته شده می‌تواند مدل مخصوص خودش را داشته باشد: اول یگان را کپی کنید."
 
 [efa5851494f]
 us = "Give a size from {0} to {1} (1 is as long as the unit it copies)."
@@ -1443,6 +1562,7 @@ ru = "Укажите размер от {0} до {1} (1 — длина копир
 cz = "Zadejte velikost {0} až {1} (1 je délka kopírované jednotky)."
 jpn = "サイズは {0}〜{1} にしてください（1 はコピー元のユニットと同じ長さ）。"
 sc = "请给出 {0} 到 {1} 的大小（1 表示与所复制单位一样长）。"
+fa = "اندازه‌ای از {0} تا {1} بدهید (1 یعنی هم‌طولِ یگانی که از آن کپی شده)."
 
 [ece40efff10]
 us = "The unit this one copies has no 3D model to fit a new one to."
@@ -1455,6 +1575,7 @@ ru = "У юнита, который копирует этот, нет 3D-мод�
 cz = "Jednotka, kterou tato kopíruje, nemá 3D model, ke kterému by se nový přizpůsobil."
 jpn = "このユニットのコピー元には、新しいモデルを合わせる3Dモデルがありません。"
 sc = "此单位所复制的单位没有可用于匹配新模型的 3D 模型。"
+fa = "یگانی که این یگان از آن کپی شده، مدل سه‌بعدی ندارد که مدل جدید با آن تطبیق داده شود."
 
 [e4d3c418a83]
 us = "{0}: {1}"
@@ -1467,6 +1588,7 @@ ru = "{0}: {1}"
 cz = "{0}: {1}"
 jpn = "{0}：{1}"
 sc = "{0}：{1}"
+fa = "{0}: {1}"
 
 [e40bfd6b68d]
 us = "This unit has no model of its own to resize: import one first."
@@ -1479,6 +1601,7 @@ ru = "У этого юнита нет своей модели для измен�
 cz = "Tato jednotka nemá vlastní model ke změně velikosti: nejprve nějaký importujte."
 jpn = "このユニットにはサイズ変更できる専用モデルがありません。先にインポートしてください。"
 sc = "此单位没有可调整大小的自有模型：请先导入一个。"
+fa = "این یگان مدل مخصوص خودش را ندارد که اندازه‌اش تغییر کند: اول یکی وارد کنید."
 
 [ee0865736a8]
 us = "The file this model was made from isn't there any more ({0}): import it again to change its size."
@@ -1491,6 +1614,7 @@ ru = "Файла, из которого сделана эта модель, бо
 cz = "Soubor, ze kterého model vznikl, už tu není ({0}): importujte ho znovu, abyste změnili velikost."
 jpn = "このモデルの元のファイルがもうありません（{0}）。サイズを変えるにはもう一度インポートしてください。"
 sc = "制作此模型的文件已不在（{0}）：请重新导入以更改其大小。"
+fa = "فایلی که این مدل از آن ساخته شده دیگر وجود ندارد ({0}): برای تغییر اندازه‌اش، آن را دوباره وارد کنید."
 
 [ea790846b5d]
 us = "{0}: resize planes (air), ground units (ground) or all"
@@ -1503,6 +1627,7 @@ ru = "{0}: менять размер самолётов (air), наземных 
 cz = "{0}: měnit velikost letadel (air), pozemních jednotek (ground) nebo všech (all)"
 jpn = "{0}：航空機（air）、地上ユニット（ground）、またはすべて（all）のサイズを変更"
 sc = "{0}：调整飞机（air）、地面单位（ground）或全部（all）的大小"
+fa = "{0}: اندازهٔ هواپیماها (air)، یگان‌های زمینی (ground) یا همه را تغییر دهید"
 
 [ec6a9aa2b68]
 us = "{0}: resize to game, real or times"
@@ -1515,6 +1640,7 @@ ru = "{0}: менять размер под игру (game), реальност�
 cz = "{0}: měnit velikost podle hry (game), skutečnosti (real) nebo násobkem (times)"
 jpn = "{0}：ゲーム（game）、実物（real）、倍率（times）のどれかでサイズを変更"
 sc = "{0}：按游戏（game）、真实（real）或倍数（times）调整大小"
+fa = "{0}: اندازه را به اندازهٔ بازی، اندازهٔ واقعی یا با ضریب تغییر دهید"
 
 [e365be8adca]
 us = "Pick or make a mod first: the card goes into it."
@@ -1527,6 +1653,7 @@ ru = "Сначала выберите или создайте мод: карто
 cz = "Nejprve vyberte nebo vytvořte mod: karta jde do něj."
 jpn = "先にModを選ぶか作ってください。カードはそこに入ります。"
 sc = "请先选择或新建一个模组：卡片会放入其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: کارت در آن قرار می‌گیرد."
 
 [e59fc0a4bd1]
 us = "This unit has no card picture the Studio can change."
@@ -1539,6 +1666,7 @@ ru = "У этого юнита нет картинки карточки, кот�
 cz = "Tato jednotka nemá obrázek karty, který by Studio mohlo změnit."
 jpn = "このユニットには Studio が変更できるカード画像がありません。"
 sc = "此单位没有 Studio 可以更改的卡片图片。"
+fa = "این یگان تصویر کارتی ندارد که استودیو بتواند تغییر دهد."
 
 [e3f12614a57]
 us = "The card picture is {0} x {1}; this unit's card is {2} x {3}."
@@ -1551,6 +1679,7 @@ ru = "Картинка карточки {0} x {1}; карточка этого �
 cz = "Obrázek karty má {0} x {1}; karta této jednotky má {2} x {3}."
 jpn = "カード画像は {0} x {1} です。このユニットのカードは {2} x {3} です。"
 sc = "卡片图片为 {0} x {1}；此单位的卡片为 {2} x {3}。"
+fa = "تصویر کارت {0} x {1} است؛ کارت این یگان {2} x {3} است."
 
 [eb98744b00b]
 us = "We couldn't find R.U.S.E., so there are no models to open."
@@ -1563,6 +1692,7 @@ ru = "R.U.S.E. не найдена, поэтому открывать модел
 cz = "R.U.S.E. jsme nenašli, takže není co otevřít za modely."
 jpn = "R.U.S.E. が見つからないため、開けるモデルがありません。"
 sc = "找不到 R.U.S.E.，因此没有可打开的模型。"
+fa = "R.U.S.E. را پیدا نکردیم، پس مدلی برای باز کردن نیست."
 
 [e505fd29bb9]
 us = "Only a unit can get its own copy of its model."
@@ -1575,6 +1705,7 @@ ru = "Собственную копию модели может получить
 cz = "Vlastní kopii svého modelu může dostat jen jednotka."
 jpn = "モデルの専用コピーを持てるのはユニットだけです。"
 sc = "只有单位才能拥有自己模型的副本。"
+fa = "فقط یک یگان می‌تواند کپی مخصوص خودش از مدلش را داشته باشد."
 
 [e194263b734]
 us = "This unit has an imported model: take it out first (Remove the model), then give it a copy."
@@ -1587,6 +1718,7 @@ ru = "У этого юнита импортированная модель: сн
 cz = "Tato jednotka má importovaný model: nejprve ho odeberte (Odebrat model), pak jí dejte kopii."
 jpn = "このユニットにはインポートしたモデルがあります。先に取り除いてから（モデルを外す）、コピーを付けてください。"
 sc = "此单位有导入的模型：请先移除（移除模型），再给它副本。"
+fa = "این یگان یک مدل واردشده دارد: اول آن را بردارید («حذف مدل»)، سپس به آن یک کپی بدهید."
 
 [ede2af1c809]
 us = "This unit has no model the Studio can copy."
@@ -1599,6 +1731,7 @@ ru = "У этого юнита нет модели, которую Studio мож
 cz = "Tato jednotka nemá model, který by Studio mohlo zkopírovat."
 jpn = "このユニットには Studio がコピーできるモデルがありません。"
 sc = "此单位没有 Studio 可以复制的模型。"
+fa = "این یگان مدلی ندارد که استودیو بتواند کپی کند."
 
 [e88f0590129]
 us = "This unit doesn't ride in a truck."
@@ -1611,6 +1744,7 @@ ru = "Этот юнит не ездит в грузовике."
 cz = "Tato jednotka nejezdí v nákladním autě."
 jpn = "このユニットはトラックに乗りません。"
 sc = "此单位不乘坐卡车。"
+fa = "این یگان سوار کامیون نمی‌شود."
 
 [e93cda5a2bc]
 us = "{0} isn't one of the trucks it can ride in."
@@ -1623,6 +1757,7 @@ ru = "{0} — не один из грузовиков, в которых он м
 cz = "{0} není jedno z nákladních aut, ve kterých může jet."
 jpn = "{0} は乗れるトラックではありません。"
 sc = "{0} 不是它可以乘坐的卡车之一。"
+fa = "{0} از کامیون‌هایی نیست که این یگان می‌تواند سوارشان شود."
 
 [e6520c65ad8]
 us = "This unit has no 3D model the Studio can open."
@@ -1635,6 +1770,7 @@ ru = "У этого юнита нет 3D-модели, которую Studio м�
 cz = "Tato jednotka nemá 3D model, který by Studio mohlo otevřít."
 jpn = "このユニットには Studio が開ける3Dモデルがありません。"
 sc = "此单位没有 Studio 可以打开的 3D 模型。"
+fa = "این یگان مدل سه‌بعدی‌ای ندارد که استودیو بتواند باز کند."
 
 [e7f3b115a6c]
 us = "Pick Custom uniform first: the default uniform is worn by other squads and by gun and vehicle crews too, so it isn't repainted here."
@@ -1647,6 +1783,7 @@ ru = "Сначала выберите «Своя форма»: стандарт�
 cz = "Nejprve vyberte Vlastní uniformu: výchozí uniformu nosí i jiná družstva a osádky děl a vozidel, takže se tu nepřebarvuje."
 jpn = "先に「専用の軍服」を選んでください。標準の軍服はほかの分隊や砲・車両の乗員も着ているため、ここでは塗り替えません。"
 sc = "请先选择“自定义制服”：默认制服也由其他小队以及火炮和车辆乘员穿着，因此不在此重绘。"
+fa = "اول «یونیفرم سفارشی» را انتخاب کنید: یونیفرم پیش‌فرض را جوخه‌های دیگر و خدمهٔ توپ‌ها و خودروها هم می‌پوشند، پس اینجا دوباره رنگ نمی‌شود."
 
 [e2f50f49698]
 us = "Pick or make a mod first: the paint goes into it."
@@ -1659,6 +1796,7 @@ ru = "Сначала выберите или создайте мод: окрас
 cz = "Nejprve vyberte nebo vytvořte mod: malování jde do něj."
 jpn = "先にModを選ぶか作ってください。塗装はそこに入ります。"
 sc = "请先选择或新建一个模组：涂装会放入其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: رنگ در آن قرار می‌گیرد."
 
 [e3bba0c4071]
 us = "Open this unit in Blender first and paint it, then Bring back."
@@ -1671,6 +1809,7 @@ ru = "Сначала откройте этот юнит в Blender и раскр
 cz = "Nejprve tuto jednotku otevřete v Blenderu a namalujte, pak Vrátit zpět."
 jpn = "先にこのユニットを Blender で開いて塗装し、それから「戻す」を押してください。"
 sc = "请先在 Blender 中打开并涂装此单位，然后点“带回”。"
+fa = "اول این یگان را در Blender باز کنید و رنگش کنید، سپس «بازگرداندن» را بزنید."
 
 [e4e429253d1]
 us = "We couldn't find R.U.S.E., so there are no models to show."
@@ -1683,6 +1822,7 @@ ru = "R.U.S.E. не найдена, поэтому показывать моде
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat za modely."
 jpn = "R.U.S.E. が見つからないため、表示できるモデルがありません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的模型。"
+fa = "R.U.S.E. را پیدا نکردیم، پس مدلی برای نشان دادن نیست."
 
 [e8f15e1ced9]
 us = "Give the new unit a name."
@@ -1695,6 +1835,7 @@ ru = "Дайте новому юниту имя."
 cz = "Pojmenujte novou jednotku."
 jpn = "新しいユニットに名前を付けてください。"
 sc = "请给新单位起个名字。"
+fa = "به یگان جدید یک نام بدهید."
 
 [e282b5f12b5]
 us = "Price: one number, used for every battle date."
@@ -1707,6 +1848,7 @@ ru = "Цена: одно число, для каждой даты сражени
 cz = "Cena: jedno číslo, pro každé datum bitvy."
 jpn = "価格：数値1つ。すべての戦闘年代に使われます。"
 sc = "价格：一个数字，用于每个战斗年代。"
+fa = "قیمت: یک عدد، برای همهٔ تاریخ‌های نبرد."
 
 [e9e34ccedf8]
 us = "Pick or make a mod first: a new unit is saved in a mod."
@@ -1719,6 +1861,7 @@ ru = "Сначала выберите или создайте мод: новый
 cz = "Nejprve vyberte nebo vytvořte mod: nová jednotka se ukládá do modu."
 jpn = "先にModを選ぶか作ってください。新しいユニットはModに保存されます。"
 sc = "请先选择或新建一个模组：新单位保存在模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: یگان جدید در ماد ذخیره می‌شود."
 
 [e159a1f0807]
 us = "{0}: copy the unit {1} was made from instead (a copy of a copy would lose its changes)"
@@ -1731,6 +1874,7 @@ ru = "{0}: скопируйте вместо этого юнит, из кото�
 cz = "{0}: zkopírujte raději jednotku, ze které vznikla {1} (kopie kopie by ztratila své změny)"
 jpn = "{0}：代わりに {1} の元になったユニットをコピーしてください（コピーのコピーでは変更が失われます）"
 sc = "{0}：请改为复制 {1} 所基于的单位（复制副本会丢失其更改）"
+fa = "{0}: به‌جای آن، یگانی را کپی کنید که {1} از آن ساخته شده است (کپیِ یک کپی تغییرهایش را از دست می‌دهد)"
 
 [e724900e10e]
 us = "{0} stays in the mod: {1} {2} researched from it. Pick another unit to research {3} from in {4} Upgrade and research box first, or choose in Settings > Research what taking it out does."
@@ -1743,6 +1887,7 @@ ru = "{0} остаётся в моде: {1} {2} исследуется из не
 cz = "{0} zůstává v modu: {1} {2} se z něj zkoumá. Nejprve v poli Vylepšení a výzkum u {4} vyberte jinou jednotku, ze které zkoumat {3}, nebo v Nastavení > Výzkum zvolte, co udělá jeho odebrání."
 jpn = "{0} は Mod に残ります：{1} {2} がここから研究されます。先に {4} の「アップグレードと研究」欄で {3} の研究元を別のユニットにするか、設定 > 研究で取り除いたときの扱いを選んでください。"
 sc = "{0} 留在模组中：{1} {2} 由它研究得到。请先在 {4} 的“升级与研究”框中为 {3} 选择另一个研究来源，或在“设置 > 研究”中选择移除它时的处理方式。"
+fa = "{0} در ماد می‌ماند: {1} {2} از آن تحقیق می‌شود. اول در کادر «ارتقا و تحقیق» {4} یگان دیگری را برای تحقیق {3} انتخاب کنید، یا در «تنظیمات > تحقیق» انتخاب کنید که برداشتن آن چه کند."
 
 [ea1e7e9a56a]
 us = "{0} isn't a unit made in this mod, so it can't be deleted here"
@@ -1755,6 +1900,7 @@ ru = "{0} — не юнит из этого мода, поэтому удали�
 cz = "{0} není jednotka z tohoto modu, takže ji tu nelze smazat"
 jpn = "{0} はこの Mod で作ったユニットではないため、ここでは削除できません"
 sc = "{0} 不是此模组中新建的单位，因此不能在此删除"
+fa = "{0} یگانی نیست که در این ماد ساخته شده باشد، پس اینجا نمی‌توان آن را حذف کرد"
 
 [e8038c11ae0]
 us = "Pick or make a mod or a map first."
@@ -1767,6 +1913,7 @@ ru = "Сначала выберите или создайте мод или ка
 cz = "Nejprve vyberte nebo vytvořte mod nebo mapu."
 jpn = "先に Mod かマップを選ぶか作ってください。"
 sc = "请先选择或新建一个模组或地图。"
+fa = "اول یک ماد یا نقشه انتخاب کنید یا بسازید."
 
 [e1fd96e3cc1]
 us = "A test is already being built: wait for it to finish."
@@ -1779,6 +1926,7 @@ ru = "Тест уже собирается: дождитесь окончани�
 cz = "Test se už sestavuje: počkejte, až skončí."
 jpn = "テストはすでにビルド中です。終わるまでお待ちください。"
 sc = "测试已在构建中：请等待完成。"
+fa = "یک آزمایش از قبل در حال ساخت است: صبر کنید تا تمام شود."
 
 [ec6d2b1550a]
 us = "That file isn't part of the last test's mods."
@@ -1791,6 +1939,7 @@ ru = "Этот файл не относится к модам последнег
 cz = "Tento soubor nepatří k modům posledního testu."
 jpn = "そのファイルは前回のテストの Mod に含まれていません。"
 sc = "该文件不属于上次测试的模组。"
+fa = "آن فایل جزو مادهای آخرین آزمایش نیست."
 
 [efeb382762a]
 us = "There's no fix called {0}."
@@ -1803,6 +1952,7 @@ ru = "Исправления с именем {0} нет."
 cz = "Oprava jménem {0} neexistuje."
 jpn = "{0} という修正はありません。"
 sc = "没有名为 {0} 的修复。"
+fa = "اصلاحی به نام {0} وجود ندارد."
 
 [ef85ce59f5a]
 us = "We couldn't find R.U.S.E., so there are no modded copies yet."
@@ -1815,6 +1965,7 @@ ru = "R.U.S.E. не найдена, поэтому модифицированн�
 cz = "R.U.S.E. jsme nenašli, takže zatím nejsou žádné upravené kopie."
 jpn = "R.U.S.E. が見つからないため、Mod 入りのコピーはまだありません。"
 sc = "找不到 R.U.S.E.，因此还没有模组副本。"
+fa = "R.U.S.E. را پیدا نکردیم، پس هنوز نسخهٔ ماددار وجود ندارد."
 
 [e760a673bf9]
 us = "A test is being built: wait for it to finish."
@@ -1827,6 +1978,7 @@ ru = "Собирается тест: дождитесь окончания."
 cz = "Sestavuje se test: počkejte, až skončí."
 jpn = "テストをビルド中です。終わるまでお待ちください。"
 sc = "正在构建测试：请等待完成。"
+fa = "یک آزمایش در حال ساخت است: صبر کنید تا تمام شود."
 
 [e6431a3bc2d]
 us = "The version should be three numbers, like 1.0.0."
@@ -1839,6 +1991,7 @@ ru = "Версия должна состоять из трёх чисел, на�
 cz = "Verze by měla mít tři čísla, třeba 1.0.0."
 jpn = "バージョンは 1.0.0 のように3つの数字にしてください。"
 sc = "版本应为三个数字，例如 1.0.0。"
+fa = "نسخه باید سه عدد باشد، مثل 1.0.0."
 
 [e29abc22c10]
 us = "{0} isn't a weapon (it's a {1})"
@@ -1851,6 +2004,7 @@ ru = "{0} — не оружие (это {1})"
 cz = "{0} není zbraň (je to {1})"
 jpn = "{0} は武器ではありません（{1} です）"
 sc = "{0} 不是武器（它是 {1}）"
+fa = "{0} سلاح نیست (یک {1} است)"
 
 [ea91a50d79d]
 us = "{0} is shared by several units; change it on each unit's own copy"
@@ -1863,6 +2017,7 @@ ru = "{0} общий для нескольких юнитов; измените 
 cz = "{0} sdílí několik jednotek; změňte ho na vlastní kopii každé jednotky"
 jpn = "{0} は複数のユニットで共有されています。各ユニット専用のコピーで変更してください"
 sc = "{0} 由多个单位共用；请在每个单位自己的副本上更改"
+fa = "{0} میان چند یگان مشترک است؛ آن را روی کپی مخصوص هر یگان تغییر دهید"
 
 [eaca7a408f7]
 us = "{0} isn't an ammunition, so it can't be copied here"
@@ -1875,6 +2030,7 @@ ru = "{0} — не боеприпас, поэтому скопировать е�
 cz = "{0} není munice, takže ji tu nelze zkopírovat"
 jpn = "{0} は弾薬ではないため、ここではコピーできません"
 sc = "{0} 不是弹药，因此不能在此复制"
+fa = "{0} مهمات نیست، پس اینجا نمی‌توان آن را کپی کرد"
 
 [ee6d8b55d02]
 us = "There's already a copy at {0}. Pick another name."
@@ -1887,6 +2043,7 @@ ru = "Копия в {0} уже есть. Выберите другое имя."
 cz = "V {0} už kopie je. Vyberte jiný název."
 jpn = "{0} にはすでにコピーがあります。別の名前にしてください。"
 sc = "{0} 处已有副本。请换个名字。"
+fa = "از قبل یک کپی در {0} وجود دارد. نام دیگری انتخاب کنید."
 
 [eaf9239a49f]
 us = "{0} isn't a unit"
@@ -1899,6 +2056,7 @@ ru = "{0} — не юнит"
 cz = "{0} není jednotka"
 jpn = "{0} はユニットではありません"
 sc = "{0} 不是单位"
+fa = "{0} یگان نیست"
 
 [e8c6ccc9e7f]
 us = "Pick an armour level from the list."
@@ -1911,6 +2069,7 @@ ru = "Выберите уровень брони из списка."
 cz = "Vyberte úroveň pancíře ze seznamu."
 jpn = "一覧から装甲レベルを選んでください。"
 sc = "请从列表中选择装甲等级。"
+fa = "یک سطح زره از فهرست انتخاب کنید."
 
 [efb8a21ad45]
 us = "Blank Ocean starts from a Battles map; Blank Terrain from a Battles map, an Operation or a campaign chapter."
@@ -1923,6 +2082,7 @@ ru = "Blank Ocean начинается с карты сражений; Blank Ter
 cz = "Blank Ocean začíná z mapy Bitvy; Blank Terrain z mapy Bitvy, Operace nebo kapitoly kampaně."
 jpn = "Blank Ocean はバトルのマップから、Blank Terrain はバトルのマップ・オペレーション・キャンペーンの章から始まります。"
 sc = "Blank Ocean 以战役地图为起点；Blank Terrain 以战役地图、行动或战役章节为起点。"
+fa = "«اقیانوس خالی» از یک نقشهٔ Battles شروع می‌شود؛ «زمین خالی» از یک نقشهٔ Battles، یک عملیات یا یک فصل کارزار."
 
 [eb2e75445fd]
 us = "The game folder isn't found, so the map's own files can't be read."
@@ -1935,6 +2095,7 @@ ru = "Папка игры не найдена, поэтому файлы кар�
 cz = "Složka hry nebyla nalezena, takže vlastní soubory mapy nelze přečíst."
 jpn = "ゲームフォルダーが見つからないため、マップのファイルを読めません。"
 sc = "找不到游戏文件夹，因此无法读取地图自身的文件。"
+fa = "پوشهٔ بازی پیدا نشد، پس فایل‌های خودِ نقشه را نمی‌توان خواند."
 
 [e27cfa2ea40]
 us = "Blender's pictures couldn't be read ({0})."
@@ -1947,6 +2108,7 @@ ru = "Картинки Blender прочитать не удалось ({0})."
 cz = "Obrázky z Blenderu se nepodařilo přečíst ({0})."
 jpn = "Blender の画像を読めませんでした（{0}）。"
 sc = "无法读取 Blender 的图片（{0}）。"
+fa = "تصویرهای Blender خوانده نشدند ({0})."
 
 [ec801f216b4]
 us = "{0}: its movement data can't be read ({1})."
@@ -1959,6 +2121,7 @@ ru = "{0}: данные передвижения прочитать нельзя
 cz = "{0}: jeho data pohybu nelze přečíst ({1})."
 jpn = "{0}：移動データを読めません（{1}）。"
 sc = "{0}：无法读取其移动数据（{1}）。"
+fa = "{0}: داده‌های حرکتِ آن خوانده نمی‌شود ({1})."
 
 [e2970ea4887]
 us = "{0} has a mistake ({1}). The mod check at the top can set it aside, or fix it by hand."
@@ -1971,6 +2134,7 @@ ru = "В {0} ошибка ({1}). Проверка мода вверху може
 cz = "{0} má chybu ({1}). Kontrola modu nahoře ho může odložit, nebo ho opravte ručně."
 jpn = "{0} に誤りがあります（{1}）。上部の Mod チェックで外すか、手で直してください。"
 sc = "{0} 有错误（{1}）。顶部的模组检查可以将其搁置，或手动修复。"
+fa = "{0} یک اشکال دارد ({1}). بررسی ماد در بالا می‌تواند آن را کنار بگذارد، یا آن را دستی درست کنید."
 
 [ee16bb5f579]
 us = "that starting point isn't in the mod any more"
@@ -1983,6 +2147,7 @@ ru = "этой стартовой точки в моде больше нет"
 cz = "tento startovní bod už v modu není"
 jpn = "その開始地点はもう Mod にありません"
 sc = "该起始点已不在模组中"
+fa = "آن نقطهٔ شروع دیگر در ماد نیست"
 
 [e387cd56d90]
 us = "A starting point can't be taken out: every player needs one. Move it instead."
@@ -1995,6 +2160,7 @@ ru = "Стартовую точку убрать нельзя: она нужна
 cz = "Startovní bod nelze odebrat: každý hráč ho potřebuje. Raději ho přesuňte."
 jpn = "開始地点は取り除けません。プレイヤーごとに必要です。代わりに移動してください。"
 sc = "起始点不能移除：每位玩家都需要一个。请改为移动它。"
+fa = "نقطهٔ شروع را نمی‌توان برداشت: هر بازیکن به یکی نیاز دارد. به‌جای آن، جابه‌جایش کنید."
 
 [eda55061fea]
 us = "a {0} can't be taken out"
@@ -2007,6 +2173,7 @@ ru = "{0} нельзя убрать"
 cz = "{0} nelze odebrat"
 jpn = "{0} は取り除けません"
 sc = "{0} 不能移除"
+fa = "{0} را نمی‌توان برداشت"
 
 [e1d805e3c5f]
 us = "{0}: {1} isn't a number"
@@ -2019,6 +2186,7 @@ ru = "{0}: {1} — не число"
 cz = "{0}: {1} není číslo"
 jpn = "{0}：{1} は数値ではありません"
 sc = "{0}：{1} 不是数字"
+fa = "{0}: {1} عدد نیست"
 
 [eeb55266256]
 us = "{0} is a whole number"
@@ -2031,6 +2199,7 @@ ru = "{0} — целое число"
 cz = "{0} je celé číslo"
 jpn = "{0} は整数です"
 sc = "{0} 是整数"
+fa = "{0} یک عدد صحیح است"
 
 [e993eddbf90]
 us = "{0}: its sectors can't be read ({1})"
@@ -2043,6 +2212,7 @@ ru = "{0}: секторы прочитать нельзя ({1})"
 cz = "{0}: jeho sektory nelze přečíst ({1})"
 jpn = "{0}：セクターを読めません（{1}）"
 sc = "{0}：无法读取其区块（{1}）"
+fa = "{0}: بخش‌های آن خوانده نمی‌شوند ({1})"
 
 [e137d72b26f]
 us = "That stroke can't be saved ({0})."
@@ -2055,6 +2225,7 @@ ru = "Этот мазок сохранить нельзя ({0})."
 cz = "Tento tah nelze uložit ({0})."
 jpn = "そのストロークは保存できません（{0}）。"
 sc = "该笔画无法保存（{0}）。"
+fa = "آن ضربهٔ قلم‌مو ذخیره نمی‌شود ({0})."
 
 [ecf007db56e]
 us = "There's no painted sector stroke to take back."
@@ -2067,6 +2238,7 @@ ru = "Нет нарисованного мазка секторов, котор�
 cz = "Není žádný namalovaný tah sektoru k vrácení."
 jpn = "取り消せるセクターのストロークはありません。"
 sc = "没有可撤销的区块笔画。"
+fa = "هیچ ضربهٔ رنگ‌آمیزیِ بخشی برای واگرد وجود ندارد."
 
 [e1f5a11202b]
 us = "trucks: {0} isn't a number"
@@ -2079,6 +2251,7 @@ ru = "грузовики: {0} — не число"
 cz = "nákladní auta: {0} není číslo"
 jpn = "トラック：{0} は数値ではありません"
 sc = "卡车：{0} 不是数字"
+fa = "کامیون‌ها: {0} عدد نیست"
 
 [edec189805b]
 us = "the places to spawn at must be pairs of numbers"
@@ -2091,6 +2264,7 @@ ru = "места появления должны быть парами чисе�
 cz = "místa objevení musí být dvojice čísel"
 jpn = "出現地点は数値の組にしてください"
 sc = "生成位置必须是数字对"
+fa = "مکان‌های اسپاون باید جفت‌هایی از عدد باشند"
 
 [e92ba7049c3]
 us = "that spawn isn't in the mod any more"
@@ -2103,6 +2277,7 @@ ru = "этого появления в моде больше нет"
 cz = "toto objevení už v modu není"
 jpn = "その出現地点はもう Mod にありません"
 sc = "该生成点已不在模组中"
+fa = "آن اسپاون دیگر در ماد نیست"
 
 [e89a10079e6]
 us = "times is a number, 0 or more"
@@ -2115,6 +2290,7 @@ ru = "множитель — число, 0 или больше"
 cz = "násobek je číslo, 0 nebo víc"
 jpn = "倍率は 0 以上の数値です"
 sc = "倍数是 0 或以上的数字"
+fa = "ضریب یک عدد است، 0 یا بیشتر"
 
 [e0c3682098c]
 us = "{0} has a mistake ({1}). Fix it by hand, or delete the file to start again."
@@ -2127,6 +2303,7 @@ ru = "В {0} ошибка ({1}). Исправьте вручную или уда
 cz = "{0} má chybu ({1}). Opravte ho ručně, nebo soubor smažte a začněte znovu."
 jpn = "{0} に誤りがあります（{1}）。手で直すか、ファイルを削除してやり直してください。"
 sc = "{0} 有错误（{1}）。请手动修复，或删除该文件重新开始。"
+fa = "{0} یک اشکال دارد ({1}). آن را دستی درست کنید، یا فایل را حذف کنید تا از نو شروع کنید."
 
 [ebf71f7d98d]
 us = "{0} can't be read ({1}). The mod check at the top can set it aside, or fix it by hand: the Studio won't write over it."
@@ -2139,6 +2316,7 @@ ru = "{0} прочитать нельзя ({1}). Проверка мода вв�
 cz = "{0} nelze přečíst ({1}). Kontrola modu nahoře ho může odložit, nebo ho opravte ručně: Studio ho nepřepíše."
 jpn = "{0} を読めません（{1}）。上部の Mod チェックで外すか、手で直してください。Studio は上書きしません。"
 sc = "无法读取 {0}（{1}）。顶部的模组检查可以将其搁置，或手动修复：Studio 不会覆盖它。"
+fa = "{0} خوانده نمی‌شود ({1}). بررسی ماد در بالا می‌تواند آن را کنار بگذارد، یا آن را دستی درست کنید: استودیو روی آن نمی‌نویسد."
 
 [e8b1ac58461]
 us = "{0}: its scenery can't be read ({1})."
@@ -2151,6 +2329,7 @@ ru = "{0}: декорации прочитать нельзя ({1})."
 cz = "{0}: jeho scenérii nelze přečíst ({1})."
 jpn = "{0}：配置物を読めません（{1}）。"
 sc = "{0}：无法读取其场景物体（{1}）。"
+fa = "{0}: اشیای صحنهٔ آن خوانده نمی‌شوند ({1})."
 
 [e95432b827b]
 us = "{0} isn't one of this map's own types, so the map can't take it."
@@ -2163,6 +2342,7 @@ ru = "{0} — не один из типов этой карты, поэтому 
 cz = "{0} není jeden z typů této mapy, takže ho mapa nepřijme."
 jpn = "{0} はこのマップ本来の種類ではないため、このマップでは使えません。"
 sc = "{0} 不是此地图自带的类型，因此该地图无法使用它。"
+fa = "{0} از انواعِ خودِ این نقشه نیست، پس نقشه نمی‌تواند آن را بپذیرد."
 
 [e893b430d1e]
 us = "{0} has no scenario {1}."
@@ -2175,6 +2355,7 @@ ru = "У {0} нет сценария {1}."
 cz = "{0} nemá scénář {1}."
 jpn = "{0} にシナリオ {1} はありません。"
 sc = "{0} 没有剧本 {1}。"
+fa = "{0} سناریوی {1} را ندارد."
 
 [e8fa179f55a]
 us = "Your mod's {0}"
@@ -2187,6 +2368,7 @@ ru = "{0} вашего мода"
 cz = "{0} vašeho modu"
 jpn = "あなたの Mod の {0}"
 sc = "你的模组的 {0}"
+fa = "{0} در ماد شما"
 
 [ebc6c8fa909]
 us = "{0} isn't in a menu, so it has no place to move."
@@ -2199,6 +2381,7 @@ ru = "{0} нет ни в одном меню, поэтому его некуда
 cz = "{0} není v žádné nabídce, takže nemá kam se přesunout."
 jpn = "{0} はどのメニューにもないため、移動する場所がありません。"
 sc = "{0} 不在任何菜单中，因此没有可移动的位置。"
+fa = "{0} در هیچ منویی نیست، پس جایی برای جابه‌جا شدن ندارد."
 
 [e65bcb0b8b2]
 us = "A bridge's place, turn and length are numbers"
@@ -2211,6 +2394,7 @@ ru = "Место, поворот и длина моста — числа"
 cz = "Místo, otočení a délka mostu jsou čísla"
 jpn = "橋の場所・向き・長さは数値です"
 sc = "桥的位置、朝向和长度都是数字"
+fa = "مکان، چرخش و طول پل عدد هستند"
 
 [ef78b44326e]
 us = "Which item to fix isn't said."
@@ -2223,6 +2407,7 @@ ru = "Не указано, какой элемент исправить."
 cz = "Není uvedeno, kterou položku opravit."
 jpn = "どの項目を直すかが指定されていません。"
 sc = "没有指明要修复哪个项目。"
+fa = "گفته نشده کدام مورد باید درست شود."
 
 [e84b2b63b68]
 us = "The Studio doesn't know a safe {0} to fill in."
@@ -2235,6 +2420,7 @@ ru = "Studio не знает безопасного {0} для подстано�
 cz = "Studio nezná bezpečné {0} k vyplnění."
 jpn = "Studio は入れても安全な {0} を知りません。"
 sc = "Studio 不知道可以安全填入的 {0}。"
+fa = "استودیو هیچ {0} بی‌خطری برای پر کردن نمی‌شناسد."
 
 [eea51c12742]
 us = "maps/{0} already exists: move the files from maps/{1} into it by hand"
@@ -2247,6 +2433,7 @@ ru = "maps/{0} уже есть: перенесите в неё вручную ф
 cz = "maps/{0} už existuje: přesuňte do něj ručně soubory z maps/{1}"
 jpn = "maps/{0} はすでにあります。maps/{1} のファイルを手で移してください"
 sc = "maps/{0} 已存在：请手动将 maps/{1} 中的文件移入其中"
+fa = "maps/{0} از قبل وجود دارد: فایل‌ها را دستی از maps/{1} به آن منتقل کنید"
 
 [ea1a4228d9a]
 us = "We couldn't find R.U.S.E. Opening a RUSE Mod Manager mod reads the game's unit data."
@@ -2259,6 +2446,7 @@ ru = "R.U.S.E. не найдена. Чтобы открыть мод RUSE Mod Ma
 cz = "R.U.S.E. jsme nenašli. Otevření modu z RUSE Mod Manageru čte data jednotek hry."
 jpn = "R.U.S.E. が見つかりません。RUSE Mod Manager の Mod を開くにはゲームのユニットデータを読みます。"
 sc = "找不到 R.U.S.E.。打开 RUSE Mod Manager 模组需要读取游戏的单位数据。"
+fa = "R.U.S.E. را پیدا نکردیم. باز کردن یک ماد RUSE Mod Manager داده‌های یگانِ بازی را می‌خواند."
 
 [ef9482132be]
 us = "Build the game index first (Units tab: Build the index), then open this mod again."
@@ -2271,6 +2459,7 @@ ru = "Сначала постройте индекс игры (вкладка «
 cz = "Nejprve sestavte index hry (karta Jednotky: Sestavit index), pak tento mod otevřete znovu."
 jpn = "先にゲームのインデックスを作ってから（ユニットタブ：インデックスを作る）、この Mod を開き直してください。"
 sc = "请先构建游戏索引（单位标签页：构建索引），然后重新打开此模组。"
+fa = "اول نمایهٔ بازی را بسازید (زبانهٔ «یگان‌ها»: «ساخت نمایه»)، سپس این ماد را دوباره باز کنید."
 
 [ece86a7c2f5]
 us = "{0} can't be edited here ({1})"
@@ -2283,6 +2472,7 @@ ru = "{0} здесь изменить нельзя ({1})"
 cz = "{0} tu nelze upravit ({1})"
 jpn = "{0} はここでは編集できません（{1}）"
 sc = "{0} 不能在此编辑（{1}）"
+fa = "{0} را اینجا نمی‌توان ویرایش کرد ({1})"
 
 [ebc72dbd629]
 us = "{0} isn't one of the AI tab's"
@@ -2295,6 +2485,7 @@ ru = "{0} — не одно из значений вкладки ИИ"
 cz = "{0} není jedna z hodnot karty AI"
 jpn = "{0} は AI タブの値ではありません"
 sc = "{0} 不是 AI 标签页的数值之一"
+fa = "{0} از مقدارهای زبانهٔ «هوش مصنوعی» نیست"
 
 [e9e93af1a3a]
 us = "{0} of {1} can't be changed here"
@@ -2307,6 +2498,7 @@ ru = "{0} у {1} здесь изменить нельзя"
 cz = "{0} u {1} tu nelze změnit"
 jpn = "{1} の {0} はここでは変更できません"
 sc = "{1} 的 {0} 不能在此更改"
+fa = "{0} از {1} را اینجا نمی‌توان تغییر داد"
 
 [e18624b19f9]
 us = "{0} has no {1} yet: add it with Add a value…"
@@ -2319,6 +2511,7 @@ ru = "У {0} ещё нет {1}: добавьте через «Добавить �
 cz = "{0} zatím nemá {1}: přidejte ho přes Přidat hodnotu…"
 jpn = "{0} にはまだ {1} がありません。「値を追加…」で追加してください"
 sc = "{0} 还没有 {1}：请用“添加数值…”添加"
+fa = "{0} هنوز {1} ندارد: آن را با «افزودن مقدار…» اضافه کنید"
 
 [e6bc246c295]
 us = "No {0} in the game's data has {1} now, so it can't be checked here"
@@ -2331,6 +2524,7 @@ ru = "Сейчас ни у одного {0} в данных игры нет {1},
 cz = "Žádný {0} v datech hry teď nemá {1}, takže to tu nelze zkontrolovat"
 jpn = "今のゲームデータに {1} を持つ {0} がないため、ここでは確認できません"
 sc = "游戏数据中目前没有任何 {0} 拥有 {1}，因此无法在此检查"
+fa = "اکنون هیچ {0} در داده‌های بازی {1} ندارد، پس اینجا نمی‌توان آن را بررسی کرد"
 
 [ec214e8fdd0]
 us = "{0} has no {1}"
@@ -2343,6 +2537,7 @@ ru = "У {0} нет {1}"
 cz = "{0} nemá {1}"
 jpn = "{0} に {1} はありません"
 sc = "{0} 没有 {1}"
+fa = "{0} {1} ندارد"
 
 [e3e54904e67]
 us = "No {0} in its file of the game's data has {1} now, so it can't be checked here"
@@ -2355,6 +2550,7 @@ ru = "Сейчас ни у одного {0} в его файле данных и
 cz = "Žádný {0} v jeho souboru dat hry teď nemá {1}, takže to tu nelze zkontrolovat"
 jpn = "今のゲームデータのそのファイルに {1} を持つ {0} がないため、ここでは確認できません"
 sc = "其游戏数据文件中目前没有任何 {0} 拥有 {1}，因此无法在此检查"
+fa = "اکنون هیچ {0} در فایل خودش از داده‌های بازی {1} ندارد، پس اینجا نمی‌توان آن را بررسی کرد"
 
 [e155b6833fb]
 us = "Pick or make a mod first: notes are kept in it."
@@ -2367,6 +2563,7 @@ ru = "Сначала выберите или создайте мод: замет
 cz = "Nejprve vyberte nebo vytvořte mod: poznámky se ukládají do něj."
 jpn = "先にModを選ぶか作ってください。メモはそこに保管されます。"
 sc = "请先选择或新建一个模组：备注保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: یادداشت‌ها در آن نگه داشته می‌شوند."
 
 [e855f9d7857]
 us = "A line break can't be typed here; the words stay on one line."
@@ -2379,6 +2576,7 @@ ru = "Перенос строки здесь ввести нельзя; слов
 cz = "Zalomení řádku tu nelze napsat; slova zůstávají na jednom řádku."
 jpn = "ここでは改行を入力できません。文字は1行のままです。"
 sc = "此处不能输入换行；文字保持在一行。"
+fa = "اینجا نمی‌توان به خط بعد رفت؛ متن در یک خط می‌ماند."
 
 [efc7536bdf1]
 us = "{0} has {1} already: change it on its row."
@@ -2391,6 +2589,7 @@ ru = "У {0} уже есть {1}: измените это в его строке
 cz = "{0} už má {1}: změňte to na jeho řádku."
 jpn = "{0} にはすでに {1} があります。その行で変更してください。"
 sc = "{0} 已有 {1}：请在其所在行更改。"
+fa = "{0} از قبل {1} دارد: آن را در ردیف خودش تغییر دهید."
 
 [ee4938455a9]
 us = "It has {0} already: change it on its row (Game's value puts back a value taken out)."
@@ -2403,6 +2602,7 @@ ru = "У него уже есть {0}: измените это в его стр�
 cz = "Už má {0}: změňte to na jeho řádku (Hodnota hry vrátí odebranou hodnotu)."
 jpn = "すでに {0} があります。その行で変更してください（「ゲームの値」で取り除いた値を戻せます）。"
 sc = "它已有 {0}：请在其所在行更改（“游戏数值”可恢复已移除的数值）。"
+fa = "از قبل {0} دارد: آن را در ردیف خودش تغییر دهید («مقدار بازی» مقداری را که برداشته شده برمی‌گرداند)."
 
 [e23783b50a6]
 us = "The size is a number: 1 is as long as the unit it copies."
@@ -2415,6 +2615,7 @@ ru = "Размер — число: 1 — длина копируемого юн�
 cz = "Velikost je číslo: 1 je délka kopírované jednotky."
 jpn = "サイズは数値です。1 はコピー元のユニットと同じ長さです。"
 sc = "大小是数字：1 表示与所复制单位一样长。"
+fa = "اندازه یک عدد است: 1 یعنی هم‌طولِ یگانی که از آن کپی شده."
 
 [ed05f2e2dbe]
 us = "Times is a number above 0: 0.5 is half the size, 2 twice."
@@ -2427,6 +2628,7 @@ ru = "Множитель — число больше 0: 0,5 — половина
 cz = "Násobek je číslo nad 0: 0,5 je poloviční velikost, 2 dvojnásobná."
 jpn = "倍率は 0 より大きい数値です。0.5 で半分、2 で2倍のサイズです。"
 sc = "倍数是大于 0 的数字：0.5 为一半大小，2 为两倍。"
+fa = "ضریب عددی بزرگ‌تر از 0 است: 0.5 یعنی نصف اندازه، 2 یعنی دو برابر."
 
 [e6708344d05]
 us = "The card picture couldn't be read (not a PNG)."
@@ -2439,6 +2641,7 @@ ru = "Картинку карточки прочитать не удалось (
 cz = "Obrázek karty se nepodařilo přečíst (není to PNG)."
 jpn = "カード画像を読めませんでした（PNG ではありません）。"
 sc = "无法读取卡片图片（不是 PNG）。"
+fa = "تصویر کارت خوانده نشد (PNG نیست)."
 
 [e1999daa967]
 us = "Pick or make a mod first: the copy is saved in it."
@@ -2451,6 +2654,7 @@ ru = "Сначала выберите или создайте мод: копия
 cz = "Nejprve vyberte nebo vytvořte mod: kopie se ukládá do něj."
 jpn = "先にModを選ぶか作ってください。コピーはそこに保存されます。"
 sc = "请先选择或新建一个模组：副本保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: کپی در آن ذخیره می‌شود."
 
 [e3afc255871]
 us = "{0} isn't a unit or building, so it can't be copied here"
@@ -2463,6 +2667,7 @@ ru = "{0} — не юнит и не здание, поэтому скопиро�
 cz = "{0} není jednotka ani budova, takže ho tu nelze zkopírovat"
 jpn = "{0} はユニットでも建物でもないため、ここではコピーできません"
 sc = "{0} 既不是单位也不是建筑，因此不能在此复制"
+fa = "{0} یگان یا ساختمان نیست، پس اینجا نمی‌توان آن را کپی کرد"
 
 [e215952753b]
 us = "No build menu for nation {0} and factory {1}: pick one of the menus the game has"
@@ -2475,6 +2680,7 @@ ru = "Нет меню постройки для нации {0} и завода {
 cz = "Žádná nabídka stavby pro národ {0} a továrnu {1}: vyberte jednu z nabídek hry"
 jpn = "国 {0}・工場 {1} の建設メニューはありません。ゲームにあるメニューから選んでください"
 sc = "没有国家 {0} 和工厂 {1} 的建造菜单：请选择游戏中已有的菜单"
+fa = "منوی ساختی برای کشور {0} و کارخانهٔ {1} وجود ندارد: یکی از منوهای بازی را انتخاب کنید"
 
 [e011d027521]
 us = "There's already a unit at {0}. Pick another name."
@@ -2487,6 +2693,7 @@ ru = "Юнит в {0} уже есть. Выберите другое имя."
 cz = "V {0} už jednotka je. Vyberte jiný název."
 jpn = "{0} にはすでにユニットがあります。別の名前にしてください。"
 sc = "{0} 处已有单位。请换个名字。"
+fa = "از قبل یگانی در {0} وجود دارد. نام دیگری انتخاب کنید."
 
 [ef8d34c8fe6]
 us = "There's no weapon at {0} in this game build."
@@ -2499,6 +2706,7 @@ ru = "В этой версии игры нет оружия в {0}."
 cz = "V této verzi hry není zbraň v {0}."
 jpn = "このゲームのバージョンには {0} に武器がありません。"
 sc = "此游戏版本中 {0} 处没有武器。"
+fa = "در این نسخهٔ بازی سلاحی در {0} وجود ندارد."
 
 [eb5ef9b96ff]
 us = "{0} isn't an ammunition"
@@ -2511,6 +2719,7 @@ ru = "{0} — не боеприпас"
 cz = "{0} není munice"
 jpn = "{0} は弾薬ではありません"
 sc = "{0} 不是弹药"
+fa = "{0} مهمات نیست"
 
 [e9fbfb8a300]
 us = "There's no ammunition at {0}."
@@ -2523,6 +2732,7 @@ ru = "В {0} нет боеприпаса."
 cz = "V {0} není munice."
 jpn = "{0} に弾薬はありません。"
 sc = "{0} 处没有弹药。"
+fa = "مهماتی در {0} وجود ندارد."
 
 [ea4f6ea35ac]
 us = "{0} isn't in this game build"
@@ -2535,6 +2745,7 @@ ru = "{0} нет в этой версии игры"
 cz = "{0} v této verzi hry není"
 jpn = "{0} はこのゲームのバージョンにありません"
 sc = "此游戏版本中没有 {0}"
+fa = "{0} در این نسخهٔ بازی نیست"
 
 [e08b1046ab4]
 us = "There's nothing at {0} in this game build."
@@ -2547,6 +2758,7 @@ ru = "В этой версии игры в {0} ничего нет."
 cz = "V této verzi hry v {0} nic není."
 jpn = "このゲームのバージョンでは {0} に何もありません。"
 sc = "此游戏版本中 {0} 处什么也没有。"
+fa = "در این نسخهٔ بازی چیزی در {0} وجود ندارد."
 
 [e2e50dc3363]
 us = "{0} can't start blank: {1}"
@@ -2559,6 +2771,7 @@ ru = "{0} нельзя начать пустой: {1}"
 cz = "{0} nemůže začít prázdná: {1}"
 jpn = "{0} は空の状態から始められません：{1}"
 sc = "{0} 不能以空白开始：{1}"
+fa = "{0} نمی‌تواند خالی شروع شود: {1}"
 
 [ea581c41578]
 us = "The scene for Blender couldn't be made ({0})."
@@ -2571,6 +2784,7 @@ ru = "Сцену для Blender создать не удалось ({0})."
 cz = "Scénu pro Blender se nepodařilo vytvořit ({0})."
 jpn = "Blender 用のシーンを作れませんでした（{0}）。"
 sc = "无法创建用于 Blender 的场景（{0}）。"
+fa = "صحنه برای Blender ساخته نشد ({0})."
 
 [e97f70c5a01]
 us = "{0}: its cover grid can't be read ({1})."
@@ -2583,6 +2797,7 @@ ru = "{0}: сетку укрытий прочитать нельзя ({1})."
 cz = "{0}: jeho mřížku krytu nelze přečíst ({1})."
 jpn = "{0}：遮蔽グリッドを読めません（{1}）。"
 sc = "{0}：无法读取其掩护网格（{1}）。"
+fa = "{0}: شبکهٔ پوشش آن خوانده نمی‌شود ({1})."
 
 [e0f5c5af995]
 us = "{0} has no movement data in {1}."
@@ -2595,6 +2810,7 @@ ru = "У {0} нет данных передвижения в {1}."
 cz = "{0} nemá data pohybu v {1}."
 jpn = "{0} には {1} に移動データがありません。"
 sc = "{0} 在 {1} 中没有移动数据。"
+fa = "{0} در {1} دادهٔ حرکت ندارد."
 
 [e21684be44b]
 us = "That shape can't be saved ({0})."
@@ -2607,6 +2823,7 @@ ru = "Эту форму сохранить нельзя ({0})."
 cz = "Tento tvar nelze uložit ({0})."
 jpn = "その形は保存できません（{0}）。"
 sc = "该形状无法保存（{0}）。"
+fa = "آن شکل ذخیره نمی‌شود ({0})."
 
 [ee3dc7f7f35]
 us = "times: {0} isn't a number"
@@ -2619,6 +2836,7 @@ ru = "множитель: {0} — не число"
 cz = "násobek: {0} není číslo"
 jpn = "倍率：{0} は数値ではありません"
 sc = "倍数：{0} 不是数字"
+fa = "ضریب: {0} عدد نیست"
 
 [e85dac38761]
 us = "{0} has no scenery file."
@@ -2631,6 +2849,7 @@ ru = "У {0} нет файла декораций."
 cz = "{0} nemá soubor scenérie."
 jpn = "{0} には配置物のファイルがありません。"
 sc = "{0} 没有场景物体文件。"
+fa = "{0} فایل اشیای صحنه ندارد."
 
 [edac791cd2f]
 us = "{0} isn't one of this map's own buildings, props or trees, so it can't be moved or taken away here."
@@ -2643,6 +2862,7 @@ ru = "{0} — не одно из зданий, предметов или дер�
 cz = "{0} není jedna z budov, předmětů ani stromů této mapy, takže ho tu nelze přesunout ani odebrat."
 jpn = "{0} はこのマップ本来の建物・小物・木ではないため、ここでは移動も取り除きもできません。"
 sc = "{0} 不是此地图自带的建筑、物件或树木，因此不能在此移动或移除。"
+fa = "{0} از ساختمان‌ها، اشیا یا درخت‌های خودِ این نقشه نیست، پس اینجا نمی‌توان آن را جابه‌جا کرد یا برداشت."
 
 [e95f0c07b48]
 us = "{0}: its road network can't be read ({1})"
@@ -2655,6 +2875,7 @@ ru = "{0}: дорожную сеть прочитать нельзя ({1})"
 cz = "{0}: jeho silniční síť nelze přečíst ({1})"
 jpn = "{0}：道路網を読めません（{1}）"
 sc = "{0}：无法读取其道路网（{1}）"
+fa = "{0}: شبکهٔ جاده‌های آن خوانده نمی‌شود ({1})"
 
 [e98f294f4a1]
 us = "{0}: its ground can't be read ({1})."
@@ -2667,6 +2888,7 @@ ru = "{0}: рельеф прочитать нельзя ({1})."
 cz = "{0}: jeho terén nelze přečíst ({1})."
 jpn = "{0}：地形を読めません（{1}）。"
 sc = "{0}：无法读取其地面（{1}）。"
+fa = "{0}: زمین آن خوانده نمی‌شود ({1})."
 
 [e77d50d1c75]
 us = "It can't move: {0}."
@@ -2679,6 +2901,7 @@ ru = "Он не может двигаться: {0}."
 cz = "Nemůže se pohnout: {0}."
 jpn = "移動できません：{0}。"
 sc = "它无法移动：{0}。"
+fa = "نمی‌توان آن را جابه‌جا کرد: {0}."
 
 [e8e9bf58574]
 us = "That couldn't be fixed safely ({0}). Put the file aside instead, or fix it by hand."
@@ -2691,6 +2914,7 @@ ru = "Это не удалось безопасно исправить ({0}). Л
 cz = "Nepodařilo se to bezpečně opravit ({0}). Soubor raději odložte, nebo ho opravte ručně."
 jpn = "安全に直せませんでした（{0}）。代わりにファイルを外すか、手で直してください。"
 sc = "无法安全修复（{0}）。请改为将文件搁置，或手动修复。"
+fa = "آن را نمی‌شد بی‌خطر درست کرد ({0}). به‌جای آن، فایل را کنار بگذارید، یا آن را دستی درست کنید."
 
 [efe37dd99e1]
 us = "{0} couldn't be opened in the Studio ({1}). Please report this."
@@ -2703,6 +2927,7 @@ ru = "{0} не удалось открыть в Studio ({1}). Пожалуйст
 cz = "{0} se ve Studiu nepodařilo otevřít ({1}). Nahlaste to prosím."
 jpn = "{0} を Studio で開けませんでした（{1}）。報告してください。"
 sc = "无法在 Studio 中打开 {0}（{1}）。请报告此问题。"
+fa = "{0} در استودیو باز نشد ({1}). لطفاً این را گزارش کنید."
 
 [e42baf4976e]
 us = "This copy of the Studio can't show scripts ({0})."
@@ -2715,6 +2940,7 @@ ru = "Эта копия Studio не может показать скрипты (
 cz = "Tato kopie Studia nedokáže ukázat skripty ({0})."
 jpn = "この Studio ではスクリプトを表示できません（{0}）。"
 sc = "此 Studio 副本无法显示脚本（{0}）。"
+fa = "این نسخه از استودیو نمی‌تواند اسکریپت‌ها را نشان دهد ({0})."
 
 [ea3fccf018c]
 us = "{0} has a mistake ({1}). Fix it, or delete it to start over."
@@ -2727,6 +2953,7 @@ ru = "В {0} ошибка ({1}). Исправьте или удалите, чт�
 cz = "{0} má chybu ({1}). Opravte ho, nebo ho smažte a začněte znovu."
 jpn = "{0} に誤りがあります（{1}）。直すか、削除してやり直してください。"
 sc = "{0} 有错误（{1}）。请修复，或删除后重新开始。"
+fa = "{0} یک اشکال دارد ({1}). آن را درست کنید، یا حذفش کنید تا از نو شروع کنید."
 
 [e45cfab199b]
 us = "{0} is a text of this mod's own file text/{1}.{2}.csv under another name: change it there."
@@ -2739,6 +2966,7 @@ ru = "{0} — текст из собственного файла мода text/
 cz = "{0} je text z vlastního souboru modu text/{1}.{2}.csv pod jiným názvem: změňte ho tam."
 jpn = "{0} はこの Mod の text/{1}.{2}.csv にある別名のテキストです。そちらで変更してください。"
 sc = "{0} 是此模组自己的文件 text/{1}.{2}.csv 中以其他名称保存的文本：请在那里更改。"
+fa = "{0} متنی از فایل خودِ این ماد، text/{1}.{2}.csv، با نامی دیگر است: آن را همان‌جا تغییر دهید."
 
 [e09f862e265]
 us = "Times is a number: 0.5 is half the size, 2 twice."
@@ -2751,6 +2979,7 @@ ru = "Множитель — число: 0,5 — половина размера
 cz = "Násobek je číslo: 0,5 je poloviční velikost, 2 dvojnásobná."
 jpn = "倍率は数値です。0.5 で半分、2 で2倍のサイズです。"
 sc = "倍数是数字：0.5 为一半大小，2 为两倍。"
+fa = "ضریب یک عدد است: 0.5 یعنی نصف اندازه، 2 یعنی دو برابر."
 
 [e96ee09dc91]
 us = "There's already a unit called {0}{1} (from {2}). Pick another name."
@@ -2763,6 +2992,7 @@ ru = "Юнит с именем {0}{1} уже есть (из {2}). Выберит
 cz = "Jednotka jménem {0}{1} už existuje (z {2}). Vyberte jiný název."
 jpn = "{0}{1} という名前のユニットがすでにあります（{2} から）。別の名前にしてください。"
 sc = "已有名为 {0}{1} 的单位（来自 {2}）。请换个名字。"
+fa = "از قبل یگانی به نام {0}{1} وجود دارد (از {2}). نام دیگری انتخاب کنید."
 
 [ee989930807]
 us = "That spawn isn't in the mod any more."
@@ -2775,6 +3005,7 @@ ru = "Этого появления в моде больше нет."
 cz = "Toto objevení už v modu není."
 jpn = "その出現地点はもう Mod にありません。"
 sc = "该生成点已不在模组中。"
+fa = "آن اسپاون دیگر در ماد نیست."
 
 [e210a1a3fa1]
 us = "unknown fix {0}"
@@ -2787,6 +3018,7 @@ ru = "неизвестное исправление {0}"
 cz = "neznámá oprava {0}"
 jpn = "不明な修正 {0}"
 sc = "未知的修复 {0}"
+fa = "اصلاح ناشناخته {0}"
 
 [e3b4d0a15dc]
 us = "{0} has no cover grid in {1}, so its cover can't be shown or painted."
@@ -2799,6 +3031,7 @@ ru = "У {0} нет сетки укрытий в {1}, поэтому укрыт�
 cz = "{0} nemá mřížku krytu v {1}, takže jeho kryt nelze ukázat ani malovat."
 jpn = "{0} には {1} に遮蔽グリッドがないため、遮蔽を表示も塗りもできません。"
 sc = "{0} 在 {1} 中没有掩护网格，因此其掩护无法显示或绘制。"
+fa = "{0} در {1} شبکهٔ پوشش ندارد، پس پوشش آن را نمی‌توان نشان داد یا رنگ کرد."
 
 [ec5f7a27f3e]
 us = "a zone's size is more than 0 and at most {0} m"
@@ -2811,6 +3044,7 @@ ru = "размер зоны больше 0 и не больше {0} м"
 cz = "velikost zóny je nad 0 a nejvýš {0} m"
 jpn = "ゾーンの大きさは 0 より大きく {0} m 以下です"
 sc = "区域大小大于 0 且最多 {0} 米"
+fa = "اندازهٔ ناحیه بیشتر از 0 و حداکثر {0} متر است"
 
 [e348cc23d78]
 us = "There's no unit at {0}."
@@ -2823,6 +3057,7 @@ ru = "В {0} нет юнита."
 cz = "V {0} není jednotka."
 jpn = "{0} にユニットはありません。"
 sc = "{0} 处没有单位。"
+fa = "یگانی در {0} وجود ندارد."
 
 [ed419b27ed6]
 us = "A group's name is letters, digits and _ (starting with a letter, up to 40)."
@@ -2835,6 +3070,7 @@ ru = "Имя группы — буквы, цифры и _ (начинается 
 cz = "Název skupiny jsou písmena, číslice a _ (začíná písmenem, nejvýš 40)."
 jpn = "グループ名は英字・数字・_ で、英字で始め、40 文字までです。"
 sc = "组名由字母、数字和 _ 组成（以字母开头，最多 40 个）。"
+fa = "نام گروه از حروف، رقم‌ها و _ است (با یک حرف شروع می‌شود، حداکثر 40 نویسه)."
 
 [e0456d91573]
 us = "{0} has no movement and road file (mapinfo.win)"
@@ -2847,6 +3083,7 @@ ru = "У {0} нет файла передвижения и дорог (mapinfo.w
 cz = "{0} nemá soubor pohybu a silnic (mapinfo.win)"
 jpn = "{0} には移動と道路のファイル（mapinfo.win）がありません"
 sc = "{0} 没有移动与道路文件（mapinfo.win）"
+fa = "{0} فایل حرکت و جاده ندارد (mapinfo.win)"
 
 [ea2f012b657]
 us = "The game's Python can't read this script{0}: {1}. Nothing was saved."
@@ -2859,6 +3096,7 @@ ru = "Python игры не может прочитать этот скрипт{0
 cz = "Python hry tento skript nedokáže přečíst{0}: {1}. Nic se neuložilo."
 jpn = "ゲームの Python はこのスクリプトを読めません{0}：{1}。何も保存していません。"
 sc = "游戏的 Python 无法读取此脚本{0}：{1}。什么也没保存。"
+fa = "Python بازی نمی‌تواند این اسکریپت{0} را بخواند: {1}. چیزی ذخیره نشد."
 
 [eaa10f1804e]
 us = "That road isn't in the mod any more."
@@ -2871,6 +3109,7 @@ ru = "Этой дороги в моде больше нет."
 cz = "Tato silnice už v modu není."
 jpn = "その道路はもう Mod にありません。"
 sc = "该道路已不在模组中。"
+fa = "آن جاده دیگر در ماد نیست."
 
 [eeda542cb6c]
 us = "a zone's size is a number"
@@ -2883,6 +3122,7 @@ ru = "размер зоны — число"
 cz = "velikost zóny je číslo"
 jpn = "ゾーンの大きさは数値です"
 sc = "区域大小是数字"
+fa = "اندازهٔ ناحیه یک عدد است"
 
 [ee31a7e5b86]
 us = "A side is -1 (neutral) or one of the scenario's camps, from 0 up."
@@ -2895,6 +3135,7 @@ ru = "Сторона — -1 (нейтральная) или один из лаг
 cz = "Strana je -1 (neutrální) nebo jeden z táborů scénáře, od 0."
 jpn = "陣営は -1（中立）か、0 から始まるシナリオの陣営のどれかです。"
 sc = "阵营为 -1（中立）或剧本中的某个阵营，从 0 开始。"
+fa = "طرف یا -1 است (خنثی) یا یکی از جبهه‌های سناریو، از 0 به بالا."
 
 [ee79e139785]
 us = "{0} isn't in {1} any more: build the game index again in Settings."
@@ -2907,6 +3148,7 @@ ru = "{0} больше нет в {1}: постройте индекс игры �
 cz = "{0} už není v {1}: sestavte index hry znovu v Nastavení."
 jpn = "{0} はもう {1} にありません。設定でゲームのインデックスを作り直してください。"
 sc = "{0} 已不在 {1} 中：请在设置中重新构建游戏索引。"
+fa = "{0} دیگر در {1} نیست: نمایهٔ بازی را در «تنظیمات» دوباره بسازید."
 
 [e403e3e0131]
 us = "camp: {0} isn't a whole number"
@@ -2919,6 +3161,7 @@ ru = "лагерь: {0} — не целое число"
 cz = "tábor: {0} není celé číslo"
 jpn = "陣営：{0} は整数ではありません"
 sc = "阵营：{0} 不是整数"
+fa = "جبهه: {0} عدد صحیح نیست"
 
 [e450e6c559c]
 us = "{0}: not in the era units library"
@@ -2931,6 +3174,7 @@ ru = "{0}: нет в библиотеке юнитов эпох"
 cz = "{0}: není v knihovně jednotek z období"
 jpn = "{0}：時代ユニットのライブラリーにありません"
 sc = "{0}：不在年代单位库中"
+fa = "{0}: در کتابخانهٔ یگان‌های دوره نیست"
 
 [e6144bf9855]
 us = "Pick or make a mod first: an era unit is added to a mod."
@@ -2943,6 +3187,7 @@ ru = "Сначала выберите или создайте мод: юнит �
 cz = "Nejprve vyberte nebo vytvořte mod: jednotka z období se přidává do modu."
 jpn = "先にModを選ぶか作ってください。時代ユニットは Mod に追加されます。"
 sc = "请先选择或新建一个模组：年代单位会添加到模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: یگان دوره به ماد اضافه می‌شود."
 
 [ed8471b487c]
 us = "{0}: pick a unit to start from"
@@ -2955,6 +3200,7 @@ ru = "{0}: выберите юнит, с которого начать"
 cz = "{0}: vyberte jednotku, ze které začít"
 jpn = "{0}：元にするユニットを選んでください"
 sc = "{0}：请选择作为起点的单位"
+fa = "{0}: یک یگان برای شروع انتخاب کنید"
 
 [e8f679b55cd]
 us = "{0} is already in this mod"
@@ -2967,6 +3213,7 @@ ru = "{0} уже есть в этом моде"
 cz = "{0} už v tomto modu je"
 jpn = "{0} はすでにこの Mod にあります"
 sc = "{0} 已在此模组中"
+fa = "{0} از قبل در این ماد هست"
 
 [e51156b966c]
 us = "Give a size from {0} to {1} (1 is as long as the unit it starts from)."
@@ -2979,6 +3226,7 @@ ru = "Укажите размер от {0} до {1} (1 — длина исход
 cz = "Zadejte velikost {0} až {1} (1 je délka výchozí jednotky)."
 jpn = "サイズは {0}〜{1} にしてください（1 は元のユニットと同じ長さ）。"
 sc = "请给出 {0} 到 {1} 的大小（1 表示与起点单位一样长）。"
+fa = "اندازه‌ای از {0} تا {1} بدهید (1 یعنی هم‌طولِ یگانی که از آن شروع می‌شود)."
 
 [eb42ff40ec5]
 us = "{0} can't be researched from {1} in that build menu"
@@ -2991,6 +3239,7 @@ ru = "{0} нельзя исследовать из {1} в этом меню по
 cz = "{0} nelze v této nabídce stavby vyzkoumat z {1}"
 jpn = "その建設メニューでは {0} を {1} から研究できません"
 sc = "在该建造菜单中，{0} 无法由 {1} 研究得到"
+fa = "در آن منوی ساخت نمی‌توان {0} را از {1} تحقیق کرد"
 
 [e2c1f95bd1b]
 us = "{0}: not in this mod"
@@ -3003,6 +3252,7 @@ ru = "{0}: нет в этом моде"
 cz = "{0}: není v tomto modu"
 jpn = "{0}：この Mod にはありません"
 sc = "{0}：不在此模组中"
+fa = "{0}: در این ماد نیست"
 
 [eee5918d146]
 us = "{0}: a number from 0 up"
@@ -3015,6 +3265,7 @@ ru = "{0}: число от 0"
 cz = "{0}: číslo od 0"
 jpn = "{0}：0 以上の数値"
 sc = "{0}：0 或以上的数字"
+fa = "{0}: عددی از 0 به بالا"
 
 [e816ebf2b52]
 us = "Pick a role from the list."
@@ -3027,6 +3278,7 @@ ru = "Выберите роль из списка."
 cz = "Vyberte roli ze seznamu."
 jpn = "一覧から役割を選んでください。"
 sc = "请从列表中选择角色。"
+fa = "یک نقش از فهرست انتخاب کنید."
 
 [e0344d5a9dd]
 us = "{0} isn't a ground vehicle"
@@ -3039,6 +3291,7 @@ ru = "{0} — не наземная техника"
 cz = "{0} není pozemní vozidlo"
 jpn = "{0} は地上車両ではありません"
 sc = "{0} 不是地面车辆"
+fa = "{0} خودروی زمینی نیست"
 
 [e67b36bfbe0]
 us = "Pick recon, or as the game has it."
@@ -3051,6 +3304,7 @@ ru = "Выберите «разведка» или «как в игре»."
 cz = "Vyberte průzkum, nebo jako ve hře."
 jpn = "偵察か、ゲームどおりを選んでください。"
 sc = "请选择侦察，或与游戏相同。"
+fa = "شناسایی را انتخاب کنید، یا همان‌طور که در بازی است."
 
 [ec6071cdac5]
 us = "Pick ground, planes or both."
@@ -3063,6 +3317,7 @@ ru = "Выберите наземные, самолёты или оба."
 cz = "Vyberte pozemní, letadla nebo obojí."
 jpn = "地上、航空機、または両方を選んでください。"
 sc = "请选择地面、飞机或两者。"
+fa = "زمینی، هواپیماها یا هر دو را انتخاب کنید."
 
 [e1a3525064d]
 us = "This game build has no bomber with a bomb bay to copy."
@@ -3075,6 +3330,7 @@ ru = "В этой версии игры нет бомбардировщика с
 cz = "Tato verze hry nemá bombardér s pumovnicí ke zkopírování."
 jpn = "このゲームのバージョンには、コピーできる爆弾倉付きの爆撃機がありません。"
 sc = "此游戏版本没有带弹舱的轰炸机可供复制。"
+fa = "این نسخهٔ بازی بمب‌افکنی با محفظهٔ بمب برای کپی کردن ندارد."
 
 [e07359c02d6]
 us = "This game build has no fighter-bomber with bombs to copy a mount from."
@@ -3087,6 +3343,7 @@ ru = "В этой версии игры нет истребителя-бомба
 cz = "Tato verze hry nemá stíhací bombardér s pumami, ze kterého zkopírovat závěs."
 jpn = "このゲームのバージョンには、取り付けをコピーできる爆弾付きの戦闘爆撃機がありません。"
 sc = "此游戏版本没有带炸弹的战斗轰炸机可供复制挂载。"
+fa = "این نسخهٔ بازی جنگنده‌بمب‌افکنی با بمب ندارد که بتوان جایگاه بمب را از آن کپی کرد."
 
 [e822a3adadb]
 us = "{0} isn't a plane"
@@ -3099,6 +3356,7 @@ ru = "{0} — не самолёт"
 cz = "{0} není letadlo"
 jpn = "{0} は航空機ではありません"
 sc = "{0} 不是飞机"
+fa = "{0} هواپیما نیست"
 
 [e12bee2f26e]
 us = "A paratroop plane carries paratroopers: its role stays."
@@ -3111,6 +3369,7 @@ ru = "Самолёт с десантниками перевозит десант
 cz = "Výsadkové letadlo nese výsadkáře: jeho role zůstává."
 jpn = "空挺機は空挺兵を運びます。役割は変わりません。"
 sc = "伞兵运输机运载伞兵：其角色保持不变。"
+fa = "هواپیمای ترابری چترباز، چترباز حمل می‌کند: نقش آن همان می‌ماند."
 
 [e8a5a16e5d0]
 us = "It has no bombs to drop: pick bombs for one of its weapons first (Weapons, below), then make it a bomber."
@@ -3123,6 +3382,7 @@ ru = "Ему нечего сбрасывать: сначала выберите 
 cz = "Nemá pumy ke shození: nejprve vyberte pumy pro jednu z jeho zbraní (Zbraně, níže), pak z něj udělejte bombardér."
 jpn = "投下する爆弾がありません。先に武器のどれかに爆弾を選び（下の「武器」）、それから爆撃機にしてください。"
 sc = "它没有可投放的炸弹：请先为其某件武器选择炸弹（下方“武器”），再将其设为轰炸机。"
+fa = "بمبی برای انداختن ندارد: اول برای یکی از سلاح‌هایش بمب انتخاب کنید («سلاح‌ها»، پایین‌تر)، سپس آن را بمب‌افکن کنید."
 
 [e1a34e74527]
 us = "We couldn't find R.U.S.E., so the map's size can't be read."
@@ -3135,6 +3395,7 @@ ru = "Мы не нашли R.U.S.E., поэтому размер карты не
 cz = "Nenašli jsme R.U.S.E., takže velikost mapy nejde přečíst."
 jpn = "R.U.S.E. が見つからないため、マップの大きさを読み込めません。"
 sc = "找不到 R.U.S.E.，因此无法读取地图大小。"
+fa = "R.U.S.E. را پیدا نکردیم، پس اندازهٔ نقشه را نمی‌توان خواند."
 
 [eeda67996f1]
 us = "A shipped map keeps its size."
@@ -3147,6 +3408,7 @@ ru = "Карта из игры сохраняет свой размер."
 cz = "Mapa ze hry si ponechá svou velikost."
 jpn = "ゲーム本来のマップは大きさを変えられません。"
 sc = "游戏自带的地图保持原有大小。"
+fa = "نقشه‌ای که همراه بازی آمده اندازه‌اش را حفظ می‌کند."
 
 [e084b1ab91f]
 us = "Only a map started blank (Duplicate map: Blank Terrain or Blank Ocean) can change size: a copy keeps the copied map's ground, and its size with it."
@@ -3159,6 +3421,7 @@ ru = "Менять размер может только карта, начата
 cz = "Velikost může změnit jen mapa začatá od nuly (Duplikovat mapu: Prázdný terén nebo Prázdný oceán): kopie si ponechá terén kopírované mapy, a s ním i její velikost."
 jpn = "大きさを変えられるのは空白から始めたマップ（マップを複製：空白の地形または空白の海）だけです。コピーは元のマップの地形を引き継ぐので、大きさもそのままです。"
 sc = "只有从空白开始的地图（复制地图：空白地形或空白海洋）才能改变大小：副本保留所复制地图的地面，大小也随之保留。"
+fa = "فقط نقشه‌ای که خالی شروع شده («تکثیر نقشه»: «زمین خالی» یا «اقیانوس خالی») می‌تواند اندازه‌اش را تغییر دهد: یک کپی، زمینِ نقشهٔ کپی‌شده و همراه آن اندازه‌اش را نگه می‌دارد."
 
 [ec1af64c763]
 us = "A strip is two squares wide: add or take off an even number of squares on a side."
@@ -3171,6 +3434,7 @@ ru = "Полоса шириной в два квадрата: добавляйт
 cz = "Pruh je široký dva čtverce: na straně přidejte nebo uberte sudý počet čtverců."
 jpn = "帯の幅は2マスです。1辺に足す・削るマスは偶数にしてください。"
 sc = "每条宽两格：在一边增加或去掉的格数必须是偶数。"
+fa = "هر نوار دو خانه پهنا دارد: در هر طرف، تعداد زوجی خانه اضافه یا کم کنید."
 
 [e773fd7a864]
 us = "Those sectors can't be made ({0})."
@@ -3183,6 +3447,7 @@ ru = "Эти секторы создать нельзя ({0})."
 cz = "Tyto sektory nejde vytvořit ({0})."
 jpn = "そのセクターは作れません（{0}）。"
 sc = "无法生成这些扇区（{0}）。"
+fa = "آن بخش‌ها ساخته نمی‌شوند ({0})."
 
 [e5130958aac]
 us = "{0}: its size can't be read ({1})."
@@ -3195,6 +3460,7 @@ ru = "{0}: её размер не прочитать ({1})."
 cz = "{0}: její velikost nejde přečíst ({1})."
 jpn = "{0}：大きさを読み込めません（{1}）。"
 sc = "{0}：无法读取其大小（{1}）。"
+fa = "{0}: اندازهٔ آن خوانده نمی‌شود ({1})."
 [eec08e83fde]
 us = "{0} isn't a game mode the economy has ({1})"
 fr = "{0} n'est pas un mode de jeu de l'économie ({1})"
@@ -3206,6 +3472,7 @@ ru = "{0} — не режим игры экономики ({1})"
 cz = "{0} není herní režim ekonomiky ({1})"
 jpn = "{0} は経済のゲームモードではありません（{1}）"
 sc = "{0} 不是经济数值的游戏模式（{1}）"
+fa = "{0} از حالت‌های بازیِ اقتصاد نیست ({1})"
 
 [e3e637e5fa9]
 us = "The game index has no {0} copy of the economy's values."
@@ -3218,6 +3485,7 @@ ru = "В индексе игры нет копии {0} значений экон
 cz = "Index hry nemá kopii {0} hodnot ekonomiky."
 jpn = "ゲーム索引に経済の値の {0} のコピーがありません。"
 sc = "游戏索引中没有经济数值的 {0} 副本。"
+fa = "نمایهٔ بازی نسخهٔ {0} از مقدارهای اقتصاد را ندارد."
 
 [e55c8a131a1]
 us = "Pick or make a mod first: the model is saved in it."
@@ -3230,6 +3498,7 @@ ru = "Сначала выберите или создайте мод: модел
 cz = "Nejprve vyberte nebo vytvořte mod: model se ukládá do něj."
 jpn = "先にModを選ぶか作ってください。モデルはModに保存されます。"
 sc = "请先选择或新建一个模组：模型保存在模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: مدل در آن ذخیره می‌شود."
 
 [e4f8ac00d3b]
 us = "{0} isn't a kind of model: rock, prop, plant or tree."
@@ -3242,6 +3511,7 @@ ru = "{0} — не вид модели: скала, объект, растени
 cz = "{0} není druh modelu: skála, předmět, rostlina nebo strom."
 jpn = "{0} はモデルの種類ではありません。岩、小物、植物、樹木のいずれかです。"
 sc = "{0} 不是模型种类：岩石、道具、植物或树木。"
+fa = "{0} یکی از انواع مدل نیست: صخره، شیء، گیاه یا درخت."
 
 [e3c17d85152]
 us = "The mod has no model called {0}."
@@ -3254,6 +3524,7 @@ ru = "В моде нет модели с именем {0}."
 cz = "Mod nemá žádný model jménem {0}."
 jpn = "このModに {0} というモデルはありません。"
 sc = "该模组中没有名为 {0} 的模型。"
+fa = "ماد مدلی به نام {0} ندارد."
 
 [e5af866a036]
 us = "A model taken from others must be CC0 or CC-BY, not {0}; leave the licence empty for a model of your own."
@@ -3266,6 +3537,7 @@ ru = "Модель, взятая у других, должна быть под C
 cz = "Model převzatý od jiných musí být CC0 nebo CC-BY, ne {0}; u vlastního modelu nechte licenci prázdnou."
 jpn = "他の人から借りたモデルは CC0 か CC-BY でなければなりません（{0} は不可）。自作のモデルならライセンスは空欄にしてください。"
 sc = "取自他人的模型必须是 CC0 或 CC-BY，而不是 {0}；自己制作的模型请将许可留空。"
+fa = "مدلی که از دیگران گرفته شده باید CC0 یا CC-BY باشد، نه {0}؛ برای مدلی که خودتان ساخته‌اید، مجوز را خالی بگذارید."
 
 [e5ce3061da1]
 us = "We couldn't find R.U.S.E., so there are no buildings' looks to show."
@@ -3278,6 +3550,7 @@ ru = "R.U.S.E. не найдена, поэтому показать внешни
 cz = "R.U.S.E. jsme nenašli, takže není co ukázat ze vzhledu budov."
 jpn = "R.U.S.E. が見つからないため、建物の見た目を表示できません。"
 sc = "找不到 R.U.S.E.，因此没有可显示的建筑外观。"
+fa = "R.U.S.E. را پیدا نکردیم، پس ظاهر ساختمانی برای نشان دادن نیست."
 
 [e746c982a1f]
 us = "A file of the game holding the buildings' looks isn't in the game folder."
@@ -3290,6 +3563,7 @@ ru = "В папке игры нет файла игры с внешним вид
 cz = "Ve složce hry chybí soubor hry se vzhledem budov."
 jpn = "建物の見た目を収めたゲームのファイルが、ゲームフォルダーにありません。"
 sc = "游戏文件夹中缺少保存建筑外观的游戏文件。"
+fa = "یکی از فایل‌های بازی که ظاهر ساختمان‌ها را نگه می‌دارد در پوشهٔ بازی نیست."
 
 [efe85f437be]
 us = "Only a new building made in this mod can get a model of its own: copy the building first."
@@ -3302,6 +3576,7 @@ ru = "Собственную модель может получить тольк
 cz = "Vlastní model může dostat jen nová budova vytvořená v tomto modu: nejprve budovu zkopírujte."
 jpn = "独自のモデルを持てるのは、このModで作った新しい建物だけです。先に建物をコピーしてください。"
 sc = "只有在此模组中新建的建筑才能拥有自己的模型：请先复制该建筑。"
+fa = "فقط ساختمان جدیدی که در این ماد ساخته شده می‌تواند مدل مخصوص خودش را داشته باشد: اول ساختمان را کپی کنید."
 
 [e0b28eeb7c1]
 us = "{0} isn't one of the pieces of this building's look."
@@ -3314,6 +3589,7 @@ ru = "{0} не входит в части внешнего вида этого �
 cz = "{0} není jedním z dílů vzhledu této budovy."
 jpn = "{0} はこの建物の見た目を構成するパーツではありません。"
 sc = "{0} 不是此建筑外观的组成部件之一。"
+fa = "{0} از قطعه‌های ظاهر این ساختمان نیست."
 
 [e006d12d0ae]
 us = "This building has no model of its own yet."
@@ -3326,6 +3602,7 @@ ru = "У этого здания пока нет собственной моде
 cz = "Tato budova zatím nemá vlastní model."
 jpn = "この建物にはまだ独自のモデルがありません。"
 sc = "此建筑还没有自己的模型。"
+fa = "این ساختمان هنوز مدل مخصوص خودش را ندارد."
 
 [eebef7db78b]
 us = "{0}. Fix it by hand, or remove that model's folder."
@@ -3338,6 +3615,7 @@ ru = "{0}. Исправьте это вручную или уберите пап
 cz = "{0}. Opravte to ručně, nebo odeberte složku toho modelu."
 jpn = "{0}。手で直すか、そのモデルのフォルダーを取り除いてください。"
 sc = "{0}。请手动修正，或移除该模型的文件夹。"
+fa = "{0}. آن را دستی درست کنید، یا پوشهٔ آن مدل را حذف کنید."
 
 [e0959d228e0]
 us = "The size is a number: 1 is as the model was made."
@@ -3350,6 +3628,7 @@ ru = "Размер — это число: 1 — как модель была с�
 cz = "Velikost je číslo: 1 je tak, jak byl model vytvořen."
 jpn = "サイズは数値です。1 は作られたときのままの大きさです。"
 sc = "尺寸是一个数字：1 表示模型制作时的原始大小。"
+fa = "اندازه یک عدد است: 1 یعنی همان اندازه‌ای که مدل ساخته شده."
 
 [e861fa111a0]
 us = "{0}."
@@ -3362,6 +3641,7 @@ ru = "{0}."
 cz = "{0}."
 jpn = "{0}。"
 sc = "{0}。"
+fa = "{0}."
 
 [ed4b6a91c76]
 us = "Give a size from 0.01 to 100 (1 is as the model was made)."
@@ -3374,6 +3654,7 @@ ru = "Укажите размер от 0,01 до 100 (1 — как модель 
 cz = "Zadejte velikost od 0,01 do 100 (1 je tak, jak byl model vytvořen)."
 jpn = "サイズは 0.01 から 100 の間で指定してください（1 は作られたときのままの大きさ）。"
 sc = "请给出 0.01 到 100 之间的尺寸（1 表示模型制作时的原始大小）。"
+fa = "اندازه‌ای از 0.01 تا 100 بدهید (1 یعنی همان اندازه‌ای که مدل ساخته شده)."
 
 [e9bfa8e1730]
 us = "The mod's models can't be drawn ({0})."
@@ -3386,6 +3667,7 @@ ru = "Модели мода не удаётся нарисовать ({0})."
 cz = "Modely modu nelze vykreslit ({0})."
 jpn = "Modのモデルを描画できません（{0}）。"
 sc = "无法绘制该模组的模型（{0}）。"
+fa = "مدل‌های ماد نمایش داده نمی‌شوند ({0})."
 
 [e568f33f359]
 us = "{0}. Fix it by hand, or remove that building's look folder."
@@ -3398,6 +3680,7 @@ ru = "{0}. Исправьте это вручную или уберите пап
 cz = "{0}. Opravte to ručně, nebo odeberte složku vzhledu té budovy."
 jpn = "{0}。手で直すか、その建物の見た目のフォルダーを取り除いてください。"
 sc = "{0}。请手动修正，或移除该建筑的外观文件夹。"
+fa = "{0}. آن را دستی درست کنید، یا پوشهٔ ظاهر آن ساختمان را حذف کنید."
 
 [ed65f57d42d]
 us = "The size is a number: 1 is as big as the piece it takes the place of."
@@ -3410,6 +3693,7 @@ ru = "Размер — это число: 1 — такого же размера
 cz = "Velikost je číslo: 1 je stejně velké jako díl, který nahrazuje."
 jpn = "サイズは数値です。1 は置き換えるパーツと同じ大きさです。"
 sc = "尺寸是一个数字：1 表示与它所替换的部件一样大。"
+fa = "اندازه یک عدد است: 1 یعنی هم‌اندازهٔ قطعه‌ای که جای آن را می‌گیرد."
 
 [e42e7437e1d]
 us = "Give a size from 0.01 to 100 (1 is as big as the piece it takes the place of)."
@@ -3422,6 +3706,7 @@ ru = "Укажите размер от 0,01 до 100 (1 — такого же р
 cz = "Zadejte velikost od 0,01 do 100 (1 je stejně velké jako díl, který nahrazuje)."
 jpn = "サイズは 0.01 から 100 の間で指定してください（1 は置き換えるパーツと同じ大きさ）。"
 sc = "请给出 0.01 到 100 之间的尺寸（1 表示与它所替换的部件一样大）。"
+fa = "اندازه‌ای از 0.01 تا 100 بدهید (1 یعنی هم‌اندازهٔ قطعه‌ای که جای آن را می‌گیرد)."
 
 [e8c3d4665e6]
 us = "{0} can't be moved to the Recycle Bin ({1})."
@@ -3434,6 +3719,7 @@ ru = "{0} не удаётся переместить в Корзину ({1})."
 cz = "{0} nelze přesunout do Koše ({1})."
 jpn = "{0} をごみ箱に移せません（{1}）。"
 sc = "无法将 {0} 移到回收站（{1}）。"
+fa = "{0} به سطل بازیافت منتقل نمی‌شود ({1})."
 
 [ed2c786925e]
 us = "The building's model can't be moved to the Recycle Bin ({0})."
@@ -3446,6 +3732,7 @@ ru = "Модель здания не удаётся переместить в К
 cz = "Model budovy nelze přesunout do Koše ({0})."
 jpn = "建物のモデルをごみ箱に移せません（{0}）。"
 sc = "无法将建筑的模型移到回收站（{0}）。"
+fa = "مدل ساختمان به سطل بازیافت منتقل نمی‌شود ({0})."
 
 [e257dd60045]
 us = "Pick or make a mod first: the board's changes are saved in it."
@@ -3458,6 +3745,7 @@ ru = "Сначала выберите или создайте мод: измен
 cz = "Nejdřív vyberte nebo vytvořte mod: změny se ukládají do něj."
 jpn = "先にMODを選ぶか作ってください。変更はそこに保存されます。"
 sc = "请先选择或创建一个模组：更改会保存在其中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: تغییرهای تابلو در آن ذخیره می‌شوند."
 
 [e89fc7d732d]
 us = "{0}: not one of the buildings that make units"
@@ -3470,6 +3758,7 @@ ru = "{0}: это не одно из зданий, производящих юн
 cz = "{0}: není to jedna z budov, které vyrábějí jednotky"
 jpn = "{0}：ユニットを生産する建物ではありません"
 sc = "{0}：不是生产单位的建筑之一"
+fa = "{0}: از ساختمان‌هایی که یگان می‌سازند نیست"
 
 [e46739dd731]
 us = "Give the new building a name."
@@ -3482,6 +3771,7 @@ ru = "Дайте новому зданию название."
 cz = "Pojmenujte novou budovu."
 jpn = "新しい建物に名前を付けてください。"
 sc = "请给新建筑起个名字。"
+fa = "به ساختمان جدید یک نام بدهید."
 
 [ed7405637bf]
 us = "{0} isn't one of this nation's new buildings"
@@ -3494,6 +3784,7 @@ ru = "{0} — не одно из новых зданий этой страны"
 cz = "{0} není jednou z nových budov tohoto národa"
 jpn = "{0} はこの国の新しい建物ではありません"
 sc = "{0} 不是该国家的新建筑之一"
+fa = "{0} از ساختمان‌های جدید این کشور نیست"
 
 [e5cb6a085c6]
 us = "Move or take out the units in {0} first: with no building of their own they couldn't be built anywhere."
@@ -3506,6 +3797,7 @@ ru = "Сначала перенесите или уберите юниты из 
 cz = "Nejprve přesuňte nebo odeberte jednotky v {0}: bez vlastní budovy by se nedaly nikde vyrábět."
 jpn = "先に {0} のユニットを移すか外してください。自分の建物がないと、どこでも生産できなくなります。"
 sc = "请先移动或移除 {0} 中的单位：没有自己的建筑，它们将无处可造。"
+fa = "اول یگان‌های داخل {0} را جابه‌جا کنید یا بردارید: بدون ساختمانی از آنِ خودشان، هیچ‌جا ساخته نمی‌شوند."
 
 [e3e25b378fd]
 us = "{0} couldn't be taken out of the mod"
@@ -3518,6 +3810,7 @@ ru = "Не удалось убрать {0} из мода"
 cz = "{0} se nepodařilo odebrat z modu"
 jpn = "{0} をModから外せませんでした"
 sc = "无法将 {0} 从模组中移除"
+fa = "{0} از ماد برداشته نشد"
 
 [e983a8a5ca9]
 us = "Pick one unit to put here."
@@ -3530,6 +3823,7 @@ ru = "Выберите один юнит, чтобы поставить его �
 cz = "Vyberte jednu jednotku, kterou sem dát."
 jpn = "ここに置くユニットを1つ選んでください。"
 sc = "请选择一个要放在这里的单位。"
+fa = "یک یگان برای قرار دادن اینجا انتخاب کنید."
 
 [ebbffb579de]
 us = "{0} isn't one of this nation's units"
@@ -3542,6 +3836,7 @@ ru = "{0} — не юнит этой страны"
 cz = "{0} není jednou z jednotek tohoto národa"
 jpn = "{0} はこの国のユニットではありません"
 sc = "{0} 不是该国家的单位"
+fa = "{0} از یگان‌های این کشور نیست"
 
 [e68714dbb85]
 us = "{0}: pick one of the game's buildings that make units to copy"
@@ -3554,6 +3849,7 @@ ru = "{0}: выберите для копирования одно из здан
 cz = "{0}: vyberte ke zkopírování jednu z budov hry, které vyrábějí jednotky"
 jpn = "{0}：コピーするには、ユニットを生産するゲームの建物を1つ選んでください"
 sc = "{0}：请选择游戏中一个生产单位的建筑来复制"
+fa = "{0}: برای کپی، یکی از ساختمان‌های بازی را که یگان می‌سازند انتخاب کنید"
 
 [e4a147e64cf]
 us = "This nation already has {0} buildings with units of their own, the most there can be. Copy a building that makes the same units as one of them instead."
@@ -3566,6 +3862,7 @@ ru = "У этой страны уже {0} здания со своими юни�
 cz = "Tento národ už má {0} budovy s vlastními jednotkami, nejvíc, kolik jich může být. Místo toho zkopírujte budovu, která vyrábí stejné jednotky jako jedna z nich."
 jpn = "この国には独自のユニットを持つ建物がすでに {0} 棟あり、これが上限です。代わりに、そのいずれかと同じユニットを生産する建物をコピーしてください。"
 sc = "该国家已有 {0} 座拥有自己单位的建筑，已达上限。请改为复制一座与其中之一生产相同单位的建筑。"
+fa = "این کشور از قبل {0} ساختمان با یگان‌های مخصوص خودشان دارد، یعنی بیشترین تعداد ممکن. به‌جای آن، ساختمانی را کپی کنید که همان یگان‌های یکی از آن‌ها را می‌سازد."
 
 [e8ec71522e2]
 us = "Each unit can be in the order once."
@@ -3578,6 +3875,7 @@ ru = "Каждый юнит может стоять в порядке тольк
 cz = "Každá jednotka může být v pořadí jen jednou."
 jpn = "各ユニットは並び順に1回しか入れられません。"
 sc = "每个单位在顺序中只能出现一次。"
+fa = "هر یگان فقط یک بار می‌تواند در ترتیب باشد."
 
 [e66aa0aa755]
 us = "This nation has no building of that kind: add one with Add a building first."
@@ -3590,6 +3888,7 @@ ru = "У этой страны нет здания такого вида: сна
 cz = "Tento národ nemá budovu tohoto druhu: nejprve ji přidejte přes Přidat budovu."
 jpn = "この国にはその種類の建物がありません。先に「建物を追加」で追加してください。"
 sc = "该国家没有这类建筑：请先用“添加建筑”添加一座。"
+fa = "این کشور ساختمانی از آن نوع ندارد: اول با «افزودن ساختمان» یکی اضافه کنید."
 
 [ef94f680300]
 us = "A unit can only be researched from one of its own nation's units."
@@ -3602,6 +3901,7 @@ ru = "Юнит можно исследовать только из юнита е
 cz = "Jednotku lze vyzkoumat jen z jednotky jejího vlastního národa."
 jpn = "ユニットは、自国のユニットからしか研究できません。"
 sc = "单位只能从其本国的单位研发而来。"
+fa = "هر یگان فقط از یکی از یگان‌های کشور خودش قابل تحقیق است."
 
 [e45a266913b]
 us = "That unit isn't in any build menu: put it back on the board first."
@@ -3614,6 +3914,7 @@ ru = "Этого юнита нет ни в одном меню производ�
 cz = "Tato jednotka není v žádné nabídce výroby: nejprve ji vraťte do budov."
 jpn = "そのユニットはどの生産メニューにもありません。先に建物に戻してください。"
 sc = "该单位不在任何生产菜单中：请先把它放回建筑中。"
+fa = "آن یگان در هیچ منوی ساختی نیست: اول آن را به تابلو برگردانید."
 
 [ea24e78fd66]
 us = "{0} isn't a unit the board can put in a building"
@@ -3626,6 +3927,7 @@ ru = "{0} — не тот юнит, который можно поставить
 cz = "{0} není jednotka, kterou lze dát do budovy"
 jpn = "{0} は建物に入れられるユニットではありません"
 sc = "{0} 不是可以放入建筑的单位"
+fa = "{0} یگانی نیست که تابلو بتواند در یک ساختمان قرار دهد"
 
 [ead259e319a]
 us = "A unit can't be researched from one that's researched from it."
@@ -3638,6 +3940,7 @@ ru = "Юнит нельзя исследовать из юнита, которы
 cz = "Jednotku nelze vyzkoumat z jednotky, která se vyzkoumává z ní."
 jpn = "あるユニットを、そのユニットから研究されるユニットから研究することはできません。"
 sc = "单位不能从由它研发而来的单位研发。"
+fa = "یک یگان را نمی‌توان از یگانی تحقیق کرد که خودش از آن تحقیق می‌شود."
 
 [e5066810094]
 us = "{0}: a colour is 4 whole numbers (red, green, blue, how solid)"
@@ -3650,6 +3953,7 @@ ru = "{0}: цвет — это 4 целых числа (красный, зелё
 cz = "{0}: barva jsou 4 celá čísla (červená, zelená, modrá, krytí)"
 jpn = "{0}：色は 4 つの整数です（赤、緑、青、不透明度）"
 sc = "{0}：颜色是 4 个整数（红、绿、蓝、不透明度）"
+fa = "{0}: هر رنگ 4 عدد صحیح است (قرمز، سبز، آبی، میزان کدری)"
 
 [efd224aff33]
 us = "{0} isn't one of an ammunition's texts"
@@ -3662,6 +3966,7 @@ ru = "{0} — не один из текстов боеприпаса"
 cz = "{0} není jedním z textů munice"
 jpn = "{0} は弾薬のテキストではありません"
 sc = "{0} 不是弹药的文本之一"
+fa = "{0} از متن‌های مهمات نیست"
 
 [e8260f0d455]
 us = "{0} is a part, not an ammunition"
@@ -3674,6 +3979,7 @@ ru = "{0} — это часть, а не боеприпас"
 cz = "{0} je díl, ne munice"
 jpn = "{0} は部品で、弾薬ではありません"
 sc = "{0} 是部件，不是弹药"
+fa = "{0} یک جزء است، نه مهمات"
 
 [e32b3f59076]
 us = "{0} can't be changed by a mod ({1})"
@@ -3686,6 +3992,7 @@ ru = "{0} нельзя изменить модом ({1})"
 cz = "{0} nejde změnit módem ({1})"
 jpn = "{0} はモッドで変更できません（{1}）"
 sc = "{0} 不能被模组修改（{1}）"
+fa = "{0} را ماد نمی‌تواند تغییر دهد ({1})"
 
 [e9915435c32]
 us = "{0} has no {1} text in the game's data to give new words"
@@ -3698,6 +4005,7 @@ ru = "У {0} нет текста {1} в данных игры, которому 
 cz = "{0} nemá v datech hry text {1}, kterému by šlo dát nová slova"
 jpn = "{0} にはゲームのデータに新しい言葉を付けられる {1} のテキストがありません"
 sc = "{0} 在游戏数据中没有可赋予新文字的 {1} 文本"
+fa = "{0} در داده‌های بازی متن {1} ندارد که بتوان به آن نوشتهٔ جدید داد"
 
 [edca496123f]
 us = "The game has no words under {0}'s {1} text, so it isn't known which of its text tables a new one goes in."
@@ -3710,6 +4018,7 @@ ru = "В игре нет слов под текстом {1} у {0}, поэтом
 cz = "Hra nemá pod textem {1} u {0} žádná slova, takže není známo, do které z jejích tabulek textů nový patří."
 jpn = "ゲームには {0} の {1} テキストの下に言葉がないため、新しいテキストをどのテキスト表に入れるかがわかりません。"
 sc = "游戏中 {0} 的 {1} 文本下没有文字，因此不知道新文本应放入哪个文本表。"
+fa = "بازی زیر متن {1} از {0} هیچ نوشته‌ای ندارد، پس معلوم نیست متن جدید در کدام یک از جدول‌های متنِ آن قرار می‌گیرد."
 
 [e4aa7602307]
 us = "Type the name on one line."
@@ -3722,6 +4031,7 @@ ru = "Введите имя в одну строку."
 cz = "Napište jméno na jeden řádek."
 jpn = "名前は 1 行で入力してください。"
 sc = "请在一行内输入名称。"
+fa = "نام را در یک خط بنویسید."
 
 [e63ea201c28]
 us = "Pick or make a mod first: flag types are saved in a mod."
@@ -3734,6 +4044,7 @@ ru = "Сначала выберите или создайте мод: типы �
 cz = "Nejdřív vyberte nebo vytvořte mód: typy flagů se ukládají do módu."
 jpn = "先にモッドを選ぶか作ってください。フラグの型はモッドに保存されます。"
 sc = "请先选择或创建一个模组：旗标类型保存在模组中。"
+fa = "اول یک ماد انتخاب کنید یا بسازید: نوع‌های پرچم در ماد ذخیره می‌شوند."
 
 [e9da7780c7f]
 us = "Give the flag type a name (one line)."
@@ -3746,6 +4057,7 @@ ru = "Дайте типу флагов имя (одна строка)."
 cz = "Dejte typu flagů jméno (jeden řádek)."
 jpn = "フラグの型に名前を付けてください（1 行）。"
 sc = "请给旗标类型起个名称（一行）。"
+fa = "به نوع پرچم یک نام بدهید (یک خط)."
 
 [e3c08056598]
 us = "A flag type's name can be at most {0} letters long."
@@ -3758,6 +4070,7 @@ ru = "Имя типа флагов может быть не длиннее {0} �
 cz = "Jméno typu flagů může mít nejvýš {0} znaků."
 jpn = "フラグの型の名前は {0} 文字までです。"
 sc = "旗标类型的名称最多 {0} 个字。"
+fa = "نام نوع پرچم حداکثر می‌تواند {0} حرف باشد."
 
 [e3af28e731c]
 us = "What it's for can be at most {0} letters long."
@@ -3770,6 +4083,7 @@ ru = "Описание, для чего он, может быть не длин�
 cz = "K čemu slouží, může mít nejvýš {0} znaků."
 jpn = "用途の説明は {0} 文字までです。"
 sc = "用途说明最多 {0} 个字。"
+fa = "توضیح کاربرد آن حداکثر می‌تواند {0} حرف باشد."
 
 [eac0284e11b]
 us = "Flag {0} isn't one of the game's flags, so it would do nothing."
@@ -3782,6 +4096,7 @@ ru = "Флаг {0} — не из флагов игры, поэтому он ни
 cz = "Flag {0} není jedním z flagů hry, takže by nic nedělal."
 jpn = "フラグ {0} はゲームのフラグではないため、何もしません。"
 sc = "旗标 {0} 不是游戏的旗标，所以不会起任何作用。"
+fa = "پرچم {0} از پرچم‌های بازی نیست، پس کاری انجام نمی‌دهد."
 
 [eba7158559a]
 us = "Tick at least one flag to turn on or off."
@@ -3794,6 +4109,7 @@ ru = "Отметьте хотя бы один флаг, чтобы включи�
 cz = "Zaškrtněte aspoň jeden flag k zapnutí nebo vypnutí."
 jpn = "オンまたはオフにするフラグを 1 つ以上チェックしてください。"
 sc = "请至少勾选一个要开启或关闭的旗标。"
+fa = "دست‌کم یک پرچم را برای روشن یا خاموش کردن تیک بزنید."
 
 [ee11e43aeed]
 us = "Flag {0} can't be turned on and off by the same type."
@@ -3806,6 +4122,7 @@ ru = "Флаг {0} не может включаться и выключатьс�
 cz = "Flag {0} nemůže stejný typ zapínat i vypínat."
 jpn = "フラグ {0} を同じ型でオンとオフの両方にすることはできません。"
 sc = "同一个类型不能同时开启和关闭旗标 {0}。"
+fa = "پرچم {0} را نمی‌توان با یک نوع هم روشن و هم خاموش کرد."
 
 [e3fc275b1d1]
 us = "{0} isn't a unit, so it has no flags to give a type"
@@ -3818,6 +4135,7 @@ ru = "{0} — не юнит, поэтому у него нет флагов, к�
 cz = "{0} není jednotka, takže nemá flagy, kterým by šlo dát typ"
 jpn = "{0} はユニットではないため、型を付けるフラグがありません"
 sc = "{0} 不是单位，所以没有可赋予类型的旗标"
+fa = "{0} یگان نیست، پس پرچمی ندارد که به آن نوعی داده شود"
 
 [e3462563936]
 us = "A flag type's flags are the game's flag numbers."
@@ -3830,6 +4148,7 @@ ru = "Флаги типа флагов — это номера флагов иг
 cz = "Flagy typu flagů jsou čísla flagů hry."
 jpn = "フラグの型のフラグはゲームのフラグ番号です。"
 sc = "旗标类型中的旗标是游戏的旗标编号。"
+fa = "پرچم‌های یک نوع پرچم، شماره‌های پرچمِ بازی هستند."
 
 [ecfab7db2f1]
 us = "There's no flag type called {0} in this mod any more."
@@ -3842,6 +4161,7 @@ ru = "В этом моде больше нет типа флагов с имен
 cz = "V tomto módu už není typ flagů jménem {0}."
 jpn = "このモッドには {0} という名前のフラグの型はもうありません。"
 sc = "此模组中已没有名为 {0} 的旗标类型。"
+fa = "دیگر نوع پرچمی به نام {0} در این ماد وجود ندارد."
 
 [e2dd7c5de8c]
 us = "There's already a flag type called {0}. Pick another name."
@@ -3854,6 +4174,7 @@ ru = "Тип флагов с именем {0} уже есть. Выберите 
 cz = "Typ flagů jménem {0} už existuje. Vyberte jiné jméno."
 jpn = "{0} という名前のフラグの型はすでにあります。別の名前を選んでください。"
 sc = "已有名为 {0} 的旗标类型。请换一个名称。"
+fa = "از قبل نوع پرچمی به نام {0} وجود دارد. نام دیگری انتخاب کنید."
 
 [ed6a5326ee7]
 us = "A mod can have at most {0} flag types."
@@ -3866,3 +4187,4 @@ ru = "В моде может быть не больше {0} типов флаг�
 cz = "Mód může mít nejvýš {0} typů flagů."
 jpn = "1 つのモッドに作れるフラグの型は {0} 個までです。"
 sc = "一个模组最多可有 {0} 个旗标类型。"
+fa = "هر ماد حداکثر می‌تواند {0} نوع پرچم داشته باشد."
