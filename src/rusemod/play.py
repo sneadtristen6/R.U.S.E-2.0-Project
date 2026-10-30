@@ -241,6 +241,35 @@ def shared_copy(game: Path, instances: Path | None = None, home: Path | None = N
     return (Path(instances) if instances else instances_dir(game, home)) / SHARED
 
 
+def build_ids(ids: list[str]) -> list[str]:
+    """The id each of a build's folders builds under, in order: its own, or for a later folder with an id an earlier
+    one has, that id with -2, -3 ... (one no other folder has). The Studio's unit mod and map changes made under one
+    name both carry it, and the load order took them for one mod and stopped ("IndexError: list index out of range",
+    a tester's Test in game, 2026-10-30)."""
+    out, taken = [], set(ids)
+    for i in ids:
+        if i in out:
+            n = 2
+            while f"{i}-{n}" in taken:
+                n += 1
+            taken.add(f"{i}-{n}")
+            i = f"{i}-{n}"
+        out.append(i)
+    return out
+
+
+def read_mods(folders, say=print) -> list:
+    """The mods in `folders` [(ModInfo, ops)], in order, read by load_mod; a folder whose id an earlier folder has is
+    read again under its build id (build_ids), and said."""
+    mods = [load_mod(Path(f)) for f in folders]
+    for k, (want, folder) in enumerate(zip(build_ids([info.id for info, _ops in mods]), folders)):
+        if want != mods[k][0].id:
+            say(f"{Path(folder).name}: another folder of this build has the id {mods[k][0].id}, so this one builds "
+                f"as {want} (its files stay as they are)")
+            mods[k] = load_mod(Path(folder), as_id=want)
+    return mods
+
+
 def keep_order(mods) -> None:
     """Make the given order of `mods` [(ModInfo, ops)] count for the load order: each mod loads after the one before
     it, unless either of the two already says how they relate (a dependency, `after` or `before`)."""
@@ -303,7 +332,7 @@ class Starter:
             stamps = mod_stamps(mod_folders)
             if needs_build(str(game), str(instance), made_from) and \
                     not take_back(str(game), str(instance), made_from):
-                mods = [load_mod(Path(m)) for m in mod_folders]
+                mods = read_mods(mod_folders, say)
                 keep_order(mods)
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),

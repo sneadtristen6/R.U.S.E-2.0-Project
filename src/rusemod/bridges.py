@@ -663,12 +663,38 @@ def _opened_notes(what: str, spans: list[tuple], c: dict) -> list[str]:
     return out
 
 
+def _host(g, span) -> int | None:
+    """The live owner circle (a bridge's or a town's, with a local map) a deck's middle is in, as Graph.open_narrow
+    finds it: that deck goes into its local map."""
+    mx, my = (span[0] + span[2]) / 2, (span[1] + span[3]) / 2
+    return next((k for k in range(len(g.subs)) if g.circles[k][2] > 0
+                 and math.hypot(mx - g.circles[k][0], my - g.circles[k][1]) < g.circles[k][2]), None)
+
+
+def _cut_ground(g) -> str:
+    """Where a graph is in more than one piece, in words: the main graph's smaller pieces (the ground round their
+    middle), else a live owner's local map in pieces (the ground by that old bridge)."""
+    label, sizes = g._labels()
+    if len(sizes) > 1:
+        main = max(sizes, key=sizes.get)
+        pts = [(x, y) for i, (x, y, r, _l, _c) in enumerate(g.circles[:-1]) if r > 0 and label[i] != main]
+        if pts:
+            return (f"the ground round ({sum(p[0] for p in pts) / len(pts):.0f}, "
+                    f"{sum(p[1] for p in pts) / len(pts):.0f})")
+    for i, sub in enumerate(g.subs):
+        if g.circles[i][2] > 0 and len(sub.parts()) > 1:
+            return f"the ground by the old bridge at ({g.circles[i][0]:.0f}, {g.circles[i][1]:.0f})"
+    return "some ground"
+
+
 def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), roads=(), blocks=(),
                 water=None, obstacles=()) -> tuple[dict, list[str]]:
     """({member: new mapinfo.win}, notes) for one map: both movement graphs closed in `closed` (circles x, y, r: where
-    old bridges stood over water; an old bridge's owner circle stays, its local movement loses the old deck and
-    takes the new one) and then opened along `spans` (the new bridges' decks: each in local movement of its own that
-    keeps units on it, joined to the ground units already use along `roads`, the mod's road lines; nav.Graph.open),
+    old bridges stood over water; an old bridge's owner circle stays where a new deck goes on it, its local movement
+    losing the old deck and taking the new one; one the closing cuts with no new deck on it goes, its local map's
+    ground brought into the graph: Graph.dissolve) and then opened along `spans` (the new bridges' decks: each in
+    local movement of its own that keeps units on it, joined to the ground units already use along `roads`, the
+    mod's road lines; nav.Graph.open),
     never through the mod's `blocks` (nav.Block), `closed`, water (`water(x, y)`: Water.at) or the holes the map's
     movement leaves for its buildings and props (`obstacles`: their (x, y); one counts for a graph where that graph
     keeps units off its middle: the owner's D-Day test, 2026-09-30, had an approach through a farm), and the road
@@ -695,9 +721,21 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
     for k, what in ((1, "infantry"), (2, "vehicles")):
         g = Graph.read(bufs[k])
         pieces = [len(s.parts()) for s in [g] + g.subs]
-        if closed:  # (an old bridge's owner stays: its local movement takes the new deck)
+        if closed:  # (an old bridge's owner stays while a new deck goes on it: its local movement takes the new deck)
             c = g.block(list(closed), refill=False, keep_owners=True)
             notes.append(f"{what}: {c['emptied']} circle(s) taken and {c['shrunk']} shrunk where old bridges stood")
+            # an old bridge its closing cut, with no new deck on it: its own movement goes, the ground round it brought
+            # into the map's movement, so the map is cut where it stood and a new bridge anywhere across counts as the
+            # way over (a kept owner still joined both banks, and the take-out was refused whatever was placed)
+            hosts = {h for h in (_host(g, s) for s in spans) if h is not None}
+            cut = [i for i, sub in enumerate(g.subs) if i not in hosts and len(sub.parts()) > pieces[i + 1]]
+            if cut:
+                d = g.dissolve(cut, list(closed))
+                notes.append(f"{what}: {d['emptied']} old bridge(s) cut by the closing, with no new bridge on them: "
+                             f"their own movement taken out, the ground round them kept ({d['added']} circle(s))")
+            wet = g.wet_pieces(water) if water is not None else []
+            if wet:  # (what's left of an old deck on the water, linked to nothing: no one's ground)
+                notes.append(f"{what}: {g.empty(wet)} circle(s) left on the water by the old decks taken out")
         if number:
             g.renumber_roads(number)  # a crossing names road links by number (the road through its circle)
         zones = [(b.x, b.y, b.radius) for b in blocks if k in UNITS[b.units]] + list(closed)
@@ -706,11 +744,27 @@ def apply_spans(read, pack: str, spans: list[tuple], closed: list[tuple] = (), r
         def avoid(x, y, r, zones=zones, holes=holes):
             return any(math.hypot(x - zx, y - zy) < zr + r for zx, zy, zr in zones) or holes.within(x, y, r)
         c = g.open_narrow(spans, DECK, roads, avoid=avoid, water=water) if spans else None
-        if any(len(s.parts()) > n for s, n in zip([g] + g.subs, pieces)):  # e.g. an old bridge, the only way across
-            # rule: ground-reach
-            raise BridgeError(f"{what}: taking the old bridges away would cut ground off from the rest of the map "
-                              f"(or of a bridge's own local movement), and the game crashes when a unit is ordered "
-                              f"onto ground it can't reach")
+        if closed and c is not None:
+            # a new deck in an old bridge's owner that its local map had no room for ("crowded"), that local map left
+            # cut: the owner goes too, and the deck opens on its own in the map's movement (on Diplomats, decks 58 m
+            # beside the old ones were still in their owners, 2026-10-30)
+            stuck = [i for i, sub in enumerate(g.subs) if g.circles[i][2] > 0 and len(sub.parts()) > pieces[i + 1]]
+            again = [si for si in c["crowded"] if _host(g, spans[si]) in stuck]
+            if stuck:
+                d = g.dissolve(stuck, list(closed))
+                notes.append(f"{what}: {d['emptied']} old bridge(s) whose own movement had no room for the new deck: "
+                             f"taken out too, the ground round them kept ({d['added']} circle(s))")
+            if again:
+                more = [spans[si] for si in again]
+                c2 = g.open_narrow(more, DECK, roads, avoid=avoid, water=water)
+                c["crowded"] = [si for si in c["crowded"] if si not in again]
+                notes += _opened_notes(what, more, c2)
+        live = [True] + [g.circles[i][2] > 0 for i in range(len(g.subs))]  # (an emptied owner's local map: unused)
+        if any(on and len(s.parts()) > n for s, n, on in zip([g] + g.subs, pieces, live)):  # e.g. an old bridge, the
+            # rule: ground-reach                                                           only way across
+            raise BridgeError(f"{what}: with the old bridges' crossings closed, {_cut_ground(g)} is cut off from the "
+                              f"rest of the map, and the game crashes when a unit is ordered onto ground it can't "
+                              f"reach: place a new bridge across to it, or keep the crossings")
         new[k] = g.to_bytes()
         if c is not None:
             notes += _opened_notes(what, spans, c)

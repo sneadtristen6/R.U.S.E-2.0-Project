@@ -265,7 +265,7 @@ class Crossings(unittest.TestCase):
         self.assertIn("vehicles can't use the bridge at (43000, 2000): past its east end, no ground they already use "
                       "lies within 62 m along the road", notes[-1])
         read = mapinfo(row())
-        with self.assertRaisesRegex(BridgeError, "would cut ground off from the rest of the map"):
+        with self.assertRaisesRegex(BridgeError, r"the ground round \(\d+, \d+\) is cut off from the rest of the map"):
             apply_spans(read, "Blitz", [], [(10000.0, 2000.0, 1000.0)])  # B shrinks off A: never an island
         new, notes = apply_spans(read, "Blitz", [], [(10800.0, 2000.0, 400.0)])  # where an old one stood
         bufs = sdb.split_mapinfo(new[member("Blitz")])[1]
@@ -337,7 +337,9 @@ class Dock(unittest.TestCase):
 class LocalMovement(unittest.TestCase):
     def test_a_bridges_own_local_movement_isnt_split(self):
         # most shipped bridges have a local graph lining the deck: closing the old deck's middle would leave its two
-        # banks' pieces apart, ground units can't get between (a crash, as with the main graph)
+        # banks' pieces apart, ground units can't get between (a crash, as with the main graph). Since 2026-10-30 the
+        # owner goes with its crossing (nav.Graph.dissolve): its local map's ground comes into the main graph where it
+        # joins it, and what only the old deck reached is left out, never an island
         from rusemod.cover import member
         g = banks()
         g.subs = [chain([(8000.0 + 2000.0 * k, 20000.0, 1280.0) for k in range(5)])]
@@ -347,8 +349,11 @@ class LocalMovement(unittest.TestCase):
         win = nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
             net.to_bytes(), g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
         read = {member("Blitz"): win}.get
-        with self.assertRaisesRegex(BridgeError, "local movement"):
-            apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)], [(12000.0, 20000.0, 1600.0)])
+        new, _notes = apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)], [(12000.0, 20000.0, 1600.0)])
+        for buf in sdb_buffers(new[member("Blitz")])[1:3]:
+            after = nav.Graph.read(buf)
+            self.assertEqual(after.circles[0][2], 0.0)  # its owner: gone with the crossing
+            self.assertEqual(len(after.parts()), 1)  # no piece of its local map left on its own
         new, _notes = apply_spans(read, "Blitz", [(11600.0, 2000.0, 16000.0, 2000.0)])  # nothing closed: fine
         self.assertIn(member("Blitz"), new)
 
@@ -389,6 +394,90 @@ class LocalMovement(unittest.TestCase):
             for across in (2000.0 + 663.0 + 100, 2000.0 - 663.0 - 100, 4000.0, 300.0):
                 opened = after.walkable(float(x), across) and not before.walkable(float(x), across)
                 self.assertFalse(opened, (x, across))  # past the floor's width: nothing the map didn't already have
+
+
+def upriver():
+    """test_nav's bridged() river and old bridge (its owner, circle 0 at x 13,800, the only way between W and E on
+    y 2000; its local map a bank circle at each end and the old deck between), with more bank up the river, W2 and E2
+    on y 11,000, linked to W and E: room for a new bridge outside the old one's owner."""
+    from test_nav import made
+    deck = [(9600.0, 2000.0, 1600.0)] + [(11800.0 + 1100.0 * k, 2000.0, 1280.0) for k in range(4)] \
+        + [(17600.0, 2000.0, 1600.0)]
+    local = made(deck, [(i, i + 1) for i in range(len(deck) - 1)])
+    return made([(13800.0, 2000.0, 8000.0), (5000.0, 2000.0, 6400.0), (22000.0, 2000.0, 6400.0),
+                 (5000.0, 11000.0, 6400.0), (22000.0, 11000.0, 6400.0)], [(0, 1), (0, 2), (1, 3), (2, 4)], [local])
+
+
+def movement(g):
+    """A map's movement file (mapinfo.win) with `g` for both kinds of unit and a short road on the west bank."""
+    net = RoadNet([(0.0, 2000.0), (6000.0, 2000.0)], [(0, 1, 600)])
+    net.tree = build_tree(net.points, net.links)
+    head = b"INFOIA\r\n" + bytes(16) + struct.pack("<II4f", 20, 6, 0.0, 0.0, 16000.0, 16000.0)
+    return nav.replace_buffers(head + b"".join(struct.pack("<I", len(b)) + b for b in (
+        net.to_bytes(), g.to_bytes(), g.to_bytes(), b"cover")) + b"tail", {})
+
+
+class TakenOutCrossings(unittest.TestCase):
+    """The map's own bridges taken out with their crossings (roads.toml take_out "crossings") and a bridge placed by
+    hand somewhere else across the river (a tester's Diplomats, 2026-10-30: every old bridge kept its own movement, which
+    still joined the banks for the map as a whole, so the build refused the take-out whatever bridge was placed)."""
+    OLD_DECK = [(13000.0, 2000.0, 1600.0), (14000.0, 2000.0, 1600.0)]  # bridges.old_crossings' circles over the water
+    NEW = (11000.0, 11000.0, 16000.0, 2000.0 + 9000.0)  # up the river: its middle 9,000 from the old owner's (8,000)
+
+    def setUp(self):
+        from test_nav import river
+        from rusemod.cover import member
+        self.read, self.member, self.river = {member("Blitz"): movement(upriver())}.get, member("Blitz"), river
+
+    def test_a_new_bridge_elsewhere_is_the_way_across(self):
+        new, notes = apply_spans(self.read, "Blitz", [self.NEW], self.OLD_DECK, water=self.river)
+        g = nav.Graph.read(sdb_buffers(new[self.member])[2])
+        self.assertEqual(g.circles[0][2], 0.0)  # the old bridge's own movement: taken out with its crossing
+        self.assertEqual(len(g.parts()), 1)  # one piece: the new deck joins W2 and E2
+        self.assertTrue(g.walkable(9600.0, 2000.0) and g.walkable(17600.0, 2000.0))  # the banks it held: kept
+        self.assertFalse(any(g.walkable(float(x), 2000.0) for x in range(11500, 15600, 100)))  # its deck: closed
+        self.assertTrue(all(g.walkable(float(x), 11000.0) for x in range(11000, 16000, 100)))  # the new deck: open
+        self.assertIn("vehicles: 1 old bridge(s) cut by the closing, with no new bridge on them: their own movement "
+                      "taken out, the ground round them kept (2 circle(s))", notes)
+
+    def test_with_no_bridge_across_the_build_says_where_it_is_cut(self):
+        with self.assertRaisesRegex(BridgeError, r"infantry: with the old bridges' crossings closed, the ground round "
+                                                 r"\(\d+, \d+\) is cut off from the rest of the map"):
+            apply_spans(self.read, "Blitz", [], self.OLD_DECK, water=self.river)
+
+    def test_a_new_bridge_on_the_old_ones_place_keeps_its_owner(self):
+        new, _notes = apply_spans(self.read, "Blitz", [(10200.0, 2600.0, 17000.0, 2600.0)], self.OLD_DECK,
+                                  water=self.river)
+        g = nav.Graph.read(sdb_buffers(new[self.member])[2])
+        self.assertEqual(g.circles[0][2], 8000.0)  # its local movement took the new deck, as before
+        self.assertEqual(len(g.subs[0].parts()), 1)
+
+    def test_what_an_old_deck_leaves_on_the_water_is_taken_out(self):
+        # an old bridge with no movement of its own: its deck is main circles over the water, and one more circle on
+        # the water beside it (M05_Hollande has two, 52 and 70 m off) keeps its size when the deck closes but loses
+        # every link: taken out, never "ground cut off" that no bridge can reach
+        from test_nav import made
+        from rusemod.cover import member
+        g = made([(5000.0, 2000.0, 6400.0), (22000.0, 2000.0, 6400.0), (12200.0, 2000.0, 1280.0),
+                  (13400.0, 2000.0, 1280.0), (14800.0, 2000.0, 1280.0), (13400.0, 5200.0, 2240.0),
+                  (5000.0, 11000.0, 6400.0), (22000.0, 11000.0, 6400.0)],
+                 [(0, 2), (2, 3), (3, 4), (4, 1), (3, 5), (0, 6), (1, 7)])
+        read = {member("Blitz"): movement(g)}.get
+        deck = [(12200.0, 2000.0, 1600.0), (13400.0, 2000.0, 1600.0), (14600.0, 2000.0, 1600.0)]
+        with self.assertRaisesRegex(BridgeError, r"the ground round \((?:5000|22000), \d+\) is cut off"):  # a bank,
+            apply_spans(read, "Blitz", [], deck, water=self.river)                                       # not the water
+        new, notes = apply_spans(read, "Blitz", [self.NEW], deck, water=self.river)
+        after = nav.Graph.read(sdb_buffers(new[member("Blitz")])[2])
+        self.assertEqual(after.circles[5][2], 0.0)
+        self.assertEqual(len(after.parts()), 1)
+        self.assertIn("vehicles: 1 circle(s) left on the water by the old decks taken out", notes)
+
+    def test_the_check_leaves_out_a_taken_out_bridges_own_movement(self):
+        from rusemod.mapcheck import cut_off
+        new, _notes = apply_spans(self.read, "Blitz", [self.NEW], self.OLD_DECK, water=self.river)
+        g = nav.Graph.read(sdb_buffers(new[self.member])[2])
+        self.assertGreater(len(g.subs[0].parts()), 1)  # (in pieces, never entered: its owner is emptied)
+        self.assertEqual(cut_off(g, "vehicles"), [])
 
 
 def sdb_buffers(win):

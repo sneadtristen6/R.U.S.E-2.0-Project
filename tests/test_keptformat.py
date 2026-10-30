@@ -13,7 +13,7 @@ from rusemod import keptformat
 # kind -> (its format number, the fingerprint of what it makes from the inputs below)
 RECORDED = {
     "model": (1, "4acee01f8354daa04ccd754f2a9609ac"),
-    "map": (2, "a20c40310c9b8067f2c877cfe210b3c8"),
+    "map": (3, "7efb3bdb8198ab53c5cd88ef55aae0e0"),
     "paint": (1, "03428b5ee3145603020f8b7e5c5d4e39"),
     "movement": (1, "ff56e3139dc5b087adf9f75977c69e0f"),
     "tile": (1, "eb940f3d474c4113c9135f0b16691508"),
@@ -43,7 +43,8 @@ def made_map() -> str:
     from rusemod.groundgen import Shape, fine_cells, make_mesh
     from rusemod.terrain_edit import edit_map
     from rusemod.tms import Tms
-    changed, notes = edit_map(reader(make_map()), [Stroke("hill", 1500.0, 1500.0, 600.0, height=400.0)], "Test")
+    changed, notes = edit_map(reader(make_map()), [Stroke("hill", 1500.0, 1500.0, 600.0, height=400.0)], "Test",
+                              keep=[(2500.0, 1500.0)])  # (a bridge's end: 3, 2026-10-30)
     shape = Shape([whole(0.0), sea(20.0), island()], BOUNDS, -50.0)
     t = Tms(make_tms(gw=2, gh=2))
     t.cells, info = make_mesh(t, shape.h, shape.w, 16, fine_cells(t, shape))

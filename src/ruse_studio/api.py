@@ -45,7 +45,7 @@ from rusemod.lock import fingerprint_text
 from rusemod.home import PrefsCalls, default_home, game_dir as find_game_dir
 from rusemod.index import FORMAT as INDEX_FORMAT, LIST_VALUES, WHOLE_LISTS, Index, build_index, default_path
 from rusemod.patch import INT_RANGES, Raw, Text
-from rusemod.play import SHARED, Starter, copies_view, instances_choice, keep_instances_dir
+from rusemod.play import SHARED, Starter, build_ids, copies_view, instances_choice, keep_instances_dir
 from rusemod.signature import keep_title, title_on
 from rusemod.rndf import DEFAULT_NAMESPACE, RndfError, parse_value
 from rusemod.rndf import literal as rndf_literal
@@ -2475,8 +2475,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     # so 24 is the last few maps. It was 3 in all, so one map's own kinds pushed each other out as it opened, and
     # every visit read everything again (issue #15: "a map is slow to open").
     MAP_DATA_KEPT = 24
-    MAP_DATA_FORMAT = 2  # the kept files' format: a new one means they're all made again (2: every type to place has
-                         # its number in the scenery's types, for its model)
+    MAP_DATA_FORMAT = 3  # the kept files' format: a new one means they're all made again (2: every type to place has
+                         # its number in the scenery's types, for its model; 3: the bridges' ends, kept when the land
+                         # is shaped)
 
     def _kept_on_disk(self, what: str, pack: str, sources: list, make):
         """`make()`'s answer (JSON-ready) for one map, kept in the cache folder between runs: named by the map, the
@@ -5361,8 +5362,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     # --- the Bridges dock: the map's own bridge kinds, and bridges placed by hand (rusemod.bridges) ---
     def map_bridges(self, pack: str) -> dict:
         """The map's own bridge kinds, for the Bridges dock: {"kinds": [rusemod.bridges.kinds' dicts], "kind": the
-        kind new roads' bridges are, or None when the map has none}. Kept per map (each kind's model is measured)."""
-        from rusemod.bridges import kinds, model_length
+        kind new roads' bridges are, or None when the map has none, "ends": [[x, y, r]] the map's own bridges' ends
+        and how far round each the ground keeps its height when the land is shaped, "slope": the map units it slopes
+        back to the strokes over (rusemod.terrain_edit)}. Kept per map (each kind's model is measured)."""
+        from rusemod.bridges import kinds, model_length, shipped_bridges
+        from rusemod.terrain_edit import KEEP_SLOPE, _end_core
+        from rusemod.tms import Tms
         pack = self._game_pack(pack)
         game = self._game()
         if game is None:
@@ -5388,6 +5393,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     sc = scenery.Scenery(bytes(map_arc.read(map_arc.find(scenery.MEMBER))))
                 except (KeyError, scenery.SceneryError, struct.error) as exc:
                     raise StudioError(f"{map_path.name}: its scenery can't be read ({exc}).") from None
+                try:
+                    mesh = Tms(bytes(map_arc.read(map_arc.find("output\\highdef.tms"))))
+                except (KeyError, ValueError, struct.error):
+                    mesh = None
             lengths: dict = {}
 
             def length_of(kind):
@@ -5395,7 +5404,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     lengths[kind] = model_length(game, descs, kind)
                 return lengths[kind]
             found = kinds(sc, descs, length_of)
-            return {"kinds": found, "kind": next((k["type"] for k in found if k["roads"]), None)}
+            # the ends of the map's own bridges, with how far round each the ground keeps its height when the land is
+            # shaped (the build's: rusemod.terrain_edit.edit_map keep), for the view to show and keep the same
+            ends = [[round(x), round(y), round(_end_core(mesh, x, y))]
+                    for b in shipped_bridges(sc, descs, length_of) for x, y in (b.deck[:2], b.deck[2:])]
+            return {"kinds": found, "kind": next((k["type"] for k in found if k["roads"]), None), "ends": ends,
+                    "slope": round(KEEP_SLOPE)}
         # (the bridge models' lengths come from ZZ_Win.dat)
         zz = find_pack(game, "ZZ_Win.dat")
         out = self._kept_on_disk("bridges", pack, [map_path, unit_path] + ([zz] if zz else []), make)
@@ -5800,8 +5814,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         name = name.strip()
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
         base = self._home / self.KINDS[kind][0]
+        # a name the other kind has is taken too: its folder name is its id, and Test in game builds the unit mod and
+        # the map changes together (two of one id stopped a tester's build, 2026-10-30)
+        other = self._home / next(f for k, (f, _r) in self.KINDS.items() if k != kind)
         folder, n = base / slug, 2
-        while folder.exists():
+        while folder.exists() or (other / folder.name).exists():
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
@@ -8955,12 +8972,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if job is None or not job.errors:
             return {"problems": []}
         folders = [Path(f) for f in getattr(self, "_test_folders", [])]
-        by_id = {}
+        ids, read = [], []
         for f in folders:
             try:
-                by_id[load_mod(f).id] = f
+                ids.append(load_mod(f)[0].id)
+                read.append(f)
             except Exception:  # noqa: BLE001 - a folder that can't be read just gets no fix
                 continue
+        by_id = dict(zip(build_ids(ids), read))  # (the ids the build gave them: a second of one id builds as <id>-2)
         order = [by_id[i] for i in job.order if i in by_id] or folders
         lang = self.prefs().get("lang") or schema.BASE  # each found by its English words, said in the player's
         return {"problems": [self._problem(text, folders, order) | {"text": buildtext.worded(text, lang)}

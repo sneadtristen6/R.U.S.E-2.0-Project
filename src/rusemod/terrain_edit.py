@@ -46,6 +46,13 @@ FILES = {"highdef": "output\\highdef.tms", "lowdef": "output\\lowdef.tms",
 LABELS = {"highdef": "close-up mesh", "lowdef": "far mesh", "ground": "gameplay ground", "camera": "camera floor"}
 GRID_SAMPLES = 64      # height samples per close-up cell for the smooth brush's local average (at most 1,024 across)
 FLOOR_NOTE = "reaches a bridge's floor"   # in each note on a stroke at a bridge's floor (_near_bridge_floors)
+KEEP_END = 1280.0      # map units round a bridge's end where the ground keeps its height: the deck's half width
+                       # (rusemod.bridges.DECK / 2), so the end of the deck, side to side, rests where it did
+KEEP_SLOPE = 5120.0    # past that, the ground goes back to the strokes' height over this (20 m), a slope to the bridge
+KEEP_CORE_MOST = 10400.0  # the farthest (40 m) a corner of the close-up triangle under an end makes the kept ground
+                          # reach; a corner further out, or with almost no weight at the end (KEEP_WEIGHT), is let go
+                          # (Vesuvio's bridge: one end on a sliver of a triangle, its other corners 30 and 112 m off)
+KEEP_WEIGHT = 0.01     # a corner's share of the end's height below which it doesn't hold the kept ground out
 
 
 @dataclass
@@ -434,12 +441,66 @@ def _reseat_roads(read, before: Tms, after: Tms, name: str) -> tuple[dict[str, b
     return out, notes
 
 
-def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=None) -> tuple[dict[str, bytes], list[str]]:
+def _end_core(mesh: Tms | None, ex: float, ey: float) -> float:
+    """How far round a bridge's end (ex, ey) the ground keeps its height whole: KEEP_END, or out to the corners of the
+    close-up mesh's triangle under the end that carry its height (`mesh`: its x and y as before the strokes, which move
+    only heights; a corner with a share of KEEP_WEIGHT or more, at most KEEP_CORE_MOST away), so the ground the game
+    sets that end on stays at its old height (on Vesuvio a 5 m circle left the end 0.32 m up, 2026-10-30)."""
+    far = KEEP_END
+    if mesh is None:
+        return far
+    for k, cell in enumerate(mesh.cells):
+        tri = cell.triangles(0)
+        if not tri:
+            continue
+        pts = mesh.world_vertices(k)
+        if not (min(p[0] for p in pts) <= ex <= max(p[0] for p in pts)
+                and min(p[1] for p in pts) <= ey <= max(p[1] for p in pts)):
+            continue
+        for t in range(0, len(tri) - 2, 3):
+            a, b, c = pts[tri[t]], pts[tri[t + 1]], pts[tri[t + 2]]
+            den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+            if den == 0:
+                continue
+            l1 = ((b[1] - c[1]) * (ex - c[0]) + (c[0] - b[0]) * (ey - c[1])) / den
+            l2 = ((c[1] - a[1]) * (ex - c[0]) + (a[0] - c[0]) * (ey - c[1])) / den
+            if min(l1, l2, 1.0 - l1 - l2) >= -1e-9:
+                for p, share in ((a, l1), (b, l2), (c, 1.0 - l1 - l2)):
+                    d = math.hypot(p[0] - ex, p[1] - ey)
+                    if share >= KEEP_WEIGHT and d <= KEEP_CORE_MOST:
+                        far = max(far, 1.01 * d)
+    return far
+
+
+def _keep_ends(pts: _Points, before: list, keep) -> int:
+    """The points of `pts` round each of `keep` (the ends of the map's own bridges: x, y and how far round each the
+    ground keeps its height whole, _end_core) put back at their height `before` the strokes, and part of the way back
+    over KEEP_SLOPE past that. The game rests a bridge on the ground under its two ends (findings F-100 and F-101:
+    read in the game's program and seen in the game, 2026-10-19), so ground raised there lifted the map's own bridges
+    with it, their walking floors left at the old height (a tester's Vesuvio, 2026-10-30). Returns how many points it
+    moved."""
+    moved = set()
+    for ex, ey, core in keep:
+        reach = core + KEEP_SLOPE
+        for k in pts.near(ex - reach, ex + reach, ey - reach, ey + reach):
+            if pts.z[k] == before[k]:
+                continue
+            d = math.hypot(pts.x[k] - ex, pts.y[k] - ey)
+            if d < reach:
+                w = max(0.0, d - core) / KEEP_SLOPE
+                pts.z[k] = before[k] + w * (pts.z[k] - before[k])
+                moved.add(k)
+    return len(moved)
+
+
+def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=None,
+             keep=()) -> tuple[dict[str, bytes], list[str]]:
     """Apply `strokes`, in order, to a map pack's ground. `read(member path)` gives a member's bytes, or None when
     the pack hasn't got it. Height brushes come first, then the water brushes (rusemod.water); then the map's water
     textures follow the drawn water near every stroke. `max_depth_of()` gives the map's MaxDepthForSimulationDepthMap
-    (the textures' depth scale), or None. Returns ({member path: new bytes} for the files that changed, report
-    lines)."""
+    (the textures' depth scale), or None. `keep`: the ends of the map's own bridges, (x, y): the ground there keeps
+    its height, so they stay where they are (_keep_ends). Returns ({member path: new bytes} for the files that changed,
+    report lines)."""
     from .water import apply_water, update_textures
     water_strokes = [s for s in strokes if s.brush in ("water", "drain")]
     strokes = [s for s in strokes if s.brush not in ("water", "drain")]
@@ -474,6 +535,7 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
     # the gameplay ground leads; without it, every file is moved by the strokes themselves
     painted = [points["ground"]] if "ground" in points else list(points.values())
     applied = []
+    z_before = {key: list(pts.z) for key, pts in points.items()} if keep else {}
     for n, stroke in enumerate(strokes, start=1):
         if stroke.brush == "smooth" and grid is None:
             continue
@@ -507,6 +569,13 @@ def edit_map(read, strokes: list[Stroke], name: str = "the map", max_depth_of=No
                         if g is not None:
                             dz -= (zs[k] - g) * (1.0 - kept)
                     zs[k] += dz
+    if keep:  # every file the same way, after they follow: the game sets a bridge's ends on the close-up mesh
+        ends = [(ex, ey, _end_core(meshes.get("highdef"), ex, ey)) for ex, ey in keep]
+        put_back = {key: _keep_ends(pts, z_before[key], ends) for key, pts in points.items()}
+        if any(put_back.values()):
+            notes.append(f"{name}: the ground at the ends of the map's own bridges kept at its height, sloping back "
+                         f"to the strokes over {round(KEEP_SLOPE / 260)} m, so they stay where they are ("
+                         + ", ".join(f"{LABELS[key]} {n}" for key, n in put_back.items() if n) + " point(s))")
 
     changed: dict[str, bytes] = {}
     counts = []

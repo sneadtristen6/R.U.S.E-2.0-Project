@@ -310,6 +310,8 @@
                 <div id="brush-erase-trees" class="muted small"></div>
                 <div id="brush-erase-buildings" class="muted small"></div>
               </div>
+              <!-- the land brushes: the ground round the map's own bridges' ends stays (maps.js drawKeptEnds) -->
+              <div id="brush-bridge-ends" class="muted small hidden"></div>
               <!-- the Water brush: a thin layer over the whole map (maps.js waterWhole) -->
               <div id="brush-water" class="tray-erase hidden">
                 <button id="brush-water-whole" type="button" class="small"></button>
@@ -403,14 +405,14 @@
               <div id="road-note" class="small"></div>
             </div>
           </div>
-          <!-- the map's own bridge kinds (maps.js bridge): one placed by hand, saved with the mod's placed objects;
-               new roads' water crossings drawn in gold -->
+          <!-- every bridge in one tab (maps.js bridge; a tester's report, 2026-10-30): a new one placed by hand (the
+               map's own kinds, saved with the mod's placed objects; new roads' water crossings drawn in gold), the
+               mod's own listed with Go to and Delete, and the map's own taken out with their crossings in one button -->
           <div id="tray-bridges" class="tray-body hidden">
             <div class="tray-main">
+              <div id="bridge-new-head" class="bridge-head"></div>
               <div id="bridge-kinds" class="kind-list" role="group"></div>
               <div id="bridge-map-note" class="small"></div>
-            </div>
-            <div class="tray-side">
               <div id="bridge-help" class="muted small"></div>
               <label class="brush-slider small"><span id="bridge-length-label"></span>
                 <input id="bridge-length" type="range" min="30" max="90" step="1" value="40"></label>
@@ -422,6 +424,13 @@
                 <span id="bridge-count" class="muted small"></span>
               </div>
               <div id="bridge-note" class="small"></div>
+            </div>
+            <div class="tray-side">
+              <div id="bridge-mine-head" class="bridge-head"></div>
+              <div id="bridge-mine" class="bridge-list" role="list"></div>
+              <div id="bridge-own-head" class="bridge-head"></div>
+              <button id="bridge-take-out" type="button" class="small"></button>
+              <div id="bridge-own-note" class="muted small"></div>
             </div>
           </div>
           <!-- "Check this map" (maps.js check): what would go wrong with the mod on this map, found before the game -->
