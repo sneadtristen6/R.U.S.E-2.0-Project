@@ -34,7 +34,8 @@ build was checked (its SHA-256 matched GitHub's record, and Windows Defender fou
 
 **Run it:** no admin rights
 needed; it installs for your Windows user, adds a Start menu entry (and a desktop icon if you tick it), and has an
-uninstaller in Windows' "Installed apps". Uninstalling keeps your mods and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
+uninstaller in Windows' "Installed apps". Uninstalling keeps your mods (`Documents\RUSE 2.0`) and the Launcher's
+library and settings (`%LOCALAPPDATA%\RUSE Mod Platform`).
 
 - **Windows may warn "Windows protected your PC"** the first time: the installers aren't signed yet (signing costs
   money). Click "More info", then "Run anyway".

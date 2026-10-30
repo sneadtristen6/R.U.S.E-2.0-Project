@@ -269,13 +269,14 @@ def _step(log, step: str):
     return lambda: log.mark(step)
 
 
-def pick_folder(window) -> str | None:
-    """A "choose a folder" dialog in `window`; the folder, or None if the player cancels."""
+def pick_folder(window, start=None) -> str | None:
+    """A "choose a folder" dialog in `window`, opened at the folder `start` (without one, pywebview opens the
+    person's own user folder); the folder, or None if the player cancels."""
     if isinstance(window, browsermode.BrowserWindow):
-        return window.pick_folder()
+        return window.pick_folder(start)
     import webview
     kind = webview.FileDialog.FOLDER if hasattr(webview, "FileDialog") else webview.FOLDER_DIALOG
-    chosen = window.create_file_dialog(kind)
+    chosen = window.create_file_dialog(kind, directory=str(start or ""))
     return chosen[0] if chosen else None
 
 

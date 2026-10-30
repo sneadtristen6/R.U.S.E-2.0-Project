@@ -49,6 +49,10 @@ vlastní otevře svůj projekt. Mod někoho jiného se stane vaší vlastní kop
 originálu): vaše změny jdou do ní a aktualizace originálu je nikdy nesmaže. Mod z RUSE Mod Manageru (`.rmod`) se
 převede ve své kopii, takže jeho změny hodnot se stanou změnami Studia, které můžete dál měnit.
 
+## Ukázat složku modu, nebo mod smazat
+
+V nabídce módu ve Studiu **Ukázat složku tohoto módu** otevře složku módu, který upravujete, a **Smazat mód…** uvádí vaše módy a změny map: **Smazat** pošle jeden do Koše (odkud ho můžete vrátit) a když to zaškrtnete, i jeho kopii v Launcheru. Složka otevřená odjinud se jen odebere ze seznamu. **Nastavení → Kde jsou vaše soubory** ukazuje, kde je všechno uložené ([[Složky a soubory modů|Složky-a-soubory-modů]]). V RUSE Launcheru **Odebrat** pošle mód z knihovny také do Koše a **Ukázat ve složce** otevře jeho složku.
+
 ## Co mod může obsahovat
 
 Jen data: čísla, texty, mapy, modely, textury. Programy (`.exe`, `.dll`, skripty, které běží na PC) obě aplikace

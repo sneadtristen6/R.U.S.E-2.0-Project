@@ -117,7 +117,7 @@ zu besitzen: keine Spieldateien werden weitergegeben, kein Starten ohne Steam.
 
 - **Ein älteres Mod-Format:** der Mod wurde mit einem älteren Studio erstellt. **Diesen Mod aktualisieren** schreibt
   seine Dateien so um, wie dieses Studio sie liest, und behält, was sie bedeuten; vorher kommt ein Zip des ganzen Mods
-  in den Ordner `mod-backups` des Studios.
+  in den Ordner `Backups` des Studios.
 - **Ein neueres RUSE Studio:** aktualisiere das Studio, bevor du diesen Mod änderst: ein älteres könnte verwerfen, was
   es nicht kennt.
 

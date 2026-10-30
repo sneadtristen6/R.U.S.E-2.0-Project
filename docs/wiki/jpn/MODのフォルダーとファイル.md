@@ -6,10 +6,12 @@
 
 | 何が | どこに |
 |---|---|
-| Studio のMOD | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>`（エクスプローラーのアドレスバーに貼り付けてください） |
+| Studio のMOD | `Documents\RUSE 2.0\Mods\<mod>`（ドキュメント フォルダー）。マップの変更は `Maps`、書き出したファイルは `Exports`、バックアップは `Backups` にあります。Studio の **設定 → ファイルの保存場所** でそれぞれを開けます。編集中のものは MOD メニューの **このMODのフォルダーを表示** で開けます |
 | Launcher にインストールしたMOD | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | ゲームのMOD入りのコピー | 設定で選んだフォルダー（どちらのアプリでも **MOD入りコピーの保存先**）。おすすめの場所はゲームと同じドライブの `RUSE-Instances`（たとえば `D:\RUSE-Instances`）で、そこではコピーがゲームのファイルを共有します。別のドライブでは、各コピーがゲームの完全なコピーになり、遅く、大きくなります。ゲームのクリーンなバックアップ（`RUSE-Backup`）はその隣に置かれます。 |
 | ゲーム本体 | 変更されることはありません |
+
+以前の Studio は `%LOCALAPPDATA%\RUSE Mod Platform`（`mods`、`maps`、`exports`、`mod-backups`）に保存していました。Studio は最初の起動時にそれらをドキュメントへ移し、そのことを知らせます。
 
 ## MODの中身
 

@@ -42,10 +42,13 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 ## The words the apps use
 
 - **Unit mod** (Units tab, top menu): where a user's unit changes are saved. Folder:
-  `%LOCALAPPDATA%\RUSE Mod Platform\mods\<name>`.
+  `Documents\RUSE 2.0\Mods\<name>` (older Studios: `%LOCALAPPDATA%\RUSE Mod Platform\mods\<name>`, moved to Documents
+  on the first start).
 - **Map changes** (Maps tab, top menu): where changes to the game's maps are saved, apart from the unit mod: changes
-  to the game's own maps, and the new maps made with Duplicate map. Folder:
-  `%LOCALAPPDATA%\RUSE Mod Platform\maps\<name>`.
+  to the game's own maps, and the new maps made with Duplicate map. Folder: `Documents\RUSE 2.0\Maps\<name>`.
+- **Show this mod's folder**, **Delete a mod…** (the top menu): open the folder of the one being edited; delete mods
+  and map changes made in the Studio (to the Recycle Bin, the Launcher's copy too when ticked; a folder opened from
+  elsewhere is only taken off the list). **Settings → Where your files are** lists and opens every folder.
 - **Duplicate map** (Maps tab, under the open map's name; Studio 0.9.4): makes a **new map**, a full copy of the map
   open with a name of its own, listed in the game's BATTLES next to the original. Everything changed on the copy is
   the copy's alone. Seen in the game: 101 new maps at once, each listed and playing its own ground. Since Studio 0.9.5
@@ -87,7 +90,9 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 - **"Test in game stopped with an error."** The Studio lists each mistake it finds in the mod with a fix next to it,
   over the test's log. If the cause isn't in the mod, **Troubleshoot** checks the PC. **Copy report** copies the log
   for a bug report.
-- **"Where are my mods?"** In `%LOCALAPPDATA%\RUSE Mod Platform` (`mods` and `maps`). Never inside the game's folder.
+- **"Where are my mods?"** The Studio's: `Documents\RUSE 2.0` (`Mods`, `Maps`, `Exports`, `Backups`); the Launcher's
+  installed mods: `%LOCALAPPDATA%\RUSE Mod Platform\library`. The Studio's Settings, **Where your files are**, opens
+  each. Never inside the game's folder.
 - **"How do I share a mod?"** The top menu's **Export** makes one file; **Share your mod** explains where to post it.
   The Launcher adds such a file (drag it in).
 - **"Something I placed can't be seen from far."** Since Studio 0.9.3 everything a mod places is drawn out to the far

@@ -30,10 +30,23 @@ MESSAGE_MOST = 1500               # characters of a message that go into the lin
 _USERS = re.compile(r"(?i)\b[a-z]:[\\/]+users[\\/]+[^\\/\s]+")  # C:\Users\<name>, any drive, either slash
 
 
+def _documents():
+    from .yourfiles import documents
+    try:
+        return documents()
+    except Exception:  # noqa: BLE001 - a report goes out even when Windows can't say
+        return None
+
+
 def private_paths_out(text: str) -> str:
     """`text` with the player's own folders written the way Windows names them for anyone: %LOCALAPPDATA%,
-    %APPDATA%, %USERPROFILE%, then any other C:\\Users\\<name> left."""
+    %APPDATA%, %USERPROFILE%, then any other C:\\Users\\<name> left. A Documents folder moved out of the player's own
+    (where the Studio keeps mods: rusemod.yourfiles) is written as Documents: its path can carry a name too."""
     out = str(text or "")
+    docs, own = _documents(), os.environ.get("USERPROFILE") or str(Path.home())
+    if docs and not str(docs).lower().startswith(own.lower().rstrip("\\/") + "\\"):
+        for form in {str(docs), str(docs).replace("\\", "/")}:
+            out = re.sub(re.escape(form), "Documents", out, flags=re.IGNORECASE)
     for var in ("LOCALAPPDATA", "APPDATA", "USERPROFILE"):
         value = os.environ.get(var) or (str(Path.home()) if var == "USERPROFILE" else "")
         if value:

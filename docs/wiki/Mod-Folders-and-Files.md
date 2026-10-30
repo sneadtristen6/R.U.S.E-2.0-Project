@@ -7,10 +7,12 @@
 
 | What | Where |
 |---|---|
-| The Studio's mods | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>` (paste that into File Explorer's address bar) |
+| The Studio's mods | `Documents\RUSE 2.0\Mods\<mod>`; map changes in `Maps`, exported files in `Exports`, backups in `Backups`. In the Studio, **Settings → Where your files are** opens each one, and the mod menu's **Show this mod's folder** opens the one you're editing |
 | The launcher's installed mods | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Modded copies of the game | The folder you choose in Settings (**Where modded copies go**, in either app); the recommended place is `RUSE-Instances` on the same drive as the game (for example `D:\RUSE-Instances`), where a copy shares the game's files. On another drive each copy is a full copy of the game: slower and bigger. The game's clean backup (`RUSE-Backup`) goes beside it. |
 | The game itself | Never changed |
+
+Older Studios kept them in `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): the Studio moves them to Documents the first time it starts, and says so.
 
 ## Inside a mod
 

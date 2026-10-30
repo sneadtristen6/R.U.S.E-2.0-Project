@@ -50,6 +50,10 @@ nome dell'originale): le tue modifiche vanno lì, e un aggiornamento dell'origin
 Manager (`.rmod`) viene convertita nella sua copia, così le sue modifiche ai valori diventano modifiche dello Studio che
 puoi cambiare.
 
+## Mostrare la cartella di una mod, o eliminare una mod
+
+Nel menu della mod dello Studio, **Mostra la cartella di questa mod** apre la cartella della mod che stai modificando, ed **Elimina una mod…** elenca le tue mod e modifiche alle mappe: **Elimina** ne manda una nel Cestino (da cui puoi recuperarla) e, se lo spunti, anche la sua copia nel Launcher. Una cartella aperta da un altro posto viene solo tolta dall'elenco. **Impostazioni → Dove sono i tuoi file** mostra dove si trova tutto ([[Cartelle e file delle mod|Cartelle-e-file-delle-mod]]). In RUSE Launcher, **Rimuovi** manda anch'esso una mod della libreria nel Cestino, e **Mostra nella cartella** apre la sua cartella.
+
 ## Cosa può contenere una mod
 
 Solo dati: numeri, testi, mappe, modelli, texture. I programmi (`.exe`, `.dll`, script che girano su un PC) vengono rifiutati

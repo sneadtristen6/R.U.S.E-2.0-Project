@@ -763,6 +763,20 @@ button.finding:hover { border-color: #7fb4e6; color: #fff; }
 .edit-mod-copy input { flex: 1; min-width: 12em; }
 .edit-mod-copy.hidden { display: none; }
 .edit-mods-search { width: 100%; box-sizing: border-box; margin-top: 10px; }
+/* Delete a mod… (app.js openDeleteMods): mods and maps, each with Delete and its "are you sure" under it */
+.del-section h3 { margin: 12px 0 6px; font-size: 13px; color: var(--muted); }
+.del-ask { flex-basis: 100%; display: grid; gap: 6px; }
+.del-ask.hidden { display: none; }
+.del-ask .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.del-also { display: flex; align-items: center; gap: 4px; }
+button.danger:not(.ghost) { background: var(--error); border: 1px solid var(--error); color: #fff; }
+/* Settings, Where your files are (app.js SETTINGS "where"): each folder with its path and Show in folder */
+.where-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.where-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px;
+             background: var(--panel-hi); border-radius: var(--radius); }
+.where-row > button { flex: none; }
+.where-words { flex: 1; min-width: 12em; display: grid; gap: 2px; }
+.where-path { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; user-select: text; }
 
 /* Duplicate map (maps.js openDuplicate): what a new map is, how it works, then its name */
 .map-duplicate { align-self: flex-start; margin: 4px 0; }

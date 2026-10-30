@@ -139,7 +139,7 @@
           useMods(await api().new_mod(typed, "mod"));
           F.made = state.mod;
           await modChanged();
-          say(fill(w.flow_made, { name: typed }), "ok");
+          say(`${fill(w.flow_made, { name: typed })} ${fill(w.where_in, { path: state.mod })}`, "ok");
         }
       }
       // "No research": every unit buildable from the start; Keep and Custom both start from the game's research,

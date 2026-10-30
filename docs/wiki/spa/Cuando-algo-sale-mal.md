@@ -116,7 +116,7 @@ tenerlo: no se reparten archivos del juego ni se ejecuta sin Steam.
 
 - **Un formato de mod más antiguo:** el mod se hizo con un Studio más antiguo. **Actualizar este mod** reescribe sus
   archivos como los lee este Studio, conservando lo que significan; antes, un zip de todo el mod va a la carpeta
-  `mod-backups` del Studio.
+  `Backups` del Studio.
 - **Un RUSE Studio más nuevo:** actualiza el Studio antes de cambiar ese mod: uno más antiguo podría perder lo que no
   conoce.
 

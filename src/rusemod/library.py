@@ -120,11 +120,17 @@ class Library:
                 shutil.rmtree(incoming, ignore_errors=True)
 
     def remove(self, mod_id: str) -> dict:
+        """Take a mod out of the library: its folder goes to the Recycle Bin (rusemod.recycle), where it can be put
+        back from (the owner, 2026-10-30: the Launcher's Remove like the Studio's Delete a mod)."""
+        from .recycle import to_recycle_bin
         folder = self.path_of(mod_id)
         if folder is None:
             raise LibraryError(f"There's no mod called {mod_id!r} in the library.")
         info = read_info(folder)
-        shutil.rmtree(folder)
+        try:
+            to_recycle_bin(folder)
+        except OSError as exc:
+            raise LibraryError(str(exc)) from None
         return info
 
 

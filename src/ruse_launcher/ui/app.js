@@ -172,6 +172,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     text($("set-game-path"), s.found ? fill(w.set_game_path, { path: s.game_dir || "" }) : (s.message || w.set_game_none));
     text($("set-game-change"), w.set_game_change);
   } },
+  { id: "where", render() { renderWhere(); } },  // loaded when Settings opens (loadWhere)
   { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
@@ -182,6 +183,29 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     text($("set-updates-check"), w.set_updates_check);
   } },
 ];
+
+// --- where things are kept (api.where_files, rusemod.yourfiles): the library, and the Studio's mods, map changes and
+// exports in Documents\RUSE 2.0 (the owner, 2026-10-30: the file paths weren't "very clear or easy to follow"); each
+// opened on the PC with one click ---
+async function loadWhere() {
+  try { state.where = await api().where_files(); } catch { state.where = null; }  // an older back end: no section
+  if (state.settings) renderWhere();
+}
+
+function renderWhere() {
+  const w = state.words, at = state.where;
+  $("set-where").classList.toggle("hidden", !at);
+  if (!at) return;
+  text($("set-where-help"), w.set_where_help);
+  $("set-where-list").replaceChildren(...["library", "mods", "maps", "exports"].map((k) => {
+    const show = el("button", { type: "button", className: "small", textContent: w.where_show,
+      title: fill(w.tip_where_show, { path: at[k] }) });
+    show.addEventListener("click", async () => { try { await api().show_folder(k); } catch (err) { problem(err); } });
+    return el("li", { className: "where-row" },
+      el("div", { className: "where-words" }, el("strong", { textContent: w["where_" + k] }),
+        el("code", { className: "where-path", textContent: at[k] })), show);
+  }));
+}
 
 // --- where modded copies go (rusemod.play.instances_dir through api.copies_folder): the folder chosen here, else
 // $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive (the owner, 2026-10-09: "user should
@@ -1261,6 +1285,9 @@ function renderLibrary() {
     const note = buildNote(mod);
     if (note) more.append(el("span", { className: "meta", textContent: note }));
     if (mod.error) more.append(el("span", { className: "warn", textContent: `${w.has_mistake}: ${mod.error}` }));
+    const show = el("button", { type: "button", className: "small ghost", textContent: w.lib_show, title: w.tip_lib_show });
+    show.addEventListener("click", () => api().show_folder("library", mod.id).catch(problem));  // where it is on the PC
+    more.append(show);
     const remove = el("button", { type: "button", className: "small ghost danger", textContent: w.remove, disabled: state.playing });
     remove.addEventListener("click", () => {
       remove.disabled = true;
@@ -1444,7 +1471,7 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup();
+    state.settings = true; render(); loadWhere(); loadCopies(); loadTitle(); loadBackup();
   });
   $("title-gold").addEventListener("change", changeTitle);
   $("set-copies-change").addEventListener("click", () => changeCopies(true));

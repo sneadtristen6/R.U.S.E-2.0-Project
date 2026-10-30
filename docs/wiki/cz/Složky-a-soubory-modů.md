@@ -7,10 +7,12 @@
 
 | Co | Kde |
 |---|---|
-| Mody Studia | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>` (vložte to do adresního řádku Průzkumníka souborů) |
+| Mody Studia | `Documents\RUSE 2.0\Mods\<mod>` (složka Dokumenty); změny map v `Maps`, exportované soubory v `Exports`, zálohy v `Backups`. Ve Studiu je **Nastavení → Kde jsou vaše soubory** otevře jednu po druhé a **Ukázat složku tohoto módu** (nabídka módu) otevře tu, kterou upravujete |
 | Nainstalované mody launcheru | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Kopie hry s mody | Složka, kterou zvolíte v Nastavení (**Kam se ukládají kopie s módy**, v kterékoli aplikaci); doporučené místo je `RUSE-Instances` na stejném disku jako hra (například `D:\RUSE-Instances`), kde kopie sdílí soubory hry. Na jiném disku je každá kopie úplnou kopií hry: pomalejší a větší. Čistá záloha hry (`RUSE-Backup`) jde vedle ní. |
 | Samotná hra | Nikdy se nemění |
+
+Starší verze Studia je ukládaly do `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): Studio je při prvním spuštění přesune do Dokumentů a řekne vám to.
 
 ## Uvnitř modu
 

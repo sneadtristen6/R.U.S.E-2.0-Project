@@ -23,6 +23,16 @@ class PrivatePaths(unittest.TestCase):
         self.assertEqual(private_paths_out("D:\\RUSE-Instances\\studio-test"), "D:\\RUSE-Instances\\studio-test")
         self.assertEqual(private_paths_out(None), "")
 
+    def test_the_documents_folder_where_the_studios_mods_are(self):
+        """Documents moved to another drive under a name of its own: written as Documents; in the player's own
+        folder (OneDrive's too) it's %USERPROFILE% as before."""
+        with mock.patch("rusemod.community._documents", return_value="E:\\Kestrel Stuff\\Documents"):
+            self.assertEqual(private_paths_out("E:\\Kestrel Stuff\\Documents\\RUSE 2.0\\Mods\\tank\\mod.toml"),
+                             "Documents\\RUSE 2.0\\Mods\\tank\\mod.toml")
+        with mock.patch("rusemod.community._documents", return_value=HOME + "\\OneDrive\\Documents"):
+            self.assertEqual(private_paths_out(HOME + "\\OneDrive\\Documents\\RUSE 2.0\\Mods\\tank"),
+                             "%USERPROFILE%\\OneDrive\\Documents\\RUSE 2.0\\Mods\\tank")
+
 
 @mock.patch.dict(os.environ, ENV)
 class ReportLink(unittest.TestCase):

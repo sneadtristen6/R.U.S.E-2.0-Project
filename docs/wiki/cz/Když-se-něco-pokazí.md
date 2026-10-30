@@ -105,7 +105,7 @@ vlastnil: žádné rozdávání souborů hry, žádné spouštění bez Steamu.
 ## „Ve starším formátu modu“ nebo „uloženo novějším RUSE Studiem“
 
 - **Starší formát modu:** mod byl vytvořen starším Studiem. **Aktualizovat tento mod** přepíše jeho soubory tak, jak je
-  čte toto Studio, a zachová, co znamenají; zip celého modu se předtím uloží do složky Studia `mod-backups`.
+  čte toto Studio, a zachová, co znamenají; zip celého modu se předtím uloží do složky Studia `Backups`.
 - **Novější RUSE Studio:** než ten mod změníte, aktualizujte Studio: starší by mohlo zahodit, co nezná.
 
 ## Zavření Studia se ptá „Zavřít RUSE Studio?“
