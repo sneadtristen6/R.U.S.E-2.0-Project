@@ -502,17 +502,21 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
             roots.append(n)
             material_of[(look, part.picture)] = len(roots) - 1
             listed[len(roots) - 1] = list(remap)
-        if part.bone not in bones.names:
+        # the copied model has no such bone (2026-10-30, every era unit's model: the P-40 Warhawk (AVG)'s wing guns
+        # on the Dewoitine D.520, the M274 Mule's 106 mm gun on the Jeep): the part rides on the hull bone, where
+        # it sits on the model; the copied unit has nothing that would turn it
+        on = part.bone if part.bone in bones.names else ROOT
+        if on not in bones.names:
             raise UnitModelError(f"{source}'s skeleton has no bone {part.bone} (a part of the .glb is named so)")
-        bone = bones.names.index(part.bone)
+        bone = bones.names.index(on)
         bone_list = listed[material_of[(look, part.picture)]]
         if bone not in bone_list:
             # the copied model ties nothing to this bone (the M7 Priest's turret): the copy lists it too
             if not remap:
-                raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {part.bone}")
+                raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {on}")
             if len(bone_list) >= MOST_BONES:
                 raise UnitModelError(f"the {look} material of {source} lists {len(bone_list)} bones, as many as the "
-                                     f"game's longest list; {part.bone} would be one more")
+                                     f"game's longest list; {on} would be one more")
             bone_list.append(bone)
         vb = _vertex_buffer(part, bone_list.index(bone))
         vb.kind = fmt
