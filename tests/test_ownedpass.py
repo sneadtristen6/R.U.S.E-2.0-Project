@@ -267,13 +267,15 @@ class BothApps(unittest.TestCase):
     def test_on_for_the_release(self):
         self.assertTrue(ownedpass.ON)  # switched on with RUSE Guard for the release (the owner, 2026-10-31)
 
-    def test_the_screen_has_english_for_every_word(self):
+    def test_the_screen_has_every_word_in_all_eleven_languages(self):
         import tomllib
+        from rusemod import schema
         table = tomllib.loads(ownedpass._WORDS.read_text(encoding="utf-8"))
         for key, values in table.items():
-            self.assertIn("us", values, key)
-            self.assertTrue(values["us"], key)
-        self.assertEqual(ownedpass.words("fr")["title"], ownedpass.words("us")["title"])  # falls back to English
+            self.assertEqual([lang for lang in schema.APP_LANGS if not values.get(lang)], [], key)
+        self.assertNotEqual(ownedpass.words("fr")["title"], ownedpass.words("us")["title"])  # translated
+        self.assertIn("{date}", ownedpass.words("fa")["until"])   # the placeholder survives every translation
+        self.assertEqual(ownedpass.words("xx")["title"], ownedpass.words("us")["title"])  # unknown: English
 
     def test_both_apps_include_the_calls_and_ship_the_screen(self):
         for app in ("ruse_launcher", "ruse_studio"):

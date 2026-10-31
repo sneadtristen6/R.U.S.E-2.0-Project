@@ -2410,16 +2410,11 @@ class Labels(unittest.TestCase):
     # The first-start agreement + username (plan §3a) is English-only here and translated at the feat/languages merge;
     # the apps fall back to English for a missing language, and the agreement is gated off until that release. These
     # keys must still have English; the other languages are checked after the merge.
-    TRANSLATED_LATER = {"agree_title", "agree_intro", "agree_guard_title", "agree_guard",
-                        "agree_full_toggle", "agree_full", "agree_accept_note", "agree_accept",
-                        "username_title", "username_help", "username_save", "username_need"}
-
     def test_complete(self):
         data = schema._data()
         for section, entries in (("props", data["props"]), ("groups", data["groups"]), ("Studio words", _words())):
-            for name, entry in entries.items():
-                langs = ["us"] if (section == "Studio words" and name in self.TRANSLATED_LATER) else schema.APP_LANGS
-                missing = [lang for lang in langs if not entry.get(lang)]
+            for name, entry in entries.items():   # every word in all eleven languages, the agreement's too (2026-10-31)
+                missing = [lang for lang in schema.APP_LANGS if not entry.get(lang)]
                 self.assertEqual(missing, [], f"{section}: {name}")
         for name, entry in data["props"].items():
             self.assertIn(entry["group"], schema.GROUP_ORDER, name)
