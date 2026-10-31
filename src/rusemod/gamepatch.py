@@ -35,7 +35,14 @@ PATCHES: dict[str, tuple[str, str]] = {
     # (rusemod.ownbuildings), Steam build 24670294
     "more-buildings": ("more-buildings-24670294.json",
                        "37ce1ed82562a0976535e5703ba000477ee3dc6df7763ee5785e6bfcdabb5fbc"),
+    # game packs past 4 GiB (rusemod.edat's wide packs: places in 16-byte steps, up to 32 GiB), for mods that make a
+    # pack that big (the owner, 2026-10-30: a player's mod set with many era units' own models), Steam build 24670294
+    "big-packs": ("big-packs-24670294.json",
+                  "932d1395107f190c63857626580506fa0cae4a869f91a7e13d2b67f5cf172ae6"),
 }
+
+
+WHY = {"more-buildings": "the mods' new buildings", "big-packs": "a game pack these mods make bigger than 4 GB"}
 
 
 class GamePatchError(Exception):
@@ -76,7 +83,8 @@ def parse(name: str, data: bytes) -> Patch:
         edits = []
         for offset, old, new in doc["edits"]:
             old_b, new_b = bytes.fromhex(old), bytes.fromhex(new)
-            assert isinstance(offset, int) and offset >= 0 and len(old_b) == len(new_b) > 0
+            # a change in place (as many bytes out as in), or bytes added at the file's end (nothing expected there)
+            assert isinstance(offset, int) and offset >= 0 and len(new_b) > 0 and len(old_b) in (0, len(new_b))
             edits.append((offset, old_b, new_b))
         assert edits
     except (UnicodeDecodeError, ValueError, KeyError, TypeError, AssertionError):
@@ -95,15 +103,50 @@ def apply(patch: Patch, exe: bytes) -> bytes:
                              f"installed (its RUSE.exe differs), so it can't be applied. Mods that need it can't be "
                              f"played with this version.")
     out = bytearray(exe)
-    for offset, old, new in patch.edits:
-        if bytes(out[offset:offset + len(old)]) != old:
-            # not a game rule: what the patch expects to find
-            raise GamePatchError(f"the game patch {patch.name} doesn't match this RUSE.exe at {offset}, so it wasn't "
-                                 f"applied")
-        out[offset:offset + len(new)] = new
+    _edit(out, [patch])
     if _sha(bytes(out)) != patch.to_sha256:
         # not a game rule: the patch's own promise
         raise GamePatchError(f"the game patch {patch.name} didn't give the RUSE.exe it promises, so it wasn't used")
+    return bytes(out)
+
+
+def _edit(out: bytearray, patches) -> None:
+    """Every patch's changes into `out`: those in place first, then the bytes added at the end, in order (each must
+    start where the file then ends)."""
+    ends = []
+    for patch in patches:
+        for offset, old, new in patch.edits:
+            if not old:
+                ends.append((offset, new, patch.name))
+                continue
+            if bytes(out[offset:offset + len(old)]) != old:
+                # not a game rule: what the patch expects to find
+                raise GamePatchError(f"the game patch {patch.name} doesn't match this RUSE.exe at {offset}, so it "
+                                     f"wasn't applied")
+            out[offset:offset + len(new)] = new
+    for offset, new, name in sorted(ends, key=lambda e: e[0]):
+        if offset != len(out):
+            # not a game rule: what the patch expects to find
+            raise GamePatchError(f"the game patch {name} doesn't match this RUSE.exe's length, so it wasn't applied")
+        out += new
+
+
+def apply_all(patches: list, exe: bytes) -> bytes:
+    """The game's RUSE.exe `exe` with every patch of `patches` (a modded copy can need more than one: the mods' own
+    buildings and a pack past 4 GiB). Each is first tried alone on `exe` (the build it's for, every place, its
+    promise); their changes mustn't touch the same bytes; then they all go in together."""
+    if len(patches) == 1:
+        return apply(patches[0], exe)
+    for patch in patches:
+        apply(patch, exe)
+    spans = sorted((offset, offset + len(new), patch.name) for patch in patches for offset, _old, new in patch.edits)
+    for (_a0, a1, an), (b0, _b1, bn) in zip(spans, spans[1:]):
+        if b0 < a1 and an != bn:
+            # not a game rule: two patches that would change the same bytes
+            raise GamePatchError(f"the game patches {an} and {bn} change the same part of RUSE.exe, so the mods "
+                                 f"that need them can't be played together")
+    out = bytearray(exe)
+    _edit(out, patches)
     return bytes(out)
 
 
@@ -143,7 +186,7 @@ def fetch(name: str, cache: Path | None, opener=_open, say=lambda line: None) ->
         from .mod_index import plain
         # not a game rule: the file couldn't be had
         raise GamePatchError(f"the game patch {name} couldn't be downloaded ({plain(exc, TIMEOUT)}). It's needed once, "
-                             f"for the mods' new buildings; connect to the internet and build again.") from None
+                             f"for {WHY.get(name, 'these mods')}; connect to the internet and build again.") from None
     if len(data) > FILE_MOST:
         # not a game rule: the patch file's own size
         raise GamePatchError(f"{file} is far bigger than a game patch ever is, so it wasn't used")

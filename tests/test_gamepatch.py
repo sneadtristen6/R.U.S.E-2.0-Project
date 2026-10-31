@@ -84,6 +84,59 @@ class GamePatchTest(unittest.TestCase):
             gamepatch.fetch("more-buildings", self.tmp / "cache")
 
 
+# a second patch, as big-packs is: changes in place elsewhere, and bytes added at the file's end
+GROWN = bytearray(EXE)
+GROWN[100:102] = b"\x11\x22"
+GROWN += b"NEW SECTION"
+GROWN = bytes(GROWN)
+BIG_EDITS = [(100, EXE[100:102], b"\x11\x22"), (len(EXE), b"", b"NEW SECTION")]
+BIG = gamepatch.write("big-packs", sha(EXE), sha(GROWN), BIG_EDITS)
+
+
+class SeveralPatchesTest(unittest.TestCase):
+    """A modded copy can need more than one patch (the owner, 2026-10-30: the mods' own buildings and a pack past
+    4 GiB): each is tried alone, they mustn't touch the same bytes, then they go in together."""
+
+    def setUp(self):
+        p = mock.patch.dict(gamepatch.PATCHES, {"more-buildings": ("more-buildings-test.json", sha(FILE)),
+                                                "big-packs": ("big-packs-test.json", sha(BIG))})
+        p.start()
+        self.addCleanup(p.stop)
+        self.more, self.big = gamepatch.parse("more-buildings", FILE), gamepatch.parse("big-packs", BIG)
+
+    def test_bytes_added_at_the_end(self):
+        self.assertEqual(gamepatch.apply(self.big, EXE), GROWN)
+        self.assertEqual(gamepatch.apply_all([self.big], EXE), GROWN)
+
+    def test_two_patches_together(self):
+        both = gamepatch.apply_all([self.more, self.big], EXE)
+        want = bytearray(PATCHED)
+        want[100:102] = b"\x11\x22"
+        self.assertEqual(both, bytes(want) + b"NEW SECTION")
+        self.assertEqual(gamepatch.apply_all([self.big, self.more], EXE), both)  # in either order
+
+    def test_two_patches_on_the_same_bytes_refused(self):
+        clash = bytearray(EXE)
+        clash[11:12] = b"\x99"
+        clash_file = gamepatch.write("big-packs", sha(EXE), sha(bytes(clash)), [(11, EXE[11:12], b"\x99")])
+        with mock.patch.dict(gamepatch.PATCHES, {"big-packs": ("big-packs-test.json", sha(clash_file))}):
+            other = gamepatch.parse("big-packs", clash_file)
+        with self.assertRaisesRegex(gamepatch.GamePatchError, "same part"):
+            gamepatch.apply_all([self.more, other], EXE)
+
+    def test_added_bytes_must_start_at_the_end(self):
+        wrong = gamepatch.write("big-packs", sha(EXE), sha(GROWN), [(len(EXE) - 1, b"", b"NEW SECTION")])
+        with mock.patch.dict(gamepatch.PATCHES, {"big-packs": ("big-packs-test.json", sha(wrong))}):
+            patch = gamepatch.parse("big-packs", wrong)
+        with self.assertRaisesRegex(gamepatch.GamePatchError, "length"):
+            gamepatch.apply(patch, EXE)
+
+    def test_a_download_error_says_what_the_patch_is_for(self):
+        with mock.patch.dict("os.environ", {gamepatch.URL_ENV: str(Path(tempfile.mkdtemp())) + "/"}):
+            with self.assertRaisesRegex(gamepatch.GamePatchError, "bigger than 4 GB"):
+                gamepatch.fetch("big-packs", None)
+
+
 
 class KnownPatchesTest(unittest.TestCase):
     def test_each_known_patch_names_a_file_and_its_checksum(self):

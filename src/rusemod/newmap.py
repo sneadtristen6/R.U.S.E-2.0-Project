@@ -820,16 +820,16 @@ class Grown:
                 added[e.path] = blob
         return added
 
-    def iter_chunks(self, replace=None, add=None):
+    def iter_chunks(self, replace=None, add=None, wide=False):
         rest = {k: v for k, v in (replace or {}).items() if k.replace("/", BS).lower() not in self._new}
-        return self.base.iter_chunks(rest, {**self.added_with(replace), **(add or {})})
+        return self.base.iter_chunks(rest, {**self.added_with(replace), **(add or {})}, wide)
 
-    def to_bytes(self, replace=None, add=None) -> bytes:
-        return b"".join(self.iter_chunks(replace, add))
+    def to_bytes(self, replace=None, add=None, wide=False) -> bytes:
+        return b"".join(self.iter_chunks(replace, add, wide))
 
-    def write_to(self, out, replace=None, add=None) -> int:
+    def write_to(self, out, replace=None, add=None, wide=False) -> int:
         n = 0
-        for chunk in self.iter_chunks(replace, add):
+        for chunk in self.iter_chunks(replace, add, wide):
             out.write(chunk)
             n += len(chunk)
         return n
@@ -851,19 +851,19 @@ class NewPack:
     def checksum(self) -> bytes:
         return self.pack_id
 
-    def iter_chunks(self, replace=None, add=None):
+    def iter_chunks(self, replace=None, add=None, wide=False):
         first = True
-        for chunk in self.base.iter_chunks(replace, add):
+        for chunk in self.base.iter_chunks(replace, add, wide):
             if first:
                 chunk, first = bytes(chunk[:8]) + self.pack_id + bytes(chunk[24:]), False
             yield chunk
 
-    def to_bytes(self, replace=None, add=None) -> bytes:
-        return b"".join(self.iter_chunks(replace, add))
+    def to_bytes(self, replace=None, add=None, wide=False) -> bytes:
+        return b"".join(self.iter_chunks(replace, add, wide))
 
-    def write_to(self, out, replace=None, add=None) -> int:
+    def write_to(self, out, replace=None, add=None, wide=False) -> int:
         n = 0
-        for chunk in self.iter_chunks(replace, add):
+        for chunk in self.iter_chunks(replace, add, wide):
             out.write(chunk)
             n += len(chunk)
         return n
