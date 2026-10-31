@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.9 and Launcher 0.4.8.9: mods install on more PCs, and a safer picture reader"
 category: Announcements
 order: 14
+skip: never posted (the owner, 2026-10-29: no Discussions posts for this update); 0.9.8.10's announcement covers it
 ---
 **RUSE Studio 0.9.8.9** and **RUSE Launcher 0.4.8.9** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

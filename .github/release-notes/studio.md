@@ -1,6 +1,13 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.10:** RUSE Guard, our anti-cheat for real multiplayer matches; Bug Watch, crash and usage reports you can opt into; Sign in through Steam; and a first-start agreement.
+
+- **A first-start agreement:** the first time the Studio or the Launcher opens, it says what RUSE Guard does and asks you to accept it (it's required to play online with the apps), whether to turn Bug Watch on (optional), and a username our developers see with your reports: a # and four numbers are added so it's unique, like Nick#4821. One name works for both apps. The agreement shows again when it changes. Seen in both apps. Its text is English for now; the other languages follow.
+- **RUSE Guard:** our anti-cheat, from DomesticNukes' design. It works only in multiplayer and co-op matches, never in single-player, skirmish against the computer, the campaign, or while you make mods. A modded copy built with a cheat or a test tool is for offline play only: it leaves multiplayer and co-op matches by itself. During a real match it checks the names of your running programs against a list of known cheat tools (names only; nothing else is read), and what it collects from a match is filed under your username, never your Steam account. Test in game builds its copies with it. Tested in multiplayer matches with a real opponent; the evidence reaches our server.
+- **Bug Watch (optional):** when you tick it, the Studio and the Launcher count what you use and when something goes wrong, the apps' crashes and the game's, with which mods were on, and send it once a day to our developers with your username. No real names, no Steam account, no files. Off unless you tick it; untick it any time and what was kept is deleted. Seen in both apps.
+- **Sign in through Steam:** a sign-in on Steam's own page in your browser confirms you own R.U.S.E., for online play, RUSE Guard and content downloads. We never see your password, and your Steam ID is never stored: only a pass kept on your PC for 30 days. The Studio asks once; the Launcher's Settings opens it any time. Nothing needs it yet. Not tried in the apps yet.
+
 **0.9.8.9:** downloads on more PCs, and a safer picture reader.
 
 - **Fixed, reported by a player:** on a PC whose Windows hasn't got the certificate GitHub's downloads are checked against and can't fetch it, downloads failed ("unable to get issuer certificate"). The Studio's downloads (its updates, the game patches, the era units' models and Map Paint's online textures) now also try with the list of certificates Firefox uses, which it carries.
