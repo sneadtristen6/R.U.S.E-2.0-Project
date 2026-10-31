@@ -3413,6 +3413,7 @@ ru = "Код игры"
 cz = "Kód hry"
 jpn = "参加コード"
 sc = "加入代码"
+fa = "کد پیوستن"
 
 [tip_join]
 us = "Your modded game's join code, to send to the people you play with, and theirs compared with it"
@@ -3425,6 +3426,7 @@ ru = "Код вашей игры с модами для тех, с кем вы �
 cz = "Kód vaší upravené hry pro spoluhráče a porovnání s jejich kódem"
 jpn = "一緒に遊ぶ人に送る MOD 版ゲームの参加コードと、相手のコードとの比較"
 sc = "你的模组游戏的加入代码，发给一起玩的人，并与他们的代码比较"
+fa = "کد پیوستن بازی مادشده‌تان، برای فرستادن به هم‌بازی‌هایتان، و کد آن‌ها برای مقایسه با آن"
 
 [fair_title]
 us = "RUSE Guard: your join code"
@@ -3437,6 +3439,7 @@ ru = "RUSE Guard: ваш код игры"
 cz = "RUSE Guard: váš kód hry"
 jpn = "RUSE Guard：あなたの参加コード"
 sc = "RUSE Guard：你的加入代码"
+fa = "RUSE Guard: کد پیوستن شما"
 
 [fair_help]
 us = "Send this code to the people you play with. The same code means the same game: the same game version, mods and mod versions. It changes when your mods change."
@@ -3449,6 +3452,7 @@ ru = "Отправьте этот код тем, с кем играете. Од�
 cz = "Pošlete tento kód spoluhráčům. Stejný kód znamená stejnou hru: stejnou verzi hry, módy a jejich verze. Změní se, když změníte módy."
 jpn = "一緒に遊ぶ人にこのコードを送ってください。同じコードなら同じゲームです（ゲームのバージョン、MOD、MOD のバージョンが同じ）。MOD を変えるとコードも変わります。"
 sc = "把这个代码发给一起玩的人。代码相同就是同一个游戏：相同的游戏版本、模组和模组版本。模组变化时代码也会变。"
+fa = "این کد را برای هم‌بازی‌هایتان بفرستید. کد یکسان یعنی بازی یکسان: همان نسخهٔ بازی، همان مادها و همان نسخه‌های مادها. با تغییر مادهایتان، کد هم عوض می‌شود."
 
 [fair_paste]
 us = "Paste a friend's join code"
@@ -3461,6 +3465,7 @@ ru = "Вставьте код друга"
 cz = "Vložte kód přítele"
 jpn = "友達の参加コードを貼り付け"
 sc = "粘贴好友的加入代码"
+fa = "کد پیوستن یک دوست را بچسبانید"
 
 [fair_compare]
 us = "Compare"
@@ -3473,6 +3478,7 @@ ru = "Сравнить"
 cz = "Porovnat"
 jpn = "比較"
 sc = "比较"
+fa = "مقایسه"
 
 [fair_full]
 us = "Check every file of the copy"
@@ -3485,6 +3491,7 @@ ru = "Проверить каждый файл копии"
 cz = "Zkontrolovat každý soubor kopie"
 jpn = "コピーの全ファイルを確認"
 sc = "检查副本的每个文件"
+fa = "بررسی همهٔ فایل‌های نسخه"
 
 [fair_checking]
 us = "Checking the modded copy…"
@@ -3497,6 +3504,7 @@ ru = "Проверка копии с модами…"
 cz = "Kontroluje se upravená kopie…"
 jpn = "MOD 版コピーを確認しています…"
 sc = "正在检查模组副本…"
+fa = "در حال بررسی نسخهٔ مادشده…"
 
 [fair_not_built]
 us = "No join code yet: press Play once, and the code comes with the modded copy."
@@ -3509,6 +3517,7 @@ ru = "Кода ещё нет: нажмите «Играть» один раз, �
 cz = "Kód zatím není: jednou stiskněte Hrát a kód přijde s upravenou kopií."
 jpn = "まだコードはありません。一度「プレイ」を押すと、MOD 版コピーと一緒にコードができます。"
 sc = "还没有代码：先按一次“开始游戏”，代码会随模组副本生成。"
+fa = "هنوز کد پیوستنی نیست: یک بار «بازی» را بزنید؛ کد همراه نسخهٔ مادشده می‌آید."
 
 [fair_changed]
 us = "No join code: the modded copy changed after it was built ({what}). Press Play to build it again."
@@ -3521,6 +3530,7 @@ ru = "Кода нет: копия с модами изменилась посл�
 cz = "Kód není: upravená kopie se po vytvoření změnila ({what}). Stiskněte Hrát a vytvořte ji znovu."
 jpn = "コードはありません。MOD 版コピーが作成後に変更されました（{what}）。「プレイ」を押して作り直してください。"
 sc = "没有代码：模组副本在生成后被改动了（{what}）。按“开始游戏”重新生成。"
+fa = "کد پیوستنی نیست: نسخهٔ مادشده پس از ساخته شدن تغییر کرده است ({what}). «بازی» را بزنید تا دوباره ساخته شود."
 
 [fair_offline]
 us = "No join code: this copy is for offline play ({why}). It leaves multiplayer and co-op matches. Make a mod set without cheats and test tools to play with others."
@@ -3533,6 +3543,7 @@ ru = "Кода нет: эта копия для игры без сети ({why})
 cz = "Kód není: tato kopie je pro hru offline ({why}). Opouští zápasy pro více hráčů i kooperaci. Pro hru s ostatními vytvořte sadu bez cheatů a testovacích nástrojů."
 jpn = "コードはありません。このコピーはオフライン用です（{why}）。マルチプレイと協力プレイの対戦からは退出します。他の人と遊ぶには、チートやテスト用ツールのない MOD セットを作ってください。"
 sc = "没有代码：这个副本只能离线游玩（{why}）。它会退出多人和合作对局。要和别人玩，请建立不含作弊和测试工具的模组组合。"
+fa = "کد پیوستنی نیست: این نسخه برای بازی آفلاین است ({why}). از نبردهای چندنفره و همکاری بیرون می‌رود. برای بازی با دیگران، یک مجموعهٔ ماد بدون تقلب و ابزار آزمایش بسازید."
 
 [fair_no_change]
 us = "No join code: these mods don't change how the game plays, so anyone can play with you."
@@ -3545,6 +3556,7 @@ ru = "Кода нет: эти моды не меняют игровой проц
 cz = "Kód není: tyto módy nemění hratelnost, hrát s vámi může kdokoli."
 jpn = "コードはありません。これらの MOD はゲームの遊び方を変えないので、誰とでも遊べます。"
 sc = "没有代码：这些模组不改变游戏玩法，任何人都能和你一起玩。"
+fa = "کد پیوستنی نیست: این مادها شیوهٔ بازی را تغییر نمی‌دهند، پس هر کسی می‌تواند با شما بازی کند."
 
 [fair_checked]
 us = "Every file checked: the copy is exactly as it was built."
@@ -3557,6 +3569,7 @@ ru = "Проверен каждый файл: копия точно такая, 
 cz = "Zkontrolován každý soubor: kopie je přesně taková, jak byla vytvořena."
 jpn = "全ファイルを確認しました。コピーは作成時のままです。"
 sc = "已检查每个文件：副本与生成时完全一致。"
+fa = "همهٔ فایل‌ها بررسی شد: نسخه دقیقاً همان است که ساخته شده بود."
 
 
 [fair_same]
@@ -3570,6 +3583,7 @@ ru = "Одинаковая игра: можно играть вместе."
 cz = "Stejná hra: můžete hrát spolu."
 jpn = "同じゲームです。一緒に遊べます。"
 sc = "同一个游戏：你们可以一起玩。"
+fa = "بازی یکسان: می‌توانید با هم بازی کنید."
 
 [fair_differs]
 us = "Not the same game. A match between these two would drift apart:"
@@ -3582,6 +3596,7 @@ ru = "Это разные игры. Матч между ними рассинх�
 cz = "Není to stejná hra. Zápas mezi nimi by se rozešel:"
 jpn = "同じゲームではありません。この 2 つで対戦すると同期がずれます："
 sc = "不是同一个游戏。两者对战会不同步："
+fa = "بازی یکسان نیست. نبردی میان این دو از هم جدا می‌افتد:"
 
 [fair_copied]
 us = "Join code copied."
@@ -3594,6 +3609,7 @@ ru = "Код скопирован."
 cz = "Kód zkopírován."
 jpn = "参加コードをコピーしました。"
 sc = "已复制加入代码。"
+fa = "کد پیوستن کپی شد."
 
 [badge_cheat]
 us = "Cheat"
@@ -3606,6 +3622,7 @@ ru = "Чит"
 cz = "Cheat"
 jpn = "チート"
 sc = "作弊"
+fa = "تقلب"
 
 [tip_badge_cheat]
 us = "A cheat or a test tool: a modded copy with it is for offline play only"
@@ -3618,6 +3635,7 @@ ru = "Чит или тестовый инструмент: копия с ним 
 cz = "Cheat nebo testovací nástroj: upravená kopie s ním je jen pro hru offline"
 jpn = "チートまたはテスト用ツール：これを含む MOD 版コピーはオフライン専用です"
 sc = "作弊或测试工具：包含它的模组副本只能离线游玩"
+fa = "یک تقلب یا ابزار آزمایش: نسخهٔ مادشده‌ای که آن را دارد فقط برای بازی آفلاین است"
 
 [badge_scripts]
 us = "Runs scripts"
@@ -3630,6 +3648,7 @@ ru = "Запускает скрипты"
 cz = "Spouští skripty"
 jpn = "スクリプト実行"
 sc = "运行脚本"
+fa = "اسکریپت اجرا می‌کند"
 
 [tip_badge_scripts]
 us = "This mod changes the game's scripts. Scripts run inside the game and can do anything it can: Play waits until you tick that you trust its author."
@@ -3642,6 +3661,7 @@ ru = "Этот мод меняет скрипты игры. Скрипты ра�
 cz = "Tento mód mění skripty hry. Skripty běží uvnitř hry a mohou vše, co ona: Hrát čeká, dokud nezaškrtnete, že autorovi věříte."
 jpn = "この MOD はゲームのスクリプトを変更します。スクリプトはゲーム内で動き、ゲームにできることは何でもできます。作者を信頼するとチェックするまで「プレイ」は始まりません。"
 sc = "这个模组会修改游戏脚本。脚本在游戏内运行，能做游戏能做的任何事：勾选信任作者之前，“开始游戏”会等待。"
+fa = "این ماد اسکریپت‌های بازی را تغییر می‌دهد. اسکریپت‌ها درون بازی اجرا می‌شوند و هر کاری که بازی می‌تواند، می‌توانند بکنند: «بازی» منتظر می‌ماند تا تیک بزنید که به سازنده‌اش اعتماد دارید."
 
 [mod_offline]
 us = "Offline only: {why}. A modded copy with it leaves multiplayer and co-op matches."
@@ -3654,6 +3674,7 @@ ru = "Только без сети: {why}. Копия с ним покидает
 cz = "Jen offline: {why}. Upravená kopie s ním opouští zápasy pro více hráčů i kooperaci."
 jpn = "オフライン専用：{why}。これを含む MOD 版コピーはマルチプレイと協力プレイの対戦から退出します。"
 sc = "仅限离线：{why}。包含它的模组副本会退出多人和合作对局。"
+fa = "فقط آفلاین: {why}. نسخهٔ مادشده‌ای که آن را دارد از نبردهای چندنفره و همکاری بیرون می‌رود."
 
 [scripts_note]
 us = "This mod changes the game's scripts. They run inside the game and can do anything it can, like any program."
@@ -3666,6 +3687,7 @@ ru = "Этот мод меняет скрипты игры. Они работа�
 cz = "Tento mód mění skripty hry. Běží uvnitř hry a mohou vše jako jakýkoli program."
 jpn = "この MOD はゲームのスクリプトを変更します。スクリプトはゲーム内で動き、普通のプログラムと同じく何でもできます。"
 sc = "这个模组会修改游戏脚本。脚本在游戏内运行，和任何程序一样什么都能做。"
+fa = "این ماد اسکریپت‌های بازی را تغییر می‌دهد. آن‌ها درون بازی اجرا می‌شوند و مثل هر برنامه‌ای، هر کاری که بازی می‌تواند، می‌توانند بکنند."
 
 [trust_author]
 us = "I trust this mod's author (Play waits for this tick)"
@@ -3678,6 +3700,7 @@ ru = "Я доверяю автору этого мода («Играть» жд�
 cz = "Věřím autorovi tohoto módu (Hrát čeká na toto zaškrtnutí)"
 jpn = "この MOD の作者を信頼します（このチェックまで「プレイ」は待ちます）"
 sc = "我信任这个模组的作者（勾选后才能开始游戏）"
+fa = "به سازندهٔ این ماد اعتماد دارم («بازی» منتظر این تیک می‌ماند)"
 # Lines the build says in Play's log (rusemod.instance.NOTES: the same English for "us")
 [play_unchanged]
 us = "Nothing changed since the last build: the modded copy is used as it is."
@@ -4199,6 +4222,7 @@ ru = "Bug Watch"
 cz = "Bug Watch"
 jpn = "Bug Watch"
 sc = "Bug Watch"
+fa = "Bug Watch"
 
 [set_bugwatch_help]
 us = "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time."
@@ -4211,6 +4235,7 @@ ru = "Рекомендуется: это помогает нам быстрее 
 cz = "Doporučeno: pomáhá nám rychleji opravovat pády a chyby. Když je zapnutý, Studio a Launcher počítají, co používáte a kdy se něco pokazí, včetně pádů hry a toho, jaké módy byly zapnuté, a jednou denně to posílají našim vývojářům s uživatelským jménem, které si zvolíte. Žádná skutečná jména, žádný účet Steam, žádné soubory. Je vypnutý, dokud ho nezaškrtnete, a zaškrtnutí můžete kdykoli zrušit."
 jpn = "おすすめ：クラッシュや不具合をより早く直すのに役立ちます。オンにすると、Studio と Launcher が、あなたが使った機能や失敗したときのこと（ゲームのクラッシュと、そのとき入っていた MOD を含む）を数え、あなたが選んだユーザー名とともに 1 日 1 回、開発者に送ります。本名、Steam アカウント、ファイルは送りません。チェックを入れるまではオフで、いつでもチェックを外せます。"
 sc = "推荐：它能帮助我们更快修复崩溃和错误。开启后，Studio 和 Launcher 会统计你使用了什么、什么时候出了问题，包括游戏的崩溃以及当时启用了哪些模组，并每天一次连同你选择的用户名发送给我们的开发者。不含真实姓名、Steam 账号或任何文件。在你勾选之前它是关闭的，你也可以随时取消勾选。"
+fa = "توصیه‌شده: کمک می‌کند خرابی‌ها و باگ‌ها را زودتر درست کنیم. وقتی روشن است، استودیو و لانچر می‌شمارند چه چیزهایی را به کار می‌برید و کی چیزی خراب می‌شود، از جمله خرابی‌های بازی و این‌که کدام مادها روشن بوده‌اند، و روزی یک بار آن را با نام کاربری‌ای که انتخاب می‌کنید برای برنامه‌نویسان ما می‌فرستند. بدون نام واقعی، بدون حساب Steam، بدون فایل. تا تیکش را نزنید خاموش است و هر وقت بخواهید می‌توانید تیکش را بردارید."
 
 [bugwatch_on_label]
 us = "Bug Watch (Recommended)"
@@ -4223,6 +4248,7 @@ ru = "Bug Watch (рекомендуется)"
 cz = "Bug Watch (doporučeno)"
 jpn = "Bug Watch（おすすめ）"
 sc = "Bug Watch（推荐）"
+fa = "Bug Watch (توصیه‌شده)"
 
 [bugwatch_name_hint]
 us = "Your username"
@@ -4235,6 +4261,7 @@ ru = "Ваше имя пользователя"
 cz = "Vaše uživatelské jméno"
 jpn = "ユーザー名"
 sc = "你的用户名"
+fa = "نام کاربری شما"
 
 [bugwatch_save]
 us = "Save username"
@@ -4247,6 +4274,7 @@ ru = "Сохранить имя"
 cz = "Uložit uživatelské jméno"
 jpn = "ユーザー名を保存"
 sc = "保存用户名"
+fa = "ذخیرهٔ نام کاربری"
 
 [bugwatch_code]
 us = "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes."
@@ -4259,6 +4287,7 @@ ru = "Вы — {name}. Ваш код отчёта: {code}. Укажите его
 cz = "Jste {name}. Váš kód hlášení je {code}: uveďte ho v hlášení chyby, abychom našli vaše pády."
 jpn = "あなたは {name} です。レポートコードは {code} です。不具合の報告に書いてもらえれば、あなたのクラッシュを見つけられます。"
 sc = "你是 {name}。你的报告代码是 {code}：在错误报告里写上它，我们就能找到你的崩溃。"
+fa = "شما {name} هستید. کد گزارش شما {code} است: آن را در گزارش باگ بنویسید تا بتوانیم خرابی‌هایتان را پیدا کنیم."
 
 [bugwatch_show]
 us = "Show what's sent"
@@ -4271,6 +4300,7 @@ ru = "Показать, что отправляется"
 cz = "Ukázat, co se posílá"
 jpn = "送る内容を表示"
 sc = "显示发送的内容"
+fa = "نمایش آنچه فرستاده می‌شود"
 
 [bugwatch_need_name]
 us = "Type a username first, then tick Bug Watch."
@@ -4283,6 +4313,7 @@ ru = "Сначала введите имя пользователя, затем 
 cz = "Nejdřív napište uživatelské jméno, potom zaškrtněte Bug Watch."
 jpn = "先にユーザー名を入力してから、Bug Watch にチェックを入れてください。"
 sc = "请先输入用户名，再勾选 Bug Watch。"
+fa = "اول یک نام کاربری بنویسید، بعد تیک Bug Watch را بزنید."
 
 [bugwatch_now_on]
 us = "Bug Watch is on. Thank you!"
@@ -4295,6 +4326,7 @@ ru = "Bug Watch включён. Спасибо!"
 cz = "Bug Watch je zapnutý. Děkujeme!"
 jpn = "Bug Watch がオンになりました。ありがとうございます！"
 sc = "Bug Watch 已开启。谢谢！"
+fa = "Bug Watch روشن است. سپاسگزاریم!"
 
 [bugwatch_now_off]
 us = "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted."
@@ -4307,6 +4339,7 @@ ru = "Bug Watch выключен: больше ничего не считает�
 cz = "Bug Watch je vypnutý: nic dalšího se nepočítá ani neposílá a uložené bylo smazáno."
 jpn = "Bug Watch がオフになりました。これ以上数えたり送ったりせず、保存していた内容は削除しました。"
 sc = "Bug Watch 已关闭：不再统计或发送任何内容，已保存的内容已删除。"
+fa = "Bug Watch خاموش است: دیگر چیزی شمرده یا فرستاده نمی‌شود و آنچه نگه داشته شده بود پاک می‌شود."
 
 [tip_bugwatch_on]
 us = "Send counts and crash reports to our developers once a day. Off unless you tick it."
@@ -4319,6 +4352,7 @@ ru = "Раз в день отправлять счётчики и отчёты �
 cz = "Jednou denně posílat počty a hlášení o pádech našim vývojářům. Vypnuto, dokud nezaškrtnete."
 jpn = "1 日 1 回、集計とクラッシュレポートを開発者に送ります。チェックを入れるまではオフです。"
 sc = "每天一次把统计和崩溃报告发送给我们的开发者。在你勾选之前保持关闭。"
+fa = "روزی یک بار شمارش‌ها و گزارش‌های خرابی را برای برنامه‌نویسان ما بفرستید. تا تیکش را نزنید خاموش است."
 
 [tip_bugwatch_name]
 us = "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique."
@@ -4331,6 +4365,7 @@ ru = "Имя, которое наши разработчики видят ряд
 cz = "Jméno, které naši vývojáři vidí u vašich počtů a pádů. Přidá se # a čtyři číslice, aby bylo jedinečné."
 jpn = "開発者があなたの集計とクラッシュと一緒に見る名前です。重複しないように # と 4 桁の数字が付きます。"
 sc = "开发者在你的统计和崩溃旁边看到的名字。会加上 # 和四位数字，确保不重复。"
+fa = "نامی که برنامه‌نویسان ما کنار شمارش‌ها و خرابی‌هایتان می‌بینند. یک # و چهار رقم به آن افزوده می‌شود تا یکتا باشد."
 
 [tip_bugwatch_save]
 us = "Keep this username (a new name gets new numbers)."
@@ -4343,6 +4378,7 @@ ru = "Оставить это имя пользователя (новое имя
 cz = "Ponechat toto uživatelské jméno (nové jméno dostane nové číslice)."
 jpn = "このユーザー名を保存します（新しい名前には新しい数字が付きます）。"
 sc = "保留这个用户名（新的名字会得到新的数字）。"
+fa = "این نام کاربری را نگه دارید (نام تازه، شماره‌های تازه می‌گیرد)."
 
 [tip_bugwatch_show]
 us = "See, word for word, what Bug Watch would send."
@@ -4355,6 +4391,7 @@ ru = "Посмотреть, слово в слово, что отправил б
 cz = "Zobrazit slovo od slova, co by Bug Watch poslal."
 jpn = "Bug Watch が送る内容を、そのまま表示します。"
 sc = "逐字查看 Bug Watch 将发送的内容。"
+fa = "ببینید، کلمه به کلمه، Bug Watch چه چیزی می‌فرستد."
 
 # The first-start agreement + username (plan §3a, AGREEMENT-DRAFT.md). English only for now: api._words falls back to
 # "us" for any language that has no translation yet, and the real translations land at the feat/languages merge. The

@@ -2227,17 +2227,18 @@ jpn = "{0}：{1} が {2}：{3} を変更するため、{4} のものを使いま
 sc = "{0}：{1} 修改了 {2}：{3}，因此使用 {4} 的版本"
 fa = "{0}: {1}، {2} را تغییر می‌دهد: {3}، پس مالِ {4} استفاده می‌شود"
 
-[e12f463a4b5]
-us = "RUSE Guard: the watcher{0} in {1} map script folders ({2})"
-fr = "RUSE Guard : le guetteur{0} dans {1} dossiers de scripts de carte ({2})"
-ger = "RUSE Guard: der Wächter{0} in {1} Karten-Skriptordnern ({2})"
-ita = "RUSE Guard: il sorvegliante{0} in {1} cartelle di script delle mappe ({2})"
-spa = "RUSE Guard: el vigilante{0} en {1} carpetas de scripts de mapa ({2})"
-pol = "RUSE Guard: strażnik{0} w {1} folderach skryptów map ({2})"
-ru = "RUSE Guard: наблюдатель{0} в папках скриптов карт: {1} ({2})"
-cz = "RUSE Guard: hlídač{0} v {1} složkách skriptů map ({2})"
-jpn = "RUSE Guard：監視役{0} をマップスクリプトのフォルダー {1} 個に（{2}）"
-sc = "RUSE Guard：监视器{0} 放入 {1} 个地图脚本文件夹（{2}）"
+[eb22a954888]
+us = "RUSE Guard: the watcher{0} in the Battles launcher ({1}) and {2} map script folders ({3})"
+fr = "RUSE Guard : le guetteur{0} dans le lanceur des Batailles ({1}) et {2} dossiers de scripts de carte ({3})"
+ger = "RUSE Guard: der Wächter{0} im Gefechte-Starter ({1}) und in {2} Karten-Skriptordnern ({3})"
+ita = "RUSE Guard: il sorvegliante{0} nel launcher delle Battaglie ({1}) e in {2} cartelle di script delle mappe ({3})"
+spa = "RUSE Guard: el vigilante{0} en el lanzador de Batallas ({1}) y en {2} carpetas de scripts de mapa ({3})"
+pol = "RUSE Guard: strażnik{0} w programie startowym Bitew ({1}) i w {2} folderach skryptów map ({3})"
+ru = "RUSE Guard: наблюдатель{0} в загрузчике «Сражений» ({1}) и в папках скриптов карт: {2} ({3})"
+cz = "RUSE Guard: hlídač{0} ve spouštěči Bitev ({1}) a v {2} složkách skriptů map ({3})"
+jpn = "RUSE Guard：監視役{0} をバトルのランチャー（{1}）とマップスクリプトのフォルダー {2} 個に（{3}）"
+sc = "RUSE Guard：监视器{0} 放入对战启动器（{1}）和 {2} 个地图脚本文件夹（{3}）"
+fa = "RUSE Guard: دیده‌بان{0} در راه‌انداز نبردها ({1}) و {2} پوشهٔ اسکریپت نقشه ({3})"
 
 [e6bc020ca9a]
 us = "note: no {0} or {1} in this game, so no RUSE Guard watcher"
@@ -2250,6 +2251,7 @@ ru = "примечание: в этой игре нет {0} или {1}, поэт
 cz = "poznámka: v této hře není {0} ani {1}, takže žádný hlídač RUSE Guard"
 jpn = "注意：このゲームには {0} も {1} もないため、RUSE Guard の監視役はありません"
 sc = "注意：此游戏中没有 {0} 或 {1}，因此没有 RUSE Guard 监视器"
+fa = "یادداشت: در این بازی {0} یا {1} نیست، پس دیده‌بان RUSE Guard هم نیست"
 
 [e70b008c3ea]
 us = "offline only: {0}; multiplayer and co-op matches are left at once"
@@ -2262,3 +2264,4 @@ ru = "только офлайн: {0}; сетевые и кооперативны
 cz = "jen offline: {0}; hry pro více hráčů a kooperace se hned opustí"
 jpn = "オフラインのみ：{0}。マルチプレイと協力プレイの対戦はすぐに退出します"
 sc = "仅离线：{0}；多人和合作对战会立即退出"
+fa = "فقط آفلاین: {0}؛ نبردهای چندنفره و همکاری بی‌درنگ ترک می‌شوند"
