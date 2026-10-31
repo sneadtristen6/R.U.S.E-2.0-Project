@@ -39,6 +39,7 @@ from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
 from rusemod.owned import OwnedCalls
+from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
 from rusemod.build import MAP_FILES, BuildError, build_and_write, build_cache, load_mod
 from rusemod.lock import fingerprint_text
@@ -551,7 +552,7 @@ def words(lang: str = schema.BASE) -> dict:
     return {key: texts.get(lang) or texts["us"] for key, texts in _words().items()}
 
 
-class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, BackupCalls, startlog.StartCalls, MusicCalls,
+class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, FlagTypeCalls, BoardCalls,
                 StartScreenCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases

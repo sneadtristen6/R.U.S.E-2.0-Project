@@ -57,7 +57,8 @@ def main(argv=None) -> int:
     api = LauncherApi(game_dir=args.game)
     if args.self_test:
         startlog.stop()  # the build's check, not a start
-        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css", "owned.js", "rtl.js", "required.js"], [
+        return self_test(args.self_test, UI, ["index.html", "app.js", "style.css", "owned.js", "rtl.js", "required.js",
+                                               "ownedsignin.js"], [
             ("the launcher answers", lambda: f"{len(api.mod_sets())} mod set(s), {len(api.library())} mod(s) in the "
                                              f"library; {api.status()['message']}"),
             ("the launcher's words", lambda: f"{len(words('fr'))} in French, e.g. {words('fr')['play']!r}"),

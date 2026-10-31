@@ -1,0 +1,69 @@
+# The words of the "Sign in through Steam" screen (rusemod.ownedpass, owned copies layer 2), for both apps.
+# English only for now; the other ten game languages fall back to English until the translation pass, as the
+# first-start agreement did. Language codes are the game's folders: us fr ger ita spa pol ru cz jpn sc.
+
+[title]
+us = "Sign in through Steam"
+
+[intro]
+us = "For online play, RUSE Guard and content downloads, R.U.S.E. 2.0 confirms you own R.U.S.E. by signing in through Steam. You sign in on Steam's own page in your browser; we never see your password, and your Steam ID is never stored."
+
+[sign_in]
+us = "Sign in through Steam"
+
+[tip_sign_in]
+us = "Opens Steam's sign-in page in your browser. After you sign in, come back here."
+
+[waiting]
+us = "Waiting for Steam. Finish signing in in your browser, then come back to this window."
+
+[waiting_note]
+us = "This window checks every few seconds. You can close it and sign in later."
+
+[cancel]
+us = "Cancel"
+
+[tip_cancel]
+us = "Stops waiting for this sign-in. Nothing is kept."
+
+[signed_in]
+us = "Signed in through Steam: you own R.U.S.E."
+
+[until]
+us = "Confirmed until {date}."
+
+[not_signed_in]
+us = "You're not signed in through Steam yet."
+
+[sign_out]
+us = "Sign out"
+
+[tip_sign_out]
+us = "Forgets this sign-in on this PC. You can sign in again any time."
+
+[close]
+us = "Close"
+
+[tip_close]
+us = "Closes this window."
+
+[err_private]
+us = "Steam didn't show us your games because your Steam profile's Game details are private. In Steam, set Game details to Public for a minute and try again, or ask for an unlock code."
+
+[err_not_owned]
+us = "This Steam account doesn't own R.U.S.E. R.U.S.E. 2.0 works only with copies people own. If you own it on another Steam account, sign in with that one; if you think this is wrong, ask for an unlock code."
+
+[err_steam]
+us = "Steam didn't answer properly, so we couldn't check. Try again in a few minutes."
+
+[err_bad_pass]
+us = "The sign-in came back but didn't check out, so nothing was kept. Try again in a few minutes."
+
+[err_expired]
+us = "This sign-in link ran out. Start the sign-in again."
+
+[err_reach]
+us = "We couldn't reach the sign-in server. Check your connection and try again."
+
+[off]
+us = "Signing in through Steam isn't switched on yet."
