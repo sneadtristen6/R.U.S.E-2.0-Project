@@ -11,8 +11,8 @@
 #     stopped. The stop is the SECOND step, after the surrender, so the honest opponent's win is already in.
 # Skirmish against the AI, operations and the campaign are untouched.
 #
-# Why stop the game, and why only here: a script error that reaches the game stops the whole game (the game's own
-# error handler, RUSE.exe 0x140859de0 -> code 0x29a; found 2026-10-30, findings ledger F-147), and the game gives a
+# Why stop the game, and why only here: a script error that reaches the game stops the whole game (with code 0x29a;
+# found 2026-10-30), and the game gives a
 # script no other way to leave a mark the maker can see (no file, output dropped). This script is ONLY ever in a copy
 # built with a cheat; honest copies never carry it, so no honest player is stopped.
 

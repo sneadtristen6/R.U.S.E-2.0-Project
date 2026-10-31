@@ -59,7 +59,13 @@
     return body;
   }
 
+  // Settings listens for this: the kept pass changed, or the panel opened or closed.
+  function notify(status) {
+    try { window.dispatchEvent(new CustomEvent("ownedsignin", { detail: status || null })); } catch { /* an old window */ }
+  }
+
   function render(status) {
+    notify(status);
     const w = status.words || {};
     if (!status.on) {
       panel(w, [el("p", { className: "osi-note", textContent: w.off || "" })]);
@@ -126,7 +132,12 @@
 
   async function atStart() {
     const status = await loadStatus();
-    if (status && status.on && !status.signed_in) open();  // layer 2 is on and nobody's signed in: prompt
+    if (!status || !status.on || status.signed_in) return;
+    let asked = false;
+    try { asked = localStorage.getItem("osi-asked") === "1"; } catch { /* no storage: ask */ }
+    if (asked) return;  // asked once already; the Launcher's Settings opens it whenever they want
+    try { localStorage.setItem("osi-asked", "1"); } catch { /* fine */ }
+    open();
   }
 
   window.OwnedSignIn = { open, close };

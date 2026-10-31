@@ -37,15 +37,16 @@ RECORD = "fairplay.json"    # in a modded copy: what the build made (write_recor
 SCRIPTS = Path(__file__).with_name("gamescripts")
 LOCK, WATCH = "fairplay_lock", "fairplay_watch"
 GUARD = "guard_hash"  # RUSE Guard's in-game record (DomesticNukes' §3.2/§3.4; multiplayer only; rusemod.guard)
-# ALL OF FAIR PLAY IS WRITTEN AND SWITCHED OFF (the owner, 2026-10-04: it goes in the big patch before 1.0, written
-# up in docs/BIG_PATCH.md; "don't implement the patch", "I don't want it necessarily working in the launcher yet").
-# Off: the build checks no mods, adds no scripts and leaves no record; the Launcher shows no join code, no badges,
-# no trust tick, and Play doesn't wait for one. Turning it on is this line, when the owner says so.
-ON = False
-# And when it's on, our game scripts still go into builds only once they've passed in the game (docs/TESTS.md F1, F3):
-# an earlier form of them stopped the owner's game at map load (2026-10-04, a copy built from the project folder).
-# The test copies for F1/F3 turn them on (`FairPlay(scripts=True)`).
-IN_BUILDS = False
+# FAIR PLAY IS SWITCHED ON for the release (the owner, 2026-10-31: "this is going out", after the 10-30/31
+# multiplayer tests with a real opponent). Written on 2026-10-04 and held off until then (docs/BIG_PATCH.md).
+# Off, the build checks no mods, adds no scripts and leaves no record; the Launcher shows no join code, no badges,
+# no trust tick, and Play doesn't wait for one. Tests that need it off patch this line.
+ON = True
+# Our game scripts go into every build: the lock passed in the game (the 10-30/31 multiplayer tests: it surrendered
+# a cheat copy and stopped it on the end-of-match screen), and the watcher and the record let no error out at any
+# of the game's nine calls (checked with failing game objects at each). Off, no scripts go in; a test copy passes
+# `FairPlay(scripts=...)` itself.
+IN_BUILDS = True
 MAP_SCRIPTS = "IA_Common.dat"         # the pack with the maps' own match scripts: ours go there (1.5 MB)
 SCRIPT_ROOT = "genpython\\1000\\test\\"  # where a scenario's DataDir:\Test\... script folder is in that pack
 MULTIPLAYER = "\\effetmapmultiplayer.xyz"  # the game's own multiplayer match script (ZZ_Win.dat, eugenpatchable.ipk)

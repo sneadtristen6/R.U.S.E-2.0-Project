@@ -45,6 +45,8 @@ CLIENT_KEY = "guard/client.key"                       # this install's own signi
 OUTBOX = "guard/outbox"                               # bundles waiting for a server
 REFUSED = "guard/refused"                             # bundles the server rejected for good (out of the send queue)
 SIGNATURES = "guard/signatures.json"                  # the server's list of known cheat tools (last fetched)
+SERVER = "https://ruse-guard.sneadtristen6.workers.dev"  # the project's server: the app window sets it as the default
+#                                                       (GuardCalls.use_guard_server), so tests keep their bundles
 MANIFEST = "ruseguard.manifest"                       # a signed mod manifest, in the mod's folder
 MATCH_LOG = "ruse_guard_match.txt"                    # what the in-game record writes, in the copy's folder
 TERMS_VERSION = 1                                     # the terms the player agreed to (DomesticNukes' draft)
@@ -337,7 +339,7 @@ def bundle(home, log: MatchLog, *, username: str, record: dict | None, replay: P
                               for m in manifests],
                      "dev_token": "" if not dev.valid else Path(home, DEV_KEY).read_text(encoding="utf-8").strip(),
                      "hotkeys": [[a, f] for a, f in log.hotkeys], "process_findings": findings,
-                     "stop": stop or {},  # the offline lock's "a cheat copy was stopped" lines, read from the crash dump
+                     "stop": stop or {},  # the offline lock's "a cheat copy was stopped" lines, read from the game's crash report
                      "ended_in_game": log.ended is not None},
         "replay": replay_b64,
     }
@@ -437,9 +439,12 @@ def deliver(home, body: dict, server: str = "") -> str:
 
 
 # --- the Launcher's settings for it ---
-def settings_of(values: dict) -> dict:
+def settings_of(values: dict, default_server: str = "") -> dict:
+    """The player's RUSE Guard settings. `default_server` is where bundles go when the player set no server: the app
+    window passes SERVER; tests pass nothing, so their bundles stay in the outbox and never leave the PC."""
     g = values.get("guard") if isinstance(values.get("guard"), dict) else {}
-    return {"terms": int(g.get("terms", 0) or 0), "scan": bool(g.get("scan", True)), "server": str(g.get("server", ""))}
+    return {"terms": int(g.get("terms", 0) or 0), "scan": bool(g.get("scan", True)),
+            "server": str(g.get("server", default_server))}
 
 
 # --- after the game starts: watch, then collect ---
@@ -476,7 +481,7 @@ def collect(home, game, copy, *, username: str, scan_findings: list | None = Non
 # crashes the game on purpose, and the game's crash reporter writes a dump. The Launcher reads only RUSE Guard's own
 # marked lines from that dump here, strips any Steam ID, long id or path (defence in depth; the mark itself carries
 # none, findings F-150), and sends them as a small bundle; the dump itself never leaves the PC (no-steam-account-risk).
-GUARD_DUMPS = ("Temp/CrashRpt_*/crashdump.dmp", "CrashDumps/RUSE.exe*.dmp")  # the game's reporter, then Windows' own
+GUARD_DUMPS = ("Temp/CrashRpt_*/*.dmp", "*Dumps/RUSE.exe*.dmp")  # the game's crash reporter's folder, then Windows' own
 _STEAM_ID = re.compile(rb"7656\d{13}")             # a SteamID64
 _LONG_ID = re.compile(rb"\d{9,}")                  # an account number or other long id
 _WIN_PATH = re.compile(rb"[A-Za-z]:\\[^\s\"<>|]+")  # a Windows path (the dump's module list etc.)
@@ -492,7 +497,7 @@ def _clean_stop(raw: bytes) -> str:
 
 
 def read_stop(dump_path) -> dict | None:
-    """From a crash dump on this PC, the offline lock's marked lines ("a cheat copy was stopped"), cleaned of any
+    """From a crash report file on this PC, the offline lock's marked lines ("a cheat copy was stopped"), cleaned of any
     Steam ID, long id or path. None if the dump has no filled-in RUSE Guard mark. The dump never leaves the PC; only
     these cleaned lines do. The crash code is the game's script-error stop (0x29a, findings F-147/F-150).
 
@@ -517,7 +522,7 @@ def read_stop(dump_path) -> dict | None:
 
 
 def stop_dumps_since(since: float, local: str | None = None) -> list[Path]:
-    """The crash dumps written after `since` on this PC (GUARD_DUMPS under %LOCALAPPDATA%)."""
+    """The crash report files written after `since` on this PC (GUARD_DUMPS under %LOCALAPPDATA%)."""
     local = local or os.environ.get("LOCALAPPDATA")
     if not local:
         return []
@@ -534,7 +539,7 @@ def stop_dumps_since(since: float, local: str | None = None) -> list[Path]:
 
 def collect_stops(home, since, *, username: str, server: str = "", now: int | None = None, say=print,
                   local: str | None = None) -> list[str]:
-    """After the game closed: every new crash dump that carries RUSE Guard's mark (a cheat copy the offline lock
+    """After the game closed: every new crash report that carries RUSE Guard's mark (a cheat copy the offline lock
     stopped) becomes a small signed bundle, its cleaned lines in evidence.stop, delivered or kept. Each dump is read
     at most once per run. Returns one line per report."""
     now = int(time.time()) if now is None else now
@@ -567,8 +572,8 @@ class MatchWatch(threading.Thread):
         super().__init__(daemon=True, name="ruse-guard-watch")
         self.process, self.home, self.game, self.copy = process, home, game, copy
         self.username, self.consent, self.manifests, self.say, self.sleep = username, consent, manifests, say, sleep
-        self.local = local           # where the crash dumps are written (%LOCALAPPDATA% when None)
-        self.started = time.time()   # only crash dumps written after this are this match's
+        self.local = local           # where the crash reports are written (%LOCALAPPDATA% when None)
+        self.started = time.time()   # only crash reports written after this are this match's
         self.findings: list[dict] = []
 
     def run(self) -> None:

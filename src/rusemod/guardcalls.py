@@ -8,11 +8,18 @@ from rusemod.home import save_settings, settings
 
 
 class GuardCalls:
+    _guard_server = ""   # where bundles go when the player set no server: the app window sets the project's own
+
+    def use_guard_server(self) -> None:
+        """From the app window: a match's evidence goes to the project's RUSE Guard server unless the player set
+        another. Tests don't call this, so their bundles stay in the outbox and never leave the PC."""
+        self._guard_server = guard.SERVER
+
     def guard_status(self) -> dict:
         """The player's RUSE Guard settings: the terms version agreed to (0: none yet), whether the process scan may
         run in multiplayer matches, the server's address ("" = evidence kept in the outbox), and the dev key."""
-        return guard.settings_of(settings(self._home)) | {"dev_key": guard.dev_key(self._home).reason,
-                                                           "terms_version": guard.TERMS_VERSION}
+        return guard.settings_of(settings(self._home), self._guard_server) | {
+            "dev_key": guard.dev_key(self._home).reason, "terms_version": guard.TERMS_VERSION}
 
     def _save_guard(self, key: str, value) -> dict:
         values = settings(self._home)

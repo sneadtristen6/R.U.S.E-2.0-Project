@@ -339,7 +339,7 @@ class Starter:
         from . import bugwatch
         watch = bugwatch.current()
         if watch is not None and process is not None and bugwatch.enabled(watch.home):
-            # Bug Watch: the minutes this game runs with these mods, and any crash dump it leaves
+            # Bug Watch: the minutes this game runs with these mods, and any crash report it leaves
             bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders)).start()
         if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
             from .guard import MatchWatch, check_manifest

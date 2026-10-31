@@ -231,7 +231,7 @@ class Bundle(unittest.TestCase):
             b" trailing junk 76561198011112222")
 
     def _dump(self, data: bytes) -> Path:
-        p = self.dir / "crashdump.dmp"
+        p = self.dir / "report.dmp"
         p.write_bytes(data)
         return p
 
@@ -255,7 +255,7 @@ class Bundle(unittest.TestCase):
               b"multi 1 coop 0 local 0 RUSEGUARD-END")
 
     def test_read_stop_prefers_the_filled_in_mark_over_the_template(self):
-        # a real lock-crash dump holds both; the filled-in line is the evidence, the template is a useless constant
+        # a real lock-crash report holds both; the filled-in line is the evidence, the template is a useless constant
         stop = guard.read_stop(self._dump(b"junk " + self.TEMPLATE + b" ... " + self.FILLED + b" junk"))
         self.assertIsNotNone(stop)
         self.assertIn("multi 1 coop 0 local 0", stop["text"])
@@ -268,7 +268,7 @@ class Bundle(unittest.TestCase):
     def test_collect_stops_bundles_a_lock_crash_with_no_steam_id(self):
         local = self.dir / "LocalAppData"
         (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "crashdump.dmp").write_bytes(self.DUMP)
+        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
         said = guard.collect_stops(self.home, since=0, username="Nick#4821", server="", now=1791000200,
                                    local=str(local), say=lambda s: None)
         self.assertEqual(len(said), 1)
@@ -312,7 +312,7 @@ class Bundle(unittest.TestCase):
                 self.polls += 1
                 if self.polls == 1:
                     dumps.mkdir(parents=True, exist_ok=True)
-                    (dumps / "crashdump.dmp").write_bytes(Bundle.DUMP)
+                    (dumps / "report.dmp").write_bytes(Bundle.DUMP)
                     return None
                 return 0x29A
 
@@ -334,7 +334,7 @@ class Bundle(unittest.TestCase):
     def test_a_lock_crash_with_no_username_still_goes_out(self):
         local = self.dir / "LocalAppData"
         (local / "Temp" / "CrashRpt_abc").mkdir(parents=True)
-        (local / "Temp" / "CrashRpt_abc" / "crashdump.dmp").write_bytes(self.DUMP)
+        (local / "Temp" / "CrashRpt_abc" / "report.dmp").write_bytes(self.DUMP)
         guard.collect_stops(self.home, since=0, username="", server="", now=1791000200, local=str(local),
                             say=lambda s: None)
         body = json.loads(next((self.home / guard.OUTBOX).glob("*.json")).read_text(encoding="utf-8"))
@@ -376,6 +376,24 @@ class Bundle(unittest.TestCase):
 
 def setattr_many(mod, values):
     mod.signatures, mod.live_multiplayer, mod.scan = values
+
+
+class Server(unittest.TestCase):
+    """The project's server is the default only from the app window (use_guard_server): a test's bundles stay in the
+    outbox and never leave the PC."""
+
+    def test_the_window_sets_the_projects_server_and_tests_keep_theirs(self):
+        import tempfile
+        from pathlib import Path
+        from ruse_launcher.api import LauncherApi
+        with tempfile.TemporaryDirectory() as tmp:
+            api = LauncherApi(home=Path(tmp))
+            self.assertEqual(api.guard_status()["server"], "")            # a test: nothing leaves the PC
+            api.use_guard_server()
+            self.assertEqual(api.guard_status()["server"], guard.SERVER)  # the app window: the project's server
+        root = Path(__file__).resolve().parents[1]
+        for app in ("ruse_launcher", "ruse_studio"):
+            self.assertIn("api.use_guard_server()", (root / "src" / app / "app.py").read_text(encoding="utf-8"), app)
 
 
 if __name__ == "__main__":

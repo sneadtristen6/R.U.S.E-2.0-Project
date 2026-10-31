@@ -39,11 +39,25 @@ class SwitchedOn(unittest.TestCase):
         self.addCleanup(on.stop)
 
 
-class Off(unittest.TestCase):
-    """Switched off (the owner, 2026-10-04): no scripts in builds, nothing in the Launcher, Play doesn't ask."""
+class Released(unittest.TestCase):
+    """Switched on for the release (the owner, 2026-10-31): the checks, the join code, and the game scripts in every
+    build."""
 
-    def test_off_by_default(self):
-        self.assertFalse(fairplay.ON)
+    def test_on_by_default(self):
+        self.assertTrue(fairplay.ON)
+        self.assertTrue(fairplay.IN_BUILDS)
+
+
+class Off(unittest.TestCase):
+    """Switched off (as it was held from 2026-10-04 to the release): no scripts in builds, nothing in the Launcher,
+    Play doesn't ask. These tests switch it off themselves."""
+
+    def setUp(self):
+        off = mock.patch.object(fairplay, "ON", False)
+        off.start()
+        self.addCleanup(off.stop)
+
+    def test_off_builds_nothing(self):
         self.assertEqual(fairplay.FairPlay([fairplay.ModCheck("t", "Test tool", cheat=True)], scripts=True).patches(), [])
 
     def test_the_launcher_shows_none_of_it(self):
@@ -229,9 +243,9 @@ class Mods(SwitchedOn):
         c = fairplay.check_mod(self.folder("maps"))
         self.assertEqual((c.cheat, c.scripts, c.calls, c.offline_reason), (False, [], [], None))
         fair = fairplay.check([self.dir / "maps"])
-        self.assertEqual(fair.patches(), [])  # not in builds until tested in the game (fairplay.IN_BUILDS)
-        fair.scripts = True
-        self.assertEqual(fair.patches(), [fairplay.game_script(fairplay.WATCH), fairplay.game_script(fairplay.GUARD)])  # then always
+        self.assertEqual(fair.patches(), [fairplay.game_script(fairplay.WATCH), fairplay.game_script(fairplay.GUARD)])  # in every build (fairplay.IN_BUILDS)
+        fair.scripts = False
+        self.assertEqual(fair.patches(), [])  # a copy built with them off gets none
 
     def test_tagged_cheat_by_itself_or_by_the_list(self):
         self.assertTrue(fairplay.check_mod(self.folder("own", 'tags = ["Cheat"]')).cheat)

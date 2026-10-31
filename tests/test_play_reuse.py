@@ -15,7 +15,7 @@ from unittest import mock
 from test_build import PACK, price, write_mod
 from rusemod import instance as inst
 from rusemod.build import build_and_write, load_mod
-from rusemod.instance import NOTES, RECORD, Note, build_instance, needs_build, read_record, set_aside_old
+from rusemod.instance import NOTES, OWN_NOTES, RECORD, Note, build_instance, needs_build, read_record, set_aside_old
 from rusemod.play import Starter, built_from, in_words
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,13 +36,14 @@ def make_game(root) -> Path:
 
 
 def files_of(folder) -> dict:
-    """{path inside: bytes} of every file in a copy but its record (which says when and how, not what)."""
+    """{path inside: bytes} of every file in a copy but its own notes (its record, RUSE Guard's join-code record, the
+    match log), which say when and how, not what."""
     out = {}
     for root, _dirs, names in os.walk(folder):
         for n in names:
             path = os.path.join(root, n)
             rel = os.path.relpath(path, folder)
-            if rel != RECORD:
+            if rel not in OWN_NOTES:
                 with open(path, "rb") as f:
                     out[rel] = f.read()
     return out
@@ -126,6 +127,23 @@ class Unchanged(Base):
         self.assertEqual(kinds, {"RUSE.exe": "copy", UNITS: "written", COMMON: "link", LANG: "copy",
                                  "steam_appid.txt": "written"})
         self.assertEqual(needs_build(str(self.game), str(self.copy), built_from(self.game, [str(mod)])), "")
+
+    def test_the_copys_own_notes_never_build_again(self):
+        """RUSE Guard's join-code record (written right after the build) and the in-game match log are the copy's own
+        notes: one of them in the copy is never a reason to build again (found when fair play was first switched on:
+        every second Play rebuilt)."""
+        from rusemod import fairplay, guard
+        mod = write_mod(self.root, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
+        self.assertEqual(self.play(mod), 1)
+        self.assertTrue((self.copy / fairplay.RECORD).is_file())  # fair play is on: the build left its record
+        (self.copy / guard.MATCH_LOG).write_text("match 1\n", encoding="utf-8")  # as the game's own script would
+        self.assertEqual(needs_build(str(self.game), str(self.copy), built_from(self.game, [str(mod)])), "")
+        self.assertEqual(self.play(mod), 0)
+        self.assertEqual(self.lines[0], NOTES["play_unchanged"])
+
+    def test_the_own_notes_are_the_real_files(self):
+        from rusemod import fairplay, guard
+        self.assertEqual(set(OWN_NOTES), {RECORD, fairplay.RECORD, guard.MATCH_LOG})
 
 
 class Changes(Base):

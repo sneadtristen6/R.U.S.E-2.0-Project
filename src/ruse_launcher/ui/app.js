@@ -194,7 +194,26 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
       : u.error ? u.error : fill(w.set_updates_latest, { version: u.version || "" }));
     text($("set-updates-check"), w.set_updates_check);
   } },
+  { id: "signin", render() { renderSignin(); } },  // Sign in through Steam (rusemod.ownedpass); loaded when Settings opens
 ];
+
+// --- Sign in through Steam (rusemod.ownedpass, owned copies layer 2): the pass that confirms the player owns the game,
+// for online play, RUSE Guard and content downloads. The sign-in window itself is ownedsignin.js; Settings says where
+// it stands and opens it ---
+async function loadSignin() {
+  try { state.signin = await api().owned_pass_status(); } catch (err) { state.signin = { on: false }; }
+  if (state.settings) renderSignin();
+}
+
+function renderSignin() {
+  const w = state.words, s = state.signin || {};
+  $("set-signin").classList.toggle("hidden", !s.on);
+  if (!s.on) return;
+  const until = s.until ? new Date(s.until * 1000).toLocaleDateString() : "";
+  text($("set-signin-text"), s.signed_in ? fill(w.set_signin_signed, { date: until }) : w.set_signin_not);
+  text($("set-signin-open"), w.set_signin_open);
+  $("set-signin-open").title = w.tip_signin_open || "";
+}
 
 // --- where modded copies go (rusemod.play.instances_dir through api.copies_folder): the folder chosen here, else
 // $RUSE_INSTANCES, else the recommended place, RUSE-Instances on the game's drive (the owner, 2026-10-09: "user should
@@ -1572,9 +1591,11 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch();
+    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch(); loadSignin();
   });
   $("title-gold").addEventListener("change", changeTitle);
+  $("set-signin-open").addEventListener("click", () => { if (window.OwnedSignIn) window.OwnedSignIn.open(); });
+  window.addEventListener("ownedsignin", () => { if (state.settings) loadSignin(); });  // the sign-in window changed something
   $("bugwatch-on").addEventListener("change", (e) => changeBugwatch(e.target.checked));
   $("bugwatch-save").addEventListener("click", () => changeBugwatch(true));
   $("bugwatch-show").addEventListener("click", showBugwatch);

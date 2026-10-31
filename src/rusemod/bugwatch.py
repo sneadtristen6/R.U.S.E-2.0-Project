@@ -11,15 +11,14 @@ What is counted, per UTC day and app version: every call a window makes (webui._
 how many failed, the error's kind, the time in five steps), every long job (webui.Job), screens, problems shown,
 troubleshooter checks that failed, updates, the mods in use (mod-list mods by id@version, any other as a count),
 minutes played, and crashes: the apps' own (an error nobody caught: its kind and the lines in our own files only)
-and the game's (its crash code, module and offset, read from the crash dump on this PC, and for the game's
-script-error stop the Traceback text). Never sent: a path, a file, anything typed, the crash dump itself, the
+and the game's (its crash code, module and offset, read from the game's crash report on this PC, and for the game's
+script-error stop the Traceback text). Never sent: a path, a file, anything typed, the crash report file itself, the
 player's in-game name, any Steam ID. Days wait in `<platform folder>/bugwatch/outbox/` until a send gets through;
 none waits more than 30 days.
 
-Checked our_tools.json: its program-reading tools (eugen_way.py, field_reads.py, fnc.py, vt.py, tunables.py,
-ghidra_xrefs.py, rdata.py, exe_q.py, Ghidra) read the game program's code; this reads none of it. It reads a crash
-dump's exception record and module list on the player's PC, which a public app may do; turning an offset into a
-function with our decompile (private/tools/crash_site.py) stays on our side, as the plan says (§2)."""
+Checked our_tools.json: none of its tools reads a crash report; this module reads only the exception record and the
+module list of the game's crash report, on the player's PC, which a public app may do, and sends the crash code, the
+module's name and the offset, nothing more (the plan, §2)."""
 from __future__ import annotations
 
 import json
@@ -38,7 +37,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-ON = False
+ON = True   # switched on for the release (the owner, 2026-10-31); each player's own opt-in decides (enabled())
 SERVER = "https://ruse-bug-watch.sneadtristen6.workers.dev"
 FOLDER = "bugwatch"
 OUTBOX = "outbox"
@@ -46,7 +45,7 @@ KEEP_DAYS = 30                    # the server refuses a day older than this; th
 SEND_EVERY = 24 * 3600            # a day's counts go once a day, on start
 STEPS = (1.0, 10.0, 60.0, 300.0)  # time in five steps: under 1 s, 10 s, 1 min, 5 min, longer
 OUR_PACKAGES = ("rusemod", "ruse_studio", "ruse_launcher")
-GAME_DUMPS = ("Temp/CrashRpt_*/*.dmp", "CrashDumps/RUSE.exe*.dmp")  # the game's crash reporter's, then Windows' own
+GAME_DUMPS = ("Temp/CrashRpt_*/*.dmp", "*Dumps/RUSE.exe*.dmp")  # the game's crash reporter's folder, then Windows' own
 # the server's own limits (PAYLOADS.md / worker.js LIMITS)
 MOST = {"calls": 150, "jobs": 30, "screens": 30, "messages": 60, "checks": 60, "mods": 60}
 ERROR_KINDS_EACH, ERROR_KINDS_ALL, MAX_COUNT, MAX_MINUTES = 8, 100, 1_000_000, 1440
@@ -498,7 +497,7 @@ def our_frames(tb) -> list:
 
 # --- the game's crashes ---------------------------------------------------------------------------------------
 def crash_dumps_since(since: float, local: str | None = None) -> list[Path]:
-    """The game's crash dumps written after `since` on this PC (GAME_DUMPS under %LOCALAPPDATA%)."""
+    """The game's crash report files written after `since` on this PC (GAME_DUMPS under %LOCALAPPDATA%)."""
     local = local or os.environ.get("LOCALAPPDATA")
     if not local:
         return []
@@ -514,7 +513,7 @@ def crash_dumps_since(since: float, local: str | None = None) -> list[Path]:
 
 
 def read_dump(path) -> dict | None:
-    """From a crash dump, read on this PC only: {"code", "module", "offset"} and, for the game's script-error stop
+    """From a crash report file, read on this PC only: {"code", "module", "offset"} and, for the game's script-error stop
     (0x29a), "traceback" (the game Python's text, paths cut). None if it can't be read. The dump never leaves the
     PC (the plan, §2)."""
     try:
@@ -559,7 +558,7 @@ def read_dump(path) -> dict | None:
 
 class GameWatch(threading.Thread):
     """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
-    any crash dump it left since it started."""
+    any crash report it left since it started."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
                  local: str | None = None):

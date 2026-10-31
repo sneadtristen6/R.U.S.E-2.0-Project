@@ -264,8 +264,8 @@ class Mixin(unittest.TestCase):
 
 
 class BothApps(unittest.TestCase):
-    def test_on_is_held_off_in_the_source(self):
-        self.assertFalse(ownedpass.ON)  # layer 2 ships switched off, turned on with RUSE Guard at a release
+    def test_on_for_the_release(self):
+        self.assertTrue(ownedpass.ON)  # switched on with RUSE Guard for the release (the owner, 2026-10-31)
 
     def test_the_screen_has_english_for_every_word(self):
         import tomllib

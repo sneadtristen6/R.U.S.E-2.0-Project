@@ -297,9 +297,12 @@ class Terrain(unittest.TestCase):
         return result, lines
 
     def copy_files(self, copy: str) -> dict:
+        """The copy's files but its own notes (its record, RUSE Guard's join-code record, the match log: when and how,
+        not what), to compare two builds."""
+        from rusemod.instance import OWN_NOTES
         out = {}
         for p in sorted((self.root / copy).rglob("*")):
-            if p.is_file() and p.name != "rusemod-copy.json":
+            if p.is_file() and p.name not in OWN_NOTES:
                 out[p.relative_to(self.root / copy).as_posix()] = p.read_bytes()
         return out
 

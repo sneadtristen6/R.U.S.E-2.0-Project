@@ -76,6 +76,7 @@ def main(argv=None) -> int:
         fix_app_list_version("launcher", __version__)
         log.mark("app_list")
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
+    api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Play (rusemod.update): the same
     api._pick_folder = lambda: pick_folder(api._window)
     api._pick_file = lambda: pick_file(api._window, MOD_FILES)

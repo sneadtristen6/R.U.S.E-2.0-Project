@@ -53,6 +53,10 @@ STEAM_APPID = "21970"
 TRASH = ".trash"  # next to the copies: leftovers waiting to be removed
 RECORD = "rusemod-copy.json"  # in the copy, next to RUSE.exe: what it was built from, and how each file got there
 RECORD_FORMAT = 1
+# The copy's own notes: this record, RUSE Guard's join-code record (rusemod.fairplay.RECORD, written right after the
+# build) and the in-game match log (rusemod.guard.MATCH_LOG). Ours, not the game's, so one of them in the copy is never
+# a reason to build again (needs_build); tests/test_play_reuse.py keeps these names equal to those constants.
+OWN_NOTES = (RECORD, "fairplay.json", "ruse_guard_match.txt")
 
 # The build's lines a player reads in the apps' log, in English; the apps say them in the player's language (their
 # words.toml has each under the same name, the same English for "us": tests/test_play_reuse.py)
@@ -331,7 +335,7 @@ def needs_build(src: str, dst: str, built_from: dict | None) -> str:
     for rel, entry in record["files"].items():
         if not _intact(src, dst, rel, entry):
             return f"{rel} in the copy isn't as its build left it"
-    known = set(record["by_path"]) | {_norm(RECORD)}
+    known = set(record["by_path"]) | {_norm(n) for n in OWN_NOTES}
     for root, _dirs, names in os.walk(dst):
         for n in names:
             rel = os.path.relpath(os.path.join(root, n), dst)

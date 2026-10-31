@@ -12,9 +12,9 @@ Linux. A pass the player already has is checked here, offline, against the proje
 owned-copies' own Ed25519 (rusemod.owned.verify) -- the same signature the server makes -- so no network is needed to
 trust a kept pass.
 
-Held with RUSE Guard: ON is False until a release turns it on (the server is likewise off until its OWNED_LIVE switch
-is set on Cloudflare). While ON is False, owned_pass_ok() is True for everyone, so nothing is gated and the sign-in
-screen shows none of it.
+Switched on for the release (the owner, 2026-10-31), with RUSE Guard; the server needs its OWNED_LIVE switch set on
+Cloudflare too. Off (ON False), owned_pass_ok() is True for everyone, so nothing is gated and the sign-in screen
+shows none of it. On, the apps ask to sign in once, and the Launcher's Settings opens the sign-in any time.
 
 Checked our_tools.json: its tools study the game's code; none signs in to Steam or checks a token, which is all this
 module does, reusing rusemod.owned's own Ed25519 and rusemod.steam's APP_ID.
@@ -42,7 +42,7 @@ SERVER = "https://ruse-owned.sneadtristen6.workers.dev"
 # here, never signed; the private half lives only on the server as the secret PASS_KEY.
 PUBLIC_KEY = bytes.fromhex("58edcfd55395d8e0378384da2bfefda977bf0745eee3a909d97aeadba5b00425")
 
-ON = False              # the app side's switch, held off with RUSE Guard until a release turns it on
+ON = True               # switched on for the release (the owner, 2026-10-31); the ruse-owned server needs OWNED_LIVE set too
 TIMEOUT = 30            # seconds for a server call
 PASS_SETTING = "owned_pass"       # settings.json: the signed pass the player holds
 SERVER_SETTING = "owned_server"   # settings.json: a server address other than SERVER (tests, a move)

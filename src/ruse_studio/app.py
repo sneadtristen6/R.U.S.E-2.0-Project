@@ -123,6 +123,7 @@ def main(argv=None) -> int:
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
+    api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Test in game (rusemod.update): the same
     try:  # the game's own lettering for the pages, from the player's game (rusemod.gamefont)
         copy_fonts(api._game(), api.cache_dir)

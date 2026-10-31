@@ -4473,3 +4473,68 @@ Questions, bug reports and appeals: on our Discord or on GitHub. Security proble
 
 This English text is the one that counts; the other languages are translations.
 """
+
+[set_signin_title]
+us = "Steam sign-in"
+fr = "Connexion Steam"
+ger = "Steam-Anmeldung"
+ita = "Accesso con Steam"
+spa = "Inicio de sesión con Steam"
+pol = "Logowanie przez Steam"
+ru = "Вход через Steam"
+cz = "Přihlášení přes Steam"
+jpn = "Steam サインイン"
+sc = "Steam 登录"
+fa = "ورود با Steam"
+
+[set_signin_signed]
+us = "Signed in through Steam: you own R.U.S.E. Confirmed until {date}."
+fr = "Connecté via Steam : vous possédez R.U.S.E. Confirmé jusqu'au {date}."
+ger = "Über Steam angemeldet: du besitzt R.U.S.E. Bestätigt bis {date}."
+ita = "Accesso con Steam effettuato: possiedi R.U.S.E. Confermato fino al {date}."
+spa = "Sesión iniciada con Steam: posees R.U.S.E. Confirmado hasta el {date}."
+pol = "Zalogowano przez Steam: posiadasz R.U.S.E. Potwierdzone do {date}."
+ru = "Выполнен вход через Steam: у вас есть R.U.S.E. Подтверждено до {date}."
+cz = "Přihlášeno přes Steam: vlastníte R.U.S.E. Potvrzeno do {date}."
+jpn = "Steam でサインイン済み: R.U.S.E. を所有しています。{date} まで確認済みです。"
+sc = "已通过 Steam 登录：你拥有 R.U.S.E.。已确认至 {date}。"
+fa = "با Steam وارد شده‌اید: شما R.U.S.E. را دارید. تا {date} تأیید شده است."
+
+[set_signin_not]
+us = "Not signed in through Steam yet. For online play, RUSE Guard and content downloads, sign in once; your Steam ID is never stored."
+fr = "Pas encore connecté via Steam. Pour le jeu en ligne, RUSE Guard et les téléchargements de contenu, connectez-vous une fois ; votre identifiant Steam n'est jamais enregistré."
+ger = "Noch nicht über Steam angemeldet. Für Online-Spiele, RUSE Guard und Inhalts-Downloads meldest du dich einmal an; deine Steam-ID wird nie gespeichert."
+ita = "Non hai ancora effettuato l'accesso con Steam. Per il gioco online, RUSE Guard e i download di contenuti, accedi una volta; il tuo ID Steam non viene mai salvato."
+spa = "Aún no has iniciado sesión con Steam. Para el juego en línea, RUSE Guard y las descargas de contenido, inicia sesión una vez; tu ID de Steam nunca se guarda."
+pol = "Nie zalogowano jeszcze przez Steam. Do gry online, RUSE Guard i pobierania zawartości zaloguj się raz; twój identyfikator Steam nigdy nie jest zapisywany."
+ru = "Вход через Steam ещё не выполнен. Для сетевой игры, RUSE Guard и загрузки материалов войдите один раз; ваш Steam ID никогда не сохраняется."
+cz = "Přes Steam ještě nejste přihlášeni. Pro hru online, RUSE Guard a stahování obsahu se jednou přihlaste; vaše Steam ID se nikdy neukládá."
+jpn = "まだ Steam でサインインしていません。オンラインプレイ、RUSE Guard、コンテンツのダウンロードのために一度サインインしてください。Steam ID が保存されることはありません。"
+sc = "尚未通过 Steam 登录。为了在线游戏、RUSE Guard 和内容下载，请登录一次；你的 Steam ID 绝不会被保存。"
+fa = "هنوز با Steam وارد نشده‌اید. برای بازی آنلاین، RUSE Guard و دانلود محتوا یک بار وارد شوید؛ شناسهٔ Steam شما هرگز ذخیره نمی‌شود."
+
+[set_signin_open]
+us = "Sign in through Steam…"
+fr = "Se connecter via Steam…"
+ger = "Über Steam anmelden…"
+ita = "Accedi con Steam…"
+spa = "Iniciar sesión con Steam…"
+pol = "Zaloguj się przez Steam…"
+ru = "Войти через Steam…"
+cz = "Přihlásit se přes Steam…"
+jpn = "Steam でサインイン…"
+sc = "通过 Steam 登录…"
+fa = "ورود با Steam…"
+
+[tip_signin_open]
+us = "Opens the sign-in window: Steam's own page in your browser, then a pass kept on this PC for 30 days."
+fr = "Ouvre la fenêtre de connexion : la page de Steam dans votre navigateur, puis un laissez-passer conservé sur ce PC pendant 30 jours."
+ger = "Öffnet das Anmeldefenster: Steams eigene Seite in deinem Browser, dann ein Pass, der 30 Tage auf diesem PC bleibt."
+ita = "Apre la finestra di accesso: la pagina di Steam nel tuo browser, poi un pass conservato su questo PC per 30 giorni."
+spa = "Abre la ventana de inicio de sesión: la página de Steam en tu navegador y luego un pase guardado en este PC durante 30 días."
+pol = "Otwiera okno logowania: stronę Steam w twojej przeglądarce, a potem przepustkę przechowywaną na tym komputerze przez 30 dni."
+ru = "Открывает окно входа: страницу Steam в вашем браузере, затем пропуск, который хранится на этом ПК 30 дней."
+cz = "Otevře okno přihlášení: stránku Steamu ve vašem prohlížeči, pak propustku uloženou na tomto počítači na 30 dní."
+jpn = "サインインの窓を開きます: ブラウザーで Steam のページを開き、その後この PC に 30 日間パスを保持します。"
+sc = "打开登录窗口：在浏览器中打开 Steam 的页面，然后在此电脑上保存通行证 30 天。"
+fa = "پنجرهٔ ورود را باز می‌کند: صفحهٔ خود Steam در مرورگرتان، سپس یک مجوز که ۳۰ روز روی این PC نگه داشته می‌شود."

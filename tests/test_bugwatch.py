@@ -1,8 +1,7 @@
 """Bug Watch (rusemod.bugwatch): opt-in counts, what's sent and when, crashes. No network: the sends go to a fake.
 
-Checked our_tools.json: its program-reading tools (eugen_way.py, field_reads.py, fnc.py, vt.py, tunables.py,
-ghidra_xrefs.py, rdata.py, exe_q.py, Ghidra) read the game program's code; these tests read none of it, only a small
-crash dump they make themselves (one module named like the game's program).
+Checked our_tools.json: none of its tools reads a crash report; these tests read nothing of the game, only a small
+crash report file they make themselves (one module named like the game).
 """
 import json
 import os
@@ -72,8 +71,8 @@ class BugWatchTest(unittest.TestCase):
 
 
 class Consent(BugWatchTest):
-    def test_off_in_the_code_by_default(self):
-        self.assertFalse(self._on)
+    def test_on_in_the_code_for_the_release(self):
+        self.assertTrue(self._on)  # switched on for the release (the owner, 2026-10-31); the opt-in below still decides
 
     def test_nothing_is_counted_without_the_players_yes(self):
         w = self.watch()
@@ -285,8 +284,8 @@ class Crashes(BugWatchTest):
         self.assertIn("a.py", text)
         self.assertTrue(is_clean(text))
 
-    def dump(self, code=0x29A, address=0x140001234, base=0x140000000, extra=b""):
-        """A small crash dump: the header, an ExceptionStream, a ModuleListStream with one module, and `extra`."""
+    def dump(self, code=0x29A, address=0x7FF612341234, base=0x7FF612340000, extra=b""):
+        """A small crash report file: the header, an ExceptionStream, a ModuleListStream with one module, and `extra`."""
         name = "C:\\Games\\R.U.S.E\\RUSE.exe".encode("utf-16-le")
         header = b"MDMP" + struct.pack("<IIIIIQ", 0xA793, 2, 32, 0, 0, 0)
         exc_at = 32 + 24
@@ -298,9 +297,9 @@ class Crashes(BugWatchTest):
         directory = struct.pack("<III", 6, len(exception), exc_at) + struct.pack("<III", 4, len(mods), mods_at)
         return header + directory + exception + mods + struct.pack("<I", len(name)) + name + extra
 
-    def test_reading_a_game_crash_dump(self):
+    def test_reading_a_game_crash_report(self):
         text = b'Traceback (most recent call last):\n  File "D:\\RUSE-2.0\\x\\events.py", line 40\nKeyError: 1\x00'
-        p = self.home / "crashdump.dmp"
+        p = self.home / "report.dmp"
         p.write_bytes(self.dump(extra=b"\0junk\0" + text))
         found = bugwatch.read_dump(p)
         self.assertEqual(found["code"], "0x29a")
@@ -327,8 +326,8 @@ class Crashes(BugWatchTest):
         w = self.watch()
 
         def sleep(_seconds):
-            (rpt / "crashdump.dmp").write_bytes(self.dump(code=0xC0000005))
-            os.utime(rpt / "crashdump.dmp", (1500, 1500))
+            (rpt / "report.dmp").write_bytes(self.dump(code=0xC0000005))
+            os.utime(rpt / "report.dmp", (1500, 1500))
 
         g = bugwatch.GameWatch(w, Game(), ["cool-mod@1.2"], 1, sleep=sleep, clock=lambda: next(times),
                                local=str(local))
