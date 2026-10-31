@@ -454,12 +454,68 @@ def _copy_materials(dst: MeshPack, src: MeshPack, numbers: list[int]) -> list[in
 
 
 # --- texture stand-in packs ---
+# A stand-in pack's table is the game's index too: a search tree on each row's key read as a little-endian number,
+# the rows inserted in table order, a smaller key down a row's first link, a larger or equal one down its second, each
+# link the bytes from the row to its child (0: none), then 0xAAAAAAAA. The game walks it to load the pack (the first
+# link's rows, the row, then the second link's) and reads each link as 16 bits. The rule gives every link of
+# all 63 of the game's packs with rows (findings F-161, F-162). A row copied in with another row's links breaks the
+# walk: rows missed, others reached by so many paths that the game's list never ends (bigpacks7's hang, F-163).
+ROW = 24
+TAIL = 0xAAAAAAAA
+LINK_MOST = 0xFFFF
+LEFT_MOST = LINK_MOST // ROW - 1   # rows a row's first subtree may hold for its second link to pass them: 2,729
+
+
 @dataclass
 class Proxy:
     key: bytes      # 8 bytes
     data: bytes     # the stand-in .tgv
-    extra: bytes    # the table row's last 8 bytes, as read
+    extra: bytes    # the table row's last 8 bytes, as read (its links: `to_bytes` writes the index anew)
     name: bytes     # 256 bytes, zero-padded
+
+
+def _links_as_inserted(keys: list[int]) -> list[tuple[int, int]] | None:
+    """The game's index for rows in this order, (first link, second link) in bytes per row; None if a link would pass
+    the 16 bits the game reads."""
+    left, right = [0] * len(keys), [0] * len(keys)
+    for i in range(1, len(keys)):
+        at = 0
+        while True:
+            side = left if keys[i] < keys[at] else right
+            if not side[at]:
+                side[at] = i
+                break
+            at = side[at]
+    links = [((lo - i) * ROW if lo else 0, (hi - i) * ROW if hi else 0) for i, (lo, hi) in enumerate(zip(left, right))]
+    return None if any(max(pair) > LINK_MOST for pair in links) else links
+
+
+def _links_laid_out(keys: list[int]) -> tuple[list[int], list[tuple[int, int]]]:
+    """For a pack too big for its own order: a row order and its links that fit 16 bits. The same kind of search tree,
+    laid out row first, then its first subtree, then its second; a first subtree never holds more than LEFT_MOST rows,
+    so the second link always fits (balanced where both sides fit, else LEFT_MOST rows to the first side). The game's
+    walk reads it like its own; mesh_all.ppk's rows aren't in name order in the game either."""
+    by_key = sorted(range(len(keys)), key=lambda i: (keys[i], i))
+    if any(keys[a] == keys[b] for a, b in zip(by_key, by_key[1:])):
+        raise PackError("two stand-ins with one key: no search tree holds both in this layout")
+    order: list[int] = []
+    links: list[tuple[int, int]] = []
+
+    def place(lo: int, hi: int) -> None:
+        n = hi - lo
+        if not n:
+            return
+        mid = lo + (n // 2 if n <= 2 * LEFT_MOST + 1 else LEFT_MOST)
+        at = len(order)
+        order.append(by_key[mid])
+        links.append((0, 0))
+        place(lo, mid)
+        place(mid + 1, hi)
+        first = mid - lo
+        links[at] = (ROW if first else 0, ROW * (1 + first) if hi - mid - 1 else 0)
+
+    place(0, len(keys))
+    return order, links
 
 
 @dataclass
@@ -490,13 +546,19 @@ class ProxyPack:
         return [p.name.split(b"\0", 1)[0].decode("latin-1") for p in self.proxies]
 
     def to_bytes(self) -> bytes:
+        """The pack, its index written anew by the game's rule (the game's own packs come back byte for byte); a pack
+        too big for that in its order is laid out in one whose links fit."""
+        keys = [struct.unpack("<Q", p.key)[0] for p in self.proxies]
+        order, links = list(range(len(keys))), _links_as_inserted(keys)
+        if links is None:
+            order, links = _links_laid_out(keys)
         table, data, names, at = bytearray(), bytearray(), bytearray(), {}
-        for i, p in enumerate(self.proxies):
-            j = self.shared[i]
+        for i, (first, second) in zip(order, links):
+            p, j = self.proxies[i], self.shared[i]
             if j not in at:
                 at[j] = len(data)
                 data += p.data
-            table += struct.pack("<8sII8s", p.key, at[j], len(p.data), p.extra)
+            table += struct.pack("<8sIIHHI", p.key, at[j], len(p.data), first, second, TAIL)
             names += p.name + p.key
         n = len(self.proxies)
         out = bytearray(0x40)
