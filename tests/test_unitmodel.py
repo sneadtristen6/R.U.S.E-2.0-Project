@@ -689,6 +689,23 @@ AIR = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02,
                props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
                       ("FileName", 2)],
                strings=[PLANE_FILE], exports={0: "Plane", 3: "Plane_PV"}, compress=True)
+GUN_FILE = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\US155mm_Long_Tomlod0.Ase2NdfBin"
+GUN_FIGURINE = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\US155mm_Long_TomMidlod0.ASE2NdfBin"
+# a towed gun as the game's: its zoomed-out figurine (GfxDescriptorIcone -> PawnDescriptor -> DescriptorFigurine)
+# names a model of its own, the gun's Midlod0
+GUN = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02, struct.pack("<i", 0))),
+                             (2, ref(1, 1)), (5, ref(3, 3))]),
+                        (1, [(3, ref(2, 2))]),
+                        (2, [(4, val(0x1C, struct.pack("<I", 0)))]),
+                        (3, [(6, ref(4, 4))]),
+                        (4, [(7, ref(5, 1))]),
+                        (1, [(3, ref(6, 2))]),
+                        (2, [(4, val(0x1C, struct.pack("<I", 1)))])],
+               classes=["TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TResourceMultiMaterialMesh",
+                        "TGfxDescriptorPileJeton", "TPawnDescriptor"],
+               props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
+                      ("FileName", 2), ("GfxDescriptorIcone", 0), ("PawnDescriptor", 3), ("DescriptorFigurine", 4)],
+               strings=[GUN_FILE, GUN_FIGURINE], exports={0: "Gun"}, compress=True)
 
 
 class TheBuild(unittest.TestCase):
@@ -754,6 +771,35 @@ class TheBuild(unittest.TestCase):
         theirs = objs["Plane"].props["GfxDescriptor"].obj.props["MeshDescriptor"]
         self.assertIsInstance(theirs, Ref)
         self.assertEqual(game.objects[theirs.target].props["FileName"].value, PLANE_FILE)
+
+    def test_a_gun_s_figurine_names_its_own_model_too(self):
+        """A towed gun's zoomed-out figurine names a model of its own (the gun's Midlod0, the same bones as the
+        close-up one); the owner, 2026-10-31, bigpacks4: "at certain angles, it takes the default shape of what that
+        unit was". The new unit's figurine names the unit's own model; the copied gun keeps its own figurine."""
+        with tempfile.TemporaryDirectory() as d:
+            mod = Path(d, "mod")
+            (mod / "src").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "m"\nname = "M"\nversion = "0.1.0"\n', encoding="utf-8")
+            (mod / "src" / "units.rndf").write_text("export Gun_Model is clone $/Gun ( DescriptorId = 3 )\n",
+                                                    encoding="utf-8")
+            (mod / "files" / "models").mkdir(parents=True)
+            (mod / "files" / "models" / "Gun_Model.glb").write_bytes(b"glTF")
+            result = build_pack(Edat(make_edat([("dir", "genglad\\patchable\\gfx\\",
+                                                 [("file", "everything.cpp.gladndfbin", GUN)])])),
+                                [load_mod(mod)], text_arc=zz_win())
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.own_models["Gun_Model"][0], GUN_FILE)
+        game, _files = load(result.changed)
+        objs = {k.rsplit("/", 1)[-1]: v for k, v in game.objects.items()}
+        own = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\Gun_Modellod0.Ase2ndfbin"
+
+        def files(unit):
+            close = objs[unit].props["GfxDescriptor"].obj.props["MeshDescriptor"].obj.props["FileName"].value
+            fig = objs[unit].props["GfxDescriptorIcone"].obj.props["PawnDescriptor"].obj.props["DescriptorFigurine"]
+            return close, fig.obj.props["MeshDescriptor"].obj.props["FileName"].value
+
+        self.assertEqual(files("Gun_Model"), (own, own))
+        self.assertEqual(files("Gun"), (GUN_FILE, GUN_FIGURINE))
 
 
 if __name__ == "__main__":

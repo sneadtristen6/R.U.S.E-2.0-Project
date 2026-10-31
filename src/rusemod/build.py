@@ -1608,8 +1608,33 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         return None
     source = file.value
     folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-    mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
+    own = f"{folder}\\{unit}lod0.Ase2ndfbin"
+    mesh.obj.props["FileName"] = Text("path", own)
+    # its figurine, drawn zoomed out: a towed gun's names a model of its own (<gun>Midlod0) that the close-up's
+    # change doesn't reach, so the unit showed the copied gun there (the owner, 2026-10-31, bigpacks4: "at certain
+    # angles, it takes the default shape of what that unit was"). It names the unit's own model too: the two have the
+    # same bones (15 of the 122 game units the era library copies have one, every one so)
+    from .unitmodel import model_key
+    figurine = _figurine_model(run, run.game.objects[name])
+    if figurine is not None and model_key(figurine) != model_key(source):
+        _point_at_copies(run, name, {model_key(figurine): own})
     return source
+
+
+FIGURINE = ("GfxDescriptorIcone", "PawnDescriptor", "DescriptorFigurine", "MeshDescriptor")
+
+
+def _figurine_model(run, obj) -> str | None:
+    """The model a unit's zoomed-out figurine names (its FIGURINE part's FileName), or None."""
+    from .patch import Inline, Ref
+    node = obj
+    for prop in FIGURINE:
+        v = node.props.get(prop)
+        node = v.obj if isinstance(v, Inline) else run.game.objects.get(v.target) if isinstance(v, Ref) else None
+        if node is None:
+            return None
+    f = node.props.get("FileName")
+    return f.value if isinstance(f, Text) and f.kind == "path" else None
 
 
 def unit_classes(base, run, zz_win, result: BuildResult, scripts: dict | None = None) -> None:
