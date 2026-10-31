@@ -1,0 +1,6 @@
+# RUSE Guard's public keys (hex), shipped with the apps (rusemod.guard). Empty until the owner makes the key pairs on
+# his own PC; the private halves never go anywhere near a repository.
+#   dev:  checks developer keys (the one way past the offline lock)
+#   mods: checks signed mod manifests (DESIGN §3.7)
+dev = ""
+mods = ""

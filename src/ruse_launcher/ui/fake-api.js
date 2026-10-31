@@ -117,7 +117,11 @@
     { id: "anchored-ships", name: "Anchored Ships", version: "1.0", authors: [], author: "", description: "Battleships stay put.",
       builds: [build], used_in: 1 },
     { id: "ardennes-rescripted", name: "Ardennes Rescripted", version: "1.0", authors: [], author: "",
-      description: "A new script for the Ardennes mission.", builds: [build], used_in: 1 },
+      description: "A new script for the Ardennes mission.", builds: [build], used_in: 1, scripts: true, trusted: false },
+    // fair play (rusemod.fairplay): a made-up test tool, tagged "cheat" in the mod list
+    { id: "money-test-tool", name: "Money Test Tool", version: "0.2.0", authors: [], author: "",
+      description: "Adds money for testing.", builds: [build], used_in: 0, cheat: true,
+      offline: "Money Test Tool is a cheat or a test tool" },
     { id: "ardennes-endless", name: "Ardennes Endless", version: "3.0", authors: [], author: "",
       description: "The Ardennes mission never ends.", builds: [build], used_in: 1 },
   ];
@@ -143,6 +147,33 @@
   Object.assign(words.sc, { lang_pick_title: "选择你的语言", lang_from_steam: "你在 Steam 中的游戏语言",
     lang_from_pc: "你的电脑语言", lang_pick_close: "关闭", tip_lang_open: "更改语言。",
     lang_pick_help: "用你的语言显示 Launcher。随时可以用顶部的语言按钮更改。" });
+  // fair play (words.toml; English only in the preview): the join code box, the badges, the trust tick
+  Object.assign(words.us, { join_code: "Join code",
+    tip_join: "Your modded game's join code, to send to the people you play with, and theirs compared with it",
+    fair_title: "RUSE Guard: your join code",
+    fair_help: "Send this code to the people you play with. The same code means the same game: the same game version, mods and mod versions. It changes when your mods change.",
+    fair_paste: "Paste a friend's join code", fair_compare: "Compare", fair_full: "Check every file of the copy",
+    fair_checking: "Checking the modded copy…",
+    fair_not_built: "No join code yet: press Play once, and the code comes with the modded copy.",
+    fair_changed: "No join code: the modded copy changed after it was built ({what}). Press Play to build it again.",
+    fair_offline: "No join code: this copy is for offline play ({why}). It leaves multiplayer and co-op matches. Make a mod set without cheats and test tools to play with others.",
+    fair_no_change: "No join code: these mods don't change how the game plays, so anyone can play with you.",
+    fair_checked: "Every file checked: the copy is exactly as it was built.", fair_same: "Same game: you can play together.",
+    fair_differs: "Not the same game. A match between these two would drift apart:", fair_copied: "Join code copied.",
+    badge_cheat: "Cheat", tip_badge_cheat: "A cheat or a test tool: a modded copy with it is for offline play only",
+    badge_scripts: "Runs scripts",
+    tip_badge_scripts: "This mod changes the game's scripts. Scripts run inside the game and can do anything it can: Play waits until you tick that you trust its author.",
+    mod_offline: "Offline only: {why}. A modded copy with it leaves multiplayer and co-op matches.",
+    scripts_note: "This mod changes the game's scripts. They run inside the game and can do anything it can, like any program.",
+    trust_author: "I trust this mod's author (Play waits for this tick)" });
+  const myCode = "RUSE1:0C4F2V9R3DNQ6M8T1KXH4Q0Z9WJ2FP3ACVQ5RT7B9EGX0J";
+  // Bug Watch's words (words.toml set_bugwatch_*, bugwatch_*, tip_bugwatch_*)
+  Object.assign(words.us, { set_bugwatch_title: "Bug Watch", set_bugwatch_help: "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time.", bugwatch_on_label: "Bug Watch (Recommended)", bugwatch_name_hint: "Your username", bugwatch_save: "Save username", bugwatch_code: "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes.", bugwatch_show: "Show what's sent", bugwatch_need_name: "Type a username first, then tick Bug Watch.", bugwatch_now_on: "Bug Watch is on. Thank you!", bugwatch_now_off: "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted.", tip_bugwatch_on: "Send counts and crash reports to our developers once a day. Off unless you tick it.", tip_bugwatch_name: "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique.", tip_bugwatch_save: "Keep this username (a new name gets new numbers).", tip_bugwatch_show: "See, word for word, what Bug Watch would send." });
+  let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
+  if (new URLSearchParams(location.search).get("fake") === "bugoff") fakeBugwatch.available = false;
+  let fakeTerms = mode === "agree" ? 0 : 1;  // ?fake=agree: the first-start agreement hasn't been accepted yet
+  // The first-start agreement + username words (words.toml agree_*, username_*), for the ?fake=agree preview
+  Object.assign(words.us, { agree_title: "R.U.S.E. 2.0: user and licence agreement", agree_intro: "This covers RUSE Studio, RUSE Launcher and our online services. R.U.S.E. is a game by Eugen Systems, published by Ubisoft, and you need your own copy. R.U.S.E. 2.0 is a free community project, not made, approved or supported by them.", agree_guard_title: "RUSE Guard: our anti-cheat (required)", agree_guard: "Why: to stop cheating in real R.U.S.E. multiplayer matches, so every match is fair. It runs only in multiplayer and co-op matches, never in single-player, skirmish against the computer, the campaign, replays, or while you make mods. As part of it, during those matches it checks your running programs against a list of known cheat tools: it reads only the programs' names, reports only a name that is on that list, and looks at nothing else. It never collects your files, your screen, your keystrokes or your computer's memory. Using the Studio and Launcher means accepting RUSE Guard, including this check.", agree_full_toggle: "Read the full agreement", agree_full: "R.U.S.E. 2.0: user and licence agreement (version 1)\n\n(The full agreement text appears here in the app.)", agree_accept_note: "Accepting RUSE Guard is required to use the apps. This English text is the one that counts; other languages are translations.", agree_accept: "Accept and continue", username_title: "Choose your username", username_help: "A name our developers see with your RUSE Guard matches or your Bug Watch reports, so we can help you. A # and four numbers are added so it's unique, like Nick#4821. One name works for both apps, and you can change it in Settings.", username_save: "Save and continue", username_need: "Type a username to continue." });
   const wordsOf = (lang) => words[lang] || words.us;
   const known = (id) => library.find((m) => m.id === id);
   const resolve = (entry) => known(entry) ? null : /^[a-z0-9][a-z0-9-]*$/.test(entry)
@@ -363,6 +394,22 @@
       use_recommended_copies: async () => { fakeCopies = null; return copiesView(); },
       game_title: async () => ({ ruse20: fakeTitle }),
       set_game_title: async (on) => { fakeTitle = Boolean(on); return { ruse20: fakeTitle }; },
+      bugwatch_status: async () => ({ ...fakeBugwatch }),
+      bugwatch_on: async (name) => {
+        const kept = /#\d{4}$/.test(name) ? name : `${name}#4821`;
+        fakeBugwatch = { ...fakeBugwatch, on: true, name: kept, code: "Zx3k9QpL" };
+        return { on: true, name: kept, code: "Zx3k9QpL" };
+      },
+      set_username: async (name) => {  // the agreement's guard-only path: a shared name/id, Bug Watch left off
+        const num = String(1000 + Math.floor(Math.random() * 9000));
+        fakeBugwatch = { ...fakeBugwatch, name: /#\d{4}$/.test(name) ? name : `${name}#${num}`, code: fakeBugwatch.code || "Zx3k9QpL" };
+        return { name: fakeBugwatch.name, code: fakeBugwatch.code };
+      },
+      bugwatch_off: async () => { fakeBugwatch = { ...fakeBugwatch, on: false, name: "", code: "" }; return { on: false }; },
+      bugwatch_next_send: async () => ({ today: { v: 1, id: "Zx3k9QpL2mVb7TnR4wYh8CdF5sGj1AeU", user: fakeBugwatch.name,
+        app: "launcher", version: "0.4.8.9", day: new Date().toISOString().slice(0, 10), setup: { windows: "11", language: "us" },
+        calls: { play: { n: 2, failed: 0, time: [0, 2, 0, 0, 0] } } }, waiting: [] }),
+      bugwatch_seen: async () => ({ ok: true }),
       troubleshoot: async () => {
         await new Promise((done) => setTimeout(done, 600));  // the real checks take a moment
         const list = findings();
@@ -403,6 +450,29 @@
       owned_sign_out: async () => { signin.signed = false; return signinStatus(); },
       report_problem: async (message) => ({ opened: `report: ${message}` }),
       library: async () => used(),
+      // fair play, switched off like the real launcher (rusemod.fairplay.ON) except in ?fake=fair (on),
+      // ?fake=fairoffline (a copy built with a test tool), ?fake=fairchanged (a copy edited since its build), and
+      // ?fake=agree (on, with the terms not yet accepted, so the first-start agreement shows)
+      fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
+      // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
+      guard_status: async () => ({ terms: fakeTerms, terms_version: 1, scan: false, on: true }),
+      guard_accept_terms: async () => { fakeTerms = 1; return { terms: 1 }; },
+      fair_play: async () => ({ built: true, code: ["fairoffline", "fairchanged"].includes(mode) ? null : myCode,
+        why: mode === "fairoffline" ? "offline" : mode === "fairchanged" ? "changed" : null, fingerprint: "K7Q2-M9XD",
+        mods: [["airfield-capacity", "1.0.0"], ["passable-forests", "1.0.0"]],
+        offline: mode === "fairoffline" ? ["Money Test Tool is a cheat or a test tool"] : [], scripts: [], watch: true,
+        problems: mode === "fairchanged" ? ["Data/PC/190852/ZZ_GladPatchableWin.dat changed after the build"] : [] }),
+      compare_code: async (text) => {
+        if (!text.trim().toUpperCase().startsWith("RUSE1:")) throw new Error("That isn't a R.U.S.E. join code (they start with RUSE1:).");
+        return text.trim() === myCode ? { same: true, differences: [] }
+          : { same: false, differences: ["They have passable-forests 1.1.0; you have 1.0.0.", "You have airfield-capacity 1.0.0; they don't."] };
+      },
+      trust_mod: async (id, yes) => {
+        const mod = known(id);
+        if (!mod) throw new Error(`There's no mod '${id}' in the library.`);
+        mod.trusted = Boolean(yes);
+        return lists({ mod: id });
+      },
       mod_sets: async () => modSets(),
       add_mod: async (path) => fakeMod(path.split(/[\\/]/).pop()),
       add_mod_file: async () => fakeMod("Pacific Maps.zip"),

@@ -168,6 +168,10 @@ RULES: dict[str, Rule] = {
         "The game draws nothing placed outside a map's scenery grid.",
         "studied", "up close, the game draws only the grid's cells that hold objects, and none outside it (2026-10-01 "
                    "audit, checked again 2026-10-02); the far tiers rest on the audit alone"),
+    "script-no-exec": Rule(
+        "The game's scripts can't use Python's exec statement: a game script with one stops the game.",
+        "game", "T24's first build (2026-10-03) stopped after the lobby; the crash report's error text was "
+                "'NotImplementedError: exec statement' (LOG 2026-10-02/03)"),
     "video-vp9-vorbis": Rule(
         "The game plays WebM videos with a VP9 picture and Vorbis sound, and no other kind.",
         "studied", "the game's video player takes WebM only and names only VP9 pictures and Vorbis sound (2026-10-08); "

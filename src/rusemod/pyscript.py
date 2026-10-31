@@ -164,14 +164,20 @@ def dump(v) -> bytes:
     if v is True or v is False:
         return b"T" if v else b"F"
     if isinstance(v, int):
-        if not -2 ** 31 <= v < 2 ** 31:
-            raise ScriptError(f"{v} doesn't fit in marshal's int")
-        return b"i" + struct.pack("<i", v)
+        if -2 ** 31 <= v < 2 ** 31:
+            return b"i" + struct.pack("<i", v)
+        digits, n = [], abs(v)  # a Python 2.5 long: its 15-bit digits, lowest first; the count carries the sign
+        while n:
+            digits.append(n & 0x7FFF)
+            n >>= 15
+        return b"l" + struct.pack("<i", len(digits) if v > 0 else -len(digits)) + struct.pack(f"<{len(digits)}H", *digits)
     if isinstance(v, bytes):
         return b"s" + struct.pack("<i", len(v)) + v
     if isinstance(v, str):  # a unicode text (u'...')
         raw = v.encode("utf-8")
         return b"u" + struct.pack("<i", len(raw)) + raw
+    if isinstance(v, float):
+        return b"g" + struct.pack("<d", v)
     if isinstance(v, tuple):
         return b"(" + struct.pack("<i", len(v)) + b"".join(dump(x) for x in v)
     if isinstance(v, Code):
@@ -179,7 +185,9 @@ def dump(v) -> bytes:
                 + b"".join(dump(x) for x in (v.code, v.consts, v.names, v.varnames, v.freevars, v.cellvars,
                                              v.filename, v.name))
                 + struct.pack("<i", v.firstlineno) + dump(v.lnotab))
-    raise ScriptError(f"can't write a {type(v).__name__} (only what the unit-list template needs)")
+    # not a game rule: what our writer supports
+    raise ScriptError(f"can't write a {type(v).__name__} (only what the unit-list template and our game scripts "
+                      f"need)")
 
 
 def instructions(code: bytes) -> list[tuple[int, int, int | None]]:
@@ -375,6 +383,87 @@ def check_added(old: bytes, new: bytes, added: list[NewClass]) -> None:
         c = after.classes.get(n.name)
         if c is None or not (c.standard and c.registered) or c.path != n.path or c.base != ul.classes[n.like].base:
             raise ScriptError(f"{n.name} doesn't read back as a registered class for {n.path}")
+
+
+# --- our own game scripts after a game module's code (rusemod.fairplay) ---
+
+# Python 2.5's instruction groups (its dis module): an index into the constants, into the names, an absolute jump, a
+# relative jump; and the two the merge never lets through
+_HAS_CONST = {LOAD_CONST}
+_HAS_NAME = {90, 91, 95, 96, 97, 98, 101, 105, 107, 108, 116}
+_HAS_JUMP_TO = {113, 119}
+_HAS_JUMP_BY = {93, 110, 111, 112, 120, 121, 122}
+EXTENDED_ARG, EXEC_STMT = 143, 85
+
+
+def _codes(v):
+    """Every code object in `v` (a Code and the ones in its constants)."""
+    if isinstance(v, Code):
+        yield v
+        for c in v.consts:
+            yield from _codes(c)
+
+
+def append_script(data: bytes, patch: bytes) -> bytes:
+    """The module `data` (marshal) with the module `patch` (marshal; compiled by Python 2.5,
+    tools/compile_gamescript.py25) run after its own code, as ONE code object: the game's Python refuses `exec`
+    (a crash after the lobby), so a script of ours can't wrap a game module, it has to follow it. The game's code,
+    constants and names stay byte for byte; the patch's indices and jumps move past them, and its closing
+    `return None` ends the module."""
+    mod, add = load(data), load(patch)
+    if not isinstance(mod, Code) or not isinstance(add, Code):
+        raise ScriptError("both the module and the script must be compiled modules")
+    for c in _codes(add):
+        if {op for _, op, _ in instructions(c.code)} & {EXEC_STMT, EXTENDED_ARG}:
+            raise ScriptError("the script uses exec or an index too big for one instruction")
+    ins = instructions(mod.code)
+    if len(ins) < 2 or ins[-2][1] != LOAD_CONST or mod.consts[ins[-2][2]] is not None or ins[-1][1] != RETURN_VALUE:
+        raise ScriptError("the module doesn't end with 'return None' as expected")
+    keep = ins[-2][0]  # the module's code up to its closing `return None`
+    for at, op, arg in ins:
+        if op == EXTENDED_ARG or (op in _HAS_JUMP_TO and arg >= keep) or (op in _HAS_JUMP_BY and at + 3 + arg >= keep):
+            raise ScriptError("the module jumps to its own end, so nothing can follow it")
+    nc, nn = len(mod.consts), len(mod.names)
+    code = bytearray(mod.code[:keep])
+    for _at, op, arg in instructions(add.code):
+        if arg is None:
+            code.append(op)
+            continue
+        arg += nc if op in _HAS_CONST else nn if op in _HAS_NAME else keep if op in _HAS_JUMP_TO else 0
+        if arg >= 65536:
+            raise ScriptError(f"index {arg} is too big for one instruction")
+        code += bytes([op, arg & 255, arg >> 8])
+    (c0, _c1), (k0, k1), (n0, n1) = _module_spans(data)
+    if data[c0:c0 + 1] != b"s" or data[k0:k0 + 1] != b"(" or data[n0:n0 + 1] != b"(":
+        raise ScriptError("the module's compiled code, constants or names aren't stored the usual way")
+    new_data = (b"c" + struct.pack("<4i", mod.argcount, mod.nlocals, max(mod.stacksize, add.stacksize), mod.flags)
+                + data[17:c0] + dump(bytes(code))
+                + b"(" + struct.pack("<i", nc + len(add.consts)) + data[k0 + 5:k1]
+                + b"".join(dump(c) for c in add.consts)
+                + b"(" + struct.pack("<i", nn + len(add.names)) + data[n0 + 5:n1]
+                + b"".join(dump(n) for n in add.names)
+                + data[n1:])
+    check_appended(data, patch, new_data)
+    return new_data
+
+
+def check_appended(old: bytes, patch: bytes, new: bytes) -> None:
+    """Raise ScriptError unless `new` is exactly the module `old` followed by the script `patch` (append_script)."""
+    a, p, b = load(old), load(patch), load(new)
+    for f in ("argcount", "nlocals", "flags", "varnames", "freevars", "cellvars", "filename", "name", "firstlineno",
+              "lnotab"):
+        if getattr(a, f) != getattr(b, f):
+            raise ScriptError(f"the module's {f} changed")
+    if b.consts != a.consts + p.consts or b.names != a.names + p.names:
+        raise ScriptError("the constants or names aren't the module's followed by the script's")
+    keep = instructions(a.code)[-2][0]
+    if b.code[:keep] != a.code[:keep]:
+        raise ScriptError("the module's own code changed")
+    if [op for _, op, _ in instructions(b.code[keep:])] != [op for _, op, _ in instructions(p.code)]:
+        raise ScriptError("the code after the module's isn't the script's")
+    if any(op == EXEC_STMT for c in _codes(b) for _, op, _ in instructions(c.code)):
+        # rule: script-no-exec
+        raise ScriptError("the module would use exec, which the game refuses")
 
 
 # --- a fixed template run after one of the game's modules (rusemod.ownbuildings) ---

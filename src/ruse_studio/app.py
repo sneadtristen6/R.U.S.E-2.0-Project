@@ -116,6 +116,8 @@ def main(argv=None) -> int:
         ])
     log.mark("api")
     log.go()
+    from rusemod import bugwatch
+    bugwatch.start(api._home, "studio", __version__)  # counts only when the player ticked Bug Watch
     from rusemod.update import fix_app_list_version, installed_app
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)

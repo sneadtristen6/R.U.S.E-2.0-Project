@@ -1,0 +1,175 @@
+# R.U.S.E. Mod Platform: RUSE Guard's in-game record (DomesticNukes' design, RUSE-Guard docs/DESIGN.md §3.2 and §3.4;
+# the same source is game_hooks/world_hash.py25 there). Python 2.5, compiled by tools/compile_gamescript.py25 into
+# guard_hash.bin; the build adds it after the code of every map's match script (rusemod.fairplay).
+#
+# MULTIPLAYER AND CO-OP ONLY (his rule): in any other match it does nothing at all. In a multiplayer match it appends
+# to ruse_guard_match.txt in the game's folder, for the Launcher to collect after the game closes:
+#   start <unix time> multi <0|1> coop <0|1> local <side>
+#   hotkey <action> <module>.<function>      every script hotkey registered (§3.4: a cheat tool adds its own)
+#   state <game time> <hash>                 every _guard_every seconds of game time (§3.2)
+#   end <game time>
+# The hash covers each side's money, unit count and unit positions (to 1 m), order-free, so two honest players'
+# games give the same series and a changed game shows where it first differs. Unit health isn't in it: no script
+# name for it was found. It only reads the match.
+#
+# Found 2026-10-30: the game's Python has no file object, so open() fails and no line is written yet; the record
+# needs another way out of the game. Its sys.stdout and sys.stderr are the game's TWrapperEugDebug, whose write()
+# throws the text away.
+
+_guard_every = 10.0
+_guard_file = 'ruse_guard_match.txt'
+
+
+def _guard_hash():
+    import front.game_rules
+    rules = front.game_rules.GameRulesMulti
+    if getattr(rules, '_guard_hash_on', False):
+        return
+    rules._guard_hash_on = True
+    old_start = rules.before_start_game
+    state = {'out': None, 'world': None, 'ticket': None}
+    held = []
+
+    def online():
+        try:
+            import _network
+            return bool(_network.IsPartieMulti()), bool(_network.IsChallengeCoop())
+        except Exception:
+            return False, False
+
+    def write(line):
+        out = state['out']
+        if out is None:
+            return
+        try:
+            out.write(line + '\n')
+            out.flush()
+        except Exception:
+            pass
+
+    def game_time(world):
+        try:
+            return float(world.GetGameTime())
+        except Exception:
+            return -1.0
+
+    def xy(position):
+        try:
+            return int(position.x / 100.0), int(position.y / 100.0)
+        except Exception:
+            try:
+                return int(position[0] / 100.0), int(position[1] / 100.0)
+            except Exception:
+                return 0, 0
+
+    def digest(world):
+        import binascii
+        sides = []
+        for camp in world.camp_list:
+            try:
+                money = int(camp.piggybank.niveau_reel)
+            except Exception:
+                money = -1
+            count, total = 0, 0
+            try:
+                for unit in camp.GetUnitList():
+                    x, y = xy(unit.position)
+                    total = (total + (binascii.crc32('%d,%d' % (x, y)) & 0xffffffff)) % 4294967296
+                    count += 1
+            except Exception:
+                count = -1
+            sides.append('%s:%d:%d:%d' % (getattr(camp, 'teamnum', '?'), money, count, total))
+        text = '|'.join(sides)
+        return '%08x%08x' % (binascii.crc32(text) & 0xffffffff, binascii.crc32(text + '#') & 0xffffffff)
+
+    def hotkeys():
+        try:
+            import front.key_management
+            shortcuts = front.key_management.key_manager.list_of_shortcuts
+        except Exception:
+            return
+        for entry in shortcuts:
+            try:
+                func = entry[3]
+                write('hotkey %s %s.%s' % (entry[2], getattr(func, '__module__', '?'), getattr(func, '__name__', '?')))
+            except Exception:
+                pass
+
+    class Tick(object):
+        __no_reduce_in_signal__ = True
+
+        def __init__(self, world):
+            self.world = world
+            self.ticket = None
+
+        def run(self):
+            world = self.world
+            if world is None or state['world'] is not world:
+                return
+            # an error leaving a timer stops the whole game: the game's own sys.excepthook crashes it (code 0x29a,
+            # the 2026-10-30 probe), so nothing may leave here
+            try:
+                write('state %.1f %s' % (game_time(world), digest(world)))
+            except Exception:
+                pass
+            try:
+                again = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket
+                self.ticket = again(_guard_every, self.run)
+            except Exception:
+                pass
+
+    def stop():
+        world = state['world']
+        if world is not None:
+            write('end %.1f' % game_time(world))
+        out = state['out']
+        state['out'], state['world'] = None, None
+        for tick in held:
+            tick.world = None
+        del held[:]
+        if out is not None:
+            try:
+                out.close()
+            except Exception:
+                pass
+
+    def start(world):
+        multi, coop = online()
+        if not (multi or coop):
+            return
+        stop()
+        import time
+        try:
+            state['out'] = open(_guard_file, 'a')
+        except Exception:
+            return
+        state['world'] = world
+        local = getattr(getattr(world, 'camp_du_joueur', None), 'teamnum', '?')
+        write('start %d multi %d coop %d local %s' % (int(time.time()), int(multi), int(coop), local))
+        hotkeys()
+        world.register_function_to_call_at_kill(stop)
+        tick = Tick(world)
+        held.append(tick)
+        tick.ticket = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(_guard_every,
+                                                                                                tick.run)
+
+    def before_start_game(self):
+        old_start(self)
+        try:
+            start(self.world)
+        except Exception:
+            pass
+
+    rules.before_start_game = before_start_game
+
+
+def _guard_hash_quietly():
+    # an error at load stops the game too (the game's sys.excepthook crashes it, code 0x29a); the catch sits in a
+    # function because the build joins the next script after this one, so the top level may not jump to its end
+    try:
+        _guard_hash()
+    except Exception:
+        pass
+
+
+_guard_hash_quietly()

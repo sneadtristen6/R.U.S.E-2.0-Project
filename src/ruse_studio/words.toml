@@ -41066,3 +41066,252 @@ cz = "Ukazovat zlaté R.U.S.E. 2.0 v menu a na načítacích obrazovkách hry s 
 jpn = "MOD入りのゲームのメニューとロード画面に金色の R.U.S.E. 2.0 を表示します。チェックを外すとゲーム本来のタイトルになります。"
 sc = "在模组版游戏的菜单和载入画面显示金色 R.U.S.E. 2.0。取消勾选则使用游戏原本的标题。"
 fa = "نمایش R.U.S.E. 2.0 به رنگ طلایی در منو و صفحه‌های بارگذاری بازی مادشده. برای عنوان خود بازی، تیک را بردارید."
+
+[set_bugwatch_title]
+us = "Bug Watch"
+fr = "Bug Watch"
+ger = "Bug Watch"
+ita = "Bug Watch"
+spa = "Bug Watch"
+pol = "Bug Watch"
+ru = "Bug Watch"
+cz = "Bug Watch"
+jpn = "Bug Watch"
+sc = "Bug Watch"
+
+[set_bugwatch_help]
+us = "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time."
+fr = "Recommandé : il nous aide à corriger plus vite les plantages et les bugs. Quand il est activé, le Studio et le Launcher comptent ce que vous utilisez et quand quelque chose échoue, y compris les plantages du jeu et les mods qui étaient actifs, et l'envoient à nos développeurs une fois par jour avec le nom d'utilisateur que vous choisissez. Pas de vrai nom, pas de compte Steam, aucun fichier. Il reste désactivé tant que vous ne le cochez pas, et vous pouvez le décocher à tout moment."
+ger = "Empfohlen: Es hilft uns, Abstürze und Fehler schneller zu beheben. Wenn es an ist, zählen das Studio und der Launcher, was du benutzt und wann etwas schiefgeht, auch die Abstürze des Spiels und welche Mods an waren, und schicken es einmal am Tag mit dem Benutzernamen, den du wählst, an unsere Entwickler. Keine echten Namen, kein Steam-Konto, keine Dateien. Es ist aus, bis du das Häkchen setzt, und du kannst es jederzeit wieder wegnehmen."
+ita = "Consigliato: ci aiuta a correggere più in fretta crash e bug. Quando è attivo, lo Studio e il Launcher contano cosa usi e quando qualcosa va storto, compresi i crash del gioco e le mod attive, e lo inviano ai nostri sviluppatori una volta al giorno con il nome utente che scegli. Niente nomi veri, niente account Steam, nessun file. Resta spento finché non lo spunti, e puoi togliere la spunta quando vuoi."
+spa = "Recomendado: nos ayuda a arreglar antes los cierres y los errores. Cuando está activado, el Studio y el Launcher cuentan lo que usas y cuándo algo falla, incluidos los cierres del juego y qué mods estaban activos, y lo envían a nuestros desarrolladores una vez al día con el nombre de usuario que elijas. Sin nombres reales, sin cuenta de Steam, sin archivos. Está desactivado hasta que lo marques, y puedes desmarcarlo cuando quieras."
+pol = "Zalecane: pomaga nam szybciej naprawiać awarie i błędy. Gdy jest włączone, Studio i Launcher liczą, czego używasz i kiedy coś się nie udaje, w tym awarie gry i to, jakie mody były włączone, i raz dziennie wysyłają to naszym programistom z wybraną przez ciebie nazwą użytkownika. Bez prawdziwych nazwisk, bez konta Steam, bez plików. Jest wyłączone, dopóki tego nie zaznaczysz, i możesz to odznaczyć w każdej chwili."
+ru = "Рекомендуется: это помогает нам быстрее исправлять вылеты и ошибки. Когда он включён, Studio и Launcher считают, чем вы пользуетесь и когда что-то идёт не так, включая вылеты игры и то, какие моды были включены, и раз в день отправляют это нашим разработчикам вместе с выбранным вами именем пользователя. Никаких настоящих имён, никакого аккаунта Steam, никаких файлов. Он выключен, пока вы не поставите галочку, и её можно снять в любой момент."
+cz = "Doporučeno: pomáhá nám rychleji opravovat pády a chyby. Když je zapnutý, Studio a Launcher počítají, co používáte a kdy se něco pokazí, včetně pádů hry a toho, jaké módy byly zapnuté, a jednou denně to posílají našim vývojářům s uživatelským jménem, které si zvolíte. Žádná skutečná jména, žádný účet Steam, žádné soubory. Je vypnutý, dokud ho nezaškrtnete, a zaškrtnutí můžete kdykoli zrušit."
+jpn = "おすすめ：クラッシュや不具合をより早く直すのに役立ちます。オンにすると、Studio と Launcher が、あなたが使った機能や失敗したときのこと（ゲームのクラッシュと、そのとき入っていた MOD を含む）を数え、あなたが選んだユーザー名とともに 1 日 1 回、開発者に送ります。本名、Steam アカウント、ファイルは送りません。チェックを入れるまではオフで、いつでもチェックを外せます。"
+sc = "推荐：它能帮助我们更快修复崩溃和错误。开启后，Studio 和 Launcher 会统计你使用了什么、什么时候出了问题，包括游戏的崩溃以及当时启用了哪些模组，并每天一次连同你选择的用户名发送给我们的开发者。不含真实姓名、Steam 账号或任何文件。在你勾选之前它是关闭的，你也可以随时取消勾选。"
+
+[bugwatch_on_label]
+us = "Bug Watch (Recommended)"
+fr = "Bug Watch (recommandé)"
+ger = "Bug Watch (empfohlen)"
+ita = "Bug Watch (consigliato)"
+spa = "Bug Watch (recomendado)"
+pol = "Bug Watch (zalecane)"
+ru = "Bug Watch (рекомендуется)"
+cz = "Bug Watch (doporučeno)"
+jpn = "Bug Watch（おすすめ）"
+sc = "Bug Watch（推荐）"
+
+[bugwatch_name_hint]
+us = "Your username"
+fr = "Votre nom d'utilisateur"
+ger = "Dein Benutzername"
+ita = "Il tuo nome utente"
+spa = "Tu nombre de usuario"
+pol = "Twoja nazwa użytkownika"
+ru = "Ваше имя пользователя"
+cz = "Vaše uživatelské jméno"
+jpn = "ユーザー名"
+sc = "你的用户名"
+
+[bugwatch_save]
+us = "Save username"
+fr = "Enregistrer le nom"
+ger = "Benutzernamen speichern"
+ita = "Salva il nome utente"
+spa = "Guardar nombre de usuario"
+pol = "Zapisz nazwę użytkownika"
+ru = "Сохранить имя"
+cz = "Uložit uživatelské jméno"
+jpn = "ユーザー名を保存"
+sc = "保存用户名"
+
+[bugwatch_code]
+us = "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes."
+fr = "Vous êtes {name}. Votre code de rapport est {code} : mettez-le dans un rapport de bug pour que nous trouvions vos plantages."
+ger = "Du bist {name}. Dein Meldecode ist {code}: Schreib ihn in eine Fehlermeldung, damit wir deine Abstürze finden."
+ita = "Sei {name}. Il tuo codice di segnalazione è {code}: mettilo in una segnalazione di bug così troviamo i tuoi crash."
+spa = "Eres {name}. Tu código de informe es {code}: ponlo en un informe de error para que encontremos tus cierres."
+pol = "Jesteś {name}. Twój kod zgłoszenia to {code}: dodaj go do zgłoszenia błędu, abyśmy znaleźli twoje awarie."
+ru = "Вы — {name}. Ваш код отчёта: {code}. Укажите его в отчёте об ошибке, чтобы мы нашли ваши вылеты."
+cz = "Jste {name}. Váš kód hlášení je {code}: uveďte ho v hlášení chyby, abychom našli vaše pády."
+jpn = "あなたは {name} です。レポートコードは {code} です。不具合の報告に書いてもらえれば、あなたのクラッシュを見つけられます。"
+sc = "你是 {name}。你的报告代码是 {code}：在错误报告里写上它，我们就能找到你的崩溃。"
+
+[bugwatch_show]
+us = "Show what's sent"
+fr = "Voir ce qui est envoyé"
+ger = "Zeigen, was gesendet wird"
+ita = "Mostra cosa viene inviato"
+spa = "Ver lo que se envía"
+pol = "Pokaż, co jest wysyłane"
+ru = "Показать, что отправляется"
+cz = "Ukázat, co se posílá"
+jpn = "送る内容を表示"
+sc = "显示发送的内容"
+
+[bugwatch_need_name]
+us = "Type a username first, then tick Bug Watch."
+fr = "Tapez d'abord un nom d'utilisateur, puis cochez Bug Watch."
+ger = "Gib zuerst einen Benutzernamen ein, dann setz das Häkchen bei Bug Watch."
+ita = "Scrivi prima un nome utente, poi spunta Bug Watch."
+spa = "Escribe primero un nombre de usuario y luego marca Bug Watch."
+pol = "Najpierw wpisz nazwę użytkownika, potem zaznacz Bug Watch."
+ru = "Сначала введите имя пользователя, затем поставьте галочку Bug Watch."
+cz = "Nejdřív napište uživatelské jméno, potom zaškrtněte Bug Watch."
+jpn = "先にユーザー名を入力してから、Bug Watch にチェックを入れてください。"
+sc = "请先输入用户名，再勾选 Bug Watch。"
+
+[bugwatch_now_on]
+us = "Bug Watch is on. Thank you!"
+fr = "Bug Watch est activé. Merci !"
+ger = "Bug Watch ist an. Danke!"
+ita = "Bug Watch è attivo. Grazie!"
+spa = "Bug Watch está activado. ¡Gracias!"
+pol = "Bug Watch jest włączony. Dziękujemy!"
+ru = "Bug Watch включён. Спасибо!"
+cz = "Bug Watch je zapnutý. Děkujeme!"
+jpn = "Bug Watch がオンになりました。ありがとうございます！"
+sc = "Bug Watch 已开启。谢谢！"
+
+[bugwatch_now_off]
+us = "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted."
+fr = "Bug Watch est désactivé : plus rien n'est compté ni envoyé, et ce qui était gardé est supprimé."
+ger = "Bug Watch ist aus: Nichts wird mehr gezählt oder gesendet, und was aufbewahrt war, ist gelöscht."
+ita = "Bug Watch è spento: non viene più contato né inviato nulla, e ciò che era conservato è stato eliminato."
+spa = "Bug Watch está desactivado: ya no se cuenta ni se envía nada, y lo guardado se ha borrado."
+pol = "Bug Watch jest wyłączony: nic więcej nie jest liczone ani wysyłane, a to, co zostało zachowane, usunięto."
+ru = "Bug Watch выключен: больше ничего не считается и не отправляется, а сохранённое удалено."
+cz = "Bug Watch je vypnutý: nic dalšího se nepočítá ani neposílá a uložené bylo smazáno."
+jpn = "Bug Watch がオフになりました。これ以上数えたり送ったりせず、保存していた内容は削除しました。"
+sc = "Bug Watch 已关闭：不再统计或发送任何内容，已保存的内容已删除。"
+
+[tip_bugwatch_on]
+us = "Send counts and crash reports to our developers once a day. Off unless you tick it."
+fr = "Envoyer chaque jour des comptes et des rapports de plantage à nos développeurs. Désactivé tant que vous ne cochez pas."
+ger = "Einmal am Tag Zählungen und Absturzberichte an unsere Entwickler senden. Aus, bis du das Häkchen setzt."
+ita = "Invia ogni giorno conteggi e rapporti di crash ai nostri sviluppatori. Spento finché non lo spunti."
+spa = "Enviar cada día recuentos e informes de cierres a nuestros desarrolladores. Desactivado hasta que lo marques."
+pol = "Wysyłaj raz dziennie liczniki i raporty awarii naszym programistom. Wyłączone, dopóki nie zaznaczysz."
+ru = "Раз в день отправлять счётчики и отчёты о вылетах нашим разработчикам. Выключено, пока вы не поставите галочку."
+cz = "Jednou denně posílat počty a hlášení o pádech našim vývojářům. Vypnuto, dokud nezaškrtnete."
+jpn = "1 日 1 回、集計とクラッシュレポートを開発者に送ります。チェックを入れるまではオフです。"
+sc = "每天一次把统计和崩溃报告发送给我们的开发者。在你勾选之前保持关闭。"
+
+[tip_bugwatch_name]
+us = "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique."
+fr = "Le nom que nos développeurs voient avec vos comptes et vos plantages. Un # et quatre chiffres sont ajoutés pour qu'il soit unique."
+ger = "Der Name, den unsere Entwickler bei deinen Zählungen und Abstürzen sehen. Ein # und vier Ziffern werden angehängt, damit er eindeutig ist."
+ita = "Il nome che i nostri sviluppatori vedono con i tuoi conteggi e crash. Vengono aggiunti un # e quattro cifre perché sia unico."
+spa = "El nombre que ven nuestros desarrolladores con tus recuentos y cierres. Se añaden un # y cuatro cifras para que sea único."
+pol = "Nazwa, którą nasi programiści widzą przy twoich licznikach i awariach. Dodawany jest # i cztery cyfry, aby była niepowtarzalna."
+ru = "Имя, которое наши разработчики видят рядом с вашими счётчиками и вылетами. К нему добавляются # и четыре цифры, чтобы оно было уникальным."
+cz = "Jméno, které naši vývojáři vidí u vašich počtů a pádů. Přidá se # a čtyři číslice, aby bylo jedinečné."
+jpn = "開発者があなたの集計とクラッシュと一緒に見る名前です。重複しないように # と 4 桁の数字が付きます。"
+sc = "开发者在你的统计和崩溃旁边看到的名字。会加上 # 和四位数字，确保不重复。"
+
+[tip_bugwatch_save]
+us = "Keep this username (a new name gets new numbers)."
+fr = "Garder ce nom d'utilisateur (un nouveau nom reçoit de nouveaux chiffres)."
+ger = "Diesen Benutzernamen behalten (ein neuer Name bekommt neue Ziffern)."
+ita = "Tieni questo nome utente (un nome nuovo riceve cifre nuove)."
+spa = "Conservar este nombre de usuario (un nombre nuevo recibe cifras nuevas)."
+pol = "Zachowaj tę nazwę użytkownika (nowa nazwa dostaje nowe cyfry)."
+ru = "Оставить это имя пользователя (новое имя получит новые цифры)."
+cz = "Ponechat toto uživatelské jméno (nové jméno dostane nové číslice)."
+jpn = "このユーザー名を保存します（新しい名前には新しい数字が付きます）。"
+sc = "保留这个用户名（新的名字会得到新的数字）。"
+
+[tip_bugwatch_show]
+us = "See, word for word, what Bug Watch would send."
+fr = "Voir, mot pour mot, ce que Bug Watch enverrait."
+ger = "Wort für Wort sehen, was Bug Watch senden würde."
+ita = "Vedi, parola per parola, cosa invierebbe Bug Watch."
+spa = "Ver, palabra por palabra, lo que enviaría Bug Watch."
+pol = "Zobacz, słowo w słowo, co Bug Watch by wysłał."
+ru = "Посмотреть, слово в слово, что отправил бы Bug Watch."
+cz = "Zobrazit slovo od slova, co by Bug Watch poslal."
+jpn = "Bug Watch が送る内容を、そのまま表示します。"
+sc = "逐字查看 Bug Watch 将发送的内容。"
+
+# The first-start agreement + username (plan §3a, AGREEMENT-DRAFT.md). English only for now: api._words falls back to
+# "us" for any language that has no translation yet, and the real translations land at the feat/languages merge. The
+# AGREEMENT-DRAFT.md text still needs a legal read before it ships (its own note).
+[agree_title]
+us = "R.U.S.E. 2.0: user and licence agreement"
+
+[agree_intro]
+us = "This covers RUSE Studio, RUSE Launcher and our online services. R.U.S.E. is a game by Eugen Systems, published by Ubisoft, and you need your own copy. R.U.S.E. 2.0 is a free community project, not made, approved or supported by them."
+
+[agree_guard_title]
+us = "RUSE Guard: our anti-cheat (required)"
+
+[agree_guard]
+us = "Why: to stop cheating in real R.U.S.E. multiplayer matches, so every match is fair. It runs only in multiplayer and co-op matches, never in single-player, skirmish against the computer, the campaign, replays, or while you make mods. As part of it, during those matches it checks your running programs against a list of known cheat tools: it reads only the programs' names, reports only a name that is on that list, and looks at nothing else. It never collects your files, your screen, your keystrokes or your computer's memory. Using the Studio and Launcher means accepting RUSE Guard, including this check."
+
+[agree_full_toggle]
+us = "Read the full agreement"
+
+[agree_accept_note]
+us = "Accepting RUSE Guard is required to use the apps. This English text is the one that counts; other languages are translations."
+
+[agree_accept]
+us = "Accept and continue"
+
+[username_title]
+us = "Choose your username"
+
+[username_help]
+us = "A name our developers see with your RUSE Guard matches or your Bug Watch reports, so we can help you. A # and four numbers are added so it's unique, like Nick#4821. One name works for the Studio and the Launcher, and you can change it in Settings."
+
+[username_save]
+us = "Save and continue"
+
+[username_need]
+us = "Type a username to continue."
+
+[agree_full]
+us = """
+R.U.S.E. 2.0: user and licence agreement (version 1)
+
+1. What this covers
+RUSE Studio, RUSE Launcher and our online services: the mod list, the RUSE Guard server, and the Bug Watch server with its private repository.
+
+2. Who we are, and who we aren't
+R.U.S.E. is a game by Eugen Systems, published by Ubisoft. You need your own copy. R.U.S.E. 2.0 is a free community project. It isn't made, approved or supported by Eugen Systems or Ubisoft. The game and its files remain theirs.
+
+3. The licences we use, and giving credit
+- Our apps are free and open source under the GNU General Public License version 3 (GPL v3). You may use, study, change and share them. If you share them, keep them under GPL v3, keep every credit, and offer the source.
+- Work by others inside our apps: LittleGroove's RUSE Mod Manager engine (GPL v3), ProLution's work, and DomesticNukes' RUSE Guard design, each credited in the apps and on the project page.
+- 3D models, sounds and textures: CC BY ones must credit the maker, as our Credits page does; CC0 ones need no credit, but we credit them anyway. Reuse one in your own mod and you credit them the same way.
+- Libraries and data the apps come with are each listed with their licence in THIRD_PARTY_NOTICES.
+- Mods made by others belong to their makers, under the terms they chose.
+
+4. RUSE Guard: our anti-cheat (required)
+To stop cheating in real R.U.S.E. multiplayer matches. To use RUSE Studio and RUSE Launcher, you accept RUSE Guard.
+- Only in multiplayer and co-op matches. Never in single-player, skirmish, the campaign, replays, or while you make mods.
+- What it collects in those matches: a check of the game files that change how the game plays, compared with the other players; regular checks that everyone's game stays the same; the match replay the game already writes; the match's details (map, mode, players' in-game names, result, times); the list of mods and their checks. While the match is live it also checks the names of running programs against a list of known cheat tools, and reports only whether one was found. You can say no to this check; without it, multiplayer and the Launcher's join code aren't available, and you can turn it on later in Settings.
+- What it never collects: your files, your screen, your keystrokes, the contents of your computer's memory, or anything outside a multiplayer match.
+- A copy with a cheat or test tool plays offline only.
+- No automatic bans. If something looks wrong, our review team watches the replay and decides. You can appeal on our Discord or on GitHub.
+- A match record is deleted 48 hours after the match. A match flagged for possible cheating is kept until we've reviewed it, and one under appeal until the appeal is done. If cheating is confirmed, only the decision is kept.
+- Confirmed cheating can remove your access to multiplayer through R.U.S.E. 2.0. It never affects your Steam account or the game itself.
+
+5. Bug Watch: help us find and fix bugs (optional, recommended)
+If you tick Bug Watch, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day. Only our developers see it, on our server and in a private repository. Never sent: your real name, your Steam account, your files or paths; the game's crash files never leave your PC. Your counts and crash reports are deleted after 7 days (a very severe crash we're still fixing is kept until it's fixed; after that only nameless totals remain). It's off unless you tick it, and you can change it any time in Settings, which shows exactly what's sent.
+
+6. Your username
+If you tick the program check or Bug Watch, you choose a username (a short number is added, like Nick#4821). It's sent only with what you agreed to send, so we know whose crash or match it is. One name works for both apps, and you can change it in Settings. Tick neither box and you aren't asked for one, and nothing is sent. To have your username and data deleted, ask on our Discord or GitHub.
+
+7. No warranty
+The apps are free and come as they are, without any warranty (GPL v3 sections 15 and 16). They build modded copies of the game and leave your installed game unchanged. We're not responsible for the game, your Steam account, or any loss from using the apps.
+
+8. Changes
+When this agreement changes, the apps show it again before you go on.
+
+9. Contact
+Questions, bug reports and appeals: on our Discord or on GitHub. Security problems: privately, as our security policy says.
+
+This English text is the one that counts; the other languages are translations.
+"""

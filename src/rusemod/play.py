@@ -146,8 +146,9 @@ def open_url(url: str) -> None:
         webbrowser.open(url)
 
 
-def start_game(exe: Path) -> None:
-    subprocess.Popen([str(exe)], cwd=str(exe.parent))
+def start_game(exe: Path):
+    """Start the game; the running process (RUSE Guard's match watch follows it, rusemod.guard)."""
+    return subprocess.Popen([str(exe)], cwd=str(exe.parent))
 
 
 def steam_running() -> bool:
@@ -267,13 +268,17 @@ class Starter:
         say("Starting R.U.S.E. through Steam…")
         self.open_url(STEAM_PLAY)
 
-    def modded(self, game: Path, mod_folders, instance: Path, name: str, say, words: dict | None = None,
-               cut_off_errors: bool = False, title: bool = True) -> None:
+    def modded(self, game: Path, mod_folders, instance: Path, name: str, say, watch: bool = True,
+               guard: dict | None = None, words: dict | None = None, cut_off_errors: bool = False,
+               title: bool = True) -> None:
         """Build these mod folders into the modded copy `instance` and start the game from it. The folders' order
         counts: a later mod comes after an earlier one, so it wins when both change the same value, unless the mods
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
         message for the player, and nothing starts; so do .rmod mods that can't go together (the build refuses them
-        before building anything, naming every clash: rusemod.rmod.clashes).
+        before building anything, naming every clash: rusemod.rmod.clashes). A set with a cheat or a test tool makes
+        an offline copy; every copy gets the fair play watcher (rusemod.fairplay). `guard` (the Launcher's: its
+        platform folder `home` and the player's RUSE Guard settings) starts the match watch beside the game
+        (rusemod.guard), when fair play is on.
 
         When the copy was last built from these same mods (every file as it was), this game build and this app, and
         is still as that build left it, nothing is built: the game starts from it (rusemod.instance.needs_build). A
@@ -283,6 +288,7 @@ class Starter:
         instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
         default), or the game's own (Settings: rusemod.signature.title_on)."""
         from .backup import _claim, _release
+        from . import fairplay
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
         refused = (self.required() if self.required is not None else None) or (
@@ -290,6 +296,8 @@ class Starter:
         if refused:  # not a game rule: the project's (a required update first; only a copy its player owns)
             raise BuildError(refused)
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
+        home = (guard or {}).get("home")
+        fair = fairplay.check([Path(m) for m in mod_folders], watch, home) if fairplay.ON else fairplay.FairPlay()
         lock = instance.parent / BUILDING
         lock.parent.mkdir(parents=True, exist_ok=True)
         fd = _claim(lock)
@@ -308,7 +316,7 @@ class Starter:
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
                 result = build_and_write(game, mods, instance=instance, say=say, cache=build_cache(),
                                          cut_off_errors=cut_off_errors, signature=title,
-                                         built_from=made_from)
+                                         built_from=made_from, fairplay=fair)
                 if built_from(game, mod_folders, title=title)["key"] != made_from["key"] \
                         or mod_stamps(mod_folders) != stamps:
                     forget(str(instance))  # changed while the build read it: the copy may hold some of each
@@ -327,7 +335,18 @@ class Starter:
         if not self._steam(say):
             raise BuildError("Steam didn't start. Start Steam, then try again.")
         say("Starting R.U.S.E. from the modded copy…")
-        self.start_game(exe)
+        process = self.start_game(exe)
+        from . import bugwatch
+        watch = bugwatch.current()
+        if watch is not None and process is not None and bugwatch.enabled(watch.home):
+            # Bug Watch: the minutes this game runs with these mods, and any crash dump it leaves
+            bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders)).start()
+        if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)
+            from .guard import MatchWatch, check_manifest
+            # the match is filed under the player's chosen username (Nick#4821), never their Steam ID
+            username = (settings(home).get("player") or {}).get("name", "")
+            MatchWatch(process, home, game, instance, username=username, consent=guard.get("consent", {}),
+                       manifests=[check_manifest(m) for m in mod_folders], say=say).start()
 
     def _steam(self, say) -> bool:
         if self.steam_running():

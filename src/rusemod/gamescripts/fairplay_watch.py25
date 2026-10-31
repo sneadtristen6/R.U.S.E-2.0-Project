@@ -1,0 +1,108 @@
+# R.U.S.E. Mod Platform: the RUSE Guard watcher (rusemod.fairplay). Python 2.5, compiled by
+# tools/compile_gamescript.py25 into fairplay_watch.bin; the build adds it after the code of every map's match script
+# (effetmap, effetmapmultiplayer) in every modded copy's IA_Common.dat. The first match of a session switches it on
+# for the whole session. It changes nothing in the match, it only tells.
+#
+# In skirmish, multiplayer and co-op matches it says on screen when something happens that the game itself never
+# does in a normal match:
+# - a unit made by a "spawn unit" order: the game's own scripts never send one, only a script mod can;
+# - a side's money jumping by _fairplay_watch_step or more at once: the developer menu's money buttons add 500.
+# Orders run on every player's PC, so a cheat sent by one player shows on the others' screens too.
+
+_fairplay_watch_step = 400
+
+
+def _fairplay_watch():
+    import _piggybank
+    import front.game_rules
+    rules = front.game_rules.GameRulesMulti
+    if getattr(rules, '_fairplay_watch_on', False):
+        return
+    rules._fairplay_watch_on = True
+    old_start = rules.before_start_game
+    state = {'world': None, 'watches': [], 'spawn': None}
+
+    def say(text):
+        world = state['world']
+        if world is None:
+            return
+        try:
+            world.display_debug_message(text, 15.0)
+        except Exception:
+            pass
+
+    def side(camp):
+        return getattr(camp, 'teamnum', '?')
+
+    class Watch(_piggybank.TPackSignaux_PiggyBank_Listener):
+        __no_reduce_in_signal__ = True
+
+        def __init__(self, camp):
+            _piggybank.TPackSignaux_PiggyBank_Listener.__init__(self)
+            self.camp = camp
+            self.last = int(camp.piggybank.niveau_reel)
+            camp.piggybank.ConnectPiggyBankChangedInterface(self)
+
+        def On_Signal_PiggyBank_Changed_Interface(self, delta):
+            try:
+                now = int(self.camp.piggybank.niveau_reel)
+                step = now - self.last
+                self.last = now
+                if step >= _fairplay_watch_step:
+                    say(u'RUSE Guard watcher: player %s got %d money at once.' % (side(self.camp), step))
+            except Exception:
+                pass
+
+        def kill(self):
+            try:
+                self.camp.piggybank.DisconnectPiggyBankChangedInterface(self)
+            except Exception:
+                pass
+            self.camp = None
+
+    def stop():
+        for watch in state['watches']:
+            watch.kill()
+        state['watches'] = []
+        state['world'] = None
+
+    def Recv_SpawnUnit(team, descriptor, position):
+        try:  # an error leaving here would stop the whole game (the game's sys.excepthook crashes it, code 0x29a)
+            say(u'RUSE Guard watcher: a unit was made by a spawn order for player %s. The game never sends one itself.'
+                % side(team))
+        except Exception:
+            pass
+        return state['spawn'](team, descriptor, position)
+
+    def start(world):
+        stop()
+        state['world'] = world
+        for camp in world.camp_list:
+            if getattr(camp, 'piggybank', None) is not None:
+                state['watches'].append(Watch(camp))
+        world.register_function_to_call_at_kill(stop)
+        if state['spawn'] is None:  # the game looks the receiving function up by name for every order
+            import base.actions.helpers
+            state['spawn'] = base.actions.helpers.Recv_SpawnUnit
+            base.actions.helpers.Recv_SpawnUnit = Recv_SpawnUnit
+
+    def before_start_game(self):
+        old_start(self)
+        try:
+            start(self.world)
+        except Exception:
+            pass
+
+    rules.before_start_game = before_start_game
+
+
+def _fairplay_watch_quietly():
+    # an error at load stops the game too (the game's sys.excepthook crashes it, code 0x29a); the catch sits in a
+    # function because the build joins the next script after this one, so the top level may not jump to its end
+    try:
+        _fairplay_watch()
+    except Exception:
+        pass
+
+
+_fairplay_watch_quietly()

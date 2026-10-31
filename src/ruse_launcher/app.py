@@ -69,6 +69,8 @@ def main(argv=None) -> int:
         ])
     log.mark("api")
     log.go()
+    from rusemod import bugwatch
+    bugwatch.start(api._home, "launcher", __version__)  # counts only when the player ticked Bug Watch
     from rusemod.update import fix_app_list_version, installed_app
     if installed_app():  # Windows' app list shows this version (issue #15: it said 0.1.0 when 0.3.1 was installed)
         fix_app_list_version("launcher", __version__)

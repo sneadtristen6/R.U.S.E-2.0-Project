@@ -2832,8 +2832,34 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   };
   const signinStatus = () => ({ on: mode === "signin", signed_in: signin.signed, owned: signin.signed,
     until: Math.floor(Date.now() / 1000) + 30 * 86400, reason: signin.signed ? "ok" : "none", words: signinWords, app_id: 21970 });
+  // Bug Watch's words (words.toml set_bugwatch_*, bugwatch_*, tip_bugwatch_*), for the ?fake preview of the card
+  Object.assign(words.us, { set_bugwatch_title: "Bug Watch", set_bugwatch_help: "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time.", bugwatch_on_label: "Bug Watch (Recommended)", bugwatch_name_hint: "Your username", bugwatch_save: "Save username", bugwatch_code: "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes.", bugwatch_show: "Show what's sent", bugwatch_need_name: "Type a username first, then tick Bug Watch.", bugwatch_now_on: "Bug Watch is on. Thank you!", bugwatch_now_off: "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted.", tip_bugwatch_on: "Send counts and crash reports to our developers once a day. Off unless you tick it.", tip_bugwatch_name: "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique.", tip_bugwatch_save: "Keep this username (a new name gets new numbers).", tip_bugwatch_show: "See, word for word, what Bug Watch would send." });
+  let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
+  let fakeTerms = mode === "agree" ? 0 : 1;  // ?fake=agree: the first-start agreement hasn't been accepted yet
+  // The first-start agreement + username words (words.toml agree_*, username_*), for the ?fake=agree preview
+  Object.assign(words.us, { agree_title: "R.U.S.E. 2.0: user and licence agreement", agree_intro: "This covers RUSE Studio, RUSE Launcher and our online services. R.U.S.E. is a game by Eugen Systems, published by Ubisoft, and you need your own copy. R.U.S.E. 2.0 is a free community project, not made, approved or supported by them.", agree_guard_title: "RUSE Guard: our anti-cheat (required)", agree_guard: "Why: to stop cheating in real R.U.S.E. multiplayer matches, so every match is fair. It runs only in multiplayer and co-op matches, never in single-player, skirmish against the computer, the campaign, replays, or while you make mods. As part of it, during those matches it checks your running programs against a list of known cheat tools: it reads only the programs' names, reports only a name that is on that list, and looks at nothing else. It never collects your files, your screen, your keystrokes or your computer's memory. Using the Studio and Launcher means accepting RUSE Guard, including this check.", agree_full_toggle: "Read the full agreement", agree_full: "R.U.S.E. 2.0: user and licence agreement (version 1)\n\n(The full agreement text appears here in the app.)", agree_accept_note: "Accepting RUSE Guard is required to use the apps. This English text is the one that counts; other languages are translations.", agree_accept: "Accept and continue", username_title: "Choose your username", username_help: "A name our developers see with your RUSE Guard matches or your Bug Watch reports, so we can help you. A # and four numbers are added so it's unique, like Nick#4821. One name works for both apps, and you can change it in Settings.", username_save: "Save and continue", username_need: "Type a username to continue." });
+
   window.pywebview = {
     api: {
+      // RUSE Guard terms the shared agreement reads and sets (?fake=agree starts them unaccepted)
+      fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
+      guard_status: async () => ({ terms: fakeTerms, terms_version: 1, scan: false, on: true }),
+      guard_accept_terms: async () => { fakeTerms = 1; return { terms: 1 }; },
+      bugwatch_status: async () => ({ ...fakeBugwatch }),
+      bugwatch_on: async (name) => {
+        const num = String(1000 + Math.floor(Math.random() * 9000));
+        fakeBugwatch = { ...fakeBugwatch, on: true, name: /#\d{4}$/.test(name) ? name : `${name}#${num}`, code: fakeBugwatch.code || "Zx3k9QpL" };
+        return { on: true };
+      },
+      set_username: async (name) => {  // the agreement's guard-only path: a shared name/id, Bug Watch left off
+        const num = String(1000 + Math.floor(Math.random() * 9000));
+        fakeBugwatch = { ...fakeBugwatch, name: /#\d{4}$/.test(name) ? name : `${name}#${num}`, code: fakeBugwatch.code || "Zx3k9QpL" };
+        return { name: fakeBugwatch.name, code: fakeBugwatch.code };
+      },
+      bugwatch_off: async () => { fakeBugwatch = { ...fakeBugwatch, on: false, name: "", code: "" }; return { on: false }; },
+      bugwatch_next_send: async () => ({ today: { v: 1, id: "Zx3k9QpL2mVb7TnR4wYh8CdF5sGj1AeU", user: fakeBugwatch.name,
+        studio: { calls: {}, screens: {} } } }),
+      bugwatch_seen: async () => ({ ok: true }),
       backup_status: async () => backupStatus(),
       backup_requested: async () => ({ make: mode === "firstbackup" && !backups.some((b) => b.matches) }),  // the installer asked
       backup_make: async (replace) => {

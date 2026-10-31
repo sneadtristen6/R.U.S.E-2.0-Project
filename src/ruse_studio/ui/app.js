@@ -203,7 +203,8 @@ async function setLanguage(lang) {
     "new-mod-cancel": "tip_cancel", "export-go": "tip_export", "export-cancel": "tip_cancel", "test-log-close": "tip_close", "test-log-copy": "tip_copy_log",
     "build-index": "tip_build_index", search: "tip_search", "set-game-change": "tip_game_change",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
-    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check" };
+    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check",
+    "bugwatch-on": "tip_bugwatch_on", "bugwatch-name": "tip_bugwatch_name", "bugwatch-save": "tip_bugwatch_save", "bugwatch-show": "tip_bugwatch_show" };
   for (const [id, key] of Object.entries(tips)) $(id).title = w[key] || "";
   $("search").placeholder = w.search;
   $("search").title = [w.tip_search, w.tip_search_tags].filter(Boolean).join(" ");   // (and how #tags work)
@@ -3387,7 +3388,7 @@ function showView(view) {
   if (view === "values") { renderValues(); return; }
   if (view === "decoy") { window.DecoyView.open(state.words, state.lang); return; }
   if (view === "files") { window.FilesView.open(state.words); return; }  // (reads the packs, not the game index)
-  if (view === "settings") { renderSettings(); loadBackup(); return; }
+  if (view === "settings") { renderSettings(); loadBackup(); loadBugwatch(); return; }
   if (view !== "maps") return;
   const open = () => window.MapView.open(api(), state.words, state.lang).catch(problem);
   if (window.MapView) open();
@@ -4973,6 +4974,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     };
   } },
   { id: "backup", render() { renderBackup(); } },  // loaded each time Settings opens (loadBackup)
+  { id: "bugwatch", render() { renderBugwatch(); } },  // loaded each time Settings opens (loadBugwatch)
   { id: "updates", async render() {
     const w = state.words, u = state.update || {};
     if (!state.version) state.version = (await api().game_folder()).version;
@@ -5201,6 +5203,50 @@ async function verifyWithSteam() {
   renderBackup();
 }
 
+// --- Bug Watch (rusemod.bugwatch through api.bugwatch_*): counts of what the apps do and where they fail, and the
+// game's crashes, sent to our developers once a day only if the player ticks it. Shared with the Launcher through
+// settings.json; the card is hidden while the code switch (bugwatch.ON) is off. ---
+async function loadBugwatch() {
+  try { state.bugwatch = { ...(state.bugwatch || {}), ...(await api().bugwatch_status()) }; }
+  catch (err) { state.bugwatch = { available: false }; }
+  if (state.view === "settings") renderBugwatch();
+}
+
+function renderBugwatch() {
+  const w = state.words, b = state.bugwatch || {}, name = $("bugwatch-name");
+  $("set-bugwatch").classList.toggle("hidden", !b.available);
+  if (!b.available) return;
+  $("bugwatch-on-label").textContent = w.bugwatch_on_label || "";
+  $("bugwatch-save").textContent = w.bugwatch_save || "";
+  $("bugwatch-show").textContent = w.bugwatch_show || "";
+  name.placeholder = w.bugwatch_name_hint || "";
+  $("bugwatch-on").checked = !!b.on;
+  $("bugwatch-code").textContent = b.on ? fill(w.bugwatch_code, { name: b.name || "", code: b.code || "" }) : "";
+  const note = $("bugwatch-note");
+  note.textContent = b.note || "";
+  note.className = "small" + (b.note ? (b.bad ? " bad" : " good") : "");
+}
+
+async function changeBugwatch(turnOn) {
+  const w = state.words, typed = $("bugwatch-name").value.trim(), b = state.bugwatch || {};
+  try {
+    if (turnOn && !typed && !b.name) { state.bugwatch = { ...b, note: w.bugwatch_need_name, bad: true }; renderBugwatch(); return; }
+    // the same name again keeps its #number; a new one gets a new number
+    const keep = b.name && typed === b.name.replace(/#\d{4}$/, "") ? b.name : typed;
+    await (turnOn ? api().bugwatch_on(keep) : api().bugwatch_off());
+    state.bugwatch = { ...(await api().bugwatch_status()), note: turnOn ? w.bugwatch_now_on : w.bugwatch_now_off };
+  } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
+  $("bugwatch-sent").classList.add("hidden");
+  renderBugwatch();
+}
+
+async function showBugwatch() {
+  const box = $("bugwatch-sent");
+  try { box.textContent = JSON.stringify(await api().bugwatch_next_send(), null, 2); }
+  catch (err) { box.textContent = errorText(err); }
+  box.classList.toggle("hidden");
+}
+
 function renderSettings() {
   const w = state.words;
   $("settings-title").textContent = w.settings_title;
@@ -5325,6 +5371,9 @@ async function start() {
   $("tab-maps").addEventListener("click", () => showView("maps"));
   $("tab-settings").addEventListener("click", () => showView("settings"));
   $("set-game-change").addEventListener("click", () => chooseGame().catch(problem));
+  $("bugwatch-on").addEventListener("change", (e) => changeBugwatch(e.target.checked));
+  $("bugwatch-save").addEventListener("click", () => changeBugwatch(true));
+  $("bugwatch-show").addEventListener("click", showBugwatch);
   $("set-copies-change").addEventListener("click", () => changeCopies(true).catch(problem));
   $("set-copies-default").addEventListener("click", () => changeCopies(false).catch(problem));
   $("backup-make").addEventListener("click", makeBackup);
@@ -5414,6 +5463,10 @@ async function start() {
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
+  // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before the start screen
+  let guardLive = false;
+  try { guardLive = (await api().fair_play_on()).on; } catch { guardLive = false; }
+  await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
   firstBackup(status.ready).catch(problem);
   // the start screen (startflow.js, loaded after this file: the page's scripts all read first)
   if (document.readyState === "loading") await new Promise((ok) => document.addEventListener("DOMContentLoaded", ok, { once: true }));

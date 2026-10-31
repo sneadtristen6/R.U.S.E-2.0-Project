@@ -2367,7 +2367,7 @@ def _shipped(arc, member: str) -> bytes | None:
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
-                    cache: Path | None = None, built_from: dict | None = None,
+                    cache: Path | None = None, built_from: dict | None = None, fairplay=None,
                     cut_off_errors: bool = False, signature: bool = False) -> BuildResult:
     """Build `mods` [(ModInfo, ops)] against the game at `game` and write the result: rebuilt packs to `out` (a .dat
     file, or a folder for several packs) and/or a modded copy at `instance`. This is `ruse build`, and the launcher's
@@ -2382,7 +2382,16 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     .rmod mods that can't go together (the same file replaced with different contents, MOD_FORMAT.md §13) stop the
     build before anything is built, with every such clash named; a later mod overwriting an earlier one's values is
     a warning. An .rmod mod converted for the Studio (rusemod.rmodconvert) also has changes of its own: they're built
-    with the other mods, on top of every .rmod."""
+    with the other mods, on top of every .rmod.
+
+    `fairplay` (rusemod.fairplay.FairPlay, from the mods' folders): whether the copy is offline (a cheat or a test
+    tool: it gets the offline lock); without it, the .rmod mods' scripts decide. Every build gets the watcher, both in
+    the maps' own script folders (IA_Common.dat, 1.5 MB). A modded copy gets the build's record (fairplay.RECORD):
+    its join code and what the build wrote."""
+    from . import fairplay as fair_play
+    fair_mods = [(m.id, m.version) for m, _ops in mods]  # the mods in the set's order, for the join code
+    fair = fairplay if fairplay is not None else \
+        fair_play.check_infos([m for m, _ops in mods]) if fair_play.ON else fair_play.FairPlay()
     rmods = [m for m, _ops in mods if m.rmod is not None]
     mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
@@ -4439,6 +4448,45 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                                                         loose=result.new_files))
             except LookError as exc:
                 raise BuildError(str(exc)) from None
+        fair_pack = None
+        patches = fair.patches()
+        if patches:  # our fair play scripts, in every map's own script folder in IA_Common.dat (rusemod.fairplay)
+            ia_path, zz_path = find_pack(game, fair_play.MAP_SCRIPTS), text_path or find_pack(game, loc.PACK)
+            if (ia_path is None or zz_path is None) and fair.offline:
+                # not a game rule: the game or one of its files isn't found
+                raise BuildError(f"The game has no {fair_play.MAP_SCRIPTS} or {loc.PACK}, so this copy can't get its "
+                                 f"offline lock: build it without the cheats and test tools.")
+            if ia_path is None or zz_path is None:
+                say(f"note: no {fair_play.MAP_SCRIPTS} or {loc.PACK} in this game, so no RUSE Guard watcher")
+                patches = []
+        if patches:
+            from .rmod import Layered
+            zz = text_arc if text_arc is not None else open_pack(zz_path)  # only read: the game's own match script
+            ia = open_pack(ia_path)
+            ia = ia if isinstance(ia, Layered) else Layered(ia, ia_path)
+            changed_low = {m.lower(): d for m, d in result.changed.items()}
+            new_low = {m.lower(): d for m, d in result.added.get(pack_path.name, {}).items()}
+            clusters = [changed_low.get(e.path.lower()) or bytes(arc.read(e)) for e in arc.entries
+                        if e.path.lower().startswith(fair_play.SCENARIOS) and "cluster" in e.path.lower()]
+            clusters += [d for m, d in new_low.items() if m.startswith(fair_play.SCENARIOS) and "cluster" in m]
+            try:
+                folders = fair_play.script_folders(clusters)
+                done = fair_play.add_to_maps(ia, folders, fair_play.multiplayer_script(zz, result.script_changed),
+                                             patches)
+                # and after the game's own Battles launcher, the one place the game loads them for Battles (the map
+                # folders' copies above never ran in a Battles match: 2026-10-30); after add_to_maps, whose
+                # fallback for a folder without its own script is the launcher as it was
+                launcher_pack, launcher_bytes = fair_play.add_to_launcher(zz, patches, result.script_changed)
+            except (fair_play.FairPlayError, pyscript.ScriptError, KeyError, ValueError) as exc:
+                raise BuildError(f"RUSE Guard's scripts can't be added: {exc}") from None
+            result.script_changed[launcher_pack] = launcher_bytes
+            if text_arc is None:  # the launcher is in ZZ_Win.dat, so the copy gets its own ZZ_Win.dat
+                text_path, text_arc = zz_path, zz
+            fair_pack = (ia_path, ia)
+            say(f"RUSE Guard: the watcher{' and the offline lock' if fair.offline else ''} in the Battles launcher "
+                f"({Path(zz_path).name}) and {done} map script folders ({ia_path.name})")
+            for reason in fair.offline:
+                say(f"offline only: {reason}; multiplayer and co-op matches are left at once")
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
             from .unitmodel import UnitModelError, read_mod_glb, write_unit_model
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
@@ -4593,6 +4641,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         rebuilt = [(pack_path, arc, result.changed), (text_path, text_arc, zz_win_changed)] + map_packs + data_packs
         listed = {Path(path).resolve() for path, _a, _c in rebuilt if path}
         rebuilt += [(p, a, {}) for p, a in rmod_packs.items() if p not in listed]
+        if fair_pack and Path(fair_pack[0]).resolve() not in {Path(p).resolve() for p, _a, _c in rebuilt if p}:
+            rebuilt.append((fair_pack[0], fair_pack[1], {}))  # (a pack the .rmod mods changed already has them)
         # a pack the .rmod mods changed writes their changes too, even when the other mods leave it alone
         rebuilt = [(path, a, changed) for path, a, changed in rebuilt if changed or getattr(a, "is_changed", False)]
         if not rebuilt:
@@ -4643,6 +4693,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 replace[gamepatch.EXE] = patched_exe  # written into the copy as a file of its own
             copied = build_instance(str(game), str(instance), replace=replace, add=add, built_from=built_from)
             say(f"modded copy ready: {instance}  {copied}")
+            if fair_play.ON:  # (switched off until the owner says: fairplay.ON)
+                record = fair_play.write_record(instance, build_id, result.fingerprint, fair_mods, fair,
+                                                 [*replace, *add])
+                say(f"join code: {record['code']}" if record["code"] else f"no join code ({record['why']})")
             locked = copied.get("read-only packs", 0)
             if getattr(copied, "other_drive", False):  # said once, every build: how much it cost this time
                 drive = os.path.splitdrive(os.path.realpath(game))[0] or str(Path(game).anchor)

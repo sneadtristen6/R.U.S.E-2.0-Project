@@ -1,0 +1,110 @@
+# R.U.S.E. Mod Platform: the RUSE Guard offline lock (rusemod.fairplay). Python 2.5, compiled by
+# tools/compile_gamescript.py25 into fairplay_lock.bin; the build adds it after the code of every map's match script
+# (effetmap, effetmapmultiplayer). The first match of a session switches it on for the whole session.
+#
+# A copy built with a cheat or a test tool is for offline play. Two steps, the owner's 2026-10-30 pick:
+#  1. When a multiplayer or co-op match starts in such a copy, this says so on screen and, a few seconds in, gives up
+#     the match for the player (the same surrender the escape menu sends). The player's opponent gets a clean,
+#     recorded win from that surrender, like any other.
+#  2. Then, once the match has ended and the player is on the end-of-match screen, it stops the game on purpose. The
+#     game's crash report (which goes to the game's maker) then carries a marked line showing a cheat copy was
+#     stopped. The stop is the SECOND step, after the surrender, so the honest opponent's win is already in.
+# Skirmish against the AI, operations and the campaign are untouched.
+#
+# Why stop the game, and why only here: a script error that reaches the game stops the whole game (the game's own
+# error handler, RUSE.exe 0x140859de0 -> code 0x29a; found 2026-10-30, findings ledger F-147), and the game gives a
+# script no other way to leave a mark the maker can see (no file, output dropped). This script is ONLY ever in a copy
+# built with a cheat; honest copies never carry it, so no honest player is stopped.
+
+_fairplay_lock_text = (u"This copy of R.U.S.E. was built with cheats or test tools, so it is for offline play. "
+                       u"It leaves multiplayer and co-op matches. Build without them in the Launcher to play online.")
+
+
+def _fairplay_lock():
+    import front.game_rules
+    rules = front.game_rules.GameRulesMulti
+    if getattr(rules, '_fairplay_lock_on', False):
+        return
+    rules._fairplay_lock_on = True
+    old_start = rules.before_start_game
+    held = []
+    state = {'multi': 0, 'coop': 0, 'local': '?', 'surrendered': False}
+
+    def online():
+        try:
+            import _network
+            state['multi'] = int(bool(_network.IsPartieMulti()))
+            state['coop'] = int(bool(_network.IsChallengeCoop()))
+        except Exception:
+            state['multi'] = state['coop'] = 0
+        return bool(state['multi'] or state['coop'])
+
+    def say(world, seconds):
+        try:
+            world.display_debug_message(_fairplay_lock_text, seconds)
+        except Exception:
+            pass
+
+    def mark():
+        return ('RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. '
+                'multi %d coop %d local %s RUSEGUARD-END' % (state['multi'], state['coop'], state['local']))
+
+    def arm_menu_stop():
+        # Step 2: after the surrender, stop the game on the end-of-match screen. The hook is on the screen's own
+        # class, not a match timer, so it outlives the match (the match's timers are dropped when it ends). The game
+        # loads its scripts as it needs them, so the end-screen module is imported here, after the match has run.
+        try:
+            import headup.end_game_screens
+            screen = headup.end_game_screens.EndGameScreenMulti  # the Battles screen inherits its show method
+        except Exception:
+            return
+        if getattr(screen, '_fairplay_lock_armed', False):
+            return
+        screen._fairplay_lock_armed = True
+        old_show = screen._show_end_game_screen
+
+        def _show_end_game_screen(self, stats):
+            old_show(self, stats)
+            if state['surrendered']:  # on the end screen, after the surrender: stop the game so the maker sees it
+                raise RuntimeError(mark())
+
+        screen._show_end_game_screen = _show_end_game_screen
+
+    class Leave(object):
+        __no_reduce_in_signal__ = True
+
+        def __init__(self, world):
+            self.world = world
+            self.ticket = None
+
+        def run(self):
+            world = self.world
+            self.world = None
+            if self in held:
+                held.remove(self)
+            if world is None:
+                return
+            say(world, 30.0)
+            import base.actions.helpers
+            base.actions.helpers.Send_Surrender(world.camp_du_joueur)
+            state['surrendered'] = True
+            arm_menu_stop()
+
+    def before_start_game(self):
+        old_start(self)
+        if not online():
+            return
+        world = self.world
+        try:
+            state['local'] = str(getattr(getattr(world, 'camp_du_joueur', None), 'teamnum', '?'))
+        except Exception:
+            state['local'] = '?'
+        say(world, 30.0)
+        leave = Leave(world)
+        held.append(leave)
+        leave.ticket = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(5.0, leave.run)
+
+    rules.before_start_game = before_start_game
+
+
+_fairplay_lock()

@@ -37,7 +37,9 @@ from rusemod import (ai, buildtext, doctor, economy, flaginfo, gamefiles, identi
                      startlog, values as every_value)
 from rusemod.backup import BackupCalls
 from rusemod.brush import BrushError, parse_strokes, strokes_toml
+from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, REPO_URL, CommunityCalls, private_paths_out
+from rusemod.guardcalls import GuardCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -554,7 +556,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, FlagTypeCalls, BoardCalls,
-                StartScreenCalls):
+                StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit

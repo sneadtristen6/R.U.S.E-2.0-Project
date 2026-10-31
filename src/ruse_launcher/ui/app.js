@@ -95,7 +95,9 @@ async function setLanguage(lang) {
   text($("drop-hint"), w.drop_hint);
   text($("library-empty"), w.library_empty);
   text($("details"), w.details);
-  text($("join"), w.join);
+  // fair play (api.fair_play_on): switched off, the button is the old "Join a friend", coming soon
+  text($("join"), state.fairOn ? w.join_code : w.join);
+  $("join").disabled = !state.fairOn;
   text($("browse"), w.browse);
   text($("doc-open"), w.doc_button);
   text($("doc-title"), w.doc_title);
@@ -107,15 +109,24 @@ async function setLanguage(lang) {
   $("help").title = w.tip_help;
   text($("report"), w.report_problem);
   $("report").title = w.tip_report_problem;
-  $("join").title = w.coming_soon;
+  text($("fair-title"), w.fair_title);
+  text($("fair-help"), w.fair_help);
+  text($("fair-copy"), w.copy);
+  $("fair-theirs").placeholder = w.fair_paste;
+  text($("fair-compare"), w.fair_compare);
+  text($("fair-full"), w.fair_full);
+  text($("fair-close"), w.cancel);
   // tooltips: one plain sentence on the controls a new player meets (words.toml tip_*)
   const tips = { "settings-open": "tip_settings_open", "side-sets": "tip_side_sets", "side-library": "tip_side_library",
     "new-set": "tip_new_set", "import-set": "tip_import_set", play: "tip_play", browse: "tip_browse", "doc-open": "tip_doc_open",
     "add-mod": "tip_add_mod", "settings-back": "tip_settings_back", lang: "tip_lang", "set-game-change": "tip_game_change",
     "convert-mod": "tip_convert_mod", "convert-pick": "tip_convert_pick", "convert-cancel": "tip_convert_cancel",
     "backup-make": "tip_backup_make", "backup-check": "tip_backup_check", "backup-restore": "tip_backup_restore",
-    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check", "title-gold": "tip_title_gold" };
+    "backup-deep": "tip_backup_deep", "set-updates-check": "tip_updates_check", "title-gold": "tip_title_gold",
+    "bugwatch-on": "tip_bugwatch_on", "bugwatch-name": "tip_bugwatch_name", "bugwatch-save": "tip_bugwatch_save",
+    "bugwatch-show": "tip_bugwatch_show" };
   for (const [id, key] of Object.entries(tips)) if ($(id)) $(id).title = w[key] || "";
+  $("join").title = state.fairOn ? w.tip_join : w.coming_soon;
   text($("browse-title"), w.browse);
   $("browse-search").placeholder = w.search_mods;
   text($("browse-refresh"), w.refresh_list);
@@ -162,6 +173,7 @@ function render() {
   else if (state.browse) renderBrowse(); else if (state.importing) renderImport(); else if (state.editing) renderEditor();
   else renderActive();
   if (state.doctor) renderDoctor();  // its words, and its fixes on or off as Play starts and ends
+  renderFair();
 }
 
 // --- Settings: one entry per section (its words are set_<id>_title); a new setting is one more entry and its
@@ -175,6 +187,7 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
   { id: "copies", render() { renderCopies(); } },  // loaded when Settings opens (loadCopies)
   { id: "title", render() { renderTitle(); } },  // loaded when Settings opens (loadTitle)
   { id: "backup", render() { renderBackup(); } },  // loaded when Settings opens (loadBackup)
+  { id: "bugwatch", render() { renderBugwatch(); } },  // loaded when Settings opens (loadBugwatch)
   { id: "updates", render() {
     const w = state.words, u = state.update || {};
     text($("set-updates-text"), u.checking ? w.set_updates_checking : u.available ? fill(w.update_out, { app: APP_NAME, version: u.version })
@@ -255,6 +268,53 @@ async function changeTitle() {
   try { state.title = { ...(await api().set_game_title(on)), note: on ? w.title_on_note : w.title_off_note }; }
   catch (err) { state.title = { ...(state.title || {}), note: errorText(err), bad: true }; }
   renderTitle();
+}
+
+// --- Bug Watch (rusemod.bugwatch through api.bugwatch_*): counts of what the apps do and where they fail, and the
+// game's crashes, sent to our developers once a day. Only the player's own tick turns it on (the owner, 2026-10-22:
+// "Off by default, but it should say like recommended"), with a username so we can tell people apart and match a
+// report to its crashes. The card stays hidden while the code's own switch is off ---
+async function loadBugwatch() {
+  try { state.bugwatch = { ...(state.bugwatch || {}), ...(await api().bugwatch_status()) }; }
+  catch (err) { state.bugwatch = { available: false }; }
+  if (state.settings) renderBugwatch();
+}
+
+function renderBugwatch() {
+  const w = state.words, b = state.bugwatch || {}, name = $("bugwatch-name");
+  $("set-bugwatch").classList.toggle("hidden", !b.available);
+  if (!b.available) return;
+  text($("set-bugwatch-help"), w.set_bugwatch_help);
+  text($("bugwatch-on-label"), w.bugwatch_on_label);
+  text($("bugwatch-save"), w.bugwatch_save);
+  text($("bugwatch-show"), w.bugwatch_show);
+  name.placeholder = w.bugwatch_name_hint;
+  if (document.activeElement !== name) name.value = (b.name || "").replace(/#\d{4}$/, "");
+  $("bugwatch-on").checked = !!b.on;
+  text($("bugwatch-code"), b.on ? fill(w.bugwatch_code, { name: b.name || "", code: b.code || "" }) : "");
+  const note = $("bugwatch-note");
+  text(note, b.note || "");
+  note.className = "message" + (b.note ? (b.bad ? " bad" : " good") : "");
+}
+
+async function changeBugwatch(turnOn) {
+  const w = state.words, typed = $("bugwatch-name").value.trim(), b = state.bugwatch || {};
+  try {
+    if (turnOn && !typed && !b.name) { state.bugwatch = { ...b, note: w.bugwatch_need_name, bad: true }; renderBugwatch(); return; }
+    // the same name again keeps its #number; a new one gets a new number
+    const keep = b.name && typed === b.name.replace(/#\d{4}$/, "") ? b.name : typed;
+    await (turnOn ? api().bugwatch_on(keep) : api().bugwatch_off());
+    state.bugwatch = { ...(await api().bugwatch_status()), note: turnOn ? w.bugwatch_now_on : w.bugwatch_now_off };
+  } catch (err) { state.bugwatch = { ...b, note: errorText(err), bad: true }; }
+  $("bugwatch-sent").classList.add("hidden");
+  renderBugwatch();
+}
+
+async function showBugwatch() {
+  const box = $("bugwatch-sent");
+  try { box.textContent = JSON.stringify(await api().bugwatch_next_send(), null, 2); }
+  catch (err) { box.textContent = errorText(err); }
+  box.classList.toggle("hidden");
 }
 
 // --- the clean game backup (rusemod.backup through api.backup_*): made while the game is clean, then a check of the
@@ -1245,7 +1305,11 @@ function renderLibrary() {
     const open = libraryOpen.has(mod.id);
     const sum = el("button", { type: "button", className: "lib-sum", title: mod.description || mod.name },
       el("span", { className: "name", textContent: mod.name },
-        ...(mod.kind === "map" ? [el("span", { className: "kind-badge", textContent: w.kind_map, title: w.tip_kind_map })] : [])),
+        ...(mod.kind === "map" ? [el("span", { className: "kind-badge", textContent: w.kind_map, title: w.tip_kind_map })] : []),
+        // fair play (rusemod.fairplay): a cheat or a test tool makes an offline copy; scripts need the trust tick
+        ...(state.fairOn && (mod.cheat || mod.offline) ? [el("span", { className: "kind-badge bad", textContent: w.badge_cheat, title: w.tip_badge_cheat })] : []),
+        ...(state.fairOn && mod.scripts ? [el("span", { className: "kind-badge" + (mod.trusted ? "" : " bad"), textContent: w.badge_scripts,
+          title: w.tip_badge_scripts })] : [])),
       el("span", { className: "meta", textContent: meta }));
     sum.setAttribute("aria-expanded", String(open));
     const li = el("li", { className: "mod-card lib-row" + (open ? " open" : "") + (mod.error ? " bad" : "") }, sum);
@@ -1261,6 +1325,15 @@ function renderLibrary() {
     const note = buildNote(mod);
     if (note) more.append(el("span", { className: "meta", textContent: note }));
     if (mod.error) more.append(el("span", { className: "warn", textContent: `${w.has_mistake}: ${mod.error}` }));
+    if (state.fairOn && mod.offline) more.append(el("span", { className: "warn", textContent: fill(w.mod_offline, { why: mod.offline }) }));
+    if (state.fairOn && mod.scripts) {  // Play waits for this tick (api.play): scripts run inside the game
+      const tick = el("input", { type: "checkbox", checked: Boolean(mod.trusted), disabled: state.playing });
+      tick.addEventListener("change", async () => {
+        try { useLists(await api().trust_mod(mod.id, tick.checked)); } catch (err) { problem(err); }
+      });
+      more.append(el("span", { className: "meta", textContent: w.scripts_note }),
+        el("label", { className: "check-row" }, tick, " ", el("span", { textContent: w.trust_author })));
+    }
     const remove = el("button", { type: "button", className: "small ghost danger", textContent: w.remove, disabled: state.playing });
     remove.addEventListener("click", () => {
       remove.disabled = true;
@@ -1345,8 +1418,63 @@ async function play() {
     setMessage(j.message, j.state === "done" ? "good" : "bad");
     if (j.state === "failed") $("progress").open = true;
     render();
+    if (state.fair) openFair(false);  // the new copy's join code
   };
   tick();
+}
+
+// --- fair play (rusemod.fairplay through api.fair_play): the modded copy's join code to send to the people you play
+// with, and theirs compared with it. No code for an offline copy (a cheat or a test tool in it), a copy changed
+// since its build, or before the first Play. state.fair: { view, result, busy } while the box is open ---
+async function openFair(full) {
+  const fair = state.fair || (state.fair = { view: null, result: null, busy: false });
+  $("fair-box").classList.remove("hidden");
+  fair.busy = true;
+  renderFair();
+  try { fair.view = await api().fair_play(Boolean(full)); fair.full = Boolean(full); } catch (err) { problem(err); }
+  fair.busy = false;
+  renderFair();
+}
+
+function closeFair() {
+  state.fair = null;
+  $("fair-box").classList.add("hidden");
+}
+
+function renderFair() {
+  const fair = state.fair, w = state.words;
+  if (!fair) return;
+  const v = fair.view, node = $("fair-state");
+  let said = w.fair_checking, kind = "";
+  if (v && !fair.busy) {
+    if (!v.built) said = w.fair_not_built;
+    else if (v.problems.length) [said, kind] = [fill(w.fair_changed, { what: v.problems.slice(0, 3).join("; ") }), "bad"];
+    else if (v.offline.length) [said, kind] = [fill(w.fair_offline, { why: v.offline.join("; ") }), "bad"];
+    else if (!v.code) said = w.fair_no_change;
+    else [said, kind] = [fair.full ? w.fair_checked : "", "good"];
+  }
+  text(node, said);
+  node.className = "message" + (kind ? " " + kind : "") + (said ? "" : " hidden");
+  $("fair-code-row").classList.toggle("hidden", !(v && v.code && !fair.busy));
+  $("fair-code").value = (v && v.code) || "";
+  $("fair-compare").disabled = fair.busy || !(v && v.code);
+  $("fair-full").disabled = fair.busy || !(v && v.built);
+  const res = fair.result, out = $("fair-result");
+  if (!res) { out.replaceChildren(); return; }
+  out.replaceChildren(el("p", { className: "message " + (res.same ? "good" : "bad"), textContent: res.same ? w.fair_same : w.fair_differs }),
+    ...(res.differences.length ? [el("ul", {}, ...res.differences.map((d) => el("li", { textContent: d })))] : []));
+}
+
+async function compareFair() {
+  const fair = state.fair;
+  if (!fair) return;
+  try { fair.result = await api().compare_code($("fair-theirs").value); } catch (err) { fair.result = null; problem(err); }
+  renderFair();
+}
+
+async function copyFair() {
+  try { await navigator.clipboard.writeText($("fair-code").value); setMessage(state.words.fair_copied, "good"); }
+  catch { $("fair-code").select(); }
 }
 
 // --- the troubleshooter (rusemod.doctor through api.troubleshoot): what can stop Play, checked in one go. Each
@@ -1444,9 +1572,12 @@ async function start() {
   $("lang-pick-close").addEventListener("click", closeLangPick);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && langPick && !langPick.first) closeLangPick(); });
   $("settings-open").addEventListener("click", () => {
-    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup();
+    state.settings = true; render(); loadCopies(); loadTitle(); loadBackup(); loadBugwatch();
   });
   $("title-gold").addEventListener("change", changeTitle);
+  $("bugwatch-on").addEventListener("change", (e) => changeBugwatch(e.target.checked));
+  $("bugwatch-save").addEventListener("click", () => changeBugwatch(true));
+  $("bugwatch-show").addEventListener("click", showBugwatch);
   $("set-copies-change").addEventListener("click", () => changeCopies(true));
   $("set-copies-default").addEventListener("click", () => changeCopies(false));
   $("backup-make").addEventListener("click", makeBackup);
@@ -1473,6 +1604,18 @@ async function start() {
   $("import-cancel").addEventListener("click", () => { state.importing = null; render(); });
   $("share-copy").addEventListener("click", copyShared);
   $("share-close").addEventListener("click", () => $("share-box").classList.add("hidden"));
+  $("join").addEventListener("click", () => {
+    if (!state.fairOn) return;
+    const away = state.settings || state.browse;  // the box is on the set's page: back to it
+    state.settings = false;
+    state.browse = null;
+    if (state.fair && !away) closeFair(); else { render(); openFair(false); }
+  });
+  $("fair-close").addEventListener("click", closeFair);
+  $("fair-copy").addEventListener("click", copyFair);
+  $("fair-compare").addEventListener("click", compareFair);
+  $("fair-theirs").addEventListener("keydown", (e) => { if (e.key === "Enter") compareFair(); });
+  $("fair-full").addEventListener("click", () => openFair(true));
   $("add-mod").addEventListener("click", addModFile);
   $("convert-mod").addEventListener("click", openConvert);
   $("convert-pick").addEventListener("click", pickConvert);
@@ -1511,12 +1654,15 @@ async function start() {
   watchDrops();
   $("update-now").addEventListener("click", installUpdate);
   $("update-info").addEventListener("click", () => { state.showChanges = !state.showChanges; renderChanges(); });
+  try { state.fairOn = (await api().fair_play_on()).on; } catch { state.fairOn = false; }  // (an older launcher)
   await setLanguage(state.lang);
   await refresh();
   // the first screen is drawn: the start-up log (rusemod.startlog) notes it, for the troubleshooter's report
   Promise.resolve().then(() => api().start_mark("ready")).catch(() => {});  // an older back end: no log
   checkUpdate();
   await openLangPick(true);  // until a language is picked there: "Choose your language", first
+  // then the shared agreement + username (shared/agreement.js), once RUSE Guard is live, before "Choose your mods"
+  await window.Agreement.open({ api: api(), words: state.words, fairOn: state.fairOn });
   await firstBackup();
   openWelcome();  // the first run: "Choose your mods"
 }

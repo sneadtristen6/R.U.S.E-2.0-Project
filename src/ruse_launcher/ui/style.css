@@ -336,6 +336,13 @@ button:disabled { cursor: default; opacity: 0.45; }
 /* a map in the library (api._kind_of): a small label beside its name */
 .kind-badge { margin-left: 8px; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
               letter-spacing: 0.04em; background: var(--accent, #3f8fe0); color: #0b1626; vertical-align: middle; }
+/* fair play (rusemod.fairplay): a cheat, or scripts not trusted yet */
+.kind-badge.bad { background: var(--bad); }
+/* the join code box (app.js renderFair) */
+#fair-box input[type="text"] { flex: 1; min-width: 0; padding: 7px 12px; background: var(--panel-hi); color: inherit;
+         border: 1px solid var(--line); border-radius: var(--radius); font: 13px/1.4 Consolas, monospace; }
+#fair-result p { margin: 0; }
+#fair-result ul { margin: 6px 0 0; padding-left: 20px; }
 
 /* what changes: the running version beside the new one, a row per change */
 .update-changes { padding: 8px 20px 12px; background: var(--panel-hi, #252b30); border-bottom: 1px solid var(--line, #333b41);

@@ -20,6 +20,11 @@ Players never touch a file (Launcher 0.2):
 - Settings has the **clean game backup** (rusemod.backup.BackupCalls): a copy of the game folder made while it's clean,
   a check of the game against it, and a restore of what other mod managers or hand edits changed. It's the only way
   the launcher writes into the game's own folder, and only when the player asks.
+- **RUSE Guard** (fair play, rusemod.fairplay; written and SWITCHED OFF until the owner says, fairplay.ON: none of what
+  follows happens yet): the library marks mods that run scripts inside the game, and Play waits until
+  the player ticks "I trust this author" for each; a set with a cheat or a test tool makes an offline copy; the Play
+  screen shows the copy's join code (none when the copy changed since the build) and compares it with a friend's;
+  every copy gets the fair play watcher.
 """
 from __future__ import annotations
 
@@ -30,10 +35,13 @@ import time
 import tomllib
 from pathlib import Path
 
-from rusemod import buildtext, doctor, mod_index, startlog
+from rusemod import buildtext, doctor, fairplay, mod_index, startlog
 from rusemod import play as game_start, schema
+from rusemod.lock import CodeError
 from rusemod.backup import BackupCalls
+from rusemod.bugwatch import BugWatchCalls
 from rusemod.community import APP_NAMES, CommunityCalls
+from rusemod.guardcalls import GuardCalls
 from rusemod.owned import OwnedCalls
 from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
@@ -85,7 +93,7 @@ def _kind_of(path) -> str:
 
 
 class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls,
-                  startlog.StartCalls):
+                  startlog.StartCalls, GuardCalls, BugWatchCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the
     window's dialogs."""
@@ -258,7 +266,92 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         for s in self._read_sets():
             for entry in s["mods"]:
                 used[entry] = used.get(entry, 0) + 1
-        return [m | {"used_in": used.get(m["id"], 0), "kind": _kind_of(m.get("path"))} for m in self._library.mods()]
+        trusted = self._trusted()
+        return [m | {"used_in": used.get(m["id"], 0), "kind": _kind_of(m.get("path"))}
+                | self._fair_view(m, trusted) for m in self._library.mods()]
+
+    # --- fair play (rusemod.fairplay) ---
+    def _fair_of(self, folder) -> fairplay.ModCheck | None:
+        """A library mod's fair play check, kept until its files change (reading a .rmod takes a moment)."""
+        if not folder or not Path(folder).is_dir():
+            return None
+        stamp = tuple((p.name, p.stat().st_mtime_ns, p.stat().st_size) for p in sorted(Path(folder).iterdir())
+                      if p.is_file())
+        cache = self.__dict__.setdefault("_fair_cache", {})
+        if cache.get(str(folder), (None,))[0] != stamp:
+            cache[str(folder)] = (stamp, fairplay.check_mod(folder))
+        return cache[str(folder)][1]
+
+    # --- RUSE Guard (DomesticNukes' design; rusemod.guard): the terms, the server (the program check is mandatory) ---
+    # guard_status, guard_accept_terms, _save_guard and fair_play_on are shared with the Studio in
+    # rusemod.guardcalls.GuardCalls (the first-start agreement needs them in both apps).
+    def guard_set_server(self, address: str) -> dict:
+        """The RUSE Guard server matches' evidence goes to ("" = keep it in the outbox)."""
+        address = str(address or "").strip()
+        if address and not address.startswith(("http://", "https://")):
+            raise LauncherError("The RUSE Guard server's address starts with http:// or https://.")
+        return self._save_guard("server", address)
+
+
+    def _fair_view(self, mod: dict, trusted: dict) -> dict:
+        check = self._fair_of(mod.get("path")) if fairplay.ON else None
+        if check is None:
+            return {"scripts": False, "trusted": False, "cheat": False, "offline": None}
+        return {"scripts": bool(check.scripts), "trusted": trusted.get(check.id) == check.version,
+                "cheat": check.cheat, "offline": check.offline_reason}
+
+    def _fair_settings(self) -> dict:
+        kept = settings(self._home).get("fairplay", {})
+        return kept if isinstance(kept, dict) else {}
+
+    def _trusted(self) -> dict:
+        kept = self._fair_settings().get("trusted", {})
+        return kept if isinstance(kept, dict) else {}
+
+    def _save_fair(self, key: str, value) -> None:
+        values = settings(self._home)
+        fair = values.get("fairplay") if isinstance(values.get("fairplay"), dict) else {}
+        fair[key] = value
+        values["fairplay"] = fair
+        save_settings(self._home, values)
+
+    def trust_mod(self, mod_id: str, trusted: bool = True) -> dict:
+        """Tick (or untick) "I trust this author" for a library mod that runs scripts inside the game. The tick is
+        for this version: an update asks again. Returns the fresh lists."""
+        mod = next((m for m in self._library.mods() if m["id"] == mod_id), None)
+        check = self._fair_of(mod.get("path")) if mod else None
+        if check is None:
+            raise LauncherError(f"There's no mod {mod_id!r} in the library.")
+        kept = self._trusted()
+        if trusted:
+            kept[check.id] = check.version
+        else:
+            kept.pop(check.id, None)
+        self._save_fair("trusted", kept)
+        return self._lists(mod=mod_id)
+
+    def fair_play(self, full: bool = False) -> dict:
+        """The modded copy as the Play screen shows it: its join code (None, with `why`, when it has none), the
+        fingerprint, the mods, why it's offline, the mods that run scripts, and what changed since the build (`full`
+        reads every file the build wrote: a few seconds)."""
+        game, _found = self._game()
+        if game is None:
+            return {"built": False, "code": None, "why": "no game", "fingerprint": None, "mods": [], "offline": [],
+                    "scripts": [], "watch": False, "problems": []}
+        return fairplay.copy_view(shared_copy(game, self._instances), game, full)
+
+    def compare_code(self, text: str) -> dict:
+        """A friend's join code next to this copy's: {"same": bool, "differences": [sentences]}."""
+        try:
+            return fairplay.compare(self.fair_play()["code"], text)
+        except CodeError as exc:
+            raise LauncherError(str(exc)) from None
+
+    def _untrusted(self, chosen: dict) -> list[str]:
+        """The set's mods that run scripts inside the game and aren't ticked "I trust this author"."""
+        trusted = self._trusted()
+        checks = [self._fair_of(folder) for folder in chosen.get("folders", [])]
+        return [c.name for c in checks if c is not None and c.scripts and trusted.get(c.id) != c.version]
 
     def _lists(self, **extra) -> dict:
         return {"library": self.library(), "sets": self.mod_sets(), **extra}
@@ -439,6 +532,9 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             raise ModIndexError(str(exc)) from None
         finally:
             file.unlink(missing_ok=True)
+        folder = self._library.path_of(info["id"])
+        if fairplay.ON and folder is not None and entry.get("tags"):
+            fairplay.save_tags(folder, entry["tags"])  # a cheat stays one in the library: its copies are offline
         say(f"{info['name']} {info['version']} is in the library" + (" (it replaced the older copy)." if replaced else "."))
 
     def _install_job(self, work, done: str) -> dict:
@@ -784,6 +880,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             job.state, job.message = "failed", f"There's no mod set called {set_id!r}."
         elif chosen.get("error"):
             job.state, job.message = "failed", f"The mod set {chosen['name']} has a mistake: {chosen['error']}."
+        elif fairplay.ON and self._untrusted(chosen) and not self.check_mods(chosen["mods"])["hard"]:  # (clashes first)
+            # not a game rule: the player's own tick (fair play)
+            names = ", ".join(self._untrusted(chosen))
+            job.state, job.message = "failed", (f"{names} run scripts inside the game. Scripts can do anything the "
+                                                f"game can, so tick “I trust this author” for each in the library "
+                                                f"first, only if you do.")
         else:
             self._play_job = job.id
             work = self._reading_game(self._backup_game(), lambda say: self._play(chosen, say))  # a restore waits
@@ -809,6 +911,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
             raise BuildError("We couldn't find R.U.S.E. Choose its folder first.")
         instance = shared_copy(game, self._instances, self._home)  # one modded copy on the PC, both apps', where
         # Settings says (rusemod.play.instances_dir)
+        extra = {"guard": {"home": self._home, "consent": self.guard_status()}} if fairplay.ON else {}  # RUSE Guard
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
                              words=words(self.prefs().get("lang") or "us"),  # the lines for the player, in theirs
-                             title=title_on(self._home))  # R.U.S.E. 2.0's title, unless Settings says the game's
+                             title=title_on(self._home), **extra)  # R.U.S.E. 2.0's title, unless Settings says the game's

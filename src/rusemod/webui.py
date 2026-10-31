@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 import threading
+import time
 import traceback
 import urllib.parse
 import urllib.request
@@ -20,13 +21,15 @@ from . import browsermode, startlog
 from .home import default_home
 
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Microsoft's WebView2 Runtime installer
+SHARED_UI = (Path(__file__).resolve().parent / "sharedui")  # screens both apps share, served at shared/ (agreement.js)
 
 
 def serve(folder: Path, extra: dict[str, Path] | None = None) -> tuple[http.server.ThreadingHTTPServer, str]:
     """Serve `folder` on a free port of 127.0.0.1 (this PC only). Returns the server and its address.
     `extra` maps a first path part to another folder, e.g. {"cache": <platform folder>/cache} serves
-    `cache/ground/x.png` from there (made pictures too big to hand over through the window's bridge)."""
-    extra = {k: Path(v).resolve() for k, v in (extra or {}).items()}
+    `cache/ground/x.png` from there (made pictures too big to hand over through the window's bridge). `shared/` is
+    always mounted to rusemod/sharedui, so both apps load the shared screens (shared/agreement.js) from one place."""
+    extra = {"shared": SHARED_UI, **{k: Path(v).resolve() for k, v in (extra or {}).items()}}
 
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *args):
@@ -67,8 +70,12 @@ class Job:
     def start(self, work, done: str, plain=(OSError,)) -> dict:
         """Run `work(say)` in the background. The job ends "done" with the message `done`, or "failed" with the
         error: as it is for the `plain` kinds (their messages are written for people), with its type for anything
-        else (for a bug report)."""
+        else (for a bug report). Bug Watch counts how it ended, under the name of the window call that started it."""
+        from . import bugwatch
+        name, began = bugwatch.running_call() or "job", time.perf_counter()
+
         def run():
+            failed = None
             try:
                 work(self.say)
                 self.state, self.message = "done", done
@@ -76,8 +83,13 @@ class Job:
                 # the errors first: a screen that sees "failed" sees them too
                 self.errors, self.order = list(getattr(exc, "errors", [])), list(getattr(exc, "order", []))
                 self.state, self.message = "failed", str(exc)
+                failed = exc
             except Exception as exc:
                 self.state, self.message = "failed", f"Something went wrong: {type(exc).__name__}: {exc}"
+                failed = exc
+            watch = bugwatch.current()
+            if watch is not None:
+                watch.job(name, failed is None, time.perf_counter() - began, failed, len(self.errors))
 
         threading.Thread(target=run, daemon=True).start()
         return {"job": self.id}
@@ -108,15 +120,20 @@ def _passed_on(api, cls, name: str):
     reads it: the page's function takes the same arguments)."""
     method = getattr(api, name)
     worded = getattr(api, "page_error", None)  # an error said in the page's language (the Studio's errortext)
+    from . import bugwatch
 
     def call(self, *args, **kwargs):
+        began = bugwatch.call_started(name)  # Bug Watch counts every call (only when the player said yes)
         try:
-            return method(*args, **kwargs)
+            out = method(*args, **kwargs)
         except Exception as exc:
+            bugwatch.call_ended(name, began, exc)
             again = worded(exc) if worded is not None else None
             if again is None:
                 raise
             raise again from None
+        bugwatch.call_ended(name, began)
+        return out
     call.__name__ = call.__qualname__ = name
     call.__doc__ = method.__doc__
     try:
@@ -248,6 +265,7 @@ def _in_browser(title: str, folder: Path, page: str, api, extra, setup, words, w
     """The pages in the player's web browser (rusemod.browsermode), the API's dialogs and drops made the browser's
     way."""
     print(f"{title} opens in the web browser: {why}")
+    extra = {"shared": SHARED_UI, **{k: Path(v).resolve() for k, v in (extra or {}).items()}}  # shared/ (agreement.js), as serve()
     startlog.mark("browser")
     page_side = page_api(api)
     log = startlog.current()

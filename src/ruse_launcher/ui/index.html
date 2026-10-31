@@ -27,6 +27,8 @@
       <p id="lang-pick-help" class="muted small"></p>
     </div>
   </div>
+  <!-- The first-start agreement + username (plan §3a) are the shared screens (shared/agreement.js, served from
+       rusemod/sharedui); app.js calls window.Agreement.open at startup. -->
   <div id="update-bar" class="update-bar hidden" role="status"><span id="update-text"></span>
     <button id="update-now" class="small" type="button"></button>
     <button id="update-info" class="small ghost" type="button"></button></div>
@@ -79,6 +81,25 @@
             <button id="share-copy" class="small" type="button"></button>
             <button id="share-close" class="small ghost" type="button"></button>
             <span id="share-note" class="muted"></span>
+          </div>
+        </div>
+        <!-- fair play (rusemod.fairplay, app.js renderFair): the modded copy's join code, and a friend's compared -->
+        <div id="fair-box" class="share hidden">
+          <h2 id="fair-title"></h2>
+          <p id="fair-help" class="muted"></p>
+          <p id="fair-state" class="message"></p>
+          <div id="fair-code-row" class="actions hidden">
+            <input id="fair-code" type="text" readonly spellcheck="false">
+            <button id="fair-copy" class="small" type="button"></button>
+          </div>
+          <div class="actions">
+            <input id="fair-theirs" type="text" spellcheck="false" autocomplete="off">
+            <button id="fair-compare" class="small" type="button"></button>
+          </div>
+          <div id="fair-result"></div>
+          <div class="actions">
+            <button id="fair-full" class="small ghost" type="button"></button>
+            <button id="fair-close" class="small ghost" type="button"></button>
           </div>
         </div>
         <ol id="active-mods" class="mods"></ol>
@@ -157,6 +178,21 @@
           <p id="backup-note" class="message" role="status"></p>
           <div id="backup-files" class="backup-files"></div>
         </section>
+        <!-- Bug Watch (rusemod.bugwatch, app.js renderBugwatch): counts and crashes for our developers, only when the
+             player ticks it, with a username; kept in settings.json, the Studio's too; hidden while the code's own
+             switch (bugwatch.ON) is off -->
+        <section class="setting hidden" id="set-bugwatch">
+          <h2 id="set-bugwatch-title"></h2><p id="set-bugwatch-help" class="muted"></p>
+          <div class="actions">
+            <input id="bugwatch-name" type="text" maxlength="34" autocomplete="off">
+            <button id="bugwatch-save" type="button" class="small"></button>
+          </div>
+          <label class="check-row"><input id="bugwatch-on" type="checkbox"> <span id="bugwatch-on-label"></span></label>
+          <p id="bugwatch-code" class="small"></p>
+          <div class="actions"><button id="bugwatch-show" type="button" class="small ghost"></button></div>
+          <pre id="bugwatch-sent" class="small hidden"></pre>
+          <p id="bugwatch-note" class="message" role="status"></p>
+        </section>
         <section class="setting" id="set-updates">
           <h2 id="set-updates-title"></h2><p id="set-updates-text" class="small"></p>
           <div class="actions"><button id="set-updates-check" type="button" class="small"></button></div>
@@ -194,7 +230,7 @@
   </main>
 
   <footer class="bottom">
-    <button id="join" class="small ghost" type="button" disabled></button>
+    <button id="join" class="small ghost" type="button"></button>
     <button id="browse" class="small ghost" type="button"></button>
     <span class="bottom-gap"></span>
     <!-- the troubleshooter (rusemod.doctor), the wiki and a bug report (rusemod.community): the launcher only opens
@@ -223,6 +259,7 @@
   <script src="fake-api.js"></script>
   <script src="rtl.js"></script>
   <script src="required.js"></script>
+  <script src="shared/agreement.js"></script>
   <script src="app.js"></script>
   <script src="owned.js"></script>
   <script src="ownedsignin.js"></script>
