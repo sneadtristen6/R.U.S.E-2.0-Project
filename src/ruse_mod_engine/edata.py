@@ -79,7 +79,7 @@ def _parse_header_v1(data: bytes) -> EdataHeader:
       0x19  DictOffset           (4 bytes) — always 0x40D (1037) for v1
       0x1D  DictLength           (4 bytes)
       0x21  FileOffset           (4 bytes) — where file data begins
-      0x25  FileLength           (4 bytes) — total bytes of file data
+      0x25  FileLength           (8 bytes, as the game reads it)— total bytes of file data
       0x29  Unknown_1            (4 bytes) — always 0
       0x2D  Padding/SectorSize   (4 bytes) — 8192 for v2; 0 for v1
     """
@@ -556,9 +556,9 @@ class EdataFile:
                 else:
                     break
 
-            # Update FileLength at 0x25
+            # Update FileLength at 0x25 (8 bytes, as the game reads it)
             f.seek(0x25)
-            f.write(struct.pack("<I", cur_pos))
+            f.write(struct.pack("<Q", cur_pos))
 
             # Recompute dict checksum at 0x08 (offsets/sizes changed)
             f.seek(hdr.dict_offset)
@@ -799,9 +799,9 @@ class EdataFile:
                 else:
                     break
 
-            # Update FileLength at 0x25
+            # Update FileLength at 0x25 (8 bytes, as the game reads it)
             f.seek(0x25)
-            f.write(struct.pack("<I", cur_pos))
+            f.write(struct.pack("<Q", cur_pos))
 
             # Update dict checksum at 0x08
             f.seek(hdr.dict_offset)
