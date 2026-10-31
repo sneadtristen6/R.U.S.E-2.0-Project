@@ -35,6 +35,7 @@ from rusemod import play as game_start, schema
 from rusemod.backup import BackupCalls
 from rusemod.community import APP_NAMES, CommunityCalls
 from rusemod.owned import OwnedCalls
+from rusemod.ownedpass import OwnedPassCalls
 from rusemod.update import UpdateCalls
 from rusemod.build import BuildError
 from rusemod.loadorder import match as match_order, parse as parse_order, share_text
@@ -83,7 +84,7 @@ def _kind_of(path) -> str:
     return "mod" if has_more else "map"
 
 
-class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, BackupCalls,
+class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls,
                   startlog.StartCalls):
     """The launcher's back end. The arguments replace the real world in tests: the game folder, the launcher's own
     folder, where modded copies and the game's backups go, how links, the game and Steam get started, and the

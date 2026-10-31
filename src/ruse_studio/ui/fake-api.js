@@ -2809,6 +2809,29 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     return { price: src ? src.price : 0, size, size_info: info,
       research: { offered: true, choices: choices.map(({ address, name }) => ({ address, name })), suggested, why } };
   }
+  // owned copies, layer 2 (rusemod.ownedpass): "Sign in through Steam". ?fake=signin shows it switched on.
+  const signin = { signed: false };
+  const signinWords = {
+    title: "Sign in through Steam",
+    intro: "For online play, RUSE Guard and content downloads, R.U.S.E. 2.0 confirms you own R.U.S.E. by signing in through Steam. You sign in on Steam's own page in your browser; we never see your password, and your Steam ID is never stored.",
+    sign_in: "Sign in through Steam", tip_sign_in: "Opens Steam's sign-in page in your browser. After you sign in, come back here.",
+    waiting: "Waiting for Steam. Finish signing in in your browser, then come back to this window.",
+    waiting_note: "This window checks every few seconds. You can close it and sign in later.",
+    cancel: "Cancel", tip_cancel: "Stops waiting for this sign-in. Nothing is kept.",
+    signed_in: "Signed in through Steam: you own R.U.S.E.", until: "Confirmed until {date}.",
+    not_signed_in: "You're not signed in through Steam yet.",
+    sign_out: "Sign out", tip_sign_out: "Forgets this sign-in on this PC. You can sign in again any time.",
+    close: "Close", tip_close: "Closes this window.",
+    err_private: "Steam didn't show us your games because your Steam profile's Game details are private.",
+    err_not_owned: "This Steam account doesn't own R.U.S.E. R.U.S.E. 2.0 works only with copies people own.",
+    err_steam: "Steam didn't answer properly, so we couldn't check. Try again in a few minutes.",
+    err_bad_pass: "The sign-in came back but didn't check out, so nothing was kept. Try again in a few minutes.",
+    err_expired: "This sign-in link ran out. Start the sign-in again.",
+    err_reach: "We couldn't reach the sign-in server. Check your connection and try again.",
+    off: "Signing in through Steam isn't switched on yet.",
+  };
+  const signinStatus = () => ({ on: mode === "signin", signed_in: signin.signed, owned: signin.signed,
+    until: Math.floor(Date.now() / 1000) + 30 * 86400, reason: signin.signed ? "ok" : "none", words: signinWords, app_id: 21970 });
   window.pywebview = {
     api: {
       backup_status: async () => backupStatus(),
@@ -4191,6 +4214,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       owned_check: async () => ({ ok: true, reasons: [], code: "" }),  // owned copies: the preview's game is fine
       owned_unlock: async () => ({ ok: true, reasons: [], code: "" }),
       owned_open: async (what) => ({ opened: what }),
+      owned_pass_status: async () => signinStatus(),
+      owned_sign_in_start: async () => signinStatus().on
+        ? { on: true, code: "PREVIEW0000000000000000000000000000000000000", login_url: "https://ruse-owned.example/v1/steam/login", poll_every: 1, expires_in: 600 }
+        : { on: false },
+      owned_sign_in_poll: async () => { signin.signed = true; return { status: "owned", ...signinStatus() }; },
+      owned_sign_out: async () => { signin.signed = false; return signinStatus(); },
       report_problem: async (message) => ({ opened: `report: ${message}` }),
       troubleshoot: async () => fakeDoctor(),
       troubleshoot_fix: async (action) => {
