@@ -615,6 +615,26 @@ class Packs(unittest.TestCase):
             stand = Tgv(unitmodel.new_standin(bytes(w * h * 4), w, h))
             self.assertEqual(len(stand.payload(0)), stand.width * stand.height)  # one level: 16 bytes a 4 x 4 block
 
+    def test_a_strip_texture_gets_a_stand_in(self):
+        """A texture more than 16 times longer than it is wide had no level 64 across for its stand-in (the HZ-5
+        (Il-28R)'s 256 x 8 stopped the 2026-10-30 build of every era unit): widened by repeating its pixels, its
+        stand-in is one of its own levels, and the picture is the same."""
+        for w, h, wide in ((256, 8, (256, 16)), (8, 256, (16, 256)), (1024, 8, (1024, 64)), (128, 8, (128, 8))):
+            px = bytes(range(256)) * (w * h * 4 // 256)
+            got, gw, gh = unitmodel.not_too_thin(px, w, h)
+            self.assertEqual((gw, gh), wide)
+            for y in range(gh):   # every pixel the one it repeats
+                for x in range(gw):
+                    sx, sy = x * w // gw, y * h // gh
+                    self.assertEqual(got[(y * gw + x) * 4:(y * gw + x + 1) * 4], px[(sy * w + sx) * 4:(sy * w + sx + 1) * 4])
+            tex = Tgv(unitmodel.new_texture(px, w, h))
+            self.assertEqual((tex.width, tex.height), wide)
+            stand = Tgv(unitmodel.new_standin(px, w, h))
+            self.assertLessEqual(max(stand.width, stand.height), unitmodel.STANDIN_SIDE)
+            self.assertEqual(min(stand.width, stand.height), 4)
+            self.assertEqual(unitmodel.new_standin(px, w, h), unitmodel.new_standin(got, gw, gh))
+        self.assertEqual(unitmodel.not_too_thin(b"x" * 64, 4, 4), (b"x" * 64, 4, 4))  # a square as it was
+
     def test_many_models_at_once_give_the_same_packs(self):
         """A build's own models in one batch (the owner, 2026-10-30: a copy with every era unit's own model): each
         pack read and written once gives byte for byte what one model after another gives."""

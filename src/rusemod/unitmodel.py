@@ -366,10 +366,24 @@ def dxt5_blocks(px: bytes, w: int, h: int) -> bytes:
     return bytes(out)
 
 
+def not_too_thin(px: bytes, w: int, h: int) -> tuple[bytes, int, int]:
+    """A texture more than STANDIN_SIDE / 4 times longer than it is wide with its shorter side's pixels repeated until
+    it isn't: (RGBA, w, h). Its levels stop at a shorter side of 4 (_levels), so such a strip has no level
+    STANDIN_SIDE across for its stand-in (the HZ-5 (Il-28R)'s 256 x 8 stopped a build, 2026-10-30). Each pixel is
+    repeated, so the picture on the model is the same; any other texture comes back as it is."""
+    while max(w, h) > STANDIN_SIDE // 4 * min(w, h):
+        if w > h:  # each row twice
+            px, h = b"".join(px[y * w * 4:(y + 1) * w * 4] * 2 for y in range(h)), h * 2
+        else:      # each pixel twice across
+            px, w = b"".join(px[i * 4:i * 4 + 4] * 2 for i in range(w * h)), w * 2
+    return px, w, h
+
+
 def new_texture(px: bytes, w: int, h: int) -> bytes:
     """A unit texture of our own: DXT5, every level a plain TGU1 payload under TGV flag 1 (as the build writes a
     repainted one: T23), smallest first, until the shorter side is 4 (_levels). Each level holds exactly the blocks
-    the game makes room for (level_room), or nothing is written."""
+    the game makes room for (level_room), or nothing is written. A strip is widened first (not_too_thin)."""
+    px, w, h = not_too_thin(px, w, h)
     levels = []
     chain = _levels(px, w, h)
     for k, (lw, lh, lpx) in zip(range(len(chain) - 1, -1, -1), chain):
@@ -384,7 +398,9 @@ def new_texture(px: bytes, w: int, h: int) -> bytes:
 
 
 def new_standin(px: bytes, w: int, h: int) -> bytes:
-    """Its stand-in: the level at most STANDIN_SIDE across, raw DXT5 blocks under TGV flag 0 (as the game's)."""
+    """Its stand-in: the level at most STANDIN_SIDE across, raw DXT5 blocks under TGV flag 0 (as the game's). A strip
+    is widened first, as new_texture widens it (not_too_thin), so the stand-in is one of the texture's own levels."""
+    px, w, h = not_too_thin(px, w, h)
     for lw, lh, lpx in _levels(px, w, h)[::-1]:
         if max(lw, lh) <= STANDIN_SIDE:
             return make_tgv(lw, lh, "DXT5", [dxt5_blocks(lpx, lw, lh)], flag=0)
