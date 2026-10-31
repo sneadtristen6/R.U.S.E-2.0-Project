@@ -622,9 +622,14 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
 
 
 def write_batch(batch: dict) -> dict:
-    """The packs a batch of write_unit_model calls changed, written once: {member: bytes}."""
-    packs = batch.get("packs", {})
-    return {packs[k][0]: packs[k][1].to_bytes() for k in sorted(batch.get("touched", ())) if k in packs}
+    """The packs a batch of write_unit_model calls changed, written once: {member: bytes}. Each pack is let go once
+    it is bytes, so a big batch never holds every pack twice; the batch is done with after this."""
+    packs, out = batch.get("packs", {}), {}
+    for k in sorted(batch.get("touched", ())):
+        if k in packs:
+            path, pack = packs.pop(k)
+            out[path] = pack.to_bytes()
+    return out
 
 
 # --- a new unit's own copy of the model it copies (the owner, 2026-10-11: "duplicate that part"): the same mesh,

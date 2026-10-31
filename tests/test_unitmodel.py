@@ -625,11 +625,12 @@ class Packs(unittest.TestCase):
         b2 = unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
         self.assertEqual(set(b1.changed) | set(b2.changed), set(one.changed) | set(two.changed))
         self.assertTrue(all(v is None for v in b2.changed.values()))  # written once, by write_batch
-        self.assertEqual(unitmodel.write_batch(batch), {**one.changed, **two.changed})
-        self.assertEqual({**b1.added, **b2.added}, {**one.added, **two.added})
-        self.assertEqual(len(batch["sources"]), 1)  # the source model found once
         with self.assertRaisesRegex(unitmodel.UnitModelError, "already have a model"):  # in the same batch too
             unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
+        self.assertEqual(len(batch["sources"]), 1)  # the source model found once
+        self.assertEqual(unitmodel.write_batch(batch), {**one.changed, **two.changed})
+        self.assertEqual({**b1.added, **b2.added}, {**one.added, **two.added})
+        self.assertEqual(batch["packs"], {})  # each pack let go once written
 
     def test_refused(self):
         with self.assertRaisesRegex(unitmodel.UnitModelError, "no mesh pack holds"):
