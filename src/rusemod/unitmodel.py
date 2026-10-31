@@ -529,13 +529,34 @@ class Written:
     report: dict
 
 
-def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: dict | None = None) -> Written:
+def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: dict | None = None,
+                     batch: dict | None = None) -> Written:
     """The new unit `unit`'s model `prep` into ZZ_Win.dat `zz` beside `source_model`'s: the changed packs and the
-    added textures. `earlier`: members other build steps already changed (path -> bytes), changed from there."""
+    added textures. `earlier`: members other build steps already changed (path -> bytes), changed from there.
+    `batch`: one build's own models written together (a dict the caller keeps for them all, then write_batch): each
+    pack is read once, grows as the models go in and is written once, and each source model is found once (the owner,
+    2026-10-30: a copy with every era unit's own model; one by one, each model read and wrote the eight nations' model
+    packs again, hours and many GB for hundreds). Its Written.changed then names the packs, with None for their bytes."""
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
-    src = find_source(zz, source_model)
+    if batch is None:
+        src = find_source(zz, source_model)
+    else:
+        sources = batch.setdefault("sources", {})
+        key = source_model.replace("/", "\\").lower()
+        if key not in sources:
+            sources[key] = find_source(zz, source_model)
+        src = sources[key]
     new = model_name(src.model, unit)
-    if any(new in MeshPack.read(raw).items for raw in src.mesh_packs.values()):
+
+    def grown(path: str, raw: bytes, kind):  # the pack as this build has it so far
+        if batch is None:
+            return kind.read(earlier.get(path.lower(), raw))
+        packs = batch.setdefault("packs", {})
+        if path.lower() not in packs:
+            packs[path.lower()] = [path, kind.read(earlier.get(path.lower(), raw))]
+        return packs[path.lower()][1]
+
+    if any(new in grown(path, raw, MeshPack).items for path, raw in src.mesh_packs.items()):
         raise UnitModelError(f"the packs already have a model called {new}")
     folder, body = src.body_texture.rsplit("\\", 1)
     group = texture_group(body)
@@ -545,18 +566,26 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         raise UnitModelError("the model has no points")
     box = tuple(min(p[i] for p in pts) for i in range(3)) + tuple(max(p[i] for p in pts) for i in range(3))
     changed: dict = {}
+
+    def keep(path: str, pack) -> None:  # written now, or (a batch) once, after the last model
+        if batch is None:
+            changed[path] = pack.to_bytes()
+        else:
+            batch.setdefault("touched", set()).add(path.lower())
+            changed[path] = None
+
     first_raw = next(iter(src.mesh_packs.values()))
     carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton)
     for path, raw in src.mesh_packs.items():
-        pack = MeshPack.read(earlier.get(path.lower(), raw))
+        pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
-        changed[path] = pack.to_bytes()
+        keep(path, pack)
     for path, raw in src.skeleton_packs.items():
-        pack = MeshPack.read(earlier.get(path.lower(), raw))
+        pack = grown(path, raw, MeshPack)
         holder = MeshPack.read(raw)
         holder.items[new] = list(holder.items[src.model])
         pack.add(holder, new)
-        changed[path] = pack.to_bytes()
+        keep(path, pack)
     added: dict = {}
     standins: dict = {}
     for image, (name, w, h, px) in zip(images, prep.pictures):
@@ -564,13 +593,19 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         added[member] = new_texture(px, w, h)
         standins[standin_member(member)] = new_standin(px, w, h)
     body_standin = standin_member(texture_member(src.body_texture))
-    for e in zz.entries:
-        if not e.path.lower().endswith(".ppk"):
-            continue
-        raw = earlier.get(e.path.lower()) or bytes(zz.read(e))
-        if raw[:8] != PROXY_MAGIC:
-            continue
-        pack = ProxyPack.read(raw)
+    proxies = batch.get("proxies") if batch is not None else None
+    if proxies is None:  # every stand-in pack, read once (a batch keeps them for every model)
+        proxies = []
+        for e in zz.entries:
+            if not e.path.lower().endswith(".ppk"):
+                continue
+            raw = earlier.get(e.path.lower()) or bytes(zz.read(e))
+            if raw[:8] == PROXY_MAGIC:
+                proxies.append((e.path, raw))
+        if batch is not None:
+            batch["proxies"] = proxies
+    for path, raw in proxies:
+        pack = grown(path, raw, ProxyPack)
         names = pack.names()
         if body_standin not in names:
             continue
@@ -578,12 +613,18 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         for name, data in standins.items():
             one = ProxyPack([Proxy(standin_key(name), data, extra, name.encode("latin-1").ljust(256, b"\0"))], [0])
             pack.add(one, name)
-        changed[e.path] = pack.to_bytes()
+        keep(path, pack)
     report = dict(prep.report)
     report.update({"model": new, "mesh_packs": sorted(src.mesh_packs), "skeleton_packs": sorted(src.skeleton_packs),
                    "textures": sorted(added), "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk")),
                    "box": box})
     return Written(changed, added, new, report)
+
+
+def write_batch(batch: dict) -> dict:
+    """The packs a batch of write_unit_model calls changed, written once: {member: bytes}."""
+    packs = batch.get("packs", {})
+    return {packs[k][0]: packs[k][1].to_bytes() for k in sorted(batch.get("touched", ())) if k in packs}
 
 
 # --- a new unit's own copy of the model it copies (the owner, 2026-10-11: "duplicate that part"): the same mesh,

@@ -4441,20 +4441,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             except LookError as exc:
                 raise BuildError(str(exc)) from None
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
-            from .unitmodel import UnitModelError, read_mod_glb, write_unit_model
+            from .unitmodel import UnitModelError, read_mod_glb, write_batch, write_unit_model
+            batch: dict = {}  # every own model into each pack at once: each pack read and written once
+            before = {**result.model_changed, **result.texture_changed, **result.model_imports}
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
-                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier={
-                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier=before,
+                                               batch=batch)
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
-                    raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: "
-                                     f"{MODEL_PACK_FULL if _past_4_gb(exc) else exc}") from None
-                result.model_imports.update(written.changed)
+                    raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {_pack_full(exc)}") from None
                 result.new_files.update(written.added)
                 r = written.report
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+            try:
+                result.model_imports.update(write_batch(batch))
+            except (ValueError, struct.error) as exc:
+                raise BuildError(f"the mods' own models: {_pack_full(exc)}") from None
+            batch.clear()
         if result.own_copies and text_arc is not None:  # units' own copies of their models (rusemod.unitmodel)
             from .unitlook import LookError
             from .unitmodel import UnitModelError, write_unit_copy
@@ -4463,8 +4468,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     written = write_unit_copy(text_arc, copies, unit, paint, earlier={
                         **result.model_changed, **result.texture_changed, **result.model_imports})
                 except (UnitModelError, LookError, ValueError, OSError, struct.error) as exc:
-                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: "
-                                     f"{MODEL_PACK_FULL if _past_4_gb(exc) else exc}") from None
+                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: {_pack_full(exc)}") from None
                 result.model_imports.update(written.changed)
                 result.new_files.update(written.added)
                 r = written.report
@@ -4678,11 +4682,24 @@ TWO_GIB = 1 << 31
 # mods' own models is such a file); the wide layout can't change that
 MODEL_PACK_FULL = ("the game's model pack it goes into would pass 4 GB, the most one file inside a game pack can be: "
                    "take some of the mods' own models out (the era units' own models are the biggest) and build again")
+# not a game rule: a model pack counts its draw calls, buffers and meshes in 2 bytes each
+MODEL_PACK_COUNTS = ("the game's model pack it goes into would hold more than 65,535 draw calls, buffers or meshes, the "
+                     "most it can count: take some of the mods' own models out (the era units' own models are the "
+                     "biggest) and build again")
 
 
 def _past_4_gb(exc) -> bool:
     """A number written in 4 bytes that didn't fit (Python says it so for every such write)."""
     return isinstance(exc, struct.error) and "4294967295" in str(exc)
+
+
+def _pack_full(exc) -> str:
+    """A model pack's write that didn't fit, in plain words; anything else as it is."""
+    if _past_4_gb(exc):
+        return MODEL_PACK_FULL
+    if isinstance(exc, struct.error) and "65535" in str(exc):
+        return MODEL_PACK_COUNTS
+    return str(exc)
 
 
 def _laid_out(a, changed, wide: bool = False) -> int:

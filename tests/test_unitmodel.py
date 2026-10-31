@@ -615,6 +615,22 @@ class Packs(unittest.TestCase):
             stand = Tgv(unitmodel.new_standin(bytes(w * h * 4), w, h))
             self.assertEqual(len(stand.payload(0)), stand.width * stand.height)  # one level: 16 bytes a 4 x 4 block
 
+    def test_many_models_at_once_give_the_same_packs(self):
+        """A build's own models in one batch (the owner, 2026-10-30: a copy with every era unit's own model): each
+        pack read and written once gives byte for byte what one model after another gives."""
+        one = unitmodel.write_unit_model(self.zz, TANK, "panzer_one", self.prep)
+        two = unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, earlier=one.changed)
+        batch = {}
+        b1 = unitmodel.write_unit_model(self.zz, TANK, "panzer_one", self.prep, batch=batch)
+        b2 = unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
+        self.assertEqual(set(b1.changed) | set(b2.changed), set(one.changed) | set(two.changed))
+        self.assertTrue(all(v is None for v in b2.changed.values()))  # written once, by write_batch
+        self.assertEqual(unitmodel.write_batch(batch), {**one.changed, **two.changed})
+        self.assertEqual({**b1.added, **b2.added}, {**one.added, **two.added})
+        self.assertEqual(len(batch["sources"]), 1)  # the source model found once
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "already have a model"):  # in the same batch too
+            unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
+
     def test_refused(self):
         with self.assertRaisesRegex(unitmodel.UnitModelError, "no mesh pack holds"):
             unitmodel.write_unit_model(self.zz, "ww2\\nothing\\nonelod0.ase2ndfbin", "x", self.prep)
