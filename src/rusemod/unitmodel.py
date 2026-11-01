@@ -569,6 +569,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
             if not remap:
                 raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {on}")
             if len(bone_list) >= MOST_BONES:
+                # not a game rule: our own cap, the longest list the game's own materials carry (past it not tried)
                 raise UnitModelError(f"the {look} material of {source} lists {len(bone_list)} bones, as many as the "
                                      f"game's longest list; {on} would be one more")
             bone_list.append(bone)

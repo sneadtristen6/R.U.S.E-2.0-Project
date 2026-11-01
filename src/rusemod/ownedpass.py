@@ -32,6 +32,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from . import net
 from .home import save_settings, settings
 from .owned import verify
 from .steam import APP_ID as _STEAM_APP_ID
@@ -120,7 +121,7 @@ def _call(url: str, data: bytes | None = None, timeout: float = TIMEOUT) -> tupl
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with net.urlopen(req, timeout) as resp:  # net: the certificate fallbacks the downloads have
             return resp.status, _body(resp.read())
     except urllib.error.HTTPError as exc:
         return exc.code, _body(exc.read())

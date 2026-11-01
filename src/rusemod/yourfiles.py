@@ -157,6 +157,7 @@ def _move(src: Path, dst: Path) -> None:
         else:
             shutil.copy2(src, part)
         if not _identical(src, part):
+            # not a game rule: a copied folder checked against the one it came from
             raise OSError(f"the copy of {src} didn't match it byte for byte")
         # taken out of the old place by a rename first: it fails while a file of it is open, and then nothing is lost
         gone = src.parent / f".moved-{src.name}"

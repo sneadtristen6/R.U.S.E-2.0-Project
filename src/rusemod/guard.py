@@ -37,7 +37,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import ed25519
+from . import ed25519, net
 
 KEYS = Path(__file__).with_name("guard_keys.toml")   # the owner's public keys (hex), shipped with the apps
 DEV_KEY = "guard/devkey.txt"                          # in the platform folder: a developer's dev key token
@@ -370,7 +370,7 @@ def send(server: str, body: dict, timeout: float = 30) -> dict:
     req = urllib.request.Request(server.rstrip("/") + "/api/bundle", data=data,
                                  headers={"Content-Type": "application/json", "User-Agent": "RUSE-Guard-client"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (an address the player set)
+        with net.urlopen(req, timeout) as r:  # noqa: S310 (an address the player set; net: the certificate fallbacks)
             return json.loads(r.read(1_000_000) or b"{}")
     except urllib.error.HTTPError as e:
         if 400 <= e.code < 500:
@@ -386,7 +386,7 @@ def signatures(home, server: str = "", timeout: float = 15) -> list:
         try:
             req = urllib.request.Request(server.rstrip("/") + "/api/signatures",
                                          headers={"User-Agent": "RUSE-Guard-client"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
+            with net.urlopen(req, timeout) as r:  # noqa: S310
                 found = json.loads(r.read(1_000_000))
             if isinstance(found, list):
                 cache.parent.mkdir(parents=True, exist_ok=True)
