@@ -17,6 +17,7 @@ RECORDED = {
     "paint": (1, "03428b5ee3145603020f8b7e5c5d4e39"),
     "movement": (1, "ff56e3139dc5b087adf9f75977c69e0f"),
     "tile": (1, "eb940f3d474c4113c9135f0b16691508"),
+    "ownmodel": (1, "52f07d3bac43a8b35c038491283652f9"),
 }
 
 
@@ -91,7 +92,26 @@ def made_movement() -> str:
     return fingerprint(new[member("Blitz")], notes)
 
 
-MAKERS = {"model": made_model, "map": made_map, "paint": made_paint, "movement": made_movement, "tile": made_tile}
+def made_ownmodel() -> str:
+    """A kept own model (rusemod.unitmodel.KeptModels) of test_unitmodel's made-up tank, as kept."""
+    import tempfile
+    import zlib
+    from pathlib import Path
+    from test_unitmodel import PICTURE, TANK, tank_3ds, zz_win
+    from rusemod import modelin, unitmodel
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "tank.3ds").write_bytes(tank_3ds())
+        (d / "Paint_Texture.tga").write_bytes(PICTURE)
+        like = unitmodel.find_source(zz_win(), TANK).like
+        glb = d / "Panzer_Model.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(d / "tank.3ds"), d, like), glb, TANK)
+        prep, textures = unitmodel.KeptModels(None).get(glb)
+        return fingerprint(zlib.decompress(unitmodel._kept_bytes(prep, textures)))
+
+
+MAKERS = {"model": made_model, "map": made_map, "paint": made_paint, "movement": made_movement, "tile": made_tile,
+          "ownmodel": made_ownmodel}
 
 
 class FormatNumbers(unittest.TestCase):

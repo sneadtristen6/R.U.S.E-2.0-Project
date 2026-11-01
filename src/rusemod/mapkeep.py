@@ -129,15 +129,16 @@ _PACK_ROW = struct.Struct("<20sQQ20s")  # a tile's fingerprint, where its record
 # opened (on this PC ~40 ms a file, measured 2026-10-14: 2,522 tiles read back in 230 s one file each, 2 s as one).
 
 
-def read_tiles(cache, names) -> dict:
+def read_tiles(cache, names, folder: str = TILES) -> dict:
     """The painted tiles kept under any of `names` (a tile's fingerprint, _tile_names's), {name: record} (b"" for a
     tile the strokes leave as it is), from whichever pack holds them, the newest first; a damaged record or pack is
-    left out (its tile painted again)."""
+    left out (its tile painted again). `folder`: another kind of record kept in packs the same way (rusemod.unitmodel's
+    own models)."""
     want, got = set(names), {}
     if cache is None or not want:
         return got
     try:
-        packs = sorted(Path(cache, TILES).glob("pack-*.bin"), key=lambda p: p.stat().st_mtime, reverse=True)
+        packs = sorted(Path(cache, folder).glob("pack-*.bin"), key=lambda p: p.stat().st_mtime, reverse=True)
     except OSError:
         return got
     for p in packs:
@@ -172,14 +173,16 @@ def read_tiles(cache, names) -> dict:
     return got
 
 
-def write_tiles(cache, records: dict, most: int = TILES_MOST) -> None:
+def write_tiles(cache, records: dict, most: int = TILES_MOST, folder: str = TILES) -> None:
     """Keep painted tiles, {name: record}, as one pack (so any map, copy or mod painting a tile the same way finds
     it, read_tiles); then forget the least recently used packs beyond `most` bytes in all. The old way (one file a
-    tile set, maps' `tiles-*.bin`, where two copies of one map threw each other's out) is taken away."""
+    tile set, maps' `tiles-*.bin`, where two copies of one map threw each other's out) is taken away. `folder`: another
+    kind of record, kept the same way in packs of its own."""
     if cache is None or not records:
         return
     names = sorted(records)
-    folder = Path(cache, TILES)
+    tiles = folder == TILES
+    folder = Path(cache, folder)
     p = folder / f"pack-{hashlib.blake2b(b''.join(names), digest_size=DIGEST).hexdigest()}.bin"
     part = p.with_name(f"{p.name}.{os.getpid()}-{threading.get_ident()}.part")
     at = 8 + len(names) * _PACK_ROW.size
@@ -202,7 +205,7 @@ def write_tiles(cache, records: dict, most: int = TILES_MOST) -> None:
         except OSError:
             pass
         return
-    for old in Path(cache, FOLDER).glob("tiles-*.bin"):
+    for old in (Path(cache, FOLDER).glob("tiles-*.bin") if tiles else ()):
         try:
             old.unlink()
         except OSError:

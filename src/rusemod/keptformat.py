@@ -20,6 +20,8 @@ FORMATS = {
     "paint": 1,      # a map's painted pictures (rusemod.groundpaint.paint_ground: both tile sets, the close-up map)
     "movement": 1,   # a map's movement graphs after its blocks and opens (rusemod.nav.apply_blocks)
     "tile": 1,       # one painted ground tile (rusemod.groundpaint.paint_strokes), kept apart, any map
+    "ownmodel": 1,   # a mod's own model as read and its pictures as the game's textures (rusemod.unitmodel.KeptModels:
+    #                  read_mod_glb, new_texture, new_standin)
 }
 
 
