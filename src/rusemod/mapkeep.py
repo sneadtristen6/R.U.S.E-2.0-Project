@@ -173,6 +173,29 @@ def read_tiles(cache, names, folder: str = TILES) -> dict:
     return got
 
 
+def tile_names(cache, folder: str = TILES) -> set:
+    """The names every pack in `folder` lists (its index only: read_tiles still checks a record when it reads it)."""
+    out: set = set()
+    if cache is None:
+        return out
+    try:
+        packs = list(Path(cache, folder).glob("pack-*.bin"))
+    except OSError:
+        return out
+    for p in packs:
+        try:
+            with open(p, "rb") as f:
+                head = f.read(8)
+                if len(head) != 8 or head[:4] != PACK_MAGIC:
+                    continue
+                rows = f.read(struct.unpack("<I", head[4:])[0] * _PACK_ROW.size)
+        except OSError:
+            continue
+        whole = len(rows) - len(rows) % _PACK_ROW.size
+        out.update(name for name, _at, _size, _digest in _PACK_ROW.iter_unpack(rows[:whole]))
+    return out
+
+
 def write_tiles(cache, records: dict, most: int = TILES_MOST, folder: str = TILES) -> None:
     """Keep painted tiles, {name: record}, as one pack (so any map, copy or mod painting a tile the same way finds
     it, read_tiles); then forget the least recently used packs beyond `most` bytes in all. The old way (one file a
