@@ -86,9 +86,12 @@ class _Parts:
 
 def cut_off(g: Graph, units: str) -> list[dict]:
     """A "fail" finding for every piece of the graph, or of one of its local graphs, past the first (the largest):
-    its circles, how far across it is and its middle (the mean of its circles' centres)."""
+    its circles, how far across it is and its middle (the mean of its circles' centres). A local graph whose owner
+    circle is emptied (an old bridge whose crossing a mod closed: nav.Graph.dissolve) is never entered: left out."""
     out = []
     for sub, graph in enumerate([g] + g.subs):
+        if sub and g.circles[sub - 1][2] <= 0:
+            continue
         label, sizes = graph._labels()
         if len(sizes) < 2:
             continue

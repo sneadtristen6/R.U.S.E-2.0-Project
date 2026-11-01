@@ -14,9 +14,11 @@ from __future__ import annotations
 # kind -> its format number: what makes it, and so what a change to bump it for touches
 FORMATS = {
     "model": 1,      # the game's unit data as loaded (rusemod.model.load: its objects, names and files)
-    "map": 2,        # a reshaped map's ground (rusemod.terrain.edit_map / groundgen, and the riverbed mend)
+    "map": 3,        # a reshaped map's ground (rusemod.terrain.edit_map / groundgen, and the riverbed mend)
     #                  (2: the height trees' normals in the game's own layout, the ground-lighting fix of 2026-10-21,
     #                  commit 4b0f1c8c: the kept grounds made before it carried the old, wrongly lit words)
+    #                  (3: the ground at the map's own bridges' ends kept at its height, 2026-10-30: the kept grounds
+    #                  made before it lifted those bridges with the land)
     "paint": 1,      # a map's painted pictures (rusemod.groundpaint.paint_ground: both tile sets, the close-up map)
     "movement": 1,   # a map's movement graphs after its blocks and opens (rusemod.nav.apply_blocks)
     "tile": 1,       # one painted ground tile (rusemod.groundpaint.paint_strokes), kept apart, any map

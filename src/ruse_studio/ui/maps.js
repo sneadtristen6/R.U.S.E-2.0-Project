@@ -474,7 +474,70 @@ function applyStroke(ed, s) {
     ed.z[i] = heightAt(s, ed.wx[i], ed.wy[i], ed.z[i], average);
     ed.touched[i] = 1;
   });
+  keepEnds(ed, [xlo, xhi, ylo, yhi]);
   if (ed.grid) gridApply(ed.grid, s, average);
+}
+
+// The map's own bridges stay where they are when the land is shaped, as the build makes them (rusemod.terrain_edit
+// edit_map's keep): the game rests a bridge on the ground under its two ends, so the ground round each end keeps its
+// height and slopes back to the strokes (a tester's Vesuvio, 2026-10-30: flattened land lifted them). Off when the
+// mod takes the map's bridges out. bridge.ends: [[x, y, how far round it the ground stays]] (StudioApi.map_bridges).
+function keptEnds() {
+  if (bridge.pack !== mv.current || !bridge.ends || (road.takeOut || []).includes("bridges") || blankMap()) return [];
+  return bridge.ends;
+}
+
+function keepEnds(ed, box) {
+  const slope = bridge.slope || 5120;
+  for (const [ex, ey, core] of keptEnds()) {
+    const reach = core + slope;
+    if (box && (ex + reach < box[0] || ex - reach > box[1] || ey + reach < box[2] || ey - reach > box[3])) continue;
+    near(ed.index, ex - reach, ex + reach, ey - reach, ey + reach, (i) => {
+      const d = Math.hypot(ed.wx[i] - ex, ed.wy[i] - ey);
+      if (d >= reach || ed.z[i] === ed.base[i]) return;
+      ed.z[i] = ed.base[i] + Math.max(0, d - core) / slope * (ed.z[i] - ed.base[i]);
+    });
+  }
+}
+
+// Rings where the ground keeps its height round the map's own bridges' ends, while a brush that shapes the land is
+// picked, so a modder sees where the land stays put.
+const SHAPING = new Set(["add", "level", "smooth", "ramp"]);
+function drawKeptEnds() {
+  const gl = mv.gl;
+  if (!gl) return;
+  const show = mv.brush.on && SHAPING.has((BRUSHES[mv.brush.name] || [])[0]) && mv.edit, ends = show ? keptEnds() : [];
+  const note = $("brush-bridge-ends");
+  if (note) {
+    note.textContent = mv.words.brush_bridge_ends || "";
+    note.classList.toggle("hidden", !ends.length);
+  }
+  if (!ends.length) {
+    if (bridge.rings) bridge.rings.visible = false;
+    gl.draw();
+    return;
+  }
+  const { THREE } = gl, grid = makeGrid(mv.edit);
+  if (!bridge.rings) {
+    bridge.rings = new THREE.Group();
+    gl.scene.add(bridge.rings);
+  }
+  for (const c of bridge.rings.children) c.geometry.dispose();
+  bridge.rings.clear();
+  if (!bridge.ringMat) {
+    bridge.ringMat = new THREE.MeshBasicMaterial({ color: 0xf3dc8a, transparent: true, opacity: 0.9, depthTest: false,
+      side: THREE.DoubleSide });
+  }
+  for (const [ex, ey, core] of ends) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), bridge.ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.renderOrder = 11;
+    ring.position.set(ex * SCALE, groundAt(grid, ex, ey) * SCALE, ey * SCALE);
+    ring.scale.set(core * SCALE, core * SCALE, core * SCALE);
+    bridge.rings.add(ring);
+  }
+  bridge.rings.visible = true;
+  gl.draw();
 }
 
 // The water surface as the strokes left it: each point at its level, and a triangle is water when its three corners
@@ -548,6 +611,7 @@ function reapply() {
   paintEnd();
   redraw(true, true);
   placeScenery();
+  drawKeptEnds();  // (the rings sit on the ground as it is now)
   if (paint.repainted.length) repaintSoon();  // (an Undo may have taken its Paint by shape stroke off)
 }
 
@@ -2556,9 +2620,11 @@ function modelLibrary(sources) {
     const twoWay = (types[t] || [])[1] === "vegetation", src = sourceOf(t), buf = src && src.buf;
     return (geometries[t] = ((src && src.index.models[t]) || []).map((p) => {
       const n = p.vertices;
-      const src = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
+      // (`raw`, not `src`: a `src` here hid the part's source, so its picture was looked up on the positions and every
+      // map stopped at "Cannot read properties of undefined (reading 'textures')", a tester's Diplomats, 2026-10-30)
+      const raw = new Float32Array(buf, p.positions, 3 * n), pos = new Float32Array(3 * n);
       for (let i = 0; i < n; i++) {  // map units, x east, y south, z up -> the scene's x east, y up, z south
-        pos[3 * i] = src[3 * i]; pos[3 * i + 1] = src[3 * i + 2]; pos[3 * i + 2] = src[3 * i + 1];
+        pos[3 * i] = raw[3 * i]; pos[3 * i + 1] = raw[3 * i + 2]; pos[3 * i + 2] = raw[3 * i + 1];
       }
       const nsrc = new Int8Array(buf, p.normals, 4 * n), nrm = new Float32Array(3 * n);
       for (let i = 0; i < n; i++) {
@@ -7308,6 +7374,7 @@ async function show(pack, keepCamera) {
   loadMoves(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadRoads(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
   loadModRoads(pack, ask).catch((err) => roadNote((err && err.message) || String(err), "error"));
+  if (!blank) loadBridges(pack);  // (their ends keep their ground when the land is shaped: keepEnds)
   if (blank) $("map-ground").textContent = "";  // (the last map's "loading" said nothing more)
   else realGround(pack, ask).catch((err) => { $("map-ground").textContent = (err && err.message) || String(err); });
 }
@@ -7349,7 +7416,7 @@ const DOCK_GROUPS = {
     // their own wrapped the bar onto two rows
     ["building", ["building", "scen_names"], "building"],
     ["nature", ["prop", "vegetation"], "vegetation"],
-    ["paint", ["paint", "erase"], "paint"],
+    ["paint", ["paint", "erase"], "paint_erase"],  // ("Paint & Erase": Erase easier to find, 2026-10-30; the X key)
     ["sectors", ["sectors"], "sectors"],
     ["check", ["check"], "check"],
   ],
@@ -7420,6 +7487,8 @@ const ICONS = {
   open_vehicles: "M3 16h18v4H3z M7 16v-4h8v4 M15 13h6",
   forest: "M7 3l-4 7h3l-3 5h8l-3-5h3z M7 15v5 M17 6l-4 7h3l-3 5h8l-3-5h3z M17 18v3",
   erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18",
+  // the Paint & Erase tile: the eraser, a little brush over it (Erase easier to find, 2026-10-30)
+  paint_erase: "M4 15l9-9 7 7-6 6H8z M9 10l7 7 M3 21h18 M18 1.5l4.5 4.5-2.5 2.5-4.5-4.5z M15.5 4l-2.5 2.5",
   paint: "M14 3l7 7-8 8-4 1 1-4z M12 5l7 7 M4 21c3 0 4-1 4-3",
   stamp: "M9 3h6v5l-2 2v3h6v4H5v-4h6v-3L9 8z M4 21h16",
   repaint: "M3 19l6-9 4 5 3-4 5 8z M14 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z",  // a hill, a spark over it
@@ -7815,13 +7884,11 @@ async function loadModRoads(pack, ask) {
   renderBridgeTray();
 }
 
-// The map's own roads and bridges taken out, or kept (StudioApi.road_take_out: roads.toml take_out), one switch each.
-// "crossings" (close where the old bridges stood) goes with the bridges: it turns them on, and goes when they stay.
+// The map's own roads taken out, or kept (StudioApi.road_take_out: roads.toml take_out). Its bridges have their one
+// button in the Bridges tab (toggleOwnBridges: the bridges and their crossings together, 2026-10-30).
 async function setTakeOut(what) {
   const pack = mv.current, now = new Set(road.takeOut || []);
   if (now.has(what)) now.delete(what); else now.add(what);
-  if (what === "crossings" && now.has("crossings")) now.add("bridges");
-  if (what === "bridges" && !now.has("bridges")) now.delete("crossings");
   try {
     const res = await mv.api.road_take_out(pack, now.has("roads"), now.has("bridges"), now.has("crossings"));
     if (pack !== mv.current) return;
@@ -7862,7 +7929,7 @@ function renderRoadTray() {
   $("road-trees-label").textContent = w.road_trees || "Keep the trees on new roads";
   $("road-trees-row").title = w.tip_road_trees || "";
   const taken = new Set(road.takeOut || []);
-  $("road-takeout").replaceChildren(...(road.mod ? ["roads", "bridges", "crossings"].map((what) =>
+  $("road-takeout").replaceChildren(...(road.mod ? ["roads"].map((what) =>
     chipOf(w["road_take_out_" + what], w["tip_road_take_out_" + what], taken.has(what), () => setTakeOut(what))) : []));
   const all = road.mine.reduce((n, r) => n + lineLength(r.points), 0);
   $("road-count").textContent = road.mine.length
@@ -7992,7 +8059,7 @@ function roadPointerMove(ev) {
 // says so, in the build's own words (rusemod.bridges.no_kind_note). ---
 const BRIDGE_WIDTH = 2560;  // map units a deck is drawn (rusemod.bridges.DECK)
 const bridge = { on: false, pack: null, kinds: null, loading: false, error: "", type: null, turn: 0, length: {},
-  cursor: null, mesh: null, preview: null };
+  cursor: null, mesh: null, preview: null, ends: null, slope: 5120, rings: null, ringMat: null };
 
 function bridgeNote(text, kind) {
   const n = $("bridge-note");
@@ -8037,6 +8104,9 @@ async function loadBridges(pack) {
     const res = await mv.api.map_bridges(pack);
     if (bridge.pack !== pack) return;
     bridge.kinds = res.kinds;
+    bridge.ends = res.ends || [];
+    bridge.slope = res.slope || 5120;
+    if (mv.edit && mv.brush.strokes.length && keptEnds().length) reapply();  // the strokes again, its ends kept
     const usable = res.kinds.filter((k) => k.placed);
     if (!usable.some((k) => k.type === bridge.type)) bridge.type = usable.length ? usable[0].type : null;
   } catch (err) {
@@ -8047,6 +8117,7 @@ async function loadBridges(pack) {
   }
   drawPlaced();
   renderBridgeTray();
+  drawKeptEnds();
 }
 
 function dropBridges() {
@@ -8054,7 +8125,8 @@ function dropBridges() {
     if (bridge[k] && mv.gl) { mv.gl.scene.remove(bridge[k]); bridge[k].geometry.dispose(); bridge[k].material.dispose(); }
     bridge[k] = null;
   }
-  Object.assign(bridge, { pack: null, kinds: null, loading: false, error: "", cursor: null });
+  if (bridge.rings) bridge.rings.visible = false;
+  Object.assign(bridge, { pack: null, kinds: null, loading: false, error: "", cursor: null, ends: null });
 }
 
 // The bridges the mod places by hand, as gold decks; and while placing, the next one under the pointer.
@@ -8118,6 +8190,76 @@ function renderBridgeTray() {
   $("bridge-redo").disabled = !bridgeRedoNext() || !mv.place.mod;
   $("bridge-count").textContent = mine ? fill(w.bridges_count, { n: mine }) : "";
   if (bridge.on) $("map-help").textContent = w.bridges_help;
+  renderBridgeLists();
+}
+
+// Every bridge in this one tab (a tester's report, 2026-10-30: "not very clear diff between placed bridges and where u
+// can delete them and where the already placed bridges can be deleted"): the mod's own, each with Go to and Delete,
+// and the map's own, taken out with their crossings in one button ("delete bridges doesnt delete the bridge crossing
+// ... should do all in 1 button").
+function renderBridgeLists() {
+  const w = mv.words, types = bridgeTypes();
+  $("bridge-new-head").textContent = w.bridges_new_head;
+  const mine = mv.place.objects.filter((o) => types.has(o.type));
+  $("bridge-mine-head").textContent = fill(w.bridges_mine_head, { n: mine.length });
+  $("bridge-mine").replaceChildren(...(mine.length ? mine.map((o) => {
+    const k = types.get(o.type), [a, b] = deckOf(o, k);
+    const metres = Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / METRE);
+    const go = el("button", { type: "button", className: "link", textContent: w.bridges_go, title: w.tip_bridges_go });
+    go.addEventListener("click", () => lookAt(o.x, o.y));
+    const del = el("button", { type: "button", className: "link danger", textContent: w.bridges_delete,
+      title: w.tip_bridges_delete, disabled: !mv.place.mod });
+    del.addEventListener("click", () => deleteBridge(o));
+    return el("div", { className: "bridge-row", role: "listitem" },
+      el("span", { className: "name", title: o.type }, `${k.name} · ${metres} m`), go, del);
+  }) : [el("div", { className: "muted small" }, w.bridges_mine_none)]));
+  const own = (bridge.pack === mv.current && bridge.ends) ? bridge.ends.length / 2 : null;
+  $("bridge-own-head").textContent = fill(w.bridges_own_head, { n: own === null ? "…" : own });
+  // taken out = the bridges and their crossings both (a map from 0.9.8.9's two switches may have only one: the button
+  // then takes out both)
+  const gone = road.takeOut || [], taken = gone.includes("bridges") && gone.includes("crossings");
+  const btn = $("bridge-take-out");
+  btn.classList.toggle("hidden", own === 0);
+  btn.disabled = !road.mod || own === null;
+  btn.textContent = taken ? w.bridges_put_back : w.bridges_take_out;
+  btn.title = taken ? w.tip_bridges_put_back : w.tip_bridges_take_out;
+  $("bridge-own-note").textContent = own === 0 ? w.bridges_own_none : taken ? w.bridges_taken_note : "";
+}
+
+// Delete in the list: that one bridge of the mod's off the map (StudioApi.scenery_change, as Select's Delete does).
+async function deleteBridge(o) {
+  const pack = mv.current;
+  if (!mv.place.mod) { bridgeNote(mv.words.no_mod, "error"); return; }
+  try {
+    await mv.api.scenery_change(pack, [[o, null]]);
+    if (pack !== mv.current) return;
+    mv.place.objects = mv.place.objects.filter((x) => x !== o);
+    mv.place.groups = mv.place.groups.map((g) => (Array.isArray(g) ? g.filter((x) => x !== o) : g))
+      .filter((g) => !Array.isArray(g) || g.length);
+    redo.place = redo.place.filter((g) => !(Array.isArray(g) && g.includes(o)));
+    drawPlaced();
+    renderPlace();
+    bridgeNote(mv.words.brush_note);
+  } catch (err) {
+    if (pack !== mv.current) return;
+    bridgeNote((err && err.message) || String(err), "error");
+  }
+  renderBridgeTray();
+}
+
+// The one button: the map's own bridges out with their crossings, or both back (StudioApi.road_take_out; the map's own
+// roads keep their own switch in the Roads tab).
+async function toggleOwnBridges() {
+  const pack = mv.current, now = new Set(road.takeOut || []), out = !(now.has("bridges") && now.has("crossings"));
+  try {
+    const res = await mv.api.road_take_out(pack, now.has("roads"), out, out);
+    if (pack !== mv.current) return;
+    road.takeOut = res.take_out || [];
+    renderRoadTray();
+    if (mv.edit && mv.brush.strokes.length && bridge.ends && bridge.ends.length) reapply();  // (their ends: kept or not)
+  } catch (err) { bridgeNote((err && err.message) || String(err), "error"); }
+  renderBridgeTray();
+  drawKeptEnds();
 }
 
 function stopBridge() {
@@ -8528,6 +8670,7 @@ function renderBrushes() {
   showOverlays();
   $("map-help").textContent = b.on ? w.brush_help : w.map_help;
   showCount();
+  drawKeptEnds();
 }
 
 function pickBrush(name) {
@@ -10065,8 +10208,8 @@ function renderWords() {
 // physical key (e.code, so W A S D are the same places on an AZERTY keyboard); the arrows always move, Esc always
 // looks around, Ctrl+Z always undoes, and the digits always pick brushes.
 const KEY_DEFAULTS = { forward: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD", turn_left: "KeyQ", turn_right: "KeyE",
-  zoom_in: "KeyR", zoom_out: "KeyF", brush: "KeyB", place: "KeyP", size_down: "BracketLeft", size_up: "BracketRight",
-  strength_down: "Minus", strength_up: "Equal" };
+  zoom_in: "KeyR", zoom_out: "KeyF", brush: "KeyB", place: "KeyP", erase: "KeyX", size_down: "BracketLeft",
+  size_up: "BracketRight", strength_down: "Minus", strength_up: "Equal" };
 const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 const MOVES = { forward: [0, -1], back: [0, 1], left: [-1, 0], right: [1, 0] };
 const HELD_ACTIONS = ["forward", "back", "left", "right", "turn_left", "turn_right", "zoom_in", "zoom_out"];
@@ -10138,7 +10281,8 @@ function keysLine() {
   const w = mv.words, k = (a) => keyName(codeOf(a));
   return [fill(w.keys_move, { k: `${k("forward")} ${k("left")} ${k("back")} ${k("right")}` }),
     fill(w.keys_turn, { k: `${k("turn_left")} ${k("turn_right")}` }), fill(w.keys_zoom, { k: `${k("zoom_in")} ${k("zoom_out")}` }),
-    w.keys_fast, w.keys_brushes, fill(w.keys_brush, { k: k("brush") }), fill(w.keys_place, { k: k("place") }), w.keys_look,
+    w.keys_fast, w.keys_brushes, fill(w.keys_brush, { k: k("brush") }), fill(w.keys_place, { k: k("place") }),
+    fill(w.keys_erase, { k: k("erase") }), w.keys_look,
     w.keys_undo, fill(w.keys_size, { k: `${k("size_down")} ${k("size_up")}` }),
     fill(w.keys_strength, { k: `${k("strength_down")} ${k("strength_up")}` })].join(" \u00b7 ");
 }
@@ -10366,6 +10510,7 @@ function onKey(e) {
   const action = keys.by[e.code];
   if (action === "brush") { if (mv.brush.on) lookAround(); else if (onMap) pickBrush(mv.brush.name); }
   else if (action === "place") { if (onMap) setPlaceMode(!mv.place.on); }
+  else if (action === "erase") { if (onMap) { if (mv.brush.on && mv.brush.name === "erase") lookAround(); else pickBrush("erase"); } }
   else if (action === "size_down") nudge("size", -1);
   else if (action === "size_up") nudge("size", 1);
   else if (action === "strength_down") nudge("strength", -1);
@@ -10702,6 +10847,7 @@ function wire() {
   $("road-finish").addEventListener("click", () => finishRoad());
   $("road-undo").addEventListener("click", () => undoRoad());
   $("bridge-undo").addEventListener("click", () => undoBridge());
+  $("bridge-take-out").addEventListener("click", () => toggleOwnBridges());
   $("bridge-length").addEventListener("input", (e) => {
     const k = bridgeKind();
     if (k) bridge.length[k.type] = Number(e.target.value) * METRE;

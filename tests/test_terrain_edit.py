@@ -200,6 +200,33 @@ class Together(unittest.TestCase):
         flat = edit_map(reader(files), [Stroke("hill", 9000.0, 9000.0, 100.0, height=5.0)], "Test")[0]
         self.assertNotIn(MEMBER, flat)  # ground that didn't move leaves it
 
+    def test_the_ground_at_a_bridges_ends_keeps_its_height(self):
+        """The game rests a bridge on the ground under its two ends (findings F-100, F-101), so land raised there
+        lifted the map's own bridges with it (a tester's Vesuvio, 2026-10-30). The ends the build gives (keep) stay at
+        their height, the ground sloping back to the stroke's past them, and the other files follow."""
+        from unittest import mock
+        import rusemod.terrain_edit as te
+        end = (1500.0, 1500.0)  # the hill's top: where it lifts most
+        with mock.patch.object(te, "KEEP_END", 100.0), mock.patch.object(te, "KEEP_SLOPE", 200.0):  # (the fixture's
+            changed, notes = edit_map(reader(self.files), [self.hill], "Test", keep=[end])           # scale)
+            core = te._end_core(Tms(self.files[FILES["highdef"]]), *end)  # (the triangle under the end, whole)
+        plain, _ = edit_map(reader(self.files), [self.hill], "Test")
+        self.assertTrue(any("ends of the map's own bridges kept at its height" in n for n in notes), notes)
+        self.assertGreaterEqual(core, 100.0)
+        before = self.points(self.files, "ground")
+        for (x, y, z0), (_x, _y, z1), (_a, _b, z2) in zip(before, self.points(changed, "ground"),
+                                                          self.points(plain, "ground")):
+            d = math.hypot(x - end[0], y - end[1])
+            if d <= core:
+                self.assertAlmostEqual(z1, z0, delta=0.11)  # at the end: as it was
+            elif d >= core + 200.0:
+                self.assertAlmostEqual(z1, z2, delta=0.11)  # past the slope: the stroke's own
+            else:
+                self.assertTrue(min(z0, z2) - 0.11 <= z1 <= max(z0, z2) + 0.11, (x, y))  # on the slope: between
+        hd0, hd1 = Tms(self.files[FILES["highdef"]]), Tms(changed[FILES["highdef"]])
+        self.assertAlmostEqual(hd1.height_at(*end), hd0.height_at(*end), delta=1.0)  # the close-up mesh follows
+        self.assertGreater(Tms(plain[FILES["highdef"]]).height_at(*end) - hd0.height_at(*end), 300.0)  # (it'd rise)
+
     def test_a_stroke_at_a_bridges_floor_is_said(self):
         """A unit stands on the higher of the ground and a bridge's floor, and the floor keeps its height: a stroke
         that reaches a bridge's floor gets a note (lower ground leaves the floor's end in the air)."""

@@ -135,6 +135,10 @@ def pick_versions(requested: dict[str, str], catalog: dict[str, list[ModInfo]]) 
 # --- order ---
 def load_order(mods: list[ModInfo]) -> list[ModInfo]:
     by_id = {m.id: m for m in mods}
+    if len(by_id) < len(mods):  # (it counted them as one and broke on the second: "list index out of range")
+        twice = sorted({m.id for m in mods if sum(1 for o in mods if o.id == m.id) > 1})
+        raise ResolveError(f"{', '.join(twice)} is in the set more than once (folders with the same id in their "
+                           f"mod.toml): give each its own id")
     for m in mods:
         for dep, rng in m.depends.items():
             if dep not in by_id:

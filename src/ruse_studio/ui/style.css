@@ -638,6 +638,11 @@ tr.edited .boxes input[type="color"] { border-color: var(--accent); }
 .kind-row:disabled { opacity: 0.5; cursor: default; }
 .kind-row .tag { color: var(--accent); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .kind-row[aria-pressed="true"] .tag { color: #fff; }
+/* the Bridges tab's parts: a new bridge, yours (each with Go to and Delete), the map's own (one button) */
+.bridge-head { color: var(--accent); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.bridge-list { display: flex; flex-direction: column; gap: 2px; max-height: 132px; overflow-y: auto; }
+.bridge-row { display: flex; align-items: baseline; gap: 2px; font-size: 12px; }
+.bridge-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* "Check this map": the button on the left, the findings list on the right; a finding with a place is clickable */
 #tray-check.tray-body { grid-template-columns: 230px 1fr; }
 .finding-list { display: flex; flex-direction: column; gap: 2px; max-height: 190px; overflow-y: auto; }

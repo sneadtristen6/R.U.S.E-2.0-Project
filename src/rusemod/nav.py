@@ -240,6 +240,104 @@ class Graph:
         self.circles, self.links, self.lists, self.crossings = circles, links, lists, b"".join(kept_cross)
         return len(cross) - len(kept_cross)
 
+    def dissolve(self, owners: list[int], zones=()) -> dict:
+        """Each of `owners` (circles that own a local map: an old bridge whose crossing a mod closed) emptied, and its
+        local map's live circles brought into this graph in its place, each linked to every live circle it overlaps by
+        STEP or more, never at a point inside `zones` (circles x, y, r): the ground round it stays as its local map had
+        it, and nothing crosses where its old deck stood. A kept owner still joined the two banks for the map as a whole
+        while its local map was cut, so the build refused the take-out, and a new bridge placed anywhere else never
+        counted as a way across (a tester's Diplomats, 2026-10-30). A circle the local map shares with this graph (its
+        copy of a main circle the owner overlaps) isn't added twice. The local maps stay, unused: they are tied to
+        their owners by number, and an emptied owner is in no index (to_bytes). Returns {"emptied", "added",
+        "linked"}."""
+        counts = {"emptied": 0, "added": 0, "linked": 0}
+        owners = sorted({i for i in owners if 0 <= i < len(self.subs) and self.circles[i][2] > 0})
+        if not owners:
+            return counts
+        n = len(self.circles) - 1
+        old = [c[:3] for c in self.circles[:-1]]
+        have = {(round(x), round(y), round(r)) for x, y, r in old if r > 0}
+        added = []
+        for i in owners:
+            for x, y, r, _l, _c in self.subs[i].circles[:-1]:
+                key = (round(x), round(y), round(r))
+                if r > 0 and key not in have:
+                    have.add(key)
+                    added.append((x, y, r))
+            old[i] = old[i][:2] + (0.0,)
+        gone = set(owners)
+        allc = old + added
+        kept = [(k, lk) for k, lk in enumerate(self.links) if lk[0] not in gone and lk[1] not in gone]
+        zoned = _Buckets(list(zones)) if zones and all(zr > 0 for _x, _y, zr in zones) else None
+
+        def in_zone(px, py):
+            near = zones if zoned is None else [zones[k] for k in zoned.near(px, py, 1.0)]
+            return any((px - zx) ** 2 + (py - zy) ** 2 <= zr * zr for zx, zy, zr in near)
+        def links_of(allc):
+            near, linked, out = _Buckets(allc), {lk[:2] for _k, lk in kept}, []
+            for c in range(n, len(allc)):
+                for d in near.around(c):
+                    if d == c or allc[d][2] <= 0:
+                        continue
+                    a, b = min(c, d), max(c, d)
+                    if (a, b) in linked:
+                        continue
+                    point = _meeting(allc[a], allc[b])
+                    if point is None or in_zone(*point):
+                        continue
+                    linked.add((a, b))
+                    out.append((None, (a, b) + point))
+            return out
+        new_links = links_of(allc)
+        # ground of its local map reached only over the old deck (its end, a bit of bank) is no one's now: left out,
+        # as an island would crash the game
+        up = list(range(len(allc)))
+
+        def root(a):
+            while up[a] != a:
+                up[a] = up[up[a]]
+                a = up[a]
+            return a
+        for _k, (a, b, _x, _y) in kept + new_links:
+            up[root(a)] = root(b)
+        reached = {root(i) for i in range(n) if allc[i][2] > 0}
+        if any(root(c) not in reached for c in range(n, len(allc))):
+            added = [allc[c] for c in range(n, len(allc)) if root(c) in reached]
+            allc = old + added
+            new_links = links_of(allc)
+        self._finish(allc, kept, new_links, n)
+        self.points = _tree_write(_tree_build([c[:3] for c in self.circles[:-1]]))  # (as to_bytes writes it)
+        counts.update(emptied=len(owners), added=len(added), linked=len(new_links))
+        return counts
+
+    def empty(self, ids) -> int:
+        """Circles `ids` emptied (radius 0), with their links: what an old deck's closing left on the water, cut off
+        from everything (Graph.wet_pieces). Their numbers stay (no local map is tied to them); the index is built again
+        from the live circles, as to_bytes does. Returns how many it emptied."""
+        gone = {i for i in ids if 0 <= i < len(self.circles) - 1 and self.circles[i][2] > 0}
+        if not gone:
+            return 0
+        n = len(self.circles) - 1
+        allc = [c[:2] + (0.0,) if i in gone else c[:3] for i, c in enumerate(self.circles[:-1])]
+        kept = [(k, lk) for k, lk in enumerate(self.links) if lk[0] not in gone and lk[1] not in gone]
+        self._finish(allc, kept, [], n)
+        self.points = _tree_write(_tree_build([c[:3] for c in self.circles[:-1]]))
+        return len(gone)
+
+    def wet_pieces(self, water) -> list[int]:
+        """The circles of every piece but the largest whose middles are all on `water` (x, y -> bool): left on the
+        water by an old deck's closing (on M05_Hollande two of a bridge's own deck circles, 52 and 70 m from its
+        middle, kept their size but lost every link, and the take-out was refused over them, 2026-10-30)."""
+        label, sizes = self._labels()
+        if len(sizes) < 2:
+            return []
+        main = max(sizes, key=sizes.get)
+        pieces: dict[int, list[int]] = {}
+        for i, (x, y, r, _l, _c) in enumerate(self.circles[:-1]):
+            if r > 0 and label[i] != main:
+                pieces.setdefault(label[i], []).append(i)
+        return [i for ids in pieces.values() if all(water(*self.circles[i][:2]) for i in ids) for i in ids]
+
     def open(self, spans: list[tuple[float, float, float, float]], radius: float = 2560.0, roads=(),
              reach: float = APPROACH, avoid=None, water=None) -> dict:
         """Give units a way over `spans` (x0, y0, x1, y1: bridges' decks) where there was none (water), the way the

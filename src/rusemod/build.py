@@ -54,18 +54,21 @@ class BuildError(Exception):
     pass
 
 
-def load_mod(path) -> tuple[ModInfo, list]:
+def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
     """A mod folder (mod.toml + src/**/*.rndf, files in path order, + text/*.csv), or a single .rndf file as a quick
-    mod. Text rows end up in `ModInfo.texts`."""
+    mod. Text rows end up in `ModInfo.texts`. `as_id`: the id it is read under in place of its own, for a build that
+    has another folder with the same id (rusemod.play.read_mods); its files are left as they are."""
     path = Path(path)
+    if as_id is not None and not _ID.match(as_id):
+        raise BuildError(f"{path}: {as_id!r} can't be a mod's id (lowercase letters, digits and '-')")
     if path.is_file() and path.suffix.lower() == ".rmod":  # a community mod as it comes (rusemod.rmod)
         from . import rmod
         mod = rmod.check(path)
-        info = ModInfo(rmod.mod_id(mod, path), rmod.version_of(mod))
+        info = ModInfo(as_id or rmod.mod_id(mod, path), rmod.version_of(mod))
         info.rmod = path
         return info, []
     if path.is_file() and path.suffix.lower() == ".rndf":
-        mod_id = re.sub(r"[^a-z0-9-]+", "-", path.stem.lower()).strip("-") or "mod"
+        mod_id = as_id or re.sub(r"[^a-z0-9-]+", "-", path.stem.lower()).strip("-") or "mod"
         info = ModInfo(mod_id)
         ops = parse(path.read_text(encoding="utf-8"), file=path.name, mod=mod_id)
     else:
@@ -91,6 +94,7 @@ def load_mod(path) -> tuple[ModInfo, list]:
         mod_id = m.get("id", "")
         if not _ID.match(mod_id):
             raise BuildError(f"{manifest_file}: [mod] id must be lowercase letters, digits and '-' (got {mod_id!r})")
+        mod_id = as_id or mod_id
         load_rules = manifest.get("load", {})
         info = ModInfo(mod_id, str(m.get("version", "0.0.0")), dict(manifest.get("dependencies", {})),
                        dict(manifest.get("optional", {})), list(load_rules.get("after", [])),
@@ -2609,6 +2613,35 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         from .roadnet import take_out_of
         bridges_out = {name.lower() for name, (rows, _ids) in scenario_edits(result.order, mods, "take_out").items()
                        if take_out_of(rows).bridges}  # maps whose own bridges go (roads.toml take_out)
+        ends_kept: dict = {}  # (the scenery descriptors, read once for the bridges' ends)
+
+        def bridge_ends(read, name) -> list:
+            """The two ends of each of the map's own bridges, (x, y), where the strokes leave the ground at its height
+            (terrain_edit.edit_map's keep: the game rests a bridge on the ground under its ends); none when the mods
+            take them out or the map starts blank (its scenery erased), or when its scenery can't be read (the strokes
+            then move the ground there as before)."""
+            from .newmap import is_blank
+            if name.lower() in bridges_out or any(n.lower() == name.lower() and is_blank(spec)
+                                                  for n, (spec, _m) in making.items()):
+                return []
+            from .bridges import model_length, shipped_bridges
+            from .scenery import MEMBER as SCENERY, Scenery, SceneryError, descriptors
+            raw = read(SCENERY)
+            if raw is None:
+                return []
+            try:
+                if "descs" not in ends_kept:
+                    ends_kept["descs"] = descriptors(arc)
+                descs, lengths = ends_kept["descs"], ends_kept.setdefault("lengths", {})
+
+                def length_of(kind):
+                    if kind not in lengths:
+                        lengths[kind] = model_length(game, descs, kind)
+                    return lengths[kind]
+                decks = [b.deck for b in shipped_bridges(Scenery(raw), descs, length_of)]
+            except (SceneryError, ValueError, KeyError, struct.error, zlib.error):
+                return []
+            return [p for x0, y0, x1, y1 in decks for p in ((x0, y0), (x1, y1))]
         for name, (strokes, ids) in terrain_edits(result.order, mods).items():
             map_path = find_map(name)
             if map_path is None:
@@ -2652,7 +2685,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                         drawn, why = False, str(exc)
                 if not drawn:
                     try:
-                        changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth)
+                        changed_members, notes = edit_map(read, strokes, name, max_depth_of=depth,
+                                                          keep=bridge_ends(read, name))
                     except (ValueError, struct.error, zlib.error) as exc:
                         result.findings.append(Finding("error", f"{map_path.name}: its ground files can't be read ({exc})"))
                         return None
@@ -2745,8 +2779,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 try:
                     depth = depth_of()
                     size_tag = "|{}x{}".format(*sized[name.lower()]) if name.lower() in sized else ""
-                    keep_key = mapkeep.key(name + ("|generated" if name.lower() in generated else "") + size_tag,
-                                           mapkeep.pack_identity(map_arc, map_path), strokes, depth)
+                    keep_key = mapkeep.key(name + ("|generated" if name.lower() in generated else "") + size_tag
+                                           + ("|bridges-out" if name.lower() in bridges_out else ""),  # (their ends
+                                           mapkeep.pack_identity(map_arc, map_path), strokes, depth)  # kept or not)
                 except Exception:  # noqa: BLE001 - nothing to tell it by: the map is made as before, and not kept
                     keep_key = None
             made = mapkeep.read(cache, keep_key)

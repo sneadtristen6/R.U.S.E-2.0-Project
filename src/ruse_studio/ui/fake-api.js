@@ -163,7 +163,7 @@
       tip_range_all: "Every unit that fires this ammo gets the new range: {names}",
       range_own_copy: "This weapon fires its own copy of the ammo, so a change here is for this unit only.",
       tip_range_reset: "Put this ammo's range back to the game's.",
-      dock_group_paint: "Map Paint", tip_dock_group_paint: "Paint the ground's picture with a colour or with the map's own ground, and erase trees and props.",
+      dock_group_paint: "Paint & Erase", tip_dock_group_paint: "Paint the ground's picture with a colour or with the map's own ground, and erase the map's trees, props and buildings (X).",
       dock_paint: "Paint", tip_dock_paint: "Paint the ground's picture: a colour, or the map's own ground copied from another spot. It changes how the ground looks, not its shape.",
       brush_paint: "Colour", tip_brush_paint: "Paint a colour on the ground: pick it on the wheel, from the map's own colours, or take it from the ground with the eyedropper.",
       brush_stamp: "Texture", tip_brush_stamp: "Paint with the map's own ground from another spot (grass, sand, rock, fields): pick the spot, then paint where it should go.",
@@ -360,7 +360,7 @@
       tip_range_all: "Toutes les unités qui tirent cette munition changent de portée : {names}",
       range_own_copy: "Cette arme tire sa propre copie de la munition : un changement ici ne vaut que pour cette unité.",
       tip_range_reset: "Remettre la portée de cette munition comme dans le jeu.",
-      dock_group_paint: "Peinture de carte", tip_dock_group_paint: "Peindre l'image du sol avec une couleur ou avec le sol de la carte elle-même, et effacer arbres et objets.",
+      dock_group_paint: "Peindre et effacer", tip_dock_group_paint: "Peindre l'image du sol avec une couleur ou avec le sol de la carte elle-même, et effacer arbres, objets et bâtiments de la carte (X).",
       dock_paint: "Peindre", tip_dock_paint: "Peindre l'image du sol : une couleur, ou le sol de la carte copié depuis un autre endroit. Cela change l'aspect du sol, pas sa forme.",
       brush_paint: "Couleur", tip_brush_paint: "Peindre une couleur sur le sol : choisissez-la sur la roue, parmi les couleurs de la carte, ou prenez-la sur le sol avec la pipette.",
       brush_stamp: "Texture", tip_brush_stamp: "Peindre avec le sol de la carte pris à un autre endroit (herbe, sable, roche, champs) : choisissez l'endroit, puis peignez là où il doit aller.",
@@ -496,7 +496,7 @@
       tip_range_all: "所有使用此弹药的单位都会获得新射程：{names}",
       range_own_copy: "这件武器使用自己的弹药副本，因此此处的修改只影响该单位。",
       tip_range_reset: "将此弹药的射程恢复为游戏原值。",
-      dock_group_paint: "地图绘制", tip_dock_group_paint: "用颜色或地图自身的地面绘制地面图像，并移除树木和道具。",
+      dock_group_paint: "绘制与移除", tip_dock_group_paint: "用颜色或地图自身的地面绘制地面图像，并移除地图自带的树木、道具和建筑（X）。",
       dock_paint: "绘制", tip_dock_paint: "绘制地面图像：用颜色，或从别处复制的地图自身地面。改变的是地面的外观，而不是形状。",
       brush_paint: "颜色", tip_brush_paint: "在地面上涂颜色：可在色轮上选、从地图自身的颜色中选，或用吸管从地面取色。",
       brush_stamp: "纹理", tip_brush_stamp: "用别处的地图自身地面（草地、沙地、岩石、田地）来绘制：先选好来源处，再在要放的地方涂。",
@@ -1925,6 +1925,19 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.sc, {"share_mod": "分享你的模组…", "share_title": "分享你的模组", "share_lead": "做了模组？把它加入列表，成为贡献者。", "share_step_export": "将其导出（模组菜单中的“导出模组…”）。文件会注明它是用 RUSE Studio 制作的。", "share_step_pr": "点击“发布到模组列表”：列表的“Add my mod”表单会在 GitHub 上打开，并按你的文件填好；打开的文件夹里有你模组的 .zip。把 .zip 拖进表单。", "share_step_post": "写明模组做什么、改了什么、它的代码做什么，然后提交。自动检查会读取文件；我们试过之后，它就会出现在每位玩家 Launcher 的列表中。", "share_file": "文件：{file}（{size} 字节）", "share_sha": "SHA-256：{sha}", "share_entry": "它在 index.toml 中的条目（在 download 中填入文件链接）：", "share_copy": "复制条目", "share_copied": "已复制：请粘贴到 index.toml 中。", "share_open": "在 GitHub 上打开模组列表", "share_discussions": "打开 Discussions", "share_publish": "发布到模组列表", "share_published": "表单已在浏览器中打开。把打开的文件夹里的 .zip 拖到其“The mod file”栏中。", "share_credit": "署名行：在你分享模组的地方粘贴它。", "share_guidelines": "列表接受哪些内容", "share_credit_copy": "复制这一行", "share_credit_copied": "已复制：粘贴到你分享模组的地方。"});
   // the Bridges dock and "Check this map" (words.toml dock_bridges, bridges_*, check_*, mc_*)
   Object.assign(words.us, {"dock_bridges": "Bridges", "tip_dock_bridges": "The map's own bridge kinds: place one by hand, and see where new roads cross water (in gold).", "bridges_help": "Pick a kind, set its length and turn, then click the ground where the bridge's middle goes. Both ends should rest on dry bank.", "bridges_kind_info": "{n} on the map · {least} to {most} m", "bridges_roads_kind": "new roads' bridges", "bridges_no_floor": "not placed on this map: no floor to copy, so the build refuses it", "bridges_length": "Length {m} m", "tip_bridges_length": "How long the deck is, bank to bank: the map's own bridges are stretched from 0.9 to 2 times their model's length.", "tip_bridges_turn": "Which way the bridge runs, in degrees (- and = keys too).", "tip_bridges_undo": "Take the last bridge placed by hand off the map.", "bridges_count": "{n} placed by hand", "bridges_crossings": "{n} water crossing(s) on the new roads, in gold: the build puts a bridge of the new roads' kind on each.", "bridges_none": "{n} water crossing(s), but this map has no bridge kind of its own: no bridge can go there, and units can't cross", "bridges_none_map": "This map has no bridge kind of its own: no bridge can go on it, and units can't cross water on a new road.", "bridges_loading": "Reading the map's bridges…", "dock_check": "Check", "tip_dock_check": "Find what would go wrong on this map with your mod, before the game starts.", "check_run": "Check this map", "tip_check_run": "Builds your mod's changes to this map as Test in game would, in a folder removed afterwards, and lists what would go wrong: ground cut off, roads or bridges units can't use, road ends not joined, buildings on roads.", "check_running": "Checking: building your mod on this map (a minute or so)…", "check_found": "{n} thing(s) to look at. Click one with a place to see it on the map.", "check_stale": "Checked before your last change: check again to be sure.", "mc_ok": "Nothing found that would go wrong on this map.", "mc_build_failed": "The map couldn't be built, so it wasn't checked: {why}", "mc_cut_off": "Ground around ({x}, {y}), {metres} m across, is cut off for {units}: they can't reach it from the rest of the map, and an order onto it crashes the game.", "mc_road_closed": "Road {road}: {metres} m around ({x}, {y}) is ground {units} can't use.", "mc_bridge_closed": "The crossing at ({x}, {y}) is closed to {units}: they can't get from one bank to the other.", "mc_road_unjoined": "Road {road} ends at ({x}, {y}) without joining the road network. Supply trucks use the road network.", "mc_object_on_road": "{name} stands on road {road} at ({x}, {y}).", "mc_objects_more": "{n} more objects stand on the new roads.", "mc_units_infantry": "infantry", "mc_units_vehicles": "vehicles"});
+  // every bridge in one tab, the land kept at the map's own bridges' ends, the X key for Erase (words.toml bridges_*,
+  // brush_bridge_ends, key_erase, keys_erase: the Studio's own, word for word)
+  Object.assign(words.us, {"bridges_new_head": "New bridge", "bridges_mine_head": "Your bridges ({n})",
+    "bridges_mine_none": "None yet: pick a kind above, then click where a bridge's middle goes.", "bridges_go": "Go to",
+    "tip_bridges_go": "Turn the view to this bridge.", "bridges_delete": "Delete",
+    "tip_bridges_delete": "Take this bridge off the map.", "bridges_own_head": "The map's own bridges ({n})",
+    "bridges_own_none": "This map has no bridges of its own.", "bridges_take_out": "Take out the map's bridges",
+    "tip_bridges_take_out": "The map's own bridges go, with the floors units stood on and their crossings: nothing crosses where they stood, supply trucks included. Your new bridges stay. If that cuts ground off, Test in game says where: place a new bridge across to it.",
+    "bridges_put_back": "Put the map's bridges back",
+    "tip_bridges_put_back": "The map's own bridges and their crossings back as the map has them.",
+    "bridges_taken_note": "Taken out, with their crossings: nothing crosses where they stood.",
+    "brush_bridge_ends": "Gold rings: the ground round the map's own bridges' ends keeps its height when you shape the land, so the bridges stay where they are.",
+    "key_erase": "Erase", "keys_erase": "{k} erase"});
   // the Erase brush (words.toml brush_erase, erase_*)
   Object.assign(words.us, {"dock_group_ground": "Ground & water", "tip_dock_group_ground": "Shape the ground, and put water on it or drain it.", "dock_group_zones": "Cover & movement", "tip_dock_group_zones": "Where units are hidden, and where they can go.", "dock_group_ways": "Roads & bridges", "tip_dock_group_ways": "Draw new roads, and place the map's own bridges.", "dock_group_nature": "Props & trees", "tip_dock_group_nature": "Place the map's own props and trees."});
   Object.assign(words.fr, {"dock_group_ground": "Terrain et eau", "tip_dock_group_ground": "Modelez le terrain, ajoutez de l'eau ou asséchez-la.", "dock_group_zones": "Couvert et mouvement", "tip_dock_group_zones": "Où les unités sont cachées, et où elles peuvent aller.", "dock_group_ways": "Routes et ponts", "tip_dock_group_ways": "Tracez de nouvelles routes et placez les ponts de la carte.", "dock_group_nature": "Objets et arbres", "tip_dock_group_nature": "Placez les objets et arbres de la carte."});
@@ -4414,7 +4427,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           ...(bridges && crossings ? ["crossings"] : [])];
         return window.pywebview.api.roads(pack);
       },
-      map_bridges: async (pack) => ({ kinds: fakeBridges[pack] || [], kind: (fakeBridges[pack] || [])[0]?.type || null }),
+      map_bridges: async (pack) => ({ kinds: fakeBridges[pack] || [], kind: (fakeBridges[pack] || [])[0]?.type || null,
+        // the map's own bridges' ends and how far round each the ground stays (made up: two bridges on TwoIslands)
+        ends: pack === "TwoIslands" ? [[300000, 655360, 2600], [340000, 655360, 1800], [655360, 980000, 1600],
+          [655360, 1020000, 4200]] : [], slope: 5120 }),
       bridge_add: async (pack, kind, x, y, turn, length) => {
         if (!current) throw new Error("Pick or make a mod first: what you place is saved in it.");
         const k = (fakeBridges[pack] || []).find((b) => b.type === kind);
