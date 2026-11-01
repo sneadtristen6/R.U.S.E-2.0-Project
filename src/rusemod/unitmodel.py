@@ -765,9 +765,9 @@ class KeptModels:
                     for f in done:
                         if f in reading:
                             name = reading.pop(f)
-                            prep = f.result() if f.exception() is None else None
-                            if prep is not None:
-                                making[makers.submit(_kept_made, prep)] = name
+                            read = f.result() if f.exception() is None else None
+                            if read is not None:
+                                making[makers.submit(_kept_made, read)] = name
                             else:
                                 self._done(name, None)
                             continue
@@ -853,22 +853,24 @@ def _kept_start() -> None:
     """A worker of KeptModels.prepare's pool: nothing shared."""
 
 
-def _kept_read_job(glb: str) -> Prepared | None:
-    """In a worker: the .glb as read_mod_glb reads it, or None when it can't be (get then makes it, its error the
-    build's)."""
+def _kept_read_job(glb: str) -> tuple[bytes, list] | None:
+    """In a worker: the .glb read (read_mod_glb), as its kept record up to the textures (_kept_start_bytes) and its
+    pictures [(w, h, RGBA)]; None when it can't be (get then makes it, its error the build's)."""
     try:
-        return read_mod_glb(Path(glb))
+        prep = read_mod_glb(Path(glb))
+        start = _kept_start_bytes(Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures],
+                                           prep.report))
+        return start, [(w, h, px) for _n, w, h, px in prep.pictures]
     except Exception:  # noqa: BLE001 (made again by get, which says what went wrong)
         return None
 
 
-def _kept_made(prep: Prepared) -> bytes | None:
+def _kept_made(read: tuple[bytes, list]) -> bytes | None:
     """On a thread: a model read (_kept_read_job) with its pictures made into textures, as a kept record
     (KeptModels.get makes the same), or None when it can't be."""
     try:
-        textures = [(new_texture(px, w, h), new_standin(px, w, h)) for _n, w, h, px in prep.pictures]
-        return _kept_bytes(Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures], prep.report),
-                           textures)
+        start, pictures = read
+        return _kept_whole(start, [(new_texture(px, w, h), new_standin(px, w, h)) for w, h, px in pictures])
     except Exception:  # noqa: BLE001 (made again by get, which says what went wrong)
         return None
 
@@ -883,8 +885,22 @@ def _kept_bytes(prep: Prepared, textures: list) -> bytes:
     """A kept model: its parts' numbers exactly as read (64-bit floats, 64-bit corners), its report and pictures'
     names and sizes, and its textures and stand-ins, compressed. ValueError for a part whose points aren't all as
     wide."""
-    import json
+    return _kept_whole(_kept_start_bytes(prep), textures)
+
+
+def _kept_whole(start: bytes, textures: list) -> bytes:
+    """A kept model from _kept_start_bytes and its textures."""
     import zlib
+    out = [start]
+    for texture, standin in textures:
+        out += [struct.pack("<QQ", len(texture), len(standin)), texture, standin]
+    return zlib.compress(b"".join(out), 1)
+
+
+def _kept_start_bytes(prep: Prepared) -> bytes:
+    """A kept model up to its textures (uncompressed): what a worker of KeptModels.prepare sends back with the
+    pictures' pixels, so its points cross as bytes, not as Python numbers."""
+    import json
     from array import array
     parts, blobs = [], []
     for p in prep.parts:
@@ -900,9 +916,7 @@ def _kept_bytes(prep: Prepared, textures: list) -> bytes:
     out = [KEPT_MAGIC, struct.pack("<I", len(head)), head]
     for b in blobs:
         out += [struct.pack("<Q", len(b)), b]
-    for texture, standin in textures:
-        out += [struct.pack("<QQ", len(texture), len(standin)), texture, standin]
-    return zlib.compress(b"".join(out), 1)
+    return b"".join(out)
 
 
 def _kept_read(record: bytes) -> tuple[Prepared, list] | None:
