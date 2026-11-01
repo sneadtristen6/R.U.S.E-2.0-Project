@@ -27,13 +27,14 @@ import hashlib
 
 from . import pyscript
 
-ACROSS = 5   # a row's cards, units and research cards alike: his 1920 x 1080 screen showed a row of 5 cards (bigpacks10)
+ACROSS = 6   # a row's cards, units and research cards alike: his pick after bigpacks12 ("a limit of 6 total in a row")
 
 SOURCES = {
     "menu": '''\
 # a build list's lines as rows (the RUSE Studio's build): a line's units (its own unit first), then its research cards,
-# _r2_across to a row, a line's rows together. Any error leaves the tab as the game made it.
-_r2_across = 5
+# _r2_across to a row, a line's rows together, the lines in the order of their menu positions. Any error leaves the tab
+# as the game made it.
+_r2_across = 6
 _r2_lines = ()
 _r2_line_of = {}
 for _r2_pair in _r2_lines:
@@ -95,6 +96,24 @@ def _r2_rows(self):
             units[line].append(bouton)
         else:
             cards[line].append(bouton)
+    key = {}            # a line's place down the column: its menu position, the same whether its own unit shows or not
+    for line in order:
+        places = []
+        for bouton in units[line] + cards[line]:
+            if bouton.is_unit_button():
+                descriptor = bouton.descriptor
+            else:
+                descriptor = bouton.techno.GetDescriptor()
+            places.append(getattr(descriptor, 'PositionInMenu', 0))
+            root = _r2_first(bouton.techno)
+            if root is not None:
+                places.append(getattr(root.GetDescriptor(), 'PositionInMenu', 0))
+        least = places[0]
+        for place in places:
+            if place < least:
+                least = place
+        key[line] = (least, line)
+    order.sort(key=lambda line: key[line])
     rows = []
     for line in order:
         first = [unit for unit in units[line] if _r2_name(unit.descriptor) == line]
@@ -126,8 +145,8 @@ def _r2_link(self, rows):
 
 
 def _r2_number(self, rows):
-    # each line's rows numbered together where the game's order first reaches the line, each row's buttons in its
-    # order; any other button as the game does, with what the game linked beside it
+    # every line's rows numbered together, in their order, where the game's order first reaches a line, each row's
+    # buttons in its order; any other button as the game does, with what the game linked beside it
     row_of = {}
     rows_of_line = {}
     for line, row in rows:
@@ -139,11 +158,15 @@ def _r2_number(self, rows):
     placed = {}
     index = 0
     merged = 0
+    lines_placed = False
     for bouton in self._current_submenu_buttons:
         if bouton in placed:
             continue
         if bouton in row_of:
-            todo = rows_of_line[row_of[bouton]]
+            if lines_placed:
+                continue
+            lines_placed = True
+            todo = [row for line, row in rows]
         else:
             row = [bouton]
             for other in bouton.get_attached_buttons():
