@@ -727,6 +727,33 @@ class KeptOwnModels(unittest.TestCase):
         prep, textures = none.get(self.glb)
         none.close()
         self.assertEqual(self.written(prep, textures), self.written(unitmodel.read_mod_glb(self.glb)))
+
+    def test_made_side_by_side(self):  # a first build's new models made in worker programs, then kept
+        other = self.dir / "models" / "Panzer_Big.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like, size=1.5),
+                          other, TANK)
+        made = {g: self.written(unitmodel.read_mod_glb(g)) for g in (self.glb, other)}
+        for cache in (self.cache, None):
+            kept = unitmodel.KeptModels(cache)
+            kept.prepare([self.glb, other, self.glb], workers=2)
+            with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
+                for g in (self.glb, other):
+                    self.assertEqual(self.written(*kept.get(g)), made[g])
+            kept.close()
+        again = unitmodel.KeptModels(self.cache)  # all kept now: no workers started
+        with mock.patch("rusemod.mend._pool", side_effect=AssertionError("a pool")):
+            again.prepare([self.glb, other], workers=2)
+            with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
+                self.assertEqual(self.written(*again.get(other)), made[other])
+
+    def test_what_a_worker_can_t_make_is_made_by_get(self):
+        broken = self.dir / "models" / "Broken.glb"
+        broken.write_bytes(b"not a glb")
+        kept = unitmodel.KeptModels(self.cache)
+        kept.prepare([self.glb, broken], workers=2)
+        self.assertEqual(self.written(*kept.get(self.glb)), self.written(unitmodel.read_mod_glb(self.glb)))
+        with self.assertRaises((unitmodel.UnitModelError, ValueError)):
+            kept.get(broken)
         self.assertFalse(self.cache.exists())
 
 

@@ -4608,6 +4608,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             batch: dict = {}  # every own model into each pack at once: each pack read and written once
             before = {**result.model_changed, **result.texture_changed, **result.model_imports}
             kept = KeptModels(cache)  # each model as read and its textures, kept between builds
+            kept.prepare([glb for _source, glb, _mod in result.own_models.values()])  # the new ones side by side
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
                     prep, textures = kept.get(glb)
