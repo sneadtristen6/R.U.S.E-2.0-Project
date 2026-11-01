@@ -1890,32 +1890,45 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     scripts: dict = {}  # script pack in ZZ_Win.dat -> (the pack, {module: new bytes})
     unit_classes(base, run, text_arc, result, scripts)
     own_buildings(run, text_arc, own_planned, result, scripts)
-    menu_pages(run, text_arc, result, scripts)
+    menu_lines(run, text_arc, result, scripts)
     if result.errors:
         return result
     result.script_changed = {path: pack.to_bytes(members) for path, (pack, members) in scripts.items()}
     return result
 
 
-def menu_pages(run, zz_win, result: BuildResult, scripts: dict) -> None:
-    """Pages in a long build list (rusemod.menupages): when the mods make new objects (units among them, so a tab's
-    list can grow past the screen), the game's menu script with the pages template run after it (into `scripts`)."""
-    from . import menupages
+def menu_lines(run, zz_win, result: BuildResult, scripts: dict) -> None:
+    """A build list's lines as rows (rusemod.menulines): when the mods make new objects (units among them, so a tab's
+    list can grow past the screen), the game's menu script with the lines template run after it (into `scripts`),
+    each new unit's line filled in."""
+    from . import menulines
     if not run.created or result.errors or zz_win is None:
         return
-    missing = menupages.missing(zz_win)
+    missing = menulines.missing(zz_win)
     if missing:
-        result.findings.append(Finding("note", f"the build lists get no pages: {missing}"))
+        result.findings.append(Finding("note", f"the build lists keep the game's rows: {missing}"))
         return
+    found = pyscript.find_unit_list(zz_win)
+    by_path: dict = {}
+    if found is not None:
+        try:
+            ul = pyscript.unit_list(pyscript.read_xyz(found[3]).payload)
+            by_path = {path: uc.name for path, uc in ul.by_path.items()}
+        except pyscript.ScriptError as exc:
+            # not a game rule: what our reader supports
+            result.findings.append(Finding("error", f"the build lists' lines can't be set: {exc}"))
+            return
     try:
-        changes = menupages.script_changes(zz_win, scripts)
-    except (menupages.MenuPagesError, pyscript.ScriptError) as exc:
+        lines = menulines.lines_of(run.game.objects, by_path, run.created)
+        changes = menulines.script_changes(zz_win, lines, scripts)
+    except (menulines.MenuLinesError, pyscript.ScriptError) as exc:
         # not a game rule: what our writer supports, or a script it can't read or join
-        result.findings.append(Finding("error", f"pages can't be added to the build lists: {exc}"))
+        result.findings.append(Finding("error", f"the build lists' lines can't be set: {exc}"))
         return
     scripts.update(changes)
-    result.findings.append(Finding("note", f"a build list with more than {menupages.PAGE_ROWS} rows shows them a page "
-                                           f"at a time, with a button below that turns the page"))
+    result.findings.append(Finding("note", f"each line of a build list stands in its own rows, at most "
+                                           f"{menulines.ACROSS} units across ({len(lines)} new units placed in a "
+                                           f"line)"))
 
 
 def own_buildings(run, zz_win, planned: dict, result: BuildResult, scripts: dict) -> None:
