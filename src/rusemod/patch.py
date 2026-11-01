@@ -270,6 +270,12 @@ class Engine:
             self.game, [n for n, o in self.game.objects.items() if unitcheck.is_unit(o)]).items())
         self._done: list = []  # (owner, path, op) of every property operation, in the order they ran
         self._kinds: dict | None = None  # (class, property) -> the number type the game gives it (_kind_in_class)
+        self._ids = None  # identity.Scans: the game's ids, debug names and slots, kept between clones (_fresh_identity)
+
+    def _touch(self, name: str) -> None:
+        """Object `name` is changed, made or deleted: counted again at the next clone's fresh identity."""
+        if self._ids is not None:
+            self._ids.touched.add(name)
 
     def run(self, mods) -> Result:
         """`mods`: [(ModInfo, [Op])] already in load order (resolve.load_order)."""
@@ -302,6 +308,7 @@ class Engine:
         (_objects_of) is pointed at the copy's parts, so filters see the changes made to it."""
         old = self.game.objects[name]
         obj = self.game.own(name)
+        self._touch(name)
         if obj is not old and self._index_gen == self._gen:
             new = dict(zip((id(o) for _p, o in _parts(old)), (o for _p, o in _parts(obj))))  # same parts, same order
             classes = {o.cls for o in new.values()}
@@ -373,6 +380,7 @@ class Engine:
             obj = Obj(op.cls or "?")
         fresh_index = self._index_gen == self._gen
         self.game.objects[name] = obj
+        self._touch(name)
         self.created[name] = placed
         self._gen += 1
         if fresh_index:
@@ -391,9 +399,13 @@ class Engine:
     def _fresh_identity(self, op: Op, name: str) -> None:
         """A clone gets its own id, debug name and build-menu slot (MOD_FORMAT §10.5, rusemod.identity), except for
         any it sets itself. Reported as a note, and in the history of each value."""
-        from .identity import refresh
+        from .identity import Scans, refresh
         own = {m.group(0) for b in op.body if (m := re.match(r"[A-Za-z_][A-Za-z0-9_]*", b.path or ""))}
-        changed = refresh(self.game, name, op.source, skip=own, new=self.created)
+        if self._ids is None:
+            self._ids = Scans(self.game)   # made once; then only what each op changes counted again
+        self._ids.touched.add(name)
+        changed = refresh(self.game, name, op.source, skip=own, new=self.created, scans=self._ids)
+        self._ids.touched.add(name)        # (its own ids, name and slot just given)
         if not changed:
             return
         fresh = copy.copy(op)
@@ -417,6 +429,7 @@ class Engine:
         if others:
             self._find("warning", f"{op.at()} deletes {name}; the changes {others[-1].at()} made to it are thrown away", op)
         del self.game.objects[name]
+        self._touch(name)
         self.deleted[name] = op
         self._gen += 1
 
@@ -740,6 +753,7 @@ class Engine:
         name = f"{part.origin[0]}#{part.origin[1]}"
         holder[key] = Ref(name)
         self.game.objects[name] = part
+        self._touch(name)
         self._gen += 1
         return name
 

@@ -162,17 +162,39 @@ class Source:
     skeleton: Skeleton | None
     like: dict = field(default_factory=dict)   # for modelin.prepare: length, pivot, ground
     body_texture: str = ""         # its body material's picture (ZZ:\\GenTexGroup\\...\\X01.png)
+    look: dict = field(default_factory=dict, repr=False)  # the first mesh pack's materials and its propellers' bones,
+    # as read here, for _with_model
 
 
-def packs_holding(zz, model: str) -> tuple[str, dict, dict]:
+def pack_names(zz) -> list:
+    """Every mesh pack of ZZ_Win.dat `zz` with the models it names, [(entry, {name: (mesh, skeleton)} or None where
+    its name table can't be read alone)], in the archive's order: for packs_holding when it looks for many models
+    (a build's own models: each one read every pack whole to find its copied model, 0.2 s a model)."""
+    out = []
+    for e in zz.entries:
+        p = e.path.lower()
+        if not (p.startswith(PACKS) and p.endswith(".spk")):
+            continue
+        raw = bytes(zz.read(e))
+        if raw[:8] != b"MESHPCPC":
+            continue
+        try:
+            out.append((e, MeshPack.item_names(raw)))
+        except (ValueError, struct.error):
+            out.append((e, None))
+    return out
+
+
+def packs_holding(zz, model: str, names: list | None = None) -> tuple[str, dict, dict]:
     """The model `model` (its pack name, any case) across ZZ_Win.dat's packs: (its name as the packs have it, the mesh
     packs that hold it, the skeleton packs that hold its skeleton entry: {member path: raw bytes} each).
-    UnitModelError when no pack holds it."""
+    UnitModelError when no pack holds it. `names`: pack_names(zz), so only the packs naming it are read whole."""
     model = model.replace("/", "\\").lower()
     if model.startswith("datadir:\\"):
         model = model[len("datadir:\\"):]
     meshes, skeletons = {}, {}
-    for e in zz.entries:
+    entries = zz.entries if names is None else [e for e, n in names if n is None or model in n]
+    for e in entries:
         p = e.path.lower()
         if not (p.startswith(PACKS) and p.endswith(".spk")):
             continue
@@ -195,10 +217,10 @@ def packs_holding(zz, model: str) -> tuple[str, dict, dict]:
     return model, meshes, skeletons
 
 
-def find_source(zz, model: str) -> Source:
+def find_source(zz, model: str, names: list | None = None) -> Source:
     """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
-    needs. UnitModelError when no pack holds it, or it has no bones."""
-    model, meshes, skeletons = packs_holding(zz, model)
+    needs. UnitModelError when no pack holds it, or it has no bones. `names`: as packs_holding takes it."""
+    model, meshes, skeletons = packs_holding(zz, model, names)
     first = MeshPack.read(next(iter(meshes.values())))
     skel = first.skeletons[first.items[model][2]] if first.items[model][2] != NONE else None
     if skel is None and skeletons:
@@ -235,7 +257,8 @@ def find_source(zz, model: str) -> Source:
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
     like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
             "ground": low, "middle": (max(hull) + min(hull)) / 2, "propellers": propellers}
-    return Source(model, meshes, skeletons, bones, like, body)
+    return Source(model, meshes, skeletons, bones, like, body,
+                  {"mats": mats, "disc_bones": {d["bone"] for d in propellers}})
 
 
 def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
@@ -435,14 +458,22 @@ def standin_member(member: str) -> str:
 
 # --- the packs ---
 def _vertex_buffer(part: Part, local: int) -> Buffer:
-    out = bytearray()
-    for (x, y, z), (nx, ny, nz), (u, v) in zip(part.positions, part.normals, part.uvs):
-        out += struct.pack("<3f", x, y, z)
-        out += bytes(max(0, min(255, round((c + 1.0) * 127.5))) for c in (nx, ny, nz)) + b"\0"
-        out += bytes((255, 0, 0, 0)) + bytes((local, 0, 0, 0))
-        out += struct.pack("<2f", u, v - 1.0)  # stored as the game's: v - 1 (its _2wn read back adds the 1)
-        out += bytes((0, 0, 255, 255))
-    return Buffer(bytes(out), len(out), len(part.positions), 0, 0)
+    """A part's points in the game's skinned format (SKINNED_2F, STRIDE bytes each). With numpy there
+    (rusemod.modelinnp.vertex_bytes), every point at once: the same bytes; these loops are what that is checked
+    against."""
+    from .modelin import whole_arrays
+    arrays = whole_arrays()
+    data = arrays.vertex_bytes(part, local) if arrays else None
+    if data is None:
+        out = bytearray()
+        for (x, y, z), (nx, ny, nz), (u, v) in zip(part.positions, part.normals, part.uvs):
+            out += struct.pack("<3f", x, y, z)
+            out += bytes(max(0, min(255, round((c + 1.0) * 127.5))) for c in (nx, ny, nz)) + b"\0"
+            out += bytes((255, 0, 0, 0)) + bytes((local, 0, 0, 0))
+            out += struct.pack("<2f", u, v - 1.0)  # stored as the game's: v - 1 (its _2wn read back adds the 1)
+            out += bytes((0, 0, 255, 255))
+        data = bytes(out)
+    return Buffer(data, len(data), len(part.positions), 0, 0)
 
 
 def _index_buffer(part: Part) -> Buffer:
@@ -471,25 +502,32 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 
 
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
-                bones: Skeleton) -> MeshPack:
+                bones: Skeleton, memo: dict | None = None) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
     helice_1: the game draws it as a spinning disc) naming its picture. A part on a bone the copied material's bone
     list hasn't got (the copied model ties nothing to it) is on that copy's list too. `bones`: the copied model's
-    skeleton (its entry is in the skeleton packs)."""
+    skeleton (its entry is in the skeleton packs). `memo`: a dict kept for this `raw` and `source` (Source.look: the
+    pack's materials and the propellers' bones as find_source read them, once for every model copying `source`)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
     roots = _material_list(nd)
-    spk = Spk(raw)
-    mats = spk.materials()
+    if memo is None or "mats" not in memo:
+        spk = Spk(raw)
+        mats = spk.materials()
+        disc_bones = {d["bone"] for p in spk.model(source)
+                      if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
+                      for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
+        if memo is not None:
+            memo["mats"], memo["disc_bones"] = mats, disc_bones
+    else:
+        mats, disc_bones = memo["mats"], memo["disc_bones"]
     own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
     body_number = next(m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {}))
     disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
-    disc_bones = {d["bone"] for p in spk.model(source) if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
-                  for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
 
     def material(number: int):
         """(the material object, the picture its Textures name, its bone numbers' remapping)."""
@@ -572,13 +610,15 @@ class Written:
 
 
 def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: dict | None = None,
-                     batch: dict | None = None) -> Written:
+                     batch: dict | None = None, textures: list | None = None) -> Written:
     """The new unit `unit`'s model `prep` into ZZ_Win.dat `zz` beside `source_model`'s: the changed packs and the
     added textures. `earlier`: members other build steps already changed (path -> bytes), changed from there.
     `batch`: one build's own models written together (a dict the caller keeps for them all, then write_batch): each
     pack is read once, grows as the models go in and is written once, and each source model is found once (the owner,
     2026-10-30: a copy with every era unit's own model; one by one, each model read and wrote the eight nations' model
-    packs again, hours and many GB for hundreds). Its Written.changed then names the packs, with None for their bytes."""
+    packs again, hours and many GB for hundreds). Its Written.changed then names the packs, with None for their bytes.
+    `textures`: its pictures already made into the game's textures, [(texture, stand-in)] in prep.pictures' order
+    (KeptModels: a model kept from an earlier build, its pictures then without their pixels)."""
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
     if batch is None:
         src = find_source(zz, source_model)
@@ -586,7 +626,9 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         sources = batch.setdefault("sources", {})
         key = source_model.replace("/", "\\").lower()
         if key not in sources:
-            sources[key] = find_source(zz, source_model)
+            if "names" not in batch:
+                batch["names"] = pack_names(zz)
+            sources[key] = find_source(zz, source_model, batch["names"])
         src = sources[key]
     new = model_name(src.model, unit)
 
@@ -606,7 +648,8 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     pts = [p for part in prep.parts for p in part.positions]
     if not pts:
         raise UnitModelError("the model has no points")
-    box = tuple(min(p[i] for p in pts) for i in range(3)) + tuple(max(p[i] for p in pts) for i in range(3))
+    cols = [[p[i] for p in pts] for i in range(3)]
+    box = tuple(min(c) for c in cols) + tuple(max(c) for c in cols)
     changed: dict = {}
 
     def keep(path: str, pack) -> None:  # written now, or (a batch) once, after the last model
@@ -617,7 +660,7 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
             changed[path] = None
 
     first_raw = next(iter(src.mesh_packs.values()))
-    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton)
+    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton, src.look)
     for path, raw in src.mesh_packs.items():
         pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
@@ -630,10 +673,11 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         keep(path, pack)
     added: dict = {}
     standins: dict = {}
-    for image, (name, w, h, px) in zip(images, prep.pictures):
+    for k, (image, (name, w, h, px)) in enumerate(zip(images, prep.pictures)):
         member = texture_member(image)
-        added[member] = new_texture(px, w, h)
-        standins[standin_member(member)] = new_standin(px, w, h)
+        texture, standin = textures[k] if textures is not None else (new_texture(px, w, h), new_standin(px, w, h))
+        added[member] = texture
+        standins[standin_member(member)] = standin
     body_standin = standin_member(texture_member(src.body_texture))
     proxies = batch.get("proxies") if batch is not None else None
     if proxies is None:  # every stand-in pack, read once (a batch keeps them for every model)
@@ -661,6 +705,289 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
                    "textures": sorted(added), "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk")),
                    "box": box})
     return Written(changed, added, new, report)
+
+
+KEPT_FOLDER = "own-models"   # in the build cache: packs of kept own models (rusemod.mapkeep's tile packs)
+KEPT_MOST = 4 << 30          # bytes of them kept at most, the most recently used
+KEPT_PACK = 256 << 20        # a build's new kept models written as a pack once they come to this many bytes
+KEPT_MAGIC = b"RUSEOWN1"
+KEPT_WIDTHS = (3, 3, 2, 3)   # a point's numbers: position, normal, texture place, a triangle's corners
+
+
+class KeptModels:
+    """A build's own models kept between builds, so a build of a mod whose .glb files are the same as an earlier
+    build's takes each model as read and its pictures as the game's textures from there instead of making them
+    again: in bigpacks14's build (2026-11-01; the owner: "keep working until this bug is solved and works quickly to
+    build") its 297 own models took 816 of its 1,103 s, reading the models and making their textures most of each.
+    A model is kept under a fingerprint of its .glb's bytes and the kept own models' format number (rusemod.keptformat
+    "ownmodel"), whichever mod or copy built it, in packs of their own in the build cache (rusemod.mapkeep's tile
+    packs: one file a pack, not a file a model); a damaged one is made again. Not kept: what each build does with the
+    game's packs (the copied model found, the new one added to them), which depends on the game and the other mods."""
+
+    def __init__(self, cache):
+        import threading
+        self.cache = cache
+        self.new: dict = {}
+        self.size = 0
+        self.made: dict = {}    # prepare's records, until get takes each
+        self.names: dict = {}   # a .glb's path -> its fingerprint, as prepare read it
+        self.coming: set = set()  # fingerprints prepare is still making
+        self.ready = threading.Condition()  # (made, coming)
+        self.lock = threading.Lock()        # (new, size)
+        self.maker = None
+        self.stop = False
+
+    def prepare(self, glbs, workers: int | None = None) -> None:
+        """The .glb files of `glbs` that aren't kept yet made side by side, in their order, while the build writes the
+        ones made (get waits for the one it needs): one after another, a first build of bigpacks14's mod spent 845 of
+        its 935 s on its 284 own models (2026-11-01). Worker programs read the .glb files (rusemod.mend's pool, half
+        the workers: they run without Numba, mend._pool's rule) and threads of this program make their pictures into
+        textures (Numba's encoder lets go of Python's lock: 256 pictures 18.0 s one after another, 5.5 s on 7
+        threads, the same bytes; in the workers without Numba they took six times as long), at most two models a
+        worker in hand; a thread of this program hands them out, and keeps each record as it is done. A record made
+        here is what get keeps, and get reading a kept model gives what making it gives (bigpacks14speed built both
+        ways: every member the same). Fewer than two to make, or one worker: nothing done here; a model that couldn't
+        be made here (or a pool that couldn't start), get makes as before, its error then the build's. close() ends
+        it."""
+        import threading
+        from .mapkeep import tile_names
+        from . import unitlook
+        from .mend import WORKERS
+        workers = WORKERS if workers is None else workers
+        todo: dict = {}
+        for glb in glbs:
+            try:
+                name = self.names[str(glb)] = _kept_name(Path(glb).read_bytes())
+            except OSError:
+                continue  # get says so
+            todo.setdefault(name, str(glb))
+        for name in tile_names(self.cache, KEPT_FOLDER):
+            todo.pop(name, None)
+        if len(todo) < 2 or workers < 2:
+            return
+        unitlook.whole_arrays()
+        try:  # the encoder with Numba in this program before the pool keeps it out of the workers (mend._pool)
+            from . import dxtnp  # noqa: F401
+        except ImportError:
+            pass
+        self.coming = set(todo)
+        self.maker = threading.Thread(target=self._make, args=(list(todo.items()), workers), daemon=True)
+        self.maker.start()
+
+    def _make(self, jobs: list, workers: int) -> None:
+        """prepare's thread: the models of `jobs` [(fingerprint, .glb)] made, each record kept as it is done."""
+        from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+        from .mend import _pool
+        reading: dict = {}   # future -> fingerprint
+        making: dict = {}
+        try:
+            with _pool(_kept_start, (), max(1, min(workers // 2, len(jobs)))) as readers, \
+                    ThreadPoolExecutor(workers) as makers:
+                while (jobs or reading or making) and not self.stop:
+                    while jobs and len(reading) + len(making) < 2 * workers:
+                        name, glb = jobs.pop(0)
+                        reading[readers.submit(_kept_read_job, glb)] = name
+                    done, _ = wait(list(reading) + list(making), return_when=FIRST_COMPLETED)
+                    for f in done:
+                        if f in reading:
+                            name = reading.pop(f)
+                            read = f.result() if f.exception() is None else None
+                            if read is not None:
+                                making[makers.submit(_kept_made, read)] = name
+                            else:
+                                self._done(name, None)
+                            continue
+                        name = making.pop(f)
+                        self._done(name, f.result())
+        except Exception:  # noqa: BLE001 (a pool that broke: what was made is kept, get makes the rest)
+            pass
+        finally:
+            with self.ready:
+                self.coming.clear()
+                self.ready.notify_all()
+
+    def _done(self, name: bytes, record: bytes | None) -> None:
+        with self.ready:
+            if record is not None:
+                self.made[name] = record
+            self.coming.discard(name)
+            self.ready.notify_all()
+        if record is not None and self.cache is not None:
+            self._keep(name, record)
+
+    def _keep(self, name: bytes, record: bytes) -> None:
+        with self.lock:
+            self.new[name] = record
+            self.size += len(record)
+            if self.size >= KEPT_PACK:
+                self._write()
+
+    def get(self, glb) -> tuple[Prepared, list]:
+        """(the .glb as read_mod_glb reads it, its pictures as the game's textures [(texture, stand-in)]) for
+        write_unit_model; its pictures without their pixels (only their names and sizes are used then)."""
+        from .mapkeep import read_tiles
+        name = self.names.get(str(glb))
+        if name is not None:
+            with self.ready:
+                while name in self.coming and name not in self.made:
+                    self.ready.wait()
+                record = self.made.pop(name, None)
+            got = _kept_read(record) if record is not None else None
+            if got is not None:
+                return got
+        if name is None:
+            data = Path(glb).read_bytes() if self.cache is not None else b""
+            name = _kept_name(data) if self.cache is not None else b""
+        if self.cache is not None:
+            with self.lock:
+                record = self.new.get(name)
+            record = record or read_tiles(self.cache, [name], folder=KEPT_FOLDER).get(name)
+            got = _kept_read(record) if record else None
+            if got is not None:
+                return got
+        prep = read_mod_glb(glb)
+        textures = [(new_texture(px, w, h), new_standin(px, w, h)) for _n, w, h, px in prep.pictures]
+        prep = Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures], prep.report)
+        if self.cache is not None:
+            try:
+                record = _kept_bytes(prep, textures)
+            except (ValueError, TypeError, OverflowError):
+                record = None      # not kept (a model laid out as this doesn't know): made again next time
+            if record is not None:
+                self._keep(name, record)
+        return prep, textures
+
+    def close(self) -> None:
+        """Stop prepare's making (what it has in hand finishes), then keep the models made since the last pack, as
+        one pack."""
+        self.stop = True
+        if self.maker is not None:
+            self.maker.join()
+            self.maker = None
+        with self.lock:
+            self._write()
+
+    def _write(self) -> None:
+        """(with self.lock held)"""
+        from .mapkeep import write_tiles
+        if self.new:
+            write_tiles(self.cache, self.new, most=KEPT_MOST, folder=KEPT_FOLDER)
+        self.new, self.size = {}, 0
+
+
+def _kept_start() -> None:
+    """A worker of KeptModels.prepare's pool: nothing shared."""
+
+
+def _kept_read_job(glb: str) -> tuple[bytes, list] | None:
+    """In a worker: the .glb read (read_mod_glb), as its kept record up to the textures (_kept_start_bytes) and its
+    pictures [(w, h, RGBA)]; None when it can't be (get then makes it, its error the build's)."""
+    try:
+        prep = read_mod_glb(Path(glb))
+        start = _kept_start_bytes(Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures],
+                                           prep.report))
+        return start, [(w, h, px) for _n, w, h, px in prep.pictures]
+    except Exception:  # noqa: BLE001 (made again by get, which says what went wrong)
+        return None
+
+
+def _kept_made(read: tuple[bytes, list]) -> bytes | None:
+    """On a thread: a model read (_kept_read_job) with its pictures made into textures, as a kept record
+    (KeptModels.get makes the same), or None when it can't be."""
+    try:
+        start, pictures = read
+        return _kept_whole(start, [(new_texture(px, w, h), new_standin(px, w, h)) for w, h, px in pictures])
+    except Exception:  # noqa: BLE001 (made again by get, which says what went wrong)
+        return None
+
+
+def _kept_name(data: bytes) -> bytes:
+    import hashlib
+    from .keptformat import stamp
+    return hashlib.blake2b(stamp("ownmodel") + data, digest_size=20).digest()
+
+
+def _kept_bytes(prep: Prepared, textures: list) -> bytes:
+    """A kept model: its parts' numbers exactly as read (64-bit floats, 64-bit corners), its report and pictures'
+    names and sizes, and its textures and stand-ins, compressed. ValueError for a part whose points aren't all as
+    wide."""
+    return _kept_whole(_kept_start_bytes(prep), textures)
+
+
+def _kept_whole(start: bytes, textures: list) -> bytes:
+    """A kept model from _kept_start_bytes and its textures."""
+    import zlib
+    out = [start]
+    for texture, standin in textures:
+        out += [struct.pack("<QQ", len(texture), len(standin)), texture, standin]
+    return zlib.compress(b"".join(out), 1)
+
+
+def _kept_start_bytes(prep: Prepared) -> bytes:
+    """A kept model up to its textures (uncompressed): what a worker of KeptModels.prepare sends back with the
+    pictures' pixels, so its points cross as bytes, not as Python numbers."""
+    import json
+    from array import array
+    parts, blobs = [], []
+    for p in prep.parts:
+        row = [p.bone, p.picture]
+        for seq, width, kind in zip((p.positions, p.normals, p.uvs, p.triangles), KEPT_WIDTHS, "dddq"):
+            if any(len(v) != width for v in seq):
+                raise ValueError("a part's points aren't all as wide")
+            row.append(len(seq))
+            blobs.append(array(kind, (x for v in seq for x in v)).tobytes())
+        parts.append(row)
+    head = json.dumps({"report": prep.report, "pictures": [[n, w, h] for n, w, h, _px in prep.pictures],
+                       "parts": parts}).encode("utf-8")
+    out = [KEPT_MAGIC, struct.pack("<I", len(head)), head]
+    for b in blobs:
+        out += [struct.pack("<Q", len(b)), b]
+    return b"".join(out)
+
+
+def _kept_read(record: bytes) -> tuple[Prepared, list] | None:
+    """A kept model back (_kept_bytes), or None when it can't be read as one."""
+    import json
+    import zlib
+    from array import array
+    try:
+        raw = zlib.decompress(record)
+        if raw[:8] != KEPT_MAGIC:
+            return None
+        at = 8
+        (n,) = struct.unpack_from("<I", raw, at)
+        head = json.loads(raw[at + 4:at + 4 + n].decode("utf-8"))
+        at += 4 + n
+
+        def blob() -> bytes:
+            nonlocal at
+            (size,) = struct.unpack_from("<Q", raw, at)
+            b = raw[at + 8:at + 8 + size]
+            if len(b) != size:
+                raise ValueError("cut short")
+            at += 8 + size
+            return b
+        parts = []
+        for bone, picture, *counts in head["parts"]:
+            seqs = []
+            for count, width, kind in zip(counts, KEPT_WIDTHS, "dddq"):
+                a = array(kind)
+                a.frombytes(blob())
+                if len(a) != count * width:
+                    return None
+                seqs.append(list(zip(*[iter(a.tolist())] * width)))
+            parts.append(Part(bone, picture, *seqs))
+        textures = []
+        for _p in head["pictures"]:
+            sizes = struct.unpack_from("<QQ", raw, at)
+            at += 16
+            textures.append((raw[at:at + sizes[0]], raw[at + sizes[0]:at + sizes[0] + sizes[1]]))
+            at += sizes[0] + sizes[1]
+        if at != len(raw):
+            return None
+        return Prepared(parts, [[n, w, h, b""] for n, w, h in head["pictures"]], head["report"]), textures
+    except (ValueError, KeyError, TypeError, struct.error, zlib.error, UnicodeDecodeError):
+        return None
 
 
 def write_batch(batch: dict) -> dict:

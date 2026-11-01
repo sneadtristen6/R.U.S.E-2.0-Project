@@ -4549,20 +4549,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for reason in fair.offline:
                 say(f"offline only: {reason}; multiplayer and co-op matches are left at once")
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
-            from .unitmodel import UnitModelError, read_mod_glb, write_batch, write_unit_model
+            from .unitmodel import KeptModels, UnitModelError, write_batch, write_unit_model
             batch: dict = {}  # every own model into each pack at once: each pack read and written once
             before = {**result.model_changed, **result.texture_changed, **result.model_imports}
+            kept = KeptModels(cache)  # each model as read and its textures, kept between builds
+            kept.prepare([glb for _unit, (_source, glb, _mod) in sorted(result.own_models.items())])  # side by side
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
-                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier=before,
-                                               batch=batch)
+                    prep, textures = kept.get(glb)
+                    written = write_unit_model(text_arc, source, unit, prep, earlier=before, batch=batch,
+                                               textures=textures)
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
+                    kept.close()
                     raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {_pack_full(exc)}") from None
                 result.new_files.update(written.added)
                 r = written.report
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+            kept.close()
             try:
                 result.model_imports.update(write_batch(batch))
             except (ValueError, struct.error) as exc:

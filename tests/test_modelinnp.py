@@ -638,5 +638,37 @@ class WholeArrays(unittest.TestCase):
                 self.same(model_bytes(modelin.read_model(out)), model_bytes(again_want), "the importer's own .glb")
 
 
+@unittest.skipIf(modelinnp is None, "numpy isn't here: the importer's loops do all of it")
+class OwnModelPoints(unittest.TestCase):
+    """unitmodel._vertex_buffer on whole arrays (modelinnp.vertex_bytes; 11-01, bigpacks14's 297 own models): the same
+    bytes as its loops, normals at a half and past -1 and 1 included, and the loops kept for what it leaves to them."""
+
+    def test_the_same_bytes_as_the_loops(self):
+        from rusemod import unitmodel
+        rnd = random.Random(11)
+        for n, local in ((1, 0), (7, 3), (500, 255)):
+            pos = points(rnd, n, (-3e3, -3e3, -3e3), (3e3, 3e3, 3e3))
+            nrm = normals(rnd, max(n, 3))[:n]
+            uvs = [(rnd.uniform(-2, 2), rnd.uniform(-2, 2)) for _ in range(n)]
+            if n > 3:   # (c + 1) * 127.5 at a half (0.0: 127.5), and normals past -1 and 1 (held to 0 and 255)
+                nrm[0], nrm[1], nrm[2] = (0.0, -0.0, 1.0), (1.5, -1.5, 1 / 127.5 - 1.0), (-1.0, 0.5, -0.25)
+            part = modelin.Part("chassis", 0, pos, nrm, uvs, [])
+            fast = unitmodel._vertex_buffer(part, local)
+            with loops():
+                slow = unitmodel._vertex_buffer(part, local)
+            self.assertEqual((fast.data, fast.size, fast.count), (slow.data, slow.size, slow.count))
+            self.assertEqual(len(fast.data), n * unitmodel.STRIDE)
+
+    def test_left_to_the_loops(self):
+        part = modelin.Part("chassis", 0, [(1.0, 2.0, 3.0)], [(0.0, 0.0, 1.0)], [(0.0, 0.0), (1.0, 1.0)], [])
+        self.assertIsNone(modelinnp.vertex_bytes(part, 0))                            # lists not as long
+        part.uvs = [(0.0, 0.0)]
+        self.assertIsNone(modelinnp.vertex_bytes(part, 256))                          # not a byte
+        part.positions = [(1e39, 0.0, 0.0)]
+        self.assertIsNone(modelinnp.vertex_bytes(part, 0))                            # past a 32-bit float
+        part.positions = [(1, 2, 3)]
+        self.assertIsNone(modelinnp.vertex_bytes(part, 0))                            # ints, not floats
+
+
 if __name__ == "__main__":
     unittest.main()

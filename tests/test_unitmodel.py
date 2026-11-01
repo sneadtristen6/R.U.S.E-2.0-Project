@@ -7,6 +7,7 @@ import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from fixtures import make_edat, make_ndf, val
 from rusemod import Edat, modelin, tgu1, unitmodel
@@ -556,6 +557,10 @@ class Packs(unittest.TestCase):
         self.assertEqual(s.like, {"length": 200.0, "width": 80.0, "pivot": (-70.0, 5.0), "ground": 2.0,
                                   "middle": -20.0, "propellers": []})
         self.assertEqual(s.body_texture, TEX)
+        # found from the packs' names read alone (a build's batch), the same
+        self.assertEqual(unitmodel.find_source(self.zz, TANK, unitmodel.pack_names(self.zz)), s)
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.find_source(self.zz, "ww2\\nothinglod0.ase2ndfbin", unitmodel.pack_names(self.zz))
 
     def test_written_beside_the_unit_s_model(self):
         w = unitmodel.write_unit_model(self.zz, TANK, "panzer_model", self.prep)
@@ -707,6 +712,109 @@ class Packs(unittest.TestCase):
         later = {**w.changed}
         with self.assertRaisesRegex(unitmodel.UnitModelError, "already have a model"):
             unitmodel.write_unit_model(_with(self.zz, later), TANK, "panzer_model", self.prep)
+
+
+class KeptOwnModels(unittest.TestCase):
+    """A mod's own models kept between builds (unitmodel.KeptModels; the owner, 2026-11-01: "works quickly to
+    build"): a kept model writes the same packs and textures as one made, a changed .glb or a damaged kept model is
+    made again, and without a cache nothing is kept."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.zz = zz_win()
+        self.like = unitmodel.find_source(self.zz, TANK).like
+        self.glb = self.dir / "models" / "Panzer_Model.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like), self.glb,
+                          TANK)
+        self.cache = self.dir / "cache"
+
+    def written(self, prep, textures=None):
+        w = unitmodel.write_unit_model(self.zz, TANK, "panzer_model", prep, textures=textures)
+        return w.changed, w.added, w.model, w.report
+
+    def test_kept_writes_what_made_writes(self):
+        made = self.written(unitmodel.read_mod_glb(self.glb))
+        first = unitmodel.KeptModels(self.cache)
+        self.assertEqual(self.written(*first.get(self.glb)), made)              # made, and kept
+        first.close()
+        self.assertTrue(list((self.cache / unitmodel.KEPT_FOLDER).glob("pack-*.bin")))
+        again = unitmodel.KeptModels(self.cache)
+        with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
+            prep, textures = again.get(self.glb)                              # taken from the kept pack
+        self.assertEqual(self.written(prep, textures), made)
+        self.assertEqual({p[3] for p in prep.pictures}, {b""})                 # no pixels kept
+
+    def test_a_changed_glb_is_made_again(self):
+        first = unitmodel.KeptModels(self.cache)
+        first.get(self.glb)
+        first.close()
+        bigger = modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like, size=1.5)
+        modelin.write_glb(bigger, self.glb, TANK)
+        again = unitmodel.KeptModels(self.cache)
+        prep, textures = again.get(self.glb)
+        self.assertEqual(self.written(prep, textures), self.written(unitmodel.read_mod_glb(self.glb)))
+
+    def test_a_damaged_kept_model_is_made_again(self):
+        first = unitmodel.KeptModels(self.cache)
+        first.get(self.glb)
+        first.close()
+        pack = next((self.cache / unitmodel.KEPT_FOLDER).glob("pack-*.bin"))
+        raw = bytearray(pack.read_bytes())
+        raw[-10] ^= 0xFF
+        pack.write_bytes(bytes(raw))
+        again = unitmodel.KeptModels(self.cache)
+        prep, textures = again.get(self.glb)
+        self.assertEqual(self.written(prep, textures), self.written(unitmodel.read_mod_glb(self.glb)))
+
+    def test_no_cache_keeps_nothing(self):
+        none = unitmodel.KeptModels(None)
+        prep, textures = none.get(self.glb)
+        none.close()
+        self.assertEqual(self.written(prep, textures), self.written(unitmodel.read_mod_glb(self.glb)))
+
+    def test_made_side_by_side(self):  # a first build's new models made in worker programs, then kept
+        other = self.dir / "models" / "Panzer_Big.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like, size=1.5),
+                          other, TANK)
+        made = {g: self.written(unitmodel.read_mod_glb(g)) for g in (self.glb, other)}
+        for cache in (self.cache, None):
+            kept = unitmodel.KeptModels(cache)
+            kept.prepare([self.glb, other, self.glb], workers=2)
+            with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
+                for g in (self.glb, other):
+                    self.assertEqual(self.written(*kept.get(g)), made[g])
+            kept.close()
+        again = unitmodel.KeptModels(self.cache)  # all kept now: no workers started
+        with mock.patch("rusemod.mend._pool", side_effect=AssertionError("a pool")):
+            again.prepare([self.glb, other], workers=2)
+            with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
+                self.assertEqual(self.written(*again.get(other)), made[other])
+
+    def test_stopped_while_making(self):  # a build stopped by an error closes it: get still makes what's missing
+        other = self.dir / "models" / "Panzer_Big.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like, size=1.5),
+                          other, TANK)
+        kept = unitmodel.KeptModels(self.cache)
+        kept.prepare([self.glb, other], workers=2)
+        kept.close()
+        self.assertIsNone(kept.maker)
+        for g in (self.glb, other):
+            self.assertEqual(self.written(*kept.get(g)), self.written(unitmodel.read_mod_glb(g)))
+        kept.close()
+
+    def test_what_a_worker_can_t_make_is_made_by_get(self):
+        broken = self.dir / "models" / "Broken.glb"
+        broken.write_bytes(b"not a glb")
+        kept = unitmodel.KeptModels(self.cache)
+        kept.prepare([self.glb, broken], workers=2)
+        self.assertEqual(self.written(*kept.get(self.glb)), self.written(unitmodel.read_mod_glb(self.glb)))
+        with self.assertRaises((unitmodel.UnitModelError, ValueError)):
+            kept.get(broken)
+        self.assertFalse(self.cache.exists())
 
 
 def _with(zz: Edat, changed: dict) -> Edat:

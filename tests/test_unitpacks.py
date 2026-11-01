@@ -218,6 +218,32 @@ class Meshes(unittest.TestCase):
         with self.assertRaises(PackError):
             pack.add(self.ger, TANK)
 
+    def test_materials_kept_read_between_copies(self):  # a build's batch: the same bytes as reading them each time
+        def copied(forget: bool) -> bytes:
+            us = mesh_pack({SHERMAN: (40.0, True, 0, 3)}, [TEX_US])
+            ger = mesh_pack({TANK: (0.0, True, 0, 6), TANK_DEAD: (20.0, True, 0, 6)}, [TEX])
+            jeep = mesh_pack({JEEP: (60.0, False, 0, 6)}, [TEX_JEEP])
+            for src, name in ((ger, TANK), (jeep, JEEP), (None, None), (ger, TANK_DEAD)):
+                if forget:
+                    for p in (us, ger, jeep):
+                        p.__dict__.pop("_materials_kept", None)
+                if src is None:  # materials set from outside are read again
+                    us.materials, us.material_count = materials([TEX_US, TEX, TEX_JEEP, TEX]), 4
+                    continue
+                us.add(src, name)
+            return us.to_bytes()
+        kept = copied(False)
+        self.assertEqual(kept, copied(True))
+        self.assertEqual(MeshPack.read(kept).to_bytes(), kept)
+
+    def test_names_read_alone(self):
+        pack = mesh_pack({TANK: (0.0, True, 0, 6), SHERMAN: (40.0, True, 0, 3)}, [TEX])
+        raw = pack.to_bytes()
+        self.assertEqual(MeshPack.item_names(raw), {n: (m, s) for n, (_d, m, s) in MeshPack.read(raw).items.items()})
+        self.assertEqual(MeshPack.item_names(skeleton_pack({}).to_bytes()), {})
+        with self.assertRaises(PackError):
+            MeshPack.item_names(b"MESHPCPC" + struct.pack("<I", 3) + bytes(200))
+
     def test_bones_and_textures(self):
         plain = mesh_pack({JEEP: (0.0, False, 0, 6)}, [TEX_JEEP])
         self.assertTrue(self.ger.bones(TANK))
@@ -272,6 +298,75 @@ class StandIns(unittest.TestCase):
         self.assertEqual(again.proxies[1].key, ger.proxies[0].key)
         with self.assertRaises(PackError):
             pack.add(ger, proxy_name(TEX))
+
+    def test_names_kept_between_adds(self):  # a build's batch: the same rows as reading the names for each add
+        adds = [f"gentexproxy\\ww2\\units\\n{k:03}.tgv" for k in (7, 2, 9, 0, 5)]
+
+        def grown(forget: bool, order: list) -> bytes:
+            pack = proxy_pack([f"gentexproxy\\ww2\\units\\n{k:03}.tgv" for k in (1, 4, 8)])
+            pack.proxies = [pack.proxies[i] for i in order]   # a pack not in name order: added as before
+            pack.shared = list(range(len(order)))
+            for name in adds:
+                if forget:
+                    pack.__dict__.pop("_names_cache", None)
+                pack.add(proxy_pack([name]), name)
+            pack.proxies.append(proxy_pack(["gentexproxy\\z.tgv"]).proxies[0])  # rows put in from outside are seen
+            pack.shared.append(len(pack.shared))
+            self.assertIn("gentexproxy\\z.tgv", pack.names())
+            return pack.to_bytes()
+        for order in ([0, 1, 2], [2, 0, 1]):
+            self.assertEqual(grown(False, order), grown(True, order))
+
+    def walked(self, raw: bytes) -> list[int]:
+        """The rows the game's walk takes (the first link's rows, the row, the second link's), in order, as row
+        numbers; each link checked to land on a row inside the table."""
+        to, ts = struct.unpack_from("<II", raw, 0x20)
+        taken = []
+
+        def visit(at: int) -> None:
+            while True:
+                self.assertTrue(at % 24 == 0 and 0 <= at < ts, f"a link lands at {at} of {ts}")
+                first, second, tail = struct.unpack_from("<HHI", raw, to + at + 0x10)
+                self.assertEqual(tail, 0xAAAAAAAA)
+                if first:
+                    visit(at + first)
+                taken.append(at // 24)
+                if not second:
+                    return
+                at += second
+
+        visit(0)
+        return taken
+
+    def keys_walked(self, raw: bytes) -> list[int]:
+        to = struct.unpack_from("<I", raw, 0x20)[0]
+        return [struct.unpack_from("<Q", raw, to + 24 * i)[0] for i in self.walked(raw)]
+
+    def test_the_index_is_the_game_s(self):  # bigpacks7's hang: rows copied in kept other rows' links (F-163)
+        names = [f"gentexproxy\\ww2\\units\\t{k:03}.tgv" for k in range(60)]
+        pack = proxy_pack(names)
+        for k, p in enumerate(pack.proxies):  # links as a copied row brings them: another pack's
+            p.extra = struct.pack("<HHI", 24 * (k % 5), 48 * (k % 3), 0xAAAAAAAA)
+        raw = pack.to_bytes()
+        keys = self.keys_walked(raw)
+        self.assertEqual(sorted(self.walked(raw)), list(range(60)))   # every row once
+        self.assertEqual(keys, sorted(keys))                          # a search tree on the key
+        self.assertEqual(ProxyPack.read(raw).names(), sorted(names))  # the rows stay in their order
+        self.assertEqual(ProxyPack.read(raw).to_bytes(), raw)
+
+    def test_a_pack_too_big_for_its_order(self):  # 5,429 rows in mesh_all.ppk with all 366 era units
+        names = [f"gentexproxy\\ww2\\units\\t{k:05}.tgv" for k in range(6000)]
+        pack = proxy_pack(names)
+        keys = [struct.unpack("<Q", p.key)[0] for p in pack.proxies]
+        from rusemod.unitpacks import _links_as_inserted
+        self.assertIsNone(_links_as_inserted(keys))   # in name order a link would pass 16 bits
+        raw = pack.to_bytes()
+        walked = self.keys_walked(raw)
+        self.assertEqual(len(walked), 6000)
+        self.assertEqual(walked, sorted(keys))
+        again = ProxyPack.read(raw)
+        self.assertEqual(sorted(again.names()), sorted(names))
+        self.assertEqual({p.name: p.data for p in again.proxies}, {p.name: p.data for p in pack.proxies})
 
     def test_names(self):
         self.assertEqual(proxy_name(TEX), "gentexproxy\\ww2\\res3d\\units\\ger\\tank\\tsccomb_combineddsctexture01.tgv")

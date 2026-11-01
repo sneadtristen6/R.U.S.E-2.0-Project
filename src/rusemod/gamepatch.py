@@ -127,7 +127,8 @@ def _edit(out: bytearray, patches) -> None:
     for offset, new, name in sorted(ends, key=lambda e: e[0]):
         if offset != len(out):
             # not a game rule: what the patch expects to find
-            raise GamePatchError(f"the game patch {name} doesn't match this RUSE.exe's length, so it wasn't applied")
+            raise GamePatchError(f"the game patch {name} doesn't match the length of this RUSE.exe, so it wasn't "
+                                 f"applied")
         out += new
 
 

@@ -586,3 +586,32 @@ def part_buffers(part, scale: float, mirror: bool):
     order = tri[:, [0, 2, 1]] if mirror else tri
     return ((pos32.tobytes(), len(p), low, high), (nrm32.tobytes(), len(n)), (uv32.tobytes(), len(uv)),
             (order.astype("<u4" if wide else "<u2").tobytes(), 3 * len(tri)))
+
+
+# --- a unit's own model as the game draws it (rusemod.unitmodel._vertex_buffer) -------------------------------------
+_VERTEX = np.dtype([("p", "<f4", (3,)), ("n", "u1", (4,)), ("w", "u1", (4,)), ("i", "u1", (4,)), ("t", "<f4", (2,)),
+                    ("a", "u1", (4,))])   # 36 bytes a point, unitmodel.STRIDE
+
+
+def vertex_bytes(part, local: int):
+    """unitmodel._vertex_buffer's bytes for a part, every point at once (11-01: bigpacks14's 297 own models): its
+    position and texture place (v - 1) as 32-bit floats, its normal's numbers as round((c + 1) * 127.5) held to 0..255
+    (rint rounds a half to even, as round() does), then the fixed bone weight, the bone `local` and the atlas bytes.
+    None for a part left to the loops: lists not all as long, a number not a finite Python float, one past a 32-bit
+    float (struct refuses it), a bone that isn't a byte."""
+    p = _numbers(part, "positions", 3)
+    n = _numbers(part, "normals", 3)
+    uv = _numbers(part, "uvs", 2)
+    if p is None or n is None or uv is None or not len(p) == len(n) == len(uv) or not 0 <= local <= 255:
+        return None
+    with np.errstate(all="ignore"):
+        pos32 = p.astype("<f4")
+        uv32 = np.stack([uv[:, 0], uv[:, 1] - 1.0], axis=1).astype("<f4")
+        byte = np.clip(np.rint((n + 1.0) * 127.5), 0, 255).astype("u1")
+    if not _finite(pos32, uv32):
+        return None
+    out = np.zeros(len(p), _VERTEX)
+    out["p"], out["t"] = pos32, uv32
+    out["n"][:, :3] = byte
+    out["w"][:, 0], out["i"][:, 0], out["a"][:, 2:] = 255, local, 255
+    return out.tobytes()

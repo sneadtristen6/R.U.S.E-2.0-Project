@@ -6,6 +6,7 @@ copied into that nation's packs the same way, and a spawned unit's go into the c
 unchanged come back byte for byte."""
 from __future__ import annotations
 
+import bisect
 import hashlib
 import struct
 from dataclasses import dataclass, field
@@ -150,6 +151,23 @@ class MeshPack:
     vbs: list = field(default_factory=list)       # Buffer
     skeletons: list = field(default_factory=list)  # bytes
     has_formats: bool = True                       # (a pack with nothing in it has no format section at all)
+
+    @staticmethod
+    def item_names(raw: bytes) -> dict:
+        """The models a pack names, {name: (mesh, skeleton)}, from its name table alone (read() reads everything)."""
+        if raw[:8] != MESH_MAGIC or struct.unpack_from("<I", raw, 8)[0] != 4:
+            raise PackError(f"not a version 4 mesh pack: {raw[:8]!r}")
+        no, ns, nc = struct.unpack_from("<III", raw, 0x34 + 12 * SECTIONS.index("names"))
+        out = {}
+        if ns:
+            if raw[no:no + 10] != NAMES_HEAD:
+                raise PackError("its name table doesn't start as known")
+            for name, data in read_names(raw, no + 10, no + ns, ITEM.size):
+                *_box, mesh, skel = ITEM.unpack(data)
+                out[name] = (mesh, skel)
+            if len(out) != nc:
+                raise PackError(f"{len(out)} names for {nc}")
+        return out
 
     @classmethod
     def read(cls, raw: bytes) -> "MeshPack":
@@ -384,20 +402,41 @@ def _texts(nd: Ndf, v: Value) -> list[str]:
     return []
 
 
+def _ident(nd: Ndf, i: int) -> bytes:
+    """What object `i` of `nd` is: its class and values."""
+    o = nd.objects[i]
+    return nd.classes[o.cls].encode() + b"".join(nd.props[pi][0].encode() + v.encode() for pi, v in o.props)
+
+
+def _materials_read(pack: MeshPack, known: bool = False) -> tuple[Ndf, dict | None, set | None]:
+    """`pack`'s materials read, and with `known` what each object is ({_ident: its first number}) and the _idents more
+    than one object has, kept on the pack while pack.materials stays the bytes they were read from or written as: a
+    build's batch copies hundreds of own models into the same packs (2026-11-01, the owner's "works quickly to
+    build"), and read again for each copy the biggest pack's materials took longer the more it held. Bytes set by
+    anyone else are read again."""
+    kept = pack.__dict__.get("_materials_kept")
+    if kept is not None and kept[0] is pack.materials and (kept[2] is not None or not known):
+        return kept[1], kept[2], kept[3]
+    nd = Ndf(pack.materials)
+    seen = twice = None
+    if known:
+        seen, twice = {}, set()
+        for i in range(len(nd.objects)):
+            key = _ident(nd, i)
+            if seen.setdefault(key, i) != i:
+                twice.add(key)
+    pack.__dict__["_materials_kept"] = (pack.materials, nd, seen, twice)
+    return nd, seen, twice
+
+
 def _copy_materials(dst: MeshPack, src: MeshPack, numbers: list[int]) -> list[int]:
     """Copy materials `numbers` of `src` into `dst` (with the objects they refer to); their numbers in `dst`. A
     material `dst` already has, the same in every value, is shared."""
-    s, d = Ndf(src.materials), Ndf(dst.materials)
+    s = Ndf(src.materials) if src is dst else _materials_read(src)[0]
+    d, known, twice = _materials_read(dst, known=True)  # known: what an object of `dst` is -> its number
+    dst.__dict__.pop("_materials_kept")                 # changed below: kept again once written
     s_list, d_list = _material_list(s), _material_list(d)
     done: dict[int, int] = {}
-    known: dict[bytes, int] = {}  # what an object of `dst` is (class and values) -> its number
-
-    def ident(nd: Ndf, i: int) -> bytes:
-        o = nd.objects[i]
-        return nd.classes[o.cls].encode() + b"".join(nd.props[pi][0].encode() + v.encode() for pi, v in o.props)
-
-    for i in range(len(d.objects)):
-        known.setdefault(ident(d, i), i)
 
     def value(v: Value) -> Value:
         if v.tc in (0x07, 0x1C):
@@ -445,21 +484,94 @@ def _copy_materials(dst: MeshPack, src: MeshPack, numbers: list[int]) -> list[in
         if n not in d_list:
             d_list.append(n)
         out.append(d_list.index(n))
-    root = d.objects[d.topo[0]]
+    r = d.topo[0]
+    root = d.objects[r]
+    old = _ident(d, r)
     root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(d_list)) + b"".join(
         Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, d.objects[n].cls)).encode() for n in d_list)))
+    new = _ident(d, r)
+    if new != old:  # known as if every object were looked at again (the first with each _ident)
+        if old in twice:
+            same = [i for i in range(len(d.objects)) if i != r and _ident(d, i) == old]
+            known[old] = same[0]
+            if len(same) == 1:
+                twice.discard(old)
+        elif known.get(old) == r:
+            del known[old]
+        if new in known:
+            twice.add(new)
+            known[new] = min(known[new], r)
+        else:
+            known[new] = r
     dst.materials = d.to_logical()
     dst.material_count = len(d_list)
+    dst.__dict__["_materials_kept"] = (dst.materials, d, known, twice)
     return out
 
 
 # --- texture stand-in packs ---
+# A stand-in pack's table is the game's index too: a search tree on each row's key read as a little-endian number,
+# the rows inserted in table order, a smaller key down a row's first link, a larger or equal one down its second, each
+# link the bytes from the row to its child (0: none), then 0xAAAAAAAA. The game walks it to load the pack (the first
+# link's rows, the row, then the second link's) and reads each link as 16 bits. The rule gives every link of
+# all 63 of the game's packs with rows (findings F-161, F-162). A row copied in with another row's links breaks the
+# walk: rows missed, others reached by so many paths that the game's list never ends (bigpacks7's hang, F-163).
+ROW = 24
+TAIL = 0xAAAAAAAA
+LINK_MOST = 0xFFFF
+LEFT_MOST = LINK_MOST // ROW - 1   # rows a row's first subtree may hold for its second link to pass them: 2,729
+
+
 @dataclass
 class Proxy:
     key: bytes      # 8 bytes
     data: bytes     # the stand-in .tgv
-    extra: bytes    # the table row's last 8 bytes, as read
+    extra: bytes    # the table row's last 8 bytes, as read (its links: `to_bytes` writes the index anew)
     name: bytes     # 256 bytes, zero-padded
+
+
+def _links_as_inserted(keys: list[int]) -> list[tuple[int, int]] | None:
+    """The game's index for rows in this order, (first link, second link) in bytes per row; None if a link would pass
+    the 16 bits the game reads."""
+    left, right = [0] * len(keys), [0] * len(keys)
+    for i in range(1, len(keys)):
+        at = 0
+        while True:
+            side = left if keys[i] < keys[at] else right
+            if not side[at]:
+                side[at] = i
+                break
+            at = side[at]
+    links = [((lo - i) * ROW if lo else 0, (hi - i) * ROW if hi else 0) for i, (lo, hi) in enumerate(zip(left, right))]
+    return None if any(max(pair) > LINK_MOST for pair in links) else links
+
+
+def _links_laid_out(keys: list[int]) -> tuple[list[int], list[tuple[int, int]]]:
+    """For a pack too big for its own order: a row order and its links that fit 16 bits. The same kind of search tree,
+    laid out row first, then its first subtree, then its second; a first subtree never holds more than LEFT_MOST rows,
+    so the second link always fits (balanced where both sides fit, else LEFT_MOST rows to the first side). The game's
+    walk reads it like its own; mesh_all.ppk's rows aren't in name order in the game either."""
+    by_key = sorted(range(len(keys)), key=lambda i: (keys[i], i))
+    if any(keys[a] == keys[b] for a, b in zip(by_key, by_key[1:])):
+        raise PackError("two stand-ins with one key: no search tree holds both in this layout")
+    order: list[int] = []
+    links: list[tuple[int, int]] = []
+
+    def place(lo: int, hi: int) -> None:
+        n = hi - lo
+        if not n:
+            return
+        mid = lo + (n // 2 if n <= 2 * LEFT_MOST + 1 else LEFT_MOST)
+        at = len(order)
+        order.append(by_key[mid])
+        links.append((0, 0))
+        place(lo, mid)
+        place(mid + 1, hi)
+        first = mid - lo
+        links[at] = (ROW if first else 0, ROW * (1 + first) if hi - mid - 1 else 0)
+
+    place(0, len(keys))
+    return order, links
 
 
 @dataclass
@@ -486,17 +598,37 @@ class ProxyPack:
             pack.shared.append(first.setdefault(off, i))
         return pack
 
+    def _names_kept(self) -> tuple[list, list, list, bool, list]:
+        """(each stand-in's id, its name, its sort_key, whether those keys are in order, the stand-ins themselves, so
+        no id is another's while kept), kept on the pack while its stand-ins are the same objects in the same order: a
+        build's batch adds thousands of stand-ins to packs of up to 5,429 (2026-11-01, the owner's "works quickly to
+        build"), and each one's names were read again for each."""
+        ids = list(map(id, self.proxies))
+        kept = self.__dict__.get("_names_cache")
+        if kept is None or kept[0] != ids:
+            names = [p.name.split(b"\0", 1)[0].decode("latin-1") for p in self.proxies]
+            keys = [sort_key(n) for n in names]
+            kept = self.__dict__["_names_cache"] = (ids, names, keys, all(a <= b for a, b in zip(keys, keys[1:])),
+                                                   list(self.proxies))
+        return kept
+
     def names(self) -> list[str]:
-        return [p.name.split(b"\0", 1)[0].decode("latin-1") for p in self.proxies]
+        return list(self._names_kept()[1])
 
     def to_bytes(self) -> bytes:
+        """The pack, its index written anew by the game's rule (the game's own packs come back byte for byte); a pack
+        too big for that in its order is laid out in one whose links fit."""
+        keys = [struct.unpack("<Q", p.key)[0] for p in self.proxies]
+        order, links = list(range(len(keys))), _links_as_inserted(keys)
+        if links is None:
+            order, links = _links_laid_out(keys)
         table, data, names, at = bytearray(), bytearray(), bytearray(), {}
-        for i, p in enumerate(self.proxies):
-            j = self.shared[i]
+        for i, (first, second) in zip(order, links):
+            p, j = self.proxies[i], self.shared[i]
             if j not in at:
                 at[j] = len(data)
                 data += p.data
-            table += struct.pack("<8sII8s", p.key, at[j], len(p.data), p.extra)
+            table += struct.pack("<8sIIHHI", p.key, at[j], len(p.data), first, second, TAIL)
             names += p.name + p.key
         n = len(self.proxies)
         out = bytearray(0x40)
@@ -511,15 +643,20 @@ class ProxyPack:
     def add(self, src: "ProxyPack", name: str) -> None:
         """Copy the stand-in `name` (gentexproxy\\...\\x01.tgv) of `src` in, in name order; a picture this pack
         already has is shared."""
-        names = self.names()
+        ids, names, keys, ordered, refs = self._names_kept()
         if name in names:
             raise PackError(f"{name} is already in the pack")
         p = src.proxies[src.names().index(name)]
         same = next((self.shared[i] for i, q in enumerate(self.proxies) if q.data == p.data), None)
-        at = next((i for i, n in enumerate(names) if sort_key(n) > sort_key(name)), len(names))
+        key = sort_key(name)  # before the first name that sorts after it (in a pack in order, bisect finds that)
+        at = bisect.bisect_right(keys, key) if ordered else next((i for i, k in enumerate(keys) if k > key), len(keys))
         self.proxies.insert(at, p)
         self.shared = [j + (j >= at) for j in self.shared]
         self.shared.insert(at, at if same is None else same + (same >= at))
+        ids.insert(at, id(p))
+        names.insert(at, name)
+        keys.insert(at, key)
+        refs.insert(at, p)
 
 
 def proxy_name(texture: str) -> str:
