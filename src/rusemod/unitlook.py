@@ -124,13 +124,34 @@ def _pool(changed: list[bool], bw: int, bh: int, nbw: int, nbh: int) -> list[boo
     return out
 
 
+def _encoded(pic: bytes, w: int, which: list) -> dict:
+    """{block: dxt.encode_block of its pixels} for the blocks `which` of the RGBA picture `pic` (`w` across). With
+    numpy there (rusemod.dxtnp.encode_blocks), all of them at once: the same 8 bytes each (11-01: a card took half a
+    second a block at a time, 162 s for bigpacks14's 297); these loops are what that is checked against."""
+    bw = w // 4
+    if which:
+        try:
+            from . import dxtnp
+            from .numpy2 import np
+            h = len(pic) // (4 * w)
+            blocks = np.frombuffer(pic, np.uint8)[:h * w * 4].reshape(h // 4, 4, bw, 4, 4)[..., :3]
+            rows = np.ascontiguousarray(blocks.transpose(0, 2, 1, 3, 4)).reshape(-1, 48)[which]
+            got = dxtnp.encode_blocks(rows)
+            return {i: got[8 * k:8 * k + 8] for k, i in enumerate(which)}
+        except (ImportError, ValueError):
+            pass    # (no numpy, or a picture not whole blocks: the loops)
+    return {i: dxt.encode_block(block_pixels(pic, w, i % bw, i // bw)) for i in which}
+
+
 def _level_blocks(old_blocks: bytes, size: int, pic: bytes, alpha_pic: bytes | None, w: int,
                   colour_changed: list[bool], alpha_changed: list[bool]) -> tuple[bytes, int]:
     """One level's blocks: the game's where nothing changed, encoded again where it did. Returns (blocks, count of
     blocks encoded again)."""
     bw = w // 4
     out, again = bytearray(), 0
-    for i in range(len(old_blocks) // size):
+    count = len(old_blocks) // size
+    colours = _encoded(pic, w, [i for i in range(count) if colour_changed[i]])
+    for i in range(count):
         old = old_blocks[size * i:size * (i + 1)]
         bx, by = i % bw, i // bw
         if not colour_changed[i] and not alpha_changed[i]:
@@ -140,10 +161,10 @@ def _level_blocks(old_blocks: bytes, size: int, pic: bytes, alpha_pic: bytes | N
         if size == 16:
             alpha = alpha_block([p[0] for p in block_pixels(alpha_pic, w, bx, by, 1, 1)]) \
                 if alpha_changed[i] else old[:8]
-            colour = dxt.encode_block(block_pixels(pic, w, bx, by)) if colour_changed[i] else old[8:]
+            colour = colours[i] if colour_changed[i] else old[8:]
             out += alpha + colour
         else:
-            out += dxt.encode_block(block_pixels(pic, w, bx, by))
+            out += colours[i] if colour_changed[i] else dxt.encode_block(block_pixels(pic, w, bx, by))
     return bytes(out), again
 
 

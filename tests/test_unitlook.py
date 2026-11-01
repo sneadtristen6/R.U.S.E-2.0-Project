@@ -705,5 +705,31 @@ class StudioLook(unittest.TestCase):
         self.assertFalse((folder / blender.SAVE_REQUEST).exists())
 
 
+class BlocksAtOnce(unittest.TestCase):
+    """unitlook._encoded (11-01: a card's blocks encoded at once with numpy, rusemod.dxtnp): the same bytes as
+    dxt.encode_block a block at a time, for blocks of one colour, two, noise and the picture's last row and column."""
+
+    def test_the_same_bytes_as_a_block_at_a_time(self):
+        import random
+        try:
+            from rusemod import dxtnp  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy isn't here: the blocks are encoded one at a time")
+        rnd = random.Random(7)
+        w, h = 32, 16
+        px = bytearray(rnd.randrange(256) for _ in range(w * h * 4))
+        px[: 4 * w * 4] = bytes((200, 30, 30, 255)) * (4 * w)        # the first row of blocks: one colour
+        for y in range(4, 8):                                       # the second: two colours
+            for x in range(w):
+                o = (y * w + x) * 4
+                px[o:o + 4] = bytes((10, 220, 40, 255)) if x % 2 else bytes((250, 250, 250, 255))
+        which = [0, 3, 8, 9, 15, 16, 17, 31] + list(range(20, 25))
+        fast = unitlook._encoded(bytes(px), w, which)
+        bw = w // 4
+        slow = {i: dxt.encode_block(unitlook.block_pixels(bytes(px), w, i % bw, i // bw)) for i in which}
+        self.assertEqual(fast, slow)
+        self.assertEqual(unitlook._encoded(bytes(px), w, []), {})
+
+
 if __name__ == "__main__":
     unittest.main()
