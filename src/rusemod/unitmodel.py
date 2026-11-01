@@ -546,13 +546,15 @@ class Written:
 
 
 def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: dict | None = None,
-                     batch: dict | None = None) -> Written:
+                     batch: dict | None = None, textures: list | None = None) -> Written:
     """The new unit `unit`'s model `prep` into ZZ_Win.dat `zz` beside `source_model`'s: the changed packs and the
     added textures. `earlier`: members other build steps already changed (path -> bytes), changed from there.
     `batch`: one build's own models written together (a dict the caller keeps for them all, then write_batch): each
     pack is read once, grows as the models go in and is written once, and each source model is found once (the owner,
     2026-10-30: a copy with every era unit's own model; one by one, each model read and wrote the eight nations' model
-    packs again, hours and many GB for hundreds). Its Written.changed then names the packs, with None for their bytes."""
+    packs again, hours and many GB for hundreds). Its Written.changed then names the packs, with None for their bytes.
+    `textures`: its pictures already made into the game's textures, [(texture, stand-in)] in prep.pictures' order
+    (KeptModels: a model kept from an earlier build, its pictures then without their pixels)."""
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
     if batch is None:
         src = find_source(zz, source_model)
@@ -604,10 +606,11 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         keep(path, pack)
     added: dict = {}
     standins: dict = {}
-    for image, (name, w, h, px) in zip(images, prep.pictures):
+    for k, (image, (name, w, h, px)) in enumerate(zip(images, prep.pictures)):
         member = texture_member(image)
-        added[member] = new_texture(px, w, h)
-        standins[standin_member(member)] = new_standin(px, w, h)
+        texture, standin = textures[k] if textures is not None else (new_texture(px, w, h), new_standin(px, w, h))
+        added[member] = texture
+        standins[standin_member(member)] = standin
     body_standin = standin_member(texture_member(src.body_texture))
     proxies = batch.get("proxies") if batch is not None else None
     if proxies is None:  # every stand-in pack, read once (a batch keeps them for every model)
@@ -635,6 +638,139 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
                    "textures": sorted(added), "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk")),
                    "box": box})
     return Written(changed, added, new, report)
+
+
+KEPT_FOLDER = "own-models"   # in the build cache: packs of kept own models (rusemod.mapkeep's tile packs)
+KEPT_MOST = 4 << 30          # bytes of them kept at most, the most recently used
+KEPT_PACK = 256 << 20        # a build's new kept models written as a pack once they come to this many bytes
+KEPT_MAGIC = b"RUSEOWN1"
+KEPT_WIDTHS = (3, 3, 2, 3)   # a point's numbers: position, normal, texture place, a triangle's corners
+
+
+class KeptModels:
+    """A build's own models kept between builds, so a build of a mod whose .glb files are the same as an earlier
+    build's takes each model as read and its pictures as the game's textures from there instead of making them
+    again: in bigpacks14's build (2026-11-01; the owner: "keep working until this bug is solved and works quickly to
+    build") its 297 own models took 816 of its 1,103 s, reading the models and making their textures most of each.
+    A model is kept under a fingerprint of its .glb's bytes and the kept own models' format number (rusemod.keptformat
+    "ownmodel"), whichever mod or copy built it, in packs of their own in the build cache (rusemod.mapkeep's tile
+    packs: one file a pack, not a file a model); a damaged one is made again. Not kept: what each build does with the
+    game's packs (the copied model found, the new one added to them), which depends on the game and the other mods."""
+
+    def __init__(self, cache):
+        self.cache = cache
+        self.new: dict = {}
+        self.size = 0
+
+    def get(self, glb) -> tuple[Prepared, list]:
+        """(the .glb as read_mod_glb reads it, its pictures as the game's textures [(texture, stand-in)]) for
+        write_unit_model; its pictures without their pixels (only their names and sizes are used then)."""
+        from .mapkeep import read_tiles
+        data = Path(glb).read_bytes() if self.cache is not None else b""
+        name = _kept_name(data) if self.cache is not None else b""
+        if self.cache is not None:
+            record = read_tiles(self.cache, [name], folder=KEPT_FOLDER).get(name)
+            got = _kept_read(record) if record else None
+            if got is not None:
+                return got
+        prep = read_mod_glb(glb)
+        textures = [(new_texture(px, w, h), new_standin(px, w, h)) for _n, w, h, px in prep.pictures]
+        prep = Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures], prep.report)
+        if self.cache is not None:
+            try:
+                record = _kept_bytes(prep, textures)
+            except (ValueError, TypeError, OverflowError):
+                record = None      # not kept (a model laid out as this doesn't know): made again next time
+            if record is not None:
+                self.new[name] = record
+                self.size += len(record)
+                if self.size >= KEPT_PACK:
+                    self.close()
+        return prep, textures
+
+    def close(self) -> None:
+        """Keep the models made since the last pack, as one pack."""
+        from .mapkeep import write_tiles
+        if self.new:
+            write_tiles(self.cache, self.new, most=KEPT_MOST, folder=KEPT_FOLDER)
+        self.new, self.size = {}, 0
+
+
+def _kept_name(data: bytes) -> bytes:
+    import hashlib
+    from .keptformat import stamp
+    return hashlib.blake2b(stamp("ownmodel") + data, digest_size=20).digest()
+
+
+def _kept_bytes(prep: Prepared, textures: list) -> bytes:
+    """A kept model: its parts' numbers exactly as read (64-bit floats, 64-bit corners), its report and pictures'
+    names and sizes, and its textures and stand-ins, compressed. ValueError for a part whose points aren't all as
+    wide."""
+    import json
+    import zlib
+    from array import array
+    parts, blobs = [], []
+    for p in prep.parts:
+        row = [p.bone, p.picture]
+        for seq, width, kind in zip((p.positions, p.normals, p.uvs, p.triangles), KEPT_WIDTHS, "dddq"):
+            if any(len(v) != width for v in seq):
+                raise ValueError("a part's points aren't all as wide")
+            row.append(len(seq))
+            blobs.append(array(kind, (x for v in seq for x in v)).tobytes())
+        parts.append(row)
+    head = json.dumps({"report": prep.report, "pictures": [[n, w, h] for n, w, h, _px in prep.pictures],
+                       "parts": parts}).encode("utf-8")
+    out = [KEPT_MAGIC, struct.pack("<I", len(head)), head]
+    for b in blobs:
+        out += [struct.pack("<Q", len(b)), b]
+    for texture, standin in textures:
+        out += [struct.pack("<QQ", len(texture), len(standin)), texture, standin]
+    return zlib.compress(b"".join(out), 1)
+
+
+def _kept_read(record: bytes) -> tuple[Prepared, list] | None:
+    """A kept model back (_kept_bytes), or None when it can't be read as one."""
+    import json
+    import zlib
+    from array import array
+    try:
+        raw = zlib.decompress(record)
+        if raw[:8] != KEPT_MAGIC:
+            return None
+        at = 8
+        (n,) = struct.unpack_from("<I", raw, at)
+        head = json.loads(raw[at + 4:at + 4 + n].decode("utf-8"))
+        at += 4 + n
+
+        def blob() -> bytes:
+            nonlocal at
+            (size,) = struct.unpack_from("<Q", raw, at)
+            b = raw[at + 8:at + 8 + size]
+            if len(b) != size:
+                raise ValueError("cut short")
+            at += 8 + size
+            return b
+        parts = []
+        for bone, picture, *counts in head["parts"]:
+            seqs = []
+            for count, width, kind in zip(counts, KEPT_WIDTHS, "dddq"):
+                a = array(kind)
+                a.frombytes(blob())
+                if len(a) != count * width:
+                    return None
+                seqs.append([tuple(a[i:i + width]) for i in range(0, len(a), width)])
+            parts.append(Part(bone, picture, *seqs))
+        textures = []
+        for _p in head["pictures"]:
+            sizes = struct.unpack_from("<QQ", raw, at)
+            at += 16
+            textures.append((raw[at:at + sizes[0]], raw[at + sizes[0]:at + sizes[0] + sizes[1]]))
+            at += sizes[0] + sizes[1]
+        if at != len(raw):
+            return None
+        return Prepared(parts, [[n, w, h, b""] for n, w, h in head["pictures"]], head["report"]), textures
+    except (ValueError, KeyError, TypeError, struct.error, zlib.error, UnicodeDecodeError):
+        return None
 
 
 def write_batch(batch: dict) -> dict:
