@@ -167,18 +167,18 @@ class Groups(unittest.TestCase):
         self.assertEqual([g["root"] for g in next(r for r in board["rows"] if r["factory"] == 9)["groups"]], [P1])
 
     # --- the group of a unit's kind ---
-    def test_two_lines_of_its_kind_the_one_with_fewer_units_then_the_first(self):
+    def test_two_lines_of_its_kind_the_first_until_it_is_full(self):
+        """His pick (2026-11-01): the first in the build list, the upper one until it's full."""
         self.mod()
         start = self.api.era_unit_start("WWI|USA|E1", H1, 0, 10)["group"]
-        self.assertEqual({k: start[k] for k in ("root", "name", "count", "most", "full", "new")},
-                         {"root": L1, "name": "L One", "count": 1, "most": 6, "full": False, "new": False})
+        self.assertEqual({k: start[k] for k in ("root", "name", "count", "most", "full", "new", "pick")},
+                         {"root": M1, "name": "M One", "count": 2, "most": 6, "full": False, "new": False,
+                          "pick": False})
         self.assertEqual([(c["root"], c["count"]) for c in start["choices"]], [(M1, 2), (L1, 1), (H1, 1), (R1, 1)])
-        e1 = self.add("E1", research_from=None)
-        self.assertEqual(self.file(), {e1: L1})                                 # bought from the start: written
-        self.assertEqual(self.groups()[L1]["units"], [L1, e1])
-        e2 = self.add("E2", research_from=None)                                  # two and two: the first in the menu
-        self.assertEqual(self.file()[e2], M1)
-        self.assertEqual(self.groups()[M1]["units"], [M1, M2, e2])
+        added = [self.add(f"E{k}", research_from=None) for k in range(1, 6)]
+        self.assertEqual(self.file(), {**{a: M1 for a in added[:4]}, added[4]: L1})   # M1's full at 6: then L1's
+        self.assertEqual(self.groups()[M1]["units"], [M1, M2] + added[:4])
+        self.assertEqual(self.groups()[L1]["units"], [L1, added[4]])
 
     def test_no_line_of_its_kind_a_group_of_its_own_the_next_joins_it(self):
         self.mod()
@@ -190,28 +190,28 @@ class Groups(unittest.TestCase):
         g = self.groups()[a1]
         self.assertEqual((g["units"], g["kinds"], g["new"]), ([a1, a2], ["Assault Gun"], True))
         self.assertEqual(self.api.era_unit_start("WWI|USA|A3", H1, 0, 10)["group"]["root"], a1)
-        made = self.api.era_unit_add("WWI|USA|A3", 0, 10)    # its start (H1) not in the group: from its first unit
-        self.assertEqual((made["research_from"], made["group"]), (a1, a1))
-        self.assertNotIn(made["address"], self.file())
+        made = self.api.era_unit_add("WWI|USA|A3", 0, 10)    # nothing suggested: bought from the start
+        self.assertEqual((made["research_from"], made["group"]), (None, a1))
+        self.assertEqual(self.file()[made["address"]], a1)
         self.assertEqual(self.groups()[a1]["count"], 3)
 
     def test_research_only_from_its_group(self):
-        """The add form's research choices are its group's units: the Patton (a Cold War medium tank started from M1)
-        in L1's line is researched from L1 (the dearest there), not M1; picked into M1's line, from M1 (its start); a
-        WWI unit whose start unit isn't in its group, from the group's first unit (test below)."""
+        """The add form's research choices are its group's units, none suggested (his pick 2026-11-01: "None: from
+        the start"): the Patton (a Cold War medium tank started from M1) in M1's line, from M1 or M2; picked into L1's
+        line, from L1; a group of its own, from none."""
         self.mod()
         research = self.api.era_unit_start("Cold War|USA|Patton", M1, 0, 10)["research"]
         self.assertEqual(([c["address"] for c in research["choices"]], research["suggested"], research["why"]),
-                         ([L1], L1, "dearest"))
-        picked = self.api.era_unit_start("Cold War|USA|Patton", M1, 0, 10, "base", M1)["research"]
+                         ([M1, M2], None, ""))
+        picked = self.api.era_unit_start("Cold War|USA|Patton", M1, 0, 10, "base", L1)["research"]
         self.assertEqual(([c["address"] for c in picked["choices"]], picked["suggested"], picked["why"]),
-                         ([M1, M2], M1, "start"))
+                         ([L1], None, ""))
         own = self.api.era_unit_start("Cold War|USA|Patton", M1, 0, 10, "base", "new")
         self.assertEqual((own["research"]["choices"], own["research"]["suggested"], own["group"]["root"]),
                          ([], None, None))
         made = self.api.era_unit_add("Cold War|USA|Patton", 0, 10)
-        self.assertEqual((made["research_from"], made["group"]), (L1, L1))
-        self.assertEqual(self.file(), {})                                        # an upgrade: its research says it
+        self.assertEqual((made["research_from"], made["group"]), (None, M1))
+        self.assertEqual(self.file(), {made["address"]: M1})                    # bought from the start: written
         with self.assertRaisesRegex(StudioError, "that unit is in another group"):
             self.api.era_unit_add("WWI|USA|E1", 0, 10, research_from=M1, group=L1)
 
@@ -260,7 +260,7 @@ class Groups(unittest.TestCase):
         mod's new ones in their groups; "Keep the game's research" puts the game's lines back, refused when one would
         then hold more than 6."""
         self.mod()
-        patton = self.api.era_unit_add("Cold War|USA|Patton", 0, 10)["address"]   # researched from L1
+        patton = self.api.era_unit_add("Cold War|USA|Patton", 0, 10, research_from=L1)["address"]
         self.api.research_clear_all()
         self.assertEqual(self.file(), {patton: L1})                              # stays in L1's group
         self.assertEqual(self.groups()[M2]["units"], [M2])                       # the game's: a line of its own
@@ -350,7 +350,7 @@ class Groups(unittest.TestCase):
         self.api.era_unit_remove("WWI|USA|A1")                                   # its first unit deleted
         self.assertEqual(self.file(), {a2: a2, a3: a2})
         self.assertEqual(self.groups()[a2]["units"], [a2, a3])
-        patton = self.api.era_unit_add("Cold War|USA|Patton", 0, 10)["address"]  # researched from L1: no line
+        patton = self.api.era_unit_add("Cold War|USA|Patton", 0, 10, research_from=L1)["address"]  # no line
         self.assertNotIn(patton, self.file())
         self.api.set_upgrade(patton, None)                                       # buildable from the start: stays
         self.assertEqual(self.file()[patton], L1)

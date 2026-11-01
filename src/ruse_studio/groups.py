@@ -135,10 +135,11 @@ class GroupState:
         return games or [g for g in row if self.info[g["root"]]["new"] and self.kinds.get(g["root"]) == kind]
 
     def kind_group(self, kind, nation: int, factory: int) -> dict | None:
-        """The group a unit of card type `kind` goes into in row (nation, factory) (matches: the one with fewer units,
-        then the one earlier in the menu); None: a group of its own."""
-        found = self.matches(kind, nation, factory)
-        return min(found, key=lambda g: (len(g["units"]), g["at"])) if found else None
+        """The group a unit of card type `kind` goes into in row (nation, factory) (matches: the first in the build
+        list until it's full, then the next with room; all full, the first: the owner's pick 2026-11-01, "The first
+        in the build list"); None: a group of its own."""
+        found = sorted(self.matches(kind, nation, factory), key=lambda g: (g["at"], g["root"]))
+        return next((g for g in found if len(g["units"]) < MOST), found[0]) if found else None
 
     def first_left(self, g: dict, info: dict, unit: str, leaving=()) -> str:
         """The first unit of group `g` still in its row after a change (`info`: the units as they'd be), in the board's
@@ -224,9 +225,15 @@ class GroupCalls:
 
     def _groups_target(self, state: GroupState, nation: int, factory: int, group, kind):
         """The group a unit goes into in row (nation, factory): `group` the address of one of its groups' first unit
-        (or of one of its units), NEW for a group of its own, None the group of `kind` (GroupState.kind_group).
-        Returns the group, or None for a group of its own."""
+        (or of one of its units), NEW for a group of its own, None the group of `kind` (GroupState.kind_group; a unit
+        with no card type is refused: its group is the modder's to pick). Returns the group, or None for a group of
+        its own."""
         from .api import StudioError
+        if group is None and kind is None:
+            # not a game rule: the owner's pick (2026-11-01): a unit with no card type, the modder picks its group
+            raise StudioError("This unit has no card type, so the Studio can't tell which group of that building it "
+                              "goes in: pick one of its groups, or a group of its own (the Nations tab's building "
+                              "board).")
         if group is None:
             return state.kind_group(kind, nation, factory)
         if group == NEW:
@@ -426,16 +433,19 @@ class GroupCalls:
                       lang: str) -> tuple[dict | None, dict | None]:
         """(the group a unit of card type `kind` would go into in a build menu, for a page: {"root" (None: a group of
         its own), "name" (its first unit's game name; this unit's `name` for a group of its own), "count", "most",
-        "full", "new" (its first unit is a new unit of the mod; True for a group of its own), "choices": [{root, name,
-        count, full}] every group of that building}, that group (None: a group of its own)). (None, None) for a build
-        menu that isn't one of the board's buildings. `group` as _groups_target takes it."""
+        "full", "new" (its first unit is a new unit of the mod; True for a group of its own), "groups" and
+        "most_groups" (the building's groups and the most it holds), "pick" (no card type and none picked: the modder
+        picks one; the owner, 2026-11-01), "choices": [{root, name, count, full}] every group of that building}, that
+        group (None: a group of its own)). (None, None) for a build menu that isn't one of the board's buildings.
+        `group` as _groups_target takes it."""
         try:
             n, f = nations.check(nation), int(factory)
         except (nations.NationError, TypeError, ValueError):
             return None, None
         if f not in ALL_ROWS:
             return None, None
-        g = self._groups_target(state, n, f, group, kind)
+        pick = group is None and kind is None      # no card type: the modder picks its group (_groups_target)
+        g = None if pick else self._groups_target(state, n, f, group, kind)
         view = self._groups_view(ix, edits, state, n, f, lang)
         mine = next((v for v in view if g is not None and v["root"] == g["root"]), None)
         # a group of its own is full when the building already has the most groups (menugroups.MOST_GROUPS)
@@ -443,5 +453,6 @@ class GroupCalls:
         return {"root": mine["root"] if mine else None, "name": mine["name"] if mine else name,
                 "count": mine["count"] if mine else 0, "most": MOST, "full": full,
                 "new": mine["new"] if mine else True, "groups": len(view), "most_groups": menugroups.MOST_GROUPS,
+                "pick": pick,
                 "choices": [{"root": v["root"], "name": v["name"], "count": v["count"], "full": v["full"]}
                             for v in view]}, g

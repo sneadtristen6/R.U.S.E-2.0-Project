@@ -8904,8 +8904,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 draft.apply([(target, "ShowInMenu", [1] * len(mine["game_shows"] or [1] * DATES))])
             info = self._groups_info(ix, edits, before, draft)
             upgrade = bool(info[target]["flag"]) and info[target]["parent"] is not None
-            g = self._groups_target(before, info[target]["nation"], info[target]["factory"], group,
-                                    before.kinds.get(source))
+            g = None if upgrade and group is None else self._groups_target(   # (an upgrade: its research's group)
+                before, info[target]["nation"], info[target]["factory"], group, before.kinds.get(source))
             placed = {} if upgrade else {target: g["root"] if g is not None else target}
             after = self._groups_after(ix, edits, before, draft, info, placed)
             if upgrade and group is not None and (g is None or after.of.get(target) is not after.of.get(g["root"])):

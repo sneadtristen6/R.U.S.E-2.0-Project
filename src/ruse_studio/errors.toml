@@ -4254,3 +4254,16 @@ cz = "V {0} už není místo pro další skupinu: měla by {1} skupin a budova j
 jpn = "{0} にはもうグループを増やせません：{1} グループになりますが、リストが画面に収まるよう建物 1 つに入るのは最大 {2} グループです。このユニットを既存のグループのどれかに入れるか、独自のユニットを持つ建物に入れてください（「建物を追加…」）。"
 sc = "{0} 中已没有位置再加一个组：它将有 {1} 个组，而为了让列表能显示在屏幕上，一个建筑最多 {2} 个组。请把这个单位放进它的某个组，或放进拥有自己单位的建筑（“添加建筑…”）。"
 fa = "در {0} دیگر جایی برای گروهی دیگر نیست: {1} گروه می‌شد، و هر ساختمان حداکثر {2} گروه دارد تا فهرستش در صفحه جا شود. این یگان را در یکی از گروه‌هایش بگذارید، یا در ساختمانی با یگان‌های خودش («افزودن ساختمان…»)."
+
+[e8695d9a76c]
+us = "This unit has no card type, so the Studio can't tell which group of that building it goes in: pick one of its groups, or a group of its own (the Nations tab's building board)."
+fr = "Cette unité n'a pas de type de carte, le Studio ne peut donc pas savoir dans quel groupe de ce bâtiment elle va : choisissez un de ses groupes, ou un groupe à elle (le tableau des bâtiments de l'onglet Nations)."
+ger = "Diese Einheit hat keinen Kartentyp, daher weiß das Studio nicht, in welche Gruppe dieses Gebäudes sie gehört: Wähle eine seiner Gruppen oder eine eigene Gruppe (die Gebäudetafel im Reiter Nationen)."
+ita = "Questa unità non ha un tipo di carta, quindi lo Studio non sa in quale gruppo di quell'edificio va: scegli uno dei suoi gruppi, oppure un gruppo tutto suo (la tabella degli edifici nella scheda Nazioni)."
+spa = "Esta unidad no tiene tipo de carta, así que el Studio no sabe en qué grupo de ese edificio va: elige uno de sus grupos, o un grupo propio (el tablero de edificios de la pestaña Naciones)."
+pol = "Ta jednostka nie ma typu karty, więc Studio nie wie, do której grupy tego budynku należy: wybierz jedną z jego grup albo osobną grupę (tablica budynków na karcie Narody)."
+ru = "У этого юнита нет типа карточки, поэтому Studio не может понять, в какую группу этого здания он входит: выберите одну из его групп или отдельную группу (доска зданий на вкладке «Нации»)."
+cz = "Tato jednotka nemá typ karty, takže Studio nepozná, do které skupiny té budovy patří: vyberte jednu z jejích skupin, nebo vlastní skupinu (tabule budov na kartě Národy)."
+jpn = "このユニットにはカードの種類がないため、Studio はその建物のどのグループに入るか判断できません。建物のグループのどれかか、専用のグループを選んでください（「国」タブの建物ボード）。"
+sc = "这个单位没有卡片类型，所以 Studio 无法判断它属于该建筑的哪个组：请选择它的某个组，或单独一组（“国家”标签页的建筑面板）。"
+fa = "این یگان نوع کارت ندارد، پس استودیو نمی‌داند در کدام گروه آن ساختمان قرار می‌گیرد: یکی از گروه‌هایش را انتخاب کنید، یا یک گروه جداگانه (صفحهٔ ساختمان‌ها در زبانهٔ ملت‌ها)."

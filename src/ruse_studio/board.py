@@ -661,7 +661,7 @@ class BoardCalls:
                     target = None
                     if group is None and left and home:   # one of the game's back in its own building: as the game
                         placed[address] = None            # has it
-                    elif group is not None or left:
+                    elif group is not None or (left and not upgrade):   # (an upgrade: its research's group)
                         target = self._groups_target(before, n, f, group, before.kinds.get(address))
                         if not upgrade:
                             placed[address] = target["root"] if target is not None else address
