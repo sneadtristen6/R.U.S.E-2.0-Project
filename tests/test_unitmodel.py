@@ -73,12 +73,13 @@ def ref(index, cls):
     return val(0x09, struct.pack("<III", 0xBBBBBBBB, index, cls))
 
 
-def skinned_materials() -> bytes:
-    """One TMeshMaterial as the game's body ones: its texture and a SkinningRemapping (local 0 -> bone 0, 1 -> 1)."""
+def skinned_materials(skinning=(0, 1)) -> bytes:
+    """One TMeshMaterial as the game's body ones: its texture and a SkinningRemapping (local k -> bone skinning[k]:
+    0 -> 0, 1 -> 1 unless said)."""
     strings = ["CombinedDSCTexture", "Standard_1", TEX]
     tex = val(0x12, struct.pack("<I", 1) + val(0x07, struct.pack("<I", 0))
               + val(0x22, val(0x1C, struct.pack("<I", 2)) + val(0x03, bytes(4))))
-    skin = val(0x11, struct.pack("<I", 2) + val(0x02, struct.pack("<i", 0)) + val(0x02, struct.pack("<i", 1)))
+    skin = val(0x11, struct.pack("<I", len(skinning)) + b"".join(val(0x02, struct.pack("<i", b)) for b in skinning))
     objects = [(0, [(0, val(0x11, struct.pack("<I", 1) + ref(1, 1)))]),
                (1, [(1, tex), (2, val(0x07, struct.pack("<I", 1))), (3, skin)])]
     return make_ndf(objects, ["TEugBListPBaseClass", "TMeshMaterial"],
@@ -106,11 +107,11 @@ def skeleton(names, parents, pivots, scales=None) -> bytes:
 SKELETON = skeleton(["chassis", "tourelle_01"], [-1, 0], [(0.0, 0.0, 0.0), (-70.0, 5.0, 30.0)])
 
 
-def unit_pack() -> MeshPack:
+def unit_pack(skinning=(0, 1)) -> MeshPack:
     """The Panzer: one draw call of a skinned quad on the chassis, 200 long (x -120..80), lowest at z 2."""
     pts = [(-120.0, -40.0, 2.0), (80.0, -40.0, 2.0), (80.0, 40.0, 2.0), (-120.0, 40.0, 2.0)]
     verts = b"".join(struct.pack("<3f4B4B4B", *p, 128, 128, 255, 0, 255, 0, 0, 0, 0, 0, 0, 0) for p in pts)
-    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(), material_count=1)
+    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(skinning), material_count=1)
     pack.ibs.append(Buffer(struct.pack("<6H", 0, 1, 2, 0, 2, 3), 12, 6, 1, 0))
     pack.vbs.append(Buffer(verts, len(verts), 4, 0, 0))
     pack.draws.append((0, 0, 0, 0, 0xFFFF, 0xCDCD))
@@ -119,14 +120,14 @@ def unit_pack() -> MeshPack:
     return pack
 
 
-def zz_win() -> Edat:
+def zz_win(skinning=(0, 1), bones=SKELETON) -> Edat:
     skel = MeshPack(formats=[], materials=b"", material_count=0, has_formats=False)
-    skel.materials = MeshPack.read(unit_pack().to_bytes()).materials
-    skel.skeletons.append(SKELETON)
+    skel.materials = MeshPack.read(unit_pack(skinning).to_bytes()).materials
+    skel.skeletons.append(bones)
     skel.items[TANK] = [bytes(28), 0xCDCD, 0]
     proxies = ProxyPack([Proxy(b"K" * 8, b"OLD-STANDIN", struct.pack("<HHI", 0, 0, 0xAAAAAAAA),
                                proxy_name(TEX).encode().ljust(256, b"\0"))], [0])
-    files = {MESHES: unit_pack().to_bytes(), SKELETONS: skel.to_bytes(), PROXIES: proxies.to_bytes()}
+    files = {MESHES: unit_pack(skinning).to_bytes(), SKELETONS: skel.to_bytes(), PROXIES: proxies.to_bytes()}
     tree: dict = {}
     for path, data in files.items():
         folder, _, name = path.rpartition("\\")
@@ -598,6 +599,53 @@ class Packs(unittest.TestCase):
         self.assertEqual((p.key, p.extra), (unitmodel.standin_key(name), struct.pack("<HHI", 0, 0, 0xAAAAAAAA)))
         self.assertEqual(Tgv(p.data).flag, 0)
         self.assertEqual(proxies.proxies[proxies.names().index(proxy_name(TEX))].data, b"OLD-STANDIN")
+
+    def test_a_bone_the_copied_material_hasn_t_got(self):
+        """The M7 Priest's body material lists its gun's bones but not tourelle_01 (so do 9 of the game's 120 turreted
+        unit models): a tester's M109 copying it stopped there, 2026-10-30. The copy lists the turret's bone too; the
+        game's own material stays as it is."""
+        zz = zz_win(skinning=(0,))
+        w = unitmodel.write_unit_model(zz, TANK, "priest_model", self.prep)
+        spk = Spk(w.changed[MESHES])
+        new = "ww2\\res3d\\units\\ger\\tank\\priest_modellod0.ase2ndfbin"
+        first, count = spk.meshes[spk.items[new].mesh]
+        self.assertEqual(count, 2)
+        mats = spk.materials()
+        for k in range(count):
+            part, exp = spk.part(first + k), self.prep.parts[k]
+            self.assertEqual(mats[part.material]["skinning"], [0, 1])
+            self.assertEqual({tuple(b) for b in part.bones}, {(0 if exp.bone == "chassis" else 1, 0, 0, 0)})
+        own = spk.part(spk.meshes[spk.items[TANK].mesh][0])
+        self.assertEqual(mats[own.material]["skinning"], [0])
+        self.assertEqual(spk.part(spk.meshes[spk.items[TANK].mesh][0]).positions,
+                         Spk(bytes(zz.read(zz.entry(MESHES)))).part(0).positions)
+
+    def test_a_turret_part_on_a_model_with_no_turret(self):
+        """The copied model has no tourelle_01 at all (2026-10-30, every era unit's model: the P-40 Warhawk (AVG)'s
+        wing guns copying the Dewoitine D.520, the M274 Mule's 106 mm gun copying the Jeep): the part rides on the
+        hull bone, its points where they were, rather than stopping the build."""
+        zz = zz_win(skinning=(0,), bones=skeleton(["chassis"], [-1], [(0.0, 0.0, 0.0)]))
+        w = unitmodel.write_unit_model(zz, TANK, "jeep_gun_model", self.prep)
+        spk = Spk(w.changed[MESHES])
+        new = "ww2\\res3d\\units\\ger\\tank\\jeep_gun_modellod0.ase2ndfbin"
+        first, count = spk.meshes[spk.items[new].mesh]
+        self.assertEqual(count, 2)
+        self.assertEqual({p.bone for p in self.prep.parts}, {"chassis", "tourelle_01"})
+        mats = spk.materials()
+        for k in range(count):
+            part, exp = spk.part(first + k), self.prep.parts[k]
+            self.assertEqual({tuple(b) for b in part.bones}, {(0, 0, 0, 0)})   # the hull's, the turret part too
+            self.assertEqual(mats[part.material]["skinning"], [0])
+            self.assertEqual(len(part.positions) // 3, len(exp.positions))
+        no_hull = zz_win(skinning=(0,), bones=skeleton(["caisse"], [-1], [(0.0, 0.0, 0.0)]))
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "skeleton has no chassis bone"):   # nowhere to put it
+            unitmodel.write_unit_model(no_hull, TANK, "no_hull_model", self.prep)
+
+    def test_a_bone_list_as_long_as_the_game_s_longest(self):
+        zz = zz_win(skinning=(0,) + tuple(range(2, unitmodel.MOST_BONES + 1)))   # 64 bones, the turret's not one
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "lists 64 bones, as many as the game's longest list; "
+                                                              "tourelle_01 would be one more"):
+            unitmodel.write_unit_model(zz, TANK, "crowded_model", self.prep)
 
     def test_texture_levels_fit_the_room_the_game_makes(self):
         """T35 run 3: the game makes room for level k of a w x h texture as (w * h / 16) >> 2k blocks and writes what

@@ -11,9 +11,13 @@ How it's stored: one draw call per picture, each vertex in the game's skinned fo
 (TVertex__Position_3f__NormalIn01_4ubn__BlW_4ubn__BlIdx_4ub__TexCoord0_2f__TexPackedAtlas0_4ubn: 55 of the game's own
 buffers), plain (not packed), one bone per vertex at full weight, the atlas bytes (0, 0, 255, 255) as on every unit;
 indices 16-bit (a draw of more than 65,535 points has its own 32-bit indices: not tried in the game). Each draw's
-material is a copy of the copied unit's body material naming the new picture. Each picture is a texture of its own
-(gen\\...\\<unit>_NN.tgv, DXT5 with every level down to 4 x 4, plain TGU1 levels as in T23) added to ZZ_Win.dat, with
-its stand-in (64 pixels across at most, raw DXT5) added to every stand-in pack that holds the copied body texture's.
+material is a copy of the copied unit's body material naming the new picture; a bone a part is on that the body
+material's bone list (SkinningRemapping) hasn't got goes on the copy's list, up to the 64 of the longest list the game
+ships (9 of the game's 120 turreted unit models tie nothing to tourelle_01: the M7 Priest's gun is on the gun's own
+bones, under the Tourelle_01 its unit data turns; a tester's M109 stopped there, 2026-10-30). Each picture is a
+texture of its own (gen\\...\\<unit>_NN.tgv, DXT5 with every level down to 4 x 4, plain TGU1 levels as in T23) added
+to ZZ_Win.dat, with its stand-in (64 pixels across at most, raw DXT5) added to every stand-in pack that holds the
+copied body texture's.
 A stand-in is found by an 8-byte key: the 64-bit CRC (polynomial 0x42F0E1EBA9EA3693, all ones in and out) of its
 name, true of all 2,822 stand-ins in the game's 74 stand-in packs (checked 2026-10-04)."""
 from __future__ import annotations
@@ -40,6 +44,7 @@ STRIDE = 12 + 4 + 4 + 4 + 8 + 4
 ROOT, TURRET = "chassis", "tourelle_01"
 PROPELLER_TYPE = "helice"   # a material type starting so draws a spinning-propeller disc (helice_1: the game's 43 planes)
 STANDIN_SIDE = 64
+MOST_BONES = 64   # the longest bone list of any material the game ships (gen_5\pack\gfxdescriptor\mesh_all.spk's 68)
 INDEX_16, INDEX_32 = 1, 0   # an index buffer's kind: 1 = 16-bit (every one the game ships), else 32-bit
 
 
@@ -454,8 +459,9 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
-    helice_1: the game draws it as a spinning disc) naming its picture. `bones`: the copied model's skeleton (its
-    entry is in the skeleton packs)."""
+    helice_1: the game draws it as a spinning disc) naming its picture. A part on a bone the copied material's bone
+    list hasn't got (the copied model ties nothing to it) is on that copy's list too. `bones`: the copied model's
+    skeleton (its entry is in the skeleton packs)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     first, _count = src.meshes[mesh]
@@ -484,6 +490,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
         src.formats.append(SKINNED_2F.encode().ljust(256, b"\0"))
     fmt = [f.split(b"\0", 1)[0] for f in src.formats].index(SKINNED_2F.encode())
     material_of: dict = {}
+    listed: dict = {}   # each copy's bone list: the copied material's, then the bones its parts are on that it hasn't
     draws = []
     for part in prep.parts:
         look = "disc" if part.bone in disc_bones and "disc" in looks else "body"
@@ -494,16 +501,35 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
             n = nd.add_object(base.cls, props)
             roots.append(n)
             material_of[(look, part.picture)] = len(roots) - 1
-        if part.bone not in bones.names:
+            listed[len(roots) - 1] = list(remap)
+        # the copied model has no such bone (2026-10-30, every era unit's model: the P-40 Warhawk (AVG)'s wing guns
+        # on the Dewoitine D.520, the M274 Mule's 106 mm gun on the Jeep): the part rides on the hull bone, where
+        # it sits on the model; the copied unit has nothing that would turn it
+        on = part.bone if part.bone in bones.names else ROOT
+        if on not in bones.names:
             raise UnitModelError(f"{source}'s skeleton has no bone {part.bone} (a part of the .glb is named so)")
-        bone = bones.names.index(part.bone)
-        if bone not in remap:
-            raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {part.bone}")
-        vb = _vertex_buffer(part, remap.index(bone))
+        bone = bones.names.index(on)
+        bone_list = listed[material_of[(look, part.picture)]]
+        if bone not in bone_list:
+            # the copied model ties nothing to this bone (the M7 Priest's turret): the copy lists it too
+            if not remap:
+                raise UnitModelError(f"the {look} material of {source} doesn't reach the bone {on}")
+            if len(bone_list) >= MOST_BONES:
+                raise UnitModelError(f"the {look} material of {source} lists {len(bone_list)} bones, as many as the "
+                                     f"game's longest list; {on} would be one more")
+            bone_list.append(bone)
+        vb = _vertex_buffer(part, bone_list.index(bone))
         vb.kind = fmt
         src.vbs.append(vb)
         src.ibs.append(_index_buffer(part))
         draws.append((0, material_of[(look, part.picture)], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
+    for number, bone_list in listed.items():   # (a new value: the copy shares its other values with the game's own)
+        obj = nd.objects[roots[number]]
+        for k, (pi, v) in enumerate(obj.props):
+            if nd.prop_name(pi) == "SkinningRemapping" and len(bone_list) > len(_subs(v)):
+                kind = _subs(v)[0].tc
+                obj.props[k] = (pi, Value(0x11, struct.pack("<I", len(bone_list)) + b"".join(
+                    Value(kind, struct.pack("<i", b)).encode() for b in bone_list)))
     root = nd.objects[nd.topo[0]]
     root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(roots)) + b"".join(
         Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, nd.objects[n].cls)).encode() for n in roots)))
