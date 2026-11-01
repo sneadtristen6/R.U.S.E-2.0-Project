@@ -151,6 +151,23 @@ class MeshPack:
     skeletons: list = field(default_factory=list)  # bytes
     has_formats: bool = True                       # (a pack with nothing in it has no format section at all)
 
+    @staticmethod
+    def item_names(raw: bytes) -> dict:
+        """The models a pack names, {name: (mesh, skeleton)}, from its name table alone (read() reads everything)."""
+        if raw[:8] != MESH_MAGIC or struct.unpack_from("<I", raw, 8)[0] != 4:
+            raise PackError(f"not a version 4 mesh pack: {raw[:8]!r}")
+        no, ns, nc = struct.unpack_from("<III", raw, 0x34 + 12 * SECTIONS.index("names"))
+        out = {}
+        if ns:
+            if raw[no:no + 10] != NAMES_HEAD:
+                raise PackError("its name table doesn't start as known")
+            for name, data in read_names(raw, no + 10, no + ns, ITEM.size):
+                *_box, mesh, skel = ITEM.unpack(data)
+                out[name] = (mesh, skel)
+            if len(out) != nc:
+                raise PackError(f"{len(out)} names for {nc}")
+        return out
+
     @classmethod
     def read(cls, raw: bytes) -> "MeshPack":
         if raw[:8] != MESH_MAGIC or struct.unpack_from("<I", raw, 8)[0] != 4:
@@ -384,20 +401,41 @@ def _texts(nd: Ndf, v: Value) -> list[str]:
     return []
 
 
+def _ident(nd: Ndf, i: int) -> bytes:
+    """What object `i` of `nd` is: its class and values."""
+    o = nd.objects[i]
+    return nd.classes[o.cls].encode() + b"".join(nd.props[pi][0].encode() + v.encode() for pi, v in o.props)
+
+
+def _materials_read(pack: MeshPack, known: bool = False) -> tuple[Ndf, dict | None, set | None]:
+    """`pack`'s materials read, and with `known` what each object is ({_ident: its first number}) and the _idents more
+    than one object has, kept on the pack while pack.materials stays the bytes they were read from or written as: a
+    build's batch copies hundreds of own models into the same packs (2026-11-01, the owner's "works quickly to
+    build"), and read again for each copy the biggest pack's materials took longer the more it held. Bytes set by
+    anyone else are read again."""
+    kept = pack.__dict__.get("_materials_kept")
+    if kept is not None and kept[0] is pack.materials and (kept[2] is not None or not known):
+        return kept[1], kept[2], kept[3]
+    nd = Ndf(pack.materials)
+    seen = twice = None
+    if known:
+        seen, twice = {}, set()
+        for i in range(len(nd.objects)):
+            key = _ident(nd, i)
+            if seen.setdefault(key, i) != i:
+                twice.add(key)
+    pack.__dict__["_materials_kept"] = (pack.materials, nd, seen, twice)
+    return nd, seen, twice
+
+
 def _copy_materials(dst: MeshPack, src: MeshPack, numbers: list[int]) -> list[int]:
     """Copy materials `numbers` of `src` into `dst` (with the objects they refer to); their numbers in `dst`. A
     material `dst` already has, the same in every value, is shared."""
-    s, d = Ndf(src.materials), Ndf(dst.materials)
+    s = Ndf(src.materials) if src is dst else _materials_read(src)[0]
+    d, known, twice = _materials_read(dst, known=True)  # known: what an object of `dst` is -> its number
+    dst.__dict__.pop("_materials_kept")                 # changed below: kept again once written
     s_list, d_list = _material_list(s), _material_list(d)
     done: dict[int, int] = {}
-    known: dict[bytes, int] = {}  # what an object of `dst` is (class and values) -> its number
-
-    def ident(nd: Ndf, i: int) -> bytes:
-        o = nd.objects[i]
-        return nd.classes[o.cls].encode() + b"".join(nd.props[pi][0].encode() + v.encode() for pi, v in o.props)
-
-    for i in range(len(d.objects)):
-        known.setdefault(ident(d, i), i)
 
     def value(v: Value) -> Value:
         if v.tc in (0x07, 0x1C):
@@ -445,11 +483,28 @@ def _copy_materials(dst: MeshPack, src: MeshPack, numbers: list[int]) -> list[in
         if n not in d_list:
             d_list.append(n)
         out.append(d_list.index(n))
-    root = d.objects[d.topo[0]]
+    r = d.topo[0]
+    root = d.objects[r]
+    old = _ident(d, r)
     root.props[0] = (root.props[0][0], Value(0x11, struct.pack("<I", len(d_list)) + b"".join(
         Value(0x09, struct.pack("<III", 0xBBBBBBBB, n, d.objects[n].cls)).encode() for n in d_list)))
+    new = _ident(d, r)
+    if new != old:  # known as if every object were looked at again (the first with each _ident)
+        if old in twice:
+            same = [i for i in range(len(d.objects)) if i != r and _ident(d, i) == old]
+            known[old] = same[0]
+            if len(same) == 1:
+                twice.discard(old)
+        elif known.get(old) == r:
+            del known[old]
+        if new in known:
+            twice.add(new)
+            known[new] = min(known[new], r)
+        else:
+            known[new] = r
     dst.materials = d.to_logical()
     dst.material_count = len(d_list)
+    dst.__dict__["_materials_kept"] = (dst.materials, d, known, twice)
     return out
 
 

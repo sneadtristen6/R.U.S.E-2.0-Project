@@ -157,17 +157,39 @@ class Source:
     skeleton: Skeleton | None
     like: dict = field(default_factory=dict)   # for modelin.prepare: length, pivot, ground
     body_texture: str = ""         # its body material's picture (ZZ:\\GenTexGroup\\...\\X01.png)
+    look: dict = field(default_factory=dict, repr=False)  # the first mesh pack's materials and its propellers' bones,
+    # as read here, for _with_model
 
 
-def packs_holding(zz, model: str) -> tuple[str, dict, dict]:
+def pack_names(zz) -> list:
+    """Every mesh pack of ZZ_Win.dat `zz` with the models it names, [(entry, {name: (mesh, skeleton)} or None where
+    its name table can't be read alone)], in the archive's order: for packs_holding when it looks for many models
+    (a build's own models: each one read every pack whole to find its copied model, 0.2 s a model)."""
+    out = []
+    for e in zz.entries:
+        p = e.path.lower()
+        if not (p.startswith(PACKS) and p.endswith(".spk")):
+            continue
+        raw = bytes(zz.read(e))
+        if raw[:8] != b"MESHPCPC":
+            continue
+        try:
+            out.append((e, MeshPack.item_names(raw)))
+        except (ValueError, struct.error):
+            out.append((e, None))
+    return out
+
+
+def packs_holding(zz, model: str, names: list | None = None) -> tuple[str, dict, dict]:
     """The model `model` (its pack name, any case) across ZZ_Win.dat's packs: (its name as the packs have it, the mesh
     packs that hold it, the skeleton packs that hold its skeleton entry: {member path: raw bytes} each).
-    UnitModelError when no pack holds it."""
+    UnitModelError when no pack holds it. `names`: pack_names(zz), so only the packs naming it are read whole."""
     model = model.replace("/", "\\").lower()
     if model.startswith("datadir:\\"):
         model = model[len("datadir:\\"):]
     meshes, skeletons = {}, {}
-    for e in zz.entries:
+    entries = zz.entries if names is None else [e for e, n in names if n is None or model in n]
+    for e in entries:
         p = e.path.lower()
         if not (p.startswith(PACKS) and p.endswith(".spk")):
             continue
@@ -190,10 +212,10 @@ def packs_holding(zz, model: str) -> tuple[str, dict, dict]:
     return model, meshes, skeletons
 
 
-def find_source(zz, model: str) -> Source:
+def find_source(zz, model: str, names: list | None = None) -> Source:
     """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
-    needs. UnitModelError when no pack holds it, or it has no bones."""
-    model, meshes, skeletons = packs_holding(zz, model)
+    needs. UnitModelError when no pack holds it, or it has no bones. `names`: as packs_holding takes it."""
+    model, meshes, skeletons = packs_holding(zz, model, names)
     first = MeshPack.read(next(iter(meshes.values())))
     skel = first.skeletons[first.items[model][2]] if first.items[model][2] != NONE else None
     if skel is None and skeletons:
@@ -230,7 +252,8 @@ def find_source(zz, model: str) -> Source:
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
     like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
             "ground": low, "middle": (max(hull) + min(hull)) / 2, "propellers": propellers}
-    return Source(model, meshes, skeletons, bones, like, body)
+    return Source(model, meshes, skeletons, bones, like, body,
+                  {"mats": mats, "disc_bones": {d["bone"] for d in propellers}})
 
 
 def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
@@ -474,24 +497,31 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 
 
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
-                bones: Skeleton) -> MeshPack:
+                bones: Skeleton, memo: dict | None = None) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
     helice_1: the game draws it as a spinning disc) naming its picture. `bones`: the copied model's skeleton (its
-    entry is in the skeleton packs)."""
+    entry is in the skeleton packs). `memo`: a dict kept for this `raw` and `source` (Source.look: the pack's
+    materials and the propellers' bones as find_source read them, once for every model copying `source`)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
     roots = _material_list(nd)
-    spk = Spk(raw)
-    mats = spk.materials()
+    if memo is None or "mats" not in memo:
+        spk = Spk(raw)
+        mats = spk.materials()
+        disc_bones = {d["bone"] for p in spk.model(source)
+                      if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
+                      for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
+        if memo is not None:
+            memo["mats"], memo["disc_bones"] = mats, disc_bones
+    else:
+        mats, disc_bones = memo["mats"], memo["disc_bones"]
     own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
     body_number = next(m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {}))
     disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
-    disc_bones = {d["bone"] for p in spk.model(source) if mats[p.material].get("type", "").startswith(PROPELLER_TYPE)
-                  for d in _discs(p, mats[p.material].get("skinning") or [], bones)}
 
     def material(number: int):
         """(the material object, the picture its Textures name, its bone numbers' remapping)."""
@@ -570,7 +600,9 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         sources = batch.setdefault("sources", {})
         key = source_model.replace("/", "\\").lower()
         if key not in sources:
-            sources[key] = find_source(zz, source_model)
+            if "names" not in batch:
+                batch["names"] = pack_names(zz)
+            sources[key] = find_source(zz, source_model, batch["names"])
         src = sources[key]
     new = model_name(src.model, unit)
 
@@ -590,7 +622,8 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     pts = [p for part in prep.parts for p in part.positions]
     if not pts:
         raise UnitModelError("the model has no points")
-    box = tuple(min(p[i] for p in pts) for i in range(3)) + tuple(max(p[i] for p in pts) for i in range(3))
+    cols = [[p[i] for p in pts] for i in range(3)]
+    box = tuple(min(c) for c in cols) + tuple(max(c) for c in cols)
     changed: dict = {}
 
     def keep(path: str, pack) -> None:  # written now, or (a batch) once, after the last model
@@ -601,7 +634,7 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
             changed[path] = None
 
     first_raw = next(iter(src.mesh_packs.values()))
-    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton)
+    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton, src.look)
     for path, raw in src.mesh_packs.items():
         pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
@@ -766,7 +799,7 @@ def _kept_read(record: bytes) -> tuple[Prepared, list] | None:
                 a.frombytes(blob())
                 if len(a) != count * width:
                     return None
-                seqs.append([tuple(a[i:i + width]) for i in range(0, len(a), width)])
+                seqs.append(list(zip(*[iter(a.tolist())] * width)))
             parts.append(Part(bone, picture, *seqs))
         textures = []
         for _p in head["pictures"]:

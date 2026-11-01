@@ -556,6 +556,10 @@ class Packs(unittest.TestCase):
         self.assertEqual(s.like, {"length": 200.0, "width": 80.0, "pivot": (-70.0, 5.0), "ground": 2.0,
                                   "middle": -20.0, "propellers": []})
         self.assertEqual(s.body_texture, TEX)
+        # found from the packs' names read alone (a build's batch), the same
+        self.assertEqual(unitmodel.find_source(self.zz, TANK, unitmodel.pack_names(self.zz)), s)
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.find_source(self.zz, "ww2\\nothinglod0.ase2ndfbin", unitmodel.pack_names(self.zz))
 
     def test_written_beside_the_unit_s_model(self):
         w = unitmodel.write_unit_model(self.zz, TANK, "panzer_model", self.prep)
