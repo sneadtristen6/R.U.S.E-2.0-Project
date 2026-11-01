@@ -7,10 +7,12 @@
 
 | Qué | Dónde |
 |---|---|
-| Los mods del Studio | `%LOCALAPPDATA%\RUSE Mod Platform\mods\<mod>` (pégalo en la barra de direcciones del Explorador de archivos) |
+| Los mods del Studio | `Documents\RUSE 2.0\Mods\<mod>` (la carpeta Documentos); los cambios de mapas en `Maps`, los archivos exportados en `Exports`, las copias de seguridad en `Backups`. En el Studio, **Ajustes → Dónde están tus archivos** abre cada una, y **Mostrar la carpeta de este mod** (menú del mod) abre la que estás editando |
 | Los mods instalados del launcher | `%LOCALAPPDATA%\RUSE Mod Platform\library` |
 | Las copias con mods del juego | La carpeta que eliges en Ajustes (**Dónde van las copias con mods**, en cualquiera de las dos aplicaciones); el lugar recomendado es `RUSE-Instances` en la misma unidad que el juego (por ejemplo `D:\RUSE-Instances`), donde una copia comparte los archivos del juego. En otra unidad, cada copia es una copia completa del juego: más lenta y más grande. La copia de seguridad limpia del juego (`RUSE-Backup`) va a su lado. |
 | El propio juego | Nunca se modifica |
+
+Los Studio más antiguos los guardaban en `%LOCALAPPDATA%\RUSE Mod Platform` (`mods`, `maps`, `exports`, `mod-backups`): el Studio los mueve a Documentos la primera vez que arranca, y lo avisa.
 
 ## Dentro de un mod
 

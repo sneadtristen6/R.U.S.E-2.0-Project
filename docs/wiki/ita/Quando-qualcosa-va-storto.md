@@ -110,7 +110,7 @@ possederlo: nessun file del gioco distribuito, niente gioco avviato senza Steam.
 
 - **Un formato di mod più vecchio:** la mod è stata creata con uno Studio più vecchio. **Aggiorna questa mod** riscrive i
   suoi file nel modo in cui li legge questo Studio, mantenendo ciò che significano; prima uno zip dell'intera mod va nella
-  cartella `mod-backups` dello Studio.
+  cartella `Backups` dello Studio.
 - **Un RUSE Studio più recente:** aggiorna lo Studio prima di cambiare quella mod: uno più vecchio potrebbe perdere ciò che
   non conosce.
 

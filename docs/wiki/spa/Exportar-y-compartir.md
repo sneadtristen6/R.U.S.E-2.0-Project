@@ -52,6 +52,10 @@ llevar el nombre del original): tus cambios van en ella, y una actualización de
 RUSE Mod Manager (`.rmod`) se convierte en su copia, así que sus cambios de valores pasan a ser cambios del Studio que
 puedes modificar.
 
+## Mostrar la carpeta de un mod, o eliminar un mod
+
+En el menú Mod del Studio, **Mostrar la carpeta de este mod** abre la carpeta del mod que estás editando, y **Eliminar un mod…** lista tus mods y cambios de mapas: **Eliminar** manda uno a la Papelera de reciclaje (puedes recuperarlo desde allí) y, si lo marcas, también su copia en el Launcher. Una carpeta que abriste desde otro sitio solo se quita de la lista. **Ajustes → Dónde están tus archivos** muestra dónde se guarda todo ([[Carpetas y archivos de un mod|Carpetas-y-archivos-de-un-mod]]). En RUSE Launcher, **Quitar** manda también un mod de la biblioteca a la Papelera de reciclaje, y **Mostrar en la carpeta** abre su carpeta.
+
 ## Qué puede contener un mod
 
 Solo datos: números, textos, mapas, modelos, texturas. Las dos aplicaciones rechazan los programas (`.exe`, `.dll`,

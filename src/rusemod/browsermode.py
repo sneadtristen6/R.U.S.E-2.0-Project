@@ -97,8 +97,8 @@ class BrowserWindow:
             out, self._scripts = self._scripts, []
         return out
 
-    def pick_folder(self) -> str | None:
-        return folder_dialog()
+    def pick_folder(self, start=None) -> str | None:
+        return folder_dialog(start)
 
     def pick_file(self, file_types=()) -> str | None:
         return file_dialog(file_types)
@@ -592,8 +592,8 @@ def file_dialog(file_types=(), filename: str = "", save: bool = False) -> str | 
     return name.value if chosen and name.value else None
 
 
-def folder_dialog() -> str | None:
-    """The shell's "choose a folder" dialog (which Wine has too); the folder, or None."""
+def folder_dialog(start=None) -> str | None:
+    """The shell's "choose a folder" dialog (which Wine has too), opened at the folder `start`; the folder, or None."""
     if sys.platform != "win32":
         return None
     import ctypes
@@ -604,15 +604,27 @@ def folder_dialog() -> str | None:
                     ("lpszTitle", ctypes.c_void_p), ("ulFlags", wintypes.UINT), ("lpfn", ctypes.c_void_p),
                     ("lParam", wintypes.LPARAM), ("iImage", ctypes.c_int)]
 
-    shell32, ole32 = ctypes.WinDLL("shell32"), ctypes.WinDLL("ole32")
+    shell32, ole32, user32 = ctypes.WinDLL("shell32"), ctypes.WinDLL("ole32"), ctypes.WinDLL("user32")
     shell32.SHBrowseForFolderW.argtypes = [ctypes.POINTER(BROWSEINFOW)]
     shell32.SHBrowseForFolderW.restype = ctypes.c_void_p
     shell32.SHGetPathFromIDListW.argtypes = [ctypes.c_void_p, wintypes.LPWSTR]
     ole32.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+    user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.SendMessageW.restype = wintypes.LPARAM
+    begin = ctypes.create_unicode_buffer(str(start)) if start else None
+
+    @ctypes.WINFUNCTYPE(ctypes.c_int, wintypes.HWND, wintypes.UINT, wintypes.LPARAM, wintypes.LPARAM)
+    def opened(hwnd, message, _param, _data):
+        if message == 1 and begin is not None:  # BFFM_INITIALIZED: open at `start`, unfolded
+            for ask in (0x46A, 0x467):  # BFFM_SETEXPANDED, BFFM_SETSELECTIONW (a path, not an item list)
+                user32.SendMessageW(hwnd, ask, 1, ctypes.addressof(begin))
+        return 0
+
     shown = ctypes.create_unicode_buffer(260)
     info = BROWSEINFOW()
     info.pszDisplayName = ctypes.addressof(shown)
     info.ulFlags = 0x0001 | 0x0040  # BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE (resizable, with "Make new folder")
+    info.lpfn = ctypes.cast(opened, ctypes.c_void_p)
     undo = _com_thread()
     try:
         _to_front_soon()

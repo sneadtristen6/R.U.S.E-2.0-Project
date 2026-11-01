@@ -822,6 +822,12 @@
         <h2 id="set-game-title"></h2><p id="set-game-path" class="small"></p>
         <div class="actions"><button id="set-game-change" type="button" class="small"></button></div>
       </section>
+      <!-- where what's made in the Studio is kept (StudioApi.where_files, rusemod.yourfiles; app.js SETTINGS "where"):
+           Documents\RUSE 2.0's Mods, Maps, Exports and Backups, and the Launcher's library; each opened on the PC -->
+      <section class="setting" id="set-where">
+        <h2 id="set-where-title"></h2><p id="set-where-help" class="muted small"></p>
+        <ul id="set-where-list" class="where-list"></ul>
+      </section>
       <!-- where modded copies go (rusemod.play.instances_dir, app.js SETTINGS "copies"): the folder chosen here, else
            the recommended place, RUSE-Instances on the game's drive; kept in settings.json, the Launcher's too -->
       <section class="setting" id="set-copies">
@@ -950,6 +956,18 @@
     <ul id="edit-mods-list" class="doctor-list"></ul>
     <div class="actions">
       <button id="edit-mods-close" type="button" class="small ghost"></button>
+    </div>
+  </dialog>
+
+  <!-- Delete a mod… (app.js openDeleteMods; StudioApi.your_mods, delete_mod, forget_mod): the mods and maps the Studio
+       knows, each deleted to the Recycle Bin after one "are you sure", the Launcher's copy too when ticked; a folder
+       opened from somewhere else is only taken off the list -->
+  <dialog id="delete-mods" class="doctor" aria-labelledby="delete-mods-title">
+    <h2 id="delete-mods-title"></h2>
+    <p id="delete-mods-lead" class="muted small"></p>
+    <div id="delete-mods-lists"></div>
+    <div class="actions">
+      <button id="delete-mods-close" type="button" class="small ghost"></button>
     </div>
   </dialog>
 

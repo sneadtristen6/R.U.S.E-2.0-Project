@@ -104,7 +104,7 @@ it: no game files handed out, no running it without Steam.
 ## "In an older mod format" or "saved by a newer RUSE Studio"
 
 - **An older mod format:** the mod was made with an older Studio. **Update this mod** rewrites its files the way this
-  Studio reads them, keeping what they mean; a zip of the whole mod goes into the Studio's `mod-backups` folder first.
+  Studio reads them, keeping what they mean; a zip of the whole mod goes into the Studio's `Backups` folder first.
 - **A newer RUSE Studio:** update the Studio before changing that mod: an older one could drop what it doesn't know.
 
 ## Closing the Studio asks "Close RUSE Studio?"

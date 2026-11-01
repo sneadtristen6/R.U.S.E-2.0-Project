@@ -271,11 +271,16 @@ class Library(Base):
         self.assertEqual(MOD_FILES[0], "Mods (*.rusemod;*.rmod;*.zip;*.toml)")
 
     def test_removing_a_mod(self):
+        """Remove sends the mod to the Recycle Bin (rusemod.recycle; a stand-in here, so no test fills the PC's bin)."""
         api = self.api()
         api.add_mod(str(self.mod("econ-half")))
         api.new_set("Half", ["econ-half"])
         self.assertEqual(api.library()[0]["used_in"], 1)
-        res = api.remove_mod("econ-half")
+        binned = []
+        with mock.patch("rusemod.recycle.to_recycle_bin",
+                        side_effect=lambda p: (binned.append(Path(p)), __import__("shutil").rmtree(p))):
+            res = api.remove_mod("econ-half")
+        self.assertEqual(binned, [self.home / "library" / "econ-half"])
         self.assertEqual((res["mod"]["id"], res["library"]), ("econ-half", []))
         self.assertFalse((self.home / "library" / "econ-half").exists())
         half = res["sets"][1]
@@ -285,6 +290,33 @@ class Library(Base):
             api.remove_mod("econ-half")
         with self.assertRaises(LauncherError):
             api.remove_mod("../home")
+        api.add_mod(str(self.mod("econ-half")))
+        with mock.patch("rusemod.recycle.to_recycle_bin", side_effect=OSError("close anything that has it open")), \
+                self.assertRaisesRegex(LauncherError, "close anything"):
+            api.remove_mod("econ-half")  # a file of it open: it stays, and why is said
+        self.assertTrue((self.home / "library" / "econ-half" / "mod.toml").is_file())
+
+    def test_where_things_are_kept_and_each_opened(self):
+        """Settings' Where your files are: the library, and the Studio's folders (in Documents\\RUSE 2.0 in the app,
+        the platform folder in tests); each opened on the PC, a library mod's own folder too."""
+        api = self.api()
+        where = api.where_files()
+        self.assertEqual(where, {"library": str(self.home / "library"), "mods": str(self.home / "mods"),
+                                 "maps": str(self.home / "maps"), "exports": str(self.home / "exports"),
+                                 "documents": False})
+        docs = Path(self.tmp.name, "Documents", "RUSE 2.0")
+        (self.home / "mods" / "old").mkdir(parents=True)  # the Studio hasn't moved them yet: shown where they are
+        where = self.api(work=docs).where_files()
+        self.assertEqual((where["mods"], where["maps"], where["documents"]),
+                         (str(self.home / "mods"), str(docs / "Maps"), True))
+        self.assertEqual(api.show_folder("exports"), {"opened": str(self.home / "exports")})
+        self.assertTrue((self.home / "exports").is_dir())  # made, so there's something to open
+        api.add_mod(str(self.mod("econ-half")))
+        self.assertEqual(api.show_folder(mod_id="econ-half")["opened"], str(self.home / "library" / "econ-half"))
+        self.assertEqual(self.urls, [str(self.home / "exports"), str(self.home / "library" / "econ-half")])
+        for bad in ({"what": "sets"}, {"mod_id": "../home"}, {"mod_id": "nothing"}):
+            with self.assertRaises(LauncherError):
+                api.show_folder(**bad)
 
     def test_the_file_dialog_and_dropped_files(self):
         folder = self.mod("econ-half")

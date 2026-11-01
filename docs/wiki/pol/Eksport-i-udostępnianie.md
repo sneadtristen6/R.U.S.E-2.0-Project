@@ -49,6 +49,10 @@ własny otwiera swój projekt. Cudzy staje się twoją kopią z własną nazwą 
 trafiają do niej, a aktualizacja oryginału nigdy ich nie wymaże. Mod z RUSE Mod Manager (`.rmod`) jest przekształcany
 w swojej kopii, więc jego zmiany wartości stają się zmianami Studio, które możesz zmieniać.
 
+## Pokaż folder moda albo usuń moda
+
+W menu moda w Studio **Pokaż folder tego moda** otwiera folder moda, którego edytujesz, a **Usuń moda…** wymienia twoje mody i zmiany map: **Usuń** wysyła jeden do Kosza (możesz go stamtąd odzyskać), a jeśli to zaznaczysz, także jego kopię w Launcherze. Folder otwarty z innego miejsca jest tylko zdejmowany z listy. **Ustawienia → Gdzie są twoje pliki** pokazują, gdzie wszystko jest trzymane ([[Foldery i pliki modów|Foldery-i-pliki-modów]]). W RUSE Launcher **Usuń** też wysyła moda z biblioteki do Kosza, a **Pokaż w folderze** otwiera jego folder.
+
 ## Co może zawierać mod
 
 Tylko dane: liczby, teksty, mapy, modele, tekstury. Programy (`.exe`, `.dll`, skrypty uruchamiane na PC) są odrzucane

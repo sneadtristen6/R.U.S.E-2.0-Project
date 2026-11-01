@@ -22,6 +22,7 @@ const KINDS = ["all", "ground", "infantry", "air", "buildings", "ammo"];
 const ERA_CHINA = 7;  // the era units' nation chip for China, which has no game nation of its own (eraunits.js)  // ammo: what weapons fire (its own list)
 const WHOLE = new Set(["int8", "int16", "uint16", "int32", "uint32", "int64"]);
 const NEW = "\u0001new", OPEN = "\u0001open", EXPORT = "\u0001export", SHARE = "\u0001share", EDIT = "\u0001edit";  // the mod menu's actions (never a folder path)
+const SHOW = "\u0001show", DELETE = "\u0001delete";
 
 function api() { return window.pywebview.api; }
 
@@ -74,6 +75,13 @@ function fadeToast(card, ms) {   // gone after `ms`, the clock held while the mo
   card._fade = setTimeout(() => dropToast(card), ms);
   card.onmouseenter = () => clearTimeout(card._fade);
   card.onmouseleave = () => { card._fade = setTimeout(() => dropToast(card), ms / 2); };
+}
+
+function stayToast(card) {   // one said only once (the move to Documents): it waits to be closed
+  if (!card) return card;
+  clearTimeout(card._fade);
+  card.onmouseenter = card.onmouseleave = null;
+  return card;
 }
 
 // A card for `text` (kind "ok", "error", "warn", "job" or ""), its buttons `actions` [{label, tip, act}]. Returns it.
@@ -232,10 +240,14 @@ function renderMods() {
     for (const m of list) options.push(el("option", { value: m.path, textContent: m.name, title: m.path,
       selected: m.path === current }));
     options.push(el("option", { value: NEW, textContent: kind === "mod" ? w.new_mod : w.new_map }),
-      el("option", { value: OPEN, textContent: w.open_folder }),
+      el("option", { value: OPEN, textContent: w.open_folder, title: w.tip_open_folder }),
       el("option", { value: EDIT, textContent: w.edit_installed }),
       el("option", { value: EXPORT, textContent: kind === "mod" ? w.export_mod : w.export_map, disabled: !current }),
-      el("option", { value: SHARE, textContent: w.share_mod }));
+      el("option", { value: SHARE, textContent: w.share_mod }),
+      // (where the one being edited is, on the PC; and Delete a mod…: the owner, 2026-10-30)
+      el("option", { value: SHOW, textContent: kind === "mod" ? w.show_mod_folder : w.show_map_folder, disabled: !current,
+        title: current ? fillText(w.tip_show_mod_folder, { path: current }) : w.tip_show_none }),
+      el("option", { value: DELETE, textContent: kind === "mod" ? w.delete_mod : w.delete_map_project, title: w.tip_delete_mod }));
     $(PICKER[kind]).replaceChildren(...options);
   }
   $("mod").title = w.tip_pick_mod || "";
@@ -458,6 +470,12 @@ async function pickMod(e, kind = "mod") {
     if (value === EXPORT) { await openExport(kind); return; }
     if (value === SHARE) { await openShare(state.exported); return; }
     if (value === EDIT) { await openEditMods(); return; }
+    if (value === SHOW) {
+      const res = await api().show_folder(kind);
+      say(fillText(state.words.where_opened, { path: res.opened }), "ok");
+      return;
+    }
+    if (value === DELETE) { await openDeleteMods(kind); return; }
     if (value !== OPEN) {  // a mod a newer Studio saved: asked first (this one could drop what it doesn't know)
       const f = await api().mod_format(kind, value);
       if (f && f.state === "newer" && !window.confirm(fillText(state.words.format_newer_ask, { name: f.name }))) return;
@@ -478,7 +496,7 @@ async function createMod(e) {
     useMods(await api().new_mod(name, kind));
     $("new-mod").classList.add("hidden");
     $("new-mod-name").value = "";
-    say(`${kind === "map" ? state.words.map_project : state.words.mod}: ${kind === "map" ? state.map : state.mod}`, "ok");
+    say(fillText(state.words.where_saved, { name, path: kind === "map" ? state.map : state.mod }), "ok");
     if (kind === "map") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
     else await modChanged();
   } catch (err) { problem(err); }
@@ -656,6 +674,88 @@ async function editInstalled(id, name, button, note) {
     renderChips();
     await refreshList();
   } else if (state.view !== "maps") showView("maps");
+}
+
+// --- Delete a mod… (StudioApi.your_mods, delete_mod, forget_mod; the owner, 2026-10-30: "boop, I don't want this
+// anymore"): every mod and map the Studio knows, the menu's kind first. One made here goes to the Recycle Bin after one
+// "are you sure" (and its copy in the Launcher too, when ticked); one opened from somewhere else is only taken off the
+// list, its folder left as it is. ---
+async function openDeleteMods(kind = "mod") {
+  const w = state.words;
+  state.deleteKind = kind;
+  $("delete-mods-title").textContent = kind === "map" ? w.del_title_map : w.del_title;
+  $("delete-mods-lead").textContent = w.del_lead;
+  $("delete-mods-close").textContent = w.close;
+  $("delete-mods-close").title = w.tip_close || "";
+  $("delete-mods-lists").replaceChildren();
+  if (!$("delete-mods").open) $("delete-mods").showModal();
+  await renderDeleteMods();
+}
+
+async function renderDeleteMods() {
+  const w = state.words;
+  let res;
+  try { res = await api().your_mods(); } catch (err) { problem(err); return; }
+  const order = state.deleteKind === "map" ? ["maps", "mods"] : ["mods", "maps"];
+  $("delete-mods-lists").replaceChildren(...order.map((key) => {
+    const list = res[key] || [];
+    return el("section", { className: "del-section" },
+      el("h3", { textContent: key === "maps" ? w.del_maps : w.del_mods }),
+      el("ul", { className: "doctor-list" }, ...(list.length ? list.map(deleteRow)
+        : [el("li", { className: "muted small", textContent: w.del_none })])));
+  }));
+}
+
+function deleteRow(m) {
+  const w = state.words;
+  const head = el("div", { className: "edit-mod-head" }, el("strong", { textContent: m.name }),
+    el("code", { className: "where-path", textContent: m.path }));
+  if (m.editing) head.append(el("span", { className: "badge edited", textContent: w.del_editing }));
+  if (!m.ours) head.append(el("span", { className: "muted small", textContent: w.del_not_ours }));
+  const row = el("li", { className: "edit-mod-row" }, head);
+  if (!m.ours) {  // opened from somewhere else: only off the list
+    const forget = el("button", { type: "button", className: "small ghost", textContent: w.del_forget, title: w.tip_del_forget });
+    forget.addEventListener("click", async () => {
+      forget.disabled = true;
+      try { await afterDelete(await api().forget_mod(m.path), m.editing); say(fillText(w.del_forgot, { name: m.name }), "ok"); }
+      catch (err) { problem(err); forget.disabled = false; }
+    });
+    row.append(forget);
+    return row;
+  }
+  const start = el("button", { type: "button", className: "small ghost danger", textContent: w.del_delete, title: w.tip_del_delete });
+  const ask = el("div", { className: "del-ask hidden" });
+  const sure = el("span", { className: "small", textContent: fillText(w.del_sure, { name: m.name }) });
+  const also = el("input", { type: "checkbox" });
+  const yes = el("button", { type: "button", className: "small danger", textContent: w.del_delete, title: w.tip_del_delete });
+  const no = el("button", { type: "button", className: "small ghost", textContent: w.cancel, title: w.tip_cancel || "" });
+  ask.append(sure);
+  if (m.launcher) {  // its copy in the Launcher's library: asked each time (the owner's pick, 2026-10-30)
+    ask.append(el("label", { className: "small del-also", title: w.tip_del_launcher }, also,
+      document.createTextNode(" " + fillText(w.del_launcher, { name: m.launcher }))));
+  }
+  ask.append(el("div", { className: "actions" }, yes, no));
+  start.addEventListener("click", () => { ask.classList.remove("hidden"); start.classList.add("hidden"); no.focus(); });
+  no.addEventListener("click", () => { ask.classList.add("hidden"); start.classList.remove("hidden"); });
+  yes.addEventListener("click", async () => {
+    yes.disabled = no.disabled = true;
+    try {
+      const res = await api().delete_mod(m.path, Boolean(m.launcher && also.checked));
+      await afterDelete(res, m.editing);
+      say(fillText(res.launcher ? w.del_done_launcher : w.del_done, { name: res.deleted }), "ok");
+    } catch (err) { problem(err); await renderDeleteMods(); }
+  });
+  row.append(start, ask);
+  return row;
+}
+
+// a mod or map gone from the lists: the menus again, and the screens of the one that was being edited
+async function afterDelete(res, editing) {
+  useMods(res.map);
+  useMods(res.mod);
+  if (editing === "map" || editing === "both") { if (window.MapView && window.MapView.modChanged) window.MapView.modChanged(); }
+  if (editing === "mod" || editing === "both") await modChanged();
+  await renderDeleteMods();
 }
 
 async function refreshMarks() {
@@ -4993,6 +5093,18 @@ const SETTINGS = [  // the language isn't here: it has its own button at the top
     $("set-game-path").textContent = g.message || (g.path ? fill(w.set_game_path, { path: g.path }) : w.set_game_none);
     $("set-game-change").textContent = w.set_game_change;
   } },
+  // where what's made here is kept (StudioApi.where_files: Documents\RUSE 2.0), each folder opened with one click
+  { id: "where", async render() {
+    const w = state.words, at = await api().where_files();
+    $("set-where-list").replaceChildren(...["mods", "maps", "exports", "backups", "library"].map((k) => {
+      const show = el("button", { type: "button", className: "small", textContent: w.where_show,
+        title: fillText(w.tip_where_show, { path: at[k] }) });
+      show.addEventListener("click", async () => { try { await api().show_folder(k); } catch (err) { problem(err); } });
+      return el("li", { className: "where-row" },
+        el("div", { className: "where-words" }, el("strong", { textContent: w["where_" + k] }),
+          el("code", { className: "where-path", textContent: at[k] })), show);
+    }));
+  } },
   { id: "copies", async render() { renderCopies(await api().copies_folder()); } },
   // the game's title in the modded copies (rusemod.signature): R.U.S.E. 2.0's gold title (the default) or the game's
   // own (the owner, 2026-10-22: "a toggle somewhere in the settings to go back to generic ruse"); the Launcher's too
@@ -5465,6 +5577,7 @@ async function start() {
   $("flag-guide-search").addEventListener("input", renderFlagGuide);
   $("edit-mods-close").addEventListener("click", () => $("edit-mods").close());
   $("edit-mods-search").addEventListener("input", renderEditMods);
+  $("delete-mods-close").addEventListener("click", () => $("delete-mods").close());
   $("test").addEventListener("click", testInGame);
   $("test-log-close").addEventListener("click", () => $("test-panel").classList.add("hidden"));
   $("test-log-copy").addEventListener("click", copyTestLog);
@@ -5504,10 +5617,19 @@ async function start() {
   let guardLive = false;
   try { guardLive = (await api().fair_play_on()).on; } catch { guardLive = false; }
   await window.Agreement.open({ api: api(), words: state.words, fairOn: guardLive });
+  filesMoved().catch(() => {});  // an older back end: nothing moved
   firstBackup(status.ready).catch(problem);
   // the start screen (startflow.js, loaded after this file: the page's scripts all read first)
   if (document.readyState === "loading") await new Promise((ok) => document.addEventListener("DOMContentLoaded", ok, { once: true }));
   if (window.StartFlow) await window.StartFlow.atStart(status.ready);
+}
+
+// The mods and maps moved to Documents\RUSE 2.0 at this start (StudioApi.use_documents, files_moved): said once, with
+// any that stayed where they were and why
+async function filesMoved() {
+  const w = state.words, m = await api().files_moved();
+  if (m.moved) stayToast(say(fillText(w.where_moved, { n: m.moved, path: m.to }), "ok"));
+  if ((m.left || []).length) stayToast(say(fillText(w.where_left, { n: m.left.length, list: m.left.map((l) => `${l.path} (${l.why})`).join("; ") }), "warn"));
 }
 
 // The installer's "Keep a clean copy of my game's files" (rusemod.backup.BackupCalls.backup_requested): made on this

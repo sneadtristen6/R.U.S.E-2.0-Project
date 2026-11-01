@@ -54,6 +54,10 @@ peut pas prendre le nom de l'original) : vos changements vont dedans, et une mis
 jamais. Un mod de RUSE Mod Manager (`.rmod`) est converti dans sa copie, donc ses changements de valeurs deviennent des
 changements du Studio que vous pouvez modifier.
 
+## Afficher le dossier d'un mod, ou supprimer un mod
+
+Dans le menu Mod du Studio, **Afficher le dossier de ce mod** ouvre le dossier du mod que vous modifiez, et **Supprimer un mod…** liste vos mods et modifs de cartes : **Supprimer** en envoie un dans la Corbeille (vous pouvez l'en récupérer) et, si vous le cochez, sa copie dans le Launcher aussi. Un dossier ouvert depuis un autre endroit est seulement retiré de la liste. **Réglages → Où sont vos fichiers** montre où tout est rangé ([[Dossiers et fichiers des mods|Dossiers-et-fichiers-des-mods]]). Dans RUSE Launcher, **Retirer** envoie aussi un mod de la bibliothèque dans la Corbeille, et **Afficher dans le dossier** ouvre son dossier.
+
 ## Ce qu'un mod peut contenir
 
 Des données seulement : nombres, textes, cartes, modèles, textures. Les programmes (`.exe`, `.dll`, scripts qui tournent

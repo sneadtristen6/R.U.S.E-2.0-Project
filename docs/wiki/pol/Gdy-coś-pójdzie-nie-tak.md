@@ -108,7 +108,7 @@ posiadania gry: żadnego rozdawania plików gry, żadnego uruchamiania jej bez S
 ## „W starszym formacie moda” albo „zapisany przez nowsze RUSE Studio”
 
 - **Starszy format moda:** mod został zrobiony starszym Studio. **Zaktualizuj ten mod** przepisuje jego pliki tak, jak
-  czyta je to Studio, zachowując ich znaczenie; najpierw zip całego moda trafia do folderu `mod-backups` Studia.
+  czyta je to Studio, zachowując ich znaczenie; najpierw zip całego moda trafia do folderu `Backups` Studia.
 - **Nowsze RUSE Studio:** zaktualizuj Studio, zanim zmienisz ten mod: starsze mogłoby pominąć to, czego nie zna.
 
 ## Zamykanie Studio pyta „Zamknąć RUSE Studio?”

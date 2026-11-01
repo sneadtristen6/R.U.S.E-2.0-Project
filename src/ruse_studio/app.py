@@ -122,6 +122,8 @@ def main(argv=None) -> int:
     if installed_app():  # Windows' app list shows this version (issue #15)
         fix_app_list_version("studio", __version__)
         log.mark("app_list")
+    api.use_documents()  # mods and maps in Documents\RUSE 2.0 (rusemod.yourfiles), moved there the first time
+    log.mark("your_files")
     api.use_owned_check()  # owned copies only (rusemod.owned): on in the app, off in tests of made-up games
     api.use_guard_server()  # RUSE Guard's evidence goes to the project's server from the app window; tests keep theirs
     api.use_required_updates()  # a required update goes in before Test in game (rusemod.update): the same

@@ -48,6 +48,10 @@ opens its project. Someone else's becomes a copy of your own with a name of its 
 name): your changes go into it, and an update of the original never wipes them. A RUSE Mod Manager mod (`.rmod`) is
 converted in its copy, so its value changes become Studio changes you can change.
 
+## Show a mod's folder, or delete a mod
+
+In the Studio's mod menu, **Show this mod's folder** opens the folder of the mod you're editing, and **Delete a mod…** lists your mods and map changes: **Delete** sends one to the Recycle Bin (you can bring it back from there) and, if you tick it, its copy in the Launcher too. A folder you opened from somewhere else is only taken off the list. **Settings → Where your files are** shows where everything is kept ([[Mod folders and files|Mod-Folders-and-Files]]). In RUSE Launcher, **Remove** sends a library mod to the Recycle Bin too, and **Show in folder** opens its folder.
+
 ## What a mod can hold
 
 Data only: numbers, texts, maps, models, textures. Programs (`.exe`, `.dll`, scripts that run on a PC) are refused by

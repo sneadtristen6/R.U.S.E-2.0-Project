@@ -117,7 +117,7 @@ R.U.S.E. sans le posséder : aucun fichier du jeu distribué, aucun lancement sa
 
 - **Un format de mod plus ancien :** le mod a été fait avec un Studio plus ancien. **Mettre ce mod à jour** réécrit ses
   fichiers de la façon dont ce Studio les lit, en gardant ce qu'ils veulent dire ; un zip du mod entier va d'abord dans
-  le dossier `mod-backups` du Studio.
+  le dossier `Backups` du Studio.
 - **Un RUSE Studio plus récent :** mettez le Studio à jour avant de changer ce mod : un plus ancien pourrait perdre ce
   qu'il ne connaît pas.
 

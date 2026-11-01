@@ -35,7 +35,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from rusemod import buildtext, doctor, fairplay, mod_index, startlog
+from rusemod import buildtext, doctor, fairplay, mod_index, startlog, yourfiles
 from rusemod import play as game_start, schema
 from rusemod.lock import CodeError
 from rusemod.backup import BackupCalls
@@ -104,9 +104,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
     def __init__(self, game_dir=None, home=None, instances=None, open_url=game_start.open_url,
                  start_game=game_start.start_game, steam_running=game_start.steam_running, find=find_game,
                  wait=time.sleep, pick_folder=None, pick_file=None, ui_language=pc_language, index_url=None,
-                 backups=None):
+                 backups=None, work=None):
         self._game_dir = Path(game_dir) if game_dir else None
         self._home = Path(home) if home else default_home()
+        # where the Studio keeps the mods and maps people make (rusemod.yourfiles), shown in Settings: Documents\RUSE 2.0
+        # in the app, the platform folder in tests
+        self._work = Path(work) if work else (None if home else yourfiles.documents_home())
         self._instances = Path(instances) if instances else None  # tests: where modded copies go, over Settings
         self._backups = Path(backups) if backups else None  # rusemod.backup: RUSE-Backup beside the modded copies
         self._open_url, self._find = open_url, find
@@ -384,11 +387,41 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return self.add_mod(chosen)
 
     def remove_mod(self, mod_id: str) -> dict:
+        """Remove a mod from the library: it goes to the Recycle Bin (Library.remove). Returns the fresh lists and
+        the mod."""
         try:
             info = self._library.remove(mod_id)
         except LibraryError as exc:
             raise LauncherError(str(exc)) from None
         return self._lists(mod=info)
+
+    # --- where things are kept (Settings: Where your files are), each opened on the PC ---
+    def where_files(self) -> dict:
+        """{"library": the Launcher's installed mods, "mods", "maps", "exports": the Studio's (rusemod.yourfiles: in
+        Documents\\RUSE 2.0, or where they still are until the Studio moves them there), "documents": whether they're
+        in Documents}."""
+        made = yourfiles.folders(self._home, self._work)
+        old = yourfiles.old_folders(self._home, self._work)
+        for k in list(made):  # not moved yet (the Studio does it at its next start): shown where they are
+            if not made[k].exists() and k in old and old[k].is_dir():
+                made[k] = old[k]
+        return {k: str(made[k]) for k in ("mods", "maps", "exports")} | {"library": str(self._library.folder),
+                                                                       "documents": self._work is not None}
+
+    def show_folder(self, what: str = "library", mod_id: str = "") -> dict:
+        """Open a folder on the PC (File Explorer on Windows): with `mod_id`, that library mod's own folder (its Show
+        in folder); else one of where_files()'s, made first when it isn't there yet. Returns {"opened"}."""
+        if mod_id:
+            folder = self._library.path_of(str(mod_id))
+            if folder is None:
+                raise LauncherError(f"There's no mod called {mod_id!r} in the library.")
+        elif what in ("library", "mods", "maps", "exports"):
+            folder = Path(self.where_files()[what])
+            folder.mkdir(parents=True, exist_ok=True)
+        else:
+            raise LauncherError(f"{what!r} isn't one of the folders the apps keep")
+        self._open_url(str(folder))
+        return {"opened": str(folder)}
 
     # --- Convert an old mod: one that comes as the game's packs with its changes in them, to drop into the game folder,
     # made into a mod the Launcher plays beside others (LittleGroove's Convert tab: his engine compares each of the

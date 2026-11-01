@@ -54,6 +54,10 @@ kann nicht den Namen des Originals tragen): deine Änderungen kommen dort hinein
 nie. Ein Mod des RUSE Mod Manager (`.rmod`) wird in seiner Kopie umgewandelt, sodass seine Wertänderungen zu
 Studio-Änderungen werden, die du ändern kannst.
 
+## Den Ordner eines Mods zeigen oder einen Mod löschen
+
+Im Mod-Menü des Studios öffnet **Ordner dieses Mods zeigen** den Ordner des Mods, den du bearbeitest, und **Mod löschen…** listet deine Mods und Kartenänderungen: **Löschen** schickt einen in den Papierkorb (dort kannst du ihn zurückholen) und, wenn du es anhakst, auch seine Kopie im Launcher. Ein Ordner, den du von woanders geöffnet hast, wird nur von der Liste genommen. **Einstellungen → Wo Ihre Dateien liegen** zeigt, wo alles liegt ([[Mod-Ordner und -Dateien|Mod-Ordner-und--Dateien]]). In RUSE Launcher schickt **Entfernen** einen Mod der Bibliothek ebenfalls in den Papierkorb, und **Im Ordner zeigen** öffnet seinen Ordner.
+
 ## Was ein Mod enthalten kann
 
 Nur Daten: Zahlen, Texte, Karten, Modelle, Texturen. Programme (`.exe`, `.dll`, Skripte, die auf einem PC laufen) lehnen
