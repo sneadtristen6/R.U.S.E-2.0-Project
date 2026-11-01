@@ -9,9 +9,14 @@ column past the screen. With lines as rows, a line's buttons stand in that line'
 units, then its research cards, ACROSS to a row, a longer line carrying on in the rows right below (bigpacks10, his test:
 a research card whose unit wasn't in the list stood alone, and while an upgrade is researched the game hides the unit
 it upgrades, so its cards stood alone till the research ended: a card goes by its line, not by its unit). A button's
-line is the first unit of its upgrades (each research's parent, up the chain); a new unit bought from the start joins
-the line of the unit it was copied from, which the build writes into the template (`_r2_lines`). A research card may
-start a row: its action, like a unit's, has the get_policy the game's research start reads.
+line is the first unit of its upgrades (each research's parent, up the chain); a unit bought from the start joins the
+group the mods' menu_groups.toml put it in (rusemod.menugroups: the Studio's pick, the game's own units too), else, a
+new unit, the line of the unit it was copied from, which the build writes into the template (`_r2_lines`). A research
+card may start a row: its action, like a unit's, has the get_policy the game's research start reads.
+
+The build counts the groups as the Studio does (built_groups, over_limits): a group holding more than menugroups.MOST,
+or a building's list more than menugroups.MOST_GROUPS groups, is built with a warning (the owner's picks, 2026-10-31
+and 11-01), never refused.
 
 The template runs after the game's own headup/menu module (pyscript.append_module), compiled with the game's Python
 2.5.1 (menulines_compiled): after the game numbers a tab's rows (Menu.update_sub_buttons), it links each row's buttons
@@ -25,9 +30,16 @@ from __future__ import annotations
 import base64
 import hashlib
 
-from . import pyscript
+from . import menugroups, ownbuildings, pyscript
 
 ACROSS = 6   # a row's cards, units and research cards alike: his pick after bigpacks12 ("a limit of 6 total in a row")
+# The units a build list's groups hold, as the Studio has them (ruse_studio.api KINDS: ground, infantry, air). In the
+# game's data (its index, 2026-11-01) these are the only classes with a Factory of a building that makes units, beside
+# the build bar's tabs (TMainMenuInfos); the buildings' own Factory is 3, the construction menu.
+UNITS = ("TUniteAuSolDescriptor", "TInfanterieDescriptor", "TAvionDescriptor")
+# The buildings that make units, the board's rows (ruse_studio.board ALL_ROWS): Barracks, Artillery & AA Base, Armor
+# Base, Anti-Tank Base, Airfield, Prototype Base, then the buildings with units of their own (rusemod.ownbuildings)
+BUILDINGS = (8, 13, 10, 11, 9, 12) + ownbuildings.KINDS
 
 SOURCES = {
     "menu": '''\
@@ -314,42 +326,112 @@ def script_changes(zz_win, lines, packs: dict | None = None) -> dict:
     return out
 
 
-def lines_of(objects, by_path, created) -> list[tuple[str, str]]:
-    """((a new unit's class, the class of the unit whose line it joins), ...): a new unit researched from another
-    (IsUpgrade, UpgradeRequire) joins that unit's line, one bought from the start the line of the unit it was copied
-    from, each followed to a unit that is neither (a game unit's own upgrades are followed by the game's script).
-    `objects`: the built game's objects; `by_path`: unit path -> its class name in the game's unit list (the game's
-    units); `created`: new object path -> the op that made it (a clone op: its source)."""
-    from .patch import Num, Ref, Text
+def class_name(objects, by_path, path) -> str | None:
+    """A unit's class in the game's Python unit list: its ClassNameForDebug, else the list's own (`by_path`: unit path
+    -> its class name there, the game's units), else None."""
+    from .patch import Text
+    obj = objects.get(path)
+    debug = obj.props.get("ClassNameForDebug") if obj is not None else None
+    return debug.value if isinstance(debug, Text) else by_path.get(path)
 
-    def cls(path):
-        obj = objects.get(path)
-        debug = obj.props.get("ClassNameForDebug") if obj is not None else None
-        return debug.value if isinstance(debug, Text) else by_path.get(path)
 
-    def up(path):
-        obj = objects.get(path)
-        if obj is None:
-            return None
-        flag, need = obj.props.get("IsUpgrade"), obj.props.get("UpgradeRequire")
-        if isinstance(flag, Num) and int(flag.value) and isinstance(need, Ref):
-            return need.target
-        op = created.get(path)
-        return op.source if op is not None and getattr(op, "kind", None) == "clone" else None
+def unit_of(obj, op=None) -> dict:
+    """A built object as rusemod.menugroups takes a unit (ruse_studio.groups builds the same from the board): {"parent":
+    the unit it's researched from (UpgradeRequire) or None, "flag": whether it's an upgrade (IsUpgrade), "source": a new
+    unit's clone source (`op`, the op that made it), "nation" (Nationalite, 0 when it has none), "factory" (its building,
+    one of BUILDINGS, else None), "shown" (at some battle date: no ShowInMenu, or a non-zero one), "slot" (its place
+    number, PositionInMenu, or None)}."""
+    from .patch import ListV, Num, Ref
+    p = obj.props
+    flag, need, shows = p.get("IsUpgrade"), p.get("UpgradeRequire"), p.get("ShowInMenu")
+    nation, factory, slot = (int(v.value) if isinstance(v, Num) else None
+                             for v in (p.get("Nationalite"), p.get("Factory"), p.get("PositionInMenu")))
+    return {"parent": need.target if isinstance(need, Ref) else None,
+            "flag": isinstance(flag, Num) and bool(flag.value),
+            "source": op.source if op is not None and getattr(op, "kind", None) == "clone" else None,
+            "nation": nation or 0, "factory": factory if factory in BUILDINGS else None,
+            "shown": not isinstance(shows, ListV) or any(isinstance(x, Num) and x.value for x in shows.items),
+            "slot": slot}
 
-    out = []
-    for path in created:
-        name = cls(path)
-        if name is None or path not in objects:
+
+def _upgrade(u: dict) -> bool:
+    """Whether a unit stands where its research puts it (rusemod.menugroups.roots climbs from it)."""
+    return bool(u["flag"]) and u["parent"] is not None
+
+
+def lines_of(objects, by_path, created, groups: dict | None = None) -> list[tuple[str, str]]:
+    """((a unit's class, the class of its group's first unit), ...) for the template's `_r2_lines`: each unit that
+    starts its research chain (no upgrade) and each new unit (created), whose group's first unit is another unit:
+    rusemod.menugroups.roots, up the research chain while an upgrade, else where the mods' menu groups put it (`groups`:
+    {address: its group's first unit's address}, the game's units too), else a new unit the way of the unit it was
+    copied from; fully resolved, as the template maps a line's first unit once. A game upgrade gets none (the game's
+    script climbs to its chain's first unit, which carries it); a new upgrade gets its chain's, as before the groups. A
+    unit in a group of its own gets none. `objects`: the built game's objects; `by_path`: unit path -> its class name in
+    the game's unit list (the game's units); `created`: new object path -> the op that made it (a clone op: its
+    source)."""
+    groups = groups or {}
+    units: dict = {}   # what roots can climb through from the units asked about: every step it may take
+    todo = [p for p in list(created) + list(groups) if p in objects]
+    while todo:
+        path = todo.pop()
+        if path in units:
             continue
-        root, seen = path, {path}
-        while True:
-            nxt = up(root)
-            if nxt is None or nxt in seen:
-                break
-            seen.add(nxt)
-            root = nxt
-        root_name = cls(root)
-        if root != path and root_name and root_name != name:
-            out.append((name, root_name))
+        u = units[path] = unit_of(objects[path], created.get(path))
+        todo += [s for s in (u["parent"], groups.get(path), u["source"]) if s in objects and s not in units]
+    root = menugroups.roots(units, groups)
+    out = []
+    for path, u in units.items():
+        if path not in created and (path not in groups or _upgrade(u)):
+            continue
+        name, to = class_name(objects, by_path, path), class_name(objects, by_path, root[path])
+        if name and to and root[path] != path and to != name:
+            out.append((name, to))
     return sorted(set(out))
+
+
+def built_groups(objects, created, groups: dict | None = None) -> tuple[dict, dict]:
+    """The build lists' groups of the built game as the Studio counts them (ruse_studio.groups GroupState): every unit
+    (UNITS), the game's and the mods', in a building that makes units and shown at some battle date, in the group
+    rusemod.menugroups.roots gives it (`groups`: the mods' menu groups), per nation and building, each upgrade one place.
+    Returns ({(nation, building, the group's first unit): [its units]} (menugroups.members), {address: its unit
+    (unit_of)} of every unit)."""
+    units = {p: unit_of(o, created.get(p)) for p, o in objects.items() if o.cls in UNITS}
+    return menugroups.members(units, menugroups.roots(units, groups or {})), units
+
+
+def first_shown(units: dict, key: tuple, members: list) -> str:
+    """The unit a group stands under in the Studio (ruse_studio.groups GroupState "root"): its first unit when it's in
+    that building's row, else the group's first unit in the board's order (ruse_studio.board _board_tree: the row's
+    units by place number, then address, each followed by the ones researched from it in that row)."""
+    nation, factory, first = key
+    if first in members:
+        return first
+    here = {a: u for a, u in units.items() if u["nation"] == nation and u["factory"] == factory and u["shown"]}
+    order = sorted(here, key=lambda a: (here[a]["slot"] is None, here[a]["slot"] or 0, a))
+    kids: dict = {}
+    top = []
+    for a in order:
+        p = here[a]["parent"]
+        (kids.setdefault(p, []) if p in here and p != a else top).append(a)
+    mine, seen = set(members), set()
+    for start in top + order:
+        stack = [start]
+        while stack:
+            a = stack.pop()
+            if a in seen:
+                continue
+            seen.add(a)
+            if a in mine:
+                return a
+            stack += reversed(kids.get(a, []))
+    return sorted(members)[0]
+
+
+def over_limits(objects, created, groups: dict | None = None) -> tuple[list, list]:
+    """What of the built game's build lists (built_groups) is past the owner's limits: ([((nation, building, the
+    group's first unit), how many, the unit it stands under in the Studio (first_shown))] for each group holding more
+    than menugroups.MOST, [((nation, building), how many groups)] for each building whose list has more than
+    menugroups.MOST_GROUPS), each the fullest first."""
+    found, units = built_groups(objects, created, groups)
+    return ([(key, count, first_shown(units, key, found[key])) for key, count in menugroups.over(found)],
+            menugroups.crowded(found))

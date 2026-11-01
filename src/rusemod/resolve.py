@@ -50,6 +50,8 @@ class ModInfo:
     new_maps: dict = field(default_factory=dict)             # new map's pack name -> [newmap.NewMap] (§8, map.toml)
     menu_pictures: dict = field(default_factory=dict)        # map pack name -> [menupicture.MenuPictures] (§8)
     menu_order: list = field(default_factory=list)           # [menuorder.Order]: missions' places in the menus (§8)
+    menu_groups: dict = field(default_factory=dict)          # a unit's address -> the address of its build list
+    # group's first unit (menu_groups.toml, rusemod.menugroups: where the Studio put each unit bought from the start)
     depots: dict = field(default_factory=dict)               # "all" or a map pack -> scenario.DepotRule (depots.toml)
     textures: dict = field(default_factory=dict)             # texture path in ZZ_Win.dat -> (colour PNG, alpha PNG) (§7)
     cards: dict = field(default_factory=dict)                # a new unit's name -> its own card PNG (files/cards, §7)
