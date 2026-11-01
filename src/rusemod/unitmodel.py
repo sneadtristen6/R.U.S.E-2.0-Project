@@ -706,15 +706,19 @@ class KeptModels:
         self.names: dict = {}   # a .glb's path -> its fingerprint, as prepare read it
 
     def prepare(self, glbs, workers: int | None = None) -> None:
-        """The .glb files of `glbs` that aren't kept yet read and their pictures made into textures side by side in
-        worker programs (rusemod.mend's pool, one per core but one), biggest first, each kept as it comes back, for
+        """The .glb files of `glbs` that aren't kept yet made side by side, biggest first, each kept as it is done, for
         get: one after another, a first build of bigpacks14's mod spent 845 of its 935 s on its 284 own models
-        (2026-11-01). A worker's record is what get keeps, and get reading a kept model gives what making it gives
-        (bigpacks14speed built both ways: every member the same). Fewer than two to make, or one worker: nothing done
-        here; a model a worker couldn't make (or a pool that couldn't start), get makes as before, its error then the
-        build's."""
+        (2026-11-01). Worker programs read the .glb files (rusemod.mend's pool, half the workers: they run without
+        Numba, mend._pool's rule) and threads of this program make their pictures into textures (Numba's encoder lets
+        go of Python's lock: 256 pictures 18.0 s one after another, 5.5 s on 7 threads, the same bytes; in the workers
+        without Numba they took six times as long), at most two models a worker in hand. A record made here is what
+        get keeps, and get reading a kept model gives what making it gives (bigpacks14speed built both ways: every
+        member the same). Fewer than two to make, or one worker: nothing done here; a model that couldn't be made
+        here (or a pool that couldn't start), get makes as before, its error then the build's."""
+        from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
         from .mapkeep import tile_names
         from .mend import WORKERS, _pool
+        from . import unitlook
         workers = WORKERS if workers is None else workers
         todo: dict = {}
         for glb in glbs:
@@ -728,18 +732,39 @@ class KeptModels:
         if len(todo) < 2 or workers < 2:
             return
         jobs = sorted(todo.items(), key=lambda kv: -Path(kv[1]).stat().st_size)
+        unitlook.whole_arrays()
+        try:  # the encoder with Numba in this program before the pool keeps it out of the workers (mend._pool)
+            from . import dxtnp  # noqa: F401
+        except ImportError:
+            pass
+        reading: dict = {}   # future -> fingerprint
+        making: dict = {}
         try:
-            with _pool(_kept_start, (), min(workers, len(jobs))) as pool:
-                for (name, _glb), record in zip(jobs, pool.map(_kept_job, [glb for _n, glb in jobs])):
-                    if record is None:
-                        continue
-                    self.made[name] = record
-                    if self.cache is not None:
-                        self.new[name] = record
-                        self.size += len(record)
-                        if self.size >= KEPT_PACK:
-                            self.close()
-        except Exception:  # noqa: BLE001 (a pool that broke: what came back is kept, get makes the rest)
+            with _pool(_kept_start, (), max(1, min(workers // 2, len(jobs)))) as readers, \
+                    ThreadPoolExecutor(workers) as makers:
+                while jobs or reading or making:
+                    while jobs and len(reading) + len(making) < 2 * workers:
+                        name, glb = jobs.pop(0)
+                        reading[readers.submit(_kept_read_job, glb)] = name
+                    done, _ = wait(list(reading) + list(making), return_when=FIRST_COMPLETED)
+                    for f in done:
+                        if f in reading:
+                            name = reading.pop(f)
+                            prep = f.result() if f.exception() is None else None
+                            if prep is not None:
+                                making[makers.submit(_kept_made, prep)] = name
+                            continue
+                        name = making.pop(f)
+                        record = f.result()
+                        if record is None:
+                            continue
+                        self.made[name] = record
+                        if self.cache is not None:
+                            self.new[name] = record
+                            self.size += len(record)
+                            if self.size >= KEPT_PACK:
+                                self.close()
+        except Exception:  # noqa: BLE001 (a pool that broke: what was made is kept, get makes the rest)
             pass
 
     def get(self, glb) -> tuple[Prepared, list]:
@@ -786,11 +811,19 @@ def _kept_start() -> None:
     """A worker of KeptModels.prepare's pool: nothing shared."""
 
 
-def _kept_job(glb: str) -> bytes | None:
-    """In a worker: the .glb read and its pictures made into textures, as a kept record (KeptModels.get makes the
-    same), or None when it can't be (get then makes it, its error the build's)."""
+def _kept_read_job(glb: str) -> Prepared | None:
+    """In a worker: the .glb as read_mod_glb reads it, or None when it can't be (get then makes it, its error the
+    build's)."""
     try:
-        prep = read_mod_glb(Path(glb))
+        return read_mod_glb(Path(glb))
+    except Exception:  # noqa: BLE001 (made again by get, which says what went wrong)
+        return None
+
+
+def _kept_made(prep: Prepared) -> bytes | None:
+    """On a thread: a model read (_kept_read_job) with its pictures made into textures, as a kept record
+    (KeptModels.get makes the same), or None when it can't be."""
+    try:
         textures = [(new_texture(px, w, h), new_standin(px, w, h)) for _n, w, h, px in prep.pictures]
         return _kept_bytes(Prepared(prep.parts, [[n, w, h, b""] for n, w, h, _px in prep.pictures], prep.report),
                            textures)
