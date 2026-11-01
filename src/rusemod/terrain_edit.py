@@ -475,10 +475,9 @@ def _end_core(mesh: Tms | None, ex: float, ey: float) -> float:
 def _keep_ends(pts: _Points, before: list, keep) -> int:
     """The points of `pts` round each of `keep` (the ends of the map's own bridges: x, y and how far round each the
     ground keeps its height whole, _end_core) put back at their height `before` the strokes, and part of the way back
-    over KEEP_SLOPE past that. The game rests a bridge on the ground under its two ends (findings F-100 and F-101:
-    read in the game's program and seen in the game, 2026-10-19), so ground raised there lifted the map's own bridges
-    with it, their walking floors left at the old height (a tester's Vesuvio, 2026-10-30). Returns how many points it
-    moved."""
+    over KEEP_SLOPE past that. The game rests a bridge on the ground under its two ends (seen in the game,
+    2026-10-19), so ground raised there lifted the map's own bridges with it, their walking floors left at the old
+    height (a tester's Vesuvio, 2026-10-30). Returns how many points it moved."""
     moved = set()
     for ex, ey, core in keep:
         reach = core + KEEP_SLOPE
