@@ -839,7 +839,7 @@ class EraUnitCalls:
                 raise StudioError(f"{entry['name']} can't be researched from {research_from}: that unit is in another "
                                   f"group of the building than the one picked.")
             if rows:
-                self._groups_full(ix, edits, target, "us")
+                self._groups_full(ix, edits, target, "us", row=(state, int(nation), int(factory)))
         finally:
             ix.close()
         costs = {}

@@ -301,7 +301,12 @@ class GroupCalls:
 
     def _groups_check(self, ix, edits, before: GroupState, after: GroupState, lang: str) -> None:
         """StudioError when a change leaves a group holding more than MOST and more than it held before (the group
-        before holding the most of its units; with two, the one holding its first unit, then the smaller)."""
+        before holding the most of its units; with two, the one holding its first unit, then the smaller), or a
+        building with more groups than menugroups.MOST_GROUPS and more than it had before."""
+        for (n, f), row in after.rows.items():
+            had = len(before.rows.get((n, f), []))
+            if len(row) > menugroups.MOST_GROUPS and len(row) > had:
+                self._groups_refuse_rows(ix, edits, n, f, len(row), lang)
         for row in after.rows.values():
             for g in row:
                 count = len(g["units"])
@@ -330,10 +335,27 @@ class GroupCalls:
                           f"group holds at most {MOST}. Take a unit out of that group, or put this one in a building "
                           f"with units of its own (Add a building…).")
 
-    def _groups_full(self, ix, edits, g: dict | None, lang: str, coming: int = 1) -> None:
-        """StudioError when `coming` units more don't fit in group `g` (None: a group of their own, always room)."""
+    def _groups_refuse_rows(self, ix, edits, nation: int, factory: int, count: int, lang: str):
+        from .api import StudioError
+        told = lang if lang in schema.LANGS else "us"
+        building = next((b["name"] for b in self._board_building_list(ix, edits, nation, told)
+                         if b["kind"] == factory), None) or str(factory)
+        # not a game rule: the owner's pick (2026-11-01, "10 groups"): the game places every row, none cut or scrolled
+        # (finding F-168), and 10 is what his screen shows while a row is drawn bigger under the mouse (F-169)
+        raise StudioError(f"There's no room for another group in {building}: it would have {count} groups, and a "
+                          f"building holds at most {menugroups.MOST_GROUPS} so its list fits on the screen. Put this "
+                          f"unit in one of its groups, or in a building with units of its own (Add a building…).")
+
+    def _groups_full(self, ix, edits, g: dict | None, lang: str, coming: int = 1, row=None) -> None:
+        """StudioError when `coming` units more don't fit in group `g`, or (`g` None: a group of their own) when the
+        building `row` ((state, nation, building)) already has menugroups.MOST_GROUPS groups."""
         if g is not None and len(g["units"]) + coming > MOST:
             self._groups_refuse(ix, edits, g, len(g["units"]) + coming, lang)
+        if g is None and row is not None:
+            state, n, f = row
+            have = len(state.rows.get((n, f), []))
+            if have + 1 > menugroups.MOST_GROUPS:
+                self._groups_refuse_rows(ix, edits, n, f, have + 1, lang)
 
     def _groups_conflict(self, ix, edits, unit: str, info: dict, lang: str):
         """StudioError: an upgrade put in a group other than its research parent's."""
@@ -416,8 +438,10 @@ class GroupCalls:
         g = self._groups_target(state, n, f, group, kind)
         view = self._groups_view(ix, edits, state, n, f, lang)
         mine = next((v for v in view if g is not None and v["root"] == g["root"]), None)
+        # a group of its own is full when the building already has the most groups (menugroups.MOST_GROUPS)
+        full = bool(mine["full"]) if mine else len(view) >= menugroups.MOST_GROUPS
         return {"root": mine["root"] if mine else None, "name": mine["name"] if mine else name,
-                "count": mine["count"] if mine else 0, "most": MOST, "full": bool(mine and mine["full"]),
-                "new": mine["new"] if mine else True,
+                "count": mine["count"] if mine else 0, "most": MOST, "full": full,
+                "new": mine["new"] if mine else True, "groups": len(view), "most_groups": menugroups.MOST_GROUPS,
                 "choices": [{"root": v["root"], "name": v["name"], "count": v["count"], "full": v["full"]}
                             for v in view]}, g

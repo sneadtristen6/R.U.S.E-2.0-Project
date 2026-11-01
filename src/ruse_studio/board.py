@@ -28,7 +28,7 @@ from __future__ import annotations
 import copy
 import threading
 
-from rusemod import nations, ownbuildings
+from rusemod import menugroups, nations, ownbuildings
 
 ROWS = (8, 13, 10, 11, 9, 12)  # the buildings that make units, in the order of the game's build tabs: Barracks,
 # Artillery & AA Base, Armor Base, Anti-Tank Base, Airfield, Prototype Base
@@ -282,7 +282,8 @@ class BoardCalls:
         game)}], "most": the most units it shows at one battle date, "untried": more than MOST_TRIED, "buildings":
         [{address, name, new}] the nation's buildings of that kind (a copy that makes the same units is one more),
         "own": a building with units of its own, "groups": its build list's groups (GroupCalls._groups_view: [{root,
-        name, kinds, units, count, most, full, over, new}]), each unit box's "group" the address of its group's first
+        name, kinds, units, count, most, full, over, new}]), "most_groups": the most groups a building holds
+        (rusemod.menugroups.MOST_GROUPS), each unit box's "group" the address of its group's first
         unit}] (the game's rows, then its buildings with units of their own), "own_left": how many more buildings with
         units of their own it can have, "taken_out": the nation's own units in no build menu (hidden by the mod, or never
         shown in the game), [{address, name, factory, new}]}."""
@@ -323,7 +324,7 @@ class BoardCalls:
             rows.append({"factory": f, "building": mine[0]["name"] if mine else None, "units": boxes, "most": most,
                          "untried": most > MOST_TRIED, "own": f in ownbuildings.KINDS,
                          "buildings": [{"address": b["address"], "name": b["name"], "new": b["new"]} for b in mine],
-                         "groups": views.get(f, [])})
+                         "groups": views.get(f, []), "most_groups": menugroups.MOST_GROUPS})
         out_of = sorted(({"address": a, "name": names.get(a, a), "factory": i["factory"], "new": i["new"]}
                          for a, i in info.items() if not self._board_shown(i) and i["factory"] in ALL_ROWS),
                         key=lambda u: (ALL_ROWS.index(u["factory"]), u["name"].casefold()))

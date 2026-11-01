@@ -299,6 +299,24 @@ class Groups(unittest.TestCase):
         self.assertIn(M2, [u["address"] for u in res["taken_out"]])
         self.api.edit(R1, "ShowInMenu", [0, 0, 1, 1, 1])                        # any other dates: no group changes
 
+    def test_a_building_with_the_most_groups_takes_no_new_one(self):
+        """His pick (2026-11-01): at most 10 groups a building, so its list fits on the screen; tried at 5 here (the
+        Armor Base has 4: M1's, L1's, H1's, R1's)."""
+        self.mod()
+        with mock.patch.object(menugroups, "MOST_GROUPS", 5):
+            a1 = self.add("A1")                                                  # no line of its kind: the 5th
+            start = self.api.era_unit_start("WWI|USA|E1", H1, 0, 10, group="new")["group"]
+            self.assertEqual((start["root"], start["full"], start["groups"], start["most_groups"]), (None, True, 5, 5))
+            self.assertEqual(self.api.board(0)["rows"][2]["most_groups"], 5)
+            with self.assertRaisesRegex(StudioError, r"There's no room for another group in Armor Base: it would have "
+                                                     r"6 groups, and a building holds at most 5 so its list fits"):
+                self.add("E1", research_from=None, group="new")
+            with self.assertRaisesRegex(StudioError, "no room for another group"):
+                self.api.board_put(0, 10, era="WWI|USA|E2", group="new")
+            self.add("A2", research_from=None)                                   # its kind's group: fine
+            self.assertEqual(self.groups()[a1]["count"], 2)
+            self.assertEqual(len(self.groups()), 5)
+
     def test_a_nations_own_units_shown_again_refused_when_their_group_is_full(self):
         copies = self.fill()                                                    # M1, M2 and 4: full
         self.api.nation_units_hide(0, True, factory=10)                         # the USA's own there: out

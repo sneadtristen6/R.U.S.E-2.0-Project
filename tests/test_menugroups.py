@@ -55,6 +55,15 @@ class MembersTest(unittest.TestCase):
         self.assertEqual(mg.over(mg.members(units, mg.roots(units))), [])
 
 
+class CrowdedTest(unittest.TestCase):
+    def test_a_building_with_more_groups_than_the_most(self):
+        units = {f"$/U/G{k}": unit() for k in range(mg.MOST_GROUPS + 1)}
+        units["$/U/Other"] = unit(factory=10)
+        self.assertEqual(mg.crowded(mg.members(units, mg.roots(units))), [((1, 8), mg.MOST_GROUPS + 1)])
+        units.pop("$/U/G0")
+        self.assertEqual(mg.crowded(mg.members(units, mg.roots(units))), [])
+
+
 class FileTest(unittest.TestCase):
     def test_read_back_as_written(self):
         with tempfile.TemporaryDirectory() as d:

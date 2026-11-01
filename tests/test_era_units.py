@@ -403,7 +403,7 @@ class EraResearch(unittest.TestCase):
         choices are that group's units; another group picked, or one of its own, changes them."""
         t80 = self.api.era_unit_page("Cold War|USSR|T-80")
         self.assertEqual(t80["group"], {"root": UA, "name": "Unit_A", "count": 2, "most": 6, "full": False,
-                                        "new": False,
+                                        "new": False, "groups": 2, "most_groups": 10,
                                         "choices": [{"root": UA, "name": "Unit_A", "count": 2, "full": False},
                                                     {"root": UC, "name": "Unit_C", "count": 1, "full": False}]})
         picked = self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 10, "base", UC)

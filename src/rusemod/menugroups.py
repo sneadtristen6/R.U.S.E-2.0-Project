@@ -19,6 +19,10 @@ import tomllib
 from pathlib import Path
 
 MOST = 6                    # his limit (2026-10-31), units and research cards alike, every battle date together
+# the most groups (rows) one building's build list holds: his pick (2026-11-01, "10 groups") after his frames at 1920 x
+# 1080 showed 11 unit rows on the screen, 10 while the row under the mouse is drawn twice as big (findings F-168, F-169:
+# the game places every row, none cut or scrolled)
+MOST_GROUPS = 10
 FILE = "menu_groups.toml"   # in a mod folder, beside mod.toml
 TABLE = "groups"
 
@@ -96,3 +100,12 @@ def members(units: dict, roots_of: dict) -> dict[tuple, list[str]]:
 def over(groups: dict[tuple, list[str]]) -> list[tuple[tuple, int]]:
     """The groups holding more than MOST: [((nation, building, first unit), how many)], the fullest first."""
     return sorted(((k, len(v)) for k, v in groups.items() if len(v) > MOST), key=lambda kv: (-kv[1], str(kv[0])))
+
+
+def crowded(groups: dict[tuple, list[str]]) -> list[tuple[tuple, int]]:
+    """The buildings whose build list has more than MOST_GROUPS groups: [((nation, building), how many)], the
+    fullest first."""
+    count: dict[tuple, int] = {}
+    for n, f, _first in groups:
+        count[(n, f)] = count.get((n, f), 0) + 1
+    return sorted(((k, c) for k, c in count.items() if c > MOST_GROUPS), key=lambda kv: (-kv[1], str(kv[0])))

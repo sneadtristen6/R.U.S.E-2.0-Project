@@ -262,9 +262,13 @@ class Board(unittest.TestCase):
         self.assertTrue(own[A]["here"])
 
     def test_more_than_ten_is_allowed_and_said(self):
+        """More than ten units in a building, said as not tried yet; in groups of at most 6 and at most 10 groups a
+        building (the owner, 2026-10-31 and 11-01), so the nine copies go in two groups of their own."""
         self.mod()
-        for _ in range(9):
-            res = self.api.board_put(0, 10, unit=TIGER)
+        first = None
+        for k in range(9):
+            res = self.api.board_put(0, 10, unit=TIGER, group="new" if k in (0, 6) else first)
+            first = res["made"] if k in (0, 6) else first
         row = next(r for r in res["rows"] if r["factory"] == 10)
         self.assertEqual((row["most"], row["untried"]), (12, True))
 

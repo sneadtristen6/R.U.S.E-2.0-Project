@@ -4241,3 +4241,16 @@ cz = "{0} nelze vyzkoumat z {1}: ta jednotka je v jiné skupině budovy než ve 
 jpn = "{0} は {1} から研究できません。そのユニットは選んだものとは別の、建物のグループにあります。"
 sc = "{0} 不能从 {1} 研究：该单位在建筑的另一个组里，而不是所选的组。"
 fa = "{0} را نمی‌توان از {1} پژوهش کرد: آن یگان در گروه دیگری از ساختمان است، نه گروهی که انتخاب شده."
+
+[eec36b53e83]
+us = "There's no room for another group in {0}: it would have {1} groups, and a building holds at most {2} so its list fits on the screen. Put this unit in one of its groups, or in a building with units of its own (Add a building…)."
+fr = "Plus de place pour un autre groupe dans {0} : il aurait {1} groupes, et un bâtiment en a au plus {2} pour que sa liste tienne à l'écran. Mettez cette unité dans un de ses groupes, ou dans un bâtiment qui a ses propres unités (Ajouter un bâtiment…)."
+ger = "In {0} ist kein Platz für eine weitere Gruppe: Es hätte {1} Gruppen, und ein Gebäude hat höchstens {2}, damit seine Liste auf den Bildschirm passt. Setze diese Einheit in eine seiner Gruppen oder in ein Gebäude mit eigenen Einheiten (Gebäude hinzufügen…)."
+ita = "Non c'è posto per un altro gruppo in {0}: avrebbe {1} gruppi, e un edificio ne ha al massimo {2} perché la sua lista stia sullo schermo. Metti questa unità in uno dei suoi gruppi, oppure in un edificio con unità proprie (Aggiungi un edificio…)."
+spa = "No queda sitio para otro grupo en {0}: tendría {1} grupos, y un edificio tiene como mucho {2} para que su lista quepa en la pantalla. Pon esta unidad en uno de sus grupos, o en un edificio con unidades propias (Añadir un edificio…)."
+pol = "W {0} nie ma miejsca na kolejną grupę: miałby {1} grup, a budynek ma najwyżej {2}, żeby jego lista zmieściła się na ekranie. Umieść tę jednostkę w jednej z jego grup albo w budynku z własnymi jednostkami (Dodaj budynek…)."
+ru = "В {0} нет места для ещё одной группы: их было бы {1}, а у здания может быть не больше {2}, чтобы его список помещался на экране. Поставьте этот юнит в одну из его групп или в здание со своими юнитами («Добавить здание…»)."
+cz = "V {0} už není místo pro další skupinu: měla by {1} skupin a budova jich má nejvýš {2}, aby se její seznam vešel na obrazovku. Dejte tuto jednotku do jedné z jejích skupin, nebo do budovy s vlastními jednotkami (Přidat budovu…)."
+jpn = "{0} にはもうグループを増やせません：{1} グループになりますが、リストが画面に収まるよう建物 1 つに入るのは最大 {2} グループです。このユニットを既存のグループのどれかに入れるか、独自のユニットを持つ建物に入れてください（「建物を追加…」）。"
+sc = "{0} 中已没有位置再加一个组：它将有 {1} 个组，而为了让列表能显示在屏幕上，一个建筑最多 {2} 个组。请把这个单位放进它的某个组，或放进拥有自己单位的建筑（“添加建筑…”）。"
+fa = "در {0} دیگر جایی برای گروهی دیگر نیست: {1} گروه می‌شد، و هر ساختمان حداکثر {2} گروه دارد تا فهرستش در صفحه جا شود. این یگان را در یکی از گروه‌هایش بگذارید، یا در ساختمانی با یگان‌های خودش («افزودن ساختمان…»)."
