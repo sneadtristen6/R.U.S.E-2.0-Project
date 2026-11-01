@@ -699,26 +699,34 @@ class KeptModels:
     game's packs (the copied model found, the new one added to them), which depends on the game and the other mods."""
 
     def __init__(self, cache):
+        import threading
         self.cache = cache
         self.new: dict = {}
         self.size = 0
         self.made: dict = {}    # prepare's records, until get takes each
         self.names: dict = {}   # a .glb's path -> its fingerprint, as prepare read it
+        self.coming: set = set()  # fingerprints prepare is still making
+        self.ready = threading.Condition()  # (made, coming)
+        self.lock = threading.Lock()        # (new, size)
+        self.maker = None
+        self.stop = False
 
     def prepare(self, glbs, workers: int | None = None) -> None:
-        """The .glb files of `glbs` that aren't kept yet made side by side, biggest first, each kept as it is done, for
-        get: one after another, a first build of bigpacks14's mod spent 845 of its 935 s on its 284 own models
-        (2026-11-01). Worker programs read the .glb files (rusemod.mend's pool, half the workers: they run without
-        Numba, mend._pool's rule) and threads of this program make their pictures into textures (Numba's encoder lets
-        go of Python's lock: 256 pictures 18.0 s one after another, 5.5 s on 7 threads, the same bytes; in the workers
-        without Numba they took six times as long), at most two models a worker in hand. A record made here is what
-        get keeps, and get reading a kept model gives what making it gives (bigpacks14speed built both ways: every
-        member the same). Fewer than two to make, or one worker: nothing done here; a model that couldn't be made
-        here (or a pool that couldn't start), get makes as before, its error then the build's."""
-        from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+        """The .glb files of `glbs` that aren't kept yet made side by side, in their order, while the build writes the
+        ones made (get waits for the one it needs): one after another, a first build of bigpacks14's mod spent 845 of
+        its 935 s on its 284 own models (2026-11-01). Worker programs read the .glb files (rusemod.mend's pool, half
+        the workers: they run without Numba, mend._pool's rule) and threads of this program make their pictures into
+        textures (Numba's encoder lets go of Python's lock: 256 pictures 18.0 s one after another, 5.5 s on 7
+        threads, the same bytes; in the workers without Numba they took six times as long), at most two models a
+        worker in hand; a thread of this program hands them out, and keeps each record as it is done. A record made
+        here is what get keeps, and get reading a kept model gives what making it gives (bigpacks14speed built both
+        ways: every member the same). Fewer than two to make, or one worker: nothing done here; a model that couldn't
+        be made here (or a pool that couldn't start), get makes as before, its error then the build's. close() ends
+        it."""
+        import threading
         from .mapkeep import tile_names
-        from .mend import WORKERS, _pool
         from . import unitlook
+        from .mend import WORKERS
         workers = WORKERS if workers is None else workers
         todo: dict = {}
         for glb in glbs:
@@ -731,18 +739,25 @@ class KeptModels:
             todo.pop(name, None)
         if len(todo) < 2 or workers < 2:
             return
-        jobs = sorted(todo.items(), key=lambda kv: -Path(kv[1]).stat().st_size)
         unitlook.whole_arrays()
         try:  # the encoder with Numba in this program before the pool keeps it out of the workers (mend._pool)
             from . import dxtnp  # noqa: F401
         except ImportError:
             pass
+        self.coming = set(todo)
+        self.maker = threading.Thread(target=self._make, args=(list(todo.items()), workers), daemon=True)
+        self.maker.start()
+
+    def _make(self, jobs: list, workers: int) -> None:
+        """prepare's thread: the models of `jobs` [(fingerprint, .glb)] made, each record kept as it is done."""
+        from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+        from .mend import _pool
         reading: dict = {}   # future -> fingerprint
         making: dict = {}
         try:
             with _pool(_kept_start, (), max(1, min(workers // 2, len(jobs)))) as readers, \
                     ThreadPoolExecutor(workers) as makers:
-                while jobs or reading or making:
+                while (jobs or reading or making) and not self.stop:
                     while jobs and len(reading) + len(making) < 2 * workers:
                         name, glb = jobs.pop(0)
                         reading[readers.submit(_kept_read_job, glb)] = name
@@ -753,34 +768,54 @@ class KeptModels:
                             prep = f.result() if f.exception() is None else None
                             if prep is not None:
                                 making[makers.submit(_kept_made, prep)] = name
+                            else:
+                                self._done(name, None)
                             continue
                         name = making.pop(f)
-                        record = f.result()
-                        if record is None:
-                            continue
-                        self.made[name] = record
-                        if self.cache is not None:
-                            self.new[name] = record
-                            self.size += len(record)
-                            if self.size >= KEPT_PACK:
-                                self.close()
+                        self._done(name, f.result())
         except Exception:  # noqa: BLE001 (a pool that broke: what was made is kept, get makes the rest)
             pass
+        finally:
+            with self.ready:
+                self.coming.clear()
+                self.ready.notify_all()
+
+    def _done(self, name: bytes, record: bytes | None) -> None:
+        with self.ready:
+            if record is not None:
+                self.made[name] = record
+            self.coming.discard(name)
+            self.ready.notify_all()
+        if record is not None and self.cache is not None:
+            self._keep(name, record)
+
+    def _keep(self, name: bytes, record: bytes) -> None:
+        with self.lock:
+            self.new[name] = record
+            self.size += len(record)
+            if self.size >= KEPT_PACK:
+                self._write()
 
     def get(self, glb) -> tuple[Prepared, list]:
         """(the .glb as read_mod_glb reads it, its pictures as the game's textures [(texture, stand-in)]) for
         write_unit_model; its pictures without their pixels (only their names and sizes are used then)."""
         from .mapkeep import read_tiles
         name = self.names.get(str(glb))
-        if name is not None and name in self.made:
-            got = _kept_read(self.made.pop(name))
+        if name is not None:
+            with self.ready:
+                while name in self.coming and name not in self.made:
+                    self.ready.wait()
+                record = self.made.pop(name, None)
+            got = _kept_read(record) if record is not None else None
             if got is not None:
                 return got
         if name is None:
             data = Path(glb).read_bytes() if self.cache is not None else b""
             name = _kept_name(data) if self.cache is not None else b""
         if self.cache is not None:
-            record = self.new.get(name) or read_tiles(self.cache, [name], folder=KEPT_FOLDER).get(name)
+            with self.lock:
+                record = self.new.get(name)
+            record = record or read_tiles(self.cache, [name], folder=KEPT_FOLDER).get(name)
             got = _kept_read(record) if record else None
             if got is not None:
                 return got
@@ -793,14 +828,21 @@ class KeptModels:
             except (ValueError, TypeError, OverflowError):
                 record = None      # not kept (a model laid out as this doesn't know): made again next time
             if record is not None:
-                self.new[name] = record
-                self.size += len(record)
-                if self.size >= KEPT_PACK:
-                    self.close()
+                self._keep(name, record)
         return prep, textures
 
     def close(self) -> None:
-        """Keep the models made since the last pack, as one pack."""
+        """Stop prepare's making (what it has in hand finishes), then keep the models made since the last pack, as
+        one pack."""
+        self.stop = True
+        if self.maker is not None:
+            self.maker.join()
+            self.maker = None
+        with self.lock:
+            self._write()
+
+    def _write(self) -> None:
+        """(with self.lock held)"""
         from .mapkeep import write_tiles
         if self.new:
             write_tiles(self.cache, self.new, most=KEPT_MOST, folder=KEPT_FOLDER)
