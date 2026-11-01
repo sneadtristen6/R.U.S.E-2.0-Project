@@ -27,6 +27,21 @@ Flugplatz: noch nicht im Spiel ausprobiert.
 Die Seite einer Einheit im Reiter **Einheiten** sagt, wo sie gebaut wird („Gebaut in Panzerfabrik: Platz 2 von 6“), und
 **In den Gebäuden zeigen** öffnet ihre Reihe.
 
+## Gruppen
+
+Im Spiel zeigt die Bauliste eines Gebäudes jede Gruppe als eine Zeile: eine Einheit und ihre Verbesserungen (der
+Panzer IV und der Panther). Die Tafel zeigt die Gruppen jedes Gebäudes, jede mit ihrer Zahl (**4 von 6**), und wie viele
+Gruppen das Gebäude hat (**7 von 10 Gruppen**).
+
+- Eine neue Einheit kommt in die Gruppe ihrer Art in ihrem Gebäude, oder in eine eigene Gruppe, wenn das Gebäude keine
+  dieser Art hat. **+** an einer Gruppe, oder darauf ablegen, setzt sie dorthin; **Neue Gruppe** beginnt eine.
+- Eine Gruppe hat höchstens 6 (ihre Einheiten und Forschungskarten), ein Gebäude höchstens 10 Gruppen, damit seine Liste
+  auf den Bildschirm passt. Eine mehr wird abgelehnt: nimm eine Einheit heraus oder setze sie in ein eigenes Gebäude
+  (**Gebäude hinzufügen…**).
+- Eine Einheit ohne Kartentyp im Spiel (ein Lastwagen, der V2-Werfer): wähle ihre Gruppe.
+
+Im Spiel noch nicht ausprobiert.
+
 ## Ein Gebäude hinzufügen
 
 **Gebäude hinzufügen…** unter der Tafel einer Nation: wähl das Gebäude des Spiels, das es kopiert (**Kopie von**), gib

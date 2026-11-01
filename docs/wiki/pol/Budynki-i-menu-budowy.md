@@ -25,6 +25,19 @@ Lotnisku: jeszcze nie sprawdzone w grze.
 Strona jednostki w zakładce **Jednostki** mówi, gdzie jest budowana („Budowana w budynku Fabryka czołgów: miejsce 2
 z 6”), a **Pokaż w budynkach** otwiera jej wiersz.
 
+## Grupy
+
+W grze lista budowy budynku pokazuje każdą grupę w jednym rzędzie: jednostkę i jej ulepszenia (Panzer IV i Panther).
+Tablica pokazuje grupy każdego budynku, każdą z jej liczbą (**4 z 6**), i ile grup ma budynek (**7 z 10 grup**).
+
+- Nowa jednostka trafia do grupy swojego rodzaju w swoim budynku albo do osobnej grupy, gdy budynek nie ma żadnej tego
+  rodzaju. **+** przy grupie albo upuszczenie na nią umieszcza ją tam; **Nowa grupa** zaczyna nową.
+- Grupa mieści najwyżej 6 (jej jednostki i karty badań), a budynek najwyżej 10 grup, żeby jego lista zmieściła się na
+  ekranie. Kolejna jest odrzucana: wyjmij jednostkę albo umieść ją w budynku z własnymi jednostkami (**Dodaj budynek…**).
+- Jednostka bez typu karty w grze (ciężarówka, wyrzutnia V2): wybierz jej grupę.
+
+Jeszcze nie sprawdzone w grze.
+
 ## Dodaj budynek
 
 **Dodaj budynek…** pod tablicą nacji: wybierz budynek gry, który kopiuje (**Kopia budynku**), w polu **Nazwa**
