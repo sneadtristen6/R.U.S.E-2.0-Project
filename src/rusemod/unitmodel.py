@@ -430,14 +430,22 @@ def standin_member(member: str) -> str:
 
 # --- the packs ---
 def _vertex_buffer(part: Part, local: int) -> Buffer:
-    out = bytearray()
-    for (x, y, z), (nx, ny, nz), (u, v) in zip(part.positions, part.normals, part.uvs):
-        out += struct.pack("<3f", x, y, z)
-        out += bytes(max(0, min(255, round((c + 1.0) * 127.5))) for c in (nx, ny, nz)) + b"\0"
-        out += bytes((255, 0, 0, 0)) + bytes((local, 0, 0, 0))
-        out += struct.pack("<2f", u, v - 1.0)  # stored as the game's: v - 1 (its _2wn read back adds the 1)
-        out += bytes((0, 0, 255, 255))
-    return Buffer(bytes(out), len(out), len(part.positions), 0, 0)
+    """A part's points in the game's skinned format (SKINNED_2F, STRIDE bytes each). With numpy there
+    (rusemod.modelinnp.vertex_bytes), every point at once: the same bytes; these loops are what that is checked
+    against."""
+    from .modelin import whole_arrays
+    arrays = whole_arrays()
+    data = arrays.vertex_bytes(part, local) if arrays else None
+    if data is None:
+        out = bytearray()
+        for (x, y, z), (nx, ny, nz), (u, v) in zip(part.positions, part.normals, part.uvs):
+            out += struct.pack("<3f", x, y, z)
+            out += bytes(max(0, min(255, round((c + 1.0) * 127.5))) for c in (nx, ny, nz)) + b"\0"
+            out += bytes((255, 0, 0, 0)) + bytes((local, 0, 0, 0))
+            out += struct.pack("<2f", u, v - 1.0)  # stored as the game's: v - 1 (its _2wn read back adds the 1)
+            out += bytes((0, 0, 255, 255))
+        data = bytes(out)
+    return Buffer(data, len(data), len(part.positions), 0, 0)
 
 
 def _index_buffer(part: Part) -> Buffer:
