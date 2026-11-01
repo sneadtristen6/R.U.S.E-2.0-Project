@@ -299,6 +299,24 @@ class StandIns(unittest.TestCase):
         with self.assertRaises(PackError):
             pack.add(ger, proxy_name(TEX))
 
+    def test_names_kept_between_adds(self):  # a build's batch: the same rows as reading the names for each add
+        adds = [f"gentexproxy\\ww2\\units\\n{k:03}.tgv" for k in (7, 2, 9, 0, 5)]
+
+        def grown(forget: bool, order: list) -> bytes:
+            pack = proxy_pack([f"gentexproxy\\ww2\\units\\n{k:03}.tgv" for k in (1, 4, 8)])
+            pack.proxies = [pack.proxies[i] for i in order]   # a pack not in name order: added as before
+            pack.shared = list(range(len(order)))
+            for name in adds:
+                if forget:
+                    pack.__dict__.pop("_names_cache", None)
+                pack.add(proxy_pack([name]), name)
+            pack.proxies.append(proxy_pack(["gentexproxy\\z.tgv"]).proxies[0])  # rows put in from outside are seen
+            pack.shared.append(len(pack.shared))
+            self.assertIn("gentexproxy\\z.tgv", pack.names())
+            return pack.to_bytes()
+        for order in ([0, 1, 2], [2, 0, 1]):
+            self.assertEqual(grown(False, order), grown(True, order))
+
     def walked(self, raw: bytes) -> list[int]:
         """The rows the game's walk takes (the first link's rows, the row, the second link's), in order, as row
         numbers; each link checked to land on a row inside the table."""

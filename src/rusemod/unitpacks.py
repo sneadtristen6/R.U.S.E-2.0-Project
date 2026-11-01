@@ -6,6 +6,7 @@ copied into that nation's packs the same way, and a spawned unit's go into the c
 unchanged come back byte for byte."""
 from __future__ import annotations
 
+import bisect
 import hashlib
 import struct
 from dataclasses import dataclass, field
@@ -597,8 +598,22 @@ class ProxyPack:
             pack.shared.append(first.setdefault(off, i))
         return pack
 
+    def _names_kept(self) -> tuple[list, list, list, bool, list]:
+        """(each stand-in's id, its name, its sort_key, whether those keys are in order, the stand-ins themselves, so
+        no id is another's while kept), kept on the pack while its stand-ins are the same objects in the same order: a
+        build's batch adds thousands of stand-ins to packs of up to 5,429 (2026-11-01, the owner's "works quickly to
+        build"), and each one's names were read again for each."""
+        ids = list(map(id, self.proxies))
+        kept = self.__dict__.get("_names_cache")
+        if kept is None or kept[0] != ids:
+            names = [p.name.split(b"\0", 1)[0].decode("latin-1") for p in self.proxies]
+            keys = [sort_key(n) for n in names]
+            kept = self.__dict__["_names_cache"] = (ids, names, keys, all(a <= b for a, b in zip(keys, keys[1:])),
+                                                   list(self.proxies))
+        return kept
+
     def names(self) -> list[str]:
-        return [p.name.split(b"\0", 1)[0].decode("latin-1") for p in self.proxies]
+        return list(self._names_kept()[1])
 
     def to_bytes(self) -> bytes:
         """The pack, its index written anew by the game's rule (the game's own packs come back byte for byte); a pack
@@ -628,15 +643,20 @@ class ProxyPack:
     def add(self, src: "ProxyPack", name: str) -> None:
         """Copy the stand-in `name` (gentexproxy\\...\\x01.tgv) of `src` in, in name order; a picture this pack
         already has is shared."""
-        names = self.names()
+        ids, names, keys, ordered, refs = self._names_kept()
         if name in names:
             raise PackError(f"{name} is already in the pack")
         p = src.proxies[src.names().index(name)]
         same = next((self.shared[i] for i, q in enumerate(self.proxies) if q.data == p.data), None)
-        at = next((i for i, n in enumerate(names) if sort_key(n) > sort_key(name)), len(names))
+        key = sort_key(name)  # before the first name that sorts after it (in a pack in order, bisect finds that)
+        at = bisect.bisect_right(keys, key) if ordered else next((i for i, k in enumerate(keys) if k > key), len(keys))
         self.proxies.insert(at, p)
         self.shared = [j + (j >= at) for j in self.shared]
         self.shared.insert(at, at if same is None else same + (same >= at))
+        ids.insert(at, id(p))
+        names.insert(at, name)
+        keys.insert(at, key)
+        refs.insert(at, p)
 
 
 def proxy_name(texture: str) -> str:
