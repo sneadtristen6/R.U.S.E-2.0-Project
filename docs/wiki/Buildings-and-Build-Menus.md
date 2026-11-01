@@ -24,6 +24,20 @@ not tried in the game yet.
 A unit's page on the **Units** tab says where it's built ("Built in the Tank factory: place 2 of 6"), and **Show on the
 board** opens its row.
 
+## Groups
+
+In the game, a building's build list shows each group as one row: a unit and its upgrades (the Panzer IV and the
+Panther). The board shows each building's groups, each with its count (**4 of 6**), and how many groups the building
+has (**7 of 10 groups**).
+
+- A new unit goes into the group of its kind in its building, or a group of its own when the building has none of
+  that kind. **+** on a group, or a drop onto it, puts it there; **New group** starts one.
+- A group holds at most 6 (its units and research cards), and a building at most 10 groups, so its list fits on the
+  screen. One more is refused: take a unit out, or put it in a building of its own (**Add a building…**).
+- A unit the game gives no card type (a truck, the V2 launcher): pick its group.
+
+Not tried in the game yet.
+
 ## Add a building
 
 **Add a building…** under a nation's board: pick the game's building it copies (**Copy of**), give it a **Name**,

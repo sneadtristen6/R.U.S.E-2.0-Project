@@ -149,7 +149,7 @@ class Board(unittest.TestCase):
 
     def test_another_nation_s_unit_is_copied_in_at_every_date(self):
         folder = self.mod()
-        res = self.api.board_put(0, 10, unit=TIGER, index=1)
+        res = self.api.board_put(0, 10, unit=TIGER, index=1, group="new")  # no card type: a group picked
         made = res["made"]
         self.assertTrue(res["note"]["copied"])
         self.assertEqual(self.row(res, 10), ["A", "  B", "Tiger", "C"])        # where it was dropped
@@ -157,7 +157,7 @@ class Board(unittest.TestCase):
         self.assertEqual(edits.new_units[made].source, TIGER)
         self.assertEqual(edits.get(made, "ShowInMenu"), [1, 1, 1, 1, 1])        # in every battle (the owner, 10-18)
         self.assertEqual((edits.get(made, "Nationalite"), edits.get(made, "Factory")), (0, 10))
-        again = self.api.board_put(0, 11, unit=TIGER)["made"]                   # the same name twice: a free address
+        again = self.api.board_put(0, 11, unit=TIGER, group="new")["made"]      # the same name twice: a free address
         self.assertNotEqual(again, made)
         self.assertTrue(again.endswith("_2"))
         self.assertEqual(edits.new_units[made].name, ModEdits(folder).new_units[again].name)
@@ -198,7 +198,7 @@ class Board(unittest.TestCase):
 
     def test_moving_a_unit_takes_its_upgrades_along(self):
         folder = self.mod()
-        res = self.api.board_move(0, A, 11, 0)
+        res = self.api.board_move(0, A, 11, 0, group="new")                     # no card type: a group picked
         self.assertEqual(self.row(res, 11), ["A", "  B", "D"])
         self.assertEqual(self.row(res, 10), ["C"])
         edits = ModEdits(folder)
@@ -230,7 +230,7 @@ class Board(unittest.TestCase):
 
     def test_a_new_unit_taken_out_asks_first(self):
         folder = self.mod()
-        made = self.api.board_put(0, 10, unit=TIGER)["made"]
+        made = self.api.board_put(0, 10, unit=TIGER, group="new")["made"]
         self.api.board_research(0, C, made)
         res = self.api.board_take_out(0, made)
         self.assertEqual(len(res["ask"]), 1)                                     # C is researched from it
@@ -261,10 +261,30 @@ class Board(unittest.TestCase):
         self.assertTrue(own[OLD]["taken_out"])
         self.assertTrue(own[A]["here"])
 
-    def test_more_than_ten_is_allowed_and_said(self):
+    def test_a_unit_with_no_card_type_has_its_group_picked(self):
+        """His pick (2026-11-01): the Studio can't tell the kind of a unit the game gives no card type (these made-up
+        units have none), so the modder picks its group."""
         self.mod()
-        for _ in range(9):
-            res = self.api.board_put(0, 10, unit=TIGER)
+        with self.assertRaisesRegex(StudioError, "no card type, so the Studio can't tell which group"):
+            self.api.board_put(0, 10, unit=TIGER)
+        with self.assertRaisesRegex(StudioError, "no card type"):
+            self.api.board_move(0, A, 11)
+        made = self.api.board_put(0, 10, unit=TIGER, group=A)["made"]           # A's group picked
+        row = next(r for r in self.api.board(0)["rows"] if r["factory"] == 10)
+        self.assertIn(made, next(g for g in row["groups"] if g["root"] == A)["units"])
+        offer = self.api.new_unit_group(TIGER, 0, 10)                            # the Units tab's New unit… asks
+        self.assertEqual((offer["pick"], offer["root"]), (True, None))
+        self.assertIn(A, [c["root"] for c in offer["choices"]])
+        self.assertFalse(self.api.new_unit_group(TIGER, 0, 10, "base", A)["pick"])   # picked
+
+    def test_more_than_ten_is_allowed_and_said(self):
+        """More than ten units in a building, said as not tried yet; in groups of at most 6 and at most 10 groups a
+        building (the owner, 2026-10-31 and 11-01), so the nine copies go in two groups of their own."""
+        self.mod()
+        first = None
+        for k in range(9):
+            res = self.api.board_put(0, 10, unit=TIGER, group="new" if k in (0, 6) else first)
+            first = res["made"] if k in (0, 6) else first
         row = next(r for r in res["rows"] if r["factory"] == 10)
         self.assertEqual((row["most"], row["untried"]), (12, True))
 
@@ -301,12 +321,12 @@ class Board(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "no building of that kind"):
             self.api.board_put(0, 6, unit=TIGER)
         shop = self.api.board_add_building(0, ARMOR_BASE, "Workshop", own=True)["made"]
-        res = self.api.board_put(0, 6, unit=TIGER)
+        res = self.api.board_put(0, 6, unit=TIGER, group="new")
         tiger = res["made"]
         self.assertEqual(self.row(res, 6), ["Tiger"])
         edits = ModEdits(folder)
         self.assertEqual((edits.get(tiger, "Factory"), edits.get(tiger, "PositionInMenu")), (6, 701))
-        res = self.api.board_move(0, A, 6)                                          # A and B, researched from it
+        res = self.api.board_move(0, A, 6, group="new")                             # A and B, researched from it
         self.assertEqual(self.row(res, 6), ["Tiger", "A", "  B"])
         self.assertEqual(self.api.board_where(A)["building"], "Workshop")
         with self.assertRaisesRegex(StudioError, "Move or take out"):

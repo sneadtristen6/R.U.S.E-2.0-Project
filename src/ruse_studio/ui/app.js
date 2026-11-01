@@ -1838,12 +1838,42 @@ function newUnitForm(u, opened) {
   nation.setAttribute("aria-label", w.nation);
   factory.setAttribute("aria-label", w.factory);
   let menus = null;
+  // the group of the building's build list it goes in (the owner, 2026-11-01: a unit with no card type, the modder
+  // picks its group): asked of the Studio for the menu chosen; shown only when it has to be picked
+  const groupPick = el("select", { title: fill(w.tip_eras_group, { most: 6, most_groups: 10 }) });
+  groupPick.setAttribute("aria-label", w.eras_group);
+  const groupWhy = el("p", { className: "small hidden", textContent: w.eras_group_pick_why });
+  const groupBox = el("label", { className: "hidden" }, el("span", { textContent: w.eras_group }), groupPick);
+  let mustPick = false;
+  const askGroup = async () => {
+    const pick = other.checked && menus;
+    let offer = null;
+    try {
+      offer = await api().new_unit_group(u.address, pick ? Number(nation.value) : -1,
+        pick ? Number(factory.value) : -1, state.lang, null);
+    } catch (err) { offer = null; }
+    mustPick = !!(offer && offer.pick);
+    groupBox.classList.toggle("hidden", !mustPick);
+    groupWhy.classList.toggle("hidden", !mustPick);
+    if (!mustPick) { groupPick.replaceChildren(); return; }
+    groupPick.title = fill(w.tip_eras_group, { most: offer.most, most_groups: offer.most_groups });
+    groupPick.replaceChildren(el("option", { value: "", textContent: w.eras_group_pick, disabled: true, selected: true }),
+      ...offer.choices.map((c) => el("option", { value: c.root, disabled: c.full,
+        textContent: fill(c.full ? w.eras_group_choice_full : w.eras_group_choice, { name: c.name, n: c.count,
+          most: offer.most }) })),
+      el("option", { value: "new", disabled: offer.groups >= offer.most_groups,
+        textContent: offer.groups >= offer.most_groups
+          ? fill(w.eras_group_own_full, { groups: offer.groups, most_groups: offer.most_groups }) : w.eras_group_own }));
+  };
   const fillFactories = () => {
     const n = menus.nations.find((x) => x.nation === Number(nation.value));
     factory.replaceChildren(...(n ? n.factories : []).map((f) =>
       el("option", { value: String(f.factory), textContent: factoryLabel(f) })));
+    askGroup();
   };
+  factory.addEventListener("change", askGroup);
   const menuChoice = () => {
+    if (!other.checked) askGroup();
     nation.disabled = factory.disabled = !other.checked;
     if (other.checked && !menus) {
       api().menus(state.lang).then((res) => {
@@ -1869,21 +1899,25 @@ function newUnitForm(u, opened) {
       el("label", {}, other, " " + w.other_menu),
       el("div", { className: "menu-picks" }, el("label", {}, el("span", { textContent: w.nation }), nation),
         el("label", {}, el("span", { textContent: w.factory }), factory))),
+    groupBox, groupWhy,
     el("div", { className: "actions" }, create, cancel));
   open.addEventListener("click", () => {
     open.classList.add("hidden");
     form.classList.remove("hidden");
     name.focus();
+    askGroup();
   });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const cost = Number(price.value);
     if (!name.value.trim() || !Number.isFinite(cost)) return;
+    if (mustPick && !groupPick.value) { groupPick.focus(); return; }   // no card type: its group picked first
     create.disabled = true;
     try {
       const pick = other.checked && menus;
       const res = await api().new_unit(u.address, name.value.trim(), cost,
-        pick ? Number(nation.value) : -1, pick ? Number(factory.value) : -1);
+        pick ? Number(nation.value) : -1, pick ? Number(factory.value) : -1, false,
+        mustPick ? groupPick.value : null);
       state.focusModel = res.address;  // its page opens at Import model
       if (state.start === "new") { state.start = "change"; renderStart(); renderChips(); }  // made: now it's changed
       await refreshList();
@@ -1897,7 +1931,10 @@ function newUnitForm(u, opened) {
     else name.focus();
     box.scrollIntoView({ block: "nearest", behavior: "smooth" });
   };
-  if (opened) requestAnimationFrame(() => name.focus({ preventScroll: true }));
+  if (opened) {
+    askGroup();
+    requestAnimationFrame(() => name.focus({ preventScroll: true }));
+  }
   return box;
 }
 

@@ -19,6 +19,10 @@
   // why a unit to research it from is suggested (StudioApi.era_unit_start's research.why)
   const WHY = { start: "eras_research_why_start", in_place_of: "eras_research_why_in_place_of",
     dearest: "eras_research_why_dearest" };
+  // the board's word for each of the game's buildings that make units (board.js ROW_GROUP)
+  const BUILDING_WORD = { 8: "group_barracks", 13: "group_artillery", 10: "group_armor", 11: "group_antitank",
+    9: "group_airfield", 12: "group_prototype" };
+  const NEW_GROUP = "new";  // era_unit_start / era_unit_add's group for a group of its own (groups.py NEW)
   const W = () => state.words;
   const round3 = (x) => String(Math.round(x * 1000) / 1000);
   const nationOf = (n) => W()[NATION_WORD[n]] || n;
@@ -229,7 +233,8 @@
   // 2026-10-09: "the units we add should be scaled proportionally with how big the units are ... in real life").
   // Researched from: any unit of the build menu picked, the mod's new ones too, or none (the owner: "If it's advanced,
   // I want it to be hidden behind the research ... it has to be super customizable"); the unit page's Upgrade box
-  // changes it later. A start unit or build menu picked asks the Studio again (era_unit_start).
+  // changes it later. Its group: the row of that building's build list it goes in, the units it may be researched
+  // from that group's. A start unit, build menu or group picked asks the Studio again (era_unit_start).
   async function addForm(p) {
     const w = W();
     const form = el("form", { className: "new-unit" });
@@ -284,6 +289,47 @@
     };
     fillF();
 
+    // its group: the row of the building's build list it goes in (era_unit_start's "group", groups.py; the owner,
+    // 2026-10-31: at most 6 units to a group, a 7th refused; 11-01: at most 10 groups to a building), one of the
+    // building's groups or a group of its own; while that has no room, or while one is to be picked ("pick": a unit with
+    // no card type, the owner's pick 11-01), Add to my mod is off and says why
+    const groupPick = el("select", { title: w.tip_eras_group });
+    groupPick.setAttribute("aria-label", w.eras_group);
+    const groupBox = el("label", {}, el("span", { textContent: w.eras_group }), groupPick);
+    const goesIn = el("p", { className: "small" });
+    const groupWhy = el("p", { className: "notice warn small hidden" });
+    const add = el("button", { type: "submit", className: "primary", textContent: w.eras_add, title: w.tip_eras_add });
+    let offer = null, groupPicked = false;  // the group shown; whether the modder picked it
+    const buildingOf = () => w[BUILDING_WORD[Number(factory.value)]]
+      || (factory.selectedOptions[0] ? factory.selectedOptions[0].textContent : "");
+    const showGroup = (g) => {  // null: a build menu that isn't one of the board's buildings (no groups)
+      offer = g || null;
+      groupBox.classList.toggle("hidden", !offer);
+      goesIn.classList.toggle("hidden", !offer);
+      let why = "";
+      if (offer) {
+        const own = offer.root === null, pick = Boolean(offer.pick);
+        const values = { building: buildingOf(), name: offer.name, n: offer.count, most: offer.most,
+          groups: offer.groups, most_groups: offer.most_groups };
+        groupPick.title = fill(w.tip_eras_group, values);
+        groupPick.replaceChildren(...(pick ? [el("option", { value: "", textContent: w.eras_group_pick, disabled: true })] : []),
+          ...offer.choices.map((c) => el("option", { value: c.root,
+            textContent: fill(c.full ? w.eras_group_choice_full : w.eras_group_choice, { name: c.name, n: c.count,
+              most: offer.most }) })),
+          el("option", { value: NEW_GROUP,
+            textContent: fill(offer.groups >= offer.most_groups ? w.eras_group_own_full : w.eras_group_own, values) }));
+        groupPick.value = pick ? "" : own ? NEW_GROUP : offer.root;
+        goesIn.textContent = pick ? "" : fill(own ? w.eras_goes_in_own : w.eras_goes_in, values);
+        goesIn.classList.toggle("hidden", pick);
+        if (pick) why = w.eras_group_pick_why;
+        else if (offer.full) why = fill(own ? w.eras_group_own_full_why : w.eras_group_full_why, values);
+      }
+      groupWhy.textContent = why;
+      groupWhy.classList.toggle("hidden", !why);
+      add.disabled = Boolean(why);
+      add.title = why || w.tip_eras_add;
+    };
+
     // researched from: the build menu's units, or none (buyable from the start), with its research price and time
     const research = el("select", { title: w.tip_eras_research_from });
     research.setAttribute("aria-label", w.eras_research_from);
@@ -318,29 +364,33 @@
     };
     research.addEventListener("change", () => { picked = true; researchNote.textContent = ""; lockCosts(); });
 
-    // another start unit or build menu: its price, size and research asked for again (the last asked wins)
+    // another start unit, build menu or group: its price, size, group and research asked for again (the last asked
+    // wins); another build menu has groups of its own, so its group is the one of its kind again
     let asked = 0;
     const again = async (newStart) => {
       const n = ++asked;
       let o;
       try {
-        o = await api().era_unit_start(p.key, start.value, Number(nation.value), Number(factory.value), state.lang);
+        o = await api().era_unit_start(p.key, start.value, Number(nation.value), Number(factory.value), state.lang,
+          groupPicked && offer ? groupPick.value : null);
       } catch (err) { problem(err); return; }
       if (n !== asked) return;
       if (newStart) {
         price.value = String(o.price);
         showSize(o.size, o.size_info);
       }
+      showGroup(o.group);
       showResearch(o.research);
     };
     start.addEventListener("change", () => again(true));
-    nation.addEventListener("change", () => { fillF(); again(false); });
-    factory.addEventListener("change", () => again(false));
+    nation.addEventListener("change", () => { fillF(); groupPicked = false; again(false); });
+    factory.addEventListener("change", () => { groupPicked = false; again(false); });
+    groupPick.addEventListener("change", () => { groupPicked = true; again(false); });
     showSize(p.size, p.size_info);
+    showGroup(p.group);
     showResearch(p.research);
     if (Number(nation.value) !== p.game_nation || Number(factory.value) !== p.factory) again(false);  // not the page's menu
 
-    const add = el("button", { type: "submit", className: "primary", textContent: w.eras_add, title: w.tip_eras_add });
     form.append(
       el("label", {}, el("span", { textContent: w.new_unit_name }), name),
       el("label", {}, el("span", { textContent: w.eras_start_from }), start),
@@ -351,6 +401,7 @@
       el("div", { className: "menu-picks" }, el("span", { textContent: w.build_menu }),
         el("label", {}, el("span", { textContent: w.nation }), nation),
         el("label", {}, el("span", { textContent: w.factory }), factory)),
+      groupBox, goesIn, groupWhy,
       el("label", {}, el("span", { textContent: w.eras_research_from }), research),
       researchNote,
       el("div", { className: "menu-picks" },
@@ -365,15 +416,17 @@
       const rt = timeSeconds(rTime.value.trim() === "" ? NaN : Number(rTime.value), rUnit.value);  // whole seconds
       if (!name.value.trim() || !Number.isFinite(cost) || (p.has_model && !Number.isFinite(sized))) return;
       if (from && (!Number.isFinite(rp) || !Number.isFinite(rt))) return;
+      if (offer && (offer.full || offer.pick)) return;  // no room in its group, or none picked (Add is off, saying why)
       add.disabled = true;
       try {
         const res = await api().era_unit_add(p.key, Number(nation.value), Number(factory.value), start.value,
-          name.value.trim(), cost, p.has_model ? sized : null, from, from ? rp : null, from ? rt : null);
+          name.value.trim(), cost, p.has_model ? sized : null, from, from ? rp : null, from ? rt : null,
+          offer ? groupPick.value : null);  // the group shown (null: a build menu that isn't one of the board's)
         say(fill(w.eras_added, { name: res.name }), "ok");
         if (res.model_note === "no_fit") say(w.eras_no_fit, "warn");
         else if (res.model_note && res.model_note !== "no_model") say(res.model_note, "warn");
         await openMade(res.address);
-      } catch (err) { problem(err); add.disabled = false; }
+      } catch (err) { problem(err); add.disabled = Boolean(offer && (offer.full || offer.pick)); }
     });
     return form;
   }

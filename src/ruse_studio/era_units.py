@@ -66,8 +66,7 @@ CLASS_OF = {"ground": "TUniteAuSolDescriptor", "air": "TAvionDescriptor"}
 FACING = (0, 1)                   # a library model's way: already in the game's axes, its front +x (era_unit_add)
 REAL_OF = {"ground": "width_m", "air": "span_m"}    # a unit's real size the library gives: its width, a plane's span
 SCALE = "units_per_metre"         # at the library's top: {"ground": k, "air": k}, the game's units in a metre
-RESEARCH_ERAS = ("Cold War", "Modern")              # put behind research when nothing closer suggests a parent
-SUGGESTED = "suggested"           # era_unit_add's research_from: the one the add form suggests
+SUGGESTED = "suggested"           # era_unit_add's research_from: the one the add form suggests (none since 11-01)
 
 
 SECTIONS_URL = "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/download/era-units/"
@@ -344,19 +343,10 @@ def size_for(real_m: float, per_metre: float, model_length: float, model_width: 
     return real_m * per_metre * model_length / (model_width * like_length)
 
 
-def first_number(value) -> float | None:
-    """A price as a unit has it: a number, or a list's first (its first battle date's); None when it's neither."""
-    if isinstance(value, list):
-        value = next((v for v in value if v is not None), None)
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value)
-
-
 class EraUnitCalls:
     """Mixed into StudioApi: uses its _open, _mod_dir, _edits, _saving, _all_units, _names, _resolve, _menu_units,
-    _game, _look_models, cache_dir, new_unit, set_upgrade, set_research, model_import, model_import_remove and
-    delete_unit."""
+    _game, _look_models, cache_dir, _unit_new, _set_upgrade, set_research, model_import, model_import_remove and
+    delete_unit, and GroupCalls' (groups.py: a build list's groups, at most 6 to one)."""
 
     def _era_library(self) -> tuple[Path | None, dict]:
         folder = library_dir(self._home)
@@ -604,16 +594,21 @@ class EraUnitCalls:
         lo, hi = MODEL_SIZES
         return dict(info, size=min(hi, max(lo, s)), real=True, clamped=None if lo <= s <= hi else s)
 
-    def _era_research(self, entry: dict, source: str | None, nation, factory, lang: str) -> dict:
+    def _era_research(self, entry: dict, source: str | None, nation, factory, lang: str, limit: bool = False,
+                      group: dict | None = None) -> dict:
         """The units the era unit may be researched from in build menu (`nation`, `factory`): upgrade()'s choices for a
         new unit there (the same nation's units in that menu, the mod's new ones too, so era units chain), each
-        {address, name} by its game name, and the one suggested: the start unit when it's there ("why": "start"),
-        else the unit the era unit stands in for ("in_place_of", by its English name), else for Cold War and Modern
-        units the dearest there (its price at the first battle date: "dearest"), else none. "offered": False when
-        units of its kind have no research in the game's files (no UpgradeRequire), and nothing is offered."""
+        {address, name} by its game name; none suggested ("suggested" None, "why" ""): the owner, 2026-11-01, "None:
+        from the start" (nothing suggested; every era unit buildable from the start unless the modder picks).
+        "offered": False when units of its kind have no research in the game's files (no UpgradeRequire), and nothing
+        is offered.
+
+        `limit`: only the units of `group` (the group of that building's build list it goes in, a GroupState group;
+        None: a group of its own, so none), as researched from one it's drawn in that group (groups.py). Bought from
+        the start, it stands in its group as the mod's menu_groups.toml says."""
         from rusemod import schema
         from .api import UPGRADE, _props, _tail
-        from .edits import REMOVED, EditsFileError
+        from .edits import EditsFileError
         empty = {"offered": False, "choices": [], "suggested": None, "why": ""}
         try:
             menu = (int(nation), int(factory))
@@ -632,31 +627,27 @@ class EraUnitCalls:
             units = {u["address"]: u for u in self._all_units(ix)}
             choices = self._menu_units(edits, units, menu, ix)  # (never-shown units left out: the 2026-10-10 crash)
             names = self._names(ix, choices, told, new_units)
-            english = names if told == "us" else self._names(ix, choices, "us", new_units)
             def shown_at(a, props):     # the battle dates the build menu shows unit `a` at (None: not said)
                 shows = edits.get(a, "ShowInMenu") if edits else None
                 shows = (props.get("ShowInMenu") or {}).get("numbers") if shows is None else shows
                 return [bool(x) for x in shows] if isinstance(shows, list) and shows else None
             # the new unit is shown at its start unit's dates; a parent missing from the menu at one of them is no
-            # choice (2026-10-09: the dearest were the game's atomic units, shown at the last date only, and DEMO,
-            # film and empty units, never shown; 2026-10-10, seen in the game: a shown upgrade whose parent has no
-            # button in the menu stops the game)
+            # choice (2026-10-09: the game's atomic units, shown at the last date only, and DEMO, film and empty units,
+            # never shown; 2026-10-10, seen in the game: a shown upgrade whose parent has no button in the menu stops
+            # the game)
             mine_at = shown_at(source, _props(ix.show(self._resolve(edits, source)[0]))) if source else None
-            prices, never_shown = {}, set()
+            never_shown = set()
             for a in choices:
                 props = _props(ix.show(self._resolve(edits, a)[0]))
-                mine = edits.get(a, "ProductionPrice") if edits else None
-                if mine is None:
-                    prices[a] = first_number((props.get("ProductionPrice") or {}).get("numbers"))
-                else:
-                    prices[a] = None if mine is REMOVED else first_number(mine)
                 at = shown_at(a, props)
                 if at is not None and (not any(at) or (mine_at is not None and any(
                         need and not (at[i] if i < len(at) else False) for i, need in enumerate(mine_at)))):
                     never_shown.add(a)
         finally:
             ix.close()
-        choices = [a for a in choices if a not in never_shown]
+        menu_choices = [a for a in choices if a not in never_shown]
+        members = set(group["units"]) if group is not None else set()
+        choices = [a for a in menu_choices if a in members] if limit else menu_choices
         shown = [names[a] for a in choices if a in names]
         twice = {n for n in shown if shown.count(n) > 1}  # two called the same: told apart as the Upgrade box does
 
@@ -664,33 +655,43 @@ class EraUnitCalls:
             n = names.get(a, _tail(a))
             return {"address": a, "name": f"{n} ({_tail(a)})" if n in twice and n != _tail(a) else n}
         listed = sorted((named(a) for a in choices), key=lambda c: c["name"].lower())
-        suggested, why = None, ""
-        stands_for = str(entry.get("in_place_of") or "").strip().casefold()
-        if source in choices:
-            suggested, why = source, "start"
-        elif stands_for:
-            hit = next((c["address"] for c in listed if english.get(c["address"], "").strip().casefold() == stands_for),
-                       None)
-            suggested, why = (hit, "in_place_of") if hit else (None, "")
-        if suggested is None and entry.get("era") in RESEARCH_ERAS:
-            priced = [(prices[c["address"]], c["address"]) for c in listed
-                      if prices.get(c["address"]) is not None and c["address"] not in never_shown]
-            if priced:
-                top = max(p for p, _a in priced)
-                suggested, why = next(a for p, a in priced if p == top), "dearest"
-        return {"offered": True, "choices": listed, "suggested": suggested, "why": why}
+        return {"offered": True, "choices": listed, "suggested": None, "why": ""}
+
+    def _era_group(self, ix, edits, entry: dict, nation, factory, group, lang: str, state=None):
+        """(the group the era unit goes in, in build menu (`nation`, `factory`), as the add form shows it
+        (GroupCalls._groups_offer: None when that menu isn't one of the board's buildings), that group (a GroupState
+        group; None: a group of its own), whether the menu is one of the board's): `group` as era_unit_add takes it.
+        Its kind is the library's card (what it really is), not its start unit's."""
+        state = self._groups_state(ix, edits) if state is None else state
+        kind = str(entry.get("card") or "").strip() or None
+        offer, g = self._groups_offer(ix, edits, state, kind, nation, factory, group, entry["name"], lang)
+        return offer, g, offer is not None
 
     def _era_options(self, folder: Path, lib: dict, entry: dict, source: str | None, nation, factory,
-                     lang: str) -> dict:
+                     lang: str, group=None) -> dict:
+        from .api import EditsFileError
         size = self._era_size(folder, lib, entry, source)
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        ix = self._open()
+        try:
+            offer, g, rows = self._era_group(ix, edits, entry, nation, factory, group, lang)
+        finally:
+            ix.close()
         return {"price": self._era_price(source) if source else 0.0, "size": size.pop("size"), "size_info": size,
-                "research": self._era_research(entry, source, nation, factory, lang)}
+                "research": self._era_research(entry, source, nation, factory, lang, rows, g), "group": offer}
 
-    def era_unit_start(self, key: str, source: str, nation: int, factory: int, lang: str = "base") -> dict:
+    def era_unit_start(self, key: str, source: str, nation: int, factory: int, lang: str = "base",
+                       group=None) -> dict:
         """What the add form shows for start unit `source` and build menu (`nation`, `factory`), asked again when one
         of them changes: {"price": the start unit's, "size": the import size suggested (its real size, else 1),
         "size_info": how it was had (_era_size), "research": the units it may be researched from there and the one
-        suggested (_era_research)}."""
+        suggested (_era_research, only the units of its group: _era_limited), "group": the group of that building's
+        build list it goes in (`group` as era_unit_add takes it; groups.py): {"root" (None: a group of its own),
+        "name", "count", "most", "full", "new", "choices": [{root, name, count, full}] the building's groups}, None for
+        a menu that isn't one of the board's buildings}."""
         from .api import StudioError
         folder, lib, entry = self._era_entry(key)
         ix = self._open()
@@ -701,14 +702,14 @@ class EraUnitCalls:
             raise StudioError(f"{source} isn't in this game build") from None
         finally:
             ix.close()
-        return self._era_options(folder, lib, entry, source, nation, factory, lang)
+        return self._era_options(folder, lib, entry, source, nation, factory, lang, group)
 
     def era_unit_page(self, key: str, lang: str = "base") -> dict:
         """One era unit for its page: its library entry, "added" (its unit's address in this mod, or None), "has_model",
         "picture" (a cache URL of its model's picture, or None), "start": the game units it can start from (its kind's
         units with a build menu: the suggested one first, then its card type's, then the rest by name), each {address,
         name (its game name), nation, suggested, same_type}, and for the suggested start unit in the library's build
-        menu (era_unit_start): "price", "size", "size_info" and "research"."""
+        menu (era_unit_start): "price", "size", "size_info", "research" and "group"."""
         from rusemod import schema
         folder, lib, entry = self._era_entry(key)
         record = self._era_record() if self._mod_dir() is not None else {}
@@ -740,16 +741,25 @@ class EraUnitCalls:
                     has_model=bool(entry.get("model") and (folder / entry["model"]).is_file()), **options)
 
     def era_unit_add(self, key: str, nation: int, factory: int, source: str | None = None, name: str | None = None,
-                     price=None, size=None, research_from=SUGGESTED, research_price=None, research_time=None) -> dict:
+                     price=None, size=None, research_from=SUGGESTED, research_price=None, research_time=None,
+                     group=None) -> dict:
         """Add an era unit to the current mod: a new unit starting from `source`'s values (default: the library's
         suggestion), called `name` (default: the era unit's), costing `price` (default: the source's), in nation
         `nation`'s build menu `factory`, with its model at `size` (times the start unit's length; default: the size
         suggested, its real size when known: _era_size), its card and its credit; researched from `research_from` (one
         of the menu's units era_unit_start offers; None: buyable from the start; default: the one suggested) for
-        `research_price` and `research_time` (default: the Studio's 50 and 50 s), as the Upgrade box links it. Returns
-        {"address", "name", "model": the model's report or None, "model_note": "" or why it shows the start unit's
-        model, "card": whether it got its own card, "size": the size its model was fitted at (None: no model),
-        "research_from": the unit it's researched from or None}."""
+        `research_price` and `research_time` (default: the Studio's 50 and 50 s), as the Upgrade box links it.
+
+        In group `group` of that building's build list (groups.py; the owner, 2026-10-31: at most 6 to a group, one
+        more refused): the address of the group's first unit, "new" for a group of its own, None for its research
+        parent's group when one is given, else the group of its kind (the library's card: what it really is). It's
+        researched only from a unit of that group (_era_limited: the one suggested kept when it's in the group, else
+        the group's first unit, else none); bought from the start, it's written in the mod's menu_groups.toml under
+        the group's first unit. Refused, nothing made, when that group has no room. Returns {"address", "name",
+        "model": the model's report or None, "model_note": "" or why it shows the start unit's model, "card": whether
+        it got its own card, "size": the size its model was fitted at (None: no model), "research_from": the unit it's
+        researched from or None, "group": its group's first unit (its own address: a group of its own; None: not in
+        one of the board's buildings)}."""
         from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
         folder, lib, entry = self._era_entry(key)
         if self._mod_dir() is None or self._edits() is None:
@@ -769,11 +779,34 @@ class EraUnitCalls:
             raise StudioError(f"Give a size from {MODEL_SIZES[0]:g} to {MODEL_SIZES[1]:g} (1 is as long as the unit "
                               f"it starts from).")
         research = self._era_research(entry, source, nation, factory, "us")
-        if research_from == SUGGESTED:
-            research_from = research["suggested"]
-        if research_from is not None and research_from not in {c["address"] for c in research["choices"]}:
-            # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
-            raise StudioError(f"{entry['name']} can't be researched from {research_from} in that build menu")
+        menu = {c["address"] for c in research["choices"]}
+        edits = self._edits()
+        ix = self._open()
+        try:
+            # its group (groups.py): the one picked; else, researched from a unit picked, that unit's; else its kind's
+            state = self._groups_state(ix, edits)
+            by_parent = group is None and research_from not in (SUGGESTED, None) and research_from in state.of
+            if by_parent and (state.of[research_from]["nation"], state.of[research_from]["factory"]) == (
+                    int(nation), int(factory)):
+                group = state.of[research_from]["root"]
+            offer, target, rows = self._era_group(ix, edits, entry, nation, factory, group, "us", state)
+            if rows and offer["pick"]:    # no card type: refused until the modder picks its group (groups.py)
+                self._groups_target(state, int(nation), int(factory), None, None)
+            if rows:
+                research = self._era_research(entry, source, nation, factory, "us", True, target)
+            if research_from == SUGGESTED:
+                research_from = research["suggested"]
+            if research_from is not None and research_from not in menu:
+                # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
+                raise StudioError(f"{entry['name']} can't be researched from {research_from} in that build menu")
+            if research_from is not None and rows and research_from not in (target or {"units": ()})["units"]:
+                # the game's way: researched from a unit of that building it's an upgrade, drawn in that unit's group
+                raise StudioError(f"{entry['name']} can't be researched from {research_from}: that unit is in another "
+                                  f"group of the building than the one picked.")
+            if rows:
+                self._groups_full(ix, edits, target, "us", row=(state, int(nation), int(factory)))
+        finally:
+            ix.close()
         costs = {}
         for prop, value in (("UpgradePrice", research_price), ("UpgradeTime", research_time)):
             value = RESEARCH[prop] if value is None or value == "" else value
@@ -784,23 +817,27 @@ class EraUnitCalls:
             costs[prop] = value
         cost = self._era_price(source) if price is None or price == "" else price
         wanted = (name or "").strip() or entry["name"]
-        try:
-            made = self.new_unit(source, wanted, cost, int(nation), int(factory))
+        try:   # (its group checked above, written below)
+            made = self._unit_new(source, wanted, cost, int(nation), int(factory), guard=False)
         except StudioError as exc:
             if name or "already a unit" not in str(exc):
                 raise
             wanted = f"{entry['name']} ({entry['era']})"   # the same name in two eras (a Leopard 1 in both, say)
-            made = self.new_unit(source, wanted, cost, int(nation), int(factory))
+            made = self._unit_new(source, wanted, cost, int(nation), int(factory), guard=False)
         record[key] = made["address"]
         with self._saving:
             self._era_save(record, lib)
         if research["offered"]:
             # linked as the Upgrade box links it (set_upgrade: the link, the upgrade flag, a research price and time);
             # None also takes away a link the start unit had, so it's buyable from the start
-            self.set_upgrade(made["address"], research_from)
+            self._set_upgrade(made["address"], research_from, guard=False)
             if research_from is not None:
                 for prop, value in costs.items():
                     self.set_research(made["address"], prop, value)
+        if rows:   # bought from the start: written in its group (an upgrade stands in its parent's)
+            from .edits import ModEdits
+            with self._saving:
+                self._groups_place(ModEdits(edits.folder), made["address"], target["root"] if target else None)
         model, note = None, ""
         if has_model:
             try:
@@ -815,7 +852,8 @@ class EraUnitCalls:
         card = self._era_card(made["address"], folder, entry)
         return {"address": made["address"], "name": made["name"], "model": model, "model_note": note, "card": card,
                 "size": float(size) if has_model else None,
-                "research_from": research_from if research["offered"] else None}
+                "research_from": research_from if research["offered"] else None,
+                "group": (target["root"] if target else made["address"]) if rows else None}
 
     def _era_card(self, address: str, folder: Path, entry: dict) -> bool:
         """Give the new unit its era card (the library's "card_picture": its fitted model drawn at the game's card

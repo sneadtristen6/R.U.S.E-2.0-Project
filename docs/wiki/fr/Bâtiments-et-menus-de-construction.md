@@ -29,6 +29,20 @@ véhicule à l'aérodrome : pas encore essayé en jeu.
 La page d'une unité dans l'onglet **Unités** dit où elle est construite (« Construite dans Tank factory : place 2 sur
 6 »), et **Voir dans les bâtiments** ouvre sa ligne.
 
+## Groupes
+
+En jeu, la liste de construction d'un bâtiment montre chaque groupe sur une ligne : une unité et ses améliorations
+(le Panzer IV et le Panther). Le tableau montre les groupes de chaque bâtiment, chacun avec son compte (**4 sur 6**),
+et combien de groupes a le bâtiment (**7 groupes sur 10**).
+
+- Une nouvelle unité va dans le groupe de son type dans son bâtiment, ou dans un groupe à elle quand le bâtiment n'en a
+  aucun de ce type. **+** sur un groupe, ou un dépôt dessus, l'y met ; **Nouveau groupe** en commence un.
+- Un groupe a au plus 6 (ses unités et cartes de recherche), et un bâtiment au plus 10 groupes, pour que sa liste
+  tienne à l'écran. Un de plus est refusé : retirez une unité, ou mettez-la dans un bâtiment à elle (**Ajouter un bâtiment…**).
+- Une unité sans type de carte dans le jeu (un camion, le lanceur de V2) : choisissez son groupe.
+
+Pas encore essayé en jeu.
+
 ## Ajouter un bâtiment
 
 **Ajouter un bâtiment…** sous le tableau d'une nation : choisissez le bâtiment du jeu qu'il copie (**Copie de**),

@@ -75,6 +75,7 @@ from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
+from .groups import PROPS as GROUP_PROPS, GroupCalls
 from .startscreen import StartScreenCalls
 from . import __version__
 
@@ -556,7 +557,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, FlagTypeCalls, BoardCalls,
-                StartScreenCalls, GuardCalls, BugWatchCalls):
+                GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
     # What Export writes into every mod's manifest ([made_with]); the mod list and the Launcher show it as the credit
@@ -1765,8 +1766,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def set_upgrade(self, address: str, parent: str | None, lang: str = schema.BASE) -> dict:
         """Make a unit researched from `parent` (one of upgrade(address)'s choices), or a unit of its own (None), in the
         current mod: the link and the upgrade flag together; a unit that becomes an upgrade gets a research price and
-        time if it has none (his 50 and 50). Saved at once; the game's own parent again takes the changes out. Returns
+        time if it has none (his 50 and 50). Saved at once; the game's own parent again takes the changes out. As an
+        upgrade it moves to its parent's group with the units researched from it, refused when that group hasn't
+        room for them; a new unit made buildable from the start stays in the group it stood in (groups.py). Returns
         upgrade(address, lang) as it is now."""
+        return self._set_upgrade(address, parent, lang)
+
+    def _set_upgrade(self, address: str, parent: str | None, lang: str = schema.BASE, guard: bool = True) -> dict:
+        """set_upgrade; `guard` False: the groups neither checked nor written (era_unit_add does both itself)."""
         edits = self._edits()
         if edits is None:
             raise StudioError("Pick or make a mod first: changes are saved in a mod.")
@@ -1784,23 +1791,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             if parent == game_parent:
-                edits.reset(address, UPGRADE)
-                edits.reset(address, UPGRADE_FLAG)
-                for prop in RESEARCH:
-                    if prop not in has:  # added for the upgrade only
-                        edits.reset(address, prop)
+                changes = [(UPGRADE, None), (UPGRADE_FLAG, None)]
+                changes += [(prop, None) for prop in RESEARCH if prop not in has]  # added for the upgrade only
             elif parent is None:
-                edits.set(address, UPGRADE, REMOVED)
-                edits.set(address, UPGRADE_FLAG, REMOVED)
+                changes = [(UPGRADE, REMOVED), (UPGRADE_FLAG, REMOVED)]
             else:
-                edits.set(address, UPGRADE, Link(parent))
-                if UPGRADE_FLAG in has:
-                    edits.reset(address, UPGRADE_FLAG)
-                else:
-                    edits.set(address, UPGRADE_FLAG, 1)  # a yes/no in the build, as on the game's upgrades
-                for prop, value in RESEARCH.items():
-                    if prop not in has and edits.get(address, prop) is None:
-                        edits.set(address, prop, value)
+                # the flag: a yes/no in the build, as on the game's upgrades
+                changes = [(UPGRADE, Link(parent)), (UPGRADE_FLAG, None if UPGRADE_FLAG in has else 1)]
+                changes += [(prop, value) for prop, value in RESEARCH.items()
+                            if prop not in has and edits.get(address, prop) is None]
+            changes = [(address, prop, value) for prop, value in changes]
+            files = self._groups_guard(edits, changes, lang) if guard else None
+            self._board_apply(edits, changes)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), **self.upgrade(address, lang)}
 
     def _editable(self, o: dict) -> tuple[bool, str]:
@@ -6162,11 +6166,25 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             before = edits.get(o["address"], prop, "shared") if how == "own" else None  # what "all of them" got
             before = before if before is not None else (p["numbers"] if p["list"] else p["numbers"][0])
-            if (values if p["list"] else values[0]) == before:
+            same = (values if p["list"] else values[0]) == before
+            files = self._groups_hand(edits, where, prop, how, None if same else values if p["list"] else values[0])
+            if same:
                 edits.reset(where, prop, how)
             else:
                 edits.set(where, prop, values if p["list"] else values[0], how)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), "value": values if p["list"] else values[0]}
+
+    def _groups_hand(self, edits: ModEdits, where: str, prop: str, how, value) -> tuple | None:
+        """A value changed by hand (the Units tab's table and its Ctrl+Z, the All values tab) that puts a unit in a
+        build list's group (GROUP_PROPS: its building, nation, battle dates, upgrade flag or research link), checked
+        against the most a group holds before it's saved (groups.py; `value` None: the game's own value back).
+        Returns the mod's menu groups (now, after) for _groups_save, or None for any other value. Inside
+        `self._saving`."""
+        if prop not in GROUP_PROPS or how or ":" in where:
+            return None
+        return self._groups_guard(edits, [(where, prop, value)])
 
     def reset(self, address: str, prop: str, mode: str = "", via: str = "") -> dict:
         edits = self._edits()
@@ -6180,7 +6198,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             ix.close()
         with self._saving:
             edits = ModEdits(edits.folder)
+            files = self._groups_hand(edits, where, prop, how, None)
             edits.reset(where, prop, how)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file)}
 
     # --- the economy (rusemod.economy): the game's constants, changed in both of their copies at once ---
@@ -7245,10 +7266,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         new, same = self._value_typed(old, value, prop, edits, o["file"], game_to)
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
+            files = self._groups_hand(edits, o["address"], prop, share, None if same and not added else new)
             if same and not added:
                 edits.reset(o["address"], prop, share)
             else:
                 edits.set(o["address"], prop, new, share)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
     def _value_typed(self, old, value, prop: str, edits: ModEdits, location: str | None, game_to: str | None):
@@ -7363,7 +7387,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             ix.close()
         with self._saving:
             edits = ModEdits(edits.folder)
-            edits.reset(o["address"], prop, "shared" if o["shared"] and not o["export"] else None)
+            share = "shared" if o["shared"] and not o["export"] else None
+            files = self._groups_hand(edits, o["address"], prop, share, None)
+            edits.reset(o["address"], prop, share)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
     # --- private notes (LittleGroove's Notes boxes): the modder's own words about a unit, an object of All values or an
@@ -7652,7 +7680,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         new = self._value_typed(example, value, prop, edits, location, None)[0]
         with self._saving:
             edits = ModEdits(edits.folder)
+            files = self._groups_hand(edits, target, prop, share, new)
             edits.set(target, prop, new, share)
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
     def value_prop_delete(self, address: str, prop: str, lang: str = schema.BASE) -> dict:
@@ -7671,12 +7702,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         share = "shared" if o["shared"] and not o["export"] else None
         with self._saving:
             edits = ModEdits(edits.folder)
+            files = None
             if prop in nd.obj(o["index"]).props:
+                files = self._groups_hand(edits, o["address"], prop, share, REMOVED)
                 edits.remove(o["address"], prop, share)
             elif edits.get(o["address"], prop, share) is not None:
+                files = self._groups_hand(edits, o["address"], prop, share, None)
                 edits.reset(o["address"], prop, share)
             else:
                 raise StudioError(f"{address} has no {prop}")
+            if files:
+                self._groups_save(edits, *files)
         return {"saved": str(edits.file), "page": self.value_object(address, lang)}
 
     def value_pointing(self, address: str, prop: str = "", lang: str = schema.BASE) -> dict:
@@ -8760,12 +8796,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return {"url": DOWNLOAD}
 
     # --- new units ---
-    def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1, unique: bool = False) -> dict:
+    def new_unit(self, source: str, name: str, price, nation: int = -1, factory: int = -1, unique: bool = False,
+                 group=None) -> dict:
         """A new unit in the current mod: a copy of `source` called `name` (in every language), costing `price` at
         every battle date, in the source's build menu or in another nation's (`nation` and `factory`, both given).
         `unique`: when a unit already has the address its name makes, the copy takes the next free one (_2, _3...)
-        and keeps the name (the board's copy of another nation's unit, named as the game names it). Returns its
+        and keeps the name (the board's copy of another nation's unit, named as the game names it). `group`: the
+        group of that building's build list it goes in (groups.py; the owner, 2026-10-31: at most 6 to a group, one
+        more refused): the address of the group's first unit, "new" for a group of its own, None for the group of its
+        kind (its start unit's); a copy that stays an upgrade stands in its research parent's group. Returns its
         address, so the page can open it."""
+        return self._unit_new(source, name, price, nation, factory, unique, group)
+
+    def _unit_new(self, source: str, name: str, price, nation: int = -1, factory: int = -1, unique: bool = False,
+                  group=None, shown: bool = False, guard: bool = True, lang: str = "us") -> dict:
+        """new_unit; `shown`: counted in its group as shown at every battle date (the board shows it so next);
+        `guard` False: its group neither checked nor written (era_unit_add does both itself); `lang`: the names in a
+        refusal."""
         name = (name or "").strip()
         if not name:
             raise StudioError("Give the new unit a name.")
@@ -8841,16 +8888,52 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # the loading screen never ended; rule unit-research-parent). The Upgrade box can link it again in its menu.
         dropped = parent if parent is not None and "Nationalite" in values and parent_menu != (nation, factory) \
             else None
+        own = [(UPGRADE, REMOVED)] + ([(UPGRADE_FLAG, REMOVED)] if any(path == UPGRADE_FLAG for path, _n, _t in
+                                                                       o["values"]) else []) if dropped else []
         with self._saving:
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             if target in edits.new_units:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
+            files = None
+            if guard and KIND_OF.get(o["class"]) != "buildings":
+                files = self._new_unit_groups(edits, target, source, name, values, own, group, shown, lang)
             edits.add_unit(target, source, name, values)
-            if dropped:
-                edits.set(target, UPGRADE, REMOVED)
-                if any(path == UPGRADE_FLAG for path, _n, _t in o["values"]):
-                    edits.set(target, UPGRADE_FLAG, REMOVED)
+            for prop, value in own:
+                edits.set(target, prop, value)
+            if files:
+                self._groups_save(edits, *files)
         return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped}
+
+    def _new_unit_groups(self, edits, target: str, source: str, name: str, values: dict, own: list, group,
+                         shown: bool, lang: str) -> tuple | None:
+        """A new unit's group (groups.py), worked out before it's made: refused when it has no room; (the mod's menu
+        groups now, after it's made: it written under its group's first unit when bought from the start), or None
+        when it's in no building that makes units."""
+        from .board import ALL_ROWS, DATES
+        from .groups import Draft
+        draft = Draft(edits)
+        draft.add_unit(target, source, name, values)
+        draft.apply([(target, prop, value) for prop, value in own])
+        ix = self._open()
+        try:
+            before = self._groups_state(ix, edits)
+            mine = self._board_info(ix, draft, only={target}).get(target)
+            if mine is None or mine["factory"] not in ALL_ROWS:
+                return None
+            if shown:
+                draft.apply([(target, "ShowInMenu", [1] * len(mine["game_shows"] or [1] * DATES))])
+            info = self._groups_info(ix, edits, before, draft)
+            upgrade = bool(info[target]["flag"]) and info[target]["parent"] is not None
+            g = None if upgrade and group is None else self._groups_target(   # (an upgrade: its research's group)
+                before, info[target]["nation"], info[target]["factory"], group, before.kinds.get(source))
+            placed = {} if upgrade else {target: g["root"] if g is not None else target}
+            after = self._groups_after(ix, edits, before, draft, info, placed)
+            if upgrade and group is not None and (g is None or after.of.get(target) is not after.of.get(g["root"])):
+                self._groups_conflict(ix, draft, target, info, lang)
+            self._groups_check(ix, draft, before, after, lang)
+        finally:
+            ix.close()
+        return before.file, after.file
 
     def research_gone(self) -> str:
         """What taking a unit out of the mod does to the units researched from it, as the modder chose in Settings >
@@ -8902,7 +8985,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """Remove a new unit from the current mod: its copy, every change made to it and its parts, and its name. The
         units researched from it are dealt with first, as the modder chose (_research_gone; `researched` "anyway" after
         the warning). Returns {"deleted": its address, "source", "saved", "relinked", "left"}, or {"deleted": None,
-        "ask": the units researched from it} when the modder is to be warned first (nothing changed)."""
+        "ask": the units researched from it} when the modder is to be warned first (nothing changed). Its line in the
+        mod's menu_groups.toml goes, and the units its group stood under move to the first remaining unit of that
+        group (groups.py)."""
         edits = self._edits()
         if edits is None or address not in edits.new_units:
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
@@ -8912,7 +8997,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         with self._saving:
             edits = ModEdits(edits.folder)
             source = edits.new_units[address].source if address in edits.new_units else None
+            files = self._groups_gone(edits, address)
             edits.remove_unit(address)
+            self._groups_save(edits, *files)
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:

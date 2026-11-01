@@ -4,7 +4,8 @@
 // stopped on two mistakes in the mods, each with its fix; ?fake=backup, ?fake=oldbackup,
 // ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the installer's
 // "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to French in
-// Steam). Only English, French
+// Steam; ?fake=groups a mod made before the build lists' limits: in the Nations tab, Germany's Armor base with a full
+// group and 10 groups, the USA's with a group over the most). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -2512,7 +2513,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"board_where": "Built in the {building}: place {n} of {all}.", "board_where_out": "Made by the {building}, but in no build menu now.", "board_show": "Show on the board", "tip_board_show": "Open {nation}'s buildings in the Nations tab, at this unit's building."});
   Object.assign(words.fr, {"board_where": "Construite dans {building} : place {n} sur {all}.", "board_where_out": "Faite par {building}, mais dans aucun menu de construction pour l'instant.", "board_show": "Voir dans les bâtiments", "tip_board_show": "Ouvrir les bâtiments de {nation} dans l'onglet Nations, au bâtiment de cette unité."});
   Object.assign(words.sc, {"board_where": "在{building}中建造：第 {n} 个，共 {all} 个。", "board_where_out": "由{building}建造，但现在不在任何建造菜单中。", "board_show": "在建筑中显示", "tip_board_show": "在“国家”标签页打开{nation}的建筑，定位到该单位的建筑。"});
-  Object.assign(words.us, {"ss_title": "What would you like to do?", "ss_carry": "Carry on with a mod", "tip_ss_carry": "Open one of your mods: the Studio opens on it, as you left it.", "ss_new": "Start a new mod", "tip_ss_new": "Name it, choose what each nation keeps, set up its buildings and research. Every step can be skipped.", "ss_skip": "Skip", "tip_ss_skip": "Go straight to the Studio, with all its tabs.", "ss_always": "Always skip this screen (I'm an experienced modder)", "tip_ss_always": "Ticked, the Studio opens straight on its tabs. Settings > Start screen brings this screen back.", "ss_carry_head": "Your mods", "ss_open": "Open", "tip_ss_open": "Open {name} in the Studio.", "ss_changed": "Last changed {when}", "ss_back": "Back", "tip_ss_back": "Back to the three choices.", "set_start_title": "Start screen", "set_start_help": "The screen the Studio opens on: carry on with a mod, start a new one, or skip it.", "set_start_show": "Show the start screen when the Studio opens", "tip_set_start_show": "Unticked, the Studio opens straight on its tabs, as the start screen's Always skip does.", "set_start_open": "Open the start screen now", "tip_set_start_open": "Show the start screen: carry on with a mod, or start a new one.", "flow_bar": "New mod, step {n} of {all}: {step}", "flow_step_name": "Name", "flow_step_nations": "Nations", "flow_step_research": "Research", "flow_step_board": "Buildings", "flow_step_change": "What else", "flow_step_done": "Done", "flow_back": "Back", "tip_flow_back": "The step before this one.", "flow_next": "Next", "tip_flow_next": "Keep what this step set and go on to the next one.", "flow_finish": "Finish", "tip_flow_finish": "Finish the steps and go to the Studio.", "flow_studio": "Go to the Studio now", "tip_flow_studio": "Leave the steps: everything set so far is saved in your mod.", "flow_name_head": "What's your mod called?", "flow_name_help": "The name players see in the Launcher.", "flow_name_placeholder": "My mod", "tip_flow_name": "Your mod's name. Press Enter or Next to make it.", "flow_name_needed": "Give your mod a name first.", "flow_made": "{name} is made: everything from here on is saved in it.", "flow_name_made": "{name} is made. Go on with Next.", "flow_help_nations": "For each nation: Keep its units (its build menus as in the game) or Start it empty (you fill its buildings on the Buildings step). Change gives it a new name and flag.", "flow_keep": "Keep its units", "tip_flow_keep": "{nation}'s build menus stay as they are in the game.", "flow_empty": "Start it empty", "tip_flow_empty": "Take all of {nation}'s units out of its build menus, at every battle date. Its HQ, factories and depots stay; you fill its buildings on the Buildings step.", "flow_research_head": "Research", "flow_research_help": "How units are unlocked in your mod.", "flow_research_keep": "Keep the game's research", "flow_research_keep_help": "Units are researched as in the game.", "flow_research_none": "No research", "flow_research_none_help": "Every unit can be built from the start: nothing is researched.", "flow_research_custom": "Custom", "flow_research_custom_help": "Starts with the game's research. On the next step, put any unit under the one it's researched from, however you like.", "flow_research_none_done": "No research: {n} units can be built from the start now.", "flow_research_reset_done": "The game's research is back.", "flow_board_head": "Buildings", "flow_board_help": "Pick a nation. Each row is one of its buildings with its build menu, in the game's order: + adds a unit, drag a unit to move it, Research… puts it under the unit it's researched from.", "flow_board_help_custom": "Pick a nation. To change research: Research… on a unit, then click the unit it comes after, in any of the nation's buildings. + adds a unit, drag a unit to move it.", "tip_flow_board_nation": "Show {nation}'s buildings.", "flow_change_head": "What will your mod change?", "flow_change_help": "Tick what you want to change next: each one opens as its own tab, with Next above it to go on. Leave them all unticked to finish now.", "flow_change_units": "Units' values", "tip_flow_change_units": "Health, weapons, speed, price… of each unit (the Units tab).", "flow_change_ai": "AI and player settings", "tip_flow_change_ai": "Starting money, income, supply depots, and how the computer players play and what they build (the AI and player settings tab).", "flow_change_music": "Music and sounds", "tip_flow_change_music": "The game's songs, replaced, or new ones added (the Music tab).", "flow_change_values": "Any other value", "tip_flow_change_values": "Every value of the game's files, found by name (the All values and files tab).", "flow_help_units": "Pick a unit on the left and change its values. Next when you're done.", "flow_help_ai": "Change the money, income and depots, and how the computer players play. Next when you're done.", "flow_help_music": "Replace a song or add one. Next when you're done.", "flow_help_values": "Search for any value and change it. Next when you're done.", "flow_done_head": "{name} is ready", "flow_done_help": "Test it in the game, or keep changing it in any tab. The start screen's Carry on with a mod opens it again.", "flow_done_test": "Test in game", "tip_flow_done_test": "Build your mod into the modded copy and start the game from it.", "board_head": "Buildings and units", "tip_board_head": "Each of this nation's buildings with the units its build menu offers.", "board_help": "Each row is one of {nation}'s buildings with its build menu, in the game's order. + adds a unit; drag a unit along its row, or to another building; × takes it out; Research… puts it under the unit it's researched from.", "board_loading": "Reading the build menus…", "board_no_mod": "Pick or make a mod first: the board's changes are saved in it.", "board_count": "Units: {n}", "board_untried": "More than 10: not tried in the game yet", "tip_board_untried": "The game's own buildings use up to {n} places. More is allowed; how the game's menu shows them hasn't been tried yet.", "tip_board_add": "Add a unit to {nation}'s {building}: one of its own, a copy of another nation's, or an era unit.", "board_empty_row": "Nothing to build here. In the game, this building then shows the HQ's building list when it's picked. Click + to add a unit.", "board_dates_from": "From {year}", "board_dates_no_nuclear": "Not in Nuclear", "board_dates_nuclear_only": "Nuclear only", "board_dates_none": "In no battle", "tip_board_dates": "The battles whose build menu shows it, as in the game. In Total War it arrives when the battle reaches that year.", "board_new": "Yours", "tip_board_new": "A unit made in your mod.", "board_mix_short": "Not tried", "board_mix": "Not tried in the game yet: a plane in a ground building, or a vehicle at the Airfield.", "board_from_other": "Researched from {name} ({building})", "tip_board_from_other": "Researched from a unit of another building: not tried in the game yet. The unit it's researched from stays buildable.", "tip_board_take_out": "Take {name} out of this building's menu. A game unit is hidden, never deleted; a unit you made goes from your mod.", "board_research": "Research…", "tip_board_research": "Choose what {name} is researched from: then click the unit it comes after.", "board_research_pick": "{name}: click Put under this one on the unit it comes after (any of {nation}'s buildings), or", "board_research_none": "Buildable from the start", "tip_board_research_none": "No research: it can be built from the start.", "board_research_none_done": "{name} can be built from the start now.", "board_research_cancel": "Cancel", "tip_board_research_cancel": "Leave its research as it is.", "board_under": "Put under this one", "tip_board_under": "{name} is researched from {parent}.", "board_research_done": "{name} is researched from {parent} now.", "board_price": "Research cost", "tip_board_price": "What researching it costs, in $.", "board_time": "Research time (s)", "tip_board_time": "How many seconds researching it takes.", "board_cost_saved": "{name}: research saved.", "tip_board_open": "Open {name}'s page in the Units tab.", "tip_board_drag": "Drag it along the row to change its place, or onto another building's row to move it there.", "board_moved": "{name} is in the {building} now.", "board_put_done": "{name} is in the {building} now.", "board_copied": "It's a copy in your mod, named as the game names it.", "board_unlinked": "{list}: no longer researched from it (research stays inside one nation).", "board_dates_narrowed": "It's shown only in the battles the unit it's researched from is in.", "board_relinked": "{list}: now researched from the unit before it, or buildable from the start.", "board_taken_out": "{name} is out of the build menu (hidden, not deleted).", "board_deleted": "{name} is out of your mod.", "board_ask_delete": "Take {name} out of your mod? {list} are researched from it: they'll be researched from the unit it was researched from, or buildable from the start.", "board_pick_title": "Add a unit to {nation}'s {building}", "board_pick_search": "Search units", "tip_board_pick_search": "Type part of a unit's name.", "board_pick_close": "Close", "board_pick_own": "{nation}'s own units", "tip_board_pick_own": "Picked, it moves here (one taken out comes back).", "tip_board_pick_copy": "Picked, a copy of it is made for this building, in your mod.", "tip_board_pick_move": "Put {name} in the {building}.", "tip_board_pick_copy_one": "Make a copy of {name} for {nation}, in this building.", "board_pick_out": "taken out", "board_pick_where": "in the {building}", "board_pick_era": "Era units: {era}", "tip_board_pick_era": "RUSE 2.0's units for this era, with their own models.", "tip_board_pick_era_one": "Add {name} to the {building}.", "board_pick_added": "Already in your mod.", "board_pick_no_eras": "No era units yet: download an era in the Units tab (its era buttons).", "board_pick_none": "No unit matches that."});
+  // the board's groups and the era units' group pick (board.js, eraunits.js; ruse_studio/groups.py)
+  Object.assign(words.us, {"board_groups_count": "{n} of {most} groups", "board_groups_over": "{n} of {most} groups: {extra} too many", "tip_board_groups": "Each group is one row of the {building}'s build list in the game: a unit and its upgrades. A building holds at most {most} groups, so its list fits on the screen.", "tip_board_groups_over": "The {building} has {n} groups, more than the {most} a building holds (the mod was made before this limit), so its list may not fit on the screen. Move units into its other groups, or into a building with units of its own (Add a building…). It takes no new group until it has {most} or fewer.", "board_group_name": "{name}'s group", "board_group_count": "{n} of {most}", "board_group_full": "{n} of {most}: full", "board_group_over": "{n} of {most}: take {extra} out", "tip_board_group_count": "This group has {n} units. A group holds at most {most}, every battle date counted together.", "tip_board_group_full": "This group is full: it has {n} units, the most a group holds (every battle date counted together). It takes no more until a unit is taken out of it.", "tip_board_group_over": "This group has {n} units, more than the {most} a group holds (the mod was made before this limit). Take {extra} out of it, or move them to another group. It takes no more units until then.", "tip_board_group_add": "Add a unit to {name}'s group in the {building}.", "board_group_no_room": "There's no room in {name}'s group in the {building}: it would have {n} units, and a group holds at most {most}. Take a unit out of that group first, or put this one in another group, in a group of its own (New group), or in a building with units of its own (Add a building…).", "tip_board_group": "A group is one row of this building's build list in the game: a unit and its upgrades. Drop a unit on it to put the unit in this group. Drag the group's name along the row to move the whole group.", "board_new_group": "New group", "tip_board_new_group": "Drop a unit here, or click, to start a group of its own in the {building}: a new row of its build list.", "board_new_group_no_room": "There's no room for another group in the {building}: it would have {n} groups, and a building holds at most {most} so its list fits on the screen. Put the unit in one of its groups, or in a building with units of its own (Add a building…).", "board_moved_group": "{name} is in {group}'s group in the {building} now.", "board_moved_new_group": "{name} is in a group of its own in the {building} now.", "board_pick_title_group": "Add a unit to {name}'s group in {nation}'s {building}", "board_pick_group": "Goes in", "tip_board_pick_group": "The group of the {building}'s build list the unit goes in: the group of its kind, as the Studio finds it, one of its groups, or a group of its own. A unit with no card type needs one picked here.", "board_pick_group_kind": "The group of its kind", "board_pick_title_new_group": "Start a new group in {nation}'s {building}", "eras_group": "Group", "tip_eras_group": "The row of the building's build list it goes in: one of the building's groups (a unit and its upgrades), or a group of its own. A group holds at most {most} units, and a building at most {most_groups} groups.", "eras_group_choice": "{name}'s group ({n} of {most})", "eras_group_choice_full": "{name}'s group ({n} of {most}: full)", "eras_group_own": "A group of its own", "eras_group_pick": "Pick its group…", "eras_group_pick_why": "Pick the group it goes in above first: this unit has no card type, so the Studio can't tell which group of the building is its kind's.", "eras_group_own_full": "A group of its own (no room: {groups} of {most_groups} groups)", "eras_goes_in": "Goes in: {building} › {name}'s group ({n} of {most})", "eras_goes_in_own": "Goes in: {building} › a group of its own ({groups} of {most_groups} groups in the building)", "eras_group_full_why": "There's no room in {name}'s group in {building}: it has {n} units, and a group holds at most {most}. Pick another of its groups above, take a unit out of that group (the nation's buildings in the Nations tab), or put this unit in a building with units of its own (Add a building… in the Nations tab).", "eras_group_own_full_why": "There's no room for another group in {building}: it has {groups} groups, and a building holds at most {most_groups} so its list fits on the screen. Pick one of its groups above, or put this unit in a building with units of its own (Add a building… in the Nations tab)."});
+  Object.assign(words.fr, {"board_groups_count": "{n} groupes sur {most}", "board_groups_over": "{n} groupes sur {most} : {extra} de trop", "tip_board_groups": "Chaque groupe est une ligne de la liste de production de {building} dans le jeu : une unité et ses améliorations. Un bâtiment a au plus {most} groupes, pour que sa liste tienne à l'écran.", "tip_board_groups_over": "{building} a {n} groupes, plus que les {most} qu'un bâtiment peut avoir (le mod a été fait avant cette limite) : sa liste risque de ne pas tenir à l'écran. Déplacez des unités dans ses autres groupes, ou dans un bâtiment qui a ses propres unités (Ajouter un bâtiment…). Il ne prend aucun nouveau groupe tant qu'il en a plus de {most}.", "board_group_name": "Groupe de {name}", "board_group_count": "{n} sur {most}", "board_group_full": "{n} sur {most} : plein", "board_group_over": "{n} sur {most} : retirez-en {extra}", "tip_board_group_count": "Ce groupe a {n} unités. Un groupe en contient au plus {most}, toutes les dates de bataille comptées ensemble.", "tip_board_group_full": "Ce groupe est plein : il a {n} unités, le maximum pour un groupe (toutes les dates de bataille comptées ensemble). Il n'en prend plus tant qu'aucune unité n'en est retirée.", "tip_board_group_over": "Ce groupe a {n} unités, plus que les {most} qu'un groupe peut contenir (le mod a été fait avant cette limite). Retirez-en {extra}, ou déplacez-les dans un autre groupe. Il ne prend plus d'unités d'ici là.", "tip_board_group_add": "Ajouter une unité au groupe de {name} dans {building}.", "board_group_no_room": "Plus de place dans le groupe de {name} dans {building} : il aurait {n} unités, et un groupe en contient au plus {most}. Retirez d'abord une unité de ce groupe, ou mettez celle-ci dans un autre groupe, dans un groupe à part (Nouveau groupe), ou dans un bâtiment qui a ses propres unités (Ajouter un bâtiment…).", "tip_board_group": "Un groupe est une ligne de la liste de production de ce bâtiment dans le jeu : une unité et ses améliorations. Déposez une unité dessus pour la mettre dans ce groupe. Glissez le nom du groupe le long de la ligne pour déplacer tout le groupe.", "board_new_group": "Nouveau groupe", "tip_board_new_group": "Déposez une unité ici, ou cliquez, pour commencer un groupe à part dans {building} : une nouvelle ligne de sa liste de production.", "board_new_group_no_room": "Plus de place pour un autre groupe dans {building} : il aurait {n} groupes, et un bâtiment en a au plus {most} pour que sa liste tienne à l'écran. Mettez l'unité dans un de ses groupes, ou dans un bâtiment qui a ses propres unités (Ajouter un bâtiment…).", "board_moved_group": "{name} est maintenant dans le groupe de {group} dans {building}.", "board_moved_new_group": "{name} est maintenant dans un groupe à part dans {building}.", "board_pick_title_group": "Ajouter une unité au groupe de {name} : {building} ({nation})", "board_pick_group": "Va dans", "tip_board_pick_group": "Le groupe de la liste de production de {building} où va l'unité : le groupe de son genre, tel que le Studio le trouve, l'un de ses groupes, ou un groupe à part. Une unité sans type de carte a besoin qu'on en choisisse un ici.", "board_pick_group_kind": "Le groupe de son genre", "board_pick_title_new_group": "Commencer un nouveau groupe : {building} ({nation})", "eras_group": "Groupe", "tip_eras_group": "La ligne de la liste de production du bâtiment où elle va : l'un des groupes du bâtiment (une unité et ses améliorations), ou un groupe à part. Un groupe contient au plus {most} unités, et un bâtiment au plus {most_groups} groupes.", "eras_group_choice": "Groupe de {name} ({n} sur {most})", "eras_group_choice_full": "Groupe de {name} ({n} sur {most} : plein)", "eras_group_own": "Un groupe à part", "eras_group_pick": "Choisissez son groupe…", "eras_group_pick_why": "Choisissez d'abord ci-dessus le groupe où elle va : cette unité n'a pas de type de carte, le Studio ne peut donc pas savoir quel groupe du bâtiment est celui de son genre.", "eras_group_own_full": "Un groupe à part (plus de place : {groups} groupes sur {most_groups})", "eras_goes_in": "Va dans : {building} › groupe de {name} ({n} sur {most})", "eras_goes_in_own": "Va dans : {building} › un groupe à part ({groups} groupes sur {most_groups} dans le bâtiment)", "eras_group_full_why": "Plus de place dans le groupe de {name} dans {building} : il a {n} unités, et un groupe en contient au plus {most}. Choisissez un autre de ses groupes ci-dessus, retirez une unité de ce groupe (les bâtiments de la nation dans l'onglet Nations), ou mettez cette unité dans un bâtiment qui a ses propres unités (Ajouter un bâtiment… dans l'onglet Nations).", "eras_group_own_full_why": "Plus de place pour un autre groupe dans {building} : il a {groups} groupes, et un bâtiment en a au plus {most_groups} pour que sa liste tienne à l'écran. Choisissez l'un de ses groupes ci-dessus, ou mettez cette unité dans un bâtiment qui a ses propres unités (Ajouter un bâtiment… dans l'onglet Nations)."});
+  Object.assign(words.sc, {"board_groups_count": "{n}/{most} 个组", "board_groups_over": "{n}/{most} 个组：多了 {extra} 个", "tip_board_groups": "每个组是游戏中{building}生产列表的一行：一个单位及其升级。为了让列表能显示在屏幕上，一个建筑最多 {most} 个组。", "tip_board_groups_over": "{building}有 {n} 个组，超过一个建筑最多可有的 {most} 个（该模组制作于此限制之前），其列表可能无法完全显示在屏幕上。请把单位移到它的其他组，或移到拥有自己单位的建筑（“添加建筑…”）。在组数降到 {most} 个或更少之前，它不接受新组。", "board_group_name": "{name} 的组", "board_group_count": "{n}/{most}", "board_group_full": "{n}/{most}：已满", "board_group_over": "{n}/{most}：请移出 {extra} 个", "tip_board_group_count": "该组有 {n} 个单位。一个组最多容纳 {most} 个，所有战役年代合并计算。", "tip_board_group_full": "该组已满：它有 {n} 个单位，是一个组的上限（所有战役年代合并计算）。在移出一个单位之前，它不再接受更多单位。", "tip_board_group_over": "该组有 {n} 个单位，超过一个组最多容纳的 {most} 个（该模组制作于此限制之前）。请从中移出 {extra} 个，或把它们移到别的组。在此之前它不再接受单位。", "tip_board_group_add": "向{building}中 {name} 的组添加单位。", "board_group_no_room": "{building}中 {name} 的组已没有空位：它将有 {n} 个单位，而一个组最多容纳 {most} 个。请先从该组移出一个单位，或把这个单位放进另一个组、单独的组（“新组”），或拥有自己单位的建筑（“添加建筑…”）。", "tip_board_group": "组是游戏中此建筑生产列表的一行：一个单位及其升级。把单位拖到这里即可放进该组。沿行拖动组名可移动整个组。", "board_new_group": "新组", "tip_board_new_group": "把单位拖到这里或点击，即可在{building}中单独成组：其生产列表中的新一行。", "board_new_group_no_room": "{building}中已没有位置再加一个组：它将有 {n} 个组，而为了让列表能显示在屏幕上，一个建筑最多 {most} 个组。请把单位放进它的某个组，或放进拥有自己单位的建筑（“添加建筑…”）。", "board_moved_group": "{name} 现在在{building}中 {group} 的组里。", "board_moved_new_group": "{name} 现在在{building}中单独成组。", "board_pick_title_group": "为{nation}的{building}中 {name} 的组添加单位", "board_pick_group": "进入", "tip_board_pick_group": "该单位进入的{building}生产列表中的组：Studio 找到的它这一类的组、建筑的某个组，或单独成组。没有卡片类型的单位需要在这里选择一个。", "board_pick_group_kind": "它这一类的组", "board_pick_title_new_group": "在{nation}的{building}中新建一个组", "eras_group": "组", "tip_eras_group": "它进入的建筑生产列表中的那一行：建筑的某个组（一个单位及其升级），或单独成组。一个组最多 {most} 个单位，一个建筑最多 {most_groups} 个组。", "eras_group_choice": "{name} 的组（{n}/{most}）", "eras_group_choice_full": "{name} 的组（{n}/{most}：已满）", "eras_group_own": "单独成组", "eras_group_pick": "选择它的组…", "eras_group_pick_why": "请先在上方选择它进入的组：这个单位没有卡片类型，所以 Studio 无法判断建筑的哪个组是它这一类的。", "eras_group_own_full": "单独成组（没有位置：{groups}/{most_groups} 个组）", "eras_goes_in": "进入：{building} › {name} 的组（{n}/{most}）", "eras_goes_in_own": "进入：{building} › 单独成组（建筑中 {groups}/{most_groups} 个组）", "eras_group_full_why": "{building}中 {name} 的组已没有空位：它有 {n} 个单位，而一个组最多容纳 {most} 个。请在上方选择它的另一个组，从该组移出一个单位（“国家”标签页中该国的建筑），或把这个单位放进拥有自己单位的建筑（“国家”标签页中的“添加建筑…”）。", "eras_group_own_full_why": "{building}中已没有位置再加一个组：它有 {groups} 个组，而为了让列表能显示在屏幕上，一个建筑最多 {most_groups} 个组。请在上方选择它的某个组，或把这个单位放进拥有自己单位的建筑（“国家”标签页中的“添加建筑…”）。"});
+  Object.assign(words.us, {"ss_title": "What would you like to do?","ss_carry": "Carry on with a mod", "tip_ss_carry": "Open one of your mods: the Studio opens on it, as you left it.", "ss_new": "Start a new mod", "tip_ss_new": "Name it, choose what each nation keeps, set up its buildings and research. Every step can be skipped.", "ss_skip": "Skip", "tip_ss_skip": "Go straight to the Studio, with all its tabs.", "ss_always": "Always skip this screen (I'm an experienced modder)", "tip_ss_always": "Ticked, the Studio opens straight on its tabs. Settings > Start screen brings this screen back.", "ss_carry_head": "Your mods", "ss_open": "Open", "tip_ss_open": "Open {name} in the Studio.", "ss_changed": "Last changed {when}", "ss_back": "Back", "tip_ss_back": "Back to the three choices.", "set_start_title": "Start screen", "set_start_help": "The screen the Studio opens on: carry on with a mod, start a new one, or skip it.", "set_start_show": "Show the start screen when the Studio opens", "tip_set_start_show": "Unticked, the Studio opens straight on its tabs, as the start screen's Always skip does.", "set_start_open": "Open the start screen now", "tip_set_start_open": "Show the start screen: carry on with a mod, or start a new one.", "flow_bar": "New mod, step {n} of {all}: {step}", "flow_step_name": "Name", "flow_step_nations": "Nations", "flow_step_research": "Research", "flow_step_board": "Buildings", "flow_step_change": "What else", "flow_step_done": "Done", "flow_back": "Back", "tip_flow_back": "The step before this one.", "flow_next": "Next", "tip_flow_next": "Keep what this step set and go on to the next one.", "flow_finish": "Finish", "tip_flow_finish": "Finish the steps and go to the Studio.", "flow_studio": "Go to the Studio now", "tip_flow_studio": "Leave the steps: everything set so far is saved in your mod.", "flow_name_head": "What's your mod called?", "flow_name_help": "The name players see in the Launcher.", "flow_name_placeholder": "My mod", "tip_flow_name": "Your mod's name. Press Enter or Next to make it.", "flow_name_needed": "Give your mod a name first.", "flow_made": "{name} is made: everything from here on is saved in it.", "flow_name_made": "{name} is made. Go on with Next.", "flow_help_nations": "For each nation: Keep its units (its build menus as in the game) or Start it empty (you fill its buildings on the Buildings step). Change gives it a new name and flag.", "flow_keep": "Keep its units", "tip_flow_keep": "{nation}'s build menus stay as they are in the game.", "flow_empty": "Start it empty", "tip_flow_empty": "Take all of {nation}'s units out of its build menus, at every battle date. Its HQ, factories and depots stay; you fill its buildings on the Buildings step.", "flow_research_head": "Research", "flow_research_help": "How units are unlocked in your mod.", "flow_research_keep": "Keep the game's research", "flow_research_keep_help": "Units are researched as in the game.", "flow_research_none": "No research", "flow_research_none_help": "Every unit can be built from the start: nothing is researched.", "flow_research_custom": "Custom", "flow_research_custom_help": "Starts with the game's research. On the next step, put any unit under the one it's researched from, however you like.", "flow_research_none_done": "No research: {n} units can be built from the start now.", "flow_research_reset_done": "The game's research is back.", "flow_board_head": "Buildings", "flow_board_help": "Pick a nation. Each row is one of its buildings with its build menu, in the game's order: + adds a unit, drag a unit to move it, Research… puts it under the unit it's researched from.", "flow_board_help_custom": "Pick a nation. To change research: Research… on a unit, then click the unit it comes after, in any of the nation's buildings. + adds a unit, drag a unit to move it.", "tip_flow_board_nation": "Show {nation}'s buildings.", "flow_change_head": "What will your mod change?", "flow_change_help": "Tick what you want to change next: each one opens as its own tab, with Next above it to go on. Leave them all unticked to finish now.", "flow_change_units": "Units' values", "tip_flow_change_units": "Health, weapons, speed, price… of each unit (the Units tab).", "flow_change_ai": "AI and player settings", "tip_flow_change_ai": "Starting money, income, supply depots, and how the computer players play and what they build (the AI and player settings tab).", "flow_change_music": "Music and sounds", "tip_flow_change_music": "The game's songs, replaced, or new ones added (the Music tab).", "flow_change_values": "Any other value", "tip_flow_change_values": "Every value of the game's files, found by name (the All values and files tab).", "flow_help_units": "Pick a unit on the left and change its values. Next when you're done.", "flow_help_ai": "Change the money, income and depots, and how the computer players play. Next when you're done.", "flow_help_music": "Replace a song or add one. Next when you're done.", "flow_help_values": "Search for any value and change it. Next when you're done.", "flow_done_head": "{name} is ready", "flow_done_help": "Test it in the game, or keep changing it in any tab. The start screen's Carry on with a mod opens it again.", "flow_done_test": "Test in game", "tip_flow_done_test": "Build your mod into the modded copy and start the game from it.", "board_head": "Buildings and units", "tip_board_head": "Each of this nation's buildings with the units its build menu offers.", "board_help": "Each row is one of {nation}'s buildings with its build menu, in the game's order. + adds a unit; drag a unit along its row, or to another building; × takes it out; Research… puts it under the unit it's researched from.", "board_loading": "Reading the build menus…", "board_no_mod": "Pick or make a mod first: the board's changes are saved in it.", "board_count": "Units: {n}", "board_untried": "More than 10: not tried in the game yet", "tip_board_untried": "The game's own buildings use up to {n} places. More is allowed; how the game's menu shows them hasn't been tried yet.", "tip_board_add": "Add a unit to {nation}'s {building}: one of its own, a copy of another nation's, or an era unit.", "board_empty_row": "Nothing to build here. In the game, this building then shows the HQ's building list when it's picked. Click + to add a unit.", "board_dates_from": "From {year}", "board_dates_no_nuclear": "Not in Nuclear", "board_dates_nuclear_only": "Nuclear only", "board_dates_none": "In no battle", "tip_board_dates": "The battles whose build menu shows it, as in the game. In Total War it arrives when the battle reaches that year.", "board_new": "Yours", "tip_board_new": "A unit made in your mod.", "board_mix_short": "Not tried", "board_mix": "Not tried in the game yet: a plane in a ground building, or a vehicle at the Airfield.", "board_from_other": "Researched from {name} ({building})", "tip_board_from_other": "Researched from a unit of another building: not tried in the game yet. The unit it's researched from stays buildable.", "tip_board_take_out": "Take {name} out of this building's menu. A game unit is hidden, never deleted; a unit you made goes from your mod.", "board_research": "Research…", "tip_board_research": "Choose what {name} is researched from: then click the unit it comes after.", "board_research_pick": "{name}: click Put under this one on the unit it comes after (any of {nation}'s buildings), or", "board_research_none": "Buildable from the start", "tip_board_research_none": "No research: it can be built from the start.", "board_research_none_done": "{name} can be built from the start now.", "board_research_cancel": "Cancel", "tip_board_research_cancel": "Leave its research as it is.", "board_under": "Put under this one", "tip_board_under": "{name} is researched from {parent}.", "board_research_done": "{name} is researched from {parent} now.", "board_price": "Research cost", "tip_board_price": "What researching it costs, in $.", "board_time": "Research time (s)", "tip_board_time": "How many seconds researching it takes.", "board_cost_saved": "{name}: research saved.", "tip_board_open": "Open {name}'s page in the Units tab.", "tip_board_drag": "Drag it along the row to change its place, or onto another building's row to move it there.", "board_moved": "{name} is in the {building} now.", "board_put_done": "{name} is in the {building} now.", "board_copied": "It's a copy in your mod, named as the game names it.", "board_unlinked": "{list}: no longer researched from it (research stays inside one nation).", "board_dates_narrowed": "It's shown only in the battles the unit it's researched from is in.", "board_relinked": "{list}: now researched from the unit before it, or buildable from the start.", "board_taken_out": "{name} is out of the build menu (hidden, not deleted).", "board_deleted": "{name} is out of your mod.", "board_ask_delete": "Take {name} out of your mod? {list} are researched from it: they'll be researched from the unit it was researched from, or buildable from the start.", "board_pick_title": "Add a unit to {nation}'s {building}", "board_pick_search": "Search units", "tip_board_pick_search": "Type part of a unit's name.", "board_pick_close": "Close", "board_pick_own": "{nation}'s own units", "tip_board_pick_own": "Picked, it moves here (one taken out comes back).", "tip_board_pick_copy": "Picked, a copy of it is made for this building, in your mod.", "tip_board_pick_move": "Put {name} in the {building}.", "tip_board_pick_copy_one": "Make a copy of {name} for {nation}, in this building.", "board_pick_out": "taken out", "board_pick_where": "in the {building}", "board_pick_era": "Era units: {era}", "tip_board_pick_era": "RUSE 2.0's units for this era, with their own models.", "tip_board_pick_era_one": "Add {name} to the {building}.", "board_pick_added": "Already in your mod.", "board_pick_no_eras": "No era units yet: download an era in the Units tab (its era buttons).", "board_pick_none": "No unit matches that."});
   Object.assign(words.fr, {"ss_title": "Que voulez-vous faire ?", "ss_carry": "Continuer un mod", "tip_ss_carry": "Ouvrez l'un de vos mods : le Studio s'ouvre dessus, tel que vous l'avez laissé.", "ss_new": "Commencer un nouveau mod", "tip_ss_new": "Nommez-le, choisissez ce que garde chaque nation, organisez ses bâtiments et ses recherches. Chaque étape peut être passée.", "ss_skip": "Passer", "tip_ss_skip": "Aller directement au Studio, avec tous ses onglets.", "ss_always": "Toujours passer cet écran (je suis un moddeur expérimenté)", "tip_ss_always": "Coché, le Studio s'ouvre directement sur ses onglets. Paramètres > Écran de départ fait revenir cet écran.", "ss_carry_head": "Vos mods", "ss_open": "Ouvrir", "tip_ss_open": "Ouvrir {name} dans le Studio.", "ss_changed": "Dernière modification : {when}", "ss_back": "Retour", "tip_ss_back": "Revenir aux trois choix.", "set_start_title": "Écran de départ", "set_start_help": "L'écran sur lequel s'ouvre le Studio : continuer un mod, en commencer un nouveau, ou le passer.", "set_start_show": "Afficher l'écran de départ à l'ouverture du Studio", "tip_set_start_show": "Décoché, le Studio s'ouvre directement sur ses onglets, comme avec Toujours passer de l'écran de départ.", "set_start_open": "Ouvrir l'écran de départ maintenant", "tip_set_start_open": "Afficher l'écran de départ : continuer un mod, ou en commencer un nouveau.", "flow_bar": "Nouveau mod, étape {n} sur {all} : {step}", "flow_step_name": "Nom", "flow_step_nations": "Nations", "flow_step_research": "Recherche", "flow_step_board": "Bâtiments", "flow_step_change": "Quoi d'autre", "flow_step_done": "Terminé", "flow_back": "Retour", "tip_flow_back": "L'étape d'avant.", "flow_next": "Suivant", "tip_flow_next": "Garder ce que cette étape a réglé et passer à la suivante.", "flow_finish": "Terminer", "tip_flow_finish": "Terminer les étapes et aller au Studio.", "flow_studio": "Aller au Studio maintenant", "tip_flow_studio": "Quitter les étapes : tout ce qui a été réglé est enregistré dans votre mod.", "flow_name_head": "Comment s'appelle votre mod ?", "flow_name_help": "Le nom que les joueurs voient dans le Launcher.", "flow_name_placeholder": "Mon mod", "tip_flow_name": "Le nom de votre mod. Appuyez sur Entrée ou Suivant pour le créer.", "flow_name_needed": "Donnez d'abord un nom à votre mod.", "flow_made": "{name} est créé : tout ce qui suit y est enregistré.", "flow_name_made": "{name} est créé. Continuez avec Suivant.", "flow_help_nations": "Pour chaque nation : Garder ses unités (ses menus de construction comme dans le jeu) ou La vider (vous remplissez ses bâtiments à l'étape Bâtiments). Modifier lui donne un nouveau nom et un nouveau drapeau.", "flow_keep": "Garder ses unités", "tip_flow_keep": "Les menus de construction de {nation} restent comme dans le jeu.", "flow_empty": "La vider", "tip_flow_empty": "Retirer toutes les unités de {nation} de ses menus de construction, à chaque date de bataille. Son QG, ses usines et ses dépôts restent ; vous remplissez ses bâtiments à l'étape Bâtiments.", "flow_research_head": "Recherche", "flow_research_help": "Comment les unités se débloquent dans votre mod.", "flow_research_keep": "Garder les recherches du jeu", "flow_research_keep_help": "Les unités se recherchent comme dans le jeu.", "flow_research_none": "Aucune recherche", "flow_research_none_help": "Chaque unité peut être construite dès le départ : rien n'est à rechercher.", "flow_research_custom": "Personnalisée", "flow_research_custom_help": "Commence avec les recherches du jeu. À l'étape suivante, placez chaque unité sous celle dont elle se recherche, comme vous voulez.", "flow_research_none_done": "Aucune recherche : {n} unités peuvent maintenant être construites dès le départ.", "flow_research_reset_done": "Les recherches du jeu sont revenues.", "flow_board_head": "Bâtiments", "flow_board_help": "Choisissez une nation. Chaque ligne est l'un de ses bâtiments avec son menu de construction, dans l'ordre du jeu : + ajoute une unité, glissez une unité pour la déplacer, Recherche… la place sous l'unité dont elle se recherche.", "flow_board_help_custom": "Choisissez une nation. Pour changer la recherche : Recherche… sur une unité, puis cliquez l'unité après laquelle elle vient, dans n'importe quel bâtiment de la nation. + ajoute une unité, glissez une unité pour la déplacer.", "tip_flow_board_nation": "Afficher les bâtiments de {nation}.", "flow_change_head": "Que va changer votre mod ?", "flow_change_help": "Cochez ce que vous voulez changer ensuite : chacun s'ouvre dans son onglet, avec Suivant au-dessus pour continuer. Laissez tout décoché pour terminer maintenant.", "flow_change_units": "Valeurs des unités", "tip_flow_change_units": "Santé, armes, vitesse, prix… de chaque unité (l'onglet Unités).", "flow_change_ai": "Réglages de l'IA et des joueurs", "tip_flow_change_ai": "Argent de départ, revenus, dépôts de ravitaillement, et comment jouent les joueurs ordinateur et ce qu'ils construisent (l'onglet Réglages de l'IA et des joueurs).", "flow_change_music": "Musique et sons", "tip_flow_change_music": "Les musiques du jeu, remplacées, ou de nouvelles ajoutées (l'onglet Musique).", "flow_change_values": "Toute autre valeur", "tip_flow_change_values": "Chaque valeur des fichiers du jeu, trouvée par son nom (l'onglet Toutes les valeurs et fichiers).", "flow_help_units": "Choisissez une unité à gauche et changez ses valeurs. Suivant quand vous avez fini.", "flow_help_ai": "Changez l'argent, les revenus et les dépôts, et la façon de jouer des joueurs ordinateur. Suivant quand vous avez fini.", "flow_help_music": "Remplacez une musique ou ajoutez-en une. Suivant quand vous avez fini.", "flow_help_values": "Cherchez n'importe quelle valeur et changez-la. Suivant quand vous avez fini.", "flow_done_head": "{name} est prêt", "flow_done_help": "Testez-le dans le jeu, ou continuez à le modifier dans n'importe quel onglet. Continuer un mod, sur l'écran de départ, le rouvre.", "flow_done_test": "Tester dans le jeu", "tip_flow_done_test": "Construire votre mod dans la copie moddée et lancer le jeu depuis celle-ci.", "board_head": "Bâtiments et unités", "tip_board_head": "Chaque bâtiment de cette nation avec les unités que propose son menu de construction.", "board_help": "Chaque ligne est l'un des bâtiments de {nation} avec son menu de construction, dans l'ordre du jeu. + ajoute une unité ; glissez une unité le long de sa ligne, ou vers un autre bâtiment ; × la retire ; Recherche… la place sous l'unité dont elle se recherche.", "board_loading": "Lecture des menus de construction…", "board_no_mod": "Choisissez ou créez d'abord un mod : les changements y sont enregistrés.", "board_count": "Unités : {n}", "board_untried": "Plus de 10 : pas encore essayé dans le jeu", "tip_board_untried": "Les bâtiments du jeu utilisent jusqu'à {n} places. Plus est permis ; la façon dont le menu du jeu les affiche n'a pas encore été essayée.", "tip_board_add": "Ajouter une unité au bâtiment {building} de {nation} : l'une des siennes, la copie d'une unité d'une autre nation, ou une unité d'époque.", "board_empty_row": "Rien à construire ici. Dans le jeu, ce bâtiment montre alors la liste de bâtiments du QG quand on le choisit. Cliquez sur + pour ajouter une unité.", "board_dates_from": "Dès {year}", "board_dates_no_nuclear": "Pas en Nucléaire", "board_dates_nuclear_only": "Nucléaire seulement", "board_dates_none": "Dans aucune bataille", "tip_board_dates": "Les batailles dont le menu de construction la montre, comme dans le jeu. En Guerre totale, elle arrive quand la bataille atteint cette année.", "board_new": "À vous", "tip_board_new": "Une unité créée dans votre mod.", "board_mix_short": "Pas essayé", "board_mix": "Pas encore essayé dans le jeu : un avion dans un bâtiment terrestre, ou un véhicule à l'aérodrome.", "board_from_other": "Recherchée depuis {name} ({building})", "tip_board_from_other": "Recherchée depuis une unité d'un autre bâtiment : pas encore essayé dans le jeu. L'unité dont elle se recherche reste constructible.", "tip_board_take_out": "Retirer {name} du menu de ce bâtiment. Une unité du jeu est cachée, jamais supprimée ; une unité que vous avez créée quitte votre mod.", "board_research": "Recherche…", "tip_board_research": "Choisir depuis quoi {name} se recherche : cliquez ensuite l'unité après laquelle elle vient.", "board_research_pick": "{name} : cliquez Placer sous celle-ci sur l'unité après laquelle elle vient (n'importe quel bâtiment de {nation}), ou", "board_research_none": "Constructible dès le départ", "tip_board_research_none": "Aucune recherche : elle peut être construite dès le départ.", "board_research_none_done": "{name} peut maintenant être construite dès le départ.", "board_research_cancel": "Annuler", "tip_board_research_cancel": "Laisser sa recherche telle quelle.", "board_under": "Placer sous celle-ci", "tip_board_under": "{name} se recherche depuis {parent}.", "board_research_done": "{name} se recherche maintenant depuis {parent}.", "board_price": "Coût de recherche", "tip_board_price": "Ce que coûte sa recherche, en $.", "board_time": "Temps de recherche (s)", "tip_board_time": "Combien de secondes dure sa recherche.", "board_cost_saved": "{name} : recherche enregistrée.", "tip_board_open": "Ouvrir la page de {name} dans l'onglet Unités.", "tip_board_drag": "Glissez-la le long de la ligne pour changer sa place, ou sur la ligne d'un autre bâtiment pour l'y déplacer.", "board_moved": "{name} est maintenant dans {building}.", "board_put_done": "{name} est maintenant dans {building}.", "board_copied": "C'est une copie dans votre mod, nommée comme dans le jeu.", "board_unlinked": "{list} : ne se recherchent plus depuis elle (la recherche reste dans une seule nation).", "board_dates_narrowed": "Elle n'apparaît que dans les batailles où se trouve l'unité dont elle se recherche.", "board_relinked": "{list} : se recherchent maintenant depuis l'unité d'avant, ou sont constructibles dès le départ.", "board_taken_out": "{name} a quitté le menu de construction (cachée, pas supprimée).", "board_deleted": "{name} a quitté votre mod.", "board_ask_delete": "Retirer {name} de votre mod ? {list} se recherchent depuis elle : elles se rechercheront depuis l'unité dont elle se recherchait, ou seront constructibles dès le départ.", "board_pick_title": "Ajouter une unité : {building} ({nation})", "board_pick_search": "Chercher des unités", "tip_board_pick_search": "Tapez une partie du nom d'une unité.", "board_pick_close": "Fermer", "board_pick_own": "Les unités de {nation}", "tip_board_pick_own": "Choisie, elle vient ici (une unité retirée revient).", "tip_board_pick_copy": "Choisie, une copie est faite pour ce bâtiment, dans votre mod.", "tip_board_pick_move": "Placer {name} dans {building}.", "tip_board_pick_copy_one": "Faire une copie de {name} pour {nation}, dans ce bâtiment.", "board_pick_out": "retirée", "board_pick_where": "dans {building}", "board_pick_era": "Unités d'époque : {era}", "tip_board_pick_era": "Les unités de RUSE 2.0 pour cette époque, avec leurs propres modèles.", "tip_board_pick_era_one": "Ajouter {name} à {building}.", "board_pick_added": "Déjà dans votre mod.", "board_pick_no_eras": "Pas encore d'unités d'époque : téléchargez une époque dans l'onglet Unités (ses boutons d'époque).", "board_pick_none": "Aucune unité ne correspond."});
   Object.assign(words.sc, {"ss_title": "你想做什么？", "ss_carry": "继续制作模组", "tip_ss_carry": "打开你的一个模组：Studio 会按你上次离开时的样子打开它。", "ss_new": "开始新模组", "tip_ss_new": "命名，选择每个国家保留什么，设置建筑和研究。每一步都可以跳过。", "ss_skip": "跳过", "tip_ss_skip": "直接进入 Studio，所有标签页都在。", "ss_always": "总是跳过此画面（我是有经验的模组作者）", "tip_ss_always": "勾选后，Studio 会直接打开各个标签页。设置 > 开始画面可以恢复此画面。", "ss_carry_head": "你的模组", "ss_open": "打开", "tip_ss_open": "在 Studio 中打开 {name}。", "ss_changed": "最后修改：{when}", "ss_back": "返回", "tip_ss_back": "返回三个选项。", "set_start_title": "开始画面", "set_start_help": "Studio 打开时的画面：继续制作模组、开始新模组或跳过。", "set_start_show": "打开 Studio 时显示开始画面", "tip_set_start_show": "取消勾选后，Studio 会直接打开标签页，和开始画面的“总是跳过”一样。", "set_start_open": "立即打开开始画面", "tip_set_start_open": "显示开始画面：继续制作模组或开始新模组。", "flow_bar": "新模组，第 {n} 步，共 {all} 步：{step}", "flow_step_name": "名称", "flow_step_nations": "国家", "flow_step_research": "研究", "flow_step_board": "建筑", "flow_step_change": "其他", "flow_step_done": "完成", "flow_back": "上一步", "tip_flow_back": "回到上一步。", "flow_next": "下一步", "tip_flow_next": "保留这一步的设置，进入下一步。", "flow_finish": "完成", "tip_flow_finish": "完成所有步骤，进入 Studio。", "flow_studio": "立即进入 Studio", "tip_flow_studio": "退出步骤：目前的所有设置都已保存在你的模组中。", "flow_name_head": "你的模组叫什么名字？", "flow_name_help": "玩家在 Launcher 中看到的名称。", "flow_name_placeholder": "我的模组", "tip_flow_name": "你的模组名称。按 Enter 或“下一步”创建。", "flow_name_needed": "请先给模组起个名字。", "flow_made": "{name} 已创建：之后的所有更改都会保存在其中。", "flow_name_made": "{name} 已创建。点“下一步”继续。", "flow_help_nations": "对每个国家：保留其单位（建造菜单与游戏相同），或从空开始（在“建筑”步骤中填充其建筑）。“更改”可为它设置新名称和旗帜。", "flow_keep": "保留其单位", "tip_flow_keep": "{nation}的建造菜单保持游戏原样。", "flow_empty": "从空开始", "tip_flow_empty": "把{nation}的所有单位从每个战斗年代的建造菜单中移除。其指挥部、工厂和补给站保留；在“建筑”步骤中填充其建筑。", "flow_research_head": "研究", "flow_research_help": "模组中单位如何解锁。", "flow_research_keep": "保留游戏的研究", "flow_research_keep_help": "单位的研究方式与游戏相同。", "flow_research_none": "无研究", "flow_research_none_help": "所有单位从一开始就可建造：不需要研究。", "flow_research_custom": "自定义", "flow_research_custom_help": "从游戏的研究开始。下一步中，可随意把任何单位放到其研究来源单位的下面。", "flow_research_none_done": "无研究：现在有 {n} 个单位从一开始就可建造。", "flow_research_reset_done": "已恢复游戏的研究。", "flow_board_head": "建筑", "flow_board_help": "选择一个国家。每一行是它的一座建筑及其建造菜单，顺序与游戏相同：+ 添加单位，拖动单位可移动，“研究…”把它放到其研究来源单位下面。", "flow_board_help_custom": "选择一个国家。要更改研究：点单位的“研究…”，再点它之前的那个单位（该国家的任何建筑都可以）。+ 添加单位，拖动可移动单位。", "tip_flow_board_nation": "显示{nation}的建筑。", "flow_change_head": "你的模组要改变什么？", "flow_change_help": "勾选接下来要更改的内容：每项都会在自己的标签页中打开，上方有“下一步”。全部不勾选则现在完成。", "flow_change_units": "单位数值", "tip_flow_change_units": "每个单位的生命值、武器、速度、价格……（“单位”标签页）。", "flow_change_ai": "AI 与玩家设置", "tip_flow_change_ai": "初始资金、收入、补给站，以及电脑玩家的打法和建造内容（“AI 与玩家设置”标签页）。", "flow_change_music": "音乐和声音", "tip_flow_change_music": "替换游戏的歌曲或添加新歌曲（“音乐”标签页）。", "flow_change_values": "任何其他数值", "tip_flow_change_values": "按名称查找游戏文件中的任何数值（“所有数值和文件”标签页）。", "flow_help_units": "在左侧选择一个单位并修改其数值。完成后点“下一步”。", "flow_help_ai": "修改资金、收入和补给站，以及电脑玩家的打法。完成后点“下一步”。", "flow_help_music": "替换或添加一首歌曲。完成后点“下一步”。", "flow_help_values": "搜索任意数值并修改。完成后点“下一步”。", "flow_done_head": "{name} 已就绪", "flow_done_help": "在游戏中测试它，或在任意标签页继续修改。开始画面的“继续制作模组”可以再次打开它。", "flow_done_test": "在游戏中测试", "tip_flow_done_test": "把模组构建到模组副本中，并从中启动游戏。", "board_head": "建筑和单位", "tip_board_head": "该国家的每座建筑及其建造菜单提供的单位。", "board_help": "每一行是{nation}的一座建筑及其建造菜单，顺序与游戏相同。+ 添加单位；沿行拖动单位或拖到另一座建筑；× 移除；“研究…”把它放到其研究来源单位下面。", "board_loading": "正在读取建造菜单…", "board_no_mod": "请先选择或创建一个模组：更改会保存在其中。", "board_count": "单位：{n}", "board_untried": "超过 10 个：尚未在游戏中测试", "tip_board_untried": "游戏自带建筑最多使用 {n} 个位置。可以更多；游戏菜单会如何显示尚未测试。", "tip_board_add": "为{nation}的{building}添加单位：本国的、其他国家单位的副本，或时代单位。", "board_empty_row": "这里没有可建造的单位。游戏中选择该建筑时会显示指挥部的建筑列表。点 + 添加单位。", "board_dates_from": "从 {year} 年起", "board_dates_no_nuclear": "核战模式中没有", "board_dates_nuclear_only": "仅核战模式", "board_dates_none": "不出现在任何战斗中", "tip_board_dates": "与游戏相同，显示该单位的战斗类型。在全面战争中，战斗进入那一年时它才出现。", "board_new": "你的", "tip_board_new": "在你的模组中制作的单位。", "board_mix_short": "未测试", "board_mix": "尚未在游戏中测试：地面建筑中的飞机，或机场中的车辆。", "board_from_other": "由{name}研究（{building}）", "tip_board_from_other": "由另一座建筑的单位研究：尚未在游戏中测试。研究来源单位仍可建造。", "tip_board_take_out": "把{name}从该建筑的菜单中移除。游戏单位只会隐藏，不会删除；你制作的单位会从模组中移除。", "board_research": "研究…", "tip_board_research": "选择{name}从哪个单位研究：然后点击它之前的那个单位。", "board_research_pick": "{name}：在它之前的单位上点“放到它下面”（{nation}的任何建筑都可以），或", "board_research_none": "一开始即可建造", "tip_board_research_none": "无需研究：一开始即可建造。", "board_research_none_done": "{name} 现在一开始即可建造。", "board_research_cancel": "取消", "tip_board_research_cancel": "保持其研究不变。", "board_under": "放到它下面", "tip_board_under": "{name}由{parent}研究。", "board_research_done": "{name}现在由{parent}研究。", "board_price": "研究费用", "tip_board_price": "研究所需费用（$）。", "board_time": "研究时间（秒）", "tip_board_time": "研究需要多少秒。", "board_cost_saved": "{name}：研究已保存。", "tip_board_open": "在“单位”标签页中打开{name}的页面。", "tip_board_drag": "沿行拖动可改变位置，拖到另一座建筑的行可移到那里。", "board_moved": "{name} 现在在{building}中。", "board_put_done": "{name} 现在在{building}中。", "board_copied": "这是你模组中的副本，名称与游戏相同。", "board_unlinked": "{list}：不再由它研究（研究只在同一个国家内）。", "board_dates_narrowed": "它只出现在其研究来源单位出现的战斗中。", "board_relinked": "{list}：现在由前一个单位研究，或一开始即可建造。", "board_taken_out": "{name} 已从建造菜单中移除（只是隐藏，未删除）。", "board_deleted": "{name} 已从你的模组中移除。", "board_ask_delete": "要把{name}从模组中移除吗？{list}由它研究：之后将由它的研究来源单位研究，或一开始即可建造。", "board_pick_title": "为{nation}的{building}添加单位", "board_pick_search": "搜索单位", "tip_board_pick_search": "输入单位名称的一部分。", "board_pick_close": "关闭", "board_pick_own": "{nation}自己的单位", "tip_board_pick_own": "选择后会移到这里（已移除的会恢复）。", "tip_board_pick_copy": "选择后会在你的模组中为该建筑制作一个副本。", "tip_board_pick_move": "把{name}放入{building}。", "tip_board_pick_copy_one": "为{nation}在该建筑中制作{name}的副本。", "board_pick_out": "已移除", "board_pick_where": "在{building}", "board_pick_era": "时代单位：{era}", "tip_board_pick_era": "RUSE 2.0 为这个时代准备的单位，带有自己的模型。", "tip_board_pick_era_one": "把{name}添加到{building}。", "board_pick_added": "已在你的模组中。", "board_pick_no_eras": "还没有时代单位：请在“单位”标签页（时代按钮）中下载一个时代。", "board_pick_none": "没有匹配的单位。"});
   Object.assign(words.us, {"tip_mission_move_pack": "The mission next to it comes from another of the game's lists: the menu shows each list's missions in the list's own order, so they can't swap.", "mission_move_up": "Move up", "tip_mission_move_up": "Put this mission one place higher in its group of the menu. Saved in your mod. Not tried in the game yet.", "mission_move_down": "Move down", "tip_mission_move_down": "Put this mission one place lower in its group of the menu. Saved in your mod. Not tried in the game yet.", "mission_order_reset": "Game's order", "tip_mission_order_reset": "Put this mission's group back in the game's own order (takes your mod's order for it out).", "tip_mission_order_reset_none": "Your mod doesn't change the order of this mission's group.", "tip_mission_move_top": "It's already first in its group: a mission moves only among the missions grouped with it.", "tip_mission_move_bottom": "It's already last in its group: a mission moves only among the missions grouped with it.", "tip_mission_move_unnamed": "A mission of its group has no scenario file a mod can name, so this group's order can't change.", "mission_group": "Group {n}", "tip_mission_group": "Missions the menu shows together, under the menu's own heading. A mission moves only within its group, among the missions from the same list of the game's.", "mission_order_mine": "Your mod changes the order of this mission's group.", "mission_moved": "Saved in your mod. Not tried in the game yet."});
@@ -2659,6 +2664,190 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     top.splice(index === null || index === undefined ? top.length : Math.max(0, Math.min(index, top.length)), 0, address);
     top.forEach((a, k) => fakeBoardSlot(a, FAKE_BOARD_BASE[factory] + 1 + k * 3, lang));
   }
+  // a row's units in the board's order, [[unit, depth]]: each followed by the ones researched from it in the row
+  function fakeBoardTree(info, n, f) {
+    const here = [...info.values()].filter((i) => i.nation === n && i.factory === f && i.shows.some(Boolean))
+      .sort((a, b) => (a.slot ?? 1e9) - (b.slot ?? 1e9) || a.address.localeCompare(b.address));
+    const tree = [], seen = new Set();
+    const walk = (i, depth) => {
+      if (seen.has(i.address)) return;
+      seen.add(i.address);
+      tree.push([i, depth]);
+      for (const k of here.filter((x) => x.parent === i.address)) walk(k, depth + 1);
+    };
+    for (const i of here.filter((x) => !here.some((p) => p.address === x.parent))) walk(i, 0);
+    for (const i of here) walk(i, 0);
+    return tree;
+  }
+  // the board's groups (StudioApi.board's "groups", ruse_studio/groups.py): each building's build list in rows, a unit
+  // and its upgrades (here: the units researched from it in its building) and the units the mod put in it
+  // (fakeGroupFile, as the mod's menu_groups.toml: a unit's address -> its group's first unit, its own address for a
+  // group of its own); a copy without one goes the way of the unit it was copied from. At most 6 to a group and 10
+  // groups to a building, a unit more refused in the Studio's own words
+  const FAKE_GROUP_MOST = 6, FAKE_GROUPS_MOST = 10;
+  const fakeGroupFile = new Map();
+  const FAKE_LANGS = ["base", "us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"];
+  const fakeKindOf = (address) => {  // its kind: the game's card type, in English (an era unit's, its library card)
+    const made = mine().find((n) => newAddress(n.id) === address);
+    if (made) return "card" in made ? made.card : fakeKindOf(made.source);  // (card null: a unit with none)
+    const t = FAKE_TYPES[address.slice(E.length)];
+    return t ? t.us : null;
+  };
+  const fakeBuildingName = (n, f, lang) => FAKE_OWN_KINDS.includes(f)
+    ? (fakeBuildings.find((b) => b.nation === n && b.kind === f) || { name: String(f) }).name
+    : (FAKE_BUILDING_NAMES[lang] || FAKE_BUILDING_NAMES.us)[f];
+  function fakeGroupState(lang) {  // { info, rows: "nation|building" -> [group], of: address -> its group }
+    const info = fakeBoardInfo(lang), made = new Map(mine().map((n) => [newAddress(n.id), n]));
+    const upgrade = (i) => { const p = i.parent && info.get(i.parent); return Boolean(p && p.nation === i.nation && p.factory === i.factory); };
+    const rootOf = (a) => {
+      let at = a;
+      const seen = new Set([a]);
+      for (;;) {
+        const i = info.get(at);
+        const next = upgrade(i) ? i.parent : fakeGroupFile.has(at) ? fakeGroupFile.get(at) : made.has(at) ? made.get(at).source : null;
+        if (!next || seen.has(next) || !info.has(next)) return at;
+        seen.add(next);
+        at = next;
+      }
+    };
+    const rows = new Map(), of = new Map();
+    for (const n of new Set([...info.values()].map((i) => i.nation))) {
+      for (const f of [...FAKE_BOARD_ROWS, ...FAKE_OWN_KINDS]) {
+        const found = new Map();
+        for (const [i] of fakeBoardTree(info, n, f)) {
+          const key = rootOf(i.address);
+          if (!found.has(key)) found.set(key, []);
+          found.get(key).push(i.address);
+        }
+        if (!found.size) continue;
+        const list = [...found].map(([key, members]) => ({ key, root: members.includes(key) ? key : members[0], units: members,
+          nation: n, factory: f }));
+        rows.set(`${n}|${f}`, list);
+        for (const g of list) for (const a of g.units) of.set(a, g);
+      }
+    }
+    return { info, rows, of };
+  }
+  function fakeGroupView(state, n, f) {  // a row's groups as the board and the add form show them
+    return (state.rows.get(`${n}|${f}`) || []).map((g) => {
+      const count = g.units.length, first = state.info.get(g.root) || {};
+      return { root: g.root, name: first.name || g.root, kinds: [...new Set(g.units.map(fakeKindOf).filter(Boolean))],
+        units: g.units.slice(), count, most: FAKE_GROUP_MOST, full: count >= FAKE_GROUP_MOST, over: count > FAKE_GROUP_MOST,
+        new: Boolean(first.new) };
+    });
+  }
+  // the group a unit goes into in row (n, f): `group` one of its units' address, "new" (a group of its own: null) or
+  // null (the group of its kind: the game's line holding a game unit of that kind, else a group the mod made whose
+  // first unit is of that kind; with two, the first in the build list until it's full, then the next with room; a
+  // unit with no card type refused: its group is the modder's to pick)
+  function fakeGroupTarget(state, n, f, group, kind) {
+    const row = state.rows.get(`${n}|${f}`) || [];
+    if (group === null && !kind) {
+      throw new Error("This unit has no card type, so the Studio can't tell which group of that building it goes in: "
+        + "pick one of its groups, or a group of its own (the Nations tab's building board).");
+    }
+    if (group === "new") return null;
+    if (group) {
+      const g = state.of.get(group);
+      if (!g || g.nation !== n || g.factory !== f) {
+        throw new Error(`${group} isn't in one of the groups of that building: pick one of its groups, or a group of its own.`);
+      }
+      return g;
+    }
+    const games = row.filter((g) => !state.info.get(g.root).new
+      && g.units.some((a) => !state.info.get(a).new && fakeKindOf(a) === kind));
+    const found = games.length ? games : row.filter((g) => state.info.get(g.root).new && fakeKindOf(g.root) === kind);
+    return found.find((g) => g.units.length < FAKE_GROUP_MOST) || found[0] || null;  // (in the build list's order)
+  }
+  // refused, as the Studio refuses it, when group `g` (null: a group of its own) has no room for `coming` units more
+  function fakeGroupRoom(state, n, f, g, coming, lang) {
+    const building = fakeBuildingName(n, f, lang);
+    if (g && g.units.length + coming > FAKE_GROUP_MOST) {
+      throw new Error(`There's no room in ${state.info.get(g.root).name}'s group in ${building}: it would have `
+        + `${g.units.length + coming} units, and a group holds at most ${FAKE_GROUP_MOST}. Take a unit out of that group, `
+        + "or put this one in a building with units of its own (Add a building…).");
+    }
+    const have = (state.rows.get(`${n}|${f}`) || []).length;
+    if (!g && have + 1 > FAKE_GROUPS_MOST) {
+      throw new Error(`There's no room for another group in ${building}: it would have ${have + 1} groups, and a building `
+        + `holds at most ${FAKE_GROUPS_MOST} so its list fits on the screen. Put this unit in one of its groups, or in a `
+        + "building with units of its own (Add a building…).");
+    }
+  }
+  // the era add form's group (StudioApi.era_unit_start's "group"): [offer or null (not one of the board's buildings),
+  // the group (null: a group of its own)]; "pick": a unit with no card type and no group picked, the modder picks one
+  function fakeGroupOffer(state, kind, n, f, group, name) {
+    if (n === null || n === undefined || ![...FAKE_BOARD_ROWS, ...FAKE_OWN_KINDS].includes(f)) return [null, null];
+    const pick = group === null && !kind;
+    const g = pick ? null : fakeGroupTarget(state, n, f, group, kind), view = fakeGroupView(state, n, f);
+    const mine_ = g ? view.find((v) => v.root === g.root) : null;
+    return [{ root: mine_ ? mine_.root : null, name: mine_ ? mine_.name : name, count: mine_ ? mine_.count : 0,
+      most: FAKE_GROUP_MOST, full: mine_ ? mine_.full : view.length >= FAKE_GROUPS_MOST, new: mine_ ? mine_.new : true,
+      groups: view.length, most_groups: FAKE_GROUPS_MOST, pick,
+      choices: view.map((v) => ({ root: v.root, name: v.name, count: v.count, full: v.full })) }, g];
+  }
+  const fakeLine = (info, address) => {  // a unit and the units researched from it in its row (they move with it)
+    const i = info.get(address);
+    const tree = fakeBoardTree(info, i.nation, i.factory), at = tree.findIndex(([x]) => x.address === address);
+    const out = [address];
+    for (let k = at + 1; at >= 0 && k < tree.length && tree[k][1] > tree[at][1]; k++) out.push(tree[k][0].address);
+    return out;
+  };
+  // a new unit (StudioApi.new_unit; the board's copies, the era units): a copy of `source` in its build menu or the one
+  // given, in `group` of that building (as fakeGroupTarget takes it), refused when that has no room (`guard` false: the
+  // caller checks and writes its group); `unique`: a name taken gets _2, _3...; `card`: an era unit's kind
+  function fakeNewUnit(source, name, price, nation, factory, { unique = false, group = null, guard = true, card = null,
+    lang = "us" } = {}) {
+    if (!current) throw new Error("Pick or make a mod first: a new unit is saved in a mod.");
+    const src = units.find((u) => E + u.id === source);
+    if (!src) throw new Error(`${source} isn't a unit or building, so it can't be copied here`);
+    const taken = (s) => units.some((u) => u.id === s) || mine().some((x) => x.id === s);
+    let stem = safeName(name) || `New_${mine().length + 1}`;
+    if (taken(stem)) {
+      if (!unique) throw new Error(`There's already a unit called Descriptor_Unit_${stem} (from '${name}'). Pick another name.`);
+      let k = 2;
+      while (taken(`${safeName(name)}_${k}`)) k += 1;
+      stem = `${safeName(name)}_${k}`;
+    }
+    const n = nation >= 0 ? nation : src.nation, f = factory >= 0 ? factory : src.factory;
+    const rows = guard && [...FAKE_BOARD_ROWS, ...FAKE_OWN_KINDS].includes(f);
+    let target = null;
+    if (rows) {
+      const state = fakeGroupState(lang);
+      target = fakeGroupTarget(state, n, f, group, card || fakeKindOf(source));
+      fakeGroupRoom(state, n, f, target, 1, lang);
+    }
+    newUnits.push({ mod: current, id: stem, source, name, price: Math.round(price ?? src.price), nation: n, factory: f,
+      ...(card ? { card } : {}) });
+    const address = newAddress(stem);
+    if (rows) fakeGroupFile.set(address, target ? target.root : address);
+    return { address, name, saved: current + "/src/studio.rndf" };
+  }
+  function fakeGroupGone(address) {  // a new unit deleted: its line out, the units under it to its group's next unit
+    const g = fakeGroupState("us").of.get(address), next = g ? g.units.find((a) => a !== address) : null;
+    fakeGroupFile.delete(address);
+    for (const [a, t] of [...fakeGroupFile]) if (t === address) fakeGroupFile.set(a, next || a);
+  }
+  // ?fake=groups: a mod made before the limits: Germany's Armor base with its Panzer IV's group full and 10 groups,
+  // the USA's with the Stuart's group over the most (8 of 6) and a truck the game gives no card type (moved to another
+  // building, its group is the modder's to pick)
+  if (mode === "groups" && current) {
+    let slot = 0;
+    const seed = (source, list, nation, factory, own) => list.forEach(([name, card]) => {
+      const id = safeName(name), address = newAddress(id);
+      newUnits.push({ mod: current, id, source: E + source, name, price: 40, nation, factory,
+        ...(card !== undefined ? { card } : {}) });
+      fakeGroupFile.set(address, own ? address : E + source);
+      fakeBoardOwn.set(address, { slot: FAKE_BOARD_BASE[factory] + 10 + slot++ });
+    });
+    seed("Panzer_IV_G", [["Panzer IV H"], ["Panzer IV J"], ["Panther D"], ["Panther A"], ["Panther G"]], 1, 10, false);
+    seed("Panzer_IV_G", [["Tiger I", "Heavy Tank"], ["Tiger II", "Heavy Tank"], ["Maus", "Super-Heavy Tank"],
+      ["Puma", "Armored Car"], ["Nashorn", "Tank Destroyer"], ["Hetzer", "Tank Destroyer"], ["Wespe", "Self-propelled Gun"],
+      ["Sturmtiger", "Assault Gun"], ["Elefant", "Heavy Tank Destroyer"]], 1, 10, true);
+    seed("M3A1_Stuart", [["M5 Stuart"], ["M24 Chaffee"], ["M4A1 Sherman"], ["M4A3 Sherman"], ["M4A3E8 Easy Eight"],
+      ["M26 Pershing"]], 0, 10, false);
+    seed("M3A1_Stuart", [["GMC truck", null]], 0, 10, true);
+  }
   const fakeJobs = new Map();  // id -> { state, message, lines }: jobs the stand-ins finish at once (nation_fill)
   const newWords = new Map();  // a new label's own text key -> { lang: words } (StudioApi._new_label_text)
   const fakeNotes = new Map();  // mod -> { key: note } (StudioApi.note_set)
@@ -2798,29 +2987,27 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const eraAdded = new Map();
   const eraHere = new Set(["WWI", "WWII", "Cold War"]);  // the eras "downloaded": Modern comes with its Download
   // an era unit's add form for a start unit and a build menu (StudioApi.era_unit_start): the start unit's price, the size
-  // suggested and the units of that menu it may be researched from. The A7V's real width (3.1 m) and the Gotha G.V's
+  // suggested, its group and the units of that menu it may be researched from. The A7V's real width (3.1 m) and the Gotha G.V's
   // wingspan (23.7 m) are Wikipedia's; the sizes are this preview's own (the Studio works them out from the models)
   const FAKE_ERA_SIZE = {
     "WWI|Germany|A7V": { size: 1.18, real: true, clamped: null, real_m: 3.1, what: "width", why: "" },
     "WWI|Germany|Gotha G.V": { size: 5, real: true, clamped: 7.31, real_m: 23.7, what: "span", why: "" } };
-  function eraStart(u, source, nation, factory) {
+  // Its group (fakeGroupOffer, `group` as era_unit_add takes it): the units it may be researched from are that group's;
+  // nothing is suggested to research it from (the owner, 2026-11-01): buildable from the start unless the modder picks.
+  function eraStart(u, source, nation, factory, group = null, lang = "us") {
     const src = units.find((g) => E + g.id === source);
     const { size, ...info } = FAKE_ERA_SIZE[u.key] || { size: 1, real: false, clamped: null, real_m: null,
       what: u.aircraft ? "span" : "width", why: "no_real" };
-    const choices = units.filter((g) => g.nation === nation && g.factory === factory)
-      .map((g) => ({ address: E + g.id, name: g.names.us, price: g.price }))
+    const menu = units.filter((g) => g.nation === nation && g.factory === factory)
+      .map((g) => ({ address: E + g.id, name: g.names.us }))
       .concat(mine().filter((n) => n.nation === nation && n.factory === factory)
-        .map((n) => ({ address: newAddress(n.id), name: n.name, price: n.price })))
+        .map((n) => ({ address: newAddress(n.id), name: n.name })))
       .sort((a, b) => a.name.localeCompare(b.name));
-    let suggested = null, why = "";
-    const standsFor = choices.find((c) => u.in_place_of && c.name.toLowerCase() === u.in_place_of.toLowerCase());
-    if (choices.some((c) => c.address === source)) [suggested, why] = [source, "start"];
-    else if (standsFor) [suggested, why] = [standsFor.address, "in_place_of"];
-    else if (["Cold War", "Modern"].includes(u.era) && choices.length) {
-      [suggested, why] = [choices.reduce((a, b) => (b.price > a.price ? b : a)).address, "dearest"];
-    }
+    const [offer, g] = fakeGroupOffer(fakeGroupState(lang), u.card, nation, factory, group, u.name);
+    const choices = offer ? menu.filter((c) => (g ? g.units : []).includes(c.address)) : menu;
     return { price: src ? src.price : 0, size, size_info: info,
-      research: { offered: true, choices: choices.map(({ address, name }) => ({ address, name })), suggested, why } };
+      research: { offered: true, choices: choices.map(({ address, name }) => ({ address, name })), suggested: null, why: "" },
+      group: offer };
   }
   // owned copies, layer 2 (rusemod.ownedpass): "Sign in through Steam". ?fake=signin shows it switched on.
   const signin = { signed: false };
@@ -2951,17 +3138,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           }) };
         }) };
       },
-      new_unit: async (source, name, price, nation, factory) => {
-        if (!current) throw new Error("Pick or make a mod first: a new unit is saved in a mod.");
+      // in the group of its kind in that building, or `group` ("new": a group of its own); refused when it has no room
+      new_unit: async (source, name, price, nation = -1, factory = -1, unique = false, group = null) =>
+        fakeNewUnit(source, name, price, nation, factory, { unique, group }),
+      // what New unit… shows (StudioApi.new_unit_group): the group a copy of `source` goes in, "pick" when it has no
+      // card type; null outside the board's buildings or without a mod
+      new_unit_group: async (source, nation = -1, factory = -1, lang = "us", group = null) => {
+        if (!current) return null;
         const src = units.find((u) => E + u.id === source);
-        if (!src) throw new Error(`${source} isn't a unit or building, so it can't be copied here`);
-        const stem = safeName(name) || `New_${mine().length + 1}`;
-        if (units.some((u) => u.id === stem) || mine().some((n) => n.id === stem)) {
-          throw new Error(`There's already a unit called Descriptor_Unit_${stem} (from '${name}'). Pick another name.`);
-        }
-        newUnits.push({ mod: current, id: stem, source, name, price: Math.round(price), nation: nation >= 0 ? nation : src.nation,
-          factory: factory >= 0 ? factory : src.factory });
-        return { address: newAddress(stem), name, saved: current + "/src/studio.rndf" };
+        if (!src || src.kind === "buildings") return null;   // (a building stands in no build list's group)
+        const n = nation >= 0 ? nation : src.nation, f = factory >= 0 ? factory : src.factory;
+        return fakeGroupOffer(fakeGroupState(lang), fakeKindOf(source), n, f, group, src.name || source)[0];
       },
       weapons: async (address, lang) => weaponsOf(address, lang),
       prefs: async () => ({ ...prefs }),
@@ -3089,6 +3276,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (i < 0) throw new Error(`${address} isn't a unit made in this mod, so it can't be deleted here`);
         const research = researchGone(address, researched);
         if (research.ask) return { deleted: null, ask: research.ask };
+        fakeGroupGone(address);
         const [gone] = newUnits.splice(i, 1);
         for (const k of [...edits.keys()]) if (k.split("|")[1].startsWith(address)) edits.delete(k);
         upgradeEdits.delete(address);
@@ -3120,6 +3308,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       set_upgrade: async (address, parent, lang) => {
         if (!current) throw new Error("Pick or make a mod first: changes are saved in a mod.");
+        // an upgrade moves to its parent's group with the units researched from it: refused when that has no room
+        const state = fakeGroupState("us"), i = state.info.get(address), above = parent && state.info.get(parent);
+        if (i && above && above.nation === i.nation && above.factory === i.factory) {
+          const from = state.of.get(address), target = state.of.get(parent);
+          if (target && (!from || target.key !== from.key)) {
+            const coming = from ? fakeLine(state.info, address).filter((a) => from.units.includes(a)).length : 1;
+            fakeGroupRoom(state, i.nation, i.factory, target, coming, "us");
+          }
+        }
         const game = upgradeOf(address, lang).game_parent;
         if ((game ? game.address : null) === parent) upgradeEdits.delete(address); else upgradeEdits.set(address, parent);
         return { saved: current + "/src/studio.rndf", ...upgradeOf(address, lang) };
@@ -3679,32 +3876,24 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       // board_research / board_take_out, research_clear_all / research_reset_all, ruse_studio/board.py): the made-up
       // units by nation and building, the Sherman researched from the Stuart; changes kept for the preview only
       board: async (n, lang = "us") => {
-        const info = fakeBoardInfo(lang), rows = [];
+        const state = fakeGroupState(lang), info = state.info, rows = [];
         const ownKinds = FAKE_OWN_KINDS.filter((k) => fakeBuildings.some((b) => b.nation === n && b.kind === k));
         for (const f of [...FAKE_BOARD_ROWS, ...ownKinds]) {
-          const here = [...info.values()].filter((i) => i.nation === n && i.factory === f && i.shows.some(Boolean))
-            .sort((a, b) => (a.slot ?? 1e9) - (b.slot ?? 1e9) || a.address.localeCompare(b.address));
-          const tree = [], seen = new Set();
-          const walk = (i, depth) => {
-            if (seen.has(i.address)) return;
-            seen.add(i.address);
-            tree.push([i, depth]);
-            for (const k of here.filter((x) => x.parent === i.address)) walk(k, depth + 1);
-          };
-          for (const i of here.filter((x) => !here.some((p) => p.address === x.parent))) walk(i, 0);
-          for (const i of here) walk(i, 0);
+          const tree = fakeBoardTree(info, n, f);
           const names = FAKE_BUILDING_NAMES[lang] || FAKE_BUILDING_NAMES.us;
           const own = FAKE_OWN_KINDS.includes(f);
           const added = fakeBuildings.filter((b) => b.nation === n && b.kind === f)
             .map((b) => ({ address: b.address, name: b.name, new: true }));
           const buildings = own ? added : [{ address: `$/GFX/Everything/Descriptor_Building_${n}_${f}`, name: names[f], new: false }, ...added];
           rows.push({ factory: f, building: buildings[0].name, buildings, own, most: tree.length, untried: tree.length > 10,
+            groups: fakeGroupView(state, n, f), most_groups: FAKE_GROUPS_MOST,
             units: tree.map(([i, depth]) => {
               const p = info.get(i.parent);
               return { address: i.address, name: i.name, new: i.new, kind: i.kind, depth, parent: i.parent || null,
                 parent_name: p ? p.name : null, parent_factory: p && p.factory !== f ? p.factory : null,
                 upgrade: Boolean(p && p.factory === f), dates: fakeDates(i.shows), research: i.parent ? i.research : null,
-                untried_mix: i.kind !== "infantry" && (i.kind === "air") !== (f === 9) };
+                untried_mix: i.kind !== "infantry" && (i.kind === "air") !== (f === 9),
+                group: state.of.has(i.address) ? state.of.get(i.address).root : null };
             }) });
         }
         const out = [...info.values()].filter((i) => i.nation === n && !i.shows.some(Boolean))
@@ -3764,31 +3953,56 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { nation: i.nation, factory: i.factory, building: row.building, place: at < 0 ? null : at + 1, count: row.units.length };
       },
       board_cards: async (addresses) => Object.fromEntries((addresses || []).map((a) => [a, fakeBoardCard(a)])),
-      board_put: async (n, factory, unit = "", era = "", index = null, lang = "us") => {
+      // `group`: a unit's address in one of the row's groups, "new" (a group of its own) or null (by its kind; a unit
+      // moved along its row, or put back, stays in its group); a language code there is an older caller's `lang`
+      board_put: async (n, factory, unit = "", era = "", index = null, group = null, lang = "us") => {
+        if (FAKE_LANGS.includes(group) && lang === "us") [group, lang] = [null, group];
         if (!current) throw new Error("Pick or make a mod first: the board's changes are saved in it.");
         let address = unit, note = {};
-        if (era) {
+        if (era) {  // its group checked and written as Add to my mod does it
           const u = FAKE_ERA_UNITS.find((x) => x.key === era);
-          address = (await window.pywebview.api.era_unit_add(era, n, factory, u.copies, u.name, 40, null, null)).address;
+          address = (await window.pywebview.api.era_unit_add(era, n, factory, u.copies, u.name, 40, null, null, null, null,
+            group)).address;
           fakeBoardOwn.set(address, { shows: [1, 1, 1, 1, 1] });
           note.era = true;
         } else {
           const info = fakeBoardInfo(lang), i = info.get(unit);
           if (!i) throw new Error(`${unit} isn't a unit the board can put in a building`);
-          if (i.nation !== n && !i.new) {  // another nation's game unit: a copy, named as it is
-            let stem = safeName(i.name) || "New", k = 2;
-            while (units.some((u) => u.id === stem) || mine().some((x) => x.id === stem)) stem = `${safeName(i.name)}_${k++}`;
-            newUnits.push({ mod: current, id: stem, source: unit, name: i.name, price: 40, nation: n, factory });
-            address = newAddress(stem);
+          if (i.nation !== n && !i.new) {  // another nation's game unit: a copy, named as it is, its group as New unit's
+            address = fakeNewUnit(unit, i.name, 40, n, factory, { unique: true, group, lang }).address;
             fakeBoardOwn.set(address, { shows: [1, 1, 1, 1, 1], parent: null });
             note.copied = true;
           } else {
+            // its group worked out and checked first (groups.py), nothing changed when there's no room
+            const state = fakeGroupState(lang), from = state.of.get(unit), moving = fakeLine(info, unit);
+            const left = i.factory !== factory || i.nation !== n;
+            const game = units.find((u) => E + u.id === unit);
+            const home = left && !i.new && game && game.nation === n && game.factory === factory;
+            let place;  // what the mod's menu groups get: undefined nothing, null its line out, else its group's first unit
+            const p = i.parent && info.get(i.parent);
+            const upgrade = Boolean(p && p.nation === n && p.factory === factory);  // it stands in its parent's group
+            if (group === null && home) place = null;  // one of the game's back in its own building: as the game has it
+            else if (group !== null || (left && !upgrade)) {
+              const target = fakeGroupTarget(state, n, factory, group, fakeKindOf(unit));
+              if (upgrade && group !== null && (!target || target !== state.of.get(p.address))) {
+                throw new Error(`${i.name} is an upgrade of ${p.name} in that building, so it stands in ${p.name}'s group. `
+                  + "Make it buildable from the start first to put it in another group.");
+              }
+              if (!target || !from || target.key !== from.key) {
+                const lone = !left && from && from.units.every((a) => moving.includes(a));  // its group goes with it
+                const coming = !left && from ? moving.filter((a) => from.units.includes(a)).length : moving.length;
+                if (target || !lone) fakeGroupRoom(state, n, factory, target, coming, lang);
+              }
+              if (!upgrade) place = target ? target.root : unit;
+            }
             const own = fakeBoardOwn.get(unit) || {};
             nationHidden.delete(unit);
             fakeBoardOwn.set(unit, { ...own, factory, nation: n, shows: own.shows && own.shows.some(Boolean) ? own.shows : null });
             for (const [a, o] of [...fakeBoardInfo(lang)].filter(([, x]) => x.parent === unit)) {  // its research comes along
               if (o.factory === i.factory) fakeBoardOwn.set(a, { ...(fakeBoardOwn.get(a) || {}), factory });
             }
+            if (place === null) fakeGroupFile.delete(unit);
+            else if (place !== undefined) fakeGroupFile.set(unit, place);
           }
         }
         fakeBoardPlace(n, factory, address, index, lang);
@@ -3799,12 +4013,28 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         seq.forEach((a, k) => fakeBoardSlot(a, FAKE_BOARD_BASE[factory] + 1 + k * 3, lang));
         return window.pywebview.api.board(n, lang);
       },
-      board_move: async (n, address, factory, index = null, lang = "us") => window.pywebview.api.board_put(n, factory, address, "", index, lang),
+      board_move: async (n, address, factory, index = null, group = null, lang = "us") => {
+        if (FAKE_LANGS.includes(group) && lang === "us") [group, lang] = [null, group];  // an older caller's `lang`
+        return window.pywebview.api.board_put(n, factory, address, "", index, group, lang);
+      },
       board_research: async (n, address, parent = null, lang = "us") => {
         if (!current) throw new Error("Pick or make a mod first: the board's changes are saved in it.");
         const info = fakeBoardInfo(lang), i = info.get(address);
         let up = parent;
         while (up) { if (up === address) throw new Error("A unit can't be researched from one that's researched from it."); up = (info.get(up) || {}).parent; }
+        // an upgrade moves to its parent's group with the units researched from it: refused when that has no room; one
+        // made buildable from the start stays in the group it stood in (groups.py)
+        const state = fakeGroupState(lang), from = state.of.get(address), above = parent && info.get(parent);
+        if (above && above.nation === i.nation && above.factory === i.factory) {
+          const target = state.of.get(parent);
+          if (target && (!from || target.key !== from.key)) {
+            const moving = fakeLine(info, address).filter((a) => !from || from.units.includes(a));
+            fakeGroupRoom(state, i.nation, i.factory, target, moving.length, lang);
+          }
+          fakeGroupFile.delete(address);
+        } else if (from && i.new && !fakeGroupFile.has(address)) {
+          fakeGroupFile.set(address, from.root);
+        }
         fakeBoardOwn.set(address, { ...(fakeBoardOwn.get(address) || {}), parent: parent || null });
         const p = info.get(parent);
         if (p && p.factory === i.factory) fakeBoardSlot(address, (p.slot || 0) + 1, lang);
@@ -3816,6 +4046,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const kids = [...info.values()].filter((x) => x.parent === address);
         if (i.new) {
           if (kids.length && researched !== "relink" && researched !== "anyway") return { ...(await window.pywebview.api.board(n, lang)), ask: kids.map((k) => k.name) };
+          fakeGroupGone(address);
           newUnits.splice(newUnits.findIndex((x) => newAddress(x.id) === address), 1);
         } else {
           fakeBoardOwn.set(address, { ...(fakeBoardOwn.get(address) || {}), shows: [0, 0, 0, 0, 0] });
@@ -3857,34 +4088,50 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { library: true, installed: true, types, units: rows.map((u) => ({ key: u.key, name: u.name, nation: u.nation, code: code[u.nation],
           card: u.card, kind: u.aircraft ? "air" : "ground", added: eraAdded.get(u.key) || null })) };
       },
-      era_unit_page: async (key) => {
+      era_unit_page: async (key, lang = "us") => {
         const u = FAKE_ERA_UNITS.find((x) => x.key === key);
         const start = units.filter((g) => g.kind === (u.aircraft ? "air" : "ground") && g.factory !== null).map((g) => ({
           address: E + g.id, name: g.names.us, nation: g.nation, suggested: E + g.id === u.copies,
           same_type: (FAKE_TYPES[g.id] || {}).us === u.card }))
           .sort((x, y) => (y.suggested - x.suggested) || (y.same_type - x.same_type) || x.name.localeCompare(y.name));
         return { ...u, added: eraAdded.get(key) || null, picture: null, start, has_model: u.model !== null,
-          ...eraStart(u, u.copies, u.game_nation, u.factory) };
+          ...eraStart(u, u.copies, u.game_nation, u.factory, null, lang) };
       },
       era_start_price: async (address) => ({ price: (units.find((g) => E + g.id === address) || { price: 0 }).price }),
-      era_unit_start: async (key, source, nation, factory) => eraStart(FAKE_ERA_UNITS.find((x) => x.key === key), source,
-        nation, factory),
-      era_unit_add: async (key, nation, factory, source, name, price, size, researchFrom, researchPrice, researchTime) => {
+      era_unit_start: async (key, source, nation, factory, lang = "us", group = null) =>
+        eraStart(FAKE_ERA_UNITS.find((x) => x.key === key), source, nation, factory, group, lang),
+      // in `group` of that building ("new": a group of its own; null: its research parent's, else its kind's, the
+      // library card), refused, nothing made, when that has no room
+      era_unit_add: async (key, nation, factory, source, name, price, size, researchFrom, researchPrice, researchTime,
+        group = null) => {
         if (!current) throw new Error("Pick or make a mod first: an era unit is added to a mod.");
         const u = FAKE_ERA_UNITS.find((x) => x.key === key);
         if (eraAdded.has(key)) throw new Error(`${u.name} is already in this mod`);
         if (size !== null && size !== undefined && !(size >= 0.05 && size <= 20)) {
           throw new Error("Give a size from 0.05 to 20 (1 is as long as the unit it starts from).");
         }
-        const made = await window.pywebview.api.new_unit(source || u.copies, name || u.name, price, nation, factory);
+        const state = fakeGroupState("us"), parent = researchFrom && state.of.get(researchFrom);
+        if (group === null && parent && parent.nation === nation && parent.factory === factory) group = parent.root;
+        const [offer, target] = fakeGroupOffer(state, u.card, nation, factory, group, u.name);
+        if (offer && offer.pick) fakeGroupTarget(state, nation, factory, null, null);  // no card type: refused until picked
+        if (offer && researchFrom && !(target ? target.units : []).includes(researchFrom)) {
+          throw new Error(`${u.name} can't be researched from ${researchFrom}: that unit is in another group of the building `
+            + "than the one picked.");
+        }
+        if (offer) fakeGroupRoom(state, nation, factory, target, 1, "us");
+        const made = fakeNewUnit(source || u.copies, name || u.name, price, nation, factory, { guard: false, card: u.card });
         eraAdded.set(key, made.address);
-        if (researchFrom) {  // linked as the Upgrade box links it
+        if (researchFrom) {  // linked as the Upgrade box links it (and the board shows it under that unit)
           upgradeEdits.set(made.address, researchFrom);
           researchEdits.set(`${made.address}|UpgradePrice`, Math.round(researchPrice ?? 50));
           researchEdits.set(`${made.address}|UpgradeTime`, Math.round(researchTime ?? 50));
+          fakeBoardOwn.set(made.address, { ...(fakeBoardOwn.get(made.address) || {}), parent: researchFrom });
+        } else if (offer) {  // bought from the start: written in its group
+          fakeGroupFile.set(made.address, target ? target.root : made.address);
         }
         return { address: made.address, name: made.name, model: null, model_note: u.model === null ? "no_model" : (u.fits ? "" : "no_fit"),
-          size: u.model === null ? null : size, research_from: researchFrom || null };
+          size: u.model === null ? null : size, research_from: researchFrom || null,
+          group: offer ? (target ? target.root : made.address) : null };
       },
       era_unit_remove: async (key, researched) => {
         const address = eraAdded.get(key);

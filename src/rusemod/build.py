@@ -148,6 +148,11 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
             info.menu_order = menu_order_of(path)  # menus.toml: missions' places in the menus
         except MenuOrderError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .menugroups import MenuGroupsError, read as menu_groups_of
+        try:
+            info.menu_groups = menu_groups_of(path)  # menu_groups.toml: each unit's group in its build list
+        except MenuGroupsError as exc:
+            raise BuildError(str(exc)) from None  # (its words name the file)
         from .scenario import ScenarioError, read_depots
         try:
             info.depots = read_depots(path)  # depots.toml: every depot's trucks, on every map or the ones named
@@ -1056,11 +1061,12 @@ def needs_zz_win(mods: list) -> bool:
     menus), changes a map's menu pictures, repaints a texture or replaces a sound (files/replace, rusemod.unitlook,
     rusemod.sound), adds map assets or building looks (their models go there: rusemod.sceneryasset), or new objects
     (a new unit needs a class in the Python unit list, which lives there), or moves a unit to another nation or model
-    (the skirmish mesh packs there say whether its models are loaded for it: unit_models)."""
+    (the skirmish mesh packs there say whether its models are loaded for it: unit_models), or puts a unit in a group
+    of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
                or getattr(m, "volumes", None) or getattr(m, "clips", None)
-               or getattr(m, "assets", None) or getattr(m, "looks", None)
+               or getattr(m, "assets", None) or getattr(m, "looks", None) or getattr(m, "menu_groups", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
 
@@ -1894,10 +1900,142 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     scripts: dict = {}  # script pack in ZZ_Win.dat -> (the pack, {module: new bytes})
     unit_classes(base, run, text_arc, result, scripts)
     own_buildings(run, text_arc, own_planned, result, scripts)
+    groups = merged_groups(order)
+    menu_lines(run, text_arc, result, scripts, groups)
+    menu_group_limits(run, text_arc, groups, result)
     if result.errors:
         return result
     result.script_changed = {path: pack.to_bytes(members) for path, (pack, members) in scripts.items()}
     return result
+
+
+def merged_groups(order) -> dict:
+    """The build lists' groups of the mods `order` (ModInfo, in load order: each one's menu_groups.toml,
+    rusemod.menugroups), together: a later mod's entry wins for the same unit."""
+    out: dict = {}
+    for m in order:
+        out.update(getattr(m, "menu_groups", None) or {})
+    return out
+
+
+def menu_lines(run, zz_win, result: BuildResult, scripts: dict, groups: dict | None = None) -> None:
+    """A build list's lines as rows (rusemod.menulines): when the mods make new objects (units among them, so a tab's
+    list can grow past the screen) or put units in groups (`groups`: their menu groups, merged_groups), the game's
+    menu script with the lines template run after it (into `scripts`), each unit's line filled in."""
+    from . import menulines
+    groups = groups or {}
+    if not (run.created or groups) or result.errors or zz_win is None:
+        return
+    missing = menulines.missing(zz_win)
+    if missing:
+        result.findings.append(Finding("note", f"the build lists keep the game's rows: {missing}"))
+        return
+    found = pyscript.find_unit_list(zz_win)
+    by_path: dict = {}
+    if found is not None:
+        try:
+            ul = pyscript.unit_list(pyscript.read_xyz(found[3]).payload)
+            by_path = {path: uc.name for path, uc in ul.by_path.items()}
+        except pyscript.ScriptError as exc:
+            # not a game rule: what our reader supports
+            result.findings.append(Finding("error", f"the build lists' lines can't be set: {exc}"))
+            return
+    lines = menulines.lines_of(run.game.objects, by_path, run.created, groups)
+    if not run.created and not lines:  # the groups put no unit anywhere but where the game has it
+        return
+    try:
+        changes = menulines.script_changes(zz_win, lines, scripts)
+    except (menulines.MenuLinesError, pyscript.ScriptError) as exc:
+        # not a game rule: what our writer supports, or a script it can't read or join
+        result.findings.append(Finding("error", f"the build lists' lines can't be set: {exc}"))
+        return
+    scripts.update(changes)
+    new = {menulines.class_name(run.game.objects, by_path, p) for p in run.created}
+    placed = sum(1 for name, _line in lines if name in new)
+    result.findings.append(Finding("note", f"each line of a build list stands in its own rows, at most "
+                                           f"{menulines.ACROSS} units across ({placed} new units placed in a "
+                                           f"line)"))
+    if len(lines) > placed:
+        result.findings.append(Finding("note", f"{len(lines) - placed} of the game's units stand in the group of a "
+                                               f"build list the mods put them in (menu_groups.toml)"))
+
+
+BUILDING = "TBatimentDescriptor"  # a building's class: its kind is TypeBatiment, the units it makes have it as Factory
+# a building's name when the game's texts aren't at hand (ruse_studio.board ROWS), else the kind's number
+BUILDING_NAMES = {8: "Barracks", 13: "Artillery & AA Base", 10: "Armor Base", 11: "Anti-Tank Base", 9: "Airfield",
+                  12: "Prototype Base"}
+
+
+def _english_names(zz_win, result: BuildResult):
+    """A function giving an object's name in English as the built game shows it (its NameInMenuToken's text in the
+    unit names, baseunite, the mods' texts as this build wrote them), or None: always None without ZZ_Win.dat or that
+    dictionary."""
+    import html
+    from .dic import Dic, name_to_key
+    dic = None
+    if zz_win is not None:
+        read, entries = _reader(zz_win)
+        member = loc.member("baseunite", "us")
+        e = entries.get(member.lower())
+        raw = (result.text_changed.get(e.path) if e is not None else None) or read(member)
+        try:
+            dic = Dic(raw) if raw else None
+        except (ValueError, struct.error):
+            dic = None
+
+    def name(obj) -> str | None:
+        v = obj.props.get("NameInMenuToken") if obj is not None and dic is not None else None
+        if not isinstance(v, Text) or v.kind != "key":
+            return None
+        try:
+            text = dic.text(int(v.value, 16) if v.value.lower().startswith("0x") else name_to_key(v.value))
+        except ValueError:
+            return None
+        return (html.unescape(text).strip() or None) if text else None
+    return name
+
+
+def menu_group_limits(run, zz_win, groups: dict, result: BuildResult) -> None:
+    """A warning for each group of a built build list holding more than menugroups.MOST units, and for each building
+    whose build list has more than menugroups.MOST_GROUPS groups (the owner, 2026-10-31: "We just need to limit how many
+    can be in a certain group. Because it's buggy."; his picks: a mod already over it when it's built is built, with a
+    warning; 11-01: "10 groups"), never an error: counted over the built units as the Studio counts them
+    (rusemod.menulines over_limits, `groups` the mods' menu groups), the game's own units included. Named by the
+    game's English names when ZZ_Win.dat is at hand, else by class names and the buildings' plain names."""
+    from . import menugroups, menulines
+    big, full = menulines.over_limits(run.game.objects, run.created, groups)
+    if not big and not full:
+        return
+    name_of = _english_names(zz_win, result)
+    buildings: dict = {}  # (nation, kind) -> its buildings, the game's first, by address
+    for path, obj in run.game.objects.items():
+        kind = obj.props.get("TypeBatiment")
+        if obj.cls == BUILDING and isinstance(kind, Num):
+            buildings.setdefault((unitcheck.nation_of(obj), int(kind.value)), []).append((path in run.created, path))
+
+    def nation(n: int) -> str:
+        return unitcheck.NATIONS[n] if 0 <= n < len(unitcheck.NATIONS) else f"nation {n}"
+
+    def building(n: int, kind: int) -> str:
+        for _new, path in sorted(buildings.get((n, kind), [])):
+            said = name_of(run.game.objects[path])
+            if said:
+                return said
+        return BUILDING_NAMES.get(kind) or f"building of kind {kind}"
+
+    def unit(path: str) -> str:
+        return name_of(run.game.objects.get(path)) or menulines.class_name(run.game.objects, {}, path) \
+            or path.rsplit("/", 1)[-1]
+    for (n, kind, _first), count, shown in big:
+        # not a game rule: the owner's limit (2026-10-31, after bigpacks13); whether the game's menu limits a row or
+        # the rows is not known
+        result.findings.append(Finding("warning", f"the {unit(shown)} group in {nation(n)}'s {building(n, kind)} "
+                                                  f"holds {count}: its build list may act up past {menugroups.MOST}"))
+    for (n, kind), count in full:
+        # not a game rule: the owner's pick (2026-11-01, "10 groups"), after his frames at 1920 x 1080 showed 11 rows
+        # on the screen, 10 while the row under the mouse is drawn twice as big
+        result.findings.append(Finding("warning", f"{nation(n)}'s {building(n, kind)} has {count} groups: its build "
+                                                  f"list may run off the screen past {menugroups.MOST_GROUPS}"))
 
 
 def own_buildings(run, zz_win, planned: dict, result: BuildResult, scripts: dict) -> None:

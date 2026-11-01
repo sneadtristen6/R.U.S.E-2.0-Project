@@ -25,6 +25,20 @@ non ancora provati in gioco.
 La pagina di un'unità nella scheda **Unità** dice dove viene costruita («Costruita nella fabbrica di carri armati: posto 2
 di 6»), e **Mostra negli edifici** apre la sua fila.
 
+## Gruppi
+
+In gioco, la lista di costruzione di un edificio mostra ogni gruppo su una riga: un'unità e i suoi potenziamenti (il
+Panzer IV e il Panther). La tavola mostra i gruppi di ogni edificio, ognuno con il suo conto (**4 su 6**), e quanti
+gruppi ha l'edificio (**7 gruppi su 10**).
+
+- Una nuova unità va nel gruppo del suo tipo nel suo edificio, oppure in un gruppo tutto suo quando l'edificio non ne ha
+  di quel tipo. **+** su un gruppo, o rilasciarla sopra, ce la mette; **Nuovo gruppo** ne inizia uno.
+- Un gruppo ha al massimo 6 (le sue unità e carte di ricerca), un edificio al massimo 10 gruppi, così la sua lista sta
+  sullo schermo. Uno in più viene rifiutato: togli un'unità, oppure mettila in un edificio tutto suo (**Aggiungi un edificio…**).
+- Un'unità senza tipo di carta nel gioco (un camion, il lanciatore di V2): scegli il suo gruppo.
+
+Non ancora provato in gioco.
+
 ## Aggiungere un edificio
 
 **Aggiungi un edificio…** sotto la tavola di una nazione: scegli l'edificio del gioco che copia (**Copia di**), dagli un

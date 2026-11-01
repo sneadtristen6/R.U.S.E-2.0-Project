@@ -32,6 +32,8 @@ ruse2-core/
   maps/<MapId>/            map sources (see §8)
   menus.toml               where missions show in their menus (see §8)
   depots.toml              every supply depot's trucks, on every map or the ones named (see §8)
+  menu_groups.toml         the group of a building's build list each unit bought from the start stands in (the
+                           Studio writes it, the build reads it; see §7, groups in a build list)
   flag-types.toml          the Studio's flag types: names for some of the game's flags turned on and off, and what
                            giving each changed on its units (the build doesn't read it; the flags are in src/)
   scripts/<map>/<part>/    the game's mission scripts it changes, as the Studio saves them (see §9)
@@ -381,6 +383,21 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   `era_units.json` (which era units it has: `{era unit key: its new unit's address}`) and `CREDITS-era-units.md` (each
   model's maker, title, licence and link, as CC BY asks; keep it with the mod). Seen in the game: loading, their cards,
   research and a chain, their own models, the sizes.
+- **Groups in a build list (2026-11-01; not tried in the game yet):** a building's build list shows each group as one
+  row: one of the game's lines (a unit and its upgrades, e.g. the Panzer IV and the Panther), its units and research
+  cards together. A new unit goes into the group of its kind in its building (its card type: an era unit's own), or a
+  group of its own when the building has none of that kind. A group holds at most 6 (units and research cards, every
+  battle date together) and a building at most 10 groups (so the list fits on a 1080-pixel-high screen); the Studio
+  refuses one more. An upgrade stands in the group of the unit it's researched from; where each unit bought from the
+  start stands is in `menu_groups.toml`:
+  ```toml
+  [groups]
+  "$/GFX/Everything/Descriptor_Unit_Leopard_2" = "$/GFX/Everything/Descriptor_Unit_Tiger"   # in the Tiger's group
+  "$/GFX/Everything/Descriptor_Unit_C_17" = "$/GFX/Everything/Descriptor_Unit_C_17"         # a group of its own
+  ```
+  A unit not in the file stands in the group of the unit it was copied from (mods made before the file). With
+  several mods, a later mod's line wins. A mod over the limits is still built, with a warning naming the group or
+  the building.
 - **The Studio's unit page** shows the unit's 3D model, turning, with the mod's paint on it (a .glb made once per game
   build in the Studio's cache). A dashed frame on it marks the card: *Use this view as the card* saves what's inside
   it, over a backdrop like the game's cards, as the mod's card; *Game's card* removes it. Under it, *Open in Blender* writes the unit's models and pictures to a work folder

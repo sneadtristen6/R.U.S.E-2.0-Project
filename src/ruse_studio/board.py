@@ -25,9 +25,10 @@ three a nation, "buildings 3 limit"), a row and a tab of its own, filled like an
 a kind makes its own units of that kind in it."""
 from __future__ import annotations
 
+import copy
 import threading
 
-from rusemod import nations, ownbuildings
+from rusemod import menugroups, nations, ownbuildings
 
 ROWS = (8, 13, 10, 11, 9, 12)  # the buildings that make units, in the order of the game's build tabs: Barracks,
 # Artillery & AA Base, Armor Base, Anti-Tank Base, Airfield, Prototype Base
@@ -65,7 +66,8 @@ def _on(shows, date: int) -> bool:
 
 class BoardCalls:
     """Mixed into StudioApi: uses its _open, _edits, _saving, _all_units, _names, _resolve, _upgrade_links,
-    _card_view, new_unit, delete_unit, era_unit_add, _era_library and _era_record."""
+    _card_view, new_unit, _unit_new, delete_unit, era_unit_add, _era_library and _era_record, and GroupCalls'
+    (groups.py: a build list's groups, at most 6 to one)."""
 
     # --- what the board reads ---
     def _board_need_mod(self):
@@ -147,12 +149,26 @@ class BoardCalls:
             out.add((nation if isinstance(nation, int) else src["nation"], kind))
         return out
 
-    def _board_info(self, ix, edits, nation: int | None = None) -> dict:
+    def _board_game(self, ix, real: str) -> tuple:
+        """A game unit's (battle dates, upgrade flag, {research price and time}) as the game has them, kept for the
+        session like the unit list (_all_units): the board reads every unit's for each change, and the game's own
+        values were most of its time (1.9 s for the 366 era units' mod, 2026-10-31)."""
+        from .api import RESEARCH, UPGRADE_FLAG, _props
+        cache = self.__dict__.setdefault("_board_games", {})
+        key = (str(getattr(ix, "path", "")), real)
+        if key not in cache:
+            props = _props(ix.show(real))
+            cache[key] = ((props.get(SHOW) or {}).get("numbers"), (props.get(UPGRADE_FLAG) or {}).get("numbers"),
+                          {p: (props.get(p) or {}).get("numbers", [None])[0] for p in RESEARCH})
+        return cache[key]
+
+    def _board_info(self, ix, edits, nation: int | None = None, only=None) -> dict:
         """The units (the game's and the mod's new ones; not buildings) as the current mod has them, those of `nation`
-        only when it's given: {address: {real, new, kind, nation, factory, slot, game_slot, shows, game_shows, parent,
-        flag, has_flag, has_link, research}}. `has_link` / `has_flag`: whether the game's object (a new unit's source)
-        has a research link / an upgrade flag of its own, so taking it out needs a `delete`."""
-        from .api import KIND_OF, RESEARCH, UPGRADE, UPGRADE_FLAG, _props
+        only when it's given (and of `only`, a set of addresses, when it's given): {address: {real, new, kind, nation,
+        factory, slot, game_slot, shows, game_shows, parent, flag, has_flag, has_link, research}}. `has_link` /
+        `has_flag`: whether the game's object (a new unit's source) has a research link / an upgrade flag of its own,
+        so taking it out needs a `delete`."""
+        from .api import KIND_OF, RESEARCH, UPGRADE, UPGRADE_FLAG
         from .edits import REMOVED
         rows = {u["address"]: u for u in self._all_units(ix)}
         links = self._upgrade_links(ix, edits)
@@ -160,6 +176,8 @@ class BoardCalls:
         new_units = edits.new_units if edits is not None else {}
         out = {}
         for address in list(rows) + [a for a in new_units if a not in rows]:
+            if only is not None and address not in only:
+                continue
             real, unit = self._resolve(edits, address)
             u = rows.get(real)
             if u is None or KIND_OF.get(u["class"]) in (None, "buildings"):
@@ -169,15 +187,13 @@ class BoardCalls:
             n = int(own_nation) if isinstance(own_nation, (int, float)) else u["nation"]
             if nation is not None and n != nation:
                 continue
-            props = _props(ix.show(real))
+            game_shows, game_flag, game_research = self._board_game(ix, real)
+            game_shows = None if game_shows is None else list(game_shows)   # (the kept ones never changed)
             factory, slot, shows, flag = mine(FACTORY), mine(SLOT), mine(SHOW), mine(UPGRADE_FLAG)
-            game_shows = (props.get(SHOW) or {}).get("numbers")
-            game_flag = (props.get(UPGRADE_FLAG) or {}).get("numbers")
             research = {}
             for p in RESEARCH:
                 own = mine(p)
-                research[p] = None if own is REMOVED else own if own is not None else (
-                    (props.get(p) or {}).get("numbers", [None])[0])
+                research[p] = None if own is REMOVED else own if own is not None else game_research[p]
             out[address] = {
                 "real": real, "new": unit is not None, "kind": KIND_OF[u["class"]], "nation": n,
                 "factory": int(factory) if isinstance(factory, (int, float)) else u["factory"],
@@ -265,9 +281,12 @@ class BoardCalls:
         UpgradeTime} (researched units), untried_mix (a plane outside the Airfield or a vehicle in it: not tried in the
         game)}], "most": the most units it shows at one battle date, "untried": more than MOST_TRIED, "buildings":
         [{address, name, new}] the nation's buildings of that kind (a copy that makes the same units is one more),
-        "own": a building with units of its own}] (the game's rows, then its buildings with units of their own),
-        "own_left": how many more buildings with units of their own it can have, "taken_out": the nation's own units in
-        no build menu (hidden by the mod, or never shown in the game), [{address, name, factory, new}]}."""
+        "own": a building with units of its own, "groups": its build list's groups (GroupCalls._groups_view: [{root,
+        name, kinds, units, count, most, full, over, new}]), "most_groups": the most groups a building holds
+        (rusemod.menugroups.MOST_GROUPS), each unit box's "group" the address of its group's first
+        unit}] (the game's rows, then its buildings with units of their own), "own_left": how many more buildings with
+        units of their own it can have, "taken_out": the nation's own units in no build menu (hidden by the mod, or never
+        shown in the game), [{address, name, factory, new}]}."""
         from .api import EditsFileError
         n = nations.check(nation)
         try:
@@ -276,10 +295,13 @@ class BoardCalls:
             edits = None
         ix = self._open()
         try:
-            info = self._board_info(ix, edits, n)
+            every = self._board_info(ix, edits)       # every nation's: a copy's group goes by the unit it copies
+            info = {a: i for a, i in every.items() if i["nation"] == n}
             parents = {i["parent"] for i in info.values() if i["parent"]}
             names = self._names(ix, set(info) | parents, lang, edits.new_units if edits else {})
             blist = self._board_building_list(ix, edits, n, lang)
+            state = self._groups_state(ix, edits, every)
+            views = {f: self._groups_view(ix, edits, state, n, f, lang) for f in ALL_ROWS}
         finally:
             ix.close()
         own_kinds = [k for k in ownbuildings.KINDS if any(b["kind"] == k for b in blist)]
@@ -296,11 +318,13 @@ class BoardCalls:
                               "depth": depth, "parent": p, "parent_name": names.get(p) if p else None,
                               "parent_factory": pf if p and pf != f else None, "upgrade": i["flag"],
                               "dates": dates_of(i["shows"]), "research": i["research"] if p else None,
-                              "untried_mix": i["kind"] != "infantry" and (i["kind"] == "air") != (f == AIRFIELD)})
+                              "untried_mix": i["kind"] != "infantry" and (i["kind"] == "air") != (f == AIRFIELD),
+                              "group": state.of[a]["root"] if a in state.of else None})
             most = max((sum(_on(info[a]["shows"], d) for a, _d in tree) for d in range(DATES)), default=0)
             rows.append({"factory": f, "building": mine[0]["name"] if mine else None, "units": boxes, "most": most,
                          "untried": most > MOST_TRIED, "own": f in ownbuildings.KINDS,
-                         "buildings": [{"address": b["address"], "name": b["name"], "new": b["new"]} for b in mine]})
+                         "buildings": [{"address": b["address"], "name": b["name"], "new": b["new"]} for b in mine],
+                         "groups": views.get(f, []), "most_groups": menugroups.MOST_GROUPS})
         out_of = sorted(({"address": a, "name": names.get(a, a), "factory": i["factory"], "new": i["new"]}
                          for a, i in info.items() if not self._board_shown(i) and i["factory"] in ALL_ROWS),
                         key=lambda u: (ALL_ROWS.index(u["factory"]), u["name"].casefold()))
@@ -563,7 +587,7 @@ class BoardCalls:
             self._board_apply(edits, self._board_slots(self._board_seq(info, n, f, order), info, row_base(f)))
         return self.board(n, lang)
 
-    def board_put(self, nation: int, factory: int, unit: str = "", era: str = "", index=None,
+    def board_put(self, nation: int, factory: int, unit: str = "", era: str = "", index=None, group=None,
                   lang: str = "base") -> dict:
         """Put a unit in row `factory` of nation `nation`'s board at top-level place `index` (None: the end): `unit`
         one of the nation's own (taken out: put back at its own battle dates, or at every one when the game shows it
@@ -571,8 +595,18 @@ class BoardCalls:
         named as it is, the Units tab's New unit, shown at every battle date), another nation's new unit of this mod
         (moved to this nation, its research links to that nation taken out); or `era` an era unit's key (added as Add
         to my mod does, not researched, shown at every battle date). Returns board() with "made": its address and
-        "note": {"copied", "moved_nation", "unlinked": the names of units no longer researched from it}."""
+        "note": {"copied", "moved_nation", "unlinked": the names of units no longer researched from it}.
+
+        `group`: the group of the row's build list it goes in (the owner, 2026-10-31: at most rusemod.menugroups.MOST
+        to a group, a unit more refused; groups.py): the address of the group's first unit there, "new" for a group of
+        its own, None for the group of its kind (a unit moved along its own row, or put back where it was, stays in its
+        group; one of the game's moved back to its own building stands as the game has it). An upgrade stands in its
+        research parent's group. Refused, nothing saved, when the group hasn't room for it and the units researched
+        from it that come along. (A language code in `group`'s place is an older caller's `lang`.)"""
         from .api import StudioError, _props, _tail
+        from .groups import Draft, is_lang
+        if is_lang(group) and lang == "base":
+            group, lang = None, group
         n, f = nations.check(nation), self._board_row(factory)
         edits = self._board_need_mod()
         if bool(unit) == bool(era):
@@ -587,8 +621,8 @@ class BoardCalls:
                 # not a game rule: the board puts units only in a building the nation has
                 raise StudioError("This nation has no building of that kind: add one with Add a building first.")
         note: dict = {}
-        if era:
-            address = self.era_unit_add(str(era), n, f, research_from=None)["address"]
+        if era:   # its group checked and written as Add to my mod does it
+            address = self.era_unit_add(str(era), n, f, research_from=None, group=group)["address"]
             note["era"] = True
         else:
             ix = self._open()
@@ -603,47 +637,46 @@ class BoardCalls:
             if info[unit]["nation"] == n or info[unit]["new"]:
                 address = unit
                 note["moved_nation"] = info[unit]["nation"] != n
-            else:
-                address = self.new_unit(unit, english, price[0] or 0, n, f, unique=True)["address"]
+            else:     # a copy: its group checked and written as New unit does it, shown at every date here
+                address = self._unit_new(unit, english, price[0] or 0, n, f, unique=True, group=group,
+                                         shown=True, lang=lang)["address"]
                 note["copied"] = True
+        placing = not (era or note.get("copied"))   # one of the mod's units the board places itself
         unlinked = []
         with self._saving:
             edits, info = self._board_read()
-            i = info[address]
-            changes = []
-            if i["factory"] != f or note.get("moved_nation"):
-                # moved: the units researched from it in its row come along (the game draws them beside it)
-                moving = [address] + [a for a, _d in self._board_desc(info, address)]
-                old = (i["nation"], i["factory"])
-                for a in moving:
-                    game_f = None if info[a]["new"] else self._game_factory(a)
-                    changes.append((a, FACTORY, None if game_f == f else f))
-                    info[a]["factory"] = f
-                    if info[a]["nation"] != n:
-                        changes.append((a, NATION, n))
-                        info[a]["nation"] = n
-                for child, ci in info.items():
-                    if ci["parent"] not in moving or child in moving:
-                        continue
-                    if (ci["nation"], ci["factory"]) == old and note.get("moved_nation"):
-                        changes += self._board_unlink(child, ci)  # research stays in one nation
-                        unlinked.append(child)
-                    else:  # its parent's building changed: upgrade or plain research again
-                        changes += self._board_flag(child, ci, ci["factory"] == f)
-                p = i["parent"]
-                if p in info and info[p]["nation"] != n:
-                    changes += self._board_unlink(address, i)
-                elif p in info:
-                    changes += self._board_flag(address, i, info[p]["factory"] == f)
-            if not self._board_shown(i) or note.get("copied") or note.get("era"):
-                game_on = not i["new"] and bool(i["game_shows"]) and any(i["game_shows"])
-                full = [1] * len(i["game_shows"] or [1] * DATES)
-                changes.append((address, SHOW, None if game_on else full))
-                i["shows"] = i["game_shows"] if game_on else full
-            if i["parent"] in info:  # never shown where the unit it's researched from isn't (the build refuses it)
-                changes += self._board_dates(address, i, info[i["parent"]])
+            ix = self._open() if placing else None
+            try:
+                before = self._groups_state(ix, edits, copy.deepcopy(info)) if placing else None
+                left = (info[address]["nation"], info[address]["factory"]) != (n, f)
+                home = placing and not info[address]["new"] and next(
+                    ((u["nation"], u["factory"]) for u in self._all_units(ix) if u["address"] == address),
+                    None) == (n, f)
+                changes = self._board_put_changes(info, address, n, f, note, unlinked)
+                if placing:
+                    draft = Draft(edits).apply(changes)
+                    after_info = self._groups_info(ix, edits, before, draft)
+                    upgrade = bool(after_info[address]["flag"]) and after_info[address]["parent"] is not None
+                    placed = {}
+                    target = None
+                    if group is None and left and home:   # one of the game's back in its own building: as the game
+                        placed[address] = None            # has it
+                    elif group is not None or (left and not upgrade):   # (an upgrade: its research's group)
+                        target = self._groups_target(before, n, f, group, before.kinds.get(address))
+                        if not upgrade:
+                            placed[address] = target["root"] if target is not None else address
+                    after = self._groups_after(ix, edits, before, draft, after_info, placed)
+                    if upgrade and group is not None and (target is None or after.of.get(address) is not
+                                                          after.of.get(target["root"])):
+                        self._groups_conflict(ix, draft, address, after_info, lang)
+                    self._groups_check(ix, draft, before, after, lang)
+            finally:
+                if ix is not None:
+                    ix.close()
             self._board_apply(edits, changes)
             self._board_apply(edits, self._board_place(info, n, f, address, index))
+            if placing:
+                self._groups_save(edits, before.file, after.file)
             if unlinked:
                 ix = self._open()
                 try:
@@ -651,6 +684,44 @@ class BoardCalls:
                 finally:
                     ix.close()
         return {**self.board(n, lang), "made": address, "note": note}
+
+    def _board_put_changes(self, info: dict, address: str, n: int, f: int, note: dict, unlinked: list) -> list:
+        """board_put's changes [(address, prop, value)] for putting `address` in row (n, f), `info` changed to match
+        (the units no longer researched from it added to `unlinked`)."""
+        i = info[address]
+        changes = []
+        if i["factory"] != f or note.get("moved_nation"):
+            # moved: the units researched from it in its row come along (the game draws them beside it)
+            moving = [address] + [a for a, _d in self._board_desc(info, address)]
+            old = (i["nation"], i["factory"])
+            for a in moving:
+                game_f = None if info[a]["new"] else self._game_factory(a)
+                changes.append((a, FACTORY, None if game_f == f else f))
+                info[a]["factory"] = f
+                if info[a]["nation"] != n:
+                    changes.append((a, NATION, n))
+                    info[a]["nation"] = n
+            for child, ci in info.items():
+                if ci["parent"] not in moving or child in moving:
+                    continue
+                if (ci["nation"], ci["factory"]) == old and note.get("moved_nation"):
+                    changes += self._board_unlink(child, ci)  # research stays in one nation
+                    unlinked.append(child)
+                else:  # its parent's building changed: upgrade or plain research again
+                    changes += self._board_flag(child, ci, ci["factory"] == f)
+            p = i["parent"]
+            if p in info and info[p]["nation"] != n:
+                changes += self._board_unlink(address, i)
+            elif p in info:
+                changes += self._board_flag(address, i, info[p]["factory"] == f)
+        if not self._board_shown(i) or note.get("copied") or note.get("era"):
+            game_on = not i["new"] and bool(i["game_shows"]) and any(i["game_shows"])
+            full = [1] * len(i["game_shows"] or [1] * DATES)
+            changes.append((address, SHOW, None if game_on else full))
+            i["shows"] = i["game_shows"] if game_on else full
+        if i["parent"] in info:  # never shown where the unit it's researched from isn't (the build refuses it)
+            changes += self._board_dates(address, i, info[i["parent"]])
+        return changes
 
     def _game_factory(self, address: str):
         ix = self._open()
@@ -673,23 +744,31 @@ class BoardCalls:
                     todo.append((c, d + 1))
         return out
 
-    def board_move(self, nation: int, address: str, factory: int, index=None, lang: str = "base") -> dict:
+    def board_move(self, nation: int, address: str, factory: int, index=None, group=None,
+                   lang: str = "base") -> dict:
         """Move one of nation `nation`'s units (and the units researched from it in its row) to row `factory`, or along
-        its row, to top-level place `index`. Returns board()."""
+        its row, to top-level place `index`, in group `group` of that row (as board_put takes it: None, the group of
+        its kind in another row, its own group along its row). Returns board()."""
         from .api import StudioError
+        from .groups import is_lang
+        if is_lang(group) and lang == "base":   # an older caller's `lang` in `group`'s place
+            group, lang = None, group
         n = nations.check(nation)
         with self._saving:
             _edits, info = self._board_read(n)
         if address not in info:
             raise StudioError(f"{address} isn't one of this nation's units")
-        return self.board_put(n, factory, unit=address, index=index, lang=lang)
+        return self.board_put(n, factory, unit=address, index=index, group=group, lang=lang)
 
     def board_research(self, nation: int, address: str, parent: str | None = None, lang: str = "base") -> dict:
         """Research nation `nation`'s unit `address` from `parent` (a unit of the same nation shown in a build menu,
         not one researched from it), or make it buildable from the start (None). Under a unit of its own building it's
         an upgrade, drawn after that unit's others; from another building, research without the upgrade flag (not
         tried in the game yet). It's then shown only at the battle dates its parent is. Returns board() with "note":
-        {"dates": whether its battle dates were narrowed}."""
+        {"dates": whether its battle dates were narrowed}. An upgrade moves to its parent's group with the units
+        researched from it, refused when that group hasn't room for them (groups.py); one made buildable from the start
+        stays in its group (a new unit, as written in the mod's menu_groups.toml; one of the game's stands on its own,
+        as the game has it)."""
         from .api import RESEARCH, StudioError, UPGRADE
         from .edits import Link
         n = nations.check(nation)
@@ -701,7 +780,10 @@ class BoardCalls:
                 raise StudioError(f"{address} isn't one of this nation's units")
             if parent is None:
                 if i["parent"] is not None:
-                    self._board_apply(edits, self._board_unlink(address, i))
+                    changes = self._board_unlink(address, i)
+                    files = self._groups_guard(edits, changes, lang)
+                    self._board_apply(edits, changes)
+                    self._groups_save(edits, *files)
                 return {**self.board(n, lang), "note": note}
             p = info.get(parent)
             if p is None:
@@ -726,7 +808,9 @@ class BoardCalls:
             i["parent"] = parent
             dates = self._board_dates(address, i, p)
             note["dates"] = bool(dates)
+            files = self._groups_guard(edits, changes + dates, lang)
             self._board_apply(edits, changes + dates)
+            self._groups_save(edits, *files)
             if same:
                 top = self._board_top(info, n, i["factory"])
                 seq = self._board_seq(info, n, i["factory"], top, last_child=(parent, address))
@@ -737,7 +821,8 @@ class BoardCalls:
         """Take a unit off nation `nation`'s board: a new unit of the mod goes from the mod (delete_unit, which may ask
         first: "ask", the units researched from it); a game unit leaves every battle date's build menu (hidden, never
         deleted), and the units researched from it are researched from the unit it was researched from, else
-        buildable from the start ("relinked": their names). Returns board()."""
+        buildable from the start ("relinked": their names; the group they land in checked, groups.py). Returns
+        board()."""
         from .api import StudioError, UPGRADE
         from .edits import Link
         n = nations.check(nation)
@@ -769,7 +854,9 @@ class BoardCalls:
                 else:
                     changes += self._board_unlink(child, ci)
                 relinked.append(child)
+            files = self._groups_guard(edits, changes, lang)
             self._board_apply(edits, changes)
+            self._groups_save(edits, *files)
             ix = self._open()
             try:
                 names = self._names(ix, relinked, lang, edits.new_units) if relinked else {}
@@ -782,7 +869,8 @@ class BoardCalls:
         the game's own units researched as in the game again (the mod's research changes on them taken out), except
         where the unit they're researched from is in no build menu now (a nation started empty: the game stops on a
         shown unit researched from a hidden one, so those stay buildable from the start). The mod's new units keep
-        theirs. Returns {"reset": how many units}."""
+        theirs. Refused when a game line, its upgrades back, would hold more than a group can (groups.py). Returns
+        {"reset": how many units}."""
         from .api import UPGRADE, UPGRADE_FLAG
         with self._saving:
             edits, info = self._board_read()
@@ -798,17 +886,25 @@ class BoardCalls:
                     continue
                 if any(edits.key(a, prop) in edits.edits for prop in (UPGRADE, UPGRADE_FLAG)):
                     back.add(a)
-            self._board_apply(edits, [(a, prop, None) for a in sorted(back) for prop in (UPGRADE, UPGRADE_FLAG)])
+            changes = [(a, prop, None) for a in sorted(back) for prop in (UPGRADE, UPGRADE_FLAG)]
+            files = self._groups_guard(edits, changes) if changes else None
+            self._board_apply(edits, changes)
+            if files:
+                self._groups_save(edits, *files)
         return {"reset": len(back)}
 
     def research_clear_all(self) -> dict:
         """The new mod's "No research": every unit of every nation buildable from the start (its research link and
-        upgrade flag taken out; its research price and time stay, unused). Returns {"cleared": how many}."""
+        upgrade flag taken out; its research price and time stay, unused). The mod's new units stay in the groups they
+        stood in, the game's each a line of its own as the game has them (groups.py). Returns {"cleared": how many}."""
         with self._saving:
             edits, info = self._board_read()
             changes = []
             for a, i in info.items():
                 if i["parent"] is not None:
                     changes += self._board_unlink(a, i)
+            files = self._groups_guard(edits, changes) if changes else None
             self._board_apply(edits, changes)
+            if files:
+                self._groups_save(edits, *files)
         return {"cleared": len(changes) // 2}

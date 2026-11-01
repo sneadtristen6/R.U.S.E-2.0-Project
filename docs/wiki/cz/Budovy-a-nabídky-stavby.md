@@ -23,6 +23,19 @@ ve hře.
 Stránka jednotky v záložce **Jednotky** říká, kde se staví („Staví se v továrně na tanky: místo 2 z 6“), a **Ukázat
 v budovách** otevře její řadu.
 
+## Skupiny
+
+Ve hře ukazuje seznam stavby budovy každou skupinu v jednom řádku: jednotku a její vylepšení (Panzer IV a Panther).
+Tabule ukazuje skupiny každé budovy, každou s jejím počtem (**4 z 6**), a kolik skupin budova má (**7 z 10 skupin**).
+
+- Nová jednotka jde do skupiny svého druhu ve své budově, nebo do vlastní skupiny, když budova žádnou toho druhu nemá.
+  **+** u skupiny nebo přetažení na ni ji tam dá; **Nová skupina** začne novou.
+- Skupina pojme nejvýš 6 (své jednotky a karty výzkumu) a budova nejvýš 10 skupin, aby se její seznam vešel na
+  obrazovku. Další je odmítnuta: vyjměte jednotku, nebo ji dejte do budovy s vlastními jednotkami (**Přidat budovu…**).
+- Jednotka bez typu karty ve hře (náklaďák, odpalovač V2): vyberte její skupinu.
+
+Ve hře zatím nevyzkoušeno.
+
 ## Přidání budovy
 
 **Přidat budovu…** pod tabulí národa: vyberte budovu hry, kterou kopíruje (**Kopie budovy**), dejte jí **Název**, pak

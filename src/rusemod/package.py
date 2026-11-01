@@ -22,13 +22,15 @@ from pathlib import Path, PurePosixPath
 
 from .build import NOT_IN_MODS, BuildError, load_mod
 from .mapscripts import is_mod_script  # the game's mission scripts a mod changes (MOD_FORMAT §9): its only scripts
+from .menugroups import FILE as MENU_GROUPS
 from .rndf import RndfError
 
 EXTENSION = ".rusemod"
 MANIFEST = "mod.toml"
 SIZE_LIMIT = 500_000_000  # bytes unpacked: a mod of data files is a few MB; anything near this isn't one
-TOP_FILES = ("mod.toml", "menus.toml", "depots.toml", "flag-types.toml", "README.md", "LICENSE", "CHANGELOG.md")  # loose
-# files a package keeps (flag-types.toml: the Studio's flag types, so a copy of the mod can still change them)
+TOP_FILES = ("mod.toml", "menus.toml", "depots.toml", "flag-types.toml", MENU_GROUPS, "README.md", "LICENSE",
+             "CHANGELOG.md")  # loose files a package keeps (flag-types.toml: the Studio's flag types, so a copy of the
+# mod can still change them; menu_groups.toml: the group of a build list each unit stands in, which the build reads)
 FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
