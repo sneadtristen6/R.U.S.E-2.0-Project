@@ -6,13 +6,28 @@
 // select it and then select the spot where it goes and then boom" (his words), never a "researched from" box. Add a
 // building (board_building_sources / board_add_building / board_remove_building): a copy of one of the game's
 // buildings, making the same units as it or units of its own, in a row and a tab of its own (three a nation: "buildings
-// 3 limit"). Used by the Nations tab under each nation, and by a new mod's Buildings step (startflow.js). Uses app.js's
-// el, fill, say, problem, api, state, showView and showUnit.
+// 3 limit"). Each row shows its build list's groups (groups.py; the owner, 2026-10-31: "We just need to limit how many
+// can be in a certain group. Because it's buggy.", a unit more in a full group: "Refuse it"; 11-01: at most 10 groups a
+// building), each one row of the game's build list: a unit and its upgrades, how full it is, and its units; a unit is
+// dropped into a group, or onto a row's New group, and a group's name is dragged along its row to move the whole group.
+// Used by the Nations tab under each nation, and by a new mod's Buildings step (startflow.js). Uses app.js's el, fill,
+// say, problem, api, state, showView and showUnit.
 (function () {
   "use strict";
   const ROW_GROUP = { 8: "barracks", 13: "artillery", 10: "armor", 11: "antitank", 9: "airfield", 12: "prototype" };
   const ERA_WORD = { WWI: "eras_era_ww1", WWII: "eras_era_ww2", "Cold War": "eras_era_cold", Modern: "eras_era_modern" };
   const MOST_TRIED = 10;  // board.py MOST_TRIED: the most places a game building uses
+  const NEW_GROUP = "new";  // board_put / board_move's group for a group of its own (groups.py NEW)
+
+  // a row's top-level units' addresses, in the board's order (board_order's and the places' list)
+  const topsOf = (row) => row.units.filter((u) => u.depth === 0).map((u) => u.address);
+
+  // the place in `tops` right after group `g`'s last top-level unit there (null: none of its units is one)
+  function endOf(g, tops) {
+    let at = -1;
+    tops.forEach((a, k) => { if (g.units.includes(a)) at = k; });
+    return at < 0 ? null : at + 1;
+  }
 
   function W() { return state.words || {}; }
 
@@ -133,10 +148,11 @@
     }
 
     function drawRow(row) {
-      const w = W(), name = buildingName(row);
+      const w = W(), name = buildingName(row), groups = row.groups || [];
       const head = el("div", { className: "board-row-head" },
         el("strong", { textContent: name }),
         el("span", { className: "muted small", textContent: " " + fill(w.board_count, { n: row.units.length }) }));
+      if (groups.length) head.append(groupsTag(row, name));
       if (row.own) head.append(el("span", { className: "board-tag mine", textContent: w.board_own_tag,
         title: w.tip_board_own_tag }));
       const chips = buildingChips(row);
@@ -145,58 +161,175 @@
         title: fill(w.tip_board_untried, { n: MOST_TRIED }) }));
       const line = el("div", { className: "board-line" });
       line.dataset.factory = row.factory;
-      const tops = row.units.filter((u) => u.depth === 0);
-      // each top-level unit with the ones researched from it in this building: one group, as the game attaches them
-      let group = null;
-      for (const u of row.units) {
-        if (u.depth === 0) {
-          group = el("div", { className: "board-group" });
-          line.append(group);
-          dropTarget(group, row, tops.indexOf(u));
-        }
-        group.append(boxOf(u, row));
+      // each group a row of its own, as the game's build list shows it; a unit in none (not looked for: groups.py
+      // puts every unit shown in a building in one) is still shown, by itself
+      const units = new Map(row.units.map((u) => [u.address, u]));
+      const seen = new Set();
+      for (const g of groups) {
+        line.append(drawGroup(row, g, g.units.map((a) => units.get(a)).filter(Boolean)));
+        for (const a of g.units) seen.add(a);
       }
-      const add = el("button", { type: "button", className: "board-add", textContent: "+",
-        title: fill(w.tip_board_add, { nation: label, building: name }), disabled: !B.data.can,
-        ariaLabel: fill(w.tip_board_add, { nation: label, building: name }) });
-      add.addEventListener("click", () => openPicker(row, null));
-      dropTarget(add, row, null);
-      line.append(add);
+      const loose = row.units.filter((u) => !seen.has(u.address));
+      if (loose.length) line.append(drawGroup(row, null, loose));
+      line.append(rowFoot(row, name));
       const out = [head, line];
       if (!row.units.length) out.push(el("p", { className: "muted small",
         textContent: row.own ? w.board_empty_own_row : w.board_empty_row }));
       return el("section", { className: "board-row" }, ...out);
     }
 
-    // a group (or the + at the end) takes a dragged unit: put before it in this row, or moved here from another
-    function dropTarget(node, row, index) {
-      node.addEventListener("dragover", (e) => {
-        if (!B.dragging) return;
-        e.preventDefault();
-        node.classList.add("drop");
+    // how many groups the row has, of the most a building holds (more: a mod made before the limit, said plainly)
+    function groupsTag(row, name) {
+      const w = W(), n = row.groups.length, most = row.most_groups, over = n > most;
+      const values = { n, most, extra: n - most, building: name };
+      return el("span", { className: "board-tag" + (over ? " bad" : n >= most ? " full" : ""),
+        textContent: fill(over ? w.board_groups_over : w.board_groups_count, values),
+        title: fill(over ? w.tip_board_groups_over : w.tip_board_groups, values) });
+    }
+
+    // one group of a row (`g` null: units in none): its head, then its units in the board's order, each with the ones
+    // researched from it in the same group pushed in under it; dropped on, a unit goes into it
+    function drawGroup(row, g, list) {
+      const node = el("div", { className: "board-menu-group" + (!g ? " loose" : g.over ? " over" : g.full ? " full" : "") });
+      if (g) {
+        node.dataset.root = g.root;
+        node.append(groupHead(row, g));
+      }
+      dropOn(node, row, g, null);
+      const inside = new Set(list.map((u) => u.address)), boxes = el("div", { className: "board-menu-group-units" });
+      node.append(boxes);
+      let block = null, top = 0;
+      for (const u of list) {
+        if (!block || u.depth === 0 || !inside.has(u.parent)) {
+          block = el("div", { className: "board-group" });
+          top = u.depth;
+          boxes.append(block);
+          if (u.depth === 0) dropOn(block, row, g, u.address);  // put before it
+        }
+        block.append(boxOf(u, row, u.depth - top));
+      }
+      return node;
+    }
+
+    // a group's name, how full it is (an over-full one, of a mod made before the limit, says how many to take out)
+    // and its + ; dragged, the whole group moves along its row
+    function groupHead(row, g) {
+      const w = W(), where = buildingName(row);
+      const values = { name: g.name, n: g.count, most: g.most, extra: g.count - g.most, building: where };
+      const count = el("span", { className: "board-tag" + (g.over ? " bad" : g.full ? " full" : ""),
+        textContent: fill(g.over ? w.board_group_over : g.full ? w.board_group_full : w.board_group_count, values),
+        title: fill(g.over ? w.tip_board_group_over : g.full ? w.tip_board_group_full : w.tip_board_group_count, values) });
+      const tip = fill(w.tip_board_group_add, values);
+      const add = el("button", { type: "button", className: "board-x ghost board-group-add", textContent: "+",
+        title: g.full ? fill(w.board_group_no_room, { ...values, n: g.count + 1 }) : tip, ariaLabel: tip,
+        disabled: !B.data.can || g.full });
+      add.addEventListener("click", () => openPicker(row, endOf(g, topsOf(row)), g.root, g.name));
+      const head = el("div", { className: "board-menu-group-head", title: w.tip_board_group,
+        draggable: B.data.can && row.groups.length > 1 },
+        el("span", { className: "board-menu-group-name small", textContent: fill(w.board_group_name, values) }),
+        el("span", { className: "board-menu-group-count" }, count, add));
+      head.addEventListener("dragstart", (e) => {
+        B.dragging = { group: g.root, units: g.units.slice(), factory: row.factory, name: g.name };
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", g.root); } catch { /* some windows: the board keeps it */ }
       });
-      node.addEventListener("dragleave", () => node.classList.remove("drop"));
+      head.addEventListener("dragend", () => { B.dragging = null; });
+      return head;
+    }
+
+    // the row's end: + (a unit added goes into the group of its kind, as before) and New group (a group of its own:
+    // off, with the reason, when the building already has the most groups)
+    function rowFoot(row, name) {
+      const w = W(), n = (row.groups || []).length;
+      const add = el("button", { type: "button", className: "board-add", textContent: "+",
+        title: fill(w.tip_board_add, { nation: label, building: name }), disabled: !B.data.can,
+        ariaLabel: fill(w.tip_board_add, { nation: label, building: name }) });
+      add.addEventListener("click", () => openPicker(row, null));
+      dropOn(add, row, null, null);
+      const roomless = n >= row.most_groups;
+      const tip = roomless ? fill(w.board_new_group_no_room, { building: name, n: n + 1, most: row.most_groups })
+        : fill(w.tip_board_new_group, { building: name });
+      const start = el("button", { type: "button", className: "small ghost", textContent: "+ " + w.board_new_group,
+        title: tip, disabled: !B.data.can || roomless });
+      start.addEventListener("click", () => openPicker(row, null, NEW_GROUP));
+      const place = el("div", { className: "board-new-group" + (roomless ? " no-room" : ""), title: tip }, start);
+      if (roomless) place.append(el("span", { className: "muted small",  // why it's off, in sight
+        textContent: fill(w.board_groups_count, { n, most: row.most_groups }) }));
+      dropOn(place, row, NEW_GROUP, null);
+      return el("div", { className: "board-row-foot" }, add, place);
+    }
+
+    // why a dragged unit can't go into group `g` of `row` (NEW_GROUP: a group of its own), said on the page before the
+    // Studio is asked; "" when it can (the Studio still checks): no room for it and the units researched from it that
+    // come along, or no room for another group
+    function refusal(d, row, g) {
+      if (d.group || !g) return "";
+      const w = W(), where = buildingName(row), groups = row.groups || [];
+      const from = d.factory === row.factory ? groups.find((x) => x.units.includes(d.address)) : null;
+      const coming = from ? d.inGroup : d.line;
+      if (g === NEW_GROUP) {
+        if (from && from.units.length <= coming) return "";  // its whole group goes: no group more
+        return groups.length >= row.most_groups
+          ? fill(w.board_new_group_no_room, { building: where, n: groups.length + 1, most: row.most_groups }) : "";
+      }
+      if (from && from.root === g.root) return "";
+      return g.count + coming > g.most
+        ? fill(w.board_group_no_room, { name: g.name, building: where, n: g.count + coming, most: g.most }) : "";
+    }
+
+    // a place that takes a dragged unit or group: group `g` of `row` (null: the row by its kind, as before; NEW_GROUP: a
+    // group of its own), before top-level unit `before` (null: at the group's end, or the row's)
+    function dropOn(node, row, g, before) {
+      node.addEventListener("dragover", (e) => {
+        const d = B.dragging;
+        if (!d || (d.group && d.factory !== row.factory)) return;  // a group moves along its own row only
+        e.preventDefault();
+        e.stopPropagation();
+        node.classList.add("drop");
+        node.classList.toggle("drop-no", Boolean(refusal(d, row, g)));
+      });
+      node.addEventListener("dragleave", () => node.classList.remove("drop", "drop-no"));
       node.addEventListener("drop", (e) => {
         e.preventDefault();
-        node.classList.remove("drop");
+        e.stopPropagation();
+        node.classList.remove("drop", "drop-no");
         const d = B.dragging;
         B.dragging = null;
-        if (!d) return;
-        const w = W(), all = row.units.filter((u) => u.depth === 0).map((u) => u.address);
-        const before = index === null ? null : all[index];  // the unit it's put before (null: at the end)
-        if (d.factory === row.factory) {
-          if (before === d.address) return;
-          const tops = all.filter((a) => a !== d.address);
-          tops.splice(before === null ? tops.length : tops.indexOf(before), 0, d.address);
-          run(() => api().board_order(nation, row.factory, tops, state.lang), "");
-        } else {
-          run(() => api().board_move(nation, d.address, row.factory, index === null ? all.length : index, state.lang),
-            fill(w.board_moved, { name: d.name, building: buildingName(row) }));
-        }
+        if (d) landed(d, row, g, before);
       });
     }
 
-    function boxOf(u, row) {
+    function landed(d, row, g, before) {
+      const w = W(), where = buildingName(row), tops = topsOf(row);
+      if (d.group) {  // a whole group: before group `g`'s first unit, or at the row's end
+        if (g && g !== NEW_GROUP && g.root === d.group) return;
+        const rest = tops.filter((a) => !d.units.includes(a));
+        const first = g && g !== NEW_GROUP ? rest.findIndex((a) => g.units.includes(a)) : -1;
+        rest.splice(first < 0 ? rest.length : first, 0, ...tops.filter((a) => d.units.includes(a)));
+        run(() => api().board_order(nation, row.factory, rest, state.lang), "");
+        return;
+      }
+      const why = refusal(d, row, g);
+      if (why) { say(why, "error"); return; }
+      const from = d.factory === row.factory ? (row.groups || []).find((x) => x.units.includes(d.address)) : null;
+      const rest = tops.filter((a) => a !== d.address);
+      let index = before ? rest.indexOf(before) : g && g !== NEW_GROUP ? endOf(g, rest) : null;
+      if (index !== null && index < 0) index = null;
+      if (d.factory === row.factory && (!g || (g !== NEW_GROUP && from && from.root === g.root))) {
+        if (before === d.address) return;  // along its row, in its own group: its place only
+        rest.splice(index === null ? rest.length : index, 0, d.address);
+        run(() => api().board_order(nation, row.factory, rest, state.lang), "");
+        return;
+      }
+      const group = g === NEW_GROUP ? NEW_GROUP : g ? g.root : null;
+      const said = g === NEW_GROUP ? fill(w.board_moved_new_group, { name: d.name, building: where })
+        : g ? fill(w.board_moved_group, { name: d.name, group: g.name, building: where })
+          : fill(w.board_moved, { name: d.name, building: where });
+      run(() => api().board_move(nation, d.address, row.factory, index, group, state.lang), said);
+    }
+
+    // `depth`: how far it's pushed in under the unit it's researched from in its group
+    function boxOf(u, row, depth = u.depth) {
       const w = W();
       const card = el("img", { className: "board-card hidden", alt: "" });
       card.dataset.address = u.address;
@@ -224,12 +357,20 @@
       const research = el("button", { type: "button", className: "small ghost board-research",
         textContent: w.board_research, title: fill(w.tip_board_research, { name: u.name }), disabled: !B.data.can });
       research.addEventListener("click", () => { B.picking = { address: u.address, name: u.name }; draw(); });
-      const node = el("div", { className: "board-box" + (u.depth ? " researched" : "") + (u.new ? " new" : ""),
+      const node = el("div", { className: "board-box" + (depth ? " researched" : "") + (u.new ? " new" : ""),
         draggable: B.data.can, title: w.tip_board_drag });
-      node.style.setProperty("--depth", String(u.depth));
+      node.style.setProperty("--depth", String(depth));
       node.dataset.address = u.address;
       node.addEventListener("dragstart", (e) => {
-        B.dragging = { address: u.address, factory: row.factory, name: u.name };
+        // what comes along: the units researched from it in its row (to another building), those in its group (along
+        // its row), as board_move moves them
+        const at = row.units.indexOf(u);
+        let end = at + 1;
+        while (end < row.units.length && row.units[end].depth > u.depth) end += 1;
+        const line = row.units.slice(at, end).map((x) => x.address);
+        const mine = (row.groups || []).find((x) => x.units.includes(u.address));
+        B.dragging = { address: u.address, factory: row.factory, name: u.name, line: line.length,
+          inGroup: mine ? line.filter((a) => mine.units.includes(a)).length : 1 };
         e.dataTransfer.effectAllowed = "move";
         try { e.dataTransfer.setData("text/plain", u.address); } catch { /* some windows: the board keeps it */ }
       });
@@ -281,14 +422,18 @@
       changed(res, fill(u.new ? w.board_deleted : w.board_taken_out, { name: u.name }));
     }
 
-    // --- the empty box's list: this nation's own units, the other nations' (a copy is made), the era units ---
-    async function openPicker(row, index) {
+    // --- the empty box's list: this nation's own units, the other nations' (a copy is made), the era units; put in
+    // `group` (a group's first unit's address; NEW_GROUP: a group of its own; null: the group of its kind) ---
+    async function openPicker(row, index, group = null, groupName = "") {
       const w = W();
       let data;
       try { data = await api().board_picker(nation, state.lang); } catch (err) { problem(err); return; }
       const dlg = pickerDialog();
       const where = buildingName(row);
-      dlg.querySelector(".board-pick-title").textContent = fill(w.board_pick_title, { building: where, nation: label });
+      dlg.querySelector(".board-pick-title").textContent = group === NEW_GROUP
+        ? fill(w.board_pick_title_new_group, { building: where, nation: label })
+        : group ? fill(w.board_pick_title_group, { name: groupName, building: where, nation: label })
+          : fill(w.board_pick_title, { building: where, nation: label });
       const search = dlg.querySelector(".board-pick-search");
       search.placeholder = w.board_pick_search;
       search.title = w.tip_board_pick_search;
@@ -297,10 +442,43 @@
       close.textContent = w.board_pick_close;
       close.title = w.board_pick_close;
       const list = dlg.querySelector(".board-pick-list");
-      const put = (what, name) => {
-        dlg.close();
-        run(() => api().board_put(nation, row.factory, what.unit || "", what.era || "", index, state.lang),
-          fill(w.board_put_done, { name, building: where }));
+      // the + at a row's end: the group it goes in is picked here, the group of its kind first (a unit with no card
+      // type has none: the Studio then asks for one, said below, and another group is picked and the unit again)
+      const pickGroup = dlg.querySelector(".board-pick-group"), why = dlg.querySelector(".board-pick-why");
+      const groups = row.groups || [];
+      pickGroup.replaceChildren(el("option", { value: "", textContent: w.board_pick_group_kind }),
+        ...groups.map((g) => el("option", { value: g.root, disabled: g.full,
+          textContent: fill(g.full ? w.eras_group_choice_full : w.eras_group_choice, { name: g.name, n: g.count, most: g.most }) })),
+        el("option", { value: NEW_GROUP, disabled: groups.length >= row.most_groups,
+          textContent: fill(groups.length >= row.most_groups ? w.eras_group_own_full : w.eras_group_own,
+            { groups: groups.length, most_groups: row.most_groups }) }));
+      pickGroup.value = "";
+      pickGroup.title = fill(w.tip_board_pick_group, { building: where });
+      dlg.querySelector(".board-pick-group-label").textContent = w.board_pick_group;
+      dlg.querySelector(".board-pick-group-box").classList.toggle("hidden", group !== null);
+      why.classList.add("hidden");
+      const put = async (what, name) => {
+        if (B.busy) return;
+        const chosen = group !== null ? group : (pickGroup.value || null);
+        const picked = group === null && chosen && chosen !== NEW_GROUP ? groups.find((g) => g.root === chosen) : null;
+        const at = picked ? endOf(picked, topsOf(row)) : index;  // a group picked here: at that group's end
+        const named = picked ? picked.name : groupName;
+        const said = chosen === NEW_GROUP ? fill(w.board_moved_new_group, { name, building: where })
+          : chosen ? fill(w.board_moved_group, { name, group: named, building: where })
+            : fill(w.board_put_done, { name, building: where });
+        B.busy = true;
+        box.classList.add("busy");
+        try {
+          const res = await api().board_put(nation, row.factory, what.unit || "", what.era || "", at, chosen, state.lang);
+          dlg.close();
+          changed(res, said);
+        } catch (err) {  // refused: said here, the list stays open for another group
+          why.textContent = (err && err.message) || String(err);
+          why.classList.remove("hidden");
+          if (group === null) pickGroup.focus();
+        }
+        B.busy = false;
+        box.classList.remove("busy");
       };
       const render = () => {
         const q = search.value.trim().toLowerCase();
@@ -441,6 +619,9 @@
     if (dlg) return dlg;
     dlg = el("dialog", { id: "board-pick", className: "doctor board-pick" },
       el("h2", { className: "board-pick-title" }),
+      el("label", { className: "small board-pick-group-box" }, el("span", { className: "board-pick-group-label" }), " ",
+        el("select", { className: "board-pick-group", title: "" })),
+      el("p", { className: "notice error small board-pick-why hidden", role: "alert" }),
       el("input", { type: "search", className: "board-pick-search", autocomplete: "off", title: "" }),
       el("div", { className: "board-pick-list" }),
       el("div", { className: "actions" }, el("button", { type: "button", className: "small ghost board-pick-close", title: "" })));

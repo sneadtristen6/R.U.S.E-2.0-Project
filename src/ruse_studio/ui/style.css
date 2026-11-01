@@ -1187,10 +1187,31 @@ body.flow-page-on main { display: none !important; }
 .board.busy { opacity: 0.6; pointer-events: none; }
 .board-row { padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .board-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 6px; }
-.board-line { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.board-line { display: flex; flex-direction: column; gap: 6px; }
+/* a group: one row of the building's build list in the game (groups.py), its name and count, then its units */
+.board-menu-group { display: flex; align-items: stretch; gap: 8px; padding: 4px;
+                    border: 1px dashed var(--line); border-radius: var(--radius); }
+.board-menu-group-units { display: flex; flex: 1; flex-wrap: wrap; align-items: stretch; gap: 8px; min-width: 0; }
+.board-menu-group.full { border-style: solid; }
+.board-menu-group.over { border-style: solid; border-color: var(--error); }
+.board-menu-group.loose { border-color: transparent; }
+.board-menu-group-head { display: flex; flex: none; flex-direction: column; align-items: flex-start; gap: 4px;
+                         width: 132px; padding: 4px 6px; cursor: grab; }
+.board-menu-group-name { font-weight: 600; overflow-wrap: anywhere; }
+.board-menu-group-count { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.board-group-add { margin-left: 0; }
+.board-tag.full { border-color: var(--muted); color: var(--text); }
+.board-tag.bad { border-color: var(--error); color: var(--error); }
+.board-row-foot { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.board-new-group { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px dashed var(--line);
+                   border-radius: var(--radius); }
+.board-new-group.no-room { opacity: 0.75; }
 .board-group { display: flex; flex-direction: column; gap: 4px; padding: 2px; border: 1px dashed transparent;
                border-radius: var(--radius); }
-.board-group.drop, .board-add.drop { border-color: var(--accent); background: rgba(92, 184, 255, 0.08); }
+.board-group.drop, .board-add.drop, .board-menu-group.drop, .board-new-group.drop { border-color: var(--accent);
+                                                                                   background: rgba(92, 184, 255, 0.08); }
+.board-menu-group.drop-no, .board-group.drop-no, .board-new-group.drop-no { border-color: var(--error);
+                                                                            background: rgba(255, 125, 110, 0.08); }
 .board-box { display: flex; flex-direction: column; gap: 3px; width: 132px; padding: 6px; background: var(--panel-hi);
              border: 1px solid var(--line); border-radius: var(--radius); cursor: grab; }
 .board-box.researched { margin-left: calc(var(--depth, 1) * 14px); border-left: 3px solid var(--shared); }
@@ -1221,6 +1242,9 @@ body.flow-page-on main { display: none !important; }
                                                  border: 1px solid var(--line); border-radius: var(--radius); }
 .board-bld-choice input { margin-right: 4px; }
 .board-pick { width: min(820px, 96vw); }
+.board-pick-group-box { display: block; margin: 6px 0; }
+.board-pick-group { margin-left: 4px; padding: 4px 8px; background: var(--panel-hi); border: 1px solid var(--line);
+                    border-radius: var(--radius); }
 .board-pick-search { width: 100%; margin: 6px 0 10px; padding: 7px 10px; background: var(--panel-hi);
                      border: 1px solid var(--line); border-radius: var(--radius); }
 .board-pick-list { max-height: 60vh; overflow: auto; }
