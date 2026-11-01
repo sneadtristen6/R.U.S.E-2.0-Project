@@ -222,6 +222,9 @@ class ShownIndex:
     def show(self, address):
         return {"values": [(f"ShowInMenu[{i}]", 1, None) for i in range(5)]}
 
+    def names(self, keys, lang):
+        return {}
+
     def links(self, prop):
         # a US tank researched from Italy's: another nation's chain, never one the Italian hide touches
         return {"$/GFX/Everything/Descriptor_Unit_US_Tank2": "$/GFX/Everything/Descriptor_Unit_US_Tank"}
@@ -234,11 +237,11 @@ class NationUnits(unittest.TestCase):
     """A nation's units all at once (the owner, 2026-10-10: Italy's units out, China's in): its own units hidden from
     its build menus in one go and shown again, and its menus filled from an era's units of another nation."""
 
-    UNITS = [{"address": "$/GFX/Everything/Descriptor_Unit_Italy_Tank", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": 10},
-             {"address": "$/GFX/Everything/Descriptor_Avion_Italy_Plane", "class": "TAvionDescriptor", "nation": 4, "factory": 9},
-             {"address": "$/GFX/Everything/Descriptor_Building_Italy_HQ", "class": "TBatimentDescriptor", "nation": 4, "factory": 3},
-             {"address": "$/GFX/Everything/Descriptor_Unit_Italy_Off", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": None},
-             {"address": "$/GFX/Everything/Descriptor_Unit_US_Tank", "class": "TUniteAuSolDescriptor", "nation": 0, "factory": 10}]
+    UNITS = [{"address": "$/GFX/Everything/Descriptor_Unit_Italy_Tank", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": 10, "slot": None, "type_key": None},
+             {"address": "$/GFX/Everything/Descriptor_Avion_Italy_Plane", "class": "TAvionDescriptor", "nation": 4, "factory": 9, "slot": None, "type_key": None},
+             {"address": "$/GFX/Everything/Descriptor_Building_Italy_HQ", "class": "TBatimentDescriptor", "nation": 4, "factory": 3, "slot": None, "type_key": None},
+             {"address": "$/GFX/Everything/Descriptor_Unit_Italy_Off", "class": "TUniteAuSolDescriptor", "nation": 4, "factory": None, "slot": None, "type_key": None},
+             {"address": "$/GFX/Everything/Descriptor_Unit_US_Tank", "class": "TUniteAuSolDescriptor", "nation": 0, "factory": 10, "slot": None, "type_key": None}]
     ERA = [{"key": "Modern|China|ZTZ-99", "era": "Modern", "nation": "China", "name": "ZTZ-99", "card": "Main Battle Tank", "factory": 10},
            {"key": "Modern|China|J-10", "era": "Modern", "nation": "China", "name": "J-10", "card": "Fighter", "factory": 9},
            {"key": "Modern|China|Odd", "era": "Modern", "nation": "China", "name": "Odd", "card": "Tank", "factory": 12},

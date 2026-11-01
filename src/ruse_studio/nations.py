@@ -243,13 +243,17 @@ class NationCalls:
             ix.close()
         with self._saving:
             edits = ModEdits(edits.folder)
-            for address, p in lists.items():
-                if not p or not p["list"] or not _can_edit(self.SHOW_IN_MENU, p):
-                    continue
+            shown = [a for a, p in lists.items() if p and p["list"] and _can_edit(self.SHOW_IN_MENU, p)]
+            # shown again, they come back into their groups: checked against the most a group holds first, nothing
+            # saved when one would go over (ruse_studio.groups; hiding only takes units out)
+            files = None if hide else self._groups_guard(edits, [(a, self.SHOW_IN_MENU, None) for a in shown], lang)
+            for address in shown:
                 if hide:
-                    edits.set(address, self.SHOW_IN_MENU, [0] * len(p["numbers"]))
+                    edits.set(address, self.SHOW_IN_MENU, [0] * len(lists[address]["numbers"]))
                 else:
                     edits.reset(address, self.SHOW_IN_MENU)
+            if files:
+                self._groups_save(edits, *files)
         # a unit still shown that is researched from one now hidden crashes the game when its building's menu opens
         # (the menu looks up the parent's button; seen in the game 2026-10-10, the Chinese units researched
         # from Italy's hidden ones): it becomes buyable from the start, as the Upgrade box's

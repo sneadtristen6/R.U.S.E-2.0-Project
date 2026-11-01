@@ -361,25 +361,30 @@ class EraResearch(unittest.TestCase):
         self.api = StudioApi(index_path=self.index, game_dir=self.game, home=self.home, starter=starter,
                              instances=self.home / "copies")
         self.lib = Path(tempfile.mkdtemp(dir=self.tmp.name))
-        units = [entry("Cold War", "USSR", "T-80", "Main Battle Tank", UB),     # starts from B, an upgrade of A
-                 entry("Modern", "Russia", "T-90", "Main Battle Tank", UC),
-                 entry("Cold War", "USA", "Patton", "Medium Tank", UD),         # starts from a German unit
-                 entry("WWI", "USA", "Liberty", "Heavy Tank", UD),
-                 dict(entry("WWII", "USA", "Easy Eight", "Medium Tank", UD), in_place_of="unit_c")]
-        (self.lib / "era_units.json").write_text(json.dumps({"version": 1, "note": "", "units": units}),
-                                                 encoding="utf-8")
+        # (the made-up game's cards: A, B (an upgrade of A) and the German D medium tanks; C and F heavy tanks)
+        self.library([entry("Cold War", "USSR", "T-80", "Medium Tank", UB),      # starts from B, an upgrade of A
+                      entry("Modern", "Russia", "T-90", "Medium Tank", UC),
+                      entry("Cold War", "USA", "Patton", "Heavy Tank", UD),      # starts from a German unit
+                      entry("WWI", "USA", "Liberty", "Heavy Tank", UD),
+                      dict(entry("WWII", "USA", "Easy Eight", "Heavy Tank", UD), in_place_of="unit_c")])
         patcher = mock.patch.dict(os.environ, {era_units.LIBRARY_ENV: str(self.lib)})
         patcher.start()
         self.addCleanup(patcher.stop)
+
+    def library(self, units):
+        (self.lib / "era_units.json").write_text(json.dumps({"version": 1, "note": "", "units": units}),
+                                                 encoding="utf-8")
 
     @staticmethod
     def names(research):
         return [c["address"] for c in research["choices"]]
 
     def test_the_menus_units_and_the_suggestion(self):
+        """Only the units of the group it goes in (the owner, 2026-10-31: a group is a line of the build list, at most
+        6): a medium tank's, the line of A and B."""
         t80 = self.api.era_unit_page("Cold War|USSR|T-80")["research"]
-        self.assertEqual((t80["offered"], self.names(t80)), (True, [UA, UB, UC]))   # US menu 10 (F is in 11, D German)
-        self.assertEqual([c["name"] for c in t80["choices"]], ["Unit_A", "Unit_B", "Unit_C"])
+        self.assertEqual((t80["offered"], self.names(t80)), (True, [UA, UB]))   # US menu 10, A's line (C: heavy)
+        self.assertEqual([c["name"] for c in t80["choices"]], ["Unit_A", "Unit_B"])
         self.assertEqual((t80["suggested"], t80["why"]), (UB, "start"))
         german = self.api.era_unit_start("Cold War|USSR|T-80", UD, 1, 10)["research"]  # another menu picked
         self.assertEqual((self.names(german), german["suggested"], german["why"]), ([UD], UD, "start"))
@@ -392,27 +397,54 @@ class EraResearch(unittest.TestCase):
         self.assertEqual((easy["suggested"], easy["why"]), (UC, "in_place_of"))      # the unit it stands in for
         self.assertEqual(self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 99)["research"]["choices"], [])
 
+    def test_the_group_it_goes_in(self):
+        """The add form says the group of the building's build list the era unit goes in (the owner, 2026-10-31: at
+        most 6 to a group): its kind's line (the library's card), the building's groups to pick from, and the research
+        choices are that group's units; another group picked, or one of its own, changes them."""
+        t80 = self.api.era_unit_page("Cold War|USSR|T-80")
+        self.assertEqual(t80["group"], {"root": UA, "name": "Unit_A", "count": 2, "most": 6, "full": False,
+                                        "new": False,
+                                        "choices": [{"root": UA, "name": "Unit_A", "count": 2, "full": False},
+                                                    {"root": UC, "name": "Unit_C", "count": 1, "full": False}]})
+        picked = self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 10, "base", UC)
+        self.assertEqual((picked["group"]["root"], self.names(picked["research"])), (UC, [UC]))
+        self.assertEqual((picked["research"]["suggested"], picked["research"]["why"]), (UC, "dearest"))
+        own = self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 10, "base", "new")
+        self.assertEqual((own["group"]["root"], own["group"]["new"], own["group"]["count"], own["research"]["choices"]),
+                         (None, True, 0, []))
+        self.assertIsNone(self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 99)["group"])   # no such building
+        with self.assertRaisesRegex(StudioError, "isn't in one of the groups of that building"):
+            self.api.era_unit_start("Cold War|USSR|T-80", UB, 0, 10, "base", UF)              # F: menu 11's
+        self.api.new_mod("Groups")
+        made = self.api.era_unit_add("Cold War|USSR|T-80", 0, 10, group=UC)
+        self.assertEqual((made["research_from"], made["group"]), (UC, UC))
+        made = self.api.era_unit_add("Modern|Russia|T-90", 0, 10, research_from=None, group="new")
+        from rusemod import menugroups
+        self.assertEqual(menugroups.read(self.home / "mods" / "groups"), {made["address"]: made["address"]})
+
     def test_a_unit_never_shown_isnt_suggested(self):
         """The dearest unit the build menu never shows (ShowInMenu 0 at every battle date, as the game's DEMO, film and
         empty units) isn't suggested, nor offered: a shown unit researched from one the menu has no button for stops
-        the game (seen in the game 2026-10-10)."""
+        the game (seen in the game 2026-10-10). Here a medium tank, in A's line: B (30) the dearest, then A (20)."""
         from ruse_studio.edits import ModEdits
+        self.library([entry("Cold War", "USA", "Jumbo", "Medium Tank", UD)])
+        self.assertEqual(self.api.era_unit_page("Cold War|USA|Jumbo")["research"]["suggested"], UB)
         self.api.new_mod("Hidden")
         edits = ModEdits(self.home / "mods" / "hidden")
-        edits.set(UC, "ShowInMenu", [0, 0, 0, 0, 0])
+        edits.set(UB, "ShowInMenu", [0, 0, 0, 0, 0])
         edits.save()
-        patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
-        self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))    # C (40) never shown: B (30)
-        self.assertNotIn(UC, self.names(patton))
+        jumbo = self.api.era_unit_page("Cold War|USA|Jumbo")["research"]
+        self.assertEqual((jumbo["suggested"], jumbo["why"]), (UA, "dearest"))    # B (30) never shown: A (20)
+        self.assertNotIn(UB, self.names(jumbo))
         # shown at the last battle date only (as the game's atomic units), while the new unit, as its start unit D,
         # is shown at all five: not suggested nor offered either (at the first four the menu has no button for it)
         edits = ModEdits(self.home / "mods" / "hidden")
-        edits.set(UC, "ShowInMenu", [0, 0, 0, 0, 1])
+        edits.set(UB, "ShowInMenu", [0, 0, 0, 0, 1])
         edits.set(UD, "ShowInMenu", [1, 1, 1, 1, 1])
         edits.save()
-        patton = self.api.era_unit_page("Cold War|USA|Patton")["research"]
-        self.assertEqual((patton["suggested"], patton["why"]), (UB, "dearest"))
-        self.assertNotIn(UC, self.names(patton))
+        jumbo = self.api.era_unit_page("Cold War|USA|Jumbo")["research"]
+        self.assertEqual((jumbo["suggested"], jumbo["why"]), (UA, "dearest"))
+        self.assertNotIn(UB, self.names(jumbo))
 
     def test_added_researched_and_chained(self):
         self.api.new_mod("Research")

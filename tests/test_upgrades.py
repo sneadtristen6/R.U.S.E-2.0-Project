@@ -6,8 +6,10 @@ import unittest
 from pathlib import Path
 
 from fixtures import make_edat, make_ndf, val
+from test_dic import make_dic
 from rusemod import Edat, Ndf
 from rusemod.build import build_pack, load_mod
+from rusemod.dic import name_to_key
 from rusemod.index import build_index
 from rusemod.play import Starter
 from ruse_studio.api import StudioApi, StudioError
@@ -26,23 +28,30 @@ def ref(i, cls):
     return val(0x09, struct.pack("<III", 0xBBBBBBBB, i, cls))
 
 
+def text(name):
+    return val(0x1D, struct.pack("<Q", name_to_key(name)))
+
+
 PROPS = [("Nationalite", 0), ("Factory", 0), ("UpgradeRequire", 0), ("IsUpgrade", 0), ("UpgradePrice", 0),
-         ("UpgradeTime", 0), ("ProductionPrice", 0)]
+         ("UpgradeTime", 0), ("ProductionPrice", 0), ("TypeUnitHintToken", 0)]
 P = {n: i for i, (n, _c) in enumerate(PROPS)}
 E = "$/GFX/Everything/"
 A, B, C, D, F = (E + n for n in ("Unit_A", "Unit_B", "Unit_C", "Unit_D", "Unit_F"))
+CARDS = {"TANK_m": "Medium Tank", "TANK_h": "Heavy Tank"}   # the units' card types, as the game's texts name them
 
 
 def units() -> bytes:
     """A (US, menu 10), B an upgrade of A (researched for 25 over 75 s), C a US unit of its own in menu 10, D a German
-    one in menu 10, F a US one in menu 11."""
+    one in menu 10, F a US one in menu 11. Their cards: A, B and D medium tanks, C and F heavy tanks."""
+    medium, heavy = (P["TypeUnitHintToken"], text("TANK_m")), (P["TypeUnitHintToken"], text("TANK_h"))
     objects = [
-        (0, [(P["Factory"], i32(10)), (P["ProductionPrice"], i32(20))]),                                    # A
+        (0, [(P["Factory"], i32(10)), (P["ProductionPrice"], i32(20)), medium]),                            # A
         (0, [(P["Factory"], i32(10)), (P["UpgradeRequire"], ref(0, 0)), (P["IsUpgrade"], flag(1)),
-             (P["UpgradePrice"], i32(25)), (P["UpgradeTime"], i32(75)), (P["ProductionPrice"], i32(30))]),  # B
-        (0, [(P["Factory"], i32(10)), (P["ProductionPrice"], i32(40))]),                                    # C
-        (0, [(P["Nationalite"], i32(1)), (P["Factory"], i32(10)), (P["ProductionPrice"], i32(40))]),        # D
-        (0, [(P["Factory"], i32(11)), (P["ProductionPrice"], i32(40))]),                                    # F
+             (P["UpgradePrice"], i32(25)), (P["UpgradeTime"], i32(75)), (P["ProductionPrice"], i32(30)),
+             medium]),                                                                                      # B
+        (0, [(P["Factory"], i32(10)), (P["ProductionPrice"], i32(40)), heavy]),                             # C
+        (0, [(P["Nationalite"], i32(1)), (P["Factory"], i32(10)), (P["ProductionPrice"], i32(40)), medium]),  # D
+        (0, [(P["Factory"], i32(11)), (P["ProductionPrice"], i32(40)), heavy]),                             # F
     ]
     return make_ndf(objects=objects, classes=["TUniteAuSolDescriptor"], props=PROPS,
                     exports={0: "GFX/Everything/Unit_A", 1: "GFX/Everything/Unit_B", 2: "GFX/Everything/Unit_C",
@@ -54,6 +63,8 @@ def write_game(root: Path):
     rev.mkdir(parents=True)
     (rev / "ZZ_GladPatchableWin.dat").write_bytes(make_edat([("dir", "genglad\\patchable\\gfx\\", [
         ("file", "everything.cpp.gladndfbin", units())])]))
+    (rev / "ZZ_Win.dat").write_bytes(make_edat([("dir", "genlocalisation\\ww2\\localisation\\translations\\", [
+        ("dir", "us\\", [("file", "baseunite.dic", make_dic([(name_to_key(k), t) for k, t in CARDS.items()]))])])]))
     (root / "RUSE.exe").write_bytes(b"MZ")
 
 
