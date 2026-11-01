@@ -218,6 +218,32 @@ class Meshes(unittest.TestCase):
         with self.assertRaises(PackError):
             pack.add(self.ger, TANK)
 
+    def test_materials_kept_read_between_copies(self):  # a build's batch: the same bytes as reading them each time
+        def copied(forget: bool) -> bytes:
+            us = mesh_pack({SHERMAN: (40.0, True, 0, 3)}, [TEX_US])
+            ger = mesh_pack({TANK: (0.0, True, 0, 6), TANK_DEAD: (20.0, True, 0, 6)}, [TEX])
+            jeep = mesh_pack({JEEP: (60.0, False, 0, 6)}, [TEX_JEEP])
+            for src, name in ((ger, TANK), (jeep, JEEP), (None, None), (ger, TANK_DEAD)):
+                if forget:
+                    for p in (us, ger, jeep):
+                        p.__dict__.pop("_materials_kept", None)
+                if src is None:  # materials set from outside are read again
+                    us.materials, us.material_count = materials([TEX_US, TEX, TEX_JEEP, TEX]), 4
+                    continue
+                us.add(src, name)
+            return us.to_bytes()
+        kept = copied(False)
+        self.assertEqual(kept, copied(True))
+        self.assertEqual(MeshPack.read(kept).to_bytes(), kept)
+
+    def test_names_read_alone(self):
+        pack = mesh_pack({TANK: (0.0, True, 0, 6), SHERMAN: (40.0, True, 0, 3)}, [TEX])
+        raw = pack.to_bytes()
+        self.assertEqual(MeshPack.item_names(raw), {n: (m, s) for n, (_d, m, s) in MeshPack.read(raw).items.items()})
+        self.assertEqual(MeshPack.item_names(skeleton_pack({}).to_bytes()), {})
+        with self.assertRaises(PackError):
+            MeshPack.item_names(b"MESHPCPC" + struct.pack("<I", 3) + bytes(200))
+
     def test_bones_and_textures(self):
         plain = mesh_pack({JEEP: (0.0, False, 0, 6)}, [TEX_JEEP])
         self.assertTrue(self.ger.bones(TANK))
