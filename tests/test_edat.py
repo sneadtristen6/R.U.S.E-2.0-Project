@@ -6,6 +6,7 @@ import unittest
 
 from fixtures import make_edat, make_empty_edat
 from rusemod import Edat
+from rusemod.edat import WIDE_MARK, WIDE_STEP, PackTooBig
 
 TREE = [
     ("dir", "genglad\\", [
@@ -132,6 +133,63 @@ class HeaderLayout(unittest.TestCase):
         self.assertEqual(raw[:4], b"edat")
         self.assertEqual(struct.unpack_from("<I", raw, 4)[0], 1)
         self.assertEqual(struct.unpack_from("<I", raw, 0x19)[0], 0x40D)
+
+
+class Says(bytes):
+    """A member that only says how long it is: the layout reads lengths, never the bytes, before it gives the
+    header, so a pack's size can be tried without making it."""
+
+    def __new__(cls, n):
+        out = super().__new__(cls, b"")
+        out.n = n
+        return out
+
+    def __len__(self):
+        return self.n
+
+
+class BigPacks(unittest.TestCase):
+    """Past 4 GiB (the owner, 2026-10-30: a player's ZZ_Win.dat with many era units' own models): the data length in
+    8 bytes, a plain pack refused past where its 4-byte places reach, and the wide layout for the big-packs patch."""
+
+    def setUp(self):
+        self.arc = Edat(make_edat(TREE))
+
+    def test_the_data_length_in_8_bytes(self):
+        raw = self.arc.to_bytes()
+        self.assertEqual(struct.unpack_from("<Q", raw, 0x25)[0], self.arc.data_len)
+        self.assertEqual(raw, make_edat(TREE))  # and every pack written as before stays byte for byte
+
+    def test_a_plain_pack_past_4_gib_is_refused_before_anything_is_written(self):
+        five = Says(5_000_000_000)
+        with self.assertRaises(PackTooBig) as cm:  # one member past 4 GiB: its own size can't be said
+            next(self.arc.iter_chunks({"top.bin": five}))
+        self.assertIn("top.bin", str(cm.exception))
+        three = Says(3_000_000_000)
+        # 2 x 3 GB: the second starts before 4 GiB, which a plain pack's places reach; its 6 GB length is 8 bytes
+        head = next(self.arc.iter_chunks({"top.bin": three}, {"new\\one.bin": three}))
+        self.assertGreater(struct.unpack_from("<Q", head, 0x25)[0], 6_000_000_000)
+        more = {"new\\one.bin": three, "new\\two.bin": three}  # 3 x 3 GB: the third starts past 4 GiB
+        with self.assertRaises(PackTooBig) as cm:
+            next(self.arc.iter_chunks({"top.bin": three}, more))
+        self.assertFalse(cm.exception.wide)
+        self.assertIn("4 GiB", str(cm.exception))
+        # laid out wide it fits
+        self.assertGreater(self.arc.laid_out({"top.bin": three}, more, wide=True), 9_000_000_000)
+
+    def test_a_wide_pack_reads_back_with_every_member(self):
+        added = {"new\\made.bin": b"N" * 37}
+        raw = self.arc.to_bytes({"genglad\\readme.txt": b"longer hello"}, added, wide=True)
+        back = Edat(raw)
+        self.assertTrue(back.wide)
+        want = {**PATHS, "genglad\\readme.txt": b"longer hello", **added}
+        self.assertEqual({e.path: bytes(back.read(e)) for e in back.entries}, want)
+        self.assertTrue(all(e.offset % WIDE_STEP == 0 for e in back.entries))  # 16-byte steps
+        places = [struct.unpack_from("<I", back._dict, e.dict_pos)[0] for e in back.entries]
+        self.assertTrue(all(p & WIDE_MARK for p in places))
+        self.assertEqual(len(raw), back.data_offset + back.data_len)  # what the game checks the file's size against
+        self.assertFalse(Edat(self.arc.to_bytes()).wide)
+        self.assertEqual(Edat(raw).to_bytes(wide=True), raw)  # a wide pack rebuilt wide: the same bytes
 
 
 if __name__ == "__main__":

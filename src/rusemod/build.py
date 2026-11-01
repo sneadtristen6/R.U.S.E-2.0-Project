@@ -1017,6 +1017,7 @@ class BuildResult:
     solved: dict = field(default_factory=dict)  # map pack name -> its answers, a locked file (rusemod.solved)
     own_kinds: list = field(default_factory=list)  # the kinds of the buildings with units of their own (ownbuildings)
     game_patch: str | None = None  # the game patch the modded copy needs (rusemod.gamepatch), or None
+    wide_packs: list = field(default_factory=list)  # the packs written wide, past 4 GiB (the big-packs game patch)
     fingerprint: bytes | None = None
 
     @property
@@ -1611,8 +1612,33 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         return None
     source = file.value
     folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-    mesh.obj.props["FileName"] = Text("path", f"{folder}\\{unit}lod0.Ase2ndfbin")
+    own = f"{folder}\\{unit}lod0.Ase2ndfbin"
+    mesh.obj.props["FileName"] = Text("path", own)
+    # its figurine, drawn zoomed out: a towed gun's names a model of its own (<gun>Midlod0) that the close-up's
+    # change doesn't reach, so the unit showed the copied gun there (the owner, 2026-10-31, bigpacks4: "at certain
+    # angles, it takes the default shape of what that unit was"). It names the unit's own model too: the two have the
+    # same bones (15 of the 122 game units the era library copies have one, every one so)
+    from .unitmodel import model_key
+    figurine = _figurine_model(run, run.game.objects[name])
+    if figurine is not None and model_key(figurine) != model_key(source):
+        _point_at_copies(run, name, {model_key(figurine): own})
     return source
+
+
+FIGURINE = ("GfxDescriptorIcone", "PawnDescriptor", "DescriptorFigurine", "MeshDescriptor")
+
+
+def _figurine_model(run, obj) -> str | None:
+    """The model a unit's zoomed-out figurine names (its FIGURINE part's FileName), or None."""
+    from .patch import Inline, Ref
+    node = obj
+    for prop in FIGURINE:
+        v = node.props.get(prop)
+        node = v.obj if isinstance(v, Inline) else run.game.objects.get(v.target) if isinstance(v, Ref) else None
+        if node is None:
+            return None
+    f = node.props.get("FileName")
+    return f.value if isinstance(f, Text) and f.kind == "path" else None
 
 
 def unit_classes(base, run, zz_win, result: BuildResult, scripts: dict | None = None) -> None:
@@ -4523,19 +4549,25 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for reason in fair.offline:
                 say(f"offline only: {reason}; multiplayer and co-op matches are left at once")
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
-            from .unitmodel import UnitModelError, read_mod_glb, write_unit_model
+            from .unitmodel import UnitModelError, read_mod_glb, write_batch, write_unit_model
+            batch: dict = {}  # every own model into each pack at once: each pack read and written once
+            before = {**result.model_changed, **result.texture_changed, **result.model_imports}
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
-                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier={
-                        **result.model_changed, **result.texture_changed, **result.model_imports})
+                    written = write_unit_model(text_arc, source, unit, read_mod_glb(glb), earlier=before,
+                                               batch=batch)
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
-                    raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {exc}") from None
-                result.model_imports.update(written.changed)
+                    raise BuildError(f"{mod_id}: files/models/{Path(glb).name}: {_pack_full(exc)}") from None
                 result.new_files.update(written.added)
                 r = written.report
                 say(f"own model of {unit}: {r.get('vertices', '?')} points, {r.get('triangles', '?')} triangles in "
                     f"{r.get('draws', '?')} draw call(s), {len(written.added)} texture(s); into "
                     f"{len(written.changed)} pack(s) beside {source}")
+            try:
+                result.model_imports.update(write_batch(batch))
+            except (ValueError, struct.error) as exc:
+                raise BuildError(f"the mods' own models: {_pack_full(exc)}") from None
+            batch.clear()
         if result.own_copies and text_arc is not None:  # units' own copies of their models (rusemod.unitmodel)
             from .unitlook import LookError
             from .unitmodel import UnitModelError, write_unit_copy
@@ -4544,7 +4576,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     written = write_unit_copy(text_arc, copies, unit, paint, earlier={
                         **result.model_changed, **result.texture_changed, **result.model_imports})
                 except (UnitModelError, LookError, ValueError, OSError, struct.error) as exc:
-                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: {exc}") from None
+                    raise BuildError(f"{mod_id}: files/models/{unit}.copy.toml: {_pack_full(exc)}") from None
                 result.model_imports.update(written.changed)
                 result.new_files.update(written.added)
                 r = written.report
@@ -4683,25 +4715,31 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if not rebuilt:
             say("The mods change nothing in these packs.")
             return result
+        # packs past 4 GiB (the owner, 2026-10-30): written wide, with the big-packs game patch in the copy
+        wide, opened = _wide_packs(game, rebuilt, say)
+        rebuilt += opened
+        result.wide_packs = sorted(Path(p).name for p in wide)
         if result.fingerprint is None:
             result.fingerprint = fingerprint(build_id, result.changed)
         patched_exe = None
-        if result.game_patch:  # the modded copy's own RUSE.exe, patched (rusemod.gamepatch); the game's is only read
+        patches = ([result.game_patch] if result.game_patch else []) + (["big-packs"] if wide else [])
+        if patches:  # the modded copy's own RUSE.exe, patched (rusemod.gamepatch); the game's is only read
             from . import gamepatch
             exe = Path(game) / gamepatch.EXE
             try:
-                patch = gamepatch.fetch(result.game_patch, cache, say=say)
-                patched_exe = gamepatch.apply(patch, exe.read_bytes()) if instance is not None else None
+                got = [gamepatch.fetch(name, cache, say=say) for name in patches]
+                patched_exe = gamepatch.apply_all(got, exe.read_bytes()) if instance is not None else None
             except OSError as exc:
                 # not a game rule: the game's file can't be read
                 raise BuildError(f"{exe} can't be read for the game patch ({exc.strerror or exc})") from None
             except gamepatch.GamePatchError as exc:
                 raise BuildError(str(exc)) from None
-            # players only play together with the same patch
-            result.fingerprint = hashlib.sha256(result.fingerprint + b"\ngame patch " + result.game_patch.encode()
-                                                + b" " + patch.sha256.encode()).digest()
-            say(f"game patch {result.game_patch}: " + ("applied to the modded copy's RUSE.exe" if instance is not None
-                                                        else "only a modded copy gets it (--instance)"))
+            for name, patch in zip(patches, got):
+                # players only play together with the same patch
+                result.fingerprint = hashlib.sha256(result.fingerprint + b"\ngame patch " + name.encode()
+                                                    + b" " + patch.sha256.encode()).digest()
+                say(f"game patch {name}: " + ("applied to the modded copy's RUSE.exe" if instance is not None
+                                              else "only a modded copy gets it (--instance)"))
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")
         if out is not None:
             out = Path(out)
@@ -4709,13 +4747,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 if len(rebuilt) > 1:
                     raise BuildError(f"these mods rebuild {len(rebuilt)} packs ("
                                      + ", ".join(path.name for path, _a, _c in rebuilt) + "): give --out a folder")
-                targets = [(out, rebuilt[0][1], rebuilt[0][2])]
+                targets = [(out, rebuilt[0][1], rebuilt[0][2], rebuilt[0][0] in wide)]
             else:
                 out.mkdir(parents=True, exist_ok=True)
-                targets = [(out / path.name, a, changed) for path, a, changed in rebuilt]
-            for target, a, changed in targets:
+                targets = [(out / path.name, a, changed, path in wide) for path, a, changed in rebuilt]
+            for target, a, changed, is_wide in targets:
                 with target.open("wb") as f:
-                    a.write_to(f, changed)
+                    a.write_to(f, changed, None, is_wide)
                 say(f"wrote {target}")
         if instance is not None:
             from .instance import Note, build_instance
@@ -4723,7 +4761,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for path, a, changed in rebuilt:
                 rel = str(path.resolve().relative_to(Path(game).resolve()))
                 # a new map's pack isn't in the game: the copy gets it as a file of its own
-                (replace if path.exists() else add)[rel] = (lambda f, a=a, changed=changed: a.write_to(f, changed))
+                (replace if path.exists() else add)[rel] = (lambda f, a=a, changed=changed, w=path in wide:
+                                                            a.write_to(f, changed, None, w))
             if patched_exe is not None:
                 replace[gamepatch.EXE] = patched_exe  # written into the copy as a file of its own
             copied = build_instance(str(game), str(instance), replace=replace, add=add, built_from=built_from)
@@ -4747,4 +4786,82 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     f"the game folder's Properties would save that space.")
             if copied.get("old copy left"):
                 say(f"note: the previous copy at {instance}.old couldn't be removed yet; the next build removes it.")
+        for _p, a, _c in opened:  # the game's own big packs opened to be rewritten wide
+            a.close()
     return result
+
+
+TWO_GIB = 1 << 31
+# not a game rule: one file inside a game pack is at most 4 GB, its size said in 4 bytes (a model pack holding the
+# mods' own models is such a file); the wide layout can't change that
+MODEL_PACK_FULL = ("the game's model pack it goes into would pass 4 GB, the most one file inside a game pack can be: "
+                   "take some of the mods' own models out (the era units' own models are the biggest) and build again")
+# not a game rule: a model pack counts its draw calls, buffers and meshes in 2 bytes each
+MODEL_PACK_COUNTS = ("the game's model pack it goes into would hold more than 65,535 draw calls, buffers or meshes, the "
+                     "most it can count: take some of the mods' own models out (the era units' own models are the "
+                     "biggest) and build again")
+
+
+def _past_4_gb(exc) -> bool:
+    """A number written in 4 bytes that didn't fit (Python says it so for every such write)."""
+    return isinstance(exc, struct.error) and "4294967295" in str(exc)
+
+
+def _pack_full(exc) -> str:
+    """A model pack's write that didn't fit, in plain words; anything else as it is."""
+    if _past_4_gb(exc):
+        return MODEL_PACK_FULL
+    if isinstance(exc, struct.error) and "65535" in str(exc):
+        return MODEL_PACK_COUNTS
+    return str(exc)
+
+
+def _laid_out(a, changed, wide: bool = False) -> int:
+    """A pack's size once written (rusemod.edat's layout, nothing read or written): PackTooBig when it can't be."""
+    head = next(iter(a.iter_chunks(changed, None, wide)))
+    return len(head) + struct.unpack_from("<Q", head, 0x25)[0]
+
+
+def _wide_packs(game, rebuilt: list, say) -> tuple[set, list]:
+    """The packs to write wide (rusemod.edat), for a copy with the big-packs game patch: none while every pack fits
+    the game's own layout (its members start within 4 GiB of its file). Once one doesn't, every pack of 2 GiB or more
+    in the copy is written wide, the game's own big ones too, rewritten as they are: with the patch, a plain place
+    with bit 31 (a member past 2 GiB) would be read as a wide one. Returns (their paths, the game's packs opened for
+    it, to add to `rebuilt`). A pack too big even wide (past 32 GiB, or one file in it past 4 GiB) stops the build."""
+    from .edat import PackTooBig
+    sizes, over = {}, []
+    for path, a, changed in rebuilt:
+        try:
+            sizes[path] = _laid_out(a, changed)
+        except PackTooBig:
+            over.append(path)
+    if not over:
+        return set(), []
+    wide = set(over) | {path for path, size in sizes.items() if size >= TWO_GIB}
+    have = {Path(p).resolve() for p, _a, _c in rebuilt}
+    opened = []
+    for f in sorted(Path(game).rglob("*.dat")):
+        if f.stat().st_size < TWO_GIB or f.resolve() in have:
+            continue
+        try:
+            opened.append((f, Edat.open(str(f)), {}))
+        except ValueError:
+            continue  # not one of the game's packs
+        wide.add(f)
+    for path, a, changed in rebuilt + opened:
+        if path not in wide:
+            continue
+        try:
+            size = _laid_out(a, changed, True)
+        except PackTooBig as exc:
+            for _f, arc, _c in opened:
+                arc.close()
+            # not a game rule: a wide pack's own reach (32 GiB, each file in it 4 GiB)
+            raise BuildError(f"{Path(path).name}: {exc}. Take some of the mods' own models or files out (the era "
+                             f"units' own models are the biggest) and build again.") from None
+        if path in over:
+            say(f"{Path(path).name}: {size / (1 << 30):.2f} GB, past the 4 GB a game pack holds: written in the wider "
+                f"layout, and the modded copy's RUSE.exe gets the big-packs game patch to read it")
+        else:
+            say(f"{Path(path).name}: written in the wider layout too (2 GB or more)")
+    return wide, opened

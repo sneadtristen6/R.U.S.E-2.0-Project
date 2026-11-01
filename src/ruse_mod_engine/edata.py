@@ -79,16 +79,16 @@ def _parse_header_v1(data: bytes) -> EdataHeader:
       0x19  DictOffset           (4 bytes) — always 0x40D (1037) for v1
       0x1D  DictLength           (4 bytes)
       0x21  FileOffset           (4 bytes) — where file data begins
-      0x25  FileLength           (4 bytes) — total bytes of file data
+      0x25  FileLength           (8 bytes, as the game reads it)— total bytes of file data
       0x29  Unknown_1            (4 bytes) — always 0
       0x2D  Padding/SectorSize   (4 bytes) — 8192 for v2; 0 for v1
     """
-    if len(data) < 0x29:
+    if len(data) < 0x2D:
         raise ValueError("File too short for edata v1 header")
     dict_offset = struct.unpack_from("<I", data, 0x19)[0]
     dict_length = struct.unpack_from("<I", data, 0x1D)[0]
     file_offset = struct.unpack_from("<I", data, 0x21)[0]
-    file_length = struct.unpack_from("<I", data, 0x25)[0]
+    file_length = struct.unpack_from("<Q", data, 0x25)[0]  # 8 bytes, as the game reads it
     return EdataHeader(version=1, dict_offset=dict_offset, dict_length=dict_length,
                        file_offset=file_offset, file_length=file_length, sector_size=0)
 
@@ -238,6 +238,10 @@ def _parse_dict_v1(data: bytes, hdr: EdataHeader) -> List[EdataEntry]:
 
             dir_stack.append(name)
 
+    # a wide pack (the apps' packs past 4 GiB, rusemod.edat): every place has bit 31 set and counts 16-byte steps
+    if entries and all(e.offset & 0x80000000 for e in entries):
+        for e in entries:
+            e.offset = (e.offset & 0x7FFFFFFF) * 16
     return entries
 
 
@@ -552,9 +556,9 @@ class EdataFile:
                 else:
                     break
 
-            # Update FileLength at 0x25
+            # Update FileLength at 0x25 (8 bytes, as the game reads it)
             f.seek(0x25)
-            f.write(struct.pack("<I", cur_pos))
+            f.write(struct.pack("<Q", cur_pos))
 
             # Recompute dict checksum at 0x08 (offsets/sizes changed)
             f.seek(hdr.dict_offset)
@@ -649,7 +653,7 @@ class EdataFile:
         header_region = bytearray(data[:hdr.dict_offset])      # header + reserved gap, verbatim
         struct.pack_into("<I", header_region, 0x1D, len(new_dict))         # DictLength
         struct.pack_into("<I", header_region, 0x21, new_file_offset)       # FileOffset
-        struct.pack_into("<I", header_region, 0x25, len(new_data_region))  # FileLength
+        struct.pack_into("<Q", header_region, 0x25, len(new_data_region))  # FileLength (8 bytes)
         header_region[8:24] = _md5(new_dict)                               # dict MD5
 
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".dat")
@@ -696,7 +700,7 @@ class EdataFile:
         new_file_offset = hdr.dict_offset + len(dict_bytes)
         struct.pack_into("<I", header_region, 0x1D, len(dict_bytes))  # DictLength
         struct.pack_into("<I", header_region, 0x21, new_file_offset)  # FileOffset
-        struct.pack_into("<I", header_region, 0x25, cur)              # FileLength
+        struct.pack_into("<Q", header_region, 0x25, cur)              # FileLength (8 bytes)
         header_region[8:24] = _md5(dict_bytes)                        # dict MD5 checksum
 
         # Write to temp file: header + dict + file data
@@ -795,9 +799,9 @@ class EdataFile:
                 else:
                     break
 
-            # Update FileLength at 0x25
+            # Update FileLength at 0x25 (8 bytes, as the game reads it)
             f.seek(0x25)
-            f.write(struct.pack("<I", cur_pos))
+            f.write(struct.pack("<Q", cur_pos))
 
             # Update dict checksum at 0x08
             f.seek(hdr.dict_offset)

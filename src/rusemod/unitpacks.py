@@ -560,7 +560,8 @@ def archive_with(raw: bytes, add: dict[str, bytes]) -> bytes:
         pos += len(data)
     names = (NAMES_HEAD + write_names(entries)) if entries else b"\x01" + bytes(9)
     head = bytearray(raw[:arc.dict_offset])
-    struct.pack_into("<IIII", head, 0x19, arc.dict_offset, len(names), arc.dict_offset + len(names), pos)
+    # (the data length in 8 bytes, as rusemod.edat writes it: the game reads 8 there)
+    struct.pack_into("<IIIQ", head, 0x19, arc.dict_offset, len(names), arc.dict_offset + len(names), pos)
     return bytes(head) + names + b"".join(files[p][0] for p in order)
 
 

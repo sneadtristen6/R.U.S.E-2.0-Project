@@ -61,11 +61,11 @@ class Layered(Edat):
         blob = self.changed.get(entry.path)
         return blob if blob is not None else Edat.read(self, entry)
 
-    def iter_chunks(self, replace=None, add=None):
+    def iter_chunks(self, replace=None, add=None, wide=False):
         merged = dict(self.changed)
         for key, blob in (replace or {}).items():
             merged[(self.entry(key) or self.find(key)).path] = blob
-        return Edat.iter_chunks(self, merged, {**self.added, **(add or {})})
+        return Edat.iter_chunks(self, merged, {**self.added, **(add or {})}, wide)
 
     # --- as LittleGroove's EdataFile ---
     @property

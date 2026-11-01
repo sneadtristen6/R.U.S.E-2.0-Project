@@ -404,20 +404,20 @@ class Resized:
         got = self.over.get(entry.path.lower())
         return got[1] if got is not None else self.base.read(entry)
 
-    def iter_chunks(self, replace=None, add=None):
+    def iter_chunks(self, replace=None, add=None, wide=False):
         merged = {path: data for path, data in self.over.values()}
         for key, data in (replace or {}).items():
             e = self.base.entry(key) or self.base.find(key)
             merged = {p: d for p, d in merged.items() if p.lower() != e.path.lower()}
             merged[e.path] = data
-        return self.base.iter_chunks(merged, add)
+        return self.base.iter_chunks(merged, add, wide)
 
-    def to_bytes(self, replace=None, add=None) -> bytes:
-        return b"".join(self.iter_chunks(replace, add))
+    def to_bytes(self, replace=None, add=None, wide=False) -> bytes:
+        return b"".join(self.iter_chunks(replace, add, wide))
 
-    def write_to(self, out, replace=None, add=None) -> int:
+    def write_to(self, out, replace=None, add=None, wide=False) -> int:
         n = 0
-        for chunk in self.iter_chunks(replace, add):
+        for chunk in self.iter_chunks(replace, add, wide):
             out.write(chunk)
             n += len(chunk)
         return n

@@ -663,6 +663,43 @@ class Packs(unittest.TestCase):
             stand = Tgv(unitmodel.new_standin(bytes(w * h * 4), w, h))
             self.assertEqual(len(stand.payload(0)), stand.width * stand.height)  # one level: 16 bytes a 4 x 4 block
 
+    def test_a_strip_texture_gets_a_stand_in(self):
+        """A texture more than 16 times longer than it is wide had no level 64 across for its stand-in (the HZ-5
+        (Il-28R)'s 256 x 8 stopped the 2026-10-30 build of every era unit): widened by repeating its pixels, its
+        stand-in is one of its own levels, and the picture is the same."""
+        for w, h, wide in ((256, 8, (256, 16)), (8, 256, (16, 256)), (1024, 8, (1024, 64)), (128, 8, (128, 8))):
+            px = bytes(range(256)) * (w * h * 4 // 256)
+            got, gw, gh = unitmodel.not_too_thin(px, w, h)
+            self.assertEqual((gw, gh), wide)
+            for y in range(gh):   # every pixel the one it repeats
+                for x in range(gw):
+                    sx, sy = x * w // gw, y * h // gh
+                    self.assertEqual(got[(y * gw + x) * 4:(y * gw + x + 1) * 4], px[(sy * w + sx) * 4:(sy * w + sx + 1) * 4])
+            tex = Tgv(unitmodel.new_texture(px, w, h))
+            self.assertEqual((tex.width, tex.height), wide)
+            stand = Tgv(unitmodel.new_standin(px, w, h))
+            self.assertLessEqual(max(stand.width, stand.height), unitmodel.STANDIN_SIDE)
+            self.assertEqual(min(stand.width, stand.height), 4)
+            self.assertEqual(unitmodel.new_standin(px, w, h), unitmodel.new_standin(got, gw, gh))
+        self.assertEqual(unitmodel.not_too_thin(b"x" * 64, 4, 4), (b"x" * 64, 4, 4))  # a square as it was
+
+    def test_many_models_at_once_give_the_same_packs(self):
+        """A build's own models in one batch (the owner, 2026-10-30: a copy with every era unit's own model): each
+        pack read and written once gives byte for byte what one model after another gives."""
+        one = unitmodel.write_unit_model(self.zz, TANK, "panzer_one", self.prep)
+        two = unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, earlier=one.changed)
+        batch = {}
+        b1 = unitmodel.write_unit_model(self.zz, TANK, "panzer_one", self.prep, batch=batch)
+        b2 = unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
+        self.assertEqual(set(b1.changed) | set(b2.changed), set(one.changed) | set(two.changed))
+        self.assertTrue(all(v is None for v in b2.changed.values()))  # written once, by write_batch
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "already have a model"):  # in the same batch too
+            unitmodel.write_unit_model(self.zz, TANK, "panzer_two", self.prep, batch=batch)
+        self.assertEqual(len(batch["sources"]), 1)  # the source model found once
+        self.assertEqual(unitmodel.write_batch(batch), {**one.changed, **two.changed})
+        self.assertEqual({**b1.added, **b2.added}, {**one.added, **two.added})
+        self.assertEqual(batch["packs"], {})  # each pack let go once written
+
     def test_refused(self):
         with self.assertRaisesRegex(unitmodel.UnitModelError, "no mesh pack holds"):
             unitmodel.write_unit_model(self.zz, "ww2\\nothing\\nonelod0.ase2ndfbin", "x", self.prep)
@@ -700,6 +737,23 @@ AIR = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02,
                props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
                       ("FileName", 2)],
                strings=[PLANE_FILE], exports={0: "Plane", 3: "Plane_PV"}, compress=True)
+GUN_FILE = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\US155mm_Long_Tomlod0.Ase2NdfBin"
+GUN_FIGURINE = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\US155mm_Long_TomMidlod0.ASE2NdfBin"
+# a towed gun as the game's: its zoomed-out figurine (GfxDescriptorIcone -> PawnDescriptor -> DescriptorFigurine)
+# names a model of its own, the gun's Midlod0
+GUN = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02, struct.pack("<i", 0))),
+                             (2, ref(1, 1)), (5, ref(3, 3))]),
+                        (1, [(3, ref(2, 2))]),
+                        (2, [(4, val(0x1C, struct.pack("<I", 0)))]),
+                        (3, [(6, ref(4, 4))]),
+                        (4, [(7, ref(5, 1))]),
+                        (1, [(3, ref(6, 2))]),
+                        (2, [(4, val(0x1C, struct.pack("<I", 1)))])],
+               classes=["TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TResourceMultiMaterialMesh",
+                        "TGfxDescriptorPileJeton", "TPawnDescriptor"],
+               props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
+                      ("FileName", 2), ("GfxDescriptorIcone", 0), ("PawnDescriptor", 3), ("DescriptorFigurine", 4)],
+               strings=[GUN_FILE, GUN_FIGURINE], exports={0: "Gun"}, compress=True)
 
 
 class TheBuild(unittest.TestCase):
@@ -765,6 +819,35 @@ class TheBuild(unittest.TestCase):
         theirs = objs["Plane"].props["GfxDescriptor"].obj.props["MeshDescriptor"]
         self.assertIsInstance(theirs, Ref)
         self.assertEqual(game.objects[theirs.target].props["FileName"].value, PLANE_FILE)
+
+    def test_a_gun_s_figurine_names_its_own_model_too(self):
+        """A towed gun's zoomed-out figurine names a model of its own (the gun's Midlod0, the same bones as the
+        close-up one); the owner, 2026-10-31, bigpacks4: "at certain angles, it takes the default shape of what that
+        unit was". The new unit's figurine names the unit's own model; the copied gun keeps its own figurine."""
+        with tempfile.TemporaryDirectory() as d:
+            mod = Path(d, "mod")
+            (mod / "src").mkdir(parents=True)
+            (mod / "mod.toml").write_text('[mod]\nid = "m"\nname = "M"\nversion = "0.1.0"\n', encoding="utf-8")
+            (mod / "src" / "units.rndf").write_text("export Gun_Model is clone $/Gun ( DescriptorId = 3 )\n",
+                                                    encoding="utf-8")
+            (mod / "files" / "models").mkdir(parents=True)
+            (mod / "files" / "models" / "Gun_Model.glb").write_bytes(b"glTF")
+            result = build_pack(Edat(make_edat([("dir", "genglad\\patchable\\gfx\\",
+                                                 [("file", "everything.cpp.gladndfbin", GUN)])])),
+                                [load_mod(mod)], text_arc=zz_win())
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.own_models["Gun_Model"][0], GUN_FILE)
+        game, _files = load(result.changed)
+        objs = {k.rsplit("/", 1)[-1]: v for k, v in game.objects.items()}
+        own = "WW2\\Res3D\\Units\\US\\Canon\\US_155mm_M1LongTom\\Gun_Modellod0.Ase2ndfbin"
+
+        def files(unit):
+            close = objs[unit].props["GfxDescriptor"].obj.props["MeshDescriptor"].obj.props["FileName"].value
+            fig = objs[unit].props["GfxDescriptorIcone"].obj.props["PawnDescriptor"].obj.props["DescriptorFigurine"]
+            return close, fig.obj.props["MeshDescriptor"].obj.props["FileName"].value
+
+        self.assertEqual(files("Gun_Model"), (own, own))
+        self.assertEqual(files("Gun"), (GUN_FILE, GUN_FIGURINE))
 
 
 if __name__ == "__main__":
