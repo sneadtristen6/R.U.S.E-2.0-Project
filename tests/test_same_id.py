@@ -57,6 +57,19 @@ class SameId(unittest.TestCase):
         self.assertTrue((self.root / "home" / "maps" / "bridge-test-2" / "mod.toml").is_file())
         self.assertFalse((self.root / "home" / "maps" / "bridge-test").exists())
 
+    def test_nor_a_name_the_other_kind_left_where_it_was_before(self):
+        # mods and maps in Documents\RUSE 2.0 (rusemod.yourfiles): a map still in the platform folder's maps (one the
+        # move left there) keeps its name from a new unit mod, and the other way round
+        folder(self.root / "home", "maps", "bridge-test")
+        folder(self.root / "home", "mods", "river-test")
+        api = StudioApi(home=self.root / "home", game_dir=self.root / "game", work=self.root / "docs")
+        api.new_mod("Bridge test")
+        api.new_mod("River test", "map")
+        self.assertTrue((self.root / "docs" / "Mods" / "bridge-test-2" / "mod.toml").is_file())
+        self.assertTrue((self.root / "docs" / "Maps" / "river-test-2" / "mod.toml").is_file())
+        self.assertFalse((self.root / "docs" / "Mods" / "bridge-test").exists())
+        self.assertFalse((self.root / "docs" / "Maps" / "river-test").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
