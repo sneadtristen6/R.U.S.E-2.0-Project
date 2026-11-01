@@ -746,6 +746,18 @@ class KeptOwnModels(unittest.TestCase):
             with mock.patch.object(unitmodel, "read_mod_glb", side_effect=AssertionError("made again")):
                 self.assertEqual(self.written(*again.get(other)), made[other])
 
+    def test_stopped_while_making(self):  # a build stopped by an error closes it: get still makes what's missing
+        other = self.dir / "models" / "Panzer_Big.glb"
+        modelin.write_glb(modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir, self.like, size=1.5),
+                          other, TANK)
+        kept = unitmodel.KeptModels(self.cache)
+        kept.prepare([self.glb, other], workers=2)
+        kept.close()
+        self.assertIsNone(kept.maker)
+        for g in (self.glb, other):
+            self.assertEqual(self.written(*kept.get(g)), self.written(unitmodel.read_mod_glb(g)))
+        kept.close()
+
     def test_what_a_worker_can_t_make_is_made_by_get(self):
         broken = self.dir / "models" / "Broken.glb"
         broken.write_bytes(b"not a glb")
