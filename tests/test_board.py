@@ -272,6 +272,10 @@ class Board(unittest.TestCase):
         made = self.api.board_put(0, 10, unit=TIGER, group=A)["made"]           # A's group picked
         row = next(r for r in self.api.board(0)["rows"] if r["factory"] == 10)
         self.assertIn(made, next(g for g in row["groups"] if g["root"] == A)["units"])
+        offer = self.api.new_unit_group(TIGER, 0, 10)                            # the Units tab's New unit… asks
+        self.assertEqual((offer["pick"], offer["root"]), (True, None))
+        self.assertIn(A, [c["root"] for c in offer["choices"]])
+        self.assertFalse(self.api.new_unit_group(TIGER, 0, 10, "base", A)["pick"])   # picked
 
     def test_more_than_ten_is_allowed_and_said(self):
         """More than ten units in a building, said as not tried yet; in groups of at most 6 and at most 10 groups a

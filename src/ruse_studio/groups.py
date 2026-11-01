@@ -429,6 +429,32 @@ class GroupCalls:
         self._groups_save(edits, file, want)
 
     # --- what the pages ask ---
+    def new_unit_group(self, source: str, nation: int = -1, factory: int = -1, lang: str = "base", group=None):
+        """What the Units tab's New unit… shows for a copy of `source` in build menu (`nation`, `factory`; -1: the
+        source's own): the group it goes in, as era_unit_start's "group" (_groups_offer: "pick" when `source` has no
+        card type, the owner's pick 2026-11-01, "The modder picks"), `group` as new_unit takes it; None outside the
+        board's buildings or without a mod."""
+        from .api import EditsFileError
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            return None
+        if edits is None:
+            return None
+        ix = self._open()
+        try:
+            state = self._groups_state(ix, edits)
+            mine = state.info.get(source) or self._board_info(ix, edits, only={source}).get(source)
+            if mine is None:
+                return None
+            n, f = (nation, factory) if nation >= 0 and factory >= 0 else (mine["nation"], mine["factory"])
+            name = self._names(ix, [source], lang if lang in schema.LANGS else "us",
+                               edits.new_units).get(source, source)
+            offer, _g = self._groups_offer(ix, edits, state, state.kinds.get(source), n, f, group, name, lang)
+        finally:
+            ix.close()
+        return offer
+
     def _groups_offer(self, ix, edits, state: GroupState, kind, nation, factory, group, name: str,
                       lang: str) -> tuple[dict | None, dict | None]:
         """(the group a unit of card type `kind` would go into in a build menu, for a page: {"root" (None: a group of

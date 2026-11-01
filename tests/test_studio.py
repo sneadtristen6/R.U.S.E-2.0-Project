@@ -636,7 +636,7 @@ class NewUnits(WithMod):
         with self.assertRaises(StudioError):
             self.api.new_unit(M4, "Super Sherman", 50)  # no mod yet
         folder = Path(self.api.new_mod("Copies")["current"])
-        made = self.api.new_unit(M4, "Super Sherman", 50.4)
+        made = self.api.new_unit(M4, "Super Sherman", 50.4, group="new")
         self.assertEqual((made["address"], made["name"]), (SUPER, "Super Sherman"))
         rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
         self.assertIn("\nexport Descriptor_Unit_Super_Sherman is clone $/GFX/Everything/Descriptor_Unit_M4_Sherman\n(\n"
@@ -716,7 +716,7 @@ class NewUnits(WithMod):
         self.assertEqual(menus[5]["factories"], [])
         with self.assertRaises(StudioError):
             self.api.new_unit(M4, "Soviet Sherman", 40, 5, 10)  # the USSR has no factory 10 in this little game
-        made = self.api.new_unit(M4, "German Sherman", 40, 1, 10)
+        made = self.api.new_unit(M4, "German Sherman", 40, 1, 10, group="new")
         rndf = (folder / "src" / "studio.rndf").read_text(encoding="utf-8")
         self.assertIn("    Factory = 10\n    Nationalite = 1\n    ProductionPrice = [40, 40]\n)\n", rndf)
         listed = self.api.units(nation=1)["units"]
@@ -724,7 +724,7 @@ class NewUnits(WithMod):
         rows = self.rows(made["address"])
         self.assertEqual((rows["Nationalite"]["values"], rows["Nationalite"]["locked"]), (["1 (Allemagne)"], True))
         self.assertEqual(rows["Factory"]["edited"], 10)
-        same = self.api.new_unit(M4, "Same menu", 40, 0, 10)  # the source's own menu: nothing to write
+        same = self.api.new_unit(M4, "Same menu", 40, 0, 10, group="new")  # the source's own menu: nothing to write
         self.assertNotIn("Descriptor_Unit_Same_menu\n(\n    NameInMenuToken = loc('studio.Descriptor_Unit_Same_menu.name')"
                          "\n    Nationalite", (folder / "src" / "studio.rndf").read_text(encoding="utf-8"))
         ndf, _texts = self.build(folder)
@@ -738,12 +738,12 @@ class NewUnits(WithMod):
         for name, price in [("M4 Sherman", 10), ("", 10), ("  ", 10), ("Fine", "10"), ("Fine", True)]:
             with self.subTest(name=name, price=price), self.assertRaises(StudioError):
                 self.api.new_unit(M4, name, price)  # the game's own unit / no name / not a number
-        self.assertEqual(self.api.new_unit(M4, "Tigre à 2 tourelles!", 10)["address"],
+        self.assertEqual(self.api.new_unit(M4, "Tigre à 2 tourelles!", 10, group="new")["address"],
                          "$/GFX/Everything/Descriptor_Unit_Tigre_a_2_tourelles")
         with self.assertRaises(StudioError):
             self.api.new_unit(M4, "Tigre a 2 tourelles", 10)  # the same address again
-        self.assertEqual(self.api.new_unit(M4, "虎", 10)["address"], "$/GFX/Everything/Descriptor_Unit_New_1")
-        self.assertEqual(self.api.new_unit(M4, "戦車", 10)["address"], "$/GFX/Everything/Descriptor_Unit_New_2")
+        self.assertEqual(self.api.new_unit(M4, "虎", 10, group="new")["address"], "$/GFX/Everything/Descriptor_Unit_New_1")
+        self.assertEqual(self.api.new_unit(M4, "戦車", 10, group="new")["address"], "$/GFX/Everything/Descriptor_Unit_New_2")
         self.assertEqual(self.api.new_unit(DEPOT, "Big Depot", 10)["address"],
                          "$/GFX/Everything/Descriptor_Building_Big_Depot")
         with self.assertRaises(StudioError):
@@ -756,8 +756,8 @@ class NewUnits(WithMod):
 
     def test_deleting_a_new_unit_removes_everything_about_it(self):
         folder = Path(self.api.new_mod("Copies")["current"])
-        self.api.new_unit(M4, "Super Sherman", 50)
-        self.api.new_unit(M4, "Other", 50)
+        self.api.new_unit(M4, "Super Sherman", 50, group="new")
+        self.api.new_unit(M4, "Other", 50, group="new")
         self.api.edit(SUPER, "SeuilMort", 20)
         self.api.edit(SUPER + ":Weapon", "PorteeMaximale", 3000)
         self.api.edit(AMMO, "Puissance", 70, "own", SUPER)
@@ -780,7 +780,7 @@ class NewUnits(WithMod):
 
     def test_a_broken_names_file_is_never_written_over(self):
         folder = Path(self.api.new_mod("Copies")["current"])
-        self.api.new_unit(M4, "Super Sherman", 50)
+        self.api.new_unit(M4, "Super Sherman", 50, group="new")
         (folder / "text" / "studio.baseunite.csv").write_text("key,us\n,no key\n", encoding="utf-8")
         self.assertFalse(self.api.unit(M4)["editable"])
         self.assertFalse(any(u["new"] for u in self.api.units()["units"]))  # it can't be shown; browsing goes on
@@ -952,7 +952,7 @@ class AmmoAndFlags(WithMod):
         self.assertIn("\npatch $/GFX/Everything/Ammo_Canon_75\n(\n    PorteeMaximale = 150000\n)\n", rndf())
         self.assertEqual((weapon()["range"], weapon()["game_range"]), (150000, 104000.0))
         # a copy of the Panzer fires it too: now "only this unit" gives the Panzer's gun a copy of its own
-        twin = self.api.new_unit(PANZER_IV, "Panzer Twin", 45)["address"]
+        twin = self.api.new_unit(PANZER_IV, "Panzer Twin", 45, group="new")["address"]
         self.assertEqual([f["address"] for f in weapon()["firing"]], [PANZER_IV, twin])
         saved = self.api.set_range(PANZER_IV, PANZER_MOUNT, 160000, "own")
         copy = "$/GFX/Everything/Ammo_Range_Panzer_IV_G_1"

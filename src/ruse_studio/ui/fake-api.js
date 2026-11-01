@@ -3079,6 +3079,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       // in the group of its kind in that building, or `group` ("new": a group of its own); refused when it has no room
       new_unit: async (source, name, price, nation = -1, factory = -1, unique = false, group = null) =>
         fakeNewUnit(source, name, price, nation, factory, { unique, group }),
+      // what New unit… shows (StudioApi.new_unit_group): the group a copy of `source` goes in, "pick" when it has no
+      // card type; null outside the board's buildings or without a mod
+      new_unit_group: async (source, nation = -1, factory = -1, lang = "us", group = null) => {
+        if (!current) return null;
+        const src = units.find((u) => E + u.id === source);
+        if (!src || src.kind === "buildings") return null;   // (a building stands in no build list's group)
+        const n = nation >= 0 ? nation : src.nation, f = factory >= 0 ? factory : src.factory;
+        return fakeGroupOffer(fakeGroupState(lang), fakeKindOf(source), n, f, group, src.name || source)[0];
+      },
       weapons: async (address, lang) => weaponsOf(address, lang),
       prefs: async () => ({ ...prefs }),
       game_folder: async () => ({ path: fakeGame, picked: fakeGame === PICKED, version: "0.6.3" }),
