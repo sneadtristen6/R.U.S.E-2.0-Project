@@ -5,16 +5,17 @@ is"; his picks: lines as rows, and a line too long for one row carries on in a s
 
 The game keeps an upgrade's research card beside the unit it upgrades, but a researched upgrade stands as a row of its
 own: a mod's era units, each an upgrade of one game unit (eight of the Kubelwagen) or bought from the start, filled the
-column past the screen. With lines as rows, every unit of a line stands in that line's row: the line's first unit, at
-most ACROSS - 1 more of its units beside it, then the research cards of the units in that row; a longer line carries on
-in a row below, which starts with its next unit. A unit's line is the first unit of its upgrades (each research's
-parent, up the chain); a new unit bought from the start joins the line of the unit it was copied from, which the build
-writes into the template (`_r2_lines`).
+column past the screen. With lines as rows, a line's buttons stand in that line's rows: its own unit first, its other
+units, then its research cards, ACROSS to a row, a longer line carrying on in the rows right below (bigpacks10, his test:
+a research card whose unit wasn't in the list stood alone, and while an upgrade is researched the game hides the unit
+it upgrades, so its cards stood alone till the research ended: a card goes by its line, not by its unit). A button's
+line is the first unit of its upgrades (each research's parent, up the chain); a new unit bought from the start joins
+the line of the unit it was copied from, which the build writes into the template (`_r2_lines`). A research card may
+start a row: its action, like a unit's, has the get_policy the game's research start reads.
 
 The template runs after the game's own headup/menu module (pyscript.append_module), compiled with the game's Python
 2.5.1 (menulines_compiled): after the game numbers a tab's rows (Menu.update_sub_buttons), it links each row's buttons
-the way the game links a unit and its research card (add_attached_button, both ways) and numbers the rows again, each
-row starting with a unit. While the game decides whether a unit's own button stays (Menu.add_bouton_construction_unit:
+the way the game links a unit and its research card (add_attached_button, both ways) and numbers the rows again. While the game decides whether a unit's own button stays (Menu.add_bouton_construction_unit:
 it goes while the first button beside it has a command, meant for its upgrade being researched), the unit shows only
 its own research cards, so another unit being built beside it never takes it away. Any error leaves the tab as the game
 made it: an error out of the game's scripts stops the game.
@@ -26,13 +27,12 @@ import hashlib
 
 from . import pyscript
 
-ACROSS = 5   # a row's units: his 1920 x 1080 screen showed a row of 4 cards and the upgrade tab (bigpacks5, capture 6996)
+ACROSS = 5   # a row's cards, units and research cards alike: his 1920 x 1080 screen showed a row of 5 cards (bigpacks10)
 
 SOURCES = {
     "menu": '''\
-# a build list's lines as rows (the RUSE Studio's build): every unit of a line in that line's row, at most _r2_across
-# of them, then the research cards of that row's units; a longer line carries on in a row below, which starts with a
-# unit. Any error leaves the tab as the game made it.
+# a build list's lines as rows (the RUSE Studio's build): a line's units (its own unit first), then its research cards,
+# _r2_across to a row, a line's rows together. Any error leaves the tab as the game made it.
 _r2_across = 5
 _r2_lines = ()
 _r2_line_of = {}
@@ -55,73 +55,64 @@ def _r2_first(techno):
     return techno
 
 
-def _r2_unit_line(bouton):
-    techno = _r2_first(bouton.techno)
+def _r2_line(techno, descriptor):
+    root = _r2_first(techno)
     name = None
-    if techno is not None:
-        name = _r2_name(techno.GetDescriptor())
+    if root is not None:
+        name = _r2_name(root.GetDescriptor())
     if name is None:
-        name = _r2_name(bouton.descriptor)
+        name = _r2_name(descriptor)
     if name is None:
         return None
     return _r2_line_of.get(name, name)
 
 
-def _r2_parent_button(self, card):
-    techno = card.techno
-    if techno is None or not techno.IsUpgrade():
-        return None
-    parent = techno.GetParente()
-    if parent is None:
-        return None
-    return self._dico_boutons.get(getattr(parent.GetDescriptor(), 'base_class', None))
+def _r2_line_of_button(bouton):
+    if bouton.is_unit_button():
+        return _r2_line(bouton.techno, bouton.descriptor)
+    if bouton.is_techno_button() and bouton.techno is not None:
+        return _r2_line(bouton.techno, bouton.techno.GetDescriptor())
+    return None
 
 
 def _r2_rows(self):
-    # [(head, [its row's other buttons])] for the tab's units in the game's order, and {card: head}
-    lines = {}
+    # [(line, [a row's buttons])] in the game's order of the lines: a line's units (its own unit first), then its
+    # research cards, _r2_across to a row
+    units = {}
+    cards = {}
     order = []
-    cards = []
     for bouton in self._current_submenu_buttons:
+        if not (bouton.is_unit_button() or bouton.is_techno_button()):
+            continue
+        line = _r2_line_of_button(bouton)
+        if line is None:
+            continue
+        if line not in units:
+            units[line] = []
+            cards[line] = []
+            order.append(line)
         if bouton.is_unit_button():
-            line = _r2_unit_line(bouton)
-            if line is not None:
-                if line not in lines:
-                    lines[line] = []
-                    order.append(line)
-                lines[line].append(bouton)
-        elif bouton.is_techno_button():
-            cards.append(bouton)
+            units[line].append(bouton)
+        else:
+            cards[line].append(bouton)
     rows = []
-    head_of = {}
     for line in order:
-        units = lines[line]
-        first = [unit for unit in units if _r2_name(unit.descriptor) == line]
-        units = first + [unit for unit in units if unit not in first]
+        first = [unit for unit in units[line] if _r2_name(unit.descriptor) == line]
+        members = first + [unit for unit in units[line] if unit not in first] + cards[line]
         k = 0
-        while k < len(units):
-            chunk = units[k:k + _r2_across]
-            rows.append((chunk[0], chunk[1:]))
-            for unit in chunk:
-                head_of[unit] = chunk[0]
+        while k < len(members):
+            rows.append((line, members[k:k + _r2_across]))
             k = k + _r2_across
-    card_head = {}
-    for card in cards:
-        parent = _r2_parent_button(self, card)
-        if parent is not None and parent in head_of:
-            card_head[card] = head_of[parent]
-    return rows, card_head
+    return rows
 
 
-def _r2_link(self, rows, card_head):
+def _r2_link(self, rows):
     want = {}
-    for head, units in rows:
-        want[head] = units[:]
-        for unit in units:
-            want[unit] = [head]
-    for card, head in card_head.items():
-        want[head].append(card)
-        want[card] = [head]
+    for line, row in rows:
+        head = row[0]
+        want[head] = row[1:]
+        for member in row[1:]:
+            want[member] = [head]
     for bouton, others in want.items():
         for linked in bouton.get_attached_buttons()[:]:
             if linked not in others:
@@ -132,40 +123,34 @@ def _r2_link(self, rows, card_head):
         for other in others:
             if not bouton.has_attached_button(other):
                 bouton.add_attached_button(other)
-    return want
 
 
-def _r2_number(self, rows, want):
-    # each row numbered where the game's order first reaches it, a line's rows together and in their order
+def _r2_number(self, rows):
+    # each line's rows numbered together where the game's order first reaches the line, each row's buttons in its
+    # order; any other button as the game does, with what the game linked beside it
+    row_of = {}
+    rows_of_line = {}
+    for line, row in rows:
+        if line not in rows_of_line:
+            rows_of_line[line] = []
+        rows_of_line[line].append(row)
+        for member in row:
+            row_of[member] = line
     placed = {}
-    line_of_head = {}
-    heads_of_line = {}
-    for head, units in rows:
-        line = _r2_unit_line(head)
-        line_of_head[head] = line
-        if line not in heads_of_line:
-            heads_of_line[line] = []
-        heads_of_line[line].append(head)
     index = 0
     merged = 0
     for bouton in self._current_submenu_buttons:
         if bouton in placed:
             continue
-        starts = [bouton]
-        if bouton in want and bouton not in line_of_head:
-            head = want[bouton][0]
-            if head not in line_of_head or head in placed:
-                continue
-            bouton = head
-        if bouton in line_of_head:
-            starts = heads_of_line[line_of_head[bouton]]
-        for start in starts:
-            if start in placed:
-                continue
-            row = [start]
-            for other in start.get_attached_buttons():
-                if other not in placed and other is not start:
+        if bouton in row_of:
+            todo = rows_of_line[row_of[bouton]]
+        else:
+            row = [bouton]
+            for other in bouton.get_attached_buttons():
+                if other not in placed and other is not bouton and other not in row_of:
                     row.append(other)
+            todo = [row]
+        for row in todo:
             group = 0
             for member in row:
                 member.set_index(index)
@@ -179,6 +164,16 @@ def _r2_number(self, rows, want):
     self._current_nb_merged_buttons = merged
 
 
+def _r2_parent_button(self, card):
+    techno = card.techno
+    if techno is None or not techno.IsUpgrade():
+        return None
+    parent = techno.GetParente()
+    if parent is None:
+        return None
+    return self._dico_boutons.get(getattr(parent.GetDescriptor(), 'base_class', None))
+
+
 _r2_game_update_sub_buttons = Menu.update_sub_buttons
 _r2_game_add_unit = Menu.add_bouton_construction_unit
 
@@ -186,12 +181,12 @@ _r2_game_add_unit = Menu.add_bouton_construction_unit
 def _r2_update_sub_buttons(self, *args, **kwargs):
     result = _r2_game_update_sub_buttons(self, *args, **kwargs)
     try:
-        rows, card_head = _r2_rows(self)
+        rows = _r2_rows(self)
     except:
         return result
     try:
-        want = _r2_link(self, rows, card_head)
-        _r2_number(self, rows, want)
+        _r2_link(self, rows)
+        _r2_number(self, rows)
     except:
         pass
     return result
