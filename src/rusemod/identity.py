@@ -75,6 +75,72 @@ def _scan(game) -> _Scan:
     return s
 
 
+class Scans:
+    """_scan kept between clones: made once, then only the objects changed since (`touched`: the patch engine names
+    each object it changes, makes or deletes) taken out and counted again. A mod with hundreds of new units made the
+    whole _scan again for each one (2026-11-01, bigpacks14: 297 times, 78 of its build's first 85 s; the owner: "works
+    quickly to build"). current() gives the same _Scan a fresh one would: the same highest ids, and the same names under
+    each id, debug name and build-menu slot."""
+
+    def __init__(self, game):
+        self.game = game
+        self.of: dict = {}                               # name -> what it counts for (_counted)
+        self.counts: dict = {p: {} for p in IDS}         # id property -> {value: objects and parts that have it}
+        self.scan = _Scan()
+        self.touched: set = set()
+        for name, obj in game.objects.items():
+            self._add(name, obj)
+
+    @staticmethod
+    def _counted(obj) -> tuple:
+        ids = [(prop, v) for o in [obj, *parts_inside(obj)] for prop in IDS
+               if (v := _int(o.props.get(prop))) is not None]
+        by_class = [(prop, v) for prop in IDS if (v := _int(obj.props.get(prop))) is not None]
+        d = obj.props.get(DEBUG_NAME)
+        menu, slot = menu_of(obj), _int(obj.props.get(SLOT))
+        return (ids, obj.cls, by_class, d.value if isinstance(d, Text) else None,
+                (menu, slot) if menu is not None and slot is not None else None)
+
+    def _add(self, name: str, obj) -> None:
+        got = self._counted(obj)
+        self.of[name] = got
+        ids, cls, by_class, debug, menu_slot = got
+        for prop, v in ids:
+            self.counts[prop][v] = self.counts[prop].get(v, 0) + 1
+        for prop, v in by_class:
+            self.scan.by_class.setdefault((prop, cls), {}).setdefault(v, []).append(name)
+        if debug is not None:
+            self.scan.debug_names.setdefault(debug, []).append(name)
+        if menu_slot is not None:
+            self.scan.menus.setdefault(menu_slot[0], {}).setdefault(menu_slot[1], []).append(name)
+
+    def _remove(self, name: str) -> None:
+        got = self.of.pop(name, None)
+        if got is None:
+            return
+        ids, cls, by_class, debug, menu_slot = got
+        for prop, v in ids:
+            self.counts[prop][v] -= 1
+            if not self.counts[prop][v]:
+                del self.counts[prop][v]
+        for prop, v in by_class:
+            self.scan.by_class[(prop, cls)][v].remove(name)
+        if debug is not None:
+            self.scan.debug_names[debug].remove(name)
+        if menu_slot is not None:
+            self.scan.menus[menu_slot[0]][menu_slot[1]].remove(name)
+
+    def current(self) -> _Scan:
+        """The game's _Scan as it is now."""
+        for name in self.touched:
+            self._remove(name)
+            if name in self.game.objects:
+                self._add(name, self.game.objects[name])
+        self.touched.clear()
+        self.scan.top = {prop: max(values) for prop, values in self.counts.items() if values}
+        return self.scan
+
+
 def _is_id(scan: _Scan, prop: str, cls: str, new) -> bool:
     """True unless two of the game's own objects of the class share a value (objects in `new` don't count)."""
     values = scan.by_class.get((prop, cls), {})
@@ -92,15 +158,16 @@ def debug_name(source: str, source_debug: str, name: str) -> str:
     return new_last
 
 
-def refresh(game, name: str, source: str, skip=(), new=()) -> list:
+def refresh(game, name: str, source: str, skip=(), new=(), scans: Scans | None = None) -> list:
     """Give the clone `name` (copied from `source`) fresh identity values, in place. `skip`: properties the clone
     sets itself; `new`: the objects mods added so far. Returns [(property, old value, new value)] per value changed.
     A clone with none of the properties these rules look at (a scenery type's copy, rusemod.visibility) has nothing to
-    change, so the game isn't scanned for it (3 seconds a clone)."""
+    change, so the game isn't scanned for it (3 seconds a clone). `scans`: the game's scan kept between clones (Scans,
+    the clone among its touched objects), instead of the whole game scanned again."""
     obj = game.objects[name]
     if not any(p in obj.props for p in RULES if p not in skip):
         return []
-    scan, changed = _scan(game), []
+    scan, changed = (scans.current() if scans is not None else _scan(game)), []
     added = set(new) | {name}
     for prop in IDS:
         old = obj.props.get(prop)
