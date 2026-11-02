@@ -343,6 +343,116 @@ class Crashes(BugWatchTest):
         self.assertEqual(crashes[0]["own_mods"], 1)
         self.assertTrue(is_clean(crashes[0]))
 
+    BASE = 0x7FF612340000
+
+    def exe(self) -> Path:
+        """A small program file: one runnable section (.text) at 0x1000, with a call ending right before 0x1105
+        (e8 rel32), 0x1206 (ff 15) and 0x1405 (e8), and nothing like a call before 0x1300."""
+        raw = bytearray(0x2400)
+        struct.pack_into("<I", raw, 0x3C, 0x80)
+        raw[0x80:0x84] = b"PE\0\0"
+        struct.pack_into("<HH", raw, 0x84, 0x8664, 1)
+        struct.pack_into("<H", raw, 0x94, 0xF0)
+        struct.pack_into("<8sIIIIIIHHI", raw, 0x98 + 0xF0, b".text", 0x2000, 0x1000, 0x2000, 0x400, 0, 0, 0, 0,
+                         0x60000020)
+        raw[0x400 + 0x105 - 5] = 0xE8
+        raw[0x400 + 0x206 - 6:0x400 + 0x206 - 4] = b"\xff\x15"
+        raw[0x400 + 0x405 - 5] = 0xE8
+        p = self.home / "copy" / "RUSE.exe"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(bytes(raw))
+        return p
+
+    def dump_with_stack(self, words_before: list, words: list, access=(0, 0x20), memory_list=False) -> bytes:
+        """A crash report file of a bad memory access in RUSE.exe (+0x4321) by thread 7: its exception record with
+        `access` (what, where) and its registers (the stack's top after `words_before`), the module list, and the
+        thread list with its stack: `words_before` (under the top: not the chain's) then `words`. `memory_list`: as
+        the game's own crash reporter writes it, the thread's stack named at 0 and kept in a memory list instead."""
+        name = "C:\\Games\\R.U.S.E\\RUSE.exe".encode("utf-16-le")
+        stack = b"".join(struct.pack("<Q", w) for w in words_before + words)
+        stack_start = 0x000000E5F7F00000
+        streams = 4 if memory_list else 3
+        exc_at = 32 + 12 * streams          # the parts, one after another, after the header and the directory
+        ctx_at = exc_at + 168
+        mods_at = ctx_at + 0x4D0
+        name_at = mods_at + 4 + 108
+        threads_at = name_at + 4 + len(name)
+        stack_at = threads_at + 4 + 48
+        memory_at = stack_at + len(stack)
+        exception = (struct.pack("<II", 7, 0) + struct.pack("<IIQQII", 0xC0000005, 0, 0, self.BASE + 0x4321, 2, 0)
+                     + struct.pack("<QQ", *access) + b"\0" * 104 + struct.pack("<II", 0x4D0, ctx_at))
+        context = bytearray(0x4D0)
+        struct.pack_into("<Q", context, 0x98, stack_start + 8 * len(words_before))
+        mods = struct.pack("<I", 1) + struct.pack("<QIIII", self.BASE, 0x2000000, 0, 0, name_at) + b"\0" * (108 - 24)
+        threads = struct.pack("<I", 1) + struct.pack("<IIIIQQIIII", 7, 0, 0, 0, 0, stack_start, len(stack),
+                                                     0 if memory_list else stack_at, 0x4D0, ctx_at)
+        memory = struct.pack("<I", 1) + struct.pack("<QII", stack_start, len(stack), stack_at)
+        header = b"MDMP" + struct.pack("<IIIIIQ", 0xA793, streams, 32, 0, 0, 0)
+        directory = (struct.pack("<III", 6, len(exception), exc_at) + struct.pack("<III", 4, len(mods), mods_at)
+                     + struct.pack("<III", 3, len(threads), threads_at))
+        if memory_list:
+            directory += struct.pack("<III", 5, len(memory), memory_at)
+        return (header + directory + exception + bytes(context) + mods + struct.pack("<I", len(name)) + name
+                + threads + stack + (memory if memory_list else b""))
+
+    def test_a_game_crash_names_what_it_tried_and_its_chain(self):
+        b = self.BASE
+        p = self.home / "report.dmp"
+        p.write_bytes(self.dump_with_stack(
+            words_before=[b + 0x1405],                                   # under the stack's top: not the chain's
+            words=[b + 0x1300, 0x1234, b + 0x1105, 0x41414141, b + 0x1105, b + 0x1206, b + 0x3000000]))
+        found = bugwatch.read_dump(p, self.exe())
+        self.assertEqual((found["code"], found["module"], found["offset"]), ("0xc0000005", "RUSE.exe", "0x4321"))
+        self.assertEqual(found["access"], "read 0x20")
+        # only the words right after a call (not 0x1300), each once, nearest first; none from outside RUSE.exe
+        self.assertEqual(found["chain"], ["RUSE.exe+0x1105", "RUSE.exe+0x1206"])
+        # without the copy's RUSE.exe there's no chain (a word into the program could be any pointer), the rest stays
+        alone = bugwatch.read_dump(p)
+        self.assertEqual((alone["access"], "chain" in alone), ("read 0x20", False))
+        self.assertIsNone(bugwatch.read_dump(p, self.home / "no such RUSE.exe").get("chain"))
+        p.write_bytes(self.dump_with_stack([], [b + 0x1105], access=(1, 0xDEAD0000)))
+        self.assertEqual(bugwatch.read_dump(p, self.exe())["access"], "write 0xdead0000")
+        # the game's own crash reporter keeps the stacks in a memory list (each thread's stack named at 0): read there,
+        # never from the file's start
+        p.write_bytes(self.dump_with_stack([b + 0x1405], [b + 0x1300, b + 0x1206, b + 0x1105], memory_list=True))
+        self.assertEqual(bugwatch.read_dump(p, self.exe())["chain"], ["RUSE.exe+0x1206", "RUSE.exe+0x1105"])
+        # the older layout (no registers, no thread list) still reads as before
+        p.write_bytes(self.dump(code=0xC0000005))
+        self.assertEqual(sorted(bugwatch.read_dump(p, self.exe())), ["code", "module", "offset"])
+
+    def test_the_chain_and_access_go_with_the_crash(self):
+        p = self.home / "report.dmp"
+        p.write_bytes(self.dump_with_stack([], [self.BASE + 0x1105, self.BASE + 0x1206]))
+        w = self.watch()
+        w.game_crash(bugwatch.read_dump(p, self.exe()), [], 1, send=False)
+        (sent,) = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
+        self.assertEqual((sent["access"], sent["chain"]), ("read 0x20", ["RUSE.exe+0x1105", "RUSE.exe+0x1206"]))
+        self.assertTrue(is_clean(sent))
+
+    def test_the_game_watch_reads_the_chain_with_the_copys_program(self):
+        local = self.home / "local"
+        rpt = local / "Temp" / "CrashRpt_x"
+        rpt.mkdir(parents=True)
+        polls = iter([None, 0])
+
+        class Game:
+            def poll(self):
+                return next(polls)
+
+        times = iter([1000.0, 1600.0, 1600.0])
+        w = self.watch()
+
+        def sleep(_seconds):
+            (rpt / "report.dmp").write_bytes(self.dump_with_stack([], [self.BASE + 0x1206]))
+            os.utime(rpt / "report.dmp", (1500, 1500))
+
+        g = bugwatch.GameWatch(w, Game(), [], 0, sleep=sleep, clock=lambda: next(times), local=str(local),
+                               exe=self.exe())
+        with mock.patch.object(w, "send_waiting"):
+            g.run()
+        (sent,) = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
+        self.assertEqual(sent["chain"], ["RUSE.exe+0x1206"])
+
     def test_mods_of(self):
         listed = self.home / "listed"
         listed.mkdir()

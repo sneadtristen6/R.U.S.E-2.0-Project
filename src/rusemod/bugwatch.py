@@ -11,14 +11,19 @@ What is counted, per UTC day and app version: every call a window makes (webui._
 how many failed, the error's kind, the time in five steps), every long job (webui.Job), screens, problems shown,
 troubleshooter checks that failed, updates, the mods in use (mod-list mods by id@version, any other as a count),
 minutes played, and crashes: the apps' own (an error nobody caught: its kind and the lines in our own files only)
-and the game's (its crash code, module and offset, read from the game's crash report on this PC, and for the game's
-script-error stop the Traceback text). Never sent: a path, a file, anything typed, the crash report file itself, the
-player's in-game name, any Steam ID. Days wait in `<platform folder>/bugwatch/outbox/` until a send gets through;
-none waits more than 30 days.
+and the game's (its crash code, module and offset, read from the game's crash report on this PC; for the game's
+script-error stop the Traceback text; for a bad memory access, what the game tried to do and where (read 0x20); and
+the chain: up to 16 places in RUSE.exe the crashed thread's stack returns to, nearest first, so a report says which
+part of the game was running, not only where it stopped). Never sent: a path, a file, anything typed, the crash
+report file itself, the player's in-game name, any Steam ID. Days wait in `<platform folder>/bugwatch/outbox/` until a
+send gets through; none waits more than 30 days.
 
-Checked our_tools.json: none of its tools reads a crash report; this module reads only the exception record and the
-module list of the game's crash report, on the player's PC, which a public app may do, and sends the crash code, the
-module's name and the offset, nothing more (the plan, §2)."""
+Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
+reads only the exception record, the module list and the crashed thread's stack of the game's crash report, on the
+player's PC, as any crash reporter does, and sends the crash code, the module's name and the offset, the access and
+the chain, nothing more (the plan, §2). For the chain it reads the copy's RUSE.exe section table and the few bytes
+before each stack word that points into it: a word right after a call is where that call returns to (2026-11-02, the
+owner's "Yes, add it": a player's crash report named only where the game stopped)."""
 from __future__ import annotations
 
 import json
@@ -50,6 +55,9 @@ GAME_DUMPS = ("Temp/CrashRpt_*/*.dmp", "*Dumps/RUSE.exe*.dmp")  # the game's cra
 MOST = {"calls": 150, "jobs": 30, "screens": 30, "messages": 60, "checks": 60, "mods": 60}
 ERROR_KINDS_EACH, ERROR_KINDS_ALL, MAX_COUNT, MAX_MINUTES = 8, 100, 1_000_000, 1440
 DAY_BYTES, CRASH_BYTES, TRACEBACK_CHARS, FRAMES = 64 * 1024, 32 * 1024, 12_000, 30
+CHAIN_MOST = 16           # places in RUSE.exe a game crash report names from the crashed thread's stack, nearest first
+STACK_LOOK = 64 * 1024    # bytes of that stack looked through, from where the crash happened up
+ACCESS = {0: "read", 1: "write", 8: "execute"}   # a bad memory access's first detail: what the game tried to do
 NAME_RE = re.compile(r"[A-Za-z0-9_.:-]{1,64}")
 KIND_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.]{0,63}")
 MOD_RE = re.compile(r"[A-Za-z0-9_.+-]{1,64}@[0-9A-Za-z.+-]{1,20}")
@@ -474,6 +482,10 @@ class Watch:
             return None
         body = {"kind": "game", "code": found["code"], "module": found["module"], "offset": found["offset"],
                 "mods": [m for m in listed if MOD_RE.fullmatch(m)][:MOST["mods"]], "own_mods": max(0, int(own))}
+        if found.get("access"):
+            body["access"] = found["access"]
+        if found.get("chain"):
+            body["chain"] = found["chain"][:CHAIN_MOST]
         if found.get("traceback"):
             body["traceback"] = found["traceback"]
         return self.crash(body, send)
@@ -512,16 +524,82 @@ def crash_dumps_since(since: float, local: str | None = None) -> list[Path]:
     return sorted(found, key=lambda p: p.stat().st_mtime)
 
 
-def read_dump(path) -> dict | None:
-    """From a crash report file, read on this PC only: {"code", "module", "offset"} and, for the game's script-error stop
-    (0x29a), "traceback" (the game Python's text, paths cut). None if it can't be read. The dump never leaves the
-    PC (the plan, §2)."""
+def _returns_to(exe):
+    """For the copy's RUSE.exe at `exe`: a test of whether a place in it (its offset from the start of the loaded
+    program) comes right after a call, so a stack word pointing there is where that call returns to, a caller, rather
+    than any other pointer into the program. None when the file can't be read as a 64-bit Windows program."""
+    try:
+        raw = Path(exe).read_bytes()
+        (pe,) = struct.unpack_from("<I", raw, 0x3C)
+        if raw[pe:pe + 4] != b"PE\0\0":
+            return None
+        (sections,), (optional,) = struct.unpack_from("<H", raw, pe + 6), struct.unpack_from("<H", raw, pe + 20)
+        code = []
+        at = pe + 24 + optional
+        for _ in range(sections):
+            _name, vsize, va, rsize, rawptr = struct.unpack_from("<8sIIII", raw, at)
+            (flags,) = struct.unpack_from("<I", raw, at + 36)
+            if flags & 0x20000000:  # (a section the program runs)
+                code.append((va, max(vsize, rsize), rawptr, rsize))
+            at += 40
+    except (OSError, struct.error):
+        return None
+
+    def after_call(place: int) -> bool:
+        for va, span, rawptr, rsize in code:
+            if not va <= place < va + span:
+                continue
+            o = place - va + rawptr
+            if o - 7 < rawptr or o > rawptr + rsize:
+                return False
+            b = raw
+            return (b[o - 5] == 0xE8                                                # call to a fixed place
+                    or b[o - 6:o - 4] == b"\xff\x15"                                # call [a fixed place]
+                    or (b[o - 2] == 0xFF and b[o - 1] & 0xF8 == 0xD0)                # call a register
+                    or (b[o - 2] == 0xFF and b[o - 1] & 0xF8 == 0x10 and b[o - 1] & 7 not in (4, 5))  # call [reg]
+                    or (b[o - 3] == 0xFF and b[o - 2] == 0x14)                       # call [reg+reg]
+                    or (b[o - 3] == 0xFF and b[o - 2] & 0xF8 == 0x50 and b[o - 2] & 7 != 4)  # call [reg+small]
+                    or (b[o - 4] == 0xFF and b[o - 3] == 0x54)                       # call [reg+reg+small]
+                    or (b[o - 6] == 0xFF and b[o - 5] & 0xF8 == 0x90 and b[o - 5] & 7 != 4)  # call [reg+large]
+                    or (b[o - 7] == 0xFF and b[o - 6] == 0x94))                      # call [reg+reg+large]
+        return False
+    return after_call
+
+
+def _memory_at(data: bytes, streams: dict, address: int) -> tuple[int, int, int] | None:
+    """(start, size, where in the file) of the memory the crash report kept around `address`, from its memory lists
+    (the game's own crash reporter keeps the threads' stacks there, not beside each thread), or None."""
+    if 5 in streams:  # MemoryListStream: (start, size, where) each
+        at, _ = streams[5]
+        (n,) = struct.unpack_from("<I", data, at)
+        for i in range(n):
+            start, size, where = struct.unpack_from("<QII", data, at + 4 + 16 * i)
+            if start <= address < start + size and where + size <= len(data):
+                return start, size, where
+    if 9 in streams:  # Memory64ListStream: (start, size) each, their bytes one after another from one place
+        at, _ = streams[9]
+        n, where = struct.unpack_from("<QQ", data, at)
+        for i in range(n):
+            start, size = struct.unpack_from("<QQ", data, at + 16 + 16 * i)
+            if start <= address < start + size and where + size <= len(data):
+                return start, size, where
+            where += size
+    return None
+
+
+def read_dump(path, exe=None) -> dict | None:
+    """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
+    (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
+    "chain": the places in RUSE.exe the crashed thread's stack returns to, nearest first (up to CHAIN_MOST, each one
+    right after a call); and for the game's script-error stop (0x29a), "traceback" (the game Python's text, paths cut).
+    None if it can't be read. The dump never leaves the PC (the plan, §2)."""
     try:
         data = Path(path).read_bytes()
     except OSError:
         return None
     if data[:4] != b"MDMP":
         return None
+    access, chain = None, []
     try:
         count, rva = struct.unpack_from("<II", data, 8)
         streams = {}
@@ -530,23 +608,57 @@ def read_dump(path) -> dict | None:
             streams[kind] = (at, size)
         if 6 not in streams:  # ExceptionStream
             return None
-        at, _size = streams[6]
-        code, _flags, _rec, address = struct.unpack_from("<IIQQ", data, at + 8)
-        module, offset = "?", address
+        at, exc_size = streams[6]
+        (thread,) = struct.unpack_from("<I", data, at)
+        code, _flags, _rec, address, params = struct.unpack_from("<IIQQI", data, at + 8)
+        if code == 0xC0000005 and params >= 2:
+            what, where = struct.unpack_from("<QQ", data, at + 40)
+            access = f"{ACCESS.get(what, '?')} 0x{where:x}"
+        modules = []
         if 4 in streams:  # ModuleListStream
             mat, _ = streams[4]
             (n,) = struct.unpack_from("<I", data, mat)
             for i in range(n):
                 base, size, _sum, _stamp, name_rva = struct.unpack_from("<QIIII", data, mat + 4 + 108 * i)
-                if base <= address < base + size:
-                    (length,) = struct.unpack_from("<I", data, name_rva)
-                    name = data[name_rva + 4:name_rva + 4 + length].decode("utf-16-le", "replace")
-                    module, offset = re.split(r"[\\/]", name)[-1], address - base
-                    break
+                (length,) = struct.unpack_from("<I", data, name_rva)
+                name = data[name_rva + 4:name_rva + 4 + length].decode("utf-16-le", "replace")
+                modules.append((base, size, re.split(r"[\\/]", name)[-1]))
+        module, offset = next(((name, address - base) for base, size, name in modules
+                               if base <= address < base + size), ("?", address))
+        game = next(((base, size) for base, size, name in modules if name.lower() == "ruse.exe"), None)
+        after_call = _returns_to(exe) if exe is not None and game is not None else None
+        if after_call is not None and 3 in streams and exc_size >= 168:  # ThreadListStream; the thread's registers
+            _ctx_size, ctx_at = struct.unpack_from("<II", data, at + 160)
+            (rsp,) = struct.unpack_from("<Q", data, ctx_at + 0x98)  # (where the crashed thread's stack was)
+            tat, _ = streams[3]
+            (n,) = struct.unpack_from("<I", data, tat)
+            for i in range(n):
+                t = tat + 4 + 48 * i
+                if struct.unpack_from("<I", data, t)[0] != thread:
+                    continue
+                start, ssize, srva = struct.unpack_from("<QII", data, t + 24)
+                if not srva or srva + ssize > len(data):  # (the stack kept in a memory list instead)
+                    start, ssize, srva = _memory_at(data, streams, rsp) or (0, 0, 0)
+                stack = data[srva:srva + ssize] if srva else b""
+                first = rsp - start if start <= rsp < start + ssize else 0
+                first -= first % 8
+                base, size = game
+                for o in range(first, min(len(stack), first + STACK_LOOK) - 7, 8):
+                    (word,) = struct.unpack_from("<Q", stack, o)
+                    place = f"RUSE.exe+0x{word - base:x}"
+                    if base <= word < base + size and place not in chain and after_call(word - base):
+                        chain.append(place)
+                        if len(chain) >= CHAIN_MOST:
+                            break
+                break
     except struct.error:
         return None
     module = re.sub(r"[^A-Za-z0-9_.+ -]", "_", module)[:64] or "?"
     out = {"code": f"0x{code:x}", "module": module, "offset": f"0x{offset:x}"}
+    if access:
+        out["access"] = access
+    if chain:
+        out["chain"] = chain
     if code == 0x29A:
         at = data.find(b"Traceback (most recent call last)")
         if at >= 0:
@@ -561,17 +673,18 @@ class GameWatch(threading.Thread):
     any crash report it left since it started."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
-                 local: str | None = None):
+                 local: str | None = None, exe=None):
         super().__init__(daemon=True, name="bug-watch-game")
         self.watch, self.process, self.listed, self.own = watch, process, listed, own
         self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
+        self.exe = exe  # the copy's RUSE.exe, for a crash's chain (read_dump)
 
     def run(self) -> None:
         while self.process.poll() is None:
             self.sleep(5)
         self.watch.played((self.clock() - self.started) / 60.0, self.listed, self.own)
         for dump in crash_dumps_since(self.started, self.local):
-            found = read_dump(dump)
+            found = read_dump(dump, self.exe)
             if found:
                 self.watch.game_crash(found, self.listed, self.own)
 
