@@ -21,7 +21,7 @@
 > [!TIP]
 > **Cómo instalar y jugar (5 minutos):**
 > 1. Abre las [versiones del Launcher](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), elige
->    la más reciente (marcada **Latest**), y en **Assets** haz clic en **RUSE-Launcher-Setup-0.4.8.9.exe**.
+>    la más reciente (marcada **Latest**), y en **Assets** haz clic en `RUSE-Launcher-Setup-<version>.exe`.
 > 2. Ejecútalo. Si Windows dice «Windows protegió su PC»: **Más información**, y luego **Ejecutar de todas formas**.
 > 3. Abre **RUSE Launcher**: encuentra R.U.S.E. por sí solo a través de Steam.
 > 4. Haz clic en **Mods compatibles**, marca los mods que quieras y pulsa **Instalar**.
@@ -32,28 +32,17 @@
 > [versiones del Studio](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) y empieza con
 > [Tu primer mod](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Tu-primer-mod).
 
-## Qué es R.U.S.E.
-
-**R.U.S.E.** (2010) es el juego de estrategia en tiempo real de la Segunda Guerra Mundial de Eugen Systems. Todo el
-frente está sobre una mesa de mapas que puedes acercar desde la sala de guerra hasta un solo tanque, y las batallas se
-ganan tanto con el engaño como con la fuerza: las **cartas de engaño** ocultan tus unidades, fingen un ataque,
-descifran los planes del enemigo o aceleran a tus tropas. Tiene una campaña, Operaciones, y batallas de escaramuza y
-multijugador en mapas desde Normandía hasta Túnez.
-
 ## Qué es R.U.S.E. 2.0
 
-**Mapas nuevos, unidades nuevas y partidas con mods pulsando un solo botón, para R.U.S.E.** Dos aplicaciones gratuitas:
+**R.U.S.E. 2.0 es una continuación hecha por fans de R.U.S.E. (2010), el popular juego de estrategia en tiempo real de la Segunda Guerra Mundial de Eugen Systems**: todo el frente sobre una mesa de mapa, y batallas que se ganan tanto con el engaño como con la fuerza. Añade mapas nuevos, unidades nuevas y partidas con mods pulsando un solo botón, en dos aplicaciones gratuitas:
 
 - **RUSE Launcher, para jugadores.** Elige un conjunto de mods y pulsa **Jugar**. Eso es todo.
 - **RUSE Studio, para modders.** Cambia cualquier unidad, crea unidades nuevas con sus propios modelos 3D, construye
   mapas desde una hoja en blanco o remodela los del propio juego, y luego pulsa **Probar en el juego**.
 
-**Comprobado antes de que empiece el juego.** El Studio lee tu mod como lo hará el juego: todo lo que fallaría en el
-juego se detiene antes, con una nota que dice qué cambiar. El objetivo: que lo que hagas funcione en el juego siempre,
-a la primera.
+**Juego limpio de serie.** RUSE Guard, nuestro anti-trampas, mantiene las trampas fuera de las partidas multijugador reales: un juego con mods de trampas se queda sin conexión, y los jugadores comparan sus códigos de partida para saber que juegan al mismo juego.
 
-**Solo datos.** Un mod aquí cambia los datos del juego, en una copia aparte del juego, y eso es todo. Tu instalación
-de Steam nunca se modifica.
+**Tu propia copia, nunca cambiada.** Las aplicaciones solo funcionan con una copia de R.U.S.E. que sea tuya, y construyen aparte una copia con mods: un mod solo cambia los datos del juego, y tu instalación de Steam nunca se toca.
 
 **Código abierto** (GPL-3.0), en once idiomas: los diez del juego, y el persa.
 
@@ -68,11 +57,33 @@ de Steam nunca se modifica.
       <sub><b>De la Primera Guerra Mundial a hoy, todo junto.</b> Biplanos, bombarderos y reactores en un mismo aeródromo.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. en el juego en Día D: una carretera nueva de cerca, asfalto con una línea central discontinua y arcenes de grava" width="260"><br>
-      <sub><b>Carreteras que trazas tú.</b> Como las del propio mapa, desde lo alto y a ras de suelo.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. en el juego: el mensaje de RUSE Guard en una copia construida con trampas: es para jugar sin conexión y abandona las partidas multijugador y cooperativas" width="260"><br>
+      <sub><b>RUSE Guard.</b> Un juego construido con trampas se queda sin conexión.</sub>
     </td>
   </tr>
 </table>
+
+## Apoyar el desarrollo
+
+R.U.S.E. 2.0 es mi primer proyecto de modding. Si quieres apoyar el desarrollo y seguir el trabajo entre bastidores,
+[visita mi Patreon](https://www.patreon.com/SneadTristen6). Cualquier apoyo me ayuda a seguir construyendo.
+
+### Opciones de apoyo de pago único
+
+| Opción | Importe | Reconocimiento |
+| --- | --- | --- |
+| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 20 $ una vez | El nombre que elijas en la sección Above & Beyond Supporters de los créditos de GitHub y de los mods. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 100 $ una vez | Una mención destacada en la sección Monumental Supporters, con un agradecimiento especial por ayudar a sentar las bases de la visión del proyecto. |
+
+Siempre he imaginado **Iwo Jima como el mapa insignia de una expansión al estilo de un DLC, Pacific Defense**, junto
+con añadir **China** al juego. El apoyo me ayuda a avanzar hacia ese sueño. Son objetivos de desarrollo de este
+proyecto independiente hecho por fans.
+
+Los créditos son opcionales: después de la compra, envía un mensaje por Patreon con el nombre público que elijas y tu
+permiso para publicarlo, o elige quedar en el anonimato. Los créditos se actualizan con las versiones del proyecto.
+Estas compras de la tienda no se renuevan automáticamente.
+
+También puedes [pedir una función por un pago único de 3 $](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
 ## Qué cambia R.U.S.E. 2.0
 
@@ -107,15 +118,10 @@ de Steam nunca se modifica.
   tamaño del juego o más grandes, dales sus propias imágenes en los menús, y pinta sus sectores.
 - **Dar forma al terreno:** colinas, cráteres, mesetas, rampas, terreno nivelado y suavizado; lagos y ríos drenados.
   Las unidades circulan y combaten sobre él.
-- **Carreteras y puentes:** carreteras rectas, curvas o a mano alzada que siguen los camiones de suministros; donde una
-  cruza el agua, el tipo de puente propio del mapa, que cruzan tanques, infantería y camiones. Quita los puentes del
-  propio mapa y cierra sus cruces.
 - **Edificios, objetos y árboles:** colócalos de uno en uno, en cuadrícula, en caja, o a lo largo de un camino (setos
   y franjas de árboles), con los edificios de cara a las carreteras; selecciónalos, muévelos, gíralos, cambia su
   tamaño y bórralos, también los del propio mapa; despeja los bosques y objetos del mapa. **Importar modelo**
   convierte un modelo 3D en una roca, un objeto, una planta o un árbol propio de tu mapa.
-- **Cobertura y movimiento:** pinta los pueblos y bosques en los que se esconden las unidades, y cierra terreno a
-  todas las unidades, a la infantería o a los vehículos. El mapa muestra lo que cambió cada trazo.
 - **Pintar mapa:** pinta la imagen del suelo con un color, con el propio suelo del mapa tomado de otro sitio, con las
   texturas del juego, con imágenes tuyas o con texturas gratuitas en línea.
 - **Escenarios y misiones:** mueve los puntos de inicio, añade las unidades con las que empieza una batalla, y
@@ -123,15 +129,8 @@ de Steam nunca se modifica.
 
 ### Las reglas del juego
 
-- **Ajustes de la IA y de los jugadores**, en una sola pestaña:
-  - **Ajustes de los jugadores:** dinero inicial e ingresos, depósitos de suministros y sus camiones, las cartas de
-    engaño con las que empieza cada bando, para las batallas normales y nucleares por separado.
-  - **Jugadores del ordenador:** cada uno de sus valores en cada dificultad y personalidad, las unidades que prefieren
-    y sus cartas de engaño, cada valor explicado.
-  - **Reglas del juego:** otros 172 valores del juego en 16 grupos (batalla y rendición, población, movimiento,
-    disparo, daño, bosques y cobertura, aviones, las cartas de engaño en acción, los colores de bandos y sectores, y
-    más), cada uno explicado.
-- **Todos los valores y archivos:** cada objeto y cada valor de los datos del juego, cambiado en tu mod.
+- **Ajustes de la IA y de los jugadores:** el dinero y los ingresos iniciales, el suministro, las cartas de engaño con que empieza cada bando, y cada valor de los jugadores que controla el ordenador, todos explicados.
+- **172 reglas más del juego** en 16 grupos, y **cada valor y cada archivo** de los datos del juego, cambiados en tu mod.
 
 ### Sonido y animación: RUSE Decoy
 
@@ -171,26 +170,12 @@ de Steam nunca se modifica.
   </tr>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. en el juego: dos escuadras de infantería y un camión de suministros cruzando un puente nuevo" width="260"><br>
-      <sub><b>Puentes que cruzan las unidades.</b> Donde tu carretera se encuentra con el agua, el tipo de puente propio del mapa.</sub>
-    </td>
-    <td width="33%" valign="top">
       <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. en el juego en Blitz: una colina levantada con los pinceles del Studio, con unidades subiéndola" width="260"><br>
       <sub><b>Terreno al que das forma tú.</b> Colinas, cráteres, lagos y ríos secos sobre los que las unidades circulan y combaten.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/blank-ocean-menu.jpg" alt="Pantalla de elección de mapa de R.U.S.E.: Océano en blanco, un mapa nuevo que empieza como mar abierto, con su propia imagen de menú" width="260"><br>
       <sub><b>Mapas nuevos</b>, empezados en blanco, con sus propias imágenes de menú.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. en el juego en Blitz: infantería encima de una zona de cobertura pintada, mostrada como oculta" width="260"><br>
-      <sub><b>Cobertura pintada.</b> La infantería que está encima queda oculta.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. en el juego: el mensaje de RUSE Guard en una copia construida con trampas: es para jugar sin conexión y abandona las partidas multijugador y cooperativas" width="260"><br>
-      <sub><b>RUSE Guard.</b> Un juego construido con trampas se queda sin conexión.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. en el juego en Día D: infantería y un tanque recorriendo el lecho de un río que un mod drenó" width="260"><br>
@@ -245,28 +230,9 @@ de Steam nunca se modifica.
 
 ### El importador de mapas: cómo va
 
-El importador de mapas convierte un lugar real en un mapa de R.U.S.E.: su suelo y sus colinas, campos, bosques, ríos,
-zanjas, playa y mar, y, si los quieres, sus carreteras y edificios, todo hecho con las propias piezas del juego para
-que el mapa se vea y se juegue como los del juego. Elegirás un lugar, y el Studio lo convertirá en un mapa que puedes
-seguir editando.
+El importador de mapas convierte un lugar real en un mapa de R.U.S.E., hecho con las piezas del propio juego para que se vea y se juegue como los mapas del juego. Ya construye una parte de Utah Beach en un mapa que se abre en el juego, pero la playa, el agua y el suelo de cerca aún no están bien, y todavía no funciona del todo en el Studio. Preferimos esperar a que un lugar real se vea y se juegue como un mapa de R.U.S.E. de verdad antes que publicar algo a medias.
 
-El Studio ya puede construir un trozo pequeño de un lugar real (parte de Utah Beach) en un mapa que se abre en el
-juego. Aún no está bien: la playa, el agua y el suelo de cerca todavía no se ven como deberían. Por qué está
-tardando:
-
-- **Un mapa son muchas capas que tienen que concordar:** la forma del suelo, su aspecto de cerca, la imagen vista
-  desde lo alto, el agua, dónde pueden circular y esconderse las unidades, las carreteras y los puentes. Un lugar real
-  tiene que salir bien en todas ellas a la vez, y un fallo en una se nota en las demás.
-- **De cerca y de lejos:** el juego dibuja su suelo de dos formas, y tienen que coincidir. Hacer que los colores de un
-  lugar real se parezcan a los del juego, tanto de cerca como desde el cielo, es la mayor parte del trabajo.
-- **El agua decide por dónde van las unidades:** los ríos, las zanjas y la costa marcan por dónde pueden moverse los
-  tanques y la infantería. Un solo punto mal y los tanques atraviesan una zanja, o no pueden llegar a una playa.
-- **Cada cambio se comprueba en el juego:** es la única prueba que cuenta, y cada comprobación supone construir el
-  mapa y mirarlo desde muchos sitios.
-- **Preferimos esperar** a que un lugar real se vea y se juegue como un verdadero mapa de R.U.S.E. antes que sacar
-  algo a medias.
-
-Lo siguiente: dejar bien el pequeño mapa de prueba, luego un mapa entero, y luego el botón Importar mapa del Studio.
+## Sobre el proyecto
 
 Todo lo que ha cambiado, versión a versión: las
 [notas del Studio](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) y las
@@ -295,22 +261,6 @@ consideremos oportuno.
 han equivocado? El recuadro de la aplicación tiene tu código y dos botones: abre un ticket en Discord o en GitHub, y te
 enviaremos un código de desbloqueo para tu PC.
 
-## Instalar en tres pasos
-
-1. **Descarga** el instalador desde las [versiones](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases):
-   `RUSE-Launcher-Setup-<version>.exe` para jugadores, `RUSE-Studio-Setup-<version>.exe` para modders. Solo Windows.
-   Necesitas R.U.S.E. en tu biblioteca de Steam, instalado.
-2. **Ejecútalo.** No hacen falta derechos de administrador ni Python. Los instaladores aún no están firmados, así que
-   Windows puede avisar una vez («Windows protegió su PC»): haz clic en **Más información**, y luego en **Ejecutar de
-   todas formas**. Para comprobar que tienes el archivo auténtico, compara su SHA-256 con el de las notas de la
-   versión.
-3. **Inícialo** desde el menú Inicio. Encuentra R.U.S.E. a través de Steam. En el Launcher, elige un conjunto de mods
-   y pulsa **Jugar**. En el Studio, construye el índice del juego una vez cuando te lo pida (cerca de un minuto), y
-   luego elige o crea un mod.
-
-Desinstalar conserva tus mods y tus ajustes. Las aplicaciones necesitan Microsoft Edge WebView2, que Windows 11 ya
-trae. Más en [installers/README.md](installers/README.md).
-
 <details>
 <summary><b>Estado, documentación y cómo contribuir</b></summary>
 
@@ -319,7 +269,7 @@ trae. Más en [installers/README.md](installers/README.md).
 [![pruebas](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![Licencia: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** para jugadores (última: 0.4.8.9) &middot; **Studio** para modders, una versión preliminar (última: 0.9.8.9) &middot; Windows &middot; necesita R.U.S.E. en Steam
+**Launcher** para jugadores (última: 0.4.8.12) &middot; **Studio** para modders, una versión preliminar (última: 0.9.8.12) &middot; Windows &middot; necesita R.U.S.E. en Steam
 
 **[Manual de campaña (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Manual-de-campa%C3%B1a)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;
@@ -411,67 +361,7 @@ py -3 -m unittest discover -s tests
 
 ## Créditos
 
-R.U.S.E. 2.0 se apoya en el trabajo de otras personas. Nada de esto estaría aquí sin ellas.
-
-### ProLution: el padrino del modding de R.U.S.E.
-
-- Creó la **RUSE Modding Database** y escribió las guías con las que aprendió la gente, entre ellas las de Operaciones
-  personalizadas.
-- **El código de ProLution está en el nuestro:** el códec del terreno de los mapas en
-  [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) se basa en el trabajo de ProLution
-  sobre el formato del terreno (publicado como CC0), y su codificador está portado del codificador de referencia de
-  ProLution. Nuestro propio lector de las texturas comprimidas del juego
-  ([`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)) también usa su códec.
-
-### LittleGroove: el primer gestor de mods
-
-LittleGroove abrió el camino a mucho de lo que hace R.U.S.E. 2.0: creó el primer gestor de mods de verdad para
-R.U.S.E., y su motor sigue siendo parte del nuestro.
-
-- **RUSE-Mod-Manager y su formato `.rmod`:** un mod como una lista de cambios en los datos del juego, para que varios
-  mods funcionen juntos. Los mods hechos con él se juegan en el Launcher, y los órdenes de carga se comparten en su
-  formato de texto, así que pasan de su Mod Manager al Launcher y al revés.
-- **Su motor es parte del nuestro** ([`src/ruse_mod_engine`](src/ruse_mod_engine/), escrito en Python), y es la razón
-  por la que todo el programa es GPL-3.0:
-  - aplica los mods `.rmod` en nuestras compilaciones, y lleva un mod hecho para otra compilación del juego a la
-    actual con sus mapas de versiones; Convertir un mod antiguo del Launcher es su conversor;
-  - nuestras herramientas de mapa leen y escriben la cobertura del juego, la cuadrícula del ordenador, los puentes,
-    las carreteras y el movimiento con su módulo `sdb`;
-  - el Studio muestra los scripts del juego como Python con su lector de scripts, su resumen de lo que hace una misión
-    y su catálogo de las partes de los scripts, compila un script cambiado con su compilador y el Python 2.5.1 del
-    juego que lleva su motor, y comprueba los archivos y textos de una misión con su cadena de escenarios;
-  - nuestros cambios en él: la raíz de un árbol SpatialDB siempre se divide (una raíz de una sola hoja bloqueaba el
-    juego), y pequeñas añadiduras a su lector de terreno y a su compilador de scripts.
-- **Lo que nos enseñaron sus herramientas:** las distancias que mantienen los depósitos de suministros y los cuarteles
-  generales en las carreteras y lo que contiene un depósito (ambas cosas medidas por él en el juego), la cámara
-  inicial con la que empieza cada partida, la suma de comprobación que permite al juego cargar un escenario cambiado,
-  cómo entran los archivos nuevos en los paquetes del juego, y copiar una munición para darle a un arma la suya
-  propia.
-- **Su Mod Manager los tuvo primero; el Studio los tiene en su propio código:** los editores de Economía y de IA, el
-  editor de valores en bruto (Todos los valores), la cadena de mejoras, el explorador de archivos, los menús, archivos
-  y textos de una misión, y los nombres, zonas y detalles de elementos del editor de mapas.
-
-### DomesticNukes: la base del creador de mapas
-
-- **DomesticNukes sentó la base del creador de mapas:** el suelo por el que caminan las unidades, dónde está cada
-  edificio, árbol y objeto, y la receta que siguen los pinceles de terreno para que un mapa remodelado cargue y se
-  juegue.
-- **DomesticNukes escribió los pinceles de agua:** lagos y ríos drenados, incorporados desde la propia pull request de
-  DomesticNukes.
-- **El trabajo de DomesticNukes sobre los modelos del juego** puso los verdaderos modelos 3D del juego en la vista de
-  mapa del Studio, y ayudó a que funcionaran las unidades de otra nación.
-- Las notas sobre las banderas de las unidades, los suelos de los puentes y cómo se apoyan las unidades en el suelo
-  pasaron a las comprobaciones de la construcción y a los puentes por los que ahora circulan las unidades.
-  DomesticNukes también prueba las versiones en el juego.
-
-### Los autores de los modelos de las unidades de época
-
-Las unidades de otras épocas (Studio 0.9.8.2) son modelos 3D gratuitos de las personas que los hicieron y los
-compartieron, bajo CC0 o CC BY. Cada autor aparece con su nombre, con el título, la licencia y el enlace del modelo, en
-la página de la unidad en el Studio, en el archivo de créditos de cualquier mod que use uno
-(`CREDITS-era-units.md`), y en la lista completa de la
-[versión de las unidades de época](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Lo
-que cambiamos: cada uno se ajustó al juego (girado y escalado) y recibió las insignias de su nación.
+R.U.S.E. 2.0 lo construyen sneadtristen6 y Claude, con la ayuda y el trabajo de las personas de abajo.
 
 ### sneadtristen6 y Claude: construyendo R.U.S.E. 2.0
 
@@ -498,11 +388,45 @@ el código. Codo con codo desde septiembre de 2026, han construido:
 - **Música y misiones:** canciones y frases de voz sustituidas en el Studio, y misiones propias.
 - **Dos aplicaciones en once idiomas** (los diez del juego, y el persa), el Studio para modders y el Launcher para jugadores, que nunca tocan
   la propia carpeta del juego, con una comprobación que detiene un mod que bloquearía el juego antes de que empiece.
+- **RUSE Guard, nuestro anti-trampas, construido y activado:** el bloqueo que mantiene sin conexión un juego con mods de trampas, el vigilante en cada juego con mods, los códigos de partida, el servidor con su pantalla de revisión, y el acuerdo que ve cada jugador.
+- **Solo copias propias:** la comprobación de que el juego es una copia tuya, códigos de desbloqueo para quien lo tiene y Steam no puede confirmarlo, y el inicio de sesión con Steam.
+- **Bug Watch:** informes de fallos y errores, si lo activas, para arreglar los problemas antes.
+- **Mods grandes:** conjuntos de mods de más de 4 GB, listas de construcción ordenadas en grupos, y construcciones unas cuatro veces más rápidas (las 366 unidades de otras épocas en unos 5 minutos).
+- **El primer importador de mapas para R.U.S.E.**, hasta donde sabemos: un lugar real convertido en mapa con las piezas del propio juego. Ya construye una parte de Utah Beach en un mapa que se abre en el juego; todavía no funciona del todo en el Studio.
 - **El código:** todo lo que hay en `src/rusemod`, `src/ruse_studio` y `src/ruse_launcher` es nuestro, escrito para
-  R.U.S.E. 2.0. Los demás en cuyo trabajo se basa tienen su crédito arriba y en
+  R.U.S.E. 2.0. Los demás en cuyo trabajo se basa tienen su crédito abajo y en
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Es pronto, y queda mucho más por venir. Gracias a todos los de arriba, sin quienes nada de esto habría empezado.
+Esto es solo el principio, y queda mucho más por venir. Gracias a todas las personas de abajo, sin las que nada de esto habría empezado.
+
+### DomesticNukes: la idea de RUSE Guard, las pruebas más duras y las bases del editor de mapas
+
+- **RUSE Guard fue idea de DomesticNukes, y el nombre es suyo**, con su primer diseño. sneadtristen6 y Claude lo construyeron en las aplicaciones y en línea; él y sneadtristen6 son su equipo de revisión.
+- **Buena parte de las pruebas más duras:** lleva lo que construimos hasta sus límites. Las primeras partidas multijugador de RUSE Guard, donde el bloqueo demostró que funciona, un modelo importado que encontró un fallo del importador, y los puentes de Diplomats y Vesuvio.
+- **Las bases del editor de mapas:** el suelo que pisan las unidades, dónde está cada edificio, árbol y objeto, y la receta que siguen los pinceles de terreno; los pinceles de agua (lagos y ríos secados) de su propio pull request; los modelos 3D reales del juego en la vista de mapa del Studio; y sus notas sobre las banderas de las unidades y los suelos de los puentes, hoy en las comprobaciones de la construcción.
+
+### ProLution: el padrino del modding de R.U.S.E.
+
+- Creó la **RUSE Modding Database** y escribió las guías con las que aprendió la gente, entre ellas las de Operaciones
+  personalizadas.
+- **El código de ProLution está en el nuestro:** el códec del terreno de los mapas en
+  [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) se basa en el trabajo de ProLution
+  sobre el formato del terreno (publicado como CC0), y su codificador está portado del codificador de referencia de
+  ProLution. Nuestro propio lector de las texturas comprimidas del juego
+  ([`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)) también usa su códec.
+
+### LittleGroove: el primer gestor de mods
+
+LittleGroove creó **RUSE-Mod-Manager**, el primer gestor de mods de verdad para R.U.S.E., y su formato `.rmod`. Su motor es parte del nuestro ([`src/ruse_mod_engine`](src/ruse_mod_engine/)), y por eso todo el programa es GPL-3.0. Los mods hechos con su Mod Manager se juegan en el Launcher, y los órdenes de carga pasan de uno a otro.
+
+### Los autores de los modelos de las unidades de época
+
+Las unidades de otras épocas (Studio 0.9.8.2) son modelos 3D gratuitos de las personas que los hicieron y los
+compartieron, bajo CC0 o CC BY. Cada autor aparece con su nombre, con el título, la licencia y el enlace del modelo, en
+la página de la unidad en el Studio, en el archivo de créditos de cualquier mod que use uno
+(`CREDITS-era-units.md`), y en la lista completa de la
+[versión de las unidades de época](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Lo
+que cambiamos: cada uno se ajustó al juego (girado y escalado) y recibió las insignias de su nación.
 
 ### (Anonyme) Oozaru: pruebas y depuración
 
@@ -534,28 +458,6 @@ de los mecenas.
 
 Un agradecimiento y su nombre en los créditos para los mecenas de 20 $ que van más allá para ayudar a que el
 desarrollo siga avanzando.
-
-## Apoyar el desarrollo
-
-R.U.S.E. 2.0 es mi primer proyecto de modding. Si quieres apoyar el desarrollo y seguir el trabajo entre bastidores,
-[visita mi Patreon](https://www.patreon.com/SneadTristen6). Cualquier apoyo me ayuda a seguir construyendo.
-
-### Opciones de apoyo de pago único
-
-| Opción | Importe | Reconocimiento |
-| --- | --- | --- |
-| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | 20 $ una vez | El nombre que elijas en la sección Above & Beyond Supporters de los créditos de GitHub y de los mods. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 100 $ una vez | Una mención destacada en la sección Monumental Supporters, con un agradecimiento especial por ayudar a sentar las bases de la visión del proyecto. |
-
-Siempre he imaginado **Iwo Jima como el mapa insignia de una expansión al estilo de un DLC, Pacific Defense**, junto
-con añadir **China** al juego. El apoyo me ayuda a avanzar hacia ese sueño. Son objetivos de desarrollo de este
-proyecto independiente hecho por fans.
-
-Los créditos son opcionales: después de la compra, envía un mensaje por Patreon con el nombre público que elijas y tu
-permiso para publicarlo, o elige quedar en el anonimato. Los créditos se actualizan con las versiones del proyecto.
-Estas compras de la tienda no se renuevan automáticamente.
-
-También puedes [pedir una función por un pago único de 3 $](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
 ## ¿Preguntas? Pregunta a cualquier IA
 

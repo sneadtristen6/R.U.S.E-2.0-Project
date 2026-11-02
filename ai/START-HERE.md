@@ -116,8 +116,11 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
 - **"Does it run on Linux or the Steam Deck?"** Through Proton, from Launcher 0.4.8.2 and Studio 0.9.8.2 the apps open
   in the web browser when their own window can't (WebView2 doesn't start under Proton). Not tried on Linux yet.
 - **"What's coming?"** [docs/community/roadmap.md](../docs/community/roadmap.md), and for the big patch before 1.0
-  (RUSE Guard's fair play, unit and building sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there,
-  not in the apps yet. Music and voice lines are in the Studio's Music tab since 0.9.8.1.
+  (unit and building sounds), [docs/BIG_PATCH.md](../docs/BIG_PATCH.md): written up there, not in the apps yet. Music
+  and voice lines are in the Studio's Music tab since 0.9.8.1.
+- **"Is there an anti-cheat?"** Yes: RUSE Guard, on in every modded copy since Launcher 0.4.8.10 and Studio
+  0.9.8.10. A game modded with cheats stays out of multiplayer, players compare join codes, and it acts only in
+  multiplayer and co-op matches. Its rules and what it collects: [SECURITY.md](../SECURITY.md).
 - **"How do I report a bug?"** The apps' **Report a problem** button, or
   [Discussions → Bug reports](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions). Check
   [issue #15](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/issues/15) first.

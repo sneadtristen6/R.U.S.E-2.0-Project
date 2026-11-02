@@ -3,8 +3,8 @@ title: "Roadmap: what's done, what's next"
 category: Announcements
 order: 2
 ---
-Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.2** and
-**RUSE Launcher 0.4.8.2**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
+Where things stand, and what's next. Tested-in-game features are marked ✅. Latest: **RUSE Studio 0.9.8.12** and
+**RUSE Launcher 0.4.8.12**, in [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases).
 0.9.x is the alpha; **1.0** is the launch.
 
 ### Done
@@ -35,6 +35,12 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 - ✅ **Units from other eras:** 366 from WWI to today, at their real size, researched like the game's own, each with
   its own card (Studio 0.9.8.2). Instead of making our own models, we use ones other people made and shared for free,
   each maker credited
+- ✅ **RUSE Guard, our anti-cheat:** a game modded with cheats is kept out of multiplayer (tested in real matches),
+  join codes, and the agreement every player sees (Launcher 0.4.8.10, Studio 0.9.8.10)
+- ✅ **Mods past 4 GB** and **build lists in groups**, tested with all 366 era units at once; builds about four times
+  faster (Studio 0.9.8.10)
+- **Owned copies only**, **Sign in through Steam**, **Bug Watch** (opt-in) and **Persian**, eleven languages in all
+  (Launcher 0.4.8.10, Studio 0.9.8.10)
 - Launcher: mod sets, `.rmod` support, shared load orders, Supported mods, self-updates, Convert an old mod
 - **Map Paint** (early): paint the ground's picture; up close where the ground under it is cleared
 - **Troubleshoot**, a **clean game backup**, **Check this map**, **Report a problem** and **Help** in both apps
@@ -42,8 +48,8 @@ Where things stand, and what's next. Tested-in-game features are marked ✅. Lat
 ### Next
 
 - **Iwo Jima and Pacific Island Defense:** the flagship.
-- **RUSE Guard** (fair play): join codes, cheats kept offline, a watcher in every modded game. Written and kept
-  switched off until it's tested in the game
+- **The map importer:** a real place as a map, the first for R.U.S.E. as far as we know. It builds part of Utah Beach
+  into a map that opens in the game; it isn't fully working in the Studio yet
 - **Unit and building sounds, and campaign scenes** (being researched)
 
 ### On hold

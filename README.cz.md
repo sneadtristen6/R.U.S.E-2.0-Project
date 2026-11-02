@@ -21,7 +21,7 @@
 > [!TIP]
 > **Jak nainstalovat a hrát (5 minut):**
 > 1. Otevřete [vydání launcheru](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher), vezměte
->    nejnovější (označené **Latest**) a v části **Assets** klikněte na **RUSE-Launcher-Setup-0.4.8.9.exe**.
+>    nejnovější (označené **Latest**) a v části **Assets** klikněte na `RUSE-Launcher-Setup-<version>.exe`.
 > 2. Spusťte ho. Pokud Windows napíše „Systém Windows ochránil váš počítač“: **Další informace**, pak **Přesto spustit**.
 > 3. Otevřete **RUSE Launcher**: R.U.S.E. najde přes Steam sám.
 > 4. Klikněte na **Podporované módy**, zaškrtněte mody, které chcete, a stiskněte **Nainstalovat**.
@@ -32,26 +32,17 @@
 > [vydání Studia](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) a začněte stránkou
 > [Váš první mod](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/V%C3%A1%C5%A1-prvn%C3%AD-mod).
 
-## Co je R.U.S.E.
-
-**R.U.S.E.** (2010) je realtimová strategie od Eugen Systems z druhé světové války. Celá fronta leží na mapovém stole,
-který můžete přiblížit od velitelské místnosti až k jedinému tanku, a bitvy se vyhrávají lstí stejně jako silou:
-**karty lstí** skryjí vaše jednotky, předstírají útok, odhalí plány nepřítele nebo zrychlí vaše vojska. Hra má
-kampaň, Operace a bitvy proti počítači i pro více hráčů na mapách od Normandie po Tunisko.
-
 ## Co je R.U.S.E. 2.0
 
-**Nové mapy, nové jednotky a hra s mody na jedno stisknutí pro R.U.S.E.** Dvě bezplatné aplikace:
+**R.U.S.E. 2.0 je pokračování R.U.S.E. (2010) od fanoušků, oblíbené realtimové strategie z druhé světové války od Eugen Systems**: celá fronta na mapovém stole a bitvy vyhrávané lstí stejně jako silou. Přidává nové mapy, nové jednotky a hraní s mody na jedno stisknutí, ve dvou bezplatných aplikacích:
 
 - **RUSE Launcher pro hráče.** Vyberte sadu modů a stiskněte **Hrát**. To je vše.
 - **RUSE Studio pro moddery.** Změňte jakoukoli jednotku, vytvořte nové s vlastními 3D modely, postavte mapy od
   čistého listu nebo předělejte ty ze hry, pak stiskněte **Vyzkoušet ve hře**.
 
-**Zkontrolováno, než se hra spustí.** Studio čte váš mod tak, jak ho bude číst hra: cokoli, co by se ve hře rozbilo,
-se zastaví předem, s poznámkou, co změnit. Cíl: co vytvoříte, funguje ve hře pokaždé, a to napoprvé.
+**Férová hra v základu.** RUSE Guard, náš anticheat, drží cheaty mimo skutečné hry více hráčů: hra upravená s cheaty zůstane offline a hráči si porovnají kódy hry, aby věděli, že hrají stejnou hru.
 
-**Jen data.** Mod tady mění data hry, v samostatné kopii hry, a to je všechno. Vaše instalace Steamu se nikdy
-nemění.
+**Vaše vlastní kopie, nikdy nezměněná.** Aplikace fungují jen s kopií R.U.S.E., kterou vlastníte, a sestaví z ní samostatnou upravenou kopii: mod mění jen data hry a vaší instalace ve Steamu se nikdy nedotkne.
 
 **Open source** (GPL-3.0), v jedenácti jazycích: deset jazyků hry a perština.
 
@@ -66,11 +57,33 @@ nemění.
       <sub><b>Od 1. světové války po dnešek, vše pohromadě.</b> Dvouplošníky, bombardéry a tryskáče na jednom letišti.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. ve hře na mapě Den D: nová silnice zblízka, asfalt s přerušovanou středovou čárou a štěrkovými krajnicemi" width="260"><br>
-      <sub><b>Silnice, které nakreslíte.</b> Jako vlastní silnice mapy, z výšky i úplně dole u země.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. ve hře: zpráva RUSE Guard v kopii sestavené s cheaty: je pro hru offline a opouští hry více hráčů a kooperace" width="260"><br>
+      <sub><b>RUSE Guard.</b> Hra sestavená s cheaty zůstane offline.</sub>
     </td>
   </tr>
 </table>
+
+## Podpora vývoje
+
+R.U.S.E. 2.0 je můj první moddingový projekt. Pokud chcete podpořit vývoj a sledovat práci v zákulisí,
+[navštivte můj Patreon](https://www.patreon.com/SneadTristen6). Každá podpora mi pomáhá pokračovat.
+
+### Jednorázová podpora
+
+| Možnost | Částka | Uznání |
+| --- | --- | --- |
+| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorázově | Vámi zvolené jméno v sekci Above & Beyond Supporters v poděkování na GitHubu a v modu. |
+| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Výrazné poděkování v sekci Monumental Supporters, s osobním poděkováním za pomoc s položením základů vize projektu. |
+
+Vždy jsem si představoval **Iwo Jimu jako vlajkovou mapu rozšíření ve stylu DLC Pacific Defense** a k tomu přidání
+**Číny** do hry. Podpora mi pomáhá k tomuto snu směřovat. Jsou to cíle vývoje tohoto nezávislého fanouškovského
+projektu.
+
+Uvedení jména je dobrovolné: po nákupu pošlete na Patreonu zprávu se zvoleným veřejným jménem a svolením ho
+zveřejnit, nebo zůstaňte v anonymitě. Poděkování se aktualizují s vydáními projektu. Tyto nákupy v Shopu se
+automaticky neobnovují.
+
+Můžete si také [vyžádat funkci za jednorázové $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
 ## Co R.U.S.E. 2.0 mění
 
@@ -104,15 +117,10 @@ nemění.
   větší, dejte jim vlastní obrázky v nabídkách a namalujte jejich sektory.
 - **Tvarování terénu:** kopce, krátery, plošiny, rampy, srovnaný a vyhlazený terén; jezera a vysušené řeky. Jednotky
   po něm jezdí a bojují na něm.
-- **Silnice a mosty:** rovné, zakřivené nebo volně kreslené silnice, po kterých jezdí zásobovací náklaďáky; kde
-  některá vede přes vodu, vlastní druh mostu mapy, po kterém přejedou tanky, pěchota i náklaďáky. Odstraňte vlastní
-  mosty mapy a uzavřete jejich přechody.
 - **Budovy, předměty a stromy:** umisťujte je po jednom, v mřížce, v obdélníku nebo podél trasy (živé ploty a pásy
   stromů), budovy čelem k silnicím; vybírejte, přesouvejte, otáčejte, měňte velikost a mažte je, i ty, které patří
   mapě; vykácejte lesy mapy a odstraňte její předměty. **Importovat model** udělá z 3D modelu jeden z vlastních kamenů,
   předmětů, rostlin nebo stromů vaší mapy.
-- **Kryt a pohyb:** namalujte města a lesy, ve kterých se jednotky skrývají, a uzavřete terén všem jednotkám, pěchotě
-  nebo vozidlům. Mapa ukazuje, co který tah změnil.
 - **Malování mapy:** malujte obraz terénu barvou, vlastním terénem mapy z jiného místa, texturami hry, vlastními
   obrázky nebo volnými texturami online.
 - **Scénáře a mise:** přesouvejte výchozí body, přidejte jednotky, se kterými bitva začíná, a vlastní mise s cíli,
@@ -120,14 +128,8 @@ nemění.
 
 ### Pravidla hry
 
-- **Nastavení počítače a hráčů**, jedna záložka:
-  - **Nastavení hráčů:** počáteční peníze a příjem, zásobovací sklady a jejich náklaďáky, karty lstí, se kterými
-    každá strana začíná, zvlášť pro normální a jaderné bitvy.
-  - **Počítačoví hráči:** každá jejich hodnota pro každou obtížnost a povahu, jednotky, kterým dávají přednost, a
-    jejich karty lstí, každá hodnota vysvětlená.
-  - **Pravidla hry:** dalších 172 hodnot hry v 16 skupinách (bitva a kapitulace, populace, pohyb, střelba,
-    poškození, lesy a kryt, letectvo, karty lstí v akci, barvy stran a sektorů a další), každá vysvětlená.
-- **Všechny hodnoty a soubory:** každý objekt a každá hodnota dat hry, změněné ve vašem modu.
+- **Nastavení AI a hráčů:** počáteční peníze a příjem, zásobování, karty lstí, se kterými začíná každá strana, a každá hodnota počítačových hráčů, každá vysvětlená.
+- **Dalších 172 pravidel hry** v 16 skupinách a **každá hodnota a každý soubor** dat hry, změněné ve vašem modu.
 
 ### Zvuk a animace: RUSE Decoy
 
@@ -165,26 +167,12 @@ nemění.
   </tr>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. ve hře: dvě čety pěchoty a zásobovací náklaďák přecházejí nový most" width="260"><br>
-      <sub><b>Mosty, po kterých jednotky přejdou.</b> Kde vaše silnice narazí na vodu, vlastní druh mostu mapy.</sub>
-    </td>
-    <td width="33%" valign="top">
       <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. ve hře na mapě Blitz: kopec navršený štětci Studia, jednotky po něm vyjíždějí nahoru" width="260"><br>
       <sub><b>Terén, který tvarujete.</b> Kopce, krátery, jezera a vyschlé řeky, po kterých jednotky jezdí a bojují na nich.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/blank-ocean-menu.jpg" alt="R.U.S.E., obrazovka výběru mapy: Blank Ocean, nová mapa, která začíná jako otevřené moře, s vlastním obrázkem v nabídce" width="260"><br>
       <sub><b>Nové mapy</b>, začaté prázdné, s vlastními obrázky v nabídce.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. ve hře na mapě Blitz: pěchota na namalované ploše krytu, zobrazená jako skrytá" width="260"><br>
-      <sub><b>Namalovaný kryt.</b> Pěchota na něm je skrytá.</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. ve hře: zpráva RUSE Guard v kopii sestavené s cheaty: je pro hru offline a opouští hry více hráčů a kooperace" width="260"><br>
-      <sub><b>RUSE Guard.</b> Hra sestavená s cheaty zůstane offline.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. ve hře na mapě Den D: pěchota a tank jdou korytem řeky, kterou mod vysušil" width="260"><br>
@@ -238,26 +226,9 @@ nemění.
 
 ### Importér map: jak na tom je
 
-Importér map promění skutečné místo v mapu R.U.S.E.: jeho terén a kopce, pole, lesy, řeky, příkopy, pláž a moře,
-a pokud je chcete, i jeho silnice a budovy, vše vytvořené z vlastních dílů hry, aby mapa vypadala a hrála se jako
-mapy hry. Vyberete místo a Studio z něj udělá mapu, kterou můžete dál upravovat.
+Importér map udělá ze skutečného místa mapu R.U.S.E. z vlastních dílů hry, aby vypadala a hrála se jako mapy hry. Už sestaví část Utah Beach do mapy, která se ve hře otevře, ale pláž, voda a zem zblízka ještě nejsou správně a ve Studiu zatím nefunguje úplně. Raději počkáme, až bude skutečné místo vypadat a hrát se jako opravdová mapa R.U.S.E., než abychom vydali něco napůl hotového.
 
-Studio už umí postavit malý kus skutečného místa (část Utah Beach) do mapy, která se ve hře otevře.
-Zatím to není správně: pláž, voda a terén zblízka pořád nevypadají tak, jak by měly. Proč to trvá:
-
-- **Mapa má mnoho vrstev, které spolu musí souhlasit:** tvar terénu, jeho vzhled zblízka, obraz viděný z výšky,
-  voda, kudy mohou jednotky jezdit a kde se skrývat, silnice a mosty. Skutečné místo musí vyjít správně ve všech
-  najednou a chyba v jedné se projeví v ostatních.
-- **Zblízka i zdálky:** hra kreslí svůj terén dvěma způsoby a ty k sobě musí sedět. Aby barvy skutečného místa
-  vypadaly jako ty ve hře, zblízka i z nebe, to je většina práce.
-- **Voda rozhoduje, kam jednotky mohou:** řeky, příkopy a pobřeží určují, kudy se tanky a pěchota mohou pohybovat.
-  Jedno špatné místo a tanky projedou příkopem, nebo se nedostanou na pláž.
-- **Každá změna se ověřuje ve hře:** to je jediný důkaz, který platí, a každá kontrola znamená mapu sestavit a
-  prohlédnout si ji z mnoha míst.
-- **Raději počkáme**, až bude skutečné místo vypadat a hrát se jako opravdová mapa R.U.S.E., než abychom vydali něco
-  napůl hotového.
-
-Dál: dát do pořádku malou testovací mapu, pak celou mapu, pak tlačítko Importovat mapu ve Studiu.
+## O projektu
 
 Všechno, co se změnilo, verzi po verzi:
 [poznámky ke Studiu](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) a
@@ -283,20 +254,6 @@ Vlastníte hru jinak, třeba jako krabicovou kopii z doby, než byl R.U.S.E. na 
 v aplikaci ukazuje váš kód a dvě tlačítka: otevřete tiket na Discordu nebo na GitHubu a pošleme vám odemykací kód
 pro vaše PC.
 
-## Instalace ve třech krocích
-
-1. **Stáhněte** instalátor z [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases):
-   `RUSE-Launcher-Setup-<version>.exe` pro hráče, `RUSE-Studio-Setup-<version>.exe` pro moddery. Jen Windows.
-   R.U.S.E. musíte mít ve své knihovně Steam, nainstalovaný.
-2. **Spusťte ho.** Nepotřebujete práva správce ani Python. Instalátory zatím nejsou digitálně podepsané, takže
-   Windows může jednou varovat („Systém Windows ochránil váš počítač“): klikněte na **Další informace**, pak na
-   **Přesto spustit**. Abyste ověřili, že máte pravý soubor, porovnejte jeho SHA-256 s tím v poznámkách k vydání.
-3. **Spusťte aplikaci** z nabídky Start. Najde R.U.S.E. přes Steam. V Launcheru vyberte sadu modů a stiskněte
-   **Hrát**. Ve Studiu jednou sestavte index hry, když o to požádá (asi minuta), pak vyberte nebo vytvořte mod.
-
-Odinstalace ponechá vaše mody a nastavení. Aplikace potřebují Microsoft Edge WebView2, který Windows 11 obsahují.
-Víc v [installers/README.md](installers/README.md).
-
 <details>
 <summary><b>Stav, dokumentace a přispívání</b></summary>
 
@@ -305,7 +262,7 @@ Víc v [installers/README.md](installers/README.md).
 [![testy](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![Licence: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** pro hráče (nejnovější: 0.4.8.9) &middot; **Studio** pro moddery, ukázková verze (nejnovější: 0.9.8.9) &middot; Windows &middot; vyžaduje R.U.S.E. na Steamu
+**Launcher** pro hráče (nejnovější: 0.4.8.12) &middot; **Studio** pro moddery, ukázková verze (nejnovější: 0.9.8.12) &middot; Windows &middot; vyžaduje R.U.S.E. na Steamu
 
 **[Polní příručka (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/Poln%C3%AD-p%C5%99%C3%ADru%C4%8Dka)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;
@@ -394,59 +351,7 @@ py -3 -m unittest discover -s tests
 
 ## Poděkování
 
-R.U.S.E. 2.0 stojí na práci jiných lidí. Bez nich by tu nic z toho nebylo.
-
-### ProLution: kmotr moddingu R.U.S.E.
-
-- Vytvořil **RUSE Modding Database** a napsal návody, ze kterých se lidé učili, mimo jiné o vlastních Operacích.
-- **Kód od ProLution je v našem:** kodek terénu map v
-  [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) je postavený na práci, kterou
-  ProLution odvedl na formátu terénu (vydané pod CC0), a jeho enkodér je převedený z referenčního enkodéru od
-  ProLution. Naše vlastní čtení komprimovaných textur hry ([`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)) také používá
-  jeho kodek.
-
-### LittleGroove: první správce modů
-
-LittleGroove připravil cestu pro mnohé z toho, co R.U.S.E. 2.0 dělá: vytvořil první skutečný správce modů pro
-R.U.S.E. a jeho engine je pořád součástí našeho.
-
-- **RUSE-Mod-Manager a jeho formát `.rmod`:** mod jako seznam změn dat hry, takže několik modů může hrát dohromady.
-  Mody vytvořené v něm hrají v Launcheru a pořadí načítání se sdílí v jeho textovém formátu, takže se přenášejí
-  mezi jeho Mod Managerem a Launcherem.
-- **Jeho engine je součástí našeho** ([`src/ruse_mod_engine`](src/ruse_mod_engine/), napsaný v Pythonu), a proto je
-  celý program pod GPL-3.0:
-  - aplikuje mody `.rmod` v našich sestaveních a pomocí jeho map verzí převádí mod vytvořený pro jiný build hry;
-    funkce Převést starý mod v Launcheru je jeho převodník;
-  - naše nástroje pro mapy čtou a zapisují kryt hry, mřížku počítače, mosty, silnice a pohyb jeho modulem `sdb`;
-  - Studio ukazuje skripty hry jako Python jeho čtečkou skriptů, jeho přehledem toho, co mise dělá, a jeho
-    katalogem částí skriptů, kompiluje změněný skript jeho kompilátorem a Pythonem 2.5.1 hry, který jeho engine
-    nese, a kontroluje soubory a texty mise jeho řetězcem pro scénáře;
-  - naše změny v něm: kořen stromu SpatialDB je vždy rozdělený (kořen s jediným listem hru shodil) a drobné
-    doplňky jeho čtečky terénu a kompilátoru skriptů.
-- **Co nás naučily jeho nástroje:** vzdálenosti, které drží zásobovací sklady a velitelství na silnicích, a co sklad
-  obsahuje (obojí změřil ve hře on), úvodní kamera, na které začíná každý zápas, kontrolní součet, díky kterému hra
-  načte změněný scénář, jak nové soubory jdou do balíků hry, a kopírování munice, aby zbraň dostala vlastní.
-- **Jeho Mod Manager je měl jako první; Studio je má ve vlastním kódu:** editory ekonomiky a AI, editor surových
-  hodnot (Všechny hodnoty), řetězec vylepšení, prohlížeč souborů, nabídky, soubory a texty mise a názvy, zóny a
-  podrobnosti položek v editoru map.
-
-### DomesticNukes: základy tvorby map
-
-- **DomesticNukes položil základy tvorby map:** terén, po kterém jednotky chodí, kde stojí každá budova, strom a
-  předmět, a postup, kterým se řídí štětce terénu, aby se přetvořená mapa načetla a dala se hrát.
-- **DomesticNukes napsal vodní štětce:** jezera a vysušené řeky, sloučené z vlastního pull requestu DomesticNukes.
-- **Práce DomesticNukes na modelech hry** přinesla skutečné 3D modely hry do zobrazení mapy ve Studiu a pomohla
-  zprovoznit jednotky z jiného národa.
-- Poznámky o příznacích jednotek, podlahách mostů a o tom, jak jednotky stojí na terénu, se dostaly do kontrol
-  sestavení a do mostů, po kterých teď jednotky jezdí. DomesticNukes také testuje vydání ve hře.
-
-### Tvůrci modelů jednotek z ér
-
-Jednotky z jiných období (Studio 0.9.8.2) jsou volné 3D modely od lidí, kteří je vytvořili a sdíleli, pod CC0 nebo
-CC BY. Každý autor je uveden, s názvem modelu, licencí a odkazem, na stránce jednotky ve Studiu, v souboru
-s poděkováním každého modu, který nějaký z nich používá (`CREDITS-era-units.md`), a v úplném seznamu na
-[vydání jednotek z ér](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Co jsme změnili:
-každý byl přizpůsoben hře (otočen a zmenšen či zvětšen) a dostal označení svého národa.
+R.U.S.E. 2.0 stavějí sneadtristen6 a Claude, s pomocí a prací lidí níže.
 
 ### sneadtristen6 a Claude: tvorba R.U.S.E. 2.0
 
@@ -472,11 +377,43 @@ boku od září 2026 vytvořili:
 - **Hudba a mise:** skladby a repliky nahrazené ve Studiu a vlastní mise.
 - **Dvě aplikace v jedenácti jazycích** (deset jazyků hry a perština), Studio pro moddery a Launcher pro hráče, které nikdy nesahají
   na vlastní složku hry, s kontrolou, která zastaví mod, jenž by hru rozbil, ještě než se hra spustí.
+- **RUSE Guard, náš anticheat, postavený a zapnutý:** zámek, který drží hru upravenou s cheaty offline, hlídač v každé upravené hře, kódy hry, server s obrazovkou kontroly a dohoda, kterou vidí každý hráč.
+- **Jen vlastněné kopie:** kontrola, že hra je kopie, kterou vlastníte, odemykací kódy pro majitele, které Steam nedokáže potvrdit, a přihlášení přes Steam.
+- **Bug Watch:** hlášení o pádech a chybách, pokud ho zapnete, aby se problémy opravovaly rychleji.
+- **Velké mody:** sady modů nad 4 GB, seznamy stavby ve skupinách a sestavení zhruba čtyřikrát rychlejší (všech 366 jednotek z jiných období asi za 5 minut).
+- **První importér map pro R.U.S.E.**, pokud víme: skutečné místo převedené na mapu z vlastních dílů hry. Už sestaví část Utah Beach do mapy, která se ve hře otevře; ve Studiu zatím nefunguje úplně.
 - **Kód:** vše v `src/rusemod`, `src/ruse_studio` a `src/ruse_launcher` je náš vlastní kód, napsaný pro
-  R.U.S.E. 2.0. Ostatní, na jejichž práci staví, jsou uvedeni výše a v
+  R.U.S.E. 2.0. Ostatní, na jejichž práci staví, jsou uvedeni níže a v
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Je to začátek a přijde mnohem víc. Děkujeme všem výše uvedeným, bez kterých by nic z toho nezačalo.
+Je to teprve začátek a čeká nás mnohem víc. Děkujeme všem níže, bez kterých by nic z toho nezačalo.
+
+### DomesticNukes: nápad na RUSE Guard, nejtvrdší testy a základy editoru map
+
+- **RUSE Guard byl nápad DomesticNukes a jméno je jeho**, spolu s jeho prvním návrhem. sneadtristen6 a Claude ho postavili do aplikací a online; on a sneadtristen6 tvoří jeho kontrolní tým.
+- **Velký kus nejtvrdších testů:** dotlačí to, co stavíme, až na hranice možností. První hry více hráčů s RUSE Guard, kde se zámek osvědčil, importovaný model, který našel chybu importéru, a mosty na Diplomats a Vesuvio.
+- **Základy editoru map:** zem, po které chodí jednotky, kde stojí každá budova, strom a objekt, a recept, kterým se řídí štětce terénu; vodní štětce (jezera a vysušené řeky) z jeho vlastního pull requestu; skutečné 3D modely hry v pohledu na mapu ve Studiu; a jeho poznámky o příznacích jednotek a podlahách mostů, dnes v kontrolách sestavení.
+
+### ProLution: kmotr moddingu R.U.S.E.
+
+- Vytvořil **RUSE Modding Database** a napsal návody, ze kterých se lidé učili, mimo jiné o vlastních Operacích.
+- **Kód od ProLution je v našem:** kodek terénu map v
+  [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) je postavený na práci, kterou
+  ProLution odvedl na formátu terénu (vydané pod CC0), a jeho enkodér je převedený z referenčního enkodéru od
+  ProLution. Naše vlastní čtení komprimovaných textur hry ([`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)) také používá
+  jeho kodek.
+
+### LittleGroove: první správce modů
+
+LittleGroove vytvořil **RUSE-Mod-Manager**, první skutečný správce modů pro R.U.S.E., a jeho formát `.rmod`. Jeho engine je součástí našeho ([`src/ruse_mod_engine`](src/ruse_mod_engine/)) a proto je celý program pod GPL-3.0. Mody vytvořené v jeho Mod Manageru se hrají v Launcheru a pořadí načítání se mezi nimi přenášejí.
+
+### Tvůrci modelů jednotek z ér
+
+Jednotky z jiných období (Studio 0.9.8.2) jsou volné 3D modely od lidí, kteří je vytvořili a sdíleli, pod CC0 nebo
+CC BY. Každý autor je uveden, s názvem modelu, licencí a odkazem, na stránce jednotky ve Studiu, v souboru
+s poděkováním každého modu, který nějaký z nich používá (`CREDITS-era-units.md`), a v úplném seznamu na
+[vydání jednotek z ér](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units). Co jsme změnili:
+každý byl přizpůsoben hře (otočen a zmenšen či zvětšen) a dostal označení svého národa.
 
 ### (Anonyme) Oozaru: testování a ladění
 
@@ -506,28 +443,6 @@ s Iwo Jimou jako vlajkovou mapou, a Číny. Tato skupina je v poděkování podp
 #### Above & Beyond Supporters
 
 Poděkování a uvedení jména pro podporovatele s $20, kteří dělají víc, než musí, aby vývoj šel dál.
-
-## Podpora vývoje
-
-R.U.S.E. 2.0 je můj první moddingový projekt. Pokud chcete podpořit vývoj a sledovat práci v zákulisí,
-[navštivte můj Patreon](https://www.patreon.com/SneadTristen6). Každá podpora mi pomáhá pokračovat.
-
-### Jednorázová podpora
-
-| Možnost | Částka | Uznání |
-| --- | --- | --- |
-| [Above & Beyond Supporter](https://www.patreon.com/SneadTristen6/posts/171328212) | $20 jednorázově | Vámi zvolené jméno v sekci Above & Beyond Supporters v poděkování na GitHubu a v modu. |
-| [Monumental Supporter](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | $100 jednorázově | Výrazné poděkování v sekci Monumental Supporters, s osobním poděkováním za pomoc s položením základů vize projektu. |
-
-Vždy jsem si představoval **Iwo Jimu jako vlajkovou mapu rozšíření ve stylu DLC Pacific Defense** a k tomu přidání
-**Číny** do hry. Podpora mi pomáhá k tomuto snu směřovat. Jsou to cíle vývoje tohoto nezávislého fanouškovského
-projektu.
-
-Uvedení jména je dobrovolné: po nákupu pošlete na Patreonu zprávu se zvoleným veřejným jménem a svolením ho
-zveřejnit, nebo zůstaňte v anonymitě. Poděkování se aktualizují s vydáními projektu. Tyto nákupy v Shopu se
-automaticky neobnovují.
-
-Můžete si také [vyžádat funkci za jednorázové $3](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812).
 
 ## Otázky? Zeptejte se jakékoli AI
 

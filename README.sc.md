@@ -20,7 +20,7 @@
 
 > [!TIP]
 > **如何安装和游玩（5 分钟）：**
-> 1. 打开 [Launcher 发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)，选最新的那个（标有 **Latest**），在 **Assets** 下点击 **RUSE-Launcher-Setup-0.4.8.9.exe**。
+> 1. 打开 [Launcher 发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=launcher)，选最新的那个（标有 **Latest**），在 **Assets** 下点击 `RUSE-Launcher-Setup-<version>.exe`。
 > 2. 运行它。如果 Windows 显示“Windows 已保护你的电脑”：点 **更多信息**，再点 **仍要运行**。
 > 3. 打开 **RUSE Launcher**：它会自己通过 Steam 找到 R.U.S.E.。
 > 4. 点击 **支持的模组**，勾选你想要的模组，然后按 **安装**。
@@ -31,20 +31,16 @@
 > [Studio 发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases?q=studio) 获取 **RUSE Studio**，然后从
 > [你的第一个模组](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/%E4%BD%A0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%A8%A1%E7%BB%84) 开始。
 
-## R.U.S.E. 是什么
-
-**R.U.S.E.**（2010）是 Eugen Systems 制作的第二次世界大战即时战略游戏。整条战线都摆在一张地图桌上，你可以从作战室一路缩放到单独一辆坦克；战斗的胜负既靠武力，也同样靠欺骗：**计谋卡** 能隐藏你的单位、佯装进攻、破解敌人的计划，或让你的部队加速。游戏有战役、行动，以及在从诺曼底到突尼斯的各种地图上进行的遭遇战和多人战斗。
-
 ## R.U.S.E. 2.0 是什么
 
-**为 R.U.S.E. 带来新地图、新单位，以及一键开玩的模组游戏。** 两个免费应用：
+**R.U.S.E. 2.0 是 R.U.S.E.（2010）的玩家自制续作；R.U.S.E. 是 Eugen Systems 广受欢迎的第二次世界大战即时战略游戏**：整条战线都在一张地图桌上，胜负既靠武力，也靠欺骗。它通过两个免费应用，带来新地图、新单位和一键开玩的模组游戏：
 
 - **RUSE Launcher，给玩家用。** 选一组模组，按 **开始游戏**。就这么简单。
 - **RUSE Studio，给模组作者用。** 修改任何单位，用它们自己的 3D 模型制作新单位，从一张白纸开始制作地图或重塑游戏自带的地图，然后按 **在游戏中测试**。
 
-**在游戏启动前就检查好。** Studio 用游戏读取的方式读取你的模组：任何会在游戏中出问题的东西都会先被拦下，并附上一条说明要改什么的提示。目标是：你做的东西每次都能在游戏中运行，而且第一次就能。
+**内置公平竞技。** 我们的反作弊 RUSE Guard 把作弊挡在真实的多人对战之外：用作弊模组构建的游戏只能离线，玩家之间可以对比加入代码，确认大家玩的是同一个游戏。
 
-**只改数据。** 这里的模组只修改游戏的数据，而且是在一份单独的游戏副本中修改，仅此而已。你的 Steam 安装永远不会被改动。
+**你自己的副本，绝不改动。** 应用只能配合你拥有的 R.U.S.E. 副本使用，并另外构建一个模组副本：模组只改变游戏数据，你的 Steam 安装永远不会被改动。
 
 **开源**（GPL-3.0），支持十一种语言：游戏的十种，再加上波斯语。
 
@@ -59,11 +55,30 @@
       <sub><b>从一战到今天，全在一起。</b> 同一座机场上的双翼机、轰炸机和喷气机。</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/roads-5-done-close.jpg" alt="R.U.S.E. 游戏画面，“D日”地图：一条新道路的特写，沥青路面，有虚线中线和碎石路肩" width="260"><br>
-      <sub><b>你画的道路。</b> 和地图自带的道路一样，无论从高处看还是贴近地面看。</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. 游戏画面：用作弊构建的副本中 RUSE Guard 的消息：它只能离线游玩，并会退出多人和合作对战" width="260"><br>
+      <sub><b>RUSE Guard。</b> 用作弊构建的游戏只能离线。</sub>
     </td>
   </tr>
 </table>
+
+## 支持开发
+
+R.U.S.E. 2.0 是我的第一个模组项目。如果你想支持开发、关注幕后的工作，
+[欢迎访问我的 Patreon](https://www.patreon.com/SneadTristen6)。任何支持都能帮助我继续做下去。
+
+### 一次性支持选项
+
+| 选项 | 金额 | 致谢方式 |
+| --- | --- | --- |
+| [卓越支持者（Above & Beyond Supporter）](https://www.patreon.com/SneadTristen6/posts/171328212) | 一次 $20 | 你选择的名称会出现在 GitHub 和模组致谢的“卓越支持者”部分。 |
+| [丰碑级支持者（Monumental Supporter）](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 一次 $100 | 在“丰碑级支持者”部分得到醒目的致谢，并专门感谢你帮助为项目的愿景打下基础。 |
+
+我一直设想 **把硫磺岛作为一个 Pacific Defense DLC 式扩展的旗舰地图**，同时
+**把中国加入游戏**。支持能帮助我朝这个梦想努力。这些是这个独立粉丝项目的开发目标。
+
+署名是可选的：购买后，通过 Patreon 发一条消息，写明你选择的公开名称并允许公布它，或者选择保持匿名。致谢会随项目的发布更新。这些商店购买不会自动续费。
+
+你也可以[一次性花 $3 提出一个功能请求](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812)。
 
 ## R.U.S.E. 2.0 带来的改变
 
@@ -83,19 +98,14 @@
 
 - **新地图**，在“战斗”中和游戏自带的地图列在一起。从 **空白陆地或开阔海面** 开始，按游戏的尺寸或更大，在菜单中给它们自己的图片，并绘制它们的扇区。
 - **塑造地形：** 山丘、弹坑、高台、斜坡、整平和平滑过的地面；湖泊和排干的河流。单位能在上面行驶和作战。
-- **道路和桥梁：** 直线、曲线或手绘的道路，补给卡车会沿着走；道路跨水的地方会有地图自带的那种桥，坦克、步兵和卡车都能通过。还可以拆掉地图自带的桥并封闭它们的通行处。
 - **建筑、道具和树木：** 一个一个地放置，或按网格、方框放置，或沿路径放置（树篱和林带），建筑会面向道路；选择、移动、旋转、缩放和删除它们，地图自带的也可以；清除地图的树林和道具。**导入模型** 把一个 3D 模型变成你地图自己的岩石、道具、植物或树木。
-- **掩护与通行：** 绘制单位隐蔽其中的城镇和树林，并对所有单位、步兵或车辆封闭地面。地图会显示每一笔改变了什么。
 - **地图绘制：** 用一种颜色、地图上别处的地面、游戏的纹理、你自己的图片或网上的免费纹理来绘制地面的图像。
 - **场景和任务：** 移动起始点，添加战斗开始时就有的单位，以及带目标、事件和镜头移动的你自己的任务，用于行动和战役章节。
 
 ### 游戏规则
 
-- **AI 与玩家设置**，一个标签页：
-  - **玩家设置：** 初始资金和收入、补给站及其卡车、每一方开局拥有的计谋卡，普通战斗和核战争战斗分开设置。
-  - **电脑玩家：** 他们在每个难度和每种性格下的每一个数值、他们偏好的单位和他们的计谋卡，每个数值都有说明。
-  - **游戏规则：** 另外 172 个游戏数值，分为 16 组（战斗与投降、人口、移动、射击、伤害、树林与掩护、飞机、计谋卡的效果、阵营和扇区的颜色，及其他），每个都有说明。
-- **所有数值和文件：** 游戏数据中的每一个对象和数值，都可以在你的模组中修改。
+- **AI 和玩家设置：** 初始资金和收入、补给、各方开局的计谋卡，以及电脑玩家的每一个数值，全部附有说明。
+- **另外 172 条游戏规则**，分为 16 组，以及游戏数据的**每一个数值和每一个文件**，都可以在你的模组中修改。
 
 ### 声音与动画：RUSE Decoy
 
@@ -128,26 +138,12 @@
   </tr>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/bridge-infantry-at-deck-height.jpg" alt="R.U.S.E. 游戏画面：两个步兵班和一辆补给卡车正在通过一座新桥" width="260"><br>
-      <sub><b>单位能通过的桥。</b> 你的道路遇到水的地方，会有地图自带的那种桥。</sub>
-    </td>
-    <td width="33%" valign="top">
       <img src="docs/images/terrain-ingame-hill.jpg" alt="R.U.S.E. 游戏画面，“闪电战”地图：用 Studio 的画笔抬起的一座山丘，单位正开上山" width="260"><br>
       <sub><b>你塑造的地形。</b> 单位能在上面行驶和作战的山丘、弹坑、湖泊和干涸的河流。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/blank-ocean-menu.jpg" alt="R.U.S.E. 的选择地图画面：Blank Ocean，一张以开阔海面开始的新地图，有它自己的菜单图片" width="260"><br>
       <sub><b>新地图</b>，从空白开始，有它们自己的菜单图片。</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <img src="docs/images/map-cover-hidden.jpg" alt="R.U.S.E. 游戏画面，“闪电战”地图：站在一块绘制的掩护上的步兵，显示为已隐藏" width="260"><br>
-      <sub><b>绘制的掩护。</b> 站在上面的步兵会被隐藏。</sub>
-    </td>
-    <td width="33%" valign="top">
-      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. 游戏画面：用作弊构建的副本中 RUSE Guard 的消息：它只能离线游玩，并会退出多人和合作对战" width="260"><br>
-      <sub><b>RUSE Guard。</b> 用作弊构建的游戏只能离线。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. 游戏画面，“D日”地图：步兵和一辆坦克沿着被模组排干的河床行进" width="260"><br>
@@ -199,17 +195,9 @@
 
 ### 地图导入器：进展如何
 
-地图导入器把一个真实的地点变成一张 R.U.S.E. 地图：它的地面和山丘、田地、树林、河流、沟渠、海滩和大海，以及（如果你需要的话）它的道路和建筑，全部用游戏自己的部件制作，让地图的外观和玩法都像游戏自带的一样。你选一个地点，Studio 就会把它做成一张你可以继续编辑的地图。
+地图导入器能把一个真实地点变成 R.U.S.E. 地图，用游戏自己的部件制作，让它看起来、玩起来都像游戏自带的地图。它已经能把犹他海滩的一部分做成可以在游戏中打开的地图，但海滩、水面和近看的地面还不对，在 Studio 中也还不能完全使用。我们宁愿等到真实地点看起来、玩起来都像真正的 R.U.S.E. 地图，也不想拿出半成品。
 
-Studio 已经能把真实地点的一小块（犹他海滩的一部分）构建成一张能在游戏中打开的地图。但它还不对：海滩、水面和近处的地面看起来仍然不是应有的样子。为什么要花这么久：
-
-- **一张地图由许多必须彼此吻合的图层组成：** 地面的形状、它近看的样子、从高处看到的图像、水、单位能在哪里行驶和隐蔽、道路和桥梁。一个真实的地点必须同时在每一层都做对，一层出错就会在其他层显现出来。
-- **近处和远处：** 游戏用两种方式绘制地面，而这两种必须一致。让一个真实地点的颜色看起来像游戏的颜色，无论近看还是从空中看，这是大部分的工作。
-- **水决定单位能去哪里：** 河流、沟渠和海岸决定坦克和步兵能在哪里移动。一处出错，坦克就会开过沟渠，或者到不了海滩。
-- **每一项改动都要在游戏中检查：** 这是唯一算数的证明，而每次检查都意味着要构建地图，并从许多地方去看它。
-- **我们宁愿等待**，直到一个真实地点的外观和玩法都像真正的 R.U.S.E. 地图，也不愿推出半成品。
-
-下一步：先把小测试地图做对，然后是一整张地图，然后是 Studio 的“导入地图”按钮。
+## 关于本项目
 
 每个版本改了什么：
 [Studio 更新说明](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/blob/main/.github/release-notes/studio.md) 和
@@ -226,18 +214,6 @@ Systems，项目会采用一个他们认可的名称。欢迎在[名称讨论](h
 
 用别的方式拥有它，比如 R.U.S.E. 上架 Steam 之前的盒装版，或者应用判断错了？应用里的那个框中有你的代码和两个按钮：在 Discord 或 GitHub 上开一个工单，我们会给你发送一个适用于你这台电脑的解锁码。
 
-## 三步安装
-
-1. 从 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases) **下载** 安装程序：
-   玩家用 `RUSE-Launcher-Setup-<version>.exe`，模组作者用 `RUSE-Studio-Setup-<version>.exe`。仅限 Windows。你的 Steam 库中需要有 R.U.S.E.，并且已经安装。
-2. **运行它。** 不需要管理员权限，也不需要 Python。安装程序还没有代码签名，所以 Windows 可能会警告一次
-   （“Windows 已保护你的电脑”）：点击 **更多信息**，再点 **仍要运行**。要确认你拿到的是真正的文件，可以把它的 SHA-256 与更新说明中的对比。
-3. 从开始菜单 **启动它**。它会通过 Steam 找到 R.U.S.E.。在 Launcher 中，选一个模组组合，然后按
-   **开始游戏**。在 Studio 中，它询问时先构建一次游戏索引（大约一分钟），然后选择或新建一个模组。
-
-卸载会保留你的模组和设置。应用需要 Microsoft Edge WebView2，Windows 11 自带。更多内容见
-[installers/README.md](installers/README.md)。
-
 <details>
 <summary><b>状态、文档和参与贡献</b></summary>
 
@@ -246,7 +222,7 @@ Systems，项目会采用一个他们认可的名称。欢迎在[名称讨论](h
 [![测试](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![许可证：GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** 给玩家（最新：0.4.8.9）&middot; **Studio** 给模组作者，预览版（最新：0.9.8.9）&middot; Windows &middot; 需要 Steam 上的 R.U.S.E.
+**Launcher** 给玩家（最新：0.4.8.12）&middot; **Studio** 给模组作者，预览版（最新：0.9.8.12）&middot; Windows &middot; 需要 Steam 上的 R.U.S.E.
 
 **[野战手册（wiki）](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki/%E9%87%8E%E6%88%98%E6%89%8B%E5%86%8C)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;
@@ -309,37 +285,7 @@ py -3 -m unittest discover -s tests
 
 ## 致谢
 
-R.U.S.E. 2.0 建立在其他人的工作之上。没有他们，这里的一切都不会存在。
-
-### ProLution：R.U.S.E. 模组制作的教父
-
-- 建立了 **RUSE Modding Database**，并撰写了大家学习用的指南，其中包括自定义行动。
-- **ProLution 的代码就在我们的代码里：** [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) 中的地图地形编解码器建立在 ProLution 的地形格式研究（以 CC0 发布）之上，它的编码器移植自 ProLution 的参考编码器。我们自己的游戏压缩纹理读取器（[`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)）也使用了他的编解码器。
-
-### LittleGroove：第一个模组管理器
-
-LittleGroove 为 R.U.S.E. 2.0 所做的许多事情铺平了道路：他为 R.U.S.E. 打造了第一个真正的模组管理器，他的引擎至今仍是我们引擎的一部分。
-
-- **RUSE-Mod-Manager 及其 `.rmod` 格式：** 把模组作为对游戏数据的一系列修改，这样几个模组就能一起玩。用它制作的模组可以在 Launcher 中游玩，加载顺序以他的文本格式共享，所以能在他的 Mod Manager 和 Launcher 之间互通。
-- **他的引擎是我们引擎的一部分**（[`src/ruse_mod_engine`](src/ruse_mod_engine/)，用 Python 编写），这也是整个程序采用 GPL-3.0 的原因：
-  - 它在我们的构建中应用 `.rmod` 模组，并用他的版本映射把为另一个游戏版本制作的模组迁移过来；Launcher 的“转换旧模组”就是他的转换器；
-  - 我们的地图工具用他的 `sdb` 模块读写游戏的掩护、电脑的网格、桥梁、道路和通行；
-  - Studio 用他的脚本读取器把游戏的脚本显示为 Python，用上他对任务内容的概要和他整理的脚本部件目录，用他的编译器和他的引擎附带的游戏 Python 2.5.1 编译修改过的脚本，并用他的场景链检查任务的文件和文本；
-  - 我们对它的修改：SpatialDB 树的根总是会被拆分（只有一片叶子的根会让游戏崩溃），以及对他的地形读取器和脚本编译器的少量补充。
-- **他的工具教会我们的：** 让补给站和指挥部保持在道路上的距离，以及补给站里装着什么（两者都是他在游戏中测出来的）、每局开始时的开场镜头、让游戏能加载修改过的场景的校验和、新文件如何放进游戏的包里，以及复制一种弹药，让武器拥有它自己的弹药。
-- **这些功能最早出现在他的 Mod Manager 中；Studio 用自己的代码实现了它们：** 经济和 AI 编辑器、原始数值编辑器（所有数值）、升级链、文件浏览器、任务的菜单、文件和文本，以及地图编辑器的名称、区域和物品详情。
-
-### DomesticNukes：地图制作的基础
-
-- **DomesticNukes 为地图制作打下了基础：** 单位行走的地面、每座建筑、每棵树和每个道具所在的位置，以及地形画笔所遵循的方法，让重塑过的地图能够加载并正常游玩。
-- **DomesticNukes 编写了水画笔：** 湖泊和排干的河流，从 DomesticNukes 自己的拉取请求合并而来。
-- **DomesticNukes 对游戏模型的研究** 把游戏真正的 3D 模型放进了 Studio 的地图视图，并帮助让来自另一个国家的单位正常运作。
-- 关于单位旗标、桥面以及单位如何站在地面上的笔记，被用到了构建的检查中，也用到了单位现在能开过去的桥梁上。DomesticNukes 也会在游戏中测试各个版本。
-
-### 时代单位的模型作者
-
-其他时代的单位（Studio 0.9.8.2）是由制作并分享它们的人提供的免费 3D 模型，采用 CC0 或 CC BY 许可。每位作者都会署名，连同模型的标题、许可和链接，出现在 Studio 中该单位的页面上、任何使用它的模组的署名文件中（`CREDITS-era-units.md`），以及
-[时代单位发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units)上的完整列表中。我们做的修改：每个模型都已适配游戏（旋转和缩放），并加上了所属国家的标志。
+R.U.S.E. 2.0 由 sneadtristen6 和 Claude 打造，并得到下面各位的帮助与贡献。
 
 ### sneadtristen6 和 Claude：打造 R.U.S.E. 2.0
 
@@ -352,10 +298,35 @@ LittleGroove 为 R.U.S.E. 2.0 所做的许多事情铺平了道路：他为 R.U.
 - **单位：** 修改其中任何一个，制作新单位，给一个国家另一支军队的坦克和飞机，任何角色的飞机，侦察车辆，能打飞机的武器，每个旗标和数值都有说明，以及把一个国家变成另一个。
 - **音乐和任务：** 在 Studio 中替换的歌曲和语音台词，以及你自己的任务。
 - **两个应用，十一种语言**（游戏的十种，再加上波斯语），给模组作者的 Studio 和给玩家的 Launcher，绝不碰游戏自己的文件夹，并带有一项检查，会在游戏启动前拦下会让游戏出问题的模组。
-- **代码：** `src/rusemod`、`src/ruse_studio` 和 `src/ruse_launcher` 中的一切都是我们自己的，为 R.U.S.E. 2.0 编写。它所依靠的其他人的工作已在上文和
+- **我们的反作弊 RUSE Guard，已建成并启用：** 让用作弊模组构建的游戏保持离线的锁、每个模组游戏里的监视器、加入代码、服务器及其审查界面，以及每位玩家都会看到的协议。
+- **仅限自有副本：** 检查游戏是否为你拥有的副本，为 Steam 无法确认的拥有者提供解锁码，以及通过 Steam 登录。
+- **Bug Watch：** 在你开启后发送崩溃和错误报告，让问题修得更快。
+- **大型模组：** 超过 4 GB 的模组组合、分组的建造列表，以及快约四倍的构建（全部 366 个其他时代单位约 5 分钟）。
+- **据我们所知，R.U.S.E. 的第一个地图导入器：** 用游戏自己的部件把真实地点做成地图。它已经能把犹他海滩的一部分做成可以在游戏中打开的地图；在 Studio 中还不能完全使用。
+- **代码：** `src/rusemod`、`src/ruse_studio` 和 `src/ruse_launcher` 中的一切都是我们自己的，为 R.U.S.E. 2.0 编写。它所依靠的其他人的工作已在下文和
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中致谢。
 
-现在还很早，还有更多内容会到来。感谢上面的每一位，没有你们，这一切都不会开始。
+这只是开始，还有更多内容即将到来。感谢下面的每一位，没有他们，这一切都不会开始。
+
+### DomesticNukes：RUSE Guard 的构想、最严苛的测试，以及地图编辑器的基础
+
+- **RUSE Guard 是 DomesticNukes 的构想，名字也是他起的**，还有他的最初设计。sneadtristen6 和 Claude 把它做进了应用和线上服务；他和 sneadtristen6 组成审查团队。
+- **相当一部分最严苛的测试：** 他把我们做的东西推到极限。RUSE Guard 的第一批多人对战（锁在其中得到验证）、一个发现了导入器错误的导入模型，以及 Diplomats 和 Vesuvio 上的桥。
+- **地图编辑器的基础：** 单位行走的地面、每座建筑、每棵树和每个道具的位置，以及地形笔刷遵循的方法；来自他自己拉取请求的水体笔刷（湖泊和干涸的河流）；Studio 地图视图中游戏真实的 3D 模型；还有他关于单位旗标和桥面的笔记，如今已用于构建检查。
+
+### ProLution：R.U.S.E. 模组制作的教父
+
+- 建立了 **RUSE Modding Database**，并撰写了大家学习用的指南，其中包括自定义行动。
+- **ProLution 的代码就在我们的代码里：** [`src/ruse_mod_engine/terrain_codec.py`](src/ruse_mod_engine/terrain_codec.py) 中的地图地形编解码器建立在 ProLution 的地形格式研究（以 CC0 发布）之上，它的编码器移植自 ProLution 的参考编码器。我们自己的游戏压缩纹理读取器（[`src/rusemod/tgu1.py`](src/rusemod/tgu1.py)）也使用了他的编解码器。
+
+### LittleGroove：第一个模组管理器
+
+LittleGroove 制作了 R.U.S.E. 的第一个真正的模组管理器 **RUSE-Mod-Manager** 及其 `.rmod` 格式。他的引擎是我们引擎的一部分（[`src/ruse_mod_engine`](src/ruse_mod_engine/)），这也是整个程序采用 GPL-3.0 的原因。用他的 Mod Manager 制作的模组可以在 Launcher 中游玩，加载顺序也能在两者之间互通。
+
+### 时代单位的模型作者
+
+其他时代的单位（Studio 0.9.8.2）是由制作并分享它们的人提供的免费 3D 模型，采用 CC0 或 CC BY 许可。每位作者都会署名，连同模型的标题、许可和链接，出现在 Studio 中该单位的页面上、任何使用它的模组的署名文件中（`CREDITS-era-units.md`），以及
+[时代单位发布页](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases/tag/era-units)上的完整列表中。我们做的修改：每个模型都已适配游戏（旋转和缩放），并加上了所属国家的标志。
 
 ### (Anonyme) Oozaru：测试和调试
 
@@ -380,25 +351,6 @@ LittleGroove 为 R.U.S.E. 2.0 所做的许多事情铺平了道路：他为 R.U.
 #### 卓越支持者（Above & Beyond Supporters）
 
 一份感谢和署名，献给 $20 的支持者，他们付出额外的努力，帮助开发持续推进。
-
-## 支持开发
-
-R.U.S.E. 2.0 是我的第一个模组项目。如果你想支持开发、关注幕后的工作，
-[欢迎访问我的 Patreon](https://www.patreon.com/SneadTristen6)。任何支持都能帮助我继续做下去。
-
-### 一次性支持选项
-
-| 选项 | 金额 | 致谢方式 |
-| --- | --- | --- |
-| [卓越支持者（Above & Beyond Supporter）](https://www.patreon.com/SneadTristen6/posts/171328212) | 一次 $20 | 你选择的名称会出现在 GitHub 和模组致谢的“卓越支持者”部分。 |
-| [丰碑级支持者（Monumental Supporter）](https://www.patreon.com/SneadTristen6/posts/monumental-100-171328695) | 一次 $100 | 在“丰碑级支持者”部分得到醒目的致谢，并专门感谢你帮助为项目的愿景打下基础。 |
-
-我一直设想 **把硫磺岛作为一个 Pacific Defense DLC 式扩展的旗舰地图**，同时
-**把中国加入游戏**。支持能帮助我朝这个梦想努力。这些是这个独立粉丝项目的开发目标。
-
-署名是可选的：购买后，通过 Patreon 发一条消息，写明你选择的公开名称并允许公布它，或者选择保持匿名。致谢会随项目的发布更新。这些商店购买不会自动续费。
-
-你也可以[一次性花 $3 提出一个功能请求](https://www.patreon.com/SneadTristen6/posts/request-r-u-s-e-171321812)。
 
 ## 有问题？问任何 AI
 

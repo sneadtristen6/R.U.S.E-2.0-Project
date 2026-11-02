@@ -1,20 +1,22 @@
 # The big patch before 1.0 (DRAFT, not released)
 
 What goes into the one big patch we make before 1.0 (not the 1.0 release itself), collected here as each part is
-written: what it does and how. Nothing here is released yet; each part says where it stands.
+written: what it does and how. Each part says where it stands; RUSE Guard, below, is released.
 
 ## RUSE Guard: our tools are never how anyone cheats online
 
-RUSE Guard, and the push to make the platform secure, were DomesticNukes' idea, and the name is his. It has two
-halves that fit together: the Launcher and in-game half written here, and his match-review half (the detectors, the
-replays, the reviews, dev keys and the terms of service) in his own repository. What each half covers, and what of
-his goes into this patch, is at the end of this section.
+**Released:** RUSE Guard is on in every modded copy since Launcher 0.4.8.10 and Studio 0.9.8.10. What's live, and its
+rules, are in [SECURITY.md](../SECURITY.md) and the agreement the apps show at their first start. What follows is the
+plan as it was written before the release, kept as the record of how it was built.
 
-**Where it stands:** our half is written and tested offline, and kept in our private repository, **switched off**,
-until it's tested in the game: the released Launcher and build do none of what follows yet. After that, the
-in-game part (the offline lock and the watcher) still waits for tests F1 and F3 before it goes into
-builds. His half is built and tested offline (59 tests, verified on real replays) and isn't wired into the Launcher
-yet.
+RUSE Guard was DomesticNukes' idea, and the name is his, with his first design and reference code; sneadtristen6 and
+Claude built it into the apps and online. The plan had two halves that fit together: the Launcher and in-game half
+written here, and the match-review half (the detectors, the replays, the reviews, dev keys and the terms of service)
+first sketched in his repository. What each half covers is at the end of this section.
+
+**Where it stood before the release:** our half written and tested offline, kept switched off until it was tested in
+the game; the match-review half built and tested offline (59 tests, verified on real replays), not yet wired into the
+Launcher.
 
 **How it works,** as the patch notes would say it:
 
@@ -80,9 +82,9 @@ sees it), the trust tick before a script mod runs, the Launcher's cheat badges, 
 
 **One rule of his to apply before turning ours on:** RUSE Guard runs in multiplayer only; it never runs in
 single-player. Our watcher also watches skirmish against the AI (that's how test F3 checks it offline); it switches to
-multiplayer only once F3 has passed.
+multiplayer only once F3 has passed. (Applied: the released RUSE Guard acts in multiplayer and co-op matches only.)
 
-### The whole system, built (2026-10-04; switched off, nothing tested in the game)
+### The whole system, built (2026-10-04; switched off then, nothing tested in the game yet)
 
 The owner's choices: the Launcher side in the platform, the server side added to DomesticNukes' repository as new
 files, the server on his PC, the process scan as he designed it.
