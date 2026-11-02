@@ -36,9 +36,13 @@ def _game_program(exe: str) -> bool:
 
 def _old_copy(p: Path) -> bool:
     """A modded copy other than the one both apps use now (rusemod.play.SHARED): one per mod set or Studio mod, as
-    the apps made them before 2026-10-02, or one built by hand. A copy holds the game's program and its Steam id."""
+    the apps made them before 2026-10-02, or one built by hand before 2026-11-02. A copy holds the game's program and
+    its Steam id. A kept copy (its keep note, rusemod.instance.KEEP: a test or reference copy, any copy built by hand
+    since) never is one: only the apps' own leftovers are cleared."""
+    from .instance import kept
     from .play import SHARED
-    return p.name != SHARED and not p.name.startswith(".") and (p / "steam_appid.txt").is_file() and \
+    return kept(str(p)) is None and p.name != SHARED and not p.name.startswith(".") and \
+        (p / "steam_appid.txt").is_file() and \
         any(f.name.lower() == "ruse.exe" for f in p.iterdir())
 
 

@@ -143,7 +143,8 @@ class Unchanged(Base):
 
     def test_the_own_notes_are_the_real_files(self):
         from rusemod import fairplay, guard
-        self.assertEqual(set(OWN_NOTES), {RECORD, fairplay.RECORD, guard.MATCH_LOG})
+        from rusemod.instance import KEEP
+        self.assertEqual(set(OWN_NOTES), {RECORD, KEEP, fairplay.RECORD, guard.MATCH_LOG})
 
 
 class Changes(Base):

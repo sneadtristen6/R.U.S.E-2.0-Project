@@ -46,6 +46,7 @@ import os
 import shutil
 import stat
 import sys
+import time
 
 from . import winfiles
 
@@ -53,10 +54,17 @@ STEAM_APPID = "21970"
 TRASH = ".trash"  # next to the copies: leftovers waiting to be removed
 RECORD = "rusemod-copy.json"  # in the copy, next to RUSE.exe: what it was built from, and how each file got there
 RECORD_FORMAT = 1
-# The copy's own notes: this record, RUSE Guard's join-code record (rusemod.fairplay.RECORD, written right after the
-# build) and the in-game match log (rusemod.guard.MATCH_LOG). Ours, not the game's, so one of them in the copy is never
-# a reason to build again (needs_build); tests/test_play_reuse.py keeps these names equal to those constants.
-OWN_NOTES = (RECORD, "fairplay.json", "ruse_guard_match.txt")
+# A kept copy (its keep note, next to the record): a test or reference copy, or any copy built by hand, which the
+# troubleshooter never counts as a leftover to clear (rusemod.doctor._old_copy). The apps' own copy (rusemod.play.SHARED)
+# gets none; every other copy build_instance makes gets one, and a rebuild keeps the note it had (why it is kept, and
+# whether it is a reference other copies are compared with). Before 2026-11-02 the troubleshooter's "clear leftover
+# copies" counted every copy but the apps' own as one, and took a whole folder of test copies with it.
+KEEP = "rusemod-keep.json"
+# The copy's own notes: this record, the keep note, RUSE Guard's join-code record (rusemod.fairplay.RECORD, written
+# right after the build) and the in-game match log (rusemod.guard.MATCH_LOG). Ours, not the game's, so one of them in
+# the copy is never a reason to build again (needs_build); tests/test_play_reuse.py keeps these names equal to those
+# constants.
+OWN_NOTES = (RECORD, KEEP, "fairplay.json", "ruse_guard_match.txt")
 
 # The build's lines a player reads in the apps' log, in English; the apps say them in the player's language (their
 # words.toml has each under the same name, the same English for "us": tests/test_play_reuse.py)
@@ -281,6 +289,48 @@ def read_record(folder: str) -> dict | None:
         return None
     record["by_path"] = {_norm(rel): entry for rel, entry in record["files"].items()}
     return record
+
+
+def kept(folder: str) -> dict | None:
+    """The copy's keep note (KEEP) when it has one, else None. A note that can't be read still keeps the copy: only a
+    copy with no note at all can be a leftover."""
+    path = os.path.join(folder, KEEP)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            note = json.load(f)
+    except (OSError, ValueError):
+        return {"keep": True, "why": "its keep note can't be read"}
+    return note if isinstance(note, dict) else {"keep": True}
+
+
+def keep(folder: str, why: str | None = None, reference: bool | None = None) -> dict:
+    """Mark the copy at `folder` kept (KEEP): `why` it is kept and, with `reference`, whether it is a reference copy
+    (one other copies are compared with). What a note there already says stays unless given here. Returns the note."""
+    note = dict(kept(folder) or {})
+    note["keep"] = True
+    note.setdefault("since", time.strftime("%Y-%m-%d %H:%M"))
+    if why is not None:
+        note["why"] = why
+    note.setdefault("why", "built by hand, not the apps' own copy: the troubleshooter leaves it alone")
+    if reference is not None:
+        note["reference"] = bool(reference)
+    with open(_fresh(os.path.join(folder, KEEP)), "w", encoding="utf-8") as f:
+        json.dump(note, f, indent=1)
+    return note
+
+
+def _keep_note(staging: str, dst: str, old: str) -> None:
+    """A copy built anywhere but the apps' own (rusemod.play.SHARED) is kept: its note goes into the new copy, the
+    one the copy had when it is rebuilt (at `dst`, or set aside at `old`)."""
+    from .play import SHARED  # (rusemod.play imports this module)
+    if os.path.basename(os.path.normpath(dst)).lower() == SHARED.lower():
+        return
+    note = kept(dst) or kept(old) or {}
+    with open(os.path.join(staging, KEEP), "w", encoding="utf-8") as f:
+        json.dump(note, f)
+    keep(staging, why=note.get("why"), reference=note.get("reference"))
 
 
 def _write_record(folder: str, src: str, files: dict, built_from: dict | None) -> None:
@@ -543,6 +593,7 @@ def build_instance(src: str, dst: str, replace: dict | None = None,
         with open(_fresh(appid_file), "w") as f:
             f.write(appid)
         files["steam_appid.txt"] = _entry("written", appid_file)
+        _keep_note(staging, dst, old)  # a test or hand-built copy stays out of the troubleshooter's leftovers
         _write_record(staging, src, files, built_from)  # last: a copy without it always gets a build
     except BaseException:
         _put_back(moved)

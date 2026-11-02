@@ -36,6 +36,18 @@ class InstanceTest(unittest.TestCase):
         build_instance(self.game, self.dst)
         self.assertTrue(os.path.exists(os.path.join(self.dst, "RUSE.exe")))
 
+    def test_a_copy_built_by_hand_is_kept_and_the_apps_own_copy_is_not(self):
+        from rusemod.instance import KEEP, keep, kept
+        build_instance(self.game, self.dst)  # a test or hand-built copy: kept, so the troubleshooter leaves it
+        self.assertTrue(kept(self.dst)["keep"])
+        keep(self.dst, why="the water reference", reference=True)
+        build_instance(self.game, self.dst)  # a rebuild keeps what its note said
+        self.assertEqual((kept(self.dst)["why"], kept(self.dst)["reference"]), ("the water reference", True))
+        own = os.path.join(self.tmp.name, "copies", "Modded game")
+        build_instance(self.game, own)  # the apps' own copy: no note, it is theirs to rebuild and clear
+        self.assertIsNone(kept(own))
+        self.assertFalse(os.path.exists(os.path.join(own, KEEP)))
+
     def test_links_copies_and_appid(self):
         counts = build_instance(self.game, self.dst)
         self.assertEqual(counts, {"linked": 3, "copied": 2, "written": 0})

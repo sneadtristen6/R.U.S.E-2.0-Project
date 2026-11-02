@@ -69,6 +69,38 @@ class Troubleshooter(unittest.TestCase):
         none = by_key(doctor.checks(None, None, lambda: True, lambda: []))  # no game, so no place for copies yet
         self.assertEqual(list(none), ["game", "steam", "running"])
 
+    def test_a_kept_copy_is_never_a_leftover(self):
+        # 2026-11-01: "clear leftover copies" counted every copy but the apps' own as a leftover and took a folder of
+        # test copies; only copies with no keep note may go
+        from rusemod import instance
+        program = doctor.GAME_PROGRAMS[0]  # the game's program, by the name the troubleshooter looks for
+
+        def copy(name, **note):
+            folder = self.copies / name
+            (folder / "Data").mkdir(parents=True)
+            (folder / program).write_bytes(b"exe")
+            (folder / "steam_appid.txt").write_text("21970")
+            if note:
+                instance.keep(str(folder), **note)
+            return folder
+        old_set = copy("my-old-set")  # one per mod set, as the apps made them before 10-02: a leftover
+        test = copy("tf-museum13c", why="a test copy")
+        ref = copy("m1-candidate1", why="regression evidence", reference=True)
+        unreadable = copy("bad-note")
+        (unreadable / instance.KEEP).write_text("{not a note")  # a note that can't be read still keeps the copy
+        shared = copy("Modded game")  # the apps' own copy is never a leftover either
+        got = by_key(doctor.checks(self.game, self.copies, lambda: True, lambda: []))
+        self.assertEqual(got["leftovers"]["data"], {"names": "my-old-set"})
+        self.assertEqual(doctor.fix("clear_leftovers", self.game, self.copies), {"done": 1, "left": []})
+        self.assertFalse(old_set.exists())
+        for folder in (test, ref, unreadable, shared):
+            self.assertTrue((folder / program).is_file(), folder.name)
+        self.assertEqual((instance.kept(str(ref))["why"], instance.kept(str(ref))["reference"]),
+                         ("regression evidence", True))
+        self.assertTrue(instance.kept(str(unreadable))["keep"])
+        self.assertEqual(by_key(doctor.checks(self.game, self.copies, lambda: True, lambda: []))["leftovers"]["level"],
+                         "ok")
+
     def test_a_copy_moved_into_the_trash_counts_once(self):
         # a copy Windows won't delete goes into the trash; it's done when the sweep removes it, not twice
         from rusemod import instance
