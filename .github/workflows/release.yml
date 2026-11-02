@@ -30,12 +30,16 @@ jobs:
         run: |
           python -m pip install -r installers/requirements.txt
           choco install innosetup --no-progress -y
+      # each app starts from its own saved compile only (studio-v* tags from nuitka-studio-..., main's apps.yml saves
+      # under the same start): with any "nuitka-" the newest saved one was taken, and Studio 0.9.8.11's release got the
+      # Launcher's and compiled most of the Studio from scratch (35 minutes and not done, 2026-11-01; main's own Studio
+      # build of the same commit, 13 minutes)
       - name: Keep Nuitka's compile cache between builds
         uses: actions/cache@v4
         with:
           path: ~\AppData\Local\Nuitka\Nuitka\Cache
           key: nuitka-${{ github.ref_name }}-${{ github.sha }}
-          restore-keys: nuitka-
+          restore-keys: nuitka-${{ startsWith(github.ref_name, 'studio-v') && 'studio' || 'launcher' }}-
       - name: Which app and version the tag names
         id: tag
         run: |
