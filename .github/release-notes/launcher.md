@@ -1,8 +1,9 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
-**0.4.8.11:** on Linux, a build's helper programs start the way they do on Windows.
+**0.4.8.11:** Sign in through Steam finishes in the apps; on Linux, a build's helper programs start the way they do on Windows.
 
+- **Fixed: Sign in through Steam.** After you signed in on Steam's page, the Launcher and the Studio kept waiting and never asked our server whether you were done: the window stopped its own checks before the first one. It checks every few seconds now and signs you in as soon as Steam says so. Tried in the preview: the check runs and the window shows you signed in.
 - **Helper programs start fresh on every system:** the programs a build shares its work out to (imported models, mending the map, movement, water) now start fresh on Linux too, the way they always have on Windows. On Linux they started as copies of the running app, which could now and then hang a build, and made one of our checks fail there. Nothing changes on Windows or under Proton on the Steam Deck.
 
 **0.4.8.10:** mods past 4 GB, build lists in groups, faster builds of big mods, Persian and every page in 11 languages, fixes from testers' reports; and RUSE Guard, our anti-cheat for real multiplayer matches, with a join code; Bug Watch, crash and usage reports you can opt into; Sign in through Steam; and a first-start agreement.

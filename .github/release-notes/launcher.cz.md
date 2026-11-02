@@ -1,8 +1,9 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
-**0.4.8.11:** v Linuxu se pomocné programy sestavení spouštějí stejně jako ve Windows.
+**0.4.8.11:** přihlášení přes Steam se v aplikacích dokončí; v Linuxu se pomocné programy sestavení spouštějí stejně jako ve Windows.
 
+- **Opraveno: přihlášení přes Steam.** Po přihlášení na stránce Steamu Launcher a Studio dál čekaly a nikdy se našeho serveru nezeptaly, jestli jste hotovi: okno zastavilo vlastní kontroly ještě před první. Teď kontroluje každých pár sekund a přihlásí vás, jakmile to Steam potvrdí. Vyzkoušeno v náhledu: kontrola proběhne a okno ukáže, že jste přihlášeni.
 - **Pomocné programy se spouštějí znovu na každém systému:** programy, mezi které sestavení dělí práci (importované modely, opravy mapy, pohyb, voda), se teď i v Linuxu spouštějí znovu, jak to vždy bylo ve Windows. V Linuxu se spouštěly jako kopie běžící aplikace, což mohlo občas sestavení zaseknout a jedna z našich kontrol tam neprošla. Ve Windows ani v Protonu na Steam Decku se nic nemění.
 
 **0.4.8.10:** módy nad 4 GB, seznamy stavby ve skupinách, rychlejší sestavení velkých módů, perština a každá stránka v 11 jazycích, opravy z hlášení testerů; a RUSE Guard, náš anticheat pro skutečné hry více hráčů, s kódem hry; Bug Watch, hlášení o pádech a používání, která si můžete zapnout; přihlášení přes Steam; a dohoda při prvním spuštění.

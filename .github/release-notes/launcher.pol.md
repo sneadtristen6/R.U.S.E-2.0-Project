@@ -1,8 +1,9 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
-**0.4.8.11:** w Linux programy pomocnicze budowania startują tak jak w Windows.
+**0.4.8.11:** logowanie przez Steam kończy się w aplikacjach; w Linux programy pomocnicze budowania startują tak jak w Windows.
 
+- **Naprawione: logowanie przez Steam.** Po zalogowaniu na stronie Steam Launcher i Studio dalej czekały i nigdy nie pytały naszego serwera, czy już skończyłeś: okno zatrzymywało własne sprawdzanie przed pierwszym razem. Teraz sprawdza co kilka sekund i loguje cię, gdy tylko Steam to potwierdzi. Wypróbowane w podglądzie: sprawdzanie działa, a okno pokazuje, że jesteś zalogowany.
 - **Programy pomocnicze startują od nowa w każdym systemie:** programy, między które budowanie dzieli pracę (importowane modele, naprawa mapy, ruch, woda), startują teraz od nowa także w Linux, tak jak zawsze w Windows. W Linux startowały jako kopie działającej aplikacji, co czasem mogło zawiesić budowanie i sprawiało, że jeden z naszych testów tam nie przechodził. W Windows i w Proton na Steam Decku nic się nie zmienia.
 
 **0.4.8.10:** mody ponad 4 GB, listy budowy w grupach, szybsze budowanie dużych modów, perski i każda strona w 11 językach, poprawki ze zgłoszeń testerów; oraz RUSE Guard, nasz anty-cheat do prawdziwych gier wieloosobowych, z kodem gry; Bug Watch, raporty o awariach i użyciu, które możesz włączyć; logowanie przez Steam; i umowa przy pierwszym uruchomieniu.

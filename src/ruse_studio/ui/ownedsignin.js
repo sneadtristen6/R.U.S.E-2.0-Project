@@ -99,8 +99,11 @@
     try { info = await api().owned_sign_in_start(); }
     catch (err) { waiting(w, w.err_reach || String(err), "bad"); return; }
     if (!info || !info.on) { render(await loadStatus()); return; }
-    const mine = ++session;  // this sign-in owns the panel until it's closed or reopened
     waiting(w, w.waiting, "");
+    // this sign-in owns the panel waiting() just drew until it's closed or reopened. Taken after drawing it: drawing a
+    // panel moves `session` on (panel() closes the one before), so a number taken first stopped every check before it
+    // ran (the owner's 0.4.8.10 sign-in, 2026-11-01: Steam's page done, the Launcher never asked the server)
+    const mine = session;
     const every = Math.max(1, info.poll_every || 3) * 1000;
     const until = Date.now() + (info.expires_in || 600) * 1000;
     const tick = async () => {

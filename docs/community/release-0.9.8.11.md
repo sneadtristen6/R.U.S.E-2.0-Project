@@ -21,8 +21,8 @@ This update makes big mods work, and brings fair play and trust:
   with their crossings; a unit mod and map changes of one name build together.
 - **Your files in Documents\RUSE 2.0:** the Studio keeps your mods, maps, exports and backups where File Explorer
   shows them, and Delete a mod sends one to the Recycle Bin.
-- **On Linux** (0.9.8.11, right after 0.9.8.10): a build's helper programs start fresh, the way they always have on
-  Windows; nothing changes on Windows or under Proton on the Steam Deck.
+- **0.9.8.11, right after 0.9.8.10:** Sign in through Steam finishes in the apps (after Steam's page, the window
+  waited and never checked); and on Linux a build's helper programs start fresh, the way they always have on Windows.
 
 The first time an app opens it shows a short agreement and asks you for a username (a # and four numbers are added so
 it's unique, like Nick#4821; one name works for both apps). Then:

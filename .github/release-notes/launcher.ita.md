@@ -1,8 +1,9 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
-**0.4.8.11:** su Linux i programmi di aiuto di una build partono come su Windows.
+**0.4.8.11:** l'accesso tramite Steam si completa nelle app; su Linux i programmi di aiuto di una build partono come su Windows.
 
+- **Corretto: accesso tramite Steam.** Dopo che avevi effettuato l'accesso sulla pagina di Steam, il Launcher e lo Studio restavano in attesa e non chiedevano mai al nostro server se avevi finito: la finestra fermava i propri controlli prima del primo. Ora controlla ogni pochi secondi e ti fa accedere appena Steam lo conferma. Provato nell'anteprima: il controllo parte e la finestra ti mostra connesso.
 - **I programmi di aiuto partono da zero su ogni sistema:** i programmi tra cui una build divide il lavoro (modelli importati, riparazione della mappa, movimento, acqua) ora partono da zero anche su Linux, come hanno sempre fatto su Windows. Su Linux partivano come copie dell'app in esecuzione, il che a volte poteva bloccare una build, e faceva fallire lì uno dei nostri controlli. Non cambia nulla su Windows né con Proton sullo Steam Deck.
 
 **0.4.8.10:** mod oltre 4 GB, liste di costruzione in gruppi, build più veloci per le mod grandi, il persiano e ogni pagina in 11 lingue, correzioni dalle segnalazioni dei tester; e RUSE Guard, il nostro anti-cheat per le vere partite multigiocatore, con un codice partita; Bug Watch, rapporti su crash e uso che puoi attivare; l'accesso con Steam; e un accordo al primo avvio.
