@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.12:** Hrát znovu sestavuje upravené hry.
+
+- **Opraveno: Hrát se zastavilo u každé sady módů** s hláškou „No such file or directory: ...fairplay_watch.bin“: instalátorům verzí 0.4.8.10 a 0.4.8.11 chyběly tři soubory RUSE Guard, takže nešlo sestavit žádnou upravenou hru. Jsou zpět a aplikaci, které chybí některý z jejích souborů, už nelze vydat.
+
 **0.4.8.11:** přihlášení přes Steam se v aplikacích dokončí; v Linuxu se pomocné programy sestavení spouštějí stejně jako ve Windows.
 
 - **Opraveno: přihlášení přes Steam.** Po přihlášení na stránce Steamu Launcher a Studio dál čekaly a nikdy se našeho serveru nezeptaly, jestli jste hotovi: okno zastavilo vlastní kontroly ještě před první. Teď kontroluje každých pár sekund a přihlásí vás, jakmile to Steam potvrdí. Vyzkoušeno v náhledu: kontrola proběhne a okno ukáže, že jste přihlášeni.

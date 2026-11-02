@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.12:** Test in game builds modded games again.
+
+- **Fixed: Test in game stopped for every mod** with "No such file or directory: ...fairplay_watch.bin": the installers of 0.9.8.10 and 0.9.8.11 left out three of RUSE Guard's files, so no modded game could be built. They're back in, and an app missing any of its files can no longer be released.
+
 **0.9.8.11:** Sign in through Steam finishes in the apps; on Linux, a build's helper programs start the way they do on Windows.
 
 - **Fixed: Sign in through Steam.** After you signed in on Steam's page, the Launcher and the Studio kept waiting and never asked our server whether you were done: the window stopped its own checks before the first one. It checks every few seconds now and signs you in as soon as Steam says so. Tried in the preview: the check runs and the window shows you signed in.

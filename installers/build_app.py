@@ -87,7 +87,39 @@ def nuitka_command(app: str, icon: Path, out: Path) -> list[str]:
             f"--product-name={a['name']}", f"--file-version={v}", f"--product-version={v}",
             f"--file-description={a['description']}", "--copyright=GPL-3.0 (C) 2026 sneadtristen6 and the RUSE Mod Platform contributors", f"--report={out / 'report.xml'}",
             *(f"--include-package={p}" for p in a.get("include", ())),
+            *(f"--include-data-files={src}={dest}" for src, dest in data_files(app)
+              if src.suffix.lower() in SKIPPED_SUFFIXES),
             str(ROOT / "installers" / f"{app}.py")]
+
+
+# Files the apps read that Nuitka's --include-package-data leaves out by their suffix alone (its
+# default_ignored_suffixes in nuitka/freezer/IncludedDataFiles.py, Nuitka 4.2.2 as pinned: .bin, .exe, .dll ...):
+# RUSE Guard's compiled game scripts, rusemod/gamescripts/*.bin, were missing from Launcher 0.4.8.10 and 0.4.8.11 and
+# Studio 0.9.8.10 and 0.9.8.11, so every modded Play and Test in game stopped ("[Errno 2] No such file or directory:
+# ...fairplay_watch.bin", the owner, 2026-11-01). Each such file goes in by name (--include-data-files keeps any
+# suffix), and a build stops when any data file of the app's packages isn't in the built app (check_data_files).
+SKIPPED_SUFFIXES = (".bin", ".exe", ".dll", ".so", ".pyd", ".pyx", ".pyi", ".pyw", ".dylib")
+CODE_SUFFIXES = (".py", ".pyc", ".pyo")  # compiled into the program (the scripts Blender runs: blender_scripts)
+
+
+def data_files(app: str) -> list[tuple[Path, str]]:
+    """Every file of the app's packages that isn't Python code: (the source file, its path in the built app)."""
+    out = []
+    for package in (APPS[app]["package"], "rusemod", "ruse_mod_engine"):
+        base = ROOT / "src" / package
+        for path in sorted(base.rglob("*")):
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix.lower() not in CODE_SUFFIXES \
+                    and path.name != "py.typed":
+                out.append((path, f"{package}/{path.relative_to(base).as_posix()}"))
+    return out
+
+
+def check_data_files(app: str, app_dir: Path) -> None:
+    """Stop the build when a data file of the app's packages isn't in the built app: a modded game can't be built
+    without them, and the self-test doesn't build one."""
+    missing = [dest for _src, dest in data_files(app) if not (app_dir / dest).is_file()]
+    if missing:
+        raise SystemExit(f"the built app lacks {len(missing)} file(s) it reads: " + ", ".join(missing[:20]))
 
 
 def iscc() -> str:
@@ -173,6 +205,7 @@ def main(argv=None) -> int:
     licence_files(program.parent)
     if APPS[app].get("python251"):
         python251(program.parent)
+    check_data_files(app, program.parent)
     self_test(program, "built app")
     run(installer_command(app, program.parent, icon, dist))
     setup = dist / f"{APPS[app]['name'].replace(' ', '-')}-Setup-{version(app)}.exe"

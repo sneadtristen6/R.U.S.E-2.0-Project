@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.12:** Vyzkoušet ve hře znovu sestavuje upravené hry.
+
+- **Opraveno: Vyzkoušet ve hře se zastavilo u každého módu** s hláškou „No such file or directory: ...fairplay_watch.bin“: instalátorům verzí 0.9.8.10 a 0.9.8.11 chyběly tři soubory RUSE Guard, takže nešlo sestavit žádnou upravenou hru. Jsou zpět a aplikaci, které chybí některý z jejích souborů, už nelze vydat.
+
 **0.9.8.11:** přihlášení přes Steam se v aplikacích dokončí; v Linuxu se pomocné programy sestavení spouštějí stejně jako ve Windows.
 
 - **Opraveno: přihlášení přes Steam.** Po přihlášení na stránce Steamu Launcher a Studio dál čekaly a nikdy se našeho serveru nezeptaly, jestli jste hotovi: okno zastavilo vlastní kontroly ještě před první. Teď kontroluje každých pár sekund a přihlásí vás, jakmile to Steam potvrdí. Vyzkoušeno v náhledu: kontrola proběhne a okno ukáže, že jste přihlášeni.

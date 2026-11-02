@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.12:** Jouer construit de nouveau les jeux moddés.
+
+- **Corrigé : Jouer s'arrêtait pour chaque ensemble de mods** avec « No such file or directory: ...fairplay_watch.bin » : les installateurs des versions 0.4.8.10 et 0.4.8.11 avaient oublié trois fichiers de RUSE Guard, si bien qu'aucun jeu moddé ne pouvait être construit. Ils sont de retour, et une application à laquelle il manque un de ses fichiers ne peut plus être publiée.
+
 **0.4.8.11:** la connexion via Steam aboutit dans les applications ; sous Linux, les programmes d'aide d'une construction démarrent comme sous Windows.
 
 - **Corrigé : la connexion via Steam.** Après votre connexion sur la page de Steam, le Launcher et le Studio attendaient sans jamais demander à notre serveur si c'était fait : la fenêtre arrêtait ses propres vérifications avant la première. Elle vérifie maintenant toutes les quelques secondes et vous connecte dès que Steam le confirme. Essayé dans l'aperçu : la vérification a lieu et la fenêtre vous montre connecté.

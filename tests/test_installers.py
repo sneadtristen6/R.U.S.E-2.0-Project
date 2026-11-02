@@ -171,6 +171,32 @@ class BuildCommands(unittest.TestCase):
         self.assertTrue(Path(cmd[-1]).is_file())  # installers/studio.py
         self.assertNotIn("ruse_launcher", " ".join(cmd))  # the other app never goes in
 
+    def test_files_nuitka_skips_go_in_by_name(self):
+        """RUSE Guard's compiled game scripts (rusemod/gamescripts/*.bin) were left out of Launcher 0.4.8.11 and
+        Studio 0.9.8.11 (Nuitka's package data skips .bin), so every modded Play stopped (the owner, 2026-11-01): each
+        file of a skipped kind goes in by name, in both apps."""
+        for app in ("launcher", "studio"):
+            with self.subTest(app=app):
+                cmd = build_app.nuitka_command(app, Path(f"{app}.ico"), Path("out"))
+                named = {arg.split("=", 1)[1].rsplit("=", 1)[1] for arg in cmd
+                         if arg.startswith("--include-data-files=")}
+                for name in ("fairplay_watch", "fairplay_lock", "guard_hash"):
+                    self.assertIn(f"rusemod/gamescripts/{name}.bin", named)
+                skipped = {dest for src, dest in build_app.data_files(app)
+                           if src.suffix.lower() in build_app.SKIPPED_SUFFIXES}
+                self.assertEqual(named, skipped)
+
+    def test_a_built_app_missing_a_data_file_stops_the_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            app_dir = Path(tmp)
+            for _src, dest in build_app.data_files("launcher"):
+                (app_dir / dest).parent.mkdir(parents=True, exist_ok=True)
+                (app_dir / dest).write_bytes(b"")
+            build_app.check_data_files("launcher", app_dir)  # every file there: the build goes on
+            (app_dir / "rusemod" / "gamescripts" / "fairplay_watch.bin").unlink()
+            with self.assertRaisesRegex(SystemExit, "fairplay_watch.bin"):
+                build_app.check_data_files("launcher", app_dir)
+
     def test_the_studio_takes_its_script_libraries_whole(self):
         # the libraries the Studio shows the game's scripts with load parts of themselves by name, which Nuitka
         # can't follow from the code: the Studio's build takes each whole (its self-test shows a script); the

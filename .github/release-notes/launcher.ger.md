@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.12:** Spielen baut gemoddete Spiele wieder.
+
+- **Behoben: Spielen brach bei jedem Mod-Set ab** mit „No such file or directory: ...fairplay_watch.bin“: Den Installern von 0.4.8.10 und 0.4.8.11 fehlten drei Dateien von RUSE Guard, sodass kein gemoddetes Spiel gebaut werden konnte. Sie sind wieder dabei, und eine App, der eine ihrer Dateien fehlt, kann nicht mehr veröffentlicht werden.
+
 **0.4.8.11:** die Anmeldung über Steam wird in den Apps abgeschlossen; unter Linux starten die Hilfsprogramme eines Builds so wie unter Windows.
 
 - **Behoben: Anmeldung über Steam.** Nachdem du dich auf der Seite von Steam angemeldet hattest, warteten der Launcher und das Studio weiter und fragten unseren Server nie, ob du fertig bist: Das Fenster beendete seine eigenen Prüfungen vor der ersten. Jetzt prüft es alle paar Sekunden und meldet dich an, sobald Steam es bestätigt. In der Vorschau ausprobiert: Die Prüfung läuft, und das Fenster zeigt dich angemeldet.

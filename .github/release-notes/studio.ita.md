@@ -1,6 +1,10 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.12:** Prova in gioco costruisce di nuovo i giochi moddati.
+
+- **Corretto: Prova in gioco si fermava con ogni mod** con «No such file or directory: ...fairplay_watch.bin»: agli installer della 0.9.8.10 e della 0.9.8.11 mancavano tre file di RUSE Guard, quindi non si poteva costruire nessun gioco moddato. Ora ci sono di nuovo, e un'app a cui manca uno dei suoi file non può più essere pubblicata.
+
 **0.9.8.11:** l'accesso tramite Steam si completa nelle app; su Linux i programmi di aiuto di una build partono come su Windows.
 
 - **Corretto: accesso tramite Steam.** Dopo che avevi effettuato l'accesso sulla pagina di Steam, il Launcher e lo Studio restavano in attesa e non chiedevano mai al nostro server se avevi finito: la finestra fermava i propri controlli prima del primo. Ora controlla ogni pochi secondi e ti fa accedere appena Steam lo conferma. Provato nell'anteprima: il controllo parte e la finestra ti mostra connesso.

@@ -1,6 +1,10 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.12:** Testuj w grze znowu buduje zmodowane gry.
+
+- **Naprawione: Testuj w grze zatrzymywało się przy każdym modzie** z komunikatem „No such file or directory: ...fairplay_watch.bin”: instalatorom wersji 0.9.8.10 i 0.9.8.11 brakowało trzech plików RUSE Guard, więc nie dało się zbudować żadnej zmodowanej gry. Wróciły, a aplikacji, której brakuje któregoś z jej plików, nie da się już wydać.
+
 **0.9.8.11:** logowanie przez Steam kończy się w aplikacjach; w Linux programy pomocnicze budowania startują tak jak w Windows.
 
 - **Naprawione: logowanie przez Steam.** Po zalogowaniu na stronie Steam Launcher i Studio dalej czekały i nigdy nie pytały naszego serwera, czy już skończyłeś: okno zatrzymywało własne sprawdzanie przed pierwszym razem. Teraz sprawdza co kilka sekund i loguje cię, gdy tylko Steam to potwierdzi. Wypróbowane w podglądzie: sprawdzanie działa, a okno pokazuje, że jesteś zalogowany.

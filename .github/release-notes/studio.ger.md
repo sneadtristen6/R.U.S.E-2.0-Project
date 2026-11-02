@@ -1,6 +1,10 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.12:** Im Spiel testen baut gemoddete Spiele wieder.
+
+- **Behoben: Im Spiel testen brach bei jedem Mod ab** mit „No such file or directory: ...fairplay_watch.bin“: Den Installern von 0.9.8.10 und 0.9.8.11 fehlten drei Dateien von RUSE Guard, sodass kein gemoddetes Spiel gebaut werden konnte. Sie sind wieder dabei, und eine App, der eine ihrer Dateien fehlt, kann nicht mehr veröffentlicht werden.
+
 **0.9.8.11:** die Anmeldung über Steam wird in den Apps abgeschlossen; unter Linux starten die Hilfsprogramme eines Builds so wie unter Windows.
 
 - **Behoben: Anmeldung über Steam.** Nachdem du dich auf der Seite von Steam angemeldet hattest, warteten der Launcher und das Studio weiter und fragten unseren Server nie, ob du fertig bist: Das Fenster beendete seine eigenen Prüfungen vor der ersten. Jetzt prüft es alle paar Sekunden und meldet dich an, sobald Steam es bestätigt. In der Vorschau ausprobiert: Die Prüfung läuft, und das Fenster zeigt dich angemeldet.
