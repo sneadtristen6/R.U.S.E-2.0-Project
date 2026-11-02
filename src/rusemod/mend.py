@@ -777,6 +777,15 @@ def _tile_job(indices: list) -> dict:
 NO_NUMBA = "RUSE_NO_NUMBA"   # set: dxtnb and tgu1nb leave Numba out (their numpy sums, the same bytes)
 
 
+def fresh_workers():
+    """How every worker program of the apps starts: as a fresh program, the way Windows always starts one. Linux's
+    own way starts a copy of the running program as it is at that moment: a copy made while this program's threads
+    hold a lock can hang, and whatever was swapped in at that moment (a test's stand-in for a function) goes into the
+    copy too (Studio 0.9.8.10's checks on Linux, 2026-11-01: KeptModels' workers took a test's stand-in and failed)."""
+    import multiprocessing
+    return multiprocessing.get_context("spawn")
+
+
 @contextmanager
 def _pool(start, args, workers: int):
     """Worker programs for `with _pool(...) as pool:`, started without Numba: with it, a paint worker lost its call
@@ -790,7 +799,8 @@ def _pool(start, args, workers: int):
     before = os.environ.get(NO_NUMBA)
     os.environ[NO_NUMBA] = "1"
     try:
-        with ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args) as pool:
+        with ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args,
+                                 mp_context=fresh_workers()) as pool:
             yield pool
     finally:
         if before is None:

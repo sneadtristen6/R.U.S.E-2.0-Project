@@ -1736,13 +1736,14 @@ class Ahead:
     def __init__(self, win: bytes, blocks: list, given: dict | None, least: float = MIN_RADIUS):
         from concurrent.futures import ProcessPoolExecutor
         from ruse_mod_engine import sdb
+        from .mend import fresh_workers
         bufs = sdb.split_mapinfo(win)[1]
         self.blocks, self.given, self.least = list(blocks), (dict(given) if given is not None else None), least
         self.bufs = tuple(bufs[:3])
         self.jobs = _jobs(bufs, self.blocks, least)
         self.pool, self.futures = None, []
         try:
-            self.pool = ProcessPoolExecutor(max_workers=max(1, len(self.jobs)))
+            self.pool = ProcessPoolExecutor(max_workers=max(1, len(self.jobs)), mp_context=fresh_workers())
             self.futures = [self.pool.submit(_graph_job, job, self.given) for job in self.jobs]
         except (OSError, RuntimeError):  # worker programs that can't start: the build works it out when it comes to it
             self.close()
@@ -1849,9 +1850,10 @@ def _two_graphs(jobs: list) -> list:
     """_one_graph for both graphs at once: the first in a worker program, the second here. A worker program that
     can't start leaves both to this program, one after the other (the same answer, later)."""
     from concurrent.futures import ProcessPoolExecutor
+    from .mend import fresh_workers
     store = solved._ACTIVE[-1] if solved._ACTIVE else None
     try:
-        pool = ProcessPoolExecutor(max_workers=1)
+        pool = ProcessPoolExecutor(max_workers=1, mp_context=fresh_workers())
         there = pool.submit(_graph_job, jobs[0], store.given if store is not None else None)
     except (OSError, RuntimeError):
         return [_one_graph(*job) for job in jobs]

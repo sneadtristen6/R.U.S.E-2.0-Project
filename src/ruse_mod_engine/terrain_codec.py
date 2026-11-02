@@ -29,6 +29,7 @@ feed it data extracted from a DataMap dat via edata.
 
 Requires numpy + Pillow.  Callers should guard on availability.
 """
+import multiprocessing
 import os
 import struct
 import time
@@ -737,8 +738,10 @@ def decode_terrain(tmst_bytes, chunk_bytes, lod=1, use_index=True, progress=None
     if workers > 1 and len(tasks) >= _PARALLEL_MIN_TILES:
         ex = None
         try:
+            # spawn: a fresh worker everywhere, as on Windows (a copy of a threaded program, Linux's own way, can hang)
             ex = ProcessPoolExecutor(max_workers=workers, initializer=_worker_init,
-                                     initargs=(use_index, tile_px))
+                                     initargs=(use_index, tile_px),
+                                     mp_context=multiprocessing.get_context("spawn"))
         except Exception:
             ex = None                                   # can't spawn → sequential fallback below
         if ex is not None:

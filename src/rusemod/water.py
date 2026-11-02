@@ -290,7 +290,8 @@ def _texels_job(jobs: list) -> list:
 
 def _pool(start, args, workers: int):
     from concurrent.futures import ProcessPoolExecutor
-    return ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args)
+    from .mend import fresh_workers
+    return ProcessPoolExecutor(max_workers=workers, initializer=start, initargs=args, mp_context=fresh_workers())
 
 
 def _all_texels(jobs: list, max_depth: float, off: float, workers: int) -> tuple[list, str | None]:

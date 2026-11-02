@@ -26,6 +26,7 @@ crop — while decoding only the chunks a given view actually touches:
 
 Requires numpy + Pillow.  Callers should guard on availability.
 """
+import multiprocessing
 import os
 import threading
 import zlib
@@ -258,8 +259,11 @@ class TerrainTiles:
                             # initializer: every worker watches its parent and exits when we do.
                             # Without it, killing the app mid-decode strands all of them forever
                             # (see terrain_codec.start_parent_watchdog).
+                            # spawn: a fresh worker everywhere, as on Windows (a copy of this threaded
+                            # program, Linux's own way, can hang)
                             pool = ProcessPoolExecutor(max_workers=self._workers,
-                                                       initializer=tc.start_parent_watchdog)
+                                                       initializer=tc.start_parent_watchdog,
+                                                       mp_context=multiprocessing.get_context("spawn"))
                         except Exception:
                             pool = False            # can't spawn — decode in this thread instead
                     got = 0
