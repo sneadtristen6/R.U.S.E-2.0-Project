@@ -1,6 +1,10 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.11:** unter Linux starten die Hilfsprogramme eines Builds so wie unter Windows.
+
+- **Hilfsprogramme starten auf jedem System frisch:** Die Programme, auf die ein Build seine Arbeit verteilt (importierte Modelle, das Ausbessern der Karte, Bewegung, Wasser, das Gelände der Kartenansicht), starten jetzt auch unter Linux frisch, so wie sie es unter Windows schon immer tun. Unter Linux starteten sie als Kopien der laufenden App, was einen Build ab und zu hängen lassen konnte und dort eine unserer Prüfungen scheitern ließ. Unter Windows und unter Proton auf dem Steam Deck ändert sich nichts.
+
 **0.9.8.10:** Mods über 4 GB, Baulisten in Gruppen, schnellere Builds großer Mods, deine Dateien in Documents\RUSE 2.0, Persisch und jede Seite in 11 Sprachen, Korrekturen aus Testerberichten; und RUSE Guard, unser Anti-Cheat für echte Mehrspieler-Gefechte; Bug Watch, Absturz- und Nutzungsberichte, die du einschalten kannst; die Anmeldung über Steam; und eine Vereinbarung beim ersten Start.
 
 - **Behoben, von einem Spieler gemeldet: Mods über 4 GB.** Ein gemoddetes Spiel, dessen Pakete 4 GB überschritten, ließ sich nicht mehr bauen („'I' format requires 0 <= number <= 4294967295“). Pakete tragen jetzt ihre volle Länge, und eines über 4 GB wird in einem breiteren Aufbau geschrieben, den das Spiel mit einem kleinen Spiel-Patch lesen kann: einmal heruntergeladen und nur auf deine gemoddete Kopie angewendet, nie auf das Spiel in deinem Steam-Ordner. Über 32 GB oder bei einer einzelnen Datei über 4 GB sagt der Build es klar. Im Spiel getestet: Kopien über 4 GB und mit 200, 283 und allen 366 Einheiten aus anderen Epochen.

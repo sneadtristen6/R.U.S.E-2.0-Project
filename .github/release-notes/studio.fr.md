@@ -1,6 +1,10 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.11:** sous Linux, les programmes d'aide d'une construction démarrent comme sous Windows.
+
+- **Les programmes d'aide démarrent à neuf sur tous les systèmes :** les programmes entre lesquels une construction répartit son travail (modèles importés, réparation de la carte, déplacements, eau, terrain de la vue de la carte) démarrent maintenant à neuf sous Linux aussi, comme ils l'ont toujours fait sous Windows. Sous Linux, ils démarraient comme des copies de l'application en cours, ce qui pouvait parfois bloquer une construction, et faisait échouer l'une de nos vérifications. Rien ne change sous Windows ni avec Proton sur le Steam Deck.
+
 **0.9.8.10:** des mods de plus de 4 Go, des listes de construction en groupes, des constructions plus rapides pour les gros mods, vos fichiers dans Documents\RUSE 2.0, le persan et chaque page en 11 langues, des corrections signalées par des testeurs ; et RUSE Guard, notre anti-triche pour les vraies parties multijoueur ; Bug Watch, des rapports de plantages et d'utilisation que vous pouvez activer ; la connexion via Steam ; et un accord au premier démarrage.
 
 - **Corrigé, signalé par un joueur : les mods de plus de 4 Go.** Un jeu moddé dont les paquets dépassaient 4 Go ne se construisait plus (« 'I' format requires 0 <= number <= 4294967295 »). Les paquets portent maintenant leur longueur complète, et un paquet de plus de 4 Go est écrit dans une disposition plus large qu'un petit correctif du jeu permet au jeu de lire : téléchargé une fois et appliqué seulement à votre copie moddée, jamais au jeu dans votre dossier Steam. Au-delà de 32 Go, ou pour un seul fichier de plus de 4 Go, la construction le dit clairement. Testé en jeu : des copies de plus de 4 Go, et avec 200, 283 et les 366 unités d'autres époques.

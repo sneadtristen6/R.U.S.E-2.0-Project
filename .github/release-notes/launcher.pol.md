@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.11:** w Linux programy pomocnicze budowania startują tak jak w Windows.
+
+- **Programy pomocnicze startują od nowa w każdym systemie:** programy, między które budowanie dzieli pracę (importowane modele, naprawa mapy, ruch, woda), startują teraz od nowa także w Linux, tak jak zawsze w Windows. W Linux startowały jako kopie działającej aplikacji, co czasem mogło zawiesić budowanie i sprawiało, że jeden z naszych testów tam nie przechodził. W Windows i w Proton na Steam Decku nic się nie zmienia.
+
 **0.4.8.10:** mody ponad 4 GB, listy budowy w grupach, szybsze budowanie dużych modów, perski i każda strona w 11 językach, poprawki ze zgłoszeń testerów; oraz RUSE Guard, nasz anty-cheat do prawdziwych gier wieloosobowych, z kodem gry; Bug Watch, raporty o awariach i użyciu, które możesz włączyć; logowanie przez Steam; i umowa przy pierwszym uruchomieniu.
 
 - **Naprawione, zgłoszone przez gracza: mody ponad 4 GB.** Zestaw modów, którego zmodowana gra przekraczała 4 GB, przestawał się budować po Graj („'I' format requires 0 <= number <= 4294967295”). Paczki mają teraz pełną długość, a paczka ponad 4 GB jest zapisywana w szerszym układzie, który gra potrafi odczytać dzięki małej łatce gry: pobieranej raz i nakładanej tylko na twoją zmodowaną kopię, nigdy na grę w twoim folderze Steam. Powyżej 32 GB albo przy jednym pliku ponad 4 GB budowanie mówi to wprost. Przetestowane w grze: kopie ponad 4 GB oraz z 200, 283 i wszystkimi 366 jednostkami z innych epok.

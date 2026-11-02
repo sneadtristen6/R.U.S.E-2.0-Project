@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.11:** on Linux, a build's helper programs start the way they do on Windows.
+
+- **Helper programs start fresh on every system:** the programs a build shares its work out to (imported models, mending the map, movement, water, the map view's terrain) now start fresh on Linux too, the way they always have on Windows. On Linux they started as copies of the running app, which could now and then hang a build, and made one of our checks fail there. Nothing changes on Windows or under Proton on the Steam Deck.
+
 **0.9.8.10:** mods past 4 GB, build lists in groups, faster builds of big mods, your files in Documents\RUSE 2.0, Persian and every page in 11 languages, fixes from testers' reports; and RUSE Guard, our anti-cheat for real multiplayer matches; Bug Watch, crash and usage reports you can opt into; Sign in through Steam; and a first-start agreement.
 
 - **Fixed, reported by a player: mods past 4 GB.** A modded game whose packs passed 4 GB stopped building ("'I' format requires 0 <= number <= 4294967295"). Packs now carry their full length, and one past 4 GB is written in a wider layout that a small game patch lets the game read: downloaded once and applied only to your modded copy, never to the game in your Steam folder. Past 32 GB, or for one file past 4 GB, the build says so plainly. Tested in the game: copies past 4 GB, and with 200, 283 and all 366 era units.

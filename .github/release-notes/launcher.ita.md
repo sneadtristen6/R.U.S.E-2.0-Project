@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.11:** su Linux i programmi di aiuto di una build partono come su Windows.
+
+- **I programmi di aiuto partono da zero su ogni sistema:** i programmi tra cui una build divide il lavoro (modelli importati, riparazione della mappa, movimento, acqua) ora partono da zero anche su Linux, come hanno sempre fatto su Windows. Su Linux partivano come copie dell'app in esecuzione, il che a volte poteva bloccare una build, e faceva fallire lì uno dei nostri controlli. Non cambia nulla su Windows né con Proton sullo Steam Deck.
+
 **0.4.8.10:** mod oltre 4 GB, liste di costruzione in gruppi, build più veloci per le mod grandi, il persiano e ogni pagina in 11 lingue, correzioni dalle segnalazioni dei tester; e RUSE Guard, il nostro anti-cheat per le vere partite multigiocatore, con un codice partita; Bug Watch, rapporti su crash e uso che puoi attivare; l'accesso con Steam; e un accordo al primo avvio.
 
 - **Corretto, segnalato da un giocatore: mod oltre 4 GB.** Un set di mod il cui gioco moddato superava 4 GB non si costruiva più con Gioca («'I' format requires 0 <= number <= 4294967295»). Ora i pacchetti portano la loro lunghezza intera, e uno oltre 4 GB viene scritto in una disposizione più ampia che il gioco può leggere grazie a una piccola patch del gioco: scaricata una volta e applicata solo alla tua copia moddata, mai al gioco nella tua cartella di Steam. Oltre 32 GB, o per un singolo file oltre 4 GB, la build lo dice chiaramente. Provato in gioco: copie oltre 4 GB, e con 200, 283 e tutte le 366 unità di altre epoche.

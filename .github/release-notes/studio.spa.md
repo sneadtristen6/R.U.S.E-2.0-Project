@@ -1,6 +1,10 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.11:** en Linux, los programas auxiliares de una construcción arrancan como en Windows.
+
+- **Los programas auxiliares arrancan de cero en todos los sistemas:** los programas entre los que una construcción reparte su trabajo (modelos importados, reparación del mapa, movimiento, agua, terreno de la vista del mapa) ahora arrancan de cero también en Linux, como siempre lo han hecho en Windows. En Linux arrancaban como copias de la aplicación en marcha, lo que a veces podía colgar una construcción, e hizo fallar allí una de nuestras comprobaciones. No cambia nada en Windows ni con Proton en Steam Deck.
+
 **0.9.8.10:** mods de más de 4 GB, listas de construcción en grupos, construcciones más rápidas de mods grandes, tus archivos en Documents\RUSE 2.0, el persa y cada página en 11 idiomas, arreglos de informes de probadores; y RUSE Guard, nuestro anti-trampas para las partidas multijugador reales; Bug Watch, informes de fallos y uso que puedes activar; el inicio de sesión con Steam; y un acuerdo al primer inicio.
 
 - **Arreglado, informado por un jugador: mods de más de 4 GB.** Un juego con mods cuyos paquetes pasaban de 4 GB dejaba de construirse («'I' format requires 0 <= number <= 4294967295»). Ahora los paquetes llevan su longitud completa, y uno de más de 4 GB se escribe en una disposición más amplia que el juego puede leer gracias a un pequeño parche del juego: se descarga una vez y se aplica solo a tu copia con mods, nunca al juego de tu carpeta de Steam. Por encima de 32 GB, o para un solo archivo de más de 4 GB, la construcción lo dice claramente. Probado en el juego: copias de más de 4 GB, y con 200, 283 y las 366 unidades de otras épocas.

@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.11:** v Linuxu se pomocné programy sestavení spouštějí stejně jako ve Windows.
+
+- **Pomocné programy se spouštějí znovu na každém systému:** programy, mezi které sestavení dělí práci (importované modely, opravy mapy, pohyb, voda, terén pohledu na mapu), se teď i v Linuxu spouštějí znovu, jak to vždy bylo ve Windows. V Linuxu se spouštěly jako kopie běžící aplikace, což mohlo občas sestavení zaseknout a jedna z našich kontrol tam neprošla. Ve Windows ani v Protonu na Steam Decku se nic nemění.
+
 **0.9.8.10:** módy nad 4 GB, seznamy stavby ve skupinách, rychlejší sestavení velkých módů, vaše soubory v Documents\RUSE 2.0, perština a každá stránka v 11 jazycích, opravy z hlášení testerů; a RUSE Guard, náš anticheat pro skutečné hry více hráčů; Bug Watch, hlášení o pádech a používání, která si můžete zapnout; přihlášení přes Steam; a dohoda při prvním spuštění.
 
 - **Opraveno, nahlásil hráč: módy nad 4 GB.** Upravená hra, jejíž balíčky přesáhly 4 GB, se přestala sestavovat („'I' format requires 0 <= number <= 4294967295“). Balíčky teď nesou svou plnou délku a balíček nad 4 GB se zapisuje v širším uspořádání, které hra dokáže číst díky malé záplatě hry: stáhne se jednou a použije se jen na vaši upravenou kopii, nikdy na hru ve vaší složce Steam. Nad 32 GB nebo u jednoho souboru nad 4 GB to sestavení řekne jasně. Vyzkoušeno ve hře: kopie nad 4 GB a s 200, 283 a všemi 366 jednotkami z jiných období.
