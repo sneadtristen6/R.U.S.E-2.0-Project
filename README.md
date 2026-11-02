@@ -146,12 +146,12 @@ install is never changed.
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. in game: two M1 Abrams tanks in the fields beside a farm" width="260"><br>
-      <sub><b>Out in the fields.</b> Two M1 Abrams beside a farm.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. in game: an Airfield's build list, the Me 109's group with First World War fighters" width="260"><br>
+      <sub><b>Build lists in groups.</b> First World War fighters in the Me 109's group.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. in game: new bombers parked beside an airfield's runway" width="260"><br>
-      <sub><b>New bombers</b> on a R.U.S.E. airfield.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. in game: an Armor Base's build list, the Panzer IV's group from a First World War tank to modern tanks" width="260"><br>
+      <sub><b>Every era in one group.</b> The Panzer IV's, from a First World War tank to modern ones.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. in game: two Shermans repainted red by a mod" width="260"><br>
@@ -178,8 +178,8 @@ install is never changed.
       <sub><b>Painted cover.</b> Infantry on it are hidden.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. in game on Blitz: a tank stopped between two giant placed water towers" width="260"><br>
-      <sub><b>Placed buildings are solid.</b> Tanks go around.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. in game: RUSE Guard's message in a copy built with cheats: it is for offline play and leaves multiplayer and co-op matches" width="260"><br>
+      <sub><b>RUSE Guard.</b> A game built with cheats stays offline.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. in game on D-Day: infantry and a tank walking along a river bed a mod drained" width="260"><br>
@@ -197,8 +197,8 @@ install is never changed.
       <sub><b>Every map in 3D.</b> Blitz with its zones and towns; the tools run along the bottom.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="RUSE Studio's Units page: a unit's weapons, its 3D model, its build-menu card and Repaint in Blender" width="400"><br>
-      <sub><b>Units.</b> A unit's numbers, flags and weapons, its 3D model and its card.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, a modern tank's page with its model and its maker credited" width="400"><br>
+      <sub><b>Units from other eras</b>, each model's maker credited.</sub>
     </td>
   </tr>
   <tr>
@@ -213,12 +213,12 @@ install is never changed.
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: the Units tab on the Modern era, a modern tank's page with its model and its maker credited" width="400"><br>
-      <sub><b>Units from other eras</b>, each model's maker credited.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: the mod library beside the Vanilla page, with the three steps to play with mods and the Play button" width="400"><br>
+      <sub><b>RUSE Launcher:</b> your mods, three steps, and Play.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: a set of 75 mods, with which mods overwrite which" width="400"><br>
-      <sub><b>RUSE Launcher:</b> a set of 75 community mods, and which overwrite which.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: Sign in through Steam, which confirms on Steam's own page that you own R.U.S.E." width="400"><br>
+      <sub><b>Sign in through Steam.</b> It confirms you own R.U.S.E.; we never see your password.</sub>
     </td>
   </tr>
 </table>

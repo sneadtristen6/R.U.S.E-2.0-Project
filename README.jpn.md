@@ -113,12 +113,12 @@
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="ゲーム内の R.U.S.E.: 農場の横の畑にいる2両の M1 Abrams 戦車" width="260"><br>
-      <sub><b>畑の中へ。</b> 農場の横の2両の M1 Abrams。</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="ゲーム内の R.U.S.E.: 飛行場の生産リスト。第一次世界大戦の戦闘機が入った Me 109 のグループ" width="260"><br>
+      <sub><b>グループ分けされた生産リスト。</b> Me 109 のグループに第一次世界大戦の戦闘機。</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="ゲーム内の R.U.S.E.: 飛行場の滑走路の横に並ぶ新しい爆撃機" width="260"><br>
-      <sub><b>新しい爆撃機</b>が R.U.S.E. の飛行場に。</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="ゲーム内の R.U.S.E.: 機甲基地の生産リスト。第一次世界大戦の戦車から現代の戦車までの Panzer IV のグループ" width="260"><br>
+      <sub><b>すべての時代を1つのグループに。</b> Panzer IV のグループ、第一次世界大戦の戦車から現代の戦車まで。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="ゲーム内の R.U.S.E.: MODで赤く塗り替えた2両の Sherman" width="260"><br>
@@ -145,8 +145,8 @@
       <sub><b>塗った遮蔽。</b> その上にいる歩兵は隠れます。</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="電撃戦のゲーム内の R.U.S.E.: 配置した2つの巨大な給水塔の間で止まった戦車" width="260"><br>
-      <sub><b>配置した建物は通り抜けられない。</b> 戦車は回り込みます。</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="ゲーム内の R.U.S.E.: チートで作ったコピーでの RUSE Guard のメッセージ。オフライン専用で、マルチプレイと協力プレイの対戦から抜けます" width="260"><br>
+      <sub><b>RUSE Guard。</b> チートで作ったゲームはオフラインのまま。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="Dデイのゲーム内の R.U.S.E.: MODで水を抜いた川床を進む歩兵と戦車" width="260"><br>
@@ -164,8 +164,8 @@
       <sub><b>すべてのマップを3Dで。</b> ゾーンと町のある電撃戦。ツールは下に並びます。</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="RUSE Studio のユニットのページ: ユニットの武器、3Dモデル、生産メニューのカード、Blenderで塗り替える" width="400"><br>
-      <sub><b>ユニット。</b> ユニットの数値、フラグ、武器、3Dモデル、カード。</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: 現代の時代を選んだユニットタブと、モデルと作者のクレジットが載った現代の戦車のページ" width="400"><br>
+      <sub><b>他の時代のユニット</b>。各モデルの作者をクレジット。</sub>
     </td>
   </tr>
   <tr>
@@ -180,12 +180,12 @@
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: 現代の時代を選んだユニットタブと、モデルと作者のクレジットが載った現代の戦車のページ" width="400"><br>
-      <sub><b>他の時代のユニット</b>。各モデルの作者をクレジット。</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: Vanilla のページの横の MOD ライブラリ。MOD で遊ぶ3つの手順と「プレイ」ボタン" width="400"><br>
+      <sub><b>RUSE Launcher:</b> あなたの MOD、3つの手順、そして「プレイ」。</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: 75個のMODのセットと、どのMODがどれを上書きするか" width="400"><br>
-      <sub><b>RUSE Launcher:</b> 75個のコミュニティMODのセットと、どれがどれを上書きするか。</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: Steam でサインイン。Steam 自身のページで R.U.S.E. を持っていることを確かめます" width="400"><br>
+      <sub><b>Steam でサインイン。</b> R.U.S.E. を持っていることを確かめます。パスワードを私たちが見ることはありません。</sub>
     </td>
   </tr>
 </table>

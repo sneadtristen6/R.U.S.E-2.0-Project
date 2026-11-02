@@ -152,12 +152,12 @@ jest zmieniana.
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. w grze: dwa czołgi M1 Abrams na polach obok gospodarstwa" width="260"><br>
-      <sub><b>Na polach.</b> Dwa M1 Abrams obok gospodarstwa.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. w grze: lista budowy lotniska, grupa Me 109 z myśliwcami z pierwszej wojny światowej" width="260"><br>
+      <sub><b>Listy budowy w grupach.</b> Myśliwce z pierwszej wojny światowej w grupie Me 109.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. w grze: nowe bombowce zaparkowane obok pasa startowego lotniska" width="260"><br>
-      <sub><b>Nowe bombowce</b> na lotnisku R.U.S.E.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. w grze: lista budowy bazy pancernej, grupa Panzer IV od czołgu z pierwszej wojny światowej po nowoczesne czołgi" width="260"><br>
+      <sub><b>Każda epoka w jednej grupie.</b> Grupa Panzer IV, od czołgu z pierwszej wojny światowej po nowoczesne.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. w grze: dwa Shermany przemalowane przez mod na czerwono" width="260"><br>
@@ -184,8 +184,8 @@ jest zmieniana.
       <sub><b>Namalowana osłona.</b> Piechota na niej jest ukryta.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. w grze na Blitz: czołg zatrzymany między dwiema olbrzymimi postawionymi wieżami ciśnień" width="260"><br>
-      <sub><b>Postawione budynki są lite.</b> Czołgi je omijają.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. w grze: komunikat RUSE Guard w kopii zbudowanej z cheatami: jest do gry offline i opuszcza gry wieloosobowe i kooperacyjne" width="260"><br>
+      <sub><b>RUSE Guard.</b> Gra zbudowana z cheatami zostaje offline.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. w grze na D-Day: piechota i czołg idące korytem rzeki, którą mod osuszył" width="260"><br>
@@ -203,8 +203,8 @@ jest zmieniana.
       <sub><b>Każda mapa w 3D.</b> Blitz ze strefami i miastami; narzędzia biegną wzdłuż dołu.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="Strona Jednostki w RUSE Studio: broń jednostki, jej model 3D, jej karta z menu budowy i Przemaluj w Blenderze" width="400"><br>
-      <sub><b>Jednostki.</b> Liczby, flagi i broń jednostki, jej model 3D i jej karta.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: zakładka Jednostki w epoce Współczesność, strona nowoczesnego czołgu z jego modelem i podziękowaniem dla autora" width="400"><br>
+      <sub><b>Jednostki z innych epok</b>, przy każdym modelu podziękowanie dla jego autora.</sub>
     </td>
   </tr>
   <tr>
@@ -219,12 +219,12 @@ jest zmieniana.
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: zakładka Jednostki w epoce Współczesność, strona nowoczesnego czołgu z jego modelem i podziękowaniem dla autora" width="400"><br>
-      <sub><b>Jednostki z innych epok</b>, przy każdym modelu podziękowanie dla jego autora.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: biblioteka modów obok strony Vanilla, z trzema krokami do gry z modami i przyciskiem Graj" width="400"><br>
+      <sub><b>RUSE Launcher:</b> twoje mody, trzy kroki i Graj.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: zestaw 75 modów, z tym, które mody nadpisują które" width="400"><br>
-      <sub><b>RUSE Launcher:</b> zestaw 75 modów społeczności i to, które nadpisują które.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: logowanie przez Steam, które na stronie samego Steama potwierdza, że masz R.U.S.E." width="400"><br>
+      <sub><b>Logowanie przez Steam.</b> Potwierdza, że masz R.U.S.E.; nigdy nie widzimy twojego hasła.</sub>
     </td>
   </tr>
 </table>

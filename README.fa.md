@@ -146,12 +146,12 @@
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. در بازی: دو تانک M1 Abrams در کشتزارها کنار یک مزرعه" width="260"><br>
-      <sub><b>بیرون، در کشتزارها.</b> دو M1 Abrams کنار یک مزرعه.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. در بازی: فهرست ساخت یک فرودگاه، گروه Me 109 با جنگنده‌های جنگ جهانی اول" width="260"><br>
+      <sub><b>فهرست‌های ساخت گروه‌بندی‌شده.</b> جنگنده‌های جنگ جهانی اول در گروه Me 109.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. در بازی: بمب‌افکن‌های تازه پارک‌شده کنار باند یک فرودگاه" width="260"><br>
-      <sub><b>بمب‌افکن‌های تازه</b> در یک فرودگاه R.U.S.E.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. در بازی: فهرست ساخت یک پایگاه زرهی، گروه Panzer IV از یک تانک جنگ جهانی اول تا تانک‌های امروزی" width="260"><br>
+      <sub><b>همهٔ دوره‌ها در یک گروه.</b> گروه Panzer IV، از یک تانک جنگ جهانی اول تا تانک‌های امروزی.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. در بازی: دو Sherman که یک ماد آن‌ها را قرمز کرده است" width="260"><br>
@@ -178,8 +178,8 @@
       <sub><b>پوشش رنگ‌شده.</b> پیاده‌نظامِ روی آن پنهان است.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. در بازی روی Blitz: تانکی که میان دو منبع آب غول‌پیکرِ گذاشته‌شده متوقف شده است" width="260"><br>
-      <sub><b>ساختمان‌های گذاشته‌شده جامدند.</b> تانک‌ها دورشان می‌زنند.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. در بازی: پیام RUSE Guard در نسخه‌ای که با تقلب ساخته شده: برای بازی آفلاین است و از بازی‌های چندنفره و همکاری بیرون می‌رود" width="260"><br>
+      <sub><b>RUSE Guard.</b> بازی‌ای که با تقلب ساخته شود آفلاین می‌ماند.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. در بازی روی D-Day: پیاده‌نظام و یک تانک در حال حرکت در بستر رودی که یک ماد آبش را خالی کرده است" width="260"><br>
@@ -197,8 +197,8 @@
       <sub><b>هر نقشه به‌صورت سه‌بعدی.</b> Blitz با منطقه‌ها و شهرهایش؛ ابزارها در پایین ردیف شده‌اند.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="صفحهٔ یگان‌ها در RUSE Studio: سلاح‌های یک یگان، مدل سه‌بعدی‌اش، کارت منوی ساختش و رنگ‌آمیزی دوباره در Blender" width="400"><br>
-      <sub><b>یگان‌ها.</b> عددها، پرچم‌ها و سلاح‌های یک یگان، مدل سه‌بعدی‌اش و کارتش.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: زبانهٔ یگان‌ها در دورهٔ مدرن، صفحهٔ یک تانک امروزی با مدلش و نام سازنده‌اش" width="400"><br>
+      <sub><b>یگان‌هایی از دوره‌های دیگر</b>، با نام سازندهٔ هر مدل.</sub>
     </td>
   </tr>
   <tr>
@@ -213,12 +213,12 @@
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: زبانهٔ یگان‌ها در دورهٔ مدرن، صفحهٔ یک تانک امروزی با مدلش و نام سازنده‌اش" width="400"><br>
-      <sub><b>یگان‌هایی از دوره‌های دیگر</b>، با نام سازندهٔ هر مدل.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: کتابخانهٔ مادها کنار صفحهٔ Vanilla، با سه گام بازی با مادها و دکمهٔ «بازی»" width="400"><br>
+      <sub><b>RUSE Launcher:</b> مادهای شما، سه گام، و «بازی».</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: مجموعه‌ای از 75 ماد، و اینکه کدام ماد روی کدام می‌نویسد" width="400"><br>
-      <sub><b>RUSE Launcher:</b> مجموعه‌ای از 75 ماد انجمن، و اینکه کدام روی کدام می‌نویسد.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: ورود با Steam، که در صفحهٔ خود Steam تأیید می‌کند R.U.S.E. را دارید" width="400"><br>
+      <sub><b>ورود با Steam.</b> تأیید می‌کند R.U.S.E. را دارید؛ ما هرگز گذرواژهٔ شما را نمی‌بینیم.</sub>
     </td>
   </tr>
 </table>

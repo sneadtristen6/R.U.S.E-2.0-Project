@@ -151,12 +151,12 @@ nemění.
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. ve hře: dva tanky M1 Abrams na polích u statku" width="260"><br>
-      <sub><b>Venku na polích.</b> Dva M1 Abrams u statku.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. ve hře: seznam stavby letiště, skupina Me 109 se stíhačkami z první světové války" width="260"><br>
+      <sub><b>Seznamy stavby ve skupinách.</b> Stíhačky z první světové války ve skupině Me 109.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. ve hře: nové bombardéry zaparkované u vzletové dráhy letiště" width="260"><br>
-      <sub><b>Nové bombardéry</b> na letišti v R.U.S.E.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. ve hře: seznam stavby obrněné základny, skupina Panzer IV od tanku z první světové války po moderní tanky" width="260"><br>
+      <sub><b>Každé období v jedné skupině.</b> Skupina Panzer IV, od tanku z první světové války po moderní.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. ve hře: dva Shermany, které mod přebarvil na červeno" width="260"><br>
@@ -183,8 +183,8 @@ nemění.
       <sub><b>Namalovaný kryt.</b> Pěchota na něm je skrytá.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. ve hře na mapě Blitz: tank zastavený mezi dvěma obřími umístěnými vodárenskými věžemi" width="260"><br>
-      <sub><b>Umístěné budovy jsou pevné.</b> Tanky je objíždějí.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. ve hře: zpráva RUSE Guard v kopii sestavené s cheaty: je pro hru offline a opouští hry více hráčů a kooperace" width="260"><br>
+      <sub><b>RUSE Guard.</b> Hra sestavená s cheaty zůstane offline.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. ve hře na mapě Den D: pěchota a tank jdou korytem řeky, kterou mod vysušil" width="260"><br>
@@ -202,8 +202,8 @@ nemění.
       <sub><b>Každá mapa ve 3D.</b> Blitz se zónami a městy; nástroje jsou dole.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="Stránka Jednotky v RUSE Studio: zbraně jednotky, její 3D model, její karta v nabídce výroby a Přebarvit v Blenderu" width="400"><br>
-      <sub><b>Jednotky.</b> Čísla, příznaky a zbraně jednotky, její 3D model a její karta.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: záložka Jednotky v moderní éře, stránka moderního tanku s jeho modelem a uvedeným autorem" width="400"><br>
+      <sub><b>Jednotky z jiných období</b>, u každého modelu uvedený autor.</sub>
     </td>
   </tr>
   <tr>
@@ -218,12 +218,12 @@ nemění.
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: záložka Jednotky v moderní éře, stránka moderního tanku s jeho modelem a uvedeným autorem" width="400"><br>
-      <sub><b>Jednotky z jiných období</b>, u každého modelu uvedený autor.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: knihovna modů vedle stránky Vanilla, se třemi kroky ke hraní s mody a tlačítkem Hrát" width="400"><br>
+      <sub><b>RUSE Launcher:</b> vaše mody, tři kroky a Hrát.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: sada 75 modů a které mody přepisují které" width="400"><br>
-      <sub><b>RUSE Launcher:</b> sada 75 komunitních modů a které přepisují které.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: přihlášení přes Steam, které na vlastní stránce Steamu potvrdí, že R.U.S.E. vlastníte" width="400"><br>
+      <sub><b>Přihlášení přes Steam.</b> Potvrdí, že R.U.S.E. vlastníte; vaše heslo nikdy nevidíme.</sub>
     </td>
   </tr>
 </table>

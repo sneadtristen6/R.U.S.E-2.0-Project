@@ -153,12 +153,12 @@ Steam-Installation wird nie verändert.
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. im Spiel: zwei M1-Abrams-Panzer auf den Feldern neben einem Bauernhof" width="260"><br>
-      <sub><b>Draußen auf den Feldern.</b> Zwei M1 Abrams neben einem Bauernhof.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. im Spiel: die Bauliste eines Flugplatzes, die Gruppe der Me 109 mit Jägern aus dem Ersten Weltkrieg" width="260"><br>
+      <sub><b>Baulisten in Gruppen.</b> Jäger aus dem Ersten Weltkrieg in der Gruppe der Me 109.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. im Spiel: neue Bomber, neben der Startbahn eines Flugplatzes abgestellt" width="260"><br>
-      <sub><b>Neue Bomber</b> auf einem Flugplatz von R.U.S.E.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. im Spiel: die Bauliste einer Panzerbasis, die Gruppe des Panzer IV vom Panzer aus dem Ersten Weltkrieg bis zu modernen Panzern" width="260"><br>
+      <sub><b>Jede Epoche in einer Gruppe.</b> Die des Panzer IV, vom Panzer aus dem Ersten Weltkrieg bis zu modernen.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. im Spiel: zwei von einem Mod rot bemalte Shermans" width="260"><br>
@@ -185,8 +185,8 @@ Steam-Installation wird nie verändert.
       <sub><b>Gemalte Deckung.</b> Infanterie darauf ist verborgen.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. im Spiel auf Blitz: ein Panzer, gestoppt zwischen zwei riesigen platzierten Wassertürmen" width="260"><br>
-      <sub><b>Platzierte Gebäude sind massiv.</b> Panzer fahren außen herum.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. im Spiel: die Meldung von RUSE Guard in einer mit Cheats gebauten Kopie: Sie ist fürs Offline-Spiel und verlässt Mehrspieler- und Koop-Gefechte" width="260"><br>
+      <sub><b>RUSE Guard.</b> Ein mit Cheats gebautes Spiel bleibt offline.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. im Spiel auf D-Day: Infanterie und ein Panzer bewegen sich entlang eines Flussbetts, das ein Mod trockengelegt hat" width="260"><br>
@@ -204,8 +204,8 @@ Steam-Installation wird nie verändert.
       <sub><b>Jede Karte in 3D.</b> Blitz mit seinen Zonen und Städten; die Werkzeuge laufen unten entlang.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="Einheitenseite von RUSE Studio: die Waffen einer Einheit, ihr 3D-Modell, ihre Karte für das Baumenü und In Blender neu bemalen" width="400"><br>
-      <sub><b>Einheiten.</b> Die Zahlen, Flags und Waffen einer Einheit, ihr 3D-Modell und ihre Karte.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: der Reiter Einheiten in der modernen Epoche, die Seite eines modernen Panzers mit seinem Modell und der Quellenangabe seines Machers" width="400"><br>
+      <sub><b>Einheiten aus anderen Epochen</b>, mit dem Macher jedes Modells genannt.</sub>
     </td>
   </tr>
   <tr>
@@ -220,12 +220,12 @@ Steam-Installation wird nie verändert.
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: der Reiter Einheiten in der modernen Epoche, die Seite eines modernen Panzers mit seinem Modell und der Quellenangabe seines Machers" width="400"><br>
-      <sub><b>Einheiten aus anderen Epochen</b>, mit dem Macher jedes Modells genannt.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: die Mod-Bibliothek neben der Seite Vanilla, mit den drei Schritten zum Spielen mit Mods und dem Knopf Spielen" width="400"><br>
+      <sub><b>RUSE Launcher:</b> deine Mods, drei Schritte und Spielen.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: ein Set aus 75 Mods, mit der Angabe, welche Mods welche überschreiben" width="400"><br>
-      <sub><b>RUSE Launcher:</b> ein Set aus 75 Community-Mods, und welche welche überschreiben.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: die Anmeldung über Steam, die auf Steams eigener Seite bestätigt, dass dir R.U.S.E. gehört" width="400"><br>
+      <sub><b>Anmeldung über Steam.</b> Sie bestätigt, dass dir R.U.S.E. gehört; dein Passwort sehen wir nie.</sub>
     </td>
   </tr>
 </table>

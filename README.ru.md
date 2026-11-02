@@ -152,12 +152,12 @@
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. в игре: два танка M1 Abrams в полях рядом с фермой" width="260"><br>
-      <sub><b>В поле.</b> Два M1 Abrams рядом с фермой.</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. в игре: список постройки аэродрома, группа Me 109 с истребителями Первой мировой войны" width="260"><br>
+      <sub><b>Списки постройки по группам.</b> Истребители Первой мировой в группе Me 109.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. в игре: новые бомбардировщики стоят у взлётной полосы аэродрома" width="260"><br>
-      <sub><b>Новые бомбардировщики</b> на аэродроме R.U.S.E.</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. в игре: список постройки бронетанковой базы, группа Panzer IV от танка Первой мировой войны до современных танков" width="260"><br>
+      <sub><b>Все эпохи в одной группе.</b> Группа Panzer IV, от танка Первой мировой до современных.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. в игре: два Sherman, перекрашенных модом в красный" width="260"><br>
@@ -184,8 +184,8 @@
       <sub><b>Нарисованное укрытие.</b> Пехота на нём скрыта.</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. в игре на карте «Блиц»: танк, остановившийся между двумя огромными поставленными водонапорными башнями" width="260"><br>
-      <sub><b>Поставленные здания непроходимы.</b> Танки их объезжают.</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. в игре: сообщение RUSE Guard в копии, собранной с читами: она для игры офлайн и выходит из многопользовательских и кооперативных матчей" width="260"><br>
+      <sub><b>RUSE Guard.</b> Игра, собранная с читами, остаётся офлайн.</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. в игре на карте «День Д»: пехота и танк идут по руслу реки, осушенной модом" width="260"><br>
@@ -203,8 +203,8 @@
       <sub><b>Каждая карта в 3D.</b> «Блиц» с зонами и городами; инструменты идут вдоль нижнего края.</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="Страница юнита в RUSE Studio: оружие юнита, его 3D-модель, его карточка в меню постройки и «Перекрасить в Blender»" width="400"><br>
-      <sub><b>Юниты.</b> Числа, флаги и оружие юнита, его 3D-модель и его карточка.</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: вкладка «Юниты» на эпохе «Современность», страница современного танка с его моделью и указанием её автора" width="400"><br>
+      <sub><b>Юниты других эпох</b>, у каждой модели указан автор.</sub>
     </td>
   </tr>
   <tr>
@@ -219,12 +219,12 @@
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio: вкладка «Юниты» на эпохе «Современность», страница современного танка с его моделью и указанием её автора" width="400"><br>
-      <sub><b>Юниты других эпох</b>, у каждой модели указан автор.</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher: библиотека модов рядом со страницей Vanilla, с тремя шагами для игры с модами и кнопкой «Играть»" width="400"><br>
+      <sub><b>RUSE Launcher:</b> ваши моды, три шага и «Играть».</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher: набор из 75 модов и какие моды какие перезаписывают" width="400"><br>
-      <sub><b>RUSE Launcher:</b> набор из 75 модов сообщества и какие из них какие перезаписывают.</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher: вход через Steam, который на собственной странице Steam подтверждает, что у вас есть R.U.S.E." width="400"><br>
+      <sub><b>Вход через Steam.</b> Он подтверждает, что у вас есть R.U.S.E.; ваш пароль мы никогда не видим.</sub>
     </td>
   </tr>
 </table>

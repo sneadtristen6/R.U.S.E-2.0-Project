@@ -114,12 +114,12 @@
 <table>
   <tr>
     <td width="33%" valign="top">
-      <img src="docs/images/units-abrams-farm.jpg" alt="R.U.S.E. 游戏画面：农场旁田野里的两辆 M1 Abrams 坦克" width="260"><br>
-      <sub><b>在田野里。</b> 农场旁的两辆 M1 Abrams。</sub>
+      <img src="docs/images/era-airfield-group.jpg" alt="R.U.S.E. 游戏画面：一个机场的建造列表，Me 109 的组里有第一次世界大战的战斗机" width="260"><br>
+      <sub><b>分组的建造列表。</b> Me 109 的组里有第一次世界大战的战斗机。</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/era-b29-airfield.jpg" alt="R.U.S.E. 游戏画面：停在机场跑道旁的新轰炸机" width="260"><br>
-      <sub><b>新的轰炸机</b>，停在 R.U.S.E. 的机场上。</sub>
+      <img src="docs/images/era-panzer-group.jpg" alt="R.U.S.E. 游戏画面：一个装甲基地的建造列表，Panzer IV 的组，从第一次世界大战的坦克到现代坦克" width="260"><br>
+      <sub><b>所有时代同在一组。</b> Panzer IV 的组，从第一次世界大战的坦克到现代坦克。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/units-repainted-red.jpg" alt="R.U.S.E. 游戏画面：被模组重新涂成红色的两辆 Sherman" width="260"><br>
@@ -146,8 +146,8 @@
       <sub><b>绘制的掩护。</b> 站在上面的步兵会被隐藏。</sub>
     </td>
     <td width="33%" valign="top">
-      <img src="docs/images/movement-solid-towers.jpg" alt="R.U.S.E. 游戏画面，“闪电战”地图：一辆坦克停在两座放置的巨型水塔之间" width="260"><br>
-      <sub><b>放置的建筑是实体的。</b> 坦克会绕过去。</sub>
+      <img src="docs/images/guard-offline-message.jpg" alt="R.U.S.E. 游戏画面：用作弊构建的副本中 RUSE Guard 的消息：它只能离线游玩，并会退出多人和合作对战" width="260"><br>
+      <sub><b>RUSE Guard。</b> 用作弊构建的游戏只能离线。</sub>
     </td>
     <td width="33%" valign="top">
       <img src="docs/images/dried-riverbed-walked.jpg" alt="R.U.S.E. 游戏画面，“D日”地图：步兵和一辆坦克沿着被模组排干的河床行进" width="260"><br>
@@ -165,8 +165,8 @@
       <sub><b>每张地图都是 3D 的。</b> 带有区域和城镇的“闪电战”；工具排在底部。</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-unit-page.jpg" alt="RUSE Studio 的单位页面：一个单位的武器、它的 3D 模型、它的建造菜单卡片和“在 Blender 中重新涂装”" width="400"><br>
-      <sub><b>单位。</b> 一个单位的数值、旗标和武器，它的 3D 模型和它的卡片。</sub>
+      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio：现代时代的单位标签页，一辆现代坦克的页面，有它的模型和署名的作者" width="400"><br>
+      <sub><b>其他时代的单位</b>，每个模型的作者都已署名。</sub>
     </td>
   </tr>
   <tr>
@@ -181,12 +181,12 @@
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/images/studio-era-units.jpg" alt="RUSE Studio：现代时代的单位标签页，一辆现代坦克的页面，有它的模型和署名的作者" width="400"><br>
-      <sub><b>其他时代的单位</b>，每个模型的作者都已署名。</sub>
+      <img src="docs/images/launcher-library-play.jpg" alt="RUSE Launcher：Vanilla 页面旁的模组库，有用模组游玩的三个步骤和“开始游戏”按钮" width="400"><br>
+      <sub><b>RUSE Launcher：</b> 你的模组、三个步骤，以及“开始游戏”。</sub>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/images/launcher-set.jpg" alt="RUSE Launcher：一个包含 75 个模组的组合，以及哪些模组覆盖哪些" width="400"><br>
-      <sub><b>RUSE Launcher：</b> 一个包含 75 个社区模组的组合，以及哪些覆盖哪些。</sub>
+      <img src="docs/images/launcher-steam-signin.jpg" alt="RUSE Launcher：通过 Steam 登录，在 Steam 自己的页面上确认你拥有 R.U.S.E." width="400"><br>
+      <sub><b>通过 Steam 登录。</b> 它确认你拥有 R.U.S.E.；我们从不会看到你的密码。</sub>
     </td>
   </tr>
 </table>
