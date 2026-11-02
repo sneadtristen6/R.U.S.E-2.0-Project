@@ -1,6 +1,7 @@
 """RUSE Guard, the Launcher's side (rusemod.guard): signed tokens in DomesticNukes' format, dev keys, signed mod
 manifests, the in-game record, the process scan, and a match's evidence bundle kept or sent."""
 import json
+import os
 import shutil
 import tempfile
 import threading
@@ -312,7 +313,13 @@ class Bundle(unittest.TestCase):
                 self.polls += 1
                 if self.polls == 1:
                     dumps.mkdir(parents=True, exist_ok=True)
-                    (dumps / "report.dmp").write_bytes(Bundle.DUMP)
+                    dump = dumps / "report.dmp"
+                    dump.write_bytes(Bundle.DUMP)
+                    # a real lock crash comes minutes after the watch starts; a file written microseconds after it
+                    # can read a hair earlier than the watch's start (72 of 500 quick writes on Windows), so it's
+                    # dated a second on, as a crash during the match would be
+                    soon = time.time() + 1
+                    os.utime(dump, (soon, soon))
                     return None
                 return 0x29A
 

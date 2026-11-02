@@ -1,6 +1,11 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.13:** Los informes de fallos del juego dicen qué llevó al fallo.
+
+- **Los informes de fallos del juego de Bug Watch dicen más:** si marcaste Bug Watch y el juego falla, el informe ahora también dice qué intentaba leer o escribir el juego, y hasta 16 puntos del juego que llevaron al fallo, leídos del propio informe de fallo del juego en tu PC, que sigue sin salir nunca de él. Un informe que solo decía dónde se detuvo el juego no podía mostrar por qué; ahora podemos rastrear fallos como el que un jugador nos envió esta semana, y corregirlos.
+- **El acuerdo, versión 3:** ahora enumera estas dos novedades entre lo que contiene un informe de fallo del juego, y nada más ha cambiado. Como ha cambiado, ambas aplicaciones te lo muestran una vez más al abrirse.
+
 **0.4.8.12:** Jugar vuelve a construir los juegos con mods.
 
 - **Corregido: Jugar se detenía con cada conjunto de mods** con «No such file or directory: ...fairplay_watch.bin»: a los instaladores de 0.4.8.10 y 0.4.8.11 les faltaban tres archivos de RUSE Guard, así que no se podía construir ningún juego con mods. Ya están de vuelta, y una aplicación a la que le falte alguno de sus archivos ya no se puede publicar.

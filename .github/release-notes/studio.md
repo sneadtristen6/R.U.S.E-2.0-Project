@@ -1,6 +1,11 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.13:** Game crash reports say what led to the crash.
+
+- **Bug Watch's game crash reports say more:** if you ticked Bug Watch and the game crashes, the report now also says what the game was trying to read or write, and up to 16 places in the game that led to the crash, read from the game's own crash report on your PC, which still never leaves it. A report that only said where the game stopped couldn't show why; now we can trace crashes like the one a player sent us this week, and fix them.
+- **The agreement, version 3:** it now lists these two new things among what a game crash report carries, and nothing else in it changed. Because it changed, both apps show it to you once more when they open.
+
 **0.9.8.12:** Test in game builds modded games again.
 
 - **Fixed: Test in game stopped for every mod** with "No such file or directory: ...fairplay_watch.bin": the installers of 0.9.8.10 and 0.9.8.11 left out three of RUSE Guard's files, so no modded game could be built. They're back in, and an app missing any of its files can no longer be released.

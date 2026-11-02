@@ -69,7 +69,7 @@ Someone cheating in a match isn't a security problem in our apps: tell us on the
 
 R.U.S.E. multiplayer has no anti-cheat of its own. RUSE Guard was DomesticNukes' idea, and the name is his;
 sneadtristen6 and Claude built it. It keeps cheats out of matches against other players without catching honest ones.
-Accepting it is part of the agreement the apps show at their first start (version 2, 31 October 2026), and these are
+Accepting it is part of the agreement the apps show at their first start (version 3, 2 November 2026), and these are
 its rules:
 
 1. **Multiplayer only.** It acts only in multiplayer and co-op matches: never in single-player, skirmish against the

@@ -1,6 +1,11 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.13:** I rapporti di crash del gioco dicono cosa ha portato al crash.
+
+- **I rapporti di crash del gioco di Bug Watch dicono di più:** se hai spuntato Bug Watch e il gioco va in crash, il rapporto ora dice anche cosa il gioco stava cercando di leggere o scrivere, e fino a 16 punti del gioco che hanno portato al crash, letti dal rapporto di crash del gioco stesso sul tuo PC, che continua a non lasciarlo mai. Un rapporto che diceva solo dove il gioco si era fermato non poteva mostrare perché; ora possiamo risalire a crash come quello che un giocatore ci ha inviato questa settimana, e correggerli.
+- **L'accordo, versione 3:** ora elenca queste due novità tra ciò che contiene un rapporto di crash del gioco, e nient'altro è cambiato. Poiché è cambiato, entrambe le app te lo mostrano ancora una volta all'apertura.
+
 **0.4.8.12:** Gioca costruisce di nuovo i giochi moddati.
 
 - **Corretto: Gioca si fermava con ogni set di mod** con «No such file or directory: ...fairplay_watch.bin»: agli installer della 0.4.8.10 e della 0.4.8.11 mancavano tre file di RUSE Guard, quindi non si poteva costruire nessun gioco moddato. Ora ci sono di nuovo, e un'app a cui manca uno dei suoi file non può più essere pubblicata.

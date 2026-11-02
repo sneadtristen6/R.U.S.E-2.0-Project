@@ -1,6 +1,11 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.13:** Les rapports de plantage du jeu disent ce qui a mené au plantage.
+
+- **Les rapports de plantage du jeu de Bug Watch en disent plus :** si vous avez coché Bug Watch et que le jeu plante, le rapport indique maintenant aussi ce que le jeu essayait de lire ou d'écrire, et jusqu'à 16 endroits du jeu qui ont mené au plantage, lus dans le propre rapport de plantage du jeu sur votre PC, qui ne le quitte toujours jamais. Un rapport qui disait seulement où le jeu s'était arrêté ne pouvait pas montrer pourquoi ; nous pouvons maintenant remonter la piste de plantages comme celui qu'un joueur nous a envoyé cette semaine, et les corriger.
+- **L'accord, version 3 :** il liste maintenant ces deux nouveautés parmi ce que contient un rapport de plantage du jeu, et rien d'autre n'y a changé. Comme il a changé, les deux applications vous le montrent encore une fois à leur ouverture.
+
 **0.9.8.12:** Tester en jeu construit de nouveau les jeux moddés.
 
 - **Corrigé : Tester en jeu s'arrêtait pour chaque mod** avec « No such file or directory: ...fairplay_watch.bin » : les installateurs des versions 0.9.8.10 et 0.9.8.11 avaient oublié trois fichiers de RUSE Guard, si bien qu'aucun jeu moddé ne pouvait être construit. Ils sont de retour, et une application à laquelle il manque un de ses fichiers ne peut plus être publiée.

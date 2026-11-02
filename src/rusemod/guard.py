@@ -49,8 +49,9 @@ SERVER = "https://ruse-guard.sneadtristen6.workers.dev"  # the project's server:
 #                                                       (GuardCalls.use_guard_server), so tests keep their bundles
 MANIFEST = "ruseguard.manifest"                       # a signed mod manifest, in the mod's folder
 MATCH_LOG = "ruse_guard_match.txt"                    # what the in-game record writes, in the copy's folder
-TERMS_VERSION = 2                                     # the agreement's version; raised when its text changes, so the
-#                                                       apps show it again (2: the final text of 2026-10-31)
+TERMS_VERSION = 3                                     # the agreement's version; raised when its text changes, so the
+#                                                       apps show it again (2: the final text of 2026-10-31; 3, 2026-11-02:
+#                                                       a game crash report's chain and memory place listed)
 BUNDLE_LIMIT = 20_000_000                             # the most a bundle may weigh (the replay is most of it)
 SCAN_EVERY = 30                                       # seconds between process scans in a live multiplayer match
 

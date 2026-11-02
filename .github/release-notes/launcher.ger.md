@@ -1,6 +1,11 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.13:** Absturzberichte des Spiels sagen, was zum Absturz geführt hat.
+
+- **Bug Watchs Absturzberichte des Spiels sagen mehr:** Wenn du Bug Watch angekreuzt hast und das Spiel abstürzt, sagt der Bericht jetzt auch, was das Spiel zu lesen oder zu schreiben versuchte, und bis zu 16 Stellen im Spiel, die zum Absturz geführt haben, gelesen aus dem eigenen Absturzbericht des Spiels auf deinem PC, der ihn weiterhin nie verlässt. Ein Bericht, der nur sagte, wo das Spiel stehen blieb, konnte nicht zeigen, warum; jetzt können wir Abstürze wie den, den uns ein Spieler diese Woche geschickt hat, zurückverfolgen und beheben.
+- **Die Vereinbarung, Version 3:** Sie nennt jetzt diese zwei neuen Angaben unter dem, was ein Absturzbericht des Spiels enthält; sonst hat sich nichts geändert. Weil sie sich geändert hat, zeigen beide Apps sie dir beim Öffnen noch einmal.
+
 **0.4.8.12:** Spielen baut gemoddete Spiele wieder.
 
 - **Behoben: Spielen brach bei jedem Mod-Set ab** mit „No such file or directory: ...fairplay_watch.bin“: Den Installern von 0.4.8.10 und 0.4.8.11 fehlten drei Dateien von RUSE Guard, sodass kein gemoddetes Spiel gebaut werden konnte. Sie sind wieder dabei, und eine App, der eine ihrer Dateien fehlt, kann nicht mehr veröffentlicht werden.

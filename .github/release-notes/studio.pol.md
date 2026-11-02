@@ -1,6 +1,11 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.13:** Raporty o awariach gry mówią, co doprowadziło do awarii.
+
+- **Raporty Bug Watch o awariach gry mówią więcej:** jeśli zaznaczyłeś Bug Watch, a gra ulegnie awarii, raport mówi teraz także, co gra próbowała odczytać lub zapisać, oraz do 16 miejsc w grze, które doprowadziły do awarii, odczytanych z własnego raportu o awarii gry na twoim PC, który nadal nigdy go nie opuszcza. Raport, który mówił tylko, gdzie gra się zatrzymała, nie mógł pokazać dlaczego; teraz możemy prześledzić awarie takie jak ta, którą gracz przysłał nam w tym tygodniu, i je naprawić.
+- **Umowa, wersja 3:** wymienia teraz te dwie nowe rzeczy wśród tego, co zawiera raport o awarii gry; nic innego się w niej nie zmieniło. Ponieważ się zmieniła, obie aplikacje pokażą ci ją jeszcze raz przy otwarciu.
+
 **0.9.8.12:** Testuj w grze znowu buduje zmodowane gry.
 
 - **Naprawione: Testuj w grze zatrzymywało się przy każdym modzie** z komunikatem „No such file or directory: ...fairplay_watch.bin”: instalatorom wersji 0.9.8.10 i 0.9.8.11 brakowało trzech plików RUSE Guard, więc nie dało się zbudować żadnej zmodowanej gry. Wróciły, a aplikacji, której brakuje któregoś z jej plików, nie da się już wydać.

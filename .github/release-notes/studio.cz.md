@@ -1,6 +1,11 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.13:** Hlášení o pádech hry říkají, co k pádu vedlo.
+
+- **Hlášení Bug Watch o pádech hry říkají víc:** pokud jste zaškrtli Bug Watch a hra spadne, hlášení teď také říká, co se hra pokoušela číst nebo zapisovat, a až 16 míst ve hře, která k pádu vedla, přečtených z vlastního hlášení hry o pádu na vašem PC, které ho stále nikdy neopouští. Hlášení, které říkalo jen, kde se hra zastavila, nemohlo ukázat proč; teď můžeme dohledat pády jako ten, který nám tento týden poslal jeden hráč, a opravit je.
+- **Smlouva, verze 3:** nyní mezi tím, co obsahuje hlášení o pádu hry, uvádí i tyto dvě nové věci; nic jiného se v ní nezměnilo. Protože se změnila, obě aplikace vám ji při otevření ukážou ještě jednou.
+
 **0.9.8.12:** Vyzkoušet ve hře znovu sestavuje upravené hry.
 
 - **Opraveno: Vyzkoušet ve hře se zastavilo u každého módu** s hláškou „No such file or directory: ...fairplay_watch.bin“: instalátorům verzí 0.9.8.10 a 0.9.8.11 chyběly tři soubory RUSE Guard, takže nešlo sestavit žádnou upravenou hru. Jsou zpět a aplikaci, které chybí některý z jejích souborů, už nelze vydat.

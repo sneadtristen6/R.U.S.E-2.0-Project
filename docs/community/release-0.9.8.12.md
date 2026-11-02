@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.12 and Launcher 0.4.8.12: Play and Test in game work again; mods past 4 GB, build lists in groups, RUSE Guard"
 category: Announcements
 order: 17
+skip: never posted; 0.9.8.13, out right after it, has its own announcement, which covers it
 ---
 **RUSE Studio 0.9.8.12** and **RUSE Launcher 0.4.8.12** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.
