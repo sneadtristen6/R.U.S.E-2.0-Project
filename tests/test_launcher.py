@@ -97,10 +97,22 @@ class Launcher(Base):
         self.assertIn("lowercase", sets[1]["error"])
         self.assertEqual(sets[2]["error"], "it lists no mods")
 
-    def test_play_vanilla_goes_through_steam(self):
+    def test_play_vanilla_builds_the_copy_with_the_title(self):
+        # the owner, 2026-11-02: "when loading a vanilla game in launcher it doesnt load gold ruse make it so it does"
         api = self.api()
+        with mock.patch("rusemod.play.Starter.modded", autospec=True) as modded:
+            j = wait_for(api, api.play("vanilla")["job"])
+        self.assertEqual((j["state"], self.urls), ("done", []), j)
+        (_starter, game, folders, instance, name, _say), kw = modded.call_args
+        # the copy with no mods (in the game it always has RUSE Guard's watcher to write; this made-up game has none)
+        self.assertEqual((game, folders, instance, name, kw["title"]),
+                         (self.game, [], self.instances / SHARED, "Vanilla", True))
+
+    def test_play_vanilla_with_the_games_own_title_goes_through_steam(self):
+        api = self.api()
+        api.set_game_title(False)
         j = wait_for(api, api.play("vanilla")["job"])
-        self.assertEqual((j["state"], self.urls), ("done", [STEAM_PLAY]))
+        self.assertEqual((j["state"], self.urls, self.started), ("done", [STEAM_PLAY], []))
 
     def test_play_a_mod_set_builds_the_copy_and_starts_it(self):
         mod = write_mod(self.tmp.name, "econ-half", {"eco.rndf": "patch $/B ( ProductionPrice *= 0.5 )"})
@@ -891,6 +903,7 @@ class CleanBackup(Base):
     def test_the_studio_at_work_on_the_game_is_waited_for(self):
         from rusemod import backup
         api, folder = self.api(), Path(self.tmp.name) / "backups"
+        api.set_game_title(False)  # (Vanilla then goes through Steam: no copy to build on this made-up game)
         self.assertEqual(wait_for(api, api.backup_make()["job"])["state"], "done")
         with backup._busy(folder, "restore"):  # the Studio restoring the game's files: a Play waits
             j = wait_for(api, api.play("vanilla")["job"])

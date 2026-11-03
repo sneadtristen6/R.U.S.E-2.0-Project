@@ -659,7 +659,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return None, f"it needs the mod folder {entry}, which isn't there any more"
 
     def _read_sets(self) -> list[dict]:
-        sets = [{"id": VANILLA, "name": "Vanilla", "description": "The game as Steam installed it.", "mods": [],
+        sets = [{"id": VANILLA, "name": "Vanilla", "description": "The game with no mods.", "mods": [],
                  "folders": [], "mod_names": [], "error": None}]
         folder = self._sets_dir()
         for f in sorted(folder.glob("*.toml"), key=lambda p: p.stem.lower()) if folder.is_dir() else []:
@@ -758,7 +758,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         chosen = self._set(set_id)
         if set_id == VANILLA:
             # not a game rule: the Launcher's own Vanilla set
-            raise LauncherError("Vanilla is the game as Steam installed it; it can't be changed. Make a new mod set.")
+            raise LauncherError("Vanilla is the game with no mods; it can't be changed. Make a new mod set.")
         name = (name or "").strip() or chosen["name"]
         mods = self._check_mods(mods) if mods is not None else chosen["mods"]
         self._write_set(set_id, name, chosen["description"] if description is None else description.strip(), mods)
@@ -935,9 +935,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         return buildtext.worded_view(view, self.prefs().get("lang") or "us")  # Play's lines in the player's language
 
     def _play(self, chosen: dict, say) -> None:
-        if chosen["id"] == VANILLA:
-            self._starter.vanilla(say)
+        title = title_on(self._home)  # R.U.S.E. 2.0's title, unless Settings says the game's
+        if chosen["id"] == VANILLA and not title:
+            self._starter.vanilla(say)  # the game's own title: Steam starts the game as it installed it
             return
+        # Vanilla with the title: the modded copy with no mods (the owner, 2026-11-02: "when loading a vanilla game in
+        # launcher it doesnt load gold ruse make it so it does"); the game's own folder is never written
         game, _found = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
@@ -947,4 +950,4 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         extra = {"guard": {"home": self._home, "consent": self.guard_status()}} if fairplay.ON else {}  # RUSE Guard
         self._starter.modded(game, chosen["folders"], instance, chosen["name"], say,
                              words=words(self.prefs().get("lang") or "us"),  # the lines for the player, in theirs
-                             title=title_on(self._home), **extra)  # R.U.S.E. 2.0's title, unless Settings says the game's
+                             title=title, **extra)
