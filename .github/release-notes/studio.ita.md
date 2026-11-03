@@ -1,6 +1,10 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.14:** Le mod con un proprio script di partita si costruiscono di nuovo.
+
+- **Corretto: Prova in gioco si fermava con alcune mod** con «RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...»: alcune mod portano un proprio script di partita la cui intestazione chiede più spazio di quanto serva allo script (tra cui 1 VS 7 AI, 1 VS 15 AI, Operation Overlord e Sand Box). Il gioco esegue questi script senza problemi, ma lo Studio li rifiutava, quindi non si poteva costruire niente con una di queste mod. Ora li legge come fa il gioco.
+
 **0.9.8.13:** I rapporti di crash del gioco dicono cosa ha portato al crash.
 
 - **I rapporti di crash del gioco di Bug Watch dicono di più:** se hai spuntato Bug Watch e il gioco va in crash, il rapporto ora dice anche cosa il gioco stava cercando di leggere o scrivere, e fino a 16 punti del gioco che hanno portato al crash, letti dal rapporto di crash del gioco stesso sul tuo PC, che continua a non lasciarlo mai. Un rapporto che diceva solo dove il gioco si era fermato non poteva mostrare perché; ora possiamo risalire a crash come quello che un giocatore ci ha inviato questa settimana, e correggerli.

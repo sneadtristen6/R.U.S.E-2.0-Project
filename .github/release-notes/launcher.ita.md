@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.14:** Le mod con un proprio script di partita si costruiscono di nuovo.
+
+- **Corretto: Gioca si fermava con alcuni set di mod** con «RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...»: alcune mod portano un proprio script di partita la cui intestazione chiede più spazio di quanto serva allo script (tra cui 1 VS 7 AI, 1 VS 15 AI, Operation Overlord e Sand Box). Il gioco esegue questi script senza problemi, ma il Launcher li rifiutava, quindi nessun set con una di queste mod si poteva costruire. Ora li legge come fa il gioco.
+
 **0.4.8.13:** I rapporti di crash del gioco dicono cosa ha portato al crash.
 
 - **I rapporti di crash del gioco di Bug Watch dicono di più:** se hai spuntato Bug Watch e il gioco va in crash, il rapporto ora dice anche cosa il gioco stava cercando di leggere o scrivere, e fino a 16 punti del gioco che hanno portato al crash, letti dal rapporto di crash del gioco stesso sul tuo PC, che continua a non lasciarlo mai. Un rapporto che diceva solo dove il gioco si era fermato non poteva mostrare perché; ora possiamo risalire a crash come quello che un giocatore ci ha inviato questa settimana, e correggerli.

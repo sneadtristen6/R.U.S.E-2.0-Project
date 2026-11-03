@@ -1,6 +1,10 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.14:** Mody z własnym skryptem rozgrywki znowu się budują.
+
+- **Naprawione: Testuj w grze zatrzymywało się przy niektórych modach** z komunikatem „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...”: kilka modów ma własny skrypt rozgrywki, którego nagłówek żąda więcej miejsca, niż skrypt potrzebuje (wśród nich 1 VS 7 AI, 1 VS 15 AI, Operation Overlord i Sand Box). Gra uruchamia te skrypty bez problemu, ale Studio je odrzucało, więc nie dało się zbudować niczego z jednym z tych modów. Teraz czyta je tak jak gra.
+
 **0.9.8.13:** Raporty o awariach gry mówią, co doprowadziło do awarii.
 
 - **Raporty Bug Watch o awariach gry mówią więcej:** jeśli zaznaczyłeś Bug Watch, a gra ulegnie awarii, raport mówi teraz także, co gra próbowała odczytać lub zapisać, oraz do 16 miejsc w grze, które doprowadziły do awarii, odczytanych z własnego raportu o awarii gry na twoim PC, który nadal nigdy go nie opuszcza. Raport, który mówił tylko, gdzie gra się zatrzymała, nie mógł pokazać dlaczego; teraz możemy prześledzić awarie takie jak ta, którą gracz przysłał nam w tym tygodniu, i je naprawić.

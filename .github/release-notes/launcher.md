@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.14:** Mods with a match script of their own build again.
+
+- **Fixed: Play stopped on some mod sets** with "RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...": a few mods bring a match script of their own whose header asks for more room than the script needs (1 VS 7 AI, 1 VS 15 AI, Operation Overlord and Sand Box among them). The game runs those scripts fine, but the Launcher refused them, so no set with one of those mods could be built. It now reads them the way the game does.
+
 **0.4.8.13:** Game crash reports say what led to the crash.
 
 - **Bug Watch's game crash reports say more:** if you ticked Bug Watch and the game crashes, the report now also says what the game was trying to read or write, and up to 16 places in the game that led to the crash, read from the game's own crash report on your PC, which still never leaves it. A report that only said where the game stopped couldn't show why; now we can trace crashes like the one a player sent us this week, and fix them.

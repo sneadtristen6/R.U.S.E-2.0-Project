@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.14:** Les mods qui ont leur propre script de partie se construisent de nouveau.
+
+- **Corrigé : Jouer s'arrêtait pour certains ensembles de mods** avec « RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ... » : quelques mods apportent leur propre script de partie, dont l'en-tête demande plus de place que le script n'en a besoin (parmi eux 1 VS 7 AI, 1 VS 15 AI, Operation Overlord et Sand Box). Le jeu exécute ces scripts sans problème, mais le Launcher les refusait, si bien qu'aucun ensemble contenant l'un de ces mods ne pouvait être construit. Il les lit maintenant comme le jeu.
+
 **0.4.8.13:** Les rapports de plantage du jeu disent ce qui a mené au plantage.
 
 - **Les rapports de plantage du jeu de Bug Watch en disent plus :** si vous avez coché Bug Watch et que le jeu plante, le rapport indique maintenant aussi ce que le jeu essayait de lire ou d'écrire, et jusqu'à 16 endroits du jeu qui ont mené au plantage, lus dans le propre rapport de plantage du jeu sur votre PC, qui ne le quitte toujours jamais. Un rapport qui disait seulement où le jeu s'était arrêté ne pouvait pas montrer pourquoi ; nous pouvons maintenant remonter la piste de plantages comme celui qu'un joueur nous a envoyé cette semaine, et les corriger.

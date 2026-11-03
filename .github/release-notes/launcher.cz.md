@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.14:** Módy s vlastním skriptem zápasu se znovu sestavují.
+
+- **Opraveno: Hrát se zastavilo u některých sad módů** s hláškou „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: několik módů přináší vlastní skript zápasu, jehož hlavička žádá víc místa, než skript potřebuje (mezi nimi 1 VS 7 AI, 1 VS 15 AI, Operation Overlord a Sand Box). Hra tyto skripty spouští bez potíží, ale Launcher je odmítal, takže nešlo sestavit žádnou sadu s některým z těchto módů. Teď je čte stejně jako hra.
+
 **0.4.8.13:** Hlášení o pádech hry říkají, co k pádu vedlo.
 
 - **Hlášení Bug Watch o pádech hry říkají víc:** pokud jste zaškrtli Bug Watch a hra spadne, hlášení teď také říká, co se hra pokoušela číst nebo zapisovat, a až 16 míst ve hře, která k pádu vedla, přečtených z vlastního hlášení hry o pádu na vašem PC, které ho stále nikdy neopouští. Hlášení, které říkalo jen, kde se hra zastavila, nemohlo ukázat proč; teď můžeme dohledat pády jako ten, který nám tento týden poslal jeden hráč, a opravit je.

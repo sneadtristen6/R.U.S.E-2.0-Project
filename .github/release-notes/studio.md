@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.14:** Mods with a match script of their own build again.
+
+- **Fixed: Test in game stopped for some mods** with "RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...": a few mods bring a match script of their own whose header asks for more room than the script needs (1 VS 7 AI, 1 VS 15 AI, Operation Overlord and Sand Box among them). The game runs those scripts fine, but the Studio refused them, so nothing with one of those mods could be built. It now reads them the way the game does.
+
 **0.9.8.13:** Game crash reports say what led to the crash.
 
 - **Bug Watch's game crash reports say more:** if you ticked Bug Watch and the game crashes, the report now also says what the game was trying to read or write, and up to 16 places in the game that led to the crash, read from the game's own crash report on your PC, which still never leaves it. A report that only said where the game stopped couldn't show why; now we can trace crashes like the one a player sent us this week, and fix them.

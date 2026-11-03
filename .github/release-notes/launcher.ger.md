@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.14:** Mods mit eigenem Partie-Skript werden wieder gebaut.
+
+- **Behoben: Spielen brach bei manchen Mod-Sets ab** mit „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: Einige Mods bringen ein eigenes Partie-Skript mit, dessen Kopf mehr Platz verlangt, als das Skript braucht (darunter 1 VS 7 AI, 1 VS 15 AI, Operation Overlord und Sand Box). Das Spiel führt diese Skripte problemlos aus, aber der Launcher lehnte sie ab, sodass kein Set mit einem dieser Mods gebaut werden konnte. Jetzt liest er sie so wie das Spiel.
+
 **0.4.8.13:** Absturzberichte des Spiels sagen, was zum Absturz geführt hat.
 
 - **Bug Watchs Absturzberichte des Spiels sagen mehr:** Wenn du Bug Watch angekreuzt hast und das Spiel abstürzt, sagt der Bericht jetzt auch, was das Spiel zu lesen oder zu schreiben versuchte, und bis zu 16 Stellen im Spiel, die zum Absturz geführt haben, gelesen aus dem eigenen Absturzbericht des Spiels auf deinem PC, der ihn weiterhin nie verlässt. Ein Bericht, der nur sagte, wo das Spiel stehen blieb, konnte nicht zeigen, warum; jetzt können wir Abstürze wie den, den uns ein Spieler diese Woche geschickt hat, zurückverfolgen und beheben.
