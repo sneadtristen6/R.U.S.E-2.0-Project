@@ -215,12 +215,19 @@ class Xyz:
 
 
 def read_xyz(raw: bytes) -> Xyz:
+    """A .xyz script read as the game reads one: the size in its header is the room it makes for the module, and the
+    one zlib stream after the header has to end within it; the module is what the stream holds. Some mods' scripts,
+    made by other tools, give a bigger size than their module and fill the rest of the file with zeros, and the game
+    runs them: four of the 78 mods in the owner's library, whose builds stopped here (2026-11-02, "1 VS 7 AI")."""
     if raw[:4] != MAGIC or raw[4:8] != PY25:
         raise ScriptError(f"not a Python 2.5 .xyz file (starts {raw[:8].hex(' ')})")
     size = struct.unpack_from(">I", raw, 8)[0]
-    payload = zlib.decompressobj().decompress(raw[28:])
-    if len(payload) != size:
-        raise ScriptError(f".xyz says {size} bytes but holds {len(payload)}")
+    stream = zlib.decompressobj()
+    payload = stream.decompress(raw[28:], size + 1)
+    if len(payload) > size:
+        raise ScriptError(f".xyz says {size} bytes but holds more")
+    if not stream.eof:
+        raise ScriptError(f".xyz says {size} bytes but its data stops after {len(payload)}")
     return Xyz(raw[12:28], payload)
 
 

@@ -159,9 +159,15 @@ class Container(unittest.TestCase):
 
     def test_bad_files(self):
         raw = write_xyz(Xyz(b"\0" * 16, MODULE))
-        for bad in (b"XYZ1" + raw[4:], raw[:8] + struct.pack(">I", 5) + raw[12:]):
+        for bad in (b"XYZ1" + raw[4:], raw[:8] + struct.pack(">I", 5) + raw[12:], raw[:-6]):  # (room too small, cut)
             with self.assertRaises(ScriptError):
                 read_xyz(bad)
+
+    def test_more_room_than_the_module(self):  # a mod's script made by another tool, which the game runs (2026-11-02)
+        raw = write_xyz(Xyz(b"\x33" * 16, MODULE))
+        roomy = raw[:8] + struct.pack(">I", len(MODULE) + 161920) + raw[12:] + bytes(40116)
+        self.assertEqual(read_xyz(roomy), Xyz(b"\x33" * 16, MODULE))
+        self.assertEqual(read_xyz(write_xyz(read_xyz(roomy))), Xyz(b"\x33" * 16, MODULE))  # written back as the game's
 
 
 UNIT_NDF = make_ndf(objects=[(0, [(0, val(0x02, struct.pack("<i", n))), (1, val(0x07, struct.pack("<I", i)))])
