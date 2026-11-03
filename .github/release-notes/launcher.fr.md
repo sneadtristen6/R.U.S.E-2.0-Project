@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.15:** Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré.
+
+- **Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré :** Jouer sur le Jeu d'origine construit maintenant la copie avec mods sans aucun mod et avec le titre doré, puis lance le jeu depuis elle, comme pour un ensemble de mods : la première fois elle se construit, ensuite le jeu démarre aussitôt, sauf si vous avez joué un ensemble de mods entre-temps. RUSE Guard surveille ses parties multijoueurs, comme pour chaque ensemble. Décochez le titre doré dans les Réglages et le Jeu d'origine se lance par Steam comme avant. Votre installation Steam n'est jamais modifiée.
+
 **0.4.8.14:** Les mods qui ont leur propre script de partie se construisent de nouveau.
 
 - **Corrigé : Jouer s'arrêtait pour certains ensembles de mods** avec « RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ... » : quelques mods apportent leur propre script de partie, dont l'en-tête demande plus de place que le script n'en a besoin (parmi eux 1 VS 7 AI, 1 VS 15 AI, Operation Overlord et Sand Box). Le jeu exécute ces scripts sans problème, mais le Launcher les refusait, si bien qu'aucun ensemble contenant l'un de ces mods ne pouvait être construit. Il les lit maintenant comme le jeu.

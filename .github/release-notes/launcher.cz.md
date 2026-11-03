@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.15:** I Původní hra má zlatý název R.U.S.E. 2.0.
+
+- **I Původní hra má zlatý název R.U.S.E. 2.0:** Hrát u Původní hry teď sestaví kopii s módy bez módů a se zlatým názvem a spustí hru z ní, stejně jako sada módů: poprvé se sestaví, potom se spouští hned, pokud jste mezitím nehráli sadu módů. RUSE Guard běží v jejích zápasech pro více hráčů, jako u každé sady. Zrušte v Nastavení zaškrtnutí zlatého názvu a Původní hra se spustí přes Steam jako dřív. Vaše instalace Steam se nikdy nemění.
+
 **0.4.8.14:** Módy s vlastním skriptem zápasu se znovu sestavují.
 
 - **Opraveno: Hrát se zastavilo u některých sad módů** s hláškou „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: několik módů přináší vlastní skript zápasu, jehož hlavička žádá víc místa, než skript potřebuje (mezi nimi 1 VS 7 AI, 1 VS 15 AI, Operation Overlord a Sand Box). Hra tyto skripty spouští bez potíží, ale Launcher je odmítal, takže nešlo sestavit žádnou sadu s některým z těchto módů. Teď je čte stejně jako hra.

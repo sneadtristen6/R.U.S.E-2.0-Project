@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.15:** I Původní hra má zlatý název R.U.S.E. 2.0.
+
+- **Ve Studiu samotném se nic nemění:** tato aktualizace je Launcheru (i Původní hra má zlatý název R.U.S.E. 2.0). Zaškrtávací pole zlatého názvu v Nastavení Studia je totéž nastavení jako v Launcheru, takže zrušení zaškrtnutí zde také spouští Původní hru přes Steam.
+
 **0.9.8.14:** Módy s vlastním skriptem zápasu se znovu sestavují.
 
 - **Opraveno: Vyzkoušet ve hře se zastavilo u některých módů** s hláškou „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: několik módů přináší vlastní skript zápasu, jehož hlavička žádá víc místa, než skript potřebuje (mezi nimi 1 VS 7 AI, 1 VS 15 AI, Operation Overlord a Sand Box). Hra tyto skripty spouští bez potíží, ale Studio je odmítalo, takže nešlo sestavit nic s některým z těchto módů. Teď je čte stejně jako hra.

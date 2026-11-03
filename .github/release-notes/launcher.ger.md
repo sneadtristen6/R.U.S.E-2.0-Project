@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.15:** Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel.
+
+- **Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel:** Spielen bei Original baut jetzt die Mod-Kopie ohne Mods und mit dem goldenen Titel und startet das Spiel daraus, so wie bei einem Mod-Set: Beim ersten Mal wird sie gebaut, danach startet es sofort, außer du hast dazwischen ein Mod-Set gespielt. RUSE Guard läuft in seinen Mehrspieler-Partien, wie bei jedem Set. Nimm in den Einstellungen das Häkchen beim goldenen Titel weg, und Original startet wie vorher über Steam. Deine Steam-Installation wird nie verändert.
+
 **0.4.8.14:** Mods mit eigenem Partie-Skript werden wieder gebaut.
 
 - **Behoben: Spielen brach bei manchen Mod-Sets ab** mit „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: Einige Mods bringen ein eigenes Partie-Skript mit, dessen Kopf mehr Platz verlangt, als das Skript braucht (darunter 1 VS 7 AI, 1 VS 15 AI, Operation Overlord und Sand Box). Das Spiel führt diese Skripte problemlos aus, aber der Launcher lehnte sie ab, sodass kein Set mit einem dieser Mods gebaut werden konnte. Jetzt liest er sie so wie das Spiel.

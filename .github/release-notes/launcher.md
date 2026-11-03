@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.15:** Vanilla gets the gold R.U.S.E. 2.0 title too.
+
+- **Vanilla gets the gold R.U.S.E. 2.0 title too:** Play on Vanilla now builds the modded copy with no mods and the gold title, and starts the game from it, the way a mod set does: the first time it builds, then it starts at once unless you played a mod set in between. RUSE Guard runs in its multiplayer matches, as in every set's. Untick the gold title in Settings and Vanilla starts through Steam as before. Your Steam install is never changed.
+
 **0.4.8.14:** Mods with a match script of their own build again.
 
 - **Fixed: Play stopped on some mod sets** with "RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...": a few mods bring a match script of their own whose header asks for more room than the script needs (1 VS 7 AI, 1 VS 15 AI, Operation Overlord and Sand Box among them). The game runs those scripts fine, but the Launcher refused them, so no set with one of those mods could be built. It now reads them the way the game does.

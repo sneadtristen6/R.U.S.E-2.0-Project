@@ -1,6 +1,10 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.15:** Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré.
+
+- **Rien ne change dans le Studio lui-même :** cette mise à jour est celle du Launcher (le Jeu d'origine a le titre R.U.S.E. 2.0 doré). La case du titre doré dans les Réglages du Studio est le même réglage que celle du Launcher : la décocher ici lance aussi le Jeu d'origine par Steam.
+
 **0.9.8.14:** Les mods qui ont leur propre script de partie se construisent de nouveau.
 
 - **Corrigé : Tester en jeu s'arrêtait pour certains mods** avec « RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ... » : quelques mods apportent leur propre script de partie, dont l'en-tête demande plus de place que le script n'en a besoin (parmi eux 1 VS 7 AI, 1 VS 15 AI, Operation Overlord et Sand Box). Le jeu exécute ces scripts sans problème, mais le Studio les refusait, si bien que rien de ce qui contenait l'un de ces mods ne pouvait être construit. Il les lit maintenant comme le jeu.

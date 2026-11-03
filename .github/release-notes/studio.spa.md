@@ -1,6 +1,10 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.15:** Original también tiene el título R.U.S.E. 2.0 dorado.
+
+- **Nada cambia en el propio Studio:** esta actualización es del Launcher (Original también tiene el título R.U.S.E. 2.0 dorado). La casilla del título dorado en los Ajustes del Studio es el mismo ajuste que la del Launcher, así que desmarcarla aquí también hace que Original se inicie a través de Steam.
+
 **0.9.8.14:** Los mods con un script de partida propio vuelven a construirse.
 
 - **Corregido: Probar en el juego se detenía con algunos mods** con «RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...»: algunos mods traen su propio script de partida, cuya cabecera pide más espacio del que el script necesita (entre ellos 1 VS 7 AI, 1 VS 15 AI, Operation Overlord y Sand Box). El juego ejecuta esos scripts sin problema, pero el Studio los rechazaba, así que no se podía construir nada con uno de esos mods. Ahora los lee como el juego.

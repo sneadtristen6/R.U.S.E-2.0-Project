@@ -1,6 +1,10 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.15:** Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel.
+
+- **Im Studio selbst ändert sich nichts:** Dieses Update ist das des Launchers (Original bekommt den goldenen R.U.S.E. 2.0-Titel). Das Häkchen für den goldenen Titel in den Einstellungen des Studios ist dieselbe Einstellung wie im Launcher; nimmst du es hier weg, startet Original auch über Steam.
+
 **0.9.8.14:** Mods mit eigenem Partie-Skript werden wieder gebaut.
 
 - **Behoben: Im Spiel testen brach bei manchen Mods ab** mit „RUSE Guard's scripts can't be added: .xyz says ... bytes but holds ...“: Einige Mods bringen ein eigenes Partie-Skript mit, dessen Kopf mehr Platz verlangt, als das Skript braucht (darunter 1 VS 7 AI, 1 VS 15 AI, Operation Overlord und Sand Box). Das Spiel führt diese Skripte problemlos aus, aber das Studio lehnte sie ab, sodass nichts mit einem dieser Mods gebaut werden konnte. Jetzt liest es sie so wie das Spiel.
