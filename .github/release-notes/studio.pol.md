@@ -1,6 +1,10 @@
 **RUSE Studio, wersja zapoznawcza dla modderów.** Przeglądaj jednostki gry w dowolnym z jej dziesięciu języków,
 zmieniaj je we własnym modzie i testuj go w grze. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.9.8.16:** Rozwiązywanie problemów zachowuje kopie gry, które zrobiłeś sam.
+
+- **Naprawione: „Usuń je” w Rozwiązywaniu problemów kasowało kopie zrobione przez ciebie:** ta sama poprawka co w Launcherze (jeden kod dla obu aplikacji). Kopia gry zbudowana ręcznie w folderze kopii, kopia testowa lub kopia wzorcowa liczyła się jako pozostałość i była usuwana na dobre. Każda taka kopia ma teraz małą notkę „zachowaj”, a kopia z notką nigdy nie jest pozostałością: usuwane są tylko pozostałości samych aplikacji (kopie zbudowane do połowy i te, które starsze wersje robiły dla każdego zestawu modów). Kopia zbudowana przed tą wersją nie ma jeszcze notki: zbuduj ją raz ponownie tą wersją albo do tego czasu nie używaj „Usuń je”.
+
 **0.9.8.15:** Oryginał też dostaje złoty tytuł R.U.S.E. 2.0.
 
 - **W samym Studio nic się nie zmienia:** ta aktualizacja dotyczy Launchera (Oryginał też dostaje złoty tytuł R.U.S.E. 2.0). Pole złotego tytułu w Ustawieniach Studio to to samo ustawienie co w Launcherze, więc odznaczenie go tutaj też uruchamia Oryginał przez Steam.

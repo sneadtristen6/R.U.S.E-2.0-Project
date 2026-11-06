@@ -1,6 +1,10 @@
 **RUSE Studio, eine Vorschau für Modder.** Durchsuche die Einheiten des Spiels in jeder seiner zehn Sprachen, ändere
 sie in einem eigenen Mod und teste ihn im Spiel. Deine Steam-Installation wird nie verändert.
 
+**0.9.8.16:** Die Fehlersuche behält die Spielkopien, die du selbst gemacht hast.
+
+- **Behoben: „Entfernen“ in der Fehlersuche löschte Kopien, die du selbst gemacht hast:** dieselbe Korrektur wie im Launcher (ein Code für beide Apps). Eine von Hand gebaute Spielkopie im Kopienordner, eine Testkopie oder eine Referenzkopie galt als Überbleibsel und wurde endgültig gelöscht. Jede solche Kopie trägt jetzt einen kleinen Behalten-Vermerk, und eine Kopie mit Vermerk ist nie ein Überbleibsel: Entfernt werden nur die Überbleibsel der Apps selbst (halb gebaute Kopien und die, die ältere Versionen je Mod-Set anlegten). Eine Kopie aus der Zeit vor dieser Version hat noch keinen Vermerk: Baue sie einmal mit dieser Version neu, oder lass „Entfernen“ bis dahin in Ruhe.
+
 **0.9.8.15:** Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel.
 
 - **Im Studio selbst ändert sich nichts:** Dieses Update ist das des Launchers (Original bekommt den goldenen R.U.S.E. 2.0-Titel). Das Häkchen für den goldenen Titel in den Einstellungen des Studios ist dieselbe Einstellung wie im Launcher; nimmst du es hier weg, startet Original auch über Steam.

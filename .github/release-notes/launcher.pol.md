@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.16:** Rozwiązywanie problemów zachowuje kopie gry, które zrobiłeś sam.
+
+- **Naprawione: „Usuń je” w Rozwiązywaniu problemów kasowało kopie zrobione przez ciebie.** Kopia gry zbudowana ręcznie w folderze kopii, kopia testowa lub kopia wzorcowa liczyła się jako pozostałość, a „Usuń je” kasowało ją na dobre, nie do Kosza. Każda kopia zbudowana poza własną kopią z modami aplikacji ma teraz małą notkę „zachowaj”, a kopia z notką nigdy nie jest pozostałością: Rozwiązywanie problemów usuwa tylko pozostałości samych aplikacji (kopie zbudowane do połowy i te, które starsze wersje robiły dla każdego zestawu modów). Zauważyliśmy to 1 listopada na naszym własnym PC, gdy zabrało wszystkie kopie testowe. Kopia zbudowana przed tą wersją nie ma jeszcze notki: zbuduj ją raz ponownie tą wersją albo do tego czasu nie używaj „Usuń je”.
+
 **0.4.8.15:** Oryginał też dostaje złoty tytuł R.U.S.E. 2.0.
 
 - **Oryginał też dostaje złoty tytuł R.U.S.E. 2.0:** Graj na Oryginale buduje teraz kopię z modami bez żadnych modów, ze złotym tytułem, i uruchamia z niej grę, tak jak zestaw modów: za pierwszym razem ją buduje, potem gra startuje od razu, chyba że w międzyczasie grałeś zestawem modów. RUSE Guard działa w jego meczach wieloosobowych, jak w każdym zestawie. Odznacz złoty tytuł w Ustawieniach, a Oryginał uruchomi się przez Steam jak dawniej. Twoja instalacja Steam nigdy nie jest zmieniana.

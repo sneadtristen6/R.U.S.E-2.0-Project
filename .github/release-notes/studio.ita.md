@@ -1,6 +1,10 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.16:** Risoluzione problemi conserva le copie del gioco che hai fatto tu.
+
+- **Corretto: «Eliminale» in Risoluzione problemi cancellava copie fatte da te:** la stessa correzione del Launcher (un solo codice per entrambe le app). Una copia del gioco costruita a mano nella cartella delle copie, una copia di prova o una copia di riferimento contava come avanzo e veniva eliminata per sempre. Ogni copia del genere ora porta una piccola nota «da tenere», e una copia che ce l'ha non è mai un avanzo: vengono eliminati solo gli avanzi delle app stesse (copie costruite a metà, quelle che le vecchie versioni facevano per ogni set di mod). Una copia costruita prima di questa versione non ha ancora la nota: ricostruiscila una volta con questa versione, o lascia stare «Eliminale» fino ad allora.
+
 **0.9.8.15:** Anche Originale ha il titolo R.U.S.E. 2.0 in oro.
 
 - **Nello Studio stesso non cambia nulla:** questo aggiornamento è del Launcher (anche Originale ha il titolo R.U.S.E. 2.0 in oro). La casella del titolo in oro nelle Impostazioni dello Studio è la stessa impostazione del Launcher, quindi togliendo la spunta qui anche Originale si avvia tramite Steam.

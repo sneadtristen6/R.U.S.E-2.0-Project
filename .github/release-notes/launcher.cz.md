@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.16:** Řešení potíží zachová kopie hry, které jste si udělali sami.
+
+- **Opraveno: „Odstranit je“ v Řešení potíží mazalo kopie, které jste udělali vy.** Kopie hry postavená ručně ve složce kopií, testovací kopie nebo referenční kopie se počítala jako zbytek a „Odstranit je“ ji smazalo nadobro, ne do Koše. Každá kopie postavená jinde než jako vlastní modovaná kopie aplikace teď nese malou poznámku „ponechat“ a kopie s poznámkou nikdy není zbytek: Řešení potíží odstraňuje jen zbytky samotných aplikací (napůl postavené kopie a ty, které starší verze dělaly pro každou sadu modů). Všimli jsme si toho 1. listopadu na našem vlastním PC, když to odneslo každou testovací kopii. Kopie postavená před touto verzí poznámku ještě nemá: postavte ji jednou znovu touto verzí, nebo do té doby na „Odstranit je“ nesahejte.
+
 **0.4.8.15:** I Původní hra má zlatý název R.U.S.E. 2.0.
 
 - **I Původní hra má zlatý název R.U.S.E. 2.0:** Hrát u Původní hry teď sestaví kopii s módy bez módů a se zlatým názvem a spustí hru z ní, stejně jako sada módů: poprvé se sestaví, potom se spouští hned, pokud jste mezitím nehráli sadu módů. RUSE Guard běží v jejích zápasech pro více hráčů, jako u každé sady. Zrušte v Nastavení zaškrtnutí zlatého názvu a Původní hra se spustí přes Steam jako dřív. Vaše instalace Steam se nikdy nemění.

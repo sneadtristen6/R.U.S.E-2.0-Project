@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.16:** Die Fehlersuche behält die Spielkopien, die du selbst gemacht hast.
+
+- **Behoben: „Entfernen“ in der Fehlersuche löschte Kopien, die du selbst gemacht hast.** Eine von Hand gebaute Spielkopie im Kopienordner, eine Testkopie oder eine Referenzkopie galt als Überbleibsel, und „Entfernen“ löschte sie endgültig, nicht in den Papierkorb. Jede Kopie, die nicht die Mod-Kopie der App selbst ist, trägt jetzt einen kleinen Behalten-Vermerk, und eine Kopie mit Vermerk ist nie ein Überbleibsel: Die Fehlersuche entfernt nur die Überbleibsel der Apps selbst (halb gebaute Kopien und die, die ältere Versionen je Mod-Set anlegten). Aufgefallen am 1. November auf unserem eigenen PC, als dort jede Testkopie verschwand. Eine Kopie aus der Zeit vor dieser Version hat noch keinen Vermerk: Baue sie einmal mit dieser Version neu, oder lass „Entfernen“ bis dahin in Ruhe.
+
 **0.4.8.15:** Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel.
 
 - **Auch Original bekommt den goldenen R.U.S.E. 2.0-Titel:** Spielen bei Original baut jetzt die Mod-Kopie ohne Mods und mit dem goldenen Titel und startet das Spiel daraus, so wie bei einem Mod-Set: Beim ersten Mal wird sie gebaut, danach startet es sofort, außer du hast dazwischen ein Mod-Set gespielt. RUSE Guard läuft in seinen Mehrspieler-Partien, wie bei jedem Set. Nimm in den Einstellungen das Häkchen beim goldenen Titel weg, und Original startet wie vorher über Steam. Deine Steam-Installation wird nie verändert.

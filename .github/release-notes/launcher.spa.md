@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.16:** Solucionar problemas conserva las copias del juego que hiciste tú.
+
+- **Corregido: «Borrarlas» en Solucionar problemas eliminaba copias hechas por ti.** Una copia del juego construida a mano en la carpeta de copias, una copia de prueba o una copia de referencia contaba como sobrante, y «Borrarlas» la eliminaba para siempre, no a la Papelera. Toda copia construida que no sea la copia con mods de la app lleva ahora una pequeña nota «conservar», y una copia que la tiene nunca es un sobrante: Solucionar problemas solo borra los sobrantes de las propias apps (copias a medio construir, las que versiones antiguas hacían por cada conjunto de mods). Lo vimos en nuestro propio PC el 1 de noviembre, cuando se llevó todas las copias de prueba. Una copia construida antes de esta versión aún no tiene nota: reconstrúyela una vez con esta versión, o no toques «Borrarlas» hasta entonces.
+
 **0.4.8.15:** Original también tiene el título R.U.S.E. 2.0 dorado.
 
 - **Original también tiene el título R.U.S.E. 2.0 dorado:** Jugar en Original ahora construye la copia con mods sin ningún mod y con el título dorado, e inicia el juego desde ella, como hace un conjunto de mods: la primera vez la construye y después arranca enseguida, salvo que entre medias hayas jugado un conjunto de mods. RUSE Guard funciona en sus partidas multijugador, como en las de cada conjunto. Desmarca el título dorado en Ajustes y Original se inicia a través de Steam como antes. Tu instalación de Steam nunca se modifica.

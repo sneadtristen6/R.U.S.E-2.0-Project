@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.15 and Launcher 0.4.8.15: Vanilla gets the gold R.U.S.E. 2.0 title; mods with their own match scripts build again; clearer game crash reports; mods past 4 GB, build lists in groups, RUSE Guard"
 category: Announcements
 order: 20
+skip: never posted; 0.9.8.16, out three days after it, has its own announcement, which covers it
 ---
 **RUSE Studio 0.9.8.15** and **RUSE Launcher 0.4.8.15** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

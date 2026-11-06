@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.16:** Řešení potíží zachová kopie hry, které jste si udělali sami.
+
+- **Opraveno: „Odstranit je“ v Řešení potíží mazalo kopie, které jste udělali vy:** stejná oprava jako v Launcheru (jeden kód pro obě aplikace). Kopie hry postavená ručně ve složce kopií, testovací kopie nebo referenční kopie se počítala jako zbytek a byla smazána nadobro. Každá taková kopie teď nese malou poznámku „ponechat“ a kopie s poznámkou nikdy není zbytek: odstraňují se jen zbytky samotných aplikací (napůl postavené kopie a ty, které starší verze dělaly pro každou sadu modů). Kopie postavená před touto verzí poznámku ještě nemá: postavte ji jednou znovu touto verzí, nebo do té doby na „Odstranit je“ nesahejte.
+
 **0.9.8.15:** I Původní hra má zlatý název R.U.S.E. 2.0.
 
 - **Ve Studiu samotném se nic nemění:** tato aktualizace je Launcheru (i Původní hra má zlatý název R.U.S.E. 2.0). Zaškrtávací pole zlatého názvu v Nastavení Studia je totéž nastavení jako v Launcheru, takže zrušení zaškrtnutí zde také spouští Původní hru přes Steam.

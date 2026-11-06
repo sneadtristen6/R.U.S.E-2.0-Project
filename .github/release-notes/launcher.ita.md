@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.16:** Risoluzione problemi conserva le copie del gioco che hai fatto tu.
+
+- **Corretto: «Eliminale» in Risoluzione problemi cancellava copie fatte da te.** Una copia del gioco costruita a mano nella cartella delle copie, una copia di prova o una copia di riferimento contava come avanzo, ed «Eliminale» la cancellava per sempre, non nel Cestino. Ogni copia costruita che non sia la copia con mod dell'app ora porta una piccola nota «da tenere», e una copia che ce l'ha non è mai un avanzo: Risoluzione problemi elimina solo gli avanzi delle app stesse (copie costruite a metà, quelle che le vecchie versioni facevano per ogni set di mod). Scoperto sul nostro PC il 1° novembre, quando si è portato via ogni copia di prova. Una copia costruita prima di questa versione non ha ancora la nota: ricostruiscila una volta con questa versione, o lascia stare «Eliminale» fino ad allora.
+
 **0.4.8.15:** Anche Originale ha il titolo R.U.S.E. 2.0 in oro.
 
 - **Anche Originale ha il titolo R.U.S.E. 2.0 in oro:** Gioca su Originale ora costruisce la copia con le mod senza nessuna mod e con il titolo in oro, e avvia il gioco da lì, come fa un set di mod: la prima volta la costruisce, poi parte subito, a meno che nel frattempo tu abbia giocato un set di mod. RUSE Guard è attivo nelle sue partite multigiocatore, come in quelle di ogni set. Togli la spunta al titolo in oro nelle Impostazioni e Originale si avvia tramite Steam come prima. La tua installazione Steam non viene mai modificata.

@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.16:** Dépannage garde les copies du jeu que vous avez faites vous-même.
+
+- **Corrigé : « Les supprimer » dans Dépannage effaçait des copies faites par vous.** Une copie du jeu construite à la main dans le dossier des copies, une copie de test ou une copie de référence comptait comme un reste, et « Les supprimer » l'effaçait pour de bon, pas dans la Corbeille. Toute copie construite ailleurs que la copie moddée de l'application porte maintenant une petite note « à garder », et une copie qui en a une n'est jamais un reste : Dépannage ne supprime que les restes des applications elles-mêmes (copies à moitié construites, celles que d'anciennes versions faisaient par ensemble de mods). Constaté sur notre propre PC le 1er novembre, quand toutes les copies de test y sont parties. Une copie construite avant cette version n'a pas encore de note : reconstruisez-la une fois avec cette version, ou laissez « Les supprimer » tranquille d'ici là.
+
 **0.4.8.15:** Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré.
 
 - **Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré :** Jouer sur le Jeu d'origine construit maintenant la copie avec mods sans aucun mod et avec le titre doré, puis lance le jeu depuis elle, comme pour un ensemble de mods : la première fois elle se construit, ensuite le jeu démarre aussitôt, sauf si vous avez joué un ensemble de mods entre-temps. RUSE Guard surveille ses parties multijoueurs, comme pour chaque ensemble. Décochez le titre doré dans les Réglages et le Jeu d'origine se lance par Steam comme avant. Votre installation Steam n'est jamais modifiée.

@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.16:** Troubleshoot keeps the game copies you made yourself.
+
+- **Fixed: Troubleshoot's "Clear them" deleted copies you made yourself.** A copy of the game you built by hand in the copies folder, a test copy or a reference copy, counted as a leftover, and "Clear them" removed it for good, not to the Recycle Bin. Every copy built anywhere but the app's own modded copy now carries a small keep note, and a copy with one is never a leftover: Troubleshoot clears only the apps' own leftovers (half-built copies, the ones older versions made per mod set). Found on our own PC on November 1, when it took every test copy there. A copy built before this version has no note yet: rebuild it once with this version, or leave "Clear them" alone until you do.
+
 **0.4.8.15:** Vanilla gets the gold R.U.S.E. 2.0 title too.
 
 - **Vanilla gets the gold R.U.S.E. 2.0 title too:** Play on Vanilla now builds the modded copy with no mods and the gold title, and starts the game from it, the way a mod set does: the first time it builds, then it starts at once unless you played a mod set in between. RUSE Guard runs in its multiplayer matches, as in every set's. Untick the gold title in Settings and Vanilla starts through Steam as before. Your Steam install is never changed.

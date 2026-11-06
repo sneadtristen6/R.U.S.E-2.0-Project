@@ -1,6 +1,10 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.16:** Solucionar problemas conserva las copias del juego que hiciste tú.
+
+- **Corregido: «Borrarlas» en Solucionar problemas eliminaba copias hechas por ti:** la misma corrección que la del Launcher (un solo código para las dos apps). Una copia del juego construida a mano en la carpeta de copias, una copia de prueba o una copia de referencia contaba como sobrante y se eliminaba para siempre. Cada copia así lleva ahora una pequeña nota «conservar», y una copia que la tiene nunca es un sobrante: solo se borran los sobrantes de las propias apps (copias a medio construir, las que versiones antiguas hacían por cada conjunto de mods). Una copia construida antes de esta versión aún no tiene nota: reconstrúyela una vez con esta versión, o no toques «Borrarlas» hasta entonces.
+
 **0.9.8.15:** Original también tiene el título R.U.S.E. 2.0 dorado.
 
 - **Nada cambia en el propio Studio:** esta actualización es del Launcher (Original también tiene el título R.U.S.E. 2.0 dorado). La casilla del título dorado en los Ajustes del Studio es el mismo ajuste que la del Launcher, así que desmarcarla aquí también hace que Original se inicie a través de Steam.

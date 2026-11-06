@@ -1,6 +1,10 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.16:** Dépannage garde les copies du jeu que vous avez faites vous-même.
+
+- **Corrigé : « Les supprimer » dans Dépannage effaçait des copies faites par vous :** la même correction que celle du Launcher (un seul code pour les deux applications). Une copie du jeu construite à la main dans le dossier des copies, une copie de test ou une copie de référence comptait comme un reste et était supprimée pour de bon. Chacune de ces copies porte maintenant une petite note « à garder », et une copie qui en a une n'est jamais un reste : seuls les restes des applications elles-mêmes (copies à moitié construites, celles que d'anciennes versions faisaient par ensemble de mods) sont supprimés. Une copie construite avant cette version n'a pas encore de note : reconstruisez-la une fois avec cette version, ou laissez « Les supprimer » tranquille d'ici là.
+
 **0.9.8.15:** Le Jeu d'origine a aussi le titre R.U.S.E. 2.0 doré.
 
 - **Rien ne change dans le Studio lui-même :** cette mise à jour est celle du Launcher (le Jeu d'origine a le titre R.U.S.E. 2.0 doré). La case du titre doré dans les Réglages du Studio est le même réglage que celle du Launcher : la décocher ici lance aussi le Jeu d'origine par Steam.

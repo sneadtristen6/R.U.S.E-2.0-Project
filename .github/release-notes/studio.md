@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.16:** Troubleshoot keeps the game copies you made yourself.
+
+- **Fixed: Troubleshoot's "Clear them" deleted copies you made yourself:** the same fix as the Launcher's (one code for both apps). A copy of the game you built by hand in the copies folder, a test copy or a reference copy, counted as a leftover and was removed for good. Every such copy now carries a small keep note, and a copy with one is never a leftover: only the apps' own leftovers (half-built copies, the ones older versions made per mod set) are cleared. A copy built before this version has no note yet: rebuild it once with this version, or leave "Clear them" alone until you do.
+
 **0.9.8.15:** Vanilla gets the gold R.U.S.E. 2.0 title too.
 
 - **No change in the Studio itself:** this update is the Launcher's (Vanilla gets the gold R.U.S.E. 2.0 title). The gold title tick box in the Studio's Settings is the same setting as the Launcher's, so unticking it here also starts Vanilla through Steam.
