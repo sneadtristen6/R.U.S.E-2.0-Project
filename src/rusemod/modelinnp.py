@@ -477,12 +477,14 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         return None     # (the loops say: the model has no length)
     scale = like["length"] * size / length
     turret = [i for i, k in enumerate(parts) if k == plain.TURRET]
+    ring = None
     if turret:
         main = max(turret, key=lambda i: len(meshes[i].positions))
         cx, cy = _turn_ring(data[main]["points"])
         ring = ((cx * f[0] + cy * f[1]) * scale, (cx * r[0] + cy * r[1]) * scale)
+    if ring is not None and not like.get("own_turret"):
         shift = (like["pivot"][0] - ring[0], like["pivot"][1] - ring[1])
-    else:  # no turret: its middle where the unit's is
+    else:  # no turret (or like "own_turret": it turns where it is): its middle where the unit's is
         mid = (_highest(along) + _lowest(along)) / 2 * scale
         with np.errstate(all="ignore"):
             side_mid = [p[:, 0] * r[0] + p[:, 1] * r[1] for p in hull]
@@ -544,8 +546,10 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         _keep(part, "triangles", tri_out)
         out.append(part)
         own_normals += int(own.sum())
-    return plain.Prepared(out, pictures, plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing,
-                                                          own_normals, own_alpha, notes))
+    report = plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    if ring is not None and like.get("own_turret"):
+        report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]
+    return plain.Prepared(out, pictures, report)
 
 
 def nearest(px, w: int, h: int, nw: int, nh: int):

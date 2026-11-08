@@ -54,13 +54,15 @@ class UnitModelError(ModelError):
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
-                 facing: list | None = None) -> dict:
+                 facing: list | None = None, own_turret: bool = False) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
     the new unit is a plane (its tail fin, its highest point, goes at the back). `facing` ([axis, sign]) pins which way
     it faces instead of working it out (an era unit's library model is already in the game's axes, its front +x: a
-    facing pinned by hand when it was fitted stays). Returns the fitting's report (parts and their roles, facing,
+    facing pinned by hand when it was fitted stays). `own_turret` (not tried in the game yet, nothing in the apps asks
+    for it): the hull sits on the copied hull's middle and the new model gets its own copy of the skeleton with the
+    turret moved to where its turret is (moved_turret). Returns the fitting's report (parts and their roles, facing,
     scale, counts, pictures, "missing": pictures not found)."""
     from .build import find_pack
     from .edat import Edat
@@ -76,7 +78,12 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     here = Path(model_file).resolve().parent
     look = ([Path(pictures)] if pictures else []) + [here, here.parent]
     like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}))
+    can_move = own_turret and TURRET in src.skeleton.names
+    if can_move:
+        like["own_turret"] = True
     prep = prepare(read_model(model_file), look, like, size=size, side=side)
+    if own_turret and not can_move:     # said, not dropped: it has no turret bone to move, so it's fitted as before
+        prep.report["notes"] = list(prep.report.get("notes") or []) + [f"{src.model} has no {TURRET} bone to move"]
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
 
@@ -151,6 +158,46 @@ def bone_point(rot, t) -> tuple:
            (f * g - d * i, a * i - c * g, c * d - a * f),
            (d * h - e * g, b * g - a * h, a * e - b * d))
     return tuple(-sum(inv[row][r] * t[r] for r in range(3)) / det for row in range(3))
+
+
+def moved_turret(blob: bytes, x: float, y: float) -> bytes:
+    """A copy of the skeleton entry `blob` with its turret (TURRET and every bone hanging from it: the gun, the muzzle)
+    moved so the turret turns round (x, y): for a model whose turret isn't where the copied unit's is. Not tried in the
+    game yet. A bone has three matrices, 3 x 4 floats each: set 0 model -> bone, set 1 from its parent, set 2 bone ->
+    model. In all 489 different records of the game's 10 skeleton packs, every one of the 9,870 bones has set 0 the
+    inverse of set 2 and set 1 the inverse of its parent's set 2 times its set 2 (2026-11-08), so a move changes only
+    the translations: set 2's and set 0's along the branch, set 1's at its top; every turn and scale keeps its bytes."""
+    _one, n, mats, parents = struct.unpack_from("<4I", blob, 0)
+    if parents - mats != 3 * n * 48:
+        raise UnitModelError("a skeleton not laid out as known")
+    bones = read_skeleton(blob)
+    if TURRET not in bones.names:
+        raise UnitModelError(f"a skeleton with no {TURRET} bone")
+    top = bones.names.index(TURRET)
+
+    def matrix(s: int, k: int) -> tuple:
+        return struct.unpack_from("<12f", blob, mats + 48 * (s * n + k))
+    start = matrix(2, top)
+    dx, dy = x - start[3], y - start[7]
+    branch = {top}
+    for _ in range(n):      # (at most as many rounds as bones: a bone's parent need not come before it)
+        branch |= {k for k in range(n) if bones.parents[k] in branch}
+    out = bytearray(blob)
+
+    def add(s: int, k: int, column: int, delta: float) -> None:
+        at = mats + 48 * (s * n + k) + 4 * column
+        struct.pack_into("<f", out, at, struct.unpack_from("<f", blob, at)[0] + delta)
+    for k in branch:
+        add(2, k, 3, dx)
+        add(2, k, 7, dy)
+        m = matrix(0, k)
+        for row in (0, 4, 8):
+            add(0, k, row + 3, -(m[row] * dx + m[row + 1] * dy))
+    parent = bones.parents[top]
+    p = matrix(0, parent) if parent >= 0 else (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+    for row in (0, 4, 8):
+        add(1, top, row + 3, p[row] * dx + p[row + 1] * dy)
+    return bytes(out)
 
 
 # --- where the copied unit's model is ---
@@ -502,16 +549,20 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 
 
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
-                bones: Skeleton, memo: dict | None = None) -> MeshPack:
+                bones: Skeleton, memo: dict | None = None, own: list | None = None) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
     helice_1: the game draws it as a spinning disc) naming its picture. A part on a bone the copied material's bone
     list hasn't got (the copied model ties nothing to it) is on that copy's list too. `bones`: the copied model's
     skeleton (its entry is in the skeleton packs). `memo`: a dict kept for this `raw` and `source` (Source.look: the
-    pack's materials and the propellers' bones as find_source read them, once for every model copying `source`)."""
+    pack's materials and the propellers' bones as find_source read them, once for every model copying `source`).
+    `own`: (x, y) the turret turns round when the model has a skeleton of its own (moved_turret)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
+    if own is not None and skel != NONE:    # (a pack that keeps the skeleton beside the mesh)
+        src.skeletons.append(moved_turret(src.skeletons[skel], *own))
+        skel = len(src.skeletons) - 1
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
     roots = _material_list(nd)
@@ -661,7 +712,10 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
             changed[path] = None
 
     first_raw = next(iter(src.mesh_packs.values()))
-    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton, src.look)
+    # a model fitted with its own turret place (modelin.prepare, like "own_turret"): its own skeleton, in every pack
+    # that holds the copied one; every other model shares the copied unit's, as before
+    own = prep.report.get("own_turret") if TURRET in src.skeleton.names else None
+    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton, src.look, own)
     for path, raw in src.mesh_packs.items():
         pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
@@ -670,6 +724,9 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         pack = grown(path, raw, MeshPack)
         holder = MeshPack.read(raw)
         holder.items[new] = list(holder.items[src.model])
+        if own is not None:
+            holder.skeletons.append(moved_turret(holder.skeletons[holder.items[new][2]], *own))
+            holder.items[new][2] = len(holder.skeletons) - 1
         pack.add(holder, new)
         keep(path, pack)
     added: dict = {}

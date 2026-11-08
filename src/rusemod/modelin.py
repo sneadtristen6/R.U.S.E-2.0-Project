@@ -884,7 +884,9 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     """`model` fitted to a unit: `like` is the copied unit's model as {"length": its hull's length along x (game
     units), "pivot": (x, y) its turret turns round, "ground": its lowest z}; `size` scales on top (1: as long as it);
     pictures at most `side` pixels, inside the model (.glb) or found in `folder` (a .3ds's: a folder, or several
-    looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing"."""
+    looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing". With `like`
+    "own_turret" (not tried in the game yet) the hull is lined up on the copied hull's middle instead, and the report's
+    "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
     arrays = whole_arrays()
     if arrays:      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
@@ -904,12 +906,14 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         raise ModelError("the model has no length")
     scale = like["length"] * size / length
     turret = [m for m, k in zip(model.meshes, parts) if k == TURRET]
+    ring = None
     if turret:
         main = max(turret, key=lambda m: len(m.positions))
         cx, cy = turn_ring(main.positions)
         ring = ((cx * f[0] + cy * f[1]) * scale, (cx * r[0] + cy * r[1]) * scale)
+    if ring is not None and not like.get("own_turret"):
         shift = (like["pivot"][0] - ring[0], like["pivot"][1] - ring[1])
-    else:  # no turret: its middle where the unit's is
+    else:  # no turret (or like "own_turret": it turns where it is, unitmodel.moved_turret): its middle where the unit's is
         mid = (max(along) + min(along)) / 2 * scale
         side_mid = [p[0] * r[0] + p[1] * r[1] for p in hull]
         shift = (like.get("middle", like["pivot"][0]) - mid, -(max(side_mid) + min(side_mid)) / 2 * scale)
@@ -954,8 +958,10 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         part.normals = [g if g is not None else n for g, n in zip(given, computed)]
         own_normals += sum(g is not None for g in given)
         out.append(part)
-    return fit_discs(Prepared(out, pictures, fit_report(model, parts, axis, sign, scale, out, pictures, missing,
-                                                        own_normals, own_alpha, notes)), like)
+    report = fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    if ring is not None and like.get("own_turret"):
+        report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]   # where it turns, for the build
+    return fit_discs(Prepared(out, pictures, report), like)
 
 
 def fit_discs(prep: Prepared, like: dict) -> Prepared:

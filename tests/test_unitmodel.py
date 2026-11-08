@@ -108,6 +108,35 @@ def skeleton(names, parents, pivots, scales=None) -> bytes:
 SKELETON = skeleton(["chassis", "tourelle_01"], [-1, 0], [(0.0, 0.0, 0.0), (-70.0, 5.0, 30.0)])
 
 
+def skeleton3(names, parents, pivots, scales=None) -> bytes:
+    """A skeleton entry with the three matrices per bone the game's have: set 0 model -> bone, set 1 from its parent,
+    set 2 bone -> model (no turns here, each bone scaled by `scales`, 1 by default)."""
+    n = len(names)
+    scales = scales or [1.0] * n
+    lens = struct.pack(f"<{n}H", *(len(x) for x in names))
+    mats_at = (0x24 + len(lens) + 3) & ~3
+
+    def row(s, x, y, z):
+        return struct.pack("<12f", s, 0, 0, x, 0, s, 0, y, 0, 0, s, z)
+    sets = [[], [], []]
+    for k, ((x, y, z), s) in enumerate(zip(pivots, scales)):
+        sets[0].append(row(s, -s * x, -s * y, -s * z))
+        sets[2].append(row(1 / s, x, y, z))
+        if parents[k] < 0:
+            sets[1].append(row(1 / s, x, y, z))
+        else:
+            (px, py, pz), q = pivots[parents[k]], scales[parents[k]]
+            sets[1].append(row(q / s, q * (x - px), q * (y - py), q * (z - pz)))
+    mats = b"".join(b"".join(group) for group in sets)
+    parents_at = mats_at + len(mats)
+    second_at = parents_at + 4 * n
+    names_at = second_at + 4 * n
+    head = struct.pack("<9I", 1, n, mats_at, parents_at, second_at, names_at, len(mats), 4 * n, 4 * n)
+    body = head + lens
+    body += bytes(mats_at - len(body)) + mats + struct.pack(f"<{n}i", *parents) + struct.pack(f"<{n}i", *range(n))
+    return body + "".join(names).encode()
+
+
 def unit_pack(skinning=(0, 1)) -> MeshPack:
     """The Panzer: one draw call of a skinned quad on the chassis, 200 long (x -120..80), lowest at z 2."""
     pts = [(-120.0, -40.0, 2.0), (80.0, -40.0, 2.0), (80.0, 40.0, 2.0), (-120.0, 40.0, 2.0)]
@@ -530,6 +559,92 @@ class Skeletons(unittest.TestCase):
     def test_a_plain_turn_is_as_before(self):  # a quarter turn round z, then a move
         p = unitmodel.bone_point(((0, 1, 0), (-1, 0, 0), (0, 0, 1)), (-5.0, 7.0, -3.0))
         self.assertEqual(tuple(round(x, 6) for x in p), (7.0, 5.0, 3.0))
+
+
+class OwnTurret(unittest.TestCase):
+    """A model that sits on the copied hull's middle and has a skeleton of its own, its turret moved to where its turret
+    is (a modder's report, 2026-11-08: a model drawn forward of its selection ring)."""
+    NAMES = ["chassis", "tourelle_01", "canon_01", "roue_1"]
+    PARENTS = [-1, 0, 1, 0]
+    PIVOTS = [(0.0, 0.0, 0.0), (-70.0, 5.0, 30.0), (40.0, 5.0, 50.0), (100.0, -30.0, 0.0)]
+    TURN = (0, 1, 2, 4, 5, 6, 8, 9, 10)
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.model = modelin.read_model(self.dir / "tank.3ds")
+
+    @staticmethod
+    def sets(blob, k):
+        _one, n, mats = struct.unpack_from("<3I", blob, 0)
+        return [struct.unpack_from("<12f", blob, mats + 48 * (s * n + k)) for s in range(3)]
+
+    def test_the_turret_and_what_hangs_from_it_move(self):
+        for scales in (None, [1.0, 100.0, 1.0, 1.0]):        # (the Panther's turret is scaled 100 times)
+            old = skeleton3(self.NAMES, self.PARENTS, self.PIVOTS, scales)
+            new = unitmodel.moved_turret(old, 20.0, -4.0)    # from (-70, 5): 90 forward, 9 across
+            self.assertEqual(len(new), len(old))
+            a, b = unitmodel.read_skeleton(old), unitmodel.read_skeleton(new)
+            self.assertEqual((b.names, b.parents), (a.names, a.parents))
+            for k in (1, 2):
+                self.assertAlmostEqual(b.pivots[k][0], a.pivots[k][0] + 90, places=2)
+                self.assertAlmostEqual(b.pivots[k][1], a.pivots[k][1] - 9, places=2)
+                self.assertAlmostEqual(b.pivots[k][2], a.pivots[k][2], places=2)
+                for s in range(3):       # every turn and scale keeps its bytes
+                    self.assertEqual([self.sets(new, k)[s][c] for c in self.TURN],
+                                     [self.sets(old, k)[s][c] for c in self.TURN])
+            for k in (0, 3):             # the hull and a wheel aren't on the branch
+                self.assertEqual(self.sets(new, k), self.sets(old, k))
+            self.assertEqual(self.sets(new, 2)[1], self.sets(old, 2)[1])  # the gun stays where it is on the turret
+            self.assertAlmostEqual(self.sets(new, 1)[1][3], self.sets(old, 1)[1][3] + 90, places=3)
+
+    def test_a_record_not_laid_out_as_known(self):
+        with self.assertRaises(unitmodel.UnitModelError):        # one matrix set, not three
+            unitmodel.moved_turret(SKELETON, 0.0, 0.0)
+        no_turret = skeleton3(["chassis", "roue_1"], [-1, 0], [(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)])
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.moved_turret(no_turret, 0.0, 0.0)
+
+    def test_fitted_on_the_hull_s_middle(self):
+        like = dict(LIKE, middle=-20.0)
+        prep = modelin.prepare(self.model, self.dir, dict(like, own_turret=True))
+        hull = next(p for p in prep.parts if p.bone == "chassis")
+        xs, ys, _zs = zip(*hull.positions)
+        self.assertEqual((min(xs), max(xs), min(ys), max(ys)), (-120, 80, -40, 40))
+        self.assertAlmostEqual(prep.report["own_turret"][0], -10)    # its ring, 10 ahead of its own middle
+        self.assertAlmostEqual(prep.report["own_turret"][1], 0)
+        self.assertNotIn("own_turret", modelin.prepare(self.model, self.dir, like).report)
+
+    def test_its_own_skeleton_in_every_pack_that_holds_the_copied_one(self):
+        bones = skeleton3(self.NAMES, self.PARENTS, self.PIVOTS)
+        zz = zz_win(bones=bones)
+        source = unitmodel.find_source(zz, TANK)
+        prep = modelin.prepare(self.model, self.dir, dict(source.like, own_turret=True))
+        written = unitmodel.write_unit_model(zz, TANK, "own_model", prep)
+        pack = MeshPack.read(written.changed[SKELETONS])
+        new = "ww2\\res3d\\units\\ger\\tank\\own_modellod0.ase2ndfbin"
+        self.assertEqual(pack.skeletons[pack.items[TANK][2]], bones)            # the game's own record as it was
+        self.assertNotEqual(pack.items[new][2], pack.items[TANK][2])
+        got = unitmodel.read_skeleton(pack.skeletons[pack.items[new][2]])
+        at = got.pivots[got.names.index("tourelle_01")]
+        self.assertAlmostEqual(at[0], prep.report["own_turret"][0], places=2)
+        self.assertAlmostEqual(at[1], prep.report["own_turret"][1], places=2)
+        # read back from the mod's file, as a build does: the same place, the same record
+        glb = self.dir / "own_model.glb"
+        modelin.write_glb(prep, glb, TANK)
+        back = unitmodel.read_mod_glb(glb)
+        self.assertEqual(back.report["own_turret"], prep.report["own_turret"])
+        again = unitmodel.write_unit_model(zz, TANK, "own_model", back)
+        pack2 = MeshPack.read(again.changed[SKELETONS])
+        self.assertEqual(pack2.skeletons[pack2.items[new][2]], pack.skeletons[pack.items[new][2]])
+        # a model fitted as before shares the copied unit's skeleton, as it always has
+        plain = modelin.prepare(self.model, self.dir, source.like)
+        shared = MeshPack.read(unitmodel.write_unit_model(zz, TANK, "own_model", plain).changed[SKELETONS])
+        self.assertEqual(shared.items[new][2], shared.items[TANK][2])
+        self.assertEqual(len(shared.skeletons), 1)
 
 
 class Packs(unittest.TestCase):

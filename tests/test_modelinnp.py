@@ -389,6 +389,7 @@ class WholeArrays(unittest.TestCase):
                     self.assertTrue(any(n is modelin._unit((0.0, 0.0, 0.0)) for n in flat))
                     self.assertTrue(any(n is modelin.smooth_normals([(0.0, 0.0, 0.0)], [])[0] for n in flat))
         self.check_prepare(made_up(4), LIKE, size=1.5, side=4)
+        self.check_prepare(made_up(4), dict(LIKE, own_turret=True))     # on the hull's middle, its turret where it is
 
     def test_no_turret_and_aircraft(self):
         """No turret: the middle where the unit's is; an aircraft: its highest points' side is its back (a sort of
