@@ -174,11 +174,17 @@ def moved_turret(blob: bytes, x: float, y: float) -> bytes:
     if TURRET not in bones.names:
         raise UnitModelError(f"a skeleton with no {TURRET} bone")
     top = bones.names.index(TURRET)
+    start = struct.unpack_from("<12f", blob, mats + 48 * (2 * n + top))
+    return _moved_branch(blob, top, x - start[3], y - start[7])
+
+
+def _moved_branch(blob: bytes, top: int, dx: float, dy: float, dz: float = 0.0) -> bytes:
+    """The skeleton entry `blob` with bone `top` and everything hanging from it moved by (dx, dy, dz) in the model's space (moved_turret says how)."""
+    _one, n, mats, _parents = struct.unpack_from("<4I", blob, 0)
+    bones = read_skeleton(blob)
 
     def matrix(s: int, k: int) -> tuple:
         return struct.unpack_from("<12f", blob, mats + 48 * (s * n + k))
-    start = matrix(2, top)
-    dx, dy = x - start[3], y - start[7]
     branch = {top}
     for _ in range(n):      # (at most as many rounds as bones: a bone's parent need not come before it)
         branch |= {k for k in range(n) if bones.parents[k] in branch}
@@ -187,17 +193,94 @@ def moved_turret(blob: bytes, x: float, y: float) -> bytes:
     def add(s: int, k: int, column: int, delta: float) -> None:
         at = mats + 48 * (s * n + k) + 4 * column
         struct.pack_into("<f", out, at, struct.unpack_from("<f", blob, at)[0] + delta)
+    def along(m: tuple, row: int) -> float:
+        d = m[row] * dx + m[row + 1] * dy
+        if dz:
+            d += m[row + 2] * dz
+        return d
     for k in branch:
         add(2, k, 3, dx)
         add(2, k, 7, dy)
+        if dz:
+            add(2, k, 11, dz)
         m = matrix(0, k)
         for row in (0, 4, 8):
-            add(0, k, row + 3, -(m[row] * dx + m[row + 1] * dy))
+            add(0, k, row + 3, -along(m, row))
     parent = bones.parents[top]
     p = matrix(0, parent) if parent >= 0 else (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
     for row in (0, 4, 8):
-        add(1, top, row + 3, p[row] * dx + p[row + 1] * dy)
+        add(1, top, row + 3, along(p, row))
     return bytes(out)
+
+
+def own_propellers(blob: bytes, places: list) -> bytes:
+    """A copy of the skeleton entry `blob` with each propeller's two bones (helice_ls_<number>, the blades', and helice_hs_<number>, the disc's) at the place
+    `places` says ([[number, x, y, z]]: modelin's report "own_propellers"). Not tried in the game yet. The game finds a propeller's two bones by those names from its number,
+    and spins it round them. A propeller the entry has is moved; one it hasn't gets its two bones after the last, copied from the entry's first propeller's (turned the same
+    way, on the same parent), so every bone keeps its number. The three matrices of each bone keep the relation moved_turret says; a new one's come from that first
+    propeller's with only the place different."""
+    for number, x, y, z in places:
+        for kind in ("hs", "ls"):
+            bones = read_skeleton(blob)
+            name = f"helice_{kind}_{number}"
+            if name in bones.names:
+                _one, n, mats = struct.unpack_from("<3I", blob, 0)
+                k = bones.names.index(name)
+                m = struct.unpack_from("<12f", blob, mats + 48 * (2 * n + k))
+                blob = _moved_branch(blob, k, x - m[3], y - m[7], z - m[11])
+    bones = read_skeleton(blob)
+    new = [(f"helice_{kind}_{number}", kind, x, y, z) for number, x, y, z in places for kind in ("hs", "ls")
+           if f"helice_{kind}_{number}" not in bones.names]
+    if not new:
+        return blob
+    one, n, mats, parents, order, names_at, msize, psize, osize = struct.unpack_from("<9I", blob, 0)
+    if parents - mats != 3 * n * 48 or msize != 3 * n * 48 or psize != 4 * n or osize != 4 * n:
+        raise UnitModelError("a skeleton not laid out as known")
+
+    def template(kind: str) -> int:
+        have = sorted((int(b.rsplit("_", 1)[1]), k) for k, b in enumerate(bones.names) if b.startswith(f"helice_{kind}_"))
+        if not have:
+            raise UnitModelError(f"a skeleton with no helice_{kind} bone to copy a new propeller's from")
+        return have[0][1]
+
+    def matrix(s: int, k: int) -> tuple:
+        return struct.unpack_from("<12f", blob, mats + 48 * (s * n + k))
+    sets = [[blob[mats + 48 * s * n:mats + 48 * (s + 1) * n]] for s in range(3)]
+    new_parents, new_names = [], []
+    for name, kind, x, y, z in new:
+        t = template(kind)
+        parent = bones.parents[t]
+        rows = (0, 4, 8)
+        s0 = list(matrix(0, t))
+        for r in rows:
+            s0[r + 3] = -(s0[r] * x + s0[r + 1] * y + s0[r + 2] * z)
+        s2 = list(matrix(2, t))
+        s2[3], s2[7], s2[11] = x, y, z
+        s1 = list(matrix(1, t))
+        if parent >= 0:
+            p = matrix(0, parent)
+            for r in rows:
+                s1[r + 3] = p[r] * x + p[r + 1] * y + p[r + 2] * z + p[r + 3]
+        else:
+            s1[3], s1[7], s1[11] = x, y, z
+        for s, m in zip(sets, (s0, s1, s2)):
+            s.append(struct.pack("<12f", *m))
+        new_parents.append(parent)
+        new_names.append(name.encode("latin-1"))
+    total = n + len(new)
+    lens = struct.unpack_from(f"<{n}H", blob, 0x24) + tuple(len(b) for b in new_names)
+    at = (0x24 + 2 * total + 3) & ~3
+    matrices = b"".join(b"".join(s) for s in sets)
+    parent_table = blob[parents:parents + psize] + struct.pack(f"<{len(new)}i", *new_parents)
+    order_table = blob[order:order + osize] + struct.pack(f"<{len(new)}I", *range(n, total))
+    text = blob[names_at:names_at + sum(struct.unpack_from(f"<{n}H", blob, 0x24))] + b"".join(new_names)
+    p_at = at + len(matrices)
+    o_at = p_at + len(parent_table)
+    t_at = o_at + len(order_table)
+    head = struct.pack("<9I", one, total, at, p_at, o_at, t_at, len(matrices), len(parent_table), len(order_table))
+    body = head + struct.pack(f"<{total}H", *lens)
+    body += bytes(at - len(body)) + matrices + parent_table + order_table + text
+    return body + bytes(-len(body) % 4)
 
 
 # --- where the copied unit's model is ---
@@ -549,7 +632,7 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 
 
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
-                bones: Skeleton, memo: dict | None = None, own: list | None = None) -> MeshPack:
+                bones: Skeleton, memo: dict | None = None, own=None) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
@@ -557,11 +640,11 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     list hasn't got (the copied model ties nothing to it) is on that copy's list too. `bones`: the copied model's
     skeleton (its entry is in the skeleton packs). `memo`: a dict kept for this `raw` and `source` (Source.look: the
     pack's materials and the propellers' bones as find_source read them, once for every model copying `source`).
-    `own`: (x, y) the turret turns round when the model has a skeleton of its own (moved_turret)."""
+    `own`: makes the model's skeleton of its own from the copied one's bytes, when it has one (moved_turret, own_propellers)."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     if own is not None and skel != NONE:    # (a pack that keeps the skeleton beside the mesh)
-        src.skeletons.append(moved_turret(src.skeletons[skel], *own))
+        src.skeletons.append(own(src.skeletons[skel]))
         skel = len(src.skeletons) - 1
     first, _count = src.meshes[mesh]
     nd = Ndf(src.materials)
@@ -598,7 +681,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     listed: dict = {}   # each copy's bone list: the copied material's, then the bones its parts are on that it hasn't
     draws = []
     for part in prep.parts:
-        look = "disc" if part.bone in disc_bones and "disc" in looks else "body"
+        look = "disc" if (part.bone in disc_bones or part.bone.startswith("helice_hs_")) and "disc" in looks else "body"
         base, old, remap = looks[look]
         if (look, part.picture) not in material_of:
             image = images[part.picture] if part.picture >= 0 else old
@@ -714,8 +797,19 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     first_raw = next(iter(src.mesh_packs.values()))
     # a model fitted with its own turret place (modelin.prepare, like "own_turret"): its own skeleton, in every pack
     # that holds the copied one; every other model shares the copied unit's, as before
-    own = prep.report.get("own_turret") if TURRET in src.skeleton.names else None
-    carrier = _with_model(first_raw, src.model, new, prep, images, box, src.skeleton, src.look, own)
+    turret_at = prep.report.get("own_turret") if TURRET in src.skeleton.names else None
+    props = prep.report.get("own_propellers")
+
+    def remade(blob: bytes) -> bytes:
+        if turret_at is not None:
+            blob = moved_turret(blob, *turret_at)
+        return own_propellers(blob, props) if props else blob
+    own = remade if turret_at is not None or props else None
+    bones = src.skeleton
+    if props:   # (a propeller the copied plane hasn't got: its bones are numbered in the model's own skeleton)
+        holder = MeshPack.read(next(iter(src.skeleton_packs.values())) if src.skeleton_packs else first_raw)
+        bones = read_skeleton(remade(holder.skeletons[holder.items[src.model][2]]))
+    carrier = _with_model(first_raw, src.model, new, prep, images, box, bones, src.look, own)
     for path, raw in src.mesh_packs.items():
         pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
@@ -725,7 +819,7 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
         holder = MeshPack.read(raw)
         holder.items[new] = list(holder.items[src.model])
         if own is not None:
-            holder.skeletons.append(moved_turret(holder.skeletons[holder.items[new][2]], *own))
+            holder.skeletons.append(own(holder.skeletons[holder.items[new][2]]))
             holder.items[new][2] = len(holder.skeletons) - 1
         pack.add(holder, new)
         keep(path, pack)

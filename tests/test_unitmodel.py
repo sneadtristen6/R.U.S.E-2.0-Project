@@ -647,6 +647,76 @@ class OwnTurret(unittest.TestCase):
         self.assertEqual(len(shared.skeletons), 1)
 
 
+class OwnPropellers(unittest.TestCase):
+    """A plane's propellers where the model has them, as many as it has: each one's two bones moved, or added after the last so every bone keeps its number."""
+    NAMES = ["chassis", "aile", "helice_hs_1", "helice_ls_1"]
+    PARENTS = [-1, 0, 0, 0]
+    PIVOTS = [(0.0, 0.0, 0.0), (10.0, 0.0, 5.0), (700.0, 2.0, 30.0), (700.0, 2.0, 30.0)]
+
+    @staticmethod
+    def sets(blob, k):
+        _one, n, mats = struct.unpack_from("<3I", blob, 0)
+        return [struct.unpack_from("<12f", blob, mats + 48 * (s * n + k)) for s in range(3)]
+
+    def record(self):
+        return skeleton3(self.NAMES, self.PARENTS, self.PIVOTS)
+
+    def test_a_propeller_it_has_is_moved(self):
+        old = self.record()
+        new = unitmodel.own_propellers(old, [[1, 650.0, -40.0, 20.0]])
+        self.assertEqual(len(new), len(old))
+        b = unitmodel.read_skeleton(new)
+        for k in (2, 3):
+            self.assertEqual([round(c, 3) for c in b.pivots[k]], [650.0, -40.0, 20.0])
+        for k in (0, 1):
+            self.assertEqual(self.sets(new, k), self.sets(old, k))
+
+    def test_a_propeller_it_hasn_t_is_added_after_the_last_bone(self):
+        old = self.record()
+        new = unitmodel.own_propellers(old, [[1, 700.0, 2.0, 30.0], [2, 300.0, 400.0, 10.0], [3, 300.0, -400.0, 10.0]])
+        a, b = unitmodel.read_skeleton(old), unitmodel.read_skeleton(new)
+        self.assertEqual(b.names, a.names + ["helice_hs_2", "helice_ls_2", "helice_hs_3", "helice_ls_3"])
+        self.assertEqual(b.parents, a.parents + [0, 0, 0, 0])
+        self.assertEqual(len(new) % 4, 0)
+        for k in range(4):                        # every bone of the copied one as it was, under its old number
+            self.assertEqual(self.sets(new, k), self.sets(old, k))
+        for k, place in ((4, (300.0, 400.0, 10.0)), (5, (300.0, 400.0, 10.0)), (6, (300.0, -400.0, 10.0)), (7, (300.0, -400.0, 10.0))):
+            self.assertEqual(tuple(round(c, 3) for c in b.pivots[k]), place)
+            s0, s1, s2 = self.sets(new, k)
+            self.assertEqual((s2[3], s2[7], s2[11]), place)
+            self.assertEqual((s1[3], s1[7], s1[11]), place)      # (its parent, the chassis, is at the origin)
+        _one, n, mats, parents, order, names_at, msize, psize, osize = struct.unpack_from("<9I", new, 0)
+        self.assertEqual((n, mats % 4, parents - mats, msize, psize, osize, order - parents, names_at - order), (8, 0, 3 * 8 * 48, 3 * 8 * 48, 32, 32, 32, 32))
+        self.assertEqual(struct.unpack_from("<8I", new, order), tuple(range(8)))
+
+    def test_no_propeller_to_copy_a_new_one_from(self):
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.own_propellers(skeleton3(["chassis"], [-1], [(0.0, 0.0, 0.0)]), [[1, 1.0, 2.0, 3.0]])
+
+    def fitted(self, like):
+        """A plane with three discs, flat squares in one mesh, fitted with the copied plane's one propeller."""
+        def square(x, y):
+            return [(x, y - 1, -1.0), (x, y + 1, -1.0), (x, y + 1, 1.0), (x, y - 1, 1.0)]
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        points = square(4.0, 0.0) + square(1.0, 3.0) + square(1.0, -3.0)
+        tris = [t for k in range(3) for t in ((4 * k, 4 * k + 1, 4 * k + 2), (4 * k, 4 * k + 2, 4 * k + 3))]
+        disc = modelin.Mesh("plane_propeller", points, tris, [(0.0, 0.0)] * 12, [-1] * 6)
+        return modelin.prepare(modelin.Model([body, disc], [], "plane.glb"), [], dict(like, facing=[0, 1]))
+
+    def test_every_disc_stays_where_the_model_has_it(self):
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "own_propellers": True,
+                "propellers": [{"bone": "helice_hs_1", "centre": (40.0, 0.0, 0.0), "radius": 10.0}]}
+        prep = self.fitted(like)
+        self.assertEqual(sorted(p.bone for p in prep.parts if p.bone.startswith("helice")), ["helice_hs_1", "helice_hs_2", "helice_hs_3"])
+        self.assertEqual(prep.report["propellers"], {"kept": 3, "left_out": 0, "why": ""})
+        self.assertEqual([p[0] for p in prep.report["own_propellers"]], [1, 2, 3])
+        self.assertEqual(prep.report["own_propellers"][0][1:3], [40.0, 0.0])     # the nearest takes the plane's own number
+        # without it: one disc on the copied plane's one bone, the others left out, as before
+        plain = self.fitted({k: v for k, v in like.items() if k != "own_propellers"})
+        self.assertEqual((plain.report["propellers"]["kept"], plain.report["propellers"]["left_out"]), (1, 2))
+        self.assertNotIn("own_propellers", plain.report)
+
+
 class Packs(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()

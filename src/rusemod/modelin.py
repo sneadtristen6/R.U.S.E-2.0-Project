@@ -978,6 +978,8 @@ def fit_discs(prep: Prepared, like: dict) -> Prepared:
         return prep
     kept_parts = [p for p in prep.parts if p.bone != mark]
     spots = [s for s in (like.get("propellers") or []) if s.get("bone")]
+    if like.get("own_propellers") and spots:
+        return _own_discs(prep, found, kept_parts, spots)
     discs = []      # (part, its points, its middle)
     for part in found:
         for pts in pieces(part.triangles, len(part.positions)):
@@ -1012,6 +1014,49 @@ def fit_discs(prep: Prepared, like: dict) -> Prepared:
         report["notes"] = list(report.get("notes") or []) + [
             f"{left} propeller disc(s) left out: " + ("the unit it copies has none to spin them" if not spots else
                                                       "not where the copied plane's propellers are")]
+    out_parts = kept_parts + [groups[k] for k in sorted(groups)]
+    report["draws"] = len(out_parts)
+    report["vertices"] = sum(len(p.positions) for p in out_parts)
+    report["triangles"] = sum(len(p.triangles) for p in out_parts)
+    return Prepared(out_parts, prep.pictures, report)
+
+
+def _own_discs(prep: Prepared, found: list, kept_parts: list, spots: list) -> Prepared:
+    """fit_discs with `like` "own_propellers" (not tried in the game yet, nothing in the apps asks for it): every disc stays where the model has it, and
+    goes on a propeller number of its own: the copied plane's number nearest it while there are any, then new numbers after the highest. The report's
+    "own_propellers" ([[number, x, y, z]]) says where each is, for the build to put that propeller's bones there (unitmodel.own_propellers)."""
+    discs = []      # (part, its points, its middle)
+    for part in found:
+        for pts in pieces(part.triangles, len(part.positions)):
+            box = [(min(part.positions[i][k] for i in pts), max(part.positions[i][k] for i in pts)) for k in range(3)]
+            discs.append((part, pts, tuple((lo + hi) / 2 for lo, hi in box)))
+    numbers = [int(s["bone"].rsplit("_", 1)[1]) for s in spots]
+    stem = spots[0]["bone"].rsplit("_", 1)[0]
+    took, used = {}, set()
+    for _dist, i, j in sorted((math.dist(d[2], s["centre"]), i, j) for i, d in enumerate(discs) for j, s in enumerate(spots)):
+        if i not in took and j not in used:
+            took[i] = numbers[j]
+            used.add(j)
+    extra = max(numbers)
+    groups: dict = {}
+    places = []
+    for i, (part, pts, middle) in enumerate(discs):
+        if i not in took:
+            extra += 1
+            took[i] = extra
+        bone = f"{stem}_{took[i]}"
+        places.append([took[i], middle[0], middle[1], middle[2]])
+        out = groups.setdefault((bone, part.picture), Part(bone, part.picture, [], [], [], []))
+        index = {}
+        for p in pts:
+            index[p] = len(out.positions)
+            out.positions.append(part.positions[p])
+            out.normals.append(part.normals[p])
+            out.uvs.append(part.uvs[p])
+        out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
+    report = dict(prep.report)
+    report["propellers"] = {"kept": len(discs), "left_out": 0, "why": ""}
+    report["own_propellers"] = sorted(places)
     out_parts = kept_parts + [groups[k] for k in sorted(groups)]
     report["draws"] = len(out_parts)
     report["vertices"] = sum(len(p.positions) for p in out_parts)
