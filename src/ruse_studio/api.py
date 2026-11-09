@@ -73,6 +73,7 @@ from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
+from .weaponclass import WeaponClassCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -556,7 +557,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, FlagTypeCalls, BoardCalls,
+                DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
+                FlagTypeCalls, BoardCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
@@ -1613,6 +1615,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 "can_copy": bool(o["export"]) and o["class"] in KIND_OF and editable and new is None and not modelless,
                 "can_copy_ammo": bool(o["export"]) and o["class"] == AMMO and editable and new is None,
                 "ammo_texts": ammo_texts,  # its name and kind in game, each changed with ammo_text_set
+                # an ammunition: the page then asks for weapon_class(address), a class of its own made there
+                "has_weapon_class": o["class"] == AMMO and (bool(o["export"]) or top),
                 "has_weapons": o["class"] in KIND_OF,  # the page then asks for weapons(address)
                 # a unit with an armour: the page then asks for armour(address), its level picked there
                 "has_armour": (bool(o["export"]) or top) and ARMOUR in types,
@@ -9164,7 +9168,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             edits = ModEdits(edits.folder)
             source = edits.new_units[address].source if address in edits.new_units else None
             files = self._groups_gone(edits, address)
+            own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
             edits.remove_unit(address)
+            if own_class:
+                self._drop_class_table(edits, own_class)
             self._groups_save(edits, *files)
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 

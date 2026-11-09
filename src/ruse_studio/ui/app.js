@@ -1837,6 +1837,64 @@ function newAmmoForm(u) {
   return el("div", { className: "copy" }, open, form);
 }
 
+// An ammunition's own weapon class (StudioApi.weapon_class): what it does to each kind of target, a number per armour level
+function weaponClassGroup(u) {
+  const w = state.words, can = Boolean(state.mod && u.editable);
+  const open = el("button", { type: "button", className: "ghost", textContent: w.weapon_class_new,
+    title: w.tip_weapon_class_new, disabled: !can });
+  const table = el("table", { className: "hidden" });
+  const save = el("button", { type: "button", className: "primary", textContent: w.weapon_class_save,
+    title: w.tip_weapon_class_save });
+  const cancel = el("button", { type: "button", className: "ghost", textContent: w.cancel });
+  const buttons = el("div", { className: "actions hidden" }, save, cancel);
+  const back = el("button", { type: "button", className: "link hidden", textContent: w.weapon_class_back,
+    title: w.tip_weapon_class_back });
+  let boxes = [];
+  const close = () => { table.classList.add("hidden"); buttons.classList.add("hidden"); open.classList.remove("hidden"); };
+  const show = (info) => {
+    open.textContent = info.own ? w.weapon_class_edit : w.weapon_class_new;
+    open.disabled = !can || !info.editable;
+    back.classList.toggle("hidden", !(info.own && can));
+    boxes = info.levels.map((l) => {
+      const label = fill(w[l.word], { n: l.n });
+      const box = el("input", { type: "number", step: "any", required: true, value: String(l.value),
+        title: w.tip_weapon_class_number });
+      box.setAttribute("aria-label", label);
+      return { box, label, game: l.game, value: l.value };
+    });
+    table.replaceChildren(...boxes.map((b) => el("tr", { className: b.value !== b.game ? "edited" : "" },
+      el("th", { textContent: b.label, title: w.tip_weapon_class_number }),
+      el("td", {}, b.box, el("span", { className: "was", textContent: b.value !== b.game ? w.was.replace("{v}", b.game) : "" })))));
+  };
+  const load = () => api().weapon_class(u.address).then(show).catch(problem);
+  open.addEventListener("click", () => {
+    open.classList.add("hidden"); table.classList.remove("hidden"); buttons.classList.remove("hidden");
+    if (boxes.length) boxes[0].box.focus();
+  });
+  cancel.addEventListener("click", () => { close(); load(); });
+  save.addEventListener("click", async () => {
+    const empty = boxes.find((b) => b.box.value.trim() === "" || !Number.isFinite(Number(b.box.value)));
+    if (empty) { empty.box.focus(); return; }
+    save.disabled = true;
+    try {
+      show(await api().weapon_class_set(u.address, boxes.map((b) => Number(b.box.value))));
+      close();
+      say(w.weapon_class_saved, "ok");
+    } catch (err) { problem(err); }
+    save.disabled = false;
+  });
+  back.addEventListener("click", async () => {
+    try {
+      show(await api().weapon_class_reset(u.address));
+      close();
+      say(w.weapon_class_backed, "ok");
+    } catch (err) { problem(err); }
+  });
+  load();
+  return el("div", { className: "group" }, el("h2", { textContent: w.weapon_class_title }),
+    el("p", { className: "muted small", textContent: w.weapon_class_help }), open, table, buttons, back);
+}
+
 // An ammunition's name and kind in game (StudioApi.ammo_text_set): words of the mod's own in every language, then each
 // language on its own in the words panel (the owner, 2026-10-22: "make it to where we can name ammo to whatever we want")
 function ammoTextsGroup(u) {
@@ -3112,6 +3170,7 @@ async function showUnit(address, via) {
     textContent: w.users_warning.replace("{n}", u.users) }));
   if (u.editable && u.share) parts.push(shareChoice(u));
   if (u.ammo_texts && u.ammo_texts.length) parts.push(ammoTextsGroup(u));
+  if (u.has_weapon_class) parts.push(weaponClassGroup(u));
   for (const g of u.groups) {
     const table = el("table");
     for (const r of g.rows) table.append(row(u, r, mode));
