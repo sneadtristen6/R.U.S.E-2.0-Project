@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import dxt, tgu1
-from .modelin import RIGGED, RIGGED_STATIC, ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, bone_weights, glb_accessor, \
+from .modelin import RIGGED, RIGGED_DISC, RIGGED_STATIC, ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, bone_weights, glb_accessor, \
     glb_document, glb_image, smooth_normals
 from .ndf import Ndf, Value
 from .spk import Spk, SpkError
@@ -562,12 +562,12 @@ def read_mod_glb(path: Path) -> Prepared:
                 uvs = glb_accessor(doc, binary, prim["attributes"]["TEXCOORD_0"]) \
                     if "TEXCOORD_0" in prim["attributes"] else [(0.0, 0.0)] * len(pos)
                 part = Part(bone, pic_of.get(prim.get("material", -1), -1), pos, nrm, list(uvs), tris)
-                if bone in (RIGGED, RIGGED_STATIC):   # each point on its own bones, as the file has them
+                if bone in (RIGGED, RIGGED_DISC, RIGGED_STATIC):   # each point on its own bones, as the file has them
                     extras = prim.get("extras") or {}
                     part.draw, part.static, part.skin = extras.get("rusemod_draw"), bone == RIGGED_STATIC, [[] for _ in pos]
                     if TRACK_ATTRIBUTE in prim["attributes"]:
                         part.tracks = [int(t[0]) for t in glb_accessor(doc, binary, prim["attributes"][TRACK_ATTRIBUTE])]
-                    if bone == RIGGED:
+                    if bone != RIGGED_STATIC:
                         names = [doc["nodes"][j].get("name", "") for j in doc["skins"][node["skin"]]["joints"]]
                         part.skin = [bone_weights(names, js, ws) for js, ws in zip(glb_accessor(doc, binary, prim["attributes"]["JOINTS_0"]),
                                                                                   glb_accessor(doc, binary, prim["attributes"]["WEIGHTS_0"]))]

@@ -664,6 +664,7 @@ DISC_MESH = "_propeller"
 BLADE_BONE = "helice_ls_"
 BLADES_MARK = "blades"      # the part prepare holds a plane's blades in, for _own_discs to put on their propellers
 RIGGED, RIGGED_STATIC = "rigged", "rigged_static"   # the nodes of a mod's .glb holding a rigged model's parts (each point on its own bones) and its draws with no bones
+RIGGED_DISC = "rigged_propeller"                    # ... and its propeller discs: named as the viewers know a disc (the Studio's 3D view, Blender keep them from showing as plain squares)
 BLADE_REACH = 1.25          # a blade reaches at most this many of its disc's radii from the middle of the disc nearest it (the game's 433 blade pieces: at most 1.15, blade_pieces.py)
 
 
@@ -1029,7 +1030,8 @@ def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: 
         for t, mk in zip(m.triangles, m.face_materials or [-1] * len(m.triangles)):
             groups.setdefault(pic_of.get(mk, -1), []).append(t)
         for pic, tris in sorted(groups.items()):
-            part = Part(RIGGED_STATIC if m.static else RIGGED, pic, [], [], [], [], skin=[], tracks=[] if m.tracks else None, draw=m.draw, static=m.static)
+            node = RIGGED_STATIC if m.static else RIGGED_DISC if DISC_MESH in m.name.lower() else RIGGED
+            part = Part(node, pic, [], [], [], [], skin=[], tracks=[] if m.tracks else None, draw=m.draw, static=m.static)
             index: dict = {}
             given: list = []
             for tri in tris:
@@ -1329,7 +1331,7 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
         nodes.setdefault(part.bone, []).append(prim)
     for bone, prims in nodes.items():
         g.doc["meshes"].append({"name": bone, "primitives": prims})
-        g.doc["nodes"].append({"name": bone, "mesh": len(g.doc["meshes"]) - 1, **({"skin": 0} if bone == RIGGED else {})})
+        g.doc["nodes"].append({"name": bone, "mesh": len(g.doc["meshes"]) - 1, **({"skin": 0} if bone in (RIGGED, RIGGED_DISC) else {})})
     if joints:
         first = len(g.doc["nodes"])
         g.doc["nodes"] += [{"name": name} for name in joints]

@@ -1146,6 +1146,17 @@ class RiggedModels(unittest.TestCase):
         with mock.patch("rusemod.modelin.read_model", lambda _f, skin: self.model(static=True)):       # no bones in the file: the order as it was
             self.assertEqual(unitmodel.rigged_first(Path("game"), Path("f.glb"), ["gun", "crew"]), ["gun", "crew"])
 
+    def test_a_propeller_disc_is_named_so_the_viewers_know_it(self):
+        model = self.model()
+        model.meshes[0].name = "plane_propeller"
+        prep = modelin.prepare(model, [], {"rigged": True, "root": "bip01"})
+        self.assertEqual(prep.parts[0].bone, modelin.RIGGED_DISC)
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(prep, glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+        self.assertEqual((back.parts[0].bone, back.parts[0].skin[2][0]), (modelin.RIGGED_DISC, ("arme_1", 200)))
+
     def test_a_kept_model_keeps_it_all(self):
         """The build keeps a model between builds: a rigged one comes back as it went in, or the second build of a mod with soldiers stops."""
         prep = self.fitted(tracks=True)
