@@ -927,13 +927,36 @@ class Prepared:
     report: dict
 
 
+def check_move(move) -> list | None:
+    """A placement as the fit takes it: [forward, right, up], in the game's model units (a minus goes the other way), each a number the model's file can hold; None for no move at all."""
+    if move is None:
+        return None
+    try:
+        out = [float(v) for v in move]
+        if len(out) != 3 or not all(math.isfinite(v) for v in out):
+            raise ValueError
+        struct.pack("<3f", *out)        # (a number too big for the file's floats raises)
+    except (TypeError, ValueError, OverflowError):
+        raise ModelError("A move is three numbers: forward, right and up (a minus goes the other way).") from None
+    return out if any(out) else None
+
+
+def _moved(shift: tuple, lift: float, like: dict) -> tuple:
+    """The fit's place with the modder's move on top (like "move", check_move's): forward is the game's +x, right its +y, up its +z. Nothing else about the fit changes, so a turret that turns where it is on the model moves with it (the report's "own_turret")."""
+    move = like.get("move")
+    if not move:
+        return shift, lift
+    return (shift[0] + move[0], shift[1] + move[1]), lift + move[2]
+
+
 def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 1024) -> Prepared:
     """`model` fitted to a unit: `like` is the copied unit's model as {"length": its hull's length along x (game
     units), "pivot": (x, y) its turret turns round, "ground": its lowest z}; `size` scales on top (1: as long as it);
     pictures at most `side` pixels, inside the model (.glb) or found in `folder` (a .3ds's: a folder, or several
     looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing". With `like`
     "own_turret" (not tried in the game yet) the hull is lined up on the copied hull's middle instead, and the report's
-    "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there."""
+    "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there. With `like`
+    "move" (check_move's [forward, right, up]) the fitted model is moved that far; the report's "moved" says so."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
     if like.get("rigged"):
         return _prepare_rigged(model, folders, like, size, side)
@@ -968,6 +991,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         shift = (like.get("middle", like["pivot"][0]) - mid, -(max(side_mid) + min(side_mid)) / 2 * scale)
     low = min(p[2] for m in model.meshes for p in m.positions)
     lift = like["ground"] - low * scale
+    shift, lift = _moved(shift, lift, like)
 
     def place(p):
         x, y, z = p
@@ -1011,6 +1035,8 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     report = fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
     if ring is not None and like.get("own_turret"):
         report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]   # where it turns, for the build
+    if like.get("move"):
+        report["moved"] = list(like["move"])
     return fit_discs(Prepared(out, pictures, report), like)
 
 

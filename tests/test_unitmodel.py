@@ -647,6 +647,100 @@ class OwnTurret(unittest.TestCase):
         self.assertEqual(len(shared.skeletons), 1)
 
 
+class ModelMoved(unittest.TestCase):
+    """A fitted model where the modder wants it (the brief's gap 1; a modder's report, 2026-11-08: a model built from a Semovente copy, and one from a Greyhound copy, drawn ahead of its selection
+    ring): forward, right and up from where the fit puts it, the turret's bones going with it."""
+    MOVE = [50.0, -20.0, 10.0]
+    # a copied unit's hull length and how far its turret's pivot is off its hull's middle (private note, gap 1: the importer's own find_source on the game's models)
+    COPIED = {"Semovente 105/25": (848.7, 229.1), "M8 Greyhound": (931.8, 3.4)}
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.model = modelin.read_model(self.dir / "tank.3ds")
+
+    def fit(self, like, **more):
+        return modelin.prepare(self.model, self.dir, dict(like, **more))
+
+    @staticmethod
+    def hull(prep):
+        """Its hull's middle along and across, and its lowest point."""
+        xs, ys, zs = zip(*next(p for p in prep.parts if p.bone == "chassis").positions)
+        return (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, min(zs)
+
+    def test_the_semovente_and_greyhound_cases(self):
+        for name, (length, off) in self.COPIED.items():
+            with self.subTest(name):
+                like = {"length": length, "pivot": (off, 0.0), "ground": 0.0, "middle": 0.0}
+                self.assertGreater(abs(self.hull(self.fit(like))[0]), 40)       # the fault: the model's turret on the copied unit's, the hull dragged off
+                fitted, moved = self.fit(like, own_turret=True), self.fit(like, own_turret=True, move=self.MOVE)
+                for got, want in zip(self.hull(fitted), (0.0, 0.0, 0.0)):        # the fit: on the copied hull's middle, on the ground
+                    self.assertAlmostEqual(got, want, places=3)
+                for got, want in zip(self.hull(moved), self.MOVE):               # moved: exactly where the modder said
+                    self.assertAlmostEqual(got, want, places=3)
+                for k in (0, 1):                                                 # the turret still turns where it is on the model
+                    self.assertAlmostEqual(moved.report["own_turret"][k], fitted.report["own_turret"][k] + self.MOVE[k], places=3)
+
+    def test_every_point_moves_and_nothing_else_changes(self):
+        like = dict(LIKE, middle=-20.0, own_turret=True)
+        a, b = self.fit(like), self.fit(like, move=self.MOVE)
+        self.assertEqual(len(a.parts), len(b.parts))
+        for p, q in zip(a.parts, b.parts):
+            self.assertEqual((p.bone, p.uvs, p.triangles, p.normals), (q.bone, q.uvs, q.triangles, q.normals))
+            for old, new in zip(p.positions, q.positions):
+                for c in range(3):
+                    self.assertAlmostEqual(new[c], old[c] + self.MOVE[c], places=3)
+        self.assertEqual(b.report["moved"], self.MOVE)
+        self.assertNotIn("moved", a.report)
+
+    def test_the_turret_s_bones_go_with_it_in_the_pack(self):
+        bones = skeleton3(OwnTurret.NAMES, OwnTurret.PARENTS, OwnTurret.PIVOTS)
+        zz = zz_win(bones=bones)
+        source = unitmodel.find_source(zz, TANK)
+        prep = self.fit(source.like, own_turret=True, move=self.MOVE)
+        pack = MeshPack.read(unitmodel.write_unit_model(zz, TANK, "own_model", prep).changed[SKELETONS])
+        new = "ww2\\res3d\\units\\ger\\tank\\own_modellod0.ase2ndfbin"
+        got, old = unitmodel.read_skeleton(pack.skeletons[pack.items[new][2]]), unitmodel.read_skeleton(bones)
+        k = got.names.index("tourelle_01")
+        self.assertAlmostEqual(got.pivots[k][0], prep.report["own_turret"][0], places=2)
+        self.assertAlmostEqual(got.pivots[k][1], prep.report["own_turret"][1], places=2)
+        self.assertAlmostEqual(got.pivots[k][2], old.pivots[k][2] + self.MOVE[2], places=2)
+        gun = got.names.index("canon_01")       # the gun and its muzzle stay on the turret
+        for c in range(3):
+            self.assertAlmostEqual(got.pivots[gun][c] - got.pivots[k][c], old.pivots[gun][c] - old.pivots[k][c], places=2)
+        self.assertEqual(got.pivots[got.names.index("chassis")], old.pivots[old.names.index("chassis")])
+
+    def test_what_counts_as_a_move(self):
+        self.assertIsNone(modelin.check_move(None))
+        self.assertIsNone(modelin.check_move([0, 0.0, -0.0]))
+        self.assertEqual(modelin.check_move(["1", 2, -3.5]), [1.0, 2.0, -3.5])
+        for bad in ([1, 2], [1, 2, 3, 4], ["a", 0, 0], 5, [float("nan"), 0, 0], [float("inf"), 0, 0], [1e39, 0, 0]):
+            with self.subTest(bad), self.assertRaises(modelin.ModelError):
+                modelin.check_move(bad)
+
+    def test_the_command_line_s_option_fits_it_as_the_studio_does(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        from rusemod import cli
+        report = {"vertices": 1, "triangles": 1, "draws": 1, "like": TANK, "facing": ("x", 1), "scale": 1.0, "parts": {}, "pictures": [], "stands": [0.0, 0.0, 0.0, 849.0], "moved": self.MOVE}
+        for extra, move, own in ((["--move", "50", "-20", "10"], self.MOVE, True), ([], None, None)):
+            with self.subTest(extra):
+                args = cli.build_parser().parse_args(["import-model", "m.glb", "--like", "ger_panzeriv", "--unit", "U", "--mod", str(self.dir), *extra])
+                self.assertEqual(args.move, move)
+                out = io.StringIO()
+                with mock.patch("rusemod.models.Library", return_value=mock.Mock(where={TANK: 1})), mock.patch("rusemod.cli._game_dir", return_value=self.dir / "game"), \
+                        mock.patch("rusemod.unitmodel.import_model", return_value=report) as fitted, contextlib.redirect_stdout(out):
+                    self.assertEqual(cli.cmd_import_model(args), 0)
+                got = fitted.call_args.kwargs
+                self.assertEqual((got.get("move"), got.get("own_turret"), got.get("own_propellers")), (move, own, own))
+                self.assertIn("moved: 50 forward, -20 right, 10 up", out.getvalue())
+
+
 class OwnPropellers(unittest.TestCase):
     """A plane's propellers where the model has them, as many as it has: each one's two bones moved, or added after the last so every bone keeps its number."""
     NAMES = ["chassis", "aile", "helice_hs_1", "helice_ls_1"]

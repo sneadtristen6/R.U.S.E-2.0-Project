@@ -493,6 +493,7 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         shift = (like.get("middle", like["pivot"][0]) - mid, -(_highest(side_mid) + _lowest(side_mid)) / 2 * scale)
     low = _lowest([d["points"][:, 2] for d in data])
     lift = like["ground"] - low * scale
+    shift, lift = plain._moved(shift, lift, like)
     every = _points([seen[k] for k in offset], offset.values(), total, f, r, scale, shift, lift)
     if every is None:
         return None
@@ -550,6 +551,8 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
     report = plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
     if ring is not None and like.get("own_turret"):
         report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]
+    if like.get("move"):
+        report["moved"] = list(like["move"])
     return plain.Prepared(out, pictures, report)
 
 

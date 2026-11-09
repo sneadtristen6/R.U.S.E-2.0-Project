@@ -58,6 +58,13 @@ and, for an era unit, **Real life** marked; click **Resize** and the model is fi
 several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
 shows from the next build.
 
+**Where it sits:** under the size, **Move it** takes three numbers, **Forward**, **Right** and **Up**, in the game's
+units (the page says how long the unit it copies is, in those units). A minus goes the other way, and 0, 0, 0 puts it
+back where it was fitted. Click **Move** and the model is fitted again from its own file, that far away; its turret and
+propellers go with it, so they still turn in the right place. In the 3D view the blue ring is where the unit it copies
+stands, and the mark on the ring is the front. A new size keeps the move. A model rigged to the unit's own bones (a
+soldier, a gun's crew) stays where its bones are: move that one in Blender.
+
 **Planes:** a plane opened in Blender from the Studio and brought back faces forward and keeps its propellers where
 your model has them, as many as it has, whatever the plane it copies had: blades on the ground, spinning discs in the
 air. Seen in the game. A model from anywhere else keeps its propellers as it drew them, standing still: the importer
@@ -87,6 +94,7 @@ units whose turrets the Studio misread): use **Import model…** again on that u
 - Pictures are made at most 1024 across, like the game's own unit pictures.
 
 From the command line, the same: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Add `--move 50 0 -10` to move it 50 forward and 10
+down from where it's fitted (forward, right, up).
 
 **Next:** [[Export and share|Export-and-Share]]

@@ -2209,7 +2209,9 @@ function cardShot(card) {
     const cam = gl.camera.clone();
     cam.aspect = wd / ht;
     cam.setViewOffset(wd, ht, r.x, r.y, r.w, r.h);
+    for (const m of gl.guides || []) m.visible = false;    // (the ring under a unit's own model is the Studio's, not the unit's picture)
     shot.render(gl.scene, cam);
+    for (const m of gl.guides || []) m.visible = true;
     const c = el("canvas", { width: card.width, height: card.height }), ctx = c.getContext("2d");
     cardBackdrop(ctx, card.width, card.height);
     ctx.drawImage(shot.domElement, 0, 0, card.width, card.height);
@@ -2347,6 +2349,19 @@ function unitView(u) {
         }
       });
       gl.model.add(g.scene);
+    }
+    gl.guides = [];
+    if (info.stands) {   // a unit's own model: a ring on the ground where the unit it copies stands, and a mark at its front
+      const { at: [x, y, z], radius: r } = info.stands;
+      const flat = { color: 0x4aa3ff, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide };
+      const ring = new THREE.Mesh(new THREE.RingGeometry(r * 0.96, r, 72), new THREE.MeshBasicMaterial(flat));
+      const front = new THREE.Mesh(new THREE.CircleGeometry(r * 0.14, 3), new THREE.MeshBasicMaterial(flat));
+      ring.rotation.x = front.rotation.x = -Math.PI / 2;
+      ring.position.set(x, y + r * 0.004, z);
+      front.position.set(x + r * 1.14, y + r * 0.004, z);   // (a three-sided circle's first corner is on its +x: it points forward)
+      gl.model.add(ring, front);
+      shown.push(ring, front);
+      gl.guides.push(ring, front);
     }
     gl.model.updateMatrixWorld(true);
     const bounds = new THREE.Box3();
@@ -2686,6 +2701,22 @@ function modelBox(address, info, draw, changed) {
     title: w.tip_model_size });
   // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
   const sizing = el("div", { className: "model-sizing" });
+  // where it sits (StudioApi.model_place): forward, right and up from where it's fitted, in the game's units
+  const moves = [[w.model_move_forward, w.tip_model_move_forward], [w.model_move_right, w.tip_model_move_right], [w.model_move_up, w.tip_model_move_up]]
+    .map(([label, title]) => ({ label, box: el("input", { type: "number", step: "10", value: "0", className: "model-size", title }) }));
+  const moved = () => moves.map((m) => Number(m.box.value) || 0);
+  const longNote = el("p", { className: "muted small" });
+  const move = el("button", { type: "button", className: "small", textContent: w.model_move, title: w.tip_model_move, disabled: true });
+  move.addEventListener("click", async () => {
+    move.disabled = true;
+    say(w.model_moving);
+    try {
+      const r = await api().model_place(address, moved());
+      say(w.model_moved, "ok");
+      if (changed) changed();
+      draw(r);
+    } catch (err) { problem(err); move.disabled = false; }
+  });
   const resize = el("button", { type: "button", className: "small", textContent: w.model_resize, title: w.tip_model_resize,
     disabled: true });
   resize.addEventListener("click", async () => {
@@ -2706,6 +2737,10 @@ function modelBox(address, info, draw, changed) {
       if (s.size) size.value = String(sizeRound(s.size));
       resize.disabled = !s.resizable;
       if (own && !s.resizable) resize.title = w.tip_model_resize_gone;
+      if (s.move) moves.forEach((m, i) => { m.box.value = String(s.move[i]); });
+      move.disabled = !s.resizable;
+      if (own && !s.resizable) move.title = w.tip_model_move_gone;
+      if (s.length) longNote.textContent = fill(w.model_move_long, { length: Math.round(s.length) });
       sizing.append(sizeSlider(size, s.marks));
       if (own && s.same_kind > 1) {
         sizing.append(resizeAllRow(s.kind, s.same_kind, () => api().look(address).then(draw).catch(problem)));
@@ -2717,7 +2752,7 @@ function modelBox(address, info, draw, changed) {
     pick.disabled = true;
     say(w.model_importing);
     try {
-      const r = await api().model_import(address, null, Number(size.value) || 1);
+      const r = await api().model_import(address, null, Number(size.value) || 1, false, null, true, true, own ? moved() : null);
       if (r.model) {  // (none: the file picker was closed)
         say(fill(w.model_done, { file: r.model.file || "" }), "ok");
         if (changed) changed();
@@ -2769,7 +2804,14 @@ function modelBox(address, info, draw, changed) {
       try { draw(await api().model_import_remove(address)); if (changed) changed(); } catch (err) { problem(err); }
     });
     box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
-      sizing, el("p", { className: "muted small", textContent: w.model_size_when }), el("div", { className: "actions" }, pick, drop));
+      sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
+    if (own.rigged) box.append(el("p", { className: "muted small", textContent: w.model_move_rigged }));
+    else {
+      box.append(el("div", { className: "actions model-move" }, el("strong", { className: "small", textContent: w.model_move_title }),
+        ...moves.map((m) => el("label", { className: "small" }, m.label, " ", m.box)), move),
+        el("p", { className: "muted small", textContent: w.model_move_how }), longNote);
+    }
+    box.append(el("div", { className: "actions" }, pick, drop));
   } else {
     box.append(el("p", { className: "muted small", textContent: w.model_how }),
       el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);

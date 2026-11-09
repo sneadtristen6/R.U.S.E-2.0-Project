@@ -671,6 +671,69 @@ class StudioLook(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "isn't there any more"):
             self.api.model_resize(jet, 1)
 
+    def test_own_model_moved(self):
+        """Move (the brief's gap 1): the model fitted again from its own file, moved from where the fit puts it, at its size and the way it faced; a Resize keeps the move; 0, 0, 0 goes back to the fit; a
+        model fitted before there was own_turret takes it once it's moved, so its turret goes with it."""
+        import json
+        from unittest import mock
+
+        from ruse_studio.api import StudioError
+        from ruse_studio.edits import NewUnit
+        tank = "$/GFX/Everything/Descriptor_Unit_R2_Tank"
+        made = {tank: NewUnit(tank, "$/GFX/Everything/Descriptor_Unit_Test", "Tank")}
+
+        class Edits:
+            new_units = made
+
+            def new_unit_of(self, a):
+                return made.get(a.split(":")[0])
+        self.api._edits = lambda: Edits()
+        self.api._unit_kinds = lambda addresses: {a: "ground" for a in addresses}
+        self.api._era_record = lambda: {}
+        self.api._open = lambda: mock.Mock()
+        self.api._names = lambda ix, addresses, lang, new_units=None: {a: "Sherman" for a in addresses}
+        calls = []
+
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None,
+                        own_turret=False, own_propellers=False, others=None, move=None):
+            calls.append((size, facing, own_turret, own_propellers, move))
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(b"glTF-own")
+            return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": [], "facing": ("y", -1),
+                    "stands": [3.0, 0.0, 2.0, 849.0], **({"moved": move} if move else {})}
+        model = Path(self.dir.name) / "tank.glb"
+        model.write_bytes(b"glTF")
+        move = [50.0, -20.0, 10.0]
+        with mock.patch("rusemod.unitmodel.import_model", fake_import):
+            with self.assertRaisesRegex(StudioError, "no model of its own to move"):
+                self.api.model_place(tank, move)
+            self.api.model_import(tank, str(model), 1.5)
+            self.assertEqual(self.api.model_sizes(tank)["move"], [0, 0, 0])     # nothing moved yet
+            self.assertEqual(self.api.model_sizes(tank)["length"], 849.0)
+            self.api.model_place(tank, [50, -20, 10])
+            self.assertEqual(calls[-1], (1.5, [1, -1], True, True, move))
+            self.assertEqual(self.api.model_sizes(tank)["move"], move)
+            self.api.model_resize(tank, 2)                                      # a new size keeps where it is
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, move))
+            self.api.model_place(tank, [0, 0, 0])                               # back to the fit
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, None))
+            self.assertEqual(self.api.model_sizes(tank)["move"], [0, 0, 0])
+            kept = self.api._own_model_file(tank).with_suffix(".json")
+            record = json.loads(kept.read_text(encoding="utf-8"))
+            self.assertNotIn("move", record)
+            del record["own_turret"], record["own_propellers"]                  # a model fitted before there was own_turret
+            kept.write_text(json.dumps(record), encoding="utf-8")
+            self.api.model_place(tank, move)
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, move))
+            calls.clear()
+            for bad in ([1, 2], ["a", 0, 0], [float("nan"), 0, 0], [1e39, 0, 0], 5):
+                with self.subTest(bad), self.assertRaisesRegex(StudioError, "three numbers"):
+                    self.api.model_place(tank, bad)
+            self.assertEqual(calls, [])                                         # refused before anything was fitted
+        model.unlink()
+        with self.assertRaisesRegex(StudioError, "isn't there any more"):
+            self.api.model_place(tank, move)
+
     def test_own_model_fitted_past_a_crew_figure(self):
         """A copied unit whose models list a crew figure first (the Kubelwagen's driver: no chassis bone) gets the new
         model fitted to the first model that can take one, the vehicle (2026-10-09: every era jeep copying the

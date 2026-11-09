@@ -390,6 +390,7 @@ class WholeArrays(unittest.TestCase):
                     self.assertTrue(any(n is modelin.smooth_normals([(0.0, 0.0, 0.0)], [])[0] for n in flat))
         self.check_prepare(made_up(4), LIKE, size=1.5, side=4)
         self.check_prepare(made_up(4), dict(LIKE, own_turret=True))     # on the hull's middle, its turret where it is
+        self.check_prepare(made_up(4), dict(LIKE, own_turret=True, move=[50.0, -20.0, 10.0]))   # and moved by the modder
         self.check_own_propellers()
 
     def check_own_propellers(self):

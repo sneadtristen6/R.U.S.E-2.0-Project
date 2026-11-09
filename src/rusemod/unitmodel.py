@@ -59,7 +59,7 @@ class UnitModelError(ModelError):
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
                  facing: list | None = None, own_turret: bool = False, own_propellers: bool = False,
-                 others: list | None = None) -> dict:
+                 others: list | None = None, move: list | None = None) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
@@ -72,10 +72,13 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     (modelin.fit_discs; a unit copying one with no propellers is fitted as before). A unit with no hull bone to fit a model on
     (a soldier, a towed gun) takes a model rigged to its own bones instead (modelin._prepare_rigged). `others`: the unit's other
     models; a rigged model takes the place of those with the same bones too (the report's "also": a squad's riflemen and its bazooka
-    man). Returns the fitting's report (parts and their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
+    man). `move` ([forward, right, up] in the game's model units, the owner's pick 2026-11-09, the brief's gap 1): the fitted model moved that far; with `own_turret` its turret's
+    bones go with it, so it still turns where the model's turret is (a rigged model stays where its bones are: said in the report's notes). Returns the fitting's report (parts and
+    their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] where the unit it copies stands and how long it is)."""
     from .build import find_pack
     from .edat import Edat
-    from .modelin import prepare, read_model, write_glb
+    from .modelin import check_move, prepare, read_model, write_glb
+    move = check_move(move)
     path = find_pack(Path(game), "ZZ_Win.dat")
     if path is None:
         raise UnitModelError(f"ZZ_Win.dat isn't in {game}")
@@ -108,9 +111,11 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     if rigged is not None:
         prep = prepare(rigged, look, dict(src.like), size=size, side=side)
         prep.report["also"] = also
+        if move:        # said, not dropped: its points lean on bones that stay where the skeleton has them
+            prep.report["notes"] = list(prep.report.get("notes") or []) + ["a model rigged to the unit's own bones stays where its bones are: the move wasn't used"]
         write_glb(prep, out, src.model)
         return dict(prep.report, like=src.model)
-    like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}))
+    like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}), **({"move": move} if move else {}))
     can_move = own_turret and TURRET in src.skeleton.names
     if can_move:
         like["own_turret"] = True
@@ -120,6 +125,7 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     prep = prepare(read_model(model_file, blades=keep_propellers), look, like, size=size, side=side)
     if own_turret and not can_move:     # said, not dropped: it has no turret bone to move, so it's fitted as before
         prep.report["notes"] = list(prep.report.get("notes") or []) + [f"{src.model} has no {TURRET} bone to move"]
+    prep.report["stands"] = [float(src.like.get("middle", src.like["pivot"][0])), 0.0, float(src.like["ground"]), float(src.like["length"])]
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
 
@@ -222,9 +228,9 @@ def bone_point(rot, t) -> tuple:
     return tuple(-sum(inv[row][r] * t[r] for r in range(3)) / det for row in range(3))
 
 
-def moved_turret(blob: bytes, x: float, y: float) -> bytes:
+def moved_turret(blob: bytes, x: float, y: float, dz: float = 0.0) -> bytes:
     """A copy of the skeleton entry `blob` with its turret (TURRET and every bone hanging from it: the gun, the muzzle)
-    moved so the turret turns round (x, y): for a model whose turret isn't where the copied unit's is. Not tried in the
+    moved so the turret turns round (x, y), and `dz` higher: for a model whose turret isn't where the copied unit's is. Not tried in the
     game yet. A bone has three matrices, 3 x 4 floats each: set 0 model -> bone, set 1 from its parent, set 2 bone ->
     model. In all 489 different records of the game's 10 skeleton packs, every one of the 9,870 bones has set 0 the
     inverse of set 2 and set 1 the inverse of its parent's set 2 times its set 2 (2026-11-08), so a move changes only
@@ -237,7 +243,7 @@ def moved_turret(blob: bytes, x: float, y: float) -> bytes:
         raise UnitModelError(f"a skeleton with no {TURRET} bone")
     top = bones.names.index(TURRET)
     start = struct.unpack_from("<12f", blob, mats + 48 * (2 * n + top))
-    return _moved_branch(blob, top, x - start[3], y - start[7])
+    return _moved_branch(blob, top, x - start[3], y - start[7], dz)
 
 
 def _moved_branch(blob: bytes, top: int, dx: float, dy: float, dz: float = 0.0) -> bytes:
@@ -941,10 +947,11 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     # that holds the copied one; every other model shares the copied unit's, as before
     turret_at = prep.report.get("own_turret") if TURRET in src.skeleton.names else None
     props = prep.report.get("own_propellers")
+    turret_up = float((prep.report.get("moved") or (0.0, 0.0, 0.0))[2])     # (a model moved up or down: its gun and muzzle stay on it)
 
     def remade(blob: bytes) -> bytes:
         if turret_at is not None:
-            blob = moved_turret(blob, *turret_at)
+            blob = moved_turret(blob, *turret_at, turret_up)
         return own_propellers(blob, props) if props else blob
     own = remade if turret_at is not None or props else None
     bones = src.skeleton
