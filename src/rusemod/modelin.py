@@ -359,20 +359,20 @@ def gltf_document(path: Path) -> tuple[dict, bytes]:
     return doc, bytes(binary)
 
 
-def read_glb(path: Path) -> Model:
+def read_glb(path: Path, blades: bool = False) -> Model:
     """A .glb's meshes (z up) with their own normals when it has them, and each material's picture and, when the
-    material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture."""
+    material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture. `blades`: by_bones's."""
     try:
         doc, binary = glb_document(Path(path).read_bytes())
     except (ValueError, struct.error) as exc:
         raise ModelError(f"{Path(path).name}: {exc}") from None
-    return _read_document(doc, binary, path)
+    return _read_document(doc, binary, path, blades)
 
 
-def read_gltf(path: Path) -> Model:
+def read_gltf(path: Path, blades: bool = False) -> Model:
     """A .gltf with its files beside it (gltf_document), read as a .glb is; a see-through material keeps its alphaMode
-    (Material.cutout) and its mask picture when it has one of its own (Material.mask)."""
-    return _read_document(*gltf_document(path), path)
+    (Material.cutout) and its mask picture when it has one of its own (Material.mask). `blades`: by_bones's."""
+    return _read_document(*gltf_document(path), path, blades)
 
 
 COMPRESSED = ("KHR_draco_mesh_compression", "EXT_meshopt_compression", "KHR_mesh_quantization")
@@ -394,7 +394,7 @@ def texture_source(doc: dict, index: int) -> int:
     raise ModelError("a texture with no picture")
 
 
-def _read_document(doc: dict, binary: bytes, path) -> Model:
+def _read_document(doc: dict, binary: bytes, path, blades: bool = False) -> Model:
     squeezed = [e for e in doc.get("extensionsRequired", []) if e in COMPRESSED]
     if squeezed:   # (a player's report, 2026-10-22: some downloaded .glb files were refused with no reason given)
         raise ModelError(f"{Path(path).name}: its meshes are compressed ({', '.join(squeezed)}), which the importer "
@@ -456,7 +456,7 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
                     tris = [tuple(idx[i:i + 3]) for i in range(0, len(idx) - 2, 3)]
                     mesh = Mesh(name, pos, tris, [(u, 1.0 - v) for u, v in uvs],  # glTF's v runs down the picture
                                 [prim.get("material", -1)] * len(tris), nrm)
-                meshes.extend(by_bones(doc, binary, node, prim, mesh))
+                meshes.extend(by_bones(doc, binary, node, prim, mesh, blades))
         for c in node.get("children", []):
             visit(c, matrix)
 
@@ -468,19 +468,20 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
     return Model(meshes, materials, str(path))
 
 
-def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> list[Mesh]:
+def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh, blades: bool = False) -> list[Mesh]:
     """A skinned part split by the bone each triangle leans on most, when one of its bones is named as a turret or a
     gun (roles' words): the game's own models come out of the Studio's Open in Blender as one mesh per picture, the
     turret in the same mesh as the hull, with each bone named as the game names it (tourelle_01, canon_01: rusemod.
     gltf). Read back, the turret's triangles become a part of their own, named after their bone, so it turns again (a
     player's report, 2026-10-22: the game's own Firefly, exported and imported, kept its turret still). Any other
-    part, and a model whose bones aren't named so, is left as it is."""
+    part, and a model whose bones aren't named so, is left as it is. `blades` (read_model's, for "own_propellers"):
+    the triangles on a propeller's slow bone (helice_ls_<number>: its real blades) split off the same way."""
     attrs = prim.get("attributes", {})
     if "skin" not in node or "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs:
         return [mesh]
     skin = doc.get("skins", [])[node["skin"]]
     names = [doc["nodes"][j].get("name", "") for j in skin.get("joints", [])]
-    moving = {k: n for k, n in enumerate(names) if named_role(n) in (TURRET, GUN)}
+    moving = {k: n for k, n in enumerate(names) if named_role(n) in (TURRET, GUN) or (blades and n.lower().startswith(BLADE_BONE))}
     if not moving:
         return [mesh]
     joints = glb_accessor(doc, binary, attrs["JOINTS_0"])
@@ -511,15 +512,15 @@ def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> li
     return out
 
 
-def read_model(path: Path) -> Model:
-    """A model file by its kind: .3ds, .glb or .gltf (with its files beside it)."""
+def read_model(path: Path, blades: bool = False) -> Model:
+    """A model file by its kind: .3ds, .glb or .gltf (with its files beside it). `blades`: by_bones's."""
     suffix = Path(path).suffix.lower()
     if suffix == ".3ds":
         return read_3ds(path)
     if suffix == ".glb":
-        return read_glb(path)
+        return read_glb(path, blades)
     if suffix == ".gltf":
-        return read_gltf(path)
+        return read_gltf(path, blades)
     raise ModelError(f"{Path(path).name}: a {suffix or 'nameless'} file; the importer reads .3ds, .glb and .gltf "
                      "(Blender saves both glTF kinds: File > Export > glTF 2.0)")
 
@@ -623,6 +624,11 @@ PLAIN_ALPHA = 144       # alpha: the Sherman's body is mostly 128-159 (no side c
 # A plane's spinning-propeller discs as `ruse export-model` and the Studio's Open in Blender write them: a mesh of
 # their own, <model>_propeller (rusemod.gltf), each disc a flat square of 4 points (all 59 of the game's, 2026-10-10)
 DISC_MESH = "_propeller"
+# A propeller is two things on two bones, the game's own way (exe 0x1409c1f90, every frame): its real blades on helice_ls_<number>, its flat disc on helice_hs_<number>.
+# Up to the unit's VitesseDeplacementMaxLS the blades turn and the disc is scaled to nothing; past it the disc turns and the blades are scaled to nothing, so a parked plane shows only blades.
+BLADE_BONE = "helice_ls_"
+BLADES_MARK = "blades"      # the part prepare holds a plane's blades in, for _own_discs to put on their propellers
+BLADE_REACH = 1.25          # a blade reaches at most this many of its disc's radii from the middle of the disc nearest it (the game's 433 blade pieces: at most 1.15, blade_pieces.py)
 
 
 def named_role(name: str) -> str | None:
@@ -889,7 +895,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
     arrays = whole_arrays()
-    if arrays:      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
+    if arrays and not like.get("own_propellers"):      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
         prep = arrays.prepare(sys.modules[__name__], model, folders, like, size, side)
         if prep is not None:
             return fit_discs(prep, like)
@@ -933,8 +939,9 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     groups: dict = {}
     for m, k in zip(model.meshes, parts):
         mats = m.face_materials or [-1] * len(m.triangles)
+        on = BLADES_MARK if like.get("own_propellers") and f".{BLADE_BONE}" in m.name.lower() else BONES[k]
         for t, mk in zip(m.triangles, mats):
-            groups.setdefault((BONES[k], pic_of.get(mk, -1)), []).append((m, t))
+            groups.setdefault((on, pic_of.get(mk, -1)), []).append((m, t))
     own_normals = 0
     for (bone, pic), tris in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
         index: dict = {}
@@ -1022,9 +1029,13 @@ def fit_discs(prep: Prepared, like: dict) -> Prepared:
 
 
 def _own_discs(prep: Prepared, found: list, kept_parts: list, spots: list) -> Prepared:
-    """fit_discs with `like` "own_propellers" (not tried in the game yet, nothing in the apps asks for it): every disc stays where the model has it, and
+    """fit_discs with `like` "own_propellers" (nothing in the apps asks for it): every disc stays where the model has it, and
     goes on a propeller number of its own: the copied plane's number nearest it while there are any, then new numbers after the highest. The report's
-    "own_propellers" ([[number, x, y, z]]) says where each is, for the build to put that propeller's bones there (unitmodel.own_propellers)."""
+    "own_propellers" ([[number, x, y, z]]) says where each is, for the build to put that propeller's bones there (unitmodel.own_propellers).
+    The model's blades (read_model's `blades`: the part on BLADES_MARK), each piece on the slow bone of the disc it lies in, spin there and are what a parked plane shows;
+    a piece reaching past BLADE_REACH of every disc stays on the hull, and a disc with no blades shows nothing below the speed its disc comes in at (the report's notes say so)."""
+    blade_parts = [p for p in kept_parts if p.bone == BLADES_MARK]
+    kept_parts = [p for p in kept_parts if p.bone != BLADES_MARK]
     discs = []      # (part, its points, its middle)
     for part in found:
         for pts in pieces(part.triangles, len(part.positions)):
@@ -1054,9 +1065,36 @@ def _own_discs(prep: Prepared, found: list, kept_parts: list, spots: list) -> Pr
             out.normals.append(part.normals[p])
             out.uvs.append(part.uvs[p])
         out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
+    radius = [max(max(d[0].positions[p][k] for p in d[1]) - min(d[0].positions[p][k] for p in d[1]) for k in range(3)) / 2 for d in discs]
+    on_a_propeller, on_the_hull = 0, 0
+    with_blades = set()
+    for part in blade_parts:
+        for pts in pieces(part.triangles, len(part.positions)):
+            mid = tuple(sum(part.positions[p][k] for p in pts) / len(pts) for k in range(3))
+            i = min(range(len(discs)), key=lambda d: math.dist(mid, discs[d][2]))
+            inside = max(math.dist(part.positions[p], discs[i][2]) for p in pts) <= BLADE_REACH * radius[i]
+            bone = f"{BLADE_BONE}{took[i]}" if inside else BONES[HULL]
+            on_a_propeller, on_the_hull = on_a_propeller + inside, on_the_hull + (not inside)
+            if inside:
+                with_blades.add(i)
+            out = groups.setdefault((bone, part.picture), Part(bone, part.picture, [], [], [], []))
+            index = {}
+            for p in pts:
+                index[p] = len(out.positions)
+                out.positions.append(part.positions[p])
+                out.normals.append(part.normals[p])
+                out.uvs.append(part.uvs[p])
+            out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
     report = dict(prep.report)
     report["propellers"] = {"kept": len(discs), "left_out": 0, "why": ""}
     report["own_propellers"] = sorted(places)
+    if blade_parts:
+        report["propellers"]["blades"] = {"on_a_propeller": on_a_propeller, "on_the_hull": on_the_hull}
+    bare = sorted(took[i] for i in range(len(discs)) if i not in with_blades)
+    if bare:
+        report["notes"] = list(report.get("notes") or []) + [f"propeller(s) {bare} have a disc and no blades: on the ground and at low speed they show nothing"]
+    if on_the_hull:
+        report["notes"] = list(report.get("notes") or []) + [f"{on_the_hull} blade piece(s) reach past every propeller disc: they stay on the plane's body and won't turn"]
     out_parts = kept_parts + [groups[k] for k in sorted(groups)]
     report["draws"] = len(out_parts)
     report["vertices"] = sum(len(p.positions) for p in out_parts)

@@ -703,6 +703,48 @@ class OwnPropellers(unittest.TestCase):
         disc = modelin.Mesh("plane_propeller", points, tris, [(0.0, 0.0)] * 12, [-1] * 6)
         return modelin.prepare(modelin.Model([body, disc], [], "plane.glb"), [], dict(like, facing=[0, 1]))
 
+    def with_blades(self, blades):
+        """A plane with two discs and `blades`: [(x, y)] one thin blade each (a triangle pair) in a mesh named as read_model(blades=True) names one."""
+        def square(x, y):
+            return [(x, y - 1, -1.0), (x, y + 1, -1.0), (x, y + 1, 1.0), (x, y - 1, 1.0)]
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        points = square(4.0, 0.0) + square(1.0, 3.0)
+        tris = [t for k in range(2) for t in ((4 * k, 4 * k + 1, 4 * k + 2), (4 * k, 4 * k + 2, 4 * k + 3))]
+        disc = modelin.Mesh("plane_propeller", points, tris, [(0.0, 0.0)] * 8, [-1] * 4)
+        pts, faces = [], []
+        for x, y in blades:
+            k = len(pts)
+            pts += [(x, y, 0.0), (x, y + 0.1, 0.0), (x, y + 0.1, 0.5), (x, y, 0.5)]
+            faces += [(k, k + 1, k + 2), (k, k + 2, k + 3)]
+        blade = modelin.Mesh("plane.helice_ls_1", pts, faces, [(0.0, 0.0)] * len(pts), [-1] * len(faces))
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "own_propellers": True, "facing": [0, 1],
+                "propellers": [{"bone": "helice_hs_1", "centre": (40.0, 0.0, 0.0), "radius": 10.0}]}
+        return modelin.prepare(modelin.Model([body, disc, blade], [], "plane.glb"), [], like)
+
+    def test_each_blade_goes_on_the_slow_bone_of_the_disc_it_lies_in(self):
+        prep = self.with_blades([(4.0, 0.2), (1.0, 3.2)])
+        on = {p.bone: len(p.positions) for p in prep.parts if "_ls_" in p.bone}
+        self.assertEqual(on, {"helice_ls_1": 4, "helice_ls_2": 4})
+        self.assertEqual(prep.report["propellers"]["blades"], {"on_a_propeller": 2, "on_the_hull": 0})
+        self.assertFalse([n for n in prep.report.get("notes") or [] if "no blades" in n])
+
+    def test_a_blade_outside_every_disc_stays_on_the_hull(self):
+        prep = self.with_blades([(4.0, 0.2), (-4.0, -4.0)])
+        self.assertEqual(prep.report["propellers"]["blades"], {"on_a_propeller": 1, "on_the_hull": 1})
+        self.assertEqual(sorted(p.bone for p in prep.parts if p.bone not in ("helice_hs_1", "helice_hs_2")), ["chassis", "chassis", "helice_ls_1"])
+        self.assertTrue([n for n in prep.report["notes"] if "reach past" in n])
+
+    def test_a_disc_with_no_blades_is_said(self):
+        prep = self.with_blades([(4.0, 0.2)])
+        self.assertTrue([n for n in prep.report["notes"] if "[2] have a disc and no blades" in n])
+
+    def test_blades_are_left_alone_without_own_propellers(self):
+        blade = modelin.Mesh("plane.helice_ls_1", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "facing": [0, 1]}
+        prep = modelin.prepare(modelin.Model([body, blade], [], "plane.glb"), [], like)
+        self.assertEqual([p.bone for p in prep.parts], ["chassis"])
+
     def test_every_disc_stays_where_the_model_has_it(self):
         like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "own_propellers": True,
                 "propellers": [{"bone": "helice_hs_1", "centre": (40.0, 0.0, 0.0), "radius": 10.0}]}
