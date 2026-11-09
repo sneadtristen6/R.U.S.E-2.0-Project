@@ -124,6 +124,32 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     return dict(prep.report, like=src.model)
 
 
+def rigged_first(game: Path, model_file: Path, models: list) -> list:
+    """`models` (a unit's, in the order Import model tries them) with those whose skeleton has every bone the file's points lean on first: a file rigged to a gun's crew goes on the crew, not on the first of the unit's
+    models a model can be fitted to (the gun). A file with no bones, or one that can't be read here (its import says why), leaves the order as it is."""
+    from .build import find_pack
+    from .edat import Edat
+    from .modelin import read_model
+    try:
+        used = {name for m in read_model(model_file, skin=True).meshes for v in m.skin for name, _w in v}
+    except (ModelError, OSError, ValueError):
+        return list(models)
+    if not used:
+        return list(models)
+    zz = Edat.open(str(find_pack(Path(game), "ZZ_Win.dat")))
+    fits, rest = [], []
+    try:
+        for m in models:
+            try:
+                has = set(find_source(zz, m, rigged=True).skeleton.names)
+            except UnitModelError:
+                has = set()
+            (fits if used <= has else rest).append(m)
+    finally:
+        zz.close()
+    return fits + rest
+
+
 def mod_models(folder: Path) -> dict:
     """{a new unit's name: its model file} from a mod's files/models/<the unit's name>.glb."""
     root = Path(folder) / MODELS

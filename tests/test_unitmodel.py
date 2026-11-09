@@ -1129,6 +1129,23 @@ class RiggedModels(unittest.TestCase):
         self.assertEqual(part.skin[1], [("bip01 pelvis", 128), ("bip01 spine", 127)])
         self.assertEqual(sum(w for _n, w in part.skin[2]), 255)
 
+    def test_a_rigged_file_goes_on_the_model_with_its_bones_first(self):
+        """A towed gun's models: the gun can take any model, but a file rigged to the crew's bones is the crew's."""
+        from types import SimpleNamespace
+        from unittest import mock
+
+        bones = {"gun": ["chassis", "canon"], "crew": ["bip01 pelvis", "bip01 spine", "arme_1", "bip01 head"]}
+
+        def source(_zz, name, rigged=False):
+            return SimpleNamespace(skeleton=SimpleNamespace(names=bones[name]))
+
+        arc = SimpleNamespace(close=lambda: None)
+        with mock.patch.object(unitmodel, "find_source", source), mock.patch("rusemod.build.find_pack", lambda *_a: "zz"), \
+                mock.patch("rusemod.edat.Edat.open", lambda _p: arc), mock.patch("rusemod.modelin.read_model", lambda _f, skin: self.model()):
+            self.assertEqual(unitmodel.rigged_first(Path("game"), Path("f.glb"), ["gun", "crew"]), ["crew", "gun"])
+        with mock.patch("rusemod.modelin.read_model", lambda _f, skin: self.model(static=True)):       # no bones in the file: the order as it was
+            self.assertEqual(unitmodel.rigged_first(Path("game"), Path("f.glb"), ["gun", "crew"]), ["gun", "crew"])
+
     def test_a_kept_model_keeps_it_all(self):
         """The build keeps a model between builds: a rigged one comes back as it went in, or the second build of a mod with soldiers stops."""
         prep = self.fitted(tracks=True)

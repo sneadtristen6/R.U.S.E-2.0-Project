@@ -8140,7 +8140,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         propellers where the model has them, as many as it has, not where the copied plane's are; False: as a model
         fitted before that was. Returns {"model": what was made (parts, counts, pictures, "missing"), **look()}."""
         from rusemod.modelin import ModelError
-        from rusemod.unitmodel import UnitModelError, import_model
+        from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         target = self._own_model_file(address)
         if target is None:
             # not a game rule: the Studio gives models only to the units a mod makes (a game unit's stays the game's)
@@ -8164,6 +8164,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
+        try:
+            found = rigged_first(self._game(), Path(file), found)
+        except (OSError, ValueError):       # (the game's packs can't be read: the import below says so)
+            pass
         for model in found:
             try:
                 report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
