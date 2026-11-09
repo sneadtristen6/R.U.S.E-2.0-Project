@@ -1091,6 +1091,75 @@ GUN = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02,
                strings=[GUN_FILE, GUN_FIGURINE], exports={0: "Gun"}, compress=True)
 
 
+class RiggedModels(unittest.TestCase):
+    """A model rigged to a game skeleton, for any unit with no hull bone to fit a model on: every point keeps its bones, its track number and its draw's material, nothing moved or scaled."""
+
+    def model(self, static=False, tracks=False):
+        points = [(0.1, 0.2, 0.3), (0.4, 0.2, 0.3), (0.1, 0.5, 0.3)]
+        skin = [[("bip01 pelvis", 255)], [("bip01 pelvis", 128), ("bip01 spine", 127)], [("arme_1", 200), ("bip01 spine", 40), ("bip01 pelvis", 10), ("bip01 head", 5)]]
+        return modelin.Model([modelin.Mesh("soldier", points, [(0, 1, 2)], [(0.25, 0.5), (0.75, 0.5), (0.25, 1.0)], [-1], [(0.0, 0.0, 1.0)] * 3, skin=[] if static else skin,
+                                           tracks=[3, 4, 5] if tracks else [], draw=1, static=static)], [], "soldier.glb")
+
+    def fitted(self, **kw):
+        return modelin.prepare(self.model(**kw), [], {"rigged": True, "root": "bip01"})
+
+    def test_points_stay_where_the_bones_are_and_keep_their_bones(self):
+        prep = self.fitted()
+        self.assertEqual([p.bone for p in prep.parts], [modelin.RIGGED])
+        part = prep.parts[0]
+        self.assertEqual([round(c, 6) for c in part.positions[0]], [10.0, -20.0, 30.0])     # the game's units and axes, no fitting
+        self.assertEqual(part.skin[2][0], ("arme_1", 200))
+        self.assertEqual(part.draw, 1)
+        self.assertEqual(part.triangles, [(0, 2, 1)])
+        self.assertTrue(prep.report["rigged"])
+
+    def test_a_size_is_said_not_used(self):
+        prep = modelin.prepare(self.model(), [], {"rigged": True, "root": "bip01"}, size=2.0)
+        self.assertEqual([round(c, 6) for c in prep.parts[0].positions[0]], [10.0, -20.0, 30.0])
+        self.assertTrue([n for n in prep.report["notes"] if "size 2" in n])
+
+    def test_the_mod_file_keeps_it_all(self):
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(self.fitted(tracks=True), glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+            self.assertEqual(unitmodel.glb_report(glb)["like"], "the model")
+        part = back.parts[0]
+        self.assertEqual((part.bone, part.draw, part.tracks), (modelin.RIGGED, 1, [3, 4, 5]))
+        self.assertEqual(part.skin[1], [("bip01 pelvis", 128), ("bip01 spine", 127)])
+        self.assertEqual(sum(w for _n, w in part.skin[2]), 255)
+
+    def test_a_kept_model_keeps_it_all(self):
+        """The build keeps a model between builds: a rigged one comes back as it went in, or the second build of a mod with soldiers stops."""
+        prep = self.fitted(tracks=True)
+        back, _textures = unitmodel._kept_read(unitmodel._kept_bytes(prep, []))
+        part, was = back.parts[0], prep.parts[0]
+        self.assertEqual((part.skin, part.tracks, part.draw, part.static), ([list(map(tuple, v)) for v in was.skin], was.tracks, was.draw, was.static))
+
+    def test_a_draw_with_no_bones_stays_so(self):
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(self.fitted(static=True), glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+        self.assertEqual((back.parts[0].bone, back.parts[0].static), (modelin.RIGGED_STATIC, True))
+
+    def test_the_vertex_bytes(self):
+        part = self.fitted(tracks=True).parts[0]
+        bones = unitmodel.Skeleton(["bip01 pelvis", "bip01 spine", "arme_1", "bip01 head"], [], [])
+        vb, fmt = unitmodel._rigged_buffer(part, [3, 2, 1, 0], bones)
+        self.assertEqual(fmt, unitmodel.TRACKED_2F)
+        self.assertEqual(len(vb.data), 3 * unitmodel.STRIDE)
+        third = vb.data[2 * unitmodel.STRIDE:]
+        self.assertEqual(third[15], 5)                                 # the track, the normal's 4th byte
+        self.assertEqual(list(third[16:20]), [200, 40, 10, 5])         # the weights
+        self.assertEqual(list(third[20:24]), [1, 2, 3, 0])             # each bone's number in the material's list
+
+    def test_weights_add_up_to_what_the_game_has(self):
+        got = modelin.bone_weights(["a", "b", "c"], [0, 1, 2, 0], [0.3333, 0.3333, 0.3334, 0.0])
+        self.assertEqual(sum(w for _n, w in got), 255)
+        self.assertEqual(modelin.bone_weights(["a", "b"], [0, 1, 0, 0], [1.0, 0.0, 0.0, 0.0]), [("a", 255)])
+
+
 class OwnPropellerList(unittest.TestCase):
     """The build lists the propellers a plane's own model has and its unit doesn't, from the model file, so nothing can be left behind."""
 

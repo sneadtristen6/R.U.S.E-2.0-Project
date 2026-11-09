@@ -29,8 +29,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import dxt, tgu1
-from .modelin import ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, glb_accessor, glb_document, \
-    glb_image, smooth_normals
+from .modelin import RIGGED, RIGGED_STATIC, ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, bone_weights, glb_accessor, \
+    glb_document, glb_image, smooth_normals
 from .ndf import Ndf, Value
 from .spk import Spk, SpkError
 from .tmst import Tgv, make_tgv
@@ -42,6 +42,9 @@ PACKS = "gen_5\\pack\\"
 SKINNED_2F = ("$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn__BlW_4ubn__BlIdx_4ub__TexCoord0_2f__"
               "TexPackedAtlas0_4ubn")
 STRIDE = 12 + 4 + 4 + 4 + 8 + 4
+TRACKED_2F = SKINNED_2F.replace("NormalIn01", "NormalAndChenilleIndexIn01")    # a tank's tracks: the normal's fourth byte is the track number
+STATIC_2WN = "$/M3D/System/VERTEXTYPE/TVertex__Position_3f__NormalIn01_4ubn__TexCoord0_2wn__TexPackedAtlas0_4ubn"  # (the game's own: a draw stored with no bones)
+UV_SIGNED = 32767.0        # a `_2wn` coordinate's scale (rusemod.spk)
 ROOT, TURRET = "chassis", "tourelle_01"
 PROPELLER_TYPE = "helice"   # a material type starting so draws a spinning-propeller disc (helice_1: the game's 43 planes)
 STANDIN_SIDE = 64
@@ -55,7 +58,8 @@ class UnitModelError(ModelError):
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
-                 facing: list | None = None, own_turret: bool = False, own_propellers: bool = False) -> dict:
+                 facing: list | None = None, own_turret: bool = False, own_propellers: bool = False,
+                 others: list | None = None) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
@@ -65,8 +69,10 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     for it): the hull sits on the copied hull's middle and the new model gets its own copy of the skeleton with the
     turret moved to where its turret is (moved_turret). `own_propellers` (the owner, 2026-11-09, after T65: "Yes, do it"): a
     plane's propellers stay where the model has them, as many as it has, each disc and its blades on bones of its own
-    (modelin.fit_discs; a unit copying one with no propellers is fitted as before). Returns the fitting's report (parts and
-    their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
+    (modelin.fit_discs; a unit copying one with no propellers is fitted as before). A unit with no hull bone to fit a model on
+    (a soldier, a towed gun) takes a model rigged to its own bones instead (modelin._prepare_rigged). `others`: the unit's other
+    models; a rigged model takes the place of those with the same bones too (the report's "also": a squad's riflemen and its bazooka
+    man). Returns the fitting's report (parts and their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import prepare, read_model, write_glb
@@ -75,11 +81,35 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
         raise UnitModelError(f"ZZ_Win.dat isn't in {game}")
     zz = Edat.open(str(path))
     try:
-        src = find_source(zz, source_model)
+        rigged = None
+        try:
+            src = find_source(zz, source_model)
+        except UnitModelError as refused:       # no hull bone to fit a model on (a soldier, a towed gun...): a model rigged to the unit's own bones needs none
+            rigged = read_model(model_file, skin=True)
+            used = {name for m in rigged.meshes for v in m.skin for name, _w in v}
+            if not used:
+                raise UnitModelError(f"{refused}. A model for this unit has to be rigged to its bones: open the unit in Blender from the Studio, change it there, and bring it back.") from None
+            src = find_source(zz, source_model, rigged=True)
+            wrong = sorted(used - set(src.skeleton.names))
+            if wrong:
+                raise UnitModelError(f"its bones aren't {src.model}'s: {', '.join(wrong[:6])}") from None
+            also = []
+            for other in others or []:
+                try:
+                    found = find_source(zz, other, rigged=True)
+                except UnitModelError:
+                    continue
+                if found.model != src.model and found.skeleton.names == src.skeleton.names:
+                    also.append(found.model)
     finally:
         zz.close()
     here = Path(model_file).resolve().parent
     look = ([Path(pictures)] if pictures else []) + [here, here.parent]
+    if rigged is not None:
+        prep = prepare(rigged, look, dict(src.like), size=size, side=side)
+        prep.report["also"] = also
+        write_glb(prep, out, src.model)
+        return dict(prep.report, like=src.model)
     like = dict(src.like, aircraft=aircraft, **({"facing": list(facing)} if facing else {}))
     can_move = own_turret and TURRET in src.skeleton.names
     if can_move:
@@ -353,9 +383,10 @@ def packs_holding(zz, model: str, names: list | None = None) -> tuple[str, dict,
     return model, meshes, skeletons
 
 
-def find_source(zz, model: str, names: list | None = None) -> Source:
+def find_source(zz, model: str, names: list | None = None, rigged: bool = False) -> Source:
     """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
-    needs. UnitModelError when no pack holds it, or it has no bones. `names`: as packs_holding takes it."""
+    needs. UnitModelError when no pack holds it, or it has no bones. `names`: as packs_holding takes it. `rigged`: for a
+    model rigged to this skeleton (modelin._prepare_rigged), which needs no hull bone: any model the game draws with bones."""
     model, meshes, skeletons = packs_holding(zz, model, names)
     first = MeshPack.read(next(iter(meshes.values())))
     skel = first.skeletons[first.items[model][2]] if first.items[model][2] != NONE else None
@@ -365,6 +396,13 @@ def find_source(zz, model: str, names: list | None = None) -> Source:
     if skel is None:
         raise UnitModelError(f"{model} has no skeleton: only units with bones (vehicles) can take a model yet")
     bones = read_skeleton(skel)
+    if rigged:
+        spk = Spk(next(iter(meshes.values())))
+        mats = spk.materials()
+        body = next((t for p in spk.model(model) for t in list(mats[p.material].get("textures", {}).values())[:1]), None)
+        if body is None or not bones.names:
+            raise UnitModelError(f"{model} draws nothing to fit a model to")
+        return Source(model, meshes, skeletons, bones, {"rigged": True, "root": bones.names[0]}, body, {"mats": mats, "disc_bones": set()})
     if ROOT not in bones.names:
         raise UnitModelError(f"{model}'s skeleton has no {ROOT} bone")
     spk = Spk(next(iter(meshes.values())))
@@ -417,7 +455,7 @@ def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
 
 # --- the mod's file back ---
 def glb_report(path: Path) -> dict:
-    """The fitting's report a mod's .glb carries (write_glb), from the file's JSON part alone, the pictures not read; {} for a file that has none."""
+    """The fitting's report a mod's .glb carries (write_glb), with "like": the game's model it was fitted to, from the file's JSON part alone, the pictures not read; {} for a file that has none."""
     try:
         with open(path, "rb") as f:
             head = f.read(20)
@@ -429,14 +467,15 @@ def glb_report(path: Path) -> dict:
             doc = json.loads(f.read(length))
     except (OSError, ValueError, struct.error):
         return {}
-    return (doc.get("asset", {}).get("extras") or {}).get("rusemod_report") or {}
+    extras = doc.get("asset", {}).get("extras") or {}
+    return dict(extras.get("rusemod_report") or {}, **({"like": extras["rusemod_like"]} if extras.get("rusemod_like") else {}))
 
 
 def read_mod_glb(path: Path) -> Prepared:
     """A mod's files/models/<unit>.glb (rusemod.modelin.write_glb's, or the same saved again from Blender): parts by
     node name (the bone), a part per primitive, in the game's axes again; its pictures with their alpha (the image
     named in the material's extras, else a plain one)."""
-    from .gltf import MIRROR, SCALE
+    from .gltf import MIRROR, SCALE, TRACK_ATTRIBUTE
     from .modelin import PLAIN_ALPHA, load_picture
     try:
         doc, binary = glb_document(Path(path).read_bytes())
@@ -496,7 +535,17 @@ def read_mod_glb(path: Path) -> Prepared:
                     nrm = smooth_normals(pos, tris)
                 uvs = glb_accessor(doc, binary, prim["attributes"]["TEXCOORD_0"]) \
                     if "TEXCOORD_0" in prim["attributes"] else [(0.0, 0.0)] * len(pos)
-                parts.append(Part(bone, pic_of.get(prim.get("material", -1), -1), pos, nrm, list(uvs), tris))
+                part = Part(bone, pic_of.get(prim.get("material", -1), -1), pos, nrm, list(uvs), tris)
+                if bone in (RIGGED, RIGGED_STATIC):   # each point on its own bones, as the file has them
+                    extras = prim.get("extras") or {}
+                    part.draw, part.static, part.skin = extras.get("rusemod_draw"), bone == RIGGED_STATIC, [[] for _ in pos]
+                    if TRACK_ATTRIBUTE in prim["attributes"]:
+                        part.tracks = [int(t[0]) for t in glb_accessor(doc, binary, prim["attributes"][TRACK_ATTRIBUTE])]
+                    if bone == RIGGED:
+                        names = [doc["nodes"][j].get("name", "") for j in doc["skins"][node["skin"]]["joints"]]
+                        part.skin = [bone_weights(names, js, ws) for js, ws in zip(glb_accessor(doc, binary, prim["attributes"]["JOINTS_0"]),
+                                                                                  glb_accessor(doc, binary, prim["attributes"]["WEIGHTS_0"]))]
+                parts.append(part)
         for c in node.get("children", []):
             visit(c, matrix)
 
@@ -628,6 +677,26 @@ def _vertex_buffer(part: Part, local: int) -> Buffer:
     return Buffer(data, len(data), len(part.positions), 0, 0)
 
 
+def _rigged_buffer(part: Part, bone_list: list, bones: Skeleton) -> tuple[Buffer, str]:
+    """A rigged part's points in the game's vertex format: each point on its own bones (their numbers in the material's list `bone_list`, which has them all by now), a tank's track number in the
+    normal's fourth byte; a draw the game stores with no bones in its format with none. Returns (the buffer, its format's name)."""
+    fmt = (STATIC_2WN.replace("NormalIn01", "NormalAndChenilleIndexIn01") if part.tracks else STATIC_2WN) if part.static else TRACKED_2F if part.tracks else SKINNED_2F
+    out = bytearray()
+    for i, ((x, y, z), (nx, ny, nz), (u, v)) in enumerate(zip(part.positions, part.normals, part.uvs)):
+        out += struct.pack("<3f", x, y, z)
+        out += bytes(max(0, min(255, round((c + 1.0) * 127.5))) for c in (nx, ny, nz)) + bytes((part.tracks[i] if part.tracks else 0,))
+        if part.static:
+            out += struct.pack("<2h", round(u * UV_SIGNED), round((v - 1.0) * UV_SIGNED))
+        else:
+            pairs = part.skin[i][:4]
+            out += bytes(w for _n, w in pairs) + bytes(4 - len(pairs))
+            out += bytes(bone_list.index(bones.names.index(n)) for n, _w in pairs) + bytes(4 - len(pairs))
+            out += struct.pack("<2f", u, v - 1.0)
+        out += bytes((0, 0, 255, 255))
+    data = bytes(out)
+    return Buffer(data, len(data), len(part.positions), 0, 0), fmt
+
+
 def _index_buffer(part: Part) -> Buffer:
     flat = [i for t in part.triangles for i in t]
     if len(part.positions) <= 0xFFFF:
@@ -682,7 +751,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     else:
         mats, disc_bones = memo["mats"], memo["disc_bones"]
     own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
-    body_number = next(m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {}))
+    body_number = next((m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {})), own[0])
     disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
 
     def material(number: int):
@@ -703,7 +772,12 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     listed: dict = {}   # each copy's bone list: the copied material's, then the bones its parts are on that it hasn't
     draws = []
     for part in prep.parts:
-        look = "disc" if (part.bone in disc_bones or part.bone.startswith("helice_hs_")) and "disc" in looks else "body"
+        if part.skin is not None:       # a rigged part keeps the material of the game's draw it came from
+            look = ("draw", own[part.draw] if part.draw is not None and 0 <= part.draw < len(own) else body_number)
+            if look not in looks:
+                looks[look] = material(look[1])
+        else:
+            look = "disc" if (part.bone in disc_bones or part.bone.startswith("helice_hs_")) and "disc" in looks else "body"
         base, old, remap = looks[look]
         if (look, part.picture) not in material_of:
             image = images[part.picture] if part.picture >= 0 else old
@@ -712,6 +786,25 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
             roots.append(n)
             material_of[(look, part.picture)] = len(roots) - 1
             listed[len(roots) - 1] = list(remap)
+        if part.skin is not None:
+            bone_list = listed[material_of[(look, part.picture)]]
+            for pairs in ([] if part.static else part.skin):
+                for name, _w in pairs:
+                    if name not in bones.names:
+                        raise UnitModelError(f"{source}'s skeleton has no bone {name} (a point of the .glb leans on it)")
+                    number = bones.names.index(name)
+                    if number not in bone_list:
+                        if len(bone_list) >= MOST_BONES:
+                            raise UnitModelError(f"the material of {source} lists {len(bone_list)} bones, as many as the game's longest list; {name} would be one more")
+                        bone_list.append(number)
+            vb, kind = _rigged_buffer(part, bone_list, bones)
+            if kind.encode() not in [f.split(b"\0", 1)[0] for f in src.formats]:
+                src.formats.append(kind.encode().ljust(256, b"\0"))
+            vb.kind = [f.split(b"\0", 1)[0] for f in src.formats].index(kind.encode())
+            src.vbs.append(vb)
+            src.ibs.append(_index_buffer(part))
+            draws.append((0, material_of[(look, part.picture)], len(src.ibs) - 1, len(src.vbs) - 1, 0xFFFF, 0xCDCD))
+            continue
         # the copied model has no such bone (2026-10-30, every era unit's model: the P-40 Warhawk (AVG)'s wing guns
         # on the Dewoitine D.520, the M274 Mule's 106 mm gun on the Jeep): the part rides on the hull bone, where
         # it sits on the model; the copied unit has nothing that would turn it
@@ -777,15 +870,16 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     `textures`: its pictures already made into the game's textures, [(texture, stand-in)] in prep.pictures' order
     (KeptModels: a model kept from an earlier build, its pictures then without their pixels)."""
     earlier = {k.lower(): v for k, v in (earlier or {}).items()}
+    rigged = bool(prep.report.get("rigged"))
     if batch is None:
-        src = find_source(zz, source_model)
+        src = find_source(zz, source_model, rigged=rigged)
     else:
         sources = batch.setdefault("sources", {})
         key = source_model.replace("/", "\\").lower()
         if key not in sources:
             if "names" not in batch:
                 batch["names"] = pack_names(zz)
-            sources[key] = find_source(zz, source_model, batch["names"])
+            sources[key] = find_source(zz, source_model, batch["names"], rigged=rigged)
         src = sources[key]
     new = model_name(src.model, unit)
 
@@ -1110,6 +1204,8 @@ def _kept_start_bytes(prep: Prepared) -> bytes:
                 raise ValueError("a part's points aren't all as wide")
             row.append(len(seq))
             blobs.append(array(kind, (x for v in seq for x in v)).tobytes())
+        if p.skin is not None:      # (a rigged part's own: each point's bones)
+            row.append({"skin": p.skin, "tracks": p.tracks, "draw": p.draw, "static": p.static})
         parts.append(row)
     head = json.dumps({"report": prep.report, "pictures": [[n, w, h] for n, w, h, _px in prep.pictures],
                        "parts": parts}).encode("utf-8")
@@ -1151,6 +1247,9 @@ def _kept_read(record: bytes) -> tuple[Prepared, list] | None:
                     return None
                 seqs.append(list(zip(*[iter(a.tolist())] * width)))
             parts.append(Part(bone, picture, *seqs))
+            if len(counts) > 4:
+                rig = counts[4]
+                parts[-1].skin, parts[-1].tracks, parts[-1].draw, parts[-1].static = [[tuple(b) for b in v] for v in rig["skin"]], rig["tracks"], rig["draw"], rig["static"]
         textures = []
         for _p in head["pictures"]:
             sizes = struct.unpack_from("<QQ", raw, at)

@@ -1418,7 +1418,9 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     out: dict = {}
     for unit, (glb, mod_id) in sorted(wanted.items()):
-        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result)
+        from .unitmodel import glb_report
+        report = glb_report(glb)
+        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result, report.get("like") if report.get("rigged") else None, report.get("also"))
         if source is None:
             continue
         _own_propeller_list(run, by_name[unit], unit, glb, f"{mod_id}: files/models/{unit}.glb", result)
@@ -1593,15 +1595,24 @@ def _point_at_copies(run, name: str, copies: dict) -> int:
                for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
 
 
-def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult) -> str | None:
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None) -> str | None:
     """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
     model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
-    part names no model file."""
+    part names no model file. `rigged_on`: the game's model a rigged model was fitted to (any kind of unit: a soldier's model is in parts of other names): every
+    part of the unit naming it, or one of `also` (the unit's other models with the same bones: a squad's bazooka man), names the unit's own."""
     from .patch import Inline, Ref, _fresh
+    from .unitmodel import model_key
     name = by_name.get(unit)
     if name is None:
         # not a game rule: a model for a unit no mod in the set makes
         result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+        return None
+    if rigged_on:
+        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        if _point_at_copies(run, name, {model_key(m): own for m in [rigged_on, *(also or [])]}):
+            return rigged_on
+        # not a game rule: what our build supports (a part of the unit naming the model it was fitted to)
+        result.findings.append(Finding("error", f"{where}: no part of {unit} names {rigged_on}, the model it was fitted to"))
         return None
     gfx = run.game.objects[name].props.get("GfxDescriptor")
     mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None

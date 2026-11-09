@@ -8167,7 +8167,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         for model in found:
             try:
                 report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
-                                      own_turret=bool(own_turret), own_propellers=bool(own_propellers),
+                                      own_turret=bool(own_turret), own_propellers=bool(own_propellers), others=found,
                                       **({"facing": facing} if facing else {}))
                 break
             except UnitModelError as exc:     # this model has no bones or hull to fit to: try the next one

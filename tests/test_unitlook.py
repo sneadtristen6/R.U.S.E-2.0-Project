@@ -546,7 +546,7 @@ class StudioLook(unittest.TestCase):
         self.api._edits = lambda: Edits()
         calls = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False):
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False, others=None):
             calls.append((source, Path(file).name, size, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
@@ -598,7 +598,7 @@ class StudioLook(unittest.TestCase):
         calls = []
 
         def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None,
-                        own_turret=False, own_propellers=False):
+                        own_turret=False, own_propellers=False, others=None):
             calls.append((Path(file).name, size, aircraft, facing, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
@@ -691,7 +691,7 @@ class StudioLook(unittest.TestCase):
         self.api._look_models = lambda a: ([driver, jeep], [])
         tried = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False):
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False, others=None):
             tried.append(source)
             if source == driver:
                 raise UnitModelError(f"{driver}'s skeleton has no chassis bone")

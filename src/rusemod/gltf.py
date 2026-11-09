@@ -32,6 +32,7 @@ SCALE = 0.01          # game model units -> glTF metres (a soldier is about 312 
 MIRROR = True         # the game's (x, y, z) -> glTF (x, z, y); False: (x, z, -y)
 PROPELLER = "helice"  # material types starting with this are propeller discs
 FLOAT, UBYTE, USHORT, UINT = 5126, 5121, 5123, 5125
+TRACK_ATTRIBUTE = "_RUSE_TRACK"   # a tank's track number per point (in the game's vertex: the normal's 4th byte)
 
 
 def _point(x: float, y: float, z: float, scale: float = SCALE) -> tuple[float, float, float]:
@@ -179,6 +180,8 @@ def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes]
                 ws.append(tuple(wx / total for wx in w))
             attrs["JOINTS_0"] = g.accessor(js, "VEC4", USHORT)
             attrs["WEIGHTS_0"] = g.accessor(ws, "VEC4", FLOAT)
+        if part.tracks:      # a tank's track numbers, read back by modelin (a custom attribute; 3D tools leave it alone)
+            attrs[TRACK_ATTRIBUTE] = g.accessor([(t, 0, 0, 0) for t in part.tracks], "VEC4", UBYTE)
         tri = list(part.indices)
         if MIRROR:
             for k in range(0, len(tri) - 2, 3):
@@ -186,7 +189,7 @@ def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes]
         prim = {"attributes": attrs, "indices": g.accessor(tri, "SCALAR", UINT if n > 65535 else USHORT, 34963),
                 "extras": {"rusemod_draw": d, "rusemod_material": part.material,
                            "rusemod_material_name": mats[part.material]["name"] if part.material < len(mats) else "",
-                           "rusemod_texture": tex or ""}}
+                           "rusemod_texture": tex or "", **({"rusemod_static": True} if not part.bones else {})}}
         if tex in texture_of:
             prim["material"] = texture_of[tex]
         kind = mats[part.material].get("type", "") if part.material < len(mats) else ""
