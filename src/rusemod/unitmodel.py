@@ -74,7 +74,7 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     models; a rigged model takes the place of those with the same bones too (the report's "also": a squad's riflemen and its bazooka
     man). `move` ([forward, right, up] in the game's model units, the owner's pick 2026-11-09, the brief's gap 1): the fitted model moved that far; with `own_turret` its turret's
     bones go with it, so it still turns where the model's turret is (a rigged model stays where its bones are: said in the report's notes). Returns the fitting's report (parts and
-    their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] where the unit it copies stands and how long it is)."""
+    their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] the unit's own place, where the game centres its selection ring, and how long the unit it copies is)."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import check_move, prepare, read_model, write_glb
@@ -125,7 +125,8 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     prep = prepare(read_model(model_file, blades=keep_propellers), look, like, size=size, side=side)
     if own_turret and not can_move:     # said, not dropped: it has no turret bone to move, so it's fitted as before
         prep.report["notes"] = list(prep.report.get("notes") or []) + [f"{src.model} has no {TURRET} bone to move"]
-    prep.report["stands"] = [float(src.like.get("middle", src.like["pivot"][0])), 0.0, float(src.like["ground"]), float(src.like["length"])]
+    # (the unit's own place: the game's selection ring is a circle on the unit with no place of its own, TGfxDescriptorCircle "halo_unite": Radius and how it shows, no offset)
+    prep.report["stands"] = [0.0, 0.0, float(src.like["ground"]), float(src.like["length"])]
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
 
