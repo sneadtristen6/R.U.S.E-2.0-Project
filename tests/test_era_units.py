@@ -134,6 +134,7 @@ class EraUnits(WithMod):
         with mock.patch.object(self.api, "model_import", return_value={"model": {"parts": []}}) as fitted:
             self.api.era_unit_add("WWI|USA|Mark VIII Liberty", 0, 10)
         self.assertEqual(fitted.call_args.kwargs.get("facing"), [0, 1])
+        self.assertIs(fitted.call_args.kwargs.get("own_turret"), False)     # the era units' models stay placed as tested
 
     def test_started_from_another_unit_with_its_own_name_and_price(self):
         folder = Path(self.api.new_mod("Own values")["current"])

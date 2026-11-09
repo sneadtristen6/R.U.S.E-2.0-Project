@@ -46,8 +46,8 @@ On the new unit's page, under **Its own model**:
    real lengths).
 2. Click **Import model…** and pick the .3ds or .glb.
 
-The Studio fits it to the unit: facing forward (the way its gun points), its length, its turret ring on the copied
-unit's turret, standing on the ground. Its pictures become textures of its own. The page shows it in 3D, with which
+The Studio fits it to the unit: facing forward (the way its gun points), its length, placed where the copied unit
+stands, its turret turning where it is on your model, standing on the ground. Its pictures become textures of its own. The page shows it in 3D, with which
 parts turn with the turret. If a picture wasn't found, it says which: put the pictures beside the model and import
 again.
 

@@ -8128,13 +8128,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return mod / MODELS / f"{_tail(unit.target)}.glb" if unit is not None and mod is not None else None
 
     def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False,
-                     facing: list | None = None) -> dict:
+                     facing: list | None = None, own_turret: bool = True) -> dict:
         """Give a new unit a model of its own: `file` (a .3ds with its pictures beside it, or a .glb; asked for when
-        not given) fitted to the model of the unit it copies (its length times `size`, its turret on the copy's
-        turret point; `aircraft`: a plane, its tail fin at the back; `facing` [axis, sign]: which way it faces, when
-        known, as for an era unit's model) and saved as the mod's files/models/<the unit's name>.glb, which the build
-        writes into the game beside the copied model. Returns {"model": what was made (parts, counts, pictures,
-        "missing"), **look()}."""
+        not given) fitted to the model of the unit it copies (its length times `size`; `aircraft`: a plane, its tail
+        fin at the back; `facing` [axis, sign]: which way it faces, when known, as for an era unit's model) and saved
+        as the mod's files/models/<the unit's name>.glb, which the build writes into the game beside the copied model.
+        `own_turret` (the owner, 2026-11-08, after T63: "Yes, do it"): its hull on the copied hull's middle and a
+        skeleton of its own, the turret turning where the model's turret is, so it sits in its selection ring; False:
+        its turret on the copied unit's turret, as a model fitted before that was (the era units' library models and
+        a Resize of such a model stay so). Returns {"model": what was made (parts, counts, pictures, "missing"),
+        **look()}."""
         from rusemod.modelin import ModelError
         from rusemod.unitmodel import UnitModelError, import_model
         target = self._own_model_file(address)
@@ -8163,7 +8166,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         for model in found:
             try:
                 report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
-                                      **({"facing": facing} if facing else {}))
+                                      own_turret=bool(own_turret), **({"facing": facing} if facing else {}))
                 break
             except UnitModelError as exc:     # this model has no bones or hull to fit to: try the next one
                 first_error = first_error or exc
@@ -8174,8 +8177,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
-                                      **({"facing": list(facing)} if facing else {}), "report": report}, indent=1),
-                          encoding="utf-8")
+                                      "own_turret": bool(own_turret), **({"facing": list(facing)} if facing else {}),
+                                      "report": report}, indent=1), encoding="utf-8")
         return {"model": report, **self.look(address)}
 
     # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
@@ -8245,7 +8248,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def model_resize(self, address: str, size: float) -> dict:
         """Fit a new unit's own model again at `size` from the file it was made from (no file to pick), the way it
-        faced and whether it's a plane kept. Returns model_import()'s answer."""
+        faced, whether it's a plane and how it was placed kept (a model fitted before there was own_turret has none in
+        its record, and stays as it was). Returns model_import()'s answer."""
         record = self._own_model_record(address)
         if record is None:
             # not a game rule: only a model the Studio fitted has a file to fit again
@@ -8255,7 +8259,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
-        return self.model_import(address, file, size, bool(aircraft), facing=self._pinned_facing(record))
+        return self.model_import(address, file, size, bool(aircraft), facing=self._pinned_facing(record),
+                                 own_turret=bool(record.get("own_turret")))
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:

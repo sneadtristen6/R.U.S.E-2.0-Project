@@ -63,7 +63,8 @@ code. The full words: [CLAUDE.md](../CLAUDE.md).
   making it never changes the original's (seen in the game; Studio 0.9.6 fixed a crash when such a unit was built).
 - **Import model…** (a new unit's page, under **Its own model**; Studio 0.9.6): a .3ds (pictures beside it or in the
   folder above) or a .glb from Blender or any 3D tool becomes the new unit's own 3D model, fitted to the unit it copies
-  (length times **Size**, its turret ring on that unit's turret, parts named turret/barrel turn with the turret).
+  (length times **Size**, placed where that unit stands, its turret turning where it is on the model, parts named
+  turret/barrel turn with the turret).
   Saved as `files/models/<the unit's name>.glb`; **Use the copied unit's model** removes it. Seen in the game: an M1
   Abrams beside the Sherman (the M1 Abrams mod in Ruse-Mods). Early: tracks and wheels don't turn, the gun flash and
   wreck are the copied unit's. How-to: the wiki's Import a model page.
