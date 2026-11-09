@@ -519,8 +519,8 @@ class StudioLook(unittest.TestCase):
         self.api._edits = lambda: Edits()
         calls = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False):
-            calls.append((source, Path(file).name, size, own_turret))
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False):
+            calls.append((source, Path(file).name, size, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
             return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": []}
@@ -535,7 +535,7 @@ class StudioLook(unittest.TestCase):
             with self.assertRaises(StudioError):
                 self.api.model_import(address, str(model), 21)  # too big (sizes go from 0.05 to 20)
         own = self.mod / "files" / "models" / "Descriptor_Unit_R2_New.glb"
-        self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36, True)]))
+        self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36, True, True)]))
         self.assertEqual((res["model"]["vertices"], res["model"]["file"]), (10, "tank.3ds"))
         self.assertEqual(self.api.look(address)["own_model"]["vertices"], 10)
         shown = self.api.unit_preview(address)["models"]
@@ -571,8 +571,8 @@ class StudioLook(unittest.TestCase):
         calls = []
 
         def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None,
-                        own_turret=False):
-            calls.append((Path(file).name, size, aircraft, facing, own_turret))
+                        own_turret=False, own_propellers=False):
+            calls.append((Path(file).name, size, aircraft, facing, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
             # the report writes the axis as a letter, as rusemod.modelin.report does
@@ -592,16 +592,16 @@ class StudioLook(unittest.TestCase):
             self.api.model_resize(tank, 1.2)
             # the pin kept, and the way the rules found as a pin the importer takes ([1, -1], not ["y", -1]: passed
             # as the report writes it, the importer guessed again and turned the J-16 round, 2026-10-10)
-            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1], True), ("jet.glb", 1.2, False, [1, -1], True)])
+            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1], True, True), ("jet.glb", 1.2, False, [1, -1], True, True)])
             calls.clear()
             # a model fitted before there was own_turret has none in its record: a Resize leaves it placed as it was
             import json
             kept = self.api._own_model_file(tank).with_suffix(".json")
             record = json.loads(kept.read_text(encoding="utf-8"))
-            del record["own_turret"]
+            del record["own_turret"], record["own_propellers"]
             kept.write_text(json.dumps(record), encoding="utf-8")
             self.api.model_resize(tank, 1.2)
-            self.assertEqual(calls, [("jet.glb", 1.2, False, [1, -1], False)])
+            self.assertEqual(calls, [("jet.glb", 1.2, False, [1, -1], False, False)])
             calls.clear()
             pinned = self.api._pinned_facing  # a record the first Resize wrote kept the letter: read as the pin too
             self.assertEqual([pinned({"facing": ["x", 1]}), pinned({"report": {"facing": ["y", -1]}}),
@@ -664,7 +664,7 @@ class StudioLook(unittest.TestCase):
         self.api._look_models = lambda a: ([driver, jeep], [])
         tried = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False):
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False):
             tried.append(source)
             if source == driver:
                 raise UnitModelError(f"{driver}'s skeleton has no chassis bone")

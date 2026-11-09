@@ -22,6 +22,7 @@ A stand-in is found by an 8-byte key: the 64-bit CRC (polynomial 0x42F0E1EBA9EA3
 name, true of all 2,822 stand-ins in the game's 74 stand-in packs (checked 2026-10-04)."""
 from __future__ import annotations
 
+import json
 import math
 import struct
 from dataclasses import dataclass, field
@@ -54,7 +55,7 @@ class UnitModelError(ModelError):
 
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
-                 facing: list | None = None, own_turret: bool = False) -> dict:
+                 facing: list | None = None, own_turret: bool = False, own_propellers: bool = False) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
@@ -62,8 +63,10 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     it faces instead of working it out (an era unit's library model is already in the game's axes, its front +x: a
     facing pinned by hand when it was fitted stays). `own_turret` (not tried in the game yet, nothing in the apps asks
     for it): the hull sits on the copied hull's middle and the new model gets its own copy of the skeleton with the
-    turret moved to where its turret is (moved_turret). Returns the fitting's report (parts and their roles, facing,
-    scale, counts, pictures, "missing": pictures not found)."""
+    turret moved to where its turret is (moved_turret). `own_propellers` (the owner, 2026-11-09, after T65: "Yes, do it"): a
+    plane's propellers stay where the model has them, as many as it has, each disc and its blades on bones of its own
+    (modelin.fit_discs; a unit copying one with no propellers is fitted as before). Returns the fitting's report (parts and
+    their roles, facing, scale, counts, pictures, "missing": pictures not found)."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import prepare, read_model, write_glb
@@ -81,7 +84,10 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     can_move = own_turret and TURRET in src.skeleton.names
     if can_move:
         like["own_turret"] = True
-    prep = prepare(read_model(model_file), look, like, size=size, side=side)
+    keep_propellers = own_propellers and bool(src.like.get("propellers"))
+    if keep_propellers:
+        like["own_propellers"] = True
+    prep = prepare(read_model(model_file, blades=keep_propellers), look, like, size=size, side=side)
     if own_turret and not can_move:     # said, not dropped: it has no turret bone to move, so it's fitted as before
         prep.report["notes"] = list(prep.report.get("notes") or []) + [f"{src.model} has no {TURRET} bone to move"]
     write_glb(prep, out, src.model)
@@ -410,6 +416,22 @@ def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
 
 
 # --- the mod's file back ---
+def glb_report(path: Path) -> dict:
+    """The fitting's report a mod's .glb carries (write_glb), from the file's JSON part alone, the pictures not read; {} for a file that has none."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(20)
+            if len(head) < 20 or head[:4] != b"glTF":
+                return {}
+            length, kind = struct.unpack_from("<I4s", head, 12)
+            if kind != b"JSON":
+                return {}
+            doc = json.loads(f.read(length))
+    except (OSError, ValueError, struct.error):
+        return {}
+    return (doc.get("asset", {}).get("extras") or {}).get("rusemod_report") or {}
+
+
 def read_mod_glb(path: Path) -> Prepared:
     """A mod's files/models/<unit>.glb (rusemod.modelin.write_glb's, or the same saved again from Blender): parts by
     node name (the bone), a part per primitive, in the game's axes again; its pictures with their alpha (the image

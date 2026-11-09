@@ -895,7 +895,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
     arrays = whole_arrays()
-    if arrays and not like.get("own_propellers"):      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
+    if arrays:      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
         prep = arrays.prepare(sys.modules[__name__], model, folders, like, size, side)
         if prep is not None:
             return fit_discs(prep, like)

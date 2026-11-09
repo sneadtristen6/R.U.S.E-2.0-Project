@@ -58,8 +58,10 @@ and, for an era unit, **Real life** marked; click **Resize** and the model is fi
 several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
 shows from the next build.
 
-**Planes:** a plane opened in Blender from the Studio and brought back keeps its spinning propellers and faces
-forward. Seen in the game.
+**Planes:** a plane opened in Blender from the Studio and brought back faces forward and keeps its propellers where
+your model has them, as many as it has, whatever the plane it copies had: blades on the ground, spinning discs in the
+air. Seen in the game. A model from anywhere else keeps its propellers as it drew them, standing still: the importer
+can't tell yet which parts of it are propellers.
 
 ## 4. Its card, then test
 

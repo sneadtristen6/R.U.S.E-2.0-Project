@@ -1421,6 +1421,7 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
         source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result)
         if source is None:
             continue
+        _own_propeller_list(run, by_name[unit], unit, glb, f"{mod_id}: files/models/{unit}.glb", result)
         out[unit] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
                                                f"beside {source}"))
@@ -1629,6 +1630,50 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
     if figurine is not None and model_key(figurine) != model_key(source):
         _point_at_copies(run, name, {model_key(figurine): own})
     return source
+
+
+def _own_propeller_list(run, name: str, unit: str, glb, where: str, result: BuildResult) -> None:
+    """A plane's own model with propellers its unit doesn't list (the model file's report, "own_propellers": modelin.fit_discs): each gets an entry in the unit's
+    list of propellers (the game spins only what is listed, by number: exe 0x14099b5f0 builds the bone names from it), a copy of the list's first entry with its
+    own number, as T64 and T65 had it by hand in the game. Worked out here from the file, so it follows the model: another import, a removed model or unit leave nothing behind."""
+    from .patch import Inline, ListV, MapV, Ref, Text, _fresh
+    from .unitmodel import glb_report
+    places = glb_report(glb).get("own_propellers")
+    if not places:
+        return
+    objects = run.game.objects
+
+    def of(value):
+        return value.obj if isinstance(value, Inline) else objects.get(value.target) if isinstance(value, Ref) else None
+
+    gfx = objects[name].props.get("GfxDescriptor")
+    parts = gfx.obj.props.get("SousElements") if isinstance(gfx, Inline) else None
+    pairs = parts.pairs if isinstance(parts, MapV) else []
+    at = next((k for k, pair in enumerate(pairs) if of(pair[1]) is not None and "ListeHelice" in of(pair[1]).props), None)
+    if at is None:
+        # not a game rule: what our build supports (the list where every plane of the game has it)
+        result.findings.append(Finding("warning", f"{where}: {unit}'s model has its own propellers, but the unit has no list of propellers to put them on: they won't spin"))
+        return
+    if isinstance(pairs[at][1], Ref):       # (a part shared with another: the copy gets its own, and the other keeps its list)
+        pairs[at] = (pairs[at][0], Inline(_fresh(of(pairs[at][1]))))
+    holder = of(pairs[at][1])
+    old = holder.props["ListeHelice"]
+    entries = [of(v) for v in old.items] if isinstance(old, ListV) else []
+    listed = {e.props["HeliceNumber"].value for e in entries if e is not None and isinstance(e.props.get("HeliceNumber"), Text)}
+    first = next((e for e in entries if e is not None and isinstance(e.props.get("HeliceNumber"), Text)), None)
+    missing = [str(p[0]) for p in places if str(p[0]) not in listed]
+    if not missing:
+        return
+    if first is None:
+        result.findings.append(Finding("warning", f"{where}: {unit}'s list of propellers has no entry to copy: propellers {missing} won't spin"))
+        return
+    added = []
+    for number in missing:
+        entry = _fresh(first)
+        entry.props["HeliceNumber"] = Text(first.props["HeliceNumber"].kind, number)
+        added.append(Inline(entry))
+    holder.props["ListeHelice"] = ListV(list(old.items) + added)
+    result.findings.append(Finding("note", f"{where}: {unit} lists {len(added)} more propeller(s), numbers {', '.join(missing)}"))
 
 
 FIGURINE = ("GfxDescriptorIcone", "PawnDescriptor", "DescriptorFigurine", "MeshDescriptor")

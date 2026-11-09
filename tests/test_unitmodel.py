@@ -1091,6 +1091,73 @@ GUN = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02,
                strings=[GUN_FILE, GUN_FIGURINE], exports={0: "Gun"}, compress=True)
 
 
+class OwnPropellerList(unittest.TestCase):
+    """The build lists the propellers a plane's own model has and its unit doesn't, from the model file, so nothing can be left behind."""
+
+    def listing(self, places, listed=("1",), shared=False, holder=True):
+        from types import SimpleNamespace
+        from unittest import mock
+
+        from rusemod.build import _own_propeller_list
+        from rusemod.patch import ListV, MapV, Obj, Text
+        entries = [Inline(Obj("TGfxDescriptorHelice", {"HeliceNumber": Text("string", n), "SensRotationADroite": Text("string", "kept")})) for n in listed]
+        self.pack = Obj("TGfxDescriptorAvionPack", {"ListeHelice": ListV(entries)} if holder else {})
+        objects = {}
+        if shared:
+            objects["$/Shared"] = self.pack
+        gfx = Obj("TGfx", {"SousElements": MapV([(Text("string", "a"), Ref("$/Shared") if shared else Inline(self.pack))])})
+        objects["$/Plane"] = Obj("TUnit", {"GfxDescriptor": Inline(gfx)})
+        run = SimpleNamespace(game=SimpleNamespace(objects=objects))
+        result = SimpleNamespace(findings=[])
+        with mock.patch("rusemod.unitmodel.glb_report", lambda _path: {"own_propellers": places} if places else {}):
+            _own_propeller_list(run, "$/Plane", "Plane", Path("x.glb"), "m: x", result)
+        value = gfx.props["SousElements"].pairs[0][1]
+        return value, result.findings
+
+    @staticmethod
+    def numbers(value):
+        return [v.obj.props["HeliceNumber"].value for v in value.obj.props["ListeHelice"].items]
+
+    def test_a_propeller_the_unit_does_not_list_is_added_as_a_copy_of_the_first(self):
+        value, said = self.listing([[1, 0.0, 0.0, 0.0], [2, 1.0, 1.0, 1.0], [3, 2.0, 2.0, 2.0]])
+        self.assertEqual(self.numbers(value), ["1", "2", "3"])
+        self.assertEqual(value.obj.props["ListeHelice"].items[2].obj.props["SensRotationADroite"].value, "kept")
+        self.assertIsNot(value.obj.props["ListeHelice"].items[2].obj, value.obj.props["ListeHelice"].items[0].obj)
+        self.assertEqual([(f.level, "numbers 2, 3" in f.message) for f in said], [("note", True)])
+
+    def test_one_it_lists_already_is_left(self):
+        value, said = self.listing([[1, 0.0, 0.0, 0.0]], ("1", "2"))
+        self.assertEqual(self.numbers(value), ["1", "2"])
+        self.assertEqual(said, [])
+
+    def test_a_model_with_no_propellers_of_its_own_changes_nothing(self):
+        value, said = self.listing(None)
+        self.assertEqual(self.numbers(value), ["1"])
+        self.assertEqual(said, [])
+
+    def test_a_shared_part_is_copied_and_the_other_plane_keeps_its_list(self):
+        value, _said = self.listing([[1, 0.0, 0.0, 0.0], [2, 1.0, 1.0, 1.0]], shared=True)
+        self.assertIsInstance(value, Inline)
+        self.assertEqual(self.numbers(value), ["1", "2"])
+        self.assertEqual(len(self.pack.props["ListeHelice"].items), 1)
+
+    def test_a_unit_with_no_list_is_said_not_dropped(self):
+        _value, said = self.listing([[1, 0.0, 0.0, 0.0]], holder=False)
+        self.assertEqual([f.level for f in said], ["warning"])
+        self.assertIn("won't spin", said[0].message)
+
+    def test_the_report_is_read_from_the_file(self):
+        part = modelin.Part("chassis", -1, [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [(0.0, 0.0, 1.0)] * 3, [(0.0, 0.0)] * 3, [(0, 1, 2)])
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(modelin.Prepared([part], [], {"own_propellers": [[2, 1.0, 2.0, 3.0]]}), glb, "like")
+            self.assertEqual(unitmodel.glb_report(glb)["own_propellers"], [[2, 1.0, 2.0, 3.0]])
+            short = Path(d, "short.glb")
+            short.write_bytes(b"glTF")
+            self.assertEqual(unitmodel.glb_report(short), {})
+            self.assertEqual(unitmodel.glb_report(Path(d, "not there.glb")), {})
+
+
 class TheBuild(unittest.TestCase):
     def build(self, rndf: str, models=("Panzer_Model",)):
         with tempfile.TemporaryDirectory() as d:

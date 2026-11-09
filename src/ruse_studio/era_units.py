@@ -844,7 +844,8 @@ class EraUnitCalls:
                 # the library's model is already in the game's axes, its front +x (and pinned by hand where the
                 # importer's rules couldn't tell): kept so, not worked out again
                 model = self.model_import(made["address"], str(folder / entry["model"]), float(size),
-                                          bool(entry.get("aircraft")), facing=list(FACING), own_turret=False)["model"]
+                                          bool(entry.get("aircraft")), facing=list(FACING), own_turret=False,
+                                          own_propellers=False)["model"]
             except StudioError as exc:
                 note = "no_fit" if not entry.get("fits") else str(exc)
         else:

@@ -509,8 +509,9 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
             pics = np.full(len(d["tris"]), next(iter(look.values())), dtype=np.int64)
         else:
             pics = np.fromiter(map(look.__getitem__, d["mats"]), dtype=np.int64, count=len(d["mats"]))
+        on = plain.BLADES_MARK if like.get("own_propellers") and f".{plain.BLADE_BONE}" in m.name.lower() else plain.BONES[k]
         for pic in sorted(set(look.values())):
-            groups.setdefault((plain.BONES[k], pic), []).append((offset[id(m)], d["tris"],
+            groups.setdefault((on, pic), []).append((offset[id(m)], d["tris"],
                                                                  np.flatnonzero(pics == pic)))
     unit_flat = plain._unit((0.0, 0.0, 0.0))                  # (the loops' own tuples)
     smooth_flat = plain.smooth_normals([(0.0, 0.0, 0.0)], [])[0]

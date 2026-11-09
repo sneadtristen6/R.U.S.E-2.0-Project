@@ -390,6 +390,21 @@ class WholeArrays(unittest.TestCase):
                     self.assertTrue(any(n is modelin.smooth_normals([(0.0, 0.0, 0.0)], [])[0] for n in flat))
         self.check_prepare(made_up(4), LIKE, size=1.5, side=4)
         self.check_prepare(made_up(4), dict(LIKE, own_turret=True))     # on the hull's middle, its turret where it is
+        self.check_own_propellers()
+
+    def check_own_propellers(self):
+        """A plane with its own propellers: the blades held apart the same way either way, then fitted the same."""
+        model = made_up(4)
+        c = 1.5
+        disc = modelin.Mesh("plane_propeller", [(c, -1.0, -1.0), (c, 1.0, -1.0), (c, 1.0, 1.0), (c, -1.0, 1.0)], [(0, 1, 2), (0, 2, 3)], [(0.0, 0.0)] * 4, [-1, -1])
+        blade = modelin.Mesh("plane.helice_ls_1", [(c, 0.0, 0.0), (c, 0.5, 0.0), (c, 0.5, 0.5)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        model.meshes += [disc, blade]
+        like = dict(LIKE, own_propellers=True, propellers=[{"bone": "helice_hs_1", "centre": (0.0, 0.0, 0.0), "radius": 5.0}])
+        here = modelin.fit_discs(modelinnp.prepare(modelin, model, [], like, 1.0, 1024), like)
+        with loops():
+            want = modelin.prepare(model, [], like)
+        self.same(prep_bytes(here), prep_bytes(want), "prepare with own propellers")
+        self.assertIn("helice_ls_1", [p.bone for p in here.parts])
 
     def test_no_turret_and_aircraft(self):
         """No turret: the middle where the unit's is; an aircraft: its highest points' side is its back (a sort of
