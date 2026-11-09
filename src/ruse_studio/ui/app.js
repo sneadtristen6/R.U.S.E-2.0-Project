@@ -2075,8 +2075,9 @@ function copyNotice(u) {
 // --- a unit's 3D model on its page, turning slowly until it's dragged (api.unit_preview: the game's model as a .glb
 // from rusemod.gltf, made once per game build and kept in the cache). three.js comes from the internet, as for the
 // Maps view (index.html). One renderer for every page, moved into the page shown. The mod's paint (what Bring back
-// put in it) goes on in place of the game's picture; propeller discs (`<model>_propeller`) stay hidden, as in
-// Blender: the game spins them with a shader of its own. ---
+// put in it) goes on in place of the game's picture; a plane's propeller discs (`<model>_propeller` in the game's own
+// models, `helice_hs_<number>` in a model of its own) show the game's own see-through picture of a spinning propeller
+// (api.unit_preview "disc"), and are left out when it can't be had. ---
 const uview = { gl: null, ask: 0 };
 
 async function unitViewGl() {
@@ -2311,6 +2312,8 @@ function unitView(u) {
         wrapT: THREE.RepeatWrapping });
       return [tex, t];
     }));
+    const disc = info.disc ? await gl.pictures.loadAsync(info.disc) : null;
+    if (disc) Object.assign(disc, { flipY: false, colorSpace: THREE.SRGBColorSpace });
     if (ask !== uview.ask) return;
     for (const old of [...gl.model.children]) {  // the last page's model
       gl.model.remove(old);
@@ -2324,13 +2327,20 @@ function unitView(u) {
     let painted = 0;
     for (const g of loaded) {
       g.scene.traverse((o) => {
-        if (/_propeller$/.test(o.name)) o.visible = false;
+        if (!/(_propeller|^helice_hs_\d+)$/.test(o.name)) return;
+        if (!disc) { o.visible = false; return; }
+        o.traverse((m) => {
+          if (!m.isMesh) return;
+          m.userData.disc = true;   // (not counted when the view frames the model: it draws over the blades, in front of them)
+          m.renderOrder = 1;
+          m.material = new THREE.MeshBasicMaterial({ map: disc, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+        });
       });
       g.scene.traverse((o) => {
         if (!o.isMesh) return;
         let seen = true;
         for (let p = o; p; p = p.parent) if (!p.visible) seen = false;
-        if (seen) shown.push(o);
+        if (seen && !o.userData.disc) shown.push(o);
         for (const m of [].concat(o.material)) {
           const t = pictureOf[m.userData && m.userData.rusemod_texture];
           if (t) { m.map = t; m.needsUpdate = true; painted++; }

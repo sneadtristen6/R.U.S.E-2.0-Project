@@ -419,9 +419,36 @@ class StudioLook(unittest.TestCase):
     def tearDown(self):
         self.dir.cleanup()
 
+    def test_the_game_s_disc_picture_for_the_view(self):
+        """The 3D view puts the game's own picture of a spinning propeller on a plane's discs: made once per game build; none when the game hasn't got it, and the view then leaves the discs out."""
+        from unittest import mock
+        opened = []
+        has = [False]
+
+        class Lib:
+            def __init__(self, _game):
+                pass
+
+            def picture(self, member, most):
+                opened.append(member)
+                return (1, 1, bytes([9, 9, 9, 128])) if has[0] else None
+
+            def close(self):
+                pass
+        with mock.patch("rusemod.models.Library", Lib):
+            self.assertIsNone(self.api._disc_picture())
+            opened.clear()
+            has[0] = True
+            first, again = self.api._disc_picture(), self.api._disc_picture()
+        self.assertEqual(first, again)
+        self.assertEqual(opened, [self.api.DISC_PICTURE])     # read from the game once
+        self.assertTrue(first.startswith("cache/units/discs/") and first.endswith(".png"), first)
+        self.assertEqual((self.api.cache_dir / first[len("cache/"):]).read_bytes()[:4], b"\x89PNG")
+
     def test_preview_made_once_with_the_mods_paint(self):
         from unittest import mock
         made = []
+        self.api._disc_picture = lambda: None   # (the model's own count below; the picture has its test above)
 
         class Lib:
             def __init__(self, game):

@@ -8910,7 +8910,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 copy.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(own, copy)
             return {"models": [{"url": f"cache/units/own/{name}", "name": own.stem}], "paint": {},
-                    "card": self._card_view(address)}
+                    "card": self._card_view(address), "disc": self._disc_picture()}
         st = find_pack(game, "ZZ_Win.dat").stat()
         build = f"{st.st_size}-{int(st.st_mtime)}-v{self.PREVIEW_VERSION}"  # a new game build makes them again
         out = self.cache_dir / "units" / build
@@ -8946,7 +8946,41 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 copy.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(colour, copy)
             paint[tex] = f"cache/units/paint/{name}"
-        return {"models": shown, "paint": paint, "card": self._card_view(address) if shown else None}
+        return {"models": shown, "paint": paint, "card": self._card_view(address) if shown else None,
+                "disc": self._disc_picture() if shown else None}
+
+    DISC_PICTURE = "gen\\ww2\\res2d\\shaders\\helice_vol.tgv"
+
+    def _disc_picture(self) -> str | None:
+        """The game's own picture of a spinning propeller, the one its planes' discs show (see-through in its alpha), as a
+        PNG in the cache, made once per game build, for the 3D view to put on a plane's discs. None when it isn't found:
+        the view then leaves the discs out."""
+        from rusemod import models
+        from rusemod.dxt import png_bytes
+        game = self._game()
+        zz = find_pack(game, "ZZ_Win.dat") if game is not None else None
+        if zz is None:
+            return None
+        st = zz.stat()
+        name = hashlib.sha1(f"{self.DISC_PICTURE}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:16] + ".png"
+        copy = self.cache_dir / "units" / "discs" / name
+        if not copy.is_file():
+            try:
+                lib = models.Library(game)
+            except (OSError, ValueError):       # (the game's files can't be read: the view leaves the discs out)
+                return None
+            try:
+                got = lib.picture(self.DISC_PICTURE, most=512)
+            finally:
+                lib.close()
+            if got is None:
+                return None
+            w, h, rgba = got
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            part = copy.with_name(copy.name + ".part")
+            part.write_bytes(png_bytes(rgba, w, h, channels=4))
+            part.replace(copy)
+        return f"cache/units/discs/{name}"
 
     def choose_blender(self) -> dict:
         """Ask where blender.exe is; kept in settings.json. Returns look()-style {"blender": path or ""}."""

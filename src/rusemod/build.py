@@ -1634,7 +1634,7 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
 
 def _own_propeller_list(run, name: str, unit: str, glb, where: str, result: BuildResult) -> None:
     """A plane's own model with propellers its unit doesn't list (the model file's report, "own_propellers": modelin.fit_discs): each gets an entry in the unit's
-    list of propellers (the game spins only what is listed, by number: exe 0x14099b5f0 builds the bone names from it), a copy of the list's first entry with its
+    list of propellers (the game spins only what is listed, finding each one's bones by its number), a copy of the list's first entry with its
     own number, as T64 and T65 had it by hand in the game. Worked out here from the file, so it follows the model: another import, a removed model or unit leave nothing behind."""
     from .patch import Inline, ListV, MapV, Ref, Text, _fresh
     from .unitmodel import glb_report

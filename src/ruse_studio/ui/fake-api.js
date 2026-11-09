@@ -3412,7 +3412,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       unit_preview: async (address) => {
         const real = new URLSearchParams(location.search).get("preview");
-        if (real) return { models: [{ url: real, name: "preview" }], paint: {}, card: fakeCard(address) };
+        if (real) return { models: [{ url: real, name: "preview" }], paint: {}, card: fakeCard(address), disc: new URLSearchParams(location.search).get("disc") };
         await new Promise((r) => setTimeout(r, 300));
         return { models: [{ url: fakeModelUrl(), name: "fake" }], card: fakeCard(address),
                  paint: fakePainted.has(address) ? { "gen\\ww2\\fake\\tsccombcs_combineddsctexture01.tgv": fakeShot("#8d2b22", "#6e1f18") } : {} };

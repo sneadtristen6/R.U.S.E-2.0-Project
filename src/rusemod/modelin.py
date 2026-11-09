@@ -624,7 +624,7 @@ PLAIN_ALPHA = 144       # alpha: the Sherman's body is mostly 128-159 (no side c
 # A plane's spinning-propeller discs as `ruse export-model` and the Studio's Open in Blender write them: a mesh of
 # their own, <model>_propeller (rusemod.gltf), each disc a flat square of 4 points (all 59 of the game's, 2026-10-10)
 DISC_MESH = "_propeller"
-# A propeller is two things on two bones, the game's own way (exe 0x1409c1f90, every frame): its real blades on helice_ls_<number>, its flat disc on helice_hs_<number>.
+# A propeller is two things on two bones, the game's own way, every frame: its real blades on helice_ls_<number>, its flat disc on helice_hs_<number>.
 # Up to the unit's VitesseDeplacementMaxLS the blades turn and the disc is scaled to nothing; past it the disc turns and the blades are scaled to nothing, so a parked plane shows only blades.
 BLADE_BONE = "helice_ls_"
 BLADES_MARK = "blades"      # the part prepare holds a plane's blades in, for _own_discs to put on their propellers
