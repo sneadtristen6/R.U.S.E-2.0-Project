@@ -58,8 +58,9 @@ and, for an era unit, **Real life** marked; click **Resize** and the model is fi
 several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
 shows from the next build.
 
-**Where it sits:** under the size, **Move it** takes three numbers, **Forward**, **Right** and **Up**, in the game's
-units (the page says how long the unit it copies is, in those units). A minus goes the other way, and 0, 0, 0 puts it
+**Where it sits:** a new model is put on the middle of the unit it copies, so most models need nothing here. If yours
+doesn't sit right, open **Move it** under the size (it stays open on a model you have moved). It takes three numbers,
+**Forward**, **Right** and **Up**, in the game's units (the page says how long the unit it copies is, in those units). A minus goes the other way, and 0, 0, 0 puts it
 back where it was fitted. Click **Move** and the model is fitted again from its own file, that far away; its turret and
 propellers go with it, so they still turn in the right place. In the 3D view the blue ring is where the unit it copies
 stands, and the mark on the ring is the front. A new size keeps the move. A model rigged to the unit's own bones (a

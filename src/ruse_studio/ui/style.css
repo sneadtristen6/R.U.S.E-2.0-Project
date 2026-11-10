@@ -973,6 +973,9 @@ th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); t
 .scale-names { overflow-wrap: anywhere; }
 .weapons-how { margin-top: 8px; max-width: 780px; }
 .weapons-how summary { cursor: pointer; font-size: 13px; }
+.model-move-fold { margin: 8px 0; }
+.model-move-fold summary { cursor: pointer; font-size: 13px; }
+.model-move-fold[open] > summary { margin-bottom: 6px; }
 .weapons-how ol { margin: 6px 0 0; padding-left: 20px; }
 .weapons-how li { margin: 3px 0; }
 .map-kind { width: 100%; margin-bottom: 8px; background: var(--bg); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }

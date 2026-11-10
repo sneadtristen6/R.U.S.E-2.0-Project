@@ -2706,6 +2706,9 @@ function modelBox(address, info, draw, changed) {
     .map(([label, title]) => ({ label, box: el("input", { type: "number", step: "10", value: "0", className: "model-size", title }) }));
   const moved = () => moves.map((m) => Number(m.box.value) || 0);
   const longNote = el("p", { className: "muted small" });
+  // Move it folds away, as the page's other extras do: a new model already sits on the unit's middle, so the row is
+  // there for who needs it and out of the way for everyone else; a model that has been moved shows its numbers
+  const moveFold = el("details", { className: "model-move-fold" });
   const move = el("button", { type: "button", className: "small", textContent: w.model_move, title: w.tip_model_move, disabled: true });
   move.addEventListener("click", async () => {
     move.disabled = true;
@@ -2738,6 +2741,7 @@ function modelBox(address, info, draw, changed) {
       resize.disabled = !s.resizable;
       if (own && !s.resizable) resize.title = w.tip_model_resize_gone;
       if (s.move) moves.forEach((m, i) => { m.box.value = String(s.move[i]); });
+      if (s.move && s.move.some((v) => v)) moveFold.open = true;
       move.disabled = !s.resizable;
       if (own && !s.resizable) move.title = w.tip_model_move_gone;
       if (s.length) longNote.textContent = fill(w.model_move_long, { length: Math.round(s.length) });
@@ -2805,12 +2809,15 @@ function modelBox(address, info, draw, changed) {
     });
     box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
       sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
-    if (own.rigged) box.append(el("p", { className: "muted small", textContent: w.model_move_rigged }));
+    moveFold.append(el("summary", {}, el("strong", { textContent: w.model_move_title }), " ",
+      el("span", { className: "muted", textContent: w.model_move_when })));
+    if (own.rigged) moveFold.append(el("p", { className: "muted small", textContent: w.model_move_rigged }));
     else {
-      box.append(el("div", { className: "actions model-move" }, el("strong", { className: "small", textContent: w.model_move_title }),
+      moveFold.append(el("div", { className: "actions model-move" },
         ...moves.map((m) => el("label", { className: "small" }, m.label, " ", m.box)), move),
         el("p", { className: "muted small", textContent: w.model_move_how }), longNote);
     }
+    box.append(moveFold);
     box.append(el("div", { className: "actions" }, pick, drop));
   } else {
     box.append(el("p", { className: "muted small", textContent: w.model_how }),
