@@ -1382,6 +1382,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     decoy_all_langs: "Every language", decoy_all_missions: "Every mission", decoy_all_set: "Set",
     decoy_anim_axis: "Turn about", decoy_anim_bones: "A bone", decoy_anim_bones_mark: "{n} bone(s) changed",
     decoy_anim_done: "Done", decoy_anim_from_mark: "another clip", decoy_anim_loading: "Getting it ready in 3D…",
+    decoy_anim_for: "Change it for", decoy_anim_for_unit: "Only this unit",
+    decoy_anim_for_all: "Every unit that plays it ({n})", decoy_anim_own_mark: "only this unit's",
+    decoy_anim_saved_own: "{name}: saved in your mod, for {unit} only.",
+    decoy_anim_reset_own: "Back to what every unit plays",
+    decoy_anim_reset_own_done: "{name}: {unit} plays it as every other unit does again.",
+    decoy_mc_used_own: "{name}: the motion capture is in your mod, for {unit} only.",
+    tip_decoy_anim_for_unit: "This unit plays its own copy of the animation, with the changes made here; every other unit plays it as before. The copy starts as the animation this unit plays now. Not tried in the game yet.",
+    tip_decoy_anim_for_all: "The change goes to the animation itself: every unit that plays it (the number in brackets) plays it changed, this one too unless it has its own copy.",
+    tip_decoy_anim_reset_own: "Take this unit's own copy of the animation out: it plays the animation as every other unit does again.",
     decoy_anim_names: "the game calls it {names}",
     decoy_anim_no_3d: "The 3D view needs the internet once (three.js); the changes still save.",
     decoy_anim_no_model: "No unit plays this animation, so there's no model to show it on; you can still change it.",
@@ -2314,6 +2323,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const DECOY_AKINDS = ["infantry", "crews", "vehicles", "hq", "scenery", "other"];
   const decoyVolumes = new Map();  // `${mod}|${member}` -> percent (StudioApi.decoy_volume)
   const decoyClipEdits = new Map();  // `${mod}|${member}` -> { speed, from, mine, tweaks } (StudioApi.decoy_anim_set)
+  const decoyOwnEdits = new Map();  // `${mod}|${unit}|${member}` -> a unit's own copy of a clip ("Only this unit")
   const decoyMember = (s) => DECOY_DIR + s[0];
   const decoySound = (s) => ({ member: decoyMember(s), kind: s[1], name: s[2], seconds: s[3], channels: s[4], rate: 44100,
     group_volume: Math.round(s[5] * 100), grouped: s[1] !== "dialogue" && s[1] !== "hq_voices", shared: s[6], lang: s[7] || "",
@@ -2357,6 +2367,31 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     if (!c) throw new Error(`${member} isn't one of the game's animations`);
     return c;
   };
+  // a unit's own copy of a clip (StudioApi's calls with `unit`): it starts as the change every unit has, then its own
+  const decoyOwnKey = (unit, member) => {
+    if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+    if (!/^\$\/GFX\/Everything\/\w+$/.test(unit || "")) throw new Error("Only a unit can have animations of its own.");
+    return `${current}|${unit}|${member}`;
+  };
+  const decoyOwnOut = (e) => e ? { speed: e.speed ?? 100, from: e.from || null, mine: Boolean(e.mine), tweaks: e.tweaks || {} } : null;
+  const decoyUnitClipOut = (c, unit) => ({ ...decoyClipOut(c), own: decoyOwnOut(current ? decoyOwnEdits.get(`${current}|${unit}|${c.member}`) : null) });
+  // the change a call makes to a clip's edits (decoyClipEdits' or a unit's own), as StudioApi._decoy_changed makes it
+  function decoyChanged(e, speed, use, bone, size, turn) {
+    e = { ...e };
+    if (speed !== null) {
+      if (typeof speed !== "number" || speed < 1 || speed > 1000) throw new Error("a speed is a percent from 1 to 1000");
+      if (speed === 100) delete e.speed; else e.speed = speed;
+    }
+    if (use !== null) { if (use) e.from = decoyClipOf(use).member; else delete e.from; }
+    if (bone !== null) {
+      const t = { ...(e.tweaks || {}) }, b = { ...(t[bone] || {}) };
+      if (size !== null) b.size = size;
+      if (turn !== null) b.turn = turn.length ? turn : null;
+      if ((b.size ?? 1) === 1 && !b.turn) delete t[bone]; else t[bone] = { size: b.size ?? 1, turn: b.turn || null };
+      if (Object.keys(t).length) e.tweaks = t; else delete e.tweaks;
+    }
+    return e;
+  }
   // the motion library (StudioApi.decoy_motions): a few made-up moves of the two free sets
   const DECOY_MOVES = [["cmu-02_01", "cmu", "walk", "Walk", "02", 3.4], ["cmu-09_01", "cmu", "run", "Run", "09", 2.6],
     ["cmu-13_29", "cmu", "jump", "Jump", "13", 2.0], ["style-Akimbo_FW", "100style", "walk", "Akimbo", "Akimbo", 6.0, "FW"],
@@ -3739,9 +3774,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!members.length) throw new Error("this unit has no sounds of its own here");
         return { count: members.length, volume: Math.round(percent), saved: decoySetVolumes(members, percent) };
       },
-      decoy_unit_anims: async () => {
-        const rows = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === "vehicles" || c.kind === "crews")
-          .map((c) => ({ ...decoyClipOut(c), role: c.names[0] || c.name }));
+      decoy_unit_anims: async (address) => {   // a squad's soldiers' clips, a vehicle's and a gun crew's
+        const squad = fakeSquad(address);
+        const rows = DECOY_CLIPS.map(decoyClip).filter((c) => squad ? c.kind === "infantry" : c.kind === "vehicles" || c.kind === "crews")
+          .map((c) => ({ ...decoyUnitClipOut(c, address), role: c.names[0] || c.name }));
         return { rows, total: rows.length, start: 0 };
       },
       decoy_anims: async () => ({ mod: Boolean(current), kinds: DECOY_AKINDS.map((id) => {
@@ -3762,26 +3798,25 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
             .map((x) => ({ member: x.member, name: x.name, names: x.names })) };
       },
       decoy_anim_preview: async (member) => { decoyClipOf(member); return { url: null }; },
-      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null) => {
+      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null, unit = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
-        const key = `${current}|${c.member}`, e = { ...(decoyClipEdits.get(key) || {}) };
-        if (speed !== null) {
-          if (typeof speed !== "number" || speed < 1 || speed > 1000) throw new Error("a speed is a percent from 1 to 1000");
-          if (speed === 100) delete e.speed; else e.speed = speed;
+        if (unit) {   // "Only this unit": its own copy, starting as the change every unit has
+          const key = decoyOwnKey(unit, c.member);
+          decoyOwnEdits.set(key, decoyChanged(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {},
+                                              speed, use, bone, size, turn));
+          return decoyUnitClipOut(c, unit);
         }
-        if (use !== null) { if (use) e.from = decoyClipOf(use).member; else delete e.from; }
-        if (bone !== null) {
-          const t = { ...(e.tweaks || {}) }, b = { ...(t[bone] || {}) };
-          if (size !== null) b.size = size;
-          if (turn !== null) b.turn = turn.length ? turn : null;
-          if ((b.size ?? 1) === 1 && !b.turn) delete t[bone]; else t[bone] = { size: b.size ?? 1, turn: b.turn || null };
-          if (Object.keys(t).length) e.tweaks = t; else delete e.tweaks;
-        }
+        const key = `${current}|${c.member}`, e = decoyChanged(decoyClipEdits.get(key) || {}, speed, use, bone, size, turn);
         if (Object.keys(e).length) decoyClipEdits.set(key, e); else decoyClipEdits.delete(key);
         return decoyClipOut(c);
       },
-      decoy_anim_reset: async (member) => { decoyClipEdits.delete(`${current}|${decoyClipOf(member).member}`); return { member }; },
+      decoy_anim_reset: async (member, unit = null) => {
+        const c = decoyClipOf(member);
+        if (unit) { decoyOwnEdits.delete(decoyOwnKey(unit, c.member)); return { member, ...decoyUnitClipOut(c, unit) }; }
+        decoyClipEdits.delete(`${current}|${c.member}`);
+        return { member };
+      },
       // motion capture: a picked .bvh read for its length (its "Frames:" and "Frame Time:" lines), never retargeted here
       decoy_mocap_open: async (name, text) => {
         const frames = Number((/Frames:\s*(\d+)/.exec(text) || [])[1] || 60), dt = Number((/Frame Time:\s*([\d.]+)/.exec(text) || [])[1] || 1 / 30);
@@ -3792,9 +3827,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return got;
       },
       decoy_mocap_preview: async (member) => { decoyClipOf(member); return { url: null, frames: 60, loop: false, scale: 1 }; },
-      decoy_mocap_use: async (member) => {
+      decoy_mocap_use: async (member, mid, start, length, inPlace, loop, credit, unit = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        if (unit) {   // (only that unit plays it: its own copy names the file)
+          const key = decoyOwnKey(unit, c.member);
+          decoyOwnEdits.set(key, { ...(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });
+          return { ...decoyUnitClipOut(c, unit), frames: 60, loop: false, scale: 1 };
+        }
         decoyClipEdits.set(`${current}|${c.member}`, { ...(decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });
         return { ...decoyClipOut(c), frames: 60, loop: false, scale: 1 };
       },

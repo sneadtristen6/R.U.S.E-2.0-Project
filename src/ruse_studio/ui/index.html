@@ -594,6 +594,9 @@
           <div class="decoy-anim-body">
             <div class="da-view-box"><div id="da-view" class="da-view"></div><p id="da-note" class="small muted"></p></div>
             <div class="da-controls">
+              <!-- opened from a unit's page: Only this unit (its own copy of the clip) or Every unit that plays it
+                   (decoy.js scopeChoice, StudioApi.decoy_anim_* with the unit, rusemod.anim's units.toml) -->
+              <div id="da-for" class="hidden"></div>
               <label class="decoy-slider" id="da-speed-row"><span id="da-speed-label" class="small"></span>
                 <input id="da-speed" type="range" min="25" max="400" step="5" value="100" data-stepper="beside">
                 <span id="da-speed-value" class="decoy-pct">100%</span></label>
