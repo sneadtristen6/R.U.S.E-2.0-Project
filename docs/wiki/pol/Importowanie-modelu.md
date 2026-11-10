@@ -88,6 +88,23 @@ oddziałem strzelców, obsługą działa i P-47.
 nowszego: starszy Launcher daje modelowi szkielet skopiowanej jednostki, więc jego wieża obraca się wokół złego punktu.
 Wersja 0.4.8.17 to wymagana aktualizacja, więc Launcher instaluje ją sam.
 
+## Własny żołnierz krok po kroku
+
+Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą część w Blenderze:
+
+1. **Utwórz oddział** jak w kroku 2 powyżej, zaczynając od oddziału (np. amerykańskich strzelców).
+2. **Otwórz jego żołnierza w Blenderze.** Na stronie nowego oddziału, w części **Własny model**, kliknij **Zmień w Blenderze**. Blender otworzy się z żołnierzem i jego kośćmi, każdą tam, gdzie ma ją gra. Nie masz Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
+3. **Zmień go albo załóż własny model na jego kości.** Żeby go zmienić, edytuj go tam. Własny model: wczytaj go przez **File > Import** do tej samej sceny i połóż na żołnierzu; kliknij swój model, **Shift+klik** na kości, potem **Ctrl+P > With Automatic Weights**. Usuń żołnierza z gry, jeśli go nie zostawiasz.
+4. **Wyślij go.** Kliknij **Wyślij do R.U.S.E. Studio** u góry Blendera.
+5. **Przenieś go z powrotem.** W Studiu kliknij **Przenieś model**. Każdy żołnierz oddziału nosi twój model: strzelec, żołnierz z bazooką i małe figurki widoczne z daleka. **Testuj w grze** go pokaże.
+
+Dobrze wiedzieć:
+- Twoje pliki Blendera zostają w folderze twojego moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\`. Nie trafiają do moda, gdy go udostępniasz. Następne **Zmień w Blenderze** zaczyna od tego, co wysłałeś ostatnio.
+- Jeśli niektóre punkty modelu nie mają kości (automatyczne wagi Blendera kilka pomijają), strona powie ile: ruszają się tylko z biodrami żołnierza. Pomaluj je na kość w **Weight Paint** i wyślij ponownie.
+- Oddział z **Własny mundur**: twój model zajmuje miejsce munduru (jego malowanie zostaje w modzie), a **Użyj modelu kopiowanej jednostki** przywraca mundur.
+- Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
+- Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku.
+
 ## 4. Jego karta, potem test
 
 Obracaj widok 3D, aż nowy model będzie dobrze wyglądał w przerywanej ramce, i kliknij **Użyj tego widoku jako karty**
