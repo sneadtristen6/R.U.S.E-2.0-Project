@@ -280,7 +280,7 @@ def write(path: Path = FILE, root: Path = ROOT) -> dict:
         for field in ("check", "where", "kind", "us"):
             lines.append(f"{field} = {json.dumps(e[field], ensure_ascii=False)}")
         lines.append("")
-    Path(path).write_text("\n".join(lines), encoding="utf-8")
+    Path(path).write_text("\n".join(lines), encoding="utf-8", newline="\n")  # (the same file on every system)
     _table.cache_clear()
     return {"entries": len(entries), "new": len(set(entries) - set(old)), "gone": len(set(old) - set(entries))}
 
