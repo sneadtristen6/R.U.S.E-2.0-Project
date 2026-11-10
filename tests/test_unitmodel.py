@@ -108,6 +108,35 @@ def skeleton(names, parents, pivots, scales=None) -> bytes:
 SKELETON = skeleton(["chassis", "tourelle_01"], [-1, 0], [(0.0, 0.0, 0.0), (-70.0, 5.0, 30.0)])
 
 
+def skeleton3(names, parents, pivots, scales=None) -> bytes:
+    """A skeleton entry with the three matrices per bone the game's have: set 0 model -> bone, set 1 from its parent,
+    set 2 bone -> model (no turns here, each bone scaled by `scales`, 1 by default)."""
+    n = len(names)
+    scales = scales or [1.0] * n
+    lens = struct.pack(f"<{n}H", *(len(x) for x in names))
+    mats_at = (0x24 + len(lens) + 3) & ~3
+
+    def row(s, x, y, z):
+        return struct.pack("<12f", s, 0, 0, x, 0, s, 0, y, 0, 0, s, z)
+    sets = [[], [], []]
+    for k, ((x, y, z), s) in enumerate(zip(pivots, scales)):
+        sets[0].append(row(s, -s * x, -s * y, -s * z))
+        sets[2].append(row(1 / s, x, y, z))
+        if parents[k] < 0:
+            sets[1].append(row(1 / s, x, y, z))
+        else:
+            (px, py, pz), q = pivots[parents[k]], scales[parents[k]]
+            sets[1].append(row(q / s, q * (x - px), q * (y - py), q * (z - pz)))
+    mats = b"".join(b"".join(group) for group in sets)
+    parents_at = mats_at + len(mats)
+    second_at = parents_at + 4 * n
+    names_at = second_at + 4 * n
+    head = struct.pack("<9I", 1, n, mats_at, parents_at, second_at, names_at, len(mats), 4 * n, 4 * n)
+    body = head + lens
+    body += bytes(mats_at - len(body)) + mats + struct.pack(f"<{n}i", *parents) + struct.pack(f"<{n}i", *range(n))
+    return body + "".join(names).encode()
+
+
 def unit_pack(skinning=(0, 1)) -> MeshPack:
     """The Panzer: one draw call of a skinned quad on the chassis, 200 long (x -120..80), lowest at z 2."""
     pts = [(-120.0, -40.0, 2.0), (80.0, -40.0, 2.0), (80.0, 40.0, 2.0), (-120.0, 40.0, 2.0)]
@@ -532,6 +561,298 @@ class Skeletons(unittest.TestCase):
         self.assertEqual(tuple(round(x, 6) for x in p), (7.0, 5.0, 3.0))
 
 
+class OwnTurret(unittest.TestCase):
+    """A model that sits on the copied hull's middle and has a skeleton of its own, its turret moved to where its turret
+    is (a modder's report, 2026-11-08: a model drawn forward of its selection ring)."""
+    NAMES = ["chassis", "tourelle_01", "canon_01", "roue_1"]
+    PARENTS = [-1, 0, 1, 0]
+    PIVOTS = [(0.0, 0.0, 0.0), (-70.0, 5.0, 30.0), (40.0, 5.0, 50.0), (100.0, -30.0, 0.0)]
+    TURN = (0, 1, 2, 4, 5, 6, 8, 9, 10)
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.model = modelin.read_model(self.dir / "tank.3ds")
+
+    @staticmethod
+    def sets(blob, k):
+        _one, n, mats = struct.unpack_from("<3I", blob, 0)
+        return [struct.unpack_from("<12f", blob, mats + 48 * (s * n + k)) for s in range(3)]
+
+    def test_the_turret_and_what_hangs_from_it_move(self):
+        for scales in (None, [1.0, 100.0, 1.0, 1.0]):        # (the Panther's turret is scaled 100 times)
+            old = skeleton3(self.NAMES, self.PARENTS, self.PIVOTS, scales)
+            new = unitmodel.moved_turret(old, 20.0, -4.0)    # from (-70, 5): 90 forward, 9 across
+            self.assertEqual(len(new), len(old))
+            a, b = unitmodel.read_skeleton(old), unitmodel.read_skeleton(new)
+            self.assertEqual((b.names, b.parents), (a.names, a.parents))
+            for k in (1, 2):
+                self.assertAlmostEqual(b.pivots[k][0], a.pivots[k][0] + 90, places=2)
+                self.assertAlmostEqual(b.pivots[k][1], a.pivots[k][1] - 9, places=2)
+                self.assertAlmostEqual(b.pivots[k][2], a.pivots[k][2], places=2)
+                for s in range(3):       # every turn and scale keeps its bytes
+                    self.assertEqual([self.sets(new, k)[s][c] for c in self.TURN],
+                                     [self.sets(old, k)[s][c] for c in self.TURN])
+            for k in (0, 3):             # the hull and a wheel aren't on the branch
+                self.assertEqual(self.sets(new, k), self.sets(old, k))
+            self.assertEqual(self.sets(new, 2)[1], self.sets(old, 2)[1])  # the gun stays where it is on the turret
+            self.assertAlmostEqual(self.sets(new, 1)[1][3], self.sets(old, 1)[1][3] + 90, places=3)
+
+    def test_a_record_not_laid_out_as_known(self):
+        with self.assertRaises(unitmodel.UnitModelError):        # one matrix set, not three
+            unitmodel.moved_turret(SKELETON, 0.0, 0.0)
+        no_turret = skeleton3(["chassis", "roue_1"], [-1, 0], [(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)])
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.moved_turret(no_turret, 0.0, 0.0)
+
+    def test_fitted_on_the_hull_s_middle(self):
+        like = dict(LIKE, middle=-20.0)
+        prep = modelin.prepare(self.model, self.dir, dict(like, own_turret=True))
+        hull = next(p for p in prep.parts if p.bone == "chassis")
+        xs, ys, _zs = zip(*hull.positions)
+        self.assertEqual((min(xs), max(xs), min(ys), max(ys)), (-120, 80, -40, 40))
+        self.assertAlmostEqual(prep.report["own_turret"][0], -10)    # its ring, 10 ahead of its own middle
+        self.assertAlmostEqual(prep.report["own_turret"][1], 0)
+        self.assertNotIn("own_turret", modelin.prepare(self.model, self.dir, like).report)
+
+    def test_its_own_skeleton_in_every_pack_that_holds_the_copied_one(self):
+        bones = skeleton3(self.NAMES, self.PARENTS, self.PIVOTS)
+        zz = zz_win(bones=bones)
+        source = unitmodel.find_source(zz, TANK)
+        prep = modelin.prepare(self.model, self.dir, dict(source.like, own_turret=True))
+        written = unitmodel.write_unit_model(zz, TANK, "own_model", prep)
+        pack = MeshPack.read(written.changed[SKELETONS])
+        new = "ww2\\res3d\\units\\ger\\tank\\own_modellod0.ase2ndfbin"
+        self.assertEqual(pack.skeletons[pack.items[TANK][2]], bones)            # the game's own record as it was
+        self.assertNotEqual(pack.items[new][2], pack.items[TANK][2])
+        got = unitmodel.read_skeleton(pack.skeletons[pack.items[new][2]])
+        at = got.pivots[got.names.index("tourelle_01")]
+        self.assertAlmostEqual(at[0], prep.report["own_turret"][0], places=2)
+        self.assertAlmostEqual(at[1], prep.report["own_turret"][1], places=2)
+        # read back from the mod's file, as a build does: the same place, the same record
+        glb = self.dir / "own_model.glb"
+        modelin.write_glb(prep, glb, TANK)
+        back = unitmodel.read_mod_glb(glb)
+        self.assertEqual(back.report["own_turret"], prep.report["own_turret"])
+        again = unitmodel.write_unit_model(zz, TANK, "own_model", back)
+        pack2 = MeshPack.read(again.changed[SKELETONS])
+        self.assertEqual(pack2.skeletons[pack2.items[new][2]], pack.skeletons[pack.items[new][2]])
+        # a model fitted as before shares the copied unit's skeleton, as it always has
+        plain = modelin.prepare(self.model, self.dir, source.like)
+        shared = MeshPack.read(unitmodel.write_unit_model(zz, TANK, "own_model", plain).changed[SKELETONS])
+        self.assertEqual(shared.items[new][2], shared.items[TANK][2])
+        self.assertEqual(len(shared.skeletons), 1)
+
+
+class ModelMoved(unittest.TestCase):
+    """A fitted model where the modder wants it (the brief's gap 1; a modder's report, 2026-11-08: a model built from a Semovente copy, and one from a Greyhound copy, drawn ahead of its selection
+    ring): forward, right and up from where the fit puts it, the turret's bones going with it."""
+    MOVE = [50.0, -20.0, 10.0]
+    # a copied unit's hull length and how far its turret's pivot is off its hull's middle (private note, gap 1: the importer's own find_source on the game's models)
+    COPIED = {"Semovente 105/25": (848.7, 229.1), "M8 Greyhound": (931.8, 3.4)}
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.model = modelin.read_model(self.dir / "tank.3ds")
+
+    def fit(self, like, **more):
+        return modelin.prepare(self.model, self.dir, dict(like, **more))
+
+    @staticmethod
+    def hull(prep):
+        """Its hull's middle along and across, and its lowest point."""
+        xs, ys, zs = zip(*next(p for p in prep.parts if p.bone == "chassis").positions)
+        return (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, min(zs)
+
+    def test_the_semovente_and_greyhound_cases(self):
+        for name, (length, off) in self.COPIED.items():
+            with self.subTest(name):
+                like = {"length": length, "pivot": (off, 0.0), "ground": 0.0, "middle": 0.0}
+                self.assertGreater(abs(self.hull(self.fit(like))[0]), 40)       # the fault: the model's turret on the copied unit's, the hull dragged off
+                fitted, moved = self.fit(like, own_turret=True), self.fit(like, own_turret=True, move=self.MOVE)
+                for got, want in zip(self.hull(fitted), (0.0, 0.0, 0.0)):        # the fit: on the copied hull's middle, on the ground
+                    self.assertAlmostEqual(got, want, places=3)
+                for got, want in zip(self.hull(moved), self.MOVE):               # moved: exactly where the modder said
+                    self.assertAlmostEqual(got, want, places=3)
+                for k in (0, 1):                                                 # the turret still turns where it is on the model
+                    self.assertAlmostEqual(moved.report["own_turret"][k], fitted.report["own_turret"][k] + self.MOVE[k], places=3)
+
+    def test_every_point_moves_and_nothing_else_changes(self):
+        like = dict(LIKE, middle=-20.0, own_turret=True)
+        a, b = self.fit(like), self.fit(like, move=self.MOVE)
+        self.assertEqual(len(a.parts), len(b.parts))
+        for p, q in zip(a.parts, b.parts):
+            self.assertEqual((p.bone, p.uvs, p.triangles, p.normals), (q.bone, q.uvs, q.triangles, q.normals))
+            for old, new in zip(p.positions, q.positions):
+                for c in range(3):
+                    self.assertAlmostEqual(new[c], old[c] + self.MOVE[c], places=3)
+        self.assertEqual(b.report["moved"], self.MOVE)
+        self.assertNotIn("moved", a.report)
+
+    def test_the_turret_s_bones_go_with_it_in_the_pack(self):
+        bones = skeleton3(OwnTurret.NAMES, OwnTurret.PARENTS, OwnTurret.PIVOTS)
+        zz = zz_win(bones=bones)
+        source = unitmodel.find_source(zz, TANK)
+        prep = self.fit(source.like, own_turret=True, move=self.MOVE)
+        pack = MeshPack.read(unitmodel.write_unit_model(zz, TANK, "own_model", prep).changed[SKELETONS])
+        new = "ww2\\res3d\\units\\ger\\tank\\own_modellod0.ase2ndfbin"
+        got, old = unitmodel.read_skeleton(pack.skeletons[pack.items[new][2]]), unitmodel.read_skeleton(bones)
+        k = got.names.index("tourelle_01")
+        self.assertAlmostEqual(got.pivots[k][0], prep.report["own_turret"][0], places=2)
+        self.assertAlmostEqual(got.pivots[k][1], prep.report["own_turret"][1], places=2)
+        self.assertAlmostEqual(got.pivots[k][2], old.pivots[k][2] + self.MOVE[2], places=2)
+        gun = got.names.index("canon_01")       # the gun and its muzzle stay on the turret
+        for c in range(3):
+            self.assertAlmostEqual(got.pivots[gun][c] - got.pivots[k][c], old.pivots[gun][c] - old.pivots[k][c], places=2)
+        self.assertEqual(got.pivots[got.names.index("chassis")], old.pivots[old.names.index("chassis")])
+
+    def test_what_counts_as_a_move(self):
+        self.assertIsNone(modelin.check_move(None))
+        self.assertIsNone(modelin.check_move([0, 0.0, -0.0]))
+        self.assertEqual(modelin.check_move(["1", 2, -3.5]), [1.0, 2.0, -3.5])
+        for bad in ([1, 2], [1, 2, 3, 4], ["a", 0, 0], 5, [float("nan"), 0, 0], [float("inf"), 0, 0], [1e39, 0, 0]):
+            with self.subTest(bad), self.assertRaises(modelin.ModelError):
+                modelin.check_move(bad)
+
+    def test_the_command_line_s_option_fits_it_as_the_studio_does(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        from rusemod import cli
+        report = {"vertices": 1, "triangles": 1, "draws": 1, "like": TANK, "facing": ("x", 1), "scale": 1.0, "parts": {}, "pictures": [], "stands": [0.0, 0.0, 0.0, 849.0], "moved": self.MOVE}
+        for extra, move, own in ((["--move", "50", "-20", "10"], self.MOVE, True), ([], None, None)):
+            with self.subTest(extra):
+                args = cli.build_parser().parse_args(["import-model", "m.glb", "--like", "ger_panzeriv", "--unit", "U", "--mod", str(self.dir), *extra])
+                self.assertEqual(args.move, move)
+                out = io.StringIO()
+                with mock.patch("rusemod.models.Library", return_value=mock.Mock(where={TANK: 1})), mock.patch("rusemod.cli._game_dir", return_value=self.dir / "game"), \
+                        mock.patch("rusemod.unitmodel.import_model", return_value=report) as fitted, contextlib.redirect_stdout(out):
+                    self.assertEqual(cli.cmd_import_model(args), 0)
+                got = fitted.call_args.kwargs
+                self.assertEqual((got.get("move"), got.get("own_turret"), got.get("own_propellers")), (move, own, own))
+                self.assertIn("moved: 50 forward, -20 right, 10 up", out.getvalue())
+
+
+class OwnPropellers(unittest.TestCase):
+    """A plane's propellers where the model has them, as many as it has: each one's two bones moved, or added after the last so every bone keeps its number."""
+    NAMES = ["chassis", "aile", "helice_hs_1", "helice_ls_1"]
+    PARENTS = [-1, 0, 0, 0]
+    PIVOTS = [(0.0, 0.0, 0.0), (10.0, 0.0, 5.0), (700.0, 2.0, 30.0), (700.0, 2.0, 30.0)]
+
+    @staticmethod
+    def sets(blob, k):
+        _one, n, mats = struct.unpack_from("<3I", blob, 0)
+        return [struct.unpack_from("<12f", blob, mats + 48 * (s * n + k)) for s in range(3)]
+
+    def record(self):
+        return skeleton3(self.NAMES, self.PARENTS, self.PIVOTS)
+
+    def test_a_propeller_it_has_is_moved(self):
+        old = self.record()
+        new = unitmodel.own_propellers(old, [[1, 650.0, -40.0, 20.0]])
+        self.assertEqual(len(new), len(old))
+        b = unitmodel.read_skeleton(new)
+        for k in (2, 3):
+            self.assertEqual([round(c, 3) for c in b.pivots[k]], [650.0, -40.0, 20.0])
+        for k in (0, 1):
+            self.assertEqual(self.sets(new, k), self.sets(old, k))
+
+    def test_a_propeller_it_hasn_t_is_added_after_the_last_bone(self):
+        old = self.record()
+        new = unitmodel.own_propellers(old, [[1, 700.0, 2.0, 30.0], [2, 300.0, 400.0, 10.0], [3, 300.0, -400.0, 10.0]])
+        a, b = unitmodel.read_skeleton(old), unitmodel.read_skeleton(new)
+        self.assertEqual(b.names, a.names + ["helice_hs_2", "helice_ls_2", "helice_hs_3", "helice_ls_3"])
+        self.assertEqual(b.parents, a.parents + [0, 0, 0, 0])
+        self.assertEqual(len(new) % 4, 0)
+        for k in range(4):                        # every bone of the copied one as it was, under its old number
+            self.assertEqual(self.sets(new, k), self.sets(old, k))
+        for k, place in ((4, (300.0, 400.0, 10.0)), (5, (300.0, 400.0, 10.0)), (6, (300.0, -400.0, 10.0)), (7, (300.0, -400.0, 10.0))):
+            self.assertEqual(tuple(round(c, 3) for c in b.pivots[k]), place)
+            s0, s1, s2 = self.sets(new, k)
+            self.assertEqual((s2[3], s2[7], s2[11]), place)
+            self.assertEqual((s1[3], s1[7], s1[11]), place)      # (its parent, the chassis, is at the origin)
+        _one, n, mats, parents, order, names_at, msize, psize, osize = struct.unpack_from("<9I", new, 0)
+        self.assertEqual((n, mats % 4, parents - mats, msize, psize, osize, order - parents, names_at - order), (8, 0, 3 * 8 * 48, 3 * 8 * 48, 32, 32, 32, 32))
+        self.assertEqual(struct.unpack_from("<8I", new, order), tuple(range(8)))
+
+    def test_no_propeller_to_copy_a_new_one_from(self):
+        with self.assertRaises(unitmodel.UnitModelError):
+            unitmodel.own_propellers(skeleton3(["chassis"], [-1], [(0.0, 0.0, 0.0)]), [[1, 1.0, 2.0, 3.0]])
+
+    def fitted(self, like):
+        """A plane with three discs, flat squares in one mesh, fitted with the copied plane's one propeller."""
+        def square(x, y):
+            return [(x, y - 1, -1.0), (x, y + 1, -1.0), (x, y + 1, 1.0), (x, y - 1, 1.0)]
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        points = square(4.0, 0.0) + square(1.0, 3.0) + square(1.0, -3.0)
+        tris = [t for k in range(3) for t in ((4 * k, 4 * k + 1, 4 * k + 2), (4 * k, 4 * k + 2, 4 * k + 3))]
+        disc = modelin.Mesh("plane_propeller", points, tris, [(0.0, 0.0)] * 12, [-1] * 6)
+        return modelin.prepare(modelin.Model([body, disc], [], "plane.glb"), [], dict(like, facing=[0, 1]))
+
+    def with_blades(self, blades):
+        """A plane with two discs and `blades`: [(x, y)] one thin blade each (a triangle pair) in a mesh named as read_model(blades=True) names one."""
+        def square(x, y):
+            return [(x, y - 1, -1.0), (x, y + 1, -1.0), (x, y + 1, 1.0), (x, y - 1, 1.0)]
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        points = square(4.0, 0.0) + square(1.0, 3.0)
+        tris = [t for k in range(2) for t in ((4 * k, 4 * k + 1, 4 * k + 2), (4 * k, 4 * k + 2, 4 * k + 3))]
+        disc = modelin.Mesh("plane_propeller", points, tris, [(0.0, 0.0)] * 8, [-1] * 4)
+        pts, faces = [], []
+        for x, y in blades:
+            k = len(pts)
+            pts += [(x, y, 0.0), (x, y + 0.1, 0.0), (x, y + 0.1, 0.5), (x, y, 0.5)]
+            faces += [(k, k + 1, k + 2), (k, k + 2, k + 3)]
+        blade = modelin.Mesh("plane.helice_ls_1", pts, faces, [(0.0, 0.0)] * len(pts), [-1] * len(faces))
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "own_propellers": True, "facing": [0, 1],
+                "propellers": [{"bone": "helice_hs_1", "centre": (40.0, 0.0, 0.0), "radius": 10.0}]}
+        return modelin.prepare(modelin.Model([body, disc, blade], [], "plane.glb"), [], like)
+
+    def test_each_blade_goes_on_the_slow_bone_of_the_disc_it_lies_in(self):
+        prep = self.with_blades([(4.0, 0.2), (1.0, 3.2)])
+        on = {p.bone: len(p.positions) for p in prep.parts if "_ls_" in p.bone}
+        self.assertEqual(on, {"helice_ls_1": 4, "helice_ls_2": 4})
+        self.assertEqual(prep.report["propellers"]["blades"], {"on_a_propeller": 2, "on_the_hull": 0})
+        self.assertFalse([n for n in prep.report.get("notes") or [] if "no blades" in n])
+
+    def test_a_blade_outside_every_disc_stays_on_the_hull(self):
+        prep = self.with_blades([(4.0, 0.2), (-4.0, -4.0)])
+        self.assertEqual(prep.report["propellers"]["blades"], {"on_a_propeller": 1, "on_the_hull": 1})
+        self.assertEqual(sorted(p.bone for p in prep.parts if p.bone not in ("helice_hs_1", "helice_hs_2")), ["chassis", "chassis", "helice_ls_1"])
+        self.assertTrue([n for n in prep.report["notes"] if "reach past" in n])
+
+    def test_a_disc_with_no_blades_is_said(self):
+        prep = self.with_blades([(4.0, 0.2)])
+        self.assertTrue([n for n in prep.report["notes"] if "[2] have a disc and no blades" in n])
+
+    def test_blades_are_left_alone_without_own_propellers(self):
+        blade = modelin.Mesh("plane.helice_ls_1", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (1.0, 1.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        body = modelin.Mesh("body", [(-5.0, -5.0, 0.0), (5.0, -5.0, 0.0), (5.0, 5.0, 0.0)], [(0, 1, 2)], [(0.0, 0.0)] * 3, [-1])
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "facing": [0, 1]}
+        prep = modelin.prepare(modelin.Model([body, blade], [], "plane.glb"), [], like)
+        self.assertEqual([p.bone for p in prep.parts], ["chassis"])
+
+    def test_every_disc_stays_where_the_model_has_it(self):
+        like = {"length": 100.0, "pivot": (0.0, 0.0), "ground": 0.0, "middle": 0.0, "own_propellers": True,
+                "propellers": [{"bone": "helice_hs_1", "centre": (40.0, 0.0, 0.0), "radius": 10.0}]}
+        prep = self.fitted(like)
+        self.assertEqual(sorted(p.bone for p in prep.parts if p.bone.startswith("helice")), ["helice_hs_1", "helice_hs_2", "helice_hs_3"])
+        self.assertEqual(prep.report["propellers"], {"kept": 3, "left_out": 0, "why": ""})
+        self.assertEqual([p[0] for p in prep.report["own_propellers"]], [1, 2, 3])
+        self.assertEqual(prep.report["own_propellers"][0][1:3], [40.0, 0.0])     # the nearest takes the plane's own number
+        # without it: one disc on the copied plane's one bone, the others left out, as before
+        plain = self.fitted({k: v for k, v in like.items() if k != "own_propellers"})
+        self.assertEqual((plain.report["propellers"]["kept"], plain.report["propellers"]["left_out"]), (1, 2))
+        self.assertNotIn("own_propellers", plain.report)
+
+
 class Packs(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
@@ -862,6 +1183,170 @@ GUN = make_ndf(objects=[(0, [(0, val(0x03, struct.pack("<I", 2))), (1, val(0x02,
                props=[("DescriptorId", 0), ("Nationalite", 0), ("GfxDescriptor", 0), ("MeshDescriptor", 1),
                       ("FileName", 2), ("GfxDescriptorIcone", 0), ("PawnDescriptor", 3), ("DescriptorFigurine", 4)],
                strings=[GUN_FILE, GUN_FIGURINE], exports={0: "Gun"}, compress=True)
+
+
+class RiggedModels(unittest.TestCase):
+    """A model rigged to a game skeleton, for any unit with no hull bone to fit a model on: every point keeps its bones, its track number and its draw's material, nothing moved or scaled."""
+
+    def model(self, static=False, tracks=False):
+        points = [(0.1, 0.2, 0.3), (0.4, 0.2, 0.3), (0.1, 0.5, 0.3)]
+        skin = [[("bip01 pelvis", 255)], [("bip01 pelvis", 128), ("bip01 spine", 127)], [("arme_1", 200), ("bip01 spine", 40), ("bip01 pelvis", 10), ("bip01 head", 5)]]
+        return modelin.Model([modelin.Mesh("soldier", points, [(0, 1, 2)], [(0.25, 0.5), (0.75, 0.5), (0.25, 1.0)], [-1], [(0.0, 0.0, 1.0)] * 3, skin=[] if static else skin,
+                                           tracks=[3, 4, 5] if tracks else [], draw=1, static=static)], [], "soldier.glb")
+
+    def fitted(self, **kw):
+        return modelin.prepare(self.model(**kw), [], {"rigged": True, "root": "bip01"})
+
+    def test_points_stay_where_the_bones_are_and_keep_their_bones(self):
+        prep = self.fitted()
+        self.assertEqual([p.bone for p in prep.parts], [modelin.RIGGED])
+        part = prep.parts[0]
+        self.assertEqual([round(c, 6) for c in part.positions[0]], [10.0, -20.0, 30.0])     # the game's units and axes, no fitting
+        self.assertEqual(part.skin[2][0], ("arme_1", 200))
+        self.assertEqual(part.draw, 1)
+        self.assertEqual(part.triangles, [(0, 2, 1)])
+        self.assertTrue(prep.report["rigged"])
+
+    def test_a_size_is_said_not_used(self):
+        prep = modelin.prepare(self.model(), [], {"rigged": True, "root": "bip01"}, size=2.0)
+        self.assertEqual([round(c, 6) for c in prep.parts[0].positions[0]], [10.0, -20.0, 30.0])
+        self.assertTrue([n for n in prep.report["notes"] if "size 2" in n])
+
+    def test_the_mod_file_keeps_it_all(self):
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(self.fitted(tracks=True), glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+            self.assertEqual(unitmodel.glb_report(glb)["like"], "the model")
+        part = back.parts[0]
+        self.assertEqual((part.bone, part.draw, part.tracks), (modelin.RIGGED, 1, [3, 4, 5]))
+        self.assertEqual(part.skin[1], [("bip01 pelvis", 128), ("bip01 spine", 127)])
+        self.assertEqual(sum(w for _n, w in part.skin[2]), 255)
+
+    def test_a_rigged_file_goes_on_the_model_with_its_bones_first(self):
+        """A towed gun's models: the gun can take any model, but a file rigged to the crew's bones is the crew's."""
+        from types import SimpleNamespace
+        from unittest import mock
+
+        bones = {"gun": ["chassis", "canon"], "crew": ["bip01 pelvis", "bip01 spine", "arme_1", "bip01 head"]}
+
+        def source(_zz, name, rigged=False):
+            return SimpleNamespace(skeleton=SimpleNamespace(names=bones[name]))
+
+        arc = SimpleNamespace(close=lambda: None)
+        with mock.patch.object(unitmodel, "find_source", source), mock.patch("rusemod.build.find_pack", lambda *_a: "zz"), \
+                mock.patch("rusemod.edat.Edat.open", lambda _p: arc), mock.patch("rusemod.modelin.read_model", lambda _f, skin: self.model()):
+            self.assertEqual(unitmodel.rigged_first(Path("game"), Path("f.glb"), ["gun", "crew"]), ["crew", "gun"])
+        with mock.patch("rusemod.modelin.read_model", lambda _f, skin: self.model(static=True)):       # no bones in the file: the order as it was
+            self.assertEqual(unitmodel.rigged_first(Path("game"), Path("f.glb"), ["gun", "crew"]), ["gun", "crew"])
+
+    def test_a_propeller_disc_is_named_so_the_viewers_know_it(self):
+        model = self.model()
+        model.meshes[0].name = "plane_propeller"
+        prep = modelin.prepare(model, [], {"rigged": True, "root": "bip01"})
+        self.assertEqual(prep.parts[0].bone, modelin.RIGGED_DISC)
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(prep, glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+        self.assertEqual((back.parts[0].bone, back.parts[0].skin[2][0]), (modelin.RIGGED_DISC, ("arme_1", 200)))
+
+    def test_a_kept_model_keeps_it_all(self):
+        """The build keeps a model between builds: a rigged one comes back as it went in, or the second build of a mod with soldiers stops."""
+        prep = self.fitted(tracks=True)
+        back, _textures = unitmodel._kept_read(unitmodel._kept_bytes(prep, []))
+        part, was = back.parts[0], prep.parts[0]
+        self.assertEqual((part.skin, part.tracks, part.draw, part.static), ([list(map(tuple, v)) for v in was.skin], was.tracks, was.draw, was.static))
+
+    def test_a_draw_with_no_bones_stays_so(self):
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(self.fitted(static=True), glb, "the model")
+            back = unitmodel.read_mod_glb(glb)
+        self.assertEqual((back.parts[0].bone, back.parts[0].static), (modelin.RIGGED_STATIC, True))
+
+    def test_the_vertex_bytes(self):
+        part = self.fitted(tracks=True).parts[0]
+        bones = unitmodel.Skeleton(["bip01 pelvis", "bip01 spine", "arme_1", "bip01 head"], [], [])
+        vb, fmt = unitmodel._rigged_buffer(part, [3, 2, 1, 0], bones)
+        self.assertEqual(fmt, unitmodel.TRACKED_2F)
+        self.assertEqual(len(vb.data), 3 * unitmodel.STRIDE)
+        third = vb.data[2 * unitmodel.STRIDE:]
+        self.assertEqual(third[15], 5)                                 # the track, the normal's 4th byte
+        self.assertEqual(list(third[16:20]), [200, 40, 10, 5])         # the weights
+        self.assertEqual(list(third[20:24]), [1, 2, 3, 0])             # each bone's number in the material's list
+
+    def test_weights_add_up_to_what_the_game_has(self):
+        got = modelin.bone_weights(["a", "b", "c"], [0, 1, 2, 0], [0.3333, 0.3333, 0.3334, 0.0])
+        self.assertEqual(sum(w for _n, w in got), 255)
+        self.assertEqual(modelin.bone_weights(["a", "b"], [0, 1, 0, 0], [1.0, 0.0, 0.0, 0.0]), [("a", 255)])
+
+
+class OwnPropellerList(unittest.TestCase):
+    """The build lists the propellers a plane's own model has and its unit doesn't, from the model file, so nothing can be left behind."""
+
+    def listing(self, places, listed=("1",), shared=False, holder=True):
+        from types import SimpleNamespace
+        from unittest import mock
+
+        from rusemod.build import _own_propeller_list
+        from rusemod.patch import ListV, MapV, Obj, Text
+        entries = [Inline(Obj("TGfxDescriptorHelice", {"HeliceNumber": Text("string", n), "SensRotationADroite": Text("string", "kept")})) for n in listed]
+        self.pack = Obj("TGfxDescriptorAvionPack", {"ListeHelice": ListV(entries)} if holder else {})
+        objects = {}
+        if shared:
+            objects["$/Shared"] = self.pack
+        gfx = Obj("TGfx", {"SousElements": MapV([(Text("string", "a"), Ref("$/Shared") if shared else Inline(self.pack))])})
+        objects["$/Plane"] = Obj("TUnit", {"GfxDescriptor": Inline(gfx)})
+        run = SimpleNamespace(game=SimpleNamespace(objects=objects))
+        result = SimpleNamespace(findings=[])
+        with mock.patch("rusemod.unitmodel.glb_report", lambda _path: {"own_propellers": places} if places else {}):
+            _own_propeller_list(run, "$/Plane", "Plane", Path("x.glb"), "m: x", result)
+        value = gfx.props["SousElements"].pairs[0][1]
+        return value, result.findings
+
+    @staticmethod
+    def numbers(value):
+        return [v.obj.props["HeliceNumber"].value for v in value.obj.props["ListeHelice"].items]
+
+    def test_a_propeller_the_unit_does_not_list_is_added_as_a_copy_of_the_first(self):
+        value, said = self.listing([[1, 0.0, 0.0, 0.0], [2, 1.0, 1.0, 1.0], [3, 2.0, 2.0, 2.0]])
+        self.assertEqual(self.numbers(value), ["1", "2", "3"])
+        self.assertEqual(value.obj.props["ListeHelice"].items[2].obj.props["SensRotationADroite"].value, "kept")
+        self.assertIsNot(value.obj.props["ListeHelice"].items[2].obj, value.obj.props["ListeHelice"].items[0].obj)
+        self.assertEqual([(f.level, "numbers 2, 3" in f.message) for f in said], [("note", True)])
+
+    def test_one_it_lists_already_is_left(self):
+        value, said = self.listing([[1, 0.0, 0.0, 0.0]], ("1", "2"))
+        self.assertEqual(self.numbers(value), ["1", "2"])
+        self.assertEqual(said, [])
+
+    def test_a_model_with_no_propellers_of_its_own_changes_nothing(self):
+        value, said = self.listing(None)
+        self.assertEqual(self.numbers(value), ["1"])
+        self.assertEqual(said, [])
+
+    def test_a_shared_part_is_copied_and_the_other_plane_keeps_its_list(self):
+        value, _said = self.listing([[1, 0.0, 0.0, 0.0], [2, 1.0, 1.0, 1.0]], shared=True)
+        self.assertIsInstance(value, Inline)
+        self.assertEqual(self.numbers(value), ["1", "2"])
+        self.assertEqual(len(self.pack.props["ListeHelice"].items), 1)
+
+    def test_a_unit_with_no_list_is_said_not_dropped(self):
+        _value, said = self.listing([[1, 0.0, 0.0, 0.0]], holder=False)
+        self.assertEqual([f.level for f in said], ["warning"])
+        self.assertIn("won't spin", said[0].message)
+
+    def test_the_report_is_read_from_the_file(self):
+        part = modelin.Part("chassis", -1, [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [(0.0, 0.0, 1.0)] * 3, [(0.0, 0.0)] * 3, [(0, 1, 2)])
+        with tempfile.TemporaryDirectory() as d:
+            glb = Path(d, "m.glb")
+            modelin.write_glb(modelin.Prepared([part], [], {"own_propellers": [[2, 1.0, 2.0, 3.0]]}), glb, "like")
+            self.assertEqual(unitmodel.glb_report(glb)["own_propellers"], [[2, 1.0, 2.0, 3.0]])
+            short = Path(d, "short.glb")
+            short.write_bytes(b"glTF")
+            self.assertEqual(unitmodel.glb_report(short), {})
+            self.assertEqual(unitmodel.glb_report(Path(d, "not there.glb")), {})
 
 
 class TheBuild(unittest.TestCase):

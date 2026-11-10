@@ -419,9 +419,36 @@ class StudioLook(unittest.TestCase):
     def tearDown(self):
         self.dir.cleanup()
 
+    def test_the_game_s_disc_picture_for_the_view(self):
+        """The 3D view puts the game's own picture of a spinning propeller on a plane's discs: made once per game build; none when the game hasn't got it, and the view then leaves the discs out."""
+        from unittest import mock
+        opened = []
+        has = [False]
+
+        class Lib:
+            def __init__(self, _game):
+                pass
+
+            def picture(self, member, most):
+                opened.append(member)
+                return (1, 1, bytes([9, 9, 9, 128])) if has[0] else None
+
+            def close(self):
+                pass
+        with mock.patch("rusemod.models.Library", Lib):
+            self.assertIsNone(self.api._disc_picture())
+            opened.clear()
+            has[0] = True
+            first, again = self.api._disc_picture(), self.api._disc_picture()
+        self.assertEqual(first, again)
+        self.assertEqual(opened, [self.api.DISC_PICTURE])     # read from the game once
+        self.assertTrue(first.startswith("cache/units/discs/") and first.endswith(".png"), first)
+        self.assertEqual((self.api.cache_dir / first[len("cache/"):]).read_bytes()[:4], b"\x89PNG")
+
     def test_preview_made_once_with_the_mods_paint(self):
         from unittest import mock
         made = []
+        self.api._disc_picture = lambda: None   # (the model's own count below; the picture has its test above)
 
         class Lib:
             def __init__(self, game):
@@ -519,8 +546,8 @@ class StudioLook(unittest.TestCase):
         self.api._edits = lambda: Edits()
         calls = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False):
-            calls.append((source, Path(file).name, size))
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False, others=None):
+            calls.append((source, Path(file).name, size, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
             return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": []}
@@ -535,7 +562,7 @@ class StudioLook(unittest.TestCase):
             with self.assertRaises(StudioError):
                 self.api.model_import(address, str(model), 21)  # too big (sizes go from 0.05 to 20)
         own = self.mod / "files" / "models" / "Descriptor_Unit_R2_New.glb"
-        self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36)]))
+        self.assertEqual((own.read_bytes(), calls), (b"glTF-own", [(self.MODEL, "tank.3ds", 1.36, True, True)]))
         self.assertEqual((res["model"]["vertices"], res["model"]["file"]), (10, "tank.3ds"))
         self.assertEqual(self.api.look(address)["own_model"]["vertices"], 10)
         shown = self.api.unit_preview(address)["models"]
@@ -570,8 +597,9 @@ class StudioLook(unittest.TestCase):
         self.api._names = lambda ix, addresses, lang, new_units=None: {a: "Sherman" for a in addresses}
         calls = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None):
-            calls.append((Path(file).name, size, aircraft, facing))
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None,
+                        own_turret=False, own_propellers=False, others=None):
+            calls.append((Path(file).name, size, aircraft, facing, own_turret, own_propellers))
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_bytes(b"glTF-own")
             # the report writes the axis as a letter, as rusemod.modelin.report does
@@ -591,7 +619,16 @@ class StudioLook(unittest.TestCase):
             self.api.model_resize(tank, 1.2)
             # the pin kept, and the way the rules found as a pin the importer takes ([1, -1], not ["y", -1]: passed
             # as the report writes it, the importer guessed again and turned the J-16 round, 2026-10-10)
-            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1]), ("jet.glb", 1.2, False, [1, -1])])
+            self.assertEqual(calls, [("jet.glb", 2.5, True, [0, -1], True, True), ("jet.glb", 1.2, False, [1, -1], True, True)])
+            calls.clear()
+            # a model fitted before there was own_turret has none in its record: a Resize leaves it placed as it was
+            import json
+            kept = self.api._own_model_file(tank).with_suffix(".json")
+            record = json.loads(kept.read_text(encoding="utf-8"))
+            del record["own_turret"], record["own_propellers"]
+            kept.write_text(json.dumps(record), encoding="utf-8")
+            self.api.model_resize(tank, 1.2)
+            self.assertEqual(calls, [("jet.glb", 1.2, False, [1, -1], False, False)])
             calls.clear()
             pinned = self.api._pinned_facing  # a record the first Resize wrote kept the letter: read as the pin too
             self.assertEqual([pinned({"facing": ["x", 1]}), pinned({"report": {"facing": ["y", -1]}}),
@@ -634,6 +671,69 @@ class StudioLook(unittest.TestCase):
         with self.assertRaisesRegex(StudioError, "isn't there any more"):
             self.api.model_resize(jet, 1)
 
+    def test_own_model_moved(self):
+        """Move (the brief's gap 1): the model fitted again from its own file, moved from where the fit puts it, at its size and the way it faced; a Resize keeps the move; 0, 0, 0 goes back to the fit; a
+        model fitted before there was own_turret takes it once it's moved, so its turret goes with it."""
+        import json
+        from unittest import mock
+
+        from ruse_studio.api import StudioError
+        from ruse_studio.edits import NewUnit
+        tank = "$/GFX/Everything/Descriptor_Unit_R2_Tank"
+        made = {tank: NewUnit(tank, "$/GFX/Everything/Descriptor_Unit_Test", "Tank")}
+
+        class Edits:
+            new_units = made
+
+            def new_unit_of(self, a):
+                return made.get(a.split(":")[0])
+        self.api._edits = lambda: Edits()
+        self.api._unit_kinds = lambda addresses: {a: "ground" for a in addresses}
+        self.api._era_record = lambda: {}
+        self.api._open = lambda: mock.Mock()
+        self.api._names = lambda ix, addresses, lang, new_units=None: {a: "Sherman" for a in addresses}
+        calls = []
+
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, facing=None,
+                        own_turret=False, own_propellers=False, others=None, move=None):
+            calls.append((size, facing, own_turret, own_propellers, move))
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(b"glTF-own")
+            return {"vertices": 10, "triangles": 4, "draws": 1, "parts": {"Hull": "hull"}, "missing": [], "facing": ("y", -1),
+                    "stands": [3.0, 0.0, 2.0, 849.0], **({"moved": move} if move else {})}
+        model = Path(self.dir.name) / "tank.glb"
+        model.write_bytes(b"glTF")
+        move = [50.0, -20.0, 10.0]
+        with mock.patch("rusemod.unitmodel.import_model", fake_import):
+            with self.assertRaisesRegex(StudioError, "no model of its own to move"):
+                self.api.model_place(tank, move)
+            self.api.model_import(tank, str(model), 1.5)
+            self.assertEqual(self.api.model_sizes(tank)["move"], [0, 0, 0])     # nothing moved yet
+            self.assertEqual(self.api.model_sizes(tank)["length"], 849.0)
+            self.api.model_place(tank, [50, -20, 10])
+            self.assertEqual(calls[-1], (1.5, [1, -1], True, True, move))
+            self.assertEqual(self.api.model_sizes(tank)["move"], move)
+            self.api.model_resize(tank, 2)                                      # a new size keeps where it is
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, move))
+            self.api.model_place(tank, [0, 0, 0])                               # back to the fit
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, None))
+            self.assertEqual(self.api.model_sizes(tank)["move"], [0, 0, 0])
+            kept = self.api._own_model_file(tank).with_suffix(".json")
+            record = json.loads(kept.read_text(encoding="utf-8"))
+            self.assertNotIn("move", record)
+            del record["own_turret"], record["own_propellers"]                  # a model fitted before there was own_turret
+            kept.write_text(json.dumps(record), encoding="utf-8")
+            self.api.model_place(tank, move)
+            self.assertEqual(calls[-1], (2.0, [1, -1], True, True, move))
+            calls.clear()
+            for bad in ([1, 2], ["a", 0, 0], [float("nan"), 0, 0], [1e39, 0, 0], 5):
+                with self.subTest(bad), self.assertRaisesRegex(StudioError, "three numbers"):
+                    self.api.model_place(tank, bad)
+            self.assertEqual(calls, [])                                         # refused before anything was fitted
+        model.unlink()
+        with self.assertRaisesRegex(StudioError, "isn't there any more"):
+            self.api.model_place(tank, move)
+
     def test_own_model_fitted_past_a_crew_figure(self):
         """A copied unit whose models list a crew figure first (the Kubelwagen's driver: no chassis bone) gets the new
         model fitted to the first model that can take one, the vehicle (2026-10-09: every era jeep copying the
@@ -654,7 +754,7 @@ class StudioLook(unittest.TestCase):
         self.api._look_models = lambda a: ([driver, jeep], [])
         tried = []
 
-        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False):
+        def fake_import(game, source, file, out, size=1.0, side=1024, pictures=None, aircraft=False, own_turret=False, own_propellers=False, others=None):
             tried.append(source)
             if source == driver:
                 raise UnitModelError(f"{driver}'s skeleton has no chassis bone")

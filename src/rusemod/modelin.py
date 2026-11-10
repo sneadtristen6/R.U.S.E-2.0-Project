@@ -60,6 +60,10 @@ class Mesh:
     uvs: list = field(default_factory=list)        # (u, v) per vertex, v up the picture; or empty
     face_materials: list = field(default_factory=list)  # material number per triangle (-1: none)
     normals: list = field(default_factory=list)    # the model's own (x, y, z) per vertex, unit length; or empty
+    skin: list = field(default_factory=list)       # read_model's `skin`: per vertex [(a bone's name, its weight 0..255)]
+    tracks: list = field(default_factory=list)     # ... a tank's track number per vertex, when the file has them
+    draw: int | None = None                        # ... which of the game model's draw calls this was (the Studio's export says)
+    static: bool = False                           # ... a draw the game stores with no bones at all
 
 
 @dataclass
@@ -359,20 +363,20 @@ def gltf_document(path: Path) -> tuple[dict, bytes]:
     return doc, bytes(binary)
 
 
-def read_glb(path: Path) -> Model:
+def read_glb(path: Path, blades: bool = False, skin: bool = False) -> Model:
     """A .glb's meshes (z up) with their own normals when it has them, and each material's picture and, when the
-    material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture."""
+    material's extras name one (`rusemod_alpha_texture`, as write_glb writes it), its alpha picture. `blades`: by_bones's; `skin`: read_model's."""
     try:
         doc, binary = glb_document(Path(path).read_bytes())
     except (ValueError, struct.error) as exc:
         raise ModelError(f"{Path(path).name}: {exc}") from None
-    return _read_document(doc, binary, path)
+    return _read_document(doc, binary, path, blades, skin)
 
 
-def read_gltf(path: Path) -> Model:
+def read_gltf(path: Path, blades: bool = False, skin: bool = False) -> Model:
     """A .gltf with its files beside it (gltf_document), read as a .glb is; a see-through material keeps its alphaMode
-    (Material.cutout) and its mask picture when it has one of its own (Material.mask)."""
-    return _read_document(*gltf_document(path), path)
+    (Material.cutout) and its mask picture when it has one of its own (Material.mask). `blades`: by_bones's; `skin`: read_model's."""
+    return _read_document(*gltf_document(path), path, blades, skin)
 
 
 COMPRESSED = ("KHR_draco_mesh_compression", "EXT_meshopt_compression", "KHR_mesh_quantization")
@@ -394,7 +398,7 @@ def texture_source(doc: dict, index: int) -> int:
     raise ModelError("a texture with no picture")
 
 
-def _read_document(doc: dict, binary: bytes, path) -> Model:
+def _read_document(doc: dict, binary: bytes, path, blades: bool = False, skin: bool = False) -> Model:
     squeezed = [e for e in doc.get("extensionsRequired", []) if e in COMPRESSED]
     if squeezed:   # (a player's report, 2026-10-22: some downloaded .glb files were refused with no reason given)
         raise ModelError(f"{Path(path).name}: its meshes are compressed ({', '.join(squeezed)}), which the importer "
@@ -456,7 +460,11 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
                     tris = [tuple(idx[i:i + 3]) for i in range(0, len(idx) - 2, 3)]
                     mesh = Mesh(name, pos, tris, [(u, 1.0 - v) for u, v in uvs],  # glTF's v runs down the picture
                                 [prim.get("material", -1)] * len(tris), nrm)
-                meshes.extend(by_bones(doc, binary, node, prim, mesh))
+                if skin:
+                    _with_skin(doc, binary, node, prim, mesh)
+                    meshes.append(mesh)
+                else:
+                    meshes.extend(by_bones(doc, binary, node, prim, mesh, blades))
         for c in node.get("children", []):
             visit(c, matrix)
 
@@ -468,19 +476,20 @@ def _read_document(doc: dict, binary: bytes, path) -> Model:
     return Model(meshes, materials, str(path))
 
 
-def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> list[Mesh]:
+def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh, blades: bool = False) -> list[Mesh]:
     """A skinned part split by the bone each triangle leans on most, when one of its bones is named as a turret or a
     gun (roles' words): the game's own models come out of the Studio's Open in Blender as one mesh per picture, the
     turret in the same mesh as the hull, with each bone named as the game names it (tourelle_01, canon_01: rusemod.
     gltf). Read back, the turret's triangles become a part of their own, named after their bone, so it turns again (a
     player's report, 2026-10-22: the game's own Firefly, exported and imported, kept its turret still). Any other
-    part, and a model whose bones aren't named so, is left as it is."""
+    part, and a model whose bones aren't named so, is left as it is. `blades` (read_model's, for "own_propellers"):
+    the triangles on a propeller's slow bone (helice_ls_<number>: its real blades) split off the same way."""
     attrs = prim.get("attributes", {})
     if "skin" not in node or "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs:
         return [mesh]
     skin = doc.get("skins", [])[node["skin"]]
     names = [doc["nodes"][j].get("name", "") for j in skin.get("joints", [])]
-    moving = {k: n for k, n in enumerate(names) if named_role(n) in (TURRET, GUN)}
+    moving = {k: n for k, n in enumerate(names) if named_role(n) in (TURRET, GUN) or (blades and n.lower().startswith(BLADE_BONE))}
     if not moving:
         return [mesh]
     joints = glb_accessor(doc, binary, attrs["JOINTS_0"])
@@ -511,15 +520,42 @@ def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> li
     return out
 
 
-def read_model(path: Path) -> Model:
-    """A model file by its kind: .3ds, .glb or .gltf (with its files beside it)."""
+def bone_weights(names: list, joints, weights) -> list:
+    """One vertex's bones as a model file gives them: [(the bone's name, its weight 0..255)], those it leans on, the weights adding up to 255 as the game's do."""
+    total = sum(weights) or 1.0
+    out = [[names[j], round(w / total * 255.0)] for j, w in zip(joints, weights) if w > 0 and j < len(names)]
+    if out:
+        out[max(range(len(out)), key=lambda k: out[k][1])][1] += 255 - sum(w for _n, w in out)
+    return [(n, w) for n, w in out if w > 0]
+
+
+def _with_skin(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh) -> None:
+    """What read_model's `skin` adds to a mesh: each point's bones by name and weight, its track number, and which of the game model's draw calls it is (the Studio's export says)."""
+    from .gltf import TRACK_ATTRIBUTE
+    attrs = prim.get("attributes", {})
+    extras = prim.get("extras") or {}
+    mesh.draw = extras.get("rusemod_draw")
+    mesh.static = bool(extras.get("rusemod_static"))
+    if TRACK_ATTRIBUTE in attrs:
+        mesh.tracks = [int(t[0]) for t in glb_accessor(doc, binary, attrs[TRACK_ATTRIBUTE])]
+    if "skin" not in node or "JOINTS_0" not in attrs or "WEIGHTS_0" not in attrs:
+        return
+    names = [doc["nodes"][j].get("name", "") for j in doc.get("skins", [])[node["skin"]].get("joints", [])]
+    joints = glb_accessor(doc, binary, attrs["JOINTS_0"])
+    weights = glb_accessor(doc, binary, attrs["WEIGHTS_0"])
+    if len(joints) == len(mesh.positions):
+        mesh.skin = [bone_weights(names, js, ws) for js, ws in zip(joints, weights)]
+
+
+def read_model(path: Path, blades: bool = False, skin: bool = False) -> Model:
+    """A model file by its kind: .3ds, .glb or .gltf (with its files beside it). `blades`: by_bones's. `skin`: each mesh keeps the bones its points lean on (Mesh.skin), for a model rigged to a game skeleton."""
     suffix = Path(path).suffix.lower()
     if suffix == ".3ds":
         return read_3ds(path)
     if suffix == ".glb":
-        return read_glb(path)
+        return read_glb(path, blades, skin)
     if suffix == ".gltf":
-        return read_gltf(path)
+        return read_gltf(path, blades, skin)
     raise ModelError(f"{Path(path).name}: a {suffix or 'nameless'} file; the importer reads .3ds, .glb and .gltf "
                      "(Blender saves both glTF kinds: File > Export > glTF 2.0)")
 
@@ -623,6 +659,13 @@ PLAIN_ALPHA = 144       # alpha: the Sherman's body is mostly 128-159 (no side c
 # A plane's spinning-propeller discs as `ruse export-model` and the Studio's Open in Blender write them: a mesh of
 # their own, <model>_propeller (rusemod.gltf), each disc a flat square of 4 points (all 59 of the game's, 2026-10-10)
 DISC_MESH = "_propeller"
+# A propeller is two things on two bones, the game's own way, every frame: its real blades on helice_ls_<number>, its flat disc on helice_hs_<number>.
+# Up to the unit's VitesseDeplacementMaxLS the blades turn and the disc is scaled to nothing; past it the disc turns and the blades are scaled to nothing, so a parked plane shows only blades.
+BLADE_BONE = "helice_ls_"
+BLADES_MARK = "blades"      # the part prepare holds a plane's blades in, for _own_discs to put on their propellers
+RIGGED, RIGGED_STATIC = "rigged", "rigged_static"   # the nodes of a mod's .glb holding a rigged model's parts (each point on its own bones) and its draws with no bones
+RIGGED_DISC = "rigged_propeller"                    # ... and its propeller discs: named as the viewers know a disc (the Studio's 3D view, Blender keep them from showing as plain squares)
+BLADE_REACH = 1.25          # a blade reaches at most this many of its disc's radii from the middle of the disc nearest it (the game's 433 blade pieces: at most 1.15, blade_pieces.py)
 
 
 def named_role(name: str) -> str | None:
@@ -871,6 +914,10 @@ class Part:
     normals: list
     uvs: list                     # (u, v), v down the picture, as the game's
     triangles: list               # wound the game's way: (b - a) x (c - a) points out
+    skin: list | None = None      # a rigged model's part (RIGGED): per vertex [(a bone's name, its weight 0..255)]
+    tracks: list | None = None    # ... a tank's track number per vertex
+    draw: int | None = None       # ... which of the game model's draw calls it was: it keeps that draw's material
+    static: bool = False          # ... a draw the game stores with no bones at all
 
 
 @dataclass
@@ -880,12 +927,39 @@ class Prepared:
     report: dict
 
 
+def check_move(move) -> list | None:
+    """A placement as the fit takes it: [forward, right, up], in the game's model units (a minus goes the other way), each a number the model's file can hold; None for no move at all."""
+    if move is None:
+        return None
+    try:
+        out = [float(v) for v in move]
+        if len(out) != 3 or not all(math.isfinite(v) for v in out):
+            raise ValueError
+        struct.pack("<3f", *out)        # (a number too big for the file's floats raises)
+    except (TypeError, ValueError, OverflowError):
+        raise ModelError("A move is three numbers: forward, right and up (a minus goes the other way).") from None
+    return out if any(out) else None
+
+
+def _moved(shift: tuple, lift: float, like: dict) -> tuple:
+    """The fit's place with the modder's move on top (like "move", check_move's): forward is the game's +x, right its +y, up its +z. Nothing else about the fit changes, so a turret that turns where it is on the model moves with it (the report's "own_turret")."""
+    move = like.get("move")
+    if not move:
+        return shift, lift
+    return (shift[0] + move[0], shift[1] + move[1]), lift + move[2]
+
+
 def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 1024) -> Prepared:
     """`model` fitted to a unit: `like` is the copied unit's model as {"length": its hull's length along x (game
     units), "pivot": (x, y) its turret turns round, "ground": its lowest z}; `size` scales on top (1: as long as it);
     pictures at most `side` pixels, inside the model (.glb) or found in `folder` (a .3ds's: a folder, or several
-    looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing"."""
+    looked in in turn). A picture named but not found is a flat colour, listed in the report's "missing". With `like`
+    "own_turret" (not tried in the game yet) the hull is lined up on the copied hull's middle instead, and the report's
+    "own_turret" says where the model's own turret ended up, for the build to move the turret's bones there. With `like`
+    "move" (check_move's [forward, right, up]) the fitted model is moved that far; the report's "moved" says so."""
     folders = [Path(f) for f in ([folder] if isinstance(folder, (str, Path)) else (folder or []))]
+    if like.get("rigged"):
+        return _prepare_rigged(model, folders, like, size, side)
     arrays = whole_arrays()
     if arrays:      # numpy: the same parts, pictures and report, every point at once (None: a model left to the loops)
         prep = arrays.prepare(sys.modules[__name__], model, folders, like, size, side)
@@ -904,17 +978,20 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         raise ModelError("the model has no length")
     scale = like["length"] * size / length
     turret = [m for m, k in zip(model.meshes, parts) if k == TURRET]
+    ring = None
     if turret:
         main = max(turret, key=lambda m: len(m.positions))
         cx, cy = turn_ring(main.positions)
         ring = ((cx * f[0] + cy * f[1]) * scale, (cx * r[0] + cy * r[1]) * scale)
+    if ring is not None and not like.get("own_turret"):
         shift = (like["pivot"][0] - ring[0], like["pivot"][1] - ring[1])
-    else:  # no turret: its middle where the unit's is
+    else:  # no turret (or like "own_turret": it turns where it is, unitmodel.moved_turret): its middle where the unit's is
         mid = (max(along) + min(along)) / 2 * scale
         side_mid = [p[0] * r[0] + p[1] * r[1] for p in hull]
         shift = (like.get("middle", like["pivot"][0]) - mid, -(max(side_mid) + min(side_mid)) / 2 * scale)
     low = min(p[2] for m in model.meshes for p in m.positions)
     lift = like["ground"] - low * scale
+    shift, lift = _moved(shift, lift, like)
 
     def place(p):
         x, y, z = p
@@ -929,8 +1006,9 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
     groups: dict = {}
     for m, k in zip(model.meshes, parts):
         mats = m.face_materials or [-1] * len(m.triangles)
+        on = BLADES_MARK if like.get("own_propellers") and f".{BLADE_BONE}" in m.name.lower() else BONES[k]
         for t, mk in zip(m.triangles, mats):
-            groups.setdefault((BONES[k], pic_of.get(mk, -1)), []).append((m, t))
+            groups.setdefault((on, pic_of.get(mk, -1)), []).append((m, t))
     own_normals = 0
     for (bone, pic), tris in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
         index: dict = {}
@@ -954,8 +1032,56 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         part.normals = [g if g is not None else n for g, n in zip(given, computed)]
         own_normals += sum(g is not None for g in given)
         out.append(part)
-    return fit_discs(Prepared(out, pictures, fit_report(model, parts, axis, sign, scale, out, pictures, missing,
-                                                        own_normals, own_alpha, notes)), like)
+    report = fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    if ring is not None and like.get("own_turret"):
+        report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]   # where it turns, for the build
+    if like.get("move"):
+        report["moved"] = list(like["move"])
+    return fit_discs(Prepared(out, pictures, report), like)
+
+
+def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: int) -> Prepared:
+    """A model rigged to the copied unit's own skeleton (read_model's `skin`; a soldier's, a towed gun's, any unit with no hull bone to fit a model on): every point keeps
+    its bones, in the game's axes and scale, nothing moved or scaled, because its bones are where the skeleton has them. One part per mesh and picture, each keeping the game
+    model's draw it came from. `like` "root": the bone for a point the file gives none."""
+    from .gltf import SCALE
+    pictures, pic_of, missing, own_alpha, notes = fit_pictures(model, folders, side)
+    notes = list(notes)
+    if size != 1.0:
+        notes.append(f"a model rigged to the unit's own bones keeps its size: size {size:g} wasn't used")
+    out, own_normals = [], 0
+    root = [(like.get("root", ""), 255)]
+    for m in model.meshes:
+        groups: dict = {}
+        for t, mk in zip(m.triangles, m.face_materials or [-1] * len(m.triangles)):
+            groups.setdefault(pic_of.get(mk, -1), []).append(t)
+        for pic, tris in sorted(groups.items()):
+            node = RIGGED_STATIC if m.static else RIGGED_DISC if DISC_MESH in m.name.lower() else RIGGED
+            part = Part(node, pic, [], [], [], [], skin=[], tracks=[] if m.tracks else None, draw=m.draw, static=m.static)
+            index: dict = {}
+            given: list = []
+            for tri in tris:
+                corners = []
+                for v in tri:
+                    if v not in index:
+                        index[v] = len(part.positions)
+                        x, y, z = m.positions[v]
+                        part.positions.append((x / SCALE, -y / SCALE, z / SCALE))
+                        u, vv = m.uvs[v] if m.uvs else (0.0, 0.0)
+                        part.uvs.append((u, 1.0 - vv))
+                        given.append((m.normals[v][0], -m.normals[v][1], m.normals[v][2]) if v < len(m.normals) else None)
+                        part.skin.append(m.skin[v] if v < len(m.skin) and m.skin[v] else root)
+                        if m.tracks:
+                            part.tracks.append(m.tracks[v])
+                    corners.append(index[v])
+                part.triangles.append((corners[0], corners[2], corners[1]))
+            computed = smooth_normals(part.positions, part.triangles)
+            part.normals = [g if g is not None else n for g, n in zip(given, computed)]
+            own_normals += sum(g is not None for g in given)
+            out.append(part)
+    report = fit_report(model, [RIGGED] * len(model.meshes), 0, 1, 1.0 / SCALE, out, pictures, missing, own_normals, own_alpha, notes)
+    report["rigged"] = True
+    return Prepared(out, pictures, report)
 
 
 def fit_discs(prep: Prepared, like: dict) -> Prepared:
@@ -972,6 +1098,8 @@ def fit_discs(prep: Prepared, like: dict) -> Prepared:
         return prep
     kept_parts = [p for p in prep.parts if p.bone != mark]
     spots = [s for s in (like.get("propellers") or []) if s.get("bone")]
+    if like.get("own_propellers") and spots:
+        return _own_discs(prep, found, kept_parts, spots)
     discs = []      # (part, its points, its middle)
     for part in found:
         for pts in pieces(part.triangles, len(part.positions)):
@@ -1006,6 +1134,80 @@ def fit_discs(prep: Prepared, like: dict) -> Prepared:
         report["notes"] = list(report.get("notes") or []) + [
             f"{left} propeller disc(s) left out: " + ("the unit it copies has none to spin them" if not spots else
                                                       "not where the copied plane's propellers are")]
+    out_parts = kept_parts + [groups[k] for k in sorted(groups)]
+    report["draws"] = len(out_parts)
+    report["vertices"] = sum(len(p.positions) for p in out_parts)
+    report["triangles"] = sum(len(p.triangles) for p in out_parts)
+    return Prepared(out_parts, prep.pictures, report)
+
+
+def _own_discs(prep: Prepared, found: list, kept_parts: list, spots: list) -> Prepared:
+    """fit_discs with `like` "own_propellers" (nothing in the apps asks for it): every disc stays where the model has it, and
+    goes on a propeller number of its own: the copied plane's number nearest it while there are any, then new numbers after the highest. The report's
+    "own_propellers" ([[number, x, y, z]]) says where each is, for the build to put that propeller's bones there (unitmodel.own_propellers).
+    The model's blades (read_model's `blades`: the part on BLADES_MARK), each piece on the slow bone of the disc it lies in, spin there and are what a parked plane shows;
+    a piece reaching past BLADE_REACH of every disc stays on the hull, and a disc with no blades shows nothing below the speed its disc comes in at (the report's notes say so)."""
+    blade_parts = [p for p in kept_parts if p.bone == BLADES_MARK]
+    kept_parts = [p for p in kept_parts if p.bone != BLADES_MARK]
+    discs = []      # (part, its points, its middle)
+    for part in found:
+        for pts in pieces(part.triangles, len(part.positions)):
+            box = [(min(part.positions[i][k] for i in pts), max(part.positions[i][k] for i in pts)) for k in range(3)]
+            discs.append((part, pts, tuple((lo + hi) / 2 for lo, hi in box)))
+    numbers = [int(s["bone"].rsplit("_", 1)[1]) for s in spots]
+    stem = spots[0]["bone"].rsplit("_", 1)[0]
+    took, used = {}, set()
+    for _dist, i, j in sorted((math.dist(d[2], s["centre"]), i, j) for i, d in enumerate(discs) for j, s in enumerate(spots)):
+        if i not in took and j not in used:
+            took[i] = numbers[j]
+            used.add(j)
+    extra = max(numbers)
+    groups: dict = {}
+    places = []
+    for i, (part, pts, middle) in enumerate(discs):
+        if i not in took:
+            extra += 1
+            took[i] = extra
+        bone = f"{stem}_{took[i]}"
+        places.append([took[i], middle[0], middle[1], middle[2]])
+        out = groups.setdefault((bone, part.picture), Part(bone, part.picture, [], [], [], []))
+        index = {}
+        for p in pts:
+            index[p] = len(out.positions)
+            out.positions.append(part.positions[p])
+            out.normals.append(part.normals[p])
+            out.uvs.append(part.uvs[p])
+        out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
+    radius = [max(max(d[0].positions[p][k] for p in d[1]) - min(d[0].positions[p][k] for p in d[1]) for k in range(3)) / 2 for d in discs]
+    on_a_propeller, on_the_hull = 0, 0
+    with_blades = set()
+    for part in blade_parts:
+        for pts in pieces(part.triangles, len(part.positions)):
+            mid = tuple(sum(part.positions[p][k] for p in pts) / len(pts) for k in range(3))
+            i = min(range(len(discs)), key=lambda d: math.dist(mid, discs[d][2]))
+            inside = max(math.dist(part.positions[p], discs[i][2]) for p in pts) <= BLADE_REACH * radius[i]
+            bone = f"{BLADE_BONE}{took[i]}" if inside else BONES[HULL]
+            on_a_propeller, on_the_hull = on_a_propeller + inside, on_the_hull + (not inside)
+            if inside:
+                with_blades.add(i)
+            out = groups.setdefault((bone, part.picture), Part(bone, part.picture, [], [], [], []))
+            index = {}
+            for p in pts:
+                index[p] = len(out.positions)
+                out.positions.append(part.positions[p])
+                out.normals.append(part.normals[p])
+                out.uvs.append(part.uvs[p])
+            out.triangles += [tuple(index[v] for v in t) for t in part.triangles if t[0] in index]
+    report = dict(prep.report)
+    report["propellers"] = {"kept": len(discs), "left_out": 0, "why": ""}
+    report["own_propellers"] = sorted(places)
+    if blade_parts:
+        report["propellers"]["blades"] = {"on_a_propeller": on_a_propeller, "on_the_hull": on_the_hull}
+    bare = sorted(took[i] for i in range(len(discs)) if i not in with_blades)
+    if bare:
+        report["notes"] = list(report.get("notes") or []) + [f"propeller(s) {bare} have a disc and no blades: on the ground and at low speed they show nothing"]
+    if on_the_hull:
+        report["notes"] = list(report.get("notes") or []) + [f"{on_the_hull} blade piece(s) reach past every propeller disc: they stay on the plane's body and won't turn"]
     out_parts = kept_parts + [groups[k] for k in sorted(groups)]
     report["draws"] = len(out_parts)
     report["vertices"] = sum(len(p.positions) for p in out_parts)
@@ -1112,8 +1314,10 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
     primitive per picture, the colour pictures as its materials' and each alpha (side colour / shine) as an image of
     its own (named in the material's extras)."""
     from .dxt import png_bytes
-    from .gltf import FLOAT, MIRROR, SCALE, UINT, USHORT, _Glb, _point, _split
+    from .gltf import FLOAT, MIRROR, SCALE, TRACK_ATTRIBUTE, UBYTE, UINT, USHORT, _Glb, _point, _split
     g = _Glb()
+    joints = sorted({name for p in prep.parts if p.skin and not p.static for v in p.skin for name, _w in v})
+    joint_at = {name: k for k, name in enumerate(joints)}
     for name, w, h, px in prep.pictures:
         colour, grey = _split(px)
         tex = g.image(png_bytes(colour, w, h), Path(name).stem)
@@ -1124,7 +1328,7 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
     nodes: dict = {}
     arrays = whole_arrays()
     for part in prep.parts:
-        packed = arrays.part_buffers(part, SCALE, MIRROR) if arrays else None
+        packed = arrays.part_buffers(part, SCALE, MIRROR) if arrays and part.skin is None else None
         if packed is not None:  # (numpy: the same bytes and the same lowest and highest, every vertex at once)
             (pos, n, low, high), (nrm, n_nrm), (uvs, n_uvs), (tri, n_tri) = packed
             prim = {"attributes": {"POSITION": g.packed(pos, n, "VEC3", FLOAT, low=low, high=high),
@@ -1141,10 +1345,26 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
                     "indices": g.accessor(tri, "SCALAR", UINT if len(pos) > 65535 else USHORT, 34963)}
         if part.picture >= 0:
             prim["material"] = part.picture
+        if part.skin is not None:       # a rigged part: each point's bones, by the joints below
+            if not part.static:
+                js = [tuple(joint_at[n] for n, _w in v[:4]) + (0,) * (4 - len(v[:4])) for v in part.skin]
+                ws = [tuple(w / 255.0 for _n, w in v[:4]) + (0.0,) * (4 - len(v[:4])) for v in part.skin]
+                prim["attributes"]["JOINTS_0"] = g.accessor(js, "VEC4", USHORT)
+                prim["attributes"]["WEIGHTS_0"] = g.accessor(ws, "VEC4", FLOAT)
+            if part.tracks:
+                prim["attributes"][TRACK_ATTRIBUTE] = g.accessor([(t, 0, 0, 0) for t in part.tracks], "VEC4", UBYTE)
+            prim["extras"] = {"rusemod_draw": part.draw, **({"rusemod_static": True} if part.static else {})}
         nodes.setdefault(part.bone, []).append(prim)
     for bone, prims in nodes.items():
         g.doc["meshes"].append({"name": bone, "primitives": prims})
-        g.doc["nodes"].append({"name": bone, "mesh": len(g.doc["meshes"]) - 1})
+        g.doc["nodes"].append({"name": bone, "mesh": len(g.doc["meshes"]) - 1, **({"skin": 0} if bone in (RIGGED, RIGGED_DISC) else {})})
+    if joints:
+        first = len(g.doc["nodes"])
+        g.doc["nodes"] += [{"name": name} for name in joints]
+        identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]
+        ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(identity * len(joints))))
+        g.doc["accessors"].append({"bufferView": ibm, "componentType": FLOAT, "count": len(joints), "type": "MAT4"})
+        g.doc["skins"] = [{"joints": list(range(first, first + len(joints))), "inverseBindMatrices": len(g.doc["accessors"]) - 1}]
     g.doc["scenes"] = [{"name": Path(path).stem, "nodes": list(range(len(g.doc["nodes"])))}]
     g.doc["scene"] = 0
     g.doc["asset"]["extras"] = {"rusemod_import": 1, "rusemod_scale": SCALE, "rusemod_mirror": MIRROR,

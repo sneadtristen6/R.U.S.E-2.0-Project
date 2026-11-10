@@ -6,7 +6,7 @@
   ruse dump <pack> <file> [filter]     show one data file as text
   ruse extract <pack> <filter> [--out DIR]   copy files out of a pack (default folder: extracted/)
   ruse export-model <name>... [--out DIR]    game models as .glb files for Blender (default: extracted/models)
-  ruse import-model <file> --like <model> --unit <name> [--mod DIR]   a .3ds/.glb as a new unit's own model
+  ruse import-model <file> --like <model> --unit <name> [--mod DIR] [--move F R U]   a .3ds/.glb as a new unit's own model
   ruse build <mod>... [--pack P] [--out FILE|DIR] [--instance DIR]   build mods into packs or a modded copy
   ruse index build                     index the data a mod can change (once per game build; about a minute)
   ruse index find|show|where|filter|texts|clone|report ...   ask the index (see `ruse index -h`)
@@ -221,12 +221,17 @@ def cmd_import_model(args) -> int:
         # not a game rule: we never write into the game folder
         raise UserError(f"Refusing to write into the game folder ({game}).")
     try:
+        # (--move: fitted the way the Studio fits one, so its turret and propellers stay on the model when it moves)
         r = import_model(game, found[0], Path(args.file), out, size=args.size, side=args.side, pictures=args.pictures,
-                         aircraft=args.aircraft)
+                         aircraft=args.aircraft,
+                         **({"move": args.move, "own_turret": True, "own_propellers": True} if args.move is not None else {}))
     except (ModelError, OSError, ValueError) as exc:
         raise UserError(str(exc)) from None
     print(f"{out}: {r['vertices']:,} points, {r['triangles']:,} triangles in {r['draws']} part(s), fitted to "
           f"{r['like']} (facing {'+' if r['facing'][1] > 0 else '-'}{r['facing'][0]}, scale {r['scale']:.3f})")
+    if r.get("moved"):
+        forward, right, up = r["moved"]
+        print(f"  moved: {forward:g} forward, {right:g} right, {up:g} up, in the game's units (the unit it copies is {r['stands'][3]:g} long)")
     for name, role in r["parts"].items():
         print(f"  {name}: {role}")
     print("  pictures: " + ", ".join(f"{n} {w}x{h}" for n, w, h in r["pictures"]))
@@ -381,6 +386,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--side", type=int, default=1024, help="largest picture side (default 1024, as the game's)")
     p.add_argument("--pictures", help="where a .3ds's pictures are (default: beside it, then one folder up)")
     p.add_argument("--aircraft", action="store_true", help="the new unit is a plane (its tail fin goes at the back)")
+    p.add_argument("--move", nargs=3, type=float, metavar=("FORWARD", "RIGHT", "UP"),
+                   help="move the fitted model this far, in the game's units (a minus goes the other way); fits it as the "
+                        "Studio does, its hull on the copied hull's middle and its turret and propellers where the model has them")
     p.set_defaults(fn=cmd_import_model)
     p = sub.add_parser("build", help="build mods into a rebuilt pack or a modded copy of the game")
     p.add_argument("mods", nargs="+", help="mod folders (with mod.toml), .rmod files, or single .rndf files")

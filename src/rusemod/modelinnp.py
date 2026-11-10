@@ -477,12 +477,14 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         return None     # (the loops say: the model has no length)
     scale = like["length"] * size / length
     turret = [i for i, k in enumerate(parts) if k == plain.TURRET]
+    ring = None
     if turret:
         main = max(turret, key=lambda i: len(meshes[i].positions))
         cx, cy = _turn_ring(data[main]["points"])
         ring = ((cx * f[0] + cy * f[1]) * scale, (cx * r[0] + cy * r[1]) * scale)
+    if ring is not None and not like.get("own_turret"):
         shift = (like["pivot"][0] - ring[0], like["pivot"][1] - ring[1])
-    else:  # no turret: its middle where the unit's is
+    else:  # no turret (or like "own_turret": it turns where it is): its middle where the unit's is
         mid = (_highest(along) + _lowest(along)) / 2 * scale
         with np.errstate(all="ignore"):
             side_mid = [p[:, 0] * r[0] + p[:, 1] * r[1] for p in hull]
@@ -491,6 +493,7 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         shift = (like.get("middle", like["pivot"][0]) - mid, -(_highest(side_mid) + _lowest(side_mid)) / 2 * scale)
     low = _lowest([d["points"][:, 2] for d in data])
     lift = like["ground"] - low * scale
+    shift, lift = plain._moved(shift, lift, like)
     every = _points([seen[k] for k in offset], offset.values(), total, f, r, scale, shift, lift)
     if every is None:
         return None
@@ -507,8 +510,9 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
             pics = np.full(len(d["tris"]), next(iter(look.values())), dtype=np.int64)
         else:
             pics = np.fromiter(map(look.__getitem__, d["mats"]), dtype=np.int64, count=len(d["mats"]))
+        on = plain.BLADES_MARK if like.get("own_propellers") and f".{plain.BLADE_BONE}" in m.name.lower() else plain.BONES[k]
         for pic in sorted(set(look.values())):
-            groups.setdefault((plain.BONES[k], pic), []).append((offset[id(m)], d["tris"],
+            groups.setdefault((on, pic), []).append((offset[id(m)], d["tris"],
                                                                  np.flatnonzero(pics == pic)))
     unit_flat = plain._unit((0.0, 0.0, 0.0))                  # (the loops' own tuples)
     smooth_flat = plain.smooth_normals([(0.0, 0.0, 0.0)], [])[0]
@@ -544,8 +548,12 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         _keep(part, "triangles", tri_out)
         out.append(part)
         own_normals += int(own.sum())
-    return plain.Prepared(out, pictures, plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing,
-                                                          own_normals, own_alpha, notes))
+    report = plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    if ring is not None and like.get("own_turret"):
+        report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]
+    if like.get("move"):
+        report["moved"] = list(like["move"])
+    return plain.Prepared(out, pictures, report)
 
 
 def nearest(px, w: int, h: int, nw: int, nh: int):

@@ -61,6 +61,7 @@ class Part:
     atlas: list = field(default_factory=list)  # the raw atlas bytes per vertex (min u, min v, width, height) × 255
     bones: list = field(default_factory=list)  # skinned models: 4 bone numbers per vertex (the material's own list)
     weights: list = field(default_factory=list)  # and their 4 weights, 0..255
+    tracks: list = field(default_factory=list)  # a tank's: the track number of each vertex (the normal's 4th byte), when its format has one
 
 
 def layout(format_name: str) -> list[tuple[str, int, int]]:
@@ -206,8 +207,9 @@ class Spk:
             uvs = [(a[0] / 255 + u * a[2] / 255, a[1] / 255 + v * a[3] / 255) for (u, v), a in zip(uvs, atlas)]
         bones = [list(b) for b in comps.get("BlIdx_4ub", [])]
         weights = [list(w) for w in comps.get("BlW_4ubn", [])]
+        tracks = [n[3] for n in comps[nrm_key]] if nrm_key == "NormalAndChenilleIndexIn01_4ubn" else []
         return Part(material, pos, nrm, [c for p in uvs for c in p], self.indices(ib), [list(a) for a in atlas],
-                    bones, weights)
+                    bones, weights, tracks)
 
 
 def _code(comp: str, size: int) -> str:

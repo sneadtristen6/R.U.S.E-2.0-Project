@@ -46,8 +46,8 @@ On the new unit's page, under **Its own model**:
    real lengths).
 2. Click **Import model…** and pick the .3ds or .glb.
 
-The Studio fits it to the unit: facing forward (the way its gun points), its length, its turret ring on the copied
-unit's turret, standing on the ground. Its pictures become textures of its own. The page shows it in 3D, with which
+The Studio fits it to the unit: facing forward (the way its gun points), its length, placed where the copied unit
+stands, its turret turning where it is on your model, standing on the ground. Its pictures become textures of its own. The page shows it in 3D, with which
 parts turn with the turret. If a picture wasn't found, it says which: put the pictures beside the model and import
 again.
 
@@ -58,8 +58,18 @@ and, for an era unit, **Real life** marked; click **Resize** and the model is fi
 several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
 shows from the next build.
 
-**Planes:** a plane opened in Blender from the Studio and brought back keeps its spinning propellers and faces
-forward. Seen in the game.
+**Where it sits:** a new model is put on the middle of the unit it copies, so most models need nothing here. If yours
+doesn't sit right, open **Move it** under the size (it stays open on a model you have moved). It takes three numbers,
+**Forward**, **Right** and **Up**, in the game's units (the page says how long the unit it copies is, in those units). A minus goes the other way, and 0, 0, 0 puts it
+back where it was fitted. Click **Move** and the model is fitted again from its own file, that far away; its turret and
+propellers go with it, so they still turn in the right place. In the 3D view the blue ring is where the unit it copies
+stands, and the mark on the ring is the front. A new size keeps the move. A model rigged to the unit's own bones (a
+soldier, a gun's crew) stays where its bones are: move that one in Blender.
+
+**Planes:** a plane opened in Blender from the Studio and brought back faces forward and keeps its propellers where
+your model has them, as many as it has, whatever the plane it copies had: blades on the ground, spinning discs in the
+air. Seen in the game. A model from anywhere else keeps its propellers as it drew them, standing still: the importer
+can't tell yet which parts of it are propellers.
 
 ## 4. Its card, then test
 
@@ -85,6 +95,7 @@ units whose turrets the Studio misread): use **Import model…** again on that u
 - Pictures are made at most 1024 across, like the game's own unit pictures.
 
 From the command line, the same: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Add `--move 50 0 -10` to move it 50 forward and 10
+down from where it's fitted (forward, right, up).
 
 **Next:** [[Export and share|Export-and-Share]]

@@ -286,8 +286,18 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   a new model of its own, following the source's bones: the parts in the node called `chassis` move with the hull,
   those in `tourelle_01` turn with the turret. Each picture in the .glb becomes a texture of its own. The file is what
   `ruse import-model` (or the Studio's *Import model*) writes from a .3ds or
-  .glb from any 3D tool: fitted to the source unit (its length, its turret's turning point, its ground), in the axes
-  `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names).
+  .glb from any 3D tool: fitted to the source unit (its length, its ground, and its turret's turning point), in the axes
+  `ruse export-model` writes, so it opens in Blender and can be changed there and saved over (keep the node names). The
+  Studio's *Import model* lines the hull up on the source's hull middle instead of the turrets; the file's report then
+  says where its turret is (`own_turret`, x and y in the game's model units), and the build gives the new model its own
+  copy of the source's skeleton with the turret and what hangs from it moved there, in every skeleton pack holding the
+  source's. Seen in the game (T63: a Sherman on a Semovente copy). A file without `own_turret` shares the source's
+  skeleton, as before. *Move it* in the Studio, or `ruse import-model --move FORWARD RIGHT UP`, moves the fitted model
+  that far in the game's units; the file's report says so (`moved`, `[forward, right, up]`) and `own_turret` is where the
+  turret is after the move, the turret's bones also going up by the third number. A plane's file can say where its own propellers are (`own_propellers` in its report, each
+  `[number, x, y, z]`): the build puts that propeller's two bones there in the model's own skeleton (`helice_ls_<number>`
+  with the blades, `helice_hs_<number>` with the flat disc, adding the bones of a number the source hasn't got) and lists
+  any number the unit doesn't in its `ListeHelice`, a copy of the list's first entry. Seen in the game (T64, T65).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
   M1 Abrams, Studio 0.9.6).
 - **A unit's own copy of its models:** `files/models/<the unit's name>.copy.toml` gives a unit its own copy of the

@@ -1418,9 +1418,12 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     out: dict = {}
     for unit, (glb, mod_id) in sorted(wanted.items()):
-        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result)
+        from .unitmodel import glb_report
+        report = glb_report(glb)
+        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result, report.get("like") if report.get("rigged") else None, report.get("also"))
         if source is None:
             continue
+        _own_propeller_list(run, by_name[unit], unit, glb, f"{mod_id}: files/models/{unit}.glb", result)
         out[unit] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
                                                f"beside {source}"))
@@ -1592,15 +1595,24 @@ def _point_at_copies(run, name: str, copies: dict) -> int:
                for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
 
 
-def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult) -> str | None:
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None) -> str | None:
     """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
     model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
-    part names no model file."""
+    part names no model file. `rigged_on`: the game's model a rigged model was fitted to (any kind of unit: a soldier's model is in parts of other names): every
+    part of the unit naming it, or one of `also` (the unit's other models with the same bones: a squad's bazooka man), names the unit's own."""
     from .patch import Inline, Ref, _fresh
+    from .unitmodel import model_key
     name = by_name.get(unit)
     if name is None:
         # not a game rule: a model for a unit no mod in the set makes
         result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+        return None
+    if rigged_on:
+        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        if _point_at_copies(run, name, {model_key(m): own for m in [rigged_on, *(also or [])]}):
+            return rigged_on
+        # not a game rule: what our build supports (a part of the unit naming the model it was fitted to)
+        result.findings.append(Finding("error", f"{where}: no part of {unit} names {rigged_on}, the model it was fitted to"))
         return None
     gfx = run.game.objects[name].props.get("GfxDescriptor")
     mesh = gfx.obj.props.get("MeshDescriptor") if isinstance(gfx, Inline) else None
@@ -1629,6 +1641,50 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
     if figurine is not None and model_key(figurine) != model_key(source):
         _point_at_copies(run, name, {model_key(figurine): own})
     return source
+
+
+def _own_propeller_list(run, name: str, unit: str, glb, where: str, result: BuildResult) -> None:
+    """A plane's own model with propellers its unit doesn't list (the model file's report, "own_propellers": modelin.fit_discs): each gets an entry in the unit's
+    list of propellers (the game spins only what is listed, finding each one's bones by its number), a copy of the list's first entry with its
+    own number, as T64 and T65 had it by hand in the game. Worked out here from the file, so it follows the model: another import, a removed model or unit leave nothing behind."""
+    from .patch import Inline, ListV, MapV, Ref, Text, _fresh
+    from .unitmodel import glb_report
+    places = glb_report(glb).get("own_propellers")
+    if not places:
+        return
+    objects = run.game.objects
+
+    def of(value):
+        return value.obj if isinstance(value, Inline) else objects.get(value.target) if isinstance(value, Ref) else None
+
+    gfx = objects[name].props.get("GfxDescriptor")
+    parts = gfx.obj.props.get("SousElements") if isinstance(gfx, Inline) else None
+    pairs = parts.pairs if isinstance(parts, MapV) else []
+    at = next((k for k, pair in enumerate(pairs) if of(pair[1]) is not None and "ListeHelice" in of(pair[1]).props), None)
+    if at is None:
+        # not a game rule: what our build supports (the list where every plane of the game has it)
+        result.findings.append(Finding("warning", f"{where}: {unit}'s model has its own propellers, but the unit has no list of propellers to put them on: they won't spin"))
+        return
+    if isinstance(pairs[at][1], Ref):       # (a part shared with another: the copy gets its own, and the other keeps its list)
+        pairs[at] = (pairs[at][0], Inline(_fresh(of(pairs[at][1]))))
+    holder = of(pairs[at][1])
+    old = holder.props["ListeHelice"]
+    entries = [of(v) for v in old.items] if isinstance(old, ListV) else []
+    listed = {e.props["HeliceNumber"].value for e in entries if e is not None and isinstance(e.props.get("HeliceNumber"), Text)}
+    first = next((e for e in entries if e is not None and isinstance(e.props.get("HeliceNumber"), Text)), None)
+    missing = [str(p[0]) for p in places if str(p[0]) not in listed]
+    if not missing:
+        return
+    if first is None:
+        result.findings.append(Finding("warning", f"{where}: {unit}'s list of propellers has no entry to copy: propellers {missing} won't spin"))
+        return
+    added = []
+    for number in missing:
+        entry = _fresh(first)
+        entry.props["HeliceNumber"] = Text(first.props["HeliceNumber"].kind, number)
+        added.append(Inline(entry))
+    holder.props["ListeHelice"] = ListV(list(old.items) + added)
+    result.findings.append(Finding("note", f"{where}: {unit} lists {len(added)} more propeller(s), numbers {', '.join(missing)}"))
 
 
 FIGURINE = ("GfxDescriptorIcone", "PawnDescriptor", "DescriptorFigurine", "MeshDescriptor")
