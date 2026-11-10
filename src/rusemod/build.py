@@ -1400,6 +1400,62 @@ def mission_models(run, zz_win, mods: list, order: list[str], result: BuildResul
         _also_loaded(run, sorted(wanted), result)
 
 
+def far_upgrades(run, result: BuildResult) -> None:
+    """An upgrade (IsUpgrade 1) of a unit made in ANOTHER building becomes a research of its own, and the build says so
+    (the owner, 2026-11-10, after playing two library mods together: "it shouldn't be taken away before the new
+    one's researched ... I feel like that kind of is a new fault", then "Yes, do that" to this rule). One mod had
+    moved a light tank to the Barracks and given it an upgrade there; another had made a tank of the Armor Base its
+    upgrade. The game takes a unit out of its list the moment ANY upgrade of it is researched, so researching the
+    Armor Base's tank took the light tank out of the Barracks, its own upgrade there not researched yet; and the
+    build list of the Armor Base stops the game when an upgrade's card finds no card of its unit in it (two
+    players' reports; rusemod.scriptguards keeps the game going there). Neither mod is wrong alone. EVERY unit of
+    the build is looked at, whichever mod set its values, .rmod mods included (unitcheck.cut_far_upgrades). Research
+    from another building's unit WITHOUT the upgrade flag, as the Studio's board writes it, is left as it is: that
+    unit stayed buildable after the research in the game (2026-10-18). Runs before the menu lines and groups, so they
+    see the research where the game will show it: on its own, as the game as sold has the T-34."""
+    game = run.game
+
+    def called(name: str) -> str:
+        obj = game.objects.get(name)
+        cls = getattr(obj.props.get("ClassNameForDebug"), "value", None) if obj is not None else None
+        return cls if isinstance(cls, str) and cls else name
+
+    def made_in(name: str) -> str:
+        kind = unitcheck._int(game.objects[name].props.get(unitcheck.FACTORY))
+        return BUILDING_NAMES.get(kind, f"building {kind}")
+
+    for name, parent in unitcheck.cut_far_upgrades(game):
+        # rule: unit-far-upgrade
+        result.findings.append(Finding("warning", f"{called(name)} ({made_in(name)}) was an upgrade of "
+                                                  f"{called(parent)} ({made_in(parent)}): the game takes a unit out "
+                                                  f"of its list as soon as any upgrade of it is researched, in "
+                                                  f"whatever building, so it is now a research of its own"))
+
+
+def rmod_far_upgrades(arc: Edat, build_id: str, cache, result: BuildResult) -> None:
+    """far_upgrades for a set of .rmod mods ONLY, the set most players have: those mods change the game's files
+    themselves and build_pack never runs, so nothing of ours would look at the unit data they leave (the two mods
+    of the owner's test were both .rmod mods). The unit data as they left it (`arc`) is read, and written again
+    only when a far upgrade was cut. With none, `result` is not touched: the copy's files, its fingerprint and its
+    join code are what they were before this step existed, so players on the release before still match."""
+    pack = load_pack(arc, cache)
+    run = Engine(pack.base).run([])
+    found = BuildResult()
+    far_upgrades(run, found)
+    if not found.findings:
+        return
+    notes: list = []
+    try:
+        changed = save(pack.base, run.game, pack.loaded, run.created, notes)
+    except ModelError as exc:
+        # not a game rule: the unit data these mods left can't be written again by our writer
+        result.findings.append(Finding("error", str(exc)))
+        return
+    result.findings += found.findings + [Finding("note", n) for n in notes]
+    result.changed = {pack.members[p]: data for p, data in changed.items()}
+    result.fingerprint = fingerprint(build_id, changed)
+
+
 def fill_loc(game, keys: dict) -> list[str]:
     """Turn every loc('...') value into the game key its text got. Returns the loc keys no mod defines."""
     missing = []
@@ -1954,6 +2010,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
                                                   f"({', '.join(p.rsplit(chr(92), 1)[-1] for p in shadows)})"))
     if run.errors:
         return result
+    far_upgrades(run, result)
     into = unitpacks.Packs(text_arc) if text_arc is not None else None
     unit_models(base, run, text_arc, result, into)
     spawn_models(run, text_arc, mods, result.order, result, into)
@@ -2753,6 +2810,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             # counts as new and looks through again and again (2026-10-04)
             with collector_paused():
                 result = build_pack(arc, mods, build_id, text_arc, cache) if mods else BuildResult()
+                if not mods and rmods:  # .rmod mods only: the one look our build takes at the unit data they leave
+                    rmod_far_upgrades(arc, build_id, cache, result)
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
         if run:

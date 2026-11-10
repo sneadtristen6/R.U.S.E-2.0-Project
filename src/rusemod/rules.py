@@ -107,6 +107,19 @@ RULES: dict[str, Rule] = {
                 "are in the project's private notes). The owner the same day: \"don't allow that to happen. There "
                 "shouldn't be a unit hidden behind a research one shown in the menu\"; with the links taken out, the "
                 "next test ran"),
+    "unit-far-upgrade": Rule(
+        "A unit leaves its build list the moment ANY upgrade of it is researched, in whatever building that upgrade "
+        "is made; so an upgrade (IsUpgrade 1) of a unit made in another building is made a research of its own "
+        "(research across buildings without the upgrade flag, as the Studio writes it, is left alone).",
+        "game", "2026-11-10 test copy menu-guard1 (the owner, four frames): two library mods together, one moving "
+                "the Soviet light tank to the Barracks with an upgrade there, the other making the T-34 of the Armor "
+                "Base its upgrade; when the T-34 was researched the light tank left the Barracks' list, its own "
+                "upgrade there not researched (the owner: \"it shouldn't be taken away before the new one's "
+                "researched\"). The game as sold has 50 upgrades, each made where its unit is. How the game treats a "
+                "finished research was studied too (the details are in the project's private notes). The remedy "
+                "itself, the far upgrade as a research of its own, is how the game as sold has the T-34; it is not "
+                "tried in the game with these two mods yet. 2026-10-18 test copy board1: research from another "
+                "building's unit WITHOUT the upgrade flag left that unit buildable after the research"),
     "unit-five-dates": Rule(
         "ProductionPrice and ShowInMenu have 5 items, one per battle date; fewer makes the unit free or hidden.",
         "studied", "partly: the game's scripts make a missing price 0 and a missing menu item hidden, with the length "

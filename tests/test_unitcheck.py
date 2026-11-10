@@ -198,6 +198,113 @@ class ResearchParents(unittest.TestCase):
         self.assertEqual(said(run(clone(source=self.IS2), base=base)), [])  # a copy of it as the game had it
 
 
+class FarUpgrades(unittest.TestCase):
+    """A unit researched from a unit made in another building. Played 2026-11-10 with two library mods on (one moves
+    the Soviet light tank to the Barracks and gives it an upgrade there, the other makes the Armor Base's T-34 its
+    upgrade): the light tank left the Barracks' list the moment the T-34 was researched, its own upgrade there not
+    researched. The owner: "it shouldn't be taken away before the new one's researched". The build makes the far
+    upgrade a research of its own, whichever mod set the values, and says so."""
+    T26, BT7, T34, T3485 = "$/T26", "$/BT7", "$/T34", "$/T3485"
+    BARRACKS, ARMOR = 8, 10
+
+    def base(self):
+        g = game()
+        tank = lambda did, factory, **extra: unit("TUniteAuSolDescriptor", did, [10, 24, 43, 55], nation=5,  # noqa: E731
+                                                  **{"Factory": num(factory), **extra})
+        upgrade = lambda of: {"UpgradeRequire": Ref(of), "IsUpgrade": num(1, "bool"),  # noqa: E731
+                              "UpgradePrice": num(35)}
+        g.objects[self.T26] = tank(1600, self.BARRACKS)
+        g.objects[self.BT7] = tank(1601, self.BARRACKS, **upgrade(self.T26))    # its upgrade in its own building
+        g.objects[self.T34] = tank(1602, self.ARMOR, **upgrade(self.T26))       # its upgrade in another building
+        g.objects[self.T3485] = tank(1603, self.ARMOR, **upgrade(self.T34))     # an upgrade of that one, beside it
+        return g
+
+    def test_only_the_upgrade_made_in_another_building_is_found(self):
+        self.assertEqual(unitcheck.far_upgrades(self.base()), [(self.T34, self.T26)])
+        self.assertEqual(unitcheck.far_upgrades(game()), [])   # the small game as it is: none
+
+    def test_cut_it_is_a_research_of_its_own_and_the_others_keep_their_unit(self):
+        g = self.base()
+        self.assertEqual(unitcheck.cut_far_upgrades(g), [(self.T34, self.T26)])
+        t34 = g.objects[self.T34].props
+        self.assertNotIn("UpgradeRequire", t34)
+        self.assertNotIn("IsUpgrade", t34)
+        self.assertEqual(t34["UpgradePrice"].value, 35)                      # still a research, at its price
+        self.assertEqual(t34["Factory"].value, self.ARMOR)                   # still made where it was
+        self.assertEqual(g.objects[self.BT7].props["UpgradeRequire"].target, self.T26)
+        self.assertEqual(g.objects[self.T3485].props["UpgradeRequire"].target, self.T34)
+        self.assertEqual(unitcheck.cut_far_upgrades(g), [])                  # nothing left to cut
+
+    def test_research_across_buildings_without_the_upgrade_flag_is_left_alone(self):
+        """How the Studio's board writes research from another building's unit: the link, no upgrade flag. Played
+        2026-10-18 (a Tiger in the Anti-Tank Base researched from the Armor Base's Sherman): the Sherman stayed
+        buildable after the research, so there is nothing to cut."""
+        g = self.base()
+        del g.objects[self.T34].props["IsUpgrade"]
+        self.assertEqual(unitcheck.far_upgrades(g), [])
+        g.objects[self.T34].props["IsUpgrade"] = num(0, "bool")
+        self.assertEqual(unitcheck.cut_far_upgrades(g), [])
+        self.assertEqual(g.objects[self.T34].props["UpgradeRequire"].target, self.T26)   # kept as the modder made it
+
+    def test_a_missing_unit_another_kind_of_object_or_no_building_is_left_alone(self):
+        g = self.base()
+        g.objects[self.T34].props["UpgradeRequire"] = Ref("$/Nothing")
+        self.assertEqual(unitcheck.far_upgrades(g), [])
+        g.objects[self.T34].props["UpgradeRequire"] = Ref(LAUNCHER)          # a turret, not a unit
+        self.assertEqual(unitcheck.far_upgrades(g), [])
+        g = self.base()
+        del g.objects[self.T26].props["Factory"]                             # the unit names no building
+        self.assertEqual(unitcheck.far_upgrades(g), [])
+
+    def test_the_build_cuts_it_and_says_so_whichever_mod_set_the_values(self):
+        """The values here are the game's own (as a .rmod mod leaves them: no op of any mod names these units), and
+        the one mod of the build changes something else."""
+        from rusemod import build as build_module
+        from rusemod.build import far_upgrades
+        base = self.base()
+        r = run(Op("set", TANK, "SeuilMort", num(5)), base=base)
+        result = BuildResult()
+        far_upgrades(r, result)
+        self.assertIn("UpgradeRequire", base.objects[self.T34].props)   # the game the build read isn't changed
+        self.assertEqual([f.level for f in result.findings], ["warning"])
+        self.assertEqual(result.findings[0].message,
+                         "Unit_1602 (Armor Base) was an upgrade of Unit_1600 (Barracks): the game takes a unit out of "
+                         "its list as soon as any upgrade of it is researched, in whatever building, so it is now a "
+                         "research of its own")
+        self.assertNotIn("UpgradeRequire", r.game.objects[self.T34].props)
+        self.assertIn("UpgradeRequire", r.game.objects[self.BT7].props)
+        self.assertEqual(build_module.BUILDING_NAMES[self.BARRACKS], "Barracks")
+        again = BuildResult()
+        far_upgrades(r, again)
+        self.assertEqual(again.findings, [])
+
+    def test_a_set_of_rmod_mods_only_is_looked_at_too_and_left_as_it_was_when_nothing_is_cut(self):
+        """.rmod mods change the game's files themselves and nothing else of ours reads the unit data they leave
+        (the two mods of the 2026-11-10 test were both .rmod mods: the first real build cut nothing). With no far
+        upgrade the build's result isn't touched: the same files, fingerprint and join code as before this step."""
+        from unittest import mock
+        from rusemod import build as build_module
+        from rusemod.build import PackModel, rmod_far_upgrades
+        member = "genglad\\patchable\\gfx\\everything.cpp.gladndfbin"
+        for base, cut in ((self.base(), True), (game(), False)):
+            pack = PackModel(base, {}, {"everything": member}, [])
+            result = BuildResult()
+            with mock.patch.object(build_module, "load_pack", return_value=pack), \
+                    mock.patch.object(build_module, "save", return_value={"everything": b"new"}) as save:
+                rmod_far_upgrades(object(), "24670294", None, result)
+            if cut:
+                self.assertEqual([f.level for f in result.findings], ["warning"])
+                self.assertIn("Unit_1602 (Armor Base) was an upgrade of Unit_1600 (Barracks)", result.findings[0].message)
+                self.assertEqual(result.changed, {member: b"new"})
+                self.assertIsNotNone(result.fingerprint)
+                written = save.call_args.args[1]                                  # the game handed to the writer
+                self.assertNotIn("UpgradeRequire", written.objects[self.T34].props)
+                self.assertIn("UpgradeRequire", base.objects[self.T34].props)     # what was read isn't changed
+            else:
+                save.assert_not_called()
+                self.assertEqual((result.findings, result.changed, result.fingerprint), ([], {}, None))
+
+
 class Lists(unittest.TestCase):
     """ProductionPrice and ShowInMenu have one item per battle date: 5."""
 

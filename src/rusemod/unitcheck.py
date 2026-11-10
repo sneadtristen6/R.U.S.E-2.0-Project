@@ -174,6 +174,48 @@ def research_hidden_parent_problems(game, names) -> dict[str, str]:
     return out
 
 
+FACTORY = "Factory"       # the kind of building a unit is made in (and whose build list its card stands in)
+IS_UPGRADE = "IsUpgrade"
+
+
+def far_upgrades(game) -> list[tuple[str, str]]:
+    """[(the upgrade, the unit it's researched from)] for every UPGRADE of `game` (IsUpgrade 1) researched from
+    (UpgradeRequire) a unit made in ANOTHER building (their Factory numbers differ). The game takes a unit out of its
+    build list the moment ANY upgrade of it is researched, wherever that upgrade is made: seen in the game
+    2026-11-10, a light tank made in the Barracks left its list when its upgrade made in the Armor Base was
+    researched, its own upgrade in the Barracks not researched yet (rule unit-far-upgrade). The game as sold has no
+    such pair (50 upgrades, each made where its unit is); two mods make one together, when one moves a unit and
+    another makes it an upgrade's unit, and so can one mod alone.
+    A research linked to another building's unit WITHOUT the upgrade flag is not one: that is how the Studio's board
+    writes research across buildings, and in the game the unit it's researched from stayed buildable after the
+    research (2026-10-18, a Tiger in the Anti-Tank Base researched from the Armor Base's Sherman)."""
+    out = []
+    for name, obj in game.objects.items():
+        v = obj.props.get(UPGRADE) if is_unit(obj) else None
+        if not isinstance(v, Ref) or not _int(obj.props.get(IS_UPGRADE)):
+            continue
+        parent = game.objects.get(v.target)
+        if parent is None or not is_unit(parent):
+            continue
+        mine, theirs = _int(obj.props.get(FACTORY)), _int(parent.props.get(FACTORY))
+        if mine is not None and theirs is not None and mine != theirs:
+            out.append((name, v.target))
+    return out
+
+
+def cut_far_upgrades(game) -> list[tuple[str, str]]:
+    """Make each of far_upgrades(game) a research of its own: its UpgradeRequire and IsUpgrade taken out, as the
+    Studio's Upgrade box does when unticked, so researching it no longer touches the other building's unit. The
+    owner, 2026-11-10: "it shouldn't be taken away before the new one's researched". `game` is changed in place
+    (its own copies of those units: Game.own); the pairs cut are returned, for the build to say."""
+    cut = far_upgrades(game)
+    for name, _parent in cut:
+        props = game.own(name).props
+        props.pop(UPGRADE, None)
+        props.pop(IS_UPGRADE, None)
+    return cut
+
+
 def _resolve(game, v):
     """The object a list item is: an owned part, or the named object a reference points at (with its name)."""
     if isinstance(v, Inline):
