@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.18:** A fix behind the scenes: the check of a modded copy lists what it finds in the same order on every system.
+
+- **Behind the scenes:** the check of a modded copy (which game files changed after it was built) now lists what it finds in the same order on Windows and Linux. What it finds doesn't change.
+
 **0.4.8.17:** Imported models sit where the unit stands, their turrets and propellers in their own places; an ammo can have a weapon class of its own.
 <!-- required update -->
 

@@ -2,6 +2,7 @@
 title: "Studio 0.9.8.17 and Launcher 0.4.8.17: imported models sit where the unit stands, on any unit; an ammo's own weapon class; Troubleshoot keeps your own game copies; the gold title for Vanilla; RUSE Guard"
 category: Announcements
 order: 22
+skip: never posted; 0.9.8.18, out after it, has its own announcement, which covers it
 ---
 **RUSE Studio 0.9.8.17** and **RUSE Launcher 0.4.8.17** are out:
 [Releases](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/releases). Both apps offer the update when they open.

@@ -1,6 +1,10 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.18:** Eine Korrektur hinter den Kulissen: die Prüfung einer gemoddeten Kopie listet ihre Funde auf jedem System in derselben Reihenfolge.
+
+- **Hinter den Kulissen:** die Prüfung einer gemoddeten Kopie (welche Spieldateien sich nach dem Bauen geändert haben) listet ihre Funde jetzt unter Windows und Linux in derselben Reihenfolge. Was sie findet, ändert sich nicht.
+
 **0.4.8.17:** Importierte Modelle stehen dort, wo die Einheit steht, ihre Türme und Propeller an ihrem eigenen Platz; eine Munition kann eine eigene Waffenklasse bekommen.
 
 - **Ein notwendiges Update:** Ältere Versionen können nicht mehr verwendet werden. Beim Öffnen installiert die App es von selbst, und **Spielen** wartet, bis es installiert ist.

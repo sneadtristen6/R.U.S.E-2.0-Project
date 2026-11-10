@@ -1,6 +1,10 @@
 **RUSE Studio, a preview for modders.** Browse the game's units in any of its ten languages, change them in a mod of
 your own, and test it in the game. Your Steam install is never changed.
 
+**0.9.8.18:** A fix behind the scenes: the check of a modded copy lists what it finds in the same order on every system.
+
+- **Behind the scenes:** the check of a modded copy (which game files changed after it was built) now lists what it finds in the same order on Windows and Linux. What it finds doesn't change.
+
 **0.9.8.17:** Imported models sit where the unit stands, their turrets and propellers in their own places; an ammo can have a weapon class of its own.
 <!-- required update -->
 

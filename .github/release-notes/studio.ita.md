@@ -1,6 +1,10 @@
 **RUSE Studio, un'anteprima per i modder.** Sfoglia le unità del gioco in una qualsiasi delle sue dieci lingue,
 modificale in un mod tuo e provalo in gioco. La tua installazione di Steam non viene mai modificata.
 
+**0.9.8.18:** Una correzione dietro le quinte: il controllo di una copia moddata elenca ciò che trova nello stesso ordine su ogni sistema.
+
+- **Dietro le quinte:** il controllo di una copia moddata (quali file del gioco sono cambiati dopo la sua costruzione) ora elenca ciò che trova nello stesso ordine su Windows e su Linux. Ciò che trova non cambia.
+
 **0.9.8.17:** I modelli importati stanno dove sta l'unità, con torrette ed eliche al loro posto; una munizione può avere una classe d'arma tutta sua.
 
 - **Un aggiornamento obbligatorio:** le versioni precedenti non si possono più usare. All'apertura l'app lo installa da sola, e **Prova in gioco** aspetta finché non è installato.

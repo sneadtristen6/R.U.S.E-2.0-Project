@@ -1,6 +1,10 @@
 **RUSE Studio, ukázková verze pro moddery.** Procházejte jednotky hry v kterémkoli z jejích deseti jazyků, měňte je ve
 vlastním módu a vyzkoušejte ho ve hře. Vaše instalace Steamu se nikdy nemění.
 
+**0.9.8.18:** Oprava v pozadí: kontrola upravené kopie vypisuje, co najde, ve stejném pořadí na každém systému.
+
+- **V pozadí:** kontrola upravené kopie (které soubory hry se po jejím sestavení změnily) teď vypisuje, co najde, ve stejném pořadí ve Windows i v Linuxu. Co najde, se nemění.
+
 **0.9.8.17:** Importované modely stojí tam, kde jednotka, s věžemi a vrtulemi na svých místech; munice může mít vlastní třídu zbraně.
 
 - **Povinná aktualizace:** starší verze už nelze používat. Aplikace ji po otevření sama nainstaluje a **Vyzkoušet ve hře** počká, dokud nebude nainstalovaná.

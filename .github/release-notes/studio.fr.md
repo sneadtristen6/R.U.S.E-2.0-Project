@@ -1,6 +1,10 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.18:** Une correction en coulisses : la vérification d'une copie moddée liste ce qu'elle trouve dans le même ordre sur tous les systèmes.
+
+- **En coulisses :** la vérification d'une copie moddée (quels fichiers du jeu ont changé après sa construction) liste désormais ce qu'elle trouve dans le même ordre sous Windows et sous Linux. Ce qu'elle trouve ne change pas.
+
 **0.9.8.17:** Les modèles importés se placent là où se tient l'unité, leurs tourelles et hélices à leur propre place ; une munition peut avoir sa propre classe d'arme.
 
 - **Une mise à jour obligatoire :** les versions plus anciennes ne peuvent plus être utilisées. À son ouverture, l'application l'installe d'elle-même, et **Tester en jeu** attend qu'elle soit installée.
