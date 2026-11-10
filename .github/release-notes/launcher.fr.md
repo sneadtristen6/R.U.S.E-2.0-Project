@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, pour les joueurs.** Il trouve R.U.S.E. via Steam, et **Jouer** construit une copie moddée du jeu
 avec vos mods et la lance. Votre installation Steam n'est jamais modifiée.
 
+**0.4.8.17:** Les modèles importés se placent là où se tient l'unité, leurs tourelles et hélices à leur propre place ; une munition peut avoir sa propre classe d'arme.
+
+- **Une mise à jour obligatoire :** les versions plus anciennes ne peuvent plus être utilisées. À son ouverture, l'application l'installe d'elle-même, et **Jouer** attend qu'elle soit installée.
+- **Les mods avec des modèles importés de la nouvelle sorte :** le Studio ajuste maintenant le modèle importé d'une unité là où se tient l'unité, avec son propre squelette, donc sa tourelle tourne là où se trouve la tourelle du modèle, et les hélices d'un avion tournent là où le modèle les a, autant qu'il en a ; les soldats, l'équipage d'un canon et d'autres avions peuvent aussi prendre des modèles à eux. Jouez ces mods avec ce Launcher ou un plus récent : un plus ancien donne au modèle le squelette de l'unité copiée, donc sa tourelle tourne autour du mauvais point. Les mods faits avant se jouent comme avant. Testé en jeu sur des copies de test construites comme le Launcher construit ; pas encore joué par le Launcher lui-même.
+- **La propre classe d'arme d'une munition :** un mod peut maintenant donner à une munition ses propres dégâts contre chaque type de cible (fait sur la page de munition du Studio). Rien n'a changé dans le Launcher pour cela : un tel mod se construit comme n'importe quel autre.
+
 **0.4.8.16:** Dépannage garde les copies du jeu que vous avez faites vous-même.
 
 - **Corrigé : « Les supprimer » dans Dépannage effaçait des copies faites par vous.** Une copie du jeu construite à la main dans le dossier des copies, une copie de test ou une copie de référence comptait comme un reste, et « Les supprimer » l'effaçait pour de bon, pas dans la Corbeille. Toute copie construite ailleurs que la copie moddée de l'application porte maintenant une petite note « à garder », et une copie qui en a une n'est jamais un reste : Dépannage ne supprime que les restes des applications elles-mêmes (copies à moitié construites, celles que d'anciennes versions faisaient par ensemble de mods). Constaté sur notre propre PC le 1er novembre, quand toutes les copies de test y sont parties. Une copie construite avant cette version n'a pas encore de note : reconstruisez-la une fois avec cette version, ou laissez « Les supprimer » tranquille d'ici là.

@@ -1,6 +1,13 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.17:** Imported models sit where the unit stands, their turrets and propellers in their own places; an ammo can have a weapon class of its own.
+<!-- required update -->
+
+- **A required update:** older versions can't be used any more. When the app opens it installs this one by itself, and **Play** waits until it's in.
+- **Mods with imported models of the new kind:** the Studio now fits a unit's imported model where the unit stands, with a skeleton of its own, so its turret turns where the turret is on the model, and a plane's propellers spin where the model has them, as many as it has; soldiers, a gun's crew and more planes can take models of their own too. Play such mods with this Launcher or newer: an older one gives the model the copied unit's skeleton, so its turret turns around the wrong point. Mods made before play as they did. Tested in the game on test copies built the way the Launcher builds; not played through the Launcher itself yet.
+- **An ammo's own weapon class:** a mod can now give an ammo its own damage against each kind of target (made on the Studio's ammo page). Nothing changed in the Launcher for it: such a mod builds like any other.
+
 **0.4.8.16:** Troubleshoot keeps the game copies you made yourself.
 
 - **Fixed: Troubleshoot's "Clear them" deleted copies you made yourself.** A copy of the game you built by hand in the copies folder, a test copy or a reference copy, counted as a leftover, and "Clear them" removed it for good, not to the Recycle Bin. Every copy built anywhere but the app's own modded copy now carries a small keep note, and a copy with one is never a leftover: Troubleshoot clears only the apps' own leftovers (half-built copies, the ones older versions made per mod set). Found on our own PC on November 1, when it took every test copy there. A copy built before this version has no note yet: rebuild it once with this version, or leave "Clear them" alone until you do.

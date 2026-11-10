@@ -255,7 +255,7 @@ app has your code and two buttons: open a ticket on Discord or on GitHub, and we
 [![tests](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/actions/workflows/tests.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-**Launcher** for players (latest: 0.4.8.16) &middot; **Studio** for modders, a preview (latest: 0.9.8.16) &middot; Windows &middot; needs R.U.S.E. on Steam
+**Launcher** for players (latest: 0.4.8.17) &middot; **Studio** for modders, a preview (latest: 0.9.8.17) &middot; Windows &middot; needs R.U.S.E. on Steam
 
 **[Field manual (wiki)](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/wiki)** &middot;
 **[Discussions](https://github.com/sneadtristen6/R.U.S.E-2.0-Project/discussions)** &middot;

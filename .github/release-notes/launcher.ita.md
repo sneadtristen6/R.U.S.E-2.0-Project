@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.17:** I modelli importati stanno dove sta l'unità, con torrette ed eliche al loro posto; una munizione può avere una classe d'arma tutta sua.
+
+- **Un aggiornamento obbligatorio:** le versioni precedenti non si possono più usare. All'apertura l'app lo installa da sola, e **Gioca** aspetta finché non è installato.
+- **Mod con modelli importati del nuovo tipo:** lo Studio ora adatta il modello importato di un'unità dove sta l'unità, con uno scheletro tutto suo, così la torretta gira dove si trova la torretta del modello e le eliche di un aereo girano dove le ha il modello, quante ne ha; anche soldati, serventi di un cannone e altri aerei possono avere modelli tutti loro. Gioca queste mod con questo Launcher o uno più nuovo: uno più vecchio dà al modello lo scheletro dell'unità copiata, così la torretta gira intorno al punto sbagliato. Le mod fatte prima si giocano come prima. Provato in gioco su copie di prova costruite come costruisce il Launcher; non ancora giocato dal Launcher stesso.
+- **Una classe d'arma propria per una munizione:** una mod ora può dare a una munizione un danno proprio contro ogni tipo di bersaglio (fatto nella pagina delle munizioni dello Studio). Nel Launcher non è cambiato nulla per questo: una mod così si costruisce come qualsiasi altra.
+
 **0.4.8.16:** Risoluzione problemi conserva le copie del gioco che hai fatto tu.
 
 - **Corretto: «Eliminale» in Risoluzione problemi cancellava copie fatte da te.** Una copia del gioco costruita a mano nella cartella delle copie, una copia di prova o una copia di riferimento contava come avanzo, ed «Eliminale» la cancellava per sempre, non nel Cestino. Ogni copia costruita che non sia la copia con mod dell'app ora porta una piccola nota «da tenere», e una copia che ce l'ha non è mai un avanzo: Risoluzione problemi elimina solo gli avanzi delle app stesse (copie costruite a metà, quelle che le vecchie versioni facevano per ogni set di mod). Scoperto sul nostro PC il 1° novembre, quando si è portato via ogni copia di prova. Una copia costruita prima di questa versione non ha ancora la nota: ricostruiscila una volta con questa versione, o lascia stare «Eliminale» fino ad allora.

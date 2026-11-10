@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.17:** Importowane modele stoją tam, gdzie jednostka, z wieżami i śmigłami na własnych miejscach; amunicja może mieć własną klasę broni.
+
+- **Wymagana aktualizacja:** starszych wersji nie można już używać. Aplikacja po otwarciu sama ją instaluje, a **Graj** czeka, aż zostanie zainstalowana.
+- **Mody z importowanymi modelami nowego rodzaju:** Studio dopasowuje teraz importowany model jednostki tam, gdzie stoi jednostka, z własnym szkieletem, więc jego wieża obraca się tam, gdzie wieża jest na modelu, a śmigła samolotu kręcą się tam, gdzie ma je model, tyle, ile ich ma; żołnierze, obsługa działa i inne samoloty też mogą dostać własne modele. Graj w takie mody tym Launcherem lub nowszym: starszy daje modelowi szkielet kopiowanej jednostki, więc jego wieża obraca się wokół złego punktu. Mody zrobione wcześniej działają jak dotąd. Przetestowane w grze na kopiach testowych zbudowanych tak, jak buduje Launcher; jeszcze nie grane przez sam Launcher.
+- **Własna klasa broni amunicji:** mod może teraz dać amunicji własne obrażenia przeciw każdemu rodzajowi celu (robione na stronie amunicji w Studiu). W Launcherze nic się dla tego nie zmieniło: taki mod buduje się jak każdy inny.
+
 **0.4.8.16:** Rozwiązywanie problemów zachowuje kopie gry, które zrobiłeś sam.
 
 - **Naprawione: „Usuń je” w Rozwiązywaniu problemów kasowało kopie zrobione przez ciebie.** Kopia gry zbudowana ręcznie w folderze kopii, kopia testowa lub kopia wzorcowa liczyła się jako pozostałość, a „Usuń je” kasowało ją na dobre, nie do Kosza. Każda kopia zbudowana poza własną kopią z modami aplikacji ma teraz małą notkę „zachowaj”, a kopia z notką nigdy nie jest pozostałością: Rozwiązywanie problemów usuwa tylko pozostałości samych aplikacji (kopie zbudowane do połowy i te, które starsze wersje robiły dla każdego zestawu modów). Zauważyliśmy to 1 listopada na naszym własnym PC, gdy zabrało wszystkie kopie testowe. Kopia zbudowana przed tą wersją nie ma jeszcze notki: zbuduj ją raz ponownie tą wersją albo do tego czasu nie używaj „Usuń je”.

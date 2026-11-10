@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.17:** Importierte Modelle stehen dort, wo die Einheit steht, ihre Türme und Propeller an ihrem eigenen Platz; eine Munition kann eine eigene Waffenklasse bekommen.
+
+- **Ein notwendiges Update:** Ältere Versionen können nicht mehr verwendet werden. Beim Öffnen installiert die App es von selbst, und **Spielen** wartet, bis es installiert ist.
+- **Mods mit importierten Modellen der neuen Art:** Das Studio passt das importierte Modell einer Einheit jetzt dort an, wo die Einheit steht, mit einem eigenen Skelett, sodass sich sein Turm dort dreht, wo der Turm auf dem Modell sitzt, und die Propeller eines Flugzeugs sich dort drehen, wo das Modell sie hat, so viele, wie es hat; auch Soldaten, die Mannschaft eines Geschützes und weitere Flugzeuge können eigene Modelle bekommen. Spiel solche Mods mit diesem Launcher oder einem neueren: Ein älterer gibt dem Modell das Skelett der kopierten Einheit, sodass sich sein Turm um den falschen Punkt dreht. Früher gemachte Mods spielen sich wie bisher. Im Spiel getestet auf Testkopien, die so gebaut sind, wie der Launcher baut; noch nicht über den Launcher selbst gespielt.
+- **Eine eigene Waffenklasse für eine Munition:** Ein Mod kann einer Munition jetzt eigenen Schaden gegen jede Zielart geben (gemacht auf der Munitionsseite des Studios). Im Launcher hat sich dafür nichts geändert: Ein solcher Mod wird gebaut wie jeder andere.
+
 **0.4.8.16:** Die Fehlersuche behält die Spielkopien, die du selbst gemacht hast.
 
 - **Behoben: „Entfernen“ in der Fehlersuche löschte Kopien, die du selbst gemacht hast.** Eine von Hand gebaute Spielkopie im Kopienordner, eine Testkopie oder eine Referenzkopie galt als Überbleibsel, und „Entfernen“ löschte sie endgültig, nicht in den Papierkorb. Jede Kopie, die nicht die Mod-Kopie der App selbst ist, trägt jetzt einen kleinen Behalten-Vermerk, und eine Kopie mit Vermerk ist nie ein Überbleibsel: Die Fehlersuche entfernt nur die Überbleibsel der Apps selbst (halb gebaute Kopien und die, die ältere Versionen je Mod-Set anlegten). Aufgefallen am 1. November auf unserem eigenen PC, als dort jede Testkopie verschwand. Eine Kopie aus der Zeit vor dieser Version hat noch keinen Vermerk: Baue sie einmal mit dieser Version neu, oder lass „Entfernen“ bis dahin in Ruhe.

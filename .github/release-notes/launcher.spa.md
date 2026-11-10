@@ -1,6 +1,12 @@
 **RUSE Launcher 0.4, para jugadores.** Encuentra R.U.S.E. a través de Steam, y **Jugar** construye una copia del juego
 con tus mods y la inicia. Tu instalación de Steam nunca se modifica.
 
+**0.4.8.17:** Los modelos importados se colocan donde está la unidad, con sus torretas y hélices en su propio sitio; una munición puede tener su propia clase de arma.
+
+- **Una actualización obligatoria:** las versiones anteriores ya no se pueden usar. Al abrirse, la aplicación la instala sola, y **Jugar** espera hasta que esté instalada.
+- **Mods con modelos importados del nuevo tipo:** el Studio ahora ajusta el modelo importado de una unidad donde está la unidad, con su propio esqueleto, así que su torreta gira donde está la torreta del modelo y las hélices de un avión giran donde las tiene el modelo, tantas como tenga; los soldados, la dotación de un cañón y más aviones también pueden llevar modelos propios. Juega esos mods con este Launcher o uno más nuevo: uno más antiguo da al modelo el esqueleto de la unidad copiada, así que su torreta gira alrededor del punto equivocado. Los mods hechos antes se juegan como antes. Probado en el juego en copias de prueba construidas como construye el Launcher; aún no jugado desde el propio Launcher.
+- **La propia clase de arma de una munición:** un mod ahora puede dar a una munición su propio daño contra cada tipo de objetivo (hecho en la página de munición del Studio). Nada cambió en el Launcher para ello: un mod así se construye como cualquier otro.
+
 **0.4.8.16:** Solucionar problemas conserva las copias del juego que hiciste tú.
 
 - **Corregido: «Borrarlas» en Solucionar problemas eliminaba copias hechas por ti.** Una copia del juego construida a mano en la carpeta de copias, una copia de prueba o una copia de referencia contaba como sobrante, y «Borrarlas» la eliminaba para siempre, no a la Papelera. Toda copia construida que no sea la copia con mods de la app lleva ahora una pequeña nota «conservar», y una copia que la tiene nunca es un sobrante: Solucionar problemas solo borra los sobrantes de las propias apps (copias a medio construir, las que versiones antiguas hacían por cada conjunto de mods). Lo vimos en nuestro propio PC el 1 de noviembre, cuando se llevó todas las copias de prueba. Una copia construida antes de esta versión aún no tiene nota: reconstrúyela una vez con esta versión, o no toques «Borrarlas» hasta entonces.
