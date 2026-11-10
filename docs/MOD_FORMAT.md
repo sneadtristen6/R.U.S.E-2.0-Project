@@ -510,6 +510,53 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   T-pose against arms down), every part's turn carried over frame by frame at the game's 30 a second, the hips made
   the soldier's size by the length of the legs and stood on the ground where the game's clip stands. The fingers, the
   weapons and the helper bones keep the game clip's own keys, so the rifle stays in the hand.
+- **One unit's own animations (2026-11-10, `rusemod.anim`; built and checked offline, not tried in the game yet as the
+  build makes them):** a clip changed in `clips.toml` or `files/replace` changes every unit that plays it.
+  `files/anim/units.toml` gives one unit clips of its own instead, every other unit playing the clips as before. A new
+  unit's or one of the game's units, named as the game's data names it:
+
+  ```toml
+  # a game clip changed for this unit alone: the same keys as clips.toml, and `file`, a whole clip of the unit's own in
+  # its place (a path in the unit's folder, below)
+  [unit.Descriptor_Unit_Horse_Squad.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf"]
+  speed = 150
+  file = "genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf"
+  [unit.Descriptor_Unit_Horse_Squad.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf".bone."bip01 head"]
+  size = 2.5
+
+  # an action (the name the unit's figures list a clip by: t_stand, b_course, idle1...) given a clip made elsewhere:
+  # every figure of the unit that lists the action...
+  [unit.Descriptor_Unit_Horse_Squad.action]
+  b_stand = "horse_stand.baf"
+  # ...or one figure, by its path from the unit (this wins over the table above)
+  [unit.Descriptor_Unit_Horse_Squad.figure."GfxDescriptorBazooka".action]
+  t_tir = "rider_bazooka_fire.baf"
+  ```
+
+  The clip files are in `files/anim/own/<the unit's name>/`. The build makes each of the unit's clips once (a clip
+  changed for it starts from the game's clip, not from what `clips.toml` makes of it) and adds it to ZZ_Win.dat as a file
+  of its own under a new name, beside the soldiers' clips: `genanim_15\ww2\res3d\units\common\own_<the unit's name
+  without Descriptor_Unit_>_<the clip's or file's name>lod0.baf` (with `_2`, `_3`... when another clip has that name).
+  The game's clips stay as they are, byte for byte. Then it points the unit's listings at it: every listing of the
+  unit's figures (its `GfxDescriptor*` parts and the unnamed parts under them: a squad's soldiers, its bazooka man, its
+  far-zoom figure and its fallen one, a gun's crew) that plays that game clip, or that lists that action. A part the
+  unit shares with other units (every soldier's listings are shared by dozens of units) is copied into the unit first,
+  so the others keep theirs. A clip the unit doesn't play, or an action none of its figures list, is a warning (nothing
+  would play it). A unit no mod in the set makes, and the game hasn't got, is an error. A later mod's row for the same
+  clip or action of a unit wins. The listing's other values (its mask, whether it loops, its events) stay as they were:
+  a clip given to an action must move the bones of the model that figure draws (a test copy of 2026-11-09 whose figures
+  were given a clip of fewer bones than their model stopped the game); the build can't tell.
+  Clips as files of their own under new names in that folder, with a unit's listings pointed at them, were seen
+  playing in the game on 2026-11-09 in a test copy put together by hand; the build's way of making them is not tried
+  in the game yet. An older Launcher builds such a mod without them: the unit plays the clips every unit plays.
+
+  RUSE Decoy writes the clip tables: opened from a unit's page, the animation editor asks *Change it for*: **Only this
+  unit** (its own copy of the clip, starting as the clip it plays now, as Copy this ammo starts from the ammo) or
+  **Every unit that plays it** (the clip itself, `clips.toml`); its motion capture's *Use it* for one unit writes
+  `files/anim/own/<the unit's name>/<the clip's path>` with its credit beside it. *Back to what every unit plays* takes
+  the unit's copy out. Tools write the action tables with `rusemod.anim.add_unit_clip(mod, unit, action, clip_bytes,
+  name, figure)` (and take a row out with `remove_unit_clip`); a unit deleted in the Studio takes its rows and folder
+  with it.
 - **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
   song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at

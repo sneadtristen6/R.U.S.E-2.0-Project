@@ -178,9 +178,10 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         info.sounds = mod_sounds(path)
         try:
             info.volumes = mod_volumes(path)  # files/sound/volume.toml: how loud it plays each of the game's sounds
-            from .anim import AnimError, mod_clips
+            from .anim import AnimError, mod_clips, mod_unit_clips
             try:
                 info.clips = mod_clips(path)  # files/anim/clips.toml and files/replace/**/*.baf: its animations
+                info.unit_clips = mod_unit_clips(path)  # files/anim/units.toml, files/anim/own: one unit's own
             except AnimError as exc:
                 raise SoundError(str(exc)) from None
             info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
@@ -1011,6 +1012,8 @@ class BuildResult:
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
     own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
+    own_clips: dict = field(default_factory=dict)   # units' own clips: new member of ZZ_Win.dat -> how it's made
+    # (unit_own_clips; rusemod.anim.own_clip_files makes them)
     own_assets: dict = field(default_factory=dict)  # mods' map assets: name -> (sceneryasset.Asset, mod id)
     own_looks: dict = field(default_factory=dict)   # new buildings' looks: building -> (buildinglook.Look, mod id)
     look_symbols: dict = field(default_factory=dict)  # new buildings' looks: building -> (the symbol it copies, its own)
@@ -1062,10 +1065,11 @@ def needs_zz_win(mods: list) -> bool:
     rusemod.sound), adds map assets or building looks (their models go there: rusemod.sceneryasset), or new objects
     (a new unit needs a class in the Python unit list, which lives there), or moves a unit to another nation or model
     (the skirmish mesh packs there say whether its models are loaded for it: unit_models), or puts a unit in a group
-    of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines)."""
+    of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines), or gives a unit
+    animations of its own (files/anim/units.toml: its clips go there, rusemod.anim)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
-               or getattr(m, "volumes", None) or getattr(m, "clips", None)
+               or getattr(m, "volumes", None) or getattr(m, "clips", None) or getattr(m, "unit_clips", None)
                or getattr(m, "assets", None) or getattr(m, "looks", None) or getattr(m, "menu_groups", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
@@ -1520,6 +1524,94 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     return out
 
 
+def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
+    """Units' own animations (a mod's files/anim/units.toml and files/anim/own/<the unit's name>/; rusemod.anim): each
+    clip a unit has of its own gets a name of its own in ZZ_Win.dat (`zz`, which those names mustn't be in already),
+    and only that unit's listings name it (anim.own_listings: a part another unit shares is copied into the unit
+    first, so they keep the game's). A new unit's or one of the game's. A later mod's row for the same clip or action
+    of a unit wins. Returns {the clip's path in ZZ_Win.dat: {"unit", "mod", "clip": the game's clip it's made from or
+    None, "edit": its changes, "file": the unit's own file or None}} for build_and_write, which makes them
+    (anim.own_clip_files); a clip no listing names in the end is left out."""
+    from . import anim
+    wanted: dict = {}   # unit -> {"clips": {clip: (edit, mod id)}, "actions": {(action, figure): (file, mod id)}}
+    for m in order:
+        for unit, u in (getattr(m, "unit_clips", None) or {}).items():
+            w = wanted.setdefault(unit, {"clips": {}, "actions": {}})
+            for member, edit in u["clips"].items():
+                w["clips"][member] = (edit, m.id)
+            for key, file in u["actions"].items():
+                w["actions"][key] = (file, m.id)
+    if not wanted:
+        return {}
+    if zz is None:
+        result.findings.append(Finding("error", "these mods give units animations of their own, which go into "
+                                                "ZZ_Win.dat; it wasn't given"))
+        return {}
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    taken: set = set()
+
+    def fresh(stem: str) -> str:
+        """`stem`, or with _2, _3... when another clip has it already (or the game has a file of that name)."""
+        base, k = stem[:-len("lod0")], 1
+        while stem in taken or zz.entry(anim.own_member(stem)) is not None:
+            k += 1
+            stem = f"{base}_{k}lod0"
+        taken.add(stem)
+        return stem
+
+    for unit in sorted(wanted):
+        w = wanted[unit]
+        mods = sorted({mid for _e, mid in w["clips"].values()} | {mid for _f, mid in w["actions"].values()})
+        where = f"{', '.join(mods)}: {anim.UNITS}"
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            # not a game rule: animations for a unit nothing makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
+                                                    f"has none of that name"))
+            continue
+        planned, by_clip, by_action, files = {}, {}, {}, {}
+        for member in sorted(w["clips"]):
+            edit, mod_id = w["clips"][member]
+            stem = fresh(anim.own_stem(unit, member))
+            by_clip[member] = anim.own_data_name(stem)
+            planned[anim.own_member(stem)] = {"unit": unit, "mod": mod_id, "clip": member, "edit": edit, "file": None}
+        for key in sorted(w["actions"], key=lambda k: (k[0], k[1] or "")):
+            file, mod_id = w["actions"][key]
+            if file not in files:   # (a file several actions play: one clip)
+                files[file] = fresh(anim.own_stem(unit, Path(file).name))
+                planned[anim.own_member(files[file])] = {"unit": unit, "mod": mod_id, "clip": None, "edit": None,
+                                                         "file": file}
+            by_action[key] = anim.own_data_name(files[file])
+        got = anim.own_listings(run.game, name, by_clip, by_action)
+        for member in sorted(by_clip):
+            if member not in got["plays"]:
+                result.findings.append(Finding("warning", f"{where}: {unit} plays no {anim.clip_key(member)}, so "
+                                                          f"nothing plays the copy of it it was given"))
+        figures = {fig for fig, _a in got["actions"]}
+        listed = {a for _f, a in got["actions"]}
+        for action, fig in sorted(by_action, key=lambda k: (k[0], k[1] or "")):
+            found = (fig, action) in got["actions"] if fig else action in listed
+            if not found:
+                on = "" if not fig else f" on its figure {fig}" if fig in figures else f" (it has no figure {fig})"
+                result.findings.append(Finding("warning", f"{where}: {unit} lists no action {action}{on}, so "
+                                                          f"nothing plays the clip it was given for it"))
+        names = []
+        for member, spec in sorted(planned.items()):
+            stem = member.rsplit("\\", 1)[-1][:-len(".baf")]
+            n = got["pointed"].get(anim.own_data_name(stem), 0)
+            if n:
+                out[member] = spec
+                names.append(f"{stem} ({n})")
+            elif spec["clip"] and spec["clip"] in got["plays"]:
+                result.findings.append(Finding("note", f"{where}: {unit}'s own {anim.clip_key(spec['clip'])} isn't "
+                                                       f"needed: every action playing it has a clip of its own"))
+        if names:
+            result.findings.append(Finding("note", f"{where}: {unit} plays {len(names)} clip(s) of its own, every "
+                                                   f"other unit as before (listings naming each): {', '.join(names)}"))
+    return out
+
+
 def _game_unit(run, unit: str) -> str | None:
     """The name of the game's unit called `unit` ("Descriptor_Unit_Soldat_US_Lourd"), or None."""
     name = f"$/GFX/Everything/{unit}"
@@ -1933,6 +2025,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_cards = unit_cards(run, order, result)
     result.own_models = unit_own_models(run, order, result)
     result.own_copies = unit_own_copies(run, order, result)
+    result.own_clips = unit_own_clips(run, order, result, text_arc)
     result.look_symbols = building_looks(run, result)
     if result.errors:
         return result
@@ -4858,6 +4951,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.sound_changed.update(anim_changes(text_arc, clips, cache, say=say, before={
                     **result.model_changed, **result.texture_changed, **result.model_imports,
                     **result.sound_changed}))
+            except AnimError as exc:
+                raise BuildError(str(exc)) from None
+        if result.own_clips and text_arc is not None:  # units' own clips (files/anim/units.toml; rusemod.anim): new
+            from .anim import AnimError, own_clip_files  # files of ZZ_Win.dat's own beside the game's, which stay
+            say(f"units' own animations: {len(result.own_clips)}")
+            try:
+                result.new_files.update(own_clip_files(text_arc, result.own_clips, cache, say=say))
             except AnimError as exc:
                 raise BuildError(str(exc)) from None
         new_songs: dict = {}  # mods' new songs (files/music/list<N>, rusemod.sound): new files and descriptions
