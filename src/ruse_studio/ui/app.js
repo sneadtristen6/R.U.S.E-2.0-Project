@@ -2918,6 +2918,9 @@ function modelBox(address, info, draw, changed) {
     if (own.missing && own.missing.length) {
       box.append(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
     }
+    // points the model file gave no bone (Blender's automatic weights leave some): they follow the hips
+    // (rusemod.modelin.BLENDER_NO_BONE; item 4, 2026-11-10)
+    if (own.no_bone) box.append(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
     if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
