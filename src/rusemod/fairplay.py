@@ -388,7 +388,7 @@ def check_copy(instance, game, full: bool = False) -> list[str]:
                 (not full and now["time"] != was.get("time")):
             out.append(f"{rel} changed after the build")
     written = {r.lower() for r in files}
-    for rel in _gameplay_files(instance):
+    for rel in sorted(_gameplay_files(instance)):  # the disk's own order differs by system (NTFS by name, Linux not)
         if rel.lower() in written:
             continue
         theirs = game / rel
