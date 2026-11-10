@@ -21,7 +21,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from rusemod import bugwatch, webui  # noqa: E402
+from rusemod import bugwatch, checkkeys, webui  # noqa: E402
 from rusemod.build import BuildError, load_mod  # noqa: E402
 from rusemod.patch import Finding  # noqa: E402
 
@@ -67,9 +67,12 @@ class Reasons(unittest.TestCase):
         day = self.day()
         self.assertEqual(day["calls"]["load"]["errors"], {"BuildError": 1})   # as before: the kind
         (key, n), = day["messages"].items()
-        self.assertRegex(key, r"^load:rusemod\.build:\d+$")
+        # (since 2026-11-10 by the check that refused, a key that never changes: rusemod.checkkeys; the place in
+        # our code is still what an error the file doesn't know is counted by)
+        self.assertEqual(key, "load:build.load_mod")
         self.assertEqual(n, 1)
-        self.assertIn("can't be a mod's id", source_line(key))             # the very line that refused
+        entry = next(e for e in checkkeys.read().values() if e["check"] == "build.load_mod")
+        self.assertIn("can't be a mod's id", entry["us"])                   # the very check that refused
         self.assertNotIn("Secret", key)
         self.assertRegex(key, bugwatch.NAME_RE)                             # what the server takes as a key
         self.assertLessEqual(len(key), 64)
@@ -99,8 +102,10 @@ class Reasons(unittest.TestCase):
             load_mod(Path(self.tmp.name) / "a-mod", as_id="NOT AN ID")
         except BuildError as exc:
             key = bugwatch.reason_key("a_call_with_a_very_long_name_" * 4, exc)
+            site = bugwatch.site_of(exc)
         self.assertLessEqual(len(key), 64)
-        self.assertRegex(key, r":rusemod\.build:\d+$")
+        self.assertRegex(key, r":build\.load_mod$")
+        self.assertRegex(site, r"^rusemod\.build:\d+$")
         self.assertRegex(key, bugwatch.NAME_RE)
 
     def test_a_finding_knows_where_the_build_made_it(self):
@@ -136,7 +141,7 @@ class Reasons(unittest.TestCase):
         self.assertEqual(messages.pop("mistake:rusemod.build:1208"), 2)
         self.assertEqual(messages.pop("mistake:rusemod.patch:77"), 1)
         (key, n), = messages.items()                                         # and the refusal itself, once
-        self.assertRegex(key, r"^test_in_game:rusemod\.build:\d+$")
+        self.assertEqual(key, "test_in_game:build.load_mod")
         self.assertEqual(n, 1)
         self.assertFalse(any("Nicks" in k for k in day["messages"]))
 

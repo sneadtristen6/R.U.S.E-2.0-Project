@@ -28,6 +28,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from .build import NOT_IN_MODS, BuildError
+from .checkkeys import engine_check
 from .edat import Edat
 from .patch import Finding
 
@@ -241,7 +242,8 @@ def apply(game, rmod_paths, build_id: str | None = None, say=print) -> RmodRun:
                                                            f"{', …' if len(scripts) > 3 else ''}): scripts run "
                                                            f"inside the game, so use it only if you trust its "
                                                            f"author"))
-                run.findings += [Finding("error", f"{name}: {e}") for e in res.errors]
+                # (each counted by Bug Watch as the engine's own check: rusemod.checkkeys.engine_check)
+                run.findings += [Finding("error", f"{name}: {e}", check=engine_check(e)) for e in res.errors]
                 run.findings += [Finding("warning", f"{name}: {w}") for w in res.warnings]
                 if res.requires_repair:
                     run.findings.append(Finding("warning", f"{name}: {len(res.requires_repair)} change(s) don't fit "

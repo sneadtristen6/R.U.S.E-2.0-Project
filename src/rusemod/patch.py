@@ -164,6 +164,12 @@ class Finding:
     # where in our code it was made ("rusemod.build:1208"): what Bug Watch counts a build's mistake by, never its
     # words, which name the player's own mod and its values. Not part of what makes two findings equal.
     site: str = field(default="", compare=False, repr=False)
+    # which check it is, by a key that never changes (rusemod.checkkeys): `check` when the code gives one (the .rmod
+    # engine's errors), else found from `where` (the function that made it, "rusemod.build:load_mod") and its words;
+    # `cause`: for a mistake made from a caught error, that error's own key or place. Not part of what a finding is.
+    check: str = field(default="", compare=False, repr=False)
+    where: str = field(default="", compare=False, repr=False)
+    cause: str = field(default="", compare=False, repr=False)
 
     def __post_init__(self):
         if not self.site:
@@ -172,7 +178,11 @@ class Finding:
                 frame = sys._getframe(2)  # past the dataclass's own __init__: the code that made this finding
                 self.site = f"{frame.f_globals.get('__name__', '?')}:{frame.f_lineno}"
             except ValueError:
-                self.site = ""
+                frame, self.site = None, ""
+            if self.level == "error" and not self.where:
+                from .checkkeys import cause_of, finding_where
+                self.where = finding_where(frame)
+                self.cause = self.cause or cause_of(sys.exc_info()[1], self.where)
 
 
 @dataclass

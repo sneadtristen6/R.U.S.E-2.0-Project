@@ -1,0 +1,2250 @@
+# Which check refused a Play or a Test in game, or listed a mistake in the mods (rusemod/checkkeys.py): Bug Watch
+# counts each by its `check`, never by its words. Made from the code by rusemod.checkkeys.write(); a key once here
+# stays (a rule's id, else the module and function that say the text). tests/test_checkkeys.py fails when the code
+# says a refusal or a mistake this file doesn't have, or the file has one the code no longer says: run write() then.
+# `kind`: raise (an error that ends the job), mistake (a build's listed mistake), tuple (a check's ("error", ...) the
+# build lists), engine (an error the .rmod engine records).
+
+[cde7e33eb16]
+check = "engine.applier._apply"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "refused unsafe dat path in mod (escapes game folder): {0}"
+
+[c36bc3ba645]
+check = "engine.applier._apply-2"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "DAT file not found: {0}"
+
+[c938db2ed62]
+check = "engine.applier._apply-3"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "refused unsafe dat path in mod (escapes output folder): {0}"
+
+[c5497d065d2]
+check = "engine.applier._apply-4"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to open {0}: {1}"
+
+[c06bec1876b]
+check = "engine.applier._apply-5"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "NDF file {0} not found in {1}. Available: {2}"
+
+[cb487313045]
+check = "engine.applier._apply-6"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to parse NDF {0}: {1}"
+
+[c309a84972b]
+check = "engine.applier._apply-7"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to write patched NDF: {0}"
+
+[cb578e6a02f]
+check = "engine.applier._apply-8"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "DAT file not found (file_patches): {0}"
+
+[cefbf593b7f]
+check = "engine.applier._apply-9"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to open {0} for file_patches: {1}"
+
+[c7fb3771cff]
+check = "engine.applier._apply-10"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "file_patch: nested archive not found in {0}: {1}"
+
+[c42ad367910]
+check = "engine.applier._apply-11"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "file_patch: {0} is not a nested archive — cannot address files inside it"
+
+[c4f20cd96f8]
+check = "engine.applier._apply-12"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "file_patch: cannot read nested archive {0}: {1}"
+
+[c9937446826]
+check = "engine.applier._apply-13"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "file_patch: rebuilding nested archive {0} failed: {1}"
+
+[c70b3db05b0]
+check = "engine.applier._apply-14"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "file_patch: batch update failed for {0}: {1}"
+
+[cd521877e97]
+check = "engine.applier._apply-15"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "DAT file not found (loc_patches): {0}"
+
+[cf7489b200c]
+check = "engine.applier._apply-16"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to open {0} for loc_patches: {1}"
+
+[cc043def925]
+check = "engine.applier._apply-17"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "loc_patch: batch update failed for {0}: {1}"
+
+[cf7f3c03547]
+check = "engine.applier._apply-18"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "DAT file not found (sdb_patches): {0}"
+
+[c6bb3fabd83]
+check = "engine.applier._apply-19"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to open {0} for sdb_patches: {1}"
+
+[c33719b58ef]
+check = "engine.applier._apply-20"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "sdb_patch: batch update failed for {0}: {1}"
+
+[ca7fb4c49e7]
+check = "engine.applier._apply-21"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "DAT file not found (scenario_patches): {0}"
+
+[c8a9b7bb984]
+check = "engine.applier._apply-22"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "Failed to open {0} for scenario_patches: {1}"
+
+[c918e1277ea]
+check = "engine.applier._apply-23"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "scenario_patch: failed to parse {0}: {1}"
+
+[c2dd437b2ee]
+check = "engine.applier._apply-24"
+where = "ruse_mod_engine.applier:_apply"
+kind = "engine"
+us = "scenario_patch: batch update failed for {0}: {1}"
+
+[cecfbcc3ecc]
+check = "anim.mod_clips"
+where = "rusemod.anim:mod_clips"
+kind = "raise"
+us = "{0}: {1}: name a clip by its path in the game's packs, ending .baf"
+
+[c9f8a5ef0c4]
+check = "anim.made"
+where = "rusemod.anim:made"
+kind = "raise"
+us = "the game has no clip {0}"
+
+[c7323fe2e93]
+check = "anim.changes"
+where = "rusemod.anim:changes"
+kind = "raise"
+us = "{0}: the game has no clip {1}"
+
+[c9155f48c8e]
+check = "backup.read_manifest"
+where = "rusemod.backup:read_manifest"
+kind = "raise"
+us = "The backup at {0} is damaged ({1}: {2}), so it can't be used. Make a new backup while the game is clean (Verify with Steam first)."
+
+[c64804d7156]
+check = "backup._busy"
+where = "rusemod.backup:_busy"
+kind = "raise"
+us = "A modded copy of the game is being built from its files (a Play, or a Test in game): wait for it to finish, then try again."
+
+[c45d9ab2dc0]
+check = "backup.reading"
+where = "rusemod.backup:reading"
+kind = "raise"
+us = "The game's files are being restored: wait for it to finish."
+
+[cf86b3f4304]
+check = "backup._copy_steady"
+where = "rusemod.backup:_copy_steady"
+kind = "raise"
+us = "{0} went away while the backup was being made (a program is changing the game's files: Steam?). Make the backup again once it has finished."
+
+[cac441b663b]
+check = "backup._existing"
+where = "rusemod.backup:_existing"
+kind = "raise"
+us = "There's already a backup of this build at {0} (made {1}). Make it again only if the game is clean now: Verify with Steam first."
+
+[c2f88cfd31d]
+check = "backup.make"
+where = "rusemod.backup:make"
+kind = "raise"
+us = "A backup can't go inside the game folder, nor the game folder inside a backup."
+
+[cf4fd9d3fea]
+check = "backup._put_back"
+where = "rusemod.backup:_put_back"
+kind = "raise"
+us = "the backup's copy is damaged (it doesn't match its checksum)"
+
+[c59c3c31d28]
+check = "backup.restore"
+where = "rusemod.backup:restore"
+kind = "raise"
+us = "A backup inside the game folder (or a game folder inside a backup) can't be restored from: move the backup out of the game folder, then try again."
+
+[ce8c2f2af16]
+check = "backup.restore-2"
+where = "rusemod.backup:restore"
+kind = "raise"
+us = "R.U.S.E. is running: {0}. Close the game, then restore."
+
+[cfc22257065]
+check = "backup.restore-3"
+where = "rusemod.backup:restore"
+kind = "raise"
+us = "Steam has updated R.U.S.E. since this backup was made (the backup is build {0}, the game is build {1}), so its files would put back the old version. Use Verify with Steam to repair the game, then make a new backup."
+
+[cc5db3c2cf1]
+check = "backup.restore-4"
+where = "rusemod.backup:restore"
+kind = "raise"
+us = "There isn't enough free space on {0} to restore the game's files: it needs {1} GB, and {2} GB is free. Free some space, then try again."
+
+[cc0b81d02f9]
+check = "backup._the_game"
+where = "rusemod.backup:_the_game"
+kind = "raise"
+us = "We couldn't find R.U.S.E. Choose its folder first."
+
+[c009093948c]
+check = "backup._backup_for"
+where = "rusemod.backup:_backup_for"
+kind = "raise"
+us = "There's no backup of the game yet: make one first, while the game is clean."
+
+[c6d5da72e62]
+check = "backup._backup_start"
+where = "rusemod.backup:_backup_start"
+kind = "raise"
+us = "The game backup is busy: wait for it to finish, then try again."
+
+[c322b5f244b]
+check = "bigmap.grow_clone"
+where = "rusemod.bigmap:grow_clone"
+kind = "raise"
+us = "maps/{0}: {1}'s map cluster doesn't load its {2} the way the game's maps do, so the new size can't be given to it"
+
+[c08d430cf33]
+check = "ground-reach"
+where = "rusemod.bridges:apply_spans"
+kind = "raise"
+us = "{0}: with the old bridges' crossings closed, {1} is cut off from the rest of the map, and the game crashes when a unit is ordered onto ground it can't reach: place a new bridge across to it, or keep the crossings"
+
+[cece38de51e]
+check = "brush.parse_strokes"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: edge = \"none\" (no fall-off at all) is for the relief brush: a real place's picture over the whole map"
+
+[c16abdb12ae]
+check = "brush.parse_strokes-2"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: mask (a brush that is a picture) is for the paint, stamp, texture and tint brushes"
+
+[c4165e40077]
+check = "brush.parse_strokes-3"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: dither (a speckled edge) is for the paint, stamp, texture and tint brushes"
+
+[c0692668980]
+check = "brush.parse_strokes-4"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: theme (the palette a repaint paints with) is for the repaint brush"
+
+[cf8e41c7a52]
+check = "brush.parse_strokes-5"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: beach (sand round a new lake) is for the repaint brush"
+
+[ca77810dea8]
+check = "brush.parse_strokes-6"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: rocks (the game's 3D rocks over painted rock) are for the texture and repaint brushes"
+
+[c993107fd4f]
+check = "brush.parse_strokes-7"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: decals (the game's own decals laid over a game texture) are for the texture brush"
+
+[ca70bf49d7b]
+check = "brush.parse_strokes-8"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: relief (the mod's heightmap) is for the relief brush"
+
+[c2c95c94b3a]
+check = "brush.parse_strokes-9"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: a relief stroke is a square (shape = \"square\"; `length` makes it a rectangle)"
+
+[c8fd2522c4c]
+check = "brush.parse_strokes-10"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: grid is made by the build from the relief's heightmap, never written"
+
+[c8e0cf8db2c]
+check = "brush.parse_strokes-11"
+where = "rusemod.brush:parse_strokes"
+kind = "raise"
+us = "{0}: within (paint only inside a relief's area) is for the paint, stamp, texture and tint brushes"
+
+[ce03884e52e]
+check = "build.load_mod"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}: {1} can't be a mod's id (lowercase letters, digits and '-')"
+
+[cb1a85d7e02]
+check = "build.load_mod-2"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0} has no mod.toml (and isn't a .rndf file)"
+
+[c5dd74e4bb1]
+check = "build.load_mod-3"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}: mods can't contain scripts or programs ({1}{2}), apart from the game's mission scripts as the Studio saves them (scripts/<map>/<part>/, .py and .xyz). The build writes the only other script changes a mod needs itself (decision 23)."
+
+[c36b7ccfad6]
+check = "build.load_mod-4"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}: {1}"
+
+[cb0b12f2186]
+check = "build.load_mod-5"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}: [mod] id must be lowercase letters, digits and '-' (got {1})"
+
+[c374c6f1ce6]
+check = "build.load_mod-6"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}: [rmod] file must name a .rmod file next to mod.toml (got {1})"
+
+[c3b1ec65b7e]
+check = "build.load_mod-7"
+where = "rusemod.build:load_mod"
+kind = "raise"
+us = "{0}"
+
+[cb72763d259]
+check = "build.read_map_file"
+where = "rusemod.build:read_map_file"
+kind = "raise"
+us = "{0}: {1} isn't a map's pack name (letters, digits and _, like TwoIslands)"
+
+[c1969d98454]
+check = "build.read_map_file-2"
+where = "rusemod.build:read_map_file"
+kind = "raise"
+us = "{0}: {1}"
+
+[c01d89de14d]
+check = "build.read_map_file-3"
+where = "rusemod.build:read_map_file"
+kind = "raise"
+us = "{0}: unknown key {1} ({2})"
+
+[c4e26c19e69]
+check = "build.read_map_file-4"
+where = "rusemod.build:read_map_file"
+kind = "raise"
+us = "{0}"
+
+[cd888094d60]
+check = "build.read_map_file-5"
+where = "rusemod.build:read_map_file"
+kind = "raise"
+us = "{0}: {1} = {2}, but maps/{3}/ has no such picture"
+
+[c0a0a0fdd52]
+check = "build._reliefs"
+where = "rusemod.build:_reliefs"
+kind = "raise"
+us = "{0}: maps/{1}/terrain.toml lays the heightmap {2}.png, which isn't in the mod's {3} folder"
+
+[c85173af39f]
+check = "build._reliefs-2"
+where = "rusemod.build:_reliefs"
+kind = "raise"
+us = "{0}: {1}/{2}.png: {3}"
+
+[c73a31c3284]
+check = "build._area_clips"
+where = "rusemod.build:_area_clips"
+kind = "raise"
+us = "{0}: maps/{1}/terrain.toml paints within relief {2}, which isn't one of that map's relief strokes in the mod"
+
+[cd85cb88078]
+check = "build._area_clips-2"
+where = "rusemod.build:_area_clips"
+kind = "raise"
+us = "{0}: maps/{1}/terrain.toml paints within relief {2}'s areas, but {3} isn't in the mod's {4} folder"
+
+[c1cf064f04a]
+check = "build._area_clips-3"
+where = "rusemod.build:_area_clips"
+kind = "raise"
+us = "{0}: {1}/{2}: {3}"
+
+[c98b44f48d6]
+check = "build._area_clips-4"
+where = "rusemod.build:_area_clips"
+kind = "raise"
+us = "{0}: maps/{1}/terrain.toml: {2}"
+
+[c97d77a11cb]
+check = "build._ground_pictures"
+where = "rusemod.build:_ground_pictures"
+kind = "raise"
+us = "{0}: maps/{1}/terrain.toml paints with the picture {2}, which isn't in the mod's {3} folder"
+
+[c98359f348e]
+check = "build._given_answers"
+where = "rusemod.build:_given_answers"
+kind = "raise"
+us = "the game has no movement file for this map"
+
+[cfd1b9fa740]
+check = "build.new_maps"
+where = "rusemod.build:new_maps"
+kind = "raise"
+us = "{0} and {1} both make a new map called {2} (maps/{3}/map.toml copy_of): give one another folder name, or leave one mod out"
+
+[c562bcbfccb]
+check = "nation-models"
+where = "rusemod.build:unit_models"
+kind = "mistake"
+us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and it can't be copied into {7}'s skirmish packs: {8}{9}. The game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit would have no model, or crash the game. Copy one of {10}'s units instead, or leave it in {11}'s army"
+
+[c7fbcaa5e4e]
+check = "nation-models"
+where = "rusemod.build:unit_models"
+kind = "mistake"
+us = "{0}{1} is in {2}'s army (Nationalite {3}), but its model {4}{5} is in the mesh pack of {6}'s units only, and the unit data has no cluster maps that could load {7}'s models in every match: the game loads a nation's unit models only in matches where a player has that nation, so in other matches this unit has no model, or crashes the game. Copy one of {8}'s units instead, or leave it in {9}'s army"
+
+[c455b473de2]
+check = "spawn-models"
+where = "rusemod.build:spawn_models"
+kind = "mistake"
+us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}, and they can't be copied into the packs every skirmish loads: {4}{5}. The game would crash as the match starts (a D-Day test with Japanese units spawned and no Japanese player did). Spawn units whose models every match has, or leave these out"
+
+[c2bad11c9f5]
+check = "spawn-models"
+where = "rusemod.build:spawn_models"
+kind = "mistake"
+us = "{0}: the spawned {1} use {2}'s unit models, which a skirmish loads only when a player has {3}, and {4}: the game would crash as the match starts (a D-Day test with Japanese units spawned and no Japanese player did). Spawn units whose models every match has, or leave these out"
+
+[c05b432d5e0]
+check = "build.rmod_far_upgrades"
+where = "rusemod.build:rmod_far_upgrades"
+kind = "mistake"
+us = "{0}"
+
+[ce247f6ff6d]
+check = "build.unit_cards"
+where = "rusemod.build:unit_cards"
+kind = "mistake"
+us = "{0}: files/cards/{1}.png: no mod in the set makes a new unit {2} (a game unit's card is changed with files/replace/<its card>.tgv.png)"
+
+[c17f8cf1d64]
+check = "build.unit_cards-2"
+where = "rusemod.build:unit_cards"
+kind = "mistake"
+us = "{0}: files/cards/{1}.png: {2} has no card of its own (TextureForInterface) naming a picture, so it can't get one"
+
+[c96e2130008]
+check = "build.building_looks"
+where = "rusemod.build:building_looks"
+kind = "mistake"
+us = "{0}: no mod in the set makes a new building {1}"
+
+[c760f5584a1]
+check = "build.building_looks-2"
+where = "rusemod.build:building_looks"
+kind = "mistake"
+us = "{0}: {1} names no look (GfxDescriptor {2}.SymbolName), so it can't get one"
+
+[c81f87bc2d2]
+check = "build.unit_own_copies"
+where = "rusemod.build:unit_own_copies"
+kind = "mistake"
+us = "{0}: {1} has an imported model too (files/models/{2}.glb); take one of the two out"
+
+[c95da0af091]
+check = "build.unit_own_copies-2"
+where = "rusemod.build:unit_own_copies"
+kind = "mistake"
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
+
+[c8b28eceda5]
+check = "build.unit_own_copies-3"
+where = "rusemod.build:unit_own_copies"
+kind = "mistake"
+us = "{0}: `of` names no model to copy"
+
+[c0eeed93a7b]
+check = "build.unit_own_copies-4"
+where = "rusemod.build:unit_own_copies"
+kind = "mistake"
+us = "{0}: {1} draws no {2} (none of its model parts names it)"
+
+[c98c3bbdd9e]
+check = "build._own_model_part"
+where = "rusemod.build:_own_model_part"
+kind = "mistake"
+us = "{0}: no mod in the set makes a new unit {1}"
+
+[c36c5e2dfa5]
+check = "build._own_model_part-2"
+where = "rusemod.build:_own_model_part"
+kind = "mistake"
+us = "{0}: no part of {1} names {2}, the model it was fitted to"
+
+[c9c69eb32e2]
+check = "build._own_model_part-3"
+where = "rusemod.build:_own_model_part"
+kind = "mistake"
+us = "{0}: {1} has no model part of its own (GfxDescriptor.MeshDescriptor) naming a model, so it can't get one"
+
+[c7e8e15602d]
+check = "build.unit_classes"
+where = "rusemod.build:unit_classes"
+kind = "mistake"
+us = "the game's Python unit list can't be read: {0}"
+
+[c80f70a277d]
+check = "delete-unit-class"
+where = "rusemod.build:unit_classes"
+kind = "mistake"
+us = "{0} is deleted, but it has a class in the game's Python unit list; deleting such units isn't supported yet (the game would fail to load its units)"
+
+[c5ac4a46edc]
+check = "build.unit_classes-2"
+where = "rusemod.build:unit_classes"
+kind = "mistake"
+us = "{0}: {1} has no ClassNameForDebug to name its class"
+
+[c069fdf99ee]
+check = "build.unit_classes-3"
+where = "rusemod.build:unit_classes"
+kind = "mistake"
+us = "the new units' classes can't be added: {0}"
+
+[c2634b761c1]
+check = "own-units-menu"
+where = "rusemod.build:_own_kinds_made"
+kind = "mistake"
+us = "{0}: a building with units of its own of kind {1} needs build menu {2} (Menu), its kind's own: a click on it opens the first tab of its menu"
+
+[c5c433f1812]
+check = "build.build_pack"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "{0}: files/assets/{1}: {2} has an asset of that name too"
+
+[c760c4fe0e3]
+check = "build.build_pack-2"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "{0}: files/buildings/{1}: {2} gives that building a look too"
+
+[c6569694842]
+check = "build.build_pack-3"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "these mods add map assets or building looks, whose models go into ZZ_Win.dat; it wasn't given"
+
+[c0e8b5b8135]
+check = "build.build_pack-4"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "{0}: files/buildings/{1}: {2}"
+
+[c6f07e1e407]
+check = "build.build_pack-5"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "{0}"
+
+[c2f5129068c]
+check = "build.build_pack-6"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "these mods have buildings with units of their own, but the unit data has no build bar list with the Prototypes tab to copy"
+
+[cf14b595b06]
+check = "build.build_pack-7"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "the skirmish unit packs can't be written: {0}"
+
+[c1d10c36a58]
+check = "build.build_pack-8"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "these mods add texts, which go into ZZ_Win.dat; it wasn't given"
+
+[c6656a825ec]
+check = "build.build_pack-9"
+where = "rusemod.build:build_pack"
+kind = "mistake"
+us = "loc('{0}') has no text: no mod in the set defines {1} in its text/*.csv"
+
+[c1a0604d701]
+check = "build.menu_lines"
+where = "rusemod.build:menu_lines"
+kind = "mistake"
+us = "the build lists' lines can't be set: {0}"
+
+[c1636b11ce5]
+check = "build.own_buildings"
+where = "rusemod.build:own_buildings"
+kind = "mistake"
+us = "the mods' files give buildings with units of their own of kinds {0}, but the built data has kinds {1} (a later change to TypeBatiment?): keep each such building's kind in the block that makes it"
+
+[cbf2f2b5b87]
+check = "build.own_buildings-2"
+where = "rusemod.build:own_buildings"
+kind = "mistake"
+us = "these mods have buildings with units of their own, whose tabs go into ZZ_Win.dat's scripts; it wasn't given"
+
+[cad622e42f8]
+check = "build.own_buildings-3"
+where = "rusemod.build:own_buildings"
+kind = "mistake"
+us = "the tabs of the buildings with units of their own can't be added to the game's scripts: {0}"
+
+[cada945b14a]
+check = "build._shipped_menu_pictures"
+where = "rusemod.build:_shipped_menu_pictures"
+kind = "mistake"
+us = "ZZ_Win.dat isn't in this game, so no map's menu pictures can change"
+
+[caf5959d478]
+check = "build._shipped_menu_pictures-2"
+where = "rusemod.build:_shipped_menu_pictures"
+kind = "mistake"
+us = "{0}: {1}"
+
+[c96e5b60e6e]
+check = "build._make_mission"
+where = "rusemod.build:_make_mission"
+kind = "mistake"
+us = "{0}: maps/{1} copies a BATTLES map; a mission of its own is for a copy of an Operation or a campaign chapter (map.toml entry)"
+
+[c163b506dd1]
+check = "build._make_mission-2"
+where = "rusemod.build:_make_mission"
+kind = "raise"
+us = "ZZ_Win.dat isn't in this game, so the mission's texts can't be added"
+
+[c3159ac781e]
+check = "build._make_mission-3"
+where = "rusemod.build:_make_mission"
+kind = "raise"
+us = "IA_Common.dat isn't in this game, so no mission can be added"
+
+[c45325566bb]
+check = "build._make_mission-4"
+where = "rusemod.build:_make_mission"
+kind = "mistake"
+us = "{0}: the mission couldn't be made: {1}"
+
+[ce7b0dd0632]
+check = "build._menu_orders"
+where = "rusemod.build:_menu_orders"
+kind = "mistake"
+us = "menus.toml: the menus couldn't be read ({0})"
+
+[c9b9c5d8147]
+check = "build._menu_orders-2"
+where = "rusemod.build:_menu_orders"
+kind = "mistake"
+us = "{0}"
+
+[c1ea5ed062f]
+check = "build.rmod-clash"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "These mods can't be played together ({0} clash{1}):\n{2}\nNothing was built."
+
+[c60914b323b]
+check = "build.build_and_write-2"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "No pack called {0} in {1}."
+
+[c4552885628]
+check = "build.build_and_write-3"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "These mods add texts, new units or new maps, which need {0}, but {1} doesn't have it."
+
+[cac534e8986]
+check = "build.build_and_write-4"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "load order: {0}"
+
+[cf87c486d6d]
+check = "build.build_and_write-5"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}"
+
+[c8b2b5800cb]
+check = "build.build_and_write-6"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0} isn't in this game, so no map can be added (the maps' scenarios and grids live there)"
+
+[c04275bfc59]
+check = "build.build_and_write-7"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}"
+
+[c4a7a04bd7c]
+check = "build.build_and_write-8"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: maps/{1}: {2}, the pack of {3}, isn't in this game, so it can't be copied"
+
+[c357c88a08b]
+check = "build.build_and_write-9"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: maps/{1}: its size ({2} x {3} cells) needs numpy, which this Python hasn't got"
+
+[cede9349c10]
+check = "build.build_and_write-10"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: maps/{1}: it can't be made {2} x {3} cells ({4})"
+
+[c42fb36db78]
+check = "build.build_and_write-11"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: the map {1} isn't in this game ({2} is missing), so its ground can't be changed{3}"
+
+[cce5b88f2c6]
+check = "build.build_and_write.make_ground"
+where = "rusemod.build:make_ground"
+kind = "mistake"
+us = "{0}: its ground files can't be read ({1})"
+
+[cec2a526dc8]
+check = "build.build_and_write.make_ground-2"
+where = "rusemod.build:make_ground"
+kind = "mistake"
+us = "{0}: {1}: where the terrain edits put water can't be worked out ({2}), so units could walk on the bed of new water"
+
+[c53b89daee5]
+check = "build.build_and_write-12"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the roads' bridges can't be made ({2})"
+
+[c6fa34ccea6]
+check = "build.build_and_write-13"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the old bridges' crossings can't be closed ({2})"
+
+[ce4c854e098]
+check = "build.build_and_write-14"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: {2} would have no floor (no bridge of its kind on this map has one to copy), so units would walk on the riverbed under it: use the map's own bridge kind{3} or take it out"
+
+[cb9bbb9d6c9]
+check = "build.build_and_write-15"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the new bridges' floors can't be made ({2}), so units would walk on the riverbed under them"
+
+[ceb0e964433]
+check = "build.build_and_write-16"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: the map {1} isn't in this game ({2} is missing), so nothing can be placed on it{3}"
+
+[c47a1f71799]
+check = "build.build_and_write-17"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: field brush {1}: there's no look called {2} (the looks: {3})"
+
+[c1431b5f471]
+check = "build.build_and_write-18"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: the ground preset's map {1} isn't in this game ({2} is missing), so its tiles can't be read"
+
+[c216d8ba9cb]
+check = "build.build_and_write-19"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: section {1}'s map {2} isn't in this game ({3} is missing), so it can't be copied"
+
+[cdc3a510ff8]
+check = "build.build_and_write-20"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0} has no scenery file, so nothing can be placed on {1}"
+
+[cd39c638aa1]
+check = "build.build_and_write-21"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: {2}"
+
+[cb6214a7da0]
+check = "build.build_and_write-22"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the map's own {2} can't be taken out ({3})"
+
+[c40feaa32ea]
+check = "build.build_and_write-23"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: the map {1} isn't in this game ({2} is missing), so it can't be painted{3}"
+
+[c158545812d]
+check = "build.build_and_write-24"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the relief's picture can't be laid ({2})"
+
+[caaa3688c2f]
+check = "build.build_and_write-25"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: what moved can't be repainted ({2})"
+
+[cceb0f2f9ba]
+check = "build.build_and_write-26"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: a texture to paint with can't be read ({2})"
+
+[cb75d563a54]
+check = "build.build_and_write-27"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the paint can't be laid ({2})"
+
+[c89cb9a5727]
+check = "build.build_and_write-28"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the new roads can't be drawn ({2})"
+
+[c72c3f05b90]
+check = "build.build_and_write-29"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the tint under its sections' stickers can't be fitted ({2})"
+
+[ca7f8c98dc2]
+check = "build.build_and_write-30"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0} isn't in this game, so no starting point or spawn can be moved, and no cover painted"
+
+[c05d4eec9fe]
+check = "build.build_and_write-31"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: maps/{1}: {2} seats {3} players, and these HQs aren't placed yet: {4}. Place each in the Studio (Scenario, Each player's HQ), or set fewer players"
+
+[c2909d81b08]
+check = "build.build_and_write-32"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}{2}"
+
+[c17d78390fc]
+check = "build.build_and_write-33"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: the bridges' movement can't be opened ({1})"
+
+[c4d70ff2276]
+check = "build.build_and_write-34"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: {1}: the map's own road network can't be taken out ({2})"
+
+[c94bcc0b7d1]
+check = "building-symbol"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "the game's base-building file has no look {0} for {1}'s to be a copy of"
+
+[ca161e64104]
+check = "build.build_and_write-35"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0}: files/buildings/{1}: {2}"
+
+[c0e4acec4ce]
+check = "build.build_and_write-36"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "the missions' own menu packs: the menus weren't changed"
+
+[c9526e95d7d]
+check = "build.build_and_write-37"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "the missions' own menu packs couldn't be made: {0}"
+
+[c8313842698]
+check = "build.build_and_write-38"
+where = "rusemod.build:build_and_write"
+kind = "mistake"
+us = "{0} isn't in this game, so no mission script can be changed"
+
+[c40ff44667d]
+check = "build.build_and_write-39"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "The game has no {0} or {1}, so this copy can't get its offline lock: build it without the cheats and test tools."
+
+[cc8b42e6a27]
+check = "build.build_and_write-40"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "RUSE Guard's scripts can't be added: {0}"
+
+[c212d3596f4]
+check = "build.build_and_write-41"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: files/models/{1}: {2}"
+
+[c1fc743b128]
+check = "build.build_and_write-42"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "the mods' own models: {0}"
+
+[c354e2bdb1a]
+check = "build.build_and_write-43"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: files/models/{1}.copy.toml: {2}"
+
+[cc6b7fb813e]
+check = "build.build_and_write-44"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0}: files/assets/{1}: {2}"
+
+[c98c358a4fb]
+check = "build.build_and_write-45"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "{0} can't be read for the game patch ({1})"
+
+[c5cbf737dd8]
+check = "build.build_and_write-46"
+where = "rusemod.build:build_and_write"
+kind = "raise"
+us = "these mods rebuild {0} packs ({1}): give --out a folder"
+
+[c39bf542b63]
+check = "build._wide_packs"
+where = "rusemod.build:_wide_packs"
+kind = "raise"
+us = "{0}: {1}. Take some of the mods' own models or files out (the era units' own models are the biggest) and build again."
+
+[c9cf2879ed2]
+check = "buildinglook.piece_kind"
+where = "rusemod.buildinglook:piece_kind"
+kind = "raise"
+us = "the game has no scenery type {0} (the piece the look's model takes the place of)"
+
+[c2b59fbff0e]
+check = "buildinglook._layout"
+where = "rusemod.buildinglook:_layout"
+kind = "raise"
+us = "the base-building scenery file's tables aren't in the order the build knows"
+
+[c9d19698506]
+check = "buildinglook.clone_symbol"
+where = "rusemod.buildinglook:clone_symbol"
+kind = "raise"
+us = "the base-building file would grow past what its references can reach"
+
+[c0431becba1]
+check = "doctor.fix"
+where = "rusemod.doctor:fix"
+kind = "raise"
+us = "no folder for modded copies yet: the game wasn't found"
+
+[cdb865a09ea]
+check = "fairplay.lock_script"
+where = "rusemod.fairplay:lock_script"
+kind = "raise"
+us = "{0} isn't a build code ({1} hex digits), so the copy's lock can't be made."
+
+[c67eb540434]
+check = "filechecks.check_video.walk"
+where = "rusemod.filechecks:walk"
+kind = "raise"
+us = "the video carries attachments or chapters, which the game doesn't use"
+
+[cc63541245b]
+check = "video-vp9-vorbis"
+where = "rusemod.filechecks:check_video"
+kind = "raise"
+us = "the game plays VP9 videos only (one picture track): this one has {0}"
+
+[ca49be2582b]
+check = "video-vp9-vorbis"
+where = "rusemod.filechecks:check_video"
+kind = "raise"
+us = "the game plays a video's sound only in Vorbis"
+
+[c447a9db9b9]
+check = "filechecks.check_flash"
+where = "rusemod.filechecks:check_flash"
+kind = "raise"
+us = "its code isn't the game's ({0} changed): a Flash menu's pictures, words and layout can change, its code can't"
+
+[c1417d8ff4b]
+check = "shader-model-3"
+where = "rusemod.filechecks:check_shader_code"
+kind = "raise"
+us = "a shader of another kind than the game's (vs_3_0 / ps_3_0)"
+
+[cbf73687e0f]
+check = "filechecks.shader_programs"
+where = "rusemod.filechecks:shader_programs"
+kind = "raise"
+us = "not the game's shader file ({0}: {1})"
+
+[ca9c4e63cc2]
+check = "filechecks.shader_programs-2"
+where = "rusemod.filechecks:shader_programs"
+kind = "raise"
+us = "not the game's shader file (it holds other things)"
+
+[c505b178c18]
+check = "filechecks.check_shaders"
+where = "rusemod.filechecks:check_shaders"
+kind = "raise"
+us = "{0} shader{1} in it changed: a mod can't change shaders"
+
+[cf848822db4]
+check = "gamefiles.delta_base"
+where = "rusemod.gamefiles:delta_base"
+kind = "raise"
+us = "not a delta of a game file"
+
+[cd48916c206]
+check = "gamefiles.apply_delta"
+where = "rusemod.gamefiles:apply_delta"
+kind = "raise"
+us = "not a delta of a game file"
+
+[c014cbb2375]
+check = "gamefiles.apply_delta-2"
+where = "rusemod.gamefiles:apply_delta"
+kind = "raise"
+us = "it was made from another version of this game file (the game was updated since?): make the change again on this version"
+
+[c6c75701023]
+check = "gamefiles.apply_delta-3"
+where = "rusemod.gamefiles:apply_delta"
+kind = "raise"
+us = "its delta is damaged (it copies past the game file's end)"
+
+[c3f06abd97d]
+check = "gamefiles.taken"
+where = "rusemod.gamefiles:taken"
+kind = "raise"
+us = "{0}: {1}"
+
+[c00a48843f9]
+check = "gamefiles.taken-2"
+where = "rusemod.gamefiles:taken"
+kind = "raise"
+us = "{0}: a {1} file {2}, so a mod can't change or add it"
+
+[cc85b0b0f91]
+check = "gamefiles.check_kind"
+where = "rusemod.gamefiles:check_kind"
+kind = "raise"
+us = "{0} is {1} MB: a mod's game file can be {2} MB at most for now"
+
+[c23ddee5d7a]
+check = "gamefiles.check_kind-2"
+where = "rusemod.gamefiles:check_kind"
+kind = "raise"
+us = "{0}: {1}"
+
+[c32b205956f]
+check = "gamefiles.check_kind-3"
+where = "rusemod.gamefiles:check_kind"
+kind = "raise"
+us = "{0} isn't a good {1} ({2}: {3})"
+
+[cb5e16747ed]
+check = "gamefiles.read_mod"
+where = "rusemod.gamefiles:read_mod"
+kind = "raise"
+us = "{0}: a game file goes in files/game/<the game's pack>/<its path in the pack>"
+
+[c9ad1df249a]
+check = "gamefiles.read_mod-2"
+where = "rusemod.gamefiles:read_mod"
+kind = "raise"
+us = "this mod's game files come to more than {0} MB, the most a mod can carry for now"
+
+[c21106ba80a]
+check = "gamefiles.read_mod-3"
+where = "rusemod.gamefiles:read_mod"
+kind = "raise"
+us = "{0}: a file a mod adds goes in its own folder in the pack, files/game/{1}/mods/{2}/...; to change one of the game's files, change it in the Studio's Files tab"
+
+[cc4975ab5fd]
+check = "gamefiles.changes"
+where = "rusemod.gamefiles:changes"
+kind = "tuple"
+us = "{0}: the game has no pack {1}"
+
+[c735d029d87]
+check = "gamefiles.changes-2"
+where = "rusemod.gamefiles:changes"
+kind = "raise"
+us = "the game has no pack {0} in {1}"
+
+[cab74733766]
+check = "gamefiles.changes-3"
+where = "rusemod.gamefiles:changes"
+kind = "raise"
+us = "the game already has {0}"
+
+[c545a2fbc67]
+check = "gamefiles.changes-4"
+where = "rusemod.gamefiles:changes"
+kind = "raise"
+us = "the game has no {0} in {1}"
+
+[cfed2614a01]
+check = "gamefiles.changes-5"
+where = "rusemod.gamefiles:changes"
+kind = "tuple"
+us = "{0}: {1}"
+
+[c19b6228508]
+check = "gamepatch.parse"
+where = "rusemod.gamepatch:parse"
+kind = "raise"
+us = "{0}: not a game patch these apps know"
+
+[c9c4708107d]
+check = "gamepatch.parse-2"
+where = "rusemod.gamepatch:parse"
+kind = "raise"
+us = "{0} isn't the game patch these apps were made with (its checksum differs), so it wasn't used. Update the apps, or delete the file to have it downloaded again."
+
+[c1befd8b374]
+check = "gamepatch.parse-3"
+where = "rusemod.gamepatch:parse"
+kind = "raise"
+us = "{0} can't be read as a game patch"
+
+[c9f507a9285]
+check = "gamepatch.apply"
+where = "rusemod.gamepatch:apply"
+kind = "raise"
+us = "the game patch {0} is made for another version of R.U.S.E. than the one installed (its RUSE.exe differs), so it can't be applied. Mods that need it can't be played with this version."
+
+[c8a7e47f8b7]
+check = "gamepatch.apply-2"
+where = "rusemod.gamepatch:apply"
+kind = "raise"
+us = "the game patch {0} didn't give the RUSE.exe it promises, so it wasn't used"
+
+[c24c126fb50]
+check = "gamepatch._edit"
+where = "rusemod.gamepatch:_edit"
+kind = "raise"
+us = "the game patch {0} doesn't match this RUSE.exe at {1}, so it wasn't applied"
+
+[c34e4a466ea]
+check = "gamepatch._edit-2"
+where = "rusemod.gamepatch:_edit"
+kind = "raise"
+us = "the game patch {0} doesn't match the length of this RUSE.exe, so it wasn't applied"
+
+[c898c7cd5f4]
+check = "gamepatch.apply_all"
+where = "rusemod.gamepatch:apply_all"
+kind = "raise"
+us = "the game patches {0} and {1} change the same part of RUSE.exe, so the mods that need them can't be played together"
+
+[ca454731051]
+check = "gamepatch.fetch"
+where = "rusemod.gamepatch:fetch"
+kind = "raise"
+us = "{0}: not a game patch these apps know"
+
+[c6a75e8f895]
+check = "gamepatch.fetch-2"
+where = "rusemod.gamepatch:fetch"
+kind = "raise"
+us = "the game patch {0} couldn't be downloaded ({1}). It's needed once, for {2}; connect to the internet and build again."
+
+[c4e3770dba4]
+check = "gamepatch.fetch-3"
+where = "rusemod.gamepatch:fetch"
+kind = "raise"
+us = "{0} is far bigger than a game patch ever is, so it wasn't used"
+
+[c7052bf2aaf]
+check = "groundtex.check_ref"
+where = "rusemod.groundtex:check_ref"
+kind = "raise"
+us = "texture {0} isn't one: game:<set>/<folder>/<name>, map:<map>:<x>:<y>, file:<name>.png or swatch:<theme>:<name>"
+
+[c21cd003981]
+check = "groundtex.swatch_pixels"
+where = "rusemod.groundtex:swatch_pixels"
+kind = "raise"
+us = "the game has no texture {0} for the palette's {1}"
+
+[cf658ffd04f]
+check = "groundtex.palette_swatch"
+where = "rusemod.groundtex:palette_swatch"
+kind = "raise"
+us = "the palette has no {0}"
+
+[c66b78c2ee0]
+check = "groundtex.swatch"
+where = "rusemod.groundtex:swatch"
+kind = "raise"
+us = "the game's ZZ_Win.dat isn't found, so its ground textures can't be read"
+
+[cb65e80f524]
+check = "groundtex.swatch-2"
+where = "rusemod.groundtex:swatch"
+kind = "raise"
+us = "the game has no ground texture {0}"
+
+[ca9b94992d3]
+check = "groundtex.swatch-3"
+where = "rusemod.groundtex:swatch"
+kind = "raise"
+us = "the map {0} isn't in this game"
+
+[c755e42ec7c]
+check = "groundtex.swatch-4"
+where = "rusemod.groundtex:swatch"
+kind = "raise"
+us = "the map {0} ({1}) isn't in this game"
+
+[c6eef870aca]
+check = "guard.send"
+where = "rusemod.guard:send"
+kind = "raise"
+us = "too-big"
+
+[ccbc69cc298]
+check = "instance.refuse_if_running"
+where = "rusemod.instance:refuse_if_running"
+kind = "raise"
+us = "R.U.S.E. is still running from the modded copy at {0}: {1}. Close the game, then try again."
+
+[c6146aca3d3]
+check = "instance._set_aside"
+where = "rusemod.instance:_set_aside"
+kind = "raise"
+us = "{0} at {1} can't be removed or moved aside: Windows refused {2} ({3}){4}. If R.U.S.E. is running from it, close the game and try again; otherwise restart Windows, or delete that folder by hand, then try again."
+
+[c586fb739f4]
+check = "instance.build_instance"
+where = "rusemod.instance:build_instance"
+kind = "raise"
+us = "refusing to build an instance inside the game folder"
+
+[c45686cb091]
+check = "instance.build_instance-2"
+where = "rusemod.instance:build_instance"
+kind = "raise"
+us = "can't add {0}: the game folder already has it"
+
+[ccbf4efe5f0]
+check = "instance.build_instance-3"
+where = "rusemod.instance:build_instance"
+kind = "raise"
+us = "files to replace not found in the game folder: {0}"
+
+[c66c86a438c]
+check = "instance.build_instance-4"
+where = "rusemod.instance:build_instance"
+kind = "raise"
+us = "The modded copy at {0} is in use, so it can't be replaced ({1}){2}. If R.U.S.E. is running from it, close the game and try again."
+
+[c0118dfc794]
+check = "kdt.__init__"
+where = "rusemod.kdt:__init__"
+kind = "raise"
+us = "Storage length does not match"
+
+[c05f5efd9f3]
+check = "kdt._parse"
+where = "rusemod.kdt:_parse"
+kind = "raise"
+us = "subtree index table does not match the chunks"
+
+[c2cd5327292]
+check = "kdt._table"
+where = "rusemod.kdt:_table"
+kind = "raise"
+us = "{0} table does not match the chunks"
+
+[c154c27e8e9]
+check = "loc.plan"
+where = "rusemod.loc:plan"
+kind = "raise"
+us = "{0}: {1} isn't a text in the game's {2}.dic"
+
+[c1e9839eb35]
+check = "loc.plan-2"
+where = "rusemod.loc:plan"
+kind = "raise"
+us = "{0}: the game key {1} is already a text in the game's {2}.dic; pick another game_key or text_prefix"
+
+[c881b9653d3]
+check = "loc.plan-3"
+where = "rusemod.loc:plan"
+kind = "raise"
+us = "{0}: the game key {1} is already used by {2}"
+
+[c597d49fb96]
+check = "loc.apply"
+where = "rusemod.loc:apply"
+kind = "raise"
+us = "the game has no dictionary called {0}.dic (text/{1}.csv)"
+
+[c0dba7d6c76]
+check = "lock.decode_join_code"
+where = "rusemod.lock:decode_join_code"
+kind = "raise"
+us = "That isn't a R.U.S.E. join code (they start with RUSE1:)."
+
+[c89e79b046a]
+check = "mapscripts.compile_text"
+where = "rusemod.mapscripts:compile_text"
+kind = "raise"
+us = "{0}"
+
+[cd909a44347]
+check = "mapscripts.build_changes"
+where = "rusemod.mapscripts:build_changes"
+kind = "tuple"
+us = "{0}: the game has no script {1} in {2}/{3} (the Studio's script list names them as the game does)"
+
+[c13d3fe69ea]
+check = "mapscripts.build_changes-2"
+where = "rusemod.mapscripts:build_changes"
+kind = "tuple"
+us = "{0}: {1} changes this script too, and only one can run: keep one of the two mods"
+
+[ca6a8a2dd9e]
+check = "mapscripts.build_changes-3"
+where = "rusemod.mapscripts:build_changes"
+kind = "tuple"
+us = "{0}: the game's Python can't read this script{1}: {2}"
+
+[c154663c220]
+check = "mapscripts.build_changes-4"
+where = "rusemod.mapscripts:build_changes"
+kind = "tuple"
+us = "{0}: its .xyz isn't what its text makes (changed by another tool?): open the script in the Studio and save it again"
+
+[c20409af021]
+check = "mapscripts.build_changes-5"
+where = "rusemod.mapscripts:build_changes"
+kind = "tuple"
+us = "{0}: only its text is here, and this copy of the apps can't make the game's form of it ({1}): save it in the Studio, which makes the .xyz beside it"
+
+[ce0d1b41301]
+check = "menugroups.read"
+where = "rusemod.menugroups:read"
+kind = "raise"
+us = "{0}: [{1}] holds a unit's address = the address of its group's first unit"
+
+[cb6b823f593]
+check = "menuorder.parse"
+where = "rusemod.menuorder:parse"
+kind = "raise"
+us = "{0}: unknown key {1} (a menus file holds [[order]] tables)"
+
+[c2bc6e167c8]
+check = "menuorder.parse-2"
+where = "rusemod.menuorder:parse"
+kind = "raise"
+us = "{0}: an order holds menu and missions, nothing else"
+
+[cb2f0c13e8a]
+check = "menuorder.parse-3"
+where = "rusemod.menuorder:parse"
+kind = "raise"
+us = "{0}: missions must list two missions or more, like [\"Alpha/LevelDesign_BH.scenario\", \"TwoIslands/leveldesign_challenge.scenario\"]"
+
+[c0779aa7105]
+check = "menupicture.start_dots_of"
+where = "rusemod.menupicture:start_dots_of"
+kind = "raise"
+us = "{0}: start_dots puts the starting points on the map's own wide picture: name it (wide_picture = \"menu-wide.png\"); the game's own have their dots drawn in"
+
+[c80baf5721d]
+check = "mission._words"
+where = "rusemod.mission:_words"
+kind = "raise"
+us = "{0}: {1} isn't one of the game's languages ({2})"
+
+[cd512f41d19]
+check = "mission.problems"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "side {0} isn't one of the copied mission's sides ({1})"
+
+[c668b67f69e]
+check = "mission-human-sides"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "side {0} is played by a person in the copied mission: it stays the player's"
+
+[c9be16f481e]
+check = "mission-human-sides"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "side {0} is the computer's in the copied mission: a mission can't add a human side (the game wants as many as there are players)"
+
+[c015a0e4ce8]
+check = "mission.problems.point"
+where = "rusemod.mission:point"
+kind = "tuple"
+us = "{0}: {1} isn't a named point of the map (add it with Add a spot or zone)"
+
+[cfa5058672f]
+check = "mission.problems.zone"
+where = "rusemod.mission:zone"
+kind = "tuple"
+us = "{0}: {1} isn't a zone of the map (add a round or square zone)"
+
+[c7150da906d]
+check = "mission.problems.group"
+where = "rusemod.mission:group"
+kind = "tuple"
+us = "{0}: no units are ever put in group {1} (spawn some into it, or give placed units that group)"
+
+[c909dc23a18]
+check = "mission.problems.side"
+where = "rusemod.mission:side"
+kind = "tuple"
+us = "{0}: side {1} isn't one of the mission's sides"
+
+[c5b9789bd9f]
+check = "mission.problems-2"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "the opening camera move {0} isn't one of the mission's or the map's"
+
+[c959e2a39b6]
+check = "mission.problems-3"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: there's no goal {1}"
+
+[cfd42451983]
+check = "mission.problems-4"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: goal {1} already shows at the start (set it to show by an event)"
+
+[c556430fe06]
+check = "mission.problems-5"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: goal {1} is done by its own rule, not by an event"
+
+[cdedd95859b]
+check = "mission.problems-6"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: there's no camera move {1}"
+
+[cf9c95ce587]
+check = "mission.problems-7"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: say whose units they are (side)"
+
+[c1fb5969057]
+check = "mission-unit-class"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: {1} isn't a unit class the game knows"
+
+[ca87158d85a]
+check = "mission.problems-8"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: {1}"
+
+[c130f515ff0]
+check = "mission-ai-side"
+where = "rusemod.mission:problems"
+kind = "tuple"
+us = "{0}: side {1} is played by a person, and only the computer's sides have a computer player to start: the game stops when this action runs. Pick one of the computer's sides"
+
+[ca6981c0a6a]
+check = "missionbuild.entry_folder"
+where = "rusemod.missionbuild:entry_folder"
+kind = "raise"
+us = "the game's menus aren't in ZZ_GladPatchableWin.dat"
+
+[cbb35d8dd48]
+check = "missionbuild.entry_folder-2"
+where = "rusemod.missionbuild:entry_folder"
+kind = "raise"
+us = "{0}'s scenario cluster isn't in the game"
+
+[c4d2a8e041b]
+check = "nav.read"
+where = "rusemod.nav:read"
+kind = "raise"
+us = "the graph's sections don't match its counts"
+
+[cd2cba6f363]
+check = "ground-reach"
+where = "rusemod.nav:open_narrow"
+kind = "raise"
+us = "opening the bridges would leave ground units can't reach, which crashes the game"
+
+[c389fbaec1e]
+check = "ground-reach"
+where = "rusemod.nav:_open_here"
+kind = "raise"
+us = "opening ground would leave ground units can't reach, which crashes the game"
+
+[cd06c0d4cd7]
+check = "ground-reach"
+where = "rusemod.nav:_check_opened"
+kind = "raise"
+us = "opening the bridges would leave ground units can't reach, which crashes the game"
+
+[c7afe9ed2a9]
+check = "ground-reach"
+where = "rusemod.nav:_check_opened"
+kind = "raise"
+us = "the local movement of the bridge at ({0}, {1}) would be in pieces, which crashes the game when a route goes through it"
+
+[c4b46439a66]
+check = "ground-reach"
+where = "rusemod.nav:add_local_maps"
+kind = "raise"
+us = "the local map at ({0}, {1}) would be in pieces"
+
+[cfc6b72e91f]
+check = "ground-reach"
+where = "rusemod.nav:add_local_maps"
+kind = "raise"
+us = "the local maps would cut {0} circles of ground off from the rest, near ({1}, {2}): a way through the town is lost"
+
+[c84a1bdce3e]
+check = "circle-links"
+where = "rusemod.nav:_cap_links"
+kind = "raise"
+us = "a circle of the map's movement meets more than {0} others, and leaving its extra links out would cut ground off from the rest (a route through such a circle crashes the game)"
+
+[c94ee207e15]
+check = "circle-links"
+where = "rusemod.nav:_keep_links"
+kind = "raise"
+us = "a circle of the map's movement meets {0} others, more than the {1} a route through it can take without crashing the game, and they can't be brought down to {2}"
+
+[cb8cb9c6f1e]
+check = "newmap-names"
+where = "rusemod.newmap:check_name"
+kind = "raise"
+us = "maps/{0}: names starting flat_ belong to the game's test maps; pick another"
+
+[c4db58bd98c]
+check = "newmap.make"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "the game's map list or menus aren't in ZZ_GladPatchableWin.dat, so no map can be added"
+
+[c9ad4de6b10]
+check = "newmap-names"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: the game already has a map called {1}; give the new map another folder name"
+
+[c21dd87eca2]
+check = "newmap.make-2"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: no menu offers {1} (BATTLES, OPERATIONS or the CAMPAIGN), so there's no entry to copy; start from a map one of them lists"
+
+[c33ac41063a]
+check = "newmap.make-3"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: copy_of = {1} isn't a map of this game (it takes the map's pack name, like SuperCrossRoads4 for Blitz)"
+
+[ce94fb8d6cd]
+check = "newmap-names"
+where = "rusemod.newmap:adding"
+kind = "raise"
+us = "maps/{0}: the game already has {1}; give the new map another folder name"
+
+[c007ceceb04]
+check = "newmap.make-4"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: {1}'s scenario cluster doesn't name one scenario and one map the way the game's maps do, so it can't be copied"
+
+[caa276de70b]
+check = "newmap.make-5"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: {1}'s map cluster doesn't mount one map pack the way the game's maps do, so it can't be copied"
+
+[c4745611806]
+check = "newmap.make-6"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: {1}'s map cluster doesn't load its constants the way the game's maps do, so it can't be copied"
+
+[c27635f7411]
+check = "newmap.make-7"
+where = "rusemod.newmap:make"
+kind = "raise"
+us = "maps/{0}: {1}'s constants don't name the folder of its grid the way the game's maps do, so it can't be copied"
+
+[c9605a56323]
+check = "packfiles.pack_path"
+where = "rusemod.packfiles:pack_path"
+kind = "raise"
+us = "there's no pack {0} in this game"
+
+[cc6ce604e44]
+check = "patch.run"
+where = "rusemod.patch:run"
+kind = "mistake"
+us = "{0}"
+
+[cede1c25851]
+check = "patch.apply"
+where = "rusemod.patch:apply"
+kind = "raise"
+us = "{0} patches every {1}, but none exists in this game build (after a game update, this needs a rebase)"
+
+[c8ee2668feb]
+check = "patch.apply-2"
+where = "rusemod.patch:apply"
+kind = "mistake"
+us = "{0}"
+
+[c5ae01e0c23]
+check = "patch._create"
+where = "rusemod.patch:_create"
+kind = "mistake"
+us = "{0}"
+
+[c27ea83c1d6]
+check = "patch._file_op"
+where = "rusemod.patch:_file_op"
+kind = "raise"
+us = "{0} replaces {1}, which isn't a game file"
+
+[c7aedf20168]
+check = "patch._select"
+where = "rusemod.patch:_select"
+kind = "raise"
+us = "{0}: [{1}] matches {2} items of {3}:{4}, it must match exactly one"
+
+[c4dc89ad1ea]
+check = "patch._target"
+where = "rusemod.patch:_target"
+kind = "raise"
+us = "{0} {1} {2}, which doesn't exist in this game build (after a game update, this needs a rebase)"
+
+[c686ec2398c]
+check = "patch._target-2"
+where = "rusemod.patch:_target"
+kind = "raise"
+us = "{0}: {1} matches {2} objects ({3}{4}); it must match exactly one"
+
+[c23f99cab85]
+check = "patch._share"
+where = "rusemod.patch:_share"
+kind = "raise"
+us = "{0}: can't refer to a {1} part that a mod made; refer to a part of a game object, or make it a named object of its own"
+
+[cb72b803ed5]
+check = "patch._finish"
+where = "rusemod.patch:_finish"
+kind = "mistake"
+us = "{0}"
+
+[c2c1bfe008f]
+check = "ruses-per-sector"
+where = "rusemod.patch:_ruses_per_sector"
+kind = "mistake"
+us = "{0}"
+
+[cc857b92dc9]
+check = "weapon-salvo"
+where = "rusemod.patch:_unit_rules"
+kind = "mistake"
+us = "{0}"
+
+[cd7f191cc50]
+check = "truck-flags"
+where = "rusemod.patch:_truck_flags"
+kind = "mistake"
+us = "{0}: {1}: {2}"
+
+[c18a6bc52c0]
+check = "play.keep_instances_dir"
+where = "rusemod.play:keep_instances_dir"
+kind = "raise"
+us = "{0} is inside the R.U.S.E. folder: modded copies can't go there. Pick a folder outside the game."
+
+[c35342e6edb]
+check = "play.project-refusal"
+where = "rusemod.play:_modded"
+kind = "raise"
+us = "{0}"
+
+[cd3300523ec]
+check = "play.other-app-building"
+where = "rusemod.play:_modded"
+kind = "raise"
+us = "The other app (the Launcher or the Studio) is building the modded game right now: wait for it to finish, then try again."
+
+[caf34e0c3ba]
+check = "play.mods-have-mistakes"
+where = "rusemod.play:_modded"
+kind = "raise"
+us = "These mods have errors (listed above). Nothing was changed."
+
+[ccb2ab2f6e6]
+check = "play.copy-has-no-exe"
+where = "rusemod.play:_modded"
+kind = "raise"
+us = "The modded copy at {0} has no RUSE.exe."
+
+[c9008b68678]
+check = "play.steam-didnt-start"
+where = "rusemod.play:_modded"
+kind = "raise"
+us = "Steam didn't start. Start Steam, then try again."
+
+[c329a0456a5]
+check = "players.parse_map"
+where = "rusemod.players:parse_map"
+kind = "raise"
+us = "{0}: entry names which of the map's entries gets players = N; players is missing"
+
+[cbbde74d684]
+check = "players-most"
+where = "rusemod.players:parse_map"
+kind = "raise"
+us = "{0}: players must be a whole number from 2 to {1}: the game's lobby shows at most {2} seats (seen in the game)"
+
+[c45311f40a2]
+check = "players.apply_players"
+where = "rusemod.players:apply_players"
+kind = "raise"
+us = "the game's map list or menus aren't in ZZ_GladPatchableWin.dat"
+
+[cd1a5295c8a]
+check = "players.apply_players-2"
+where = "rusemod.players:apply_players"
+kind = "raise"
+us = "{0} isn't played online or in BATTLES (it has no multiplayer entry), so its player count can't change"
+
+[c42b487b267]
+check = "seats-per-team"
+where = "rusemod.players:apply_players"
+kind = "raise"
+us = "{0}: {1} players need a starting point for each (seen in the game: a player without one starts with no HQ and no units); {2} has none for {3}. Add them (scenario.toml [[start]], or the Studio's Add HQ start)"
+
+[cb25b73d8ff]
+check = "presets.read_facts"
+where = "rusemod.presets:read_facts"
+kind = "raise"
+us = "{0}: the game's files aren't all there ({1})"
+
+[c8d2ed90dcd]
+check = "presets.read_facts.read"
+where = "rusemod.presets:read"
+kind = "raise"
+us = "{0}: {1} isn't in the game's files"
+
+[c1e325f452d]
+check = "presets.copy_scenario"
+where = "rusemod.presets:copy_scenario"
+kind = "raise"
+us = "ZZ_GladPatchableWin.dat isn't in the game folder"
+
+[c633dd243a8]
+check = "presets.copy_scenario-2"
+where = "rusemod.presets:copy_scenario"
+kind = "raise"
+us = "{0}: its scenario can't be found, so it can't start blank"
+
+[c882fb29c61]
+check = "pyscript.dump"
+where = "rusemod.pyscript:dump"
+kind = "raise"
+us = "can't write a {0} (only what the unit-list template and our game scripts need)"
+
+[c013c934027]
+check = "script-no-exec"
+where = "rusemod.pyscript:check_appended"
+kind = "raise"
+us = "the module would use exec, which the game refuses"
+
+[c3f925f192d]
+check = "pyscript.append_module"
+where = "rusemod.pyscript:append_module"
+kind = "raise"
+us = "the game's script or the template doesn't end with 'return None' as expected"
+
+[cd508e00c6c]
+check = "pyscript.append_module-2"
+where = "rusemod.pyscript:append_module"
+kind = "raise"
+us = "the game's script jumps where the template goes ({0})"
+
+[c6a59a5b80f]
+check = "pyscript.append_module-3"
+where = "rusemod.pyscript:append_module"
+kind = "raise"
+us = "the template reads {0}, which the game's script doesn't set"
+
+[c3339a1a96f]
+check = "pyscript.append_module-4"
+where = "rusemod.pyscript:append_module"
+kind = "raise"
+us = "the game's script's compiled code, constants or names aren't stored the usual way"
+
+[c4518e274c5]
+check = "pyscript.append_module-5"
+where = "rusemod.pyscript:append_module"
+kind = "raise"
+us = "the joined script doesn't read back as the game's then the template's"
+
+[c6ae8ead257]
+check = "rmod.check"
+where = "rusemod.rmod:check"
+kind = "raise"
+us = "{0} can't be read as a .rmod mod ({1})."
+
+[c48d97ef20b]
+check = "rmod.check-2"
+where = "rusemod.rmod:check"
+kind = "raise"
+us = "{0} brings files that would run on the PC ({1}{2}); mods can't bring programs."
+
+[c336f583a6c]
+check = "rmod.apply"
+where = "rusemod.rmod:apply"
+kind = "mistake"
+us = "{0}"
+
+[c27637b0dd7]
+check = "rmod.apply-2"
+where = "rusemod.rmod:apply"
+kind = "mistake"
+us = "{0}: the .rmod engine stopped: {1}"
+
+[cb0d0cb71af]
+check = "rmod.apply-3"
+where = "rusemod.rmod:apply"
+kind = "mistake"
+us = "{0}: {1}"
+
+[c31a8505432]
+check = "roadnet.read"
+where = "rusemod.roadnet:read"
+kind = "raise"
+us = "the road network's point lists don't match its links"
+
+[cb98635ba73]
+check = "road-network-one-piece"
+where = "rusemod.roadnet:apply_roads"
+kind = "raise"
+us = "{0}: {1} would be cut off from the rest of the map's roads; every road network the game ships is one piece, and supply routes between two pieces fail. Draw each end onto a road, or give the road a larger join"
+
+[c60e7fd53f0]
+check = "seats-per-team"
+where = "rusemod.scenario:parse_removes"
+kind = "raise"
+us = "{0}: a starting point can't be removed, every player needs one: move it instead"
+
+[c020571a0d0]
+check = "scenario._check_text"
+where = "rusemod.scenario:_check_text"
+kind = "raise"
+us = "{0}: {1} is one line of 1 to {2} letters"
+
+[c71354efdb2]
+check = "scenario._check_text-2"
+where = "rusemod.scenario:_check_text"
+kind = "raise"
+us = "{0}: name has a letter a scenario file can't keep (use letters, digits and _)"
+
+[c23f86c8f01]
+check = "scenario.parse_places"
+where = "rusemod.scenario:parse_places"
+kind = "raise"
+us = "{0}: a {1} needs its text (the game text its words are under)"
+
+[c7110e67486]
+check = "skirmish-neutral-spawns"
+where = "rusemod.scenario:apply_moves"
+kind = "raise"
+us = "{0} is for camp {1}, but {2} is a skirmish map's scenario, and a skirmish game spawns only neutral items: the game would leave it out without a word. Set camp = -1 (or leave camp out), or spawn it in an Operation's scenario"
+
+[c96f2d252ae]
+check = "skirmish-neutral-spawns"
+where = "rusemod.scenario:apply_moves"
+kind = "raise"
+us = "{0}: items.toml: item {1} of {2} is given camp {3}, but {4} is a skirmish map's scenario, and a skirmish game spawns only neutral items: the game would leave it out without a word. Keep camp = -1, or change it in an Operation's scenario"
+
+[c806e9a5eac]
+check = "scenery-md5"
+where = "rusemod.scenery:__init__"
+kind = "raise"
+us = "the scenery file's MD5 is wrong (the game would refuse it)"
+
+[ccc35db824f]
+check = "scenery._grown"
+where = "rusemod.scenery:_grown"
+kind = "raise"
+us = "block {0}: a road piece would have gone into its far-view list (a mistake in this writer, not in the mod: please report it)"
+
+[c27f263f658]
+check = "scenery-grid"
+where = "rusemod.scenery:_grids_hold"
+kind = "raise"
+us = "({0}, {1}) is outside the map's scenery grid ({2} x {3} cells of {4}), where the game draws nothing"
+
+[cce229aabaa]
+check = "sceneryasset.write_asset"
+where = "rusemod.sceneryasset:write_asset"
+kind = "raise"
+us = "{0}: no mesh pack holds the game's {1} (its kind's model)"
+
+[cd09aae29dd]
+check = "sceneryasset.rules"
+where = "rusemod.sceneryasset:rules"
+kind = "raise"
+us = "{0}: the game has no {1} for its scenery type to be a copy of"
+
+[ca5f2c2f468]
+check = "sceneryasset.checked_credit"
+where = "rusemod.sceneryasset:checked_credit"
+kind = "raise"
+us = "{0}: a model taken from others must be CC0 or CC-BY (this one says {1}); leave the licence empty for a model of your own"
+
+[c32cb748588]
+check = "sectors.apply_sectors"
+where = "rusemod.sectors:apply_sectors"
+kind = "raise"
+us = "{0}: its movement file isn't in the game, so the map's size isn't known"
+
+[c478dcde19b]
+check = "solved.unpack"
+where = "rusemod.solved:unpack"
+kind = "raise"
+us = "the answers don't open with this game file: they were made with another version of the game, or the file was changed"
+
+[cc7b7c72f36]
+check = "sound.header"
+where = "rusemod.sound:header"
+kind = "raise"
+us = "not one of the game's sounds"
+
+[c9c3c6b75a6]
+check = "sound.decode"
+where = "rusemod.sound:decode"
+kind = "raise"
+us = "a kind of sound file the game's own don't use ({0}, {1})"
+
+[ce2cff8a5e7]
+check = "sound.decode-2"
+where = "rusemod.sound:decode"
+kind = "raise"
+us = "{0} channels: none of the game's sounds has that many"
+
+[cd3bdcce3a6]
+check = "sound.encode"
+where = "rusemod.sound:encode"
+kind = "raise"
+us = "{0} channels: the game's sounds have 1, 2 or 6"
+
+[cb1d75fc160]
+check = "sound.ambience_changes"
+where = "rusemod.sound:ambience_changes"
+kind = "raise"
+us = "maps/{0}: no map {1} with a background sound in this game"
+
+[c9e46ec38e2]
+check = "sound.ambience_changes-2"
+where = "rusemod.sound:ambience_changes"
+kind = "raise"
+us = "maps/{0}: no background sound {1} in this game"
+
+[cbcb93c321e]
+check = "sound.ambience_changes-3"
+where = "rusemod.sound:ambience_changes"
+kind = "raise"
+us = "maps/{0}: {1} is already in the game"
+
+[c77a94ce350]
+check = "sound.new_song_changes"
+where = "rusemod.sound:new_song_changes"
+kind = "raise"
+us = "{0}/{1}/{2}: {3} is already in the game"
+
+[c62d0691b65]
+check = "sound.changes"
+where = "rusemod.sound:changes"
+kind = "raise"
+us = "{0}/{1}.wav: the game has no sound {2}"
+
+[c4c0912bb24]
+check = "sound.mod_volumes"
+where = "rusemod.sound:mod_volumes"
+kind = "raise"
+us = "{0}: {1} = {2}: a volume is a percent from 0 to {3}"
+
+[c6926adbc2b]
+check = "sound.volume_changes"
+where = "rusemod.sound:volume_changes"
+kind = "raise"
+us = "{0}: the game has no sound {1}"
+
+[c7fdc22a881]
+check = "tms.decode_parents"
+where = "rusemod.tms:decode_parents"
+kind = "raise"
+us = "predictor stream length does not match the vertex count"
+
+[ca1283518e0]
+check = "tms.decode"
+where = "rusemod.tms:decode"
+kind = "raise"
+us = "element stream length does not match the vertex count"
+
+[c1534a481d8]
+check = "tmst.__init__"
+where = "rusemod.tmst:__init__"
+kind = "raise"
+us = "size fields {0}/{1} do not match {2}/{3}"
+
+[cd209617972]
+check = "unit-nation-range"
+where = "rusemod.unitcheck:problems"
+kind = "tuple"
+us = "{0} {1} isn't a nation: it must be 0 to 6 ({2}); the game has room for exactly seven nations' units, and another number corrupts it as it loads"
+
+[ce150759f65]
+check = "unit-id-zero"
+where = "rusemod.unitcheck:problems"
+kind = "tuple"
+us = "{0} 0 isn't an id: the game skips the unit in its unit lists, and ordering it causes an error in the match; give it a number no other unit has"
+
+[c116b5a5251]
+check = "unit-five-dates"
+where = "rusemod.unitcheck:problems"
+kind = "tuple"
+us = "{0} isn't a list; it needs {1} items, one per battle date"
+
+[c387994ca91]
+check = "unit-five-dates"
+where = "rusemod.unitcheck:problems"
+kind = "tuple"
+us = "{0} has {1} item(s); it needs {2}, one per battle date ({3})"
+
+[cd8a0602bc7]
+check = "flag-59"
+where = "rusemod.unitflags:problems"
+kind = "tuple"
+us = "flag 59 (transport_parachutiste) on a unit that isn't an aircraft crashes R.U.S.E. when the game looks for the paratroopers it drops; take it off (only aircraft, {0} units with a {1}, can carry it)"
+
+[ca02a1f4a8e]
+check = "flag-59"
+where = "rusemod.unitflags:problems"
+kind = "tuple"
+us = "flag 59 (transport_parachutiste) on an aircraft with no {0} crashes R.U.S.E. when the game looks for the paratroopers it drops; set {1} to the unit it drops, or take the flag off"
+
+[c5e4e456ec1]
+check = "unitlook.make_standin"
+where = "rusemod.unitlook:make_standin"
+kind = "raise"
+us = "a stand-in whose size doesn't match its blocks"
+
+[c07674b6327]
+check = "unitlook._plain_picture"
+where = "rusemod.unitlook:_plain_picture"
+kind = "raise"
+us = "a {0} picture with flag {1} can't be replaced yet"
+
+[c352fefffe2]
+check = "unitlook._plain_picture-2"
+where = "rusemod.unitlook:_plain_picture"
+kind = "raise"
+us = "a picture whose size doesn't match its pixels"
+
+[c8606392fc7]
+check = "unitlook.make_picture"
+where = "rusemod.unitlook:make_picture"
+kind = "raise"
+us = "a {0} picture with {1} level(s) can't be replaced yet: only cards (one DXT1 level, ZIPO)"
+
+[c1cb26ca0c6]
+check = "unitlook.make_picture-2"
+where = "rusemod.unitlook:make_picture"
+kind = "raise"
+us = "a picture whose size doesn't match its blocks"
+
+[cbf5618d3e2]
+check = "unitlook.own_cards"
+where = "rusemod.unitlook:own_cards"
+kind = "raise"
+us = "{0}: the unit's card {1} isn't in the game, so its own card can't be made from it"
+
+[c2e651609c0]
+check = "unitlook.own_cards-2"
+where = "rusemod.unitlook:own_cards"
+kind = "raise"
+us = "{0}: the game already has a card {1}"
+
+[c8d9d06fee6]
+check = "unitlook.own_cards-3"
+where = "rusemod.unitlook:own_cards"
+kind = "raise"
+us = "no menu pack holds {0}, so the new cards can't be shown"
+
+[cb449483690]
+check = "unitlook.changes"
+where = "rusemod.unitlook:changes"
+kind = "raise"
+us = "files/replace/{0}.png: the game has no texture {1}"
+
+[c3fb0c82b14]
+check = "unitmodel.new_texture"
+where = "rusemod.unitmodel:new_texture"
+kind = "raise"
+us = "a {0} x {1} texture's level {2} ({3} x {4}) holds {5} blocks; the game makes room for {6}"
+
+[c65c48ef708]
+check = "unitmodel._with_model"
+where = "rusemod.unitmodel:_with_model"
+kind = "raise"
+us = "the material of {0} lists {1} bones, as many as the game's longest list; {2} would be one more"
+
+[c4c26187184]
+check = "unitmodel._with_model-2"
+where = "rusemod.unitmodel:_with_model"
+kind = "raise"
+us = "the {0} material of {1} lists {2} bones, as many as the game's longest list; {3} would be one more"
+
+[c466db9c64c]
+check = "yourfiles._move"
+where = "rusemod.yourfiles:_move"
+kind = "raise"
+us = "the copy of {0} didn't match it byte for byte"
+
+[c7f62d0ccd9]
+check = "studio.test.no-mod-or-map"
+where = "ruse_studio.api:test_in_game"
+kind = "raise"
+us = "Pick or make a mod or a map first."
+
+[ca723028550]
+check = "studio.test.already-building"
+where = "ruse_studio.api:test_in_game"
+kind = "raise"
+us = "A test is already being built: wait for it to finish."
+
+[cdb89a5070f]
+check = "studio.test.restoring"
+where = "ruse_studio.api:test_in_game"
+kind = "raise"
+us = "The game's files are being restored: wait for it to finish."
+
+[c7a745db9ef]
+check = "studio.test.game-not-found"
+where = "ruse_studio.api:work"
+kind = "raise"
+us = "We couldn't find R.U.S.E."
+
+[cdeb4e39d4a]
+check = "launcher.play.game-not-found"
+where = "ruse_launcher.api:_play"
+kind = "raise"
+us = "We couldn't find R.U.S.E. Choose its folder first."

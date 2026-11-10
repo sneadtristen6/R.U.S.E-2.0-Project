@@ -316,7 +316,22 @@ class Starter:
         `words`: the app's words in the player's language, for the lines meant for the player (in_words).
         `cut_off_errors`: ground the mods cut off from the rest of a map stops the build (the Studio's Test in game)
         instead of being a warning (build_and_write). `title`: the copy gets R.U.S.E. 2.0's gold title (the
-        default), or the game's own (Settings: rusemod.signature.title_on)."""
+        default), or the game's own (Settings: rusemod.signature.title_on).
+
+        An error leaving here says, for Bug Watch, how far the Play got (`stage`: refused "before" any build, the
+        "build" raised, the build "listed" mistakes in the mods, or the game didn't "start") and which mods were on
+        (`mod_set`): rusemod.bugwatch.failed_at. Never the words, folders or own mods' names."""
+        state = {"stage": "before"}
+        try:
+            self._modded(game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title, state)
+        except Exception as exc:
+            from . import bugwatch
+            bugwatch.failed_at(exc, state["stage"], mod_folders)
+            raise
+
+    def _modded(self, game, mod_folders, instance, name, say, watch, guard, words, cut_off_errors, title,
+                state: dict) -> None:
+        """modded's steps; `state["stage"]` follows them."""
         from .backup import _claim, _release
         from . import fairplay
         from .instance import forget, needs_build, refuse_if_running, take_back
@@ -344,6 +359,7 @@ class Starter:
             stamps = mod_stamps(mod_folders)
             if needs_build(str(game), str(instance), made_from) and \
                     not take_back(str(game), str(instance), made_from):
+                state["stage"] = "build"
                 mods = read_mods(mod_folders, say)
                 keep_order(mods)
                 say(f"Building the modded copy of R.U.S.E. for {name} in {instance}…")
@@ -358,12 +374,17 @@ class Starter:
         finally:
             _release(lock, fd)
         if result is not None and result.errors:
+            state["stage"] = "listed"
             exc = BuildError("These mods have errors (listed above). Nothing was changed.")
             # what the apps show one by one, each with its fix when there is one (ruse_studio test_problems)
             exc.errors, exc.order = [f.message for f in result.errors], list(result.order)
-            # Bug Watch: which mistakes they were, by where the build found each (rusemod.patch.Finding.site)
+            # Bug Watch: which mistakes they were, by where the build found each (rusemod.patch.Finding.site), and
+            # by which check each was, with the caught error's when it said one again (rusemod.checkkeys)
             exc.error_sites = [getattr(f, "site", "") for f in result.errors]
+            from .checkkeys import finding_key
+            exc.error_keys = [finding_key(f) for f in result.errors]
             raise exc
+        state["stage"] = "start"
         exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) if instance.is_dir() else None
         if exe is None:
             raise BuildError(f"The modded copy at {instance} has no RUSE.exe.")
