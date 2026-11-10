@@ -5,8 +5,12 @@ into the .glb; its alpha is not see-through but the player's side colour (low) a
 as a grey picture of its own beside the .glb, with the colour as a picture too (for painting).
 
 Skinned models (every unit) keep their bones: one joint per skeleton bone the model uses (through each material's
-SkinningRemapping), all at the origin with identity bind matrices (the skeleton files' bone positions aren't read
-yet), so the model shows as stored and every vertex keeps its bones and weights.
+SkinningRemapping), so the model shows as stored and every vertex keeps its bones and weights. By default the joints
+are all at the origin with identity bind matrices, as the paint round trip has always had them. With `rest_bones`
+each joint is at its rest pose from the model's skeleton record, laid out the way Blender draws bones (rest_poses:
+each frame turned once so the bone runs along the game's +x, a bone the game gives no parent hung from the one that
+leads to it), so in Blender the bones stand where the game has them and a mesh of the modder's own can take
+Blender's automatic weights from them; the points, bone names and weights are the same bytes either way.
 
 Axes: the game's model x, y, z (z up) are written as glTF's x, z, y (y up), times SCALE. That is a mirror, so
 each triangle's winding is reversed too. Which way is right was checked on the T-26: its turret number reads
@@ -106,9 +110,161 @@ def _split(rgba: bytes) -> tuple[bytes, bytes]:
     return bytes(colour), bytes(grey)
 
 
-def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes], dict]:
+PLAIN = 1e-3   # a rest pose whose axes are this close to length one and square to each other is a plain turn
+
+
+def _rows(m) -> list:
+    """A skeleton record's matrix (12 numbers: 3 rows of [r r r t], the game's) as 3 rows of 4."""
+    return [list(m[0:4]), list(m[4:8]), list(m[8:12])]
+
+
+def _flat(rows) -> tuple:
+    return tuple(v for row in rows for v in row)
+
+
+def _after(a, b) -> list:
+    """The move `b`, then `a` (3 rows of 4 each)."""
+    return [[sum(a[i][k] * b[k][j] for k in range(3)) + (a[i][3] if j == 3 else 0.0) for j in range(4)]
+            for i in range(3)]
+
+
+def _undo(f) -> list:
+    """The inverse of a plain turn and move (3 rows of 4)."""
+    return [[f[j][i] for j in range(3)] + [-sum(f[j][i] * f[j][3] for j in range(3))] for i in range(3)]
+
+
+def _det3(r) -> float:
+    """The determinant of 3 rows of 3 (below 0: a mirror)."""
+    return (r[0][0] * (r[1][1] * r[2][2] - r[1][2] * r[2][1]) - r[0][1] * (r[1][0] * r[2][2] - r[1][2] * r[2][0])
+            + r[0][2] * (r[1][0] * r[2][1] - r[1][1] * r[2][0]))
+
+
+def _is_plain(m) -> bool:
+    """Whether a rest pose (3 rows of 4) is a plain turn and move: no size, no mirror."""
+    cols = [[m[i][j] for i in range(3)] for j in range(3)]
+    if any(abs(sum(c * c for c in col) ** 0.5 - 1.0) > PLAIN for col in cols):
+        return False
+    if any(abs(sum(a * b for a, b in zip(cols[i], cols[j]))) > PLAIN for i, j in ((0, 1), (0, 2), (1, 2))):
+        return False
+    return _det3([row[:3] for row in m]) > 0
+
+
+def _plain_turn(m) -> list:
+    """The plain turn nearest a rest pose the game sizes or mirrors (3 rows of 4), at the same place: its axes made
+    length one and square to each other, x first; a mirroring one's x axis turned round."""
+    axes = []
+    for j in range(3):
+        v = [m[i][j] for i in range(3)]
+        for u in axes:
+            d = sum(a * b for a, b in zip(v, u))
+            v = [a - d * b for a, b in zip(v, u)]
+        n = sum(a * a for a in v) ** 0.5 or 1.0
+        axes.append([a / n for a in v])
+    if _det3(axes) < 0:     # (the axes as rows: the same determinant as the turn they make)
+        axes[0] = [-a for a in axes[0]]
+    return [[axes[j][i] for j in range(3)] + [m[i][3]] for i in range(3)]
+
+
+# Blender draws a bone from its place along its own +y axis, which a joint's +y in a .glb becomes; the game's bones
+# run along their own +x (the US rifleman's skeleton: 19 of its 30 bone-to-child pairs within 7.1 degrees of the
+# bone's +x; the other 11 branch off: shoulders, fingers, weapons, effect points). So each joint's frame is turned
+# once, by this quarter turn about the bone's own y: the game's +x onto the axis that becomes the .glb's +y after the
+# mirror (the game's z). Rows of a turn and move: frame -> frame x TURN. It only swaps and negates numbers, so it is
+# exact, and the game's frame is always the file's turned back.
+TURN = ((0.0, 0.0, 1.0, 0.0), (0.0, 1.0, 0.0, 0.0), (-1.0, 0.0, 0.0, 0.0))
+LEG = {"calf": "thigh", "foot": "calf", "toe0": "foot"}   # a Biped leg, hip to toe (the game's crews' skeletons)
+
+
+def _turned(m) -> list:
+    """A rest pose (3 rows of 4) with its frame turned by TURN: its axes x, y, z become -z, y, x; its place kept."""
+    return [[-row[2], row[1], row[0], row[3]] for row in m]
+
+
+def _turned_back(m) -> list:
+    """TURN's inverse times a move (3 rows of 4): its rows x, y, z become -z, y, x."""
+    return [[-v for v in m[2]], list(m[1]), list(m[0])]
+
+
+def _hung_from(names: list, b: int, at: dict) -> int | None:
+    """The joint a bone the game gives no parent hangs from in the file (Blender sizes a bone by the bones hanging
+    from it, and one hanging from nothing by its distance from the model's origin: a soldier's thigh came out 1.7 m
+    long): a Biped leg's next bone up (calf from thigh, foot from calf, toe from foot), its thigh from the skeleton's
+    first bone, as anything else is (bone 0: a soldier's bip01, a gun's or plane's first part)."""
+    name = names[b].lower()
+    side, _, part = name.rpartition(" ")
+    if side and part in LEG:
+        above = next((k for k, n in enumerate(names) if n.lower() == f"{side} {LEG[part]}"), None)
+        if above in at:
+            return above
+    return 0 if 0 in at and b != 0 else None
+
+
+def rest_poses(record: bytes, joints: list[int]) -> dict | None:
+    """Where model_glb's `joints` (skeleton bone numbers, in the skin's order) stand at rest, from the model's skeleton
+    record (rusemod.baf.skeleton), laid out so Blender shows a skeleton a modder can use: {"parents": each joint's
+    parent joint (its position in `joints`; None: it hangs from the skeleton node), "trs": each joint's move, turn and
+    size from that parent, "ibm": each joint's inverse bind matrix (glTF's column-major 4 x 4), "plain_turns": the
+    names of the joints written as a plain turn, "hung": {joint: the joint it hangs from} for those the game gives no
+    parent}, in the export's axes and scale (the mirror and 0.01), through rusemod.animglb's _trs and _ibm (RUSE Decoy's
+    preview's). Every joint stands at the record's place for it. Its frame is the record's turned by TURN (so its bone
+    runs along the game's +x); a bone the game sizes or mirrors at rest (every bone of the P-47, a gun's effect points:
+    none of a soldier's) is written as the plain turn nearest it, turned the same, its inverse bind matrix that turn's
+    inverse: Blender keeps no size on a bone and would move the points on it otherwise. A joint whose parent bone isn't
+    a joint hangs from its nearest forebear that is one; one the game gives no parent at all (a soldier's legs, a
+    vehicle's wheels) hangs from the joint _hung_from picks. The points don't change either way. None when the record
+    can't place them (a joint past its bones)."""
+    from . import baf
+    from .animglb import _ibm, _trs
+    sk = baf.skeleton(record)
+    nb, parent_of, names = sk["bones"], sk["parents"], sk["names"]
+    if any(not 0 <= b < nb for b in joints):
+        return None
+    world = [_rows(m) for m in sk["world"]]
+    plain = [_is_plain(w) for w in world]
+    frame = [_turned(w if ok else _plain_turn(w)) for w, ok in zip(world, plain)]
+    at = {b: k for k, b in enumerate(joints)}
+    ups, hung = {}, {}
+    for b in joints:
+        up, steps = parent_of[b], 0
+        while 0 <= up < nb and up not in at and steps < nb:     # its nearest forebear that is a joint
+            up, steps = parent_of[up], steps + 1
+        ups[b] = up if up in at else None
+        if parent_of[b] < 0:
+            ups[b] = _hung_from(names, b, at)
+            if ups[b] is not None:
+                hung[b] = ups[b]
+    for b in list(hung):            # never a loop: one that would hang from a bone hanging from it hangs from nothing
+        seen, up = {b}, ups[b]
+        while up is not None and up not in seen:
+            seen.add(up)
+            up = ups[up]
+        if up is not None:
+            ups[b] = None
+            del hung[b]
+    out = {"parents": [], "trs": [], "ibm": [], "plain_turns": [],
+           "hung": {names[b]: names[up] for b, up in hung.items()}}
+    for b in joints:
+        up = ups[b]
+        if plain[b] and up is None and parent_of[b] < 0:
+            local = _flat(_turned(_rows(sk["local"][b])))      # the record's own rest pose, turned
+        elif plain[b] and up is not None and up == parent_of[b] and plain[up]:
+            local = _flat(_turned_back(_turned(_rows(sk["local"][b]))))   # from its turned parent: TURN^-1 L TURN
+        else:
+            local = _flat(_after(_undo(frame[up]), frame[b]) if up is not None else frame[b])
+        out["parents"].append(at[up] if up is not None else None)
+        out["trs"].append(_trs(local))
+        out["ibm"].append(_ibm(_flat(_turned_back(_rows(sk["bind"][b]))) if plain[b] else _flat(_undo(frame[b]))))
+        if not plain[b]:
+            out["plain_turns"].append(names[b])
+    return out
+
+
+def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tuple[bytes, dict[str, bytes], dict]:
     """One model of `lib` (rusemod.models.Library) as (.glb bytes, {picture file name: PNG bytes}, summary).
-    Textures come from their mip level at most `side` pixels wide."""
+    Textures come from their mip level at most `side` pixels wide. `rest_bones`: a model with bones has each bone at
+    its rest pose (rest_poses, from lib.skeleton), not all at one spot; the summary's "rest_bones" says whether they
+    were placed (False: no skeleton record found for it, written as by default), "plain_turns" which were written as a
+    plain turn and "hung" which hang from another joint than the game's. Without it every byte is as it always was."""
     spk = lib.where[name]
     mats = spk.materials()
     parts = lib.parts(name)
@@ -213,9 +369,25 @@ def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes]
         g.doc["nodes"] += [{"name": bones[b] if bones and b < len(bones) and bones[b] else f"bone_{b}"}
                            for b in joints]
         rig = len(g.doc["nodes"])
-        g.doc["nodes"].append({"name": f"{stem}_bones", "children": list(range(first, first + len(joints)))})
-        identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]
-        ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(identity * len(joints))))
+        rest = None
+        if rest_bones:
+            record = lib.skeleton(name) if hasattr(lib, "skeleton") else None
+            rest = rest_poses(record, joints) if record is not None else None
+            summary["rest_bones"] = rest is not None
+        if rest is None:
+            g.doc["nodes"].append({"name": f"{stem}_bones", "children": list(range(first, first + len(joints)))})
+            identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]
+            ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(identity * len(joints))))
+        else:
+            for k, (t, r, s) in enumerate(rest["trs"]):
+                g.doc["nodes"][first + k].update({"translation": t, "rotation": r, "scale": s})
+            for k, p in enumerate(rest["parents"]):
+                if p is not None:
+                    g.doc["nodes"][first + p].setdefault("children", []).append(first + k)
+            g.doc["nodes"].append({"name": f"{stem}_bones",
+                                   "children": [first + k for k, p in enumerate(rest["parents"]) if p is None]})
+            ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(v for m in rest["ibm"] for v in m)))
+            summary["plain_turns"], summary["hung"] = rest["plain_turns"], rest["hung"]
         g.doc["accessors"].append({"bufferView": ibm, "componentType": FLOAT, "count": len(joints), "type": "MAT4"})
         g.doc["skins"] = [{"name": f"{stem}_skin", "joints": list(range(first, first + len(joints))),
                            "inverseBindMatrices": len(g.doc["accessors"]) - 1, "skeleton": rig}]
@@ -229,13 +401,14 @@ def model_glb(lib, name: str, side: int = 2048) -> tuple[bytes, dict[str, bytes]
     return g.to_bytes(), pictures, summary
 
 
-def export(lib, names: list[str], out: Path, side: int = 2048) -> list[dict]:
-    """Write each model of `names` as <out>/<model>.glb with its pictures; returns each one's summary."""
+def export(lib, names: list[str], out: Path, side: int = 2048, rest_bones: bool = False) -> list[dict]:
+    """Write each model of `names` as <out>/<model>.glb with its pictures; returns each one's summary. `rest_bones`:
+    model_glb's."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     done = []
     for name in names:
-        glb, pictures, summary = model_glb(lib, name, side)
+        glb, pictures, summary = model_glb(lib, name, side, rest_bones=rest_bones)
         stem = name.rsplit("\\", 1)[-1].replace("lod0.ase2ndfbin", "").replace(".ase2ndfbin", "")
         (out / f"{stem}.glb").write_bytes(glb)
         for fname, png in pictures.items():
