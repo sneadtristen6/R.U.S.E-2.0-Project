@@ -358,6 +358,8 @@ class Starter:
             exc = BuildError("These mods have errors (listed above). Nothing was changed.")
             # what the apps show one by one, each with its fix when there is one (ruse_studio test_problems)
             exc.errors, exc.order = [f.message for f in result.errors], list(result.order)
+            # Bug Watch: which mistakes they were, by where the build found each (rusemod.patch.Finding.site)
+            exc.error_sites = [getattr(f, "site", "") for f in result.errors]
             raise exc
         exe = next((p for p in instance.iterdir() if p.name.lower() == "ruse.exe"), None) if instance.is_dir() else None
         if exe is None:
@@ -369,6 +371,10 @@ class Starter:
         from . import bugwatch
         watch = bugwatch.current()
         if watch is not None and process is not None and bugwatch.enabled(watch.home):
+            try:
+                watch.game_build(build_of(game))  # the game's Steam build, which the day's report names
+            except (OSError, ValueError):
+                pass
             # Bug Watch: the minutes this game runs with these mods, and any crash report it leaves
             bugwatch.GameWatch(watch, process, *bugwatch.mods_of(mod_folders), exe=exe).start()
         if fairplay.ON and guard and process is not None:  # RUSE Guard: the match watch (multiplayer only)

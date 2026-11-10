@@ -161,6 +161,18 @@ class Finding:
     level: str          # error | warning | note
     message: str
     op: Op | None = None
+    # where in our code it was made ("rusemod.build:1208"): what Bug Watch counts a build's mistake by, never its
+    # words, which name the player's own mod and its values. Not part of what makes two findings equal.
+    site: str = field(default="", compare=False, repr=False)
+
+    def __post_init__(self):
+        if not self.site:
+            import sys
+            try:
+                frame = sys._getframe(2)  # past the dataclass's own __init__: the code that made this finding
+                self.site = f"{frame.f_globals.get('__name__', '?')}:{frame.f_lineno}"
+            except ValueError:
+                self.site = ""
 
 
 @dataclass

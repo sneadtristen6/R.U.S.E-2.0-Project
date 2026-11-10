@@ -89,7 +89,8 @@ class Job:
                 failed = exc
             watch = bugwatch.current()
             if watch is not None:
-                watch.job(name, failed is None, time.perf_counter() - began, failed, len(self.errors))
+                watch.job(name, failed is None, time.perf_counter() - began, failed, len(self.errors),
+                          mistakes=list(getattr(failed, "error_sites", []) or []))
 
         threading.Thread(target=run, daemon=True).start()
         return {"job": self.id}

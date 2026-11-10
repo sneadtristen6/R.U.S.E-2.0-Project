@@ -9476,6 +9476,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         game = self._game()
         copies, how = self._copies(game)
         findings = doctor.checks(game, copies, steam_running=self._starter.steam_running, how=how)
+        from rusemod import bugwatch
+        bugwatch.checks(findings)  # Bug Watch: which checks said something is wrong, by their keys
         report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
                                startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": private_paths_out(report)}

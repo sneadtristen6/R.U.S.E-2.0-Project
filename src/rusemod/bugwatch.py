@@ -10,6 +10,7 @@ switch, beside RUSE Guard's fairplay.ON: off until the owner says.
 What is counted, per UTC day and app version: every call a window makes (webui._passed_on: its name, how many,
 how many failed, the error's kind, the time in five steps), every long job (webui.Job), screens, problems shown,
 troubleshooter checks that failed, updates, the mods in use (mod-list mods by id@version, any other as a count),
+the game's Steam build,
 minutes played, and crashes: the apps' own (an error nobody caught: its kind and the lines in our own files only)
 and the game's (its crash code, module and offset, read from the game's crash report on this PC; for the game's
 script-error stop the Traceback text; for a bad memory access, what the game tried to do and where (read 0x20); and
@@ -17,6 +18,15 @@ the chain: up to 16 places in RUSE.exe the crashed thread's stack returns to, ne
 part of the game was running, not only where it stopped). Never sent: a path, a file, anything typed, the crash
 report file itself, the player's in-game name, any Steam ID. Days wait in `<platform folder>/bugwatch/outbox/` until a
 send gets through; none waits more than 30 days.
+
+WHICH failure it was (2026-11-10; players' reports said "BuildError at job:play" and nothing more, and three faults
+could not be told from a hundred others): every failed call and job is also counted, under "messages", by the error's
+own key when it has one (the Launcher's mod set refusals) and otherwise by where in our own code it came from, as
+"play:rusemod.play:327": a module's name and a line number, which the app's version turns back into the very line
+(reason_key, site_of). A build that lists mistakes in the mods counts each by where the build found it,
+"mistake:rusemod.build:1208" (rusemod.patch.Finding.site). Never the words of either: they hold what the player
+typed, folders, and the names in the player's own mods. The agreement's words for this: "what went wrong and where
+(in our own code only)".
 
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
 reads only the exception record, the module list and the crashed thread's stack of the game's crash report, on the
@@ -177,6 +187,36 @@ def _kind(exc_or_name) -> str:
     return name if KIND_RE.fullmatch(name or "") else "Error"
 
 
+def site_of(error) -> str:
+    """Where in our own code an error came from, as "rusemod.play:327": the last line of our own packages on its way
+    (the line that raised it, or our line that called what raised it). "" when none of its lines is ours. Our code
+    only: a module's name and a line number, no path and nothing of the player's."""
+    tb, site = getattr(error, "__traceback__", None), ""
+    while tb is not None:
+        module = tb.tb_frame.f_globals.get("__name__", "")
+        passing_on = module == "rusemod.webui" and tb.tb_frame.f_code.co_name in ("call", "run")
+        # (webui's own two lines that pass every call and job on say nothing about which one failed)
+        if isinstance(module, str) and module.split(".")[0] in OUR_PACKAGES and not passing_on:
+            site = f"{module}:{tb.tb_lineno}"
+        tb = tb.tb_next
+    return site
+
+
+def reason_key(name: str, error) -> str | None:
+    """What a failed call or job is counted by under "messages", so a report says WHICH refusal or failure it was and
+    not only its kind: the error's own key when it carries one (the Launcher's LauncherError(key=...)), else the
+    call's name and where the error came from, "play:rusemod.play:327" (the app's version, sent with the day, says
+    which code that line is in). Never the error's words: they can hold what the player typed, or a folder."""
+    key = getattr(error, "words_key", None)
+    if isinstance(key, str) and key:
+        return _name(key)
+    site = site_of(error)
+    if not site:
+        return None
+    site = site[-60:]
+    return _name(f"{str(name)[:max(1, 63 - len(site))]}:{site}")
+
+
 def _step(seconds: float) -> int:
     return next((i for i, edge in enumerate(STEPS) if seconds < edge), len(STEPS))
 
@@ -238,9 +278,12 @@ class Watch:
                 c["failed"] += 1
                 kind = _kind(error)
                 c["errors"][kind] = c["errors"].get(kind, 0) + 1
+                self._reason(day, key, error)
             self._changed()
 
-    def job(self, name: str, ok: bool, seconds: float, error=None, build_errors: int = 0) -> None:
+    def job(self, name: str, ok: bool, seconds: float, error=None, build_errors: int = 0, mistakes=()) -> None:
+        """`mistakes`: for a build that listed mistakes in the mods, where the build found each one
+        (rusemod.patch.Finding.site), counted under "messages" as "mistake:rusemod.build:1208"."""
         key = _name(name) or "job"
         with self.lock:
             day = self._day()
@@ -254,7 +297,33 @@ class Watch:
             if not ok and error is not None:
                 kind = _kind(error)
                 j["errors"][kind] = j["errors"].get(kind, 0) + 1
+                self._reason(day, key, error)
+                for site in list(mistakes or [])[:MOST["messages"]]:
+                    where = _name(f"mistake:{str(site)[-55:]}") if site else None
+                    if where:
+                        day["messages"][where] = day["messages"].get(where, 0) + 1
             self._changed()
+
+    def _reason(self, day: dict, name: str, error) -> None:
+        """Which refusal or failure it was (reason_key), counted with the problems shown."""
+        key = reason_key(name, error)
+        if key:
+            day["messages"][key] = day["messages"].get(key, 0) + 1
+
+    def game_build(self, build) -> None:
+        """The game's Steam build as the app found it when it started a game: named in the day's report."""
+        text = str(build or "")
+        with self.lock:
+            day = self._day()
+            if day is not None and re.fullmatch(r"[0-9A-Za-z._+-]{1,24}", text) and day.get("game_build") != text:
+                day["game_build"] = text
+                self._changed()
+
+    def checks(self, findings) -> None:
+        """The troubleshooter's findings that say something is wrong ("warn" or "fail"), each counted by its key."""
+        for found in findings or []:
+            if isinstance(found, dict) and found.get("level") in ("warn", "fail") and found.get("key"):
+                self.count("checks", str(found["key"]))
 
     def count(self, group: str, key: str) -> None:
         """One of: "screens" (a screen opened), "messages" (a problem shown: its words key), "checks" (a
@@ -307,6 +376,8 @@ class Watch:
         player = values.get("player") or {}
         out = {"v": 1, "id": player.get("id", ""), "app": self.app, "version": counts.get("version") or self.version,
                "day": day, "setup": self.setup()}
+        if counts.get("game_build"):
+            out["setup"]["game_build"] = counts["game_build"]
         if player.get("name"):
             out["user"] = player["name"]
         budget = [ERROR_KINDS_ALL]
@@ -660,12 +731,48 @@ def read_dump(path, exe=None) -> dict | None:
     if chain:
         out["chain"] = chain
     if code == 0x29A:
-        at = data.find(b"Traceback (most recent call last)")
-        if at >= 0:
-            end = data.find(b"\x00", at)
-            text = data[at:end if end > at else at + TRACEBACK_CHARS].decode("latin-1", "replace")
+        text = script_error_text(data)
+        if text:
             out["traceback"] = no_paths(text)[:TRACEBACK_CHARS]
     return out
+
+
+TRACEBACK_MARK = b"Traceback (most recent call last)"
+TRACEBACK_COPIES = 64   # copies of the text looked at in one crash report
+
+
+def _one_error_text(raw: bytes) -> tuple[bool, str]:
+    """(whole?, text) for one copy of the game's script error text: its lines up to and with the error's own line
+    (the first line after the header that isn't indented: "KeyError: ..."), and nothing after it (whatever bytes
+    followed it in memory). Not whole when the copy ends before that line."""
+    lines = raw.decode("latin-1", "replace").replace("\r\n", "\n").split("\n")
+    kept = [lines[0].rstrip()]
+    for line in lines[1:]:
+        clean = "".join(ch for ch in line if ch == "\t" or " " <= ch <= "~" or "\xa0" <= ch).rstrip()
+        if line.startswith(" "):
+            kept.append(clean)
+            continue
+        if re.match(r"[A-Za-z_][A-Za-z0-9_.]*(?::|$)", clean):  # the error's own line: its kind, then what it says
+            kept.append(clean)
+            return True, "\n".join(kept)
+        break
+    return False, "\n".join(kept)
+
+
+def script_error_text(data: bytes) -> str:
+    """The game's script error text in a crash report file (its code 0x29a stop). The file can hold the text more
+    than once, and the first copy can be cut short before the error's own line (two players' reports of 2026-11-06
+    ended in the middle of a file name): the copy that reaches the error's line wins, else the longest one."""
+    best, best_whole = "", False
+    at, seen = data.find(TRACEBACK_MARK), 0
+    while at >= 0 and seen < TRACEBACK_COPIES:
+        end = data.find(b"\x00", at)
+        whole, text = _one_error_text(data[at:end if at < end <= at + TRACEBACK_CHARS else at + TRACEBACK_CHARS])
+        if (whole, len(text)) > (best_whole, len(best)):
+            best, best_whole = text, whole
+        seen += 1
+        at = data.find(TRACEBACK_MARK, at + len(TRACEBACK_MARK))
+    return best
 
 
 class GameWatch(threading.Thread):
@@ -739,17 +846,20 @@ def call_started(name: str) -> float:
 def call_ended(name: str, started: float, error=None) -> None:
     _calls.name = None
     if _current is not None and not name.startswith("bugwatch_"):  # (its own calls aren't what it counts)
+        # (a failed call is also counted by which refusal or failure it was: Watch.call, reason_key)
         _current.call(name, time.perf_counter() - started, error)
-        # a refusal the window shows the player, by its key (never its words: they can hold what was typed)
-        key = getattr(error, "words_key", None)
-        if isinstance(key, str) and key:
-            _current.count("messages", key)
 
 
 def count(group: str, key: str) -> None:
     """Count one of Watch.count's groups in this app's Watch, when there is one (nothing when Bug Watch is off)."""
     if _current is not None:
         _current.count(group, key)
+
+
+def checks(findings) -> None:
+    """Count the troubleshooter's findings that say something is wrong (Watch.checks), when there is a Watch."""
+    if _current is not None:
+        _current.checks(findings)
 
 
 class BugWatchCalls:

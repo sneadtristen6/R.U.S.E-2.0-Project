@@ -236,6 +236,8 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         folder…"""
         game, instances, how = self._doctor_places()
         findings = doctor.checks(game, instances, steam_running=self._starter.steam_running, how=how)
+        from rusemod import bugwatch
+        bugwatch.checks(findings)  # Bug Watch: which checks said something is wrong, by their keys
         report = doctor.report(findings, APP_NAMES[self.UPDATE_APP], self.UPDATE_VERSION,
                                startlog.recent(self.UPDATE_APP, self._home))
         return {"findings": findings, "report": report}
