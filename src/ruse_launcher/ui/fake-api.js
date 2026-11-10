@@ -160,14 +160,14 @@
     fair_checking: "Checking the modded copy…",
     fair_not_built: "No join code yet: press Play once, and the code comes with the modded copy.",
     fair_changed: "No join code: the modded copy changed after it was built ({what}). Press Play to build it again.",
-    fair_offline: "No join code: this copy is for offline play ({why}). It leaves multiplayer and co-op matches. Make a mod set without cheats and test tools to play with others.",
+    fair_offline: "This copy was built with cheats or test tools ({why}). It plays multiplayer and co-op only with players whose join code is the same as yours; it leaves any other match a few seconds in.",
     fair_no_change: "No join code: these mods don't change how the game plays, so anyone can play with you.",
     fair_checked: "Every file checked: the copy is exactly as it was built.", fair_same: "Same game: you can play together.",
     fair_differs: "Not the same game. A match between these two would drift apart:", fair_copied: "Join code copied.",
-    badge_cheat: "Cheat", tip_badge_cheat: "A cheat or a test tool: a modded copy with it is for offline play only",
+    badge_cheat: "Cheat", tip_badge_cheat: "A cheat or a test tool: a modded copy with it plays multiplayer and co-op only with players who have the same mods",
     badge_scripts: "Runs scripts",
     tip_badge_scripts: "This mod changes the game's scripts. Scripts run inside the game and can do anything it can: Play waits until you tick that you trust its author.",
-    mod_offline: "Offline only: {why}. A modded copy with it leaves multiplayer and co-op matches.",
+    mod_offline: "Cheat or test tool: {why}. A modded copy with it plays multiplayer and co-op only with players who have the same mods, and leaves any other match.",
     scripts_note: "This mod changes the game's scripts. They run inside the game and can do anything it can, like any program.",
     trust_author: "I trust this mod's author (Play waits for this tick)" });
   const myCode = "RUSE1:0C4F2V9R3DNQ6M8T1KXH4Q0Z9WJ2FP3ACVQ5RT7B9EGX0J";
@@ -461,7 +461,8 @@
       // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
       guard_status: async () => ({ terms: fakeTerms, terms_version: 3, scan: false, on: true }),
       guard_accept_terms: async () => { fakeTerms = 3; return { terms: 3 }; },
-      fair_play: async () => ({ built: true, code: ["fairoffline", "fairchanged"].includes(mode) ? null : myCode,
+      // (a copy built with a test tool has its join code too: it plays with players who have the same build)
+      fair_play: async () => ({ built: true, code: mode === "fairchanged" ? null : myCode,
         why: mode === "fairoffline" ? "offline" : mode === "fairchanged" ? "changed" : null, fingerprint: "K7Q2-M9XD",
         mods: [["airfield-capacity", "1.0.0"], ["passable-forests", "1.0.0"]],
         offline: mode === "fairoffline" ? ["Money Test Tool is a cheat or a test tool"] : [], scripts: [], watch: true,

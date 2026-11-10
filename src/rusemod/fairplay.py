@@ -1,13 +1,19 @@
 """Fair play in multiplayer (PLAN.md §14, MOD_FORMAT.md §12): our apps are never the cheat tool for a match against
 other people, and players who don't cheat can show it.
 
-- A modded copy is OFFLINE when one of its mods is a cheat or a test tool: tagged "cheat" (the mod list's tag, kept
-  next to a mod installed from it in TAGS_FILE, or the mod's own `[mod] tags`), or a .rmod whose game scripts call one
-  of the game's cheat orders (CHEAT_CALLS: money, units or kills out of nowhere, the developer menu). The build adds
-  our offline lock to such a copy (gamescripts/fairplay_lock.py25): a multiplayer or co-op match starting in it says
-  so on screen and is given up a few seconds in. NOT TESTED in a match yet (docs/TESTS.md F1).
-- Every other copy gets a join code (rusemod.lock): the game build, the mods and their versions, the fingerprint.
-  Two players with the same code have the same game; a different code says what differs (`compare`).
+- A modded copy is a CHEAT COPY (`offline` in the code and the record, its first name) when one of its mods is a
+  cheat or a test tool: tagged "cheat" (the mod list's tag, kept next to a mod installed from it in TAGS_FILE, or the
+  mod's own `[mod] tags`), or a .rmod whose game scripts call one of the game's cheat orders (CHEAT_CALLS: money,
+  units or kills out of nowhere, the developer menu). The build adds our lock to such a copy
+  (gamescripts/fairplay_lock.py25) with the copy's build code in it (`build_code`, `lock_script`). In a multiplayer
+  or co-op match the lock announces that code to every player's game and looks at what the others announced: every
+  human player has the same code = the match goes on (GitHub issue 24, the owner 2026-11-10: players who all have
+  the same game play together, cheats or not); anyone missing or different = it says so on screen and gives the
+  match up a few seconds in, as it did for every such match before. The leaving passed in the game (the 10-30/31
+  multiplayer tests); the same-build match is NOT TESTED in the game yet (docs/TESTS.md F5).
+- Every copy gets a join code (rusemod.lock): the game build, the mods and their versions, the fingerprint.
+  Two players with the same code have the same game; a different code says what differs (`compare`). A cheat copy
+  has one too, so the players of a same-build match can compare before they start.
 - The build leaves a record in the copy (RECORD): the code, the mods, and the size, time and SHA-256 of every file
   it wrote. `check_copy` finds a copy changed since (a pack swapped or edited, a file added to the game's data); the
   Launcher then shows no code.
@@ -36,6 +42,10 @@ TAGS_FILE = "tags.toml"     # next to a mod installed from the mod list: the lis
 RECORD = "fairplay.json"    # in a modded copy: what the build made (write_record)
 SCRIPTS = Path(__file__).with_name("gamescripts")
 LOCK, WATCH = "fairplay_lock", "fairplay_watch"
+BUILD_CODE_DIGITS = 13                    # a cheat copy's build code: this many hex digits (52 bits), in its lock
+NO_BUILD_CODE = "0" * BUILD_CODE_DIGITS   # a lock with no build code: it matches no copy, so it leaves every match
+_CODE_NAME = b"_fairplay_lock_code"       # the name the lock's source sets its build code to (fairplay_lock.py25)
+LOCK_FIRST, LOCK_VERSION = 0x40000000, 1  # the lock's announcement: its numbers' start and its version (lock_numbers)
 GUARD = "guard_hash"  # RUSE Guard's in-game record (DomesticNukes' §3.2/§3.4; multiplayer only; rusemod.guard)
 # FAIR PLAY IS SWITCHED ON for the release (the owner, 2026-10-31: "this is going out", after the 10-30/31
 # multiplayer tests with a real opponent). Written on 2026-10-04 and held off until then (docs/BIG_PATCH.md).
@@ -195,12 +205,13 @@ class FairPlay:
     def script_mods(self) -> list[str]:
         return [m.name for m in self.mods if m.scripts]
 
-    def patches(self) -> list[bytes]:
-        """Our game scripts this copy gets, compiled: the offline lock, the watcher."""
+    def patches(self, code: str = NO_BUILD_CODE) -> list[bytes]:
+        """Our game scripts this copy gets, compiled: a cheat copy's lock with the copy's build `code` in it
+        (build_code; left out, the lock has none and leaves every match), the watcher, the record."""
         if not ON or not (IN_BUILDS if self.scripts is None else self.scripts):
             return []
         lock = bool(self.offline) and not self.dev
-        return [game_script(name) for name, on in ((LOCK, lock), (WATCH, self.watch), (GUARD, self.watch)) if on]
+        return ([lock_script(code)] if lock else []) + [game_script(name) for name in (WATCH, GUARD) if self.watch]
 
 
 def check(folders, watch: bool = True, home=None) -> FairPlay:
@@ -216,6 +227,57 @@ def check(folders, watch: bool = True, home=None) -> FairPlay:
 def game_script(name: str) -> bytes:
     """A compiled game script of ours (tools/compile_gamescript.py25): the module's code, marshalled."""
     return (SCRIPTS / f"{name}.bin").read_bytes()[16:]
+
+
+def build_code(build_id, fp: bytes | None, mods) -> str:
+    """A cheat copy's build code, for its lock: BUILD_CODE_DIGITS hex digits (52 bits) that are the same in two
+    copies exactly when what a join code names is the same (rusemod.lock: the game build, the mods with their
+    versions in the set's order, the gameplay fingerprint `fp`), short enough for the lock's two orders. Never all
+    zeros: that is the lock's "no code" (NO_BUILD_CODE)."""
+    h = hashlib.sha256(b"RUSE Guard build code 1\n" + str(build_id or 0).encode("utf-8") + b"\n" + (fp or b""))
+    for mod_id, version in mods:
+        h.update(f"\n{mod_id}\t{version}".encode("utf-8"))
+    code = h.hexdigest()[:BUILD_CODE_DIGITS]
+    return code if code != NO_BUILD_CODE else "1" + code[1:]
+
+
+def lock_script(code: str = NO_BUILD_CODE) -> bytes:
+    """The lock of a cheat copy, compiled, with the copy's build code in it: the constant its top level sets
+    `_fairplay_lock_code` to. Two copies whose locks carry the same code play multiplayer and co-op together; a lock
+    with NO_BUILD_CODE matches no other copy."""
+    if not re.fullmatch(r"[0-9a-f]{%d}" % BUILD_CODE_DIGITS, code):
+        # not a game rule: what the lock's two orders carry
+        raise FairPlayError(f"{code!r} isn't a build code ({BUILD_CODE_DIGITS} hex digits), so the copy's lock can't "
+                            f"be made.")
+    try:
+        return pyscript.dump(pyscript.with_value(pyscript.load(game_script(LOCK)), _CODE_NAME, code.encode("ascii")))
+    except pyscript.ScriptError as exc:
+        raise FairPlayError(f"The copy's lock can't take its build code: {exc}") from None
+
+
+def lock_numbers(code: str) -> tuple[int, int]:
+    """The two production numbers a lock with build `code` announces in a match (fairplay_lock.py25 `numbers`, the
+    same sum): each is LOCK_FIRST plus which half it is in bits 28-29 (0, 1); the first half carries the
+    announcement's version (LOCK_VERSION, bits 24-27) and the code's first 24 bits, the second its last 28. The
+    game counts a side's own productions from 1, and reads a number as signed 32 bits: these stay in between."""
+    if not re.fullmatch(r"[0-9a-f]{%d}" % BUILD_CODE_DIGITS, code) or code == NO_BUILD_CODE:
+        raise FairPlayError(f"{code!r} isn't a build code a lock announces.")
+    return LOCK_FIRST | LOCK_VERSION << 24 | int(code[:6], 16), LOCK_FIRST | 1 << 28 | int(code[6:], 16)
+
+
+def lock_code_of(script: bytes) -> str | None:
+    """The build code in a compiled lock (lock_script), or None when the script sets none; for checks and tests."""
+    try:
+        top = pyscript.load(script)
+        ins = pyscript.instructions(top.code)
+        for k in range(1, len(ins)):
+            if ins[k][1] == pyscript.STORE_NAME and top.names[ins[k][2]] == _CODE_NAME \
+                    and ins[k - 1][1] == pyscript.LOAD_CONST:
+                value = top.consts[ins[k - 1][2]]
+                return value.decode("ascii") if isinstance(value, bytes) else None
+    except (pyscript.ScriptError, IndexError, UnicodeDecodeError, AttributeError):
+        pass
+    return None
 
 
 def script_is_current(name: str) -> bool:
@@ -316,24 +378,25 @@ def _stat(path: Path, full: bool) -> dict:
     return out
 
 
-def write_record(instance, build_id, fp: bytes | None, mods, fair: FairPlay, written) -> dict:
-    """Leave the build's record in the copy: the join code (None for an OFFLINE copy, or one whose mods' versions
-    don't fit), why it's offline, its script mods, the watcher, and every file the build wrote (`written`: paths
-    relative to the copy) with its size, time and SHA-256."""
+def write_record(instance, build_id, fp: bytes | None, mods, fair: FairPlay, written,
+                 lock_code: str | None = None) -> dict:
+    """Leave the build's record in the copy: the join code (None when the mods change nothing in how the game plays,
+    or their versions don't fit a code), why it's a cheat copy (`offline`; `why` is then "offline", and the copy has
+    its join code all the same: its players compare codes before a same-build match), the build code in its lock
+    (`lock_code`, None when it has no lock), its script mods, the watcher, and every file the build wrote
+    (`written`: paths relative to the copy) with its size, time and SHA-256."""
     instance = Path(instance)
-    code, why = None, None
-    if fair.offline:
-        why = "offline"
-    elif fp is None:
-        why = "no gameplay change"
+    code, why = None, "offline" if fair.offline else None
+    if fp is None:
+        why = why or "no gameplay change"
     else:
         try:
             code = encode_join_code(int(build_id or 0), fp, [(str(i), str(v)) for i, v in mods])
         except (ValueError, UnicodeEncodeError) as exc:
-            why = f"no join code: {exc}"
+            why = why or f"no join code: {exc}"
     record = {"version": 1, "build": str(build_id), "code": code, "why": why,
               "fingerprint": fingerprint_text(fp) if fp else None, "mods": [[str(i), str(v)] for i, v in mods],
-              "offline": fair.offline, "scripts": fair.script_mods, "watch": fair.watch,
+              "offline": fair.offline, "lock": lock_code, "scripts": fair.script_mods, "watch": fair.watch,
               "files": {str(rel).replace("\\", "/"): _stat(instance / rel, True) for rel in written}}
     (instance / RECORD).write_text(json.dumps(record, indent=1), encoding="utf-8")
     return record

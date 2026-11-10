@@ -2608,12 +2608,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     a warning. An .rmod mod converted for the Studio (rusemod.rmodconvert) also has changes of its own: they're built
     with the other mods, on top of every .rmod.
 
-    `fairplay` (rusemod.fairplay.FairPlay, from the mods' folders): whether the copy is offline (a cheat or a test
-    tool: it gets the offline lock); without it, the .rmod mods' scripts decide. Every build gets the watcher, both in
+    `fairplay` (rusemod.fairplay.FairPlay, from the mods' folders): whether the copy is a cheat copy (a cheat or a
+    test tool in it: it gets the lock, with the copy's build code in it, so it plays multiplayer only with players
+    who have the same build); without it, the .rmod mods' scripts decide. Every build gets the watcher, both in
     the maps' own script folders (IA_Common.dat, 1.5 MB). A modded copy gets the build's record (fairplay.RECORD):
     its join code and what the build wrote."""
     from . import fairplay as fair_play
     fair_mods = [(m.id, m.version) for m, _ops in mods]  # the mods in the set's order, for the join code
+    lock_code = None  # the build code in a cheat copy's lock (fair_play.build_code), once the lock is made
     fair = fairplay if fairplay is not None else \
         fair_play.check_infos([m for m, _ops in mods]) if fair_play.ON else fair_play.FairPlay()
     rmods = [m for m, _ops in mods if m.rmod is not None]
@@ -4704,7 +4706,14 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             except LookError as exc:
                 raise BuildError(str(exc)) from None
         fair_pack = None
-        patches = fair.patches()
+        # a cheat copy's lock carries the copy's build code: what the mods make of the game, as the join code names
+        # it (the game patches a copy gets below follow from the same mods, so they need no place in it)
+        lock_code = fair_play.build_code(
+            build_id, result.fingerprint if result.fingerprint is not None else fingerprint(build_id, result.changed),
+            fair_mods) if fair.offline and not fair.dev else None
+        patches = fair.patches(lock_code or fair_play.NO_BUILD_CODE)
+        if not patches:
+            lock_code = None  # (our game scripts are off in this build: no lock)
         if patches:  # our fair play scripts, in every map's own script folder in IA_Common.dat (rusemod.fairplay)
             ia_path, zz_path = find_pack(game, fair_play.MAP_SCRIPTS), text_path or find_pack(game, loc.PACK)
             if (ia_path is None or zz_path is None) and fair.offline:
@@ -4738,10 +4747,11 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             if text_arc is None:  # the launcher is in ZZ_Win.dat, so the copy gets its own ZZ_Win.dat
                 text_path, text_arc = zz_path, zz
             fair_pack = (ia_path, ia)
-            say(f"RUSE Guard: the watcher{' and the offline lock' if fair.offline else ''} in the Battles launcher "
-                f"({Path(zz_path).name}) and {done} map script folders ({ia_path.name})")
+            say(f"RUSE Guard: the watcher{' and the lock of a copy with cheats' if lock_code else ''} in the Battles "
+                f"launcher ({Path(zz_path).name}) and {done} map script folders ({ia_path.name})")
             for reason in fair.offline:
-                say(f"offline only: {reason}; multiplayer and co-op matches are left at once")
+                say(f"built with cheats or test tools: {reason}; multiplayer and co-op only with players who have "
+                    f"the same build, any other match is left at once")
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
             from .unitmodel import KeptModels, UnitModelError, write_batch, write_unit_model
             batch: dict = {}  # every own model into each pack at once: each pack read and written once
@@ -4968,7 +4978,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             say(f"modded copy ready: {instance}  {copied}")
             if fair_play.ON:  # (switched off until the owner says: fairplay.ON)
                 record = fair_play.write_record(instance, build_id, result.fingerprint, fair_mods, fair,
-                                                 [*replace, *add])
+                                                 [*replace, *add], lock_code)
                 say(f"join code: {record['code']}" if record["code"] else f"no join code ({record['why']})")
             locked = copied.get("read-only packs", 0)
             if getattr(copied, "other_drive", False):  # said once, every build: how much it cost this time

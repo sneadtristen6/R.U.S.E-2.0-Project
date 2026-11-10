@@ -24,17 +24,23 @@ R.U.S.E. multiplayer has no anti-cheat of its own, so we built RUSE Guard into t
 use for testing out of matches against other players, lets players who don't cheat show it, and makes you choose
 before a mod runs scripts inside your game.
 
-**Cheats and test tools are offline only.** A mod set with a cheat or a test tool in it (the "Cheat" mods in Supported
-mods, and any mod whose scripts add money, make units out of nowhere or open the game's developer menu) builds an
-offline copy of the game. Skirmish against the AI, operations and the campaign work as before. A multiplayer or co-op
-match started in that copy says so on screen and is given up a few seconds in, so the cheat never plays against
-anyone. *(Not tested in a real match yet: test F1.)*
+**Cheats and test tools only play with players who have the same build.** A mod set with a cheat or a test tool in it
+(the "Cheat" mods in Supported mods, and any mod whose scripts add money, make units out of nowhere or open the game's
+developer menu) builds a cheat copy of the game. Skirmish against the AI, operations and the campaign work as before.
+In a multiplayer or co-op match, the copy tells every player's game which build it is, a second in, and looks at
+what the others told: when every human player has the same build (the same game version, the same mods in the same
+order, the same versions), it says so on screen and the match goes on; when anyone is missing or different, it says so
+and gives the match up a few seconds in, so a cheat never plays against someone who doesn't have it. *(Changed
+2026-11-10, GitHub issue 24: until then such a copy left every multiplayer and co-op match, friends with the same
+mods included. Leaving a match passed in real matches on 2026-10-30/31; the same-build match is not tested in a real
+match yet: test F5.)*
 
 **Join codes.** The new **Join code** button (bottom bar) shows your modded game's code, starting `RUSE1:`. Send it to
 the people you play with: the same code means the same game (the same game version, the same mods, the same versions).
 Paste a friend's code and press **Compare**: "Same game", or exactly what differs (a mod one of you is missing, a
 different version, a different game build). Two different games in one match drift apart, and that can look like
-cheating when it isn't; now you can check before you play. An offline copy has no code.
+cheating when it isn't; now you can check before you play. A cheat copy has its code too (since 2026-11-10): compare
+it with your friends' before a match, since the copy only plays with players whose code is the same.
 
 **A copy changed by hand loses its code.** The Launcher remembers every file it built into the modded copy. If a file
 is swapped or edited afterwards, or a pack the game didn't have is added, the Join code box says what changed and

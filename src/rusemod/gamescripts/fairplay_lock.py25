@@ -1,23 +1,50 @@
-# R.U.S.E. Mod Platform: the RUSE Guard offline lock (rusemod.fairplay). Python 2.5, compiled by
-# tools/compile_gamescript.py25 into fairplay_lock.bin; the build adds it after the code of every map's match script
+# R.U.S.E. Mod Platform: the RUSE Guard lock of a copy built with cheats or test tools (rusemod.fairplay). Python 2.5,
+# compiled by tools/compile_gamescript.py25 into fairplay_lock.bin; the build fills in the copy's build code
+# (_fairplay_lock_code, rusemod.fairplay.lock_script) and adds it after the code of every map's match script
 # (effetmap, effetmapmultiplayer). The first match of a session switches it on for the whole session.
 #
-# A copy built with a cheat or a test tool is for offline play. Two steps, the owner's 2026-10-30 pick:
-#  1. When a multiplayer or co-op match starts in such a copy, this says so on screen and, a few seconds in, gives up
-#     the match for the player (the same surrender the escape menu sends). The player's opponent gets a clean,
-#     recorded win from that surrender, like any other.
-#  2. Then, once the match has ended and the player is on the end-of-match screen, it stops the game on purpose. The
-#     game's crash report (which goes to the game's maker) then carries a marked line showing a cheat copy was
-#     stopped. The stop is the SECOND step, after the surrender, so the honest opponent's win is already in.
+# A copy built with a cheat or a test tool plays multiplayer and co-op only with players who have THE SAME BUILD
+# (the owner, 2026-11-10, GitHub issue 24: "if they both have the same game, it should be allowed ... even if
+# they're labeled as cheats, because all the players in the lobby have that game version"). Against anyone else it
+# leaves the match, as before. How a match goes in such a copy:
+#  1. One second in, the copy announces its build code to every player's game. The carrier is the game's own
+#     "cancel a production" order, sent twice for this player's side with production numbers the game never reaches
+#     (it counts each side's productions from 1; ours start at 1,073,741,824) and the code in them. The game's own
+#     script looks the production up, finds none and does nothing (base.actions.helpers.Recv_AnnuleProduction), so a
+#     game without this script is not changed by it in any way. Orders reach every player's game, in the same order.
+#  2. Seven seconds in, the copy looks at what arrived. Every human player still in the match announced the same
+#     code as this copy: it says so on screen and the match goes on. Anyone missing or different (a player without
+#     the cheats, with other mods, or with an older Launcher): the two steps of the owner's 2026-10-30 pick:
+#     a. it says so on screen and gives up the match for the player (the same surrender the escape menu sends). The
+#        other players get a clean, recorded win from that surrender, like any other.
+#     b. Then, once the match has ended and the player is on the end-of-match screen, it stops the game on purpose.
+#        The game's crash report (which goes to the game's maker) then carries a marked line showing a cheat copy
+#        was stopped. The stop is the SECOND step, after the surrender, so the honest opponent's win is already in.
 # Skirmish against the AI, operations and the campaign are untouched.
 #
 # Why stop the game, and why only here: a script error that reaches the game stops the whole game (with code 0x29a;
 # found 2026-10-30), and the game gives a
 # script no other way to leave a mark the maker can see (no file, output dropped). This script is ONLY ever in a copy
 # built with a cheat; honest copies never carry it, so no honest player is stopped.
+#
+# What the carrier rests on, each point checked on 2026-11-10 (the checks are in the project's private notes): the
+# order takes a side, a number and a building kind; when it arrives the game calls
+# base.actions.helpers.Recv_AnnuleProduction, found by its name again for every order, so the handler put there below
+# is the one called; a side's own production numbers count up from 1 in each of its factories; looking up a number a
+# factory doesn't have gives nothing. A number of 2,147,483,648 or more would fail in the game's own handler (it
+# takes the number as signed), so ours stay below that. Every side that isn't the neutral one has a headquarters
+# factory, and the announcement is only ever sent for a side that has one.
 
-_fairplay_lock_text = (u"This copy of R.U.S.E. was built with cheats or test tools, so it is for offline play. "
-                       u"It leaves multiplayer and co-op matches. Build without them in the Launcher to play online.")
+_fairplay_lock_code = '0000000000000'  # the build's code: 13 hex digits, filled in by the build; all zeros = none
+_fairplay_lock_check_text = (u"RUSE Guard: this copy of R.U.S.E. was built with cheats or test tools. Checking that "
+                             u"every player in this match has the same build...")
+_fairplay_lock_same_text = (u"RUSE Guard: every player in this match has the same build as you, cheats and test "
+                            u"tools included. The match goes on.")
+_fairplay_lock_text = (u"RUSE Guard: not every player in this match has the same build as you, so this copy leaves "
+                       u"the match. A copy built with cheats or test tools only plays with players who built the "
+                       u"same mods: compare join codes in the Launcher.")
+_fairplay_lock_first = 0x40000000  # production numbers from here up are RUSE Guard's (the game's own start at 1)
+_fairplay_lock_version = 1         # the announcement's version: copies with another one don't count as the same
 
 
 def _fairplay_lock():
@@ -28,7 +55,7 @@ def _fairplay_lock():
     rules._fairplay_lock_on = True
     old_start = rules.before_start_game
     held = []
-    state = {'multi': 0, 'coop': 0, 'local': '?', 'surrendered': False}
+    state = {'multi': 0, 'coop': 0, 'local': '?', 'surrendered': False, 'seen': {}, 'cancel': None}
 
     def online():
         try:
@@ -39,9 +66,9 @@ def _fairplay_lock():
             state['multi'] = state['coop'] = 0
         return bool(state['multi'] or state['coop'])
 
-    def say(world, seconds):
+    def say(world, text, seconds):
         try:
-            world.display_debug_message(_fairplay_lock_text, seconds)
+            world.display_debug_message(text, seconds)
         except Exception:
             pass
 
@@ -49,8 +76,71 @@ def _fairplay_lock():
         return ('RUSEGUARD-LOCK a cheat copy was stopped: it surrendered and left the match. '
                 'multi %d coop %d local %s RUSEGUARD-END' % (state['multi'], state['coop'], state['local']))
 
+    def numbers():
+        # The two production numbers that carry this build's code: bits 28-29 say which half (0, 1); the first
+        # half holds the announcement's version (bits 24-27) and the code's first 24 bits, the second its last 28.
+        code = _fairplay_lock_code
+        if len(code) != 13 or code == '0' * 13:
+            raise ValueError('this copy has no build code')
+        return (_fairplay_lock_first | (_fairplay_lock_version << 24) | int(code[:6], 16),
+                _fairplay_lock_first | (1 << 28) | int(code[6:], 16))
+
+    def Recv_AnnuleProduction(team, production_id, type_batiment):
+        try:  # an error leaving here would stop the whole game (the game's sys.excepthook crashes it, code 0x29a)
+            if production_id >= _fairplay_lock_first:
+                halves = state['seen'].setdefault(int(team.teamnum), {})
+                halves[int((production_id >> 28) & 3)] = int(production_id & 0x0FFFFFFF)
+        except Exception:
+            pass
+        return state['cancel'](team, production_id, type_batiment)  # the game's own: it finds no such production
+
+    def listen():
+        if state['cancel'] is None:  # the game looks the receiving function up by name for every order
+            import base.actions.helpers
+            state['cancel'] = base.actions.helpers.Recv_AnnuleProduction
+            base.actions.helpers.Recv_AnnuleProduction = Recv_AnnuleProduction
+
+    def announce(world):
+        try:  # nothing sent = no announcement = this copy leaves the match, as before
+            import _actions
+            import _enum_for_game_play
+            camp = world.camp_du_joueur
+            kind = _enum_for_game_play.BatimentEnum.HeadQuarter
+            if getattr(camp, 'online_data', None) is None or camp.GetFactoryByTypeBatiment(kind) is None:
+                return  # not a player's side (an observer): the game's own handler needs the side's factory
+            first, second = numbers()
+            manager = world.GetNetworkActionManager()
+            manager.Send(_actions.TNetworkActionAnnuleProduction(camp, first, kind))
+            manager.Send(_actions.TNetworkActionAnnuleProduction(camp, second, kind))
+        except Exception:
+            pass
+
+    def same_build(world):
+        # Whether every human player still in the match announced this copy's own code. Humans are told from the
+        # computer's sides the way the game does it itself (tools/synchronisation.py): a side with online data
+        # whose level isn't "scripted". A player who gave up or dropped out before now is out of the match and not
+        # counted: a surrender marks its side defeated at once.
+        try:
+            import _enum_for_game_play
+            first, second = numbers()
+            mine = {0: first & 0x0FFFFFFF, 1: second & 0x0FFFFFFF}
+            scripted = _enum_for_game_play.NiveauIA.Scripted
+            if state['seen'].get(int(world.camp_du_joueur.teamnum)) != mine:
+                return False  # this copy's own announcement never came back through the match
+            players = 0
+            for camp in world.camp_list:
+                data = getattr(camp, 'online_data', None)
+                if data is None or data.niveau_ia == scripted or camp.IsDefeated():
+                    continue
+                players += 1
+                if state['seen'].get(int(camp.teamnum)) != mine:
+                    return False
+            return players > 0
+        except Exception:
+            return False
+
     def arm_menu_stop():
-        # Step 2: after the surrender, stop the game on the end-of-match screen. The hook is on the screen's own
+        # Step 2b: after the surrender, stop the game on the end-of-match screen. The hook is on the screen's own
         # class, not a match timer, so it outlives the match (the match's timers are dropped when it ends). The game
         # loads its scripts as it needs them, so the end-screen module is imported here, after the match has run.
         try:
@@ -70,11 +160,22 @@ def _fairplay_lock():
 
         screen._show_end_game_screen = _show_end_game_screen
 
-    class Leave(object):
+    def decide(world):
+        if same_build(world):
+            say(world, _fairplay_lock_same_text, 15.0)
+            return
+        say(world, _fairplay_lock_text, 30.0)
+        import base.actions.helpers
+        base.actions.helpers.Send_Surrender(world.camp_du_joueur)
+        state['surrendered'] = True
+        arm_menu_stop()
+
+    class Later(object):
         __no_reduce_in_signal__ = True
 
-        def __init__(self, world):
+        def __init__(self, world, what):
             self.world = world
+            self.what = what
             self.ticket = None
 
         def run(self):
@@ -84,25 +185,34 @@ def _fairplay_lock():
                 held.remove(self)
             if world is None:
                 return
-            say(world, 30.0)
-            import base.actions.helpers
-            base.actions.helpers.Send_Surrender(world.camp_du_joueur)
-            state['surrendered'] = True
-            arm_menu_stop()
+            self.what(world)
+
+    def later(world, seconds, what):
+        step = Later(world, what)
+        held.append(step)
+        step.ticket = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(seconds, step.run)
 
     def before_start_game(self):
         old_start(self)
         if not online():
             return
         world = self.world
+        for step in held:  # an earlier match's steps that never ran: they must not run on this one
+            step.world = None
+        del held[:]
+        state['seen'] = {}
+        state['surrendered'] = False
         try:
             state['local'] = str(getattr(getattr(world, 'camp_du_joueur', None), 'teamnum', '?'))
         except Exception:
             state['local'] = '?'
-        say(world, 30.0)
-        leave = Leave(world)
-        held.append(leave)
-        leave.ticket = world.unit_time.callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(5.0, leave.run)
+        try:
+            listen()
+        except Exception:
+            pass
+        say(world, _fairplay_lock_check_text, 8.0)
+        later(world, 1.0, announce)
+        later(world, 7.0, decide)
 
     rules.before_start_game = before_start_game
 

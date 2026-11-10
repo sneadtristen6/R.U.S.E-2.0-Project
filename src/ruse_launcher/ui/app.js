@@ -1349,7 +1349,8 @@ function renderLibrary() {
     const sum = el("button", { type: "button", className: "lib-sum", title: mod.description || mod.name },
       el("span", { className: "name", textContent: mod.name },
         ...(mod.kind === "map" ? [el("span", { className: "kind-badge", textContent: w.kind_map, title: w.tip_kind_map })] : []),
-        // fair play (rusemod.fairplay): a cheat or a test tool makes an offline copy; scripts need the trust tick
+        // fair play (rusemod.fairplay): a cheat or a test tool makes a cheat copy (it plays multiplayer only with
+        // players who have the same build); scripts need the trust tick
         ...(state.fairOn && (mod.cheat || mod.offline) ? [el("span", { className: "kind-badge bad", textContent: w.badge_cheat, title: w.tip_badge_cheat })] : []),
         ...(state.fairOn && mod.scripts ? [el("span", { className: "kind-badge" + (mod.trusted ? "" : " bad"), textContent: w.badge_scripts,
           title: w.tip_badge_scripts })] : [])),
@@ -1470,8 +1471,9 @@ async function play() {
 }
 
 // --- fair play (rusemod.fairplay through api.fair_play): the modded copy's join code to send to the people you play
-// with, and theirs compared with it. No code for an offline copy (a cheat or a test tool in it), a copy changed
-// since its build, or before the first Play. state.fair: { view, result, busy } while the box is open ---
+// with, and theirs compared with it. A copy with a cheat or a test tool in it has its code too, under the note that
+// it only plays with players who have the same one. No code for a copy changed since its build, or before the first
+// Play. state.fair: { view, result, busy } while the box is open ---
 async function openFair(full) {
   const fair = state.fair || (state.fair = { view: null, result: null, busy: false });
   $("fair-box").classList.remove("hidden");

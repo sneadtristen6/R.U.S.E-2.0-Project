@@ -22,7 +22,8 @@ Players never touch a file (Launcher 0.2):
   the launcher writes into the game's own folder, and only when the player asks.
 - **RUSE Guard** (fair play, rusemod.fairplay; written and SWITCHED OFF until the owner says, fairplay.ON: none of what
   follows happens yet): the library marks mods that run scripts inside the game, and Play waits until
-  the player ticks "I trust this author" for each; a set with a cheat or a test tool makes an offline copy; the Play
+  the player ticks "I trust this author" for each; a set with a cheat or a test tool makes a cheat copy, which plays
+  multiplayer and co-op only with players who have the same build and leaves any other match; the Play
   screen shows the copy's join code (none when the copy changed since the build) and compares it with a friend's;
   every copy gets the fair play watcher.
 """

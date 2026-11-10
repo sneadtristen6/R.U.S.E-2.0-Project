@@ -214,8 +214,126 @@ class Scripts(SwitchedOn):
             self.assertIn(b"_guard_hash", code2.names)
 
 
+def python25() -> Path | None:
+    """The game's own Python (2.5.1), to run our game scripts where the game can't be started: the folder
+    RUSE_PYTHON251 names (as the installers' build takes it), else the engine's own slot; None when neither is there."""
+    for folder in (os.environ.get("RUSE_PYTHON251"),
+                   Path(fairplay.__file__).parent.parent / "ruse_mod_engine" / "python251"):
+        if folder and (Path(folder) / "python.exe").is_file():
+            return Path(folder) / "python.exe"
+    return None
+
+
+class SameBuild(SwitchedOn):
+    """A copy built with cheats or test tools plays multiplayer and co-op with players who have the same build, and
+    leaves any other match (GitHub issue 24; the owner, 2026-11-10): the build code in its lock, the numbers it
+    announces, and whole matches played by the lock itself under the game's Python."""
+    FP = hashlib.sha256(b"x").digest()
+    MODS = [("depot", "1.0.0"), ("tanks", "1.2.0")]
+
+    def test_the_build_code(self):
+        code = fairplay.build_code("24687178", self.FP, self.MODS)
+        self.assertRegex(code, r"^[0-9a-f]{13}$")
+        self.assertEqual(code, fairplay.build_code(24687178, self.FP, list(self.MODS)))  # the same build: the same
+        others = [fairplay.build_code("24687179", self.FP, self.MODS),                     # another game build
+                  fairplay.build_code("24687178", hashlib.sha256(b"y").digest(), self.MODS),  # other gameplay files
+                  fairplay.build_code("24687178", self.FP, self.MODS[:1]),                 # a mod fewer
+                  fairplay.build_code("24687178", self.FP, [("depot", "1.0.1"), ("tanks", "1.2.0")]),  # a version
+                  fairplay.build_code("24687178", self.FP, self.MODS[::-1]),               # another order
+                  fairplay.build_code("24687178", None, self.MODS)]                        # no gameplay change
+        self.assertEqual(len({code, *others}), 7)
+        self.assertNotIn(fairplay.NO_BUILD_CODE, {code, *others})
+        with mock.patch.object(fairplay.hashlib, "sha256") as sha:  # a hash starting with thirteen zeros is still
+            sha.return_value.hexdigest.return_value = "0" * 64      # a code: "all zeros" stays the lock's "none"
+            self.assertEqual(fairplay.build_code("1", self.FP, []), "1" + "0" * 12)
+
+    def test_the_code_goes_into_the_lock(self):
+        code = fairplay.build_code("24687178", self.FP, self.MODS)
+        plain, made = pyscript.load(fairplay.game_script(fairplay.LOCK)), pyscript.load(fairplay.lock_script(code))
+        self.assertEqual(fairplay.lock_code_of(fairplay.game_script(fairplay.LOCK)), fairplay.NO_BUILD_CODE)
+        self.assertEqual(fairplay.lock_code_of(fairplay.lock_script(code)), code)
+        differ = [k for k, (a, b) in enumerate(zip(plain.consts, made.consts)) if a != b]
+        self.assertEqual([(plain.consts[k], made.consts[k]) for k in differ],
+                         [(fairplay.NO_BUILD_CODE.encode(), code.encode())])  # that one value, nothing else
+        for part in ("argcount", "nlocals", "stacksize", "flags", "code", "names", "varnames", "freevars",
+                     "cellvars", "filename", "name", "firstlineno", "lnotab"):
+            self.assertEqual(getattr(plain, part), getattr(made, part), part)
+        self.assertEqual(fairplay.lock_code_of(fairplay.lock_script()), fairplay.NO_BUILD_CODE)
+        self.assertIsNone(fairplay.lock_code_of(fairplay.game_script(fairplay.WATCH)))
+        for bad in ("", "xyz", code.upper(), code + "0", code[:-1]):
+            with self.assertRaisesRegex(fairplay.FairPlayError, "build code"):
+                fairplay.lock_script(bad)
+        # and it still goes after a game module's own code, like the script without a code
+        mod = module(bytes([LOAD_NAME, 0, 0, POP_TOP, LOAD_CONST, 0, 0, RETURN_VALUE]), names=(b"front",))
+        joined = pyscript.load(pyscript.append_script(mod, fairplay.lock_script(code)))
+        self.assertIn(code.encode(), joined.consts)
+        self.assertIn(b"_fairplay_lock_code", joined.names)
+
+    def test_the_numbers_a_lock_announces(self):
+        first, second = fairplay.lock_numbers("473dc7fef1d1a")
+        self.assertEqual((first, second), (0x40000000 | 1 << 24 | 0x473dc7, 0x40000000 | 1 << 28 | 0xfef1d1a))
+        for code in ("fffffffffffff", "0000000000001", fairplay.build_code("1", self.FP, self.MODS)):
+            for number in fairplay.lock_numbers(code):
+                # above every production number the game makes itself (it counts from 1), below the game's signed
+                # limit (its own lookup of a number reads 32 bits, signed)
+                self.assertTrue(fairplay.LOCK_FIRST <= number < 2 ** 31, (code, number))
+        self.assertNotEqual(fairplay.lock_numbers("fffffffffffff")[0] >> 28 & 3,
+                            fairplay.lock_numbers("fffffffffffff")[1] >> 28 & 3)  # which half each one is
+        for bad in (fairplay.NO_BUILD_CODE, "xyz", ""):
+            with self.assertRaises(fairplay.FairPlayError):
+                fairplay.lock_numbers(bad)
+
+    def test_the_source_says_the_same_numbers(self):
+        """The lock's source and rusemod.fairplay agree on the announcement's start, version and the code's name."""
+        src = (fairplay.SCRIPTS / "fairplay_lock.py25").read_text(encoding="utf-8")
+        self.assertIn(f"_fairplay_lock_first = 0x{fairplay.LOCK_FIRST:08X}", src)
+        self.assertIn(f"_fairplay_lock_version = {fairplay.LOCK_VERSION} ", src)
+        self.assertIn(f"_fairplay_lock_code = '{fairplay.NO_BUILD_CODE}'", src)
+        top = pyscript.load(fairplay.game_script(fairplay.LOCK))
+        self.assertEqual(top.consts.count(fairplay.NO_BUILD_CODE.encode()), 1)  # the one the build replaces
+
+    @unittest.skipUnless(python25(), "no Python 2.5.1 on this PC (set RUSE_PYTHON251 to its folder)")
+    def test_matches_played_under_the_games_python(self):
+        """tests/gamescripts_sim.py25: whole matches between stand-in PCs, run by the game's own Python version with
+        the scripts exactly as a build puts them in a copy. Every match goes as expected: same build = plays on;
+        anyone missing or different = the cheat copy leaves; a game without our scripts is never touched."""
+        import subprocess
+        a = fairplay.build_code("24687178", self.FP, self.MODS)
+        b = fairplay.build_code("24687178", self.FP, self.MODS + [("money", "0.3.0")])
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            for name, data in (("lock_a", fairplay.lock_script(a)), ("lock_a2", fairplay.lock_script(a)),
+                               ("lock_b", fairplay.lock_script(b)), ("lock_none", fairplay.lock_script()),
+                               ("watch", fairplay.game_script(fairplay.WATCH)),
+                               ("record", fairplay.game_script(fairplay.GUARD))):
+                (out / f"{name}.bin").write_bytes(data)
+            (out / "numbers.txt").write_text("".join(f"{name} {x} {y}\n" for name, (x, y) in
+                                                     (("a", fairplay.lock_numbers(a)),
+                                                      ("b", fairplay.lock_numbers(b)))), encoding="ascii")
+            released = Path(__file__).with_name("data") / "fairplay_lock_before_same_build.bin"
+            if released.is_file():  # the lock as released up to 0.4.8.18, before the same-build check: it meets
+                # the new one (a player who hasn't updated yet)
+                (out / "lock_old.bin").write_bytes(released.read_bytes()[16:])
+            if (GAME / "Data").is_dir():  # with the game on this PC: its own Battles launcher with a copy's scripts
+                from rusemod import Edat, loc  # after it, the very module a build writes into a copy
+                from rusemod.build import find_pack
+                fair = fairplay.FairPlay([fairplay.ModCheck("t", "Test tool", cheat=True)], scripts=True)
+                with Edat.open(str(find_pack(GAME, loc.PACK))) as zz:
+                    for name, code in (("joined_a", a), ("joined_a2", a), ("joined_b", b)):
+                        _path, raw = fairplay.add_to_launcher(zz, fair.patches(code))
+                        pack = Edat(raw)
+                        member = next(e for e in pack.entries if e.path.lower().endswith(fairplay.MULTIPLAYER))
+                        (out / f"{name}.bin").write_bytes(pyscript.read_xyz(bytes(pack.read(member))).payload)
+            run = subprocess.run([str(python25()), str(Path(__file__).with_name("gamescripts_sim.py25")), str(out)],
+                                 capture_output=True, text=True, timeout=300)
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertRegex(run.stdout, r"(\d+) of \1 matches as expected")
+        self.assertNotIn("FAILED", run.stdout)
+        self.assertGreaterEqual(run.stdout.count("\nok "), 16)
+
+
 class Mods(SwitchedOn):
-    """Which mods make a copy offline."""
+    """Which mods make a cheat copy (`offline` in the code)."""
 
     def setUp(self):
         super().setUp()
@@ -255,9 +373,13 @@ class Mods(SwitchedOn):
         fair = fairplay.check([listed])
         self.assertEqual(fair.offline, ["Listed is a cheat or a test tool"])
         fair.scripts = True
-        self.assertEqual(fair.patches(), [fairplay.game_script(fairplay.LOCK), fairplay.game_script(fairplay.WATCH), fairplay.game_script(fairplay.GUARD)])
-        fair.dev = True  # a valid dev key: the one way past the offline lock
-        self.assertEqual(fair.patches(), [fairplay.game_script(fairplay.WATCH), fairplay.game_script(fairplay.GUARD)])
+        code = fairplay.build_code("24687178", hashlib.sha256(b"x").digest(), [("listed", "1.2.0")])
+        self.assertEqual(fair.patches(code), [fairplay.lock_script(code), fairplay.game_script(fairplay.WATCH),
+                                              fairplay.game_script(fairplay.GUARD)])
+        self.assertEqual(fairplay.lock_code_of(fair.patches(code)[0]), code)  # the copy's build code is in its lock
+        self.assertEqual(fairplay.lock_code_of(fair.patches()[0]), fairplay.NO_BUILD_CODE)  # none given: none in it
+        fair.dev = True  # a valid dev key: the one way past the lock
+        self.assertEqual(fair.patches(code), [fairplay.game_script(fairplay.WATCH), fairplay.game_script(fairplay.GUARD)])
 
     def test_scripts_that_send_cheat_orders(self):
         cheat = fairplay.check_mod(self.folder("dev", rmod=self.rmod([b"base", b"Send_AddMaterial", b"Hud",
@@ -291,19 +413,35 @@ class Copy(unittest.TestCase):
         (self.copy / "Data" / "PC" / "1" / "Units.dat").write_bytes(b"modded units")
         self.fp = hashlib.sha256(b"x").digest()
 
-    def record(self, fair=None):
+    def record(self, fair=None, lock_code=None):
         return fairplay.write_record(self.copy, "24687178", self.fp, [("tanks", "1.2.0")], fair or fairplay.FairPlay(),
-                                     ["Data/PC/1/Units.dat"])
+                                     ["Data/PC/1/Units.dat"], lock_code)
 
     def test_a_multiplayer_copy_has_its_code(self):
         rec = self.record()
         self.assertEqual(rec["code"], encode_join_code(24687178, self.fp, [("tanks", "1.2.0")]))
+        self.assertEqual((rec["why"], rec["lock"]), (None, None))
         view = fairplay.copy_view(self.copy, self.game, full=True)
         self.assertEqual((view["code"], view["problems"], view["fingerprint"]), (rec["code"], [], rec["fingerprint"]))
 
-    def test_an_offline_copy_has_none(self):
-        rec = self.record(fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)]))
-        self.assertEqual((rec["code"], rec["why"], rec["offline"]), (None, "offline", ["Dev is a cheat or a test tool"]))
+    def test_a_cheat_copy_has_its_code_too(self):
+        """A copy built with cheats or test tools plays with players who have the same build (GitHub issue 24), so
+        it has its join code for them to compare, and its record says which build code its lock carries."""
+        lock = fairplay.build_code("24687178", self.fp, [("tanks", "1.2.0")])
+        rec = self.record(fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)]), lock)
+        self.assertEqual((rec["code"], rec["why"], rec["offline"], rec["lock"]),
+                         (encode_join_code(24687178, self.fp, [("tanks", "1.2.0")]), "offline",
+                          ["Dev is a cheat or a test tool"], lock))
+        view = fairplay.copy_view(self.copy, self.game, full=True)
+        self.assertEqual((view["code"], view["why"], view["offline"]), (rec["code"], "offline", rec["offline"]))
+        # two players with that set compare their codes as any others do
+        self.assertTrue(fairplay.compare(view["code"], rec["code"])["same"])
+        # a copy whose mods change nothing in how the game plays has no code, cheat copy or not
+        none = fairplay.write_record(self.copy, "24687178", None, [("tanks", "1.2.0")],
+                                     fairplay.FairPlay([fairplay.ModCheck("dev", "Dev", cheat=True)]), [])
+        self.assertEqual((none["code"], none["why"]), (None, "offline"))
+        plain = fairplay.write_record(self.copy, "24687178", None, [("tanks", "1.2.0")], fairplay.FairPlay(), [])
+        self.assertEqual((plain["code"], plain["why"]), (None, "no gameplay change"))
 
     def test_changes_after_the_build(self):
         self.record()

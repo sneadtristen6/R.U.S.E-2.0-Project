@@ -1,0 +1,814 @@
+# Python 2.5.1, the game's own Python: whole multiplayer matches played between several stand-in PCs, to check RUSE
+# Guard's game scripts (src/rusemod/gamescripts) where the game can't be started: the lock of a copy built with
+# cheats or test tools, which plays on when every human player has the same build and leaves the match otherwise.
+#
+#     <python 2.5>/python.exe tests/gamescripts_sim.py25 <folder>          (tests/test_fairplay.py runs it)
+#
+# <folder> holds compiled scripts as the build puts them in a copy (marshalled code, no header): lock_a.bin and
+# lock_a2.bin (two locks with build code A), lock_b.bin (build code B), lock_none.bin (no build code), watch.bin,
+# record.bin, and lock_old.bin when the released lock from before the same-build check is at hand. With
+# joined_a.bin, joined_a2.bin and joined_b.bin there too (the game's own Battles launcher script with a copy's
+# scripts after it, one module, made from the game's file where the game is installed), those are played as well.
+#
+# What stands in for the game (each point checked against the game on 2026-11-10; the checks are in the project's
+# private notes):
+# - Each PC has its own copy of the game's script modules, its own match world and its own sides (camps), like the
+#   separate programs they are. Before any of a PC's code runs, its modules are the ones `import` finds.
+# - Orders (base.actions.helpers, as the game's own script has them): a PC sends an order through its match's
+#   network action manager; every PC, the sender too, gets it a few ticks later, in the same order, by a call of
+#   base.actions.helpers.Recv_<order> looked up BY NAME for every order, so a handler a script put there is the one
+#   called. Recv_AnnuleProduction and Recv_Surrender are the game's own lines.
+# - A side's factory finds a production by its number and gives None for one it doesn't have; a number of 2**31 or
+#   more fails there as it does in the game (it reads a signed number). The neutral side has no factories.
+# - A script error that leaves a call from the game stops that PC's game (code 0x29a): here it is caught per PC and
+#   counted as "the game stopped", which a check then expects or not.
+# - Timers are in game seconds, the same on every PC (the match is lockstep).
+import marshal
+import os
+import sys
+import types
+
+FOLDER = sys.argv[1]
+TICK = 0.1
+GAME_MODULES = ('front', 'front.game_rules', 'front.key_management', 'base', 'base.actions', 'base.actions.helpers',
+                'base.world_helper', '_network', '_actions', '_enum_for_game_play', '_piggybank', 'headup',
+                'headup.end_game_screens', 'leveldesign', 'leveldesign.launcheffetmap',
+                'leveldesign.descriptorspecial')
+
+
+def blob(name):
+    return open(os.path.join(FOLDER, name + '.bin'), 'rb').read()
+
+
+def have(name):
+    return os.path.isfile(os.path.join(FOLDER, name + '.bin'))
+
+
+class Stopped(Exception):
+    """A script error left a call from the game on this PC: its game stopped."""
+
+
+class Enum(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
+PLAYER, SCRIPTED = Enum('NiveauIA.Player'), Enum('NiveauIA.Scripted')
+HEADQUARTER, CASERNE = Enum('BatimentEnum.HeadQuarter'), Enum('BatimentEnum.Caserne')
+
+
+class OnlineData(object):
+    def __init__(self, niveau_ia):
+        self.niveau_ia = niveau_ia
+
+
+class Production(object):
+    def __init__(self, number):
+        self.number = number
+
+    def GetDescriptor(self):
+        return None
+
+
+class Factory(object):
+    """A side's virtual factory: its productions, numbered from 1."""
+
+    def __init__(self):
+        self.productions = []
+        self.cancelled = []
+        self.lookups = []
+
+    def add(self):
+        p = Production(len(self.productions) + len(self.cancelled) + 1)
+        self.productions.append(p)
+        return p
+
+    def GetProductionById(self, number):
+        if not isinstance(number, (int, long)):
+            raise TypeError('GetProductionById(int)')
+        if not -2 ** 31 <= number < 2 ** 31:
+            raise OverflowError('the number does not fit the game\'s signed number')
+        self.lookups.append(number)
+        for p in self.productions:
+            if p.number == number:
+                return p
+        return None
+
+    def CancelProduction(self, production):
+        self.productions.remove(production)
+        self.cancelled.append(production.number)
+
+
+class Camp(object):
+    def __init__(self, teamnum, kind):
+        self.teamnum = teamnum
+        self.kind = kind                    # 'human', 'computer', 'neutral'
+        self.neutre = kind == 'neutral'
+        self.online_data = None
+        if kind == 'human':
+            self.online_data = OnlineData(PLAYER)
+        elif kind == 'computer':
+            self.online_data = OnlineData(SCRIPTED)
+        self.factories = {}
+        if not self.neutre:                 # base/camp.py init: every side but the neutral one
+            self.factories = {HEADQUARTER: Factory(), CASERNE: Factory()}
+        self.defeated = False
+        self.piggybank = None
+
+    def GetFactoryByTypeBatiment(self, kind):
+        return self.factories.get(kind)
+
+    def IsDefeated(self):
+        return self.defeated
+
+
+class Action(object):
+    def __init__(self, order, *fields):
+        self.order = order
+        self.fields = fields
+
+
+class Net(object):
+    """The match's orders: sent by one PC, given to every PC `delay` ticks later, in the order sent."""
+
+    def __init__(self, delay=3):
+        self.delay = delay
+        self.waiting = []
+        self.sent = []
+
+    def send(self, pc, tick, action):
+        self.waiting.append((tick + self.delay, action))
+        self.sent.append((pc.name, tick, action.order, action.fields))
+
+    def due(self, tick):
+        now = [a for t, a in self.waiting if t <= tick]
+        self.waiting = [(t, a) for t, a in self.waiting if t > tick]
+        return now
+
+
+class PC(object):
+    """One player's computer: its own game modules, and what its copy was built with (`scripts`: compiled scripts,
+    in the build's order; none: the game as bought)."""
+
+    def __init__(self, name, scripts=()):
+        self.name = name
+        self.scripts = scripts
+        self.modules = None
+        self.world = None
+        self.stopped = None          # why this PC's game stopped (a script error left a call), else None
+        self.said = []
+        self.loaded = False
+
+    # --- this PC's game modules ---
+    def make_modules(self, sim):
+        pc = self
+        mods = {}
+
+        def module(name, **names):
+            m = types.ModuleType(name)
+            m.__dict__.update(names)
+            mods[name] = m
+            return m
+
+        class GameRulesMulti(object):
+            def before_start_game(self):
+                pass
+
+        class EndGameScreenMulti(object):
+            def _show_end_game_screen(self, stats):
+                pc.end_screens = getattr(pc, 'end_screens', 0) + 1
+
+        # base.actions.helpers: the game's own lines for these orders, as its script has them
+        def Send_Surrender(team):
+            network_action_manager = pc.world.GetNetworkActionManager()
+            network_action_manager.Send(Action('Surrender', team.teamnum, False))
+
+        def Recv_Surrender(team, is_by_disconnect):
+            pc.world.joueur_surrender(team, is_by_disconnect)
+
+        def Recv_AnnuleProduction(team, production_id, type_batiment):
+            factory = team.GetFactoryByTypeBatiment(type_batiment)
+            production = factory.GetProductionById(production_id)
+            if production:
+                productionDescriptor = production.GetDescriptor()
+                factory.CancelProduction(production)
+            return
+
+        def Recv_SpawnUnit(team, descriptor, position):
+            return 'the game\'s own'
+
+        def TNetworkActionAnnuleProduction(team, production_id, type_batiment):
+            # the order's arguments as the game takes them: a side or None, an unsigned number, a kind
+            if not isinstance(production_id, (int, long)) or not 0 <= production_id < 2 ** 32:
+                raise OverflowError('TNetworkActionAnnuleProduction: the number must fit 32 bits, unsigned')
+            if not isinstance(type_batiment, Enum):
+                raise TypeError('TNetworkActionAnnuleProduction: the kind must be a BatimentEnum')
+            num = None
+            if team is not None:
+                num = team.teamnum
+            return Action('AnnuleProduction', num, production_id, type_batiment)
+
+        helpers = module('base.actions.helpers', Send_Surrender=Send_Surrender, Recv_Surrender=Recv_Surrender,
+                         Recv_AnnuleProduction=Recv_AnnuleProduction, Recv_SpawnUnit=Recv_SpawnUnit)
+        actions = module('base.actions', helpers=helpers)
+        module('base', actions=actions, world_helper=module('base.world_helper'))
+        keys = module('front.key_management', key_manager=types.ModuleType('key_manager'))
+        keys.key_manager.list_of_shortcuts = []
+        module('front', game_rules=module('front.game_rules', GameRulesMulti=GameRulesMulti), key_management=keys)
+        module('_network', IsPartieMulti=lambda: sim.multi, IsChallengeCoop=lambda: sim.coop)
+        module('_actions', TNetworkActionAnnuleProduction=TNetworkActionAnnuleProduction)
+
+        class NiveauIA(object):
+            Player, Scripted = PLAYER, SCRIPTED
+
+        class BatimentEnum(object):
+            HeadQuarter, Caserne = HEADQUARTER, CASERNE
+
+        # what the game's own Battles launcher (effetmapmultiplayer) names when it loads: its skirmish rules, the
+        # warm-up and the launch descriptor, made with keywords, and two values of the game's enums
+        class Made(object):
+            def __init__(self, **keywords):
+                self.keywords = keywords
+
+        class TGameTimerMode(object):
+            Countdown = Enum('TGameTimerMode.Countdown')
+
+        class TPopCapConfig(object):
+            PopCapSkirmish = Enum('TPopCapConfig.PopCapSkirmish')
+
+        module('leveldesign', launcheffetmap=module('leveldesign.launcheffetmap', GameRulesSkirmish=Made,
+                                                    DescriptorLaunchEffetMapSkirmishFromOutgame=Made),
+               descriptorspecial=module('leveldesign.descriptorspecial', DescriptorSkirmishWarmup=Made))
+        module('_enum_for_game_play', NiveauIA=NiveauIA, BatimentEnum=BatimentEnum, TGameTimerMode=TGameTimerMode,
+               TPopCapConfig=TPopCapConfig)
+        module('_piggybank', TPackSignaux_PiggyBank_Listener=type('TPackSignaux_PiggyBank_Listener', (object,), {}))
+        module('headup', end_game_screens=module('headup.end_game_screens', EndGameScreenMulti=EndGameScreenMulti))
+        self.modules = mods
+
+    def enter(self):
+        for name in GAME_MODULES:
+            if name in sys.modules:
+                del sys.modules[name]
+        sys.modules.update(self.modules)
+
+    def load(self):
+        """The copy's match script as the game loads it: the game's own module, then our scripts after it."""
+        self.enter()
+
+        def no_open(*args):  # the game's Python has no file object (found 2026-10-30): the record writes nothing
+            raise IOError('the game has no files')
+        scope = {'__name__': 'effetmapmultiplayer', '__builtins__': __builtins__, 'open': no_open}
+        for data in self.scripts:
+            exec marshal.loads(data) in scope
+        self.scope = scope
+        self.loaded = True
+
+    def call(self, what, *args):
+        """A call from the game into this PC's scripts; an error that leaves it stops this PC's game."""
+        if self.stopped is not None:
+            return None
+        self.enter()
+        try:
+            return what(*args)
+        except Exception, e:
+            self.stopped = '%s: %s' % (e.__class__.__name__, e)
+            return None
+
+
+class World(object):
+    def __init__(self, sim, pc, sides, local):
+        self.sim, self.pc = sim, pc
+        self.camps = dict([(num, Camp(num, kind)) for num, kind in sides])
+        self.camp_neutre = Camp(-1, 'neutral')
+        self.camp_list = tuple([self.camps[num] for num, _kind in sides])
+        if local is None:
+            self.camp_du_joueur = self.camp_neutre       # an observer
+        else:
+            self.camp_du_joueur = self.camps[local]
+        self.timers = []
+        self.surrenders = []
+        self.kills = []
+        world = self
+
+        class UnitTime(object):
+            def callback_qui_prend_pas_en_compte_la_duree_de_vie_du_ticket(self, delay, call):
+                world.timers.append((sim.tick + int(round(delay / TICK)), call))
+                return object()
+
+        class Manager(object):
+            def Send(self, action):
+                sim.net.send(pc, sim.tick, action)
+
+        self.unit_time = UnitTime()
+        self._manager = Manager()
+
+    def GetNetworkActionManager(self):
+        return self._manager
+
+    def display_debug_message(self, text, seconds):
+        self.pc.said.append((self.sim.tick, text))
+
+    def register_function_to_call_at_kill(self, call):
+        self.kills.append(call)
+
+    def GetGameTime(self):
+        return self.sim.tick * TICK
+
+    def joueur_surrender(self, team, is_by_disconnect):
+        team.defeated = True
+        self.surrenders.append((self.sim.tick, team.teamnum))
+
+    def camp(self, num):
+        if num is None:
+            return None
+        if num == -1:
+            return self.camp_neutre
+        return self.camps[num]
+
+
+class Sim(object):
+    """One session of the PCs: matches played one after another (our scripts switch on once per session)."""
+
+    def __init__(self, pcs):
+        self.pcs = pcs
+        self.multi, self.coop = True, False
+        self.tick = 0
+        self.net = None
+        for pc in pcs:
+            pc.make_modules(self)
+
+    def match(self, sides, local, seconds=12.0, delay=3, multi=True, coop=False, during=None):
+        """Play one match. sides: [(number, 'human' | 'computer')]; local: {pc name: its side's number, or None for
+        an observer}; during: {tick: call(sim)} for what happens meanwhile. Returns the orders sent."""
+        self.multi, self.coop = multi, coop
+        self.tick = 0
+        self.net = Net(delay)
+        for pc in self.pcs:
+            pc.world = World(self, pc, sides, local[pc.name])
+            pc.said = []
+            pc.end_screens = 0
+            if not pc.loaded:
+                try:
+                    pc.load()
+                except Exception, e:
+                    pc.stopped = 'at load: %s: %s' % (e.__class__.__name__, e)
+        for pc in self.pcs:  # the match starts: the game calls its rules' before_start_game on every PC
+            def start(pc=pc):
+                rules = sys.modules['front.game_rules'].GameRulesMulti()
+                rules.world = pc.world
+                rules.before_start_game()
+            pc.call(start)
+        last = int(round(seconds / TICK))
+        while self.tick < last:
+            self.tick += 1
+            if during and self.tick in during:
+                during[self.tick](self)
+            for action in self.net.due(self.tick):
+                for pc in self.pcs:
+                    self.give(pc, action)
+            for pc in self.pcs:
+                due = [c for t, c in pc.world.timers if t <= self.tick]
+                pc.world.timers = [(t, c) for t, c in pc.world.timers if t > self.tick]
+                for call in due:
+                    pc.call(call)
+        for pc in self.pcs:  # the match ends: its end-of-match screen, on every PC still running
+            def end(pc=pc):
+                sys.modules['headup.end_game_screens'].EndGameScreenMulti()._show_end_game_screen(None)
+            pc.call(end)
+        return self.net.sent
+
+    def give(self, pc, action):
+        """An order arrives on a PC: the game looks its receiving function up by name and calls it."""
+        if action.order == 'AnnuleProduction':
+            num, number, kind = action.fields
+
+            def recv():
+                helpers = sys.modules['base.actions.helpers']
+                return helpers.Recv_AnnuleProduction(pc.world.camp(num), number, kind)
+            pc.call(recv)
+        elif action.order == 'Surrender':
+            num, by_disconnect = action.fields
+
+            def recv():
+                return sys.modules['base.actions.helpers'].Recv_Surrender(pc.world.camp(num), by_disconnect)
+            pc.call(recv)
+        else:
+            raise ValueError('an order the stand-in game does not know: %s' % action.order)
+
+
+# --- what a check looks at ---
+def surrendered(pc, num):
+    """The tick this PC's world saw side `num` give up, or None."""
+    for tick, n in pc.world.surrenders:
+        if n == num:
+            return tick
+    return None
+
+
+def sent(orders, name, order):
+    return [(tick, fields) for who, tick, o, fields in orders if who == name and o == order]
+
+
+def says(pc, words):
+    return [t for t, text in pc.said if words in text]
+
+
+FAILS = []
+
+
+def expect(scenario, what, got, want):
+    if got != want:
+        FAILS.append('%s: %s: got %r, expected %r' % (scenario, what, got, want))
+
+
+def untouched(scenario, pc):
+    """Nothing the announcements did may show in a PC's game: no production cancelled, none looked up and found."""
+    for camp in list(pc.world.camp_list) + [pc.world.camp_neutre]:
+        for factory in camp.factories.values():
+            expect(scenario, '%s: side %s cancelled productions' % (pc.name, camp.teamnum), factory.cancelled, [])
+
+
+A, A2, B, NONE = blob('lock_a'), blob('lock_a2'), blob('lock_b'), blob('lock_none')
+WATCH, RECORD = blob('watch'), blob('record')
+CHEAT_A, CHEAT_A2, CHEAT_B, CHEAT_NONE = (A, WATCH, RECORD), (A2, WATCH, RECORD), (B, WATCH, RECORD), (NONE, WATCH,
+                                                                                                    RECORD)
+HONEST = (WATCH, RECORD)       # a modded copy without cheats: the watcher and the record, no lock
+PLAIN = ()                     # the game as bought
+LEAVE_TICK = 70                # 7.0 seconds in: the lock's decision
+RESULTS = []
+NUMBERS = {}                   # numbers.txt, when there: "a <first> <second>" as rusemod.fairplay.lock_numbers says
+if os.path.isfile(os.path.join(FOLDER, 'numbers.txt')):
+    for line in open(os.path.join(FOLDER, 'numbers.txt')).read().split('\n'):
+        parts = line.split()
+        if len(parts) == 3:
+            NUMBERS[parts[0]] = [int(parts[1]), int(parts[2])]
+
+
+def scenario(name):
+    def wrap(run):
+        before = len(FAILS)
+        try:
+            run(name)
+        except Exception, e:
+            FAILS.append('%s: the check itself failed: %s: %s' % (name, e.__class__.__name__, e))
+        RESULTS.append((name, len(FAILS) == before))
+        return run
+    return wrap
+
+
+@scenario('two players with the same cheat build, against the computer (the issue): the match goes on')
+def _(name):
+    p1, p2 = PC('first', CHEAT_A), PC('friend', CHEAT_A2)
+    sim = Sim([p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'first': 0, 'friend': 1})
+    for pc, num in ((p1, 0), (p2, 1)):
+        expect(name, '%s stopped' % pc.name, pc.stopped, None)
+        expect(name, '%s sent a surrender' % pc.name, sent(orders, pc.name, 'Surrender'), [])
+        expect(name, '%s announcements' % pc.name, len(sent(orders, pc.name, 'AnnuleProduction')), 2)
+        expect(name, '%s said the match goes on' % pc.name, says(pc, 'The match goes on'), [LEAVE_TICK])
+        expect(name, '%s said it leaves' % pc.name, says(pc, 'leaves the match'), [])
+        expect(name, '%s end screens shown' % pc.name, pc.end_screens, 1)
+        untouched(name, pc)
+    # the announcements: sent one second in, for the sender's own side, for the headquarters factory, with numbers
+    # the game never reaches and below the game's signed limit
+    for who, tick, order, fields in orders:
+        expect(name, 'an order sent', order, 'AnnuleProduction')
+        expect(name, 'sent at', tick, 10)
+        expect(name, 'for the sender\'s side', fields[0], {'first': 0, 'friend': 1}[who])
+        expect(name, 'in RUSE Guard\'s numbers', 0x40000000 <= fields[1] < 2 ** 31, True)
+        expect(name, 'the factory kind', fields[2], HEADQUARTER)
+    expect(name, 'both builds announce the same numbers',
+           sorted([f[1] for t, f in sent(orders, 'first', 'AnnuleProduction')]),
+           sorted([f[1] for t, f in sent(orders, 'friend', 'AnnuleProduction')]))
+    if 'a' in NUMBERS:  # and they are the numbers the build's side works out for that code
+        expect(name, 'the numbers announced', [f[1] for t, f in sent(orders, 'first', 'AnnuleProduction')],
+               NUMBERS['a'])
+
+
+@scenario('a cheat build against a player with the game as bought: the cheat copy leaves, the other game untouched')
+def _(name):
+    cheat, other = PC('cheat', CHEAT_A), PC('plain', PLAIN)
+    sim = Sim([cheat, other])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
+    expect(name, 'the plain game stopped', other.stopped, None)
+    expect(name, 'the cheat copy surrendered at', [t for t, f in sent(orders, 'cheat', 'Surrender')], [LEAVE_TICK])
+    expect(name, 'the plain game saw the surrender', surrendered(other, 0) is not None, True)
+    expect(name, 'the plain game sent anything', [o for who, t, o, f in orders if who == 'plain'], [])
+    expect(name, 'the cheat copy said it leaves', says(cheat, 'leaves the match'), [LEAVE_TICK])
+    expect(name, 'the cheat copy was stopped on its end screen', (cheat.stopped or '')[:28],
+           'RuntimeError: RUSEGUARD-LOCK')
+    expect(name, 'the plain game\'s end screens', other.end_screens, 1)
+    untouched(name, other)
+    lookups = other.world.camps[0].factories[HEADQUARTER].lookups
+    expect(name, 'the plain game looked the two numbers up and found nothing', len(lookups), 2)
+
+
+@scenario('a cheat build against an honest modded copy (watcher, no lock): the cheat copy leaves')
+def _(name):
+    cheat, other = PC('cheat', CHEAT_A), PC('honest', HONEST)
+    sim = Sim([cheat, other])
+    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'cheat': 0, 'honest': 1})
+    expect(name, 'the honest copy stopped', other.stopped, None)
+    expect(name, 'the cheat copy surrendered at', [t for t, f in sent(orders, 'cheat', 'Surrender')], [LEAVE_TICK])
+    expect(name, 'the honest copy sent anything', [o for who, t, o, f in orders if who == 'honest'], [])
+    untouched(name, other)
+
+
+@scenario('two cheat builds with different mods: both leave')
+def _(name):
+    p1, p2 = PC('one', CHEAT_A), PC('other', CHEAT_B)
+    sim = Sim([p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'other': 1})
+    for pc in (p1, p2):
+        expect(name, '%s surrendered at' % pc.name, [t for t, f in sent(orders, pc.name, 'Surrender')], [LEAVE_TICK])
+        expect(name, '%s was stopped on its end screen' % pc.name, (pc.stopped or '')[:28],
+               'RuntimeError: RUSEGUARD-LOCK')
+        # the stop's line is the one the Launcher reads from the game's crash report: filled in, with its end mark
+        expect(name, '%s: the stop line is filled in' % pc.name,
+               ('%' not in pc.stopped, pc.stopped.endswith('RUSEGUARD-END'),
+                'multi 1 coop 0 local %d' % {'one': 0, 'other': 1}[pc.name] in pc.stopped), (True, True, True))
+    if 'b' in NUMBERS:
+        expect(name, 'the other build\'s numbers', [f[1] for t, f in sent(orders, 'other', 'AnnuleProduction')],
+               NUMBERS['b'])
+
+
+@scenario('three players, two with the same cheat build and one honest: both cheat copies leave')
+def _(name):
+    p1, p2, p3 = PC('one', CHEAT_A), PC('two', CHEAT_A2), PC('honest', HONEST)
+    sim = Sim([p1, p2, p3])
+    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'human')], {'one': 0, 'two': 1, 'honest': 2})
+    for pc in (p1, p2):
+        expect(name, '%s surrendered at' % pc.name, [t for t, f in sent(orders, pc.name, 'Surrender')], [LEAVE_TICK])
+    expect(name, 'the honest copy stopped', p3.stopped, None)
+    expect(name, 'the honest copy saw both give up', sorted([n for t, n in p3.world.surrenders]), [0, 1])
+    untouched(name, p3)
+
+
+@scenario('four players with the same cheat build, a co-op match: the match goes on')
+def _(name):
+    pcs = [PC('p%d' % k, (CHEAT_A, CHEAT_A2)[k % 2]) for k in range(4)]
+    sim = Sim(pcs)
+    orders = sim.match([(k, 'human') for k in range(4)] + [(4, 'computer'), (5, 'computer')],
+                       dict([('p%d' % k, k) for k in range(4)]), multi=False, coop=True)
+    expect(name, 'surrenders', [o for who, t, o, f in orders if o == 'Surrender'], [])
+    expect(name, 'announcements', len([o for who, t, o, f in orders if o == 'AnnuleProduction']), 8)
+    for pc in pcs:
+        expect(name, '%s stopped' % pc.name, pc.stopped, None)
+        expect(name, '%s said the match goes on' % pc.name, says(pc, 'The match goes on'), [LEAVE_TICK])
+
+
+@scenario('one human with a cheat build and computer players, a multiplayer match: the match goes on')
+def _(name):
+    pc = PC('alone', CHEAT_A)
+    sim = Sim([pc])
+    orders = sim.match([(0, 'human'), (1, 'computer')], {'alone': 0})
+    expect(name, 'surrenders', sent(orders, 'alone', 'Surrender'), [])
+    expect(name, 'stopped', pc.stopped, None)
+
+
+@scenario('a skirmish against the computer (not multiplayer, not co-op): the lock does nothing at all')
+def _(name):
+    pc = PC('offline', CHEAT_A)
+    sim = Sim([pc])
+    orders = sim.match([(0, 'human'), (1, 'computer')], {'offline': 0}, multi=False, coop=False)
+    expect(name, 'orders sent', orders, [])
+    expect(name, 'the lock\'s words on screen', [text for t, text in pc.said if 'RUSE Guard:' in text
+                                                  and 'watcher' not in text], [])
+    expect(name, 'stopped', pc.stopped, None)
+
+
+@scenario('cheat copies with no build code in their locks: no announcement, both leave')
+def _(name):
+    p1, p2 = PC('one', CHEAT_NONE), PC('two', CHEAT_NONE)
+    sim = Sim([p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1})
+    expect(name, 'announcements', [o for who, t, o, f in orders if o == 'AnnuleProduction'], [])
+    for pc in (p1, p2):
+        expect(name, '%s surrendered at' % pc.name, [t for t, f in sent(orders, pc.name, 'Surrender')], [LEAVE_TICK])
+
+
+@scenario('an observer with a cheat build: it announces nothing (the neutral side has no factory)')
+def _(name):
+    watcher, p1, p2 = PC('observer', CHEAT_A), PC('one', PLAIN), PC('two', PLAIN)
+    sim = Sim([watcher, p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'observer': None, 'one': 0, 'two': 1})
+    expect(name, 'the observer\'s announcements', sent(orders, 'observer', 'AnnuleProduction'), [])
+    for pc in (p1, p2):
+        untouched(name, pc)
+        lookups = sum([len(f.lookups) for c in pc.world.camp_list for f in c.factories.values()])
+        expect(name, '%s: productions looked up' % pc.name, lookups, 0)
+
+
+@scenario('a player who gives up before the decision is not counted: the two left have the same build')
+def _(name):
+    p1, p2, p3 = PC('one', CHEAT_A), PC('two', CHEAT_A2), PC('leaver', PLAIN)
+    sim = Sim([p1, p2, p3])
+
+    def quits(sim):
+        sim.net.send(p3, sim.tick, Action('Surrender', 2, True))
+    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'human')], {'one': 0, 'two': 1, 'leaver': 2},
+                       during={30: quits})
+    for pc in (p1, p2):
+        expect(name, '%s surrendered' % pc.name, sent(orders, pc.name, 'Surrender'), [])
+        expect(name, '%s stopped' % pc.name, pc.stopped, None)
+
+
+@scenario('orders arriving late (5.5 seconds) still count; arriving after the decision, the copies leave')
+def _(name):
+    p1, p2 = PC('one', CHEAT_A), PC('two', CHEAT_A2)
+    sim = Sim([p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1}, delay=55)
+    expect(name, 'surrenders with a 5.5 second delay', [o for who, t, o, f in orders if o == 'Surrender'], [])
+    p1, p2 = PC('one', CHEAT_A), PC('two', CHEAT_A2)
+    sim = Sim([p1, p2])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1}, delay=65, seconds=20.0)
+    expect(name, 'surrenders with a 6.5 second delay', len([o for who, t, o, f in orders if o == 'Surrender']), 2)
+
+
+@scenario('a second match in the same session: each match is decided on its own')
+def _(name):
+    p1, p2 = PC('one', CHEAT_A), PC('two', CHEAT_A2)
+    sim = Sim([p1, p2])
+    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1})
+    orders = sim.match([(3, 'human'), (5, 'human'), (6, 'computer')], {'one': 5, 'two': 3})
+    expect(name, 'surrenders in the second match', [o for who, t, o, f in orders if o == 'Surrender'], [])
+    expect(name, 'announcements in the second match', len([o for who, t, o, f in orders
+                                                           if o == 'AnnuleProduction']), 4)
+    for pc in (p1, p2):
+        expect(name, '%s stopped' % pc.name, pc.stopped, None)
+        expect(name, '%s end screens' % pc.name, pc.end_screens, 1)
+    # then a third player without the build joins the session's third match: now they leave
+    p3 = PC('plain', PLAIN)
+    p3.make_modules(sim)
+    sim.pcs.append(p3)
+    orders = sim.match([(0, 'human'), (1, 'human'), (2, 'human')], {'one': 0, 'two': 1, 'plain': 2})
+    expect(name, 'surrenders in the third match', sorted([who for who, t, o, f in orders if o == 'Surrender']),
+           ['one', 'two'])
+
+
+@scenario('a match left for a different build, quit before its end screen, then a same-build match: not stopped')
+def _(name):
+    p1, p2, p3 = PC('one', CHEAT_A), PC('two', CHEAT_A2), PC('plain', PLAIN)
+    sim = Sim([p1, p3])
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'plain': 1})
+    expect(name, 'the first match was left', len(sent(orders, 'one', 'Surrender')), 1)
+    p1.stopped = None  # as if the player had quit to the menu before the end-of-match screen: the game still runs
+    p2.make_modules(sim)
+    sim.pcs = [p1, p2]
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1})
+    expect(name, 'surrenders in the same-build match', [o for who, t, o, f in orders if o == 'Surrender'], [])
+    expect(name, 'the copy was stopped on the same-build match\'s end screen', p1.stopped, None)
+
+
+@scenario('a real cancel order of the game passes through the lock unchanged')
+def _(name):
+    p1, p2 = PC('one', CHEAT_A), PC('two', CHEAT_A2)
+    sim = Sim([p1, p2])
+
+    def queue_and_cancel(sim):
+        for pc in sim.pcs:
+            pc.world.camps[1].factories[CASERNE].add()
+            pc.world.camps[1].factories[CASERNE].add()
+        sim.net.send(p2, sim.tick, Action('AnnuleProduction', 1, 2, CASERNE))
+    orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1}, during={40: queue_and_cancel})
+    for pc in (p1, p2):
+        expect(name, '%s: production 2 cancelled' % pc.name, pc.world.camps[1].factories[CASERNE].cancelled, [2])
+        expect(name, '%s: production 1 kept' % pc.name,
+               [p.number for p in pc.world.camps[1].factories[CASERNE].productions], [1])
+        expect(name, '%s stopped' % pc.name, pc.stopped, None)
+    expect(name, 'surrenders', [o for who, t, o, f in orders if o == 'Surrender'], [])
+
+
+@scenario('half an announcement, another version\'s, or a third half: not the same build')
+def _(name):
+    for case, forged in (('only the first half', [0x40000000 | (1 << 24) | 0x473dc7]),
+                         ('version 2', [0x40000000 | (2 << 24) | 0x000001, 0x40000000 | (1 << 28) | 0x0000002]),
+                         ('a third half too', None)):
+        p1, p2 = PC('one', CHEAT_A), PC('forger', PLAIN)
+        sim = Sim([p1, p2])
+
+        def forge(sim, forged=forged):
+            mine = [f[1] for t, f in sent(sim.net.sent, 'one', 'AnnuleProduction')]
+            numbers = forged
+            if numbers is None:
+                numbers = mine + [0x40000000 | (2 << 28) | 5]
+            for number in numbers:
+                sim.net.send(p2, sim.tick, Action('AnnuleProduction', 1, number, HEADQUARTER))
+        orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'forger': 1}, during={20: forge})
+        expect(name, '%s: the cheat copy surrendered' % case, len(sent(orders, 'one', 'Surrender')), 1)
+        expect(name, '%s: the other game stopped' % case, p2.stopped, None)
+
+
+if have('lock_old'):
+    @scenario('the released lock from before this change, against the new one: the old one leaves as it always did')
+    def _(name):
+        old, new = PC('old', (blob('lock_old'), WATCH, RECORD)), PC('new', CHEAT_A)
+        sim = Sim([old, new])
+        orders = sim.match([(0, 'human'), (1, 'human')], {'old': 0, 'new': 1})
+        expect(name, 'the old lock surrendered at', [t for t, f in sent(orders, 'old', 'Surrender')], [50])
+        expect(name, 'the new lock stopped during the match', new.stopped, None)
+        expect(name, 'the old copy took the announcements without a change',
+               [len(c.factories[HEADQUARTER].cancelled) for c in old.world.camp_list], [0, 0])
+
+
+if have('joined_a') and have('joined_a2') and have('joined_b'):
+    # The game's OWN Battles launcher with a copy's scripts after it, as one module: the very bytes a build writes
+    # into a copy's ZZ_Win.dat (tests/test_fairplay.py makes them from the game's own script when the game is on
+    # the PC). The launcher's own lines run first (its descriptors, its launch function), then ours.
+    JOINED_A, JOINED_A2, JOINED_B = (blob('joined_a'),), (blob('joined_a2'),), (blob('joined_b'),)
+
+    @scenario('the game\'s own launcher script with the lock after it, as a copy carries it: same build plays on')
+    def _(name):
+        p1, p2 = PC('first', JOINED_A), PC('friend', JOINED_A2)
+        sim = Sim([p1, p2])
+        orders = sim.match([(0, 'human'), (1, 'human'), (2, 'computer')], {'first': 0, 'friend': 1})
+        for pc in (p1, p2):
+            expect(name, '%s stopped' % pc.name, pc.stopped, None)
+            expect(name, '%s said the match goes on' % pc.name, says(pc, 'The match goes on'), [LEAVE_TICK])
+            # the launcher's own lines ran: its launch function is there, its two helpers were deleted again
+            expect(name, '%s: the launcher\'s own names' % pc.name,
+                   ('launch' in pc.scope, 'ER_3' in pc.scope, 'IR_1' in pc.scope, 'IR_2' in pc.scope),
+                   (True, True, False, False))
+            expect(name, '%s: the launcher\'s rules as it made them' % pc.name,
+                   pc.scope['ER_3'].keywords['GameRules'].keywords.get('GameTime'), 1200)
+        expect(name, 'surrenders', [o for who, t, o, f in orders if o == 'Surrender'], [])
+        expect(name, 'announcements', len([o for who, t, o, f in orders if o == 'AnnuleProduction']), 4)
+        if 'a' in NUMBERS:
+            expect(name, 'the numbers announced', [f[1] for t, f in sent(orders, 'first', 'AnnuleProduction')],
+                   NUMBERS['a'])
+
+    @scenario('the same, against another cheat build and against the game as bought: it leaves')
+    def _(name):
+        p1, p2 = PC('one', JOINED_A), PC('other', JOINED_B)
+        sim = Sim([p1, p2])
+        orders = sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'other': 1})
+        for pc in (p1, p2):
+            expect(name, '%s surrendered at' % pc.name, [t for t, f in sent(orders, pc.name, 'Surrender')],
+                   [LEAVE_TICK])
+        cheat, plain = PC('cheat', JOINED_A), PC('plain', PLAIN)
+        sim = Sim([cheat, plain])
+        orders = sim.match([(0, 'human'), (1, 'human')], {'cheat': 0, 'plain': 1})
+        expect(name, 'the cheat copy surrendered at', [t for t, f in sent(orders, 'cheat', 'Surrender')],
+               [LEAVE_TICK])
+        expect(name, 'the plain game stopped', plain.stopped, None)
+        untouched(name, plain)
+
+
+# --- game objects that fail on every use: what may never let an error out, even in a cheat copy ---
+class Boom(Exception):
+    pass
+
+
+class Bomb(object):
+    def __getattr__(self, name):
+        raise Boom('the game object failed on .%s' % name)
+
+    def __call__(self, *args):
+        raise Boom('the game object failed when called')
+
+    def __iter__(self):
+        raise Boom('the game object failed when listed')
+
+
+@scenario('an order arriving with game objects that fail on every use: the lock lets no error out')
+def _(name):
+    p1, p2 = PC('one', CHEAT_A), PC('two', CHEAT_A2)
+    sim = Sim([p1, p2])
+    sim.match([(0, 'human'), (1, 'human')], {'one': 0, 'two': 1})
+    p1.enter()
+    helpers = sys.modules['base.actions.helpers']
+    expect(name, 'the lock\'s handler is in place', helpers.Recv_AnnuleProduction.__name__, 'Recv_AnnuleProduction')
+    real = p1.world.camps[1]
+    try:
+        # a failing number, with a real side: our part fails quietly, the game's own part still runs
+        class BadNumber(object):
+            def __cmp__(self, other):
+                raise Boom('the number failed to compare')
+        try:
+            helpers.Recv_AnnuleProduction(real, BadNumber(), HEADQUARTER)
+        except TypeError:
+            pass  # from the stand-in game's own lookup, not from the lock
+        # a side whose number can't be read, with one of RUSE Guard's numbers: our part quiet, the game's own
+        # handler gets the order as it came
+        class NoNumber(Camp):
+            teamnum = property(lambda self: Bomb()())
+        try:
+            odd = NoNumber.__new__(NoNumber)
+            odd.factories = real.factories
+            helpers.Recv_AnnuleProduction(odd, 0x40000000 | 7, HEADQUARTER)
+        except Boom, e:
+            FAILS.append('%s: the lock let an error out: %s' % (name, e))
+    except Boom, e:
+        FAILS.append('%s: the lock let an error out: %s' % (name, e))
+
+
+for name, ok in RESULTS:
+    print '%-6s %s' % (('FAILED', 'ok')[ok], name)
+print
+for line in FAILS:
+    print 'FAILED:', line
+print '%d of %d matches as expected' % (len([1 for n, ok in RESULTS if ok]), len(RESULTS))
+sys.exit((0, 1)[bool(FAILS)])

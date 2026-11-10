@@ -305,7 +305,8 @@ class Starter:
         themselves say otherwise (MOD_FORMAT §10.6). A problem raises BuildError (or RndfError, OSError) with a
         message for the player, and nothing starts; so do .rmod mods that can't go together (the build refuses them
         before building anything, naming every clash: rusemod.rmod.clashes). A set with a cheat or a test tool makes
-        an offline copy; every copy gets the fair play watcher (rusemod.fairplay). `guard` (the Launcher's: its
+        a cheat copy (multiplayer and co-op only with players who have the same build); every copy gets the fair
+        play watcher (rusemod.fairplay). `guard` (the Launcher's: its
         platform folder `home` and the player's RUSE Guard settings) starts the match watch beside the game
         (rusemod.guard), when fair play is on.
 

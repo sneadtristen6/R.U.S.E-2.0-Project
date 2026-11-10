@@ -2253,18 +2253,18 @@ jpn = "注意：このゲームには {0} も {1} もないため、RUSE Guard �
 sc = "注意：此游戏中没有 {0} 或 {1}，因此没有 RUSE Guard 监视器"
 fa = "یادداشت: در این بازی {0} یا {1} نیست، پس دیده‌بان RUSE Guard هم نیست"
 
-[e70b008c3ea]
-us = "offline only: {0}; multiplayer and co-op matches are left at once"
-fr = "hors ligne seulement : {0} ; les parties multijoueur et en coopération sont quittées aussitôt"
-ger = "nur offline: {0}; Mehrspieler- und Koop-Partien werden sofort verlassen"
-ita = "solo offline: {0}; le partite multigiocatore e cooperative vengono lasciate subito"
-spa = "solo sin conexión: {0}; las partidas multijugador y cooperativas se abandonan al momento"
-pol = "tylko offline: {0}; mecze wieloosobowe i kooperacyjne są od razu opuszczane"
-ru = "только офлайн: {0}; сетевые и кооперативные матчи сразу покидаются"
-cz = "jen offline: {0}; hry pro více hráčů a kooperace se hned opustí"
-jpn = "オフラインのみ：{0}。マルチプレイと協力プレイの対戦はすぐに退出します"
-sc = "仅离线：{0}；多人和合作对战会立即退出"
-fa = "فقط آفلاین: {0}؛ نبردهای چندنفره و همکاری بی‌درنگ ترک می‌شوند"
+[e94bbd873ba]
+us = "built with cheats or test tools: {0}; multiplayer and co-op only with players who have the same build, any other match is left at once"
+fr = "créée avec des triches ou des outils de test : {0} ; multijoueur et coopération seulement avec des joueurs qui ont la même construction, toute autre partie est quittée aussitôt"
+ger = "mit Cheats oder Testwerkzeugen erstellt: {0}; Mehrspieler und Koop nur mit Spielern, die denselben Build haben, jede andere Partie wird sofort verlassen"
+ita = "creata con trucchi o strumenti di test: {0}; multigiocatore e cooperativa solo con giocatori che hanno la stessa build, ogni altra partita viene lasciata subito"
+spa = "creada con trucos o herramientas de prueba: {0}; multijugador y cooperativo solo con jugadores que tengan la misma compilación, cualquier otra partida se abandona al momento"
+pol = "utworzona z kodami lub narzędziami testowymi: {0}; mecze wieloosobowe i kooperacyjne tylko z graczami, którzy mają tę samą kompilację, każdy inny mecz jest od razu opuszczany"
+ru = "создана с читами или тестовыми инструментами: {0}; сетевые и кооперативные матчи только с игроками, у которых та же сборка, любой другой матч сразу покидается"
+cz = "vytvořena s cheaty nebo testovacími nástroji: {0}; hry pro více hráčů a kooperace jen s hráči, kteří mají stejné sestavení, každá jiná hra se hned opustí"
+jpn = "チートまたはテスト用ツール入りで作成：{0}。マルチプレイと協力プレイは同じビルドのプレイヤーとだけ。それ以外の対戦はすぐに退出します"
+sc = "包含作弊或测试工具：{0}；多人和合作对战仅限拥有相同构建的玩家，其他对战会立即退出"
+fa = "با تقلب یا ابزار آزمایش ساخته شده: {0}؛ نبردهای چندنفره و همکاری فقط با بازیکنانی که همان ساخت را دارند، هر نبرد دیگری بی‌درنگ ترک می‌شود"
 
 [e089ab2730a]
 us = "{0}: another folder of this build has the id {1}, so this one builds as {2} (its files stay as they are)"
