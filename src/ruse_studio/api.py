@@ -8160,9 +8160,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             copy = self._own_copy_file(address)
             if copy is not None and copy.is_file():
                 with self._saving:
+                    # kept in the model's own record, so taking the model out gives the copy back in one click
+                    # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
+                    self._keep_in_model_record(address, copy.read_text(encoding="utf-8"))
                     copy.unlink(missing_ok=True)
                 copy_out = True
         return {"model": report, "copy_out": copy_out, **self.look(address)}
+
+    def _keep_in_model_record(self, address: str, copy_text: str) -> None:
+        """Keep the .copy.toml an import took the place of in the model's record (files/models/<unit>.json,
+        "copy_kept")."""
+        target = self._own_model_file(address)
+        record = target.with_suffix(".json") if target is not None else None
+        if record is None or not record.is_file():
+            return
+        data = json.loads(record.read_text(encoding="utf-8"))
+        data["copy_kept"] = copy_text
+        record.write_text(json.dumps(data, indent=1), encoding="utf-8")
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
                    own_turret: bool, own_propellers: bool, move: list | None) -> dict | None:
@@ -8406,17 +8420,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
     def model_import_remove(self, address: str) -> dict:
-        """Take a new unit's own model out of the mod: it shows the model of the unit it copies again, a squad its
-        soldiers in the default uniform. An own copy the model took the place of (model_import: a squad's Custom
-        uniform) doesn't come back by itself: model_copy gives it again, with the paint the mod kept. Returns look() and
-        "model_out": whether there was a model to take out."""
+        """Take a new unit's own model out of the mod: it shows the model of the unit it copies again. An own copy the
+        model took the place of (model_import: a squad's Custom uniform, kept in the model's record) comes back with it,
+        its paint still in the mod: one click undoes the import (the owner, 2026-11-10: it has to be intuitive for
+        someone who has never modded). Returns look(), "model_out": whether there was a model to take out, and
+        "copy_back": whether its copy came back."""
         target = self._own_model_file(address)
         out = target is not None and target.is_file()
+        copy_back = False
         if target is not None:
+            record = target.with_suffix(".json")
+            try:
+                kept = json.loads(record.read_text(encoding="utf-8")).get("copy_kept") if record.is_file() else None
+            except (OSError, ValueError):
+                kept = None
             with self._saving:
                 target.unlink(missing_ok=True)
-                target.with_suffix(".json").unlink(missing_ok=True)
-        return {**self.look(address), "model_out": out}
+                record.unlink(missing_ok=True)
+                copy = self._own_copy_file(address)
+                if isinstance(kept, str) and copy is not None and not copy.is_file():
+                    copy.parent.mkdir(parents=True, exist_ok=True)
+                    copy.write_text(kept, encoding="utf-8")
+                    copy_back = True
+        return {**self.look(address), "model_out": out, "copy_back": copy_back}
 
     def _card_view(self, address: str) -> dict | None:
         """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the

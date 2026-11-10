@@ -2928,7 +2928,8 @@ function modelBox(address, info, draw, changed) {
     drop.addEventListener("click", async () => {
       try {
         const r = await api().model_import_remove(address);
-        say(squad ? w.model_removed_squad : w.model_removed, "ok");
+        say(r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+          : (squad ? w.model_removed_squad : w.model_removed), "ok");
         draw(r);
         if (changed) changed();
       } catch (err) { problem(err); }
@@ -2950,7 +2951,11 @@ function modelBox(address, info, draw, changed) {
     if (info.copy_out) box.append(el("p", { className: "notice", textContent: copyOut }));
     box.append(el("div", { className: "actions" }, pick, drop));
   } else {
-    if (info.model_out) box.append(el("p", { className: "notice", textContent: squad ? w.model_removed_squad : w.model_removed }));
+    if (info.model_out) {
+      box.append(el("p", { className: "notice", textContent: info.copy_back
+        ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+        : (squad ? w.model_removed_squad : w.model_removed) }));
+    }
     box.append(el("p", { className: "muted small", textContent: squad ? w.model_how_squad : w.model_how }));
     // with its own copy (a squad's Custom uniform): what an import does to it, before the button is clicked
     if (info.own_copy) {

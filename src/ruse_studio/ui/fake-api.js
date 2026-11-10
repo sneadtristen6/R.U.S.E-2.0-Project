@@ -794,6 +794,7 @@
   }
   const fakeModelCopies = new Set();  // units with their own copy of the model (model_copy): a squad's custom uniform
   const fakeBlenderSent = new Set();  // units whose soldier was opened in Blender (model_blender): Bring back works
+  const fakeCopiesKept = new Set();   // copies an import took the place of: Use the copied unit's model gives them back
   const fakeModels = new Map();  // a new unit's own model (model_import): what the report says
   const FAKE_IMPORT = { file: "Tank Abrams.3ds", vertices: 17122, triangles: 13828, draws: 5, missing: [],
                         parts: { Main_Body: "hull", Main_Turre: "turret", Main_Barre: "gun", Minigun: "turret",
@@ -3390,11 +3391,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         fakeModels.set(address, fakeSquad(address) ? { ...FAKE_SQUAD_IMPORT }
           : { ...FAKE_IMPORT, scale: 2.46 * (size || 1), size: Number(size) || 1 });
         const copyOut = fakeModelCopies.delete(address);  // the model takes the place of its own copy (a Custom uniform)
+        if (copyOut) fakeCopiesKept.add(address);          // kept, to come back when the model is taken out
         return { model: fakeModels.get(address), copy_out: copyOut, ...fakeLook(address) };
       },
       model_import_remove: async (address) => {
         const out = fakeModels.delete(address);
-        return { ...fakeLook(address), model_out: out };
+        const back = fakeCopiesKept.delete(address);
+        if (back) fakeModelCopies.add(address);
+        return { ...fakeLook(address), model_out: out, copy_back: back };
       },
       // a squad's soldier changed in Blender (StudioApi.model_blender, model_blender_back): the work folder in the mod
       model_blender: async (address) => {

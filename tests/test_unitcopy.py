@@ -635,20 +635,29 @@ class ImportOverCopy(unittest.TestCase):
         self.assertEqual((res["model"], res["copy_out"], res["own_copy"]), (None, False, True))
         self.assertTrue(copy.is_file())
 
-    def test_the_model_taken_out_leaves_the_default_uniform(self):
-        """Use the copied unit's model: the soldiers of the squad it copies, in the default uniform; the Custom uniform
-        doesn't come back by itself (the page says so), and comes back with its paint when he picks it."""
+    def test_the_model_taken_out_gives_the_custom_uniform_back(self):
+        """Use the copied unit's model undoes the import in one click (the owner, 2026-11-10: intuitive for someone who
+        has never modded): the Custom uniform the model took the place of comes back, with its paint."""
         self.api.model_copy(self.SQUAD)
+        copy = self.models / "Descriptor_Unit_R2_Soldat_Red.copy.toml"
+        before = copy.read_text(encoding="utf-8")
         self.painted("Descriptor_Unit_R2_Soldat_Red")
+        self.imported(self.SQUAD)
+        self.assertFalse(copy.exists())
+        res = self.api.model_import_remove(self.SQUAD)
+        self.assertTrue(res["model_out"] and res["copy_back"])
+        self.assertFalse(res["own_model"])
+        self.assertTrue(res["own_copy"])
+        self.assertEqual(copy.read_text(encoding="utf-8"), before)   # the same uniform, as it was
+        self.assertEqual(res["painted"], [self.TEX])                  # with the paint he gave it
+        self.assertFalse(self.api.model_import_remove(self.SQUAD)["model_out"])   # nothing left to take out
+
+    def test_the_model_taken_out_with_no_uniform_before_leaves_the_default(self):
         self.imported(self.SQUAD)
         res = self.api.model_import_remove(self.SQUAD)
         self.assertTrue(res["model_out"])
-        self.assertFalse(res["own_model"] or res["own_copy"])
+        self.assertFalse(res["copy_back"] or res["own_model"] or res["own_copy"])
         self.assertEqual(res["painted"], [])
-        self.assertFalse(self.api.model_import_remove(self.SQUAD)["model_out"])   # nothing left to take out
-        res = self.api.model_copy(self.SQUAD)
-        self.assertTrue(res["own_copy"])
-        self.assertEqual(res["painted"], [self.TEX])          # the paint he gave it before
 
     def test_custom_uniform_waits_while_there_s_a_model_naming_the_page_s_buttons(self):
         from ruse_studio import errortext
@@ -694,7 +703,8 @@ class NamesTheButtons(unittest.TestCase):
         "tip_model_import_squad": ("uniform_custom", "test_in_game"),
         "model_import_over_uniform": ("uniform_custom",),
         "model_copy_out_squad": ("uniform_custom", "model_remove"),
-        "model_copy_out": ("model_remove", "model_copy"),
+        "model_copy_out": ("model_remove",),     # (one click gives the copy back: no second button to name)
+        "model_removed_copy_back_squad": ("uniform_custom",),
         "model_removed_squad": ("uniform_custom",),
         "tip_model_remove_squad": ("uniform_custom",),
         "model_both_squad": ("uniform_custom", "test_in_game", "uniform_default_again", "uniform_title", "model_remove"),
