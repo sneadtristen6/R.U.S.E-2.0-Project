@@ -740,6 +740,16 @@ def call_ended(name: str, started: float, error=None) -> None:
     _calls.name = None
     if _current is not None and not name.startswith("bugwatch_"):  # (its own calls aren't what it counts)
         _current.call(name, time.perf_counter() - started, error)
+        # a refusal the window shows the player, by its key (never its words: they can hold what was typed)
+        key = getattr(error, "words_key", None)
+        if isinstance(key, str) and key:
+            _current.count("messages", key)
+
+
+def count(group: str, key: str) -> None:
+    """Count one of Watch.count's groups in this app's Watch, when there is one (nothing when Bug Watch is off)."""
+    if _current is not None:
+        _current.count(group, key)
 
 
 class BugWatchCalls:

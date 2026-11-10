@@ -395,6 +395,10 @@ class UpdateCalls:
         if rel is None:
             return {"available": False, "version": self.UPDATE_VERSION, "current": self.UPDATE_VERSION}
         changes = changes_in(rel, lang, self.UPDATE_VERSION, opener=self._update_opener)
+        if getattr(self, "_update_offered", None) != rel.version:  # Bug Watch: once per version offered, per run
+            self._update_offered = rel.version
+            from . import bugwatch
+            bugwatch.count("updates", "offered")
         return {"available": True, "version": rel.version, "current": self.UPDATE_VERSION, "changes": changes,
                 "page": rel.page, "size": rel.size, "installed": bool(self._update_installed()),
                 "required": bool(rel.required)}
@@ -428,9 +432,20 @@ class UpdateCalls:
                 if pct // 10 != last[0]:
                     last[0] = pct // 10
                     say(f"{pct}%")
-            path = download(rel, Path(self._home) / "updates", progress, opener=self._update_opener)
-            say("installing")
-            run_installer(path, popen=self._update_popen)
+            from . import bugwatch
+            try:
+                path = download(rel, Path(self._home) / "updates", progress, opener=self._update_opener)
+                say("installing")
+                run_installer(path, popen=self._update_popen)
+            except Exception:
+                bugwatch.count("updates", "failed")
+                raise
+            # Bug Watch: "installed" is the checked installer started (the app quits for it); kept now, since the
+            # quit (os._exit) skips the save Bug Watch leaves for the app's end
+            bugwatch.count("updates", "installed")
+            watch = bugwatch.current()
+            if watch is not None:
+                watch.save()
             self._update_quit()
         return job.start(work, f"{APPS[self.UPDATE_APP]} {rel.version} is installing; it opens again by itself.",
                          plain=(UpdateError,))

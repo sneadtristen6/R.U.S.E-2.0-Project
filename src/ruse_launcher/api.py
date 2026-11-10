@@ -69,7 +69,12 @@ MOD_FILES = ("Mods (*.rusemod;*.rmod;*.zip;*.toml)", "All files (*.*)")  # the f
 
 
 class LauncherError(Exception):
-    """A problem the player can act on; the message says what to do next."""
+    """A problem the player can act on; the message says what to do next. `key`, when given, names which problem it
+    is, for Bug Watch's count of problems shown (rusemod.bugwatch.call_ended: the key only, never the words)."""
+
+    def __init__(self, message: str = "", key: str | None = None):
+        super().__init__(message)
+        self.words_key = key
 
 
 # --- the screen's words ---
@@ -708,21 +713,21 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
     def _set(self, set_id: str) -> dict:
         chosen = next((s for s in self._read_sets() if s["id"] == set_id), None)
         if chosen is None:
-            raise LauncherError(f"There's no mod set called {set_id!r} any more. Pick another one.")
+            raise LauncherError(f"There's no mod set called {set_id!r} any more. Pick another one.", key="set_gone")
         return chosen
 
     def _check_mods(self, mods) -> list[str]:
         if not isinstance(mods, list) or not all(isinstance(m, str) and m.strip() for m in mods):
-            raise LauncherError("Tick at least one mod for this mod set.")
+            raise LauncherError("Tick at least one mod for this mod set.", key="set_no_mods")
         mods = [m.strip() for m in mods]
         if not mods:
-            raise LauncherError("Tick at least one mod for this mod set.")
+            raise LauncherError("Tick at least one mod for this mod set.", key="set_no_mods")
         if len(set(mods)) != len(mods):
-            raise LauncherError("A mod can only be in a mod set once.")
+            raise LauncherError("A mod can only be in a mod set once.", key="set_mod_twice")
         for m in mods:
             path, why = self._resolve(m, self._sets_dir() / "x.toml")
             if path is None:
-                raise LauncherError(f"This mod set can't be saved: {why}.")
+                raise LauncherError(f"This mod set can't be saved: {why}.", key="set_mod_missing")
         return mods
 
     def _write_set(self, set_id: str, name: str, description: str, mods: list[str]) -> None:
@@ -747,7 +752,7 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         and the new set's id, so the screen can select it."""
         name = (name or "").strip()
         if not name:
-            raise LauncherError("Give the mod set a name.")
+            raise LauncherError("Give the mod set a name.", key="set_no_name")
         mods = self._check_mods(mods)
         set_id = self._new_id(name)
         self._write_set(set_id, name, (description or "").strip(), mods)
@@ -759,7 +764,8 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         chosen = self._set(set_id)
         if set_id == VANILLA:
             # not a game rule: the Launcher's own Vanilla set
-            raise LauncherError("Vanilla is the game with no mods; it can't be changed. Make a new mod set.")
+            raise LauncherError("Vanilla is the game with no mods; it can't be changed. Make a new mod set.",
+                                key="set_vanilla")
         name = (name or "").strip() or chosen["name"]
         mods = self._check_mods(mods) if mods is not None else chosen["mods"]
         self._write_set(set_id, name, chosen["description"] if description is None else description.strip(), mods)
