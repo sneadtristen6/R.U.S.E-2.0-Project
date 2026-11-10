@@ -689,6 +689,27 @@ class ImportOverCopy(unittest.TestCase):
 class NamesTheButtons(unittest.TestCase):
     """Every text of this fix that tells the player what to click names the page's own buttons and parts, in every
     language, word for word (words.toml): the refusal 0.9.8.19 had named a "Remove the model" no page shows."""
+    PAGE = {  # each page word, and the words.toml labels it names
+        "model_how_squad": ("model_import",),
+        "tip_model_import_squad": ("uniform_custom", "test_in_game"),
+        "model_import_over_uniform": ("uniform_custom",),
+        "model_copy_out_squad": ("uniform_custom", "model_remove"),
+        "model_copy_out": ("model_remove", "model_copy"),
+        "model_removed_squad": ("uniform_custom",),
+        "tip_model_remove_squad": ("uniform_custom",),
+        "model_both_squad": ("uniform_custom", "test_in_game", "uniform_default_again", "uniform_title", "model_remove"),
+        "model_both": ("test_in_game", "model_copy_remove", "model_remove"),
+        "uniform_own_model": ("model_title", "model_remove"),
+        "tip_uniform_custom_own_model": ("model_remove", "model_title"),
+    }
+
+    def test_the_page_s_words(self):
+        from ruse_studio import errortext
+        words = page_words()
+        for key, labels in self.PAGE.items():
+            for lang in errortext.LANGS:
+                for label in labels:
+                    self.assertIn(words[label][lang], words[key][lang], (key, lang, label))
 
     def test_the_refusals_and_the_build_s_error(self):
         import tomllib
@@ -711,6 +732,30 @@ class NamesTheButtons(unittest.TestCase):
 
 
 class Page(unittest.TestCase):
+    def test_a_squad_s_page_has_its_own_model_box_and_its_words(self):
+        """The squad page showed no Import model at all (lookBox: `!info.soldiers`), and a unit with its own copy only
+        the copy's Back button (modelBox returned early): both, for the owner's item 4 (2026-11-10)."""
+        root = Path(__file__).resolve().parents[1]
+        app = (root / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("if (info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));", app)
+        self.assertIn("else if (!info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));", app)
+        self.assertNotIn("no import while it has a copy", app)
+        self.assertNotIn("(Remove the model)", app)
+        for needle in ("w.model_how_squad", "w.tip_model_import_squad", "w.model_import_over_uniform",
+                       "w.model_import_over_copy", "w.model_copy_out_squad", "w.model_copy_out", "w.model_removed_squad",
+                       "w.model_removed", "w.tip_model_remove_squad", "w.model_squad_fit", "w.model_both_squad",
+                       "w.model_both", "w.tip_model_move_fold", "w.uniform_own_model", "w.tip_uniform_custom_own_model",
+                       "r.copy_out", "info.copy_out", "info.model_out"):
+            self.assertIn(needle, app)
+        fake = (root / "src" / "ruse_studio" / "ui" / "fake-api.js").read_text(encoding="utf-8")
+        for needle in ("copy_out: copyOut", "model_out: out", "FAKE_SQUAD_IMPORT"):
+            self.assertIn(needle, fake)
+        words = page_words()
+        for key in NamesTheButtons.PAGE:
+            self.assertEqual(len(words[key]), 11, key)  # the apps' eleven languages
+        for key in ("model_import_over_copy", "model_removed", "model_squad_fit", "tip_model_move_fold"):
+            self.assertEqual(len(words[key]), 11, key)
+
     def test_the_words_and_the_buttons(self):
         import tomllib
         root = Path(__file__).resolve().parents[1]
