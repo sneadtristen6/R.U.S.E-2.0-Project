@@ -321,10 +321,13 @@ class Starter:
         from . import fairplay
         from .instance import forget, needs_build, refuse_if_running, take_back
         say = in_words(say, words)
-        refused = (self.required() if self.required is not None else None) or (
-            self.owned(game) if self.owned is not None else None)
-        if refused:  # not a game rule: the project's (a required update first; only a copy its player owns)
-            raise BuildError(refused)
+        required = self.required() if self.required is not None else None
+        not_owned = self.owned(game) if not required and self.owned is not None else None
+        if required or not_owned:  # not a game rule: the project's (a required update first; only a copy its player owns)
+            exc = BuildError(required or not_owned)
+            # Bug Watch: which of the two it was (rusemod.bugwatch.reason_key); the words themselves never go
+            exc.words_key = "play_update_required" if required else "play_copy_not_confirmed"
+            raise exc
         refuse_if_running(str(instance))  # before anything is built: a game still running from the copy is said at once
         home = (guard or {}).get("home")
         fair = fairplay.check([Path(m) for m in mod_folders], watch, home) if fairplay.ON else fairplay.FairPlay()

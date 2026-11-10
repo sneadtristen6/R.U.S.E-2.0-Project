@@ -215,5 +215,47 @@ class ScriptErrorText(unittest.TestCase):
         self.assertNotIn("Nick", bugwatch.no_paths(text))
 
 
+class TheTwoProjectRefusals(unittest.TestCase):
+    """A required update and a copy that isn't confirmed stop Play at the same line of rusemod.play, so by the place
+    alone they were one count. Each has a key of its own, and the day's report tells them apart."""
+
+    def starter(self):
+        from rusemod.play import Starter
+        return Starter(open_url=lambda url: None, start_game=lambda exe: None, steam_running=lambda: True,
+                       wait=lambda s: None)
+
+    def refused(self, **hooks):
+        with tempfile.TemporaryDirectory() as tmp:
+            starter = self.starter()
+            for name, hook in hooks.items():
+                setattr(starter, name, hook)
+            with self.assertRaises(BuildError) as caught:
+                starter.modded(Path(tmp), [], Path(tmp) / "copies" / "Modded game", "test", lambda line: None)
+            self.assertFalse((Path(tmp) / "copies").exists())  # nothing made
+            return caught.exception
+
+    def test_each_has_its_own_key_and_the_player_still_reads_the_words(self):
+        update = self.refused(required=lambda: "RUSE Launcher has a required update to install first.")
+        self.assertEqual(bugwatch.reason_key("play", update), "play_update_required")
+        copy = self.refused(owned=lambda game: "This copy isn't confirmed.")
+        self.assertEqual(bugwatch.reason_key("play", copy), "play_copy_not_confirmed")
+        self.assertEqual(str(copy), "This copy isn't confirmed.")
+        for key in ("play_update_required", "play_copy_not_confirmed"):
+            self.assertRegex(key, bugwatch.NAME_RE)  # what the server takes as a key
+
+    def test_the_update_comes_first_and_the_copy_isn_t_asked_then(self):
+        asked = []
+        both = self.refused(required=lambda: "update first", owned=lambda game: asked.append(game) or "not confirmed")
+        self.assertEqual((str(both), both.words_key, asked), ("update first", "play_update_required", []))
+
+    def test_neither_refusing_no_key_is_made(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            starter = self.starter()
+            starter.required, starter.owned = (lambda: None), (lambda game: None)
+            with self.assertRaises(Exception) as caught:  # (an empty folder is no game: the build says so)
+                starter.modded(Path(tmp), [], Path(tmp) / "copies" / "Modded game", "test", lambda line: None)
+            self.assertIsNone(getattr(caught.exception, "words_key", None))
+
+
 if __name__ == "__main__":
     unittest.main()
