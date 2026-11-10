@@ -254,6 +254,7 @@ button:disabled { cursor: default; opacity: 0.45; }
 .lib-more .small { justify-self: start; }
 .mod-card .name { font-weight: 600; }
 .mod-card .meta, .pick-list .meta { font-size: 12px; color: var(--muted); }
+.pick-list .meta.bad { color: var(--bad); }
 .mod-card .warn { font-size: 12px; color: var(--bad); }
 .mod-card .small { justify-self: start; margin-top: 4px; }
 .mod-card .confirm { margin: 6px 0 0; }

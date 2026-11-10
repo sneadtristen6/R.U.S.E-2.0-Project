@@ -972,7 +972,12 @@ function renderEditor() {
   form.classList.remove("hidden");
   const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
   name.setAttribute("aria-label", w.set_name);
-  name.addEventListener("input", () => { ed.name = name.value; });
+  // what the Launcher answers to Create or Save is said HERE, under the buttons: the set's own page, where problems
+  // are otherwise said, is hidden while this editor is open (players pressed Create, were refused, saw nothing and
+  // pressed again: 14 of 36 "New mod set" tries, Bug Watch 2026-11-02 to 11-08). It goes when the set is changed.
+  const said = el("p", { className: "message bad" + (ed.problem ? "" : " hidden"), textContent: ed.problem || "" });
+  said.setAttribute("role", "alert");
+  name.addEventListener("input", () => { ed.name = name.value; ed.problem = ""; said.classList.add("hidden"); });
   // the owner, 2026-10-03: Create up top with the mods already in the set, where it's seen, and a search that narrows
   // the rest of the library by name ("the list doesn't condense to what the mod is called")
   const rows = el("ul", { className: "pick-list" }), more = el("ul", { className: "pick-list" });
@@ -984,11 +989,15 @@ function renderEditor() {
     tick.addEventListener("change", () => {
       if (tick.checked) { ed.mods.push(r.entry); ed.names.push(r.name); }
       else { const k = ed.mods.indexOf(r.entry); ed.mods.splice(k, 1); ed.names.splice(k, 1); }
+      ed.problem = "";
       renderEditor();
     });
     const label = el("label", {}, tick, " ", el("span", { className: "name", textContent: r.name }));
     if (r.mod && r.mod.version) label.append(el("span", { className: "meta", textContent: " " + fill(w.version_v, { v: r.mod.version }) }));
-    if (!r.mod) label.append(el("span", { className: "meta", textContent: " · " + w.from_folder }));
+    // a set's mod the library doesn't have: a folder of the player's own (its entry is a path), or a library mod
+    // that has gone, which is what Save then refuses: said as that, in the colour of a problem
+    const gone = !r.mod && !/[\\/:]/.test(r.entry);
+    if (!r.mod) label.append(el("span", { className: gone ? "meta bad" : "meta", textContent: " · " + (gone ? w.set_mod_gone : w.from_folder) }));
     return el("li", {}, label);
   };
   for (const [i, r] of inSet.entries()) {  // the set's own mods, in load order, with arrows to move them
@@ -1001,6 +1010,7 @@ function renderEditor() {
     const swap = (a, b) => {
       [ed.mods[a], ed.mods[b]] = [ed.mods[b], ed.mods[a]];
       [ed.names[a], ed.names[b]] = [ed.names[b], ed.names[a]];
+      ed.problem = "";
       renderEditor();
     };
     up.addEventListener("click", () => swap(i, i - 1));
@@ -1025,6 +1035,9 @@ function renderEditor() {
   find.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });  // Enter isn't Create
   showMore();
   const save = el("button", { type: "submit", className: "small", textContent: ed.id ? w.save : w.create });
+  // a mod set is its mods: Create and Save wait for the first tick, and say why (Enter in the name box waits too)
+  save.disabled = ed.mods.length === 0;
+  if (save.disabled) save.title = state.library.length ? w.set_none_yet : w.library_empty_for_set;
   const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
   cancel.addEventListener("click", () => { state.editing = null; render(); });
   // the ticked mods checked against each other as they're ticked and moved, so a clash shows before the set is saved
@@ -1033,6 +1046,7 @@ function renderEditor() {
     const names = Object.fromEntries(ed.mods.map((m, i) => [m, ed.names[i]]));
     ed.mods = best.slice();
     ed.names = best.map((m) => names[m]);
+    ed.problem = "";
     renderEditor();
   };
   const toBelow = (c) => {  // "Use <mod>'s" in the editor: its own order changes, Save keeps it
@@ -1046,6 +1060,7 @@ function renderEditor() {
     el("h1", { textContent: ed.id ? w.edit : w.new_set }),
     el("label", { className: "field" }, el("span", { textContent: w.set_name }), name),
     el("div", { className: "actions" }, save, cancel),
+    said,
     el("p", { className: "muted", textContent: state.library.length || ed.mods.length ? w.tick_mods : w.library_empty_for_set }),
     el("h2", { className: "set-part", textContent: fill(w.set_in_this, { n: ed.mods.length }) }),
     ...(inSet.length ? [rows] : [el("p", { className: "muted note", textContent: w.set_none_yet })]),
@@ -1054,13 +1069,18 @@ function renderEditor() {
   form.onsubmit = async (e) => {
     e.preventDefault();
     if (!ed.name.trim()) { name.focus(); return; }
+    if (!ed.mods.length) return;  // (Create is off then; this is for a form sent some other way)
     save.disabled = true;
     try {
       const res = ed.id ? await api().save_set(ed.id, ed.name.trim(), ed.mods) : await api().new_set(ed.name.trim(), ed.mods);
       state.editing = null;
       useLists(res);
       setMessage(fill(w.set_saved, { name: ed.name.trim() }), "good");
-    } catch (err) { problem(err); save.disabled = false; }
+    } catch (err) {
+      // said in the editor, and only there: written on the set's page it would wait, stale, behind this editor
+      ed.problem = (err && err.message) || String(err);
+      if (state.editing === ed) renderEditor();
+    }
   };
   if (!ed.id && !ed.name) name.focus();
 }

@@ -457,6 +457,19 @@ jpn = "フォルダーから"
 sc = "来自文件夹"
 fa = "از یک پوشه"
 
+[set_mod_gone]
+us = "not in the library any more"
+fr = "n'est plus dans la bibliothèque"
+ger = "nicht mehr in der Bibliothek"
+ita = "non è più nella libreria"
+spa = "ya no está en la biblioteca"
+pol = "nie ma go już w bibliotece"
+ru = "больше нет в библиотеке"
+cz = "už není v knihovně"
+jpn = "ライブラリにありません"
+sc = "已不在库中"
+fa = "دیگر در کتابخانه نیست"
+
 [library_empty_for_set]
 us = "Add a mod to the library first: a mod set is made of the mods in it."
 fr = "Ajoutez d'abord un mod à la bibliothèque : un ensemble de mods se compose des mods qui s'y trouvent."
