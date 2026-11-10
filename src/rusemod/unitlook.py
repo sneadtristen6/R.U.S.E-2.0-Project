@@ -577,16 +577,21 @@ def _pixels_hash(path: Path, alpha: bool) -> str:
     return hashlib.sha1(struct.pack("<II", w, h) + data).hexdigest()
 
 
-def prepare(lib, models: list[str], folder: Path, side: int = 4096) -> dict:
+def prepare(lib, models: list[str], folder: Path, side: int = 4096, rest_bones: bool = False) -> dict:
     """Write `models` (names in `lib`, a rusemod.models.Library) into `folder` as .glb files with their pictures,
     and look.json: which picture is which texture's colour or alpha, and a hash of each one as exported (so Bring
-    back takes only what was painted). Returns that record."""
+    back takes only what was painted). Returns that record. `rest_bones` (rusemod.gltf.model_glb's): each model's
+    bones at their rest poses, for changing its model in Blender; the record then also has "rest_bones", {each .glb's
+    path: whether its bones were placed (False: its skeleton wasn't found, its bones are all at one spot)}, for the
+    models with bones. Without it, every file and the record are as they always were."""
     from . import gltf
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     record = {"models": [], "pictures": {}}
-    for s in gltf.export(lib, models, folder, side=side):
+    for s in gltf.export(lib, models, folder, side=side, rest_bones=rest_bones):
         record["models"].append(s["file"])
+        if "rest_bones" in s:
+            record.setdefault("rest_bones", {})[s["file"]] = s["rest_bones"]
         for name, (member, kind) in s.get("picture_of", {}).items():
             record["pictures"][name] = {"texture": member, "kind": kind,
                                         "hash": _pixels_hash(folder / name, kind == "alpha")}
