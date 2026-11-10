@@ -1357,7 +1357,10 @@ def mission_models(run, zz_win, mods: list, order: list[str], result: BuildResul
     scenario's spawns gave on 2026-10-01). So a nation the copied map doesn't load in all its missions gets its packs
     loaded in campaign chapters and Operations, and its skeletons and card pictures with every nation's, as for a unit
     given another nation's models (_also_loaded), with the same notes."""
-    made = new_maps(order, mods)
+    try:
+        made = new_maps(order, mods)
+    except BuildError:
+        return  # two mods make one map: build_and_write says so as a mistake, and nothing is written
     by_class: dict | None = None
     in_packs = None
     wanted: set[int] = set()
