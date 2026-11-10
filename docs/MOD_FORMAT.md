@@ -544,8 +544,8 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   so the others keep theirs. A clip the unit doesn't play, or an action none of its figures list, is a warning (nothing
   would play it). A unit no mod in the set makes, and the game hasn't got, is an error. A later mod's row for the same
   clip or action of a unit wins. The listing's other values (its mask, whether it loops, its events) stay as they were:
-  a clip given to an action must move the bones of the model that figure draws (a test copy of 2026-11-09 whose figures
-  were given a clip of fewer bones than their model stopped the game); the build can't tell.
+  a clip given to an action must move the bones of the model that figure draws (on 2026-11-09 a test copy stopped the
+  game when a figure played a clip made for other bones); the build can't tell.
   Clips as files of their own under new names in that folder, with a unit's listings pointed at them, were seen
   playing in the game on 2026-11-09 in a test copy put together by hand; the build's way of making them is not tried
   in the game yet. An older Launcher builds such a mod without them: the unit plays the clips every unit plays.
