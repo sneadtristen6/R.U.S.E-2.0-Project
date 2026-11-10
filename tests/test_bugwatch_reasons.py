@@ -77,7 +77,13 @@ class Reasons(unittest.TestCase):
     def test_an_error_s_own_key_comes_first(self):
         error = BuildError("words for the player")
         error.words_key = "set_no_mods"
-        self.assertEqual(bugwatch.reason_key("new_set", error), "set_no_mods")
+        # with the call's name in front: one key comes from several calls (FL-97)
+        self.assertEqual(bugwatch.reason_key("new_set", error), "new_set:set_no_mods")
+        self.assertEqual(bugwatch.reason_key("save_set", error), "save_set:set_no_mods")
+        long = bugwatch.reason_key("a_call_with_a_very_long_name_" * 4, error)
+        self.assertTrue(long.endswith(":set_no_mods"))
+        self.assertLessEqual(len(long), 64)
+        self.assertRegex(long, bugwatch.NAME_RE)
 
     def test_an_error_from_outside_our_code_is_placed_at_our_line_that_called_it(self):
         def ours():
@@ -236,9 +242,9 @@ class TheTwoProjectRefusals(unittest.TestCase):
 
     def test_each_has_its_own_key_and_the_player_still_reads_the_words(self):
         update = self.refused(required=lambda: "RUSE Launcher has a required update to install first.")
-        self.assertEqual(bugwatch.reason_key("play", update), "play_update_required")
+        self.assertEqual(bugwatch.reason_key("play", update), "play:play_update_required")
         copy = self.refused(owned=lambda game: "This copy isn't confirmed.")
-        self.assertEqual(bugwatch.reason_key("play", copy), "play_copy_not_confirmed")
+        self.assertEqual(bugwatch.reason_key("test_in_game", copy), "test_in_game:play_copy_not_confirmed")
         self.assertEqual(str(copy), "This copy isn't confirmed.")
         for key in ("play_update_required", "play_copy_not_confirmed"):
             self.assertRegex(key, bugwatch.NAME_RE)  # what the server takes as a key

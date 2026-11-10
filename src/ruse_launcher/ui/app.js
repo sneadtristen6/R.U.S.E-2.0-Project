@@ -317,6 +317,15 @@ async function changeTitle() {
 // game's crashes, sent to our developers once a day. Only the player's own tick turns it on (the owner, 2026-10-22:
 // "Off by default, but it should say like recommended"), with a username so we can tell people apart and match a
 // report to its crashes. The card stays hidden while the code's own switch is off ---
+
+// What the page itself tells Bug Watch (api.bugwatch_seen; nothing is counted unless the player ticked it): a screen
+// opened ("screens") or used ("screen_used"), and a refusal the page makes before any call ("messages", a key that
+// never changes, "page:new_set:set_no_mods"), which the Launcher's own count of calls never sees. Keys only, never what
+// was typed. A Bug Watch that isn't there or fails changes nothing on the page.
+function seen(group, key) {
+  Promise.resolve().then(() => api().bugwatch_seen(group, key)).catch(() => {});
+}
+
 async function loadBugwatch() {
   try { state.bugwatch = { ...(state.bugwatch || {}), ...(await api().bugwatch_status()) }; }
   catch (err) { state.bugwatch = { available: false }; }
@@ -749,17 +758,20 @@ function renderClashes(holder, check, onBest, onMove) {
 function renameSet(set) {
   const w = state.words;
   const head = $("active-name");
-  const box = el("input", { value: set.name, maxLength: 60, className: "rename" });
+  const box = el("input", { value: set.name, maxLength: 60, className: "rename", required: true });
   box.setAttribute("aria-label", w.set_name);
+  // a blank name: the window's own bubble (it did nothing before, and nothing was counted), counted for Bug Watch
+  box.addEventListener("invalid", () => seen("messages", "page:rename_set:set_no_name"));
   const save = el("button", { type: "button", className: "small", textContent: w.save });
   const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
   const form = el("form", { className: "rename-form" }, box, save, cancel);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!box.value.trim()) return;
+    if (!box.value.trim()) { box.value = ""; box.reportValidity(); return; }
     save.disabled = true;
     try {
-      useLists(await api().save_set(set.id, box.value.trim()));
+      // its own call (not save_set), so Bug Watch tells a rename from the editor's Save
+      useLists(await api().rename_set(set.id, box.value.trim()));
       setMessage(fill(w.set_saved, { name: box.value.trim() }), "good");
     } catch (err) { problem(err); save.disabled = false; }
   });
@@ -959,6 +971,9 @@ function openEditor(set) {
   state.converting = null;
   state.editing = set ? { id: set.id, name: set.name, mods: set.mods.slice(), names: set.mod_names.slice() }
     : { id: null, name: "", mods: [], names: [] };
+  // Bug Watch: the editor opened, and (below) used when it makes or saves the set; one opened and left unused is a
+  // player who didn't get a set, whatever stopped them (FL-97)
+  seen("screens", set ? "set_editor_edit" : "set_editor_new");
   render();
 }
 
@@ -972,6 +987,10 @@ function renderEditor() {
   form.classList.remove("hidden");
   const name = el("input", { value: ed.name, maxLength: 60, required: true, placeholder: w.set_name, autocomplete: "off" });
   name.setAttribute("aria-label", w.set_name);
+  const call = ed.id ? "save_set" : "new_set";
+  // a blank name is stopped by the window itself (its own bubble, in the window's language) and never reaches the
+  // Launcher: counted here, or Bug Watch would never see it
+  name.addEventListener("invalid", () => seen("messages", `page:${call}:set_no_name`));
   // what the Launcher answers to Create or Save is said HERE, under the buttons: the set's own page, where problems
   // are otherwise said, is hidden while this editor is open (players pressed Create, were refused, saw nothing and
   // pressed again: 14 of 36 "New mod set" tries, Bug Watch 2026-11-02 to 11-08). It goes when the set is changed.
@@ -1035,9 +1054,12 @@ function renderEditor() {
   find.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });  // Enter isn't Create
   showMore();
   const save = el("button", { type: "submit", className: "small", textContent: ed.id ? w.save : w.create });
-  // a mod set is its mods: Create and Save wait for the first tick, and say why (Enter in the name box waits too)
-  save.disabled = ed.mods.length === 0;
-  if (save.disabled) save.title = state.library.length ? w.set_none_yet : w.library_empty_for_set;
+  // a mod set is its mods: Create and Save look switched off until the first tick, and say why on them. They still
+  // take the press (and Enter in the name box), and then the editor says why under the buttons and Bug Watch counts
+  // it: a press that does nothing was FL-97 itself, and a refusal the page makes never reaches the Launcher's count
+  const noMods = ed.mods.length === 0;
+  save.setAttribute("aria-disabled", String(noMods));
+  if (noMods) save.title = state.library.length ? w.set_none_yet : w.library_empty_for_set;
   const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel });
   cancel.addEventListener("click", () => { state.editing = null; render(); });
   // the ticked mods checked against each other as they're ticked and moved, so a clash shows before the set is saved
@@ -1068,11 +1090,22 @@ function renderEditor() {
     ...(others.length ? [el("h2", { className: "set-part", textContent: w.set_add_mods }), find, none, more] : []));
   form.onsubmit = async (e) => {
     e.preventDefault();
-    if (!ed.name.trim()) { name.focus(); return; }
-    if (!ed.mods.length) return;  // (Create is off then; this is for a form sent some other way)
+    if (!ed.name.trim()) {  // spaces only: emptied, so the window says what it says of an empty box ("invalid" counts it)
+      name.value = ed.name = "";
+      name.reportValidity();
+      name.focus();
+      return;
+    }
+    if (!ed.mods.length) {  // said under the buttons, as the Launcher's own refusals are, and counted
+      ed.problem = state.library.length ? w.set_none_yet : w.library_empty_for_set;
+      seen("messages", `page:${call}:${state.library.length ? "set_no_mods" : "set_library_empty"}`);
+      renderEditor();
+      return;
+    }
     save.disabled = true;
     try {
       const res = ed.id ? await api().save_set(ed.id, ed.name.trim(), ed.mods) : await api().new_set(ed.name.trim(), ed.mods);
+      seen("screen_used", ed.id ? "set_editor_edit" : "set_editor_new");
       state.editing = null;
       useLists(res);
       setMessage(fill(w.set_saved, { name: ed.name.trim() }), "good");

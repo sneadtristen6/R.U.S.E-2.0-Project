@@ -56,11 +56,13 @@ class Shown(unittest.TestCase):
             page.save_set("vanilla", typed, ["a"])
         with self.assertRaisesRegex(Exception, "any more"):
             page.save_set("gone", typed, ["a"])
-        self.assertEqual(self.day()["messages"], {"set_no_mods": 1, "set_no_name": 1, "set_mod_missing": 1,
-                                                  "set_mod_twice": 1, "set_vanilla": 1, "set_gone": 1})
+        # each with the call it came from in front (FL-97: one key comes from several calls)
+        self.assertEqual(self.day()["messages"], {"new_set:set_no_mods": 1, "new_set:set_no_name": 1,
+                                                  "new_set:set_mod_missing": 1, "new_set:set_mod_twice": 1,
+                                                  "save_set:set_vanilla": 1, "save_set:set_gone": 1})
         self.assertEqual(self.day()["calls"]["new_set"]["errors"], {"LauncherError": 4})
         sent = bugwatch._current.payload(bugwatch._today(), self.day())
-        self.assertEqual(sent["messages"]["set_no_mods"], 1)
+        self.assertEqual(sent["messages"]["new_set:set_no_mods"], 1)
         self.assertNotIn("secret", str(sent))           # never what was typed
         self.assertNotIn("not-in-the-library", str(sent))
 

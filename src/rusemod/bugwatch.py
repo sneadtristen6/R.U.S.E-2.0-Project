@@ -20,10 +20,11 @@ report file itself, the player's in-game name, any Steam ID. Days wait in `<plat
 send gets through; none waits more than 30 days.
 
 WHICH failure it was (2026-11-10; players' reports said "BuildError at job:play" and nothing more, and three faults
-could not be told from a hundred others): every failed call and job is also counted, under "messages", by the error's
-own key when it has one (the Launcher's mod set refusals) and otherwise by where in our own code it came from, as
-"play:rusemod.play:327": a module's name and a line number, which the app's version turns back into the very line
-(reason_key, site_of). A build that lists mistakes in the mods counts each by where the build found it,
+could not be told from a hundred others): every failed call and job is also counted, under "messages", by its name
+and the error's own key when it has one, as "new_set:set_no_mods" (the Launcher's mod set refusals), and otherwise by
+its name and where in our own code it came from, as "play:rusemod.play:327": a module's name and a line number, which
+the app's version turns back into the very line (reason_key, site_of). A refusal the page makes itself, before any
+call, is counted by the page under "messages" as "page:new_set:set_no_mods" (BugWatchCalls.bugwatch_seen). A build that lists mistakes in the mods counts each by where the build found it,
 "mistake:rusemod.build:1208" (rusemod.patch.Finding.site). Never the words of either: they hold what the player
 typed, folders, and the names in the player's own mods. The agreement's words for this: "what went wrong and where
 (in our own code only)".
@@ -204,12 +205,19 @@ def site_of(error) -> str:
 
 def reason_key(name: str, error) -> str | None:
     """What a failed call or job is counted by under "messages", so a report says WHICH refusal or failure it was and
-    not only its kind: the error's own key when it carries one (the Launcher's LauncherError(key=...)), else the
-    call's name and where the error came from, "play:rusemod.play:327" (the app's version, sent with the day, says
-    which code that line is in). Never the error's words: they can hold what the player typed, or a folder."""
+    not only its kind: the call's name and the error's own key when it carries one (the Launcher's
+    LauncherError(key=...)), "new_set:set_no_mods", else the call's name and where the error came from,
+    "play:rusemod.play:327" (the app's version, sent with the day, says which code that line is in). Never the error's
+    words: they can hold what the player typed, or a folder.
+
+    The call's name is in front of a key too (FL-97, 2026-11-10): one key comes from several calls (set_gone from
+    save_set, delete_set, duplicate_set...; set_no_mods from new_set, save_set, import_set, best_order), and a day
+    with refusals of two calls could not say which was which; the server's rule 8 finds a call's refusals by that
+    name in front."""
     key = getattr(error, "words_key", None)
     if isinstance(key, str) and key:
-        return _name(key)
+        key = key[-40:]
+        return _name(f"{str(name)[:max(1, 63 - len(key))]}:{key}")
     site = site_of(error)
     if not site:
         return None
@@ -326,16 +334,19 @@ class Watch:
                 self.count("checks", str(found["key"]))
 
     def count(self, group: str, key: str) -> None:
-        """One of: "screens" (a screen opened), "messages" (a problem shown: its words key), "checks" (a
-        troubleshooter check that failed), "updates" ("offered" / "installed" / "failed")."""
+        """One of: "screens" (a screen opened), "screen_used" (a screen did what it is for: a mod set made in the
+        editor), "messages" (a problem shown: its words key), "checks" (a troubleshooter check that failed),
+        "updates" ("offered" / "installed" / "failed")."""
         name = _name(key)
         with self.lock:
             day = self._day()
             if day is None or name is None:
                 return
-            if group == "screens":
+            if group in ("screens", "screen_used"):
+                # (the server's rule 7 says "opened but never used" of a screen with no use counted: a screen that
+                # is counted opened is counted used too)
                 s = day["screens"].setdefault(name, {"opened": 0, "used": 0})
-                s["opened"] += 1
+                s["opened" if group == "screens" else "used"] += 1
             elif group == "updates":
                 if name in day["updates"]:
                     day["updates"][name] += 1
@@ -904,9 +915,10 @@ class BugWatchCalls:
         return {"today": watch.payload(day, counts), "waiting": waiting}
 
     def bugwatch_seen(self, group: str, key: str) -> dict:
-        """The page tells Bug Watch a screen opened ("screens", its name) or a problem shown ("messages", its words
-        key)."""
-        if group not in ("screens", "messages"):
+        """The page tells Bug Watch a screen opened ("screens", its name), that screen used ("screen_used": the Launcher's
+        mod set editor made a set) or a problem shown ("messages", a key that never changes: a refusal the page makes
+        itself, which never reaches a call, as "page:new_set:set_no_mods")."""
+        if group not in ("screens", "screen_used", "messages"):
             raise ValueError("Bug Watch counts screens and messages from the page, nothing else.")
         if _current is not None:
             _current.count(group, key)

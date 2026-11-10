@@ -527,6 +527,7 @@
         if (name && name.trim()) s.name = name.trim();
         return lists({ set: id });
       },
+      rename_set: async (id, name) => window.pywebview.api.save_set(id, name),  // (LauncherApi.rename_set)
       duplicate_set: async (id, name) => {
         const s = sets.find((x) => x.id === id);
         const copy = { id: slug(name), name, description: s.description, mods: s.mods.slice() };
