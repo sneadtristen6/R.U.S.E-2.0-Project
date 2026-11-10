@@ -29,6 +29,14 @@ call, is counted by the page under "messages" as "page:new_set:set_no_mods" (Bug
 typed, folders, and the names in the player's own mods. The agreement's words for this: "what went wrong and where
 (in our own code only)".
 
+WHICH check, by a key that never changes (2026-11-10, FL-98 and FL-99: a modder's two Test in game tries and two
+players' Plays failed with "BuildError" and a count of mistakes, and a line moves with every edit): a refusal and each
+listed mistake are counted by the check that made it (rusemod.checkkeys: a rule's id such as "nation-models", else
+the module and function, "build.load_mod"), a mistake made from a caught error also by that error's ("cause:..."); a
+failed Play or Test in game by how far it got ("play:stage:before" | build | listed | start) and its set, mods from
+our list by id and version and the player's own as counts of folder and .rmod mods ("play:set:L1-F0-R1"); a game
+that closed within a minute with no crash report, "game:closed-under-1-min" (Watch._failed, GameWatch).
+
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
 reads only the exception record, the module list and the crashed thread's stack of the game's crash report, on the
 player's PC, as any crash reporter does, and sends the crash code, the module's name and the offset, the access and
@@ -206,9 +214,10 @@ def site_of(error) -> str:
 def reason_key(name: str, error) -> str | None:
     """What a failed call or job is counted by under "messages", so a report says WHICH refusal or failure it was and
     not only its kind: the call's name and the error's own key when it carries one (the Launcher's
-    LauncherError(key=...)), "new_set:set_no_mods", else the call's name and where the error came from,
-    "play:rusemod.play:327" (the app's version, sent with the day, says which code that line is in). Never the error's
-    words: they can hold what the player typed, or a folder.
+    LauncherError(key=...)), "new_set:set_no_mods", else the call's name and the check that refused, by a key that
+    never changes ("play:build.load_mod", "play:nation-models": rusemod.checkkeys), else the call's name and where the
+    error came from, "play:rusemod.play:327" (the app's version, sent with the day, says which code that line is in).
+    Never the error's words: they can hold what the player typed, or a folder.
 
     The call's name is in front of a key too (FL-97, 2026-11-10): one key comes from several calls (set_gone from
     save_set, delete_set, duplicate_set...; set_no_mods from new_set, save_set, import_set, best_order), and a day
@@ -218,11 +227,54 @@ def reason_key(name: str, error) -> str | None:
     if isinstance(key, str) and key:
         key = key[-40:]
         return _name(f"{str(name)[:max(1, 63 - len(key))]}:{key}")
+    check = _check_of(error)
+    if check:
+        return _name(f"{str(name)[:max(1, 63 - len(check))]}:{check}")
     site = site_of(error)
     if not site:
         return None
     site = site[-60:]
     return _name(f"{str(name)[:max(1, 63 - len(site))]}:{site}")
+
+
+def _check_of(error) -> str:
+    """The key of the check that raised `error` (rusemod.checkkeys.error_check), "" when the file doesn't know it."""
+    try:
+        from .checkkeys import error_check
+        return error_check(error)
+    except Exception:  # noqa: BLE001 - counting must never stop the app
+        return ""
+
+
+# --- how far a failed Play or Test in game got, and with which mods (2026-11-10: FL-98, FL-99) ---------------------
+STAGES = ("before", "build", "listed", "start")  # refused before any build / the build raised / it listed mistakes in
+#                                                  the mods / the game didn't start (rusemod.play.Starter.modded)
+
+
+def set_of(folders) -> tuple[list[str], int, int]:
+    """(the mod-list mods among these mod folders as id@version, how many others are folder mods, how many others are
+    .rmod files): mods_of, with the player's own mods counted by their kind, never named."""
+    listed, own = mods_of(folders)
+    rmods = 0
+    if own:
+        from .rmod import rmod_of
+        for folder in folders:
+            folder = Path(folder)
+            if not (folder / "tags.toml").is_file() and rmod_of(folder) is not None:
+                rmods += 1
+    return listed, max(0, own - rmods), rmods
+
+
+def failed_at(error, stage: str, folders) -> None:
+    """Mark an error leaving a Play or a Test in game (rusemod.play.Starter.modded) with how far it got and the set's
+    mods (set_of), for Watch.job. Never raises."""
+    try:
+        if getattr(error, "stage", None) is None:
+            error.stage = stage if stage in STAGES else None
+        if getattr(error, "mod_set", None) is None:
+            error.mod_set = set_of(list(folders or []))
+    except Exception:  # noqa: BLE001 - an error that takes no attributes, or a mod folder that can't be read
+        pass
 
 
 def _step(seconds: float) -> int:
@@ -291,7 +343,8 @@ class Watch:
 
     def job(self, name: str, ok: bool, seconds: float, error=None, build_errors: int = 0, mistakes=()) -> None:
         """`mistakes`: for a build that listed mistakes in the mods, where the build found each one
-        (rusemod.patch.Finding.site), counted under "messages" as "mistake:rusemod.build:1208"."""
+        (rusemod.patch.Finding.site), counted under "messages" as "mistake:rusemod.build:1208" when the error
+        doesn't say which check each was (its `error_keys`: _failed)."""
         key = _name(name) or "job"
         with self.lock:
             day = self._day()
@@ -306,11 +359,55 @@ class Watch:
                 kind = _kind(error)
                 j["errors"][kind] = j["errors"].get(kind, 0) + 1
                 self._reason(day, key, error)
-                for site in list(mistakes or [])[:MOST["messages"]]:
-                    where = _name(f"mistake:{str(site)[-55:]}") if site else None
-                    if where:
-                        day["messages"][where] = day["messages"].get(where, 0) + 1
+                if not self._failed(day, key, error):
+                    for site in list(mistakes or [])[:MOST["messages"]]:
+                        where = _name(f"mistake:{str(site)[-55:]}") if site else None
+                        if where:
+                            day["messages"][where] = day["messages"].get(where, 0) + 1
             self._changed()
+
+    def _failed(self, day: dict, job: str, error) -> bool:
+        """What a failed Play or Test in game tells beyond its kind, under "messages" (2026-11-10: FL-98, FL-99), each a
+        key of our own, never the words:
+        - "play:stage:before" | build | listed | start: how far it got (rusemod.play.Starter.modded);
+        - "play:set:L2-F1-R0": the set's mods, L from our mod list, F the player's own folder mods, R the player's own
+          .rmod files (counted, never named), and "play:lib:cheat-mod-v2:2.0.0" for each from the list (id:version);
+        - "mistake:<check>" for each listed mistake (rusemod.checkkeys: a rule's id, or the module and function that
+          found it), "cause:<check or module.function>" for the caught error one said again, and for the refusal's
+          own cause.
+        Returns whether the error said its mistakes' checks (then the sites aren't counted again)."""
+        def add(text: str) -> None:
+            k = _name(text)
+            if k and len(text) <= 64 and (k in day["messages"] or len(day["messages"]) < 4 * MOST["messages"]):
+                day["messages"][k] = day["messages"].get(k, 0) + 1
+
+        try:
+            stage = getattr(error, "stage", None)
+            if stage in STAGES:
+                add(f"{job}:stage:{stage}")
+            found = getattr(error, "mod_set", None)
+            if isinstance(found, tuple) and len(found) == 3:
+                listed, folders, rmods = found
+                add(f"{job}:set:L{len(listed)}-F{int(folders)}-R{int(rmods)}")
+                for mod in listed[:MOST["mods"]]:
+                    if MOD_RE.fullmatch(str(mod)):
+                        add(f"{job}:lib:{str(mod).replace('@', ':')}")
+            from .checkkeys import cause_of, where_of
+            context = error.__cause__ or error.__context__
+            cause = cause_of(context, where_of(error)) if context is not None else ""
+            if cause:
+                add(f"cause:{cause}")
+            keys = getattr(error, "error_keys", None)
+            if not isinstance(keys, list):
+                return False
+            for check, cause in keys[:MOST["messages"]]:
+                if check:
+                    add(f"mistake:{str(check)[-55:]}")
+                if cause:
+                    add(f"cause:{str(cause)[-57:]}")
+            return True
+        except Exception:  # noqa: BLE001 - counting must never stop the app
+            return False
 
     def _reason(self, day: dict, name: str, error) -> None:
         """Which refusal or failure it was (reason_key), counted with the problems shown."""
@@ -786,6 +883,9 @@ def script_error_text(data: bytes) -> str:
     return best
 
 
+QUICK_CLOSE = 60.0  # seconds: a game started from a modded copy that closed sooner, leaving no crash report, is counted
+
+
 class GameWatch(threading.Thread):
     """Beside the game the apps started (rusemod.play.Starter): when it closes, the minutes it ran with its mods, and
     any crash report it left since it started."""
@@ -800,11 +900,16 @@ class GameWatch(threading.Thread):
     def run(self) -> None:
         while self.process.poll() is None:
             self.sleep(5)
-        self.watch.played((self.clock() - self.started) / 60.0, self.listed, self.own)
+        ran = self.clock() - self.started
+        self.watch.played(ran / 60.0, self.listed, self.own)
+        crashed = False
         for dump in crash_dumps_since(self.started, self.local):
             found = read_dump(dump, self.exe)
             if found:
+                crashed = True
                 self.watch.game_crash(found, self.listed, self.own)
+        if ran < QUICK_CLOSE and not crashed:  # the game didn't get going, or was quit at once (2026-11-10)
+            self.watch.count("messages", "game:closed-under-1-min")
 
 
 def mods_of(folders) -> tuple[list[str], int]:
@@ -871,6 +976,22 @@ def checks(findings) -> None:
     """Count the troubleshooter's findings that say something is wrong (Watch.checks), when there is a Watch."""
     if _current is not None:
         _current.checks(findings)
+
+
+class Refused(Exception):
+    """A job an app refused before it started: its kind as Bug Watch counts it, and its key (never words)."""
+
+    def __init__(self, key: str):
+        super().__init__(key)
+        self.words_key = key
+
+
+def refused(name: str, key: str) -> None:
+    """A job an app refused before starting it (the Launcher's Play: one already starting, a restore running, no
+    such set, a set with a mistake, an author not trusted yet), counted as a failed job of kind "Refused" and by its
+    key under "messages". Until 2026-11-10 these Plays never reached Bug Watch at all (the job never started)."""
+    if _current is not None:
+        _current.job(name, False, 0.0, Refused(key))
 
 
 class BugWatchCalls:
