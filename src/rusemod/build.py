@@ -1347,6 +1347,56 @@ def spawn_models(run, zz_win, mods: list, order: list[str], result: BuildResult,
                                                     f"whose models every match has, or leave these out"))
 
 
+def mission_models(run, zz_win, mods: list, order: list[str], result: BuildResult) -> None:
+    """The units a new map's own mission makes (maps/<map>/mission.toml: an event's spawn), and the nations its sides
+    are given. A mission is played as an Operation or a campaign chapter, never as a skirmish, and loads only the
+    nations of the mission it copies (most Operations: the six of the game as first sold; a chapter: the two to five
+    it plays; Japan in almost none). A unit of another nation made there has no model and no skeleton, and the game
+    stops when it is made: the build said nothing (a mission spawning Japanese units built with 0 errors, 2026-11-10;
+    players' games stopped in the game's model code with mods of their own on, which is this family; the same stop a
+    scenario's spawns gave on 2026-10-01). So a nation the copied map doesn't load in all its missions gets its packs
+    loaded in campaign chapters and Operations, and its skeletons and card pictures with every nation's, as for a unit
+    given another nation's models (_also_loaded), with the same notes."""
+    made = new_maps(order, mods)
+    by_class: dict | None = None
+    in_packs = None
+    wanted: set[int] = set()
+    for m, _ops in mods:
+        for map_name, found in (getattr(m, "missions", None) or {}).items():
+            mission = found[0] if isinstance(found, tuple) else found
+            nations: set[int] = set()
+            for side in getattr(mission, "sides", None) or []:
+                if side.nation in unitcheck.NATIONS:
+                    nations.add(unitcheck.NATIONS.index(side.nation))
+            for event in getattr(mission, "events", None) or []:
+                for action in event.actions:
+                    if action.do != "spawn" or not action.unit:
+                        continue
+                    if by_class is None:
+                        by_class = {}
+                        for name, obj in run.game.objects.items():
+                            cls = getattr(obj.props.get("ClassNameForDebug"), "value", None) \
+                                if unitcheck.is_unit(obj) else None
+                            if cls:
+                                by_class.setdefault(cls, name)
+                        in_packs = skirmish_models(zz_win) if zz_win is not None else None
+                    name = by_class.get(action.unit)
+                    if name is None:
+                        continue  # (not a unit of this build: the mission's own check says so)
+                    obj = run.game.objects[name]
+                    nations.add(unitcheck.nation_of(obj))
+                    for model in unitcheck.model_files(obj, run.game) if in_packs else ():
+                        if model not in in_packs["common"]:  # a unit wearing another nation's model needs that one
+                            nations |= {i for i, tag in enumerate(unitcheck.PACK_TAGS) if model in in_packs[tag]}
+            spec = next((s for n, (s, _id) in made.items() if n.lower() == map_name.lower()), None)
+            loads = unitcheck.mission_nation_bits(run.game, spec.copy_of) if spec is not None else []
+            # a nation every mission of the copied map loads needs nothing; no word on the map: every nation is asked
+            wanted |= {n for n in nations if 0 <= n < len(unitcheck.NATIONS)
+                       and not (loads and all(bits >> n & 1 for bits in loads))}
+    if wanted:
+        _also_loaded(run, sorted(wanted), result)
+
+
 def fill_loc(game, keys: dict) -> list[str]:
     """Turn every loc('...') value into the game key its text got. Returns the loc keys no mod defines."""
     missing = []
@@ -1904,6 +1954,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     into = unitpacks.Packs(text_arc) if text_arc is not None else None
     unit_models(base, run, text_arc, result, into)
     spawn_models(run, text_arc, mods, result.order, result, into)
+    mission_models(run, text_arc, mods, result.order, result)
     if result.errors:
         return result
     if into is not None:

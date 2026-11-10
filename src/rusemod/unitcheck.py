@@ -320,13 +320,50 @@ def load_everywhere(game, nations) -> dict[int, tuple[int, int]]:
 # bit above does nothing there. 30 of the 85 cluster maps list only the nations their mission plays, one pack each
 # (Holland's chapters: the common pack, US, Germany and UK), so another nation's unit, spawned there or bought, has no
 # model (a player's build spawning French units, Holland, 2026-10-03: the game crashed loading the mission). The other
-# 55 list one pack of every nation's units (PackMesh_All) and need nothing.
+# 55 list one pack of several nations' units (PackMesh_All): it serves the nations its UsefulnessMask names, the six
+# of the game as first sold and NOT Japan (the pack's mask ends ...3F, Japan's own packs' ...40; a model goes to a
+# pack only when their masks share a nation bit). So a Japanese unit in one of those 55 had no model either (read in
+# the data and the program, 2026-11-10; a mission of ours spawning Japanese units built with no word about it).
 NOT_SKIRMISH = "NotSkirmishPacks"
+MASK = "UsefulnessMask"
+
+
+def _mask(game, target: str) -> int | None:
+    """A pack's mask (its nation bits are the low ones, Nationalite 0 to 6), or None when the data doesn't say."""
+    obj = game.objects.get(target)
+    return _int(obj.props.get(MASK)) if obj is not None else None
+
+
+# A cluster map's picker of per-nation skeleton loaders says which nations' it runs in a game that is not a skirmish:
+# the nations of these three fields' bits (most Operations: all six of the game as first sold; a campaign chapter:
+# the two to five it plays; Japan in almost none).
+MISSION_BITS = ("BitFieldNationaliteIfNotSkirmish", "BitFieldPlayerIfNotSkirmish", "ForceLoadBitFieldNationalite")
+
+
+def mission_nation_bits(game, map_name: str) -> list[int]:
+    """For each cluster map of the shipped map `map_name` (one per scenario of it): the nations, as bits by
+    Nationalite, whose units it loads in a game that is not a skirmish. [] when the data has none for that map."""
+    key = f"/scenario/{map_name.lower()}/"
+    out = []
+    for top in sorted(game.objects):
+        origin = game.objects[top].origin
+        where = str(origin[0] if origin else top).replace("\\", "/").lower()
+        if key not in where or "clustermap" not in where:
+            continue
+        bits = None
+        for _path, part in _parts(game.objects[top]):
+            found = [_int(part.props.get(k)) for k in MISSION_BITS if k in part.props]
+            for v in found:
+                bits = (bits or 0) | (v or 0)
+        if bits is not None:
+            out.append(bits)
+    return out
 
 
 def load_in_missions(game, nations) -> dict[int, tuple[int, int]]:
     """Have the per-nation packs of `nations` (Nationalite numbers) load in every campaign chapter and Operation too:
-    each loader whose NotSkirmishPacks names nations' packs one by one gets SkirmishPacks[n] added when it lacks it.
+    each loader whose NotSkirmishPacks names nations' packs one by one gets SkirmishPacks[n] added when it lacks it,
+    and so does a loader with one pack for several nations when that pack's mask leaves the nation out (Japan).
     A WithBoat pack counts as its nation's (Italy and D-Day list the US's with boats, which holds all of the plain
     one's models and five ships). {nation: (loaders it was added to, cluster maps they're in)}."""
     out = {}
@@ -339,8 +376,14 @@ def load_in_missions(game, nations) -> dict[int, tuple[int, int]]:
                 continue
             per_nation = {x.target for x in packs if isinstance(x, Ref) and x.target}
             have = {x.target.replace("WithBoat", "") for x in listed.items if isinstance(x, Ref) and x.target}
-            if not have & per_nation or packs[n].target in have:
-                continue  # one pack for every nation (or none named one by one), or the nation's there already
+            if packs[n].target in have:
+                continue  # the nation's there already
+            # the packs listed that aren't one nation's own: the common pack, the one pack of several nations
+            masks = [m for m in (_mask(game, t) for t in have - per_nation) if m is not None]
+            if any(m >> n & 1 for m in masks):
+                continue  # a pack of several nations' units serves this nation
+            if not masks and not have & per_nation:
+                continue  # no mask to go by and no nation named one by one: taken as one pack for every nation
             game.own_part(top, path).props[NOT_SKIRMISH].items.append(Ref(packs[n].target))  # (patch.Game.own)
             count += 1
             origin = game.objects[top].origin

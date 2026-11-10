@@ -718,6 +718,128 @@ class LoadedEverywhere(ForceLoadOn, unittest.TestCase):
         self.assertEqual(unitcheck.load_in_missions(g, {3}), {3: (0, 0)})
         self.assertEqual(len(listed(g, "$/Holland")[1]), 5)
 
+    def test_the_one_pack_of_several_nations_leaves_japan_out(self):
+        # 55 of the game's cluster maps load one pack of several nations' units outside a skirmish. It serves the
+        # nations its mask names: the six of the game as first sold, not Japan (the game's own numbers below). A
+        # Japanese unit made in such a mission had no model (a mission of ours spawning Japanese units, 2026-11-10)
+        g = Game(objects={"$/Alpha": mission("_All"), "$/Holland": mission(*HOLLAND)})
+        for kind, every in (("Proxy", 33505343), ("Mesh", 33505343)):
+            g.objects[f"$/IA/Cluster/Pack{kind}_All"] = Obj("TResourceDescriptorMeshPack",
+                                                            {"UsefulnessMask": num(every, "uint32")})
+        g.objects["$/IA/Cluster/PackAnimation_All_ButCommon"] = Obj("TResourceDescriptorAnimationPack",
+                                                                    {"UsefulnessMask": num(33488959, "uint32")})
+        # France: served by the one pack in Alpha; Holland names nations one by one and lacks it (as before)
+        self.assertEqual(unitcheck.load_in_missions(g, {3}), {3: (2, 1)})
+        self.assertEqual(listed(g, "$/Alpha"), [["PackProxy_All"], ["PackMesh_All"], ["PackAnimation_All_ButCommon"]])
+        # Japan: no pack serves it anywhere. Alpha's three loaders get Japan's own packs beside the one pack; Holland's
+        # proxy and mesh lists get them, and so does its animation list (one pack of several nations', not Japan's)
+        self.assertEqual(unitcheck.load_in_missions(g, {6}), {6: (6, 2)})
+        self.assertEqual(listed(g, "$/Alpha"), [["PackProxy_All", "PackProxySkirmish_JAP"],
+                                                ["PackMesh_All", "PackMeshSkirmish_JAP"],
+                                                ["PackAnimation_All_ButCommon", "PackAnimationSkirmish_JAP"]])
+        self.assertEqual(listed(g, "$/Holland")[2], ["PackAnimation_All_ButCommon", "PackAnimationSkirmish_JAP"])
+        self.assertEqual(listed(g, "$/Holland")[1][-2:], ["PackMeshSkirmish_FR", "PackMeshSkirmish_JAP"])
+        # twice: nothing more, and a nation the one pack serves is still left alone
+        self.assertEqual(unitcheck.load_in_missions(g, {6, 0}), {0: (0, 0), 6: (0, 0)})
+        # a pack whose mask isn't in the data is taken to serve every nation, as before
+        unknown = Game(objects={"$/Alpha": mission("_All")})
+        self.assertEqual(unitcheck.load_in_missions(unknown, {6}), {6: (0, 0)})
+
+
+class MissionsOwnUnits(unittest.TestCase):
+    """A new map's own mission (maps/<map>/mission.toml) that makes units of a nation its copied map doesn't load in
+    its missions, or gives a side that nation: the nation's packs are loaded for missions, with the build's notes
+    (build.mission_models). The build said nothing before, and the game stops when such a unit is made (a mission
+    spawning Japanese units, built and read back 2026-11-10: its Japanese units had no model and no skeleton)."""
+
+    def world(self, bits=63, packs=("_All",)):
+        from types import SimpleNamespace
+        picker = Inline(Obj("TClusterInitialisationExecuteSelectifSubClusters",
+                            {"BitFieldNationaliteIfNotSkirmish": num(bits, "uint32"),
+                             "BitFieldPlayerIfNotSkirmish": num(0, "uint32")}))
+        source = cluster_map(*(loader(k, missions=packs) for k in ("Proxy", "Mesh")),
+                             loader("Animation", missions=("_All_ButCommon",)), picker)
+        source.origin = ("genglad\\patchable\\scenario\\blitz\\scenario_challenge_2\\clustermap.cpp.gladndfbin", 4)
+        g = Game(objects={"$/Source": source, "$/Sherman": unit("TUniteAuSolDescriptor", 1, [10], nation=0),
+                          "$/ChiHa": unit("TUniteAuSolDescriptor", 2, [10], nation=6),
+                          "$/Somua": unit("TUniteAuSolDescriptor", 3, [10], nation=3)})
+        for kind in ("Proxy", "Mesh"):
+            g.objects[f"$/IA/Cluster/Pack{kind}_All"] = Obj("TResourceDescriptorMeshPack",
+                                                            {"UsefulnessMask": num(33505343, "uint32")})
+            g.objects[f"$/IA/Cluster/Pack{kind}Skirmish_Common"] = Obj("TResourceDescriptorMeshPack",
+                                                                       {"UsefulnessMask": num(33505280, "uint32")})
+        g.objects["$/IA/Cluster/PackAnimation_All_ButCommon"] = Obj("TResourceDescriptorAnimationPack",
+                                                                    {"UsefulnessMask": num(33488959, "uint32")})
+        return SimpleNamespace(game=g)
+
+    def mods(self, *actions, sides=(), copy_of="Blitz"):
+        from types import SimpleNamespace
+        from rusemod import mission as M
+        made = M.Mission(sides=list(sides), events=[M.Event("go", "time", actions=list(actions))])
+        mod = SimpleNamespace(id="ops", missions={"MyOp": (made, "maps/MyOp/mission.toml")},
+                              new_maps={"MyOp": [SimpleNamespace(copy_of=copy_of)]})
+        return [(mod, [])]
+
+    def made(self, r, mods):
+        from rusemod.build import mission_models
+        result = BuildResult()
+        mission_models(r, None, mods, ["ops"], result)
+        return result
+
+    def spawn(self, cls):
+        from rusemod import mission as M
+        return M.Action("spawn", unit=cls, side=1, at="here")
+
+    def test_a_nation_the_copied_map_loads_needs_nothing(self):
+        r = self.world()
+        result = self.made(r, self.mods(self.spawn("Unit_1"), self.spawn("Unit_3")))   # a US and a French unit
+        self.assertEqual(result.findings, [])
+        self.assertEqual(listed(r.game, "$/Source"), [["PackProxy_All"], ["PackMesh_All"],
+                                                     ["PackAnimation_All_ButCommon"]])
+
+    def test_a_japanese_unit_has_japans_packs_loaded_in_missions(self):
+        r = self.world()
+        result = self.made(r, self.mods(self.spawn("Unit_1"), self.spawn("Unit_2")))
+        self.assertEqual(said(result), [])
+        self.assertEqual(listed(r.game, "$/Source"), [["PackProxy_All", "PackProxySkirmish_JAP"],
+                                                     ["PackMesh_All", "PackMeshSkirmish_JAP"],
+                                                     ["PackAnimation_All_ButCommon", "PackAnimationSkirmish_JAP"]])
+        self.assertEqual(said(result, "note"), [
+            "Japan's unit models load in campaign chapters and Operations too, which load only the nations they play "
+            "(3 loaders in 1 cluster maps)"])
+
+    def test_a_side_given_another_nation_counts_too(self):
+        from rusemod import mission as M
+        r = self.world()
+        result = self.made(r, self.mods(sides=[M.Side(1, nation="Japan"), M.Side(0, nation="US"), M.Side(2)]))
+        self.assertEqual(said(result), [])
+        self.assertEqual(listed(r.game, "$/Source")[1], ["PackMesh_All", "PackMeshSkirmish_JAP"])
+
+    def test_a_chapter_that_plays_three_nations(self):
+        # a copy of a campaign chapter that loads the US, Germany and the UK (bits 7), its packs named one by one
+        r = self.world(bits=7, packs=HOLLAND)
+        result = self.made(r, self.mods(self.spawn("Unit_1"), self.spawn("Unit_3")))   # the US is there; France isn't
+        self.assertEqual(said(result), [])
+        self.assertEqual(listed(r.game, "$/Source")[1], [f"PackMeshSkirmish_{n}" for n in ("Common", "US", "GER", "UK",
+                                                                                           "FR")])
+        self.assertEqual(len(said(result, "note")), 1)
+        self.assertIn("France's unit models load in campaign chapters and Operations too", said(result, "note")[0])
+
+    def test_a_unit_the_build_doesnt_have_or_no_mission_at_all(self):
+        from types import SimpleNamespace
+        r = self.world()
+        self.assertEqual(self.made(r, self.mods(self.spawn("Unit_Not_There"))).findings, [])
+        self.assertEqual(self.made(r, [(SimpleNamespace(id="ops"), [])]).findings, [])
+        from rusemod import mission as M
+        only_words = self.mods(M.Action("message"), M.Action("money", side=0, amount=5))
+        self.assertEqual(self.made(r, only_words).findings, [])
+
+    def test_a_copied_map_the_data_says_nothing_of_asks_for_the_nation(self):
+        r = self.world()
+        result = self.made(r, self.mods(self.spawn("Unit_2"), copy_of="SomewhereElse"))
+        self.assertEqual(listed(r.game, "$/Source")[1], ["PackMesh_All", "PackMeshSkirmish_JAP"])
+        self.assertEqual(said(result), [])
+
 
 # --- the build writes the loaders' bits into the cluster map files ---
 def ref(index, cls):
