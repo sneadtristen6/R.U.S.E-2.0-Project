@@ -55,6 +55,7 @@ class WeaponClassCalls:
                 raise StudioError(f"{address} isn't an ammunition")
             table = next((what for p, kind, what in ix.uses(real) if p == STRESS and kind == "object"), None)
             if table is None:
+                # not a game rule: this game build's index has no damage table for the ammo (a lookup in its data)
                 raise StudioError(f"{address} has no damage table in this game build.")
             shown = ix.show(table)
         finally:
@@ -69,6 +70,7 @@ class WeaponClassCalls:
         pairs = nd.obj(shown["index"]).props[VALUES].pairs
         found = next(((i, row) for i, (key, row) in enumerate(pairs) if int(key.value) == int(arme)), None)
         if found is None:
+            # not a game rule: the damage table read from the game's data has no row for this class number (a lookup)
             raise StudioError(f"{address} has a weapon class the game's damage table has no row for ({int(arme)}).")
         mine = edits.get(keyed, STRESS) if edits is not None else None
         own = str(mine) if isinstance(mine, Link) and str(mine).rsplit("/", 1)[-1].startswith(PREFIX) else None

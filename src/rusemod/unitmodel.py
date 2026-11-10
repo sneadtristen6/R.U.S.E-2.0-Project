@@ -828,6 +828,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
                     number = bones.names.index(name)
                     if number not in bone_list:
                         if len(bone_list) >= MOST_BONES:
+                            # not a game rule: our own cap, the longest list the game's own materials carry (past it not tried)
                             raise UnitModelError(f"the material of {source} lists {len(bone_list)} bones, as many as the game's longest list; {name} would be one more")
                         bone_list.append(number)
             vb, kind = _rigged_buffer(part, bone_list, bones)
