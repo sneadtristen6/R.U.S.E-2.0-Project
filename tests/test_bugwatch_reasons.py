@@ -137,9 +137,10 @@ class Reasons(unittest.TestCase):
         job = webui.Job()
         job.start(work, "done", plain=(BuildError,))
         for _ in range(500):   # the job's own thread counts it right after it ends
-            counted = bugwatch._current.days.get(bugwatch._today(), {}).get("jobs", {})
-            if job.state != "running" and "test_in_game" in counted:
-                break
+            with bugwatch._current.lock:   # all of one job's counts go in under the lock: read them whole, never half
+                counted = bugwatch._current.days.get(bugwatch._today(), {}).get("jobs", {})
+                if job.state != "running" and "test_in_game" in counted:
+                    break
             time.sleep(0.01)
         day = self.day()
         self.assertEqual(day["jobs"]["test_in_game"]["build_errors"], 3)

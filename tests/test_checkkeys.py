@@ -36,7 +36,7 @@ def entry(check: str = None, words: str = None) -> dict:
 
 def said(template: str, *values) -> str:
     """A text as the code makes it from its template."""
-    return template.replace("{{", "\0").replace("}}", "\1").format(*values).replace("\0", "{").replace("\1", "}")
+    return template.replace("{{", "\x00").replace("}}", "\x01").format(*values).replace("\x00", "{").replace("\x01", "}")
 
 
 class TheFileIsTheCode(unittest.TestCase):

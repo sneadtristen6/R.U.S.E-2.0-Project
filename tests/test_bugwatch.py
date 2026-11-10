@@ -490,11 +490,11 @@ class Hooks(BugWatchTest):
         with self.assertRaises(ValueError):
             page.bad()
         page.long()
-        for _ in range(200):
-            if jobs["j"].state != "running":
-                break
-            time.sleep(0.02)
-        time.sleep(0.1)
+        for _ in range(500):   # the job's own thread counts it right after its state changes: wait for the count
+            with bugwatch._current.lock:   # all of one job's counts go in under the lock: read them whole, never half
+                if "long" in bugwatch._current.days.get(bugwatch._today(), {}).get("jobs", {}):
+                    break
+            time.sleep(0.01)
         day = bugwatch._current.days[bugwatch._today()]
         self.assertEqual(day["calls"]["good"]["n"], 1)
         self.assertEqual(day["calls"]["bad"]["errors"], {"ValueError": 1})
