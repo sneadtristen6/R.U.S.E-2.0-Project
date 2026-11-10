@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, für Spieler.** Er findet R.U.S.E. über Steam, und **Spielen** baut eine gemoddete Kopie des
 Spiels mit deinen Mods und startet sie. Deine Steam-Installation wird nie verändert.
 
+**0.4.8.19:** RUSE Guard: Ein mit einer Cheat-Mod gebautes Spiel spielt jetzt Mehrspieler- und Koop-Gefechte mit Spielern, die denselben Build haben. Noch nicht voll unterstützt und vielleicht noch fehlerhaft: Nutzung im Mehrspieler auf eigene Verantwortung.
+
+- **Von einem Spieler gemeldet:** Zwei Freunde mit demselben Mod-Paket flogen aus jedem Mehrspieler-Gefecht, weil eine Mod darin (Infinite Supply Depot) als Cheat markiert ist. RUSE Guard behandelte jedes Spiel, das mit einem Cheat oder einem Testwerkzeug gebaut wurde, als reine Offline-Kopie: Es verließ jedes Mehrspieler- und Koop-Gefecht nach wenigen Sekunden und sah nie nach, wer sonst mitspielte.
+- **Was wir geändert haben:** Eine Sekunde nach Beginn eines Mehrspieler- oder Koop-Gefechts teilt ein solches Spiel den Spielen der anderen Spieler jetzt mit, welcher Build es ist: ein kurzer Code aus der Spielversion und den Mods, nichts über dich. Nach etwa sieben Sekunden entscheidet es. Haben alle Spieler denselben Build (dieselbe Spielversion, dieselben Mods in derselben Reihenfolge, dieselben Mod-Versionen), zeigt es das auf dem Bildschirm an und das Gefecht geht weiter. Hat jemand einen anderen Build oder keine Mods, verlässt es das Gefecht wie bisher.
+- **Ein Beitrittscode für diese Sets:** Im Launcher bekommt ein Mod-Set mit einer Cheat-Mod jetzt einen Beitrittscode wie jedes andere. Derselbe Code heißt derselbe Build: Vergleicht eure Codes, bevor ihr spielt.
+- **Jeder Spieler braucht diese Version:** Das Spiel jedes Spielers im Gefecht muss mit Launcher 0.4.8.19 oder Studio 0.9.8.19 oder neuer gebaut sein. Nach dem Update baut das nächste **Spielen** oder **Im Spiel testen** es von selbst neu.
+- **Noch nicht voll unterstützt:** Wir haben es im Spiel mit einem Spieler getestet, der allein ein Mehrspieler-Gefecht gegen den Computer gehostet hat, und außerhalb des Spiels mit 20 simulierten Gefechten mit bis zu vier Spielern. Zu zweit in einem echten Gefecht hat es noch niemand gespielt, es kann also noch Fehler haben: Nutze es im Mehrspieler auf eigene Verantwortung. Probier es aus und sag uns auf Discord oder GitHub, was passiert ist: welche RUSE-Guard-Meldung du gesehen hast und ob das Gefecht weiterging.
+- **Unverändert:** ein ohne Cheats gebautes Spiel, das Gefecht gegen den Computer und die Kampagne.
+
 **0.4.8.18:** Eine Korrektur hinter den Kulissen: die Prüfung einer gemoddeten Kopie listet ihre Funde auf jedem System in derselben Reihenfolge.
 
 - **Hinter den Kulissen:** die Prüfung einer gemoddeten Kopie (welche Spieldateien sich nach dem Bauen geändert haben) listet ihre Funde jetzt unter Windows und Linux in derselben Reihenfolge. Was sie findet, ändert sich nicht.

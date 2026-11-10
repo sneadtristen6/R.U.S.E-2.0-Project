@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, dla graczy.** Znajduje R.U.S.E. przez Steam, a **Graj** buduje zmodowaną kopię gry z twoimi
 modami i ją uruchamia. Twoja instalacja Steam nigdy nie jest zmieniana.
 
+**0.4.8.19:** RUSE Guard: gra zbudowana z modem oznaczonym jako cheat gra teraz w grach wieloosobowych i kooperacyjnych z graczami, którzy zbudowali taką samą grę. Jeszcze nie w pełni obsługiwane i może mieć błędy: w grach wieloosobowych używasz tego na własną odpowiedzialność.
+
+- **Zgłoszone przez gracza:** dwóch znajomych z tą samą paczką modów było wyrzucanych z każdej gry wieloosobowej, bo jeden mod z paczki (Infinite Supply Depot) jest oznaczony jako cheat. RUSE Guard traktował każdą grę zbudowaną z cheatem lub narzędziem testowym jako tylko offline: opuszczała każdą grę wieloosobową i kooperacyjną po kilku sekundach i nigdy nie sprawdzała, kto jeszcze gra.
+- **Co zmieniliśmy:** sekundę po rozpoczęciu gry wieloosobowej lub kooperacyjnej taka gra podaje teraz grom pozostałych graczy, z czego została zbudowana: krótki kod utworzony z wersji gry i modów, nic o tobie. Po około siedmiu sekundach decyduje. Jeśli wszyscy gracze mają taką samą zbudowaną grę (tę samą wersję gry, te same mody w tej samej kolejności, te same wersje modów), pisze o tym na ekranie i gra toczy się dalej. Jeśli ktoś ma inną albo nie ma modów, opuszcza grę jak dotąd.
+- **Kod gry dla takich zestawów:** w Launcherze zestaw modów z modem oznaczonym jako cheat dostaje teraz kod gry jak każdy inny. Ten sam kod oznacza taką samą zbudowaną grę: porównajcie kody, zanim zagracie.
+- **Każdy gracz potrzebuje tej wersji:** gra każdego gracza musi być zbudowana przez Launcher 0.4.8.19 lub Studio 0.9.8.19 albo nowsze. Po aktualizacji następne **Graj** lub **Testuj w grze** zbuduje ją ponownie samo.
+- **Jeszcze nie w pełni obsługiwane:** przetestowaliśmy to w grze z jednym graczem, który sam hostował grę wieloosobową przeciw komputerowi, oraz poza grą w 20 symulowanych grach do czterech graczy. Nikt jeszcze nie zagrał w to we dwóch w prawdziwej grze, więc mogą być błędy: w grach wieloosobowych używasz tego na własną odpowiedzialność. Wypróbuj i daj nam znać na Discordzie lub GitHubie, co się stało: jaki komunikat RUSE Guard zobaczyłeś i czy gra toczyła się dalej.
+- **Bez zmian:** gra zbudowana bez cheatów, potyczka z komputerem i kampania.
+
 **0.4.8.18:** Poprawka pod maską: sprawdzanie zmodowanej kopii wypisuje to, co znajdzie, w tej samej kolejności na każdym systemie.
 
 - **Pod maską:** sprawdzanie zmodowanej kopii (które pliki gry zmieniły się po jej zbudowaniu) wypisuje teraz to, co znajdzie, w tej samej kolejności w Windows i w Linuksie. To, co znajduje, się nie zmienia.

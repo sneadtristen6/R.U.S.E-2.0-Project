@@ -1,6 +1,15 @@
 **RUSE Studio, un aperçu pour les moddeurs.** Parcourez les unités du jeu dans n'importe laquelle de ses dix langues,
 modifiez-les dans un mod à vous et testez-le en jeu. Votre installation Steam n'est jamais modifiée.
 
+**0.9.8.19:** RUSE Guard : un jeu construit avec un mod de triche joue maintenant en multijoueur et en coop avec les joueurs qui ont la même construction. Pas encore entièrement pris en charge, et peut-être encore bogué : à utiliser en multijoueur à vos risques.
+
+- **Signalé par un joueur :** deux amis avec le même pack de mods étaient exclus de chaque partie multijoueur, parce qu'un mod du pack (Infinite Supply Depot) porte le badge Triche. RUSE Guard traitait tout jeu construit avec une triche ou un outil de test comme hors ligne uniquement : il quittait chaque partie multijoueur et coopérative au bout de quelques secondes, sans jamais regarder qui d'autre jouait.
+- **Ce que nous avons changé :** une seconde après le début d'une partie multijoueur ou coopérative, un tel jeu indique maintenant aux jeux des autres joueurs quelle construction il est : un code court tiré de la version du jeu et des mods, rien sur vous. Vers sept secondes, il décide. Si tous les joueurs ont la même construction (la même version du jeu, les mêmes mods dans le même ordre, les mêmes versions des mods), il l'affiche à l'écran et la partie continue. Si quelqu'un a une autre construction ou aucun mod, il quitte la partie comme avant.
+- **Un code de partie pour ces ensembles :** dans le Launcher, un ensemble de mods avec un mod de triche reçoit maintenant un code de partie comme les autres. Le même code veut dire la même construction : comparez vos codes avant de jouer.
+- **Chaque joueur a besoin de cette version :** le jeu de chaque joueur de la partie doit être construit par le Launcher 0.4.8.19 ou le Studio 0.9.8.19, ou plus récent. Après la mise à jour, le prochain **Jouer** ou **Tester en jeu** le reconstruit tout seul.
+- **Pas encore entièrement pris en charge :** nous l'avons testé dans le jeu avec un seul joueur hébergeant une partie multijoueur contre l'ordinateur, et hors du jeu avec 20 parties simulées de quatre joueurs au plus. Personne n'y a encore joué à deux dans une vraie partie : il peut donc rester des bogues, et vous l'utilisez en multijoueur à vos risques. Essayez-le et dites-nous ce qui s'est passé sur Discord ou GitHub : quel message de RUSE Guard vous avez vu, et si la partie a continué.
+- **Inchangé :** un jeu construit sans triche, l'escarmouche contre l'ordinateur et la campagne.
+
 **0.9.8.18:** Une correction en coulisses : la vérification d'une copie moddée liste ce qu'elle trouve dans le même ordre sur tous les systèmes.
 
 - **En coulisses :** la vérification d'une copie moddée (quels fichiers du jeu ont changé après sa construction) liste désormais ce qu'elle trouve dans le même ordre sous Windows et sous Linux. Ce qu'elle trouve ne change pas.

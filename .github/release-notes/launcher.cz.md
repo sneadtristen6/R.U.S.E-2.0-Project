@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, pro hráče.** Najde R.U.S.E. přes Steam a **Hrát** sestaví upravenou kopii hry s vašimi módy a
 spustí ji. Vaše instalace Steamu se nikdy nemění.
 
+**0.4.8.19:** RUSE Guard: hra sestavená s cheatovým módem teď hraje hry více hráčů a kooperaci s hráči, kteří mají stejné sestavení. Zatím není plně podporováno a může mít chyby: ve hře více hráčů to používáte na vlastní uvážení.
+
+- **Nahlásil hráč:** dva přátele se stejným balíkem módů to vyhazovalo z každé hry více hráčů, protože jeden mód v balíku (Infinite Supply Depot) je označen jako cheat. RUSE Guard bral každou hru sestavenou s cheatem nebo testovacím nástrojem jako hru jen pro offline: každou hru více hráčů i kooperaci po pár sekundách opustila a nikdy se nedívala, kdo další hraje.
+- **Co jsme změnili:** sekundu po začátku hry více hráčů nebo kooperace teď taková hra sdělí hrám ostatních hráčů, o jaké sestavení jde: krátký kód vytvořený z verze hry a módů, nic o vás. Asi po sedmi sekundách rozhodne. Mají-li všichni hráči stejné sestavení (stejnou verzi hry, stejné módy ve stejném pořadí, stejné verze módů), napíše to na obrazovku a hra pokračuje. Má-li někdo jiné sestavení nebo žádné módy, hru opustí jako dřív.
+- **Kód hry i pro tyto sady:** v Launcheru teď sada módů s cheatovým módem dostane kód hry jako každá jiná. Stejný kód znamená stejné sestavení: porovnejte si kódy, než začnete hrát.
+- **Tuto verzi potřebuje každý hráč:** hra každého hráče musí být sestavena Launcherem 0.4.8.19 nebo Studiem 0.9.8.19, případně novějšími. Po aktualizaci ji příští **Hrát** nebo **Vyzkoušet ve hře** sestaví znovu samo.
+- **Zatím není plně podporováno:** vyzkoušeli jsme to ve hře s jedním hráčem, který sám hostoval hru více hráčů proti počítači, a mimo hru na 20 simulovaných hrách až se čtyřmi hráči. Ve dvou ve skutečné hře to zatím nikdo nehrál, takže to může mít chyby: ve hře více hráčů to používáte na vlastní uvážení. Vyzkoušejte to a napište nám na Discord nebo GitHub, co se stalo: jakou zprávu RUSE Guard jste viděli a jestli hra pokračovala.
+- **Beze změny:** hra sestavená bez cheatů, bitva proti počítači a kampaň.
+
 **0.4.8.18:** Oprava v pozadí: kontrola upravené kopie vypisuje, co najde, ve stejném pořadí na každém systému.
 
 - **V pozadí:** kontrola upravené kopie (které soubory hry se po jejím sestavení změnily) teď vypisuje, co najde, ve stejném pořadí ve Windows i v Linuxu. Co najde, se nemění.

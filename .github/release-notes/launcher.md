@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, for players.** It finds R.U.S.E. through Steam, and **Play** builds a modded copy of the game
 with your mods and starts it. Your Steam install is never changed.
 
+**0.4.8.19:** RUSE Guard: a game built with a cheat mod now plays multiplayer and co-op with players who have the same build. Not fully supported yet and it may still be buggy: use it in multiplayer at your own discretion.
+
+- **Reported by a player:** two friends with the same mod pack were thrown out of every multiplayer match, because one mod in it (Infinite Supply Depot) is tagged as a cheat. RUSE Guard treated every game built with a cheat mod or a test tool as offline only: it left each multiplayer and co-op match a few seconds in, and never looked at who else was playing.
+- **What we changed:** one second into a multiplayer or co-op match, such a game now tells the other players' games which build it is: a short code made from the game version and the mods, nothing about you. About seven seconds in it decides. If every player has the same build (the same game version, the same mods in the same order, the same mod versions), it says so on screen and the match goes on. If anyone has another build or no mods, it leaves the match as before.
+- **A join code for these sets:** in the Launcher, a mod set with a cheat mod now gets a join code like any other. The same code means the same build, so compare codes before you play.
+- **Every player needs this version:** the game of each player in the match must be built by Launcher 0.4.8.19 or Studio 0.9.8.19, or newer. After the update, the next **Play** or **Test in game** builds it again by itself.
+- **Not fully supported yet:** we tested it in the game with one player hosting a multiplayer match alone against the computer, and outside the game with 20 simulated matches of up to four players. Nobody has played it with two people in a real match yet, so it may still be buggy: use it in multiplayer at your own discretion. Try it and tell us what happened on Discord or GitHub: which RUSE Guard message you saw, and whether the match went on.
+- **Unchanged:** a game built without cheat mods, skirmish against the computer and the campaign.
+
 **0.4.8.18:** A fix behind the scenes: the check of a modded copy lists what it finds in the same order on every system.
 
 - **Behind the scenes:** the check of a modded copy (which game files changed after it was built) now lists what it finds in the same order on Windows and Linux. What it finds doesn't change.

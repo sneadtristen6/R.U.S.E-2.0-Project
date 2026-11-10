@@ -1,6 +1,15 @@
 **RUSE Launcher 0.4, per i giocatori.** Trova R.U.S.E. tramite Steam, e **Gioca** costruisce una copia del gioco con i
 tuoi mod e la avvia. La tua installazione di Steam non viene mai modificata.
 
+**0.4.8.19:** RUSE Guard: un gioco costruito con una mod trucco ora gioca in multigiocatore e in cooperativa con i giocatori che hanno la stessa build. Non ancora del tutto supportato e forse ancora con bug: usalo in multigiocatore a tua discrezione.
+
+- **Segnalato da un giocatore:** due amici con lo stesso pacchetto di mod venivano buttati fuori da ogni partita multigiocatore, perché una mod del pacchetto (Infinite Supply Depot) è contrassegnata come trucco. RUSE Guard trattava ogni gioco costruito con un trucco o uno strumento di prova come solo offline: lasciava ogni partita multigiocatore e cooperativa dopo pochi secondi, senza mai guardare chi altro stesse giocando.
+- **Cosa abbiamo cambiato:** un secondo dopo l'inizio di una partita multigiocatore o cooperativa, un gioco così ora dice ai giochi degli altri giocatori quale build è: un codice breve ricavato dalla versione del gioco e dalle mod, niente su di te. Dopo circa sette secondi decide. Se tutti i giocatori hanno la stessa build (la stessa versione del gioco, le stesse mod nello stesso ordine, le stesse versioni delle mod), lo scrive sullo schermo e la partita continua. Se qualcuno ha un'altra build o nessuna mod, lascia la partita come prima.
+- **Un codice partita per questi set:** nel Launcher, un set di mod con una mod trucco ora riceve un codice partita come ogni altro. Lo stesso codice vuol dire la stessa build: confrontate i codici prima di giocare.
+- **Ogni giocatore ha bisogno di questa versione:** il gioco di ogni giocatore della partita deve essere costruito dal Launcher 0.4.8.19 o dallo Studio 0.9.8.19, o più recenti. Dopo l'aggiornamento, il prossimo **Gioca** o **Prova in gioco** lo ricostruisce da solo.
+- **Non ancora del tutto supportato:** l'abbiamo provato nel gioco con un solo giocatore che ospitava una partita multigiocatore contro il computer, e fuori dal gioco con 20 partite simulate fino a quattro giocatori. Nessuno l'ha ancora giocato in due in una partita vera, quindi può avere ancora bug: usalo in multigiocatore a tua discrezione. Provalo e dicci cosa è successo su Discord o GitHub: quale messaggio di RUSE Guard hai visto e se la partita è continuata.
+- **Invariato:** un gioco costruito senza trucchi, la schermaglia contro il computer e la campagna.
+
 **0.4.8.18:** Una correzione dietro le quinte: il controllo di una copia moddata elenca ciò che trova nello stesso ordine su ogni sistema.
 
 - **Dietro le quinte:** il controllo di una copia moddata (quali file del gioco sono cambiati dopo la sua costruzione) ora elenca ciò che trova nello stesso ordine su Windows e su Linux. Ciò che trova non cambia.

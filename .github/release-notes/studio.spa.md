@@ -1,6 +1,15 @@
 **RUSE Studio, una versión preliminar para modders.** Explora las unidades del juego en cualquiera de sus diez
 idiomas, cámbialas en un mod propio y pruébalo en el juego. Tu instalación de Steam nunca se modifica.
 
+**0.9.8.19:** RUSE Guard: un juego construido con un mod de trucos ahora juega partidas multijugador y cooperativas con los jugadores que tienen la misma construcción. Aún no tiene soporte completo y puede tener fallos: úsalo en multijugador bajo tu propia responsabilidad.
+
+- **Informado por un jugador:** dos amigos con el mismo paquete de mods eran expulsados de todas las partidas multijugador, porque un mod del paquete (Infinite Supply Depot) está marcado como truco. RUSE Guard trataba todo juego construido con un truco o una herramienta de prueba como solo sin conexión: abandonaba cada partida multijugador y cooperativa a los pocos segundos, sin mirar nunca quién más jugaba.
+- **Qué hemos cambiado:** un segundo después de empezar una partida multijugador o cooperativa, un juego así ahora dice a los juegos de los demás jugadores qué construcción es: un código corto hecho con la versión del juego y los mods, nada sobre ti. Hacia los siete segundos decide. Si todos los jugadores tienen la misma construcción (la misma versión del juego, los mismos mods en el mismo orden, las mismas versiones de los mods), lo dice en pantalla y la partida sigue. Si alguien tiene otra construcción o ningún mod, abandona la partida como antes.
+- **Un código de partida para estos conjuntos:** en el Launcher, un conjunto de mods con un mod de trucos ahora recibe un código de partida como cualquier otro. El mismo código significa la misma construcción: comparad los códigos antes de jugar.
+- **Todos los jugadores necesitan esta versión:** el juego de cada jugador de la partida debe estar construido con el Launcher 0.4.8.19 o el Studio 0.9.8.19, o más nuevos. Tras actualizar, el siguiente **Jugar** o **Probar en el juego** lo vuelve a construir solo.
+- **Aún sin soporte completo:** lo probamos en el juego con un solo jugador que alojaba una partida multijugador contra el ordenador, y fuera del juego con 20 partidas simuladas de hasta cuatro jugadores. Nadie lo ha jugado todavía entre dos personas en una partida real, así que puede tener fallos: úsalo en multijugador bajo tu propia responsabilidad. Pruébalo y cuéntanos qué pasó en Discord o GitHub: qué mensaje de RUSE Guard viste y si la partida siguió.
+- **Sin cambios:** un juego construido sin trucos, la escaramuza contra el ordenador y la campaña.
+
 **0.9.8.18:** Un arreglo interno: la comprobación de una copia con mods enumera lo que encuentra en el mismo orden en todos los sistemas.
 
 - **Por dentro:** la comprobación de una copia con mods (qué archivos del juego cambiaron después de construirla) ahora enumera lo que encuentra en el mismo orden en Windows y en Linux. Lo que encuentra no cambia.
