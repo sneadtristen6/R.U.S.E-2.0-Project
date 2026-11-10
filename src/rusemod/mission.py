@@ -678,6 +678,11 @@ def problems(m: Mission, base: Base, ctx: Context) -> list:
                 why = ctx.unit_problem(a.unit) if callable(ctx.unit_problem) else None
                 if why:
                     out.append(("error", f"{aat}: {why}"))
+            if a.do == "ai" and a.side in player:
+                # rule: mission-ai-side
+                out.append(("error", f"{aat}: side {a.side} is played by a person, and only the computer's sides have "
+                                     f"a computer player to start: the game stops when this action runs. Pick one of "
+                                     f"the computer's sides"))
     for g in m.goals:
         if g.start == "event" and not any(a.do == "goal" and a.goal == g.id for e in m.events for a in e.actions):
             out.append(("warning", f"goal {g.id} shows by an event, but no event shows it"))

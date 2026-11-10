@@ -204,6 +204,19 @@ class MissionFile(unittest.TestCase):
         unknown = M.problems(m, base(), ctx(classes={"Unit_Other"}))
         self.assertTrue(any("isn't a unit class the game knows" in msg for _l, msg in unknown))
 
+    def test_an_event_cant_hand_a_persons_side_to_the_computer(self):
+        """An event's "ai" action starts the computer player of a side, and only the computer's sides have one:
+        naming the side a person plays is refused (in the game the action stops the whole game when it runs). A
+        computer side is handed over as before."""
+        handover = '\n[[event]]\nid = "handover"\nwhen = "time"\nat = 30\ndo = [{ do = "ai", side = %d }]\n'
+        computer = M.parse(tomllib.loads(SAMPLE + handover % 1))
+        self.assertEqual([p for p in M.problems(computer, base(), ctx()) if p[0] == "error"], [])
+        person = M.parse(tomllib.loads(SAMPLE + handover % 0))
+        errors = [msg for level, msg in M.problems(person, base(), ctx()) if level == "error"]
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("event handover, action 1 (ai)", errors[0])
+        self.assertIn("side 0 is played by a person", errors[0])
+
 
 class MissionScript(unittest.TestCase):
     def setUp(self):

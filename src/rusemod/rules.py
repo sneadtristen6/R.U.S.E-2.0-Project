@@ -148,6 +148,13 @@ RULES: dict[str, Rule] = {
         "A mission keeps the copied mission's human sides as they are: it can't add one or give one to the computer.",
         "studied", "the game's one co-op Operation script raises an error when the connected players aren't as many "
                    "as its human sides (2026-10-09); not seen in a match"),
+    "mission-ai-side": Rule(
+        "A mission's step that starts a side's computer player stops the game when a person plays that side.",
+        "studied", "the game's mission scripts give a computer player only to the sides the computer plays, and the "
+                   "step that starts one uses it without checking the side has one, where the steps beside it check "
+                   "(2026-11-10); all 92 such steps in the game's own missions name a computer's side. A player's "
+                   "game stopped on that step's error four times on 2026-11-05 (Bug Watch; which mission isn't "
+                   "known); not tried in a test of ours"),
     "delete-unit-class": Rule(
         "Deleting a unit the game's Python unit list names makes the game fail to load units.",
         "studied", "every class in the game's unit list looks its unit up by name as the list loads, and a missing "
