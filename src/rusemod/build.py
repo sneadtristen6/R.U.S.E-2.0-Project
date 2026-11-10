@@ -4752,6 +4752,22 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for reason in fair.offline:
                 say(f"built with cheats or test tools: {reason}; multiplayer and co-op only with players who have "
                     f"the same build, any other match is left at once")
+        # guards on three places where the game's own scripts stop the game with mods on (rusemod.scriptguards): in
+        # every copy, on top of what the steps above did to the same script packs. One that can't be joined is left
+        # out and said; it never stops the build.
+        from . import scriptguards
+        guard_path = text_path or find_pack(game, loc.PACK)
+        if guard_path is not None:
+            guard_zz = text_arc if text_arc is not None else open_pack(guard_path)
+            guarded, guards_added, guards_left = scriptguards.script_changes(guard_zz, result.script_changed)
+            if guarded:
+                result.script_changed.update(guarded)
+                if text_arc is None:  # the script packs are in ZZ_Win.dat, so the copy gets its own ZZ_Win.dat
+                    text_path, text_arc = guard_path, guard_zz
+                guards_said = "; ".join(scriptguards.WHAT[name] for name in guards_added)
+                say(f"guards in the game's own scripts, each only where the game would otherwise stop: {guards_said}")
+            for left in guards_left:
+                say(f"note: a guard in the game's scripts was left out. {left}")
         if result.own_models and text_arc is not None:  # new units' own models (rusemod.unitmodel)
             from .unitmodel import KeptModels, UnitModelError, write_batch, write_unit_model
             batch: dict = {}  # every own model into each pack at once: each pack read and written once

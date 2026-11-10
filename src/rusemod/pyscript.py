@@ -481,8 +481,9 @@ _NAME_ARGS = {90, 91, 95, 96, 97, 98, 101, 105, 107, 108, 116}  # STORE/DELETE_N
 # GLOBAL, LOAD_NAME, LOAD_ATTR, IMPORT_NAME, IMPORT_FROM, LOAD_GLOBAL
 _PLACE_ARGS = {113, 119}  # JUMP_ABSOLUTE, CONTINUE_LOOP
 EXTENDED_ARG, LOAD_GLOBAL, IMPORT_NAME, STORE_GLOBAL = 143, 116, 107, 97
-# the built-in names the templates use (len: the game's own headup menu module uses it too)
-BUILTINS = {b"True", b"False", b"None", b"getattr", b"len"}
+# the built-in names the templates use (len: the game's own headup menu module uses it too; KeyError, RuntimeError
+# and super: the guards of rusemod.scriptguards catch the two errors and call a class's parent as the game's code does)
+BUILTINS = {b"True", b"False", b"None", b"getattr", b"len", b"KeyError", b"RuntimeError", b"super"}
 
 
 def _ends_return_none(code: Code) -> bool:
