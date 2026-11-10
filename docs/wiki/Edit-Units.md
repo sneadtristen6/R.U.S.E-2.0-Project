@@ -133,6 +133,15 @@ MG 42) and its **Kind** (AP shell). Type new words and save: every language show
 with **Change the words…**; **Game's words** takes yours out. A copied ammo is called by the name you give it. Not
 tried in the game yet.
 
+**Weapon class** (on an ammo's page, Studio 0.9.8.17): how much of its damage the ammo does to each kind of target.
+**New weapon class…** opens one number for each: buildings and fortifications, aircraft, paratroopers coming down,
+infantry, light vehicles (transports), armour 1 to 5, and construction trucks. 1 is full damage, 2 double, 0.5 half,
+and 0 means it can't attack that target at all. **Save class** gives the ammo its own copy of the game's damage table,
+so no other ammo's damage moves, but every unit that fires this ammo gets it (for one unit only, use
+**Copy this ammo…** first). The button then reads **Change this weapon class…**; **Back to the game's class** takes the
+copy out, and deleting a copied ammo takes its class with it. Seen in the game: rifle squads whose round got numbers
+against tanks shot at tanks with their rifles and damaged them. The button itself hasn't been clicked in the Studio yet.
+
 **Shot speed:** an ammo's shot speed and drag decide when the hit lands: a slower shot hits later, and a moving target
 is aimed ahead by the flight time (known from how the game works; not tried in a test yet).
 

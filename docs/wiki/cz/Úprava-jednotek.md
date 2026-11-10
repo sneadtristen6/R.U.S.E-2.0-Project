@@ -137,6 +137,16 @@ MG 42) a její **Druh** (AP shell). Napište nová slova a uložte: všechny jaz
 přes **Změnit text…**; **Slova hry** ta vaše odebere. Zkopírovaná munice se jmenuje tak, jak ji pojmenujete. Zatím
 nevyzkoušeno ve hře.
 
+**Třída zbraně** (na stránce munice, Studio 0.9.8.17): jakou část poškození munice způsobí každému druhu cíle.
+**Nová třída zbraně…** otevře jedno číslo pro každý druh: budovy a opevnění, letadla, výsadkáři při seskoku,
+pěchota, lehká vozidla (transportéry), pancéřování 1 až 5 a stavební nákladní auta. 1 je plné poškození, 2 dvojnásobné,
+0,5 poloviční a 0 znamená, že tento cíl vůbec nemůže napadnout. **Uložit třídu** dá munici vlastní kopii tabulky
+poškození hry, takže se poškození žádné jiné munice nezmění, ale dostane ji každá jednotka, která touto municí střílí
+(jen pro jednu jednotku nejdřív použijte **Kopírovat tuto munici…**). Tlačítko se pak jmenuje
+**Změnit tuto třídu zbraně…**; **Zpět na třídu ze hry** kopii odebere a smazání zkopírované munice vezme její třídu
+s sebou. Viděno ve hře: pěší družstva, jejichž munice dostala čísla proti tankům, střílela na tanky z pušek
+a poškodila je. Samotné tlačítko zatím ve Studiu nikdo nestiskl.
+
 **Rychlost střely:** rychlost střely munice a její odpor rozhodují, kdy zásah dopadne: pomalejší střela zasáhne
 později a na pohyblivý cíl se míří s předstihem o dobu letu (známo z toho, jak hra funguje; zatím neověřeno testem).
 

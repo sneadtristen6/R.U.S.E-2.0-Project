@@ -64,12 +64,24 @@ doesn't sit right, open **Move it** under the size (it stays open on a model you
 back where it was fitted. Click **Move** and the model is fitted again from its own file, that far away; its turret and
 propellers go with it, so they still turn in the right place. In the 3D view the blue ring is where the unit it copies
 stands, and the mark on the ring is the front. A new size keeps the move. A model rigged to the unit's own bones (a
-soldier, a gun's crew) stays where its bones are: move that one in Blender.
+soldier, a gun's crew) stays where its bones are: move that one in Blender. A model imported before Studio 0.9.8.17
+keeps its old place (its turret on the copied unit's turret), even resized, until you import it again or move it; the
+era units' models keep theirs.
 
 **Planes:** a plane opened in Blender from the Studio and brought back faces forward and keeps its propellers where
 your model has them, as many as it has, whatever the plane it copies had: blades on the ground, spinning discs in the
 air. Seen in the game. A model from anywhere else keeps its propellers as it drew them, standing still: the importer
-can't tell yet which parts of it are propellers.
+can't tell yet which parts of it are propellers. In the 3D view a plane's discs show see-through, the way the game
+draws a spinning propeller.
+
+**Soldiers, crews and more planes:** soldiers, a gun's crew and the planes the Studio couldn't fit a model to before
+(the P-47, for one) take a model of their own too, if it is rigged to the unit's own bones: one of the game's models
+opened in Blender from the Studio and changed there, say. It goes on those bones as it is, nothing moved or scaled,
+and a squad's other men with the same bones wear it too. Seen in the game with a rifle squad, a gun's crew and the P-47.
+
+**Your players:** a mod with a model imported by Studio 0.9.8.17 or later needs Launcher 0.4.8.17 or newer: an older
+one gives the model the copied unit's skeleton, so its turret turns around the wrong point. 0.4.8.17 is a required
+update, so the Launcher installs it by itself.
 
 ## 4. Its card, then test
 
@@ -93,9 +105,13 @@ units whose turrets the Studio misread): use **Import model…** again on that u
 - Tracks and wheels don't turn yet: they move with the hull.
 - The gun's flash and the wreck are the copied unit's.
 - Pictures are made at most 1024 across, like the game's own unit pictures.
+- Tried in the game with the game's own models (the Sherman, two planes, a rifle squad, a gun's crew): not yet with a
+  model from anywhere else, another turret tank, a turret that turns all the way round, or a plane copying a unit with
+  no propellers.
 
-From the command line, the same: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Add `--move 50 0 -10` to move it 50 forward and 10
-down from where it's fitted (forward, right, up).
+From the command line: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. With `--move`, it's fitted the way the Studio fits
+it: `--move 50 0 -10` moves it 50 forward and 10 down from where it's fitted (forward, right, up), and `--move 0 0 0`
+leaves it there. Without `--move`, the command still fits it the old way, its turret on the copied unit's turret.
 
 **Next:** [[Export and share|Export-and-Share]]

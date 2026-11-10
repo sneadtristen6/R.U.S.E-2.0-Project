@@ -46,10 +46,10 @@ En la página de la unidad nueva, bajo **Su propio modelo**:
    a un Sherman es **1.36** (sus longitudes reales).
 2. Haz clic en **Importar modelo…** y elige el .3ds o el .glb.
 
-El Studio lo ajusta a la unidad: mirando hacia delante (hacia donde apunta su cañón), su longitud, el anillo de su
-torreta sobre la torreta de la unidad copiada, apoyado en el suelo. Sus imágenes pasan a ser texturas propias. La
-página lo muestra en 3D, con las piezas que giran con la torreta. Si no se encontró una imagen, dice cuál: pon las
-imágenes junto al modelo e impórtalo otra vez.
+El Studio lo ajusta a la unidad: mirando hacia delante (hacia donde apunta su cañón), su longitud, colocado donde está
+la unidad copiada, con su torreta girando en el sitio que tiene en tu modelo, apoyado en el suelo. Sus imágenes pasan a
+ser texturas propias. La página lo muestra en 3D, con las piezas que giran con la torreta. Si no se encontró una imagen,
+dice cuál: pon las imágenes junto al modelo e impórtalo otra vez.
 
 Se guarda en tu mod como `files/models/<the unit's name>.glb`. **Usar el modelo de la unidad copiada** lo quita otra
 vez.
@@ -60,8 +60,33 @@ el modelo se ajusta otra vez a partir de su propio archivo. Con varios aviones n
 les cambia el tamaño a todos. El juego lee un modelo cuando carga, así que un tamaño nuevo se ve a partir de la
 siguiente construcción.
 
-**Los aviones:** un avión abierto en Blender desde el Studio y traído de vuelta conserva sus hélices girando y mira hacia
-delante. Visto en el juego.
+**Dónde queda:** un modelo nuevo se pone en el centro de la unidad que copia, así que a la mayoría de los modelos no les
+hace falta nada aquí. Si el tuyo no queda bien colocado, abre la sección **Moverlo** bajo el tamaño (se queda abierta en
+un modelo que hayas movido). Pide tres números, **Adelante**, **Derecha** y **Arriba**, en unidades del juego (la página
+dice cuánto mide la unidad copiada en esas unidades). Un menos va al otro lado, y 0, 0, 0 lo devuelve a donde se ajustó.
+Haz clic en **Mover** y el modelo se ajusta otra vez a partir de su propio archivo, movido esa distancia; su torreta y
+sus hélices van con él, así que siguen girando en el sitio correcto. En la vista 3D, el anillo azul es donde está la
+unidad copiada, y la marca del anillo es el frente. Un tamaño nuevo conserva el movimiento. Un modelo ligado a los
+huesos de la unidad (un soldado, la dotación de un cañón) se queda donde están sus huesos: ese, muévelo en Blender. Un
+modelo importado antes del Studio 0.9.8.17 conserva su sitio de antes (su torreta sobre la torreta de la unidad
+copiada), aunque le cambies el tamaño, hasta que lo importes otra vez o lo muevas; los modelos de las unidades de época
+conservan el suyo.
+
+**Los aviones:** un avión abierto en Blender desde el Studio y traído de vuelta mira hacia delante y conserva sus
+hélices donde las tiene tu modelo, tantas como tenga, sin importar las que tuviera el avión que copia: palas en el
+suelo, discos girando en el aire. Visto en el juego. Un modelo de cualquier otro sitio conserva sus hélices tal como
+están dibujadas, quietas: el importador aún no sabe distinguir cuáles de sus piezas son hélices. En la vista 3D, los
+discos de un avión se ven transparentes, como el juego dibuja una hélice que gira.
+
+**Soldados, dotaciones y más aviones:** los soldados, la dotación de un cañón y los aviones a los que el Studio antes no
+podía ajustar un modelo (el P-47, por ejemplo) también admiten un modelo propio, si está ligado a los huesos de la
+unidad: uno de los modelos del juego abierto en Blender desde el Studio y cambiado allí, por ejemplo. Va sobre esos
+huesos tal cual, sin mover ni escalar nada, y los demás hombres de un pelotón con los mismos huesos también lo llevan.
+Visto en el juego con un pelotón de fusileros, la dotación de un cañón y el P-47.
+
+**Tus jugadores:** un mod con un modelo importado con el Studio 0.9.8.17 o posterior necesita el Launcher 0.4.8.17 o más
+reciente: un Launcher más antiguo le da al modelo el esqueleto de la unidad copiada, así que su torreta gira alrededor
+del punto equivocado. La 0.4.8.17 es una actualización obligatoria, así que el Launcher la instala solo.
 
 ## 4. Su tarjeta, y luego la prueba
 
@@ -88,9 +113,15 @@ queda sobre la torreta.
 - Las orugas y las ruedas aún no giran: se mueven con el casco.
 - El fogonazo del cañón y los restos son los de la unidad copiada.
 - Las imágenes se hacen de 1024 de ancho como máximo, como las imágenes de las unidades del propio juego.
+- Probado en el juego con los propios modelos del juego (el Sherman, dos aviones, un pelotón de fusileros, la dotación
+  de un cañón): aún no con un modelo de otro sitio, otro tanque con torreta, una torreta que da la vuelta completa ni un
+  avión que copie una unidad sin hélices.
 
-Desde la línea de comandos, lo mismo: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Desde la línea de comandos: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Con `--move`, se ajusta como lo ajusta el Studio:
+`--move 50 0 -10` lo mueve 50 hacia delante y 10 hacia abajo desde donde está ajustado (adelante, derecha, arriba), y
+`--move 0 0 0` lo deja ahí. Sin `--move`, el comando aún lo ajusta a la manera antigua, con su torreta sobre la torreta
+de la unidad copiada.
 
 **Siguiente:** [[Exportar y compartir|Exportar-y-compartir]]
 

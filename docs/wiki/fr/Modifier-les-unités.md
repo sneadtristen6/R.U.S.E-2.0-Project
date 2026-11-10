@@ -148,6 +148,17 @@ et les munitions**, en dessous, reprend aussi ces étapes.
 affichent jusqu'à ce que vous en changiez une à part avec **Changer le texte…** ; **Mots du jeu** retire les vôtres.
 Une munition copiée porte le nom que vous lui donnez. Pas encore essayé en jeu.
 
+**Classe d'arme** (sur la page d'une munition, Studio 0.9.8.17) : la part de ses dégâts que la munition inflige à
+chaque type de cible. **Nouvelle classe d'arme…** ouvre un nombre pour chacun : bâtiments et fortifications, avions,
+parachutistes en descente, infanterie, véhicules légers (transports), blindage 1 à 5, et camions de construction.
+1 = dégâts complets, 2 = le double, 0,5 = la moitié, et 0 signifie qu'elle ne peut pas du tout attaquer cette cible.
+**Enregistrer la classe** donne à la munition sa propre copie de la table des dégâts du jeu : les dégâts des autres
+munitions ne bougent pas, mais chaque unité qui tire cette munition la reçoit (pour une seule unité, utilisez d'abord
+**Copier cette munition…**). Le bouton devient alors **Modifier cette classe d'arme…** ;
+**Revenir à la classe du jeu** retire la copie, et supprimer une munition copiée emporte sa classe avec elle. Vu en
+jeu : des escouades de fusiliers dont la munition avait reçu des nombres contre les chars ont tiré sur des chars avec
+leurs fusils et les ont endommagés. Le bouton lui-même n'a pas encore été cliqué dans le Studio.
+
 **Vitesse du tir :** la vitesse du projectile d'une munition et sa traînée décident du moment où le coup arrive : un tir
 plus lent touche plus tard, et une cible en mouvement est visée en avance, du temps de vol (connu par le fonctionnement
 du jeu ; pas encore essayé dans un test).

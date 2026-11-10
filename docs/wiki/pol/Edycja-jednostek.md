@@ -140,6 +140,16 @@ MG 42) i jej **Rodzaj** (AP shell). Wpisz nowe słowa i zapisz: każdy język je
 osobno przyciskiem **Zmień słowa…**; **Słowa z gry** usuwa twoje. Skopiowana amunicja nazywa się tak, jak ją nazwiesz.
 Jeszcze nie sprawdzone w grze.
 
+**Klasa broni** (na stronie amunicji, Studio 0.9.8.17): jaką część obrażeń amunicja zadaje każdemu rodzajowi celu.
+**Nowa klasa broni…** otwiera po jednej liczbie dla każdego: budynki i umocnienia, samoloty, spadochroniarze w locie,
+piechota, lekkie pojazdy (transportery), pancerz od 1 do 5 i ciężarówki budowlane. 1 to pełne obrażenia, 2 podwójne,
+0,5 połowa, a 0 oznacza, że w ogóle nie może atakować tego celu. **Zapisz klasę** daje amunicji własną kopię tabeli
+obrażeń gry, więc obrażenia żadnej innej amunicji się nie zmieniają, ale dostaje ją każda jednostka, która strzela tą
+amunicją (tylko dla jednej jednostki najpierw użyj **Kopiuj tę amunicję…**). Przycisk nazywa się wtedy
+**Zmień tę klasę broni…**; **Wróć do klasy z gry** usuwa kopię, a usunięcie skopiowanej amunicji zabiera ze sobą jej
+klasę. Widziane w grze: drużyny strzelców, których amunicja dostała liczby przeciw czołgom, strzelały do czołgów
+z karabinów i je uszkadzały. Samego przycisku nie kliknięto jeszcze w Studio.
+
 **Prędkość pocisku:** prędkość pocisku amunicji i jego opór decydują, kiedy trafienie nastąpi: wolniejszy pocisk
 trafia później, a do ruchomego celu celuje się z wyprzedzeniem o czas lotu (wiadomo to z tego, jak działa gra; jeszcze
 nie sprawdzone w teście).

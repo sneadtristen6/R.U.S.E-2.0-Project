@@ -47,10 +47,10 @@ Sur la page de la nouvelle unité, sous **Son propre modèle** :
    rapport à un Sherman, c'est **1.36** (leurs longueurs réelles).
 2. Cliquez sur **Importer un modèle…** et choisissez le .3ds ou le .glb.
 
-Le Studio l'ajuste à l'unité : tourné vers l'avant (là où pointe son canon), à sa longueur, l'anneau de sa tourelle sur
-la tourelle de l'unité copiée, posé sur le sol. Ses images deviennent ses propres textures. La page le montre en 3D, avec
-les pièces qui tournent avec la tourelle. Si une image n'a pas été trouvée, elle dit laquelle : mettez les images à côté
-du modèle et importez de nouveau.
+Le Studio l'ajuste à l'unité : tourné vers l'avant (là où pointe son canon), à sa longueur, placé là où se tient l'unité
+copiée, sa tourelle tournant là où elle est sur votre modèle, posé sur le sol. Ses images deviennent ses propres
+textures. La page le montre en 3D, avec les pièces qui tournent avec la tourelle. Si une image n'a pas été trouvée, elle
+dit laquelle : mettez les images à côté du modèle et importez de nouveau.
 
 Il est enregistré dans votre mod sous `files/models/<the unit's name>.glb`. **Utiliser le modèle de l'unité copiée** le
 retire de nouveau.
@@ -61,8 +61,33 @@ nouveau ajusté depuis son propre fichier. Avec plusieurs nouveaux avions (ou un
 redimensionne tous. Le jeu lit un modèle quand il se charge, donc une nouvelle taille se voit à partir de la construction
 suivante.
 
-**Les avions :** un avion ouvert dans Blender depuis le Studio puis ramené garde ses hélices qui tournent et reste tourné
-vers l'avant. Vu en jeu.
+**Où il se place :** un nouveau modèle est posé au milieu de l'unité qu'il copie, donc la plupart des modèles n'ont
+besoin de rien ici. Si le vôtre n'est pas bien placé, ouvrez la partie **Le déplacer** sous la taille (elle reste
+ouverte sur un modèle que vous avez déplacé). Elle demande trois nombres, **Avant**, **Droite** et **Haut**, en unités
+du jeu (la page dit quelle longueur fait l'unité copiée, dans ces unités). Un moins va dans l'autre sens, et 0, 0, 0 le
+remet là où il a été ajusté. Cliquez sur **Déplacer** et le modèle est de nouveau ajusté depuis son propre fichier,
+déplacé d'autant ; sa tourelle et ses hélices le suivent, donc elles tournent toujours au bon endroit. Dans la vue 3D,
+l'anneau bleu est l'endroit où se tient l'unité copiée, et la marque sur l'anneau est l'avant. Une nouvelle taille garde
+le déplacement. Un modèle lié aux os de l'unité (un soldat, les servants d'un canon) reste là où sont ses os : celui-là,
+déplacez-le dans Blender. Un modèle importé avant le Studio 0.9.8.17 garde son ancienne place (sa tourelle sur la
+tourelle de l'unité copiée), même redimensionné, jusqu'à ce que vous l'importiez de nouveau ou le déplaciez ; les
+modèles des unités d'époque gardent la leur.
+
+**Les avions :** un avion ouvert dans Blender depuis le Studio puis ramené reste tourné vers l'avant et garde ses
+hélices là où votre modèle les a, autant qu'il en a, quelles que soient celles de l'avion qu'il copie : des pales au
+sol, des disques qui tournent en vol. Vu en jeu. Un modèle venu d'ailleurs garde ses hélices telles qu'elles sont
+dessinées, immobiles : l'importateur ne sait pas encore dire lesquelles de ses pièces sont des hélices. Dans la vue 3D,
+les disques d'un avion apparaissent transparents, comme le jeu dessine une hélice qui tourne.
+
+**Soldats, servants et plus d'avions :** les soldats, les servants d'un canon et les avions auxquels le Studio ne savait
+pas ajuster de modèle avant (le P-47, par exemple) prennent eux aussi un modèle à eux, s'il est lié aux os de l'unité :
+par exemple un des modèles du jeu ouvert dans Blender depuis le Studio et modifié là. Il va sur ces os tel quel, sans
+rien déplacer ni redimensionner, et les autres hommes d'une escouade qui ont les mêmes os le portent aussi. Vu en jeu
+avec une escouade de fusiliers, les servants d'un canon et le P-47.
+
+**Vos joueurs :** un mod avec un modèle importé par le Studio 0.9.8.17 ou plus récent demande le Launcher 0.4.8.17 ou
+plus récent : un Launcher plus ancien donne au modèle le squelette de l'unité copiée, donc sa tourelle tourne autour du
+mauvais point. La 0.4.8.17 est une mise à jour obligatoire, donc le Launcher l'installe tout seul.
 
 ## 4. Sa carte, puis le test
 
@@ -89,9 +114,15 @@ cette unité, et il se pose sur la tourelle.
 - Les chenilles et les roues ne tournent pas encore : elles bougent avec la caisse.
 - La lueur du canon et l'épave sont celles de l'unité copiée.
 - Les images font au plus 1024 de large, comme les propres images d'unités du jeu.
+- Essayé en jeu avec les propres modèles du jeu (le Sherman, deux avions, une escouade de fusiliers, les servants d'un
+  canon) : pas encore avec un modèle venu d'ailleurs, un autre char à tourelle, une tourelle qui fait un tour complet,
+  ou un avion qui copie une unité sans hélices.
 
-En ligne de commande, la même chose : `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+En ligne de commande : `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Avec `--move`, il est ajusté comme le Studio
+l'ajuste : `--move 50 0 -10` le déplace de 50 vers l'avant et de 10 vers le bas depuis là où il est ajusté (avant,
+droite, haut), et `--move 0 0 0` l'y laisse. Sans `--move`, la commande l'ajuste toujours à l'ancienne, sa tourelle sur
+la tourelle de l'unité copiée.
 
 **Suivant :** [[Exporter et partager|Exporter-et-partager]]
 

@@ -47,10 +47,10 @@ Na stronie nowej jednostki, pod **Własny model**:
    Shermana to **1.36** (ich prawdziwe długości).
 2. Kliknij **Importuj model…** i wybierz plik .3ds lub .glb.
 
-Studio dopasowuje go do jednostki: przodem do przodu (tam, gdzie celuje jego działo), na jej długość, z pierścieniem wieży
-na wieży skopiowanej jednostki, stojący na ziemi. Jego obrazy stają się jego własnymi teksturami. Strona pokazuje go
-w 3D, razem z tym, które części obracają się z wieżą. Jeśli jakiś obraz nie został znaleziony, strona mówi który: połóż
-obrazy obok modelu i zaimportuj go znowu.
+Studio dopasowuje go do jednostki: przodem do przodu (tam, gdzie celuje jego działo), na jej długość, w miejscu, w
+którym stoi skopiowana jednostka, z wieżą obracającą się tam, gdzie jest na twoim modelu, stojący na ziemi. Jego obrazy
+stają się jego własnymi teksturami. Strona pokazuje go w 3D, razem z tym, które części obracają się z wieżą. Jeśli jakiś
+obraz nie został znaleziony, strona mówi który: połóż obrazy obok modelu i zaimportuj go znowu.
 
 Zostaje zapisany w twoim modzie jako `files/models/<the unit's name>.glb`. **Użyj modelu kopiowanej jednostki** znowu go
 usuwa.
@@ -60,8 +60,33 @@ usuwa.
 zostanie dopasowany od nowa z jego własnego pliku. Przy kilku nowych samolotach (lub jednostkach lądowych) jedno kliknięcie
 zmienia rozmiar wszystkich. Gra czyta model przy wczytywaniu, więc nowy rozmiar widać od następnego budowania.
 
-**Samoloty:** samolot otwarty w Blenderze ze Studio i przeniesiony z powrotem zachowuje obracające się śmigła i jest
-zwrócony do przodu. Widziane w grze.
+**Gdzie stoi:** nowy model jest stawiany na środku jednostki, którą kopiuje, więc większości modeli nic tu nie trzeba.
+Jeśli twój stoi nie tak, jak trzeba, otwórz sekcję **Przesuń** pod rozmiarem (zostaje otwarta przy modelu już
+przesuniętym). Są w niej trzy liczby, **Do przodu**, **W prawo** i **W górę**, w jednostkach gry (strona mówi, jaką
+długość ma skopiowana jednostka w tych jednostkach). Minus to przeciwny kierunek, a 0, 0, 0 przywraca go tam, gdzie
+został dopasowany. Kliknij przycisk **Przesuń**, a model zostanie dopasowany od nowa z jego własnego pliku, przesunięty
+o tyle; jego wieża i śmigła idą razem z nim, więc dalej obracają się we właściwym miejscu. W widoku 3D niebieski
+pierścień to miejsce, w którym stoi skopiowana jednostka, a znak na pierścieniu to przód. Nowy rozmiar zachowuje
+przesunięcie. Model związany z kośćmi jednostki (żołnierz, obsługa działa) zostaje tam, gdzie są jego kości: taki
+przesuń w Blenderze. Model zaimportowany przed Studio 0.9.8.17 zachowuje swoje stare miejsce (wieżę na wieży skopiowanej
+jednostki), nawet po zmianie rozmiaru, dopóki nie zaimportujesz go ponownie albo go nie przesuniesz; modele jednostek z
+innej epoki zachowują swoje.
+
+**Samoloty:** samolot otwarty w Blenderze ze Studio i przeniesiony z powrotem jest zwrócony do przodu i ma śmigła tam,
+gdzie ma je twój model, tyle, ile ich ma, bez względu na to, jakie miał samolot, który kopiuje: łopaty na ziemi,
+wirujące tarcze w powietrzu. Widziane w grze. Model z dowolnego innego źródła zachowuje śmigła tak, jak je narysowano,
+nieruchome: importer nie umie jeszcze rozpoznać, które jego części są śmigłami. W widoku 3D tarcze samolotu są
+półprzezroczyste, tak jak gra rysuje obracające się śmigło.
+
+**Żołnierze, obsługa dział i więcej samolotów:** żołnierze, obsługa działa i samoloty, do których Studio wcześniej nie
+umiało dopasować modelu (na przykład P-47), też mogą dostać własny model, jeśli jest związany z kośćmi jednostki: na
+przykład jeden z modeli gry otwarty w Blenderze ze Studio i tam zmieniony. Trafia na te kości taki, jaki jest, nic nie
+jest przesuwane ani skalowane, a pozostali ludzie z oddziału z tymi samymi kośćmi też go noszą. Widziane w grze z
+oddziałem strzelców, obsługą działa i P-47.
+
+**Twoi gracze:** mod z modelem zaimportowanym przez Studio 0.9.8.17 lub nowsze potrzebuje Launchera 0.4.8.17 lub
+nowszego: starszy Launcher daje modelowi szkielet skopiowanej jednostki, więc jego wieża obraca się wokół złego punktu.
+Wersja 0.4.8.17 to wymagana aktualizacja, więc Launcher instaluje ją sam.
 
 ## 4. Jego karta, potem test
 
@@ -86,9 +111,15 @@ stanie na wieży.
 - Gąsienice i koła jeszcze się nie obracają: poruszają się z kadłubem.
 - Błysk działa i wrak są ze skopiowanej jednostki.
 - Obrazy mają najwyżej 1024 piksele szerokości, jak własne obrazy jednostek gry.
+- Wypróbowane w grze z własnymi modelami gry (Sherman, dwa samoloty, oddział strzelców, obsługa działa): jeszcze nie z
+  modelem z innego źródła, innym czołgiem z wieżą, wieżą obracającą się dookoła ani samolotem kopiującym jednostkę bez
+  śmigieł.
 
-Z wiersza poleceń to samo: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Z wiersza poleceń: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Z `--move` jest dopasowywany tak, jak dopasowuje go
+Studio: `--move 50 0 -10` przesuwa go o 50 do przodu i o 10 w dół od miejsca dopasowania (do przodu, w prawo, w górę), a
+`--move 0 0 0` zostawia go tam. Bez `--move` polecenie dalej dopasowuje go po staremu, z wieżą na wieży skopiowanej
+jednostki.
 
 **Dalej:** [[Eksport i udostępnianie|Eksport-i-udostępnianie]]
 

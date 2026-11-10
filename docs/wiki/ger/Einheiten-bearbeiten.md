@@ -147,6 +147,17 @@ Waffen und Munition**, darunter, enthält diese Schritte ebenfalls.
 einzeln mit **Text ändern …** änderst; **Wörter des Spiels** nimmt deine wieder heraus. Eine kopierte Munition heißt so,
 wie du sie nennst. Noch nicht im Spiel ausprobiert.
 
+**Waffenklasse** (auf der Seite einer Munition, Studio 0.9.8.17): wie viel ihres Schadens die Munition jeder Zielart
+zufügt. **Neue Waffenklasse…** öffnet eine Zahl pro Zielart: Gebäude und Befestigungen, Flugzeuge, Fallschirmjäger im
+Sprung, Infanterie, leichte Fahrzeuge (Transporter), Panzerung 1 bis 5 und Baufahrzeuge. 1 ist voller Schaden, 2 das
+Doppelte, 0,5 die Hälfte, und 0 heißt, sie kann dieses Ziel gar nicht angreifen. **Klasse speichern** gibt der Munition
+ihre eigene Kopie der Schadenstabelle des Spiels: der Schaden keiner anderen Munition ändert sich, aber jede Einheit,
+die diese Munition verschießt, bekommt sie (für nur eine Einheit zuerst **Diese Munition kopieren…**). Die
+Schaltfläche heißt dann **Diese Waffenklasse ändern…**; **Zurück zur Klasse des Spiels** nimmt die Kopie wieder
+heraus, und das Löschen einer kopierten Munition nimmt ihre Klasse mit. Im Spiel gesehen: Schützengruppen, deren
+Munition Zahlen gegen Panzer bekam, schossen mit ihren Gewehren auf Panzer und beschädigten sie. Die Schaltfläche
+selbst wurde im Studio noch nicht angeklickt.
+
 **Schussgeschwindigkeit:** Schussgeschwindigkeit und Luftwiderstand einer Munition bestimmen, wann der Treffer landet:
 ein langsamerer Schuss trifft später, und auf ein bewegtes Ziel wird um die Flugzeit vorgehalten (aus der
 Funktionsweise des Spiels bekannt; noch nicht in einem Test ausprobiert).

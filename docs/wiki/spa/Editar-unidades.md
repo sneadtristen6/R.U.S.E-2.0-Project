@@ -144,6 +144,16 @@ armas y la munición**, debajo, también tiene estos pasos.
 muestran hasta que cambies uno por separado con **Cambiar el texto…**; **Palabras del juego** quita las tuyas. Una
 munición copiada se llama como tú la llames. Aún sin probar en el juego.
 
+**Clase de arma** (en la página de una munición, Studio 0.9.8.17): qué parte de su daño hace la munición a cada tipo
+de objetivo. **Nueva clase de arma…** abre un número para cada uno: edificios y fortificaciones, aviones, paracaidistas
+en descenso, infantería, vehículos ligeros (transportes), blindaje 1 a 5 y camiones de construcción. 1 es daño
+completo, 2 el doble, 0,5 la mitad, y 0 significa que no puede atacar ese objetivo en absoluto. **Guardar clase** da a
+la munición su propia copia de la tabla de daños del juego, así que no cambia el daño de ninguna otra munición, pero
+cada unidad que dispara esta munición la recibe (para una sola unidad, usa antes **Copiar esta munición…**). El botón
+pasa a decir **Cambiar esta clase de arma…**; **Volver a la clase del juego** quita la copia, y borrar una munición
+copiada se lleva su clase con ella. Visto en el juego: pelotones de fusileros cuya munición recibió números contra
+tanques dispararon a los tanques con sus fusiles y los dañaron. El botón en sí aún no se ha pulsado en el Studio.
+
 **Velocidad del disparo:** la velocidad y la resistencia del disparo de una munición deciden cuándo llega el impacto:
 un disparo más lento impacta más tarde, y a un objetivo en movimiento se le apunta por delante según el tiempo de vuelo
 (se sabe por cómo funciona el juego; aún no se ha comprobado en una prueba).

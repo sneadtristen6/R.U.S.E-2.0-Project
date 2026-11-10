@@ -138,6 +138,17 @@ munizioni**, sotto di esso, ha anche questi passi.
 ne cambi una da sola con **Cambia le parole…**; **Parole del gioco** toglie le tue. Una munizione copiata si chiama con il
 nome che le dai. Non ancora provato in gioco.
 
+**Classe d'arma** (nella pagina di una munizione, Studio 0.9.8.17): quanta parte del suo danno la munizione infligge a
+ogni tipo di bersaglio. **Nuova classe d'arma…** apre un numero per ciascuno: edifici e fortificazioni, aerei,
+paracadutisti in discesa, fanteria, veicoli leggeri (trasporti), corazza da 1 a 5 e camion da costruzione. 1 è il danno
+pieno, 2 il doppio, 0,5 la metà, e 0 significa che non può attaccare affatto quel bersaglio. **Salva classe** dà alla
+munizione una propria copia della tabella dei danni del gioco, così non cambia il danno di nessun'altra munizione, ma
+ogni unità che spara questa munizione la riceve (per una sola unità, usa prima **Copia questa munizione…**). Il
+pulsante diventa allora **Cambia questa classe d'arma…**; **Torna alla classe del gioco** toglie la copia, ed
+eliminare una munizione copiata elimina anche la sua classe. Visto in gioco: squadre di fucilieri la cui munizione
+aveva ricevuto numeri contro i carri armati hanno sparato ai carri con i fucili e li hanno danneggiati. Il pulsante in
+sé non è ancora stato cliccato nello Studio.
+
 **Velocità del colpo:** la velocità del colpo di una munizione e la sua resistenza dell'aria decidono quando arriva il
 colpo: un colpo più lento colpisce più tardi, e un bersaglio in movimento viene puntato in anticipo, in base al tempo di
 volo (noto da come funziona il gioco; non ancora provato in un test).

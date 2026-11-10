@@ -46,10 +46,10 @@ Na stránce nové jednotky, pod **Vlastní model**:
    **1.36** (jejich skutečné délky).
 2. Klikněte na **Importovat model…** a vyberte .3ds nebo .glb.
 
-Studio ho napasuje na jednotku: natočený dopředu (tam, kam míří jeho kanón), jeho délku, jeho věžový kruh na věž
-kopírované jednotky, stojící na zemi. Jeho obrázky se stanou jeho vlastními texturami. Stránka ho ukáže ve 3D, i to,
-které díly se otáčejí s věží. Pokud se nějaký obrázek nenašel, řekne který: dejte obrázky vedle modelu a importujte
-znovu.
+Studio ho napasuje na jednotku: natočený dopředu (tam, kam míří jeho kanón), jeho délku, umístěný tam, kde stojí
+kopírovaná jednotka, s věží, která se otáčí tam, kde je na vašem modelu, stojící na zemi. Jeho obrázky se stanou jeho
+vlastními texturami. Stránka ho ukáže ve 3D, i to, které díly se otáčejí s věží. Pokud se nějaký obrázek nenašel,
+řekne který: dejte obrázky vedle modelu a importujte znovu.
 
 Uloží se do vašeho modu jako `files/models/<the unit's name>.glb`. **Použít model kopírované jednotky** ho zase vyjme.
 
@@ -58,8 +58,30 @@ Uloží se do vašeho modu jako `files/models/<the unit's name>.glb`. **Použít
 napasuje znovu ze svého vlastního souboru. S několika novými letadly (nebo pozemními jednotkami) změní jedno kliknutí
 velikost všem. Hra čte model při načítání, takže nová velikost se ukáže od dalšího sestavení.
 
-**Letadla:** letadlo otevřené v Blenderu ze Studia a přenesené zpět si ponechá roztočené vrtule a je natočené dopředu.
-Viděno ve hře.
+**Kde sedí:** nový model se umístí doprostřed jednotky, kterou kopíruje, takže většina modelů tu nic nepotřebuje.
+Pokud ten váš nesedí správně, otevřete **Posunout** pod velikostí (u modelu, který jste posunuli, zůstane otevřené).
+Má tři čísla, **Vpřed**, **Vpravo** a **Nahoru**, v jednotkách hry (stránka uvádí, jak dlouhá je kopírovaná jednotka
+v těchto jednotkách). Mínus posouvá opačným směrem a 0, 0, 0 ho vrátí tam, kam byl napasován. Klikněte na
+**Posunout** a model se napasuje znovu ze svého vlastního souboru, posunutý o tolik; jeho věž a vrtule jdou s ním,
+takže se pořád otáčejí na správném místě. Ve 3D pohledu je modrý kruh místo, kde stojí kopírovaná jednotka, a značka
+na kruhu je předek. Nová velikost posun zachová. Model napojený na vlastní kosti jednotky (voják, obsluha děla) zůstane
+tam, kde jsou jeho kosti: ten posuňte v Blenderu. Model importovaný Studiem starším než 0.9.8.17 si nechá své staré
+místo (věž na věži kopírované jednotky), i po změně velikosti, dokud ho znovu neimportujete nebo neposunete; modely
+jednotek z jiné éry si nechají svá místa.
+
+**Letadla:** letadlo otevřené v Blenderu ze Studia a přenesené zpět je natočené dopředu a ponechá si vrtule tam, kde
+je má váš model, a tolik, kolik jich má, ať už mělo kopírované letadlo jakékoli: listy na zemi, roztočené kotouče ve
+vzduchu. Viděno ve hře. Model odjinud si nechá vrtule tak, jak jsou v něm nakreslené, nehybné: import zatím nepozná,
+které jeho díly jsou vrtule. Ve 3D pohledu jsou kotouče letadla průhledné, tak jak hra kreslí roztočenou vrtuli.
+
+**Vojáci, obsluhy a další letadla:** vojáci, obsluha děla a letadla, na která Studio dřív model napasovat neumělo
+(například P-47), dostanou vlastní model také, pokud je napojený na vlastní kosti jednotky: třeba jeden z modelů hry
+otevřený v Blenderu ze Studia a tam upravený. Na ty kosti jde tak, jak je, nic se neposouvá ani nemění velikost, a
+ostatní muži družstva se stejnými kostmi ho nosí také. Viděno ve hře se střeleckým družstvem, obsluhou děla a P-47.
+
+**Vaši hráči:** mod s modelem importovaným Studiem 0.9.8.17 nebo novějším potřebuje Launcher 0.4.8.17 nebo novější:
+starší dá modelu kostru kopírované jednotky, takže se jeho věž otáčí kolem špatného bodu. 0.4.8.17 je povinná
+aktualizace, takže ji Launcher nainstaluje sám.
 
 ## 4. Jeho karta, pak test
 
@@ -84,9 +106,14 @@ na věži.
 - Pásy a kola se zatím neotáčejí: pohybují se s korbou.
 - Záblesk kanónu a vrak jsou z kopírované jednotky.
 - Obrázky jsou nejvýš 1024 na šířku, jako vlastní obrázky jednotek hry.
+- Vyzkoušeno ve hře s vlastními modely hry (Sherman, dvě letadla, střelecké družstvo, obsluha děla): zatím ne
+  s modelem odjinud, jiným tankem s věží, věží, která se otočí dokola, ani s letadlem, které kopíruje jednotku bez
+  vrtulí.
 
-Z příkazového řádku totéž: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Z příkazového řádku: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. S `--move` se napasuje tak, jak ho napasuje
+Studio: `--move 50 0 -10` ho posune o 50 dopředu a o 10 dolů od místa, kam je napasovaný (vpřed, vpravo, nahoru),
+a `--move 0 0 0` ho tam nechá. Bez `--move` ho příkaz pořád napasuje postaru, s věží na věži kopírované jednotky.
 
 **Další:** [[Export a sdílení|Export-a-sdílení]]
 

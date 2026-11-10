@@ -46,10 +46,10 @@ Nella pagina della nuova unità, sotto **Un modello tutto suo**:
    rispetto a uno Sherman è **1.36** (le loro lunghezze reali).
 2. Clicca su **Importa modello…** e scegli il .3ds o il .glb.
 
-Lo Studio lo adatta all'unità: rivolto in avanti (dove punta il suo cannone), la sua lunghezza, l'anello della sua torretta
-sulla torretta dell'unità copiata, appoggiato a terra. Le sue immagini diventano texture sue. La pagina lo mostra in 3D,
-con le parti che girano con la torretta. Se un'immagine non è stata trovata, dice quale: metti le immagini accanto al
-modello e importa di nuovo.
+Lo Studio lo adatta all'unità: rivolto in avanti (dove punta il suo cannone), la sua lunghezza, messo dove sta l'unità
+copiata, con la torretta che gira dove si trova sul tuo modello, appoggiato a terra. Le sue immagini diventano texture
+sue. La pagina lo mostra in 3D, con le parti che girano con la torretta. Se un'immagine non è stata trovata, dice quale:
+metti le immagini accanto al modello e importa di nuovo.
 
 Viene salvato nella tua mod come `files/models/<the unit's name>.glb`. **Usa il modello dell'unità copiata** lo toglie di
 nuovo.
@@ -59,8 +59,32 @@ nuovo.
 viene adattato di nuovo dal suo file. Con diversi nuovi aerei (o unità di terra), un clic li ridimensiona tutti. Il gioco
 legge un modello quando carica, quindi una nuova dimensione si vede dalla build successiva.
 
-**Aerei:** un aereo aperto in Blender dallo Studio e riportato indietro mantiene le sue eliche che girano ed è rivolto in
-avanti. Visto in gioco.
+**Dove sta:** un nuovo modello viene messo al centro dell'unità che copia, quindi alla maggior parte dei modelli qui non
+serve niente. Se il tuo non è al posto giusto, apri la sezione **Spostalo** sotto la dimensione (resta aperta su un
+modello che hai spostato). Chiede tre numeri, **Avanti**, **Destra** e **Su**, in unità del gioco (la pagina dice quanto
+è lunga l'unità copiata, in queste unità). Un meno va dall'altra parte, e 0, 0, 0 lo rimette dove era stato adattato.
+Clicca su **Sposta** e il modello viene adattato di nuovo dal suo file, spostato di tanto; la torretta e le eliche vanno
+con lui, così girano ancora nel punto giusto. Nella vista 3D l'anello blu è dove sta l'unità copiata, e il segno
+sull'anello è il davanti. Una nuova dimensione mantiene lo spostamento. Un modello legato alle ossa dell'unità (un
+soldato, i serventi di un cannone) resta dove sono le sue ossa: quello spostalo in Blender. Un modello importato prima
+dello Studio 0.9.8.17 mantiene il suo vecchio posto (la torretta sulla torretta dell'unità copiata), anche
+ridimensionato, finché non lo importi di nuovo o lo sposti; i modelli delle unità d'epoca mantengono il loro.
+
+**Aerei:** un aereo aperto in Blender dallo Studio e riportato indietro è rivolto in avanti e mantiene le eliche dove le
+ha il tuo modello, quante ne ha, qualunque cosa avesse l'aereo che copia: pale a terra, dischi che girano in volo. Visto
+in gioco. Un modello preso altrove mantiene le eliche come sono disegnate, ferme: l'importatore non sa ancora
+riconoscere quali sue parti sono eliche. Nella vista 3D i dischi di un aereo si vedono trasparenti, come il gioco
+disegna un'elica che gira.
+
+**Soldati, serventi e altri aerei:** i soldati, i serventi di un cannone e gli aerei a cui prima lo Studio non sapeva
+adattare un modello (il P-47, per esempio) prendono anche loro un modello tutto loro, se è legato alle ossa dell'unità:
+per esempio uno dei modelli del gioco aperto in Blender dallo Studio e cambiato lì. Va su quelle ossa così com'è, senza
+spostare né scalare niente, e anche gli altri uomini di una squadra con le stesse ossa lo indossano. Visto in gioco con
+una squadra di fucilieri, i serventi di un cannone e il P-47.
+
+**I tuoi giocatori:** una mod con un modello importato dallo Studio 0.9.8.17 o successivo richiede il Launcher 0.4.8.17
+o più recente: un Launcher più vecchio dà al modello lo scheletro dell'unità copiata, così la torretta gira attorno al
+punto sbagliato. La 0.4.8.17 è un aggiornamento obbligatorio, quindi il Launcher lo installa da solo.
 
 ## 4. La sua scheda, poi la prova
 
@@ -85,9 +109,15 @@ torretta.
 - Cingoli e ruote per ora non girano: si muovono con lo scafo.
 - Il lampo del cannone e il relitto sono quelli dell'unità copiata.
 - Le immagini vengono fatte larghe al massimo 1024, come le immagini delle unità del gioco stesso.
+- Provato in gioco con i modelli del gioco stesso (lo Sherman, due aerei, una squadra di fucilieri, i serventi di un
+  cannone): non ancora con un modello preso altrove, un altro carro armato con torretta, una torretta che fa il giro
+  completo o un aereo che copia un'unità senza eliche.
 
-Dalla riga di comando, la stessa cosa: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
-Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`.
+Dalla riga di comando: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
+Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Con `--move`, viene adattato come lo adatta lo
+Studio: `--move 50 0 -10` lo sposta di 50 in avanti e di 10 in basso da dove è adattato (avanti, destra, su), e
+`--move 0 0 0` lo lascia lì. Senza `--move`, il comando lo adatta ancora alla vecchia maniera, con la torretta sulla
+torretta dell'unità copiata.
 
 **Avanti:** [[Esportare e condividere|Esportare-e-condividere]]
 
