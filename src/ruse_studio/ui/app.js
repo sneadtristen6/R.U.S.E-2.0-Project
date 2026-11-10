@@ -2823,6 +2823,55 @@ function modelBox(address, info, draw, changed) {
     } catch (err) { problem(err); } finally { pick.disabled = false; }
   });
   const box = el("div", { className: "model-own" }, el("h3", { textContent: w.model_title }));
+  // a squad's soldier changed in Blender and brought back (StudioApi.model_blender, model_blender_back; the owner's
+  // order of 2026-11-10, item 4: Open in Blender was a painting door behind Custom uniform, with the bones all in one
+  // spot): no uniform needed, the bones at their real places, Bring back takes the model in as Import model does
+  if (info.soldiers) {
+    const where = el("p", { className: "muted small" });
+    const actions = el("div", { className: "actions" });
+    if (!info.blender) {  // (the same two buttons as the Look box's: get Blender, or show where it is)
+      const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
+      get.addEventListener("click", () => api().get_blender().catch(problem));
+      const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
+        title: w.tip_look_choose_blender });
+      choose.addEventListener("click", async () => {
+        try {
+          const r = await api().choose_blender();
+          if (r.message) say(r.message, "error");
+          draw(await api().look(address));
+        } catch (err) { problem(err); }
+      });
+      actions.append(get, choose);
+    } else {
+      const open = el("button", { type: "button", textContent: w.model_blender, title: w.tip_model_blender });
+      const back = el("button", { type: "button", textContent: w.model_blender_back, title: w.tip_model_blender_back });
+      open.addEventListener("click", async () => {
+        open.disabled = true;
+        say(w.model_blender_opening);
+        try {
+          const r = await api().model_blender(address, state.lang);
+          say(w.model_blender_opened, "ok");
+          where.textContent = fill(w.model_blender_where, { folder: r.work || "" });
+        } catch (err) { problem(err); } finally { open.disabled = false; }
+      });
+      back.addEventListener("click", async () => {
+        back.disabled = true;
+        say(w.model_blender_bringing);
+        try {
+          const r = await api().model_blender_back(address, Number(size.value) || 1);
+          if (r.model) {
+            say(w.model_blender_done, "ok");
+            if (changed) changed();
+          }
+          draw(r);
+        } catch (err) { problem(err); } finally { back.disabled = false; }
+      });
+      actions.append(open, back);
+    }
+    box.append(el("h4", { textContent: w.model_blender_title }),
+      el("p", { className: "small", textContent: info.blender ? w.model_blender_how : w.model_blender_needs }),
+      actions, where);
+  }
   // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
   // model with textures of its own, so Repaint in Blender above changes this unit only
   const copyAction = (call, button) => async () => {
