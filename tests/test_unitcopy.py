@@ -357,9 +357,21 @@ class CopyInTheBuild(unittest.TestCase):
                              "WW2\\Res3D\\Units\\GER\\Tank\\Panzer_Redlod0.Ase2ndfbin")
 
     def test_a_unit_can_t_have_both(self):
+        """Still an error (a mod made by an older Studio, or by hand: Import model takes the copy out now), in words
+        that say what's wrong, why, and which of the Studio's buttons fixes it, in the player's language too."""
+        from rusemod import buildtext
         _info, result = self.build(glb=True)
         self.assertEqual(len(result.errors), 1)
-        self.assertIn("has an imported model too", result.errors[0].message)
+        said = result.errors[0].message
+        self.assertTrue(said.startswith("m: files/models/Panzer_Red.copy.toml: Panzer_Red has two models: one you "
+                                        "imported (files/models/Panzer_Red.glb)"), said)
+        self.assertIn("Each of its figures is drawn with one model, so it can't use both.", said)
+        for button in ("Back to the default uniform", "Use the shared model again", "Use the copied unit's model"):
+            self.assertIn(button, said)
+        french = buildtext.worded(said, "fr")
+        self.assertIn("a deux modèles", french)
+        self.assertIn("(files/models/Panzer_Red.glb)", french)
+        self.assertIn("Utiliser le modèle de l'unité copiée", french)
 
     def test_a_model_it_doesn_t_draw(self):
         _info, result = self.build(copy='of = ["WW2\\\\Res3D\\\\Other\\\\Nonelod0.Ase2NdfBin"]\n')
@@ -452,7 +464,7 @@ class StudioCopy(unittest.TestCase):
         glb = self.mod / "files" / "models" / "Descriptor_Unit_R2_Red.glb"
         glb.parent.mkdir(parents=True)
         glb.write_bytes(b"glTF")
-        with self.assertRaisesRegex(StudioError, "imported model"):
+        with self.assertRaisesRegex(StudioError, "has a model you imported"):
             self.api.model_copy(self.NEW)
 
     def test_bring_back_into_the_copy(self):
@@ -521,6 +533,181 @@ class RidesIn(unittest.TestCase):
             self.api.rides_in_set(self.TANK, self.TRUCK)
         with self.assertRaisesRegex(StudioError, "isn't one of the trucks"):
             self.api.rides_in_set(self.RANGERS, self.GUNS)  # a gun truck for a squad
+
+
+WORDS_FILE = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "words.toml"
+
+
+def page_words() -> dict:
+    import tomllib
+    return tomllib.loads(WORDS_FILE.read_text(encoding="utf-8"))
+
+
+class ImportOverCopy(unittest.TestCase):
+    """Item 4 of the owner's list (2026-11-10): a squad reached Blender only through Custom uniform (its own copy of its
+    soldiers), and once he imported his model the build stopped on both, with nothing saying why. Import model takes
+    the copy out now and says so ("copy_out"), its paint kept in the mod; a failed import leaves it. Use the copied
+    unit's model doesn't bring it back by itself; Custom uniform waits while there's a model, naming the page's
+    buttons. The fitting itself (rusemod.unitmodel.import_model) is stood in for: test_unitmodel has it."""
+    TEX = "gen\\ww2\\x\\a01.tgv"
+    TANK = "$/GFX/Everything/Descriptor_Unit_R2_Red"
+    SQUAD = "$/GFX/Everything/Descriptor_Unit_R2_Soldat_Red"
+
+    def setUp(self):
+        from ruse_studio.edits import NewUnit
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        (root / "R.U.S.E" / "Data" / "PC" / "190852").mkdir(parents=True)
+        self.mod = root / "mod"
+        self.mod.mkdir()
+        self.source = root / "my soldier.glb"      # what he exported from Blender
+        self.source.write_bytes(b"glTF")
+        self.api = StudioApi(game_dir=root / "R.U.S.E", home=root / "home")
+        self.api._look_models = lambda address: (["ww2\\x\\soldierlod0.ase2ndfbin"], [self.TEX])
+        self.api._mod_dir = lambda kind="mod": self.mod
+        self.api._copy_models = lambda address: ["ww2\\x\\soldierlod0.ase2ndfbin"]
+        self.api._soldiers = lambda address: "Soldat" in address
+        units = {a: NewUnit(a, "$/GFX/Everything/Descriptor_Unit_Test", "Red") for a in (self.TANK, self.SQUAD)}
+
+        class Edits:
+            def new_unit_of(self, a):
+                return units.get(a.split(":")[0])
+        self.api._edits = lambda: Edits()
+        self.models = self.mod / "files" / "models"
+
+    @staticmethod
+    def fitted(game, source_model, model_file, out, **kw):
+        """rusemod.unitmodel.import_model stood in for: the mod's .glb written (its folder made, as write_glb does),
+        its report returned."""
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_bytes(b"glTF fitted")
+        return {"file": Path(model_file).name, "vertices": 3, "triangles": 1, "rigged": True}
+
+    def imported(self, address, file=None):
+        from unittest import mock
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            return self.api.model_import(address, str(file or self.source))
+
+    def painted(self, unit: str) -> Path:
+        """A picture painted into the unit's copy (its folder, files/models/<its name>/)."""
+        pic = self.models / unit / "gen" / "ww2" / "x" / "a01.tgv.png"
+        pic.parent.mkdir(parents=True, exist_ok=True)
+        pic.write_bytes(png_bytes(bytes((200, 30, 30, 255)), 1, 1, channels=4))
+        return pic
+
+    def test_import_takes_the_custom_uniform_out_and_keeps_its_paint(self):
+        self.api.model_copy(self.SQUAD)  # Custom uniform: in 0.9.8.19 the only way into Blender for a squad
+        copy = self.models / "Descriptor_Unit_R2_Soldat_Red.copy.toml"
+        self.assertTrue(copy.is_file())
+        pic = self.painted("Descriptor_Unit_R2_Soldat_Red")
+        res = self.imported(self.SQUAD)
+        self.assertTrue(res["copy_out"])                     # said, for the page to say so
+        self.assertEqual(res["model"]["file"], "my soldier.glb")
+        self.assertFalse(copy.exists() or res["own_copy"])
+        self.assertTrue(res["own_model"])
+        self.assertTrue((self.models / "Descriptor_Unit_R2_Soldat_Red.glb").is_file())
+        self.assertTrue(pic.is_file())                       # its paint stays, for the uniform made again
+        self.assertEqual(unitmodel.mod_copies(self.mod), {})  # nothing left for the build to stop on
+        self.assertEqual(list(unitmodel.mod_models(self.mod)), ["Descriptor_Unit_R2_Soldat_Red"])
+        # importing again, with no copy left: nothing more to take out
+        self.assertFalse(self.imported(self.SQUAD)["copy_out"])
+
+    def test_a_vehicle_s_own_copy_too(self):
+        self.api.model_copy(self.TANK)
+        res = self.imported(self.TANK)
+        self.assertTrue(res["copy_out"])
+        self.assertFalse((self.models / "Descriptor_Unit_R2_Red.copy.toml").exists())
+
+    def test_a_failed_import_or_a_closed_picker_leaves_the_copy(self):
+        from unittest import mock
+        from ruse_studio.api import StudioError
+        self.api.model_copy(self.SQUAD)
+        copy = self.models / "Descriptor_Unit_R2_Soldat_Red.copy.toml"
+
+        def refused(*a, **k):
+            raise unitmodel.UnitModelError("its bones aren't the game soldier's: arm_left")
+        with mock.patch("rusemod.unitmodel.import_model", refused):
+            with self.assertRaisesRegex(StudioError, "arm_left"):
+                self.api.model_import(self.SQUAD, str(self.source))
+        self.assertTrue(copy.is_file())
+        res = self.api.model_import(self.SQUAD)   # no file, no window to pick one in: nothing done
+        self.assertEqual((res["model"], res["copy_out"], res["own_copy"]), (None, False, True))
+        self.assertTrue(copy.is_file())
+
+    def test_the_model_taken_out_leaves_the_default_uniform(self):
+        """Use the copied unit's model: the soldiers of the squad it copies, in the default uniform; the Custom uniform
+        doesn't come back by itself (the page says so), and comes back with its paint when he picks it."""
+        self.api.model_copy(self.SQUAD)
+        self.painted("Descriptor_Unit_R2_Soldat_Red")
+        self.imported(self.SQUAD)
+        res = self.api.model_import_remove(self.SQUAD)
+        self.assertTrue(res["model_out"])
+        self.assertFalse(res["own_model"] or res["own_copy"])
+        self.assertEqual(res["painted"], [])
+        self.assertFalse(self.api.model_import_remove(self.SQUAD)["model_out"])   # nothing left to take out
+        res = self.api.model_copy(self.SQUAD)
+        self.assertTrue(res["own_copy"])
+        self.assertEqual(res["painted"], [self.TEX])          # the paint he gave it before
+
+    def test_custom_uniform_waits_while_there_s_a_model_naming_the_page_s_buttons(self):
+        from ruse_studio import errortext
+        from ruse_studio.api import StudioError
+        words = page_words()
+        self.imported(self.SQUAD)
+        self.imported(self.TANK)
+        for address, buttons in ((self.SQUAD, ("model_remove", "model_title", "uniform_custom")),
+                                 (self.TANK, ("model_remove", "model_title", "model_copy"))):
+            with self.assertRaises(StudioError) as caught:
+                self.api.model_copy(address)
+            for lang in errortext.LANGS:       # as the page gets it, in each language (errors.toml)
+                said = errortext.worded(str(caught.exception), lang)
+                for key in buttons:
+                    self.assertIn(words[key][lang], said, (address, lang, key))
+            self.assertFalse((self.models / f"{address.rsplit('/', 1)[1]}.copy.toml").exists())
+
+    def test_resize_keeps_a_copy_made_with_both(self):
+        """A mod made with both (an older Studio, or by hand): Resize fits the model again and leaves the copy (only a
+        new import takes it out); the page shows the both-notice, the build says which button fixes it."""
+        from unittest import mock
+        import json
+        self.models.mkdir(parents=True)
+        (self.models / "Descriptor_Unit_R2_Red.copy.toml").write_text('of = ["ww2\\\\x\\\\soldierlod0.ase2ndfbin"]\n',
+                                                                       encoding="utf-8")
+        (self.models / "Descriptor_Unit_R2_Red.glb").write_bytes(b"glTF")
+        (self.models / "Descriptor_Unit_R2_Red.json").write_text(json.dumps(
+            {"from": str(self.source), "size": 1.0, "aircraft": False, "report": {"file": "my soldier.glb"}}),
+            encoding="utf-8")
+        info = self.api.look(self.TANK)
+        self.assertTrue(info["own_copy"] and info["own_model"])
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            res = self.api.model_resize(self.TANK, 1.2)
+        self.assertFalse(res["copy_out"])
+        self.assertTrue(res["own_copy"])
+
+
+class NamesTheButtons(unittest.TestCase):
+    """Every text of this fix that tells the player what to click names the page's own buttons and parts, in every
+    language, word for word (words.toml): the refusal 0.9.8.19 had named a "Remove the model" no page shows."""
+
+    def test_the_refusals_and_the_build_s_error(self):
+        import tomllib
+        from rusemod import buildtext
+        from ruse_studio import errortext
+        words = page_words()
+        errors = [e for e in tomllib.loads(errortext.FILE.read_text(encoding="utf-8")).values()
+                  if "has a model you imported" in e["us"]]
+        self.assertEqual(len(errors), 2)
+        build = [e for e in tomllib.loads(buildtext.FILE.read_text(encoding="utf-8")).values()
+                 if "has two models: one you imported" in e["us"]]
+        self.assertEqual(len(build), 1)
+        for entry in errors + build:
+            labels = ("model_remove", "model_title", "uniform_custom") if entry["us"].startswith("This squad") else \
+                ("model_remove", "model_title", "model_copy") if entry["us"].startswith("This unit") else \
+                ("uniform_custom", "uniform_default_again", "model_copy_remove", "model_remove")
+            for lang in errortext.LANGS:
+                for label in labels:
+                    self.assertIn(words[label][lang], entry[lang], (entry["us"][:30], lang, label))
 
 
 class Page(unittest.TestCase):
