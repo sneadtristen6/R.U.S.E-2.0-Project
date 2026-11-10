@@ -331,6 +331,28 @@ class Reading(unittest.TestCase):
         self.assertTrue(close(poses[2][0][15], (0.0, 0.0, 75.0), 4))
         self.assertTrue(close(poses[2][0][30], (0.0, 0.0, 75.0), 4))    # the last key
 
+    def test_a_gltf_with_its_files_beside_it(self):
+        import json
+        data = little_glb([("Walk", [(1, "translation", [0.0, 1.0], [(0.0, 1.0, 0.0), (0.0, 1.0, 2.0)], "LINEAR")])])
+        doc, binary = modelin.glb_document(data)
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "beast.bin").write_bytes(binary)
+            doc["buffers"] = [{"uri": "beast.bin", "byteLength": len(binary)}]
+            Path(d, "beast.gltf").write_text(json.dumps(doc), encoding="utf-8")
+            r = rig.read_rig(Path(d, "beast.gltf"))
+        same = rig_of_bytes(data)
+        self.assertEqual((r.names, r.record()), (same.names, same.record()))
+        self.assertEqual(r.poses(r.animations[0]), same.poses(same.animations[0]))
+
+    def test_an_animated_node_above_the_bones_moves_the_root(self):
+        """Blender's armature object moved by an action: the root bone's track carries it."""
+        anims = [("Slide", [(4, "translation", [0.0, 1.0], [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)], "LINEAR")])]
+        r = rig_of_bytes(little_glb(anims))
+        _l, poses = r.poses(r.animations[0])
+        self.assertTrue(close(poses[0][0][30], (100.0, 0.0, 100.0)))      # 1 m along glTF's x: the game's x
+        self.assertTrue(close(poses[0][0][15], (50.0, 0.0, 100.0)))
+        self.assertTrue(close(poses[1][0][30], (0.0, 0.0, 50.0)))         # Spine still from its parent as at rest
+
     def test_a_record_the_file_carries_is_kept_while_its_bones_match(self):
         r = rig_of_bytes(little_glb())
         worked = r.record()
