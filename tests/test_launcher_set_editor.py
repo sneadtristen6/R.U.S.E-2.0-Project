@@ -44,11 +44,19 @@ class SetEditor(unittest.TestCase):
         self.assertGreaterEqual(code.count('ed.problem = "";'), 4)   # the name, a tick, a move, the suggested order
 
     def test_create_waits_for_a_ticked_mod_and_says_why(self):
+        """Create looks switched off until a mod is ticked and says why on it; pressed anyway (or Enter in the name
+        box), the editor says why under the buttons and nothing is sent (FL-97: a press that did nothing)."""
         code = editor()
-        self.assertIn("save.disabled = ed.mods.length === 0;", code)
-        self.assertIn("save.title = state.library.length ? w.set_none_yet : w.library_empty_for_set;", code)
+        self.assertIn('save.setAttribute("aria-disabled", String(noMods));', code)
+        self.assertNotIn("save.disabled = ed.mods.length === 0", code)    # (a disabled button takes no press to say why)
+        self.assertIn("if (noMods) save.title = state.library.length ? w.set_none_yet : w.library_empty_for_set;", code)
         sending = code[code.index("form.onsubmit"):]
-        self.assertLess(sending.index("if (!ed.mods.length) return;"), sending.index("api().new_set("))
+        stop = sending.index("if (!ed.mods.length) {")
+        self.assertLess(stop, sending.index("api().new_set("))
+        said = sending[stop:sending.index("return;", stop)]
+        self.assertIn("ed.problem = state.library.length ? w.set_none_yet : w.library_empty_for_set;", said)
+        self.assertIn("renderEditor();", said)
+        self.assertIn('button[aria-disabled="true"]', (UI / "style.css").read_text(encoding="utf-8"))
 
     def test_a_library_mod_that_has_gone_is_not_called_a_folder(self):
         code = editor()

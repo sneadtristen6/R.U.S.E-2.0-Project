@@ -773,6 +773,12 @@ class LauncherApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedC
         self._write_set(set_id, name, chosen["description"] if description is None else description.strip(), mods)
         return self._lists(set=set_id)
 
+    def rename_set(self, set_id: str, name: str) -> dict:
+        """A mod set's new name (the set page's Rename), its mods as they are. A call of its own, not save_set, so
+        Bug Watch counts a rename apart from the editor's Save (FL-97: "Save mod set" refused 11 of 81 tries, and
+        which of them were renames was not in the counts)."""
+        return self.save_set(set_id, name)
+
     def duplicate_set(self, set_id: str, name: str) -> dict:
         """A copy of a mod set under a new name (the screen suggests "<name> (copy)"), selected."""
         chosen = self._set(set_id)
