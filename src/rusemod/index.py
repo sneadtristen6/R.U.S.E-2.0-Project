@@ -37,6 +37,7 @@ import time
 from collections import defaultdict, deque
 from pathlib import Path
 
+from . import schema
 from .build import SHADOW
 from .dic import GLYPH_KEY, Dic, key_to_name
 from .edat import Edat
@@ -489,10 +490,11 @@ class Index:
                                    ORDER BY v.num DESC, o.address LIMIT ?""", (cls, path, number, limit)).fetchall()
 
     def texts(self, words: str, lang: str = "us", limit: int = 50) -> list[tuple[str, str, str]]:
-        """(key name, dictionary, text) of texts containing `words` in one language."""
+        """(key name, dictionary, text) of texts containing `words` in one language (English for one the game hasn't:
+        schema.game_lang)."""
         return self.db.execute("""SELECT COALESCE(name, key), dictionary, text FROM text
                                   WHERE lang = ? AND text LIKE ? ORDER BY dictionary, name LIMIT ?""",
-                               (lang, f"%{words}%", limit)).fetchall()
+                               (schema.game_lang(lang), f"%{words}%", limit)).fetchall()
 
     def text_used_by(self, name: str) -> list[tuple[str, str]]:
         """(address, property path) of the data that shows the text with this key name."""
@@ -501,12 +503,13 @@ class Index:
                                   ORDER BY s.address""", (name,)).fetchall()
 
     def unused_texts(self, lang: str = "us", dictionary: str | None = None, limit: int = 100):
-        """(key name, dictionary, text) of texts no NDF data refers to. Scripts and the program may still use some."""
+        """(key name, dictionary, text) of texts no NDF data refers to. Scripts and the program may still use some.
+        English for a language the game hasn't (schema.game_lang)."""
         return self.db.execute("""SELECT COALESCE(t.name, t.key), t.dictionary, t.text FROM text t
                                   WHERE t.lang = ? AND (? IS NULL OR t.dictionary = ?) AND NOT EXISTS
                                     (SELECT 1 FROM ref r WHERE r.kind = 'text' AND r.target = COALESCE(t.name, '0x' || t.key))
                                   ORDER BY t.dictionary, t.name LIMIT ?""",
-                               (lang, dictionary, dictionary, limit)).fetchall()
+                               (schema.game_lang(lang), dictionary, dictionary, limit)).fetchall()
 
     def units(self, classes) -> list[dict]:
         """Named objects of `classes` (units, buildings…) with their nation, factory, menu slot, name key, type key
@@ -590,8 +593,10 @@ class Index:
 
     def names(self, keys, lang: str) -> dict:
         """Key name -> its text in one language, preferring the unit-name dictionary (baseunite). The game's texts keep
-        some characters as HTML entities ("ARTILLERY &amp; ANTI-AIR BASE"): they come back as the characters."""
+        some characters as HTML entities ("ARTILLERY &amp; ANTI-AIR BASE"): they come back as the characters. An app
+        language the game has no texts in (Persian) reads the English ones (schema.game_lang)."""
         keys = [k for k in set(keys) if k]
+        lang = schema.game_lang(lang)
         out = {}
         for start in range(0, len(keys), 500):
             chunk = keys[start:start + 500]

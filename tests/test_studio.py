@@ -180,6 +180,26 @@ class Studio(unittest.TestCase):
         self.assertEqual((page["name"], page["game_name"], page["desc"]),
                          ("Descriptor_Unit_M4_Sherman", "M4 Sherman", ""))
 
+    def test_persian_shows_the_games_english_names(self):
+        """The game has no Persian texts. A Persian page shows its English names, never code names or "no name in the
+        game" (2026-11-11: 3,196 such names across the Studio's lists in Persian, the owner's "Yes, fix it"; every
+        lookup now goes through rusemod.index.Index.names, which reads English for it). Code names stay code names."""
+        fa = {u["base_name"]: (u["name"], u["game_name"]) for u in self.api.units("fa")["units"]}
+        self.assertEqual(fa["Descriptor_Unit_M4_Sherman"], ("M4 Sherman", "M4 Sherman"))
+        self.assertEqual(fa["Descriptor_Unit_Panzer_IV_G"], ("Panzer IV", "Panzer IV"))
+        self.assertEqual(self.api.unit(M4, "fa")["name"], "M4 Sherman")
+        ix = self.api._open()
+        try:
+            key = next(u["key"] for u in self.api._all_units(ix) if u["address"] == M4)
+            self.assertEqual(ix.names([key], "us"), {key: "M4 Sherman"})
+            self.assertEqual(ix.names([key], "fa"), {key: "M4 Sherman"})
+            self.assertEqual(ix.names([key], "fr"), {key: "M4 Sherman (fr)"})
+            self.assertEqual(ix.names([key], "base"), {})
+        finally:
+            ix.close()
+        self.assertEqual({u["base_name"]: u["name"] for u in self.api.units()["units"]}["Descriptor_Unit_M4_Sherman"],
+                         "Descriptor_Unit_M4_Sherman")
+
     def test_search_every_word_and_tags(self):
         # the owner's Studio 1.0 list, item 11: search with tags (studio-tools-design §11.3)
         from ruse_studio.api import search_terms

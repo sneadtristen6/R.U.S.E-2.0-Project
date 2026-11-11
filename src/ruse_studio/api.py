@@ -4207,7 +4207,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             listed = []
 
         def name_of(m: dict) -> str:
-            titles = (m.get("titles") or {}).get(lang) or m.get("names") or [m["pack"]]
+            titles = (m.get("titles") or {}).get(schema.game_lang(lang)) or m.get("names") or [m["pack"]]
             return str(titles[0] if titles else m["pack"])
         names = {m["pack"].lower(): name_of(m) for m in listed}
         shown = [{**self._rule_view(r, k), "name": names.get(k.lower(), k)} for k, r in rules.items()]

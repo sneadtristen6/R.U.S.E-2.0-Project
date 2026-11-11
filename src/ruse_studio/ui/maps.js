@@ -3064,11 +3064,11 @@ function clearScenario() {
   scen.group = null;
 }
 
-// A scenario's name: what the game's menus call it in the Studio's language (Code names: the map list's own name),
-// else its file's name.
+// A scenario's name: what the game's menus call it in the Studio's language, English where the game has none in it
+// (Persian; Code names: the map list's own name), else its file's name.
 function scenarioLabel(s) {
   const e = (s.entries || [])[0];
-  if (e) return (mv.lang !== "base" && e.titles && e.titles[mv.lang]) || e.name;
+  if (e) return (mv.lang !== "base" && e.titles && (e.titles[mv.lang] || e.titles.us)) || e.name;
   const stem = s.file.replace(/\.scenario$/i, "").replace(/^leveldesign_?/i, "");
   return stem ? stem.replace(/_/g, " ") : mv.words.scen_main;
 }

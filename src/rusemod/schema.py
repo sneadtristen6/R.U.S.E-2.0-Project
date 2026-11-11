@@ -13,10 +13,18 @@ from pathlib import Path
 
 LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")  # the game's ten: its texts, its names
 # the apps' own languages: the game's ten, and Persian (the owner, 2026-10-30), which the game hasn't got: its texts
-# and names in a Persian app are the English ones (each lookup in the game's data checks `lang in LANGS`)
+# and names in a Persian app are the English ones (the game index's text reader reads them so: game_lang below)
 APP_LANGS = LANGS + ("fa",)
 RTL = ("fa",)  # written right to left (the apps' rtl.js)
 BASE = "base"
+
+
+def game_lang(lang: str) -> str:
+    """The language to read the game's own texts in for `lang`: itself where the game has it, English for an app
+    language it hasn't (Persian), anything else as it is (BASE: no texts, the code names). Index.names, texts and
+    unused_texts use it, so no lookup can leave a Persian page on code names (found 2026-11-11: 3,196 names across
+    the Studio's lists and pages came back as code names or "no name in the game" in Persian)."""
+    return "us" if lang in APP_LANGS and lang not in LANGS else lang
 
 
 @functools.cache
