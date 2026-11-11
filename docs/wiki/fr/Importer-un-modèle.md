@@ -57,6 +57,8 @@ dit laquelle : mettez les images à côté du modèle et importez de nouveau.
 Il est enregistré dans votre mod sous `files/models/<the unit's name>.glb`. **Utiliser le modèle de l'unité copiée** le
 retire de nouveau.
 
+**Où il est sur votre PC :** le **Plus** de la ligne **Modèle** commence par là : le chemin complet, `Documents\RUSE 2.0\Mods\<votre mod>\files\models\<nom de l'unité>.glb`, et **Afficher dans le dossier**, qui ouvre ce dossier. Tant que l'unité n'a pas de modèle à elle, il dit où le fichier sera. Une unité avec sa propre copie du modèle (**Lui donner sa propre copie du modèle**, ou l'**Uniforme personnalisé** d'une escouade) est gardée dans le même dossier, sous `<nom de l'unité>.copy.toml`, sa peinture dans le dossier du même nom.
+
 **Sa taille plus tard :** le curseur sous la case de taille va de **Minuscule** à **Énorme** (0.05 à 20), avec **Taille du
 jeu** (1) et, pour une unité d'époque, **Taille réelle** marqués ; cliquez sur **Redimensionner** et le modèle est de
 nouveau ajusté depuis son propre fichier. Avec plusieurs nouveaux avions (ou unités terrestres), un clic les
@@ -105,10 +107,12 @@ Pour une escouade (fusiliers, parachutistes, toute infanterie), le Studio fait l
 
 Bon à savoir :
 - Vos fichiers Blender restent dans le dossier de votre mod : `Documents\RUSE 2.0\Mods\<votre mod>\blender\<nom de l'unité>\`. Ils ne sont pas emballés dans votre mod quand vous le partagez. Le prochain **Changer dans Blender** repart de ce que vous avez envoyé en dernier.
+- Sous **Changer dans Blender**, la page dit où sont ces fichiers, même avant votre premier clic, et son **Afficher dans le dossier** ouvre ce dossier dès que Blender y a ouvert le soldat.
 - Si des points de votre modèle n'ont pas d'os (les poids automatiques de Blender en oublient quelques-uns), la page dit combien : ils ne bougent qu'avec les hanches du soldat. Peignez-les sur un os dans **Weight Paint**, puis renvoyez.
 - Une escouade avec un **Uniforme personnalisé** : votre modèle prend la place de l'uniforme (sa peinture reste dans votre mod), et **Utiliser le modèle de l'unité copiée** rend l'uniforme.
 - Vous avez déjà un .glb fait sur les os du soldat du jeu ? **Importer un modèle…** le prend tel quel.
 - Le modèle que porte votre escouade est gardé dans le dossier de votre mod sous `files\models\<nom de l'unité>.glb`, une fois en place ; celui du soldat à l'arme lourde sous `files\models\<nom de l'unité>@bazooka.glb`.
+- **Ses soldats** dit où est gardé le modèle de chacun (ou le sera), et **Afficher dans le dossier** de la ligne **Modèle** ouvre ce dossier.
 - **Ses soldats** dit aussi quelles autres figures de l'escouade sont dessinées avec chaque modèle : le soldat tombé, et la figurine vue de loin (celle de l'escouade de fusiliers US est dessinée avec son soldat au bazooka).
 
 ## Ses animations : laquelle joue chaque action

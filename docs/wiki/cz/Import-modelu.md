@@ -55,6 +55,8 @@ vlastními texturami. Stránka ho ukáže ve 3D, i to, které díly se otáčej�
 
 Uloží se do vašeho modu jako `files/models/<the unit's name>.glb`. **Použít model kopírované jednotky** ho zase vyjme.
 
+**Kde je ve vašem počítači:** **Více** na řádku **Model** začíná právě tím: celou cestou, `Documents\RUSE 2.0\Mods\<váš mod>\files\models\<název jednotky>.glb`, a **Ukázat ve složce**, které tu složku otevře. Dokud jednotka nemá vlastní model, řekne, kde soubor bude. Jednotka s vlastní kopií modelu (**Dát mu vlastní kopii modelu** nebo **Vlastní uniforma** družstva) je ve stejné složce jako `<název jednotky>.copy.toml` a její barvy ve složce se stejným názvem.
+
 **Jeho velikost později:** posuvník pod polem velikosti jde od **Drobný** po **Obrovský** (0.05 až 20), s vyznačenou
 **Velikost ze hry** (1) a u jednotky z jiné éry i **Skutečná velikost**; klikněte na **Změnit velikost** a model se
 napasuje znovu ze svého vlastního souboru. S několika novými letadly (nebo pozemními jednotkami) změní jedno kliknutí
@@ -99,10 +101,12 @@ U družstva (střelci, výsadkáři, jakákoli pěchota) udělá Studio část v
 
 Dobré vědět:
 - Tvoje soubory z Blenderu zůstávají ve složce tvého modu: `Documents\RUSE 2.0\Mods\<tvůj mod>\blender\<název jednotky>\`. Při sdílení modu se do něj nebalí. Další **Změnit v Blenderu** začne tím, co jsi poslal naposledy.
+- Pod **Změnit v Blenderu** stránka řekne, kde ty soubory jsou, ještě před prvním kliknutím, a její **Ukázat ve složce** tu složku otevře, jakmile v ní Blender otevře vojáka.
 - Pokud některé body tvého modelu nemají kost (automatické váhy Blenderu pár vynechají), stránka řekne kolik: hýbou se jen s boky vojáka. Namaluj je na kost v Blenderu ve **Weight Paint** a pošli znovu.
 - Družstvo s **Vlastní uniforma**: tvůj model zaujme místo uniformy (její barvy zůstanou v modu) a **Použít model kopírované jednotky** uniformu vrátí.
 - Máš už .glb udělaný na kostech vojáka ze hry? **Importovat model…** ho vezme tak, jak je.
 - Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř; vlastní model vojáka s těžkou zbraní jako `files\models\<název jednotky>@bazooka.glb`.
+- **Jeho vojáci** řekne, kde je model každého z nich uložený (nebo bude), a **Ukázat ve složce** na řádku **Model** tu složku otevře.
 - **Jeho vojáci** také říká, které další figury družstva se kreslí kterým modelem: padlý voják a figura viděná zdálky (v americkém střeleckém družstvu se kreslí modelem muže s bazukou).
 
 ## Její animace: kterou hraje každá činnost

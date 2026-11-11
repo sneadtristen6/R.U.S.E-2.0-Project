@@ -61,6 +61,8 @@ eines Teils des kopierten Aussehens ein: das Hauptgebäude einer Fabrik oder ein
 Modell bekommt die Größe dieses Teils und steht, wo es stand; der Rest des Aussehens bleibt. Die eigenen Gebäude des
 Spiels bleiben, wie sie sind: mach zuerst aus einem von ihnen ein neues Gebäude.
 
+**Wo dein Mod es aufbewahrt:** `files\buildings\<Name des Gebäudes>\`. Der Kasten zeigt den ganzen Pfad auf deinem PC (oder wo es sein wird, bevor das Modell drin ist), und **Im Ordner zeigen** öffnet diesen Ordner.
+
 **Sein Bild im Baumenü:** dreh und zoom das Modell, bis es im gestrichelten Rahmen richtig aussieht, dann nimm diese
 Ansicht. Zu Modellen allgemein siehe [[Ein Modell importieren|Ein-Modell-importieren]].
 

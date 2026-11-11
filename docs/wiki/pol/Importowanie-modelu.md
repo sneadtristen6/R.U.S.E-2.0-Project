@@ -57,6 +57,8 @@ obraz nie został znaleziony, strona mówi który: połóż obrazy obok modelu i
 Zostaje zapisany w twoim modzie jako `files/models/<the unit's name>.glb`. **Użyj modelu kopiowanej jednostki** znowu go
 usuwa.
 
+**Gdzie jest na twoim komputerze:** **Więcej** w wierszu **Model** zaczyna się od tego: pełna ścieżka, `Documents\RUSE 2.0\Mods\<twój mod>\files\models\<nazwa jednostki>.glb`, i **Pokaż w folderze**, który otwiera ten folder. Dopóki jednostka nie ma własnego modelu, mówi, gdzie będzie plik. Jednostka z własną kopią modelu (**Daj mu własną kopię modelu** albo **Własny mundur** oddziału) jest trzymana w tym samym folderze, jako `<nazwa jednostki>.copy.toml`, a jej malowanie w folderze o tej samej nazwie.
+
 **Jego rozmiar później:** suwak pod polem rozmiaru idzie od **Malutki** do **Ogromny** (od 0.05 do 20), z zaznaczonymi
 **Rozmiar z gry** (1) oraz, dla jednostki z innej epoki, **Jak w rzeczywistości**; kliknij **Zmień rozmiar**, a model
 zostanie dopasowany od nowa z jego własnego pliku. Przy kilku nowych samolotach (lub jednostkach lądowych) jedno kliknięcie
@@ -103,10 +105,12 @@ Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą 
 
 Dobrze wiedzieć:
 - Twoje pliki Blendera zostają w folderze twojego moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\`. Nie trafiają do moda, gdy go udostępniasz. Następne **Zmień w Blenderze** zaczyna od tego, co wysłałeś ostatnio.
+- Pod **Zmień w Blenderze** strona mówi, gdzie są te pliki, jeszcze przed pierwszym kliknięciem, a jej **Pokaż w folderze** otwiera ten folder, gdy tylko Blender otworzy tam żołnierza.
 - Jeśli niektóre punkty modelu nie mają kości (automatyczne wagi Blendera kilka pomijają), strona powie ile: ruszają się tylko z biodrami żołnierza. Pomaluj je na kość w **Weight Paint** i wyślij ponownie.
 - Oddział z **Własny mundur**: twój model zajmuje miejsce munduru (jego malowanie zostaje w modzie), a **Użyj modelu kopiowanej jednostki** przywraca mundur.
 - Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
 - Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku; własny model żołnierza z ciężką bronią jako `files\models\<nazwa jednostki>@bazooka.glb`.
+- **Jego żołnierze** mówi, gdzie jest trzymany model każdego z nich (albo gdzie będzie), a **Pokaż w folderze** w wierszu **Model** otwiera ten folder.
 - **Jego żołnierze** mówi też, które inne figury oddziału są rysowane którym modelem: poległy żołnierz i figura widziana z daleka (w amerykańskim oddziale strzelców rysowana modelem żołnierza z bazooką).
 
 ## Jej animacje: którą odtwarza każda czynność

@@ -92,6 +92,7 @@ Decoy**): an animation for this unit only or for every unit that plays it, a sou
 - **A model of its own (new units):** **Import model…** brings in a 3D model from Blender or any 3D tool. See
   [[Import a model|Import-a-Model]]. A game unit keeps its model: its page has **New unit from this one…** to make
   the new unit the model goes on.
+- **Where its model is kept:** the **Model** row's **More** starts with where your mod keeps the unit's own model on your PC (or will, once it has one), with **Show in folder** to open that folder. A squad's **Change it in Blender** says where your Blender files are kept, with a **Show in folder** of its own.
 - **A new unit, start to finish:** **New unit (import a model)** at the top of the Units tab, pick the unit to start
   from (a tank for a tank, a squad for soldiers or a horse and rider), name it and click **Create**. Then work down
   **Look and moves**: its model, its soldiers, its animations, its sounds, its truck. Give it a card, set its price

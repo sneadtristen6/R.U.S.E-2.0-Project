@@ -94,6 +94,7 @@ tutte le unità che la usano, un suono per tutte le unità che lo usano.
 - **Un modello tutto suo (nuove unità):** **Importa modello…** porta dentro un modello 3D da Blender o da qualsiasi
   programma 3D. Vedi [[Importare un modello|Importare-un-modello]]. Un'unità del gioco tiene il suo modello: la sua pagina ha
   **Nuova unità da questa…** per creare la nuova unità su cui va il modello.
+- **Dove è tenuto il suo modello:** **Altro** della riga **Modello** comincia da dove la tua mod tiene il modello tutto suo dell'unità sul tuo PC (o lo terrà, appena ne ha uno), con **Mostra nella cartella** per aprire quella cartella. **Cambialo in Blender** di una squadra dice dove sono tenuti i tuoi file di Blender, con un suo **Mostra nella cartella**.
 - **Una nuova unità, dall'inizio alla fine:** **Nuova unità (importa un modello)** in cima alla scheda Unità, scegli
   l'unità di partenza (un carro per un carro, una squadra per dei soldati o per un cavallo con cavaliere), dalle un
   nome e clicca **Crea**. Poi scendi lungo **Aspetto e movimenti**: il suo modello, i suoi soldati, le sue animazioni,

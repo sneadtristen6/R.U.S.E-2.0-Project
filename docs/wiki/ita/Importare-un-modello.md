@@ -56,6 +56,8 @@ metti le immagini accanto al modello e importa di nuovo.
 Viene salvato nella tua mod come `files/models/<the unit's name>.glb`. **Usa il modello dell'unità copiata** lo toglie di
 nuovo.
 
+**Dov'è sul tuo PC:** **Altro** della riga **Modello** comincia da lì: il percorso completo, `Documents\RUSE 2.0\Mods\<la tua mod>\files\models\<nome dell'unità>.glb`, e **Mostra nella cartella**, che apre quella cartella. Finché l'unità non ha un modello suo, dice dove sarà il file. Un'unità con una sua copia del modello (**Dagli una sua copia del modello**, o l'**Uniforme personalizzata** di una squadra) è tenuta nella stessa cartella, come `<nome dell'unità>.copy.toml`, e i suoi colori nella cartella con lo stesso nome.
+
 **La sua dimensione in seguito:** il cursore sotto il riquadro della dimensione va da **Minuscolo** a **Enorme** (da 0.05 a
 20), con **Dimensione del gioco** (1) e, per un'unità d'epoca, **Dal vero** segnati; clicca su **Ridimensiona** e il modello
 viene adattato di nuovo dal suo file. Con diversi nuovi aerei (o unità di terra), un clic li ridimensiona tutti. Il gioco
@@ -102,10 +104,12 @@ Per una squadra (fucilieri, paracadutisti, qualsiasi fanteria) lo Studio fa con 
 
 Buono a sapersi:
 - I tuoi file di Blender restano nella cartella della tua mod: `Documents\RUSE 2.0\Mods\<la tua mod>\blender\<nome dell'unità>\`. Non vengono messi nella mod quando la condividi. Il prossimo **Cambialo in Blender** riparte da ciò che hai inviato per ultimo.
+- Sotto **Cambialo in Blender** la pagina dice dove sono quei file, anche prima del tuo primo clic, e il suo **Mostra nella cartella** apre quella cartella appena Blender vi ha aperto il soldato.
 - Se alcuni punti del tuo modello non hanno un osso (i pesi automatici di Blender ne saltano qualcuno), la pagina dice quanti: si muovono solo con i fianchi del soldato. Dipingili su un osso in **Weight Paint** e invia di nuovo.
 - Una squadra con **Uniforme personalizzata**: il tuo modello prende il posto dell'uniforme (i suoi colori restano nella mod), e **Usa il modello dell'unità copiata** rimette l'uniforme.
 - Hai già un .glb fatto sulle ossa del soldato del gioco? **Importa modello…** lo prende così com'è.
 - Il modello che indossa la tua squadra è tenuto nella cartella della mod come `files\models\<nome dell'unità>.glb`, una volta dentro; quello del soldato con arma pesante come `files\models\<nome dell'unità>@bazooka.glb`.
+- **I suoi soldati** dice dove è tenuto il modello di ciascuno (o lo sarà), e **Mostra nella cartella** della riga **Modello** apre quella cartella.
 - **I suoi soldati** dice anche quali altre figure della squadra sono disegnate con ciascun modello: il soldato caduto, e la figura vista da lontano (quella della squadra di fucilieri USA è disegnata col modello del suo uomo col bazooka).
 
 ## Le sue animazioni: quale esegue ogni azione

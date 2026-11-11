@@ -56,6 +56,8 @@ dice cuál: pon las imágenes junto al modelo e impórtalo otra vez.
 Se guarda en tu mod como `files/models/<the unit's name>.glb`. **Usar el modelo de la unidad copiada** lo quita otra
 vez.
 
+**Dónde está en tu PC:** **Más** de la fila **Modelo** empieza por ahí: la ruta completa, `Documents\RUSE 2.0\Mods\<tu mod>\files\models\<nombre de la unidad>.glb`, y **Mostrar en la carpeta**, que abre esa carpeta. Mientras la unidad no tenga un modelo propio, dice dónde estará el archivo. Una unidad con su propia copia del modelo (**Darle su propia copia del modelo**, o el **Uniforme personalizado** de un pelotón) se guarda en la misma carpeta, como `<nombre de la unidad>.copy.toml`, y su pintura en la carpeta del mismo nombre.
+
 **Su tamaño más tarde:** el control deslizante bajo el cuadro del tamaño va de **Diminuto** a **Enorme** (de 0.05 a
 20), con **Tamaño del juego** (1) y, en una unidad de época, **Tamaño real** marcados; haz clic en **Cambiar tamaño** y
 el modelo se ajusta otra vez a partir de su propio archivo. Con varios aviones nuevos (o unidades terrestres), un clic
@@ -104,10 +106,12 @@ Para un pelotón (fusileros, paracaidistas, cualquier infantería), el Studio ha
 
 Bueno saberlo:
 - Tus archivos de Blender quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`. No se empaquetan en tu mod cuando lo compartes. El próximo **Cambiarlo en Blender** empieza desde lo último que enviaste.
+- Bajo **Cambiarlo en Blender** la página dice dónde están esos archivos, incluso antes de tu primer clic, y su **Mostrar en la carpeta** abre esa carpeta en cuanto Blender ha abierto allí al soldado.
 - Si algunos puntos de tu modelo no tienen hueso (los pesos automáticos de Blender se saltan algunos), la página dice cuántos: se mueven solo con la cadera del soldado. Píntalos sobre un hueso en **Weight Paint** y envíalo de nuevo.
 - Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod), y **Usar el modelo de la unidad copiada** devuelve el uniforme.
 - ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
 - El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro; el propio del soldado con arma pesada como `files\models\<nombre de la unidad>@bazooka.glb`.
+- **Sus soldados** dice dónde se guarda el modelo de cada uno (o se guardará), y **Mostrar en la carpeta** de la fila **Modelo** abre esa carpeta.
 - **Sus soldados** también dice qué otras figuras del pelotón se dibujan con cada modelo: el soldado caído y la figura vista de lejos (la del pelotón de fusileros de EE. UU. se dibuja con el modelo de su soldado del bazuca).
 
 ## Sus animaciones: cuál reproduce cada acción

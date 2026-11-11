@@ -92,6 +92,7 @@ jednotku, nebo pro všechny jednotky, které ji hrají, zvuk pro všechny jednot
 - **Vlastní model (nové jednotky):** **Importovat model…** přinese 3D model z Blenderu nebo jakéhokoli 3D nástroje.
   Viz [[Import modelu|Import-modelu]]. Jednotka hry si ponechá svůj model: její stránka má **Nová jednotka
   z této…**, kterou vytvoříte novou jednotku, na kterou model přijde.
+- **Kde je její model uložený:** **Více** na řádku **Model** začíná tím, kde váš mod má vlastní model jednotky ve vašem počítači (nebo ho mít bude, jakmile nějaký dostane), s **Ukázat ve složce**, které tu složku otevře. **Změnit v Blenderu** u družstva řekne, kde jsou vaše soubory z Blenderu, s vlastním **Ukázat ve složce**.
 - **Nová jednotka od začátku do konce:** **Nová jednotka (import modelu)** nahoře na záložce Jednotky, vyberte výchozí
   jednotku (tank pro tank, družstvo pro vojáky nebo pro koně s jezdcem), pojmenujte ji a klikněte na **Vytvořit**. Pak
   projděte **Vzhled a pohyb** shora dolů: její model, její vojáky, její animace, její zvuky, její nákladní auto. Dejte

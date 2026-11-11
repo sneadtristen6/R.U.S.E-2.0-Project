@@ -59,6 +59,8 @@ drehen. Wurde ein Bild nicht gefunden, sagt sie, welches: leg die Bilder neben d
 Es wird in deinem Mod als `files/models/<the unit's name>.glb` gespeichert. **Modell der kopierten Einheit nutzen** nimmt
 es wieder heraus.
 
+**Wo es auf deinem PC liegt:** **Mehr** in der Zeile **Modell** beginnt damit: der ganze Pfad, `Documents\RUSE 2.0\Mods\<dein Mod>\files\models\<Name der Einheit>.glb`, und **Im Ordner zeigen**, das diesen Ordner öffnet. Solange die Einheit kein eigenes Modell hat, steht dort, wo die Datei sein wird. Eine Einheit mit eigener Kopie des Modells (**Eigene Kopie des Modells geben**, oder die **Eigene Uniform** eines Trupps) liegt im selben Ordner, als `<Name der Einheit>.copy.toml`, ihre Bemalung im Ordner mit demselben Namen.
+
 **Seine Größe später:** der Schieberegler unter dem Größenfeld geht von **Winzig** bis **Riesig** (0,05 bis 20), mit
 **Spielgröße** (1) und, bei einer Epocheneinheit, **Echte Größe** markiert; klicke auf **Größe ändern**, und das Modell
 wird aus seiner eigenen Datei neu angepasst. Bei mehreren neuen Flugzeugen (oder Bodeneinheiten) ändert ein Klick die
@@ -108,10 +110,12 @@ Bei einem Trupp (Schützen, Fallschirmjäger, jede Infanterie) macht das Studio 
 
 Gut zu wissen:
 - Deine Blender-Dateien bleiben im Ordner deines Mods: `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\`. Sie werden nicht in deinen Mod gepackt, wenn du ihn teilst. Das nächste **In Blender ändern** beginnt mit dem, was du zuletzt gesendet hast.
+- Unter **In Blender ändern** sagt die Seite, wo diese Dateien liegen, schon vor deinem ersten Klick, und ihr **Im Ordner zeigen** öffnet diesen Ordner, sobald Blender den Soldaten dort geöffnet hat.
 - Haben einige Punkte deines Modells keinen Knochen (Blenders automatische Gewichte lassen ein paar aus), sagt die Seite, wie viele: Sie bewegen sich nur mit der Hüfte des Soldaten. Male sie in **Weight Paint** auf einen Knochen und sende erneut.
 - Ein Trupp mit **Eigene Uniform**: Dein Modell nimmt den Platz der Uniform ein (ihre Bemalung bleibt im Mod), und **Modell der kopierten Einheit nutzen** gibt die Uniform zurück.
 - Hast du schon eine .glb auf den Knochen des Spielsoldaten? **Modell importieren…** nimmt sie, wie sie ist.
 - Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist; das eigene des Soldaten mit schwerer Waffe als `files\models\<Name der Einheit>@bazooka.glb`.
+- **Seine Soldaten** sagt, wo das Modell eines jeden liegt (oder liegen wird), und **Im Ordner zeigen** in der Zeile **Modell** öffnet diesen Ordner.
 - **Seine Soldaten** sagt auch, welche anderen Figuren des Trupps mit welchem Modell gezeichnet werden: der gefallene Soldat und die Figur aus der Ferne (die des US-Schützentrupps mit dem Modell seines Bazooka-Manns).
 
 ## Seine Animationen: welche jede Handlung abspielt

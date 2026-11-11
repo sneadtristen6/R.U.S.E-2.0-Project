@@ -57,6 +57,8 @@ the look it copies: the main building of a factory or HQ, or the piece you pick.
 stands where it stood; the rest of the look stays. The game's own buildings stay as they are: make a new building from
 one first.
 
+**Where your mod keeps it:** `files\buildings\<the building's name>\`. The box shows the whole path on your PC (or where it will be, before the model is in), and **Show in folder** opens that folder.
+
 **Its picture in the build menu:** turn and zoom the model until it looks right inside the dashed frame, then use
 that view. See [[Import a model|Import-a-Model]] for models in general.
 

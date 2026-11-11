@@ -101,6 +101,7 @@ toutes les unités qui le jouent.
 - **Un modèle à elle (nouvelles unités) :** **Importer un modèle…** fait entrer un modèle 3D venu de Blender ou de
   n'importe quel outil 3D. Voir [[Importer un modèle|Importer-un-modèle]]. Une unité du jeu garde son modèle : sa page a
   **Nouvelle unité à partir de celle-ci…** pour créer la nouvelle unité sur laquelle le modèle va.
+- **Où son modèle est gardé :** le **Plus** de la ligne **Modèle** commence par l'endroit où votre mod garde le modèle propre de l'unité sur votre PC (ou le gardera, dès qu'elle en a un), avec **Afficher dans le dossier** pour ouvrir ce dossier. **Changer dans Blender** d'une escouade dit où sont gardés vos fichiers Blender, avec son propre **Afficher dans le dossier**.
 - **Une nouvelle unité, du début à la fin :** **Nouvelle unité (importer un modèle)** en haut de l'onglet Unités,
   choisissez l'unité de départ (un char pour un char, une escouade pour des soldats ou un cheval et son cavalier),
   nommez-la et cliquez sur **Créer**. Puis descendez **Apparence et mouvements** : son modèle, ses soldats, ses

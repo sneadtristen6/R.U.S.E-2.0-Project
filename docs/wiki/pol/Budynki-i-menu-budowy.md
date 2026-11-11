@@ -56,6 +56,8 @@ wyglądu, który kopiuje: głównego budynku fabryki lub kwatery głównej albo 
 rozmiar tej części i stoi tam, gdzie ona stała; reszta wyglądu zostaje. Własne budynki gry pozostają takie, jakie są:
 najpierw zrób z jednego z nich nowy budynek.
 
+**Gdzie trzyma go twój mod:** `files\buildings\<nazwa budynku>\`. Ramka pokazuje pełną ścieżkę na twoim komputerze (albo gdzie będzie, zanim model trafi do środka), a **Pokaż w folderze** otwiera ten folder.
+
 **Jego obraz w menu budowy:** obracaj i przybliżaj model, aż będzie dobrze wyglądał w przerywanej ramce, potem użyj
 tego widoku. Zobacz [[Importowanie modelu|Importowanie-modelu]], by dowiedzieć się o modelach ogólnie.
 

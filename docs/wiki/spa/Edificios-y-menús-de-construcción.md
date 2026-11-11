@@ -58,6 +58,8 @@ pieza del aspecto que copia: el edificio principal de una fábrica o de un cuart
 modelo toma el tamaño de esa pieza y se pone donde estaba ella; el resto del aspecto se queda. Los edificios del propio
 juego se quedan como están: crea primero un edificio nuevo a partir de uno.
 
+**Dónde lo guarda tu mod:** `files\buildings\<nombre del edificio>\`. El recuadro muestra la ruta completa en tu PC (o dónde estará, antes de que el modelo esté dentro), y **Mostrar en la carpeta** abre esa carpeta.
+
 **Su imagen en el menú de construcción:** gira y acerca el modelo hasta que se vea bien dentro del marco discontinuo, y
 luego usa esa vista. Consulta [[Importar un modelo|Importar-un-modelo]] para los modelos en general.
 

@@ -62,6 +62,8 @@ d'une pièce de l'apparence qu'il copie : le bâtiment principal d'une usine ou 
 Votre modèle est mis à la taille de cette pièce et se tient là où elle se tenait ; le reste de l'apparence reste. Les
 bâtiments du jeu lui-même restent tels quels : créez d'abord un nouveau bâtiment à partir de l'un d'eux.
 
+**Où votre mod le garde :** `files\buildings\<nom du bâtiment>\`. La boîte affiche le chemin complet sur votre PC (ou l'endroit où il sera, avant que le modèle soit en place), et **Afficher dans le dossier** ouvre ce dossier.
+
 **Son image dans le menu de construction :** tournez et zoomez le modèle jusqu'à ce qu'il rende bien dans le cadre en
 pointillés, puis utilisez cette vue. Voir [[Importer un modèle|Importer-un-modèle]] pour les modèles en général.
 

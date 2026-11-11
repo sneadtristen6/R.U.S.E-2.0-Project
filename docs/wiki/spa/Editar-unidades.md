@@ -97,6 +97,7 @@ unidad o para todas las unidades que la usan, un sonido para todas las unidades 
 - **Un modelo propio (unidades nuevas):** **Importar modelo…** trae un modelo 3D de Blender o de cualquier herramienta
   3D. Consulta [[Importar un modelo|Importar-un-modelo]]. Una unidad del juego conserva su modelo: su página tiene **Nueva
   unidad a partir de esta…** para crear la unidad nueva en la que va el modelo.
+- **Dónde se guarda su modelo:** **Más** de la fila **Modelo** empieza por dónde guarda tu mod el modelo propio de la unidad en tu PC (o lo guardará, en cuanto tenga uno), con **Mostrar en la carpeta** para abrir esa carpeta. **Cambiarlo en Blender** de un pelotón dice dónde se guardan tus archivos de Blender, con su propio **Mostrar en la carpeta**.
 - **Una unidad nueva, de principio a fin:** **Nueva unidad (importar un modelo)** arriba en la pestaña Unidades, elige
   la unidad de partida (un tanque para un tanque, un pelotón para soldados o para un caballo con jinete), ponle nombre
   y haz clic en **Crear**. Luego recorre **Aspecto y movimientos** de arriba abajo: su modelo, sus soldados, sus

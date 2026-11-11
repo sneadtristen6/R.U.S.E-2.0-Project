@@ -96,6 +96,7 @@ jej używają, dźwięk dla wszystkich jednostek, które go używają.
 - **Własny model (nowe jednostki):** **Importuj model…** wczytuje model 3D z Blendera lub dowolnego narzędzia 3D. Zobacz
   [[Importowanie modelu|Importowanie-modelu]]. Jednostka z gry zachowuje swój model: jej strona ma **Nowa jednostka z tej…**,
   by zrobić nową jednostkę, na którą trafi model.
+- **Gdzie jest trzymany jej model:** **Więcej** w wierszu **Model** zaczyna się od tego, gdzie twój mod trzyma własny model jednostki na twoim komputerze (albo będzie go trzymał, gdy już go dostanie), z **Pokaż w folderze**, by otworzyć ten folder. **Zmień w Blenderze** oddziału mówi, gdzie są trzymane twoje pliki Blendera, z własnym **Pokaż w folderze**.
 - **Nowa jednostka od początku do końca:** **Nowa jednostka (import modelu)** u góry zakładki Jednostki, wybierz
   jednostkę wyjściową (czołg dla czołgu, oddział dla żołnierzy albo konia z jeźdźcem), nazwij ją i kliknij **Utwórz**.
   Potem przejdź w dół przez **Wygląd i ruch**: jej model, jej żołnierzy, jej animacje, jej dźwięki, jej ciężarówkę.

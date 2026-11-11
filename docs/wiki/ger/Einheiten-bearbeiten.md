@@ -100,6 +100,7 @@ Einheiten, die es spielen.
 - **Ein eigenes Modell (neue Einheiten):** **Modell importieren…** holt ein 3D-Modell aus Blender oder einem anderen
   3D-Programm. Siehe [[Ein Modell importieren|Ein-Modell-importieren]]. Eine Einheit des Spiels behält ihr Modell: ihre Seite
   hat **Neue Einheit aus dieser…**, um die neue Einheit zu erstellen, die das Modell bekommt.
+- **Wo ihr Modell liegt:** **Mehr** in der Zeile **Modell** beginnt damit, wo dein Mod das eigene Modell der Einheit auf deinem PC aufbewahrt (oder aufbewahren wird, sobald sie eines hat), mit **Im Ordner zeigen**, um diesen Ordner zu öffnen. **In Blender ändern** eines Trupps sagt, wo deine Blender-Dateien liegen, mit einem eigenen **Im Ordner zeigen**.
 - **Eine neue Einheit, von Anfang bis Ende:** **Neue Einheit (Modell importieren)** oben im Reiter Einheiten, wähle
   die Einheit, von der du ausgehst (ein Panzer für einen Panzer, ein Trupp für Soldaten oder ein Pferd mit Reiter),
   gib ihr einen Namen und klick auf **Erstellen**. Dann geh **Aussehen und Bewegung** von oben nach unten durch: ihr

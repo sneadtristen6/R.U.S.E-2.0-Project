@@ -57,6 +57,8 @@ dell'aspetto che copia: l'edificio principale di una fabbrica o di un QG, o il p
 dimensionato su quel pezzo e sta dove stava lui; il resto dell'aspetto rimane. Gli edifici del gioco restano come sono:
 prima crea un nuovo edificio da uno di essi.
 
+**Dove lo tiene la tua mod:** `files\buildings\<nome dell'edificio>\`. Il riquadro mostra il percorso completo sul tuo PC (o dove sarà, prima che il modello sia dentro), e **Mostra nella cartella** apre quella cartella.
+
 **La sua immagine nel menu di costruzione:** ruota e ingrandisci il modello finché non sta bene dentro la cornice
 tratteggiata, poi usa quella vista. Vedi [[Importare un modello|Importare-un-modello]] per i modelli in generale.
 

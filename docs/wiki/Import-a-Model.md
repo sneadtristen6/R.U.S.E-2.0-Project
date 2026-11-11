@@ -55,6 +55,8 @@ again.
 
 It's saved in your mod as `files/models/<the unit's name>.glb`. **Use the copied unit's model** takes it out again.
 
+**Where it is on your PC:** the **Model** row's **More** starts with it: the whole path, `Documents\RUSE 2.0\Mods\<your mod>\files\models\<the unit's name>.glb`, and **Show in folder**, which opens that folder. Before the unit has a model of its own, it says where the file will be. A unit with its own copy of the model (**Give it its own copy of the model**, or a squad's **Custom uniform**) is kept in the same folder, as `<the unit's name>.copy.toml`, its paint in the folder of the same name.
+
 **Its size later:** the slider under the size box goes from **Tiny** to **Huge** (0.05 to 20), with **Game size** (1)
 and, for an era unit, **Real life** marked; click **Resize** and the model is fitted again from its own file. With
 several new planes (or ground units), one click resizes them all. The game reads a model when it loads, so a new size
@@ -99,10 +101,12 @@ For a squad (riflemen, paratroopers, any infantry) the Studio does the Blender p
 
 Good to know:
 - Your Blender files stay in your mod's folder: `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\`. They aren't packed into your mod when you share it. The next **Change it in Blender** starts from what you sent last.
+- Under **Change it in Blender** the page says where those files are, even before your first click, and its **Show in folder** opens that folder once Blender has opened the soldier there.
 - If some points of your model have no bone (Blender's automatic weights miss a few), the page says how many: they move with the soldier's hips only. Paint them onto a bone in Blender's **Weight Paint**, then send again.
 - A squad with a **Custom uniform**: your model takes the uniform's place (its paint stays in your mod), and **Use the copied unit's model** gives the uniform back.
 - Already have a .glb made on the game soldier's bones? **Import model…** takes it as it is.
 - The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in; the heavy-weapon soldier's own as `files\models\<the unit's name>@bazooka.glb`.
+- **Its soldiers** says where each of their models is kept (or will be), and the **Model** row's **Show in folder** opens that folder.
 - **Its soldiers** also says which of the squad's other figures are drawn with each model: the fallen soldier, and the figure seen from far away (the US rifle squad's is drawn with its bazooka man's).
 
 ## Its animations: which one each action plays

@@ -55,6 +55,8 @@ který kopíruje: hlavní budovy továrny nebo velitelství, nebo dílu, který 
 a stojí tam, kde stál on; zbytek vzhledu zůstane. Vlastní budovy hry zůstanou, jak jsou: nejdřív z jedné udělejte
 novou budovu.
 
+**Kde ho váš mod má:** `files\buildings\<název budovy>\`. Rámeček ukazuje celou cestu ve vašem počítači (nebo kde bude, než bude model uvnitř) a **Ukázat ve složce** tu složku otevře.
+
 **Její obrázek v nabídce stavby:** otáčejte a přibližujte model, dokud uvnitř čárkovaného rámečku nevypadá správně, pak
 ten pohled použijte. O modelech obecně viz [[Import modelu|Import-modelu]].
 
