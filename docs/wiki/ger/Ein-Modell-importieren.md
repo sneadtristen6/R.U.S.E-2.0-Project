@@ -92,6 +92,23 @@ denselben Knochen tragen es auch. Im Spiel gesehen mit einem Schützentrupp, ein
 0.4.8.17 oder neuer: ein älterer Launcher gibt dem Modell das Skelett der kopierten Einheit, sodass sich sein Turm um
 den falschen Punkt dreht. Version 0.4.8.17 ist ein notwendiges Update, also installiert der Launcher es von selbst.
 
+## Dein eigener Soldat, Schritt für Schritt
+
+Bei einem Trupp (Schützen, Fallschirmjäger, jede Infanterie) macht das Studio den Blender-Teil mit dir:
+
+1. **Erstelle den Trupp** wie in Schritt 2 oben, ausgehend von einem Trupp (etwa den US-Schützen).
+2. **Öffne seinen Soldaten in Blender.** Klicke auf der Seite des neuen Trupps unter **Eigenes Modell** auf **In Blender ändern**. Blender öffnet sich mit dem Soldaten und seinen Knochen, jeder dort, wo das Spiel ihn hat. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio, wo es ist.
+3. **Ändere ihn, oder setze dein eigenes Modell auf seine Knochen.** Zum Ändern bearbeite ihn dort. Für ein eigenes Modell: hole es mit **File > Import** in dieselbe Szene und lege es auf den Soldaten; klicke dein Modell an, **Umschalt+Klick** auf die Knochen, dann **Strg+P > With Automatic Weights**. Lösche den Soldaten des Spiels, wenn du ihn nicht behältst.
+4. **Sende es.** Klicke oben in Blender auf **An das R.U.S.E. Studio senden**.
+5. **Hol es zurück.** Klicke im Studio auf **Modell zurückholen**. Jeder Soldat des Trupps trägt dein Modell: der Schütze, der Mann mit der Bazooka und die kleinen Figuren, die man von weit oben sieht. **Im Spiel testen** zeigt es.
+
+Gut zu wissen:
+- Deine Blender-Dateien bleiben im Ordner deines Mods: `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\`. Sie werden nicht in deinen Mod gepackt, wenn du ihn teilst. Das nächste **In Blender ändern** beginnt mit dem, was du zuletzt gesendet hast.
+- Haben einige Punkte deines Modells keinen Knochen (Blenders automatische Gewichte lassen ein paar aus), sagt die Seite, wie viele: Sie bewegen sich nur mit der Hüfte des Soldaten. Male sie in **Weight Paint** auf einen Knochen und sende erneut.
+- Ein Trupp mit **Eigene Uniform**: Dein Modell nimmt den Platz der Uniform ein (ihre Bemalung bleibt im Mod), und **Modell der kopierten Einheit nutzen** gibt die Uniform zurück.
+- Hast du schon eine .glb auf den Knochen des Spielsoldaten? **Modell importieren…** nimmt sie, wie sie ist.
+- Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist.
+
 ## 4. Seine Karte, dann testen
 
 Dreh die 3D-Ansicht, bis das neue Modell im gestrichelten Rahmen richtig aussieht, und klicke auf **Diese Ansicht als

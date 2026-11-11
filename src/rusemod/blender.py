@@ -16,6 +16,8 @@ from pathlib import Path
 DOWNLOAD = "https://www.blender.org/download/"
 OPENER = Path(__file__).with_name("blender_open.py")
 SAVE_REQUEST, SAVE_DONE = "save.request", "save.done"  # files in the models' folder; blender_open.py's names too
+CHANGER = Path(__file__).with_name("blender_model.py")  # a new unit's model opened to be changed, not painted
+SEND_REQUEST, SEND_DONE = "send.request", "send.done"  # files beside the model it sends; blender_model.py's names too
 
 
 def find_blender(chosen: str | None = None) -> Path | None:
@@ -82,6 +84,37 @@ def newest(paths) -> Path:
 def open_models(blender: Path, files: list) -> subprocess.Popen:
     """Start Blender with these .glb files loaded (blender_open.py); returns at once, with Blender's process."""
     return subprocess.Popen([str(blender), "--python", str(OPENER), "--"] + [str(f) for f in files])
+
+
+def open_model_to_change(blender: Path, model: Path, send: Path, words: Path) -> subprocess.Popen:
+    """Start Blender with a new unit's model (its bones at their real places) to be changed (blender_model.py): its
+    "Send to the R.U.S.E. Studio" button, or the Studio's Bring back the model (ask_to_send), writes the model to
+    `send`; `words` holds the button's and the help's words in the Studio's language. Returns at once."""
+    return subprocess.Popen([str(blender), "--python", str(CHANGER), "--", str(model), str(send), str(words)])
+
+
+def ask_to_send(send: Path, timeout: float) -> str | None:
+    """Ask the Blender changing a model (blender_model.py) to send it to `send`, and wait for it: the file it wrote,
+    or None when no Blender answered within `timeout` seconds (it was closed: what it sent before is still there)."""
+    folder = Path(send).parent
+    done, request = folder / SEND_DONE, folder / SEND_REQUEST
+    done.unlink(missing_ok=True)
+    part = folder / (SEND_REQUEST + ".part")  # written beside it, then put in place: Blender never sees it half made
+    part.write_text("send", encoding="utf-8")
+    os.replace(part, request)
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        if done.exists():
+            try:
+                answer = json.loads(done.read_text(encoding="utf-8"))
+            except (OSError, ValueError):  # being written: look again
+                answer = None
+            if isinstance(answer, dict) and answer.get("file"):
+                done.unlink(missing_ok=True)
+                return str(answer["file"])
+        time.sleep(0.1)
+    request.unlink(missing_ok=True)
+    return None
 
 
 MENU_SCENE = Path(__file__).with_name("blender_menu.py")

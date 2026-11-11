@@ -83,6 +83,23 @@ and a squad's other men with the same bones wear it too. Seen in the game with a
 one gives the model the copied unit's skeleton, so its turret turns around the wrong point. 0.4.8.17 is a required
 update, so the Launcher installs it by itself.
 
+## Your own soldier, step by step
+
+For a squad (riflemen, paratroopers, any infantry) the Studio does the Blender part with you:
+
+1. **Make the squad** as in step 2 above, starting from a squad (the US rifle squad, say).
+2. **Open its soldier in Blender.** On the new squad's page, under **Its own model**, click **Change it in Blender**. Blender opens with the soldier and his bones, each one where the game has it. No Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
+3. **Change him, or put your own model on his bones.** To change him, edit him there. To use a model of your own: **File > Import** it into the same scene and place it over the soldier; click your model, **Shift+click** the bones, then press **Ctrl+P > With Automatic Weights**. Delete the game's soldier if you don't keep him.
+4. **Send it.** Click **Send to the R.U.S.E. Studio** at the top of Blender.
+5. **Bring it back.** In the Studio, click **Bring back the model**. Every soldier of the squad wears your model: the rifleman, the bazooka man, and the little figures you see from far away. **Test in game** shows it.
+
+Good to know:
+- Your Blender files stay in your mod's folder: `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\`. They aren't packed into your mod when you share it. The next **Change it in Blender** starts from what you sent last.
+- If some points of your model have no bone (Blender's automatic weights miss a few), the page says how many: they move with the soldier's hips only. Paint them onto a bone in Blender's **Weight Paint**, then send again.
+- A squad with a **Custom uniform**: your model takes the uniform's place (its paint stays in your mod), and **Use the copied unit's model** gives the uniform back.
+- Already have a .glb made on the game soldier's bones? **Import model…** takes it as it is.
+- The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in.
+
 ## 4. Its card, then test
 
 Turn the 3D view until the new model looks right in the dashed frame and click **Use this view as the card** (see

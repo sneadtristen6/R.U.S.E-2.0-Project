@@ -520,10 +520,18 @@ def by_bones(doc: dict, binary: bytes, node: dict, prim: dict, mesh: Mesh, blade
     return out
 
 
+# Blender's glTF export skins every point that has no weight to a bone of its own by this name (it isn't a bone of the
+# model): read back, such a point has no bone, and Import model gives it the root bone as any point with none
+# (2026-11-10, item 4: a modder's own mesh put on a squad's bones with Blender's automatic weights left 23 points
+# unweighted, and Import model refused the whole file over this bone)
+BLENDER_NO_BONE = "neutral_bone"
+
+
 def bone_weights(names: list, joints, weights) -> list:
-    """One vertex's bones as a model file gives them: [(the bone's name, its weight 0..255)], those it leans on, the weights adding up to 255 as the game's do."""
-    total = sum(weights) or 1.0
-    out = [[names[j], round(w / total * 255.0)] for j, w in zip(joints, weights) if w > 0 and j < len(names)]
+    """One vertex's bones as a model file gives them: [(the bone's name, its weight 0..255)], those it leans on, the weights adding up to 255 as the game's do (Blender's no-bone left out)."""
+    total = sum(w for j, w in zip(joints, weights) if j < len(names) and names[j] != BLENDER_NO_BONE) or 1.0
+    out = [[names[j], round(w / total * 255.0)] for j, w in zip(joints, weights)
+           if w > 0 and j < len(names) and names[j] != BLENDER_NO_BONE]
     if out:
         out[max(range(len(out)), key=lambda k: out[k][1])][1] += 255 - sum(w for _n, w in out)
     return [(n, w) for n, w in out if w > 0]
@@ -1051,6 +1059,10 @@ def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: 
         notes.append(f"a model rigged to the unit's own bones keeps its size: size {size:g} wasn't used")
     out, own_normals = [], 0
     root = [(like.get("root", ""), 255)]
+    no_bone = sum(1 for m in model.meshes if m.skin for v in range(len(m.positions)) if v >= len(m.skin) or not m.skin[v])
+    if no_bone:  # (said to the modder: in Blender they'd show unweighted; Blender's export put them on its neutral_bone)
+        notes.append(f"{no_bone} point(s) had no bone in the file: they follow the root bone ({like.get('root') or '?'}). "
+                     "To make them move with an arm or a leg, give them weights in Blender")
     for m in model.meshes:
         groups: dict = {}
         for t, mk in zip(m.triangles, m.face_materials or [-1] * len(m.triangles)):
@@ -1081,6 +1093,8 @@ def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: 
             out.append(part)
     report = fit_report(model, [RIGGED] * len(model.meshes), 0, 1, 1.0 / SCALE, out, pictures, missing, own_normals, own_alpha, notes)
     report["rigged"] = True
+    if no_bone:
+        report["no_bone"] = no_bone    # (the page says it in the player's language: words.toml model_no_bone)
     return Prepared(out, pictures, report)
 
 

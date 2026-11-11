@@ -2654,9 +2654,11 @@ function lookBox(u, brought, startNew) {
       parts.push(el("p", { className: paintable ? "small" : "notice warn",
         textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
     }
-    let model = null;  // (a squad's soldiers aren't swapped for an imported model)
-    if (!info.soldiers && info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));
-    else if (!info.soldiers && !info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));  // (no mod: no startNew)
+    // a new unit's own model, a squad's too: Import model puts a model rigged to the game soldier's bones on every
+    // soldier of it (the owner, 2026-11-09: "Yes, soldiers"; the squad page hid the box until item 4, 2026-11-10)
+    let model = null;
+    if (info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));
+    else if (!info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));  // (no mod: no startNew)
     body.className = "new-unit";
     body.replaceChildren(...parts);
     if (model && state.focusModel === address) {  // just made: show where its model goes
@@ -2755,6 +2757,9 @@ function resizeAllRow(kind, n, changed) {
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
+  // a squad's model is rigged to the game soldier's bones and keeps the size and place it has on them
+  // (rusemod.modelin._prepare_rigged), so its box has no Size or Move; its own copy is its uniform, in the box above
+  const squad = Boolean(info.soldiers);
   const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", value: "1", className: "model-size",
     title: w.tip_model_size });
   // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
@@ -2792,7 +2797,8 @@ function modelBox(address, info, draw, changed) {
       draw(r);
     } catch (err) { problem(err); resize.disabled = false; }
   });
-  (own ? api().model_sizes(address, state.lang) : api().model_size_marks(address, state.lang).then((marks) => ({ marks })))
+  (squad ? Promise.resolve(null)
+    : own ? api().model_sizes(address, state.lang) : api().model_size_marks(address, state.lang).then((marks) => ({ marks })))
     .then((s) => {
       if (!s) return;
       if (s.size) size.value = String(sizeRound(s.size));
@@ -2809,22 +2815,76 @@ function modelBox(address, info, draw, changed) {
       }
     }).catch(() => {});  // (no slider: the number box still takes a size)
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
-    title: w.tip_model_import });
+    title: squad ? w.tip_model_import_squad : w.tip_model_import });
+  // the unit's own copy a new model took the place of (StudioApi.model_import's "copy_out"; a squad's Custom uniform)
+  const copyOut = squad ? w.model_copy_out_squad : w.model_copy_out;
   pick.addEventListener("click", async () => {
     pick.disabled = true;
     say(w.model_importing);
     try {
-      const r = await api().model_import(address, null, Number(size.value) || 1, false, null, true, true, own ? moved() : null);
+      const r = await api().model_import(address, null, squad ? 1 : Number(size.value) || 1, false, null, true, true,
+        own && !squad ? moved() : null);
       if (r.model) {  // (none: the file picker was closed)
-        say(fill(w.model_done, { file: r.model.file || "" }), "ok");
+        say(fill(w.model_done, { file: r.model.file || "" }) + (r.copy_out ? ` ${copyOut}` : ""), "ok");
         if (changed) changed();
       }
-      draw(r);
+      draw(r);  // (its copy_out shows in the box below until the box is drawn again)
     } catch (err) { problem(err); } finally { pick.disabled = false; }
   });
   const box = el("div", { className: "model-own" }, el("h3", { textContent: w.model_title }));
+  // a squad's soldier changed in Blender and brought back (StudioApi.model_blender, model_blender_back; the owner's
+  // order of 2026-11-10, item 4: Open in Blender was a painting door behind Custom uniform, with the bones all in one
+  // spot): no uniform needed, the bones at their real places, Bring back takes the model in as Import model does
+  if (info.soldiers) {
+    const where = el("p", { className: "muted small" });
+    const actions = el("div", { className: "actions" });
+    if (!info.blender) {  // (the same two buttons as the Look box's: get Blender, or show where it is)
+      const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
+      get.addEventListener("click", () => api().get_blender().catch(problem));
+      const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
+        title: w.tip_look_choose_blender });
+      choose.addEventListener("click", async () => {
+        try {
+          const r = await api().choose_blender();
+          if (r.message) say(r.message, "error");
+          draw(await api().look(address));
+        } catch (err) { problem(err); }
+      });
+      actions.append(get, choose);
+    } else {
+      const open = el("button", { type: "button", textContent: w.model_blender, title: w.tip_model_blender });
+      const back = el("button", { type: "button", textContent: w.model_blender_back, title: w.tip_model_blender_back });
+      open.addEventListener("click", async () => {
+        open.disabled = true;
+        say(w.model_blender_opening);
+        try {
+          const r = await api().model_blender(address, state.lang);
+          say(w.model_blender_opened, "ok");
+          where.textContent = fill(w.model_blender_where, { folder: r.work || "" });
+        } catch (err) { problem(err); } finally { open.disabled = false; }
+      });
+      back.addEventListener("click", async () => {
+        back.disabled = true;
+        say(w.model_blender_bringing);
+        try {
+          const r = await api().model_blender_back(address, Number(size.value) || 1);
+          if (r.model) {
+            say(w.model_blender_done, "ok");
+            if (changed) changed();
+          }
+          draw(r);
+        } catch (err) { problem(err); } finally { back.disabled = false; }
+      });
+      actions.append(open, back);
+    }
+    box.append(el("h4", { textContent: w.model_blender_title }),
+      el("p", { className: "small", textContent: info.blender ? w.model_blender_how : w.model_blender_needs }),
+      actions, where);
+  }
   // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
-  // model with textures of its own, so Repaint in Blender above changes this unit only
+  // model with textures of its own, so Repaint in Blender above changes this unit only (a squad's is its uniform, in the
+  // box above). One model per unit: Import model takes the copy's place (the copy goes, its paint stays), and the copy
+  // waits while the unit has a model of its own (StudioApi.model_copy refuses, naming the button that takes it out)
   const copyAction = (call, button) => async () => {
     button.disabled = true;
     try {
@@ -2834,14 +2894,11 @@ function modelBox(address, info, draw, changed) {
       if (changed) changed();
     } catch (err) { problem(err); button.disabled = false; }
   };
-  if (info.own_copy) {
+  if (info.own_copy && !squad) {
     const back = el("button", { type: "button", className: "ghost", textContent: w.model_copy_remove, title: w.tip_model_copy_remove });
     back.addEventListener("click", copyAction("model_copy_remove", back));
     box.append(el("p", { className: "small", textContent: w.model_copy_has }), el("div", { className: "actions" }, back));
-    box.pick = back;
-    return box;  // (one model per unit: no import while it has a copy)
-  }
-  if (!own) {
+  } else if (!own && !info.own_copy && !squad) {
     const copy = el("button", { type: "button", textContent: w.model_copy, title: w.tip_model_copy });
     copy.addEventListener("click", copyAction("model_copy", copy));
     box.append(el("p", { className: "muted small", textContent: w.model_copy_how }), el("div", { className: "actions" }, copy));
@@ -2861,25 +2918,51 @@ function modelBox(address, info, draw, changed) {
     if (own.missing && own.missing.length) {
       box.append(el("p", { className: "notice warn", textContent: fill(w.model_missing, { names: own.missing.join(", ") }) }));
     }
-    const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove, title: w.tip_model_remove });
+    // points the model file gave no bone (Blender's automatic weights leave some): they follow the hips
+    // (rusemod.modelin.BLENDER_NO_BONE; item 4, 2026-11-10)
+    if (own.no_bone) box.append(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+    // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
+    if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
+    const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
+      title: squad ? w.tip_model_remove_squad : w.tip_model_remove });
     drop.addEventListener("click", async () => {
-      try { draw(await api().model_import_remove(address)); if (changed) changed(); } catch (err) { problem(err); }
+      try {
+        const r = await api().model_import_remove(address);
+        say(r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+          : (squad ? w.model_removed_squad : w.model_removed), "ok");
+        draw(r);
+        if (changed) changed();
+      } catch (err) { problem(err); }
     });
-    box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
-      sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
-    moveFold.append(el("summary", {}, el("strong", { textContent: w.model_move_title }), " ",
-      el("span", { className: "muted", textContent: w.model_move_when })));
-    if (own.rigged) moveFold.append(el("p", { className: "muted small", textContent: w.model_move_rigged }));
+    if (squad) box.append(el("p", { className: "muted small", textContent: w.model_squad_fit }));
     else {
-      moveFold.append(el("div", { className: "actions model-move" },
-        ...moves.map((m) => el("label", { className: "small" }, m.label, " ", m.box)), move),
-        el("p", { className: "muted small", textContent: w.model_move_how }), longNote);
+      box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
+        sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
+      moveFold.append(el("summary", { title: w.tip_model_move_fold }, el("strong", { textContent: w.model_move_title }), " ",
+        el("span", { className: "muted", textContent: w.model_move_when })));
+      if (own.rigged) moveFold.append(el("p", { className: "muted small", textContent: w.model_move_rigged }));
+      else {
+        moveFold.append(el("div", { className: "actions model-move" },
+          ...moves.map((m) => el("label", { className: "small" }, m.label, " ", m.box)), move),
+          el("p", { className: "muted small", textContent: w.model_move_how }), longNote);
+      }
+      box.append(moveFold);
     }
-    box.append(moveFold);
+    if (info.copy_out) box.append(el("p", { className: "notice", textContent: copyOut }));
     box.append(el("div", { className: "actions" }, pick, drop));
   } else {
-    box.append(el("p", { className: "muted small", textContent: w.model_how }),
-      el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
+    if (info.model_out) {
+      box.append(el("p", { className: "notice", textContent: info.copy_back
+        ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+        : (squad ? w.model_removed_squad : w.model_removed) }));
+    }
+    box.append(el("p", { className: "muted small", textContent: squad ? w.model_how_squad : w.model_how }));
+    // with its own copy (a squad's Custom uniform): what an import does to it, before the button is clicked
+    if (info.own_copy) {
+      box.append(el("p", { className: "notice", textContent: squad ? w.model_import_over_uniform : w.model_import_over_copy }));
+    }
+    if (squad) box.append(el("div", { className: "actions" }, pick));
+    else box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
   }
   box.pick = pick;
   return box;
@@ -2920,10 +3003,14 @@ function uniformBox(address, info, draw, changed) {
     back.addEventListener("click", act("model_copy_remove", back));
     box.append(el("p", { className: "small", textContent: w.uniform_has }), el("div", { className: "actions" }, back));
   } else {
-    const custom = el("button", { type: "button", textContent: w.uniform_custom, title: w.tip_uniform_custom,
-      disabled: !state.mod });
+    // a model of its own (Its own model, below) takes the uniform's place: one model per unit, so Custom uniform waits
+    // until Use the copied unit's model takes the model out (StudioApi.model_copy refuses as well, naming that button)
+    const owned = Boolean(info.own_model);
+    const custom = el("button", { type: "button", textContent: w.uniform_custom,
+      title: owned ? w.tip_uniform_custom_own_model : w.tip_uniform_custom, disabled: !state.mod || owned });
     custom.addEventListener("click", act("model_copy", custom));
-    box.append(el("p", { className: "muted small", textContent: w.uniform_default }), el("div", { className: "actions" }, custom));
+    box.append(el("p", { className: "muted small", textContent: owned ? w.uniform_own_model : w.uniform_default }),
+      el("div", { className: "actions" }, custom));
     if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
   }
   return box;

@@ -641,18 +641,18 @@ jpn = "{0}：files/cards/{1}.png：{2} には画像を指す専用カード（Te
 sc = "{0}：files/cards/{1}.png：{2} 没有指明图片的自有卡片（TextureForInterface），因此无法获得卡片"
 fa = "{0}: files/cards/{1}.png: {2} کارت خودش (TextureForInterface) را ندارد که نام تصویری را ببرد، پس نمی‌تواند کارتی بگیرد"
 
-[e651fc6d124]
-us = "{0}: {1} has an imported model too (files/models/{2}.glb); take one of the two out"
-fr = "{0} : {1} a aussi un modèle importé (files/models/{2}.glb) ; retirez l'un des deux"
-ger = "{0}: {1} hat auch ein importiertes Modell (files/models/{2}.glb); nimm eines der beiden heraus"
-ita = "{0}: {1} ha anche un modello importato (files/models/{2}.glb); togline uno dei due"
-spa = "{0}: {1} también tiene un modelo importado (files/models/{2}.glb); quita uno de los dos"
-pol = "{0}: {1} ma też zaimportowany model (files/models/{2}.glb); usuń jeden z nich"
-ru = "{0}: у {1} есть и импортированная модель (files/models/{2}.glb); уберите одну из двух"
-cz = "{0}: {1} má i importovaný model (files/models/{2}.glb); jeden z nich odeberte"
-jpn = "{0}：{1} にはインポートしたモデル（files/models/{2}.glb）もあります。どちらかを外してください"
-sc = "{0}：{1} 还有一个导入的模型（files/models/{2}.glb）；请移除其中一个"
-fa = "{0}: {1} یک مدل واردشده هم دارد (files/models/{2}.glb)؛ یکی از این دو را بردارید"
+[ebfae938c82]
+us = "{0}: {1} has two models: one you imported (files/models/{2}.glb) and its own copy of the game's model (this file, a squad's Custom uniform). Each of its figures is drawn with one model, so it can't use both. In the Studio, on this unit's page, click Back to the default uniform (or Use the shared model again, for a unit that isn't a squad) to keep your model, or Use the copied unit's model to keep the copy"
+fr = "{0} : {1} a deux modèles : un que vous avez importé (files/models/{2}.glb) et sa propre copie du modèle du jeu (ce fichier, l'Uniforme personnalisé d'une escouade). Chacune de ses figurines est dessinée avec un seul modèle : elle ne peut pas utiliser les deux. Dans le Studio, sur la page de cette unité, cliquez sur Revenir à l'uniforme par défaut (ou Reprendre le modèle partagé, pour une unité qui n'est pas une escouade) pour garder votre modèle, ou sur Utiliser le modèle de l'unité copiée pour garder la copie"
+ger = "{0}: {1} hat zwei Modelle: eines, das du importiert hast (files/models/{2}.glb), und eine eigene Kopie des Spielmodells (diese Datei, die Eigene Uniform eines Trupps). Jede ihrer Figuren wird mit einem einzigen Modell gezeichnet, also kann sie nicht beide nutzen. Klicke im Studio auf der Seite dieser Einheit auf Zurück zur Standarduniform (oder Wieder das gemeinsame Modell nutzen bei einer Einheit, die kein Trupp ist), um dein Modell zu behalten, oder auf Modell der kopierten Einheit nutzen, um die Kopie zu behalten"
+ita = "{0}: {1} ha due modelli: uno che hai importato (files/models/{2}.glb) e una sua copia del modello del gioco (questo file, l'Uniforme personalizzata di una squadra). Ciascuna delle sue figure è disegnata con un solo modello, quindi non può usarli entrambi. Nello Studio, nella pagina di questa unità, clicca Torna all'uniforme predefinita (o Usa di nuovo il modello condiviso, per un'unità che non è una squadra) per tenere il tuo modello, oppure Usa il modello dell'unità copiata per tenere la copia"
+spa = "{0}: {1} tiene dos modelos: uno que importaste (files/models/{2}.glb) y su propia copia del modelo del juego (este archivo, el Uniforme personalizado de un pelotón). Cada una de sus figuras se dibuja con un solo modelo, así que no puede usar los dos. En el Studio, en la página de esta unidad, haz clic en Volver al uniforme predeterminado (o Volver al modelo compartido, para una unidad que no es un pelotón) para quedarte con tu modelo, o en Usar el modelo de la unidad copiada para quedarte con la copia"
+pol = "{0}: {1} ma dwa modele: jeden zaimportowany przez ciebie (files/models/{2}.glb) i własną kopię modelu z gry (ten plik, Własny mundur oddziału). Każda z jego figur jest rysowana jednym modelem, więc nie może używać obu. W Studiu, na stronie tej jednostki, kliknij Wróć do domyślnego munduru (albo Wróć do wspólnego modelu, jeśli to nie oddział), aby zachować swój model, albo Użyj modelu kopiowanej jednostki, aby zachować kopię"
+ru = "{0}: у {1} две модели: одна импортирована вами (files/models/{2}.glb), другая — его собственная копия модели игры (этот файл, «Своя форма» отряда). Каждая его фигура рисуется одной моделью, поэтому он не может использовать обе. В Studio на странице этого юнита нажмите «Вернуть стандартную форму» (или «Снова использовать общую модель», если это не отряд), чтобы оставить свою модель, или «Модель копируемого юнита», чтобы оставить копию"
+cz = "{0}: {1} má dva modely: jeden, který jste importovali (files/models/{2}.glb), a vlastní kopii modelu ze hry (tento soubor, Vlastní uniforma družstva). Každá jeho figura se kreslí jedním modelem, takže nemůže používat oba. Ve Studiu na stránce této jednotky klikněte na Zpět na výchozí uniformu (nebo Znovu použít sdílený model u jednotky, která není družstvo), chcete-li si nechat svůj model, nebo na Použít model kopírované jednotky, chcete-li si nechat kopii"
+jpn = "{0}：{1} には二つのモデルがあります。読み込んだモデル（files/models/{2}.glb）と、ゲームのモデルの専用コピー（このファイル、分隊の「カスタム軍服」）です。各フィギュアは一つのモデルで描かれるため、両方は使えません。Studioでこのユニットのページを開き、モデルを残すには「標準の軍服に戻す」（分隊でないユニットは「共有のモデルに戻す」）を、コピーを残すには「コピー元のモデルを使う」を押してください"
+sc = "{0}：{1} 有两个模型：一个是你导入的（files/models/{2}.glb），一个是游戏模型的自有副本（此文件，小队的“自定义制服”）。它的每个人物都只用一个模型绘制，所以不能同时使用两者。在 Studio 中这个单位的页面上，点击“改回默认制服”（不是小队的单位点击“重新使用共享模型”）可保留你的模型，点击“使用所复制单位的模型”可保留副本"
+fa = "{0}: {1} دو مدل دارد: یکی که شما وارد کرده‌اید (files/models/{2}.glb) و کپی جداگانه‌اش از مدل بازی (همین فایل، «اونیفرم سفارشی» یک جوخه). هر یک از پیکره‌هایش با یک مدل کشیده می‌شود، پس نمی‌تواند از هر دو استفاده کند. در استودیو، در صفحهٔ این یگان، برای نگه داشتن مدلتان روی «بازگشت به اونیفرم پیش‌فرض» (یا «استفادهٔ دوباره از مدل مشترک»، برای یگانی که جوخه نیست) کلیک کنید، یا برای نگه داشتن کپی روی «استفاده از مدلِ یگانِ کپی‌شده»"
 
 [e01d155d139]
 us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"

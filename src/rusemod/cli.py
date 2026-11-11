@@ -229,6 +229,15 @@ def cmd_import_model(args) -> int:
         raise UserError(str(exc)) from None
     print(f"{out}: {r['vertices']:,} points, {r['triangles']:,} triangles in {r['draws']} part(s), fitted to "
           f"{r['like']} (facing {'+' if r['facing'][1] > 0 else '-'}{r['facing'][0]}, scale {r['scale']:.3f})")
+    # a unit has one model, so the import takes the place of its own copy (a squad's Custom uniform), as the Studio's
+    # Import model does (ruse_studio.api.model_import): the copy's .copy.toml goes, its paint folder stays (2026-11-10,
+    # item 4 of the owner's list: the build stopped on a unit with both)
+    from .unitmodel import COPY
+    copy = out.with_name(out.stem + COPY)
+    if not args.out and copy.is_file():
+        copy.unlink()
+        print(f"  its own copy ({copy.name}) is taken out: a unit has only one model; its paint stays in "
+              f"{out.with_suffix('')}")
     if r.get("moved"):
         forward, right, up = r["moved"]
         print(f"  moved: {forward:g} forward, {right:g} right, {up:g} up, in the game's units (the unit it copies is {r['stands'][3]:g} long)")
