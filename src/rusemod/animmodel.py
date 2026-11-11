@@ -573,25 +573,36 @@ def point_masks(game, name: str, model: str, masks: dict) -> dict:
 # --- the unit's actions, from the game's index ---
 def unit_figures(db, unit: str) -> list:
     """[(figure path, the model file it wears (lower case), [its actions in the game's order])] of the game's unit
-    `unit` (its address), from the game index `db`: each part of it with clip listings (ResourceAnimation)."""
-    rows = db.execute("SELECT id, address FROM object WHERE (address = ? OR substr(address, 1, ?) = ?) AND shadow = 0",
-                      (unit, len(unit) + 1, unit + ":")).fetchall()
-    out = []
-    for oid, address in rows:
-        listed = db.execute("SELECT path, dst FROM ref WHERE src = ? AND path LIKE 'ResourceAnimation[%].v'",
-                            (oid,)).fetchall()
-        if not listed:
+    `unit` (its address), from the game index `db`: each part reached from the unit's GfxDescriptor* links that lists
+    clips (ResourceAnimation), its unnamed parts followed and never a named object (another unit, a shared drawer), as
+    the build walks a unit (rusemod.anim.own_listings). A part the unit shares with another is found by its link,
+    whichever unit's address the index files it under."""
+    row = db.execute("SELECT id FROM object WHERE address = ? AND shadow = 0", (unit,)).fetchone()
+    if row is None:
+        return []
+    todo = [(dst, path) for path, dst in db.execute("SELECT path, dst FROM ref WHERE src = ?", (row[0],))
+            if path and path.startswith("GfxDescriptor")]
+    out, seen = [], set()
+    while todo:
+        oid, path = todo.pop(0)
+        if oid is None or oid in seen or len(seen) > 20000:
             continue
-        mesh = db.execute("SELECT dst FROM ref WHERE src = ? AND path = 'MeshDescriptor'", (oid,)).fetchone()
-        got = db.execute("SELECT text FROM value WHERE object = ? AND path = 'FileName'", (mesh[0],)).fetchone() \
-            if mesh else db.execute("SELECT text FROM value WHERE object = ? AND path = 'MeshDescriptor.FileName'",
-                                    (oid,)).fetchone()
-        model = (got[0] if got and got[0] else "").replace("/", "\\").lower()
-        actions = []
-        for path, _dst in sorted(listed, key=lambda r: int(re.search(r"\[(\d+)\]", r[0]).group(1))):
-            k = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, path[:-2] + ".k")).fetchone()
-            if k and k[0] and k[0] not in actions:
-                actions.append(k[0])
-        figure = address.split(":", 1)[1] if ":" in address else ""
-        out.append((figure, model, actions))
+        seen.add(oid)
+        named = db.execute("SELECT export FROM object WHERE id = ?", (oid,)).fetchone()
+        if named is None or named[0]:
+            continue
+        refs = db.execute("SELECT path, dst FROM ref WHERE src = ?", (oid,)).fetchall()
+        listed = [(p, d) for p, d in refs if p and p.startswith("ResourceAnimation[") and p.endswith("].v")]
+        if listed:
+            mesh = next((d for p, d in refs if p == "MeshDescriptor"), None)
+            got = db.execute("SELECT text FROM value WHERE object = ? AND path = 'FileName'", (mesh,)).fetchone() \
+                if mesh is not None else db.execute("SELECT text FROM value WHERE object = ? AND path = "
+                                                    "'MeshDescriptor.FileName'", (oid,)).fetchone()
+            actions = []
+            for p, _d in sorted(listed, key=lambda r: int(re.search(r"\[(\d+)\]", r[0]).group(1))):
+                k = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, p[:-2] + ".k")).fetchone()
+                if k and k[0] and k[0] not in actions:
+                    actions.append(k[0])
+            out.append((path, (got[0] if got and got[0] else "").replace("/", "\\").lower(), actions))
+        todo += [(d, f"{path}.{p}") for p, d in refs if p and not p.startswith("ResourceAnimation[")]
     return out

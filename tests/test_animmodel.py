@@ -525,24 +525,35 @@ class OwnBonesOn(unittest.TestCase):
 
 class TheIndex(unittest.TestCase):
     def test_a_unit_s_figures_and_actions(self):
+        """Its figures by its links, as the build walks a unit: a figure the index files under another unit (the first
+        to reach it) is found; its ride (another unit) and a named object are not walked into."""
         db = sqlite3.connect(":memory:")
-        db.executescript("CREATE TABLE object (id INTEGER, address TEXT, class TEXT, shadow INTEGER);"
+        db.executescript("CREATE TABLE object (id INTEGER, address TEXT, export TEXT, class TEXT, shadow INTEGER);"
                          "CREATE TABLE ref (src INTEGER, dst INTEGER, path TEXT);"
                          "CREATE TABLE value (object INTEGER, path TEXT, text TEXT, num REAL);")
-        unit = E + "Descriptor_Unit_Squad"
-        db.executemany("INSERT INTO object VALUES (?, ?, ?, 0)", [(1, unit, "TInfanterieDescriptor"),
-                                                                  (2, unit + ":GfxDescriptorFusilier", "TGfxDescriptorBiped"),
-                                                                  (3, None, "TResourceMultiMaterialMesh"),
-                                                                  (4, None, "TGfxDescriptorAnimation"),
-                                                                  (5, unit + "_Other:GfxDescriptorFusilier", "TGfxDescriptorBiped")])
-        db.executemany("INSERT INTO ref VALUES (?, ?, ?)", [(2, 3, "MeshDescriptor"), (2, 4, "ResourceAnimation[1].v"),
-                                                            (2, 4, "ResourceAnimation[0].v"), (5, 4, "ResourceAnimation[0].v")])
-        db.executemany("INSERT INTO value VALUES (?, ?, ?, NULL)", [(3, "FileName", MODEL_FILE),
-                                                                    (2, "ResourceAnimation[0].k", "t_stand"),
-                                                                    (2, "ResourceAnimation[1].k", "b_stand"),
-                                                                    (5, "ResourceAnimation[0].k", "t_x")])
+        unit, other, truck = E + "Descriptor_Unit_Squad", E + "Descriptor_Unit_Other", E + "Descriptor_Unit_Truck"
+        db.executemany("INSERT INTO object VALUES (?, ?, ?, ?, 0)", [
+            (1, unit, unit, "TInfanterieDescriptor"), (2, unit + ":GfxDescriptorFusilier", None, "TGfxDescriptorBiped"),
+            (3, None, None, "TResourceMultiMaterialMesh"), (4, None, None, "TGfxDescriptorAnimation"),
+            (5, other + ":GfxDescriptorIcone", None, "TGfxDescriptorPileJeton"),
+            (6, other + ":GfxDescriptorIcone.PawnDescriptor", None, "TPawnDescriptor"),
+            (7, other + ":GfxDescriptorIcone.PawnDescriptor.DescriptorFigurine", None, "TGfxDescriptorBiped"),
+            (8, truck, truck, "TUniteAuSolDescriptor"), (9, truck + ":GfxDescriptor", None, "TGfxDescriptorBiped"),
+            (10, E + "Named_Figure", E + "Named_Figure", "TGfxDescriptorBiped")])
+        db.executemany("INSERT INTO ref VALUES (?, ?, ?)", [
+            (1, 2, "GfxDescriptorFusilier"), (1, 5, "GfxDescriptorIcone"), (1, 8, "TransportPourMorphe"),
+            (1, 10, "GfxDescriptorNamed"), (2, 3, "MeshDescriptor"), (2, 4, "ResourceAnimation[1].v"),
+            (2, 4, "ResourceAnimation[0].v"), (5, 6, "PawnDescriptor"), (6, 7, "DescriptorFigurine"),
+            (7, 3, "MeshDescriptor"), (7, 4, "ResourceAnimation[0].v"), (8, 9, "GfxDescriptor"),
+            (9, 4, "ResourceAnimation[0].v"), (10, 4, "ResourceAnimation[0].v")])
+        db.executemany("INSERT INTO value VALUES (?, ?, ?, NULL)", [
+            (3, "FileName", MODEL_FILE), (2, "ResourceAnimation[0].k", "t_stand"), (2, "ResourceAnimation[1].k", "b_stand"),
+            (7, "ResourceAnimation[0].k", "t_tir_replacement"), (9, "ResourceAnimation[0].k", "idle1"),
+            (10, "ResourceAnimation[0].k", "t_named")])
         got = animmodel.unit_figures(db, unit)
-        self.assertEqual(got, [("GfxDescriptorFusilier", MODEL_FILE.lower(), ["t_stand", "b_stand"])])
+        self.assertEqual(got, [("GfxDescriptorFusilier", MODEL_FILE.lower(), ["t_stand", "b_stand"]),
+                               ("GfxDescriptorIcone.PawnDescriptor.DescriptorFigurine", MODEL_FILE.lower(),
+                                ["t_tir_replacement"])])
 
 
 if __name__ == "__main__":
