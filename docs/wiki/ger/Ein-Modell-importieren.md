@@ -85,8 +85,10 @@ Propeller zeichnet.
 **Soldaten, Geschützbedienungen und mehr Flugzeuge:** Soldaten, die Bedienung eines Geschützes und die Flugzeuge, an die
 das Studio vorher kein Modell anpassen konnte (zum Beispiel die P-47), bekommen auch ein eigenes Modell, wenn es an den
 Knochen der Einheit hängt: etwa eines der Modelle des Spiels, aus dem Studio in Blender geöffnet und dort geändert. Es
-kommt so, wie es ist, auf diese Knochen, nichts verschoben oder skaliert, und die anderen Männer eines Trupps mit
-denselben Knochen tragen es auch. Im Spiel gesehen mit einem Schützentrupp, einer Geschützbedienung und der P-47.
+kommt so, wie es ist, auf diese Knochen, nichts verschoben oder skaliert, und die anderen Männer eines Trupps, die mit
+demselben Modell gezeichnet werden, tragen es auch. Im Spiel gesehen mit einem Schützentrupp, einer Geschützbedienung
+und der P-47. Ein Soldat mit schwerer Waffe, den das Spiel mit einem eigenen Modell zeichnet (der Bazooka-Mann des
+US-Schützentrupps), behält es, bis du ihm unter **Seine Soldaten** (weiter unten) eins gibst.
 
 **Deine Spieler:** ein Mod mit einem Modell, das mit Studio 0.9.8.17 oder neuer importiert wurde, braucht Launcher
 0.4.8.17 oder neuer: ein älterer Launcher gibt dem Modell das Skelett der kopierten Einheit, sodass sich sein Turm um
@@ -100,14 +102,15 @@ Bei einem Trupp (Schützen, Fallschirmjäger, jede Infanterie) macht das Studio 
 2. **Öffne seinen Soldaten in Blender.** Klicke auf der Seite des neuen Trupps unter **Eigenes Modell** auf **In Blender ändern**. Blender öffnet sich mit dem Soldaten und seinen Knochen, jeder dort, wo das Spiel ihn hat. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio, wo es ist.
 3. **Ändere ihn, oder setze dein eigenes Modell auf seine Knochen.** Zum Ändern bearbeite ihn dort. Für ein eigenes Modell: hole es mit **File > Import** in dieselbe Szene und lege es auf den Soldaten; klicke dein Modell an, **Umschalt+Klick** auf die Knochen, dann **Strg+P > With Automatic Weights**. Lösche den Soldaten des Spiels, wenn du ihn nicht behältst.
 4. **Sende es.** Klicke oben in Blender auf **An das R.U.S.E. Studio senden**.
-5. **Hol es zurück.** Klicke im Studio auf **Modell zurückholen**. Jeder Soldat des Trupps trägt dein Modell: der Schütze, der Mann mit der Bazooka und die kleinen Figuren, die man von weit oben sieht. **Im Spiel testen** zeigt es.
+5. **Hol es zurück.** Klicke im Studio auf **Modell zurückholen**. Die Schützen des Trupps tragen dein Modell. Ein Trupp, dessen Soldaten mit schwerer Waffe das Spiel mit einem eigenen Modell zeichnet (etwa der Bazooka-Mann des US-Schützentrupps), behält ihn so, wie ihn der kopierte Trupp hat, bis du ihm eins gibst: **Seine Soldaten** unter **Eigenes Modell** zeigt jeden von ihnen, und sein **Modell importieren…** ist nur für ihn. **Im Spiel testen** zeigt es.
 
 Gut zu wissen:
 - Deine Blender-Dateien bleiben im Ordner deines Mods: `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\`. Sie werden nicht in deinen Mod gepackt, wenn du ihn teilst. Das nächste **In Blender ändern** beginnt mit dem, was du zuletzt gesendet hast.
 - Haben einige Punkte deines Modells keinen Knochen (Blenders automatische Gewichte lassen ein paar aus), sagt die Seite, wie viele: Sie bewegen sich nur mit der Hüfte des Soldaten. Male sie in **Weight Paint** auf einen Knochen und sende erneut.
 - Ein Trupp mit **Eigene Uniform**: Dein Modell nimmt den Platz der Uniform ein (ihre Bemalung bleibt im Mod), und **Modell der kopierten Einheit nutzen** gibt die Uniform zurück.
 - Hast du schon eine .glb auf den Knochen des Spielsoldaten? **Modell importieren…** nimmt sie, wie sie ist.
-- Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist.
+- Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist; das eigene des Soldaten mit schwerer Waffe als `files\models\<Name der Einheit>@bazooka.glb`.
+- **Seine Soldaten** sagt auch, welche anderen Figuren des Trupps mit welchem Modell gezeichnet werden: der gefallene Soldat und die Figur aus der Ferne (die des US-Schützentrupps mit dem Modell seines Bazooka-Manns).
 
 ## Seine Animationen: welche jede Handlung abspielt
 
@@ -148,6 +151,7 @@ Gut zu wissen:
 - In Blender geändert? Importiere es erneut: Jede Aktion behält ihre Animation, solange eine Animation dieses Namens noch in der Datei ist.
 - Dein Mod behält das Modell und jede Animation: `files\models\<Name der Einheit>.glb`, und jede Animation als `files\anim\own\<Name der Einheit>\<ihr Name>.baf`.
 - **Modell der kopierten Einheit nutzen** nimmt das Modell wieder heraus, mit seinen Animationen.
+- Ein Trupp mit einem Soldaten mit schwerer Waffe: Gib ihm unter **Seine Soldaten** sein eigenes Pferd mit Reiter, auf denselben Knochen gebaut wie das der Schützen, dann spielt er ihre Animationen. Auf anderen Knochen spielt er, was er im kopierten Trupp spielte, und die Seite warnt dich: Das kann das Spiel anhalten. Nimmst du das Modell der Schützen heraus, geht seines mit.
 - Über das Studio noch nicht im Spiel ausprobiert.
 
 ## 4. Seine Karte, dann testen

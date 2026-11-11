@@ -8135,9 +8135,112 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         mod = self._mod_dir()
         return mod / MODELS / f"{_tail(unit.target)}.glb" if unit is not None and mod is not None else None
 
+    # The figures of a squad that aren't a kind of soldier: its fallen soldiers and the one figure it's drawn as from far
+    # away (every one of the game's 19 squads with a bazooka man has the two, read 2026-11-11), by the page's names
+    _SQUAD_FIGURES = (("GfxDescriptorIconeCadavre", "fallen"), ("DescriptorFigurine", "far"))
+
+    def _soldier_figures(self, address: str) -> list:
+        """[(figure path, the game model it draws, lower case)] of the unit a new unit copies (rusemod.animmodel.
+        unit_figures, from the game index); [] when it can't be read."""
+        from rusemod import animmodel
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
+        try:
+            real, _unit = self._resolve(edits, address)
+            ix = self._open()
+        except Exception:   # (no game index yet: a unit with no kinds, as before)
+            return []
+        try:
+            return [(p, m) for p, m, _a in animmodel.unit_figures(ix.db, real.split(":", 1)[0])]
+        except Exception:   # (an index its figures can't be read from: no kinds, as before)
+            return []
+        finally:
+            ix.close()
+
+    def _soldier_kinds(self, address: str) -> dict:
+        """A squad whose soldiers come in kinds drawing different models (the game's 19 such squads: its riflemen and
+        its bazooka man): {kind: the game model its figure draws}, the riflemen first (what Import model gives a model
+        to unless told another kind); {} for any other unit. The owner, 2026-11-11: "when you copy a fucking unit, it
+        should copy the unit": a model imported for the riflemen leaves the bazooka man as the copied unit had him."""
+        from rusemod.unitmodel import model_key
+        found: dict = {}
+        for path, model in self._soldier_figures(address):
+            if not model or "." in path or path in ("GfxDescriptor", "GfxDescriptorCadavre", "GfxDescriptorIconeCadavre"):
+                continue    # (its look's own part, its wreck, its fallen figure, its far-away figure: no kind of soldier)
+            found.setdefault(path[len("GfxDescriptor"):].lower(), model)
+        if len({model_key(m) for m in found.values()}) < 2:
+            return {}
+        return {k: found[k] for k in sorted(found, key=lambda k: (k != "fusilier", k))}
+
+    def _kind_models(self, address: str, kind: str | None, found: list) -> list:
+        """Of a unit's models (`found`), those a model for one kind of its soldiers takes the place of: that kind's game
+        model; for the first kind (the riflemen) every model no other kind draws (the squad's far-away figure where it
+        draws one of its own). Every model for a unit whose soldiers don't come in kinds."""
+        from rusemod.unitmodel import model_key
+        kinds = self._soldier_kinds(address)
+        if not kinds:
+            return list(found)
+        kind = kind or next(iter(kinds))
+        if kind != next(iter(kinds)):
+            return [m for m in found if model_key(m) == model_key(kinds[kind])]
+        others = {model_key(m) for k, m in kinds.items() if k != kind}
+        return [m for m in found if model_key(m) not in others]
+
+    def _kind_rows(self, address: str) -> list:
+        """The page's soldiers of a new squad whose soldiers come in kinds (_soldier_kinds), one row per kind: {"kind",
+        "model": the copied unit's model for them (rusemod.unitmodel.model_key's name), "own": whether the mod gives them a model of their
+        own, "file": the file it was made from, "skeleton": "own" (bones of its own) or "soldier", "same_bones": for a
+        kind after the first on bones of its own, whether they're the first kind's model's bones (it plays their
+        animations), "also": the squad's other figures drawn with the same model ("fallen", "far")}; [] for any other
+        unit or a game unit."""
+        from rusemod.bonefit import skeleton_key
+        from rusemod.unitmodel import model_key
+        kinds = self._soldier_kinds(address)
+        if not kinds or self._own_model_file(address) is None:
+            return []
+        main = next(iter(kinds))
+        figures = self._soldier_figures(address)
+        taken = {model_key(m): k for k, m in kinds.items()}
+        also: dict = {k: [] for k in kinds}
+        for path, model in figures:
+            role = next((r for p, r in self._SQUAD_FIGURES if path.endswith(p)), None)
+            if role and model:
+                k = taken.get(model_key(model), main)   # (a model no kind draws goes with the riflemen's import)
+                if role not in also[k]:
+                    also[k].append(role)
+        main_file = self._kind_file(address, main)
+        main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
+        rows = []
+        for k, m in kinds.items():
+            target = self._kind_file(address, k)
+            own = target is not None and target.is_file()
+            try:
+                record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8")) if own else {}
+            except (OSError, ValueError):
+                record = {}
+            skeleton = record.get("skeleton") if isinstance(record, dict) else None
+            same = None
+            if own and k != main and skeleton == "own":
+                same = main_key is not None and skeleton_key(target) == main_key
+            rows.append({"kind": k, "model": model_key(m), "own": own,
+                         "file": Path(str(record.get("from") or "")).name if own else None, "skeleton": skeleton,
+                         "same_bones": same, "also": also[k]})
+        return rows
+
+    def _kind_file(self, address: str, kind: str | None) -> Path | None:
+        """The model file of one kind of a squad's soldiers: the unit's own (files/models/<unit>.glb) for the first
+        kind (the riflemen) or none given, files/models/<unit>@<kind>.glb for another (its bazooka man)."""
+        target = self._own_model_file(address)
+        kinds = self._soldier_kinds(address) if kind else {}
+        if target is None or not kind or not kinds or kind == next(iter(kinds)):
+            return target
+        return target.with_name(f"{target.stem}@{kind}.glb")
+
     def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False,
                      facing: list | None = None, own_turret: bool = True, own_propellers: bool = True,
-                     move: list | None = None) -> dict:
+                     move: list | None = None, kind: str | None = None) -> dict:
         """Give a new unit a model of its own: `file` (a .3ds with its pictures beside it, or a .glb; asked for when
         not given) fitted to the model of the unit it copies (its length times `size`; `aircraft`: a plane, its tail
         fin at the back; `facing` [axis, sign]: which way it faces, when known, as for an era unit's model) and saved
@@ -8156,8 +8259,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         nothing on the page saying why: item 4 of the owner's list, 2026-11-10). Once the model is in, the copy's
         .copy.toml goes and its paint stays in the mod (files/models/<the unit's name>/), as model_copy_remove leaves
         it; "copy_out" says it went, for the page to say so. A failed import, or the file picker closed, leaves the copy
-        as it was."""
-        report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move)
+        as it was.
+
+        `kind` (a squad whose soldiers come in kinds, _soldier_kinds: "fusilier", "bazooka"): the model is for those
+        soldiers only, the others keeping the look the copied unit gave them; none given: the riflemen (the owner,
+        2026-11-11: "when you copy a fucking unit, it should copy the unit"). The bazooka man's model is
+        files/models/<unit>@bazooka.glb, on the same bones as the riflemen's: their animations are the unit's."""
+        report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind)
         copy_out = False
         if report is not None:
             copy = self._own_copy_file(address)
@@ -8165,15 +8273,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 with self._saving:
                     # kept in the model's own record, so taking the model out gives the copy back in one click
                     # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
-                    self._keep_in_model_record(address, copy.read_text(encoding="utf-8"))
+                    self._keep_in_model_record(address, copy.read_text(encoding="utf-8"), kind)
                     copy.unlink(missing_ok=True)
                 copy_out = True
-        return {"model": report, "copy_out": copy_out, **self.look(address)}
+        return {"model": report, "copy_out": copy_out, "kind": kind, **self.look(address)}
 
-    def _keep_in_model_record(self, address: str, copy_text: str) -> None:
-        """Keep the .copy.toml an import took the place of in the model's record (files/models/<unit>.json,
-        "copy_kept")."""
-        target = self._own_model_file(address)
+    @staticmethod
+    def _kind_skeleton(target: Path, report: dict) -> dict:
+        """What another kind's model is on: {"skeleton": "own", "bones": [...]} for a model on bones of its own (its
+        record, as the build writes it), {"skeleton": "soldier"} for one on the game soldier's bones."""
+        from rusemod.modelin import OWN_SKELETON
+        if not report.get(OWN_SKELETON):
+            return {"skeleton": "soldier"} if report.get("rigged") else {}
+        from rusemod import animmodel, baf
+        try:
+            names = baf.skeleton(animmodel.record_of(target))["names"]
+        except (animmodel.AnimModelError, ValueError, OSError):
+            names = []
+        return {"skeleton": "own", "bones": list(names)}   # (as _record_more writes a main model's)
+
+    def _keep_in_model_record(self, address: str, copy_text: str, kind: str | None = None) -> None:
+        """Keep the .copy.toml an import took the place of in the model's record (files/models/<unit>.json, or the
+        kind's, "copy_kept")."""
+        target = self._kind_file(address, kind)
         record = target.with_suffix(".json") if target is not None else None
         if record is None or not record.is_file():
             return
@@ -8182,10 +8304,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         record.write_text(json.dumps(data, indent=1), encoding="utf-8")
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
-                   own_turret: bool, own_propellers: bool, move: list | None) -> dict | None:
+                   own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None) -> dict | None:
         """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
-        through it): the model saved as the mod's files/models/<the unit's name>.glb, its record beside it. Returns the
-        model's report, or None when no file was picked."""
+        through it): the model saved as the mod's files/models/<the unit's name>.glb (or a kind's of its soldiers,
+        _kind_file), its record beside it. Returns the model's report, or None when no file was picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8212,6 +8334,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
+        # a squad whose soldiers come in kinds (its riflemen, its bazooka man): the model is for one kind, the riflemen
+        # unless told another, and takes the place of that kind's game model alone (the others keep the copied unit's)
+        kinds = self._soldier_kinds(address)
+        if kind is not None and kind not in kinds:
+            # not a game rule: the Studio's kinds are a squad's soldiers that draw different models
+            raise StudioError(f"This unit's soldiers don't come in a kind called {kind}.")
+        main_kind = next(iter(kinds), None)
+        kind = kind or main_kind
+        if kinds:
+            found = self._kind_models(address, kind, found)
+            if not found:
+                raise StudioError("The unit this one copies has no 3D model for those soldiers to fit a new one to.")
+            if kind != main_kind:
+                target = target.with_name(f"{target.stem}@{kind}.glb")
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
@@ -8241,7 +8377,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
         except (OSError, ValueError):
             before = {}
-        more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {})
+        if kinds and kind != main_kind:
+            # another kind's model (the bazooka man's): the unit's animations are its main model's, played by him when
+            # his model is on the same bones (rusemod.build._on_main_bones), else he plays what he played: only what
+            # the model is, and a note when it's on bones of its own that aren't the main model's
+            more = {"for": kind, **self._kind_skeleton(target, report)}
+            if more.get("skeleton") == "own":
+                from rusemod.bonefit import skeleton_key
+                main_file = self._own_model_file(address)
+                main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
+                if main_key is None or skeleton_key(target) != main_key:
+                    report.setdefault("notes", []).append(
+                        "This model is on bones of its own, and the riflemen's model isn't on the same bones, so these "
+                        "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
+                        "the game. Import a model on the same bones for the riflemen too.")
+        else:
+            more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {})
+            if kinds:
+                more["for"] = kind
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
                                       "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
                                       **({"facing": list(facing)} if facing else {}),
@@ -8249,8 +8402,46 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       "report": report, **more,
                                       # (the modder's choices last: a split chosen on the page wins over the one
                                       # the file names; Part 3's kept_choices, item 5 merge)
-                                      **kept_choices(record)}, indent=1), encoding="utf-8")
+                                      **kept_choices(record),
+                                      # (a Custom uniform the model took the place of stays kept through Resize, Move
+                                      # and a new import, so taking the model out still gives it back: written anew
+                                      # without it, it was lost on the first Resize, 2026-11-11)
+                                      **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
+                                         and isinstance(before.get("copy_kept"), str) else {})},
+                                     indent=1), encoding="utf-8")
         return report
+
+    def _kind_records(self, address: str) -> list:
+        """[(kind, its model's record)] of each kind of a squad's soldiers after the first (the riflemen's model is the
+        unit's own) that has a model of its own (_kind_file)."""
+        out = []
+        for k in list(self._soldier_kinds(address))[1:]:
+            target = self._kind_file(address, k)
+            if target is None or not target.is_file():
+                continue
+            try:
+                record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                record = None
+            out.append((k, record if isinstance(record, dict) else {}))
+        return out
+
+    def _kinds_ready(self, address: str, moving: bool) -> list:
+        """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with its file still
+        there (they go with it, one size and place for the squad), else a StudioError naming the file that isn't,
+        nothing changed."""
+        others = self._kind_records(address)
+        for _k, r in others:
+            file = r.get("from")
+            if file and Path(file).is_file():
+                continue
+            # (the page's words: model_kinds_title is the box his model is imported in)
+            if moving:
+                raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more "
+                                  f"({file}): import that model again under Its soldiers, then move it.")
+            raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more ({file}): "
+                              f"import that model again under Its soldiers, then change the size.")
+        return others
 
     # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
     # planes ... are a little bit too big" ... "make it a slider. So if people want to have like super big planes or
@@ -8331,8 +8522,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
+        others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
         report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
                                  bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"))
+        for k, r in others:
+            self._fit_model(address, r["from"], size, bool(r.get("aircraft")), self._pinned_facing(r),
+                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     def model_place(self, address: str, move) -> dict:
@@ -8349,8 +8544,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
+        others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
         report = self._fit_model(address, file, float(record.get("size") or 1.0), bool(aircraft),
                                  self._pinned_facing(record), True, True, move)
+        for k, r in others:
+            self._fit_model(address, r["from"], float(r.get("size") or 1.0), bool(r.get("aircraft")),
+                            self._pinned_facing(r), True, True, move, k)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     @staticmethod
@@ -8434,31 +8633,67 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
-    def model_import_remove(self, address: str) -> dict:
+    def model_import_remove(self, address: str, kind: str | None = None) -> dict:
         """Take a new unit's own model out of the mod: it shows the model of the unit it copies again. An own copy the
         model took the place of (model_import: a squad's Custom uniform, kept in the model's record) comes back with it,
         its paint still in the mod: one click undoes the import (the owner, 2026-11-10: it has to be intuitive for
         someone who has never modded). Returns look(), "model_out": whether there was a model to take out, and
-        "copy_back": whether its copy came back."""
-        target = self._own_model_file(address)
-        out = target is not None and target.is_file()
-        copy_back = False
-        if target is not None:
-            record = target.with_suffix(".json")
-            try:
-                kept = json.loads(record.read_text(encoding="utf-8")).get("copy_kept") if record.is_file() else None
-            except (OSError, ValueError):
-                kept = None
-            with self._saving:
-                self._animations_out(address, record)   # (a model on bones of its own: its animations go with it)
+        "copy_back": whether its copy came back.
+
+        `kind` (a squad whose soldiers come in kinds, _soldier_kinds): that kind's model only; none given, or the
+        first kind (the riflemen): the unit's main model, and with it each other kind's model on its bones (they play
+        its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left."""
+        kinds = self._soldier_kinds(address)
+        if kind is not None and kind not in kinds:
+            # not a game rule: the Studio's kinds are a squad's soldiers that draw different models
+            raise StudioError(f"This unit's soldiers don't come in a kind called {kind}.")
+        main_kind = next(iter(kinds), None)
+        if kinds and kind is not None and kind != main_kind:
+            going = [(kind, self._kind_file(address, kind))]
+        else:
+            going = [(main_kind, self._own_model_file(address))]
+            for k in list(kinds)[1:]:   # (the other kinds' models on bones of its own go with its animations)
+                other = self._kind_file(address, k)
+                try:
+                    on_own = other is not None and other.is_file() and json.loads(
+                        other.with_suffix(".json").read_text(encoding="utf-8")).get("skeleton") == "own"
+                except (OSError, ValueError):
+                    on_own = False
+                if on_own:
+                    going.append((k, other))
+        out, copy_back, kinds_out, kept = False, False, [], None
+        with self._saving:
+            for k, target in going:
+                if target is None:
+                    continue
+                record = target.with_suffix(".json")
+                try:
+                    data = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
+                except (OSError, ValueError):
+                    data = {}
+                if isinstance(data.get("copy_kept"), str):
+                    kept = kept or data["copy_kept"]
+                if k == main_kind:   # (a model on bones of its own: its animations go with it; a kind's are its)
+                    self._animations_out(address, record)
+                if target.is_file():
+                    if k == (kind or main_kind):
+                        out = True
+                    else:
+                        kinds_out.append(k)
                 target.unlink(missing_ok=True)
                 record.unlink(missing_ok=True)
-                copy = self._own_copy_file(address)
-                if isinstance(kept, str) and copy is not None and not copy.is_file():
-                    copy.parent.mkdir(parents=True, exist_ok=True)
-                    copy.write_text(kept, encoding="utf-8")
-                    copy_back = True
-        return {**self.look(address), "model_out": out, "copy_back": copy_back}
+            left = [k for k in kinds if (f := self._kind_file(address, k)) is not None and f.is_file()] if kinds \
+                else []
+            copy = self._own_copy_file(address)
+            if kept is not None and not left and copy is not None and not copy.is_file():
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                copy.write_text(kept, encoding="utf-8")
+                copy_back = True
+            elif kept is not None and left:
+                # (the copy waits in a model that's still there: it comes back when the last one goes)
+                self._keep_in_model_record(address, kept, left[0] if left[0] != main_kind else None)
+        return {**self.look(address), "model_out": out, "copy_back": copy_back, "kinds_out": kinds_out,
+                "kind": kind}
 
     def _card_view(self, address: str) -> dict | None:
         """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the
@@ -8765,11 +9000,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             except (OSError, ValueError):
                 own_model = {}
         copy = self._own_copy_file(address)
-        # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy)
+        # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy); "kinds": a new
+        # squad's riflemen and heavy-weapon soldier, each with a model of its own or the copied unit's (_kind_rows)
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
                 "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
                 "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file()),
-                "soldiers": bool(found) and self._soldiers(address)}
+                "soldiers": bool(found) and self._soldiers(address), "kinds": self._kind_rows(address)}
 
     # --- a unit's own copy of the models it draws (the owner, 2026-10-11: "duplicate that part"; built by
     # rusemod.unitmodel.write_unit_copy): the same models with textures of their own, so Repaint in Blender changes

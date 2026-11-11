@@ -1417,21 +1417,50 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
+    from .unitmodel import glb_report, model_key
     wanted: dict = {}
     for m in order:
-        for unit, glb in (getattr(m, "models", None) or {}).items():
-            wanted[unit] = (glb, m.id)
+        for stem, glb in (getattr(m, "models", None) or {}).items():
+            wanted[stem] = (glb, m.id)
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    # a model file for one kind of a squad's soldiers (<unit>@<kind>.glb: its bazooka man) takes the place of the game
+    # model those soldiers drew; the unit's main file never takes that model too (an older Studio's main file named
+    # every soldier model of the squad: it still does when no kind has a file of its own, so its mod builds as before)
+    claimed: dict = {}
+    for stem, (glb, _mod) in wanted.items():
+        unit, _, kind = stem.partition("@")
+        like = glb_report(glb).get("like") if kind else None
+        if like:
+            claimed.setdefault(unit, set()).add(model_key(like))
     out: dict = {}
-    for unit, (glb, mod_id) in sorted(wanted.items()):
-        from .unitmodel import glb_report
+    for stem, (glb, mod_id) in sorted(wanted.items()):
+        unit, _, kind = stem.partition("@")
+        where = f"{mod_id}: files/models/{stem}.glb"
         report = glb_report(glb)
-        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result, report.get("like") if report.get("rigged") else None, report.get("also"))
+        rigged_on = report.get("like") if report.get("rigged") else None
+        also = list(report.get("also") or [])
+        if kind and not rigged_on:
+            # not a game rule: a kind's own file is a soldier's model, on bones (what the Studio's import writes)
+            result.findings.append(Finding("error", f"{where}: a model for {unit}'s {kind} must be fitted to his bones "
+                                                    f"(import it again in the Studio)"))
+            continue
+        if kind:
+            also = []
+        elif rigged_on:
+            taken = claimed.get(unit, set())
+            mine = [m for m in [rigged_on, *also] if model_key(m) not in taken]
+            if not mine:
+                result.findings.append(Finding("warning", f"{where}: every soldier of {unit} has a model of his own "
+                                                          f"file, so this one draws none of them"))
+                continue
+            rigged_on, also = mine[0], mine[1:]
+        source = _own_model_part(run, by_name, unit, where, result, rigged_on, also, own_stem=_own_stem(stem))
         if source is None:
             continue
-        _own_propeller_list(run, by_name[unit], unit, glb, f"{mod_id}: files/models/{unit}.glb", result)
-        out[unit] = (source, glb, mod_id)
-        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
+        if not kind:
+            _own_propeller_list(run, by_name[unit], unit, glb, where, result)
+        out[stem] = (source, glb, mod_id)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{stem}.glb), "
                                                f"beside {source}"))
     return out
 
@@ -1493,7 +1522,7 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     out: dict = {}
     for unit, (of, paint, mod_id) in sorted(wanted.items()):
         where = f"{mod_id}: files/models/{unit}.copy.toml"
-        if unit in result.own_models:
+        if any(_unit_of(s) == unit for s in result.own_models):   # (its main model, or one kind's: _unit_of)
             # One model per unit (an imported one, or a copy of the one it copies): each of its model parts names one
             # file. The Studio's Import model takes the copy out since 2026-11-10, so only a mod made by an older Studio
             # or by hand gets here; the words name the Studio's buttons that fix it (words.toml uniform_default_again,
@@ -1647,10 +1676,45 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
     return out
 
 
-def _draws_own_model(model: str | None, unit: str) -> bool:
+def _draws_own_model(model: str | None, unit: str, stems=None) -> bool:
     """Whether a figure's model is the unit's own: the name _own_model_part (and unitmodel.model_name) give it,
-    <the copied model's folder>\\<unit>lod0.Ase2ndfbin."""
-    return bool(model) and model.replace("/", "\\").lower().endswith(f"\\{unit.lower()}lod0.ase2ndfbin")
+    <the copied model's folder>\\<unit>lod0.Ase2ndfbin; `stems`: every own model of the unit (_own_stems: its
+    soldiers' and its bazooka man's), else its one."""
+    if not model:
+        return False
+    name = model.replace("/", "\\").lower()
+    return any(name.endswith(f"\\{s.lower()}lod0.ase2ndfbin") for s in (stems or [unit]))
+
+
+def _unit_of(stem: str) -> str:
+    """The unit a mod's model file is for: files/models/<unit>.glb, or <unit>@<kind>.glb for one kind of its
+    soldiers (the owner, 2026-11-11: "when you copy a fucking unit, it should copy the unit": Import model gives the
+    riflemen a model, the bazooka man keeps what the copied unit gave him until he gets <unit>@bazooka.glb)."""
+    return stem.partition("@")[0]
+
+
+def _own_stem(stem: str) -> str:
+    """The name a model file's own model is written under, beside the copied model: <unit>lod0, or <unit>__<kind>lod0
+    for one kind of its soldiers."""
+    unit, _, kind = stem.partition("@")
+    return f"{unit}__{kind}" if kind else unit
+
+
+def _on_main_bones(result, unit: str) -> list:
+    """The unit's own models that play its model's own animations, by the stem each is written under (_own_stem): its
+    main one (files/models/<unit>.glb), and each kind's (<unit>@<kind>.glb, its bazooka man's) on the same bones as
+    it, names and parents. A kind's model on other bones (the game soldier's, or another skeleton) is left to play
+    what its figure played: an animation made on other bones can stop the game (2026-11-09)."""
+    from .bonefit import skeleton_key
+    main = result.own_models.get(unit)
+    if main is None:
+        return []
+    key = skeleton_key(main[1])
+    out = [unit]
+    for stem, (_source, glb, _mod) in sorted(result.own_models.items()):
+        if stem != unit and _unit_of(stem) == unit and key is not None and skeleton_key(glb) == key:
+            out.append(stem)
+    return [_own_stem(s) for s in out]
 
 
 def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, where: str, plan, by_action: dict):
@@ -1678,7 +1742,10 @@ def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, whe
                                                   f"(files/models/{unit}.glb), so none of them plays: its figures play "
                                                   f"what the unit it copies plays"))
         return None
-    drawn = [f for f in anim.unit_figures(run.game, name) if _draws_own_model(f["model"], unit)]
+    # (its figures drawing its own model: its riflemen, and its bazooka man when his own is on the same bones; on other
+    # bones he plays what he played, unit_own_halves says so)
+    stems = _on_main_bones(result, unit)
+    drawn = [f for f in anim.unit_figures(run.game, name) if _draws_own_model(f["model"], unit, stems)]
     if not drawn:
         result.findings.append(Finding("warning", f"{where}: none of {unit}'s figures draws its own model, so its own "
                                                   f"animations play nowhere"))
@@ -1805,8 +1872,8 @@ def unit_own_halves(run, result: BuildResult) -> None:
     from .unitmodel import glb_report
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
-        if not glb_report(glb).get(OWN_SKELETON) or unit not in by_name:
-            continue
+        if "@" in unit or not glb_report(glb).get(OWN_SKELETON) or unit not in by_name:
+            continue    # (a kind's own model, <unit>@<kind>: through its unit's main model, below)
         where = f"{mod_id}: files/models/{unit}.glb"
         name = by_name[unit]
         try:
@@ -1814,6 +1881,24 @@ def unit_own_halves(run, result: BuildResult) -> None:
         except animmodel.AnimModelError as exc:
             result.findings.append(Finding("error", f"{where}: {exc}"))
             continue
+        # the unit's other own models (its bazooka man's) play through the same halves when they're on the same bones
+        same = _on_main_bones(result, unit)
+        wearing = []
+        for stem, (k_source, k_glb, k_mod) in sorted(result.own_models.items()):
+            if _unit_of(stem) != unit:
+                continue
+            if _own_stem(stem) in same:
+                wearing.append(f"{k_source.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0"
+                               f".Ase2ndfbin")
+            elif glb_report(k_glb).get(OWN_SKELETON):
+                # not a game rule: the unit's own animations and halves are made on its main model's bones; a kind's
+                # model on bones of its own but other ones plays the game's, made on the game soldier's bones
+                result.findings.append(Finding("warning", f"{k_mod}: files/models/{stem}.glb: its bones aren't those "
+                                                          f"of {unit}'s main model (files/models/{unit}.glb), so its "
+                                                          f"figures play what the unit it copies plays, made on the "
+                                                          f"game soldier's bones (an animation made on other bones can "
+                                                          f"stop the game: make his model on the same bones as the "
+                                                          f"main one)"))
         try:   # (one rule for the page and the build, item 5's merge: the bone the modder chose on the unit's page
             # while the model still has it, else rusemod.bonefit's suggestion: the 11-09 split for the Horse Squad)
             split = bonefit.split_for(Path(glb))
@@ -1830,7 +1915,7 @@ def unit_own_halves(run, result: BuildResult) -> None:
                 mask = f"$/GFX/Everything/Mask_{unit}_{half.capitalize()}_{k}"
             run.game.objects[mask] = animmodel.mask_object(run.game, like[half], halves[half])
             masks[half] = mask
-        got = animmodel.point_masks(run.game, name, own, masks)
+        got = animmodel.point_masks(run.game, name, tuple(wearing), masks)
         if not got["pointed"]:      # (no listing of a figure that wears it weighs bones by name: nothing to point)
             for mask in masks.values():
                 del run.game.objects[mask]
@@ -1900,14 +1985,15 @@ def unit_fit_checks(run, result: BuildResult, zz=None) -> int:
     checked = set()     # (unit, figure) whose every animation is checked already
     like_of = {}        # a model rigged to the game's bones it copies (a squad's soldier) -> that model: its bones
     broken = (ValueError, KeyError, IndexError, OSError, struct.error)   # a file a check can't read: said, below
-    for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
-        name, where = by_name.get(unit), f"{mod_id}: {unit}"
+    for stem, (source, glb, mod_id) in sorted(result.own_models.items()):
+        unit = _unit_of(stem)   # (its main model, or one kind's of its soldiers: <unit>@<kind>, its bazooka man's)
+        name, where = by_name.get(unit), f"{mod_id}: {stem}"
         try:
             report = glb_report(glb)
             if name is None or name not in run.game.objects or not report.get("rigged"):
                 continue    # (a model on a hull's bones plays no animations of its own)
             like = str(report.get("like") or source).replace("/", "\\")
-            own_model = f"{like.rsplit(chr(92), 1)[0]}\\{unit}lod0.Ase2ndfbin"
+            own_model = f"{like.rsplit(chr(92), 1)[0]}\\{_own_stem(stem)}lod0.Ase2ndfbin"
             if not report.get(OWN_SKELETON):
                 like_of[bonefit.model_key(own_model)] = like    # (the game's own clips fit it: only its own can't)
                 continue
@@ -2107,7 +2193,8 @@ def _point_at_copies(run, name: str, copies: dict) -> int:
                for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
 
 
-def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None) -> str | None:
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None,
+                    own_stem: str | None = None) -> str | None:
     """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
     model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
     part names no model file. `rigged_on`: the game's model a rigged model was fitted to (any kind of unit: a soldier's model is in parts of other names): every
@@ -2119,8 +2206,9 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         # not a game rule: a model for a unit no mod in the set makes
         result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
         return None
+    own_stem = own_stem or unit    # (a kind's own model, <unit>__<kind>: _own_stem)
     if rigged_on:
-        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{own_stem}lod0.Ase2ndfbin"
         if _point_at_copies(run, name, {model_key(m): own for m in [rigged_on, *(also or [])]}):
             return rigged_on
         # not a game rule: what our build supports (a part of the unit naming the model it was fitted to)
@@ -2142,7 +2230,7 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         return None
     source = file.value
     folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-    own = f"{folder}\\{unit}lod0.Ase2ndfbin"
+    own = f"{folder}\\{own_stem}lod0.Ase2ndfbin"
     mesh.obj.props["FileName"] = Text("path", own)
     # its figurine, drawn zoomed out: a towed gun's names a model of its own (<gun>Midlod0) that the close-up's
     # change doesn't reach, so the unit showed the copied gun there (the owner, 2026-10-31, bigpacks4: "at certain
@@ -5279,7 +5367,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
                     prep, textures = kept.get(glb)
-                    written = write_unit_model(text_arc, source, unit, prep, earlier=before, batch=batch,
+                    # (written under its own stem: <unit>, or <unit>__<kind> for one kind of its soldiers)
+                    written = write_unit_model(text_arc, source, _own_stem(unit), prep, earlier=before, batch=batch,
                                                textures=textures)
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
                     kept.close()

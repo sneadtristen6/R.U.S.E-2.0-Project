@@ -110,7 +110,13 @@ class ActionCalls:
                 pass
             info.append({"name": n, "seconds": seconds, "frames": frames})
         report = record.get("report") or {}
-        models = {model_key(m) for m in [report.get("like"), *(report.get("also") or [])] if m} or None
+        models = {model_key(m) for m in [report.get("like"), *(report.get("also") or [])] if m}
+        # (a squad's heavy-weapon soldier plays the unit's own animations too when his own model is on the same bones:
+        # his actions are in the table, as the build plays them, rusemod.build._on_main_bones)
+        for row in self._kind_rows(address):
+            if row.get("same_bones"):
+                models.add(model_key(row["model"]))
+        models = models or None
         listings = self._action_listings(unit.source, models)
         rows = animactions.table(listings, names, picks)
         for r in rows:   # (what a picked action would play were its pick taken out)

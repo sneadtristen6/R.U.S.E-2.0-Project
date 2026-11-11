@@ -204,6 +204,20 @@ def glb_record(glb: Path) -> bytes | None:
         return None
 
 
+def skeleton_key(glb: Path) -> tuple | None:
+    """A mod's model on bones of its own as (its bone names in lower case, their parents), to tell whether two models
+    are on the same bones (a squad's riflemen's and its bazooka man's: the unit's own animations and halves are made
+    on one skeleton); None for a model on another unit's bones, or a file that can't be read."""
+    record = glb_record(Path(glb))
+    if record is None:
+        return None
+    try:
+        names, parents = skeleton_of(record)
+    except (ValueError, KeyError, IndexError, UnicodeDecodeError, struct.error):
+        return None
+    return tuple(names), tuple(parents)
+
+
 def split_for(glb: Path) -> str | None:
     """The bone the build splits a mod's model on bones of its own at (rusemod.unitmodel.halves): the one the modder
     chose on the unit's page while the model still has it, else suggest_split's; None for any other model."""

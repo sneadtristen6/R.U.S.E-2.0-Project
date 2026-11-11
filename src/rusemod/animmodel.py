@@ -422,13 +422,15 @@ def _part(objects, v):
     return objects.get(v.target) if isinstance(v, Ref) and v.target else None
 
 
-def wears(objects, figure, model: str) -> bool:
-    """Whether a figure (an object with clip listings) draws the model `model` (its MeshDescriptor's file, any case)."""
+def wears(objects, figure, model) -> bool:
+    """Whether a figure (an object with clip listings) draws the model `model` (its MeshDescriptor's file, any case),
+    or one of several (a squad's own models: its riflemen's and its bazooka man's, 2026-11-11)."""
     from .patch import Text
     from .unitmodel import model_key
     mesh = _part(objects, figure.props.get("MeshDescriptor"))
     f = mesh.props.get("FileName") if mesh is not None else None
-    return isinstance(f, Text) and model_key(f.value) == model_key(model)
+    keys = {model_key(model)} if isinstance(model, str) else {model_key(m) for m in model}
+    return isinstance(f, Text) and model_key(f.value) in keys
 
 
 def _names_bones(objects, mask_value) -> bool:

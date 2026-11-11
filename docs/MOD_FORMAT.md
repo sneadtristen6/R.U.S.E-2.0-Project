@@ -300,6 +300,18 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   any number the unit doesn't in its `ListeHelice`, a copy of the list's first entry. Seen in the game (T64, T65).
   The source's wreck stays its own. A model there for a unit no mod in the set makes is an error. Seen in the game (the
   M1 Abrams, Studio 0.9.6).
+- **A squad's soldiers by kind:** a model rigged to a soldier's bones takes the place of the game models its report
+  names (`like`, and `also`). The Studio's *Import model* writes the riflemen's model alone there since 2026-11-11, so a
+  squad whose heavy-weapon soldier the game draws with a model of his own (19 of the game's squads: the US rifle squad's
+  bazooka man) keeps him as the unit it copies has him: a copy of a unit stays a copy of it.
+  `files/models/<the unit's name>@<kind>.glb` gives one kind of its soldiers a model of his own: `@bazooka`, his figure
+  being `GfxDescriptorBazooka` (`@fusilier` for `GfxDescriptorFusilier`); it must be rigged (else an error), and it
+  takes the place of the game model its `like` names, written as `<the copied model's folder>\<the unit's
+  name>__<kind>lod0`. The unit's main file then draws none of the models a kind's file claims; a main file whose models
+  are all claimed draws nothing (a warning). The squad's other figures follow the model they draw: its fallen figure and
+  its far-zoom figure (`GfxDescriptorIcone`'s) each draw one of the two (the US rifle squad's far-zoom figure draws its
+  bazooka man's), and a third model no kind draws goes with the main file. A file made by an older Studio names every
+  soldier model in `also` and builds as before. Not seen in the game yet.
 - **A unit's own copy of its models:** `files/models/<the unit's name>.copy.toml` gives a unit its own copy of the
   models it draws: the same meshes, bones and moving parts, with textures of their own (named in the source texture's
   group, `TSCCombCS_<unit>_CombinedDSCTexture01`), so painting it changes that unit only. `of = ["<model>", ...]` lists
@@ -575,8 +587,10 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   ```
 
   The build gives every listing of the figures that draw the unit's own model (the figures whose model part names
-  `<the copied model's folder>\<the unit's name>lod0`: a squad's riflemen, its bazooka man, its far-zoom and fallen
-  figures) one of those animations, by one rule, the one the unit's page shows (`rusemod.animactions`): the animation
+  `<the copied model's folder>\<the unit's name>lod0`: a squad's riflemen and the figures drawn with their model, and
+  those drawing a kind's own model, `<the unit's name>__<kind>lod0`, when its file is on the same bones as the main one,
+  names and parents; a kind's model on other bones plays what its figure played, and a warning says so when they're bones
+  of its own) one of those animations, by one rule, the one the unit's page shows (`rusemod.animactions`): the animation
   picked for its action; else one named for it (its name, the action's, or the game's clip it played: `t_course`,
   `course`, `fusilier_course`), else one whose name says the action (stand or idle, walk, run or gallop, aim, fire or
   shoot, throw or grenade, reload, hit, die or death, flee, with back, left, right, explosion, bazooka and a number);

@@ -2755,12 +2755,68 @@ function resizeAllRow(kind, n, changed) {
     ...buttons, note);
 }
 
+// --- a squad whose riflemen and heavy-weapon soldier draw different models (StudioApi._kind_rows; the owner,
+// 2026-11-11: "when you copy a fucking unit, it should copy the unit"): Import model above is the riflemen's; the
+// heavy-weapon soldier keeps the copied unit's look until he gets a model of his own here (api.model_import and
+// model_import_remove with his kind) ---
+const KIND_WORDS = { fusilier: "fit_fig_rifle", bazooka: "fit_fig_heavy" };
+const kindLabel = (kind) => state.words[KIND_WORDS[kind]] || state.words.fit_fig_other;
+function kindsBox(address, kinds, draw, changed) {
+  const w = state.words;
+  const figure = (role) => ({ far: w.fit_fig_far, fallen: w.fit_fig_fallen })[role] || w.fit_fig_other;
+  const box = el("div", { className: "model-kinds" }, el("h4", { textContent: w.model_kinds_title }),
+    el("p", { className: "muted small", textContent: w.model_kinds_how }));
+  kinds.forEach((row, i) => {
+    box.append(el("p", { className: "model-kind small" }, el("strong", { textContent: kindLabel(row.kind) }), ": ",
+      row.own ? fill(w.model_kind_own, { file: row.file || "" }) : w.model_kind_game));
+    if (row.also && row.also.length) {
+      box.append(el("p", { className: "muted small",
+        textContent: fill(w.model_kind_also, { figures: row.also.map(figure).join(", ") }) }));
+    }
+    // (on bones of its own that aren't the riflemen's model's: he plays what he played, which can stop the game)
+    if (row.same_bones === false) box.append(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));
+    if (i === 0) return;   // (the riflemen's model is Import model's, above)
+    const pick = el("button", { type: "button", textContent: w.model_import, title: w.tip_model_kind_import });
+    pick.addEventListener("click", async () => {
+      pick.disabled = true;
+      say(w.model_importing);
+      try {
+        const r = await api().model_import(address, null, 1, false, null, true, true, null, row.kind);
+        if (r.model) {  // (none: the file picker was closed)
+          say(fill(w.model_kind_done, { file: r.model.file || "" }), "ok");
+          if (changed) changed();
+        }
+        draw(r);
+      } catch (err) { problem(err); } finally { pick.disabled = false; }
+    });
+    const actions = el("div", { className: "actions" }, pick);
+    if (row.own) {
+      const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
+        title: w.tip_model_kind_remove });
+      drop.addEventListener("click", async () => {
+        drop.disabled = true;
+        try {
+          const r = await api().model_import_remove(address, row.kind);
+          say(w.model_kind_removed, "ok");
+          draw(r);
+          if (changed) changed();
+        } catch (err) { problem(err); drop.disabled = false; }
+      });
+      actions.append(drop);
+    }
+    box.append(actions);
+  });
+  return box;
+}
+
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
   // a squad's model is rigged to the game soldier's bones and keeps the size and place it has on them
   // (rusemod.modelin._prepare_rigged), so its box has no Size or Move; its own copy is its uniform, in the box above
   const squad = Boolean(info.soldiers);
+  // a squad whose riflemen and heavy-weapon soldier draw different models: Import model is the riflemen's (kindsBox)
+  const kinds = squad && info.kinds && info.kinds.length > 1 ? info.kinds : null;
   const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", value: "1", className: "model-size",
     title: w.tip_model_size });
   // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
@@ -2816,7 +2872,7 @@ function modelBox(address, info, draw, changed) {
       }
     }).catch(() => {});  // (no slider: the number box still takes a size)
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
-    title: squad ? w.tip_model_import_squad : w.tip_model_import });
+    title: kinds ? w.tip_model_import_kinds : squad ? w.tip_model_import_squad : w.tip_model_import });
   // the unit's own copy a new model took the place of (StudioApi.model_import's "copy_out"; a squad's Custom uniform)
   const copyOut = squad ? w.model_copy_out_squad : w.model_copy_out;
   pick.addEventListener("click", async () => {
@@ -2854,7 +2910,8 @@ function modelBox(address, info, draw, changed) {
       actions.append(get, choose);
     } else {
       const open = el("button", { type: "button", textContent: w.model_blender, title: w.tip_model_blender });
-      const back = el("button", { type: "button", textContent: w.model_blender_back, title: w.tip_model_blender_back });
+      const back = el("button", { type: "button", textContent: w.model_blender_back,
+        title: kinds ? w.tip_model_blender_back_kinds : w.tip_model_blender_back });
       open.addEventListener("click", async () => {
         open.disabled = true;
         say(w.model_blender_opening);
@@ -2870,7 +2927,7 @@ function modelBox(address, info, draw, changed) {
         try {
           const r = await api().model_blender_back(address, Number(size.value) || 1);
           if (r.model) {
-            say(w.model_blender_done, "ok");
+            say(kinds ? w.model_blender_done_kinds : w.model_blender_done, "ok");
             if (changed) changed();
           }
           draw(r);
@@ -2879,7 +2936,8 @@ function modelBox(address, info, draw, changed) {
       actions.append(open, back);
     }
     box.append(el("h4", { textContent: w.model_blender_title }),
-      el("p", { className: "small", textContent: info.blender ? w.model_blender_how : w.model_blender_needs }),
+      el("p", { className: "small", textContent: !info.blender ? w.model_blender_needs
+        : kinds ? w.model_blender_how_kinds : w.model_blender_how }),
       actions, where);
   }
   // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
@@ -2926,12 +2984,15 @@ function modelBox(address, info, draw, changed) {
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
     if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
-      title: squad ? w.tip_model_remove_squad : w.tip_model_remove });
+      title: kinds ? w.tip_model_remove_kinds : squad ? w.tip_model_remove_squad : w.tip_model_remove });
     drop.addEventListener("click", async () => {
       try {
         const r = await api().model_import_remove(address);
-        say(r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
-          : (squad ? w.model_removed_squad : w.model_removed), "ok");
+        // (a heavy-weapon soldier's model on its bones went with it: StudioApi.model_import_remove's "kinds_out")
+        const went = (r.kinds_out || []).length
+          ? " " + fill(w.model_kinds_out, { who: r.kinds_out.map(kindLabel).join(", ") }) : "";
+        say((r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+          : (squad ? w.model_removed_squad : w.model_removed)) + went, "ok");
         draw(r);
         if (changed) changed();
       } catch (err) { problem(err); }
@@ -2959,7 +3020,8 @@ function modelBox(address, info, draw, changed) {
         ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
         : (squad ? w.model_removed_squad : w.model_removed) }));
     }
-    box.append(el("p", { className: "muted small", textContent: squad ? w.model_how_squad : w.model_how }));
+    box.append(el("p", { className: "muted small", textContent: kinds ? w.model_how_kinds : squad ? w.model_how_squad
+      : w.model_how }));
     // a model on bones of its own with its animations (a horse, any creature) comes in through the same button
     if (squad) box.append(el("p", { className: "muted small", textContent: w.model_how_own_bones, title: w.tip_model_how_own_bones }));
     // with its own copy (a squad's Custom uniform): what an import does to it, before the button is clicked
@@ -2969,6 +3031,7 @@ function modelBox(address, info, draw, changed) {
     if (squad) box.append(el("div", { className: "actions" }, pick));
     else box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
   }
+  if (kinds) box.append(kindsBox(address, kinds, draw, changed));
   box.pick = pick;
   return box;
 }

@@ -18,8 +18,9 @@ from pathlib import Path
 
 WORK = "blender"
 SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to send
-# a squad's second figure carries the heavy weapon: the rifleman is the one to change (the others with the same bones
-# wear the model too: rusemod.unitmodel._own_model_part)
+# a squad's second figure carries the heavy weapon: the rifleman is the one to change, and what comes back is the
+# riflemen's model (Import model's first kind; the heavy-weapon soldier keeps the copied unit's until he gets his own,
+# the owner, 2026-11-11: "when you copy a fucking unit, it should copy the unit")
 HEAVY = re.compile(r"bazooka|panzerschreck|piat|flame|lanceflamme|mortier|mortar", re.I)
 
 
@@ -51,6 +52,7 @@ class ModelBlenderCalls:
             found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
             if not found:
                 raise StudioError("This unit has no 3D model the Studio can open.")
+            found = self._kind_models(address, None, found) or found   # (a squad's riflemen's, _soldier_kinds)
             model = next((m for m in found if not HEAVY.search(m.rsplit("\\", 1)[-1])), found[0])
             work.mkdir(parents=True, exist_ok=True)
             lib = models.Library(self._game())
