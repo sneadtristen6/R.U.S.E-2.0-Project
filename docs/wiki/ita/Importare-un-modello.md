@@ -103,6 +103,32 @@ Buono a sapersi:
 - Hai già un .glb fatto sulle ossa del soldato del gioco? **Importa modello…** lo prende così com'è.
 - Il modello che indossa la tua squadra è tenuto nella cartella della mod come `files\models\<nome dell'unità>.glb`, una volta dentro.
 
+## Le sue animazioni: quale esegue ogni azione
+
+Un modello su ossa proprie (un cavallo, un cavallo col suo cavaliere, qualsiasi creatura) porta con sé le sue
+animazioni. Nella pagina dell'unità, **Le sue animazioni** mostra cosa esegue l'unità per ogni cosa che fa in gioco:
+
+- **Sta fermo**, **Cammina** e **Corre** vengono per prime: il minimo che serve a un modello. Se una di esse non ha
+  niente di suo, la pagina lo dice, e cosa esegue al suo posto.
+- Ogni azione è una lista delle animazioni del modello. Scegline una, o lasciala su **Più vicina**: esegue allora
+  quella del modello più somigliante, e la lista dice quale. Più vicina vuol dire, nell'ordine: un'animazione col nome
+  di quell'azione (stand o idle, walk, run o gallop, fire, death...), altrimenti quella che esegue l'azione più vicina
+  (una camminata la corsa, una corsa la camminata, poi la posa ferma; uno sparo la mira, poi la posa ferma; ogni morte
+  la morte semplice). La build segue la stessa regola: ciò che dice la pagina è ciò che esegue il gioco.
+- Un'animazione il cui nome inizia con t_ o b_ (hr_t_fire, hr_b_run) si esegue solo sulla metà superiore o inferiore
+  del corpo: quelle di un cavaliere sopra, quelle del suo cavallo sotto.
+- **Tutte le altre azioni** apre il resto, per tipo: fermo, in movimento, mirare e sparare, l'arma pesante, essere
+  colpiti, morire.
+- **Nei lunghi spostamenti** il gioco mette una squadra nel suo camion. Un'unità con animazioni sue va invece da sé,
+  eseguendo l'animazione scelta lì (la sua corsa se lasci Più vicina), veloce quanto il suo camion. Scegli **Nel suo
+  camion** per tenere il camion.
+
+**Una copia tiene le sue animazioni:** un'unità copiata da una con animazioni sue esegue le stesse. Per cambiarne una
+solo per lei, usa RUSE Decoy.
+
+Non ancora provato in gioco così come lo fa lo Studio; una Horse Squad fatta allo stesso modo a mano è stata giocata
+(novembre 2026).
+
 ## 4. La sua scheda, poi la prova
 
 Ruota la vista 3D finché il nuovo modello non sta bene nella cornice tratteggiata e clicca su **Usa questa vista come

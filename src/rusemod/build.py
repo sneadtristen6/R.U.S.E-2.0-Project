@@ -1014,6 +1014,8 @@ class BuildResult:
     own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
     own_clips: dict = field(default_factory=dict)   # units' own clips: new member of ZZ_Win.dat -> how it's made
     # (unit_own_clips; rusemod.anim.own_clip_files makes them)
+    own_rides: dict = field(default_factory=dict)   # units riding as themselves on long moves: unit -> its ride
+    # (unit_own_clips plans it, unit_own_rides makes it)
     own_assets: dict = field(default_factory=dict)  # mods' map assets: name -> (sceneryasset.Asset, mod id)
     own_looks: dict = field(default_factory=dict)   # new buildings' looks: building -> (buildinglook.Look, mod id)
     look_symbols: dict = field(default_factory=dict)  # new buildings' looks: building -> (the symbol it copies, its own)
@@ -1541,16 +1543,28 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
     first, so they keep the game's). A new unit's or one of the game's. A later mod's row for the same clip or action
     of a unit wins. Returns {the clip's path in ZZ_Win.dat: {"unit", "mod", "clip": the game's clip it's made from or
     None, "edit": its changes, "file": the unit's own file or None}} for build_and_write, which makes them
-    (anim.own_clip_files); a clip no listing names in the end is left out."""
+    (anim.own_clip_files); a clip no listing names in the end is left out.
+
+    A unit with a model of its own and its model's animations ([unit.<name>.animation]): every listing of the figures
+    that draw its own model plays one of them, the one rusemod.animactions' rule picks (the modder's pick, else the
+    nearest); a row of the action tables still wins. Its ride on long moves (unless it rides in its truck) is planned
+    in result.own_rides for unit_own_rides."""
     from . import anim
-    wanted: dict = {}   # unit -> {"clips": {clip: (edit, mod id)}, "actions": {(action, figure): (file, mod id)}}
+    wanted: dict = {}   # unit -> {"clips": {clip: (edit, mod id)}, "actions": {(action, figure): (file, mod id)},
+    #                              "animations": {name: (file, mod id)}, "plays": {action: (name, mod id)}, "ride"}
     for m in order:
         for unit, u in (getattr(m, "unit_clips", None) or {}).items():
-            w = wanted.setdefault(unit, {"clips": {}, "actions": {}})
+            w = wanted.setdefault(unit, {"clips": {}, "actions": {}, "animations": {}, "plays": {}, "ride": None})
             for member, edit in u["clips"].items():
                 w["clips"][member] = (edit, m.id)
             for key, file in u["actions"].items():
                 w["actions"][key] = (file, m.id)
+            if u.get("animations"):   # (a later mod's model brings its own animations: they take the place, whole)
+                w["animations"] = {n: (f, m.id) for n, f in u["animations"].items()}
+            for action, n in (u.get("plays") or {}).items():
+                w["plays"][action] = (n, m.id)
+            if u.get("ride"):
+                w["ride"] = (u["ride"], m.id)
     if not wanted:
         return {}
     if zz is None:
@@ -1572,7 +1586,9 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
 
     for unit in sorted(wanted):
         w = wanted[unit]
-        mods = sorted({mid for _e, mid in w["clips"].values()} | {mid for _f, mid in w["actions"].values()})
+        mods = sorted({mid for _e, mid in w["clips"].values()} | {mid for _f, mid in w["actions"].values()}
+                      | {mid for _f, mid in w["animations"].values()} | {mid for _n, mid in w["plays"].values()}
+                      | ({w["ride"][1]} if w["ride"] else set()))
         where = f"{', '.join(mods)}: {anim.UNITS}"
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
@@ -1593,6 +1609,15 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
                 planned[anim.own_member(files[file])] = {"unit": unit, "mod": mod_id, "clip": None, "edit": None,
                                                          "file": file}
             by_action[key] = anim.own_data_name(files[file])
+        ride_stem = None
+        if w["animations"]:   # its model's own animations, on the figures that draw its model (and its ride)
+            def plan(file, mod_id):
+                if file not in files:
+                    files[file] = fresh(anim.own_stem(unit, Path(file).name))
+                    planned[anim.own_member(files[file])] = {"unit": unit, "mod": mod_id, "clip": None, "edit": None,
+                                                             "file": file}
+                return files[file]
+            ride_stem = _own_animations(run, unit, name, w, result, where, plan, by_action)
         got = anim.own_listings(run.game, name, by_clip, by_action)
         for member in sorted(by_clip):
             if member not in got["plays"]:
@@ -1609,7 +1634,7 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         names = []
         for member, spec in sorted(planned.items()):
             stem = member.rsplit("\\", 1)[-1][:-len(".baf")]
-            n = got["pointed"].get(anim.own_data_name(stem), 0)
+            n = got["pointed"].get(anim.own_data_name(stem), 0) + (stem == ride_stem)   # (its ride plays one too)
             if n:
                 out[member] = spec
                 names.append(f"{stem} ({n})")
@@ -1620,6 +1645,142 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
             result.findings.append(Finding("note", f"{where}: {unit} plays {len(names)} clip(s) of its own, every "
                                                    f"other unit as before (listings naming each): {', '.join(names)}"))
     return out
+
+
+def _draws_own_model(model: str | None, unit: str) -> bool:
+    """Whether a figure's model is the unit's own: the name _own_model_part (and unitmodel.model_name) give it,
+    <the copied model's folder>\\<unit>lod0.Ase2ndfbin."""
+    return bool(model) and model.replace("/", "\\").lower().endswith(f"\\{unit.lower()}lod0.ase2ndfbin")
+
+
+def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, where: str, plan, by_action: dict):
+    """unit_own_clips' part for a unit with its model's own animations (`w`: its "animations", "plays", "ride" and
+    the action rows that win): each listing of the figures that draw the unit's own model, by_action[(action,
+    figure)] = the FileName of the animation rusemod.animactions.choose gives it (`plan(file, mod id)` gives a file
+    its clip's stem). A unit with no model of its own in the build, or none of whose figures draws it, plays none of
+    them, said (a clip of the model's bones on a figure drawing another model is what stopped the game on
+    2026-11-09). Its ride on long moves goes in result.own_rides (unit_own_rides makes it). Returns the stem of the
+    clip its ride plays, or None."""
+    from . import anim, animactions
+    from .patch import Inline, Num, Ref, Text
+    anims = {n: f for n, (f, _m) in w["animations"].items()}
+    names = list(anims)
+    picks = {}
+    for action, (n, mod_id) in sorted(w["plays"].items()):
+        if n in anims:
+            picks[action] = n
+        else:
+            result.findings.append(Finding("warning", f"{mod_id}: {anim.UNITS}: {unit}'s {action} plays {n}, which "
+                                                      f"isn't one of its model's animations now, so it plays the "
+                                                      f"nearest"))
+    if unit not in result.own_models:
+        result.findings.append(Finding("warning", f"{where}: {unit} has animations of its own but no model of its own "
+                                                  f"(files/models/{unit}.glb), so none of them plays: its figures play "
+                                                  f"what the unit it copies plays"))
+        return None
+    drawn = [f for f in anim.unit_figures(run.game, name) if _draws_own_model(f["model"], unit)]
+    if not drawn:
+        result.findings.append(Finding("warning", f"{where}: none of {unit}'s figures draws its own model, so its own "
+                                                  f"animations play nowhere"))
+        return None
+    mod_of = {n: m for n, (_f, m) in w["animations"].items()}
+    plays: dict = {}
+    for fig in drawn:
+        for key, clip in fig["listings"]:
+            if (key, fig["path"]) in w["actions"] or (key, None) in w["actions"]:
+                continue   # (a row RUSE Decoy or a tool wrote for the action wins)
+            pick, _how = animactions.choose(key, names, picks, clip)
+            by_action[(key, fig["path"])] = anim.own_data_name(plan(anims[pick], mod_of[pick]))
+            plays[pick] = plays.get(pick, 0) + 1
+    if plays:
+        result.findings.append(Finding("note", f"{where}: {unit}'s figures that draw its own model play its model's "
+                                               f"animations ({sum(plays.values())} listings of {len(drawn)} figures): "
+                                               f"{', '.join(f'{n} {k}' for n, k in plays.items())}"))
+    if w["ride"] and w["ride"][0] == "truck":
+        return None
+    truck = run.game.objects[name].props.get("TransportPourMorphe")
+    if not isinstance(truck, Ref) or truck.target not in run.game.objects:
+        result.findings.append(Finding("note", f"{where}: {unit} rides in no truck on long moves, so it gets no ride "
+                                               f"of its own"))
+        return None
+    first = next((f for f in drawn if f["path"] == "GfxDescriptorFusilier"), drawn[0])   # (a squad's rifleman)
+    mesh = first["object"].props.get("MeshDescriptor")
+    mesh = mesh.obj if isinstance(mesh, Inline) else run.game.objects.get(mesh.target) if isinstance(mesh, Ref) \
+        and mesh.target else None
+    model = mesh.props.get("FileName") if mesh is not None else None
+    mask = mesh.props.get("UsefulnessMask") if mesh is not None else None
+    pack = first["object"].props.get("MultiRenderTypeMaterialPack")
+    pick, _how = animactions.ride(names, picks)
+    stem = plan(anims[pick], mod_of[pick])
+    result.own_rides[unit] = {
+        "unit": name, "truck": truck.target, "clip": anim.own_data_name(stem), "animation": pick,
+        "model": model.value if isinstance(model, Text) else None,
+        "mask": int(mask.value) if isinstance(mask, Num) else None,
+        "pack": pack.target if isinstance(pack, Ref) and pack.target else None, "where": where,
+        "mod": mod_of[pick]}
+    return stem
+
+
+def unit_own_rides(engine, run, result: BuildResult):
+    """Each unit riding as itself on long moves (result.own_rides, planned by unit_own_clips): a copy of the truck it
+    rides in, drawn as the unit's own model playing one of its animations on a loop, and the unit riding in that copy
+    (the owner's 2026-11-09 words, "Just make it look like the horse is running for that truck animation"; the way his
+    sixth and tenth Horse Squad copies did it by hand, played in the game: its own ride unit, the truck's look part with
+    no wheels, chassis or dust (bones the model hasn't got), one listing 'idle1' looping, the default clip, its own
+    size, the squad's own shader pack). The truck's values (its speed on the roads), its wreck and its far-zoom pile
+    stay the truck's; the truck itself and every other unit's ride stay as they are. Made by the patch engine as a
+    mod's lines are (`engine`, the build's: a clone gets its own id and name), after the mods. Returns `run` with the
+    new objects among its created ones."""
+    from . import anim
+    from .patch import PatchError
+    from .rndf import RndfError, parse
+    objects = run.game.objects
+
+    def free(stem: str) -> str:
+        n, got = 2, f"$/GFX/Everything/{stem}"
+        while got in objects:
+            got, n = f"$/GFX/Everything/{stem}_{n}", n + 1
+        return got
+
+    for unit, r in sorted(result.own_rides.items()):
+        if not r["model"] or r["mask"] is None:
+            # not a game rule: what our build reads off the unit's figure to draw its ride
+            result.findings.append(Finding("error", f"{r['where']}: {unit}'s figure names no model to draw its ride "
+                                                    f"with"))
+            continue
+        ride, clip_obj = free(f"{unit}_Ride"), free(f"Anim_{unit}_Ride")
+        look = (f"SousElements = MAP[]  ResourceAnimation = MAP[ ( 'idle1', {clip_obj} ) ]  DefaultAnimation = 'idle1'"
+                f"  InnerScale = 1.0" + (f"  MultiRenderTypeMaterialPack = {r['pack']}" if r["pack"] else ""))
+        text = "\n".join([
+            f"export {ride.rsplit('/', 1)[-1]} is clone {r['truck']} ( )",
+            f"patch own {ride}:GfxDescriptor.MeshDescriptor ( FileName = path('{r['model']}')  "
+            f"UsefulnessMask = {r['mask']} )",
+            f"export {clip_obj.rsplit('/', 1)[-1]} is TGfxDescriptorAnimation ( FileName = path('{r['clip']}')  "
+            f"UsefulnessMask = {RIDE_CLIP_MASK}  PlayInLoop = true )",
+            f"patch own {ride}:GfxDescriptor ( {look} )",
+            f"patch {r['unit']} ( TransportPourMorphe = {ride} )"])
+        before = len(engine.findings)
+        try:
+            ops = parse(text, file=f"{anim.UNITS} ({unit}'s ride)", mod=r["mod"])
+        except RndfError as exc:
+            result.findings.append(Finding("error", f"{r['where']}: {unit}'s ride can't be made: {exc}"))
+            continue
+        for op in ops:
+            try:
+                engine.apply(op)
+            except PatchError as exc:
+                engine.findings.append(Finding("error", str(exc), op))
+        result.findings += engine.findings[before:]
+        if ride in engine.game.objects:
+            result.findings.append(Finding("note", f"{r['where']}: {unit} rides as itself on long moves, playing "
+                                                   f"{r['animation']} on a loop ({ride.rsplit('/', 1)[-1]}, a copy of "
+                                                   f"{r['truck'].rsplit('/', 1)[-1]})"))
+    for name, op in engine.created.items():
+        run.created.setdefault(name, op)
+    return run
+
+
+RIDE_CLIP_MASK = 81920   # the UsefulnessMask every clip listing of the game carries (2026-11-09: all 593 of them)
 
 
 def _game_unit(run, unit: str) -> str | None:
@@ -1994,7 +2155,8 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         tabs = [(k, own_planned[k]) for k in ownbuildings.KINDS if k in own_planned]
         extra = extra + [(ModInfo("r2-own-buildings"), parse(ownbuildings.tabs_rndf(tabs, game_keys),
                                                              file="own buildings", mod="r2-own-buildings"))]
-    run = Engine(base).run(first + [by_id[m.id] for m in order] + extra)
+    engine = Engine(base)
+    run = engine.run(first + [by_id[m.id] for m in order] + extra)
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     # the levels each placed type is drawn at (its far copy's too), for its objects to ask of the blocks they hang on
     result.type_levels = visibility.type_levels(run.game, {t for t in placed if t} | set(result.visibility.values()))
@@ -2036,6 +2198,8 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_models = unit_own_models(run, order, result)
     result.own_copies = unit_own_copies(run, order, result)
     result.own_clips = unit_own_clips(run, order, result, text_arc)
+    if result.own_rides:   # (units riding as themselves on long moves: their rides, made after the mods)
+        run = unit_own_rides(engine, run, result)
     result.look_symbols = building_looks(run, result)
     if result.errors:
         return result

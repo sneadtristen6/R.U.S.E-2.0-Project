@@ -109,6 +109,32 @@ Gut zu wissen:
 - Hast du schon eine .glb auf den Knochen des Spielsoldaten? **Modell importieren…** nimmt sie, wie sie ist.
 - Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist.
 
+## Seine Animationen: welche jede Handlung abspielt
+
+Ein Modell auf eigenen Knochen (ein Pferd, ein Pferd mit Reiter, jedes Wesen) bringt seine Animationen mit. Auf der
+Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlung im Spiel abspielt:
+
+- **Steht still**, **Geht** und **Läuft** kommen zuerst: das Mindeste, was ein Modell braucht. Hat eine davon nichts
+  Eigenes, sagt die Seite das und was sie stattdessen spielt.
+- Jede Handlung ist eine Liste der Animationen des Modells. Wähle eine oder lass **Nächste**: Dann spielt sie die
+  ähnlichste, die das Modell hat, und die Liste sagt welche. Nächste heißt, der Reihe nach: eine Animation, die nach
+  der Handlung benannt ist (stand oder idle, walk, run oder gallop, fire, death...), sonst was die nächste Handlung
+  spielt (ein Gehen das Laufen, ein Laufen das Gehen, dann das Stehen; ein Schuss das Zielen, dann das Stehen; jeder
+  Tod den einfachen Tod). Der Build folgt derselben Regel: Was die Seite sagt, spielt das Spiel.
+- Eine Animation, deren Name mit t_ oder b_ beginnt (hr_t_fire, hr_b_run), spielt nur auf der oberen oder unteren
+  Körperhälfte: die eines Reiters oben, die seines Pferdes unten.
+- **Alle anderen Handlungen** öffnet den Rest, nach Art: Stillstehen, in Bewegung, Zielen und Schießen, die schwere
+  Waffe, Getroffen werden, Sterben.
+- **Auf langen Wegen** setzt das Spiel einen Trupp in seinen Lastwagen. Eine Einheit mit eigenen Animationen geht
+  stattdessen selbst und spielt die dort gewählte Animation (ihr Laufen bei Nächste), so schnell wie ihr Lastwagen.
+  Wähle **In seinem Lastwagen**, um den Lastwagen zu behalten.
+
+**Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt
+dieselben. Um eine nur für sie zu ändern, nimm RUSE Decoy.
+
+Noch nicht im Spiel ausprobiert, so wie das Studio es macht; eine auf dieselbe Weise von Hand gebaute Horse Squad lief
+im Spiel (November 2026).
+
 ## 4. Seine Karte, dann testen
 
 Dreh die 3D-Ansicht, bis das neue Modell im gestrichelten Rahmen richtig aussieht, und klicke auf **Diese Ansicht als

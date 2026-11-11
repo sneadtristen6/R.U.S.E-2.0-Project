@@ -558,6 +558,48 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   the unit's copy out. Tools write the action tables with `rusemod.anim.add_unit_clip(mod, unit, action, clip_bytes,
   name, figure)` (and take a row out with `remove_unit_clip`); a unit deleted in the Studio takes its rows and folder
   with it.
+
+  **A model's own animations, which one each action plays, and the ride (item 5, 2026-11-10; `rusemod.animactions`,
+  `rusemod.anim`; built and checked offline, not tried in the game yet as the build makes them):** a new unit with a
+  model of its own and that model's animations has them by name, the modder's picks, and how it goes on long moves:
+
+  ```toml
+  [unit.Descriptor_Unit_Horse_Squad]
+  ride = "truck"                  # in its truck on long moves; without it, as itself (below)
+  [unit.Descriptor_Unit_Horse_Squad.animation]   # the model's animations, in its order, each a clip file
+  stand = "stand.baf"             # in files/anim/own/<the unit's name>/ (rusemod.anim.set_animations writes them)
+  "Gallop fast" = "Gallop_fast.baf"
+  [unit.Descriptor_Unit_Horse_Squad.plays]       # the animation picked for an action (the unit's page)
+  course = "Gallop fast"          # the action as the game names it, without t_ / b_: course is t_course and b_course
+  ride = "stand"                  # what it plays on long moves, as itself
+  ```
+
+  The build gives every listing of the figures that draw the unit's own model (the figures whose model part names
+  `<the copied model's folder>\<the unit's name>lod0`: a squad's riflemen, its bazooka man, its far-zoom and fallen
+  figures) one of those animations, by one rule, the one the unit's page shows (`rusemod.animactions`): the animation
+  picked for its action; else one named for it (its name, the action's, or the game's clip it played: `t_course`,
+  `course`, `fusilier_course`), else one whose name says the action (stand or idle, walk, run or gallop, aim, fire or
+  shoot, throw or grenade, reload, hit, die or death, flee, with back, left, right, explosion, bazooka and a number);
+  else what the next action on its line plays (a walk the run, a run the walk, then the stand; a fire the aim, then the
+  stand; a death of another kind the plain death, then the stand); else the model's first. A name starting `t_` or
+  `b_` (after what all the model's names start with) is for that half of the body only. A row of the action tables
+  above (RUSE Decoy's, a tool's) still wins for its action. A unit with animations but no model of its own in the
+  build, or none of whose figures draws it, plays none of them: a warning (a clip made for one model's bones on a
+  figure drawing another stopped the game on 2026-11-09).
+
+  **The ride:** a squad goes on long moves as the truck its `TransportPourMorphe` names. A unit with a model and
+  animations of its own goes as itself instead, unless `ride = "truck"`: the build makes `<the unit's name>_Ride`, a
+  copy of that truck (its speed on the roads, its wreck and its far-zoom pile stay the truck's), whose look draws the
+  unit's own model with no wheels, chassis or dust parts and one listing, `idle1`, playing the ride's animation on a
+  loop (the `ride` pick, else the nearest: run, walk, stand), and points the unit's `TransportPourMorphe` at it. The
+  owner's sixth and tenth Horse Squad copies did this by hand and played (2026-11-09). A unit that rides in no truck
+  gets no ride.
+
+  **Copies:** a unit the Studio copies (New unit, the board's copy, an era unit) takes along every row and clip file the
+  unit it copies has here, so it plays the same; RUSE Decoy changes them for it alone after (the owner, 2026-11-10).
+
+  An older Launcher that reads units.toml stops on these tables (it doesn't know them); one from before units.toml
+  (0.9.8.19 and earlier) builds the mod without any of it.
 - **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
   song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at

@@ -29,9 +29,27 @@ The clip files are in `files/anim/own/<the unit's name>/`. The build makes each 
 as a file of its own under a new name (own_<unit>_<name>lod0.baf, beside the soldiers' clips), and points that unit's
 listings at it (own_listings): a part of the unit another unit shares too is copied into it first, so the others
 keep the game's.
+
+A unit with a model of its own and animations of its own (Import model; set_animations) has them by name, and which
+one each action plays (the unit's page, set_pick; rusemod.animactions' rule for the rest), and how it rides on long
+moves:
+
+    [unit.Descriptor_Unit_Horse_Squad]
+    ride = "truck"                                # in its truck; without it, as itself playing an animation
+    [unit.Descriptor_Unit_Horse_Squad.animation]  # the model's own animations, by name, each a clip file
+    stand = "stand.baf"
+    "Gallop fast" = "Gallop_fast.baf"
+    [unit.Descriptor_Unit_Horse_Squad.plays]      # the modder's picks, by action (rusemod.animactions.ACTIONS)
+    course = "Gallop fast"
+    ride = "Gallop fast"
+
+The build gives every listing of the figures that draw the unit's own model the animation the rule picks (a row of
+the action tables above, RUSE Decoy's or a tool's, still wins), and the unit a ride of its own (rusemod.build).
+A copied unit takes all of it along (copy_unit; the owner, 2026-11-10: "They should have the same animation").
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import re
 import shutil
@@ -51,6 +69,8 @@ B = "\\"
 OWN_DIR = "genanim_15\\ww2\\res3d\\units\\common\\"
 OWN_DATA_DIR = "WW2\\Res3D\\Units\\Common\\"
 _NAME = re.compile(r"^[A-Za-z0-9_]+$")   # a unit's name, as the game's data and the mods give them
+_ACTION = re.compile(r"^[a-z0-9_]+$")    # an action's name as the unit's picks give it (rusemod.animactions)
+RIDES = ("truck", "itself")              # how a unit with animations of its own rides on long moves
 
 
 class AnimError(ValueError):
@@ -225,7 +245,8 @@ def mod_unit_clips(folder: Path, text: str | None = None) -> dict:
     """A mod's units' own animations, from its files/anim/units.toml (or `text`, a units.toml not written yet):
     {unit name: {"clips": {the game's clip path (backslashes, lower case): its changes as mod_clips gives them, "file"
     a clip of the unit's own in its place}, "actions": {(action, figure path or None for every figure): the clip
-    file}}}; {} without the file."""
+    file}, "animations": {its model's animation: the clip file}, "plays": {action: the animation picked for it},
+    "ride": "truck", "itself" or None}}; {} without the file."""
     root = Path(folder)
     f = root / UNITS
     if text is None and not f.is_file():
@@ -240,9 +261,10 @@ def mod_unit_clips(folder: Path, text: str | None = None) -> dict:
         raise AnimError(f"{UNITS}: [unit.<a unit's name>] tables, one a unit")
     out: dict = {}
     for unit, u in units.items():
-        if not _NAME.match(unit) or not isinstance(u, dict) or set(u) - {"clip", "action", "figure"}:
-            raise AnimError(f"{UNITS}: [unit.{unit}]: a unit's name (letters, digits and _), then its clip, action "
-                            f"and figure tables")
+        if not _NAME.match(unit) or not isinstance(u, dict) \
+                or set(u) - {"clip", "action", "figure", "animation", "plays", "ride"}:
+            raise AnimError(f"{UNITS}: [unit.{unit}]: a unit's name (letters, digits and _), then its clip, action, "
+                            f"figure, animation and plays tables and its ride")
         own = root / OWN / unit
         clips: dict = {}
         for key, v in (u.get("clip") or {}).items():
@@ -267,8 +289,36 @@ def mod_unit_clips(folder: Path, text: str | None = None) -> dict:
             for action, rel in acts.items():
                 actions[(action, fig)] = _own_file(own, rel, f"{UNITS}: {unit}: {action}"
                                                              + (f" ({fig})" if fig else ""))
-        out[unit] = {"clips": clips, "actions": actions}
+        animations, plays = _model_tables(unit, u, own)
+        ride = u.get("ride")
+        if ride is not None and ride not in RIDES:
+            # not a game rule: how our format says it
+            raise AnimError(f"{UNITS}: [unit.{unit}]: ride is \"truck\" (in its truck) or \"itself\"")
+        out[unit] = {"clips": clips, "actions": actions, "animations": animations, "plays": plays, "ride": ride}
     return out
+
+
+def _model_tables(unit: str, u: dict, own: Path) -> tuple[dict, dict]:
+    """A unit's [animation] table ({name: its clip file, there}) and [plays] table ({action: one of those names})."""
+    table, picks = u.get("animation") or {}, u.get("plays") or {}
+    if not isinstance(table, dict) or not isinstance(picks, dict):
+        # not a game rule: how our format names them
+        raise AnimError(f"{UNITS}: {unit}: [unit.{unit}.animation] names its model's animations, "
+                        f"[unit.{unit}.plays] the one each action plays")
+    animations = {}
+    for name, rel in table.items():
+        if not str(name).strip() or any(ord(c) < 32 for c in str(name)):
+            raise AnimError(f"{UNITS}: {unit}: {name!r} isn't an animation's name")
+        animations[name] = _own_file(own, rel, f"{UNITS}: {unit}: the animation {name}")
+    plays = {}
+    for action, name in picks.items():
+        if not _ACTION.match(str(action)):
+            raise AnimError(f"{UNITS}: {unit}: {action!r} isn't an action's name (lower case letters, digits and _)")
+        if name not in animations:
+            # not a game rule: a pick names one of the unit's own animations
+            raise AnimError(f"{UNITS}: {unit}: {action} plays {name!r}, which isn't one of its animations")
+        plays[action] = name
+    return animations, plays
 
 
 def own_stem(unit: str, name: str) -> str:
@@ -300,14 +350,28 @@ def _bare(s: str) -> str:
 
 def units_toml(table: dict) -> str | None:
     """units.toml's text for `table` ({unit: {"clip": {clip key: {"speed", "from", "file", "bone": {name: {"size",
-    "turn"}}}}, "action": {action: file}, "figure": {path: {"action": {action: file}}}}}), in name order; None when
-    it holds nothing."""
+    "turn"}}}}, "action": {action: file}, "figure": {path: {"action": {action: file}}}, "animation": {name: file},
+    "plays": {action: name}, "ride": "truck"}}), in name order (a model's animations in its own order); None when it
+    holds nothing."""
     lines = ["# One unit's own animations: every unit not named here plays the game's (rusemod.anim). RUSE Decoy",
              "# (\"Only this unit\") and Import model write it; the build makes each clip a file of its own, beside the",
              "# game's, and points only that unit's actions at it. Clip files: files/anim/own/<the unit's name>/.", ""]
     some = False
     for unit in sorted(table):
         u = table[unit] or {}
+        if u.get("ride"):
+            some = True
+            lines += [f"[unit.{_bare(unit)}]", f"ride = {_q(u['ride'])}", ""]
+        if u.get("animation"):
+            some = True
+            lines.append(f"[unit.{_bare(unit)}.animation]")
+            lines += [f"{_bare(name)} = {_q(file)}" for name, file in u["animation"].items()]
+            lines.append("")
+        if u.get("plays"):
+            some = True
+            lines.append(f"[unit.{_bare(unit)}.plays]")
+            lines += [f"{_bare(a)} = {_q(u['plays'][a])}" for a in sorted(u["plays"])]
+            lines.append("")
         for key in sorted(u.get("clip") or {}):
             e = u["clip"][key]
             some = True
@@ -429,6 +493,7 @@ def _named_files(u: dict) -> set:
     named |= set((u.get("action") or {}).values())
     for fv in (u.get("figure") or {}).values():
         named |= set(((fv or {}).get("action") or {}).values())
+    named |= set((u.get("animation") or {}).values())
     return named
 
 
@@ -474,6 +539,205 @@ def remove_unit(mod: Path, unit: str) -> None:
         shutil.rmtree(folder)
 
 
+# --- a model's own animations, which one each action plays, its ride; and a copied unit's ---
+def _unit_name(unit) -> str:
+    if not isinstance(unit, str) or not _NAME.match(unit):
+        raise AnimError(f"{unit!r} isn't a unit's name (letters, digits and _)")
+    return unit
+
+
+def _write_unit(mod: Path, unit: str, u: dict, keep_files: set | None = None) -> None:
+    """The unit's tables `u` in units.toml (none left: its entry goes), then each file of its folder that a row named
+    before and none names now goes (`keep_files`: the names to keep anyway)."""
+    table = read_units(mod)
+    before = _named_files(table.get(unit) or {})
+    u = {k: v for k, v in u.items() if v}
+    if u:
+        table[unit] = u
+    else:
+        table.pop(unit, None)
+    write_units(mod, table)
+    for gone in sorted(before - _named_files(u) - (keep_files or set())):
+        (Path(mod) / OWN / unit / gone).unlink(missing_ok=True)
+
+
+def own_animations(mod: Path, unit: str) -> dict:
+    """The unit's model's own animations in the mod as units.toml has them: {"animations": {name: file}, "plays":
+    {action: name}, "ride": "truck"/"itself"/None}."""
+    u = read_units(mod).get(unit) or {}
+    return {"animations": dict(u.get("animation") or {}), "plays": dict(u.get("plays") or {}), "ride": u.get("ride")}
+
+
+def set_animations(mod: Path, unit: str, clips: dict) -> dict:
+    """Give the unit `unit` (a new unit with a model of its own) its model's animations, `clips` {name: the clip's
+    bytes (rusemod.baf; unitmodel.own_clips makes them)}, in the model's order: each kept as files/anim/own/<unit>/
+    <name>.baf and named in units.toml's [unit.<unit>.animation], in place of the ones it had (Import model again, or
+    an animation changed in Blender: what it plays goes on by name). A pick naming an animation the model hasn't got
+    any more goes (that action plays the nearest again); so does a file no row names any more. Returns {name: the
+    file's name}. Import model calls it (item 5, part 1); an empty `clips` takes the animations out (drop_animations)."""
+    unit = _unit_name(unit)
+    files, taken = {}, set()
+    for name, clip in clips.items():
+        if not isinstance(name, str) or not name.strip() or any(ord(c) < 32 for c in name):
+            raise AnimError(f"{name!r} isn't an animation's name")
+        try:
+            baf.check(baf.parse(clip))
+        except baf.ClipError as exc:
+            raise AnimError(f"{unit}: the animation {name}: {exc}") from None
+        stem, k = _file_name(name)[:-len(".baf")], 2
+        file = f"{stem}.baf"
+        while file.lower() in taken:
+            file, k = f"{stem}_{k}.baf", k + 1
+        taken.add(file.lower())
+        files[name] = file
+    u = dict(read_units(mod).get(unit) or {})
+    own = Path(mod) / OWN / unit
+    new = [f for f in files.values() if not (own / f).exists()]
+    if files:
+        own.mkdir(parents=True, exist_ok=True)
+    for name, file in files.items():
+        tmp = (own / file).with_suffix(".part")
+        tmp.write_bytes(bytes(clips[name]))
+        tmp.replace(own / file)
+    u["animation"] = files
+    u["plays"] = {a: n for a, n in (u.get("plays") or {}).items() if n in files}
+    if not files:
+        u.pop("ride", None)
+    try:
+        _write_unit(mod, unit, u, keep_files=set(files.values()))
+    except AnimError:   # (units.toml as it was: the files only this call made go again)
+        for f in new:
+            (own / f).unlink(missing_ok=True)
+        raise
+    return files
+
+
+def drop_animations(mod: Path, unit: str) -> None:
+    """The unit's model's animations, its picks and its ride out of the mod (its model taken out): the rows RUSE Decoy
+    or a tool wrote for it stay."""
+    set_animations(mod, unit, {})
+
+
+def set_pick(mod: Path, unit: str, action: str, name: str | None) -> None:
+    """The unit's action `action` (rusemod.animactions.ACTIONS; "ride" for its ride) plays its animation `name`; None
+    takes the pick out, so it plays the nearest."""
+    unit = _unit_name(unit)
+    if not isinstance(action, str) or not _ACTION.match(action):
+        raise AnimError(f"{action!r} isn't an action's name")
+    u = dict(read_units(mod).get(unit) or {})
+    if name is not None and name not in (u.get("animation") or {}):
+        raise AnimError(f"{unit} has no animation called {name}")
+    picks = dict(u.get("plays") or {})
+    if name is None:
+        picks.pop(action, None)
+    else:
+        picks[action] = name
+    u["plays"] = picks
+    _write_unit(mod, unit, u)
+
+
+def set_ride(mod: Path, unit: str, ride: str | None) -> None:
+    """How the unit rides on long moves: "truck" in its truck; None (or "itself") as itself, playing an animation
+    (the build's ride of its own, for a unit with a model and animations of its own)."""
+    unit = _unit_name(unit)
+    if ride not in (None,) + RIDES:
+        raise AnimError(f"{ride!r}: a unit rides in its truck or as itself")
+    u = dict(read_units(mod).get(unit) or {})
+    if ride in (None, "itself"):
+        u.pop("ride", None)
+    else:
+        u["ride"] = ride
+    _write_unit(mod, unit, u)
+
+
+def copy_unit(mod: Path, source: str, target: str) -> bool:
+    """The unit `target` (a copy of `source` just made) takes `source`'s own animations along: its rows in units.toml
+    and its folder of clip files (the owner, 2026-11-10: "They should have the same animation. The only way you
+    should change animation is in Ruse Decoy"). Whether it had any. A target that had rows of its own keeps none of
+    them: the copy plays what the source plays."""
+    source, target = _unit_name(source), _unit_name(target)
+    table = read_units(mod)
+    u = table.get(source)
+    if not u:
+        return False
+    src, dst = Path(mod) / OWN / source, Path(mod) / OWN / target
+    had = dst.exists()
+    if src.is_dir():
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+    table[target] = copy.deepcopy(u)
+    try:
+        write_units(mod, table)
+    except AnimError:
+        if not had and dst.is_dir():
+            shutil.rmtree(dst)
+        raise
+    return True
+
+
+def _step(path: str, prop: str) -> str:
+    return f"{path}.{prop}" if path else prop
+
+
+def _figures(objects: dict, v, path: str, depth: int = 0, seen=frozenset()):
+    """(path, object) of each object holding clip listings under the value `v` (its unnamed parts followed: a Ref to
+    one of the game's named objects, "$/...", is never followed), as own_listings and unit_figures walk a unit's
+    graphics."""
+    from .patch import Inline, ListV, MapV, PairV, Ref
+    if depth > 24:
+        return
+    if isinstance(v, Ref):
+        if v.target in objects and not v.target.startswith("$/") and v.target not in seen:
+            yield from _obj_figures(objects, objects[v.target], path, depth + 1, seen | {v.target})
+    elif isinstance(v, Inline):
+        yield from _obj_figures(objects, v.obj, path, depth + 1, seen)
+    elif isinstance(v, ListV):
+        for i, x in enumerate(v.items):
+            yield from _figures(objects, x, f"{path}[{i}]", depth + 1, seen)
+    elif isinstance(v, MapV):
+        for i, (_k, x) in enumerate(v.pairs):
+            yield from _figures(objects, x, f"{path}[{i}].v", depth + 1, seen)
+    elif isinstance(v, PairV):
+        yield from _figures(objects, v.a, path, depth + 1, seen)
+        yield from _figures(objects, v.b, path, depth + 1, seen)
+
+
+def _obj_figures(objects: dict, obj, path: str, depth: int, seen):
+    from .patch import MapV
+    if isinstance(obj.props.get("ResourceAnimation"), MapV):
+        yield path, obj
+    for p, w in obj.props.items():
+        if p != "ResourceAnimation":
+            yield from _figures(objects, w, _step(path, p), depth, seen)
+
+
+def unit_figures(game, name: str) -> list:
+    """The figures of the unit `name` (a top-level object of `game`, the build's rusemod.patch.Game) that list clips,
+    walked as own_listings walks them: [{"path": the figure's path from the unit (own_listings' and units.toml's),
+    "model": the model its MeshDescriptor names or None, "listings": [(action, the FileName its listing names or
+    None)], "object": the figure}]."""
+    from .patch import Inline, Ref, Text
+    objects = game.objects
+
+    def obj_of(v):
+        if isinstance(v, Inline):
+            return v.obj
+        return objects.get(v.target) if isinstance(v, Ref) and v.target else None
+
+    def file_of(obj):
+        f = obj.props.get("FileName") if obj is not None else None
+        return f.value if isinstance(f, Text) and f.value else None
+
+    unit = objects[name]
+    out = []
+    for p in [p for p in unit.props if p.startswith("GfxDescriptor")]:
+        for path, fig in _figures(objects, unit.props[p], p):
+            keys = [(k.value, file_of(obj_of(v))) for k, v in fig.props["ResourceAnimation"].pairs
+                    if isinstance(k, Text)]
+            out.append({"path": path, "model": file_of(obj_of(fig.props.get("MeshDescriptor"))), "listings": keys,
+                        "object": fig})
+    return out
+
+
 def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
     """Point the clip listings of the unit `name` (a top-level object of `game`, the build's rusemod.patch.Game) at
     clips of its own: every listing whose clip is one of `by_clip`'s ({the game's clip path: the FileName of the
@@ -507,34 +771,10 @@ def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
         got = (by_action.get((k, figure)) or by_action.get((k, None))) if k is not None else None
         return got or by_clip.get(member_of(f.value))
 
-    def step(path, prop):
-        return f"{path}.{prop}" if path else prop
+    step = _step
 
     def figures(v, path, depth=0, seen=frozenset()):
-        """(path, object) of each object holding clip listings under `v` (its unnamed parts followed)."""
-        if depth > 24:
-            return
-        if isinstance(v, Ref):
-            if v.target in objects and not v.target.startswith("$/") and v.target not in seen:
-                yield from obj_figures(objects[v.target], path, depth + 1, seen | {v.target})
-        elif isinstance(v, Inline):
-            yield from obj_figures(v.obj, path, depth + 1, seen)
-        elif isinstance(v, ListV):
-            for i, x in enumerate(v.items):
-                yield from figures(x, f"{path}[{i}]", depth + 1, seen)
-        elif isinstance(v, MapV):
-            for i, (_k, x) in enumerate(v.pairs):
-                yield from figures(x, f"{path}[{i}].v", depth + 1, seen)
-        elif isinstance(v, PairV):
-            yield from figures(v.a, path, depth + 1, seen)
-            yield from figures(v.b, path, depth + 1, seen)
-
-    def obj_figures(obj, path, depth, seen):
-        if isinstance(obj.props.get("ResourceAnimation"), MapV):
-            yield path, obj
-        for p, w in obj.props.items():
-            if p != "ResourceAnimation":
-                yield from figures(w, step(path, p), depth, seen)
+        return _figures(objects, v, path, depth, seen)
 
     def changes(fig, path) -> bool:
         return any((own := wanted(k, v, path)) and file_of(v).value != own
