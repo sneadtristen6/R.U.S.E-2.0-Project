@@ -1627,6 +1627,187 @@ def _game_unit(run, unit: str) -> str | None:
     return name if name in run.game.objects else None
 
 
+def unit_fit_checks(run, result: BuildResult, zz=None) -> int:
+    """The owner's 7 (2026-11-10: "seven should warn them. If it's gonna break, and then tell them how to fix it. And
+    what's the issue is."): a warning, never an error, for what doesn't fit on a unit with a model on bones of its own
+    (every figure drawing it: each animation it plays, each bone its parts and shots need, its two halves, more than 64
+    bones) and on a unit with animations of its own (each on the figure that plays it, against that figure's model: a
+    model rigged to the game's bones it copies, a squad's soldier, has those bones). rusemod.bonefit says what each check
+    rests on. Runs once the units' models, animations and halves are pointed (after unit_own_models and
+    unit_own_clips); `zz`: ZZ_Win.dat, for the game's own clips and skeletons, read only when a check needs them.
+    Returns how many warnings it said."""
+    from . import anim, bonefit
+    from .animlist import member_of, words
+    from .modelin import OWN_SKELETON
+    from .unitmodel import glb_report
+    if not result.own_models and not result.own_clips:
+        return 0
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    game = bonefit.GameBones(zz)
+
+    def bones_of(file: str) -> list | None:     # (the clip a listing names: the unit's own, or the game's)
+        m = member_of(file)
+        spec = result.own_clips.get(m)
+        if spec is None:
+            return game.clip_bones(m)
+        if spec.get("file"):
+            try:
+                return bonefit.clip_bones(Path(spec["file"]).read_bytes())
+            except OSError:
+                return None
+        return game.clip_bones(spec["clip"]) if spec.get("clip") else None
+
+    def own(file: str) -> bool:
+        return member_of(file) in result.own_clips
+
+    def clip_name(file: str) -> str:
+        spec = result.own_clips.get(member_of(file))
+        if spec is not None and spec.get("file"):
+            return Path(spec["file"]).stem
+        return words(member_of(file) if spec is None or not spec.get("clip") else spec["clip"])
+
+    said = 0
+    checked = set()     # (unit, figure) whose every animation is checked already
+    like_of = {}        # a model rigged to the game's bones it copies (a squad's soldier) -> that model: its bones
+    broken = (ValueError, KeyError, IndexError, OSError, struct.error)   # a file a check can't read: said, below
+    for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
+        name, where = by_name.get(unit), f"{mod_id}: {unit}"
+        try:
+            report = glb_report(glb)
+            if name is None or name not in run.game.objects or not report.get("rigged"):
+                continue    # (a model on a hull's bones plays no animations of its own)
+            like = str(report.get("like") or source).replace("/", "\\")
+            own_model = f"{like.rsplit(chr(92), 1)[0]}\\{unit}lod0.Ase2ndfbin"
+            if not report.get(OWN_SKELETON):
+                like_of[bonefit.model_key(own_model)] = like    # (the game's own clips fit it: only its own can't)
+                continue
+            record = bonefit.glb_record(glb)
+            if record is None:
+                continue    # (its writing says why)
+            names, parents = bonefit.skeleton_of(record)
+            problems = bonefit.model_problems(names, parents, bonefit.model_record(glb).get(bonefit.SPLIT))
+            for fig in bonefit.own_figures(bonefit.data_figures(run.game, name), [own_model]):
+                problems += bonefit.check_figure(names, fig, bones_of, own)
+                checked.add((unit, fig.path))
+        except broken as exc:
+            # not a game rule: a check that can't run is said, never dropped; it's only warnings, so the build goes on
+            result.findings.append(Finding("warning", f"{where}: its animations and bones couldn't be checked "
+                                                      f"({exc}), so the build goes on without that check."))
+            said += 1
+            continue
+        said += _say_fit(result, where, problems, clip_name)
+    for unit in sorted({spec["unit"] for spec in result.own_clips.values()}):
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            continue
+        mods = sorted({spec["mod"] for spec in result.own_clips.values() if spec["unit"] == unit})
+        where = f"{', '.join(mods)}: {anim.UNITS}: {unit}"
+        problems = []
+        try:
+            for fig in bonefit.data_figures(run.game, name):
+                mine = [x for x in fig.listings if own(x[1])]
+                if not mine or (unit, fig.path) in checked:
+                    continue
+                names = game.model_bones(like_of.get(bonefit.model_key(fig.model), fig.model))
+                if names is None:   # a model no skeleton pack holds: the bones of the game's clips the figure plays
+                    kinds = {tuple(b) for _a, f, _m in fig.listings if not own(f) and (b := bones_of(f)) is not None}
+                    names = list(next(iter(kinds))) if len(kinds) == 1 else None
+                if names is not None:
+                    problems += bonefit.check_figure(names, bonefit.Figure(fig.path, fig.model, mine), bones_of, own,
+                                                     masks=False)
+        except broken as exc:
+            result.findings.append(Finding("warning", f"{where}: its animations and bones couldn't be checked "
+                                                      f"({exc}), so the build goes on without that check."))
+            said += 1
+            continue
+        said += _say_fit(result, where, problems, clip_name)
+    return said
+
+
+def _say_fit(result: BuildResult, where: str, problems: list, clip_name) -> int:
+    """unit_fit_checks' problems (rusemod.bonefit's) as the build's warnings, in plain words: what doesn't fit, what the
+    game does with it, how to fix it."""
+    from .bonefit import SHOT
+    for p in problems:
+        k, fig = p["kind"], p.get("figure", "")
+        if k == "clip":   # (the animations that don't fit the same way, said together: a few by name)
+            names = ", ".join(clip_name(c) for c in p["clips"][:4]) + (f" (+{len(p['clips']) - 4})"
+                                                                         if len(p["clips"]) > 4 else "")
+            n, acts = len(p["clips"]), len(p["actions"])
+        if k == "clip" and p["how"] == "fewer":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have {p['clip_bones']} bones "
+                                                      f"where the model has {p['model_bones']}. The game can stop on an "
+                                                      f"animation with fewer bones than its model (it did in a test). "
+                                                      f"Give those actions animations made on this model's own bones "
+                                                      f"(in Blender, then Import model; the unit's page shows which "
+                                                      f"animation each action plays)."))
+        elif k == "clip" and p["how"] == "more":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have {p['clip_bones']} bones "
+                                                      f"where the model has {p['model_bones']}. An animation with more "
+                                                      f"bones than its model can stop the game (not tried in the game "
+                                                      f"yet). Give those actions animations made on this model's own "
+                                                      f"bones (in Blender, then Import model; the unit's page shows "
+                                                      f"which animation each action plays)."))
+        elif k == "clip" and p["how"] == "names":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and their bones have other names than the "
+                                                      f"model's (the first: {p['examples'][0][0]}, where the model has "
+                                                      f"{p['examples'][0][1]}). The game plays an animation bone by bone "
+                                                      f"in order, so the wrong bones will move. Give those actions "
+                                                      f"animations made on this model's own bones (in Blender, then "
+                                                      f"Import model)."))
+        elif k == "clip":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have the model's bones in another "
+                                                      f"order. The game plays an animation bone by bone in order, so "
+                                                      f"the wrong bones will move. Give those actions animations made on "
+                                                      f"this model's own bones (in Blender, then Import model)."))
+        elif k == "bone" and p["need"] == SHOT:
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} fires from a bone called "
+                                                      f"{p['bone']}, which the model hasn't got, so the unit will fire "
+                                                      f"with no shot to be seen (seen in a test). In Blender, add a bone "
+                                                      f"called {p['bone']} at the weapon's muzzle, under the bone the "
+                                                      f"weapon moves with, then bring the model back."))
+        elif k == "bone":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} hangs {p['count']} part(s) on a "
+                                                      f"bone called {p['bone']}, which the model hasn't got: the game "
+                                                      f"can stop on it (not tried in the game yet). In Blender, add a "
+                                                      f"bone called {p['bone']} where that part belongs, then bring the "
+                                                      f"model back."))
+        elif k == "mask_bones":
+            gone = ", ".join(p["names"][:6]) + (f" (+{len(p['names']) - 6})" if len(p["names"]) > 6 else "")
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {p['count']} animation(s) "
+                                                      f"on halves of the body that name bones the model hasn't got "
+                                                      f"({gone}): the game can stop on it (not tried in the game yet). "
+                                                      f"Choose where the model splits in two on the unit's page (Its two "
+                                                      f"halves), then build again."))
+        elif k == "mask_sum":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig}'s upper and lower halves together "
+                                                      f"move {len(p['bones'])} bone(s) more than once over ("
+                                                      f"{', '.join(p['bones'][:6])}), so the model will grow out of "
+                                                      f"shape, as the horses of a test did. Choose where the model "
+                                                      f"splits in two on the unit's page (Its two halves), then build "
+                                                      f"again."))
+        elif k == "too_many":
+            result.findings.append(Finding("warning", f"{where}: the model has {p['bones']} bones. The game isn't "
+                                                      f"seen to animate a model with more than {p['most']} (not tried in "
+                                                      f"the game yet): it may stand still. In Blender, join or delete "
+                                                      f"bones until it has {p['most']} or fewer, then bring the model "
+                                                      f"back."))
+        elif k == "split_gone":
+            result.findings.append(Finding("warning", f"{where}: the bone {p['split']} chosen to split the model in "
+                                                      f"two isn't in it any more, so it splits at {p['used']}. Choose "
+                                                      f"again on the unit's page (Its two halves)."))
+        elif k == "split_all_top":
+            result.findings.append(Finding("warning", f"{where}: the model splits at {p['split']}, its first bone, "
+                                                      f"so every bone is in its upper half and the lower half's "
+                                                      f"animations (walking, running) move nothing. Choose another bone "
+                                                      f"on the unit's page (Its two halves)."))
+    return len(problems)
+
+
 def _point_at_copies(run, name: str, copies: dict) -> int:
     """Point every model part of the unit `name` (under its GfxDescriptor* links: a squad's soldiers, its bazooka man,
     its token's figure) that names one of `copies`' models ({the game's model, rusemod.unitmodel.model_key: the copy's
@@ -2036,6 +2217,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_copies = unit_own_copies(run, order, result)
     result.own_clips = unit_own_clips(run, order, result, text_arc)
     result.look_symbols = building_looks(run, result)
+    unit_fit_checks(run, result, text_arc)  # (after every step that points a unit's models, clips and halves)
     if result.errors:
         return result
     notes: list = []
