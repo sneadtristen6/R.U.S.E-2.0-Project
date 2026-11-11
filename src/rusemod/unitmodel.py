@@ -82,7 +82,9 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     turret moved to where its turret is (moved_turret). `own_propellers` (the owner, 2026-11-09, after T65: "Yes, do it"): a
     plane's propellers stay where the model has them, as many as it has, each disc and its blades on bones of its own
     (modelin.fit_discs; a unit copying one with no propellers is fitted as before). A unit with no hull bone to fit a model on
-    (a soldier, a towed gun) takes a model rigged to its own bones instead (modelin._prepare_rigged). `others`: the unit's other
+    (a soldier, a gun's crew) takes a model rigged to its own bones instead (modelin._prepare_rigged); so does a unit whose
+    body picture is no CombinedDSCTexture (a towed gun, the FCM F1: body_material) when the model is rigged to its bones,
+    and a model with no bones is fitted to that unit as to a tank (2026-11-11). `others`: the unit's other
     models; a rigged model takes the place of those with the same bones too (the report's "also": a squad's riflemen and its bazooka
     man). `move` ([forward, right, up] in the game's model units, the owner's pick 2026-11-09, the brief's gap 1): the fitted model moved that far; with `own_turret` its turret's
     bones go with it, so it still turns where the model's turret is (a rigged model stays where its bones are: said in the report's notes). Returns the fitting's report (parts and
@@ -107,12 +109,20 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     try:
         rigged = None
         try:
-            src = find_source(zz, source_model)
-        except UnitModelError as refused:       # no hull bone to fit a model on (a soldier, a towed gun...): a model rigged to the unit's own bones needs none
-            rigged = read_model(model_file, skin=True)
-            used = {name for m in rigged.meshes for v in m.skin for name, _w in v}
-            if not used:
+            src, refused = find_source(zz, source_model), None
+        except UnitModelError as exc:       # no hull bone to fit a model on (a soldier, a gun's crew...): a model rigged to the unit's own bones needs none
+            src, refused = None, exc
+        # a unit whose body picture is no CombinedDSCTexture (a towed gun, the Puma, the FCM F1: body_material) took only
+        # a model rigged to its bones until 2026-11-11 (a modder's P75.glb on the FCM F1 was refused, 11-02): it still
+        # takes such a model on its own bones, as before, and a model with no bones is fitted to it as to a tank
+        if refused is not None or src.body_role != BODY_ROLE:
+            model = read_model(model_file, skin=True)
+            used = {name for m in model.meshes for v in m.skin for name, _w in v}
+            if used:
+                rigged = model
+            elif refused is not None:
                 raise UnitModelError(f"{refused}. A model for this unit has to be rigged to its bones: open the unit in Blender from the Studio, change it there, and bring it back.") from None
+        if rigged is not None:
             src = find_source(zz, source_model, rigged=True)
             wrong = sorted(used - set(src.skeleton.names))
             if wrong:
@@ -581,9 +591,32 @@ class Source:
     skeleton_packs: dict           # member path -> raw bytes, every skeleton pack that holds its skeleton entry
     skeleton: Skeleton | None
     like: dict = field(default_factory=dict)   # for modelin.prepare: length, pivot, ground
-    body_texture: str = ""         # its body material's picture (ZZ:\\GenTexGroup\\...\\X01.png)
+    body_texture: str = ""         # its body material's picture (ZZ:\\GenTexGroup\\...\\X01.png): body_material's
     look: dict = field(default_factory=dict, repr=False)  # the first mesh pack's materials and its propellers' bones,
     # as read here, for _with_model
+    body_role: str = ""            # what that picture is to its material: BODY_ROLE, CombinedDSTexture, diffuseTexture
+
+
+# the body picture of the Sherman and of every game model a new model could be fitted to before 2026-11-11 (137 of the
+# 262 models a new unit can be copied from): its colour the paint, its alpha the player's side colour where low and
+# shine where high (T23)
+BODY_ROLE = "CombinedDSCTexture"
+# which game models find_source fits to, as a number: an answer of it kept on disk (the era units' eras/likes.json) is
+# kept under it, so one given by an older rule isn't used again (2: a body picture other than BODY_ROLE fitted too,
+# 2026-11-11; 1 before)
+SOURCE_RULE = 2
+
+
+def body_material(numbers: list, mats: list) -> int | None:
+    """The material a unit model's body is drawn with, of its draws' materials `numbers` (in draw order; `mats`: the
+    pack's materials as rusemod.spk reads them): the first that names a BODY_ROLE picture, else its first draw's,
+    whatever its picture is to it; None for a model with no draws. A new model's draws copy this material and its
+    pictures are named after this one's (_with_model, write_unit_model). The game's own models with a hull and no
+    BODY_ROLE picture (48 of the 262 models a new unit can be copied from, 2026-11-11: towed guns, the Puma, the FCM F1,
+    the US half-track, the Bren carrier, three transport planes, some bunkers) draw their body so: in every one the
+    first draw holds the hull, its material names one picture (CombinedDSTexture or diffuseTexture, in the texture
+    group TSCCombDS or TSCOther), and that picture's texture and its stand-in are in the game."""
+    return next((m for m in numbers if BODY_ROLE in mats[m].get("textures", {})), numbers[0] if numbers else None)
 
 
 def pack_names(zz) -> list:
@@ -639,8 +672,10 @@ def packs_holding(zz, model: str, names: list | None = None) -> tuple[str, dict,
 
 def find_source(zz, model: str, names: list | None = None, rigged: bool = False) -> Source:
     """The copied unit's model `model` (its pack name, any case) across ZZ_Win.dat's packs, and what fitting to it
-    needs. UnitModelError when no pack holds it, or it has no bones. `names`: as packs_holding takes it. `rigged`: for a
-    model rigged to this skeleton (modelin._prepare_rigged), which needs no hull bone: any model the game draws with bones."""
+    needs: its hull (the points on its chassis bone) and its body picture (body_material's), which the new model's
+    pictures are named after. UnitModelError when no pack holds it, it has no bones, no chassis bone or no point on it,
+    or no picture on its body. `names`: as packs_holding takes it. `rigged`: for a model rigged to this skeleton
+    (modelin._prepare_rigged), which needs no hull bone: any model the game draws with bones."""
     model, meshes, skeletons = packs_holding(zz, model, names)
     first = MeshPack.read(next(iter(meshes.values())))
     skel = first.skeletons[first.items[model][2]] if first.items[model][2] != NONE else None
@@ -653,22 +688,24 @@ def find_source(zz, model: str, names: list | None = None, rigged: bool = False)
     if rigged:
         spk = Spk(next(iter(meshes.values())))
         mats = spk.materials()
-        body = next((t for p in spk.model(model) for t in list(mats[p.material].get("textures", {}).values())[:1]), None)
+        body, role = next(((t, r) for p in spk.model(model) for r, t in list(mats[p.material].get("textures", {}).items())[:1]),
+                          (None, ""))
         if body is None or not bones.names:
             raise UnitModelError(f"{model} draws nothing to fit a model to")
-        return Source(model, meshes, skeletons, bones, {"rigged": True, "root": bones.names[0]}, body, {"mats": mats, "disc_bones": set()})
+        return Source(model, meshes, skeletons, bones, {"rigged": True, "root": bones.names[0]}, body, {"mats": mats, "disc_bones": set()},
+                      body_role=role)
     if ROOT not in bones.names:
         raise UnitModelError(f"{model}'s skeleton has no {ROOT} bone")
     spk = Spk(next(iter(meshes.values())))
     mats = spk.materials()
+    parts = spk.model(model)
+    number = body_material([p.material for p in parts], mats)
+    pictures = mats[number].get("textures", {}) if number is not None else {}
+    body, role = next(iter(pictures.values()), None), next(iter(pictures), "")
     hull, hull_y, low = [], [], math.inf
-    body = None
     propellers = []
-    for part in spk.model(model):
+    for part in parts:
         remap = mats[part.material].get("skinning") or []
-        tex = next(iter(mats[part.material].get("textures", {}).values()), "")
-        if body is None and "CombinedDSCTexture" in mats[part.material].get("textures", {}):
-            body = tex
         if mats[part.material].get("type", "").startswith(PROPELLER_TYPE):
             propellers += _discs(part, remap, bones)
         for i in range(len(part.positions) // 3):
@@ -680,13 +717,16 @@ def find_source(zz, model: str, names: list | None = None, rigged: bool = False)
             if (remap[b[heavy]] if b[heavy] < len(remap) else b[heavy]) == bones.names.index(ROOT):
                 hull.append(p[0])
                 hull_y.append(p[1])
-    if not hull or body is None:
-        raise UnitModelError(f"{model} has no hull on its {ROOT} bone, or no body texture (CombinedDSCTexture)")
+    if not hull:
+        raise UnitModelError(f"{model} has no hull on its {ROOT} bone")
+    if body is None:
+        # not a game rule: the new model's pictures are named after its body picture (write_unit_model)
+        raise UnitModelError(f"{model}'s body has no picture to name the new model's pictures after")
     pivot = bones.pivots[bones.names.index(TURRET)] if TURRET in bones.names else ((max(hull) + min(hull)) / 2, 0.0, 0)
     like = {"length": max(hull) - min(hull), "width": max(hull_y) - min(hull_y), "pivot": (pivot[0], pivot[1]),
             "ground": low, "middle": (max(hull) + min(hull)) / 2, "propellers": propellers}
     return Source(model, meshes, skeletons, bones, like, body,
-                  {"mats": mats, "disc_bones": {d["bone"] for d in propellers}})
+                  {"mats": mats, "disc_bones": {d["bone"] for d in propellers}}, body_role=role)
 
 
 def _discs(part, remap: list, bones: Skeleton) -> list[dict]:
@@ -1031,7 +1071,7 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     else:
         mats, disc_bones = memo["mats"], memo["disc_bones"]
     own = [src.draws[k][1] for k in range(first, first + src.meshes[mesh][1])]
-    body_number = next((m for m in own if "CombinedDSCTexture" in mats[m].get("textures", {})), own[0])
+    body_number = body_material(own, mats)   # (find_source named the new pictures after this material's)
     disc_number = next((m for m in own if mats[m].get("type", "").startswith(PROPELLER_TYPE)), None)
 
     def material(number: int):

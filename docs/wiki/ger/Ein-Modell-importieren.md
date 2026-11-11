@@ -182,6 +182,10 @@ sitzt auf dem Turm.
 - Im Spiel ausprobiert mit den eigenen Modellen des Spiels (dem Sherman, zwei Flugzeugen, einem Schützentrupp, einer
   Geschützbedienung): noch nicht mit einem Modell von anderswo, einem anderen Panzer mit Turm, einem Turm, der sich ganz
   herumdreht, oder einem Flugzeug, das eine Einheit ohne Propeller kopiert.
+- Eine neue Einheit, kopiert von einem gezogenen Geschütz, dem FCM F1, dem Puma, einem Halbkettenfahrzeug, dem Bren
+  Carrier, einem Flugzeug für Fallschirmjäger, manchen Bunkern und ein paar anderen, bekommt auch ein Modell von
+  anderswo, nicht nur eines, das an ihren Knochen hängt, und es wird so gezeichnet wie diese Einheit. Noch nicht im
+  Spiel ausprobiert.
 
 Über die Befehlszeile: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Mit `--move` wird es so angepasst, wie das Studio es

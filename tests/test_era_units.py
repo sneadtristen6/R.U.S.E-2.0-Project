@@ -175,6 +175,21 @@ class EraUnits(WithMod):
         self.assertEqual(list(kept.values()), [None])
         self.assertTrue(next(iter(kept)).endswith("|" + M4))
 
+    def test_a_start_unit_kept_by_the_rule_before_is_worked_out_again(self):
+        """The importer fits to more of the game's models since 2026-11-11 (rusemod.unitmodel.SOURCE_RULE: the FCM F1,
+        the towed guns, the Puma, whose length was None before): what eras/likes.json kept for a start unit under the
+        rule before isn't used again, and goes when the answer is kept anew."""
+        from rusemod.build import find_pack
+        zz = find_pack(self.api._game(), "ZZ_Win.dat")
+        st = zz.stat()
+        saved = self.api.cache_dir / "eras" / "likes.json"
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        saved.write_text(json.dumps({f"{zz}|{st.st_size}|{st.st_mtime_ns}|{M4}": {"length": 999.0, "width": 9.0}}),
+                         encoding="utf-8")
+        self.assertIsNone(self.api._era_like(M4))       # this made-up game's M4 has no model: worked out, not the 999
+        kept = json.loads(saved.read_text(encoding="utf-8"))
+        self.assertEqual(list(kept.values()), [None])   # the answer kept under the rule before is gone
+
     def test_no_research_where_the_game_has_none(self):
         """This made-up game's units have no UpgradeRequire: nothing is offered to research them from, and adding one
         writes no research."""

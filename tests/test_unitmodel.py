@@ -2,6 +2,7 @@
 (hull, turret, barrel) with a .tga beside it, fitted to a made-up unit, saved as the mod's .glb and read back, then
 written into made-up packs beside the unit's model. T35 (2026-10-04) is the same on the game's Sherman and a real
 model; scratch tools ran it on the game's packs with every check exact."""
+import contextlib
 import math
 import struct
 import tempfile
@@ -74,10 +75,10 @@ def ref(index, cls):
     return val(0x09, struct.pack("<III", 0xBBBBBBBB, index, cls))
 
 
-def skinned_materials(skinning=(0, 1)) -> bytes:
-    """One TMeshMaterial as the game's body ones: its texture and a SkinningRemapping (local k -> bone skinning[k]:
-    0 -> 0, 1 -> 1 unless said)."""
-    strings = ["CombinedDSCTexture", "Standard_1", TEX]
+def skinned_materials(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX) -> bytes:
+    """One TMeshMaterial as the game's body ones: its texture (`tex`, as the material's `role` picture) and a
+    SkinningRemapping (local k -> bone skinning[k]: 0 -> 0, 1 -> 1 unless said)."""
+    strings = [role, "Standard_1", tex]
     tex = val(0x12, struct.pack("<I", 1) + val(0x07, struct.pack("<I", 0))
               + val(0x22, val(0x1C, struct.pack("<I", 2)) + val(0x03, bytes(4))))
     skin = val(0x11, struct.pack("<I", len(skinning)) + b"".join(val(0x02, struct.pack("<i", b)) for b in skinning))
@@ -137,11 +138,12 @@ def skeleton3(names, parents, pivots, scales=None) -> bytes:
     return body + "".join(names).encode()
 
 
-def unit_pack(skinning=(0, 1)) -> MeshPack:
+def unit_pack(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX) -> MeshPack:
     """The Panzer: one draw call of a skinned quad on the chassis, 200 long (x -120..80), lowest at z 2."""
     pts = [(-120.0, -40.0, 2.0), (80.0, -40.0, 2.0), (80.0, 40.0, 2.0), (-120.0, 40.0, 2.0)]
     verts = b"".join(struct.pack("<3f4B4B4B", *p, 128, 128, 255, 0, 255, 0, 0, 0, 0, 0, 0, 0) for p in pts)
-    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(skinning), material_count=1)
+    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(skinning, role, tex),
+                    material_count=1)
     pack.ibs.append(Buffer(struct.pack("<6H", 0, 1, 2, 0, 2, 3), 12, 6, 1, 0))
     pack.vbs.append(Buffer(verts, len(verts), 4, 0, 0))
     pack.draws.append((0, 0, 0, 0, 0xFFFF, 0xCDCD))
@@ -150,14 +152,14 @@ def unit_pack(skinning=(0, 1)) -> MeshPack:
     return pack
 
 
-def zz_win(skinning=(0, 1), bones=SKELETON) -> Edat:
+def zz_win(skinning=(0, 1), bones=SKELETON, role="CombinedDSCTexture", tex=TEX) -> Edat:
     skel = MeshPack(formats=[], materials=b"", material_count=0, has_formats=False)
-    skel.materials = MeshPack.read(unit_pack(skinning).to_bytes()).materials
+    skel.materials = MeshPack.read(unit_pack(skinning, role, tex).to_bytes()).materials
     skel.skeletons.append(bones)
     skel.items[TANK] = [bytes(28), 0xCDCD, 0]
     proxies = ProxyPack([Proxy(b"K" * 8, b"OLD-STANDIN", struct.pack("<HHI", 0, 0, 0xAAAAAAAA),
-                               proxy_name(TEX).encode().ljust(256, b"\0"))], [0])
-    files = {MESHES: unit_pack(skinning).to_bytes(), SKELETONS: skel.to_bytes(), PROXIES: proxies.to_bytes()}
+                               proxy_name(tex).encode().ljust(256, b"\0"))], [0])
+    files = {MESHES: unit_pack(skinning, role, tex).to_bytes(), SKELETONS: skel.to_bytes(), PROXIES: proxies.to_bytes()}
     tree: dict = {}
     for path, data in files.items():
         folder, _, name = path.rpartition("\\")
@@ -1063,6 +1065,99 @@ class Packs(unittest.TestCase):
         later = {**w.changed}
         with self.assertRaisesRegex(unitmodel.UnitModelError, "already have a model"):
             unitmodel.write_unit_model(_with(self.zz, later), TANK, "panzer_model", self.prep)
+
+
+class BodyPictureOfAnotherKind(unittest.TestCase):
+    """A unit whose body picture is no CombinedDSCTexture: a diffuseTexture (the FCM F1's TSCCombDS_diffuseTexture01,
+    the US half-track's TSCOther one) or a CombinedDSTexture (a towed gun's, the Puma's, the Bren carrier's): 48 of the
+    262 game models a new unit can be copied from (survey, 2026-11-11). A modder's P75.glb on a unit copied from the
+    FCM F1 was refused (11-02: "has no hull on its chassis bone, or no body texture (CombinedDSCTexture)"), and every
+    model with no bones still was on 2026-11-11. Its body is its first draw's material, as a new model's draws already
+    copied it (_with_model): the new pictures are named in that picture's folder and texture group (the game finds a
+    picture through its group: T35 run 2), with their stand-ins where its stand-in is. A model rigged to the unit's
+    bones still goes on them as it did; a model with no point on the chassis bone is still refused, on that alone."""
+
+    DIFFUSE = "ZZ:\\GenTexGroup\\WW2\\Res3D\\Units\\FR\\Char\\FR_FCMF1\\TSCCombDS_diffuseTexture01.png"
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "tank.3ds").write_bytes(tank_3ds())
+        (self.dir / "Paint_Texture.tga").write_bytes(PICTURE)
+        self.zz = zz_win(role="diffuseTexture", tex=self.DIFFUSE)
+
+    def test_its_body_picture_is_its_first_draw_s(self):
+        s = unitmodel.find_source(self.zz, TANK)     # refused before 2026-11-11
+        self.assertEqual((s.body_texture, s.body_role), (self.DIFFUSE, "diffuseTexture"))
+        self.assertEqual(s.like, {"length": 200.0, "width": 80.0, "pivot": (-70.0, 5.0), "ground": 2.0,
+                                  "middle": -20.0, "propellers": []})
+        self.assertEqual(unitmodel.find_source(zz_win(), TANK).body_role, unitmodel.BODY_ROLE)   # a Sherman's, as before
+
+    def test_written_with_its_pictures_in_the_body_picture_s_group(self):
+        prep = modelin.prepare(modelin.read_model(self.dir / "tank.3ds"), self.dir,
+                               unitmodel.find_source(self.zz, TANK).like)
+        w = unitmodel.write_unit_model(self.zz, TANK, "p75_model", prep)
+        spk = Spk(w.changed[MESHES])
+        new = "ww2\\res3d\\units\\ger\\tank\\p75_modellod0.ase2ndfbin"
+        first, count = spk.meshes[spk.items[new].mesh]
+        self.assertEqual(count, 2)
+        mats = spk.materials()
+        for k in range(count):   # each draw: the body material, its picture the new one, in the body's group
+            self.assertEqual(mats[spk.part(first + k).material]["textures"],
+                             {"diffuseTexture": "ZZ:\\GenTexGroup\\WW2\\Res3D\\Units\\FR\\Char\\FR_FCMF1\\"
+                                                "TSCCombDS_p75_model_01.png"})
+        member = "gen\\ww2\\res3d\\units\\fr\\char\\fr_fcmf1\\tsccombds_p75_model_01.tgv"
+        self.assertEqual(list(w.added), [member])
+        self.assertEqual(Tgv(w.added[member]).format, "DXT5")
+        proxies = ProxyPack.read(w.changed[PROXIES])     # the stand-in pack holding the body picture's
+        self.assertIn("gentexproxy\\ww2\\res3d\\units\\fr\\char\\fr_fcmf1\\tsccombds_p75_model_01.tgv", proxies.names())
+        self.assertEqual(proxies.proxies[proxies.names().index(proxy_name(self.DIFFUSE))].data, b"OLD-STANDIN")
+
+    def imported(self, zz, read=None) -> dict:
+        """Import model's step one (unitmodel.import_model) on the made-up packs `zz`, the .3ds tank as the file (or
+        what `read` gives for it)."""
+        patches = [mock.patch("rusemod.build.find_pack", return_value=Path("ZZ_Win.dat")),
+                   mock.patch("rusemod.edat.Edat.open", return_value=zz)]
+        if read is not None:
+            patches.append(mock.patch("rusemod.modelin.read_model", side_effect=read))
+        with contextlib.ExitStack() as stack:
+            for p in patches:
+                stack.enter_context(p)
+            return unitmodel.import_model(Path("game"), TANK, self.dir / "tank.3ds", self.dir / "out.glb")
+
+    def test_a_model_with_no_bones_is_fitted_to_it(self):
+        report = self.imported(self.zz)   # before 2026-11-11: "... has to be rigged to its bones"
+        self.assertFalse(report.get("rigged"))
+        self.assertEqual(report["like"], TANK)
+        self.assertEqual(report["stands"], [0.0, 0.0, 2.0, 200.0])
+        self.assertEqual(unitmodel.glb_report(self.dir / "out.glb")["like"], TANK)   # the build copies it from there
+
+    def test_a_model_rigged_to_its_bones_still_goes_on_them(self):
+        def rigged(_path, blades=False, skin=False):
+            pts = [(0.1, 0.2, 0.3), (0.4, 0.2, 0.3), (0.1, 0.5, 0.3)]
+            weights = [[("chassis", 255)], [("tourelle_01", 255)], [("chassis", 128), ("tourelle_01", 127)]]
+            return modelin.Model([modelin.Mesh("tank", pts, [(0, 1, 2)], [(0.25, 0.5), (0.75, 0.5), (0.25, 1.0)], [-1],
+                                               [(0.0, 0.0, 1.0)] * 3, skin=weights if skin else [], draw=0)], [], "tank.glb")
+        report = self.imported(self.zz, rigged)
+        self.assertTrue(report.get("rigged"))       # on its own bones, nothing moved or scaled, as before 2026-11-11
+        report = self.imported(zz_win(), rigged)    # a Sherman's: fitted as a model with no bones, as before
+        self.assertFalse(report.get("rigged"))
+
+    def test_no_point_on_the_chassis_bone_is_still_refused(self):
+        no_hull = zz_win(skinning=(1,), role="diffuseTexture", tex=self.DIFFUSE)   # its quad on the turret's bone
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "has no hull on its chassis bone$"):
+            unitmodel.find_source(no_hull, TANK)
+        with self.assertRaisesRegex(unitmodel.UnitModelError, "has no hull on its chassis bone. A model for this unit "
+                                                              "has to be rigged to its bones"):
+            self.imported(no_hull)
+
+    def test_the_body_material_of_a_model(self):
+        mats = [{"textures": {"CombinedDSTexture": "track.png"}}, {"textures": {unitmodel.BODY_ROLE: "body.png"}},
+                {"textures": {"diffuseTexture": "crew.png"}}]
+        self.assertEqual(unitmodel.body_material([0, 1, 2], mats), 1)    # the IS-3: its track drawn first
+        self.assertEqual(unitmodel.body_material([2, 0], mats), 2)       # none: the first draw's
+        self.assertIsNone(unitmodel.body_material([], mats))
 
 
 class KeptOwnModels(unittest.TestCase):

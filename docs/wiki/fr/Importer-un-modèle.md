@@ -180,6 +180,9 @@ cette unité, et il se pose sur la tourelle.
 - Essayé en jeu avec les propres modèles du jeu (le Sherman, deux avions, une escouade de fusiliers, les servants d'un
   canon) : pas encore avec un modèle venu d'ailleurs, un autre char à tourelle, une tourelle qui fait un tour complet,
   ou un avion qui copie une unité sans hélices.
+- Une nouvelle unité copiée d'un canon tracté, du FCM F1, du Puma, d'un half-track, du Bren Carrier, d'un avion de
+  parachutistes, de certains bunkers et de quelques autres prend aussi un modèle venu d'ailleurs, pas seulement un
+  modèle lié à ses os, et il est dessiné comme cette unité. Pas encore essayé en jeu.
 
 En ligne de commande : `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Avec `--move`, il est ajusté comme le Studio

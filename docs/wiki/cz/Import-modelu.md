@@ -172,6 +172,9 @@ na věži.
 - Vyzkoušeno ve hře s vlastními modely hry (Sherman, dvě letadla, střelecké družstvo, obsluha děla): zatím ne
   s modelem odjinud, jiným tankem s věží, věží, která se otočí dokola, ani s letadlem, které kopíruje jednotku bez
   vrtulí.
+- Nová jednotka zkopírovaná z taženého děla, FCM F1, Pumy, polopásového vozidla, Bren Carrieru, letadla pro výsadkáře,
+  některých bunkrů a několika dalších dostane také model odjinud, nejen model napojený na její kosti, a kreslí se tak
+  jako ta jednotka. Ve hře zatím nevyzkoušeno.
 
 Z příkazového řádku: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. S `--move` se napasuje tak, jak ho napasuje

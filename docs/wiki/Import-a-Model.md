@@ -171,6 +171,9 @@ units whose turrets the Studio misread): use **Import model…** again on that u
 - Tried in the game with the game's own models (the Sherman, two planes, a rifle squad, a gun's crew): not yet with a
   model from anywhere else, another turret tank, a turret that turns all the way round, or a plane copying a unit with
   no propellers.
+- A new unit copied from a towed gun, the FCM F1, the Puma, a half-track, the Bren carrier, a paratroop plane, some
+  bunkers and a few others takes a model from anywhere too, not only one rigged to its bones, and it's drawn the way
+  that unit is. Not tried in the game yet.
 
 From the command line: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. With `--move`, it's fitted the way the Studio fits
