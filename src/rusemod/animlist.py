@@ -136,6 +136,66 @@ def unit_clips(db, unit: str) -> list:
     return out
 
 
+def unit_figures(db, unit: str) -> list:
+    """Each figure of a unit that draws a model or plays clips: [{"figure": its address, "model": the model file as the
+    mesh packs name it (lower case, backslashes; None when it names none), "clips": [(the name the figure gives the
+    clip, the clip's path in the packs)]}], in address order. Walked from the unit's own graphics (its GfxDescriptor...
+    links) through everything under them but other units (the truck it rides in) and effects: a squad's rifleman, its
+    bazooka man, its far-zoom and fallen figures; a gun and each of its crewmen; a vehicle and the people on it."""
+    row = db.execute("SELECT id FROM object WHERE address = ? OR export = ? ORDER BY shadow LIMIT 1", (unit, unit)).fetchone()
+    if row is None:
+        return []
+    todo = [d for p, d in db.execute("SELECT path, dst FROM ref WHERE src = ? AND kind = 'object'", (row[0],))
+            if p.startswith("Gfx")]
+    seen, out = set(), []
+    while todo:
+        oid = todo.pop()
+        if oid in seen or len(seen) > 5000:
+            continue
+        seen.add(oid)
+        address = db.execute("SELECT address FROM object WHERE id = ?", (oid,)).fetchone()[0]
+        mesh = db.execute("""SELECT f.target FROM ref m JOIN ref f ON f.src = m.dst AND f.kind = 'file'
+                             WHERE m.src = ? AND m.path = 'MeshDescriptor'""", (oid,)).fetchone()
+        clips = []
+        for path, dst in db.execute("SELECT path, dst FROM ref WHERE src = ? AND path LIKE 'ResourceAnimation[%].v'",
+                                    (oid,)).fetchall():
+            key = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, path[:-2] + ".k")).fetchone()
+            f = db.execute("SELECT text FROM value WHERE object = ? AND path = 'FileName'", (dst,)).fetchone()
+            if f and f[0]:
+                clips.append((int(path.split("[", 1)[1].split("]", 1)[0]), key[0] if key else "", member_of(f[0])))
+        if mesh or clips:
+            out.append({"figure": address, "model": mesh[0].replace("/", B).lower() if mesh else None,
+                        "clips": [(k, m) for _i, k, m in sorted(clips)]})
+        for dst, cls in db.execute("""SELECT r.dst, o.class FROM ref r JOIN object o ON o.id = r.dst
+                                      WHERE r.src = ? AND r.kind = 'object' AND r.path NOT LIKE 'BinderEffets%'""", (oid,)):
+            if dst not in seen and not cls.startswith(("TUnite", "TInfanterie")):
+                todo.append(dst)
+    return sorted(out, key=lambda f: f["figure"] or "")
+
+
+def clip_reader(arc):
+    """A function giving a clip's bytes by its path in the packs (loose in ZZ_Win.dat, `arc`, or in one of its
+    genanim_15 packs), or None when no pack has it. The packs are opened the first time a clip isn't loose."""
+    from .edat import Edat
+    packs: list = []
+
+    def read(member: str):
+        member = member.lower().replace("/", B)
+        e = arc.entry(member)
+        if e is not None:
+            return bytes(arc.read(e))
+        if not packs:
+            for p in arc.entries:
+                if p.path.lower().startswith(ROOT + "pack" + B) and p.path.lower().endswith(".apk"):
+                    packs.append(Edat(bytes(arc.read(p))))
+        for pk in packs:
+            x = pk.entry(member)
+            if x is not None:
+                return bytes(pk.read(x))
+        return None
+    return read
+
+
 def catalogue(db, clips: dict) -> list:
     """Every clip: [{member, kind, name, seconds, frames, bones, packs, names, models, units}] for `clips` ({clip
     path: {"packs": [...], "seconds", "frames", "bones"}}), in the kinds' order then by path."""

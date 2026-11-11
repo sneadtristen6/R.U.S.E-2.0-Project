@@ -8165,7 +8165,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     self._keep_in_model_record(address, copy.read_text(encoding="utf-8"))
                     copy.unlink(missing_ok=True)
                 copy_out = True
-        return {"model": report, "copy_out": copy_out, **self.look(address)}
+        # the animations of a file Change it in Blender laid out, against what went out (ruse_studio.modelblender)
+        animations = self._animations_back(address, report) if report is not None else None
+        return {"model": report, "copy_out": copy_out, **self.look(address),
+                **({"animations": animations} if animations is not None else {})}
 
     def _keep_in_model_record(self, address: str, copy_text: str) -> None:
         """Keep the .copy.toml an import took the place of in the model's record (files/models/<unit>.json,
@@ -8209,16 +8212,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
         if not found:
             raise StudioError("The unit this one copies has no 3D model to fit a new one to.")
+        # a file whose bones Change it in Blender laid out for Blender (and its animations) in the game's frames first
+        # (ruse_studio.modelblender); any other file as it is
+        source = self._game_frames_file(address, Path(file))
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
         try:
-            found = rigged_first(self._game(), Path(file), found)
+            found = rigged_first(self._game(), source, found)
         except (OSError, ValueError):       # (the game's packs can't be read: the import below says so)
             pass
         for model in found:
             try:
-                report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
+                report = import_model(self._game(), model, source, target, size=size, aircraft=bool(aircraft),
                                       own_turret=bool(own_turret), own_propellers=bool(own_propellers), others=found,
                                       **({"facing": facing} if facing else {}), **({"move": move} if move else {}))
                 break

@@ -2754,6 +2754,24 @@ function resizeAllRow(kind, n, changed) {
     ...buttons, note);
 }
 
+// --- a unit's animations back from Blender (StudioApi.model_blender_back / model_import's "animations",
+// ruse_studio.modelblender: item 5 of the owner's list, "fully editable in the studio"): what came back, in plain words,
+// a line each: the ones changed (the squad's own now; with a model on bones of its own, in with the model), all the
+// same, ones made in Blender that no action plays yet, ones that didn't come back ---
+function blenderAnimationsSaid(w, a) {
+  if (!a) return [];
+  const names = (list) => list.join(", ");
+  const lines = [];
+  if (a.changed && a.changed.length) {
+    lines.push(fill(a.own_bones ? w.model_blender_anims_own : w.model_blender_anims_changed, { names: names(a.changed) }));
+  } else if (a.same) {
+    lines.push(w.model_blender_anims_same);
+  }
+  if (a.new && a.new.length) lines.push(fill(w.model_blender_anims_new, { names: names(a.new) }));
+  if (a.gone && a.gone.length) lines.push(fill(w.model_blender_anims_gone, { names: names(a.gone) }));
+  return lines;
+}
+
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
@@ -2826,6 +2844,7 @@ function modelBox(address, info, draw, changed) {
         own && !squad ? moved() : null);
       if (r.model) {  // (none: the file picker was closed)
         say(fill(w.model_done, { file: r.model.file || "" }) + (r.copy_out ? ` ${copyOut}` : ""), "ok");
+        for (const line of blenderAnimationsSaid(w, r.animations)) say(line, "ok");   // (a file from Blender)
         if (changed) changed();
       }
       draw(r);  // (its copy_out shows in the box below until the box is drawn again)
@@ -2859,7 +2878,7 @@ function modelBox(address, info, draw, changed) {
         say(w.model_blender_opening);
         try {
           const r = await api().model_blender(address, state.lang);
-          say(w.model_blender_opened, "ok");
+          say(r.animations ? fill(w.model_blender_opened_anims, { n: r.animations }) : w.model_blender_opened, "ok");
           where.textContent = fill(w.model_blender_where, { folder: r.work || "" });
         } catch (err) { problem(err); } finally { open.disabled = false; }
       });
@@ -2870,6 +2889,7 @@ function modelBox(address, info, draw, changed) {
           const r = await api().model_blender_back(address, Number(size.value) || 1);
           if (r.model) {
             say(w.model_blender_done, "ok");
+            for (const line of blenderAnimationsSaid(w, r.animations)) say(line, "ok");
             if (changed) changed();
           }
           draw(r);
@@ -2879,6 +2899,7 @@ function modelBox(address, info, draw, changed) {
     }
     box.append(el("h4", { textContent: w.model_blender_title }),
       el("p", { className: "small", textContent: info.blender ? w.model_blender_how : w.model_blender_needs }),
+      ...(info.blender ? [el("p", { className: "small muted", textContent: w.model_blender_anim_how })] : []),
       actions, where);
   }
   // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
