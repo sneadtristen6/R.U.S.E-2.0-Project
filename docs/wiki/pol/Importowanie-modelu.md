@@ -105,6 +105,22 @@ Dobrze wiedzieć:
 - Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
 - Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku.
 
+## Model z własnymi kośćmi i animacjami
+
+Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia do oddziału razem ze swoimi animacjami.
+
+1. **Zrób go w Blenderze**: twój model na armaturze z własnymi kośćmi (nazwanymi, jak chcesz) i akcja dla każdej animacji. Nazwij akcje tak, jak to, co pokazują: co najmniej **stand** (lub **idle**), **walk** i **run**; rozpoznawane są też **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** i **grenade**.
+2. **Wyeksportuj go**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, z zaznaczonym **Animation**.
+3. **Utwórz oddział** jak w kroku 2 powyżej. Na jego stronie, w części **Własny model**, kliknij **Importuj model…** i wybierz swój .glb. Studio widzi, że jego kości nie są kośćmi żołnierza, i bierze go z własnymi kośćmi i wszystkimi animacjami. Strona pokazuje, ile ma kości, każdą animację z jej długością i ile czynności oddziału ją gra.
+4. **Testuj w grze** go pokaże.
+
+Dobrze wiedzieć:
+- Każda czynność oddziału gra animację nazwaną dla niej. Czynność, dla której żadna animacja nie jest nazwana, nie ma jeszcze żadnej: strona mówi, ile ich jest.
+- Zmieniony w Blenderze? Zaimportuj go ponownie: każda czynność zachowa swoją animację, dopóki animacja o tej nazwie jest w pliku.
+- Twój mod przechowuje model i każdą animację: `files\models\<nazwa jednostki>.glb`, a każdą animację jako `files\anim\own\<nazwa jednostki>\<jej nazwa>.baf`.
+- **Użyj modelu kopiowanej jednostki** znowu usuwa model, razem z jego animacjami.
+- Przez Studio jeszcze nie wypróbowano w grze.
+
 ## 4. Jego karta, potem test
 
 Obracaj widok 3D, aż nowy model będzie dobrze wyglądał w przerywanej ramce, i kliknij **Użyj tego widoku jako karty**

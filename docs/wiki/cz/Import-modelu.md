@@ -100,6 +100,22 @@ Dobré vědět:
 - Máš už .glb udělaný na kostech vojáka ze hry? **Importovat model…** ho vezme tak, jak je.
 - Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř.
 
+## Model s vlastními kostmi a animacemi
+
+Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi.
+
+1. **Udělej ho v Blenderu**: tvůj model na armatuře s vlastními kostmi (pojmenovanými, jak chceš) a akci pro každou animaci. Pojmenuj akce podle toho, co ukazují: aspoň **stand** (nebo **idle**), **walk** a **run**; známé jsou i **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** a **grenade**.
+2. **Exportuj ho**: **File > Export > glTF 2.0**, formát **glTF Binary (.glb)**, se zaškrtnutým **Animation**.
+3. **Vytvoř družstvo** jako v kroku 2 výše. Na jeho stránce v části **Vlastní model** klikni na **Importovat model…** a vyber svůj .glb. Studio pozná, že jeho kosti nejsou vojákovy, a vezme ho s vlastními kostmi a všemi animacemi. Stránka ukáže, kolik má kostí, každou animaci s její délkou a kolik akcí družstva ji hraje.
+4. **Vyzkoušet ve hře** ho ukáže.
+
+Dobré vědět:
+- Každá akce družstva hraje animaci pojmenovanou pro ni. Akce, pro kterou žádná animace pojmenovaná není, zatím žádnou nemá: stránka řekne kolik.
+- Změnil jsi ho v Blenderu? Importuj ho znovu: každá akce si nechá svou animaci, dokud je animace toho jména v souboru.
+- Tvůj mod uchová model i každou animaci: `files\models\<název jednotky>.glb` a každou animaci jako `files\anim\own\<název jednotky>\<její název>.baf`.
+- **Použít model kopírované jednotky** model zase odebere, i s jeho animacemi.
+- Přes Studio zatím nevyzkoušeno ve hře.
+
 ## 4. Jeho karta, pak test
 
 Otáčejte 3D pohledem, dokud nový model v čárkovaném rámečku nevypadá správně, a klikněte na **Použít tento pohled jako

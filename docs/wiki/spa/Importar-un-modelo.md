@@ -105,6 +105,22 @@ Bueno saberlo:
 - ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
 - El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro.
 
+## Un modelo con huesos y animaciones propios
+
+Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones.
+
+1. **Hazlo en Blender**: tu modelo sobre una armadura con huesos propios (con los nombres que quieras) y una acción para cada animación. Nombra las acciones según lo que muestran: al menos **stand** (o **idle**), **walk** y **run**; también se reconocen **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** y **grenade**.
+2. **Expórtalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** marcado.
+3. **Crea el pelotón** como en el paso 2 de arriba. En su página, bajo **Su propio modelo**, pulsa **Importar modelo…** y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
+4. **Probar en el juego** lo muestra.
+
+Bueno saberlo:
+- Cada acción del pelotón hace la animación nombrada para ella. Una acción para la que no hay ninguna animación nombrada todavía no tiene ninguna: la página dice cuántas.
+- ¿Lo cambiaste en Blender? Impórtalo de nuevo: cada acción mantiene su animación mientras en el archivo siga habiendo una animación con ese nombre.
+- Tu mod guarda el modelo y cada animación: `files\models\<nombre de la unidad>.glb`, y cada animación como `files\anim\own\<nombre de la unidad>\<su nombre>.baf`.
+- **Usar el modelo de la unidad copiada** vuelve a quitar el modelo, con sus animaciones.
+- Todavía no probado en el juego a través del Studio.
+
 ## 4. Su tarjeta, y luego la prueba
 
 Gira la vista 3D hasta que el nuevo modelo se vea bien dentro del marco discontinuo y haz clic en **Usar esta vista
