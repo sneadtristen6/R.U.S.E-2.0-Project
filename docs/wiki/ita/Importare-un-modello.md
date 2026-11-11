@@ -103,6 +103,21 @@ Buono a sapersi:
 - Hai già un .glb fatto sulle ossa del soldato del gioco? **Importa modello…** lo prende così com'è.
 - Il modello che indossa la tua squadra è tenuto nella cartella della mod come `files\models\<nome dell'unità>.glb`, una volta dentro.
 
+## Le sue animazioni, cambiate in Blender
+
+**Cambialo in Blender** apre il soldato con ogni animazione che la squadra riproduce (in piedi, camminata, corsa, fuoco, morte…), ognuna chiamata come ciò che fa, seguita dal nome del gioco: `Corsa, mirando (fusilier_course_vise)`.
+
+1. **Scegline una.** In basso in Blender, l'Action Editor le elenca: scegli quella da cambiare. **Spazio** la riproduce.
+2. **Metti in posa le ossa.** Clicca un osso, premi **Ctrl+Tab** per la Pose Mode, **R** per ruotarlo (**G** lo sposta), poi **I** per tenere la posa a questo fotogramma. Fallo a ogni fotogramma che cambi: Blender passa da solo da una posa tenuta alla successiva.
+3. **Inviala.** Clicca **Invia al R.U.S.E. Studio**: partono tutte le animazioni, cambiate o no.
+4. **Riportala.** Clicca **Riporta il modello**. Lo Studio dice quali sono tornate cambiate: ora sono proprie di questa squadra, e RUSE Decoy le mostra sotto **Solo questa unità**. Ogni altra squadra, e ogni animazione che non hai toccato, resta quella del gioco.
+
+Buono a sapersi:
+- Il gioco riproduce le animazioni a 30 fotogrammi al secondo, e Blender le apre così. Un'animazione si apre lunga quanto la riproduce il gioco; allungala o accorciala in Blender e torna così.
+- Un'animazione fatta in Blender (una copia rinominata) torna anche lei, ma nessuna azione la riproduce ancora: lo Studio lo dice. Una rinominata conta come nuova, e quella che era si riproduce come prima.
+- Le ossa su cui non poggia nessun punto del soldato (il punto della bocca dell'arma, la mano della seconda arma) si possono animare, ma i pesi automatici di Blender le lasciano fuori.
+- Verificato con Blender 4.5 e i test dello Studio; non ancora provato in gioco.
+
 ## 4. La sua scheda, poi la prova
 
 Ruota la vista 3D finché il nuovo modello non sta bene nella cornice tratteggiata e clicca su **Usa questa vista come

@@ -109,6 +109,21 @@ Gut zu wissen:
 - Hast du schon eine .glb auf den Knochen des Spielsoldaten? **Modell importieren…** nimmt sie, wie sie ist.
 - Das Modell, das dein Trupp trägt, liegt im Ordner deines Mods als `files\models\<Name der Einheit>.glb`, sobald es drin ist.
 
+## Seine Animationen, in Blender geändert
+
+**In Blender ändern** öffnet den Soldaten mit jeder Animation, die der Trupp spielt (stehen, gehen, rennen, feuern, sterben…), jede nach dem benannt, was er darin tut, dahinter der Name des Spiels: `Rennen, zielend (fusilier_course_vise)`.
+
+1. **Wähle eine.** Unten in Blender listet der Action Editor sie auf: wähle die, die du ändern willst. **Leertaste** spielt sie ab.
+2. **Stelle die Knochen.** Klicke einen Knochen, drücke **Strg+Tab** für den Pose Mode, **R** zum Drehen (**G** verschiebt), dann **I**, um die Pose in diesem Bild festzuhalten. Mach das in jedem Bild, das du änderst: Blender geht von selbst von einer festgehaltenen Pose zur nächsten.
+3. **Sende sie.** Klicke **An das R.U.S.E. Studio senden**: jede Animation geht mit, geändert oder nicht.
+4. **Hol sie zurück.** Klicke **Modell zurückholen**. Das Studio sagt, welche geändert zurückkamen: die gehören jetzt diesem Trupp, und RUSE Decoy zeigt sie unter **Nur diese Einheit**. Jeder andere Trupp und jede Animation, die du nicht angefasst hast, bleibt die des Spiels.
+
+Gut zu wissen:
+- Das Spiel spielt Animationen mit 30 Bildern pro Sekunde, und Blender öffnet sie so. Eine Animation öffnet sich so lang, wie das Spiel sie spielt; machst du sie in Blender länger oder kürzer, kommt sie so zurück.
+- Eine in Blender gemachte Animation (eine Kopie, umbenannt) kommt auch zurück, aber noch spielt keine Aktion sie: das Studio sagt es. Eine umbenannte zählt als neu, und die, die sie vorher war, läuft wie vorher.
+- Knochen, auf denen kein Punkt des Soldaten liegt (der Mündungspunkt der Waffe, die Hand der zweiten Waffe), lassen sich animieren, aber Blenders automatische Gewichte lassen sie aus.
+- Geprüft mit Blender 4.5 und den eigenen Tests des Studios; im Spiel noch nicht ausprobiert.
+
 ## 4. Seine Karte, dann testen
 
 Dreh die 3D-Ansicht, bis das neue Modell im gestrichelten Rahmen richtig aussieht, und klicke auf **Diese Ansicht als

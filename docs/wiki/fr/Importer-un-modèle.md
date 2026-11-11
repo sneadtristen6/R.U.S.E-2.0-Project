@@ -106,6 +106,21 @@ Bon à savoir :
 - Vous avez déjà un .glb fait sur les os du soldat du jeu ? **Importer un modèle…** le prend tel quel.
 - Le modèle que porte votre escouade est gardé dans le dossier de votre mod sous `files\models\<nom de l'unité>.glb`, une fois en place.
 
+## Ses animations, changées dans Blender
+
+**Changer dans Blender** ouvre le soldat avec toutes les animations que joue l'escouade (debout, marche, course, tir, mort…), chacune nommée d'après ce qu'il y fait, suivie du nom du jeu : `Course, en visant (fusilier_course_vise)`.
+
+1. **Choisissez-en une.** En bas de Blender, l'Action Editor les liste : choisissez celle à changer. **Espace** la joue.
+2. **Posez les os.** Cliquez sur un os, appuyez sur **Ctrl+Tab** pour le Pose Mode, **R** pour le tourner (**G** le déplace), puis **I** pour garder la pose à cette image. Faites-le à chaque image que vous changez : Blender passe tout seul d'une pose gardée à la suivante.
+3. **Envoyez-la.** Cliquez sur **Envoyer au R.U.S.E. Studio** : toutes les animations partent, changées ou non.
+4. **Ramenez-la.** Cliquez sur **Ramener le modèle**. Le Studio dit lesquelles sont revenues changées : elles sont désormais propres à cette escouade, et RUSE Decoy les montre sous **Cette unité seulement**. Toutes les autres escouades, et chaque animation que vous n'avez pas touchée, restent celles du jeu.
+
+Bon à savoir :
+- Le jeu joue les animations à 30 images par seconde, et Blender les ouvre ainsi. Une animation s'ouvre avec la durée que lui donne le jeu ; allongez-la ou raccourcissez-la dans Blender et elle revient ainsi.
+- Une animation faite dans Blender (la copie d'une autre, renommée) revient aussi, mais aucune action ne la joue encore : le Studio le dit. Une animation renommée compte comme nouvelle, et celle qu'elle était se joue comme avant.
+- Les os sur lesquels aucun point du soldat ne repose (le point de la bouche du canon, la main de la seconde arme) peuvent être animés, mais les poids automatiques de Blender les laissent de côté.
+- Vérifié avec Blender 4.5 et les tests du Studio ; pas encore essayé en jeu.
+
 ## 4. Sa carte, puis le test
 
 Tournez la vue 3D jusqu'à ce que le nouveau modèle rende bien dans le cadre en pointillés et cliquez sur **Utiliser cette

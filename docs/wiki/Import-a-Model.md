@@ -100,6 +100,21 @@ Good to know:
 - Already have a .glb made on the game soldier's bones? **Import model…** takes it as it is.
 - The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in.
 
+## Its animations, changed in Blender
+
+**Change it in Blender** opens the soldier with every animation the squad plays (standing, walking, running, firing, dying…), each named after what he does in it, with the game's own name after it: `Run, aiming (fusilier_course_vise)`.
+
+1. **Pick one.** At the bottom of Blender, the Action Editor lists them: pick the one to change. **Space** plays it.
+2. **Pose the bones.** Click a bone, press **Ctrl+Tab** for Pose Mode, **R** to turn it (**G** moves it), then **I** to keep the pose at this frame. Do it at every frame you change: Blender goes from one kept pose to the next by itself.
+3. **Send it.** Click **Send to the R.U.S.E. Studio**: every animation goes, changed or not.
+4. **Bring it back.** Click **Bring back the model**. The Studio says which came back changed: those are this squad's own now, and RUSE Decoy shows them under **Only this unit**. Every other squad, and every animation you didn't touch, stays the game's.
+
+Good to know:
+- The game plays animations at 30 frames a second, and Blender opens them so. An animation opens as long as the game plays it; make it longer or shorter in Blender and it comes back so.
+- An animation made in Blender (a copy of one, renamed) comes back too, but no action plays it yet: the Studio says so. A renamed one counts as new, and the one it was plays as before.
+- Bones none of the soldier's points lean on (the gun's muzzle point, the second gun's hand) can be animated, but Blender's automatic weights leave them out.
+- Checked with Blender 4.5 and the Studio's own tests; not tried in the game yet.
+
 ## 4. Its card, then test
 
 Turn the 3D view until the new model looks right in the dashed frame and click **Use this view as the card** (see

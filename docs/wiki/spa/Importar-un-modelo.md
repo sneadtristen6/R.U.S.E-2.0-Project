@@ -105,6 +105,21 @@ Bueno saberlo:
 - ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
 - El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro.
 
+## Sus animaciones, cambiadas en Blender
+
+**Cambiarlo en Blender** abre el soldado con cada animación que reproduce el escuadrón (de pie, caminar, correr, disparo, muerte…), cada una con el nombre de lo que hace en ella y después el nombre del juego: `Correr, apuntando (fusilier_course_vise)`.
+
+1. **Elige una.** Abajo en Blender, el Action Editor las enumera: elige la que quieres cambiar. **Espacio** la reproduce.
+2. **Coloca los huesos.** Haz clic en un hueso, pulsa **Ctrl+Tab** para el Pose Mode, **R** para girarlo (**G** lo mueve) y luego **I** para guardar la pose en este fotograma. Hazlo en cada fotograma que cambies: Blender pasa solo de una pose guardada a la siguiente.
+3. **Envíala.** Pulsa **Enviar a R.U.S.E. Studio**: van todas las animaciones, cambiadas o no.
+4. **Tráela de vuelta.** Pulsa **Traer el modelo**. El Studio dice cuáles volvieron cambiadas: ahora son propias de este escuadrón, y RUSE Decoy las muestra en **Solo esta unidad**. Cada otro escuadrón, y cada animación que no tocaste, sigue siendo la del juego.
+
+Conviene saber:
+- El juego reproduce las animaciones a 30 fotogramas por segundo, y Blender las abre así. Una animación se abre con la duración que le da el juego; alárgala o acórtala en Blender y vuelve así.
+- Una animación hecha en Blender (una copia de otra, renombrada) también vuelve, pero aún no la reproduce ninguna acción: el Studio lo dice. Una renombrada cuenta como nueva, y la que era se reproduce como antes.
+- Los huesos en los que no se apoya ningún punto del soldado (el punto de la boca del arma, la mano de la segunda arma) se pueden animar, pero los pesos automáticos de Blender los dejan fuera.
+- Comprobado con Blender 4.5 y las pruebas del propio Studio; aún no probado en el juego.
+
 ## 4. Su tarjeta, y luego la prueba
 
 Gira la vista 3D hasta que el nuevo modelo se vea bien dentro del marco discontinuo y haz clic en **Usar esta vista

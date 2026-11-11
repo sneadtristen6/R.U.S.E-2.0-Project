@@ -105,6 +105,21 @@ Dobrze wiedzieć:
 - Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
 - Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku.
 
+## Jego animacje, zmienione w Blenderze
+
+**Zmień w Blenderze** otwiera żołnierza ze wszystkimi animacjami, które odtwarza oddział (stanie, marsz, bieg, strzał, śmierć…), każdą nazwaną od tego, co w niej robi, a za tym nazwa z gry: `Bieg, celując (fusilier_course_vise)`.
+
+1. **Wybierz jedną.** Na dole Blendera Action Editor je wymienia: wybierz tę do zmiany. **Spacja** ją odtwarza.
+2. **Ustaw kości.** Kliknij kość, naciśnij **Ctrl+Tab** dla Pose Mode, **R** aby ją obrócić (**G** przesuwa), potem **I** aby zachować pozę w tej klatce. Zrób to w każdej klatce, którą zmieniasz: Blender sam przechodzi od jednej zachowanej pozy do następnej.
+3. **Wyślij ją.** Kliknij **Wyślij do R.U.S.E. Studio**: idą wszystkie animacje, zmienione czy nie.
+4. **Przywróć ją.** Kliknij **Przenieś model**. Studio powie, które wróciły zmienione: są teraz własne tego oddziału, a RUSE Decoy pokazuje je pod **Tylko ta jednostka**. Każdy inny oddział i każda animacja, której nie ruszałeś, zostaje z gry.
+
+Warto wiedzieć:
+- Gra odtwarza animacje z prędkością 30 klatek na sekundę i Blender tak je otwiera. Animacja otwiera się tak długa, jak odtwarza ją gra; wydłuż ją lub skróć w Blenderze, a wróci taka.
+- Animacja zrobiona w Blenderze (kopia innej, przemianowana) też wraca, ale żadna akcja jeszcze jej nie odtwarza: Studio to mówi. Przemianowana liczy się jako nowa, a ta, którą była, gra jak wcześniej.
+- Kości, na których nie opiera się żaden punkt żołnierza (punkt wylotu lufy, dłoń drugiej broni), można animować, ale automatyczne wagi Blendera je pomijają.
+- Sprawdzone z Blenderem 4.5 i własnymi testami Studia; w grze jeszcze niewypróbowane.
+
 ## 4. Jego karta, potem test
 
 Obracaj widok 3D, aż nowy model będzie dobrze wyglądał w przerywanej ramce, i kliknij **Użyj tego widoku jako karty**

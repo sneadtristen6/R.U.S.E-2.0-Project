@@ -100,6 +100,21 @@ Dobré vědět:
 - Máš už .glb udělaný na kostech vojáka ze hry? **Importovat model…** ho vezme tak, jak je.
 - Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř.
 
+## Jeho animace, změněné v Blenderu
+
+**Změnit v Blenderu** otevře vojáka se všemi animacemi, které oddíl hraje (stání, chůze, běh, palba, smrt…), každou pojmenovanou podle toho, co v ní dělá, a za tím herní název: `Běh, míření (fusilier_course_vise)`.
+
+1. **Vyber jednu.** Dole v Blenderu je vypisuje Action Editor: vyber tu, kterou chceš změnit. **Mezerník** ji přehraje.
+2. **Napózuj kosti.** Klikni na kost, stiskni **Ctrl+Tab** pro Pose Mode, **R** ji otočí (**G** posune), pak **I** uloží pózu v tomto snímku. Udělej to v každém snímku, který měníš: Blender přejde z jedné uložené pózy do další sám.
+3. **Pošli ji.** Klikni na **Poslat do R.U.S.E. Studia**: odejdou všechny animace, změněné i nezměněné.
+4. **Vrať ji.** Klikni na **Přenést model**. Studio řekne, které se vrátily změněné: ty jsou teď vlastní tomuto oddílu a RUSE Decoy je ukáže pod **Jen tato jednotka**. Každý jiný oddíl a každá animace, na kterou jsi nesáhl, zůstávají herní.
+
+Dobré vědět:
+- Hra přehrává animace rychlostí 30 snímků za sekundu a Blender je tak otevře. Animace se otevře tak dlouhá, jak ji hra přehrává; prodloužíš-li ji nebo zkrátíš v Blenderu, vrátí se tak.
+- Animace vytvořená v Blenderu (kopie jiné, přejmenovaná) se vrátí také, ale zatím ji nehraje žádná akce: Studio to řekne. Přejmenovaná se počítá jako nová a ta, kterou byla předtím, hraje jako dřív.
+- Kosti, na kterých nestojí žádný bod vojáka (bod ústí zbraně, ruka druhé zbraně), lze animovat, ale automatické váhy Blenderu je vynechají.
+- Ověřeno s Blenderem 4.5 a vlastními testy Studia; ve hře zatím nevyzkoušeno.
+
 ## 4. Jeho karta, pak test
 
 Otáčejte 3D pohledem, dokud nový model v čárkovaném rámečku nevypadá správně, a klikněte na **Použít tento pohled jako
