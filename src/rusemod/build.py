@@ -178,9 +178,10 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         info.sounds = mod_sounds(path)
         try:
             info.volumes = mod_volumes(path)  # files/sound/volume.toml: how loud it plays each of the game's sounds
-            from .anim import AnimError, mod_clips
+            from .anim import AnimError, mod_clips, mod_unit_clips
             try:
                 info.clips = mod_clips(path)  # files/anim/clips.toml and files/replace/**/*.baf: its animations
+                info.unit_clips = mod_unit_clips(path)  # files/anim/units.toml, files/anim/own: one unit's own
             except AnimError as exc:
                 raise SoundError(str(exc)) from None
             info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
@@ -1011,6 +1012,10 @@ class BuildResult:
     own_cards: dict = field(default_factory=dict)   # new units' cards: card member to add -> (its source's, the PNG)
     own_models: dict = field(default_factory=dict)  # new units' models: unit -> (its source's model, the .glb, mod id)
     own_copies: dict = field(default_factory=dict)  # units' own model copies: unit -> ({model: copy}, paint, mod id)
+    own_clips: dict = field(default_factory=dict)   # units' own clips: new member of ZZ_Win.dat -> how it's made
+    # (unit_own_clips; rusemod.anim.own_clip_files makes them)
+    own_rides: dict = field(default_factory=dict)   # units riding as themselves on long moves: unit -> its ride
+    # (unit_own_clips plans it, unit_own_rides makes it)
     own_assets: dict = field(default_factory=dict)  # mods' map assets: name -> (sceneryasset.Asset, mod id)
     own_looks: dict = field(default_factory=dict)   # new buildings' looks: building -> (buildinglook.Look, mod id)
     look_symbols: dict = field(default_factory=dict)  # new buildings' looks: building -> (the symbol it copies, its own)
@@ -1062,10 +1067,11 @@ def needs_zz_win(mods: list) -> bool:
     rusemod.sound), adds map assets or building looks (their models go there: rusemod.sceneryasset), or new objects
     (a new unit needs a class in the Python unit list, which lives there), or moves a unit to another nation or model
     (the skirmish mesh packs there say whether its models are loaded for it: unit_models), or puts a unit in a group
-    of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines)."""
+    of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines), or gives a unit
+    animations of its own (files/anim/units.toml: its clips go there, rusemod.anim)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
-               or getattr(m, "volumes", None) or getattr(m, "clips", None)
+               or getattr(m, "volumes", None) or getattr(m, "clips", None) or getattr(m, "unit_clips", None)
                or getattr(m, "assets", None) or getattr(m, "looks", None) or getattr(m, "menu_groups", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
@@ -1520,21 +1526,50 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
+    from .unitmodel import glb_report, model_key
     wanted: dict = {}
     for m in order:
-        for unit, glb in (getattr(m, "models", None) or {}).items():
-            wanted[unit] = (glb, m.id)
+        for stem, glb in (getattr(m, "models", None) or {}).items():
+            wanted[stem] = (glb, m.id)
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    # a model file for one kind of a squad's soldiers (<unit>@<kind>.glb: its bazooka man) takes the place of the game
+    # model those soldiers drew; the unit's main file never takes that model too (an older Studio's main file named
+    # every soldier model of the squad: it still does when no kind has a file of its own, so its mod builds as before)
+    claimed: dict = {}
+    for stem, (glb, _mod) in wanted.items():
+        unit, _, kind = stem.partition("@")
+        like = glb_report(glb).get("like") if kind else None
+        if like:
+            claimed.setdefault(unit, set()).add(model_key(like))
     out: dict = {}
-    for unit, (glb, mod_id) in sorted(wanted.items()):
-        from .unitmodel import glb_report
+    for stem, (glb, mod_id) in sorted(wanted.items()):
+        unit, _, kind = stem.partition("@")
+        where = f"{mod_id}: files/models/{stem}.glb"
         report = glb_report(glb)
-        source = _own_model_part(run, by_name, unit, f"{mod_id}: files/models/{unit}.glb", result, report.get("like") if report.get("rigged") else None, report.get("also"))
+        rigged_on = report.get("like") if report.get("rigged") else None
+        also = list(report.get("also") or [])
+        if kind and not rigged_on:
+            # not a game rule: a kind's own file is a soldier's model, on bones (what the Studio's import writes)
+            result.findings.append(Finding("error", f"{where}: a model for {unit}'s {kind} must be fitted to his bones "
+                                                    f"(import it again in the Studio)"))
+            continue
+        if kind:
+            also = []
+        elif rigged_on:
+            taken = claimed.get(unit, set())
+            mine = [m for m in [rigged_on, *also] if model_key(m) not in taken]
+            if not mine:
+                result.findings.append(Finding("warning", f"{where}: every soldier of {unit} has a model of his own "
+                                                          f"file, so this one draws none of them"))
+                continue
+            rigged_on, also = mine[0], mine[1:]
+        source = _own_model_part(run, by_name, unit, where, result, rigged_on, also, own_stem=_own_stem(stem))
         if source is None:
             continue
-        _own_propeller_list(run, by_name[unit], unit, glb, f"{mod_id}: files/models/{unit}.glb", result)
-        out[unit] = (source, glb, mod_id)
-        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{unit}.glb), "
+        if not kind:
+            _own_propeller_list(run, by_name[unit], unit, glb, where, result)
+        out[stem] = (source, glb, mod_id)
+        result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{stem}.glb), "
                                                f"beside {source}"))
     return out
 
@@ -1596,11 +1631,12 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     out: dict = {}
     for unit, (of, paint, mod_id) in sorted(wanted.items()):
         where = f"{mod_id}: files/models/{unit}.copy.toml"
-        if unit in result.own_models:
-            # Each of its model parts names one file. The Studio's Import model takes the copy out since 2026-11-10, so
-            # only a mod made by an older Studio or by hand gets here; the words name the Studio's buttons that fix it
-            # (words.toml uniform_default_again, model_copy_remove, model_remove).
-            # not a game rule: one model per unit (an imported one, or a copy of the one it copies)
+        if any(_unit_of(s) == unit for s in result.own_models):   # (its main model, or one kind's: _unit_of)
+            # One model per unit (an imported one, or a copy of the one it copies): each of its model parts names one
+            # file. The Studio's Import model takes the copy out since 2026-11-10, so only a mod made by an older Studio
+            # or by hand gets here; the words name the Studio's buttons that fix it (words.toml uniform_default_again,
+            # model_copy_remove, model_remove).
+            # not a game rule: one model per unit, our build's own way of writing a unit's model parts
             result.findings.append(Finding("error", f"{where}: {unit} has two models: one you imported "
                                                     f"(files/models/{unit}.glb) and its own copy of the game's model "
                                                     f"(this file, a squad's Custom uniform). Each of its figures is "
@@ -1638,10 +1674,563 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     return out
 
 
+def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
+    """Units' own animations (a mod's files/anim/units.toml and files/anim/own/<the unit's name>/; rusemod.anim): each
+    clip a unit has of its own gets a name of its own in ZZ_Win.dat (`zz`, which those names mustn't be in already),
+    and only that unit's listings name it (anim.own_listings: a part another unit shares is copied into the unit
+    first, so they keep the game's). A new unit's or one of the game's. A later mod's row for the same clip or action
+    of a unit wins. Returns {the clip's path in ZZ_Win.dat: {"unit", "mod", "clip": the game's clip it's made from or
+    None, "edit": its changes, "file": the unit's own file or None}} for build_and_write, which makes them
+    (anim.own_clip_files); a clip no listing names in the end is left out.
+
+    A unit with a model of its own and its model's animations ([unit.<name>.animation]): every listing of the figures
+    that draw its own model plays one of them, the one rusemod.animactions' rule picks (the modder's pick, else the
+    nearest); a row of the action tables still wins. Its ride on long moves (unless it rides in its truck) is planned
+    in result.own_rides for unit_own_rides."""
+    from . import anim
+    wanted: dict = {}   # unit -> {"clips": {clip: (edit, mod id)}, "actions": {(action, figure): (file, mod id)},
+    #                              "animations": {name: (file, mod id)}, "plays": {action: (name, mod id)}, "ride"}
+    for m in order:
+        for unit, u in (getattr(m, "unit_clips", None) or {}).items():
+            w = wanted.setdefault(unit, {"clips": {}, "actions": {}, "animations": {}, "plays": {}, "ride": None})
+            for member, edit in u["clips"].items():
+                w["clips"][member] = (edit, m.id)
+            for key, file in u["actions"].items():
+                w["actions"][key] = (file, m.id)
+            if u.get("animations"):   # (a later mod's model brings its own animations: they take the place, whole)
+                w["animations"] = {n: (f, m.id) for n, f in u["animations"].items()}
+            for action, n in (u.get("plays") or {}).items():
+                w["plays"][action] = (n, m.id)
+            if u.get("ride"):
+                w["ride"] = (u["ride"], m.id)
+    if not wanted:
+        return {}
+    if zz is None:
+        result.findings.append(Finding("error", "these mods give units animations of their own, which go into "
+                                                "ZZ_Win.dat; it wasn't given"))
+        return {}
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    out: dict = {}
+    taken: set = set()
+
+    def fresh(stem: str) -> str:
+        """`stem`, or with _2, _3... when another clip has it already (or the game has a file of that name)."""
+        base, k = stem[:-len("lod0")], 1
+        while stem in taken or zz.entry(anim.own_member(stem)) is not None:
+            k += 1
+            stem = f"{base}_{k}lod0"
+        taken.add(stem)
+        return stem
+
+    for unit in sorted(wanted):
+        w = wanted[unit]
+        mods = sorted({mid for _e, mid in w["clips"].values()} | {mid for _f, mid in w["actions"].values()}
+                      | {mid for _f, mid in w["animations"].values()} | {mid for _n, mid in w["plays"].values()}
+                      | ({w["ride"][1]} if w["ride"] else set()))
+        where = f"{', '.join(mods)}: {anim.UNITS}"
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            # not a game rule: animations for a unit nothing makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
+                                                    f"has none of that name"))
+            continue
+        planned, by_clip, by_action, files = {}, {}, {}, {}
+        for member in sorted(w["clips"]):
+            edit, mod_id = w["clips"][member]
+            stem = fresh(anim.own_stem(unit, member))
+            by_clip[member] = anim.own_data_name(stem)
+            planned[anim.own_member(stem)] = {"unit": unit, "mod": mod_id, "clip": member, "edit": edit, "file": None}
+        for key in sorted(w["actions"], key=lambda k: (k[0], k[1] or "")):
+            file, mod_id = w["actions"][key]
+            if file not in files:   # (a file several actions play: one clip)
+                files[file] = fresh(anim.own_stem(unit, Path(file).name))
+                planned[anim.own_member(files[file])] = {"unit": unit, "mod": mod_id, "clip": None, "edit": None,
+                                                         "file": file}
+            by_action[key] = anim.own_data_name(files[file])
+        ride_stem = None
+        if w["animations"]:   # its model's own animations, on the figures that draw its model (and its ride)
+            def plan(file, mod_id):
+                if file not in files:
+                    files[file] = fresh(anim.own_stem(unit, Path(file).name))
+                    planned[anim.own_member(files[file])] = {"unit": unit, "mod": mod_id, "clip": None, "edit": None,
+                                                             "file": file}
+                return files[file]
+            ride_stem = _own_animations(run, unit, name, w, result, where, plan, by_action)
+        got = anim.own_listings(run.game, name, by_clip, by_action)
+        for member in sorted(by_clip):
+            if member not in got["plays"]:
+                result.findings.append(Finding("warning", f"{where}: {unit} plays no {anim.clip_key(member)}, so "
+                                                          f"nothing plays the copy of it it was given"))
+        figures = {fig for fig, _a in got["actions"]}
+        listed = {a for _f, a in got["actions"]}
+        for action, fig in sorted(by_action, key=lambda k: (k[0], k[1] or "")):
+            found = (fig, action) in got["actions"] if fig else action in listed
+            if not found:
+                on = "" if not fig else f" on its figure {fig}" if fig in figures else f" (it has no figure {fig})"
+                result.findings.append(Finding("warning", f"{where}: {unit} lists no action {action}{on}, so "
+                                                          f"nothing plays the clip it was given for it"))
+        names = []
+        for member, spec in sorted(planned.items()):
+            stem = member.rsplit("\\", 1)[-1][:-len(".baf")]
+            n = got["pointed"].get(anim.own_data_name(stem), 0) + (stem == ride_stem)   # (its ride plays one too)
+            if n:
+                out[member] = spec
+                names.append(f"{stem} ({n})")
+            elif spec["clip"] and spec["clip"] in got["plays"]:
+                result.findings.append(Finding("note", f"{where}: {unit}'s own {anim.clip_key(spec['clip'])} isn't "
+                                                       f"needed: every action playing it has a clip of its own"))
+        if names:
+            result.findings.append(Finding("note", f"{where}: {unit} plays {len(names)} clip(s) of its own, every "
+                                                   f"other unit as before (listings naming each): {', '.join(names)}"))
+    return out
+
+
+def _draws_own_model(model: str | None, unit: str, stems=None) -> bool:
+    """Whether a figure's model is the unit's own: the name _own_model_part (and unitmodel.model_name) give it,
+    <the copied model's folder>\\<unit>lod0.Ase2ndfbin; `stems`: every own model of the unit (_own_stems: its
+    soldiers' and its bazooka man's), else its one."""
+    if not model:
+        return False
+    name = model.replace("/", "\\").lower()
+    return any(name.endswith(f"\\{s.lower()}lod0.ase2ndfbin") for s in (stems or [unit]))
+
+
+def _unit_of(stem: str) -> str:
+    """The unit a mod's model file is for: files/models/<unit>.glb, or <unit>@<kind>.glb for one kind of its
+    soldiers (the owner, 2026-11-11: "when you copy a fucking unit, it should copy the unit": Import model gives the
+    riflemen a model, the bazooka man keeps what the copied unit gave him until he gets <unit>@bazooka.glb)."""
+    return stem.partition("@")[0]
+
+
+def _own_stem(stem: str) -> str:
+    """The name a model file's own model is written under, beside the copied model: <unit>lod0, or <unit>__<kind>lod0
+    for one kind of its soldiers."""
+    unit, _, kind = stem.partition("@")
+    return f"{unit}__{kind}" if kind else unit
+
+
+def _on_main_bones(result, unit: str) -> list:
+    """The unit's own models that play its model's own animations, by the stem each is written under (_own_stem): its
+    main one (files/models/<unit>.glb), and each kind's (<unit>@<kind>.glb, its bazooka man's) on the same bones as
+    it, names and parents. A kind's model on other bones (the game soldier's, or another skeleton) is left to play
+    what its figure played: an animation made on other bones can stop the game (2026-11-09)."""
+    from .bonefit import skeleton_key
+    main = result.own_models.get(unit)
+    if main is None:
+        return []
+    key = skeleton_key(main[1])
+    out = [unit]
+    for stem, (_source, glb, _mod) in sorted(result.own_models.items()):
+        if stem != unit and _unit_of(stem) == unit and key is not None and skeleton_key(glb) == key:
+            out.append(stem)
+    return [_own_stem(s) for s in out]
+
+
+def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, where: str, plan, by_action: dict):
+    """unit_own_clips' part for a unit with its model's own animations (`w`: its "animations", "plays", "ride" and
+    the action rows that win): each listing of the figures that draw the unit's own model, by_action[(action,
+    figure)] = the FileName of the animation rusemod.animactions.choose gives it (`plan(file, mod id)` gives a file
+    its clip's stem). A unit with no model of its own in the build, or none of whose figures draws it, plays none of
+    them, said (a clip of the model's bones on a figure drawing another model is what stopped the game on
+    2026-11-09). Its ride on long moves goes in result.own_rides (unit_own_rides makes it). Returns the stem of the
+    clip its ride plays, or None."""
+    from . import anim, animactions
+    from .patch import Inline, Num, Ref, Text
+    anims = {n: f for n, (f, _m) in w["animations"].items()}
+    names = list(anims)
+    picks = {}
+    for action, (n, mod_id) in sorted(w["plays"].items()):
+        if n in anims:
+            picks[action] = n
+        else:
+            result.findings.append(Finding("warning", f"{mod_id}: {anim.UNITS}: {unit}'s {action} plays {n}, which "
+                                                      f"isn't one of its model's animations now, so it plays the "
+                                                      f"nearest"))
+    if unit not in result.own_models:
+        result.findings.append(Finding("warning", f"{where}: {unit} has animations of its own but no model of its own "
+                                                  f"(files/models/{unit}.glb), so none of them plays: its figures play "
+                                                  f"what the unit it copies plays"))
+        return None
+    # (its figures drawing its own model: its riflemen, and its bazooka man when his own is on the same bones; on other
+    # bones he plays what he played, unit_own_halves says so)
+    stems = _on_main_bones(result, unit)
+    drawn = [f for f in anim.unit_figures(run.game, name) if _draws_own_model(f["model"], unit, stems)]
+    if not drawn:
+        result.findings.append(Finding("warning", f"{where}: none of {unit}'s figures draws its own model, so its own "
+                                                  f"animations play nowhere"))
+        return None
+    mod_of = {n: m for n, (_f, m) in w["animations"].items()}
+    plays: dict = {}
+    for fig in drawn:
+        for key, clip in fig["listings"]:
+            if (key, fig["path"]) in w["actions"] or (key, None) in w["actions"]:
+                continue   # (a row RUSE Decoy or a tool wrote for the action wins)
+            pick, _how = animactions.choose(key, names, picks, clip)
+            by_action[(key, fig["path"])] = anim.own_data_name(plan(anims[pick], mod_of[pick]))
+            plays[pick] = plays.get(pick, 0) + 1
+    if plays:
+        result.findings.append(Finding("note", f"{where}: {unit}'s figures that draw its own model play its model's "
+                                               f"animations ({sum(plays.values())} listings of {len(drawn)} figures): "
+                                               f"{', '.join(f'{n} {k}' for n, k in plays.items())}"))
+    if w["ride"] and w["ride"][0] == "truck":
+        return None
+    truck = run.game.objects[name].props.get("TransportPourMorphe")
+    if not isinstance(truck, Ref) or truck.target not in run.game.objects:
+        result.findings.append(Finding("note", f"{where}: {unit} rides in no truck on long moves, so it gets no ride "
+                                               f"of its own"))
+        return None
+    first = next((f for f in drawn if f["path"] == "GfxDescriptorFusilier"), drawn[0])   # (a squad's rifleman)
+    mesh = first["object"].props.get("MeshDescriptor")
+    mesh = mesh.obj if isinstance(mesh, Inline) else run.game.objects.get(mesh.target) if isinstance(mesh, Ref) \
+        and mesh.target else None
+    model = mesh.props.get("FileName") if mesh is not None else None
+    mask = mesh.props.get("UsefulnessMask") if mesh is not None else None
+    pack = first["object"].props.get("MultiRenderTypeMaterialPack")
+    # how the riders grow as the camera goes out (their ScaleWithVisibilityRange_Coef and _Ref, a model look's own
+    # pair: the game's US riflemen 20 against Zoom3_Infanterie, its trucks 12 against Zoom3): the ride takes its
+    # riders', so the one model it rides as is drawn as big as each of them (the owner's FL-104, 2026-11-11: "The
+    # horse that it switches to while it's moving needs to be a bit bigger")
+    coef = first["object"].props.get("ScaleWithVisibilityRange_Coef")
+    ref = first["object"].props.get("ScaleWithVisibilityRange_Ref")
+    pick, _how = animactions.ride(names, picks)
+    stem = plan(anims[pick], mod_of[pick])
+    result.own_rides[unit] = {
+        "unit": name, "truck": truck.target, "clip": anim.own_data_name(stem), "animation": pick,
+        "model": model.value if isinstance(model, Text) else None,
+        "mask": int(mask.value) if isinstance(mask, Num) else None,
+        "pack": pack.target if isinstance(pack, Ref) and pack.target else None, "where": where,
+        "mod": mod_of[pick],
+        "coef": float(coef.value) if isinstance(coef, Num) else None,
+        "ref": ref.target if isinstance(ref, Ref) and ref.target else None}
+    return stem
+
+
+def unit_own_rides(engine, run, result: BuildResult):
+    """Each unit riding as itself on long moves (result.own_rides, planned by unit_own_clips): a copy of the truck it
+    rides in, drawn as the unit's own model playing one of its animations on a loop, and the unit riding in that copy
+    (the owner's 2026-11-09 words, "Just make it look like the horse is running for that truck animation"; the way his
+    sixth and tenth Horse Squad copies did it by hand, played in the game: its own ride unit, the truck's look part with
+    no wheels, chassis or dust (bones the model hasn't got), one listing 'idle1' looping, the default clip, its own
+    size, the squad's own shader pack). The truck's values (its speed on the roads), its wreck and its far-zoom pile
+    stay the truck's; the truck itself and every other unit's ride stay as they are. Made by the patch engine as a
+    mod's lines are (`engine`, the build's: a clone gets its own id and name), after the mods. Returns `run` with the
+    new objects among its created ones."""
+    from . import anim
+    from .patch import PatchError
+    from .rndf import RndfError, parse
+    objects = run.game.objects
+
+    def free(stem: str) -> str:
+        n, got = 2, f"$/GFX/Everything/{stem}"
+        while got in objects:
+            got, n = f"$/GFX/Everything/{stem}_{n}", n + 1
+        return got
+
+    for unit, r in sorted(result.own_rides.items()):
+        if not r["model"] or r["mask"] is None:
+            # not a game rule: what our build reads off the unit's figure to draw its ride
+            result.findings.append(Finding("error", f"{r['where']}: {unit}'s figure names no model to draw its ride "
+                                                    f"with"))
+            continue
+        ride, clip_obj = free(f"{unit}_Ride"), free(f"Anim_{unit}_Ride")
+        look = (f"SousElements = MAP[]  ResourceAnimation = MAP[ ( 'idle1', {clip_obj} ) ]  DefaultAnimation = 'idle1'"
+                f"  InnerScale = 1.0" + (f"  MultiRenderTypeMaterialPack = {r['pack']}" if r["pack"] else "")
+                + (f"  ScaleWithVisibilityRange_Coef = {r['coef']!r}" if r.get("coef") is not None else "")
+                + (f"  ScaleWithVisibilityRange_Ref = {r['ref']}" if r.get("ref") else ""))
+        text = "\n".join([
+            f"export {ride.rsplit('/', 1)[-1]} is clone {r['truck']} ( )",
+            f"patch own {ride}:GfxDescriptor.MeshDescriptor ( FileName = path('{r['model']}')  "
+            f"UsefulnessMask = {r['mask']} )",
+            f"export {clip_obj.rsplit('/', 1)[-1]} is TGfxDescriptorAnimation ( FileName = path('{r['clip']}')  "
+            f"UsefulnessMask = {RIDE_CLIP_MASK}  PlayInLoop = true )",
+            f"patch own {ride}:GfxDescriptor ( {look} )",
+            f"patch {r['unit']} ( TransportPourMorphe = {ride} )"])
+        before = len(engine.findings)
+        try:
+            ops = parse(text, file=f"{anim.UNITS} ({unit}'s ride)", mod=r["mod"])
+        except RndfError as exc:
+            result.findings.append(Finding("error", f"{r['where']}: {unit}'s ride can't be made: {exc}"))
+            continue
+        for op in ops:
+            try:
+                engine.apply(op)
+            except PatchError as exc:
+                engine.findings.append(Finding("error", str(exc), op))
+        result.findings += engine.findings[before:]
+        if ride in engine.game.objects:
+            result.findings.append(Finding("note", f"{r['where']}: {unit} rides as itself on long moves, playing "
+                                                   f"{r['animation']} on a loop ({ride.rsplit('/', 1)[-1]}, a copy of "
+                                                   f"{r['truck'].rsplit('/', 1)[-1]})"))
+    for name, op in engine.created.items():
+        run.created.setdefault(name, op)
+    return run
+
+
+RIDE_CLIP_MASK = 81920   # the UsefulnessMask every clip listing of the game carries (2026-11-09: all 593 of them)
+def unit_own_halves(run, result: BuildResult) -> None:
+    """New units whose own model is on bones of its own (its file's report says so: rusemod.unitmodel's own_bones):
+    every figure that wears the model plays its clips through two masks of its own, the model's top and bottom halves,
+    which the build adds to the unit data (rusemod.animmodel: copies of the game's top and bottom masks naming the
+    model's own bones, split at the bone its record names, files/models/<the unit's name>.json "split", while the
+    model has it, else at rusemod.bonefit's suggestion). The game's own masks name the game soldier's bones, and a mask naming a bone the model lacks
+    would stop the game with its error box. A model on the game's own bones, and every other unit, are left as they
+    were. Said: each such unit's halves; a listing of one of its figures that doesn't wear the model playing one of the
+    unit's own clips (made on the model's bones)."""
+    from . import anim, animmodel, bonefit
+    from .modelin import OWN_SKELETON
+    from .unitmodel import glb_report
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
+        if "@" in unit or not glb_report(glb).get(OWN_SKELETON) or unit not in by_name:
+            continue    # (a kind's own model, <unit>@<kind>: through its unit's main model, below)
+        where = f"{mod_id}: files/models/{unit}.glb"
+        name = by_name[unit]
+        try:
+            record = animmodel.record_of(glb)
+        except animmodel.AnimModelError as exc:
+            result.findings.append(Finding("error", f"{where}: {exc}"))
+            continue
+        # the unit's other own models (its bazooka man's) play through the same halves when they're on the same bones
+        same = _on_main_bones(result, unit)
+        wearing = []
+        for stem, (k_source, k_glb, k_mod) in sorted(result.own_models.items()):
+            if _unit_of(stem) != unit:
+                continue
+            if _own_stem(stem) in same:
+                wearing.append(f"{k_source.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0"
+                               f".Ase2ndfbin")
+            elif glb_report(k_glb).get(OWN_SKELETON):
+                # not a game rule: the unit's own animations and halves are made on its main model's bones; a kind's
+                # model on bones of its own but other ones plays the game's, made on the game soldier's bones
+                result.findings.append(Finding("warning", f"{k_mod}: files/models/{stem}.glb: its bones aren't those "
+                                                          f"of {unit}'s main model (files/models/{unit}.glb), so its "
+                                                          f"figures play what the unit it copies plays, made on the "
+                                                          f"game soldier's bones (an animation made on other bones can "
+                                                          f"stop the game: make his model on the same bones as the "
+                                                          f"main one)"))
+        try:   # (one rule for the page and the build, item 5's merge: the bone the modder chose on the unit's page
+            # while the model still has it, else rusemod.bonefit's suggestion: the 11-09 split for the Horse Squad)
+            split = bonefit.split_for(Path(glb))
+        except (bonefit.FitError, OSError, ValueError):
+            split = None
+        halves, notes = animmodel.halves_for(record, split)
+        own = f"{source.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        like = animmodel.game_masks(run.game, name, own)
+        masks = {}
+        for half in ("top", "bottom"):
+            mask, k = f"$/GFX/Everything/Mask_{unit}_{half.capitalize()}", 1
+            while mask in run.game.objects:
+                k += 1
+                mask = f"$/GFX/Everything/Mask_{unit}_{half.capitalize()}_{k}"
+            run.game.objects[mask] = animmodel.mask_object(run.game, like[half], halves[half])
+            masks[half] = mask
+        got = animmodel.point_masks(run.game, name, tuple(wearing), masks)
+        if not got["pointed"]:      # (no listing of a figure that wears it weighs bones by name: nothing to point)
+            for mask in masks.values():
+                del run.game.objects[mask]
+        else:
+            result.findings.append(Finding("note", f"{where}: {unit}'s {len(got['figures'])} figure(s) wearing its "
+                                                   f"model play through its own two halves, split at "
+                                                   f"{halves['split']} ({len(halves['top']['Weights'])} bone(s) on "
+                                                   f"top, {len(halves['bottom']['Weights'])} below; "
+                                                   f"{got['pointed']} listing(s))"))
+        for n in notes:
+            result.findings.append(Finding("warning", f"{where}: {unit}: {n}"))
+        own_files = {anim.own_data_name(m.rsplit("\\", 1)[-1][:-len(".baf")]).lower()
+                     for m, spec in result.own_clips.items() if spec.get("unit") == unit}
+        wrong = sorted({fig for fig, _action, f in got["others"] if f.lower() in own_files})
+        if wrong:
+            # not a game rule: a clip goes with the model it was made on (a clip of other bones can stop the game)
+            result.findings.append(Finding("warning", f"{where}: {unit}'s figure(s) {', '.join(wrong)} don't wear its "
+                                                      f"model but play clips made on its bones"))
+
+
 def _game_unit(run, unit: str) -> str | None:
     """The name of the game's unit called `unit` ("Descriptor_Unit_Soldat_US_Lourd"), or None."""
     name = f"$/GFX/Everything/{unit}"
     return name if name in run.game.objects else None
+
+
+def unit_fit_checks(run, result: BuildResult, zz=None) -> int:
+    """The owner's 7 (2026-11-10: "seven should warn them. If it's gonna break, and then tell them how to fix it. And
+    what's the issue is."): a warning, never an error, for what doesn't fit on a unit with a model on bones of its own
+    (every figure drawing it: each animation it plays, each bone its parts and shots need, its two halves, more than 64
+    bones) and on a unit with animations of its own (each on the figure that plays it, against that figure's model: a
+    model rigged to the game's bones it copies, a squad's soldier, has those bones). rusemod.bonefit says what each check
+    rests on. Runs once the units' models, animations and halves are pointed (after unit_own_models and
+    unit_own_clips); `zz`: ZZ_Win.dat, for the game's own clips and skeletons, read only when a check needs them.
+    Returns how many warnings it said."""
+    from . import anim, bonefit
+    from .animlist import member_of, words
+    from .modelin import OWN_SKELETON
+    from .unitmodel import glb_report
+    if not result.own_models and not result.own_clips:
+        return 0
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    game = bonefit.GameBones(zz)
+
+    def bones_of(file: str) -> list | None:     # (the clip a listing names: the unit's own, or the game's)
+        m = member_of(file)
+        spec = result.own_clips.get(m)
+        if spec is None:
+            return game.clip_bones(m)
+        if spec.get("file"):
+            try:
+                return bonefit.clip_bones(Path(spec["file"]).read_bytes())
+            except OSError:
+                return None
+        return game.clip_bones(spec["clip"]) if spec.get("clip") else None
+
+    def own(file: str) -> bool:
+        return member_of(file) in result.own_clips
+
+    def clip_name(file: str) -> str:
+        spec = result.own_clips.get(member_of(file))
+        if spec is not None and spec.get("file"):
+            return Path(spec["file"]).stem
+        return words(member_of(file) if spec is None or not spec.get("clip") else spec["clip"])
+
+    said = 0
+    checked = set()     # (unit, figure) whose every animation is checked already
+    like_of = {}        # a model rigged to the game's bones it copies (a squad's soldier) -> that model: its bones
+    broken = (ValueError, KeyError, IndexError, OSError, struct.error)   # a file a check can't read: said, below
+    for stem, (source, glb, mod_id) in sorted(result.own_models.items()):
+        unit = _unit_of(stem)   # (its main model, or one kind's of its soldiers: <unit>@<kind>, its bazooka man's)
+        name, where = by_name.get(unit), f"{mod_id}: {stem}"
+        try:
+            report = glb_report(glb)
+            if name is None or name not in run.game.objects or not report.get("rigged"):
+                continue    # (a model on a hull's bones plays no animations of its own)
+            like = str(report.get("like") or source).replace("/", "\\")
+            own_model = f"{like.rsplit(chr(92), 1)[0]}\\{_own_stem(stem)}lod0.Ase2ndfbin"
+            if not report.get(OWN_SKELETON):
+                like_of[bonefit.model_key(own_model)] = like    # (the game's own clips fit it: only its own can't)
+                continue
+            record = bonefit.glb_record(glb)
+            if record is None:
+                continue    # (its writing says why)
+            names, parents = bonefit.skeleton_of(record)
+            problems = bonefit.model_problems(names, parents, bonefit.model_record(glb).get(bonefit.SPLIT))
+            for fig in bonefit.own_figures(bonefit.data_figures(run.game, name), [own_model]):
+                problems += bonefit.check_figure(names, fig, bones_of, own)
+                checked.add((unit, fig.path))
+        except broken as exc:
+            # not a game rule: a check that can't run is said, never dropped; it's only warnings, so the build goes on
+            result.findings.append(Finding("warning", f"{where}: its animations and bones couldn't be checked "
+                                                      f"({exc}), so the build goes on without that check."))
+            said += 1
+            continue
+        said += _say_fit(result, where, problems, clip_name)
+    for unit in sorted({spec["unit"] for spec in result.own_clips.values()}):
+        name = by_name.get(unit) or _game_unit(run, unit)
+        if name is None:
+            continue
+        mods = sorted({spec["mod"] for spec in result.own_clips.values() if spec["unit"] == unit})
+        where = f"{', '.join(mods)}: {anim.UNITS}: {unit}"
+        problems = []
+        try:
+            for fig in bonefit.data_figures(run.game, name):
+                mine = [x for x in fig.listings if own(x[1])]
+                if not mine or (unit, fig.path) in checked:
+                    continue
+                names = game.model_bones(like_of.get(bonefit.model_key(fig.model), fig.model))
+                if names is None:   # a model no skeleton pack holds: the bones of the game's clips the figure plays
+                    kinds = {tuple(b) for _a, f, _m in fig.listings if not own(f) and (b := bones_of(f)) is not None}
+                    names = list(next(iter(kinds))) if len(kinds) == 1 else None
+                if names is not None:
+                    problems += bonefit.check_figure(names, bonefit.Figure(fig.path, fig.model, mine), bones_of, own,
+                                                     masks=False)
+        except broken as exc:
+            result.findings.append(Finding("warning", f"{where}: its animations and bones couldn't be checked "
+                                                      f"({exc}), so the build goes on without that check."))
+            said += 1
+            continue
+        said += _say_fit(result, where, problems, clip_name)
+    return said
+
+
+def _say_fit(result: BuildResult, where: str, problems: list, clip_name) -> int:
+    """unit_fit_checks' problems (rusemod.bonefit's) as the build's warnings, in plain words: what doesn't fit, what the
+    game does with it, how to fix it."""
+    from .bonefit import SHOT
+    for p in problems:
+        k, fig = p["kind"], p.get("figure", "")
+        if k == "clip":   # (the animations that don't fit the same way, said together: a few by name)
+            names = ", ".join(clip_name(c) for c in p["clips"][:4]) + (f" (+{len(p['clips']) - 4})"
+                                                                         if len(p["clips"]) > 4 else "")
+            n, acts = len(p["clips"]), len(p["actions"])
+        if k == "clip" and p["how"] == "fewer":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have {p['clip_bones']} bones "
+                                                      f"where the model has {p['model_bones']}. The game can stop on an "
+                                                      f"animation with fewer bones than its model (it did in a test). "
+                                                      f"Give those actions animations made on this model's own bones "
+                                                      f"(in Blender, then Import model; the unit's page shows which "
+                                                      f"animation each action plays)."))
+        elif k == "clip" and p["how"] == "more":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have {p['clip_bones']} bones "
+                                                      f"where the model has {p['model_bones']}. An animation with more "
+                                                      f"bones than its model can stop the game (not tried in the game "
+                                                      f"yet). Give those actions animations made on this model's own "
+                                                      f"bones (in Blender, then Import model; the unit's page shows "
+                                                      f"which animation each action plays)."))
+        elif k == "clip" and p["how"] == "names":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and their bones have other names than the "
+                                                      f"model's (the first: {p['examples'][0][0]}, where the model has "
+                                                      f"{p['examples'][0][1]}). The game plays an animation bone by bone "
+                                                      f"in order, so the wrong bones will move. Give those actions "
+                                                      f"animations made on this model's own bones (in Blender, then "
+                                                      f"Import model)."))
+        elif k == "clip":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {n} animation(s) for {acts} "
+                                                      f"action(s) ({names}), and they have the model's bones in another "
+                                                      f"order. The game plays an animation bone by bone in order, so "
+                                                      f"the wrong bones will move. Give those actions animations made on "
+                                                      f"this model's own bones (in Blender, then Import model)."))
+        elif k == "bone" and p["need"] == SHOT:
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} fires from a bone called "
+                                                      f"{p['bone']}, which the model hasn't got, so the unit will fire "
+                                                      f"with no shot to be seen (seen in a test). In Blender, add a bone "
+                                                      f"called {p['bone']} at the weapon's muzzle, under the bone the "
+                                                      f"weapon moves with, then bring the model back."))
+        elif k == "bone":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} hangs {p['count']} part(s) on a "
+                                                      f"bone called {p['bone']}, which the model hasn't got: the game "
+                                                      f"can stop on it (not tried in the game yet). In Blender, add a "
+                                                      f"bone called {p['bone']} where that part belongs, then bring the "
+                                                      f"model back."))
+        elif k == "mask_bones":
+            gone = ", ".join(p["names"][:6]) + (f" (+{len(p['names']) - 6})" if len(p["names"]) > 6 else "")
+            result.findings.append(Finding("warning", f"{where}: its figure {fig} plays {p['count']} animation(s) "
+                                                      f"on halves of the body that name bones the model hasn't got "
+                                                      f"({gone}): the game can stop on it (not tried in the game yet). "
+                                                      f"Choose where the model splits in two on the unit's page (Its two "
+                                                      f"halves), then build again."))
+        elif k == "mask_sum":
+            result.findings.append(Finding("warning", f"{where}: its figure {fig}'s upper and lower halves together "
+                                                      f"move {len(p['bones'])} bone(s) more than once over ("
+                                                      f"{', '.join(p['bones'][:6])}), so the model will grow out of "
+                                                      f"shape, as the horses of a test did. Choose where the model "
+                                                      f"splits in two on the unit's page (Its two halves), then build "
+                                                      f"again."))
+        elif k == "too_many":
+            result.findings.append(Finding("warning", f"{where}: the model has {p['bones']} bones. The game isn't "
+                                                      f"seen to animate a model with more than {p['most']} (not tried in "
+                                                      f"the game yet): it may stand still. In Blender, join or delete "
+                                                      f"bones until it has {p['most']} or fewer, then bring the model "
+                                                      f"back."))
+        elif k == "split_gone":
+            result.findings.append(Finding("warning", f"{where}: the bone {p['split']} chosen to split the model in "
+                                                      f"two isn't in it any more, so it splits at {p['used']}. Choose "
+                                                      f"again on the unit's page (Its two halves)."))
+        elif k == "split_all_top":
+            result.findings.append(Finding("warning", f"{where}: the model splits at {p['split']}, its first bone, "
+                                                      f"so every bone is in its upper half and the lower half's "
+                                                      f"animations (walking, running) move nothing. Choose another bone "
+                                                      f"on the unit's page (Its two halves)."))
+    return len(problems)
 
 
 def _point_at_copies(run, name: str, copies: dict) -> int:
@@ -1713,7 +2302,8 @@ def _point_at_copies(run, name: str, copies: dict) -> int:
                for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
 
 
-def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None) -> str | None:
+def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None,
+                    own_stem: str | None = None) -> str | None:
     """Point the new unit `unit`'s model part at a model of its own beside its source's ({folder}\\<unit>lod0): the
     model the source draws (the part's FileName), or None, with an error said, when no mod makes `unit` or its model
     part names no model file. `rigged_on`: the game's model a rigged model was fitted to (any kind of unit: a soldier's model is in parts of other names): every
@@ -1725,8 +2315,9 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         # not a game rule: a model for a unit no mod in the set makes
         result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
         return None
+    own_stem = own_stem or unit    # (a kind's own model, <unit>__<kind>: _own_stem)
     if rigged_on:
-        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        own = f"{rigged_on.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{own_stem}lod0.Ase2ndfbin"
         if _point_at_copies(run, name, {model_key(m): own for m in [rigged_on, *(also or [])]}):
             return rigged_on
         # not a game rule: what our build supports (a part of the unit naming the model it was fitted to)
@@ -1748,7 +2339,7 @@ def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResu
         return None
     source = file.value
     folder = source.replace("/", "\\").rsplit("\\", 1)[0]
-    own = f"{folder}\\{unit}lod0.Ase2ndfbin"
+    own = f"{folder}\\{own_stem}lod0.Ase2ndfbin"
     mesh.obj.props["FileName"] = Text("path", own)
     # its figurine, drawn zoomed out: a towed gun's names a model of its own (<gun>Midlod0) that the close-up's
     # change doesn't reach, so the unit showed the copied gun there (the owner, 2026-10-31, bigpacks4: "at certain
@@ -2010,7 +2601,8 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
         tabs = [(k, own_planned[k]) for k in ownbuildings.KINDS if k in own_planned]
         extra = extra + [(ModInfo("r2-own-buildings"), parse(ownbuildings.tabs_rndf(tabs, game_keys),
                                                              file="own buildings", mod="r2-own-buildings"))]
-    run = Engine(base).run(first + [by_id[m.id] for m in order] + extra)
+    engine = Engine(base)
+    run = engine.run(first + [by_id[m.id] for m in order] + extra)
     result.findings = [Finding("note", n) for n in base.notes] + list(run.findings)
     # the levels each placed type is drawn at (its far copy's too), for its objects to ask of the blocks they hang on
     result.type_levels = visibility.type_levels(run.game, {t for t in placed if t} | set(result.visibility.values()))
@@ -2053,7 +2645,12 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_cards = unit_cards(run, order, result)
     result.own_models = unit_own_models(run, order, result)
     result.own_copies = unit_own_copies(run, order, result)
+    result.own_clips = unit_own_clips(run, order, result, text_arc)
+    unit_own_halves(run, result)   # (the unit's own figures only: before its ride, a unit of its own, is made)
+    if result.own_rides:   # (units riding as themselves on long moves: their rides, made after the mods)
+        run = unit_own_rides(engine, run, result)
     result.look_symbols = building_looks(run, result)
+    unit_fit_checks(run, result, text_arc)  # (after every step that points a unit's models, clips and halves)
     if result.errors:
         return result
     notes: list = []
@@ -4899,7 +5496,8 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
             for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
                 try:
                     prep, textures = kept.get(glb)
-                    written = write_unit_model(text_arc, source, unit, prep, earlier=before, batch=batch,
+                    # (written under its own stem: <unit>, or <unit>__<kind> for one kind of its soldiers)
+                    written = write_unit_model(text_arc, source, _own_stem(unit), prep, earlier=before, batch=batch,
                                                textures=textures)
                 except (UnitModelError, ValueError, OSError, struct.error) as exc:
                     kept.close()
@@ -4996,6 +5594,13 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 result.sound_changed.update(anim_changes(text_arc, clips, cache, say=say, before={
                     **result.model_changed, **result.texture_changed, **result.model_imports,
                     **result.sound_changed}))
+            except AnimError as exc:
+                raise BuildError(str(exc)) from None
+        if result.own_clips and text_arc is not None:  # units' own clips (files/anim/units.toml; rusemod.anim): new
+            from .anim import AnimError, own_clip_files  # files of ZZ_Win.dat's own beside the game's, which stay
+            say(f"units' own animations: {len(result.own_clips)}")
+            try:
+                result.new_files.update(own_clip_files(text_arc, result.own_clips, cache, say=say))
             except AnimError as exc:
                 raise BuildError(str(exc)) from None
         new_songs: dict = {}  # mods' new songs (files/music/list<N>, rusemod.sound): new files and descriptions

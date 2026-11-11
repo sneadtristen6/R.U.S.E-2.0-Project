@@ -185,6 +185,20 @@ class Decoy(unittest.TestCase):
         with self.assertRaises(DecoyError):
             calls.decoy_volume(SHOT, 50)
 
+    def test_the_unit_s_words_in_every_language(self):
+        # every word RUSE Decoy's page names (w.<key>), in each of the Studio's languages, with the same blanks
+        import re
+        from rusemod import schema
+        from ruse_studio.api import _words
+        js = (Path(__file__).parents[1] / "src" / "ruse_studio" / "ui" / "decoy.js").read_text(encoding="utf-8")
+        used = set(re.findall(r"\bw\.([a-z_0-9]+)", js)) | set(re.findall(r'"((?:tip_)?decoy_[a-z_0-9]*[a-z0-9])"', js))
+        words = _words()
+        self.assertGreater(len(used), 60)
+        self.assertEqual(sorted(k for k in used if k not in words), [])
+        self.assertEqual(sorted((k, lang) for k in used for lang in schema.APP_LANGS if not words[k].get(lang)), [])
+        for key in ("decoy_anim_for_unit", "decoy_anim_for_all", "decoy_anim_reset_own"):   # each control's tooltip
+            self.assertIn("tip_" + key, used)
+
     def test_any_sound_played_and_replaced(self):
         got = self.calls.music_sound(SHOT)                       # the page reads the game's own sound
         self.assertEqual(got["kind"], "ess")
@@ -196,6 +210,146 @@ class Decoy(unittest.TestCase):
         self.assertEqual(self.calls.music_save(SHOT, base64.b64encode(wav).decode(), 0, 1)["saved"], str(target))
         self.assertEqual(sound.mod_sounds(self.calls.mod), {SHOT: target})   # the build puts it in (a flag-0 sound)
         self.assertTrue(self.calls.decoy_list("weapons")["rows"][0]["mine"])
+
+
+class UnitCalls(DecoyCalls):
+    """RUSE Decoy opened from a unit's page, on a made-up game: Descriptor_Unit_Squad's rifleman plays the run as
+    t_course (an index in miniature); the run and the flee are clips of the same bones (test_mocap's small soldier)."""
+    from test_mocap import RUN as _RUN
+    FLEE = _RUN.replace("courselod0", "deroutelod0")
+
+    def __init__(self, d):
+        from test_mocap import SOLDIER, template
+        from rusemod import baf
+        self.mod = Path(d)
+        self._saving = threading.RLock()
+        self.clips = {self._RUN: baf.build(template()), self.FLEE: baf.build(template(loops=False))}
+        self.skeleton = "|".join(n for n, _p, _w in SOLDIER)
+        self.shown = []
+        db = sqlite3.connect(":memory:")
+        db.executescript(f"""
+            CREATE TABLE object(id INTEGER PRIMARY KEY, class TEXT, shadow INTEGER, address TEXT, export TEXT);
+            CREATE TABLE value(object INTEGER, path TEXT, num REAL, text TEXT);
+            CREATE TABLE ref(src INTEGER, path TEXT, kind TEXT, dst INTEGER, target TEXT);
+            INSERT INTO object VALUES (1, 'TInfanterieDescriptor', 0, '{SQUAD}', NULL),
+                (2, 'TGfxDescriptorBiped', 0, '{SQUAD}:GfxDescriptorFusilier', NULL),
+                (3, 'TGfxDescriptorAnimation', 0, '{SQUAD}:GfxDescriptorFusilier.ResourceAnimation[0].v', NULL);
+            INSERT INTO ref VALUES (1, 'GfxDescriptorFusilier', 'object', 2, NULL),
+                (2, 'ResourceAnimation[0].v', 'object', 3, NULL);
+            INSERT INTO value VALUES (2, 'ResourceAnimation[0].k', NULL, 't_course'),
+                (3, 'FileName', NULL, 'WW2\\Res3D\\Units\\Common\\Fusilier_courselod0.Ase2NdfBin');
+        """)
+        self.db = db
+
+    def _mod_dir(self, kind="mod"):
+        return self.mod
+
+    def _open(self):
+        return mock.Mock(db=self.db, close=lambda: None)
+
+    def _edits(self):
+        return None
+
+    def _resolve(self, edits, address):
+        return address, None
+
+    def _decoy_clip_row(self, member):
+        m = str(member).lower().replace("/", B)
+        return {"member": m, "kind": "infantry", "name": m.rsplit(B, 1)[-1], "seconds": 1.0, "frames": 31,
+                "bones": len(self.skeleton.split("|")), "names": ["t_course"], "units": ["a", "b", "c"],
+                "skeleton": self.skeleton} if m in self.clips else None
+
+    def _decoy_game_clips(self):
+        return lambda m: self.clips.get(str(m).lower())
+
+    def _decoy_preview_model(self, r):
+        return "soldier"
+
+    def _decoy_glb(self, model, raw):
+        from rusemod import baf
+        self.shown.append(raw)
+        return {"url": "cache/x.glb", "model": model, "seconds": baf.parse(raw).duration}
+
+
+SQUAD = "$/GFX/Everything/Descriptor_Unit_Squad"
+
+
+class OnlyThisUnit(unittest.TestCase):
+    """RUSE Decoy opened from a unit's page: a change for "Only this unit" goes to the unit's own copy of the clip
+    (files/anim/units.toml, rusemod.anim), "Every unit that plays it" to the clip itself (files/anim/clips.toml)."""
+
+    def setUp(self):
+        self.d = tempfile.TemporaryDirectory()
+        self.addCleanup(self.d.cleanup)
+        self.calls = UnitCalls(self.d.name)
+        self.mod = Path(self.d.name)
+
+    def own(self):
+        from rusemod import anim
+        return anim.mod_unit_clips(self.mod).get("Descriptor_Unit_Squad", {}).get("clips", {})
+
+    def test_only_this_unit_then_every_unit(self):
+        from rusemod import anim
+        run = UnitCalls._RUN
+        got = self.calls.decoy_anim_set(run, speed=150, unit=SQUAD)
+        self.assertEqual((got["speed"], got["own"]["speed"]), (100.0, 150.0))     # the clip's own: as the game's
+        self.assertFalse((self.mod / anim.CLIPS).exists())
+        self.assertEqual(self.own()[run]["speed"], 150.0)                          # the build reads what it wrote
+        row = self.calls.decoy_unit_anims(SQUAD)["rows"][0]
+        self.assertEqual((row["member"], row["role"], row["own"]["speed"], row["speed"]), (run, "t_course", 150.0, 100.0))
+        self.calls.decoy_anim_set(run, speed=300)                                  # every unit: clips.toml
+        self.assertEqual(anim.mod_clips(self.mod)[run]["speed"], 300.0)
+        self.assertEqual(self.own()[run]["speed"], 150.0)                          # its own copy stays its own
+        self.calls.decoy_anim_preview(run, unit=SQUAD)                            # as this unit plays it: 150%
+        self.calls.decoy_anim_preview(run)                                         # as every unit plays it: 300%
+        from rusemod import baf
+        game = baf.parse(self.calls.clips[run]).duration
+        self.assertEqual([round(baf.parse(r).duration, 4) for r in self.calls.shown],
+                         [round(game / 1.5, 4), round(game / 3, 4)])
+
+    def test_the_copy_starts_as_what_the_unit_played(self):
+        # like Copy this ammo: the change every unit has is the copy's start, then each goes its own way
+        run = UnitCalls._RUN
+        self.calls.decoy_anim_set(run, speed=200, use=UnitCalls.FLEE)
+        got = self.calls.decoy_anim_set(run, bone="bip01 head", size=2.0, unit=SQUAD)
+        self.assertEqual((got["own"]["speed"], got["own"]["from"], got["own"]["tweaks"]),
+                         (200.0, UnitCalls.FLEE, {"bip01 head": {"size": 2.0, "turn": None}}))
+        self.assertEqual(got["tweaks"], {})                                        # every unit's: no bone
+        with self.assertRaises(DecoyError):                                        # a part, not a unit
+            self.calls.decoy_anim_set(run, speed=50, unit=SQUAD + ":GfxDescriptorFusilier")
+        with self.assertRaises(DecoyError):
+            self.calls.decoy_anim_set(run, speed=5000, unit=SQUAD)
+
+    def test_motion_capture_for_one_unit_and_back(self):
+        from rusemod import anim
+        from test_mocap import bvh_text
+        run = UnitCalls._RUN
+        self.calls.decoy_anim_set(run, speed=50)                                   # every unit: half speed
+        mid = self.calls.decoy_mocap_open("walk.bvh", bvh_text([{}] * 241))["id"]
+        used = self.calls.decoy_mocap_use(run, mid, 0.5, 1.0, True, None, "Me, CC0", SQUAD)
+        self.assertTrue(used["own"]["mine"])
+        self.assertEqual(used["own"]["speed"], 50.0)                               # (its changes still on top)
+        own = self.mod / anim.OWN / "Descriptor_Unit_Squad" / anim.clip_key(run)
+        self.assertTrue(own.is_file() and own.with_suffix(".toml").is_file())
+        self.assertEqual(self.own()[run]["file"], own)                             # the build takes it
+        self.assertFalse((self.mod / anim.REPLACE).exists())                       # every unit's: untouched
+        back = self.calls.decoy_anim_reset(run, SQUAD)
+        self.assertIsNone(back["own"])
+        self.assertEqual(self.own(), {})
+        self.assertFalse((self.mod / anim.OWN / "Descriptor_Unit_Squad").exists())  # its file, credit and folders
+        self.assertFalse((self.mod / anim.UNITS).exists())
+        self.assertEqual(anim.mod_clips(self.mod)[run]["speed"], 50.0)             # every unit's change kept
+        self.calls.decoy_anim_reset(run)
+        self.assertFalse((self.mod / anim.CLIPS).exists())
+
+    def test_a_unit_deleted_takes_its_animations(self):
+        from rusemod import anim
+        from ruse_studio.edits import ModEdits
+        self.calls.decoy_anim_set(UnitCalls._RUN, speed=150, unit=SQUAD)
+        (self.mod / "src").mkdir()
+        edits = ModEdits(self.mod)
+        edits.remove_unit(SQUAD)
+        self.assertFalse((self.mod / anim.UNITS).exists())
 
 
 if __name__ == "__main__":

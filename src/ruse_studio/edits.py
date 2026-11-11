@@ -332,8 +332,8 @@ class ModEdits:
         return unit
 
     def remove_unit(self, target: str) -> None:
-        """Delete a new unit: its copy, every change made to it and its parts, its name, its own card and its own
-        model (a card or a model with no unit is an error in the build)."""
+        """Delete a new unit: its copy, every change made to it and its parts, its name, its own card, its own
+        model and its own animations (a card, a model or an animation with no unit is an error in the build)."""
         self.new_units.pop(target, None)
         for key in [k for k in self.edits if k[0] == target]:
             del self.edits[key]
@@ -342,6 +342,11 @@ class ModEdits:
         (self.folder / "files" / "cards" / f"{tail}.png").unlink(missing_ok=True)
         for suffix in (".glb", ".json"):
             (self.folder / "files" / "models" / f"{tail}{suffix}").unlink(missing_ok=True)
+        from rusemod import anim
+        try:
+            anim.remove_unit(self.folder, tail)   # (files/anim/units.toml's rows and files/anim/own/<its name>/)
+        except anim.AnimError:   # a units.toml that can't be read: the unit still goes, the build says what's wrong
+            pass
 
     def new_unit_of(self, address: str) -> NewUnit | None:
         """The new unit an address belongs to (the unit itself, or a part inside it), or None."""

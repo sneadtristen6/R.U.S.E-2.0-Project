@@ -81,8 +81,10 @@ discos de un avión se ven transparentes, como el juego dibuja una hélice que g
 **Soldados, dotaciones y más aviones:** los soldados, la dotación de un cañón y los aviones a los que el Studio antes no
 podía ajustar un modelo (el P-47, por ejemplo) también admiten un modelo propio, si está ligado a los huesos de la
 unidad: uno de los modelos del juego abierto en Blender desde el Studio y cambiado allí, por ejemplo. Va sobre esos
-huesos tal cual, sin mover ni escalar nada, y los demás hombres de un pelotón con los mismos huesos también lo llevan.
-Visto en el juego con un pelotón de fusileros, la dotación de un cañón y el P-47.
+huesos tal cual, sin mover ni escalar nada, y los demás hombres de un pelotón dibujados con el mismo modelo también lo llevan.
+Visto en el juego con un pelotón de fusileros, la dotación de un cañón y el P-47. Un soldado con arma pesada que el
+juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU.) lo conserva hasta que le des uno
+en **Sus soldados** (más abajo).
 
 **Tus jugadores:** un mod con un modelo importado con el Studio 0.9.8.17 o posterior necesita el Launcher 0.4.8.17 o más
 reciente: un Launcher más antiguo le da al modelo el esqueleto de la unidad copiada, así que su torreta gira alrededor
@@ -96,14 +98,58 @@ Para un pelotón (fusileros, paracaidistas, cualquier infantería), el Studio ha
 2. **Abre su soldado en Blender.** En la página del nuevo pelotón, bajo **Su propio modelo**, pulsa **Cambiarlo en Blender**. Blender se abre con el soldado y sus huesos, cada uno donde lo tiene el juego. ¿Aún no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
 3. **Cámbialo, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en los huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no lo conservas.
 4. **Envíalo.** Pulsa **Enviar a R.U.S.E. Studio** arriba en Blender.
-5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Cada soldado del pelotón lleva tu modelo: el fusilero, el del bazuca y las figuritas que se ven de lejos. **Probar en el juego** lo muestra.
+5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Los fusileros del pelotón llevan tu modelo. Un pelotón cuyo soldado con arma pesada el juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU., por ejemplo) lo conserva como lo tiene el pelotón copiado hasta que le des uno: **Sus soldados**, bajo **Su propio modelo**, muestra a cada uno, y su **Importar modelo…** es solo para él. **Probar en el juego** lo muestra.
 
 Bueno saberlo:
 - Tus archivos de Blender quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`. No se empaquetan en tu mod cuando lo compartes. El próximo **Cambiarlo en Blender** empieza desde lo último que enviaste.
 - Si algunos puntos de tu modelo no tienen hueso (los pesos automáticos de Blender se saltan algunos), la página dice cuántos: se mueven solo con la cadera del soldado. Píntalos sobre un hueso en **Weight Paint** y envíalo de nuevo.
 - Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod), y **Usar el modelo de la unidad copiada** devuelve el uniforme.
 - ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
-- El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro.
+- El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro; el propio del soldado con arma pesada como `files\models\<nombre de la unidad>@bazooka.glb`.
+- **Sus soldados** también dice qué otras figuras del pelotón se dibujan con cada modelo: el soldado caído y la figura vista de lejos (la del pelotón de fusileros de EE. UU. se dibuja con el modelo de su soldado del bazuca).
+
+## Sus animaciones: cuál reproduce cada acción
+
+Un modelo sobre huesos propios (un caballo, un caballo con su jinete, cualquier criatura) trae consigo sus animaciones.
+En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad para cada cosa que hace en el juego:
+
+- **Se queda quieto**, **Camina** y **Corre** van primero: lo mínimo que necesita un modelo. Si alguna no tiene nada
+  propio, la página lo dice, y qué reproduce en su lugar.
+- Cada acción es una lista de las animaciones del modelo. Elige una, o déjala en **La más cercana**: entonces
+  reproduce la más parecida que tenga el modelo, y la lista dice cuál. La más cercana es, por orden: una animación con
+  el nombre de esa acción (stand o idle, walk, run o gallop, fire, death...), si no, lo que reproduce la acción más
+  cercana (caminar el correr, correr el caminar, luego el estar quieto; disparar el apuntar, luego el estar quieto;
+  toda muerte la muerte simple). La compilación sigue la misma regla: lo que dice la página es lo que reproduce el
+  juego.
+- Una animación cuyo nombre empieza por t_ o b_ (hr_t_fire, hr_b_run) se reproduce solo en la mitad de arriba o de
+  abajo del cuerpo: las de un jinete arriba, las de su caballo abajo.
+- **Todas las demás acciones** abre el resto, por tipo: quieto, en movimiento, apuntar y disparar, el arma pesada,
+  recibir impactos, morir.
+- **En los trayectos largos** el juego mete a un pelotón en su camión. Una unidad con animaciones propias va por sí
+  misma en su lugar, reproduciendo la animación elegida ahí (su correr si la dejas en La más cercana), tan rápido como
+  su camión. Elige **En su camión** para quedarte con el camión.
+
+**Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para
+cambiar una solo para ella, usa RUSE Decoy.
+
+Aún no probado en el juego tal como lo hace el Studio; un Horse Squad hecho igual a mano se jugó en el juego
+(noviembre de 2026).
+## Un modelo con huesos y animaciones propios
+
+Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones.
+
+1. **Hazlo en Blender**: tu modelo sobre una armadura con huesos propios (con los nombres que quieras) y una acción para cada animación. Nombra las acciones según lo que muestran: al menos **stand** (o **idle**), **walk** y **run**; también se reconocen **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** y **grenade**.
+2. **Expórtalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** marcado.
+3. **Crea el pelotón** como en el paso 2 de arriba. En su página, bajo **Su propio modelo**, pulsa **Importar modelo…** y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
+4. **Probar en el juego** lo muestra.
+
+Bueno saberlo:
+- Cada acción del pelotón hace la animación nombrada para ella. Una acción para la que no hay ninguna animación nombrada todavía no tiene ninguna: la página dice cuántas.
+- ¿Lo cambiaste en Blender? Impórtalo de nuevo: cada acción mantiene su animación mientras en el archivo siga habiendo una animación con ese nombre.
+- Tu mod guarda el modelo y cada animación: `files\models\<nombre de la unidad>.glb`, y cada animación como `files\anim\own\<nombre de la unidad>\<su nombre>.baf`.
+- **Usar el modelo de la unidad copiada** vuelve a quitar el modelo, con sus animaciones.
+- Un pelotón con soldado con arma pesada: dale su propio caballo con jinete en **Sus soldados**, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
+- Todavía no probado en el juego a través del Studio.
 
 ## 4. Su tarjeta, y luego la prueba
 

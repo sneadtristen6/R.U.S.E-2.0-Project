@@ -77,7 +77,9 @@ které jeho díly jsou vrtule. Ve 3D pohledu jsou kotouče letadla průhledné, 
 **Vojáci, obsluhy a další letadla:** vojáci, obsluha děla a letadla, na která Studio dřív model napasovat neumělo
 (například P-47), dostanou vlastní model také, pokud je napojený na vlastní kosti jednotky: třeba jeden z modelů hry
 otevřený v Blenderu ze Studia a tam upravený. Na ty kosti jde tak, jak je, nic se neposouvá ani nemění velikost, a
-ostatní muži družstva se stejnými kostmi ho nosí také. Viděno ve hře se střeleckým družstvem, obsluhou děla a P-47.
+ostatní muži družstva kreslení stejným modelem ho nosí také. Viděno ve hře se střeleckým družstvem, obsluhou děla a P-47.
+Voják s těžkou zbraní, kterého hra kreslí vlastním modelem (muž s bazukou v americkém střeleckém družstvu), si ho
+nechá, dokud mu nedáš model v **Jeho vojáci** (níže).
 
 **Vaši hráči:** mod s modelem importovaným Studiem 0.9.8.17 nebo novějším potřebuje Launcher 0.4.8.17 nebo novější:
 starší dá modelu kostru kopírované jednotky, takže se jeho věž otáčí kolem špatného bodu. 0.4.8.17 je povinná
@@ -91,14 +93,56 @@ U družstva (střelci, výsadkáři, jakákoli pěchota) udělá Studio část v
 2. **Otevři jeho vojáka v Blenderu.** Na stránce nového družstva v části **Vlastní model** klikni na **Změnit v Blenderu**. Blender se otevře s vojákem a jeho kostmi, každou tam, kde ji má hra. Nemáš Blender? **Získat Blender (zdarma)** ho nainstaluje; **Vybrat Blender…** ukáže Studiu, kde je.
 3. **Změň ho, nebo nasaď vlastní model na jeho kosti.** Chceš-li ho změnit, uprav ho tam. Pro vlastní model: načti ho přes **File > Import** do téže scény a polož ho na vojáka; klikni na svůj model, **Shift+klik** na kosti, pak **Ctrl+P > With Automatic Weights**. Vojáka ze hry smaž, pokud si ho nenecháš.
 4. **Pošli ho.** Klikni nahoře v Blenderu na **Poslat do R.U.S.E. Studia**.
-5. **Přenes ho zpět.** Ve Studiu klikni na **Přenést model**. Tvůj model nosí každý voják družstva: střelec, muž s bazukou i malé figurky viditelné zdálky. **Vyzkoušet ve hře** ho ukáže.
+5. **Přenes ho zpět.** Ve Studiu klikni na **Přenést model**. Tvůj model nosí střelci družstva. Družstvo, jehož vojáka s těžkou zbraní hra kreslí vlastním modelem (třeba muže s bazukou v americkém střeleckém družstvu), si ho nechá tak, jak ho má kopírované družstvo, dokud mu nedáš vlastní: **Jeho vojáci** pod **Vlastní model** ukazuje každého z nich a jeho **Importovat model…** je jen pro něj. **Vyzkoušet ve hře** ho ukáže.
 
 Dobré vědět:
 - Tvoje soubory z Blenderu zůstávají ve složce tvého modu: `Documents\RUSE 2.0\Mods\<tvůj mod>\blender\<název jednotky>\`. Při sdílení modu se do něj nebalí. Další **Změnit v Blenderu** začne tím, co jsi poslal naposledy.
 - Pokud některé body tvého modelu nemají kost (automatické váhy Blenderu pár vynechají), stránka řekne kolik: hýbou se jen s boky vojáka. Namaluj je na kost v Blenderu ve **Weight Paint** a pošli znovu.
 - Družstvo s **Vlastní uniforma**: tvůj model zaujme místo uniformy (její barvy zůstanou v modu) a **Použít model kopírované jednotky** uniformu vrátí.
 - Máš už .glb udělaný na kostech vojáka ze hry? **Importovat model…** ho vezme tak, jak je.
-- Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř.
+- Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř; vlastní model vojáka s těžkou zbraní jako `files\models\<název jednotky>@bazooka.glb`.
+- **Jeho vojáci** také říká, které další figury družstva se kreslí kterým modelem: padlý voják a figura viděná zdálky (v americkém střeleckém družstvu se kreslí modelem muže s bazukou).
+
+## Její animace: kterou hraje každá činnost
+
+Model na vlastních kostech (kůň, kůň s jezdcem, jakýkoli tvor) si s sebou přináší své animace. Na stránce jednotky
+ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
+
+- **Stojí na místě**, **Jde** a **Běží** jsou první: to nejmenší, co model potřebuje. Když některá nemá nic
+  vlastního, stránka to řekne a ukáže, co hraje místo toho.
+- Každá činnost je seznam animací modelu. Vyberte jednu, nebo nechte **Nejbližší**: pak hraje tu nejpodobnější,
+  kterou model má, a seznam řekne kterou. Nejbližší znamená popořadě: animaci pojmenovanou podle té činnosti (stand
+  nebo idle, walk, run nebo gallop, fire, death...), jinak to, co hraje nejbližší činnost (chůze běh, běh chůzi, pak
+  stání; výstřel míření, pak stání; každá smrt obyčejnou smrt). Sestavení se řídí stejným pravidlem: co řekne stránka,
+  to hra hraje.
+- Animace, jejíž jméno začíná t_ nebo b_ (hr_t_fire, hr_b_run), hraje jen na horní nebo dolní polovině těla:
+  jezdcova nahoře, jeho koně dole.
+- **Všechny ostatní činnosti** otevře zbytek, podle druhu: na místě, pohyb, míření a střelba, těžká zbraň, zásahy,
+  smrt.
+- **Na dlouhých přesunech** hra posadí četu do jejího auta. Jednotka s vlastními animacemi jde místo toho sama a hraje
+  animaci tam vybranou (svůj běh, když necháte Nejbližší), stejně rychle jako její auto. Vyberte **Ve svém autě**,
+  chcete-li auto ponechat.
+
+**Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
+změnit jen pro ni, použijte RUSE Decoy.
+
+Ve hře zatím nevyzkoušeno tak, jak to dělá Studio; Horse Squad udělaný stejně ručně ve hře fungoval (listopad 2026).
+## Model s vlastními kostmi a animacemi
+
+Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi.
+
+1. **Udělej ho v Blenderu**: tvůj model na armatuře s vlastními kostmi (pojmenovanými, jak chceš) a akci pro každou animaci. Pojmenuj akce podle toho, co ukazují: aspoň **stand** (nebo **idle**), **walk** a **run**; známé jsou i **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** a **grenade**.
+2. **Exportuj ho**: **File > Export > glTF 2.0**, formát **glTF Binary (.glb)**, se zaškrtnutým **Animation**.
+3. **Vytvoř družstvo** jako v kroku 2 výše. Na jeho stránce v části **Vlastní model** klikni na **Importovat model…** a vyber svůj .glb. Studio pozná, že jeho kosti nejsou vojákovy, a vezme ho s vlastními kostmi a všemi animacemi. Stránka ukáže, kolik má kostí, každou animaci s její délkou a kolik akcí družstva ji hraje.
+4. **Vyzkoušet ve hře** ho ukáže.
+
+Dobré vědět:
+- Každá akce družstva hraje animaci pojmenovanou pro ni. Akce, pro kterou žádná animace pojmenovaná není, zatím žádnou nemá: stránka řekne kolik.
+- Změnil jsi ho v Blenderu? Importuj ho znovu: každá akce si nechá svou animaci, dokud je animace toho jména v souboru.
+- Tvůj mod uchová model i každou animaci: `files\models\<název jednotky>.glb` a každou animaci jako `files\anim\own\<název jednotky>\<její název>.baf`.
+- **Použít model kopírované jednotky** model zase odebere, i s jeho animacemi.
+- Družstvo s vojákem s těžkou zbraní: dej mu vlastního koně s jezdcem v **Jeho vojáci**, udělaného na stejných kostech jako model střelců, a bude hrát jejich animace. Na jiných kostech hraje to, co v kopírovaném družstvu, a stránka tě varuje: to může hru zastavit. Odebrání modelu střelců odebere i jeho.
+- Přes Studio zatím nevyzkoušeno ve hře.
 
 ## 4. Jeho karta, pak test
 

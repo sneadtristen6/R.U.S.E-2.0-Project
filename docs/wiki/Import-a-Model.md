@@ -77,7 +77,9 @@ draws a spinning propeller.
 **Soldiers, crews and more planes:** soldiers, a gun's crew and the planes the Studio couldn't fit a model to before
 (the P-47, for one) take a model of their own too, if it is rigged to the unit's own bones: one of the game's models
 opened in Blender from the Studio and changed there, say. It goes on those bones as it is, nothing moved or scaled,
-and a squad's other men with the same bones wear it too. Seen in the game with a rifle squad, a gun's crew and the P-47.
+and a squad's other men drawn with the same model wear it too. Seen in the game with a rifle squad, a gun's crew and the P-47.
+A heavy-weapon soldier the game draws with a model of his own (the US rifle squad's bazooka man) keeps it until you give
+him one under **Its soldiers** (below).
 
 **Your players:** a mod with a model imported by Studio 0.9.8.17 or later needs Launcher 0.4.8.17 or newer: an older
 one gives the model the copied unit's skeleton, so its turret turns around the wrong point. 0.4.8.17 is a required
@@ -91,14 +93,57 @@ For a squad (riflemen, paratroopers, any infantry) the Studio does the Blender p
 2. **Open its soldier in Blender.** On the new squad's page, under **Its own model**, click **Change it in Blender**. Blender opens with the soldier and his bones, each one where the game has it. No Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
 3. **Change him, or put your own model on his bones.** To change him, edit him there. To use a model of your own: **File > Import** it into the same scene and place it over the soldier; click your model, **Shift+click** the bones, then press **Ctrl+P > With Automatic Weights**. Delete the game's soldier if you don't keep him.
 4. **Send it.** Click **Send to the R.U.S.E. Studio** at the top of Blender.
-5. **Bring it back.** In the Studio, click **Bring back the model**. Every soldier of the squad wears your model: the rifleman, the bazooka man, and the little figures you see from far away. **Test in game** shows it.
+5. **Bring it back.** In the Studio, click **Bring back the model**. The squad's riflemen wear your model. A squad whose heavy-weapon soldier the game draws with a model of his own (the US rifle squad's bazooka man, say) keeps him as the copied squad has him until you give him one: **Its soldiers**, under **Its own model**, shows each of them, and its **Import model…** is for him alone. **Test in game** shows it.
 
 Good to know:
 - Your Blender files stay in your mod's folder: `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\`. They aren't packed into your mod when you share it. The next **Change it in Blender** starts from what you sent last.
 - If some points of your model have no bone (Blender's automatic weights miss a few), the page says how many: they move with the soldier's hips only. Paint them onto a bone in Blender's **Weight Paint**, then send again.
 - A squad with a **Custom uniform**: your model takes the uniform's place (its paint stays in your mod), and **Use the copied unit's model** gives the uniform back.
 - Already have a .glb made on the game soldier's bones? **Import model…** takes it as it is.
-- The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in.
+- The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in; the heavy-weapon soldier's own as `files\models\<the unit's name>@bazooka.glb`.
+- **Its soldiers** also says which of the squad's other figures are drawn with each model: the fallen soldier, and the figure seen from far away (the US rifle squad's is drawn with its bazooka man's).
+
+## Its animations: which one each action plays
+
+A model on bones of its own (a horse, a horse and its rider, any creature) brings its animations with it. On the
+unit's page, **Its animations** shows what the unit plays for each thing it does in the game:
+
+- **Stands still**, **Walks** and **Runs** come first: the least a model needs. If one of them has nothing of its own,
+  the page says so, and what it plays instead.
+- Each action is a list of the model's animations. Pick one, or leave it on **Nearest**: it then plays the closest one
+  the model has, and the list says which. Nearest means, in order: an animation named for that action (stand or idle,
+  walk, run or gallop, fire, death...), else what the nearest action plays (a walk the run, a run the walk, then the
+  stand; a fire the aim, then the stand; any death the plain death). The build uses the same rule, so what the page
+  says is what the game plays.
+- An animation whose name starts with t_ or b_ (hr_t_fire, hr_b_run) plays on the top or the bottom half of the body
+  only: a rider's on top, his horse's below.
+- **Every other action** opens the rest, by kind: standing still, moving, aiming and firing, the heavy weapon,
+  getting hit, dying.
+- **On long moves** the game puts a squad in its truck. A unit with animations of its own goes as itself instead,
+  playing the animation picked there (its run, when left on Nearest), as fast as its truck. Pick **In its truck** to
+  keep the truck.
+
+**A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
+for it alone, use RUSE Decoy.
+
+Not tried in the game yet as the Studio makes it; a Horse Squad made the same way by hand played in the game
+(November 2026).
+## A model with its own bones and animations
+
+A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations.
+
+1. **Make it in Blender**: your model on an armature with bones of your own (named as you like), and an action for each animation. Name the actions for what they show: **stand** (or **idle**), **walk** and **run** at least; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** and **grenade** are known too.
+2. **Export it**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked.
+3. **Make the squad** as in step 2 above. On its page, under **Its own model**, click **Import model…** and pick your .glb. The Studio sees that its bones aren't the soldier's and takes it with its own bones and every animation. The page shows how many bones it has, each animation with its length, and how many of the squad's actions play it.
+4. **Test in game** shows it.
+
+Good to know:
+- Each action of the squad plays the animation named for it. An action no animation is named for has none yet: the page says how many.
+- Changed it in Blender? Import it again: each action keeps its animation while one of that name is still in the file.
+- Your mod keeps the model and every animation: `files\models\<the unit's name>.glb`, and each animation as `files\anim\own\<the unit's name>\<its name>.baf`.
+- **Use the copied unit's model** takes the model out again, with its animations.
+- A squad with a heavy-weapon soldier: give him his own horse and rider under **Its soldiers**, made on the same bones as the riflemen's, and he plays their animations. On other bones he plays what he played in the copied squad, and the page warns you: that can stop the game. Taking the riflemen's model out takes his out with it.
+- Not tried in the game yet through the Studio.
 
 ## 4. Its card, then test
 

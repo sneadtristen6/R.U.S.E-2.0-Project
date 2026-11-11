@@ -16,6 +16,17 @@ changed clip seen in the game: "Big Heads", 2026-10-09). A clip is:
     the skeleton it was made for, at most 64 bones.
 A bone's pose is move x turn x size, from its parent; bones without a parent (a biped's legs too) are in the model's
 own space.
+
+A skeleton record of a model's own (skeleton_bytes, the same layout a clip carries) and a clip made from a pose at every
+frame (from_frames) are written as the game's own are (2026-11-10; the writer is the one the owner's tenth horse test
+was made with on 2026-11-09, which gave the game's horse and rifleman records back byte for byte):
+  - a record's track order is its bones taken depth by depth, in bone order within a depth: all 633 different records
+    the game's packs hold are so, and every parent comes before its child in the bone list;
+  - a clip runs at 30 frames a second, its frames on the grid k / (frames - 1); a key is kept only where the game's own
+    sum between its kept neighbours doesn't give the pose back as the clip stores it (moves and sizes to the float,
+    turns to the step of their packing), so a still bone has one key and a straight move two;
+  - a track's first turn has w >= 0 and each next one is on the same side as the one before (dot >= 0), as in every
+    clip of the game.
 """
 from __future__ import annotations
 
@@ -121,10 +132,11 @@ def parse(b: bytes) -> Clip:
     return Clip(dur, frames, tracks, bytes(b[s_off:s_off + s_size]))
 
 
-def check(c: Clip) -> None:
-    """The rules a clip must keep for the game (above): a wrong clip fails here, not in the game."""
-    if not 0 < c.bones <= MOST_BONES:
-        raise ClipError(f"{c.bones} bones: an animated model has 1 to {MOST_BONES}")
+def check(c: Clip, most: int = MOST_BONES) -> None:
+    """The rules a clip must keep for the game (above): a wrong clip fails here, not in the game. `most`: the most
+    bones taken (a model's own skeleton past MOST_BONES is written with a warning: rusemod.unitmodel.own_clips)."""
+    if not 0 < c.bones <= most:
+        raise ClipError(f"{c.bones} bones: an animated model has 1 to {most}")
     if c.frames < 1 or not c.duration > 0.0 or math.isinf(c.duration):
         raise ClipError("a clip needs frames and a length")
     for u, t in enumerate(c.tracks):
@@ -138,8 +150,8 @@ def check(c: Clip) -> None:
                 raise ClipError(f"bone {u}: with more than two keys the last must be at the clip's end")
 
 
-def build(c: Clip) -> bytes:
-    check(c)
+def build(c: Clip, most: int = MOST_BONES) -> bytes:
+    check(c, most)
     blocks = []
     for t in c.tracks:
         out = bytearray(struct.pack("<3I", len(t.T), len(t.S), len(t.R)))
@@ -172,6 +184,43 @@ def skeleton(part: bytes) -> dict:
     return {"bones": nb, "names": names, "parents": list(struct.unpack_from(f"<{nb}i", part, p_off)),
             "index": list(struct.unpack_from(f"<{nb}I", part, i_off)),
             "bind": mats[:nb], "local": mats[nb:2 * nb], "world": mats[2 * nb:]}
+
+
+def depth_order(parents: list) -> list:
+    """The track order of a skeleton whose bones have these parents: the bones depth by depth (the roots first), in
+    bone order within a depth, as every skeleton record of the game has it."""
+    depth = []
+    for b in range(len(parents)):
+        d, p = 0, parents[b]
+        while p >= 0:
+            d, p = d + 1, parents[p]
+            if d > len(parents):
+                raise ClipError("a skeleton whose parents go round in a loop")
+        depth.append(d)
+    return sorted(range(len(parents)), key=lambda b: (depth[b], b))
+
+
+def skeleton_bytes(names: list, parents: list, bind: list, local: list, world: list, index: list | None = None) -> bytes:
+    """A skeleton record laid out as the game's (the layout skeleton() reads): `bind`, `local` and `world` each a 3 x 4
+    matrix (12 floats, rows of [r r r t]) per bone, as skeleton() names the three sets; `index` the track order
+    (depth_order when not given). Taken from the 2026-11-09 horse test's record writer (its blob_of), which gives the
+    game's own horse and rifleman records back byte for byte."""
+    n = len(names)
+    if not (len(parents) == len(bind) == len(local) == len(world) == n) or n < 1:
+        raise ClipError("a skeleton needs a name, a parent and three rest matrices for every bone")
+    index = depth_order(parents) if index is None else list(index)
+    if sorted(index) != list(range(n)):
+        raise ClipError("a track order that isn't one track a bone")
+    enc = [x.encode("latin-1") for x in names]
+    at = (0x24 + 2 * n + 3) & ~3
+    matrices = b"".join(struct.pack("<12f", *m) for s in (bind, local, world) for m in s)
+    ptab, otab, text = struct.pack(f"<{n}i", *parents), struct.pack(f"<{n}I", *index), b"".join(enc)
+    p_at = at + len(matrices)
+    o_at = p_at + len(ptab)
+    head = struct.pack("<9I", 1, n, at, p_at, o_at, o_at + len(otab), len(matrices), len(ptab), len(otab))
+    body = head + struct.pack(f"<{n}H", *[len(e) for e in enc])
+    body += bytes(at - len(body)) + matrices + ptab + otab + text
+    return body + bytes(-len(body) % 4)
 
 
 def track_of(c: Clip, bone: str) -> int:
@@ -231,6 +280,120 @@ def _rot(keys, frac):
 def sample(t: Track, frac: float) -> tuple:
     """A bone's (move, turn (x, y, z, w), size) at a place in the clip (0..1)."""
     return _vec(t.T, frac), _rot(t.R, frac), _vec(t.S, frac)
+
+
+# --- a clip from a pose at every frame (a model's own animations: rusemod.unitmodel.own_clips) ---
+FPS = 30   # every clip of the game runs at 30 frames a second (134 of its 135 different clips; the other is one frame)
+
+
+def frame_time(k: int, frames: int) -> int:
+    """Frame k of a clip of `frames` frames, as a key's time."""
+    return time_of(k / (frames - 1)) if frames > 1 else 0
+
+
+def _f32(v: float) -> float:
+    return struct.unpack("<f", struct.pack("<f", v))[0]
+
+
+def _lerp(a, b, f):
+    return tuple(x + (y - x) * f for x, y in zip(a, b))
+
+
+def _same_float(a: float, b: float) -> bool:
+    """Two moves' or sizes' numbers the same as a clip's floats hold them (two steps of a 32-bit float)."""
+    return abs(a - b) <= max(1e-6, 2.5e-7 * max(abs(a), abs(b)))
+
+
+def _vec_keys(values: list) -> list:
+    """The frames a move or size track keeps: each frame the straight line between its kept neighbours (as the clip
+    stores them) doesn't give back as its floats hold it; all one value: the first alone."""
+    v = [tuple(_f32(c) for c in x) for x in values]
+
+    def same(p, m: int) -> bool:
+        return all(_same_float(x, y) for x, y in zip(p, values[m]))
+    if all(same(v[0], m) for m in range(len(v))):
+        return [0]
+
+    def on_line(a: int, e: int) -> bool:
+        return all(same(_lerp(v[a], v[e], (m - a) / (e - a)), m) for m in range(e - 1, a, -1))
+    return _kept(len(v), on_line)
+
+
+def _turn_keys(turns: list) -> list:
+    """The frames a turn track keeps: each frame where the game's own turn between its kept neighbours (as the clip
+    packs them) is further from the frame's turn than a key of its own would be, by more than one step of the packing.
+    (A key isn't always the nearer: near a half turn the packing holds w no closer to 0 than about 0.0014.)"""
+    back = [unpack_quat(pack_quat(*q)) for q in turns]
+
+    def apart(q, r) -> float:
+        if sum(x * y for x, y in zip(q, r)) < 0:
+            q = tuple(-c for c in q)
+        return max(abs(x - y) for x, y in zip(q, r))
+    own = [apart(b, q) for b, q in zip(back, turns)]
+
+    def same(q, m: int) -> bool:
+        return apart(q, turns[m]) <= own[m] + SCALE * 1.5
+    if all(same(back[0], m) for m in range(len(turns))):
+        return [0]
+
+    def on_line(a: int, e: int) -> bool:   # (from the far end: where a poorly packed end fails, it fails at once)
+        return all(same(slerp(back[a], back[e], (m - a) / (e - a)), m) for m in range(e - 1, a, -1))
+    return _kept(len(turns), on_line, lambda e: own[e] <= SCALE * 1.5)
+
+
+PAST_POOR = 256   # frames looked past for a farther one the line reaches, while the ones between are poorly packed
+
+
+def _kept(n: int, on_line, good=None) -> list:
+    """The frames to keep of n: from each kept frame, the farthest frame every frame between them is on the line to.
+    A frame that isn't `good` (its own key would be poorly packed) doesn't end the search when the line to it fails:
+    the line may reach a farther one (up to PAST_POOR frames on)."""
+    keep, a = [0], 0
+    while a < n - 1:
+        best, e = a + 1, a + 2
+        while e < n and e - best <= PAST_POOR:
+            if on_line(a, e):
+                best = e
+            elif good is None or good(e):
+                break
+            e += 1
+        keep.append(best)
+        a = best
+    return keep
+
+
+def same_side(turns: list) -> list:
+    """Turns (x, y, z, w) as the game's clips keep a track's: the first with w >= 0, each next one on the same side as
+    the one before."""
+    out = []
+    for q in turns:
+        q = tuple(float(c) for c in q)
+        if (not out and q[3] < 0) or (out and sum(x * y for x, y in zip(q, out[-1])) < 0):
+            q = tuple(-c for c in q)
+        out.append(q)
+    return out
+
+
+def from_frames(duration: float, poses: list, record: bytes) -> Clip:
+    """A clip on the skeleton `record` (one skeleton_bytes writes, or the game's) from a pose at each frame: `poses[b]`
+    is bone b's (moves, turns, sizes), one (x, y, z) / (x, y, z, w) / (x, y, z) a frame, every bone the same number of
+    frames, on the grid k / (frames - 1) of `duration` seconds. Keys as the docstring above says; tracks in the
+    record's track order; the record is the clip's skeleton part."""
+    sk = skeleton(record)
+    if len(poses) != sk["bones"]:
+        raise ClipError(f"poses for {len(poses)} bones, the skeleton has {sk['bones']}")
+    frames = len(poses[0][0]) if poses else 0
+    if frames < 1 or any(len(ch) != frames for p in poses for ch in p):
+        raise ClipError("a pose at every frame, for every bone")
+    tracks = []
+    for b in sk["index"]:
+        moves, turns, sizes = poses[b]
+        turns = same_side(turns)
+        T = [(frame_time(k, frames), *(_f32(c) for c in moves[k])) for k in _vec_keys(moves)]
+        S = [(frame_time(k, frames), *(_f32(c) for c in sizes[k])) for k in _vec_keys(sizes)]
+        R = [(frame_time(k, frames), *pack_quat(*turns[k])) for k in _turn_keys(turns)]
+        tracks.append(Track(T, S, R))
+    return Clip(float(duration), frames, tracks, bytes(record))
 
 
 # --- changes ---

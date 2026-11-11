@@ -673,6 +673,7 @@ BLADE_BONE = "helice_ls_"
 BLADES_MARK = "blades"      # the part prepare holds a plane's blades in, for _own_discs to put on their propellers
 RIGGED, RIGGED_STATIC = "rigged", "rigged_static"   # the nodes of a mod's .glb holding a rigged model's parts (each point on its own bones) and its draws with no bones
 RIGGED_DISC = "rigged_propeller"                    # ... and its propeller discs: named as the viewers know a disc (the Studio's 3D view, Blender keep them from showing as plain squares)
+OWN_SKELETON = "own_skeleton"   # the fitting's report: a model on bones of its own (rusemod.unitmodel.own_skeleton): {"bones", "animations", "record": its skeleton record in base64}
 BLADE_REACH = 1.25          # a blade reaches at most this many of its disc's radii from the middle of the disc nearest it (the game's 433 blade pieces: at most 1.15, blade_pieces.py)
 
 
@@ -1323,14 +1324,26 @@ def smooth_normals(positions: list, triangles: list) -> list:
 
 
 # --- the mod's own file: files/models/<unit>.glb ---
-def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
+def write_glb(prep: Prepared, path: Path, like_model: str = "", animations: dict | None = None) -> None:
     """Save a fitted model as a .glb in the axes `ruse export-model` writes (rusemod.gltf): one node per bone, a
     primitive per picture, the colour pictures as its materials' and each alpha (side colour / shine) as an image of
-    its own (named in the material's extras)."""
+    its own (named in the material's extras). A model on bones of its own (the report's OWN_SKELETON) has its whole
+    skeleton in it, every bone at its rest pose under its parent, and its record in its skin's extras (rusemod.rig),
+    so it opens in Blender with its bones and the build gets the record back as it was; `animations` ({name: a game
+    clip's bytes on that record}, rusemod.unitmodel.own_clips) go in as its animations (_own_animations), so the file
+    keeps them all and opens in Blender with them."""
     from .dxt import png_bytes
     from .gltf import FLOAT, MIRROR, SCALE, TRACK_ATTRIBUTE, UBYTE, UINT, USHORT, _Glb, _point, _split
     g = _Glb()
-    joints = sorted({name for p in prep.parts if p.skin and not p.static for v in p.skin for name, _w in v})
+    own = prep.report.get(OWN_SKELETON)
+    own = own.get("record") if isinstance(own, dict) else None
+    sk = None
+    if own:
+        import base64
+        from . import baf
+        sk = baf.skeleton(base64.b64decode(own))
+    joints = list(sk["names"]) if sk is not None else \
+        sorted({name for p in prep.parts if p.skin and not p.static for v in p.skin for name, _w in v})
     joint_at = {name: k for k, name in enumerate(joints)}
     for name, w, h, px in prep.pictures:
         colour, grey = _split(px)
@@ -1372,16 +1385,96 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
     for bone, prims in nodes.items():
         g.doc["meshes"].append({"name": bone, "primitives": prims})
         g.doc["nodes"].append({"name": bone, "mesh": len(g.doc["meshes"]) - 1, **({"skin": 0} if bone in (RIGGED, RIGGED_DISC) else {})})
-    if joints:
-        first = len(g.doc["nodes"])
-        g.doc["nodes"] += [{"name": name} for name in joints]
-        identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]
-        ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(identity * len(joints))))
-        g.doc["accessors"].append({"bufferView": ibm, "componentType": FLOAT, "count": len(joints), "type": "MAT4"})
-        g.doc["skins"] = [{"joints": list(range(first, first + len(joints))), "inverseBindMatrices": len(g.doc["accessors"]) - 1}]
-    g.doc["scenes"] = [{"name": Path(path).stem, "nodes": list(range(len(g.doc["nodes"])))}]
+    report = prep.report
+    if sk is not None:
+        meshes = list(range(len(g.doc["nodes"])))
+        holder = _own_bones(g, sk, own, Path(path).stem)
+        g.doc["scenes"] = [{"name": Path(path).stem, "nodes": meshes + [holder]}]
+        if animations:
+            _own_animations(g, sk, holder - sk["bones"], animations)
+        report = dict(report, **{OWN_SKELETON: {k: v for k, v in report[OWN_SKELETON].items() if k != "record"}})
+    else:
+        if joints:
+            first = len(g.doc["nodes"])
+            g.doc["nodes"] += [{"name": name} for name in joints]
+            identity = [1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0]
+            ibm = g.view(struct.pack(f"<{16 * len(joints)}f", *(identity * len(joints))))
+            g.doc["accessors"].append({"bufferView": ibm, "componentType": FLOAT, "count": len(joints), "type": "MAT4"})
+            g.doc["skins"] = [{"joints": list(range(first, first + len(joints))), "inverseBindMatrices": len(g.doc["accessors"]) - 1}]
+        g.doc["scenes"] = [{"name": Path(path).stem, "nodes": list(range(len(g.doc["nodes"])))}]
     g.doc["scene"] = 0
     g.doc["asset"]["extras"] = {"rusemod_import": 1, "rusemod_scale": SCALE, "rusemod_mirror": MIRROR,
-                                "rusemod_like": like_model, "rusemod_report": prep.report}
+                                "rusemod_like": like_model, "rusemod_report": report}
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_bytes(g.to_bytes())
+
+
+def _own_bones(g, sk: dict, record: str, stem: str) -> int:
+    """write_glb's bones for a model on bones of its own (`sk`: its record as rusemod.baf.skeleton reads it, `record`
+    the record in base64): each bone a node at its rest pose from its parent, under one node holding the roots; the
+    skin's inverse bind matrices from the record's model -> bone set, and the record itself in its extras. Returns the
+    node holding them."""
+    from .gltf import FLOAT
+    from .rig import SKELETON_EXTRA, decompose, matrix_out, move_out, size_out, turn_out
+    first = len(g.doc["nodes"])
+    for b, name in enumerate(sk["names"]):
+        move, turn, size, _off = decompose(sk["local"][b])
+        g.doc["nodes"].append({"name": name, "translation": list(move_out(move)), "rotation": list(turn_out(turn)),
+                               "scale": list(size_out(size))})
+    for b, p in enumerate(sk["parents"]):
+        if p >= 0:
+            g.doc["nodes"][first + p].setdefault("children", []).append(first + b)
+    holder = len(g.doc["nodes"])
+    g.doc["nodes"].append({"name": f"{stem}_bones", "children": [first + b for b, p in enumerate(sk["parents"]) if p < 0]})
+    ibm = [v for b in range(sk["bones"]) for v in matrix_out(sk["bind"][b])]
+    g.doc["accessors"].append({"bufferView": g.view(struct.pack(f"<{len(ibm)}f", *ibm)), "componentType": FLOAT,
+                               "count": sk["bones"], "type": "MAT4"})
+    g.doc["skins"] = [{"joints": list(range(first, first + sk["bones"])), "inverseBindMatrices": len(g.doc["accessors"]) - 1,
+                       "skeleton": holder, "extras": {SKELETON_EXTRA: record}}]
+    return holder
+
+
+def _own_animations(g, sk: dict, first: int, animations: dict) -> None:
+    """write_glb's animations for a model on bones of its own: each game clip (`animations`, {name: its bytes}, on the
+    record `sk`) as a glTF animation of the bone nodes from `first` on, every key of each track as the clip keeps it
+    (a turn as it's unpacked, a move and a size as stored), as glTF plays them (LINEAR): a track's one key held from
+    the clip's start to its end, two keys across the whole clip (the game doesn't read their times), more at their
+    times; a clip of one frame as one key at 0. rusemod.rig reads them back, so the build and a later import get the
+    same clips again (within what a clip's numbers hold)."""
+    from . import baf
+    from .gltf import FLOAT
+    from .rig import move_out, size_out, turn_out
+    out = g.doc.setdefault("animations", [])
+    for name, data in animations.items():
+        c = baf.parse(data)
+        csk = baf.skeleton(c.skeleton)
+        if csk["names"] != sk["names"]:
+            # not a game rule: a clip goes with the skeleton it was made on
+            raise ModelError(f"the animation {name} is on other bones than the model's")
+        times_of: dict = {}
+
+        def times(keys) -> int:
+            if c.frames <= 1:
+                t = (0.0,)
+            elif len(keys) <= 2:
+                t = (0.0, float(c.duration))
+            else:
+                t = tuple(k[0] / baf.LAST_TIME * c.duration for k in keys)
+            if t not in times_of:
+                times_of[t] = g.accessor(list(t), "SCALAR", FLOAT, target=None)
+                g.doc["accessors"][times_of[t]]["min"], g.doc["accessors"][times_of[t]]["max"] = [min(t)], [max(t)]
+            return times_of[t]
+        samplers, channels = [], []
+        for u, track in enumerate(c.tracks):
+            node = first + csk["index"][u]
+            for path, keys, conv, kind in (("translation", track.T, lambda k: move_out(k[1:4]), "VEC3"),
+                                           ("rotation", track.R, lambda k: turn_out(baf.unpack_quat(k[1:5])), "VEC4"),
+                                           ("scale", track.S, lambda k: size_out(k[1:4]), "VEC3")):
+                keys = keys[:1] if c.frames <= 1 else keys
+                values = [conv(k) for k in keys]
+                if c.frames > 1 and len(values) == 1:
+                    values = values * 2
+                samplers.append({"input": times(keys), "output": g.accessor(values, kind, FLOAT, target=None),
+                                 "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1, "target": {"node": node, "path": path}})
+        out.append({"name": name, "samplers": samplers, "channels": channels})

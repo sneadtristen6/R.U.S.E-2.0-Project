@@ -19,17 +19,26 @@ texture of its own (gen\\...\\<unit>_NN.tgv, DXT5 with every level down to 4 x 4
 to ZZ_Win.dat, with its stand-in (64 pixels across at most, raw DXT5) added to every stand-in pack that holds the
 copied body texture's.
 A stand-in is found by an 8-byte key: the 64-bit CRC (polynomial 0x42F0E1EBA9EA3693, all ones in and out) of its
-name, true of all 2,822 stand-ins in the game's 74 stand-in packs (checked 2026-10-04)."""
+name, true of all 2,822 stand-ins in the game's 74 stand-in packs (checked 2026-10-04).
+
+A model on bones of its own (a horse, a horse and its rider, any creature: import_model's `own_bones`, 2026-11-10) brings
+its skeleton with it (rusemod.rig reads it from the .glb): its record (own_skeleton) goes under the new model's name in
+every skeleton pack that holds the copied unit's, each draw lists the bones its points lean on (64 at most: a part that
+leans on more is drawn in several), its points are stored as a rigged model's are, and each of its animations becomes a
+game clip on that skeleton (own_clips; where they go in the game is the build's). Its top and bottom halves for the two
+clips a soldier plays at once: halves. The owner's tenth horse test (2026-11-09) played such a model, made by hand:
+62 bones, its own draws, 24 clips and two masks; the pieces here are taken from that test's scripts."""
 from __future__ import annotations
 
+import base64
 import json
 import math
 import struct
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import dxt, tgu1
-from .modelin import RIGGED, RIGGED_DISC, RIGGED_STATIC, ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, bone_weights, glb_accessor, \
+from . import baf, dxt, tgu1
+from .modelin import OWN_SKELETON, RIGGED, RIGGED_DISC, RIGGED_STATIC, ModelError, Part, Prepared, _IDENTITY, _matmul, _node_matrix, bone_weights, glb_accessor, \
     glb_document, glb_image, smooth_normals
 from .ndf import Ndf, Value
 from .spk import Spk, SpkError
@@ -50,6 +59,8 @@ PROPELLER_TYPE = "helice"   # a material type starting so draws a spinning-prope
 STANDIN_SIDE = 64
 MOST_BONES = 64   # the longest bone list of any material the game ships (gen_5\pack\gfxdescriptor\mesh_all.spk's 68)
 INDEX_16, INDEX_32 = 1, 0   # an index buffer's kind: 1 = 16-bit (every one the game ships), else 32-bit
+MOST_ANIMATED = 64   # the most bones a model the game animates is seen to have (not tried past it: a warning, not a refusal)
+TOP_MASK, BOTTOM_MASK = 65280, 255   # the two halves' MaskUnionCode, as a soldier's own masks and the 11-09 horse's have them
 
 
 class UnitModelError(ModelError):
@@ -59,7 +70,8 @@ class UnitModelError(ModelError):
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
                  facing: list | None = None, own_turret: bool = False, own_propellers: bool = False,
-                 others: list | None = None, move: list | None = None) -> dict:
+                 others: list | None = None, move: list | None = None, own_bones: bool = False,
+                 clips: dict | None = None) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
@@ -74,7 +86,10 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     models; a rigged model takes the place of those with the same bones too (the report's "also": a squad's riflemen and its bazooka
     man). `move` ([forward, right, up] in the game's model units, the owner's pick 2026-11-09, the brief's gap 1): the fitted model moved that far; with `own_turret` its turret's
     bones go with it, so it still turns where the model's turret is (a rigged model stays where its bones are: said in the report's notes). Returns the fitting's report (parts and
-    their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] the unit's own place, where the game centres its selection ring, and how long the unit it copies is)."""
+    their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] the unit's own place, where the game centres its selection ring, and how long the unit it copies is).
+    `own_bones` (2026-11-10, not tried in the game yet): the file's model is on bones of its own (a horse, any creature),
+    whatever bones the copied unit has: _import_own_bones; `clips` (a dict, own_bones only) gets each of its animations
+    as a game clip, {its name: the clip's bytes} (own_clips), for the caller to keep as the unit's own."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import check_move, prepare, read_model, write_glb
@@ -83,6 +98,12 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     if path is None:
         raise UnitModelError(f"ZZ_Win.dat isn't in {game}")
     zz = Edat.open(str(path))
+    if own_bones:
+        try:
+            return _import_own_bones(zz, source_model, Path(model_file), Path(out), size, side, pictures, others, move,
+                                     clips)
+        finally:
+            zz.close()
     try:
         rigged = None
         try:
@@ -129,6 +150,60 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     prep.report["stands"] = [0.0, 0.0, float(src.like["ground"]), float(src.like["length"])]
     write_glb(prep, out, src.model)
     return dict(prep.report, like=src.model)
+
+
+def _import_own_bones(zz, source_model: str, model_file: Path, out: Path, size: float, side: int,
+                      pictures: Path | None, others: list | None, move: list | None, clips: dict | None = None) -> dict:
+    """import_model for a model on bones of its own: its skeleton read from the file (rusemod.rig) and kept as the
+    game's record (own_skeleton), every point on its own bones in the game's axes and units, nothing moved or scaled (a
+    rigged model's way, modelin._prepare_rigged), each part keeping its game draw's material when the file says which.
+    The new model takes the place of the copied unit's model and of its other models with the same bones (the report's
+    "also"), as a rigged one does. Its animations, made into game clips on that record (own_clips), go into the
+    model's file as its animations (modelin.write_glb), so the file keeps them all, and into `clips` when given. The
+    report's OWN_SKELETON: {"bones": how many, "animations": [{"name", "seconds", "frames"}] (each clip's), "record":
+    the record in base64 (kept in the model's file, not in the report the Studio is given)}."""
+    from .modelin import prepare, read_model, write_glb
+    from .rig import read_rig
+    rig = read_rig(model_file)
+    record, notes = own_skeleton(rig)
+    made, _clip_notes = own_clips(rig, record)   # (its notes are the rig's, said already)
+    model = read_model(model_file, skin=True)
+    for m in model.meshes:      # (the record keeps its names in lower case: rusemod.rig)
+        m.skin = [[(n.lower(), w) for n, w in v] for v in m.skin]
+    used = {n for m in model.meshes for v in m.skin for n, _w in v}
+    wrong = sorted(used - set(rig.names))
+    if wrong:
+        # not a game rule: a point leans on a bone of another skin than the ones read
+        raise UnitModelError(f"its points lean on bones its skeleton hasn't got: {', '.join(wrong[:6])}")
+    src = find_source(zz, source_model, rigged=True)
+    also = []
+    for other in others or []:
+        try:
+            found = find_source(zz, other, rigged=True)
+        except UnitModelError:
+            continue
+        if found.model != src.model and found.skeleton.names == src.skeleton.names:
+            also.append(found.model)
+    loose = [m.name for m in model.meshes if not m.skin and not m.static]
+    if loose:
+        notes.append(f"not skinned, so on its first bone ({rig.joints[0].name}): {', '.join(loose[:6])}. In Blender, "
+                     "skin it to the bones it should follow")
+    if move:
+        notes.append("a model on bones of its own stays where its bones are: the move wasn't used")
+    here = model_file.resolve().parent
+    look = ([Path(pictures)] if pictures else []) + [here, here.parent]
+    prep = prepare(model, look, dict(src.like, root=rig.joints[0].name), size=size, side=side)
+    prep.report["also"] = also
+    prep.report["notes"] = list(prep.report.get("notes") or []) + notes
+    shown = {name: baf.parse(data) for name, data in made.items()}
+    prep.report[OWN_SKELETON] = {"bones": len(rig.joints), "record": base64.b64encode(record).decode("ascii"),
+                                 "animations": [{"name": name, "seconds": round(c.duration, 4), "frames": c.frames}
+                                                for name, c in shown.items()]}
+    write_glb(prep, out, src.model, animations=made)
+    if clips is not None:
+        clips.clear()
+        clips.update(made)
+    return dict(said(prep.report), like=src.model)
 
 
 def rigged_first(game: Path, model_file: Path, models: list) -> list:
@@ -350,6 +425,152 @@ def own_propellers(blob: bytes, places: list) -> bytes:
     body = head + struct.pack(f"<{total}H", *lens)
     body += bytes(at - len(body)) + matrices + parent_table + order_table + text
     return body + bytes(-len(body) % 4)
+
+
+# --- a model on bones of its own (rusemod.rig) ---
+def too_many_bones(n: int) -> str:
+    """What is said of a skeleton past MOST_ANIMATED bones: written all the same, never refused."""
+    return (f"{n} bones: the game isn't seen to animate a model with more than {MOST_ANIMATED} (not tried in the game "
+            f"yet). Its skeleton, draws and clips are written all the same, each draw listing {MOST_BONES} bones at most.")
+
+
+def own_skeleton(rig) -> tuple[bytes, list]:
+    """A model's own skeleton (rusemod.rig.Rig) as the game's record (rig.record(): the file's own when its bones still
+    match it, else worked out from them), and what is to be said about it: the reader's notes, and a warning past
+    MOST_ANIMATED bones."""
+    record = rig.record()
+    notes = list(rig.notes)
+    if len(rig.joints) > MOST_ANIMATED:
+        notes.append(too_many_bones(len(rig.joints)))
+    return record, notes
+
+
+def own_clips(rig, record: bytes | None = None, fps: int = baf.FPS) -> tuple[dict, list]:
+    """Each of the model's animations (rusemod.rig.Rig) as a game clip on its skeleton `record` (own_skeleton's, the
+    rig's own when not given), `fps` frames a second (rusemod.baf.from_frames): ({the animation's name: the clip's
+    bytes}, what is to be said). A name the file gives twice is numbered. Writing them into the game and pointing a
+    unit's actions at them is the build's."""
+    record = rig.record() if record is None else record
+    sk = baf.skeleton(record)
+    if sk["names"] != rig.names:
+        raise UnitModelError("that skeleton isn't this model's: its bones differ")
+    most = max(baf.MOST_BONES, sk["bones"])
+    out: dict = {}
+    for anim in rig.animations:
+        length, poses = rig.poses(anim, fps)
+        name, k = anim.name, 2
+        while name in out:
+            name, k = f"{anim.name} {k}", k + 1
+        try:
+            out[name] = baf.build(baf.from_frames(length, poses, record), most)
+        except baf.ClipError as exc:
+            raise UnitModelError(f"the animation {anim.name}: {exc}") from None
+    notes = [n for n in rig.notes]
+    if sk["bones"] > MOST_ANIMATED:
+        notes.append(too_many_bones(sk["bones"]))
+    return out, notes
+
+
+def own_record(report: dict) -> bytes | None:
+    """The skeleton record of a model on bones of its own, as the fitting's report carries it (OWN_SKELETON's
+    "record", put there by read_mod_glb from the model's file); None for a model on the copied unit's bones."""
+    own = report.get(OWN_SKELETON)
+    if not own:
+        return None
+    record = own.get("record") if isinstance(own, dict) else None
+    if not record:
+        # not a game rule: the model's file lost its skeleton (a file not written by the Studio)
+        raise UnitModelError("its skeleton isn't in its file any more: import the model again")
+    return base64.b64decode(record)
+
+
+def said(report: dict) -> dict:
+    """The fitting's report as the Studio shows and keeps it: its own skeleton's record left out (it's in the model's
+    file)."""
+    own = report.get(OWN_SKELETON)
+    if not isinstance(own, dict) or "record" not in own:
+        return report
+    return dict(report, **{OWN_SKELETON: {k: v for k, v in own.items() if k != "record"}})
+
+
+def _top_of(record: bytes, split: str) -> tuple[dict, set]:
+    sk = baf.skeleton(record)
+    low = [n.lower() for n in sk["names"]]
+    if split.lower() not in low:
+        # not a game rule: a half starts at one of the model's own bones
+        raise UnitModelError(f"the skeleton has no bone called {split}")
+    top = {low.index(split.lower())}
+    grew = True
+    while grew:          # (parents come first in every record, so once round is enough; the loop guards any other)
+        grew = False
+        for b, p in enumerate(sk["parents"]):
+            if p in top and b not in top:
+                top.add(b)
+                grew = True
+    return sk, top
+
+
+def halves(record: bytes, split: str) -> dict:
+    """A skeleton's top and bottom halves for the two clips a soldier plays at once (the top's and the bottom's), split
+    at the bone `split`: that bone and every bone under it weigh 1.0 in the top mask and 0 in the bottom, every other
+    bone the other way round, as the owner's tenth horse test (2026-11-09) played them. Each mask names its own bones
+    at 1.0 and leaves the rest to the mask's default, 0, as that test's did. Returns the two masks' contents, to be
+    written as the game's masks (THierarchicalASEModelSkeletonMask): {"split": the bone, "top": {"MaskUnionCode",
+    "AnimationSlot", "Weights": {bone: 1.0}}, "bottom": {"MaskUnionCode", "Weights": {bone: 1.0}}, "notes"}."""
+    sk, top = _top_of(record, split)
+    names = sk["names"]
+    notes = []
+    if len(top) == len(names):
+        notes.append(f"the split at {names[min(top)]} puts every bone in the top half: the bottom's clips move nothing")
+    return {"split": names[min(top)],
+            "top": {"MaskUnionCode": TOP_MASK, "AnimationSlot": 1, "Weights": {names[b]: 1.0 for b in sorted(top)}},
+            "bottom": {"MaskUnionCode": BOTTOM_MASK, "Weights": {n: 1.0 for b, n in enumerate(names) if b not in top}},
+            "notes": notes}
+
+
+def game_masks_fit(record: bytes, masks: dict) -> dict:
+    """Whether a soldier's own two masks (`masks`: {"top": {name: weight}, "bottom": {name: weight}}, as the game's
+    data has them) fit this skeleton instead of halves(): a mask weighs bones by name (any case), and a name the
+    skeleton hasn't got is expected to stop the game with an error box (not tried in the game). Returns {"fit": every
+    name they weigh is one of its bones, "missing": {half: [names]}, "left": [its bones neither weighs above 0 (what the
+    game gives such a bone is not known)], "weights": {bone: [top, bottom]}}."""
+    sk = baf.skeleton(record)
+    low = {n.lower(): n for n in sk["names"]}
+    missing, weights = {}, {n: [0.0, 0.0] for n in sk["names"]}
+    for k, half in enumerate(("top", "bottom")):
+        for name, w in (masks.get(half) or {}).items():
+            bone = low.get(name.lower())
+            if bone is None:
+                missing.setdefault(half, []).append(name)
+            else:
+                weights[bone][k] = float(w)
+    return {"fit": not missing, "missing": missing, "left": [n for n, (t, b) in weights.items() if t <= 0 and b <= 0],
+            "weights": weights}
+
+
+def _bone_pieces(part: Part, most: int = MOST_BONES) -> list:
+    """A rigged part as draws leaning on `most` bones at most each (a material's bone list holds 64): the part itself
+    when it leans on no more, else its triangles in turn, a new draw begun when the next would take one past it."""
+    if len({n for v in part.skin for n, _w in v[:4]}) <= most:
+        return [part]
+    groups, tris, have = [], [], set()
+    for t in part.triangles:
+        need = {n for v in t for n, _w in part.skin[v][:4]}
+        if tris and len(have | need) > most:
+            groups.append(tris)
+            tris, have = [], set()
+        tris.append(t)
+        have |= need
+    groups.append(tris)
+    out = []
+    for tris in groups:
+        keep = sorted({v for t in tris for v in t})
+        new = {v: k for k, v in enumerate(keep)}
+        out.append(Part(part.bone, part.picture, [part.positions[v] for v in keep], [part.normals[v] for v in keep],
+                        [part.uvs[v] for v in keep], [tuple(new[v] for v in t) for t in tris],
+                        skin=[part.skin[v] for v in keep], tracks=[part.tracks[v] for v in keep] if part.tracks else part.tracks,
+                        draw=part.draw, static=part.static))
+    return out
 
 
 # --- where the copied unit's model is ---
@@ -587,7 +808,30 @@ def read_mod_glb(path: Path) -> Prepared:
         visit(n, _IDENTITY)
     if not parts:
         raise UnitModelError(f"{Path(path).name}: no meshes in it")
-    return Prepared(parts, pictures, (doc.get("asset", {}).get("extras") or {}).get("rusemod_report", {}))
+    report = (doc.get("asset", {}).get("extras") or {}).get("rusemod_report", {})
+    from .rig import SKELETON_EXTRA
+    if report.get(OWN_SKELETON) is not None or any((s.get("extras") or {}).get(SKELETON_EXTRA) for s in doc.get("skins") or []):
+        report = _with_own_record(doc, binary, report, Path(path).name)
+    return Prepared(parts, pictures, report)
+
+
+def _with_own_record(doc: dict, binary: bytes, report: dict, label: str) -> dict:
+    """The fitting's report with the model's own skeleton record (OWN_SKELETON's "record") from the model's file
+    itself: the record it carries while its bones still match it, else worked out from them (rusemod.rig), so a file
+    whose bones were moved in Blender is built as it is now."""
+    from .rig import rig_of
+    try:
+        rig = rig_of(doc, binary, label)
+    except ModelError as exc:
+        raise UnitModelError(f"{label}: its own skeleton can't be read: {exc}") from None
+    record, notes = own_skeleton(rig)
+    out = dict(report)
+    out[OWN_SKELETON] = dict(report.get(OWN_SKELETON) or {}, bones=len(rig.joints),
+                             record=base64.b64encode(record).decode("ascii"))
+    new = [n for n in notes if n not in (report.get("notes") or [])]
+    if new:
+        out["notes"] = list(report.get("notes") or []) + new
+    return out
 
 
 # --- textures ---
@@ -756,7 +1000,7 @@ def _retext(nd: Ndf, v: Value, old: str, new: str) -> Value:
 
 
 def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[str], box: tuple,
-                bones: Skeleton, memo: dict | None = None, own=None) -> MeshPack:
+                bones: Skeleton, memo: dict | None = None, own=None, own_bones: bool = False) -> MeshPack:
     """A copy of pack `raw` holding `new`: the fitted parts as draw calls, each material a copy of `source`'s body
     material naming its own picture (for MeshPack.add to carry into each pack); a part on a bone `source`'s own
     propeller discs spin on is a disc too, its material a copy of `source`'s propeller material (MaterialType
@@ -764,7 +1008,10 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     list hasn't got (the copied model ties nothing to it) is on that copy's list too. `bones`: the copied model's
     skeleton (its entry is in the skeleton packs). `memo`: a dict kept for this `raw` and `source` (Source.look: the
     pack's materials and the propellers' bones as find_source read them, once for every model copying `source`).
-    `own`: makes the model's skeleton of its own from the copied one's bytes, when it has one (moved_turret, own_propellers)."""
+    `own`: makes the model's skeleton of its own from the copied one's bytes, when it has one (moved_turret, own_propellers).
+    `own_bones`: `bones` is the model's own skeleton (a model on bones of its own): each rigged draw's material is a
+    copy of its game draw's with a bone list of its own, the bones its points lean on (64 at most a draw: _bone_pieces),
+    as the owner's tenth horse test (2026-11-09) had its draws."""
     src = MeshPack.read(raw)
     data, mesh, skel = src.items[source]
     if own is not None and skel != NONE:    # (a pack that keeps the skeleton beside the mesh)
@@ -804,7 +1051,53 @@ def _with_model(raw: bytes, source: str, new: str, prep: Prepared, images: list[
     material_of: dict = {}
     listed: dict = {}   # each copy's bone list: the copied material's, then the bones its parts are on that it hasn't
     draws = []
+    own_material_of: dict = {}   # (look, picture, bone list) -> a copy with that bone list (own_bones)
+
+    def own_bone_material(look, picture: int, bone_list: list) -> int:
+        # (the horse test's carrier(): the game draw's material with the draw's own SkinningRemapping)
+        key = (look, picture, tuple(bone_list))
+        if key not in own_material_of:
+            base, old, _remap = looks[look]
+            image = images[picture] if picture >= 0 else old
+            props, found = [], False
+            for pi, v in base.props:
+                name = nd.prop_name(pi)
+                if name == "Textures":
+                    v = _retext(nd, v, old, image)
+                elif name == "SkinningRemapping":
+                    items = _subs(v)
+                    kind = items[0].tc if items else 0x02
+                    v = Value(0x11, struct.pack("<I", len(bone_list)) + b"".join(
+                        Value(kind, struct.pack("<i", b)).encode() for b in bone_list))
+                    found = True
+                props.append((pi, v))
+            if not found:
+                # not a game rule: the copy's bone list is made from the game draw's own
+                raise UnitModelError(f"the material of {source} that this draw copies has no bone list to give it")
+            roots.append(nd.add_object(base.cls, props))
+            own_material_of[key] = len(roots) - 1
+        return own_material_of[key]
+
     for part in prep.parts:
+        if own_bones and part.skin is not None and not part.static:   # a model on bones of its own
+            look = ("draw", own[part.draw] if part.draw is not None and 0 <= part.draw < len(own) else body_number)
+            if look not in looks:
+                looks[look] = material(look[1])
+            for piece in _bone_pieces(part):
+                for pairs in piece.skin:
+                    for name, _w in pairs[:4]:
+                        if name not in bones.names:
+                            raise UnitModelError(f"its skeleton has no bone {name} (a point of the .glb leans on it)")
+                bone_list = sorted({bones.names.index(n) for pairs in piece.skin for n, _w in pairs[:4]})
+                vb, kind = _rigged_buffer(piece, bone_list, bones)
+                if kind.encode() not in [f.split(b"\0", 1)[0] for f in src.formats]:
+                    src.formats.append(kind.encode().ljust(256, b"\0"))
+                vb.kind = [f.split(b"\0", 1)[0] for f in src.formats].index(kind.encode())
+                src.vbs.append(vb)
+                src.ibs.append(_index_buffer(piece))
+                draws.append((0, own_bone_material(look, piece.picture, bone_list), len(src.ibs) - 1, len(src.vbs) - 1,
+                              0xFFFF, 0xCDCD))
+            continue
         if part.skin is not None:       # a rigged part keeps the material of the game's draw it came from
             look = ("draw", own[part.draw] if part.draw is not None and 0 <= part.draw < len(own) else body_number)
             if look not in looks:
@@ -960,7 +1253,11 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
     if props:   # (a propeller the copied plane hasn't got: its bones are numbered in the model's own skeleton)
         holder = MeshPack.read(next(iter(src.skeleton_packs.values())) if src.skeleton_packs else first_raw)
         bones = read_skeleton(remade(holder.skeletons[holder.items[src.model][2]]))
-    carrier = _with_model(first_raw, src.model, new, prep, images, box, bones, src.look, own)
+    record = own_record(prep.report)
+    if record is not None:   # a model on bones of its own: its record in place of the copied one's, everywhere it goes
+        bones = read_skeleton(record)
+        own = lambda _blob: record   # noqa: E731
+    carrier = _with_model(first_raw, src.model, new, prep, images, box, bones, src.look, own, own_bones=record is not None)
     for path, raw in src.mesh_packs.items():
         pack = grown(path, raw, MeshPack)
         pack.add(carrier, new)
@@ -1003,7 +1300,7 @@ def write_unit_model(zz, source_model: str, unit: str, prep: Prepared, earlier: 
             one = ProxyPack([Proxy(standin_key(name), data, extra, name.encode("latin-1").ljust(256, b"\0"))], [0])
             pack.add(one, name)
         keep(path, pack)
-    report = dict(prep.report)
+    report = dict(said(prep.report))
     report.update({"model": new, "mesh_packs": sorted(src.mesh_packs), "skeleton_packs": sorted(src.skeleton_packs),
                    "textures": sorted(added), "standin_packs": sorted(p for p in changed if p.lower().endswith(".ppk")),
                    "box": box})
@@ -1136,7 +1433,7 @@ class KeptModels:
                     self.ready.wait()
                 record = self.made.pop(name, None)
             got = _kept_read(record) if record is not None else None
-            if got is not None:
+            if got is not None and _kept_has_all(got[0]):
                 return got
         if name is None:
             data = Path(glb).read_bytes() if self.cache is not None else b""
@@ -1146,7 +1443,7 @@ class KeptModels:
                 record = self.new.get(name)
             record = record or read_tiles(self.cache, [name], folder=KEPT_FOLDER).get(name)
             got = _kept_read(record) if record else None
-            if got is not None:
+            if got is not None and _kept_has_all(got[0]):
                 return got
         prep = read_mod_glb(glb)
         textures = [(new_texture(px, w, h), new_standin(px, w, h)) for _n, w, h, px in prep.pictures]
@@ -1176,6 +1473,13 @@ class KeptModels:
         if self.new:
             write_tiles(self.cache, self.new, most=KEPT_MOST, folder=KEPT_FOLDER)
         self.new, self.size = {}, 0
+
+
+def _kept_has_all(prep: Prepared) -> bool:
+    """Whether a kept model has all the build needs: a model on bones of its own with its skeleton record (a model of
+    such a file kept by a Studio that didn't know them hasn't, and is read again)."""
+    own = prep.report.get(OWN_SKELETON)
+    return not own or (isinstance(own, dict) and bool(own.get("record")))
 
 
 def _kept_start() -> None:

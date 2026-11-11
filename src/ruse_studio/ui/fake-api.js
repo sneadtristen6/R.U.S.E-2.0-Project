@@ -5,7 +5,8 @@
 // ?fake=nospace and ?fake=running the clean game backup's states, in Settings; ?fake=firstbackup the installer's
 // "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to French in
 // Steam; ?fake=groups a mod made before the build lists' limits: in the Nations tab, Germany's Armor base with a full
-// group and 10 groups, the USA's with a group over the most). Only English, French
+// group and 10 groups, the USA's with a group over the most; ?fake=horse a squad's Import model brings the Horse Squad,
+// a model on bones of its own with its animations). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -597,6 +598,14 @@
   Object.assign(words.us, {"model_blender_title": "Your own soldier, made in Blender", "model_blender_how": "1. Click Change it in Blender: Blender opens with the soldier and his bones. 2. Change him there, or bring in a model of your own (File > Import) and put it on his bones: click your model, Shift+click the bones, then Ctrl+P > With Automatic Weights. Delete what you don't keep. 3. Click Send to the R.U.S.E. Studio at the top of Blender. 4. Click Bring back the model here. Every soldier of the squad wears it.", "model_blender_needs": "To change this squad's soldier you need Blender, a free 3D program. Get Blender (free) installs it; Choose Blender… shows the Studio where it is if you have it already.", "model_blender": "Change it in Blender", "tip_model_blender": "Opens this squad's soldier in Blender with his bones in place. Change him there, or bring in a model of your own and put it on his bones. Your Blender files stay in your mod's folder, in blender.", "model_blender_back": "Bring back the model", "tip_model_blender_back": "Takes the model you sent from Blender into this squad: every soldier of it wears your model. Test in game shows it.", "model_blender_opening": "Opening Blender…", "model_blender_opened": "Blender is opening the soldier. When you're done there, click Send to the R.U.S.E. Studio at the top of Blender, then Bring back the model here.", "model_blender_where": "Your Blender files are kept here: {folder}", "model_blender_bringing": "Bringing your model back from Blender…", "model_blender_done": "Your model is in: every soldier of the squad wears it. Test in game shows it.", "blender_model_send": "Send to the R.U.S.E. Studio", "blender_model_sent": "Sent. Now click Bring back the model in the R.U.S.E. Studio.", "blender_model_hint1": "Change the soldier, or bring in your own model (File > Import) and put it on his bones: click your model, Shift+click the bones, Ctrl+P > With Automatic Weights.", "blender_model_hint2": "Delete what you don't keep. Then click Send to the R.U.S.E. Studio (top bar) and Bring back the model in the Studio."});
   Object.assign(words.fr, {"model_blender_title": "Votre propre soldat, fait dans Blender", "model_blender_how": "1. Cliquez sur Changer dans Blender : Blender s'ouvre avec le soldat et ses os. 2. Modifiez-le, ou importez votre propre modèle (File > Import) et posez-le sur ses os : cliquez sur votre modèle, Maj+clic sur les os, puis Ctrl+P > With Automatic Weights. Supprimez ce que vous ne gardez pas. 3. Cliquez sur Envoyer au R.U.S.E. Studio en haut de Blender. 4. Cliquez ici sur Ramener le modèle. Tous les soldats de l'escouade le portent.", "model_blender_needs": "Pour changer le soldat de cette escouade, il vous faut Blender, un logiciel 3D gratuit. Obtenir Blender (gratuit) l'installe ; Choisir Blender… montre au Studio où il est si vous l'avez déjà.", "model_blender": "Changer dans Blender", "tip_model_blender": "Ouvre le soldat de cette escouade dans Blender avec ses os en place. Modifiez-le, ou importez votre propre modèle et posez-le sur ses os. Vos fichiers Blender restent dans le dossier de votre mod, dans blender.", "model_blender_back": "Ramener le modèle", "tip_model_blender_back": "Prend le modèle envoyé depuis Blender pour cette escouade : chacun de ses soldats porte votre modèle. Tester en jeu le montre.", "model_blender_opening": "Ouverture de Blender…", "model_blender_opened": "Blender ouvre le soldat. Quand vous avez fini, cliquez sur Envoyer au R.U.S.E. Studio en haut de Blender, puis sur Ramener le modèle ici.", "model_blender_where": "Vos fichiers Blender sont gardés ici : {folder}", "model_blender_bringing": "Retour de votre modèle depuis Blender…", "model_blender_done": "Votre modèle est en place : chaque soldat de l'escouade le porte. Tester en jeu le montre.", "blender_model_send": "Envoyer au R.U.S.E. Studio", "blender_model_sent": "Envoyé. Cliquez maintenant sur Ramener le modèle dans le R.U.S.E. Studio.", "blender_model_hint1": "Modifiez le soldat, ou importez votre modèle (File > Import) et posez-le sur ses os : clic sur votre modèle, Maj+clic sur les os, Ctrl+P > With Automatic Weights.", "blender_model_hint2": "Supprimez ce que vous ne gardez pas. Puis cliquez sur Envoyer au R.U.S.E. Studio (barre du haut) et Ramener le modèle dans le Studio."});
   Object.assign(words.sc, {"model_blender_title": "在 Blender 中制作你自己的士兵", "model_blender_how": "1. 点击“在 Blender 中修改”：Blender 会打开这个士兵和他的骨骼。2. 在那里修改他，或导入你自己的模型（File > Import）并放到他的骨骼上：点击你的模型，按住 Shift 点击骨骼，然后 Ctrl+P > With Automatic Weights。删除你不保留的部分。3. 点击 Blender 顶部的“发送到 R.U.S.E. Studio”。4. 在这里点击“带回模型”。小队的每个士兵都会使用它。", "model_blender_needs": "要修改这个小队的士兵，你需要免费的 3D 软件 Blender。“获取 Blender（免费）”会安装它；如果你已经有了，“选择 Blender…”可以告诉 Studio 它在哪里。", "model_blender": "在 Blender 中修改", "tip_model_blender": "在 Blender 中打开这个小队的士兵，骨骼都在正确位置。在那里修改他，或导入你自己的模型并放到他的骨骼上。你的 Blender 文件保存在模组文件夹的 blender 里。", "model_blender_back": "带回模型", "tip_model_blender_back": "把你从 Blender 发送的模型放进这个小队：它的每个士兵都会使用你的模型。在游戏中测试即可看到。", "model_blender_opening": "正在打开 Blender…", "model_blender_opened": "Blender 正在打开这个士兵。完成后，点击 Blender 顶部的“发送到 R.U.S.E. Studio”，再在这里点击“带回模型”。", "model_blender_where": "你的 Blender 文件保存在这里：{folder}", "model_blender_bringing": "正在从 Blender 带回你的模型…", "model_blender_done": "你的模型已放入：小队的每个士兵都会使用它。在游戏中测试即可看到。", "blender_model_send": "发送到 R.U.S.E. Studio", "blender_model_sent": "已发送。现在在 R.U.S.E. Studio 中点击“带回模型”。", "blender_model_hint1": "修改士兵，或导入你的模型（File > Import）并放到他的骨骼上：点击你的模型，Shift+点击骨骼，Ctrl+P > With Automatic Weights。", "blender_model_hint2": "删除你不保留的部分。然后点击“发送到 R.U.S.E. Studio”（顶部栏），再在 Studio 中点击“带回模型”。"});
+  // which animation each action plays (words.toml actions_*, act_*, tip_actions_*: item 5, part 2)
+  Object.assign(words.us, /*actions-words*/ {"actions_title": "Its animations", "tip_actions_title": "Which of its model's animations the unit plays for each thing it does in the game.", "actions_how": "Each thing the unit does in the game plays one of its model's animations. Pick one for an action, or leave it on Nearest: it then plays the closest one the model has.", "actions_nearest": "Nearest: {name}", "actions_halves": "{top} above, {bottom} below", "actions_option": "{name} ({seconds} s)", "tip_actions_pick": "The animation it plays for “{action}”. Nearest plays the closest one the model has: one named for it, else the one the nearest action plays (a walk plays the run, a fire the aim or the stand).", "actions_saved": "“{action}” plays {name} now.", "actions_missing": "Nothing of its own for “{action}”: it plays {name}. Pick one here, or give the model one in Blender and import it again.", "act_ride": "On long moves", "tip_actions_ride": "On long moves the game puts a squad in its truck. With animations of its own it can go as itself instead, playing one of them on a loop.", "actions_ride_nearest": "As itself: {name} (nearest)", "actions_ride_as": "As itself: {name}", "actions_ride_truck": "In its truck ({truck})", "actions_ride_saved": "On long moves it goes as itself, playing {name}.", "actions_ride_saved_truck": "On long moves it rides in its truck ({truck}).", "actions_ride_how": "As itself, it keeps its truck's speed on the roads (the truck picked in Rides in).", "actions_ride_none": "It never rides a truck: it walks everywhere.", "actions_more": "Every other action ({n})", "tip_actions_more": "The game's other actions for this unit, by kind: each plays the nearest animation until you pick one.", "actions_other": "Action “{key}”", "actions_kept": "It plays the same animations as the unit it copies. To change one for it alone, use RUSE Decoy.", "act_section_stand": "Standing still", "act_section_move": "Moving", "act_section_fight": "Aiming and firing", "act_section_special": "The heavy weapon", "act_section_hit": "Getting hit", "act_section_die": "Dying", "act_section_para": "Parachuting", "act_section_crew": "A crew's actions", "act_section_other": "Other actions", "act_stand": "Stands still", "act_accroupi": "Crouches", "act_look_around": "Looks around", "act_marche": "Walks", "act_marche_arriere": "Walks backwards", "act_course": "Runs", "act_course2": "Runs (second way)", "act_course3": "Runs (third way)", "act_course_droite": "Runs to the right", "act_course_gauche": "Runs to the left", "act_course_arriere": "Runs backwards", "act_deroute": "Flees", "act_deroute2": "Flees (second way)", "act_deroute3": "Flees (third way)", "act_stand_vise": "Aims, standing", "act_accroupi_vise": "Aims, crouching", "act_marche_vise": "Aims while walking", "act_marche_arriere_vise": "Aims while walking backwards", "act_course_vise": "Aims while running", "act_course_droite_vise": "Aims while running right", "act_course_gauche_vise": "Aims while running left", "act_course_arriere_vise": "Aims while running backwards", "act_tir": "Fires", "act_tir_secondaire": "Throws a grenade", "act_tir_secondaire2": "Throws a grenade (second way)", "act_tir_secondaire3": "Throws a grenade (third way)", "act_recharge": "Reloads", "act_stand_vise_special": "Aims the heavy weapon", "act_course_vise_special": "Aims the heavy weapon while running", "act_course_droite_vise_special": "Aims the heavy weapon while running right", "act_course_gauche_vise_special": "Aims the heavy weapon while running left", "act_course_arriere_vise_special": "Aims the heavy weapon while running backwards", "act_tir_special": "Fires the heavy weapon", "act_transition_to_special": "Raises the heavy weapon", "act_transition_from_special": "Lowers the heavy weapon", "act_hit": "Is hit", "act_hit_dos": "Is hit from behind", "act_hit_explosion": "Is hit by a blast", "act_mort_balle": "Dies, shot", "act_mort_balle_violente": "Dies, shot hard", "act_mort_balle_dos": "Dies, shot from behind", "act_mort_explosion": "Dies in a blast", "act_mort_explosion_dos": "Dies in a blast from behind", "act_mort": "Lies fallen", "act_deploy": "Jumps out", "act_chute": "Falls", "act_vol": "Floats down under the parachute", "act_land": "Lands", "act_move": "Moves", "act_fire": "Fires (a crewman)", "act_idle1": "Waits", "act_idle2": "Waits (second way)", "act_walkingfront": "Walks forward with the gun", "act_walkingback": "Walks back with the gun", "act_gotogun": "Goes to the gun", "act_gotowalk": "Leaves the gun to walk", "act_morphin": "Sets the gun up", "act_morphout": "Packs the gun up", "act_reload": "Reloads the gun"});
+  Object.assign(words.fr, /*actions-words*/ {"actions_title": "Ses animations", "tip_actions_title": "Quelle animation de son modèle l'unité joue pour chaque chose qu'elle fait en jeu.", "actions_how": "Chaque chose que fait l'unité en jeu joue une des animations de son modèle. Choisissez-en une pour une action, ou laissez-la sur La plus proche : elle joue alors celle du modèle qui s'en rapproche le plus.", "actions_nearest": "La plus proche : {name}", "actions_halves": "{top} en haut, {bottom} en bas", "actions_option": "{name} ({seconds} s)", "tip_actions_pick": "L'animation jouée pour « {action} ». La plus proche joue celle du modèle qui s'en rapproche le plus : une qui porte son nom, sinon celle de l'action la plus proche (une marche joue la course, un tir la visée ou l'attente).", "actions_saved": "« {action} » joue maintenant {name}.", "actions_missing": "Rien en propre pour « {action} » : elle joue {name}. Choisissez-en une ici, ou donnez-en une au modèle dans Blender et importez-le à nouveau.", "act_ride": "Sur les longs trajets", "tip_actions_ride": "Sur les longs trajets, le jeu met une escouade dans son camion. Avec ses propres animations, elle peut y aller elle-même à la place, en jouant l'une d'elles en boucle.", "actions_ride_nearest": "Elle-même : {name} (la plus proche)", "actions_ride_as": "Elle-même : {name}", "actions_ride_truck": "Dans son camion ({truck})", "actions_ride_saved": "Sur les longs trajets, elle y va elle-même en jouant {name}.", "actions_ride_saved_truck": "Sur les longs trajets, elle monte dans son camion ({truck}).", "actions_ride_how": "Elle-même, elle garde la vitesse de son camion sur les routes (le camion choisi dans Se déplace en).", "actions_ride_none": "Elle ne monte jamais dans un camion : elle va partout à pied.", "actions_more": "Toutes les autres actions ({n})", "tip_actions_more": "Les autres actions du jeu pour cette unité, par sorte : chacune joue l'animation la plus proche tant que vous n'en choisissez pas une.", "actions_other": "Action « {key} »", "actions_kept": "Elle joue les mêmes animations que l'unité qu'elle copie. Pour en changer une rien que pour elle, utilisez RUSE Decoy.", "act_section_stand": "À l'arrêt", "act_section_move": "En mouvement", "act_section_fight": "Viser et tirer", "act_section_special": "L'arme lourde", "act_section_hit": "Être touché", "act_section_die": "Mourir", "act_section_para": "Parachutage", "act_section_crew": "Actions d'un équipage", "act_section_other": "Autres actions", "act_stand": "Reste immobile", "act_accroupi": "S'accroupit", "act_look_around": "Regarde autour", "act_marche": "Marche", "act_marche_arriere": "Marche à reculons", "act_course": "Court", "act_course2": "Court (deuxième façon)", "act_course3": "Court (troisième façon)", "act_course_droite": "Court vers la droite", "act_course_gauche": "Court vers la gauche", "act_course_arriere": "Court à reculons", "act_deroute": "Fuit", "act_deroute2": "Fuit (deuxième façon)", "act_deroute3": "Fuit (troisième façon)", "act_stand_vise": "Vise, debout", "act_accroupi_vise": "Vise, accroupi", "act_marche_vise": "Vise en marchant", "act_marche_arriere_vise": "Vise en marchant à reculons", "act_course_vise": "Vise en courant", "act_course_droite_vise": "Vise en courant vers la droite", "act_course_gauche_vise": "Vise en courant vers la gauche", "act_course_arriere_vise": "Vise en courant à reculons", "act_tir": "Tire", "act_tir_secondaire": "Lance une grenade", "act_tir_secondaire2": "Lance une grenade (deuxième façon)", "act_tir_secondaire3": "Lance une grenade (troisième façon)", "act_recharge": "Recharge", "act_stand_vise_special": "Vise avec l'arme lourde", "act_course_vise_special": "Vise avec l'arme lourde en courant", "act_course_droite_vise_special": "Vise avec l'arme lourde en courant vers la droite", "act_course_gauche_vise_special": "Vise avec l'arme lourde en courant vers la gauche", "act_course_arriere_vise_special": "Vise avec l'arme lourde en courant à reculons", "act_tir_special": "Tire avec l'arme lourde", "act_transition_to_special": "Lève l'arme lourde", "act_transition_from_special": "Baisse l'arme lourde", "act_hit": "Est touché", "act_hit_dos": "Est touché dans le dos", "act_hit_explosion": "Est touché par une explosion", "act_mort_balle": "Meurt, abattu", "act_mort_balle_violente": "Meurt, violemment abattu", "act_mort_balle_dos": "Meurt, abattu dans le dos", "act_mort_explosion": "Meurt dans une explosion", "act_mort_explosion_dos": "Meurt dans une explosion par derrière", "act_mort": "Gît à terre", "act_deploy": "Saute", "act_chute": "Tombe", "act_vol": "Descend sous le parachute", "act_land": "Atterrit", "act_move": "Se déplace", "act_fire": "Tire (un servant)", "act_idle1": "Attend", "act_idle2": "Attend (deuxième façon)", "act_walkingfront": "Avance avec la pièce", "act_walkingback": "Recule avec la pièce", "act_gotogun": "Va à la pièce", "act_gotowalk": "Quitte la pièce pour marcher", "act_morphin": "Met la pièce en batterie", "act_morphout": "Replie la pièce", "act_reload": "Recharge la pièce"});
+  Object.assign(words.sc, /*actions-words*/ {"actions_title": "它的动画", "tip_actions_title": "单位在游戏中做每件事时播放其模型的哪个动画。", "actions_how": "单位在游戏中做的每件事都会播放其模型的一个动画。可以为某个动作选一个，或保持“最接近的”：这时播放模型里最接近的那个。", "actions_nearest": "最接近的：{name}", "actions_halves": "上半身 {top}，下半身 {bottom}", "actions_option": "{name}（{seconds} 秒）", "tip_actions_pick": "为“{action}”播放的动画。“最接近的”播放模型里最接近的那个：名字对应的，否则播放最接近的动作的那个（走路播放跑步，开火播放瞄准或站立）。", "actions_saved": "“{action}”现在播放 {name}。", "actions_missing": "“{action}”没有自己的动画：它播放 {name}。请在这里选一个，或在 Blender 中给模型加一个再重新导入。", "act_ride": "长途移动时", "tip_actions_ride": "长途移动时，游戏会让小队坐上卡车。有自己的动画时，它可以改为自己移动，循环播放其中一个动画。", "actions_ride_nearest": "自己移动：{name}（最接近的）", "actions_ride_as": "自己移动：{name}", "actions_ride_truck": "坐自己的卡车（{truck}）", "actions_ride_saved": "长途移动时它自己移动，播放 {name}。", "actions_ride_saved_truck": "长途移动时它坐自己的卡车（{truck}）。", "actions_ride_how": "自己移动时，它在道路上保持卡车的速度（在“乘坐”里选的卡车）。", "actions_ride_none": "它从不坐卡车：到哪儿都步行。", "actions_more": "其他所有动作（{n}）", "tip_actions_more": "这个单位在游戏中的其他动作，按种类分：在你选择之前，每个都播放最接近的动画。", "actions_other": "动作“{key}”", "actions_kept": "它播放与所复制单位相同的动画。若只想为它修改某个动画，请使用 RUSE Decoy。", "act_section_stand": "原地", "act_section_move": "移动", "act_section_fight": "瞄准与开火", "act_section_special": "重武器", "act_section_hit": "被击中", "act_section_die": "阵亡", "act_section_para": "跳伞", "act_section_crew": "乘员的动作", "act_section_other": "其他动作", "act_stand": "原地站立", "act_accroupi": "蹲下", "act_look_around": "环顾四周", "act_marche": "行走", "act_marche_arriere": "向后走", "act_course": "奔跑", "act_course2": "奔跑（第二种）", "act_course3": "奔跑（第三种）", "act_course_droite": "向右跑", "act_course_gauche": "向左跑", "act_course_arriere": "向后跑", "act_deroute": "逃跑", "act_deroute2": "逃跑（第二种）", "act_deroute3": "逃跑（第三种）", "act_stand_vise": "站立瞄准", "act_accroupi_vise": "蹲姿瞄准", "act_marche_vise": "边走边瞄准", "act_marche_arriere_vise": "边后退边瞄准", "act_course_vise": "边跑边瞄准", "act_course_droite_vise": "边向右跑边瞄准", "act_course_gauche_vise": "边向左跑边瞄准", "act_course_arriere_vise": "边向后跑边瞄准", "act_tir": "开火", "act_tir_secondaire": "投掷手榴弹", "act_tir_secondaire2": "投掷手榴弹（第二种）", "act_tir_secondaire3": "投掷手榴弹（第三种）", "act_recharge": "装弹", "act_stand_vise_special": "用重武器瞄准", "act_course_vise_special": "边跑边用重武器瞄准", "act_course_droite_vise_special": "边向右跑边用重武器瞄准", "act_course_gauche_vise_special": "边向左跑边用重武器瞄准", "act_course_arriere_vise_special": "边向后跑边用重武器瞄准", "act_tir_special": "用重武器开火", "act_transition_to_special": "举起重武器", "act_transition_from_special": "放下重武器", "act_hit": "被击中", "act_hit_dos": "背后被击中", "act_hit_explosion": "被爆炸击中", "act_mort_balle": "中弹阵亡", "act_mort_balle_violente": "被重击阵亡", "act_mort_balle_dos": "背后中弹阵亡", "act_mort_explosion": "在爆炸中阵亡", "act_mort_explosion_dos": "在背后的爆炸中阵亡", "act_mort": "倒地", "act_deploy": "跳出", "act_chute": "下落", "act_vol": "乘伞下降", "act_land": "着陆", "act_move": "移动", "act_fire": "开火（乘员）", "act_idle1": "待命", "act_idle2": "待命（第二种）", "act_walkingfront": "推炮前进", "act_walkingback": "推炮后退", "act_gotogun": "走向火炮", "act_gotowalk": "离开火炮步行", "act_morphin": "架设火炮", "act_morphout": "收起火炮", "act_reload": "给火炮装弹"});
+  // a model on bones of its own and its animations (words.toml model_anim_*, model_how_own_bones, model_own_bones_fit)
+  Object.assign(words.us, {"model_how_own_bones": "A model with bones of its own, a horse or any creature, and its animations? Import model… takes that too.", "tip_model_how_own_bones": "Make it in Blender: your model on an armature with bones of your own, and an action for each animation (stand, walk and run at least, named so). Export it as glTF Binary (.glb) with its animations, then click Import model… here.", "model_anim_title": "Its bones and animations", "model_anim_bones": "It has bones of its own: {n}. The game moves your model with them.", "tip_model_anim_bones": "The bones came in from your file, named and placed as you made them in Blender. The game moves the model with these bones, not with the soldier's, so it moves as its own animations say.", "model_anim_count": "Its animations ({n}), as your file names them:", "tip_model_anim_count": "Each action you made in Blender came in as an animation of its own, with its name and length.", "model_anim_row": "{name}: {seconds} s, plays {n} of the unit's actions", "model_anim_row_none": "{name}: {seconds} s, plays none of the unit's actions yet", "tip_model_anim_row": "An action of the unit (standing, walking, running, firing, dying...) plays the animation named for it: stand or idle, walk, run, fire, death... An animation named for none of them isn't played yet.", "model_anim_none": "Your model brought no animations. It needs stand, walk and run at least: make them in Blender, export the .glb with its animations, and import it again.", "tip_model_anim_none": "In Blender, each animation is an action (Dope Sheet > Action Editor). Name them stand, walk and run, and keep Animation ticked when you export as glTF Binary (.glb).", "model_anim_empty": "{n} of the unit's {all} actions have no animation named for them yet.", "tip_model_anim_empty": "Name an animation in Blender as what it shows (stand or idle, walk, run, death, fire, reload, hit, crouch, aim, look, flee, grenade) and import the model again: each action then plays the one named for it.", "model_anim_next": "Test in game shows it moving. Changed it in Blender? Import it again: what each action plays stays as it was.", "tip_model_anim_next": "Importing the model again keeps every action on its animation while an animation of that name is still in the file. One you took out is taken off its actions too.", "model_own_bones_fit": "Your model keeps the size and place it has in its file, on its own bones: to change them, change it in Blender and import it again."});
+  Object.assign(words.fr, {"model_how_own_bones": "Un modèle avec ses propres os, un cheval ou n'importe quelle créature, et ses animations ? Importer un modèle… le prend aussi.", "tip_model_how_own_bones": "Faites-le dans Blender : votre modèle sur une armature avec vos propres os, et une action pour chaque animation (au moins stand, walk et run, nommées ainsi). Exportez-le en glTF Binary (.glb) avec ses animations, puis cliquez ici sur Importer un modèle…", "model_anim_title": "Ses os et ses animations", "model_anim_bones": "Il a ses propres os : {n}. Le jeu fait bouger votre modèle avec eux.", "tip_model_anim_bones": "Les os viennent de votre fichier, nommés et placés comme vous les avez faits dans Blender. Le jeu fait bouger le modèle avec ces os, pas avec ceux du soldat : il bouge donc comme le disent ses propres animations.", "model_anim_count": "Ses animations ({n}), telles que votre fichier les nomme :", "tip_model_anim_count": "Chaque action faite dans Blender est arrivée comme une animation à part, avec son nom et sa durée.", "model_anim_row": "{name} : {seconds} s, joue {n} des actions de l'unité", "model_anim_row_none": "{name} : {seconds} s, ne joue encore aucune action de l'unité", "tip_model_anim_row": "Une action de l'unité (rester debout, marcher, courir, tirer, mourir...) joue l'animation nommée pour elle : stand ou idle, walk, run, fire, death... Une animation nommée pour aucune d'elles n'est pas encore jouée.", "model_anim_none": "Votre modèle n'a apporté aucune animation. Il lui faut au moins stand, walk et run : faites-les dans Blender, exportez le .glb avec ses animations et importez-le à nouveau.", "tip_model_anim_none": "Dans Blender, chaque animation est une action (Dope Sheet > Action Editor). Nommez-les stand, walk et run, et laissez Animation cochée à l'export en glTF Binary (.glb).", "model_anim_empty": "{n} des {all} actions de l'unité n'ont pas encore d'animation nommée pour elles.", "tip_model_anim_empty": "Nommez une animation dans Blender d'après ce qu'elle montre (stand ou idle, walk, run, death, fire, reload, hit, crouch, aim, look, flee, grenade) et importez à nouveau le modèle : chaque action joue alors celle nommée pour elle.", "model_anim_next": "Tester en jeu le montre en mouvement. Changé dans Blender ? Importez-le à nouveau : ce que joue chaque action reste comme avant.", "tip_model_anim_next": "Importer à nouveau le modèle garde chaque action sur son animation tant qu'une animation de ce nom est encore dans le fichier. Une animation retirée est aussi retirée de ses actions.", "model_own_bones_fit": "Votre modèle garde la taille et la place qu'il a dans son fichier, sur ses propres os : pour les changer, modifiez-le dans Blender et importez-le à nouveau."});
+  Object.assign(words.sc, {"model_how_own_bones": "带有自己骨骼的模型（马或任何生物）及其动画？“导入模型…”也能导入。", "tip_model_how_own_bones": "在 Blender 中制作：把你的模型放在带有自己骨骼的骨架上，并为每个动画做一个动作（至少有 stand、walk 和 run，按此命名）。连同动画导出为 glTF Binary (.glb)，然后在这里点击“导入模型…”。", "model_anim_title": "它的骨骼和动画", "model_anim_bones": "它有自己的骨骼：{n} 根。游戏用这些骨骼移动你的模型。", "tip_model_anim_bones": "这些骨骼来自你的文件，名称和位置与你在 Blender 中制作的一样。游戏用这些骨骼而不是士兵的骨骼移动模型，所以它按自己的动画活动。", "model_anim_count": "它的动画（{n} 个，名称与你的文件相同）：", "tip_model_anim_count": "你在 Blender 中做的每个动作都作为单独的动画导入，带有它的名称和时长。", "model_anim_row": "{name}：{seconds} 秒，用于单位的 {n} 个动作", "model_anim_row_none": "{name}：{seconds} 秒，尚未用于单位的任何动作", "tip_model_anim_row": "单位的动作（站立、行走、奔跑、射击、阵亡……）会播放以它命名的动画：stand 或 idle、walk、run、fire、death…… 没有以任何动作命名的动画暂时不会播放。", "model_anim_none": "你的模型没有带来动画。它至少需要 stand、walk 和 run：在 Blender 中制作它们，连同动画导出 .glb，再重新导入。", "tip_model_anim_none": "在 Blender 中，每个动画都是一个动作（Dope Sheet > Action Editor）。把它们命名为 stand、walk 和 run，导出为 glTF Binary (.glb) 时保持勾选 Animation。", "model_anim_empty": "单位的 {all} 个动作中，有 {n} 个还没有以它们命名的动画。", "tip_model_anim_empty": "在 Blender 中按动画表现的内容命名（stand 或 idle、walk、run、death、fire、reload、hit、crouch、aim、look、flee、grenade），然后重新导入模型：每个动作就会播放以它命名的动画。", "model_anim_next": "“在游戏中测试”可以看到它动起来。在 Blender 中改过了？重新导入即可：每个动作播放的动画保持不变。", "tip_model_anim_next": "重新导入模型时，只要文件中仍有同名动画，每个动作都保持原来的动画。你删掉的动画也会从对应动作中移除。", "model_own_bones_fit": "你的模型保持它在文件中的大小和位置，位于它自己的骨骼上：要改变它们，请在 Blender 中修改后重新导入。"});
   // Settings' title switch (words.toml set_title_*, title_*: R.U.S.E. 2.0's gold title or the game's own)
   Object.assign(words.us, { set_title_title: "The game's title", set_title_help: "The modded game shows its title as R.U.S.E. 2.0 in gold: on the main menu, on the loading screens and in the video as the game starts. It's made on your PC from your own game's files, never shipped. Untick it to have the game's own R.U.S.E. title. The next Test in game builds the copy your way, and so does the Launcher's Play.", title_gold: "Gold R.U.S.E. 2.0 title", title_on_note: "The next Test in game gives the modded game the gold R.U.S.E. 2.0 title.", title_off_note: "The next Test in game gives the modded game the game's own R.U.S.E. title.", tip_title_gold: "Show R.U.S.E. 2.0 in gold on the menu and the loading screens of the modded game. Untick for the game's own title." });
   // where your files are, Show in folder, Delete a mod… (words.toml where_*, del_*, show_*_folder)
@@ -764,7 +773,20 @@
              blender: mode === "noblender" ? "" : "C:\\Program Files\\Blender Foundation\\Blender 4.5\\blender.exe",
              opened: fakeLooks.has(address), new_unit: mine().some((n) => address === newAddress(n.id)),
              own_model: fakeModels.get(address) || null, own_copy: fakeModelCopies.has(address),
-             soldiers: fakeSquad(address) };
+             soldiers: fakeSquad(address), kinds: fakeKinds(address) };
+  }
+  // a new GI squad's riflemen and heavy-weapon soldier (StudioApi._kind_rows): the riflemen's model is Import model's,
+  // the heavy-weapon soldier's his own (model_import with his kind); the far-away figure draws his model, as in the game
+  const fakeKindModels = new Map();  // squad -> the heavy-weapon soldier's own model
+  function fakeKinds(address) {
+    if (!fakeSquad(address) || !mine().some((n) => address === newAddress(n.id))) return [];
+    const main = fakeModels.get(address), heavy = fakeKindModels.get(address);
+    const on = (m) => (m ? (m.own_skeleton ? "own" : "soldier") : null);
+    return [{ kind: "fusilier", model: "ww2\\res3d\\units\\us\\infanterie\\us_soldier_modellod0.ase2ndfbin", own: Boolean(main),
+              file: main ? main.file : null, skeleton: on(main), same_bones: null, also: ["fallen"] },
+            { kind: "bazooka", model: "ww2\\res3d\\units\\us\\infanterie\\us_soldier_bazooka_modellod0.ase2ndfbin",
+              own: Boolean(heavy), file: heavy ? heavy.file : null, skeleton: on(heavy),
+              same_bones: heavy && heavy.own_skeleton ? Boolean(main && main.own_skeleton) : null, also: ["far"] }];
   }
   // a building's look (building_look): a made-up factory look's pieces, biggest first; a new building's own model
   const fakeBuildingModels = new Map();
@@ -792,6 +814,28 @@
     return { now: fakeRides.get(address) || game, game, choices: FAKE_TRUCKS.map(([a, name]) =>
       ({ address: a, name, code: a.split("/").pop(), new: false })) };
   }
+  // a squad's own animated model (unit_actions; item 5, part 2): a made-up horse with four animations and no walk, so
+  // the page shows Walk's warning; picks and the ride kept per unit as units.toml keeps them
+  const FAKE_ANIMS = [{ name: "Stand", seconds: 2, frames: 61 }, { name: "Gallop", seconds: 0.8, frames: 25 },
+    { name: "Rider fire", seconds: 1.5, frames: 46 }, { name: "Death", seconds: 2.2, frames: 67 }];
+  const FAKE_ACTIONS = [["stand", "stand", "Stand", "named"], ["accroupi", "stand", "Stand"], ["marche", "move", "Gallop"],
+    ["course", "move", "Gallop"], ["course2", "move", "Gallop"], ["deroute", "move", "Gallop"],
+    ["stand_vise", "fight", "Stand"], ["marche_vise", "fight", "Gallop"], ["tir", "fight", "Rider fire", "named"],
+    ["recharge", "fight", "Stand"], ["hit", "hit", "Stand"], ["mort_balle", "die", "Death", "named"],
+    ["mort_explosion", "die", "Death"], ["mort", "die", "Death"]];
+  const fakePicks = new Map(), fakeRideHow = new Map();  // unit -> {action: animation}; unit -> "truck" or a pick
+  function fakeActions(address) {
+    if (!fakeModels.get(address) || !fakeSquad(address)) return { own: false };
+    const picks = fakePicks.get(address) || {};
+    const rows = FAKE_ACTIONS.map(([action, section, near, how]) => ({ action, section, picked: picks[action] || null,
+      plays: { top: picks[action] || near, bottom: picks[action] || near }, nearest: { top: near, bottom: near },
+      how: picks[action] ? "picked" : how || "nearest", keys: 2 }));
+    const ride = fakeRideHow.get(address) || "";
+    return { own: true, editable: true, animations: FAKE_ANIMS, rows, needed: ["stand", "marche", "course"],
+      missing: picks.marche ? [] : ["marche"],
+      ride: { can: true, truck: FAKE_TRUCKS[0][1], itself: ride !== "truck", picked: ride && ride !== "truck" ? ride : null,
+              plays: ride && ride !== "truck" ? ride : "Gallop", how: "nearest", nearest: "Gallop" } };
+  }
   const fakeModelCopies = new Set();  // units with their own copy of the model (model_copy): a squad's custom uniform
   const fakeBlenderSent = new Set();  // units whose soldier was opened in Blender (model_blender): Bring back works
   const fakeCopiesKept = new Set();   // copies an import took the place of: Use the copied unit's model gives them back
@@ -802,6 +846,50 @@
   // a squad's: a .glb from Blender rigged to the game soldier's bones, on its riflemen and its bazooka man
   const FAKE_SQUAD_IMPORT = { file: "My soldier.glb", vertices: 600, triangles: 1096, draws: 1, missing: [], parts: {},
                               rigged: true, also: ["ww2\\res3d\\units\\us\\infanterie\\us_soldier_modellod0.ase2ndfbin"] };
+  // a model on bones of its own, for the halves box (StudioApi.model_fit): the Horse Squad's bones, [name, parent]
+  const FAKE_HORSE_BONES = [["horse bip01",-1],["horse pelvis",0],["horse spine",1],["horse l thigh",2],["horse r thigh",2],["horse spine1",2],["horse tail",2],["horse l calf",3],["horse r calf",4],["horse spine2",5],["horse tail1",6],["horse l horselink",7],["horse r horselink",8],["horse neck",9],["horse tailnub",10],["horse l foot",11],["horse r foot",12],["horse l clavicle",13],["horse neck1",13],["horse r clavicle",13],["horse l toe0",15],["horse r toe0",16],["horse l upperarm",17],["horse head",18],["horse r upperarm",19],["horse l forearm",22],["horse headnub",23],["horse bone04",23],["horse bone05",23],["horse r forearm",24],["horse l hand",25],["horse r hand",29],["bip01",5],["bip01 pelvis",32],["bip01 spine",33],["bip01 spine1",34],["bip01 neck",35],["bip01 head",36],["bip01 l clavicle",36],["bip01 r clavicle",36],["bip01 l upperarm",38],["bip01 r upperarm",39],["bip01 l forearm",40],["bip01 r forearm",41],["bip01 l hand",42],["bip01 r hand",43],["bip01 l finger0",44],["bip01 l finger1",44],["bip01 l finger2",44],["arme_1",45],["arme_2",45],["bip01 r finger0",45],["bip01 r finger1",45],["bip01 r finger2",45],["bip01 l finger01",46],["bip01 l finger11",47],["bip01 l finger21",48],["fx_tir_01",49],["fx_tir_02",50],["bip01 r finger01",51],["bip01 r finger11",52],["bip01 r finger21",53]];
+  const fakeSplits = new Map();   // a squad's chosen split (model_split)
+  const fakeFit = (address) => {
+    const own = fakeModels.get(address);
+    if (!own || !own.rigged) return { skeleton: null, bones: 0, halves: null, problems: [] };
+    const names = FAKE_HORSE_BONES.map(([n]) => n), parents = FAKE_HORSE_BONES.map(([, p]) => p);
+    const suggested = "bip01", split = fakeSplits.get(address) || suggested;
+    const top = new Set([names.indexOf(split)]);
+    for (let grew = true; grew;) {
+      grew = false;
+      parents.forEach((p, b) => { if (top.has(p) && !top.has(b)) { top.add(b); grew = true; } });
+    }
+    const depth = (b) => (parents[b] < 0 ? 0 : 1 + depth(parents[b]));
+    const tree = [];
+    const walk = (b) => { tree.push({ name: names[b], depth: depth(b), top: top.has(b) }); parents.forEach((p, k) => { if (p === b) walk(k); }); };
+    parents.forEach((p, b) => { if (p < 0) walk(b); });
+    const problems = [{ kind: "clip", how: "fewer", level: "stops", seen: true, figure: "GfxDescriptorIconeCadavre",
+      figure_kind: "fallen", clips: ["WW2\\Res3D\\Units\\Common\\Fusilier_mort_pionlod0.Ase2NdfBin"], clip_names: ["Fusilier mort pion"],
+      own: false, actions: ["b_mort", "t_mort"], clip_bones: 41, model_bones: 62, examples: [] },
+    { kind: "clip", how: "fewer", level: "stops", seen: true, figure: "GfxDescriptorFusilier", figure_kind: "rifle",
+      clips: ["a", "b", "c", "d", "e", "f"], clip_names: ["Fusilier stand", "Fusilier marche", "Fusilier course", "Fusilier tir",
+        "Fusilier hit", "Fusilier recharge"], own: false, actions: Array.from({ length: 14 }, (_, k) => `t_${k}`),
+      clip_bones: 41, model_bones: 62, examples: [] }];
+    if (top.size === names.length) problems.push({ kind: "split_all_top", level: "note", seen: false, split });
+    return { skeleton: "own", bones: names.length, problems,
+      halves: { split, suggested, chosen: fakeSplits.has(address), top: names.filter((n, b) => top.has(b)),
+        bottom: names.filter((n, b) => !top.has(b)), tree } };
+  };
+  // ?fake=horse: a squad's import is the Horse Squad that played on 2026-11-09, a model on bones of its own with its
+  // animations (rusemod.animmodel), and its page's Its bones and animations (model_animations) as the Studio gives it
+  // (the Studio's own answer for horse-squad-rifle.glb on a copy of the US rifle squad, 2026-11-10)
+  const FAKE_HORSE_ANIMS = [["hr_t_stand", 2.0, 13], ["hr_b_stand", 5.3333, 18], ["hr_b_walk", 1.4667, 4],
+    ["hr_b_run", 0.6667, 13], ["hr_t_mort_balle", 2.5333, 1], ["hr_t_mort_balle_violente", 1.0, 1],
+    ["hr_t_mort_explosion", 1.4333, 1], ["hr_t_mort_balle_dos", 2.5, 1], ["hr_t_mort_explosion_dos", 2.0, 1],
+    ["hr_t_stand_vise", 1.0, 8], ["hr_t_tir", 0.9333, 1], ["hr_t_grenade", 3.2, 1], ["hr_t_grenade2", 2.9333, 1],
+    ["hr_t_grenade3", 2.9333, 1], ["hr_t_recharge", 2.5, 1], ["hr_t_hit", 2.0, 1], ["hr_t_hit_dos", 2.0, 1],
+    ["hr_t_hit_explosion", 2.0, 1], ["hr_t_look_around", 4.0, 1], ["hr_ride", 0.6667, 0], ["hr_t_bazooka_tir", 2.0, 0],
+    ["hr_t_bazooka_transition1", 2.0, 0], ["hr_t_bazooka_transition2", 2.0, 0], ["hr_t_bazooka_vise", 2.0, 0]]
+    .map(([name, seconds, n]) => ({ name, seconds, frames: Math.round(seconds * 30) + 1,
+      actions: Array.from({ length: n }, (_x, k) => `${name}_${k}`) }));
+  const FAKE_HORSE_IMPORT = { ...FAKE_SQUAD_IMPORT, file: "horse-squad-rifle.glb", vertices: 553, triangles: 647, draws: 3,
+                              own_skeleton: { bones: 62, animations: FAKE_HORSE_ANIMS.map(({ name, seconds, frames }) =>
+                                ({ name, seconds, frames })) } };
   // a made-up tank for the 3D preview (three boxes with a striped picture), as a .gltf in a data: address; its paint
   // (after Bring back) is the same picture in red. ?preview=<url of a .glb> shows that model instead.
   const fakeShot = (base, stripe) => {
@@ -1391,6 +1479,15 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     decoy_all_langs: "Every language", decoy_all_missions: "Every mission", decoy_all_set: "Set",
     decoy_anim_axis: "Turn about", decoy_anim_bones: "A bone", decoy_anim_bones_mark: "{n} bone(s) changed",
     decoy_anim_done: "Done", decoy_anim_from_mark: "another clip", decoy_anim_loading: "Getting it ready in 3D…",
+    decoy_anim_for: "Change it for", decoy_anim_for_unit: "Only this unit",
+    decoy_anim_for_all: "Every unit that plays it ({n})", decoy_anim_own_mark: "only this unit's",
+    decoy_anim_saved_own: "{name}: saved in your mod, for {unit} only.",
+    decoy_anim_reset_own: "Back to what every unit plays",
+    decoy_anim_reset_own_done: "{name}: {unit} plays it as every other unit does again.",
+    decoy_mc_used_own: "{name}: the motion capture is in your mod, for {unit} only.",
+    tip_decoy_anim_for_unit: "This unit plays its own copy of the animation, with the changes made here; every other unit plays it as before. The copy starts as the animation this unit plays now. Not tried in the game yet.",
+    tip_decoy_anim_for_all: "The change goes to the animation itself: every unit that plays it (the number in brackets) plays it changed, this one too unless it has its own copy.",
+    tip_decoy_anim_reset_own: "Take this unit's own copy of the animation out: it plays the animation as every other unit does again.",
     decoy_anim_names: "the game calls it {names}",
     decoy_anim_no_3d: "The 3D view needs the internet once (three.js); the changes still save.",
     decoy_anim_no_model: "No unit plays this animation, so there's no model to show it on; you can still change it.",
@@ -2029,6 +2126,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   Object.assign(words.us, {"model_title": "Its own model", "model_none": "The Studio can't find the 3D model of the unit this one copies, so it can't give this unit a model of its own here (a new model is fitted to the copied one). Everything else on this page still works. To change the model, make the new unit from another unit, and please tell us this unit's name so we can fix it.", "model_how":"It uses the model of the unit it copies. Import a 3D model (.3ds, or .glb from Blender and most 3D tools) to give it one of its own: it's fitted to that unit's length (times Size), placed where that unit stands, its turret turning where it is on the model, and it drives the same way.", "model_import": "Import model…", "model_import_again": "Import another…", "tip_model_import": "Pick a .3ds (with its pictures beside it, or in the folder above) or a .glb. It's fitted to the copied unit and saved in your mod; Test in game shows it.", "model_size": "Size", "tip_model_size": "Its length over the copied unit's: 1 is as long; an M1 Abrams over a Sherman is 1.36.", "model_importing": "Fitting the model to the unit…", "model_done": "{file} is now this unit's model. Click Test in game to see it.", "model_own": "From {file}: {points} points, {triangles} triangles.", "model_turret": "Turning with the turret: {parts}. The rest moves with the hull.", "model_missing": "Pictures not found: {names}. Those parts show one flat colour. Put the pictures beside the model (or the folder above it) and import it again.", "model_remove": "Use the copied unit's model", "tip_model_remove": "Take its own model out of the mod: it looks like the unit it copies again."});
   // fix 3's words (words.toml model_how_squad .. tip_uniform_custom_own_model)
   Object.assign(words.us, {"model_how_squad": "Its soldiers use the model of the squad it copies. The easy way to your own soldier is Change it in Blender above. Already have a .glb made on the game soldier's bones? Click Import model… and pick it. Every soldier of this squad then has your model instead of its uniform.", "tip_model_import_squad": "Pick the .glb you made in Blender on the game soldier's bones. Every soldier of this squad then has it instead of its uniform; a Custom uniform is taken out, and its paint stays in your mod. Test in game shows it.", "model_import_over_uniform": "A model you import takes the place of its Custom uniform: a unit has only one model, so the uniform is taken out and its paint stays in your mod.", "model_import_over_copy": "A model you import takes the place of its own copy: a unit has only one model, so the copy is taken out and its paint stays in your mod.", "model_copy_out_squad": "Its Custom uniform is taken out: a unit has only one model, and now it's yours. To wear the uniform again instead of your model, click Use the copied unit's model, then Custom uniform: your paint is still in your mod.", "model_copy_out": "Its own copy of the model is taken out: a unit has only one model, and now it's yours. To use the copy again instead of your model, click Use the copied unit's model, then Give it its own copy of the model: its paint is still in your mod.", "model_removed_squad": "Your model is out: this squad's soldiers use the model of the squad it copies again, in the default uniform. A Custom uniform doesn't come back by itself: click Custom uniform, and paint you gave it before comes back with it.", "model_removed": "Your model is out: it uses the model of the unit it copies again.", "tip_model_remove_squad": "Takes your model out of the mod: this squad's soldiers use the model of the squad it copies again, in the default uniform. Custom uniform then gives it a uniform of its own again, with paint you gave one before.", "model_squad_fit": "Your model keeps the size and place you gave it in Blender, on the soldier's bones: to change them, change it in Blender and import it again.", "model_both_squad": "This squad has a model of your own and a Custom uniform too (made by an older Studio, or by hand). A unit has only one model, so Test in game stops on this. To keep your model, click Back to the default uniform under Uniform; to keep the uniform, click Use the copied unit's model.", "model_both": "This unit has a model of your own and its own copy of the model too (made by an older Studio, or by hand). A unit has only one model, so Test in game stops on this. To keep your model, click Use the shared model again; to keep the copy, click Use the copied unit's model.", "tip_model_move_fold": "Opens the boxes that move your model forward, right or up: for a model that doesn't sit where the unit stands.", "uniform_own_model": "This squad has your own model (under Its own model), so no uniform shows on it. For a uniform instead, click Use the copied unit's model there first: it takes your model out.", "tip_uniform_custom_own_model": "Not while this squad has your own model: a unit has only one model. To swap your model for a uniform, click Use the copied unit's model under Its own model first; then this gives the squad a uniform of its own."});
+  // a squad's riflemen and heavy-weapon soldier, each with his own model (words.toml model_kind*, *_kinds)
+  Object.assign(words.us, {"model_kinds_title": "Its soldiers", "model_kinds_how": "Its riflemen and its heavy-weapon soldier each keep the look of the unit it copies until you give them a model. Import model… above is for the riflemen; give the heavy-weapon soldier his own here.", "model_kind_game": "Looks as in the unit it copies.", "model_kind_own": "Your model, from {file}.", "model_kind_also": "Drawn with the same model: {figures}.", "tip_model_kind_import": "Pick a .glb for this soldier alone: made on the game soldier's bones, or on the same bones as your riflemen's model (a horse and rider: he then plays their animations). The riflemen keep theirs. Test in game shows it.", "tip_model_kind_remove": "Takes this soldier's model out: he looks as in the unit it copies again. The riflemen keep theirs.", "model_kind_done": "{file} is now this soldier's model. Click Test in game to see it.", "model_kind_removed": "His model is out: he looks as in the unit it copies again.", "model_kinds_out": "The model of {who} went too: it was on your model's bones and played its animations.", "model_kind_bones_other": "His model is on bones of its own that aren't your riflemen's model's, so he plays what he played in the unit it copies, made on the game soldier's bones: that can stop the game. Make his model on the same bones as the riflemen's.", "tip_model_import_kinds": "Pick the .glb you made in Blender on the game soldier's bones, or a model with bones of its own (a horse and rider). This squad's riflemen then have it; its heavy-weapon soldier keeps his look until you give him his own under Its soldiers. A Custom uniform is taken out, and its paint stays in your mod. Test in game shows it.", "model_how_kinds": "Its soldiers use the models of the squad it copies. The easy way to your own soldier is Change it in Blender above. Already have a .glb made on the game soldier's bones? Click Import model… and pick it: this squad's riflemen then have your model, and its heavy-weapon soldier keeps his until you give him one under Its soldiers.", "tip_model_remove_kinds": "Takes your model out of the mod: this squad's riflemen use the model of the squad it copies again. A heavy-weapon soldier's model on your model's bones goes with it, as it plays your model's animations. If your model took a Custom uniform's place, the uniform comes back once no model of yours is left.", "model_blender_how_kinds": "1. Click Change it in Blender: Blender opens with the soldier and his bones. 2. Change him there, or bring in a model of your own (File > Import) and put it on his bones: click your model, Shift+click the bones, then Ctrl+P > With Automatic Weights. Delete what you don't keep. 3. Click Send to the R.U.S.E. Studio at the top of Blender. 4. Click Bring back the model here. The squad's riflemen wear it; its heavy-weapon soldier keeps his look until you give him his own under Its soldiers.", "tip_model_blender_back_kinds": "Takes the model you sent from Blender into this squad: its riflemen wear your model, and its heavy-weapon soldier keeps his. Test in game shows it.", "model_blender_done_kinds": "Your model is in: the squad's riflemen wear it, and its heavy-weapon soldier keeps his. Test in game shows it."});
+  // a model rigged to bones: its two halves and what won't work in the game (words.toml fit_*, tip_fit_*)
+  Object.assign(words.us, {"fit_working": "Checking its bones…", "fit_halves_title": "Its two halves", "tip_fit_halves_title": "Where your model splits into the two halves the game animates at the same time.", "fit_halves_how": "The game plays two animations on this unit at once, as on a soldier: one on its upper half (aiming, firing) and one on its lower half (walking, running). Pick the bone where the upper half starts: that bone and every bone under it are the upper half, all the others the lower half.", "fit_halves_example": "Example: on a horse with a rider, pick the rider's first bone (bip01 on the Horse Squad), so he aims and fires while the horse walks and runs.", "fit_split": "Upper half starts at", "tip_fit_split": "Pick one of your model's bones: it and every bone under it make the upper half (aiming, firing); all the other bones make the lower half (walking, running). The first choice is the one the Studio suggests. It's saved at once and shows in the game after the next build.", "fit_split_suggested": "{bone} (suggested)", "fit_split_saved": "The upper half now starts at {bone}. It shows in the game after the next build.", "fit_split_back": "Back to the suggested split, at {bone}.", "fit_halves_counts": "Upper half: {top} bones. Lower half: {bottom} bones.", "fit_halves_tree": "Which bone goes where", "tip_fit_halves_tree": "Every bone of your model under the bone it hangs from, each marked upper or lower half.", "fit_half_top": "upper half", "fit_half_bottom": "lower half", "fit_soldier_halves": "Your model is on the game soldier's bones, so it keeps the game's own two halves: nothing to choose.", "tip_fit_soldier_halves": "A soldier's bones already come with the game's upper and lower halves; only a model with bones of its own needs its halves chosen.", "fit_title": "Will it work in the game?", "tip_fit_title": "The Studio checks your model's bones against the animations it plays and against the parts and shots of the unit it copies. Building the mod checks again with all your changes.", "fit_ok": "Nothing found that would stop the game: every animation it plays has its {n} bones, and every bone its parts and shots need is there.", "fit_checked": "Checked against the unit it copies and your mod's own animations. Building the mod checks again with all your changes.", "fit_level_stops_seen": "This can stop the game: it did in a test.", "fit_level_stops": "This can stop the game (not tried in the game yet).", "fit_level_wrong": "The game plays it, but it will look wrong (not tried in the game yet).", "fit_level_unseen": "The unit still fights, but its shots won't be seen: that happened in a test.", "fit_level_untried": "Not tried in the game yet: the game may not animate it.", "fit_level_note": "It still works, but it may not be what you want.", "fit_clip_fewer": "{who}: {count} animation(s) play for {n} action(s): {clips}. They move {a} bones and your model has {b}.", "fit_clip_more": "{who}: {count} animation(s) play for {n} action(s): {clips}. They move {a} bones and your model has only {b}.", "fit_clip_names": "{who}: {count} animation(s) play for {n} action(s): {clips}. They have as many bones as your model but named differently ({x} where your model has {y}), and the game moves bones by their place in the list, so the wrong ones will move.", "fit_clip_order": "{who}: {count} animation(s) play for {n} action(s): {clips}. They have your model's bones but in another order, and the game moves bones by their place in the list, so the wrong ones will move.", "fit_fix_clip_game": "To fix it: give those actions animations of your model's own. Import model brings in every animation in your model's file; which one each action plays is chosen on this page.", "fit_fix_clip_own": "To fix it: these animations were made for another model. Make them in Blender on this model's own bones, then import the model again.", "fit_bone_shot": "{who}: shots start from a bone called {bone}, and your model hasn't got one.", "fit_bone_turn": "{who}: the upper body turns toward the target at a bone called {bone}, and your model hasn't got one.", "fit_bone_show": "{who}: a weapon is shown and hidden on a bone called {bone}, and your model hasn't got one.", "fit_bone_hold": "{who}: a part (a weapon, a muzzle flash, a person) is held on a bone called {bone}, and your model hasn't got one.", "fit_bone_turret": "{who}: a turret turns on a bone called {bone}, and your model hasn't got one.", "fit_bone_move": "{who}: a part moves on a bone called {bone}, and your model hasn't got one.", "fit_bone_body": "{who}: the body rests on a bone called {bone}, and your model hasn't got one.", "fit_bone_wheel": "{who}: a wheel turns on a bone called {bone}, and your model hasn't got one.", "fit_bone_hook": "{who}: a towed gun hooks on at a bone called {bone}, and your model hasn't got one.", "fit_fix_bone_shot": "To fix it: in Blender, add a bone called {bone} at the weapon's muzzle, as a child of the bone the weapon moves with, then bring the model back.", "fit_fix_bone": "To fix it: in Blender, add a bone called {bone} where that part belongs (or rename the bone that is there), then bring the model back.", "fit_too_many": "Your model has {n} bones. The game isn't seen to animate a model with more than {most}.", "fit_fix_too_many": "To fix it: in Blender, join or delete bones until it has {most} or fewer, then bring the model back.", "fit_split_gone": "The bone you chose for the split, {bone}, isn't in your model any more, so it splits at {used}.", "fit_fix_split_gone": "To fix it: pick the bone again above.", "fit_split_all_top": "The split at {bone}, your model's first bone, puts every bone in the upper half, so the lower half's animations (walking, running) move nothing.", "fit_fix_split_all_top": "To fix it: pick a bone further down above, where the upper body starts.", "fit_fig_rifle": "Riflemen", "fit_fig_heavy": "Heavy-weapon soldier", "fit_fig_far": "Figure seen from far away", "fit_fig_fallen": "Fallen soldier", "fit_fig_wreck": "Wreck", "fit_fig_unit": "The unit", "fit_fig_other": "A part of the unit"});
   // moving a unit's own model (words.toml model_move*, model_moving, model_moved, tip_model_move*)
   Object.assign(words.us, {"model_move_title": "Move it", "model_move_forward": "Forward", "model_move_right": "Right", "model_move_up": "Up", "model_move": "Move", "model_moving": "Moving the model...", "model_moved": "Model moved. It shows in the game from the next build.", "model_move_how": "How far from where it's fitted, in the game's units; a minus goes the other way (back, left, down), and 0, 0, 0 puts it back. Its turret and propellers move with it. In the 3D view above, the blue ring is where the unit it copies stands and the mark on it is the front.", "model_move_long": "The unit it copies is {length} long in these units.", "model_move_rigged": "This model is rigged to the unit's own bones, so it stays where its bones are. To move it, open it in Blender.", "tip_model_move_forward": "How far to move it forward, in the game's units. A minus moves it back.", "tip_model_move_right": "How far to move it to its right, in the game's units. A minus moves it left.", "tip_model_move_up": "How far to lift it, in the game's units. A minus lowers it, into the ground if you go far enough.", "tip_model_move": "Fit its model again from the file it was made from, moved this far (nothing to pick). It shows in the game from the next build.", "tip_model_move_gone": "The file this model was made from isn't there any more: Import model again to move it."});
   // the Units tab's two ways in (words.toml start_*, pick_unit_new, tip_start_from, new_unit_next, model_want*)
@@ -2325,6 +2426,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   const DECOY_AKINDS = ["infantry", "crews", "vehicles", "hq", "scenery", "other"];
   const decoyVolumes = new Map();  // `${mod}|${member}` -> percent (StudioApi.decoy_volume)
   const decoyClipEdits = new Map();  // `${mod}|${member}` -> { speed, from, mine, tweaks } (StudioApi.decoy_anim_set)
+  const decoyOwnEdits = new Map();  // `${mod}|${unit}|${member}` -> a unit's own copy of a clip ("Only this unit")
   const decoyMember = (s) => DECOY_DIR + s[0];
   const decoySound = (s) => ({ member: decoyMember(s), kind: s[1], name: s[2], seconds: s[3], channels: s[4], rate: 44100,
     group_volume: Math.round(s[5] * 100), grouped: s[1] !== "dialogue" && s[1] !== "hq_voices", shared: s[6], lang: s[7] || "",
@@ -2368,6 +2470,31 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     if (!c) throw new Error(`${member} isn't one of the game's animations`);
     return c;
   };
+  // a unit's own copy of a clip (StudioApi's calls with `unit`): it starts as the change every unit has, then its own
+  const decoyOwnKey = (unit, member) => {
+    if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+    if (!/^\$\/GFX\/Everything\/\w+$/.test(unit || "")) throw new Error("Only a unit can have animations of its own.");
+    return `${current}|${unit}|${member}`;
+  };
+  const decoyOwnOut = (e) => e ? { speed: e.speed ?? 100, from: e.from || null, mine: Boolean(e.mine), tweaks: e.tweaks || {} } : null;
+  const decoyUnitClipOut = (c, unit) => ({ ...decoyClipOut(c), own: decoyOwnOut(current ? decoyOwnEdits.get(`${current}|${unit}|${c.member}`) : null) });
+  // the change a call makes to a clip's edits (decoyClipEdits' or a unit's own), as StudioApi._decoy_changed makes it
+  function decoyChanged(e, speed, use, bone, size, turn) {
+    e = { ...e };
+    if (speed !== null) {
+      if (typeof speed !== "number" || speed < 1 || speed > 1000) throw new Error("a speed is a percent from 1 to 1000");
+      if (speed === 100) delete e.speed; else e.speed = speed;
+    }
+    if (use !== null) { if (use) e.from = decoyClipOf(use).member; else delete e.from; }
+    if (bone !== null) {
+      const t = { ...(e.tweaks || {}) }, b = { ...(t[bone] || {}) };
+      if (size !== null) b.size = size;
+      if (turn !== null) b.turn = turn.length ? turn : null;
+      if ((b.size ?? 1) === 1 && !b.turn) delete t[bone]; else t[bone] = { size: b.size ?? 1, turn: b.turn || null };
+      if (Object.keys(t).length) e.tweaks = t; else delete e.tweaks;
+    }
+    return e;
+  }
   // the motion library (StudioApi.decoy_motions): a few made-up moves of the two free sets
   const DECOY_MOVES = [["cmu-02_01", "cmu", "walk", "Walk", "02", 3.4], ["cmu-09_01", "cmu", "run", "Run", "09", 2.6],
     ["cmu-13_29", "cmu", "jump", "Jump", "13", 2.0], ["style-Akimbo_FW", "100style", "walk", "Akimbo", "Akimbo", 6.0, "FW"],
@@ -3385,20 +3512,42 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       // a unit's look (?fake=noblender: Blender not found): every unit has one made-up model and two pictures
       look: async (address) => fakeLook(address),
-      model_import: async (address, file, size) => {
+      model_import: async (address, file, size, aircraft, facing, ownTurret, ownPropellers, move, kind) => {
         if (!fakeLook(address).new_unit) throw new Error("Only a new unit made in this mod can get a model of its own: copy the unit first.");
         await new Promise((r) => setTimeout(r, 400));
-        fakeModels.set(address, fakeSquad(address) ? { ...FAKE_SQUAD_IMPORT }
+        if (kind && kind !== "fusilier") {   // the heavy-weapon soldier's own (the riflemen keep theirs)
+          if (!fakeKinds(address).some((k) => k.kind === kind)) throw new Error(`This unit's soldiers don't come in a kind called ${kind}.`);
+          fakeKindModels.set(address, mode === "horse"
+            ? { ...FAKE_HORSE_IMPORT, file: "horse-squad-bazooka.glb" } : { ...FAKE_SQUAD_IMPORT, file: "My bazooka soldier.glb" });
+          return { model: fakeKindModels.get(address), copy_out: false, kind, ...fakeLook(address) };
+        }
+        fakeModels.set(address, fakeSquad(address) ? { ...(mode === "horse" ? FAKE_HORSE_IMPORT : FAKE_SQUAD_IMPORT) }
           : { ...FAKE_IMPORT, scale: 2.46 * (size || 1), size: Number(size) || 1 });
         const copyOut = fakeModelCopies.delete(address);  // the model takes the place of its own copy (a Custom uniform)
         if (copyOut) fakeCopiesKept.add(address);          // kept, to come back when the model is taken out
         return { model: fakeModels.get(address), copy_out: copyOut, ...fakeLook(address) };
       },
-      model_import_remove: async (address) => {
+      // a model on bones of its own: what came in with it (StudioApi.model_animations); { own: false } for any other
+      model_animations: async (address) => {
+        const m = fakeModels.get(address);
+        if (!m || !m.own_skeleton) return { own: false };
+        const actions = FAKE_HORSE_ANIMS.reduce((n, a) => n + a.actions.length, 0) + 22;
+        return { own: true, bones: m.own_skeleton.bones, animations: FAKE_HORSE_ANIMS, actions,
+                 empty: Array.from({ length: 22 }, (_x, k) => `empty_${k}`), split: "bip01" };
+      },
+      model_import_remove: async (address, kind) => {
+        if (kind && kind !== "fusilier") {   // the heavy-weapon soldier's own only
+          const out = fakeKindModels.delete(address);
+          return { ...fakeLook(address), model_out: out, copy_back: false, kinds_out: [], kind };
+        }
         const out = fakeModels.delete(address);
-        const back = fakeCopiesKept.delete(address);
+        // (his own model on its bones goes with it: it played its animations)
+        const heavy = fakeKindModels.get(address);
+        const kindsOut = heavy && heavy.own_skeleton ? ["bazooka"] : [];
+        if (kindsOut.length) fakeKindModels.delete(address);
+        const back = !fakeKindModels.has(address) && fakeCopiesKept.delete(address);
         if (back) fakeModelCopies.add(address);
-        return { ...fakeLook(address), model_out: out, copy_back: back };
+        return { ...fakeLook(address), model_out: out, copy_back: back, kinds_out: kindsOut };
       },
       // a squad's soldier changed in Blender (StudioApi.model_blender, model_blender_back): the work folder in the mod
       model_blender: async (address) => {
@@ -3410,7 +3559,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       model_blender_back: async (address, size) => {
         if (!fakeBlenderSent.has(address)) throw new Error("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at the top, then Bring back the model here.");
         await new Promise((r) => setTimeout(r, 400));
-        fakeModels.set(address, { ...FAKE_SQUAD_IMPORT });   // Bring back takes it in as Import model does
+        fakeModels.set(address, { ...(mode === "horse" ? FAKE_HORSE_IMPORT : FAKE_SQUAD_IMPORT) });   // as Import model
         const copyOut = fakeModelCopies.delete(address);
         return { model: fakeModels.get(address), copy_out: copyOut, ...fakeLook(address),
           work: current + "\\blender\\" + address.split("/").pop() };
@@ -3431,6 +3580,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           : "It draws the model it copies again. Its paint is kept in the mod, for when it gets a copy again." };
       },
       rides_in: async (address) => fakeRidesIn(address),
+      unit_actions: async (address) => fakeActions(address),
+      unit_action_set: async (address, action, animation) => {
+        const picks = { ...(fakePicks.get(address) || {}) };
+        if (animation) picks[action] = animation; else delete picks[action];
+        fakePicks.set(address, picks);
+        return fakeActions(address);
+      },
+      unit_ride_set: async (address, ride) => { fakeRideHow.set(address, ride || ""); return fakeActions(address); },
       rides_in_set: async (address, truck) => {
         const info = fakeRidesIn(address);
         const chosen = (info.choices || []).find((c) => c.address === truck);
@@ -3455,6 +3612,16 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         await new Promise((r) => setTimeout(r, 400));
         fakeModels.set(address, { ...fakeModels.get(address), moved: move.map(Number) });
         return { model: fakeModels.get(address), ...fakeLook(address) };
+      },
+      // a squad's imported model as one on bones of its own: the Horse Squad's 62 bones (StudioApi.model_fit, model_split;
+      // rusemod.bonefit): its halves, and the fallen soldier still playing the game's 41-bone death
+      model_fit: async (address) => fakeFit(address),
+      model_split: async (address, bone) => {
+        const own = fakeModels.get(address);
+        if (!own || !own.rigged) throw new Error("Only a model with bones of its own can be split where you choose: import one first.");
+        if (bone && !FAKE_HORSE_BONES.some(([n]) => n === bone)) throw new Error(`The model has no bone called ${bone}.`);
+        if (bone) fakeSplits.set(address, bone); else fakeSplits.delete(address);
+        return fakeFit(address);
       },
       model_resize: async (address, size) => {
         if (!fakeModels.has(address)) throw new Error("This unit has no model of its own to resize: import one first.");
@@ -3777,9 +3944,10 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (!members.length) throw new Error("this unit has no sounds of its own here");
         return { count: members.length, volume: Math.round(percent), saved: decoySetVolumes(members, percent) };
       },
-      decoy_unit_anims: async () => {
-        const rows = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === "vehicles" || c.kind === "crews")
-          .map((c) => ({ ...decoyClipOut(c), role: c.names[0] || c.name }));
+      decoy_unit_anims: async (address) => {   // a squad's soldiers' clips, a vehicle's and a gun crew's
+        const squad = fakeSquad(address);
+        const rows = DECOY_CLIPS.map(decoyClip).filter((c) => squad ? c.kind === "infantry" : c.kind === "vehicles" || c.kind === "crews")
+          .map((c) => ({ ...decoyUnitClipOut(c, address), role: c.names[0] || c.name }));
         return { rows, total: rows.length, start: 0 };
       },
       decoy_anims: async () => ({ mod: Boolean(current), kinds: DECOY_AKINDS.map((id) => {
@@ -3800,26 +3968,25 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
             .map((x) => ({ member: x.member, name: x.name, names: x.names })) };
       },
       decoy_anim_preview: async (member) => { decoyClipOf(member); return { url: null }; },
-      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null) => {
+      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null, unit = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
-        const key = `${current}|${c.member}`, e = { ...(decoyClipEdits.get(key) || {}) };
-        if (speed !== null) {
-          if (typeof speed !== "number" || speed < 1 || speed > 1000) throw new Error("a speed is a percent from 1 to 1000");
-          if (speed === 100) delete e.speed; else e.speed = speed;
+        if (unit) {   // "Only this unit": its own copy, starting as the change every unit has
+          const key = decoyOwnKey(unit, c.member);
+          decoyOwnEdits.set(key, decoyChanged(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {},
+                                              speed, use, bone, size, turn));
+          return decoyUnitClipOut(c, unit);
         }
-        if (use !== null) { if (use) e.from = decoyClipOf(use).member; else delete e.from; }
-        if (bone !== null) {
-          const t = { ...(e.tweaks || {}) }, b = { ...(t[bone] || {}) };
-          if (size !== null) b.size = size;
-          if (turn !== null) b.turn = turn.length ? turn : null;
-          if ((b.size ?? 1) === 1 && !b.turn) delete t[bone]; else t[bone] = { size: b.size ?? 1, turn: b.turn || null };
-          if (Object.keys(t).length) e.tweaks = t; else delete e.tweaks;
-        }
+        const key = `${current}|${c.member}`, e = decoyChanged(decoyClipEdits.get(key) || {}, speed, use, bone, size, turn);
         if (Object.keys(e).length) decoyClipEdits.set(key, e); else decoyClipEdits.delete(key);
         return decoyClipOut(c);
       },
-      decoy_anim_reset: async (member) => { decoyClipEdits.delete(`${current}|${decoyClipOf(member).member}`); return { member }; },
+      decoy_anim_reset: async (member, unit = null) => {
+        const c = decoyClipOf(member);
+        if (unit) { decoyOwnEdits.delete(decoyOwnKey(unit, c.member)); return { member, ...decoyUnitClipOut(c, unit) }; }
+        decoyClipEdits.delete(`${current}|${c.member}`);
+        return { member };
+      },
       // motion capture: a picked .bvh read for its length (its "Frames:" and "Frame Time:" lines), never retargeted here
       decoy_mocap_open: async (name, text) => {
         const frames = Number((/Frames:\s*(\d+)/.exec(text) || [])[1] || 60), dt = Number((/Frame Time:\s*([\d.]+)/.exec(text) || [])[1] || 1 / 30);
@@ -3830,9 +3997,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return got;
       },
       decoy_mocap_preview: async (member) => { decoyClipOf(member); return { url: null, frames: 60, loop: false, scale: 1 }; },
-      decoy_mocap_use: async (member) => {
+      decoy_mocap_use: async (member, mid, start, length, inPlace, loop, credit, unit = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        if (unit) {   // (only that unit plays it: its own copy names the file)
+          const key = decoyOwnKey(unit, c.member);
+          decoyOwnEdits.set(key, { ...(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });
+          return { ...decoyUnitClipOut(c, unit), frames: 60, loop: false, scale: 1 };
+        }
         decoyClipEdits.set(`${current}|${c.member}`, { ...(decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });
         return { ...decoyClipOut(c), frames: 60, loop: false, scale: 1 };
       },

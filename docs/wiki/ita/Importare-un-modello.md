@@ -79,8 +79,10 @@ disegna un'elica che gira.
 **Soldati, serventi e altri aerei:** i soldati, i serventi di un cannone e gli aerei a cui prima lo Studio non sapeva
 adattare un modello (il P-47, per esempio) prendono anche loro un modello tutto loro, se è legato alle ossa dell'unità:
 per esempio uno dei modelli del gioco aperto in Blender dallo Studio e cambiato lì. Va su quelle ossa così com'è, senza
-spostare né scalare niente, e anche gli altri uomini di una squadra con le stesse ossa lo indossano. Visto in gioco con
-una squadra di fucilieri, i serventi di un cannone e il P-47.
+spostare né scalare niente, e anche gli altri uomini di una squadra disegnati con lo stesso modello lo indossano. Visto in gioco con
+una squadra di fucilieri, i serventi di un cannone e il P-47. Un soldato con arma pesante che il gioco disegna con un
+modello suo (l'uomo col bazooka della squadra di fucilieri USA) lo tiene finché non gliene dai uno sotto
+**I suoi soldati** (più sotto).
 
 **I tuoi giocatori:** una mod con un modello importato dallo Studio 0.9.8.17 o successivo richiede il Launcher 0.4.8.17
 o più recente: un Launcher più vecchio dà al modello lo scheletro dell'unità copiata, così la torretta gira attorno al
@@ -94,14 +96,57 @@ Per una squadra (fucilieri, paracadutisti, qualsiasi fanteria) lo Studio fa con 
 2. **Apri il suo soldato in Blender.** Nella pagina della nuova squadra, sotto **Un modello tutto suo**, clicca **Cambialo in Blender**. Blender si apre con il soldato e le sue ossa, ognuna dove la mette il gioco. Non hai ancora Blender? **Scarica Blender (gratis)** lo installa; **Scegli Blender…** mostra allo Studio dov'è.
 3. **Modificalo, o metti il tuo modello sulle sue ossa.** Per modificarlo, lavoralo lì. Per un tuo modello: importalo con **File > Import** nella stessa scena e posalo sul soldato; clicca il tuo modello, **Maiusc+clic** sulle ossa, poi **Ctrl+P > With Automatic Weights**. Elimina il soldato del gioco se non lo tieni.
 4. **Invialo.** Clicca **Invia al R.U.S.E. Studio** in alto in Blender.
-5. **Riportalo.** Nello Studio clicca **Riporta il modello**. Ogni soldato della squadra indossa il tuo modello: il fuciliere, l'uomo col bazooka e le figurine che si vedono da lontano. **Prova in gioco** lo mostra.
+5. **Riportalo.** Nello Studio clicca **Riporta il modello**. I fucilieri della squadra indossano il tuo modello. Una squadra il cui soldato con arma pesante il gioco disegna con un modello suo (l'uomo col bazooka della squadra di fucilieri USA, per esempio) lo tiene come lo ha la squadra copiata finché non gliene dai uno: **I suoi soldati**, sotto **Un modello tutto suo**, mostra ognuno di loro, e il suo **Importa modello…** è solo per lui. **Prova in gioco** lo mostra.
 
 Buono a sapersi:
 - I tuoi file di Blender restano nella cartella della tua mod: `Documents\RUSE 2.0\Mods\<la tua mod>\blender\<nome dell'unità>\`. Non vengono messi nella mod quando la condividi. Il prossimo **Cambialo in Blender** riparte da ciò che hai inviato per ultimo.
 - Se alcuni punti del tuo modello non hanno un osso (i pesi automatici di Blender ne saltano qualcuno), la pagina dice quanti: si muovono solo con i fianchi del soldato. Dipingili su un osso in **Weight Paint** e invia di nuovo.
 - Una squadra con **Uniforme personalizzata**: il tuo modello prende il posto dell'uniforme (i suoi colori restano nella mod), e **Usa il modello dell'unità copiata** rimette l'uniforme.
 - Hai già un .glb fatto sulle ossa del soldato del gioco? **Importa modello…** lo prende così com'è.
-- Il modello che indossa la tua squadra è tenuto nella cartella della mod come `files\models\<nome dell'unità>.glb`, una volta dentro.
+- Il modello che indossa la tua squadra è tenuto nella cartella della mod come `files\models\<nome dell'unità>.glb`, una volta dentro; quello del soldato con arma pesante come `files\models\<nome dell'unità>@bazooka.glb`.
+- **I suoi soldati** dice anche quali altre figure della squadra sono disegnate con ciascun modello: il soldato caduto, e la figura vista da lontano (quella della squadra di fucilieri USA è disegnata col modello del suo uomo col bazooka).
+
+## Le sue animazioni: quale esegue ogni azione
+
+Un modello su ossa proprie (un cavallo, un cavallo col suo cavaliere, qualsiasi creatura) porta con sé le sue
+animazioni. Nella pagina dell'unità, **Le sue animazioni** mostra cosa esegue l'unità per ogni cosa che fa in gioco:
+
+- **Sta fermo**, **Cammina** e **Corre** vengono per prime: il minimo che serve a un modello. Se una di esse non ha
+  niente di suo, la pagina lo dice, e cosa esegue al suo posto.
+- Ogni azione è una lista delle animazioni del modello. Scegline una, o lasciala su **Più vicina**: esegue allora
+  quella del modello più somigliante, e la lista dice quale. Più vicina vuol dire, nell'ordine: un'animazione col nome
+  di quell'azione (stand o idle, walk, run o gallop, fire, death...), altrimenti quella che esegue l'azione più vicina
+  (una camminata la corsa, una corsa la camminata, poi la posa ferma; uno sparo la mira, poi la posa ferma; ogni morte
+  la morte semplice). La build segue la stessa regola: ciò che dice la pagina è ciò che esegue il gioco.
+- Un'animazione il cui nome inizia con t_ o b_ (hr_t_fire, hr_b_run) si esegue solo sulla metà superiore o inferiore
+  del corpo: quelle di un cavaliere sopra, quelle del suo cavallo sotto.
+- **Tutte le altre azioni** apre il resto, per tipo: fermo, in movimento, mirare e sparare, l'arma pesante, essere
+  colpiti, morire.
+- **Nei lunghi spostamenti** il gioco mette una squadra nel suo camion. Un'unità con animazioni sue va invece da sé,
+  eseguendo l'animazione scelta lì (la sua corsa se lasci Più vicina), veloce quanto il suo camion. Scegli **Nel suo
+  camion** per tenere il camion.
+
+**Una copia tiene le sue animazioni:** un'unità copiata da una con animazioni sue esegue le stesse. Per cambiarne una
+solo per lei, usa RUSE Decoy.
+
+Non ancora provato in gioco così come lo fa lo Studio; una Horse Squad fatta allo stesso modo a mano è stata giocata
+(novembre 2026).
+## Un modello con ossa e animazioni tutte sue
+
+Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni.
+
+1. **Fallo in Blender**: il tuo modello su un'armatura con ossa tue (chiamate come vuoi) e un'azione per ogni animazione. Chiama le azioni come ciò che mostrano: almeno **stand** (o **idle**), **walk** e **run**; si riconoscono anche **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** e **grenade**.
+2. **Esportalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** spuntato.
+3. **Crea la squadra** come al passo 2 sopra. Sulla sua pagina, sotto **Un modello tutto suo**, clicca **Importa modello…** e scegli il tuo .glb. Lo Studio vede che le sue ossa non sono quelle del soldato e lo prende con le sue ossa e tutte le sue animazioni. La pagina mostra quante ossa ha, ogni animazione con la sua durata e quante azioni della squadra la fanno.
+4. **Prova in gioco** lo mostra.
+
+Buono a sapersi:
+- Ogni azione della squadra fa l'animazione chiamata per lei. Un'azione per cui nessuna animazione è chiamata non ne ha ancora: la pagina dice quante.
+- Cambiato in Blender? Importalo di nuovo: ogni azione tiene la sua animazione finché nel file c'è ancora un'animazione con quel nome.
+- Il tuo mod tiene il modello e ogni animazione: `files\models\<nome dell'unità>.glb`, e ogni animazione come `files\anim\own\<nome dell'unità>\<il suo nome>.baf`.
+- **Usa il modello dell'unità copiata** toglie di nuovo il modello, con le sue animazioni.
+- Una squadra con un soldato con arma pesante: dagli il suo cavallo con cavaliere sotto **I suoi soldati**, fatto sulle stesse ossa di quello dei fucilieri, ed esegue le loro animazioni. Su altre ossa esegue ciò che eseguiva nella squadra copiata, e la pagina ti avvisa: questo può fermare il gioco. Togliere il modello dei fucilieri toglie anche il suo.
+- Non ancora provato in gioco tramite lo Studio.
 
 ## 4. La sua scheda, poi la prova
 

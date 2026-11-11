@@ -5,11 +5,18 @@
 // files/sound/volume.toml; the build makes the sound again at it), and replaced in sound.js's editor. A mission's
 // lines show what they say, in the Studio's language. "Music and jingles" is the game's songs by where they play
 // (sound.js musicInto: where the Music tab was), each with its volume too. A unit's page opens it on that unit's own
-// sounds (showUnitSounds). Uses app.js's $, el, fill, say, problem and api.
+// sounds (showUnitSounds), and its animations: each change to one is for "Only this unit" (its own copy of the clip,
+// files/anim/units.toml) or "Every unit that plays it" (the clip itself). Uses app.js's $, el, fill, say, problem and
+// api.
 (function () {
   "use strict";
   const D = { words: {}, lang: "base", data: null, kind: null, words_q: "", mission: "", in_lang: "", rows: [],
-              total: 0, start: 0, timer: null, unit: null, mode: "sound", akind: null, adata: null, anim: null };
+              total: 0, start: 0, timer: null, unit: null, mode: "sound", akind: null, adata: null, anim: null,
+              scope: "all" };
+  // the animation's changes the editor shows and makes: the unit's own copy ("unit": opened from a unit's page; until
+  // it has one, the clip as it plays now) or the clip every unit plays ("all"), and the unit the calls are for
+  const cur = (a) => (D.scope === "unit" && a.own) ? a.own : a;
+  const scopeUnit = () => (D.scope === "unit" && D.unit) ? D.unit.address : null;
   const W = () => D.words;
   const clock = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
   const shortClock = (s) => s < 10 ? `${s.toFixed(1)} s` : clock(s);
@@ -166,6 +173,7 @@
     if (a.from) marks.push(w.decoy_anim_from_mark);
     if (Object.keys(a.tweaks || {}).length) marks.push(fill(w.decoy_anim_bones_mark, { n: Object.keys(a.tweaks).length }));
     if (a.mine) marks.push(w.music_yours);
+    if (a.own) marks.push(w.decoy_anim_own_mark);   // (a unit's list: it has its own copy)
     for (const m of marks) head.append(el("span", { className: "music-mine small", textContent: m }));
     const bits = [];
     if (a.role) bits.push(a.role);
@@ -183,7 +191,20 @@
       });
       actions.append(back);
     }
-    return el("div", { className: "music-row" + (a.changed ? " edited" : "") }, head,
+    if (a.own && D.unit) {   // the unit's own copy taken out: it plays the clip as every unit does again
+      const unit = D.unit;
+      const back = el("button", { type: "button", className: "link small", textContent: w.decoy_anim_reset_own,
+                                  title: w.tip_decoy_anim_reset_own });
+      back.addEventListener("click", async () => {
+        try {
+          await api().decoy_anim_reset(a.member, unit.address);
+          say(fill(w.decoy_anim_reset_own_done, { name: a.name, unit: unit.name }), "ok");
+          open(D.words, D.lang);
+        } catch (err) { problem(err); }
+      });
+      actions.append(back);
+    }
+    return el("div", { className: "music-row" + (a.changed || a.own ? " edited" : "") }, head,
       el("div", { className: "muted small music-where", textContent: bits.join(" · ") }), actions);
   }
 
@@ -232,7 +253,7 @@
     const w = W();
     $("da-note").textContent = w.decoy_anim_loading;
     let got;
-    try { got = await api().decoy_anim_preview(a.member); } catch (err) { $("da-note").textContent = (err && err.message) || String(err); return; }
+    try { got = await api().decoy_anim_preview(a.member, scopeUnit()); } catch (err) { $("da-note").textContent = (err && err.message) || String(err); return; }
     playClip(got, w.decoy_anim_on);
   }
 
@@ -427,10 +448,12 @@
     const w = W(), a = D.anim;
     if (!a || !D.mc) return;
     if (!$("da-mc-credit").value.trim()) { say(w.decoy_mc_credit_needed, "warn"); $("da-mc-credit").focus(); return; }
+    const unit = scopeUnit();
     try {
-      const got = await api().decoy_mocap_use(...mocapArgs(), $("da-mc-credit").value.trim());
+      const got = await api().decoy_mocap_use(...mocapArgs(), $("da-mc-credit").value.trim(), unit);
       Object.assign(a, got);
-      say(fill(w.decoy_mc_used, { name: a.name }), "ok");
+      say(unit ? fill(w.decoy_mc_used_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_mc_used, { name: a.name }), "ok");
+      animControls(a);
       showClip(a);
     } catch (err) { problem(err); }
   }
@@ -438,21 +461,21 @@
   async function openAnim(a) {
     const w = W();
     D.anim = a;
+    // from a unit's page: its own copy when it has one, or when no change is made for every unit yet
+    D.scope = D.unit && (a.own || !a.changed) ? "unit" : "all";
     window.SoundView.stop();
     $("da-title").textContent = a.name;
     $("da-lead").textContent = [a.names.length ? fill(w.decoy_anim_names, { names: a.names.join(", ") }) : "",
       a.units ? fill(w.decoy_anim_units, { n: a.units }) : w.decoy_anim_no_units].filter(Boolean).join(" · ");
     for (const [id, word] of [["da-speed-label", "decoy_anim_speed"], ["da-use-label", "decoy_anim_use"],
       ["da-bones-label", "decoy_anim_bones"], ["da-size-label", "decoy_anim_size"], ["da-axis-label", "decoy_anim_axis"],
-      ["da-turn-label", "decoy_anim_turn"], ["da-reset", "decoy_anim_reset"], ["da-close", "decoy_anim_done"]]) $(id).textContent = w[word];
+      ["da-turn-label", "decoy_anim_turn"], ["da-close", "decoy_anim_done"]]) $(id).textContent = w[word];
     for (const [id, tip] of [["da-speed", "tip_decoy_anim_speed"], ["da-use", "tip_decoy_anim_use"], ["da-bone", "tip_decoy_anim_bone"],
-      ["da-size", "tip_decoy_anim_size"], ["da-axis", "tip_decoy_anim_axis"], ["da-turn", "tip_decoy_anim_turn"],
-      ["da-reset", "tip_decoy_anim_reset"]]) $(id).title = w[tip];
-    $("da-speed").value = String(Math.round(a.speed));
-    $("da-speed-value").textContent = `${Math.round(a.speed)}%`;
+      ["da-size", "tip_decoy_anim_size"], ["da-axis", "tip_decoy_anim_axis"], ["da-turn", "tip_decoy_anim_turn"]]) $(id).title = w[tip];
     $("da-use").replaceChildren(el("option", { value: "", textContent: w.decoy_anim_use_own }));
     $("da-bone").replaceChildren();
-    tweaksLine();
+    scopeChoice(a);
+    animControls(a);
     mocapWords();
     $("decoy-anim").showModal();
     showClip(a);
@@ -460,7 +483,7 @@
     try { info = await api().decoy_anim_info(a.member); } catch (err) { problem(err); return; }
     $("da-use").append(...info.same.map((s) => el("option", { value: s.member,
       textContent: s.name + (s.names.length ? ` (${s.names.slice(0, 2).join(", ")})` : "") })));
-    $("da-use").value = a.from || "";
+    $("da-use").value = cur(a).from || "";
     a.loops = info.loops;
     $("da-mc-loop").checked = info.loops;
     $("da-mc-label").closest("fieldset").classList.toggle("hidden", !info.mocap);
@@ -470,15 +493,42 @@
     boneControls();
   }
 
+  // "Change it for": Only this unit (its own copy of the clip) or Every unit that plays it, when a unit's page sent us
+  function scopeChoice(a) {
+    const w = W(), box = $("da-for");
+    box.classList.toggle("hidden", !D.unit);
+    if (!D.unit) { box.replaceChildren(); return; }
+    const choice = el("div", { className: "choice", role: "radiogroup" }, el("span", { textContent: w.decoy_anim_for }));
+    for (const [scope, text, tip] of [["unit", w.decoy_anim_for_unit, w.tip_decoy_anim_for_unit],
+      ["all", fill(w.decoy_anim_for_all, { n: a.units }), w.tip_decoy_anim_for_all]]) {
+      const input = el("input", { type: "radio", name: "da-for", value: scope, checked: D.scope === scope, title: tip });
+      input.addEventListener("change", () => { D.scope = scope; animControls(a); showClip(a); });
+      choice.append(el("label", { title: tip }, input, " " + text));
+    }
+    box.replaceChildren(choice);
+  }
+
+  // the speed, stand-in, bones and the way back, as the chosen one (cur) has them
+  function animControls(a) {
+    const w = W(), c = cur(a), own = Boolean(scopeUnit());
+    $("da-speed").value = String(Math.round(c.speed));
+    $("da-speed-value").textContent = `${Math.round(c.speed)}%`;
+    if ([...$("da-use").options].some((o) => o.value === (c.from || ""))) $("da-use").value = c.from || "";
+    $("da-reset").textContent = own ? w.decoy_anim_reset_own : w.decoy_anim_reset;
+    $("da-reset").title = own ? w.tip_decoy_anim_reset_own : w.tip_decoy_anim_reset;
+    tweaksLine();
+    if ($("da-bone").value) boneControls();
+  }
+
   function tweaksLine() {
-    const w = W(), t = (D.anim && D.anim.tweaks) || {};
+    const w = W(), t = (D.anim && cur(D.anim).tweaks) || {};
     const bits = Object.entries(t).map(([b, v]) => `${b}: ${Math.round((v.size || 1) * 100)}%` +
       (v.turn ? `, ${v.turn[0].toUpperCase()} ${v.turn[1]}°` : ""));
     $("da-tweaks").textContent = bits.length ? fill(w.decoy_anim_tweaked, { bones: bits.join(" · ") }) : "";
   }
 
   function boneControls() {
-    const t = ((D.anim && D.anim.tweaks) || {})[$("da-bone").value] || {};
+    const t = ((D.anim && cur(D.anim).tweaks) || {})[$("da-bone").value] || {};
     $("da-size").value = String(Math.round((t.size || 1) * 100));
     $("da-size-value").textContent = `${$("da-size").value}%`;
     $("da-axis").value = t.turn ? t.turn[0] : "z";
@@ -489,12 +539,13 @@
   async function saveAnim(change) {
     const w = W(), a = D.anim;
     if (!a) return;
+    const unit = scopeUnit();
     try {
       const got = await api().decoy_anim_set(a.member, change.speed ?? null, change.use ?? null, change.bone ?? null,
-                                             change.size ?? null, change.turn ?? null);
+                                             change.size ?? null, change.turn ?? null, unit);
       Object.assign(a, got);
       tweaksLine();
-      say(fill(w.decoy_anim_saved, { name: a.name }), "ok");
+      say(unit ? fill(w.decoy_anim_saved_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_anim_saved, { name: a.name }), "ok");
       showClip(a);
     } catch (err) { problem(err); }
   }
@@ -649,14 +700,15 @@
     $("da-turn").addEventListener("change", turn);
     $("da-axis").addEventListener("change", () => { if (Number($("da-turn").value)) turn(); });
     $("da-reset").addEventListener("click", async () => {
-      const a = D.anim;
+      const a = D.anim, unit = scopeUnit();
       if (!a) return;
       try {
-        await api().decoy_anim_reset(a.member);
-        Object.assign(a, { speed: 100, from: null, tweaks: {}, changed: false, mine: false });
-        $("da-speed").value = "100"; $("da-speed-value").textContent = "100%"; $("da-use").value = "";
-        boneControls(); tweaksLine(); showClip(a);
-        say(fill(W().decoy_anim_reset_done, { name: a.name }), "ok");
+        await api().decoy_anim_reset(a.member, unit);
+        if (unit) a.own = null;   // (it plays the clip as every unit does: the controls show that)
+        else Object.assign(a, { speed: 100, from: null, tweaks: {}, changed: false, mine: false });
+        animControls(a); showClip(a);
+        say(unit ? fill(W().decoy_anim_reset_own_done, { name: a.name, unit: D.unit.name })
+          : fill(W().decoy_anim_reset_done, { name: a.name }), "ok");
       } catch (err) { problem(err); }
     });
     $("da-close").addEventListener("click", () => $("decoy-anim").close());

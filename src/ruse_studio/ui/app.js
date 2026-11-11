@@ -2081,6 +2081,7 @@ function newUnitForm(u, opened) {
       await refreshList();
       await showUnit(res.address);
       say(w.unit_made.replace("{name}", res.name), "ok");
+      if (res.animations_kept) say(w.actions_kept, "ok");  // (its source's own animations came along: RUSE Decoy changes them)
     } catch (err) { problem(err); create.disabled = false; }
   });
   const box = el("div", { className: "copy" }, open, form);
@@ -2754,12 +2755,68 @@ function resizeAllRow(kind, n, changed) {
     ...buttons, note);
 }
 
+// --- a squad whose riflemen and heavy-weapon soldier draw different models (StudioApi._kind_rows; the owner,
+// 2026-11-11: "when you copy a fucking unit, it should copy the unit"): Import model above is the riflemen's; the
+// heavy-weapon soldier keeps the copied unit's look until he gets a model of his own here (api.model_import and
+// model_import_remove with his kind) ---
+const KIND_WORDS = { fusilier: "fit_fig_rifle", bazooka: "fit_fig_heavy" };
+const kindLabel = (kind) => state.words[KIND_WORDS[kind]] || state.words.fit_fig_other;
+function kindsBox(address, kinds, draw, changed) {
+  const w = state.words;
+  const figure = (role) => ({ far: w.fit_fig_far, fallen: w.fit_fig_fallen })[role] || w.fit_fig_other;
+  const box = el("div", { className: "model-kinds" }, el("h4", { textContent: w.model_kinds_title }),
+    el("p", { className: "muted small", textContent: w.model_kinds_how }));
+  kinds.forEach((row, i) => {
+    box.append(el("p", { className: "model-kind small" }, el("strong", { textContent: kindLabel(row.kind) }), ": ",
+      row.own ? fill(w.model_kind_own, { file: row.file || "" }) : w.model_kind_game));
+    if (row.also && row.also.length) {
+      box.append(el("p", { className: "muted small",
+        textContent: fill(w.model_kind_also, { figures: row.also.map(figure).join(", ") }) }));
+    }
+    // (on bones of its own that aren't the riflemen's model's: he plays what he played, which can stop the game)
+    if (row.same_bones === false) box.append(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));
+    if (i === 0) return;   // (the riflemen's model is Import model's, above)
+    const pick = el("button", { type: "button", textContent: w.model_import, title: w.tip_model_kind_import });
+    pick.addEventListener("click", async () => {
+      pick.disabled = true;
+      say(w.model_importing);
+      try {
+        const r = await api().model_import(address, null, 1, false, null, true, true, null, row.kind);
+        if (r.model) {  // (none: the file picker was closed)
+          say(fill(w.model_kind_done, { file: r.model.file || "" }), "ok");
+          if (changed) changed();
+        }
+        draw(r);
+      } catch (err) { problem(err); } finally { pick.disabled = false; }
+    });
+    const actions = el("div", { className: "actions" }, pick);
+    if (row.own) {
+      const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
+        title: w.tip_model_kind_remove });
+      drop.addEventListener("click", async () => {
+        drop.disabled = true;
+        try {
+          const r = await api().model_import_remove(address, row.kind);
+          say(w.model_kind_removed, "ok");
+          draw(r);
+          if (changed) changed();
+        } catch (err) { problem(err); drop.disabled = false; }
+      });
+      actions.append(drop);
+    }
+    box.append(actions);
+  });
+  return box;
+}
+
 function modelBox(address, info, draw, changed) {
   const w = state.words;
   const own = info.own_model;
   // a squad's model is rigged to the game soldier's bones and keeps the size and place it has on them
   // (rusemod.modelin._prepare_rigged), so its box has no Size or Move; its own copy is its uniform, in the box above
   const squad = Boolean(info.soldiers);
+  // a squad whose riflemen and heavy-weapon soldier draw different models: Import model is the riflemen's (kindsBox)
+  const kinds = squad && info.kinds && info.kinds.length > 1 ? info.kinds : null;
   const size = el("input", { type: "number", min: "0.05", max: "20", step: "any", value: "1", className: "model-size",
     title: w.tip_model_size });
   // its size now, the slider's points, Resize (fitted again from its own file) and every plane at once
@@ -2815,7 +2872,7 @@ function modelBox(address, info, draw, changed) {
       }
     }).catch(() => {});  // (no slider: the number box still takes a size)
   const pick = el("button", { type: "button", textContent: own ? w.model_import_again : w.model_import,
-    title: squad ? w.tip_model_import_squad : w.tip_model_import });
+    title: kinds ? w.tip_model_import_kinds : squad ? w.tip_model_import_squad : w.tip_model_import });
   // the unit's own copy a new model took the place of (StudioApi.model_import's "copy_out"; a squad's Custom uniform)
   const copyOut = squad ? w.model_copy_out_squad : w.model_copy_out;
   pick.addEventListener("click", async () => {
@@ -2853,7 +2910,8 @@ function modelBox(address, info, draw, changed) {
       actions.append(get, choose);
     } else {
       const open = el("button", { type: "button", textContent: w.model_blender, title: w.tip_model_blender });
-      const back = el("button", { type: "button", textContent: w.model_blender_back, title: w.tip_model_blender_back });
+      const back = el("button", { type: "button", textContent: w.model_blender_back,
+        title: kinds ? w.tip_model_blender_back_kinds : w.tip_model_blender_back });
       open.addEventListener("click", async () => {
         open.disabled = true;
         say(w.model_blender_opening);
@@ -2869,7 +2927,7 @@ function modelBox(address, info, draw, changed) {
         try {
           const r = await api().model_blender_back(address, Number(size.value) || 1);
           if (r.model) {
-            say(w.model_blender_done, "ok");
+            say(kinds ? w.model_blender_done_kinds : w.model_blender_done, "ok");
             if (changed) changed();
           }
           draw(r);
@@ -2878,7 +2936,8 @@ function modelBox(address, info, draw, changed) {
       actions.append(open, back);
     }
     box.append(el("h4", { textContent: w.model_blender_title }),
-      el("p", { className: "small", textContent: info.blender ? w.model_blender_how : w.model_blender_needs }),
+      el("p", { className: "small", textContent: !info.blender ? w.model_blender_needs
+        : kinds ? w.model_blender_how_kinds : w.model_blender_how }),
       actions, where);
   }
   // its own copy of the model it copies (StudioApi.model_copy; the owner, 2026-10-11: "duplicate that part"): the same
@@ -2906,6 +2965,7 @@ function modelBox(address, info, draw, changed) {
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
+    if (own.own_skeleton) box.append(ownAnimationsBox(address));  // a model on bones of its own: what came in with it
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
     // its propeller discs (rusemod.modelin.fit_discs): spinning as the game's, or left out and why
@@ -2924,17 +2984,20 @@ function modelBox(address, info, draw, changed) {
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
     if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
-      title: squad ? w.tip_model_remove_squad : w.tip_model_remove });
+      title: kinds ? w.tip_model_remove_kinds : squad ? w.tip_model_remove_squad : w.tip_model_remove });
     drop.addEventListener("click", async () => {
       try {
         const r = await api().model_import_remove(address);
-        say(r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
-          : (squad ? w.model_removed_squad : w.model_removed), "ok");
+        // (a heavy-weapon soldier's model on its bones went with it: StudioApi.model_import_remove's "kinds_out")
+        const went = (r.kinds_out || []).length
+          ? " " + fill(w.model_kinds_out, { who: r.kinds_out.map(kindLabel).join(", ") }) : "";
+        say((r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
+          : (squad ? w.model_removed_squad : w.model_removed)) + went, "ok");
         draw(r);
         if (changed) changed();
       } catch (err) { problem(err); }
     });
-    if (squad) box.append(el("p", { className: "muted small", textContent: w.model_squad_fit }));
+    if (squad) box.append(el("p", { className: "muted small", textContent: own.own_skeleton ? w.model_own_bones_fit : w.model_squad_fit }));
     else {
       box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
         sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
@@ -2949,6 +3012,7 @@ function modelBox(address, info, draw, changed) {
       box.append(moveFold);
     }
     if (info.copy_out) box.append(el("p", { className: "notice", textContent: copyOut }));
+    if (own.rigged) box.append(fitBox(address, changed));  // its two halves and what won't fit (item 5, the owner's 7)
     box.append(el("div", { className: "actions" }, pick, drop));
   } else {
     if (info.model_out) {
@@ -2956,7 +3020,10 @@ function modelBox(address, info, draw, changed) {
         ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
         : (squad ? w.model_removed_squad : w.model_removed) }));
     }
-    box.append(el("p", { className: "muted small", textContent: squad ? w.model_how_squad : w.model_how }));
+    box.append(el("p", { className: "muted small", textContent: kinds ? w.model_how_kinds : squad ? w.model_how_squad
+      : w.model_how }));
+    // a model on bones of its own with its animations (a horse, any creature) comes in through the same button
+    if (squad) box.append(el("p", { className: "muted small", textContent: w.model_how_own_bones, title: w.tip_model_how_own_bones }));
     // with its own copy (a squad's Custom uniform): what an import does to it, before the button is clicked
     if (info.own_copy) {
       box.append(el("p", { className: "notice", textContent: squad ? w.model_import_over_uniform : w.model_import_over_copy }));
@@ -2964,7 +3031,160 @@ function modelBox(address, info, draw, changed) {
     if (squad) box.append(el("div", { className: "actions" }, pick));
     else box.append(el("div", { className: "actions" }, pick, el("label", { className: "small" }, w.model_size, " ", size)), sizing);
   }
+  if (kinds) box.append(kindsBox(address, kinds, draw, changed));
   box.pick = pick;
+  return box;
+}
+
+// --- a new unit's model rigged to bones: its two halves, and what of it won't work in the game (api.model_fit,
+// model_split; ruse_studio/modelfit.py, rusemod/bonefit.py). Item 5 of the owner's list, his 7 (2026-11-10): "Yes,
+// seven should warn them. If it's gonna break, and then tell them how to fix it. And what's the issue is. Should be
+// intuitive." Every problem says what doesn't fit, what the game does with it, and how to fix it; none stops anything.
+// A model with bones of its own picks the bone its upper half starts at (the suggested one first: on the 11-09 Horse
+// Squad, the rider's first bone); a model on the game soldier's bones keeps the game's halves, no choice shown ---
+function fitBox(address, changed) {
+  const w = state.words;
+  const box = el("div", { className: "model-fit" }, el("p", { className: "muted small", textContent: w.fit_working }));
+  const draw = (r) => {
+    box.replaceChildren();
+    if (!r || !r.skeleton) return;
+    if (r.skeleton === "own" && r.halves) box.append(halvesBox(address, r, draw, changed));
+    else if (r.skeleton === "soldier") {
+      box.append(el("h4", { textContent: w.fit_halves_title, title: w.tip_fit_halves_title }),
+        el("p", { className: "muted small", textContent: w.fit_soldier_halves, title: w.tip_fit_soldier_halves }));
+    }
+    box.append(fitProblems(r));
+  };
+  api().model_fit(address).then(draw).catch((err) => { box.replaceChildren(el("p", { className: "notice warn",
+    textContent: (err && err.message) || String(err) })); });
+  return box;
+}
+
+// where its upper half starts: a list of its bones (the suggested one first, then every bone under its parent), how
+// many bones each half has, and the whole tree marked upper and lower in a fold
+function halvesBox(address, r, draw, changed) {
+  const w = state.words, h = r.halves;
+  const pick = el("select", { className: "fit-split", title: w.tip_fit_split });
+  pick.append(el("option", { value: "", textContent: fill(w.fit_split_suggested, { bone: h.suggested }) }));
+  for (const b of h.tree) pick.append(el("option", { value: b.name, textContent: "  ".repeat(b.depth) + b.name }));
+  pick.value = h.chosen ? h.split : "";
+  pick.addEventListener("change", async () => {
+    pick.disabled = true;
+    try {
+      const got = await api().model_split(address, pick.value || null);
+      say(fill(pick.value ? w.fit_split_saved : w.fit_split_back, { bone: got.halves ? got.halves.split : pick.value }), "ok");
+      draw(got);
+      if (changed) changed();
+    } catch (err) { problem(err); pick.disabled = false; }
+  });
+  const tree = el("details", { className: "fit-tree" }, el("summary", { title: w.tip_fit_halves_tree },
+    el("strong", { textContent: w.fit_halves_tree })));
+  for (const b of h.tree) {   // (the half in a column of its own, each bone set in under the bone it hangs from)
+    const name = el("span", { textContent: b.name });
+    name.style.paddingInlineStart = `${b.depth * 12}px`;
+    tree.append(el("div", { className: "small fit-bone " + (b.top ? "half-top" : "half-bottom") },
+      el("span", { className: "fit-half", textContent: b.top ? w.fit_half_top : w.fit_half_bottom }), name));
+  }
+  return el("div", { className: "fit-halves" },
+    el("h4", { textContent: w.fit_halves_title, title: w.tip_fit_halves_title }),
+    el("p", { className: "small", textContent: w.fit_halves_how }),
+    el("label", { className: "small" }, w.fit_split, " ", pick),
+    el("p", { className: "small", textContent: fill(w.fit_halves_counts, { top: h.top.length, bottom: h.bottom.length }) }),
+    el("p", { className: "muted small", textContent: w.fit_halves_example }), tree);
+}
+
+// each problem: what doesn't fit, what the game does with it, how to fix it
+function fitProblems(r) {
+  const w = state.words;
+  const box = el("div", { className: "fit-problems" }, el("h4", { textContent: w.fit_title, title: w.tip_fit_title }));
+  if (!r.problems.length) {
+    box.append(el("p", { className: "small", textContent: fill(w.fit_ok, { n: r.bones }) }));
+  }
+  for (const p of r.problems) {
+    const sayIt = fitWords(p);
+    if (!sayIt) continue;
+    box.append(el("div", { className: "notice " + (p.level === "stops" ? "stop" : "warn") },
+      el("p", { textContent: sayIt[0] }), el("p", { className: "small", textContent: sayIt[1] }),
+      el("p", { className: "small", textContent: sayIt[2] })));
+  }
+  box.append(el("p", { className: "muted small", textContent: w.fit_checked }));
+  return box;
+}
+
+function fitWho(p) {
+  const w = state.words;
+  return ({ rifle: w.fit_fig_rifle, heavy: w.fit_fig_heavy, far: w.fit_fig_far, fallen: w.fit_fig_fallen,
+    wreck: w.fit_fig_wreck, unit: w.fit_fig_unit })[p.figure_kind] || w.fit_fig_other;
+}
+
+function fitLevel(p) {
+  const w = state.words;
+  if (p.level === "stops") return p.seen ? w.fit_level_stops_seen : w.fit_level_stops;
+  if (p.level === "wrong") return w.fit_level_wrong;
+  if (p.level === "unseen") return w.fit_level_unseen;
+  if (p.level === "untried") return w.fit_level_untried;
+  return w.fit_level_note;
+}
+
+// [what doesn't fit, what the game does, how to fix it] for one of model_fit's problems (rusemod.bonefit's kinds)
+function fitWords(p) {
+  const w = state.words;
+  const names = p.clip_names || [];   // (the animations that don't fit the same way, together: a few by name)
+  const v = { who: fitWho(p), clips: names.slice(0, 4).join(", ") + (names.length > 4 ? ` (+${names.length - 4})` : ""), count: names.length,
+    n: (p.actions || []).length, a: p.clip_bones, b: p.model_bones, bone: p.bone || p.split || "", used: p.used || "",
+    most: p.most, x: p.examples && p.examples[0] ? p.examples[0][0] : "", y: p.examples && p.examples[0] ? p.examples[0][1] : "" };
+  let what, how;
+  if (p.kind === "clip") {
+    what = ({ fewer: w.fit_clip_fewer, more: w.fit_clip_more, names: w.fit_clip_names, order: w.fit_clip_order })[p.how];
+    how = p.own ? w.fit_fix_clip_own : w.fit_fix_clip_game;
+  } else if (p.kind === "bone") {
+    what = ({ shot: w.fit_bone_shot, turn: w.fit_bone_turn, show: w.fit_bone_show, hold: w.fit_bone_hold,
+      turret: w.fit_bone_turret, move: w.fit_bone_move, body: w.fit_bone_body, wheel: w.fit_bone_wheel,
+      hook: w.fit_bone_hook })[p.need] || w.fit_bone_move;
+    how = p.need === "shot" ? w.fit_fix_bone_shot : w.fit_fix_bone;
+  } else if (p.kind === "too_many") {
+    what = fill(w.fit_too_many, { n: p.bones, most: p.most });
+    how = w.fit_fix_too_many;
+  } else if (p.kind === "split_gone") {
+    what = w.fit_split_gone;
+    how = w.fit_fix_split_gone;
+  } else if (p.kind === "split_all_top") {
+    what = w.fit_split_all_top;
+    how = w.fit_fix_split_all_top;
+  } else return null;   // (the halves' masks are the build's: it says them)
+  return [fill(what, v), fitLevel(p), fill(how, v)];
+}
+
+// --- a model on bones of its own and its animations (api.model_animations; rusemod.animmodel, ruse_studio.
+// animmodel_calls; the owner's list, item 5: a horse that runs and stops, a rifleman on it who shoots, any creature):
+// what came in with the model, its bones and each animation with its length and how many of the unit's actions play
+// it, each action playing the animation named for it; a line when it brought none, and what to do next ---
+function ownAnimationsBox(address) {
+  const w = state.words;
+  const box = el("div", { className: "model-anims" }, el("h4", { textContent: w.model_anim_title }));
+  api().model_animations(address).then((a) => {
+    if (!a || !a.own) { box.remove(); return; }
+    box.append(el("p", { className: "small", textContent: fill(w.model_anim_bones, { n: a.bones }),
+      title: w.tip_model_anim_bones }));
+    if (!a.animations.length) {
+      box.append(el("p", { className: "notice warn", textContent: w.model_anim_none, title: w.tip_model_anim_none }));
+      return;
+    }
+    box.append(el("p", { className: "small", textContent: fill(w.model_anim_count, { n: a.animations.length }),
+      title: w.tip_model_anim_count }));
+    const list = el("ul", { className: "small model-anim-list" });
+    for (const r of a.animations) {
+      const seconds = Number(r.seconds || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      list.append(el("li", { title: w.tip_model_anim_row, textContent: fill(r.actions.length ? w.model_anim_row
+        : w.model_anim_row_none, { name: r.name, seconds, n: r.actions.length }) }));
+    }
+    box.append(list);
+    if (a.empty.length) {
+      box.append(el("p", { className: "muted small", textContent: fill(w.model_anim_empty, { n: a.empty.length,
+        all: a.actions }), title: w.tip_model_anim_empty }));
+    }
+    box.append(el("p", { className: "muted small", textContent: w.model_anim_next, title: w.tip_model_anim_next }));
+  }).catch(() => box.remove());  // (no answer: the box above still says what the model is)
   return box;
 }
 
@@ -3043,6 +3263,87 @@ function ridesInBox(u) {
     if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
   };
   api().rides_in(u.address, state.lang).then(draw).catch(() => box.remove());
+  return box;
+}
+
+// --- which animation each action plays (StudioApi.unit_actions, unit_action_set, unit_ride_set; rusemod.animactions,
+// one rule for this page and the build): a new unit with a model of its own and its model's animations (item 5 of the
+// owner's list, 2026-11-10) shows every action the game plays for it and the animation that plays it, picked from the
+// model's or left on Nearest, and says which one the nearest is. Stand, walk and run first (the least a model needs:
+// a warning names any of them with nothing of its own) and the ride on long moves; the rest folded away by kind ---
+const ACTION_MAIN = ["stand", "marche", "course"];
+function unitActionsBox(u) {
+  const w = state.words;
+  const box = el("div", { className: "group unit-actions" },
+    el("h2", { textContent: w.actions_title, title: w.tip_actions_title }));
+  const nameOf = (a) => w[`act_${a}`] || fill(w.actions_other, { key: a });
+  // what an action plays, in words: one animation, or the top half's and the bottom half's when they differ
+  const said = (plays) => {
+    const top = plays.top || plays.all || plays.bottom || "", bottom = plays.bottom || plays.all || plays.top || "";
+    return top === bottom ? top : fill(w.actions_halves, { top, bottom });
+  };
+  const optionText = (a) => (a.seconds != null ? fill(w.actions_option, { name: a.name, seconds: a.seconds }) : a.name);
+  const draw = (info) => {
+    // (kept, hidden, on a unit without them: an import on this page gives it some, and reload shows them)
+    box.classList.toggle("hidden", !info || !info.own);
+    if (!info || !info.own) { box.replaceChildren(box.firstChild); return; }
+    const save = (call, args, done) => async (e) => {
+      const pick = e.target;
+      pick.disabled = true;
+      try { const r = await api()[call](u.address, ...args(pick.value), state.lang); say(done(pick.value), "ok"); draw(r); }
+      catch (err) { problem(err); draw(info); }
+    };
+    const row = (r) => {
+      const pick = el("select", { title: fill(w.tip_actions_pick, { action: nameOf(r.action) }), disabled: !info.editable });
+      pick.append(el("option", { value: "", textContent: fill(w.actions_nearest, { name: said(r.nearest) }) }));
+      for (const a of info.animations) pick.append(el("option", { value: a.name, textContent: optionText(a) }));
+      pick.value = r.picked || "";
+      pick.addEventListener("change", save("unit_action_set", (v) => [r.action, v || null],
+        (v) => fill(w.actions_saved, { action: nameOf(r.action), name: v || said(r.nearest) })));
+      return el("tr", {}, el("td", { textContent: nameOf(r.action) }), el("td", {}, pick));
+    };
+    const parts = [el("p", { className: "muted small", textContent: w.actions_how })];
+    const byAction = Object.fromEntries(info.rows.map((r) => [r.action, r]));
+    for (const a of info.missing) {
+      parts.push(el("p", { className: "notice warn", textContent: fill(w.actions_missing,
+        { action: nameOf(a), name: said(byAction[a].plays) }) }));
+    }
+    const main = el("table", { className: "unit-actions-main" },
+      ...ACTION_MAIN.filter((a) => byAction[a]).map((a) => row(byAction[a])));
+    // the ride on long moves: as itself, playing one of its animations on a loop, or in its truck
+    const ride = info.ride;
+    if (ride.can) {
+      const pick = el("select", { title: w.tip_actions_ride, disabled: !info.editable });
+      pick.append(el("option", { value: "", textContent: fill(w.actions_ride_nearest, { name: ride.nearest }) }));
+      for (const a of info.animations) pick.append(el("option", { value: a.name, textContent: fill(w.actions_ride_as, { name: a.name }) }));
+      pick.append(el("option", { value: "truck", textContent: fill(w.actions_ride_truck, { truck: ride.truck || "" }) }));
+      pick.value = ride.itself ? (ride.picked || "") : "truck";
+      pick.addEventListener("change", save("unit_ride_set", (v) => [v], (v) => (v === "truck"
+        ? fill(w.actions_ride_saved_truck, { truck: ride.truck || "" }) : fill(w.actions_ride_saved, { name: v || ride.nearest }))));
+      main.append(el("tr", {}, el("td", { textContent: w.act_ride }), el("td", {}, pick)));
+    }
+    parts.push(main);
+    parts.push(el("p", { className: "muted small", textContent: ride.can ? w.actions_ride_how : w.actions_ride_none }));
+    // every other action, by kind, folded away: each plays the nearest until one is picked
+    const rest = info.rows.filter((r) => !ACTION_MAIN.includes(r.action));
+    if (rest.length) {
+      const fold = el("details", { className: "unit-actions-more" },
+        el("summary", { title: w.tip_actions_more, textContent: fill(w.actions_more, { n: rest.length }) }));
+      let section = null, table = null;
+      for (const r of rest) {
+        if (r.section !== section) {
+          section = r.section;
+          table = el("table");
+          fold.append(el("h4", { textContent: w[`act_section_${section}`] || w.act_section_other }), table);
+        }
+        table.append(row(r));
+      }
+      parts.push(fold);
+    }
+    box.replaceChildren(box.firstChild, ...parts);
+  };
+  box.reload = () => api().unit_actions(u.address, state.lang).then(draw).catch(() => draw(null));
+  box.reload();
   return box;
 }
 
@@ -3357,8 +3658,9 @@ async function showUnit(address, via) {
   parts.push(notesBox(`obj:${u.address}`));  // (the same note as on its All values page)
   if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
     const view = unitView(u);
+    const actions = unitActionsBox(u);  // (which animation each action plays: a new model brings its own)
     const side = el("aside", { className: "unit-side" }, view,
-      lookBox(u, () => view.reload(), copyForm && copyForm.openForm), ridesInBox(u));
+      lookBox(u, () => { view.reload(); actions.reload(); }, copyForm && copyForm.openForm), actions, ridesInBox(u));
     $("detail").replaceChildren(...parts.slice(0, head),
       el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
     return;
