@@ -2474,7 +2474,9 @@ class Labels(unittest.TestCase):
         app = (ui / "app.js").read_text(encoding="utf-8")
         self.assertIn('["new", "start_new", "tip_start_new"]', app)
         self.assertIn("newUnitForm(u, state.start === \"new\")", app)
-        self.assertIn("parts.push(modelWant(startNew))", app)
+        # (since 2026-11-11 the Look and moves section's Model row: a game unit's main button makes the new unit)
+        self.assertIn("textContent: w.model_want_button, title: w.tip_model_want", app)
+        self.assertIn("if (startNew) go.addEventListener(\"click\", startNew);", app)
         self.assertIn("(import a model)", _words()["start_new"]["us"])
 
     def test_menus_and_feel(self):

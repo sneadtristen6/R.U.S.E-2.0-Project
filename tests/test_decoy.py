@@ -171,7 +171,7 @@ class Decoy(unittest.TestCase):
         self.assertEqual({k["id"]: k["changed"] for k in self.calls.decoy("us")["kinds"]}["engines"], 2)
 
     def test_a_units_own_sounds(self):
-        self.assertEqual(self.calls.decoy_unit(UNIT), {"count": 3, "voices": 1, "engine": 2, "clips": 0})
+        self.assertEqual(self.calls.decoy_unit(UNIT), {"count": 3, "voices": 1, "engine": 2, "clips": 0, "own_clips": 0})
         rows = self.calls.decoy_unit_list(UNIT)["rows"]
         self.assertEqual([(r["member"], r["role"]) for r in rows],
                          [(RUN, "engine_run"), (IDLE, "engine_idle"), (VOICE, "voice")])
@@ -306,6 +306,20 @@ class OnlyThisUnit(unittest.TestCase):
         game = baf.parse(self.calls.clips[run]).duration
         self.assertEqual([round(baf.parse(r).duration, 4) for r in self.calls.shown],
                          [round(game / 1.5, 4), round(game / 3, 4)])
+
+    def test_the_unit_page_counts_what_is_this_unit_s_only(self):
+        """The unit page's Look and moves, its Animations row (the owner, 2026-11-11: "Yes, start working on this"):
+        decoy_unit's own_clips counts the clips changed for this unit only, never a change every unit has."""
+        from unittest import mock
+        run = UnitCalls._RUN
+        # (this made-up game has no sounds for the squad: decoy_unit's sound half answers none)
+        with mock.patch.object(self.calls, "_decoy_unit_sounds", return_value=("", [])):
+            self.assertEqual(self.calls.decoy_unit(SQUAD)["own_clips"], 0)
+            self.calls.decoy_anim_set(run, speed=300)                              # every unit: not this unit's own
+            self.assertEqual(self.calls.decoy_unit(SQUAD)["own_clips"], 0)
+            self.calls.decoy_anim_set(run, speed=150, unit=SQUAD)                  # only this unit
+            got = self.calls.decoy_unit(SQUAD)
+        self.assertEqual((got["own_clips"], got["clips"]), (1, self.calls.decoy_unit_anims(SQUAD)["total"]))
 
     def test_the_copy_starts_as_what_the_unit_played(self):
         # like Copy this ammo: the change every unit has is the copy's start, then each goes its own way

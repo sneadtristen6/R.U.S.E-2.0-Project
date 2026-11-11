@@ -215,14 +215,18 @@ class DecoyCalls:
         return real, unique
 
     def decoy_unit(self, address: str) -> dict:
-        """What a unit's page says about its sounds and animations: how many voice lines, engine sounds and clips."""
+        """What a unit's page says about its sounds and animations: how many voice lines, engine sounds and clips, and
+        how many of those clips the current mod changed for this unit only ("own_clips": its own copy, Only this unit;
+        the Animations row of the page's Look and moves, the owner's 2026-11-11 "Yes, start working on this")."""
         _real, items = self._decoy_unit_sounds(address)
         try:
-            clips = self.decoy_unit_anims(address)["total"]
+            anims = self.decoy_unit_anims(address)
+            clips, own_clips = anims["total"], sum(1 for r in anims["rows"] if r.get("own"))
         except Exception:  # noqa: BLE001 (no animations read: its sounds are still shown)
-            clips = 0
+            clips = own_clips = 0
         return {"count": len(items), "voices": sum(1 for _m, role, _x in items if role == "voice"),
-                "engine": sum(1 for _m, role, _x in items if role.startswith("engine")), "clips": clips}
+                "engine": sum(1 for _m, role, _x in items if role.startswith("engine")), "clips": clips,
+                "own_clips": own_clips}
 
     def decoy_unit_list(self, address: str, lang: str = "base") -> dict:
         """A unit's own sounds as RUSE Decoy lists them: its engine first, then its voice lines by moment."""

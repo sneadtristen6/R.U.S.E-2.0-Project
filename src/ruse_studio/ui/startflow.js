@@ -3,13 +3,15 @@
 // and it takes you to the studio as is right now ... or start a new mod ... And then an option to just bypass both";
 // on skipping: "are you an experienced modder? Select here and you can always have this menu skip", kept in Settings).
 //
-// The start screen: Carry on with a mod (only when there's one: never on a fresh install), Start a new mod, Skip, and
-// the tick that always skips it. A new mod's steps: its name; what each nation keeps (the Nations tab itself, with
+// The start screen: Carry on with a mod (only when there's one: never on a fresh install), Start a new mod (the
+// Studio's own New mod box since 2026-11-11, the owner's "take the guided step out of the studio for now"), Skip, and
+// the tick that always skips it. A new mod's steps, OFF since that day (kept, called from nowhere, for when he takes
+// the idea off hold): its name; what each nation keeps (the Nations tab itself, with
 // Keep its units / Start it empty on each nation); research (keep the game's, none, or custom: the game's, changed on
 // the board); the board of each nation's buildings (board.js); "What will your mod change?", whose ticked tabs come
 // next, each the tab itself with the steps' bar above it (never a second copy of an editor); then done. Maps keep
 // their own start in the Maps tab. Uses app.js's $, el, fill, say, problem, api, state, showView, useMods, modChanged,
-// pickMod and window.NationsView.
+// pickMod, NEW and window.NationsView.
 (function () {
   "use strict";
   const CHANGES = [  // "What will your mod change?": each tick's tab (the economy is in AI and player settings, 10-22)
@@ -66,7 +68,13 @@
     } else {
       const choices = [];
       if (mods.length) choices.push(big("ss_carry", "tip_ss_carry", () => openStart(true), "primary"));  // never on a fresh install
-      choices.push(big("ss_new", "tip_ss_new", () => { closeStart(); startFlow(); }, mods.length ? "" : "primary"));
+      // Start a new mod: the Studio's own New mod box (its name, then the Studio on it). The owner, 2026-11-11: "Yes,
+      // in this patch, take the guided step out of the studio for now" (before: "I doubt anyone's using it yet because
+      // it's not fully fleshed out ... I'm gonna put that idea on hold"). A new mod's steps (startFlow, below) are kept
+      // for later, called from nowhere; with them went, for now, the two things only they offered: a nation started
+      // empty (the Nations step's Keep its units / Start it empty) and No research for the whole mod.
+      choices.push(big("ss_new", "tip_ss_new", () => { closeStart(); pickMod({ target: { value: NEW } }, "mod"); },
+        mods.length ? "" : "primary"));
       choices.push(big("ss_skip", "tip_ss_skip", closeStart, "ghost"));
       body.replaceChildren(el("div", { className: "ss-choices" }, ...choices), tick);
     }

@@ -747,8 +747,12 @@ class Page(unittest.TestCase):
         the copy's Back button (modelBox returned early): both, for the owner's item 4 (2026-11-10)."""
         root = Path(__file__).resolve().parents[1]
         app = (root / "src" / "ruse_studio" / "ui" / "app.js").read_text(encoding="utf-8")
-        self.assertIn("if (info.new_unit && state.mod) parts.push(model = modelBox(address, info, draw, brought));", app)
-        self.assertIn("else if (!info.new_unit && u.can_copy && u.editable) parts.push(modelWant(startNew));", app)
+        # (since 2026-11-11 in the Look and moves section's Model row, lookMovesBox: its Import model is the row's
+        # main button, the way to a new unit a game unit's)
+        self.assertIn("if (info.new_unit && state.mod) {\n      model = modelBox(address, info, drawLook, changed);\n"
+                      "      main = [model.pick];", app)
+        self.assertIn("} else if (!info.new_unit && u.can_copy && u.editable) {", app)
+        self.assertIn("textContent: w.model_want_button, title: w.tip_model_want", app)
         self.assertNotIn("no import while it has a copy", app)
         self.assertNotIn("(Remove the model)", app)
         for needle in ("w.model_how_squad", "w.tip_model_import_squad", "w.model_import_over_uniform",
