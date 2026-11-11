@@ -167,6 +167,54 @@ where = "rusemod.anim:changes"
 kind = "raise"
 us = "{0}: the game has no clip {1}"
 
+[c572a8a6bdc]
+check = "anim._own_file"
+where = "rusemod.anim:_own_file"
+kind = "raise"
+us = "{0}: name a .baf file in the unit's own folder ({1}/<the unit's name>/)"
+
+[ca3f6ba995b]
+check = "anim.mod_unit_clips"
+where = "rusemod.anim:mod_unit_clips"
+kind = "raise"
+us = "{0}: [unit.<a unit's name>] tables, one a unit"
+
+[c4fb25ad46e]
+check = "anim.mod_unit_clips-2"
+where = "rusemod.anim:mod_unit_clips"
+kind = "raise"
+us = "{0}: {1}: {2}: name a clip by its path in the game's packs, ending .baf"
+
+[cb7e030107a]
+check = "anim.mod_unit_clips-3"
+where = "rusemod.anim:mod_unit_clips"
+kind = "raise"
+us = "{0}: [unit.{1}]: ride is \"truck\" (in its truck) or \"itself\""
+
+[c98aca5ed55]
+check = "anim._model_tables"
+where = "rusemod.anim:_model_tables"
+kind = "raise"
+us = "{0}: {1}: [unit.{2}.animation] names its model's animations, [unit.{3}.plays] the one each action plays"
+
+[cc008f395b2]
+check = "anim._model_tables-2"
+where = "rusemod.anim:_model_tables"
+kind = "raise"
+us = "{0}: {1}: {2} plays {3}, which isn't one of its animations"
+
+[c3480834aee]
+check = "anim.own_clip_files"
+where = "rusemod.anim:own_clip_files"
+kind = "raise"
+us = "{0} is one of the game's own files already"
+
+[ca38cc5d2ab]
+check = "anim.own_clip_files-2"
+where = "rusemod.anim:own_clip_files"
+kind = "raise"
+us = "{0}: the game has no such clip"
+
 [c9155f48c8e]
 check = "backup.read_manifest"
 where = "rusemod.backup:read_manifest"
@@ -256,6 +304,12 @@ check = "bigmap.grow_clone"
 where = "rusemod.bigmap:grow_clone"
 kind = "raise"
 us = "maps/{0}: {1}'s map cluster doesn't load its {2} the way the game's maps do, so the new size can't be given to it"
+
+[caddba6e4fe]
+check = "bonefit.halves_of"
+where = "rusemod.bonefit:halves_of"
+kind = "raise"
+us = "the model has no bone called {0}"
 
 [c08d430cf33]
 check = "ground-reach"
@@ -497,6 +551,12 @@ where = "rusemod.build:unit_cards"
 kind = "mistake"
 us = "{0}: files/cards/{1}.png: {2} has no card of its own (TextureForInterface) naming a picture, so it can't get one"
 
+[cf44d4429da]
+check = "build.unit_own_models"
+where = "rusemod.build:unit_own_models"
+kind = "mistake"
+us = "{0}: a model for {1}'s {2} must be fitted to his bones (import it again in the Studio)"
+
 [c96e2130008]
 check = "build.building_looks"
 where = "rusemod.build:building_looks"
@@ -532,6 +592,42 @@ check = "build.unit_own_copies-4"
 where = "rusemod.build:unit_own_copies"
 kind = "mistake"
 us = "{0}: {1} draws no {2} (none of its model parts names it)"
+
+[cc0ae748a8a]
+check = "build.unit_own_clips"
+where = "rusemod.build:unit_own_clips"
+kind = "mistake"
+us = "these mods give units animations of their own, which go into ZZ_Win.dat; it wasn't given"
+
+[cf67ba54f23]
+check = "build.unit_own_clips-2"
+where = "rusemod.build:unit_own_clips"
+kind = "mistake"
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
+
+[cb4e2a7f510]
+check = "build.unit_own_rides"
+where = "rusemod.build:unit_own_rides"
+kind = "mistake"
+us = "{0}: {1}'s figure names no model to draw its ride with"
+
+[cc1bab0be40]
+check = "build.unit_own_rides-2"
+where = "rusemod.build:unit_own_rides"
+kind = "mistake"
+us = "{0}: {1}'s ride can't be made: {2}"
+
+[c1e01ed2d10]
+check = "build.unit_own_rides-3"
+where = "rusemod.build:unit_own_rides"
+kind = "mistake"
+us = "{0}"
+
+[cacf626bc62]
+check = "build.unit_own_halves"
+where = "rusemod.build:unit_own_halves"
+kind = "mistake"
+us = "{0}: {1}"
 
 [c98c3bbdd9e]
 check = "build._own_model_part"
@@ -1565,6 +1661,12 @@ where = "rusemod.missionbuild:entry_folder"
 kind = "raise"
 us = "{0}'s scenario cluster isn't in the game"
 
+[c4a4635b1dd]
+check = "modelin._own_animations"
+where = "rusemod.modelin:_own_animations"
+kind = "raise"
+us = "the animation {0} is on other bones than the model's"
+
 [c4d2a8e041b]
 check = "nav.read"
 where = "rusemod.nav:read"
@@ -1895,6 +1997,30 @@ where = "rusemod.pyscript:append_module"
 kind = "raise"
 us = "the joined script doesn't read back as the game's then the template's"
 
+[c64d7cd3e4c]
+check = "rig.rig_of"
+where = "rusemod.rig:rig_of"
+kind = "raise"
+us = "{0}: no bones in it (no mesh is skinned to an armature): in Blender, parent the mesh to its armature with weights, then export it again"
+
+[c08674177e0]
+check = "rig.rig_of-2"
+where = "rusemod.rig:rig_of"
+kind = "raise"
+us = "{0}: a bone without a name (node {1}): name it in Blender"
+
+[c13fe11df55]
+check = "rig.rig_of-3"
+where = "rusemod.rig:rig_of"
+kind = "raise"
+us = "{0}: the bone name {1} has letters a skeleton can't hold: rename it with plain letters in Blender"
+
+[c929f083429]
+check = "rig.rig_of-4"
+where = "rusemod.rig:rig_of"
+kind = "raise"
+us = "{0}: two bones are called {1} (not counting capitals): rename one in Blender"
+
 [c6ae8ead257]
 check = "rmod.check"
 where = "rusemod.rmod:check"
@@ -2195,11 +2321,35 @@ where = "rusemod.unitlook:changes"
 kind = "raise"
 us = "files/replace/{0}.png: the game has no texture {1}"
 
+[cb66e135128]
+check = "unitmodel._import_own_bones"
+where = "rusemod.unitmodel:_import_own_bones"
+kind = "raise"
+us = "its points lean on bones its skeleton hasn't got: {0}"
+
+[cfc91c2e869]
+check = "unitmodel.own_record"
+where = "rusemod.unitmodel:own_record"
+kind = "raise"
+us = "its skeleton isn't in its file any more: import the model again"
+
+[c35d1f059f4]
+check = "unitmodel._top_of"
+where = "rusemod.unitmodel:_top_of"
+kind = "raise"
+us = "the skeleton has no bone called {0}"
+
 [c3fb0c82b14]
 check = "unitmodel.new_texture"
 where = "rusemod.unitmodel:new_texture"
 kind = "raise"
 us = "a {0} x {1} texture's level {2} ({3} x {4}) holds {5} blocks; the game makes room for {6}"
+
+[c46c2c9c170]
+check = "unitmodel._with_model.own_bone_material"
+where = "rusemod.unitmodel:own_bone_material"
+kind = "raise"
+us = "the material of {0} that this draw copies has no bone list to give it"
 
 [c65c48ef708]
 check = "unitmodel._with_model"
