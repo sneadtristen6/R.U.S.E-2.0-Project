@@ -74,7 +74,7 @@ class ModelBlenderCalls:
         proc = self._blenders.get(str(work))
         if proc is not None and proc.poll() is None:  # its Blender is open: it sends what it has now
             ask_to_send(send, SEND_WAIT)
-        if not send.is_file():
+        if not send.is_file():  # not a game rule: the Studio's own hand-over from Blender, nothing sent yet
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring back the model here.")
         return {**self.model_import(address, str(send), size), "work": str(work)}

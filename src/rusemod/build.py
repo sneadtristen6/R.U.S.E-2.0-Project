@@ -1597,10 +1597,10 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     for unit, (of, paint, mod_id) in sorted(wanted.items()):
         where = f"{mod_id}: files/models/{unit}.copy.toml"
         if unit in result.own_models:
-            # not a game rule: one model per unit (an imported one, or a copy of the one it copies): each of its model
-            # parts names one file. The Studio's Import model takes the copy out since 2026-11-10, so only a mod made
-            # by an older Studio or by hand gets here; the words name the Studio's buttons that fix it (words.toml
-            # uniform_default_again, model_copy_remove, model_remove)
+            # Each of its model parts names one file. The Studio's Import model takes the copy out since 2026-11-10, so
+            # only a mod made by an older Studio or by hand gets here; the words name the Studio's buttons that fix it
+            # (words.toml uniform_default_again, model_copy_remove, model_remove).
+            # not a game rule: one model per unit (an imported one, or a copy of the one it copies)
             result.findings.append(Finding("error", f"{where}: {unit} has two models: one you imported "
                                                     f"(files/models/{unit}.glb) and its own copy of the game's model "
                                                     f"(this file, a squad's Custom uniform). Each of its figures is "

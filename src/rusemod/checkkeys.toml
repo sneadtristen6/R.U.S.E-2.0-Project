@@ -509,11 +509,11 @@ where = "rusemod.build:building_looks"
 kind = "mistake"
 us = "{0}: {1} names no look (GfxDescriptor {2}.SymbolName), so it can't get one"
 
-[c81f87bc2d2]
+[c742887cb94]
 check = "build.unit_own_copies"
 where = "rusemod.build:unit_own_copies"
 kind = "mistake"
-us = "{0}: {1} has an imported model too (files/models/{2}.glb); take one of the two out"
+us = "{0}: {1} has two models: one you imported (files/models/{2}.glb) and its own copy of the game's model (this file, a squad's Custom uniform). Each of its figures is drawn with one model, so it can't use both. In the Studio, on this unit's page, click Back to the default uniform (or Use the shared model again, for a unit that isn't a squad) to keep your model, or Use the copied unit's model to keep the copy"
 
 [c95da0af091]
 check = "build.unit_own_copies-2"
