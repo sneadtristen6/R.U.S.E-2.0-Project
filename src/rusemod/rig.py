@@ -244,10 +244,9 @@ class Rig:
             return 1.0, 1
         return anim.seconds, max(2, round(anim.seconds * fps) + 1)
 
-    def poses(self, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
-        """(its length in seconds, each bone's (moves, turns, sizes) at each of its frames, in the game's axes and
-        units, as rusemod.baf.from_frames takes them). Each bone's pose is from its parent bone: a node between them
-        counts in (their matrices multiplied and taken apart again); a bone the animation doesn't move keeps its rest."""
+    def _sampler(self, anim: Animation, fps: int) -> tuple[float, int, dict, object]:
+        """(its length, its frames, {node: what moves it}, trs(node, frame): the node's (move, turn, size) at that
+        frame, or its matrix for a node given as one) for poses() and worlds()."""
         length, frames = self.frames(anim, fps)
         step = anim.seconds / (frames - 1) if frames > 1 else 0.0
         times = [anim.start + k * step for k in range(frames)]
@@ -271,7 +270,29 @@ class Rig:
                     value = sample(ch, snapped, times[k])
                 out.append(value)
             return tuple(out)
+        return length, frames, by_node, trs
 
+    def worlds(self, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
+        """(its length, each frame's [each bone's pose in the model (a 3 x 4), in the rig's bone order]), the nodes
+        between bones counted in, as poses() samples them."""
+        length, frames, _by_node, trs = self._sampler(anim, fps)
+        out = []
+        for k in range(frames):
+            w = []
+            for j, joint in enumerate(self.joints):
+                m = w[joint.parent] if joint.parent >= 0 else IDENTITY
+                for n in self.chains[j] + [joint.node]:
+                    part = trs(n, k)
+                    m = mul(m, compose(*part) if isinstance(part[0], tuple) else part)
+                w.append(m)
+            out.append(w)
+        return length, out
+
+    def poses(self, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
+        """(its length in seconds, each bone's (moves, turns, sizes) at each of its frames, in the game's axes and
+        units, as rusemod.baf.from_frames takes them). Each bone's pose is from its parent bone: a node between them
+        counts in (their matrices multiplied and taken apart again); a bone the animation doesn't move keeps its rest."""
+        length, frames, by_node, trs = self._sampler(anim, fps)
         poses, slant = [], []
         for j, joint in enumerate(self.joints):
             chain = self.chains[j]
@@ -553,3 +574,380 @@ def _kept_record(given, rig: Rig) -> bytes | None:
 def skeleton_extra(record: bytes) -> str:
     """A record as a skin's extras carry it (SKELETON_EXTRA)."""
     return base64.b64encode(record).decode("ascii")
+
+
+# --- a file whose bones were laid out for Blender, back in the game's frames (rusemod.animglb's notes) ---
+# A pose that comes back within these of the clip that went out is the same: what Blender's own sums leave, and what
+# its File > Export's Optimize Animation Size (on by default; the Studio's Send turns it off) flattens, a channel that
+# moves less than 0.0001 over an action cut to its first and last key: 0.01 of the game's units a bone, a few down a
+# chain of them (Blender 4.5's exporter, fcurve_is_constant; measured on the US rifleman's 41 clips,
+# scratch/animmodels/agent5-4). 0.05 of the game's units is 0.3 mm on a soldier 312 units tall; a deliberate change
+# is far more.
+TOL_BACK_MOVE = 5e-2     # the game's units, as it shows in the model
+TOL_BACK_FRAME = 5e-4    # the 3 x 3 of turn and size together (about 0.03 degrees): a mirrored bone's turn and size
+#                          can be taken apart two ways (a minus on one axis or another), the same pose either way
+_UNTURN = (0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)   # rusemod.gltf.TURN's inverse, 12 numbers
+
+
+@dataclass
+class Back:
+    """How a file's bones are the game's again (back_of): the bones in the game's order (`names`: the reference's
+    that the file has, then those it adds), each one's parent there (-1: none), its bone in the rig (`joint`), the
+    fixed turn that takes its pose in the file to the game's (`fix`: game = file x fix), its rest pose in the model,
+    and the record: the reference itself while no bone moved, was added or went, else worked out from the file."""
+    names: list
+    parents: list
+    joint: list
+    fix: list
+    world: list
+    record: bytes
+    turned: bool
+    kept: bool
+    moved: list = field(default_factory=list)
+    new: list = field(default_factory=list)
+    missing: list = field(default_factory=list)
+    hung: list = field(default_factory=list)
+
+
+def _turn_off(a, b) -> float:
+    """How far apart two poses' turns are (the largest difference of their 3 x 3 numbers, each column made length
+    one first, so a size doesn't count)."""
+    out = 0.0
+    for j in range(3):
+        ca = [a[i * 4 + j] for i in range(3)]
+        cb = [b[i * 4 + j] for i in range(3)]
+        na = math.sqrt(sum(v * v for v in ca)) or 1.0
+        nb_ = math.sqrt(sum(v * v for v in cb)) or 1.0
+        out = max(out, max(abs(x / na - y / nb_) for x, y in zip(ca, cb)))
+    return out
+
+
+def back_of(rig: Rig, reference: bytes) -> Back | None:
+    """How the bones of a file read by rig_of are the game's again, against `reference`, the skeleton record they were
+    laid out from (rusemod.gltf.rest_poses: turned by gltf.TURN, or as they are for a skeleton made in Blender; legs
+    hung; sized bones as plain turns): which of the two layouts the file is in is read from its bones' turns at rest
+    (most bones the reference has decide), then each bone the reference has takes the fixed turn that layout gave it,
+    and a bone it hasn't got (made in Blender) the layout's turn back. A bone at its place gets the reference's own rest
+    pose; the record is the reference's, byte for byte, while every bone is at its place and none was added or went.
+    None when there is nothing to do: the file's bones are the game's frames already, under the game's parents (a file
+    of the game's own frames, or one with no bone of the reference)."""
+    from .gltf import rest_poses
+    sk = baf.skeleton(reference)
+    nb = sk["bones"]
+    ref = [n.lower() for n in sk["names"]]
+    at = {n: j for j, n in enumerate(rig.names)}
+    common = [b for b in range(nb) if ref[b] in at]
+    if not common:
+        return None
+    lay = {t: rest_poses(reference, list(range(nb)), turn=t) for t in (True, False)}
+    score = {t: sorted(_turn_off(lay[t]["frames"][b], rig.joints[at[ref[b]]].world) for b in common) for t in lay}
+    turned = score[True][len(common) // 2] < score[False][len(common) // 2]
+    frames = lay[turned]["frames"]
+    names, parents, joint, fix, world = [], [], [], [], []
+    moved, missing, hung = [], [], []
+    pos: dict = {}
+    for b in range(nb):
+        if ref[b] not in at:
+            missing.append(sk["names"][b])
+            continue
+        j = at[ref[b]]
+        # (a bone the file holds as the game has it, size and all, needs nothing: a model of the game's own frames)
+        f = IDENTITY if near(rig.joints[j].world, sk["world"][b]) <= 1.0 else mul(inverse(frames[b]), sk["world"][b])
+        w = mul(rig.joints[j].world, f)
+        if near(w, sk["world"][b]) <= 1.0:
+            w = tuple(sk["world"][b])
+        else:
+            moved.append(sk["names"][b])
+        p = sk["parents"][b]
+        while p >= 0 and ref[p] not in at:      # (its parent went: the nearest bone above it that's still there)
+            p = sk["parents"][p]
+        up = rig.joints[j].parent
+        if (rig.names[up] if up >= 0 else None) != (ref[p] if p >= 0 else None):
+            hung.append(sk["names"][b])
+        pos[ref[b]] = len(names)
+        names.append(sk["names"][b])
+        parents.append(pos[ref[p]] if p >= 0 else -1)
+        joint.append(j)
+        fix.append(f)
+        world.append(w)
+    new = []
+    back = _UNTURN if turned else IDENTITY
+    for j, jt in enumerate(rig.joints):
+        if jt.name in pos:
+            continue
+        new.append(jt.name)
+        pos[jt.name] = len(names)
+        names.append(jt.name)
+        parents.append(pos[rig.names[jt.parent]] if jt.parent >= 0 else -1)
+        joint.append(j)
+        fix.append(back)
+        world.append(mul(jt.world, back))
+    if not turned and not hung and all(near(f, IDENTITY) <= 1.0 for f in fix):
+        return None
+    kept = not moved and not new and not missing
+    if kept:
+        record = bytes(reference)
+    else:
+        local = [w if p < 0 else mul(inverse(world[p]), w) for w, p in zip(world, parents)]
+        record = baf.skeleton_bytes(names, parents, [inverse(w) for w in world], local, world)
+    return Back(names, parents, joint, fix, world, record, turned, kept, moved, new, missing, hung)
+
+
+def back_poses(rig: Rig, back: Back, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
+    """An animation of the file as the game's poses: (its length, each of `back`'s bones' (moves, turns, sizes) at
+    each frame, from its parent in the game, as rusemod.baf.from_frames takes them): each bone's pose in the model
+    (Rig.worlds) times its fix, then taken from its game parent's. Turns on one side, each next one by the one before
+    (rusemod.baf.same_side)."""
+    length, frames = rig.worlds(anim, fps)
+    out = [([], [], []) for _ in back.names]
+    for w in frames:
+        game = [mul(w[j], f) for j, f in zip(back.joint, back.fix)]
+        for i, p in enumerate(back.parents):
+            move, turn, size, _off = decompose(game[i] if p < 0 else mul(inverse(game[p]), game[i]))
+            out[i][0].append(tuple(move))
+            out[i][1].append(tuple(turn))
+            out[i][2].append(tuple(size))
+    return length, [(m, baf.same_side(t), s) for m, t, s in out]
+
+
+def _carried(doc: dict) -> bytes | None:
+    """The record a file's skin carries (SKELETON_EXTRA), or None."""
+    for skin in doc.get("skins") or []:
+        given = (skin.get("extras") or {}).get(SKELETON_EXTRA)
+        if given:
+            try:
+                return base64.b64decode(given, validate=True)
+            except (ValueError, TypeError):
+                return None
+    return None
+
+
+def _settle(rig: Rig, back: Back, anim: Animation, raw: bytes | None) -> tuple[float, list, dict]:
+    """An animation's poses as back_poses gives them, with each bone the modder didn't change (its poses at every frame
+    within TOL_BACK_* of the clip that went out, `raw`: its bytes, or None) given that clip's own poses, exactly.
+    Returns (its length, the poses in `back`'s order, {"clip": the clip that went out (None: none, or one of other
+    bones, or of another length), "untouched": {back's bone: that clip's track}, "frames"})."""
+    length, poses = back_poses(rig, back, anim)
+    frames = len(poses[0][0]) if poses else 1
+    orig = baf.parse(raw) if raw else None
+    if orig is not None and not (orig.frames == frames and (frames == 1 or abs(orig.duration - length) < 1e-4)):
+        orig = None
+    untouched = {}
+    if orig is not None:
+        osk = baf.skeleton(orig.skeleton)
+        names = [n.lower() for n in osk["names"]]
+        track = {osk["index"][u]: t for u, t in enumerate(orig.tracks)}
+        worlds = _clip_worlds(orig, osk, frames)
+        for i, name in enumerate(back.names):
+            b = names.index(name.lower()) if name.lower() in names else None
+            if b is None or b not in track:
+                continue
+            p = osk["parents"][b]
+            if _same_track(track[b], poses[i], frames, [w[p] for w in worlds] if p >= 0 else None):
+                got = [baf.sample(track[b], k / (frames - 1) if frames > 1 else 0.0) for k in range(frames)]
+                poses[i] = ([g[0] for g in got], baf.same_side([g[1] for g in got]), [g[2] for g in got])
+                untouched[i] = track[b]
+    return length, poses, {"clip": orig, "untouched": untouched, "frames": frames}
+
+
+def turn_back(raw: bytes, reference: bytes | None = None, label: str = "the file",
+              originals: dict | None = None) -> tuple[bytes | None, dict]:
+    """A .glb whose bones were laid out for Blender (rusemod.gltf.model_glb's `clips`, rusemod.animglb.own_glb; and
+    the same sent back by Blender, which keeps no extras) as a .glb in the game's own frames, for Import model and the
+    unit's clips to read as any other: each bone under its game parent at its rest pose the game's way (back_of), the
+    skins' joints in the record's order (the points' bone numbers with them) and their inverse bind matrices from those
+    rest poses, the record in the skins' extras (the reference byte for byte while no bone moved), and every animation
+    as the game's poses at each of its frames (back_poses; with `originals`, {the animation's name: the bytes of the
+    clip that went out under it}, each bone the modder didn't change as that clip has it, exactly: _settle).
+    `reference`: the skeleton record the bones were laid out from; None: the one the file carries. Returns (the new
+    file, or None when there was nothing to turn back; {"turned", "kept", "moved", "new", "missing", "hung",
+    "animations": [{"name", "frames", "seconds", "changed": the bones that came back changed, of a clip that went out
+    under its name (None: no such clip)}]})."""
+    from .gltf import FLOAT, USHORT, _Glb
+    try:
+        doc, binary = glb_document(raw)
+    except (ValueError, struct.error) as exc:
+        raise ModelError(f"{label}: {exc}") from None
+    reference = reference or _carried(doc)
+    if reference is None:
+        return None, {"turned": False}
+    rig = rig_of(doc, binary, label)
+    back = back_of(rig, reference)
+    if back is None:
+        return None, {"turned": False}
+    sk = baf.skeleton(back.record)
+    g = _Glb()
+    g.doc, g.bin = doc, bytearray(binary)
+    nodes = doc["nodes"]
+    joint_node = [rig.joints[j].node for j in back.joint]
+    taken = {j.node for j in rig.joints}
+    roots = [j for j in rig.joints if j.parent < 0]
+    holder = None
+    if roots:       # the node the bones hang from (Blender's armature), the nearest one above the first that isn't one
+        up = rig.node_parent[roots[0].node]
+        holder = up if up >= 0 else None
+    for node in nodes:
+        if "children" in node:
+            node["children"] = [c for c in node["children"] if c not in taken]
+            if not node["children"]:
+                del node["children"]
+    scene = (doc.get("scenes") or [{"nodes": []}])[doc.get("scene", 0)]
+    scene["nodes"] = [n for n in scene.get("nodes", []) if n not in taken]
+    h_world = IDENTITY
+    if holder is not None:
+        m, n = IDENTITY, holder
+        while n >= 0:
+            m = mul(_rest_matrix(rig.node_rest[n]), m)
+            n = rig.node_parent[n]
+        h_world = m
+    for i, node_i in enumerate(joint_node):
+        p = back.parents[i]
+        local = sk["local"][i] if back.kept and (p >= 0 or holder is None or near(h_world, IDENTITY) == 0.0) else \
+            (mul(inverse(back.world[p]), back.world[i]) if p >= 0 else mul(inverse(h_world), back.world[i]))
+        move, turn, size, _off = decompose(local)
+        node = nodes[node_i]
+        node.pop("matrix", None)
+        node.update(translation=list(move_out(move)), rotation=list(turn_out(turn)), scale=list(size_out(size)))
+        if p >= 0:
+            nodes[joint_node[p]].setdefault("children", []).append(node_i)
+        elif holder is not None:
+            nodes[holder].setdefault("children", []).append(node_i)
+        else:
+            scene["nodes"].append(node_i)
+    order = {node: i for i, node in enumerate(joint_node)}
+    for s, skin in enumerate(doc.get("skins") or []):
+        old = list(skin.get("joints") or [])
+        if not old or any(n not in order for n in old):
+            continue
+        remap = {k: order[n] for k, n in enumerate(old)}
+        skin["joints"] = list(joint_node)
+        ibm = [v for i in range(len(joint_node)) for v in matrix_out(sk["bind"][i])]
+        g.doc["accessors"].append({"bufferView": g.view(struct.pack(f"<{len(ibm)}f", *ibm)), "componentType": FLOAT,
+                                   "count": len(joint_node), "type": "MAT4"})
+        skin["inverseBindMatrices"] = len(g.doc["accessors"]) - 1
+        skin.setdefault("extras", {})[SKELETON_EXTRA] = skeleton_extra(back.record)
+        if remap == {k: k for k in range(len(old))}:
+            continue
+        for node in nodes:      # the points' bone numbers, as the joints now stand
+            if node.get("skin") != s or "mesh" not in node:
+                continue
+            for prim in doc["meshes"][node["mesh"]]["primitives"]:
+                for key in [k for k in prim.get("attributes", {}) if k.startswith("JOINTS_")]:
+                    js = [tuple(remap.get(int(x), 0) for x in v) for v in glb_accessor(doc, binary, prim["attributes"][key])]
+                    prim["attributes"][key] = g.accessor(js, "VEC4", USHORT)
+    animations, said = [], []
+    for anim in rig.animations:
+        length, poses, settled = _settle(rig, back, anim, (originals or {}).get(anim.name))
+        frames = settled["frames"]
+        step = length / (frames - 1) if frames > 1 else 0.0
+        times = [k * step for k in range(frames)]
+        samplers, channels = [], []
+        tin = g.accessor(times, "SCALAR", FLOAT, target=None)
+        g.doc["accessors"][tin]["min"], g.doc["accessors"][tin]["max"] = [min(times)], [max(times)]
+        for i, (moves, turns, sizes) in enumerate(poses):
+            for path, vals, out_of in (("translation", moves, move_out), ("rotation", turns, turn_out),
+                                       ("scale", sizes, size_out)):
+                tout = g.accessor([tuple(out_of(v)) for v in vals], "VEC4" if path == "rotation" else "VEC3", FLOAT,
+                                  target=None)
+                samplers.append({"input": tin, "output": tout, "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1, "target": {"node": joint_node[i], "path": path}})
+        animations.append({"name": anim.name, "samplers": samplers, "channels": channels})
+        said.append({"name": anim.name, "frames": frames, "seconds": round(length, 4),
+                     "changed": [n for i, n in enumerate(back.names) if i not in settled["untouched"]]
+                     if settled["clip"] is not None else None})
+    if animations:
+        doc["animations"] = animations
+    else:
+        doc.pop("animations", None)
+    return g.to_bytes(), {"turned": back.turned, "kept": back.kept, "moved": back.moved, "new": back.new,
+                          "missing": back.missing, "hung": back.hung, "animations": said}
+
+
+def clips_back(rig: Rig, back: Back, reference: bytes, originals: dict | None = None) -> list[dict]:
+    """Each animation of the file as a game clip on the skeleton `reference` (a model on the game soldier's bones: the
+    game's record, every one of its bones a track, as every clip the soldier plays has): its poses the game's way
+    (back_poses), a bone the file hasn't got held as the clip that went out has it, or at its rest. `originals`: {the
+    animation's name: the bytes of the clip that went out under it}; a clip of the same frames and length keeps every
+    track the modder didn't change (each frame within TOL_BACK_* of it) as that clip's own, byte for byte, and its
+    skeleton part; the others are written at each frame (rusemod.baf.from_frames). Returns [{"name", "clip": its bytes,
+    "changed": the bones whose track came back changed (all of them for an animation with no clip that went out),
+    "same": whether it is the clip that went out, byte for byte, "frames", "seconds"}]."""
+    sk = baf.skeleton(reference)
+    nb = sk["bones"]
+    ref = [n.lower() for n in sk["names"]]
+    pos = {n.lower(): i for i, n in enumerate(back.names)}
+    rest = [decompose(m)[:3] for m in sk["local"]]
+    out = []
+    for anim in rig.animations:
+        raw = (originals or {}).get(anim.name)
+        if raw and [n.lower() for n in baf.skeleton(baf.parse(raw).skeleton)["names"]] != ref:
+            raw = None      # (a clip of other bones: not one to keep tracks of)
+        length, poses, settled = _settle(rig, back, anim, raw)
+        frames, orig = settled["frames"], settled["clip"]
+        track = {}
+        if orig is not None:
+            osk = baf.skeleton(orig.skeleton)
+            track = {osk["index"][u]: t for u, t in enumerate(orig.tracks)}
+        full = []
+        for b in range(nb):
+            i = pos.get(ref[b])
+            if i is not None:
+                full.append(poses[i])
+            elif b in track:        # (a bone the file hasn't got: as the clip that went out has it)
+                got = [baf.sample(track[b], k / (frames - 1) if frames > 1 else 0.0) for k in range(frames)]
+                full.append(([g[0] for g in got], baf.same_side([g[1] for g in got]), [g[2] for g in got]))
+            else:
+                full.append(([rest[b][0]] * frames, [rest[b][1]] * frames, [rest[b][2]] * frames))
+        part = orig.skeleton if orig is not None else bytes(reference)
+        clip = baf.from_frames(orig.duration if orig is not None else length, full, part)
+        if orig is not None:
+            kept = {ref.index(back.names[i].lower()) for i in settled["untouched"]}
+            psk = baf.skeleton(part)
+            changed = []
+            for u, b in enumerate(psk["index"]):
+                if b in kept or (ref[b] not in pos and b in track):
+                    clip.tracks[u] = track[b]
+                else:
+                    changed.append(sk["names"][b])
+            clip = baf.Clip(orig.duration, orig.frames, clip.tracks, part)
+        else:
+            changed = list(sk["names"])
+        data = baf.build(clip, max(baf.MOST_BONES, nb))
+        out.append({"name": anim.name, "clip": data, "changed": changed,
+                    "same": orig is not None and data == bytes(raw), "frames": frames, "seconds": round(length, 4)})
+    return out
+
+
+def _clip_worlds(clip: baf.Clip, sk: dict, frames: int) -> list:
+    """Each frame's [each bone's pose in the model (a 3 x 4)] as the clip plays them, bone by bone in its skeleton's
+    order (parents first)."""
+    track = {sk["index"][u]: t for u, t in enumerate(clip.tracks)}
+    out = []
+    for k in range(frames):
+        frac = k / (frames - 1) if frames > 1 else 0.0
+        w = [None] * sk["bones"]
+        for b in range(sk["bones"]):
+            m = compose(*baf.sample(track[b], frac)) if b in track else tuple(sk["local"][b])
+            w[b] = m if sk["parents"][b] < 0 else mul(w[sk["parents"][b]], m)
+        out.append(w)
+    return out
+
+
+def _same_track(track: baf.Track, poses: tuple, frames: int, parent: list | None = None) -> bool:
+    """Whether a bone's poses at every frame are the track's, within TOL_BACK_*: its turn and size together (the 3 x 3
+    they make), and its move as far as it shows in the model, through its parent's pose at that frame (`parent`, a
+    3 x 4 a frame; None: it has none), so a bone under one the game sizes down to hide it (the rifle's muzzle point
+    while the bazooka is out, sized 0.001) isn't held to a thousand times what shows."""
+    moves, turns, sizes = poses
+    for k in range(frames):
+        a = compose(*baf.sample(track, k / (frames - 1) if frames > 1 else 0.0))
+        b = compose(moves[k], turns[k], sizes[k])
+        if max(abs(a[4 * i + j] - b[4 * i + j]) for i in range(3) for j in range(3)) > TOL_BACK_FRAME:
+            return False
+        d = [a[3] - b[3], a[7] - b[7], a[11] - b[11]]
+        if parent is not None:
+            m = parent[k]
+            d = [m[4 * i] * d[0] + m[4 * i + 1] * d[1] + m[4 * i + 2] * d[2] for i in range(3)]
+        if max(abs(x) for x in d) > TOL_BACK_MOVE:
+            return False
+    return True
