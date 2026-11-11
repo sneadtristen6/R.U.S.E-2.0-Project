@@ -549,6 +549,9 @@ class Tab(unittest.TestCase):
         self.api.value_words_set(key, {"fr": "Fourmi géante"})
         self.assertEqual(self.rows(self.api.value_object(E + "Unit_A", "fr"))["NameInMenuToken"]["edited"]["words"],
                          "Fourmi géante")
+        # Persian, a language the game has no texts in: the mod's English words (2026-11-11; it showed none)
+        self.assertEqual(self.rows(self.api.value_object(E + "Unit_A", "fa"))["NameInMenuToken"]["edited"]["words"],
+                         "Giant Ant")
         rev = self.game / "Data" / "PC" / "190852"
         arc, text_arc = Edat((rev / "ZZ_GladPatchableWin.dat").read_bytes()), Edat((rev / "ZZ_Win.dat").read_bytes())
         result = build_pack(arc, [load_mod(folder)], text_arc=text_arc)

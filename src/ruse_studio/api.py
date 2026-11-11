@@ -921,7 +921,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """An ammunition's name and kind in game as its page shows them (ammo_text_set): [{prop, key, words, own,
         changed}] (`own`: a text of the mod's own, whose words the words panel changes; `changed`: the mod points it
         at another text than the game's)."""
-        text_lang = "us" if lang == schema.BASE else lang
+        text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)
         mine = self._mod_words()
         keys = {}
         for prop in self.AMMO_TEXTS:
@@ -5264,7 +5264,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("We couldn't find R.U.S.E., so there are no missions to show.")
         if self._new_maps().get(str(pack).lower()):
             return {"new": True}
-        text_lang = "us" if lang == schema.BASE else lang
+        text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)
         orders = self._menu_orders()
         with missionsteps.PackStore(game) as store:
             m = missionsteps.find(store, str(pack), str(file))
@@ -6645,7 +6645,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         def mine(address, prop):
             return edits.get(address, prop) if edits is not None else None
 
-        text_lang = "us" if lang == schema.BASE else lang
+        text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)
         ix = self._open()
         try:
             configs = ai.configurations(ix)
@@ -7295,7 +7295,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             mod, broken = None, str(exc)
         if mod is not None and address in mod.new_objects:
             return self._value_new_page(mod, address, lang)
-        text_lang = "us" if lang == schema.BASE else lang
+        text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)
         ix = self._open()
         try:
             try:
@@ -7353,7 +7353,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _value_rows_finish(self, rows: list, mine: dict, why: str, words: dict, lang: str, has_mod: bool) -> None:
         """What the All values tab shows beside each row's game value (value_object): its label, `locked`, `can`,
         `deletable`, the words of a text key, the mod's change."""
-        text_lang = "us" if lang == schema.BASE else lang
+        text_lang = schema.game_lang("us" if lang == schema.BASE else lang)  # (Persian: the English texts and words)
         mod_words = self._mod_words() if has_mod else {}
         for r in rows:
             r["label"] = schema.label(r["prop"], lang)
