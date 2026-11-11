@@ -179,6 +179,9 @@ torretta.
 - Provato in gioco con i modelli del gioco stesso (lo Sherman, due aerei, una squadra di fucilieri, i serventi di un
   cannone): non ancora con un modello preso altrove, un altro carro armato con torretta, una torretta che fa il giro
   completo o un aereo che copia un'unità senza eliche.
+- Una nuova unità copiata da un cannone trainato, dal FCM F1, dal Puma, da un semicingolato, dal Bren Carrier, da un
+  aereo per paracadutisti, da alcuni bunker e da pochi altri prende anche un modello preso altrove, non solo uno legato
+  alle sue ossa, e viene disegnato come quell'unità. Non ancora provato in gioco.
 
 Dalla riga di comando: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Con `--move`, viene adattato come lo adatta lo

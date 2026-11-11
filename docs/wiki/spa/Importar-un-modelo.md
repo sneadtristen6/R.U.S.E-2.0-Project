@@ -184,6 +184,9 @@ queda sobre la torreta.
 - Probado en el juego con los propios modelos del juego (el Sherman, dos aviones, un pelotón de fusileros, la dotación
   de un cañón): aún no con un modelo de otro sitio, otro tanque con torreta, una torreta que da la vuelta completa ni un
   avión que copie una unidad sin hélices.
+- Una unidad nueva copiada de un cañón remolcado, del FCM F1, del Puma, de un semioruga, del Bren Carrier, de un avión
+  de paracaidistas, de algunos búnkeres y de unos pocos más también admite un modelo de otro sitio, no solo uno ligado a
+  sus huesos, y se dibuja como esa unidad. Aún no probado en el juego.
 
 Desde la línea de comandos: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Con `--move`, se ajusta como lo ajusta el Studio:

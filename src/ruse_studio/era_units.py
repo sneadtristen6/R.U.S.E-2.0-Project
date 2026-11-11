@@ -515,18 +515,19 @@ class EraUnitCalls:
 
     def _era_like(self, source: str) -> dict | None:
         """The start unit's model as the importer fits to it (rusemod.unitmodel.find_source's "like": its hull's
-        "length" and "width" in game units...), kept while ZZ_Win.dat is the same (in the cache folder too, eras/
-        likes.json: working it out reads the game's model packs, a few seconds); None when it has no model the importer
-        can fit to, or the game's files aren't found."""
+        "length" and "width" in game units...), kept while ZZ_Win.dat and find_source's rule (unitmodel.SOURCE_RULE)
+        are the same (in the cache folder too, eras/likes.json: working it out reads the game's model packs, a few
+        seconds); None when it has no model the importer can fit to, or the game's files aren't found."""
         from rusemod.build import find_pack
         from rusemod.edat import Edat
-        from rusemod.unitmodel import UnitModelError, find_source
+        from rusemod.unitmodel import SOURCE_RULE, UnitModelError, find_source
         game = self._game()
         zz_path = find_pack(game, "ZZ_Win.dat") if game is not None else None
         if zz_path is None:
             return None
         st = zz_path.stat()
-        key = f"{zz_path}|{st.st_size}|{st.st_mtime_ns}|{source}"
+        # (the rule in the key: a start unit refused by an older one, the FCM F1 before 2026-11-11, is worked out again)
+        key = f"{zz_path}|{st.st_size}|{st.st_mtime_ns}|{SOURCE_RULE}|{source}"
         kept = self.__dict__.setdefault("_era_likes", {})
         if key in kept:
             return kept[key]
@@ -560,7 +561,7 @@ class EraUnitCalls:
         try:
             saved.parent.mkdir(parents=True, exist_ok=True)
             saved.write_text(json.dumps({k: v for k, v in on_disk.items() if k.startswith(f"{zz_path}|{st.st_size}|"
-                                                                                       f"{st.st_mtime_ns}|")}
+                                                                                       f"{st.st_mtime_ns}|{SOURCE_RULE}|")}
                                         | {key: like}), encoding="utf-8")
         except OSError:
             pass                      # kept for this run only

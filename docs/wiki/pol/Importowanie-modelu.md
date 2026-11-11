@@ -180,6 +180,9 @@ stanie na wieży.
 - Wypróbowane w grze z własnymi modelami gry (Sherman, dwa samoloty, oddział strzelców, obsługa działa): jeszcze nie z
   modelem z innego źródła, innym czołgiem z wieżą, wieżą obracającą się dookoła ani samolotem kopiującym jednostkę bez
   śmigieł.
+- Nowa jednostka skopiowana z jednej z tych: działo holowane, FCM F1, Puma, transporter półgąsienicowy, Bren Carrier,
+  samolot dla spadochroniarzy, niektóre bunkry i kilka innych, też przyjmuje model z innego źródła, nie tylko związany z
+  jej kośćmi, i jest rysowany tak jak ta jednostka. Jeszcze niewypróbowane w grze.
 
 Z wiersza poleceń: `ruse import-model "Tank Abrams.3ds" --like coc_shermanm4_tir --unit
 Descriptor_Unit_R2_M1_Abrams --size 1.36 --mod <your mod folder>`. Z `--move` jest dopasowywany tak, jak dopasowuje go
