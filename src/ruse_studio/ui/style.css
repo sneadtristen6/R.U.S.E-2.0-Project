@@ -387,6 +387,17 @@ tr.edited .boxes input[type="color"] { border-color: var(--accent); }
 .model-own p { margin: 0; }
 .model-own .actions { flex-wrap: wrap; align-items: center; }
 .model-own input.model-size { width: 5em; }
+/* a model rigged to bones: its two halves and what won't work in the game (app.js fitBox) */
+.model-fit, .fit-halves, .fit-problems { display: grid; gap: 6px; min-width: 0; }
+.model-fit h4 { margin: 4px 0 0; font-size: 13px; }
+.model-fit select.fit-split { max-width: 100%; }
+.model-fit .notice { margin: 0; }
+.notice.stop { border-left-color: var(--error); color: var(--text); }
+.fit-tree { max-height: 320px; overflow: auto; }
+.fit-bone { display: flex; gap: 8px; }
+.fit-bone .fit-half { flex: none; min-width: 7em; }
+.fit-bone.half-top .fit-half { color: var(--accent); }
+.fit-bone.half-bottom .fit-half { color: var(--ok); }
 /* a building's own model (app.js buildingModelBox): which piece it takes the place of, its size and credit */
 .model-own { min-width: 0; }
 .model-own > * { min-width: 0; }
