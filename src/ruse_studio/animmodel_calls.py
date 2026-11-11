@@ -49,6 +49,7 @@ class AnimModelCalls:
         from rusemod.anim import AnimError
         from rusemod.modelin import OWN_SKELETON
         from .api import StudioError
+        from rusemod import anim
         target = self._own_model_file(address)
         unit, mod = target.stem, self._mod_dir()
         was_own = before.get("skeleton") == "own"
@@ -57,7 +58,7 @@ class AnimModelCalls:
             if previous:   # (the clips were made on the old model's bones: they go with it)
                 with self._saving:
                     try:
-                        animmodel.drop_animations(mod, unit, previous)
+                        anim.drop_animations(mod, unit)
                     except (AnimError, OSError) as exc:
                         raise StudioError(f"The animations of the model it had can't be taken out: {exc}") from None
             return {"skeleton": "soldier", "animations": []} if report.get("rigged") else {}
@@ -71,24 +72,34 @@ class AnimModelCalls:
         if list(clips) != animmodel.clip_names(rig):   # (one reading of the file, two answers: never expected)
             raise StudioError(f"{Path(file).name}: its animations came out two different ways when read: please report "
                               f"this.")
-        actions = self._model_actions(address, report)
+        # (item 5's merge: the model's animations go into Part 2's table, units.toml's [unit.<unit>.animation],
+        # where the action table on the page picks what each action plays and the build plays the nearest for the
+        # rest, rusemod.animactions: one rule for the page and the build. What the file itself says an animation
+        # plays, its extras, becomes that action's pick.)
         with self._saving:
             try:
-                kept = animmodel.keep_animations(mod, unit, clips, actions, said, previous)
-            except (animmodel.AnimModelError, AnimError, OSError) as exc:
+                files = anim.set_animations(mod, unit, clips)
+                for name, listed in zip(list(clips), said):
+                    for listing in listed or []:   # (a listing's name, t_course: the table's action is course)
+                        action = listing[2:] if listing[:2] in ("t_", "b_") else listing
+                        try:
+                            anim.set_pick(mod, unit, action, name)
+                        except AnimError:   # (an action name the table doesn't know: the file's word is noted)
+                            report.setdefault("notes", []).append(
+                                f"{name}: the file says it plays {listing}, which isn't one of the unit's actions")
+            except (AnimError, OSError) as exc:
                 raise StudioError(f"{Path(file).name}: its animations can't be kept: {exc}") from None
+        animations = []
+        for name, data in clips.items():
+            c = baf.parse(data)
+            animations.append({"name": name, "frames": c.frames, "seconds": round(c.duration, 4), "file": files[name]})
         names = baf.skeleton(record)["names"]
-        out = {"skeleton": "own", "bones": names, "animations": kept["animations"], "actions": kept["actions"]}
+        out = {"skeleton": "own", "bones": names, "animations": animations}
         split = before.get("split") if was_own and isinstance(before.get("split"), str) else None
         if split is None or split.lower() not in names:   # (a choice made before, kept while the bone is there)
             split = animmodel.split_of(record, halves) if halves else None
         if split:
             out["split"] = split.lower()
-        notes = list(report.get("notes") or [])
-        notes += [f"{action} played {name}, which didn't come in again: it has none now" for action, name in
-                  kept["dropped"]]
-        if notes:
-            report["notes"] = notes
         return out
 
     def _model_actions(self, address: str, report: dict) -> list:
@@ -127,7 +138,9 @@ class AnimModelCalls:
         if data.get("skeleton") != "own" or not data.get("animations"):
             return []
         try:
-            return animmodel.drop_animations(self._mod_dir(), record.stem, data["animations"])
+            from rusemod import anim
+            anim.drop_animations(self._mod_dir(), record.stem)   # (Part 2's table: the merge's one store)
+            return [a.get("name") for a in data["animations"] if isinstance(a, dict)]
         except (AnimError, OSError) as exc:
             raise StudioError(f"The animations of the model it had can't be taken out: {exc}") from None
 
@@ -145,11 +158,23 @@ class AnimModelCalls:
             return {"own": False}
         if not isinstance(data, dict) or data.get("skeleton") != "own":
             return {"own": False}
-        actions = data.get("actions") or {}
+        # (item 5's merge: which animation each action plays is Part 2's table and rule, read live, so this box and
+        # the action table never disagree; "empty": the actions nothing is named or picked for, playing the nearest)
+        try:
+            table = self.unit_actions(address)
+        except Exception:   # (the table can't be read: the box still says what came in)
+            table = {"own": False}
+        plays: dict = {}
+        empty = []
+        for row in table.get("rows") or [] if table.get("own") else []:
+            for name in set((row.get("plays") or {}).values()):
+                plays.setdefault(name, []).append(row.get("action"))
+            if row.get("how") == "nearest":
+                empty.append(row.get("action"))
         rows = []
         for a in data.get("animations") or []:
-            plays = [k for k, v in actions.items() if v == a.get("name")]
             rows.append({"name": a.get("name"), "seconds": a.get("seconds"), "frames": a.get("frames"),
-                         "actions": plays})
-        return {"own": True, "bones": len(data.get("bones") or []), "animations": rows, "actions": len(actions),
-                "empty": [k for k, v in actions.items() if v is None], "split": data.get("split")}
+                         "actions": plays.get(a.get("name"), [])})
+        return {"own": True, "bones": len(data.get("bones") or []), "animations": rows,
+                "actions": len(table.get("rows") or []) if table.get("own") else 0, "empty": empty,
+                "split": data.get("split")}

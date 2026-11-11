@@ -104,12 +104,13 @@ class WhatTheFileSays(unittest.TestCase):
         got, notes = animmodel.halves_for(record, "spine")
         self.assertEqual((sorted(got["top"]["Weights"]), sorted(got["bottom"]["Weights"])), (["head", "spine"], ["hips"]))
         self.assertEqual(notes, [])
-        got, notes = animmodel.halves_for(record, None)                  # nothing chosen: every bone on top
-        self.assertEqual((len(got["top"]["Weights"]), got["bottom"]["Weights"]), (3, {}))
-        self.assertTrue(any("not tried in the game" in n for n in notes))
-        got, notes = animmodel.halves_for(record, "tail")                # a bone it hasn't got: said, every bone on top
-        self.assertEqual(len(got["top"]["Weights"]), 3)
-        self.assertTrue(any("tail" in n for n in notes))
+        # (item 5's merge: nothing chosen splits at rusemod.bonefit's suggestion, here the spine, as the page shows)
+        got, notes = animmodel.halves_for(record, None)
+        self.assertEqual((sorted(got["top"]["Weights"]), sorted(got["bottom"]["Weights"])), (["head", "spine"], ["hips"]))
+        self.assertEqual(notes, [])
+        got, notes = animmodel.halves_for(record, "tail")                # a bone it hasn't got: said, the suggested one
+        self.assertEqual(sorted(got["top"]["Weights"]), ["head", "spine"])
+        self.assertTrue(any("tail" in n and "spine" in n for n in notes))
 
 
 class TheUnitsOwnClips(unittest.TestCase):
@@ -336,16 +337,17 @@ class TheBuild(unittest.TestCase):
         self.assertEqual(mine["t_stand"][0], anim.own_data_name(anim.own_stem(self.UNIT, "Idle.baf")))   # its own clips
         self.assertTrue(any("split at spine" in f.message for f in result.findings if f.level == "note"))
 
-    def test_nothing_chosen_every_bone_on_top(self):
+    def test_nothing_chosen_split_at_the_suggested_bone(self):
+        """(item 5's merge) No split chosen: the build splits where rusemod.bonefit suggests, as the page shows it."""
         from rusemod.model import load
         with tempfile.TemporaryDirectory() as d:
             result = self.build(self.mod(d))
         self.assertEqual(result.errors, [])
         game, _files = load(result.changed)
         mine = self.listings(game.objects, self.UNIT)
-        self.assertEqual(mine["t_stand"][2], {"hips": 1.0, "spine": 1.0, "head": 1.0})
-        self.assertEqual(mine["b_stand"][2], {})
-        self.assertTrue(any("not tried in the game" in f.message for f in result.findings if f.level == "warning"))
+        self.assertEqual(mine["t_stand"][2], {"spine": 1.0, "head": 1.0})
+        self.assertEqual(mine["b_stand"][2], {"hips": 1.0})
+        self.assertTrue(any("split at spine" in f.message for f in result.findings if f.level == "note"))
 
     def test_a_model_on_the_game_s_bones_builds_as_before(self):
         """The step changes nothing for a unit whose model is rigged to the copied model's own bones (item 4's way):
@@ -429,19 +431,19 @@ class StudioImport(unittest.TestCase):
         self.assertEqual(record["bones"], ["hips", "spine", "head"])
         self.assertEqual([(a["name"], a["frames"], a["file"]) for a in record["animations"]],
                          [("Walk", 31, "Walk.baf"), ("Run", 31, "Run.baf"), ("Idle", 31, "Idle.baf")])
-        self.assertEqual((record["actions"]["t_marche"], record["actions"]["b_course"], record["actions"]["t_tir"]),
-                         ("Walk", "Run", None))
         self.assertEqual(record["split"], "spine")                        # where the file's own halves meet
-        rows = anim.read_units(self.mod)["Descriptor_Unit_Beast"]["action"]
-        self.assertEqual(rows["b_stand"], "Idle.baf")
+        # (item 5's merge: the animations go into Part 2's table, which the action table picks from and the build
+        # plays the nearest of; no row per action)
+        own = anim.own_animations(self.mod, "Descriptor_Unit_Beast")
+        self.assertEqual(own["animations"], {"Walk": "Walk.baf", "Run": "Run.baf", "Idle": "Idle.baf"})
+        self.assertNotIn("action", anim.read_units(self.mod)["Descriptor_Unit_Beast"])
         page = self.api.model_animations(self.ADDRESS)
         self.assertEqual((page["own"], page["bones"], page["split"]), (True, 3, "spine"))
-        self.assertEqual(page["animations"][0], {"name": "Walk", "seconds": 1.0, "frames": 31,
-                                                 "actions": ["t_marche", "b_marche"]})
-        self.assertIn("t_tir", page["empty"])
+        self.assertEqual({k: page["animations"][0][k] for k in ("name", "seconds", "frames")},
+                         {"name": "Walk", "seconds": 1.0, "frames": 31})
         # taken out: its animations go with it
         self.api.model_import_remove(self.ADDRESS)
-        self.assertEqual(anim.read_units(self.mod), {})
+        self.assertEqual(anim.own_animations(self.mod, "Descriptor_Unit_Beast")["animations"], {})
         self.assertEqual(list(Path(self.mod, anim.OWN, "Descriptor_Unit_Beast").glob("*.baf")), [])
         self.assertEqual(self.api.model_animations(self.ADDRESS), {"own": False})
 
@@ -458,17 +460,15 @@ class StudioImport(unittest.TestCase):
             path = self.target.with_suffix(".json")
             record = json.loads(path.read_text(encoding="utf-8"))
             path.write_text(json.dumps(dict(record, split="head")), encoding="utf-8")       # chosen on the page
-            table = anim.read_units(self.mod)
-            table["Descriptor_Unit_Beast"]["action"]["t_tir"] = "Run.baf"                  # chosen for an action
-            anim.write_units(self.mod, table)
+            anim.set_pick(self.mod, "Descriptor_Unit_Beast", "tir", "Run")                 # picked in the table
+            anim.set_pick(self.mod, "Descriptor_Unit_Beast", "marche", "Walk")
             self.src.write_bytes(walk_glb(("Walk", "Idle"), halves={"top": ["Spine", "Head"], "bottom": ["Hips"]}))
-            res = self.api.model_import(self.ADDRESS, str(self.src))
+            self.api.model_import(self.ADDRESS, str(self.src))
         record = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(record["split"], "head")
-        rows = anim.read_units(self.mod)["Descriptor_Unit_Beast"]["action"]
-        self.assertNotIn("t_tir", rows)                                   # Run went with its file
-        self.assertEqual(rows["t_marche"], "Walk.baf")
-        self.assertTrue(any("t_tir played Run" in n for n in res["model"]["notes"]))
+        plays = anim.own_animations(self.mod, "Descriptor_Unit_Beast")["plays"]
+        self.assertNotIn("tir", plays)                                    # Run went with its file: the nearest again
+        self.assertEqual(plays["marche"], "Walk")
 
     def test_a_model_on_the_game_soldier_s_bones_goes_on_as_before(self):
         self.src.write_bytes(walk_glb())

@@ -342,8 +342,11 @@ def record_of(path) -> bytes:
 
 # --- the halves ---
 def default_split(record: bytes) -> str:
-    """The bone a model on bones of its own is split at when nothing says where: its first (every bone in the top)."""
-    return baf.skeleton(record)["names"][0]
+    """The bone a model on bones of its own is split at when nothing says where: rusemod.bonefit's suggestion (item 5's
+    merge: one rule for the page, the checks and the build; the 11-09 split for the Horse Squad)."""
+    from .bonefit import skeleton_of, suggest_split
+    names, parents = skeleton_of(record)
+    return suggest_split(names, parents)
 
 
 def split_of(record: bytes, halves: dict) -> str | None:
@@ -370,15 +373,13 @@ def halves_for(record: bytes, split: str | None) -> tuple[dict, list]:
     notes = []
     names = baf.skeleton(record)["names"]
     if split and split.lower() not in [n.lower() for n in names]:
-        notes.append(f"its halves were to meet at {split}, a bone it hasn't got: every bone is in the top half")
+        notes.append(f"its halves were to meet at {split}, a bone it hasn't got: they meet at "
+                     f"{default_split(record)} instead, the suggested bone")
         split = None
-    try:
+    try:   # (no bone chosen: rusemod.bonefit's suggestion, item 5's merge; the build's note names the bone)
         got = halves(record, split or default_split(record))
     except UnitModelError as exc:   # (not reached: the bone is checked above)
         raise AnimModelError(str(exc)) from None
-    if not split:
-        notes.append("no bone is chosen where its two halves meet: every bone is in the top half, so its top "
-                     "animations move the whole model (not tried in the game yet)")
     return got, notes + got["notes"]
 
 

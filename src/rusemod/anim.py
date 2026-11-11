@@ -270,6 +270,7 @@ def mod_unit_clips(folder: Path, text: str | None = None) -> dict:
         for key, v in (u.get("clip") or {}).items():
             m = _member(key)
             if not m.endswith(".baf") or not isinstance(v, dict):
+                # not a game rule: the way units.toml names a clip (its path in the packs), our own file's layout
                 raise AnimError(f"{UNITS}: {unit}: {key}: name a clip by its path in the game's packs, ending .baf")
             entry = _edit(v, f"{UNITS}: {unit}: {key}")
             if v.get("file"):

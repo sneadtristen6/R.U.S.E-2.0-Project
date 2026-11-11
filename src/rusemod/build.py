@@ -1785,14 +1785,12 @@ def unit_own_halves(run, result: BuildResult) -> None:
     """New units whose own model is on bones of its own (its file's report says so: rusemod.unitmodel's own_bones):
     every figure that wears the model plays its clips through two masks of its own, the model's top and bottom halves,
     which the build adds to the unit data (rusemod.animmodel: copies of the game's top and bottom masks naming the
-    model's own bones, split at the bone its record names, files/models/<the unit's name>.json "split", else every
-    bone in the top). The game's own masks name the game soldier's bones, and a mask naming a bone the model lacks
+    model's own bones, split at the bone its record names, files/models/<the unit's name>.json "split", while the
+    model has it, else at rusemod.bonefit's suggestion). The game's own masks name the game soldier's bones, and a mask naming a bone the model lacks
     would stop the game with its error box. A model on the game's own bones, and every other unit, are left as they
     were. Said: each such unit's halves; a listing of one of its figures that doesn't wear the model playing one of the
     unit's own clips (made on the model's bones)."""
-    import json
-
-    from . import anim, animmodel
+    from . import anim, animmodel, bonefit
     from .modelin import OWN_SKELETON
     from .unitmodel import glb_report
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
@@ -1806,11 +1804,12 @@ def unit_own_halves(run, result: BuildResult) -> None:
         except animmodel.AnimModelError as exc:
             result.findings.append(Finding("error", f"{where}: {exc}"))
             continue
-        try:   # (the Studio's record of the model: where its halves meet, when chosen)
-            split = json.loads(Path(glb).with_suffix(".json").read_text(encoding="utf-8")).get("split")
-        except (OSError, ValueError, AttributeError):
+        try:   # (one rule for the page and the build, item 5's merge: the bone the modder chose on the unit's page
+            # while the model still has it, else rusemod.bonefit's suggestion: the 11-09 split for the Horse Squad)
+            split = bonefit.split_for(Path(glb))
+        except (bonefit.FitError, OSError, ValueError):
             split = None
-        halves, notes = animmodel.halves_for(record, split if isinstance(split, str) else None)
+        halves, notes = animmodel.halves_for(record, split)
         own = f"{source.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
         like = animmodel.game_masks(run.game, name, own)
         masks = {}
