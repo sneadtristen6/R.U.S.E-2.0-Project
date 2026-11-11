@@ -8,8 +8,7 @@ juego.
 ## El tablero de edificios
 
 Abre la pestaña **Naciones**: bajo cada nación, **Edificios y unidades** muestra sus edificios como filas, cada una con
-las unidades que ofrece su menú de construcción, en el orden del juego. El paso **Edificios** de un mod nuevo muestra el
-mismo tablero.
+las unidades que ofrece su menú de construcción, en el orden del juego. Junto al nombre de cada nación, **Conservar sus unidades** vuelve a poner todas sus unidades en sus menús de construcción, como en el juego, y **Empezarla vacía** las quita todas, para que llenes tú sus edificios. **Investigación**, encima de las naciones: **Sin investigación** hace que cada unidad de cada nación se pueda construir desde el principio; **Conservar la investigación del juego** devuelve su investigación a las unidades del juego. Los dos preguntan antes.
 
 - **+** añade una unidad a un edificio: una de la propia nación, una copia de la de otra nación, o una
   [[unidad de época|Unidades-de-otras-épocas]]. Una copia va a tu mod, con el nombre que le da el juego.

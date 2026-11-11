@@ -12,7 +12,7 @@ Ein Modell kann auch auf ein neues Gebäude kommen, anstelle eines Teils seines 
 auf deine Karte (siehe [[Gebäude und Bäume platzieren|Gebäude-und-Bäume-platzieren]]). Beides: Studio 0.9.8.8, im Spiel
 gesehen.
 
-Auf der Seite der Einheit ist all das in **Aussehen und Bewegung**: **Modell importieren…** ist die Schaltfläche der Zeile **Modell**, und die übrigen Optionen des Modells (seine Größe, **Verschieben**, **In Blender ändern**) sind unter **Mehr** dieser Zeile. **Seine Soldaten** ist eine eigene Zeile, und was die Animationen des Modells tun, steht unter **Mehr** der Zeile **Animationen**.
+Auf der Seite der Einheit ist all das in **Aussehen und Bewegung**: **Modell importieren…** ist die Schaltfläche der Zeile **Modell**, und die übrigen Optionen des Modells (seine Größe, **Verschieben**, **In Blender ändern**) sind unter **Mehr** dieser Zeile. **Seine Soldaten** ist eine eigene Zeile, und was die Animationen des Modells tun, steht unter **Mehr** der Zeile **Geräusche und Animation**.
 
 ## 1. Ein Modell besorgen
 
@@ -135,7 +135,7 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
   Wähle **In seinem Lastwagen**, um den Lastwagen zu behalten.
 
 **Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt
-dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Animationen**, dann **Nur diese Einheit**.
+dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Geräusche und Animation**, dann **Nur diese Einheit**.
 
 Die so im Studio gemachte Horse Squad lief im Spiel (November 2026).
 ## Ein Modell mit eigenen Knochen und Animationen

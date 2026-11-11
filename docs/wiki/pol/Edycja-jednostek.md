@@ -71,12 +71,12 @@ Strona jednostki pokazuje jej **Model 3D**: przeciągnij, by go obrócić, przew
 
 Pod spodem **Wygląd i ruch** zbiera wszystko o tym, jak jednostka wygląda i się porusza, wiersz na każdą rzecz, w
 kolejności, w jakiej pracujesz: **Model**, **Jego żołnierze** (oddział, którego strzelcy i żołnierz z ciężką bronią
-mają różne modele), **Animacje**, **Dźwięki** i **Jedzie w**. Każdy wiersz mówi, co jednostka ma teraz, i ma jeden
+mają różne modele), **Dźwięki i animacje** i **Jedzie w**. Każdy wiersz mówi, co jednostka ma teraz, i ma jeden
 przycisk do zwykłej czynności; **Więcej** pokazuje na miejscu pozostałe opcje tego wiersza. Wszystko, co zmienisz, od
 razu zapisuje się w twoim modzie: nic do zapisywania, żadnego folderu do wybierania. Przemalowanie, własna kopia
-modelu, mundur oddziału i własny model są w wierszu **Model**; animacje i dźwięki zmieniasz w RUSE Decoy z ich wierszy
-(**Zmień w RUSE Decoy**): animację tylko dla tej jednostki albo dla wszystkich jednostek, które jej używają, dźwięk
-dla wszystkich jednostek, które go używają.
+modelu, mundur oddziału i własny model są w wierszu **Model**; dźwięki i animacje zmieniasz w RUSE Decoy z wiersza
+**Dźwięki i animacje** (**Zmień w RUSE Decoy**): animację tylko dla tej jednostki albo dla wszystkich jednostek, które
+jej używają, dźwięk dla wszystkich jednostek, które go używają.
 
 - **Przemaluj w Blenderze:** kliknij **Otwórz w Blenderze** (Blender jest darmowy; jeśli Studio go nie znajdzie, strona
   proponuje **Pobierz Blendera (za darmo)** i **Wybierz Blendera…**, by wskazać, gdzie jest `blender.exe`). Jednostka

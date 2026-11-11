@@ -11,7 +11,7 @@ Model może też trafić na nowy budynek, w miejsce części jego wyglądu (zoba
 [[Budynki i menu budowy|Budynki-i-menu-budowy]]), albo na twoją mapę jako własna skała, obiekt, krzew lub drzewo
 (zobacz [[Rozmieszczanie budynków i drzew|Rozmieszczanie-budynków-i-drzew]]). Oba: Studio 0.9.8.8, widziane w grze.
 
-Na stronie jednostki wszystko to jest w **Wygląd i ruch**: **Importuj model…** to przycisk wiersza **Model**, a pozostałe opcje modelu (rozmiar, **Przesuń**, **Zmień w Blenderze**) są pod **Więcej** tego wiersza. **Jego żołnierze** to osobny wiersz, a to, co robią animacje modelu, jest pod **Więcej** wiersza **Animacje**.
+Na stronie jednostki wszystko to jest w **Wygląd i ruch**: **Importuj model…** to przycisk wiersza **Model**, a pozostałe opcje modelu (rozmiar, **Przesuń**, **Zmień w Blenderze**) są pod **Więcej** tego wiersza. **Jego żołnierze** to osobny wiersz, a to, co robią animacje modelu, jest pod **Więcej** wiersza **Dźwięki i animacje**.
 
 ## 1. Zdobądź model
 
@@ -130,7 +130,7 @@ jednostki **Jej animacje** pokazują, co jednostka odtwarza przy każdej czynno�
   **W swojej ciężarówce**, aby zostawić ciężarówkę.
 
 **Kopia zachowuje animacje:** jednostka skopiowana z takiej, która ma własne animacje, odtwarza te same. Aby zmienić
-którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Animacje**, potem **Tylko ta jednostka**.
+którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Dźwięki i animacje**, potem **Tylko ta jednostka**.
 
 Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026).
 ## Model z własnymi kośćmi i animacjami

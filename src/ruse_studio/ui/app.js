@@ -2606,7 +2606,7 @@ function buildingModelBox(address, info, draw) {
 // files/replace): nothing to choose. A row with nothing for this unit isn't shown. A building's page keeps its own Look
 // box (buildingLookBox) ---
 const LM_ROWS = [["model", "lm_model", "tip_lm_model"], ["soldiers", "lm_soldiers", "tip_lm_soldiers"],
-  ["anims", "lm_anims", "tip_lm_anims"], ["sounds", "lm_sounds", "tip_lm_sounds"], ["rides", "rides_in", "tip_rides_in"]];
+  ["decoy", "decoy_unit_title", "tip_lm_decoy"], ["rides", "rides_in", "tip_rides_in"]];
 function lookMovesBox(u, view, startNew) {
   const w = state.words, address = u.address;
   const name = u.name || address.split("/").pop();
@@ -2650,8 +2650,8 @@ function lookMovesBox(u, view, startNew) {
   };
   // after a change the model's view and every row are read again (an import brings animations, a split changes them)
   const changed = () => { if (view && view.reload) view.reload(); load(); };
-  // RUSE Decoy on just this unit's sounds and animations (StudioApi.decoy_unit, DecoyView.unit): the Animations and
-  // Sounds rows' button
+  // RUSE Decoy on just this unit's sounds and animations (StudioApi.decoy_unit, DecoyView.unit): the Sounds and
+  // animation row's button
   const decoyButton = (d) => {
     const count = d ? (d.count || 0) + (d.clips || 0) : 0;
     const b = el("button", { type: "button", textContent: w.lm_decoy, title: count ? w.tip_lm_decoy : w.tip_lm_decoy_none,
@@ -2719,12 +2719,16 @@ function lookMovesBox(u, view, startNew) {
         [pick], [kindsBox(address, kinds, drawLook, changed)]);
     } else hide("soldiers");
   };
-  // the Animations row: what came with its model, its two halves, which animation each action plays; RUSE Decoy
-  // changes any of them for this unit only (StudioApi.unit_actions, decoy_unit)
-  const drawAnims = (info, acts, d) => {
+  // the Sounds and animation row, one RUSE Decoy button for both (the owner, 2026-11-11: "The sound and animation
+  // button should be one button. I don't understand why it's two different things": they were two rows with the same
+  // button). Says its animations (what came with its model, the game's, the copied unit's; how many changed for this
+  // unit only) and its sounds; More: what came with its model, its two halves, which animation each action plays, and
+  // that a changed sound is every unit's that plays it (StudioApi.unit_actions, decoy_unit)
+  const drawDecoy = (info, acts, d) => {
     const hasModel = Boolean(info && info.models && info.models.length);
     const clips = d ? d.clips || 0 : 0;
-    if (!hasModel && !clips && !(d && d.count)) { hide("anims"); return; }
+    const count = d ? d.count || 0 : 0;
+    if (!hasModel && !clips && !count) { hide("decoy"); return; }
     const own = info && info.own_model;
     const table = Boolean(acts && acts.own);
     const more = [];
@@ -2735,20 +2739,17 @@ function lookMovesBox(u, view, startNew) {
       actions.rideChanged = load;   // (the Rides in row says whether it rides as itself)
       more.push(actions);
     }
-    more.push(el("p", { className: "muted small", textContent: clips || table ? w.lm_anims_how : w.decoy_unit_more_all }));
-    put("anims", (table ? fill(w.lm_anims_own, { n: acts.animations.length }) : !clips ? w.lm_anims_none
-      : info && info.new_unit ? w.lm_anims_copied : w.lm_anims_game)
-      + (d && d.own_clips ? ` · ${fill(w.lm_anims_changed, { n: d.own_clips })}` : ""), [decoyButton(d)], more);
-  };
-  // the Sounds row: its voice lines and engine sounds; a sound changed in RUSE Decoy is every unit's that plays it
-  const drawSounds = (info, d) => {
-    if (!d || (!d.count && !(info && info.models && info.models.length))) { hide("sounds"); return; }
-    put("sounds", d.count ? fill(w.lm_sounds_has, { voices: d.voices, engine: d.engine }) : w.lm_sounds_none,
-      [decoyButton(d)], [el("p", { className: "small", textContent: w.lm_sounds_shared }),
-        el("p", { className: "muted small", textContent: w.decoy_unit_more_all })]);
+    if (clips || table) more.push(el("p", { className: "muted small", textContent: w.lm_anims_how }));
+    if (count) more.push(el("p", { className: "small", textContent: w.lm_sounds_shared }));
+    more.push(el("p", { className: "muted small", textContent: w.decoy_unit_more_all }));
+    const anims = table ? fill(w.lm_anims_own, { n: acts.animations.length }) : !clips ? ""
+      : info && info.new_unit ? w.lm_anims_copied : w.lm_anims_game;
+    const now = [anims && anims + (d && d.own_clips ? ` (${fill(w.lm_anims_changed, { n: d.own_clips })})` : ""),
+      count ? fill(w.lm_sounds_has, { voices: d.voices, engine: d.engine }) : ""].filter(Boolean);
+    put("decoy", now.length ? now.join(" · ") : w.lm_sounds_none, [decoyButton(d)], more);
   };
   // the Rides in row: the truck it turns into on the roads (api.rides_in, rides_in_set; the owner, 2026-10-11:
-  // "rangers versus GI, getting a different truck"), or itself when its own animation rides (the Animations row)
+  // "rangers versus GI, getting a different truck"), or itself when its own animation rides (the Sounds and animation row)
   const drawRides = (info, acts) => {
     if (!info || !info.choices) { hide("rides"); return; }
     const pick = el("select", { title: w.tip_rides_in, disabled: !state.mod || !u.editable });
@@ -2779,8 +2780,7 @@ function lookMovesBox(u, view, startNew) {
     const answer = (p) => p.then((v) => v, () => null);   // (a call that fails leaves its row out, never the others)
     Promise.all([answer(look), answer(api().unit_actions(address, state.lang)), answer(api().decoy_unit(address)),
       answer(api().rides_in(address, state.lang))]).then(([info, acts, sounds, rides]) => {
-      drawAnims(info, acts, sounds);
-      drawSounds(info, sounds);
+      drawDecoy(info, acts, sounds);
       drawRides(rides, acts);
     });
   };
@@ -3132,7 +3132,7 @@ function modelBox(address, info, draw, changed) {
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
-    // (a model on bones of its own: what came in with it is in the Animations row, ownAnimationsBox)
+    // (a model on bones of its own: what came in with it is in the Sounds and animation row, ownAnimationsBox)
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
     // its propeller discs (rusemod.modelin.fit_discs): spinning as the game's, or left out and why
@@ -3179,7 +3179,7 @@ function modelBox(address, info, draw, changed) {
       box.append(moveFold);
     }
     if (info.copy_out) box.append(el("p", { className: "notice", textContent: copyOut }));
-    // what of it won't work in the game (item 5, the owner's 7); its two halves are in the Animations row
+    // what of it won't work in the game (item 5, the owner's 7); its two halves are in the Sounds and animation row
     if (own.rigged) box.append(fitBox(address, changed, "problems"));
     box.append(el("div", { className: "actions" }, drop));   // (Import again: the row's main button)
   } else {
@@ -3210,7 +3210,7 @@ function modelBox(address, info, draw, changed) {
 // intuitive." Every problem says what doesn't fit, what the game does with it, and how to fix it; none stops anything.
 // A model with bones of its own picks the bone its upper half starts at (the suggested one first: on the 11-09 Horse
 // Squad, the rider's first bone); a model on the game soldier's bones keeps the game's halves, no choice shown ---
-// `part`: "halves" (Look and moves' Animations row) or "problems" (its Model row); both when not given.
+// `part`: "halves" (Look and moves' Sounds and animation row) or "problems" (its Model row); both when not given.
 function fitBox(address, changed, part) {
   const w = state.words;
   const box = el("div", { className: "model-fit" }, el("p", { className: "muted small", textContent: w.fit_working }));
@@ -3248,7 +3248,7 @@ function halvesBox(address, r, draw, changed) {
       if (changed) changed();
     } catch (err) { problem(err); pick.disabled = false; }
   });
-  // (a list of its own that scrolls, not a fold: it is under the Animations row's More already)
+  // (a list of its own that scrolls, not a fold: it is under the Sounds and animation row's More already)
   const tree = el("div", { className: "fit-tree" }, el("h4", { title: w.tip_fit_halves_tree, textContent: w.fit_halves_tree }));
   for (const b of h.tree) {   // (the half in a column of its own, each bone set in under the bone it hangs from)
     const name = el("span", { textContent: b.name });
@@ -3443,7 +3443,7 @@ function ridesInBox(u) {
 // model's or left on Nearest, and says which one the nearest is. Stand, walk and run first (the least a model needs:
 // a warning names any of them with nothing of its own) and the ride on long moves; the rest folded away by kind ---
 const ACTION_MAIN = ["stand", "marche", "course"];
-// `first`: unit_actions' answer already read (Look and moves' Animations row): then no frame of its own, and the other
+// `first`: unit_actions' answer already read (Look and moves' Sounds and animation row): then no frame of its own, and the other
 // actions under headings, not folded (the row's More is the fold; the owner, 2026-11-11: not "buttons layered inside
 // buttons"). Without it (a building's page), its own box as before.
 function unitActionsBox(u, first) {

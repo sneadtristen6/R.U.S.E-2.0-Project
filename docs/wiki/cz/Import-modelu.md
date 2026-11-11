@@ -11,7 +11,7 @@ Model může jít také na novou budovu, místo jednoho dílu jejího vzhledu (v
 [[Budovy a nabídky stavby|Budovy-a-nabídky-stavby]]), nebo na vaši mapu jako vlastní kámen, předmět, keř nebo strom
 (viz [[Umisťování budov a stromů|Umisťování-budov-a-stromů]]). Obojí: Studio 0.9.8.8, viděno ve hře.
 
-Na stránce jednotky je to vše ve **Vzhled a pohyb**: **Importovat model…** je tlačítko řádku **Model** a ostatní možnosti modelu (velikost, **Posunout**, **Změnit v Blenderu**) jsou pod **Více** toho řádku. **Jeho vojáci** je samostatný řádek a co dělají animace modelu, je pod **Více** řádku **Animace**.
+Na stránce jednotky je to vše ve **Vzhled a pohyb**: **Importovat model…** je tlačítko řádku **Model** a ostatní možnosti modelu (velikost, **Posunout**, **Změnit v Blenderu**) jsou pod **Více** toho řádku. **Jeho vojáci** je samostatný řádek a co dělají animace modelu, je pod **Více** řádku **Zvuky a animace**.
 
 ## 1. Opatřete si model
 
@@ -126,7 +126,7 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
   chcete-li auto ponechat.
 
 **Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
-změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Animace** a pak na **Jen tato jednotka**.
+změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Zvuky a animace** a pak na **Jen tato jednotka**.
 
 Horse Squad udělaný takto ve Studiu ve hře fungoval (listopad 2026).
 ## Model s vlastními kostmi a animacemi

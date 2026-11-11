@@ -7,8 +7,7 @@ Die Gebäude jeder Nation, was ihre Baumenüs anbieten und in welcher Reihenfolg
 ## Die Gebäudetafel
 
 Öffne den Reiter **Nationen**: unter jeder Nation zeigt **Gebäude und Einheiten** ihre Gebäude als Reihen, jede eine
-Reihe der Einheiten, die ihr Baumenü anbietet, in der Reihenfolge des Spiels. Der Schritt **Gebäude** eines neuen Mods
-zeigt dieselbe Tafel.
+Reihe der Einheiten, die ihr Baumenü anbietet, in der Reihenfolge des Spiels. Neben dem Namen jeder Nation stellt **Einheiten behalten** alle ihre eigenen Einheiten wieder in ihre Baumenüs, wie im Spiel, und **Leer beginnen** nimmt sie alle heraus, damit du ihre Gebäude selbst füllst. **Forschung**, über den Nationen: **Keine Forschung** macht jede Einheit jeder Nation von Anfang an baubar; **Die Forschung des Spiels behalten** gibt den Einheiten des Spiels ihre Forschung zurück. Beide fragen vorher.
 
 - **+** fügt einem Gebäude eine Einheit hinzu: eine der eigenen der Nation, die Kopie einer Einheit einer anderen Nation
   oder eine [[Epocheneinheit|Einheiten-aus-anderen-Epochen]]. Eine Kopie kommt in deinen Mod, so benannt wie im Spiel.

@@ -74,13 +74,13 @@ La page de l'unité montre son **Modèle 3D** : faites glisser pour le tourner, 
 
 Dessous, **Apparence et mouvements** réunit tout ce qui touche à l'apparence et aux mouvements de l'unité, une ligne
 pour chaque chose, dans l'ordre où vous travaillez : **Modèle**, **Ses soldats** (une escouade dont les fusiliers et
-le soldat à l'arme lourde ont des modèles différents), **Animations**, **Sons** et **Se déplace en**. Chaque ligne dit
+le soldat à l'arme lourde ont des modèles différents), **Sons et animations** et **Se déplace en**. Chaque ligne dit
 ce que l'unité a maintenant et a un bouton pour l'action habituelle ; **Plus** affiche ici même le reste des options
 de cette ligne. Tout ce que vous changez est enregistré aussitôt dans votre mod : rien à enregistrer, aucun dossier à
 choisir. Repeindre, sa propre copie du modèle, l'uniforme d'une escouade et un modèle à elle sont sur la ligne
-**Modèle** ; les animations et les sons se changent dans RUSE Decoy depuis leurs lignes (**Changer dans RUSE Decoy**)
-: une animation pour cette unité seulement ou pour toutes les unités qui la jouent, un son pour toutes les unités qui
-le jouent.
+**Modèle** ; les sons et les animations se changent dans RUSE Decoy depuis la ligne **Sons et animations** (**Changer
+dans RUSE Decoy**) : une animation pour cette unité seulement ou pour toutes les unités qui la jouent, un son pour
+toutes les unités qui le jouent.
 
 - **Repeindre dans Blender :** cliquez sur **Ouvrir dans Blender** (Blender est gratuit ; si le Studio ne le trouve pas,
   la page propose **Obtenir Blender (gratuit)** et **Choisir Blender…** pour lui montrer où est `blender.exe`). L'unité

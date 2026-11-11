@@ -7,7 +7,7 @@ Each nation's buildings, what their build menus offer and in what order, and bui
 ## The buildings board
 
 Open the **Nations** tab: under each nation, **Buildings and units** shows its buildings as rows, each a row of the
-units its build menu offers, in the game's order. A new mod's **Buildings** step shows the same board.
+units its build menu offers, in the game's order. Beside each nation's name, **Keep its units** puts every unit of its own back in its build menus, as in the game, and **Start it empty** takes them all out, so you fill its buildings yourself. **Research**, above the nations: **No research** makes every unit of every nation buildable from the start; **Keep the game's research** gives the game's units their research back. Both ask first.
 
 - **+** adds a unit to a building: one of the nation's own, a copy of another nation's, or an
   [[era unit|Units-From-Other-Eras]]. A copy goes into your mod, named as the game names it.

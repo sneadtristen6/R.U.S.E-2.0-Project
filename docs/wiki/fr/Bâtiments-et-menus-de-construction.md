@@ -9,8 +9,7 @@ vous. Vu en jeu.
 ## Le tableau des bâtiments
 
 Ouvrez l'onglet **Nations** : sous chaque nation, **Bâtiments et unités** montre ses bâtiments en lignes, chacune une
-rangée des unités que propose son menu de construction, dans l'ordre du jeu. L'étape **Bâtiments** d'un nouveau mod
-montre le même tableau.
+rangée des unités que propose son menu de construction, dans l'ordre du jeu. À côté du nom de chaque nation, **Garder ses unités** remet toutes ses unités dans ses menus de construction, comme dans le jeu, et **La vider** les retire toutes, pour que vous remplissiez vous-même ses bâtiments. **Recherche**, au-dessus des nations : **Aucune recherche** rend chaque unité de chaque nation constructible dès le départ ; **Garder les recherches du jeu** rend leur recherche aux unités du jeu. Les deux demandent d'abord.
 
 - **+** ajoute une unité à un bâtiment : une unité de la nation elle-même, une copie de celle d'une autre nation, ou une
   [[unité d'époque|Unités-des-autres-époques]]. Une copie va dans votre mod, nommée comme le jeu la nomme.

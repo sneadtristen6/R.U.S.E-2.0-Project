@@ -75,22 +75,38 @@ class NationCalls:
     def nations_view(self) -> dict:
         """The Nations tab: {"mod": whether a mod is picked, "nations": [{"nation": its number, "code", "name": the
         lobby's words for it in every language ([{lang, game, mine}], value_words), "name_key", "army": its army's
-        ([...] or None for Japan), "army_key", "flag": _nation_flag, "units": how many units and buildings it has}]}."""
+        ([...] or None for Japan), "army_key", "flag": _nation_flag, "units": how many units and buildings it has,
+        "own": how many of its own game units stand in a build menu, "hidden": how many of those the current mod takes
+        out of every battle date's menu (nation_units' `hidden`)}]}. own and hidden show each nation's Keep its units /
+        Empty it on the tab (the owner, 2026-11-11: "Yes, add those to nations tab", once the new-mod steps that had
+        them were taken out)."""
+        from .api import EditsFileError
+        try:
+            edits = self._edits()
+        except EditsFileError:
+            edits = None
         ix = self._open()
         try:
             flags = [self._nation_flag(ix, n) for n in range(len(nations.NATIONS))]
             counts = {}
             for u in self._all_units(ix):
                 counts[u.get("nation")] = counts.get(u.get("nation"), 0) + 1
+            own = {n: [u["address"] for u in self._nation_own_units(ix, n)] for n in range(len(nations.NATIONS))}
         finally:
             ix.close()
+
+        def hidden(addresses: list) -> int:
+            if edits is None:
+                return 0
+            mine = (edits.get(a, self.SHOW_IN_MENU) for a in addresses)
+            return sum(1 for m in mine if isinstance(m, list) and bool(m) and not any(m))
         out = []
         for n, code in enumerate(nations.NATIONS):
             name_key, army_key = nations.lobby_key(n), nations.army_key(n)
             out.append({"nation": n, "code": code, "name_key": name_key, "army_key": army_key,
                         "name": self.value_words(name_key)["words"],
                         "army": self.value_words(army_key)["words"] if army_key else None,
-                        "flag": flags[n], "units": counts.get(n, 0)})
+                        "flag": flags[n], "units": counts.get(n, 0), "own": len(own[n]), "hidden": hidden(own[n])})
         return {"mod": self._mod_dir() is not None, "nations": out}
 
     def nation_words_set(self, nation: int, which: str, texts: dict) -> dict:

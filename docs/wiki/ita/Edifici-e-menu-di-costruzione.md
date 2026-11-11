@@ -7,8 +7,7 @@ Gli edifici di ogni nazione, cosa offrono i loro menu di costruzione e in quale 
 ## La tavola degli edifici
 
 Apri la scheda **Nazioni**: sotto ogni nazione, **Edifici e unità** mostra i suoi edifici come file, ognuna una fila delle
-unità che offre il suo menu di costruzione, nell'ordine del gioco. Il passo **Edifici** di una nuova mod mostra la stessa
-tavola.
+unità che offre il suo menu di costruzione, nell'ordine del gioco. Accanto al nome di ogni nazione, **Tieni le sue unità** rimette tutte le sue unità nei suoi menu di costruzione, come nel gioco, e **Iniziala vuota** le toglie tutte, così riempi tu i suoi edifici. **Ricerca**, sopra le nazioni: **Nessuna ricerca** rende ogni unità di ogni nazione costruibile fin dall'inizio; **Tieni le ricerche del gioco** restituisce la ricerca alle unità del gioco. Entrambi chiedono prima.
 
 - **+** aggiunge un'unità a un edificio: una della nazione stessa, la copia di una di un'altra nazione, o
   un'[[unità d'epoca|Unità-di-altre-epoche]]. Una copia va nella tua mod, con il nome che le dà il gioco.

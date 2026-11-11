@@ -69,12 +69,12 @@ La pagina dell'unità mostra il suo **Modello 3D**: trascina per ruotarlo, usa l
 
 Sotto, **Aspetto e movimenti** raccoglie tutto ciò che riguarda l'aspetto e i movimenti dell'unità, una riga per ogni
 cosa, nell'ordine in cui lavori: **Modello**, **I suoi soldati** (una squadra i cui fucilieri e il soldato con arma
-pesante hanno modelli diversi), **Animazioni**, **Suoni** e **Viaggia su**. Ogni riga dice cosa ha ora l'unità e ha un
+pesante hanno modelli diversi), **Suoni e animazioni** e **Viaggia su**. Ogni riga dice cosa ha ora l'unità e ha un
 pulsante per la cosa più comune; **Altro** mostra lì stesso il resto delle opzioni di quella riga. Tutto ciò che cambi
 viene salvato subito nella tua mod: niente da salvare, nessuna cartella da scegliere. Ridipingere, una sua copia del
-modello, l'uniforme di una squadra e un modello tutto suo sono sulla riga **Modello**; animazioni e suoni si cambiano
-in RUSE Decoy dalle loro righe (**Cambia in RUSE Decoy**): un'animazione solo per questa unità o per tutte le unità
-che la usano, un suono per tutte le unità che lo usano.
+modello, l'uniforme di una squadra e un modello tutto suo sono sulla riga **Modello**; suoni e animazioni si cambiano
+in RUSE Decoy dalla riga **Suoni e animazioni** (**Cambia in RUSE Decoy**): un'animazione solo per questa unità o per
+tutte le unità che la usano, un suono per tutte le unità che lo usano.
 
 - **Ridipingi in Blender:** clicca su **Apri in Blender** (Blender è gratuito; se lo Studio non lo trova, la pagina propone
   **Scarica Blender (gratis)** e **Scegli Blender…** per mostrargli dove si trova `blender.exe`). L'unità si apre con le sue

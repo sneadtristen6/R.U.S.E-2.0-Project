@@ -11,7 +11,7 @@ Un modèle peut aussi aller sur un nouveau bâtiment, à la place d'une pièce d
 [[Bâtiments et menus de construction|Bâtiments-et-menus-de-construction]]), ou sur votre carte comme rocher, objet, buisson ou
 arbre à vous (voir [[Placer bâtiments et arbres|Placer-bâtiments-et-arbres]]). Les deux : Studio 0.9.8.8, vus en jeu.
 
-Sur la page de l'unité, tout cela est dans **Apparence et mouvements** : **Importer un modèle…** est le bouton de la ligne **Modèle**, et le reste des options du modèle (sa taille, **Le déplacer**, **Changer dans Blender**) est sous le **Plus** de cette ligne. **Ses soldats** est une ligne à part, et ce que font les animations du modèle est sous le **Plus** de la ligne **Animations**.
+Sur la page de l'unité, tout cela est dans **Apparence et mouvements** : **Importer un modèle…** est le bouton de la ligne **Modèle**, et le reste des options du modèle (sa taille, **Le déplacer**, **Changer dans Blender**) est sous le **Plus** de cette ligne. **Ses soldats** est une ligne à part, et ce que font les animations du modèle est sous le **Plus** de la ligne **Sons et animations**.
 
 ## 1. Se procurer un modèle
 
@@ -132,7 +132,7 @@ avec lui. Sur la page de l'unité, **Ses animations** montre ce que l'unité jou
   camion. Choisissez **Dans son camion** pour garder le camion.
 
 **Une copie garde ses animations :** une unité copiée d'une unité qui a ses propres animations joue les mêmes. Pour en
-changer une rien que pour elle, cliquez sur **Changer dans RUSE Decoy** sur sa ligne **Animations**, puis **Cette unité seulement**.
+changer une rien que pour elle, cliquez sur **Changer dans RUSE Decoy** sur sa ligne **Sons et animations**, puis **Cette unité seulement**.
 
 La Horse Squad faite ainsi dans le Studio a été jouée en jeu (novembre 2026).
 ## Un modèle avec ses propres os et ses animations

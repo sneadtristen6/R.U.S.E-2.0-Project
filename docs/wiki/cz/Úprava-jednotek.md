@@ -68,11 +68,11 @@ Stránka jednotky ukazuje její **3D model**: tažením ho otočíte, kolečkem 
 
 Pod ním **Vzhled a pohyb** shromažďuje vše o tom, jak jednotka vypadá a jak se pohybuje, řádek pro každou věc, v
 pořadí, v jakém pracujete: **Model**, **Jeho vojáci** (družstvo, jehož střelci a voják s těžkou zbraní mají různé
-modely), **Animace**, **Zvuky** a **Jezdí v**. Každý řádek říká, co jednotka teď má, a má jedno tlačítko pro obvyklou
+modely), **Zvuky a animace** a **Jezdí v**. Každý řádek říká, co jednotka teď má, a má jedno tlačítko pro obvyklou
 věc; **Více** ukáže přímo tam zbytek možností řádku. Vše, co změníte, se hned uloží do vašeho modu: nic k ukládání,
 žádná složka k vybírání. Přemalování, vlastní kopie modelu, uniforma družstva a vlastní model jsou na řádku **Model**;
-animace a zvuky se mění v RUSE Decoy z jejich řádků (**Změnit v RUSE Decoy**): animace jen pro tuto jednotku, nebo pro
-všechny jednotky, které ji hrají, zvuk pro všechny jednotky, které ho hrají.
+zvuky a animace se mění v RUSE Decoy z řádku **Zvuky a animace** (**Změnit v RUSE Decoy**): animace jen pro tuto
+jednotku, nebo pro všechny jednotky, které ji hrají, zvuk pro všechny jednotky, které ho hrají.
 
 - **Přebarvení v Blenderu:** klikněte na **Otevřít v Blenderu** (Blender je zdarma; pokud ho Studio nenajde, stránka
   nabídne **Získat Blender (zdarma)** a **Vybrat Blender…**, kterým mu ukážete, kde je `blender.exe`). Jednotka se

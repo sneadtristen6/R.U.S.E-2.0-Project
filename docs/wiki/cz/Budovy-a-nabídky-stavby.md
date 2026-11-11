@@ -7,7 +7,7 @@ Budovy každého národa, co jejich nabídky stavby nabízejí a v jakém pořad
 ## Tabule budov
 
 Otevřete záložku **Národy**: pod každým národem ukazuje **Budovy a jednotky** jeho budovy jako řady, každou jako řadu
-jednotek, které nabízí její nabídka stavby, v pořadí hry. Krok **Budovy** nového modu ukazuje stejnou tabuli.
+jednotek, které nabízí její nabídka stavby, v pořadí hry. Vedle názvu každého národa **Ponechat jednotky** vrátí všechny jeho jednotky do nabídek stavby, jako ve hře, a **Začít prázdný** je všechny odebere, abyste jeho budovy naplnili sami. **Výzkum**, nad národy: **Bez výzkumu** umožní stavět každou jednotku každého národa od začátku; **Ponechat výzkum ze hry** vrátí jednotkám hry jejich výzkum. Obojí se nejdřív zeptá.
 
 - **+** přidá jednotku do budovy: vlastní jednotku národa, kopii jednotky jiného národa, nebo
   [[jednotku éry|Jednotky-z-jiných-období]]. Kopie jde do vašeho modu, pojmenovaná tak, jak ji pojmenovává hra.

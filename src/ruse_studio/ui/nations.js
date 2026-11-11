@@ -4,13 +4,14 @@
 // with All values' words box (app.js wordsPanel); its flag is a picture of the modder's (any picture the window can
 // read: PNG, JPG, WebP...) fitted here to the flag's size, shone like the game's flags, its round shape kept the game's.
 // Its units: the Units tab with that nation picked (New unit puts a unit in its build menus); what they say: each
-// unit's page (Voice). Seen in the game (2026-10-08, Italy made China). Uses app.js's $, el, fill, say, problem, api,
+// unit's page (Voice). Seen in the game (2026-10-08, Italy made China). Since 2026-11-11 also each nation's Keep its
+// units / Empty it and Research for the whole mod (the new-mod steps that had them are off). Uses app.js's $, el, fill, say, problem, api,
 // state, wordsPanel,
 // showView, renderChips and refreshList.
 (function () {
   "use strict";
   const N = { words: {}, lang: "base", data: null, open: null,
-    flow: false, empty: new Set() };  // a new mod's Nations step (startflow.js): each nation kept or started empty
+    flow: false };  // a new mod's Nations step (startflow.js; its steps are off since 2026-11-11)
   const W = () => N.words;
   // the era library's eras and nations, by the Units tab's words for them (eraunits.js)
   const ERA_WORD = { WWI: "eras_era_ww1", WWII: "eras_era_ww2", "Cold War": "eras_era_cold", Modern: "eras_era_modern" };
@@ -36,7 +37,36 @@
     N.data = data;
     $("nations-nomod").textContent = data.mod ? "" : w.no_mod;
     $("nations-nomod").classList.toggle("hidden", data.mod);
+    $("nations-research").replaceChildren(researchBox(data.mod));
     $("nations-list").replaceChildren(...data.nations.map(card));
+  }
+
+  // Research for the whole mod (StudioApi.research_clear_all / research_reset_all, ruse_studio/board.py): No research,
+  // or the game's research back, every nation at once, each asked first. On the tab since 2026-11-11 (the owner: "Yes,
+  // add those to nations tab"); a new mod's Research step had it before, and those steps are off.
+  function researchBox(mod) {
+    const w = W();
+    const act = (call, ask) => async (e) => {
+      if (!window.confirm(w[ask])) return;
+      const b = e.currentTarget;
+      b.disabled = true;
+      try {
+        const res = await api()[call]();
+        say(call === "research_clear_all" ? fill(w.flow_research_none_done, { n: res.cleared }) : w.flow_research_reset_done, "ok");
+        render();
+      } catch (err) { problem(err); } finally { b.disabled = false; }
+    };
+    // (the names the Research step had: No research, Keep the game's research; each asked first, as it changes every
+    // unit's research at once)
+    const none = el("button", { type: "button", className: "small", textContent: w.flow_research_none,
+      title: w.flow_research_none_help, disabled: !mod });
+    none.addEventListener("click", act("research_clear_all", "nations_research_none_ask"));
+    const game = el("button", { type: "button", className: "small ghost", textContent: w.flow_research_keep,
+      title: w.flow_research_keep_help, disabled: !mod });
+    game.addEventListener("click", act("research_reset_all", "nations_research_keep_ask"));
+    return el("div", { className: "nations-research" },
+      el("h3", { textContent: w.flow_research_head, title: w.flow_research_help }),
+      el("p", { className: "muted small", textContent: w.flow_research_help }), el("div", { className: "actions" }, none, game));
   }
 
   function flagImage(url, label, big) {
@@ -58,30 +88,37 @@
     const toggle = el("button", { type: "button", className: "small", textContent: N.open === x.nation ? w.nations_close : w.nations_change,
       title: fill(w.tip_nations_change, { nation: name.now }) });
     toggle.addEventListener("click", () => { N.open = N.open === x.nation ? null : x.nation; render(); });
-    if (N.flow) head.append(keepOrEmpty(x, name));
+    if (N.data && N.data.mod) head.append(keepOrEmpty(x, name));   // (a choice saved in a mod: none, none shown)
     head.append(toggle);
     const box = el("div", { className: "nation" + (changed ? " changed" : "") }, head);
     if (N.open === x.nation) box.append(details(x, name));
     return box;
   }
 
-  // A new mod's Nations step: Keep its units (its build menus as in the game) or Start it empty (all its units out of
-  // them, as Hide all does: StudioApi.nation_units_hide), beside its name and flag
+  // Each nation's own units in its build menus, beside its name and flag: Keep its units (the game's menus back) or
+  // Empty it (all of them out, StudioApi.nation_units_hide). Its state is the mod's (nations_view own and hidden):
+  // neither picked when only some are out (taken out one by one on the board), and the line says how many. On the tab
+  // since 2026-11-11 (the owner: "Yes, add those to nations tab"); a new mod's Nations step had it before, and those
+  // steps are off.
   function keepOrEmpty(x, name) {
     const w = W(), group = el("span", { className: "flow-keep", role: "radiogroup" });
-    for (const [key, word, tip] of [["keep", "flow_keep", "tip_flow_keep"], ["empty", "flow_empty", "tip_flow_empty"]]) {
-      const r = el("input", { type: "radio", name: `flow-keep-${x.nation}`, value: key,
-        checked: (key === "empty") === N.empty.has(x.nation), title: fill(w[tip], { nation: name.now }) });
+    const all = x.own || 0, out = x.hidden || 0;
+    const now = all && out === all ? "empty" : out === 0 ? "keep" : null;
+    // (the names the steps had, his "put ... back"; the tips new: the steps' spoke of the steps)
+    for (const [key, word, tip] of [["keep", "flow_keep", "tip_nations_keep"], ["empty", "flow_empty", "tip_nations_empty"]]) {
+      const r = el("input", { type: "radio", name: `flow-keep-${x.nation}`, value: key, checked: now === key,
+        title: fill(w[tip], { nation: name.now }) });
       r.addEventListener("change", async () => {
         const empty = key === "empty";
         let res;
         try { res = await api().nation_units_hide(x.nation, empty, N.lang); } catch (err) { problem(err); render(); return; }
-        if (empty) N.empty.add(x.nation); else N.empty.delete(x.nation);
         say(fill(empty ? w.nations_units_hidden : w.nations_units_shown, { nation: name.now })
           + (res && res.unlinked && res.unlinked.length ? " " + fill(w.nations_units_unlinked, { list: res.unlinked.join(", ") }) : ""), "ok");
+        render();   // (its state read again from the mod)
       });
       group.append(el("label", { className: "small", title: fill(w[tip], { nation: name.now }) }, r, " " + w[word]));
     }
+    if (now === null) group.append(el("span", { className: "muted small", textContent: fill(w.nations_some_hidden, { hidden: out, all }) }));
     return group;
   }
 
@@ -325,7 +362,7 @@
   window.NationsView = {
     open(words, lang) { N.words = words; N.lang = lang; render(); },
     setWords(words, lang) { N.words = words; N.lang = lang; render(); },
-    modChanged() { N.empty.clear(); render(); },
+    modChanged() { render(); },
     setFlow(on) { N.flow = Boolean(on); if (!$("nations-view").classList.contains("hidden")) render(); },
     // a unit's page in the Units tab, "Show on the board": its nation opened, its building's row brought into sight
     async openNation(n, factory) {

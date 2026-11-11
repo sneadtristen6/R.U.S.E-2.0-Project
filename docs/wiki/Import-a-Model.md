@@ -11,7 +11,7 @@ A model can also go on a new building, in place of a piece of its look (see
 [[Buildings and build menus|Buildings-and-Build-Menus]]), or on your map as a rock, prop, bush or tree of your own
 (see [[Place buildings and trees|Place-Buildings-and-Trees]]). Both: Studio 0.9.8.8, seen in the game.
 
-On the unit's page all of this is in **Look and moves**: **Import model…** is the **Model** row's button, and the rest of the model's options (its size, **Move it**, **Change it in Blender**) are under that row's **More**. **Its soldiers** is a row of its own, and what the model's animations do is under the **Animations** row's **More**.
+On the unit's page all of this is in **Look and moves**: **Import model…** is the **Model** row's button, and the rest of the model's options (its size, **Move it**, **Change it in Blender**) are under that row's **More**. **Its soldiers** is a row of its own, and what the model's animations do is under the **Sounds and animation** row's **More**.
 
 ## 1. Get a model
 
@@ -126,7 +126,7 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
   keep the truck.
 
 **A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
-for it alone, click **Change in RUSE Decoy** on its **Animations** row, then **Only this unit**.
+for it alone, click **Change in RUSE Decoy** on its **Sounds and animation** row, then **Only this unit**.
 
 The Horse Squad made this way in the Studio played in the game (November 2026).
 ## A model with its own bones and animations

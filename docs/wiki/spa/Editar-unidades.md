@@ -71,12 +71,12 @@ La página de la unidad muestra su **Modelo 3D**: arrastra para girarlo, usa la 
 
 Debajo, **Aspecto y movimientos** reúne todo lo que tiene que ver con el aspecto y los movimientos de la unidad, una
 fila para cada cosa, en el orden en que trabajas: **Modelo**, **Sus soldados** (un pelotón cuyos fusileros y soldado
-con arma pesada tienen modelos distintos), **Animaciones**, **Sonidos** y **Viaja en**. Cada fila dice lo que la
-unidad tiene ahora y tiene un botón para lo habitual; **Más** muestra ahí mismo el resto de opciones de esa fila. Todo
-lo que cambias se guarda al momento en tu mod: nada que guardar, ninguna carpeta que elegir. Repintar, su propia copia
-del modelo, el uniforme de un pelotón y un modelo propio están en la fila **Modelo**; las animaciones y los sonidos se
-cambian en RUSE Decoy desde sus filas (**Cambiar en RUSE Decoy**): una animación solo para esta unidad o para todas
-las unidades que la usan, un sonido para todas las unidades que lo usan.
+con arma pesada tienen modelos distintos), **Sonidos y animación** y **Viaja en**. Cada fila dice lo que la unidad
+tiene ahora y tiene un botón para lo habitual; **Más** muestra ahí mismo el resto de opciones de esa fila. Todo lo que
+cambias se guarda al momento en tu mod: nada que guardar, ninguna carpeta que elegir. Repintar, su propia copia del
+modelo, el uniforme de un pelotón y un modelo propio están en la fila **Modelo**; los sonidos y las animaciones se
+cambian en RUSE Decoy desde la fila **Sonidos y animación** (**Cambiar en RUSE Decoy**): una animación solo para esta
+unidad o para todas las unidades que la usan, un sonido para todas las unidades que lo usan.
 
 - **Repintar en Blender:** haz clic en **Abrir en Blender** (Blender es gratis; si el Studio no lo encuentra, la página
   ofrece **Conseguir Blender (gratis)** y **Elegir Blender…** para indicarle dónde está `blender.exe`). La unidad se abre con sus imágenes,

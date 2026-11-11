@@ -7,8 +7,7 @@ Budynki każdej nacji, to, co oferują ich menu budowy i w jakiej kolejności, o
 ## Tablica budynków
 
 Otwórz zakładkę **Nacje**: pod każdą nacją **Budynki i jednostki** pokazuje jej budynki jako wiersze, każdy będący
-rzędem jednostek, które oferuje menu budowy tego budynku, w kolejności z gry. Krok **Budynki** nowego moda pokazuje tę
-samą tablicę.
+rzędem jednostek, które oferuje menu budowy tego budynku, w kolejności z gry. Obok nazwy każdej nacji **Zachowaj jednostki** przywraca wszystkie jej jednostki do menu budowy, jak w grze, a **Zacznij pusty** usuwa je wszystkie, żebyś sam zapełnił jej budynki. **Badania**, nad nacjami: **Bez badań** sprawia, że każdą jednostkę każdej nacji można budować od początku; **Zachowaj badania z gry** przywraca jednostkom z gry ich badania. Oba najpierw pytają.
 
 - **+** dodaje jednostkę do budynku: jedną z własnych jednostek nacji, kopię jednostki innej nacji albo
   [[jednostkę z innej epoki|Jednostki-z-innych-epok]]. Kopia trafia do twojego moda, nazwana tak, jak nazywa ją gra.

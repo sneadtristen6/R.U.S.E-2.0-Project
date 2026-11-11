@@ -67,12 +67,12 @@ then change it like any other. Or pick the unit and choose **New unit…** on it
 The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
 
 Under it, **Look and moves** holds everything about how the unit looks and moves, a row each, in the order you work:
-**Model**, **Its soldiers** (a squad whose riflemen and heavy-weapon soldier have different models), **Animations**,
-**Sounds** and **Rides in**. Each row says what the unit has now and has one button for the usual thing; **More**
+**Model**, **Its soldiers** (a squad whose riflemen and heavy-weapon soldier have different models), **Sounds and
+animation** and **Rides in**. Each row says what the unit has now and has one button for the usual thing; **More**
 shows the rest of that row's options right there. Everything you change is saved in your mod at once: nothing to save,
 no folder to pick. Repainting, its own copy of the model, a squad's uniform and a model of its own are on the
-**Model** row; animations and sounds are changed in RUSE Decoy from their rows (**Change in RUSE Decoy**): an
-animation for this unit only or for every unit that plays it, a sound for every unit that plays it.
+**Model** row; sounds and animations are changed in RUSE Decoy from the **Sounds and animation** row (**Change in RUSE
+Decoy**): an animation for this unit only or for every unit that plays it, a sound for every unit that plays it.
 
 - **Repaint in Blender:** click **Open in Blender** (Blender is free; if the Studio doesn't find it, the page offers
   **Get Blender (free)** and **Choose Blender…** to show it where `blender.exe` is). The unit opens with its pictures,

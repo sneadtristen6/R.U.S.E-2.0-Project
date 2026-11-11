@@ -11,7 +11,7 @@ Un modelo también puede ir en un edificio nuevo, en lugar de una pieza de su as
 [[Edificios y menús de construcción|Edificios-y-menús-de-construcción]]), o en tu mapa como roca, objeto, arbusto o árbol propio
 (consulta [[Colocar edificios y árboles|Colocar-edificios-y-árboles]]). Los dos: Studio 0.9.8.8, visto en el juego.
 
-En la página de la unidad todo esto está en **Aspecto y movimientos**: **Importar modelo…** es el botón de la fila **Modelo**, y el resto de opciones del modelo (su tamaño, **Moverlo**, **Cambiarlo en Blender**) está bajo **Más** de esa fila. **Sus soldados** es una fila propia, y lo que hacen las animaciones del modelo está bajo **Más** de la fila **Animaciones**.
+En la página de la unidad todo esto está en **Aspecto y movimientos**: **Importar modelo…** es el botón de la fila **Modelo**, y el resto de opciones del modelo (su tamaño, **Moverlo**, **Cambiarlo en Blender**) está bajo **Más** de esa fila. **Sus soldados** es una fila propia, y lo que hacen las animaciones del modelo está bajo **Más** de la fila **Sonidos y animación**.
 
 ## 1. Consigue un modelo
 
@@ -132,7 +132,7 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
   su camión. Elige **En su camión** para quedarte con el camión.
 
 **Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para
-cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Animaciones** y luego en **Solo esta unidad**.
+cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Sonidos y animación** y luego en **Solo esta unidad**.
 
 El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026).
 ## Un modelo con huesos y animaciones propios

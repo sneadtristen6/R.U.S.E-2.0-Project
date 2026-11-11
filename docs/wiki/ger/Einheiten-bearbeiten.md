@@ -72,13 +72,13 @@ Die Seite der Einheit zeigt ihr **3D-Modell**: zum Drehen ziehen, zum Zoomen scr
 
 Darunter fasst **Aussehen und Bewegung** alles zusammen, wie die Einheit aussieht und sich bewegt, eine Zeile für
 jedes, in der Reihenfolge, in der du arbeitest: **Modell**, **Seine Soldaten** (ein Trupp, dessen Schützen und Soldat
-mit schwerer Waffe verschiedene Modelle haben), **Animationen**, **Geräusche** und **Fährt in**. Jede Zeile sagt, was
-die Einheit jetzt hat, und hat eine Schaltfläche für das Übliche; **Mehr** zeigt die übrigen Optionen dieser Zeile
-direkt dort. Alles, was du änderst, wird sofort in deinem Mod gespeichert: nichts zu speichern, kein Ordner zu wählen.
-Neu bemalen, eine eigene Kopie des Modells, die Uniform eines Trupps und ein eigenes Modell sind in der Zeile
-**Modell**; Animationen und Geräusche änderst du in RUSE Decoy aus ihren Zeilen (**In RUSE Decoy ändern**): eine
-Animation nur für diese Einheit oder für alle Einheiten, die sie spielen, ein Geräusch für alle Einheiten, die es
-spielen.
+mit schwerer Waffe verschiedene Modelle haben), **Geräusche und Animation** und **Fährt in**. Jede Zeile sagt, was die
+Einheit jetzt hat, und hat eine Schaltfläche für das Übliche; **Mehr** zeigt die übrigen Optionen dieser Zeile direkt
+dort. Alles, was du änderst, wird sofort in deinem Mod gespeichert: nichts zu speichern, kein Ordner zu wählen. Neu
+bemalen, eine eigene Kopie des Modells, die Uniform eines Trupps und ein eigenes Modell sind in der Zeile **Modell**;
+Geräusche und Animationen änderst du in RUSE Decoy aus der Zeile **Geräusche und Animation** (**In RUSE Decoy
+ändern**): eine Animation nur für diese Einheit oder für alle Einheiten, die sie spielen, ein Geräusch für alle
+Einheiten, die es spielen.
 
 - **In Blender neu bemalen:** klicke auf **In Blender öffnen** (Blender ist kostenlos; findet das Studio es nicht, bietet
   die Seite **Blender holen (kostenlos)** und **Blender auswählen…** an, um ihm zu zeigen, wo `blender.exe` liegt). Die

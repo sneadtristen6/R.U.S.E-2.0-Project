@@ -282,6 +282,22 @@ class NationUnits(unittest.TestCase):
         self.assertEqual(view["hidden"], 0)
         self.assertNotIn("ShowInMenu", (self.mod / "src" / "studio.rndf").read_text(encoding="utf-8"))
 
+    def test_the_nations_tab_counts_what_is_taken_out(self):
+        """The Nations tab's Keep its units / Start it empty (the owner, 2026-11-11: "Yes, add those to nations tab",
+        once the new-mod steps that had them were off): nations_view says, for each nation, its own units in a build
+        menu and how many the mod takes out, so the tab shows its state: none out, all out, or some (one by one)."""
+        self.api._nation_flag = lambda ix, n: None
+        self.api.value_words = lambda key: {"words": []}
+
+        def italy():
+            return self.api.nations_view()["nations"][4]
+        self.assertEqual((italy()["own"], italy()["hidden"]), (2, 0))   # (its tank and plane: not its HQ, not the unit in no menu)
+        self.api.nation_units_hide(4, True)
+        self.assertEqual((italy()["own"], italy()["hidden"]), (2, 2))
+        self.api.nation_units_hide(4, False, factory=10)
+        self.assertEqual(italy()["hidden"], 1)                          # some out: the tab picks neither
+        self.assertEqual(self.api.nations_view()["nations"][0]["hidden"], 0)   # (the US tank, never touched)
+
     def test_a_building_left_with_nothing_to_build_is_said(self):
         """The 2026-10-10 test: Italy's units all hidden, China's era units had none for its artillery and anti-tank
         bases, so in the game those showed their construction menu. The view names such a building, and its own

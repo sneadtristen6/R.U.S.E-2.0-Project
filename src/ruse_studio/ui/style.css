@@ -1233,7 +1233,13 @@ body.flow-page-on main { display: none !important; }
                border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
 .flow-option:hover { border-color: var(--accent); }
 .flow-nations { display: flex; flex-wrap: wrap; gap: 6px; }
-.flow-keep { display: inline-flex; gap: 10px; margin-left: auto; margin-right: 8px; }
+.flow-keep { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-left: auto; margin-right: 8px; }
+/* the Nations tab's Research for the whole mod (nations.js researchBox): its two buttons above the nations */
+.nations-research { display: grid; gap: 6px; max-width: 820px; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line);
+                    border-radius: var(--radius); background: var(--panel); }
+.nations-research h3 { margin: 0; font-size: 14px; }
+.nations-research p { margin: 0; }
+.nations-research .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* the board (board.js): one nation's buildings, each a row of boxes like its build menu in the game */
 .board { display: grid; gap: 12px; }
