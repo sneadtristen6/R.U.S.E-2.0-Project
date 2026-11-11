@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands"
+title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands"
 category: Announcements
 order: 25
 ---
@@ -31,6 +31,14 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
 - **Missions of your own (Studio):** a new map's mission that makes units of a nation its copied mission doesn't load
   now gets that nation's packs, so those units have their models (the game stopped when such a unit was made). The
   mission check also refuses an event that hands a side a person plays to the computer. Not yet tried in the game.
+- **A squad's own soldier (Studio):** a modder asked on Discord how to change infantry models. A squad's page now gets
+  **Its own model** with **Change it in Blender**: the squad's soldier opens in Blender on his own bones, and Blender
+  gets a **Send to the R.U.S.E. Studio** button. **Bring back the model** takes him in on the game soldier's bones,
+  with no **Custom uniform** needed. **Import model…** also works now on a unit with a **Custom uniform**: it takes the
+  copy out, and **Use the copied unit's model** gives it back in one click. Points Blender leaves with no bone follow
+  the root bone, and the page says how many. The wiki's Import a Model page has the steps. Tested in the game with two
+  US squads made this way (one with a bigger head, one with a new mesh weighted in Blender); the rest was checked
+  outside the game.
 - **Bug Watch says why, if you ticked it:** which check refused a build or found a mistake (a fixed name from our
   code), how far a **Play** or **Test in game** got, which mods from our list were on and how many of your own
   (counted by kind, never named), Plays refused before they started, and updates offered, installed or failed. Never
