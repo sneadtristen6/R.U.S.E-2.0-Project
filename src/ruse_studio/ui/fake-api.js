@@ -809,10 +809,15 @@
                               rigged: true, also: ["ww2\\res3d\\units\\us\\infanterie\\us_soldier_modellod0.ase2ndfbin"] };
   // ?fake=horse: a squad's import is the Horse Squad that played on 2026-11-09, a model on bones of its own with its
   // animations (rusemod.animmodel), and its page's Its bones and animations (model_animations) as the Studio gives it
-  const FAKE_HORSE_ANIMS = [["hr_t_stand", 1.0, 13], ["hr_b_stand", 1.0, 19], ["hr_b_walk", 1.4667, 4],
-    ["hr_b_run", 0.6667, 13], ["hr_t_mort_balle", 2.5333, 1], ["hr_t_stand_vise", 1.0, 8], ["hr_t_tir", 0.9333, 1],
-    ["hr_t_grenade", 3.2, 1], ["hr_t_recharge", 2.5, 1], ["hr_t_hit", 2.0, 1], ["hr_ride", 0.6667, 0],
-    ["hr_t_bazooka_tir", 2.0, 0]].map(([name, seconds, n]) => ({ name, seconds, frames: Math.round(seconds * 30) + 1,
+  // (the Studio's own answer for horse-squad-rifle.glb on a copy of the US rifle squad, 2026-11-10)
+  const FAKE_HORSE_ANIMS = [["hr_t_stand", 2.0, 13], ["hr_b_stand", 5.3333, 18], ["hr_b_walk", 1.4667, 4],
+    ["hr_b_run", 0.6667, 13], ["hr_t_mort_balle", 2.5333, 1], ["hr_t_mort_balle_violente", 1.0, 1],
+    ["hr_t_mort_explosion", 1.4333, 1], ["hr_t_mort_balle_dos", 2.5, 1], ["hr_t_mort_explosion_dos", 2.0, 1],
+    ["hr_t_stand_vise", 1.0, 8], ["hr_t_tir", 0.9333, 1], ["hr_t_grenade", 3.2, 1], ["hr_t_grenade2", 2.9333, 1],
+    ["hr_t_grenade3", 2.9333, 1], ["hr_t_recharge", 2.5, 1], ["hr_t_hit", 2.0, 1], ["hr_t_hit_dos", 2.0, 1],
+    ["hr_t_hit_explosion", 2.0, 1], ["hr_t_look_around", 4.0, 1], ["hr_ride", 0.6667, 0], ["hr_t_bazooka_tir", 2.0, 0],
+    ["hr_t_bazooka_transition1", 2.0, 0], ["hr_t_bazooka_transition2", 2.0, 0], ["hr_t_bazooka_vise", 2.0, 0]]
+    .map(([name, seconds, n]) => ({ name, seconds, frames: Math.round(seconds * 30) + 1,
       actions: Array.from({ length: n }, (_x, k) => `${name}_${k}`) }));
   const FAKE_HORSE_IMPORT = { ...FAKE_SQUAD_IMPORT, file: "horse-squad-rifle.glb", vertices: 553, triangles: 647, draws: 3,
                               own_skeleton: { bones: 62, animations: FAKE_HORSE_ANIMS.map(({ name, seconds, frames }) =>
