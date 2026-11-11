@@ -532,6 +532,21 @@ class ThePage(unittest.TestCase):
         got = self.api.model_split(E + UNIT, "")
         self.assertEqual((got["halves"]["split"], got["halves"]["chosen"]), ("bip01", False))
 
+    def test_a_new_fit_keeps_the_chosen_split(self):
+        # Import model again, Resize, Move and Bring back write the model's record anew: the modder's split stays
+        from unittest import mock
+        self.api.model_split(E + UNIT, "horse neck")
+        self.api._look_models = lambda address: ([LIKE], [])
+        report = {"rigged": True, "like": LIKE, OWN_SKELETON: {"bones": 14}}
+        with mock.patch("rusemod.unitmodel.import_model", lambda *a, **k: dict(report)), \
+                mock.patch("rusemod.unitmodel.rigged_first", lambda game, file, models: list(models)):
+            self.api._fit_model(E + UNIT, str(self.glb), 1.0, False, None, True, True, None)
+        kept = json.loads(self.glb.with_suffix(".json").read_text(encoding="utf-8"))
+        self.assertEqual((kept["split"], kept["from"], kept["report"]["like"]), ("horse neck", str(self.glb), LIKE))
+        self.assertEqual(self.api.model_fit(E + UNIT)["halves"]["split"], "horse neck")
+        from ruse_studio.modelfit import kept_choices
+        self.assertEqual(kept_choices(Path(self.dir.name, "nowhere.json")), {})
+
     def test_a_model_on_the_game_soldier_s_bones_keeps_the_game_s_halves(self):
         report = {"rigged": True, "like": LIKE}
         self.glb.with_suffix(".json").write_text(json.dumps({"report": report}), encoding="utf-8")

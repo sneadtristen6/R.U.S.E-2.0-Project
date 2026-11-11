@@ -13,6 +13,7 @@ choice. What the page checks is the game's own data for the unit the new one cop
 build checks the same again on the mod's data as built (rusemod.build.unit_fit_checks)."""
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -20,6 +21,20 @@ from pathlib import Path
 FIGURE_KINDS = (("DescriptorFigurine", "far"), ("GfxDescriptorIconeCadavre", "fallen"), ("GfxDescriptorCadavre", "wreck"),
                 ("GfxDescriptorFusilier", "rifle"), ("GfxDescriptorBazooka", "heavy"), ("GfxDescriptor", "unit"))
 OWN = "own:"   # what a listing plays, when it's the mod's own animation file: own:<the file>
+
+
+def kept_choices(record: Path) -> dict:
+    """What the modder chose about a model that a new fit of it keeps (StudioApi._fit_model writes the record anew on
+    Import model, Resize, Move and Bring back): {"split": the bone its upper half starts at} when the record has one.
+    A bone the new model hasn't got stays chosen, and the page says so (rusemod.bonefit's "split_gone"): never dropped
+    quietly."""
+    from rusemod import bonefit
+    try:
+        old = json.loads(Path(record).read_text(encoding="utf-8")) if Path(record).is_file() else {}
+    except (OSError, ValueError):
+        return {}
+    split = old.get(bonefit.SPLIT) if isinstance(old, dict) else None
+    return {bonefit.SPLIT: split} if isinstance(split, str) and split.strip() else {}
 
 
 def figure_kind(path: str) -> str:
