@@ -72,9 +72,10 @@ class Library:
             for name in spk.items:
                 self.where.setdefault(name, spk)
 
-    def bone_names(self, model: str) -> list[str] | None:
-        """A model's bones by their numbers, as its skeleton names them (chassis, tourelle_01, canon_01...); None when
-        no skeleton pack has it. The skeleton packs are read the first time this is asked."""
+    def skeleton(self, model: str) -> bytes | None:
+        """A model's skeleton record as its skeleton pack keeps it (rusemod.baf.skeleton reads it: its bones' names,
+        parents and rest poses); None when no skeleton pack has it. The skeleton packs are read the first time this or
+        bone_names is asked."""
         if self._skeletons is None:
             from .unitpacks import NONE, MeshPack
             self._skeletons = {}
@@ -86,7 +87,12 @@ class Library:
                 for name, item in pack.items.items():
                     if item[2] != NONE:
                         self._skeletons.setdefault(name, pack.skeletons[item[2]])
-        blob = self._skeletons.get(model.replace("/", "\\").lower())
+        return self._skeletons.get(model.replace("/", "\\").lower())
+
+    def bone_names(self, model: str) -> list[str] | None:
+        """A model's bones by their numbers, as its skeleton names them (chassis, tourelle_01, canon_01...); None when
+        no skeleton pack has it. The skeleton packs are read the first time this is asked."""
+        blob = self.skeleton(model)
         if blob is None:
             return None
         from .unitmodel import UnitModelError, read_skeleton

@@ -740,6 +740,36 @@ class ModelMoved(unittest.TestCase):
                 self.assertEqual((got.get("move"), got.get("own_turret"), got.get("own_propellers")), (move, own, own))
                 self.assertIn("moved: 50 forward, -20 right, 10 up", out.getvalue())
 
+    def test_the_command_line_import_takes_the_unit_s_own_copy_out(self):
+        """As the Studio's Import model does (2026-11-10, item 4): a unit has one model, so `ruse import-model` into a
+        mod takes the unit's own copy (a squad's Custom uniform: files/models/<unit>.copy.toml) out and keeps its paint;
+        the build would otherwise stop on a unit with both. Written elsewhere (--out), the mod's copy is left alone."""
+        import contextlib
+        import io
+        from unittest import mock
+
+        from rusemod import cli
+        report = {"vertices": 1, "triangles": 1, "draws": 1, "like": TANK, "facing": ("x", 1), "scale": 1.0, "parts": {},
+                  "pictures": [], "stands": [0.0, 0.0, 0.0, 849.0]}
+        models_dir = self.dir / "files" / "models"
+        (models_dir / "U").mkdir(parents=True, exist_ok=True)
+        paint = models_dir / "U" / "a01.tgv.png"
+        for extra, gone in ((["--out", str(self.dir / "elsewhere.glb")], False), ([], True)):
+            with self.subTest(extra):
+                copy = models_dir / "U.copy.toml"
+                copy.write_text('of = ["x"]\n', encoding="utf-8")
+                paint.write_bytes(b"paint")
+                args = cli.build_parser().parse_args(["import-model", "m.glb", "--like", "ger_panzeriv", "--unit", "U",
+                                                      "--mod", str(self.dir), *extra])
+                out = io.StringIO()
+                with mock.patch("rusemod.models.Library", return_value=mock.Mock(where={TANK: 1})), \
+                        mock.patch("rusemod.cli._game_dir", return_value=self.dir / "game"), \
+                        mock.patch("rusemod.unitmodel.import_model", return_value=report), contextlib.redirect_stdout(out):
+                    self.assertEqual(cli.cmd_import_model(args), 0)
+                self.assertEqual(copy.is_file(), not gone)
+                self.assertTrue(paint.is_file())                       # the paint stays either way
+                self.assertEqual("is taken out" in out.getvalue(), gone)
+
 
 class OwnPropellers(unittest.TestCase):
     """A plane's propellers where the model has them, as many as it has: each one's two bones moved, or added after the last so every bone keeps its number."""

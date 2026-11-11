@@ -88,6 +88,23 @@ Visto en el juego con un pelotón de fusileros, la dotación de un cañón y el 
 reciente: un Launcher más antiguo le da al modelo el esqueleto de la unidad copiada, así que su torreta gira alrededor
 del punto equivocado. La 0.4.8.17 es una actualización obligatoria, así que el Launcher la instala solo.
 
+## Tu propio soldado, paso a paso
+
+Para un pelotón (fusileros, paracaidistas, cualquier infantería), el Studio hace contigo la parte de Blender:
+
+1. **Crea el pelotón** como en el paso 2 de arriba, partiendo de un pelotón (los fusileros estadounidenses, por ejemplo).
+2. **Abre su soldado en Blender.** En la página del nuevo pelotón, bajo **Su propio modelo**, pulsa **Cambiarlo en Blender**. Blender se abre con el soldado y sus huesos, cada uno donde lo tiene el juego. ¿Aún no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
+3. **Cámbialo, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en los huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no lo conservas.
+4. **Envíalo.** Pulsa **Enviar a R.U.S.E. Studio** arriba en Blender.
+5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Cada soldado del pelotón lleva tu modelo: el fusilero, el del bazuca y las figuritas que se ven de lejos. **Probar en el juego** lo muestra.
+
+Bueno saberlo:
+- Tus archivos de Blender quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`. No se empaquetan en tu mod cuando lo compartes. El próximo **Cambiarlo en Blender** empieza desde lo último que enviaste.
+- Si algunos puntos de tu modelo no tienen hueso (los pesos automáticos de Blender se saltan algunos), la página dice cuántos: se mueven solo con la cadera del soldado. Píntalos sobre un hueso en **Weight Paint** y envíalo de nuevo.
+- Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod), y **Usar el modelo de la unidad copiada** devuelve el uniforme.
+- ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
+- El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro.
+
 ## 4. Su tarjeta, y luego la prueba
 
 Gira la vista 3D hasta que el nuevo modelo se vea bien dentro del marco discontinuo y haz clic en **Usar esta vista

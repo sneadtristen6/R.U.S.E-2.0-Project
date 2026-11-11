@@ -74,6 +74,7 @@ from .missionedit import MissionCalls
 from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
+from .modelblender import ModelBlenderCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -558,7 +559,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
-                FlagTypeCalls, BoardCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
@@ -8144,7 +8145,44 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         a Resize of such a model stay so). `own_propellers` (the owner, 2026-11-09, after T65: "Yes, do it"): a plane's
         propellers where the model has them, as many as it has, not where the copied plane's are; False: as a model
         fitted before that was. `move` ([forward, right, up], model_place): moved that far from where it's fitted. Returns
-        {"model": what was made (parts, counts, pictures, "missing"), **look()}."""
+        {"model": what was made (parts, counts, pictures, "missing"), "copy_out", **look()}.
+
+        A unit has one model: the build takes a model of its own or its own copy of the model it copies, never both
+        (rusemod.build.unit_own_copies). So the model takes the place of the unit's own copy (model_copy; a squad's is
+        its Custom uniform, which a squad needed to reach Blender at all, and the build then stopped on both with
+        nothing on the page saying why: item 4 of the owner's list, 2026-11-10). Once the model is in, the copy's
+        .copy.toml goes and its paint stays in the mod (files/models/<the unit's name>/), as model_copy_remove leaves
+        it; "copy_out" says it went, for the page to say so. A failed import, or the file picker closed, leaves the copy
+        as it was."""
+        report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move)
+        copy_out = False
+        if report is not None:
+            copy = self._own_copy_file(address)
+            if copy is not None and copy.is_file():
+                with self._saving:
+                    # kept in the model's own record, so taking the model out gives the copy back in one click
+                    # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
+                    self._keep_in_model_record(address, copy.read_text(encoding="utf-8"))
+                    copy.unlink(missing_ok=True)
+                copy_out = True
+        return {"model": report, "copy_out": copy_out, **self.look(address)}
+
+    def _keep_in_model_record(self, address: str, copy_text: str) -> None:
+        """Keep the .copy.toml an import took the place of in the model's record (files/models/<unit>.json,
+        "copy_kept")."""
+        target = self._own_model_file(address)
+        record = target.with_suffix(".json") if target is not None else None
+        if record is None or not record.is_file():
+            return
+        data = json.loads(record.read_text(encoding="utf-8"))
+        data["copy_kept"] = copy_text
+        record.write_text(json.dumps(data, indent=1), encoding="utf-8")
+
+    def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
+                   own_turret: bool, own_propellers: bool, move: list | None) -> dict | None:
+        """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
+        through it): the model saved as the mod's files/models/<the unit's name>.glb, its record beside it. Returns the
+        model's report, or None when no file was picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8157,10 +8195,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
         if file is None:
             if self._window is None:
-                return {"model": None, **self.look(address)}
+                return None
             file = pick_file(self._window, ("3D model (*.3ds;*.glb)",))
             if not file:
-                return {"model": None, **self.look(address)}
+                return None
         try:
             size = float(size)
         except (TypeError, ValueError):
@@ -8197,7 +8235,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       **({"facing": list(facing)} if facing else {}),
                                       **({"move": move} if report.get("moved") else {}),
                                       "report": report}, indent=1), encoding="utf-8")
-        return {"model": report, **self.look(address)}
+        return report
 
     # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
     # planes ... are a little bit too big" ... "make it a slider. So if people want to have like super big planes or
@@ -8267,7 +8305,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def model_resize(self, address: str, size: float) -> dict:
         """Fit a new unit's own model again at `size` from the file it was made from (no file to pick), the way it
         faced, whether it's a plane and how it was placed kept, a move too (a model fitted before there was own_turret or
-        own_propellers has none in its record, and stays as it was). Returns model_import()'s answer."""
+        own_propellers has none in its record, and stays as it was). Returns model_import()'s answer; an own copy of the
+        unit's (a mod made with both, by an older Studio or by hand) stays: only a new import takes it out."""
         record = self._own_model_record(address)
         if record is None:
             # not a game rule: only a model the Studio fitted has a file to fit again
@@ -8277,15 +8316,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
-        return self.model_import(address, file, size, bool(aircraft), facing=self._pinned_facing(record),
-                                 own_turret=bool(record.get("own_turret")), own_propellers=bool(record.get("own_propellers")),
-                                 move=record.get("move"))
+        report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
+                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"))
+        return {"model": report, "copy_out": False, **self.look(address)}
 
     def model_place(self, address: str, move) -> dict:
         """Put a new unit's own model where the modder wants it (the owner's pick 2026-11-09, the brief's gap 1: Angelo's models sat ahead of their selection rings): `move` [forward, right,
         up], in the game's model units, from where the fit puts it (a minus goes the other way; 0, 0, 0 back to the fit). Fitted again from the file it was made from, at its size, the way it faced.
         It's fitted the way a new import is: its turret's bones go with it, so the turret keeps turning where the model's turret is, and its propellers stay on it; a model fitted before
-        there was own_turret or own_propellers takes that too once it's moved. Returns model_import()'s answer."""
+        there was own_turret or own_propellers takes that too once it's moved. Returns model_import()'s answer (an own copy stays, as model_resize)."""
         record = self._own_model_record(address)
         if record is None:
             # not a game rule: only a model the Studio fitted has a file to fit again
@@ -8295,8 +8334,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
-        return self.model_import(address, file, float(record.get("size") or 1.0), bool(aircraft),
-                                 facing=self._pinned_facing(record), own_turret=True, own_propellers=True, move=move)
+        report = self._fit_model(address, file, float(record.get("size") or 1.0), bool(aircraft),
+                                 self._pinned_facing(record), True, True, move)
+        return {"model": report, "copy_out": False, **self.look(address)}
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:
@@ -8380,13 +8420,29 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
     def model_import_remove(self, address: str) -> dict:
-        """Take a new unit's own model out of the mod: it shows the model of the unit it copies again."""
+        """Take a new unit's own model out of the mod: it shows the model of the unit it copies again. An own copy the
+        model took the place of (model_import: a squad's Custom uniform, kept in the model's record) comes back with it,
+        its paint still in the mod: one click undoes the import (the owner, 2026-11-10: it has to be intuitive for
+        someone who has never modded). Returns look(), "model_out": whether there was a model to take out, and
+        "copy_back": whether its copy came back."""
         target = self._own_model_file(address)
+        out = target is not None and target.is_file()
+        copy_back = False
         if target is not None:
+            record = target.with_suffix(".json")
+            try:
+                kept = json.loads(record.read_text(encoding="utf-8")).get("copy_kept") if record.is_file() else None
+            except (OSError, ValueError):
+                kept = None
             with self._saving:
                 target.unlink(missing_ok=True)
-                target.with_suffix(".json").unlink(missing_ok=True)
-        return self.look(address)
+                record.unlink(missing_ok=True)
+                copy = self._own_copy_file(address)
+                if isinstance(kept, str) and copy is not None and not copy.is_file():
+                    copy.parent.mkdir(parents=True, exist_ok=True)
+                    copy.write_text(kept, encoding="utf-8")
+                    copy_back = True
+        return {**self.look(address), "model_out": out, "copy_back": copy_back}
 
     def _card_view(self, address: str) -> dict | None:
         """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the
@@ -8741,9 +8797,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("Only a unit can get its own copy of its model.")
         own = self._own_model_file(address)
         if own is not None and own.is_file():
-            # not a game rule: one model per unit
-            raise StudioError("This unit has an imported model: take it out first (Remove the model), then give it a "
-                              "copy.")
+            # not a game rule: one model per unit (the build takes the imported one or the copy, never both). Refused,
+            # not done: the imported model would be lost, where an import over a copy loses nothing (its paint stays).
+            # The buttons named are the page's own (words.toml model_remove, model_title, uniform_custom, model_copy)
+            if self._soldiers(address):
+                raise StudioError("This squad has a model you imported, so it can't have a Custom uniform too: a unit "
+                                  "has only one model. To give it a uniform, click Use the copied unit's model under "
+                                  "Its own model first, then Custom uniform.")
+            raise StudioError("This unit has a model you imported, so it can't have its own copy of the model too: a "
+                              "unit has only one model. Click Use the copied unit's model under Its own model first, "
+                              "then Give it its own copy of the model.")
         models = self._copy_models(address)
         if not models:
             # not a game rule: the build copies the models the unit's own model parts name

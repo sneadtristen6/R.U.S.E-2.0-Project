@@ -67,5 +67,28 @@ class Gltf(unittest.TestCase):
                 read_model(path)
 
 
+class BlenderNoBone(unittest.TestCase):
+    """Blender's glTF export skins each point it has no weight for to a bone it calls neutral_bone (2026-11-10, item 4:
+    a modder's own mesh put on a squad's bones with Blender's automatic weights had 23 such points, and Import model
+    refused the whole file over that one bone). Read back, the point has no bone; the root bone takes it, as it takes
+    any point with none, and the report counts them for the page."""
+
+    def test_the_neutral_bone_is_no_bone(self):
+        from rusemod.modelin import BLENDER_NO_BONE, bone_weights
+        names = ["bip01", "bip01 head", BLENDER_NO_BONE]
+        self.assertEqual(bone_weights(names, [2, 0, 0, 0], [1.0, 0, 0, 0]), [])                # only Blender's: none
+        self.assertEqual(bone_weights(names, [1, 2, 0, 0], [0.5, 0.5, 0, 0]), [("bip01 head", 255)])  # the rest, whole
+        self.assertEqual(bone_weights(names, [0, 1, 0, 0], [0.25, 0.75, 0, 0]), [("bip01", 64), ("bip01 head", 191)])
+
+    def test_a_point_with_no_bone_follows_the_root_and_is_counted(self):
+        from rusemod.modelin import Mesh, Model, _prepare_rigged
+        mesh = Mesh("me", [(0.0, 0.0, 0.0), (0.01, 0.0, 0.0), (0.0, 0.01, 0.0)], [(0, 1, 2)], [], [], [])
+        mesh.skin = [[("bip01 head", 255)], [], [("bip01 head", 255)]]
+        prep = _prepare_rigged(Model([mesh], []), [], {"root": "bip01"}, 1.0, 64)
+        self.assertEqual(sorted({w[0][0] for p in prep.parts for w in p.skin}), ["bip01", "bip01 head"])
+        self.assertEqual(prep.report["no_bone"], 1)
+        self.assertTrue(any("1 point(s) had no bone" in n for n in prep.report["notes"]))
+
+
 if __name__ == "__main__":
     unittest.main()

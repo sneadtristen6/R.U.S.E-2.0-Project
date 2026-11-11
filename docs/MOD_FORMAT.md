@@ -310,8 +310,9 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   (`Descriptor_Unit_Soldat_US_Lourd.copy.toml`). Its paint is in `files/models/<the unit's name>/`, laid out as
   `files/replace/` (named for the source's textures). The Studio writes both: *Give it its own copy of the model* (a
   new vehicle) or *Custom uniform* (a squad: its soldiers, its bazooka man and its token's figure), then *Open in
-  Blender* and *Bring back*. A unit can't have a copy and an imported `.glb` both. A file naming no model (the first
-  ones) copies the model its `GfxDescriptor` draws.
+  Blender* and *Bring back*. A unit can't have a copy and an imported `.glb` both: the build stops on that, and the
+  Studio's *Import model* on a unit with a copy takes the `.copy.toml` out (its paint folder stays, for a copy made
+  again). A file naming no model (the first ones) copies the model its `GfxDescriptor` draws.
 - **A map asset of its own** (a rock or cliff, a prop, a bush or plant, a tree): `files/assets/<name>/asset.toml`
   beside its model (.glb, .gltf with its files beside it, or .3ds) becomes the scenery type `TypeWarrior/R2_<name>`
   (`<name>` its folder's name in letters and digits: `rock_face_01` is `R2_RockFace01`), placed like any type in a

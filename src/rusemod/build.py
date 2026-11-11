@@ -1480,7 +1480,8 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     of the models its file lists names the unit's copy instead, beside the game's model. A new unit's, or one of the
     game's units' (a squad's own uniform: its soldiers, its bazooka man and its token's figure; the owner,
     2026-10-11: "you don't want the whole game to be colored the same"). Returns {unit: ({the game's model: its copy},
-    its paint, mod id)}. A unit with an imported model too (files/models/<name>.glb) is an error: it would have two."""
+    its paint, mod id)}. A unit with an imported model too (files/models/<name>.glb) is an error: it would have two
+    (the Studio's Import model takes the copy out, so only a mod made by an older Studio or by hand has both)."""
     from .unitmodel import copy_model_name, model_key
     wanted: dict = {}
     for m in order:
@@ -1491,9 +1492,17 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
     for unit, (of, paint, mod_id) in sorted(wanted.items()):
         where = f"{mod_id}: files/models/{unit}.copy.toml"
         if unit in result.own_models:
-            # not a game rule: one model per unit (an imported one, or a copy of the one it copies)
-            result.findings.append(Finding("error", f"{where}: {unit} has an imported model too "
-                                                    f"(files/models/{unit}.glb); take one of the two out"))
+            # not a game rule: one model per unit (an imported one, or a copy of the one it copies): each of its model
+            # parts names one file. The Studio's Import model takes the copy out since 2026-11-10, so only a mod made
+            # by an older Studio or by hand gets here; the words name the Studio's buttons that fix it (words.toml
+            # uniform_default_again, model_copy_remove, model_remove)
+            result.findings.append(Finding("error", f"{where}: {unit} has two models: one you imported "
+                                                    f"(files/models/{unit}.glb) and its own copy of the game's model "
+                                                    f"(this file, a squad's Custom uniform). Each of its figures is "
+                                                    f"drawn with one model, so it can't use both. In the Studio, on "
+                                                    f"this unit's page, click Back to the default uniform (or Use the "
+                                                    f"shared model again, for a unit that isn't a squad) to keep your "
+                                                    f"model, or Use the copied unit's model to keep the copy"))
             continue
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
