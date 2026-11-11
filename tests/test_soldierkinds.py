@@ -375,6 +375,53 @@ class TheStudio(unittest.TestCase):
         self.assertTrue(res["copy_back"])
         self.assertEqual(copy.read_text(encoding="utf-8"), before)
 
+    def test_a_kept_custom_uniform_survives_every_rewrite_of_the_record(self):
+        """Every Studio call that writes a model's record (files/models/<unit>.json, or a kind's) keeps the Custom
+        uniform an import took the place of: Import model again, Resize, Move, Bring back the model (Blender), the
+        split chosen on the page, his model's refit with the squad's. Each one in turn, the record read after each;
+        then taking the models out gives the uniform back as it was. (Before 2026-11-11 _fit_model wrote the record
+        anew and dropped it on the first Resize.)"""
+        from rusemod import bonefit
+        self.api.model_copy(self.unit)
+        copy = self.models / f"{UNIT}.copy.toml"
+        before = copy.read_text(encoding="utf-8")
+        self.assertTrue(self.imported()["copy_out"])
+        kept = lambda: self.record(UNIT).get("copy_kept")   # noqa: E731
+        self.assertEqual(kept(), before)
+        steps = []
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            self.api.model_import(self.unit, str(self.source))                     # Import model again
+            steps.append(("import again", kept()))
+            self.api.model_resize(self.unit, 1.3)                                  # Resize
+            steps.append(("resize", kept()))
+            self.api.model_place(self.unit, [10, 0, 0])                            # Move
+            steps.append(("move", kept()))
+            work, send = self.api._model_work(self.unit)                           # Bring back the model
+            work.mkdir(parents=True, exist_ok=True)
+            send.write_bytes(b"glTF")
+            self.api.model_blender_back(self.unit)
+            steps.append(("bring back", kept()))
+            self.api.model_import(self.unit, str(self.source), kind="bazooka")     # his own, then the squad's refits
+            self.api.model_resize(self.unit, 1.1)
+            steps.append(("resize with his", kept()))
+            self.api.model_place(self.unit, [0, 0, 0])
+            steps.append(("move with his", kept()))
+        bonefit.save_split(self.models / f"{UNIT}.glb", "bip01")                    # the split chosen on the page
+        steps.append(("split", kept()))
+        bonefit.save_split(self.models / f"{UNIT}.glb", None)
+        steps.append(("split back", kept()))
+        self.assertEqual([s for s, k in steps if k != before], [])
+        self.assertNotIn("copy_kept", self.record(f"{UNIT}@bazooka"))   # (one record keeps it)
+        res = self.api.model_import_remove(self.unit)       # his is on the soldier's bones: it stays, the uniform waits
+        self.assertEqual((res["copy_back"], res["kinds_out"]), (False, []))
+        self.assertEqual(self.record(f"{UNIT}@bazooka")["copy_kept"], before)
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            self.api.model_import(self.unit, str(self.source), kind="bazooka")     # his imported again: still kept
+        self.assertEqual(self.record(f"{UNIT}@bazooka")["copy_kept"], before)
+        res = self.api.model_import_remove(self.unit, "bazooka")
+        self.assertTrue(res["copy_back"])
+        self.assertEqual(copy.read_text(encoding="utf-8"), before)
+
     def test_resize_fits_his_model_again_too(self):
         self.imported()
         self.imported("bazooka")
