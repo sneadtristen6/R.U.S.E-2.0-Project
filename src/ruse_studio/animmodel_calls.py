@@ -80,8 +80,14 @@ class AnimModelCalls:
             try:
                 files = anim.set_animations(mod, unit, clips)
                 for name, listed in zip(list(clips), said):
-                    for listing in listed or []:   # (a listing's name, t_course: the table's action is course)
-                        action = listing[2:] if listing[:2] in ("t_", "b_") else listing
+                    for listing in listed or []:
+                        if listing[:2] in ("t_", "b_"):
+                            # (a half's listing, t_course: a pick is the whole action's, both halves, so it isn't
+                            # made from it; Part 2's rule plays each half by the half mark in the animation's own
+                            # name, hr_t_.../hr_b_..., as the 11-09 copy did. Made into a pick, a bottom half played
+                            # a top animation: 115 of the Horse Squad's 248 listings, the merge's dry run 11-11)
+                            continue
+                        action = listing
                         try:
                             anim.set_pick(mod, unit, action, name)
                         except AnimError:   # (an action name the table doesn't know: the file's word is noted)
