@@ -1710,6 +1710,12 @@ def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, whe
     model = mesh.props.get("FileName") if mesh is not None else None
     mask = mesh.props.get("UsefulnessMask") if mesh is not None else None
     pack = first["object"].props.get("MultiRenderTypeMaterialPack")
+    # how the riders grow as the camera goes out (their ScaleWithVisibilityRange_Coef and _Ref, a model look's own
+    # pair: the game's US riflemen 20 against Zoom3_Infanterie, its trucks 12 against Zoom3): the ride takes its
+    # riders', so the one model it rides as is drawn as big as each of them (the owner's FL-104, 2026-11-11: "The
+    # horse that it switches to while it's moving needs to be a bit bigger")
+    coef = first["object"].props.get("ScaleWithVisibilityRange_Coef")
+    ref = first["object"].props.get("ScaleWithVisibilityRange_Ref")
     pick, _how = animactions.ride(names, picks)
     stem = plan(anims[pick], mod_of[pick])
     result.own_rides[unit] = {
@@ -1717,7 +1723,9 @@ def _own_animations(run, unit: str, name: str, w: dict, result: BuildResult, whe
         "model": model.value if isinstance(model, Text) else None,
         "mask": int(mask.value) if isinstance(mask, Num) else None,
         "pack": pack.target if isinstance(pack, Ref) and pack.target else None, "where": where,
-        "mod": mod_of[pick]}
+        "mod": mod_of[pick],
+        "coef": float(coef.value) if isinstance(coef, Num) else None,
+        "ref": ref.target if isinstance(ref, Ref) and ref.target else None}
     return stem
 
 
@@ -1750,7 +1758,9 @@ def unit_own_rides(engine, run, result: BuildResult):
             continue
         ride, clip_obj = free(f"{unit}_Ride"), free(f"Anim_{unit}_Ride")
         look = (f"SousElements = MAP[]  ResourceAnimation = MAP[ ( 'idle1', {clip_obj} ) ]  DefaultAnimation = 'idle1'"
-                f"  InnerScale = 1.0" + (f"  MultiRenderTypeMaterialPack = {r['pack']}" if r["pack"] else ""))
+                f"  InnerScale = 1.0" + (f"  MultiRenderTypeMaterialPack = {r['pack']}" if r["pack"] else "")
+                + (f"  ScaleWithVisibilityRange_Coef = {r['coef']!r}" if r.get("coef") is not None else "")
+                + (f"  ScaleWithVisibilityRange_Ref = {r['ref']}" if r.get("ref") else ""))
         text = "\n".join([
             f"export {ride.rsplit('/', 1)[-1]} is clone {r['truck']} ( )",
             f"patch own {ride}:GfxDescriptor.MeshDescriptor ( FileName = path('{r['model']}')  "

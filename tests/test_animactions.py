@@ -273,9 +273,12 @@ def unit_data() -> bytes:
         return val(0x12, struct.pack("<I", len(pairs)) + b"".join(text(k) + ref(o, 2) for k, o in pairs))
     strings = ["t_stand", "b_stand", "t_course", "b_course", "t_marche_vise", "b_marche_vise", STAND_FILE, RUN_FILE,
                WALK_FILE, SOLDIER_MODEL, TRUCK_MODEL, "Roues"]
+    def f32(v):
+        return val(0x05, struct.pack("<f", v))
     ndf = make_ndf(objects=[
         (0, [(0, u32(2)), (8, i32(1)), (1, ref(1, 1)), (2, ref(2, 1)), (9, ref(9, 4))]),            # 0 the squad
-        (1, [(4, ref(3, 3)), (3, listing((0, 4), (1, 4), (2, 5), (3, 5), (4, 6), (5, 6)))]),      # 1 its rifleman
+        (1, [(4, ref(3, 3)), (3, listing((0, 4), (1, 4), (2, 5), (3, 5), (4, 6), (5, 6))),         # 1 its rifleman,
+             (16, f32(20.0)), (17, ref(13, 7))]),                                    # growing as the game's riflemen
         (1, [(4, ref(3, 3)), (3, listing((0, 4), (2, 5)))]),                                     # 2 its bazooka man
         (3, [(7, path(9)), (10, u32(524289))]),                                                  # 3 the soldier
         (2, [(5, path(6)), (6, val(0x00, b"\x01"))]),                                            # 4 stand
@@ -284,17 +287,23 @@ def unit_data() -> bytes:
         (0, [(0, u32(4)), (8, i32(1)), (1, ref(8, 1)), (9, ref(9, 4))]),                         # 7 another squad
         (1, [(4, ref(3, 3)), (3, listing((0, 4), (2, 5)))]),                                     # 8 its rifleman
         (4, [(11, u32(3)), (12, i32(1)), (13, ref(10, 5))]),                                     # 9 the troop truck
-        (5, [(14, ref(11, 3)), (15, val(0x12, struct.pack("<I", 1) + text(11) + ref(12, 6)))]),  # 10 its look
+        (5, [(14, ref(11, 3)), (15, val(0x12, struct.pack("<I", 1) + text(11) + ref(12, 6))),    # 10 its look,
+             (18, f32(12.0))]),                                                     # growing as the game's trucks
         (3, [(7, path(10)), (10, u32(524289))]),                                                 # 11 the truck model
-        (6, [])],                                                                                # 12 its wheels
+        (6, []),                                                                                 # 12 its wheels
+        (7, [])],                                                                    # 13 the infantry's zoom range
         classes=["TInfanterieDescriptor", "TGfxDescriptorBiped", "TGfxDescriptorAnimation", "TResourceMultiMaterialMesh",
-                 "TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TGfxDescriptorRouePack"],
+                 "TUniteAuSolDescriptor", "TGfxDescriptorModeleWithAnimation", "TGfxDescriptorRouePack",
+                 "TVisibilityRange"],
         props=[("DescriptorId", 0), ("GfxDescriptorFusilier", 0), ("GfxDescriptorBazooka", 0), ("ResourceAnimation", 1),
                ("MeshDescriptor", 1), ("FileName", 2), ("PlayInLoop", 2), ("FileName", 3), ("Nationalite", 0),
                ("TransportPourMorphe", 0), ("UsefulnessMask", 3), ("DescriptorId", 4), ("Nationalite", 4),
-               ("GfxDescriptor", 4), ("MeshDescriptor", 5), ("SousElements", 5)],
+               ("GfxDescriptor", 4), ("MeshDescriptor", 5), ("SousElements", 5),
+               ("ScaleWithVisibilityRange_Coef", 1), ("ScaleWithVisibilityRange_Ref", 1),
+               ("ScaleWithVisibilityRange_Coef", 5)],
         strings=strings, exports={0: "GFX/Everything/Descriptor_Unit_Squad", 7: "GFX/Everything/Descriptor_Unit_Other",
-                                  9: "GFX/Everything/Descriptor_Unit_TransportSoldier"},
+                                  9: "GFX/Everything/Descriptor_Unit_TransportSoldier",
+                                  13: "GFX/Visibility/AllRanges/Zoom3_Infanterie"},
         compress=True)
     from fixtures import make_edat
     return make_edat([("dir", "genglad\\patchable\\gfx\\", [("file", "everything.cpp.gladndfbin", ndf)])])
@@ -397,7 +406,12 @@ class InTheBuild(unittest.TestCase):
             self.assertEqual((key.value, loop.props["FileName"].value, int(loop.props["PlayInLoop"].value)),
                              ("idle1", own["gallop"], 1))
             self.assertNotEqual(objects[ride].props["DescriptorId"].value, truck.props["DescriptorId"].value)
+            # (FL-104, 11-11) it grows with the zoom as its riders do, not as the truck: the riders' number and range
+            self.assertEqual((float(look.props["ScaleWithVisibilityRange_Coef"].value),
+                              look.props["ScaleWithVisibilityRange_Ref"].target),
+                             (20.0, "$/GFX/Visibility/AllRanges/Zoom3_Infanterie"))
             truck_look = self.part(objects, truck.props["GfxDescriptor"])                 # the truck: as the game's
+            self.assertEqual(float(truck_look.props["ScaleWithVisibilityRange_Coef"].value), 12.0)
             self.assertEqual(self.part(objects, truck_look.props["MeshDescriptor"]).props["FileName"].value, TRUCK_MODEL)
             self.assertEqual(len(truck_look.props["SousElements"].pairs), 1)
             said = " ".join(f.message for f in result.findings)
