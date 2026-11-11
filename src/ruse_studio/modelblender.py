@@ -72,7 +72,10 @@ class ModelBlenderCalls:
             try:
                 if own_raw is not None:     # a model on bones of its own, with its own animations
                     rows = self._unit_plays(address, lib, own_record, w, own_raw)
-                    data, _summary = animglb.own_glb(own_raw, animblender.as_clips(rows))
+                    try:
+                        data, _summary = animglb.own_glb(own_raw, animblender.as_clips(rows))
+                    except animglb.AnimGlbError as exc:
+                        raise StudioError(str(exc)) from None
                     start = work / f"{send.stem}_model.glb"
                     start.write_bytes(data)
                     animblender.write_sent(work, "own", own_record, rows)
@@ -172,7 +175,7 @@ class ModelBlenderCalls:
             rows = animblender.unit_plays(self._unit_figures(address), names, animlist.clip_reader(lib.arc),
                                           self._mod_dir(), animblender.unit_name(own), lib.skeleton, w,
                                           labelled=own_raw is None)
-        except anim.AnimError as exc:
+        except (anim.AnimError, baf.ClipError) as exc:   # (a clip file of the mod's that isn't one: says which)
             raise StudioError(str(exc)) from None
         if rows or own_raw is None:
             return rows
