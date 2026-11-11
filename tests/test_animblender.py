@@ -237,6 +237,40 @@ class Studio(unittest.TestCase):
         other.write_bytes(b"3ds")
         self.assertEqual(self.api._game_frames_file(SQUAD, other), other)
 
+    def test_a_model_on_bones_of_its_own_opens_with_its_own_animations(self):
+        """The unit's own model on bones of its own (its file carries its record): it goes out with its own clips under
+        their own names (the modder's, which its record knows), and comes back in the game's frames, record and all."""
+        from test_animglb import own_model_file
+        own = self.mod / "files" / "models" / "Descriptor_Unit_My_Riflemen.glb"
+        own.parent.mkdir(parents=True)
+        own.write_bytes(own_model_file())
+        res, start = self.open()
+        self.assertEqual(Path(start).name, "Descriptor_Unit_My_Riflemen_model.glb")
+        self.assertEqual(res["animations"], 2)
+        sent = animblender.read_sent(self.work)
+        self.assertEqual((sent["model"], sent["record"]), ("own", RECORD))
+        self.assertEqual([a["name"] for a in sent["animations"]], ["made_stand", "made_run"])
+        self.send.write_bytes(Blenderish(Path(start).read_bytes()).send(
+            change=("made_run", "bip01 spine", baf.axis_angle("x", 20.0))))
+        source = self.api._game_frames_file(SQUAD, self.send)
+        self.assertEqual(self.api._turned_back["info"]["kept"], True)
+        back = modelin.glb_document(source.read_bytes())[0]
+        import base64
+        from rusemod.rig import SKELETON_EXTRA
+        self.assertEqual(base64.b64decode(back["skins"][0]["extras"][SKELETON_EXTRA]), RECORD)
+        got = self.api._animations_back(SQUAD, {"rigged": True, modelin.OWN_SKELETON: {"bones": 10}})
+        self.assertEqual((got["changed"], got["same"], got["own_bones"]), (["made_run"], 1, True))
+
+    def test_a_model_on_bones_of_its_own_before_any_action_plays_its_clips(self):
+        from test_animglb import own_model_file
+        own = self.mod / "files" / "models" / "Descriptor_Unit_My_Riflemen.glb"
+        own.parent.mkdir(parents=True)
+        own.write_bytes(own_model_file())
+        self.api._unit_figures = lambda address: []
+        res, start = self.open()
+        self.assertEqual(res["animations"], 0)            # (its file carries none: it goes out on its bones alone)
+        self.assertEqual(animblender.read_sent(self.work)["animations"], [])
+
     def test_work_goes_on_from_what_was_sent_last(self):
         _res, start = self.open()
         self.send.write_bytes(Blenderish(Path(start).read_bytes()).send())

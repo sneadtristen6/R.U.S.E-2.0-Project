@@ -158,9 +158,10 @@ class ModelBlenderCalls:
             ix.close()
 
     def _unit_plays(self, address: str, lib, record: bytes, w: dict, own_raw: bytes | None = None) -> list:
-        """ruse_studio.animblender.unit_plays for the unit on a model of `record`'s bones; for a model on bones of
-        its own (`own_raw`, its file) whose actions play none of its own clips yet, the animations its file carries
-        (rusemod.unitmodel.own_clips), no action playing them."""
+        """ruse_studio.animblender.unit_plays for the unit on a model of `record`'s bones; a model on bones of its own
+        (`own_raw`, its file) keeps its animations' own names (the modder's, which its record knows them by), and when
+        its actions play none of its own clips yet, the animations its file carries go out (rusemod.unitmodel.own_clips),
+        no action playing them."""
         from rusemod import anim, animlist, baf, rig, unitmodel
         from rusemod.modelin import ModelError, glb_document
         from . import animblender
@@ -169,7 +170,8 @@ class ModelBlenderCalls:
         names = baf.skeleton(record)["names"]
         try:
             rows = animblender.unit_plays(self._unit_figures(address), names, animlist.clip_reader(lib.arc),
-                                          self._mod_dir(), animblender.unit_name(own), lib.skeleton, w)
+                                          self._mod_dir(), animblender.unit_name(own), lib.skeleton, w,
+                                          labelled=own_raw is None)
         except anim.AnimError as exc:
             raise StudioError(str(exc)) from None
         if rows or own_raw is None:
@@ -178,8 +180,7 @@ class ModelBlenderCalls:
             carried, _notes = unitmodel.own_clips(rig.rig_of(*glb_document(own_raw)), record)
         except (ModelError, ValueError):
             return []
-        return [{"name": animblender.label(n, w), "clip": c, "member": None, "own": None, "actions": {}}
-                for n, c in carried.items()]
+        return [{"name": n, "clip": c, "member": None, "own": None, "actions": {}} for n, c in carried.items()]
 
     def _reference_of(self, address: str, work: Path) -> tuple[bytes | None, dict | None]:
         """(the skeleton record a file sent back for the unit was laid out from, what went out with it): the work
@@ -248,7 +249,8 @@ class ModelBlenderCalls:
         sent = turned["sent"]
         went = {a["name"]: a for a in sent["animations"]}
         came = turned["names"]
-        own_bones = bool(report.get(OWN_SKELETON))
+        # on bones of its own: the fitting's report says so, or the model's record (COMMON5's "skeleton": "own")
+        own_bones = bool(report.get(OWN_SKELETON)) or (self._own_model_record(address) or {}).get("skeleton") == "own"
         out = {"changed": [], "same": 0, "new": [n for n in came if n not in went],
                "gone": [n for n in went if n not in came], "written": 0, "own_bones": own_bones}
         if own_bones:

@@ -75,13 +75,16 @@ def unit_name(own_model: Path) -> str:
     return Path(own_model).stem
 
 
-def unit_plays(figures: list, names: list, read, mod: Path | None, unit: str, skeleton_of, w: dict) -> list[dict]:
+def unit_plays(figures: list, names: list, read, mod: Path | None, unit: str, skeleton_of, w: dict,
+               labelled: bool = True) -> list[dict]:
     """The clips a unit plays on a model of the bones `names` (lower case, in order), as the current mod makes them:
-    [{"name": the animation's name (label), "clip": its bytes, "member": the game's clip it is made from (None: a
-    file of the unit's own), "own": the unit's own file's name (None: none), "actions": {figure path: [the names the
-    figure gives it]}}], in the order the figures list them. `figures`: rusemod.animlist.unit_figures of the unit (a new
-    unit's: the unit it copies); `read`: rusemod.animlist.clip_reader; `mod`: the current mod's folder (None: the
-    game's clips); `unit`: the unit's name in units.toml; `skeleton_of(model)`: a figure's model's record, or None."""
+    [{"name": the animation's name (label; not `labelled`: its clip's own name, a model on bones of its own's, whose
+    animations the modder named and the model's record knows by those names), "clip": its bytes, "member": the game's
+    clip it is made from (None: a file of the unit's own), "own": the unit's own file's name (None: none), "actions":
+    {figure path: [the names the figure gives it]}}], in the order the figures list them. `figures`:
+    rusemod.animlist.unit_figures of the unit (a new unit's: the unit it copies); `read`: rusemod.animlist.clip_reader;
+    `mod`: the current mod's folder (None: the game's clips); `unit`: the unit's name in units.toml;
+    `skeleton_of(model)`: a figure's model's record, or None."""
     from rusemod import anim, baf
     edits, own_rows = {}, {"clips": {}, "actions": {}}
     if mod is not None:
@@ -120,9 +123,10 @@ def unit_plays(figures: list, names: list, read, mod: Path | None, unit: str, sk
     rows, taken = [], set()
     for (kind, what), row in out.items():
         stem = stem_of(what)
-        name, n = label(stem, w), 2
+        first = label(stem, w) if labelled else stem
+        name, n = first, 2
         while name.lower() in taken:
-            name, n = f"{label(stem, w)} {n}", n + 1
+            name, n = f"{first} {n}", n + 1
         taken.add(name.lower())
         rows.append({"name": name, **row})
     return rows
