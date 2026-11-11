@@ -2081,6 +2081,7 @@ function newUnitForm(u, opened) {
       await refreshList();
       await showUnit(res.address);
       say(w.unit_made.replace("{name}", res.name), "ok");
+      if (res.animations_kept) say(w.actions_kept, "ok");  // (its source's own animations came along: RUSE Decoy changes them)
     } catch (err) { problem(err); create.disabled = false; }
   });
   const box = el("div", { className: "copy" }, open, form);
@@ -3046,6 +3047,87 @@ function ridesInBox(u) {
   return box;
 }
 
+// --- which animation each action plays (StudioApi.unit_actions, unit_action_set, unit_ride_set; rusemod.animactions,
+// one rule for this page and the build): a new unit with a model of its own and its model's animations (item 5 of the
+// owner's list, 2026-11-10) shows every action the game plays for it and the animation that plays it, picked from the
+// model's or left on Nearest, and says which one the nearest is. Stand, walk and run first (the least a model needs:
+// a warning names any of them with nothing of its own) and the ride on long moves; the rest folded away by kind ---
+const ACTION_MAIN = ["stand", "marche", "course"];
+function unitActionsBox(u) {
+  const w = state.words;
+  const box = el("div", { className: "group unit-actions" },
+    el("h2", { textContent: w.actions_title, title: w.tip_actions_title }));
+  const nameOf = (a) => w[`act_${a}`] || fill(w.actions_other, { key: a });
+  // what an action plays, in words: one animation, or the top half's and the bottom half's when they differ
+  const said = (plays) => {
+    const top = plays.top || plays.all || plays.bottom || "", bottom = plays.bottom || plays.all || plays.top || "";
+    return top === bottom ? top : fill(w.actions_halves, { top, bottom });
+  };
+  const optionText = (a) => (a.seconds != null ? fill(w.actions_option, { name: a.name, seconds: a.seconds }) : a.name);
+  const draw = (info) => {
+    // (kept, hidden, on a unit without them: an import on this page gives it some, and reload shows them)
+    box.classList.toggle("hidden", !info || !info.own);
+    if (!info || !info.own) { box.replaceChildren(box.firstChild); return; }
+    const save = (call, args, done) => async (e) => {
+      const pick = e.target;
+      pick.disabled = true;
+      try { const r = await api()[call](u.address, ...args(pick.value), state.lang); say(done(pick.value), "ok"); draw(r); }
+      catch (err) { problem(err); draw(info); }
+    };
+    const row = (r) => {
+      const pick = el("select", { title: fill(w.tip_actions_pick, { action: nameOf(r.action) }), disabled: !info.editable });
+      pick.append(el("option", { value: "", textContent: fill(w.actions_nearest, { name: said(r.nearest) }) }));
+      for (const a of info.animations) pick.append(el("option", { value: a.name, textContent: optionText(a) }));
+      pick.value = r.picked || "";
+      pick.addEventListener("change", save("unit_action_set", (v) => [r.action, v || null],
+        (v) => fill(w.actions_saved, { action: nameOf(r.action), name: v || said(r.nearest) })));
+      return el("tr", {}, el("td", { textContent: nameOf(r.action) }), el("td", {}, pick));
+    };
+    const parts = [el("p", { className: "muted small", textContent: w.actions_how })];
+    const byAction = Object.fromEntries(info.rows.map((r) => [r.action, r]));
+    for (const a of info.missing) {
+      parts.push(el("p", { className: "notice warn", textContent: fill(w.actions_missing,
+        { action: nameOf(a), name: said(byAction[a].plays) }) }));
+    }
+    const main = el("table", { className: "unit-actions-main" },
+      ...ACTION_MAIN.filter((a) => byAction[a]).map((a) => row(byAction[a])));
+    // the ride on long moves: as itself, playing one of its animations on a loop, or in its truck
+    const ride = info.ride;
+    if (ride.can) {
+      const pick = el("select", { title: w.tip_actions_ride, disabled: !info.editable });
+      pick.append(el("option", { value: "", textContent: fill(w.actions_ride_nearest, { name: ride.nearest }) }));
+      for (const a of info.animations) pick.append(el("option", { value: a.name, textContent: fill(w.actions_ride_as, { name: a.name }) }));
+      pick.append(el("option", { value: "truck", textContent: fill(w.actions_ride_truck, { truck: ride.truck || "" }) }));
+      pick.value = ride.itself ? (ride.picked || "") : "truck";
+      pick.addEventListener("change", save("unit_ride_set", (v) => [v], (v) => (v === "truck"
+        ? fill(w.actions_ride_saved_truck, { truck: ride.truck || "" }) : fill(w.actions_ride_saved, { name: v || ride.nearest }))));
+      main.append(el("tr", {}, el("td", { textContent: w.act_ride }), el("td", {}, pick)));
+    }
+    parts.push(main);
+    parts.push(el("p", { className: "muted small", textContent: ride.can ? w.actions_ride_how : w.actions_ride_none }));
+    // every other action, by kind, folded away: each plays the nearest until one is picked
+    const rest = info.rows.filter((r) => !ACTION_MAIN.includes(r.action));
+    if (rest.length) {
+      const fold = el("details", { className: "unit-actions-more" },
+        el("summary", { title: w.tip_actions_more, textContent: fill(w.actions_more, { n: rest.length }) }));
+      let section = null, table = null;
+      for (const r of rest) {
+        if (r.section !== section) {
+          section = r.section;
+          table = el("table");
+          fold.append(el("h4", { textContent: w[`act_section_${section}`] || w.act_section_other }), table);
+        }
+        table.append(row(r));
+      }
+      parts.push(fold);
+    }
+    box.replaceChildren(box.firstChild, ...parts);
+  };
+  box.reload = () => api().unit_actions(u.address, state.lang).then(draw).catch(() => draw(null));
+  box.reload();
+  return box;
+}
+
 function modelWant(startNew) {
   const w = state.words;
   const go = el("button", { type: "button", textContent: w.model_want_button, title: w.tip_model_want,
@@ -3357,8 +3439,9 @@ async function showUnit(address, via) {
   parts.push(notesBox(`obj:${u.address}`));  // (the same note as on its All values page)
   if (u.named || u.new) {  // a unit: its model beside its values, with the Blender buttons under it
     const view = unitView(u);
+    const actions = unitActionsBox(u);  // (which animation each action plays: a new model brings its own)
     const side = el("aside", { className: "unit-side" }, view,
-      lookBox(u, () => view.reload(), copyForm && copyForm.openForm), ridesInBox(u));
+      lookBox(u, () => { view.reload(); actions.reload(); }, copyForm && copyForm.openForm), actions, ridesInBox(u));
     $("detail").replaceChildren(...parts.slice(0, head),
       el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
     return;

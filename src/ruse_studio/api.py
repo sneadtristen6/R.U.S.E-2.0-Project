@@ -75,6 +75,7 @@ from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
 from .modelblender import ModelBlenderCalls
+from .actions import ActionCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -559,7 +560,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
-                FlagTypeCalls, BoardCalls, ModelBlenderCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls, ActionCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
@@ -9114,8 +9115,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         and keeps the name (the board's copy of another nation's unit, named as the game names it). `group`: the
         group of that building's build list it goes in (groups.py; the owner, 2026-10-31: at most 6 to a group, one
         more refused): the address of the group's first unit, "new" for a group of its own, None for the group of its
-        kind (its start unit's); a copy that stays an upgrade stands in its research parent's group. Returns its
-        address, so the page can open it."""
+        kind (its start unit's); a copy that stays an upgrade stands in its research parent's group. The copy plays
+        what `source` plays, the animations the mod gave `source` of its own too ("animations_kept"; ActionCalls.
+        _animations_along). Returns its address, so the page can open it."""
         return self._unit_new(source, name, price, nation, factory, unique, group)
 
     def _unit_new(self, source: str, name: str, price, nation: int = -1, factory: int = -1, unique: bool = False,
@@ -9204,6 +9206,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             edits = ModEdits(edits.folder)  # read again: another change may have been saved meanwhile
             if target in edits.new_units:
                 raise StudioError(f"There's already a unit at {target}. Pick another name.")
+            self._animations_ready(edits.folder)  # (its animations go along: actions.py)
             files = None
             if guard and KIND_OF.get(o["class"]) != "buildings":
                 files = self._new_unit_groups(edits, target, source, name, values, own, group, shown, lang)
@@ -9212,7 +9215,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 edits.set(target, prop, value)
             if files:
                 self._groups_save(edits, *files)
-        return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped}
+            # a copy plays what the unit it copies plays, its own animations too (the owner, 2026-11-10)
+            kept = self._animations_along(edits.folder, source, target)
+        return {"address": target, "name": name, "saved": str(edits.file), "research_parent_dropped": dropped,
+                "animations_kept": kept}
 
     def _new_unit_groups(self, edits, target: str, source: str, name: str, values: dict, own: list, group,
                          shown: bool, lang: str) -> tuple | None:
