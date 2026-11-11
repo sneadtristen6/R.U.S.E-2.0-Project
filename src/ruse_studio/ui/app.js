@@ -2570,6 +2570,9 @@ function buildingModelBox(address, info, draw) {
   });
   const box = el("div", { className: "model-own" }, el("h3", { textContent: w.building_model_title }),
     el("p", { className: "muted small", textContent: w.building_model_how }),
+    // where the mod keeps it, files\buildings\<its name>, or will once it's imported, and Show in folder (keptRow)
+    ...(info.kept ? [keptRow(address, "building", info.kept.made ? w.model_kept : w.model_kept_later, info.kept.file,
+      info.kept.folder, info.kept.made, w.tip_model_folder_none)] : []),
     el("label", { className: "small" }, w.building_piece, " ", piece),
     el("label", { className: "small" }, w.asset_size, " ", size),
     el("label", { className: "small" }, w.asset_licence, " ", licence), author, source,
@@ -2595,6 +2598,36 @@ function buildingModelBox(address, info, draw) {
     box.append(el("div", { className: "actions" }, save, remove));
   }
   return box;
+}
+
+// --- where the mod keeps a unit's own model, and Show in folder (StudioApi.show_model_folder; look()'s and
+// building_look()'s "kept"). A modder, 2026-11-10: "is it the possibility of changing infantry models a WIP? i can't
+// find a way to do it for now": the page named the file he had picked, never the mod's own copy of it, had no way to
+// open its folder, and named Change it in Blender's work folder only once that was clicked. A row: what is kept there
+// (or will be, once it's made), its place on the PC, and Show in folder, which opens the folder once there's something
+// of the unit's in it (`what`: "model", "building" or "blender", the call's folders) ---
+function keptRow(address, what, said, path, folder, made, tipNone) {
+  const w = state.words;
+  const tip = what === "blender" ? w.tip_model_blender_folder : w.tip_model_folder;
+  const show = el("button", { type: "button", className: "small", textContent: w.where_show,
+    title: made ? fill(tip, { folder }) : tipNone, disabled: !made });
+  show.addEventListener("click", async () => {
+    try {
+      const r = await api().show_model_folder(address, what);
+      say(fill(w.where_opened, { path: r.opened }), "ok");
+    } catch (err) { problem(err); }
+  });
+  return el("div", { className: "where-row model-kept" }, el("div", { className: "where-words" },
+    el("span", { className: "small", textContent: said }), el("code", { className: "where-path", textContent: path })),
+  show);
+}
+
+// the Model row's: its own model's file, or its own copy's (a squad's Custom uniform), in files\models
+function modelKeptRow(address, kept, squad) {
+  const w = state.words;
+  const said = kept.copy ? (squad ? w.model_kept_uniform : w.model_kept_copy)
+    : kept.file_made ? w.model_kept : w.model_kept_later;
+  return keptRow(address, "model", said, kept.file, kept.folder, kept.made, w.tip_model_folder_none);
 }
 
 // --- Look and moves: everything about how a unit looks and moves, in one section of its page. The owner, 2026-11-11:
@@ -2677,6 +2710,8 @@ function lookMovesBox(u, view, startNew) {
     const paintable = !squad || info.own_copy;  // (Blender's paint buttons come with a squad's custom uniform)
     const more = [];
     let main = [], model = null;
+    // where the mod keeps its own model, or will once it has one, and Show in folder: first under More (keptRow)
+    if (info.kept) more.push(modelKeptRow(address, info.kept, squad));
     // a new unit's own model, a squad's too: Import model puts a model rigged to the game soldier's bones on every
     // soldier of it (the owner, 2026-11-09: "Yes, soldiers"; the squad page hid the box until item 4, 2026-11-10); a
     // game unit's: the way to a new unit from it (no mod: no startNew)
@@ -2932,6 +2967,12 @@ function kindsBox(address, kinds, draw, changed) {
   kinds.forEach((row, i) => {
     box.append(el("p", { className: "model-kind small" }, el("strong", { textContent: kindLabel(row.kind) }), ": ",
       row.own ? fill(w.model_kind_own, { file: row.file || "" }) : w.model_kind_game));
+    // where the mod keeps his model, or will (files\models\<unit>@<kind>.glb after the riflemen's): the Model row's
+    // Show in folder opens that folder
+    if (row.kept) {
+      box.append(el("p", { className: "muted small model-kind-kept" }, `${row.own ? w.model_kept : w.model_kept_later} `,
+        el("code", { className: "where-path", textContent: row.kept })));
+    }
     if (row.also && row.also.length) {
       box.append(el("p", { className: "muted small",
         textContent: fill(w.model_kind_also, { figures: row.also.map(figure).join(", ") }) }));
@@ -3064,7 +3105,11 @@ function modelBox(address, info, draw, changed) {
   // order of 2026-11-10, item 4: Open in Blender was a painting door behind Custom uniform, with the bones all in one
   // spot): no uniform needed, the bones at their real places, Bring back takes the model in as Import model does
   if (info.soldiers) {
-    const where = el("p", { className: "muted small" });
+    // its work folder, <mod>\blender\<its name>: where it is, or will be before the first click (keptRow)
+    const where = el("div", { className: "model-kept-blender" });
+    const showWhere = (path, made) => where.replaceChildren(keptRow(address, "blender",
+      made ? w.model_blender_kept : w.model_blender_kept_later, path, path, made, w.tip_model_blender_folder_none));
+    if (info.kept && info.kept.blender) showWhere(info.kept.blender, info.kept.blender_made);
     const actions = el("div", { className: "actions" });
     if (!info.blender) {  // (the same two buttons as the Look box's: get Blender, or show where it is)
       const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
@@ -3089,7 +3134,7 @@ function modelBox(address, info, draw, changed) {
         try {
           const r = await api().model_blender(address, state.lang);
           say(w.model_blender_opened, "ok");
-          where.textContent = fill(w.model_blender_where, { folder: r.work || "" });
+          if (r.work) showWhere(r.work, true);
         } catch (err) { problem(err); } finally { open.disabled = false; }
       });
       back.addEventListener("click", async () => {

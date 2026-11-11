@@ -8210,7 +8210,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _kind_rows(self, address: str) -> list:
         """The page's soldiers of a new squad whose soldiers come in kinds (_soldier_kinds), one row per kind: {"kind",
         "model": the copied unit's model for them (rusemod.unitmodel.model_key's name), "own": whether the mod gives them a model of their
-        own, "file": the file it was made from, "skeleton": "own" (bones of its own) or "soldier", "same_bones": for a
+        own, "file": the file it was made from, "kept": where the mod keeps their model, made or not (_kind_file),
+        "skeleton": "own" (bones of its own) or "soldier", "same_bones": for a
         kind after the first on bones of its own, whether they're the first kind's model's bones (it plays their
         animations), "also": the squad's other figures drawn with the same model ("fallen", "far")}; [] for any other
         unit or a game unit."""
@@ -8244,8 +8245,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if own and k != main and skeleton == "own":
                 same = main_key is not None and skeleton_key(target) == main_key
             rows.append({"kind": k, "model": model_key(m), "own": own,
-                         "file": Path(str(record.get("from") or "")).name if own else None, "skeleton": skeleton,
-                         "same_bones": same, "also": also[k]})
+                         "file": Path(str(record.get("from") or "")).name if own else None, "kept": str(target),
+                         "skeleton": skeleton, "same_bones": same, "also": also[k]})
         return rows
 
     def _kind_file(self, address: str, kind: str | None) -> Path | None:
@@ -8868,10 +8869,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         (_card_view), "new_unit": whether the current mod makes it, "symbol": the look it copies, "pieces": [{"type",
         "name", "count", "size": [width, depth, height] metres}] of that look's 3D pieces, biggest first (what a model
         can take the place of), "own": its look of its own ({"piece", "file", "size", "two_sided", "credit",
-        "triangles", "versions"}) or None}."""
+        "triangles", "versions"}) or None, "kept": where the mod keeps its model, made or not ({"file", "file_made",
+        "made", "folder": files/buildings/<its name>, what Show in folder opens: show_model_folder}), None for the
+        game's own buildings and without a mod}."""
         symbol = self._building_symbol(address)
-        out = {"building": symbol is not None, "card": None, "new_unit": self._own_look_folder(address) is not None,
-               "symbol": symbol, "pieces": [], "own": None}
+        folder = self._own_look_folder(address)
+        out = {"building": symbol is not None, "card": None, "new_unit": folder is not None,
+               "symbol": symbol, "pieces": [], "own": None, "kept": None}
         if symbol is None:
             return out
         out["card"] = self._card_view(address)
@@ -8882,6 +8886,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             view = self._asset_view(look.asset)
             out["own"] = {"piece": look.piece, **{k: view[k] for k in ("file", "size", "two_sided", "credit",
                                                                         "triangles", "versions")}}
+        if folder is not None:   # (its model as building_look_import saves it: rusemod.buildinglook.import_look)
+            file = Path(look.asset.model) if look is not None else folder / f"{folder.name}.glb"
+            out["kept"] = {"file": str(file), "file_made": file.is_file(), "made": look is not None,
+                           "folder": str(folder)}
         return out
 
     def building_look_import(self, address: str, piece: str, file: str | None = None, size: float = 1.0,
@@ -9001,7 +9009,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def look(self, address: str) -> dict:
         """The Look box of a unit: {"models": its models, "textures": the pictures they're drawn with, "painted":
         those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
-        "opened": whether the unit has been opened in Blender (its work folder is there)}."""
+        "opened": whether the unit has been opened in Blender (its work folder is there), "kept": where the mod keeps
+        its own model, made or not (_model_kept)}."""
         from rusemod.blender import DOWNLOAD
         from rusemod.unitlook import LOOK_FILE
         if self._game() is None:
@@ -9019,12 +9028,86 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             except (OSError, ValueError):
                 own_model = {}
         copy = self._own_copy_file(address)
+        kinds = self._kind_rows(address)
         # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy); "kinds": a new
         # squad's riflemen and heavy-weapon soldier, each with a model of its own or the copied unit's (_kind_rows)
         return {"models": found, "textures": textures, "painted": painted, "blender": str(blender or ""),
                 "download": DOWNLOAD, "opened": (self._look_folder(address) / LOOK_FILE).is_file(),
                 "new_unit": own is not None, "own_model": own_model, "own_copy": bool(copy and copy.is_file()),
-                "soldiers": bool(found) and self._soldiers(address), "kinds": self._kind_rows(address)}
+                "soldiers": bool(found) and self._soldiers(address), "kinds": kinds,
+                "kept": self._model_kept(address, kinds)}
+
+    # --- where the mod keeps a unit's own model, and Show in folder (a modder, Angelo, 2026-11-10 on Discord: "is it
+    # the possibility of changing infantry models a WIP? i can't find a way to do it for now"; the page named the file
+    # he had picked, never the mod's own copy of it, had no way to open its folder, and named Change it in Blender's
+    # work folder only once that was clicked). Every place a unit's own model is kept in the mod:
+    #   files/models/<its name>.glb         a new unit's own model (_own_model_file), its record (.json) beside it;
+    #   files/models/<its name>@<kind>.glb  a squad's other soldiers' (_kind_file: its heavy-weapon soldier's);
+    #   files/models/<its name>.copy.toml   its own copy of the model it draws, a game unit's too (_own_copy_file),
+    #                                       its paint in files/models/<its name>/ (_paint_root);
+    #   files/buildings/<its name>/         a new building's (_own_look_folder: building.toml, its model, its versions);
+    #   blender/<its name>/                 Change it in Blender's work folder (ruse_studio.modelblender: not packed).
+    # A model on bones of its own brings its animations too, kept apart in files/anim/own/<its name>/ (rusemod.anim:
+    # the Sounds and animation row's) ---
+    UNIT_FOLDERS = ("model", "building", "blender")
+
+    def _model_kept(self, address: str, kinds: list | None = None) -> dict | None:
+        """Where the current mod keeps the unit's own model, for its page and Show in folder: {"file": the file the
+        page names, made or not (its own model's; its own copy's when that's what it has), "file_made": whether that
+        file is there, "copy": whether it's its own copy (a squad's Custom uniform), "made": whether anything of the
+        unit's own is in the folder (its model, one of its soldiers' kinds' (`kinds`: _kind_rows' rows when already
+        read), its own copy: show_model_folder opens it only then), "folder": that folder (files/models), "blender":
+        Change it in Blender's work folder (a new unit's, None for a game unit's), "blender_made": whether it's there}.
+        None without a mod, and for a game unit with no copy of its own (its model is the game's: none of it is in the
+        mod)."""
+        if self._mod_dir() is None:
+            return None
+        own, copy = self._own_model_file(address), self._own_copy_file(address)
+        has_own, has_copy = own is not None and own.is_file(), copy is not None and copy.is_file()
+        if own is None and not has_copy:
+            return None
+        if kinds is None and own is not None:   # (a squad's soldiers after its riflemen: <its name>@<kind>.glb)
+            kinds = [{"own": f is not None and f.is_file()}
+                     for f in (self._kind_file(address, k) for k in list(self._soldier_kinds(address))[1:])]
+        file = own if own is not None and (has_own or not has_copy) else copy
+        work = self._model_work(address)[0] if own is not None else None
+        return {"file": str(file), "file_made": file.is_file(), "copy": file == copy, "folder": str(file.parent),
+                "made": has_own or has_copy or any(r.get("own") for r in kinds or ()),
+                "blender": str(work) if work is not None else None,
+                "blender_made": work is not None and work.is_dir()}
+
+    def show_model_folder(self, address: str, what: str = "model") -> dict:
+        """Open on the PC (File Explorer on Windows) a folder where the current mod keeps the unit's own model (the
+        unit page's Show in folder): `what` "model" its files/models folder (_model_kept: its own model, its soldiers'
+        kinds', its own copy and its paint), "building" a new building's files/buildings/<its name>/, "blender" its
+        Change it in Blender work folder (<mod>/blender/<its name>/). Refused in plain words without a mod, for a unit
+        none of it can be kept for (the game's own, with no copy of its own), and while none of it is there yet (the
+        page says where it will be: look()'s and building_look()'s "kept"). Returns {"opened": the folder}."""
+        if what not in self.UNIT_FOLDERS:
+            raise StudioError(f"{what!r} isn't one of the Studio's folders")
+        if self._mod_dir() is None:
+            raise StudioError("Pick or make a mod first.")
+        if what == "building":
+            folder = self._own_look_folder(address)
+            if folder is None:
+                raise StudioError("Only a new building made in this mod can get a model of its own: copy the building "
+                                  "first.")
+            if not (folder / "building.toml").is_file():
+                raise StudioError("This building has no model of its own yet.")
+        elif what == "blender":
+            folder = self._model_work(address)[0]   # (the game's own units: refused as Change it in Blender is)
+            if not folder.is_dir():
+                raise StudioError("There are no Blender files for this unit yet: click Change it in Blender first.")
+        else:
+            kept = self._model_kept(address)
+            if kept is None:
+                raise StudioError("Only a new unit made in this mod can get a model of its own: copy the unit first.")
+            if not kept["made"]:
+                raise StudioError("This unit has no model of its own in your mod yet: click Import model… to give it "
+                                  "one.")
+            folder = Path(kept["folder"])
+        self._starter.open_url(str(folder))
+        return {"opened": str(folder)}
 
     # --- a unit's own copy of the models it draws (the owner, 2026-10-11: "duplicate that part"; built by
     # rusemod.unitmodel.write_unit_copy): the same models with textures of their own, so Repaint in Blender changes
