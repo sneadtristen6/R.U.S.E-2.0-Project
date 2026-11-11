@@ -75,6 +75,7 @@ from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
 from .modelblender import ModelBlenderCalls
+from .animmodel_calls import AnimModelCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -559,7 +560,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
-                FlagTypeCalls, BoardCalls, ModelBlenderCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls, AnimModelCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
@@ -8226,15 +8227,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 first_error = first_error or exc
             except (ModelError, OSError, ValueError) as exc:
                 raise StudioError(f"{Path(file).name}: {exc}") from None
+        clips: dict = {}
+        if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
+            report = self._own_bones_fit(address, Path(file), found, target, size, clips)
         if report is None:
             raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
+        try:
+            before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
+        except (OSError, ValueError):
+            before = {}
+        more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {})
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
                                       "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
                                       **({"facing": list(facing)} if facing else {}),
                                       **({"move": move} if report.get("moved") else {}),
-                                      "report": report}, indent=1), encoding="utf-8")
+                                      "report": report, **more}, indent=1), encoding="utf-8")
         return report
 
     # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese
@@ -8435,6 +8444,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             except (OSError, ValueError):
                 kept = None
             with self._saving:
+                self._animations_out(address, record)   # (a model on bones of its own: its animations go with it)
                 target.unlink(missing_ok=True)
                 record.unlink(missing_ok=True)
                 copy = self._own_copy_file(address)
