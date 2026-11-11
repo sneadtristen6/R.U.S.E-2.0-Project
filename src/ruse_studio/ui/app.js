@@ -1970,7 +1970,11 @@ function shareChoice(u) {
 }
 
 // --- new units: a copy of the unit shown, with its own name, price and build menu ---
+// A build menu by what the game calls its building (StudioApi.menus: BARRACKS, ARMOR BASE...; both names where two
+// buildings share it; the owner, 2026-11-11: "each factory should be called what its building's called"); by its
+// first units only when the game has no building for it
 function factoryLabel(f) {
+  if (f.buildings && f.buildings.length) return f.buildings.join(" / ");
   const more = f.count - f.units.length;
   return f.units.join(", ") + (more > 0 ? ` ${state.words.more_units.replace("{n}", more)}` : "");
 }

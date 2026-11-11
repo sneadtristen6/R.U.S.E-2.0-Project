@@ -21,7 +21,7 @@ Każdy wiersz mówi, ile ma jednostek. Budynek, któremu nie zostało nic do bud
 listę budynków kwatery głównej. Więcej niż 10 jednostek w jednym budynku, samolot w budynku lądowym albo pojazd na
 Lotnisku: jeszcze nie sprawdzone w grze.
 
-Strona jednostki w zakładce **Jednostki** mówi, gdzie jest budowana („Budowana w budynku Fabryka czołgów: miejsce 2
+Strona jednostki w zakładce **Jednostki** mówi, gdzie jest budowana („Budowana w budynku BAZA CZOŁGÓW: miejsce 2
 z 6”), a **Pokaż w budynkach** otwiera jej wiersz.
 
 ## Grupy

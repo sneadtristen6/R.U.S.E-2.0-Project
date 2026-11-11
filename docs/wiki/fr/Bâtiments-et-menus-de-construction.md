@@ -25,7 +25,7 @@ Chaque ligne dit combien d'unités elle a. Un bâtiment laissé sans rien à con
 bâtiments du QG quand on le choisit. Plus de 10 unités dans un bâtiment, un avion dans un bâtiment terrestre, ou un
 véhicule à l'aérodrome : pas encore essayé en jeu.
 
-La page d'une unité dans l'onglet **Unités** dit où elle est construite (« Construite dans Tank factory : place 2 sur
+La page d'une unité dans l'onglet **Unités** dit où elle est construite (« Construite dans BASE DE BLINDES : place 2 sur
 6 »), et **Voir dans les bâtiments** ouvre sa ligne.
 
 ## Groupes

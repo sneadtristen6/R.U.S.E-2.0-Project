@@ -204,7 +204,8 @@ class NationCalls:
         the eras downloaded (the Units tab downloads them), "empty": the build menus (factory numbers) of its own
         buildings left with nothing to build (its own units there all hidden and none of the mod's new ones put in:
         the game then shows the building's construction menu when it's picked, seen 2026-10-10 with Italy's
-        artillery and anti-tank bases)}."""
+        artillery and anti-tank bases), "empty_buildings": {factory number as text: what the game calls the
+        building (StudioApi._factory_buildings)} for those}."""
         from .api import KIND_OF, EditsFileError
         from .era_units import ERAS
         n = nations.check(nation)
@@ -219,6 +220,7 @@ class NationCalls:
             every = {u["address"]: u for u in self._all_units(ix)}
             empty = [f for f in sorted({u["factory"] for u in rows})
                      if not self._menu_units(edits, every, (n, f), ix)] if edits is not None else []
+            built = self._factory_buildings(ix, lang) if empty else {}
         finally:
             ix.close()
         out = []
@@ -235,7 +237,7 @@ class NationCalls:
             if have:
                 eras.append({"era": era, "nations": have})
         return {"nation": n, "units": out, "hidden": sum(u["hidden"] for u in out), "can": edits is not None,
-                "eras": eras, "empty": empty}
+                "eras": eras, "empty": empty, "empty_buildings": {str(f): built.get((n, f), []) for f in empty}}
 
     def nation_units_hide(self, nation: int, hide: bool = True, lang: str = "base", factory: int | None = None) -> dict:
         """Take every one of nation `nation`'s own units out of its build menus in the current mod (`hide`), or give
@@ -301,8 +303,8 @@ class NationCalls:
         """What filling nation `nation`'s menus from `era`'s units of nation `source` (as the era library names it:
         "China") would add: {"units": [{key, name, card, kind, factory: the building it goes in (its own kind of
         building, the same number in every nation's menus; None when this nation has none), added}], "menus":
-        [{factory, units, count}] this nation's build menus (StudioApi.menus)}. Every unit not yet added starts
-        ticked on the page."""
+        [{factory, buildings, units, count}] this nation's build menus (StudioApi.menus)}. Every unit not yet added
+        starts ticked on the page."""
         from .era_units import kind_of
         n = nations.check(nation)
         _folder, lib = self._era_library()

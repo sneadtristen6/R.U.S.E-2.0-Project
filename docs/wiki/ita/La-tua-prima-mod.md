@@ -34,7 +34,7 @@ Da ora in poi, tutto ciò che cambi viene salvato in questa mod, mai nel gioco.
 
 1. Clicca **Prova in gioco** (nella barra in alto). Lo Studio controlla la mod, costruisce la copia moddata (una per tutto il PC, `RUSE-Instances\Modded game` sull'unità del gioco, o la cartella che hai scelto in Impostazioni) e avvia R.U.S.E.
 2. Nel menu principale del gioco, clicca **BATTAGLIE** (una partita libera contro il computer), scegli una mappa qualsiasi,
-   gioca con gli USA e apri la fabbrica di carri armati: lo Sherman costa $1.
+   gioca con gli USA e apri la **BASE BLINDATI**: lo Sherman costa $1.
 
 > [!TIP]
 > Se invece sotto la barra in alto compare una barra rossa, il controllo della mod ha trovato un errore in un file della

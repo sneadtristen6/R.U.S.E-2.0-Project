@@ -21,7 +21,7 @@ Each row says how many units it has. A building left with nothing to build shows
 when it's picked. More than 10 units in one building, a plane in a ground building, or a vehicle at the Airfield:
 not tried in the game yet.
 
-A unit's page on the **Units** tab says where it's built ("Built in the Tank factory: place 2 of 6"), and **Show on the
+A unit's page on the **Units** tab says where it's built ("Built in the ARMOR BASE: place 2 of 6"), and **Show on the
 board** opens its row.
 
 ## Groups

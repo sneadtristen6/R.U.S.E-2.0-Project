@@ -23,7 +23,7 @@ Jede Reihe sagt, wie viele Einheiten sie hat. Ein Gebäude, dem nichts zu bauen 
 Gebäudeliste des HQ. Mehr als 10 Einheiten in einem Gebäude, ein Flugzeug in einem Bodengebäude oder ein Fahrzeug am
 Flugplatz: noch nicht im Spiel ausprobiert.
 
-Die Seite einer Einheit im Reiter **Einheiten** sagt, wo sie gebaut wird („Gebaut in Panzerfabrik: Platz 2 von 6“), und
+Die Seite einer Einheit im Reiter **Einheiten** sagt, wo sie gebaut wird („Gebaut in PANZERBASIS: Platz 2 von 6“), und
 **In den Gebäuden zeigen** öffnet ihre Reihe.
 
 ## Gruppen

@@ -711,8 +711,9 @@ class NewUnits(WithMod):
         folder = Path(self.api.new_mod("Lend-Lease")["current"])
         menus = self.api.menus("us")["nations"]
         self.assertEqual([(m["nation"], m["name"]) for m in menus][:2], [(0, "USA"), (1, "Germany")])
-        self.assertEqual(menus[0]["factories"], [{"factory": 10, "units": ["M4 Sherman"], "count": 1}])
-        self.assertEqual(menus[1]["factories"], [{"factory": 10, "units": ["Panzer IV"], "count": 1}])
+        # (no building of kind 10 in this little game: its menus have no building's name, test_factory_names has them)
+        self.assertEqual(menus[0]["factories"], [{"factory": 10, "buildings": [], "units": ["M4 Sherman"], "count": 1}])
+        self.assertEqual(menus[1]["factories"], [{"factory": 10, "buildings": [], "units": ["Panzer IV"], "count": 1}])
         self.assertEqual(menus[5]["factories"], [])
         with self.assertRaises(StudioError):
             self.api.new_unit(M4, "Soviet Sherman", 40, 5, 10)  # the USSR has no factory 10 in this little game

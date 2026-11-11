@@ -223,7 +223,8 @@
       // building's construction menu when it's picked (seen 2026-10-10, Italy's artillery and anti-tank bases), so
       // it's said here with a way to give it its own units back
       const empty = (data.empty || []).map((f) => {
-        const where = w["group_" + FACTORY_GROUP[f]] || String(f);
+        const named = (data.empty_buildings || {})[f] || [];   // what the game calls the building (nation_units)
+        const where = named.length ? named.join(" / ") : w["group_" + FACTORY_GROUP[f]] || String(f);
         const back = el("button", { type: "button", className: "small", textContent: fill(w.nations_empty_back, { nation: name.now }),
           title: fill(w.tip_nations_empty_back, { nation: name.now, building: where }), disabled: !data.can });
         back.addEventListener("click", async () => {
@@ -260,9 +261,11 @@
     return box;
   }
 
-  // A build menu by its building, as the Units tab groups units (StudioApi.FACTORY_GROUPS), with two of its units
+  // A build menu by what the game calls its building (factoryLabel, StudioApi.menus); where the game has no building
+  // for it, as the Units tab groups units (StudioApi.FACTORY_GROUPS), with two of its units
   const FACTORY_GROUP = { 8: "barracks", 10: "armor", 11: "antitank", 13: "artillery", 12: "prototype", 9: "airfield", 3: "turret" };
   function buildingLabel(m) {
+    if (m.buildings && m.buildings.length) return factoryLabel(m);
     const w = W(), group = w["group_" + FACTORY_GROUP[m.factory]];
     return group ? `${group} (${m.units.slice(0, 2).join(", ")}…)` : factoryLabel(m);
   }

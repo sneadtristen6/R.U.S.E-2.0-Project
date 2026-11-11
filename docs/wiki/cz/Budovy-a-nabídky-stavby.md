@@ -20,7 +20,7 @@ Každá řada říká, kolik má jednotek. Budova, které nezbylo nic ke stavěn
 velitelství. Víc než 10 jednotek v jedné budově, letadlo v pozemní budově nebo vozidlo na Letišti: zatím nevyzkoušeno
 ve hře.
 
-Stránka jednotky v záložce **Jednotky** říká, kde se staví („Staví se v továrně na tanky: místo 2 z 6“), a **Ukázat
+Stránka jednotky v záložce **Jednotky** říká, kde se staví („Staví se v budově TANKOVÁ ZÁKLADNA: místo 2 z 6“), a **Ukázat
 v budovách** otevře její řadu.
 
 ## Skupiny

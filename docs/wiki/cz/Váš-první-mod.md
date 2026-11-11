@@ -34,7 +34,7 @@ Od této chvíle se vše, co změníte, ukládá do tohoto modu, nikdy do hry.
 
 1. Klikněte na **Vyzkoušet ve hře** (záhlaví). Studio zkontroluje mod, sestaví upravenou kopii (jednu pro celé PC, `RUSE-Instances\Modded game` na disku hry, nebo složku, kterou jste zvolili v Nastavení) a spustí R.U.S.E.
 2. V hlavní nabídce hry klikněte na **BITVY** (volná hra proti počítači), vyberte jakoukoli mapu, hrajte za USA a
-   otevřete továrnu na tanky: Sherman stojí $1.
+   otevřete budovu **TANKOVÁ ZÁKLADNA**: Sherman stojí $1.
 
 > [!TIP]
 > Pokud se místo toho pod záhlavím objeví červená lišta, kontrola modu našla chybu v souboru vašeho modu. Viz

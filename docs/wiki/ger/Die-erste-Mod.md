@@ -36,7 +36,7 @@ Ab jetzt wird alles, was du änderst, in diesem Mod gespeichert, nie im Spiel.
 
 1. Klick auf **Im Spiel testen** (Kopfleiste). Das Studio prüft den Mod, baut die gemoddete Kopie (eine für den ganzen PC, `RUSE-Instances\Modded game` auf dem Laufwerk des Spiels, oder der Ordner, den du in den Einstellungen gewählt hast) und startet R.U.S.E.
 2. Klick im Hauptmenü des Spiels auf **KÄMPFE** (ein freies Gefecht gegen den Computer), wähl eine beliebige Karte, spiel die USA und
-   öffne die Panzerfabrik: der Sherman kostet $1.
+   öffne die **PANZERBASIS**: der Sherman kostet $1.
 
 > [!TIP]
 > Erscheint stattdessen ein roter Balken unter der Kopfleiste, hat die Mod-Prüfung einen Fehler in einer Datei deines Mods gefunden. Siehe

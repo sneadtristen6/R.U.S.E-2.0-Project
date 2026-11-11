@@ -1396,13 +1396,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         except KeyError:
             return False
 
+    def _factory_buildings(self, ix: Index, lang: str) -> dict:
+        """(nation, factory) -> what the game calls the nation's buildings of that kind (TypeBatiment, the Factory
+        number of the units they make), each name once, in the game's order: BARRACKS, ARMOR BASE...; HEADQUARTERS for
+        3, the menu the buildings are in; PROTOTYPE BASE and ATOMIC CENTER for 12, one menu (by their ShowInMenu the
+        Prototype Base stands in 1945 and Total War battles, the Atomic Center in Nuclear ones; read 2026-11-11). The
+        game's names in `lang`, in English where the game has no texts in it (Persian, base)."""
+        buildings = [u for u in self._all_units(ix) if KIND_OF.get(u["class"]) == "buildings"]
+        texts = ix.names([u.get("key") for u in buildings], lang if lang in schema.LANGS else "us")
+        out: dict[tuple, list] = {}
+        for u in buildings:
+            name = (texts.get(u.get("key")) or "").strip() or _tail(u["address"])
+            have = out.setdefault((u["nation"], self._building_kind(ix, u["address"])[0]), [])
+            if name not in have:
+                have.append(name)
+        return out
+
     def menus(self, lang: str = schema.BASE) -> dict:
-        """The build menus a new unit can go in: for every nation, its factories, each shown by the units it holds
-        (the game has no names for factories), in menu order."""
+        """The build menus a new unit can go in: for every nation, its factories in menu order, each {"factory",
+        "buildings": what the game calls its building (_factory_buildings: BARRACKS, ARMOR BASE...; both names where
+        two buildings share the menu; the owner, 2026-11-11: "each factory should be called what its building's
+        called"), "units": its first three units, "count": how many it holds}."""
         ix = self._open()
         try:
             rows = self._all_units(ix)
             names = self._names(ix, [u["address"] for u in rows if u["factory"] is not None], lang)
+            buildings = self._factory_buildings(ix, lang)
         finally:
             ix.close()
         by_menu: dict[tuple, list] = {}
@@ -1416,8 +1435,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 if nation != n:
                     continue
                 units = sorted(units, key=lambda u: (u["slot"] is None, u["slot"] or 0, u["address"]))
-                factories.append({"factory": factory, "units": [names[u["address"]] for u in units[:3]],
-                                  "count": len(units)})
+                factories.append({"factory": factory, "buildings": buildings.get((nation, factory), []),
+                                  "units": [names[u["address"]] for u in units[:3]], "count": len(units)})
             nations.append({"nation": n, "name": schema.nation(n, lang), "factories": factories})
         return {"nations": nations}
 

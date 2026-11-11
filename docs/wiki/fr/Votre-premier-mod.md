@@ -34,7 +34,7 @@ Désormais, tout ce que vous changez est enregistré dans ce mod, jamais dans le
 
 1. Cliquez sur **Tester en jeu** (dans l'en-tête). Le Studio vérifie le mod, construit la copie moddée (une pour tout le PC, `RUSE-Instances\Modded game` sur le disque du jeu, ou le dossier choisi dans les Réglages) et lance R.U.S.E.
 2. Dans le menu principal du jeu, cliquez sur **BATAILLES** (une partie libre contre l'ordinateur), choisissez
-   n'importe quelle carte, jouez les USA et ouvrez l'usine de chars : le Sherman coûte 1 $.
+   n'importe quelle carte, jouez les USA et ouvrez la **BASE DE BLINDES** : le Sherman coûte 1 $.
 
 > [!TIP]
 > Si une barre rouge apparaît à la place sous l'en-tête, la vérification du mod a trouvé une erreur dans un fichier de

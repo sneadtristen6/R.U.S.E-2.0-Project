@@ -28,7 +28,7 @@ from __future__ import annotations
 import copy
 import threading
 
-from rusemod import menugroups, nations, ownbuildings
+from rusemod import menugroups, nations, ownbuildings, schema
 
 ROWS = (8, 13, 10, 11, 9, 12)  # the buildings that make units, in the order of the game's build tabs: Barracks,
 # Artillery & AA Base, Armor Base, Anti-Tank Base, Airfield, Prototype Base
@@ -126,7 +126,9 @@ class BoardCalls:
                         "menu": mine(address, MENU, menu)})
         out = [b for b in out if b["kind"] in ALL_ROWS and (nation is None or b["nation"] == nation)]
         keys = sorted({b["key"] for b in out if b["key"]})
-        names = ix.names(keys, "us" if lang == "base" else lang) if keys else {}
+        # the game's names in English where it has no texts in `lang` (base; Persian: its code names were shown,
+        # found 2026-11-11 with the owner's "each factory should be called what its building's called")
+        names = ix.names(keys, lang if lang in schema.LANGS else "us") if keys else {}
         for b in out:
             if b["name"] is None:
                 b["name"] = (names.get(b["key"]) or "").strip() or _tail(b["address"])

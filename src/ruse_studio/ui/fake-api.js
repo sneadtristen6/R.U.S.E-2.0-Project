@@ -149,7 +149,7 @@
       price_dates: "One price per game mode, in the game's order: 1945, 1942, 1939, Total War, Nuclear (each box is named). The host picks the mode when setting up a battle.",
       new_unit: "New unit…", new_unit_name: "Name of the new unit (shown in every language)",
       price: "Price (every battle date)", build_menu: "Build menu", same_menu: "The same as {name}",
-      other_menu: "Another one", nation: "Nation", factory: "Factory (shown by the units in it)",
+      other_menu: "Another one", nation: "Nation", factory: "Factory",
       more_units: "and {n} more", copy_of: "A copy of {name}, made in this mod.", delete_unit: "Delete this unit",
       really_delete: "Delete {name}? Its changes go with it.", new_mark: "new",
       unit_made: "{name} is in the mod. Test in game to see it in its build menu.",
@@ -3305,13 +3305,17 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { units: out, total: units.length + made.length, groups: GROUPS.filter((g) => present.has(g)), types,
           tags: fakeTagList(shown.map((u) => ({ ...u, address: E + u.id, group: u.group || groupOf(u) })), lang) };
       },
+      // each build menu with what the game calls its building (StudioApi.menus "buildings"; made-up English names)
       menus: async (lang) => {
         const names = nations[lang] || nations.us;
+        const built = { 3: ["Headquarters"], 8: ["Barracks"], 9: ["Airfield"], 10: ["Armor Base"], 11: ["Anti-Tank Base"],
+          12: ["Prototype Base", "Atomic Center"], 13: ["Artillery & Anti-Air Base"] };
         return { nations: names.map((name, n) => {
           const factories = [...new Set(units.filter((u) => u.nation === n).map((u) => u.factory))].sort((a, b) => a - b);
           return { nation: n, name, factories: factories.map((f) => {
             const inside = units.filter((u) => u.nation === n && u.factory === f).sort((a, b) => a.slot - b.slot);
-            return { factory: f, units: inside.slice(0, 3).map((u) => nameOf(u, lang)), count: inside.length };
+            return { factory: f, buildings: built[f] || [], units: inside.slice(0, 3).map((u) => nameOf(u, lang)),
+              count: inside.length };
           }) };
         }) };
       },
@@ -4144,7 +4148,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const filled = new Set(FAKE_ERA_UNITS.filter((u) => eraAdded.has(u.key)).map((u) => u.factory));
         const empty = [...new Set(own.map((u) => u.factory))].filter((f) => !filled.has(f)
           && own.filter((u) => u.factory === f).every((u) => u.hidden)).sort((a, b) => a - b);
-        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras, empty };
+        // what the game calls each such building (StudioApi.nation_units "empty_buildings"), from the menus' names
+        const menus = (await window.pywebview.api.menus(lang)).nations[n].factories;
+        const empty_buildings = Object.fromEntries(empty.map((f) => [String(f),
+          (menus.find((m) => m.factory === f) || { buildings: [] }).buildings]));
+        return { nation: n, units: own, hidden: own.filter((u) => u.hidden).length, can: Boolean(current), eras, empty,
+          empty_buildings };
       },
       nation_units_hide: async (n, hide = true, lang = "us", factory = null) => {
         if (!current) throw new Error("Pick or make a mod first: the change is saved in it.");

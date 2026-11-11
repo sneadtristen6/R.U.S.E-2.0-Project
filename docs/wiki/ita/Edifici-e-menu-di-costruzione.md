@@ -21,7 +21,7 @@ Ogni fila dice quante unità ha. Un edificio rimasto senza niente da costruire m
 QG quando lo si sceglie. Più di 10 unità in un edificio, un aereo in un edificio di terra, o un veicolo all'Aeroporto:
 non ancora provati in gioco.
 
-La pagina di un'unità nella scheda **Unità** dice dove viene costruita («Costruita nella fabbrica di carri armati: posto 2
+La pagina di un'unità nella scheda **Unità** dice dove viene costruita («Costruita in BASE BLINDATI: posto 2
 di 6»), e **Mostra negli edifici** apre la sua fila.
 
 ## Gruppi

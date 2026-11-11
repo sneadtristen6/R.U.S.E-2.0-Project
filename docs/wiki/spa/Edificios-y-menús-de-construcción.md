@@ -22,7 +22,7 @@ Cada fila dice cuántas unidades tiene. Un edificio que se queda sin nada que co
 edificios del cuartel general cuando se elige. Más de 10 unidades en un edificio, un avión en un edificio de tierra o un
 vehículo en el Aeródromo: aún sin probar en el juego.
 
-La página de una unidad en la pestaña **Unidades** dice dónde se construye («Se construye en Fábrica de tanques: puesto
+La página de una unidad en la pestaña **Unidades** dice dónde se construye («Se construye en BASE DE BLINDADOS: puesto
 2 de 6»), y **Ver en los edificios** abre su fila.
 
 ## Grupos

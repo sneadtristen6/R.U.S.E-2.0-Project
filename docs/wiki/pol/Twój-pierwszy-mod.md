@@ -33,7 +33,7 @@ Od teraz wszystko, co zmienisz, jest zapisywane w tym modzie, nigdy w grze.
 
 1. Kliknij **Testuj w grze** (w nagłówku). Studio sprawdza mod, buduje zmodowaną kopię (jedną dla całego PC, `RUSE-Instances\Modded game` na dysku gry albo folder wybrany w Ustawieniach) i uruchamia R.U.S.E.
 2. W menu głównym gry kliknij **BITWY** (swobodna gra przeciw komputerowi), wybierz dowolną mapę, graj USA i
-   otwórz fabrykę czołgów: Sherman kosztuje $1.
+   otwórz budynek **BAZA CZOŁGÓW**: Sherman kosztuje $1.
 
 > [!TIP]
 > Jeśli zamiast tego pod nagłówkiem pojawi się czerwony pasek, sprawdzenie moda znalazło błąd w jednym z plików
