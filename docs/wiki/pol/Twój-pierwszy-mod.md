@@ -15,17 +15,9 @@ Pełny przewodnik: zainstaluj Studio, zrób mod, w którym M4 Sherman kosztuje $
 Studio otwiera się na ekranie **Co chcesz zrobić?**: **Kontynuuj moda**, **Zacznij nowego moda** albo **Pomiń**
 (zaznacz **Zawsze pomijaj ten ekran**, by od tej pory od razu przechodzić do zakładek; Ustawienia go przywracają).
 
-1. Kliknij **Zacznij nowego moda**. Jego kroki widać na pasku u góry, z przyciskami **Wstecz** i **Dalej**:
-   - **Nazwa:** wpisz nazwę, na przykład `cheap-sherman` (nazwę, którą gracze widzą w Launcherze).
-   - **Nacje:** dla każdej nacji **Zachowaj jednostki** (jej menu budowy jak w grze) albo **Zacznij pusty**.
-     **Zmień** daje nacji nową nazwę i flagę ([[Zamiana jednej nacji w inną|Zamiana-jednej-nacji-w-inną]]).
-   - **Badania:** **Zachowaj badania z gry**, **Bez badań** (każdą jednostkę można budować od początku) albo
-     **Własne**.
-   - **Budynki:** budynki każdej nacji i to, co budują ([[Budynki i menu budowy|Budynki-i-menu-budowy]]).
-   - **Co jeszcze:** zaznacz, co chcesz zmienić potem (wartości jednostek, ustawienia SI i graczy, muzykę i dźwięki,
-     dowolną inną wartość); każde otwiera się jako osobna zakładka. Na potrzeby tego przewodnika zaznacz **Wartości
-     jednostek**.
-2. Zachowaj jednostki i badania z gry i naciskaj **Dalej**, aż otworzy się zakładka Jednostki.
+1. Kliknij **Zacznij nowego moda**.
+2. Wpisz nazwę, na przykład `cheap-sherman` (nazwę, którą gracze widzą w Launcherze), i kliknij **Utwórz**. Studio
+   otworzy się na twoim nowym modzie.
 
 Jesteś już w Studio? Menu **Mod** w nagłówku też ma **Nowy mod…**: wpisz nazwę i kliknij **Utwórz**.
 

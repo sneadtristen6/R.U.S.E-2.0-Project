@@ -66,6 +66,14 @@ na **Vytvořit**; pak ji měňte jako kteroukoli jinou. Nebo vyberte jednotku a 
 
 Stránka jednotky ukazuje její **3D model**: tažením ho otočíte, kolečkem myši přiblížíte.
 
+Pod ním **Vzhled a pohyb** shromažďuje vše o tom, jak jednotka vypadá a jak se pohybuje, řádek pro každou věc, v
+pořadí, v jakém pracujete: **Model**, **Jeho vojáci** (družstvo, jehož střelci a voják s těžkou zbraní mají různé
+modely), **Animace**, **Zvuky** a **Jezdí v**. Každý řádek říká, co jednotka teď má, a má jedno tlačítko pro obvyklou
+věc; **Více** ukáže přímo tam zbytek možností řádku. Vše, co změníte, se hned uloží do vašeho modu: nic k ukládání,
+žádná složka k vybírání. Přemalování, vlastní kopie modelu, uniforma družstva a vlastní model jsou na řádku **Model**;
+animace a zvuky se mění v RUSE Decoy z jejich řádků (**Změnit v RUSE Decoy**): animace jen pro tuto jednotku, nebo pro
+všechny jednotky, které ji hrají, zvuk pro všechny jednotky, které ho hrají.
+
 - **Přebarvení v Blenderu:** klikněte na **Otevřít v Blenderu** (Blender je zdarma; pokud ho Studio nenajde, stránka
   nabídne **Získat Blender (zdarma)** a **Vybrat Blender…**, kterým mu ukážete, kde je `blender.exe`). Jednotka se
   otevře se svými obrázky, připravená k malování na model. Malujte, pak klikněte na **Přenést zpět**: vaše
@@ -84,6 +92,15 @@ Stránka jednotky ukazuje její **3D model**: tažením ho otočíte, kolečkem 
 - **Vlastní model (nové jednotky):** **Importovat model…** přinese 3D model z Blenderu nebo jakéhokoli 3D nástroje.
   Viz [[Import modelu|Import-modelu]]. Jednotka hry si ponechá svůj model: její stránka má **Nová jednotka
   z této…**, kterou vytvoříte novou jednotku, na kterou model přijde.
+- **Nová jednotka od začátku do konce:** **Nová jednotka (import modelu)** nahoře na záložce Jednotky, vyberte výchozí
+  jednotku (tank pro tank, družstvo pro vojáky nebo pro koně s jezdcem), pojmenujte ji a klikněte na **Vytvořit**. Pak
+  projděte **Vzhled a pohyb** shora dolů: její model, její vojáky, její animace, její zvuky, její nákladní auto. Dejte
+  jí kartu, nastavte cenu a hodnoty a pak **Vyzkoušet ve hře**. Velký mod s mnoha novými jednotkami jsou stejné kroky
+  pro každou: každá jednotka má to vše ve vašem modu pod svým vlastním názvem.
+- **Jednotka, která nese svého jezdce (kůň, motocykl):** jeden model s jezdcem a tím, na čem jede, na jedné kostře, s
+  vlastními animacemi (alespoň stání, chůze a běh), importovaný na kopírované družstvo: viz [[Import
+  modelu|Import-modelu]], část o modelu s vlastními kostmi a animacemi. Horse Squad byl takto udělán ve Studiu a hrán
+  ve hře (listopad 2026); nic jiného takto udělaného zatím ve hře vyzkoušeno nebylo.
 
 ## Pancéřování
 

@@ -11,6 +11,8 @@ Un modello può anche andare su un nuovo edificio, al posto di un pezzo del suo 
 [[Edifici e menu di costruzione|Edifici-e-menu-di-costruzione]]), o sulla tua mappa come una roccia, un oggetto, un cespuglio o
 un albero tuo (vedi [[Posizionare edifici e alberi|Posizionare-edifici-e-alberi]]). Entrambi: Studio 0.9.8.8, visti in gioco.
 
+Nella pagina dell'unità tutto questo è in **Aspetto e movimenti**: **Importa modello…** è il pulsante della riga **Modello**, e il resto delle opzioni del modello (la dimensione, **Spostalo**, **Cambialo in Blender**) è sotto **Altro** di quella riga. **I suoi soldati** è una riga a sé, e cosa fanno le animazioni del modello è sotto **Altro** della riga **Animazioni**.
+
 ## 1. Procurati un modello
 
 Un **.3ds** con le sue immagini (.tga o .png), oppure un **.glb** o **.gltf** (immagini al suo interno: PNG, JPG o WebP).
@@ -35,16 +37,16 @@ parti chiamate Main_Body, Main_Turre, Main_Barre...).
 Nella scheda **Unità**, clicca su **Nuova unità (importa un modello)** in alto, poi scegli l'unità da cui partire (per un
 carro armato, un carro armato: lo Sherman per l'Abrams). Dalle un nome e clicca su **Crea**: la pagina della nuova unità si
 apre su **Importa modello…**. Il modello della nuova unità girerà e si muoverà come quello di questa unità. La pagina di
-un'unità del gioco ha lo stesso ingresso: **Nuova unità da questa…** sotto **Un modello tutto suo**. (Lo Studio 0.9.6 non
+un'unità del gioco ha lo stesso ingresso: **Nuova unità da questa…** sulla riga **Modello** di **Aspetto e movimenti**. (Lo Studio 0.9.6 non
 ha ancora nessuno dei due pulsanti: apri l'unità e scegli **Nuova unità…** nella sua pagina.)
 
 ## 3. Importa
 
-Nella pagina della nuova unità, sotto **Un modello tutto suo**:
+Nella pagina della nuova unità, sulla riga **Modello** di **Aspetto e movimenti**:
 
-1. Imposta **Dimensione**: la sua lunghezza rispetto a quella dell'unità copiata. **1** è lunga uguale; un M1 Abrams
+1. Clicca **Altro** e imposta **Dimensione**: la sua lunghezza rispetto a quella dell'unità copiata. **1** è lunga uguale; un M1 Abrams
    rispetto a uno Sherman è **1.36** (le loro lunghezze reali).
-2. Clicca su **Importa modello…** e scegli il .3ds o il .glb.
+2. Clicca su **Importa modello…** (il pulsante della riga) e scegli il .3ds o il .glb.
 
 Lo Studio lo adatta all'unità: rivolto in avanti (dove punta il suo cannone), la sua lunghezza, messo dove sta l'unità
 copiata, con la torretta che gira dove si trova sul tuo modello, appoggiato a terra. Le sue immagini diventano texture
@@ -60,8 +62,8 @@ viene adattato di nuovo dal suo file. Con diversi nuovi aerei (o unità di terra
 legge un modello quando carica, quindi una nuova dimensione si vede dalla build successiva.
 
 **Dove sta:** un nuovo modello viene messo al centro dell'unità che copia, quindi alla maggior parte dei modelli qui non
-serve niente. Se il tuo non è al posto giusto, apri la sezione **Spostalo** sotto la dimensione (resta aperta su un
-modello che hai spostato). Chiede tre numeri, **Avanti**, **Destra** e **Su**, in unità del gioco (la pagina dice quanto
+serve niente. Se il tuo non è al posto giusto, usa **Spostalo** sotto la dimensione, in **Altro** della riga
+Modello. Chiede tre numeri, **Avanti**, **Destra** e **Su**, in unità del gioco (la pagina dice quanto
 è lunga l'unità copiata, in queste unità). Un meno va dall'altra parte, e 0, 0, 0 lo rimette dove era stato adattato.
 Clicca su **Sposta** e il modello viene adattato di nuovo dal suo file, spostato di tanto; la torretta e le eliche vanno
 con lui, così girano ancora nel punto giusto. Nella vista 3D l'anello blu è dove sta l'unità copiata, e il segno
@@ -96,7 +98,7 @@ Per una squadra (fucilieri, paracadutisti, qualsiasi fanteria) lo Studio fa con 
 2. **Apri il suo soldato in Blender.** Nella pagina della nuova squadra, sotto **Un modello tutto suo**, clicca **Cambialo in Blender**. Blender si apre con il soldato e le sue ossa, ognuna dove la mette il gioco. Non hai ancora Blender? **Scarica Blender (gratis)** lo installa; **Scegli Blender…** mostra allo Studio dov'è.
 3. **Modificalo, o metti il tuo modello sulle sue ossa.** Per modificarlo, lavoralo lì. Per un tuo modello: importalo con **File > Import** nella stessa scena e posalo sul soldato; clicca il tuo modello, **Maiusc+clic** sulle ossa, poi **Ctrl+P > With Automatic Weights**. Elimina il soldato del gioco se non lo tieni.
 4. **Invialo.** Clicca **Invia al R.U.S.E. Studio** in alto in Blender.
-5. **Riportalo.** Nello Studio clicca **Riporta il modello**. I fucilieri della squadra indossano il tuo modello. Una squadra il cui soldato con arma pesante il gioco disegna con un modello suo (l'uomo col bazooka della squadra di fucilieri USA, per esempio) lo tiene come lo ha la squadra copiata finché non gliene dai uno: **I suoi soldati**, sotto **Un modello tutto suo**, mostra ognuno di loro, e il suo **Importa modello…** è solo per lui. **Prova in gioco** lo mostra.
+5. **Riportalo.** Nello Studio clicca **Riporta il modello**. I fucilieri della squadra indossano il tuo modello. Una squadra il cui soldato con arma pesante il gioco disegna con un modello suo (l'uomo col bazooka della squadra di fucilieri USA, per esempio) lo tiene come lo ha la squadra copiata finché non gliene dai uno: la riga **I suoi soldati** mostra ognuno di loro, e il suo **Importa modello…** è solo per lui. **Prova in gioco** lo mostra.
 
 Buono a sapersi:
 - I tuoi file di Blender restano nella cartella della tua mod: `Documents\RUSE 2.0\Mods\<la tua mod>\blender\<nome dell'unità>\`. Non vengono messi nella mod quando la condividi. Il prossimo **Cambialo in Blender** riparte da ciò che hai inviato per ultimo.
@@ -120,24 +122,23 @@ animazioni. Nella pagina dell'unità, **Le sue animazioni** mostra cosa esegue l
   la morte semplice). La build segue la stessa regola: ciò che dice la pagina è ciò che esegue il gioco.
 - Un'animazione il cui nome inizia con t_ o b_ (hr_t_fire, hr_b_run) si esegue solo sulla metà superiore o inferiore
   del corpo: quelle di un cavaliere sopra, quelle del suo cavallo sotto.
-- **Tutte le altre azioni** apre il resto, per tipo: fermo, in movimento, mirare e sparare, l'arma pesante, essere
+- **Tutte le altre azioni** elenca il resto, per tipo: fermo, in movimento, mirare e sparare, l'arma pesante, essere
   colpiti, morire.
 - **Nei lunghi spostamenti** il gioco mette una squadra nel suo camion. Un'unità con animazioni sue va invece da sé,
   eseguendo l'animazione scelta lì (la sua corsa se lasci Più vicina), veloce quanto il suo camion. Scegli **Nel suo
   camion** per tenere il camion.
 
 **Una copia tiene le sue animazioni:** un'unità copiata da una con animazioni sue esegue le stesse. Per cambiarne una
-solo per lei, usa RUSE Decoy.
+solo per lei, clicca **Cambia in RUSE Decoy** sulla sua riga **Animazioni**, poi **Solo questa unità**.
 
-Non ancora provato in gioco così come lo fa lo Studio; una Horse Squad fatta allo stesso modo a mano è stata giocata
-(novembre 2026).
+La Horse Squad fatta così nello Studio è stata giocata (novembre 2026).
 ## Un modello con ossa e animazioni tutte sue
 
 Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni.
 
 1. **Fallo in Blender**: il tuo modello su un'armatura con ossa tue (chiamate come vuoi) e un'azione per ogni animazione. Chiama le azioni come ciò che mostrano: almeno **stand** (o **idle**), **walk** e **run**; si riconoscono anche **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** e **grenade**.
 2. **Esportalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** spuntato.
-3. **Crea la squadra** come al passo 2 sopra. Sulla sua pagina, sotto **Un modello tutto suo**, clicca **Importa modello…** e scegli il tuo .glb. Lo Studio vede che le sue ossa non sono quelle del soldato e lo prende con le sue ossa e tutte le sue animazioni. La pagina mostra quante ossa ha, ogni animazione con la sua durata e quante azioni della squadra la fanno.
+3. **Crea la squadra** come al passo 2 sopra. Sulla sua pagina, clicca **Importa modello…** sulla riga **Modello** di **Aspetto e movimenti** e scegli il tuo .glb. Lo Studio vede che le sue ossa non sono quelle del soldato e lo prende con le sue ossa e tutte le sue animazioni. La pagina mostra quante ossa ha, ogni animazione con la sua durata e quante azioni della squadra la fanno.
 4. **Prova in gioco** lo mostra.
 
 Buono a sapersi:
@@ -146,7 +147,7 @@ Buono a sapersi:
 - Il tuo mod tiene il modello e ogni animazione: `files\models\<nome dell'unità>.glb`, e ogni animazione come `files\anim\own\<nome dell'unità>\<il suo nome>.baf`.
 - **Usa il modello dell'unità copiata** toglie di nuovo il modello, con le sue animazioni.
 - Una squadra con un soldato con arma pesante: dagli il suo cavallo con cavaliere sotto **I suoi soldati**, fatto sulle stesse ossa di quello dei fucilieri, ed esegue le loro animazioni. Su altre ossa esegue ciò che eseguiva nella squadra copiata, e la pagina ti avvisa: questo può fermare il gioco. Togliere il modello dei fucilieri toglie anche il suo.
-- Non ancora provato in gioco tramite lo Studio.
+- La Horse Squad fatta così nello Studio è stata giocata (novembre 2026); nient'altro fatto così è ancora stato provato in gioco.
 
 ## 4. La sua scheda, poi la prova
 

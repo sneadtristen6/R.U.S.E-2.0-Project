@@ -72,6 +72,16 @@ prenez **Nouvelle unité…** sur sa page.
 
 La page de l'unité montre son **Modèle 3D** : faites glisser pour le tourner, utilisez la molette pour zoomer.
 
+Dessous, **Apparence et mouvements** réunit tout ce qui touche à l'apparence et aux mouvements de l'unité, une ligne
+pour chaque chose, dans l'ordre où vous travaillez : **Modèle**, **Ses soldats** (une escouade dont les fusiliers et
+le soldat à l'arme lourde ont des modèles différents), **Animations**, **Sons** et **Se déplace en**. Chaque ligne dit
+ce que l'unité a maintenant et a un bouton pour l'action habituelle ; **Plus** affiche ici même le reste des options
+de cette ligne. Tout ce que vous changez est enregistré aussitôt dans votre mod : rien à enregistrer, aucun dossier à
+choisir. Repeindre, sa propre copie du modèle, l'uniforme d'une escouade et un modèle à elle sont sur la ligne
+**Modèle** ; les animations et les sons se changent dans RUSE Decoy depuis leurs lignes (**Changer dans RUSE Decoy**)
+: une animation pour cette unité seulement ou pour toutes les unités qui la jouent, un son pour toutes les unités qui
+le jouent.
+
 - **Repeindre dans Blender :** cliquez sur **Ouvrir dans Blender** (Blender est gratuit ; si le Studio ne le trouve pas,
   la page propose **Obtenir Blender (gratuit)** et **Choisir Blender…** pour lui montrer où est `blender.exe`). L'unité
   s'ouvre avec ses images, prête à être peinte sur le modèle. Peignez, puis cliquez sur **Récupérer** : votre
@@ -91,6 +101,17 @@ La page de l'unité montre son **Modèle 3D** : faites glisser pour le tourner, 
 - **Un modèle à elle (nouvelles unités) :** **Importer un modèle…** fait entrer un modèle 3D venu de Blender ou de
   n'importe quel outil 3D. Voir [[Importer un modèle|Importer-un-modèle]]. Une unité du jeu garde son modèle : sa page a
   **Nouvelle unité à partir de celle-ci…** pour créer la nouvelle unité sur laquelle le modèle va.
+- **Une nouvelle unité, du début à la fin :** **Nouvelle unité (importer un modèle)** en haut de l'onglet Unités,
+  choisissez l'unité de départ (un char pour un char, une escouade pour des soldats ou un cheval et son cavalier),
+  nommez-la et cliquez sur **Créer**. Puis descendez **Apparence et mouvements** : son modèle, ses soldats, ses
+  animations, ses sons, son camion. Donnez-lui une carte, réglez son prix et ses valeurs, puis **Tester en jeu**. Un
+  gros mod avec beaucoup de nouvelles unités, ce sont les mêmes étapes pour chacune : chaque unité garde tout cela
+  dans votre mod sous son propre nom.
+- **Une unité qui porte son cavalier (un cheval, une moto) :** un seul modèle avec le cavalier et ce qu'il monte sur
+  un même squelette, avec ses propres animations (au moins debout, marche et course), importé sur une escouade copiée
+  : voir [[Importer un modèle|Importer-un-modèle]], sa partie sur un modèle avec ses propres os et animations. La
+  Horse Squad a été faite ainsi dans le Studio et jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore
+  été essayé en jeu.
 
 ## Blindage
 

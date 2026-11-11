@@ -12,6 +12,8 @@ Ein Modell kann auch auf ein neues Gebäude kommen, anstelle eines Teils seines 
 auf deine Karte (siehe [[Gebäude und Bäume platzieren|Gebäude-und-Bäume-platzieren]]). Beides: Studio 0.9.8.8, im Spiel
 gesehen.
 
+Auf der Seite der Einheit ist all das in **Aussehen und Bewegung**: **Modell importieren…** ist die Schaltfläche der Zeile **Modell**, und die übrigen Optionen des Modells (seine Größe, **Verschieben**, **In Blender ändern**) sind unter **Mehr** dieser Zeile. **Seine Soldaten** ist eine eigene Zeile, und was die Animationen des Modells tun, steht unter **Mehr** der Zeile **Animationen**.
+
 ## 1. Ein Modell besorgen
 
 Eine **.3ds** mit ihren Bildern (.tga oder .png), oder eine **.glb** oder **.gltf** (die Bilder stecken darin: PNG, JPG
@@ -38,16 +40,16 @@ Klicke im Reiter **Einheiten** oben auf **Neue Einheit (Modell importieren)** un
 ausgehst (für einen Panzer einen Panzer: den Sherman für den Abrams). Gib ihr einen Namen und klicke auf **Erstellen**:
 die Seite der neuen Einheit öffnet sich bei **Modell importieren…**. Das Modell der neuen Einheit wird sich drehen und
 fahren wie das dieser Einheit. Die Seite einer Einheit des Spiels hat denselben Weg hinein: **Neue Einheit aus dieser…**
-unter **Eigenes Modell**. (Studio 0.9.6 hat noch keine der beiden Schaltflächen: öffne die Einheit und wähle **Neue
+in der Zeile **Modell** von **Aussehen und Bewegung**. (Studio 0.9.6 hat noch keine der beiden Schaltflächen: öffne die Einheit und wähle **Neue
 Einheit…** auf ihrer Seite.)
 
 ## 3. Importieren
 
-Auf der Seite der neuen Einheit, unter **Eigenes Modell**:
+Auf der Seite der neuen Einheit, in der Zeile **Modell** von **Aussehen und Bewegung**:
 
-1. Stell die **Größe** ein: ihre Länge im Verhältnis zur kopierten Einheit. **1** ist gleich lang; ein M1 Abrams im
+1. Klick auf **Mehr** und stell die **Größe** ein: ihre Länge im Verhältnis zur kopierten Einheit. **1** ist gleich lang; ein M1 Abrams im
    Verhältnis zu einem Sherman ist **1,36** (ihre echten Längen).
-2. Klicke auf **Modell importieren…** und wähle die .3ds oder .glb.
+2. Klicke auf **Modell importieren…** (die Schaltfläche der Zeile) und wähle die .3ds oder .glb.
 
 Das Studio passt es an die Einheit an: nach vorn gerichtet (dahin, wohin seine Kanone zeigt), seine Länge, dorthin
 gesetzt, wo die kopierte Einheit steht, mit seinem Turm, der sich dort dreht, wo er auf deinem Modell sitzt, auf dem
@@ -63,8 +65,8 @@ wird aus seiner eigenen Datei neu angepasst. Bei mehreren neuen Flugzeugen (oder
 Größe aller. Das Spiel liest ein Modell beim Laden, daher zeigt sich eine neue Größe ab dem nächsten Build.
 
 **Wo es sitzt:** ein neues Modell wird auf die Mitte der Einheit gesetzt, die es kopiert, daher brauchen die meisten
-Modelle hier nichts. Sitzt deines nicht richtig, öffne den Bereich **Verschieben** unter der Größe (er bleibt offen bei
-einem Modell, das du verschoben hast). Dort gibst du drei Zahlen ein, **Vor**, **Rechts** und **Hoch**, in
+Modelle hier nichts. Sitzt deines nicht richtig, nimm **Verschieben** unter der Größe, unter **Mehr** der Zeile
+Modell. Dort gibst du drei Zahlen ein, **Vor**, **Rechts** und **Hoch**, in
 Spieleinheiten (die Seite sagt, wie lang die kopierte Einheit in diesen Einheiten ist). Ein Minus geht in die andere
 Richtung, und 0, 0, 0 setzt es dorthin zurück, wo es angepasst wurde. Klicke auf die Schaltfläche **Verschieben**, und
 das Modell wird aus seiner eigenen Datei neu angepasst, um so viel verschoben; sein Turm und seine Propeller gehen mit,
@@ -102,7 +104,7 @@ Bei einem Trupp (Schützen, Fallschirmjäger, jede Infanterie) macht das Studio 
 2. **Öffne seinen Soldaten in Blender.** Klicke auf der Seite des neuen Trupps unter **Eigenes Modell** auf **In Blender ändern**. Blender öffnet sich mit dem Soldaten und seinen Knochen, jeder dort, wo das Spiel ihn hat. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio, wo es ist.
 3. **Ändere ihn, oder setze dein eigenes Modell auf seine Knochen.** Zum Ändern bearbeite ihn dort. Für ein eigenes Modell: hole es mit **File > Import** in dieselbe Szene und lege es auf den Soldaten; klicke dein Modell an, **Umschalt+Klick** auf die Knochen, dann **Strg+P > With Automatic Weights**. Lösche den Soldaten des Spiels, wenn du ihn nicht behältst.
 4. **Sende es.** Klicke oben in Blender auf **An das R.U.S.E. Studio senden**.
-5. **Hol es zurück.** Klicke im Studio auf **Modell zurückholen**. Die Schützen des Trupps tragen dein Modell. Ein Trupp, dessen Soldaten mit schwerer Waffe das Spiel mit einem eigenen Modell zeichnet (etwa der Bazooka-Mann des US-Schützentrupps), behält ihn so, wie ihn der kopierte Trupp hat, bis du ihm eins gibst: **Seine Soldaten** unter **Eigenes Modell** zeigt jeden von ihnen, und sein **Modell importieren…** ist nur für ihn. **Im Spiel testen** zeigt es.
+5. **Hol es zurück.** Klicke im Studio auf **Modell zurückholen**. Die Schützen des Trupps tragen dein Modell. Ein Trupp, dessen Soldaten mit schwerer Waffe das Spiel mit einem eigenen Modell zeichnet (etwa der Bazooka-Mann des US-Schützentrupps), behält ihn so, wie ihn der kopierte Trupp hat, bis du ihm eins gibst: die Zeile **Seine Soldaten** zeigt jeden von ihnen, und sein **Modell importieren…** ist nur für ihn. **Im Spiel testen** zeigt es.
 
 Gut zu wissen:
 - Deine Blender-Dateien bleiben im Ordner deines Mods: `Documents\RUSE 2.0\Mods\<dein Mod>\blender\<Name der Einheit>\`. Sie werden nicht in deinen Mod gepackt, wenn du ihn teilst. Das nächste **In Blender ändern** beginnt mit dem, was du zuletzt gesendet hast.
@@ -126,24 +128,23 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
   Tod den einfachen Tod). Der Build folgt derselben Regel: Was die Seite sagt, spielt das Spiel.
 - Eine Animation, deren Name mit t_ oder b_ beginnt (hr_t_fire, hr_b_run), spielt nur auf der oberen oder unteren
   Körperhälfte: die eines Reiters oben, die seines Pferdes unten.
-- **Alle anderen Handlungen** öffnet den Rest, nach Art: Stillstehen, in Bewegung, Zielen und Schießen, die schwere
+- **Alle anderen Handlungen** listet den Rest auf, nach Art: Stillstehen, in Bewegung, Zielen und Schießen, die schwere
   Waffe, Getroffen werden, Sterben.
 - **Auf langen Wegen** setzt das Spiel einen Trupp in seinen Lastwagen. Eine Einheit mit eigenen Animationen geht
   stattdessen selbst und spielt die dort gewählte Animation (ihr Laufen bei Nächste), so schnell wie ihr Lastwagen.
   Wähle **In seinem Lastwagen**, um den Lastwagen zu behalten.
 
 **Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt
-dieselben. Um eine nur für sie zu ändern, nimm RUSE Decoy.
+dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Animationen**, dann **Nur diese Einheit**.
 
-Noch nicht im Spiel ausprobiert, so wie das Studio es macht; eine auf dieselbe Weise von Hand gebaute Horse Squad lief
-im Spiel (November 2026).
+Die so im Studio gemachte Horse Squad lief im Spiel (November 2026).
 ## Ein Modell mit eigenen Knochen und Animationen
 
 Ein Pferd, ein Pferd mit Reiter, irgendein Tier: Ein Modell auf eigenen Knochen kommt mit seinen Animationen auf einen Trupp.
 
 1. **Mach es in Blender**: dein Modell auf einer Armature mit eigenen Knochen (benannt, wie du willst) und eine Action für jede Animation. Benenne die Actions nach dem, was sie zeigen: mindestens **stand** (oder **idle**), **walk** und **run**; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** und **grenade** werden auch erkannt.
 2. **Exportiere es**: **File > Export > glTF 2.0**, Format **glTF Binary (.glb)**, mit angehaktem **Animation**.
-3. **Erstelle den Trupp** wie in Schritt 2 oben. Klicke auf seiner Seite unter **Eigenes Modell** auf **Modell importieren…** und wähle deine .glb. Das Studio sieht, dass seine Knochen nicht die des Soldaten sind, und nimmt es mit seinen eigenen Knochen und allen Animationen. Die Seite zeigt, wie viele Knochen es hat, jede Animation mit ihrer Länge und wie viele Aktionen des Trupps sie spielen.
+3. **Erstelle den Trupp** wie in Schritt 2 oben. Klicke auf seiner Seite in der Zeile **Modell** von **Aussehen und Bewegung** auf **Modell importieren…** und wähle deine .glb. Das Studio sieht, dass seine Knochen nicht die des Soldaten sind, und nimmt es mit seinen eigenen Knochen und allen Animationen. Die Seite zeigt, wie viele Knochen es hat, jede Animation mit ihrer Länge und wie viele Aktionen des Trupps sie spielen.
 4. **Im Spiel testen** zeigt es.
 
 Gut zu wissen:
@@ -152,7 +153,7 @@ Gut zu wissen:
 - Dein Mod behält das Modell und jede Animation: `files\models\<Name der Einheit>.glb`, und jede Animation als `files\anim\own\<Name der Einheit>\<ihr Name>.baf`.
 - **Modell der kopierten Einheit nutzen** nimmt das Modell wieder heraus, mit seinen Animationen.
 - Ein Trupp mit einem Soldaten mit schwerer Waffe: Gib ihm unter **Seine Soldaten** sein eigenes Pferd mit Reiter, auf denselben Knochen gebaut wie das der Schützen, dann spielt er ihre Animationen. Auf anderen Knochen spielt er, was er im kopierten Trupp spielte, und die Seite warnt dich: Das kann das Spiel anhalten. Nimmst du das Modell der Schützen heraus, geht seines mit.
-- Über das Studio noch nicht im Spiel ausprobiert.
+- Die so im Studio gemachte Horse Squad lief im Spiel (November 2026); nichts anderes, das so gemacht wurde, ist bisher im Spiel ausprobiert.
 
 ## 4. Seine Karte, dann testen
 

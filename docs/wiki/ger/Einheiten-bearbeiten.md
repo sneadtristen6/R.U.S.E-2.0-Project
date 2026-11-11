@@ -70,6 +70,16 @@ dann **Neue Einheit…** auf ihrer Seite.
 
 Die Seite der Einheit zeigt ihr **3D-Modell**: zum Drehen ziehen, zum Zoomen scrollen.
 
+Darunter fasst **Aussehen und Bewegung** alles zusammen, wie die Einheit aussieht und sich bewegt, eine Zeile für
+jedes, in der Reihenfolge, in der du arbeitest: **Modell**, **Seine Soldaten** (ein Trupp, dessen Schützen und Soldat
+mit schwerer Waffe verschiedene Modelle haben), **Animationen**, **Geräusche** und **Fährt in**. Jede Zeile sagt, was
+die Einheit jetzt hat, und hat eine Schaltfläche für das Übliche; **Mehr** zeigt die übrigen Optionen dieser Zeile
+direkt dort. Alles, was du änderst, wird sofort in deinem Mod gespeichert: nichts zu speichern, kein Ordner zu wählen.
+Neu bemalen, eine eigene Kopie des Modells, die Uniform eines Trupps und ein eigenes Modell sind in der Zeile
+**Modell**; Animationen und Geräusche änderst du in RUSE Decoy aus ihren Zeilen (**In RUSE Decoy ändern**): eine
+Animation nur für diese Einheit oder für alle Einheiten, die sie spielen, ein Geräusch für alle Einheiten, die es
+spielen.
+
 - **In Blender neu bemalen:** klicke auf **In Blender öffnen** (Blender ist kostenlos; findet das Studio es nicht, bietet
   die Seite **Blender holen (kostenlos)** und **Blender auswählen…** an, um ihm zu zeigen, wo `blender.exe` liegt). Die
   Einheit öffnet sich mit ihren Bildern, bereit zum Bemalen des Modells. Male, dann klicke auf **Zurückholen**: deine
@@ -90,6 +100,17 @@ Die Seite der Einheit zeigt ihr **3D-Modell**: zum Drehen ziehen, zum Zoomen scr
 - **Ein eigenes Modell (neue Einheiten):** **Modell importieren…** holt ein 3D-Modell aus Blender oder einem anderen
   3D-Programm. Siehe [[Ein Modell importieren|Ein-Modell-importieren]]. Eine Einheit des Spiels behält ihr Modell: ihre Seite
   hat **Neue Einheit aus dieser…**, um die neue Einheit zu erstellen, die das Modell bekommt.
+- **Eine neue Einheit, von Anfang bis Ende:** **Neue Einheit (Modell importieren)** oben im Reiter Einheiten, wähle
+  die Einheit, von der du ausgehst (ein Panzer für einen Panzer, ein Trupp für Soldaten oder ein Pferd mit Reiter),
+  gib ihr einen Namen und klick auf **Erstellen**. Dann geh **Aussehen und Bewegung** von oben nach unten durch: ihr
+  Modell, ihre Soldaten, ihre Animationen, ihre Geräusche, ihr Lastwagen. Gib ihr eine Karte, stell Preis und Werte
+  ein und dann **Im Spiel testen**. Ein großer Mod mit vielen neuen Einheiten sind dieselben Schritte für jede: Jede
+  Einheit behält all das in deinem Mod unter ihrem eigenen Namen.
+- **Eine Einheit, die ihren Reiter trägt (ein Pferd, ein Motorrad):** ein Modell mit dem Reiter und dem, worauf er
+  reitet, auf einem Skelett, mit eigenen Animationen (mindestens Stehen, Gehen und Laufen), auf einen kopierten Trupp
+  importiert: siehe [[Ein Modell importieren|Ein-Modell-importieren]], den Teil über ein Modell mit eigenen Knochen
+  und Animationen. Die Horse Squad wurde so im Studio gemacht und im Spiel gespielt (November 2026); nichts anderes,
+  das so gemacht wurde, ist bisher im Spiel ausprobiert.
 
 ## Panzerung
 

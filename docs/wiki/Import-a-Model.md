@@ -11,6 +11,8 @@ A model can also go on a new building, in place of a piece of its look (see
 [[Buildings and build menus|Buildings-and-Build-Menus]]), or on your map as a rock, prop, bush or tree of your own
 (see [[Place buildings and trees|Place-Buildings-and-Trees]]). Both: Studio 0.9.8.8, seen in the game.
 
+On the unit's page all of this is in **Look and moves**: **Import model…** is the **Model** row's button, and the rest of the model's options (its size, **Move it**, **Change it in Blender**) are under that row's **More**. **Its soldiers** is a row of its own, and what the model's animations do is under the **Animations** row's **More**.
+
 ## 1. Get a model
 
 A **.3ds** with its pictures (.tga or .png), or a **.glb** or **.gltf** (pictures inside it: PNG, JPG or WebP). A
@@ -35,16 +37,16 @@ parts named Main_Body, Main_Turre, Main_Barre...).
 In the **Units** tab, click **New unit (import a model)** at the top, then pick the unit to start from (for a tank,
 a tank: the Sherman for the Abrams). Give it a name and click **Create**: the new unit's page opens at
 **Import model…**. The new unit's model will turn and drive like this unit's. A game unit's page has the same way
-in: **New unit from this one…** under **Its own model**. (Studio 0.9.6 has neither button yet: open the unit and
+in: **New unit from this one…** on the **Model** row of **Look and moves**. (Studio 0.9.6 has neither button yet: open the unit and
 choose **New unit…** on its page.)
 
 ## 3. Import
 
-On the new unit's page, under **Its own model**:
+On the new unit's page, on the **Model** row of **Look and moves**:
 
-1. Set **Size**: its length over the copied unit's. **1** is as long; an M1 Abrams over a Sherman is **1.36** (their
+1. Click **More** and set **Size**: its length over the copied unit's. **1** is as long; an M1 Abrams over a Sherman is **1.36** (their
    real lengths).
-2. Click **Import model…** and pick the .3ds or .glb.
+2. Click **Import model…** (the row's button) and pick the .3ds or .glb.
 
 The Studio fits it to the unit: facing forward (the way its gun points), its length, placed where the copied unit
 stands, its turret turning where it is on your model, standing on the ground. Its pictures become textures of its own. The page shows it in 3D, with which
@@ -59,7 +61,7 @@ several new planes (or ground units), one click resizes them all. The game reads
 shows from the next build.
 
 **Where it sits:** a new model is put on the middle of the unit it copies, so most models need nothing here. If yours
-doesn't sit right, open **Move it** under the size (it stays open on a model you have moved). It takes three numbers,
+doesn't sit right, use **Move it** under the size, in the Model row's **More**. It takes three numbers,
 **Forward**, **Right** and **Up**, in the game's units (the page says how long the unit it copies is, in those units). A minus goes the other way, and 0, 0, 0 puts it
 back where it was fitted. Click **Move** and the model is fitted again from its own file, that far away; its turret and
 propellers go with it, so they still turn in the right place. In the 3D view the blue ring is where the unit it copies
@@ -93,7 +95,7 @@ For a squad (riflemen, paratroopers, any infantry) the Studio does the Blender p
 2. **Open its soldier in Blender.** On the new squad's page, under **Its own model**, click **Change it in Blender**. Blender opens with the soldier and his bones, each one where the game has it. No Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
 3. **Change him, or put your own model on his bones.** To change him, edit him there. To use a model of your own: **File > Import** it into the same scene and place it over the soldier; click your model, **Shift+click** the bones, then press **Ctrl+P > With Automatic Weights**. Delete the game's soldier if you don't keep him.
 4. **Send it.** Click **Send to the R.U.S.E. Studio** at the top of Blender.
-5. **Bring it back.** In the Studio, click **Bring back the model**. The squad's riflemen wear your model. A squad whose heavy-weapon soldier the game draws with a model of his own (the US rifle squad's bazooka man, say) keeps him as the copied squad has him until you give him one: **Its soldiers**, under **Its own model**, shows each of them, and its **Import model…** is for him alone. **Test in game** shows it.
+5. **Bring it back.** In the Studio, click **Bring back the model**. The squad's riflemen wear your model. A squad whose heavy-weapon soldier the game draws with a model of his own (the US rifle squad's bazooka man, say) keeps him as the copied squad has him until you give him one: the **Its soldiers** row shows each of them, and its **Import model…** is for him alone. **Test in game** shows it.
 
 Good to know:
 - Your Blender files stay in your mod's folder: `Documents\RUSE 2.0\Mods\<your mod>\blender\<the unit's name>\`. They aren't packed into your mod when you share it. The next **Change it in Blender** starts from what you sent last.
@@ -117,24 +119,23 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
   says is what the game plays.
 - An animation whose name starts with t_ or b_ (hr_t_fire, hr_b_run) plays on the top or the bottom half of the body
   only: a rider's on top, his horse's below.
-- **Every other action** opens the rest, by kind: standing still, moving, aiming and firing, the heavy weapon,
+- **Every other action** lists the rest, by kind: standing still, moving, aiming and firing, the heavy weapon,
   getting hit, dying.
 - **On long moves** the game puts a squad in its truck. A unit with animations of its own goes as itself instead,
   playing the animation picked there (its run, when left on Nearest), as fast as its truck. Pick **In its truck** to
   keep the truck.
 
 **A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
-for it alone, use RUSE Decoy.
+for it alone, click **Change in RUSE Decoy** on its **Animations** row, then **Only this unit**.
 
-Not tried in the game yet as the Studio makes it; a Horse Squad made the same way by hand played in the game
-(November 2026).
+The Horse Squad made this way in the Studio played in the game (November 2026).
 ## A model with its own bones and animations
 
 A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations.
 
 1. **Make it in Blender**: your model on an armature with bones of your own (named as you like), and an action for each animation. Name the actions for what they show: **stand** (or **idle**), **walk** and **run** at least; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** and **grenade** are known too.
 2. **Export it**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked.
-3. **Make the squad** as in step 2 above. On its page, under **Its own model**, click **Import model…** and pick your .glb. The Studio sees that its bones aren't the soldier's and takes it with its own bones and every animation. The page shows how many bones it has, each animation with its length, and how many of the squad's actions play it.
+3. **Make the squad** as in step 2 above. On its page, click **Import model…** on the **Model** row of **Look and moves** and pick your .glb. The Studio sees that its bones aren't the soldier's and takes it with its own bones and every animation. The page shows how many bones it has, each animation with its length, and how many of the squad's actions play it.
 4. **Test in game** shows it.
 
 Good to know:
@@ -143,7 +144,7 @@ Good to know:
 - Your mod keeps the model and every animation: `files\models\<the unit's name>.glb`, and each animation as `files\anim\own\<the unit's name>\<its name>.baf`.
 - **Use the copied unit's model** takes the model out again, with its animations.
 - A squad with a heavy-weapon soldier: give him his own horse and rider under **Its soldiers**, made on the same bones as the riflemen's, and he plays their animations. On other bones he plays what he played in the copied squad, and the page warns you: that can stop the game. Taking the riflemen's model out takes his out with it.
-- Not tried in the game yet through the Studio.
+- The Horse Squad made this way in the Studio played in the game (November 2026); nothing else made this way has been tried in the game yet.
 
 ## 4. Its card, then test
 

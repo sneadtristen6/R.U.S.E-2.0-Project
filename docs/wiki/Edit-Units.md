@@ -66,6 +66,14 @@ then change it like any other. Or pick the unit and choose **New unit…** on it
 
 The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
 
+Under it, **Look and moves** holds everything about how the unit looks and moves, a row each, in the order you work:
+**Model**, **Its soldiers** (a squad whose riflemen and heavy-weapon soldier have different models), **Animations**,
+**Sounds** and **Rides in**. Each row says what the unit has now and has one button for the usual thing; **More**
+shows the rest of that row's options right there. Everything you change is saved in your mod at once: nothing to save,
+no folder to pick. Repainting, its own copy of the model, a squad's uniform and a model of its own are on the
+**Model** row; animations and sounds are changed in RUSE Decoy from their rows (**Change in RUSE Decoy**): an
+animation for this unit only or for every unit that plays it, a sound for every unit that plays it.
+
 - **Repaint in Blender:** click **Open in Blender** (Blender is free; if the Studio doesn't find it, the page offers
   **Get Blender (free)** and **Choose Blender…** to show it where `blender.exe` is). The unit opens with its pictures,
   ready to paint on the model. Paint, then click **Bring back**: your
@@ -84,6 +92,15 @@ The unit's page shows its **3D model**: drag to turn it, scroll to zoom.
 - **A model of its own (new units):** **Import model…** brings in a 3D model from Blender or any 3D tool. See
   [[Import a model|Import-a-Model]]. A game unit keeps its model: its page has **New unit from this one…** to make
   the new unit the model goes on.
+- **A new unit, start to finish:** **New unit (import a model)** at the top of the Units tab, pick the unit to start
+  from (a tank for a tank, a squad for soldiers or a horse and rider), name it and click **Create**. Then work down
+  **Look and moves**: its model, its soldiers, its animations, its sounds, its truck. Give it a card, set its price
+  and values, and **Test in game**. A big mod with many new units is the same steps for each one: every unit keeps all
+  of it in your mod under its own name.
+- **A unit that carries its rider (a horse, a motorcycle):** one model with the rider and what he rides on one
+  skeleton, with its own animations (stand, walk and run at least), imported onto a copied squad: see [[Import a
+  model|Import-a-Model]], its part on a model with its own bones and animations. The Horse Squad was made this way in
+  the Studio and played in the game (November 2026); nothing else made this way has been tried in the game yet.
 
 ## Armour
 

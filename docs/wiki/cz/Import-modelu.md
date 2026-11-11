@@ -11,6 +11,8 @@ Model může jít také na novou budovu, místo jednoho dílu jejího vzhledu (v
 [[Budovy a nabídky stavby|Budovy-a-nabídky-stavby]]), nebo na vaši mapu jako vlastní kámen, předmět, keř nebo strom
 (viz [[Umisťování budov a stromů|Umisťování-budov-a-stromů]]). Obojí: Studio 0.9.8.8, viděno ve hře.
 
+Na stránce jednotky je to vše ve **Vzhled a pohyb**: **Importovat model…** je tlačítko řádku **Model** a ostatní možnosti modelu (velikost, **Posunout**, **Změnit v Blenderu**) jsou pod **Více** toho řádku. **Jeho vojáci** je samostatný řádek a co dělají animace modelu, je pod **Více** řádku **Animace**.
+
 ## 1. Opatřete si model
 
 Soubor **.3ds** s jeho obrázky (.tga nebo .png), nebo **.glb** či **.gltf** (obrázky jsou uvnitř: PNG, JPG nebo WebP).
@@ -35,16 +37,16 @@ díly pojmenované Main_Body, Main_Turre, Main_Barre...).
 V záložce **Jednotky** klikněte nahoře na **Nová jednotka (import modelu)**, pak vyberte jednotku, ze které začnete
 (pro tank tank: pro Abrams Sherman). Dejte jí název a klikněte na **Vytvořit**: stránka nové jednotky se otevře na
 **Importovat model…**. Model nové jednotky se bude otáčet a jezdit jako model této jednotky. Stránka jednotky hry má
-stejnou cestu: **Nová jednotka z této…** pod **Vlastní model**. (Studio 0.9.6 zatím nemá ani jedno tlačítko: otevřete
+stejnou cestu: **Nová jednotka z této…** na řádku **Model** v části **Vzhled a pohyb**. (Studio 0.9.6 zatím nemá ani jedno tlačítko: otevřete
 jednotku a na její stránce zvolte **Nová jednotka…**.)
 
 ## 3. Import
 
-Na stránce nové jednotky, pod **Vlastní model**:
+Na stránce nové jednotky, na řádku **Model** v části **Vzhled a pohyb**:
 
-1. Nastavte **Velikost**: její délka vůči kopírované jednotce. **1** je stejně dlouhá; M1 Abrams vůči Shermanu je
+1. Klikněte na **Více** a nastavte **Velikost**: její délka vůči kopírované jednotce. **1** je stejně dlouhá; M1 Abrams vůči Shermanu je
    **1.36** (jejich skutečné délky).
-2. Klikněte na **Importovat model…** a vyberte .3ds nebo .glb.
+2. Klikněte na **Importovat model…** (tlačítko řádku) a vyberte .3ds nebo .glb.
 
 Studio ho napasuje na jednotku: natočený dopředu (tam, kam míří jeho kanón), jeho délku, umístěný tam, kde stojí
 kopírovaná jednotka, s věží, která se otáčí tam, kde je na vašem modelu, stojící na zemi. Jeho obrázky se stanou jeho
@@ -59,7 +61,7 @@ napasuje znovu ze svého vlastního souboru. S několika novými letadly (nebo p
 velikost všem. Hra čte model při načítání, takže nová velikost se ukáže od dalšího sestavení.
 
 **Kde sedí:** nový model se umístí doprostřed jednotky, kterou kopíruje, takže většina modelů tu nic nepotřebuje.
-Pokud ten váš nesedí správně, otevřete **Posunout** pod velikostí (u modelu, který jste posunuli, zůstane otevřené).
+Pokud ten váš nesedí správně, použijte **Posunout** pod velikostí, v **Více** řádku Model.
 Má tři čísla, **Vpřed**, **Vpravo** a **Nahoru**, v jednotkách hry (stránka uvádí, jak dlouhá je kopírovaná jednotka
 v těchto jednotkách). Mínus posouvá opačným směrem a 0, 0, 0 ho vrátí tam, kam byl napasován. Klikněte na
 **Posunout** a model se napasuje znovu ze svého vlastního souboru, posunutý o tolik; jeho věž a vrtule jdou s ním,
@@ -93,7 +95,7 @@ U družstva (střelci, výsadkáři, jakákoli pěchota) udělá Studio část v
 2. **Otevři jeho vojáka v Blenderu.** Na stránce nového družstva v části **Vlastní model** klikni na **Změnit v Blenderu**. Blender se otevře s vojákem a jeho kostmi, každou tam, kde ji má hra. Nemáš Blender? **Získat Blender (zdarma)** ho nainstaluje; **Vybrat Blender…** ukáže Studiu, kde je.
 3. **Změň ho, nebo nasaď vlastní model na jeho kosti.** Chceš-li ho změnit, uprav ho tam. Pro vlastní model: načti ho přes **File > Import** do téže scény a polož ho na vojáka; klikni na svůj model, **Shift+klik** na kosti, pak **Ctrl+P > With Automatic Weights**. Vojáka ze hry smaž, pokud si ho nenecháš.
 4. **Pošli ho.** Klikni nahoře v Blenderu na **Poslat do R.U.S.E. Studia**.
-5. **Přenes ho zpět.** Ve Studiu klikni na **Přenést model**. Tvůj model nosí střelci družstva. Družstvo, jehož vojáka s těžkou zbraní hra kreslí vlastním modelem (třeba muže s bazukou v americkém střeleckém družstvu), si ho nechá tak, jak ho má kopírované družstvo, dokud mu nedáš vlastní: **Jeho vojáci** pod **Vlastní model** ukazuje každého z nich a jeho **Importovat model…** je jen pro něj. **Vyzkoušet ve hře** ho ukáže.
+5. **Přenes ho zpět.** Ve Studiu klikni na **Přenést model**. Tvůj model nosí střelci družstva. Družstvo, jehož vojáka s těžkou zbraní hra kreslí vlastním modelem (třeba muže s bazukou v americkém střeleckém družstvu), si ho nechá tak, jak ho má kopírované družstvo, dokud mu nedáš vlastní: řádek **Jeho vojáci** ukazuje každého z nich a jeho **Importovat model…** je jen pro něj. **Vyzkoušet ve hře** ho ukáže.
 
 Dobré vědět:
 - Tvoje soubory z Blenderu zůstávají ve složce tvého modu: `Documents\RUSE 2.0\Mods\<tvůj mod>\blender\<název jednotky>\`. Při sdílení modu se do něj nebalí. Další **Změnit v Blenderu** začne tím, co jsi poslal naposledy.
@@ -117,23 +119,23 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
   to hra hraje.
 - Animace, jejíž jméno začíná t_ nebo b_ (hr_t_fire, hr_b_run), hraje jen na horní nebo dolní polovině těla:
   jezdcova nahoře, jeho koně dole.
-- **Všechny ostatní činnosti** otevře zbytek, podle druhu: na místě, pohyb, míření a střelba, těžká zbraň, zásahy,
+- **Všechny ostatní činnosti** vypíše zbytek, podle druhu: na místě, pohyb, míření a střelba, těžká zbraň, zásahy,
   smrt.
 - **Na dlouhých přesunech** hra posadí četu do jejího auta. Jednotka s vlastními animacemi jde místo toho sama a hraje
   animaci tam vybranou (svůj běh, když necháte Nejbližší), stejně rychle jako její auto. Vyberte **Ve svém autě**,
   chcete-li auto ponechat.
 
 **Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
-změnit jen pro ni, použijte RUSE Decoy.
+změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Animace** a pak na **Jen tato jednotka**.
 
-Ve hře zatím nevyzkoušeno tak, jak to dělá Studio; Horse Squad udělaný stejně ručně ve hře fungoval (listopad 2026).
+Horse Squad udělaný takto ve Studiu ve hře fungoval (listopad 2026).
 ## Model s vlastními kostmi a animacemi
 
 Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi.
 
 1. **Udělej ho v Blenderu**: tvůj model na armatuře s vlastními kostmi (pojmenovanými, jak chceš) a akci pro každou animaci. Pojmenuj akce podle toho, co ukazují: aspoň **stand** (nebo **idle**), **walk** a **run**; známé jsou i **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** a **grenade**.
 2. **Exportuj ho**: **File > Export > glTF 2.0**, formát **glTF Binary (.glb)**, se zaškrtnutým **Animation**.
-3. **Vytvoř družstvo** jako v kroku 2 výše. Na jeho stránce v části **Vlastní model** klikni na **Importovat model…** a vyber svůj .glb. Studio pozná, že jeho kosti nejsou vojákovy, a vezme ho s vlastními kostmi a všemi animacemi. Stránka ukáže, kolik má kostí, každou animaci s její délkou a kolik akcí družstva ji hraje.
+3. **Vytvoř družstvo** jako v kroku 2 výše. Na jeho stránce klikni na **Importovat model…** na řádku **Model** v části **Vzhled a pohyb** a vyber svůj .glb. Studio pozná, že jeho kosti nejsou vojákovy, a vezme ho s vlastními kostmi a všemi animacemi. Stránka ukáže, kolik má kostí, každou animaci s její délkou a kolik akcí družstva ji hraje.
 4. **Vyzkoušet ve hře** ho ukáže.
 
 Dobré vědět:
@@ -142,7 +144,7 @@ Dobré vědět:
 - Tvůj mod uchová model i každou animaci: `files\models\<název jednotky>.glb` a každou animaci jako `files\anim\own\<název jednotky>\<její název>.baf`.
 - **Použít model kopírované jednotky** model zase odebere, i s jeho animacemi.
 - Družstvo s vojákem s těžkou zbraní: dej mu vlastního koně s jezdcem v **Jeho vojáci**, udělaného na stejných kostech jako model střelců, a bude hrát jejich animace. Na jiných kostech hraje to, co v kopírovaném družstvu, a stránka tě varuje: to může hru zastavit. Odebrání modelu střelců odebere i jeho.
-- Přes Studio zatím nevyzkoušeno ve hře.
+- Horse Squad udělaný takto ve Studiu ve hře fungoval (listopad 2026); nic jiného takto udělaného zatím ve hře vyzkoušeno nebylo.
 
 ## 4. Jeho karta, pak test
 

@@ -15,16 +15,9 @@ A full walkthrough: install the Studio, make a mod that makes the M4 Sherman cos
 The Studio opens on **What would you like to do?**: **Carry on with a mod**, **Start a new mod**, or **Skip** (tick
 **Always skip this screen** to go straight to the tabs from then on; Settings brings it back).
 
-1. Click **Start a new mod**. Its steps show in a bar on top, with **Back** and **Next**:
-   - **Name:** type a name, for example `cheap-sherman` (the name players see in the Launcher).
-   - **Nations:** for each nation, **Keep its units** (its build menus as in the game) or **Start it empty**.
-     **Change** gives a nation a new name and flag ([[Make a nation into another|Make-a-Nation]]).
-   - **Research:** **Keep the game's research**, **No research** (every unit can be built from the start), or
-     **Custom**.
-   - **Buildings:** each nation's buildings and what they build ([[Buildings and build menus|Buildings-and-Build-Menus]]).
-   - **What else:** tick what you want to change next (units' values, AI and player settings, music and sounds, any
-     other value); each opens as its own tab. For this walkthrough, tick **Units' values**.
-2. Keep the game's units and research, and press **Next** until the Units tab opens.
+1. Click **Start a new mod**.
+2. Type a name, for example `cheap-sherman` (the name players see in the Launcher), and click **Create**. The Studio
+   opens on your new mod.
 
 Already in the Studio? The header's **Mod** menu has **New mod...** too: type a name and click **Create**.
 

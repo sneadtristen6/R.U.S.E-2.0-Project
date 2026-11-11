@@ -67,6 +67,15 @@ poi cambiala come qualsiasi altra. Oppure scegli l'unità e scegli **Nuova unit�
 
 La pagina dell'unità mostra il suo **Modello 3D**: trascina per ruotarlo, usa la rotellina per lo zoom.
 
+Sotto, **Aspetto e movimenti** raccoglie tutto ciò che riguarda l'aspetto e i movimenti dell'unità, una riga per ogni
+cosa, nell'ordine in cui lavori: **Modello**, **I suoi soldati** (una squadra i cui fucilieri e il soldato con arma
+pesante hanno modelli diversi), **Animazioni**, **Suoni** e **Viaggia su**. Ogni riga dice cosa ha ora l'unità e ha un
+pulsante per la cosa più comune; **Altro** mostra lì stesso il resto delle opzioni di quella riga. Tutto ciò che cambi
+viene salvato subito nella tua mod: niente da salvare, nessuna cartella da scegliere. Ridipingere, una sua copia del
+modello, l'uniforme di una squadra e un modello tutto suo sono sulla riga **Modello**; animazioni e suoni si cambiano
+in RUSE Decoy dalle loro righe (**Cambia in RUSE Decoy**): un'animazione solo per questa unità o per tutte le unità
+che la usano, un suono per tutte le unità che lo usano.
+
 - **Ridipingi in Blender:** clicca su **Apri in Blender** (Blender è gratuito; se lo Studio non lo trova, la pagina propone
   **Scarica Blender (gratis)** e **Scegli Blender…** per mostrargli dove si trova `blender.exe`). L'unità si apre con le sue
   immagini, pronta per dipingere sul modello. Dipingi, poi clicca su **Riporta**: la tua
@@ -85,6 +94,16 @@ La pagina dell'unità mostra il suo **Modello 3D**: trascina per ruotarlo, usa l
 - **Un modello tutto suo (nuove unità):** **Importa modello…** porta dentro un modello 3D da Blender o da qualsiasi
   programma 3D. Vedi [[Importare un modello|Importare-un-modello]]. Un'unità del gioco tiene il suo modello: la sua pagina ha
   **Nuova unità da questa…** per creare la nuova unità su cui va il modello.
+- **Una nuova unità, dall'inizio alla fine:** **Nuova unità (importa un modello)** in cima alla scheda Unità, scegli
+  l'unità di partenza (un carro per un carro, una squadra per dei soldati o per un cavallo con cavaliere), dalle un
+  nome e clicca **Crea**. Poi scendi lungo **Aspetto e movimenti**: il suo modello, i suoi soldati, le sue animazioni,
+  i suoi suoni, il suo camion. Dalle una scheda, imposta prezzo e valori, poi **Prova in gioco**. Una grande mod con
+  tante nuove unità sono gli stessi passi per ognuna: ogni unità tiene tutto questo nella tua mod sotto il suo nome.
+- **Un'unità che porta il suo cavaliere (un cavallo, una moto):** un solo modello con il cavaliere e ciò che cavalca
+  su uno stesso scheletro, con le sue animazioni (almeno fermo, camminata e corsa), importato su una squadra copiata:
+  vedi [[Importare un modello|Importare-un-modello]], la parte su un modello con ossa e animazioni proprie. La Horse
+  Squad è stata fatta così nello Studio e giocata in gioco (novembre 2026); nient'altro fatto così è ancora stato
+  provato in gioco.
 
 ## Corazza
 

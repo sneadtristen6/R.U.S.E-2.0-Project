@@ -17,17 +17,9 @@ Das Studio öffnet sich auf **Was möchten Sie tun?**: **An einem Mod weiterarbe
 **Überspringen** (hake **Diesen Bildschirm immer überspringen** an, um von da an direkt zu den Reitern zu gehen; die
 Einstellungen bringen ihn zurück).
 
-1. Klick auf **Einen neuen Mod beginnen**. Seine Schritte erscheinen in einer Leiste oben, mit **Zurück** und **Weiter**:
-   - **Name:** gib einen Namen ein, zum Beispiel `cheap-sherman` (der Name, den Spieler im Launcher sehen).
-   - **Nationen:** für jede Nation **Einheiten behalten** (ihre Baumenüs wie im Spiel) oder **Leer beginnen**.
-     **Ändern** gibt einer Nation einen neuen Namen und eine neue Flagge ([[Eine Nation in eine andere verwandeln|Eine-Nation-in-eine-andere-verwandeln]]).
-   - **Forschung:** **Die Forschung des Spiels behalten**, **Keine Forschung** (jede Einheit kann von Anfang an gebaut
-     werden) oder **Eigene**.
-   - **Gebäude:** die Gebäude jeder Nation und was sie bauen ([[Gebäude und Baumenüs|Gebäude-und-Baumenüs]]).
-   - **Was noch:** hake an, was du als Nächstes ändern willst (Werte der Einheiten, KI- und Spielereinstellungen, Musik
-     und Klänge, jeden anderen Wert); jedes öffnet sich als eigener Reiter. Für diese Anleitung hake **Werte der
-     Einheiten** an.
-2. Behalte die Einheiten und die Forschung des Spiels und drück **Weiter**, bis sich der Reiter Einheiten öffnet.
+1. Klick auf **Einen neuen Mod beginnen**.
+2. Gib einen Namen ein, zum Beispiel `cheap-sherman` (der Name, den Spieler im Launcher sehen), und klick auf
+   **Erstellen**. Das Studio öffnet sich auf deinem neuen Mod.
 
 Schon im Studio? Das Menü **Mod** in der Kopfleiste hat auch **Neue Mod…**: gib einen Namen ein und klick auf
 **Erstellen**.

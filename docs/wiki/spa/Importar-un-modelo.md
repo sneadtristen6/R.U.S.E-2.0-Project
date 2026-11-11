@@ -11,6 +11,8 @@ Un modelo también puede ir en un edificio nuevo, en lugar de una pieza de su as
 [[Edificios y menús de construcción|Edificios-y-menús-de-construcción]]), o en tu mapa como roca, objeto, arbusto o árbol propio
 (consulta [[Colocar edificios y árboles|Colocar-edificios-y-árboles]]). Los dos: Studio 0.9.8.8, visto en el juego.
 
+En la página de la unidad todo esto está en **Aspecto y movimientos**: **Importar modelo…** es el botón de la fila **Modelo**, y el resto de opciones del modelo (su tamaño, **Moverlo**, **Cambiarlo en Blender**) está bajo **Más** de esa fila. **Sus soldados** es una fila propia, y lo que hacen las animaciones del modelo está bajo **Más** de la fila **Animaciones**.
+
 ## 1. Consigue un modelo
 
 Un **.3ds** con sus imágenes (.tga o .png), o un **.glb** o **.gltf** (con las imágenes dentro: PNG, JPG o WebP). Un
@@ -35,16 +37,16 @@ con piezas llamadas Main_Body, Main_Turre, Main_Barre...).
 En la pestaña **Unidades**, haz clic en **Nueva unidad (importar un modelo)** arriba, y luego elige la unidad de la que
 partir (para un tanque, un tanque: el Sherman para el Abrams). Dale un nombre y haz clic en **Crear**: la página de la
 unidad nueva se abre en **Importar modelo…**. El modelo de la unidad nueva girará y avanzará como el de esta unidad. La
-página de una unidad del juego tiene la misma entrada: **Nueva unidad a partir de esta…** bajo **Su propio modelo**.
+página de una unidad del juego tiene la misma entrada: **Nueva unidad a partir de esta…** en la fila **Modelo** de **Aspecto y movimientos**.
 (El Studio 0.9.6 aún no tiene ninguno de los dos botones: abre la unidad y elige **Nueva unidad…** en su página.)
 
 ## 3. Importa
 
-En la página de la unidad nueva, bajo **Su propio modelo**:
+En la página de la unidad nueva, en la fila **Modelo** de **Aspecto y movimientos**:
 
-1. Ajusta el **Tamaño**: su longitud respecto a la de la unidad copiada. **1** es igual de largo; un M1 Abrams respecto
+1. Haz clic en **Más** y ajusta el **Tamaño**: su longitud respecto a la de la unidad copiada. **1** es igual de largo; un M1 Abrams respecto
    a un Sherman es **1.36** (sus longitudes reales).
-2. Haz clic en **Importar modelo…** y elige el .3ds o el .glb.
+2. Haz clic en **Importar modelo…** (el botón de la fila) y elige el .3ds o el .glb.
 
 El Studio lo ajusta a la unidad: mirando hacia delante (hacia donde apunta su cañón), su longitud, colocado donde está
 la unidad copiada, con su torreta girando en el sitio que tiene en tu modelo, apoyado en el suelo. Sus imágenes pasan a
@@ -61,8 +63,8 @@ les cambia el tamaño a todos. El juego lee un modelo cuando carga, así que un 
 siguiente construcción.
 
 **Dónde queda:** un modelo nuevo se pone en el centro de la unidad que copia, así que a la mayoría de los modelos no les
-hace falta nada aquí. Si el tuyo no queda bien colocado, abre la sección **Moverlo** bajo el tamaño (se queda abierta en
-un modelo que hayas movido). Pide tres números, **Adelante**, **Derecha** y **Arriba**, en unidades del juego (la página
+hace falta nada aquí. Si el tuyo no queda bien colocado, usa **Moverlo** bajo el tamaño, en **Más** de la fila
+Modelo. Pide tres números, **Adelante**, **Derecha** y **Arriba**, en unidades del juego (la página
 dice cuánto mide la unidad copiada en esas unidades). Un menos va al otro lado, y 0, 0, 0 lo devuelve a donde se ajustó.
 Haz clic en **Mover** y el modelo se ajusta otra vez a partir de su propio archivo, movido esa distancia; su torreta y
 sus hélices van con él, así que siguen girando en el sitio correcto. En la vista 3D, el anillo azul es donde está la
@@ -98,7 +100,7 @@ Para un pelotón (fusileros, paracaidistas, cualquier infantería), el Studio ha
 2. **Abre su soldado en Blender.** En la página del nuevo pelotón, bajo **Su propio modelo**, pulsa **Cambiarlo en Blender**. Blender se abre con el soldado y sus huesos, cada uno donde lo tiene el juego. ¿Aún no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
 3. **Cámbialo, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en los huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no lo conservas.
 4. **Envíalo.** Pulsa **Enviar a R.U.S.E. Studio** arriba en Blender.
-5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Los fusileros del pelotón llevan tu modelo. Un pelotón cuyo soldado con arma pesada el juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU., por ejemplo) lo conserva como lo tiene el pelotón copiado hasta que le des uno: **Sus soldados**, bajo **Su propio modelo**, muestra a cada uno, y su **Importar modelo…** es solo para él. **Probar en el juego** lo muestra.
+5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Los fusileros del pelotón llevan tu modelo. Un pelotón cuyo soldado con arma pesada el juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU., por ejemplo) lo conserva como lo tiene el pelotón copiado hasta que le des uno: la fila **Sus soldados** muestra a cada uno, y su **Importar modelo…** es solo para él. **Probar en el juego** lo muestra.
 
 Bueno saberlo:
 - Tus archivos de Blender quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`. No se empaquetan en tu mod cuando lo compartes. El próximo **Cambiarlo en Blender** empieza desde lo último que enviaste.
@@ -123,24 +125,23 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
   juego.
 - Una animación cuyo nombre empieza por t_ o b_ (hr_t_fire, hr_b_run) se reproduce solo en la mitad de arriba o de
   abajo del cuerpo: las de un jinete arriba, las de su caballo abajo.
-- **Todas las demás acciones** abre el resto, por tipo: quieto, en movimiento, apuntar y disparar, el arma pesada,
+- **Todas las demás acciones** lista el resto, por tipo: quieto, en movimiento, apuntar y disparar, el arma pesada,
   recibir impactos, morir.
 - **En los trayectos largos** el juego mete a un pelotón en su camión. Una unidad con animaciones propias va por sí
   misma en su lugar, reproduciendo la animación elegida ahí (su correr si la dejas en La más cercana), tan rápido como
   su camión. Elige **En su camión** para quedarte con el camión.
 
 **Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para
-cambiar una solo para ella, usa RUSE Decoy.
+cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Animaciones** y luego en **Solo esta unidad**.
 
-Aún no probado en el juego tal como lo hace el Studio; un Horse Squad hecho igual a mano se jugó en el juego
-(noviembre de 2026).
+El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026).
 ## Un modelo con huesos y animaciones propios
 
 Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones.
 
 1. **Hazlo en Blender**: tu modelo sobre una armadura con huesos propios (con los nombres que quieras) y una acción para cada animación. Nombra las acciones según lo que muestran: al menos **stand** (o **idle**), **walk** y **run**; también se reconocen **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** y **grenade**.
 2. **Expórtalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** marcado.
-3. **Crea el pelotón** como en el paso 2 de arriba. En su página, bajo **Su propio modelo**, pulsa **Importar modelo…** y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
+3. **Crea el pelotón** como en el paso 2 de arriba. En su página, pulsa **Importar modelo…** en la fila **Modelo** de **Aspecto y movimientos** y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
 4. **Probar en el juego** lo muestra.
 
 Bueno saberlo:
@@ -149,7 +150,7 @@ Bueno saberlo:
 - Tu mod guarda el modelo y cada animación: `files\models\<nombre de la unidad>.glb`, y cada animación como `files\anim\own\<nombre de la unidad>\<su nombre>.baf`.
 - **Usar el modelo de la unidad copiada** vuelve a quitar el modelo, con sus animaciones.
 - Un pelotón con soldado con arma pesada: dale su propio caballo con jinete en **Sus soldados**, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
-- Todavía no probado en el juego a través del Studio.
+- El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado todavía en el juego.
 
 ## 4. Su tarjeta, y luego la prueba
 

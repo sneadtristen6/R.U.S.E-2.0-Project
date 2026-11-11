@@ -69,6 +69,15 @@ i kliknij **Utwórz**; potem zmieniaj ją jak każdą inną. Albo wybierz jednos
 
 Strona jednostki pokazuje jej **Model 3D**: przeciągnij, by go obrócić, przewiń, by przybliżyć.
 
+Pod spodem **Wygląd i ruch** zbiera wszystko o tym, jak jednostka wygląda i się porusza, wiersz na każdą rzecz, w
+kolejności, w jakiej pracujesz: **Model**, **Jego żołnierze** (oddział, którego strzelcy i żołnierz z ciężką bronią
+mają różne modele), **Animacje**, **Dźwięki** i **Jedzie w**. Każdy wiersz mówi, co jednostka ma teraz, i ma jeden
+przycisk do zwykłej czynności; **Więcej** pokazuje na miejscu pozostałe opcje tego wiersza. Wszystko, co zmienisz, od
+razu zapisuje się w twoim modzie: nic do zapisywania, żadnego folderu do wybierania. Przemalowanie, własna kopia
+modelu, mundur oddziału i własny model są w wierszu **Model**; animacje i dźwięki zmieniasz w RUSE Decoy z ich wierszy
+(**Zmień w RUSE Decoy**): animację tylko dla tej jednostki albo dla wszystkich jednostek, które jej używają, dźwięk
+dla wszystkich jednostek, które go używają.
+
 - **Przemaluj w Blenderze:** kliknij **Otwórz w Blenderze** (Blender jest darmowy; jeśli Studio go nie znajdzie, strona
   proponuje **Pobierz Blendera (za darmo)** i **Wybierz Blendera…**, by wskazać, gdzie jest `blender.exe`). Jednostka
   otwiera się ze swoimi obrazami, gotowa do malowania na modelu. Maluj, potem kliknij **Przenieś**: twoje
@@ -87,6 +96,15 @@ Strona jednostki pokazuje jej **Model 3D**: przeciągnij, by go obrócić, przew
 - **Własny model (nowe jednostki):** **Importuj model…** wczytuje model 3D z Blendera lub dowolnego narzędzia 3D. Zobacz
   [[Importowanie modelu|Importowanie-modelu]]. Jednostka z gry zachowuje swój model: jej strona ma **Nowa jednostka z tej…**,
   by zrobić nową jednostkę, na którą trafi model.
+- **Nowa jednostka od początku do końca:** **Nowa jednostka (import modelu)** u góry zakładki Jednostki, wybierz
+  jednostkę wyjściową (czołg dla czołgu, oddział dla żołnierzy albo konia z jeźdźcem), nazwij ją i kliknij **Utwórz**.
+  Potem przejdź w dół przez **Wygląd i ruch**: jej model, jej żołnierzy, jej animacje, jej dźwięki, jej ciężarówkę.
+  Daj jej kartę, ustaw cenę i wartości, potem **Testuj w grze**. Duży mod z wieloma nowymi jednostkami to te same
+  kroki dla każdej: każda jednostka trzyma to wszystko w twoim modzie pod własną nazwą.
+- **Jednostka, która niesie swojego jeźdźca (koń, motocykl):** jeden model z jeźdźcem i tym, na czym jedzie, na jednym
+  szkielecie, z własnymi animacjami (co najmniej stanie, chód i bieg), zaimportowany na skopiowany oddział: zobacz
+  [[Importowanie modelu|Importowanie-modelu]], część o modelu z własnymi kośćmi i animacjami. Horse Squad zrobiono tak
+  w Studiu i zagrano w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
 ## Pancerz
 

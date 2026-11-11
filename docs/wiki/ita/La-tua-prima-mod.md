@@ -15,16 +15,9 @@ Una guida completa: installa lo Studio, crea una mod che fa costare $1 l'M4 Sher
 Lo Studio si apre su **Che cosa vuoi fare?**: **Continua un mod**, **Inizia un nuovo mod** o **Salta** (spunta
 **Salta sempre questa schermata** per andare da allora in poi direttamente alle schede; Impostazioni la fa tornare).
 
-1. Clicca **Inizia un nuovo mod**. I suoi passi compaiono in una barra in alto, con **Indietro** e **Avanti**:
-   - **Nome:** scrivi un nome, per esempio `cheap-sherman` (il nome che i giocatori vedono nel Launcher).
-   - **Nazioni:** per ogni nazione, **Tieni le sue unità** (i suoi menu di costruzione come nel gioco) o **Iniziala vuota**.
-     **Modifica** dà a una nazione un nuovo nome e una nuova bandiera ([[Trasformare una nazione in un altro paese|Trasformare-una-nazione-in-un-altro-paese]]).
-   - **Ricerca:** **Tieni le ricerche del gioco**, **Nessuna ricerca** (ogni unità si può costruire fin dall'inizio) o
-     **Personalizzata**.
-   - **Edifici:** gli edifici di ogni nazione e cosa costruiscono ([[Edifici e menu di costruzione|Edifici-e-menu-di-costruzione]]).
-   - **Altro:** spunta cosa vuoi cambiare dopo (valori delle unità, impostazioni dell'IA e dei giocatori, musica e suoni,
-     qualsiasi altro valore); ognuno si apre in una scheda tutta sua. Per questa guida, spunta **Valori delle unità**.
-2. Tieni le unità e le ricerche del gioco, e premi **Avanti** finché non si apre la scheda Unità.
+1. Clicca **Inizia un nuovo mod**.
+2. Scrivi un nome, per esempio `cheap-sherman` (il nome che i giocatori vedono nel Launcher), e clicca **Crea**. Lo
+   Studio si apre sulla tua nuova mod.
 
 Sei già nello Studio? Anche il menu **Mod** della barra in alto ha **Nuova mod…**: scrivi un nome e clicca **Crea**.
 

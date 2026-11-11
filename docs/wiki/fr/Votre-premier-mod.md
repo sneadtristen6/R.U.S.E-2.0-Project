@@ -15,20 +15,9 @@ Un guide complet : installer le Studio, faire un mod où le M4 Sherman coûte 1 
 Le Studio s'ouvre sur **Que voulez-vous faire ?** : **Continuer un mod**, **Commencer un nouveau mod**, ou **Passer**
 (cochez **Toujours passer cet écran** pour aller directement aux onglets dès lors ; les Réglages le font revenir).
 
-1. Cliquez sur **Commencer un nouveau mod**. Ses étapes s'affichent dans une barre en haut, avec **Retour** et
-   **Suivant** :
-   - **Nom :** tapez un nom, par exemple `cheap-sherman` (le nom que les joueurs voient dans le Launcher).
-   - **Nations :** pour chaque nation, **Garder ses unités** (ses menus de construction comme dans le jeu) ou **La
-     vider**. **Changer** donne à une nation un nouveau nom et un nouveau drapeau
-     ([[Changer une nation en une autre|Changer-une-nation-en-une-autre]]).
-   - **Recherche :** **Garder les recherches du jeu**, **Aucune recherche** (chaque unité peut être construite dès le
-     départ), ou **Personnalisée**.
-   - **Bâtiments :** les bâtiments de chaque nation et ce qu'ils construisent
-     ([[Bâtiments et menus de construction|Bâtiments-et-menus-de-construction]]).
-   - **Quoi d'autre :** cochez ce que vous voulez changer ensuite (valeurs des unités, réglages de l'IA et des joueurs,
-     musique et sons, toute autre valeur) ; chacun s'ouvre dans son propre onglet. Pour ce guide, cochez **Valeurs des
-     unités**.
-2. Gardez les unités et les recherches du jeu, et appuyez sur **Suivant** jusqu'à ce que l'onglet Unités s'ouvre.
+1. Cliquez sur **Commencer un nouveau mod**.
+2. Tapez un nom, par exemple `cheap-sherman` (le nom que les joueurs voient dans le Launcher), et cliquez sur
+   **Créer**. Le Studio s'ouvre sur votre nouveau mod.
 
 Déjà dans le Studio ? Le menu **Mod** de l'en-tête a aussi **Nouveau mod…** : tapez un nom et cliquez sur **Créer**.
 

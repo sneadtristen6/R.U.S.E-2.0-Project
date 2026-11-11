@@ -16,16 +16,9 @@ to ve hře.
 Studio se otevře na obrazovce **Co chcete udělat?**: **Pokračovat v modu**, **Začít nový mod** nebo **Přeskočit**
 (zaškrtněte **Tuto obrazovku vždy přeskočit** a od té doby půjdete rovnou do záložek; Nastavení ji vrátí).
 
-1. Klikněte na **Začít nový mod**. Jeho kroky se ukazují v liště nahoře, s tlačítky **Zpět** a **Další**:
-   - **Název:** napište název, například `cheap-sherman` (název, který hráči uvidí v Launcheru).
-   - **Národy:** u každého národa **Ponechat jednotky** (jeho nabídky stavby jako ve hře) nebo **Začít prázdný**.
-     **Změnit** dá národu nový název a vlajku ([[Změna jednoho národa v jiný|Změna-jednoho-národa-v-jiný]]).
-   - **Výzkum:** **Ponechat výzkum ze hry**, **Bez výzkumu** (každou jednotku lze stavět hned od začátku) nebo
-     **Vlastní**.
-   - **Budovy:** budovy každého národa a co staví ([[Budovy a nabídky stavby|Budovy-a-nabídky-stavby]]).
-   - **Co dál:** zaškrtněte, co chcete změnit potom (hodnoty jednotek, nastavení AI a hráčů, hudbu a zvuky, jakoukoli
-     jinou hodnotu); každá věc se otevře jako vlastní záložka. Pro tento návod zaškrtněte **Hodnoty jednotek**.
-2. Ponechte jednotky a výzkum ze hry a mačkejte **Další**, dokud se neotevře záložka Jednotky.
+1. Klikněte na **Začít nový mod**.
+2. Napište název, například `cheap-sherman` (název, který hráči uvidí v Launcheru), a klikněte na **Vytvořit**. Studio
+   se otevře s vaším novým modem.
 
 Už jste ve Studiu? Nabídka **Mod** v záhlaví má také **Nový mód…**: napište název a klikněte na **Vytvořit**.
 

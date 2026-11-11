@@ -11,6 +11,8 @@ Model może też trafić na nowy budynek, w miejsce części jego wyglądu (zoba
 [[Budynki i menu budowy|Budynki-i-menu-budowy]]), albo na twoją mapę jako własna skała, obiekt, krzew lub drzewo
 (zobacz [[Rozmieszczanie budynków i drzew|Rozmieszczanie-budynków-i-drzew]]). Oba: Studio 0.9.8.8, widziane w grze.
 
+Na stronie jednostki wszystko to jest w **Wygląd i ruch**: **Importuj model…** to przycisk wiersza **Model**, a pozostałe opcje modelu (rozmiar, **Przesuń**, **Zmień w Blenderze**) są pod **Więcej** tego wiersza. **Jego żołnierze** to osobny wiersz, a to, co robią animacje modelu, jest pod **Więcej** wiersza **Animacje**.
+
 ## 1. Zdobądź model
 
 Plik **.3ds** z jego obrazami (.tga lub .png) albo **.glb** lub **.gltf** (obrazy są w środku: PNG, JPG lub WebP).
@@ -36,16 +38,16 @@ części nazwane Main_Body, Main_Turre, Main_Barre...).
 W zakładce **Jednostki** kliknij u góry **Nowa jednostka (import modelu)**, potem wybierz jednostkę, od której zaczynasz
 (dla czołgu czołg: Shermana dla Abramsa). Nadaj jej nazwę i kliknij **Utwórz**: strona nowej jednostki otwiera się przy
 **Importuj model…**. Model nowej jednostki będzie się obracał i jeździł jak ta jednostka. Strona jednostki z gry ma to samo
-wejście: **Nowa jednostka z tej…** pod **Własny model**. (Studio 0.9.6 nie ma jeszcze żadnego z tych przycisków: otwórz
+wejście: **Nowa jednostka z tej…** w wierszu **Model** sekcji **Wygląd i ruch**. (Studio 0.9.6 nie ma jeszcze żadnego z tych przycisków: otwórz
 jednostkę i wybierz **Nowa jednostka…** na jej stronie.)
 
 ## 3. Import
 
-Na stronie nowej jednostki, pod **Własny model**:
+Na stronie nowej jednostki, w wierszu **Model** sekcji **Wygląd i ruch**:
 
-1. Ustaw **Rozmiar**: jej długość w stosunku do skopiowanej jednostki. **1** to ta sama długość; M1 Abrams w stosunku do
+1. Kliknij **Więcej** i ustaw **Rozmiar**: jej długość w stosunku do skopiowanej jednostki. **1** to ta sama długość; M1 Abrams w stosunku do
    Shermana to **1.36** (ich prawdziwe długości).
-2. Kliknij **Importuj model…** i wybierz plik .3ds lub .glb.
+2. Kliknij **Importuj model…** (przycisk wiersza) i wybierz plik .3ds lub .glb.
 
 Studio dopasowuje go do jednostki: przodem do przodu (tam, gdzie celuje jego działo), na jej długość, w miejscu, w
 którym stoi skopiowana jednostka, z wieżą obracającą się tam, gdzie jest na twoim modelu, stojący na ziemi. Jego obrazy
@@ -61,8 +63,8 @@ zostanie dopasowany od nowa z jego własnego pliku. Przy kilku nowych samolotach
 zmienia rozmiar wszystkich. Gra czyta model przy wczytywaniu, więc nowy rozmiar widać od następnego budowania.
 
 **Gdzie stoi:** nowy model jest stawiany na środku jednostki, którą kopiuje, więc większości modeli nic tu nie trzeba.
-Jeśli twój stoi nie tak, jak trzeba, otwórz sekcję **Przesuń** pod rozmiarem (zostaje otwarta przy modelu już
-przesuniętym). Są w niej trzy liczby, **Do przodu**, **W prawo** i **W górę**, w jednostkach gry (strona mówi, jaką
+Jeśli twój stoi nie tak, jak trzeba, użyj **Przesuń** pod rozmiarem, w **Więcej** wiersza
+Model. Są w niej trzy liczby, **Do przodu**, **W prawo** i **W górę**, w jednostkach gry (strona mówi, jaką
 długość ma skopiowana jednostka w tych jednostkach). Minus to przeciwny kierunek, a 0, 0, 0 przywraca go tam, gdzie
 został dopasowany. Kliknij przycisk **Przesuń**, a model zostanie dopasowany od nowa z jego własnego pliku, przesunięty
 o tyle; jego wieża i śmigła idą razem z nim, więc dalej obracają się we właściwym miejscu. W widoku 3D niebieski
@@ -97,7 +99,7 @@ Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą 
 2. **Otwórz jego żołnierza w Blenderze.** Na stronie nowego oddziału, w części **Własny model**, kliknij **Zmień w Blenderze**. Blender otworzy się z żołnierzem i jego kośćmi, każdą tam, gdzie ma ją gra. Nie masz Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
 3. **Zmień go albo załóż własny model na jego kości.** Żeby go zmienić, edytuj go tam. Własny model: wczytaj go przez **File > Import** do tej samej sceny i połóż na żołnierzu; kliknij swój model, **Shift+klik** na kości, potem **Ctrl+P > With Automatic Weights**. Usuń żołnierza z gry, jeśli go nie zostawiasz.
 4. **Wyślij go.** Kliknij **Wyślij do R.U.S.E. Studio** u góry Blendera.
-5. **Przenieś go z powrotem.** W Studiu kliknij **Przenieś model**. Twój model noszą strzelcy oddziału. Oddział, którego żołnierza z ciężką bronią gra rysuje własnym modelem (na przykład żołnierz z bazooką w amerykańskim oddziale strzelców), zachowuje go takim, jakim ma go kopiowany oddział, dopóki nie dasz mu własnego: **Jego żołnierze** pod **Własny model** pokazuje każdego z nich, a tamtejsze **Importuj model…** jest tylko dla niego. **Testuj w grze** go pokaże.
+5. **Przenieś go z powrotem.** W Studiu kliknij **Przenieś model**. Twój model noszą strzelcy oddziału. Oddział, którego żołnierza z ciężką bronią gra rysuje własnym modelem (na przykład żołnierz z bazooką w amerykańskim oddziale strzelców), zachowuje go takim, jakim ma go kopiowany oddział, dopóki nie dasz mu własnego: wiersz **Jego żołnierze** pokazuje każdego z nich, a tamtejsze **Importuj model…** jest tylko dla niego. **Testuj w grze** go pokaże.
 
 Dobrze wiedzieć:
 - Twoje pliki Blendera zostają w folderze twojego moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\`. Nie trafiają do moda, gdy go udostępniasz. Następne **Zmień w Blenderze** zaczyna od tego, co wysłałeś ostatnio.
@@ -121,24 +123,23 @@ jednostki **Jej animacje** pokazują, co jednostka odtwarza przy każdej czynno�
   zasadę: to, co mówi strona, odtwarza gra.
 - Animacja, której nazwa zaczyna się od t_ lub b_ (hr_t_fire, hr_b_run), działa tylko na górnej albo dolnej połowie
   ciała: jeźdźca u góry, jego konia na dole.
-- **Wszystkie inne czynności** otwierają resztę, według rodzaju: w miejscu, w ruchu, celowanie i strzelanie, ciężka
+- **Wszystkie inne czynności** wymieniają resztę, według rodzaju: w miejscu, w ruchu, celowanie i strzelanie, ciężka
   broń, trafienia, śmierć.
 - **Na długich trasach** gra wsadza oddział do ciężarówki. Jednostka z własnymi animacjami idzie zamiast tego sama,
   odtwarzając wybraną tam animację (swój bieg, jeśli zostawisz Najbliższą), tak szybko jak jej ciężarówka. Wybierz
   **W swojej ciężarówce**, aby zostawić ciężarówkę.
 
 **Kopia zachowuje animacje:** jednostka skopiowana z takiej, która ma własne animacje, odtwarza te same. Aby zmienić
-którąś tylko dla niej, użyj RUSE Decoy.
+którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Animacje**, potem **Tylko ta jednostka**.
 
-Jeszcze nie sprawdzone w grze w wykonaniu Studia; Horse Squad zrobiony w ten sam sposób ręcznie działał w grze
-(listopad 2026).
+Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026).
 ## Model z własnymi kośćmi i animacjami
 
 Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia do oddziału razem ze swoimi animacjami.
 
 1. **Zrób go w Blenderze**: twój model na armaturze z własnymi kośćmi (nazwanymi, jak chcesz) i akcja dla każdej animacji. Nazwij akcje tak, jak to, co pokazują: co najmniej **stand** (lub **idle**), **walk** i **run**; rozpoznawane są też **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** i **grenade**.
 2. **Wyeksportuj go**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, z zaznaczonym **Animation**.
-3. **Utwórz oddział** jak w kroku 2 powyżej. Na jego stronie, w części **Własny model**, kliknij **Importuj model…** i wybierz swój .glb. Studio widzi, że jego kości nie są kośćmi żołnierza, i bierze go z własnymi kośćmi i wszystkimi animacjami. Strona pokazuje, ile ma kości, każdą animację z jej długością i ile czynności oddziału ją gra.
+3. **Utwórz oddział** jak w kroku 2 powyżej. Na jego stronie kliknij **Importuj model…** w wierszu **Model** sekcji **Wygląd i ruch** i wybierz swój .glb. Studio widzi, że jego kości nie są kośćmi żołnierza, i bierze go z własnymi kośćmi i wszystkimi animacjami. Strona pokazuje, ile ma kości, każdą animację z jej długością i ile czynności oddziału ją gra.
 4. **Testuj w grze** go pokaże.
 
 Dobrze wiedzieć:
@@ -147,7 +148,7 @@ Dobrze wiedzieć:
 - Twój mod przechowuje model i każdą animację: `files\models\<nazwa jednostki>.glb`, a każdą animację jako `files\anim\own\<nazwa jednostki>\<jej nazwa>.baf`.
 - **Użyj modelu kopiowanej jednostki** znowu usuwa model, razem z jego animacjami.
 - Oddział z żołnierzem z ciężką bronią: daj mu własnego konia z jeźdźcem w **Jego żołnierze**, zrobionego na tych samych kościach co model strzelców, a będzie odgrywał ich animacje. Na innych kościach odgrywa to, co w kopiowanym oddziale, a strona ostrzega: to może zatrzymać grę. Usunięcie modelu strzelców usuwa też jego.
-- Przez Studio jeszcze nie wypróbowano w grze.
+- Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
 ## 4. Jego karta, potem test
 
