@@ -131,6 +131,21 @@ changer une rien que pour elle, utilisez RUSE Decoy.
 
 Pas encore essayé en jeu tel que le Studio le fait ; une Horse Squad faite de la même façon à la main a été jouée en
 jeu (novembre 2026).
+## Un modèle avec ses propres os et ses animations
+
+Un cheval, un cheval avec son cavalier, n'importe quelle créature : un modèle sur ses propres os va sur une escouade avec ses animations.
+
+1. **Faites-le dans Blender** : votre modèle sur une armature avec vos propres os (nommés comme vous voulez), et une action pour chaque animation. Nommez les actions d'après ce qu'elles montrent : au moins **stand** (ou **idle**), **walk** et **run** ; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** et **grenade** sont connues aussi.
+2. **Exportez-le** : **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, avec **Animation** cochée.
+3. **Créez l'escouade** comme à l'étape 2 plus haut. Sur sa page, sous **Son propre modèle**, cliquez sur **Importer un modèle…** et choisissez votre .glb. Le Studio voit que ses os ne sont pas ceux du soldat et le prend avec ses propres os et toutes ses animations. La page montre combien d'os il a, chaque animation avec sa durée, et combien d'actions de l'escouade la jouent.
+4. **Tester en jeu** le montre.
+
+Bon à savoir :
+- Chaque action de l'escouade joue l'animation nommée pour elle. Une action pour laquelle aucune animation n'est nommée n'en a pas encore : la page dit combien.
+- Modifié dans Blender ? Importez-le à nouveau : chaque action garde son animation tant qu'une animation de ce nom est encore dans le fichier.
+- Votre mod garde le modèle et chaque animation : `files\models\<nom de l'unité>.glb`, et chaque animation sous `files\anim\own\<nom de l'unité>\<son nom>.baf`.
+- **Utiliser le modèle de l'unité copiée** retire à nouveau le modèle, avec ses animations.
+- Pas encore essayé en jeu par le Studio.
 
 ## 4. Sa carte, puis le test
 

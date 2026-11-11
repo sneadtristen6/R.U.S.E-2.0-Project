@@ -128,6 +128,21 @@ solo per lei, usa RUSE Decoy.
 
 Non ancora provato in gioco così come lo fa lo Studio; una Horse Squad fatta allo stesso modo a mano è stata giocata
 (novembre 2026).
+## Un modello con ossa e animazioni tutte sue
+
+Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni.
+
+1. **Fallo in Blender**: il tuo modello su un'armatura con ossa tue (chiamate come vuoi) e un'azione per ogni animazione. Chiama le azioni come ciò che mostrano: almeno **stand** (o **idle**), **walk** e **run**; si riconoscono anche **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** e **grenade**.
+2. **Esportalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** spuntato.
+3. **Crea la squadra** come al passo 2 sopra. Sulla sua pagina, sotto **Un modello tutto suo**, clicca **Importa modello…** e scegli il tuo .glb. Lo Studio vede che le sue ossa non sono quelle del soldato e lo prende con le sue ossa e tutte le sue animazioni. La pagina mostra quante ossa ha, ogni animazione con la sua durata e quante azioni della squadra la fanno.
+4. **Prova in gioco** lo mostra.
+
+Buono a sapersi:
+- Ogni azione della squadra fa l'animazione chiamata per lei. Un'azione per cui nessuna animazione è chiamata non ne ha ancora: la pagina dice quante.
+- Cambiato in Blender? Importalo di nuovo: ogni azione tiene la sua animazione finché nel file c'è ancora un'animazione con quel nome.
+- Il tuo mod tiene il modello e ogni animazione: `files\models\<nome dell'unità>.glb`, e ogni animazione come `files\anim\own\<nome dell'unità>\<il suo nome>.baf`.
+- **Usa il modello dell'unità copiata** toglie di nuovo il modello, con le sue animazioni.
+- Non ancora provato in gioco tramite lo Studio.
 
 ## 4. La sua scheda, poi la prova
 

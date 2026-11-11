@@ -125,6 +125,21 @@ for it alone, use RUSE Decoy.
 
 Not tried in the game yet as the Studio makes it; a Horse Squad made the same way by hand played in the game
 (November 2026).
+## A model with its own bones and animations
+
+A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations.
+
+1. **Make it in Blender**: your model on an armature with bones of your own (named as you like), and an action for each animation. Name the actions for what they show: **stand** (or **idle**), **walk** and **run** at least; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** and **grenade** are known too.
+2. **Export it**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, with **Animation** ticked.
+3. **Make the squad** as in step 2 above. On its page, under **Its own model**, click **Import model…** and pick your .glb. The Studio sees that its bones aren't the soldier's and takes it with its own bones and every animation. The page shows how many bones it has, each animation with its length, and how many of the squad's actions play it.
+4. **Test in game** shows it.
+
+Good to know:
+- Each action of the squad plays the animation named for it. An action no animation is named for has none yet: the page says how many.
+- Changed it in Blender? Import it again: each action keeps its animation while one of that name is still in the file.
+- Your mod keeps the model and every animation: `files\models\<the unit's name>.glb`, and each animation as `files\anim\own\<the unit's name>\<its name>.baf`.
+- **Use the copied unit's model** takes the model out again, with its animations.
+- Not tried in the game yet through the Studio.
 
 ## 4. Its card, then test
 

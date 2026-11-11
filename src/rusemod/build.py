@@ -1781,6 +1781,65 @@ def unit_own_rides(engine, run, result: BuildResult):
 
 
 RIDE_CLIP_MASK = 81920   # the UsefulnessMask every clip listing of the game carries (2026-11-09: all 593 of them)
+def unit_own_halves(run, result: BuildResult) -> None:
+    """New units whose own model is on bones of its own (its file's report says so: rusemod.unitmodel's own_bones):
+    every figure that wears the model plays its clips through two masks of its own, the model's top and bottom halves,
+    which the build adds to the unit data (rusemod.animmodel: copies of the game's top and bottom masks naming the
+    model's own bones, split at the bone its record names, files/models/<the unit's name>.json "split", else every
+    bone in the top). The game's own masks name the game soldier's bones, and a mask naming a bone the model lacks
+    would stop the game with its error box. A model on the game's own bones, and every other unit, are left as they
+    were. Said: each such unit's halves; a listing of one of its figures that doesn't wear the model playing one of the
+    unit's own clips (made on the model's bones)."""
+    import json
+
+    from . import anim, animmodel
+    from .modelin import OWN_SKELETON
+    from .unitmodel import glb_report
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    for unit, (source, glb, mod_id) in sorted(result.own_models.items()):
+        if not glb_report(glb).get(OWN_SKELETON) or unit not in by_name:
+            continue
+        where = f"{mod_id}: files/models/{unit}.glb"
+        name = by_name[unit]
+        try:
+            record = animmodel.record_of(glb)
+        except animmodel.AnimModelError as exc:
+            result.findings.append(Finding("error", f"{where}: {exc}"))
+            continue
+        try:   # (the Studio's record of the model: where its halves meet, when chosen)
+            split = json.loads(Path(glb).with_suffix(".json").read_text(encoding="utf-8")).get("split")
+        except (OSError, ValueError, AttributeError):
+            split = None
+        halves, notes = animmodel.halves_for(record, split if isinstance(split, str) else None)
+        own = f"{source.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{unit}lod0.Ase2ndfbin"
+        like = animmodel.game_masks(run.game, name, own)
+        masks = {}
+        for half in ("top", "bottom"):
+            mask, k = f"$/GFX/Everything/Mask_{unit}_{half.capitalize()}", 1
+            while mask in run.game.objects:
+                k += 1
+                mask = f"$/GFX/Everything/Mask_{unit}_{half.capitalize()}_{k}"
+            run.game.objects[mask] = animmodel.mask_object(run.game, like[half], halves[half])
+            masks[half] = mask
+        got = animmodel.point_masks(run.game, name, own, masks)
+        if not got["pointed"]:      # (no listing of a figure that wears it weighs bones by name: nothing to point)
+            for mask in masks.values():
+                del run.game.objects[mask]
+        else:
+            result.findings.append(Finding("note", f"{where}: {unit}'s {len(got['figures'])} figure(s) wearing its "
+                                                   f"model play through its own two halves, split at "
+                                                   f"{halves['split']} ({len(halves['top']['Weights'])} bone(s) on "
+                                                   f"top, {len(halves['bottom']['Weights'])} below; "
+                                                   f"{got['pointed']} listing(s))"))
+        for n in notes:
+            result.findings.append(Finding("warning", f"{where}: {unit}: {n}"))
+        own_files = {anim.own_data_name(m.rsplit("\\", 1)[-1][:-len(".baf")]).lower()
+                     for m, spec in result.own_clips.items() if spec.get("unit") == unit}
+        wrong = sorted({fig for fig, _action, f in got["others"] if f.lower() in own_files})
+        if wrong:
+            # not a game rule: a clip goes with the model it was made on (a clip of other bones can stop the game)
+            result.findings.append(Finding("warning", f"{where}: {unit}'s figure(s) {', '.join(wrong)} don't wear its "
+                                                      f"model but play clips made on its bones"))
 
 
 def _game_unit(run, unit: str) -> str | None:
@@ -2379,6 +2438,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     result.own_models = unit_own_models(run, order, result)
     result.own_copies = unit_own_copies(run, order, result)
     result.own_clips = unit_own_clips(run, order, result, text_arc)
+    unit_own_halves(run, result)   # (the unit's own figures only: before its ride, a unit of its own, is made)
     if result.own_rides:   # (units riding as themselves on long moves: their rides, made after the mods)
         run = unit_own_rides(engine, run, result)
     result.look_symbols = building_looks(run, result)

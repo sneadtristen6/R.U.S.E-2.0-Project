@@ -134,6 +134,21 @@ dieselben. Um eine nur für sie zu ändern, nimm RUSE Decoy.
 
 Noch nicht im Spiel ausprobiert, so wie das Studio es macht; eine auf dieselbe Weise von Hand gebaute Horse Squad lief
 im Spiel (November 2026).
+## Ein Modell mit eigenen Knochen und Animationen
+
+Ein Pferd, ein Pferd mit Reiter, irgendein Tier: Ein Modell auf eigenen Knochen kommt mit seinen Animationen auf einen Trupp.
+
+1. **Mach es in Blender**: dein Modell auf einer Armature mit eigenen Knochen (benannt, wie du willst) und eine Action für jede Animation. Benenne die Actions nach dem, was sie zeigen: mindestens **stand** (oder **idle**), **walk** und **run**; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** und **grenade** werden auch erkannt.
+2. **Exportiere es**: **File > Export > glTF 2.0**, Format **glTF Binary (.glb)**, mit angehaktem **Animation**.
+3. **Erstelle den Trupp** wie in Schritt 2 oben. Klicke auf seiner Seite unter **Eigenes Modell** auf **Modell importieren…** und wähle deine .glb. Das Studio sieht, dass seine Knochen nicht die des Soldaten sind, und nimmt es mit seinen eigenen Knochen und allen Animationen. Die Seite zeigt, wie viele Knochen es hat, jede Animation mit ihrer Länge und wie viele Aktionen des Trupps sie spielen.
+4. **Im Spiel testen** zeigt es.
+
+Gut zu wissen:
+- Jede Aktion des Trupps spielt die Animation, die nach ihr benannt ist. Eine Aktion, nach der keine Animation benannt ist, hat noch keine: Die Seite sagt, wie viele.
+- In Blender geändert? Importiere es erneut: Jede Aktion behält ihre Animation, solange eine Animation dieses Namens noch in der Datei ist.
+- Dein Mod behält das Modell und jede Animation: `files\models\<Name der Einheit>.glb`, und jede Animation als `files\anim\own\<Name der Einheit>\<ihr Name>.baf`.
+- **Modell der kopierten Einheit nutzen** nimmt das Modell wieder heraus, mit seinen Animationen.
+- Über das Studio noch nicht im Spiel ausprobiert.
 
 ## 4. Seine Karte, dann testen
 

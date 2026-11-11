@@ -2907,6 +2907,7 @@ function modelBox(address, info, draw, changed) {
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
+    if (own.own_skeleton) box.append(ownAnimationsBox(address));  // a model on bones of its own: what came in with it
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
     // its propeller discs (rusemod.modelin.fit_discs): spinning as the game's, or left out and why
@@ -2935,7 +2936,7 @@ function modelBox(address, info, draw, changed) {
         if (changed) changed();
       } catch (err) { problem(err); }
     });
-    if (squad) box.append(el("p", { className: "muted small", textContent: w.model_squad_fit }));
+    if (squad) box.append(el("p", { className: "muted small", textContent: own.own_skeleton ? w.model_own_bones_fit : w.model_squad_fit }));
     else {
       box.append(el("div", { className: "actions" }, el("label", { className: "small" }, w.model_size, " ", size), resize),
         sizing, el("p", { className: "muted small", textContent: w.model_size_when }));
@@ -2959,6 +2960,8 @@ function modelBox(address, info, draw, changed) {
         : (squad ? w.model_removed_squad : w.model_removed) }));
     }
     box.append(el("p", { className: "muted small", textContent: squad ? w.model_how_squad : w.model_how }));
+    // a model on bones of its own with its animations (a horse, any creature) comes in through the same button
+    if (squad) box.append(el("p", { className: "muted small", textContent: w.model_how_own_bones, title: w.tip_model_how_own_bones }));
     // with its own copy (a squad's Custom uniform): what an import does to it, before the button is clicked
     if (info.own_copy) {
       box.append(el("p", { className: "notice", textContent: squad ? w.model_import_over_uniform : w.model_import_over_copy }));
@@ -3087,6 +3090,39 @@ function fitWords(p) {
     how = w.fit_fix_split_all_top;
   } else return null;   // (the halves' masks are the build's: it says them)
   return [fill(what, v), fitLevel(p), fill(how, v)];
+}
+
+// --- a model on bones of its own and its animations (api.model_animations; rusemod.animmodel, ruse_studio.
+// animmodel_calls; the owner's list, item 5: a horse that runs and stops, a rifleman on it who shoots, any creature):
+// what came in with the model, its bones and each animation with its length and how many of the unit's actions play
+// it, each action playing the animation named for it; a line when it brought none, and what to do next ---
+function ownAnimationsBox(address) {
+  const w = state.words;
+  const box = el("div", { className: "model-anims" }, el("h4", { textContent: w.model_anim_title }));
+  api().model_animations(address).then((a) => {
+    if (!a || !a.own) { box.remove(); return; }
+    box.append(el("p", { className: "small", textContent: fill(w.model_anim_bones, { n: a.bones }),
+      title: w.tip_model_anim_bones }));
+    if (!a.animations.length) {
+      box.append(el("p", { className: "notice warn", textContent: w.model_anim_none, title: w.tip_model_anim_none }));
+      return;
+    }
+    box.append(el("p", { className: "small", textContent: fill(w.model_anim_count, { n: a.animations.length }),
+      title: w.tip_model_anim_count }));
+    const list = el("ul", { className: "small model-anim-list" });
+    for (const r of a.animations) {
+      const seconds = Number(r.seconds || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      list.append(el("li", { title: w.tip_model_anim_row, textContent: fill(r.actions.length ? w.model_anim_row
+        : w.model_anim_row_none, { name: r.name, seconds, n: r.actions.length }) }));
+    }
+    box.append(list);
+    if (a.empty.length) {
+      box.append(el("p", { className: "muted small", textContent: fill(w.model_anim_empty, { n: a.empty.length,
+        all: a.actions }), title: w.tip_model_anim_empty }));
+    }
+    box.append(el("p", { className: "muted small", textContent: w.model_anim_next, title: w.tip_model_anim_next }));
+  }).catch(() => box.remove());  // (no answer: the box above still says what the model is)
+  return box;
 }
 
 // A box in the unit's side column brought into sight (the side column and the page each scrolled as little as it
