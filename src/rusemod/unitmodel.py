@@ -70,7 +70,8 @@ class UnitModelError(ModelError):
 def import_model(game: Path, source_model: str, model_file: Path, out: Path, size: float = 1.0,
                  side: int = 1024, pictures: Path | None = None, aircraft: bool = False,
                  facing: list | None = None, own_turret: bool = False, own_propellers: bool = False,
-                 others: list | None = None, move: list | None = None, own_bones: bool = False) -> dict:
+                 others: list | None = None, move: list | None = None, own_bones: bool = False,
+                 clips: dict | None = None) -> dict:
     """Step one for a mod: `model_file` (.3ds or .glb) fitted to the game's model `source_model` (the unit the new
     one copies) and saved as `out` (the mod's files/models/<unit>.glb). A .3ds's pictures are looked for in
     `pictures`, then beside it, then one folder up (downloads often keep them in a folder of their own). `aircraft`:
@@ -87,7 +88,8 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     bones go with it, so it still turns where the model's turret is (a rigged model stays where its bones are: said in the report's notes). Returns the fitting's report (parts and
     their roles, facing, scale, counts, pictures, "missing": pictures not found; "stands": [x, y, z, length] the unit's own place, where the game centres its selection ring, and how long the unit it copies is).
     `own_bones` (2026-11-10, not tried in the game yet): the file's model is on bones of its own (a horse, any creature),
-    whatever bones the copied unit has: _import_own_bones."""
+    whatever bones the copied unit has: _import_own_bones; `clips` (a dict, own_bones only) gets each of its animations
+    as a game clip, {its name: the clip's bytes} (own_clips), for the caller to keep as the unit's own."""
     from .build import find_pack
     from .edat import Edat
     from .modelin import check_move, prepare, read_model, write_glb
@@ -98,7 +100,8 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
     zz = Edat.open(str(path))
     if own_bones:
         try:
-            return _import_own_bones(zz, source_model, Path(model_file), Path(out), size, side, pictures, others, move)
+            return _import_own_bones(zz, source_model, Path(model_file), Path(out), size, side, pictures, others, move,
+                                     clips)
         finally:
             zz.close()
     try:
@@ -150,17 +153,20 @@ def import_model(game: Path, source_model: str, model_file: Path, out: Path, siz
 
 
 def _import_own_bones(zz, source_model: str, model_file: Path, out: Path, size: float, side: int,
-                      pictures: Path | None, others: list | None, move: list | None) -> dict:
+                      pictures: Path | None, others: list | None, move: list | None, clips: dict | None = None) -> dict:
     """import_model for a model on bones of its own: its skeleton read from the file (rusemod.rig) and kept as the
     game's record (own_skeleton), every point on its own bones in the game's axes and units, nothing moved or scaled (a
     rigged model's way, modelin._prepare_rigged), each part keeping its game draw's material when the file says which.
     The new model takes the place of the copied unit's model and of its other models with the same bones (the report's
-    "also"), as a rigged one does. The report's OWN_SKELETON: {"bones": how many, "animations": [{"name", "seconds",
-    "frames"}], "record": the record in base64 (kept in the model's file, not in the report the Studio is given)}."""
+    "also"), as a rigged one does. Its animations, made into game clips on that record (own_clips), go into the
+    model's file as its animations (modelin.write_glb), so the file keeps them all, and into `clips` when given. The
+    report's OWN_SKELETON: {"bones": how many, "animations": [{"name", "seconds", "frames"}] (each clip's), "record":
+    the record in base64 (kept in the model's file, not in the report the Studio is given)}."""
     from .modelin import prepare, read_model, write_glb
     from .rig import read_rig
     rig = read_rig(model_file)
     record, notes = own_skeleton(rig)
+    made, _clip_notes = own_clips(rig, record)   # (its notes are the rig's, said already)
     model = read_model(model_file, skin=True)
     for m in model.meshes:      # (the record keeps its names in lower case: rusemod.rig)
         m.skin = [[(n.lower(), w) for n, w in v] for v in m.skin]
@@ -189,11 +195,14 @@ def _import_own_bones(zz, source_model: str, model_file: Path, out: Path, size: 
     prep = prepare(model, look, dict(src.like, root=rig.joints[0].name), size=size, side=side)
     prep.report["also"] = also
     prep.report["notes"] = list(prep.report.get("notes") or []) + notes
-    frames = [(a, rig.frames(a)) for a in rig.animations]
+    shown = {name: baf.parse(data) for name, data in made.items()}
     prep.report[OWN_SKELETON] = {"bones": len(rig.joints), "record": base64.b64encode(record).decode("ascii"),
-                                 "animations": [{"name": a.name, "seconds": round(length, 4), "frames": n}
-                                                for a, (length, n) in frames]}
-    write_glb(prep, out, src.model)
+                                 "animations": [{"name": name, "seconds": round(c.duration, 4), "frames": c.frames}
+                                                for name, c in shown.items()]}
+    write_glb(prep, out, src.model, animations=made)
+    if clips is not None:
+        clips.clear()
+        clips.update(made)
     return dict(said(prep.report), like=src.model)
 
 

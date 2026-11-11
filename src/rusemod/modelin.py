@@ -1324,12 +1324,14 @@ def smooth_normals(positions: list, triangles: list) -> list:
 
 
 # --- the mod's own file: files/models/<unit>.glb ---
-def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
+def write_glb(prep: Prepared, path: Path, like_model: str = "", animations: dict | None = None) -> None:
     """Save a fitted model as a .glb in the axes `ruse export-model` writes (rusemod.gltf): one node per bone, a
     primitive per picture, the colour pictures as its materials' and each alpha (side colour / shine) as an image of
     its own (named in the material's extras). A model on bones of its own (the report's OWN_SKELETON) has its whole
     skeleton in it, every bone at its rest pose under its parent, and its record in its skin's extras (rusemod.rig),
-    so it opens in Blender with its bones and the build gets the record back as it was."""
+    so it opens in Blender with its bones and the build gets the record back as it was; `animations` ({name: a game
+    clip's bytes on that record}, rusemod.unitmodel.own_clips) go in as its animations (_own_animations), so the file
+    keeps them all and opens in Blender with them."""
     from .dxt import png_bytes
     from .gltf import FLOAT, MIRROR, SCALE, TRACK_ATTRIBUTE, UBYTE, UINT, USHORT, _Glb, _point, _split
     g = _Glb()
@@ -1386,7 +1388,10 @@ def write_glb(prep: Prepared, path: Path, like_model: str = "") -> None:
     report = prep.report
     if sk is not None:
         meshes = list(range(len(g.doc["nodes"])))
-        g.doc["scenes"] = [{"name": Path(path).stem, "nodes": meshes + [_own_bones(g, sk, own, Path(path).stem)]}]
+        holder = _own_bones(g, sk, own, Path(path).stem)
+        g.doc["scenes"] = [{"name": Path(path).stem, "nodes": meshes + [holder]}]
+        if animations:
+            _own_animations(g, sk, holder - sk["bones"], animations)
         report = dict(report, **{OWN_SKELETON: {k: v for k, v in report[OWN_SKELETON].items() if k != "record"}})
     else:
         if joints:
@@ -1427,3 +1432,49 @@ def _own_bones(g, sk: dict, record: str, stem: str) -> int:
     g.doc["skins"] = [{"joints": list(range(first, first + sk["bones"])), "inverseBindMatrices": len(g.doc["accessors"]) - 1,
                        "skeleton": holder, "extras": {SKELETON_EXTRA: record}}]
     return holder
+
+
+def _own_animations(g, sk: dict, first: int, animations: dict) -> None:
+    """write_glb's animations for a model on bones of its own: each game clip (`animations`, {name: its bytes}, on the
+    record `sk`) as a glTF animation of the bone nodes from `first` on, every key of each track as the clip keeps it
+    (a turn as it's unpacked, a move and a size as stored), as glTF plays them (LINEAR): a track's one key held from
+    the clip's start to its end, two keys across the whole clip (the game doesn't read their times), more at their
+    times; a clip of one frame as one key at 0. rusemod.rig reads them back, so the build and a later import get the
+    same clips again (within what a clip's numbers hold)."""
+    from . import baf
+    from .gltf import FLOAT
+    from .rig import move_out, size_out, turn_out
+    out = g.doc.setdefault("animations", [])
+    for name, data in animations.items():
+        c = baf.parse(data)
+        csk = baf.skeleton(c.skeleton)
+        if csk["names"] != sk["names"]:
+            # not a game rule: a clip goes with the skeleton it was made on
+            raise ModelError(f"the animation {name} is on other bones than the model's")
+        times_of: dict = {}
+
+        def times(keys) -> int:
+            if c.frames <= 1:
+                t = (0.0,)
+            elif len(keys) <= 2:
+                t = (0.0, float(c.duration))
+            else:
+                t = tuple(k[0] / baf.LAST_TIME * c.duration for k in keys)
+            if t not in times_of:
+                times_of[t] = g.accessor(list(t), "SCALAR", FLOAT, target=None)
+                g.doc["accessors"][times_of[t]]["min"], g.doc["accessors"][times_of[t]]["max"] = [min(t)], [max(t)]
+            return times_of[t]
+        samplers, channels = [], []
+        for u, track in enumerate(c.tracks):
+            node = first + csk["index"][u]
+            for path, keys, conv, kind in (("translation", track.T, lambda k: move_out(k[1:4]), "VEC3"),
+                                           ("rotation", track.R, lambda k: turn_out(baf.unpack_quat(k[1:5])), "VEC4"),
+                                           ("scale", track.S, lambda k: size_out(k[1:4]), "VEC3")):
+                keys = keys[:1] if c.frames <= 1 else keys
+                values = [conv(k) for k in keys]
+                if c.frames > 1 and len(values) == 1:
+                    values = values * 2
+                samplers.append({"input": times(keys), "output": g.accessor(values, kind, FLOAT, target=None),
+                                 "interpolation": "LINEAR"})
+                channels.append({"sampler": len(samplers) - 1, "target": {"node": node, "path": path}})
+        out.append({"name": name, "samplers": samplers, "channels": channels})
