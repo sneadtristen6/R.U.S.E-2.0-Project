@@ -64,6 +64,33 @@ class TheRule(unittest.TestCase):
                 self.assertEqual(aa.choose(key, names)[0], f"horse_{horse_rule(key)}")
         self.assertEqual(aa.ride(names), ("horse_run", "nearest"))
 
+    def test_the_horse_squad_s_own_animations_play_as_own_horse10_played_them(self):
+        """The Horse Squad .glb (scratch/animmodels/horse-squad-rifle.glb, the owner's tenth horse copy, passed in the
+        game 2026-11-09) names its animations hr_t_* (the rider: the top half) and hr_b_* (the horse: the bottom
+        half). Each listing gets what that copy played (all 246 of the three figures': the agent's
+        check_hr_rule.py; a sample here, with the game's clip each listing played)."""
+        names = ["hr_t_stand", "hr_b_stand", "hr_b_walk", "hr_b_run", "hr_t_mort_balle", "hr_t_mort_balle_violente",
+                 "hr_t_mort_explosion", "hr_t_mort_balle_dos", "hr_t_mort_explosion_dos", "hr_t_stand_vise",
+                 "hr_t_tir", "hr_t_grenade", "hr_t_grenade2", "hr_t_grenade3", "hr_t_recharge", "hr_t_hit",
+                 "hr_t_hit_dos", "hr_t_hit_explosion", "hr_t_look_around", "hr_ride", "hr_t_bazooka_tir",
+                 "hr_t_bazooka_transition1", "hr_t_bazooka_transition2", "hr_t_bazooka_vise"]
+        played = {("t_course", "courselod0"): "hr_t_stand", ("b_course", "courselod0"): "hr_b_run",
+                  ("t_marche_vise", "stand_viselod0"): "hr_t_stand_vise", ("b_marche_vise", "marchelod0"): "hr_b_walk",
+                  ("t_course_vise", "course_viselod0"): "hr_t_stand_vise", ("b_tir", "tirlod0"): "hr_b_stand",
+                  ("t_transition_to_special", "bazooka_transition1lod0"): "hr_t_bazooka_transition1",
+                  ("t_tir_special_replacement", "bazooka_tirlod0"): "hr_t_bazooka_tir",
+                  ("t_course_vise_special", "bazooka_course_viselod0"): "hr_t_bazooka_vise",
+                  ("t_mort_explosion_dos", "mort_explosion_doslod0"): "hr_t_mort_explosion_dos",
+                  ("b_mort_explosion_dos", "mort_explosion_doslod0"): "hr_b_stand",
+                  ("t_tir_secondaire2", "grenade2lod0"): "hr_t_grenade2", ("t_deroute2", "deroute2lod0"): "hr_t_stand",
+                  ("b_deroute2", "deroute2lod0"): "hr_b_run", ("t_accroupi", "accroupilod0"): "hr_t_stand"}
+        for (key, stem), want in played.items():
+            with self.subTest(key=key):
+                self.assertEqual(aa.choose(key, names, {}, f"WW2\\Res3D\\Units\\Common\\Fusilier_{stem}.Ase2NdfBin")[0],
+                                 want)
+        self.assertEqual(aa.ride(names), ("hr_ride", "named"))
+        self.assertEqual(aa.marked(names)["hr_b_run"], ("run", "bottom"))
+
     def test_a_pick_wins_and_the_actions_nearest_it_follow(self):
         names = ["Idle", "Gallop", "Trot slow"]
         picks = {"course": "Gallop"}
@@ -243,7 +270,7 @@ def unit_data() -> bytes:
                WALK_FILE, SOLDIER_MODEL, TRUCK_MODEL, "Roues"]
     ndf = make_ndf(objects=[
         (0, [(0, u32(2)), (8, i32(1)), (1, ref(1, 1)), (2, ref(2, 1)), (9, ref(9, 4))]),            # 0 the squad
-        (1, [(4, ref(3, 3)), (3, listing((0, 4), (1, 4), (2, 5), (3, 5), (4, 4), (5, 6)))]),      # 1 its rifleman
+        (1, [(4, ref(3, 3)), (3, listing((0, 4), (1, 4), (2, 5), (3, 5), (4, 6), (5, 6)))]),      # 1 its rifleman
         (1, [(4, ref(3, 3)), (3, listing((0, 4), (2, 5)))]),                                     # 2 its bazooka man
         (3, [(7, path(9)), (10, u32(524289))]),                                                  # 3 the soldier
         (2, [(5, path(6)), (6, val(0x00, b"\x01"))]),                                            # 4 stand

@@ -16,17 +16,20 @@ THE RULE: a listing plays, in this order,
      fusilier_course), else a name that says what the action does: words for the kind of action (stand or idle, walk,
      run or gallop, aim, fire or shoot, throw or grenade, reload, hit, die or death, flee...), with the words for its
      way (back or backwards, left, right, explosion or blast, bazooka or special) and its number (run 2) when it has
-     them (KINDS, WAYS);
-  3. else, the same way, what the next action on its line plays (LINES: a walk plays the run, a run the walk, then
-     the stand; a fire the aim, then the stand; a death of another kind the plain death, then the stand...). The top
-     half of an action done while aiming (walks aiming) plays an aim only when the model has one picked or named for
-     it, else the moving; its bottom half does the moving, as the game's own soldiers do (their t_marche_vise plays
-     the standing aim, b_marche_vise the walk);
-  4. else the model's first animation.
+     them (KINDS, WAYS). Only an animation made for that half of the body counts: one whose name starts t_ (or top_)
+     is the top half's, b_ (or bottom_) the bottom half's, after what all the model's names start with (hr_t_stand,
+     hr_b_run: the 2026-11-09 Horse Squad's rider and horse), any other is the whole body's;
+  3. else, the same way, what the next action on its line plays (ACTIONS' lines: a walk plays the run, a run the
+     walk, then the stand; a fire the aim, then the stand; a death of another kind the plain death, then the
+     stand...). The top half of an action done while aiming (walks aiming) plays an aim only when the model has one
+     picked or named for it, else the moving; its bottom half does the moving, as the game's own soldiers do (their
+     t_marche_vise plays the standing aim, b_marche_vise the walk);
+  4. else the model's first animation (for that half).
 The least a model needs is a stand, a walk and a run (NEEDED; the owner's settled answer, 2026-11-10): the page names
 any of the three that has nothing picked or named for it."""
 from __future__ import annotations
 
+import os
 import re
 
 NEEDED = ("stand", "marche", "course")   # stand, walk, run: what the 2026-11-09 horse's own body had
@@ -205,24 +208,52 @@ def _line(base: str, half: str | None) -> list[tuple[str, bool]]:
     return [(w.lstrip("!"), w.startswith("!")) for w in text.split()]
 
 
-def named(base: str, names: list, key: str | None = None, clip: str | None = None) -> str | None:
-    """The model's animation named for the action `base` (rule 2), or None: one called by the listing's name (`key`),
-    the action's, or the game's clip it played (`clip`), else the first whose name says the action's kind, ways and
+HALF_MARKS = (("t_", "top"), ("top_", "top"), ("upper_", "top"), ("b_", "bottom"), ("bottom_", "bottom"),
+              ("lower_", "bottom"))
+
+
+def marked(names: list) -> dict:
+    """{name: (its core, the half it's made for or None)} for a model's animation names: what all of them start with
+    dropped (hr_ of hr_t_stand, hr_b_run, hr_ride), then a half's mark at the start (t_ or top_ for the top half, b_
+    or bottom_ for the bottom one: the game's own way, t_stand and b_stand). A name made for one half plays on that
+    half only (the owner's 2026-11-09 Horse Squad: the rider's clips on top, the horse's below)."""
+    norms = {n: _norm(n) for n in names}
+    prefix = os.path.commonprefix(list(norms.values())) if len(norms) > 1 else ""
+    prefix = prefix[:prefix.rfind("_") + 1]
+    out = {}
+    for n, x in norms.items():
+        core, half = x[len(prefix):] or x, None
+        for mark, h in HALF_MARKS:
+            if core.startswith(mark) and len(core) > len(mark):
+                core, half = core[len(mark):], h
+                break
+        out[n] = (core, half)
+    return out
+
+
+def named(base: str, names: list, key: str | None = None, clip: str | None = None, half: str | None = None,
+          marks: dict | None = None) -> str | None:
+    """The model's animation named for the action `base` (rule 2), or None, of those made for the listing's `half`
+    (or for the whole body): one called by the listing's name (`key`: t_course), the action's (course), or the game's
+    clip it played (`clip`: fusilier_course, or course), else the first whose name says the action's kind, ways and
     number."""
-    norm = {n: _norm(n) for n in names}
-    wanted = [x for x in (key, base, f"fusilier_{base}", clip) if x]
-    for w in wanted:
-        w = _norm(w)
-        for n in names:
-            if norm[n] == w:
-                return n
+    marks = marks if marks is not None else marked(names)
+    fit = [n for n in names if marks[n][1] in (None, half)]
+    if half is None:   # (a whole figure, its ride: one made for a half after those for the whole body)
+        fit += [n for n in names if marks[n][1] is not None]
+    wanted = {_norm(x) for x in (key, base, f"fusilier_{base}", clip) if x}
+    if clip:
+        wanted.add(re.sub(r"^fusilier_", "", _norm(clip)))
+    for n in fit:
+        if _norm(n) in wanted or marks[n][0] in wanted:
+            return n
     sigs = _signatures(base)
     if not sigs:
         return None
     number = ACTIONS[base][2]
-    said = {n: says(n) for n in names}
+    said = {n: says(n) for n in fit}
     for kind, ways in sigs:
-        for n in names:
+        for n in fit:
             k, w, num = said[n]
             if k == kind and w == ways and num == number:
                 return n
@@ -240,7 +271,8 @@ def choose(key: str, names: list, picks: dict | None = None, clip: str | None = 
     half, base = parse_key(key)
     if base in picks:
         return picks[base], "picked"
-    got = named(base, names, str(key).lower() if key else None, _stem(clip))
+    marks = marked(names)
+    got = named(base, names, str(key).lower() if key else None, _stem(clip), half, marks)
     if got is not None:
         return got, "named"
     seen: set = set()
@@ -251,7 +283,7 @@ def choose(key: str, names: list, picks: dict | None = None, clip: str | None = 
         seen.add((action, strict))
         if action in picks:
             return picks[action]
-        found = named(action, names)
+        found = named(action, names, half=half, marks=marks)
         if found is not None or strict:
             return found
         for nxt, only in _line(action, half):
@@ -264,7 +296,7 @@ def choose(key: str, names: list, picks: dict | None = None, clip: str | None = 
         got = walk(nxt, only)
         if got is not None:
             return got, "nearest"
-    return names[0], "nearest"
+    return next((n for n in names if marks[n][1] in (None, half)), names[0]), "nearest"   # (rule 4)
 
 
 def _stem(clip: str | None) -> str | None:
