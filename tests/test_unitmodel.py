@@ -75,12 +75,15 @@ def ref(index, cls):
     return val(0x09, struct.pack("<III", 0xBBBBBBBB, index, cls))
 
 
-def skinned_materials(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX) -> bytes:
-    """One TMeshMaterial as the game's body ones: its texture (`tex`, as the material's `role` picture) and a
-    SkinningRemapping (local k -> bone skinning[k]: 0 -> 0, 1 -> 1 unless said)."""
-    strings = [role, "Standard_1", tex]
-    tex = val(0x12, struct.pack("<I", 1) + val(0x07, struct.pack("<I", 0))
-              + val(0x22, val(0x1C, struct.pack("<I", 2)) + val(0x03, bytes(4))))
+def skinned_materials(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX, more=()) -> bytes:
+    """One TMeshMaterial as the game's body ones: its texture (`tex`, as the material's `role` picture; `more`: other
+    (role, picture) pairs it names after it, which no game material does) and a SkinningRemapping (local k -> bone
+    skinning[k]: 0 -> 0, 1 -> 1 unless said)."""
+    strings = [role, "Standard_1", tex] + [s for pair in more for s in pair]
+    pairs = [(0, 2)] + [(3 + 2 * k, 4 + 2 * k) for k in range(len(more))]
+    tex = val(0x12, struct.pack("<I", len(pairs)) + b"".join(
+        val(0x07, struct.pack("<I", key)) + val(0x22, val(0x1C, struct.pack("<I", pic)) + val(0x03, bytes(4)))
+        for key, pic in pairs))
     skin = val(0x11, struct.pack("<I", len(skinning)) + b"".join(val(0x02, struct.pack("<i", b)) for b in skinning))
     objects = [(0, [(0, val(0x11, struct.pack("<I", 1) + ref(1, 1)))]),
                (1, [(1, tex), (2, val(0x07, struct.pack("<I", 1))), (3, skin)])]
@@ -138,11 +141,11 @@ def skeleton3(names, parents, pivots, scales=None) -> bytes:
     return body + "".join(names).encode()
 
 
-def unit_pack(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX) -> MeshPack:
+def unit_pack(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX, more=()) -> MeshPack:
     """The Panzer: one draw call of a skinned quad on the chassis, 200 long (x -120..80), lowest at z 2."""
     pts = [(-120.0, -40.0, 2.0), (80.0, -40.0, 2.0), (80.0, 40.0, 2.0), (-120.0, 40.0, 2.0)]
     verts = b"".join(struct.pack("<3f4B4B4B", *p, 128, 128, 255, 0, 255, 0, 0, 0, 0, 0, 0, 0) for p in pts)
-    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(skinning, role, tex),
+    pack = MeshPack(formats=[SKIN.encode().ljust(256, b"\0")], materials=skinned_materials(skinning, role, tex, more),
                     material_count=1)
     pack.ibs.append(Buffer(struct.pack("<6H", 0, 1, 2, 0, 2, 3), 12, 6, 1, 0))
     pack.vbs.append(Buffer(verts, len(verts), 4, 0, 0))
@@ -152,14 +155,15 @@ def unit_pack(skinning=(0, 1), role="CombinedDSCTexture", tex=TEX) -> MeshPack:
     return pack
 
 
-def zz_win(skinning=(0, 1), bones=SKELETON, role="CombinedDSCTexture", tex=TEX) -> Edat:
+def zz_win(skinning=(0, 1), bones=SKELETON, role="CombinedDSCTexture", tex=TEX, more=()) -> Edat:
     skel = MeshPack(formats=[], materials=b"", material_count=0, has_formats=False)
-    skel.materials = MeshPack.read(unit_pack(skinning, role, tex).to_bytes()).materials
+    skel.materials = MeshPack.read(unit_pack(skinning, role, tex, more).to_bytes()).materials
     skel.skeletons.append(bones)
     skel.items[TANK] = [bytes(28), 0xCDCD, 0]
     proxies = ProxyPack([Proxy(b"K" * 8, b"OLD-STANDIN", struct.pack("<HHI", 0, 0, 0xAAAAAAAA),
                                proxy_name(tex).encode().ljust(256, b"\0"))], [0])
-    files = {MESHES: unit_pack(skinning, role, tex).to_bytes(), SKELETONS: skel.to_bytes(), PROXIES: proxies.to_bytes()}
+    files = {MESHES: unit_pack(skinning, role, tex, more).to_bytes(), SKELETONS: skel.to_bytes(),
+             PROXIES: proxies.to_bytes()}
     tree: dict = {}
     for path, data in files.items():
         folder, _, name = path.rpartition("\\")
@@ -1133,16 +1137,28 @@ class BodyPictureOfAnotherKind(unittest.TestCase):
         self.assertEqual(report["stands"], [0.0, 0.0, 2.0, 200.0])
         self.assertEqual(unitmodel.glb_report(self.dir / "out.glb")["like"], TANK)   # the build copies it from there
 
+    @staticmethod
+    def rigged(_path, blades=False, skin=False):
+        """A model file rigged to the Panzer's two bones, as read_model reads it (its bones only when asked)."""
+        pts = [(0.1, 0.2, 0.3), (0.4, 0.2, 0.3), (0.1, 0.5, 0.3)]
+        weights = [[("chassis", 255)], [("tourelle_01", 255)], [("chassis", 128), ("tourelle_01", 127)]]
+        return modelin.Model([modelin.Mesh("tank", pts, [(0, 1, 2)], [(0.25, 0.5), (0.75, 0.5), (0.25, 1.0)], [-1],
+                                           [(0.0, 0.0, 1.0)] * 3, skin=weights if skin else [], draw=0)], [], "tank.glb")
+
     def test_a_model_rigged_to_its_bones_still_goes_on_them(self):
-        def rigged(_path, blades=False, skin=False):
-            pts = [(0.1, 0.2, 0.3), (0.4, 0.2, 0.3), (0.1, 0.5, 0.3)]
-            weights = [[("chassis", 255)], [("tourelle_01", 255)], [("chassis", 128), ("tourelle_01", 127)]]
-            return modelin.Model([modelin.Mesh("tank", pts, [(0, 1, 2)], [(0.25, 0.5), (0.75, 0.5), (0.25, 1.0)], [-1],
-                                               [(0.0, 0.0, 1.0)] * 3, skin=weights if skin else [], draw=0)], [], "tank.glb")
-        report = self.imported(self.zz, rigged)
+        report = self.imported(self.zz, self.rigged)
         self.assertTrue(report.get("rigged"))       # on its own bones, nothing moved or scaled, as before 2026-11-11
-        report = self.imported(zz_win(), rigged)    # a Sherman's: fitted as a model with no bones, as before
+        report = self.imported(zz_win(), self.rigged)    # a Sherman's: fitted as a model with no bones, as before
         self.assertFalse(report.get("rigged"))
+
+    def test_a_body_material_naming_its_combined_picture_second(self):
+        """No game material names two pictures, but one naming a CombinedDSCTexture after another picture is still a
+        CombinedDSCTexture body, as it was before 2026-11-11: its new pictures named after its first picture, and a
+        file rigged to its bones fitted as on a tank (find_source once took what its first picture is for its kind)."""
+        zz = zz_win(role="diffuseTexture", tex=self.DIFFUSE, more=[(unitmodel.BODY_ROLE, TEX)])
+        s = unitmodel.find_source(zz, TANK)
+        self.assertEqual((s.body_texture, s.body_role), (self.DIFFUSE, unitmodel.BODY_ROLE))
+        self.assertFalse(self.imported(zz, self.rigged).get("rigged"))
 
     def test_no_point_on_the_chassis_bone_is_still_refused(self):
         no_hull = zz_win(skinning=(1,), role="diffuseTexture", tex=self.DIFFUSE)   # its quad on the turret's bone
@@ -1158,6 +1174,17 @@ class BodyPictureOfAnotherKind(unittest.TestCase):
         self.assertEqual(unitmodel.body_material([0, 1, 2], mats), 1)    # the IS-3: its track drawn first
         self.assertEqual(unitmodel.body_material([2, 0], mats), 2)       # none: the first draw's
         self.assertIsNone(unitmodel.body_material([], mats))
+
+    def test_the_body_picture_and_what_it_is(self):
+        """What the new pictures are named after (the body material's first picture, as before 2026-11-11) and whether
+        the body is a CombinedDSCTexture one, which Import model goes by: on a unit whose body is another kind, a file
+        rigged to its bones goes on them. A material naming it second still counts (every game material names one)."""
+        mats = [{"textures": {"CombinedDSTexture": "track.png"}},
+                {"textures": {"diffuseTexture": "paint.png", unitmodel.BODY_ROLE: "body.png"}},
+                {"textures": {"diffuseTexture": "crew.png"}}]
+        self.assertEqual(unitmodel.body_picture([0, 1], mats), ("paint.png", unitmodel.BODY_ROLE))
+        self.assertEqual(unitmodel.body_picture([2, 0], mats), ("crew.png", "diffuseTexture"))
+        self.assertEqual(unitmodel.body_picture([], mats), (None, ""))
 
 
 class KeptOwnModels(unittest.TestCase):

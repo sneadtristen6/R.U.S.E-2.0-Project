@@ -619,6 +619,17 @@ def body_material(numbers: list, mats: list) -> int | None:
     return next((m for m in numbers if BODY_ROLE in mats[m].get("textures", {})), numbers[0] if numbers else None)
 
 
+def body_picture(numbers: list, mats: list) -> tuple:
+    """(the picture the new model's pictures are named after, what the body's picture is to its material) of a unit
+    model whose draws' materials are `numbers`: the first picture body_material's material names (as the importer has
+    always taken it), and BODY_ROLE when that material names a BODY_ROLE picture anywhere in it, else its first
+    picture's role (every material of the game names one picture: 2026-11-11). (None, "") for a model with no picture.
+    Import model goes by the role: a file rigged to the bones of a unit whose body is another kind goes on them."""
+    number = body_material(numbers, mats)
+    pictures = mats[number].get("textures", {}) if number is not None else {}
+    return next(iter(pictures.values()), None), BODY_ROLE if BODY_ROLE in pictures else next(iter(pictures), "")
+
+
 def pack_names(zz) -> list:
     """Every mesh pack of ZZ_Win.dat `zz` with the models it names, [(entry, {name: (mesh, skeleton)} or None where
     its name table can't be read alone)], in the archive's order: for packs_holding when it looks for many models
@@ -699,9 +710,7 @@ def find_source(zz, model: str, names: list | None = None, rigged: bool = False)
     spk = Spk(next(iter(meshes.values())))
     mats = spk.materials()
     parts = spk.model(model)
-    number = body_material([p.material for p in parts], mats)
-    pictures = mats[number].get("textures", {}) if number is not None else {}
-    body, role = next(iter(pictures.values()), None), next(iter(pictures), "")
+    body, role = body_picture([p.material for p in parts], mats)
     hull, hull_y, low = [], [], math.inf
     propellers = []
     for part in parts:
