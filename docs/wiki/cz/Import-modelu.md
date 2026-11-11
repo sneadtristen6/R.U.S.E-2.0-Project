@@ -100,6 +100,31 @@ Dobré vědět:
 - Máš už .glb udělaný na kostech vojáka ze hry? **Importovat model…** ho vezme tak, jak je.
 - Model, který tvé družstvo nosí, je ve složce modu jako `files\models\<název jednotky>.glb`, jakmile je uvnitř.
 
+## Její animace: kterou hraje každá činnost
+
+Model na vlastních kostech (kůň, kůň s jezdcem, jakýkoli tvor) si s sebou přináší své animace. Na stránce jednotky
+ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
+
+- **Stojí na místě**, **Jde** a **Běží** jsou první: to nejmenší, co model potřebuje. Když některá nemá nic
+  vlastního, stránka to řekne a ukáže, co hraje místo toho.
+- Každá činnost je seznam animací modelu. Vyberte jednu, nebo nechte **Nejbližší**: pak hraje tu nejpodobnější,
+  kterou model má, a seznam řekne kterou. Nejbližší znamená popořadě: animaci pojmenovanou podle té činnosti (stand
+  nebo idle, walk, run nebo gallop, fire, death...), jinak to, co hraje nejbližší činnost (chůze běh, běh chůzi, pak
+  stání; výstřel míření, pak stání; každá smrt obyčejnou smrt). Sestavení se řídí stejným pravidlem: co řekne stránka,
+  to hra hraje.
+- Animace, jejíž jméno začíná t_ nebo b_ (hr_t_fire, hr_b_run), hraje jen na horní nebo dolní polovině těla:
+  jezdcova nahoře, jeho koně dole.
+- **Všechny ostatní činnosti** otevře zbytek, podle druhu: na místě, pohyb, míření a střelba, těžká zbraň, zásahy,
+  smrt.
+- **Na dlouhých přesunech** hra posadí četu do jejího auta. Jednotka s vlastními animacemi jde místo toho sama a hraje
+  animaci tam vybranou (svůj běh, když necháte Nejbližší), stejně rychle jako její auto. Vyberte **Ve svém autě**,
+  chcete-li auto ponechat.
+
+**Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
+změnit jen pro ni, použijte RUSE Decoy.
+
+Ve hře zatím nevyzkoušeno tak, jak to dělá Studio; Horse Squad udělaný stejně ručně ve hře fungoval (listopad 2026).
+
 ## 4. Jeho karta, pak test
 
 Otáčejte 3D pohledem, dokud nový model v čárkovaném rámečku nevypadá správně, a klikněte na **Použít tento pohled jako

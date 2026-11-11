@@ -100,6 +100,32 @@ Good to know:
 - Already have a .glb made on the game soldier's bones? **Import model…** takes it as it is.
 - The model your squad wears is kept as `files\models\<the unit's name>.glb` in your mod's folder, once it's in.
 
+## Its animations: which one each action plays
+
+A model on bones of its own (a horse, a horse and its rider, any creature) brings its animations with it. On the
+unit's page, **Its animations** shows what the unit plays for each thing it does in the game:
+
+- **Stands still**, **Walks** and **Runs** come first: the least a model needs. If one of them has nothing of its own,
+  the page says so, and what it plays instead.
+- Each action is a list of the model's animations. Pick one, or leave it on **Nearest**: it then plays the closest one
+  the model has, and the list says which. Nearest means, in order: an animation named for that action (stand or idle,
+  walk, run or gallop, fire, death...), else what the nearest action plays (a walk the run, a run the walk, then the
+  stand; a fire the aim, then the stand; any death the plain death). The build uses the same rule, so what the page
+  says is what the game plays.
+- An animation whose name starts with t_ or b_ (hr_t_fire, hr_b_run) plays on the top or the bottom half of the body
+  only: a rider's on top, his horse's below.
+- **Every other action** opens the rest, by kind: standing still, moving, aiming and firing, the heavy weapon,
+  getting hit, dying.
+- **On long moves** the game puts a squad in its truck. A unit with animations of its own goes as itself instead,
+  playing the animation picked there (its run, when left on Nearest), as fast as its truck. Pick **In its truck** to
+  keep the truck.
+
+**A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
+for it alone, use RUSE Decoy.
+
+Not tried in the game yet as the Studio makes it; a Horse Squad made the same way by hand played in the game
+(November 2026).
+
 ## 4. Its card, then test
 
 Turn the 3D view until the new model looks right in the dashed frame and click **Use this view as the card** (see

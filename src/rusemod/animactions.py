@@ -316,7 +316,8 @@ def table(listings: list, names: list, picks: dict | None = None) -> list[dict]:
     """The page's rows for a unit's `listings` [(figure path, action name, the game's clip it plays or None)]: one an
     action, in ACTIONS' order (actions the game lists that aren't there after, by name), each {"action", "section",
     "picked": the animation picked or None, "plays": {"top"/"bottom"/"all": animation}, "how": "picked", "named" or
-    "nearest" (the top half's, else the whole figure's), "keys": how many listings it covers}."""
+    "nearest" (the best of its halves': a horse's own walk below its rider's nearest on top is a walk of its own),
+    "keys": how many listings it covers}."""
     picks = {a: n for a, n in (picks or {}).items() if n in names}
     first: dict = {}   # action -> {half: (key, clip)}: the first figure's listing of each half
     count: dict = {}
@@ -330,7 +331,7 @@ def table(listings: list, names: list, picks: dict | None = None) -> list[dict]:
         plays, hows = {}, {}
         for half, (key, clip) in sorted(first[base].items(), key=lambda kv: ("top", "all", "bottom").index(kv[0])):
             plays[half], hows[half] = choose(key, names, picks, clip)
-        how = hows.get("top") or hows.get("all") or hows.get("bottom")
+        how = next(h for h in ("picked", "named", "nearest", "none") if h in hows.values())
         rows.append({"action": base, "section": section(base), "picked": picks.get(base), "plays": plays,
                      "how": how, "keys": count[base]})
     return rows

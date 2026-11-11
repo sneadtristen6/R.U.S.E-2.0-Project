@@ -105,6 +105,32 @@ Dobrze wiedzieć:
 - Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
 - Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku.
 
+## Jej animacje: którą odtwarza każda czynność
+
+Model na własnych kościach (koń, koń z jeźdźcem, dowolne stworzenie) przynosi ze sobą swoje animacje. Na stronie
+jednostki **Jej animacje** pokazują, co jednostka odtwarza przy każdej czynności w grze:
+
+- **Stoi w miejscu**, **Idzie** i **Biegnie** są pierwsze: to minimum, którego potrzebuje model. Jeśli któraś nie ma
+  nic własnego, strona to mówi i pokazuje, co odtwarza zamiast tego.
+- Każda czynność to lista animacji modelu. Wybierz jedną albo zostaw **Najbliższą**: wtedy odtwarza najbardziej
+  podobną, jaką ma model, a lista mówi którą. Najbliższa to po kolei: animacja nazwana tak jak czynność (stand lub
+  idle, walk, run lub gallop, fire, death...), a jeśli jej nie ma, to co odtwarza najbliższa czynność (chód odtwarza
+  bieg, bieg chód, potem stanie; strzał celowanie, potem stanie; każda śmierć zwykłą śmierć). Budowanie stosuje tę samą
+  zasadę: to, co mówi strona, odtwarza gra.
+- Animacja, której nazwa zaczyna się od t_ lub b_ (hr_t_fire, hr_b_run), działa tylko na górnej albo dolnej połowie
+  ciała: jeźdźca u góry, jego konia na dole.
+- **Wszystkie inne czynności** otwierają resztę, według rodzaju: w miejscu, w ruchu, celowanie i strzelanie, ciężka
+  broń, trafienia, śmierć.
+- **Na długich trasach** gra wsadza oddział do ciężarówki. Jednostka z własnymi animacjami idzie zamiast tego sama,
+  odtwarzając wybraną tam animację (swój bieg, jeśli zostawisz Najbliższą), tak szybko jak jej ciężarówka. Wybierz
+  **W swojej ciężarówce**, aby zostawić ciężarówkę.
+
+**Kopia zachowuje animacje:** jednostka skopiowana z takiej, która ma własne animacje, odtwarza te same. Aby zmienić
+którąś tylko dla niej, użyj RUSE Decoy.
+
+Jeszcze nie sprawdzone w grze w wykonaniu Studia; Horse Squad zrobiony w ten sam sposób ręcznie działał w grze
+(listopad 2026).
+
 ## 4. Jego karta, potem test
 
 Obracaj widok 3D, aż nowy model będzie dobrze wyglądał w przerywanej ramce, i kliknij **Użyj tego widoku jako karty**

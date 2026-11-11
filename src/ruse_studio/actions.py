@@ -124,7 +124,8 @@ class ActionCalls:
             rides = self.rides_in(address, lang)
         except Exception:  # (no index or no game: no ride shown)
             rides = {}
-        truck = next((c["name"] for c in rides.get("choices", []) if c["address"] == rides.get("now")), None)
+        truck = next((f"{c['name']} ({c['code']})" for c in rides.get("choices", []) if c["address"] == rides.get("now")),
+                     None)   # (as the Rides in box names it)
         plays, how = animactions.ride(names, picks)
         nearest, _ = animactions.ride(names, {a: n for a, n in picks.items() if a != animactions.RIDE})
         return {"own": True, "editable": True, "animations": info, "rows": rows, "needed": list(animactions.NEEDED),

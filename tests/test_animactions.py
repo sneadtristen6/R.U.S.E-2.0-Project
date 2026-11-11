@@ -90,6 +90,11 @@ class TheRule(unittest.TestCase):
                                  want)
         self.assertEqual(aa.ride(names), ("hr_ride", "named"))
         self.assertEqual(aa.marked(names)["hr_b_run"], ("run", "bottom"))
+        # its walk and run are the horse's own below: nothing is missing, though the rider stands on top
+        rows = aa.table([("GfxDescriptorFusilier", k, None) for k in SOLDIER], names)
+        walk = next(r for r in rows if r["action"] == "marche")
+        self.assertEqual((walk["plays"], walk["how"]), ({"top": "hr_t_stand", "bottom": "hr_b_walk"}, "named"))
+        self.assertEqual(aa.missing(rows), [])
 
     def test_a_pick_wins_and_the_actions_nearest_it_follow(self):
         names = ["Idle", "Gallop", "Trot slow"]
