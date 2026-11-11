@@ -76,6 +76,7 @@ from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
 from .modelblender import ModelBlenderCalls
 from .actions import ActionCalls
+from .modelfit import ModelFitCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -560,7 +561,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
-                FlagTypeCalls, BoardCalls, ModelBlenderCalls, ActionCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls, ActionCalls, ModelFitCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json
@@ -8231,11 +8232,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
         record = target.with_suffix(".json")
+        from .modelfit import kept_choices
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
                                       "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
                                       **({"facing": list(facing)} if facing else {}),
                                       **({"move": move} if report.get("moved") else {}),
-                                      "report": report}, indent=1), encoding="utf-8")
+                                      **kept_choices(record), "report": report}, indent=1), encoding="utf-8")
         return report
 
     # --- a new unit's model at another size (the owner, 2026-10-10: "the unarmed recon and some of these Chinese

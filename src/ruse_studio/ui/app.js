@@ -2950,6 +2950,7 @@ function modelBox(address, info, draw, changed) {
       box.append(moveFold);
     }
     if (info.copy_out) box.append(el("p", { className: "notice", textContent: copyOut }));
+    if (own.rigged) box.append(fitBox(address, changed));  // its two halves and what won't fit (item 5, the owner's 7)
     box.append(el("div", { className: "actions" }, pick, drop));
   } else {
     if (info.model_out) {
@@ -2967,6 +2968,125 @@ function modelBox(address, info, draw, changed) {
   }
   box.pick = pick;
   return box;
+}
+
+// --- a new unit's model rigged to bones: its two halves, and what of it won't work in the game (api.model_fit,
+// model_split; ruse_studio/modelfit.py, rusemod/bonefit.py). Item 5 of the owner's list, his 7 (2026-11-10): "Yes,
+// seven should warn them. If it's gonna break, and then tell them how to fix it. And what's the issue is. Should be
+// intuitive." Every problem says what doesn't fit, what the game does with it, and how to fix it; none stops anything.
+// A model with bones of its own picks the bone its upper half starts at (the suggested one first: on the 11-09 Horse
+// Squad, the rider's first bone); a model on the game soldier's bones keeps the game's halves, no choice shown ---
+function fitBox(address, changed) {
+  const w = state.words;
+  const box = el("div", { className: "model-fit" }, el("p", { className: "muted small", textContent: w.fit_working }));
+  const draw = (r) => {
+    box.replaceChildren();
+    if (!r || !r.skeleton) return;
+    if (r.skeleton === "own" && r.halves) box.append(halvesBox(address, r, draw, changed));
+    else if (r.skeleton === "soldier") {
+      box.append(el("h4", { textContent: w.fit_halves_title, title: w.tip_fit_halves_title }),
+        el("p", { className: "muted small", textContent: w.fit_soldier_halves, title: w.tip_fit_soldier_halves }));
+    }
+    box.append(fitProblems(r));
+  };
+  api().model_fit(address).then(draw).catch((err) => { box.replaceChildren(el("p", { className: "notice warn",
+    textContent: (err && err.message) || String(err) })); });
+  return box;
+}
+
+// where its upper half starts: a list of its bones (the suggested one first, then every bone under its parent), how
+// many bones each half has, and the whole tree marked upper and lower in a fold
+function halvesBox(address, r, draw, changed) {
+  const w = state.words, h = r.halves;
+  const pick = el("select", { className: "fit-split", title: w.tip_fit_split });
+  pick.append(el("option", { value: "", textContent: fill(w.fit_split_suggested, { bone: h.suggested }) }));
+  for (const b of h.tree) pick.append(el("option", { value: b.name, textContent: "  ".repeat(b.depth) + b.name }));
+  pick.value = h.chosen ? h.split : "";
+  pick.addEventListener("change", async () => {
+    pick.disabled = true;
+    try {
+      const got = await api().model_split(address, pick.value || null);
+      say(fill(pick.value ? w.fit_split_saved : w.fit_split_back, { bone: got.halves ? got.halves.split : pick.value }), "ok");
+      draw(got);
+      if (changed) changed();
+    } catch (err) { problem(err); pick.disabled = false; }
+  });
+  const tree = el("details", { className: "fit-tree" }, el("summary", { title: w.tip_fit_halves_tree },
+    el("strong", { textContent: w.fit_halves_tree })));
+  for (const b of h.tree) {   // (the half in a column of its own, each bone set in under the bone it hangs from)
+    const name = el("span", { textContent: b.name });
+    name.style.paddingInlineStart = `${b.depth * 12}px`;
+    tree.append(el("div", { className: "small fit-bone " + (b.top ? "half-top" : "half-bottom") },
+      el("span", { className: "fit-half", textContent: b.top ? w.fit_half_top : w.fit_half_bottom }), name));
+  }
+  return el("div", { className: "fit-halves" },
+    el("h4", { textContent: w.fit_halves_title, title: w.tip_fit_halves_title }),
+    el("p", { className: "small", textContent: w.fit_halves_how }),
+    el("label", { className: "small" }, w.fit_split, " ", pick),
+    el("p", { className: "small", textContent: fill(w.fit_halves_counts, { top: h.top.length, bottom: h.bottom.length }) }),
+    el("p", { className: "muted small", textContent: w.fit_halves_example }), tree);
+}
+
+// each problem: what doesn't fit, what the game does with it, how to fix it
+function fitProblems(r) {
+  const w = state.words;
+  const box = el("div", { className: "fit-problems" }, el("h4", { textContent: w.fit_title, title: w.tip_fit_title }));
+  if (!r.problems.length) {
+    box.append(el("p", { className: "small", textContent: fill(w.fit_ok, { n: r.bones }) }));
+  }
+  for (const p of r.problems) {
+    const sayIt = fitWords(p);
+    if (!sayIt) continue;
+    box.append(el("div", { className: "notice " + (p.level === "stops" ? "stop" : "warn") },
+      el("p", { textContent: sayIt[0] }), el("p", { className: "small", textContent: sayIt[1] }),
+      el("p", { className: "small", textContent: sayIt[2] })));
+  }
+  box.append(el("p", { className: "muted small", textContent: w.fit_checked }));
+  return box;
+}
+
+function fitWho(p) {
+  const w = state.words;
+  return ({ rifle: w.fit_fig_rifle, heavy: w.fit_fig_heavy, far: w.fit_fig_far, fallen: w.fit_fig_fallen,
+    wreck: w.fit_fig_wreck, unit: w.fit_fig_unit })[p.figure_kind] || w.fit_fig_other;
+}
+
+function fitLevel(p) {
+  const w = state.words;
+  if (p.level === "stops") return p.seen ? w.fit_level_stops_seen : w.fit_level_stops;
+  if (p.level === "wrong") return w.fit_level_wrong;
+  if (p.level === "unseen") return w.fit_level_unseen;
+  if (p.level === "untried") return w.fit_level_untried;
+  return w.fit_level_note;
+}
+
+// [what doesn't fit, what the game does, how to fix it] for one of model_fit's problems (rusemod.bonefit's kinds)
+function fitWords(p) {
+  const w = state.words;
+  const names = p.clip_names || [];   // (the animations that don't fit the same way, together: a few by name)
+  const v = { who: fitWho(p), clips: names.slice(0, 4).join(", ") + (names.length > 4 ? ` (+${names.length - 4})` : ""), count: names.length,
+    n: (p.actions || []).length, a: p.clip_bones, b: p.model_bones, bone: p.bone || p.split || "", used: p.used || "",
+    most: p.most, x: p.examples && p.examples[0] ? p.examples[0][0] : "", y: p.examples && p.examples[0] ? p.examples[0][1] : "" };
+  let what, how;
+  if (p.kind === "clip") {
+    what = ({ fewer: w.fit_clip_fewer, more: w.fit_clip_more, names: w.fit_clip_names, order: w.fit_clip_order })[p.how];
+    how = p.own ? w.fit_fix_clip_own : w.fit_fix_clip_game;
+  } else if (p.kind === "bone") {
+    what = ({ shot: w.fit_bone_shot, turn: w.fit_bone_turn, show: w.fit_bone_show, hold: w.fit_bone_hold,
+      turret: w.fit_bone_turret, move: w.fit_bone_move, body: w.fit_bone_body, wheel: w.fit_bone_wheel,
+      hook: w.fit_bone_hook })[p.need] || w.fit_bone_move;
+    how = p.need === "shot" ? w.fit_fix_bone_shot : w.fit_fix_bone;
+  } else if (p.kind === "too_many") {
+    what = fill(w.fit_too_many, { n: p.bones, most: p.most });
+    how = w.fit_fix_too_many;
+  } else if (p.kind === "split_gone") {
+    what = w.fit_split_gone;
+    how = w.fit_fix_split_gone;
+  } else if (p.kind === "split_all_top") {
+    what = w.fit_split_all_top;
+    how = w.fit_fix_split_all_top;
+  } else return null;   // (the halves' masks are the build's: it says them)
+  return [fill(what, v), fitLevel(p), fill(how, v)];
 }
 
 // A box in the unit's side column brought into sight (the side column and the page each scrolled as little as it
