@@ -1571,7 +1571,41 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
         out[stem] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{stem}.glb), "
                                                f"beside {source}"))
+    # a squad whose soldiers have looks of their own: its far-away figure wears the riflemen's (_far_figure_riflemen)
+    for unit in sorted({stem.partition("@")[0] for stem in out}):
+        if unit in by_name:
+            _far_figure_riflemen(run, by_name[unit], unit, out, result)
     return out
+
+
+# a squad's riflemen's figure (the game's GfxDescriptorFusilier: every man but the last), its model part
+RIFLEMEN = ("GfxDescriptorFusilier", "MeshDescriptor")
+
+
+def _far_figure_riflemen(run, name: str, unit: str, out: dict, result: BuildResult) -> None:
+    """A new squad whose soldiers have looks of their own (unit_own_models' `out`: files/models/<unit>.glb for its
+    riflemen, <unit>@<kind>.glb for its bazooka man): its far-away figure (FIGURINE) wears its riflemen's look, the most
+    soldiers of the squad. The owner, 2026-11-11, on squad-page1 (only the bazooka man painted red): far away "they're
+    red ... It should take that like the more predominant unit ... up close, it should be just the red bazooka guy".
+    The game draws the G.I. squad's far-away figure with its bazooka man, so before this a bazooka man of his own lent
+    the squad his look far away, and riflemen of their own left the game's bazooka man there. The riflemen's look: their
+    own model when they have one (written beside the game model it was fitted to, as _own_model_part names it), else
+    the game model their figure draws. A unit with no riflemen's figure (not a squad) is left as it is."""
+    from .unitmodel import model_key
+    obj = run.game.objects[name]
+    far = _figurine_model(run, obj)
+    if far is None:
+        return
+    if unit in out:
+        fitted = out[unit][0].replace("/", "\\")
+        riflemen = f"{fitted.rsplit(chr(92), 1)[0]}\\{_own_stem(unit)}lod0.Ase2ndfbin"
+    else:
+        riflemen = _part_model(run, obj, RIFLEMEN)
+    if riflemen is None or model_key(riflemen) == model_key(far):
+        return
+    if _point_at_copies(run, name, {model_key(far): riflemen}, parts=lambda p: p == FIGURINE[0]):
+        result.findings.append(Finding("note", f"{unit}'s far-away figure wears its riflemen's look "
+                                               f"({riflemen.replace(chr(92), '/').rsplit('/', 1)[-1]})"))
 
 
 def building_looks(run, result: BuildResult) -> dict:
@@ -2233,12 +2267,13 @@ def _say_fit(result: BuildResult, where: str, problems: list, clip_name) -> int:
     return len(problems)
 
 
-def _point_at_copies(run, name: str, copies: dict) -> int:
+def _point_at_copies(run, name: str, copies: dict, parts=None) -> int:
     """Point every model part of the unit `name` (under its GfxDescriptor* links: a squad's soldiers, its bazooka man,
     its token's figure) that names one of `copies`' models ({the game's model, rusemod.unitmodel.model_key: the copy's
     name}) at the copy. A part the unit links to that other units link to as well (an unnamed object of its own in
     the unit data, or a model part) is copied into the unit first, so they keep the game's. A game unit is copied
-    before it's changed (Game.own). Returns how many model parts name a copy now (0: none named those models)."""
+    before it's changed (Game.own). `parts`: which of the unit's GfxDescriptor* links to look under (a test of the
+    link's name; None: all of them). Returns how many model parts name a copy now (0: none named those models)."""
     from .patch import Inline, ListV, MapV, PairV, Ref, _fresh
     from .unitmodel import model_key
     objects = run.game.objects
@@ -2295,11 +2330,14 @@ def _point_at_copies(run, name: str, copies: dict) -> int:
             return point(prop, v.a, lambda y: setattr(v, "a", y)) + point(prop, v.b, lambda y: setattr(v, "b", y))
         return 0
 
-    if not any(reaches(p, w) for p, w in objects[name].props.items() if p.startswith("GfxDescriptor")):
+    def looked(p: str) -> bool:
+        return p.startswith("GfxDescriptor") and (parts is None or parts(p))
+
+    if not any(reaches(p, w) for p, w in objects[name].props.items() if looked(p)):
         return 0
     unit = run.game.own(name)
     return sum(point(p, w, lambda x, p=p: unit.props.__setitem__(p, x))
-               for p, w in list(unit.props.items()) if p.startswith("GfxDescriptor"))
+               for p, w in list(unit.props.items()) if looked(p))
 
 
 def _own_model_part(run, by_name: dict, unit: str, where: str, result: BuildResult, rigged_on: str | None = None, also: list | None = None,
@@ -2401,9 +2439,15 @@ FIGURINE = ("GfxDescriptorIcone", "PawnDescriptor", "DescriptorFigurine", "MeshD
 
 def _figurine_model(run, obj) -> str | None:
     """The model a unit's zoomed-out figurine names (its FIGURINE part's FileName), or None."""
+    return _part_model(run, obj, FIGURINE)
+
+
+def _part_model(run, obj, path) -> str | None:
+    """The model a unit's model part at `path` (its links' names from the unit, the last one the part) names (its
+    FileName), or None."""
     from .patch import Inline, Ref
     node = obj
-    for prop in FIGURINE:
+    for prop in path:
         v = node.props.get(prop)
         node = v.obj if isinstance(v, Inline) else run.game.objects.get(v.target) if isinstance(v, Ref) else None
         if node is None:

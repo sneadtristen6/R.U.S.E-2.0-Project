@@ -140,11 +140,13 @@ class InTheBuild(unittest.TestCase):
         return {f: model_of(objects, unit, f) for f in FIGURES}
 
     def test_the_riflemen_s_model_leaves_the_heavy_weapon_soldier_as_the_copied_unit_had_him(self):
-        """Import model's file for a squad since 2026-11-11: fitted to the riflemen's model alone ("also" empty)."""
+        """Import model's file for a squad since 2026-11-11: fitted to the riflemen's model alone ("also" empty). Its
+        far-away figure wears the riflemen's look (the owner, 2026-11-11 on squad-page1: "It should take that like the
+        more predominant unit"), no more the game's bazooka man."""
         with tempfile.TemporaryDirectory() as d:
             result, objects = self.build(self.mod(d, {UNIT: ({"rigged": True, "also": []}, RIFLE.lower())}))
             self.assertEqual([f.message for f in result.errors], [])
-            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": H, "far": H})
+            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": H, "far": O})
             self.assertEqual(self.drawn(objects, "Descriptor_Unit_Squad"),
                              {"rifle": R, "fallen": R, "heavy": H, "far": H})   # the game's: as it was
 
@@ -154,7 +156,7 @@ class InTheBuild(unittest.TestCase):
                                f"{UNIT}@bazooka": ({"rigged": True, "also": []}, HEAVY.lower())})
             result, objects = self.build(mod)
             self.assertEqual([f.message for f in result.errors], [])
-            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": OH, "far": OH})
+            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": OH, "far": O})
             self.assertEqual(sorted(result.own_models), [UNIT, f"{UNIT}@bazooka"])
             said = " ".join(f.message for f in result.findings)
             self.assertIn(f"files/models/{UNIT}@bazooka.glb", said)
@@ -174,7 +176,7 @@ class InTheBuild(unittest.TestCase):
                                f"{UNIT}@bazooka": ({"rigged": True, "also": []}, HEAVY.lower())})
             result, objects = self.build(mod)
             self.assertEqual([f.message for f in result.errors], [])
-            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": OH, "far": OH})
+            self.assertEqual(self.drawn(objects), {"rifle": O, "fallen": O, "heavy": OH, "far": O})
 
     def test_a_kind_s_file_not_on_bones_is_refused_said(self):
         with tempfile.TemporaryDirectory() as d:
@@ -191,7 +193,19 @@ class InTheBuild(unittest.TestCase):
             result, objects = self.build(mod)
             self.assertEqual([f.message for f in result.errors], [])
             self.assertTrue(any(f.level == "warning" and "draws none of them" in f.message for f in result.findings))
-            self.assertEqual(self.drawn(objects), {"rifle": R, "fallen": R, "heavy": OH, "far": OH})
+            self.assertEqual(self.drawn(objects), {"rifle": R, "fallen": R, "heavy": OH, "far": R})
+
+    def test_only_his_own_model_far_away_the_squad_wears_the_riflemen_s(self):
+        """His squad-page1 case (2026-11-11): the bazooka man alone has a model of his own (painted red in Blender).
+        Up close he draws it; far away the squad's figure is the riflemen's, the game's rifleman ("They're definitely
+        red from up high. But up close, it should be just the red bazooka guy"); the game's own squad as it was."""
+        with tempfile.TemporaryDirectory() as d:
+            result, objects = self.build(self.mod(d, {f"{UNIT}@bazooka": ({"rigged": True, "also": []}, HEAVY.lower())}))
+            self.assertEqual([f.message for f in result.errors], [])
+            self.assertEqual(self.drawn(objects), {"rifle": R, "fallen": R, "heavy": OH, "far": R})
+            self.assertTrue(any("far-away figure wears its riflemen's look" in f.message for f in result.findings))
+            self.assertEqual(self.drawn(objects, "Descriptor_Unit_Squad"),
+                             {"rifle": R, "fallen": R, "heavy": H, "far": H})
 
     def test_names(self):
         self.assertEqual((build._unit_of(f"{UNIT}@bazooka"), build._own_stem(f"{UNIT}@bazooka"), build._own_stem(UNIT)),
