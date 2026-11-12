@@ -67,6 +67,27 @@ When you take out a unit that others are researched from, **Settings > Research*
 A unit left researched from one that's gone says so in its **Upgrade and research** box and in the check bar, and the
 build stops on it until you pick another unit, or none.
 
+## The Horse Squad
+
+**WWII+** also lists the **Horse Squad**, made by sneadtristen6: riflemen and a heavy-weapon soldier, each on a horse of
+his own. Nothing of it is downloaded, so it's there whether or not you've downloaded the WWII+ units. Like the era
+units, it isn't in your mod until you add it.
+
+1. Click it. Its page says who made it and what adding it does.
+2. Fill in the form as for an era unit: its name, its price, its **Build menu**, its **Group** and the unit it's
+   **Researched from**. **Start from** is always the game's G.I. squad (the US riflemen): its horses and riders are made
+   for that squad's soldiers.
+3. Click **Add to my mod**. The Studio makes its horses and riders on your PC from your own copy of the game, makes the
+   unit, then gives its riflemen and its heavy-weapon soldier their horses. Each step shows under the button as it
+   goes, with the time so far. If your game can't give what it needs, the Studio says why, and nothing is added.
+4. It's a new unit of your mod now: **Open its page** to change any of its values, like any unit.
+   **Take it out of my mod** takes it out again, with both its models and their animations.
+
+Its maker, sneadtristen6, is credited in your mod's `CREDITS-era-units.md`, beside the era units' makers.
+
+Seen in the game: these riders on their horses, made with **Import model…** on a copy of the G.I. squad. Not tried in
+the game yet: the Horse Squad added from this list.
+
 ## Credits
 
 Every era unit's maker is credited: on its page, and in your mod's `CREDITS-era-units.md`, which the Studio writes when

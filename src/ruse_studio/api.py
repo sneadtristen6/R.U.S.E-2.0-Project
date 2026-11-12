@@ -69,6 +69,7 @@ from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, pl
 from .music import MusicCalls
 from .decoy import DecoyCalls, DecoyError
 from .era_units import EraUnitCalls
+from .horse_squad import HorseSquadCalls
 from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
@@ -563,7 +564,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
+                DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, GroundTextureCalls, MissionCalls, RoleCalls,
+                WeaponClassCalls,
                 FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, DecoyBlenderCalls, ActionCalls,
                 ModelFitCalls, AnimModelCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
@@ -5895,6 +5897,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def new_mod(self, name: str, kind: str = "mod") -> dict:
         """Make a new, empty mod (or map: `kind` "map") in the Studio's mods (or maps) folder and start editing it."""
         kind = self._kind(kind)
+        if kind == "mod":
+            self._horse_guard(None, switching=True)   # (the Horse Squad's unit being made in the mod edited now)
         name = name.strip()
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
         base = self._folders()[self.KINDS[kind][0]]
@@ -5921,6 +5925,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind = self._kind(kind)
         if not Path(path, "mod.toml").is_file():
             raise StudioError(f"{path} isn't a mod folder (it has no mod.toml)")
+        if kind == "mod":
+            self._horse_guard(path, switching=True)   # (the Horse Squad's unit being made in the mod edited now)
         st = modformat.state(path)
         if st["state"] == "newer" and not anyway:
             raise StudioError(f"{Path(path).name} was saved by a newer RUSE Studio (mod format {st['format']}; this "
@@ -6047,6 +6053,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = Path(str(path or ""))
         if not (folder / "mod.toml").is_file():
             raise StudioError(f"{folder} isn't a mod folder any more.")
+        self._horse_guard(folder)   # (the Horse Squad's unit being made in it)
         if not self._in_roots(folder):
             # not a game rule: the Studio deletes only what it made; a folder opened from elsewhere stays
             raise StudioError(f"{folder} wasn't made in the Studio, so it isn't deleted here: take it off the list "
@@ -6078,6 +6085,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def forget_mod(self, path: str) -> dict:
         """Take a mod or map folder opened from somewhere else off the Studio's lists (Delete a mod…'s "Take off the
         list"): the folder itself stays as it is. Returns {"mod": mods("mod"), "map": mods("map")}."""
+        self._horse_guard(path or None)   # (the Horse Squad's unit being made in it)
         self._forget(str(path or ""))
         return {"mod": self.mods("mod"), "map": self.mods("map")}
 

@@ -70,6 +70,27 @@ Když vyjmete jednotku, ze které se zkoumají jiné, o tom, co se stane, rozhod
 Jednotka, která zůstala zkoumaná z jednotky, jež už neexistuje, to řekne ve svém poli **Vylepšení a výzkum** a v liště
 kontroly, a sestavení se na ní zastaví, dokud nevyberete jinou jednotku, nebo žádnou.
 
+## Jízdní družstvo
+
+**2. světová válka+** ukazuje také **Jízdní družstvo**, jehož autorem je sneadtristen6: střelci a voják s těžkou zbraní,
+každý na vlastním koni. Nic z něj se nestahuje, takže tam je, ať už jsi jednotky 2. světové války+ stáhl, nebo ne.
+Stejně jako jednotky z období není ve tvém modu, dokud ho nepřidáš.
+
+1. Klikni na něj. Jeho stránka říká, kdo ho udělal a co přidání udělá.
+2. Vyplň formulář jako u jednotky z období: jeho název, cenu, **Nabídka výroby**, **Skupina** a jednotku, ze které se
+   **Zkoumá se z**. **Vycházet z** je vždy družstvo PĚCHOTA ze hry (američtí střelci): jeho koně a jezdci jsou udělaní pro
+   vojáky tohoto družstva.
+3. Klikni na **Přidat do modu**. Studio vyrobí jeho koně a jezdce v tvém PC z tvé vlastní kopie hry, vytvoří jednotku a
+   pak dá koně jeho střelcům a vojákovi s těžkou zbraní. Každý krok se ukazuje pod tlačítkem, jak postupuje, s časem,
+   který už uběhl. Když tvoje hra nemůže dát, co je potřeba, Studio řekne proč a nic se nepřidá.
+4. Teď je to nová jednotka tvého modu: **Otevřít její stránku** a změň kteroukoli jeho hodnotu, jako u každé jednotky.
+   **Odebrat z modu** ho zase odebere, i s oběma modely a jejich animacemi.
+
+Jeho autor, sneadtristen6, je uveden v souboru `CREDITS-era-units.md` tvého modu, vedle autorů jednotek z období.
+
+Viděno ve hře: tito jezdci na svých koních, udělaní přes **Importovat model…** na kopii družstva PĚCHOTA. Zatím
+nevyzkoušeno ve hře: Jízdní družstvo přidané z tohoto seznamu.
+
 ## Autoři
 
 Autor každé jednotky z jiné éry je uveden: na její stránce a v souboru `CREDITS-era-units.md` vašeho modu, který Studio

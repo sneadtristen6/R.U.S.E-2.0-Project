@@ -2336,6 +2336,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
   // an era unit's size and the unit it's researched from (words.toml eras_size*, eras_research_*, tip_eras_size,
   // tip_eras_research_*)
   Object.assign(words.us, {"eras_size": "Size", "tip_eras_size": "How big its model is: 1 is as long as the unit it starts from. The suggestion gives it its real size beside the game's own units (its real width; a plane's, its wingspan).", "eras_size_help": "1 = as long as the start unit; the suggestion is its real size.", "eras_size_real_width": "Suggested: its real width, {m} m.", "eras_size_real_span": "Suggested: its real wingspan, {m} m.", "eras_size_clamped": "Its real size would need {raw}, but sizes go from 0.05 to 20: {size} is the nearest.", "eras_size_unknown": "Its real size isn't in the library yet, so 1: as long as the start unit.", "eras_size_unread": "Its real size couldn't be worked out, so 1: as long as the start unit.", "eras_research_from": "Researched from", "tip_eras_research_from": "The unit it's researched from: it can be built only after that research (a unit in the same nation's build menu; your mod's new units too). None: buyable from the start. Change it later in its page's Upgrade and research box.", "eras_research_none": "None: buyable from the start", "eras_research_why_start": "Suggested: the unit it starts from.", "eras_research_why_in_place_of": "Suggested: the unit it stands in for.", "eras_research_why_dearest": "Suggested: the dearest unit of this build menu, so an advanced unit comes after research.", "eras_research_price": "Research price", "tip_eras_research_price": "What its research costs.", "eras_research_time": "Research time", "tip_eras_research_time": "How long its research takes, in the seconds or minutes picked beside it (50 seconds to start, as in the Upgrade and research box; that the game counts seconds isn't timed in the game yet).", "tip_eras_research_locked": "Nothing to research: it's buyable from the start. Pick a unit it's researched from first.", "tip_eras_research_off": "Units of this kind have no research in the game's files."});
+  // the Horse Squad among the era units (words.toml eras_horse_*, tip_eras_horse_*), word for word
+  Object.assign(words.us, {"eras_horse_name": "Horse Squad", "eras_horse_by": "by {author}", "eras_horse_made_by": "Made by {author}.", "eras_horse_what": "Riflemen and a heavy-weapon soldier, each on a horse of his own. Nothing is downloaded: when you add it, the Studio makes its horses and riders on this PC from your own copy of the game.", "eras_horse_start_help": "It always starts from this unit's values: its horses and riders are made for this unit's soldiers. Once it's in your mod, change any of its values on its page, like any unit.", "tip_eras_horse_start": "The Horse Squad always starts from this unit: its horses and riders are made for this unit's soldiers.", "tip_eras_horse_add": "Makes its horses and riders on this PC from your own copy of the game, then makes it a new unit of your mod: its maker's credit, the values of the unit it starts from, in the build menu picked.", "eras_horse_step_build": "Step 1 of 4: making its horses and riders from your game… {time}", "eras_horse_step_unit": "Step 2 of 4: making the unit… {time}", "eras_horse_step_riflemen": "Step 3 of 4: giving the riflemen their horses… {time}", "eras_horse_step_bazooka": "Step 4 of 4: giving the heavy-weapon soldier his horse… {time}"});
   // research: what taking out a unit others are researched from does, seconds or minutes (words.toml research_*, set_research_*, upgrade_parent_gone, upgrade_gone_option, check_open_unit)
   Object.assign(words.us, {"set_research_title": "Research", "set_research_help": "What happens to the units researched from a unit you take out of your mod, and whether research times are typed in seconds or minutes.", "research_gone_label": "When you take out a unit that others are researched from:", "tip_research_gone": "What the Studio does when you delete a unit of your mod (or take an era unit out) while other units are researched from it.", "research_gone_warn": "Warn me first", "research_gone_refuse": "Refuse", "research_gone_relink": "Re-link them", "tip_research_gone_warn": "The Studio asks first. If you go ahead, the units researched from it are left researched from a unit that's gone: the check bar lists them, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "tip_research_gone_refuse": "The unit stays in your mod while any unit is researched from it: pick another unit for them in their Upgrade and research box first.", "tip_research_gone_relink": "The units researched from it are researched from the unit it was researched from instead, at the same price and time. If it wasn't researched from any, they become buyable from the start.", "research_time_unit": "Research time in", "tip_research_time_unit": "Type research times in seconds or minutes: minutes are turned into whole seconds, the unit the times are kept in (that the game counts them in seconds isn't timed in the game yet).", "research_seconds": "seconds", "research_minutes": "minutes", "research_gone_ask": "Researched from {name}: {names}. If you take it out, they're left researched from a unit that's gone, and the game can't be tested until each gets another unit, or none, in its Upgrade and research box.", "research_gone_anyway": "Take it out anyway", "tip_research_gone_anyway": "Takes it out now. The units researched from it wait for you to pick another unit for them; the check bar lists them.", "research_gone_settings": "Change this in Settings", "tip_research_gone_settings": "Opens Settings, where you choose what taking out such a unit does: warn first, refuse, or re-link them.", "research_relinked": "{name} is now researched from {to}.", "research_relinked_none": "{name} is now buyable from the start.", "research_left": "Researched from a unit that's gone: {names}. Pick another unit for each in its Upgrade and research box (the check bar lists them).", "upgrade_parent_gone": "It's researched from a unit that's no longer in your mod, so the build stops on it. Pick another unit below, or none.", "upgrade_gone_option": "{name} (no longer in your mod)", "check_open_unit": "Open its page", "tip_check_open_unit": "Shows this unit's page, where its Upgrade and research box picks another unit to research it from."});
   // the Music tab (words.toml music_*, tip_tab_music, tip_music_*)
@@ -3334,7 +3336,61 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
 
   const FAKE_ERA_UNITS = [{"key": "WWI|Germany|A7V", "era": "WWI", "nation": "Germany", "name": "A7V", "in_place_of": "", "card": "Super-Heavy Tank", "building": "Prototype base", "copies": "$/GFX/Everything/Descriptor_Unit_Panzer_IV_G", "copies_name": "M4 Sherman", "game_nation": 1, "factory": 10, "aircraft": false, "model": "WWI/Germany/A7V.glb", "fits": true, "credit": {"title": "tank A7V", "author": "tnikita", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "WWI|Germany|Gotha G.V", "era": "WWI", "nation": "Germany", "name": "Gotha G.V", "in_place_of": "", "card": "Light Bomber", "building": "Airfield", "copies": "$/GFX/Everything/Descriptor_Unit_P40Warhawk", "copies_name": "M4 Sherman", "game_nation": 1, "factory": 10, "aircraft": true, "model": "WWI/Germany/Gotha_G_V.glb", "fits": true, "credit": {"title": "Gotha G.V", "author": "panzerowl", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "WWI|France|75 mm Mle 1897", "era": "WWI", "nation": "France", "name": "75 mm Mle 1897", "in_place_of": "", "card": "Advanced Anti-tank Gun", "building": "Anti-tank base", "copies": "$/GFX/Everything/Descriptor_Unit_M3A1_Stuart", "copies_name": "M4 Sherman", "game_nation": 3, "factory": 10, "aircraft": false, "model": "WWI/France/75_mm.glb", "fits": false, "credit": {"title": "75mm Field Gun", "author": "kisotsu", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "WWI|UK|Mark V", "era": "WWI", "nation": "UK", "name": "Mark V", "in_place_of": "", "card": "Heavy Tank", "building": "Armor base", "copies": "$/GFX/Everything/Descriptor_Unit_M4_Sherman", "copies_name": "M4 Sherman", "game_nation": 2, "factory": 10, "aircraft": false, "model": null, "fits": true, "credit": {"title": "tank-ww1-mark v", "author": "Ara_my45yt", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "Cold War|USSR|T-10", "era": "Cold War", "nation": "USSR", "name": "T-10", "in_place_of": "", "card": "Super-Heavy Tank", "building": "Prototype base", "copies": "$/GFX/Everything/Descriptor_Unit_M4_Sherman", "copies_name": "M4 Sherman", "game_nation": 5, "factory": 10, "aircraft": false, "model": "Cold_War/USSR/T-10.glb", "fits": true, "credit": {"title": "Tank T-10M", "author": "yanix", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "Cold War|China|J-7", "era": "Cold War", "nation": "China", "name": "J-7", "in_place_of": "", "card": "Fighter", "building": "Airfield", "copies": "$/GFX/Everything/Descriptor_Unit_P40Warhawk", "copies_name": "M4 Sherman", "game_nation": null, "factory": 10, "aircraft": true, "model": "Cold_War/China/J-7.glb", "fits": true, "credit": {"title": "Mig21", "author": "manilov.ap", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}, {"key": "Modern|Germany|Leopard 2A7", "era": "Modern", "nation": "Germany", "name": "Leopard 2A7", "in_place_of": "", "card": "Main Battle Tank", "building": "Armor base", "copies": "$/GFX/Everything/Descriptor_Unit_Panzer_IV_G", "copies_name": "M4 Sherman", "game_nation": 1, "factory": 10, "aircraft": false, "model": "Modern/Germany/Leopard.glb", "fits": true, "credit": {"title": "Leopard 2 MBT Revolution", "author": "someone", "licence": "CC-BY 4.0", "url": "https://sketchfab.com/", "extra": ""}}];
   const eraAdded = new Map();
-  const eraHere = new Set(["WWI", "WWII", "Cold War"]);  // the eras "downloaded": Modern comes with its Download
+  // the eras "downloaded": Modern comes with its Download (?fake=nowwii: WWII+ too, the Horse Squad listed above it)
+  const eraHere = new Set(mode === "nowwii" ? ["WWI", "Cold War"] : ["WWI", "WWII", "Cold War"]);
+  // the Horse Squad (StudioApi.horse_squad_add, ruse_studio/horse_squad.py): listed in WWII+ whether that era is
+  // downloaded or not, credited to its maker; added, its two models are made from the player's own game first. Here a
+  // stand-in builder: each look at the job (every half second) is one more step, then the unit is made with its riflemen's
+  // and heavy-weapon soldier's horse-and-rider models (FAKE_HORSE_IMPORT). ?fake=nohorse: the builder refuses, in words
+  // made up for this preview (the real builder's own words come from rusemod.horsesquad), and nothing is made
+  const FAKE_HORSE = { key: "horse-squad", era: "WWII", nation: "USA", name: "Horse Squad", in_place_of: "",
+    card: "Light Infantry", copies: "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger", game_nation: 0, factory: 8,
+    aircraft: false, model: null, fits: true, picture: null, card_picture: null, built: true,
+    credit: { author: "sneadtristen6" } };
+  const FAKE_HORSE_NAMES = ["Horse Squad", "Escouade à cheval", "Reitertrupp", "Squadra a cavallo", "Pelotón a caballo",
+    "Oddział konny", "Конный отряд", "Jízdní družstvo", "騎馬分隊", "骑兵小队", "جوخهٔ سواره"];  // (words.toml eras_horse_name)
+  let fakeHorseJob = null;  // the job adding it, while it runs
+  function fakeHorseAdd(nation, factory, name, price, researchFrom, researchPrice, researchTime, group) {
+    if (!current) throw new Error("Pick or make a mod first: an era unit is added to a mod.");
+    if (eraAdded.has(FAKE_HORSE.key)) throw new Error(`${FAKE_HORSE.name} is already in this mod`);
+    if (fakeHorseJob && backupJobs[fakeHorseJob] && backupJobs[fakeHorseJob].step < backupJobs[fakeHorseJob].lines.length) {
+      return { job: fakeHorseJob };
+    }
+    const state = fakeGroupState("us");
+    const [offer, target] = fakeGroupOffer(state, FAKE_HORSE.card, nation, factory, group, FAKE_HORSE.name);
+    if (offer && researchFrom && !(target ? target.units : []).includes(researchFrom)) {
+      throw new Error(`${FAKE_HORSE.name} can't be researched from ${researchFrom}: that unit is in another group of the `
+        + "building than the one picked.");
+    }
+    if (offer) fakeGroupRoom(state, nation, factory, target, 1, "us");
+    const stem = safeName(name || "");  // a name given whose address is taken: refused before the long part
+    if (stem && (units.some((u) => u.id === stem) || mine().some((x) => x.id === stem))) {
+      throw new Error(`There's already a unit called Descriptor_Unit_${stem} (from '${name}'). Pick another name.`);
+    }
+    if (mode === "nohorse") {
+      fakeHorseJob = backupJob(["build", "build", "build"], "The Horse Squad can't be made from your game: the game's "
+        + "horse wasn't found in your game's files.", null).job;
+      return { job: fakeHorseJob };
+    }
+    const result = {};
+    fakeHorseJob = backupJob(["build", "build", "build", "build", "unit", "riflemen", "riflemen", "bazooka"],
+      `${FAKE_HORSE.name} is in your mod.`, result, () => {
+        const made = fakeNewUnit(FAKE_HORSE.copies, name || FAKE_HORSE.name, price, nation, factory, { guard: false, card: FAKE_HORSE.card });
+        eraAdded.set(FAKE_HORSE.key, made.address);
+        if (researchFrom) {
+          upgradeEdits.set(made.address, researchFrom);
+          researchEdits.set(`${made.address}|UpgradePrice`, Math.round(researchPrice ?? 50));
+          researchEdits.set(`${made.address}|UpgradeTime`, Math.round(researchTime ?? 50));
+          fakeBoardOwn.set(made.address, { ...(fakeBoardOwn.get(made.address) || {}), parent: researchFrom });
+        } else if (offer) {
+          fakeGroupFile.set(made.address, target ? target.root : made.address);
+        }
+        fakeModels.set(made.address, { ...FAKE_HORSE_IMPORT, file: "horse-squad-rifle.glb" });
+        fakeKindModels.set(made.address, { ...FAKE_HORSE_IMPORT, file: "horse-squad-bazooka.glb" });
+        Object.assign(result, { address: made.address, name: made.name });
+      }).job;
+    return { job: fakeHorseJob };
+  }
   // an era unit's add form for a start unit and a build menu (StudioApi.era_unit_start): the start unit's price, the size
   // suggested, its group and the units of that menu it may be researched from. The A7V's real width (3.1 m) and the Gotha G.V's
   // wingspan (23.7 m) are Wikipedia's; the sizes are this preview's own (the Studio works them out from the models)
@@ -4754,17 +4810,30 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         state: eraHere.has(era) ? "current" : "new" })) }),
       era_download: async (era) => { eraHere.add(era); return { job: "era" }; },
       era_units_list: async (era, kind = "all", nation = -1, search = "", group = "all") => {
-        if (!eraHere.has(era)) return { library: true, installed: false, types: [], units: [] };
         const code = { USA: 0, Germany: 1, UK: 2, France: 3, Italy: 4, USSR: 5, Russia: 5, Japan: 6, China: 7 };
-        let rows = FAKE_ERA_UNITS.filter((u) => u.era === era && ["all", u.aircraft ? "air" : "ground"].includes(kind)
+        // (the Horse Squad: in its era whether that's downloaded or not, found by its name in any language)
+        let rows = (eraHere.has(era) ? FAKE_ERA_UNITS : []).concat([FAKE_HORSE])
+          .filter((u) => u.era === era && ["all", u.aircraft ? "air" : "ground"].includes(kind)
           && (nation === -1 || code[u.nation] === nation));
         const types = [...new Set(rows.map((u) => u.card))].sort();
         if (group.startsWith("type:")) rows = rows.filter((u) => u.card === group.slice(5));
-        rows = rows.filter((u) => u.name.toLowerCase().includes((search || "").toLowerCase()));
-        return { library: true, installed: true, types, units: rows.map((u) => ({ key: u.key, name: u.name, nation: u.nation, code: code[u.nation],
-          card: u.card, kind: u.aircraft ? "air" : "ground", added: eraAdded.get(u.key) || null })) };
+        const words = (search || "").toLowerCase().split(/\s+/).filter(Boolean);
+        rows = rows.filter((u) => (u.built ? FAKE_HORSE_NAMES : [u.name])
+          .some((n) => words.every((w) => n.toLowerCase().includes(w))));
+        return { library: true, installed: eraHere.has(era), types, units: rows.map((u) => ({ key: u.key, name: u.name,
+          nation: u.nation, code: code[u.nation], card: u.card, kind: u.aircraft ? "air" : "ground",
+          added: eraAdded.get(u.key) || null, built: Boolean(u.built), by: u.built ? u.credit.author : null })) };
       },
       era_unit_page: async (key, lang = "us") => {
+        if (key === FAKE_HORSE.key) {  // its own unit only to start from; "building": the job adding it, while it runs
+          const g = units.find((x) => E + x.id === FAKE_HORSE.copies);
+          const j = fakeHorseJob && backupJobs[fakeHorseJob];
+          return { ...FAKE_HORSE, added: eraAdded.get(key) || null, picture: null, has_model: false,
+            start: [{ address: FAKE_HORSE.copies, name: (g.names[lang] || g.names.us), nation: g.nation, suggested: true,
+              same_type: true }],
+            building: j && j.step < j.lines.length ? fakeHorseJob : null,
+            ...eraStart(FAKE_HORSE, FAKE_HORSE.copies, FAKE_HORSE.game_nation, FAKE_HORSE.factory, null, lang) };
+        }
         const u = FAKE_ERA_UNITS.find((x) => x.key === key);
         const start = units.filter((g) => g.kind === (u.aircraft ? "air" : "ground") && g.factory !== null).map((g) => ({
           address: E + g.id, name: g.names.us, nation: g.nation, suggested: E + g.id === u.copies,
@@ -4774,8 +4843,13 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           ...eraStart(u, u.copies, u.game_nation, u.factory, null, lang) };
       },
       era_start_price: async (address) => ({ price: (units.find((g) => E + g.id === address) || { price: 0 }).price }),
-      era_unit_start: async (key, source, nation, factory, lang = "us", group = null) =>
-        eraStart(FAKE_ERA_UNITS.find((x) => x.key === key), source, nation, factory, group, lang),
+      era_unit_start: async (key, source, nation, factory, lang = "us", group = null) => key === FAKE_HORSE.key
+        ? eraStart(FAKE_HORSE, FAKE_HORSE.copies, nation, factory, group, lang)  // (its own unit only)
+        : eraStart(FAKE_ERA_UNITS.find((x) => x.key === key), source, nation, factory, group, lang),
+      // the Horse Squad added (StudioApi.horse_squad_add): a job whose lines are its steps (fakeHorseAdd)
+      horse_squad_add: async (nation, factory, name = null, price = null, researchFrom = null, researchPrice = null,
+        researchTime = null, group = null) => fakeHorseAdd(nation, factory, name, price, researchFrom, researchPrice,
+        researchTime, group),
       // in `group` of that building ("new": a group of its own; null: its research parent's, else its kind's, the
       // library card), refused, nothing made, when that has no room
       era_unit_add: async (key, nation, factory, source, name, price, size, researchFrom, researchPrice, researchTime,
@@ -4811,9 +4885,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       era_unit_remove: async (key, researched) => {
         const address = eraAdded.get(key);
+        if (!address) throw new Error(`${key}: not in this mod`);
         const research = researchGone(address, researched);  // before anything goes
         if (research.ask) return { removed: null, ask: research.ask };
         eraAdded.delete(key);
+        fakeModels.delete(address);       // its model (the Horse Squad: both its soldiers')
+        fakeKindModels.delete(address);
         await window.pywebview.api.delete_unit(address, "anyway");
         return { removed: address, ...research };
       },

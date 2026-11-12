@@ -77,6 +77,30 @@ passe :
 Une unité restée recherchée depuis une unité disparue le dit dans sa case **Amélioration et recherche** et dans la barre
 de vérification, et la construction s'arrête dessus jusqu'à ce que vous choisissiez une autre unité, ou aucune.
 
+## L'Escouade à cheval
+
+**39-45+** propose aussi l'**Escouade à cheval**, créée par sneadtristen6 : des fusiliers et un soldat à l'arme lourde,
+chacun sur son propre cheval. Rien n'en est téléchargé : elle est là, que vous ayez téléchargé ou non les unités 39-45+.
+Comme les unités d'époque, elle n'est dans votre mod que si vous l'ajoutez.
+
+1. Cliquez dessus. Sa page dit qui l'a créée et ce que fait l'ajout.
+2. Remplissez le formulaire comme pour une unité d'époque : son nom, son prix, son **Menu de production**, son
+   **Groupe** et l'unité d'où elle est **Recherchée depuis**. **Partir de** est toujours l'escouade G.I. du jeu (les
+   fusiliers américains) : ses chevaux et cavaliers sont faits pour les soldats de cette escouade.
+3. Cliquez sur **Ajouter à mon mod**. Le Studio fabrique ses chevaux et cavaliers sur votre PC à partir de votre propre
+   copie du jeu, crée l'unité, puis donne leurs chevaux à ses fusiliers et à son soldat à l'arme lourde. Chaque étape
+   s'affiche sous le bouton au fur et à mesure, avec le temps écoulé. Si votre jeu ne peut pas fournir ce qu'il faut, le
+   Studio dit pourquoi, et rien n'est ajouté.
+4. C'est maintenant une nouvelle unité de votre mod : **Ouvrir sa page** pour changer n'importe laquelle de ses valeurs,
+   comme pour n'importe quelle unité. **La retirer de mon mod** la retire de nouveau, avec ses deux modèles et leurs
+   animations.
+
+Son créateur, sneadtristen6, est crédité dans le `CREDITS-era-units.md` de votre mod, à côté des créateurs des unités
+d'époque.
+
+Vu en jeu : ces cavaliers sur leurs chevaux, faits avec **Importer un modèle…** sur une copie de l'escouade G.I. Pas
+encore essayé en jeu : l'Escouade à cheval ajoutée depuis cette liste.
+
 ## Crédits
 
 Le créateur de chaque unité d'époque est crédité : sur sa page, et dans le `CREDITS-era-units.md` de votre mod, que le
