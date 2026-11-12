@@ -75,6 +75,7 @@ from .nations import NationCalls
 from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
 from .modelblender import ModelBlenderCalls
+from .squadblender import SquadBlenderCalls
 from .actions import ActionCalls
 from .modelfit import ModelFitCalls
 from .animmodel_calls import AnimModelCalls
@@ -562,7 +563,7 @@ def words(lang: str = schema.BASE) -> dict:
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
                 DecoyCalls, NationCalls, EraUnitCalls, GroundTextureCalls, MissionCalls, RoleCalls, WeaponClassCalls,
-                FlagTypeCalls, BoardCalls, ModelBlenderCalls, ActionCalls, ModelFitCalls, AnimModelCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, ActionCalls, ModelFitCalls, AnimModelCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
     PREFS_APP = "studio"  # rusemod.home: the language and keys, kept in settings.json

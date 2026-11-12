@@ -18,6 +18,7 @@ OPENER = Path(__file__).with_name("blender_open.py")
 SAVE_REQUEST, SAVE_DONE = "save.request", "save.done"  # files in the models' folder; blender_open.py's names too
 CHANGER = Path(__file__).with_name("blender_model.py")  # a new unit's model opened to be changed, not painted
 SEND_REQUEST, SEND_DONE = "send.request", "send.done"  # files beside the model it sends; blender_model.py's names too
+SQUAD_FLAG = "--squad"  # blender_model.py's: a whole squad from the Studio's manifest, one file per soldier sent
 
 
 def find_blender(chosen: str | None = None) -> Path | None:
@@ -91,6 +92,14 @@ def open_model_to_change(blender: Path, model: Path, send: Path, words: Path) ->
     "Send to the R.U.S.E. Studio" button, or the Studio's Bring back the model (ask_to_send), writes the model to
     `send`; `words` holds the button's and the help's words in the Studio's language. Returns at once."""
     return subprocess.Popen([str(blender), "--python", str(CHANGER), "--", str(model), str(send), str(words)])
+
+
+def open_squad_to_change(blender: Path, manifest: Path) -> subprocess.Popen:
+    """Start Blender with every soldier of a squad side by side, each to be changed on his own (blender_model.py's
+    squad mode): `manifest` (written by the Studio's Change the squad in Blender, ruse_studio.squadblender) names each
+    soldier's file, the folder each is written to as opened, and the list file a sending ends with (its "sent"), which
+    ask_to_send waits for; Blender writes one file per soldier beside that list. Returns at once."""
+    return subprocess.Popen([str(blender), "--python", str(CHANGER), "--", SQUAD_FLAG, str(manifest)])
 
 
 def ask_to_send(send: Path, timeout: float) -> str | None:
