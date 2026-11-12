@@ -157,6 +157,23 @@ Bon à savoir :
 - Une escouade avec un soldat à l'arme lourde : donnez-lui son propre cheval et son cavalier avec **Importer un modèle…** sur sa ligne, faits sur les mêmes os que ceux des fusiliers, et il joue leurs animations. Sur d'autres os, il joue ce qu'il jouait dans l'escouade copiée, et la page vous prévient : cela peut arrêter le jeu. Retirer le modèle des fusiliers retire le sien avec.
 - La Horse Squad faite ainsi dans le Studio a été jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore été essayé en jeu.
 
+## Ses animations, changées dans Blender
+
+Les animations se changent dans RUSE Decoy. Sur la page de l'unité, dans la ligne **Sons et animations**, cliquez sur **Changer dans RUSE Decoy**, puis sur **Changer ses animations dans Blender** sous ses animations. Blender s'ouvre avec l'unité et toutes les animations qu'elle joue (debout, marche, course, tir, mort…), chacune nommée d'après ce qu'elle y fait, suivie du nom du jeu : `Course, en visant (fusilier_course_vise)`.
+
+1. **Choisissez-en une.** En bas de Blender, l'Action Editor les liste : choisissez celle à changer. **Espace** la joue.
+2. **Posez les os.** Cliquez sur un os, appuyez sur **Ctrl+Tab** pour le Pose Mode, **R** pour le tourner (**G** le déplace), puis **I** pour garder la pose à cette image. Faites-le à chaque image que vous changez : Blender passe tout seul d'une pose gardée à la suivante.
+3. **Envoyez-la.** Cliquez sur **Envoyer au R.U.S.E. Studio** : toutes les animations partent, changées ou non.
+4. **Ramenez-la.** Dans RUSE Decoy, cliquez sur **Ramener mes changements**. Il dit lesquelles sont revenues changées : elles sont désormais propres à cette unité, et RUSE Decoy les montre sous **Cette unité seulement**. Toutes les autres unités, et chaque animation que vous n'avez pas touchée, restent celles du jeu.
+
+Bon à savoir :
+- Le jeu joue les animations à 30 images par seconde, et Blender les ouvre ainsi. Une animation s'ouvre avec la durée que lui donne le jeu ; allongez-la ou raccourcissez-la dans Blender et elle revient ainsi.
+- Une animation faite dans Blender (la copie d'une autre, renommée) revient aussi, mais aucune action ne la joue encore : le Studio le dit. Une animation renommée compte comme nouvelle, et celle qu'elle était se joue comme avant.
+- Les os sur lesquels aucun point du soldat ne repose (le point de la bouche du canon, la main de la seconde arme) peuvent être animés, mais les poids automatiques de Blender les laissent de côté.
+- Seule une nouvelle unité créée dans votre mod a ses propres animations : pour une unité du jeu, créez d'abord une nouvelle unité à partir d'elle.
+- Un modèle sur ses propres os (un cheval, toute créature) envoie ses propres animations, sous leurs propres noms. Celle que vous changez prend sa place : chaque action qui la jouait la joue changée, et la ligne **Sons et animations** de l'unité la liste avec les autres.
+- Vérifié avec Blender 4.5 et les tests du Studio ; pas encore essayé en jeu.
+
 ## 4. Sa carte, puis le test
 
 Tournez la vue 3D jusqu'à ce que le nouveau modèle rende bien dans le cadre en pointillés et cliquez sur **Utiliser cette

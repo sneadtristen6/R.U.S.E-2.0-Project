@@ -155,6 +155,23 @@ Dobrze wiedzieć:
 - Oddział z żołnierzem z ciężką bronią: daj mu własnego konia z jeźdźcem przez **Importuj model…** w jego wierszu, zrobionego na tych samych kościach co model strzelców, a będzie odgrywał ich animacje. Na innych kościach odgrywa to, co w kopiowanym oddziale, a strona ostrzega: to może zatrzymać grę. Usunięcie modelu strzelców usuwa też jego.
 - Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
+## Jego animacje, zmienione w Blenderze
+
+Animacje zmienia się w RUSE Decoy. Na stronie jednostki w wierszu **Dźwięki i animacje** kliknij **Zmień w RUSE Decoy**, potem **Zmień jego animacje w Blenderze** pod jej animacjami. Blender otworzy się z jednostką i wszystkimi animacjami, które odtwarza (stanie, marsz, bieg, strzał, śmierć…), każdą nazwaną od tego, co w niej robi, a za tym nazwa z gry: `Bieg, celując (fusilier_course_vise)`.
+
+1. **Wybierz jedną.** Na dole Blendera Action Editor je wymienia: wybierz tę do zmiany. **Spacja** ją odtwarza.
+2. **Ustaw kości.** Kliknij kość, naciśnij **Ctrl+Tab** dla Pose Mode, **R** aby ją obrócić (**G** przesuwa), potem **I** aby zachować pozę w tej klatce. Zrób to w każdej klatce, którą zmieniasz: Blender sam przechodzi od jednej zachowanej pozy do następnej.
+3. **Wyślij ją.** Kliknij **Wyślij do R.U.S.E. Studio**: idą wszystkie animacje, zmienione czy nie.
+4. **Przywróć ją.** W RUSE Decoy kliknij **Przenieś moje zmiany**. Powie, które wróciły zmienione: są teraz własne tej jednostki, a RUSE Decoy pokazuje je pod **Tylko ta jednostka**. Każda inna jednostka i każda animacja, której nie ruszałeś, zostaje z gry.
+
+Warto wiedzieć:
+- Gra odtwarza animacje z prędkością 30 klatek na sekundę i Blender tak je otwiera. Animacja otwiera się tak długa, jak odtwarza ją gra; wydłuż ją lub skróć w Blenderze, a wróci taka.
+- Animacja zrobiona w Blenderze (kopia innej, przemianowana) też wraca, ale żadna akcja jeszcze jej nie odtwarza: Studio to mówi. Przemianowana liczy się jako nowa, a ta, którą była, gra jak wcześniej.
+- Kości, na których nie opiera się żaden punkt żołnierza (punkt wylotu lufy, dłoń drugiej broni), można animować, ale automatyczne wagi Blendera je pomijają.
+- Własne animacje dostaje tylko nowa jednostka zrobiona w twoim modzie: z jednostki z gry najpierw zrób nową jednostkę.
+- Model na własnych kościach (koń, dowolne stworzenie) wysyła własne animacje pod ich własnymi nazwami. Ta, którą zmienisz, zajmuje jej miejsce: każda akcja, która ją odtwarzała, odtwarza ją zmienioną, a wiersz **Dźwięki i animacje** jednostki wymienia ją z innymi.
+- Sprawdzone z Blenderem 4.5 i własnymi testami Studia; w grze jeszcze niewypróbowane.
+
 ## 4. Jego karta, potem test
 
 Obracaj widok 3D, aż nowy model będzie dobrze wyglądał w przerywanej ramce, i kliknij **Użyj tego widoku jako karty**

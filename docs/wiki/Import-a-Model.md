@@ -151,6 +151,23 @@ Good to know:
 - A squad with a heavy-weapon soldier: give him his own horse and rider with **Import a model…** on his line, made on the same bones as the riflemen's, and he plays their animations. On other bones he plays what he played in the copied squad, and the page warns you: that can stop the game. Taking the riflemen's model out takes his out with it.
 - The Horse Squad made this way in the Studio played in the game (November 2026); nothing else made this way has been tried in the game yet.
 
+## Its animations, changed in Blender
+
+Animations are changed in RUSE Decoy. On the unit's page, in its **Sounds and animation** row, click **Change in RUSE Decoy**, then **Change its animations in Blender** under its animations. Blender opens with the unit and every animation it plays (standing, walking, running, firing, dying…), each named after what it does in it, with the game's own name after it: `Run, aiming (fusilier_course_vise)`.
+
+1. **Pick one.** At the bottom of Blender, the Action Editor lists them: pick the one to change. **Space** plays it.
+2. **Pose the bones.** Click a bone, press **Ctrl+Tab** for Pose Mode, **R** to turn it (**G** moves it), then **I** to keep the pose at this frame. Do it at every frame you change: Blender goes from one kept pose to the next by itself.
+3. **Send it.** Click **Send to the R.U.S.E. Studio**: every animation goes, changed or not.
+4. **Bring it back.** In RUSE Decoy, click **Bring my changes back**. It says which came back changed: those are this unit's own now, and RUSE Decoy shows them under **Only this unit**. Every other unit, and every animation you didn't touch, stays the game's.
+
+Good to know:
+- The game plays animations at 30 frames a second, and Blender opens them so. An animation opens as long as the game plays it; make it longer or shorter in Blender and it comes back so.
+- An animation made in Blender (a copy of one, renamed) comes back too, but no action plays it yet: the Studio says so. A renamed one counts as new, and the one it was plays as before.
+- Bones none of the soldier's points lean on (the gun's muzzle point, the second gun's hand) can be animated, but Blender's automatic weights leave them out.
+- Only a new unit made in your mod gets animations of its own: for one of the game's units, make a new unit from it first.
+- A model on bones of its own (a horse, any creature) sends its own animations, under their own names. One you change takes its place: every action that played it plays it changed, and the unit's **Sounds and animation** row lists it with the others.
+- Checked with Blender 4.5 and the Studio's own tests; not tried in the game yet.
+
 ## 4. Its card, then test
 
 Turn the 3D view until the new model looks right in the dashed frame and click **Use this view as the card** (see

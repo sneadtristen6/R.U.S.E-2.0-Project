@@ -199,20 +199,23 @@ def _hung_from(names: list, b: int, at: dict) -> int | None:
     return 0 if 0 in at and b != 0 else None
 
 
-def rest_poses(record: bytes, joints: list[int]) -> dict | None:
+def rest_poses(record: bytes, joints: list[int], turn: bool = True) -> dict | None:
     """Where model_glb's `joints` (skeleton bone numbers, in the skin's order) stand at rest, from the model's skeleton
     record (rusemod.baf.skeleton), laid out so Blender shows a skeleton a modder can use: {"parents": each joint's
     parent joint (its position in `joints`; None: it hangs from the skeleton node), "trs": each joint's move, turn and
     size from that parent, "ibm": each joint's inverse bind matrix (glTF's column-major 4 x 4), "plain_turns": the
     names of the joints written as a plain turn, "hung": {joint: the joint it hangs from} for those the game gives no
-    parent}, in the export's axes and scale (the mirror and 0.01), through rusemod.animglb's _trs and _ibm (RUSE Decoy's
+    parent, "frames": each joint's place and turn in the model as written (12 numbers, rows of [r r r t], the game's
+    axes and units), "plain": whether each joint is written as the record has it (not as a plain turn in place of a
+    size)}, in the export's axes and scale (the mirror and 0.01), through rusemod.animglb's _trs and _ibm (RUSE Decoy's
     preview's). Every joint stands at the record's place for it. Its frame is the record's turned by TURN (so its bone
-    runs along the game's +x); a bone the game sizes or mirrors at rest (every bone of the P-47, a gun's effect points:
-    none of a soldier's) is written as the plain turn nearest it, turned the same, its inverse bind matrix that turn's
-    inverse: Blender keeps no size on a bone and would move the points on it otherwise. A joint whose parent bone isn't
-    a joint hangs from its nearest forebear that is one; one the game gives no parent at all (a soldier's legs, a
-    vehicle's wheels) hangs from the joint _hung_from picks. The points don't change either way. None when the record
-    can't place them (a joint past its bones)."""
+    runs along the game's +x; `turn` False: the record's own frame, for a skeleton whose bones already run along the
+    axis Blender draws them on, one made in Blender: rusemod.animglb.runs_along_x); a bone the game sizes or mirrors at
+    rest (every bone of the P-47, a gun's effect points: none of a soldier's) is written as the plain turn nearest it,
+    turned the same, its inverse bind matrix that turn's inverse: Blender keeps no size on a bone and would move the
+    points on it otherwise. A joint whose parent bone isn't a joint hangs from its nearest forebear that is one; one
+    the game gives no parent at all (a soldier's legs, a vehicle's wheels) hangs from the joint _hung_from picks. The
+    points don't change either way. None when the record can't place them (a joint past its bones)."""
     from . import baf
     from .animglb import _ibm, _trs
     sk = baf.skeleton(record)
@@ -221,7 +224,9 @@ def rest_poses(record: bytes, joints: list[int]) -> dict | None:
         return None
     world = [_rows(m) for m in sk["world"]]
     plain = [_is_plain(w) for w in world]
-    frame = [_turned(w if ok else _plain_turn(w)) for w, ok in zip(world, plain)]
+    turned = _turned if turn else (lambda m: [list(row) for row in m])
+    turned_back = _turned_back if turn else (lambda m: [list(row) for row in m])
+    frame = [turned(w if ok else _plain_turn(w)) for w, ok in zip(world, plain)]
     at = {b: k for k, b in enumerate(joints)}
     ups, hung = {}, {}
     for b in joints:
@@ -242,29 +247,38 @@ def rest_poses(record: bytes, joints: list[int]) -> dict | None:
             ups[b] = None
             del hung[b]
     out = {"parents": [], "trs": [], "ibm": [], "plain_turns": [],
-           "hung": {names[b]: names[up] for b, up in hung.items()}}
+           "hung": {names[b]: names[up] for b, up in hung.items()}, "frames": [], "plain": []}
     for b in joints:
         up = ups[b]
         if plain[b] and up is None and parent_of[b] < 0:
-            local = _flat(_turned(_rows(sk["local"][b])))      # the record's own rest pose, turned
+            local = _flat(turned(_rows(sk["local"][b])))      # the record's own rest pose, turned
         elif plain[b] and up is not None and up == parent_of[b] and plain[up]:
-            local = _flat(_turned_back(_turned(_rows(sk["local"][b]))))   # from its turned parent: TURN^-1 L TURN
+            local = _flat(turned_back(turned(_rows(sk["local"][b]))))   # from its turned parent: TURN^-1 L TURN
         else:
             local = _flat(_after(_undo(frame[up]), frame[b]) if up is not None else frame[b])
         out["parents"].append(at[up] if up is not None else None)
         out["trs"].append(_trs(local))
-        out["ibm"].append(_ibm(_flat(_turned_back(_rows(sk["bind"][b]))) if plain[b] else _flat(_undo(frame[b]))))
+        out["ibm"].append(_ibm(_flat(turned_back(_rows(sk["bind"][b]))) if plain[b] else _flat(_undo(frame[b]))))
+        out["frames"].append(_flat(frame[b]))
+        out["plain"].append(plain[b])
         if not plain[b]:
             out["plain_turns"].append(names[b])
     return out
 
 
-def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tuple[bytes, dict[str, bytes], dict]:
+def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False,
+              clips: list | None = None) -> tuple[bytes, dict[str, bytes], dict]:
     """One model of `lib` (rusemod.models.Library) as (.glb bytes, {picture file name: PNG bytes}, summary).
     Textures come from their mip level at most `side` pixels wide. `rest_bones`: a model with bones has each bone at
     its rest pose (rest_poses, from lib.skeleton), not all at one spot; the summary's "rest_bones" says whether they
     were placed (False: no skeleton record found for it, written as by default), "plain_turns" which were written as a
-    plain turn and "hung" which hang from another joint than the game's. Without it every byte is as it always was."""
+    plain turn and "hung" which hang from another joint than the game's. Without it every byte is as it always was.
+    `clips` ([(the animation's name, a rusemod.baf.Clip, its extras)], the Studio's Change it in Blender for a unit
+    whose figures play them): every bone of its skeleton is a joint, at its rest pose as with `rest_bones`, and each
+    clip is an animation of the file (rusemod.animglb.add_animations; the summary's "animations"); a model with no
+    skeleton record can't play one (rusemod.animglb.AnimGlbError)."""
+    if clips is not None:
+        rest_bones = True
     spk = lib.where[name]
     mats = spk.materials()
     parts = lib.parts(name)
@@ -305,8 +319,24 @@ def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tup
         for b, w in zip(part.bones, part.weights):
             used.update(skeleton_bone(part, i) for i, x in zip(b, w) if x)
     joints = sorted(used)
+    record = None
+    if clips is not None:      # every bone of the skeleton a joint: a clip moves bones no point leans on too
+        from . import baf
+        from .animglb import AnimGlbError
+        record = lib.skeleton(name) if hasattr(lib, "skeleton") else None
+        if record is None:
+            raise AnimGlbError(f"{name} has no skeleton: it can't play an animation")
+        nb = baf.skeleton(record)["bones"]
+        if joints[-1] >= nb:
+            # not a game rule: the model's points name a bone its skeleton record hasn't got (none in the game)
+            raise AnimGlbError(f"{name}: its points lean on bone {joints[-1]}, but its skeleton has {nb} bones")
+        joints = list(range(nb))
     joint_of = {b: i for i, b in enumerate(joints)}
     skinned = any(part.bones for part, _t in parts)
+    if clips is not None and not skinned:
+        from .animglb import AnimGlbError
+        # not a game rule: points stored with no bones can't follow an animation
+        raise AnimGlbError(f"{name} has no points on bones: it can't play an animation")
 
     primitives, propellers = [], []
     for d, (part, tex) in enumerate(parts):
@@ -371,7 +401,8 @@ def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tup
         rig = len(g.doc["nodes"])
         rest = None
         if rest_bones:
-            record = lib.skeleton(name) if hasattr(lib, "skeleton") else None
+            if record is None:
+                record = lib.skeleton(name) if hasattr(lib, "skeleton") else None
             rest = rest_poses(record, joints) if record is not None else None
             summary["rest_bones"] = rest is not None
         if rest is None:
@@ -395,6 +426,9 @@ def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tup
             node["skin"] = 0
         roots.append(rig)
         summary["bones"] = joints
+        if clips is not None:
+            from .animglb import add_animations
+            summary["animations"] = add_animations(g, record, first, rest, clips)
     g.doc["scenes"] = [{"name": stem, "nodes": roots}]
     g.doc["scene"] = 0
     g.doc["asset"]["extras"] = {"rusemod_model": name, "rusemod_scale": SCALE, "rusemod_mirror": MIRROR}
@@ -491,14 +525,16 @@ def rest_bones_glb(raw: bytes, record: bytes) -> bytes | None:
     return pack_glb(doc, views)
 
 
-def export(lib, names: list[str], out: Path, side: int = 2048, rest_bones: bool = False) -> list[dict]:
+def export(lib, names: list[str], out: Path, side: int = 2048, rest_bones: bool = False,
+           clips: dict | None = None) -> list[dict]:
     """Write each model of `names` as <out>/<model>.glb with its pictures; returns each one's summary. `rest_bones`:
-    model_glb's."""
+    model_glb's; `clips`: {a model of `names`: model_glb's `clips`} (a model not in it: none)."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     done = []
     for name in names:
-        glb, pictures, summary = model_glb(lib, name, side, rest_bones=rest_bones)
+        glb, pictures, summary = model_glb(lib, name, side, rest_bones=rest_bones, **(
+            {"clips": clips[name]} if clips and name in clips else {}))
         stem = name.rsplit("\\", 1)[-1].replace("lod0.ase2ndfbin", "").replace(".ase2ndfbin", "")
         (out / f"{stem}.glb").write_bytes(glb)
         for fname, png in pictures.items():

@@ -157,6 +157,23 @@ Bueno saberlo:
 - Un pelotón con soldado con arma pesada: dale su propio caballo con jinete con **Importar un modelo…** en su línea, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
 - El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado todavía en el juego.
 
+## Sus animaciones, cambiadas en Blender
+
+Las animaciones se cambian en RUSE Decoy. En la página de la unidad, en la fila **Sonidos y animación**, pulsa **Cambiar en RUSE Decoy**, y luego **Cambiar sus animaciones en Blender** bajo sus animaciones. Blender se abre con la unidad y cada animación que reproduce (de pie, caminar, correr, disparo, muerte…), cada una con el nombre de lo que hace en ella y después el nombre del juego: `Correr, apuntando (fusilier_course_vise)`.
+
+1. **Elige una.** Abajo en Blender, el Action Editor las enumera: elige la que quieres cambiar. **Espacio** la reproduce.
+2. **Coloca los huesos.** Haz clic en un hueso, pulsa **Ctrl+Tab** para el Pose Mode, **R** para girarlo (**G** lo mueve) y luego **I** para guardar la pose en este fotograma. Hazlo en cada fotograma que cambies: Blender pasa solo de una pose guardada a la siguiente.
+3. **Envíala.** Pulsa **Enviar a R.U.S.E. Studio**: van todas las animaciones, cambiadas o no.
+4. **Tráela de vuelta.** En RUSE Decoy, pulsa **Traer mis cambios**. Dice cuáles volvieron cambiadas: ahora son propias de esta unidad, y RUSE Decoy las muestra en **Solo esta unidad**. Cada otra unidad, y cada animación que no tocaste, sigue siendo la del juego.
+
+Conviene saber:
+- El juego reproduce las animaciones a 30 fotogramas por segundo, y Blender las abre así. Una animación se abre con la duración que le da el juego; alárgala o acórtala en Blender y vuelve así.
+- Una animación hecha en Blender (una copia de otra, renombrada) también vuelve, pero aún no la reproduce ninguna acción: el Studio lo dice. Una renombrada cuenta como nueva, y la que era se reproduce como antes.
+- Los huesos en los que no se apoya ningún punto del soldado (el punto de la boca del arma, la mano de la segunda arma) se pueden animar, pero los pesos automáticos de Blender los dejan fuera.
+- Solo una unidad nueva hecha en tu mod tiene animaciones propias: para una unidad del juego, crea primero una unidad nueva a partir de ella.
+- Un modelo sobre sus propios huesos (un caballo, cualquier criatura) envía sus propias animaciones, con sus propios nombres. La que cambies ocupa su lugar: cada acción que la reproducía la reproduce cambiada, y la fila **Sonidos y animación** de la unidad la lista con las demás.
+- Comprobado con Blender 4.5 y las pruebas del propio Studio; aún no probado en el juego.
+
 ## 4. Su tarjeta, y luego la prueba
 
 Gira la vista 3D hasta que el nuevo modelo se vea bien dentro del marco discontinuo y haz clic en **Usar esta vista

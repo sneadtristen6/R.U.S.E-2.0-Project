@@ -6,13 +6,14 @@
 // lines show what they say, in the Studio's language. "Music and jingles" is the game's songs by where they play
 // (sound.js musicInto: where the Music tab was), each with its volume too. A unit's page opens it on that unit's own
 // sounds (showUnitSounds), and its animations: each change to one is for "Only this unit" (its own copy of the clip,
-// files/anim/units.toml) or "Every unit that plays it" (the clip itself). Uses app.js's $, el, fill, say, problem and
-// api.
+// files/anim/units.toml) or "Every unit that plays it" (the clip itself); and, for a new unit of the mod, Change its
+// animations in Blender and Bring my changes back (blenderBox: every animation the unit plays out to Blender, the
+// changed ones back as this unit's own; ruse_studio.decoyblender). Uses app.js's $, el, fill, say, problem and api.
 (function () {
   "use strict";
   const D = { words: {}, lang: "base", data: null, kind: null, words_q: "", mission: "", in_lang: "", rows: [],
               total: 0, start: 0, timer: null, unit: null, mode: "sound", akind: null, adata: null, anim: null,
-              scope: "all" };
+              scope: "all", blender: null, said: null, busy: false };
   // the animation's changes the editor shows and makes: the unit's own copy ("unit": opened from a unit's page; until
   // it has one, the clip as it plays now) or the clip every unit plays ("all"), and the unit the calls are for
   const cur = (a) => (D.scope === "unit" && a.own) ? a.own : a;
@@ -143,9 +144,68 @@
       try { got = await api().decoy_unit_anims(D.unit.address); } catch (err) { problem(err); return; }
       if (got.rows.length) {
         $("decoy-rows").append(el("h2", { textContent: fill(w.decoy_unit_anims, { n: got.rows.length }) }),
-          ...got.rows.map(animRow));
+          await blenderBox(), ...got.rows.map(animRow));
       }
     }
+  }
+
+  // --- the unit's animations in Blender, both ways (StudioApi.decoy_blender_state, decoy_blender, decoy_blender_back;
+  // ruse_studio.decoyblender; the owner, 2026-11-10: "The only way you should change animation is in Ruse Decoy, you
+  // go and change the animation for your new unit."): Change its animations in Blender opens every one the unit plays,
+  // Bring my changes back makes the changed ones this unit's own; a game unit is told why not ---
+  async function blenderBox() {
+    const box = el("div", { className: "decoy-blender" });
+    try { D.blender = await api().decoy_blender_state(D.unit.address, D.lang); }
+    catch (err) { problem(err); return box; }
+    drawBlender(box);
+    return box;
+  }
+
+  function drawBlender(box) {
+    const w = W(), st = D.blender || {};
+    if (!st.can) {
+      box.replaceChildren(el("p", { className: "muted small", textContent: st.why_not || "" }));
+      return;
+    }
+    const go = el("button", { type: "button", className: "primary", textContent: w.decoy_blender,
+      title: w.tip_decoy_blender, disabled: D.busy || Boolean(st.open) });
+    go.addEventListener("click", () => blenderOpen(box));
+    const buttons = [go];
+    if (st.open || st.waiting) {   // (its Blender open, or a sending not brought back yet)
+      const back = el("button", { type: "button", textContent: w.decoy_blender_back, title: w.tip_decoy_blender_back,
+        disabled: D.busy });
+      back.addEventListener("click", () => blenderBack(box));
+      buttons.push(back);
+    }
+    box.replaceChildren(el("div", { className: "squad-go" }, ...buttons),
+      el("p", { className: "muted small", textContent: w.decoy_blender_how }), ...(D.said ? [D.said] : []));
+  }
+
+  async function blenderOpen(box) {
+    D.busy = true;
+    D.said = null;
+    drawBlender(box);
+    try {
+      const r = await api().decoy_blender(D.unit.address, D.lang);
+      D.blender = r;
+      say(r.message, "ok");
+    } catch (err) { problem(err); }
+    D.busy = false;
+    drawBlender(box);
+  }
+
+  // what came back said on the page and in a pop-up, then its animations read again (the changed ones its own now)
+  async function blenderBack(box) {
+    D.busy = true;
+    drawBlender(box);
+    let r = null;
+    try { r = await api().decoy_blender_back(D.unit.address, D.lang); } catch (err) { problem(err); }
+    D.busy = false;
+    if (!r) { drawBlender(box); return; }
+    D.blender = r;
+    D.said = el("p", { className: "squad-result", role: "status", textContent: r.message });
+    say(r.message, r.changed && r.changed.length ? "ok" : "");
+    await list(true);
   }
 
   // --- animations (StudioApi.decoy_anim_list, rusemod.animlist): one kind's clips ---
@@ -735,7 +795,7 @@
     modChanged() { open(D.words, D.lang); },
     leave() { if (window.SoundView) window.SoundView.stop(); },
     // a unit's page: "Sounds and animation" opens here on that unit's own sounds (StudioApi.decoy_unit_list)
-    unit(address, name, count) { D.unit = { address, name, count }; D.kind = null; },
+    unit(address, name, count) { D.unit = { address, name, count }; D.kind = null; D.blender = null; D.said = null; },
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
 })();

@@ -876,6 +876,7 @@
   const fakeSquadList = new Map();     // squad -> its soldiers' kinds, soldier 1 first
   const fakeSquadLooks = new Map();    // squad -> the numbers of its soldiers with a look of their own
   const fakeSquadAdding = new Map();   // squad -> the soldier Add a soldier opened in Blender: {kind, at}
+  const fakeDecoyBlender = new Set();  // units whose animations RUSE Decoy opened in Blender, not brought back
   // the limits as the Studio says them (words.toml blender_squad_limit_most, blender_squad_limit_fewest)
   const FAKE_LIMITS = {
     us: ["A squad has at most {n} soldiers for now.", "A squad keeps at least {n} soldiers: the game's own rule."],
@@ -1720,6 +1721,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     decoy_role_voice: "Voice line", decoy_search: "Search sounds or words said…", decoy_sounds_head: "Sounds",
     decoy_subtitle: "RUSE sound and animation designer", decoy_tab: "RUSE Decoy", decoy_title: "RUSE Decoy",
     decoy_unit_anims: "Its animations ({n})",
+    decoy_blender: "Change its animations in Blender",
+    tip_decoy_blender: "Opens Blender with this unit and every animation it plays, each named after what it does in it. Change one there, click Send to the R.U.S.E. Studio, then Bring my changes back here: the changed ones become this unit's own, and every other unit keeps the game's.",
+    decoy_blender_back: "Bring my changes back",
+    tip_decoy_blender_back: "Takes the animations you changed in Blender in as this unit's own. One you didn't change stays as it was.",
+    decoy_blender_how: "Its animations open in Blender with its model, each named after what it does in it (Run, Fire, Death…). To change one: pick it in Blender's Action Editor at the bottom, pose the bones, then click Send to the R.U.S.E. Studio. Bring my changes back makes the changed ones this unit's own; every other unit keeps the game's.",
     decoy_unit_has: "This unit has {voices} voice lines and {engine} engine sounds of its own.",
     decoy_unit_has_all: "This unit has {voices} voice lines, {engine} engine sounds and {clips} animations of its own.",
     decoy_unit_help: "Only {name}'s own sounds: its engine and its voice lines. Other units of the same nation and kind say the same lines.",
@@ -4293,6 +4299,35 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const rows = DECOY_CLIPS.map(decoyClip).filter((c) => squad ? c.kind === "infantry" : c.kind === "vehicles" || c.kind === "crews")
           .map((c) => ({ ...decoyUnitClipOut(c, address), role: c.names[0] || c.name }));
         return { rows, total: rows.length, start: 0 };
+      },
+      // RUSE Decoy's Change its animations in Blender for one unit (StudioApi.decoy_blender_state, decoy_blender,
+      // decoy_blender_back): a new unit of the mod only; Blender "opens" (nothing runs here), and bringing back says the
+      // unit's first animation came back changed
+      decoy_blender_state: async (address, lang = "us") => {
+        const made = mine().some((n) => address === newAddress(n.id)) && Boolean(current);
+        return made ? { can: true, why_not: null, open: fakeDecoyBlender.has(address), waiting: fakeDecoyBlender.has(address),
+          work: `${winPath(current)}\\blender\\${address.split("/").pop()}\\animations` }
+          : { can: false, why_not: "Only a new unit made in this mod gets animations of its own: make a new unit from this one first.",
+            open: false, waiting: false, work: null };
+      },
+      decoy_blender: async (address, lang = "us") => {
+        const st = await window.pywebview.api.decoy_blender_state(address, lang);
+        if (!st.can) throw new Error(st.why_not);
+        if (st.open) throw new Error("This unit's animations are open in Blender already: change them there, then bring your changes back.");
+        await new Promise((r) => setTimeout(r, 300));
+        fakeDecoyBlender.add(address);
+        const n = (await window.pywebview.api.decoy_unit_anims(address)).rows.length;
+        return { ...(await window.pywebview.api.decoy_blender_state(address, lang)), opened: n, file: `${st.work}\\animations.glb`,
+          set_aside: null, message: `Blender is opening it with its ${n} animations. When you're done there, click Send to the R.U.S.E. Studio at the top of Blender, then Bring my changes back here.` };
+      },
+      decoy_blender_back: async (address, lang = "us") => {
+        if (!fakeDecoyBlender.has(address)) throw new Error("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at the top, then Bring my changes back here.");
+        await new Promise((r) => setTimeout(r, 300));
+        fakeDecoyBlender.delete(address);
+        const first = (await window.pywebview.api.decoy_unit_anims(address)).rows[0];
+        const name = first ? first.name : "Run (fusilier_course)";
+        return { ...(await window.pywebview.api.decoy_blender_state(address, lang)), changed: [name], same: 0, new: [], gone: [],
+          written: 1, message: `Changed in Blender, this unit's own now: ${name}. Every other unit keeps the game's.` };
       },
       decoy_anims: async () => ({ mod: Boolean(current), kinds: DECOY_AKINDS.map((id) => {
         const clips = DECOY_CLIPS.map(decoyClip).filter((c) => c.kind === id);

@@ -154,6 +154,23 @@ Buono a sapersi:
 - Una squadra con un soldato con arma pesante: dagli il suo cavallo con cavaliere con **Importa un modello…** sulla sua riga, fatto sulle stesse ossa di quello dei fucilieri, ed esegue le loro animazioni. Su altre ossa esegue ciò che eseguiva nella squadra copiata, e la pagina ti avvisa: questo può fermare il gioco. Togliere il modello dei fucilieri toglie anche il suo.
 - La Horse Squad fatta così nello Studio è stata giocata (novembre 2026); nient'altro fatto così è ancora stato provato in gioco.
 
+## Le sue animazioni, cambiate in Blender
+
+Le animazioni si cambiano in RUSE Decoy. Sulla pagina dell'unità, nella riga **Suoni e animazioni**, clicca **Cambia in RUSE Decoy**, poi **Cambia le sue animazioni in Blender** sotto le sue animazioni. Blender si apre con l'unità e ogni animazione che riproduce (in piedi, camminata, corsa, fuoco, morte…), ognuna chiamata come ciò che fa, seguita dal nome del gioco: `Corsa, mirando (fusilier_course_vise)`.
+
+1. **Scegline una.** In basso in Blender, l'Action Editor le elenca: scegli quella da cambiare. **Spazio** la riproduce.
+2. **Metti in posa le ossa.** Clicca un osso, premi **Ctrl+Tab** per la Pose Mode, **R** per ruotarlo (**G** lo sposta), poi **I** per tenere la posa a questo fotogramma. Fallo a ogni fotogramma che cambi: Blender passa da solo da una posa tenuta alla successiva.
+3. **Inviala.** Clicca **Invia al R.U.S.E. Studio**: partono tutte le animazioni, cambiate o no.
+4. **Riportala.** In RUSE Decoy, clicca **Riporta le mie modifiche**. Dice quali sono tornate cambiate: ora sono proprie di questa unità, e RUSE Decoy le mostra sotto **Solo questa unità**. Ogni altra unità, e ogni animazione che non hai toccato, resta quella del gioco.
+
+Buono a sapersi:
+- Il gioco riproduce le animazioni a 30 fotogrammi al secondo, e Blender le apre così. Un'animazione si apre lunga quanto la riproduce il gioco; allungala o accorciala in Blender e torna così.
+- Un'animazione fatta in Blender (una copia rinominata) torna anche lei, ma nessuna azione la riproduce ancora: lo Studio lo dice. Una rinominata conta come nuova, e quella che era si riproduce come prima.
+- Le ossa su cui non poggia nessun punto del soldato (il punto della bocca dell'arma, la mano della seconda arma) si possono animare, ma i pesi automatici di Blender le lasciano fuori.
+- Solo una nuova unità fatta nella tua mod ha animazioni proprie: per un'unità del gioco, crea prima una nuova unità da essa.
+- Un modello sulle proprie ossa (un cavallo, qualsiasi creatura) invia le proprie animazioni, con i loro nomi. Quella che cambi prende il suo posto: ogni azione che la riproduceva la riproduce cambiata, e la riga **Suoni e animazioni** dell'unità la elenca con le altre.
+- Verificato con Blender 4.5 e i test dello Studio; non ancora provato in gioco.
+
 ## 4. La sua scheda, poi la prova
 
 Ruota la vista 3D finché il nuovo modello non sta bene nella cornice tratteggiata e clicca su **Usa questa vista come
