@@ -209,6 +209,46 @@ class GameSoldierBones(Door):
             return
         self.assertEqual((got["new"], got["gone"]), ([], []), got["message"])
 
+    def test_another_scene_frame_rate_plays_as_blender_plays_it(self):
+        """FAILS on 07a688b5. The modder set Blender's scene to 24 frames a second (the door opened it at 30): Blender
+        plays every animation slower, and Send writes each frame at its time at that rate. The door takes every
+        animation in as changed (said), but makes each clip again at 30 frames a second from those frames, so each
+        pose Blender showed is now a mix of its neighbours: the game's clip is off what Blender plays at those very
+        moments. (Real Blender, the rifleman: all 41 animations rewritten, the run's legs up to 6 game units and
+        about 6 degrees off: out/s-fps.json.) Each frame Blender sent must play as sent (within a clip's packing),
+        or the door must say the frame rate isn't the game's."""
+        from rusemod import rig
+        start = self.open()
+        doc, binary = modelin.glb_document(Blenderish(start).send())
+        from rusemod.gltf import FLOAT, _Glb
+        g = _Glb()
+        g.doc, g.bin = doc, bytearray(binary)
+        for a in doc["animations"]:      # (each frame at its time at 24 a second)
+            times = [t * 30.0 / 24.0 for t in modelin.glb_accessor(doc, binary, a["samplers"][0]["input"])]
+            tin = g.accessor(times, "SCALAR", FLOAT, target=None)
+            g.doc["accessors"][tin]["min"], g.doc["accessors"][tin]["max"] = [min(times)], [max(times)]
+            for s in a["samplers"]:
+                s["input"] = tin
+        self.send.write_bytes(g.to_bytes())
+        got = self.back()
+        if "frame" in got["message"].lower():
+            return
+        self.assertIn("Run (made_run)", got["changed"])
+        figures = self.rows()["figure"]
+        mine = baf.parse((self.mod / anim.OWN / UNIT / figures["GfxDescriptorFusilier"]["action"]["b_course"])
+                         .read_bytes())
+        theirs = baf.parse(CLIP_BYTES[RUN])
+        sk = baf.skeleton(mine.skeleton)
+        worst = 0.0
+        for k in range(theirs.frames):    # (frame k of what went out: Blender sent it at k / 24 s, its k / (n - 1))
+            f = k / (theirs.frames - 1)
+            for u in range(theirs.bones):
+                b = sk["index"][u]
+                a = rig.compose(*baf.sample(theirs.tracks[baf.skeleton(theirs.skeleton)["index"].index(b)], f))
+                e = rig.compose(*baf.sample(mine.tracks[u], f))
+                worst = max(worst, max(abs(a[4 * i + j] - e[4 * i + j]) for i in range(3) for j in range(3)))
+        self.assertLess(worst, 2 * rig.TOL_BACK_FRAME, "the poses Blender sent, off at their own times")
+
     def test_animations_not_sent_back_are_not_said_to_have_come_back(self):
         """FAILS on 07a688b5. The stand deleted or renamed in Blender: the door rightly leaves it as it was and says
         so, but its message begins "Every animation came back as it went out." (Real Blender: out/s-actions.json,
