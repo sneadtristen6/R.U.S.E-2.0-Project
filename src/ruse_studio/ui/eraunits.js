@@ -8,6 +8,9 @@
 // then it's a new unit like any other, its page open to change every value. Uses app.js's $, el, fill, say, problem,
 // api, state, renderChips, refreshList, renderGroups, showUnit and factoryLabel, and its research helpers (researchAsk,
 // researchTold, timeUnit, timeShown, timeSeconds, timeUnitPicker).
+// The Horse Squad (StudioApi.horse_squad_add, ruse_studio.horse_squad) is listed in WWII+ beside them, downloaded or
+// not ("built": nothing of it is downloaded; the owner, 2026-11-12: "Yes, like era units"): its page credits its maker,
+// and Add to my mod makes its horses and riders from the modder's own game first, the steps shown as they go.
 (function () {
   "use strict";
   const ERAS = [["vanilla", "era_vanilla"], ["WWI", "eras_era_ww1"], ["WWII", "eras_era_ww2"],
@@ -23,10 +26,19 @@
   const BUILDING_WORD = { 8: "group_barracks", 13: "group_artillery", 10: "group_armor", 11: "group_antitank",
     9: "group_airfield", 12: "group_prototype" };
   const NEW_GROUP = "new";  // era_unit_start / era_unit_add's group for a group of its own (groups.py NEW)
+  const HORSE = "horse-squad";  // the Horse Squad's key (horse_squad.KEY): its name in the Studio's language
+  // what horse_squad_add's job is doing, by its lines (horse_squad.STEPS)
+  const HORSE_STEPS = { build: "eras_horse_step_build", unit: "eras_horse_step_unit",
+    riflemen: "eras_horse_step_riflemen", bazooka: "eras_horse_step_bazooka" };
   const W = () => state.words;
   const round3 = (x) => String(Math.round(x * 1000) / 1000);
   const nationOf = (n) => W()[NATION_WORD[n]] || n;
   const eraOf = (era) => W()[(ERAS.find(([k]) => k === era) || [])[1]] || era;
+  const unitName = (u) => (u.built && u.key === HORSE ? W().eras_horse_name : u.name);
+  const clock = (ms) => {  // m:ss since it started
+    const s = Math.max(0, Math.round(ms / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  };
 
   // the era filter, above the kinds; the era note under the chips
   function renderEraChips() {
@@ -141,27 +153,27 @@
       res = await api().era_units_list(state.era, state.kind, state.nation, state.search, state.group || "all");
     } catch (err) { problem(err); return; }
     $("era-note").classList.toggle("hidden", !res.installed);  // the models' note only over models
-    if (!res.installed) {
-      const era = state.era;
-      $("count").textContent = w.units.replace("{n}", 0);
-      renderGroups([], []);
-      const panel = await downloadPanel(era);
-      if (state.era === era) $("unit-list").replaceChildren(el("li", {}, panel));
-      return;
-    }
     $("count").textContent = w.units.replace("{n}", res.units.length);
     renderGroups([], res.types || []);
-    $("unit-list").replaceChildren(...res.units.map((u) => {
+    const rows = res.units.map((u) => {
       const b = el("button", { type: "button", title: w.tip_open_unit },
-        el("span", { className: "name", textContent: u.name }),
-        el("span", { className: "sub", textContent: `${nationOf(u.nation)} · ${u.card}` +
-          (u.added ? ` · ${w.eras_in_mod_badge}` : "") }));
+        el("span", { className: "name", textContent: unitName(u) }),
+        el("span", { className: "sub", textContent: [nationOf(u.nation), u.card,
+          ...(u.built ? [fill(w.eras_horse_by, { author: u.by || "" })] : []),
+          ...(u.added ? [w.eras_in_mod_badge] : [])].filter(Boolean).join(" · ") }));
       b.dataset.address = "era:" + u.key;
       if (u.added) b.prepend(el("span", { className: "badge new", textContent: state.words.new_mark }));
       b.setAttribute("aria-current", String(state.selected === "era:" + u.key));
       b.addEventListener("click", () => showEraPage(u.key));
       return el("li", {}, b);
-    }));
+    });
+    if (!res.installed) {  // the era's own units not on this PC: its download, under what needs none (the Horse Squad)
+      const era = state.era;
+      const panel = await downloadPanel(era);
+      if (state.era === era) $("unit-list").replaceChildren(...rows, el("li", {}, panel));
+      return;
+    }
+    $("unit-list").replaceChildren(...rows);
   }
 
   async function showEraPage(key) {
@@ -174,22 +186,73 @@
     try { p = await api().era_unit_page(key, state.lang); } catch (err) { problem(err); return; }
     state.page = null;
     state.eraPage = key;
-    const facts = [eraOf(p.era), nationOf(p.nation), p.card];
+    const facts = [eraOf(p.era), nationOf(p.nation), p.card].filter(Boolean);
     if (p.in_place_of) facts.push(fill(w.eras_in_place_of, { name: p.in_place_of }));
     const c = p.credit || {};
-    const credit = el("p", { className: "small" },
-      el("span", { textContent: fill(w.eras_model_by, { author: c.author || "", licence: c.licence || "" }) + " " }),
-      el("a", { href: c.url || "#", target: "_blank", rel: "noopener", textContent: c.title || "", title: w.tip_eras_credit }),
-      ...(c.extra ? [el("span", { textContent: ` · ${c.extra}` })] : []));
-    const parts = [el("h1", { textContent: p.name }), el("p", { className: "unit-desc", textContent: facts.join(" · ") })];
-    if (p.picture) parts.push(el("img", { src: p.picture, alt: p.name, className: "era-picture" }));
-    parts.push(credit);
-    if (!p.has_model) parts.push(el("p", { className: "notice warn", textContent: w.eras_game_model }));
-    else if (!p.fits) parts.push(el("p", { className: "notice warn", textContent: w.eras_no_fit }));
+    const parts = [el("h1", { textContent: unitName(p) }), el("p", { className: "unit-desc", textContent: facts.join(" · ") })];
+    if (p.built) {  // made for RUSE 2.0, from the modder's own game when added: its maker, and what adding it does
+      parts.push(el("p", { className: "small", textContent: fill(w.eras_horse_made_by, { author: c.author || "" }) }),
+        el("p", { className: "notice", textContent: w.eras_horse_what }));
+    } else {
+      const credit = el("p", { className: "small" },
+        el("span", { textContent: fill(w.eras_model_by, { author: c.author || "", licence: c.licence || "" }) + " " }),
+        el("a", { href: c.url || "#", target: "_blank", rel: "noopener", textContent: c.title || "", title: w.tip_eras_credit }),
+        ...(c.extra ? [el("span", { textContent: ` · ${c.extra}` })] : []));
+      if (p.picture) parts.push(el("img", { src: p.picture, alt: p.name, className: "era-picture" }));
+      parts.push(credit);
+      if (!p.has_model) parts.push(el("p", { className: "notice warn", textContent: w.eras_game_model }));
+      else if (!p.fits) parts.push(el("p", { className: "notice warn", textContent: w.eras_no_fit }));
+    }
     if (!state.mod) parts.push(el("p", { className: "notice", textContent: w.no_mod }));
-    else if (p.added) parts.push(addedBox(p));
+    else if (p.added && !p.building) parts.push(addedBox(p));  // (the Horse Squad being made: its steps, not Take out)
     else parts.push(await addForm(p));
     $("detail").replaceChildren(...parts);
+    if (p.built && p.building) {  // being added already (this page was left, or opened again): follow it here
+      if (!horseJob || horseJob.id !== p.building) horseJob = { id: p.building, began: Date.now() };
+      followHorse();
+    }
+  }
+
+  // the Horse Squad being added: horse_squad_add's job, followed by one loop whichever page is shown; its steps are
+  // said under its Add to my mod while its page is open, and its page opens when it's done (the page still shown)
+  let horseJob = null;  // { id, began }
+  let horseLoop = false;
+  async function followHorse() {
+    if (horseLoop || !horseJob) return;
+    horseLoop = true;
+    const job = horseJob;
+    let seen = 0, step = "build";
+    const shown = () => ({ status: $("detail").querySelector("[data-horse-status]"),
+      add: $("detail").querySelector("[data-horse-add]") });
+    for (;;) {
+      let j;
+      try { j = await api().job(job.id, seen); } catch (err) {
+        problem(err);
+        break;
+      }
+      seen = j.count;
+      for (const line of j.lines) if (HORSE_STEPS[line]) step = line;
+      const { status, add } = shown();
+      if (add) add.disabled = true;
+      if (status) status.textContent = fill(W()[HORSE_STEPS[step]], { time: clock(Date.now() - job.began) });
+      if (j.state === "running") { await new Promise((r) => setTimeout(r, 500)); continue; }
+      if (j.state === "done") {
+        const res = j.result || {};
+        say(fill(W().eras_added, { name: res.name || W().eras_horse_name }), "ok");
+        horseJob = null;
+        horseLoop = false;
+        if (state.eraPage === HORSE && res.address) await openMade(res.address);
+        else if (state.era !== "vanilla" && state.view === "units") await refreshList();
+        return;
+      }
+      say(j.message, "error");  // refused in words (the game couldn't give what it needs): nothing was made
+      break;
+    }
+    horseJob = null;
+    horseLoop = false;
+    const { status, add } = shown();
+    if (status) status.textContent = "";
+    if (add) add.disabled = false;
   }
 
   // in the mod already: to its page (every value changed there), or out of the mod again
@@ -206,10 +269,10 @@
       try {
         const res = await api().era_unit_remove(p.key, researched);
         if (res.ask) {
-          researchAsk(ask, p.name, res.ask, () => remove("anyway"), () => showEraPage(p.key));
+          researchAsk(ask, unitName(p), res.ask, () => remove("anyway"), () => showEraPage(p.key));
           return;
         }
-        researchTold(res, fill(w.eras_removed, { name: p.name }));
+        researchTold(res, fill(w.eras_removed, { name: unitName(p) }));
         await refreshList();
         await showEraPage(p.key);
       } catch (err) { problem(err); out.disabled = false; }
@@ -238,9 +301,10 @@
   async function addForm(p) {
     const w = W();
     const form = el("form", { className: "new-unit" });
-    const name = el("input", { autocomplete: "off", maxLength: 60, required: true, value: p.name, title: w.tip_eras_name });
+    const name = el("input", { autocomplete: "off", maxLength: 60, required: true, value: unitName(p), title: w.tip_eras_name });
     name.setAttribute("aria-label", w.new_unit_name);
-    const start = el("select", { title: w.tip_eras_start_from });
+    // (the Horse Squad starts from its own unit only: its horses and riders are made for that unit's soldiers)
+    const start = el("select", { title: p.built ? w.tip_eras_horse_start : w.tip_eras_start_from, disabled: Boolean(p.built) });
     start.setAttribute("aria-label", w.eras_start_from);
     const groups = [[w.eras_suggested, p.start.filter((s) => s.suggested)],
       [w.eras_start_same, p.start.filter((s) => !s.suggested && s.same_type)],
@@ -298,7 +362,13 @@
     const groupBox = el("label", {}, el("span", { textContent: w.eras_group }), groupPick);
     const goesIn = el("p", { className: "small" });
     const groupWhy = el("p", { className: "notice warn small hidden" });
-    const add = el("button", { type: "submit", className: "primary", textContent: w.eras_add, title: w.tip_eras_add });
+    const addTip = p.built ? w.tip_eras_horse_add : w.tip_eras_add;
+    const add = el("button", { type: "submit", className: "primary", textContent: w.eras_add, title: addTip });
+    const horseStatus = el("p", { className: "small muted" });  // the Horse Squad's steps while it's made (followHorse)
+    if (p.built) {
+      add.dataset.horseAdd = "1";
+      horseStatus.dataset.horseStatus = "1";
+    }
     let offer = null, groupPicked = false;  // the group shown; whether the modder picked it
     const buildingOf = () => w[BUILDING_WORD[Number(factory.value)]]
       || (factory.selectedOptions[0] ? factory.selectedOptions[0].textContent : "");
@@ -326,8 +396,8 @@
       }
       groupWhy.textContent = why;
       groupWhy.classList.toggle("hidden", !why);
-      add.disabled = Boolean(why);
-      add.title = why || w.tip_eras_add;
+      add.disabled = Boolean(why) || Boolean(p.built && horseJob);  // (the Horse Squad: off while it's being made)
+      add.title = why || addTip;
     };
 
     // researched from: the build menu's units, or none (buyable from the start), with its research price and time
@@ -394,7 +464,7 @@
     form.append(
       el("label", {}, el("span", { textContent: w.new_unit_name }), name),
       el("label", {}, el("span", { textContent: w.eras_start_from }), start),
-      el("p", { className: "muted small", textContent: w.eras_start_help }),
+      el("p", { className: "muted small", textContent: p.built ? w.eras_horse_start_help : w.eras_start_help }),
       el("label", {}, el("span", { textContent: w.price }), price),
       ...(p.has_model ? [el("label", {}, el("span", { textContent: w.eras_size }), size), sizeSlide,
         el("p", { className: "muted small" }, `${w.eras_size_help} `, sizeNote)] : []),
@@ -407,7 +477,7 @@
       el("div", { className: "menu-picks" },
         el("label", {}, el("span", { textContent: w.eras_research_price }), rPrice),
         el("label", {}, el("span", { textContent: w.eras_research_time }), rTime), rUnit),
-      el("div", { className: "actions" }, add));
+      el("div", { className: "actions" }, add), ...(p.built ? [horseStatus] : []));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const cost = Number(price.value);
@@ -418,6 +488,15 @@
       if (from && (!Number.isFinite(rp) || !Number.isFinite(rt))) return;
       if (offer && (offer.full || offer.pick)) return;  // no room in its group, or none picked (Add is off, saying why)
       add.disabled = true;
+      if (p.built) {  // the Horse Squad: its horses and riders made from the modder's own game first, a job followed
+        try {
+          const res = await api().horse_squad_add(Number(nation.value), Number(factory.value), name.value.trim(), cost,
+            from, from ? rp : null, from ? rt : null, offer ? groupPick.value : null);
+          if (!horseJob || horseJob.id !== res.job) horseJob = { id: res.job, began: Date.now() };
+          followHorse();
+        } catch (err) { problem(err); add.disabled = Boolean(offer && (offer.full || offer.pick)); }
+        return;
+      }
       try {
         const res = await api().era_unit_add(p.key, Number(nation.value), Number(factory.value), start.value,
           name.value.trim(), cost, p.has_model ? sized : null, from, from ? rp : null, from ? rt : null,

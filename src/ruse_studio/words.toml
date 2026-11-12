@@ -27480,6 +27480,152 @@ jpn = "この種類のユニットには、ゲームのファイル上で研究�
 sc = "这类单位在游戏文件中没有研究。"
 fa = "یگان‌های این نوع در فایل‌های بازی تحقیقی ندارند."
 
+# --- the Horse Squad among the era units (eraunits.js; StudioApi.horse_squad_add, ruse_studio/horse_squad.py; the
+# owner, 2026-11-12: "Yes, like era units": off until a modder adds it, made from their own game when added, his name
+# in the mod's credits). Its steps while it's made are horse_squad.STEPS ---
+[eras_horse_name]
+us = "Horse Squad"
+fr = "Escouade à cheval"
+ger = "Reitertrupp"
+ita = "Squadra a cavallo"
+spa = "Pelotón a caballo"
+pol = "Oddział konny"
+ru = "Конный отряд"
+cz = "Jízdní družstvo"
+jpn = "騎馬分隊"
+sc = "骑兵小队"
+fa = "جوخهٔ سواره"
+
+[eras_horse_by]
+us = "by {author}"
+fr = "par {author}"
+ger = "von {author}"
+ita = "di {author}"
+spa = "de {author}"
+pol = "autor: {author}"
+ru = "автор: {author}"
+cz = "autor: {author}"
+jpn = "作者：{author}"
+sc = "作者：{author}"
+fa = "از {author}"
+
+[eras_horse_made_by]
+us = "Made by {author}."
+fr = "Créée par {author}."
+ger = "Erstellt von {author}."
+ita = "Creata da {author}."
+spa = "Creado por {author}."
+pol = "Autor: {author}."
+ru = "Автор: {author}."
+cz = "Autor: {author}."
+jpn = "作者：{author}。"
+sc = "作者：{author}。"
+fa = "ساختهٔ {author}."
+
+[eras_horse_what]
+us = "Riflemen and a heavy-weapon soldier, each on a horse of his own. Nothing is downloaded: when you add it, the Studio makes its horses and riders on this PC from your own copy of the game."
+fr = "Des fusiliers et un soldat à l'arme lourde, chacun sur son propre cheval. Rien n'est téléchargé : quand vous l'ajoutez, le Studio fabrique ses chevaux et ses cavaliers sur ce PC à partir de votre propre copie du jeu."
+ger = "Schützen und ein Soldat mit schwerer Waffe, jeder auf seinem eigenen Pferd. Nichts wird heruntergeladen: Wenn du ihn hinzufügst, baut das Studio seine Pferde und Reiter auf diesem PC aus deiner eigenen Kopie des Spiels."
+ita = "Fucilieri e un soldato con arma pesante, ciascuno sul proprio cavallo. Non si scarica nulla: quando la aggiungi, lo Studio crea i suoi cavalli e cavalieri su questo PC dalla tua copia del gioco."
+spa = "Fusileros y un soldado con arma pesada, cada uno en su propio caballo. No se descarga nada: cuando lo añades, el Studio crea sus caballos y jinetes en este PC a partir de tu propia copia del juego."
+pol = "Strzelcy i żołnierz z ciężką bronią, każdy na własnym koniu. Nic nie jest pobierane: gdy go dodasz, Studio robi jego konie i jeźdźców na tym PC z twojej własnej kopii gry."
+ru = "Стрелки и солдат с тяжёлым оружием, каждый на своём коне. Ничего не загружается: когда вы его добавляете, Studio делает его коней и всадников на этом ПК из вашей собственной копии игры."
+cz = "Střelci a voják s těžkou zbraní, každý na vlastním koni. Nic se nestahuje: když ho přidáš, Studio vyrobí jeho koně a jezdce v tomto PC z tvé vlastní kopie hry."
+jpn = "小銃兵と重火器兵が、それぞれ自分の馬に乗ります。ダウンロードはありません。追加すると、Studio がこの PC であなた自身のゲームから馬と騎手を作ります。"
+sc = "步枪兵和一名重武器士兵，各骑一匹自己的马。无需下载：添加时，Studio 会在这台电脑上用你自己的游戏副本制作它的马和骑手。"
+fa = "تفنگداران و یک سرباز سلاح سنگین، هر کدام سوار بر اسب خودش. چیزی دانلود نمی‌شود: وقتی آن را اضافه می‌کنید، Studio اسب‌ها و سوارانش را روی همین رایانه از نسخهٔ خودِ شما از بازی می‌سازد."
+
+[eras_horse_start_help]
+us = "It always starts from this unit's values: its horses and riders are made for this unit's soldiers. Once it's in your mod, change any of its values on its page, like any unit."
+fr = "Elle part toujours des valeurs de cette unité : ses chevaux et cavaliers sont faits pour les soldats de cette unité. Une fois dans votre mod, changez n'importe laquelle de ses valeurs sur sa page, comme pour toute unité."
+ger = "Er übernimmt immer die Werte dieser Einheit: Seine Pferde und Reiter sind für die Soldaten dieser Einheit gemacht. Ist er in deiner Mod, änderst du jeden seiner Werte auf seiner Seite, wie bei jeder Einheit."
+ita = "Parte sempre dai valori di questa unità: i suoi cavalli e cavalieri sono fatti per i soldati di questa unità. Una volta nella tua mod, cambia qualsiasi suo valore nella sua pagina, come per ogni unità."
+spa = "Siempre empieza con los valores de esta unidad: sus caballos y jinetes están hechos para los soldados de esta unidad. Una vez en tu mod, cambia cualquiera de sus valores en su página, como con cualquier unidad."
+pol = "Zawsze startuje z wartościami tej jednostki: jego konie i jeźdźcy są zrobieni dla żołnierzy tej jednostki. Gdy jest w modzie, zmienisz każdą jego wartość na jego stronie, jak przy każdej jednostce."
+ru = "Он всегда начинает со значений этого юнита: его кони и всадники сделаны для солдат этого юнита. Когда он в моде, меняйте любое его значение на его странице, как у любого юнита."
+cz = "Vždy začne s hodnotami této jednotky: jeho koně a jezdci jsou udělaní pro vojáky této jednotky. Jakmile je v modu, změň kteroukoli jeho hodnotu na jeho stránce, jako u každé jednotky."
+jpn = "必ずこのユニットの値で始まります。馬と騎手はこのユニットの兵士用に作られるためです。MODに入ったら、ほかのユニットと同じくページで値を自由に変更できます。"
+sc = "它总是以这个单位的数值开始：它的马和骑手是为这个单位的士兵制作的。加入模组后，可像其他单位一样在其页面上修改任何数值。"
+fa = "همیشه با مقادیر این یگان شروع می‌شود: اسب‌ها و سوارانش برای سربازان همین یگان ساخته می‌شوند. وقتی در ماد شما بود، هر کدام از مقادیرش را در صفحه‌اش تغییر دهید، مثل هر یگان دیگر."
+
+[tip_eras_horse_start]
+us = "The Horse Squad always starts from this unit: its horses and riders are made for this unit's soldiers."
+fr = "L'Escouade à cheval part toujours de cette unité : ses chevaux et cavaliers sont faits pour les soldats de cette unité."
+ger = "Der Reitertrupp geht immer von dieser Einheit aus: Seine Pferde und Reiter sind für die Soldaten dieser Einheit gemacht."
+ita = "La Squadra a cavallo parte sempre da questa unità: i suoi cavalli e cavalieri sono fatti per i soldati di questa unità."
+spa = "El Pelotón a caballo siempre parte de esta unidad: sus caballos y jinetes están hechos para los soldados de esta unidad."
+pol = "Oddział konny zawsze powstaje na bazie tej jednostki: jego konie i jeźdźcy są zrobieni dla żołnierzy tej jednostki."
+ru = "Конный отряд всегда основан на этом юните: его кони и всадники сделаны для солдат этого юнита."
+cz = "Jízdní družstvo vždy vychází z této jednotky: jeho koně a jezdci jsou udělaní pro vojáky této jednotky."
+jpn = "騎馬分隊は必ずこのユニットをベースにします。馬と騎手はこのユニットの兵士用に作られます。"
+sc = "骑兵小队总是基于这个单位：它的马和骑手是为这个单位的士兵制作的。"
+fa = "جوخهٔ سواره همیشه از همین یگان شروع می‌شود: اسب‌ها و سوارانش برای سربازان همین یگان ساخته می‌شوند."
+
+[tip_eras_horse_add]
+us = "Makes its horses and riders on this PC from your own copy of the game, then makes it a new unit of your mod: its maker's credit, the values of the unit it starts from, in the build menu picked."
+fr = "Fabrique ses chevaux et cavaliers sur ce PC à partir de votre propre copie du jeu, puis en fait une nouvelle unité de votre mod : le crédit de son créateur, les valeurs de l'unité de départ, dans le menu de construction choisi."
+ger = "Baut seine Pferde und Reiter auf diesem PC aus deiner eigenen Kopie des Spiels und macht ihn dann zu einer neuen Einheit deiner Mod: mit dem Namen seines Erstellers, den Werten der Ausgangseinheit, im gewählten Baumenü."
+ita = "Crea i suoi cavalli e cavalieri su questo PC dalla tua copia del gioco, poi ne fa una nuova unità della tua mod: il credito del suo autore, i valori dell'unità di partenza, nel menu di costruzione scelto."
+spa = "Crea sus caballos y jinetes en este PC a partir de tu propia copia del juego y luego lo convierte en una nueva unidad de tu mod: el crédito de su autor, los valores de la unidad de partida, en el menú de construcción elegido."
+pol = "Robi jego konie i jeźdźców na tym PC z twojej własnej kopii gry, a potem dodaje go jako nową jednostkę twojego moda: z podpisem autora, wartościami jednostki bazowej, w wybranym menu budowy."
+ru = "Делает его коней и всадников на этом ПК из вашей собственной копии игры, затем делает его новым юнитом вашего мода: с именем автора, значениями исходного юнита, в выбранном меню постройки."
+cz = "Vyrobí jeho koně a jezdce v tomto PC z tvé vlastní kopie hry a pak z něj udělá novou jednotku tvého modu: s uvedením autora, hodnotami výchozí jednotky, ve zvolené nabídce stavby."
+jpn = "この PC であなた自身のゲームから馬と騎手を作り、MODの新しいユニットにします。作者のクレジット、ベースにするユニットの値、選んだ生産メニューで追加されます。"
+sc = "在这台电脑上用你自己的游戏副本制作它的马和骑手，然后把它作为你模组的新单位：带作者署名、起始单位的数值，放在所选的建造菜单中。"
+fa = "اسب‌ها و سوارانش را روی همین رایانه از نسخهٔ خودِ شما از بازی می‌سازد، سپس آن را یگان تازهٔ ماد شما می‌کند: با نام سازنده‌اش، مقادیر یگانِ شروع، در منوی ساختِ انتخاب‌شده."
+
+[eras_horse_step_build]
+us = "Step 1 of 4: making its horses and riders from your game… {time}"
+fr = "Étape 1 sur 4 : fabrication de ses chevaux et cavaliers à partir de votre jeu… {time}"
+ger = "Schritt 1 von 4: seine Pferde und Reiter werden aus deinem Spiel gebaut… {time}"
+ita = "Passo 1 di 4: creazione dei suoi cavalli e cavalieri dal tuo gioco… {time}"
+spa = "Paso 1 de 4: creando sus caballos y jinetes a partir de tu juego… {time}"
+pol = "Krok 1 z 4: robienie jego koni i jeźdźców z twojej gry… {time}"
+ru = "Шаг 1 из 4: делаем его коней и всадников из вашей игры… {time}"
+cz = "Krok 1 ze 4: výroba jeho koní a jezdců z tvé hry… {time}"
+jpn = "手順 1/4：あなたのゲームから馬と騎手を作成中… {time}"
+sc = "第 1 步，共 4 步：正在用你的游戏制作它的马和骑手… {time}"
+fa = "گام ۱ از ۴: ساختن اسب‌ها و سوارانش از بازی شما… {time}"
+
+[eras_horse_step_unit]
+us = "Step 2 of 4: making the unit… {time}"
+fr = "Étape 2 sur 4 : création de l'unité… {time}"
+ger = "Schritt 2 von 4: die Einheit wird erstellt… {time}"
+ita = "Passo 2 di 4: creazione dell'unità… {time}"
+spa = "Paso 2 de 4: creando la unidad… {time}"
+pol = "Krok 2 z 4: tworzenie jednostki… {time}"
+ru = "Шаг 2 из 4: создаём юнит… {time}"
+cz = "Krok 2 ze 4: vytváření jednotky… {time}"
+jpn = "手順 2/4：ユニットを作成中… {time}"
+sc = "第 2 步，共 4 步：正在制作单位… {time}"
+fa = "گام ۲ از ۴: ساختن یگان… {time}"
+
+[eras_horse_step_riflemen]
+us = "Step 3 of 4: giving the riflemen their horses… {time}"
+fr = "Étape 3 sur 4 : les fusiliers reçoivent leurs chevaux… {time}"
+ger = "Schritt 3 von 4: die Schützen bekommen ihre Pferde… {time}"
+ita = "Passo 3 di 4: i fucilieri ricevono i loro cavalli… {time}"
+spa = "Paso 3 de 4: dando a los fusileros sus caballos… {time}"
+pol = "Krok 3 z 4: strzelcy dostają swoje konie… {time}"
+ru = "Шаг 3 из 4: стрелки получают своих коней… {time}"
+cz = "Krok 3 ze 4: střelci dostávají své koně… {time}"
+jpn = "手順 3/4：小銃兵に馬を与えています… {time}"
+sc = "第 3 步，共 4 步：正在给步枪兵配马… {time}"
+fa = "گام ۳ از ۴: دادن اسب به تفنگداران… {time}"
+
+[eras_horse_step_bazooka]
+us = "Step 4 of 4: giving the heavy-weapon soldier his horse… {time}"
+fr = "Étape 4 sur 4 : le soldat à l'arme lourde reçoit son cheval… {time}"
+ger = "Schritt 4 von 4: der Soldat mit schwerer Waffe bekommt sein Pferd… {time}"
+ita = "Passo 4 di 4: il soldato con arma pesante riceve il suo cavallo… {time}"
+spa = "Paso 4 de 4: dando al soldado con arma pesada su caballo… {time}"
+pol = "Krok 4 z 4: żołnierz z ciężką bronią dostaje swojego konia… {time}"
+ru = "Шаг 4 из 4: солдат с тяжёлым оружием получает своего коня… {time}"
+cz = "Krok 4 ze 4: voják s těžkou zbraní dostává svého koně… {time}"
+jpn = "手順 4/4：重火器兵に馬を与えています… {time}"
+sc = "第 4 步，共 4 步：正在给重武器士兵配马… {time}"
+fa = "گام ۴ از ۴: دادن اسب به سرباز سلاح سنگین… {time}"
+
 # --- research (app.js SETTINGS "research", researchAsk, researchTold, timeUnitPicker; StudioApi.RESEARCH_GONE): what
 # taking out a unit others are researched from does (the owner, 2026-10-09: the modder chooses: warn, refuse or
 # re-link), research times in seconds or minutes, and a unit left researched from one that's gone ---

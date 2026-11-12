@@ -72,6 +72,29 @@ Quando togli un'unità da cui altre vengono ricercate, **Impostazioni > Ricerca*
 Un'unità rimasta ricercata da una che non c'è più lo dice nel suo riquadro **Potenziamento e ricerca** e nella barra dei
 controlli, e la build si ferma su di essa finché non scegli un'altra unità, o nessuna.
 
+## La Squadra a cavallo
+
+**Seconda guerra mondiale+** elenca anche la **Squadra a cavallo**, creata da sneadtristen6: fucilieri e un soldato con
+arma pesante, ciascuno sul proprio cavallo. Non se ne scarica nulla, quindi c'è che tu abbia scaricato o no le unità
+della Seconda guerra mondiale+. Come le unità d'epoca, non è nella tua mod finché non la aggiungi.
+
+1. Cliccala. La sua pagina dice chi l'ha creata e cosa fa aggiungerla.
+2. Compila il modulo come per un'unità d'epoca: il suo nome, il suo prezzo, il suo **Menu di produzione**, il suo
+   **Gruppo** e l'unità da cui è **Ricercata da**. **Parti da** è sempre la squadra G.I. del gioco (i fucilieri
+   americani): i suoi cavalli e cavalieri sono fatti per i soldati di quella squadra.
+3. Clicca **Aggiungi alla mia mod**. Lo Studio crea i suoi cavalli e cavalieri sul tuo PC dalla tua copia del gioco, crea
+   l'unità, poi dà i loro cavalli ai suoi fucilieri e al suo soldato con arma pesante. Ogni passo compare sotto il
+   pulsante mentre procede, con il tempo trascorso. Se il tuo gioco non può dare ciò che serve, lo Studio dice perché, e
+   non viene aggiunto nulla.
+4. Ora è una nuova unità della tua mod: **Apri la sua pagina** per cambiare qualsiasi suo valore, come per ogni unità.
+   **Toglila dalla mia mod** la toglie di nuovo, con i suoi due modelli e le loro animazioni.
+
+Il suo autore, sneadtristen6, è citato nel `CREDITS-era-units.md` della tua mod, accanto agli autori delle unità
+d'epoca.
+
+Visto in gioco: questi cavalieri sui loro cavalli, fatti con **Importa modello…** su una copia della squadra G.I. Non
+ancora provato in gioco: la Squadra a cavallo aggiunta da questa lista.
+
 ## Crediti
 
 L'autore di ogni unità d'epoca è citato: nella sua pagina, e nel `CREDITS-era-units.md` della tua mod, che lo Studio scrive

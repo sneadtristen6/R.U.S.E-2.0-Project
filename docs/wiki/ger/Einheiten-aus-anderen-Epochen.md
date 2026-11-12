@@ -77,6 +77,30 @@ passiert:
 Eine Einheit, die noch von einer erforscht wird, die es nicht mehr gibt, sagt das in ihrem Feld **Verbesserung und
 Forschung** und in der Prüfleiste, und der Build stoppt an ihr, bis du eine andere Einheit wählst, oder keine.
 
+## Der Reitertrupp
+
+**Zweiter Weltkrieg+** zeigt auch den **Reitertrupp**, erstellt von sneadtristen6: Schützen und ein Soldat mit schwerer
+Waffe, jeder auf seinem eigenen Pferd. Nichts davon wird heruntergeladen, also ist er da, ob du die Einheiten des
+Zweiten Weltkriegs+ heruntergeladen hast oder nicht. Wie die Epochen-Einheiten ist er erst in deiner Mod, wenn du ihn
+hinzufügst.
+
+1. Klicke ihn an. Seine Seite sagt, wer ihn erstellt hat und was das Hinzufügen tut.
+2. Fülle das Formular wie für eine Epochen-Einheit aus: seinen Namen, seinen Preis, sein **Baumenü**, seine **Gruppe**
+   und die Einheit, aus der er **Erforscht aus** wird. **Ausgehend von** ist immer der G.I.-Trupp des Spiels (die
+   US-Schützen): Seine Pferde und Reiter sind für die Soldaten dieses Trupps gemacht.
+3. Klicke auf **Zu meiner Mod hinzufügen**. Das Studio baut seine Pferde und Reiter auf deinem PC aus deiner eigenen
+   Kopie des Spiels, erstellt die Einheit und gibt dann seinen Schützen und seinem Soldaten mit schwerer Waffe ihre
+   Pferde. Jeder Schritt erscheint unter dem Knopf, während er läuft, mit der Zeit bis dahin. Kann dein Spiel nicht
+   liefern, was nötig ist, sagt das Studio warum, und nichts wird hinzugefügt.
+4. Jetzt ist er eine neue Einheit deiner Mod: **Ihre Seite öffnen**, um jeden seiner Werte zu ändern, wie bei jeder
+   Einheit. **Aus meiner Mod entfernen** nimmt ihn wieder heraus, mit seinen beiden Modellen und ihren Animationen.
+
+Sein Ersteller, sneadtristen6, wird in der `CREDITS-era-units.md` deiner Mod genannt, neben den Erstellern der
+Epochen-Einheiten.
+
+Im Spiel gesehen: diese Reiter auf ihren Pferden, gemacht mit **Modell importieren…** auf einer Kopie des G.I.-Trupps.
+Noch nicht im Spiel ausprobiert: der Reitertrupp, aus dieser Liste hinzugefügt.
+
 ## Nennung der Ersteller
 
 Der Ersteller jeder Epocheneinheit wird genannt: auf ihrer Seite und in der `CREDITS-era-units.md` deines Mods, die das

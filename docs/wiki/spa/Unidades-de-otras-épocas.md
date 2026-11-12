@@ -74,6 +74,28 @@ Cuando quitas una unidad desde la que se investigan otras, **Ajustes > Investiga
 Una unidad que se queda investigada desde una que ya no está lo dice en su cuadro **Mejora e investigación** y en la
 barra de comprobación, y la construcción se detiene en ella hasta que elijas otra unidad, o ninguna.
 
+## El Pelotón a caballo
+
+**IIGM+** también muestra el **Pelotón a caballo**, creado por sneadtristen6: fusileros y un soldado con arma pesada,
+cada uno en su propio caballo. No se descarga nada de él, así que está ahí tanto si descargaste las unidades de IIGM+
+como si no. Como las unidades de época, no está en tu mod hasta que lo añades.
+
+1. Haz clic en él. Su página dice quién lo creó y qué hace añadirlo.
+2. Rellena el formulario como para una unidad de época: su nombre, su precio, su **Menú de producción**, su **Grupo** y la
+   unidad desde la que es **Investigada desde**. **Partir de** es siempre el pelotón G.I. del juego (los fusileros
+   estadounidenses): sus caballos y jinetes están hechos para los soldados de ese pelotón.
+3. Pulsa **Añadir a mi mod**. El Studio crea sus caballos y jinetes en tu PC a partir de tu propia copia del juego, crea
+   la unidad y luego da sus caballos a sus fusileros y a su soldado con arma pesada. Cada paso se muestra bajo el botón
+   a medida que avanza, con el tiempo transcurrido. Si tu juego no puede dar lo que hace falta, el Studio dice por qué, y
+   no se añade nada.
+4. Ahora es una nueva unidad de tu mod: **Abrir su página** para cambiar cualquiera de sus valores, como con cualquier
+   unidad. **Quitarla de mi mod** lo quita de nuevo, con sus dos modelos y sus animaciones.
+
+Su autor, sneadtristen6, figura en el `CREDITS-era-units.md` de tu mod, junto a los autores de las unidades de época.
+
+Visto en el juego: estos jinetes en sus caballos, hechos con **Importar modelo…** sobre una copia del pelotón G.I. Aún no
+probado en el juego: el Pelotón a caballo añadido desde esta lista.
+
 ## Créditos
 
 El autor de cada unidad de época tiene su crédito: en su página, y en el `CREDITS-era-units.md` de tu mod, que el Studio

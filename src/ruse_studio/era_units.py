@@ -36,7 +36,10 @@ RUSE 2.0's GitHub release `era-units`, in .zip files under 2 GB each. The releas
 its version, its files (size and SHA-256) and its units. An era downloads when the modder picks it and presses
 Download; every file is checked against the list before it's used, and only models and pictures inside the era's own
 folders (or pictures/) are taken from it. A downloaded era updates itself when the list holds a newer version of it,
-so eras still being finished arrive as they're put up, without a new Studio."""
+so eras still being finished arrive as they're put up, without a new Studio.
+
+Units made for RUSE 2.0 are listed with them in their era, downloaded or not ("built": nothing of theirs is
+downloaded): the Horse Squad in WWII+, made on the modder's PC from their own game when added (horse_squad.py)."""
 from __future__ import annotations
 
 import hashlib
@@ -297,15 +300,24 @@ def install_section(root: Path, section: dict, zips: list[Path]) -> None:
 
 def credits_text(units: list[dict]) -> str:
     """The mod's credits file for the era units it has (CC BY asks for the maker, the work, its licence and a note of
-    changes)."""
-    lines = ["# Era unit models", "",
-             "These units use free 3D models by their makers, under the licence named. Changes: fitted to the game "
-             "(turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
-    for u in sorted(units, key=lambda x: (x["era"], x["nation"], x["name"])):
+    changes), and for the units made for RUSE 2.0 it has ("built": the Horse Squad, by its maker's name; the owner,
+    2026-11-12: "your name, sneadtristen6, in that mod's credits"). A mod with era units only gets the file as before."""
+    era = [u for u in units if not u.get("built")]
+    built = [u for u in units if u.get("built")]
+    lines = []
+    if era:
+        lines += ["# Era unit models", "",
+                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
+                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+    for u in sorted(era, key=lambda x: (x["era"], x["nation"], x["name"])):
         c = u["credit"]
         extra = f" {c['extra']}." if c.get("extra") else ""
         lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): \"{c['title']}\" by {c['author']}, {c['licence']}, "
                      f"{c['url']}.{extra}")
+    if built:
+        lines += ([""] if lines else []) + ["# Made for RUSE 2.0", ""]
+    for u in sorted(built, key=lambda x: (x["era"], x["nation"], x["name"])):
+        lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): by {u['credit']['author']}.")
     return "\n".join(lines) + "\n"
 
 
@@ -444,9 +456,13 @@ class EraUnitCalls:
         return {k: a for k, a in record.items() if a in have}
 
     def _era_save(self, record: dict, lib: dict) -> None:
+        """The mod's era_units.json (`record`) and its credits: the library's units it has, and the units made for
+        RUSE 2.0 it has (horse_squad.BUILT, never in a library)."""
+        from .horse_squad import BUILT
         mod = self._mod_dir()
         (mod / INDEX).write_text(json.dumps(record, indent=1, ensure_ascii=False), encoding="utf-8")
-        mine = [u for u in lib["units"] if u["key"] in record]
+        mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
+        mine += [entry for key, entry in BUILT.items() if key in record]
         credits = mod / CREDITS
         if mine:
             credits.write_text(credits_text(mine), encoding="utf-8")
@@ -456,22 +472,29 @@ class EraUnitCalls:
     def era_units_list(self, era: str, kind: str = "all", nation: int = -1, search: str = "",
                        group: str = "all") -> dict:
         """One era's units for the Units list: {"library": found or not, "units": [{key, name, nation, code (the
-        nation chip), card, kind, added}], "types": the card types there, sorted}, filtered as the Units list is:
-        by kind (ground or air), nation chip, words in the name and card type ("type:<card>")."""
+        nation chip), card, kind, added, built, by}], "types": the card types there, sorted}, filtered as the Units
+        list is: by kind (ground or air), nation chip, words in the name (a built unit's in any of the Studio's
+        languages) and card type ("type:<card>"). "installed": whether the era's library units are on this PC (else
+        the page offers its download). The units made for RUSE 2.0 ("built": the Horse Squad, horse_squad.py; "by":
+        its maker, else None) are listed in their era whether it's downloaded or not: nothing of theirs is
+        downloaded."""
+        from .horse_squad import BUILT
         folder, lib = self._era_library()
         record = self._era_record() if self._mod_dir() is not None else {}
         words = (search or "").casefold().split()
-        rows = [u for u in lib["units"] if u["era"] == era]
+        built = self._era_built() if any(e["era"] == era for e in BUILT.values()) else []   # (the game's index read)
+        rows = [u for u in lib["units"] if u["era"] == era] + [u for u in built if u["era"] == era]
         rows = [u for u in rows if kind in ("all", kind_of(u)) and nation in (-1, NATION_CODE.get(u["nation"], -1))]
-        types = sorted({u["card"] for u in rows})
+        types = sorted({u["card"] for u in rows if u["card"]})
         if group.startswith("type:"):
             rows = [u for u in rows if u["card"] == group[5:]]
-        rows = [u for u in rows if all(w in u["name"].casefold() for w in words)]
+        rows = [u for u in rows if any(all(w in n.casefold() for w in words) for n in [u["name"], *u.get("names", ())])]
         return {"library": folder is not None, "types": types,
                 "installed": any(u["era"] == era for u in lib["units"]),
                 "units": [{"key": u["key"], "name": u["name"], "nation": u["nation"],
                            "code": NATION_CODE.get(u["nation"], -1), "card": u["card"], "kind": kind_of(u),
-                           "added": record.get(u["key"])} for u in rows]}
+                           "added": record.get(u["key"]), "built": bool(u.get("built")),
+                           "by": (u.get("credit") or {}).get("author") if u.get("built") else None} for u in rows]}
 
     def _era_price(self, source: str) -> float:
         from .api import _props
@@ -623,7 +646,8 @@ class EraUnitCalls:
         told = lang if lang in schema.LANGS else "us"     # game names, never code names
         ix = self._open()
         try:
-            if UPGRADE not in ix.prop_types(CLASS_OF[kind_of(entry)]):
+            # (a unit made for RUSE 2.0 names its class, "class": the Horse Squad is infantry, its start unit's)
+            if UPGRADE not in ix.prop_types(entry.get("class") or CLASS_OF[kind_of(entry)]):
                 return empty
             units = {u["address"]: u for u in self._all_units(ix)}
             choices = self._menu_units(edits, units, menu, ix)  # (never-shown units left out: the 2026-10-10 crash)
@@ -692,9 +716,14 @@ class EraUnitCalls:
         suggested (_era_research, only the units of its group: _era_limited), "group": the group of that building's
         build list it goes in (`group` as era_unit_add takes it; groups.py): {"root" (None: a group of its own),
         "name", "count", "most", "full", "new", "choices": [{root, name, count, full}] the building's groups}, None for
-        a menu that isn't one of the board's buildings}."""
+        a menu that isn't one of the board's buildings}. A unit made for RUSE 2.0 (the Horse Squad) starts from its own
+        unit only, whatever `source` says."""
         from .api import StudioError
-        folder, lib, entry = self._era_entry(key)
+        built = self._era_built_entry(key)
+        if built is not None:   # (its models are made for its start unit's soldiers: horse_squad.py)
+            folder, lib, entry, source = None, {}, built, built["copies"]
+        else:
+            folder, lib, entry = self._era_entry(key)
         ix = self._open()
         try:
             ix.show(source)
@@ -710,8 +739,12 @@ class EraUnitCalls:
         "picture" (a cache URL of its model's picture, or None), "start": the game units it can start from (its kind's
         units with a build menu: the suggested one first, then its card type's, then the rest by name), each {address,
         name (its game name), nation, suggested, same_type}, and for the suggested start unit in the library's build
-        menu (era_unit_start): "price", "size", "size_info", "research" and "group"."""
+        menu (era_unit_start): "price", "size", "size_info", "research" and "group". A unit made for RUSE 2.0 (the
+        Horse Squad): its own page, horse_squad.HorseSquadCalls._horse_page."""
         from rusemod import schema
+        built = self._era_built_entry(key)
+        if built is not None:
+            return self._horse_page(built, lang)
         folder, lib, entry = self._era_entry(key)
         record = self._era_record() if self._mod_dir() is not None else {}
         picture = None
@@ -761,8 +794,37 @@ class EraUnitCalls:
         it got its own card, "size": the size its model was fitted at (None: no model), "research_from": the unit it's
         researched from or None, "group": its group's first unit (its own address: a group of its own; None: not in
         one of the board's buildings)}."""
-        from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
+        from .api import StudioError
         folder, lib, entry = self._era_entry(key)
+        plan = self._era_plan(key, folder, lib, entry, nation, factory, source, size, research_from, research_price,
+                              research_time, group)
+        made = self._era_make(key, lib, entry, plan, nation, factory, name, price)
+        model, note, size = None, "", plan["size"]
+        if plan["has_model"]:
+            try:
+                # the library's model is already in the game's axes, its front +x (and pinned by hand where the
+                # importer's rules couldn't tell): kept so, not worked out again
+                model = self.model_import(made["address"], str(folder / entry["model"]), float(size),
+                                          bool(entry.get("aircraft")), facing=list(FACING), own_turret=False,
+                                          own_propellers=False)["model"]
+            except StudioError as exc:
+                note = "no_fit" if not entry.get("fits") else str(exc)
+        else:
+            note = "no_model"
+        card = self._era_card(made["address"], folder, entry)
+        target = plan["target"]
+        return {"address": made["address"], "name": made["name"], "model": model, "model_note": note, "card": card,
+                "size": float(size) if plan["has_model"] else None,
+                "research_from": plan["research_from"] if plan["research"]["offered"] else None,
+                "group": (target["root"] if target else made["address"]) if plan["rows"] else None}
+
+    def _era_plan(self, key: str, folder: Path | None, lib: dict, entry: dict, nation, factory, source=None,
+                  size=None, research_from=SUGGESTED, research_price=None, research_time=None, group=None) -> dict:
+        """era_unit_add's checks of everything asked for, before the unit is made, so a refusal leaves nothing half
+        made (the Horse Squad's add, horse_squad.py, checks the same; `folder` None: no library model). Returns what
+        _era_make makes it from: {"source", "record", "has_model", "size", "research", "research_from", "costs",
+        "rows", "target", "edits"}."""
+        from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
         if self._mod_dir() is None or self._edits() is None:
             raise StudioError("Pick or make a mod first: an era unit is added to a mod.")
         source = source or entry.get("copies")
@@ -772,7 +834,7 @@ class EraUnitCalls:
         if key in record:
             raise StudioError(f"{entry['name']} is already in this mod")
         # everything asked for is checked before the unit is made, so a refusal leaves nothing half made
-        has_model = bool(entry.get("model") and (folder / entry["model"]).is_file())
+        has_model = bool(folder is not None and entry.get("model") and (folder / entry["model"]).is_file())
         if size is None or size == "":
             size = self._era_size(folder, lib, entry, source)["size"] if has_model else 1.0
         if isinstance(size, bool) or not isinstance(size, (int, float)) or not MODEL_SIZES[0] <= size <= MODEL_SIZES[1]:
@@ -816,15 +878,25 @@ class EraUnitCalls:
                 raise StudioError(f"{prop}: a number from 0 up")
             _whole(value, "int32", prop)  # what set_research keeps, checked before the unit is made (0.9.8.2 review)
             costs[prop] = value
+        return {"source": source, "record": record, "has_model": has_model, "size": size, "research": research,
+                "research_from": research_from, "costs": costs, "rows": rows, "target": target, "edits": edits}
+
+    def _era_make(self, key: str, lib: dict, entry: dict, plan: dict, nation, factory, name=None, price=None) -> dict:
+        """The unit _era_plan checked, made: a new unit from its start unit called `name` (default: the entry's),
+        costing `price` (default: the start unit's), put in the mod's era_units.json and credits, linked to the unit
+        it's researched from as the Upgrade box links it, and written in its group. Returns _unit_new's answer."""
+        from .api import StudioError
+        source, research, research_from = plan["source"], plan["research"], plan["research_from"]
         cost = self._era_price(source) if price is None or price == "" else price
         wanted = (name or "").strip() or entry["name"]
-        try:   # (its group checked above, written below)
+        try:   # (its group checked by _era_plan, written below)
             made = self._unit_new(source, wanted, cost, int(nation), int(factory), guard=False)
         except StudioError as exc:
             if name or "already a unit" not in str(exc):
                 raise
             wanted = f"{entry['name']} ({entry['era']})"   # the same name in two eras (a Leopard 1 in both, say)
             made = self._unit_new(source, wanted, cost, int(nation), int(factory), guard=False)
+        record = plan["record"]
         record[key] = made["address"]
         with self._saving:
             self._era_save(record, lib)
@@ -833,29 +905,14 @@ class EraUnitCalls:
             # None also takes away a link the start unit had, so it's buyable from the start
             self._set_upgrade(made["address"], research_from, guard=False)
             if research_from is not None:
-                for prop, value in costs.items():
+                for prop, value in plan["costs"].items():
                     self.set_research(made["address"], prop, value)
-        if rows:   # bought from the start: written in its group (an upgrade stands in its parent's)
+        if plan["rows"]:   # bought from the start: written in its group (an upgrade stands in its parent's)
             from .edits import ModEdits
+            target = plan["target"]
             with self._saving:
-                self._groups_place(ModEdits(edits.folder), made["address"], target["root"] if target else None)
-        model, note = None, ""
-        if has_model:
-            try:
-                # the library's model is already in the game's axes, its front +x (and pinned by hand where the
-                # importer's rules couldn't tell): kept so, not worked out again
-                model = self.model_import(made["address"], str(folder / entry["model"]), float(size),
-                                          bool(entry.get("aircraft")), facing=list(FACING), own_turret=False,
-                                          own_propellers=False)["model"]
-            except StudioError as exc:
-                note = "no_fit" if not entry.get("fits") else str(exc)
-        else:
-            note = "no_model"
-        card = self._era_card(made["address"], folder, entry)
-        return {"address": made["address"], "name": made["name"], "model": model, "model_note": note, "card": card,
-                "size": float(size) if has_model else None,
-                "research_from": research_from if research["offered"] else None,
-                "group": (target["root"] if target else made["address"]) if rows else None}
+                self._groups_place(ModEdits(plan["edits"].folder), made["address"], target["root"] if target else None)
+        return made
 
     def _era_card(self, address: str, folder: Path, entry: dict) -> bool:
         """Give the new unit its era card (the library's "card_picture": its fitted model drawn at the game's card
@@ -884,8 +941,14 @@ class EraUnitCalls:
         """Take an era unit out of the mod: its unit, every change made to it, its model, its card and its credit. The
         units researched from it are dealt with first, as the modder chose (delete_unit; `researched` "anyway" after
         the warning). Returns {"removed": its address, "relinked", "left"}, or {"removed": None, "ask": the units
-        researched from it} when the modder is to be warned first (nothing changed)."""
+        researched from it} when the modder is to be warned first (nothing changed). The Horse Squad goes the same way:
+        both its soldiers' models with their animations (model_import_remove takes the riflemen's and, on the same
+        bones, the heavy-weapon soldier's), its unit and its credit line."""
         from .api import StudioError
+        from .horse_squad import BUILT
+        if key in BUILT and self._horse_running() and not self.__dict__.get("_horse_undoing"):
+            # (its models are being imported: taken out only when that's done, or by the add's own take-back)
+            raise StudioError("The Horse Squad is being added to this mod: wait for it to finish.")
         _folder, lib = self._era_library()
         record = self._era_record()
         address = record.get(key)
