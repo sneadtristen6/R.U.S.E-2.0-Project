@@ -551,11 +551,89 @@ where = "rusemod.build:unit_cards"
 kind = "mistake"
 us = "{0}: files/cards/{1}.png: {2} has no card of its own (TextureForInterface) naming a picture, so it can't get one"
 
+[cb9de9b4a6f]
+check = "build.unit_own_models-2"
+where = "rusemod.build:unit_own_models"
+kind = "mistake"
+us = "{0}: the model of {1}'s soldier {2} must be fitted to his bones (import it again in the Studio)"
+
+[c377fd64738]
+check = "build.unit_own_models-3"
+where = "rusemod.build:unit_own_models"
+kind = "mistake"
+us = "{0}: no mod in the set makes a new unit {1}"
+
 [cf44d4429da]
 check = "build.unit_own_models"
 where = "rusemod.build:unit_own_models"
 kind = "mistake"
 us = "{0}: a model for {1}'s {2} must be fitted to his bones (import it again in the Studio)"
+
+[c03adef1e93]
+check = "build.squad_soldiers"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: no mod in the set makes a new unit {1}"
+
+[cfead72b219]
+check = "build.squad_soldiers-2"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: {1} isn't a squad of soldiers, so it can't have soldiers of its own"
+
+[c102f844c6f]
+check = "build.squad_soldiers-3"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: {1} would have {2} soldiers: a squad keeps at least {3}, the game's own rule"
+
+[c3fa87ec000]
+check = "build.squad_soldiers-4"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: {1} would have {2} soldiers: a squad has at most {3} for now"
+
+[c2cb8e07433]
+check = "build.squad_soldiers-5"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: {1} would have {2} soldiers, but its last soldiers fire {3} weapons one each ({4}): it needs at least {5}"
+
+[c0da543d836]
+check = "build.squad_soldiers-6"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: the game's number of soldiers in a squad ({1}) can't be read, so {2}'s soldiers can't be counted"
+
+[ccb7a5030ae]
+check = "build.squad_soldiers-7"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: files/models/{1}.glb: {2} has {3} soldiers, so there is no soldier {4} to wear this look"
+
+[cda745c2e0a]
+check = "build.squad_soldiers-8"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: files/models/{1}.json: {2} has {3} soldiers, so there is no soldier {4} to wear the game's look"
+
+[c112be89c04]
+check = "build.squad_soldiers-9"
+where = "rusemod.build:squad_soldiers"
+kind = "mistake"
+us = "{0}: files/models/{1}.glb: the model of {2}'s soldier {3} was fitted to {4}, which none of its soldiers wears (import it again in the Studio)"
+
+[cf972fc85a6]
+check = "build._soldier_figure"
+where = "rusemod.build:_soldier_figure"
+kind = "mistake"
+us = "{0}: files/models/{1}.glb: {2} has no figure with a model for its soldiers to copy, so its soldier can't wear a look of his own"
+
+[ca9420acbc9]
+check = "build._game_figure"
+where = "rusemod.build:_game_figure"
+kind = "mistake"
+us = "{0}: files/models/{1}.json: the unit {2} copies has no figure with a model for soldier {3}'s place, so he can't wear the game's look"
 
 [c96e2130008]
 check = "build.building_looks"
@@ -2338,6 +2416,12 @@ check = "unitmodel._top_of"
 where = "rusemod.unitmodel:_top_of"
 kind = "raise"
 us = "the skeleton has no bone called {0}"
+
+[cf679b9b364]
+check = "unitmodel.find_source"
+where = "rusemod.unitmodel:find_source"
+kind = "raise"
+us = "{0}'s body has no picture to name the new model's pictures after"
 
 [c3fb0c82b14]
 check = "unitmodel.new_texture"
