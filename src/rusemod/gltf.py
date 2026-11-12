@@ -401,6 +401,96 @@ def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False) -> tup
     return g.to_bytes(), pictures, summary
 
 
+def glb_views(raw: bytes) -> tuple[dict, list]:
+    """A .glb as (its JSON document, each buffer view's bytes in order): the form pack_glb writes back once something
+    in it is changed (a picture swapped or added, bones placed). Only a .glb whose views are all in its own binary
+    chunk, as rusemod and Blender write them."""
+    from .modelin import ModelError, glb_document
+    doc, binary = glb_document(raw)
+    views = []
+    for v in doc.get("bufferViews", []):
+        if v.get("buffer", 0) != 0:
+            raise ModelError("a .glb whose data is outside its own buffer")
+        start = v.get("byteOffset", 0)
+        views.append(bytes(binary[start:start + v["byteLength"]]))
+    return doc, views
+
+
+def add_view(doc: dict, views: list, data: bytes) -> int:
+    """A new buffer view holding `data` (for pack_glb to lay out); returns its number."""
+    doc.setdefault("bufferViews", []).append({"buffer": 0, "byteOffset": 0, "byteLength": len(data)})
+    views.append(bytes(data))
+    return len(doc["bufferViews"]) - 1
+
+
+def pack_glb(doc: dict, views: list) -> bytes:
+    """A .glb of `doc` with its buffer views' bytes `views` (glb_views', add_view's): each laid out after the one before
+    at a multiple of 4 bytes, its byteOffset and byteLength and the one buffer's length set to match; everything else
+    in `doc` as it is."""
+    found = doc.get("bufferViews", [])
+    if len(found) != len(views):
+        raise ValueError(f"{len(found)} buffer views and {len(views)} parts of data")
+    binary = bytearray()
+    for v, data in zip(found, views):
+        binary += bytes(-len(binary) % 4)
+        v.update({"buffer": 0, "byteOffset": len(binary), "byteLength": len(data)})
+        binary += data
+    binary += bytes(-len(binary) % 4)
+    doc["buffers"] = [{"byteLength": len(binary)}]
+    js = json.dumps(doc, separators=(",", ":")).encode()
+    js += b" " * (-len(js) % 4)
+    total = 12 + 8 + len(js) + 8 + len(binary)
+    return (struct.pack("<4sII", b"glTF", 2, total) + struct.pack("<I4s", len(js), b"JSON") + js
+            + struct.pack("<I4s", len(binary), b"BIN\0") + bytes(binary))
+
+
+def rest_bones_glb(raw: bytes, record: bytes) -> bytes | None:
+    """A model rigged to a game skeleton and saved with its bones all at one spot (rusemod.modelin.write_glb: one
+    joint node per bone named as the game names it, identity bind matrices, as Import model saves a soldier's) with
+    every bone at its rest pose from the skeleton `record` instead, laid out as model_glb's rest_bones lays them
+    (rest_poses), so Blender shows the bones where the game has them and its tools work on them. The points, weights,
+    names and pictures are the same bytes. None when it isn't such a model: no skin, its bones placed already (a model
+    on bones of its own carries its whole skeleton at rest), or a bone the record hasn't got."""
+    from . import baf
+    doc, views = glb_views(raw)
+    skins = doc.get("skins") or []
+    if len(skins) != 1:
+        return None
+    skin, nodes = skins[0], doc.get("nodes", [])
+    joints = list(skin.get("joints") or [])
+    if not joints or "skeleton" in skin or any(
+            k in nodes[j] for j in joints for k in ("translation", "rotation", "scale", "matrix", "children")):
+        return None
+    names = [nodes[j].get("name", "") for j in joints]
+    try:
+        index = {n: b for b, n in enumerate(baf.skeleton(record)["names"])}
+    except (ValueError, struct.error, UnicodeDecodeError, KeyError):
+        return None
+    if any(n not in index for n in names):
+        return None
+    rest = rest_poses(record, [index[n] for n in names])
+    if rest is None:
+        return None
+    for k, (t, r, s) in enumerate(rest["trs"]):
+        nodes[joints[k]].update({"translation": t, "rotation": r, "scale": s})
+    for k, p in enumerate(rest["parents"]):
+        if p is not None:
+            nodes[joints[p]].setdefault("children", []).append(joints[k])
+    stem = (doc.get("scenes") or [{}])[doc.get("scene", 0)].get("name") or "model"
+    nodes.append({"name": f"{stem}_bones", "children": [joints[k] for k, p in enumerate(rest["parents"]) if p is None]})
+    skin["skeleton"] = len(nodes) - 1
+    scene = doc["scenes"][doc.get("scene", 0)]
+    scene["nodes"] = [n for n in scene.get("nodes", []) if n not in set(joints)] + [len(nodes) - 1]
+    ibm = struct.pack(f"<{16 * len(joints)}f", *(v for m in rest["ibm"] for v in m))
+    if "inverseBindMatrices" in skin:
+        doc["accessors"][skin["inverseBindMatrices"]].update({"bufferView": add_view(doc, views, ibm), "byteOffset": 0})
+    else:
+        doc["accessors"].append({"bufferView": add_view(doc, views, ibm), "componentType": FLOAT,
+                                 "count": len(joints), "type": "MAT4"})
+        skin["inverseBindMatrices"] = len(doc["accessors"]) - 1
+    return pack_glb(doc, views)
+
+
 def export(lib, names: list[str], out: Path, side: int = 2048, rest_bones: bool = False) -> list[dict]:
     """Write each model of `names` as <out>/<model>.glb with its pictures; returns each one's summary. `rest_bones`:
     model_glb's."""
