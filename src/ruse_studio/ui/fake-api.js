@@ -3749,7 +3749,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       },
       // made up: the first bring-back after each opening finds the last line's soldier changed (his paint) and the others
       // as they were; another, nothing changed. Blender is taken as closed after it, as when the modder closes it
-      squad_blender_back: async (address) => {
+      squad_blender_back: async (address, lang) => {
         const info = fakeSquadOwn(address);
         if (!info.blender.made) throw new Error("Nothing has come back from Blender yet: click Change the squad in Blender, change a soldier there, then click Send to the R.U.S.E. Studio at the top of Blender.");
         await new Promise((r) => setTimeout(r, 400));

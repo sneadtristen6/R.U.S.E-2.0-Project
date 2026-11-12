@@ -24,7 +24,7 @@ from test_lookmoves import BLANK, LANGS, controls, function_text, read
 UI = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
 WORDS = UI.parent / "words.toml"
 # the Studio's calls the page draws (the contracts' section 4): Phase 1's (agent B's), and a later step's (agent D's)
-PHASE1 = {"squad_info": ["address", "lang"], "squad_blender": ["address", "lang"], "squad_blender_back": ["address"],
+PHASE1 = {"squad_info": ["address", "lang"], "squad_blender": ["address", "lang"], "squad_blender_back": ["address", "lang"],
           "soldier_import": ["address", "soldier", "file", "size"], "soldier_reset": ["address", "soldier"]}
 LATER = {"soldier_add": ["address", "source", "of", "unit", "file"], "soldier_remove": ["address", "soldier"]}
 
@@ -132,7 +132,7 @@ class ThePage(unittest.TestCase):
         self.assertIn('big.addEventListener("click", open ? bringBack : openBlender);', big)
         self.assertIn("const open = Boolean(info.blender && info.blender.open);", big)
         self.assertIn("api().squad_blender(address, state.lang)", inner(self.squad, "openBlender"))
-        self.assertIn("api().squad_blender_back(address)", inner(self.squad, "bringBack"))
+        self.assertIn("api().squad_blender_back(address, state.lang)", inner(self.squad, "bringBack"))
         # who changed and who didn't, said plainly on the card
         back = inner(self.squad, "bringBack")
         self.assertIn("const changed = r.changed || [], same = r.unchanged || [];", back)

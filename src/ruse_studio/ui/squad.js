@@ -184,8 +184,9 @@
         });
         out.push(el("p", { className: "squad-how", textContent: w.squad_blender_needs }),
           el("div", { className: "squad-go" }, get, choose));
-      } else if (!open && info.blender && info.blender.made) {
-        // Blender closed, its folder there: what was last sent from it can still come back (a bring-back takes a closed
+      } else if (!open && info.blender && ("waiting" in info.blender ? info.blender.waiting : info.blender.made)) {
+        // Blender closed with a sending not brought back yet (squad_info's blender.waiting; without that field, its
+        // folder being there): what was last sent from it can still come back (a bring-back takes a closed
         // Blender's last sending; one brought back already changes nothing)
         const again = el("button", { type: "button", className: "ghost squad-again", textContent: w.squad_blender_back,
           title: w.tip_squad_blender_back_closed, disabled: S.busy || !can.blender });
@@ -218,7 +219,7 @@
       drawCard();
       say(w.squad_blender_bringing);
       let r = null;
-      try { r = await api().squad_blender_back(address); } catch (err) { problem(err); }
+      try { r = await api().squad_blender_back(address, state.lang); } catch (err) { problem(err); }
       S.busy = false;
       if (!r) { draw(); return; }
       await reload(true);
