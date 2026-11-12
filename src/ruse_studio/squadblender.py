@@ -45,6 +45,7 @@ import hashlib
 import json
 import os
 import shutil
+import struct
 import time
 import uuid
 from pathlib import Path
@@ -531,7 +532,10 @@ class SquadBlenderCalls:
         alpha picture's path}, as blender_model lists them), named in the material's extras as rusemod.modelin reads
         it (rusemod_alpha_texture); a material with none, or whose picture isn't there any more, as Blender wrote it."""
         from rusemod import gltf
-        doc, views = gltf.glb_views(raw)
+        try:
+            doc, views = gltf.glb_views(raw)
+        except (ValueError, struct.error):   # (not a .glb: Import model says so in its own words)
+            return raw
         added = False
         for mat in doc.get("materials", []):
             path = alphas.get(mat.get("name"))
