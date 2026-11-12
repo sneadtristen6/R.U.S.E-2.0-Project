@@ -11,7 +11,7 @@ Model może też trafić na nowy budynek, w miejsce części jego wyglądu (zoba
 [[Budynki i menu budowy|Budynki-i-menu-budowy]]), albo na twoją mapę jako własna skała, obiekt, krzew lub drzewo
 (zobacz [[Rozmieszczanie budynków i drzew|Rozmieszczanie-budynków-i-drzew]]). Oba: Studio 0.9.8.8, widziane w grze.
 
-Na stronie jednostki wszystko to jest w **Wygląd i ruch**: **Importuj model…** to przycisk wiersza **Model**, a pozostałe opcje modelu (rozmiar, **Przesuń**, **Zmień w Blenderze**) są pod **Więcej** tego wiersza. **Jego żołnierze** to osobny wiersz, a to, co robią animacje modelu, jest pod **Więcej** wiersza **Dźwięki i animacje**.
+Na stronie jednostki wszystko to jest w **Wygląd i ruch**: **Importuj model…** to przycisk wiersza **Model**, a pozostałe opcje modelu (rozmiar, **Przesuń**) są pod **Więcej** tego wiersza. To, co robią animacje modelu, jest pod **Więcej** wiersza **Dźwięki i animacje**. Strona oddziału zaczyna się natomiast od jego żołnierzy, na karcie oddziału: zobacz [[Zmiana oddziału|Zmiana-oddziału]].
 
 ## 1. Zdobądź model
 
@@ -57,7 +57,7 @@ obraz nie został znaleziony, strona mówi który: połóż obrazy obok modelu i
 Zostaje zapisany w twoim modzie jako `files/models/<the unit's name>.glb`. **Użyj modelu kopiowanej jednostki** znowu go
 usuwa.
 
-**Gdzie jest na twoim komputerze:** **Więcej** w wierszu **Model** zaczyna się od tego: pełna ścieżka, `Documents\RUSE 2.0\Mods\<twój mod>\files\models\<nazwa jednostki>.glb`, i **Pokaż w folderze**, który otwiera ten folder. Dopóki jednostka nie ma własnego modelu, mówi, gdzie będzie plik. Jednostka z własną kopią modelu (**Daj mu własną kopię modelu** albo **Własny mundur** oddziału) jest trzymana w tym samym folderze, jako `<nazwa jednostki>.copy.toml`, a jej malowanie w folderze o tej samej nazwie.
+**Gdzie jest na twoim komputerze:** **Więcej** w wierszu **Model** zaczyna się od tego (strona oddziału mówi to w **Więcej opcji**, pod jego żołnierzami): pełna ścieżka, `Documents\RUSE 2.0\Mods\<twój mod>\files\models\<nazwa jednostki>.glb`, i **Pokaż w folderze**, który otwiera ten folder. Dopóki jednostka nie ma własnego modelu, mówi, gdzie będzie plik. Jednostka z własną kopią modelu (**Daj mu własną kopię modelu** albo **Własny mundur** oddziału) jest trzymana w tym samym folderze, jako `<nazwa jednostki>.copy.toml`, a jej malowanie w folderze o tej samej nazwie.
 
 **Jego rozmiar później:** suwak pod polem rozmiaru idzie od **Malutki** do **Ogromny** (od 0.05 do 20), z zaznaczonymi
 **Rozmiar z gry** (1) oraz, dla jednostki z innej epoki, **Jak w rzeczywistości**; kliknij **Zmień rozmiar**, a model
@@ -87,7 +87,7 @@ umiało dopasować modelu (na przykład P-47), też mogą dostać własny model,
 przykład jeden z modeli gry otwarty w Blenderze ze Studio i tam zmieniony. Trafia na te kości taki, jaki jest, nic nie
 jest przesuwane ani skalowane, a pozostali ludzie z oddziału rysowani tym samym modelem też go noszą. Widziane w grze z
 oddziałem strzelców, obsługą działa i P-47. Żołnierz z ciężką bronią, którego gra rysuje własnym modelem (żołnierz z
-bazooką w amerykańskim oddziale strzelców), zachowuje go, dopóki nie dasz mu modelu w **Jego żołnierze** (niżej).
+bazooką w amerykańskim oddziale strzelców), zachowuje go, dopóki nie dasz mu modelu w jego własnym wierszu na stronie oddziału (niżej).
 
 **Twoi gracze:** mod z modelem zaimportowanym przez Studio 0.9.8.17 lub nowsze potrzebuje Launchera 0.4.8.17 lub
 nowszego: starszy Launcher daje modelowi szkielet skopiowanej jednostki, więc jego wieża obraca się wokół złego punktu.
@@ -95,23 +95,24 @@ Wersja 0.4.8.17 to wymagana aktualizacja, więc Launcher instaluje ją sam.
 
 ## Własny żołnierz krok po kroku
 
-Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą część w Blenderze:
+Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą część w Blenderze. Strona oddziału zaczyna
+się od karty oddziału i wiersza dla każdego z jego żołnierzy; [[Zmiana oddziału|Zmiana-oddziału]] przechodzi przez nie.
 
-1. **Utwórz oddział** jak w kroku 2 powyżej, zaczynając od oddziału (np. amerykańskich strzelców).
-2. **Otwórz jego żołnierza w Blenderze.** Na stronie nowego oddziału, w części **Własny model**, kliknij **Zmień w Blenderze**. Blender otworzy się z żołnierzem i jego kośćmi, każdą tam, gdzie ma ją gra. Nie masz Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
-3. **Zmień go albo załóż własny model na jego kości.** Żeby go zmienić, edytuj go tam. Własny model: wczytaj go przez **File > Import** do tej samej sceny i połóż na żołnierzu; kliknij swój model, **Shift+klik** na kości, potem **Ctrl+P > With Automatic Weights**. Usuń żołnierza z gry, jeśli go nie zostawiasz.
-4. **Wyślij go.** Kliknij **Wyślij do R.U.S.E. Studio** u góry Blendera.
-5. **Przenieś go z powrotem.** W Studiu kliknij **Przenieś model**. Twój model noszą strzelcy oddziału. Oddział, którego żołnierza z ciężką bronią gra rysuje własnym modelem (na przykład żołnierz z bazooką w amerykańskim oddziale strzelców), zachowuje go takim, jakim ma go kopiowany oddział, dopóki nie dasz mu własnego: wiersz **Jego żołnierze** pokazuje każdego z nich, a tamtejsze **Importuj model…**, **Zmień w Blenderze** i **Przenieś model** są tylko dla niego. **Testuj w grze** go pokaże.
+1. **Utwórz oddział** jak w kroku 2 powyżej, zaczynając od oddziału (na przykład amerykańskiego oddziału strzelców).
+2. **Otwórz oddział w Blenderze.** Na karcie oddziału kliknij **Zmień oddział w Blenderze**. Blender otworzy się ze wszystkimi żołnierzami oddziału obok siebie, każdy na swoich kościach, każdy z własną kopią swoich obrazków. Nie masz jeszcze Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
+3. **Zmień żołnierza albo załóż własny model na jego kości.** Żeby go zmienić, edytuj go tam. Własny model: wczytaj go przez **File > Import** do tej samej sceny i połóż na żołnierzu; kliknij swój model, **Shift+klik** na jego kości, potem **Ctrl+P > With Automatic Weights**. Usuń żołnierza z gry, jeśli go nie zostawiasz.
+4. **Wyślij.** Kliknij **Wyślij do R.U.S.E. Studio** u góry Blendera.
+5. **Przenieś z powrotem.** Na karcie oddziału kliknij **Przenieś moje zmiany**. Każdy żołnierz dostaje tylko to, co zrobiono z nim, a ten, którego nie ruszałeś, zostaje taki, jaki był: karta mówi, kto się zmienił, a kto nie. **Testuj w grze** to pokaże.
 
 Dobrze wiedzieć:
-- Twoje pliki Blendera zostają w folderze twojego moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\`. Pliki żołnierza z ciężką bronią zostają obok, w `<nazwa jednostki>@bazooka\`. Nie trafiają do moda, gdy go udostępniasz. Następne **Zmień w Blenderze** zaczyna od tego, co wysłałeś ostatnio.
-- Pod **Zmień w Blenderze** strona mówi, gdzie są te pliki, jeszcze przed pierwszym kliknięciem, a jej **Pokaż w folderze** otwiera ten folder, gdy tylko Blender otworzy tam żołnierza.
+- Czterej strzelcy amerykańskiego oddziału strzelców to w Blenderze jedna figura: gra daje im jeden model, więc to, co z nim zrobisz, noszą wszyscy czterej. Żołnierz z bazooką to osobna figura.
+- Twoje pliki Blendera zostają w folderze moda: `Documents\RUSE 2.0\Mods\<twój mod>\blender\<nazwa jednostki>\squad\`. Nie są pakowane do moda, gdy go udostępniasz. **Więcej opcji**, pod żołnierzami, mówi, gdzie są, a jego **Pokaż w folderze** otwiera folder, w którym leżą.
+- Zamknąłeś Blendera, zanim przeniosłeś zmiany? Mały przycisk **Przenieś moje zmiany** pod dużym bierze to, co wysłałeś ostatnio.
 - Jeśli niektóre punkty modelu nie mają kości (automatyczne wagi Blendera kilka pomijają), strona powie ile: ruszają się tylko z biodrami żołnierza. Pomaluj je na kość w **Weight Paint** i wyślij ponownie.
-- Oddział z **Własny mundur**: twój model zajmuje miejsce munduru (jego malowanie zostaje w modzie), a **Użyj modelu kopiowanej jednostki** przywraca mundur.
-- Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** weźmie go tak, jak jest.
-- Model, który nosi twój oddział, jest trzymany w folderze moda jako `files\models\<nazwa jednostki>.glb`, gdy już jest w środku; własny model żołnierza z ciężką bronią jako `files\models\<nazwa jednostki>@bazooka.glb`.
-- **Jego żołnierze** mówi, gdzie jest trzymany model każdego z nich (albo gdzie będzie), a **Pokaż w folderze** w wierszu **Model** otwiera ten folder.
-- **Jego żołnierze** mówi też, które inne figury oddziału są rysowane którym modelem: poległy żołnierz i figura widziana z daleka (w amerykańskim oddziale strzelców rysowana modelem żołnierza z bazooką).
+- Oddział z **Własny mundur**: twój model zajmuje miejsce munduru (jego malowanie zostaje w modzie); gdy każdy żołnierz wróci do wyglądu z gry (**Wróć do wyglądu z gry** w jego wierszu), mundur wraca.
+- Masz już .glb zrobiony na kościach żołnierza z gry? **Importuj model…** w wierszu tego żołnierza bierze go tak, jak jest.
+- Twój mod trzyma model każdego żołnierza w `files\models\`: strzelców jako `<nazwa jednostki>.glb`, żołnierza z ciężką bronią jako `<nazwa jednostki>@bazooka.glb`. **Więcej opcji** mówi, gdzie jest każdy z nich (albo gdzie będzie), i które inne figury oddziału są nim rysowane: poległy żołnierz i figura widziana z daleka (w amerykańskim oddziale strzelców rysowana modelem żołnierza z bazooką).
+- Cały oddział w jednym Blenderze, każdy żołnierz przeniesiony osobno: to nowość, jeszcze niewypróbowana w grze.
 
 ## Jej animacje: którą odtwarza każda czynność
 
@@ -143,15 +144,15 @@ Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia
 
 1. **Zrób go w Blenderze**: twój model na armaturze z własnymi kośćmi (nazwanymi, jak chcesz) i akcja dla każdej animacji. Nazwij akcje tak, jak to, co pokazują: co najmniej **stand** (lub **idle**), **walk** i **run**; rozpoznawane są też **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** i **grenade**.
 2. **Wyeksportuj go**: **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, z zaznaczonym **Animation**.
-3. **Utwórz oddział** jak w kroku 2 powyżej. Na jego stronie kliknij **Importuj model…** w wierszu **Model** sekcji **Wygląd i ruch** i wybierz swój .glb. Studio widzi, że jego kości nie są kośćmi żołnierza, i bierze go z własnymi kośćmi i wszystkimi animacjami. Strona pokazuje, ile ma kości, każdą animację z jej długością i ile czynności oddziału ją gra.
+3. **Utwórz oddział** jak w kroku 2 powyżej. Na jego stronie kliknij **Importuj model…** w wierszu strzelców, pod **Każdy żołnierz**, i wybierz swój .glb. Studio widzi, że jego kości nie są kośćmi żołnierza, i bierze go z własnymi kośćmi i wszystkimi animacjami. Strona pokazuje, ile ma kości, każdą animację z jej długością i ile czynności oddziału ją gra.
 4. **Testuj w grze** go pokaże.
 
 Dobrze wiedzieć:
 - Każda czynność oddziału gra animację nazwaną dla niej. Czynność, dla której żadna animacja nie jest nazwana, nie ma jeszcze żadnej: strona mówi, ile ich jest.
 - Zmieniony w Blenderze? Zaimportuj go ponownie: każda czynność zachowa swoją animację, dopóki animacja o tej nazwie jest w pliku.
 - Twój mod przechowuje model i każdą animację: `files\models\<nazwa jednostki>.glb`, a każdą animację jako `files\anim\own\<nazwa jednostki>\<jej nazwa>.baf`.
-- **Użyj modelu kopiowanej jednostki** znowu usuwa model, razem z jego animacjami.
-- Oddział z żołnierzem z ciężką bronią: daj mu własnego konia z jeźdźcem w **Jego żołnierze**, zrobionego na tych samych kościach co model strzelców, a będzie odgrywał ich animacje. Na innych kościach odgrywa to, co w kopiowanym oddziale, a strona ostrzega: to może zatrzymać grę. Usunięcie modelu strzelców usuwa też jego.
+- **Wróć do wyglądu z gry** w tym wierszu znowu usuwa model, razem z jego animacjami.
+- Oddział z żołnierzem z ciężką bronią: daj mu własnego konia z jeźdźcem przez **Importuj model…** w jego wierszu, zrobionego na tych samych kościach co model strzelców, a będzie odgrywał ich animacje. Na innych kościach odgrywa to, co w kopiowanym oddziale, a strona ostrzega: to może zatrzymać grę. Usunięcie modelu strzelców usuwa też jego.
 - Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
 ## 4. Jego karta, potem test

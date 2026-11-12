@@ -11,7 +11,7 @@ Un modelo también puede ir en un edificio nuevo, en lugar de una pieza de su as
 [[Edificios y menús de construcción|Edificios-y-menús-de-construcción]]), o en tu mapa como roca, objeto, arbusto o árbol propio
 (consulta [[Colocar edificios y árboles|Colocar-edificios-y-árboles]]). Los dos: Studio 0.9.8.8, visto en el juego.
 
-En la página de la unidad todo esto está en **Aspecto y movimientos**: **Importar modelo…** es el botón de la fila **Modelo**, y el resto de opciones del modelo (su tamaño, **Moverlo**, **Cambiarlo en Blender**) está bajo **Más** de esa fila. **Sus soldados** es una fila propia, y lo que hacen las animaciones del modelo está bajo **Más** de la fila **Sonidos y animación**.
+En la página de la unidad todo esto está en **Aspecto y movimientos**: **Importar modelo…** es el botón de la fila **Modelo**, y el resto de opciones del modelo (su tamaño, **Moverlo**) está bajo **Más** de esa fila. Lo que hacen las animaciones del modelo está bajo **Más** de la fila **Sonidos y animación**. La página de un pelotón empieza en cambio por sus soldados, en su tarjeta de pelotón: mira [[Cambiar un pelotón|Cambiar-un-pelotón]].
 
 ## 1. Consigue un modelo
 
@@ -56,7 +56,7 @@ dice cuál: pon las imágenes junto al modelo e impórtalo otra vez.
 Se guarda en tu mod como `files/models/<the unit's name>.glb`. **Usar el modelo de la unidad copiada** lo quita otra
 vez.
 
-**Dónde está en tu PC:** **Más** de la fila **Modelo** empieza por ahí: la ruta completa, `Documents\RUSE 2.0\Mods\<tu mod>\files\models\<nombre de la unidad>.glb`, y **Mostrar en la carpeta**, que abre esa carpeta. Mientras la unidad no tenga un modelo propio, dice dónde estará el archivo. Una unidad con su propia copia del modelo (**Darle su propia copia del modelo**, o el **Uniforme personalizado** de un pelotón) se guarda en la misma carpeta, como `<nombre de la unidad>.copy.toml`, y su pintura en la carpeta del mismo nombre.
+**Dónde está en tu PC:** **Más** de la fila **Modelo** empieza por ahí (la página de un pelotón lo dice en **Más opciones**, debajo de sus soldados): la ruta completa, `Documents\RUSE 2.0\Mods\<tu mod>\files\models\<nombre de la unidad>.glb`, y **Mostrar en la carpeta**, que abre esa carpeta. Mientras la unidad no tenga un modelo propio, dice dónde estará el archivo. Una unidad con su propia copia del modelo (**Darle su propia copia del modelo**, o el **Uniforme personalizado** de un pelotón) se guarda en la misma carpeta, como `<nombre de la unidad>.copy.toml`, y su pintura en la carpeta del mismo nombre.
 
 **Su tamaño más tarde:** el control deslizante bajo el cuadro del tamaño va de **Diminuto** a **Enorme** (de 0.05 a
 20), con **Tamaño del juego** (1) y, en una unidad de época, **Tamaño real** marcados; haz clic en **Cambiar tamaño** y
@@ -88,7 +88,7 @@ unidad: uno de los modelos del juego abierto en Blender desde el Studio y cambia
 huesos tal cual, sin mover ni escalar nada, y los demás hombres de un pelotón dibujados con el mismo modelo también lo llevan.
 Visto en el juego con un pelotón de fusileros, la dotación de un cañón y el P-47. Un soldado con arma pesada que el
 juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU.) lo conserva hasta que le des uno
-en **Sus soldados** (más abajo).
+en su propia línea de la página del pelotón (más abajo).
 
 **Tus jugadores:** un mod con un modelo importado con el Studio 0.9.8.17 o posterior necesita el Launcher 0.4.8.17 o más
 reciente: un Launcher más antiguo le da al modelo el esqueleto de la unidad copiada, así que su torreta gira alrededor
@@ -96,23 +96,24 @@ del punto equivocado. La 0.4.8.17 es una actualización obligatoria, así que el
 
 ## Tu propio soldado, paso a paso
 
-Para un pelotón (fusileros, paracaidistas, cualquier infantería), el Studio hace contigo la parte de Blender:
+Para un pelotón (fusileros, paracaidistas, cualquier infantería) el Studio hace la parte de Blender contigo. La página de un
+pelotón empieza por su tarjeta de pelotón y una línea para cada uno de sus soldados; [[Cambiar un pelotón|Cambiar-un-pelotón]] los recorre.
 
-1. **Crea el pelotón** como en el paso 2 de arriba, partiendo de un pelotón (los fusileros estadounidenses, por ejemplo).
-2. **Abre su soldado en Blender.** En la página del nuevo pelotón, bajo **Su propio modelo**, pulsa **Cambiarlo en Blender**. Blender se abre con el soldado y sus huesos, cada uno donde lo tiene el juego. ¿Aún no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
-3. **Cámbialo, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en los huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no lo conservas.
+1. **Crea el pelotón** como en el paso 2 de arriba, a partir de un pelotón (el pelotón de fusileros de EE. UU., por ejemplo).
+2. **Abre el pelotón en Blender.** En la tarjeta de pelotón, pulsa **Cambiar el pelotón en Blender**. Blender se abre con todos los soldados del pelotón uno al lado del otro, cada uno sobre sus huesos, cada uno con su propia copia de sus imágenes. ¿Todavía no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
+3. **Cambia un soldado, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en sus huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no te lo quedas.
 4. **Envíalo.** Pulsa **Enviar a R.U.S.E. Studio** arriba en Blender.
-5. **Tráelo de vuelta.** En el Studio, pulsa **Traer el modelo**. Los fusileros del pelotón llevan tu modelo. Un pelotón cuyo soldado con arma pesada el juego dibuja con un modelo propio (el del bazuca del pelotón de fusileros de EE. UU., por ejemplo) lo conserva como lo tiene el pelotón copiado hasta que le des uno: la fila **Sus soldados** muestra a cada uno, y sus **Importar modelo…**, **Cambiarlo en Blender** y **Traer el modelo** son solo para él. **Probar en el juego** lo muestra.
+5. **Tráelo de vuelta.** En la tarjeta de pelotón, pulsa **Traer mis cambios**. Cada soldado recibe solo lo que se le hizo a él, y el que no tocaste se queda como estaba: la tarjeta dice quién cambió y quién no. **Probar en el juego** lo muestra.
 
-Bueno saberlo:
-- Tus archivos de Blender quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\`. Los del soldado con arma pesada quedan al lado, en `<nombre de la unidad>@bazooka\`. No se empaquetan en tu mod cuando lo compartes. El próximo **Cambiarlo en Blender** empieza desde lo último que enviaste.
-- Bajo **Cambiarlo en Blender** la página dice dónde están esos archivos, incluso antes de tu primer clic, y su **Mostrar en la carpeta** abre esa carpeta en cuanto Blender ha abierto allí al soldado.
+Bueno saber:
+- Los cuatro fusileros del pelotón de fusileros de EE. UU. son una sola figura en Blender: el juego les da un solo modelo, así que lo que le hagas lo llevan los cuatro. Su soldado del bazuca es una figura propia.
+- Tus archivos de Blender se quedan en la carpeta de tu mod: `Documents\RUSE 2.0\Mods\<tu mod>\blender\<nombre de la unidad>\squad\`. No se empaquetan en tu mod cuando lo compartes. **Más opciones**, debajo de los soldados, dice dónde están, y su **Mostrar en la carpeta** abre la carpeta donde están.
+- ¿Cerraste Blender antes de traer tus cambios? El pequeño **Traer mis cambios** bajo el botón grande toma lo último que enviaste.
 - Si algunos puntos de tu modelo no tienen hueso (los pesos automáticos de Blender se saltan algunos), la página dice cuántos: se mueven solo con la cadera del soldado. Píntalos sobre un hueso en **Weight Paint** y envíalo de nuevo.
-- Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod), y **Usar el modelo de la unidad copiada** devuelve el uniforme.
-- ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar modelo…** lo toma tal cual.
-- El modelo que lleva tu pelotón se guarda en la carpeta del mod como `files\models\<nombre de la unidad>.glb`, una vez dentro; el propio del soldado con arma pesada como `files\models\<nombre de la unidad>@bazooka.glb`.
-- **Sus soldados** dice dónde se guarda el modelo de cada uno (o se guardará), y **Mostrar en la carpeta** de la fila **Modelo** abre esa carpeta.
-- **Sus soldados** también dice qué otras figuras del pelotón se dibujan con cada modelo: el soldado caído y la figura vista de lejos (la del pelotón de fusileros de EE. UU. se dibuja con el modelo de su soldado del bazuca).
+- Un pelotón con **Uniforme personalizado**: tu modelo ocupa el lugar del uniforme (su pintura queda en tu mod); cuando cada soldado vuelve al aspecto del juego (**Volver al aspecto del juego** en su línea), el uniforme vuelve.
+- ¿Ya tienes un .glb hecho sobre los huesos del soldado del juego? **Importar un modelo…** en la línea de ese soldado lo toma tal cual.
+- Tu mod guarda el modelo de cada soldado en `files\models\`: el de los fusileros como `<nombre de la unidad>.glb`, el del soldado con arma pesada como `<nombre de la unidad>@bazooka.glb`. **Más opciones** dice dónde se guarda cada uno (o se guardará), y qué otras figuras del pelotón se dibujan con él: el soldado caído y la figura vista de lejos (la del pelotón de fusileros de EE. UU. se dibuja con el modelo de su soldado del bazuca).
+- Todo el pelotón en un solo Blender, cada soldado traído por separado: es nuevo, todavía no probado en el juego.
 
 ## Sus animaciones: cuál reproduce cada acción
 
@@ -145,15 +146,15 @@ Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus pr
 
 1. **Hazlo en Blender**: tu modelo sobre una armadura con huesos propios (con los nombres que quieras) y una acción para cada animación. Nombra las acciones según lo que muestran: al menos **stand** (o **idle**), **walk** y **run**; también se reconocen **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** y **grenade**.
 2. **Expórtalo**: **File > Export > glTF 2.0**, formato **glTF Binary (.glb)**, con **Animation** marcado.
-3. **Crea el pelotón** como en el paso 2 de arriba. En su página, pulsa **Importar modelo…** en la fila **Modelo** de **Aspecto y movimientos** y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
+3. **Crea el pelotón** como en el paso 2 de arriba. En su página, pulsa **Importar un modelo…** en la línea de los fusileros, bajo **Cada soldado**, y elige tu .glb. El Studio ve que sus huesos no son los del soldado y lo toma con sus propios huesos y todas sus animaciones. La página muestra cuántos huesos tiene, cada animación con su duración y cuántas acciones del pelotón la hacen.
 4. **Probar en el juego** lo muestra.
 
 Bueno saberlo:
 - Cada acción del pelotón hace la animación nombrada para ella. Una acción para la que no hay ninguna animación nombrada todavía no tiene ninguna: la página dice cuántas.
 - ¿Lo cambiaste en Blender? Impórtalo de nuevo: cada acción mantiene su animación mientras en el archivo siga habiendo una animación con ese nombre.
 - Tu mod guarda el modelo y cada animación: `files\models\<nombre de la unidad>.glb`, y cada animación como `files\anim\own\<nombre de la unidad>\<su nombre>.baf`.
-- **Usar el modelo de la unidad copiada** vuelve a quitar el modelo, con sus animaciones.
-- Un pelotón con soldado con arma pesada: dale su propio caballo con jinete en **Sus soldados**, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
+- **Volver al aspecto del juego** en esa línea vuelve a quitar el modelo, con sus animaciones.
+- Un pelotón con soldado con arma pesada: dale su propio caballo con jinete con **Importar un modelo…** en su línea, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
 - El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado todavía en el juego.
 
 ## 4. Su tarjeta, y luego la prueba

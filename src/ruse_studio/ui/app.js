@@ -2645,7 +2645,10 @@ function modelKeptRow(address, kept, squad) {
 // box (buildingLookBox) ---
 const LM_ROWS = [["model", "lm_model", "tip_lm_model"], ["soldiers", "lm_soldiers", "tip_lm_soldiers"],
   ["decoy", "decoy_unit_title", "tip_lm_decoy"], ["rides", "rides_in", "tip_rides_in"]];
-function lookMovesBox(u, view, startNew) {
+// `squadPage`: a squad's page with its squad card (squad.js), which has its soldiers' models, its Blender and where
+// their files are kept: the Model row is then the squad's Uniform row, and Its soldiers isn't shown (the owner,
+// 2026-11-11, of the page before: "so many things that say change it in Blender, bring back the model")
+function lookMovesBox(u, view, startNew, squadPage = false) {
   const w = state.words, address = u.address;
   const name = u.name || address.split("/").pop();
   const box = el("div", { className: "group look-moves" }, el("h2", { textContent: w.lm_title, title: w.tip_lm_title }),
@@ -2686,8 +2689,9 @@ function lookMovesBox(u, view, startNew) {
     rows[key].row.classList.add("hidden");
     box.classList.toggle("hidden", LM_ROWS.every(([k]) => rows[k].row.classList.contains("hidden")));
   };
-  // after a change the model's view and every row are read again (an import brings animations, a split changes them)
-  const changed = () => { if (view && view.reload) view.reload(); load(); };
+  // after a change the model's view and every row are read again (an import brings animations, a split changes them),
+  // and a squad's card (where its Custom uniform's file is said)
+  const changed = () => { if (view && view.reload) view.reload(); load(); if (box.squadChanged) box.squadChanged(); };
   // RUSE Decoy on just this unit's sounds and animations (StudioApi.decoy_unit, DecoyView.unit): the Sounds and
   // animation row's button
   const decoyButton = (d) => {
@@ -2709,6 +2713,24 @@ function lookMovesBox(u, view, startNew) {
     }
     const squad = Boolean(info.soldiers);
     const paintable = !squad || info.own_copy;  // (Blender's paint buttons come with a squad's custom uniform)
+    // a squad's page: its uniform (Default or Custom) and the paint Repaint in Blender puts on a Custom one; the rest of
+    // this row is on its squad card
+    if (squadPage) {
+      const rest = squad ? [uniformBox(address, info, drawLook, changed, true)] : [];
+      if (squad && paintable) rest.push(repaintBox(address, info, drawLook, changed));
+      if (squad && info.painted && info.painted.length) {
+        rest.push(el("p", { className: paintable ? "small" : "notice warn",
+          textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
+      }
+      hide("soldiers");
+      if (!rest.length) { hide("model"); return; }
+      const label = rows.model.row.querySelector(".lm-what strong");
+      label.textContent = w.uniform_title;
+      label.title = w.tip_squad_uniform_row;
+      put("model", info.own_copy ? w.lm_model_uniform : info.own_model ? w.squad_uniform_now_model
+        : w.squad_uniform_now_default, [], rest);
+      return;
+    }
     const more = [];
     let main = [], model = null;
     // where the mod keeps its own model, or will once it has one, and Show in folder: first under More (keptRow)
@@ -2825,6 +2847,7 @@ function lookMovesBox(u, view, startNew) {
     });
   };
   load();
+  box.reload = load;   // (a squad's card changed its soldiers' models: an import brings animations)
   return box;
 }
 
@@ -3455,10 +3478,12 @@ function keepInSight(box) {
 // a game unit's page: where its own model would go, and the way there (a new unit from it)
 // A squad's uniform (api.model_copy, model_copy_remove: its own copy of its soldiers, the game's squads' too): Default
 // is the game's picture, which other squads and the gun and vehicle crews wear as well (T48: one squad repainted turned
-// every US soldier blue); Custom is this squad's own, and Repaint in Blender paints it.
-function uniformBox(address, info, draw, changed) {
+// every US soldier blue); Custom is this squad's own, and Repaint in Blender paints it. `squadPage`: on a squad's page
+// (squad.js), where its own model is taken out with Back to the game's look on its soldiers' line
+function uniformBox(address, info, draw, changed, squadPage = false) {
   const w = state.words;
-  const box = el("div", { className: "model-own uniform" }, el("h3", { textContent: w.uniform_title }));
+  // (on a squad's page the row itself is named Uniform)
+  const box = el("div", { className: "model-own uniform" }, ...(squadPage ? [] : [el("h3", { textContent: w.uniform_title })]));
   const act = (call, button) => async () => {
     if (!state.mod) { say(w.no_mod, "error"); return; }
     button.disabled = true;
@@ -3479,9 +3504,11 @@ function uniformBox(address, info, draw, changed) {
     // until Use the copied unit's model takes the model out (StudioApi.model_copy refuses as well, naming that button)
     const owned = Boolean(info.own_model);
     const custom = el("button", { type: "button", textContent: w.uniform_custom,
-      title: owned ? w.tip_uniform_custom_own_model : w.tip_uniform_custom, disabled: !state.mod || owned });
+      title: owned ? (squadPage ? w.tip_squad_uniform_custom_own_model : w.tip_uniform_custom_own_model)
+        : w.tip_uniform_custom, disabled: !state.mod || owned });
     custom.addEventListener("click", act("model_copy", custom));
-    box.append(el("p", { className: "muted small", textContent: owned ? w.uniform_own_model : w.uniform_default }),
+    box.append(el("p", { className: "muted small",
+      textContent: owned ? (squadPage ? w.squad_uniform_own_model : w.uniform_own_model) : w.uniform_default }),
       el("div", { className: "actions" }, custom));
     if (!state.mod) box.append(el("p", { className: "notice", textContent: w.no_mod }));
   }
@@ -3842,6 +3869,7 @@ async function showUnit(address, via) {
   if (!knownNumbers) {  // each number's meaning and the game modes' names, before the rows are drawn
     try { knownNumbers = await api().numbers(state.lang); } catch { knownNumbers = null; }
   }
+  const fresh = !state.page || state.page.address !== address;   // (another unit: a squad's page opens at its card)
   state.page = { address, via };
   const inside = u.named ? u.address : via;  // the named unit its parts are opened from
   const mode = u.share ? (u.share.via ? state.mode : "shared") : "";
@@ -3912,14 +3940,29 @@ async function showUnit(address, via) {
   }
   parts.push(notesBox(`obj:${u.address}`));  // (the same note as on its All values page)
   if (u.named || u.new) {  // a unit: its model beside its values, everything about its look and moves under it
+    // a squad: its soldiers first, full width above the values, on its squad card (squad.js; StudioApi.squad_info)
+    const squad = building || !window.SquadView ? null : await window.SquadView.infoOf(u.address);
+    if (state.selected !== address) return;   // (another unit was picked meanwhile)
     const view = unitView(u);
-    let side;
+    let side, top = [];
     if (building) {   // a building's page as before: its Look box, then the two boxes a unit had
       const actions = unitActionsBox(u);  // (which animation each action plays: a new model brings its own)
       side = el("aside", { className: "unit-side" }, view, buildingLookBox(u, copyForm && copyForm.openForm), actions,
         ridesInBox(u));
-    } else side = el("aside", { className: "unit-side" }, view, lookMovesBox(u, view, copyForm && copyForm.openForm));
-    $("detail").replaceChildren(...parts.slice(0, head),
+    } else if (squad && !squad.error) {   // (its 3D view goes on the card; Look and moves keeps its uniform)
+      const looks = lookMovesBox(u, view, copyForm && copyForm.openForm, true);
+      const card = window.SquadView.section(u, squad, { view, looks, startNew: copyForm && copyForm.openForm, fresh });
+      looks.squadChanged = card.reload;
+      side = el("aside", { className: "unit-side" }, looks);
+      top = [card];
+    } else {
+      // (its soldiers couldn't be read: said first, and the page as before)
+      if (squad && squad.error) {
+        parts.splice(head, 0, el("p", { className: "notice warn", textContent: fill(w.squad_unreadable, { why: squad.error }) }));
+      }
+      side = el("aside", { className: "unit-side" }, view, lookMovesBox(u, view, copyForm && copyForm.openForm));
+    }
+    $("detail").replaceChildren(...parts.slice(0, head), ...top,
       el("div", { className: "unit-page" }, el("div", { className: "unit-main" }, ...parts.slice(head)), side));
     return;
   }

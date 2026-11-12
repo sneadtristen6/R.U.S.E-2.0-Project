@@ -47,6 +47,7 @@ starts a quick test copy on its own, to check your work as you go.
 | Make my first mod (10 minutes, start here) | [[Your first mod|Your-First-Mod]] |
 | Change a unit, make a new one, swap its ammo | [[Edit units|Edit-Units]] |
 | Give a new unit or building a 3D model from Blender or any 3D tool, or put one on a map | [[Import a model|Import-a-Model]] |
+| Change a squad's soldiers: the whole squad at once in Blender, or one soldier from a model file | [[Change a squad|Change-a-Squad]] |
 | Add units from WWI to today (WWI, WWII+, Cold War, modern), at their real size and behind research | [[Units from other eras|Units-From-Other-Eras]] |
 | Give one of the game's nations a new name and flag (China in Italy's place) | [[Make a nation into another|Make-a-Nation]] |
 | Change what each building builds and in what order, research, add buildings of my own with their own look | [[Buildings and build menus|Buildings-and-Build-Menus]] |

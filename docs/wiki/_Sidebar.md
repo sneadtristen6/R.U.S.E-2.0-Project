@@ -11,6 +11,7 @@
 - [[Edit units|Edit-Units]]
 - [[Buildings and build menus|Buildings-and-Build-Menus]]
 - [[Import a model|Import-a-Model]]
+- [[Change a squad|Change-a-Squad]]
 - [[Units from other eras|Units-From-Other-Eras]]
 - [[Make a nation into another|Make-a-Nation]]
 - [[Music and sounds|Music-and-Sounds]]
