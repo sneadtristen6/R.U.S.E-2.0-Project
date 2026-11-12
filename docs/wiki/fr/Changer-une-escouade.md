@@ -3,8 +3,9 @@
 > **Pour :** les moddeurs · **Il vous faut :** RUSE Studio, un mod, et Blender (gratuit) pour changer les soldats dans
 > Blender · **Durée :** quelques minutes
 
-Donnez aux GI américains l'allure de Marines, ou à un seul soldat une allure à lui. La page d'une escouade commence par
-ses soldats : la carte d'escouade en haut, puis une ligne pour chaque soldat.
+Donnez aux GI américains l'allure de Marines, donnez à un seul soldat une allure à lui, ou donnez à une escouade plus ou
+moins de soldats. La page d'une escouade commence par ses soldats : la carte d'escouade en haut, puis une ligne pour
+chaque soldat.
 
 ## 1. Votre propre escouade
 
@@ -26,17 +27,34 @@ cliquez sur **Créer**. Sa page s'ouvre sur sa carte.
    reçoit seulement ce qui lui a été fait, et la carte dit qui a changé et qui non.
 6. Cliquez sur **Tester en jeu** pour les voir.
 
-Le jeu donne aux quatre fusiliers de l'escouade de fusiliers US un seul modèle : dans Blender ils sont une seule figure,
-et ce que vous lui faites, les quatre le portent. Le soldat au bazooka est une figure à lui.
+Dans Blender, chaque soldat est une figure à lui : peignez un fusilier, et lui seul change.
 
-## 3. Un soldat depuis un fichier de modèle
+## 3. Un seul soldat
 
-Sous **Chaque soldat**, chaque soldat a une ligne : son image, son nom et combien ils sont (« Fusilier ×4 »), et ce avec
-quoi il tire.
+Sous **Chaque soldat**, chaque soldat a une ligne : son image, son numéro et ce qu'il est (« Soldat 3 : Fusilier »), et
+ce avec quoi il tire.
 
 - **Importer un modèle…** lui donne un modèle depuis un fichier fait dans Blender sur les os du soldat du jeu, ou un
   modèle avec ses propres os (un cheval et son cavalier). Les autres gardent le leur.
-- **Revenir à l'apparence du jeu** retire à nouveau son modèle de votre mod.
+- **Revenir à l'apparence du jeu** rend à lui seul l'apparence du jeu ; les autres soldats gardent la leur.
+- **Retirer** le sort de l'escouade une fois que vous l'avez confirmé : les soldats après lui avancent d'une place, et une
+  apparence à lui est gardée avec vos fichiers Blender.
+
+## 4. Plus ou moins de soldats
+
+Sur la carte, sous le grand bouton :
+
+- **+1 soldat** ajoute tout de suite un fusilier, sans Blender. Il se place avant le soldat au bazooka et ressemble à la
+  plupart de vos fusiliers.
+- **−1 soldat** retire tout de suite le dernier fusilier. Le soldat au bazooka reste le dernier.
+- **Ajouter un soldat** vous laisse choisir qui arrive : **La copie d'un soldat de cette escouade**,
+  **Un soldat d'une autre unité** ou **Un fichier de modèle…**. Blender s'ouvre avec lui seul : changez-le ou non,
+  cliquez sur **Envoyer au R.U.S.E. Studio**, puis sur **Ramener mes changements** dans le Studio, et il rejoint
+  l'escouade avant le soldat au bazooka.
+
+Une escouade a pour l'instant de 2 à 8 soldats, et garde un soldat pour chaque bazooka, lance-flammes ou charge que
+portent ses derniers hommes. Seules les escouades que vous créez ont ces boutons : les escouades du jeu gardent leurs
+soldats.
 
 ## Bon à savoir
 
@@ -47,8 +65,7 @@ quoi il tire.
 - L'uniforme de l'escouade est dans **Apparence et mouvements**, à côté des valeurs : **Uniforme personnalisé** donne à
   l'escouade un uniforme à elle, que **Repeindre dans Blender** peint pour tous les soldats à la fois. Une escouade porte
   soit vos modèles, soit un uniforme.
-- Pas encore essayé en jeu : toute l'escouade dans un seul Blender, chaque soldat ramené à part. Ajouter et retirer des
-  soldats n'est pas encore dans le Studio.
+- Pas encore essayé en jeu : une escouade de 8 ou de 2.
 
 Plus sur les modèles, les os et les animations : [[Importer un modèle|Importer-un-modèle]].
 

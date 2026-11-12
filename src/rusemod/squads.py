@@ -14,12 +14,20 @@ Kept in a mod, in files/models beside the unit's own models:
   soldier wears the squad's last man's figure, its bazooka man's; the others its riflemen's), read as any model file
   of the mod is; the build writes it as the model <unit>__<i> beside the one it was fitted to. A soldier's number is
   digits only, so it is never the name of a kind of soldier (<unit>@bazooka.glb, rusemod.build._unit_of).
+- <unit>@<i>.json with no model beside it, `"look": "game"`: soldier i wears the game's look though the soldiers of
+  his place wear a model of the mod (<unit>.glb for its riflemen): Back to the game's look on him changes him alone
+  (the owner's pick 3, 2026-11-12). write_game_look writes it, mod_game_looks reads it.
+
+Copies of one look are one look (the owner's pick 5, 2026-11-12): look_key tells two files apart only by what shows in
+the game, so a soldier added as a copy of another, or two soldiers painted alike, count once (the squad's far-away
+figure, the look +1 gives a new soldier).
 
 What the build writes for such a squad, and for no other:
 - R2Behaviour: the squad's own copy of that setting, as the mods leave it, with only NbSoldatInGroupeCombat its own;
   the squad's soldiers take it in place of the shared one (a bigger squad spreads out wider: the game's own rule);
-- R2SoldierLooks: one entry per soldier, soldier 1 first: none (he wears what the game gives his place) or a copy of
-  the figure the game gives his place drawing his own model;
+- R2SoldierLooks: one entry per soldier, soldier 1 first: none (he wears what the game gives his place), a copy of
+  the figure the game gives his place drawing his own model, or one drawing the game's model (he wears the game's
+  look);
 - the own-squads game patch in the modded copy (rusemod.gamepatch), through which alone the game reads the two. A game
   without it leaves names it doesn't know aside, so such a mod loads there with the game's own squads (not tried).
 Who fires what stays the game's rule: the weapons whose ammunition has NeedModelChange (a bazooka, a flamethrower, a
@@ -28,7 +36,10 @@ squad keeps at least as many soldiers as it has such weapons.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import os
+import struct
 import tomllib
 from pathlib import Path
 
@@ -42,6 +53,7 @@ OWN_COUNT, OWN_LOOKS = "R2Behaviour", "R2SoldierLooks"    # the squad's own sett
 SQUAD_CLASS = "TInfanterieDescriptor"                      # the only class the game patch gives the two to
 PATCH = "own-squads"                                       # rusemod.gamepatch.PATCHES
 RIFLEMEN, LAST = "GfxDescriptorFusilier", "GfxDescriptorBazooka"   # the figures the game gives the places
+GAME = "game"                 # a soldier's record with no model: he wears the game's look (write_game_look)
 
 
 class SquadError(Exception):
@@ -117,3 +129,86 @@ def join_place(count: int, need: int, has_last: bool) -> int:
     their weapons and looks and the new one stands among the riflemen; at the end when neither."""
     tail = min(count, max(need, 1 if has_last else 0))
     return count + 1 - tail
+
+
+def leave_place(count: int, need: int, has_last: bool) -> int | None:
+    """Who leaves a squad of `count` on −1 (his number): the soldier standing where +1 puts a new one, the last rifleman
+    before the soldiers who fire its NeedModelChange weapons and its last man, so +1 then −1 leaves it as it was; None
+    when every soldier is one of those."""
+    place = join_place(count, need, has_last) - 1
+    return place if place >= 1 else None
+
+
+# --- one look, however many copies (the owner's pick 5) ---
+# what never shows in the game: the names of a model file's pictures, materials, textures and scene (the Studio names
+# them after the soldier, "Rifleman 2 1"), and the fitting's report, which names them again
+_NAMED = ("materials", "images", "textures", "scenes")
+
+
+def look_key(raw: bytes) -> str:
+    """One look, as a key that is the same for two copies of it (a soldier added as a copy of another, two soldiers
+    painted alike in Blender) and differs for two looks: a hash of the model file's JSON part without what never shows in
+    the game (_NAMED's names, the report) and of all its data, each buffer view in order, so its shape, its bones, the
+    model it was fitted to and every picture's bytes count. A file that isn't a .glb: the hash of its bytes."""
+    from .gltf import glb_views
+    try:
+        doc, views = glb_views(raw)
+    except (ValueError, KeyError, TypeError, struct.error):
+        return "bytes:" + hashlib.sha256(raw).hexdigest()
+    doc = json.loads(json.dumps(doc))
+    for part in _NAMED:
+        for item in doc.get(part) or []:
+            if isinstance(item, dict):
+                item.pop("name", None)
+    extras = (doc.get("asset") or {}).get("extras")
+    if isinstance(extras, dict):
+        extras.pop("rusemod_report", None)
+    h = hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":")).encode())
+    for view in views:
+        h.update(len(view).to_bytes(8, "little"))
+        h.update(view)
+    return "look:" + h.hexdigest()
+
+
+def look_key_file(path) -> str | None:
+    """look_key of a model file; None when it can't be read."""
+    try:
+        return look_key(Path(path).read_bytes())
+    except OSError:
+        return None
+
+
+# --- a soldier who wears the game's look though the soldiers of his place wear a model of the mod (pick 3) ---
+def game_record(path) -> bool:
+    """Whether files/models/<unit>@<i>.json, with no model beside it, says soldier i wears the game's look."""
+    path = Path(path)
+    if not path.is_file() or path.with_suffix(".glb").is_file():
+        return False
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and data.get("look") == GAME
+
+
+def write_game_look(folder, unit: str, i: int) -> Path:
+    """Soldier `i` of `unit` wears the game's look (Back to the game's look on him alone, while the soldiers of his place
+    wear a model of the mod): his record files/models/<unit>@<i>.json, no model beside it. Returns its path."""
+    path = Path(folder) / MODELS / f"{soldier_stem(unit, i)}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    part = path.with_name(path.name + ".part")
+    part.write_text(json.dumps({"for": str(int(i)), "look": GAME}, indent=1), encoding="utf-8")
+    os.replace(part, path)
+    return path
+
+
+def mod_game_looks(folder) -> dict:
+    """{a new squad's name: [its soldiers who wear the game's look, by number]} from a mod's files/models/<unit>@<i>.json
+    records with no model beside them (write_game_look's)."""
+    root = Path(folder) / MODELS
+    found: dict = {}
+    for f in (sorted(root.glob("*@*.json")) if root.is_dir() else ()):
+        s = soldier_of(f.stem)
+        if s is not None and game_record(f):
+            found.setdefault(s[0], []).append(s[1])
+    return {unit: sorted(numbers) for unit, numbers in found.items()}

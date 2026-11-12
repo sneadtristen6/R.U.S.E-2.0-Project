@@ -16,11 +16,12 @@
 // soldier and Remove are drawn only when squad_info's "can" says so, and when it can't, its "limits" say why in a plain
 // sentence (at most 8 soldiers for now, at least 2: the owner's picks of 2026-11-12). Each squad its own soldiers, each
 // his own look: one line per soldier ("Soldier 3: Rifleman"); Add a soldier opens Blender with just him, and he joins
-// the squad when Bring my changes back brings him. The squad's uniform stays in the Look and moves section beside the
-// values (app.js lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender,
-// squad_blender_back, soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), look,
-// units. Uses app.js's el, fill, say, problem, api, state, keptRow, fitBox and testInGame; app.js's showUnit puts it on
-// the page when squad_info answers for the unit.
+// the squad when Bring my changes back brings him; −1 and +1 above it take one away or add one at once, no Blender
+// (the owner, 2026-11-12). The squad's uniform stays in the Look and moves section beside the values (app.js
+// lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender, squad_blender_back,
+// soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), soldier_plus,
+// soldier_minus, look, units. Uses app.js's el, fill, say, problem, api, state, keptRow, fitBox and testInGame;
+// app.js's showUnit puts it on the page when squad_info answers for the unit.
 (function () {
   "use strict";
 
@@ -166,6 +167,7 @@
         parts.push(el("p", { className: "squad-why", textContent: info.why_not || w.squad_game }),
           el("div", { className: "squad-go" }, go));
       } else parts.push(...blenderParts());
+      if (mine()) parts.push(countParts());
       if (mine() && info.can && info.can.add) parts.push(...addParts());
       // (why there's no Add a soldier: the most soldiers a squad has, said)
       else if (mine() && info.limits && info.limits.add) parts.push(el("p", { className: "squad-limit", textContent: info.limits.add }));
@@ -343,12 +345,48 @@
         try {
           const r = await api().soldier_remove(address, s.id);
           S.sure = null;
-          say(fill(w.squad_removed, { number: s.number != null ? s.number : s.id, n: r && r.count != null ? r.count : "" }),
-            "ok");
+          say([fill(w.squad_removed, { number: s.number != null ? s.number : s.id, n: r && r.count != null ? r.count : "" }),
+            r && r.copy_back ? w.squad_reset_uniform : ""].filter(Boolean).join(" "), "ok");
           await reload(true);
         } catch (err) { problem(err); yes.disabled = false; }
       });
       return [el("span", { className: "squad-sure", textContent: fill(w.squad_remove_sure, { who: s.label }) }), yes, no];
+    };
+
+    // --- −1 and +1 on the card, at once, no Blender (the owner, 2026-11-12: "I would like to add the +1 button because
+    // that seems a lot easier than 4 steps to add 1 unit"; "You should be able to subtract from the base unit. And
+    // add."): +1 adds a rifleman before the bazooka man, looking like most of the riflemen; −1 takes out the soldier
+    // standing there. Each only when squad_info's "can" says so (its limits say why not: Add a soldier's on the card,
+    // Remove's under the soldiers) ---
+    const countParts = () => {
+      const w = W(), can = S.info.can || {};
+      const minus = el("button", { type: "button", className: "squad-count", textContent: w.squad_minus,
+        title: w.tip_squad_minus, disabled: S.busy || !can.remove });
+      minus.addEventListener("click", () => countBy(-1));
+      const plus = el("button", { type: "button", className: "squad-count", textContent: w.squad_plus,
+        title: w.tip_squad_plus, disabled: S.busy || !can.add });
+      plus.addEventListener("click", () => countBy(1));
+      return el("div", { className: "squad-go" }, minus, plus);
+    };
+
+    // one soldier more or fewer, said on the card and in a pop-up: how many now, and for −1 a look of his own kept
+    // aside and a Custom uniform that came back
+    const countBy = async (step) => {
+      const w = W();
+      S.busy = true;
+      S.adding = null;
+      drawCard();
+      let r = null;
+      try { r = step > 0 ? await api().soldier_plus(address) : await api().soldier_minus(address); }
+      catch (err) { problem(err); }
+      S.busy = false;
+      if (!r) { draw(); return; }
+      const text = step > 0 ? fill(w.squad_added, { n: r.count })
+        : [fill(w.squad_removed, { number: r.removed, n: r.count }), r.look_kept ? w.squad_minus_kept : "",
+          r.copy_back ? w.squad_reset_uniform : ""].filter(Boolean).join(" ");
+      S.said = el("p", { className: "squad-result", role: "status", textContent: text });
+      say(text, "ok");
+      await reload(true);
     };
 
     // --- Add a soldier on the card (squad_info's can.add; its limits.add says why not): a copy of one in this squad, a

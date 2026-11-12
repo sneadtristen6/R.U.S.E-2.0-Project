@@ -3,8 +3,8 @@
 > **Per:** modder · **Ti serve:** RUSE Studio, una mod e Blender (gratis) per cambiare i soldati in Blender ·
 > **Tempo:** pochi minuti
 
-Fai sembrare i GI americani dei Marines, o dai a un solo soldato un aspetto suo. La pagina di una squadra comincia dai
-suoi soldati: la scheda della squadra in alto, poi una riga per ogni soldato.
+Fai sembrare i GI americani dei Marines, dai a un solo soldato un aspetto suo, o dai a una squadra più o meno soldati.
+La pagina di una squadra comincia dai suoi soldati: la scheda della squadra in alto, poi una riga per ogni soldato.
 
 ## 1. La tua squadra
 
@@ -26,17 +26,33 @@ scheda.
    che è stato fatto a lui, e la scheda dice chi è cambiato e chi no.
 6. Clicca **Prova in gioco** per vederli.
 
-Il gioco dà ai quattro fucilieri della squadra di fucilieri USA un solo modello: in Blender sono una sola figura, e ciò che
-le fai lo indossano tutti e quattro. L'uomo col bazooka è una figura a sé.
+In Blender ogni soldato è una figura a sé: dipingi un fuciliere, e cambia solo lui.
 
-## 3. Un soldato da un file di modello
+## 3. Un solo soldato
 
-Sotto **Ogni soldato**, ogni soldato ha una riga: la sua immagine, il suo nome e quanti sono («Fuciliere ×4»), e con che
-cosa spara.
+Sotto **Ogni soldato**, ogni soldato ha una riga: la sua immagine, il suo numero e che cos'è («Soldato 3: Fuciliere»), e
+con che cosa spara.
 
 - **Importa un modello…** gli dà un modello da un file fatto in Blender sulle ossa del soldato del gioco, o un modello con
   ossa proprie (un cavallo con cavaliere). Gli altri tengono il loro.
-- **Torna all'aspetto del gioco** toglie di nuovo il suo modello dalla tua mod.
+- **Torna all'aspetto del gioco** ridà solo a lui l'aspetto del gioco; gli altri soldati tengono il loro.
+- **Togli** lo toglie dalla squadra quando lo confermi: i soldati dopo di lui salgono di un posto, e un suo aspetto
+  proprio viene tenuto con i tuoi file di Blender.
+
+## 4. Più o meno soldati
+
+Sulla scheda, sotto il pulsante grande:
+
+- **+1 soldato** aggiunge subito un fuciliere, senza Blender. Si mette prima del soldato con bazooka e ha l'aspetto della
+  maggior parte dei tuoi fucilieri.
+- **−1 soldato** toglie subito l'ultimo fuciliere. Il soldato con bazooka resta l'ultimo.
+- **Aggiungi un soldato** ti fa scegliere chi arriva: **La copia di un soldato di questa squadra**,
+  **Un soldato di un'altra unità** o **Un file di modello…**. Blender si apre solo con lui: cambialo o no, clicca
+  **Invia al R.U.S.E. Studio**, poi **Riporta le mie modifiche** nello Studio, e lui entra nella squadra prima del
+  soldato con bazooka.
+
+Per ora una squadra ha da 2 a 8 soldati, e tiene un soldato per ogni bazooka, lanciafiamme o carica che portano i suoi
+ultimi uomini. Solo le squadre che crei tu hanno questi pulsanti: le squadre del gioco tengono i loro soldati.
 
 ## Buono a sapersi
 
@@ -47,8 +63,7 @@ cosa spara.
 - L'uniforme della squadra è in **Aspetto e movimenti**, accanto ai valori: **Uniforme personalizzata** dà alla squadra
   un'uniforme tutta sua, che **Ridipingi in Blender** dipinge per tutti i soldati insieme. Una squadra indossa o i tuoi
   modelli o un'uniforme.
-- Non ancora provato in gioco: tutta la squadra in un solo Blender, ogni soldato riportato da solo. Aggiungere e togliere
-  soldati non è ancora nello Studio.
+- Non ancora provato in gioco: una squadra di 8 o di 2.
 
 Altro su modelli, ossa e animazioni: [[Importare un modello|Importare-un-modello]].
 

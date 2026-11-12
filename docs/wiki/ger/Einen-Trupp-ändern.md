@@ -3,8 +3,9 @@
 > **Für:** Modder · **Du brauchst:** RUSE Studio, einen Mod und Blender (kostenlos), um Soldaten in Blender zu ändern ·
 > **Dauer:** ein paar Minuten
 
-Lass die amerikanischen GIs wie Marines aussehen, oder gib einem einzelnen Soldaten ein eigenes Aussehen. Die Seite eines
-Trupps beginnt mit seinen Soldaten: oben die Trupp-Karte, darunter eine Zeile für jeden Soldaten.
+Lass die amerikanischen GIs wie Marines aussehen, gib einem einzelnen Soldaten ein eigenes Aussehen, oder gib einem
+Trupp mehr oder weniger Soldaten. Die Seite eines Trupps beginnt mit seinen Soldaten: oben die Trupp-Karte, darunter eine
+Zeile für jeden Soldaten.
 
 ## 1. Dein eigener Trupp
 
@@ -27,17 +28,35 @@ bei seiner Karte.
    bekommt nur, was an ihm gemacht wurde, und die Karte sagt, wer sich geändert hat und wer nicht.
 6. Klicke auf **Im Spiel testen**, um sie zu sehen.
 
-Das Spiel gibt den vier Schützen des US-Schützentrupps ein Modell: In Blender sind sie eine Figur, und was du daran
-machst, tragen alle vier. Der Bazooka-Mann ist eine eigene Figur.
+In Blender ist jeder Soldat eine eigene Figur: Bemalst du einen Schützen, ändert sich nur er.
 
-## 3. Ein Soldat aus einer Modelldatei
+## 3. Ein einzelner Soldat
 
-Unter **Jeder Soldat** hat jeder Soldat eine Zeile: sein Bild, sein Name und wie viele es sind („Schütze ×4“) und womit
-er feuert.
+Unter **Jeder Soldat** hat jeder Soldat eine Zeile: sein Bild, seine Nummer und was er ist („Soldat 3: Schütze“) und
+womit er feuert.
 
 - **Ein Modell importieren…** gibt ihm ein Modell aus einer Datei, in Blender auf den Knochen des Spielsoldaten gebaut,
   oder ein Modell mit eigenen Knochen (ein Pferd mit Reiter). Die anderen behalten ihres.
-- **Zurück zum Aussehen aus dem Spiel** nimmt sein Modell wieder aus deinem Mod.
+- **Zurück zum Aussehen aus dem Spiel** gibt nur ihm wieder das Aussehen aus dem Spiel; die anderen Soldaten behalten
+  ihres.
+- **Entfernen** nimmt ihn aus dem Trupp, sobald du es bestätigst: Die Soldaten nach ihm rücken um eins vor, und ein
+  eigenes Aussehen von ihm bleibt bei deinen Blender-Dateien.
+
+## 4. Mehr oder weniger Soldaten
+
+Auf der Karte, unter der großen Schaltfläche:
+
+- **+1 Soldat** fügt sofort einen Schützen hinzu, ohne Blender. Er steht vor dem Bazooka-Schützen und sieht aus wie die
+  meisten deiner Schützen.
+- **−1 Soldat** nimmt sofort den letzten Schützen heraus. Der Bazooka-Schütze bleibt der Letzte.
+- **Einen Soldaten hinzufügen** lässt dich wählen, wer dazukommt: **Eine Kopie eines Soldaten dieses Trupps**,
+  **Ein Soldat aus einer anderen Einheit** oder **Eine Modelldatei…**. Blender öffnet sich nur mit ihm: Ändere ihn oder
+  nicht, klicke auf **An das R.U.S.E. Studio senden**, dann im Studio auf **Meine Änderungen zurückholen**, und er kommt
+  vor dem Bazooka-Schützen dazu.
+
+Ein Trupp hat vorerst 2 bis 8 Soldaten und behält einen Soldaten für jede Bazooka, jeden Flammenwerfer und jede
+Sprengladung, die seine letzten Männer tragen. Nur Trupps, die du machst, haben diese Schaltflächen: Die Trupps aus dem
+Spiel behalten ihre Soldaten.
 
 ## Gut zu wissen
 
@@ -48,8 +67,7 @@ er feuert.
 - Die Uniform des Trupps ist in **Aussehen und Bewegung**, neben den Werten: **Eigene Uniform** gibt dem Trupp eine eigene
   Uniform, die **In Blender neu bemalen** für alle Soldaten auf einmal bemalt. Ein Trupp trägt entweder deine Modelle
   oder eine Uniform.
-- Im Spiel noch nicht ausprobiert: der ganze Trupp in einem Blender, jeder Soldat für sich zurückgeholt. Soldaten
-  hinzufügen und entfernen gibt es im Studio noch nicht.
+- Im Spiel noch nicht ausprobiert: ein Trupp mit 8 oder mit 2 Soldaten.
 
 Mehr über Modelle, Knochen und Animationen: [[Ein Modell importieren|Ein-Modell-importieren]].
 

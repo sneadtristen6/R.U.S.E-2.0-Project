@@ -3,8 +3,9 @@
 > **Dla:** modderów · **Potrzebujesz:** RUSE Studio, moda i Blendera (za darmo), żeby zmieniać żołnierzy w Blenderze ·
 > **Czas:** kilka minut
 
-Spraw, by amerykańscy GI wyglądali jak marines, albo daj jednemu żołnierzowi własny wygląd. Strona oddziału zaczyna się od
-jego żołnierzy: na górze karta oddziału, pod nią wiersz dla każdego żołnierza.
+Spraw, by amerykańscy GI wyglądali jak marines, daj jednemu żołnierzowi własny wygląd albo daj oddziałowi więcej lub
+mniej żołnierzy. Strona oddziału zaczyna się od jego żołnierzy: na górze karta oddziału, pod nią wiersz dla każdego
+żołnierza.
 
 ## 1. Własny oddział
 
@@ -26,16 +27,32 @@ karcie **Nowa jednostka z tej…**, nadaj oddziałowi nazwę i kliknij **Utwórz
    nim, a karta mówi, kto się zmienił, a kto nie.
 6. Kliknij **Testuj w grze**, żeby ich zobaczyć.
 
-Gra daje czterem strzelcom amerykańskiego oddziału strzelców jeden model: w Blenderze są jedną figurą, a to, co z nią
-zrobisz, noszą wszyscy czterej. Żołnierz z bazooką to osobna figura.
+W Blenderze każdy żołnierz jest osobną figurą: pomaluj jednego strzelca, a zmieni się tylko on.
 
-## 3. Jeden żołnierz z pliku modelu
+## 3. Jeden żołnierz
 
-Pod **Każdy żołnierz** każdy żołnierz ma wiersz: jego obrazek, nazwę i liczbę („Strzelec ×4”) oraz to, z czego strzela.
+Pod **Każdy żołnierz** każdy żołnierz ma wiersz: jego obrazek, numer i to, kim jest („Żołnierz 3: Strzelec”), oraz to, z
+czego strzela.
 
 - **Importuj model…** daje mu model z pliku zrobionego w Blenderze na kościach żołnierza z gry albo model z własnymi
   kośćmi (koń z jeźdźcem). Pozostali zachowują swój.
-- **Wróć do wyglądu z gry** znowu usuwa jego model z twojego moda.
+- **Wróć do wyglądu z gry** przywraca wygląd z gry tylko jemu; pozostali żołnierze zachowują swój.
+- **Usuń** zabiera go z oddziału, gdy to potwierdzisz: żołnierze za nim przesuwają się o jedno miejsce, a jego własny
+  wygląd zostaje przy twoich plikach Blendera.
+
+## 4. Więcej lub mniej żołnierzy
+
+Na karcie, pod dużym przyciskiem:
+
+- **+1 żołnierz** od razu dodaje strzelca, bez Blendera. Staje przed żołnierzem z bazooką i wygląda jak większość twoich
+  strzelców.
+- **−1 żołnierz** od razu zabiera ostatniego strzelca. Żołnierz z bazooką zostaje ostatni.
+- **Dodaj żołnierza** pozwala wybrać, kto dołącza: **Kopia żołnierza z tego oddziału**, **Żołnierz z innej jednostki**
+  albo **Plik modelu…**. Blender otworzy się tylko z nim: zmień go albo nie, kliknij **Wyślij do R.U.S.E. Studio**, potem
+  w Studiu **Przenieś moje zmiany**, a on dołączy przed żołnierzem z bazooką.
+
+Oddział ma na razie od 2 do 8 żołnierzy i zachowuje jednego żołnierza na każdą bazookę, miotacz ognia albo ładunek, które
+niosą jego ostatni ludzie. Te przyciski mają tylko oddziały, które tworzysz: oddziały z gry zachowują swoich żołnierzy.
 
 ## Dobrze wiedzieć
 
@@ -45,8 +62,7 @@ Pod **Każdy żołnierz** każdy żołnierz ma wiersz: jego obrazek, nazwę i li
   ostatnio.
 - Mundur oddziału jest w **Wygląd i ruch**, obok wartości: **Własny mundur** daje oddziałowi własny mundur, który
   **Przemaluj w Blenderze** maluje wszystkim żołnierzom naraz. Oddział nosi albo twoje modele, albo mundur.
-- Jeszcze niewypróbowane w grze: cały oddział w jednym Blenderze, każdy żołnierz przeniesiony osobno. Dodawania i usuwania
-  żołnierzy nie ma jeszcze w Studiu.
+- Jeszcze niewypróbowane w grze: oddział z 8 albo z 2 żołnierzami.
 
 Więcej o modelach, kościach i animacjach: [[Importowanie modelu|Importowanie-modelu]].
 

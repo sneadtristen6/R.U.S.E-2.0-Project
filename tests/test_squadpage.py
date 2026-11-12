@@ -26,7 +26,8 @@ WORDS = UI.parent / "words.toml"
 # the Studio's calls the page draws (the contracts' section 4): Phase 1's (agent B's), and a later step's (agent D's)
 PHASE1 = {"squad_info": ["address", "lang"], "squad_blender": ["address", "lang"], "squad_blender_back": ["address", "lang"],
           "soldier_import": ["address", "soldier", "file", "size"], "soldier_reset": ["address", "soldier"]}
-LATER = {"soldier_add": ["address", "source", "of", "unit", "file"], "soldier_remove": ["address", "soldier"]}
+LATER = {"soldier_add": ["address", "source", "of", "unit", "file"], "soldier_remove": ["address", "soldier"],
+         "soldier_plus": ["address"], "soldier_minus": ["address"]}   # (−1 and +1: the owner, 2026-11-12)
 
 
 def inner(js: str, name: str) -> str:
@@ -90,7 +91,7 @@ class TheWords(unittest.TestCase):
             "squad_uniform_own_model": ("squad_reset",), "tip_squad_uniform_custom_own_model": ("squad_reset",),
             "squad_both": ("uniform_default_again", "uniform_title", "squad_reset", "test_in_game"),
             "squad_more_bones": ("squad_import",),
-            "squad_add_opened": ("blender_model_send", "squad_blender_back")}
+            "squad_add_opened": ("blender_model_send", "squad_blender_back"), "squad_minus_kept": ("squad_more",)}
         for key, labels in names.items():
             for lang in LANGS:
                 for label in labels:
@@ -191,6 +192,33 @@ class ThePage(unittest.TestCase):
         self.assertNotIn("reload(", add)
         self.assertIn("r.joined ? fill(w.squad_added, { n: r.count })", inner(self.squad, "bringBack"))
 
+    def test_minus_one_and_plus_one_at_once(self):
+        """−1 and +1 on the card, no Blender (the owner, 2026-11-12: "I would like to add the +1 button because that
+        seems a lot easier than 4 steps to add 1 unit"; "You should be able to subtract from the base unit. And add."),
+        each only when the Studio says the squad can (Remove's and Add a soldier's "can"), what changed said."""
+        card = inner(self.squad, "drawCard")
+        self.assertIn("if (mine()) parts.push(countParts());", card)
+        self.assertLess(card.index("countParts()"), card.index("addParts()"))   # (above Add a soldier, below Blender's)
+        count = inner(self.squad, "countParts")
+        self.assertIn("textContent: w.squad_minus,\n        title: w.tip_squad_minus, disabled: S.busy || !can.remove", count)
+        self.assertIn("textContent: w.squad_plus,\n        title: w.tip_squad_plus, disabled: S.busy || !can.add", count)
+        self.assertLess(count.index("w.squad_minus"), count.index("w.squad_plus"))
+        by = inner(self.squad, "countBy")
+        self.assertIn("step > 0 ? await api().soldier_plus(address) : await api().soldier_minus(address)", by)
+        self.assertIn("fill(w.squad_added, { n: r.count })", by)
+        self.assertIn("fill(w.squad_removed, { number: r.removed, n: r.count }), r.look_kept ? w.squad_minus_kept", by)
+        self.assertIn("r.copy_back ? w.squad_reset_uniform", by)
+        self.assertIn("await reload(true);", by)
+        self.assertEqual(len(re.findall(r"\bcountParts\(\)", self.squad)), 1)
+        for call in ("soldier_plus", "soldier_minus"):
+            self.assertEqual(len(re.findall(rf"api\(\)\.{call}\(", self.squad)), 1)
+        # the stand-in page: +1 before the bazooka man, −1 the soldier standing there, as Remove takes one out
+        fake = read("fake-api.js")
+        self.assertIn("const at = list.includes(\"bazooka\") ? list.length : list.length + 1;",
+                      fake[fake.index("soldier_plus: async"):])
+        self.assertIn("window.pywebview.api.soldier_remove(address, String(list.includes(\"bazooka\") ? list.length - 1 "
+                      ": list.length));", fake)
+
     def test_a_game_squad_says_why_and_offers_its_way_to_a_new_unit(self):
         card = inner(self.squad, "drawCard")
         self.assertIn("textContent: w.model_want_button,\n          title: w.tip_model_want, disabled: !page.startNew", card)
@@ -275,7 +303,10 @@ class TheWiki(unittest.TestCase):
              "fa": "fa/تغییر-جوخه"}
     BUTTONS = ("squad_blender", "squad_blender_back", "squad_import", "squad_reset", "squad_each", "squad_more",
                "where_show", "look_get_blender", "look_choose_blender", "blender_model_send", "test_in_game",
-               "model_want_button", "create", "units_tab", "uniform_custom", "unit_look", "lm_title")
+               "model_want_button", "create", "units_tab", "uniform_custom", "unit_look", "lm_title",
+               # (a soldier more or fewer: the owner, 2026-11-12, "Yes, update it" to the page's own update)
+               "squad_plus", "squad_minus", "squad_add", "squad_add_copy", "squad_add_unit", "squad_add_file",
+               "squad_remove")
 
     def test_its_buttons_named_as_the_page_names_them(self):
         wiki = UI.parents[2] / "docs" / "wiki"

@@ -36,8 +36,8 @@ section 2 (#4463065).
   side colour where low, shine where high) goes back in with him: Blender's export drops it (it keeps no picture a
   material doesn't show), so the alpha the Studio gave each material comes back by its name (rusemod.modelin reads it
   from the material's rusemod_alpha_texture).
-- soldier_import, soldier_reset: Import model and Use the copied unit's model for one soldier (model_import and
-  model_import_remove with his kind; the riflemen: none), their answers as they are.
+- soldier_import, soldier_reset: Import model for one soldier (model_import with his kind), and Back to the game's look
+  for him alone (soldier_reset's note: the owner's pick 3, 2026-11-12).
 The calls the d43f0c6d page used (model_blender, model_blender_back with a kind) stay as they were.
 
 Each squad its own number of soldiers, each soldier his own look (the squad work's Phases 2-3, rusemod.squads; the
@@ -54,6 +54,11 @@ on its page):
   stays last), the soldiers after him one number on. soldier_remove: the soldier goes, his own look kept aside in the
   squad's Blender folder (removed/), the soldiers after him one number down. Never fewer than 2 soldiers, nor than the
   weapons its last soldiers fire one each; never more than 8; each refused in a plain sentence.
+- soldier_plus (+1) and soldier_minus (−1): a soldier more or fewer at once, no Blender (the owner, 2026-11-12: "I
+  would like to add the +1 button because that seems a lot easier than 4 steps to add 1 unit", and the same for
+  taking one away). +1 joins where Add a soldier's would, wearing the look most of the riflemen wear (copies of one
+  look count as one: rusemod.squads.look_key, the owner's pick 5); −1 takes out the soldier standing there
+  (rusemod.squads.leave_place), as Remove does, so +1 then −1 leaves the squad as it was.
 - soldier_blender: Blender with one soldier alone; squad_blender with every soldier."""
 from __future__ import annotations
 
@@ -412,8 +417,10 @@ class SquadBlenderCalls:
             own = self._kind_file(address, ln["kind"]) if own_unit else None
             mine = own is not None and own.is_file()
             # the model file he wears: his own look, else his place's kind's model in the mod (the riflemen's, the
-            # bazooka man's), else none (the game's)
-            worn = own if mine else (self._kind_file(address, ln["base"]) if own_unit else None)
+            # bazooka man's) unless he wears the game's look (Back to the game's look on him alone), else none (the
+            # game's)
+            game_look = own is not None and not mine and sq.game_record(own.with_suffix(".json"))
+            worn = own if mine else (self._kind_file(address, ln["base"]) if own_unit and not game_look else None)
             has = worn is not None and worn.is_file()
             record = _read(worn.with_suffix(".json")) if has else {}
             src = str(record.get("from") or "") if has else ""
@@ -481,10 +488,12 @@ class SquadBlenderCalls:
         from rusemod import gltf
         from rusemod.modelin import glb_document
         from .api import StudioError
+        from rusemod import squads as sq
         sid = line["id"]
         folder = work / "start" / sid
         target = file if file is not None else self._kind_file(address, line["kind"])
-        if file is None and "base" in line and (target is None or not target.is_file()):
+        if file is None and "base" in line and (target is None or not target.is_file()) \
+                and not (target is not None and sq.game_record(target.with_suffix(".json"))):
             target = self._kind_file(address, line["base"])   # (what he wears: his place's kind's model in the mod)
         taken = (state.get("taken") or {}).get(sid) or {}
         kept = work / "kept" / f"{target.stem}.glb" if target is not None else None
@@ -787,17 +796,45 @@ class SquadBlenderCalls:
         return self.model_import(address, file, size, kind=kind) if kind else self.model_import(address, file, size)
 
     def soldier_reset(self, address: str, soldier: str) -> dict:
-        """Back to the game's look for one soldier: model_import_remove with his kind (the riflemen: none, which takes
-        the other kinds on bones of their own with them, "kinds_out"), its answer as it is. A soldier with a look of
-        his own (one line per soldier: rusemod.squads) loses his own; one wearing his place's kind's model in the mod
-        (a squad's riflemen's or bazooka man's, from before each soldier had his own) that one, as before."""
+        """Back to the game's look for one soldier, him alone (the owner's pick 3, 2026-11-12: the button says only he
+        changes): his own look leaves the mod (model_import_remove with his number), and when the soldiers of his place
+        wear a model of the mod (the riflemen's or the bazooka man's, from before each soldier had his own) he wears the
+        game's look all the same (rusemod.squads.write_game_look), the others keeping theirs. Once no soldier wears that
+        model any more, it leaves the mod as before (model_import_remove with his place's kind: what goes with it in
+        "kinds_out", by soldier number, and a Custom uniform it took the place of back in "copy_back"), and so do the
+        records of the soldiers who wore the game's look in its place. Returns model_import_remove's answer, with
+        "game_look": whether he wears the game's look by his record."""
+        from rusemod import squads as sq
         kind = self._soldier_kind(address, soldier)
-        line = next((ln for ln in self._squad_lines(address) if ln["id"] == soldier), None)
-        if line is not None and kind is not None:
-            own = self._kind_file(address, kind)
-            if own is None or not own.is_file():
-                kind = line["base"]   # (none: the riflemen's, the unit's own model)
-        return self.model_import_remove(address, kind=kind) if kind else self.model_import_remove(address)
+        lines = self._squad_lines(address)
+        line = next(ln for ln in lines if ln["id"] == soldier)
+        own = self._kind_file(address, kind)
+        res = self.model_import_remove(address, kind=kind) if own is not None and own.is_file() else None
+        place = self._kind_file(address, line["base"])
+        if place is None or not place.is_file():
+            return {**(res or {**self.look(address), "model_out": False, "copy_back": False, "kinds_out": [],
+                               "kind": kind}), "game_look": False}
+
+        def wears_place(ln) -> bool:   # (no look of his own and no record saying he wears the game's)
+            f = self._kind_file(address, ln["kind"])
+            return not f.is_file() and not sq.game_record(f.with_suffix(".json"))
+        if any(ln["id"] != soldier and ln["base"] == line["base"] and wears_place(ln) for ln in lines):
+            sq.write_game_look(self._mod_dir(), self._own_model_file(address).stem, int(kind))
+            return {**(res or {**self.look(address), "model_out": True, "copy_back": False, "kinds_out": [],
+                               "kind": kind}), "game_look": True}
+        # the last soldier wearing it: it leaves the mod, and the records saying who wore the game's look in its place
+        gone = self.model_import_remove(address, kind=line["base"]) if line["base"] else \
+            self.model_import_remove(address)
+        for ln in lines:
+            f = self._kind_file(address, ln["kind"]).with_suffix(".json")
+            if ln["base"] == line["base"] and sq.game_record(f):
+                f.unlink(missing_ok=True)
+        # (what went with it, by the soldiers who wore it: a kind's model is worn by the soldiers of its place)
+        out = []
+        for k in gone.get("kinds_out") or []:
+            out += [k] if str(k).isdigit() else [ln["id"] for ln in lines if ln["base"] == k]
+        return {**gone, "model_out": True, "kinds_out": list(dict.fromkeys(out)), "kind": kind,
+                "copy_back": bool(gone.get("copy_back") or (res or {}).get("copy_back")), "game_look": False}
 
     # --- a soldier more or less (the squad work's Phases 2-3: rusemod.squads) ---
     def _page_lang(self) -> str:
@@ -823,8 +860,10 @@ class SquadBlenderCalls:
         from rusemod import squads as sq
         main = self._own_model_file(address)
         places = [main.parent, work / "kept"]
-        have = sorted({s[1] for folder in places if folder.is_dir() for f in folder.glob(f"{main.stem}@*.glb")
-                       if (s := sq.soldier_of(f.stem)) is not None and s[0] == main.stem and s[1] >= start})
+        # (a record alone moves too: a soldier who wears the game's look, rusemod.squads.write_game_look)
+        have = sorted({s[1] for folder in places if folder.is_dir() for f in folder.glob(f"{main.stem}@*")
+                       if f.suffix.lower() in (".glb", ".json") and (s := sq.soldier_of(f.stem)) is not None
+                       and s[0] == main.stem and s[1] >= start})
         for i in (reversed(have) if step > 0 else have):
             j = i + step
             for folder in places:
@@ -990,6 +1029,8 @@ class SquadBlenderCalls:
         set_aside = self._set_aside(work, state)
         main = self._own_model_file(address)
         aside = work / time.strftime(f"removed-%Y%m%d-%H%M%S-soldier{i}")
+        # a Custom uniform his look took the place of waits in his record (model_import): it stays in the mod
+        uniform = _read(main.with_name(f"{main.stem}@{i}.json")).get("copy_kept")
         for f in (main.with_name(f"{main.stem}@{i}.glb"), main.with_name(f"{main.stem}@{i}.json"),
                   work / "kept" / f"{main.stem}@{i}.glb"):
             if f.is_file():
@@ -999,6 +1040,126 @@ class SquadBlenderCalls:
         self._renumber(address, work, state, i + 1, -1)
         self._write_count(address, n - 1)
         _write(work / "state.json", state)
+        copy_back = self._uniform_on(address, uniform) if isinstance(uniform, str) else False
+        # (a look of his own kept aside: said, so the page can say where)
+        had_look = (aside / f"{main.stem}@{i}.glb").is_file()
         return {**self.squad_info(address, lang), "removed": str(i),
                 "set_aside": str(set_aside) if set_aside is not None else None,
-                "kept_aside": str(aside) if aside.is_dir() else None}
+                "kept_aside": str(aside) if aside.is_dir() else None, "look_kept": had_look,
+                "copy_back": copy_back}
+
+    def _uniform_on(self, address: str, kept: str) -> bool:
+        """A Custom uniform that waited in a record that left the mod (a soldier taken out): into the record of a model
+        of the squad still in the mod, as model_import_remove keeps it, or back as the squad's uniform when none is
+        left (it comes back once no model of yours is left: the page's words). Returns whether it came back."""
+        from rusemod.squads import soldier_of
+        own = self._own_model_file(address)
+        kinds = self._soldier_kinds(address)
+        left = [k for k in kinds if (f := self._kind_file(address, k)) is not None and f.is_file()] if kinds \
+            else ([None] if own.is_file() else [])
+        left += [str(s[1]) for f in (sorted(own.parent.glob(f"{own.stem}@*.glb")) if own.parent.is_dir() else ())
+                 if (s := soldier_of(f.stem)) is not None and s[0] == own.stem]
+        if left:
+            first = left[0]
+            self._keep_in_model_record(address, kept, None if kinds and first == next(iter(kinds)) else first)
+            return False
+        copy = self._own_copy_file(address)
+        if copy is None or copy.is_file():
+            return False
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(kept, encoding="utf-8")
+        return True
+
+    # --- +1 and −1: a soldier more or less at once, no Blender (the owner, 2026-11-12: "I would like to add the +1
+    # button because that seems a lot easier than 4 steps to add 1 unit"; "Should also be able to subtract ... You should
+    # be able to subtract from the base unit. And add.") ---
+    def _rifle_looks(self, address: str, n: int, has_last: bool) -> list:
+        """The squad's soldiers who stand at a riflemen's place, first to last, each with the look he wears: [(his
+        number, its key, how)] where how is "own" (his own look file), "game" (his record says he wears the game's look)
+        or "place" (what his place gives: the riflemen's model in the mod, else the game's). Copies of one look have one
+        key (rusemod.squads.look_key: the owner's pick 5)."""
+        from rusemod import squads as sq
+        from rusemod.unitmodel import model_key
+        out, keys = [], {}
+
+        def key(path: Path) -> str:
+            if path not in keys:
+                keys[path] = sq.look_key_file(path) or f"file:{path}"
+            return keys[path]
+        for ln in self._squad_lines(address):
+            i = ln["number"]
+            if sq.place_figure(i, n, has_last) != sq.RIFLEMEN:
+                continue
+            own = self._kind_file(address, ln["kind"])
+            game = f"game:{model_key(ln['model'])}" if ln.get("model") else "game:"
+            if own.is_file():
+                out.append((i, key(own), "own"))
+            elif sq.game_record(own.with_suffix(".json")):
+                out.append((i, game, "game"))
+            else:
+                place = self._kind_file(address, ln["base"])
+                out.append((i, key(place) if place is not None and place.is_file() else game, "place"))
+        return out
+
+    def soldier_plus(self, address: str) -> dict:
+        """+1: one soldier more at once, no Blender. He joins where Add a soldier puts one (rusemod.squads.join_place:
+        before the bazooka man), wearing the look most of the squad's riflemen wear (copies of one look counted as one,
+        the owner's pick 5; between looks as many wear, the lowest-numbered of them's, as the far-away figure is chosen):
+        a copy of that soldier's own look file, the game's look, or what his place gives. Refused, in words, as Add a
+        soldier is: not a squad of this mod's own, a squad of 8 already, the squad open in Blender. A sending from
+        Blender never brought back is kept aside first (its soldiers' numbers are the old ones). Returns squad_info with
+        "joined": his number, "like": the soldier whose look he wears, "set_aside"."""
+        from rusemod import squads as sq
+        from .api import StudioError
+        lang = self._page_lang()
+        info = self._squad_checked(address, lang)
+        n = info["count"]
+        if n >= sq.MOST:
+            # not a game rule: the owner's pick 2 (2026-11-12), "Most soldiers for now: 8"
+            raise StudioError(f"A squad has at most {sq.MOST} soldiers for now.")
+        work = self._squad_work(address)
+        if self._squad_open(address, work):
+            raise StudioError("This squad is open in Blender already: change it there, then bring your changes back.")
+        figs = {p: m for p, m in self._soldier_figures(address) if m}
+        has_last = bool(figs.get(sq.LAST))
+        at = sq.join_place(n, len(self._need_names(address, lang)), has_last)
+        worn = self._rifle_looks(address, n, has_last)
+        like = None
+        if worn:
+            counts: dict = {}
+            for _i, k, _how in worn:
+                counts[k] = counts.get(k, 0) + 1
+            top = max(counts.values())
+            like = next(w for w in worn if counts[w[1]] == top)
+        main = self._own_model_file(address)
+        copy = None
+        if like is not None and like[2] == "own":   # (his look's file and record, read before anyone moves)
+            record = _read(main.with_name(f"{main.stem}@{like[0]}.json"))
+            record.pop("copy_kept", None)   # (a uniform waiting in a record waits in one: the first one's)
+            copy = (main.with_name(f"{main.stem}@{like[0]}.glb").read_bytes(), record)
+        work.mkdir(parents=True, exist_ok=True)
+        state = _read(work / "state.json")
+        set_aside = self._set_aside(work, state)
+        self._renumber(address, work, state, at, +1)
+        if copy is not None:
+            _put(main.with_name(f"{main.stem}@{at}.glb"), copy[0])
+            _write(main.with_name(f"{main.stem}@{at}.json"), {**copy[1], "for": str(at)})
+        elif like is not None and like[2] == "game":
+            sq.write_game_look(self._mod_dir(), main.stem, at)
+        self._write_count(address, n + 1)
+        _write(work / "state.json", state)
+        return {**self.squad_info(address, lang), "joined": str(at),
+                "like": str(like[0] if like[0] < at else like[0] + 1) if like is not None else None,
+                "set_aside": str(set_aside) if set_aside is not None else None}
+
+    def soldier_minus(self, address: str) -> dict:
+        """−1: one soldier fewer at once: the soldier standing where +1 puts a new one leaves (rusemod.squads.
+        leave_place: the last rifleman before the bazooka man), as Remove takes a soldier out (soldier_remove: his own
+        look kept aside in the squad's Blender folder, the limits said in words). Returns soldier_remove's answer."""
+        from rusemod import squads as sq
+        lang = self._page_lang()
+        info = self._squad_checked(address, lang)
+        figs = {p: m for p, m in self._soldier_figures(address) if m}
+        i = sq.leave_place(info["count"], len(self._need_names(address, lang)), bool(figs.get(sq.LAST)))
+        # (none: every soldier fires one of its weapons of his own, which soldier_remove refuses in its words)
+        return self.soldier_remove(address, str(i if i is not None else info["count"]))

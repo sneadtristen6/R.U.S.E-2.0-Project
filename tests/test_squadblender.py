@@ -616,24 +616,60 @@ class BringItBack(Squad):
 
 
 class OneSoldier(Squad):
-    def test_import_and_reset_go_to_his_kind(self):
-        """Import a model… on a soldier's line gives him his own look (Import model with his number); Back to the
-        game's look takes his own out, or, when he has none, the model he wears from before each soldier had his own
-        (the bazooka man's kind, the riflemen's: none)."""
+    def test_import_and_reset_change_him_alone(self):
+        """Import a model… on a soldier's line gives him his own look (Import model with his number). Back to the
+        game's look changes him alone (the owner's pick 3, 2026-11-12; before it, on a squad whose riflemen wore one
+        model from before each soldier had his own, it took that model off all of them): his own look out; while the
+        other soldiers of his place wear that model, a record says he wears the game's look and they keep it; the last
+        one wearing it takes it out of the mod, and the records with it. A soldier with nothing of his own and no such
+        model looks as in the game already: nothing is taken out."""
         got = []
         self.api.model_import = lambda address, file=None, size=1.0, kind=None: got.append(("import", file, size, kind)) \
             or {"model": {}, "kind": kind}
-        self.api.model_import_remove = lambda address, kind=None: got.append(("reset", kind)) or {"kinds_out": []}
+
+        def remove(address, kind=None):   # (Use the copied unit's model, its files going as model_import_remove's do)
+            got.append(("reset", kind))
+            target = self.models / (f"{STEM}@{kind}.glb" if kind else f"{STEM}.glb")
+            for f in (target, target.with_suffix(".json")):
+                f.unlink(missing_ok=True)
+            return {"kinds_out": [], "copy_back": False, "model_out": True, "kind": kind}
+        self.api.model_import_remove = remove
         self.assertEqual(self.api.soldier_import(SQUAD, "5", "C:/m.glb", 1.2), {"model": {}, "kind": "5"})
         self.api.soldier_import(SQUAD, "1")
-        self.api.soldier_reset(SQUAD, "5")
-        self.assertEqual(self.api.soldier_reset(SQUAD, "1"), {"kinds_out": []})
+        res = self.api.soldier_reset(SQUAD, "5")
+        self.assertEqual((res["model_out"], res["game_look"]), (False, False))
+        self.assertEqual(got, [("import", "C:/m.glb", 1.2, "5"), ("import", None, 1.0, "1")])   # (nothing to take out)
+        # the riflemen's one model from before: soldier 1 alone back to the game's look, the others keep it
+        riflemen = self.models / f"{STEM}.glb"
+        riflemen.parent.mkdir(parents=True)
+        riflemen.write_bytes(b"glTF riflemen")
+        riflemen.with_suffix(".json").write_text("{}", encoding="utf-8")
+        res = self.api.soldier_reset(SQUAD, "1")
+        self.assertEqual((res["game_look"], len(got)), (True, 2))
+        self.assertTrue(riflemen.is_file())
+        self.assertEqual(json.loads((self.models / f"{STEM}@1.json").read_text(encoding="utf-8")),
+                         {"for": "1", "look": "game"})
+        self.assertEqual([r["wears"] for r in self.info()["soldiers"]], ["game", "kind", "kind", "kind", "game"])
+        # one with a look of his own: it goes, and he wears the game's look too, not the riflemen's model
         his = self.models / f"{STEM}@3.glb"
-        his.parent.mkdir(parents=True)
         his.write_bytes(b"glTF")
-        self.api.soldier_reset(SQUAD, "3")
-        self.assertEqual(got, [("import", "C:/m.glb", 1.2, "5"), ("import", None, 1.0, "1"), ("reset", "bazooka"),
-                               ("reset", None), ("reset", "3")])
+        res = self.api.soldier_reset(SQUAD, "3")
+        self.assertEqual((got[-1], res["game_look"]), (("reset", "3"), True))
+        self.assertEqual([r["wears"] for r in self.info()["soldiers"]], ["game", "kind", "game", "kind", "game"])
+        # in Blender he starts from the game's model, as he looks now
+        with self.patched():
+            self.api.soldier_blender(SQUAD, "3")
+        self.assertEqual(json.loads((self.work / "squad.json").read_text(encoding="utf-8"))["soldiers"][0]["id"], "3")
+        doc, _bin = glb_document(Path(self.manifest()["soldiers"][0]["file"]).read_bytes())
+        self.assertEqual(doc["materials"][0]["extras"]["rusemod_texture"], UNIFORM)   # (game_glb's: the game model)
+        self.api._blenders.clear()
+        # soldier 2, then soldier 4, the last one wearing it: it leaves the mod, and so do the records
+        self.api.soldier_reset(SQUAD, "2")
+        self.assertTrue(riflemen.is_file())
+        res = self.api.soldier_reset(SQUAD, "4")
+        self.assertEqual((got[-1], res["game_look"]), (("reset", None), False))
+        self.assertEqual(sorted(p.name for p in self.models.iterdir()), [])
+        self.assertEqual([r["wears"] for r in self.info()["soldiers"]], ["game"] * 5)
 
     def test_a_soldier_the_squad_hasn_t_got_or_a_unit_that_isn_t_a_squad(self):
         from ruse_studio.api import StudioError

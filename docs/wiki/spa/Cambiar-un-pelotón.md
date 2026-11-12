@@ -3,8 +3,9 @@
 > **Para:** modders · **Necesitas:** RUSE Studio, un mod y Blender (gratis) para cambiar soldados en Blender ·
 > **Tiempo:** unos minutos
 
-Haz que los GI estadounidenses parezcan marines, o dale a un solo soldado un aspecto propio. La página de un pelotón
-empieza por sus soldados: la tarjeta de pelotón arriba y luego una línea para cada soldado.
+Haz que los GI estadounidenses parezcan marines, dale a un solo soldado un aspecto propio, o dale a un pelotón más o
+menos soldados. La página de un pelotón empieza por sus soldados: la tarjeta de pelotón arriba y luego una línea para
+cada soldado.
 
 ## 1. Tu propio pelotón
 
@@ -27,17 +28,32 @@ página se abre en su tarjeta.
    le hizo a él, y la tarjeta dice quién cambió y quién no.
 6. Pulsa **Probar en el juego** para verlos.
 
-El juego da a los cuatro fusileros del pelotón de fusileros de EE. UU. un solo modelo: en Blender son una sola figura, y
-lo que le hagas lo llevan los cuatro. El soldado del bazuca es una figura propia.
+En Blender cada soldado es una figura propia: pinta a un fusilero y solo cambia él.
 
-## 3. Un soldado desde un archivo de modelo
+## 3. Un solo soldado
 
-Bajo **Cada soldado**, cada soldado tiene una línea: su imagen, su nombre y cuántos hay («Fusilero ×4»), y con qué
+Bajo **Cada soldado**, cada soldado tiene una línea: su imagen, su número y qué es («Soldado 3: Fusilero»), y con qué
 dispara.
 
 - **Importar un modelo…** le da un modelo desde un archivo hecho en Blender sobre los huesos del soldado del juego, o un
   modelo con huesos propios (un caballo con jinete). Los demás conservan el suyo.
-- **Volver al aspecto del juego** vuelve a quitar su modelo de tu mod.
+- **Volver al aspecto del juego** le devuelve solo a él el aspecto del juego; los demás soldados conservan el suyo.
+- **Quitar** lo saca del pelotón cuando lo confirmas: los soldados que van tras él suben un puesto, y un aspecto propio
+  suyo se guarda con tus archivos de Blender.
+
+## 4. Más o menos soldados
+
+En la tarjeta, bajo el botón grande:
+
+- **+1 soldado** añade al momento un fusilero, sin Blender. Se coloca antes del soldado con bazuca y se parece a la
+  mayoría de tus fusileros.
+- **−1 soldado** saca al momento al último fusilero. El soldado con bazuca sigue siendo el último.
+- **Añadir un soldado** te deja elegir quién se une: **Una copia de uno de este pelotón**, **Un soldado de otra unidad**
+  o **Un archivo de modelo…**. Blender se abre solo con él: cámbialo o no, pulsa **Enviar a R.U.S.E. Studio** y luego
+  **Traer mis cambios** en el Studio, y se une antes del soldado con bazuca.
+
+Por ahora un pelotón tiene de 2 a 8 soldados, y conserva un soldado por cada bazuca, lanzallamas o carga que llevan sus
+últimos hombres. Solo los pelotones que tú creas tienen estos botones: los pelotones del juego conservan sus soldados.
 
 ## Bueno saber
 
@@ -48,8 +64,7 @@ dispara.
 - El uniforme del pelotón está en **Aspecto y movimientos**, junto a los valores: **Uniforme personalizado** le da al
   pelotón un uniforme propio, que **Repintar en Blender** pinta para todos los soldados a la vez. Un pelotón lleva o tus
   modelos o un uniforme.
-- Todavía no probado en el juego: todo el pelotón en un solo Blender, cada soldado traído por separado. Añadir y quitar
-  soldados aún no está en el Studio.
+- Todavía no probado en el juego: un pelotón de 8 o de 2.
 
 Más sobre modelos, huesos y animaciones: [[Importar un modelo|Importar-un-modelo]].
 

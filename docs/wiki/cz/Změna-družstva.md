@@ -3,8 +3,8 @@
 > **Pro:** moddery · **Potřebuješ:** RUSE Studio, mod a Blender (zdarma), abys mohl měnit vojáky v Blenderu ·
 > **Zabere:** pár minut
 
-Ať americkí GI vypadají jako mariňáci, nebo dej jednomu vojákovi vlastní vzhled. Stránka družstva začíná jeho vojáky:
-nahoře karta družstva, pod ní řádek pro každého vojáka.
+Ať americkí GI vypadají jako mariňáci, dej jednomu vojákovi vlastní vzhled, nebo dej družstvu víc či méně vojáků.
+Stránka družstva začíná jeho vojáky: nahoře karta družstva, pod ní řádek pro každého vojáka.
 
 ## 1. Vlastní družstvo
 
@@ -25,16 +25,30 @@ Na kartě **Jednotky** vyber družstvo (třeba americké střelecké družstvo).
    ním, a karta řekne, kdo se změnil a kdo ne.
 6. Klikni na **Vyzkoušet ve hře** a uvidíš je.
 
-Hra dává čtyřem střelcům amerického střeleckého družstva jeden model: v Blenderu jsou jedna figura a co s ní uděláš, nosí
-všichni čtyři. Muž s bazukou je samostatná figura.
+V Blenderu je každý voják samostatná figura: když přemaluješ jednoho střelce, změní se jen on.
 
-## 3. Jeden voják ze souboru modelu
+## 3. Jeden voják
 
-Pod **Každý voják** má každý voják řádek: jeho obrázek, jméno a kolik jich je („Střelec ×4“) a z čeho střílí.
+Pod **Každý voják** má každý voják řádek: jeho obrázek, číslo a kdo je („Voják 3: Střelec“) a z čeho střílí.
 
 - **Importovat model…** mu dá model ze souboru udělaného v Blenderu na kostech vojáka ze hry, nebo model s vlastními
   kostmi (kůň s jezdcem). Ostatní si nechají svůj.
-- **Zpět na vzhled ze hry** jeho model z tvého modu zase odebere.
+- **Zpět na vzhled ze hry** vrátí vzhled ze hry jen jemu; ostatní vojáci si nechají svůj.
+- **Odebrat** ho z družstva odebere, až to potvrdíš: vojáci za ním se posunou o jedno místo a jeho vlastní vzhled
+  zůstane u tvých souborů z Blenderu.
+
+## 4. Víc nebo méně vojáků
+
+Na kartě, pod velkým tlačítkem:
+
+- **+1 voják** hned přidá střelce, bez Blenderu. Postaví se před vojáka s bazukou a vypadá jako většina tvých střelců.
+- **−1 voják** hned odebere posledního střelce. Voják s bazukou zůstane poslední.
+- **Přidat vojáka** tě nechá vybrat, kdo přibude: **Kopie vojáka z tohoto družstva**, **Voják z jiné jednotky** nebo
+  **Soubor modelu…**. Blender se otevře jen s ním: změň ho, nebo ne, klikni na **Poslat do R.U.S.E. Studia**, pak ve
+  Studiu na **Přenést moje změny** a on se přidá před vojáka s bazukou.
+
+Družstvo má zatím 2 až 8 vojáků a nechá si jednoho vojáka na každou bazuku, plamenomet nebo nálož, které nesou jeho
+poslední muži. Tato tlačítka mají jen družstva, která uděláš ty: družstva ze hry si nechají své vojáky.
 
 ## Dobré vědět
 
@@ -44,8 +58,7 @@ Pod **Každý voják** má každý voják řádek: jeho obrázek, jméno a kolik
   naposledy.
 - Uniforma družstva je ve **Vzhled a pohyb**, vedle hodnot: **Vlastní uniforma** dá družstvu vlastní uniformu, kterou
   **Přebarvit v Blenderu** přebarví všem vojákům najednou. Družstvo nosí buď tvoje modely, nebo uniformu.
-- Ve hře ještě nevyzkoušené: celé družstvo v jednom Blenderu, každý voják přenesený zvlášť. Přidávat a odebírat vojáky
-  ve Studiu zatím nejde.
+- Ve hře ještě nevyzkoušené: družstvo s 8 nebo se 2 vojáky.
 
 Víc o modelech, kostech a animacích: [[Import modelu|Import-modelu]].
 

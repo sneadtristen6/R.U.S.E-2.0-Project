@@ -2966,6 +2966,32 @@ jpn = "{0}：files/models/{1}.glb：{2} の兵士は {3} 人なので、この�
 sc = "{0}：files/models/{1}.glb：{2} 有 {3} 名士兵，所以没有第 {4} 名士兵来采用这个外观"
 fa = "{0}: files/models/{1}.glb: {2} {3} سرباز دارد، پس سرباز {4} ای نیست که این ظاهر را داشته باشد"
 
+[eb7131af98b]
+us = "{0}: files/models/{1}.json: {2} has {3} soldiers, so there is no soldier {4} to wear the game's look"
+fr = "{0} : files/models/{1}.json : {2} a {3} soldats, il n'y a donc pas de soldat {4} pour porter l'apparence du jeu"
+ger = "{0}: files/models/{1}.json: {2} hat {3} Soldaten, also gibt es keinen Soldaten {4}, der das Aussehen aus dem Spiel tragen könnte"
+ita = "{0}: files/models/{1}.json: {2} ha {3} soldati, quindi non c'è un soldato {4} che abbia l'aspetto del gioco"
+spa = "{0}: files/models/{1}.json: {2} tiene {3} soldados, así que no hay un soldado {4} que lleve el aspecto del juego"
+pol = "{0}: files/models/{1}.json: jednostka {2} ma {3} żołnierzy, więc nie ma żołnierza {4}, który miałby wygląd z gry"
+ru = "{0}: files/models/{1}.json: у юнита {2} солдат: {3}, так что нет солдата {4}, который выглядел бы как в игре"
+cz = "{0}: files/models/{1}.json: jednotka {2} má {3} vojáků, takže není žádný voják {4}, který by měl vzhled ze hry"
+jpn = "{0}：files/models/{1}.json：{2} の兵士は {3} 人なので、ゲームの見た目にする兵士 {4} はいません"
+sc = "{0}：files/models/{1}.json：{2} 有 {3} 名士兵，所以没有第 {4} 名士兵来采用游戏中的外观"
+fa = "{0}: files/models/{1}.json: {2} {3} سرباز دارد، پس سرباز {4} ای نیست که ظاهر بازی را داشته باشد"
+
+[e6b713a7317]
+us = "{0}: files/models/{1}.json: the unit {2} copies has no figure with a model for soldier {3}'s place, so he can't wear the game's look"
+fr = "{0} : files/models/{1}.json : l'unité que {2} copie n'a pas de figure avec un modèle pour la place du soldat {3}, il ne peut donc pas porter l'apparence du jeu"
+ger = "{0}: files/models/{1}.json: Die Einheit, die {2} kopiert, hat für den Platz von Soldat {3} keine Figur mit Modell, also kann er das Aussehen aus dem Spiel nicht tragen"
+ita = "{0}: files/models/{1}.json: l'unità che {2} copia non ha una figura con un modello per il posto del soldato {3}, quindi non può avere l'aspetto del gioco"
+spa = "{0}: files/models/{1}.json: la unidad que copia {2} no tiene una figura con modelo para el puesto del soldado {3}, así que no puede llevar el aspecto del juego"
+pol = "{0}: files/models/{1}.json: jednostka, którą kopiuje {2}, nie ma postaci z modelem dla miejsca żołnierza {3}, więc nie może on mieć wyglądu z gry"
+ru = "{0}: files/models/{1}.json: у юнита, который копирует {2}, нет фигуры с моделью для места солдата {3}, так что он не может выглядеть как в игре"
+cz = "{0}: files/models/{1}.json: jednotka, kterou {2} kopíruje, nemá pro místo vojáka {3} postavu s modelem, takže nemůže mít vzhled ze hry"
+jpn = "{0}：files/models/{1}.json：{2} がコピーするユニットには兵士 {3} の位置にモデル付きの姿がないので、ゲームの見た目にできません"
+sc = "{0}：files/models/{1}.json：{2} 所复制的单位在第 {3} 名士兵的位置上没有带模型的形象，所以他无法采用游戏中的外观"
+fa = "{0}: files/models/{1}.json: یگانی که {2} از آن کپی می‌کند برای جای سرباز {3} پیکری با مدل ندارد، پس او نمی‌تواند ظاهر بازی را داشته باشد"
+
 [ea03f6aa329]
 us = "{0}: {1} has {2} soldiers of its own (the game's squads have {3})"
 fr = "{0} : {1} a {2} soldats bien à lui (les escouades du jeu en ont {3})"
@@ -3043,6 +3069,19 @@ cz = "{0}: voják {2} jednotky {1} má vlastní vzhled"
 jpn = "{0}：{1} の兵士 {2} は独自の見た目です"
 sc = "{0}：{1} 的第 {2} 名士兵有自己的外观"
 fa = "{0}: سرباز {2}ِ {1} ظاهر خودش را دارد"
+
+[e3c3bfa7eab]
+us = "{0}: {1}'s soldier {2} wears the game's look"
+fr = "{0} : le soldat {2} de {1} porte l'apparence du jeu"
+ger = "{0}: Der Soldat {2} von {1} trägt das Aussehen aus dem Spiel"
+ita = "{0}: il soldato {2} di {1} ha l'aspetto del gioco"
+spa = "{0}: el soldado {2} de {1} lleva el aspecto del juego"
+pol = "{0}: żołnierz {2} jednostki {1} ma wygląd z gry"
+ru = "{0}: солдат {2} юнита {1} выглядит как в игре"
+cz = "{0}: voják {2} jednotky {1} má vzhled ze hry"
+jpn = "{0}：{1} の兵士 {2} はゲームの見た目です"
+sc = "{0}：{1} 的第 {2} 名士兵采用游戏中的外观"
+fa = "{0}: سرباز {2}ِ {1} ظاهر بازی را دارد"
 
 [e22d1561748]
 us = "{0}: files/models/{1}.glb: the model of {2}'s soldier {3} was fitted to {4}, which none of its soldiers wears (import it again in the Studio)"

@@ -167,11 +167,12 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
             info.model_copies = mod_copies(path)
         except UnitModelError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
-        from .squads import SquadError, mod_squads
+        from .squads import SquadError, mod_game_looks, mod_squads
         try:
             info.squads = mod_squads(path)  # files/models/<unit>.squad.toml: a squad's own number of soldiers
         except SquadError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        info.squad_game = mod_game_looks(path)  # files/models/<unit>@<i>.json alone: soldier i wears the game's look
         from .sceneryasset import AssetError, mod_assets
         try:
             info.assets = mod_assets(path)  # files/assets/<name>/asset.toml: its own rocks, props, plants, trees
@@ -1638,15 +1639,18 @@ def _far_figure_riflemen(run, name: str, unit: str, out: dict, result: BuildResu
 def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
     """New squads with soldiers of their own (rusemod.squads): files/models/<unit>.squad.toml, the squad's own number of
     soldiers, and files/models/<unit>@<i>.glb, soldier i's own look (in result.own_models, written beside the model it
-    was fitted to as any own model). Such a squad gets R2Behaviour, its own copy of the game's one setting for every
-    squad as the mods leave it, only its number of soldiers its own; and R2SoldierLooks, one entry per soldier, soldier 1
-    first: none (he wears what the game gives his place), or a copy of the figure the game gives his place drawing his
-    own model. Its far-away figure wears the look most of its soldiers wear (_far_figure_most), and the modded copy gets
-    the own-squads game patch. Refused, said: a number below FEWEST or above MOST (the owner's picks 1 and 2,
-    2026-11-12), or below the squad's weapons its last soldiers fire one each (NeedModelChange: the game gives the
-    first to the last soldier, the next to the one before him); a look for a soldier the squad hasn't got; a unit no mod
-    makes, or that isn't a squad. A squad with neither file, and every game squad, is left exactly as it was. Runs after
-    the units' own models, clips, halves and rides (each soldier's figure is a copy of the squad's as it then stands)."""
+    was fitted to as any own model), or <unit>@<i>.json alone, soldier i wearing the game's look (rusemod.squads.
+    write_game_look). Such a squad gets R2Behaviour, its own copy of the game's one setting for every squad as the mods
+    leave it, only its number of soldiers its own; and R2SoldierLooks, one entry per soldier, soldier 1 first: none (he
+    wears what the game gives his place), a copy of the figure the game gives his place drawing his own model, or one
+    drawing the game's model (_game_figure; none when his place's figure draws it already). Its far-away figure wears
+    the look most of its soldiers wear (_far_figure_most), and the modded copy gets the own-squads game patch. Refused,
+    said: a number below FEWEST or above MOST (the owner's picks 1 and 2, 2026-11-12), or below the squad's weapons its
+    last soldiers fire one each (NeedModelChange: the game gives the first to the last soldier, the next to the one
+    before him); a look for a soldier the squad hasn't got; a unit no mod makes, or that isn't a squad. A squad with none
+    of these files, or whose only one says a soldier wears the game's look his place's figure draws already, and every
+    game squad, is left exactly as it was. Runs after the units' own models, clips, halves and rides (each soldier's
+    figure is a copy of the squad's as it then stands)."""
     from decimal import Decimal
 
     from . import squads as sq
@@ -1661,17 +1665,23 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
         soldier = sq.soldier_of(stem)
         if soldier is not None:
             looks.setdefault(soldier[0], {})[soldier[1]] = (source, mod_id, stem)
-    if not wanted and not looks:
+    plain: dict = {}   # unit -> {soldier: mod id}: soldiers who wear the game's look (rusemod.squads.write_game_look)
+    for m in order:
+        for unit, numbers in (getattr(m, "squad_game", None) or {}).items():
+            for i in numbers:
+                plain.setdefault(unit, {})[i] = m.id
+    if not wanted and not looks and not plain:
         return
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     shared = run.game.objects.get(sq.BEHAVIOUR)
     shared_count = shared.props.get(sq.COUNT) if shared is not None else None
     shared_n = int(shared_count.value) if isinstance(shared_count, Num) else None
     done = []
-    for unit in sorted(set(wanted) | set(looks)):
+    for unit in sorted(set(wanted) | set(looks) | set(plain)):
         count, mod_id = wanted.get(unit, (None, None))
         soldiers = looks.get(unit, {})
-        mod_id = mod_id or next(iter(soldiers.values()))[1]
+        games = plain.get(unit, {})
+        mod_id = mod_id or (next(iter(soldiers.values()))[1] if soldiers else next(iter(games.values())))
         where = f"{mod_id}: files/models/{unit}{sq.SUFFIX}" if unit in wanted else f"{mod_id}: files/models/{unit}"
         name = by_name.get(unit)
         if name is None:
@@ -1713,7 +1723,13 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
             # not a game rule: a look for a soldier the squad hasn't got (a file left after the squad got fewer)
             result.findings.append(Finding("error", f"{soldiers[i][1]}: files/models/{soldiers[i][2]}.glb: {unit} has "
                                                     f"{n} soldiers, so there is no soldier {i} to wear this look"))
-        if past:
+        past_game = [i for i in sorted(games) if i > n]
+        for i in past_game:
+            # not a game rule: the same, for a soldier who'd wear the game's look
+            result.findings.append(Finding("error", f"{games[i]}: files/models/{sq.soldier_stem(unit, i)}.json: {unit} "
+                                                    f"has {n} soldiers, so there is no soldier {i} to wear the game's "
+                                                    f"look"))
+        if past or past_game:
             continue
         # each soldier's look fitted to a model the copied unit's soldiers wear (the Studio fits it to his place's: a
         # file made otherwise, fitted to another unit's model, is refused, as a kind's is)
@@ -1730,15 +1746,18 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
         if strays:
             continue
         unit_obj = run.game.own(name)
+        wrote = False
         if count is not None:
             copy = _fresh(shared)
             copy.props[sq.COUNT] = Num(shared_count.kind, Decimal(count))
             unit_obj.props[sq.OWN_COUNT] = Inline(copy)
             result.findings.append(Finding("note", f"{where}: {unit} has {count} soldiers of its own (the game's "
                                                    f"squads have {shared_n})"))
-        if soldiers:
+            wrote = True
+        if soldiers or games:
             has_last = _figure_of(run, unit_obj, sq.LAST) is not None
             entries = []
+            worn_game: dict = {}   # soldier -> the game's model he draws, wearing the game's look
             for i in range(1, n + 1):
                 fig = None
                 if i in soldiers:
@@ -1747,10 +1766,20 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
                     if fig is not None:
                         result.findings.append(Finding("note", f"{soldiers[i][1]}: {unit}'s soldier {i} wears a look "
                                                                f"of his own"))
+                elif i in games:
+                    fig = _game_figure(base, run, name, unit, unit_obj, sq.place_figure(i, n, has_last), i, games[i],
+                                       result)
+                    if fig is not None:
+                        worn_game[i] = _mesh_file(run, fig)
+                        result.findings.append(Finding("note", f"{games[i]}: {unit}'s soldier {i} wears the game's "
+                                                               f"look"))
                 entries.append(Inline(fig) if fig is not None else Ref(None))
-            unit_obj.props[sq.OWN_LOOKS] = ListV(entries)
-            _far_figure_most(run, name, unit, unit_obj, n, has_last, soldiers, result)
-        done.append(unit)
+            if soldiers or worn_game:
+                unit_obj.props[sq.OWN_LOOKS] = ListV(entries)
+                _far_figure_most(run, name, unit, unit_obj, n, has_last, soldiers, result, worn_game)
+                wrote = True
+        if wrote:
+            done.append(unit)
     if done:
         if sq.PATCH not in result.game_patch:
             result.game_patch.append(sq.PATCH)
@@ -1803,10 +1832,47 @@ def _soldier_figure(base, run, name: str, unit: str, unit_obj, place: str, look:
                                                 f"for its soldiers to copy, so its soldier can't wear a look of his own"))
         return None
     fig = _fresh(src)
-    own = f"{like.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0.Ase2ndfbin"
     mesh = _fresh(_figure_of(run, fig, "MeshDescriptor"))   # (a model part the game's units share: his own copy)
-    mesh.props["FileName"] = Text("path", own)
+    mesh.props["FileName"] = Text("path", _own_model_path(like, stem))
     fig.props["MeshDescriptor"] = Inline(mesh)
+    return fig
+
+
+def _own_model_path(like: str, stem: str) -> str:
+    """The model a mod's model file is written as (unit_own_models, squad_soldiers): <the folder of the model it was
+    fitted to>\\<unit>lod0, <unit>__<kind>lod0 or <unit>__<i>lod0 (_own_stem)."""
+    return f"{like.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0.Ase2ndfbin"
+
+
+def _game_figure(base, run, name: str, unit: str, unit_obj, place: str, i: int, mod_id: str, result: BuildResult):
+    """Soldier `i`'s figure for R2SoldierLooks when he wears the game's look (rusemod.squads.write_game_look: Back to the
+    game's look on him alone while the soldiers of his place wear a model of the mod; the owner's pick 3, 2026-11-12): a
+    copy of the figure the game gives his place, as _soldier_figure copies it (its clips and halves the squad's), its
+    model part the copied unit's for that place; the copied unit's figure as the game has it when the squad's own model
+    is on bones of its own (the game's model is on the game soldier's bones). None when his place's figure draws that
+    model already: he wears the game's look without an entry."""
+    from . import squads as sq
+    from .modelin import OWN_SKELETON
+    from .patch import Inline, _fresh
+    from .unitmodel import glb_report, model_key
+    op = run.created.get(name)
+    source = base.objects.get(op.source) if op is not None and op.kind == "clone" else None
+    game = _figure_of(run, source, place) if source is not None else None
+    model = _mesh_file(run, game) if game is not None else None
+    if model is None:
+        # not a game rule: what our build copies the game's look from (the copied unit's figure for his place)
+        result.findings.append(Finding("error", f"{mod_id}: files/models/{sq.soldier_stem(unit, i)}.json: the unit "
+                                                f"{unit} copies has no figure with a model for soldier {i}'s place, so "
+                                                f"he can't wear the game's look"))
+        return None
+    src = _figure_of(run, unit_obj, place) or _figure_of(run, unit_obj, sq.RIFLEMEN)
+    if src is not None and _mesh_file(run, src) is not None and model_key(_mesh_file(run, src)) == model_key(model):
+        return None
+    main = result.own_models.get(unit)
+    if src is None or (main is not None and glb_report(main[1]).get(OWN_SKELETON)):
+        return _fresh(game)
+    fig = _fresh(src)
+    fig.props["MeshDescriptor"] = Inline(_fresh(_figure_of(run, game, "MeshDescriptor")))
     return fig
 
 
@@ -1856,33 +1922,49 @@ def _squad_need(run, obj) -> tuple[int, list]:
 
 
 def _far_figure_most(run, name: str, unit: str, unit_obj, n: int, has_last: bool, soldiers: dict,
-                     result: BuildResult) -> None:
+                     result: BuildResult, worn_game: dict | None = None) -> None:
     """A squad whose soldiers have looks one by one: its far-away figure (FIGURINE) wears the look most of its `n`
     soldiers wear (the owner, 2026-11-11, on squad-page1: "It should take that like the more predominant unit"). Each
-    soldier counts once, for the model he draws: his own look's model (each soldier's own is a look of its own), else
-    the model of the figure the game gives his place as the build leaves it (the riflemen's own model, the last man's,
-    or the game's). The most soldiers win; between looks with as many, the one the lowest-numbered of them wears (so a
-    tie with soldier 1's look goes to soldier 1's)."""
+    soldier counts once, for the look he wears: his own look's model, the game's model when he wears the game's look
+    (`worn_game`: {soldier: that model}), else the model of the figure the game gives his place as the build leaves it
+    (the riflemen's own model, the last man's, or the game's). Copies of one look are one look (the owner's pick 5,
+    2026-11-12): two models of the mod whose files show the same (rusemod.squads.look_key) count together, as do two
+    soldiers drawing one game model. The most soldiers win; between looks with as many, the one the lowest-numbered of
+    them wears (so a tie with soldier 1's look goes to soldier 1's)."""
     from collections import Counter
 
     from . import squads as sq
     from .unitmodel import model_key
+    # this unit's models of the mod (its riflemen's, a kind's, each soldier's own), by the model each is written as
+    files = {model_key(_own_model_path(like, stem)): glb for stem, (like, glb, _mod) in result.own_models.items()
+             if _unit_of(stem) == unit}
+    seen: dict = {}
+
+    def look(model: str):
+        glb = files.get(model_key(model))
+        if glb is None:
+            return ("game", model_key(model))
+        if glb not in seen:
+            seen[glb] = sq.look_key_file(glb) or f"file:{glb}"
+        return ("mod", seen[glb])
     worn = []
     for i in range(1, n + 1):
         if i in soldiers:
             like, _mod, stem = soldiers[i]
-            model = f"{like.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0.Ase2ndfbin"
+            model = _own_model_path(like, stem)
+        elif worn_game and i in worn_game:
+            model = worn_game[i]
         else:
             model = _mesh_file(run, _figure_of(run, unit_obj, sq.place_figure(i, n, has_last)))
         if model:
-            worn.append((model_key(model), model))
+            worn.append((look(model), model))
     if not worn:
         return
     counts = Counter(k for k, _m in worn)
     top = max(counts.values())
-    key, model = next((k, m) for k, m in worn if counts[k] == top)
+    _key, model = next((k, m) for k, m in worn if counts[k] == top)
     far = _figurine_model(run, unit_obj)
-    if far is None or model_key(far) == key:
+    if far is None or model_key(far) == model_key(model):
         return
     if _point_at_copies(run, name, {model_key(far): model}, parts=lambda p: p == FIGURINE[0]):
         result.findings.append(Finding("note", f"{unit}'s far-away figure wears the look most of its soldiers wear "
