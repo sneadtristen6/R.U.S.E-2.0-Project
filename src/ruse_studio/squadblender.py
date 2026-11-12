@@ -9,9 +9,9 @@ section 2 (#4463065).
 - squad_info: what the squad is made of, read from the game and the mod: how many soldiers (the game's one setting,
   NbSoldatInGroupeCombat of $/GFX/Everything/UniteBehaviourDescriptor, with the mod's change of it), one line per kind
   of soldier (StudioApi._soldier_kinds: the riflemen, then the last man's other look; a squad all of one look is one
-  line), what each fires by the game's rule (the program, 0x7cc6f0 and 0x7cd310 in
-  code/shared/private/notes/exe-map-notes-infantry.tsv: a weapon whose ammunition has NeedModelChange is fired by the
-  last man, a second such weapon by the one before him; the squad's other weapons by the men holding none of those),
+  line), what each fires by the game's own rule for its squads (the squad contracts' section 3, read 2026-11-11: the
+  last man wears the squad's second figure, a weapon whose ammunition has NeedModelChange is fired by the last man, a
+  second such weapon by the one before him; the squad's other weapons by the men holding none of those),
   the weapons named as the Studio's weapon list names them (StudioApi.weapons, api.py: each weapon's ammunition with
   the mod's pick, named by _ammo_names from the game's two texts of it, its kind and calibre, which the game's card
   shows), each soldier's 3D view (as unit_preview makes them) and where the mod keeps his model.
@@ -56,7 +56,7 @@ BEHAVIOUR = "$/GFX/Everything/UniteBehaviourDescriptor"   # the game's one behav
 COUNT = "NbSoldatInGroupeCombat"                          # its soldiers in a squad (5 in the game)
 NEED = "NeedModelChange"                                  # an ammunition fired by the squad's last men (TAmmunition)
 MAIN = "fusilier"                                         # the riflemen's figure (GfxDescriptorFusilier)
-LAST = "bazooka"                                          # the last man's (GfxDescriptorBazooka): 0x7cbb60
+LAST = "bazooka"                                          # the last man's (GfxDescriptorBazooka)
 WORD = {"fusilier": "rifleman", "bazooka": "bazookaman"}  # each figure's words (words.toml blender_squad_<word>)
 PLURAL = {"rifleman": "riflemen", "bazookaman": "bazookamen", "soldier": "soldiers"}
 
@@ -190,10 +190,10 @@ class SquadBlenderCalls:
 
     @staticmethod
     def _squad_men(lines: list, count: int, weapons: list) -> list:
-        """[(the line he wears, [his weapons])] for each man of the squad, first to last, by the game's rules: the last
-        man wears the second figure (0x7cbb60), the squad's NeedModelChange weapons go to the last man, then the one
-        before him (0x7cc6f0); a man holding none of those fires the squad's others (0x7cd310: which of them each
-        fires was not read; taken as every one)."""
+        """[(the line he wears, [his weapons])] for each man of the squad, first to last, by the game's rules (the
+        squad contracts' section 3): the last man wears the second figure, the squad's NeedModelChange weapons go to
+        the last man, then the one before him; a man holding none of those fires the squad's others (which of those
+        men fires each of them is not known: taken as every one)."""
         ids = [ln["id"] for ln in lines]
         first = MAIN if MAIN in ids else ids[0]
         last = LAST if LAST in ids else first
