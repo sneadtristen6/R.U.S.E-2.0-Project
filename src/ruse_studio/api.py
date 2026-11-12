@@ -8213,10 +8213,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         own, "file": the file it was made from, "kept": where the mod keeps their model, made or not (_kind_file),
         "skeleton": "own" (bones of its own) or "soldier", "same_bones": for a
         kind after the first on bones of its own, whether they're the first kind's model's bones (it plays their
-        animations), "also": the squad's other figures drawn with the same model ("fallen", "far")}; [] for any other
-        unit or a game unit."""
+        animations), "also": the squad's other figures drawn with the same model ("fallen", "far"), "blender": his
+        Change it in Blender work folder (ruse_studio.modelblender: the riflemen's is the unit's), "blender_made":
+        whether it's there}; [] for any other unit or a game unit."""
         from rusemod.bonefit import skeleton_key
         from rusemod.unitmodel import model_key
+        from .modelblender import WORK
         kinds = self._soldier_kinds(address)
         if not kinds or self._own_model_file(address) is None:
             return []
@@ -8244,9 +8246,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             same = None
             if own and k != main and skeleton == "own":
                 same = main_key is not None and skeleton_key(target) == main_key
+            work = self._mod_dir() / WORK / target.stem   # (_model_work's, without reading the kinds again)
             rows.append({"kind": k, "model": model_key(m), "own": own,
                          "file": Path(str(record.get("from") or "")).name if own else None, "kept": str(target),
-                         "skeleton": skeleton, "same_bones": same, "also": also[k]})
+                         "skeleton": skeleton, "same_bones": same, "also": also[k],
+                         "blender": str(work), "blender_made": work.is_dir()})
         return rows
 
     def _kind_file(self, address: str, kind: str | None) -> Path | None:
@@ -9076,11 +9080,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 "blender": str(work) if work is not None else None,
                 "blender_made": work is not None and work.is_dir()}
 
-    def show_model_folder(self, address: str, what: str = "model") -> dict:
+    def show_model_folder(self, address: str, what: str = "model", kind: str | None = None) -> dict:
         """Open on the PC (File Explorer on Windows) a folder where the current mod keeps the unit's own model (the
         unit page's Show in folder): `what` "model" its files/models folder (_model_kept: its own model, its soldiers'
         kinds', its own copy and its paint), "building" a new building's files/buildings/<its name>/, "blender" its
-        Change it in Blender work folder (<mod>/blender/<its name>/). Refused in plain words without a mod, for a unit
+        Change it in Blender work folder (<mod>/blender/<its name>/; with `kind`, that soldier's of a squad,
+        <its name>@<kind>/: ruse_studio.modelblender). Refused in plain words without a mod, for a unit
         none of it can be kept for (the game's own, with no copy of its own), and while none of it is there yet (the
         page says where it will be: look()'s and building_look()'s "kept"). Returns {"opened": the folder}."""
         if what not in self.UNIT_FOLDERS:
@@ -9094,8 +9099,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                   "first.")
             if not (folder / "building.toml").is_file():
                 raise StudioError("This building has no model of its own yet.")
-        elif what == "blender":
-            folder = self._model_work(address)[0]   # (the game's own units: refused as Change it in Blender is)
+        elif what == "blender":   # (the game's own units: refused as Change it in Blender is)
+            folder = self._model_work(address, self._blender_kind(address, kind))[0]
             if not folder.is_dir():
                 raise StudioError("There are no Blender files for this unit yet: click Change it in Blender first.")
         else:

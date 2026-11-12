@@ -186,5 +186,101 @@ class StudioCalls(unittest.TestCase):
             self.api.model_blender_back(SQUAD)
 
 
+class EachSoldier(unittest.TestCase):
+    """Each of a squad's soldiers changed in Blender on his own (the owner, 2026-11-11, on the step-4 test copy: the
+    big-head squad's bazooka man "did not get scaled", Change it in Blender having opened the riflemen only; then
+    "edit any individual in like a normal rifleman squad ... inside Blender. Or add a new model or attach it with
+    bones"). The squad here: riflemen and a bazooka man drawing two models (StudioApi._soldier_kinds stood in)."""
+    def setUp(self):
+        StudioCalls.setUp(self)   # (the same made-up mod and stand-ins; its own tests aren't run again here)
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.his_work = self.mod / "blender" / "Descriptor_Unit_My_Riflemen@bazooka"
+        self.his_send = self.his_work / "Descriptor_Unit_My_Riflemen@bazooka.glb"
+
+    def tearDown(self):
+        StudioCalls.tearDown(self)
+
+    def _open(self, lang="us", kind=None):
+        exported, started = [], []
+
+        def export(lib, names, out, side=2048, rest_bones=False):
+            exported.append((names, rest_bones))
+            f = Path(out) / "game_soldier.glb"
+            f.write_bytes(b"glTF-game")
+            return [{"file": str(f)}]
+
+        class Lib:
+            def __init__(self, _game):
+                pass
+
+            def close(self):
+                pass
+        with mock.patch("rusemod.models.Library", Lib), mock.patch("rusemod.gltf.export", export), \
+                mock.patch("rusemod.blender.open_model_to_change",
+                           lambda b, model, send, words: started.append((model, send, words)) or "proc"):
+            res = self.api.model_blender(SQUAD, lang, kind)
+        return res, exported, started
+
+    def test_his_own_opens_him_alone_with_his_bones_in_place(self):
+        res, exported, started = self._open(kind="bazooka")
+        self.assertEqual(exported, [([BAZOOKA], True)])             # his game model, not the riflemen's; real bones
+        self.assertEqual((res["work"], res["kind"]), (str(self.his_work), "bazooka"))   # beside the unit's: <unit>@bazooka
+        self.assertEqual(started[0][1], self.his_send)                # what Blender sends for him lands here
+        self.assertEqual(self.api._blenders[str(self.his_work)], "proc")
+        words = json.loads((self.his_work / "words.json").read_text(encoding="utf-8"))
+        self.assertEqual(words["send"], "Send to the R.U.S.E. Studio")
+        self.assertFalse(self.work.exists())                          # the riflemen's folder isn't touched
+
+    def test_the_riflemen_by_name_are_the_model_row_s(self):
+        res, exported, started = self._open(kind="fusilier")
+        self.assertEqual(exported, [([RIFLEMAN], True)])
+        self.assertEqual((res["work"], res["kind"]), (str(self.work), None))
+        self.assertEqual(started[0][1], self.send)
+
+    def test_each_goes_on_from_his_own_last_sending(self):
+        for folder, send, data in ((self.work, self.send, b"glTF-riflemen"), (self.his_work, self.his_send, b"glTF-his")):
+            folder.mkdir(parents=True)
+            send.write_bytes(data)
+        res, exported, started = self._open(kind="bazooka")
+        self.assertEqual((exported, started[0][0], res["file"]), ([], self.his_send, str(self.his_send)))
+        res, exported, started = self._open()
+        self.assertEqual((exported, started[0][0]), ([], self.send))
+
+    def test_bring_back_gives_the_model_to_him_alone(self):
+        self.his_work.mkdir(parents=True)
+        self.his_send.write_bytes(b"glTF-sent")
+        imported = []
+        self.api.model_import = lambda address, file, size=1.0, kind=None: imported.append((address, file, size, kind)) or {
+            "model": {"rigged": True}}
+
+        class Closed:
+            def poll(self):
+                return 0
+        self.api._blenders[str(self.his_work)] = Closed()
+        res = self.api.model_blender_back(SQUAD, 1.0, "bazooka")
+        self.assertEqual(imported, [(SQUAD, str(self.his_send), 1.0, "bazooka")])   # Import model's kind: his alone
+        self.assertEqual((res["work"], res["kind"]), (str(self.his_work), "bazooka"))
+        from ruse_studio.api import StudioError
+        with self.assertRaisesRegex(StudioError, "Nothing has come back from Blender yet"):   # (the riflemen sent nothing)
+            self.api.model_blender_back(SQUAD)
+
+    def test_a_soldier_the_squad_hasn_t_got_and_a_squad_of_one_model_are_refused(self):
+        from ruse_studio.api import StudioError
+        with self.assertRaisesRegex(StudioError, "This squad has no soldier called medic"):
+            self.api.model_blender(SQUAD, "us", "medic")
+        with self.assertRaisesRegex(StudioError, "This squad has no soldier called medic"):
+            self.api.model_blender_back(SQUAD, 1.0, "medic")
+        self.api._soldier_kinds = lambda address: {}
+        with self.assertRaisesRegex(StudioError, "no soldiers of another kind"):
+            self.api.model_blender(SQUAD, "us", "bazooka")
+        self.assertFalse((self.mod / "blender").exists())
+
+    def test_his_game_model_missing_is_said(self):
+        from ruse_studio.api import StudioError
+        self.api._look_models = lambda address: ([RIFLEMAN], [])
+        with self.assertRaisesRegex(StudioError, "This soldier has no 3D model the Studio can open"):
+            self._open(kind="bazooka")
+
+
 if __name__ == "__main__":
     unittest.main()

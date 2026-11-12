@@ -2606,14 +2606,15 @@ function buildingModelBox(address, info, draw) {
 // open its folder, and named Change it in Blender's work folder only once that was clicked. A row: what is kept there
 // (or will be, once it's made), its place on the PC, and Show in folder, which opens the folder once there's something
 // of the unit's in it (`what`: "model", "building" or "blender", the call's folders) ---
-function keptRow(address, what, said, path, folder, made, tipNone) {
+function keptRow(address, what, said, path, folder, made, tipNone, kind = null) {
   const w = state.words;
   const tip = what === "blender" ? w.tip_model_blender_folder : w.tip_model_folder;
   const show = el("button", { type: "button", className: "small", textContent: w.where_show,
     title: made ? fill(tip, { folder }) : tipNone, disabled: !made });
   show.addEventListener("click", async () => {
     try {
-      const r = await api().show_model_folder(address, what);
+      // (`kind`: one of a squad's other soldiers' Blender folder, kindsBox's)
+      const r = await api().show_model_folder(address, what, kind);
       say(fill(w.where_opened, { path: r.opened }), "ok");
     } catch (err) { problem(err); }
   });
@@ -2979,13 +2980,44 @@ function kindsBox(address, kinds, draw, changed) {
     }
     // (on bones of its own that aren't the riflemen's model's: he plays what he played, which can stop the game)
     if (row.same_bones === false) box.append(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));
-    if (i === 0) return;   // (the riflemen's model is Import model's, above)
+    if (i === 0) return;   // (the riflemen's model is Import model's and Change it in Blender's, above)
     const actions = el("div", { className: "actions" });
     if (!row.inHead) {   // (the one whose import is the Its soldiers row's own button, Look and moves, has it there)
       const pick = el("button", { type: "button", textContent: w.model_import, title: w.tip_model_kind_import });
       pick.addEventListener("click", () => kindImport(address, row, draw, changed, pick));
       actions.append(pick);
     }
+    // his own Change it in Blender and Bring back the model (StudioApi.model_blender, model_blender_back with his
+    // kind; the owner, 2026-11-11: "edit any individual in like a normal rifleman squad ... inside Blender. Or add a
+    // new model or attach it with bones"), his Blender files in <mod>\blender\<the unit's name>@<kind>
+    const where = el("div", { className: "model-kept-blender" });
+    const showWhere = (path, made) => where.replaceChildren(keptRow(address, "blender",
+      made ? w.model_blender_kept : w.model_blender_kept_later, path, path, made, w.tip_model_blender_folder_none, row.kind));
+    if (row.blender) showWhere(row.blender, row.blender_made);
+    const open = el("button", { type: "button", textContent: w.model_blender, title: w.tip_model_kind_blender });
+    open.addEventListener("click", async () => {
+      open.disabled = true;
+      say(w.model_blender_opening);
+      try {
+        const r = await api().model_blender(address, state.lang, row.kind);
+        say(w.model_blender_opened, "ok");
+        if (r.work) showWhere(r.work, true);
+      } catch (err) { problem(err); } finally { open.disabled = false; }
+    });
+    const back = el("button", { type: "button", textContent: w.model_blender_back, title: w.tip_model_kind_blender_back });
+    back.addEventListener("click", async () => {
+      back.disabled = true;
+      say(w.model_blender_bringing);
+      try {
+        const r = await api().model_blender_back(address, 1, row.kind);
+        if (r.model) {
+          say(fill(w.model_kind_done, { file: r.model.file || "" }), "ok");
+          if (changed) changed();
+        }
+        draw(r);
+      } catch (err) { problem(err); } finally { back.disabled = false; }
+    });
+    actions.append(open, back);
     if (row.own) {
       const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
         title: w.tip_model_kind_remove });
@@ -3000,7 +3032,7 @@ function kindsBox(address, kinds, draw, changed) {
       });
       actions.append(drop);
     }
-    if (actions.children.length) box.append(actions);
+    box.append(actions, where);
   });
   return box;
 }

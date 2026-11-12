@@ -202,6 +202,46 @@ class TheCall(unittest.TestCase):
         self.assertEqual(self.api.show_model_folder(self.squad, "blender"), {"opened": str(work)})
         self.assertEqual(self.opened, [str(work)])
 
+    def test_each_soldier_s_own_blender_folder(self):
+        """A squad's heavy-weapon soldier changed in Blender on his own (the owner, 2026-11-11: "edit any individual in
+        like a normal rifleman squad ... inside Blender"): his work folder <mod>/blender/<its name>@bazooka, beside the
+        riflemen's, on his row before a click and opened by his Show in folder once there."""
+        work = self.mod / "blender" / tail(self.squad)
+        his = self.mod / "blender" / f"{tail(self.squad)}@bazooka"
+        rows = {r["kind"]: r for r in self.api.look(self.squad)["kinds"]}
+        self.assertEqual({k: (r["blender"], r["blender_made"]) for k, r in rows.items()},
+                         {"fusilier": (str(work), False), "bazooka": (str(his), False)})
+        with self.assertRaises(StudioError) as said:
+            self.api.show_model_folder(self.squad, "blender", "bazooka")
+        self.assertEqual(str(said.exception), NO_BLENDER)
+
+        def export(lib, names, out, side=2048, rest_bones=False):
+            f = Path(out) / "us_soldier_bazooka_model.glb"
+            f.write_bytes(b"glTF-game")
+            return [{"file": str(f)}]
+
+        class Lib:
+            def __init__(self, _game):
+                pass
+
+            def close(self):
+                pass
+        self.api._blender = lambda: Path("C:/b/blender.exe")
+        with mock.patch("rusemod.models.Library", Lib), mock.patch("rusemod.gltf.export", export), \
+                mock.patch("rusemod.blender.open_model_to_change", lambda *a: "proc"):
+            res = self.api.model_blender(self.squad, "us", "bazooka")
+        self.assertEqual((res["work"], res["kind"]), (str(his), "bazooka"))
+        rows = {r["kind"]: r for r in res["kinds"]}
+        self.assertEqual((rows["fusilier"]["blender_made"], rows["bazooka"]["blender_made"]), (False, True))
+        self.assertEqual(res["kept"]["blender_made"], False)          # (the Model row's is the riflemen's: still to come)
+        self.assertEqual(self.api.show_model_folder(self.squad, "blender", "bazooka"), {"opened": str(his)})
+        self.assertEqual(self.opened, [str(his)])
+        with self.assertRaisesRegex(StudioError, "This squad has no soldier called medic"):
+            self.api.show_model_folder(self.squad, "blender", "medic")
+        with self.assertRaisesRegex(StudioError, "no soldiers of another kind"):   # (a squad of one model)
+            self.api.show_model_folder(self.one, "blender", "bazooka")
+        self.assertEqual(self.opened, [str(his)])
+
     def test_refused_without_a_mod_or_for_a_folder_it_doesn_t_have(self):
         api = self.studio(Path(tempfile.mkdtemp(dir=self.tmp.name)))   # (no mod picked)
         for what in ("model", "building", "blender"):
@@ -251,7 +291,9 @@ class ThePage(unittest.TestCase):
         self.assertIn("textContent: w.where_show", made[0])
         self.assertIn("title: made ? fill(tip, { folder }) : tipNone, disabled: !made", made[0])
         self.assertIn('const tip = what === "blender" ? w.tip_model_blender_folder : w.tip_model_folder;', row)
-        self.assertIn("await api().show_model_folder(address, what);", row)
+        # (`kind`: a squad's other soldier's own Blender folder, kindsBox's; null for every other place)
+        self.assertIn("await api().show_model_folder(address, what, kind);", row)
+        self.assertIn("function keptRow(address, what, said, path, folder, made, tipNone, kind = null) {", self.app)
         self.assertIn("say(fill(w.where_opened, { path: r.opened }), \"ok\");", row)
         self.assertIn('el("code", { className: "where-path", textContent: path })', row)
 
@@ -264,6 +306,14 @@ class ThePage(unittest.TestCase):
         kinds = function_text(self.app, "kindsBox")    # (each kind of a squad's soldiers: his file)
         self.assertIn("row.own ? w.model_kept : w.model_kept_later", kinds)
         self.assertIn('textContent: row.kept', kinds)
+        # ...and his own Change it in Blender, Bring back the model and Blender folder (the owner, 2026-11-11)
+        self.assertIn("if (row.blender) showWhere(row.blender, row.blender_made);", kinds)
+        self.assertIn("w.tip_model_blender_folder_none, row.kind)", kinds)
+        self.assertIn("api().model_blender(address, state.lang, row.kind)", kinds)
+        self.assertIn("api().model_blender_back(address, 1, row.kind)", kinds)
+        made = controls(kinds)
+        self.assertIn('textContent: w.model_blender, title: w.tip_model_kind_blender', " ".join(made))
+        self.assertIn('textContent: w.model_blender_back, title: w.tip_model_kind_blender_back', " ".join(made))
         building = function_text(self.app, "buildingModelBox")
         self.assertIn('keptRow(address, "building", info.kept.made ? w.model_kept : w.model_kept_later, info.kept.file',
                       building)
@@ -286,6 +336,14 @@ class ThePage(unittest.TestCase):
                 self.assertIn(self.words[label][lang], self.words[key][lang], (key, lang))
         self.assertNotIn("model_blender_where", self.words)   # (said only after the click: the Blender row's now)
         self.assertNotIn("model_blender_where", self.fake)
+        # each soldier's own Blender buttons' tooltips, and the how-tos that name them, in the eleven languages
+        for key in ("tip_model_kind_blender", "tip_model_kind_blender_back"):
+            with self.subTest(key=key):
+                self.assertEqual(set(self.words[key]), set(LANGS))
+                self.assertIn(f'"{key}": {json.dumps(self.words[key]["us"], ensure_ascii=False)}', self.fake)
+        for key in ("model_kinds_how", "model_blender_how_kinds"):
+            for lang in LANGS:
+                self.assertIn(self.words["model_blender"][lang], self.words[key][lang], (key, lang))
 
     def test_the_call_is_the_studio_s_and_the_stand_in_page_s(self):
         self.assertTrue(callable(getattr(StudioApi, "show_model_folder", None)))
@@ -295,8 +353,10 @@ class ThePage(unittest.TestCase):
         self.assertIn("show_model_folder", calls)
         self.assertEqual(sorted(c for c in calls if not callable(getattr(StudioApi, c, None))), [])
         self.assertEqual(sorted(c for c in calls if not re.search(rf"\b{c}: async", self.fake)), [])
-        self.assertIn('show_model_folder: async (address, what = "model") =>', self.fake)
+        self.assertIn('show_model_folder: async (address, what = "model", kind = null) =>', self.fake)
         self.assertIn('if (!["model", "building", "blender"].includes(what))', self.fake)
+        self.assertIn("model_blender: async (address, lang, kind = null) =>", self.fake)
+        self.assertIn("model_blender_back: async (address, size, kind = null) =>", self.fake)
         # the stand-in page's units say where, as look(), _kind_rows and building_look do
         self.assertIn("kept: fakeKept(address)", self.fake)
         self.assertIn("kept: `${kept}@bazooka.glb`", self.fake)
