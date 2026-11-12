@@ -342,6 +342,15 @@ class ModEdits:
         (self.folder / "files" / "cards" / f"{tail}.png").unlink(missing_ok=True)
         for suffix in (".glb", ".json"):
             (self.folder / "files" / "models" / f"{tail}{suffix}").unlink(missing_ok=True)
+        # a squad's own number of soldiers and its soldiers' own looks (rusemod.squads: files with no unit stop the
+        # build)
+        from rusemod.squads import SUFFIX, soldier_of
+        models = self.folder / "files" / "models"
+        (models / f"{tail}{SUFFIX}").unlink(missing_ok=True)
+        for f in (list(models.glob(f"{tail}@*")) if models.is_dir() else []):
+            s = soldier_of(f.name.rsplit(".", 1)[0])
+            if s is not None and s[0] == tail and f.suffix.lower() in (".glb", ".json"):
+                f.unlink(missing_ok=True)
         from rusemod import anim
         try:
             anim.remove_unit(self.folder, tail)   # (files/anim/units.toml's rows and files/anim/own/<its name>/)

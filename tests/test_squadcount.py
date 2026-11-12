@@ -305,6 +305,283 @@ class InTheBuild(unittest.TestCase):
         self.assertEqual(squads.PATCH, "own-squads")
 
 
+from rusemod.modelin import glb_document  # noqa: E402
+from test_squadblender import (BAZOOKA, GAME_SQUAD, RIFLE_FIRES, RIFLEMAN, SQUAD, STEM, WEAPONS, Running,  # noqa: E402
+                               Squad, game_glb, glb_from, own_glb, sha)
+
+
+class TheStudioCalls(Squad):
+    """A soldier more or less in the Studio (ruse_studio.squadblender): squad_info's count, can and limits; soldier_add,
+    its join on Bring my changes back, soldier_remove; with test_squadblender's stand-ins for Blender, the index and the
+    game's models."""
+
+    def set_count(self, n):
+        squads.write_count(self.mod, STEM, n)
+
+    def add(self, source, of=None, unit=None, file=None):
+        with self.patched():
+            return self.api.soldier_add(SQUAD, source, of, unit, file)
+
+    def remove(self, soldier):
+        with self.patched():
+            return self.api.soldier_remove(SQUAD, soldier)
+
+    def back(self):
+        with self.patched():
+            return self.api.squad_blender_back(SQUAD)
+
+    def look(self, i: int, data: bytes, **record):
+        f = self.models / f"{STEM}@{i}.glb"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_bytes(data)
+        f.with_suffix(".json").write_text(json.dumps({"from": f"C:/x/{i}.glb", "for": str(i), **record}),
+                                          encoding="utf-8")
+        return f
+
+    def test_the_count_is_the_squad_s_own(self):
+        self.set_count(7)
+        info = self.info()
+        self.assertEqual((info["count"], len(info["soldiers"])), (7, 7))
+        self.assertEqual([r["label"] for r in info["soldiers"]], ["Rifleman"] * 6 + ["Bazooka man"])
+        self.assertTrue(info["line"].startswith("7 soldiers: 6 riflemen"))
+        self.assertEqual([r["fires"] for r in info["soldiers"]][-2:], [RIFLE_FIRES, ["Bazooka"]])
+
+    def test_the_limits_in_words(self):
+        from ruse_studio.api import StudioError
+        self.set_count(8)
+        info = self.info()
+        self.assertEqual((info["can"]["add"], info["can"]["remove"]), (False, True))
+        self.assertEqual(info["limits"], {"add": "A squad has at most 8 soldiers for now.", "remove": None})
+        with self.assertRaisesRegex(StudioError, "^A squad has at most 8 soldiers for now.$"):
+            self.add("copy", "1")
+        self.set_count(2)
+        info = self.info()
+        self.assertEqual((info["can"]["add"], info["can"]["remove"]), (True, False))
+        self.assertEqual(info["limits"], {"add": None, "remove": "A squad keeps at least 2 soldiers: the game's own rule."})
+        with self.assertRaisesRegex(StudioError, "^A squad keeps at least 2 soldiers: the game's own rule.$"):
+            self.remove("1")
+        # three weapons its last soldiers fire one each (NeedModelChange): at least 3
+        self.weapons = [WEAPONS[0]] + [("Ammo_Bazooka", "Bazooka")] * 3
+        self.set_count(3)
+        info = self.info()
+        self.assertEqual((info["fewest"], info["can"]["remove"]), (3, False))
+        said = "This squad keeps at least 3 soldiers: its last 3 fire Bazooka, one each."
+        self.assertEqual(info["limits"]["remove"], said)
+        with self.assertRaisesRegex(StudioError, f"^{said}$"):
+            self.remove("2")
+        self.assertEqual(squads.mod_squads(self.mod), {STEM: 3})   # (nothing changed)
+        # its Blender open: neither, until its changes are brought back or it's closed
+        self.set_count(5)
+        self.weapons = list(WEAPONS)
+        self.api._blenders[str(self.work)] = Running()
+        self.assertEqual({k: self.info()["can"][k] for k in ("add", "remove")}, {"add": False, "remove": False})
+        with self.assertRaisesRegex(StudioError, "This squad is open in Blender already"):
+            self.remove("1")
+        with self.assertRaisesRegex(StudioError, "This squad is open in Blender already"):
+            self.add("copy", "1")
+
+    def test_a_copy_joins_before_the_bazooka_man_when_brought_back(self):
+        """His picture's soldier 2 copied: Blender opens with him alone; brought back, he's soldier 5, the bazooka man
+        soldier 6 with his own look as it was, the squad 6 (its own number, in the mod)."""
+        old = self.look(5, own_glb(b"PNG-old-5", b"PNG-a"), report={"like": BAZOOKA})
+        before = sha(old)
+        res = self.add("copy", "2")
+        self.assertEqual((res["opened"], res["adding"], res["count"]), (["new"], {"at": 5, "started": "game"}, 5))
+        m = self.manifest()
+        self.assertEqual([(s["id"], s["name"]) for s in m["soldiers"]], [("new", "New soldier")])
+        self.assertEqual(m["adding"], {"id": "new", "at": 5, "source": "copy"})
+        self.assertEqual(squads.mod_squads(self.mod), {})        # (not in the squad until he's brought back)
+        self.blender_opened()
+        calls = self.taking_in()
+        self.blender_sends({"new": glb_from(b"PNG-new", "New soldier 1")})
+        res = self.back()
+        self.assertEqual((res["joined"], res["count"], res["changed"]), ("5", 6, ["5"]))
+        self.assertEqual(res["message"], "Soldier 5 joins the squad: it has 6 soldiers now.")
+        self.assertEqual(calls, [(SQUAD, f"{STEM}@5.glb", 1.0, "5")])
+        self.assertEqual(sha(self.models / f"{STEM}@6.glb"), before)          # the bazooka man: still last, as he was
+        self.assertEqual(json.loads((self.models / f"{STEM}@6.json").read_text(encoding="utf-8"))["for"], "6")
+        self.assertEqual(squads.mod_squads(self.mod), {STEM: 6})
+        info = self.info()
+        self.assertEqual([r["label"] for r in info["soldiers"]], ["Rifleman"] * 5 + ["Bazooka man"])
+        self.assertEqual([r["wears"] for r in info["soldiers"]], ["game"] * 4 + ["own", "own"])
+        state = json.loads((self.work / "state.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(state["taken"]), ["5"])
+
+    def test_a_join_that_fails_leaves_the_squad_as_it_was(self):
+        from ruse_studio.api import StudioError
+        old = self.look(5, b"glTF-old-5")
+        self.add("copy", "1")
+        self.blender_opened()
+
+        def fails(*_a, **_k):
+            raise StudioError("This model can't be fitted.")
+        self.api.model_import = fails
+        self.blender_sends({"new": glb_from(b"PNG-new", "New soldier 1")})
+        with self.assertRaisesRegex(StudioError, "can't be fitted"):
+            self.back()
+        self.assertEqual((old.read_bytes(), squads.mod_squads(self.mod)), (b"glTF-old-5", {}))
+        self.assertFalse((self.models / f"{STEM}@6.glb").exists())
+
+    def test_a_soldier_from_another_squad_and_from_a_file(self):
+        from ruse_studio.api import StudioError
+        res = self.add("unit", "1", GAME_SQUAD)
+        self.assertEqual(res["adding"], {"at": 5, "started": "game"})
+        doc, _binary = glb_document(Path(self.manifest()["soldiers"][0]["file"]).read_bytes())
+        self.assertEqual([x["name"] for x in doc["materials"]], ["New soldier 1"])
+        self.api._soldiers = lambda address: address != E + "Descriptor_Unit_Tank"
+        with self.assertRaisesRegex(StudioError, "^The unit to take a soldier from isn't a squad of soldiers.$"):
+            self.add("unit", "1", E + "Descriptor_Unit_Tank")
+        with self.assertRaisesRegex(StudioError, "^That squad has no soldier called 9.$"):
+            self.add("unit", "9", GAME_SQUAD)
+        # a model file: fitted to a rifleman's bones into the squad's Blender folder, the mod's files untouched
+        fitted = []
+
+        def fit(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind=None, out=None):
+            fitted.append((Path(file).name, kind, Path(out)))
+            Path(out).write_bytes(own_glb(b"PNG-file", b"PNG-file-alpha"))
+            Path(out).with_suffix(".json").write_text(json.dumps({"report": {"like": RIFLEMAN}}), encoding="utf-8")
+            return {"rigged": True}
+        self.api._fit_model = fit
+        res = self.add("file", file="C:/Users/x/marine.glb")
+        self.assertEqual(fitted, [("marine.glb", "1", self.work / "new" / "marine.glb")])
+        self.assertEqual(res["adding"], {"at": 5, "started": "model"})
+        self.assertEqual(list(self.models.glob("*")) if self.models.is_dir() else [], [])
+        self.assertIsNone(self.add("file"))     # (no file given and no window to pick one in: nothing opened)
+
+    def test_remove_moves_the_soldiers_after_him_up_and_keeps_his_look_aside(self):
+        for i in (2, 3, 5):
+            self.look(i, f"glTF-{i}".encode())
+        kept = self.work / "kept"
+        kept.mkdir(parents=True)
+        (kept / f"{STEM}@3.glb").write_bytes(b"kept-3")
+        (self.work / "state.json").write_text(json.dumps({"taken": {"3": {"kept": "a", "model": "b"},
+                                                                     "fusilier": {"x": 1}}}), encoding="utf-8")
+        res = self.remove("2")
+        self.assertEqual((res["removed"], res["count"]), ("2", 4))
+        aside = Path(res["kept_aside"])
+        self.assertTrue(aside.is_relative_to(self.work))
+        self.assertEqual(sorted(p.name for p in aside.iterdir()), [f"{STEM}@2.glb", f"{STEM}@2.json"])
+        self.assertEqual(((self.models / f"{STEM}@2.glb").read_bytes(), (self.models / f"{STEM}@4.glb").read_bytes()),
+                         (b"glTF-3", b"glTF-5"))                         # soldiers 3 and 5 are 2 and 4 now
+        self.assertFalse((self.models / f"{STEM}@5.glb").exists() or (self.models / f"{STEM}@3.glb").exists())
+        self.assertEqual(json.loads((self.models / f"{STEM}@4.json").read_text(encoding="utf-8"))["for"], "4")
+        self.assertEqual((kept / f"{STEM}@2.glb").read_bytes(), b"kept-3")
+        state = json.loads((self.work / "state.json").read_text(encoding="utf-8"))
+        self.assertEqual(state["taken"], {"2": {"kept": "a", "model": "b"}, "fusilier": {"x": 1}})
+        self.assertEqual(squads.mod_squads(self.mod), {STEM: 4})
+        # one more joins: the game's 5 again, so no number of its own is kept
+        self.add("copy", "1")
+        self.blender_opened()
+        self.taking_in()
+        self.blender_sends({"new": glb_from(b"PNG-new", "New soldier 1")})
+        self.assertEqual((self.back()["count"], squads.mod_squads(self.mod)), (5, {}))
+
+    def test_the_refusals(self):
+        from ruse_studio.api import StudioError
+        with self.assertRaisesRegex(StudioError, "^pigeon isn't a way to add a soldier"):
+            self.add("pigeon")
+        with self.assertRaisesRegex(StudioError, "^This squad has no soldier called 7.$"):
+            self.add("copy", "7")
+        with self.assertRaisesRegex(StudioError, "^This squad has no soldier called 9.$"):
+            self.remove("9")
+        with self.patched(), self.assertRaisesRegex(StudioError, "one of the game's own squads: copy it first"):
+            self.api.soldier_add(GAME_SQUAD, "copy", "1")
+        self.api._blender = lambda: None
+        with self.assertRaisesRegex(StudioError, "Blender isn't found on this PC"):
+            self.add("copy", "1")
+        self.assertFalse((self.work / "squad.json").exists())
+
+
+class InTheStudio(unittest.TestCase):
+    """Import a model for one soldier alone, Back to the game's look, Resize and a deleted unit, on a made-up game's
+    index (the squad above): each soldier's own look fitted to the figure the game gives his place."""
+
+    @classmethod
+    def setUpClass(cls):
+        from rusemod.index import build_index
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.game = Path(cls.tmp.name, "game")
+        data = cls.game / "Data" / "PC" / "190852"
+        data.mkdir(parents=True)
+        (data / "ZZ_GladPatchableWin.dat").write_bytes(unit_data())
+        (data / "ZZ_Win.dat").write_bytes(clips_pack())
+        cls.index = build_index(cls.game, Path(cls.tmp.name, "index.sqlite"), say=lambda line: None)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        self.home = Path(tempfile.mkdtemp(dir=self.tmp.name))
+        self.api = StudioApi(index_path=self.index, game_dir=self.game, home=self.home)
+        self.api._look_models = lambda address: ([RIFLE.lower(), HEAVY.lower()], [])
+        self.mod = Path(self.home, "mods", "squads")
+        (self.mod / "src").mkdir(parents=True)
+        (self.mod / "mod.toml").write_text('[mod]\nid = "squads"\nversion = "1.0.0"\n', encoding="utf-8")
+        self.api.choose_mod(str(self.mod))
+        self.unit = self.api.new_unit(E + "Descriptor_Unit_Squad", "Squad Seven", 5)["address"]
+        self.stem = self.unit.rsplit("/", 1)[-1]
+        self.models = self.mod / "files" / "models"
+        self.source = Path(self.home, "marine.glb")
+        self.source.write_bytes(b"glTF")
+        self.calls = []
+
+    def fitted(self, game, source_model, model_file, out, **kw):
+        """rusemod.unitmodel.import_model stood in for (test_unitmodel has the fitting): the file written, its report."""
+        self.calls.append(source_model)
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        Path(out).write_bytes(b"glTF fitted")
+        return {"file": Path(model_file).name, "vertices": 3, "triangles": 1, "rigged": True, "like": source_model}
+
+    def imported(self, kind=None):
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            return self.api.model_import(self.unit, str(self.source), kind=kind)
+
+    def test_one_soldier_s_own_look_fitted_to_his_place(self):
+        from ruse_studio.api import StudioError
+        self.imported("5")
+        self.assertEqual(self.calls[-1], HEAVY.lower())      # the last place: the bazooka man's figure's model
+        self.imported("2")
+        self.assertEqual(self.calls[-1], RIFLE.lower())      # a rifleman's place
+        own = lambda i: self.models / f"{self.stem}@{i}"   # noqa: E731
+        self.assertTrue(own(5).with_suffix(".glb").is_file() and own(2).with_suffix(".glb").is_file())
+        self.assertEqual(json.loads(own(5).with_suffix(".json").read_text(encoding="utf-8"))["for"], "5")
+        self.assertFalse((self.models / f"{self.stem}.glb").exists())     # the riflemen's model: none made
+        with mock.patch("rusemod.gltf.model_glb", lambda lib, name, side=2048, rest_bones=False: game_glb(name)):
+            info = self.api.squad_info(self.unit)       # (its previews: the made-up game has no model packs)
+        self.assertEqual([r["wears"] for r in info["soldiers"]], ["game", "own", "game", "game", "own"])
+        with self.assertRaisesRegex(StudioError, "kind called 6"):     # (a squad of 5 has no soldier 6)
+            self.imported("6")
+        squads.write_count(self.mod, self.stem, 7)
+        self.imported("6")                                    # (with 7, soldier 6 stands among the riflemen)
+        self.assertEqual(self.calls[-1], RIFLE.lower())
+        squads.write_count(self.mod, self.stem, None)
+        own(6).with_suffix(".glb").unlink()
+        own(6).with_suffix(".json").unlink()
+        # his own look out; the others' stay
+        res = self.api.model_import_remove(self.unit, "5")
+        self.assertTrue(res["model_out"])
+        self.assertFalse(own(5).with_suffix(".glb").exists())
+        self.assertTrue(own(2).with_suffix(".glb").is_file())
+        # Resize fits each soldier's own look again too: one size for the squad
+        self.imported()
+        self.calls.clear()
+        with mock.patch("rusemod.unitmodel.import_model", self.fitted):
+            self.api.model_resize(self.unit, 1.5)
+        self.assertEqual(self.calls, [RIFLE.lower(), RIFLE.lower()])     # the riflemen's model, then soldier 2's
+        self.assertEqual(json.loads(own(2).with_suffix(".json").read_text(encoding="utf-8"))["size"], 1.5)
+
+    def test_a_deleted_unit_takes_its_soldiers_files_with_it(self):
+        from ruse_studio.edits import ModEdits
+        self.imported("3")
+        squads.write_count(self.mod, self.stem, 7)
+        self.assertEqual(sorted(p.name for p in self.models.iterdir()),
+                         [f"{self.stem}.squad.toml", f"{self.stem}@3.glb", f"{self.stem}@3.json"])
+        ModEdits(self.mod).remove_unit(self.unit)
+        self.assertEqual(list(self.models.iterdir()), [])
+
+
 class TheRules(unittest.TestCase):
     def test_numbers_and_places(self):
         self.assertEqual((squads.FEWEST, squads.MOST), (2, 8))

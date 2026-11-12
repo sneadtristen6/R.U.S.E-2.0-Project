@@ -38,7 +38,23 @@ section 2 (#4463065).
   from the material's rusemod_alpha_texture).
 - soldier_import, soldier_reset: Import model and Use the copied unit's model for one soldier (model_import and
   model_import_remove with his kind; the riflemen: none), their answers as they are.
-The calls the d43f0c6d page used (model_blender, model_blender_back with a kind) stay as they were."""
+The calls the d43f0c6d page used (model_blender, model_blender_back with a kind) stay as they were.
+
+Each squad its own number of soldiers, each soldier his own look (the squad work's Phases 2-3, rusemod.squads; the
+owner, 2026-11-12: "I would only want to change it for this one squad. Not every squad in the game.", and his picks
+the same night: at least 2, at most 8 for now, an added soldier a figure only, the squad's health and weapons as set
+on its page):
+- one line per soldier, soldier 1 first ("1".."n"): what he fires by the game's rule (the last soldiers the weapons
+  whose ammunition has NeedModelChange), his look: his own (files/models/<unit>@<i>.glb, Import model's with his number
+  as the kind), else the model of the figure the game gives his place as the mod has it (the riflemen's own model, the
+  bazooka man's) or the game's; a squad's own number in files/models/<unit>.squad.toml (none: the game's setting).
+- soldier_add: Blender opens with just the new soldier, starting as the soldier he copies looks (one of this squad's,
+  another squad's, or a model file fitted to the soldier's bones); he joins the squad when he's brought back (Bring my
+  changes back), standing before the squad's last soldiers who fire its NeedModelChange weapons (so its bazooka man
+  stays last), the soldiers after him one number on. soldier_remove: the soldier goes, his own look kept aside in the
+  squad's Blender folder (removed/), the soldiers after him one number down. Never fewer than 2 soldiers, nor than the
+  weapons its last soldiers fire one each; never more than 8; each refused in a plain sentence.
+- soldier_blender: Blender with one soldier alone; squad_blender with every soldier."""
 from __future__ import annotations
 
 import hashlib
@@ -108,10 +124,10 @@ def plural_form(lang: str, n: int) -> str:
 
 class SquadBlenderCalls:
     # --- what the squad is made of ---
-    def _squad_lines(self, address: str) -> list:
-        """The squad's soldier lines, the riflemen first: [{"id": his figure as _soldier_kinds names it, "kind": what
-        Import model takes (None: the riflemen, the unit's own model), "model": the game model his figure draws, "word":
-        his words' name}]. A squad whose soldiers all draw one model is one line (its riflemen's figure)."""
+    def _kind_lines(self, address: str) -> list:
+        """The squad's kinds of soldier, the riflemen first: [{"id": his figure as _soldier_kinds names it, "kind": what
+        Import model takes for that kind (None: the riflemen, the unit's own model), "model": the game model his figure
+        draws, "word": his words' name}]. A squad whose soldiers all draw one model is one (its riflemen's figure)."""
         kinds = self._soldier_kinds(address)
         if kinds:
             main = next(iter(kinds))
@@ -124,8 +140,47 @@ class SquadBlenderCalls:
         sid = MAIN if MAIN in ids else (ids[0] if ids else MAIN)
         return [{"id": sid, "kind": None, "model": next((m for k, m in figs if k == sid), None), "word": "soldier"}]
 
-    def _squad_count(self) -> int:
-        """How many soldiers a squad has: the game's one setting (every squad's), with the mod's change of it."""
+    def _squad_lines(self, address: str) -> list:
+        """The squad's soldiers, one line each, soldier 1 first (rusemod.squads): {"id": his number "1".."n", "kind":
+        the same (what Import model takes for his own look, files/models/<unit>@<i>.glb), "number", "model": the game
+        model of the figure the game gives his place, "word": that figure's words' name, "place": that figure's kind
+        line ("fusilier", "bazooka"), "base": the kind whose model file he wears when he has no look of his own (None:
+        the riflemen's, the unit's own model)}."""
+        from rusemod import squads as sq
+        kinds = self._kind_lines(address)
+        figs = {p: m for p, m in self._soldier_figures(address) if m}
+        has_last = bool(figs.get(sq.LAST))
+        n = self._squad_count(address)
+        out = []
+        for i in range(1, n + 1):
+            place = sq.place_figure(i, n, has_last)[len("GfxDescriptor"):].lower()
+            line = next((ln for ln in kinds if ln["id"] == place), kinds[0]) if len(kinds) > 1 else kinds[0]
+            out.append({"id": str(i), "kind": str(i), "number": i,
+                        "model": figs.get(sq.place_figure(i, n, has_last)) or line["model"], "word": line["word"],
+                        "place": line["id"], "base": line["kind"]})
+        return out
+
+    def _squad_file(self, address: str) -> Path | None:
+        """The squad's own number of soldiers, files/models/<its name>.squad.toml (made or not); None for a game unit."""
+        from rusemod import squads as sq
+        own = self._own_model_file(address)
+        return own.with_name(f"{own.stem}{sq.SUFFIX}") if own is not None else None
+
+    def _squad_count(self, address: str | None = None) -> int:
+        """How many soldiers a squad has: its own number (files/models/<its name>.squad.toml, a squad of this mod's
+        own: rusemod.squads), else the game's one setting for every squad, with the mod's change of it."""
+        from rusemod import squads as sq
+        from .api import StudioError
+        own = self._squad_file(address) if address else None
+        if own is not None and own.is_file():
+            try:
+                return sq.read_count(own)
+            except sq.SquadError as exc:   # (the file's own mistake, said as it is)
+                raise StudioError(str(exc)) from None
+        return self._shared_count()
+
+    def _shared_count(self) -> int:
+        """The game's one setting for every squad's soldiers, with the mod's change of it."""
         from .api import StudioError
         from .edits import EditsFileError
         try:
@@ -338,9 +393,13 @@ class SquadBlenderCalls:
                                 edits.new_units if edits else None)
         finally:
             ix.close()
+        from rusemod import squads as sq
+        kinds = self._kind_lines(address)
         lines = self._squad_lines(address)
-        count = self._squad_count()
-        men = self._squad_men(lines, count, self._squad_weapons(address, lang))
+        count = len(lines)
+        weapons = self._squad_weapons(address, lang)
+        men = self._squad_men(kinds, count, weapons)   # (each soldier's kind and weapons, by the game's rule)
+        need = [full for full, _k, needs in weapons if needs]
         w = words(lang)
         own_unit = self._own_model_file(address) is not None
         try:
@@ -349,13 +408,14 @@ class SquadBlenderCalls:
             models = []
         blender_root = (self._mod_dir() / WORK).resolve() if self._mod_dir() is not None else None
         rows = []
-        for ln in lines:
-            mine = [carried for look, carried in men if look == ln["id"]]
-            if not mine:
-                continue
-            target = self._kind_file(address, ln["kind"]) if own_unit else None
-            has = target is not None and target.is_file()
-            record = _read(target.with_suffix(".json")) if has else {}
+        for ln, (_look, carried) in zip(lines, men):
+            own = self._kind_file(address, ln["kind"]) if own_unit else None
+            mine = own is not None and own.is_file()
+            # the model file he wears: his own look, else his place's kind's model in the mod (the riflemen's, the
+            # bazooka man's), else none (the game's)
+            worn = own if mine else (self._kind_file(address, ln["base"]) if own_unit else None)
+            has = worn is not None and worn.is_file()
+            record = _read(worn.with_suffix(".json")) if has else {}
             src = str(record.get("from") or "") if has else ""
             changed = False
             if src and blender_root is not None:
@@ -363,25 +423,37 @@ class SquadBlenderCalls:
                     changed = Path(src).resolve().is_relative_to(blender_root)
                 except (OSError, ValueError):
                     changed = False
-            label = w[f"blender_squad_{ln['word']}"]
-            rows.append({"id": ln["id"], "label": label, "count": len(mine),
-                         "fires": list(dict.fromkeys(full for carried in mine for full, _k, _n in carried)),
-                         "preview": self._soldier_preview(address, ln, target if has else None, models),
-                         "own_model": has, "from": Path(src).name if src else None, "blender_changed": changed,
-                         "kept": str(target) if target is not None else None})
+            rows.append({"id": ln["id"], "number": ln["number"], "label": w[f"blender_squad_{ln['word']}"], "count": 1,
+                         "fires": list(dict.fromkeys(full for full, _k, _n in carried)),
+                         "preview": self._soldier_preview(address, ln, worn if has else None, models),
+                         "own_model": has, "wears": "own" if mine else "kind" if has else "game",
+                         "from": Path(src).name if src else None, "blender_changed": changed,
+                         "kept": str(own) if own is not None else None})
         work = self._squad_work(address)
         state = _read(work / "state.json") if work is not None else {}
         sent = work / "sent" / "sent.json" if work is not None else None
         waiting = bool(sent is not None and sent.is_file() and _sha(sent) != state.get("brought")
                        and _read(sent).get("session") == state.get("session"))
         can_change = own_unit and self._mod_dir() is not None
+        is_open = self._squad_open(address, work)
+        fewest = sq.fewest(len(need))
+        limits = {"add": None, "remove": None}   # (why Add a soldier or Remove can't be, in a plain sentence)
+        if can_change and count >= sq.MOST:
+            limits["add"] = w["squad_limit_most"].format(n=sq.MOST)
+        if can_change and count <= fewest:
+            limits["remove"] = w["squad_limit_need"].format(n=len(need), weapons=w["blender_squad_list_sep"].join(
+                dict.fromkeys(need))) if len(need) > sq.FEWEST else w["squad_limit_fewest"].format(n=sq.FEWEST)
         return {"name": names.get(address), "copies": names.get(new.source) if new else None, "own": own_unit,
-                "count": count, "line": self._squad_line(men, lines, lang), "soldiers": rows,
-                "blender": {"open": self._squad_open(address, work), "work": str(work) if work is not None else None,
+                "count": count, "fewest": fewest, "most": sq.MOST, "line": self._squad_line(men, kinds, lang),
+                "soldiers": rows,
+                "blender": {"open": is_open, "work": str(work) if work is not None else None,
                             "made": bool(work is not None and work.is_dir()), "found": self._blender() is not None,
                             "waiting": waiting},
                 "can": {"blender": can_change and bool(rows), "import": can_change,
-                        "reset": can_change and any(r["own_model"] for r in rows), "add": False, "remove": False},
+                        "reset": can_change and any(r["own_model"] for r in rows),
+                        "add": can_change and count < sq.MOST and not is_open,
+                        "remove": can_change and count > fewest and not is_open},
+                "limits": limits,
                 "why_not": None if can_change else w["blender_squad_why_game"]}
 
     # --- the whole squad in Blender ---
@@ -396,19 +468,24 @@ class SquadBlenderCalls:
             raise StudioError("This is one of the game's own squads: copy it first, then change the copy.")
         return info
 
-    def _start_file(self, address: str, line: dict, work: Path, state: dict, models: list, lib, name: str) -> tuple:
+    def _start_file(self, address: str, line: dict, work: Path, state: dict, models: list, lib, name: str,
+                    file: Path | None = None) -> tuple:
         """What one soldier starts from in Blender, as a file of his own in <work>/start/<his id>/: (its path, {each
         material's name in it: its alpha picture's path}, where it came from: "kept" his last bring-back from this
-        Blender (only while his model in the mod is the one made from it), "model" his own model, its bones put at
-        their rest poses, "uniform" the game model wearing the squad's Custom uniform and its paint, "repainted" the
-        game model with the mod's repaint of the game's picture (files/replace), "game" the game model).
-        Its materials and pictures are named after him ("Bazooka man 1"), each material's alpha written beside it."""
+        Blender (only while his model in the mod is the one made from it), "model" his own model (one soldier's line
+        without a look of his own: the model file of his place's kind he wears, `line`'s "base"; `file`: that file),
+        its bones put at their rest poses, "uniform" the game model wearing the squad's Custom uniform and its paint,
+        "repainted" the game model with the mod's repaint of the game's picture (files/replace), "game" the game
+        model). Its materials and pictures are named after him ("Bazooka man 1"), each material's alpha written
+        beside it."""
         from rusemod import gltf
         from rusemod.modelin import glb_document
         from .api import StudioError
         sid = line["id"]
         folder = work / "start" / sid
-        target = self._kind_file(address, line["kind"])
+        target = file if file is not None else self._kind_file(address, line["kind"])
+        if file is None and "base" in line and (target is None or not target.is_file()):
+            target = self._kind_file(address, line["base"])   # (what he wears: his place's kind's model in the mod)
         taken = (state.get("taken") or {}).get(sid) or {}
         kept = work / "kept" / f"{target.stem}.glb" if target is not None else None
         colour, alpha = {}, {}
@@ -493,10 +570,18 @@ class SquadBlenderCalls:
         Blender that was never brought back is kept aside (moved to sent-not-brought-<time>/, "set_aside"), and this
         Blender starts from what the mod has. Returns squad_info with "work", "opened": [ids], "started": {id: where
         he started from}, "set_aside", "message"."""
-        from rusemod import models as gamemodels
-        from rusemod.blender import open_squad_to_change
-        from .api import StudioError, words
-        info = self._squad_checked(address, lang)
+        return self._into_blender(address, lang)
+
+    def soldier_blender(self, address: str, soldier: str, lang: str = "us") -> dict:
+        """Change one soldier in Blender: Blender with him alone, as squad_blender opens each soldier (his own
+        pictures, where he starts from), brought back the same way (Bring my changes back: squad_blender_back). Refused
+        as squad_blender is, and for a soldier the squad hasn't got. Returns squad_blender's answer."""
+        self._soldier_kind(address, soldier)   # (not a squad, or no such soldier: refused)
+        return self._into_blender(address, lang, only=[str(soldier)])
+
+    def _blender_ready(self, address: str) -> tuple:
+        """(Blender's path, the squad's work folder), or the refusal: Blender not found, the squad open in it already."""
+        from .api import StudioError
         blender = self._blender()
         if blender is None:
             raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
@@ -504,14 +589,31 @@ class SquadBlenderCalls:
         work = self._squad_work(address)
         if self._squad_open(address, work):
             raise StudioError("This squad is open in Blender already: change it there, then bring your changes back.")
-        lines = [ln for ln in self._squad_lines(address) if any(r["id"] == ln["id"] for r in info["soldiers"])]
-        work.mkdir(parents=True, exist_ok=True)
-        state = _read(work / "state.json")
-        set_aside = None
+        return blender, work
+
+    @staticmethod
+    def _set_aside(work: Path, state: dict) -> Path | None:
+        """A sending of the squad's last Blender that was never brought back, moved to sent-not-brought-<time>/ (kept,
+        nothing lost); the folder, or None when there was none."""
         sent = work / "sent"
         if (sent / "sent.json").is_file() and _sha(sent / "sent.json") != state.get("brought"):
-            set_aside = work / time.strftime("sent-not-brought-%Y%m%d-%H%M%S")
-            sent.rename(set_aside)
+            aside = work / time.strftime("sent-not-brought-%Y%m%d-%H%M%S")
+            sent.rename(aside)
+            return aside
+        return None
+
+    def _into_blender(self, address: str, lang: str, only: list | None = None) -> dict:
+        """squad_blender's work: every soldier of the squad (`only`: those of these ids) into one Blender, each named
+        after his line and his number ("Rifleman 3"), each from his own start file (_start_file)."""
+        from rusemod import models as gamemodels
+        from .api import words
+        info = self._squad_checked(address, lang)
+        blender, work = self._blender_ready(address)
+        lines = [ln for ln in self._squad_lines(address) if (only is None or ln["id"] in only)
+                 and any(r["id"] == ln["id"] for r in info["soldiers"])]
+        work.mkdir(parents=True, exist_ok=True)
+        state = _read(work / "state.json")
+        set_aside = self._set_aside(work, state)
         w = words(lang)
         models = self._look_models(address)[0]
         lib = gamemodels.Library(self._game())
@@ -519,28 +621,37 @@ class SquadBlenderCalls:
         try:
             for ln in lines:
                 row = next(r for r in info["soldiers"] if r["id"] == ln["id"])
-                name = w["blender_squad_all"].format(label=row["label"], n=row["count"]) if row["count"] > 1 \
-                    else row["label"]
-                start, alphas, how = self._start_file(address, ln, work, state, models, lib, row["label"])
+                name = w["blender_squad_numbered"].format(label=row["label"], n=row["number"])
+                start, alphas, how = self._start_file(address, ln, work, state, models, lib, name)
                 soldiers.append({"id": ln["id"], "name": name, "file": str(start), "alpha": alphas})
                 started[ln["id"]] = how
         finally:
             lib.close()
+        self._open_blender(address, blender, work, state, soldiers, w)
+        message = w["blender_squad_opened"].format(names=w["blender_squad_list_sep"].join(s["name"] for s in soldiers))
+        if set_aside is not None:
+            message += " " + w["blender_squad_set_aside"].format(folder=str(set_aside))
+        return {**self.squad_info(address, lang), "work": str(work), "opened": [s["id"] for s in soldiers],
+                "started": started, "set_aside": str(set_aside) if set_aside is not None else None, "message": message}
+
+    def _open_blender(self, address: str, blender: Path, work: Path, state: dict, soldiers: list, w: dict,
+                      adding: dict | None = None) -> None:
+        """The squad's manifest for Blender (rusemod.blender_model's squad mode: these soldiers, where Blender writes
+        what it opened and what it sends, its words; `adding`: the new soldier soldier_add opened, {"id", "at"}), a
+        new session in the squad's state, and Blender started on it."""
+        from rusemod.blender import open_squad_to_change
         session = uuid.uuid4().hex
         manifest = {"format": 1, "session": session, "unit": self._own_model_file(address).stem, "soldiers": soldiers,
                     "base": str(work / "base"), "sent": str(work / "sent" / "sent.json"),
                     "words": {"send": w["blender_model_send"], "sent": w["blender_squad_sent"],
                               "hint": [w["blender_squad_hint1"], w["blender_squad_hint2"]],
                               "left_out": w["blender_squad_left_out"]}}
+        if adding is not None:
+            manifest["adding"] = adding
         _write(work / "squad.json", manifest)
         state.update({"format": 1, "session": session, "base": {}})
         _write(work / "state.json", state)
         self._blenders[str(work)] = open_squad_to_change(blender, work / "squad.json")
-        message = w["blender_squad_opened"].format(names=w["blender_squad_list_sep"].join(s["name"] for s in soldiers))
-        if set_aside is not None:
-            message += " " + w["blender_squad_set_aside"].format(folder=str(set_aside))
-        return {**self.squad_info(address, lang), "work": str(work), "opened": [s["id"] for s in soldiers],
-                "started": started, "set_aside": str(set_aside) if set_aside is not None else None, "message": message}
 
     @staticmethod
     def _with_alpha(raw: bytes, alphas: dict) -> bytes:
@@ -591,7 +702,7 @@ class SquadBlenderCalls:
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring my changes back here.")
         ids = [s["id"] for s in manifest["soldiers"]]
-        label = {r["id"]: r["label"] for r in info["soldiers"]}
+        label = {s["id"]: s.get("name") or s["id"] for s in manifest["soldiers"]}   # (as Blender named each: "Rifleman 3")
         got = listing.get("soldiers") or {}
         missing = [i for i in ids if not (got.get(i) or {}).get("file") or not Path(got[i]["file"]).is_file()]
         if missing:
@@ -599,6 +710,8 @@ class SquadBlenderCalls:
             raise StudioError(f"Blender sent nothing for {', '.join(label.get(i, i) for i in missing)}: in Blender, "
                               f"undo what was deleted (Ctrl+Z), click Send to the R.U.S.E. Studio, then bring your "
                               f"changes back.")
+        if manifest.get("adding"):   # (Add a soldier's Blender: the new soldier joins the squad now)
+            return self._join(address, lang, work, manifest, listing, sent)
         state = _read(work / "state.json")
         base = dict(state.get("base") or {}) if state.get("session") == manifest.get("session") else {}
         opened = _read(work / "base" / "base.json")
@@ -621,6 +734,9 @@ class SquadBlenderCalls:
             kept = work / "kept" / f"{target.stem}.glb"
             _put(kept, self._with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {}))
             record = _read(target.with_suffix(".json")) if target.is_file() else {}
+            if not record and "base" in lines[i]:   # (his first own look: the size of the model he wore, if any)
+                worn = self._kind_file(address, lines[i]["base"])
+                record = _read(worn.with_suffix(".json")) if worn is not None and worn.is_file() else {}
             size = record.get("size") if isinstance(record.get("size"), (int, float)) else 1.0
             kind = lines[i]["kind"]
             res = self.model_import(address, str(kept), size, kind=kind) if kind else \
@@ -672,6 +788,217 @@ class SquadBlenderCalls:
 
     def soldier_reset(self, address: str, soldier: str) -> dict:
         """Back to the game's look for one soldier: model_import_remove with his kind (the riflemen: none, which takes
-        the other kinds on bones of their own with them, "kinds_out"), its answer as it is."""
+        the other kinds on bones of their own with them, "kinds_out"), its answer as it is. A soldier with a look of
+        his own (one line per soldier: rusemod.squads) loses his own; one wearing his place's kind's model in the mod
+        (a squad's riflemen's or bazooka man's, from before each soldier had his own) that one, as before."""
         kind = self._soldier_kind(address, soldier)
+        line = next((ln for ln in self._squad_lines(address) if ln["id"] == soldier), None)
+        if line is not None and kind is not None:
+            own = self._kind_file(address, kind)
+            if own is None or not own.is_file():
+                kind = line["base"]   # (none: the riflemen's, the unit's own model)
         return self.model_import_remove(address, kind=kind) if kind else self.model_import_remove(address)
+
+    # --- a soldier more or less (the squad work's Phases 2-3: rusemod.squads) ---
+    def _page_lang(self) -> str:
+        """The Studio's language, for a call the page makes without one."""
+        from rusemod import schema
+        return self.prefs().get("lang") or schema.BASE
+
+    def _need_names(self, address: str, lang: str) -> list:
+        """The squad's weapons its last soldiers fire one each (their ammunition has NeedModelChange), named as the
+        weapon list names them."""
+        return [full for full, _k, needs in self._squad_weapons(address, lang) if needs]
+
+    def _write_count(self, address: str, n: int) -> None:
+        """The squad's own number of soldiers into the mod (none kept when it's the game's setting again)."""
+        from rusemod import squads as sq
+        own = self._own_model_file(address)
+        sq.write_count(self._mod_dir(), own.stem, None if n == self._shared_count() else n)
+
+    def _renumber(self, address: str, work: Path, state: dict, start: int, step: int) -> None:
+        """The soldiers from number `start` on take the next number (`step` 1) or the one before (-1): their own looks'
+        files and records (files/models/<unit>@<i>.glb, .json), their last bring-backs (<work>/kept/) and the squad's
+        Blender state of them; never over a file not yet moved."""
+        from rusemod import squads as sq
+        main = self._own_model_file(address)
+        places = [main.parent, work / "kept"]
+        have = sorted({s[1] for folder in places if folder.is_dir() for f in folder.glob(f"{main.stem}@*.glb")
+                       if (s := sq.soldier_of(f.stem)) is not None and s[0] == main.stem and s[1] >= start})
+        for i in (reversed(have) if step > 0 else have):
+            j = i + step
+            for folder in places:
+                for suffix in (".glb", ".json"):
+                    src = folder / f"{main.stem}@{i}{suffix}"
+                    if src.is_file():
+                        os.replace(src, folder / f"{main.stem}@{j}{suffix}")
+            record = main.parent / f"{main.stem}@{j}.json"
+            data = _read(record)
+            if data.get("for") == str(i):
+                data["for"] = str(j)
+                _write(record, data)
+        taken = state.get("taken") or {}
+        state["taken"] = {(str(int(k) + step) if k.isdigit() and int(k) >= start else k): v for k, v in taken.items()}
+        state["base"] = {}
+
+    def soldier_add(self, address: str, source: str, of: str | None = None, unit: str | None = None,
+                    file: str | None = None) -> dict | None:
+        """Add a soldier (the owner, 2026-11-11: "copy an existing unit or import a model, and then that takes you to
+        Blender. And when you bring it back, that unit can be then added to that squad"): Blender opens with just the
+        new soldier, starting as `source` gives him: "copy" one of this squad's soldiers (`of`, his number) as he looks
+        now, "unit" a soldier of another squad (`unit`, `of`: his number there) as he looks there, "file" a model file
+        (asked for when not given; None back when the picker is closed) fitted to the soldier's bones. He joins the
+        squad when he's brought back (squad_blender_back), before its last soldiers who fire its NeedModelChange
+        weapons (rusemod.squads.join_place); the squad's health and weapons stay as they are (the owner's pick 4).
+        Refused, in words: not a squad of this mod's own, a squad of 8 already, Blender not found or this squad open in
+        it, no such way or soldier. Returns squad_info with "work", "opened": ["new"], "adding": {"at": the number he
+        will have, "started": where he starts from (_start_file's)}, "set_aside"."""
+        from rusemod import models as gamemodels, squads as sq
+        from .api import StudioError, pick_file, words
+        lang = self._page_lang()
+        info = self._squad_checked(address, lang)
+        if source not in ("copy", "unit", "file"):
+            # not a game rule: the Studio's three ways to add a soldier
+            raise StudioError(f"{source} isn't a way to add a soldier: a copy of one in this squad, a soldier from "
+                              f"another unit, or a model file.")
+        n = info["count"]
+        if n >= sq.MOST:
+            # not a game rule: the owner's pick 2 (2026-11-12), "Most soldiers for now: 8"
+            raise StudioError(f"A squad has at most {sq.MOST} soldiers for now.")
+        line = None
+        from_address = address
+        if source == "copy":
+            line = next((ln for ln in self._squad_lines(address) if ln["id"] == str(of)), None)
+            if line is None:
+                raise StudioError(f"This squad has no soldier called {of}.")
+        elif source == "unit":
+            if not unit or unit == address or not self._soldiers(unit):
+                raise StudioError("The unit to take a soldier from isn't a squad of soldiers.")
+            from_address = unit
+            line = next((ln for ln in self._squad_lines(unit) if ln["id"] == str(of)), None)
+            if line is None:
+                raise StudioError(f"That squad has no soldier called {of}.")
+        elif file is None:
+            if self._window is None:
+                return None
+            file = pick_file(self._window, ("3D model (*.3ds;*.glb)",))
+            if not file:
+                return None
+        blender, work = self._blender_ready(address)
+        figs = {p: m for p, m in self._soldier_figures(address) if m}
+        at = sq.join_place(n, len(self._need_names(address, lang)), bool(figs.get(sq.LAST)))
+        work.mkdir(parents=True, exist_ok=True)
+        state = _read(work / "state.json")
+        set_aside = self._set_aside(work, state)
+        w = words(lang)
+        name = w["blender_squad_new"]
+        lib = gamemodels.Library(self._game())
+        try:
+            if source == "file":
+                # fitted to the soldier's bones as the model of the place he'll stand at (before the last soldiers who
+                # fire its NeedModelChange weapons, or at the end of a squad all of one figure: a riflemen's place,
+                # soldier 1's), into the squad's Blender folder; the mod's own files are left as they are until he joins
+                fitted = work / "new" / f"{Path(file).stem}.glb"
+                fitted.parent.mkdir(parents=True, exist_ok=True)
+                self._fit_model(address, file, 1.0, False, None, True, True, None, kind="1", out=fitted)
+                start, alphas, how = self._start_file(address, {"id": "new"}, work, {}, [], lib, name, file=fitted)
+            else:
+                models = self._look_models(from_address)[0]
+                start, alphas, how = self._start_file(from_address, {**line, "id": "new"}, work, {}, models, lib,
+                                                      name)
+        finally:
+            lib.close()
+        self._open_blender(address, blender, work, state, [{"id": "new", "name": name, "file": str(start),
+                                                            "alpha": alphas}], w,
+                           adding={"id": "new", "at": at, "source": source})
+        return {**self.squad_info(address, lang), "work": str(work), "opened": ["new"],
+                "adding": {"at": at, "started": how}, "set_aside": str(set_aside) if set_aside is not None else None}
+
+    def _join(self, address: str, lang: str, work: Path, manifest: dict, listing: dict, sent: Path) -> dict:
+        """squad_blender_back for Add a soldier's Blender: the new soldier joins the squad at the number soldier_add
+        gave him (the ones from there on one number on), the squad one soldier more, his look his own (Import model with
+        his number, from what Blender sent: <work>/kept/<unit>@<i>.glb). An Import model that fails leaves the squad as
+        it was. Returns squad_blender_back's answer with "joined": his number and "count"."""
+        from rusemod import squads as sq
+        from .api import StudioError, words
+        adding = manifest["adding"]
+        new = (listing.get("soldiers") or {}).get(adding["id"]) or {}
+        n = self._squad_count(address)
+        if n >= sq.MOST:
+            raise StudioError(f"A squad has at most {sq.MOST} soldiers for now.")
+        at = max(1, min(int(adding.get("at") or n + 1), n + 1))
+        state = _read(work / "state.json")
+        main = self._own_model_file(address)
+        main_record = _read(main.with_suffix(".json")) if main.is_file() else {}
+        size = main_record.get("size") if isinstance(main_record.get("size"), (int, float)) else 1.0
+        self._renumber(address, work, state, at, +1)
+        self._write_count(address, n + 1)
+        target = self._kind_file(address, str(at))
+        kept = work / "kept" / f"{target.stem}.glb"
+        _put(kept, self._with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {}))
+        try:
+            res = self.model_import(address, str(kept), size, kind=str(at))
+        except BaseException:
+            # (the squad as it was: his sending stays in Blender's folder, to bring back again)
+            kept.unlink(missing_ok=True)
+            for f in (target, target.with_suffix(".json")):
+                f.unlink(missing_ok=True)
+            self._write_count(address, n)
+            self._renumber(address, work, state, at + 1, -1)
+            _write(work / "state.json", state)
+            raise
+        state.setdefault("taken", {})[str(at)] = {"kept": _sha(kept), "model": _sha(target)}
+        state.update({"session": manifest.get("session"), "base": {}, "brought": _sha(sent)})
+        _write(work / "state.json", state)
+        w = words(lang)
+        left = list(listing.get("left_out") or [])
+        message = w["blender_squad_joined"].format(n=at, count=n + 1)
+        if left:
+            message += " " + w["blender_squad_left_out_back"].format(names=", ".join(left))
+        return {**self.squad_info(address, lang), "changed": [str(at)], "unchanged": [], "uniform_kept": [],
+                "left_out": left, "reports": {str(at): res.get("model")}, "joined": str(at), "work": str(work),
+                "message": message}
+
+    def soldier_remove(self, address: str, soldier: str) -> dict:
+        """Take a soldier out of the squad (`soldier`: his number): the squad one soldier fewer, the soldiers after him
+        one number down, his own look kept aside in the squad's Blender folder (<work>/removed-<time>-soldier<i>/:
+        nothing lost, not packed). Refused, in words: fewer than 2 soldiers (the game's own rule, the owner's pick 1),
+        fewer than the weapons its last soldiers fire one each, the squad open in Blender, no such soldier. A sending
+        from Blender never brought back is kept aside first (its soldiers' numbers are the old ones). Returns
+        squad_info with "removed", "set_aside", "kept_aside"."""
+        from rusemod import squads as sq
+        from .api import StudioError
+        lang = self._page_lang()
+        info = self._squad_checked(address, lang)
+        if not any(r["id"] == str(soldier) for r in info["soldiers"]):
+            raise StudioError(f"This squad has no soldier called {soldier}.")
+        n = info["count"]
+        need = self._need_names(address, lang)
+        if n - 1 < sq.FEWEST:
+            # the game's own rule (its setting makes any number below 2 a 2) and the owner's pick 1
+            raise StudioError(f"A squad keeps at least {sq.FEWEST} soldiers: the game's own rule.")
+        if n - 1 < len(need):
+            # the game's rule: each of these weapons goes to one soldier, from the last one back
+            raise StudioError(f"This squad keeps at least {len(need)} soldiers: its last {len(need)} fire "
+                              f"{', '.join(dict.fromkeys(need))}, one each.")
+        work = self._squad_work(address)
+        if self._squad_open(address, work):
+            raise StudioError("This squad is open in Blender already: change it there, then bring your changes back.")
+        i = int(soldier)
+        work.mkdir(parents=True, exist_ok=True)
+        state = _read(work / "state.json")
+        set_aside = self._set_aside(work, state)
+        main = self._own_model_file(address)
+        aside = work / time.strftime(f"removed-%Y%m%d-%H%M%S-soldier{i}")
+        for f in (main.with_name(f"{main.stem}@{i}.glb"), main.with_name(f"{main.stem}@{i}.json"),
+                  work / "kept" / f"{main.stem}@{i}.glb"):
+            if f.is_file():
+                aside.mkdir(parents=True, exist_ok=True)
+                os.replace(f, aside / f.name)
+        (state.get("taken") or {}).pop(str(i), None)
+        self._renumber(address, work, state, i + 1, -1)
+        self._write_count(address, n - 1)
+        _write(work / "state.json", state)
+        return {**self.squad_info(address, lang), "removed": str(i),
+                "set_aside": str(set_aside) if set_aside is not None else None,
+                "kept_aside": str(aside) if aside.is_dir() else None}

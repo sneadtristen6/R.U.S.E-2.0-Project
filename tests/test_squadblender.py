@@ -239,23 +239,31 @@ def glb_from(figure: bytes, material: str = "Bazooka man 1") -> bytes:
     return g.to_bytes()
 
 
+RIFLE_FIRES = ["Infantry weapon · Light weapons", "Grenades · Light grenade"]
+
+
 class SquadInfo(Squad):
     def test_the_two_kind_squad(self):
+        """One line per soldier, soldier 1 first (the squad work's Phase 3): the four riflemen, then the bazooka man,
+        each with his own look's file (made or not) and what he fires by the game's rule."""
         info = self.info()
         self.assertEqual((info["name"], info["copies"], info["own"], info["count"]), ("My Riflemen", "G.I.", True, 5))
         self.assertEqual(info["line"], "5 soldiers: 4 riflemen (Infantry weapon, Grenades), 1 bazooka man (Bazooka).")
-        self.assertEqual([(r["id"], r["label"], r["count"], r["fires"]) for r in info["soldiers"]],
-                         [("fusilier", "Rifleman", 4, ["Infantry weapon · Light weapons", "Grenades · Light grenade"]),
-                          ("bazooka", "Bazooka man", 1, ["Bazooka"])])
-        rifle, bazooka = info["soldiers"]
-        self.assertEqual((rifle["own_model"], rifle["from"], rifle["blender_changed"]), (False, None, False))
-        self.assertEqual(rifle["kept"], str(self.models / f"{STEM}.glb"))
-        self.assertEqual(bazooka["kept"], str(self.models / f"{STEM}@bazooka.glb"))
+        self.assertEqual([(r["id"], r["number"], r["label"], r["count"], r["fires"]) for r in info["soldiers"]],
+                         [(str(i), i, "Rifleman", 1, RIFLE_FIRES) for i in range(1, 5)]
+                         + [("5", 5, "Bazooka man", 1, ["Bazooka"])])
+        rifle, bazooka = info["soldiers"][0], info["soldiers"][4]
+        self.assertEqual((rifle["own_model"], rifle["wears"], rifle["from"], rifle["blender_changed"]),
+                         (False, "game", None, False))
+        self.assertEqual(rifle["kept"], str(self.models / f"{STEM}@1.glb"))      # his own look's file, made or not
+        self.assertEqual(bazooka["kept"], str(self.models / f"{STEM}@5.glb"))
         self.assertTrue(rifle["preview"]["url"].startswith("cache/units/") and rifle["preview"]["url"].endswith(".glb"))
         self.assertNotEqual(rifle["preview"]["url"], bazooka["preview"]["url"])   # each his own figure
+        self.assertEqual(info["soldiers"][1]["preview"], rifle["preview"])        # (the riflemen: one game model)
         self.assertEqual(info["blender"], {"open": False, "work": str(self.work), "made": False, "found": True,
                                            "waiting": False})
-        self.assertEqual(info["can"], {"blender": True, "import": True, "reset": False, "add": False, "remove": False})
+        self.assertEqual(info["can"], {"blender": True, "import": True, "reset": False, "add": True, "remove": True})
+        self.assertEqual((info["fewest"], info["most"], info["limits"]), (2, 8, {"add": None, "remove": None}))
         self.assertIsNone(info["why_not"])
 
     def test_the_sentence_in_other_languages_counts_the_way_each_says_it(self):
@@ -263,10 +271,11 @@ class SquadInfo(Squad):
                          "5 soldats : 4 fusiliers (Infantry weapon, Grenades), 1 soldat au bazooka (Bazooka).")
         ru = self.info("ru")
         self.assertEqual(ru["line"], "5 солдат: 4 стрелка (Infantry weapon, Grenades), 1 гранатомётчик (Bazooka).")
-        self.assertEqual([r["label"] for r in ru["soldiers"]], ["Стрелок", "Гранатомётчик"])
+        self.assertEqual([r["label"] for r in ru["soldiers"]], ["Стрелок"] * 4 + ["Гранатомётчик"])
         self.assertEqual(self.info("jpn")["line"], "兵士5人：ライフル兵4人（Infantry weapon、Grenades）、バズーカ兵1人（Bazooka）。")
 
     def test_a_squad_of_one_look_is_one_line_and_its_last_man_still_carries_the_satchel_charge(self):
+        """Its sentence says one kind; its lines are its five soldiers, the last one carrying the charge."""
         self.kinds = {}   # (riflemen and bazooka man drawing one model: _soldier_kinds gives none)
         self.api._soldier_figures = lambda address: [("GfxDescriptorFusilier", RIFLEMAN),
                                                      ("GfxDescriptorBazooka", RIFLEMAN)]
@@ -274,9 +283,9 @@ class SquadInfo(Squad):
                         ("Ammo_Charge_AT", "Satchel charge"), ("Ammo_Grenades_legeres", "Grenades · Light grenade")]
         info = self.info()
         self.assertEqual(info["line"], "5 soldiers: 4 soldiers (Infantry weapon, Grenades), 1 soldier (Satchel charge).")
-        self.assertEqual([(r["id"], r["label"], r["count"]) for r in info["soldiers"]], [("fusilier", "Soldier", 5)])
-        self.assertEqual(info["soldiers"][0]["fires"], ["Infantry weapon · Light weapons", "Grenades · Light grenade",
-                                                        "Satchel charge"])
+        self.assertEqual([(r["id"], r["label"], r["count"]) for r in info["soldiers"]],
+                         [(str(i), "Soldier", 1) for i in range(1, 6)])
+        self.assertEqual([r["fires"] for r in info["soldiers"]], [RIFLE_FIRES] * 4 + [["Satchel charge"]])
         self.weapons = self.weapons[:1]
         self.assertEqual(self.info()["line"], "5 soldiers (Infantry weapon).")
         self.weapons = []
@@ -287,8 +296,9 @@ class SquadInfo(Squad):
         info = self.info(address=GAME_SQUAD)
         self.assertEqual((info["name"], info["copies"], info["own"]), ("G.I.", None, False))
         self.assertEqual(info["can"], {"blender": False, "import": False, "reset": False, "add": False, "remove": False})
+        self.assertEqual(info["limits"], {"add": None, "remove": None})
         self.assertIn("copy it first", info["why_not"])
-        self.assertEqual([r["kept"] for r in info["soldiers"]], [None, None])
+        self.assertEqual([r["kept"] for r in info["soldiers"]], [None] * 5)
         self.assertEqual(info["blender"]["work"], None)
 
     def test_a_unit_that_isn_t_a_squad(self):
@@ -298,7 +308,7 @@ class SquadInfo(Squad):
     def test_the_count_is_the_game_s_setting_with_the_mod_s_change(self):
         self.edits.values[(E + "UniteBehaviourDescriptor", "NbSoldatInGroupeCombat")] = 7
         info = self.info()
-        self.assertEqual((info["count"], [r["count"] for r in info["soldiers"]]), (7, [6, 1]))
+        self.assertEqual((info["count"], [r["label"] for r in info["soldiers"]]), (7, ["Rifleman"] * 6 + ["Bazooka man"]))
         self.assertTrue(info["line"].startswith("7 soldiers: 6 riflemen"))
 
     def test_who_fires_what_follows_the_game_s_rule(self):
@@ -322,53 +332,72 @@ class SquadInfo(Squad):
         self.assertEqual([plural_form("us", n) for n in (1, 2)], ["one", "many"])
 
     def test_his_own_model_is_said_and_shown(self):
-        target = self.models / f"{STEM}@bazooka.glb"
+        """Soldier 5's own look (<unit>@5.glb, brought back from the squad's Blender); before each soldier had his own,
+        the bazooka man's model (<unit>@bazooka.glb) is what the last soldier wears, said as such."""
+        target = self.models / f"{STEM}@5.glb"
         target.parent.mkdir(parents=True)
         target.write_bytes(b"glTF-his")
         target.with_suffix(".json").write_text(json.dumps({"from": str(self.mod / "blender" / STEM / "squad" / "kept" /
-                                                                       f"{STEM}@bazooka.glb")}), encoding="utf-8")
-        bazooka = self.info()["soldiers"][1]
-        self.assertEqual((bazooka["own_model"], bazooka["from"], bazooka["blender_changed"]),
-                         (True, f"{STEM}@bazooka.glb", True))
+                                                                       f"{STEM}@5.glb")}), encoding="utf-8")
+        bazooka = self.info()["soldiers"][4]
+        self.assertEqual((bazooka["own_model"], bazooka["wears"], bazooka["from"], bazooka["blender_changed"]),
+                         (True, "own", f"{STEM}@5.glb", True))
         self.assertTrue(bazooka["preview"]["url"].startswith("cache/units/own/"))
         self.assertEqual(self.info()["can"]["reset"], True)
+        self.assertEqual([r["own_model"] for r in self.info()["soldiers"]], [False] * 4 + [True])   # (he alone)
         target.with_suffix(".json").write_text(json.dumps({"from": "C:/Users/x/Desktop/marine.glb"}), encoding="utf-8")
-        self.assertEqual(self.info()["soldiers"][1]["blender_changed"], False)
+        self.assertEqual(self.info()["soldiers"][4]["blender_changed"], False)
+        # a bazooka man's model from before (the kind's file): the last soldier wears it
+        target.with_suffix(".json").unlink()
+        target.rename(self.models / f"{STEM}@bazooka.glb")
+        (self.models / f"{STEM}@bazooka.json").write_text(json.dumps({"from": "C:/x/marine.glb"}), encoding="utf-8")
+        bazooka = self.info()["soldiers"][4]
+        self.assertEqual((bazooka["own_model"], bazooka["wears"], bazooka["from"], bazooka["kept"]),
+                         (True, "kind", "marine.glb", str(self.models / f"{STEM}@5.glb")))
 
 
 class OpenTheSquad(Squad):
-    def test_one_blender_with_both_soldiers_each_his_own_file_and_pictures(self):
+    def test_one_blender_with_every_soldier_each_his_own_file_and_pictures(self):
         res = self.open_squad()
         self.assertEqual(self.started, [(Path("C:/b/blender.exe"), self.work / "squad.json")])
         self.assertIsInstance(self.api._blenders[str(self.work)], Closed)
-        self.assertEqual((res["work"], res["opened"]), (str(self.work), ["fusilier", "bazooka"]))
-        self.assertEqual(res["started"], {"fusilier": "game", "bazooka": "game"})
+        self.assertEqual((res["work"], res["opened"]), (str(self.work), ["1", "2", "3", "4", "5"]))
+        self.assertEqual(res["started"], {str(i): "game" for i in range(1, 6)})
         m = self.manifest()
         self.assertEqual([(s["id"], s["name"]) for s in m["soldiers"]],
-                         [("fusilier", "Rifleman (all 4)"), ("bazooka", "Bazooka man")])
+                         [(str(i), f"Rifleman {i}") for i in range(1, 5)] + [("5", "Bazooka man 5")])
         self.assertEqual((m["base"], m["sent"]), (str(self.work / "base"), str(self.work / "sent" / "sent.json")))
         self.assertEqual(m["words"]["hint"][0], "Each soldier is his own: change one, and only he changes. Painting one "
                                                 "never paints another.")
         files = [Path(s["file"]) for s in m["soldiers"]]
-        self.assertEqual(files, [self.work / "start" / "fusilier" / "fusilier.glb",
-                                 self.work / "start" / "bazooka" / "bazooka.glb"])
+        self.assertEqual(files, [self.work / "start" / str(i) / f"{i}.glb" for i in range(1, 6)])
         for s, f in zip(m["soldiers"], files):
             doc, binary = glb_document(f.read_bytes())
-            label = "Rifleman" if s["id"] == "fusilier" else "Bazooka man"
+            label = s["name"]
             self.assertEqual([x["name"] for x in doc["materials"]], [f"{label} 1"])   # named after him
             self.assertEqual([x["name"] for x in doc["images"]], [f"{label} 1"])
             self.assertNotIn("rusemod_alpha_texture", doc["materials"][0].get("extras", {}))
             alpha = Path(s["alpha"][f"{label} 1"])
             self.assertEqual(alpha.parent, f.parent)   # his own copy, in his own folder
-            stem = "us_soldier_model" if s["id"] == "fusilier" else "us_soldier_bazooka_model"
+            stem = "us_soldier_model" if s["id"] != "5" else "us_soldier_bazooka_model"
             self.assertEqual(alpha.read_bytes(), f"PNG-alpha-{stem}".encode())
-        self.assertEqual(len({str(f.parent) for f in files}), 2)
+        self.assertEqual(len({str(f.parent) for f in files}), 5)
+
+    def test_one_soldier_alone(self):
+        with self.patched():
+            res = self.api.soldier_blender(SQUAD, "3")
+        self.assertEqual((res["opened"], res["started"]), (["3"], {"3": "game"}))
+        self.assertEqual([(s["id"], s["name"]) for s in self.manifest()["soldiers"]], [("3", "Rifleman 3")])
+        from ruse_studio.api import StudioError
+        self.api._blenders = {}
+        with self.patched(), self.assertRaisesRegex(StudioError, "This squad has no soldier called 6"):
+            self.api.soldier_blender(SQUAD, "6")
 
     def test_the_words_blender_shows_are_in_the_studio_s_language(self):
         self.open_squad("ger")
         m = self.manifest()
         self.assertEqual(m["words"]["send"], "An das R.U.S.E. Studio senden")
-        self.assertEqual([s["name"] for s in m["soldiers"]], ["Schütze (alle 4)", "Bazooka-Schütze"])
+        self.assertEqual([s["name"] for s in m["soldiers"]], [f"Schütze {i}" for i in range(1, 5)] + ["Bazooka-Schütze 5"])
 
     def test_a_custom_uniform_s_paint_is_what_he_starts_in(self):
         copy = self.models / f"{STEM}.copy.toml"
@@ -379,7 +408,7 @@ class OpenTheSquad(Squad):
         paint.write_bytes(b"PNG-painted-uniform")
         paint.with_name(paint.name.replace(".tgv.png", ".tgv.alpha.png")).write_bytes(b"PNG-painted-alpha")
         res = self.open_squad()
-        self.assertEqual(res["started"], {"fusilier": "uniform", "bazooka": "uniform"})
+        self.assertEqual(res["started"], {str(i): "uniform" for i in range(1, 6)})
         for s in self.manifest()["soldiers"]:
             doc, binary = glb_document(Path(s["file"]).read_bytes())
             v = doc["bufferViews"][doc["images"][0]["bufferView"]]
@@ -387,41 +416,48 @@ class OpenTheSquad(Squad):
             self.assertEqual(Path(next(iter(s["alpha"].values()))).read_bytes(), b"PNG-painted-alpha")
 
     def test_his_own_model_from_a_file_is_what_he_starts_in(self):
-        target = self.models / f"{STEM}@bazooka.glb"
-        target.parent.mkdir(parents=True)
-        target.write_bytes(own_glb(b"PNG-his-colour", b"PNG-his-alpha"))
-        target.with_suffix(".json").write_text(json.dumps({"from": "C:/Users/x/Desktop/marine.glb",
-                                                           "report": {"like": BAZOOKA}}), encoding="utf-8")
-        res = self.open_squad()
-        self.assertEqual(res["started"], {"fusilier": "game", "bazooka": "model"})
-        s = self.manifest()["soldiers"][1]
-        doc, binary = glb_document(Path(s["file"]).read_bytes())
-        self.assertNotIn("rusemod_alpha_texture", doc["materials"][0].get("extras", {}))
-        self.assertEqual(Path(s["alpha"]["Bazooka man 1"]).read_bytes(), b"PNG-his-alpha")
+        """His own look (<unit>@5.glb) is what he starts from; before he had one, the bazooka man's model from before
+        each soldier had his own (<unit>@bazooka.glb) was, the soldier who wears it."""
+        for name in (f"{STEM}@5", f"{STEM}@bazooka"):
+            with self.subTest(file=name):
+                for f in self.models.glob("*") if self.models.is_dir() else []:
+                    f.unlink()
+                target = self.models / f"{name}.glb"
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(own_glb(b"PNG-his-colour", b"PNG-his-alpha"))
+                target.with_suffix(".json").write_text(json.dumps({"from": "C:/Users/x/Desktop/marine.glb",
+                                                                   "report": {"like": BAZOOKA}}), encoding="utf-8")
+                self.api._blenders = {}
+                res = self.open_squad()
+                self.assertEqual(res["started"], {**{str(i): "game" for i in range(1, 5)}, "5": "model"})
+                s = self.manifest()["soldiers"][4]
+                doc, binary = glb_document(Path(s["file"]).read_bytes())
+                self.assertNotIn("rusemod_alpha_texture", doc["materials"][0].get("extras", {}))
+                self.assertEqual(Path(s["alpha"]["Bazooka man 5 1"]).read_bytes(), b"PNG-his-alpha")
 
     def test_a_bring_back_is_where_he_starts_until_a_model_from_a_file_takes_its_place(self):
         self.open_squad()
         figures = self.blender_opened()
         calls = self.taking_in()
-        self.blender_sends({**figures, "bazooka": glb_from(b"PNG-painted-red")})
+        self.blender_sends({**figures, "5": glb_from(b"PNG-painted-red")})
         self.api.squad_blender_back(SQUAD)
-        self.assertEqual([c[3] for c in calls], ["bazooka"])
+        self.assertEqual([c[3] for c in calls], ["5"])
         res = self.open_squad()
-        self.assertEqual(res["started"], {"fusilier": "game", "bazooka": "kept"})   # his last bring-back
+        self.assertEqual(res["started"], {**{str(i): "game" for i in range(1, 5)}, "5": "kept"})   # his last bring-back
         # Import model from another file of the very same bytes: his model's record names that file now
-        target = self.models / f"{STEM}@bazooka.glb"
+        target = self.models / f"{STEM}@5.glb"
         record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
         target.with_suffix(".json").write_text(json.dumps({**record, "from": "C:/Users/x/same.glb"}), encoding="utf-8")
-        self.assertEqual(self.open_squad()["started"]["bazooka"], "model")
+        self.assertEqual(self.open_squad()["started"]["5"], "model")
         target.with_suffix(".json").write_text(json.dumps(record), encoding="utf-8")
-        self.assertEqual(self.open_squad()["started"]["bazooka"], "kept")
+        self.assertEqual(self.open_squad()["started"]["5"], "kept")
         # Import model from a file after the Blender trip: his model is that one now, never undone by the old sending
         target.write_bytes(own_glb(b"PNG-file-colour", b"PNG-file-alpha"))
         target.with_suffix(".json").write_text(json.dumps({"from": "C:/Users/x/marine.glb", "report": {}}),
                                                encoding="utf-8")
         res = self.open_squad()
-        self.assertEqual(res["started"]["bazooka"], "model")
-        doc, binary = glb_document(Path(self.manifest()["soldiers"][1]["file"]).read_bytes())
+        self.assertEqual(res["started"]["5"], "model")
+        doc, binary = glb_document(Path(self.manifest()["soldiers"][4]["file"]).read_bytes())
         v = doc["bufferViews"][doc["images"][doc["textures"][doc["materials"][0]["pbrMetallicRoughness"]
                                                              ["baseColorTexture"]["index"]]["source"]]["bufferView"]]
         self.assertEqual(binary[v["byteOffset"]:v["byteOffset"] + v["byteLength"]], b"PNG-file-colour")
@@ -481,37 +517,38 @@ class BringItBack(Squad):
         rifle.write_bytes(b"glTF-riflemen")
         rifle.with_suffix(".json").write_text('{"from": "C:/x/rifle.glb"}', encoding="utf-8")
         before = (sha(rifle), sha(rifle.with_suffix(".json")))
-        painted = glb_from(b"PNG-painted-red")
-        self.blender_sends({**self.figures, "bazooka": painted})
+        painted = glb_from(b"PNG-painted-red", "Bazooka man 5 1")   # (his material as his start file named it)
+        self.blender_sends({**self.figures, "5": painted})
         res = self.back()
-        self.assertEqual((res["changed"], res["unchanged"], res["uniform_kept"]), (["bazooka"], ["fusilier"], []))
-        kept = self.work / "kept" / f"{STEM}@bazooka.glb"
-        self.assertEqual(self.calls, [(SQUAD, kept.name, 1.0, "bazooka")])
+        self.assertEqual((res["changed"], res["unchanged"], res["uniform_kept"]), (["5"], ["1", "2", "3", "4"], []))
+        kept = self.work / "kept" / f"{STEM}@5.glb"
+        self.assertEqual(self.calls, [(SQUAD, kept.name, 1.0, "5")])   # his own look alone
         self.assertEqual((sha(rifle), sha(rifle.with_suffix(".json"))), before)
-        self.assertEqual(res["message"], "Brought back: Bazooka man. As they were: Rifleman.")
+        self.assertEqual(res["message"], "Brought back: Bazooka man 5. As they were: Rifleman 1, Rifleman 2, Rifleman 3, "
+                                         "Rifleman 4.")
         # his alpha back in the file Import model read: the start file's alpha for his material, named in its extras
         doc, binary = glb_document(kept.read_bytes())
         k = doc["materials"][0]["extras"]["rusemod_alpha_texture"]
         v = doc["bufferViews"][doc["images"][doc["textures"][k]["source"]]["bufferView"]]
         self.assertEqual(binary[v["byteOffset"]:v["byteOffset"] + v["byteLength"]], b"PNG-alpha-us_soldier_bazooka_model")
         state = json.loads((self.work / "state.json").read_text(encoding="utf-8"))
-        self.assertEqual(state["taken"]["bazooka"], {"kept": sha(kept), "model": sha(self.models / f"{STEM}@bazooka.glb")})
+        self.assertEqual(state["taken"]["5"], {"kept": sha(kept), "model": sha(self.models / f"{STEM}@5.glb")})
 
-    def test_sent_again_unchanged_takes_nothing_and_then_the_riflemen_alone(self):
+    def test_sent_again_unchanged_takes_nothing_and_then_soldier_1_alone(self):
         painted = glb_from(b"PNG-painted-red")
-        self.blender_sends({**self.figures, "bazooka": painted})
+        self.blender_sends({**self.figures, "5": painted})
         self.back()
-        his = self.models / f"{STEM}@bazooka.glb"
+        his = self.models / f"{STEM}@5.glb"
         his_before = (sha(his), sha(his.with_suffix(".json")))
-        self.blender_sends({**self.figures, "bazooka": painted})   # Send again, nothing done since
+        self.blender_sends({**self.figures, "5": painted})   # Send again, nothing done since
         res = self.back()
-        self.assertEqual((res["changed"], res["unchanged"]), ([], ["fusilier", "bazooka"]))
+        self.assertEqual((res["changed"], res["unchanged"]), ([], ["1", "2", "3", "4", "5"]))
         self.assertEqual(res["message"], "Nothing was changed in Blender since the squad was opened or last brought "
                                          "back, so nothing changed here.")
-        self.blender_sends({"fusilier": glb_from(b"figure-fusilier-moved", "Rifleman 1"), "bazooka": painted})
+        self.blender_sends({**self.figures, "1": glb_from(b"figure-1-moved", "Rifleman 1 1"), "5": painted})
         res = self.back()
-        self.assertEqual(res["changed"], ["fusilier"])
-        self.assertEqual([c[3] for c in self.calls], ["bazooka", None])   # (the riflemen: Import model with no kind)
+        self.assertEqual(res["changed"], ["1"])
+        self.assertEqual([c[3] for c in self.calls], ["5", "1"])   # (soldier 1: his own look, not the riflemen's)
         self.assertEqual((sha(his), sha(his.with_suffix(".json"))), his_before)
 
     def test_nothing_changed_at_all(self):
@@ -524,10 +561,11 @@ class BringItBack(Squad):
         copy = self.models / f"{STEM}.copy.toml"
         copy.parent.mkdir(parents=True)
         copy.write_text('of = ["x"]\n', encoding="utf-8")
-        self.blender_sends({**self.figures, "bazooka": glb_from(b"PNG-painted-red")})
+        self.blender_sends({**self.figures, "5": glb_from(b"PNG-painted-red")})
         res = self.back()
-        self.assertEqual((res["changed"], res["unchanged"], res["uniform_kept"]), (["bazooka"], ["fusilier"], ["fusilier"]))
-        self.assertEqual([c[3] for c in self.calls], [None, "bazooka"])   # the riflemen first, as he was
+        self.assertEqual((res["changed"], res["unchanged"], res["uniform_kept"]),
+                         (["5"], ["1", "2", "3", "4"], ["1", "2", "3", "4"]))
+        self.assertEqual([c[3] for c in self.calls], ["1", "2", "3", "4", "5"])   # each as he was, in his order
         self.assertIn("Custom uniform", res["message"])
 
     def test_an_open_blender_is_asked_to_send(self):
@@ -538,7 +576,7 @@ class BringItBack(Squad):
             end = time.monotonic() + 5
             while not (sent.parent / blender.SEND_REQUEST).exists() and time.monotonic() < end:
                 time.sleep(0.02)
-            self.blender_sends({**self.figures, "bazooka": glb_from(b"PNG-painted")})
+            self.blender_sends({**self.figures, "5": glb_from(b"PNG-painted")})
             (sent.parent / blender.SEND_DONE).write_text(json.dumps({"file": str(sent)}), encoding="utf-8")
             (sent.parent / blender.SEND_REQUEST).unlink(missing_ok=True)
         sent.parent.mkdir(parents=True, exist_ok=True)
@@ -546,12 +584,12 @@ class BringItBack(Squad):
         t.start()
         res = self.back()
         t.join()
-        self.assertEqual(res["changed"], ["bazooka"])
+        self.assertEqual(res["changed"], ["5"])
 
     def test_an_open_blender_that_doesn_t_answer_takes_nothing(self):
         from ruse_studio.api import StudioError
         self.api._blenders[str(self.work)] = Running()
-        self.blender_sends({**self.figures, "bazooka": glb_from(b"old")})
+        self.blender_sends({**self.figures, "5": glb_from(b"old")})
         with mock.patch("ruse_studio.squadblender.SEND_WAIT", 0.3), \
                 self.assertRaisesRegex(StudioError, "Blender didn't answer in time"):
             self.back()
@@ -564,8 +602,9 @@ class BringItBack(Squad):
         self.blender_sends(dict(self.figures), session="an older Blender")
         with self.assertRaisesRegex(StudioError, "Nothing has come back from Blender yet"):
             self.back()
-        self.blender_sends({"bazooka": b"x"})   # (every part of the riflemen deleted in Blender)
-        with self.assertRaisesRegex(StudioError, "Blender sent nothing for Rifleman"):
+        self.blender_sends({"5": b"x"})   # (every part of the riflemen deleted in Blender)
+        with self.assertRaisesRegex(StudioError, "Blender sent nothing for Rifleman 1, Rifleman 2, Rifleman 3, "
+                                                 "Rifleman 4"):
             self.back()
         self.assertEqual(self.calls, [])
 
@@ -578,16 +617,23 @@ class BringItBack(Squad):
 
 class OneSoldier(Squad):
     def test_import_and_reset_go_to_his_kind(self):
+        """Import a model… on a soldier's line gives him his own look (Import model with his number); Back to the
+        game's look takes his own out, or, when he has none, the model he wears from before each soldier had his own
+        (the bazooka man's kind, the riflemen's: none)."""
         got = []
         self.api.model_import = lambda address, file=None, size=1.0, kind=None: got.append(("import", file, size, kind)) \
             or {"model": {}, "kind": kind}
         self.api.model_import_remove = lambda address, kind=None: got.append(("reset", kind)) or {"kinds_out": []}
-        self.assertEqual(self.api.soldier_import(SQUAD, "bazooka", "C:/m.glb", 1.2), {"model": {}, "kind": "bazooka"})
-        self.api.soldier_import(SQUAD, "fusilier")
-        self.api.soldier_reset(SQUAD, "bazooka")
-        self.assertEqual(self.api.soldier_reset(SQUAD, "fusilier"), {"kinds_out": []})
-        self.assertEqual(got, [("import", "C:/m.glb", 1.2, "bazooka"), ("import", None, 1.0, None), ("reset", "bazooka"),
-                               ("reset", None)])
+        self.assertEqual(self.api.soldier_import(SQUAD, "5", "C:/m.glb", 1.2), {"model": {}, "kind": "5"})
+        self.api.soldier_import(SQUAD, "1")
+        self.api.soldier_reset(SQUAD, "5")
+        self.assertEqual(self.api.soldier_reset(SQUAD, "1"), {"kinds_out": []})
+        his = self.models / f"{STEM}@3.glb"
+        his.parent.mkdir(parents=True)
+        his.write_bytes(b"glTF")
+        self.api.soldier_reset(SQUAD, "3")
+        self.assertEqual(got, [("import", "C:/m.glb", 1.2, "5"), ("import", None, 1.0, "1"), ("reset", "bazooka"),
+                               ("reset", None), ("reset", "3")])
 
     def test_a_soldier_the_squad_hasn_t_got_or_a_unit_that_isn_t_a_squad(self):
         from ruse_studio.api import StudioError

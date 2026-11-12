@@ -8256,12 +8256,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def _kind_file(self, address: str, kind: str | None) -> Path | None:
         """The model file of one kind of a squad's soldiers: the unit's own (files/models/<unit>.glb) for the first
-        kind (the riflemen) or none given, files/models/<unit>@<kind>.glb for another (its bazooka man)."""
+        kind (the riflemen) or none given, files/models/<unit>@<kind>.glb for another (its bazooka man), and for one
+        soldier alone, `kind` his number, his own look files/models/<unit>@<number>.glb (rusemod.squads)."""
         target = self._own_model_file(address)
+        if target is not None and kind and str(kind).isdigit():
+            return target.with_name(f"{target.stem}@{int(kind)}.glb")
         kinds = self._soldier_kinds(address) if kind else {}
         if target is None or not kind or not kinds or kind == next(iter(kinds)):
             return target
         return target.with_name(f"{target.stem}@{kind}.glb")
+
+    def _soldier_place_model(self, address: str, kind) -> str | None:
+        """For one soldier of a squad (`kind` his number, from 1 to its count: rusemod.squads), the game model of the
+        figure the game gives his place, which his own look is fitted to; None for anything else."""
+        if not kind or not str(kind).isdigit() or not self._soldiers(address):
+            return None
+        line = next((ln for ln in self._squad_lines(address) if ln["number"] == int(kind)), None)
+        return line["model"] if line is not None else None
 
     def model_import(self, address: str, file: str | None = None, size: float = 1.0, aircraft: bool = False,
                      facing: list | None = None, own_turret: bool = True, own_propellers: bool = True,
@@ -8329,10 +8340,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         record.write_text(json.dumps(data, indent=1), encoding="utf-8")
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
-                   own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None) -> dict | None:
+                   own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None,
+                   out: Path | None = None) -> dict | None:
         """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
         through it): the model saved as the mod's files/models/<the unit's name>.glb (or a kind's of its soldiers,
-        _kind_file), its record beside it. Returns the model's report, or None when no file was picked."""
+        _kind_file; or one soldier's own look, `kind` his number), its record beside it; `out`: saved there instead
+        (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). Returns the
+        model's report, or None when no file was picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8362,17 +8376,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # a squad whose soldiers come in kinds (its riflemen, its bazooka man): the model is for one kind, the riflemen
         # unless told another, and takes the place of that kind's game model alone (the others keep the copied unit's)
         kinds = self._soldier_kinds(address)
-        if kind is not None and kind not in kinds:
+        # one soldier alone (`kind` his number: rusemod.squads): fitted to the model of the figure the game gives his
+        # place, saved as his own look, files/models/<unit>@<number>.glb
+        place = self._soldier_place_model(address, kind) if kind is not None and kind not in kinds else None
+        if kind is not None and kind not in kinds and place is None:
             # not a game rule: the Studio's kinds are a squad's soldiers that draw different models
             raise StudioError(f"This unit's soldiers don't come in a kind called {kind}.")
         main_kind = next(iter(kinds), None)
         kind = kind or main_kind
-        if kinds:
+        if place is not None:
+            from rusemod.unitmodel import model_key
+            found = [m for m in found if model_key(m) == model_key(place)]
+            if not found:
+                raise StudioError("The unit this one copies has no 3D model for those soldiers to fit a new one to.")
+            target = self._kind_file(address, kind)
+        elif kinds:
             found = self._kind_models(address, kind, found)
             if not found:
                 raise StudioError("The unit this one copies has no 3D model for those soldiers to fit a new one to.")
             if kind != main_kind:
                 target = target.with_name(f"{target.stem}@{kind}.glb")
+        if out is not None:
+            target = Path(out)
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
@@ -8402,10 +8427,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
         except (OSError, ValueError):
             before = {}
-        if kinds and kind != main_kind:
-            # another kind's model (the bazooka man's): the unit's animations are its main model's, played by him when
-            # his model is on the same bones (rusemod.build._on_main_bones), else he plays what he played: only what
-            # the model is, and a note when it's on bones of its own that aren't the main model's
+        if place is not None or (kinds and kind != main_kind):
+            # another kind's model (the bazooka man's), or one soldier's own look: the unit's animations are its main
+            # model's, played by him when his model is on the same bones (rusemod.build._on_main_bones), else he plays
+            # what he played: only what the model is, and a note when it's on bones of its own that aren't the main
+            # model's
             more = {"for": kind, **self._kind_skeleton(target, report)}
             if more.get("skeleton") == "own":
                 from rusemod.bonefit import skeleton_key
@@ -8438,9 +8464,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def _kind_records(self, address: str) -> list:
         """[(kind, its model's record)] of each kind of a squad's soldiers after the first (the riflemen's model is the
-        unit's own) that has a model of its own (_kind_file)."""
+        unit's own) that has a model of its own (_kind_file), then each soldier's own look (his number: rusemod.squads),
+        so Resize and Move fit them all again together."""
+        from rusemod.squads import soldier_of
         out = []
-        for k in list(self._soldier_kinds(address))[1:]:
+        own = self._own_model_file(address)
+        soldiers = sorted(s[1] for f in (own.parent.glob(f"{own.stem}@*.glb") if own is not None and own.parent.is_dir()
+                                         else ()) if (s := soldier_of(f.stem)) is not None and s[0] == own.stem)
+        for k in list(self._soldier_kinds(address))[1:] + [str(i) for i in soldiers]:
             target = self._kind_file(address, k)
             if target is None or not target.is_file():
                 continue
@@ -8668,16 +8699,24 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         `kind` (a squad whose soldiers come in kinds, _soldier_kinds): that kind's model only; none given, or the
         first kind (the riflemen): the unit's main model, and with it each other kind's model on its bones (they play
         its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left."""
+        from rusemod.squads import soldier_of
         kinds = self._soldier_kinds(address)
-        if kind is not None and kind not in kinds:
+        # one soldier's own look (`kind` his number: rusemod.squads) goes alone
+        soldier = kind is not None and kind not in kinds and str(kind).isdigit() and self._soldiers(address)
+        if kind is not None and kind not in kinds and not soldier:
             # not a game rule: the Studio's kinds are a squad's soldiers that draw different models
             raise StudioError(f"This unit's soldiers don't come in a kind called {kind}.")
         main_kind = next(iter(kinds), None)
-        if kinds and kind is not None and kind != main_kind:
+        own = self._own_model_file(address)
+        soldiers = [str(s[1]) for f in (sorted(own.parent.glob(f"{own.stem}@*.glb")) if own is not None
+                                         and own.parent.is_dir() else ())
+                    if (s := soldier_of(f.stem)) is not None and s[0] == own.stem]
+        if soldier or (kinds and kind is not None and kind != main_kind):
             going = [(kind, self._kind_file(address, kind))]
         else:
             going = [(main_kind, self._own_model_file(address))]
-            for k in list(kinds)[1:]:   # (the other kinds' models on bones of its own go with its animations)
+            # (the other kinds' models and the soldiers' own looks on bones of its own go with its animations)
+            for k in list(kinds)[1:] + soldiers:
                 other = self._kind_file(address, k)
                 try:
                     on_own = other is not None and other.is_file() and json.loads(
@@ -8708,7 +8747,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 target.unlink(missing_ok=True)
                 record.unlink(missing_ok=True)
             left = [k for k in kinds if (f := self._kind_file(address, k)) is not None and f.is_file()] if kinds \
-                else []
+                else ([None] if own is not None and own.is_file() else [])
+            left += [s for s in soldiers if (f := self._kind_file(address, s)) is not None and f.is_file()]
             copy = self._own_copy_file(address)
             if kept is not None and not left and copy is not None and not copy.is_file():
                 copy.parent.mkdir(parents=True, exist_ok=True)
