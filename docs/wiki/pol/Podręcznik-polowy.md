@@ -47,6 +47,7 @@ szybką kopię testową, byś mógł sprawdzać swoją pracę na bieżąco.
 | Zrobić swój pierwszy mod (10 minut, zacznij tutaj) | [[Twój pierwszy mod|Twój-pierwszy-mod]] |
 | Zmienić jednostkę, zrobić nową, zamienić jej amunicję | [[Edycja jednostek|Edycja-jednostek]] |
 | Dać nowej jednostce lub budynkowi model 3D z Blendera lub dowolnego narzędzia 3D albo postawić go na mapie | [[Importowanie modelu|Importowanie-modelu]] |
+| Zmienić żołnierzy oddziału: cały oddział naraz w Blenderze albo jednego żołnierza z pliku modelu | [[Zmiana oddziału|Zmiana-oddziału]] |
 | Dodać jednostki od I wojny światowej po dziś (I wojna światowa, II wojna światowa+, zimna wojna, współczesność), w ich prawdziwym rozmiarze i dostępne po zbadaniu | [[Jednostki z innych epok|Jednostki-z-innych-epok]] |
 | Dać jednej z nacji gry nową nazwę i flagę (Chiny w miejsce Włoch) | [[Zamiana jednej nacji w inną|Zamiana-jednej-nacji-w-inną]] |
 | Zmienić, co buduje każdy budynek i w jakiej kolejności, badania, dodać własne budynki z własnym wyglądem | [[Budynki i menu budowy|Budynki-i-menu-budowy]] |

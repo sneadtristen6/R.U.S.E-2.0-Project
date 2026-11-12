@@ -11,7 +11,7 @@ Un modèle peut aussi aller sur un nouveau bâtiment, à la place d'une pièce d
 [[Bâtiments et menus de construction|Bâtiments-et-menus-de-construction]]), ou sur votre carte comme rocher, objet, buisson ou
 arbre à vous (voir [[Placer bâtiments et arbres|Placer-bâtiments-et-arbres]]). Les deux : Studio 0.9.8.8, vus en jeu.
 
-Sur la page de l'unité, tout cela est dans **Apparence et mouvements** : **Importer un modèle…** est le bouton de la ligne **Modèle**, et le reste des options du modèle (sa taille, **Le déplacer**, **Changer dans Blender**) est sous le **Plus** de cette ligne. **Ses soldats** est une ligne à part, et ce que font les animations du modèle est sous le **Plus** de la ligne **Sons et animations**.
+Sur la page de l'unité, tout cela est dans **Apparence et mouvements** : **Importer un modèle…** est le bouton de la ligne **Modèle**, et le reste des options du modèle (sa taille, **Le déplacer**) est sous le **Plus** de cette ligne. Ce que font les animations du modèle est sous le **Plus** de la ligne **Sons et animations**. La page d'une escouade commence plutôt par ses soldats, sur sa carte d'escouade : voir [[Changer une escouade|Changer-une-escouade]].
 
 ## 1. Se procurer un modèle
 
@@ -57,7 +57,7 @@ dit laquelle : mettez les images à côté du modèle et importez de nouveau.
 Il est enregistré dans votre mod sous `files/models/<the unit's name>.glb`. **Utiliser le modèle de l'unité copiée** le
 retire de nouveau.
 
-**Où il est sur votre PC :** le **Plus** de la ligne **Modèle** commence par là : le chemin complet, `Documents\RUSE 2.0\Mods\<votre mod>\files\models\<nom de l'unité>.glb`, et **Afficher dans le dossier**, qui ouvre ce dossier. Tant que l'unité n'a pas de modèle à elle, il dit où le fichier sera. Une unité avec sa propre copie du modèle (**Lui donner sa propre copie du modèle**, ou l'**Uniforme personnalisé** d'une escouade) est gardée dans le même dossier, sous `<nom de l'unité>.copy.toml`, sa peinture dans le dossier du même nom.
+**Où il est sur votre PC :** le **Plus** de la ligne **Modèle** commence par là (la page d'une escouade le dit sous **Plus d'options**, sous ses soldats) : le chemin complet, `Documents\RUSE 2.0\Mods\<votre mod>\files\models\<nom de l'unité>.glb`, et **Afficher dans le dossier**, qui ouvre ce dossier. Tant que l'unité n'a pas de modèle à elle, il dit où le fichier sera. Une unité avec sa propre copie du modèle (**Lui donner sa propre copie du modèle**, ou l'**Uniforme personnalisé** d'une escouade) est gardée dans le même dossier, sous `<nom de l'unité>.copy.toml`, sa peinture dans le dossier du même nom.
 
 **Sa taille plus tard :** le curseur sous la case de taille va de **Minuscule** à **Énorme** (0.05 à 20), avec **Taille du
 jeu** (1) et, pour une unité d'époque, **Taille réelle** marqués ; cliquez sur **Redimensionner** et le modèle est de
@@ -89,7 +89,7 @@ par exemple un des modèles du jeu ouvert dans Blender depuis le Studio et modif
 rien déplacer ni redimensionner, et les autres hommes d'une escouade dessinés avec le même modèle le portent aussi. Vu en jeu
 avec une escouade de fusiliers, les servants d'un canon et le P-47. Un soldat à l'arme lourde que le jeu dessine avec
 un modèle à lui (le soldat au bazooka de l'escouade de fusiliers US) le garde tant que vous ne lui en donnez pas un
-sous **Ses soldats** (plus bas).
+sur sa propre ligne de la page de l'escouade (plus bas).
 
 **Vos joueurs :** un mod avec un modèle importé par le Studio 0.9.8.17 ou plus récent demande le Launcher 0.4.8.17 ou
 plus récent : un Launcher plus ancien donne au modèle le squelette de l'unité copiée, donc sa tourelle tourne autour du
@@ -97,23 +97,24 @@ mauvais point. La 0.4.8.17 est une mise à jour obligatoire, donc le Launcher l'
 
 ## Votre propre soldat, pas à pas
 
-Pour une escouade (fusiliers, parachutistes, toute infanterie), le Studio fait la partie Blender avec vous :
+Pour une escouade (fusiliers, parachutistes, toute infanterie), le Studio fait la partie Blender avec vous. La page d'une
+escouade commence par sa carte d'escouade et une ligne pour chacun de ses soldats ; [[Changer une escouade|Changer-une-escouade]] les parcourt.
 
 1. **Créez l'escouade** comme à l'étape 2 plus haut, à partir d'une escouade (les fusiliers américains, par exemple).
-2. **Ouvrez son soldat dans Blender.** Sur la page de la nouvelle escouade, sous **Son propre modèle**, cliquez sur **Changer dans Blender**. Blender s'ouvre avec le soldat et ses os, chacun là où le jeu le place. Pas encore Blender ? **Obtenir Blender (gratuit)** l'installe ; **Choisir Blender…** montre au Studio où il est.
-3. **Modifiez-le, ou posez votre propre modèle sur ses os.** Pour le modifier, éditez-le là. Pour un modèle à vous : importez-le avec **File > Import** dans la même scène et placez-le sur le soldat ; cliquez sur votre modèle, **Maj+clic** sur les os, puis **Ctrl+P > With Automatic Weights**. Supprimez le soldat du jeu si vous ne le gardez pas.
+2. **Ouvrez l'escouade dans Blender.** Sur la carte d'escouade, cliquez sur **Changer l'escouade dans Blender**. Blender s'ouvre avec tous les soldats de l'escouade côte à côte, chacun sur ses os, chacun avec sa propre copie de ses images. Pas encore Blender ? **Obtenir Blender (gratuit)** l'installe ; **Choisir Blender…** montre au Studio où il est.
+3. **Modifiez un soldat, ou posez votre propre modèle sur ses os.** Pour le modifier, éditez-le là. Pour un modèle à vous : importez-le avec **File > Import** dans la même scène et placez-le sur le soldat ; cliquez sur votre modèle, **Maj+clic** sur ses os, puis **Ctrl+P > With Automatic Weights**. Supprimez le soldat du jeu si vous ne le gardez pas.
 4. **Envoyez-le.** Cliquez sur **Envoyer au R.U.S.E. Studio** en haut de Blender.
-5. **Ramenez-le.** Dans le Studio, cliquez sur **Ramener le modèle**. Les fusiliers de l'escouade portent votre modèle. Une escouade dont le jeu dessine le soldat à l'arme lourde avec un modèle à lui (le soldat au bazooka de l'escouade de fusiliers US, par exemple) le garde comme l'escouade copiée l'a, tant que vous ne lui en donnez pas un : la ligne **Ses soldats** montre chacun d'eux, et ses **Importer un modèle…**, **Changer dans Blender** et **Ramener le modèle** sont pour lui seul. **Tester en jeu** le montre.
+5. **Ramenez-le.** Sur la carte d'escouade, cliquez sur **Ramener mes changements**. Chaque soldat reçoit seulement ce qui lui a été fait, et celui que vous n'avez pas touché reste comme il était : la carte dit qui a changé et qui non. **Tester en jeu** le montre.
 
 Bon à savoir :
-- Vos fichiers Blender restent dans le dossier de votre mod : `Documents\RUSE 2.0\Mods\<votre mod>\blender\<nom de l'unité>\`. Ceux du soldat à l'arme lourde restent à côté, dans `<nom de l'unité>@bazooka\`. Ils ne sont pas emballés dans votre mod quand vous le partagez. Le prochain **Changer dans Blender** repart de ce que vous avez envoyé en dernier.
-- Sous **Changer dans Blender**, la page dit où sont ces fichiers, même avant votre premier clic, et son **Afficher dans le dossier** ouvre ce dossier dès que Blender y a ouvert le soldat.
+- Les quatre fusiliers de l'escouade de fusiliers US sont une seule figure dans Blender : le jeu leur donne un seul modèle, donc ce que vous lui faites, les quatre le portent. Son soldat au bazooka est une figure à lui.
+- Vos fichiers Blender restent dans le dossier de votre mod : `Documents\RUSE 2.0\Mods\<votre mod>\blender\<nom de l'unité>\squad\`. Ils ne sont pas emballés dans votre mod quand vous le partagez. **Plus d'options**, sous les soldats, dit où ils sont, et son **Afficher dans le dossier** ouvre le dossier où ils se trouvent.
+- Vous avez fermé Blender avant de ramener vos changements ? Le petit **Ramener mes changements** sous le grand bouton prend ce que vous avez envoyé en dernier.
 - Si des points de votre modèle n'ont pas d'os (les poids automatiques de Blender en oublient quelques-uns), la page dit combien : ils ne bougent qu'avec les hanches du soldat. Peignez-les sur un os dans **Weight Paint**, puis renvoyez.
-- Une escouade avec un **Uniforme personnalisé** : votre modèle prend la place de l'uniforme (sa peinture reste dans votre mod), et **Utiliser le modèle de l'unité copiée** rend l'uniforme.
-- Vous avez déjà un .glb fait sur les os du soldat du jeu ? **Importer un modèle…** le prend tel quel.
-- Le modèle que porte votre escouade est gardé dans le dossier de votre mod sous `files\models\<nom de l'unité>.glb`, une fois en place ; celui du soldat à l'arme lourde sous `files\models\<nom de l'unité>@bazooka.glb`.
-- **Ses soldats** dit où est gardé le modèle de chacun (ou le sera), et **Afficher dans le dossier** de la ligne **Modèle** ouvre ce dossier.
-- **Ses soldats** dit aussi quelles autres figures de l'escouade sont dessinées avec chaque modèle : le soldat tombé, et la figurine vue de loin (celle de l'escouade de fusiliers US est dessinée avec son soldat au bazooka).
+- Une escouade avec un **Uniforme personnalisé** : votre modèle prend la place de l'uniforme (sa peinture reste dans votre mod) ; quand chaque soldat est revenu à l'apparence du jeu (**Revenir à l'apparence du jeu** sur sa ligne), l'uniforme revient.
+- Vous avez déjà un .glb fait sur les os du soldat du jeu ? **Importer un modèle…** sur la ligne de ce soldat le prend tel quel.
+- Votre mod garde le modèle de chaque soldat dans `files\models\` : celui des fusiliers sous `<nom de l'unité>.glb`, celui du soldat à l'arme lourde sous `<nom de l'unité>@bazooka.glb`. **Plus d'options** dit où chacun est gardé (ou le sera), et quelles autres figures de l'escouade sont dessinées avec lui : le soldat tombé, et la figurine vue de loin (celle de l'escouade de fusiliers US est dessinée avec son soldat au bazooka).
+- Toute l'escouade dans un seul Blender, chaque soldat ramené à part : c'est nouveau, pas encore essayé en jeu.
 
 ## Ses animations : laquelle joue chaque action
 
@@ -145,15 +146,15 @@ Un cheval, un cheval avec son cavalier, n'importe quelle créature : un modèle 
 
 1. **Faites-le dans Blender** : votre modèle sur une armature avec vos propres os (nommés comme vous voulez), et une action pour chaque animation. Nommez les actions d'après ce qu'elles montrent : au moins **stand** (ou **idle**), **walk** et **run** ; **death**, **fire**, **reload**, **hit**, **crouch**, **aim**, **look**, **flee** et **grenade** sont connues aussi.
 2. **Exportez-le** : **File > Export > glTF 2.0**, format **glTF Binary (.glb)**, avec **Animation** cochée.
-3. **Créez l'escouade** comme à l'étape 2 plus haut. Sur sa page, cliquez sur **Importer un modèle…** sur la ligne **Modèle** de **Apparence et mouvements** et choisissez votre .glb. Le Studio voit que ses os ne sont pas ceux du soldat et le prend avec ses propres os et toutes ses animations. La page montre combien d'os il a, chaque animation avec sa durée, et combien d'actions de l'escouade la jouent.
+3. **Créez l'escouade** comme à l'étape 2 plus haut. Sur sa page, cliquez sur **Importer un modèle…** sur la ligne des fusiliers, sous **Chaque soldat**, et choisissez votre .glb. Le Studio voit que ses os ne sont pas ceux du soldat et le prend avec ses propres os et toutes ses animations. La page montre combien d'os il a, chaque animation avec sa durée, et combien d'actions de l'escouade la jouent.
 4. **Tester en jeu** le montre.
 
 Bon à savoir :
 - Chaque action de l'escouade joue l'animation nommée pour elle. Une action pour laquelle aucune animation n'est nommée n'en a pas encore : la page dit combien.
 - Modifié dans Blender ? Importez-le à nouveau : chaque action garde son animation tant qu'une animation de ce nom est encore dans le fichier.
 - Votre mod garde le modèle et chaque animation : `files\models\<nom de l'unité>.glb`, et chaque animation sous `files\anim\own\<nom de l'unité>\<son nom>.baf`.
-- **Utiliser le modèle de l'unité copiée** retire à nouveau le modèle, avec ses animations.
-- Une escouade avec un soldat à l'arme lourde : donnez-lui son propre cheval et son cavalier sous **Ses soldats**, faits sur les mêmes os que ceux des fusiliers, et il joue leurs animations. Sur d'autres os, il joue ce qu'il jouait dans l'escouade copiée, et la page vous prévient : cela peut arrêter le jeu. Retirer le modèle des fusiliers retire le sien avec.
+- **Revenir à l'apparence du jeu** sur cette ligne retire à nouveau le modèle, avec ses animations.
+- Une escouade avec un soldat à l'arme lourde : donnez-lui son propre cheval et son cavalier avec **Importer un modèle…** sur sa ligne, faits sur les mêmes os que ceux des fusiliers, et il joue leurs animations. Sur d'autres os, il joue ce qu'il jouait dans l'escouade copiée, et la page vous prévient : cela peut arrêter le jeu. Retirer le modèle des fusiliers retire le sien avec.
 - La Horse Squad faite ainsi dans le Studio a été jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore été essayé en jeu.
 
 ## 4. Sa carte, puis le test
