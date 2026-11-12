@@ -1651,6 +1651,7 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
 
     from . import squads as sq
     from .patch import Inline, ListV, Ref, _fresh
+    from .unitmodel import model_key
     wanted: dict = {}
     for m in order:
         for unit, count in (getattr(m, "squads", None) or {}).items():
@@ -1713,6 +1714,20 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
             result.findings.append(Finding("error", f"{soldiers[i][1]}: files/models/{soldiers[i][2]}.glb: {unit} has "
                                                     f"{n} soldiers, so there is no soldier {i} to wear this look"))
         if past:
+            continue
+        # each soldier's look fitted to a model the copied unit's soldiers wear (the Studio fits it to his place's: a
+        # file made otherwise, fitted to another unit's model, is refused, as a kind's is)
+        op = run.created.get(name)
+        copied = base.objects.get(op.source) if op is not None and op.kind == "clone" else None
+        worn = {model_key(m) for m in (_mesh_file(run, _figure_of(run, copied, p)) if copied is not None else None
+                                       for p in (sq.RIFLEMEN, sq.LAST)) if m}
+        strays = [i for i in sorted(soldiers) if worn and model_key(soldiers[i][0]) not in worn]
+        for i in strays:
+            # not a game rule: what our build gives a soldier's own figure (a model on the bones his figure plays on)
+            result.findings.append(Finding("error", f"{soldiers[i][1]}: files/models/{soldiers[i][2]}.glb: the model "
+                                                    f"of {unit}'s soldier {i} was fitted to {soldiers[i][0]}, which "
+                                                    f"none of its soldiers wears (import it again in the Studio)"))
+        if strays:
             continue
         unit_obj = run.game.own(name)
         if count is not None:

@@ -259,6 +259,16 @@ class InTheBuild(unittest.TestCase):
                          ["squads: files/models/Descriptor_Unit_Looks@4.glb: Descriptor_Unit_Looks has 3 soldiers, so "
                           "there is no soldier 4 to wear this look"])
 
+    def test_a_look_fitted_to_a_model_none_of_its_soldiers_wears(self):
+        tank = "WW2\\Res3D\\Units\\US\\Char\\US_Sherman_modellod0.Ase2ndfbin".lower()
+        mod = self.mod({"Descriptor_Unit_Looks": "Descriptor_Unit_Squad"}, {},
+                       {"Descriptor_Unit_Looks@2": ({"rigged": True}, tank)})
+        result, _arc, _loaded = self.build(mod)
+        self.assertEqual([f.message for f in result.errors],
+                         [f"squads: files/models/Descriptor_Unit_Looks@2.glb: the model of Descriptor_Unit_Looks's soldier 2 "
+                          f"was fitted to {tank}, which none of its soldiers wears (import it again in the Studio)"])
+        self.assertEqual(result.game_patch, [])
+
     def test_a_squad_file_that_can_t_be_read_stops_the_build_saying_so(self):
         for text, words in (("count = 'seven'\n", "count must be a whole number of soldiers"), ("count = [\n", "can't be read")):
             with self.subTest(text=text):
@@ -281,6 +291,27 @@ class InTheBuild(unittest.TestCase):
         self.assertEqual(result.changed, before.changed)
         self.assertEqual(result.game_patch, [])
         self.assertFalse(any(p.startswith("R2") for o in loaded.base.objects.values() for p in o.props))
+
+    def test_own_squads_beside_more_buildings(self):
+        """A copy needing both: the squads' step and the buildings' step each add theirs to the one list (before,
+        the buildings' step set the copy's one patch), and the copy gets both in the apps' order."""
+        from types import SimpleNamespace
+
+        from rusemod.model import Obj
+        from rusemod.patch import num
+        from test_ownbuildings import made_up_zz_win
+        result, _arc, _loaded = self.build(self.mod({"Descriptor_Unit_Seven": "Descriptor_Unit_Squad"},
+                                                    {"Descriptor_Unit_Seven": "count = 7\n"}))
+        self.assertEqual(result.game_patch, ["own-squads"])
+        buildings = {"$/W": Obj("TBatimentDescriptor", {"TypeBatiment": num(7), "Menu": num(10)})}
+        build.own_buildings(SimpleNamespace(game=SimpleNamespace(objects=buildings)), Edat(made_up_zz_win()), {7: None},
+                            result, {})
+        self.assertEqual([f.message for f in result.errors], [])
+        self.assertEqual(result.game_patch, ["own-squads", "more-buildings"])
+        self.assertEqual(build.copy_patches(result.game_patch, False), ["more-buildings", "own-squads"])
+        build.own_buildings(SimpleNamespace(game=SimpleNamespace(objects=buildings)), Edat(made_up_zz_win()), {7: None},
+                            result, {})
+        self.assertEqual(result.game_patch, ["own-squads", "more-buildings"])   # (each once)
 
     def test_the_copy_s_patches_and_its_fingerprint(self):
         # the apps' own order, each once: a copy that had more-buildings and big-packs gets them as before
