@@ -9,8 +9,8 @@ nahoře karta družstva, pod ní řádek pro každého vojáka.
 ## 1. Vlastní družstvo
 
 Na kartě **Jednotky** vyber družstvo (třeba americké střelecké družstvo). Jeho karta řekne, z čeho se skládá:
-„5 vojáků: 4 střelci s puškami, 1 muž s bazukou s bazukou“. Družstva ze hry se nemění: klikni na kartě na **Nová jednotka
-z této…**, dej družstvu jméno a klikni na **Vytvořit**. Jeho stránka se otevře na jeho kartě.
+„5 vojáků: 4 střelci s puškami, 1 muž s bazukou s bazukou“. Družstva ze hry se nemění: klikni na kartě na
+**Nová jednotka z této…**, dej družstvu jméno a klikni na **Vytvořit**. Jeho stránka se otevře na jeho kartě.
 
 ## 2. Celé družstvo v Blenderu
 

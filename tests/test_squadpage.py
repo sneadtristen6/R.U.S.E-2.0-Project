@@ -251,6 +251,33 @@ class ThePage(unittest.TestCase):
         self.assertIn("changed, unchanged:", back)
 
 
+class TheWiki(unittest.TestCase):
+    """The field manual's page on changing a squad, in each of the eleven languages, names the page's buttons as the
+    page says them in that language (words.toml), and the Import a model page leads to it."""
+    PAGES = {"us": "Change-a-Squad", "fr": "fr/Changer-une-escouade", "ger": "ger/Einen-Trupp-ändern",
+             "ita": "ita/Cambiare-una-squadra", "spa": "spa/Cambiar-un-pelotón", "pol": "pol/Zmiana-oddziału",
+             "ru": "ru/Изменение-отряда", "cz": "cz/Změna-družstva", "jpn": "jpn/分隊の変更", "sc": "sc/修改小队",
+             "fa": "fa/تغییر-جوخه"}
+    BUTTONS = ("squad_blender", "squad_blender_back", "squad_import", "squad_reset", "squad_each", "squad_more",
+               "where_show", "look_get_blender", "look_choose_blender", "blender_model_send", "test_in_game",
+               "model_want_button", "create", "units_tab", "uniform_custom", "unit_look", "lm_title")
+
+    def test_its_buttons_named_as_the_page_names_them(self):
+        wiki = UI.parents[2] / "docs" / "wiki"
+        words = tomllib.loads(WORDS.read_text(encoding="utf-8"))
+        self.assertEqual(set(self.PAGES), set(LANGS))
+        for lang, page in self.PAGES.items():
+            text = (wiki / f"{page}.md").read_text(encoding="utf-8")
+            for key in self.BUTTONS:
+                with self.subTest(lang=lang, key=key):
+                    self.assertIn(f"**{words[key][lang]}**", text)
+            # (and the language's Import a model page leads to it, by the page's name)
+            name = page.split("/")[-1]
+            leads = [p for p in (wiki / (page.split("/")[0] if "/" in page else "")).glob("*.md")
+                     if f"|{name}]]" in p.read_text(encoding="utf-8") and p.stem != name]
+            self.assertGreaterEqual(len(leads), 2, lang)   # (its Import a model page and its home page)
+
+
 @unittest.skipUnless(all(callable(getattr(StudioApi, c, None)) for c in PHASE1),
                      "the Studio's squad calls aren't joined yet (agent B's branch)")
 class TheStudioCalls(unittest.TestCase):
