@@ -109,7 +109,7 @@ class InTheBuild(unittest.TestCase):
     def test_tabs_scripts_and_the_patch(self):
         result, scripts = self.run_with({"$/W": (6, 8), "$/X": (7, 10), "$/Armor": (10, 1)}, {6: None, 7: None})
         self.assertEqual(result.errors, [])
-        self.assertEqual((result.own_kinds, result.game_patch), ([6, 7], "more-buildings"))
+        self.assertEqual((result.own_kinds, result.game_patch), ([6, 7], ["more-buildings"]))
         members = {m.rsplit("\\", 1)[-1] for _pack, changed in scripts.values() for m in changed}
         self.assertEqual(members, {"camp.xyz", "menu_builder.xyz", "paramsmainmenu.xyz"})
         for _pack, changed in scripts.values():
@@ -119,7 +119,7 @@ class InTheBuild(unittest.TestCase):
 
     def test_kind_6_alone_needs_no_patch(self):
         result, _scripts = self.run_with({"$/W": (6, 8)}, {6: None})
-        self.assertEqual((result.errors, result.game_patch), ([], None))
+        self.assertEqual((result.errors, result.game_patch), ([], []))
 
     def test_a_building_in_another_menu_is_refused(self):
         result, _scripts = self.run_with({"$/W": (4, 8)}, {4: None})

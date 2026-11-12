@@ -347,7 +347,8 @@ def data_figures(game, name: str) -> list:
             walk(v.b, path, depth, seen, holder, named)
 
     unit = objects[name]
-    for p in [p for p in unit.props if p.startswith("GfxDescriptor")]:
+    # (and a squad's soldiers' own figures, R2SoldierLooks: rusemod.squads)
+    for p in [p for p in unit.props if p.startswith("GfxDescriptor") or p == "R2SoldierLooks"]:
         walk(unit.props[p], p, 0, frozenset(), None)
     return out
 

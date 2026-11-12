@@ -167,6 +167,11 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
             info.model_copies = mod_copies(path)
         except UnitModelError as exc:
             raise BuildError(f"{mod_id}: {exc}") from None
+        from .squads import SquadError, mod_squads
+        try:
+            info.squads = mod_squads(path)  # files/models/<unit>.squad.toml: a squad's own number of soldiers
+        except SquadError as exc:
+            raise BuildError(f"{mod_id}: {exc}") from None
         from .sceneryasset import AssetError, mod_assets
         try:
             info.assets = mod_assets(path)  # files/assets/<name>/asset.toml: its own rocks, props, plants, trees
@@ -1026,7 +1031,9 @@ class BuildResult:
     # ask them of the blocks they hang on: rusemod.visibility.type_levels)
     solved: dict = field(default_factory=dict)  # map pack name -> its answers, a locked file (rusemod.solved)
     own_kinds: list = field(default_factory=list)  # the kinds of the buildings with units of their own (ownbuildings)
-    game_patch: str | None = None  # the game patch the modded copy needs (rusemod.gamepatch), or None
+    # the game patches the modded copy needs (rusemod.gamepatch's names: a copy can need more-buildings AND own-squads),
+    # each once; big-packs is added when the packs are written wide (build_and_write)
+    game_patch: list = field(default_factory=list)
     wide_packs: list = field(default_factory=list)  # the packs written wide, past 4 GiB (the big-packs game patch)
     fingerprint: bytes | None = None
 
@@ -1526,6 +1533,7 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     """New units' own models (a mod's files/models/<the unit's name>.glb; rusemod.unitmodel): the clone's model part
     names a model of its own, beside its source's, which the build writes into the packs that hold the source's.
     Returns {unit: (its source's model, the .glb, mod id)}."""
+    from .squads import soldier_of
     from .unitmodel import glb_report, model_key
     wanted: dict = {}
     for m in order:
@@ -1534,11 +1542,12 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
     by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
     # a model file for one kind of a squad's soldiers (<unit>@<kind>.glb: its bazooka man) takes the place of the game
     # model those soldiers drew; the unit's main file never takes that model too (an older Studio's main file named
-    # every soldier model of the squad: it still does when no kind has a file of its own, so its mod builds as before)
+    # every soldier model of the squad: it still does when no kind has a file of its own, so its mod builds as before).
+    # One soldier's own look (<unit>@<i>.glb, rusemod.squads) claims nothing: he alone wears it (squad_soldiers)
     claimed: dict = {}
     for stem, (glb, _mod) in wanted.items():
         unit, _, kind = stem.partition("@")
-        like = glb_report(glb).get("like") if kind else None
+        like = glb_report(glb).get("like") if kind and soldier_of(stem) is None else None
         if like:
             claimed.setdefault(unit, set()).add(model_key(like))
     out: dict = {}
@@ -1548,6 +1557,22 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
         report = glb_report(glb)
         rigged_on = report.get("like") if report.get("rigged") else None
         also = list(report.get("also") or [])
+        soldier = soldier_of(stem)
+        if soldier is not None:
+            # one soldier's own look: his model is written beside the one he was fitted to (the figure the game gives
+            # his place draws it), and no figure of the unit is pointed at it here: squad_soldiers gives him a figure
+            # of his own, so the squad's other soldiers keep theirs
+            if not rigged_on:
+                # not a game rule: a soldier's own look is a model on his bones (what the Studio's import writes)
+                result.findings.append(Finding("error", f"{where}: the model of {unit}'s soldier {soldier[1]} must be "
+                                                        f"fitted to his bones (import it again in the Studio)"))
+                continue
+            if unit not in by_name:
+                # not a game rule: a model for a unit no mod in the set makes
+                result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+                continue
+            out[stem] = (rigged_on, glb, mod_id)
+            continue
         if kind and not rigged_on:
             # not a game rule: a kind's own file is a soldier's model, on bones (what the Studio's import writes)
             result.findings.append(Finding("error", f"{where}: a model for {unit}'s {kind} must be fitted to his bones "
@@ -1571,9 +1596,11 @@ def unit_own_models(run, order: list, result: BuildResult) -> dict:
         out[stem] = (source, glb, mod_id)
         result.findings.append(Finding("note", f"{mod_id}: {unit} gets its own model (files/models/{stem}.glb), "
                                                f"beside {source}"))
-    # a squad whose soldiers have looks of their own: its far-away figure wears the riflemen's (_far_figure_riflemen)
+    # a squad whose soldiers have looks of their own: its far-away figure wears the riflemen's (_far_figure_riflemen);
+    # one whose soldiers have looks one by one, the look most of them wear (squad_soldiers decides it)
+    by_soldier = {_unit_of(stem) for stem in out if soldier_of(stem) is not None}
     for unit in sorted({stem.partition("@")[0] for stem in out}):
-        if unit in by_name:
+        if unit in by_name and unit not in by_soldier:
             _far_figure_riflemen(run, by_name[unit], unit, out, result)
     return out
 
@@ -1606,6 +1633,245 @@ def _far_figure_riflemen(run, name: str, unit: str, out: dict, result: BuildResu
     if _point_at_copies(run, name, {model_key(far): riflemen}, parts=lambda p: p == FIGURINE[0]):
         result.findings.append(Finding("note", f"{unit}'s far-away figure wears its riflemen's look "
                                                f"({riflemen.replace(chr(92), '/').rsplit('/', 1)[-1]})"))
+
+
+def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
+    """New squads with soldiers of their own (rusemod.squads): files/models/<unit>.squad.toml, the squad's own number of
+    soldiers, and files/models/<unit>@<i>.glb, soldier i's own look (in result.own_models, written beside the model it
+    was fitted to as any own model). Such a squad gets R2Behaviour, its own copy of the game's one setting for every
+    squad as the mods leave it, only its number of soldiers its own; and R2SoldierLooks, one entry per soldier, soldier 1
+    first: none (he wears what the game gives his place), or a copy of the figure the game gives his place drawing his
+    own model. Its far-away figure wears the look most of its soldiers wear (_far_figure_most), and the modded copy gets
+    the own-squads game patch. Refused, said: a number below FEWEST or above MOST (the owner's picks 1 and 2,
+    2026-11-12), or below the squad's weapons its last soldiers fire one each (NeedModelChange: the game gives the
+    first to the last soldier, the next to the one before him); a look for a soldier the squad hasn't got; a unit no mod
+    makes, or that isn't a squad. A squad with neither file, and every game squad, is left exactly as it was. Runs after
+    the units' own models, clips, halves and rides (each soldier's figure is a copy of the squad's as it then stands)."""
+    from decimal import Decimal
+
+    from . import squads as sq
+    from .patch import Inline, ListV, Ref, _fresh
+    wanted: dict = {}
+    for m in order:
+        for unit, count in (getattr(m, "squads", None) or {}).items():
+            wanted[unit] = (count, m.id)
+    looks: dict = {}   # unit -> {soldier: (the model his look was fitted to, mod id, his file's stem)}
+    for stem, (source, _glb, mod_id) in result.own_models.items():
+        soldier = sq.soldier_of(stem)
+        if soldier is not None:
+            looks.setdefault(soldier[0], {})[soldier[1]] = (source, mod_id, stem)
+    if not wanted and not looks:
+        return
+    by_name = {n.rsplit("/", 1)[-1]: n for n, op in run.created.items() if op.kind == "clone"}
+    shared = run.game.objects.get(sq.BEHAVIOUR)
+    shared_count = shared.props.get(sq.COUNT) if shared is not None else None
+    shared_n = int(shared_count.value) if isinstance(shared_count, Num) else None
+    done = []
+    for unit in sorted(set(wanted) | set(looks)):
+        count, mod_id = wanted.get(unit, (None, None))
+        soldiers = looks.get(unit, {})
+        mod_id = mod_id or next(iter(soldiers.values()))[1]
+        where = f"{mod_id}: files/models/{unit}{sq.SUFFIX}" if unit in wanted else f"{mod_id}: files/models/{unit}"
+        name = by_name.get(unit)
+        if name is None:
+            # not a game rule: a squad's file for a unit no mod in the set makes
+            result.findings.append(Finding("error", f"{where}: no mod in the set makes a new unit {unit}"))
+            continue
+        if run.game.objects[name].cls != sq.SQUAD_CLASS:
+            # not a game rule: the own-squads game patch gives soldiers of their own to squads alone (their class)
+            result.findings.append(Finding("error", f"{where}: {unit} isn't a squad of soldiers, so it can't have "
+                                                    f"soldiers of its own"))
+            continue
+        need, fired = _squad_need(run, run.game.objects[name])
+        if count is not None:
+            if count < sq.FEWEST:
+                # the game's rule (its setting makes any number below 2 a 2 as it loads) and the owner's pick 1
+                result.findings.append(Finding("error", f"{where}: {unit} would have {count} soldiers: a squad keeps at "
+                                                        f"least {sq.FEWEST}, the game's own rule"))
+                continue
+            if count > sq.MOST:
+                # not a game rule: the owner's pick 2 (2026-11-12), "Most soldiers for now: 8, with the first test at 7"
+                result.findings.append(Finding("error", f"{where}: {unit} would have {count} soldiers: a squad has at "
+                                                        f"most {sq.MOST} for now"))
+                continue
+            if count < need:
+                # the game's rule: each of these weapons goes to one soldier, from the last one back
+                result.findings.append(Finding("error", f"{where}: {unit} would have {count} soldiers, but its last "
+                                                        f"soldiers fire {need} weapons one each ({', '.join(fired)}): "
+                                                        f"it needs at least {need}"))
+                continue
+        n = count if count is not None else shared_n
+        if n is None or (count is not None and shared_n is None):
+            # not a game rule: the game's own setting, as our build reads the unit data
+            result.findings.append(Finding("error", f"{where}: the game's number of soldiers in a squad "
+                                                    f"({sq.BEHAVIOUR}) can't be read, so {unit}'s soldiers can't be "
+                                                    f"counted"))
+            continue
+        past = [i for i in sorted(soldiers) if i > n]
+        for i in past:
+            # not a game rule: a look for a soldier the squad hasn't got (a file left after the squad got fewer)
+            result.findings.append(Finding("error", f"{soldiers[i][1]}: files/models/{soldiers[i][2]}.glb: {unit} has "
+                                                    f"{n} soldiers, so there is no soldier {i} to wear this look"))
+        if past:
+            continue
+        unit_obj = run.game.own(name)
+        if count is not None:
+            copy = _fresh(shared)
+            copy.props[sq.COUNT] = Num(shared_count.kind, Decimal(count))
+            unit_obj.props[sq.OWN_COUNT] = Inline(copy)
+            result.findings.append(Finding("note", f"{where}: {unit} has {count} soldiers of its own (the game's "
+                                                   f"squads have {shared_n})"))
+        if soldiers:
+            has_last = _figure_of(run, unit_obj, sq.LAST) is not None
+            entries = []
+            for i in range(1, n + 1):
+                fig = None
+                if i in soldiers:
+                    fig = _soldier_figure(base, run, name, unit, unit_obj, sq.place_figure(i, n, has_last),
+                                          soldiers[i], result)
+                    if fig is not None:
+                        result.findings.append(Finding("note", f"{soldiers[i][1]}: {unit}'s soldier {i} wears a look "
+                                                               f"of his own"))
+                entries.append(Inline(fig) if fig is not None else Ref(None))
+            unit_obj.props[sq.OWN_LOOKS] = ListV(entries)
+            _far_figure_most(run, name, unit, unit_obj, n, has_last, soldiers, result)
+        done.append(unit)
+    if done:
+        if sq.PATCH not in result.game_patch:
+            result.game_patch.append(sq.PATCH)
+        result.findings.append(Finding("note", f"the modded copy gets the game patch {sq.PATCH} for the squads with "
+                                               f"soldiers of their own ({', '.join(done)})"))
+
+
+def _figure_of(run, obj, prop: str):
+    """The figure (or any part) the unit object `obj` names in `prop`: its own part, or the object a link names; None
+    when it names none."""
+    from .patch import Inline, Ref
+    v = obj.props.get(prop)
+    if isinstance(v, Inline):
+        return v.obj
+    if isinstance(v, Ref) and v.target:
+        return run.game.objects.get(v.target)
+    return None
+
+
+def _mesh_file(run, figure) -> str | None:
+    """The model a figure draws (its MeshDescriptor's FileName), or None."""
+    mesh = _figure_of(run, figure, "MeshDescriptor") if figure is not None else None
+    f = mesh.props.get("FileName") if mesh is not None else None
+    return f.value if isinstance(f, Text) and f.kind == "path" else None
+
+
+def _soldier_figure(base, run, name: str, unit: str, unit_obj, place: str, look: tuple, result: BuildResult):
+    """Soldier's own figure for R2SoldierLooks: a copy of the figure the game gives his place (`place`, the squad's
+    riflemen's or its last man's, as the build leaves it: its clips and halves the squad's), its model part his own
+    model (<the model he was fitted to's folder>\\<unit>__<i>lod0, as unit_own_models writes it). When the squad's own
+    model is on bones of its own and his isn't on those bones, the figure is the copied unit's as the game has it, so he
+    plays what it plays (made on the game soldier's bones: an animation made on other bones can stop the game)."""
+    from . import squads as sq
+    from .modelin import OWN_SKELETON
+    from .patch import Inline, _fresh
+    from .unitmodel import glb_report
+    like, mod_id, stem = look
+    src = _figure_of(run, unit_obj, place) or _figure_of(run, unit_obj, sq.RIFLEMEN)
+    main = result.own_models.get(unit)
+    if src is not None and main is not None and glb_report(main[1]).get(OWN_SKELETON) \
+            and _own_stem(stem) not in _on_main_bones(result, unit):
+        op = run.created.get(name)
+        source = base.objects.get(op.source) if op is not None and op.kind == "clone" else None
+        game = _figure_of(run, source, place) if source is not None else None
+        if game is not None:
+            src = game
+    if src is None or _mesh_file(run, src) is None:
+        # not a game rule: what our build copies a soldier's figure from (the squad's figure for his place, with a model)
+        result.findings.append(Finding("error", f"{mod_id}: files/models/{stem}.glb: {unit} has no figure with a model "
+                                                f"for its soldiers to copy, so its soldier can't wear a look of his own"))
+        return None
+    fig = _fresh(src)
+    own = f"{like.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0.Ase2ndfbin"
+    mesh = _fresh(_figure_of(run, fig, "MeshDescriptor"))   # (a model part the game's units share: his own copy)
+    mesh.props["FileName"] = Text("path", own)
+    fig.props["MeshDescriptor"] = Inline(mesh)
+    return fig
+
+
+def _squad_need(run, obj) -> tuple[int, list]:
+    """How many of a squad's weapons fire an ammunition with NeedModelChange (each goes to one soldier, from the last
+    one back: the game's rule), and those ammunitions' names; its weapons as the unit holds them (WeaponDescriptor's
+    turrets, their mounted weapons, each one's Ammunition), only its own parts walked."""
+    from . import squads as sq
+    from .patch import Inline, ListV, MapV, Ref
+    found: list = []
+
+    def part(v, named: bool = False):
+        if isinstance(v, Inline):
+            return v.obj
+        if isinstance(v, Ref) and v.target and (named or not v.target.startswith("$/")):
+            return run.game.objects.get(v.target)
+        return None
+
+    def walk(v, depth: int) -> None:
+        if depth > 16:
+            return
+        if isinstance(v, ListV):
+            for x in v.items:
+                walk(x, depth + 1)
+            return
+        if isinstance(v, MapV):
+            for _k, x in v.pairs:
+                walk(x, depth + 1)
+            return
+        o = part(v)
+        if o is None:
+            return
+        for p, w in o.props.items():
+            if p != "Ammunition":
+                walk(w, depth + 1)
+                continue
+            ammo = w.obj if isinstance(w, Inline) else run.game.objects.get(w.target) \
+                if isinstance(w, Ref) and w.target else None
+            flag = ammo.props.get(sq.NEED) if ammo is not None else None
+            if isinstance(flag, Num) and flag.value != 0:
+                found.append(w.target.rsplit("/", 1)[-1] if isinstance(w, Ref) else ammo.cls)
+
+    weapons = part(obj.props.get("WeaponDescriptor"), named=True)   # (its own, or a named one: either is its weapons)
+    for w in (weapons.props.values() if weapons is not None else ()):
+        walk(w, 1)
+    return len(found), found
+
+
+def _far_figure_most(run, name: str, unit: str, unit_obj, n: int, has_last: bool, soldiers: dict,
+                     result: BuildResult) -> None:
+    """A squad whose soldiers have looks one by one: its far-away figure (FIGURINE) wears the look most of its `n`
+    soldiers wear (the owner, 2026-11-11, on squad-page1: "It should take that like the more predominant unit"). Each
+    soldier counts once, for the model he draws: his own look's model (each soldier's own is a look of its own), else
+    the model of the figure the game gives his place as the build leaves it (the riflemen's own model, the last man's,
+    or the game's). The most soldiers win; between looks with as many, the one the lowest-numbered of them wears (so a
+    tie with soldier 1's look goes to soldier 1's)."""
+    from collections import Counter
+
+    from . import squads as sq
+    from .unitmodel import model_key
+    worn = []
+    for i in range(1, n + 1):
+        if i in soldiers:
+            like, _mod, stem = soldiers[i]
+            model = f"{like.replace('/', chr(92)).rsplit(chr(92), 1)[0]}{chr(92)}{_own_stem(stem)}lod0.Ase2ndfbin"
+        else:
+            model = _mesh_file(run, _figure_of(run, unit_obj, sq.place_figure(i, n, has_last)))
+        if model:
+            worn.append((model_key(model), model))
+    if not worn:
+        return
+    counts = Counter(k for k, _m in worn)
+    top = max(counts.values())
+    key, model = next((k, m) for k, m in worn if counts[k] == top)
+    far = _figurine_model(run, unit_obj)
+    if far is None or model_key(far) == key:
+        return
+    if _point_at_copies(run, name, {model_key(far): model}, parts=lambda p: p == FIGURINE[0]):
+        result.findings.append(Finding("note", f"{unit}'s far-away figure wears the look most of its soldiers wear "
+                                               f"({model.replace(chr(92), '/').rsplit('/', 1)[-1]}, {top} of {n})"))
 
 
 def building_looks(run, result: BuildResult) -> dict:
@@ -2693,6 +2959,7 @@ def build_pack(arc: Edat, mods: list, build_id: str = "0", text_arc: Edat | None
     unit_own_halves(run, result)   # (the unit's own figures only: before its ride, a unit of its own, is made)
     if result.own_rides:   # (units riding as themselves on long moves: their rides, made after the mods)
         run = unit_own_rides(engine, run, result)
+    squad_soldiers(base, run, order, result)   # (each soldier's own figure a copy of the squad's as it now stands)
     result.look_symbols = building_looks(run, result)
     unit_fit_checks(run, result, text_arc)  # (after every step that points a unit's models, clips and halves)
     if result.errors:
@@ -2884,12 +3151,13 @@ def own_buildings(run, zz_win, planned: dict, result: BuildResult, scripts: dict
     for path, (pack, members) in changes.items():
         scripts.setdefault(path, (pack, {}))[1].update(members)
     result.own_kinds = kinds
-    if set(kinds) & ownbuildings.PATCHED:
-        result.game_patch = ownbuildings.PATCH
+    patched = bool(set(kinds) & ownbuildings.PATCHED)
+    if patched and ownbuildings.PATCH not in result.game_patch:
+        result.game_patch.append(ownbuildings.PATCH)
     result.findings.append(Finding("note", f"buildings with units of their own: kinds {', '.join(map(str, kinds))}, "
                                            f"each with its tab on the build bar"
                                    + (f"; the modded copy gets the game patch {ownbuildings.PATCH}"
-                                      if result.game_patch else "")))
+                                      if patched else "")))
 
 
 def terrain_edits(order: list[str], mods: list) -> dict[str, tuple[list, list[str]]]:
@@ -3348,6 +3616,24 @@ def _shipped(arc, member: str) -> bytes | None:
     """A member of a layered pack (rmod.Layered) as the game ships it, under the changes on top."""
     e = arc.entry(member)
     return bytes(Edat.read(arc, e)) if e is not None else None
+
+
+def copy_patches(wanted: list, wide: bool) -> list:
+    """The game patches a modded copy gets: the build's (`wanted`, BuildResult.game_patch), and big-packs when a pack is
+    written wide; each once, in the apps' own order (rusemod.gamepatch.PATCHES: more-buildings, big-packs, own-squads),
+    so a copy that needed the first two before gets them as before. A name the apps don't know comes last, refused when
+    it's fetched."""
+    from . import gamepatch
+    names = set(wanted) | ({"big-packs"} if wide else set())
+    return [p for p in gamepatch.PATCHES if p in names] + sorted(names - set(gamepatch.PATCHES))
+
+
+def patches_fingerprint(fp: bytes, patches: list) -> bytes:
+    """A copy's fingerprint `fp` with each of its game patches taken in, in order ([(name, its file's SHA-256)]): players
+    only play together with the same ones."""
+    for name, sha in patches:
+        fp = hashlib.sha256(fp + b"\ngame patch " + name.encode() + b" " + sha.encode()).digest()
+    return fp
 
 
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
@@ -5718,9 +6004,9 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
         if result.fingerprint is None:
             result.fingerprint = fingerprint(build_id, result.changed)
         patched_exe = None
-        patches = ([result.game_patch] if result.game_patch else []) + (["big-packs"] if wide else [])
+        from . import gamepatch
+        patches = copy_patches(result.game_patch, bool(wide))
         if patches:  # the modded copy's own RUSE.exe, patched (rusemod.gamepatch); the game's is only read
-            from . import gamepatch
             exe = Path(game) / gamepatch.EXE
             try:
                 got = [gamepatch.fetch(name, cache, say=say) for name in patches]
@@ -5730,10 +6016,10 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                 raise BuildError(f"{exe} can't be read for the game patch ({exc.strerror or exc})") from None
             except gamepatch.GamePatchError as exc:
                 raise BuildError(str(exc)) from None
-            for name, patch in zip(patches, got):
-                # players only play together with the same patch
-                result.fingerprint = hashlib.sha256(result.fingerprint + b"\ngame patch " + name.encode()
-                                                    + b" " + patch.sha256.encode()).digest()
+            # players only play together with the same patches
+            result.fingerprint = patches_fingerprint(result.fingerprint,
+                                                     [(name, patch.sha256) for name, patch in zip(patches, got)])
+            for name in patches:
                 say(f"game patch {name}: " + ("applied to the modded copy's RUSE.exe" if instance is not None
                                               else "only a modded copy gets it (--instance)"))
         say(f"fingerprint: {fingerprint_text(result.fingerprint)}")

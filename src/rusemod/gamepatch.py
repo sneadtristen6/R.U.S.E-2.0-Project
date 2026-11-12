@@ -39,10 +39,16 @@ PATCHES: dict[str, tuple[str, str]] = {
     # pack that big (the owner, 2026-10-30: a player's mod set with many era units' own models), Steam build 24670294
     "big-packs": ("big-packs-24670294.json",
                   "932d1395107f190c63857626580506fa0cae4a869f91a7e13d2b67f5cf172ae6"),
+    # a squad with a number of soldiers of its own (2 to 8) and each soldier a look of his own (rusemod.squads: the
+    # squad's R2Behaviour and R2SoldierLooks; the owner, 2026-11-12: "I would only want to change it for this one
+    # squad. Not every squad in the game."): every other squad stays as the game has it, Steam build 24670294
+    "own-squads": ("own-squads-24670294.json",
+                   "360207cf9268eadea8c176910dc5b3a3c41ce2cbd4b84361c673e03bcc526087"),
 }
 
 
-WHY = {"more-buildings": "the mods' new buildings", "big-packs": "a game pack these mods make bigger than 4 GB"}
+WHY = {"more-buildings": "the mods' new buildings", "big-packs": "a game pack these mods make bigger than 4 GB",
+       "own-squads": "the mods' squads with soldiers of their own"}
 
 
 class GamePatchError(Exception):
