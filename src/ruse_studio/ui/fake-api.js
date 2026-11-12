@@ -6,7 +6,8 @@
 // "Keep a clean copy" ask, made on the first start; ?fake=lang "Choose your language" with the game set to French in
 // Steam; ?fake=groups a mod made before the build lists' limits: in the Nations tab, Germany's Armor base with a full
 // group and 10 groups, the USA's with a group over the most; ?fake=horse a squad's Import model brings the Horse Squad,
-// a model on bones of its own with its animations). Only English, French
+// a model on bones of its own with its animations; ?fake=squad2 a squad's page with Add a soldier and Remove, the squad
+// calls of a later step stood in for). Only English, French
 // and Chinese words are included here; the real Studio has all ten languages. It does nothing in the real Studio window.
 "use strict";
 
@@ -733,6 +734,9 @@
       names: { us: "Panzer IV", fr: "Panzer IV", sc: "四号坦克" }, price: 45, hp: 13, speed: 34 },
     { id: "Soldat_US_Leger", kind: "infantry", nation: 0, factory: 8, slot: 101, key: "U_GI",
       names: { us: "Infantry", fr: "Infanterie", sc: "步兵" }, price: 10, hp: 4, speed: 12 },
+    // (a squad whose soldiers are all one kind: one line on its page, squadInfo)
+    { id: "Soldat_Russe_Para", kind: "infantry", nation: 5, factory: 8, slot: 105, key: "U_DESANT",
+      names: { us: "Desantniki", fr: "Desantniki", sc: "空降兵" }, price: 20, hp: 4, speed: 12 },
     { id: "Type97_ChiHa", kind: "ground", nation: 6, factory: 10, slot: 302, key: "U_CHIHA",
       names: { us: "Type 97 Chi-Ha", fr: "Type 97 Chi-Ha", sc: "九七式中战车" }, price: 30, hp: 9, speed: 36 },
     { id: "P40Warhawk", kind: "air", nation: 0, factory: 9, slot: 201, key: "U_P40",
@@ -793,6 +797,7 @@
   const fakeKindModels = new Map();  // squad -> the heavy-weapon soldier's own model
   function fakeKinds(address) {
     if (!fakeSquad(address) || !mine().some((n) => address === newAddress(n.id))) return [];
+    if ((fakeSquadSource(address).kinds || []).length < 2) return [];   // (its soldiers all one kind: the Desantniki)
     const main = fakeModels.get(address), heavy = fakeKindModels.get(address);
     const on = (m) => (m ? (m.own_skeleton ? "own" : "soldier") : null);
     const kept = `${winPath(current)}\\files\\models\\${address.split("/").pop()}`;   // (StudioApi._kind_file)
@@ -826,7 +831,85 @@
   // a squad (its look is its uniform: Default or Custom) and the truck it rides in (rides_in): the GI squad and its copies
   const fakeSquad = (address) => /Soldat/.test(address)
     || mine().some((n) => address === newAddress(n.id) && /Soldat/.test(n.source));
-  const FAKE_TRUCKS = [["$/GFX/Everything/Descriptor_Unit_TransportSoldier", "TRUCK"],
+  // --- a squad's soldiers, for its page (StudioApi.squad_info, squad_blender, squad_blender_back, soldier_import,
+  // soldier_reset: the squad contracts' section 4, 2026-11-11; stand-ins until the Studio's own are joined): the GI squad
+  // (4 riflemen, 1 bazooka man), the Desantniki (5 riflemen: one kind, one line) and their copies; null for any other
+  // unit. ?fake=squad2: Add a soldier and Remove (soldier_add, soldier_remove: a later step's calls) ---
+  const FAKE_SQUADS = {   // the game's squad -> its soldiers, the riflemen first: [kind, how many]
+    Soldat_US_Leger: [["fusilier", 4], ["bazooka", 1]],
+    Soldat_Russe_Para: [["fusilier", 5]] };
+  // the made-up squads' words: a soldier's name, one and several of him in the squad's line, what he carries (one,
+  // several); the line itself; why a game squad's soldiers aren't changed
+  const FAKE_SOLDIER_WORDS = {
+    us: { fusilier: ["Rifleman", "rifleman", "riflemen", "a rifle", "rifles"],
+          bazooka: ["Bazooka man", "bazooka man", "bazooka men", "a bazooka", "bazookas"],
+          line: (n, parts) => `${n} soldiers: ${parts.join(", ")}`,
+          part: (c, one, many, a, some) => `${c} ${c === 1 ? one : many} with ${c === 1 ? a : some}`,
+          game: "This is one of the game's own squads, so its soldiers aren't changed here: make a new unit from it, then change that one." },
+    fr: { fusilier: ["Fusilier", "fusilier", "fusiliers", "un fusil", "des fusils"],
+          bazooka: ["Soldat au bazooka", "soldat au bazooka", "soldats au bazooka", "un bazooka", "des bazookas"],
+          line: (n, parts) => `${n} soldats : ${parts.join(", ")}`,
+          part: (c, one, many, a, some) => `${c} ${c === 1 ? one : many} avec ${c === 1 ? a : some}`,
+          game: "C'est une escouade du jeu, ses soldats ne se changent donc pas ici : créez une nouvelle unité à partir d'elle, puis changez celle-là." },
+    sc: { fusilier: ["步枪兵", "步枪兵", "步枪兵", "步枪", "步枪"],
+          bazooka: ["火箭筒兵", "火箭筒兵", "火箭筒兵", "火箭筒", "火箭筒"],
+          line: (n, parts) => `${n} 名士兵：${parts.join("，")}`,
+          part: (c, one, many, a) => `${c} 名${one}（${a}）`,
+          game: "这是游戏自带的小队，所以这里不更改它的士兵：请以它制作一个新单位，再修改那个新单位。" } };
+  // the weapons each fires, as their cards name them (the one that changes his model, the bazooka, is the last man's)
+  const FAKE_FIRES = {
+    Soldat_US_Leger: { fusilier: { us: ["M1 Garand"], fr: ["M1 Garand"], sc: ["M1 加兰德"] },
+                       bazooka: { us: ["Bazooka"], fr: ["Bazooka"], sc: ["巴祖卡"] } },
+    Soldat_Russe_Para: { fusilier: { us: ["PPSh-41"], fr: ["PPSh-41"], sc: ["PPSh-41"] } } };
+  const fakeSquadOpen = new Set();     // squads whose Blender is open now (squad_blender)
+  const fakeSquadWork = new Set();     // squads with a Blender work folder, <mod>\blender\<unit>\squad
+  const fakeSquadSent = new Set();     // squads opened in Blender and not brought back since
+  const fakeSquadChanged = new Map();  // squad -> the soldiers whose model came back from Blender
+  const fakeSquadCounts = new Map();   // squad -> {kind: how many}, after Add a soldier or Remove (?fake=squad2)
+  function fakeSquadSource(address) {   // the game's squad a unit is or copies, and its soldiers' kinds
+    const made = mine().find((n) => address === newAddress(n.id));
+    const game = units.find((x) => E + x.id === (made ? made.source : address));
+    return { made, game, kinds: game ? FAKE_SQUADS[game.id] || null : null };
+  }
+  function fakeSquadInfo(address, lang = "us") {
+    const { made, game, kinds } = fakeSquadSource(address);
+    if (!kinds) return null;
+    const L = FAKE_SOLDIER_WORDS[lang] || FAKE_SOLDIER_WORDS.us;
+    const stem = address.split("/").pop(), first = kinds[0][0];
+    const counts = fakeSquadCounts.get(address) || Object.fromEntries(kinds);
+    const own = Boolean(made && current), files = own ? `${winPath(current)}\\files\\models\\${stem}` : null;
+    const changed = fakeSquadChanged.get(address) || new Set();
+    const soldiers = kinds.filter(([kind]) => counts[kind] > 0).map(([kind]) => {
+      const model = kind === first ? fakeModels.get(address) : fakeKindModels.get(address);
+      const back = Boolean(model) && changed.has(kind);
+      const fires = FAKE_FIRES[game.id][kind] || {};
+      return { id: kind, label: L[kind][0], count: counts[kind], fires: fires[lang] || fires.us || [],
+        preview: { url: fakeFigureUrl(kind, back ? "blender" : model ? "own" : "game") },
+        own_model: Boolean(model), from: model ? model.file : null, blender_changed: back,
+        kept: files ? `${files}${kind === first ? "" : "@" + kind}.glb` : null };
+    });
+    const count = soldiers.reduce((n, s) => n + s.count, 0);
+    return { name: made ? made.name : nameOf(game, lang), copies: made ? nameOf(game, lang) : null, own: Boolean(made),
+      count, line: L.line(count, soldiers.map((s) => L.part(s.count, ...L[s.id].slice(1)))), soldiers,
+      blender: { open: fakeSquadOpen.has(address), work: own ? `${winPath(current)}\\blender\\${stem}\\squad` : null,
+        made: fakeSquadWork.has(address) },
+      can: { blender: own, import: own, reset: own, add: own && mode === "squad2", remove: own && mode === "squad2" && count > 1 },
+      why_not: own ? null : L.game };
+  }
+  // a squad of the mod's own, or refused as the Studio refuses (not a squad; a game unit: copy it first)
+  function fakeSquadOwn(address, lang = "us") {
+    const info = fakeSquadInfo(address, lang);
+    if (!info) throw new Error("This unit isn't a squad of soldiers.");
+    if (!info.own) throw new Error("This is one of the game's own squads: make a new unit from it first, then change that one.");
+    return info;
+  }
+  // one of a squad's soldiers by his id, and whether he wears the unit's own model (the riflemen: no kind given)
+  function fakeSoldierOf(address, soldier) {
+    const info = fakeSquadOwn(address);
+    if (!info.soldiers.some((s) => s.id === soldier)) throw new Error(`This squad has no soldier called ${soldier}.`);
+    return soldier === fakeSquadSource(address).kinds[0][0] ? null : soldier;
+  }
+  const FAKE_TRUCKS =[["$/GFX/Everything/Descriptor_Unit_TransportSoldier", "TRUCK"],
     ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_GER", "OPEL BLITZ"],
     ["$/GFX/Everything/Descriptor_Unit_TransportSoldier_UK", "BEDFORD"]];
   const fakeRides = new Map();  // squad -> the truck the mod has it ride in
@@ -923,7 +1006,19 @@
     return c.toDataURL("image/png");
   };
   function fakeModelUrl() {
-    const boxes = [[-1.6, 0, -0.9, 1.6, 0.7, 0.9], [-0.7, 0.7, -0.6, 0.6, 1.15, 0.6], [0.6, 0.85, -0.08, 2.2, 1.0, 0.08]];
+    return fakeBoxesUrl([[-1.6, 0, -0.9, 1.6, 0.7, 0.9], [-0.7, 0.7, -0.6, 0.6, 1.15, 0.6], [0.6, 0.85, -0.08, 2.2, 1.0, 0.08]],
+      "#6b6a3c", "#55542e");
+  }
+  // a made-up soldier for a squad's pictures (squad_info's previews, unit_preview), made as the tank is: legs, a body, a
+  // head and what he carries (a rifle; the bazooka man's tube on his shoulder); olive as the game's, green with a model
+  // from a file, blue once changed in Blender; `x`: where he stands, beside the others
+  function fakeFigureUrl(kind, look, x = 0) {
+    const [base, stripe] = { game: ["#6b6a3c", "#55542e"], own: ["#3f6a3a", "#2f522b"], blender: ["#2f5d8a", "#244a6e"] }[look];
+    return fakeBoxesUrl([[-0.15, 0, -0.1, 0.15, 0.8, 0.1], [-0.2, 0.8, -0.13, 0.2, 1.4, 0.13], [-0.1, 1.42, -0.1, 0.1, 1.66, 0.1],
+      kind === "bazooka" ? [-0.45, 1.3, 0.14, 0.75, 1.44, 0.28] : [0, 1.0, 0.15, 0.85, 1.06, 0.21]]
+      .map(([x0, y0, z0, x1, y1, z1]) => [x0 + x, y0, z0, x1 + x, y1, z1]), base, stripe);
+  }
+  function fakeBoxesUrl(boxes, base, stripe) {
     const pos = [], uv = [], idx = [];
     for (const [x0, y0, z0, x1, y1, z1] of boxes) {
       for (const f of [[[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]],
@@ -943,10 +1038,11 @@
       buffers: [{ byteLength: bytes.length, uri: "data:application/octet-stream;base64," + btoa(String.fromCharCode(...bytes)) }],
       bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: pos.length * 4 }, { buffer: 0, byteOffset: pos.length * 4, byteLength: uv.length * 4 },
         { buffer: 0, byteOffset: f32.byteLength, byteLength: u16.byteLength }],
-      accessors: [{ bufferView: 0, componentType: 5126, count: pos.length / 3, type: "VEC3", min: [-1.6, 0, -0.9], max: [2.2, 1.15, 0.9] },
+      accessors: [{ bufferView: 0, componentType: 5126, count: pos.length / 3, type: "VEC3",
+        min: [0, 1, 2].map((k) => Math.min(...boxes.map((b) => b[k]))), max: [3, 4, 5].map((k) => Math.max(...boxes.map((b) => b[k]))) },
         { bufferView: 1, componentType: 5126, count: uv.length / 2, type: "VEC2" },
         { bufferView: 2, componentType: 5123, count: idx.length, type: "SCALAR" }],
-      images: [{ uri: fakeShot("#6b6a3c", "#55542e") }], textures: [{ source: 0 }],
+      images: [{ uri: fakeShot(base, stripe) }], textures: [{ source: 0 }],
       materials: [{ name: "Fake", pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 0.8 },
         doubleSided: true, extras: { rusemod_texture: "gen\\ww2\\fake\\tsccombcs_combineddsctexture01.tgv" } }],
       meshes: [{ name: "fake", primitives: [{ attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 2, material: 0 }] }],
@@ -3631,6 +3727,81 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { model: fakeModels.get(address), copy_out: copyOut, ...fakeLook(address),
           work: winPath(current) + "\\blender\\" + address.split("/").pop() };
       },
+      // a squad's page (StudioApi.squad_info, squad_blender, squad_blender_back, soldier_import, soldier_reset: the squad
+      // contracts' section 4), refused as the contracts have the Studio refuse: not a squad, a game unit, Blender not
+      // found, its Blender already open, nothing sent from Blender yet
+      squad_info: async (address, lang = "us") => fakeSquadInfo(address, lang),
+      squad_blender: async (address, lang = "us") => {
+        const info = fakeSquadOwn(address, lang);
+        if (mode === "noblender") throw new Error("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use Choose Blender… to show the Studio where blender.exe is.");
+        if (info.blender.open) throw new Error("This squad's Blender is open already: change the soldiers there, click Send to the R.U.S.E. Studio at the top of Blender, then Bring my changes back here.");
+        await new Promise((r) => setTimeout(r, 400));
+        fakeSquadOpen.add(address);
+        fakeSquadWork.add(address);
+        fakeSquadSent.add(address);
+        const now = fakeSquadInfo(address, lang);
+        return { ...now, work: now.blender.work, opened: now.soldiers.map((s) => s.id) };
+      },
+      // made up: the first bring-back after each opening finds the last line's soldier changed (his paint) and the others
+      // as they were; another, nothing changed. Blender is taken as closed after it, as when the modder closes it
+      squad_blender_back: async (address) => {
+        const info = fakeSquadOwn(address);
+        if (!info.blender.made) throw new Error("Nothing has come back from Blender yet: click Change the squad in Blender, change a soldier there, then click Send to the R.U.S.E. Studio at the top of Blender.");
+        await new Promise((r) => setTimeout(r, 400));
+        const last = info.soldiers[info.soldiers.length - 1];
+        const changed = fakeSquadSent.delete(address) ? [last.id] : [];
+        fakeSquadOpen.delete(address);
+        if (changed.length) {
+          const model = { ...FAKE_SQUAD_IMPORT, file: `${last.label}.glb` };
+          if (fakeSoldierOf(address, last.id)) fakeKindModels.set(address, model);
+          else { fakeModels.set(address, model); fakeModelCopies.delete(address); }   // (as Import model: a Custom uniform goes)
+          fakeSquadChanged.set(address, new Set([...(fakeSquadChanged.get(address) || []), last.id]));
+        }
+        const now = fakeSquadInfo(address);
+        return { ...now, changed, unchanged: now.soldiers.map((s) => s.id).filter((id) => !changed.includes(id)),
+          work: now.blender.work };
+      },
+      // one soldier's model from a file, and back to the game's look: today's model_import and model_import_remove with
+      // his kind (the riflemen: none), their answers as they are
+      soldier_import: async (address, soldier, file = null, size = 1.0) => {
+        const kind = fakeSoldierOf(address, soldier);
+        const r = await window.pywebview.api.model_import(address, file, size, false, null, true, true, null, kind);
+        if (fakeSquadChanged.has(address)) fakeSquadChanged.get(address).delete(soldier);   // (from a file now)
+        return r;
+      },
+      soldier_reset: async (address, soldier) => {
+        const kind = fakeSoldierOf(address, soldier);
+        const r = await window.pywebview.api.model_import_remove(address, kind);
+        for (const id of [soldier, ...(r.kinds_out || [])]) if (fakeSquadChanged.has(address)) fakeSquadChanged.get(address).delete(id);
+        return r;
+      },
+      // ?fake=squad2: a soldier more or less (a later step's soldier_add and soldier_remove, the squad contracts' Phase 2):
+      // a copy of one, a soldier of another unit or a model file joins as one more of that line (the riflemen when from
+      // elsewhere); never fewer than one soldier
+      soldier_add: async (address, source, of = null, unit = null, file = null) => {
+        const info = fakeSquadOwn(address);
+        if (!info.can.add) throw new Error("This squad can't have a soldier more yet.");
+        if (!["copy", "unit", "file"].includes(source)) throw new Error(`'${source}' isn't a way to add a soldier`);
+        if (source === "copy" && !info.soldiers.some((s) => s.id === of)) throw new Error(`This squad has no soldier called ${of}.`);
+        if (source === "unit" && !(fakeSquadInfo(unit) || { soldiers: [] }).soldiers.some((s) => s.id === of)) throw new Error("That unit has no such soldier.");
+        await new Promise((r) => setTimeout(r, 300));
+        const counts = Object.fromEntries(fakeSquadSource(address).kinds.map(([k]) => [k, 0]));
+        for (const s of info.soldiers) counts[s.id] = s.count;
+        const line = source === "copy" ? of : fakeSquadSource(address).kinds[0][0];
+        counts[line] += 1;
+        fakeSquadCounts.set(address, counts);
+        return { ...fakeSquadInfo(address), added: line, file };
+      },
+      soldier_remove: async (address, soldier) => {
+        const info = fakeSquadOwn(address);
+        if (!info.can.remove) throw new Error("This squad keeps at least one soldier.");
+        if (!info.soldiers.some((s) => s.id === soldier)) throw new Error(`This squad has no soldier called ${soldier}.`);
+        await new Promise((r) => setTimeout(r, 300));
+        const counts = Object.fromEntries(info.soldiers.map((s) => [s.id, s.count]));
+        counts[soldier] -= 1;
+        fakeSquadCounts.set(address, counts);
+        return fakeSquadInfo(address);
+      },
       model_copy: async (address) => {
         if (fakeModels.has(address)) {
           throw new Error(fakeSquad(address)
@@ -3723,7 +3894,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (real) return { models: [{ url: real, name: "preview" }], paint: {}, card: fakeCard(address), disc: query.get("disc"),
           ...(query.get("stands") ? { stands: JSON.parse(query.get("stands")) } : {}) };
         await new Promise((r) => setTimeout(r, 300));
-        return { models: [{ url: fakeModelUrl(), name: "fake" }], card: fakeCard(address),
+        // (a squad: one made-up soldier for each line of its page, side by side, each as he looks now)
+        const squad = fakeSquadInfo(address);
+        const models = squad ? squad.soldiers.map((s, i) => ({ name: s.id, url: fakeFigureUrl(s.id,
+          s.blender_changed ? "blender" : s.own_model ? "own" : "game", (i - (squad.soldiers.length - 1) / 2) * 0.9) }))
+          : [{ url: fakeModelUrl(), name: "fake" }];
+        return { models, card: fakeCard(address),
                  paint: fakePainted.has(address) ? { "gen\\ww2\\fake\\tsccombcs_combineddsctexture01.tgv": fakeShot("#8d2b22", "#6e1f18") } : {} };
       },
       look_card: async (address, picture) => {
