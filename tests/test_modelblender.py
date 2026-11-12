@@ -1,16 +1,22 @@
 """A squad's soldier changed in Blender and brought back (ruse_studio.modelblender; rusemod.blender's
 open_model_to_change and ask_to_send; rusemod.blender_model, run by Blender). The owner's order of 2026-11-10, item 4:
-a player couldn't give a squad a model of his own (Open in Blender was a painting door behind Custom uniform)."""
+a player couldn't give a squad a model of his own (Open in Blender was a painting door behind Custom uniform).
+ItsOwnShine: a tank, a plane or a soldier brought back keeps its own shine and side colour (the owner, 2026-11-12,
+"Keep its own"), through the Studio's real export, Import model's real reading and fitting of pictures, and a
+stand-in for what Blender does to materials and pictures."""
 import json
 import re
 import tempfile
 import threading
 import time
 import unittest
+from collections import defaultdict
 from pathlib import Path
 from unittest import mock
 
-from rusemod import blender
+from rusemod import blender, gltf, modelin
+from rusemod.png import read_png
+from test_gltf_bones import FakeLibrary, FakeSpk, parts
 
 SQUAD = "$/GFX/Everything/Descriptor_Unit_My_Riflemen"
 RIFLEMAN = "ww2\\res3d\\units\\us\\infanterie\\us_soldier_modellod0.ase2ndfbin"
@@ -161,8 +167,10 @@ class StudioCalls(unittest.TestCase):
         t = answer_send(self.send)
         res = self.api.model_blender_back(SQUAD)
         t.join()
-        self.assertEqual(imported, [(SQUAD, str(self.send), 1.0)])
+        kept = self.work / "kept" / self.send.name   # (what Blender sent, each alpha picture back in it: ItsOwnShine)
+        self.assertEqual(imported, [(SQUAD, str(kept), 1.0)])
         self.assertEqual(self.send.read_bytes(), b"glTF-sent")
+        self.assertEqual(kept.read_bytes(), b"glTF-sent")   # (not a .glb: as sent, and Import model says why)
         self.assertEqual(res["model"], {"rigged": True})
         self.assertEqual(res["work"], str(self.work))
 
@@ -178,7 +186,7 @@ class StudioCalls(unittest.TestCase):
         self.api._blenders[str(self.work)] = Closed()
         with mock.patch("rusemod.blender.ask_to_send", side_effect=AssertionError("a closed Blender isn't asked")):
             self.api.model_blender_back(SQUAD)
-        self.assertEqual(imported, [str(self.send)])
+        self.assertEqual(imported, [str(self.work / "kept" / self.send.name)])
 
     def test_bring_back_with_nothing_sent_says_what_to_click(self):
         from ruse_studio.api import StudioError
@@ -258,7 +266,8 @@ class EachSoldier(unittest.TestCase):
                 return 0
         self.api._blenders[str(self.his_work)] = Closed()
         res = self.api.model_blender_back(SQUAD, 1.0, "bazooka")
-        self.assertEqual(imported, [(SQUAD, str(self.his_send), 1.0, "bazooka")])   # Import model's kind: his alone
+        his_kept = self.his_work / "kept" / self.his_send.name
+        self.assertEqual(imported, [(SQUAD, str(his_kept), 1.0, "bazooka")])   # Import model's kind: his alone
         self.assertEqual((res["work"], res["kind"]), (str(self.his_work), "bazooka"))
         from ruse_studio.api import StudioError
         with self.assertRaisesRegex(StudioError, "Nothing has come back from Blender yet"):   # (the riflemen sent nothing)
@@ -280,6 +289,247 @@ class EachSoldier(unittest.TestCase):
         self.api._look_models = lambda address: ([RIFLEMAN], [])
         with self.assertRaisesRegex(StudioError, "This soldier has no 3D model the Studio can open"):
             self._open(kind="bazooka")
+
+
+# --- its own shine and side colour (ItsOwnShine) ---
+TANK = "$/GFX/Everything/Descriptor_Unit_My_Tank"
+TANK_MODEL = "ww2\\res3d\\units\\us\\char\\test_tank\\test_tanklod0.ase2ndfbin"
+HULL = "ww2\\res3d\\units\\us\\char\\test_tank\\test_tank_hull.tgv"
+TURRET = "ww2\\res3d\\units\\us\\char\\test_tank\\test_tank_turret.tgv"
+LIKE = {"length": 200.0, "pivot": (0.0, 0.0), "ground": 0.0}
+
+
+def game_picture(seed: int, w: int, h: int) -> tuple:
+    """A picture as the game's model library gives it, (width, height, RGBA): its alpha the side colour (0) where low
+    and shine where high, as the game's pictures have it, with a value of its own nearly everywhere."""
+    rgba = bytearray()
+    for i in range(w * h):
+        alpha = 0 if i % 7 == 3 else 250 - (i * seed) % 90
+        rgba += bytes([(40 + 3 * i) % 256, (90 + seed) % 256, (11 * i) % 256, alpha])
+    return w, h, bytes(rgba)
+
+
+PICTURES = {HULL: game_picture(5, 8, 4), TURRET: game_picture(9, 4, 4)}
+GAME_ALPHA = {"test_tank_hull": PICTURES[HULL][2][3::4], "test_tank_turret": PICTURES[TURRET][2][3::4]}
+
+
+class PaintedLibrary(FakeLibrary):
+    """test_gltf_bones' made-up model and skeleton under any model's name, each of its two draws with a game picture of
+    its own (what rusemod.gltf.export reads of rusemod.models.Library)."""
+
+    def __init__(self, _game=None):
+        super().__init__()
+        self.where = defaultdict(FakeSpk)
+
+    def parts(self, name):
+        (hull, _no), (turret, _none) = parts()
+        return [(hull, HULL), (turret, TURRET)]
+
+    def picture(self, texture, most=512):
+        return PICTURES.get(texture)
+
+    def close(self):
+        pass
+
+
+def blender_sends(start: Path, send: Path, rename: dict | None = None) -> None:
+    """What Blender 4.5 does to a model's materials and pictures between the file the Studio opens in it and its Send
+    (rusemod.blender_model), as the real one did it on 2026-11-12 with a Sherman, a P-47 and a soldier
+    (scratch/animmodels/shine-door/proof-new/proof.json, each step's sent_file): every material and the picture it
+    shows kept under its own name (`rename` {name: new name}: renamed there), no extras anywhere, and no picture a
+    material doesn't show."""
+    doc, views = gltf.glb_views(start.read_bytes())
+    for part in ([doc.get("asset") or {}] + doc.get("nodes", []) + doc.get("meshes", []) + doc.get("skins", [])
+                 + doc.get("materials", []) + [p for m in doc.get("meshes", []) for p in m.get("primitives", [])]):
+        part.pop("extras", None)
+    shown = sorted({doc["textures"][m["pbrMetallicRoughness"]["baseColorTexture"]["index"]]["source"]
+                    for m in doc.get("materials", []) if (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")})
+    image = {old: k for k, old in enumerate(shown)}
+    textures = []
+    for m in doc.get("materials", []):
+        tex = (m.get("pbrMetallicRoughness") or {}).get("baseColorTexture")
+        if tex:
+            textures.append({"source": image[doc["textures"][tex["index"]]["source"]]})
+            tex["index"] = len(textures) - 1
+        m["name"] = (rename or {}).get(m.get("name"), m.get("name"))
+    doc["images"], doc["textures"] = [doc["images"][k] for k in shown], textures
+    send.parent.mkdir(parents=True, exist_ok=True)
+    send.write_bytes(gltf.pack_glb(doc, views))
+
+
+def fitted(game, source_model, model_file, out, size=1.0, **_more):
+    """rusemod.unitmodel.import_model for a model of no game unit (test_unitmodel has the fitting): the file read and
+    fitted the importer's own way, its pictures and their alpha too (rusemod.modelin), saved as the mod keeps it."""
+    prep = modelin.prepare(modelin.read_model(Path(model_file)), Path(model_file).parent, LIKE, size=size)
+    modelin.write_glb(prep, Path(out), source_model)
+    return dict(prep.report)
+
+
+def alphas_in(model: Path) -> dict:
+    """{each picture of a model the mod keeps (rusemod.modelin.write_glb's): its alpha, a byte a pixel}."""
+    doc, binary = modelin.glb_document(model.read_bytes())
+    out = {}
+    for m in doc["materials"]:
+        k = m["extras"]["rusemod_alpha_texture"]
+        _w, _h, rgba = read_png(modelin.glb_image(doc, binary, doc["textures"][k]["source"]))
+        out[m["name"]] = bytes(rgba[0::4])
+    return out
+
+
+class ItsOwnShine(unittest.TestCase):
+    """A new unit copied from a game tank (and a squad's soldier), changed in Blender and brought back, keeps each
+    picture's own alpha (the owner, 2026-11-12: "Keep its own": "Its own shine and side-colour layer goes back in, the
+    way the squad page already does it"), byte for byte, through a second trip and a Resize; a material renamed or new
+    in Blender has the plain 144 and the import's report says so; a model imported from a file stays flat ("Keep it
+    flat"). Real: the Studio's calls, rusemod.gltf.export of a made-up model with pictures, Import model's reading,
+    fitting and saving (rusemod.modelin). Stood in: the game (PaintedLibrary), Blender (blender_sends), the fitting to
+    a game unit's model (fitted)."""
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        self.dir = tempfile.TemporaryDirectory()
+        root = Path(self.dir.name)
+        data = root / "R.U.S.E" / "Data" / "PC" / "190852"
+        data.mkdir(parents=True)
+        (data / "ZZ_Win.dat").write_bytes(b"zz")
+        self.mod = root / "mod"
+        self.models = self.mod / "files" / "models"
+        api = self.api = StudioApi(game_dir=root / "R.U.S.E", home=root / "home")
+        api._mod_dir = lambda: self.mod
+        api._soldier_kinds = lambda address: {}
+        api._look_models = lambda address: ([TANK_MODEL], [])
+        api._own_model_file = lambda address: self.models / f"{address.rsplit('/', 1)[-1]}.glb"
+        api._blender = lambda: Path("C:/b/blender.exe")
+        api.look = lambda address: {"look": True}
+        self.work = self.mod / "blender" / "Descriptor_Unit_My_Tank"
+        self.send = self.work / "Descriptor_Unit_My_Tank.glb"
+        self.opened = []
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def patched(self, fit=fitted):
+        from contextlib import ExitStack
+        stack = ExitStack()
+        stack.enter_context(mock.patch("rusemod.models.Library", PaintedLibrary))
+        stack.enter_context(mock.patch("rusemod.blender.open_model_to_change",
+                                       lambda b, model, send, words: self.opened.append(Path(model)) or None))
+        stack.enter_context(mock.patch("rusemod.unitmodel.rigged_first", lambda game, file, models: list(models)))
+        stack.enter_context(mock.patch("rusemod.unitmodel.import_model", fit))
+        return stack
+
+    def trip(self, address=TANK, kind=None, rename=None, before_back=None) -> dict:
+        """Change it in Blender, Blender sends (`rename`: with those materials renamed), Bring back the model."""
+        with self.patched():
+            res = self.api.model_blender(address, "us", kind) if kind else self.api.model_blender(address)
+            start = self.opened[-1]
+            blender_sends(start, Path(res["work"]) / f"{Path(res['work']).name}.glb", rename)
+            if before_back:
+                before_back()
+            return self.api.model_blender_back(address, 1.0, kind) if kind else self.api.model_blender_back(address)
+
+    def record(self, stem="Descriptor_Unit_My_Tank") -> dict:
+        return json.loads((self.models / f"{stem}.json").read_text(encoding="utf-8"))
+
+    def test_a_tank_keeps_its_own_alpha_byte_for_byte(self):
+        res = self.trip()
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+        report = res["model"]
+        self.assertEqual(report["alpha"], {"test_tank_hull": "the model's own", "test_tank_turret": "the model's own"})
+        self.assertEqual(report["blender_alpha"], {"test_tank_hull": "its own, put back",
+                                                   "test_tank_turret": "its own, put back"})
+        self.assertFalse([n for n in report["notes"] if "Blender" in n])            # nothing lost, nothing to say
+        self.assertEqual(self.record()["report"]["blender_alpha"], report["blender_alpha"])   # kept with the model
+        # what went out: each material's alpha picture beside the game model's file, listed by the material's name
+        listed = json.loads((self.work / "alpha.json").read_text(encoding="utf-8"))["alpha"]
+        self.assertEqual(listed, {"test_tank_hull": "test_tank_test_tank_hull_alpha.png",
+                                  "test_tank_turret": "test_tank_test_tank_turret_alpha.png"})
+
+    def test_a_renamed_material_gets_the_plain_144_and_that_is_said(self):
+        res = self.trip(rename={"test_tank_turret": "My turret"})
+        got = alphas_in(self.models / "Descriptor_Unit_My_Tank.glb")
+        self.assertEqual(got["test_tank_hull"], GAME_ALPHA["test_tank_hull"])        # the other one keeps its own
+        self.assertEqual(got["test_tank_turret"], bytes([modelin.PLAIN_ALPHA]) * 16)  # (its picture keeps its name)
+        report = res["model"]
+        self.assertEqual(report["alpha"]["test_tank_turret"], "plain 144")
+        self.assertEqual(report["blender_alpha"]["My turret"], "plain 144: no alpha picture went out to Blender with "
+                                                               "a material of this name (renamed or new there)")
+        self.assertEqual(report["blender_alpha"]["test_tank_hull"], "its own, put back")
+        said = " ".join(report["notes"])
+        self.assertIn("so with the plain 144 (no shine or side colour of their own): My turret.", said)
+        self.assertIn("didn't come back under that name: test_tank_turret.", said)
+        self.assertEqual(self.record()["report"]["notes"], report["notes"])          # in the model's record too
+
+    def test_the_next_trip_and_a_resize_keep_it(self):
+        self.trip()
+        res = self.trip()                                     # Blender opens what it sent last, and sends it again
+        self.assertEqual(self.opened[-1], self.send)
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+        self.assertEqual(set(res["model"]["blender_alpha"].values()), {"its own, put back"})
+        with self.patched():
+            self.api.model_resize(TANK, 1.5)                   # fitted again from the file brought back
+        self.assertEqual(self.record()["from"], str(self.work / "kept" / self.send.name))
+        self.assertEqual(self.record()["size"], 1.5)
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+
+    def test_a_blender_folder_from_before_keeps_it_too(self):
+        """A work folder from a Studio before alpha.json: the game export's alpha pictures still beside, by name."""
+        self.trip(before_back=lambda: (self.work / "alpha.json").unlink(missing_ok=True))
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+
+    def test_an_alpha_picture_gone_from_the_folder_is_said(self):
+        res = self.trip(before_back=lambda: (self.work / "test_tank_test_tank_hull_alpha.png").unlink())
+        got = alphas_in(self.models / "Descriptor_Unit_My_Tank.glb")
+        self.assertEqual(got["test_tank_hull"], bytes([modelin.PLAIN_ALPHA]) * 32)
+        self.assertEqual(got["test_tank_turret"], GAME_ALPHA["test_tank_turret"])
+        self.assertEqual(res["model"]["blender_alpha"]["test_tank_hull"],
+                         "plain 144: the alpha picture that went out with it isn't in its Blender folder any more")
+
+    def test_a_failed_import_leaves_the_file_it_was_made_from(self):
+        from ruse_studio.api import StudioError
+        self.trip()
+        kept = self.work / "kept" / self.send.name
+        made_from, model = kept.read_bytes(), (self.models / "Descriptor_Unit_My_Tank.glb").read_bytes()
+
+        def refused(*_a, **_k):
+            raise modelin.ModelError("the model has no points")
+        with self.patched(fit=refused), self.assertRaisesRegex(StudioError, "the model has no points"):
+            self.api.model_blender(TANK)
+            blender_sends(self.send, self.send, {"test_tank_hull": "Changed"})
+            self.api.model_blender_back(TANK)
+        self.assertEqual(kept.read_bytes(), made_from)          # Resize and Move still fit from what was brought back
+        self.assertEqual((self.models / "Descriptor_Unit_My_Tank.glb").read_bytes(), model)
+        self.assertEqual(self.record()["from"], str(kept))
+
+    def test_a_squad_s_soldier_keeps_his_own_too(self):
+        """The bazooka man through his own Change it in Blender (EachSoldier's): agent B's real-Blender case of
+        2026-11-11 (scratch/animmodels/squadblender/single_path_alpha.json: "plain 144")."""
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.api._look_models = lambda address: ([BAZOOKA, RIFLEMAN], [])
+        res = self.trip(SQUAD, kind="bazooka")
+        self.assertEqual(res["kind"], "bazooka")
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Riflemen@bazooka.glb"), GAME_ALPHA)
+        self.assertFalse((self.models / "Descriptor_Unit_My_Riflemen.glb").exists())   # the riflemen's untouched
+        self.assertEqual(set(self.record("Descriptor_Unit_My_Riflemen@bazooka")["report"]["blender_alpha"].values()),
+                         {"its own, put back"})
+
+    def test_a_model_of_his_own_from_blender_or_a_file_stays_flat(self):
+        """Controls (they pass before the change too): what the modder brings into Blender has no game alpha, so his
+        own materials come back flat; and Import model from a file, even one whose materials are named as the game's
+        pictures, keeps the plain 144 (the owner, 2026-11-12: "Keep it flat")."""
+        def his_own():   # (every material his: none of the names that went out)
+            blender_sends(self.send, self.send, {"test_tank_hull": "Hull paint", "test_tank_turret": "Turret paint"})
+        self.trip(before_back=his_own)
+        plain = bytes([modelin.PLAIN_ALPHA])
+        flat = {"test_tank_hull": plain * 32, "test_tank_turret": plain * 16}
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), flat)
+        outside = Path(self.dir.name) / "outside.glb"   # (named as the game model's materials, not from Blender)
+        blender_sends(self.work / "test_tank.glb", outside)
+        with self.patched():
+            res = self.api.model_import(TANK, str(outside))
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), flat)
+        self.assertEqual(set(res["model"]["alpha"].values()), {"plain 144"})
+        self.assertNotIn("blender_alpha", res["model"])
 
 
 if __name__ == "__main__":
