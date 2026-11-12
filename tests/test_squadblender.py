@@ -223,7 +223,7 @@ class Squad(unittest.TestCase):
         def model_import(address, file, size=1.0, kind=None, **_more):
             target = self.models / (f"{STEM}@{kind}.glb" if kind else f"{STEM}.glb")
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(b"model-from-" + Path(file).read_bytes()[:40])
+            target.write_bytes(own_glb(b"PNG-from-" + sha(file)[:16].encode(), b"PNG-model-alpha"))
             target.with_suffix(".json").write_text(json.dumps({"from": str(file), "size": size}), encoding="utf-8")
             calls.append((address, Path(file).name, size, kind))
             return {"model": {"rigged": True, "file": Path(file).name}, "copy_out": False, "kind": kind}
@@ -408,8 +408,14 @@ class OpenTheSquad(Squad):
         self.assertEqual([c[3] for c in calls], ["bazooka"])
         res = self.open_squad()
         self.assertEqual(res["started"], {"fusilier": "game", "bazooka": "kept"})   # his last bring-back
-        # Import model from a file after the Blender trip: his model is that one now, never undone by the old sending
+        # Import model from another file of the very same bytes: his model's record names that file now
         target = self.models / f"{STEM}@bazooka.glb"
+        record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
+        target.with_suffix(".json").write_text(json.dumps({**record, "from": "C:/Users/x/same.glb"}), encoding="utf-8")
+        self.assertEqual(self.open_squad()["started"]["bazooka"], "model")
+        target.with_suffix(".json").write_text(json.dumps(record), encoding="utf-8")
+        self.assertEqual(self.open_squad()["started"]["bazooka"], "kept")
+        # Import model from a file after the Blender trip: his model is that one now, never undone by the old sending
         target.write_bytes(own_glb(b"PNG-file-colour", b"PNG-file-alpha"))
         target.with_suffix(".json").write_text(json.dumps({"from": "C:/Users/x/marine.glb", "report": {}}),
                                                encoding="utf-8")

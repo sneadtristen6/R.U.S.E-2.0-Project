@@ -412,14 +412,27 @@ class SquadBlenderCalls:
         taken = (state.get("taken") or {}).get(sid) or {}
         kept = work / "kept" / f"{target.stem}.glb" if target is not None else None
         colour, alpha = {}, {}
-        if target is not None and target.is_file() and kept is not None and taken \
+        # his last bring-back, only while his model is the one made from it: his model's record names that file, and
+        # neither has changed since (an Import model from another file, even of the same bytes, names that file)
+        made_from = str(_read(target.with_suffix(".json")).get("from") or "") if target is not None else ""
+        try:
+            from_kept = bool(made_from) and kept is not None and Path(made_from).resolve() == kept.resolve()
+        except (OSError, ValueError):
+            from_kept = False
+        source = None
+        if target is not None and target.is_file() and from_kept and taken \
                 and _sha(target) == taken.get("model") and _sha(kept) == taken.get("kept"):
-            raw, how = kept.read_bytes(), "kept"
+            source, how = kept, "kept"
+            raw = kept.read_bytes()
         elif target is not None and target.is_file():
-            raw, how = target.read_bytes(), "model"
+            source, how = target, "model"
+            raw = target.read_bytes()
             record = _read(target.with_suffix(".json"))
             if record.get("skeleton") != "own":   # (a model on bones of its own carries its whole skeleton at rest)
-                doc, _bin = glb_document(raw)
+                try:
+                    doc, _bin = glb_document(raw)
+                except (ValueError, struct.error) as exc:
+                    raise StudioError(f"{target.name}: {exc}") from None
                 like = ((record.get("report") or {}).get("like")
                         or ((doc.get("asset") or {}).get("extras") or {}).get("rusemod_like"))
                 skeleton = lib.skeleton(like) if like else None
@@ -441,7 +454,10 @@ class SquadBlenderCalls:
                 colour[member] = mine[0].read_bytes() if mine[0] is not None else None
                 alpha[member] = (mine[1].read_bytes() if mine[1] is not None
                                  else pictures.get(by.get((member, "alpha"), ""), None))
-        doc, views = gltf.glb_views(raw)
+        try:
+            doc, views = gltf.glb_views(raw)
+        except (ValueError, struct.error) as exc:   # (his model file or last bring-back unreadable: said, not skipped)
+            raise StudioError(f"{source.name if source is not None else line['id']}: {exc}") from None
         folder.mkdir(parents=True, exist_ok=True)
         alphas = {}
         for k, mat in enumerate(doc.get("materials", [])):
