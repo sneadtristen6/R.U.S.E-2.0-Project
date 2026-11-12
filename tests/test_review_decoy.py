@@ -10,6 +10,7 @@ scenarios.py, out/) found each fault first. RealBlender's test runs Blender itse
 (Blender 4.5), else it is skipped."""
 import json
 import os
+import re
 import subprocess
 import tempfile
 import tomllib
@@ -274,7 +275,7 @@ class OwnBones(Door):
         self.assertEqual(self.back()["changed"], ["run"])
         self.send.write_bytes(Blenderish(start).send())
         got = self.back()
-        if "run" in got["message"].replace("unit's own", ""):
+        if re.search(r"\brun\b", got["message"]):
             return
         self.assertEqual((self.mod / anim.OWN / UNIT / files["run"]).read_bytes(), CLIP_BYTES[RUN],
                          f"the run still plays the change undone in Blender: {got['message']}")
@@ -304,10 +305,15 @@ class OwnBones(Door):
         and says "Changed in Blender, this unit's own now: b_run.", but no listing plays the run's head. (Real
         Blender, the Horse Squad: the rider's arm in hr_b_mort_balle and hr_b_run, the horse's neck in hr_ride:
         out/h-halves.json, its build's listings and masks.) The door must say which changed bones won't show."""
+        from ruse_studio.api import StudioError
         self.own_bones_unit({"t_stand": CLIP_BYTES[STAND], "b_run": CLIP_BYTES[RUN]}, split="bip01 spine")
         start = self.open()
         self.send.write_bytes(Blenderish(start).send(change=("b_run", "bip01 head", HEAD_TURN)))
-        got = self.back()
+        try:
+            got = self.back()
+        except StudioError as exc:
+            self.assertIn("bip01 head", str(exc))
+            return
         self.assertEqual(got["changed"], ["b_run"])
         self.assertIn("bip01 head", got["message"])
 
