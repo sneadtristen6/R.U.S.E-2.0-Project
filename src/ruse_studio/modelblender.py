@@ -16,15 +16,31 @@ model or attach it with bones"): the Model row's buttons are the riflemen's, and
 draws another model gives him his own pair under Its soldiers (`kind`: StudioApi._soldier_kinds). His work folder is
 <mod>/blender/<the unit's name>@<kind>/, beside his model file files/models/<the unit's name>@<kind>.glb, and what he
 sends back is his model alone (Import model's `kind`). A squad has as many looks as the game's unit data gives it: one
-model every one of its riflemen wears, and one for its heavy-weapon soldier."""
+model every one of its riflemen wears, and one for its heavy-weapon soldier.
+
+A tank, a plane or a soldier changed in Blender keeps its own shine and side colour (the owner, 2026-11-12, "Keep its
+own": its own shine and side-colour layer goes back in, the way the squad page already does it). In the game's
+pictures the alpha is the shine where high and the side colour (the team tint) where low; Blender shows it nowhere.
+The game's model goes out with each picture's alpha as a picture of its own beside it (rusemod.gltf.export), and
+Blender's export keeps no picture a material doesn't show and no extras, so what it sends has none: Import model
+gave such a model the plain 144 an outside model gets (measured with Blender 4.5 on 2026-11-11: the bazooka man's
+picture came back "plain 144"). So Change it in Blender notes which alpha picture went out with each material
+(alpha.json in the work folder, by the material's name), and Bring back the model puts each back in what Blender sent,
+by that name (rusemod.gltf.with_alpha, the squad page's), as <work>/kept/<its name>.glb: the file Import model takes
+in, and Resize and Move fit again from. A material that comes back under a name none went out with (renamed or new in
+Blender) has the plain 144, and the import's report says so ("blender_alpha", and its notes). A model imported from a
+file keeps the plain 144 as before (the owner, the same day: "Keep it flat")."""
 from __future__ import annotations
 
 import json
 import re
+import struct
 from pathlib import Path
 
 WORK = "blender"
 SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to send
+ALPHA = "alpha.json"   # in the work folder: the alpha picture that went out with each material, by the material's name
+KEPT = "kept"          # <work>/kept/<its name>.glb: what Bring back the model took in, each alpha picture back in it
 # a squad's second figure carries the heavy weapon: the rifleman is the one to change, and what comes back is the
 # riflemen's model (Import model's first kind; the heavy-weapon soldier keeps the copied unit's until he gets his own,
 # the owner, 2026-11-11: "when you copy a fucking unit, it should copy the unit")
@@ -58,13 +74,98 @@ class ModelBlenderCalls:
         work = self._mod_dir() / WORK / own.stem
         return work, work / f"{own.stem}.glb"
 
+    @staticmethod
+    def _alphas_out(start: Path, summary: dict) -> dict:
+        """{each material's name in the game model's file `start`: the alpha picture rusemod.gltf.export wrote beside it
+        for that material's texture (its file name: `summary`'s picture_of)}; none for a file it can't read."""
+        from rusemod.modelin import glb_document
+        alpha_of = {member: name for name, (member, what) in (summary.get("picture_of") or {}).items()
+                    if what == "alpha"}
+        try:
+            doc, _bin = glb_document(Path(start).read_bytes())
+        except (OSError, ValueError, struct.error):
+            return {}
+        out = {}
+        for mat in doc.get("materials", []):
+            member = (mat.get("extras") or {}).get("rusemod_texture")
+            if isinstance(mat.get("name"), str) and member in alpha_of:
+                out.setdefault(mat["name"], alpha_of[member])
+        return out
+
+    @staticmethod
+    def _alphas_back(work: Path, send: Path, raw: bytes) -> dict:
+        """{a material's name: the alpha picture that went out to Blender with it (its path in the work folder)}, as
+        alpha.json lists them; for a work folder from before alpha.json, each material of the sending `raw` whose alpha
+        picture rusemod.gltf.export wrote beside the game model's file (<that file's name>_<the material's
+        name>_alpha.png), when one only is there."""
+        from rusemod.modelin import glb_document
+        from .squadblender import _read
+        listed = _read(work / ALPHA).get("alpha")
+        if isinstance(listed, dict):
+            return {m: work / f for m, f in listed.items()
+                    if isinstance(m, str) and isinstance(f, str) and f and Path(f).name == f}
+        try:
+            doc, _bin = glb_document(raw)
+        except (ValueError, struct.error):
+            return {}
+        stems = [p.stem for p in work.glob("*.glb") if p.name != send.name]
+        out = {}
+        for mat in doc.get("materials", []):
+            name = mat.get("name")
+            if not isinstance(name, str) or not name or "/" in name or "\\" in name:   # (a file of this folder only)
+                continue
+            found = [work / f"{s}_{name}_alpha.png" for s in stems if (work / f"{s}_{name}_alpha.png").is_file()]
+            if len(found) == 1:
+                out[name] = found[0]
+        return out
+
+    def _alpha_said(self, address: str, kind: str | None, res: dict, got: dict, went: dict) -> None:
+        """Import model's report of what Bring back the model took in (res["model"]), and the model's record beside it,
+        told what each material Blender sent got for alpha ("blender_alpha": `got`, rusemod.gltf.with_alpha's word on
+        each), and in its notes which have the plain 144 and why, and which went out (`went`) and didn't come back
+        under their names: no material's shine and side colour lost without a word."""
+        from rusemod.gltf import ALPHA_BACK, ALPHA_GONE, ALPHA_NONE
+        from rusemod.modelin import PLAIN_ALPHA
+        report = res.get("model")
+        if not isinstance(report, dict) or not (got or went):
+            return
+        plain = f"plain {PLAIN_ALPHA}"
+        said = {ALPHA_BACK: "its own, put back",
+                ALPHA_NONE: f"{plain}: no alpha picture went out to Blender with a material of this name (renamed or "
+                            f"new there)",
+                ALPHA_GONE: f"{plain}: the alpha picture that went out with it isn't in its Blender folder any more"}
+        report["blender_alpha"] = {m: said[g] for m, g in got.items()}
+        flat = [m for m, g in got.items() if g != ALPHA_BACK]
+        lost = [m for m in went if m not in got]
+        notes = report.setdefault("notes", [])
+        if flat:
+            notes.append(f"Back from Blender without an alpha picture of their own, so with the {plain} (no shine or "
+                         f"side colour of their own): {', '.join(flat)}.")
+        if lost:
+            notes.append(f"Went out to Blender with an alpha picture and didn't come back under that name: "
+                         f"{', '.join(lost)}.")
+        target = self._kind_file(address, kind) if kind else self._own_model_file(address)
+        record = target.with_suffix(".json") if target is not None else None
+        try:
+            data = json.loads(record.read_text(encoding="utf-8")) if record is not None and record.is_file() else None
+        except (OSError, ValueError):
+            data = None
+        if isinstance(data, dict):   # (as Import model wrote it, with this said too)
+            data["report"] = report
+            record.write_text(json.dumps(data, indent=1), encoding="utf-8")
+            if not kind and "own_model" in res:   # (look()'s, read before this was said)
+                res["own_model"] = json.loads(json.dumps(report))
+
     def model_blender(self, address: str, lang: str = "us", kind: str | None = None) -> dict:
         """Open the unit's model in Blender to be changed (see the module's note); `kind`: one of a squad's other
-        soldiers, opened alone (his last sending, or the game model his figure draws). Returns look() with "work" (the
-        work folder), "file" (what Blender opened) and "kind" (None for the riflemen)."""
+        soldiers, opened alone (his last sending, or the game model his figure draws). The game model goes out with
+        the alpha picture of each material beside it, listed in the work folder's alpha.json (Bring back the model
+        puts them back). Returns look() with "work" (the work folder), "file" (what Blender opened) and "kind" (None
+        for the riflemen)."""
         from rusemod import gltf, models
         from rusemod.blender import open_model_to_change
         from .api import StudioError, words
+        from .squadblender import _write
         kind = self._blender_kind(address, kind)
         work, send = self._model_work(address, kind)
         blender = self._blender()
@@ -88,9 +189,12 @@ class ModelBlenderCalls:
             work.mkdir(parents=True, exist_ok=True)
             lib = models.Library(self._game())
             try:
-                start = Path(gltf.export(lib, [model], work, rest_bones=True)[0]["file"])
+                summary = gltf.export(lib, [model], work, rest_bones=True)[0]
             finally:
                 lib.close()
+            start = Path(summary["file"])
+            # which alpha picture goes out with each material (Blender keeps none of them): Bring back puts them back
+            _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": self._alphas_out(start, summary)})
         w = words(lang)
         (work / "words.json").write_text(json.dumps(
             {"send": w["blender_model_send"], "sent": w["blender_model_sent"],
@@ -101,9 +205,13 @@ class ModelBlenderCalls:
     def model_blender_back(self, address: str, size: float = 1.0, kind: str | None = None) -> dict:
         """Take what Blender sent in as the unit's own model (Import model's way), or, with `kind`, as that soldier's
         own model alone (the squad's others keep theirs): an open Blender is asked to send first; a closed one's last
-        sending is used. Returns model_import()'s answer with "work" and "kind"."""
+        sending is used. Each material's alpha picture that went out goes back in by its name (rusemod.gltf.
+        with_alpha), into <work>/kept/<its name>.glb, the file Import model takes in; its report says what each got
+        (_alpha_said). Returns model_import()'s answer with "work" and "kind"."""
+        from rusemod import gltf
         from rusemod.blender import ask_to_send
         from .api import StudioError
+        from .squadblender import _put
         kind = self._blender_kind(address, kind)
         work, send = self._model_work(address, kind)
         proc = self._blenders.get(str(work))
@@ -112,5 +220,21 @@ class ModelBlenderCalls:
         if not send.is_file():  # not a game rule: the Studio's own hand-over from Blender, nothing sent yet
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring back the model here.")
-        got = self.model_import(address, str(send), size, kind=kind) if kind else self.model_import(address, str(send), size)
+        raw = send.read_bytes()
+        went = self._alphas_back(work, send, raw)
+        data, put = gltf.with_alpha(raw, {m: str(p) for m, p in went.items()})
+        kept = work / KEPT / send.name
+        before = kept.read_bytes() if kept.is_file() else None
+        _put(kept, data)
+        try:
+            got = self.model_import(address, str(kept), size, kind=kind) if kind else \
+                self.model_import(address, str(kept), size)
+        except BaseException:
+            # (an import that fails leaves the file the model was made from as it was: Resize and Move fit from it)
+            if before is None:
+                kept.unlink(missing_ok=True)
+            else:
+                _put(kept, before)
+            raise
+        self._alpha_said(address, kind, got, put, went)
         return {**got, "work": str(work), "kind": kind}

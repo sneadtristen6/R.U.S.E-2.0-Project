@@ -34,8 +34,9 @@ section 2 (#4463065).
   so Import model takes the uniform off; the soldiers still wearing it are then taken in too, from Blender as they
   were, paint and all, so their look stays ("uniform_kept"). What each soldier's picture had for alpha (the game's
   side colour where low, shine where high) goes back in with him: Blender's export drops it (it keeps no picture a
-  material doesn't show), so the alpha the Studio gave each material comes back by its name (rusemod.modelin reads it
-  from the material's rusemod_alpha_texture).
+  material doesn't show), so the alpha the Studio gave each material comes back by its name (rusemod.gltf.with_alpha,
+  which the single model's Bring back the model shares; rusemod.modelin reads it from the material's
+  rusemod_alpha_texture).
 - soldier_import, soldier_reset: Import model for one soldier (model_import with his kind), and Back to the game's look
   for him alone (soldier_reset's note: the owner's pick 3, 2026-11-12).
 The calls the d43f0c6d page used (model_blender, model_blender_back with a kind) stay as they were.
@@ -662,29 +663,6 @@ class SquadBlenderCalls:
         _write(work / "state.json", state)
         self._blenders[str(work)] = open_squad_to_change(blender, work / "squad.json")
 
-    @staticmethod
-    def _with_alpha(raw: bytes, alphas: dict) -> bytes:
-        """A soldier's file from Blender with each material's alpha picture back in it (`alphas`: {material's name: the
-        alpha picture's path}, as blender_model lists them), named in the material's extras as rusemod.modelin reads
-        it (rusemod_alpha_texture); a material with none, or whose picture isn't there any more, as Blender wrote it."""
-        from rusemod import gltf
-        try:
-            doc, views = gltf.glb_views(raw)
-        except (ValueError, struct.error):   # (not a .glb: Import model says so in its own words)
-            return raw
-        added = False
-        for mat in doc.get("materials", []):
-            path = alphas.get(mat.get("name"))
-            if not path or not Path(path).is_file():
-                continue
-            view = gltf.add_view(doc, views, Path(path).read_bytes())
-            doc.setdefault("images", []).append({"bufferView": view, "mimeType": "image/png",
-                                                 "name": f"{mat.get('name')} alpha"})
-            doc.setdefault("textures", []).append({"source": len(doc["images"]) - 1})
-            mat.setdefault("extras", {})["rusemod_alpha_texture"] = len(doc["textures"]) - 1
-            added = True
-        return gltf.pack_glb(doc, views) if added else raw
-
     def squad_blender_back(self, address: str, lang: str = "us") -> dict:
         """Bring my changes back: the open Blender is asked to send (a closed one's last sending is used), and each
         soldier whose file differs from the one Blender wrote of him when the squad opened (or when he was last taken
@@ -693,6 +671,7 @@ class SquadBlenderCalls:
         module's note on a Custom uniform). Returns squad_info with "changed", "unchanged", "uniform_kept", "left_out"
         (objects Blender sent with nobody), "reports" (each taken-in soldier's Import model report), "work" and
         "message"."""
+        from rusemod import gltf
         from rusemod.blender import ask_to_send
         from .api import StudioError, words
         info = self._squad_checked(address, lang)
@@ -741,7 +720,7 @@ class SquadBlenderCalls:
         for i in take:
             target = self._kind_file(address, lines[i]["kind"])
             kept = work / "kept" / f"{target.stem}.glb"
-            _put(kept, self._with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {}))
+            _put(kept, gltf.with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {})[0])
             record = _read(target.with_suffix(".json")) if target.is_file() else {}
             if not record and "base" in lines[i]:   # (his first own look: the size of the model he wore, if any)
                 worn = self._kind_file(address, lines[i]["base"])
@@ -958,7 +937,7 @@ class SquadBlenderCalls:
         gave him (the ones from there on one number on), the squad one soldier more, his look his own (Import model with
         his number, from what Blender sent: <work>/kept/<unit>@<i>.glb). An Import model that fails leaves the squad as
         it was. Returns squad_blender_back's answer with "joined": his number and "count"."""
-        from rusemod import squads as sq
+        from rusemod import gltf, squads as sq
         from .api import StudioError, words
         adding = manifest["adding"]
         new = (listing.get("soldiers") or {}).get(adding["id"]) or {}
@@ -974,7 +953,7 @@ class SquadBlenderCalls:
         self._write_count(address, n + 1)
         target = self._kind_file(address, str(at))
         kept = work / "kept" / f"{target.stem}.glb"
-        _put(kept, self._with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {}))
+        _put(kept, gltf.with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {})[0])
         try:
             res = self.model_import(address, str(kept), size, kind=str(at))
         except BaseException:

@@ -478,6 +478,38 @@ def pack_glb(doc: dict, views: list) -> bytes:
             + struct.pack("<I4s", len(binary), b"BIN\0") + bytes(binary))
 
 
+ALPHA_BACK, ALPHA_NONE, ALPHA_GONE = "back", "none", "gone"   # with_alpha's word on each material
+
+
+def with_alpha(raw: bytes, alphas: dict) -> tuple[bytes, dict]:
+    """A .glb sent from Blender with each material's alpha picture back in it (the game's side colour where low, shine
+    where high: `alphas` {a material's name: its alpha picture's path}, as it went out to Blender), named in the
+    material's extras as rusemod.modelin reads it (rusemod_alpha_texture). Blender's glTF export keeps no picture a
+    material doesn't show and no extras, so this is the alpha's only way back; a material is matched by its name. Both
+    of the Studio's Blender doors use it (ruse_studio.squadblender, ruse_studio.modelblender). Returns (the file, {each
+    material's name in it: ALPHA_BACK its picture put back, ALPHA_NONE no picture went out under that name (renamed or
+    new in Blender), ALPHA_GONE its picture isn't there any more}); a material with none keeps what Blender wrote, and a
+    file that isn't a .glb comes back as it is, with no word on any material (Import model says why in its words)."""
+    try:
+        doc, views = glb_views(raw)
+    except (ValueError, struct.error):
+        return raw, {}
+    added, got = False, {}
+    for mat in doc.get("materials", []):
+        path = alphas.get(mat.get("name"))
+        if not path or not Path(path).is_file():
+            got[mat.get("name")] = ALPHA_GONE if path else ALPHA_NONE
+            continue
+        view = add_view(doc, views, Path(path).read_bytes())
+        doc.setdefault("images", []).append({"bufferView": view, "mimeType": "image/png",
+                                             "name": f"{mat.get('name')} alpha"})
+        doc.setdefault("textures", []).append({"source": len(doc["images"]) - 1})
+        mat.setdefault("extras", {})["rusemod_alpha_texture"] = len(doc["textures"]) - 1
+        added = True
+        got[mat.get("name")] = ALPHA_BACK
+    return (pack_glb(doc, views) if added else raw), got
+
+
 def rest_bones_glb(raw: bytes, record: bytes) -> bytes | None:
     """A model rigged to a game skeleton and saved with its bones all at one spot (rusemod.modelin.write_glb: one
     joint node per bone named as the game names it, identity bind matrices, as Import model saves a soldier's) with
