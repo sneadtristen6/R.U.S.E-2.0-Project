@@ -89,7 +89,8 @@ class TheWords(unittest.TestCase):
             "tip_squad_folder_none": ("squad_import", "squad_blender"), "tip_squad_blender_folder_none": ("squad_blender",),
             "squad_uniform_own_model": ("squad_reset",), "tip_squad_uniform_custom_own_model": ("squad_reset",),
             "squad_both": ("uniform_default_again", "uniform_title", "squad_reset", "test_in_game"),
-            "squad_more_bones": ("squad_import",)}
+            "squad_more_bones": ("squad_import",),
+            "squad_add_opened": ("blender_model_send", "squad_blender_back")}
         for key, labels in names.items():
             for lang in LANGS:
                 for label in labels:
@@ -159,8 +160,11 @@ class ThePage(unittest.TestCase):
         self.assertIn("r.kinds_out", reset)
         self.assertIn('fill(w.model_kinds_out, { who: gone.join(", ") })', reset)
         self.assertIn("r.copy_back ? w.squad_reset_uniform", reset)
-        # "Rifleman ×4", and what he fires (the game's rule, squad_info's "fires")
+        # "Soldier 3: Rifleman", one line per soldier, and what he fires (the game's rule, squad_info's "fires"); a line
+        # of several from before ("Rifleman ×4")
         words = function_text(self.squad.replace("  function ", "function "), "soldierWords")
+        self.assertIn("fill(fires.length ? w.squad_soldier_one_fires : w.squad_soldier_one,", words)
+        self.assertIn("{ who: s.label, n: s.number, weapons: fires.join(\", \") }", words)
         self.assertIn("fill(fires.length ? w.squad_soldier_fires : w.squad_soldier,", words)
 
     def test_add_and_remove_only_when_the_studio_says_so(self):
@@ -172,9 +176,20 @@ class ThePage(unittest.TestCase):
         self.assertEqual(len(re.findall(r"\bremoveParts\(s\)", self.squad)), 1)
         self.assertEqual(len(re.findall(r"api\(\)\.soldier_add\(", self.squad)), 1)
         self.assertEqual(len(re.findall(r"api\(\)\.soldier_remove\(", self.squad)), 1)
-        # the stand-in page says so only with ?fake=squad2 (the later step's calls stood in for)
+        # the stand-in page says so only with ?fake=squad2 (one line per soldier, at most 8, at least 2)
         fake = read("fake-api.js")
-        self.assertIn('add: own && mode === "squad2", remove: own && mode === "squad2" && count > 1', fake)
+        self.assertIn("can: { blender: own, import: own, reset: own, add: false, remove: false },", fake)
+        self.assertIn('if (mode === "squad2") return fakeSquadInfo2(address, lang, made, game, kinds);', fake)
+        self.assertIn("add: own && count < 8 && !open,\n        remove: own && count > fewest && !open },", fake)
+        # when it can't, the limits say why: Add a soldier's on the card, Remove's under the soldiers
+        self.assertIn("else if (mine() && info.limits && info.limits.add) parts.push(el(\"p\", { className: "
+                      "\"squad-limit\", textContent: info.limits.add }));", card)
+        self.assertIn("textContent: info.limits.remove", inner(self.squad, "drawLines"))
+        # Add a soldier ends in Blender with him (he joins on Bring my changes back, which says so)
+        add = inner(self.squad, "addSoldier")
+        self.assertIn("say(w.squad_add_opened, \"ok\");", add)
+        self.assertNotIn("reload(", add)
+        self.assertIn("r.joined ? fill(w.squad_added, { n: r.count })", inner(self.squad, "bringBack"))
 
     def test_a_game_squad_says_why_and_offers_its_way_to_a_new_unit(self):
         card = inner(self.squad, "drawCard")
@@ -284,7 +299,7 @@ class TheStudioCalls(unittest.TestCase):
     """Once the Studio's own calls are joined: the parameters the page sends, as the contracts' section 4 names them."""
 
     def test_their_parameters(self):
-        for call, names in PHASE1.items():
+        for call, names in {**PHASE1, **LATER, "soldier_blender": ["address", "soldier", "lang"]}.items():
             with self.subTest(call=call):
                 got = [p for p in inspect.signature(getattr(StudioApi, call)).parameters if p != "self"]
                 self.assertEqual(got, names)

@@ -48768,7 +48768,7 @@ jpn = "兵士{n}が分隊に加わりました。分隊は今{count}人です。
 sc = "第 {n} 名士兵加入了小队：小队现在有 {count} 名士兵。"
 fa = "سرباز {n} به جوخه پیوست: جوخه حالا {count} سرباز دارد."
 
-[squad_limit_most]
+[blender_squad_limit_most]
 us = "A squad has at most {n} soldiers for now."
 fr = "Une escouade a au plus {n} soldats pour l'instant."
 ger = "Ein Trupp hat vorerst höchstens {n} Soldaten."
@@ -48781,7 +48781,7 @@ jpn = "今のところ分隊の兵士は最大{n}人です。"
 sc = "小队目前最多有 {n} 名士兵。"
 fa = "یک جوخه فعلاً حداکثر {n} سرباز دارد."
 
-[squad_limit_fewest]
+[blender_squad_limit_fewest]
 us = "A squad keeps at least {n} soldiers: the game's own rule."
 fr = "Une escouade garde au moins {n} soldats : c'est la règle du jeu lui-même."
 ger = "Ein Trupp behält mindestens {n} Soldaten: die eigene Regel des Spiels."
@@ -48794,7 +48794,7 @@ jpn = "分隊の兵士は最低{n}人です。これはゲーム自体の決ま�
 sc = "小队至少保留 {n} 名士兵：这是游戏本身的规则。"
 fa = "یک جوخه دست‌کم {n} سرباز نگه می‌دارد: قاعدهٔ خودِ بازی."
 
-[squad_limit_need]
+[blender_squad_limit_need]
 us = "This squad keeps at least {n} soldiers: its last {n} fire {weapons}, one each."
 fr = "Cette escouade garde au moins {n} soldats : ses {n} derniers tirent avec {weapons}, une arme chacun."
 ger = "Dieser Trupp behält mindestens {n} Soldaten: Seine letzten {n} feuern mit {weapons}, je einer eine Waffe."

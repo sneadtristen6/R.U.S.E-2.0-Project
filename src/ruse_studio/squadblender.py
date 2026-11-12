@@ -439,10 +439,10 @@ class SquadBlenderCalls:
         fewest = sq.fewest(len(need))
         limits = {"add": None, "remove": None}   # (why Add a soldier or Remove can't be, in a plain sentence)
         if can_change and count >= sq.MOST:
-            limits["add"] = w["squad_limit_most"].format(n=sq.MOST)
+            limits["add"] = w["blender_squad_limit_most"].format(n=sq.MOST)
         if can_change and count <= fewest:
-            limits["remove"] = w["squad_limit_need"].format(n=len(need), weapons=w["blender_squad_list_sep"].join(
-                dict.fromkeys(need))) if len(need) > sq.FEWEST else w["squad_limit_fewest"].format(n=sq.FEWEST)
+            limits["remove"] = w["blender_squad_limit_need"].format(n=len(need), weapons=w["blender_squad_list_sep"].join(
+                dict.fromkeys(need))) if len(need) > sq.FEWEST else w["blender_squad_limit_fewest"].format(n=sq.FEWEST)
         return {"name": names.get(address), "copies": names.get(new.source) if new else None, "own": own_unit,
                 "count": count, "fewest": fewest, "most": sq.MOST, "line": self._squad_line(men, kinds, lang),
                 "soldiers": rows,

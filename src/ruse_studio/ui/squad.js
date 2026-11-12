@@ -13,11 +13,14 @@
 // - More options, small, last: where the files are kept, each soldier's model and what of it won't work in the game.
 //
 // A game squad's card says why its soldiers aren't changed here, with the page's way to a new unit from it. Add a
-// soldier and Remove (a later step's calls) are drawn only when squad_info's "can" says so. The squad's uniform stays
-// in the Look and moves section beside the values (app.js lookMovesBox, its row then named Uniform). Calls:
-// StudioApi.squad_info, squad_blender, squad_blender_back, soldier_import, soldier_reset (the squad contracts' section
-// 4), look; later soldier_add, soldier_remove, units. Uses app.js's el, fill, say, problem, api, state, keptRow, fitBox
-// and testInGame; app.js's showUnit puts it on the page when squad_info answers for the unit.
+// soldier and Remove are drawn only when squad_info's "can" says so, and when it can't, its "limits" say why in a plain
+// sentence (at most 8 soldiers for now, at least 2: the owner's picks of 2026-11-12). Each squad its own soldiers, each
+// his own look: one line per soldier ("Soldier 3: Rifleman"); Add a soldier opens Blender with just him, and he joins
+// the squad when Bring my changes back brings him. The squad's uniform stays in the Look and moves section beside the
+// values (app.js lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender,
+// squad_blender_back, soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), look,
+// units. Uses app.js's el, fill, say, problem, api, state, keptRow, fitBox and testInGame; app.js's showUnit puts it on
+// the page when squad_info answers for the unit.
 (function () {
   "use strict";
 
@@ -100,11 +103,23 @@
     });
   }
 
-  // "Rifleman ×4", and what he fires when the game gives him a weapon of his own ("Bazooka man ×1, fires Bazooka")
+  // "Soldier 3: Rifleman", and what he fires ("Soldier 5: Bazooka man, fires Bazooka"): one line per soldier (each squad
+  // its own soldiers, each his own look); a line for several of one kind ("Rifleman ×4") from a Studio that had those
   function soldierWords(s) {
     const w = W(), fires = (s.fires || []).filter(Boolean);
+    if (s.number != null) {
+      return fill(fires.length ? w.squad_soldier_one_fires : w.squad_soldier_one,
+        { who: s.label, n: s.number, weapons: fires.join(", ") });
+    }
     return fill(fires.length ? w.squad_soldier_fires : w.squad_soldier,
       { who: s.label, n: s.count, weapons: fires.join(", ") });
+  }
+
+  // a soldier's name alone ("Soldier 3: Rifleman"; "Rifleman ×4" for a line of several)
+  function soldierName(s) {
+    const w = W();
+    return s.number != null ? fill(w.squad_soldier_one, { who: s.label, n: s.number })
+      : fill(w.squad_soldier, { who: s.label, n: s.count });
   }
 
   // the folder a file or folder is in (a path as the Studio gives it, \ or /)
@@ -152,6 +167,8 @@
           el("div", { className: "squad-go" }, go));
       } else parts.push(...blenderParts());
       if (mine() && info.can && info.can.add) parts.push(...addParts());
+      // (why there's no Add a soldier: the most soldiers a squad has, said)
+      else if (mine() && info.limits && info.limits.add) parts.push(el("p", { className: "squad-limit", textContent: info.limits.add }));
       words.replaceChildren(...parts);
     };
 
@@ -225,10 +242,11 @@
       await reload(true);
       const named = (ids) => (ids || []).map((id) => {
         const s = S.info.soldiers.find((x) => x.id === id) || (r.soldiers || []).find((x) => x.id === id);
-        return s ? fill(w.squad_soldier, { who: s.label, n: s.count }) : String(id);
+        return s ? soldierName(s) : String(id);
       }).join(", ");
       const changed = r.changed || [], same = r.unchanged || [];
-      const text = !changed.length ? w.squad_back_none : same.length
+      // (Add a soldier's Blender brought back: he joined the squad)
+      const text = r.joined ? fill(w.squad_added, { n: r.count }) : !changed.length ? w.squad_back_none : same.length
         ? fill(w.squad_back_some, { changed: named(changed), unchanged: named(same) })
         : fill(w.squad_back_all, { changed: named(changed) });
       S.said = el("p", { className: "squad-result" + (changed.length ? "" : " none"), role: "status", textContent: text });
@@ -239,8 +257,11 @@
     // --- a line per soldier ---
     const drawLines = () => {
       const w = W(), info = S.info, soldiers = info.soldiers || [];
+      // (why there's no Remove: the fewest soldiers a squad keeps, said under its soldiers)
+      const limit = mine() && info.limits && info.limits.remove
+        ? [el("p", { className: "squad-limit", textContent: info.limits.remove })] : [];
       lines.replaceChildren(...(soldiers.length ? [el("h3", { className: "squad-each", textContent: w.squad_each })] : []),
-        ...soldiers.map(soldierLine));
+        ...soldiers.map(soldierLine), ...limit);
     };
 
     const soldierLine = (s) => {
@@ -303,7 +324,8 @@
       } catch (err) { problem(err); button.disabled = false; }
     };
 
-    // --- a later step's: Remove on a soldier's line, asked first; never fewer than one soldier (squad_info's can.remove)
+    // --- Remove on a soldier's line, asked first; never fewer than 2 soldiers, nor than the weapons its last soldiers
+    // fire one each (squad_info's can.remove; its limits.remove says why not)
     const removeParts = (s) => {
       const w = W();
       if (S.sure !== s.id) {
@@ -321,17 +343,20 @@
         try {
           const r = await api().soldier_remove(address, s.id);
           S.sure = null;
-          say(fill(w.squad_removed, { who: s.label, n: r && r.count != null ? r.count : "" }), "ok");
+          say(fill(w.squad_removed, { number: s.number != null ? s.number : s.id, n: r && r.count != null ? r.count : "" }),
+            "ok");
           await reload(true);
         } catch (err) { problem(err); yes.disabled = false; }
       });
       return [el("span", { className: "squad-sure", textContent: fill(w.squad_remove_sure, { who: s.label }) }), yes, no];
     };
 
-    // --- a later step's: Add a soldier on the card (squad_info's can.add): a copy of one in this squad, a soldier from
-    // another unit picked by his picture, or a model file (the owner, 2026-11-11: "copy an existing unit or import a
-    // model"; his picture of the page: "duplicate one of the existing ... soldiers inside of the GI squad already, or
-    // you could then add a model of another unit") ---
+    // --- Add a soldier on the card (squad_info's can.add; its limits.add says why not): a copy of one in this squad, a
+    // soldier from another unit picked by his picture, or a model file (the owner, 2026-11-11: "copy an existing unit or
+    // import a model, and then that takes you to Blender. And when you bring it back, that unit can be then added to
+    // that squad"; his picture of the page: "duplicate one of the existing ... soldiers inside of the GI squad already,
+    // or you could then add a model of another unit"): Blender opens with just him, and he joins the squad when Bring
+    // my changes back brings him ---
     const addParts = () => {
       const w = W();
       const add = el("button", { type: "button", textContent: w.squad_add, title: w.tip_squad_add, disabled: S.busy });
@@ -381,8 +406,8 @@
       const w = W();
       const face = el("span", { className: "squad-face" });
       putFace(face, s);
-      const b = el("button", { type: "button", className: "squad-pick", title: fill(w.tip_squad_add_pick, { who: s.label }),
-        disabled: S.busy }, face, el("span", { textContent: s.label }));
+      const b = el("button", { type: "button", className: "squad-pick", title: fill(w.tip_squad_add_pick, { who: soldierName(s) }),
+        disabled: S.busy }, face, el("span", { textContent: soldierName(s) }));
       b.addEventListener("click", act);
       return b;
     };
@@ -410,6 +435,8 @@
       drawCard();
     };
 
+    // Blender opens with just him (squad_info back, its Blender open: the big button reads Bring my changes back, which
+    // brings him into the squad); none back: the file picker was closed
     const addSoldier = async (source, of = null, unit = null) => {
       const w = W();
       S.busy = true;
@@ -417,8 +444,10 @@
       try {
         const r = await api().soldier_add(address, source, of, unit, null);
         S.adding = null;
-        say(fill(w.squad_added, { n: r && r.count != null ? r.count : "" }), "ok");
-        await reload(true);
+        if (r && r.soldiers) {
+          S.info = r;
+          say(w.squad_add_opened, "ok");
+        }
       } catch (err) { problem(err); }
       S.busy = false;
       draw();
