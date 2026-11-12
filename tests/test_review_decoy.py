@@ -190,6 +190,25 @@ class GameSoldierBones(Door):
                 self.assertEqual((self.mod / anim.OWN / UNIT / f).read_bytes(), CLIP_BYTES[RUN],
                                  f"{fig} {key} still plays the change undone in Blender: {got['message']}")
 
+    def test_brought_back_with_nothing_sent_since_opening_says_so(self):
+        """FAILS on 07a688b5. The run changed, sent and brought back; Change its animations in Blender again (the page
+        shows Bring my changes back while that Blender is open); the modder closes Blender without clicking Send and
+        clicks Bring my changes back. Nothing came from this Blender, but the last sending (already brought back) is
+        still in the work folder: the door reads it against what went out this time and says "Made in Blender, played
+        by no action yet: Run (made_run). ... Not sent back (deleted or renamed in Blender), so they play as before:
+        Run (blender_made_run)." None of it happened. (Real Blender: out/s-closed.json.) The door must say nothing
+        came back since it opened."""
+        from ruse_studio.api import StudioError
+        start = self.open()
+        self.send.write_bytes(Blenderish(start).send(change=("Run (made_run)", "bip01 spine", SPINE_TURN)))
+        self.back()
+        self.open()                                  # (Blender closed again without a Send)
+        try:
+            got = self.back()
+        except StudioError:
+            return
+        self.assertEqual((got["new"], got["gone"]), ([], []), got["message"])
+
     def test_animations_not_sent_back_are_not_said_to_have_come_back(self):
         """FAILS on 07a688b5. The stand deleted or renamed in Blender: the door rightly leaves it as it was and says
         so, but its message begins "Every animation came back as it went out." (Real Blender: out/s-actions.json,
