@@ -9017,10 +9017,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     trouble = trouble or exc
             if trouble is not None:
                 raise trouble
-            # (the job's message: how many were fitted, how many skipped; its line too, the page reading only the
-            # resized / skipped / not_kept lines)
-            say(f"{fitted[0]} model(s) fitted, {skipped[0]} skipped.")
-            job.told = job.lines[-1]
+            # (the job's message: how many were fitted, how many skipped. Not a line of the job: its lines are one per
+            # unit, as the page and the tests read them. Said through a `say` of its own so rusemod.buildtext lists
+            # it with the job's lines and words it in the player's language, buildtext.toml)
+            def message():
+                def say(text: str) -> str:
+                    return text
+                return say(f"{fitted[0]} model(s) fitted, {skipped[0]} skipped.")
+            job.told = message()
 
         return job.start(work, f"{len(units)} model(s) gone through.", plain=(StudioError,))
 

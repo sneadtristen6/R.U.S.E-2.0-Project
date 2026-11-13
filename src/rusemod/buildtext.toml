@@ -3179,7 +3179,7 @@ jpn = "skipped\t{0}\t{1}: {2}"
 sc = "skipped\t{0}\t{1}: {2}"
 fa = "skipped\t{0}\t{1}: {2}"
 
-# "Resize every ground unit"'s last line and its job's message (StudioApi.models_resize_all; the one check, finding 11)
+# "Resize every ground unit"'s job message (StudioApi.models_resize_all; the one check, finding 11)
 [e5165931cdd]
 us = "{0} model(s) fitted, {1} skipped."
 fr = "{0} modèle(s) ajusté(s), {1} ignoré(s)."
