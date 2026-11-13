@@ -134,6 +134,57 @@ class Studio(unittest.TestCase):
             self.api.fix_problem({"fix": "fill", "file": T, "table": "stroke", "n": 2, "key": "x"})
 
 
+class TheMapsOwnFolder(unittest.TestCase):
+    """The check before Test in game reads the map being edited too, when it is a folder of its own (Test in game builds
+    both). Until 2026-11-13 it read the mod only, so a mistake in the map showed only once the build had stopped on it
+    (round 2's reading of FL-98, a modder's two failed tests)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        home = Path(self.tmp.name, "home")
+        self.api = StudioApi(index_path=Path(self.tmp.name, "none.sqlite"), find=lambda: None, home=home)
+        self.mod = Path(self.api.new_mod("Units")["current"])
+        self.map = Path(self.api.new_mod("Island", kind="map")["current"])
+        (self.map / T).parent.mkdir(parents=True)
+        (self.map / T).write_text(TERRAIN, encoding="utf-8", newline="\n")
+        self.api._map_water = lambda pack, folder: 812.25
+
+    def test_a_mistake_in_the_maps_own_folder_is_found_and_fixed_there(self):
+        self.assertNotEqual(self.mod, self.map)
+        (p,) = self.api.check_mod()["problems"]
+        self.assertEqual((p["where"], p["problem"]), ("map", f"{T}: stroke 1: the water brush needs level"))
+        fill = next(f for f in p["fixes"] if f["fix"] == "fill")
+        with self.assertRaises(StudioError):   # the mod's folder hasn't the file: the fix goes where the check found it
+            self.api.fix_problem(fill)
+        res = self.api.fix_problem(fill | {"where": "map"})
+        self.assertEqual(res["problems"], [])
+        self.assertEqual(tomllib.loads((self.map / T).read_text(encoding="utf-8"))["stroke"][0]["level"], 812.25)
+        self.assertFalse((self.mod / T).exists())
+
+    def test_set_aside_in_the_maps_own_folder_and_the_mods_still_marked_mod(self):
+        (self.mod / "src").mkdir(exist_ok=True)
+        (self.mod / "src" / "hand.rndf").write_text("patch $/GFX/Everything/X\n(\n    Speed = \n", encoding="utf-8")
+        found = self.api.check_mod()["problems"]
+        self.assertEqual(sorted(p["where"] for p in found), ["map", "mod"])
+        res = self.api.set_aside(T, "map")
+        self.assertEqual([p["where"] for p in res["problems"]], ["mod"])
+        self.assertTrue(Path(res["kept"]).is_file())
+        self.assertIn(str(self.map), res["kept"])
+
+    def test_a_map_alone_and_one_folder_for_both(self):
+        """A map picked with no mod is checked; a mod that holds its maps (before mods and maps were apart) once."""
+        settings = self.api._settings()
+        settings.pop("mod", None)
+        self.api._save_settings(settings)
+        self.assertEqual(self.api._mod_dir(), None)
+        (p,) = self.api.check_mod()["problems"]
+        self.assertEqual(p["where"], "map")
+        settings["mod"] = settings["map"] = str(self.map)
+        self.api._save_settings(settings)
+        self.assertEqual([p["where"] for p in self.api.check_mod()["problems"]], ["mod"])
+
+
 class Page(unittest.TestCase):
     def test_the_words_are_in_every_language(self):
         words = tomllib.loads((ROOT / "src" / "ruse_studio" / "words.toml").read_text(encoding="utf-8"))
