@@ -44,6 +44,30 @@ ENTRY = {"key": KEY, "era": "WWII", "nation": "USA", "name": NAME, "in_place_of"
          "class": "TInfanterieDescriptor", "built": True, "credit": {"author": AUTHOR}}
 BUILT = {KEY: ENTRY}    # the units made for RUSE 2.0, by key (era_units: their credits, never a library's)
 _LOCK = threading.Lock()
+# Windows' longest path (260 with the character that ends it; a folder: 248) while its long paths aren't on for this
+# program: a platform folder of 140 characters stopped the Add (2026-11-12, the real builder: 139 added, 140 not, the
+# words "...isn't there"), so the Add works out the longest path it is going to write and says so first (_horse_room)
+PATH_MOST = 259
+WORK = ".m"             # the Add's own folder in horse_squad/ while the builder works: this and 8 letters (short, so a
+#                         deep platform folder has the most room; the files it ends with keep the builder's names)
+CLIP_LONGEST = 24       # the longest name of the Horse Squad's animations (hr_t_mort_balle_violente,
+#                         hr_t_bazooka_transition1: the passed copy's files), written as <name>.part, then <name>.baf
+OWN_CLIPS = ("files", "anim", "own")   # where Import model puts a unit's own animations: <mod>/files/anim/own/<unit>/
+
+
+def long_paths_on() -> bool:
+    """Whether this program may write a path longer than PATH_MOST: not Windows, or Windows with its long paths
+    turned on and this program taking them (ntdll's RtlAreLongPathsEnabled says both); False when it can't tell."""
+    import sys
+    if sys.platform != "win32":
+        return True
+    try:
+        import ctypes
+        enabled = ctypes.WinDLL("ntdll").RtlAreLongPathsEnabled
+        enabled.restype = ctypes.c_ubyte        # (a BOOLEAN: one byte)
+        return bool(enabled())
+    except (OSError, AttributeError):
+        return False
 
 
 class HorseSquadCalls:
@@ -154,6 +178,7 @@ class HorseSquadCalls:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E.: the Horse Squad is made from your own copy of the game.")
         builder = self._horse_builder()
+        self._horse_room(builder, mod, name)
         with _LOCK:
             running = self._horse_running()
             if running:
@@ -240,6 +265,43 @@ class HorseSquadCalls:
         if taken:
             raise StudioError(f"There's already a unit called {prefix}{stem} (from {wanted!r}). Pick another name.")
 
+    def _horse_room(self, builder, mod: Path, name) -> None:
+        """Before the long part: the longest path the Add is going to write, in the platform folder (the builder's
+        scratch files under horse_squad/: its longest_written, when it says) and in the mod (each animation of the unit
+        as Import model writes it, under the name the unit is going to get: `name`, else its own and the one it takes
+        when that's taken); a StudioError saying which folder is too deep and by how much, and what to change, when
+        Windows won't take it (PATH_MOST; nothing when this program may write longer paths: long_paths_on)."""
+        from .api import _PREFIX, StudioError, safe_name
+        if long_paths_on():
+            return
+        root = self._home / FOLDER
+        work = root / (WORK + "x" * 8)
+        longest = getattr(builder, "longest_written", None)
+        try:
+            need = int(longest(work)) if callable(longest) else len(str(work))
+        except (TypeError, ValueError):
+            need = len(str(work))
+        if need > PATH_MOST:
+            # not a game rule: Windows' longest path, which the files the Horse Squad is made into must fit
+            raise StudioError(f"The Horse Squad can't be added: the folder the Studio keeps its own files in "
+                              f"({self._home}) is too deep for it. Adding it would write a file whose path is "
+                              f"{need - PATH_MOST} character(s) longer than Windows takes ({PATH_MOST} at most). Move "
+                              f"it to a folder with a shorter path, and set the Windows environment variable "
+                              f"RUSE_PLATFORM_HOME to that folder, then add it again.")
+        m = _PREFIX.match(SQUAD.rsplit("/", 1)[-1])
+        prefix = m.group(1) if m else "Descriptor_Unit_"
+        wanted = (name or "").strip()
+        stems = [safe_name(wanted)] if wanted and safe_name(wanted) else \
+            [safe_name(NAME), safe_name(f"{NAME} ({ENTRY['era']})")]   # (era_units._era_make's two)
+        tail = max((prefix + s for s in stems), key=len)
+        need = len(str(Path(mod, *OWN_CLIPS, tail, "x" * CLIP_LONGEST + ".part"))) if mod is not None else 0
+        if need > PATH_MOST:
+            # not a game rule: Windows' longest path, which the Horse Squad's animations in the mod must fit
+            raise StudioError(f"The Horse Squad can't be added: your mod's folder ({mod}) is too deep for it. Adding "
+                              f"it would write a file whose path is {need - PATH_MOST} character(s) longer than "
+                              f"Windows takes ({PATH_MOST} at most). Give it a shorter name in the form, or put the mod "
+                              f"in a folder with a shorter path, then add it again.")
+
     def _horse_builder(self):
         """The builder (BUILDER), or a StudioError when this Studio hasn't got it, or has it but a part it needs
         (numpy, say) can't be loaded: said as that, never as the builder not being in it."""
@@ -276,6 +338,13 @@ class HorseSquadCalls:
             return StudioError(f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on "
                                f"it, then add it again.")
         path = file_named(exc, reading if reading is not None else folder)
+        long = [str(f) for f in (exc.filename, exc.filename2) if f is not None and len(str(f)) > PATH_MOST]
+        if long and not long_paths_on():
+            # not a game rule: Windows' longest path (one _horse_room's sum didn't see coming: said as what it is,
+            # never as a file that "isn't there")
+            return StudioError(f"The Horse Squad couldn't be added: {long[0]} is {len(long[0]) - PATH_MOST} "
+                               f"character(s) longer than Windows takes in a path ({PATH_MOST} at most). Put the "
+                               f"folder it is in somewhere with a shorter path, then add it again.")
         code = getattr(exc, "winerror", None) or exc.errno
         if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
             return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written, because "
@@ -301,7 +370,7 @@ class HorseSquadCalls:
         refusal = getattr(builder, "HorseSquadError", None)
         refusals = (refusal,) if isinstance(refusal, type) and issubclass(refusal, Exception) else ()
         root = self._home / FOLDER
-        work = root / f".making-{uuid.uuid4().hex[:8]}"
+        work = root / f"{WORK}{uuid.uuid4().hex[:8]}"
         work.mkdir(parents=True)
         try:
             try:
