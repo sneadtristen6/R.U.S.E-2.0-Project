@@ -73,13 +73,14 @@ class HorseSquadCalls:
 
     def _horse_card(self, ix, lang: str) -> str:
         """The US rifle squad's type (the game's word on its card: the Horse Squad's type) in the Studio's language
-        `lang`, as the Units list says a game unit's type: a language the game has its own, else (Persian, the code
-        names' "base") the game's English; "" when the index has none."""
+        `lang`, as the Units list says a game unit's type (api.units: its HTML entities undone too): a language the game
+        has its own, else (Persian, the code names' "base") the game's English; "" when the index has none."""
+        import html
         from rusemod import schema
         row = next((u for u in self._all_units(ix) if u["address"] == SQUAD), None)
         key = row.get("type_key") if row is not None else None
         told = lang if lang in schema.LANGS else "us"
-        return ((ix.names([key], told).get(key) or "") if key else "").strip()
+        return html.unescape((ix.names([key], told).get(key) or "") if key else "").strip()
 
     def _era_built(self, lang: str = "us") -> list[dict]:
         """The units made for RUSE 2.0 the game can make (era_units_list's "built" rows), their type in `lang`: none

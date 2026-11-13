@@ -403,6 +403,20 @@ class TheTypeInTheStudiosLanguage(unittest.TestCase):
                 self.assertNotIn("Horse Squad", worded, lang)
                 self.assertNotIn("that unit is in another group", worded, lang)
 
+    def test_its_type_is_the_one_the_units_list_says_for_the_us_rifle_squad(self):
+        """The same words as the Units list shows for the unit it's made from, in the Studio's language (the recheck of
+        round 1, probe_card.py: equal in all twelve settings; its HTML entities undone the same way, api.units)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            api = StudioApi(index_path=INDEX, game_dir=Path(tmp) / "no-game", home=Path(tmp) / "home")
+            api.new_mod("Types")
+            for lang in ("base", *schema.APP_LANGS):
+                with self.subTest(lang=lang):
+                    rifle = next(u for u in api.units(lang)["units"] if u.get("address") == SQUAD)
+                    self.assertTrue(rifle["type"])
+                    self.assertEqual([u["card"] for u in api.era_units_list("WWII", lang=lang)["units"]],
+                                     [rifle["type"]])
+                    self.assertEqual(api.era_unit_page(KEY, lang)["card"], rifle["type"])
+
     def test_the_page_asks_for_it_in_the_studio_s_language(self):
         js = (UI / "eraunits.js").read_text(encoding="utf-8")
         calls = re.findall(r"api\(\)\.era_units_list\(([^;]*?)\);", js, re.S)
