@@ -221,6 +221,33 @@ class RemoveUnit(unittest.TestCase):
             ModEdits(self.mod).remove_leftovers(self.other)
         self.assertIn(self.other, anim.read_units(self.mod))
 
+    @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")
+    def test_leftovers_with_a_file_held_are_all_put_back_and_trying_again_takes_them(self):
+        """The lead's check of 2026-11-13 (a planted mistake no test caught: remove_leftovers no longer putting back
+        what it had moved): the take-out of what a deleted unit left, stopped by a file another program holds, leaves
+        every leftover where it was (the files it had already set aside too, no .taking-out left), and trying again
+        once the file is free takes them all."""
+        edits = ModEdits(self.mod)
+        edits.new_units.pop(UNIT)
+        edits.save()
+        before = tree(self.mod)
+        self.assertGreater(len(unit_files(self.mod, self.tail)), 2)
+        # (a clip in the unit's own animations folder: the folder is the last thing set aside, so the card, the
+        # models and the records have been moved by then and must come back)
+        held = open(self.mod / anim.OWN / self.tail / "stand.baf", "rb")
+        try:
+            with self.assertRaises(OSError):
+                ModEdits(self.mod).remove_leftovers(self.tail)
+        finally:
+            held.close()
+        self.assertEqual(tree(self.mod), before)
+        self.assertFalse((self.mod / TAKING_OUT).exists())
+        self.assertIn(self.tail, anim.read_units(self.mod))
+        gone = ModEdits(self.mod).remove_leftovers(self.tail)
+        self.assertIn(f"{anim.UNITS} [unit.{self.tail}]", gone)
+        self.assertEqual(unit_files(self.mod, self.tail), [])
+        self.assertNotIn(self.tail, anim.read_units(self.mod))
+
 
 class AnimRemoveUnit(unittest.TestCase):
     @unittest.skipUnless(WINDOWS, "a file another program holds: Windows")

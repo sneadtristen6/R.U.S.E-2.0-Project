@@ -303,9 +303,16 @@ class OnTheGame(unittest.TestCase):
         made from by its full path, in the platform folder (%LOCALAPPDATA%\\RUSE Mod Platform\\horse_squad\\... on a
         player's PC: his Windows user name in it), so it goes out with every shared mod that has the Horse Squad."""
         self.assertEqual(self.add()["state"], "done")
-        packed = {p.relative_to(self.mod).as_posix(): p for p in package.files_of(self.mod)}
-        naming = [name for name, p in packed.items() if name.endswith(".json")
-                  and str(self.home).lower() in p.read_text(encoding="utf-8").replace("\\\\", "\\").lower()]
+        # (read in the EXPORTED file since 2026-11-13: the owner's choice for FL-110, "Keep file name only", is made
+        # when the mod is packed; the mod's own records on his PC keep the full path, which Resize and Move need. The
+        # test read the mod folder's files before, as the export then packed them unchanged.)
+        import zipfile
+        out = package.pack(self.mod, self.home / "exported-for-this-test")
+        with zipfile.ZipFile(out) as z:
+            packed = {n: z.read(n).decode("utf-8", errors="replace") for n in z.namelist() if n.endswith(".json")}
+        self.assertIn("files/models/Descriptor_Unit_Horse_Squad.json", packed)
+        naming = [name for name, text in packed.items()
+                  if str(self.home).lower() in text.replace("\\\\", "\\").lower()]
         self.assertEqual(naming, [])
 
     def test_change_it_in_blender_opens_its_own_model(self):
