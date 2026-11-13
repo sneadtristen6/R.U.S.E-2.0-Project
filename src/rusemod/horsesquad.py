@@ -116,6 +116,7 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
     hold a scratch folder of the game's models while they're read; it is removed after."""
     game, work_in = Path(game), Path(work_in)
     if find_pack(game, "ZZ_Win.dat") is None or find_pack(game, DEFAULT_PACK) is None:
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"The Horse Squad is made from your game's own files, and {game} isn't a R.U.S.E. game "
                               "folder (ZZ_Win.dat or ZZ_GladPatchableWin.dat isn't in it).")
     say("Horse Squad: reading the horse, the rifleman and the bazooka man from your game")
@@ -129,6 +130,7 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
         horse_blob, rider_blob, bazooka_blob = (_record_of(*held[m]) for m in (HORSE, SOLDIER, BAZOOKA))
         rb, bb = baf.skeleton(rider_blob), baf.skeleton(bazooka_blob)
         if (rb["names"], rb["parents"]) != (bb["names"], bb["parents"]):
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's bazooka man isn't on the rifleman's bones: the Horse Squad can't be "
                                   "made from it.")
         bones = _combined(horse_blob, rider_blob)
@@ -142,6 +144,7 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
         horse = _horse_parts(_parts_of(lib, HORSE, work / "horse"))
         mesh_packs = held[SOLDIER][1]
         if sorted(held[BAZOOKA][1]) != sorted(mesh_packs) or MESH_PACK not in mesh_packs:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's rifleman and bazooka man aren't in the packs the Horse Squad is made "
                                   "from.")
         plans = {NEW["rifle"]: (SOLDIER, [(p, "horse") for p in horse] + [(p, p.draw) for p in rifle]),
@@ -160,8 +163,9 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
         raw = _clip_files(zz, wanted)
         missing = sorted(n for n in wanted if n not in raw)
         if missing:
-            raise HorseSquadError("Your game hasn't the animations the Horse Squad is made from: "
-                                  + ", ".join(missing) + ".")
+            # not a game rule: the builder's own check of what the Horse Squad is made from
+            raise HorseSquadError(f"Your game hasn't the animations the Horse Squad is made from: "
+                                  f"{', '.join(missing)}.")
         maker = _Clips(raw, bones, _seat_in_clips(bones.horse, raw), blob)
         clips, top_names, bottom = {}, {}, {}
         for t in tops:
@@ -259,14 +263,17 @@ def _listings_in_game(game: Path) -> dict:
     from .animmodel import figures_of
     from .build import load_pack
     from .patch import Inline, Ref, Text
-    arc = Edat.open(str(find_pack(game, DEFAULT_PACK)))
+    pack = find_pack(game, DEFAULT_PACK)
+    arc = Edat.open(str(pack))
     try:
         base = load_pack(arc).base
         figures = dict(figures_of(base, UNIT))
-    except (KeyError, ValueError, OSError) as exc:
-        # (a pack that can't be read is said as that, never as animations the game hasn't)
-        raise HorseSquadError(f"Your game's unit data couldn't be read, so the Horse Squad can't be made from it "
-                              f"({exc}).") from None
+    except (KeyError, ValueError, OSError):
+        # (a pack that can't be read is said as that, never as animations the game hasn't; by its file, never in the
+        # reader's own English words: the Studio says this in the modder's language, errors.toml)
+        # not a game rule: the builder's own check of what the Horse Squad is made from
+        raise HorseSquadError(f"Your game's unit data in {pack} couldn't be read, so the Horse Squad can't be made "
+                              f"from it.") from None
     finally:
         arc.close()
     out = {}
@@ -279,6 +286,7 @@ def _listings_in_game(game: Path) -> dict:
             if isinstance(k, Text) and isinstance(f, Text):
                 rows.append((k.value, _stem(f.value)))
         if not rows:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's US rifle squad hasn't the animations the Horse Squad's riders play.")
         out[part] = rows
     return out
@@ -332,6 +340,7 @@ def _holding(zz, model: str, table: list) -> tuple:
     try:
         return packs_holding(zz, model, table)
     except UnitModelError:
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"Your game hasn't the model the Horse Squad is made from: {model}.") from None
 
 
@@ -342,6 +351,7 @@ def _record_of(name: str, _meshes: dict, skels: dict) -> bytes:
         pack = MeshPack.read(raw)
         blobs.add(pack.skeletons[pack.items[name][2]])
     if len(blobs) != 1:
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"Your game's skeleton of {name} isn't one the Horse Squad can be made from "
                               f"({len(blobs)} records).")
     return blobs.pop()
@@ -481,6 +491,7 @@ def _combined(horse_blob: bytes, rider_blob: bytes) -> _Bones:
             k.names.append(r["names"][b])
             if p < 0:
                 if r["names"][b] != "bip01":
+                    # not a game rule: the builder's own check of what the Horse Squad is made from
                     raise HorseSquadError("Your game's rifleman has a second root bone: the Horse Squad can't be made "
                                           "from him.")
                 k.parents.append(k.hmap[seat_bone])
@@ -493,6 +504,7 @@ def _combined(horse_blob: bytes, rider_blob: bytes) -> _Bones:
     except (KeyError, ValueError) as exc:
         if isinstance(exc, HorseSquadError):
             raise
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError("Your game's horse or rifleman isn't built as the Horse Squad expects (a bone it rides "
                               "on is missing).") from None
     return k
@@ -512,6 +524,7 @@ def _check_record(blob: bytes) -> None:
                        _m4(sk["world"][b])) for b in range(n))
     if n > baf.MOST_BONES or any(p >= b for b, p in enumerate(parents)) or len(set(sk["names"])) != n \
             or worst0 > 1e-3 or worst1 > 1e-2:
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError("The Horse Squad's skeleton made from your game isn't one the game takes.")
 
 
@@ -527,6 +540,7 @@ def _parts_of(lib, model: str, folder: Path) -> list:
         return prepare(read_model(next(folder.glob("*.glb")), skin=True), folder, {"rigged": True, "root": "bip01"},
                        1.0, 64).parts
     except (KeyError, ModelError, StopIteration):
+        # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"Your game's model {model} couldn't be read for the Horse Squad.") from None
 
 
@@ -547,6 +561,7 @@ def _rider_parts(parts: list) -> list:
     out = []
     for part in parts:
         if part.static or part.tracks:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's soldier has a draw with no bones: the Horse Squad can't be made from "
                                   "it.")
         keep = [sum(w for n, w in pairs if n in LEGS) <= 127 for pairs in part.skin]
@@ -572,10 +587,12 @@ def _horse_parts(parts: list) -> list:
     out = []
     for part in parts:
         if part.static or part.tracks:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's horse has a draw with no bones: the Horse Squad can't be made from it.")
         skin = []
         for pairs in part.skin:
             if any(n in HORSE_DROP for n, _w in pairs):
+                # not a game rule: the builder's own check of what the Horse Squad is made from
                 raise HorseSquadError("A point of your game's horse leans on a bone the Horse Squad leaves out.")
             skin.append([(_horse_name(n), w) for n, w in pairs])
         out.append(Part(part.bone, part.picture, list(part.positions), list(part.normals), list(part.uvs),
@@ -614,6 +631,7 @@ def _carrier(first_raw: bytes, horse_raw: bytes, plans: dict, names: list, blob:
                     found = True
                 props.append((pi, v))
             if not found:
+                # not a game rule: the builder's own check of what the Horse Squad is made from
                 raise HorseSquadError("A material of your game's soldier or horse has no bone list.")
             roots.append(nd.add_object(obj.cls, props))
             made[key] = len(roots) - 1
@@ -715,6 +733,7 @@ class _Clips:
         self.qa = _mat_quat(self.Ra)
         back = _quat_m(self.qa)
         if max(abs(back[i][j] - self.Ra[i][j]) for i in range(3) for j in range(3)) > 1e-5:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("The Horse Squad's seat on your game's horse doesn't read back.")
         self.order = sorted([("h", b, n) for b, n in bones.hmap.items()] + [("r", b, n) for b, n in bones.rmap.items()],
                             key=lambda x: x[2])
@@ -736,6 +755,7 @@ class _Clips:
         for b in self.bones.rmap:
             name = self.bones.rider["names"][b]
             if name not in by:
+                # not a game rule: the builder's own check of what the Horse Squad is made from
                 raise HorseSquadError(f"A clip of your game's rifleman hasn't his bone {name}.")
             t = self.root(by[name]) if name == "bip01" else by[name]
             out[b] = _held(*baf.sample(t, 0.0)) if hold else t
@@ -747,6 +767,7 @@ class _Clips:
         for b in self.bones.hmap:
             name = self.bones.horse["names"][b]
             if name not in by:
+                # not a game rule: the builder's own check of what the Horse Squad is made from
                 raise HorseSquadError(f"A clip of your game's horse hasn't its bone {name}.")
             out[b] = _held(*baf.sample(by[name], 0.0)) if hold else by[name]
         return out
@@ -761,6 +782,7 @@ class _Clips:
         out = baf.build(baf.Clip(src.duration, src.frames, tracks, self.blob))
         back = baf.parse(out)
         if back.bones != len(self.bones.names) or baf.skeleton(back.skeleton)["names"] != self.bones.names:
+            # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("A Horse Squad animation made from your game doesn't read back.")
         return out
 
