@@ -500,7 +500,7 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
     (px, py, pz), (uu, vv), has, (tx, ty, tz), given_flat = every
 
     # each mesh's triangles by picture (pic_of.get(material, -1)): the pictures first, as the loops make them
-    pictures, pic_of, missing, own_alpha, notes = plain.fit_pictures(model, folders, side)
+    pictures, pic_of, missing, own_alpha, notes, sizes = plain.fit_pictures(model, folders, side)
     groups: dict = {}
     for m, d, k in zip(meshes, data, parts):
         if not len(d["tris"]):
@@ -548,7 +548,8 @@ def prepare(plain, model, folders: list, like: dict, size: float, side: int):
         _keep(part, "triangles", tri_out)
         out.append(part)
         own_normals += int(own.sum())
-    report = plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    report = plain.fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes,
+                              sizes)
     if ring is not None and like.get("own_turret"):
         report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]
     if like.get("move"):
