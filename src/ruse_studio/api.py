@@ -8506,6 +8506,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             file = r.get("from")
             if file and Path(file).is_file():
                 continue
+            self._horse_gone(address, file, moving)   # (the Horse Squad's files: never the modder's to import)
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
                 raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more "
@@ -8590,6 +8591,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("This unit has no model of its own to resize: import one first.")
         file = record.get("from")
         if not file or not Path(file).is_file():
+            self._horse_gone(address, file, False)   # (the Horse Squad's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8612,6 +8614,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("This unit has no model of its own to move: import one first.")
         file = record.get("from")
         if not file or not Path(file).is_file():
+            self._horse_gone(address, file, True)   # (the Horse Squad's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8700,7 +8703,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     self.model_resize(address, size)
                     say(f"resized\t{name}\t{size:g}")
                 except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
-                    say(f"skipped\t{name}\t{exc}")
+                    # why, in the Studio's language (a refusal's words, errortext): never English inside the line
+                    say(f"skipped\t{name}\t{self._worded(str(exc)) if isinstance(exc, StudioError) else exc}")
 
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
