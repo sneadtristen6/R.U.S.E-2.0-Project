@@ -63,7 +63,7 @@ def forms(folder: Path) -> list:
     return [f.encode("utf-8") for f in {s, s.replace("\\", "/"), s.replace("\\", "\\\\"), NAME}]
 
 
-@unittest.skipUnless(READY, "needs RUSE_GAME, the Studio's game index and the passed copy's two Generic Horse files")
+@unittest.skipUnless(READY, "needs RUSE_GAME, the Studio's game index and the passed copy's two Horse Squad files")
 class OnTheGame(unittest.TestCase):
     """The Horse Squad added with the real builder, the mod exported as the Studio's Export does (built on the game),
     added to the Launcher library by Export, and Publish's .zip made."""
