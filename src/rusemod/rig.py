@@ -223,10 +223,19 @@ class Rig:
     node_parent: list = field(default_factory=list, repr=False)   # each node's parent node (-1: none)
     node_rest: list = field(default_factory=list, repr=False)     # each node's rest: (move, turn, size), or a 3 x 4
     chains: list = field(default_factory=list, repr=False)        # each bone's nodes between its parent bone and it
+    meshes: list = field(default_factory=list, repr=False)        # the nodes of its meshes on bones (a skin's)
 
     @property
     def names(self) -> list:
         return [j.name for j in self.joints]
+
+    def node_world(self, n: int) -> tuple:
+        """A node's rest in the model, every node above it counted in (as a bone's `world` is)."""
+        m = IDENTITY
+        while n >= 0:
+            m = mul(_rest_matrix(self.node_rest[n]), m)
+            n = self.node_parent[n]
+        return m
 
     def record(self) -> bytes:
         """The skeleton's record, as the game keeps one (rusemod.baf.skeleton_bytes): the file's own when it carries
@@ -569,7 +578,8 @@ def rig_of(doc: dict, binary: bytes, label: str = "the file") -> Rig:
             continue
         animations.append(Animation(name, channels, min(c.times[0] for c in channels if c.times),
                                     max(c.times[-1] for c in channels if c.times)))
-    rig = Rig(out, animations, None, notes, parent, rest, chains)
+    rig = Rig(out, animations, None, notes, parent, rest, chains,
+              [n for n in order if "mesh" in nodes[n] and "skin" in nodes[n]])
     for s in skins:
         given = (doc["skins"][s].get("extras") or {}).get(SKELETON_EXTRA)
         if given:
@@ -718,6 +728,52 @@ def back_of(rig: Rig, reference: bytes) -> Back | None:
         local = [w if p < 0 else mul(inverse(world[p]), w) for w, p in zip(world, parents)]
         record = baf.skeleton_bytes(names, parents, [inverse(w) for w in world], local, world)
     return Back(names, parents, joint, fix, world, record, turned, kept, moved, new, missing, hung)
+
+
+def off_points(rig: Rig, back: Back, reference: bytes) -> list[str]:
+    """The bones of `reference` (as it spells them, in its order) whose rest in the file moved away from the model's
+    points: Blender's Edit mode moves a bone's rest and leaves the points where they were, so there they stay put,
+    while a model keeping the reference's rest moves them with the bone. Each of back_of's moved bones' move from the
+    reference's rest (its rest the game's way after the reference's inverse) is set against where each mesh on the
+    bones sits in the file: the whole armature moved in Object mode takes its meshes along (real Blender 4.5 sends the
+    bones and the mesh moved alike, 2026-11-12), so a bone moved with them is not off its points."""
+    if not back.moved:
+        return []
+    sk = baf.skeleton(reference)
+    at = {n.lower(): b for b, n in enumerate(sk["names"])}
+    places = [rig.node_world(n) for n in rig.meshes] or [IDENTITY]
+    moved = set(back.moved)
+    out = []
+    for i, name in enumerate(back.names):
+        b = at.get(name.lower())
+        if b is None or name not in moved:
+            continue
+        delta = mul(back.world[i], inverse(sk["world"][b]))
+        if all(near(delta, m) > 1.0 for m in places):
+            out.append((b, sk["names"][b]))
+    return [n for _b, n in sorted(out)]
+
+
+def weighted(doc: dict, binary: bytes) -> set:
+    """The bones (lower case) some point of the file's meshes on bones leans on: a weight above nothing."""
+    nodes = doc.get("nodes") or []
+    out = set()
+    for node in nodes:
+        if "mesh" not in node or "skin" not in node:
+            continue
+        joints = ((doc.get("skins") or [])[node["skin"]]).get("joints") or []
+        for prim in ((doc.get("meshes") or [])[node["mesh"]]).get("primitives") or []:
+            attrs = prim.get("attributes") or {}
+            k = 0
+            while f"JOINTS_{k}" in attrs and f"WEIGHTS_{k}" in attrs:
+                for js, ws in zip(glb_accessor(doc, binary, attrs[f"JOINTS_{k}"]),
+                                  glb_accessor(doc, binary, attrs[f"WEIGHTS_{k}"])):
+                    for j, wt in zip(js, ws):
+                        if wt > 0 and 0 <= int(j) < len(joints):
+                            out.add(str(nodes[joints[int(j)]].get("name", "")).lower())
+                k += 1
+    out.discard("")
+    return out
 
 
 def back_poses(rig: Rig, back: Back, anim: Animation, fps: int = baf.FPS,
