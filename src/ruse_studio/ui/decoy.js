@@ -177,6 +177,12 @@
       back.addEventListener("click", () => blenderBack(box));
       buttons.push(back);
     }
+    if (st.aside) {   // (a sending kept aside when its animations were opened again, never brought back)
+      const aside = el("button", { type: "button", textContent: w.decoy_blender_aside, title: w.tip_decoy_blender_aside,
+        disabled: D.busy });
+      aside.addEventListener("click", () => blenderBack(box, st.aside));
+      buttons.push(aside);
+    }
     box.replaceChildren(el("div", { className: "squad-go" }, ...buttons),
       el("p", { className: "muted small", textContent: w.decoy_blender_how }), ...(D.said ? [D.said] : []));
   }
@@ -194,17 +200,18 @@
     drawBlender(box);
   }
 
-  // what came back said on the page and in a pop-up, then its animations read again (the changed ones its own now)
-  async function blenderBack(box) {
+  // what came back said on the page and in a pop-up, then its animations read again (the changed ones its own now);
+  // `aside`: the sending kept aside to bring back instead (decoy_blender_state's "aside")
+  async function blenderBack(box, aside) {
     D.busy = true;
     drawBlender(box);
     let r = null;
-    try { r = await api().decoy_blender_back(D.unit.address, D.lang); } catch (err) { problem(err); }
+    try { r = await api().decoy_blender_back(D.unit.address, D.lang, aside || null); } catch (err) { problem(err); }
     D.busy = false;
     if (!r) { drawBlender(box); return; }
     D.blender = r;
     D.said = el("p", { className: "squad-result", role: "status", textContent: r.message });
-    say(r.message, r.changed && r.changed.length ? "ok" : "");
+    say(r.message, (r.changed && r.changed.length) || (r.undone && r.undone.length) ? "ok" : "");
     await list(true);
   }
 

@@ -1726,6 +1726,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     decoy_blender_back: "Bring my changes back",
     tip_decoy_blender_back: "Takes the animations you changed in Blender in as this unit's own. One you didn't change stays as it was.",
     decoy_blender_how: "Its animations open in Blender with its model, each named after what it does in it (Run, Fire, Death…). To change one: pick it in Blender's Action Editor at the bottom, pose the bones, then click Send to the R.U.S.E. Studio. Bring my changes back makes the changed ones this unit's own; every other unit keeps the game's.",
+    decoy_blender_aside: "Bring back the set-aside sending",
+    tip_decoy_blender_aside: "Takes in what Blender sent before its animations were opened again, which was never brought back: the animations changed in it become this unit's own, as Bring my changes back does.",
     decoy_unit_has: "This unit has {voices} voice lines and {engine} engine sounds of its own.",
     decoy_unit_has_all: "This unit has {voices} voice lines, {engine} engine sounds and {clips} animations of its own.",
     decoy_unit_help: "Only {name}'s own sounds: its engine and its voice lines. Other units of the same nation and kind say the same lines.",
@@ -4362,9 +4364,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       decoy_blender_state: async (address, lang = "us") => {
         const made = mine().some((n) => address === newAddress(n.id)) && Boolean(current);
         return made ? { can: true, why_not: null, open: fakeDecoyBlender.has(address), waiting: fakeDecoyBlender.has(address),
-          work: `${winPath(current)}\\blender\\${address.split("/").pop()}\\animations` }
+          work: `${winPath(current)}\\blender\\${address.split("/").pop()}\\animations`, aside: null, aside_folder: null }
           : { can: false, why_not: "Only a new unit made in this mod gets animations of its own: make a new unit from this one first.",
-            open: false, waiting: false, work: null };
+            open: false, waiting: false, work: null, aside: null, aside_folder: null };
       },
       decoy_blender: async (address, lang = "us") => {
         const st = await window.pywebview.api.decoy_blender_state(address, lang);
@@ -4376,7 +4378,7 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { ...(await window.pywebview.api.decoy_blender_state(address, lang)), opened: n, file: `${st.work}\\animations.glb`,
           set_aside: null, message: `Blender is opening it with its ${n} animations. When you're done there, click Send to the R.U.S.E. Studio at the top of Blender, then Bring my changes back here.` };
       },
-      decoy_blender_back: async (address, lang = "us") => {
+      decoy_blender_back: async (address, lang = "us", aside = null) => {
         if (!fakeDecoyBlender.has(address)) throw new Error("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at the top, then Bring my changes back here.");
         await new Promise((r) => setTimeout(r, 300));
         fakeDecoyBlender.delete(address);
