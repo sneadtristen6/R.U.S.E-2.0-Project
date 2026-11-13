@@ -287,6 +287,7 @@ button:disabled, button[aria-disabled="true"] { cursor: default; opacity: 0.45; 
 .browse-card .meta { font-size: 12px; color: var(--muted); grid-column: 1; }
 .browse-card .desc { font-size: 13px; grid-column: 1; }
 .browse-card .tags { font-size: 11px; color: var(--accent); grid-column: 1; }
+.browse-card .known { font-size: 12px; color: var(--warn); grid-column: 1; }
 .browse-card .small { grid-column: 2; grid-row: 1 / span 5; align-self: center; }
 .browse-card .link { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px;
                      text-decoration: underline; grid-column: 1; justify-self: start; }

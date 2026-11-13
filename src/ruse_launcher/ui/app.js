@@ -1185,6 +1185,9 @@ function renderPickList(holder, view) {
         : mod.state === "update" ? fill(w.update_to, { v: mod.version }) : "" }),
       el("span", { className: "meta", textContent: meta }));
     if (mod.description) li.append(el("span", { className: "desc", textContent: mod.description }));
+    // the list's note on a known problem (rusemod.mod_index.KNOWN_ISSUES), in the player's language
+    const known = { "campaign-chapters-stop": w.known_campaign_chapters_stop, "tutorial-stops": w.known_tutorial_stops };
+    for (const k of mod.known_issues || []) if (known[k]) li.append(el("span", { className: "known", textContent: known[k] }));
     if (mod.tags && mod.tags.length) li.append(el("span", { className: "tags", textContent: mod.tags.join(" · ") }));
     if (mod.homepage) {
       const link = el("button", { type: "button", className: "link", textContent: w.more_info });

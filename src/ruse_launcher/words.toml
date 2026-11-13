@@ -3256,6 +3256,32 @@ jpn = "「プレイ」は少し待ちます。これらのMODが一緒に使え�
 sc = "“开始游戏”稍等片刻：Launcher 正在检查这些模组能否一起使用。"
 fa = "«بازی» کمی صبر می‌کند: Launcher در حال بررسی این است که این مادها با هم جور هستند یا نه."
 
+[known_campaign_chapters_stop]
+us = "Known problem: with this mod on, some campaign chapters stop about a second after they start. It replaces their maps with ones that lack places their missions use."
+fr = "Problème connu : avec ce mod, certains chapitres de la campagne s'arrêtent environ une seconde après leur début. Il remplace leurs cartes par des cartes auxquelles manquent des lieux qu'utilisent leurs missions."
+ger = "Bekanntes Problem: Mit dieser Mod enden einige Kampagnenkapitel etwa eine Sekunde nach dem Start. Sie ersetzt ihre Karten durch solche, denen Orte fehlen, die ihre Missionen brauchen."
+ita = "Problema noto: con questa mod attiva, alcuni capitoli della campagna si interrompono circa un secondo dopo l'avvio. Sostituisce le loro mappe con altre a cui mancano luoghi usati dalle loro missioni."
+spa = "Problema conocido: con este mod activado, algunos capítulos de la campaña se detienen aproximadamente un segundo después de empezar. Sustituye sus mapas por otros a los que les faltan lugares que usan sus misiones."
+pol = "Znany problem: z tym modem niektóre rozdziały kampanii zatrzymują się mniej więcej sekundę po starcie. Zastępuje ich mapy takimi, w których brakuje miejsc używanych przez ich misje."
+ru = "Известная проблема: с этим модом некоторые главы кампании останавливаются примерно через секунду после начала. Он заменяет их карты картами, в которых нет мест, нужных их миссиям."
+cz = "Známý problém: s tímto modem se některé kapitoly kampaně zastaví asi sekundu po začátku. Nahrazuje jejich mapy mapami, ve kterých chybí místa, jež jejich mise používají."
+jpn = "既知の問題：このMODを入れると、キャンペーンのいくつかの章が始まって約1秒で止まります。それらのマップを、ミッションが使う場所のないマップに置き換えるためです。"
+sc = "已知问题：启用此模组时，战役的部分章节会在开始约一秒后停止。它把这些章节的地图换成了缺少其任务所用地点的地图。"
+fa = "مشکل شناخته‌شده: با این ماد، برخی فصل‌های کارزار حدود یک ثانیه پس از شروع متوقف می‌شوند. این ماد نقشه‌های آن‌ها را با نقشه‌هایی جایگزین می‌کند که جاهایی را که مأموریت‌هایشان به کار می‌برند ندارند."
+
+[known_tutorial_stops]
+us = "Known problem: with this mod on, the tutorial stops about a second after it starts. It replaces the tutorial's map with one that lacks places its mission uses."
+fr = "Problème connu : avec ce mod, le tutoriel s'arrête environ une seconde après son début. Il remplace la carte du tutoriel par une carte à laquelle manquent des lieux qu'utilise sa mission."
+ger = "Bekanntes Problem: Mit dieser Mod endet das Tutorial etwa eine Sekunde nach dem Start. Sie ersetzt die Karte des Tutorials durch eine, der Orte fehlen, die seine Mission braucht."
+ita = "Problema noto: con questa mod attiva, il tutorial si interrompe circa un secondo dopo l'avvio. Sostituisce la mappa del tutorial con una a cui mancano luoghi usati dalla sua missione."
+spa = "Problema conocido: con este mod activado, el tutorial se detiene aproximadamente un segundo después de empezar. Sustituye el mapa del tutorial por uno al que le faltan lugares que usa su misión."
+pol = "Znany problem: z tym modem samouczek zatrzymuje się mniej więcej sekundę po starcie. Zastępuje mapę samouczka taką, w której brakuje miejsc używanych przez jego misję."
+ru = "Известная проблема: с этим модом обучение останавливается примерно через секунду после начала. Он заменяет карту обучения картой, в которой нет мест, нужных её миссии."
+cz = "Známý problém: s tímto modem se výuka zastaví asi sekundu po začátku. Nahrazuje mapu výuky mapou, ve které chybí místa, jež její mise používá."
+jpn = "既知の問題：このMODを入れると、チュートリアルが始まって約1秒で止まります。チュートリアルのマップを、そのミッションが使う場所のないマップに置き換えるためです。"
+sc = "已知问题：启用此模组时，教程会在开始约一秒后停止。它把教程的地图换成了缺少其任务所用地点的地图。"
+fa = "مشکل شناخته‌شده: با این ماد، آموزش حدود یک ثانیه پس از شروع متوقف می‌شود. این ماد نقشهٔ آموزش را با نقشه‌ای جایگزین می‌کند که جاهایی را که مأموریتش به کار می‌برد ندارد."
+
 [tip_browse]
 us = "Mods from our list on GitHub: tick the ones you want and they're downloaded and checked."
 fr = "Les mods de notre liste sur GitHub : cochez ceux que vous voulez, ils sont téléchargés et vérifiés."

@@ -134,6 +134,37 @@ class Reading(unittest.TestCase):
         self.assertEqual([p.split(": ", 1)[1] for p in problems], ['the tags aren\'t a list of words, like ["cheat"]'] * 2)
         self.assertEqual((is_cheat(["x", " Cheat "]), is_cheat([]), is_cheat(None)), (True, False, False))
 
+    def test_a_known_problem_note(self):
+        """The list's note on a mod with a known problem (the owner, 2026-11-13: "build warning and a note so both"):
+        `known_issues`, keys the Launcher says in the player's language (KNOWN_ISSUES). A key it doesn't know is left
+        out and never skips the entry; an entry without the field has none (as every list before it)."""
+        from rusemod.mod_index import KNOWN_ISSUES
+        text = "format = 1\n"
+        for i, issues in enumerate((["campaign-chapters-stop"], "tutorial-stops", ["tutorial-stops", "something-new",
+                                    "tutorial-stops", 3], [], None)):
+            values = {} if issues is None else {"known_issues": issues}
+            text += entry(id=f"m{i}", version="1.0.0", download=f"https://x/{i}", size=1, sha256="a" * 64, **values)
+        text += "[[mod]]\nid = \"odd\"\nversion = \"1.0.0\"\ndownload = \"https://x/o\"\nsize = 1\nsha256 = \"%s\"\n" \
+                "known_issues = 5\n" % ("c" * 64)
+        mods, problems = parse(text)
+        self.assertEqual(problems, [])
+        self.assertEqual([m["known_issues"] for m in mods], [["campaign-chapters-stop"], ["tutorial-stops"],
+                                                              ["tutorial-stops"], [], [], []])
+        self.assertEqual(KNOWN_ISSUES, ("campaign-chapters-stop", "tutorial-stops"))
+
+    def test_every_known_problem_has_the_launchers_words_and_a_card_line(self):
+        import tomllib
+        from rusemod.mod_index import KNOWN_ISSUES
+        ui = Path(__file__).resolve().parents[1] / "src" / "ruse_launcher"
+        words = tomllib.loads((ui / "words.toml").read_text(encoding="utf-8"))
+        app = (ui / "ui" / "app.js").read_text(encoding="utf-8")
+        for key in KNOWN_ISSUES:
+            name = "known_" + key.replace("-", "_")
+            for lang in ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"):
+                self.assertTrue(words[name].get(lang, "").strip(), f"{name} {lang}")
+            self.assertIn(f'"{key}": w.{name}', app)
+        self.assertIn('li.append(el("span", { className: "known", textContent: known[k] }))', app)
+
     def test_an_exported_files_entry(self):
         """The Studio's "Share your mod" shows the entry to paste into index.toml: it reads back as the same mod, and
         without a download link it's skipped (a half-finished entry never points at nothing)."""
