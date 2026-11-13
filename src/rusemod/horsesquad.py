@@ -89,6 +89,22 @@ FIGURES = {"rifle": ["GfxDescriptorFusilier"], "bazooka": ["GfxDescriptorBazooka
 RIDE = "hr_ride"
 RIDE_FIGURE = "Descriptor_Unit_Horse_Ride:GfxDescriptor"   # the 11-09 ride's figure: drew the rifle model, idle1
 FILES = {"rifle": "horse-squad-rifle.glb", "bazooka": "horse-squad-bazooka.glb"}
+# the names it writes while it works, its own (made_from's scratch folder: tempfile's 8 letters after WORK_PREFIX, a
+# folder for each game model in it): short, so a deep folder leaves the most room under Windows' 260 characters (a
+# platform folder of 140 characters stopped the Add on 2026-11-12, when they took 120: .making-<8>\horse-squad-<8>\
+# bazooka\<the model's pictures' names>); the files it ends with (FILES) are named as before
+WORK_PREFIX = "h"
+WORK_PARTS = {SOLDIER: "r", BAZOOKA: "b", HORSE: "h"}
+
+
+def longest_written(out: Path) -> int:
+    """The length of the longest path horse_squad_glbs writes into `out` (its scratch folder's random letters
+    counted), so a caller can tell before the long part whether Windows will take it."""
+    out = Path(out)
+    work = out / (WORK_PREFIX + "x" * 8)       # (tempfile.mkdtemp's names: the prefix and 8 letters)
+    names = [work / part / (_stem_of(model) + ".glb") for model, part in WORK_PARTS.items()]
+    names += [out / f for f in FILES.values()]
+    return max(len(str(p)) for p in names)
 
 
 def horse_squad_glbs(game: Path, out: Path, *, index: Path | None = None, say=print) -> dict:
@@ -122,7 +138,7 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
     say("Horse Squad: reading the horse, the rifleman and the bazooka man from your game")
     listings = _listings(game, index)
     work_in.mkdir(parents=True, exist_ok=True)
-    work = Path(tempfile.mkdtemp(prefix="horse-squad-", dir=work_in))
+    work = Path(tempfile.mkdtemp(prefix=WORK_PREFIX, dir=work_in))
     zz = Edat.open(str(find_pack(game, "ZZ_Win.dat")))
     try:
         table = pack_names(zz)
@@ -139,9 +155,9 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
         _check_record(blob)
         say("Horse Squad: making the models")
         lib = _Few(zz, held, {HORSE: horse_blob, SOLDIER: rider_blob, BAZOOKA: bazooka_blob})
-        rifle = _rider_parts(_parts_of(lib, SOLDIER, work / "rifle"))
-        bazooka = _rider_parts(_parts_of(lib, BAZOOKA, work / "bazooka"))
-        horse = _horse_parts(_parts_of(lib, HORSE, work / "horse"))
+        rifle = _rider_parts(_parts_of(lib, SOLDIER, work / WORK_PARTS[SOLDIER]))
+        bazooka = _rider_parts(_parts_of(lib, BAZOOKA, work / WORK_PARTS[BAZOOKA]))
+        horse = _horse_parts(_parts_of(lib, HORSE, work / WORK_PARTS[HORSE]))
         mesh_packs = held[SOLDIER][1]
         if sorted(held[BAZOOKA][1]) != sorted(mesh_packs) or MESH_PACK not in mesh_packs:
             # not a game rule: the builder's own check of what the Horse Squad is made from
@@ -531,14 +547,16 @@ def _check_record(blob: bytes) -> None:
 # --- 2. the models ---
 def _parts_of(lib, model: str, folder: Path) -> list:
     """The game model `model` as the importer reads a model rigged to its own bones (the Studio's own export, read
-    back: every point on its bones, in the game's axes), each part keeping its draw."""
-    from .gltf import export
+    back: every point on its bones, in the game's axes), each part keeping its draw. Only the .glb is written into
+    `folder`, as rusemod.gltf.export names it (its pictures are inside it: the colour and alpha pictures export writes
+    beside it, with long names, were never read here)."""
+    from .gltf import model_glb
     from .modelin import ModelError, prepare, read_model
     folder.mkdir(parents=True)
     try:
-        export(lib, [model], folder, side=64)
-        return prepare(read_model(next(folder.glob("*.glb")), skin=True), folder, {"rigged": True, "root": "bip01"},
-                       1.0, 64).parts
+        glb = folder / (_stem_of(model) + ".glb")
+        glb.write_bytes(model_glb(lib, model, 64)[0])
+        return prepare(read_model(glb, skin=True), folder, {"rigged": True, "root": "bip01"}, 1.0, 64).parts
     except (KeyError, ModelError, StopIteration):
         # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"Your game's model {model} couldn't be read for the Horse Squad.") from None
