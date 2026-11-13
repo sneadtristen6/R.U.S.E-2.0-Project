@@ -1,5 +1,7 @@
 """The resize recheck (round 1, fix/resize at e469d4d4): what a fit again of a model on bones of its own (Resize, Move,
-every ground unit at once) does with a clip file of the mod's that can't be read the way the Studio writes them.
+every ground unit at once) does with a clip file of the mod's that can't be read the way the Studio writes them
+(ADamagedClipFile, a regression), and what Import model again does over a model record written before the fix
+(ARecordFromBefore: the class not closed on that route).
 
 Since e469d4d4 a fit again reads every one of the model's animations as the mod has them (AnimModelCalls._own_now) and
 checks each one changed since the last fit (_record_more: "a clip file that isn't one any more: the file's takes its
@@ -10,9 +12,10 @@ struct.error instead, so:
   before the fix (db2abbfb) the file's clip took its place;
 - the resize of every ground unit at once stops for every unit after it ("Something went wrong: error: ..."), where
   the job says one that can't be fitted leaves the rest.
-Each test here FAILS on e469d4d4 by design until fixed, and passes on db2abbfb. On test_animmodel's made-up game (the
-stand-ins of tests/test_refit_keeps.py, written out here so the file runs on the code before the fix too): no game
-needed."""
+Each test here FAILS on e469d4d4 by design until fixed; ADamagedClipFile's pass on db2abbfb, ARecordFromBefore's fails
+there too. On test_animmodel's made-up game (the stand-ins of tests/test_refit_keeps.py, written out here so the file
+runs on the code before the fix too): no game needed."""
+import json
 import struct
 import tempfile
 import unittest
@@ -21,7 +24,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from rusemod import anim, unitmodel
+from rusemod import anim, baf, unitmodel
 from test_horse_squad import finished
 from test_ownrig import little_glb
 
@@ -118,6 +121,43 @@ class ADamagedClipFile(unittest.TestCase):
         self.assertEqual(view["state"], "done", view.get("message"))
         said = view["lines"][0].split("\t")[0] if view["lines"] else None
         self.assertIn(said, ("resized", "skipped"), view["lines"])
+
+
+class ARecordFromBefore(ADamagedClipFile):
+    """A model record written before e86eabec has no fingerprints of what its fit took in ("from_file"): every own-bones
+    record of this branch's mods made before the fix, the owner's own Horse Squad mods among them (their RUSE Decoy
+    changes of 2026-11-12 too). Import model again, the same file: the change made in RUSE Decoy goes back to the
+    file's and nothing names it (the fixer's known limit: "Import model again over such a record can't name his
+    changes"), though the same file tells it, as Resize tells it on such a record. FAILS on e469d4d4 and on db2abbfb
+    (not a regression: the class not closed on this route)."""
+    test_resize_and_move_take_the_file_s_clip_in_its_place = None
+    test_every_ground_unit_at_once_goes_on_past_it = None
+
+    def decoy(self, name: str = "Walk") -> bytes:
+        """One of its animations changed as RUSE Decoy's Bring my changes back keeps it (decoyblender.py: the mod's
+        animations with the changed one in its place by name, rusemod.anim.set_animations, and the record's
+        lengths): its first bone turned and the animation half as fast. Returns the changed clip."""
+        now = self.clips()
+        c = baf.parse(now[name])
+        changed = baf.build(baf.with_speed(baf.with_bone(c, baf.skeleton(c.skeleton)["names"][0], turn=("x", 20.0)),
+                                           50.0))
+        clips = {**now, name: changed}
+        files = anim.set_animations(self.mod, UNIT, clips)
+        self.api._record_lengths(ADDRESS, clips, files)
+        return changed
+
+    def test_import_model_again_names_or_keeps_the_change_it_would_put_back(self):
+        self.imported(beast_glb())
+        changed = self.decoy("Walk")
+        path = self.target.with_suffix(".json")
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record.pop("from_file", None)                 # (as written before e86eabec)
+        path.write_text(json.dumps(record, indent=1), encoding="utf-8")
+        got = self.imported(beast_glb())
+        kept = self.clips()["Walk"] == changed
+        named = ((got.get("model") or {}).get("not_kept") or {}).get("animations")
+        self.assertTrue(kept or named == ["Walk"],
+                        f"Import model again put the file's Walk back and named {named or 'nothing'}")
 
 
 if __name__ == "__main__":
