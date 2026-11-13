@@ -2939,6 +2939,19 @@ function sizeSlider(box, marks) {
   return el("div", { className: "size-slider" }, range, el("div", { className: "size-marks" }, ...labels));
 }
 
+// What of the modder's own a fit of his model couldn't keep (StudioApi.model_resize, model_place, model_import: the
+// report's "not_kept", AnimModelCalls._record_more): his changes to its animations (made in RUSE Decoy) and what was
+// chosen for its actions, in words, never dropped quietly; "" when everything was kept.
+function notKeptSaid(lost) {
+  const w = state.words;
+  if (!lost) return "";
+  const action = (a) => w[`act_${a}`] || fill(w.actions_other, { key: a });
+  const said = [];
+  if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
+  if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
+  return said.join(" ");
+}
+
 // Every plane (or ground unit) of the mod with a model of its own, resized at once (StudioApi.models_resize_all, a
 // job): to the game's size, to real life, or a step smaller or bigger.
 function resizeAllRow(kind, n, changed) {
@@ -2949,7 +2962,7 @@ function resizeAllRow(kind, n, changed) {
     let job;
     try { job = await api().models_resize_all(kind, to, times); } catch (err) { problem(err); buttons.forEach((b) => { b.disabled = false; }); return; }
     let seen = 0;
-    const done = [], skipped = [];
+    const done = [], skipped = [], notKept = [];
     for (;;) {
       let st;
       try { st = await api().job(job.job, seen); } catch (err) { problem(err); break; }
@@ -2957,14 +2970,21 @@ function resizeAllRow(kind, n, changed) {
       for (const line of st.lines) {
         const [what, unit, more] = line.split("\t");
         if (what === "resized") done.push(unit); else if (what === "skipped") skipped.push(`${unit}: ${more}`);
+        else if (what === "not_kept") {   // (resized, but something of the modder's on it couldn't be kept)
+          let lost = null;
+          try { lost = JSON.parse(more); } catch (err) { lost = null; }
+          const said = notKeptSaid(lost);
+          if (said) notKept.push(`${unit}: ${said}`);
+        }
       }
       note.textContent = fill(w.models_all_progress, { done: done.length + skipped.length, all: n });
       if (st.state !== "running") break;
       await new Promise((ok) => setTimeout(ok, 700));
     }
     note.textContent = fill(w.models_all_done, { n: done.length })
-      + (skipped.length ? " " + fill(w.models_all_skipped, { list: skipped.join(" · ") }) : "");
-    say(note.textContent, skipped.length ? "" : "ok");
+      + (skipped.length ? " " + fill(w.models_all_skipped, { list: skipped.join(" · ") }) : "")
+      + (notKept.length ? " " + notKept.join(" ") : "");
+    say(note.textContent, skipped.length || notKept.length ? "" : "ok");
     buttons.forEach((b) => { b.disabled = false; });
     if (changed) changed();
   };
@@ -3103,7 +3123,8 @@ function modelBox(address, info, draw, changed) {
     say(w.model_moving);
     try {
       const r = await api().model_place(address, moved());
-      say(w.model_moved, "ok");
+      const lost = notKeptSaid((r.model || {}).not_kept);   // (what of his it couldn't keep, said)
+      say(lost ? `${w.model_moved} ${lost}` : w.model_moved, lost ? "" : "ok");
       if (changed) changed();
       draw(r);
     } catch (err) { problem(err); move.disabled = false; }
@@ -3117,7 +3138,8 @@ function modelBox(address, info, draw, changed) {
     say(w.model_resizing);
     try {
       const r = await api().model_resize(address, s);
-      say(fill(w.model_resized, { size: sizeRound(s) }), "ok");
+      const lost = notKeptSaid((r.model || {}).not_kept);   // (what of his it couldn't keep, said)
+      say(fill(w.model_resized, { size: sizeRound(s) }) + (lost ? ` ${lost}` : ""), lost ? "" : "ok");
       if (changed) changed();
       draw(r);
     } catch (err) { problem(err); resize.disabled = false; }
@@ -3149,7 +3171,10 @@ function modelBox(address, info, draw, changed) {
       const r = await api().model_import(address, null, squad ? 1 : Number(size.value) || 1, false, null, true, true,
         own && !squad ? moved() : null);
       if (r.model) {  // (none: the file picker was closed)
-        say(fill(w.model_done, { file: r.model.file || "" }) + (r.copy_out ? ` ${copyOut}` : ""), "ok");
+        // (a new model brings its own animations: what of the modder's they took the place of is said)
+        const lost = notKeptSaid(r.model.not_kept);
+        say(fill(w.model_done, { file: r.model.file || "" }) + (r.copy_out ? ` ${copyOut}` : "") + (lost ? ` ${lost}` : ""),
+          lost ? "" : "ok");
         if (changed) changed();
       }
       draw(r);  // (its copy_out shows in the box below until the box is drawn again)
@@ -3198,7 +3223,8 @@ function modelBox(address, info, draw, changed) {
         try {
           const r = await api().model_blender_back(address, Number(size.value) || 1);
           if (r.model) {
-            say(kinds ? w.model_blender_done_kinds : w.model_blender_done, "ok");
+            const lost = notKeptSaid(r.model.not_kept);   // (what of his the model brought back took the place of)
+            say((kinds ? w.model_blender_done_kinds : w.model_blender_done) + (lost ? ` ${lost}` : ""), lost ? "" : "ok");
             if (changed) changed();
           }
           draw(r);

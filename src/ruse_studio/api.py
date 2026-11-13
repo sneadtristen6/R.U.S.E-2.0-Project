@@ -80,7 +80,7 @@ from .squadblender import SquadBlenderCalls
 from .decoyblender import DecoyBlenderCalls
 from .actions import ActionCalls
 from .modelfit import ModelFitCalls
-from .animmodel_calls import AnimModelCalls
+from .animmodel_calls import NOT_KEPT, AnimModelCalls
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -8351,12 +8351,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
                    own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None,
-                   out: Path | None = None) -> dict | None:
+                   out: Path | None = None, refit: bool = False) -> dict | None:
         """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
         through it): the model saved as the mod's files/models/<the unit's name>.glb (or a kind's of its soldiers,
         _kind_file; or one soldier's own look, `kind` his number), its record beside it; `out`: saved there instead
-        (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). Returns the
-        model's report, or None when no file was picked."""
+        (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). `refit`:
+        fitted again from the file it was made from (Resize, Move): what the modder made of its animations since stays
+        (AnimModelCalls._record_more). Returns the model's report, or None when no file was picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8408,6 +8409,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 target = target.with_name(f"{target.stem}@{kind}.glb")
         if out is not None:
             target = Path(out)
+        # (fitted again, the unit's own model on bones of its own: the bones it's on now, before they're written anew)
+        bones_before = self._bones_now(target) if refit and out is None and place is None \
+            and not (kinds and kind != main_kind) else None
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
@@ -8453,7 +8457,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
                         "the game. Import a model on the same bones for the riflemen too.")
         else:
-            more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {})
+            more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {},
+                                     refit=refit, bones_before=bones_before)
             if kinds:
                 more["for"] = kind
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
@@ -8577,7 +8582,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def model_resize(self, address: str, size: float) -> dict:
         """Fit a new unit's own model again at `size` from the file it was made from (no file to pick), the way it
         faced, whether it's a plane and how it was placed kept, a move too (a model fitted before there was own_turret or
-        own_propellers has none in its record, and stays as it was). Returns model_import()'s answer; an own copy of the
+        own_propellers has none in its record, and stays as it was). What the modder made of its animations since it
+        came in stays (an animation changed in RUSE Decoy, an action's pick: AnimModelCalls._record_more); what can't
+        be is named in the report's "not_kept", which the page says. Returns model_import()'s answer; an own copy of the
         unit's (a mod made with both, by an older Studio or by hand) stays: only a new import takes it out."""
         record = self._own_model_record(address)
         if record is None:
@@ -8590,10 +8597,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
         report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
-                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"))
+                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"),
+                                 refit=True)
         for k, r in others:
             self._fit_model(address, r["from"], size, bool(r.get("aircraft")), self._pinned_facing(r),
-                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k)
+                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k, refit=True)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     def model_place(self, address: str, move) -> dict:
@@ -8611,11 +8619,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
+        # (what the modder made of its animations since stays, as model_resize's)
         report = self._fit_model(address, file, float(record.get("size") or 1.0), bool(aircraft),
-                                 self._pinned_facing(record), True, True, move)
+                                 self._pinned_facing(record), True, True, move, refit=True)
         for k, r in others:
             self._fit_model(address, r["from"], float(r.get("size") or 1.0), bool(r.get("aircraft")),
-                            self._pinned_facing(r), True, True, move, k)
+                            self._pinned_facing(r), True, True, move, k, refit=True)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     @staticmethod
@@ -8659,7 +8668,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """Every new unit of the current mod with a model of its own, of `kind` ("air", "ground" or "all"), fitted
         again: `to` "game" (size 1, as long as the unit it copies), "real" (its real-life size; a unit the library
         gives none for is skipped) or "times" (its size now times `times`, kept within the importer's sizes). A job
-        the page follows; its lines are "resized<TAB>name<TAB>size" or "skipped<TAB>name<TAB>why"."""
+        the page follows; its lines are "resized<TAB>name<TAB>size" or "skipped<TAB>name<TAB>why", a resized one
+        followed by "not_kept<TAB>name<TAB>{"animations": [...], "picks": [...]}" (JSON) when something of the
+        modder's own on it couldn't be kept (model_resize's report), which the page says in words."""
         from rusemod.webui import Job
         if kind not in ("air", "ground", "all"):
             raise StudioError(f"{kind}: resize planes (air), ground units (ground) or all")
@@ -8692,8 +8703,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     else:
                         now = float((self._own_model_record(address) or {}).get("size") or 1.0)
                         size = min(MODEL_SIZES[1], max(MODEL_SIZES[0], now * times))
-                    self.model_resize(address, size)
+                    got = self.model_resize(address, size)
                     say(f"resized\t{name}\t{size:g}")
+                    lost = ((got.get("model") or {}) if isinstance(got, dict) else {}).get(NOT_KEPT)
+                    if lost:   # (what of the modder's own on it couldn't be kept: named, the page says it)
+                        say(f"not_kept\t{name}\t{json.dumps(lost)}")
                 except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
                     say(f"skipped\t{name}\t{exc}")
 
