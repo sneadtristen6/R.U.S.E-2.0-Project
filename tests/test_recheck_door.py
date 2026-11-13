@@ -3,8 +3,8 @@ fixer's round 1. Each test is a route to a fault of reviewer 4's (tests/test_rev
 (tests/test_fix_door.py) don't take, and each FAILS on cdd67623, by design, until that route is fixed too:
 
 - D-F1's class: a bone moved in Edit mode (its rest place) rewrites every animation, said only "Changed in Blender";
-- D-F2's class: the mod changed while Blender is open (RUSE Decoy's way back to the game's), and the next bring back
-  says every animation came back as it went out while the mod plays another run than Blender shows;
+- D-F2's class: the mod changed while Blender is open (a model on bones of its own imported again), and the next bring
+  back says every animation came back as it went out while the mod plays another run than Blender shows;
 - D-F3's class: an animation that only one half of the body plays by the build's rule (rusemod.animactions.choose),
   though its name has no t_ or b_, changed on the other half's bones with no word;
 - D-F5: a bone added and keyed is named now, but the answer still begins "Every animation came back as it went out.";
@@ -13,8 +13,9 @@ fixer's round 1. Each test is a route to a fault of reviewer 4's (tests/test_rev
 
 On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no game files), Blender's part played by
 test_animglb's stand-in (Blenderish) with what a real Blender sends for that edit. Real Blender 4.5 gave the same
-answers for the moved bone (scratch/animmodels/fix-door/recheck1/real_probe2.py, out/real_probe2.json)."""
+answers for the moved bone (scratch/animmodels/fix-door/recheck1/mine/rA_real_probe.py, mine/real_probe2.out.json)."""
 import json
+import re
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -25,8 +26,6 @@ from test_animglb import Blenderish
 from test_gltf_bones import NAME
 import test_review_decoy as rd     # (RealBlender's helper and BLENDER: imported by name, its test would run here too)
 from test_review_decoy import HEAD_TURN, SPINE_TURN, UNIT, Door, renamed, with_new_bone
-
-RUNS = (("GfxDescriptorBazooka", "t_tir"), ("GfxDescriptorFusilier", "b_course"))   # the actions that play the run
 
 
 def moved(raw: bytes, bone: str, by: tuple) -> bytes:
@@ -96,33 +95,37 @@ class Recheck(Door):
                       f"every animation rewritten with the head off its rest, not a word of it: {got['message']}")
 
     # --- D-F2's class ---
-    def test_an_own_clip_taken_out_while_blender_is_open_is_not_said_to_have_come_back_as_it_went(self):
-        """FAILS on cdd67623. Round one: the run changed in Blender and brought back (the unit's own now). Round two:
-        Change its animations in Blender again (the run goes out as the unit's own, changed); while Blender is open the
-        modder takes the run's own clip out in RUSE Decoy (back to the game's); Blender sends with the run untouched,
+    def test_a_model_imported_again_while_blender_is_open_is_not_said_to_have_come_back_as_it_went(self):
+        """FAILS on cdd67623. A model on bones of its own (the Horse Squad's kind). Round one: its run changed in Blender
+        and brought back. Round two: Change its animations in Blender again (the run goes out changed, as the mod has
+        it); while that Blender is open the model is imported again (Import model's store, rusemod.anim.set_animations,
+        as the fixer's own test of it: the animations as the file carries them); Blender sends with the run untouched,
         still showing the change. Bring my changes back says "Every animation came back as it went out." and the mod
-        plays the game's run: Blender shows one run, the game plays another, as D-F2. The fixer's own
-        test_a_change_taken_out_elsewhere_since_is_taken_in_again takes the same run in again when round one's
-        Blender sends it (its bring back wrote it): here only the round differs. The run must play as Blender shows it,
-        or the door must say it doesn't."""
+        plays the run as the file carries it: Blender shows one run, the game plays another (D-F2), and the door's own
+        rule for a model imported again while Blender was open (the module's note: nothing taken in, "and that is
+        said") is said only when an animation came back changed. The fixer's
+        test_a_model_animation_put_back_elsewhere_since_is_taken_in_again takes the run in again when the change was
+        brought back from the same opening: only the round differs. The run must play as Blender shows it, or the door
+        must say it doesn't (a refusal in words counts)."""
+        from ruse_studio.api import StudioError
+        files = self.own_bones_unit({"stand": CLIP_BYTES[STAND], "run": CLIP_BYTES[RUN]})
         start = self.open()
-        self.send.write_bytes(Blenderish(start).send(change=("Run (made_run)", "bip01 spine", SPINE_TURN)))
-        self.assertEqual(self.back()["changed"], ["Run (made_run)"])
-        changed = (self.mod / anim.OWN / UNIT / "blender_made_run.baf").read_bytes()
+        self.send.write_bytes(Blenderish(start).send(change=("run", "bip01 spine", SPINE_TURN)))
+        self.assertEqual(self.back()["changed"], ["run"])
+        changed = (self.mod / anim.OWN / UNIT / files["run"]).read_bytes()
         _res, start = self.reopen()
         went = json.loads((self.work / "animations.json").read_text(encoding="utf-8"))
-        self.assertIn("Run (blender_made_run)", [a["name"] for a in went["animations"]])
-        for fig, key in RUNS:
-            anim.remove_unit_clip(self.mod, UNIT, key, figure=fig)      # RUSE Decoy: back to the game's run
+        self.assertEqual(sorted(a["name"] for a in went["animations"]), ["run", "stand"])
+        anim.set_animations(self.mod, UNIT, {"stand": CLIP_BYTES[STAND], "run": CLIP_BYTES[RUN]})   # (imported again)
         self.send.write_bytes(Blenderish(start).send())                 # (the run untouched in Blender)
-        got = self.back()
-        if "blender_made_run" in got["message"]:
+        try:
+            got = self.back()
+        except StudioError:
+            return      # (refused in words: said)
+        if re.search(r"\brun\b", got["message"]):
             return      # (said)
-        figures = self.rows().get("figure") or {}
-        for fig, key in RUNS:
-            f = ((figures.get(fig) or {}).get("action") or {}).get(key)
-            self.assertTrue(f and (self.mod / anim.OWN / UNIT / f).read_bytes() == changed,
-                            f"{fig} {key} plays the game's run while Blender shows the changed one: {got['message']}")
+        self.assertEqual((self.mod / anim.OWN / UNIT / files["run"]).read_bytes(), changed,
+                         f"the run plays as the model's file carries it while Blender shows it changed: {got['message']}")
 
     # --- D-F3's class ---
     def test_an_animation_only_one_half_plays_is_warned_whatever_its_name(self):
