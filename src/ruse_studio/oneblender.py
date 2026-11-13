@@ -16,7 +16,8 @@ in, and remembers nothing else than one.json in the unit's Blender folder):
 - a unit that isn't a squad: its model (Change it in Blender's way, modelblender), its bones when it has them, its
   paint; the model unticked and the paint ticked: the paint alone (the Look box's way, the game's pictures);
 - a squad of soldiers on the game soldier's bones: its soldiers, each ticked or not (Change the squad in Blender's way,
-  squadblender: the ones ticked side by side), their bones, their paint;
+  squadblender: the ones ticked side by side), their paint (no Bones: they come back onto the game soldier's bones
+  whatever Blender did to them);
 - a squad on bones of its own (the Generic Horse): one of its kinds at a time (the riflemen with their horse, or the
   heavy-weapon soldier), as Change it in Blender opens them, never the whole squad side by side (five horses, each with
   every animation: ten minutes to open and the break above);
@@ -91,7 +92,10 @@ class OneBlenderCalls:
         if own is None:
             return out
         parts = [{"id": "model", "label": w["one_part_model"]}]
-        if squad or (own.is_file() and self._own_bones(address)):
+        # Its bones only for a model on bones of its own: a squad's soldiers on the game soldier's bones come back onto
+        # those bones whatever Blender did to them (walked with real Blender 2026-11-13, onewalk.py: a bone moved 5 cm,
+        # Its bones ticked and unticked, the mod's model the same byte for byte), so a tick there would change nothing
+        if self._own_bones(address):
             parts.append({"id": "bones", "label": w["one_part_bones"]})
         parts.append({"id": "paint", "label": w["one_part_paint"]})
         out["parts"] = parts
@@ -132,7 +136,8 @@ class OneBlenderCalls:
         else:
             kind = str(ticks.get("kind") or "") or None if parts["route"] == "kinds" else None
             got, door = self.model_blender(address, lang, kind), "model"
-        state = {"format": 1, "door": door, "kind": kind, "keep_bones": not ticks.get("bones", True),
+        bones = any(p["id"] == "bones" for p in parts["parts"])   # (a part this unit has: see blender_parts)
+        state = {"format": 1, "door": door, "kind": kind, "keep_bones": bones and not ticks.get("bones", True),
                  "keep_paint": not paint, "back": False,
                  # (the squad Blender's own session: Add a soldier opens that Blender too, without these ticks)
                  "session": self._squad_door(address)[1] if door == "squad" else None}

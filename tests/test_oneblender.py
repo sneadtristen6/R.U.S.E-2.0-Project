@@ -114,9 +114,24 @@ class OneButton(unittest.TestCase):
         parts = s.blender_parts(E + "Descriptor_Unit_My_Riflemen")
         self.assertEqual(parts["route"], "squad")
         self.assertEqual([x["id"] for x in parts["soldiers"]], ["1", "2", "3"])
-        s.blender_open(E + "Descriptor_Unit_My_Riflemen", {"model": True, "soldiers": ["1", "3"], "bones": False})
+        s.blender_open(E + "Descriptor_Unit_My_Riflemen", {"model": True, "soldiers": ["1", "3"], "paint": False})
         s.blender_back(E + "Descriptor_Unit_My_Riflemen")
-        self.assertEqual(s.calls, [("squad_blender", ["1", "3"]), ("squad_blender_back", True, False)])
+        self.assertEqual(s.calls, [("squad_blender", ["1", "3"]), ("squad_blender_back", False, True)])
+
+    def test_a_squad_on_the_game_soldiers_bones_has_no_bones_tick(self):
+        """Its soldiers come back onto the game soldier's bones whatever Blender did to them: walked with real Blender
+        2026-11-13 (onewalk.py), a bone moved 5 cm, Its bones ticked and unticked, the mod's model the same byte for
+        byte. So there's no Bones tick to untick, and an untick sent anyway keeps nothing."""
+        s = Stand(self.root, squad=True)
+        parts = s.blender_parts(E + "Descriptor_Unit_My_Riflemen")
+        self.assertEqual([p["id"] for p in parts["parts"]], ["model", "paint"])
+        s.blender_open(E + "Descriptor_Unit_My_Riflemen", {"model": True, "bones": False})
+        s.blender_back(E + "Descriptor_Unit_My_Riflemen")
+        self.assertEqual(s.calls[-1], ("squad_blender_back", False, False))
+        # (on bones of its own, the Generic Horse: Bones is there, and unticked it keeps them)
+        horse = Stand(self.root, squad=True, own_bones=True)
+        self.assertEqual([p["id"] for p in horse.blender_parts(E + "Descriptor_Unit_Generic_Horse")["parts"]],
+                         ["model", "bones", "paint"])
 
     def test_a_squad_on_bones_of_its_own_opens_one_model_never_the_whole_squad(self):
         """The Generic Horse through the squad's side-by-side Blender came back off the riflemen's bones, "that can stop
@@ -176,19 +191,19 @@ class OtherOpeners(unittest.TestCase):
 
     def test_add_a_soldier_after_the_one_button_comes_back_without_its_ticks(self):
         s = Stand(self.root, squad=True)
-        s.blender_open(self.SQUAD, {"model": True, "soldiers": ["1"], "bones": False, "paint": False})
+        s.blender_open(self.SQUAD, {"model": True, "soldiers": ["1"], "paint": False})
         s.blender_back(self.SQUAD)
         s.door = (True, "Add a soldier's session")   # (Blender closed; then Add a soldier opened it again)
         s.blender_back(self.SQUAD)
-        self.assertEqual(s.calls, [("squad_blender", ["1"]), ("squad_blender_back", True, True),
+        self.assertEqual(s.calls, [("squad_blender", ["1"]), ("squad_blender_back", False, True),
                                    ("squad_blender_back", False, False)])
 
     def test_the_same_blender_brought_back_twice_keeps_its_ticks(self):
         s = Stand(self.root, squad=True)
-        s.blender_open(self.SQUAD, {"model": True, "bones": False})
+        s.blender_open(self.SQUAD, {"model": True, "paint": False})
         s.blender_back(self.SQUAD)
         s.blender_back(self.SQUAD)   # (Blender still open: changed again, sent again)
-        self.assertEqual(s.calls[1:], [("squad_blender_back", True, False), ("squad_blender_back", True, False)])
+        self.assertEqual(s.calls[1:], [("squad_blender_back", False, True), ("squad_blender_back", False, True)])
 
     def test_add_a_soldier_beside_the_one_buttons_model_blender_comes_back_first(self):
         s = Stand(self.root, squad=True, own_bones=True)

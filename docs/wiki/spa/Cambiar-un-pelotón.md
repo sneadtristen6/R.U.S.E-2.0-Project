@@ -19,7 +19,7 @@ página se abre en su tarjeta.
 1. Pulsa **Abrir en Blender** en la tarjeta. Blender se abre con todos los soldados del pelotón uno al lado
    del otro. ¿Todavía no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al
    Studio dónde está.
-   ¿Solo una parte? Pulsa **Qué va a Blender** junto al botón y desmarca lo que debe quedar como está (un soldado, los huesos, la pintura); **Traer mis cambios** lo deja entonces como estaba. Al principio todo está marcado.
+   ¿Solo una parte? Pulsa **Qué va a Blender** junto al botón y desmarca lo que debe quedar como está; **Traer mis cambios** lo deja entonces como estaba. Al principio todo está marcado.
 2. Cambia el soldado que quieras: su forma, sus colores, su equipo. Cada soldado tiene su propia copia de sus imágenes:
    pintar uno solo lo cambia a él.
 3. Tu propio casco, mochila o bazuca en un solo soldado: tráelo con **File > Import**, pónselo, haz clic en él,

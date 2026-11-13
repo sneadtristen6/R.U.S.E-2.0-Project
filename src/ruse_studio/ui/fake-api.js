@@ -4085,9 +4085,11 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         const info = fakeSquad(address) ? fakeSquadOwn(address, lang) : null;
         const own = info ? info.own : mine().some((n) => address === newAddress(n.id));
         const w = words[lang] || words.us;
-        const parts = [{ id: "model", label: w.one_part_model || "Its model" }, ...(info
-          ? [{ id: "bones", label: w.one_part_bones || "Its bones" }] : []), { id: "paint", label: w.one_part_paint || "Its paint" }];
         const horse = mode === "horse" && info;
+        // (Its bones only on bones of its own, the Generic Horse's: a squad on the game soldier's bones comes back on
+        // them whatever Blender did, so the Studio gives it no Bones tick)
+        const parts = [{ id: "model", label: w.one_part_model || "Its model" }, ...(horse
+          ? [{ id: "bones", label: w.one_part_bones || "Its bones" }] : []), { id: "paint", label: w.one_part_paint || "Its paint" }];
         return { route: info ? (horse ? "kinds" : "squad") : "model", parts: own ? parts : [], can: own,
           why_not: own ? null : (w.one_why_game || "One of the game's own units: copy it first, then open the copy in Blender."),
           soldiers: info && !horse ? info.soldiers.map((s) => ({ id: s.id, label: `${s.label} ${s.number}` })) : [],

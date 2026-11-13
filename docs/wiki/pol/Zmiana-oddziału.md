@@ -18,7 +18,7 @@ karcie **Nowa jednostka z tej…**, nadaj oddziałowi nazwę i kliknij **Utwórz
 1. Kliknij na karcie **Otwórz w Blenderze**. Blender otworzy się ze wszystkimi żołnierzami oddziału obok siebie.
    Nie masz jeszcze Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie
    jest.
-   Tylko część? Kliknij **Co trafia do Blendera** obok przycisku i odznacz to, co ma zostać bez zmian (żołnierza, kości, malowanie); **Przenieś moje zmiany** zostawi to wtedy takie, jakie było. Na początku wszystko jest zaznaczone.
+   Tylko część? Kliknij **Co trafia do Blendera** obok przycisku i odznacz to, co ma zostać bez zmian; **Przenieś moje zmiany** zostawi to wtedy takie, jakie było. Na początku wszystko jest zaznaczone.
 2. Zmień, którego chcesz: kształt, kolory, wyposażenie. Każdy żołnierz ma własną kopię swoich obrazków: malując jednego,
    zmieniasz tylko jego.
 3. Własny hełm, plecak albo bazooka na jednym żołnierzu: wczytaj je przez **File > Import**, załóż na niego, kliknij je,

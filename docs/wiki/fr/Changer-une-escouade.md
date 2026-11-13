@@ -18,7 +18,7 @@ cliquez sur **Créer**. Sa page s'ouvre sur sa carte.
 
 1. Cliquez sur **Ouvrir dans Blender** sur la carte. Blender s'ouvre avec tous les soldats de l'escouade côte
    à côte. Pas encore Blender ? **Obtenir Blender (gratuit)** l'installe ; **Choisir Blender…** montre au Studio où il est.
-   Seulement une partie ? Cliquez sur **Ce qui va dans Blender** à côté du bouton et décochez ce qui doit rester tel quel (un soldat, les os, la peinture) ; **Ramener mes changements** le laisse alors comme il était. Tout est coché au départ.
+   Seulement une partie ? Cliquez sur **Ce qui va dans Blender** à côté du bouton et décochez ce qui doit rester tel quel ; **Ramener mes changements** le laisse alors comme il était. Tout est coché au départ.
 2. Changez le soldat que vous voulez : sa forme, ses couleurs, son équipement. Chaque soldat a sa propre copie de ses
    images : en peindre un ne change que lui.
 3. Votre propre casque, sac ou bazooka sur un seul soldat : importez-le avec **File > Import**, posez-le sur lui, cliquez

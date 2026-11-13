@@ -19,7 +19,7 @@ bei seiner Karte.
 1. Klicke auf der Karte auf **In Blender öffnen**. Blender öffnet sich mit allen Soldaten des Trupps
    nebeneinander. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio,
    wo es ist.
-   Nur einen Teil? Klicke neben dem Knopf auf **Was nach Blender geht** und nimm das Kreuz bei dem weg, was so bleiben soll (ein Soldat, die Knochen, die Bemalung); **Meine Änderungen zurückholen** lässt es dann, wie es war. Am Anfang ist alles angekreuzt.
+   Nur einen Teil? Klicke neben dem Knopf auf **Was nach Blender geht** und nimm das Kreuz bei dem weg, was so bleiben soll; **Meine Änderungen zurückholen** lässt es dann, wie es war. Am Anfang ist alles angekreuzt.
 2. Ändere, wen du willst: seine Form, seine Farben, seine Ausrüstung. Jeder Soldat hat seine eigene Kopie seiner Bilder:
    Bemalst du einen, ändert sich nur er.
 3. Dein eigener Helm, Rucksack oder deine eigene Bazooka an einem Soldaten: hole sie mit **File > Import** herein, setze
