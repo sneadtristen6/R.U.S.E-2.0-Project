@@ -709,6 +709,44 @@ def bones_like(raw: bytes, model: bytes) -> tuple[bytes, str]:
     return pack_glb(doc, views), BONES_KEPT
 
 
+def _base_picture(doc: dict, views: list, material: dict) -> tuple | None:
+    """(the image number, its bytes, its type) a material's base colour picture is, when it is kept in the file; None
+    for a material with none, or one kept outside it."""
+    tex = ((material.get("pbrMetallicRoughness") or {}).get("baseColorTexture") or {}).get("index")
+    if tex is None or tex >= len(doc.get("textures", [])):
+        return None
+    src = doc["textures"][tex].get("source")
+    if src is None or src >= len(doc.get("images", [])) or "bufferView" not in doc["images"][src]:
+        return None
+    image = doc["images"][src]
+    return src, bytes(views[image["bufferView"]]), image.get("mimeType")
+
+
+def paint_like(raw: bytes, model: bytes) -> tuple[bytes, list]:
+    """A .glb sent from Blender (`raw`) with the base colour picture of each of its materials put back as it was in the
+    file that went out (`model`), matched by the material's name; the mesh, the bones and the animations as Blender sent
+    them. For the one Blender button's Paint unticked (the owner, 2026-11-13: what's unticked stays as it was). Returns
+    (the file, [the name of each material whose picture was put back]); a material new or renamed in Blender, or one
+    with no picture in the file, keeps what Blender wrote; a file that can't be read comes back as it is, with []."""
+    try:
+        doc, views = glb_views(raw)
+        went, went_views = glb_views(model)
+    except (ValueError, struct.error, OSError):
+        return raw, []
+    old = {m.get("name"): _base_picture(went, went_views, m) for m in went.get("materials", []) if m.get("name")}
+    put = []
+    for material in doc.get("materials", []):
+        mine, was = _base_picture(doc, views, material), old.get(material.get("name"))
+        if mine is None or was is None or mine[1] == was[1]:
+            continue
+        image = doc["images"][mine[0]]
+        image["bufferView"] = add_view(doc, views, was[1])
+        if was[2]:
+            image["mimeType"] = was[2]
+        put.append(material.get("name"))
+    return (pack_glb(doc, views) if put else raw), put
+
+
 ALPHA_BACK, ALPHA_NONE, ALPHA_GONE = "back", "none", "gone"   # with_alpha's word on each material
 
 

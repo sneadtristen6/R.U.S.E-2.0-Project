@@ -767,5 +767,50 @@ class BonesKept(unittest.TestCase):
         self.assertEqual(gltf.bones_like(b"not a model", went), (b"not a model", gltf.BONES_UNREAD))
 
 
+def painted(pictures: dict) -> bytes:
+    """A .glb of one triangle with a material per `pictures` {its name: its base colour picture's bytes}, each picture
+    kept in the file."""
+    import struct as st
+    doc = {"asset": {"version": "2.0"}, "nodes": [{"name": "mesh", "mesh": 0}], "scenes": [{"nodes": [0]}], "scene": 0,
+           "accessors": [], "bufferViews": [], "materials": [], "textures": [], "images": []}
+    views = []
+    pos = gltf.add_view(doc, views, st.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0))
+    doc["accessors"].append({"bufferView": pos, "componentType": 5126, "count": 3, "type": "VEC3"})
+    prims = []
+    for name, data in pictures.items():
+        doc["images"].append({"bufferView": gltf.add_view(doc, views, data), "mimeType": "image/png"})
+        doc["textures"].append({"source": len(doc["images"]) - 1})
+        doc["materials"].append({"name": name, "pbrMetallicRoughness": {
+            "baseColorTexture": {"index": len(doc["textures"]) - 1}}})
+        prims.append({"attributes": {"POSITION": 0}, "material": len(doc["materials"]) - 1})
+    doc["meshes"] = [{"primitives": prims}]
+    return gltf.pack_glb(doc, views)
+
+
+class PaintKept(unittest.TestCase):
+    """The one Blender button's Paint unticked: gltf.paint_like puts each material's picture back as it went out, by the
+    material's name; the rest as Blender sent it."""
+
+    def picture(self, raw: bytes, name: str) -> bytes:
+        doc, views = gltf.glb_views(raw)
+        material = next(m for m in doc["materials"] if m["name"] == name)
+        return gltf._base_picture(doc, views, material)[1]
+
+    def test_a_picture_painted_in_blender_goes_back_as_it_went_out(self):
+        went = painted({"body": b"old body", "tracks": b"old tracks"})
+        sent = painted({"body": b"new paint", "tracks": b"old tracks"})
+        got, put = gltf.paint_like(sent, went)
+        self.assertEqual(put, ["body"])
+        self.assertEqual(self.picture(got, "body"), b"old body")
+        self.assertEqual(self.picture(got, "tracks"), b"old tracks")
+
+    def test_a_material_new_or_renamed_in_blender_keeps_what_blender_wrote(self):
+        went = painted({"body": b"old body"})
+        sent = painted({"body": b"old body", "saddle_leather": b"leather"})
+        got, put = gltf.paint_like(sent, went)
+        self.assertEqual((got, put), (sent, []))
+        self.assertEqual(gltf.paint_like(b"not a model", went), (b"not a model", []))
+
+
 if __name__ == "__main__":
     unittest.main()
