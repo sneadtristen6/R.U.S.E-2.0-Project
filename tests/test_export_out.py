@@ -82,6 +82,21 @@ MODDER_TEXTS = ("/var/home/jane/Models/tank.glb", "/Volumes/Jane Drive/models/ta
                 "\\\\?\\C:\\Users\\jane\\x.glb", "Plan B:/C", "Hold sector A:\\ then B", "Phase 1: Take bridge X:/Y",
                 "%USERPROFILE%\\Documents\\tank.glb", "C:\\Users\\jane\\x.glb; then see the manual\\page 3",
                 "Made from C:\\models\\tank.glb, and docs\\turret.md tells how.", "https://example.org/x")
+# What each becomes in his README (the owner, 2026-11-13, to "A folder path in a modder's own README, in an exported
+# mod: cut it to the file name, or keep it with a warning?": "cut to file name"): only a path that names a folder is
+# cut, to the name after its last slash, every word around it as written; "Plan B:/C" and the like name no folder
+README_CUT = {"/var/home/jane/Models/tank.glb": "tank.glb", "/Volumes/Jane Drive/models/tank.glb": "tank.glb",
+              "/opt/models/tank.glb": "tank.glb", "/data/jane/models/tank.glb": "tank.glb",
+              "~/Models/tank.glb": "tank.glb", "made from `/home/jane/x.glb`": "made from `x.glb`",
+              "file:///home/jane/x.glb": "x.glb", "made from (/home/jane/x.glb)": "made from (x.glb)",
+              "file:///C:/Users/jane/x.glb": "x.glb", "\\\\?\\C:\\Users\\jane\\x.glb": "x.glb",
+              "Plan B:/C": "Plan B:/C", "Hold sector A:\\ then B": "Hold sector A:\\ then B",
+              "Phase 1: Take bridge X:/Y": "Phase 1: Take bridge X:/Y",
+              "%USERPROFILE%\\Documents\\tank.glb": "tank.glb",
+              "C:\\Users\\jane\\x.glb; then see the manual\\page 3": "x.glb; then see the manual\\page 3",
+              "Made from C:\\models\\tank.glb, and docs\\turret.md tells how.":
+                  "Made from tank.glb, and docs\\turret.md tells how.",
+              "https://example.org/x": "https://example.org/x"}
 
 
 class StudioPaths(unittest.TestCase):
@@ -108,6 +123,56 @@ class StudioPaths(unittest.TestCase):
         for text in ("coat.png", "textures/coat.png", "textures\\coat.png", "$/GFX/Everything/X",
                      "https://example.org/coat.png", "Plan B:/C", None):
             self.assertFalse(package.is_absolute(text), text)
+
+
+class HisReadme(unittest.TestCase):
+    """package.paths_cut, what Export does to his README (the owner, 2026-11-13: "cut to file name"): each path that
+    names a folder of a disk or a home loses its folders, the name after the last slash and every word around it stay.
+    Each answer is written out here by hand, never worked out by the code under test."""
+
+    def test_a_folder_path_is_cut_to_its_name_and_no_word_goes_with_it(self):
+        for text, want in (
+                ("Made from C:\\models\\tank.glb and docs\\turret.md", "Made from tank.glb and docs\\turret.md"),
+                ("Made on C:\\Users\\Jane Doe\\AppData\\Local\\RUSE Mod Platform\\mods\\cavalry by me.",
+                 "Made on cavalry by me."),
+                ("I keep them in /home/jane/mods and /home/jane/maps.", "I keep them in mods and maps."),
+                ("Put it in C:\\Mods\\MyMod\\ and play", "Put it in MyMod\\ and play"),
+                ("C:\\Program Files (x86)\\Steam\\steamapps\\common\\R.U.S.E\\ZZ_Win.dat", "ZZ_Win.dat"),
+                ("[my model](C:\\Users\\jane\\tank.glb)", "[my model](tank.glb)"),
+                ("see /home/jane/x.glb and/or /tmp", "see x.glb and/or /tmp"),
+                ("\\\\server\\share\\models\\tank.glb", "tank.glb"),
+                ("E:\\Mods & Models\\Jane's (2026)\\horse-squad-rifle.glb", "horse-squad-rifle.glb"),
+                ("C:\\Users\\jane\\My Tank.glb is mine", "My Tank.glb is mine"),
+                ("C:/Users/jane/x.glb", "x.glb"), ("path=C:\\Users\\jane\\x.glb", "path=x.glb"),
+                ("D:\\RUSE-2.0\\scratch\\x\\Boulder01.glb (far)", "Boulder01.glb (far)"),
+                ("C:\\Mods\\Version 2.0 Final\\tank.glb", "tank.glb"),
+                ("C:\\\\Users\\\\jane\\\\x.glb", "x.glb"), ("two: C:\\a\\b.glb, D:\\c\\d.glb.", "two: b.glb, d.glb."),
+                ("Made from C:\\models\\tank.glb, and docs\\turret.md tells how.",
+                 "Made from tank.glb, and docs\\turret.md tells how."),
+                ("*~/Models/tank.glb*", "*tank.glb*"), ("%APPDATA%\\x\\y.glb", "y.glb")):
+            self.assertEqual(package.paths_cut(text)[0], text if want is None else want, text)
+
+    def test_what_names_no_folder_stays(self):
+        for text in ("Join /r/ruse today", "C:\\tank.glb", "a\\b\\c and docs/x.md", "Plan B:/C",
+                     "Hold sector A:\\ then B", "Phase 1: Take bridge X:/Y", "https://example.org/a/b/c.glb",
+                     "By sneadtristen6: https://github.com/sneadtristen6/R.U.S.E-2.0-Project", "1/2/3", "and/or",
+                     "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger", "~/x.glb", "/opt/x.glb", ""):
+            self.assertEqual(package.paths_cut(text), (text, []), text)
+
+    def test_what_export_says_of_each_cut(self):
+        self.assertEqual(package.paths_cut("Made from C:\\models\\tank.glb, and more")[1],
+                         [("C:\\models\\tank.glb,", "tank.glb,")])
+        self.assertEqual(package.cut_shown("C:\\models\\tank.glb,", "tank.glb,"), "C:\\models\\tank.glb \u2192 tank.glb")
+        self.assertEqual(package.cut_shown("C:\\a\\x.glb)", "x.glb)"), "C:\\a\\x.glb \u2192 x.glb")
+        self.assertEqual(package.cut_shown("C:\\a\\tank (2).glb", "tank (2).glb"), "C:\\a\\tank (2).glb \u2192 tank (2).glb")
+
+    def test_which_files_are_his_readmes(self):
+        for name in ("README.md", "readme.txt", "files/docs/README", "src/README-fr.md", "maps/X/Readme_old.TXT",
+                     "README.en.md", "readme"):
+            self.assertTrue(package.is_readme(name), name)
+        for name in ("CHANGELOG.md", "LICENSE", "files/notes/readme.png", "files/readmefirst.md", "src/units.rndf",
+                     "README.glb", "notreadme.md", "text/units.csv"):
+            self.assertFalse(package.is_readme(name), name)
 
 
 class Packing(unittest.TestCase):
@@ -222,10 +287,12 @@ class Packing(unittest.TestCase):
         raw = got["files/assets/Boulder01/Boulder01_far.glb"]
         self.assertEqual(struct.unpack_from("<I", raw, 8)[0], len(raw))
 
-    def test_only_what_the_studio_wrote_changes_and_the_modder_s_words_go_out_as_written(self):
-        """The Studio's record and scenery model name only their files; the modder's own texts (a README, a TOML of
-        his, a .rndf, a .csv) go out byte for byte, even naming a folder of his PC, and pack says which name his home
-        folder. (Round 1 cut paths out of every text, and with them his words: the export recheck's F2.)"""
+    def test_only_what_the_studio_wrote_and_his_readme_s_folders_change_his_other_words_go_out_as_written(self):
+        """The Studio's record and scenery model name only their files; his README goes out with the folder path in it
+        cut to its own name (the owner, 2026-11-13: "cut to file name"), every other byte as he wrote it; his other
+        texts (a TOML of his, a .rndf, a .csv) go out byte for byte, even naming a folder of his PC ("yes only warn"),
+        and pack says which name his home folder. (Round 1 cut paths out of every text, and with them his words: the
+        export recheck's F2.)"""
         self.write("files/models/Descriptor_Unit_X.json", json.dumps({"from": "D:/models/x.glb"}))
         doubled = PC.replace("\\", "\\\\")                   # (a TOML string writes each backslash twice)
         self.write("files/notes/made.toml", f'# made from {PC}\\x.blend\n[x]\nfile = "{doubled}\\\\x.glb"\n')
@@ -233,22 +300,30 @@ class Packing(unittest.TestCase):
         self.write("src/units.rndf", f"// made from {PC}\\x.blend; Plan B:/C\npatch $/B ( ProductionPrice *= 0.5 )\n")
         self.write("text/units.csv", f"key,us\nk1,Made from C:\\models\\tank.glb and docs\\turret.md\n")
         self.write("files/assets/A/A.glb", glb_naming("/home/jane/models/a.gltf"))
-        cleaned, kinds, home_in = [], {}, []
-        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC)
-        self.assertEqual(kinds, {"files/assets/A/A.glb": "model", "files/models/Descriptor_Unit_X.json": "record"})
-        self.assertEqual(sorted(cleaned), ["files/assets/A/A.glb", "files/models/Descriptor_Unit_X.json"])
-        self.assertEqual(sorted(home_in), ["README.md", "files/notes/made.toml", "src/units.rndf"])
+        cleaned, kinds, home_in, cuts = [], {}, [], {}
+        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC,
+                           cuts=cuts)
+        self.assertEqual(kinds, {"files/assets/A/A.glb": "model", "files/models/Descriptor_Unit_X.json": "record",
+                                 "README.md": "readme"})
+        self.assertEqual(sorted(cleaned), ["README.md", "files/assets/A/A.glb", "files/models/Descriptor_Unit_X.json"])
+        self.assertEqual(sorted(home_in), ["files/notes/made.toml", "src/units.rndf"])
+        self.assertEqual(cuts, {"README.md": [(f"{PC}\\mods\\cavalry", "cavalry")]})
         got = members(out)
-        for rel in ("README.md", "files/notes/made.toml", "src/units.rndf", "text/units.csv", "mod.toml"):
+        self.assertEqual(got["README.md"], self.text("README.md").replace(f"{PC}\\mods\\".encode(), b""))
+        self.assertEqual(got["README.md"].replace(b"\r\n", b"\n"), b"Made on cavalry by sneadtristen6.\n")
+        self.assertIn(f"{PC}\\mods\\cavalry".encode(), self.text("README.md"))   # (his own README as he wrote it)
+        for rel in ("files/notes/made.toml", "src/units.rndf", "text/units.csv", "mod.toml"):
             self.assertEqual(got[rel], self.text(rel), rel)
         self.assertEqual(json.loads(got["files/models/Descriptor_Unit_X.json"]), {"from": "x.glb"})
         doc, _binary = glb_document(got["files/assets/A/A.glb"])
         self.assertEqual((doc["meshes"][0]["name"], doc["asset"]["extras"]["rusemod_version"]), ("a.gltf", "a.gltf"))
         self.assertEqual(package.check(out)["id"], "cavalry")
 
-    def test_every_text_the_recheck_tried_goes_out_byte_for_byte(self):
-        """Each text of the recheck's probe, in each kind of text a modder writes (README.md, mod.toml's description,
-        a .rndf comment, a .csv text, CHANGELOG.md, the era credits): the member is the file, byte for byte."""
+    def test_every_text_the_recheck_tried_goes_out_as_written_but_his_readme_s_folder_paths(self):
+        """Each text of the recheck's probe, in each kind of text a modder writes (mod.toml's description, a .rndf
+        comment, a .csv text, CHANGELOG.md, the era credits): the member is the file, byte for byte (the owner,
+        2026-11-13, "yes only warn"). In his README each folder path is cut to its own name and nothing else changes
+        ("cut to file name"): README_CUT says what each text becomes, written out here, not worked out by the code."""
         texts = "\n".join(MODDER_TEXTS)
         self.write("README.md", texts + "\n")
         self.write("CHANGELOG.md", texts.encode("utf-8").replace(b"\n", b"\r\n"))
@@ -262,10 +337,51 @@ class Packing(unittest.TestCase):
         self.assertIn("Plan B:/C", tomllib.loads(manifest.read_text(encoding="utf-8"))["mod"]["description"])
         cleaned = []
         out = package.pack(self.mod, self.root / "out", cleaned=cleaned)
-        self.assertEqual(cleaned, [])
+        self.assertEqual(cleaned, ["README.md"])
         got = members(out)
-        for rel in ("README.md", "CHANGELOG.md", era_units.CREDITS, "src/units.rndf", "text/units.csv", "mod.toml"):
+        for rel in ("CHANGELOG.md", era_units.CREDITS, "src/units.rndf", "text/units.csv", "mod.toml"):
             self.assertEqual(got[rel], self.text(rel), rel)
+        want = self.root / "want-README.md"            # (written as `write` writes a text: the PC's own line ends)
+        want.write_text("\n".join(README_CUT[t] for t in MODDER_TEXTS) + "\n", encoding="utf-8")
+        self.assertEqual(got["README.md"].decode("utf-8").splitlines(), want.read_text(encoding="utf-8").splitlines())
+        self.assertEqual(got["README.md"], want.read_bytes())
+
+    def test_every_readme_of_his_is_cut_and_no_other_text(self):
+        """The class of his READMEs (package.is_readme): README.md at the top and any README of his in the mod's
+        folders (readme.txt, README with no ending, README-fr.md), each folder path cut to its own name, his line
+        ends and a UTF-8 mark at the start kept; the same path in CHANGELOG.md, LICENSE, a note of his or a picture
+        called readme goes out byte for byte; a README that isn't UTF-8 goes out as written and is named when it names
+        his home folder; a README with no folder path in it goes out byte for byte."""
+        line = f"Made from {PC}\\models\\tank.glb, and docs\\turret.md tells how."
+        cut = "Made from tank.glb, and docs\\turret.md tells how."
+        readmes = {"README.md": (line + "\r\n").encode("utf-8"),
+                   "files/notes/readme.txt": ("﻿" + line + "\n").encode("utf-8"),
+                   "files/docs/README": (line + "\n").encode("utf-8"),
+                   "src/README-fr.md": ("Fait depuis /home/jane/mods/tank.glb.\n").encode("utf-8")}
+        for rel, data in readmes.items():
+            self.write(rel, data)
+        others = {"CHANGELOG.md": (line + "\n").encode("utf-8"), "LICENSE": (line + "\n").encode("utf-8"),
+                  "files/notes/made.md": (line + "\n").encode("utf-8"), "files/notes/readme.png": b"\x89PNG " + line.encode(),
+                  "files/latin/README.TXT": f"Fait sur {PC}\\x\\\xe9t\xe9.glb\n".encode("cp1252"),
+                  "files/plain/README.md": b"Nothing here names a folder: docs\\turret.md, and/or /r/ruse.\n"}
+        for rel, data in others.items():
+            self.write(rel, data)
+        cleaned, kinds, home_in, cuts = [], {}, [], {}
+        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC,
+                           cuts=cuts)
+        got = members(out)
+        self.assertEqual(got["README.md"], (cut + "\r\n").encode("utf-8"))
+        self.assertEqual(got["files/notes/readme.txt"], ("﻿" + cut + "\n").encode("utf-8"))
+        self.assertEqual(got["files/docs/README"], (cut + "\n").encode("utf-8"))
+        self.assertEqual(got["src/README-fr.md"], "Fait depuis tank.glb.\n".encode("utf-8"))
+        for rel, data in others.items():
+            self.assertEqual(got[rel], data, rel)
+        self.assertEqual(sorted(cleaned), sorted(readmes))
+        self.assertEqual({k for k, v in kinds.items() if v == "readme"}, set(readmes))
+        self.assertEqual(cuts["src/README-fr.md"], [("/home/jane/mods/tank.glb.", "tank.glb.")])
+        self.assertEqual(sorted(home_in), ["CHANGELOG.md", "LICENSE", "files/latin/README.TXT", "files/notes/made.md"])
+        for rel in readmes:                                  # (his own files as he wrote them)
+            self.assertEqual(self.text(rel), readmes[rel], rel)
 
     def test_a_record_from_any_system_names_only_its_file(self):
         """F1 of the export recheck, as a class: the record's "from" is the file's own name wherever the folder was
@@ -400,9 +516,11 @@ class OnTheMadeUpGame(WithMod):
         self.assertEqual((library / era_units.INDEX).read_bytes(), got[era_units.INDEX])
         self.assertEqual((library / era_units.CREDITS).read_bytes(), got[era_units.CREDITS])
 
-    def test_his_own_words_go_out_as_written_and_the_export_says_which_name_his_home(self):
-        """A README and a description of his naming folders of his PC (his home among them): Export changes none of
-        it, and says which files name his home folder, in his language."""
+    def test_his_readme_s_folders_go_his_description_goes_out_as_written_and_the_export_says_both(self):
+        """A README and a description of his naming folders of his PC (his home among them): Export cuts the README's
+        folder path to its file's name (the owner, 2026-11-13: "cut to file name") and says so, his README in the mod
+        as he wrote it; the description goes out as written ("yes only warn"), and Export says it names his home
+        folder; both lines in his language."""
         folder = Path(self.api.new_mod("Shared")["current"])
         readme = f"Made from {PC}\\models\\tank.glb, and docs\\turret.md tells how.\nPlan B:/C\n"
         (folder / "README.md").write_bytes(readme.encode("utf-8"))
@@ -411,17 +529,26 @@ class OnTheMadeUpGame(WithMod):
             view = finished(self.api, self.api.export_mod("1.0.0", "a modder", f"Plan B:/C from {PC}\\x.glb")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         got = members(Path(view["result"]["path"]))
-        self.assertEqual(got["README.md"], readme.encode("utf-8"))
+        self.assertEqual(got["README.md"], b"Made from tank.glb, and docs\\turret.md tells how.\nPlan B:/C\n")
+        self.assertEqual((folder / "README.md").read_bytes(), readme.encode("utf-8"))   # (his own, as he wrote it)
         self.assertEqual(got["mod.toml"], (folder / "mod.toml").read_bytes())
         self.assertIn(f"Plan B:/C from {PC}\\x.glb", tomllib.loads(got["mod.toml"].decode("utf-8"))["mod"]
                       .get("description", ""))
         said = [ln for ln in view["lines"] if ln.startswith("These files of the mod name your PC's home folder")]
         self.assertEqual(said, [f"These files of the mod name your PC's home folder ({PC}) and go out as they are, "
                                 "since Export never changes what you wrote: change them in the mod if that shouldn't "
-                                "be shared: mod.toml, README.md."])
-        self.assertFalse([ln for ln in view["lines"] if ln.startswith("In the exported file,")])
+                                "be shared: mod.toml."])
+        cut = [ln for ln in view["lines"] if ln.startswith("In the exported file,")]
+        self.assertEqual(cut, ["In the exported file, each folder path in these README files of yours is cut to its "
+                               "own name, every other word as you wrote it; the files in your mod stay as they are: "
+                               f"README.md ({PC}\\models\\tank.glb \u2192 tank.glb)."])
         self.api.set_pref("lang", "ger")
-        self.assertEqual(len([ln for ln in self.api.job(view["id"])["lines"] if "Benutzerordner" in ln]), 1)
+        lines = self.api.job(view["id"])["lines"]
+        self.assertEqual(len([ln for ln in lines if "Benutzerordner" in ln]), 1)
+        self.assertEqual([ln for ln in lines if ln.startswith("In der exportierten Datei ist jeder Ordnerpfad")],
+                         ["In der exportierten Datei ist jeder Ordnerpfad in diesen README-Dateien von Ihnen auf seinen "
+                          "eigenen Namen gekürzt, jedes andere Wort so, wie Sie es geschrieben haben; die Dateien in "
+                          f"Ihrem Mod bleiben, wie sie sind: README.md ({PC}\\models\\tank.glb \u2192 tank.glb)."])
 
     def test_another_player_s_studio_knows_its_era_units_are_in_the_mod(self):
         _folder, _record, export, _view = self.exported()

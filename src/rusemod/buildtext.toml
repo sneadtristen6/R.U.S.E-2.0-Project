@@ -3232,3 +3232,17 @@ cz = "Napasované modely: {0}, přeskočené: {1}."
 jpn = "{0} 個のモデルを合わせ直し、{1} 個を飛ばしました。"
 sc = "已适配 {0} 个模型，跳过 {1} 个。"
 fa = "{0} مدل جا انداخته شد، {1} مدل رد شد."
+# Export's line for a modder's README whose folder paths were cut to their names (the owner, 2026-11-13, question A:
+# "cut to file name"; rusemod.package.readme_paths_out)
+[e0db0b3035c]
+us = "In the exported file, each folder path in these README files of yours is cut to its own name, every other word as you wrote it; the files in your mod stay as they are: {0}."
+fr = "Dans le fichier exporté, chaque chemin de dossier de ces fichiers README à vous est réduit à son propre nom, tous les autres mots tels que vous les avez écrits ; les fichiers de votre mod restent tels quels : {0}."
+ger = "In der exportierten Datei ist jeder Ordnerpfad in diesen README-Dateien von Ihnen auf seinen eigenen Namen gekürzt, jedes andere Wort so, wie Sie es geschrieben haben; die Dateien in Ihrem Mod bleiben, wie sie sind: {0}."
+ita = "Nel file esportato, ogni percorso di cartella in questi tuoi file README è ridotto al suo solo nome, ogni altra parola come l'hai scritta; i file nella tua mod restano come sono: {0}."
+spa = "En el archivo exportado, cada ruta de carpeta de estos archivos README tuyos queda reducida a su propio nombre, cada otra palabra tal como la escribiste; los archivos de tu mod se quedan como están: {0}."
+pol = "W wyeksportowanym pliku każda ścieżka folderu w tych twoich plikach README jest skrócona do samej nazwy, każde inne słowo tak, jak je napisałeś; pliki w twoim modzie zostają bez zmian: {0}."
+ru = "В экспортированном файле каждый путь к папке в этих ваших файлах README сокращён до одного имени, все остальные слова такие, как вы их написали; файлы в вашем моде остаются как есть: {0}."
+cz = "V exportovaném souboru je každá cesta ke složce v těchto vašich souborech README zkrácena na samotné jméno, každé jiné slovo tak, jak jste ho napsali; soubory ve vašem modu zůstávají tak, jak jsou: {0}."
+jpn = "エクスポートしたファイルでは、あなたのこれらの README ファイルにあるフォルダーのパスをそれぞれ名前だけにしました。ほかの言葉は書いたとおりです。Mod の中のファイルはそのままです：{0}。"
+sc = "在导出的文件里，你的这些 README 文件中的每个文件夹路径都只留下它自己的名字，其他字句都和你写的一样；模组里的文件保持原样：{0}。"
+fa = "در فایل خروجی، هر مسیر پوشه در این فایل‌های README شما به نام خودش کوتاه شده است و هر کلمهٔ دیگر همان‌طور است که نوشتید؛ فایل‌های داخل ماد شما همان‌طور که هستند می‌مانند: {0}."
