@@ -493,7 +493,7 @@ class ThePage(unittest.TestCase):
         api = StudioApi(game_dir=root / "R.U.S.E", home=root / "home")
         api._mod_dir = lambda: self.mod
         api._own_model_file = lambda address: self.glb
-        unit = NewUnit(E + UNIT, E + "Descriptor_Unit_Soldat", "Horse Squad")
+        unit = NewUnit(E + UNIT, E + "Descriptor_Unit_Soldat", "Generic Horse")
         api._edits = lambda: SimpleNamespace(new_unit_of=lambda address: unit)
         db = index_of_squad()
         api._open = lambda: SimpleNamespace(db=db, close=lambda: None)
@@ -562,7 +562,7 @@ class ThePage(unittest.TestCase):
         self.assertEqual(self.api.model_fit(E + UNIT)["skeleton"], None)
 
 
-@unittest.skipUnless(HORSE_GLB, "RUSE_HORSE_GLB names the 2026-11-09 Horse Squad's .glb")
+@unittest.skipUnless(HORSE_GLB, "RUSE_HORSE_GLB names the 2026-11-09 Generic Horse's .glb")
 class TheHorseSquad(unittest.TestCase):
     def test_its_split_and_its_own_animations(self):
         from rusemod import unitmodel

@@ -540,7 +540,7 @@ class HeldOnTheGame(unittest.TestCase):
         self.api = StudioApi(index_path=INDEX, game_dir=GAME, home=self.home, instances=self.home / "copies")
         self.mod = Path(self.api.new_mod("Held")["current"])
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}):
-            view = finished(self.api, self.api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         self.address = view["result"]["address"]
         self.tail = self.address.rsplit("/", 1)[-1]

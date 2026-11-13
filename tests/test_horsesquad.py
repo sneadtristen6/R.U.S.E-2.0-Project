@@ -147,7 +147,7 @@ class TheSkeleton(unittest.TestCase):
             hs._combined(record(HORSE), record(RIDER + [("bip01 prop", -1, (0, 0, 0))]))
 
     def test_a_horse_bone_on_a_left_out_one_is_refused_in_words(self):
-        with self.assertRaisesRegex(hs.HorseSquadError, "isn't built as the Horse Squad expects"):
+        with self.assertRaisesRegex(hs.HorseSquadError, "isn't built as the Generic Horse expects"):
             hs._combined(record(HORSE + [("bip01 saddle", 5, (0, 0, 1))]), record(RIDER))
 
     def test_a_record_past_64_bones_is_refused(self):

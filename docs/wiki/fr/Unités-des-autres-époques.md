@@ -77,9 +77,9 @@ passe :
 Une unité restée recherchée depuis une unité disparue le dit dans sa case **Amélioration et recherche** et dans la barre
 de vérification, et la construction s'arrête dessus jusqu'à ce que vous choisissiez une autre unité, ou aucune.
 
-## L'Escouade à cheval
+## L'Escouade à cheval générique
 
-**39-45+** propose aussi l'**Escouade à cheval**, créée par sneadtristen6 : des fusiliers et un soldat à l'arme lourde,
+**39-45+** propose aussi l'**Escouade à cheval générique**, créée par sneadtristen6 : des fusiliers et un soldat à l'arme lourde,
 chacun sur son propre cheval. Rien n'en est téléchargé : elle est là, que vous ayez téléchargé ou non les unités 39-45+.
 Comme les unités d'époque, elle n'est dans votre mod que si vous l'ajoutez.
 
@@ -99,7 +99,7 @@ Son créateur, sneadtristen6, est crédité dans le `CREDITS-era-units.md` de vo
 d'époque.
 
 Vu en jeu : ces cavaliers sur leurs chevaux, faits avec **Importer un modèle…** sur une copie de l'escouade G.I. Pas
-encore essayé en jeu : l'Escouade à cheval ajoutée depuis cette liste.
+encore essayé en jeu : l'Escouade à cheval générique ajoutée depuis cette liste.
 
 ## Crédits
 

@@ -161,7 +161,7 @@ class TheAddsRoom(WithMod):
         self.heavy.write_bytes(b"glb heavy")
         self.folder = Path(self.api.new_mod("Room")["current"])
 
-    def add(self, longest, name="Horse Squad"):
+    def add(self, longest, name="Generic Horse"):
         """horse_squad_add with a stand-in builder whose longest path in `out` is `longest(out)`: (the job's view, or
         the StudioError it was refused with; the builder's calls)."""
         asked = []
@@ -185,7 +185,7 @@ class TheAddsRoom(WithMod):
         said, asked = self.add(lambda out: horse_squad.PATH_MOST + 3)
         self.assertIsInstance(said, StudioError)
         self.assertEqual(str(said), (
-            f"The Horse Squad can't be added: the folder the Studio keeps its own files in ({self.home}) is too deep "
+            f"The Generic Horse can't be added: the folder the Studio keeps its own files in ({self.home}) is too deep "
             f"for it. Adding it would write a file whose path is 3 character(s) longer than Windows takes "
             f"({horse_squad.PATH_MOST} at most). Move it to a folder with a shorter path, and set the Windows "
             f"environment variable RUSE_PLATFORM_HOME to that folder, then add it again."))
@@ -215,7 +215,7 @@ class TheAddsRoom(WithMod):
         said, asked = self.add(lambda out: 10, name="H" * (room + 1))
         self.assertIsInstance(said, StudioError)
         self.assertEqual(str(said), (
-            f"The Horse Squad can't be added: your mod's folder ({self.folder}) is too deep for it. Adding it would "
+            f"The Generic Horse can't be added: your mod's folder ({self.folder}) is too deep for it. Adding it would "
             f"write a file whose path is 1 character(s) longer than Windows takes ({horse_squad.PATH_MOST} at most). "
             f"Give it a shorter name in the form, or put the mod in a folder with a shorter path, then add it again."))
         self.assertEqual((asked, self.tree()), ([], before))
@@ -246,16 +246,16 @@ class AFileTooLongAfterAll(unittest.TestCase):
         with mock.patch.object(horse_squad, "long_paths_on", lambda: False):
             said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(long)), folder)
             self.assertEqual(str(said), (
-                f"The Horse Squad couldn't be added: {long} is {len(str(long)) - horse_squad.PATH_MOST} character(s) "
+                f"The Generic Horse couldn't be added: {long} is {len(str(long)) - horse_squad.PATH_MOST} character(s) "
                 f"longer than Windows takes in a path ({horse_squad.PATH_MOST} at most). Put the folder it is in "
                 f"somewhere with a shorter path, then add it again."))
             self.assertIn("dépasse", errortext.worded(str(said), "fr"))
             short = Path("D:/m/horse_squad/horse-squad-rifle.glb")
             said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(short)), folder)
-            self.assertEqual(str(said), f"The Horse Squad couldn't be added: {short} isn't there.")
+            self.assertEqual(str(said), f"The Generic Horse couldn't be added: {short} isn't there.")
         with mock.patch.object(horse_squad, "long_paths_on", lambda: True):
             said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(long)), folder)
-            self.assertEqual(str(said), f"The Horse Squad couldn't be added: {long} isn't there.")
+            self.assertEqual(str(said), f"The Generic Horse couldn't be added: {long} isn't there.")
 
 
 class TheBuildersNames(unittest.TestCase):
@@ -301,7 +301,7 @@ class TheModsSide(unittest.TestCase):
             api = StudioApi(index_path=INDEX, game_dir=GAME, home=home, instances=home / "copies")
             mod = Path(api.new_mod("Room")["current"])
             with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}):
-                view = finished(api, api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+                view = finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
             self.assertEqual(view["state"], "done", view.get("message"))
             tail = view["result"]["address"].rsplit("/", 1)[-1]
             sum_ = len(str(Path(mod, *horse_squad.OWN_CLIPS, tail, "x" * horse_squad.CLIP_LONGEST + ".part")))

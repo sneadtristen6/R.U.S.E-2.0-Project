@@ -139,7 +139,7 @@ En la página de la unidad, **Sus animaciones** muestra qué reproduce la unidad
 **Una copia conserva sus animaciones:** una unidad copiada de otra con animaciones propias reproduce las mismas. Para
 cambiar una solo para ella, haz clic en **Cambiar en RUSE Decoy** en su fila **Sonidos y animación** y luego en **Solo esta unidad**.
 
-El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026).
+El Pelotón a caballo genérico hecho así en el Studio se jugó en el juego (noviembre de 2026).
 ## Un modelo con huesos y animaciones propios
 
 Un caballo, un caballo con su jinete, cualquier criatura: un modelo sobre sus propios huesos va en un pelotón con sus animaciones.
@@ -155,7 +155,7 @@ Bueno saberlo:
 - Tu mod guarda el modelo y cada animación: `files\models\<nombre de la unidad>.glb`, y cada animación como `files\anim\own\<nombre de la unidad>\<su nombre>.baf`.
 - **Volver al aspecto del juego** en esa línea vuelve a quitar el modelo, con sus animaciones.
 - Un pelotón con soldado con arma pesada: dale su propio caballo con jinete con **Importar un modelo…** en su línea, hecho sobre los mismos huesos que el de los fusileros, y hará sus animaciones. Sobre otros huesos hace lo que hacía en el pelotón copiado, y la página te avisa: eso puede detener el juego. Quitar el modelo de los fusileros quita también el suyo.
-- El Horse Squad hecho así en el Studio se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado todavía en el juego.
+- El Pelotón a caballo genérico hecho así en el Studio se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado todavía en el juego.
 
 ## Sus animaciones, cambiadas en Blender
 

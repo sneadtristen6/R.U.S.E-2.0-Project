@@ -106,7 +106,7 @@ LEGER = "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger"     # the US rifle sq
 
 
 @unittest.skipUnless(rd2.GAME is not None and rd2.GAME.is_dir() and rd2.INDEX.is_file() and rd2.RIFLE.is_file(),
-                     "RUSE_GAME names no game folder, or the game index or the Horse Squad's riflemen's file isn't there")
+                     "RUSE_GAME names no game folder, or the game index or the Generic Horse's riflemen's file isn't there")
 class OnTheGame(unittest.TestCase):
     def test_the_ride_of_a_unit_riding_a_truck_is_not_said_to_play_nowhere(self):
         """The legitimate case beside test_recheck2_door.OnTheGame: a unit made from the US rifle squad, which rides in

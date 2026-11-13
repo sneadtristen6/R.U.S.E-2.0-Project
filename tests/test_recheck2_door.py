@@ -234,7 +234,7 @@ NECK_TURN = baf.axis_angle("x", 30.0)
 
 
 @unittest.skipUnless(GAME is not None and GAME.is_dir() and INDEX.is_file() and RIFLE.is_file(),
-                     "RUSE_GAME names no game folder, or the game index or the Horse Squad's riflemen's file isn't there")
+                     "RUSE_GAME names no game folder, or the game index or the Generic Horse's riflemen's file isn't there")
 class OnTheGame(unittest.TestCase):
     """The game's own US paratroopers, the index, and the Horse Squad's riflemen's file (scratch/animmodels/fixes3)."""
 

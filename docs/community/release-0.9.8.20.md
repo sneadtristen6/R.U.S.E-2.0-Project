@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, animations for one unit and the Horse Squad"
+title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, animations for one unit and the Generic Horse"
 category: Announcements
 order: 25
 ---
@@ -46,7 +46,7 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   it isn't shown to you again.
 
 **Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, animations for one unit, models with animations of
-their own and the Horse Squad.**
+their own and the Generic Horse.**
 
 - **A squad, soldier by soldier:** a squad's page now starts with its squad card and a line for each soldier, in place
   of its **Its own model** box. **Change the squad in Blender** opens all its soldiers side by side, each with his own
@@ -71,7 +71,7 @@ their own and the Horse Squad.**
   Decoy opens Blender with the unit and every animation it plays, each named for what it does in it. Change one, click
   **Send to the R.U.S.E. Studio**, then **Bring my changes back**: the changed ones become that unit's own, and every
   other unit keeps the game's. A sending you never brought back is set aside, and **Bring back the set-aside sending**
-  takes it in. Tested in the game with a squad standing and running with an arm raised, and a Horse Squad whose horses
+  takes it in. Tested in the game with a squad standing and running with an arm raised, and a Generic Horse whose horses
   hold their heads up.
 - **Models with bones and animations of their own:** **Import model…** now also takes a .glb on bones of its own with
   its animations: a horse and rider, or any creature. **Its animations** shows which animation the unit plays for each
@@ -79,14 +79,14 @@ their own and the Horse Squad.**
   them, instead of in its truck. **Its two halves** picks the bone where the model splits into the upper and lower
   halves the game animates at once (a rider aims while his horse runs), and **Will it work in the game?** says what in
   the model could stop the game or look wrong. In a squad, the riflemen and the heavy-weapon soldier each take a model
-  of their own on their own line. Tested in the game with a Horse Squad made this way: riflemen and a bazooka man on
+  of their own on their own line. Tested in the game with a Generic Horse made this way: riflemen and a bazooka man on
   horses, firing, riding as themselves on long moves, each horse falling with its rider; another animation picked by
   hand or another split, not yet.
-- **The Horse Squad:** riflemen and a heavy-weapon soldier, each on a horse of his own, now listed in the **Units** tab
+- **The Generic Horse:** riflemen and a heavy-weapon soldier, each on a horse of his own, now listed in the **Units** tab
   with the units from other eras (**WWII+**, USA), off until you add it. **Add to my mod** makes its horses and riders
   on your PC from your own copy of the game (nothing is downloaded), adds it as a new unit of your mod and puts
   sneadtristen6 in your mod's credits; **Take it out of my mod** takes it all out again. It is made the same way as the
-  Horse Squad tested above; added from the **Units** tab, not yet tried in the game.
+  Generic Horse tested above; added from the **Units** tab, not yet tried in the game.
 - **Its own shine after Blender:** a model sent to Blender with **Change it in Blender** and brought back with **Bring
   back the model** keeps its own shine and side-colour layer; before, it came back with the plain one a model from a
   file gets. When one can't be kept, the page says which. Not yet tried in the game.
@@ -101,7 +101,7 @@ their own and the Horse Squad.**
 - **Export leaves your PC's folders out:** an exported mod no longer carries the folders of your PC that the Studio
   wrote into its model records (often with your Windows user name in them): only the file's own name goes. What you
   wrote yourself (README, descriptions, credits) goes out as you wrote it, and Export tells you if it names your home
-  folder. The credits of units from other eras, the Horse Squad's too, now go with the mod.
+  folder. The credits of units from other eras, the Generic Horse's too, now go with the mod.
 - **Smaller things:** each factory is called by its building's name; in Persian, the game's names show in English,
   never as code names.
 - **Players, update your Launcher:** a mod whose squads have soldiers of their own, or whose units have animations of

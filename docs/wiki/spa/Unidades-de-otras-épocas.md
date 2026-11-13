@@ -74,9 +74,9 @@ Cuando quitas una unidad desde la que se investigan otras, **Ajustes > Investiga
 Una unidad que se queda investigada desde una que ya no está lo dice en su cuadro **Mejora e investigación** y en la
 barra de comprobación, y la construcción se detiene en ella hasta que elijas otra unidad, o ninguna.
 
-## El Pelotón a caballo
+## El Pelotón a caballo genérico
 
-**IIGM+** también muestra el **Pelotón a caballo**, creado por sneadtristen6: fusileros y un soldado con arma pesada,
+**IIGM+** también muestra el **Pelotón a caballo genérico**, creado por sneadtristen6: fusileros y un soldado con arma pesada,
 cada uno en su propio caballo. No se descarga nada de él, así que está ahí tanto si descargaste las unidades de IIGM+
 como si no. Como las unidades de época, no está en tu mod hasta que lo añades.
 
@@ -94,7 +94,7 @@ como si no. Como las unidades de época, no está en tu mod hasta que lo añades
 Su autor, sneadtristen6, figura en el `CREDITS-era-units.md` de tu mod, junto a los autores de las unidades de época.
 
 Visto en el juego: estos jinetes en sus caballos, hechos con **Importar modelo…** sobre una copia del pelotón G.I. Aún no
-probado en el juego: el Pelotón a caballo añadido desde esta lista.
+probado en el juego: el Pelotón a caballo genérico añadido desde esta lista.
 
 ## Créditos
 

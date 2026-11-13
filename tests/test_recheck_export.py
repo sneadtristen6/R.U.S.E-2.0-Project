@@ -63,7 +63,7 @@ def forms(folder: Path) -> list:
     return [f.encode("utf-8") for f in {s, s.replace("\\", "/"), s.replace("\\", "\\\\"), NAME}]
 
 
-@unittest.skipUnless(READY, "needs RUSE_GAME, the Studio's game index and the passed copy's two Horse Squad files")
+@unittest.skipUnless(READY, "needs RUSE_GAME, the Studio's game index and the passed copy's two Generic Horse files")
 class OnTheGame(unittest.TestCase):
     """The Horse Squad added with the real builder, the mod exported as the Studio's Export does (built on the game),
     added to the Launcher library by Export, and Publish's .zip made."""
@@ -80,7 +80,7 @@ class OnTheGame(unittest.TestCase):
         cls.addClassCleanup(env.stop)
         cls.api = StudioApi(index_path=INDEX, game_dir=GAME, home=cls.home)
         cls.mod, cls.unit = added(cls.api, "Cavalry")
-        cls.job = finished(cls.api, cls.api.export_mod("1.0.0", "a modder", "With the Horse Squad.")["job"])
+        cls.job = finished(cls.api, cls.api.export_mod("1.0.0", "a modder", "With the Generic Horse.")["job"])
         cls.export = Path(cls.job["result"]["path"]) if cls.job["state"] == "done" else None
         cls.opened = []
         cls.api._starter.open_url = cls.opened.append
@@ -113,7 +113,7 @@ class OnTheGame(unittest.TestCase):
             record = json.loads(got[f"files/models/{stem}.json"])
             self.assertEqual((record["from"], record["report"]["file"]), (made, made))
         self.assertIn(era_units.INDEX, got)
-        self.assertIn(b"Horse Squad (WWII, USA): by sneadtristen6", got[era_units.CREDITS])
+        self.assertIn(b"Generic Horse (WWII, USA): by sneadtristen6", got[era_units.CREDITS])
 
     def test_the_launcher_library_copy_names_no_folder_of_his_pc(self):
         library = self.home / "library" / package.info_of(self.mod)["id"]
@@ -214,7 +214,7 @@ class AnotherPlayerWithoutTheEra(WithMod):
             view = finished(self.api, self.api.horse_squad_add(0, 10, "Cavalry", 7, group="new")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
-        view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "With the Horse Squad.")["job"])
+        view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "With the Generic Horse.")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         self.assertIn(LIBERTY_LINE.encode(), members(Path(view["result"]["path"]))[era_units.CREDITS])
         self.env.stop()                                      # (another PC: no WWI era downloaded there)

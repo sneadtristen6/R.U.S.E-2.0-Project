@@ -72,9 +72,9 @@ Quando togli un'unità da cui altre vengono ricercate, **Impostazioni > Ricerca*
 Un'unità rimasta ricercata da una che non c'è più lo dice nel suo riquadro **Potenziamento e ricerca** e nella barra dei
 controlli, e la build si ferma su di essa finché non scegli un'altra unità, o nessuna.
 
-## La Squadra a cavallo
+## La Squadra a cavallo generica
 
-**Seconda guerra mondiale+** elenca anche la **Squadra a cavallo**, creata da sneadtristen6: fucilieri e un soldato con
+**Seconda guerra mondiale+** elenca anche la **Squadra a cavallo generica**, creata da sneadtristen6: fucilieri e un soldato con
 arma pesante, ciascuno sul proprio cavallo. Non se ne scarica nulla, quindi c'è che tu abbia scaricato o no le unità
 della Seconda guerra mondiale+. Come le unità d'epoca, non è nella tua mod finché non la aggiungi.
 
@@ -93,7 +93,7 @@ Il suo autore, sneadtristen6, è citato nel `CREDITS-era-units.md` della tua mod
 d'epoca.
 
 Visto in gioco: questi cavalieri sui loro cavalli, fatti con **Importa modello…** su una copia della squadra G.I. Non
-ancora provato in gioco: la Squadra a cavallo aggiunta da questa lista.
+ancora provato in gioco: la Squadra a cavallo generica aggiunta da questa lista.
 
 ## Crediti
 

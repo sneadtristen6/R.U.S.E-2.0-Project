@@ -111,7 +111,7 @@ toutes les unités qui le jouent.
 - **Une unité qui porte son cavalier (un cheval, une moto) :** un seul modèle avec le cavalier et ce qu'il monte sur
   un même squelette, avec ses propres animations (au moins debout, marche et course), importé sur une escouade copiée
   : voir [[Importer un modèle|Importer-un-modèle]], sa partie sur un modèle avec ses propres os et animations. La
-  Horse Squad a été faite ainsi dans le Studio et jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore
+  L'Escouade à cheval générique a été faite ainsi dans le Studio et jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore
   été essayé en jeu.
 
 ## Blindage

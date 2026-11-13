@@ -107,7 +107,7 @@ unidad o para todas las unidades que la usan, un sonido para todas las unidades 
 - **Una unidad que lleva a su jinete (un caballo, una moto):** un solo modelo con el jinete y lo que monta sobre un
   mismo esqueleto, con sus propias animaciones (al menos quieto, caminar y correr), importado sobre un pelotón
   copiado: mira [[Importar un modelo|Importar-un-modelo]], su parte sobre un modelo con huesos y animaciones propios.
-  La Horse Squad se hizo así en el Studio y se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado
+  El Pelotón a caballo genérico se hizo así en el Studio y se jugó en el juego (noviembre de 2026); nada más hecho así se ha probado
   todavía en el juego.
 
 ## Blindaje

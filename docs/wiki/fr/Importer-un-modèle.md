@@ -139,7 +139,7 @@ avec lui. Sur la page de l'unité, **Ses animations** montre ce que l'unité jou
 **Une copie garde ses animations :** une unité copiée d'une unité qui a ses propres animations joue les mêmes. Pour en
 changer une rien que pour elle, cliquez sur **Changer dans RUSE Decoy** sur sa ligne **Sons et animations**, puis **Cette unité seulement**.
 
-La Horse Squad faite ainsi dans le Studio a été jouée en jeu (novembre 2026).
+L'Escouade à cheval générique faite ainsi dans le Studio a été jouée en jeu (novembre 2026).
 ## Un modèle avec ses propres os et ses animations
 
 Un cheval, un cheval avec son cavalier, n'importe quelle créature : un modèle sur ses propres os va sur une escouade avec ses animations.
@@ -155,7 +155,7 @@ Bon à savoir :
 - Votre mod garde le modèle et chaque animation : `files\models\<nom de l'unité>.glb`, et chaque animation sous `files\anim\own\<nom de l'unité>\<son nom>.baf`.
 - **Revenir à l'apparence du jeu** sur cette ligne retire à nouveau le modèle, avec ses animations.
 - Une escouade avec un soldat à l'arme lourde : donnez-lui son propre cheval et son cavalier avec **Importer un modèle…** sur sa ligne, faits sur les mêmes os que ceux des fusiliers, et il joue leurs animations. Sur d'autres os, il joue ce qu'il jouait dans l'escouade copiée, et la page vous prévient : cela peut arrêter le jeu. Retirer le modèle des fusiliers retire le sien avec.
-- La Horse Squad faite ainsi dans le Studio a été jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore été essayé en jeu.
+- L'Escouade à cheval générique faite ainsi dans le Studio a été jouée en jeu (novembre 2026) ; rien d'autre fait ainsi n'a encore été essayé en jeu.
 
 ## Ses animations, changées dans Blender
 

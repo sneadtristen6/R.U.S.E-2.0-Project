@@ -100,7 +100,7 @@ jednotku, nebo pro všechny jednotky, které ji hrají, zvuk pro všechny jednot
   pro každou: každá jednotka má to vše ve vašem modu pod svým vlastním názvem.
 - **Jednotka, která nese svého jezdce (kůň, motocykl):** jeden model s jezdcem a tím, na čem jede, na jedné kostře, s
   vlastními animacemi (alespoň stání, chůze a běh), importovaný na kopírované družstvo: viz [[Import
-  modelu|Import-modelu]], část o modelu s vlastními kostmi a animacemi. Horse Squad byl takto udělán ve Studiu a hrán
+  modelu|Import-modelu]], část o modelu s vlastními kostmi a animacemi. Univerzální jízdní družstvo bylo takto uděláno ve Studiu a hráno
   ve hře (listopad 2026); nic jiného takto udělaného zatím ve hře vyzkoušeno nebylo.
 
 ## Pancéřování

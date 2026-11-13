@@ -44,7 +44,7 @@ KEY = horse_squad.KEY
 ON_THE_GAME = msvcrt is not None and GAME is not None and GAME.is_dir() and INDEX.is_file() and RIFLE.is_file() and HEAVY.is_file()
 WHY_SKIPPED = ("RUSE_GAME names no game folder, or the Studio's game index or the two horse-and-rider files of the copy "
                "that passed in the game aren't there, or this isn't Windows")
-STILL_IN = ("The Horse Squad couldn't be added, and taking it back out failed too, so part of it is still in your mod: "
+STILL_IN = ("The Generic Horse couldn't be added, and taking it back out failed too, so part of it is still in your mod: "
             "take it out of your mod on its page in the Units tab, or delete it on its unit page.")
 
 
@@ -107,7 +107,7 @@ class EraLines(WithMod):
         """The add's check fails; its take-back can't delete the unit (its unit file held by another program): the
         unit stays, and the job says so, with what to do."""
         def check(api, address):
-            raise StudioError("The Horse Squad's two models didn't come in on the same bones, so it wasn't added. "
+            raise StudioError("The Generic Horse's two models didn't come in on the same bones, so it wasn't added. "
                               "Please report this.")
 
         def delete(api, address, researched=None):
@@ -135,7 +135,7 @@ class ItsAnimationsFileHeld(unittest.TestCase):
         self.api = StudioApi(index_path=INDEX, game_dir=GAME, home=self.home, instances=self.home / "copies")
         self.mod = Path(self.api.new_mod("Held")["current"])
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}):
-            view = finished(self.api, self.api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         self.address = view["result"]["address"]
         self.tail = self.address.rsplit("/", 1)[-1]

@@ -44,7 +44,7 @@ KEY, SQUAD = horse_squad.KEY, horse_squad.SQUAD
 SRC = Path(__file__).resolve().parents[1] / "src"
 BUILDER_FILE = SRC / "rusemod" / "horsesquad.py"
 UI = SRC / "ruse_studio" / "ui"
-FRAME = "The Horse Squad can't be made from your game: {0}"
+FRAME = "The Generic Horse can't be made from your game: {0}"
 OTHERS = tuple(lang for lang in errortext.LANGS if lang != "us")
 INDEX = Path(os.environ.get("RUSE_GAME_INDEX") or os.environ.get("RUSE_STUDIO_INDEX")
              or "D:/RUSE-2.0/scratch/modelgaps/game-index.sqlite")
@@ -178,7 +178,7 @@ class TheAddSaysItInWords(WithLibrary):
         folder = Path(self.api.new_mod(f"Words {self.made}")["current"])
         before = tree(folder)
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: builder}):
-            view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
         self.assertEqual(view["state"], "failed")
         self.assertEqual(tree(folder), before)
         self.assertEqual(os.listdir(self.home / horse_squad.FOLDER), [])
@@ -186,10 +186,10 @@ class TheAddSaysItInWords(WithLibrary):
 
     def test_a_refusal_in_the_builder_s_words_is_said_wholly_in_the_studio_s_language(self):
         e = entries()
-        text = "Your game hasn't the model the Horse Squad is made from: ww2\\res3d\\units\\us\\x.ase2ndfbin."
+        text = "Your game hasn't the model the Generic Horse is made from: ww2\\res3d\\units\\us\\x.ase2ndfbin."
         view, _folder, _before = self.add_failing(raising(None, refusal=text))
         self.assertEqual(view["message"], made(FRAME, text))
-        inner = e[errortext.key_of("Your game hasn't the model the Horse Squad is made from: {0}.")]
+        inner = e[errortext.key_of("Your game hasn't the model the Generic Horse is made from: {0}.")]
         for lang in OTHERS:
             with self.subTest(lang=lang):
                 self.assertEqual(self.job_said_in(view["id"], lang),
@@ -200,19 +200,19 @@ class TheAddSaysItInWords(WithLibrary):
         root = self.home / horse_squad.FOLDER
         cases = (
             (OSError(errno.ENOSPC, "No space left on device"),
-             f"The Horse Squad couldn't be added: the disk holding {root} is full. Make room on it, then add it again."),
+             f"The Generic Horse couldn't be added: the disk holding {root} is full. Make room on it, then add it again."),
             (PermissionError(errno.EACCES, "Permission denied", "C:\\Somewhere\\rifle.glb"),
-             "The Horse Squad couldn't be added: C:\\Somewhere\\rifle.glb couldn't be read or written, because another "
+             "The Generic Horse couldn't be added: C:\\Somewhere\\rifle.glb couldn't be read or written, because another "
              "program has it open or Windows didn't allow it. Close that program, then add it again."),
             (FileNotFoundError(errno.ENOENT, "No such file or directory", "D:\\Games\\RUSE\\ZZ_Win.dat"),
-             "The Horse Squad couldn't be added: D:\\Games\\RUSE\\ZZ_Win.dat isn't there."),
+             "The Generic Horse couldn't be added: D:\\Games\\RUSE\\ZZ_Win.dat isn't there."),
             (OSError(errno.EIO, "Input/output error"),
-             f"The Horse Squad couldn't be added: {root} couldn't be read or written (error {errno.EIO}). Please "
+             f"The Generic Horse couldn't be added: {root} couldn't be read or written (error {errno.EIO}). Please "
              f"report this."),
             (OSError("a pack that ends early"),
-             f"The Horse Squad couldn't be added: {root} couldn't be read or written. Please report this."),
+             f"The Generic Horse couldn't be added: {root} couldn't be read or written. Please report this."),
             (OSError(errno.EBADF, "Bad file descriptor", 3),         # (a file's number, never said as its name)
-             f"The Horse Squad couldn't be added: {root} couldn't be read or written (error {errno.EBADF}). Please "
+             f"The Generic Horse couldn't be added: {root} couldn't be read or written (error {errno.EBADF}). Please "
              f"report this."),
         )
         for exc, expected in cases:
@@ -227,9 +227,9 @@ class TheAddSaysItInWords(WithLibrary):
                     self.assertNotIn(str(exc), said, lang)
 
     def test_anything_else_the_builder_stops_on_is_said_in_words(self):
-        other = ("The Horse Squad can't be made from your game: making it stopped on something the Studio didn't "
+        other = ("The Generic Horse can't be made from your game: making it stopped on something the Studio didn't "
                  "expect. Please report this.")
-        memory = ("The Horse Squad can't be made from your game: this PC ran out of memory while making it. Close "
+        memory = ("The Generic Horse can't be made from your game: this PC ran out of memory while making it. Close "
                   "other programs, then add it again.")
         e = entries()
         for exc, expected in ((IndexError("list index out of range"), other), (KeyError("bip01 spine1"), other),
@@ -242,9 +242,9 @@ class TheAddSaysItInWords(WithLibrary):
                     self.assertEqual(self.job_said_in(view["id"], lang), e[errortext.key_of(expected)][lang])
 
     def test_a_part_the_builder_needs_that_can_t_be_loaded_is_said_as_that(self):
-        named = "This Studio can't make the Horse Squad: a part it needs ({0}) couldn't be loaded. Please report this."
-        unnamed = "This Studio can't make the Horse Squad: a part it needs couldn't be loaded. Please report this."
-        missing = ("This Studio can't make the Horse Squad yet: the part that makes it from your game isn't in it.")
+        named = "This Studio can't make the Generic Horse: a part it needs ({0}) couldn't be loaded. Please report this."
+        unnamed = "This Studio can't make the Generic Horse: a part it needs couldn't be loaded. Please report this."
+        missing = ("This Studio can't make the Generic Horse yet: the part that makes it from your game isn't in it.")
         folder = Path(self.api.new_mod("Parts")["current"])
         before = tree(folder)
         for exc, expected in ((ModuleNotFoundError("No module named 'numpy'", name="numpy"), made(named, "numpy")),
@@ -276,8 +276,8 @@ class TheAddSaysItInWords(WithLibrary):
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}), \
                 mock.patch.object(StudioApi, "model_import",
                                   side_effect=OSError(errno.ENOSPC, "No space left on device")):
-            view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
-        expected = (f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on it, then add "
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
+        expected = (f"The Generic Horse couldn't be added: the disk holding {folder} is full. Make room on it, then add "
                     f"it again.")
         self.assertEqual((view["state"], view["message"], view["lines"]),
                          ("failed", expected, ["build", "unit", "riflemen"]))
@@ -286,7 +286,7 @@ class TheAddSaysItInWords(WithLibrary):
         after.pop("src/studio.rndf", None)
         self.assertEqual(after, {k: v for k, v in before.items() if k != "src/studio.rndf"})
         self.assertEqual(self.job_said_in(view["id"], "fr"),
-                         entries()[errortext.key_of("The Horse Squad couldn't be added: the disk holding {0} is full. "
+                         entries()[errortext.key_of("The Generic Horse couldn't be added: the disk holding {0} is full. "
                                                     "Make room on it, then add it again.")]["fr"].format(folder))
 
 
@@ -306,13 +306,13 @@ class TheHorseSquadByItsName(WithLibrary):
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}), \
                 self.assertRaises(StudioError) as said:
             self.api.horse_squad_add(0, 10, group="new")
-        self.assertEqual(str(said.exception), "Horse Squad is already in this mod")    # (the English as it was)
+        self.assertEqual(str(said.exception), "Generic Horse is already in this mod")    # (the English as it was)
         name = words()["eras_horse_name"]
         for lang in OTHERS:
             with self.subTest(lang=lang):
                 worded = self.said_in(str(said.exception), lang)
                 self.assertIn(name[lang], worded)
-                self.assertNotIn("Horse Squad", worded)
+                self.assertNotIn("Generic Horse", worded)
         # an era unit's own name, as its library says it
         self.api.era_unit_add(LIBERTY, 0, 10)
         with self.assertRaises(StudioError) as said:
@@ -327,11 +327,11 @@ class TheHorseSquadByItsName(WithLibrary):
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}), \
                 self.assertRaises(StudioError) as said:
             self.api.horse_squad_add(0, 10, research_from=nowhere, group="new")
-        expected = f"Horse Squad can't be researched from {nowhere} in that build menu"
+        expected = f"Generic Horse can't be researched from {nowhere} in that build menu"
         self.assertEqual(str(said.exception), expected)
         for lang in OTHERS:
             worded = self.said_in(expected, lang)
-            self.assertNotIn("Horse Squad", worded, lang)
+            self.assertNotIn("Generic Horse", worded, lang)
             self.assertIn(nowhere, worded, lang)
             self.assertNotEqual(worded, expected, lang)
 
@@ -339,10 +339,10 @@ class TheHorseSquadByItsName(WithLibrary):
         self.api.new_mod("Not in")
         with self.assertRaises(StudioError) as said:
             self.api.era_unit_remove(KEY)
-        self.assertEqual(str(said.exception), "Horse Squad isn't in this mod")      # (not its key, "horse-squad")
+        self.assertEqual(str(said.exception), "Generic Horse isn't in this mod")      # (not its key, "horse-squad")
         for lang in OTHERS:
             worded = self.said_in(str(said.exception), lang)
-            self.assertNotIn("Horse Squad", worded, lang)
+            self.assertNotIn("Generic Horse", worded, lang)
             self.assertNotIn(KEY, worded, lang)
         with self.assertRaises(StudioError) as said:                          # an era unit's: as before
             self.api.era_unit_remove(LIBERTY)
@@ -393,14 +393,14 @@ class TheTypeInTheStudiosLanguage(unittest.TestCase):
             before = tree(folder)
             with self.assertRaises(StudioError) as said:
                 api.horse_squad_add(page["game_nation"], page["factory"], research_from=SQUAD, group="new")
-            expected = (f"Horse Squad can't be researched from {SQUAD}: that unit is in another group of the building "
+            expected = (f"Generic Horse can't be researched from {SQUAD}: that unit is in another group of the building "
                         f"than the one picked.")
             self.assertEqual(str(said.exception), expected)
             self.assertEqual(tree(folder), before)
             for lang in OTHERS:
                 api.set_pref("lang", lang)
                 worded = str(api.page_error(said.exception))
-                self.assertNotIn("Horse Squad", worded, lang)
+                self.assertNotIn("Generic Horse", worded, lang)
                 self.assertNotIn("that unit is in another group", worded, lang)
 
     def test_its_type_is_the_one_the_units_list_says_for_the_us_rifle_squad(self):
@@ -437,7 +437,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
         self.mod = Path(self.api.new_mod("Gone")["current"])
         entry = self.api._era_built_entry(KEY)
         plan = self.api._era_plan(KEY, None, {}, entry, 0, 10, SQUAD, None, None, None, None, "new")
-        self.horse = self.api._era_make(KEY, self.api._era_library()[1], entry, plan, 0, 10, "Horse Squad", 5)[
+        self.horse = self.api._era_make(KEY, self.api._era_library()[1], entry, plan, 0, 10, "Generic Horse", 5)[
             "address"]
         self.other = self.api.new_unit(SQUAD, "My Rifles", 5, group="new")["address"]
         self.gone = str(self.home / horse_squad.FOLDER / "horse-squad-rifle.glb")
@@ -449,7 +449,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
 
     def way_out(self, moving: bool) -> str:
         what = "it can't be moved" if moving else "its size can't be changed"
-        return (f"The file the Horse Squad's model was made from isn't there any more ({self.gone}), so {what}. To "
+        return (f"The file the Generic Horse's model was made from isn't there any more ({self.gone}), so {what}. To "
                 f"have it made again, on its page in the Units tab (WWII+) click Take it out of my mod, then Add to my "
                 f"mod: what you changed on it is lost.")
 
@@ -465,7 +465,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                     worded = self.said_in(str(said.exception), lang)
                     for key in ("units_tab", "eras_era_ww2", "eras_take_out", "eras_add"):
                         self.assertIn(w[key][lang], worded, (lang, key))
-                    self.assertNotIn("Horse Squad", worded, lang)
+                    self.assertNotIn("Generic Horse", worded, lang)
                 with self.assertRaises(StudioError) as said:                  # another unit: as before
                     call(self.other)
                 self.assertIn("import it again", str(said.exception))
@@ -485,7 +485,7 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
         """The page reads each line's first word ("resized" or "skipped": app.js resizeAllRow, as nations.js reads
         the Nations tab's): the same in every language (translated, the page counted nothing, 0 done and none
         skipped); the reason in the Studio's language."""
-        names = {self.horse: "Horse Squad", self.other: "My Rifles"}
+        names = {self.horse: "Generic Horse", self.other: "My Rifles"}
         for lang in ("us", "fr", "jpn", "fa"):
             with self.subTest(lang=lang):
                 self.api.set_pref("lang", lang)
@@ -496,13 +496,13 @@ class ResizeAndMoveWithItsFilesGone(WithLibrary):
                 self.assertEqual(view["state"], "done")
                 lines = dict((ln.split("\t")[1], ln.split("\t")) for ln in view["lines"])
                 self.assertEqual(sorted(lines), sorted(names.values()))
-                horse = lines["Horse Squad"]
+                horse = lines["Generic Horse"]
                 self.assertEqual(horse[0], "skipped")
                 self.assertEqual(lines["My Rifles"][0], "skipped")
                 self.assertEqual(horse[2], self.way_out(False) if lang == "us" else errortext.worded(
                     self.way_out(False), lang))
                 if lang != "us":
-                    self.assertNotIn("Horse Squad", horse[2])
+                    self.assertNotIn("Generic Horse", horse[2])
                     self.assertNotIn("import it again", lines["My Rifles"][2])
         for lang in OTHERS:
             self.assertEqual(buildtext.worded("resized\tTiger\t1.2", lang), "resized\tTiger\t1.2")

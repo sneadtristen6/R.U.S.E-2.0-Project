@@ -137,7 +137,7 @@ jednostki **Jej animacje** pokazują, co jednostka odtwarza przy każdej czynno�
 **Kopia zachowuje animacje:** jednostka skopiowana z takiej, która ma własne animacje, odtwarza te same. Aby zmienić
 którąś tylko dla niej, kliknij **Zmień w RUSE Decoy** w jej wierszu **Dźwięki i animacje**, potem **Tylko ta jednostka**.
 
-Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026).
+Uniwersalny oddział konny zrobiony tak w Studiu działał w grze (listopad 2026).
 ## Model z własnymi kośćmi i animacjami
 
 Koń, koń z jeźdźcem, dowolne stworzenie: model na własnych kościach trafia do oddziału razem ze swoimi animacjami.
@@ -153,7 +153,7 @@ Dobrze wiedzieć:
 - Twój mod przechowuje model i każdą animację: `files\models\<nazwa jednostki>.glb`, a każdą animację jako `files\anim\own\<nazwa jednostki>\<jej nazwa>.baf`.
 - **Wróć do wyglądu z gry** w tym wierszu znowu usuwa model, razem z jego animacjami.
 - Oddział z żołnierzem z ciężką bronią: daj mu własnego konia z jeźdźcem przez **Importuj model…** w jego wierszu, zrobionego na tych samych kościach co model strzelców, a będzie odgrywał ich animacje. Na innych kościach odgrywa to, co w kopiowanym oddziale, a strona ostrzega: to może zatrzymać grę. Usunięcie modelu strzelców usuwa też jego.
-- Horse Squad zrobiony tak w Studiu działał w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
+- Uniwersalny oddział konny zrobiony tak w Studiu działał w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
 ## Jego animacje, zmienione w Blenderze
 

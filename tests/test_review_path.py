@@ -65,10 +65,10 @@ def added(api, mod_name: str) -> tuple[Path, str]:
     the unit's address)."""
     folder = Path(api.new_mod(mod_name)["current"])
     page = api.era_unit_page(KEY, "us")
-    view = finished(api, api.horse_squad_add(page["game_nation"], page["factory"], "Horse Squad", 5, None, None, None,
+    view = finished(api, api.horse_squad_add(page["game_nation"], page["factory"], "Generic Horse", 5, None, None, None,
                                              "new")["job"])
     if view["state"] != "done":
-        raise AssertionError(f"the Horse Squad wasn't added: {view.get('message')}")
+        raise AssertionError(f"the Generic Horse wasn't added: {view.get('message')}")
     return folder, view["result"]["address"]
 
 
@@ -97,7 +97,7 @@ class TheWholePath(unittest.TestCase):
         cls.home = cls.tmp / "first"
         cls.api = StudioApi(index_path=INDEX, game_dir=GAME, home=cls.home)
         cls.mod, cls.unit = added(cls.api, "Cavalry")
-        cls.export_job = finished(cls.api, cls.api.export_mod("1.0.0", "a modder", "With the Horse Squad.")["job"])
+        cls.export_job = finished(cls.api, cls.api.export_mod("1.0.0", "a modder", "With the Generic Horse.")["job"])
         cls.export = Path(cls.export_job["result"]["path"]) if cls.export_job["state"] == "done" else None
         # another player, his platform folder without the Horse Squad's files
         cls.other, cls.copy = opened_by_another_player(cls.tmp / "second", cls.export, "Cavalry (my copy)")
@@ -115,7 +115,7 @@ class TheWholePath(unittest.TestCase):
         self.assertEqual({p.name: p.read_bytes() for p in kept.iterdir()},
                          {"horse-squad-rifle.glb": RIFLE.read_bytes(), "horse-squad-bazooka.glb": HEAVY.read_bytes()})
         by_hand = Path(self.api.new_mod("By hand")["current"])
-        unit = self.api.new_unit(SQUAD, "Horse Squad", 5, group="new")["address"]
+        unit = self.api.new_unit(SQUAD, "Generic Horse", 5, group="new")["address"]
         self.api.model_import(unit, str(RIFLE))
         self.api.model_import(unit, str(HEAVY), kind="bazooka")
         self.assertEqual(unit, self.unit)
@@ -143,7 +143,7 @@ class TheWholePath(unittest.TestCase):
         self.assertEqual(self.export_job["state"], "done", self.export_job.get("message"))
         with zipfile.ZipFile(self.export) as z:
             names = z.namelist()
-            credited = [n for n in names if b"Horse Squad (WWII, USA): by sneadtristen6" in z.read(n)]
+            credited = [n for n in names if b"Generic Horse (WWII, USA): by sneadtristen6" in z.read(n)]
         self.assertIn(era_units.CREDITS, names)
         self.assertIn(era_units.INDEX, names)
         self.assertNotEqual(credited, [])
@@ -293,15 +293,15 @@ class TheBuilderRefusing(unittest.TestCase):
         api = StudioApi(index_path=INDEX, game_dir=not_a_game, home=tmp / "home")
         api.new_mod("Words")
         page = api.era_unit_page(KEY, "us")
-        view = finished(api, api.horse_squad_add(page["game_nation"], page["factory"], "Horse Squad", 5, None, None,
+        view = finished(api, api.horse_squad_add(page["game_nation"], page["factory"], "Generic Horse", 5, None, None,
                                                  None, "new")["job"])
         self.assertEqual(view["state"], "failed")
         self.assertIn("isn't a R.U.S.E. game folder", view["message"])     # (the builder's own words, in English)
         api.set_pref("lang", "fr")
         said = api.job(view["id"])["message"]
-        self.assertTrue(said.startswith("L'Escouade à cheval ne peut pas être fabriquée"), said)
+        self.assertTrue(said.startswith("L'Escouade à cheval générique ne peut pas être fabriquée"), said)
         self.assertNotIn("isn't a R.U.S.E. game folder", said)
-        self.assertNotIn("The Horse Squad is made from your game's own files", said)
+        self.assertNotIn("The Generic Horse is made from your game's own files", said)
 
 
 if __name__ == "__main__":

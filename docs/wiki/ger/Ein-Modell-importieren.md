@@ -142,7 +142,7 @@ Seite der Einheit zeigt **Seine Animationen**, was die Einheit für jede Handlun
 **Eine Kopie behält ihre Animationen:** Eine Einheit, die von einer mit eigenen Animationen kopiert wurde, spielt
 dieselben. Um eine nur für sie zu ändern, klick auf **In RUSE Decoy ändern** in ihrer Zeile **Geräusche und Animation**, dann **Nur diese Einheit**.
 
-Die so im Studio gemachte Horse Squad lief im Spiel (November 2026).
+Der so im Studio gemachte Generische Reitertrupp lief im Spiel (November 2026).
 ## Ein Modell mit eigenen Knochen und Animationen
 
 Ein Pferd, ein Pferd mit Reiter, irgendein Tier: Ein Modell auf eigenen Knochen kommt mit seinen Animationen auf einen Trupp.
@@ -158,7 +158,7 @@ Gut zu wissen:
 - Dein Mod behält das Modell und jede Animation: `files\models\<Name der Einheit>.glb`, und jede Animation als `files\anim\own\<Name der Einheit>\<ihr Name>.baf`.
 - **Zurück zum Aussehen aus dem Spiel** in dieser Zeile nimmt das Modell wieder heraus, mit seinen Animationen.
 - Ein Trupp mit einem Soldaten mit schwerer Waffe: Gib ihm mit **Ein Modell importieren…** in seiner Zeile sein eigenes Pferd mit Reiter, auf denselben Knochen gebaut wie das der Schützen, dann spielt er ihre Animationen. Auf anderen Knochen spielt er, was er im kopierten Trupp spielte, und die Seite warnt dich: Das kann das Spiel anhalten. Nimmst du das Modell der Schützen heraus, geht seines mit.
-- Die so im Studio gemachte Horse Squad lief im Spiel (November 2026); nichts anderes, das so gemacht wurde, ist bisher im Spiel ausprobiert.
+- Der so im Studio gemachte Generische Reitertrupp lief im Spiel (November 2026); nichts anderes, das so gemacht wurde, ist bisher im Spiel ausprobiert.
 
 ## Seine Animationen, in Blender geändert
 

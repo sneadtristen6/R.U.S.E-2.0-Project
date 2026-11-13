@@ -70,9 +70,9 @@ Když vyjmete jednotku, ze které se zkoumají jiné, o tom, co se stane, rozhod
 Jednotka, která zůstala zkoumaná z jednotky, jež už neexistuje, to řekne ve svém poli **Vylepšení a výzkum** a v liště
 kontroly, a sestavení se na ní zastaví, dokud nevyberete jinou jednotku, nebo žádnou.
 
-## Jízdní družstvo
+## Univerzální jízdní družstvo
 
-**2. světová válka+** ukazuje také **Jízdní družstvo**, jehož autorem je sneadtristen6: střelci a voják s těžkou zbraní,
+**2. světová válka+** ukazuje také **Univerzální jízdní družstvo**, jehož autorem je sneadtristen6: střelci a voják s těžkou zbraní,
 každý na vlastním koni. Nic z něj se nestahuje, takže tam je, ať už jsi jednotky 2. světové války+ stáhl, nebo ne.
 Stejně jako jednotky z období není ve tvém modu, dokud ho nepřidáš.
 
@@ -89,7 +89,7 @@ Stejně jako jednotky z období není ve tvém modu, dokud ho nepřidáš.
 Jeho autor, sneadtristen6, je uveden v souboru `CREDITS-era-units.md` tvého modu, vedle autorů jednotek z období.
 
 Viděno ve hře: tito jezdci na svých koních, udělaní přes **Importovat model…** na kopii družstva PĚCHOTA. Zatím
-nevyzkoušeno ve hře: Jízdní družstvo přidané z tohoto seznamu.
+nevyzkoušeno ve hře: Univerzální jízdní družstvo přidané z tohoto seznamu.
 
 ## Autoři
 

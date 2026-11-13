@@ -65,7 +65,7 @@ class TheAddsOwnWritesOnAFullDisk(unittest.TestCase):
     def add_on_a_full_disk(self, which) -> dict:
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}), \
                 mock.patch.object(pathlib.Path, "write_bytes", full_disk_at(which)):
-            view = finished(self.api, self.api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
         self.assertEqual(view["state"], "failed")
         return view
 
@@ -117,7 +117,7 @@ class TheFileAnotherProgramHolds(WithLibrary):
         self.api.new_mod("Held")
         with open(held, "rb"):       # (another program holding it, as Python's own open holds a file on Windows)
             with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}):
-                view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
+                view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
         self.assertEqual(view["state"], "failed")
         self.assertIn(str(held), view["message"])
         self.assertNotIn(".making-", view["message"])
@@ -135,7 +135,7 @@ class TheEveryGroundUnitLine(unittest.TestCase):
         api = StudioApi(index_path=INDEX, game_dir=GAME, home=home, instances=home / "copies")
         api.new_mod("Locked")
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}):
-            view = finished(api, api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+            view = finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
         self.assertEqual(view["state"], "done")
         file = home / horse_squad.FOLDER / RIFLE.name
         size = file.stat().st_size
@@ -149,7 +149,7 @@ class TheEveryGroundUnitLine(unittest.TestCase):
                 held.seek(0)
                 msvcrt.locking(held.fileno(), msvcrt.LK_UNLCK, size)
         lines = [line.split("\t") for line in job["lines"]]
-        self.assertEqual([(ln[0], ln[1]) for ln in lines], [("skipped", "Horse Squad")])
+        self.assertEqual([(ln[0], ln[1]) for ln in lines], [("skipped", "Generic Horse")])
         for words in ("Errno", "Permission denied"):
             self.assertNotIn(words, lines[0][2])
 

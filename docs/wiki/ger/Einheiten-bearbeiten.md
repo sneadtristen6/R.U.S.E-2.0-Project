@@ -110,7 +110,7 @@ Einheiten, die es spielen.
 - **Eine Einheit, die ihren Reiter trägt (ein Pferd, ein Motorrad):** ein Modell mit dem Reiter und dem, worauf er
   reitet, auf einem Skelett, mit eigenen Animationen (mindestens Stehen, Gehen und Laufen), auf einen kopierten Trupp
   importiert: siehe [[Ein Modell importieren|Ein-Modell-importieren]], den Teil über ein Modell mit eigenen Knochen
-  und Animationen. Die Horse Squad wurde so im Studio gemacht und im Spiel gespielt (November 2026); nichts anderes,
+  und Animationen. Der Generische Reitertrupp wurde so im Studio gemacht und im Spiel gespielt (November 2026); nichts anderes,
   das so gemacht wurde, ist bisher im Spiel ausprobiert.
 
 ## Panzerung

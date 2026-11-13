@@ -99,7 +99,7 @@ class OnTheGame(unittest.TestCase):
     def add(self, api=None, heavy=HEAVY, during=None) -> dict:
         api = api or self.api
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, heavy, during=during)}):
-            return finished(api, api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
+            return finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
 
     def kind_files(self, tail: str = "Descriptor_Unit_Horse_Squad") -> list:
         models = self.mod / "files" / "models"
@@ -136,7 +136,7 @@ class OnTheGame(unittest.TestCase):
         before = tree(self.mod)
         view = self.add(heavy=Path(made[0]["file"]))
         self.assertEqual((view["state"], view["message"]), (
-            "failed", "The Horse Squad's two models didn't come in on the same bones, so it wasn't added. Please "
+            "failed", "The Generic Horse's two models didn't come in on the same bones, so it wasn't added. Please "
                       "report this."))
         self.assertEqual(self.kind_files(), [])
         self.assertEqual(tree(self.mod), before)
@@ -169,13 +169,13 @@ class OnTheGame(unittest.TestCase):
             if not kw.get("kind"):            # the riflemen's model in: the modder's click lands now
                 ready.set()
                 done.wait(120)
-                raise StudioError("The Horse Squad's two models didn't come in on the same bones, so it wasn't "
+                raise StudioError("The Generic Horse's two models didn't come in on the same bones, so it wasn't "
                                   "added. Please report this.")
             return got
 
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}), \
                 mock.patch.object(StudioApi, "model_import", importing):
-            job = self.api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"]
+            job = self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"]
             try:
                 self.assertTrue(ready.wait(600))
                 try:
@@ -196,7 +196,7 @@ class OnTheGame(unittest.TestCase):
         back's failure is swallowed, the job says the Horse Squad 'wasn't added', and the whole of it is in the mod
         (its unit, both models, 25 clips, its era_units.json line and credit line; the Units tab shows it added)."""
         def check(api, address):
-            raise StudioError("The Horse Squad's two models didn't come in on the same bones, so it wasn't added. "
+            raise StudioError("The Generic Horse's two models didn't come in on the same bones, so it wasn't added. "
                               "Please report this.")
 
         def remove(api, address, kind=None):

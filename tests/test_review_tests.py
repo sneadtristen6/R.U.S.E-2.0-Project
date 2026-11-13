@@ -117,7 +117,7 @@ class TheAddOnTheMadeUpGame(WithMod):
                 with self.builder(), self.no_import(), checked_on(rows):
                     view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
                 self.assertEqual((view["state"], view["message"]), (
-                    "failed", "The Horse Squad's two models didn't come in on the same bones, so it wasn't added. "
+                    "failed", "The Generic Horse's two models didn't come in on the same bones, so it wasn't added. "
                               "Please report this."))
                 self.assertEqual(view["lines"], ["build", "unit", "riflemen", "bazooka"])
                 self.assertEqual(ModEdits(folder).new_units, {})
@@ -154,7 +154,7 @@ class TheAddOnTheMadeUpGame(WithMod):
                     said.append(str(exc))
         with self.builder(), mock.patch.object(StudioApi, "model_import", importing), checked_on(own_rows(True)):
             view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
-        self.assertEqual(said, ["The Horse Squad is being added to this mod: wait for it to finish."] * 2)
+        self.assertEqual(said, ["The Generic Horse is being added to this mod: wait for it to finish."] * 2)
         self.assertEqual(sorted(p.name for p in first.parent.iterdir()), mods)      # no mod made meanwhile
         self.assertEqual(view["state"], "done", view.get("message"))
         self.assertIn(view["result"]["address"], ModEdits(first).new_units)
@@ -173,7 +173,7 @@ class TheAddOnTheMadeUpGame(WithMod):
                 with self.builder(rifle=rifle, heavy=heavy), self.no_import(), checked_on(own_rows(True)):
                     view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
                 self.assertEqual((view["state"], view["message"]), (
-                    "failed", "The Horse Squad can't be made from your game: its two model files didn't come out. "
+                    "failed", "The Generic Horse can't be made from your game: its two model files didn't come out. "
                               "Please report this."))
                 self.assertEqual(tree(folder), before)
 
@@ -433,7 +433,7 @@ class TheBuilderAndItsIndex(unittest.TestCase):
         out = self.root / "out"
         with mock.patch.object(hs, "_listings", lambda game, index: {p: LISTED_ROWS for p in hs.LISTED}), \
                 mock.patch.object(hs.tempfile, "mkdtemp", mkdtemp), \
-                self.assertRaisesRegex(hs.HorseSquadError, "Your game hasn't the model the Horse Squad is made from"):
+                self.assertRaisesRegex(hs.HorseSquadError, "Your game hasn't the model the Generic Horse is made from"):
             hs.made_from(self.game, out, say=lambda line: None)
         self.assertEqual([p.parent for p in made], [out])
         self.assertEqual(list(out.iterdir()), [])
@@ -446,7 +446,7 @@ class TheBuilderAndItsIndex(unittest.TestCase):
             return modelin.Part("bip01", 0, [(0.0, 0.0, 0.0)] * 3, [(0.0, 0.0, 1.0)] * 3, [(0.0, 0.0)] * 3, [(0, 1, 2)],
                                 skin=[[(bone, 255)]] * 3, tracks=None, draw=0, static=False)
         self.assertEqual(hs._horse_parts([part("bip01 pelvis")])[0].skin, [[("horse pelvis", 255)]] * 3)
-        with self.assertRaisesRegex(hs.HorseSquadError, "leans on a bone the Horse Squad leaves out"):
+        with self.assertRaisesRegex(hs.HorseSquadError, "leans on a bone the Generic Horse leaves out"):
             hs._horse_parts([part("bip01 footsteps")])
 
 
@@ -521,15 +521,15 @@ class TheRealBuilderThroughTheAdd(unittest.TestCase):
         self.addCleanup(shutil.rmtree, home, True)
         api = StudioApi(index_path=INDEX, game_dir=GAME, home=home)
         one = Path(api.new_mod("By hand")["current"])
-        unit = api.new_unit(SQUAD, "Horse Squad", 5, group="new")["address"]
+        unit = api.new_unit(SQUAD, "Generic Horse", 5, group="new")["address"]
         api.model_import(unit, str(rifle))
         api.model_import(unit, str(heavy), kind="bazooka")
         two = Path(api.new_mod("Added")["current"])
         fresh = tree(two)
         self.assertIs(sys.modules.get(horse_squad.BUILDER), hs)      # (the real builder, no stand-in, is what it gets)
-        view = finished(api, api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
-        self.assertEqual((view["state"], view["message"]), ("done", "Horse Squad is in your mod."))
-        self.assertEqual(view["result"], {"address": unit, "name": "Horse Squad"})
+        view = finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
+        self.assertEqual((view["state"], view["message"]), ("done", "Generic Horse is in your mod."))
+        self.assertEqual(view["result"], {"address": unit, "name": "Generic Horse"})
         kept = home / horse_squad.FOLDER
         self.assertEqual(sorted(os.listdir(kept)), sorted(hs.FILES.values()))      # nothing of the build left
         self.assertEqual((kept / hs.FILES["rifle"]).read_bytes(), rifle.read_bytes())
@@ -537,7 +537,7 @@ class TheRealBuilderThroughTheAdd(unittest.TestCase):
         by_hand, added = tree(one), tree(two)
         self.assertEqual(json.loads(added.pop(era_units.INDEX)), {KEY: unit})
         self.assertEqual(added.pop(era_units.CREDITS).decode("utf-8").replace("\r\n", "\n"),
-                         "# Made for RUSE 2.0\n\n- Horse Squad (WWII, USA): by sneadtristen6.\n")
+                         "# Made for RUSE 2.0\n\n- Generic Horse (WWII, USA): by sneadtristen6.\n")
         by_hand.pop("mod.toml"), added.pop("mod.toml")
         self.assertEqual(sorted(added), sorted(by_hand))
         differ = {}

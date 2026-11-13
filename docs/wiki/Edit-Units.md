@@ -100,7 +100,7 @@ Decoy**): an animation for this unit only or for every unit that plays it, a sou
   of it in your mod under its own name.
 - **A unit that carries its rider (a horse, a motorcycle):** one model with the rider and what he rides on one
   skeleton, with its own animations (stand, walk and run at least), imported onto a copied squad: see [[Import a
-  model|Import-a-Model]], its part on a model with its own bones and animations. The Horse Squad was made this way in
+  model|Import-a-Model]], its part on a model with its own bones and animations. The Generic Horse was made this way in
   the Studio and played in the game (November 2026); nothing else made this way has been tried in the game yet.
 
 ## Armour

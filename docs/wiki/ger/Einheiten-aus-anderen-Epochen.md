@@ -77,9 +77,9 @@ passiert:
 Eine Einheit, die noch von einer erforscht wird, die es nicht mehr gibt, sagt das in ihrem Feld **Verbesserung und
 Forschung** und in der Prüfleiste, und der Build stoppt an ihr, bis du eine andere Einheit wählst, oder keine.
 
-## Der Reitertrupp
+## Generischer Reitertrupp
 
-**Zweiter Weltkrieg+** zeigt auch den **Reitertrupp**, erstellt von sneadtristen6: Schützen und ein Soldat mit schwerer
+**Zweiter Weltkrieg+** zeigt auch den Trupp **Generischer Reitertrupp**, erstellt von sneadtristen6: Schützen und ein Soldat mit schwerer
 Waffe, jeder auf seinem eigenen Pferd. Nichts davon wird heruntergeladen, also ist er da, ob du die Einheiten des
 Zweiten Weltkriegs+ heruntergeladen hast oder nicht. Wie die Epochen-Einheiten ist er erst in deiner Mod, wenn du ihn
 hinzufügst.
@@ -99,7 +99,7 @@ Sein Ersteller, sneadtristen6, wird in der `CREDITS-era-units.md` deiner Mod gen
 Epochen-Einheiten.
 
 Im Spiel gesehen: diese Reiter auf ihren Pferden, gemacht mit **Modell importieren…** auf einer Kopie des G.I.-Trupps.
-Noch nicht im Spiel ausprobiert: der Reitertrupp, aus dieser Liste hinzugefügt.
+Noch nicht im Spiel ausprobiert: der Generische Reitertrupp, aus dieser Liste hinzugefügt.
 
 ## Nennung der Ersteller
 

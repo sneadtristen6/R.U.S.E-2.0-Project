@@ -67,9 +67,9 @@ When you take out a unit that others are researched from, **Settings > Research*
 A unit left researched from one that's gone says so in its **Upgrade and research** box and in the check bar, and the
 build stops on it until you pick another unit, or none.
 
-## The Horse Squad
+## The Generic Horse
 
-**WWII+** also lists the **Horse Squad**, made by sneadtristen6: riflemen and a heavy-weapon soldier, each on a horse of
+**WWII+** also lists the **Generic Horse**, made by sneadtristen6: riflemen and a heavy-weapon soldier, each on a horse of
 his own. Nothing of it is downloaded, so it's there whether or not you've downloaded the WWII+ units. Like the era
 units, it isn't in your mod until you add it.
 
@@ -86,7 +86,7 @@ units, it isn't in your mod until you add it.
 Its maker, sneadtristen6, is credited in your mod's `CREDITS-era-units.md`, beside the era units' makers.
 
 Seen in the game: these riders on their horses, made with **Import model…** on a copy of the G.I. squad. Not tried in
-the game yet: the Horse Squad added from this list.
+the game yet: the Generic Horse added from this list.
 
 ## Credits
 

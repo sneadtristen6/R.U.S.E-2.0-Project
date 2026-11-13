@@ -133,7 +133,7 @@ unit's page, **Its animations** shows what the unit plays for each thing it does
 **A copy keeps its animations:** a unit copied from one with animations of its own plays the same ones. To change one
 for it alone, click **Change in RUSE Decoy** on its **Sounds and animation** row, then **Only this unit**.
 
-The Horse Squad made this way in the Studio played in the game (November 2026).
+The Generic Horse made this way in the Studio played in the game (November 2026).
 ## A model with its own bones and animations
 
 A horse, a horse with its rider, any creature: a model on bones of its own goes on a squad with its animations.
@@ -149,7 +149,7 @@ Good to know:
 - Your mod keeps the model and every animation: `files\models\<the unit's name>.glb`, and each animation as `files\anim\own\<the unit's name>\<its name>.baf`.
 - **Back to the game's look** on that line takes the model out again, with its animations.
 - A squad with a heavy-weapon soldier: give him his own horse and rider with **Import a model…** on his line, made on the same bones as the riflemen's, and he plays their animations. On other bones he plays what he played in the copied squad, and the page warns you: that can stop the game. Taking the riflemen's model out takes his out with it.
-- The Horse Squad made this way in the Studio played in the game (November 2026); nothing else made this way has been tried in the game yet.
+- The Generic Horse made this way in the Studio played in the game (November 2026); nothing else made this way has been tried in the game yet.
 
 ## Its animations, changed in Blender
 

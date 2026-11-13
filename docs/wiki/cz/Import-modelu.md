@@ -133,7 +133,7 @@ ukazují **Její animace**, co jednotka hraje pro každou činnost ve hře:
 **Kopie si nechává animace:** jednotka zkopírovaná z jednotky s vlastními animacemi hraje tytéž. Chcete-li některou
 změnit jen pro ni, klikněte na **Změnit v RUSE Decoy** na jejím řádku **Zvuky a animace** a pak na **Jen tato jednotka**.
 
-Horse Squad udělaný takto ve Studiu ve hře fungoval (listopad 2026).
+Univerzální jízdní družstvo udělané takto ve Studiu ve hře fungovalo (listopad 2026).
 ## Model s vlastními kostmi a animacemi
 
 Kůň, kůň s jezdcem, jakýkoli tvor: model na vlastních kostech jde na družstvo i se svými animacemi.
@@ -149,7 +149,7 @@ Dobré vědět:
 - Tvůj mod uchová model i každou animaci: `files\models\<název jednotky>.glb` a každou animaci jako `files\anim\own\<název jednotky>\<její název>.baf`.
 - **Zpět na vzhled ze hry** na tom řádku model zase odebere, i s jeho animacemi.
 - Družstvo s vojákem s těžkou zbraní: dej mu vlastního koně s jezdcem přes **Importovat model…** na jeho řádku, udělaného na stejných kostech jako model střelců, a bude hrát jejich animace. Na jiných kostech hraje to, co v kopírovaném družstvu, a stránka tě varuje: to může hru zastavit. Odebrání modelu střelců odebere i jeho.
-- Horse Squad udělaný takto ve Studiu ve hře fungoval (listopad 2026); nic jiného takto udělaného zatím ve hře vyzkoušeno nebylo.
+- Univerzální jízdní družstvo udělané takto ve Studiu ve hře fungovalo (listopad 2026); nic jiného takto udělaného zatím ve hře vyzkoušeno nebylo.
 
 ## Jeho animace, změněné v Blenderu
 

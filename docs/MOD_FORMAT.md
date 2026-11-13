@@ -531,18 +531,18 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   ```toml
   # a game clip changed for this unit alone: the same keys as clips.toml, and `file`, a whole clip of the unit's own in
   # its place (a path in the unit's folder, below)
-  [unit.Descriptor_Unit_Horse_Squad.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf"]
+  [unit.Descriptor_Unit_Generic_Horse.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf"]
   speed = 150
   file = "genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf"
-  [unit.Descriptor_Unit_Horse_Squad.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf".bone."bip01 head"]
+  [unit.Descriptor_Unit_Generic_Horse.clip."genanim_15/ww2/res3d/units/common/fusilier_standlod0.baf".bone."bip01 head"]
   size = 2.5
 
   # an action (the name the unit's figures list a clip by: t_stand, b_course, idle1...) given a clip made elsewhere:
   # every figure of the unit that lists the action...
-  [unit.Descriptor_Unit_Horse_Squad.action]
+  [unit.Descriptor_Unit_Generic_Horse.action]
   b_stand = "horse_stand.baf"
   # ...or one figure, by its path from the unit (this wins over the table above)
-  [unit.Descriptor_Unit_Horse_Squad.figure."GfxDescriptorBazooka".action]
+  [unit.Descriptor_Unit_Generic_Horse.figure."GfxDescriptorBazooka".action]
   t_tir = "rider_bazooka_fire.baf"
   ```
 
@@ -576,12 +576,12 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
   model of its own and that model's animations has them by name, the modder's picks, and how it goes on long moves:
 
   ```toml
-  [unit.Descriptor_Unit_Horse_Squad]
+  [unit.Descriptor_Unit_Generic_Horse]
   ride = "truck"                  # in its truck on long moves; without it, as itself (below)
-  [unit.Descriptor_Unit_Horse_Squad.animation]   # the model's animations, in its order, each a clip file
+  [unit.Descriptor_Unit_Generic_Horse.animation]   # the model's animations, in its order, each a clip file
   stand = "stand.baf"             # in files/anim/own/<the unit's name>/ (rusemod.anim.set_animations writes them)
   "Gallop fast" = "Gallop_fast.baf"
-  [unit.Descriptor_Unit_Horse_Squad.plays]       # the animation picked for an action (the unit's page)
+  [unit.Descriptor_Unit_Generic_Horse.plays]       # the animation picked for an action (the unit's page)
   course = "Gallop fast"          # the action as the game names it, without t_ / b_: course is t_course and b_course
   ride = "stand"                  # what it plays on long moves, as itself
   ```

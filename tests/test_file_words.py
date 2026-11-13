@@ -58,8 +58,8 @@ TRY_AGAIN = {
     "code": "{0} couldn't be read or written (error {1}). Please report this.",
 }
 ADD = {
-    "full": "The Horse Squad couldn't be added: the disk holding {0} is full. Make room on it, then add it again.",
-    "held": "The Horse Squad couldn't be added: {0} couldn't be read or written, because another program has it open "
+    "full": "The Generic Horse couldn't be added: the disk holding {0} is full. Make room on it, then add it again.",
+    "held": "The Generic Horse couldn't be added: {0} couldn't be read or written, because another program has it open "
             "or Windows didn't allow it. Close that program, then add it again.",
 }
 
@@ -158,7 +158,7 @@ class TheAddSaysTheImportsFileErrorInItsWords(WithLibrary):
         before = tree(folder)
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(self.rifle, self.heavy)}), \
                 mock.patch.object(StudioApi, "model_import", side_effect=raising):
-            view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
         self.assertEqual((view["state"], view["lines"]), ("failed", ["build", "unit", "riflemen"]))
         after = tree(folder)
         self.assertEqual(json.loads(after.pop(era_units.INDEX)), {})          # (its record emptied, as test_horse_squad)
@@ -207,7 +207,7 @@ class TheAddSaysTheImportsFileErrorInItsWords(WithLibrary):
         self.assertEqual(str(said), ADD["held"].format(kept))
         said = self.api._horse_file_error(FileNotFoundError(errno.ENOENT, "Not found", str(new), None, str(kept)),
                                           self.home / horse_squad.FOLDER)
-        self.assertEqual(str(said), f"The Horse Squad couldn't be added: {new} isn't there.")
+        self.assertEqual(str(said), f"The Generic Horse couldn't be added: {new} isn't there.")
 
 
 class EveryGroundUnitSaysAFileErrorInWords(WithLibrary):
@@ -318,7 +318,7 @@ class OnTheGame(unittest.TestCase):
             for p in patches:
                 p.start()
             try:
-                return finished(self.api, self.api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None,
+                return finished(self.api, self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None,
                                                                    "new")["job"])
             finally:
                 for p in reversed(patches):

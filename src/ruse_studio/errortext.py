@@ -25,7 +25,7 @@ FILE = Path(__file__).with_name("errors.toml")
 # call making one: which argument holds its text})}. The Horse Squad's builder (rusemod.horsesquad) refuses in plain
 # words (HorseSquadError), and horse_squad.py passes its refusal on inside this frame (review 2026-11-12: the frame was
 # said in the player's language with the builder's sentence left English inside it).
-WITHIN = {"The Horse Squad can't be made from your game: {0}":
+WITHIN = {"The Generic Horse can't be made from your game: {0}":
           (Path(__file__).parents[1] / "rusemod" / "horsesquad.py", {"HorseSquadError": 0})}
 
 

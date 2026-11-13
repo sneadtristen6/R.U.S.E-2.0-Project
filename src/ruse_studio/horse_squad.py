@@ -30,7 +30,7 @@ import uuid
 from pathlib import Path
 
 KEY = "horse-squad"     # its key among the era units (the mod's era_units.json): never one of a library's (era|nation|name)
-NAME = "Horse Squad"    # its name in English: the new unit's when the form gives none, and the credits'
+NAME = "Generic Horse"    # its name in English: the new unit's when the form gives none, and the credits'
 AUTHOR = "sneadtristen6"   # the name on his mods
 SQUAD = "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger"   # the US rifle squad it's made from, as horse-studio2 was
 BUILDER = "rusemod.horsesquad"   # its two model files from the player's own game (horse_squad_glbs, HorseSquadError)
@@ -176,7 +176,7 @@ class HorseSquadCalls:
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
-            raise StudioError("We couldn't find R.U.S.E.: the Horse Squad is made from your own copy of the game.")
+            raise StudioError("We couldn't find R.U.S.E.: the Generic Horse is made from your own copy of the game.")
         builder = self._horse_builder()
         self._horse_room(builder, mod, name)
         with _LOCK:
@@ -201,7 +201,7 @@ class HorseSquadCalls:
                 try:
                     # the mod it was asked for, still the one being edited: nothing is made in another
                     if self._mod_dir() != mod:
-                        raise StudioError("The mod being edited changed while the Horse Squad was being made, so it "
+                        raise StudioError("The mod being edited changed while the Generic Horse was being made, so it "
                                           "wasn't added: add it again.")
                     # from here every step writes into this mod, even when another Studio window on the same platform
                     # folder picks another mod meanwhile (its _horse_guard is its own: api._mod_dir keeps this one)
@@ -283,7 +283,7 @@ class HorseSquadCalls:
             need = len(str(work))
         if need > PATH_MOST:
             # not a game rule: Windows' longest path, which the files the Horse Squad is made into must fit
-            raise StudioError(f"The Horse Squad can't be added: the folder the Studio keeps its own files in "
+            raise StudioError(f"The Generic Horse can't be added: the folder the Studio keeps its own files in "
                               f"({self._home}) is too deep for it. Adding it would write a file whose path is "
                               f"{need - PATH_MOST} character(s) longer than Windows takes ({PATH_MOST} at most). Move "
                               f"it to a folder with a shorter path, and set the Windows environment variable "
@@ -297,7 +297,7 @@ class HorseSquadCalls:
         need = len(str(Path(mod, *OWN_CLIPS, tail, "x" * CLIP_LONGEST + ".part"))) if mod is not None else 0
         if need > PATH_MOST:
             # not a game rule: Windows' longest path, which the Horse Squad's animations in the mod must fit
-            raise StudioError(f"The Horse Squad can't be added: your mod's folder ({mod}) is too deep for it. Adding "
+            raise StudioError(f"The Generic Horse can't be added: your mod's folder ({mod}) is too deep for it. Adding "
                               f"it would write a file whose path is {need - PATH_MOST} character(s) longer than "
                               f"Windows takes ({PATH_MOST} at most). Give it a shorter name in the form, or put the mod "
                               f"in a folder with a shorter path, then add it again.")
@@ -312,7 +312,7 @@ class HorseSquadCalls:
             if exc.name != BUILDER:
                 raise self._horse_part_missing(exc) from exc
             # not a game rule: the part of the Studio that makes it
-            raise StudioError("This Studio can't make the Horse Squad yet: the part that makes it from your game "
+            raise StudioError("This Studio can't make the Generic Horse yet: the part that makes it from your game "
                               "isn't in it.") from None
 
     @staticmethod
@@ -320,9 +320,9 @@ class HorseSquadCalls:
         """The StudioError for a part the builder needs that couldn't be loaded (`exc`), named when Python names it."""
         from .api import StudioError
         if exc.name:
-            return StudioError(f"This Studio can't make the Horse Squad: a part it needs ({exc.name}) couldn't be "
+            return StudioError(f"This Studio can't make the Generic Horse: a part it needs ({exc.name}) couldn't be "
                                f"loaded. Please report this.")
-        return StudioError("This Studio can't make the Horse Squad: a part it needs couldn't be loaded. Please report "
+        return StudioError("This Studio can't make the Generic Horse: a part it needs couldn't be loaded. Please report "
                            "this.")
 
     @staticmethod
@@ -335,27 +335,27 @@ class HorseSquadCalls:
         `reading`, else `folder` (api.file_error's rule)."""
         from .api import StudioError, disk_full, file_named
         if disk_full(exc):
-            return StudioError(f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on "
+            return StudioError(f"The Generic Horse couldn't be added: the disk holding {folder} is full. Make room on "
                                f"it, then add it again.")
         path = file_named(exc, reading if reading is not None else folder)
         long = [str(f) for f in (exc.filename, exc.filename2) if f is not None and len(str(f)) > PATH_MOST]
         if long and not long_paths_on():
             # not a game rule: Windows' longest path (one _horse_room's sum didn't see coming: said as what it is,
             # never as a file that "isn't there")
-            return StudioError(f"The Horse Squad couldn't be added: {long[0]} is {len(long[0]) - PATH_MOST} "
+            return StudioError(f"The Generic Horse couldn't be added: {long[0]} is {len(long[0]) - PATH_MOST} "
                                f"character(s) longer than Windows takes in a path ({PATH_MOST} at most). Put the "
                                f"folder it is in somewhere with a shorter path, then add it again.")
         code = getattr(exc, "winerror", None) or exc.errno
         if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
-            return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written, because "
+            return StudioError(f"The Generic Horse couldn't be added: {path} couldn't be read or written, because "
                                f"another program has it open or Windows didn't allow it. Close that program, then add "
                                f"it again.")
         if isinstance(exc, FileNotFoundError):
-            return StudioError(f"The Horse Squad couldn't be added: {path} isn't there.")
+            return StudioError(f"The Generic Horse couldn't be added: {path} isn't there.")
         if code is None:
-            return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written. Please report "
+            return StudioError(f"The Generic Horse couldn't be added: {path} couldn't be read or written. Please report "
                                f"this.")
-        return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written (error {code}). "
+        return StudioError(f"The Generic Horse couldn't be added: {path} couldn't be read or written (error {code}). "
                            f"Please report this.")
 
     def _horse_build(self, builder, game: Path) -> dict:
@@ -377,20 +377,20 @@ class HorseSquadCalls:
                 got = builder.horse_squad_glbs(Path(game), work, index=self._path(), say=lambda _line: None)
             except refusals as exc:
                 # not a game rule: the builder's own refusal, in its plain words, of what the game gave it
-                raise StudioError(f"The Horse Squad can't be made from your game: {exc}") from None
+                raise StudioError(f"The Generic Horse can't be made from your game: {exc}") from None
             except OSError:
                 raise
             except ImportError as exc:   # (a part it loads as it goes)
                 raise self._horse_part_missing(exc) from exc
             except MemoryError:
                 # not a game rule: this PC's memory
-                raise StudioError("The Horse Squad can't be made from your game: this PC ran out of memory while "
+                raise StudioError("The Generic Horse can't be made from your game: this PC ran out of memory while "
                                   "making it. Close other programs, then add it again.") from None
             except Exception as exc:
                 # (the builder stopped on something it doesn't check for: a mistake of its own, or game data unlike any
                 # it was tried on; Bug Watch counts where, from the error it was raised from)
                 # not a game rule: what the builder didn't expect
-                raise StudioError("The Horse Squad can't be made from your game: making it stopped on something the "
+                raise StudioError("The Generic Horse can't be made from your game: making it stopped on something the "
                                   "Studio didn't expect. Please report this.") from exc
             files = {}
             for role in ROLES:
@@ -402,7 +402,7 @@ class HorseSquadCalls:
                 files[role] = path
             if not files or len({p.name.lower() for p in files.values()}) != len(ROLES):
                 # not a game rule: what the builder hands over (two .glb files of its own, where it was asked)
-                raise StudioError("The Horse Squad can't be made from your game: its two model files didn't come out. "
+                raise StudioError("The Generic Horse can't be made from your game: its two model files didn't come out. "
                                   "Please report this.")
             out = {}
             for role, path in files.items():
@@ -422,7 +422,7 @@ class HorseSquadCalls:
         heavy = rows.get(HEAVY, {})
         if not (main.get("own") and main.get("skeleton") == "own" and heavy.get("own")
                 and heavy.get("same_bones") is True):
-            raise StudioError("The Horse Squad's two models didn't come in on the same bones, so it wasn't added. "
+            raise StudioError("The Generic Horse's two models didn't come in on the same bones, so it wasn't added. "
                               "Please report this.")
 
     def _horse_undo(self, address: str | None, before: set) -> None:
@@ -466,7 +466,7 @@ class HorseSquadCalls:
             still = sorted(mine)
         if still:
             # not a game rule: what this job made couldn't all be taken out of the mod again
-            raise StudioError("The Horse Squad couldn't be added, and taking it back out failed too, so part of it "
+            raise StudioError("The Generic Horse couldn't be added, and taking it back out failed too, so part of it "
                               "is still in your mod: take it out of your mod on its page in the Units tab, or delete "
                               "it on its unit page.")
 
@@ -485,10 +485,10 @@ class HorseSquadCalls:
         if not mine:
             return
         if moving:
-            raise StudioError(f"The file the Horse Squad's model was made from isn't there any more ({file}), so it "
+            raise StudioError(f"The file the Generic Horse's model was made from isn't there any more ({file}), so it "
                               f"can't be moved. To have it made again, on its page in the Units tab (WWII+) click Take "
                               f"it out of my mod, then Add to my mod: what you changed on it is lost.")
-        raise StudioError(f"The file the Horse Squad's model was made from isn't there any more ({file}), so its size "
+        raise StudioError(f"The file the Generic Horse's model was made from isn't there any more ({file}), so its size "
                           f"can't be changed. To have it made again, on its page in the Units tab (WWII+) click Take it "
                           f"out of my mod, then Add to my mod: what you changed on it is lost.")
 
@@ -503,4 +503,4 @@ class HorseSquadCalls:
         same = path is not None and os.path.normcase(os.path.abspath(str(path))) == \
             os.path.normcase(os.path.abspath(str(busy)))
         if same != switching:
-            raise StudioError("The Horse Squad is being added to this mod: wait for it to finish.")
+            raise StudioError("The Generic Horse is being added to this mod: wait for it to finish.")

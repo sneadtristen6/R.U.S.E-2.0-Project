@@ -115,7 +115,7 @@ class OnTheMadeUpGame(WithMod):
         got = self.api.era_units_list("WWII")
         self.assertEqual((got["installed"], got["library"]), (False, True))      # WWII+ isn't downloaded here
         self.assertEqual([(u["key"], u["name"], u["built"], u["by"], u["added"], u["code"], u["kind"])
-                          for u in got["units"]], [(KEY, "Horse Squad", True, "sneadtristen6", None, 0, "ground")])
+                          for u in got["units"]], [(KEY, "Generic Horse", True, "sneadtristen6", None, 0, "ground")])
         self.assertEqual(self.api.era_units_list("WWI")["units"][0]["built"], False)   # an era unit's row as before
         self.assertNotIn(KEY, [u["key"] for u in self.api.era_units_list("WWI")["units"]])
         for kind, nation, search, listed in (("air", -1, "", []), ("all", 1, "", []), ("ground", 0, "", [KEY]),
@@ -133,7 +133,7 @@ class OnTheMadeUpGame(WithMod):
     def test_its_page_credits_its_maker_and_starts_from_the_rifle_squad_only(self):
         page = self.api.era_unit_page(KEY, "us")
         self.assertEqual((page["name"], page["built"], page["credit"], page["added"], page["has_model"],
-                          page["building"]), ("Horse Squad", True, {"author": "sneadtristen6"}, None, False, None))
+                          page["building"]), ("Generic Horse", True, {"author": "sneadtristen6"}, None, False, None))
         self.assertEqual([s["address"] for s in page["start"]], [SQUAD])
         self.assertEqual((page["era"], page["nation"], page["copies"]), ("WWII", "USA", SQUAD))
         # another start unit asked for is never taken: its models are made for that unit's soldiers
@@ -149,7 +149,7 @@ class OnTheMadeUpGame(WithMod):
         before = tree(folder)
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: None}), self.assertRaises(StudioError) as said:
             self.api.horse_squad_add(0, 10, group="new")
-        self.assertEqual(str(said.exception), "This Studio can't make the Horse Squad yet: the part that makes it "
+        self.assertEqual(str(said.exception), "This Studio can't make the Generic Horse yet: the part that makes it "
                                               "from your game isn't in it.")
         self.assertEqual(tree(folder), before)
         self.assertFalse((self.home / horse_squad.FOLDER).exists())
@@ -158,16 +158,16 @@ class OnTheMadeUpGame(WithMod):
         folder = Path(self.api.new_mod("Refused")["current"])
         before, asked = tree(folder), []
         with self.builder(refuse="Your game has no horse the Studio can read.", asked=asked):
-            view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
         self.assertEqual((view["state"], view["message"], view["lines"]),
-                         ("failed", "The Horse Squad can't be made from your game: Your game has no horse the Studio "
+                         ("failed", "The Generic Horse can't be made from your game: Your game has no horse the Studio "
                                     "can read.", ["build"]))
         self.assertEqual(tree(folder), before)                                  # nothing made
         self.assertEqual(os.listdir(self.home / horse_squad.FOLDER), [])        # nothing left of the build
         self.assertEqual((asked[0]["game"], asked[0]["index"]), (self.game, self.index))
         # in the Studio's language, the builder's own words kept as they came
         self.api.set_pref("lang", "fr")
-        self.assertEqual(self.api.job(view["id"])["message"], "L'Escouade à cheval ne peut pas être fabriquée à partir "
+        self.assertEqual(self.api.job(view["id"])["message"], "L'Escouade à cheval générique ne peut pas être fabriquée à partir "
                                                               "de votre jeu : Your game has no horse the Studio can read.")
 
     def test_files_not_made_where_the_builder_was_asked_are_refused(self):
@@ -177,7 +177,7 @@ class OnTheMadeUpGame(WithMod):
         with self.builder(where=away):
             view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
         self.assertEqual((view["state"], view["message"]), (
-            "failed", "The Horse Squad can't be made from your game: its two model files didn't come out. Please "
+            "failed", "The Generic Horse can't be made from your game: its two model files didn't come out. Please "
                       "report this."))
         self.assertEqual(sorted(os.listdir(away)), ["heavy.glb", "rifle.glb"])  # never moved from where they are
         self.assertEqual(tree(folder), before)
@@ -188,11 +188,11 @@ class OnTheMadeUpGame(WithMod):
         folder = Path(self.api.new_mod("Half")["current"])
         before = tree(folder)
         with self.builder():
-            view = finished(self.api, self.api.horse_squad_add(0, 10, "Horse Squad", 5, group="new")["job"])
+            view = finished(self.api, self.api.horse_squad_add(0, 10, "Generic Horse", 5, group="new")["job"])
         self.assertEqual(view["state"], "failed")
         self.assertEqual(view["lines"], ["build", "unit", "riflemen"])
         self.assertEqual(view["message"], "The unit this one copies has no 3D model to fit a new one to.")
-        self.assertNotIn("Horse Squad", [u["name"] for u in self.api.units()["units"] if u.get("new")])
+        self.assertNotIn("Generic Horse", [u["name"] for u in self.api.units()["units"] if u.get("new")])
         self.assertEqual(ModEdits(folder).new_units, {})
         # what's left: its record emptied, and the Studio's own changes file with no change in it (as Delete leaves it)
         after = tree(folder)
@@ -221,7 +221,7 @@ class OnTheMadeUpGame(WithMod):
         self.assertEqual((units[made["address"]]["new"], units[made["address"]]["source"]), (True, SQUAD))
         self.assertEqual(json.loads((folder / era_units.INDEX).read_text(encoding="utf-8")), {KEY: made["address"]})
         self.assertEqual((folder / era_units.CREDITS).read_text(encoding="utf-8"),
-                         "# Made for RUSE 2.0\n\n- Horse Squad (WWII, USA): by sneadtristen6.\n")
+                         "# Made for RUSE 2.0\n\n- Generic Horse (WWII, USA): by sneadtristen6.\n")
         self.assertEqual(self.api.era_units_list("WWII")["units"][0]["added"], made["address"])
         self.assertEqual(self.api.era_unit_page(KEY)["added"], made["address"])
         with self.builder(), self.assertRaisesRegex(StudioError, "already in this mod"):
@@ -232,11 +232,11 @@ class OnTheMadeUpGame(WithMod):
         self.assertTrue(credits.startswith("# Era unit models\n"), credits)
         self.assertTrue(credits.endswith('- Mark VIII Liberty (WWI, USA): "Liberty model" by maker, CC-BY 4.0, '
                                          'https://example.org/Liberty.\n\n# Made for RUSE 2.0\n\n'
-                                         '- Horse Squad (WWII, USA): by sneadtristen6.\n'), credits)
+                                         '- Generic Horse (WWII, USA): by sneadtristen6.\n'), credits)
         out = self.api.era_unit_remove(KEY)
         self.assertEqual(out["removed"], made["address"])
         self.assertNotIn(made["address"], {u["address"] for u in self.api.units()["units"]})
-        self.assertNotIn("Horse Squad", (folder / era_units.CREDITS).read_text(encoding="utf-8"))
+        self.assertNotIn("Generic Horse", (folder / era_units.CREDITS).read_text(encoding="utf-8"))
         self.assertEqual(json.loads((folder / era_units.INDEX).read_text(encoding="utf-8")),
                          {"WWI|USA|Mark VIII Liberty": liberty["address"]})
         self.api.era_unit_remove("WWI|USA|Mark VIII Liberty")
@@ -255,18 +255,18 @@ class OnTheMadeUpGame(WithMod):
 
         with self.builder(during=meanwhile):
             view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
-        self.assertEqual((view["state"], view["message"]), ("failed", "Horse Squad is already in this mod"))
+        self.assertEqual((view["state"], view["message"]), ("failed", "Generic Horse is already in this mod"))
         self.assertEqual(json.loads((folder / era_units.INDEX).read_text(encoding="utf-8")), {KEY: other["address"]})
         self.assertIn(other["address"], ModEdits(folder).new_units)
         self.assertIn("sneadtristen6", (folder / era_units.CREDITS).read_text(encoding="utf-8"))
 
     def test_a_name_taken_is_refused_before_the_build(self):
         self.api.new_mod("Taken")
-        self.api.new_unit("$/GFX/Everything/Descriptor_Unit_M4_Sherman", "Horse Squad", 5, group="new")
+        self.api.new_unit("$/GFX/Everything/Descriptor_Unit_M4_Sherman", "Generic Horse", 5, group="new")
         asked = []
         with self.builder(asked=asked), self.assertRaisesRegex(StudioError, "There's already a unit called "
-                                                                            "Descriptor_Unit_Horse_Squad"):
-            self.api.horse_squad_add(0, 10, "Horse Squad", group="new")
+                                                                            "Descriptor_Unit_Generic_Horse"):
+            self.api.horse_squad_add(0, 10, "Generic Horse", group="new")
         self.assertEqual(asked, [])
 
     def test_the_mod_changed_during_the_build(self):
@@ -277,7 +277,7 @@ class OnTheMadeUpGame(WithMod):
         with self.builder(during=lambda: self.api.choose_mod(str(second))):
             view = finished(self.api, self.api.horse_squad_add(0, 10, group="new")["job"])
         self.assertEqual((view["state"], view["message"]), (
-            "failed", "The mod being edited changed while the Horse Squad was being made, so it wasn't added: add it "
+            "failed", "The mod being edited changed while the Generic Horse was being made, so it wasn't added: add it "
                       "again."))
         self.assertEqual((tree(first), tree(second)), before)
 
@@ -289,7 +289,7 @@ class OnTheMadeUpGame(WithMod):
         try:
             for call in (lambda: self.api.choose_mod(str(other)), lambda: self.api.new_mod("Third"),
                          lambda: self.api.delete_mod(str(first)), lambda: self.api.forget_mod(str(first))):
-                with self.assertRaisesRegex(StudioError, "The Horse Squad is being added to this mod"):
+                with self.assertRaisesRegex(StudioError, "The Generic Horse is being added to this mod"):
                     call()
             self.api.choose_mod(str(first))           # the same mod again: nothing changes
             self.api.forget_mod(str(other))            # another mod: as always
@@ -305,7 +305,7 @@ class OnTheMadeUpGame(WithMod):
             try:
                 self.assertEqual(self.api.horse_squad_add(0, 10, group="new")["job"], first)
                 self.assertEqual(self.api.era_unit_page(KEY)["building"], first)
-                with self.assertRaisesRegex(StudioError, "The Horse Squad is being added to this mod"):
+                with self.assertRaisesRegex(StudioError, "The Generic Horse is being added to this mod"):
                     self.api.era_unit_remove(KEY)          # (taken out only once that's done)
             finally:
                 go.set()
@@ -371,9 +371,9 @@ class Credits(unittest.TestCase):
 
     def test_the_horse_squad_by_its_maker(self):
         self.assertEqual(era_units.credits_text([horse_squad.ENTRY]),
-                         "# Made for RUSE 2.0\n\n- Horse Squad (WWII, USA): by sneadtristen6.\n")
+                         "# Made for RUSE 2.0\n\n- Generic Horse (WWII, USA): by sneadtristen6.\n")
         both = era_units.credits_text([horse_squad.ENTRY, self.ERA])
-        self.assertTrue(both.endswith("https://example.org/a.\n\n# Made for RUSE 2.0\n\n- Horse Squad (WWII, USA): "
+        self.assertTrue(both.endswith("https://example.org/a.\n\n# Made for RUSE 2.0\n\n- Generic Horse (WWII, USA): "
                                       "by sneadtristen6.\n"), both)
 
 
@@ -389,7 +389,7 @@ class OnTheGame(unittest.TestCase):
         api = StudioApi(index_path=INDEX, game_dir=GAME, home=home)
         # the copy's own calls (make_horse_studio2_test.py), in a mod of their own
         one = Path(api.new_mod("By hand")["current"])
-        unit = api.new_unit(SQUAD, "Horse Squad", 5, group="new")["address"]
+        unit = api.new_unit(SQUAD, "Generic Horse", 5, group="new")["address"]
         api.model_import(unit, str(RIFLE))
         api.model_import(unit, str(HEAVY), kind="bazooka")
         # the Units tab's Add to my mod, in another, its builder standing in with the same two files
@@ -397,10 +397,10 @@ class OnTheGame(unittest.TestCase):
         fresh = tree(two)
         asked = []
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY, asked=asked)}):
-            view = finished(api, api.horse_squad_add(0, 8, "Horse Squad", 5, None, None, None, "new")["job"])
-        self.assertEqual((view["state"], view["message"]), ("done", "Horse Squad is in your mod."))
+            view = finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
+        self.assertEqual((view["state"], view["message"]), ("done", "Generic Horse is in your mod."))
         self.assertEqual(view["lines"], ["build", "unit", "riflemen", "bazooka"])
-        self.assertEqual(view["result"], {"address": unit, "name": "Horse Squad"})
+        self.assertEqual(view["result"], {"address": unit, "name": "Generic Horse"})
         self.assertEqual((asked[0]["game"], asked[0]["index"]), (GAME, INDEX))
         kept = home / horse_squad.FOLDER
         self.assertEqual(sorted(os.listdir(kept)), sorted([RIFLE.name, HEAVY.name]))     # no folder of the build left
@@ -410,7 +410,7 @@ class OnTheGame(unittest.TestCase):
         # its own files besides: the record of the era units it has and its credit line
         self.assertEqual(json.loads(added.pop(era_units.INDEX)), {KEY: unit})
         self.assertEqual(added.pop(era_units.CREDITS).decode("utf-8").replace("\r\n", "\n"),   # (as read_text reads it)
-                         "# Made for RUSE 2.0\n\n- Horse Squad (WWII, USA): by sneadtristen6.\n")
+                         "# Made for RUSE 2.0\n\n- Generic Horse (WWII, USA): by sneadtristen6.\n")
         by_hand.pop("mod.toml"), added.pop("mod.toml")       # (each mod's own name, from new_mod)
         self.assertEqual(sorted(added), sorted(by_hand))
         tail = unit.rsplit("/", 1)[-1]

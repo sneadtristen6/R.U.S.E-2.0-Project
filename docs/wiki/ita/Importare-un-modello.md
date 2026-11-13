@@ -136,7 +136,7 @@ animazioni. Nella pagina dell'unità, **Le sue animazioni** mostra cosa esegue l
 **Una copia tiene le sue animazioni:** un'unità copiata da una con animazioni sue esegue le stesse. Per cambiarne una
 solo per lei, clicca **Cambia in RUSE Decoy** sulla sua riga **Suoni e animazioni**, poi **Solo questa unità**.
 
-La Horse Squad fatta così nello Studio è stata giocata (novembre 2026).
+La Squadra a cavallo generica fatta così nello Studio è stata giocata (novembre 2026).
 ## Un modello con ossa e animazioni tutte sue
 
 Un cavallo, un cavallo con il suo cavaliere, qualsiasi creatura: un modello sulle sue ossa va su una squadra con le sue animazioni.
@@ -152,7 +152,7 @@ Buono a sapersi:
 - Il tuo mod tiene il modello e ogni animazione: `files\models\<nome dell'unità>.glb`, e ogni animazione come `files\anim\own\<nome dell'unità>\<il suo nome>.baf`.
 - **Torna all'aspetto del gioco** su quella riga toglie di nuovo il modello, con le sue animazioni.
 - Una squadra con un soldato con arma pesante: dagli il suo cavallo con cavaliere con **Importa un modello…** sulla sua riga, fatto sulle stesse ossa di quello dei fucilieri, ed esegue le loro animazioni. Su altre ossa esegue ciò che eseguiva nella squadra copiata, e la pagina ti avvisa: questo può fermare il gioco. Togliere il modello dei fucilieri toglie anche il suo.
-- La Horse Squad fatta così nello Studio è stata giocata (novembre 2026); nient'altro fatto così è ancora stato provato in gioco.
+- La Squadra a cavallo generica fatta così nello Studio è stata giocata (novembre 2026); nient'altro fatto così è ancora stato provato in gioco.
 
 ## Le sue animazioni, cambiate in Blender
 

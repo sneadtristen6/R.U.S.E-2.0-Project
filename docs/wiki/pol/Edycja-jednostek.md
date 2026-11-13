@@ -104,7 +104,7 @@ jej używają, dźwięk dla wszystkich jednostek, które go używają.
   kroki dla każdej: każda jednostka trzyma to wszystko w twoim modzie pod własną nazwą.
 - **Jednostka, która niesie swojego jeźdźca (koń, motocykl):** jeden model z jeźdźcem i tym, na czym jedzie, na jednym
   szkielecie, z własnymi animacjami (co najmniej stanie, chód i bieg), zaimportowany na skopiowany oddział: zobacz
-  [[Importowanie modelu|Importowanie-modelu]], część o modelu z własnymi kośćmi i animacjami. Horse Squad zrobiono tak
+  [[Importowanie modelu|Importowanie-modelu]], część o modelu z własnymi kośćmi i animacjami. Uniwersalny oddział konny zrobiono tak
   w Studiu i zagrano w grze (listopad 2026); nic innego zrobionego w ten sposób nie było jeszcze próbowane w grze.
 
 ## Pancerz

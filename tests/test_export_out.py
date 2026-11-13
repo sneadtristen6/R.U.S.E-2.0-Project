@@ -37,7 +37,7 @@ from ruse_studio.api import StudioApi, StudioError
 KEY = horse_squad.KEY
 LIBERTY = "WWI|USA|Mark VIII Liberty"
 LIBERTY_LINE = '- Mark VIII Liberty (WWI, USA): "Liberty model" by maker, CC-BY 4.0, https://example.org/Liberty.'
-HIS_LINE = "- Horse Squad (WWII, USA): by sneadtristen6."
+HIS_LINE = "- Generic Horse (WWII, USA): by sneadtristen6."
 PC = "C:\\Users\\Jane Doe\\AppData\\Local\\RUSE Mod Platform"   # a player's platform folder, his Windows name in it
 
 
@@ -372,7 +372,7 @@ class OnTheMadeUpGame(WithMod):
         record.write_text(json.dumps({"from": str(made), "size": 1.0, "report": {"file": made.name}}, indent=1),
                           encoding="utf-8")
         self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
-        view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "With the Horse Squad.")["job"])
+        view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "With the Generic Horse.")["job"])
         self.assertEqual(view["state"], "done", view.get("message"))
         return folder, record, Path(view["result"]["path"]), view
 

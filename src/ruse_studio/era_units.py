@@ -908,7 +908,7 @@ class EraUnitCalls:
         record = self._era_record()
         if key in record:
             if key == HORSE:
-                raise StudioError("Horse Squad is already in this mod")
+                raise StudioError("Generic Horse is already in this mod")
             raise StudioError(f"{entry['name']} is already in this mod")
         # everything asked for is checked before the unit is made, so a refusal leaves nothing half made
         has_model = bool(folder is not None and entry.get("model") and (folder / entry["model"]).is_file())
@@ -939,13 +939,13 @@ class EraUnitCalls:
             if research_from is not None and research_from not in menu:
                 if key == HORSE:
                     # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
-                    raise StudioError(f"Horse Squad can't be researched from {research_from} in that build menu")
+                    raise StudioError(f"Generic Horse can't be researched from {research_from} in that build menu")
                 # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
                 raise StudioError(f"{entry['name']} can't be researched from {research_from} in that build menu")
             if research_from is not None and rows and research_from not in (target or {"units": ()})["units"]:
                 if key == HORSE:
                     # the game's way: researched from a unit of that building it's an upgrade, drawn in that group
-                    raise StudioError(f"Horse Squad can't be researched from {research_from}: that unit is in another "
+                    raise StudioError(f"Generic Horse can't be researched from {research_from}: that unit is in another "
                                       f"group of the building than the one picked.")
                 # the game's way: researched from a unit of that building it's an upgrade, drawn in that unit's group
                 raise StudioError(f"{entry['name']} can't be researched from {research_from}: that unit is in another "
@@ -1032,7 +1032,7 @@ class EraUnitCalls:
         from .horse_squad import BUILT
         if key in BUILT and self._horse_running() and not self.__dict__.get("_horse_undoing"):
             # (its models are being imported: taken out only when that's done, or by the add's own take-back)
-            raise StudioError("The Horse Squad is being added to this mod: wait for it to finish.")
+            raise StudioError("The Generic Horse is being added to this mod: wait for it to finish.")
         record = self._era_record()
         address = record.get(key)
         if address is None:
@@ -1040,7 +1040,7 @@ class EraUnitCalls:
             if gone is not None:
                 return gone
             if key in BUILT:   # (by its name, in the modder's language: never its key)
-                raise StudioError("Horse Squad isn't in this mod")
+                raise StudioError("Generic Horse isn't in this mod")
             raise StudioError(f"{key}: not in this mod")
         research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
         if "ask" in research:

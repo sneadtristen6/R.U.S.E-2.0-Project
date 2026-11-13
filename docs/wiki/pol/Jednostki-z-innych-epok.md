@@ -72,9 +72,9 @@ Gdy usuwasz jednostkę, z której badane są inne, **Ustawienia > Badania** decy
 Jednostka, która została badana z jednostki, której już nie ma, mówi to w swoim polu **Ulepszenie i badania** i na pasku
 kontroli, a budowanie zatrzymuje się na niej, dopóki nie wybierzesz innej jednostki albo żadnej.
 
-## Oddział konny
+## Uniwersalny oddział konny
 
-**II wojna światowa+** pokazuje też **Oddział konny**, którego autorem jest sneadtristen6: strzelcy i żołnierz z ciężką
+**II wojna światowa+** pokazuje też **Uniwersalny oddział konny**, którego autorem jest sneadtristen6: strzelcy i żołnierz z ciężką
 bronią, każdy na własnym koniu. Nic z niego nie jest pobierane, więc jest tam, czy pobrałeś jednostki II wojny
 światowej+, czy nie. Tak jak jednostki z epok, nie ma go w twoim modzie, dopóki go nie dodasz.
 
@@ -92,7 +92,7 @@ bronią, każdy na własnym koniu. Nic z niego nie jest pobierane, więc jest ta
 Jego autor, sneadtristen6, jest podpisany w pliku `CREDITS-era-units.md` twojego moda, obok autorów jednostek z epok.
 
 Widziane w grze: ci jeźdźcy na swoich koniach, zrobieni przez **Importuj model…** na kopii oddziału PIECHOTA. Jeszcze
-nie sprawdzone w grze: Oddział konny dodany z tej listy.
+nie sprawdzone w grze: Uniwersalny oddział konny dodany z tej listy.
 
 ## Podziękowania
 
