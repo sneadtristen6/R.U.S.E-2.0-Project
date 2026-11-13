@@ -1019,6 +1019,7 @@ class SquadBlenderCalls:
         need = self._need_names(address, lang)
         if n - 1 < sq.FEWEST:
             # the game's own rule (its setting makes any number below 2 a 2) and the owner's pick 1
+            # rule: squad-fewest-two
             raise StudioError(f"A squad keeps at least {sq.FEWEST} soldiers: the game's own rule.")
         if n - 1 < len(need):
             # the game's rule: each of these weapons goes to one soldier, from the last one back

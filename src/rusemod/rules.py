@@ -78,6 +78,12 @@ RULES: dict[str, Rule] = {
         "studied", "partly: the game skips id 0 when it lists units by id and by nation (the nation list feeds the "
                    "in-game encyclopedia), and an order for such a unit reaches the game's scripts with no unit, an "
                    "error (2026-10-02); what the player sees then isn't known"),
+    "squad-fewest-two": Rule(
+        "A squad has at least 2 soldiers: the game makes any number below 2 a 2 as it loads.",
+        "studied", "the game raises a squad's soldier count below 2 to 2 as it reads the setting (2026-11-11; the "
+                   "details are in the project's private notes). In the game squads of 3, 5, 6 and 7 were played "
+                   "(squad-count1 and squad-plusminus1, owner, 2026-11-12: 'tested worked', 'Yep, it worked'); a "
+                   "squad of 2 and a squad of 8 were not tried"),
     "unit-card-shown": Rule(
         "A unit shown in a build menu at one of the first four battle dates, with no card picture "
         "(TextureForInterface), stops the game as it starts.",

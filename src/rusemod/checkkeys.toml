@@ -594,7 +594,7 @@ kind = "mistake"
 us = "{0}: {1} isn't a squad of soldiers, so it can't have soldiers of its own"
 
 [c102f844c6f]
-check = "build.squad_soldiers-3"
+check = "squad-fewest-two"
 where = "rusemod.build:squad_soldiers"
 kind = "mistake"
 us = "{0}: {1} would have {2} soldiers: a squad keeps at least {3}, the game's own rule"

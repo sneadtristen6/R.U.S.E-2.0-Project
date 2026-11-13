@@ -499,6 +499,7 @@ class DecoyBlenderCalls:
         send = folder / SEND
         if aside is None and self._anim_open(work):   # its Blender is open: it sends what it has now
             if ask_to_send(send, SEND_WAIT) is None:
+                # not a game rule: Blender's own answer to the Studio, in time or not
                 raise StudioError("Blender didn't answer in time: in Blender, click Send to the R.U.S.E. Studio at the "
                                   "top, then bring your changes back again.")
         sent = animblender.read_sent(folder)
@@ -537,12 +538,14 @@ class DecoyBlenderCalls:
             # told (a deleted one's points don't move in Blender as the game would move them)
             missing = ", ".join(back.missing)
             if back.new:
+                # not a game rule: which bone a renamed one was can't be told (the note above)
                 raise StudioError(f"These bones of this unit's skeleton didn't come back from Blender: {missing}, and "
                                   f"these came back that it hasn't got: {', '.join(new_bones)}. A bone renamed or "
                                   f"deleted there can't be taken back into its animations, so nothing was taken in. If "
                                   f"the Blender that sent it is still open: give the bones their names back there (or "
                                   f"undo deleting them), click Send to the R.U.S.E. Studio, then bring your changes "
                                   f"back again.")
+            # not a game rule: which bone a renamed one was can't be told (the note above)
             raise StudioError(f"These bones of this unit's skeleton didn't come back from Blender: {missing}. A bone "
                               f"renamed or deleted there can't be taken back into its animations, so nothing was taken "
                               f"in. If the Blender that sent it is still open: give the bones their names back there "
@@ -552,9 +555,9 @@ class DecoyBlenderCalls:
         points = {str(p).lower() for p in points} if isinstance(points, list) else rig.weighted(doc, binary)
         off = [b for b in rig.off_points(r, back, sent["record"]) if b.lower() in points]
         if off:
-            # not a game rule: the animations move the bones of a model that keeps where they rest (its points bound
-            # there), and this door changes no model; a bone no point leans on, moved so, is taken in where Blender
-            # has it
+            # (the animations move the bones of a model that keeps where they rest, its points bound there, and this
+            # door changes no model; a bone no point leans on, moved so, is taken in where Blender has it)
+            # not a game rule: what this door can carry back from Blender; a model's rest pose is no part of it
             raise StudioError(f"These bones of this unit's skeleton were moved in Blender's Edit Mode, where they "
                               f"rest: {', '.join(off)}. Its model keeps them where they rested, so in the game the "
                               f"parts of the model on them would move off with them, while in Blender those parts "
@@ -565,8 +568,9 @@ class DecoyBlenderCalls:
         if about.get("glb") != sha:       # (said of another sending, or of none)
             about = {}
         if about.get("session") and state.get("session") and about["session"] != state["session"]:
-            # not a game rule: a Blender left open from an earlier opening (the Studio restarted meanwhile) sent it,
-            # made from what went out then, not from what went out last
+            # (a Blender left open from an earlier opening, the Studio restarted meanwhile, sent it: made from what
+            # went out then, not from what went out last)
+            # not a game rule: which Blender sent the file
             raise StudioError("What came back was sent by a Blender opened before the last Change its animations in "
                               "Blender, so it can't be taken in: close that Blender, then in the one opened last click "
                               "Send to the R.U.S.E. Studio and bring your changes back.")

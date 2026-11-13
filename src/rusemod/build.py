@@ -1697,6 +1697,7 @@ def squad_soldiers(base, run, order: list, result: BuildResult) -> None:
         if count is not None:
             if count < sq.FEWEST:
                 # the game's rule (its setting makes any number below 2 a 2 as it loads) and the owner's pick 1
+                # rule: squad-fewest-two
                 result.findings.append(Finding("error", f"{where}: {unit} would have {count} soldiers: a squad keeps at "
                                                         f"least {sq.FEWEST}, the game's own rule"))
                 continue
