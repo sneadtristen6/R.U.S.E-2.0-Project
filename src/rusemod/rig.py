@@ -237,17 +237,23 @@ class Rig:
                                   [j.local for j in self.joints], [j.world for j in self.joints])
 
     # --- an animation, frame by frame ---
-    def frames(self, anim: Animation, fps: int = baf.FPS) -> tuple[float, int]:
+    def frames(self, anim: Animation, fps: int = baf.FPS, rate: float | None = None) -> tuple[float, int]:
         """(its length as a clip keeps it, its frames): `fps` frames a second from its first key to its last; one frame
-        of 1 second for an animation that doesn't move in time (as the game's one-frame clip)."""
+        of 1 second for an animation that doesn't move in time (as the game's one-frame clip). `rate`: the frames a
+        second the file was sampled at when that isn't `fps` (Blender's scene set to another rate: sampled_rate):
+        each of the file's frames is one of the clip's, `fps` a second, so every pose sent is a frame of the clip as
+        it was sent (the clip runs at the game's speed, not the file's)."""
         if anim.seconds <= 1e-9:
             return 1.0, 1
+        if rate:
+            frames = max(2, round(anim.seconds * rate) + 1)
+            return (frames - 1) / fps, frames
         return anim.seconds, max(2, round(anim.seconds * fps) + 1)
 
-    def _sampler(self, anim: Animation, fps: int) -> tuple[float, int, dict, object]:
+    def _sampler(self, anim: Animation, fps: int, rate: float | None = None) -> tuple[float, int, dict, object]:
         """(its length, its frames, {node: what moves it}, trs(node, frame): the node's (move, turn, size) at that
         frame, or its matrix for a node given as one) for poses() and worlds()."""
-        length, frames = self.frames(anim, fps)
+        length, frames = self.frames(anim, fps, rate)
         step = anim.seconds / (frames - 1) if frames > 1 else 0.0
         times = [anim.start + k * step for k in range(frames)]
         by_node: dict = {}
@@ -272,10 +278,10 @@ class Rig:
             return tuple(out)
         return length, frames, by_node, trs
 
-    def worlds(self, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
+    def worlds(self, anim: Animation, fps: int = baf.FPS, rate: float | None = None) -> tuple[float, list]:
         """(its length, each frame's [each bone's pose in the model (a 3 x 4), in the rig's bone order]), the nodes
-        between bones counted in, as poses() samples them."""
-        length, frames, _by_node, trs = self._sampler(anim, fps)
+        between bones counted in, as poses() samples them (`rate`: frames()'s)."""
+        length, frames, _by_node, trs = self._sampler(anim, fps, rate)
         out = []
         for k in range(frames):
             w = []
@@ -365,6 +371,27 @@ def sample(ch: Channel, times: list, t: float):
     if ch.path == "rotation":
         return baf.slerp(a, b, s)
     return tuple(x + (y - x) * s for x, y in zip(a, b))
+
+
+EVEN = 1e-3   # keys this close to one step apart (a share of the step) are evenly spaced: a float's time isn't exact
+
+
+def sampled_rate(rig: Rig) -> float | None:
+    """The frames a second a file's animations were sampled at, when every channel of every one of them has a key at
+    each frame, all at one step (Blender's Send samples every frame of an action at its scene's rate): 30 for the
+    game's, 24 for a scene set to 24. None when that can't be told (keys not evenly spaced, or none two apart)."""
+    steps = []
+    for anim in rig.animations:
+        for ch in anim.channels:
+            if len(ch.times) < 2:
+                continue
+            gaps = [b - a for a, b in zip(ch.times, ch.times[1:])]
+            if min(gaps) <= 0 or max(gaps) - min(gaps) > EVEN * max(gaps):
+                return None
+            steps.append(sum(gaps) / len(gaps))
+    if not steps or max(steps) - min(steps) > EVEN * max(steps):
+        return None
+    return len(steps) / sum(steps)
 
 
 # --- reading ---
@@ -693,12 +720,13 @@ def back_of(rig: Rig, reference: bytes) -> Back | None:
     return Back(names, parents, joint, fix, world, record, turned, kept, moved, new, missing, hung)
 
 
-def back_poses(rig: Rig, back: Back, anim: Animation, fps: int = baf.FPS) -> tuple[float, list]:
+def back_poses(rig: Rig, back: Back, anim: Animation, fps: int = baf.FPS,
+               rate: float | None = None) -> tuple[float, list]:
     """An animation of the file as the game's poses: (its length, each of `back`'s bones' (moves, turns, sizes) at
     each frame, from its parent in the game, as rusemod.baf.from_frames takes them): each bone's pose in the model
     (Rig.worlds) times its fix, then taken from its game parent's. Turns on one side, each next one by the one before
-    (rusemod.baf.same_side)."""
-    length, frames = rig.worlds(anim, fps)
+    (rusemod.baf.same_side). `rate`: Rig.frames'."""
+    length, frames = rig.worlds(anim, fps, rate)
     out = [([], [], []) for _ in back.names]
     for w in frames:
         game = [mul(w[j], f) for j, f in zip(back.joint, back.fix)]
@@ -722,16 +750,63 @@ def _carried(doc: dict) -> bytes | None:
     return None
 
 
-def _settle(rig: Rig, back: Back, anim: Animation, raw: bytes | None) -> tuple[float, list, dict]:
+def _under_held(back: Back, reference: bytes, poses: list, orig: baf.Clip | None, frames: int) -> list:
+    """back_poses' `poses` with each bone whose parent in `reference` the file hasn't got (back_of hangs it from the
+    nearest bone above that the file has) taken from that parent again, as the clip will hold it: a bone the file
+    hasn't got held as the clip that went out (`orig`) has it, else at its rest (clips_back's way). So each bone the
+    file has is where the file puts it in the model, and a missing bone's pose isn't counted twice under it."""
+    sk = baf.skeleton(reference)
+    ref = [n.lower() for n in sk["names"]]
+    pos = {n.lower(): i for i, n in enumerate(back.names)}
+    track = {}
+    if orig is not None:
+        osk = baf.skeleton(orig.skeleton)
+        for u, t in enumerate(orig.tracks):
+            name = osk["names"][osk["index"][u]].lower()
+            if name in ref:
+                track[ref.index(name)] = t
+
+    def held(b: int, k: int) -> tuple:
+        if b in track:
+            return compose(*baf.sample(track[b], k / (frames - 1) if frames > 1 else 0.0))
+        return tuple(sk["local"][b])
+    out = list(poses)
+    for b in range(sk["bones"]):
+        i, p = pos.get(ref[b]), sk["parents"][b]
+        if i is None or p < 0 or ref[p] in pos:
+            continue
+        chain = []      # (the bones the file hasn't got, from the nearest one above that it has down to b's parent)
+        while p >= 0 and ref[p] not in pos:
+            chain.insert(0, p)
+            p = sk["parents"][p]
+        moves, turns, sizes = poses[i]
+        got = ([], [], [])
+        for k in range(frames):
+            h = IDENTITY
+            for m in chain:
+                h = mul(h, held(m, k))
+            move, turn, size, _off = decompose(mul(inverse(h), compose(moves[k], turns[k], sizes[k])))
+            for part, v in zip(got, (move, turn, size)):
+                part.append(tuple(v))
+        out[i] = (got[0], baf.same_side(got[1]), got[2])
+    return out
+
+
+def _settle(rig: Rig, back: Back, anim: Animation, raw: bytes | None, rate: float | None = None,
+            reference: bytes | None = None) -> tuple[float, list, dict]:
     """An animation's poses as back_poses gives them, with each bone the modder didn't change (its poses at every frame
     within TOL_BACK_* of the clip that went out, `raw`: its bytes, or None) given that clip's own poses, exactly.
-    Returns (its length, the poses in `back`'s order, {"clip": the clip that went out (None: none, or one of other
-    bones, or of another length), "untouched": {back's bone: that clip's track}, "frames"})."""
-    length, poses = back_poses(rig, back, anim)
+    `rate`: Rig.frames'. `reference`: the skeleton the poses are for, when it isn't `back`'s own (clips_back's: a bone
+    the file hasn't got stays in it, _under_held). Returns (its length, the poses in `back`'s order, {"clip": the clip
+    that went out (None: none, or one of other bones, or of another length), "untouched": {back's bone: that clip's
+    track}, "frames"})."""
+    length, poses = back_poses(rig, back, anim, rate=rate)
     frames = len(poses[0][0]) if poses else 1
     orig = baf.parse(raw) if raw else None
     if orig is not None and not (orig.frames == frames and (frames == 1 or abs(orig.duration - length) < 1e-4)):
         orig = None
+    if reference is not None and back.missing:
+        poses = _under_held(back, reference, poses, orig, frames)
     untouched = {}
     if orig is not None:
         osk = baf.skeleton(orig.skeleton)
@@ -863,15 +938,18 @@ def turn_back(raw: bytes, reference: bytes | None = None, label: str = "the file
                           "missing": back.missing, "hung": back.hung, "animations": said}
 
 
-def clips_back(rig: Rig, back: Back, reference: bytes, originals: dict | None = None) -> list[dict]:
+def clips_back(rig: Rig, back: Back, reference: bytes, originals: dict | None = None,
+               rate: float | None = None) -> list[dict]:
     """Each animation of the file as a game clip on the skeleton `reference` (a model on the game soldier's bones: the
     game's record, every one of its bones a track, as every clip the soldier plays has): its poses the game's way
-    (back_poses), a bone the file hasn't got held as the clip that went out has it, or at its rest. `originals`: {the
-    animation's name: the bytes of the clip that went out under it}; a clip of the same frames and length keeps every
-    track the modder didn't change (each frame within TOL_BACK_* of it) as that clip's own, byte for byte, and its
-    skeleton part; the others are written at each frame (rusemod.baf.from_frames). Returns [{"name", "clip": its bytes,
-    "changed": the bones whose track came back changed (all of them for an animation with no clip that went out),
-    "same": whether it is the clip that went out, byte for byte, "frames", "seconds"}]."""
+    (back_poses), a bone the file hasn't got held as the clip that went out has it, or at its rest, and each bone under
+    it taken from it (_under_held: where the file puts it in the model). `originals`: {the animation's name: the bytes
+    of the clip that went out under it}; a clip of the same frames and length keeps every track the modder didn't
+    change (each frame within TOL_BACK_* of it) as that clip's own, byte for byte, and its skeleton part; the others
+    are written at each frame (rusemod.baf.from_frames). `rate`: the frames a second the file was sampled at when it
+    isn't the game's (sampled_rate): each of its frames a frame of the clip (Rig.frames). Returns [{"name", "clip": its
+    bytes, "changed": the bones whose track came back changed (all of them for an animation with no clip that went
+    out), "same": whether it is the clip that went out, byte for byte, "frames", "seconds"}]."""
     sk = baf.skeleton(reference)
     nb = sk["bones"]
     ref = [n.lower() for n in sk["names"]]
@@ -882,7 +960,7 @@ def clips_back(rig: Rig, back: Back, reference: bytes, originals: dict | None = 
         raw = (originals or {}).get(anim.name)
         if raw and [n.lower() for n in baf.skeleton(baf.parse(raw).skeleton)["names"]] != ref:
             raw = None      # (a clip of other bones: not one to keep tracks of)
-        length, poses, settled = _settle(rig, back, anim, raw)
+        length, poses, settled = _settle(rig, back, anim, raw, rate, reference)
         frames, orig = settled["frames"], settled["clip"]
         track = {}
         if orig is not None:
