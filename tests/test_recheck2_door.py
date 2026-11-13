@@ -10,6 +10,8 @@ design, until that route is fixed too:
 - D-F1's class: the unit's own model on the game soldier's bones (Import model's files/models/<unit>.glb, no record of
   its own) leaning on a bone the game models it copies don't, that bone moved in Blender's Edit Mode: taken in, every
   animation rewritten, no word (the points the door checks are the copied game models' only);
+- D-F11's class: Change its animations in Blender failing after it set the last sending aside says nothing of it, and
+  Bring my changes back then answers "Nothing has come back from Blender yet";
 - D-F3's class (on the game, RUSE_GAME and the game index and the Horse Squad's files): a horse unit made from the US
   paratroopers, which ride in no truck, so the build gives it no ride of its own; its hr_ride, which no listing plays
   by the build's rule, changed in Blender is said "Changed in Blender" and nothing else, though nothing plays it (the
@@ -120,6 +122,38 @@ class Recheck2(Door):
                          f"said to play as before again, while the mod plays the game's run, not the one Blender shows "
                          f"(its head turned): {got['message']}")
         self.assertIn(run["name"], got["message"])
+
+    # --- D-F11's class: an opening that fails after it set the last sending aside ---
+    def test_an_opening_that_fails_after_setting_the_sending_aside_says_where_it_is(self):
+        """FAILS on 659fc768. The run changed in Blender and sent, never brought back; Change its animations in Blender
+        again fails (here: the unit plays no animation the Studio can open any more), but only after it has set that
+        sending aside (decoy_blender sets it aside first). It says only "This unit plays no animation the Studio can
+        open in Blender.", never that the sending was set aside or where; the page keeps what it showed before (decoy.js
+        blenderOpen redraws its old state after an error), so its Bring my changes back answers "Nothing has come back
+        from Blender yet", though it came back and is kept aside. The sending must still be waiting (Bring my changes
+        back takes it in), or the words must say where it was set aside."""
+        from ruse_studio.api import StudioError
+        start = self.open()
+        self.send.write_bytes(Blenderish(start).send(change=("Run (made_run)", "bip01 spine", SPINE_TURN)))
+        self.assertTrue(self.api.decoy_blender_state(SQUAD)["waiting"])
+        figures = self.api._unit_figures
+        self.api._unit_figures = lambda address: []          # (nothing it can open now)
+        said = ""
+        with mock.patch("rusemod.models.Library", lambda game: self.lib), \
+                mock.patch("rusemod.blender.open_model_to_change", lambda b, model, send, words: Closed()):
+            try:
+                said = self.api.decoy_blender(SQUAD, "us")["message"]
+            except StudioError as exc:
+                said = str(exc)
+        self.api._unit_figures = figures
+        if self.send.is_file():                               # (still waiting: Bring my changes back takes it in)
+            self.assertEqual(self.back()["changed"], ["Run (made_run)"])
+            return
+        asides = self.api.decoy_blender_state(SQUAD)["asides"]
+        self.assertEqual(len(asides), 1)
+        self.assertIn(asides[0]["folder"], said,
+                      f"the sending, set aside by an opening that failed, isn't said: {said!r}; Bring my changes back "
+                      f"now answers that nothing has come back")
 
     # --- D-F1's class: the unit's own model on the game soldier's bones ---
     def test_a_bone_only_the_unit_s_own_model_leans_on_moved_in_edit_mode_is_not_taken_in_unsaid(self):
