@@ -1070,6 +1070,93 @@ class SpawnedUnits(ForceLoadOn, unittest.TestCase):
         self.assertIn("would crash as the match starts", r.errors[0].message)
 
 
+class Cards(unittest.TestCase):
+    """A unit the game lists as it starts needs a card picture (TextureForInterface): the 2026-11-11 crash at start
+    was a copy of the HQ truck (no card picture, shown at no battle date) shown at every date."""
+    CARD, HQ, DECOY = "$/Card_Tank", "$/HQTruck", "$/Decoy"
+    WORDS = "it has no card picture (TextureForInterface) and is shown in a build menu (ShowInMenu)"
+
+    def base(self):
+        """As the game has them: a tank with a card picture, shown; an HQ truck with none, shown at no battle date;
+        a decoy building with none, shown at four dates and kept out of the start-up list by its flags."""
+        g = game()
+        g.objects[self.CARD] = Obj("TUIResourceTexture", {})
+        g.objects[TANK].props["TextureForInterface"] = Ref(self.CARD)
+        g.objects[self.HQ] = unit("TUniteAuSolDescriptor", 1500, [10, 24, 43])
+        g.objects[self.HQ].props["ShowInMenu"] = nums([0] * 5, "bool")
+        g.objects[self.DECOY] = unit("TBatimentDescriptor", 1600, [4, 10, 30])
+        g.objects[self.DECOY].props["ShowInMenu"] = nums([1, 1, 0, 1, 1], "bool")
+        return g
+
+    def shown(self, *items):
+        return ("ShowInMenu", nums(list(items), "bool"))
+
+    def test_the_game_as_shipped_and_plain_copies_have_nothing_to_say(self):
+        self.assertEqual(said(run(base=self.base())), [])
+        for name in (TANK, self.HQ, self.DECOY):
+            with self.subTest(copy_of=name):
+                self.assertEqual(said(run(clone(source=name), base=self.base())), [])
+
+    def test_a_copy_of_a_unit_with_no_card_picture_shown_at_a_battle_date_is_refused(self):
+        r = run(clone(self.shown(1, 1, 1, 1, 1), source=self.HQ), base=self.base())
+        self.assertEqual(len(said(r)), 1, said(r))
+        self.assertTrue(said(r)[0].startswith(f"m (m.rndf:1): {NEW}: {self.WORDS}: the game lists such a unit as it "
+                                              f"starts, and stops there; hide it at every battle date"), said(r)[0])
+        self.assertIn("make it as a copy of a unit that has a card picture", said(r)[0])
+
+    def test_one_date_among_the_first_four_is_enough(self):
+        for items in ((1, 0, 0, 0, 0), (0, 0, 0, 1, 0), (0, 1, 0, 0, 1)):
+            with self.subTest(shown=items):
+                r = run(clone(self.shown(*items), source=self.HQ), base=self.base())
+                self.assertEqual(len([m for m in said(r) if self.WORDS in m]), 1, said(r))
+
+    def test_the_game_s_own_unit_with_no_card_picture_shown_by_a_mod_is_refused_too(self):
+        r = run(Op("set", self.HQ, "ShowInMenu", nums([1, 1, 1, 1, 1], "bool")), base=self.base())
+        self.assertEqual(len([m for m in said(r) if self.WORDS in m]), 1, said(r))
+        self.assertIn(self.HQ, said(r)[0])
+
+    def test_the_fifth_battle_date_alone_does_not_list_it(self):
+        """The game's start-up list asks about the first four dates only (a list of four or five items)."""
+        r = run(clone(self.shown(0, 0, 0, 0, 1), source=self.HQ), base=self.base())
+        self.assertEqual(said(r), [])
+
+    def test_a_unit_with_a_card_picture_is_fine_shown_or_not(self):
+        r = run(clone(self.shown(1, 1, 1, 1, 1), ("TextureForInterface", Ref(self.CARD)), source=self.HQ),
+                base=self.base())
+        self.assertEqual(said(r), [])
+        r = run(clone(self.shown(0, 0, 0, 0, 0)), base=self.base())  # a copy of the tank, hidden
+        self.assertEqual(said(r), [])
+
+    def test_a_card_picture_taken_away_from_a_shown_unit_is_refused(self):
+        for value in (None, Ref(None)):  # the property gone, or naming nothing (nil)
+            with self.subTest(value=value):
+                op = Op("delprop", TANK, "TextureForInterface") if value is None \
+                    else Op("set", TANK, "TextureForInterface", value)
+                r = run(op, base=self.base())
+                self.assertEqual(len([m for m in said(r) if self.WORDS in m]), 1, said(r))
+
+    def test_flags_that_keep_a_unit_out_of_the_start_up_list(self):
+        """The game's decoy buildings (flag 4 without flag 6), flag 30 and flag 49: shown with no card picture, as
+        the game's four decoy anti-tank bases are, and the game starts."""
+        for flags, listed in (([4, 10], False), ([10, 30], False), ([10, 49], False), ([4, 6, 10], True),
+                              ([10, 24, 43], True)):
+            with self.subTest(flags=flags):
+                r = run(clone(self.shown(1, 1, 0, 1, 1), ("InitialFlagSet", nums(flags, "uint32")), source=self.HQ),
+                        base=self.base())
+                self.assertEqual(len([m for m in said(r) if self.WORDS in m]), 1 if listed else 0, said(r))
+        r = run(clone(self.shown(1, 1, 1, 1, 1), source=self.DECOY), base=self.base())  # a copy of the decoy, shown
+        self.assertEqual([m for m in said(r) if self.WORDS in m], [])
+
+    def test_the_rule_as_functions(self):
+        g = self.base()
+        self.assertTrue(unitcheck.has_card(g.objects[TANK]))
+        self.assertFalse(unitcheck.has_card(g.objects[self.HQ]))
+        self.assertTrue(unitcheck.in_start_list(g.objects[TANK]))
+        self.assertFalse(unitcheck.in_start_list(g.objects[self.HQ]))      # shown at no battle date
+        self.assertFalse(unitcheck.in_start_list(g.objects[self.DECOY]))   # its flags
+        self.assertFalse(unitcheck.in_start_list(Obj("TUniteAuSolDescriptor", {})))  # no ShowInMenu at all
+
+
 class Rules(unittest.TestCase):
     def test_the_kinds_of_unit(self):
         self.assertTrue(unitcheck.is_unit(Obj("TBatimentDescriptor")))
