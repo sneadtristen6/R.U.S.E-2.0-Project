@@ -52,6 +52,20 @@ class Guards(unittest.TestCase):
             self.assertIn(sg.KEPT[name].decode(), sg.SOURCES[name])
         self.assertEqual(sorted(GAME_FUNCTIONS), sorted(n for n, f in sg.FUNCTIONS.items() if f is not None))
 
+    def test_each_guard_counts_when_it_steps_in(self):
+        """(2026-11-13) A guard that steps in adds 1 to the count the game's own text says before a later script-error
+        stop ("Previously ignored errors: N"), so a crash report says how often guards kept the game going; only in
+        its stepping-in branch (the cases, each guard against the game's own function under the game's Python, are
+        run by the template compiler: count_after in its checker)."""
+        self.assertIn("sys.ignore_count = getattr(sys, 'ignore_count', 0) + 1", sg.COUNT)
+        for name, source in sg.SOURCES.items():
+            self.assertIn(sg.COUNT, source, name)
+            self.assertEqual(source.count("_r2g_count()"), 2, name)   # its definition, and one call
+        menu, ia, units = sg.SOURCES["menu"], sg.SOURCES["strategic_ia"], sg.SOURCES["units"]
+        self.assertIn("            raise\n    _r2g_count()\n    for techno_fille", menu)
+        self.assertIn("    if no_ia:\n        _r2g_count()\n        return None", ia)
+        self.assertIn("        except RuntimeError:\n            gone = 1\n    if gone:\n        _r2g_count()", units)
+
     def test_a_changed_source_is_refused_until_compiled_again(self):
         old = sg.SOURCES["menu"]
         sg.SOURCES["menu"] = old + "\n# changed\n"

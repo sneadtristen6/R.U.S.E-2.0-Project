@@ -26,6 +26,12 @@ note: it never stops a build.
 
 Read in the game's scripts and, for `menu`, run with the game's own compiled menu scripts under its own Python on the
 players' unit data, which gives the players' error without the guard and the lists with it. Not tried in the game.
+
+Each guard that steps in also adds 1 to the count the game's own text says before a later script-error stop
+("Previously ignored errors: N", COUNT), so Bug Watch can tell how often guards kept a game going before it stopped
+(2026-11-13, the owner's "yes gather all bug watch stuff for this patch"). Checked with the game's own functions under
+its Python (the count goes up by one only where a guard steps in); whether the game's text says it: not tried in the
+game yet (one game test).
 """
 from __future__ import annotations
 
@@ -34,6 +40,21 @@ import hashlib
 
 from . import pyscript
 
+# Each guard, when it steps in, adds 1 to the count the game's own script-error text says before a later stop
+# ("Previously ignored errors: N", the game's sys.ignore_count), so the crash report of a stop later in the same game
+# says how often guards had stepped in before it (Bug Watch's "ignored": rusemod.bugwatch.read_dump). The game's Python
+# can write nothing anywhere else (2026-11-10, round 2 on FL-101). Never stops anything: any trouble is passed over.
+COUNT = '''
+
+
+def _r2g_count():
+    # one more on the count the game's script-error text says before a later stop ("Previously ignored errors: N")
+    try:
+        import sys
+        sys.ignore_count = getattr(sys, 'ignore_count', 0) + 1
+    except:
+        pass
+'''
 SOURCES = {
     "menu": '''\
 # RUSE 2.0's guard on a build list's research cards (rusemod.scriptguards). The game's own code runs first, unchanged.
@@ -41,7 +62,7 @@ SOURCES = {
 # made and in the list, it is an upgrade's, and that unit has no button in this list), the card stays, unlinked, like
 # a research that upgrades nothing, and the cards of the researches after it are made as the game goes on to do. Any
 # other error is passed on as it was.
-_r2g_game_add_techno = Menu.add_bouton_techno
+_r2g_game_add_techno = Menu.add_bouton_techno''' + COUNT + '''
 
 
 def _r2g_no_parent_button(self, techno):
@@ -61,6 +82,7 @@ def _r2g_add_techno(self, techno, hud_instance, technologie_manager):
     except KeyError:
         if not _r2g_no_parent_button(self, techno):
             raise
+    _r2g_count()
     for techno_fille in techno.GetListeFilles():
         self.add_bouton_techno(techno_fille, hud_instance, technologie_manager)
     return None
@@ -72,7 +94,7 @@ Menu.add_bouton_techno = _r2g_add_techno
 # RUSE 2.0's guard on a mission's "start the computer's AI for this side" step (rusemod.scriptguards). A side a person
 # plays has no AI object: there is nothing to start, and the game's step would stop the game using it. Any other side
 # goes to the game's own code, unchanged.
-_r2g_game_ia_all = DescriptorIAAll.execute
+_r2g_game_ia_all = DescriptorIAAll.execute''' + COUNT + '''
 
 
 def _r2g_ia_all(self, *args, **kwargs):
@@ -81,6 +103,7 @@ def _r2g_ia_all(self, *args, **kwargs):
     except:
         no_ia = 0
     if no_ia:
+        _r2g_count()
         return None
     return _r2g_game_ia_all(self, *args, **kwargs)
 
@@ -92,19 +115,22 @@ DescriptorIAAll.execute = _r2g_ia_all
 # game keeps the new units for a few seconds, then takes their highlight off, each without checking it still exists:
 # one killed and cleared away in between would stop the game. The game's own five lines, with a unit that is gone
 # passed over.
-_r2g_game_mute_finished = ActionMuteUnit.virtual_on_finished
+_r2g_game_mute_finished = ActionMuteUnit.virtual_on_finished''' + COUNT + '''
 
 
 def _r2g_mute_finished(self):
     units = getattr(self, '_ActionMuteUnit__units', None)
     if units is None:
         return _r2g_game_mute_finished(self)
+    gone = 0
     for unit in units:
         try:
             unit.apparence_manager.Remove_Highlight_Modifier(self._fade_out_parameters)
             unit.apparence_manager.Set_AppearDisappearState(False)
         except RuntimeError:
-            pass
+            gone = 1
+    if gone:
+        _r2g_count()
     super(ActionMuteUnit, self).virtual_on_finished()
     self.terminate_ifn()
     return None
