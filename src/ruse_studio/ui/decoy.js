@@ -177,14 +177,36 @@
       back.addEventListener("click", () => blenderBack(box));
       buttons.push(back);
     }
-    if (st.aside) {   // (a sending kept aside when its animations were opened again, never brought back)
-      const aside = el("button", { type: "button", textContent: w.decoy_blender_aside, title: w.tip_decoy_blender_aside,
+    // every sending kept aside when its animations were opened again, never brought back (newest first): each can be
+    // brought back, or put in the Recycle Bin, so none is out of reach behind another
+    const asides = (st.asides || []).map((a) => {
+      const back = el("button", { type: "button", textContent: w.decoy_blender_aside, title: w.tip_decoy_blender_aside,
         disabled: D.busy });
-      aside.addEventListener("click", () => blenderBack(box, st.aside));
-      buttons.push(aside);
-    }
-    box.replaceChildren(el("div", { className: "squad-go" }, ...buttons),
+      back.addEventListener("click", () => blenderBack(box, a.name));
+      const bin = el("button", { type: "button", textContent: w.decoy_blender_aside_recycle,
+        title: w.tip_decoy_blender_aside_recycle, disabled: D.busy });
+      bin.addEventListener("click", () => blenderRecycle(box, a.name));
+      return el("div", { className: "decoy-aside" },
+        el("p", { className: "muted small", textContent: fill(w.decoy_blender_aside_when, { when: a.when }) }),
+        el("div", { className: "squad-go" }, back, bin));
+    });
+    box.replaceChildren(el("div", { className: "squad-go" }, ...buttons), ...asides,
       el("p", { className: "muted small", textContent: w.decoy_blender_how }), ...(D.said ? [D.said] : []));
+  }
+
+  // a sending kept aside, to the Recycle Bin (StudioApi.decoy_blender_recycle): nothing of it taken in
+  async function blenderRecycle(box, aside) {
+    D.busy = true;
+    drawBlender(box);
+    let r = null;
+    try { r = await api().decoy_blender_recycle(D.unit.address, aside, D.lang); } catch (err) { problem(err); }
+    D.busy = false;
+    if (r) {
+      D.blender = r;
+      D.said = el("p", { className: "squad-result", role: "status", textContent: r.message });
+      say(r.message, "");
+    }
+    drawBlender(box);
   }
 
   async function blenderOpen(box) {

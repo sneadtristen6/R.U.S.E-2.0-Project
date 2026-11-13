@@ -49714,3 +49714,98 @@ jpn = "アニメーションを開き直す前にBlenderが送って、戻され
 sc = "收入在重新打开它的动画之前 Blender 发送、却从未带回的内容：其中修改过的动画会变成这个单位专属的，和“带回我的修改”一样。"
 fa = "آنچه Blender پیش از باز شدن دوبارهٔ انیمیشن‌هایش فرستاده و هرگز بازگردانده نشده را می‌گیرد: انیمیشن‌هایی که در آن تغییر کردند، مثل «بازگرداندن تغییراتم»، مخصوص این یگان می‌شوند."
 
+# Round 2 of the fixes (ruse_studio.decoyblender, 2026-11-12): an animation the Studio changed while it was out in
+# Blender (Import model again, RUSE Decoy) that came back untouched keeps the Studio's change; a changed one no action
+# of the unit plays (the build's own rule); every sending kept aside listed on the page, each with its own Bring back
+# and a way to the Recycle Bin.
+[decoy_blender_differs]
+us = "Changed in the Studio since they went out to Blender, and sent back from Blender unchanged, so the Studio's change stays, not what Blender sent: {names}."
+fr = "Changées dans le Studio depuis leur départ vers Blender, et renvoyées par Blender sans changement : le changement du Studio reste donc, pas ce que Blender a envoyé : {names}."
+ger = "Seit sie an Blender gingen, im Studio geändert und von Blender unverändert zurückgesendet, also bleibt die Änderung des Studios, nicht das, was Blender gesendet hat: {names}."
+ita = "Cambiate nello Studio da quando sono partite per Blender, e rimandate da Blender senza modifiche, quindi resta la modifica dello Studio, non ciò che ha inviato Blender: {names}."
+spa = "Cambiadas en el Studio desde que salieron hacia Blender, y devueltas por Blender sin cambios, así que se queda el cambio del Studio, no lo que envió Blender: {names}."
+pol = "Zmienione w Studio, odkąd wyszły do Blendera, a odesłane z Blendera bez zmian, więc zostaje zmiana ze Studio, nie to, co wysłał Blender: {names}."
+ru = "Изменены в Studio после того, как ушли в Blender, а из Blender вернулись без изменений, поэтому остаётся изменение из Studio, а не то, что отправил Blender: {names}."
+cz = "Změněné ve Studiu od chvíle, kdy odešly do Blenderu, a z Blenderu poslané zpět beze změny, takže zůstává změna ze Studia, ne to, co poslal Blender: {names}."
+jpn = "Blenderに送り出した後にStudioで変更され、Blenderからは変更なしで送り返されたため、Blenderが送ったものではなく、Studioでの変更が残ります：{names}。"
+sc = "送到 Blender 之后在 Studio 中改过、而从 Blender 送回时没有改动的，所以保留 Studio 中的修改，而不是 Blender 发来的：{names}。"
+fa = "پس از رفتن به Blender در Studio تغییر کردند و Blender آن‌ها را بدون تغییر برگرداند، پس تغییرِ Studio می‌ماند، نه آنچه Blender فرستاد: {names}."
+
+[decoy_blender_replaced]
+us = "Changed in the Studio too since they went out to Blender: Blender's change takes the place of the Studio's: {names}."
+fr = "Changées aussi dans le Studio depuis leur départ vers Blender : le changement de Blender remplace celui du Studio : {names}."
+ger = "Seit sie an Blender gingen, auch im Studio geändert: Die Änderung aus Blender tritt an die Stelle der des Studios: {names}."
+ita = "Cambiate anche nello Studio da quando sono partite per Blender: la modifica di Blender prende il posto di quella dello Studio: {names}."
+spa = "Cambiadas también en el Studio desde que salieron hacia Blender: el cambio de Blender ocupa el lugar del cambio del Studio: {names}."
+pol = "Zmienione także w Studio, odkąd wyszły do Blendera: zmiana z Blendera zastępuje zmianę ze Studio: {names}."
+ru = "Изменены также в Studio после того, как ушли в Blender: изменение из Blender заменяет изменение из Studio: {names}."
+cz = "Změněné také ve Studiu od chvíle, kdy odešly do Blenderu: změna z Blenderu nahrazuje změnu ze Studia: {names}."
+jpn = "Blenderに送り出した後にStudioでも変更されていました。Studioでの変更の代わりにBlenderでの変更が使われます：{names}。"
+sc = "送到 Blender 之后在 Studio 中也改过的：Blender 的修改取代了 Studio 的修改：{names}。"
+fa = "پس از رفتن به Blender در Studio هم تغییر کردند: تغییرِ Blender جای تغییرِ Studio را می‌گیرد: {names}."
+
+[decoy_blender_unplayed]
+us = "No action of this unit plays these, so their changes won't show in the game until one does: {names}. To play one, pick it for an action under Its animations on the unit's page."
+fr = "Aucune action de cette unité ne joue celles-ci, leurs changements ne se verront donc pas dans le jeu tant qu'aucune ne les joue : {names}. Pour en jouer une, choisissez-la pour une action sous Ses animations, sur la page de l'unité."
+ger = "Keine Handlung dieser Einheit spielt diese ab, also sind ihre Änderungen im Spiel nicht zu sehen, bis eine es tut: {names}. Um eine abzuspielen, wähle sie auf der Seite der Einheit unter Seine Animationen für eine Handlung."
+ita = "Nessuna azione di questa unità esegue queste, quindi le loro modifiche non si vedranno nel gioco finché una non lo farà: {names}. Per eseguirne una, sceglila per un'azione sotto Le sue animazioni, nella pagina dell'unità."
+spa = "Ninguna acción de esta unidad reproduce estas, así que sus cambios no se verán en el juego hasta que una lo haga: {names}. Para reproducir una, elígela para una acción en Sus animaciones, en la página de la unidad."
+pol = "Żadna czynność tej jednostki nie odtwarza tych animacji, więc ich zmiany nie będą widoczne w grze, dopóki któraś tego nie zrobi: {names}. Aby odtworzyć jedną, wybierz ją dla czynności w Jej animacje na stronie jednostki."
+ru = "Ни одно действие этого юнита не играет эти анимации, поэтому их изменения не будут видны в игре, пока какое-нибудь не начнёт: {names}. Чтобы одна из них играла, выберите её для действия в «Её анимации» на странице юнита."
+cz = "Žádná činnost této jednotky tyto animace nehraje, takže jejich změny nebudou ve hře vidět, dokud je některá nezačne hrát: {names}. Chceš-li jednu hrát, vyber ji pro činnost v Její animace na stránce jednotky."
+jpn = "このユニットのどの動作もこれらを再生しないため、再生されるまで変更はゲームに表示されません：{names}。再生するには、ユニットのページの「このユニットのアニメーション」で動作に選んでください。"
+sc = "这个单位没有任何动作播放这些，所以在有动作播放之前，它们的修改不会在游戏中显示：{names}。要播放其中一个，请在单位页面的“它的动画”中为某个动作选中它。"
+fa = "هیچ کاری از این یگان این‌ها را پخش نمی‌کند، پس تا وقتی یکی پخششان نکند، تغییراتشان در بازی دیده نمی‌شود: {names}. برای پخش یکی، در صفحهٔ یگان زیر «انیمیشن‌هایش» آن را برای یک کار انتخاب کنید."
+
+[decoy_blender_aside_when]
+us = "Sent from Blender, never brought back, set aside on {when} when its animations were opened again."
+fr = "Envoyé depuis Blender, jamais ramené, mis de côté le {when} quand ses animations ont été rouvertes."
+ger = "Aus Blender gesendet, nie zurückgeholt, am {when} beiseitegelegt, als seine Animationen wieder geöffnet wurden."
+ita = "Inviato da Blender, mai riportato, messo da parte il {when} quando le sue animazioni sono state riaperte."
+spa = "Enviado desde Blender, nunca traído, guardado aparte el {when} cuando sus animaciones se abrieron de nuevo."
+pol = "Wysłane z Blendera, nigdy nieprzeniesione, odłożone {when}, gdy jej animacje otwarto ponownie."
+ru = "Отправлено из Blender, так и не возвращено, отложено {when}, когда его анимации открыли снова."
+cz = "Odesláno z Blenderu, nikdy nepřeneseno, odloženo {when}, když se její animace znovu otevřely."
+jpn = "Blenderから送られたまま戻されず、{when} にアニメーションを開き直したときに取っておいたものです。"
+sc = "从 Blender 发送后从未带回，于 {when} 重新打开它的动画时另存。"
+fa = "از Blender فرستاده شده و هرگز بازگردانده نشده، در {when} هنگام باز شدن دوبارهٔ انیمیشن‌هایش کنار گذاشته شد."
+
+[decoy_blender_aside_recycle]
+us = "Put it in the Recycle Bin"
+fr = "Le mettre à la Corbeille"
+ger = "In den Papierkorb legen"
+ita = "Mettilo nel Cestino"
+spa = "Llevarlo a la Papelera de reciclaje"
+pol = "Przenieś do Kosza"
+ru = "Отправить в Корзину"
+cz = "Přesunout do Koše"
+jpn = "ごみ箱に移す"
+sc = "移到回收站"
+fa = "انتقال به سطل بازیافت"
+
+[tip_decoy_blender_aside_recycle]
+us = "Takes this set-aside sending off the page, nothing in it taken in: it goes to the Recycle Bin, so it can be put back from there."
+fr = "Retire cet envoi mis de côté de la page, sans rien en prendre : il part dans la Corbeille, d'où il peut être restauré."
+ger = "Nimmt diese beiseitegelegte Sendung von der Seite, ohne etwas daraus zu übernehmen: Sie kommt in den Papierkorb und lässt sich dort wiederherstellen."
+ita = "Toglie dalla pagina questo invio messo da parte, senza prendere niente di esso: va nel Cestino, da cui si può ripristinare."
+spa = "Quita de la página este envío guardado aparte, sin tomar nada de él: va a la Papelera de reciclaje, desde donde se puede restaurar."
+pol = "Usuwa tę odłożoną wysyłkę ze strony, nie przyjmując nic z niej: trafia do Kosza, skąd można ją przywrócić."
+ru = "Убирает эту отложенную отправку со страницы, ничего из неё не беря: она уходит в Корзину, откуда её можно восстановить."
+cz = "Odebere toto odložené odeslání ze stránky, aniž by z něj něco převzal: jde do Koše, odkud ho lze obnovit."
+jpn = "この取っておいた送信を、何も取り込まずにページから外します。ごみ箱に移るので、そこから元に戻せます。"
+sc = "把这个另存的发送从页面上移除，不收入其中任何内容：它会移到回收站，可从那里还原。"
+fa = "این ارسالِ کنارگذاشته را بی‌آنکه چیزی از آن گرفته شود از صفحه برمی‌دارد: به سطل بازیافت می‌رود، پس می‌توان از آنجا برش گرداند."
+
+[decoy_blender_aside_recycled]
+us = "The set-aside sending is in the Recycle Bin now, nothing in it taken in."
+fr = "L'envoi mis de côté est maintenant dans la Corbeille, sans que rien n'en ait été pris."
+ger = "Die beiseitegelegte Sendung liegt jetzt im Papierkorb, nichts daraus wurde übernommen."
+ita = "L'invio messo da parte ora è nel Cestino, senza che niente di esso sia stato preso."
+spa = "El envío guardado aparte está ahora en la Papelera de reciclaje, sin que se tomara nada de él."
+pol = "Odłożona wysyłka jest teraz w Koszu, nic z niej nie przyjęto."
+ru = "Отложенная отправка теперь в Корзине, ничего из неё не взято."
+cz = "Odložené odeslání je teď v Koši, nic z něj nebylo převzato."
+jpn = "取っておいた送信はごみ箱に移りました。何も取り込んでいません。"
+sc = "另存的发送现在在回收站中，其中的内容都没有收入。"
+fa = "ارسالِ کنارگذاشته اکنون در سطل بازیافت است و چیزی از آن گرفته نشد."
+

@@ -26,27 +26,38 @@ name or the nearest (rusemod.animactions); no game clip is on its bones. Those g
 has them (before it has any, the ones its file carries), and a changed one comes back in its place by name
 (rusemod.anim.set_animations, Import model's own store), so whatever played it plays it changed and every pick stays.
 Found 2026-11-12 checking the join: sent with no action, such a change was said to be the unit's own and written
-nowhere. When the model or the animation changed after it went out (a model imported again while Blender was open),
-nothing is taken in, and that is said. The build plays such a model's animations by halves (rusemod.animactions: one
-named for a half, t_ or b_, on that half's listings only, through the model's own two masks): a change to bones of the
-other half is said, as not tried in the game yet (_halves_unplayed; the owner decides whether more is done).
+nowhere. When the model or a changed animation changed after it went out (a model imported again while Blender was
+open), nothing is taken in, and that is said. The build plays such a model's animations by halves, through the model's
+own two masks: which listing plays which animation is its own rule (rusemod.animactions.choose for each listing of the
+unit's figures, as rusemod.build._own_animations calls it, a row of the unit's own winning), whatever the animation's
+name. A change to bones of the half that doesn't play it is said, as not tried in the game yet, and so is a change to
+one no action plays at all (_halves_unplayed; the owner decides whether more is done).
 
-Each Bring my changes back makes the mod play what Blender sent, compared with what the mod has now: a change brought
-back earlier since Blender opened and undone there since is undone in the mod too (its rows and file as they were;
-state.json "wrote"), and the same sending brought back twice is nothing new. Refused, nothing written: a bone of the
-unit's skeleton renamed or deleted in Blender (its animations are on that skeleton: which bone a renamed one was can't
-be told, and a deleted one's points don't move in Blender as the game moves them). Said, the rest taken in: a bone made
-in Blender (the game can't play it), timing Blender's NLA editor gives an action (Send carries the actions as they are:
-rusemod.blender_model's ABOUT), and a scene set to another frame rate than the game's 30 (each frame sent is taken as
-one of the game's: rusemod.rig.Rig.frames' rate).
+Each Bring my changes back makes the mod play what Blender sent, compared with what the mod plays now (_plays_now): an
+animation that came back as the mod plays it is left alone; one changed in Blender becomes the unit's own; a change
+brought back earlier since Blender opened and undone there since is undone in the mod too (its rows and file as they
+were; state.json "wrote"); one that came back as it went out while the mod plays another since (changed in the Studio
+meanwhile: Import model again, RUSE Decoy, a set-aside sending brought back) keeps the Studio's, and that is said; one
+an action plays, changed both in Blender and in the Studio since, takes Blender's, said (one of the model's own
+animations so is refused, as before); the same sending brought back twice is nothing new. Refused, nothing written: a
+bone of the unit's skeleton renamed or deleted in Blender (its animations are on that skeleton: which bone a renamed
+one was can't be told, and a deleted one's points don't move in Blender as the game moves them), and one that points
+of its models lean on moved in Blender's Edit Mode (where it rests: there its points stay put, while the model keeps
+its rest and would move them with it; the whole armature moved in Object Mode takes its mesh along and is taken in:
+rusemod.rig.off_points). Said, the rest taken in: a bone made in Blender (the game can't play it), timing Blender's NLA
+editor gives an action (Send carries the actions as they are: rusemod.blender_model's ABOUT), and a scene set to
+another frame rate than the game's 30 (each frame sent is taken as one of the game's: rusemod.rig.Rig.frames' rate;
+the rate said is the scene's, as Send read it).
 
 The work folder: <mod>/blender/<unit>/animations/ (never packed): what went out (animblender's animations.json and
 clips/), the file Blender opened, the file it sends (send.glb) and what Send says of it (send.glb.json), the words, and
-state.json ("session"; "brought": the fingerprint of the last sending brought back; "wrote": what each bring back since
+state.json ("session"; "points": the bones points of the unit's models lean on; "edits": how the mod changed each game
+clip that went out; "brought": the fingerprint of the last sending brought back; "wrote": what each bring back since
 Blender opened made of an animation). Each opening starts from what the mod has now: a sending brought back already is
 taken out (it's in the mod; a bring back never reads it again); one never brought back is kept aside whole first
-(sent-not-brought-<time>/: the sending with what went out with it), and Bring back the set-aside sending still takes it
-in (decoy_blender_back's `aside`)."""
+(sent-not-brought-<time>/: the sending with what went out with it). Every sending kept aside is on the page
+(decoy_blender_state's "asides", newest first): Bring back the set-aside sending takes it in (decoy_blender_back's
+`aside`), Put it in the Recycle Bin takes it off the page (decoy_blender_recycle; it can be put back from the bin)."""
 from __future__ import annotations
 
 import hashlib
@@ -103,6 +114,12 @@ def _figure_row(table: dict, figure: str, action: str) -> str | None:
     return (((table.get("figure") or {}).get(figure) or {}).get("action") or {}).get(action)
 
 
+def _when(name: str) -> str:
+    """When a sending was set aside, from its folder's name (sent-not-brought-20261112-202814: 2026-11-12 20:28:14)."""
+    m = re.match(re.escape(ASIDE) + r"(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)(\d\d)", name)
+    return f"{m[1]}-{m[2]}-{m[3]} {m[4]}:{m[5]}:{m[6]}" if m else name[len(ASIDE):]
+
+
 class DecoyBlenderCalls:
     # --- where, and whether ---
     def _anim_work(self, address: str) -> Path | None:
@@ -130,22 +147,24 @@ class DecoyBlenderCalls:
     def decoy_blender_state(self, address: str, lang: str = "us") -> dict:
         """What RUSE Decoy's page for one unit shows of its Blender door: {"can": whether its animations can go out
         (a new unit of this mod), "why_not": a sentence when they can't, "open": its Blender is open now, "waiting": a
-        sending not brought back yet, "work": the work folder (None for a game unit), "aside": the newest sending kept
-        aside that can still be brought back (its folder's name, for decoy_blender_back's `aside`; None: none),
-        "aside_folder": where it is}."""
+        sending not brought back yet, "work": the work folder (None for a game unit), "asides": every sending kept
+        aside that can still be brought back, newest first ([{"name": its folder's name, for decoy_blender_back's and
+        decoy_blender_recycle's `aside`, "folder": where it is, "when": when it was set aside}]), "aside" and
+        "aside_folder": the newest's name and folder (None: none)}."""
         from .api import words
         w = words(lang)
         work = self._anim_work(address)
         if work is None:
             return {"can": False, "why_not": w["decoy_blender_why_game"], "open": False, "waiting": False,
-                    "work": None, "aside": None, "aside_folder": None}
+                    "work": None, "asides": [], "aside": None, "aside_folder": None}
         send = work / SEND
         state = _read(work / STATE)
         waiting = send.is_file() and _sha(send) != state.get("brought") and state.get("session") is not None
         asides = self._asides(work)
         return {"can": True, "why_not": None, "open": self._anim_open(work), "waiting": bool(waiting),
-                "work": str(work), "aside": asides[0].name if asides else None,
-                "aside_folder": str(asides[0]) if asides else None}
+                "work": str(work),
+                "asides": [{"name": p.name, "folder": str(p), "when": _when(p.name)} for p in asides],
+                "aside": asides[0].name if asides else None, "aside_folder": str(asides[0]) if asides else None}
 
     # --- the unit's animations (item 5 Part 4's, kept from feat/anim5-blender's modelblender) ---
     def _own_bones_model(self, address: str) -> tuple[bytes | None, bytes | None]:
@@ -264,6 +283,74 @@ class DecoyBlenderCalls:
             shutil.copytree(work / animblender.CLIPS, aside / animblender.CLIPS)
         return aside
 
+    # --- what a bring back checks against, kept when the animations go out (state.json) ---
+    @staticmethod
+    def _game_points(lib, models: list, record: bytes) -> set:
+        """The bones (lower case) some point of the unit's models on `record`'s bones leans on (each model's own:
+        rusemod.gltf.bones_with_points). A model whose points can't be read counts every bone (a bone of it moved off
+        where it rests is then refused, never taken in unseen)."""
+        import zlib
+        from rusemod import baf, gltf
+        names = [n.lower() for n in baf.skeleton(record)["names"]]
+        out: set = set()
+        for m in models:
+            try:
+                rec = lib.skeleton(m) if hasattr(lib, "skeleton") else None
+                if rec is None or [n.lower() for n in baf.skeleton(rec)["names"]] != names:
+                    continue
+                out |= {names[b] for b in gltf.bones_with_points(lib, m) if 0 <= b < len(names)}
+            except (OSError, ValueError, KeyError, IndexError, AttributeError, struct.error, zlib.error, baf.ClipError):
+                out |= set(names)
+        return out
+
+    def _own_points(self, address: str, own_raw: bytes, record: bytes) -> set:
+        """The same for a model on bones of its own: its file's points, and those of each model of a kind of its
+        soldiers (files/models/<unit>@<kind>.glb) on the same bones, which play its animations too. A file whose points
+        can't be read counts every bone."""
+        from rusemod import baf, rig
+        from rusemod.modelin import glb_document
+        names = {n.lower() for n in baf.skeleton(record)["names"]}
+        own = self._own_model_file(address)
+        kinds = sorted(own.parent.glob(f"{own.stem}@*.glb")) if own is not None and own.parent.is_dir() else []
+        out: set = set()
+        for k, src in enumerate([own_raw, *kinds]):
+            try:
+                doc, binary = glb_document(src if k == 0 else src.read_bytes())
+                joints = {str(doc["nodes"][j].get("name", "")).lower() for s in doc.get("skins") or []
+                          for j in s.get("joints") or []}
+                if k and joints != names:
+                    continue        # (a kind's model on other bones plays other animations)
+                out |= rig.weighted(doc, binary)
+            except (OSError, ValueError, KeyError, IndexError, TypeError, struct.error):
+                out |= names
+        return out & names
+
+    @staticmethod
+    def _edit_print(rows: dict, edits: dict, member: str | None) -> str | None:
+        """How the mod changes the game's clip `member` for the unit (its own [clip] table in units.toml, else every
+        unit's in clips.toml: what animblender.unit_plays makes the clip with), as a text to compare; None: not at all
+        (`rows`: rusemod.anim.mod_unit_clips' for the unit; `edits`: mod_clips')."""
+        e = ((rows.get("clips") or {}).get(member) or edits.get(member)) if member else None
+        if not e:
+            return None
+        return json.dumps({"speed": e.get("speed"), "from": e.get("from"),
+                           "file": _sha(e["file"]) if e.get("file") else None,
+                           "bones": {b: [v.get("size"), list(v["turn"]) if v.get("turn") else None]
+                                     for b, v in sorted((e.get("bones") or {}).items())}}, sort_keys=True)
+
+    def _edits_then(self, unit: str, rows: list) -> dict:
+        """{each animation that went out as a game clip the mod may change: _edit_print's text for it now}."""
+        from rusemod import anim
+        from .api import StudioError
+        mod = self._mod_dir()
+        try:
+            mine = anim.mod_unit_clips(mod).get(unit) or {} if mod is not None else {}
+            edits = anim.mod_clips(mod) if mod is not None else {}
+        except anim.AnimError as exc:
+            raise StudioError(str(exc)) from None
+        return {r["name"]: self._edit_print(mine, edits, r["member"]) for r in rows
+                if r.get("member") and not r.get("own") and not r.get("model_animation")}
+
     def decoy_blender(self, address: str, lang: str = "us") -> dict:
         """Change its animations in Blender: Blender opens with the unit's model and every animation the unit plays as
         the mod makes them (see the module's note). Refused, in words: a unit that isn't a new unit of this mod, Blender
@@ -309,6 +396,7 @@ class DecoyBlenderCalls:
                     raise StudioError(str(exc)) from None
                 start = work / "animations.glb"
                 start.write_bytes(data)
+                points = self._own_points(address, own_raw, own_record)
             else:
                 found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
                 if not found:
@@ -323,15 +411,17 @@ class DecoyBlenderCalls:
                                              clips={model: animblender.as_clips(rows)})[0]["file"])
                 except animglb.AnimGlbError as exc:
                     raise StudioError(str(exc)) from None
+                points = self._game_points(lib, found, record)    # (the unit's other models play them too)
         finally:
             lib.close()
+        edits = self._edits_then(animblender.unit_name(self._own_model_file(address)), rows)
         animblender.write_sent(work, model, record, rows)
         session = hashlib.sha256(f"{time.time()}|{work}".encode()).hexdigest()[:16]
         _write(work / "words.json", {"send": w["blender_model_send"], "sent": w["decoy_blender_sent"],
                                      "hint": [w["blender_anim_hint1"], w["blender_anim_hint2"]],
                                      "hint_animations": [], "nla": w["decoy_blender_nla"], "session": session})
-        # (a new opening: nothing brought back from it yet, nothing it wrote)
-        _write(work / STATE, {"session": session, "file": str(start)})
+        # (a new opening: nothing brought back from it yet, nothing it wrote; what a bring back checks against)
+        _write(work / STATE, {"session": session, "file": str(start), "points": sorted(points), "edits": edits})
         self._blenders[str(work)] = open_model_to_change(blender, start, send, work / "words.json")
         message = w["decoy_blender_opened"].format(n=len(rows))
         if set_aside is not None:
@@ -351,17 +441,20 @@ class DecoyBlenderCalls:
         return folder
 
     def decoy_blender_back(self, address: str, lang: str = "us", aside: str | None = None) -> dict:
-        """Bring my changes back: the open Blender is asked to send (a closed one's last sending is used); each
-        animation that came back changed becomes the unit's own clip for every action of every figure that played it,
-        or, one of its model's own animations, takes that animation's place by name; one changed and brought back
-        before since Blender opened, and undone in Blender since, is put back as it went out (see the module's note).
-        `aside`: bring back the sending kept aside under that name instead (decoy_blender_state's "aside"; it goes once
-        brought back). Refused, in words, nothing written: nothing sent from this Blender yet, nothing went out from it,
-        a file not on the bones its animations went out on, a bone of them renamed or deleted in Blender, the model or
-        one of its changed animations not as it went out. Returns decoy_blender_state's answer with "changed",
-        "undone" (names), "same" (how many came back as the mod plays them), "new", "gone" (names), "written" (how many
-        were kept), "new_bones", "halves" (changes the game may not play, said), "nla", "fps" (None: the game's) and
-        "message"."""
+        """Bring my changes back: the open Blender is asked to send (a closed one's last sending is used), and the mod
+        made to play what came back, compared with what it plays now (_plays_now; see the module's note): each
+        animation changed in Blender becomes the unit's own clip for every action of every figure that played it, or,
+        one of its model's own animations, takes that animation's place by name; one changed and brought back before
+        since Blender opened, and undone in Blender since, is put back as it went out; one that came back as it went
+        out while the mod plays another since keeps the mod's, said; one an action plays, changed both in Blender and in
+        the Studio since it went out, takes Blender's, said. `aside`: bring back the sending kept aside under
+        that name instead (decoy_blender_state's "asides"; it goes once brought back). Refused, in words, nothing
+        written: nothing sent from this Blender yet, nothing went out from it, a file not on the bones its animations
+        went out on, a bone of them renamed or deleted in Blender, one that points lean on moved in its Edit mode, the
+        model or one of its changed animations not as it went out. Returns decoy_blender_state's answer with "changed",
+        "undone", "differs", "replaced" (names), "same" (how many came back as the mod plays them), "new", "gone"
+        (names), "written" (how many were kept), "new_bones", "halves" (changes the game may not play, said), "unplayed"
+        (changed ones no action plays, said), "nla", "fps" (None: the game's) and "message"."""
         from rusemod import anim, baf, rig
         from rusemod.blender import ask_to_send
         from rusemod.modelin import ModelError, glb_document
@@ -384,8 +477,9 @@ class DecoyBlenderCalls:
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring my changes back here.")
         sha = _sha(send)
-        empty = {"changed": [], "undone": [], "same": 0, "new": [], "gone": [], "written": 0, "new_bones": [],
-                 "halves": [], "nla": [], "fps": None}
+        empty = {"changed": [], "undone": [], "differs": [], "replaced": [], "same": 0, "new": [], "gone": [],
+                 "written": 0, "new_bones": [], "halves": [], "unplayed": [], "nla": [], "fps": None}
+        out = {k: list(v) if isinstance(v, list) else v for k, v in empty.items()}
         unit = animblender.unit_name(self._own_model_file(address))
         mod = self._mod_dir()
         went = {a["name"]: a for a in sent["animations"]}
@@ -394,9 +488,6 @@ class DecoyBlenderCalls:
         kept = state.get("wrote") if isinstance(state.get("wrote"), dict) else {}
         wrote = {n: p for n, p in kept.items() if n in went and isinstance(p, dict)
                  and self._in_force(mod, unit, went[n], p)}
-        if sha == state.get("brought") and len(wrote) == len(kept):
-            # (brought back already and the mod as it left it: nothing new came from Blender since)
-            return {**self.decoy_blender_state(address, lang), **empty, "message": w["decoy_blender_nothing_new"]}
         raw = send.read_bytes()
         try:
             doc, binary = glb_document(raw)
@@ -417,13 +508,28 @@ class DecoyBlenderCalls:
             if back.new:
                 raise StudioError(f"These bones of this unit's skeleton didn't come back from Blender: {missing}, and "
                                   f"these came back that it hasn't got: {', '.join(new_bones)}. A bone renamed or "
-                                  f"deleted there can't be taken back into its animations, so nothing was taken in: "
-                                  f"give the bones their names back in Blender (or undo deleting them), click Send to "
-                                  f"the R.U.S.E. Studio, then bring your changes back again.")
+                                  f"deleted there can't be taken back into its animations, so nothing was taken in. If "
+                                  f"the Blender that sent it is still open: give the bones their names back there (or "
+                                  f"undo deleting them), click Send to the R.U.S.E. Studio, then bring your changes "
+                                  f"back again.")
             raise StudioError(f"These bones of this unit's skeleton didn't come back from Blender: {missing}. A bone "
                               f"renamed or deleted there can't be taken back into its animations, so nothing was taken "
-                              f"in: give the bones their names back in Blender (or undo deleting them), click Send to "
-                              f"the R.U.S.E. Studio, then bring your changes back again.")
+                              f"in. If the Blender that sent it is still open: give the bones their names back there "
+                              f"(or undo deleting them), click Send to the R.U.S.E. Studio, then bring your changes "
+                              f"back again.")
+        points = state.get("points")       # (the bones points of the unit's models lean on, as they went out)
+        points = {str(p).lower() for p in points} if isinstance(points, list) else rig.weighted(doc, binary)
+        off = [b for b in rig.off_points(r, back, sent["record"]) if b.lower() in points]
+        if off:
+            # not a game rule: the animations move the bones of a model that keeps where they rest (its points bound
+            # there), and this door changes no model; a bone no point leans on, moved so, is taken in where Blender
+            # has it
+            raise StudioError(f"These bones of this unit's skeleton were moved in Blender's Edit Mode, where they "
+                              f"rest: {', '.join(off)}. Its model keeps them where they rested, so in the game the "
+                              f"parts of the model on them would move off with them, while in Blender those parts "
+                              f"stayed where they were: nothing was taken in. If the Blender that sent it is still "
+                              f"open: move them back there (or undo moving them) and pose them in Pose Mode instead, "
+                              f"click Send to the R.U.S.E. Studio, then bring your changes back again.")
         about = _read(folder / ABOUT)
         if about.get("glb") != sha:       # (said of another sending, or of none)
             about = {}
@@ -436,12 +542,17 @@ class DecoyBlenderCalls:
         rate = rig.sampled_rate(r)
         if rate is not None and abs(rate - baf.FPS) <= baf.FPS * RATE_NEAR:
             rate = None                   # (the game's own 30 a second)
+        scene = about.get("fps")    # (the scene's rate as Send read it: Blender writes 29.97's keys 1/30.03 s apart)
+        said_rate = rate
+        if rate is not None and isinstance(scene, (int, float)) and not isinstance(scene, bool) and scene > 0 \
+                and abs(scene - baf.FPS) > baf.FPS * RATE_NEAR:
+            said_rate = float(scene)
         came = animblender.file_animations(send)
-        out = {**empty, "new": [n for n in came if n not in went], "gone": [n for n in went if n not in came],
-               "new_bones": new_bones, "nla": [n for n in about.get("nla") or [] if isinstance(n, str)],
-               "fps": rate}
+        out.update(new=[n for n in came if n not in went], gone=[n for n in went if n not in came], new_bones=new_bones,
+                   nla=[n for n in about.get("nla") or [] if isinstance(n, str)], fps=said_rate)
+        now = self._plays_now(address, mod, unit, sent, state)
         by_action, by_name, allowed, models, bones = [], {}, {}, [], {}
-        last = False        # (one came back as last brought back, not as it went out)
+        last = False        # (one came back as the mod plays it, but not as it went out)
         seen = set()
         for got in rig.clips_back(r, back, sent["record"], {n: a["clip"] for n, a in went.items()}, rate=rate):
             name, a = got["name"], went.get(got["name"])
@@ -449,9 +560,14 @@ class DecoyBlenderCalls:
                 continue
             seen.add(name)
             prev = wrote.get(name)
-            if (got["same"] if prev is None else _sha_of(got["clip"]) == prev.get("sha")):
+            if now.get(name) is not None and _sha_of(got["clip"]) == now[name]:
                 out["same"] += 1    # (as the mod plays it now)
-                last = last or prev is not None
+                last = last or not got["same"]
+                continue
+            if got["same"] and prev is None:
+                # as it went out, while the mod plays another since (changed in the Studio meanwhile): not changed in
+                # Blender, so the Studio's stays, said
+                out["differs"].append(name)
                 continue
             undo = got["same"]      # (as it went out again: a change brought back before, undone in Blender since)
             if undo:
@@ -466,8 +582,15 @@ class DecoyBlenderCalls:
                 models.append((name, undo, clip))
             else:
                 by_action.append((name, a, clip, undo, prev))
+                if not undo and prev is None and now.get(name) != _sha_of(a["clip"]):
+                    # (changed in the Studio too since it went out: Blender's change takes its place, said; a model's
+                    # own animation so is refused instead, _model_animations_back)
+                    out["replaced"].append(name)
         # (one that came back under its name but moved no bone the game has is one that didn't come back)
         out["gone"] += [n for n in went if n in came and n not in seen]
+        if sha == state.get("brought") and not by_action and not by_name and not out["differs"]:
+            # (brought back already, and the mod plays what it sent: nothing new came from Blender since)
+            return {**self.decoy_blender_state(address, lang), **empty, "message": w["decoy_blender_nothing_new"]}
         clips = self._model_animations_back(address, sent, by_name, allowed) if by_name else None
         current = None
         try:
@@ -505,16 +628,23 @@ class DecoyBlenderCalls:
             shutil.rmtree(folder, ignore_errors=True)
         sep = w["blender_squad_list_sep"]
         if sent.get("model") == "own":
-            out["halves"] = self._halves_unplayed(address, sent, bones, sep)
+            out["halves"], out["unplayed"] = self._halves_unplayed(address, sent, bones, sep)
         said = []
         if out["changed"]:
             said.append(w["decoy_blender_changed"].format(names=sep.join(out["changed"])))
+        if out["replaced"]:
+            said.append(w["decoy_blender_replaced"].format(names=sep.join(out["replaced"])))
         if out["undone"]:
             said.append(w["decoy_blender_undone"].format(names=sep.join(out["undone"])))
-        if not out["changed"] and not out["undone"] and out["same"]:
+        if out["differs"]:
+            said.append(w["decoy_blender_differs"].format(names=sep.join(out["differs"])))
+        if not out["changed"] and not out["undone"] and not out["differs"] and out["same"] and not out["new_bones"]:
+            # (every one that came back plays as Blender shows it; "as it went out" only when each did, and all came)
             said.append(w["decoy_blender_same_rest"] if out["gone"] or last else w["decoy_blender_same"])
         if out["halves"]:
             said.append(w["decoy_blender_halves"].format(names=sep.join(out["halves"])))
+        if out["unplayed"]:
+            said.append(w["decoy_blender_unplayed"].format(names=sep.join(out["unplayed"])))
         if out["new"]:
             said.append(w["decoy_blender_new"].format(names=sep.join(out["new"])))
         if out["gone"]:
@@ -523,9 +653,73 @@ class DecoyBlenderCalls:
             said.append(w["decoy_blender_new_bones"].format(names=sep.join(out["new_bones"])))
         if out["nla"]:
             said.append(w["decoy_blender_nla"].format(names=sep.join(out["nla"])))
-        if rate is not None:
-            said.append(w["decoy_blender_fps"].format(fps=_fps_text(rate)))
+        if said_rate is not None:
+            said.append(w["decoy_blender_fps"].format(fps=_fps_text(said_rate)))
         return {**self.decoy_blender_state(address, lang), **out, "message": " ".join(said)}
+
+    def decoy_blender_recycle(self, address: str, aside: str, lang: str = "us") -> dict:
+        """Put it in the Recycle Bin: the sending kept aside under the name `aside` (decoy_blender_state's "asides")
+        goes to the Recycle Bin (rusemod.recycle: it can be put back from there), nothing of it taken in, and off the
+        page. Returns decoy_blender_state's answer with "message"."""
+        from rusemod.recycle import to_recycle_bin
+        from .api import StudioError, words
+        w = words(lang)
+        work = self._anim_work(address)
+        if work is None:
+            raise StudioError(w["decoy_blender_why_game"])
+        folder = self._aside_folder(work, aside)
+        try:
+            to_recycle_bin(folder)
+        except OSError as exc:
+            raise StudioError(f"{folder} can't be moved to the Recycle Bin ({exc}).") from None
+        return {**self.decoy_blender_state(address, lang), "message": w["decoy_blender_aside_recycled"]}
+
+    def _plays_now(self, address: str, mod: Path, unit: str, sent: dict, state: dict) -> dict:
+        """{each animation that went out: the SHA-256 of the clip the mod plays for it now, or None when that isn't one
+        clip the Studio can tell without the game's files}: one of the model's own animations, its file by name (before
+        the mod has any, the one its model's file carries); an animation actions play, what every one of them plays now:
+        a row of the unit's own, or, with none, the game's clip it went out as, changed as it was then (state.json's
+        "edits": _edit_print's; an opening that kept none: taken as unchanged), the clip that went out."""
+        from rusemod import anim
+        from .api import StudioError
+        try:
+            mine = anim.own_animations(mod, unit)["animations"]
+            rows = anim.mod_unit_clips(mod).get(unit) or {"clips": {}, "actions": {}}
+            edits = anim.mod_clips(mod)
+        except anim.AnimError as exc:
+            raise StudioError(str(exc)) from None
+        then = state.get("edits") if isinstance(state.get("edits"), dict) else None
+        carried = None
+        out = {}
+        for a in sent["animations"]:
+            n = a.get("model_animation")
+            if n:
+                if mine:
+                    try:
+                        f = anim._own_file(Path(mod) / anim.OWN / unit, mine[n], n) if n in mine else None
+                    except anim.AnimError:
+                        f = None
+                    out[a["name"]] = _sha(f) if f is not None else None
+                    continue
+                if carried is None:     # (none in the mod yet: those its model's file carries)
+                    own_raw, record = self._own_bones_model(address)
+                    carried = {} if own_raw is None else {x["model_animation"]: _sha_of(x["clip"])
+                                                          for x in self._model_animations(address, own_raw, record)}
+                out[a["name"]] = carried.get(n)
+                continue
+            got = set()
+            for fig, keys in (a.get("actions") or {}).items():
+                for key in keys:
+                    own = rows["actions"].get((key, fig)) or rows["actions"].get((key, None))
+                    if own is not None:
+                        got.add(_sha(own))
+                    elif a.get("member") and not a.get("own") \
+                            and (then is None or then.get(a["name"]) == self._edit_print(rows, edits, a["member"])):
+                        got.add(_sha_of(a["clip"]))     # (the game's clip, changed as when it went out)
+                    else:
+                        got.add(None)
+            out[a["name"]] = next(iter(got)) if len(got) == 1 else None
+        return out
 
     @staticmethod
     def _in_force(mod: Path, unit: str, a: dict, prev: dict) -> bool:
@@ -628,14 +822,50 @@ class DecoyBlenderCalls:
         anim.write_units(mod, table)
 
     # --- a model on bones of its own ---
-    def _halves_unplayed(self, address: str, sent: dict, bones: dict, sep: str) -> list:
-        """For a model on bones of its own, each animation that came back changed on bones the game may not play from
-        it ("<its name> (<those bones>)"): one played on one half of the body only, changed on bones of the other half
-        (the build's two masks for the model: rusemod.bonefit.halves_for). A model's own animation plays on one half
-        when its name is made for that half (rusemod.animactions.marked: t_ or b_, after what all its names start with)
-        and no action picks it (a pick plays on both); one an action's own row plays, when every one of its actions is
-        that half's (t_ or b_). Read from the build's rules, not tried in the game (`bones`: {name: the bones whose
-        track came back changed})."""
+    def _played(self, address: str, names: list, mine: dict, rows: dict) -> dict | None:
+        """{each of the model's own animations `names` (in the model's order): the halves the build plays it on, "top",
+        "bottom" or "all" (the whole body)}, by the build's own rule (rusemod.build._own_animations): each listing of
+        the unit's figures plays what rusemod.animactions.choose gives it, unless a row of the unit's own for its
+        action wins (`rows`: rusemod.anim.mod_unit_clips' "actions"; a row naming one of the animations' files plays
+        that one), a t_ listing on the top half, a b_ one on the bottom, any other on the whole body; its ride, unless
+        it rides in its truck, animactions.ride's, on the whole body. Every figure of the unit counts (the build's are
+        those wearing its model: one that doesn't adds a listing, so a half can only be said where it isn't played,
+        never left unsaid). None without the unit's figures (no game index)."""
+        from rusemod import animactions
+        figures = [f for f in self._unit_figures(address) if f.get("clips")]
+        if not figures or not names:
+            return None
+        picks = {a: n for a, n in (mine.get("plays") or {}).items() if n in names}
+        files = {Path(str(f)).name.lower(): n for n, f in (mine.get("animations") or {}).items()}
+        out = {n: set() for n in names}
+        for f in figures:
+            fig = str(f["figure"]).split(":", 1)[-1]
+            for key, clip in f["clips"]:
+                half = animactions.parse_key(key)[0] or "all"
+                row = rows.get((key, fig)) or rows.get((key, None))
+                if row is not None:     # (a row of its own wins: the build plays that file there)
+                    n = files.get(Path(row).name.lower())
+                    if n in out:
+                        out[n].add(half)
+                    continue
+                pick, _how = animactions.choose(key, names, picks, clip)
+                if pick in out:
+                    out[pick].add(half)
+        if mine.get("ride") != "truck":
+            pick, _how = animactions.ride(names, picks)
+            if pick in out:
+                out[pick].add("all")
+        return out
+
+    def _halves_unplayed(self, address: str, sent: dict, bones: dict, sep: str) -> tuple[list, list]:
+        """For a model on bones of its own, what the game may not play of the animations that came back changed
+        (`bones`: {name: the bones whose track came back changed}): (each played on one half of the body only, changed
+        on bones of the other half, "<its name> (<those bones>)" (the build's two masks for the model:
+        rusemod.bonefit.halves_for); each no action plays at all, by name). Which halves play one of the model's own
+        animations: _played's, the build's rule whatever its name; without the unit's figures, by its name (one made for
+        a half, rusemod.animactions.marked: t_ or b_ after what all the names start with, plays on that half only,
+        unless an action picks it). One an action's own row plays: the halves of its actions (t_ or b_). Read from the
+        build's rules, not tried in the game."""
         from rusemod import anim, animactions, bonefit
         from rusemod.unitmodel import UnitModelError
         from . import animblender
@@ -644,31 +874,39 @@ class DecoyBlenderCalls:
             halves = bonefit.halves_for(Path(own)) if own is not None else None
         except (bonefit.FitError, UnitModelError, OSError, ValueError, KeyError, IndexError, struct.error):
             halves = None   # (its halves can't be told: nothing said of them)
-        if not halves:
-            return []
-        weighed = {h: {n.lower() for n in halves[h]["Weights"]} for h in ("top", "bottom")}
-        model = [a["model_animation"] for a in sent["animations"] if a.get("model_animation")]
-        marks = animactions.marked(model) if model else {}
+        weighed = {h: {n.lower() for n in halves[h]["Weights"]} for h in ("top", "bottom")} if halves else None
         try:
-            picked = set(anim.own_animations(self._mod_dir(), animblender.unit_name(own))["plays"].values())
+            mine = anim.own_animations(self._mod_dir(), animblender.unit_name(own))
+            rows = (anim.mod_unit_clips(self._mod_dir()).get(animblender.unit_name(own)) or {}).get("actions") or {}
         except anim.AnimError:
-            picked = set()
+            return [], []
+        names = list(mine["animations"]) or [a["model_animation"] for a in sent["animations"]
+                                             if a.get("model_animation")]
+        played = self._played(address, names, mine, rows)
+        marks = animactions.marked(names) if names else {}
+        picked = set(mine["plays"].values())
         went = {a["name"]: a for a in sent["animations"]}
-        out = []
+        out, unplayed = [], []
         for name, changed in bones.items():
             a = went.get(name) or {}
             if a.get("model_animation"):
                 n = a["model_animation"]
-                half = None if n in picked else marks.get(n, (None, None))[1]
+                if played is not None:
+                    got = played.get(n) or set()
+                    if not got:
+                        unplayed.append(name)
+                        continue
+                else:
+                    got = {("all" if n in picked else marks.get(n, (None, None))[1]) or "all"}
             else:
-                sides = {animactions.parse_key(k)[0] for ks in (a.get("actions") or {}).values() for k in ks}
-                half = next(iter(sides)) if len(sides) == 1 else None
-            if half not in weighed:
+                got = {animactions.parse_key(k)[0] or "all" for ks in (a.get("actions") or {}).values() for k in ks}
+            if weighed is None or not got or "all" in got or {"top", "bottom"} <= got:
                 continue
-            unplayed = [b for b in changed if b.lower() not in weighed[half]]
-            if unplayed:
-                out.append(f"{name} ({sep.join(unplayed)})")
-        return out
+            half = next(iter(got))
+            missed = [b for b in changed if b.lower() not in weighed[half]]
+            if missed:
+                out.append(f"{name} ({sep.join(missed)})")
+        return out, unplayed
 
     def _model_animations_back(self, address: str, sent: dict, by_name: dict, allowed: dict) -> dict:
         """The model's own animations to keep after a bring back (rusemod.anim.set_animations' `clips`): the mod's as
