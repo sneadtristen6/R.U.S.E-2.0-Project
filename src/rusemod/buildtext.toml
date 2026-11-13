@@ -3111,3 +3111,31 @@ cz = "{0}: files/models/{1}.glb: model vojáka {3} jednotky {2} byl přizpůsobe
 jpn = "{0}：files/models/{1}.glb：{2} の兵士 {3} のモデルは {4} に合わせてありますが、その分隊の兵士は誰もそれを使っていません（Studioでもう一度読み込んでください）"
 sc = "{0}：files/models/{1}.glb：{2} 的第 {3} 名士兵的模型是适配到 {4} 的，而它的士兵都不使用这个模型（请在 Studio 中重新导入）"
 fa = "{0}: files/models/{1}.glb: مدل سرباز {3}ِ {2} روی {4} جا انداخته شده که هیچ‌کدام از سربازانش آن را ندارند (آن را دوباره در Studio وارد کنید)"
+
+# the page reads this line's first word (app.js resizeAllRow): it stays as it is in every language
+[eef225c7395]
+us = "not_kept\t{0}\t{1}"
+fr = "not_kept\t{0}\t{1}"
+ger = "not_kept\t{0}\t{1}"
+ita = "not_kept\t{0}\t{1}"
+spa = "not_kept\t{0}\t{1}"
+pol = "not_kept\t{0}\t{1}"
+ru = "not_kept\t{0}\t{1}"
+cz = "not_kept\t{0}\t{1}"
+jpn = "not_kept\t{0}\t{1}"
+sc = "not_kept\t{0}\t{1}"
+fa = "not_kept\t{0}\t{1}"
+
+# the page reads this line's first word (app.js resizeAllRow): it stays as it is in every language
+[eb127e26a50]
+us = "skipped\t{0}\t{1}: {2}"
+fr = "skipped\t{0}\t{1}: {2}"
+ger = "skipped\t{0}\t{1}: {2}"
+ita = "skipped\t{0}\t{1}: {2}"
+spa = "skipped\t{0}\t{1}: {2}"
+pol = "skipped\t{0}\t{1}: {2}"
+ru = "skipped\t{0}\t{1}: {2}"
+cz = "skipped\t{0}\t{1}: {2}"
+jpn = "skipped\t{0}\t{1}: {2}"
+sc = "skipped\t{0}\t{1}: {2}"
+fa = "skipped\t{0}\t{1}: {2}"

@@ -51,7 +51,9 @@ class RecordLost(base.Refit):
                           ("Move", lambda: self.api.model_place(ADDRESS, [10, 0, 0])),
                           ("Take it out keeping a uniform", lambda: self.api._keep_in_model_record(ADDRESS, "u"))):
             with self.subTest(how=how):
-                with mock.patch.object(Path, "write_text", full), self.assertRaises(OSError):
+                # (the final join: a fit's failed record write is said in words, a StudioError raised from the
+                # OSError, fix/horse-add's file_error; Take it out's own write still raises the OSError itself)
+                with mock.patch.object(Path, "write_text", full), self.assertRaises((OSError, StudioError)):
                     call()
                 self.assertEqual(self.path().read_bytes(), before)
                 self.assertFalse(self.path().with_name(self.path().name + ".part").exists())
@@ -60,7 +62,7 @@ class RecordLost(base.Refit):
         self.assertEqual((self.clips()["Walk"], self.named(got)), (changed, None))
         # Import model again stopped the same way: the record readable, as it was
         before = self.path().read_bytes()
-        with mock.patch.object(Path, "write_text", full), self.assertRaises(OSError):
+        with mock.patch.object(Path, "write_text", full), self.assertRaises((OSError, StudioError)):
             self.imported(beast_glb())
         self.assertEqual(self.path().read_bytes(), before)
 

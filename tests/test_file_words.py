@@ -409,7 +409,9 @@ class OnTheGame(unittest.TestCase):
         real = pathlib.Path.write_text
 
         def write_text(path, *args, **kw):
-            if Path(path) == record:
+            # (the final join: the record is written beside itself first, <record>.part, then put in its place,
+            # fix/resize's write_record, so the full disk is met there)
+            if Path(path) in (record, record.with_name(record.name + ".part")):
                 raise OSError(errno.ENOSPC, "No space left on device")     # (a write on a full disk names no file)
             return real(path, *args, **kw)
         with mock.patch.object(pathlib.Path, "write_text", write_text), self.assertRaises(StudioError) as said:
