@@ -1,0 +1,200 @@
+"""Recheck 1 of fix/door (cdd67623): RUSE Decoy's Change its animations in Blender / Bring my changes back after the
+fixer's round 1. Each test is a route to a fault of reviewer 4's (tests/test_review_decoy.py) that the fixer's tests
+(tests/test_fix_door.py) don't take, and each FAILS on cdd67623, by design, until that route is fixed too:
+
+- D-F1's class: a bone moved in Edit mode (its rest place) rewrites every animation, said only "Changed in Blender";
+- D-F2's class: the mod changed while Blender is open (RUSE Decoy's way back to the game's), and the next bring back
+  says every animation came back as it went out while the mod plays another run than Blender shows;
+- D-F3's class: an animation that only one half of the body plays by the build's rule (rusemod.animactions.choose),
+  though its name has no t_ or b_, changed on the other half's bones with no word;
+- D-F5: a bone added and keyed is named now, but the answer still begins "Every animation came back as it went out.";
+- D-F11: a sending set aside behind a newer one that is refused is never offered again.
+
+On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no game files), Blender's part played by
+test_animglb's stand-in (Blenderish) with what a real Blender sends for that edit. Real Blender 4.5 gave the same
+answers for the moved bone (scratch/animmodels/fix-door/recheck1/real_probe2.py, out/real_probe2.json)."""
+import json
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from rusemod import anim, modelin
+from test_animblender import CLIP_BYTES, COMMON, RUN, SQUAD, STAND, Closed
+from test_animglb import Blenderish
+from test_gltf_bones import NAME
+from test_review_decoy import HEAD_TURN, SPINE_TURN, UNIT, Door, renamed, with_new_bone
+
+RUNS = (("GfxDescriptorBazooka", "t_tir"), ("GfxDescriptorFusilier", "b_course"))   # the actions that play the run
+
+
+def moved(raw: bytes, bone: str, by: tuple) -> bytes:
+    """What Blender sends when the modder moved a bone in Edit mode (G there) and posed nothing: its rest place and its
+    place at every frame of every animation moved by `by`, in its parent's frame, in the file's units (0.1 is 10 of the
+    game's units). For a bone with no bone under it (Edit mode leaves a child bone where it was)."""
+    from rusemod.gltf import FLOAT, _Glb
+    doc, binary = modelin.glb_document(raw)
+    g = _Glb()
+    g.doc, g.bin = doc, bytearray(binary)
+    node = next(i for i, n in enumerate(doc["nodes"]) if n.get("name") == bone)
+    assert not doc["nodes"][node].get("children"), bone
+    t = list(doc["nodes"][node].get("translation", [0.0, 0.0, 0.0]))
+    doc["nodes"][node]["translation"] = [a + b for a, b in zip(t, by)]
+    for a in doc["animations"]:
+        for ch in a["channels"]:
+            if ch["target"]["node"] == node and ch["target"]["path"] == "translation":
+                s = a["samplers"][ch["sampler"]]
+                vals = modelin.glb_accessor(doc, binary, s["output"])
+                s["output"] = g.accessor([tuple(x + y for x, y in zip(v, by)) for v in vals], "VEC3", FLOAT,
+                                         target=None)
+    return g.to_bytes()
+
+
+def strings(value) -> set:
+    """Every string in an answer, however deep."""
+    if isinstance(value, str):
+        return {value}
+    if isinstance(value, dict):
+        return set().union(*(strings(v) for v in value.values())) if value else set()
+    if isinstance(value, (list, tuple)):
+        return set().union(*(strings(v) for v in value)) if value else set()
+    return set()
+
+
+class Recheck(Door):
+    def reopen(self) -> tuple:
+        """Change its animations in Blender again (the last Blender closed): (its answer, the file Blender opened)."""
+        started = []
+        with mock.patch("rusemod.models.Library", lambda game: self.lib), \
+                mock.patch("rusemod.blender.open_model_to_change",
+                           lambda b, model, send, words: started.append(model) or Closed()):
+            res = self.api.decoy_blender(SQUAD, "us")
+        return res, Path(started[0]).read_bytes()
+
+    # --- D-F1's class ---
+    def test_a_bone_moved_in_edit_mode_is_not_taken_in_without_a_word(self):
+        """FAILS on cdd67623. In Blender the modder moved the head (points of the model lean on it) 10 game units in
+        Edit mode and posed nothing. Blender moves its rest with it, so its points stay where they were; the game's
+        skeleton keeps the head's rest, so a clip putting the head 10 units off puts its points 10 units off. The door
+        rewrites every animation so ("Changed in Blender, this unit's own now: Stand (made_stand), Run (made_run).") and
+        never says why: D-F1's bending, by a moved bone instead of a renamed one. (Real Blender 4.5, the same answer:
+        recheck1/out/real_probe2.json, case editmove_head; the same move of fx_point, which no point leans on, is the
+        legitimate case: there the game plays what Blender shows.) The door must refuse it in words naming the bone, or
+        write nothing, or say it naming the bone."""
+        from ruse_studio.api import StudioError
+        start = self.open()
+        self.send.write_bytes(moved(Blenderish(start).send(), "bip01 head", (0.0, 0.1, 0.0)))
+        try:
+            got = self.back()
+        except StudioError as exc:
+            self.assertIn("bip01 head", str(exc))
+            return
+        if got["written"] == 0:
+            return
+        self.assertIn("bip01 head", got["message"],
+                      f"every animation rewritten with the head off its rest, not a word of it: {got['message']}")
+
+    # --- D-F2's class ---
+    def test_an_own_clip_taken_out_while_blender_is_open_is_not_said_to_have_come_back_as_it_went(self):
+        """FAILS on cdd67623. Round one: the run changed in Blender and brought back (the unit's own now). Round two:
+        Change its animations in Blender again (the run goes out as the unit's own, changed); while Blender is open the
+        modder takes the run's own clip out in RUSE Decoy (back to the game's); Blender sends with the run untouched,
+        still showing the change. Bring my changes back says "Every animation came back as it went out." and the mod
+        plays the game's run: Blender shows one run, the game plays another, as D-F2. The fixer's own
+        test_a_change_taken_out_elsewhere_since_is_taken_in_again takes the same run in again when round one's
+        Blender sends it (its bring back wrote it): here only the round differs. The run must play as Blender shows it,
+        or the door must say it doesn't."""
+        start = self.open()
+        self.send.write_bytes(Blenderish(start).send(change=("Run (made_run)", "bip01 spine", SPINE_TURN)))
+        self.assertEqual(self.back()["changed"], ["Run (made_run)"])
+        changed = (self.mod / anim.OWN / UNIT / "blender_made_run.baf").read_bytes()
+        _res, start = self.reopen()
+        went = json.loads((self.work / "animations.json").read_text(encoding="utf-8"))
+        self.assertIn("Run (blender_made_run)", [a["name"] for a in went["animations"]])
+        for fig, key in RUNS:
+            anim.remove_unit_clip(self.mod, UNIT, key, figure=fig)      # RUSE Decoy: back to the game's run
+        self.send.write_bytes(Blenderish(start).send())                 # (the run untouched in Blender)
+        got = self.back()
+        if "blender_made_run" in got["message"]:
+            return      # (said)
+        figures = self.rows().get("figure") or {}
+        for fig, key in RUNS:
+            f = ((figures.get(fig) or {}).get("action") or {}).get(key)
+            self.assertTrue(f and (self.mod / anim.OWN / UNIT / f).read_bytes() == changed,
+                            f"{fig} {key} plays the game's run while Blender shows the changed one: {got['message']}")
+
+    # --- D-F3's class ---
+    def test_an_animation_only_one_half_plays_is_warned_whatever_its_name(self):
+        """FAILS on cdd67623. A model on bones of its own (the Horse Squad's kind) with the rider's t_stand and t_run
+        and the horse's gallop, whose name has no half in it; its figure lists the soldier's t_stand, b_stand,
+        t_course and b_course. By the build's rule (rusemod.animactions.choose, as rusemod.build._own_animations
+        calls it for each listing) gallop is what the bottom half's two listings play and never a top one: its top
+        bones are never played, as for hr_b_run. The modder turns the head (the top half, split at the spine) in
+        gallop: the door writes it and says "Changed in Blender, this unit's own now: gallop.", no word that the head
+        may not show (it warns only for a name marked t_ or b_: _halves_unplayed). The same warning as for b_run is
+        due."""
+        from rusemod import animactions
+        nope = COMMON + "nothing_herelod0.baf"     # (a listing's game clip this unit can't play: no action row)
+        keys = ["t_stand", "b_stand", "t_course", "b_course"]
+        names = ["t_stand", "t_run", "gallop"]
+        self.own_bones_unit({"t_stand": CLIP_BYTES[STAND], "t_run": CLIP_BYTES[STAND], "gallop": CLIP_BYTES[RUN]},
+                            split="bip01 spine")
+        self.api._unit_figures = lambda address: [{"figure": f"{UNIT}:GfxDescriptorFusilier", "model": NAME,
+                                                   "clips": [(k, nope) for k in keys]}]
+        plays = {k: animactions.choose(k, names, {}, nope)[0] for k in keys}
+        self.assertEqual(sorted(k for k, n in plays.items() if n == "gallop"), ["b_course", "b_stand"])
+        start = self.open()
+        self.send.write_bytes(Blenderish(start).send(change=("gallop", "bip01 head", HEAD_TURN)))
+        got = self.back()
+        self.assertEqual(got["changed"], ["gallop"])
+        self.assertIn("bip01 head", got["message"],
+                      f"gallop plays on the bottom half only (listings: {plays}), changed on the head: {got['message']}")
+
+    # --- D-F5 ---
+    def test_a_bone_added_and_keyed_is_not_said_to_have_come_back_as_it_went_out(self):
+        """FAILS on cdd67623. D-F5 as the reviewer found it: a bone added under the head and keyed in the run; the door
+        said "Every animation came back as it went out." The bone is named now, but the answer still begins with that
+        sentence: "Every animation came back as it went out. Bones made in Blender, ...: prop. ..." The run came back
+        with keys the game can't play: it didn't come back as it went out."""
+        start = self.open()
+        self.send.write_bytes(with_new_bone(Blenderish(start).send(), "Run (made_run)", "bip01 head"))
+        got = self.back()
+        self.assertIn("prop", got["message"])
+        self.assertNotIn("Every animation came back as it went out.", got["message"])
+
+    # --- D-F11 ---
+    def test_a_sending_set_aside_behind_a_refused_one_can_still_be_brought_back(self):
+        """FAILS on cdd67623. Round one's sending (the run changed) never brought back: the next opening sets it aside
+        (A) and says Bring back the set-aside sending takes it in. Round two's sending has a bone renamed, is refused,
+        and the next opening sets it aside too (B). The page offers one set-aside sending, decoy_blender_state's
+        "aside": B, the newest, refused each time (its refusal says to name the bone again in Blender and Send: that
+        Blender is closed), and nothing drops it; A is never offered again. A sending set aside must stay reachable."""
+        from ruse_studio.api import StudioError
+        start = self.open()
+        self.send.write_bytes(Blenderish(start).send(change=("Run (made_run)", "bip01 spine", SPINE_TURN)))
+        first, start = self.reopen()
+        a = Path(first["set_aside"])
+        self.send.write_bytes(renamed(Blenderish(start).send(), "bip01 spine", "Spine.R"))
+        with self.assertRaises(StudioError):
+            self.back()
+        _second, _start = self.reopen()
+        offered, said = [], []
+        for _ in range(3):      # (the page's button: it brings back what "aside" names)
+            st = self.api.decoy_blender_state(SQUAD)
+            if a.name in strings(st) or str(a) in strings(st):
+                return      # (offered)
+            if st["aside"] is None:
+                break
+            offered.append(st["aside"])
+            try:
+                got = self.api.decoy_blender_back(SQUAD, "us", st["aside"])
+            except StudioError as exc:
+                said.append(str(exc))
+                continue
+            if "Run (made_run)" in got["changed"]:
+                return      # (brought back)
+        self.fail(f"the sending set aside first ({a.name}) is never offered: the page offers {offered}, and says "
+                  f"{said[-1] if said else None}")
+
+
+if __name__ == "__main__":
+    unittest.main()
