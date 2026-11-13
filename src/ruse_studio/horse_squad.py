@@ -164,8 +164,10 @@ class HorseSquadCalls:
             self.__dict__["_horse_mod"] = None   # the mod being written while its unit is made (_horse_guard)
 
         def work(say):
-            where = self._home / FOLDER   # the folder being written (the platform folder's, then the mod): said when
-            try:                          # a file can't be read or written and the error names none
+            # the folder being written (the platform folder's, then the mod) and the file being read (each soldier's
+            # file while its model is imported): said when a file can't be read or written and the error names none
+            where, reading = self._home / FOLDER, None
+            try:
                 say(STEPS[0])
                 files = self._horse_build(builder, game)
                 where = mod
@@ -185,9 +187,12 @@ class HorseSquadCalls:
                                               research_price, research_time, group)
                         made = self._era_make(KEY, self._era_library()[1], entry, plan, nation, factory, name, price)
                         say(STEPS[2])
+                        reading = files["rifle"]
                         self.model_import(made["address"], str(files["rifle"]))
                         say(STEPS[3])
+                        reading = files["bazooka"]
                         self.model_import(made["address"], str(files["bazooka"]), kind=HEAVY)
+                        reading = None
                         self._horse_check(made["address"])
                     except BaseException:
                         self._horse_undo(made["address"] if made else None, before)
@@ -197,7 +202,13 @@ class HorseSquadCalls:
                     self.__dict__["_horse_pin"] = None
             except OSError as exc:
                 # (in words, never Python's own: the job's message goes to the page in the modder's language)
-                raise self._horse_file_error(exc, where) from exc
+                raise self._horse_file_error(exc, where, reading) from exc
+            except StudioError as exc:
+                # a file the Studio's own import couldn't read or write (api.file_error, raised from its OSError): said
+                # as one of the add's own steps' is, that the Horse Squad wasn't added (the import's words don't say)
+                if not isinstance(exc.__cause__, OSError):
+                    raise
+                raise self._horse_file_error(exc.__cause__, where, reading) from exc.__cause__
             job.result = {"address": made["address"], "name": made["name"]}
 
         return job.start(work, f"{NAME} is in your mod.", plain=(StudioError, OSError))
@@ -252,19 +263,19 @@ class HorseSquadCalls:
                            "this.")
 
     @staticmethod
-    def _horse_file_error(exc: OSError, folder):
+    def _horse_file_error(exc: OSError, folder, reading=None):
         """The StudioError for a file that couldn't be read or written while the Horse Squad was being made or added
         (`exc`), in words and never in Python's own (English, inside the modder's language): the disk full, a file
-        another program holds or Windows didn't allow, a file not there, else its error number. The file is the one
-        `exc` names, else `folder`, the folder being written then."""
-        import errno
-        from .api import StudioError
-        named = [f for f in (exc.filename, exc.filename2) if isinstance(f, (str, os.PathLike)) and str(f)]
-        path = named[0] if named else folder   # (a file's number, which an error may carry instead, isn't said)
-        code = getattr(exc, "winerror", None) or exc.errno
-        if exc.errno == errno.ENOSPC:   # (Windows' "disk full" errors come as this one too)
+        another program holds or Windows didn't allow, a file not there, else its error number. A full disk is the one
+        holding `folder`, the folder being written then; any other names the file `exc` names (api.file_named: of two,
+        the one in the place a new file was being put, never the add's own new one), else the file being read then,
+        `reading`, else `folder` (api.file_error's rule)."""
+        from .api import StudioError, disk_full, file_named
+        if disk_full(exc):
             return StudioError(f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on "
                                f"it, then add it again.")
+        path = file_named(exc, reading if reading is not None else folder)
+        code = getattr(exc, "winerror", None) or exc.errno
         if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
             return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written, because "
                                f"another program has it open or Windows didn't allow it. Close that program, then add "
