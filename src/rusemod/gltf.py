@@ -266,6 +266,18 @@ def rest_poses(record: bytes, joints: list[int], turn: bool = True) -> dict | No
     return out
 
 
+def bones_with_points(lib, name: str) -> set[int]:
+    """The bones of one model of `lib` (its skeleton's numbers) some point of it leans on, as model_glb reads its
+    parts (a part's own numbers through its material's SkinningRemapping)."""
+    mats = lib.where[name].materials()
+    out: set = set()
+    for part, _tex in lib.parts(name):
+        remap = mats[part.material].get("skinning") if part.material < len(mats) else None
+        for b, w in zip(part.bones, part.weights):
+            out.update(remap[i] if remap and i < len(remap) else i for i, x in zip(b, w) if x)
+    return out
+
+
 def model_glb(lib, name: str, side: int = 2048, rest_bones: bool = False,
               clips: list | None = None) -> tuple[bytes, dict[str, bytes], dict]:
     """One model of `lib` (rusemod.models.Library) as (.glb bytes, {picture file name: PNG bytes}, summary).

@@ -35,7 +35,11 @@ the game's 30 frames a second, so every key of a clip falls on a whole frame; ea
 ("actions", read from the file's own animation extras, which Blender's importer doesn't carry over); the bones no
 point of the model leans on (an effect point, the gun's second hand) are left out of Blender's automatic weights; and
 the timeline at the bottom shows the Action Editor. Sending writes every action as an animation of the file, each
-frame sampled (send's settings, named whatever Blender's defaults are), so the Studio gets every one back."""
+frame sampled (send's settings, named whatever Blender's defaults are), so the Studio gets every one back. What that
+can't carry is said beside the file (<send>.json, ABOUT): the scene's frames a second, and each action Blender's NLA
+editor plays with timing of its own (a strip's Scale or Repeat...: unsent_timing), which an action sent as it is
+doesn't have; Blender says the latter at once too (the words' "nla"), and the Studio's Bring my changes back says
+both."""
 import hashlib
 import json
 import os
@@ -75,6 +79,8 @@ SOLDIER = "ruse_soldier"   # custom property: the soldier an object or collectio
 OFFSET = "ruse_offset"     # custom property of a soldier's collection: how far he stands from his own place
 ALPHA = "ruse_alpha"       # custom property of a material: the alpha picture (side colour / shine) the Studio gave it
 ANIMATED = False           # the opened file has animations
+ABOUT = ".json"            # beside the file sent, its name and this: what Send says of it (ruse_studio.decoyblender's)
+UNSENT = []                # the last sending's actions the NLA editor plays with timing of their own
 
 
 def clear_start_scene() -> None:
@@ -127,28 +133,102 @@ def leave_out_unweighted() -> None:
                     bone.use_deform = False
 
 
+def own_timing(strip, action) -> bool:
+    """Whether an NLA strip plays its action otherwise than the action plays alone: faster or slower (Scale), more than
+    once (Repeat), backwards, only a part of it, blending in or out, with an influence or a time of its own, or
+    blended onto what's under it."""
+    start, end = action.frame_range
+    return (abs(strip.scale - 1.0) > 1e-6 or abs(strip.repeat - 1.0) > 1e-6 or strip.use_reverse
+            or strip.blend_in > 1e-6 or strip.blend_out > 1e-6 or strip.use_animated_influence
+            or strip.use_animated_time or strip.blend_type != "REPLACE"
+            or abs(strip.action_frame_start - start) > 1e-3 or abs(strip.action_frame_end - end) > 1e-3)
+
+
+def unsent_timing() -> list:
+    """The actions Blender's NLA editor plays with timing of their own (own_timing), which sending every action as it
+    is (send's ACTIONS) doesn't carry: a strip on a track that plays (not muted; Blender's import puts each action on
+    a muted one), or the strip being edited (tweak mode). Each action's name once."""
+    out = []
+    for obj in bpy.data.objects:
+        ad = obj.animation_data
+        if ad is None or not getattr(ad, "use_nla", True):
+            continue
+        tweak = getattr(ad, "use_tweak_mode", False)
+        for track in ad.nla_tracks:
+            for strip in track.strips:
+                act = strip.action
+                if act is None or act.name in out:
+                    continue
+                playing = (not track.mute and not strip.mute) or (tweak and getattr(strip, "active", False))
+                if playing and own_timing(strip, act):
+                    out.append(act.name)
+    return out
+
+
+def say_about(unsent: list, stretch: list | None = None) -> None:
+    """ABOUT beside SEND: {"glb": the SHA-256 of the file sent (so a stale one is never read with another), "fps": the
+    scene's frames a second, "nla": unsent's, "stretch": [Old, New] of the scene's Time Stretching when it stretches
+    (send sends each action whole without it), else None, "session": the opening this Blender was started for (the
+    words' "session": a Blender left open from an earlier opening is told apart)}."""
+    scene = bpy.context.scene
+    about = {"glb": hashlib.sha256(SEND.read_bytes()).hexdigest(),
+             "fps": scene.render.fps / (scene.render.fps_base or 1.0), "nla": unsent, "stretch": stretch,
+             "session": WORDS.get("session")}
+    path = SEND.with_name(SEND.name + ABOUT)
+    part = path.with_name(path.name + ".part")
+    part.write_text(json.dumps(about), encoding="utf-8")
+    os.replace(part, path)
+
+
 def send() -> str:
     """Write the whole scene (the bones, every model on them and every action) as glTF Binary to SEND; returns its
     path. The animation settings are named (all but one Blender's defaults today): every action an animation, each
     frame sampled and every sample kept, every bone, the pose put back to rest between them. Blender's Optimize
     Animation Size (on by default) is off: it keeps only the first and last key of any channel that moves less than
     0.0001 over the whole action (0.01 of the game's units; Blender 4.5's exporter, fcurve_is_constant), and a bone's
-    small moves are the game's too. A squad (SQUAD): send_squad's."""
+    small moves are the game's too. With animations, what it can't carry is said beside it (say_about). A squad
+    (SQUAD): send_squad's."""
+    global UNSENT
     if SQUAD:
         return send_squad()
     part = SEND.with_name(SEND.stem + ".sending.glb")
     if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
+    UNSENT = []
+    if ANIMATED:
+        try:
+            UNSENT = unsent_timing()
+        except Exception:  # noqa: BLE001  (shown in Blender's console; the sending goes on)
+            traceback.print_exc()
     settings = dict(export_animations=True, export_animation_mode="ACTIONS", export_force_sampling=True,
                     export_frame_step=1, export_frame_range=False, export_anim_slide_to_zero=False,
                     export_anim_single_armature=True, export_reset_pose_bones=True, export_def_bones=False,
                     export_optimize_animation_size=False)
+    # Output Properties' Time Stretching (Old, New) makes Blender play every action slower or faster, and sampling
+    # with it on would send each one cut short or cut long: each is sent whole, frame by frame, as the Action Editor
+    # keys it, the stretching put back after, and said beside the file (say_about's "stretch")
+    render = bpy.context.scene.render
+    stretch = None
+    if ANIMATED and render.frame_map_old != render.frame_map_new:
+        stretch = [int(render.frame_map_old), int(render.frame_map_new)]
+        render.frame_map_new = render.frame_map_old
     try:
-        bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB", **settings)
-    except TypeError:  # an older Blender without one of them: its own
-        bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB")
+        try:
+            bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB", **settings)
+        except TypeError:  # an older Blender without one of them: its own
+            bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB")
+    finally:
+        if stretch is not None:
+            render.frame_map_new = stretch[1]
     os.replace(part, SEND)
+    if ANIMATED:
+        try:
+            say_about(UNSENT, stretch)
+        except Exception:  # noqa: BLE001  (shown in Blender's console; the sending is made)
+            traceback.print_exc()
     print("rusemod: sent", SEND)
+    if UNSENT:
+        print("rusemod: the NLA editor plays these with timing of its own, which isn't sent:", ", ".join(UNSENT))
     return str(SEND)
 
 
@@ -405,6 +485,8 @@ class RUSE_OT_send_model(bpy.types.Operator):
             self.report({"ERROR"}, str(exc))
             return {"CANCELLED"}
         self.report({"INFO"}, WORDS["sent"])
+        if UNSENT and WORDS.get("nla"):
+            self.report({"WARNING"}, WORDS["nla"].replace("{names}", ", ".join(UNSENT)))
         if SQUAD:
             try:
                 left = json.loads(SEND.read_text(encoding="utf-8")).get("left_out") or []
