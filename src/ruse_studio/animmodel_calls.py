@@ -90,7 +90,7 @@ class FitUndo:
         self.files = [self.target, self.record] + ([self.mod / anim.UNITS] if unit else [])
         self.own = self.mod / anim.OWN / unit if unit else None   # (the unit's own animations' folder)
         self.folder = self.mod / UNDO / self.target.name
-        self.id = None   # (take's: this fit's own mark, in its list and in the record it writes, FIT_MARK)
+        self.id = None   # (wrote()'s: this fit's mark, made from what it wrote, in its list and its record: FIT_MARK)
 
     def _rel(self, path: Path) -> str:
         return Path(path).relative_to(self.mod).as_posix()
@@ -108,9 +108,8 @@ class FitUndo:
         """Keep what the fit is about to write, as it is; an OSError (the disk full: no room even for the copies)
         before anything of the mod is written, the copies made so far gone again."""
         import shutil
-        import uuid
         shutil.rmtree(self.folder, ignore_errors=True)   # (copies whose list never got written: an earlier take's)
-        self.id = uuid.uuid4().hex
+        self.id = None   # (no mark before wrote(): a fit stopped before it is put back whole)
         try:
             (self.folder / "files").mkdir(parents=True, exist_ok=True)
             files = {}
@@ -123,7 +122,7 @@ class FitUndo:
                 own = {"path": self._rel(self.own), "was": self.own.is_dir()}
                 if self.own.is_dir():
                     shutil.copytree(self.own, self.folder / "own")
-            self._write_manifest({"fit": self.id, "files": files, "own": own})
+            self._write_manifest({"files": files, "own": own})
         except BaseException:
             self._clear()
             raise
@@ -148,10 +147,17 @@ class FitUndo:
 
     def wrote(self) -> None:
         """Note what the fit wrote, before its last write (the record): put_back then puts back only a file still as
-        the fit left it."""
+        the fit left it. The fit's mark (FIT_MARK, `id`, written into its record too) is made from what it wrote, the
+        record left out (it holds the mark), never a random number: the same fit gives the same record, byte for byte,
+        on every run and PC (the project's proofs compare records and whole mods by exact bytes). A second fit that
+        wrote the same files and stopped before its record then reads as finished: the record there describes them."""
+        import hashlib
         data = self._manifest()
         if data is not None:
-            data["wrote"] = self._now()
+            now = self._now()
+            table = sorted((k, v) for k, v in now.items() if k != self._rel(self.record))
+            self.id = hashlib.sha256(json.dumps(table).encode("utf-8")).hexdigest()
+            data["wrote"], data["fit"] = now, self.id
             self._write_manifest(data)
 
     def finish(self) -> None:

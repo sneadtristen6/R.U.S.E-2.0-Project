@@ -9033,7 +9033,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
         `kind` (a squad whose soldiers come in kinds, _soldier_kinds): that kind's model only; none given, or the
         first kind (the riflemen): the unit's main model, and with it each other kind's model on its bones (they play
-        its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left."""
+        its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left.
+        "record_unread": a record that couldn't be read (a Custom uniform it may have held isn't given back: the page
+        says so); the model and the animations it brought still go."""
         from rusemod.squads import soldier_of
         kinds = self._soldier_kinds(address)
         # one soldier's own look (`kind` his number: rusemod.squads) goes alone
@@ -9406,7 +9408,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """The Look box of a unit: {"models": its models, "textures": the pictures they're drawn with, "painted":
         those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
         "opened": whether the unit has been opened in Blender (its work folder is there), "kept": where the mod keeps
-        its own model, made or not (_model_kept)}."""
+        its own model, made or not (_model_kept)}. "own_model": its own model's import report, with "record_unread"
+        when its record can't be read or doesn't say what it was made from (the page says Import model again mends
+        it)."""
         from rusemod.blender import DOWNLOAD
         from rusemod.unitlook import LOOK_FILE
         if self._game() is None:

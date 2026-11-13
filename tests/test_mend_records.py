@@ -267,6 +267,58 @@ class TheWrites(_Case):
         self.assertEqual(self.state()["own"], was["own"])
         self.assertFalse(self.undo_left())
 
+    def test_a_studio_that_ended_before_noting_what_it_wrote_is_put_back_whole(self):
+        """Ended after the model file, before its animations and before wrote(): the list has no mark, so all of it
+        is put back at the next fit, said."""
+        from rusemod import anim
+        self.imported(beast_glb())
+        was = self.state()
+        other = self.src.with_name("other.glb")
+        other.write_bytes(beast_glb(step=0.3))
+        killed, _real = self.studio_ends_at_the_record()
+        with killed, mock.patch.object(anim, "set_animations", side_effect=OSError(28, "No space left on device")), \
+                self.assertRaises(StudioError):
+            self.api.model_import(ADDRESS, str(other))
+        self.assertNotEqual(self.state()["glb"], was["glb"])    # (as the closed Studio left it: the other file's)
+        manifest = json.loads((self.mod / UNDO / f"{UNIT}.glb" / "manifest.json").read_text(encoding="utf-8"))
+        self.assertNotIn("fit", manifest)
+        got = self.api.model_place(ADDRESS, [0, 0, 0])
+        self.assertTrue((self.named(got) or {}).get("cut_off"))
+        self.assertEqual(json.loads(self.path().read_text(encoding="utf-8"))["from"], str(self.src))
+        self.assertEqual(self.state()["own"], was["own"])
+        self.assertFalse(self.undo_left())
+
+    def test_a_ruse_decoy_change_after_a_finished_fit_whose_copies_stayed_is_kept(self):
+        """A fit got to its end, its copies stayed (the Studio closed before clearing them); then a RUSE Decoy change
+        (which writes the clips and the record's lengths, keeping its mark): never put back."""
+        self.imported(beast_glb())
+        with mock.patch.object(FitUndo, "finish", lambda undo: None):
+            self.api.model_resize(ADDRESS, 1.5)
+        changed = self.decoy("Walk")
+        got = self.api.model_resize(ADDRESS, 1.0)
+        self.assertFalse((self.named(got) or {}).get("cut_off"))
+        self.assertEqual(self.clips()["Walk"], changed)
+        self.assertFalse(self.undo_left())
+
+    def test_the_same_fit_gives_the_same_record_byte_for_byte(self):
+        """The fit's mark is made from what it wrote, never random: the same import twice, the same resize twice, and
+        the same import on a fresh mod (the unit's model taken out, then added again) give the same record bytes."""
+        self.api._soldier_kinds = lambda address: {}
+        self.imported(beast_glb())
+        first = self.path().read_bytes()
+        self.assertIn(b'"fit"', first)
+        self.imported(beast_glb())
+        self.assertEqual(self.path().read_bytes(), first)
+        self.api.model_resize(ADDRESS, 1.3)
+        resized = self.path().read_bytes()
+        self.api.model_resize(ADDRESS, 1.3)
+        self.assertEqual(self.path().read_bytes(), resized)
+        self.api.look = lambda address: {}
+        self.api.model_import_remove(ADDRESS)
+        self.assertFalse(self.target.exists())
+        self.imported(beast_glb())
+        self.assertEqual(self.path().read_bytes(), first)
+
     def test_no_room_even_for_the_copies_changes_nothing(self):
         self.imported(beast_glb())
         was = self.state()
