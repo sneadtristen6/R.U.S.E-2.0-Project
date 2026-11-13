@@ -23,22 +23,20 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   a warning. Tested in the game with the USSR and Italy. It changes some sets with the Balance Overhaul Mod, and sets
   with the Field Manual before the Balanced Realism Mod; the warning names each unit.
 - **Join codes:** a set the build changes this way gets a new join code, so every player in a match with it needs
-  this version. Every other set keeps its join code. After the update, the next **Play** or **Test in game** builds
-  your game again by itself.
+  this version. A set with a mod that gives a gun crew a model of its own gets a new join code too: the crew's little
+  far-away figure now wears that model. Every other set keeps its join code. After the update, the next **Play** or
+  **Test in game** builds your game again by itself.
 - **The Launcher's mod set editor says why:** when it can't make or save a set (no mod ticked, or a mod that is no
   longer in your library), it now says so inside the editor, under its buttons. Before, the message went to the set's
   page, hidden behind the editor, so nothing seemed to happen. **Create** and **Save** wait until a mod is ticked.
 - **Missions of your own (Studio):** a new map's mission that makes units of a nation its copied mission doesn't load
   now gets that nation's packs, so those units have their models (the game stopped when such a unit was made). The
   mission check also refuses an event that hands a side a person plays to the computer. Not yet tried in the game.
-- **A squad's own soldier (Studio):** a modder asked on Discord how to change infantry models. A squad's page now gets
-  **Its own model** with **Change it in Blender**: the squad's soldier opens in Blender on his own bones, and Blender
-  gets a **Send to the R.U.S.E. Studio** button. **Bring back the model** takes him in on the game soldier's bones,
-  with no **Custom uniform** needed. **Import model…** also works now on a unit with a **Custom uniform**: it takes the
-  copy out, and **Use the copied unit's model** gives it back in one click. Points Blender leaves with no bone follow
-  the root bone, and the page says how many. The wiki's Import a Model page has the steps. Tested in the game with two
-  US squads made this way (one with a bigger head, one with a new mesh weighted in Blender); the rest was checked
-  outside the game.
+- **Models from Blender, and a Custom uniform (Studio):** a modder asked on Discord how to change infantry models; the
+  squad card (below) is the way now. Points Blender leaves with no bone follow the root bone, and the page says how
+  many. **Import model…** also works now on a unit with a **Custom uniform**: it takes the copy out, and **Use the
+  copied unit's model** gives it back in one click. The wiki's Import a Model page has the steps. Tested in the game
+  with a squad's soldier weighted in Blender; the Custom uniform part was checked outside the game.
 - **Bug Watch says why, if you ticked it:** which check refused a build or found a mistake (a fixed name from our
   code), how far a **Play** or **Test in game** got, which mods from our list were on and how many of your own
   (counted by kind, never named), Plays refused before they started, and updates offered, installed or failed. Never
