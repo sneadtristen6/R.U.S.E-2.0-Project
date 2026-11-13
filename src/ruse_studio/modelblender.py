@@ -49,6 +49,8 @@ import re
 import struct
 from pathlib import Path
 
+from .animmodel_calls import write_record
+
 WORK = "blender"
 SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to send
 ALPHA = "alpha.json"   # in the work folder: the alpha picture that went out with each material, by the material's name
@@ -209,7 +211,7 @@ class ModelBlenderCalls:
             data = None
         if isinstance(data, dict):   # (as Import model wrote it, with this said too)
             data["report"] = report
-            record.write_text(json.dumps(data, indent=1), encoding="utf-8")
+            write_record(record, data)   # (whole or not at all)
             if not kind and "own_model" in res:   # (look()'s, read before this was said)
                 res["own_model"] = json.loads(json.dumps(report))
             # (look()'s row of his kind in the answer, the riflemen's the first: read before this was said too)

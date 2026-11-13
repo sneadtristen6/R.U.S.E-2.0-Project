@@ -13677,6 +13677,49 @@ jpn = "モデルのサイズを {size} にしました。次のビルドから�
 sc = "模型尺寸已改为 {size}。下次构建后在游戏中生效。"
 fa = "اندازهٔ مدل به {size} تغییر کرد. از ساخت بعدی در بازی دیده می‌شود."
 
+# what of the modder's own a fit of his model couldn't keep (Resize, Move, every unit at once, Import model again,
+# Bring back the model: StudioApi's report "not_kept"), said after the fit's own words
+[model_kept_not_anims]
+us = "Changes to these animations weren't kept: {names}. If you made them in RUSE Decoy, make them again there."
+fr = "Les modifications de ces animations n'ont pas été gardées : {names}. Si vous les aviez faites dans RUSE Decoy, refaites-les là."
+ger = "Änderungen an diesen Animationen wurden nicht behalten: {names}. Wenn du sie in RUSE Decoy gemacht hast, mach sie dort noch einmal."
+ita = "Le modifiche a queste animazioni non sono state tenute: {names}. Se le avevi fatte in RUSE Decoy, rifalle lì."
+spa = "Los cambios de estas animaciones no se han conservado: {names}. Si los hiciste en RUSE Decoy, vuelve a hacerlos allí."
+pol = "Zmiany tych animacji nie zostały zachowane: {names}. Jeśli były zrobione w RUSE Decoy, zrób je tam ponownie."
+ru = "Изменения этих анимаций не сохранились: {names}. Если вы делали их в RUSE Decoy, сделайте их там снова."
+cz = "Změny těchto animací nebyly zachovány: {names}. Pokud jsi je udělal v RUSE Decoy, udělej je tam znovu."
+jpn = "これらのアニメーションへの変更は残りませんでした：{names}。RUSE Decoyで変えたものなら、そこでもう一度変えてください。"
+sc = "对这些动画的修改没有保留：{names}。如果是在 RUSE Decoy 中修改的，请在那里重新修改。"
+fa = "تغییرات این انیمیشن‌ها نگه داشته نشد: {names}. اگر آن‌ها را در RUSE Decoy انجام داده بودید، دوباره همان‌جا انجامشان دهید."
+
+[model_kept_not_picks]
+us = "These actions don't play what was chosen for them any more: {actions}. Check them under Its animations."
+fr = "Ces actions ne jouent plus ce qui avait été choisi pour elles : {actions}. Vérifiez-les sous Ses animations."
+ger = "Diese Handlungen spielen nicht mehr, was für sie gewählt war: {actions}. Prüfe sie unter Seine Animationen."
+ita = "Queste azioni non eseguono più ciò che era stato scelto per loro: {actions}. Controllale in Le sue animazioni."
+spa = "Estas acciones ya no reproducen lo que se eligió para ellas: {actions}. Revísalas en Sus animaciones."
+pol = "Te czynności nie odtwarzają już tego, co dla nich wybrano: {actions}. Sprawdź je w sekcji Jej animacje."
+ru = "Эти действия больше не играют то, что для них было выбрано: {actions}. Проверьте их в разделе «Её анимации»."
+cz = "Tyto činnosti už nehrají to, co pro ně bylo vybráno: {actions}. Zkontroluj je v části Její animace."
+jpn = "これらの動作は、選ばれていたものをもう再生しません：{actions}。「このユニットのアニメーション」で確かめてください。"
+sc = "这些动作不再播放为它们选定的内容：{actions}。请在“它的动画”中检查。"
+fa = "این کارها دیگر آنچه برایشان انتخاب شده بود را پخش نمی‌کنند: {actions}. آن‌ها را در «انیمیشن‌هایش» بررسی کنید."
+
+# (its record in the mod, files/models/<unit>.json, couldn't be read: what else it held is gone; StudioApi._fit_model's
+# not_kept "record")
+[model_kept_not_record]
+us = "The model's record in the mod couldn't be read, so these weren't kept, if it had them: the bone chosen under Its two halves, and a Custom uniform the model took the place of. Check them."
+fr = "Le registre du modèle dans le mod n'a pas pu être lu, donc ceci n'a pas été gardé, s'il l'avait : l'os choisi sous Ses deux moitiés, et un Uniforme personnalisé que le modèle remplaçait. Vérifiez-les."
+ger = "Der Eintrag des Modells im Mod konnte nicht gelesen werden, deshalb wurde dies nicht behalten, falls es das hatte: der unter Seine zwei Hälften gewählte Knochen und eine Eigene Uniform, deren Platz das Modell eingenommen hat. Prüfe sie."
+ita = "Il registro del modello nella mod non si è potuto leggere, quindi questo non è stato tenuto, se c'era: l'osso scelto in Le sue due metà e un'Uniforme personalizzata di cui il modello ha preso il posto. Controllali."
+spa = "No se pudo leer el registro del modelo en el mod, así que esto no se ha conservado, si lo tenía: el hueso elegido en Sus dos mitades y un Uniforme personalizado cuyo lugar ocupó el modelo. Revísalos."
+pol = "Nie udało się odczytać zapisu modelu w modzie, więc nie zachowano tego, jeśli to miał: kości wybranej w sekcji Dwie połowy oraz Własnego munduru, którego miejsce zajął model. Sprawdź je."
+ru = "Запись модели в моде не удалось прочитать, поэтому это не сохранилось, если было: кость, выбранная в разделе «Две половины», и Своя форма, место которой заняла модель. Проверьте их."
+cz = "Záznam modelu v modu se nepodařilo přečíst, takže tohle nebylo zachováno, pokud to měl: kost zvolená v části Jeho dvě poloviny a Vlastní uniforma, jejíž místo model zaujal. Zkontroluj je."
+jpn = "MOD内のモデルの記録を読めなかったため、次のものはあったとしても残りませんでした：「上半身と下半身」で選んだ骨と、モデルが置き換えたカスタム軍服。確かめてください。"
+sc = "无法读取模组中该模型的记录，因此以下内容（如果有的话）没有保留：在“上下两半”中选择的骨骼，以及该模型所取代的自定义制服。请检查它们。"
+fa = "سابقهٔ مدل در ماد خوانده نشد، پس این‌ها اگر بودند نگه داشته نشدند: استخوانی که در «دو نیمهٔ آن» انتخاب شده بود، و اونیفرم سفارشی‌ای که مدل جایش را گرفت. آن‌ها را بررسی کنید."
+
 [model_size_when]
 us = "A unit's size can't change while the game runs (it reads the model when it loads): a new size shows from the next build."
 fr = "La taille d'une unité ne peut pas changer pendant la partie (le jeu lit le modèle au chargement) : une nouvelle taille se voit à la prochaine construction."
