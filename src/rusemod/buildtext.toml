@@ -3232,3 +3232,16 @@ cz = "Záznam a poděkování jednotek z období jmenovaly jednotky, které už 
 jpn = "時代ユニットの記録とクレジットに、もう MOD にないユニットが書かれていました。その行を取り除きました：{0}。"
 sc = "时代单位的记录和致谢中列出了模组中已不再有的单位；已移除它们的行：{0}。"
 fa = "سابقه و قدردانی یگان‌های دوره‌ها یگان‌هایی را نام می‌بردند که دیگر در ماد نیستند؛ سطرهایشان بیرون برده شد: {0}."
+# "Resize every ground unit"'s job message (StudioApi.models_resize_all; the one check, finding 11)
+[e5165931cdd]
+us = "{0} model(s) fitted, {1} skipped."
+fr = "{0} modèle(s) ajusté(s), {1} ignoré(s)."
+ger = "{0} Modell(e) angepasst, {1} übersprungen."
+ita = "{0} modello/i adattato/i, {1} saltato/i."
+spa = "{0} modelo(s) ajustado(s), {1} omitido(s)."
+pol = "Dopasowane modele: {0}, pominięte: {1}."
+ru = "Подогнано моделей: {0}, пропущено: {1}."
+cz = "Napasované modely: {0}, přeskočené: {1}."
+jpn = "{0} 個のモデルを合わせ直し、{1} 個を飛ばしました。"
+sc = "已适配 {0} 个模型，跳过 {1} 个。"
+fa = "{0} مدل جا انداخته شد، {1} مدل رد شد."

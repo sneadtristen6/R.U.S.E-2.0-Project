@@ -49,7 +49,7 @@ import re
 import struct
 from pathlib import Path
 
-from .animmodel_calls import write_record
+from .animmodel_calls import read_record, write_record
 
 WORK = "blender"
 SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to send
@@ -63,12 +63,57 @@ LOST = ("blender_alpha_lost", "alpha_sizes")   # what an import's report says it
 SAID = ("blender_alpha", "blender_alpha_lost")  # what _alpha_said adds to a report (keep_said carries them)
 
 
-def alpha_lost(report) -> dict:
-    """Of an import's report (a model's record's "report"), what it says couldn't be kept of the model's own shine and
-    side colour, for the page (app.js alphaLostLines): "blender_alpha_lost" and "alpha_sizes", those it has."""
+LOST_KINDS = ("none", "gone", "not_back")   # "blender_alpha_lost"'s lists
+# what a Studio from before "blender_alpha_lost" (07a688b5, the shine door) wrote in "blender_alpha" and in its notes,
+# word for word: read back so its record still says it on the page and through a Resize (the one check, finding 7)
+OLDER_SAID = {"none": "no alpha picture went out to Blender with a material of this name",
+              "gone": "the alpha picture that went out with it isn't in its Blender folder any more"}
+OLDER_NOT_BACK = "Went out to Blender with an alpha picture and didn't come back under that name: "
+
+
+def _said(report) -> dict:
+    """A report's "blender_alpha" ({material: its word}) as this Studio reads it: {} for one of another shape, a
+    material that isn't named by a word left out (a record edited by hand: a field of the wrong shape is one that isn't
+    there, never Python's own error: the one check, finding 2)."""
+    said = report.get("blender_alpha") if isinstance(report, dict) else None
+    if not isinstance(said, dict):
+        return {}
+    return {m: w for m, w in said.items() if isinstance(m, str) and isinstance(w, str)}
+
+
+def lost_of(report) -> dict:
+    """A report's "blender_alpha_lost" ({"none", "gone", "not_back"}: lists of materials' names) as this Studio reads
+    it: a list that isn't one of names left out, one of another shape as if it weren't there. A record from a Studio
+    before "blender_alpha_lost" (it has "blender_alpha" and no "blender_alpha_lost") says the same in "blender_alpha"'s
+    words and in its notes: read from them (OLDER_SAID; "not_back" from its note, its names as the note lists them,
+    split at ", ")."""
     if not isinstance(report, dict):
         return {}
-    return {k: json.loads(json.dumps(report[k])) for k in LOST if report.get(k)}
+    lost = report.get("blender_alpha_lost")
+    if isinstance(lost, dict):
+        out = {k: [m for m in lost.get(k) if isinstance(m, str)] for k in LOST_KINDS if isinstance(lost.get(k), list)}
+        return {k: v for k, v in out.items() if v}
+    if "blender_alpha_lost" in report:   # (one of another shape: not there)
+        return {}
+    out = {k: [m for m, w in _said(report).items() if phrase in w] for k, phrase in OLDER_SAID.items()}
+    notes = report.get("notes") if isinstance(report.get("notes"), list) else []
+    for note in notes:
+        if _said(report) and isinstance(note, str) and note.startswith(OLDER_NOT_BACK):
+            out["not_back"] = [m for m in note[len(OLDER_NOT_BACK):].rstrip(".").split(", ") if m]
+    return {k: v for k, v in out.items() if v}
+
+
+def alpha_lost(report) -> dict:
+    """Of an import's report (a model's record's "report"), what it says couldn't be kept of the model's own shine and
+    side colour, for the page (app.js alphaLostLines): "blender_alpha_lost" (lost_of: an older Studio's record's too)
+    and "alpha_sizes", those it has."""
+    if not isinstance(report, dict):
+        return {}
+    out = {"blender_alpha_lost": lost_of(report)}
+    sizes = report.get("alpha_sizes")
+    if isinstance(sizes, list):
+        out["alpha_sizes"] = json.loads(json.dumps([s for s in sizes if isinstance(s, dict)]))
+    return {k: v for k, v in out.items() if v}
 
 
 def blender_notes(report: dict) -> list:
@@ -76,9 +121,9 @@ def blender_notes(report: dict) -> list:
     that came back without an alpha picture of its own, in the order Blender sent them ("blender_alpha"), and each that
     went out with one and didn't come back under its name ("blender_alpha_lost")."""
     from rusemod.modelin import PLAIN_ALPHA
-    lost = report.get("blender_alpha_lost") or {}
+    lost = lost_of(report)
     flat_names = {str(m) for k in ("none", "gone") for m in lost.get(k) or []}
-    flat = [m for m in (report.get("blender_alpha") or {}) if str(m) in flat_names]
+    flat = [m for m in _said(report) if str(m) in flat_names]
     notes = []
     if flat:
         notes.append(f"Back from Blender without an alpha picture of their own, so with the plain {PLAIN_ALPHA} (no "
@@ -94,12 +139,20 @@ def keep_said(before, report: dict) -> None:
     back said it couldn't keep (_alpha_said, in the record's report `before`) is still so, as that file is the same, so
     the new `report` says it too (in the record and to the page), as the Custom uniform a model took the place of stays
     kept through them. Nothing for a model that didn't come back from Blender."""
-    if not isinstance(before, dict) or not isinstance(report, dict) or not any(before.get(k) for k in SAID):
+    if not isinstance(before, dict) or not isinstance(report, dict):
         return
-    for k in SAID:
-        if before.get(k):
-            report[k] = json.loads(json.dumps(before[k]))
-    report.setdefault("notes", []).extend(blender_notes(report))
+    # (read as this Studio reads them: a field of the wrong shape is one that isn't there, never Python's own error, the
+    # one check's finding 2; an older Studio's record, "blender_alpha" alone, says it through lost_of and is written
+    # from now on with "blender_alpha_lost" too, its finding 7)
+    said, lost = _said(before), lost_of(before)
+    if not said and not lost:
+        return
+    if said:
+        report["blender_alpha"] = dict(said)
+    if lost:
+        report["blender_alpha_lost"] = lost
+    notes = report.get("notes") if isinstance(report.get("notes"), list) else []
+    report["notes"] = notes + [n for n in blender_notes(report) if n not in notes]
 
 
 class ModelBlenderCalls:
@@ -205,13 +258,14 @@ class ModelBlenderCalls:
         report.setdefault("notes", []).extend(blender_notes(report))
         target = self._kind_file(address, kind) if kind else self._own_model_file(address)
         record = target.with_suffix(".json") if target is not None else None
-        try:
-            data = json.loads(record.read_text(encoding="utf-8")) if record is not None and record.is_file() else None
-        except (OSError, ValueError):
-            data = None
-        if isinstance(data, dict):   # (as Import model wrote it, with this said too)
+        data = read_record(record) if record is not None else None
+        if data:   # (as Import model wrote it, with this said too)
+            from .api import file_error
             data["report"] = report
-            write_record(record, data)   # (whole or not at all)
+            try:
+                write_record(record, data)   # (whole or not at all)
+            except OSError as exc:   # (said in words, never in Python's own)
+                raise file_error(exc, record) from exc
             if not kind and "own_model" in res:   # (look()'s, read before this was said)
                 res["own_model"] = json.loads(json.dumps(report))
             # (look()'s row of his kind in the answer, the riflemen's the first: read before this was said too)

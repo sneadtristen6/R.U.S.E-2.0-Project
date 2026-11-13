@@ -80,7 +80,8 @@ from .squadblender import SquadBlenderCalls
 from .decoyblender import DecoyBlenderCalls
 from .actions import ActionCalls
 from .modelfit import ModelFitCalls
-from .animmodel_calls import NOT_KEPT, AnimModelCalls, write_record
+from .animmodel_calls import (FIT_MARK, NOT_KEPT, AnimModelCalls, FitUndo, read_record, record_number, record_numbers,
+                              record_report, write_record)
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -8327,20 +8328,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         for k, m in kinds.items():
             target = self._kind_file(address, k)
             own = target is not None and target.is_file()
-            try:
-                record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8")) if own else {}
-            except (OSError, ValueError):
-                record = {}
-            skeleton = record.get("skeleton") if isinstance(record, dict) else None
+            record = read_record(target.with_suffix(".json")) if own else {}
+            # (his model's record can't be read or doesn't say what it was made from: said on his row, with what to do,
+            # Import model again; never Python's own words: the one check, findings 3 and 12)
+            unread = own and (record is None or not record.get("from"))
+            record = record if isinstance(record, dict) else {}
+            skeleton = record.get("skeleton") if isinstance(record.get("skeleton"), str) else None
             same = None
             if own and k != main and skeleton == "own":
                 same = main_key is not None and skeleton_key(target) == main_key
             work = self._mod_dir() / WORK / target.stem   # (_model_work's, without reading the kinds again)
+            made_from = record.get("from") if isinstance(record.get("from"), str) else ""
             rows.append({"kind": k, "model": model_key(m), "own": own,
-                         "file": Path(str(record.get("from") or "")).name if own else None, "kept": str(target),
+                         "file": Path(made_from).name if own else None, "kept": str(target),
                          "skeleton": skeleton, "same_bones": same, "also": also[k],
                          "blender": str(work), "blender_made": work.is_dir(),
-                         **(alpha_lost(record.get("report")) if isinstance(record, dict) else {})})
+                         **({"record_unread": True} if unread else {}),
+                         **alpha_lost(record_report(record))})
         return rows
 
     def _kind_file(self, address: str, kind: str | None) -> Path | None:
@@ -8390,21 +8394,28 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         soldiers only, the others keeping the look the copied unit gave them; none given: the riflemen (the owner,
         2026-11-11: "when you copy a fucking unit, it should copy the unit"). The bazooka man's model is
         files/models/<unit>@bazooka.glb, on the same bones as the riflemen's: their animations are the unit's."""
-        report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind)
-        copy_out = False
-        if report is not None:
-            copy = self._own_copy_file(address)
-            if copy is not None and copy.is_file():
-                try:
-                    with self._saving:
-                        # kept in the model's own record, so taking the model out gives the copy back in one click
-                        # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
-                        self._keep_in_model_record(address, copy.read_text(encoding="utf-8"), kind)
-                        copy.unlink(missing_ok=True)
-                except OSError as exc:      # (said in words, never in Python's own)
-                    raise file_error(exc, copy) from exc
-                copy_out = True
-        return {"model": report, "copy_out": copy_out, "kind": kind, **self.look(address)}
+        copy_out = []
+
+        def fits(hold):
+            report = self._fit_model(address, file, size, aircraft, facing, own_turret, own_propellers, move, kind,
+                                     hold=hold)
+            if report is not None:
+                copy = self._own_copy_file(address)
+                if copy is not None and copy.is_file():
+                    try:
+                        with self._saving:
+                            # kept in the model's own record, so taking the model out gives the copy back in one
+                            # click (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10).
+                            # The copy goes last: a stop before it puts the model back out (_fitted_together), the copy
+                            # still there, never a mod with both or neither
+                            self._keep_in_model_record(address, copy.read_text(encoding="utf-8"), kind)
+                            copy.unlink(missing_ok=True)
+                    except OSError as exc:      # (said in words, never in Python's own)
+                        raise file_error(exc, copy) from exc
+                    copy_out.append(True)
+            return report
+        report = self._fitted_together(fits)
+        return {"model": report, "copy_out": bool(copy_out), "kind": kind, **self.look(address)}
 
     @staticmethod
     def _kind_skeleton(target: Path, report: dict) -> dict:
@@ -8427,24 +8438,25 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         record = target.with_suffix(".json") if target is not None else None
         if record is None or not record.is_file():
             return
-        try:
-            data = json.loads(record.read_text(encoding="utf-8"))
-        except (OSError, ValueError):   # (one that can't be read: the uniform is kept all the same, never lost with
-            data = {}                   # it; the model's next fit reads its animations from the model's own file)
-        data = data if isinstance(data, dict) else {}
+        # (one that can't be read: the uniform is kept all the same, never lost with it; the model's next fit reads its
+        # animations from the model's own file)
+        data = read_record(record) or {}
         data["copy_kept"] = copy_text
         write_record(record, data)   # (whole or not at all)
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
                    own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None,
-                   out: Path | None = None, refit: bool = False) -> dict | None:
+                   out: Path | None = None, refit: bool = False, hold: list | None = None) -> dict | None:
         """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
         through it): the model saved as the mod's files/models/<the unit's name>.glb (or a kind's of its soldiers,
         _kind_file; or one soldier's own look, `kind` his number), its record beside it; `out`: saved there instead
         (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). `refit`: a
         Resize or a Move, the file its record names fitted again: what the modder made of its animations since stays
         (AnimModelCalls._record_more), and what its Bring back from Blender couldn't keep is still said
-        (ruse_studio.modelblender.keep_said). Returns the model's report, or None when no file was picked."""
+        (ruse_studio.modelblender.keep_said). The model file, its animations and its record are written together or
+        not at all (FitUndo); `hold`: a list its FitUndo goes into, for the caller to finish once the rest of the same
+        click is written too (or to put back with _fit_undone). Returns the model's report, or None when no file was
+        picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8497,14 +8509,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if out is not None:
             target = Path(out)
         record = target.with_suffix(".json")
-        unread = False   # (a record there that can't be read: what it held is said as not kept, never dropped quietly)
-        try:
-            before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
-        except (OSError, ValueError):
-            before, unread = {}, True
-        if not isinstance(before, dict):
-            before, unread = {}, True
         main = out is None and place is None and not (kinds and kind != main_kind)
+        # (a fit of this model stopped mid-way by a Studio that ended: what it wrote put back before the record is read,
+        # never taken for the modder's own change: FitUndo, the one check's findings 4 and 5; and this fit's own writes
+        # kept, to be put back if it stops)
+        mod = self._mod_dir() if out is None else None
+        cut_off = self._fit_cut_off(target, main) if mod is not None else False
+        undo = FitUndo(mod, target, target.stem if main else None) if mod is not None else None
+        # (a record there that can't be read, or isn't an object: what it held is said as not kept, never dropped
+        # quietly)
+        before = read_record(record)
+        unread = before is None
+        before = before or {}
         # (the unit's own model, its file there, with no record that says what it is: one that can't be read, cut
         # short, gone, or holding the split alone. What its last fit took in is then read from the model's own file
         # alone, so a change the modder made since is named or kept, never put back without a word: the resize
@@ -8514,83 +8530,158 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # when one of the unit's animations has no fingerprint in its record, a record from before them; the fit
         # tells the modder's RUSE Decoy changes from what its last fit took in by them: AnimModelCalls._last_fit)
         carried = (self._file_clips(target) if lost else self._carried_before(target, before)) if main else None
-        # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
-        # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
-        report, first_error = None, None
-        try:
-            found = rigged_first(self._game(), Path(file), found)
-        except (OSError, ValueError):       # (the game's packs can't be read: the import below says so)
-            pass
-        for model in found:
+
+        def fit() -> dict:
+            nonlocal found
+            # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
+            # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
+            report, first_error = None, None
             try:
-                report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
-                                      own_turret=bool(own_turret), own_propellers=bool(own_propellers), others=found,
-                                      **({"facing": facing} if facing else {}), **({"move": move} if move else {}))
-                break
-            except (ModelError, OSError, ValueError) as exc:
-                cause = oserror_of(exc)
-                if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
-                    raise file_error(cause, target, Path(file)) from cause
-                if isinstance(exc, UnitModelError):   # this model has no bones or hull to fit to: try the next one
-                    first_error = first_error or exc
-                    continue
-                raise StudioError(f"{Path(file).name}: {exc}") from None
-        clips: dict = {}
-        if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
-            report = self._own_bones_fit(address, Path(file), found, target, size, clips)
-        if report is None:
-            raise StudioError(f"{Path(file).name}: {first_error}")
-        report["file"] = Path(file).name
-        from .modelfit import kept_choices
-        if refit and str(before.get("from") or "") == str(file):
-            # (the same file fitted again: the parts that came back from Blender with the plain 144 still have it, so
-            # it is still said, in the record and to the page; written anew without it, the page forgot it on the
-            # first Resize, a recheck of 2026-11-12. `before` is the record as read above, before the fit: the final
-            # join of fix/notes and fix/resize, which reads it once, there)
-            from .modelblender import keep_said
-            keep_said(before.get("report"), report)
-        if place is not None or (kinds and kind != main_kind):
-            # another kind's model (the bazooka man's), or one soldier's own look: the unit's animations are its main
-            # model's, played by him when his model is on the same bones (rusemod.build._on_main_bones), else he plays
-            # what he played: only what the model is, and a note when it's on bones of its own that aren't the main
-            # model's
-            more = {"for": kind, **self._kind_skeleton(target, report)}
-            if more.get("skeleton") == "own":
-                from rusemod.bonefit import skeleton_key
-                main_file = self._own_model_file(address)
-                main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
-                if main_key is None or skeleton_key(target) != main_key:
-                    report.setdefault("notes", []).append(
-                        "This model is on bones of its own, and the riflemen's model isn't on the same bones, so these "
-                        "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
-                        "the game. Import a model on the same bones for the riflemen too.")
-        else:
-            more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried,
-                                     lost=lost)
-            if kinds:
-                more["for"] = kind
-        if unread:   # (what else it held, a split chosen on the page, a Custom uniform it took the place of: said)
-            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["record"] = True
-        # (written whole beside itself, then put in place: a write that stops, the disk full or the Studio closed,
-        # leaves the record as it was, never one cut short: the resize recheck, round 2; and a write that fails is
-        # said in words, never in Python's own: the words recheck, round 1. Both kept in the final join)
+                found = rigged_first(self._game(), Path(file), found)
+            except (OSError, ValueError):       # (the game's packs can't be read: the import below says so)
+                pass
+            for model in found:
+                try:
+                    report = import_model(self._game(), model, Path(file), target, size=size, aircraft=bool(aircraft),
+                                          own_turret=bool(own_turret), own_propellers=bool(own_propellers), others=found,
+                                          **({"facing": facing} if facing else {}), **({"move": move} if move else {}))
+                    break
+                except (ModelError, OSError, ValueError) as exc:
+                    cause = oserror_of(exc)
+                    if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                        raise file_error(cause, target, Path(file)) from cause
+                    if isinstance(exc, UnitModelError):   # this model has no bones or hull to fit to: try the next one
+                        first_error = first_error or exc
+                        continue
+                    raise StudioError(f"{Path(file).name}: {exc}") from None
+            clips: dict = {}
+            if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
+                report = self._own_bones_fit(address, Path(file), found, target, size, clips)
+            if report is None:
+                raise StudioError(f"{Path(file).name}: {first_error}")
+            report["file"] = Path(file).name
+            from .modelfit import kept_choices
+            if refit and str(before.get("from") or "") == str(file):
+                # (the same file fitted again: the parts that came back from Blender with the plain 144 still have it, so
+                # it is still said, in the record and to the page; written anew without it, the page forgot it on the
+                # first Resize, a recheck of 2026-11-12. `before` is the record as read above, before the fit: the final
+                # join of fix/notes and fix/resize, which reads it once, there)
+                from .modelblender import keep_said
+                keep_said(before.get("report"), report)
+            if place is not None or (kinds and kind != main_kind):
+                # another kind's model (the bazooka man's), or one soldier's own look: the unit's animations are its main
+                # model's, played by him when his model is on the same bones (rusemod.build._on_main_bones), else he plays
+                # what he played: only what the model is, and a note when it's on bones of its own that aren't the main
+                # model's
+                more = {"for": kind, **self._kind_skeleton(target, report)}
+                if more.get("skeleton") == "own":
+                    from rusemod.bonefit import skeleton_key
+                    main_file = self._own_model_file(address)
+                    main_key = skeleton_key(main_file) if main_file is not None and main_file.is_file() else None
+                    if main_key is None or skeleton_key(target) != main_key:
+                        report.setdefault("notes", []).append(
+                            "This model is on bones of its own, and the riflemen's model isn't on the same bones, so these "
+                            "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
+                            "the game. Import a model on the same bones for the riflemen too.")
+            else:
+                more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried,
+                                         lost=lost)
+                if kinds:
+                    more["for"] = kind
+            if unread:   # (what else it held, a split chosen on the page, a Custom uniform it took the place of: said)
+                report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["record"] = True
+            if undo is not None:
+                try:
+                    undo.wrote()   # (what it wrote, before the last write: FitUndo.put_back's)
+                except OSError as exc:      # (said in words, never in Python's own)
+                    raise file_error(exc, undo.folder) from exc
+            # (written whole beside itself, then put in place: a write that stops, the disk full or the Studio closed,
+            # leaves the record as it was, never one cut short: the resize recheck, round 2; and a write that fails is
+            # said in words, never in Python's own: the words recheck, round 1. Both kept in the final join)
+            try:
+                write_record(record, {"from": str(file), "size": size, "aircraft": bool(aircraft),
+                                      "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
+                                      **({"facing": list(facing)} if facing else {}),
+                                      **({"move": move} if report.get("moved") else {}),
+                                      "report": report, **more,
+                                      # (this fit's mark: FitUndo.put_back tells by it that the fit got to its end)
+                                      **({FIT_MARK: undo.id} if undo is not None and undo.id else {}),
+                                      # (the modder's choices last: a split chosen on the page wins over the one
+                                      # the file names; Part 3's kept_choices, item 5 merge)
+                                      **kept_choices(record),
+                                      # (a Custom uniform the model took the place of stays kept through Resize, Move
+                                      # and a new import, so taking the model out still gives it back: written anew
+                                      # without it, it was lost on the first Resize, 2026-11-11)
+                                      **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
+                                         and isinstance(before.get("copy_kept"), str) else {})})
+            except OSError as exc:      # (said in words, never in Python's own)
+                raise file_error(exc, record) from exc
+            return report
+
+        # the model file, its animations and its record: written together or not at all (FitUndo; the one check,
+        # findings 4 and 5). A fit into the squad's Blender folder (`out`, Add a soldier) writes nothing of the mod.
+        if undo is None:
+            return fit()
         try:
-            write_record(record, {"from": str(file), "size": size, "aircraft": bool(aircraft),
-                                  "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
-                                  **({"facing": list(facing)} if facing else {}),
-                                  **({"move": move} if report.get("moved") else {}),
-                                  "report": report, **more,
-                                  # (the modder's choices last: a split chosen on the page wins over the one
-                                  # the file names; Part 3's kept_choices, item 5 merge)
-                                  **kept_choices(record),
-                                  # (a Custom uniform the model took the place of stays kept through Resize, Move
-                                  # and a new import, so taking the model out still gives it back: written anew
-                                  # without it, it was lost on the first Resize, 2026-11-11)
-                                  **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
-                                     and isinstance(before.get("copy_kept"), str) else {})})
-        except OSError as exc:      # (said in words, never in Python's own)
-            raise file_error(exc, record) from exc
+            undo.take()
+        except OSError as exc:      # (no room even to keep them: nothing written yet, said in words)
+            raise file_error(exc, undo.folder) from exc
+        try:
+            report = fit()
+        except BaseException as exc:
+            self._fit_undone([undo], exc)
+            raise
+        if cut_off:
+            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["cut_off"] = True
+        if hold is not None:
+            hold.append(undo)   # (the caller's to finish: more of the same click still to write)
+        else:
+            undo.finish()
         return report
+
+    def _fit_undone(self, undos: list, exc: BaseException) -> None:
+        """A fit (or a Resize or a Move with a squad's other kinds, an Import model with the Custom uniform it takes the
+        place of) stopped by `exc` after its first write: what each wrote put back (FitUndo.restore), the last first,
+        so the modder's mod is as it was and `exc` (in words) says why. What can't be put back now (a file another
+        program holds) is said, with what to do: the next fit of that model puts it back first (FitUndo.put_back)."""
+        failed = []
+        for undo in reversed(undos):
+            try:
+                failed += undo.restore()
+            except OSError:
+                failed.append(undo.target.name)
+        if failed:
+            # not a game rule: a file of the mod the Studio couldn't write back as it was
+            raise StudioError(f"The model couldn't be fitted, and what it had already changed couldn't all be put back "
+                              f"({failed[0]}): close any program holding the mod's files or make room on the disk, "
+                              f"then click Import model, Resize or Move again: it puts it back first.") from exc
+
+    def _fit_cut_off(self, target: Path, main: bool) -> bool:
+        """Before anything reads a model's record to fit it (or take it out): a fit of it stopped mid-way by a Studio
+        that ended has what it wrote put back first (FitUndo.put_back), so it's never taken for the modder's own
+        change; True when it was (the fit's report then says so: NOT_KEPT's "cut_off"). A refusal in words when
+        it can't be (a file another program holds)."""
+        mod = self._mod_dir()
+        if mod is None or target is None:
+            return False
+        undo = FitUndo(mod, target, target.stem if main else None)
+        try:
+            return undo.put_back()
+        except OSError as exc:      # (said in words, never in Python's own)
+            raise file_error(exc, target) from exc
+
+    def _unit_cut_off(self, address: str) -> bool:
+        """_fit_cut_off for the unit's own model and every other model of it (a squad's other kinds', its soldiers'
+        own looks: files/models/<unit>@...), before Resize, Move or Take it out reads their records."""
+        from .animmodel_calls import UNDO
+        own, mod = self._own_model_file(address), self._mod_dir()
+        if own is None or mod is None or not (Path(mod) / UNDO).is_dir():
+            return False
+        put = False
+        for folder in sorted((Path(mod) / UNDO).iterdir()):
+            if folder.name == own.name or (folder.name.startswith(f"{own.stem}@") and folder.name.endswith(".glb")):
+                put = self._fit_cut_off(own.with_name(folder.name), folder.name == own.name) or put
+        return put
 
     def _kind_records(self, address: str) -> list:
         """[(kind, its model's record)] of each kind of a squad's soldiers after the first (the riflemen's model is the
@@ -8605,22 +8696,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             target = self._kind_file(address, k)
             if target is None or not target.is_file():
                 continue
-            try:
-                record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                record = None
-            out.append((k, record if isinstance(record, dict) else {}))
+            out.append((k, read_record(target.with_suffix(".json"))))   # (None: one that can't be read)
         return out
 
     def _kinds_ready(self, address: str, moving: bool) -> list:
         """Before Resize or Move (`moving`) fits a squad's model again: every other kind's model with its file still
         there (they go with it, one size and place for the squad), else a StudioError naming the file that isn't,
-        nothing changed."""
+        or the record that can't be read or doesn't say it (the one check, finding 12: it read "...isn't there any
+        more (None)..."), nothing changed."""
         others = self._kind_records(address)
-        for _k, r in others:
-            file = r.get("from")
+        for k, r in others:
+            file = r.get("from") if isinstance(r, dict) else None
             if self._made_from(r) is not None:
                 continue
+            if not isinstance(file, str) or not file:
+                name = self._kind_file(address, k).with_suffix(".json").name
+                # not a game rule: only a model whose record says the file it was made from can be fitted again
+                if moving:
+                    raise StudioError(f"The record of the model of one of its soldiers in the mod ({name}) can't be "
+                                      f"read or is missing: import that model again under Its soldiers, then move it.")
+                raise StudioError(f"The record of the model of one of its soldiers in the mod ({name}) can't be read "
+                                  f"or is missing: import that model again under Its soldiers, then change the size.")
             self._horse_gone(address, file, moving)   # (the Horse Squad's files: never the modder's to import)
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
@@ -8642,11 +8738,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         target = self._own_model_file(address)
         if target is None or not target.is_file():
             return None
-        try:
-            record = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        return record if isinstance(record, dict) else None
+        record = read_record(target.with_suffix(".json"))
+        return record or None   # (none there, or one that can't be read: _record_readable says it)
 
     def _record_readable(self, address: str, record: dict | None) -> None:
         """Before Resize or Move: a StudioError in words when the unit's own model file is there but its record
@@ -8655,7 +8748,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         modder's it can't keep (AnimModelCalls._record_more's `lost`). Said as "import one first" before, of a model
         the page still showed (the resize recheck, round 2)."""
         target = self._own_model_file(address)
-        if target is None or not target.is_file() or (record is not None and record.get("from")):
+        if target is None or not target.is_file() or (isinstance(record, dict) and isinstance(record.get("from"), str)
+                                                      and record.get("from")):
             return
         # not a game rule: only a model whose record says the file it was made from can be fitted again from it
         raise StudioError(f"This model's record in the mod ({target.with_suffix('.json').name}) can't be read or is "
@@ -8714,7 +8808,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         own_propellers has none in its record, and stays as it was). What the modder made of its animations since it
         came in stays (an animation changed in RUSE Decoy, an action's pick: AnimModelCalls._record_more); what can't
         be is named in the report's "not_kept", which the page says. Returns model_import()'s answer; an own copy of the
-        unit's (a mod made with both, by an older Studio or by hand) stays: only a new import takes it out."""
+        unit's (a mod made with both, by an older Studio or by hand) stays: only a new import takes it out. The unit's
+        model and a squad's other kinds' are fitted again together or not at all (_fitted_together)."""
+        cut_off = self._unit_cut_off(address)
         record = self._own_model_record(address)
         self._record_readable(address, record)
         if record is None:
@@ -8727,19 +8823,42 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
-        report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
-                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"),
-                                 refit=True)
-        for k, r in others:
-            self._fit_model(address, r["from"], size, bool(r.get("aircraft")), self._pinned_facing(r),
-                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k, refit=True)
+
+        def fits(hold):
+            report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
+                                     bool(record.get("own_turret")), bool(record.get("own_propellers")),
+                                     record.get("move"), refit=True, hold=hold)
+            for k, r in others:
+                self._fit_model(address, r["from"], size, bool(r.get("aircraft")), self._pinned_facing(r),
+                                bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k,
+                                refit=True, hold=hold)
+            return report
+        report = self._fitted_together(fits, cut_off)
         return {"model": report, "copy_out": False, **self.look(address)}
+
+    def _fitted_together(self, fits, cut_off: bool = False) -> dict:
+        """`fits(hold)` (a Resize's or a Move's: the unit's model, then a squad's other kinds', one size and place for
+        the squad) written together or not at all: one that stops puts back what the ones before it wrote
+        (_fit_undone), so the squad is never left half resized. `cut_off`: a fit stopped mid-way was put back first
+        (_unit_cut_off), said in the report (NOT_KEPT's "cut_off")."""
+        hold: list = []
+        try:
+            report = fits(hold)
+        except BaseException as exc:
+            self._fit_undone(hold, exc)
+            raise
+        for undo in hold:
+            undo.finish()
+        if cut_off and isinstance(report, dict):
+            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["cut_off"] = True
+        return report
 
     def model_place(self, address: str, move) -> dict:
         """Put a new unit's own model where the modder wants it (the owner's pick 2026-11-09, the brief's gap 1: Angelo's models sat ahead of their selection rings): `move` [forward, right,
         up], in the game's model units, from where the fit puts it (a minus goes the other way; 0, 0, 0 back to the fit). Fitted again from the file it was made from, at its size, the way it faced.
         It's fitted the way a new import is: its turret's bones go with it, so the turret keeps turning where the model's turret is, and its propellers stay on it; a model fitted before
         there was own_turret or own_propellers takes that too once it's moved. Returns model_import()'s answer (an own copy stays, as model_resize)."""
+        cut_off = self._unit_cut_off(address)
         record = self._own_model_record(address)
         self._record_readable(address, record)
         if record is None:
@@ -8752,12 +8871,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
-        # (what the modder made of its animations since stays, as model_resize's)
-        report = self._fit_model(address, file, float(record.get("size") or 1.0), bool(aircraft),
-                                 self._pinned_facing(record), True, True, move, refit=True)
-        for k, r in others:
-            self._fit_model(address, r["from"], float(r.get("size") or 1.0), bool(r.get("aircraft")),
-                            self._pinned_facing(r), True, True, move, k, refit=True)
+        # (what the modder made of its animations since stays, as model_resize's; all of the squad moved or none)
+
+        def fits(hold):
+            report = self._fit_model(address, file, record_number(record.get("size"), 1.0) or 1.0, bool(aircraft),
+                                     self._pinned_facing(record), True, True, move, refit=True, hold=hold)
+            for k, r in others:
+                self._fit_model(address, r["from"], record_number(r.get("size"), 1.0) or 1.0,
+                                bool(r.get("aircraft")), self._pinned_facing(r), True, True, move, k, refit=True,
+                                hold=hold)
+            return report
+        report = self._fitted_together(fits, cut_off)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     @staticmethod
@@ -8777,7 +8901,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         it was given, else the one its report says it found. The report writes the axis as "x" or "y", which the pin
         doesn't take: passed as it is, the importer guessed again and turned the J-16 round (seen in the game,
         2026-10-10, after the first Resize)."""
-        given = record.get("facing") or (record.get("report") or {}).get("facing")
+        given = record.get("facing") or record_report(record).get("facing")
         if not isinstance(given, (list, tuple)) or len(given) != 2:
             return None
         axis, sign = {"x": 0, "y": 1}.get(given[0], given[0]) if isinstance(given[0], str) else given[0], given[1]
@@ -8805,10 +8929,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if record is None:
             return None
         kind = "air" if self._unit_kind(address) == "air" else "ground"
-        stands = (record.get("report") or {}).get("stands")
-        return {"size": float(record.get("size") or 1.0), "resizable": self._made_from(record) is not None,
+        # (a field of the wrong shape, a record edited by hand: as if it weren't there)
+        stands = record_numbers(record_report(record).get("stands"), 4)
+        return {"size": record_number(record.get("size"), 1.0) or 1.0, "resizable": self._made_from(record) is not None,
                 "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang),
-                "move": list(record.get("move") or (0, 0, 0)), "length": stands[3] if stands else None}
+                "move": (record_numbers(record.get("move"), 3) or [0, 0, 0])[:3],
+                "length": stands[3] if stands else None}
 
     def models_resize_all(self, kind: str, to: str, times: float | None = None) -> dict:
         """Every new unit of the current mod with a model of its own, of `kind` ("air", "ground" or "all"), fitted
@@ -8836,11 +8962,33 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         units = self._own_models_of(kind)
         names = {a: u.name for a, u in self._new_units().items()}
         models = {a: self._own_model_file(a) for a in units}    # (each one's model: the file being written)
-        job = Job()
+
+        class Counted(Job):
+            """The job, its message once done how many were fitted and how many skipped (its last line, `told`), in
+            the player's language as its lines are (rusemod.buildtext): it said "N model(s) done." counting the
+            skipped ones too (the one check, finding 11)."""
+            told = None
+
+            def view(self, since: int = 0) -> dict:
+                out = super().view(since)
+                if self.state == "done" and self.told:
+                    out["message"] = self.told
+                return out
+        job = Counted()
         self._jobs[job.id] = job
 
         def work(say):
             trouble = None
+            fitted, skipped = [0], [0]
+            real_say = say
+
+            def say(line):   # (counted by its first word, as the page reads it)
+                what = line.split("\t", 1)[0]
+                if what == "resized":
+                    fitted[0] += 1
+                elif what == "skipped":
+                    skipped[0] += 1
+                real_say(line)
             for address in units:
                 name = names.get(address, _tail(address))
                 try:
@@ -8852,7 +9000,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                             say(f"skipped\t{name}\tno real-life size known")
                             continue
                     else:
-                        now = float((self._own_model_record(address) or {}).get("size") or 1.0)
+                        now = record_number((self._own_model_record(address) or {}).get("size"), 1.0) or 1.0
                         size = min(MODEL_SIZES[1], max(MODEL_SIZES[0], now * times))
                     got = self.model_resize(address, size)
                     say(f"resized\t{name}\t{size:g}")
@@ -8869,8 +9017,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     trouble = trouble or exc
             if trouble is not None:
                 raise trouble
+            # (the job's message: how many were fitted, how many skipped. Not a line of the job: its lines are one per
+            # unit, as the page and the tests read them. Said through a `say` of its own so rusemod.buildtext lists
+            # it with the job's lines and words it in the player's language, buildtext.toml)
+            def message():
+                def say(text: str) -> str:
+                    return text
+                return say(f"{fitted[0]} model(s) fitted, {skipped[0]} skipped.")
+            job.told = message()
 
-        return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
+        return job.start(work, f"{len(units)} model(s) gone through.", plain=(StudioError,))
 
     def model_import_remove(self, address: str, kind: str | None = None) -> dict:
         """Take a new unit's own model out of the mod: it shows the model of the unit it copies again. An own copy the
@@ -8881,7 +9037,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
         `kind` (a squad whose soldiers come in kinds, _soldier_kinds): that kind's model only; none given, or the
         first kind (the riflemen): the unit's main model, and with it each other kind's model on its bones (they play
-        its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left."""
+        its animations, which go with it), said in "kinds_out". A copy comes back once no model of the unit is left.
+        "record_unread": a record that couldn't be read (a Custom uniform it may have held isn't given back: the page
+        says so); the model and the animations it brought still go."""
         from rusemod.squads import soldier_of
         kinds = self._soldier_kinds(address)
         # one soldier's own look (`kind` his number: rusemod.squads) goes alone
@@ -8890,6 +9048,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: the Studio's kinds are a squad's soldiers that draw different models
             raise StudioError(f"This unit's soldiers don't come in a kind called {kind}.")
         main_kind = next(iter(kinds), None)
+        self._unit_cut_off(address)   # (a fit stopped mid-way by a Studio that ended: put back first, FitUndo)
         own = self._own_model_file(address)
         soldiers = [str(s[1]) for f in (sorted(own.parent.glob(f"{own.stem}@*.glb")) if own is not None
                                          and own.parent.is_dir() else ())
@@ -8901,22 +9060,26 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # (the other kinds' models and the soldiers' own looks on bones of its own go with its animations)
             for k in list(kinds)[1:] + soldiers:
                 other = self._kind_file(address, k)
-                try:
-                    on_own = other is not None and other.is_file() and json.loads(
-                        other.with_suffix(".json").read_text(encoding="utf-8")).get("skeleton") == "own"
-                except (OSError, ValueError):
-                    on_own = False
+                if other is None or not other.is_file():
+                    continue
+                data = read_record(other.with_suffix(".json"))
+                if data is None:   # (one that can't be read: his model file tells whether it's on the main one's bones)
+                    on_own = self._same_skeleton(other, own)
+                else:
+                    on_own = data.get("skeleton") == "own"
                 if on_own:
                     going.append((k, other))
-        out, copy_back, kinds_out, kept = False, False, [], None
+        out, copy_back, kinds_out, kept, unread = False, False, [], None, False
         with self._saving:
             for k, target in going:
                 if target is None:
                     continue
                 record = target.with_suffix(".json")
-                try:
-                    data = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
-                except (OSError, ValueError):
+                data = read_record(record)
+                if data is None:
+                    # (a record that can't be read, or isn't an object: the model still goes, and what it may have
+                    # held, a Custom uniform it took the place of, is said as not given back: the one check, finding 3)
+                    unread = unread or target.is_file()
                     data = {}
                 if isinstance(data.get("copy_kept"), str):
                     kept = kept or data["copy_kept"]
@@ -8941,7 +9104,18 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 # (the copy waits in a model that's still there: it comes back when the last one goes)
                 self._keep_in_model_record(address, kept, left[0] if left[0] != main_kind else None)
         return {**self.look(address), "model_out": out, "copy_back": copy_back, "kinds_out": kinds_out,
-                "kind": kind}
+                "kind": kind, **({"record_unread": True} if unread else {})}
+
+    @staticmethod
+    def _same_skeleton(model: Path, main: Path | None) -> bool:
+        """Whether a model file of the mod is on bones of its own that are its main model's (rusemod.bonefit's
+        skeleton_key), read from the files alone: for a record that can't be read."""
+        from rusemod.bonefit import skeleton_key
+        try:
+            key = skeleton_key(model) if main is not None and main.is_file() else None
+            return key is not None and key == skeleton_key(main)
+        except Exception:  # noqa: BLE001 - a file that can't be read, however: not known to be on them
+            return False
 
     def _card_view(self, address: str) -> dict | None:
         """The card as the unit page shows it: {"texture", "width", "height", "url": the picture now (the mod's or the
@@ -9238,7 +9412,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """The Look box of a unit: {"models": its models, "textures": the pictures they're drawn with, "painted":
         those the current mod repaints, "blender": Blender's path ("" when not found), "download": where to get it,
         "opened": whether the unit has been opened in Blender (its work folder is there), "kept": where the mod keeps
-        its own model, made or not (_model_kept)}."""
+        its own model, made or not (_model_kept)}. "own_model": its own model's import report, with "record_unread"
+        when its record can't be read or doesn't say what it was made from (the page says Import model again mends
+        it)."""
         from rusemod.blender import DOWNLOAD
         from rusemod.unitlook import LOOK_FILE
         if self._game() is None:
@@ -9251,10 +9427,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         own = self._own_model_file(address)
         own_model = None
         if own is not None and own.is_file():
-            try:
-                own_model = json.loads(own.with_suffix(".json").read_text(encoding="utf-8")).get("report") or {}
-            except (OSError, ValueError):
-                own_model = {}
+            from .modelblender import alpha_lost
+            record = read_record(own.with_suffix(".json"))
+            # (its report as the page draws it, with what a Bring back couldn't keep of its shine, as an older Studio's
+            # record says it too: modelblender.alpha_lost)
+            own_model = {**record_report(record), **alpha_lost(record_report(record))}
+            if record is None or not isinstance(record.get("from"), str) or not record.get("from"):
+                # a record that can't be read, isn't an object, or doesn't say what the model was made from: the page
+                # says it, and that Import model again mends it, never Python's own words (the one check, finding 3)
+                own_model["record_unread"] = True
         copy = self._own_copy_file(address)
         kinds = self._kind_rows(address)
         # "soldiers": a squad, whose look is its uniform (Default, the game's, or Custom: its own copy); "kinds": a new
@@ -9591,7 +9772,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if not copy.is_file():
                 copy.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(own, copy)
-            stands = ((self._own_model_record(address) or {}).get("report") or {}).get("stands")
+            stands = record_numbers(record_report(self._own_model_record(address)).get("stands"), 4)
             return {"models": [{"url": f"cache/units/own/{name}", "name": own.stem}], "paint": {},
                     "card": self._card_view(address), "disc": self._disc_picture(),
                     # where the unit it copies stands, in the .glb's own axes, so the view can show a moved model off it
