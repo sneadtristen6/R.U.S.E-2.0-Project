@@ -182,11 +182,25 @@ def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
 
 
 # --- pack ---
-def files_of(folder) -> list[Path]:
+# the files the Studio and the build leave beside one of their own while they write it (written whole there first, then
+# put in its place: <name>.part, <stem>.part, <name>.<program>.part, <name>.partial, <name>.tmp), found only when a
+# program was stopped in between: half made, never read by a build, and one can name a folder of the maker's PC (a model
+# record's .part: the one check of 2026-11-13, finding 13), so a package, the Launcher's copy of it and Publish's .zip
+# never take one; Export names each it left out (pack's `left_out`)
+WORK_ENDINGS = (".part", ".partial", ".tmp")
+
+
+def is_work_file(name) -> bool:
+    """Whether a file called `name` is one the Studio leaves while it writes (WORK_ENDINGS)."""
+    return PurePosixPath(str(name).replace("\\", "/")).suffix.lower() in WORK_ENDINGS
+
+
+def files_of(folder, left_out: list | None = None) -> list[Path]:
     """The files of a mod folder that go into its package: mod.toml and the other loose files of §2 (the era units'
     credits and record among them, a record naming no unit left out), the .rmod a community mod's mod.toml names
     ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/ and scripts/ (never caches, hidden
-    files or build output)."""
+    files, build output, or a file the Studio left half written: is_work_file; `left_out`, a list, gets each of
+    those)."""
     folder = Path(folder)
     out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
     try:
@@ -200,7 +214,14 @@ def files_of(folder) -> list[Path]:
         if (folder / sub).is_dir():
             for root, dirs, names in os.walk(folder / sub):
                 dirs[:] = sorted(d for d in dirs if d not in SKIP and not d.startswith("."))
-                out += [Path(root) / n for n in sorted(names) if not n.startswith(".")]
+                for n in sorted(names):
+                    if n.startswith("."):
+                        continue
+                    if is_work_file(n):
+                        if left_out is not None:
+                            left_out.append(Path(root) / n)
+                        continue
+                    out.append(Path(root) / n)
     return out
 
 
@@ -471,7 +492,7 @@ def home_shown() -> str:
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
          fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None,
          cleaned: list | None = None, kinds: dict | None = None, home_in: list | None = None,
-         home=None) -> Path:
+         home=None, left_out: list | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
     its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
@@ -482,7 +503,9 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     file's own name there (studio_paths_out, STUDIO_PATHS; the folder's own file stays as it is); `cleaned`, a list,
     gets each such file's path inside the package, `kinds`, a dict, {that path: the kind of place, "record", "model"
     or "import"}. Every other file goes in byte for byte. `home_in`, a list, gets each member that still names this
-    PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left as he wrote it."""
+    PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left as he wrote it.
+    A file the Studio left half written (is_work_file) never goes in; `left_out`, a list, gets each one's path in the
+    mod folder, as a package would name it."""
     folder = Path(folder)
     if not (folder / MANIFEST).is_file():
         raise PackageError(f"{folder} isn't a mod: it has no {MANIFEST} in it.")
@@ -516,8 +539,12 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
             home = Path.home()
         except RuntimeError:                              # (no home folder known: nothing to look for)
             home = None
+    work: list = []
+    files = files_of(folder, work)
+    if left_out is not None:
+        left_out += [f.relative_to(folder).as_posix() for f in work]
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in files_of(folder):
+        for f in files:
             name = f.relative_to(folder).as_posix()
             got = studio_paths_out(f, name)
             if got is None:
