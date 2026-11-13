@@ -512,7 +512,11 @@ def _folder_name_ok(run: str) -> bool:
     """Whether a run of letters before a slash or backslash reads as a folder's name rather than as words."""
     if not run or run != run.strip() or len(run) > 255:
         return False
-    return not (any(c.isspace() for c in run) and _WORDS_NOT_A_NAME.search(run))
+    if not any(c.isspace() for c in run):
+        return True
+    # (with a space in it, words read so: a sentence's stop, a file's ending before a space, a bracket left open, a
+    # home's ~: "python (assuming ~guido" in a README of the tools, 2026-11-13, is words between two paths)
+    return not (_WORDS_NOT_A_NAME.search(run) or run.count("(") != run.count(")") or "~" in run)
 
 
 def paths_cut(text: str) -> tuple[str, list]:
@@ -526,9 +530,12 @@ def paths_cut(text: str) -> tuple[str, list]:
             break
         start, j = m.start(), m.end()
         folders = []      # (its name, where it starts, where its slashes end)
-        while True:
+        forward = m.lastgroup in ("unix", "home", "file")    # (a path of these is written with / only: a \ after
+        server = m.group(0) == "\\\\"                        # "/Iinclude share" says it is a switch and words; a
+        while True:                                          # server's name, \\server\, has no space in it)
             f = _FOLDER_RUN.match(text, j)
-            if f is None or not _folder_name_ok(f.group(1)):
+            if f is None or not _folder_name_ok(f.group(1)) or (forward and "\\" in f.group(2)) \
+                    or (server and not folders and any(c.isspace() for c in f.group(1))):
                 break
             folders.append((f.group(1), f.start(), f.end()))
             j = f.end()

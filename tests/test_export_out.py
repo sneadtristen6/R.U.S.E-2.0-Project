@@ -149,7 +149,12 @@ class HisReadme(unittest.TestCase):
                 ("C:\\\\Users\\\\jane\\\\x.glb", "x.glb"), ("two: C:\\a\\b.glb, D:\\c\\d.glb.", "two: b.glb, d.glb."),
                 ("Made from C:\\models\\tank.glb, and docs\\turret.md tells how.",
                  "Made from tank.glb, and docs\\turret.md tells how."),
-                ("*~/Models/tank.glb*", "*tank.glb*"), ("%APPDATA%\\x\\y.glb", "y.glb")):
+                ("*~/Models/tank.glb*", "*tank.glb*"), ("%APPDATA%\\x\\y.glb", "y.glb"),
+                # (from READMEs of the tools on this PC, 2026-11-13: words between two paths, a switch, an escape)
+                ("in /usr/tmp/python (assuming ~guido/src/python is the toplevel",
+                 "in python (assuming ~guido/src/python is the toplevel"),
+                ("cl /Iinclude share\\doc\\gmsh\\t1.cpp lib\\gmsh.lib", None),
+                ("cssesc gives 'Ich \\\\2665  B\\\\FC cher'", None)):
             self.assertEqual(package.paths_cut(text)[0], text if want is None else want, text)
 
     def test_what_names_no_folder_stays(self):
