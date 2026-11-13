@@ -3191,3 +3191,44 @@ cz = "Vynecháno z exportovaného souboru: {0}. Jsou to soubory, které Studio n
 jpn = "エクスポートしたファイルから外したもの：{0}。Studio が書き込み中に止められたときに書きかけで残したファイルです（名前の末尾が .part、.partial、.tmp）。どのビルドも読みません。"
 sc = "未放进导出文件：{0}。这些是 Studio 在写入时被中止而留下的写了一半的文件（名字以 .part、.partial 或 .tmp 结尾）；任何构建都不读取它们。"
 fa = "از فایل خروجی کنار گذاشته شد: {0}. این‌ها فایل‌هایی‌اند که Studio وقتی هنگام نوشتنشان متوقف شد نیمه‌نوشته باقی گذاشت (نامشان به .part، .partial یا .tmp ختم می‌شود)؛ هیچ ساختی آن‌ها را نمی‌خواند."
+# Mend A (2026-11-13, the one check's finding 1): the build's line for what a unit deleted from the mod left behind
+# says what to do; the button it names is words.toml test_fix_unit_leftovers
+[e2cd5072924]
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name. If {2} was deleted from this mod, this file was left behind: in the Studio, click Take out what it left under this mistake in Test in game's log, or delete this file"
+fr = "{0} : aucun mod de l'ensemble ne crée d'unité {1}, et le jeu n'en a aucune de ce nom. Si {2} a été supprimée de ce mod, ce fichier est resté : dans le Studio, cliquez sur Retirer ce qu'elle a laissé sous cette erreur dans le journal de Tester en jeu, ou supprimez ce fichier"
+ger = "{0}: kein Mod im Set macht eine Einheit {1}, und das Spiel hat keine dieses Namens. Wenn {2} aus diesem Mod gelöscht wurde, ist diese Datei übrig geblieben: Klicke im Studio unter diesem Fehler im Protokoll von Im Spiel testen auf Entfernen, was sie hinterlassen hat, oder lösche diese Datei"
+ita = "{0}: nessuna mod dell'insieme crea un'unità {1}, e il gioco non ne ha nessuna con quel nome. Se {2} è stata eliminata da questa mod, questo file è rimasto: nello Studio, fai clic su Togli ciò che ha lasciato sotto questo errore nel registro di Prova in gioco, oppure elimina questo file"
+spa = "{0}: ningún mod del conjunto crea una unidad {1}, y el juego no tiene ninguna con ese nombre. Si {2} se borró de este mod, este archivo se quedó: en el Studio, haz clic en Quitar lo que dejó bajo este error en el registro de Probar en el juego, o borra este archivo"
+pol = "{0}: żaden mod w zestawie nie tworzy jednostki {1}, a gra nie ma żadnej o tej nazwie. Jeśli {2} została usunięta z tego moda, ten plik został: w Studiu kliknij Usuń to, co zostawiła pod tym błędem w dzienniku Testuj w grze, albo usuń ten plik"
+ru = "{0}: ни один мод набора не создаёт юнит {1}, и в игре нет юнита с таким именем. Если {2} был удалён из этого мода, этот файл остался: в Студии нажмите Убрать то, что осталось под этой ошибкой в журнале Проверить в игре, или удалите этот файл"
+cz = "{0}: žádný mod v sadě nevytváří jednotku {1} a hra žádnou takového jména nemá. Pokud byla {2} z tohoto modu smazána, tento soubor zůstal: ve Studiu klikni na Odebrat, co zanechala pod touto chybou v protokolu Vyzkoušet ve hře, nebo tento soubor smaž"
+jpn = "{0}：セット内のどの Mod もユニット {1} を作っておらず、ゲームにもその名前のユニットはありません。{2} をこの MOD から削除したのなら、このファイルが残っています：Studio で「ゲームでテスト」のログのこの誤りの下にある「残ったものを取り除く」をクリックするか、このファイルを削除してください"
+sc = "{0}：组合中没有模组创建单位 {1}，游戏中也没有该名称的单位。如果 {2} 已从此模组中删除，这个文件是它留下的：在 Studio 中，点击“在游戏中测试”日志里此错误下方的“移除它留下的内容”，或删除这个文件"
+fa = "{0}: هیچ مادی در مجموعه یگانی به نام {1} نمی‌سازد، و بازی هم یگانی با این نام ندارد. اگر {2} از این ماد حذف شده، این فایل به‌جا مانده: در استودیو، زیر این اشتباه در گزارش «آزمایش در بازی» روی «حذف آنچه به‌جا گذاشته» کلیک کنید، یا این فایل را حذف کنید"
+
+[e472f71c76e]
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name. If {2} was deleted from this mod, its animations were left behind: in the Studio, click Take out what it left under this mistake in Test in game's log, or take [unit.{3}] out of {4} and delete the folder {5}/{6}/"
+fr = "{0} : aucun mod de l'ensemble ne crée d'unité {1}, et le jeu n'en a aucune de ce nom. Si {2} a été supprimée de ce mod, ses animations sont restées : dans le Studio, cliquez sur Retirer ce qu'elle a laissé sous cette erreur dans le journal de Tester en jeu, ou retirez [unit.{3}] de {4} et supprimez le dossier {5}/{6}/"
+ger = "{0}: kein Mod im Set macht eine Einheit {1}, und das Spiel hat keine dieses Namens. Wenn {2} aus diesem Mod gelöscht wurde, sind ihre Animationen übrig geblieben: Klicke im Studio unter diesem Fehler im Protokoll von Im Spiel testen auf Entfernen, was sie hinterlassen hat, oder nimm [unit.{3}] aus {4} heraus und lösche den Ordner {5}/{6}/"
+ita = "{0}: nessuna mod dell'insieme crea un'unità {1}, e il gioco non ne ha nessuna con quel nome. Se {2} è stata eliminata da questa mod, le sue animazioni sono rimaste: nello Studio, fai clic su Togli ciò che ha lasciato sotto questo errore nel registro di Prova in gioco, oppure togli [unit.{3}] da {4} ed elimina la cartella {5}/{6}/"
+spa = "{0}: ningún mod del conjunto crea una unidad {1}, y el juego no tiene ninguna con ese nombre. Si {2} se borró de este mod, sus animaciones se quedaron: en el Studio, haz clic en Quitar lo que dejó bajo este error en el registro de Probar en el juego, o quita [unit.{3}] de {4} y borra la carpeta {5}/{6}/"
+pol = "{0}: żaden mod w zestawie nie tworzy jednostki {1}, a gra nie ma żadnej o tej nazwie. Jeśli {2} została usunięta z tego moda, jej animacje zostały: w Studiu kliknij Usuń to, co zostawiła pod tym błędem w dzienniku Testuj w grze, albo usuń [unit.{3}] z {4} i usuń folder {5}/{6}/"
+ru = "{0}: ни один мод набора не создаёт юнит {1}, и в игре нет юнита с таким именем. Если {2} был удалён из этого мода, его анимации остались: в Студии нажмите Убрать то, что осталось под этой ошибкой в журнале Проверить в игре, или уберите [unit.{3}] из {4} и удалите папку {5}/{6}/"
+cz = "{0}: žádný mod v sadě nevytváří jednotku {1} a hra žádnou takového jména nemá. Pokud byla {2} z tohoto modu smazána, její animace zůstaly: ve Studiu klikni na Odebrat, co zanechala pod touto chybou v protokolu Vyzkoušet ve hře, nebo odeber [unit.{3}] z {4} a smaž složku {5}/{6}/"
+jpn = "{0}：セット内のどの Mod もユニット {1} を作っておらず、ゲームにもその名前のユニットはありません。{2} をこの MOD から削除したのなら、そのアニメーションが残っています：Studio で「ゲームでテスト」のログのこの誤りの下にある「残ったものを取り除く」をクリックするか、{4} から [unit.{3}] を取り除いてフォルダー {5}/{6}/ を削除してください"
+sc = "{0}：组合中没有模组创建单位 {1}，游戏中也没有该名称的单位。如果 {2} 已从此模组中删除，它的动画留了下来：在 Studio 中，点击“在游戏中测试”日志里此错误下方的“移除它留下的内容”，或从 {4} 中移除 [unit.{3}] 并删除文件夹 {5}/{6}/"
+fa = "{0}: هیچ مادی در مجموعه یگانی به نام {1} نمی‌سازد، و بازی هم یگانی با این نام ندارد. اگر {2} از این ماد حذف شده، انیمیشن‌هایش به‌جا مانده‌اند: در استودیو، زیر این اشتباه در گزارش «آزمایش در بازی» روی «حذف آنچه به‌جا گذاشته» کلیک کنید، یا [unit.{3}] را از {4} بیرون ببرید و پوشهٔ {5}/{6}/ را حذف کنید"
+
+# Mend A (2026-11-13, finding 8): Export takes out the era record and credit lines of units the mod no longer has
+[e4246a11109]
+us = "The era units' record and credits named units no longer in the mod; their lines were taken out: {0}."
+fr = "Le registre et les crédits des unités d'époque nommaient des unités qui ne sont plus dans le mod ; leurs lignes ont été retirées : {0}."
+ger = "Der Eintrag und die Credits der Epochen-Einheiten nannten Einheiten, die nicht mehr im Mod sind; ihre Zeilen wurden entfernt: {0}."
+ita = "Il registro e i crediti delle unità d'epoca nominavano unità che non sono più nella mod; le loro righe sono state tolte: {0}."
+spa = "El registro y los créditos de las unidades de época nombraban unidades que ya no están en el mod; se quitaron sus líneas: {0}."
+pol = "Zapis i podziękowania jednostek z epok wymieniały jednostki, których nie ma już w modzie; ich wiersze usunięto: {0}."
+ru = "Запись и благодарности юнитов эпох называли юниты, которых больше нет в моде; их строки убраны: {0}."
+cz = "Záznam a poděkování jednotek z období jmenovaly jednotky, které už v modu nejsou; jejich řádky byly odebrány: {0}."
+jpn = "時代ユニットの記録とクレジットに、もう MOD にないユニットが書かれていました。その行を取り除きました：{0}。"
+sc = "时代单位的记录和致谢中列出了模组中已不再有的单位；已移除它们的行：{0}。"
+fa = "سابقه و قدردانی یگان‌های دوره‌ها یگان‌هایی را نام می‌بردند که دیگر در ماد نیستند؛ سطرهایشان بیرون برده شد: {0}."

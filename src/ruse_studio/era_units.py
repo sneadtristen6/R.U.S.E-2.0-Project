@@ -46,6 +46,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import struct
 import shutil
 import sys
@@ -341,6 +342,43 @@ def credits_text(units: list[dict], kept: list[str] = ()) -> str:
     return "\n".join(lines) + "\n"
 
 
+def era_files(mod: Path, record: dict, lib: dict) -> tuple[str, str | None]:
+    """(era_units.json's text, the credits file's text or None: no file) for a mod whose era units are `record` ({era
+    unit key: its unit's address}, only units the mod has), with the library `lib`: the library's units it has, and the
+    units made for RUSE 2.0 it has (horse_squad.BUILT, never in a library). An era unit the mod has whose era isn't
+    downloaded on this PC: the library can't write its credit line, so the era lines already in the mod stay (never a
+    CC BY credit lost because this PC lacks the era), except a line the library names for a unit the mod hasn't (one
+    deleted: the owner's check, 2026-11-13, finding 8)."""
+    from .horse_squad import BUILT
+    known = {u["key"]: u for u in lib.get("units", [])}
+    mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
+    mine += [entry for key, entry in BUILT.items() if key in record]
+    credits = mod / CREDITS
+    unnamed = [k for k in record if k not in BUILT and k not in known]
+    try:
+        kept = era_credit_lines(credits.read_text(encoding="utf-8")) if unnamed and credits.is_file() else []
+    except (OSError, UnicodeDecodeError):
+        kept = []
+    gone = gone_lines(record, lib)
+    kept = [line for line in kept if not line.startswith(gone)] if gone else kept
+    return (json.dumps(record, indent=1, ensure_ascii=False),
+            credits_text(mine, kept) if mine or kept else None)
+
+
+def gone_lines(record: dict, lib: dict) -> tuple[str, ...]:
+    """The starts of the credit lines (credits_text's) of the library's era units a mod with era units `record`
+    hasn't."""
+    return tuple(f"- {u['name']} ({u['era']}, {u['nation']}):" for u in lib.get("units", [])
+                 if u.get("key") not in record and all(isinstance(u.get(k), str) for k in ("name", "era", "nation")))
+
+
+def _put_text(path: Path, text: str) -> None:
+    """A text file written whole (through a .partial file: one another program holds stays as it was), its lines ending
+    as Python's write_text ends them on this PC (the bytes the Studio wrote before)."""
+    from .edits import _put
+    _put(path, text.replace("\n", os.linesep).encode("utf-8"))
+
+
 def kind_of(u: dict) -> str:
     return "air" if u.get("aircraft") else "ground"
 
@@ -478,24 +516,13 @@ class EraUnitCalls:
     def _era_save(self, record: dict, lib: dict) -> None:
         """The mod's era_units.json (`record`) and its credits: the library's units it has, and the units made for
         RUSE 2.0 it has (horse_squad.BUILT, never in a library)."""
-        from .horse_squad import BUILT
         mod = self._mod_dir()
-        (mod / INDEX).write_text(json.dumps(record, indent=1, ensure_ascii=False), encoding="utf-8")
-        known = {u["key"] for u in lib.get("units", [])}
-        mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
-        mine += [entry for key, entry in BUILT.items() if key in record]
-        credits = mod / CREDITS
-        # an era unit the mod has whose era isn't downloaded on this PC: the library can't write its credit line, so
-        # the lines already in the mod stay as they are (never a CC BY credit lost because this PC lacks the era)
-        unnamed = [k for k in record if k not in BUILT and k not in known]
-        try:
-            kept = era_credit_lines(credits.read_text(encoding="utf-8")) if unnamed and credits.is_file() else []
-        except (OSError, UnicodeDecodeError):
-            kept = []
-        if mine or kept:
-            credits.write_text(credits_text(mine, kept), encoding="utf-8")
+        index, credits = era_files(mod, record, lib)
+        _put_text(mod / INDEX, index)
+        if credits is not None:
+            _put_text(mod / CREDITS, credits)
         else:
-            credits.unlink(missing_ok=True)
+            (mod / CREDITS).unlink(missing_ok=True)
 
     def _era_forget(self, address: str) -> None:
         """A unit deleted from the mod (delete_unit): when the mod's era_units.json names it (an era unit, or a unit
@@ -1006,25 +1033,136 @@ class EraUnitCalls:
         if key in BUILT and self._horse_running() and not self.__dict__.get("_horse_undoing"):
             # (its models are being imported: taken out only when that's done, or by the add's own take-back)
             raise StudioError("The Horse Squad is being added to this mod: wait for it to finish.")
-        _folder, lib = self._era_library()
         record = self._era_record()
         address = record.get(key)
         if address is None:
+            gone = self._era_left_behind(key)   # (a take-out that stopped half way before 2026-11-13: tried again)
+            if gone is not None:
+                return gone
             if key in BUILT:   # (by its name, in the modder's language: never its key)
                 raise StudioError("Horse Squad isn't in this mod")
             raise StudioError(f"{key}: not in this mod")
         research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
         if "ask" in research:
             return {"removed": None, "ask": research["ask"]}
-        record.pop(key)
-        try:
-            self.model_import_remove(address)
-        except StudioError:
-            pass
-        mine = self._own_card_file(address)       # its era card goes with it
-        if mine is not None:
-            mine.unlink(missing_ok=True)
+        # Delete takes all of it, all or nothing (the owner's check, 2026-11-13): its card, its models with their
+        # animations (the Horse Squad's heavy-weapon soldier's too: <unit>@<kind>), its rows in units.toml, its clips'
+        # folder, its record line and credit line (_era_forget); a file another program holds leaves it whole, in words
         self.delete_unit(address, "anyway")       # the units researched from it are dealt with above
-        with self._saving:
-            self._era_save(record, lib)
         return {"removed": address, **research}
+
+    def _era_left_behind(self, key: str) -> dict | None:
+        """Take it out of my mod tried again on an era unit (or the Horse Squad) the mod no longer has but its
+        era_units.json still names: what the unit left behind (delete_unit's leftovers: its files, its animations) and
+        its record line and credit line go. None when the record doesn't name it."""
+        mod = self._mod_dir()
+        try:
+            raw = json.loads((mod / INDEX).read_text(encoding="utf-8")) if mod is not None and (mod / INDEX).is_file() \
+                else {}
+        except (OSError, ValueError):
+            return None
+        address = raw.get(key) if isinstance(raw, dict) else None
+        if not isinstance(address, str):
+            return None
+        edits = self._edits()
+        if edits is None or address in edits.new_units:
+            return None
+        left = self._take_leftovers(edits, address)   # (only its leftovers, never a game unit's)
+        _folder, lib = self._era_library()
+        with self._saving:
+            try:
+                self._era_save(self._era_record(), lib)
+            except OSError as exc:
+                from .api import file_error
+                raise file_error(exc, mod / INDEX) from exc
+        return {"removed": address, "relinked": [], "left": [], "leftovers": left}
+
+    # --- what a unit deleted half way left behind, offered under Test in game's mistake (api.test_problems) ---
+    LEFT_BEHIND = re.compile(r"(?:^|: )(?P<where>files/models/(?P<file>[A-Za-z0-9_]+)\.copy\.toml|files/anim/units\.toml)"
+                             r": no mod in the set makes a unit (?P<unit>[A-Za-z0-9_]+), and the game has none of "
+                             r"that name\. If ")
+
+    def _leftovers_problem(self, text: str, folders: list) -> list[dict]:
+        """The fix test_problems offers for the build's "no mod in the set makes a unit X ... If X was deleted from this
+        mod" (rusemod.build: a copy or animations a deleted unit left): [{"kind": "unit_leftovers", "path": the mod
+        folder holding them, "unit": X}], one for each of `folders` (the last test's) whose leftovers they are (X not a
+        new unit of it); [] for any other mistake."""
+        from rusemod import anim
+        from .edits import EditsFileError, ModEdits, unit_files
+        m = self.LEFT_BEHIND.search(text)
+        if not m:
+            return []
+        unit, out = m["unit"], []
+        for folder in folders:
+            folder = Path(folder)
+            try:
+                if any(t.rsplit("/", 1)[-1] == unit for t in ModEdits(folder).new_units):
+                    continue
+                rows = unit in anim.read_units(folder)
+            except (EditsFileError, anim.AnimError):
+                rows = False
+            if rows or unit_files(folder, unit):
+                out.append({"kind": "unit_leftovers", "path": str(folder), "unit": unit})
+        return out
+
+    def leftovers_fix(self, fix: dict) -> dict:
+        """test_fix's "unit_leftovers": what the unit fix["unit"] left behind in the mod fix["path"] (one of the last
+        test's mods) taken out, all or nothing, never a unit's the mod or the game has (api._take_leftovers). Returns
+        {"done": what was taken out}."""
+        from .api import StudioError
+        from .edits import ModEdits
+        folder = Path(str(fix.get("path", "")))
+        mine = [Path(f).resolve() for f in getattr(self, "_test_folders", [])]
+        if not folder.is_dir() or folder.resolve() not in mine:
+            raise StudioError("That file isn't part of the last test's mods.")
+        unit = str(fix.get("unit", ""))
+        left = self._take_leftovers(ModEdits(folder), f"$/GFX/Everything/{unit}")
+        if not left:
+            # not a game rule: nothing of that unit is left in the mod, or it's a unit the game or the mod has
+            raise StudioError(f"Nothing that {unit} left behind is in the mod any more, or it is a unit the mod or the "
+                              f"game has.")
+        return {"done": f"{unit}: taken out ({', '.join(left)})"}
+
+    def _era_tidy(self, folder: Path) -> list[str]:
+        """Before Export packs the mod at `folder` (the owner's check, 2026-11-13, finding 8): when its era_units.json
+        names a unit it no longer has (deleted by a Studio that left the line, 0.9.8.19's Delete), or its credits file a
+        library unit it no longer has, those lines go, as the next save would write them (era_files); every line of a
+        unit it has and every era credit line this PC's library can't name stay. Nothing changes otherwise. Returns the
+        names of the units whose lines went (Export says them), [] when nothing changed."""
+        from .api import file_error
+        from .edits import ModEdits, EditsFileError
+        index = Path(folder) / INDEX
+        if not index.is_file():
+            return []
+        try:
+            raw = json.loads(index.read_text(encoding="utf-8"))
+            have = set(ModEdits(folder).new_units)
+        except (OSError, ValueError, EditsFileError):
+            return []   # (packed as it is; the mod check and the build say what's wrong with those files)
+        if not isinstance(raw, dict):
+            return []
+        record = {k: a for k, a in raw.items() if a in have}
+        _lib_folder, lib = self._era_library()
+        credits = Path(folder) / CREDITS
+        try:
+            lines = era_credit_lines(credits.read_text(encoding="utf-8")) if credits.is_file() else []
+        except (OSError, UnicodeDecodeError):
+            lines = []
+        gone = gone_lines(record, lib)
+        stale = sorted(set(raw) - set(record))
+        old = [line[2:].split(" (", 1)[0] for line in lines if gone and line.startswith(gone)]
+        if not stale and not old:
+            return []
+        text, credit = era_files(Path(folder), record, lib)
+        try:
+            _put_text(index, text)
+            if credit is not None:
+                _put_text(credits, credit)
+            else:
+                credits.unlink(missing_ok=True)
+        except OSError as exc:
+            raise file_error(exc, index) from exc
+        from .horse_squad import BUILT   # (by their names, never their keys)
+        named = {u.get("key"): u.get("name") for u in lib.get("units", [])}
+        named |= {k: e.get("name") for k, e in BUILT.items()}
+        return sorted({str(named.get(k) or k) for k in stale} | set(old))
