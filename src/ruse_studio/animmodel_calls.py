@@ -16,21 +16,63 @@ the change in this same store, by name: ruse_studio.decoyblender) and the animat
 Before 2026-11-12 the fit took every animation in again from the file and set the file's own word on an action again,
 so the change went back without a word (the silent-loss review's F2). What the last fit took in is kept in the
 model's record (FROM_FILE: each animation's fingerprint, the file's own word on each action), so a change of the
-modder's is told from the file's own. Whatever of his can't be kept (the file's bones aren't the ones he changed them
+modder's is told from the file's own. Whatever of his can't be kept (the model's bones aren't the ones he changed it
 on any more; a new model brought in, Import model again, which brings its own animations as before) is named in the
-fit's report (NOT_KEPT), and the page says it in words."""
+fit's report (NOT_KEPT), and the page says it in words.
+
+A record written before FROM_FILE (by this branch's Studio before 2026-11-12: no release has models on bones of their
+own) has no fingerprints. What its last fit took in is then read again (_last_fit): what the file it was made from
+gives now, the way a fit takes it in, and the animations the model's own file in the mod carries (a fit writes them
+into it; RUSE Decoy never changes that file), so Import model again and Bring back the model name a change made in
+RUSE Decoy over such a record too (the resize recheck, round 1). A clip file or model file of the mod that can't be
+read is never a reason to stop a fit: the file's animation takes its place and is named, as before the fingerprints
+(the same recheck: a damaged clip file stopped Resize, Move and every unit at once)."""
 from __future__ import annotations
 
 import hashlib
 import json
+import os
+import struct
 from pathlib import Path
 
 FROM_FILE = "from_file"   # the model's record: what its last fit took in from its file ({"animations", "plays"})
 NOT_KEPT = "not_kept"     # a fit's report: what of the modder's own it couldn't keep ({"animations", "picks"})
+UNREAD = (ValueError, IndexError, struct.error)   # a clip's bytes rusemod.baf can't read (its ClipError a ValueError)
 
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(bytes(data)).hexdigest()
+
+
+def _close(x: float, y: float) -> bool:
+    return abs(x - y) <= 1e-5 * max(1.0, abs(x), abs(y))
+
+
+def _near(a: bytes, b: bytes) -> bool:
+    """Whether clip `a` plays as clip `b` does within what a clip's numbers keep through the model's own file (a fit
+    writes its clips into it as animations, rusemod.modelin.write_glb, and rusemod.unitmodel.own_clips reads them
+    back): the same frames, length, skeleton, keys and key times, every move and size within a float's last places and
+    every turn within two steps of its packing. Measured on the Horse Squad, 2026-11-12: 24 of its 25 came back byte
+    for byte, hr_b_mort_balle with moves off by 7.7e-6 at most. RUSE Decoy takes a bone in as changed only past
+    rusemod.rig.TOL_BACK_* (a move of 0.05 as it shows in the model, a turn of about 0.03 degrees), far coarser. Two
+    clips that can't both be read aren't near."""
+    from rusemod import baf
+    try:
+        ca, cb = baf.parse(a), baf.parse(b)
+    except UNREAD:
+        return False
+    if (ca.frames, ca.bones, ca.skeleton) != (cb.frames, cb.bones, cb.skeleton) or not _close(ca.duration, cb.duration):
+        return False
+    for ta, tb in zip(ca.tracks, cb.tracks):
+        for ka, kb in ((ta.T, tb.T), (ta.S, tb.S)):
+            if len(ka) != len(kb) or any(p[0] != q[0] or not all(_close(x, y) for x, y in zip(p[1:], q[1:]))
+                                         for p, q in zip(ka, kb)):
+                return False
+        if len(ta.R) != len(tb.R) or any(
+                p[0] != q[0] or max(abs(x - y) for x, y in zip(baf.unpack_quat(p[1:]), baf.unpack_quat(q[1:])))
+                > 2 * baf.SCALE for p, q in zip(ta.R, tb.R)):
+            return False
+    return True
 
 
 class AnimModelCalls:
@@ -60,19 +102,21 @@ class AnimModelCalls:
             raise StudioError(f"{Path(file).name}: {exc}") from None
 
     def _record_more(self, address: str, report: dict, file: Path, clips: dict, before: dict, refit: bool = False,
-                     bones_before: bytes | None = None) -> dict:
+                     carried: dict | None = None) -> dict:
         """What the model's record says of its bones and animations (rusemod.animmodel's record), the unit's own clips
         and rows written for a model on bones of its own; `before`: the record as it was (a model brought in before
         this one), whose animations go when the new model has none of its own. Its notes go into `report`.
 
-        `refit` (Resize, Move: the model fitted again from the file it was made from; `bones_before`: the skeleton
-        record it was on, _bones_now): each of its animations the modder changed since the last fit stays as the mod
-        has it while its bones are the same, one the file hasn't got any more too, and each action's pick made on the
-        page stays (the file's own word on an action is set again only where the pick is still the one that word
-        set). Every other animation and word is the file's again, as before. A new model (Import model, Bring back the
-        model) brings its own animations and words, in place of the modder's changes, as before. Either way, what of
-        his couldn't be kept goes into the report's NOT_KEPT (the page says it), and the record's FROM_FILE says what
-        this fit took in (see the module's note)."""
+        `refit` (Resize, Move: the model fitted again from the file it was made from): each of its animations the
+        modder changed since the last fit stays as the mod has it while it's on the model's bones (the skeleton its
+        clip was made on, which every clip carries, is the model's now), one the file hasn't got any more too, and each
+        action's pick made on the page stays (the file's own word on an action is set again only where the pick is
+        still the one that word set). Every other animation and word is the file's again, as before. A new model
+        (Import model, Bring back the model) brings its own animations and words, in place of the modder's changes, as
+        before. Either way, what of his couldn't be kept goes into the report's NOT_KEPT (the page says it), and the
+        record's FROM_FILE says what this fit took in (see the module's note). `carried`: what the unit's own model
+        file carried before this fit wrote it anew (_carried_before), for an animation the record has no fingerprint
+        of (_last_fit)."""
         from rusemod import animmodel, baf
         from rusemod.anim import AnimError
         from rusemod.modelin import OWN_SKELETON
@@ -85,6 +129,11 @@ class AnimModelCalls:
         last = before.get(FROM_FILE) if was_own and isinstance(before.get(FROM_FILE), dict) else {}
         last_clips = last.get("animations") if isinstance(last.get("animations"), dict) else {}
         last_plays = last.get("plays") if isinstance(last.get("plays"), dict) else None
+
+        # (what the last fit took in, read again only for an animation with no fingerprint: a record from before them.
+        # With no model on bones of its own before this one, the animations the unit has came along with a copy of a
+        # unit, ruse_studio.actions, not from a fit of a model of its own: nothing to tell them by, as before)
+        last_fit = (lambda: self._last_fit(before, file, clips, carried)) if was_own else None
         if not report.get(OWN_SKELETON):
             if previous:   # (the clips were made on the old model's bones: they go with it)
                 with self._saving:
@@ -95,7 +144,7 @@ class AnimModelCalls:
                         raise StudioError(f"The animations of the model it had can't be taken out: {exc}") from None
                 # (the modder's changes of them go too: named, never dropped quietly; their picks go with the whole
                 # action table, which a model on the game soldier's bones hasn't got)
-                gone = self._changed_since(mine, last_clips, {}, False)
+                gone = self._changed_since(mine, last_clips, last_fit)
                 if gone:
                     report[NOT_KEPT] = {"animations": gone, "picks": []}
             return {"skeleton": "soldier", "animations": []} if report.get("rigged") else {}
@@ -110,22 +159,22 @@ class AnimModelCalls:
             raise StudioError(f"{Path(file).name}: its animations came out two different ways when read: please report "
                               f"this.")
         names = baf.skeleton(record)["names"]
-        # (a fit again from the same file: on the bones the modder's changes were made on, they still fit)
-        same_bones = bones_before == record if bones_before is not None else \
-            was_own and [str(b) for b in before.get("bones") or []] == list(names)
         # (item 5's merge: the model's animations go into Part 2's table, units.toml's [unit.<unit>.animation],
         # where the action table on the page picks what each action plays and the build plays the nearest for the
         # rest, rusemod.animactions: one rule for the page and the build. What the file itself says an animation
         # plays, its extras, becomes that action's pick.)
         with self._saving:
             mine, picks = self._own_now(mod, unit)
-            changed = self._changed_since(mine, last_clips, clips, refit)
+            changed = self._changed_since(mine, last_clips, last_fit)
             keep = {}
-            for name in changed if refit and same_bones else []:
+            for name in changed if refit else []:
                 try:
-                    baf.check(baf.parse(mine[name]))
-                except baf.ClipError:   # (a clip file that isn't one any more: the file's takes its place, said)
+                    c = baf.parse(mine[name])
+                    baf.check(c)
+                except UNREAD:   # (a clip file that isn't one any more: the file's takes its place, said)
                     continue
+                if c.skeleton != record:   # (made on other bones than the model's now, the same bone names with
+                    continue               # another rest too: the file's takes its place, said)
                 keep[name] = mine[name]
             kept = {name: keep.get(name, data) for name, data in clips.items()}
             kept.update({name: data for name, data in keep.items() if name not in kept})
@@ -200,34 +249,85 @@ class AnimModelCalls:
         return mine, dict(own["plays"])
 
     @staticmethod
-    def _changed_since(mine: dict, taken: dict, clips: dict, refit: bool) -> list:
-        """Of the model's animations as the mod has them (`mine`), those changed since the last fit took them in from
-        its file (`taken`: their fingerprints, the record's FROM_FILE). An animation with none (a record from before
-        them) counts as changed on a fit again from the same file (`refit`) when it isn't what the file gives
-        (`clips`); on a new model, nothing tells, so it doesn't."""
-        out = []
+    def _changed_since(mine: dict, taken: dict, last_fit) -> list:
+        """Of the model's animations as the mod has them (`mine`), in its order, those the modder changed since the
+        last fit took them in from its file: one with a fingerprint (`taken`, the record's FROM_FILE) when it isn't
+        that any more; one with none (a record from before them, an animation added by hand) when it is none of what
+        `last_fit()` reads that fit took in (_last_fit: exactly, or near where `near`). Nothing read tells it: his,
+        named rather than dropped without a word. `last_fit` None (no model on bones of its own before this one): only
+        the fingerprints tell."""
+        out, told = [], None
         for name, data in mine.items():
             known = taken.get(name)
             if isinstance(known, str):
                 if _sha(data) != known:
                     out.append(name)
-            elif refit and name in clips and data != clips[name]:
+                continue
+            if last_fit is None:
+                continue
+            if told is None:
+                told = last_fit()
+            if not any(name in seen and (_near(data, seen[name]) if near else data == seen[name])
+                       for seen, near in told):
                 out.append(name)
         return out
 
-    @staticmethod
-    def _bones_now(target: Path) -> bytes | None:
-        """The skeleton record the unit's own model is on now, when its record says it's on bones of its own (read
-        before a fit again writes the model anew: _record_more keeps the modder's changes on the same bones); None
-        otherwise, or when it can't be read (the record's bone names tell then)."""
-        from rusemod import animmodel
-        try:
-            record = json.loads(Path(target).with_suffix(".json").read_text(encoding="utf-8"))
-            if not isinstance(record, dict) or record.get("skeleton") != "own" or not Path(target).is_file():
-                return None
-            return animmodel.record_of(target)
-        except (OSError, ValueError):   # (animmodel.AnimModelError is a ValueError)
+    def _last_fit(self, before: dict, file: Path, clips: dict, carried: dict | None) -> list:
+        """What the model's last fit took in, read again for an animation its record has no fingerprint of:
+        [({name: the clip's bytes}, whether only near: _near)], from the file it was made from (the record's "from":
+        `clips`, what this fit takes in, when that's the file fitted now, else what it gives now, the way a fit takes
+        it in) and from what the model's own file carried before this fit (`carried`, _carried_before: a fit writes
+        its clips into it, near as they were). [] when neither can be read."""
+        out = []
+        old = before.get("from")
+        if isinstance(old, str) and old:
+            if self._same_file(old, file):
+                out.append((clips, False))
+            else:
+                got = self._file_clips(Path(old))
+                if got:
+                    out.append((got, False))
+        if carried:
+            out.append((carried, True))
+        return out
+
+    def _carried_before(self, target: Path, before: dict) -> dict | None:
+        """The animations the unit's own model file carries now (a fit writes its clips into it: rusemod.modelin.
+        write_glb; RUSE Decoy never changes that file), read before a fit writes it anew, when one of the unit's
+        animations has no fingerprint in the model's record `before` (a record from before them: _last_fit); None when
+        none needs it, {} when the file can't be read."""
+        from rusemod import anim
+        if not isinstance(before, dict) or before.get("skeleton") != "own" or not Path(target).is_file():
             return None
+        try:
+            names = list(anim.own_animations(self._mod_dir(), Path(target).stem)["animations"])
+        except Exception:  # noqa: BLE001 - a units.toml that can't be read, however: the fit's own reading and
+            return None    # writing of it say why (_own_now, rusemod.anim.set_animations), as before the fingerprints
+        last = before.get(FROM_FILE)
+        taken = last.get("animations") if isinstance(last, dict) else None
+        if not names or (isinstance(taken, dict) and all(isinstance(taken.get(n), str) for n in names)):
+            return None
+        return self._file_clips(Path(target))
+
+    @staticmethod
+    def _file_clips(path: Path) -> dict:
+        """The animations a model file on bones of its own gives, the way a fit takes them in (rusemod.unitmodel.
+        _import_own_bones: its rig, its record, own_clips), {name: the clip's bytes}; {} when it can't be read."""
+        from rusemod import rig, unitmodel
+        try:
+            r = rig.read_rig(Path(path))
+            record, _notes = unitmodel.own_skeleton(r)
+            made, _notes = unitmodel.own_clips(r, record)
+        except Exception:  # noqa: BLE001 - a file that can't be read, however, tells nothing: _changed_since then
+            return {}      # names the animation it would have told of (never dropped without a word)
+        return made
+
+    @staticmethod
+    def _same_file(a, b) -> bool:
+        try:
+            return os.path.normcase(os.path.abspath(str(a))) == os.path.normcase(os.path.abspath(str(b)))
+        except (TypeError, ValueError, OSError):
+            return False
 
     def _model_actions(self, address: str, report: dict) -> list:
         """Every action the figures that wear the model list (the game's unit the new one copies, read in the game's

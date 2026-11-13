@@ -2961,11 +2961,11 @@ function resizeAllRow(kind, n, changed) {
     buttons.forEach((b) => { b.disabled = true; });
     let job;
     try { job = await api().models_resize_all(kind, to, times); } catch (err) { problem(err); buttons.forEach((b) => { b.disabled = false; }); return; }
-    let seen = 0;
+    let seen = 0, failed = "";   // (a job that stopped, or can't be followed: said as an error, never as done)
     const done = [], skipped = [], notKept = [];
     for (;;) {
       let st;
-      try { st = await api().job(job.job, seen); } catch (err) { problem(err); break; }
+      try { st = await api().job(job.job, seen); } catch (err) { failed = (err && err.message) || String(err); break; }
       seen = st.count;
       for (const line of st.lines) {
         const [what, unit, more] = line.split("\t");
@@ -2978,13 +2978,15 @@ function resizeAllRow(kind, n, changed) {
         }
       }
       note.textContent = fill(w.models_all_progress, { done: done.length + skipped.length, all: n });
+      if (st.state === "failed") failed = st.message || st.state;
       if (st.state !== "running") break;
       await new Promise((ok) => setTimeout(ok, 700));
     }
     note.textContent = fill(w.models_all_done, { n: done.length })
       + (skipped.length ? " " + fill(w.models_all_skipped, { list: skipped.join(" · ") }) : "")
       + (notKept.length ? " " + notKept.join(" ") : "");
-    say(note.textContent, skipped.length || notKept.length ? "" : "ok");
+    say(note.textContent, failed || skipped.length || notKept.length ? "" : "ok");
+    if (failed) say(failed, "error");
     buttons.forEach((b) => { b.disabled = false; });
     if (changed) changed();
   };

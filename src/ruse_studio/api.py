@@ -8409,8 +8409,16 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 target = target.with_name(f"{target.stem}@{kind}.glb")
         if out is not None:
             target = Path(out)
-        # (fitted again, the unit's own model on bones of its own: the bones it's on now, before they're written anew)
-        bones_before = self._bones_now(target) if refit and out is None and place is None \
+        record = target.with_suffix(".json")
+        try:
+            before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
+        except (OSError, ValueError):
+            before = {}
+        before = before if isinstance(before, dict) else {}
+        # (the unit's own model on bones of its own, read before it's written anew: the animations its file carries,
+        # when one of the unit's animations has no fingerprint in its record, a record from before them; the fit
+        # tells the modder's RUSE Decoy changes from what its last fit took in by them: AnimModelCalls._last_fit)
+        carried = self._carried_before(target, before) if out is None and place is None \
             and not (kinds and kind != main_kind) else None
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
@@ -8435,12 +8443,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if report is None:
             raise StudioError(f"{Path(file).name}: {first_error}")
         report["file"] = Path(file).name
-        record = target.with_suffix(".json")
         from .modelfit import kept_choices
-        try:
-            before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
-        except (OSError, ValueError):
-            before = {}
         if place is not None or (kinds and kind != main_kind):
             # another kind's model (the bazooka man's), or one soldier's own look: the unit's animations are its main
             # model's, played by him when his model is on the same bones (rusemod.build._on_main_bones), else he plays
@@ -8457,8 +8460,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
                         "the game. Import a model on the same bones for the riflemen too.")
         else:
-            more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {},
-                                     refit=refit, bones_before=bones_before)
+            more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried)
             if kinds:
                 more["for"] = kind
         record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
@@ -8670,7 +8672,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         gives none for is skipped) or "times" (its size now times `times`, kept within the importer's sizes). A job
         the page follows; its lines are "resized<TAB>name<TAB>size" or "skipped<TAB>name<TAB>why", a resized one
         followed by "not_kept<TAB>name<TAB>{"animations": [...], "picks": [...]}" (JSON) when something of the
-        modder's own on it couldn't be kept (model_resize's report), which the page says in words."""
+        modder's own on it couldn't be kept (model_resize's report), which the page says in words. One that can't be
+        fitted leaves the rest, whatever stopped it: one that failed some other way than a refusal in words is skipped
+        with what stopped it, and once every other is done the job ends failed with it (for a bug report, and Bug
+        Watch counts it), never as done (the resize recheck, round 1: it stopped every unit after it)."""
         from rusemod.webui import Job
         if kind not in ("air", "ground", "all"):
             raise StudioError(f"{kind}: resize planes (air), ground units (ground) or all")
@@ -8690,6 +8695,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         self._jobs[job.id] = job
 
         def work(say):
+            trouble = None
             for address in units:
                 name = names.get(address, _tail(address))
                 try:
@@ -8710,6 +8716,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         say(f"not_kept\t{name}\t{json.dumps(lost)}")
                 except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
                     say(f"skipped\t{name}\t{exc}")
+                except Exception as exc:  # noqa: BLE001 - so does one that failed another way: said, raised below
+                    say(f"skipped\t{name}\t{type(exc).__name__}: {exc}")
+                    trouble = trouble or exc
+            if trouble is not None:
+                raise trouble
 
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
