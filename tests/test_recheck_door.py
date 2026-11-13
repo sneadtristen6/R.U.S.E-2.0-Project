@@ -129,24 +129,25 @@ class Recheck(Door):
 
     # --- D-F3's class ---
     def test_an_animation_only_one_half_plays_is_warned_whatever_its_name(self):
-        """FAILS on cdd67623. A model on bones of its own (the Horse Squad's kind) with the rider's t_stand and t_run
-        and the horse's gallop, whose name has no half in it; its figure lists the soldier's t_stand, b_stand,
-        t_course and b_course. By the build's rule (rusemod.animactions.choose, as rusemod.build._own_animations
-        calls it for each listing) gallop is what the bottom half's two listings play and never a top one: its top
-        bones are never played, as for hr_b_run. The modder turns the head (the top half, split at the spine) in
-        gallop: the door writes it and says "Changed in Blender, this unit's own now: gallop.", no word that the head
-        may not show (it warns only for a name marked t_ or b_: _halves_unplayed). The same warning as for b_run is
-        due."""
+        """FAILS on cdd67623. A model on bones of its own (the Horse Squad's kind) with the rider's t_stand and t_run,
+        the horse's gallop, whose name has no half in it, and a ride (as the Horse Squad's hr_ride); its figure lists
+        the soldier's t_stand, b_stand, t_course and b_course. By the build's rule (rusemod.animactions.choose, as
+        rusemod.build._own_animations calls it for each listing, and animactions.ride for the ride on long moves)
+        gallop is what the bottom half's two listings play, never a top one or the ride: its top bones are never
+        played, as for hr_b_run. The modder turns the head (the top half, split at the spine) in gallop: the door
+        writes it and says "Changed in Blender, this unit's own now: gallop.", no word that the head may not show (it
+        warns only for a name marked t_ or b_: _halves_unplayed). The same warning as for b_run is due."""
         from rusemod import animactions
         nope = COMMON + "nothing_herelod0.baf"     # (a listing's game clip this unit can't play: no action row)
         keys = ["t_stand", "b_stand", "t_course", "b_course"]
-        names = ["t_stand", "t_run", "gallop"]
-        self.own_bones_unit({"t_stand": CLIP_BYTES[STAND], "t_run": CLIP_BYTES[STAND], "gallop": CLIP_BYTES[RUN]},
-                            split="bip01 spine")
+        names = ["t_stand", "t_run", "gallop", "ride"]
+        self.own_bones_unit({"t_stand": CLIP_BYTES[STAND], "t_run": CLIP_BYTES[STAND], "gallop": CLIP_BYTES[RUN],
+                             "ride": CLIP_BYTES[STAND]}, split="bip01 spine")
         self.api._unit_figures = lambda address: [{"figure": f"{UNIT}:GfxDescriptorFusilier", "model": NAME,
                                                    "clips": [(k, nope) for k in keys]}]
         plays = {k: animactions.choose(k, names, {}, nope)[0] for k in keys}
         self.assertEqual(sorted(k for k, n in plays.items() if n == "gallop"), ["b_course", "b_stand"])
+        self.assertEqual(animactions.ride(names)[0], "ride")
         start = self.open()
         self.send.write_bytes(Blenderish(start).send(change=("gallop", "bip01 head", HEAD_TURN)))
         got = self.back()
