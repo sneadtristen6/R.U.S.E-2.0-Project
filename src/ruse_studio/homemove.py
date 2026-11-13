@@ -337,12 +337,16 @@ class HomeMoveCalls:
                 shutil.rmtree(_long(to), ignore_errors=True)
                 from .api import file_error
                 raise file_error(exc, to) from exc
-            roots = [(src, dst) for src, dst in pairs]
-            records = follow_records(to, roots)
             from rusemod import yourfiles
-            moved = [(Path(e), Path(dst) / Path(e).name) for src, dst in pairs if Path(src).is_dir()
-                     and Path(dst).name in yourfiles.OLD_NAMES.values() for e in sorted(Path(src).iterdir())]
-            yourfiles._follow(to, moved)
+            try:
+                records = follow_records(to, list(pairs))
+                moved = [(Path(e), Path(dst) / Path(e).name) for src, dst in pairs if Path(src).is_dir()
+                         and Path(dst).name in yourfiles.OLD_NAMES.values() for e in sorted(Path(src).iterdir())]
+                yourfiles._follow(to, moved)
+            except OSError as exc:      # (said in words, never in Python's own; nothing switched, the copy taken away)
+                shutil.rmtree(_long(to), ignore_errors=True)
+                from .api import file_error
+                raise file_error(exc, to) from exc
             say(f"Every file arrived as it is ({len(files)} files). The records in the copy name its own places "
                 f"({len(records)} model record(s)).")
             try:
