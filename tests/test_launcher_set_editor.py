@@ -4,7 +4,7 @@ Players' reports (Bug Watch, 2026-11-02 to 11-08): 14 of 36 "New mod set" tries 
 editor let Create (and Enter in the name box) go with no mod ticked; the Launcher refused; and the editor wrote the
 refusal on the set's own page, which it hides while it is open. So nothing seemed to happen, and the player pressed
 again. These read the screen's own code (ui/app.js): the editor's part of it, between `function renderEditor` and the
-next function.
+next function. And the set's Play, which waits for the clash check (PlayWaitsForTheClashCheck, 2026-11-13).
 """
 import re
 import unittest
@@ -63,6 +63,47 @@ class SetEditor(unittest.TestCase):
         self.assertIn("w.set_mod_gone", code)
         self.assertIn("w.from_folder", code)
         self.assertIn(".pick-list .meta.bad", (UI / "style.css").read_text(encoding="utf-8"))
+
+
+def function(name: str) -> str:
+    source = (UI / "app.js").read_text(encoding="utf-8")
+    start = source.index(f"function {name}(")
+    return source[start:source.index("\nfunction ", start + 10)]
+
+
+class PlayWaitsForTheClashCheck(unittest.TestCase):
+    """The set's Play stays off until the check of whether its mods go together has answered (the owner, 2026-11-13:
+    "yes make it wait for check"). Before, Play was live while the check was still being asked (check null), so a set
+    whose mods can't go together could be sent to the build and refused there (round 2, FL-99's reading)."""
+
+    def test_play_is_off_while_the_check_has_not_answered(self):
+        code = function("renderActive")
+        self.assertIn("const waiting = !set.error && check === null;", code)
+        line = code[code.index("play.disabled ="):code.index(";", code.index("play.disabled ="))]
+        self.assertIn("waiting", line)
+        self.assertIn("Boolean(check && check.hard.length)", line)     # a hard clash still keeps it off
+        self.assertIn("play.title = waiting ? w.tip_play_waits : w.tip_play;", code)
+
+    def test_the_check_is_still_null_until_it_answers(self):
+        """checkOf gives null while the Launcher is asked and re-renders when the answer comes (the only way the null
+        the button waits on ends)."""
+        code = function("checkOf")
+        self.assertIn("return null;", code)
+        self.assertIn("state.checks[key] = res; then(res);", code)
+        self.assertIn('if (mods.length < 2) return { hard: [], soft: [] };', code)   # nothing to ask: no wait
+
+    def test_a_check_that_fails_doesnt_keep_play_off_for_ever(self):
+        code = function("checkOf")
+        caught = code[code.index(".catch((err) => {"):code.index(".finally(")]
+        self.assertIn("problem(err);", caught)
+        self.assertIn("state.checks[key] = { hard: [], soft: [], failed: true };", caught)
+        self.assertIn("then(state.checks[key]);", caught)
+
+    def test_the_waiting_tooltip_is_in_every_language(self):
+        import tomllib
+        words = tomllib.loads((UI.parent / "words.toml").read_text(encoding="utf-8"))
+        for lang in ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc", "fa"):
+            self.assertTrue(words["tip_play_waits"].get(lang, "").strip(), lang)
 
 
 if __name__ == "__main__":

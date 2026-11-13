@@ -3243,6 +3243,19 @@ jpn = "選んだセットでMOD入りのゲームのコピーを作って起動�
 sc = "用所选组合构建一份模组版游戏副本并启动。你的 Steam 游戏不会被改动。"
 fa = "یک نسخهٔ مادشده از بازی با مجموعهٔ انتخاب‌شده می‌سازد و اجرایش می‌کند. بازی Steam شما تغییر نمی‌کند."
 
+[tip_play_waits]
+us = "Play waits a moment: the Launcher is checking whether these mods go together."
+fr = "Jouer attend un instant : le Launcher vérifie si ces mods vont ensemble."
+ger = "Spielen wartet einen Moment: Der Launcher prüft, ob diese Mods zusammenpassen."
+ita = "Gioca attende un momento: il Launcher controlla se queste mod vanno d'accordo."
+spa = "Jugar espera un momento: el Launcher está comprobando si estos mods van bien juntos."
+pol = "Graj czeka chwilę: Launcher sprawdza, czy te mody do siebie pasują."
+ru = "«Играть» ждёт немного: Launcher проверяет, совместимы ли эти моды."
+cz = "Hrát chvíli počká: Launcher kontroluje, zda tyto mody jdou dohromady."
+jpn = "「プレイ」は少し待ちます。これらのMODが一緒に使えるか、Launcher が確認しています。"
+sc = "“开始游戏”稍等片刻：Launcher 正在检查这些模组能否一起使用。"
+fa = "«بازی» کمی صبر می‌کند: Launcher در حال بررسی این است که این مادها با هم جور هستند یا نه."
+
 [tip_browse]
 us = "Mods from our list on GitHub: tick the ones you want and they're downloaded and checked."
 fr = "Les mods de notre liste sur GitHub : cochez ceux que vous voulez, ils sont téléchargés et vérifiés."
