@@ -201,6 +201,7 @@ class HorseSquadCalls:
         (refused at once, as era_unit_add refuses it); a second ask while one runs follows it. Returns {"job": id}."""
         from rusemod.webui import Job
         from .api import StudioError
+        self.__dict__["_too_deep"] = None    # (this Add's own refusal of a folder too deep, if any: home_move_offer)
         source = source or SQUAD
         if source not in SQUADS:
             # not a game rule: the rifle squads its riders are made from (each read from the game first: SQUADS)

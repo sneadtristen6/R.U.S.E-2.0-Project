@@ -323,6 +323,16 @@ class EveryTooDeepRefusalOffersIt(WithMod):
         self.assertEqual(view["state"], "done", view.get("message"))
         self.assertIsNone(self.api.home_move_offer()["needed"])
 
+    def test_a_later_refusal_of_another_kind_offers_nothing(self):
+        """The note is the last Add's own: refused for another reason after a folder too deep, nothing is offered."""
+        self.assertIsInstance(self.add(lambda out: horse_squad.PATH_MOST + 3), StudioError)
+        self.assertIsNotNone(self.api.home_move_offer()["needed"])
+        taken = self.api.new_unit(horse_squad.SQUAD, "Taken", 5, group="new")["address"]
+        said = self.add(lambda out: 10, name="Taken")                 # (the name's address is taken: refused)
+        self.assertIsInstance(said, StudioError, taken)
+        self.assertIn("There's already a unit called", str(said))
+        self.assertIsNone(self.api.home_move_offer()["needed"])
+
     def test_a_path_longer_than_windows_takes_after_all(self):
         import errno
         long = str(self.home / horse_squad.FOLDER / ("x" * 300))
