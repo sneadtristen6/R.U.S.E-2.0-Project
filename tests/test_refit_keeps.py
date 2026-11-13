@@ -138,12 +138,14 @@ class Refit(unittest.TestCase):
         self.imported(beast_glb())
         file = self.clips()
         changed = self.decoy("Walk")
+        decoyed = self.tree(self.mod / "files" / "anim")       # (what the build reads: units.toml and the clips)
         for how, call in (("Resize", lambda: self.api.model_resize(ADDRESS, 1.0)),
                           ("Move", lambda: self.api.model_place(ADDRESS, [10, 0, 0])),
                           ("every ground unit", self.every_unit)):
             with self.subTest(how=how):
                 got = call()
                 self.assertEqual(self.clips(), {**file, "Walk": changed})
+                self.assertEqual(self.tree(self.mod / "files" / "anim"), decoyed)   # byte for byte as RUSE Decoy left it
                 if how == "every ground unit":
                     self.assertEqual(got, ["resized\tBeast\t1"])           # (nothing to say)
                 else:
