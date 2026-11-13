@@ -502,12 +502,15 @@ class ModEdits:
         return gone
 
     def _take_files(self, tail: str, take: TakeOut) -> list[str]:
-        """The unit `tail`'s own files set aside and its rows out of units.toml, in `take` (put back if a later step
-        fails). The rows last: a file that can't be moved stops it with units.toml as it was."""
+        """The unit `tail`'s own files set aside, its rows out of units.toml and its ticks out of the mod's copies of
+        animations (copies.toml: a tick for a unit no mod makes stops the build), in `take` (put back if a later step
+        fails). The rows and ticks last: a file that can't be moved stops it with units.toml as it was."""
         from rusemod import anim
         table_file = self.folder / anim.UNITS
         take.keep(table_file)
+        take.keep(self.folder / anim.COPIES)
         table = anim.read_units(self.folder)   # (a units.toml that can't be read stops it here: nothing changed yet)
+        ticked = anim.ticked_in(self.folder, tail)   # (so does a copies.toml that can't be read)
         gone = []
         for path in unit_files(self.folder, tail):
             take.set_aside(path)
@@ -515,6 +518,9 @@ class ModEdits:
         if table.pop(tail, None) is not None:
             anim.write_units(self.folder, table)
             gone.append(f"{anim.UNITS} [unit.{tail}]")
+        if ticked:
+            anim.untick_unit(self.folder, tail)
+            gone += [f"{anim.COPIES} [copy.{cid}.units] {tail}" for cid in ticked]
         return gone
 
     def new_unit_of(self, address: str) -> NewUnit | None:

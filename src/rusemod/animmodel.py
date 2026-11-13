@@ -580,12 +580,43 @@ def unit_figures(db, unit: str) -> list:
     clips (ResourceAnimation), its unnamed parts followed and never a named object (another unit, a shared drawer), as
     the build walks a unit (rusemod.anim.own_listings). A part the unit shares with another is found by its link,
     whichever unit's address the index files it under."""
+    out = []
+    for path, oid, listed, model in _listing_parts(db, unit):
+        actions = []
+        for p, _d in listed:
+            k = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, p[:-2] + ".k")).fetchone()
+            if k and k[0] and k[0] not in actions:
+                actions.append(k[0])
+        out.append((path, model, actions))
+    return out
+
+
+def unit_listings(db, unit: str) -> list:
+    """[(figure path, the model file it wears (lower case), [(action, the clip it plays: its path in the packs, as
+    rusemod.animlist names clips; None when its listing names no file)])] of the game's unit `unit`, each listing in
+    the game's order, from the game index `db`, walked as unit_figures walks it (the build's own_listings walk): what a
+    copy of a clip ticked for a figure of the unit plays on (RUSE Decoy's Copy this animation…)."""
+    from .animlist import member_of
+    out = []
+    for path, oid, listed, model in _listing_parts(db, unit):
+        rows = []
+        for p, d in listed:
+            k = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, p[:-2] + ".k")).fetchone()
+            f = db.execute("SELECT text FROM value WHERE object = ? AND path = 'FileName'", (d,)).fetchone()
+            rows.append((k[0] if k and k[0] else "", member_of(f[0]) if f and f[0] else None))
+        out.append((path, model, rows))
+    return out
+
+
+def _listing_parts(db, unit: str):
+    """(figure path, its id, its listings [(their path, the listed object's id)] in the game's order, the model file it
+    wears) of each part of the game's unit `unit` that lists clips, as unit_figures walks it."""
     row = db.execute("SELECT id FROM object WHERE address = ? AND shadow = 0", (unit,)).fetchone()
     if row is None:
-        return []
+        return
     todo = [(dst, path) for path, dst in db.execute("SELECT path, dst FROM ref WHERE src = ?", (row[0],))
             if path and path.startswith("GfxDescriptor")]
-    out, seen = [], set()
+    seen = set()
     while todo:
         oid, path = todo.pop(0)
         if oid is None or oid in seen or len(seen) > 20000:
@@ -601,11 +632,6 @@ def unit_figures(db, unit: str) -> list:
             got = db.execute("SELECT text FROM value WHERE object = ? AND path = 'FileName'", (mesh,)).fetchone() \
                 if mesh is not None else db.execute("SELECT text FROM value WHERE object = ? AND path = "
                                                     "'MeshDescriptor.FileName'", (oid,)).fetchone()
-            actions = []
-            for p, _d in sorted(listed, key=lambda r: int(re.search(r"\[(\d+)\]", r[0]).group(1))):
-                k = db.execute("SELECT text FROM value WHERE object = ? AND path = ?", (oid, p[:-2] + ".k")).fetchone()
-                if k and k[0] and k[0] not in actions:
-                    actions.append(k[0])
-            out.append((path, (got[0] if got and got[0] else "").replace("/", "\\").lower(), actions))
+            yield (path, oid, sorted(listed, key=lambda r: int(re.search(r"\[(\d+)\]", r[0]).group(1))),
+                   (got[0] if got and got[0] else "").replace("/", "\\").lower())
         todo += [(d, f"{path}.{p}") for p, d in refs if p and not p.startswith("ResourceAnimation[")]
-    return out

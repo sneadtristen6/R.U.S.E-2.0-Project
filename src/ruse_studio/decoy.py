@@ -16,6 +16,8 @@ from rusemod import sound, soundlist
 from rusemod.edat import Edat
 from rusemod.terrain import map_list
 
+from .decoycopies import DecoyCopyCalls
+
 PAGE = 100          # rows the page asks for at a time
 TEXT_LANGS = ("us", "fr", "ger", "ita", "spa", "pol", "ru", "cz", "jpn", "sc")  # the Studio's ten, as the texts name them
 
@@ -28,7 +30,7 @@ def _toml_key(member: str) -> str:
     return '"' + sound.volume_key(member).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-class DecoyCalls:
+class DecoyCalls(DecoyCopyCalls):   # (a copy of an animation for the units ticked for it: ruse_studio.decoycopies)
     _decoy_lock = threading.Lock()
 
     # --- every game sound, worked out once per game build ---
@@ -363,11 +365,17 @@ class DecoyCalls:
                 "own": self._decoy_edit_out(own) if own is not None else None}
 
     def _decoy_own_start(self, mod, name: str, member: str, moves: bool = True) -> dict:
-        """A unit's own copy of clip `member` as units.toml first writes it: the changes every unit gets (clips.toml,
-        files/replace), its moves of its own copied into the unit's folder (not with `moves` False: the caller puts
-        others there); {} when there are none."""
+        """A unit's own copy of clip `member` as units.toml first writes it: what the unit plays now, the copy of the
+        clip it is ticked in for every figure (copies.toml: Copy this animation…), else the changes every unit gets
+        (clips.toml, files/replace), its moves of its own copied into the unit's folder (not with `moves` False: the
+        caller puts others there); {} when there are none."""
         from rusemod import anim
-        e = self._decoy_clip_edits().get(member)
+        try:
+            ticked = [c["edit"] for c in anim.mod_copies(mod).values()
+                      if c["clip"] == member and c["units"].get(name) == ()]
+        except anim.AnimError:   # (a copies.toml that can't be read: every unit's, as before; RUSE Decoy says why)
+            ticked = []
+        e = ticked[0] if ticked else self._decoy_clip_edits().get(member)
         if not e:
             return {}
         entry: dict = {}
@@ -529,11 +537,12 @@ class DecoyCalls:
                 lib.close()
         return None
 
-    def decoy_anim_preview(self, member: str, unit: str | None = None) -> dict:
+    def decoy_anim_preview(self, member: str, unit: str | None = None, copy: str | None = None) -> dict:
         """The clip on a model that plays it, as the current mod makes it (its speed, its stand-in, its bones), as a
         .glb at a cache address of the window's own: {"url", "model", "seconds", "matched", "bones"}; {"url": None}
         when no unit's model plays it (the HQ's figures, scenery: the page says so). With `unit` (a unit's address),
-        as that unit plays it: its own copy when it has one."""
+        as that unit plays it: its own copy when it has one. With `copy` (the id of one of the mod's copies of the
+        clip, ruse_studio.decoycopies), as that copy is."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
         if r is None:  # not a game rule: no such animation in the game's packs
@@ -541,8 +550,9 @@ class DecoyCalls:
         model = self._decoy_preview_model(r)
         if model is None:
             return {"url": None}
-        own = self._decoy_own_edits(unit).get(r["member"]) if unit else None
-        edit = own if own is not None else self._decoy_clip_edits().get(r["member"], {})
+        own = self._decoy_own_edits(unit).get(r["member"]) if unit and not copy else None
+        edit = self._decoy_copy_edit(copy) if copy else \
+            own if own is not None else self._decoy_clip_edits().get(r["member"], {})
         game_clip = self._decoy_game_clips()
         try:
             raw = anim.made(game_clip(r["member"]), edit, game_clip) if edit else game_clip(r["member"])
@@ -735,18 +745,23 @@ class DecoyCalls:
         return {**self._decoy_glb(model, raw), **info}
 
     def decoy_mocap_use(self, member: str, mid: str, start=0.0, length=2.0, in_place=True, loop=None,
-                        credit: str = "", unit: str | None = None) -> dict:
+                        credit: str = "", unit: str | None = None, copy: str | None = None) -> dict:
         """Keep the clip decoy_mocap_preview showed in the mod: files/replace/<clip>.baf, and beside it <clip>.toml
         (the file it came from, the stretch, the credit). The clip's speed and bone changes still apply on top. With
         `unit` (a unit's address), only that unit plays it: files/anim/own/<its name>/<clip>.baf and its credit beside
-        it, named by its own copy of the clip in units.toml."""
+        it, named by its own copy of the clip in units.toml. With `copy` (one of the mod's copies of the clip), it is
+        that copy's clip: files/anim/copies/<its id>.baf and its credit beside it, named by the copy."""
         from rusemod import anim
         r, name, raw, info = self._decoy_mocap_clip(member, mid, start, length, in_place, loop)
         mod = self._mod_dir()
         if mod is None:
             raise DecoyError("Pick or make a mod first: animations are changed in a mod.")
         rel = anim.clip_key(r["member"])
-        own = (mod / anim.OWN / self._decoy_unit_name(unit) / rel) if unit else mod / anim.REPLACE / rel
+        if copy:
+            unit = None
+            own = self._decoy_copy_file(copy)
+        else:
+            own = (mod / anim.OWN / self._decoy_unit_name(unit) / rel) if unit else mod / anim.REPLACE / rel
         q = lambda s: '"' + str(s).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ") + '"'  # noqa: E731
         side = "\n".join(["# Where this clip came from (RUSE Decoy's motion capture): carry the credit wherever the mod goes.",
                           f"source = {q(name)}", f"start = {float(start):g}", f"length = {float(length):g}",
@@ -758,21 +773,27 @@ class DecoyCalls:
             tmp.write_bytes(raw)
             tmp.replace(own)
             own.with_suffix(".toml").write_text(side, encoding="utf-8")
+        if copy:   # (the copy names the file now: its other changes still apply on top)
+            return {**self._decoy_copy_save(r, copy, lambda e: {**e, "file": own.name}), **info}
         if unit:   # (its own copy now names the file: the copy's other changes still apply on top)
             return {**self._decoy_own_save(r, unit, lambda e: {**e, "file": rel}, moves=False), **info}
         return {**self._decoy_clip_out(r, self._decoy_clip_edits()), **info}
 
     def decoy_anim_set(self, member: str, speed=None, use=None, bone: str | None = None, size=None, turn=None,
-                       unit: str | None = None) -> dict:
+                       unit: str | None = None, copy: str | None = None) -> dict:
         """Change a clip in the current mod (files/anim/clips.toml): its `speed` (percent), `use` another clip of the
         same bones in its place ("" takes that out), or a `bone`'s `size` and `turn` (["x"|"y"|"z", degrees]; size 1
         and no turn take the bone out). What's not given is kept. With `unit` (a unit's address: "Only this unit"),
         the change is to that unit's own copy of the clip (files/anim/units.toml), which starts as the clip it plays
-        now; every other unit keeps playing it as before."""
+        now; every other unit keeps playing it as before. With `copy` (the id of one of the mod's copies of the clip:
+        Copy this animation…, files/anim/copies.toml), the change is to that copy, which the units ticked for it play."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
         if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
+        if copy:
+            return self._decoy_copy_save(r, copy, lambda e: self._decoy_changed(r, e, speed, use, bone, size, turn,
+                                                                                self._decoy_clip_row))
         if unit:
             return self._decoy_own_save(r, unit, lambda e: self._decoy_changed(r, e, speed, use, bone, size, turn,
                                                                                self._decoy_clip_row))
@@ -833,14 +854,17 @@ class DecoyCalls:
             lines.append("")
         return "\n".join(lines)
 
-    def decoy_anim_reset(self, member: str, unit: str | None = None) -> dict:
+    def decoy_anim_reset(self, member: str, unit: str | None = None, copy: str | None = None) -> dict:
         """Take every change the mod makes to a clip out (its line in clips.toml; a whole clip of its own too). With
         `unit` (a unit's address), that unit's own copy of it goes instead, and its file and credit with it: the unit
-        plays the clip as every unit does again."""
+        plays the clip as every unit does again. With `copy` (one of the mod's copies of the clip), that copy's changes
+        go, its file and credit too: the units ticked for it play the game's clip until it's changed again."""
         from rusemod import anim
         r = self._decoy_clip_row(member)
         if r is None:  # not a game rule: no such animation in the game's packs
             raise DecoyError(f"{member} isn't one of the game's animations")
+        if copy:
+            return {"member": r["member"], **self._decoy_copy_reset(r, copy)}
         mod = self._mod_dir()
         if mod is None:
             return {"member": r["member"]}
@@ -882,7 +906,8 @@ class DecoyCalls:
 
     def decoy_unit_anims(self, address: str) -> dict:
         """A unit's own clips (its models' animations, a gun's crew's too), by the name its model gives each; "own"
-        is the unit's own copy of a clip in the current mod (None: it plays it as every unit does)."""
+        is the unit's own copy of a clip in the current mod (None: it plays it as every unit does); "copies" the mod's
+        copies of the clip ticked for the unit (Copy this animation…), each with the figures it's ticked for."""
         from rusemod import animlist
         try:
             edits = self._edits()
@@ -899,6 +924,7 @@ class DecoyCalls:
             own = self._decoy_own_edits(address)
         except DecoyError:   # (not a unit, or its units.toml can't be read: the clips are still shown)
             own = {}
+        copies = self._decoy_unit_copies(address)
         rows, seen = [], set()
         for member, name in items:
             r = self._decoy_clip_row(member)
@@ -908,6 +934,7 @@ class DecoyCalls:
             row = self._decoy_clip_out(r, cedits)
             row["role"] = name
             row["own"] = self._decoy_edit_out(own[member]) if member in own else None
+            row["copies"] = copies.get(member, [])
             rows.append(row)
         return {"rows": rows, "total": len(rows), "start": 0}
 

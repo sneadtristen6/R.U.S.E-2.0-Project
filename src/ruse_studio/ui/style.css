@@ -1170,6 +1170,19 @@ th.has-meaning { cursor: help; text-decoration: underline dotted var(--muted); t
 .da-lib-row:hover, .da-lib-row:focus-visible { background: var(--bg); }
 .da-lib-row.picked { outline: 2px solid var(--accent, #4a90d9); outline-offset: -2px; }
 .da-lib-row .muted { overflow-wrap: anywhere; }
+/* a copy of an animation (decoy.js copyBox): its name, Copy this animation…'s form, and Who plays it with its ticks */
+.da-copy { display: grid; gap: 8px; }
+.da-copy:empty { display: none; }
+.da-copy-form { display: grid; gap: 6px; }
+.da-copy input[type=text] { width: 100%; box-sizing: border-box; }
+.da-copy-form p, .da-who p { margin: 0; }
+.da-who-rows { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius);
+               padding: 4px 8px; }
+.da-who-unit { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.da-who-unit:last-child { border-bottom: 0; }
+.da-who-figs { display: grid; gap: 2px; margin: 2px 0 0 22px; }
+.da-who-note { margin: 0 0 0 22px; overflow-wrap: anywhere; }
+.da-who-head { margin: 6px 0 2px; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.75; }
 @media (max-width: 760px) { .decoy { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .decoy-anim-body { grid-template-columns: 1fr; } .da-view { height: 300px; } }
 
