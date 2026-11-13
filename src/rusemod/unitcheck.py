@@ -7,6 +7,11 @@
                     has room for exactly seven nations' unit lists, and another number corrupts it as it loads.
   ProductionPrice,  5 items, one per battle date: at a date with no item the game makes the unit free, or hides it
   ShowInMenu        (and a ShowInMenu of 1 or 2 items is read past its end).
+  TextureForInterface  the unit's card picture: as it starts, the game lists each nation's units that are shown at
+                    one of the first four battle dates (in_start_list) and reads each one's card picture without
+                    asking whether it has one: a unit it lists with no card picture stops the game there. All 203
+                    units of the game's own that it lists have one; the HQ truck, the gun truck and 63 more have
+                    none and are never listed, so a copy of one of them shown at a battle date is the case.
   InitialFlagSet    rusemod.unitflags: flags that belong to one kind of unit.
   salvos            a weapon's mounted weapons with a SalveNumber other than -1 need 0 to 4, and the weapon's
                     Salves[SalveNumber] above 0; otherwise the game stops at load with a "Quit game ?" box.
@@ -16,7 +21,7 @@
                     or crash the game, in every other match, so the build has that nation's packs load in every
                     skirmish, and in every campaign chapter and Operation (load_in_missions).
 
-patch.Engine asks for the first five at the end of every run and reports what the mods made wrong (what the game's
+patch.Engine asks for all but the last at the end of every run and reports what the mods made wrong (what the game's
 data already had is left alone); build.build_pack asks for the models, which need ZZ_Win.dat.
 """
 from __future__ import annotations
@@ -78,7 +83,40 @@ def problems(obj) -> list[tuple[str, str, str]]:
             # rule: unit-five-dates
             out.append(("error", prop, f"{prop} has {len(v.items)} item(s); it needs {DATES}, one per battle date "
                                        f"({what})"))
+    if not has_card(obj) and in_start_list(obj):
+        # rule: unit-card-shown
+        out.append(("error", CARD, f"it has no card picture ({CARD}) and is shown in a build menu ({SHOWN}): the game "
+                                   f"lists such a unit as it starts, and stops there; hide it at every battle date "
+                                   f"({SHOWN} all 0), or make it as a copy of a unit that has a card picture"))
     return out + unitflags.problems(obj)
+
+
+CARD = "TextureForInterface"      # the unit's card, its picture in the build menu
+LISTED_DATES = 4                  # the battle dates the start-up list asks about: the first four of ShowInMenu
+UNLISTED_FLAGS = (30, 49)         # a unit with one of these is never in the start-up list
+DECOY_FLAGS = (4, 6)              # nor is one with the first and without the second (the game's decoy buildings)
+
+
+def has_card(obj) -> bool:
+    """Whether a unit has a card picture: its TextureForInterface names an object (nil is none)."""
+    v = obj.props.get(CARD)
+    return isinstance(v, Inline) or (isinstance(v, Ref) and v.target is not None)
+
+
+def in_start_list(obj) -> bool:
+    """Whether the game lists this unit as it starts (each nation's units, for the in-game encyclopedia): shown at
+    one of the first four battle dates (the fifth alone doesn't list it; a list longer than five is asked from its
+    sixth item on), and not kept out by its flags (UNLISTED_FLAGS, DECOY_FLAGS). The four decoy anti-tank bases of
+    the game, shown at four dates with no card picture, are kept out that way."""
+    shown = _shown(obj)
+    if not shown:
+        return False
+    if not any(shown[:LISTED_DATES]) and not (len(shown) > DATES and any(shown[DATES:])):
+        return False
+    flags = unitflags.numbers(obj.props.get(unitflags.PROP)) if obj.props.get(unitflags.PROP) is not None else set()
+    if DECOY_FLAGS[0] in flags and DECOY_FLAGS[1] not in flags:
+        return False
+    return not any(f in flags for f in UNLISTED_FLAGS)
 
 
 def ids(game) -> dict[str, int | None]:

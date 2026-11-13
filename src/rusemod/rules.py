@@ -78,6 +78,17 @@ RULES: dict[str, Rule] = {
         "studied", "partly: the game skips id 0 when it lists units by id and by nation (the nation list feeds the "
                    "in-game encyclopedia), and an order for such a unit reaches the game's scripts with no unit, an "
                    "error (2026-10-02); what the player sees then isn't known"),
+    "unit-card-shown": Rule(
+        "A unit shown in a build menu at one of the first four battle dates, with no card picture "
+        "(TextureForInterface), stops the game as it starts.",
+        "game", "step4-combined3 (owner, 2026-11-11: 'game crashes after i enter code into cmd'): a copy of the HQ "
+                "truck, which has no card picture, shown at every battle date, stopped the game at start twice; "
+                "step4-combined4, the same units with only that one hidden, reached the menu and a battle. Studied "
+                "(2026-11-12): as it starts the game lists each nation's shown units for its in-game encyclopedia "
+                "and reads each one's card picture without asking whether there is one; of the game's own 468 units "
+                "the 203 it lists all have one. The fifth battle date alone doesn't list a unit; a decoy building "
+                "(flag 4 without flag 6), flag 30 and flag 49 keep a unit out of the list: the game's four decoy "
+                "anti-tank bases, shown with no card picture, fit that; flag 49 alone wasn't seen in the game's data"),
     "unit-id-clash": Rule(
         "Two units with one DescriptorId: orders for one build the other.",
         "studied", "the game keeps the first unit with an id and skips the next without a word; production orders "

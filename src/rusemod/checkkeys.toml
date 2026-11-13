@@ -2357,6 +2357,12 @@ where = "rusemod.unitcheck:problems"
 kind = "tuple"
 us = "{0} has {1} item(s); it needs {2}, one per battle date ({3})"
 
+[c724bdf0e87]
+check = "unit-card-shown"
+where = "rusemod.unitcheck:problems"
+kind = "tuple"
+us = "it has no card picture ({0}) and is shown in a build menu ({1}): the game lists such a unit as it starts, and stops there; hide it at every battle date ({2} all 0), or make it as a copy of a unit that has a card picture"
+
 [cd8a0602bc7]
 check = "flag-59"
 where = "rusemod.unitflags:problems"
