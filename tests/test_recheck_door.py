@@ -8,7 +8,8 @@ fixer's round 1. Each test is a route to a fault of reviewer 4's (tests/test_rev
 - D-F3's class: an animation that only one half of the body plays by the build's rule (rusemod.animactions.choose),
   though its name has no t_ or b_, changed on the other half's bones with no word;
 - D-F5: a bone added and keyed is named now, but the answer still begins "Every animation came back as it went out.";
-- D-F11: a sending set aside behind a newer one that is refused is never offered again.
+- D-F11: a sending set aside behind a newer one that is refused is never offered again;
+- D-F8's words (real Blender, RUSE_BLENDER set): a scene at 29.97 frames a second is said to have played at 30.03.
 
 On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no game files), Blender's part played by
 test_animglb's stand-in (Blenderish) with what a real Blender sends for that edit. Real Blender 4.5 gave the same
@@ -22,6 +23,7 @@ from rusemod import anim, modelin
 from test_animblender import CLIP_BYTES, COMMON, RUN, SQUAD, STAND, Closed
 from test_animglb import Blenderish
 from test_gltf_bones import NAME
+import test_review_decoy as rd     # (RealBlender's helper and BLENDER: imported by name, its test would run here too)
 from test_review_decoy import HEAD_TURN, SPINE_TURN, UNIT, Door, renamed, with_new_bone
 
 RUNS = (("GfxDescriptorBazooka", "t_tir"), ("GfxDescriptorFusilier", "b_course"))   # the actions that play the run
@@ -194,6 +196,35 @@ class Recheck(Door):
                 return      # (brought back)
         self.fail(f"the sending set aside first ({a.name}) is never offered: the page offers {offered}, and says "
                   f"{said[-1] if said else None}")
+
+
+FPS_2997 = r'''
+import bpy
+bpy.context.scene.render.fps = 30
+bpy.context.scene.render.fps_base = 1.001      # Blender's 29.97 preset: Frame Rate 30, Base 1.001
+bpy.ops.ruse.send_model()
+'''
+
+
+@unittest.skipUnless(rd.BLENDER and Path(rd.BLENDER).is_file(), "set RUSE_BLENDER to Blender 4.5's blender.exe")
+class RecheckRealBlender(Door):
+    """The door with real Blender doing the modder's part (headless), on the made-up model."""
+    blender = rd.RealBlender.blender    # (its helper, not its test)
+
+    def test_a_scene_at_29_97_frames_a_second_is_said_at_its_own_rate(self):
+        """FAILS on cdd67623 (with RUSE_BLENDER). D-F8's words: Blender's scene set to the 29.97 preset (Frame Rate
+        30, Base 1.001). Blender 4.5's exporter writes the keys 1/30.03 s apart; the door reads the rate from the keys'
+        spacing (rusemod.rig.sampled_rate) and says "Blender's scene played at 30.03 frames a second", while the scene
+        played at 29.97 (Send's own note beside the file, send.glb.json, says 29.97: the door doesn't read it). Each
+        frame is still taken in frame for frame: only the rate said is wrong. (Recheck run:
+        recheck1/mine/rA_real_fps2997.json.)"""
+        self.open()
+        self.blender(self.start, FPS_2997, "Run (made_run)")
+        about = json.loads((self.work / "send.glb.json").read_text(encoding="utf-8"))
+        self.assertAlmostEqual(about["fps"], 30 / 1.001, places=3)
+        got = self.back()
+        self.assertNotIn("30.03", got["message"])
+        self.assertIn("29.97", got["message"])
 
 
 if __name__ == "__main__":
