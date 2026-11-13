@@ -464,6 +464,157 @@ class Crashes(BugWatchTest):
         self.assertEqual(bugwatch.mods_of([listed, own]), (["cool-mod@1.2"], 1))
 
 
+class VersionFour(BugWatchTest):
+    """What version 4 of the agreement added (the owner, 2026-11-13, "sure"): it goes only for a player who accepted
+    version 4 and ticked Bug Watch; a mod's own map, its units' and files' names, its words and paths never."""
+
+    def setUp(self):
+        super().setUp()
+        bugwatch.turn_on(self.home, "Nick")
+        self.game = self.home / "game"
+        (self.game / "Maps" / "PC").mkdir(parents=True)
+        for name in ("SuperCrossroads4", "M04_Cotentin"):
+            (self.game / "Maps" / "PC" / f"DataMap{name}_v09.dat").write_bytes(b"")
+
+    def accept(self, version):
+        values = homes.settings(self.home)
+        values["guard"] = {"terms": version}
+        homes.save_settings(self.home, values)
+
+    def report(self, current_map=None, ignored=0, code=0x29A):
+        """A crash report file holding the game's script-error text as its error hook writes it."""
+        text = b"Revision Data: 190852 - ruse.player.release\n\n"
+        if current_map:
+            text += b"Current Map: DataDir:\\DATASMAP\\" + current_map + b"\n\n"
+        if ignored:
+            text += b"Previously ignored errors: %d\n\n" % ignored
+        text += b'Traceback (most recent call last):\n  File "DataDir:\\x\\menu.py", line 40, in f\nKeyError: 1\x00'
+        p = self.home / "report.dmp"
+        p.write_bytes(Crashes.dump(self, code=code, extra=b"\0junk\0" + text))
+        return p
+
+    def own_mods(self):
+        """A mod from our list, an own folder mod (units, texts, a map's file, a mission script) and an own .rmod mod
+        (a whole script, a map file, a value, a new unit, a text)."""
+        from test_rmod import new_unit, rmod_json, set_values
+        listed, own, rmodded = self.home / "cool-mod", self.home / "nicks-secret-mod", self.home / "nicks-rmod"
+        for f in (listed, own, rmodded):
+            f.mkdir()
+        (listed / "mod.toml").write_text('[mod]\nid = "cool-mod"\nversion = "1.2"\n')
+        (listed / "tags.toml").write_text('tags = ["units"]\n')
+        (listed / "src").mkdir()
+        (listed / "src" / "a.rndf").write_text("patch $/GFX/Everything/Descriptor_Unit_M3_Lee ( ProductionPrice = [1] )\n")
+        (own / "mod.toml").write_text('[mod]\nid = "nicks-secret-mod"\nversion = "0.1"\n')
+        (own / "src").mkdir()
+        (own / "src" / "units.rndf").write_text("Nicks_Tank is clone $/GFX/Everything/Descriptor_Unit_M3_Lee\n"
+                                                "(\n    ProductionPrice = [1, 1, 1, 1, 1]\n)\n")
+        (own / "text").mkdir()
+        (own / "text" / "baseunite.csv").write_text("key,us\nNICKS,Nick's tank\n")
+        (own / "maps" / "nicks_island").mkdir(parents=True)
+        (own / "maps" / "nicks_island" / "scenery.toml").write_text("\n")
+        (own / "scripts" / "m06_ardennes" / "scripting_chapter1").mkdir(parents=True)
+        (own / "scripts" / "m06_ardennes" / "scripting_chapter1" / "effetmap.py").write_text("x = 1\n")
+        (rmodded / "mod.toml").write_text('[mod]\nid = "nicks-rmod"\nversion = "1.0.0"\n\n[rmod]\nfile = "N.rmod"\n')
+        (rmodded / "N.rmod").write_text(rmod_json({"genpython/map/effetmap.xyz": b"XYZ0", "test/map/a/x.scenario": b"S"},
+                                                  patches=[set_values("Unit_Battleship", VitesseLineaire=1),
+                                                           new_unit("Unit_Nicks_Ship")], texts={"0123456789abcdef": "Nick"}))
+        return [listed, own, rmodded]
+
+    def test_only_with_version_4_accepted_and_bug_watch_on(self):
+        self.assertEqual((bugwatch.agreement(self.home), bugwatch.allows_v4(self.home)), (0, False))
+        for terms, allowed in ((3, False), (4, True), (5, True), (True, False), ("4", False)):
+            self.accept(terms)
+            self.assertEqual(bugwatch.allows_v4(self.home), allowed, terms)
+        bugwatch.turn_off(self.home)
+        self.assertFalse(bugwatch.allows_v4(self.home))   # version 4 accepted, Bug Watch off: nothing goes
+
+    def test_the_map_by_the_games_own_name_or_said_as_a_mods(self):
+        found = bugwatch.read_dump(self.report(b"SuperCrossRoads4"), install=self.game)
+        self.assertEqual(found["map"], "SuperCrossroads4")     # the pack's own name, whatever the case in the text
+        self.assertEqual(bugwatch.read_dump(self.report(b"IwoGround"), install=self.game)["map"], "own")
+        self.assertNotIn("map", bugwatch.read_dump(self.report(), install=self.game))      # the text names none
+        self.assertNotIn("map", bugwatch.read_dump(self.report(b"M04_cotentin")))       # no install given: none
+        self.assertNotIn("map", bugwatch.read_dump(self.report(b"Edge", code=0xC0000005), install=self.game))
+
+    def test_the_count_of_errors_let_pass_before_the_stop(self):
+        """The game's own "Previously ignored errors: N" line (each of our script guards adds 1 when it steps in):
+        the game's own error text, which version 3 lists."""
+        self.assertEqual(bugwatch.read_dump(self.report(b"Edge", ignored=3))["ignored"], 3)
+        self.assertNotIn("ignored", bugwatch.read_dump(self.report(b"Edge")))
+
+    def test_a_game_crash_under_version_3_and_under_version_4(self):
+        found = bugwatch.read_dump(self.report(b"IwoGround", ignored=2), install=self.game)
+        holds = {"folder": 1, "maps": 1, "nonsense": 4}
+        w = self.watch()
+        self.accept(3)
+        w.game_crash(found, ["cool-mod@1.2"], 1, send=False, holds=holds)
+        self.accept(4)
+        w.game_crash(found, ["cool-mod@1.2"], 1, send=False, holds=holds)
+        v3, v4 = sorted((json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")), key=lambda b: "agreement" in b)
+        self.assertEqual({"agreement", "map", "own"} & set(v3), set())
+        self.assertEqual(v3["ignored"], 2)
+        self.assertEqual((v4["agreement"], v4["map"], v4["own"], v4["ignored"]), (4, "own", {"folder": 1, "maps": 1}, 2))
+        self.assertNotIn("IwoGround", json.dumps(v4))
+        self.assertTrue(is_clean(v4))
+        w.game_crash(found, ["cool-mod@1.2"], 0, send=False, holds=holds)   # no own mod on: nothing about them
+        newest = max(w.outbox.glob("crash-*.json"), key=lambda f: f.name)
+        self.assertNotIn("own", json.loads(newest.read_text()))
+
+    def test_the_day_under_version_3_and_under_version_4(self):
+        w = self.watch()
+        self.accept(3)
+        w.played(10, ["cool-mod@1.2"], 1, {"folder": 1, "scripts": 1})
+        out = w.payload(bugwatch._today(), w.days[bugwatch._today()])
+        self.assertNotIn("own_holds", w.days[bugwatch._today()])
+        self.assertEqual(("agreement" in out, "holds" in out["mods"]), (False, False))
+        self.accept(4)
+        w.played(5, [], 2, {"folder": 2, "scripts": 1, "maps": 1})
+        w.played(5, [], 1, {"folder": 1, "texts": 1, "nonsense": 9})
+        out = w.payload(bugwatch._today(), w.days[bugwatch._today()])
+        self.assertEqual(out["agreement"], 4)
+        self.assertEqual(out["mods"]["holds"], {"folder": 2, "scripts": 1, "maps": 1, "texts": 1})  # each kind's most
+        self.assertTrue(is_clean(out))
+
+    def test_what_the_players_own_mods_hold(self):
+        mods = self.own_mods()
+        self.assertEqual(bugwatch.own_holds(mods), {"folder": 1, "rmod": 1, "data": 2, "new_objects": 2, "texts": 2,
+                                                    "maps": 2, "scripts": 2})
+        self.assertEqual(bugwatch.own_holds(mods[:1]), {})                    # one from our list: named, not counted
+        self.assertEqual(bugwatch.own_holds([self.home / "no such mod"]), {"folder": 1})   # unreadable: its format
+        self.assertEqual(list(bugwatch.own_holds(mods)), [k for k in bugwatch.OWN_KINDS if k in bugwatch.own_holds(mods)])
+
+    def test_the_game_watch_sends_them_under_version_4(self):
+        self.accept(4)
+        mods = self.own_mods()
+        local = self.home / "local"
+        rpt = local / "Temp" / "CrashRpt_x"
+        rpt.mkdir(parents=True)
+        polls = iter([None, 0])
+
+        class Game:
+            def poll(self):
+                return next(polls)
+
+        times = iter([1000.0, 1600.0, 1600.0])
+        w = self.watch()
+        report = self.report(b"IwoGround")
+
+        def sleep(_seconds):
+            (rpt / "report.dmp").write_bytes(report.read_bytes())
+            os.utime(rpt / "report.dmp", (1500, 1500))
+
+        g = bugwatch.GameWatch(w, Game(), ["cool-mod@1.2"], 2, sleep=sleep, clock=lambda: next(times),
+                               local=str(local), folders=mods, game=self.game)
+        with mock.patch.object(w, "send_waiting"):
+            g.run()
+        (sent,) = [json.loads(f.read_text()) for f in w.outbox.glob("crash-*.json")]
+        self.assertEqual((sent["map"], sent["own"]["scripts"], sent["agreement"]), ("own", 2, 4))
+        self.assertEqual(w.days[bugwatch._today()]["own_holds"]["new_objects"], 2)
+        text = json.dumps(sent) + json.dumps(w.days)
+        for secret in ("nicks", "Nick's", "Nicks_Tank", "Unit_Nicks_Ship", "ardennes", "IwoGround", "N.rmod"):
+            self.assertNotIn(secret, text)
+
+
 class Hooks(BugWatchTest):
     def setUp(self):
         super().setUp()
@@ -579,6 +730,37 @@ class TheAgreementScreen(unittest.TestCase):
             for key in self.KEYS:
                 self.assertIn(key, words, f"{app}: {key} missing")
                 self.assertTrue(words[key].get("us"), f"{app}: {key} has no English")
+
+    def test_version_4_of_the_agreement(self):
+        """The agreement's version 4 (2026-11-13): the apps show it again (TERMS_VERSION), Bug Watch's version 4 fields
+        wait for it (AGREEMENT_V4), and its text, the same in both apps, says what they are in every language."""
+        import tomllib
+        from rusemod import guard
+        self.assertEqual(guard.TERMS_VERSION, 4)
+        self.assertEqual(bugwatch.AGREEMENT_V4, guard.TERMS_VERSION)
+        texts = [tomllib.loads((self.SRC / app / "words.toml").read_text(encoding="utf-8"))["agree_full"]
+                 for app in ("ruse_launcher", "ruse_studio")]
+        self.assertEqual(texts[0], texts[1])
+        english = texts[0]["us"]
+        for said in ("Version 4, ", "how many mods of your own you had and what kinds of things they hold",
+                     "the map it was on", "the game mode", "the unit the game was making",
+                     "which version of this agreement you accepted", "or the names and words of your own mods"):
+            self.assertIn(said, english)
+        self.assertNotIn("how many of our own mods", english)   # (version 3's slip: it meant the player's own)
+        for lang, text in texts[0].items():
+            lines = text.split("\n")
+            self.assertEqual(len(lines), len(english.split("\n")), lang)
+            self.assertRegex(lines[1], r"4|۴", lang)
+
+    def test_a_new_version_keeps_the_username_and_says_what_is_on(self):
+        """Shown a new version, a player who has a username keeps it (asked again, a new #number would replace it);
+        the Bug Watch tick starts as Bug Watch is, and accepting with it changed turns Bug Watch on or off."""
+        js = (self.SRC / "rusemod" / "sharedui" / "agreement.js").read_text(encoding="utf-8")
+        self.assertIn('$("agree-bugwatch").checked = Boolean(status.available && status.on);', js)
+        kept = js[js.index("if (status.name) {"):js.index("await askUsername(api, words, bw);")]
+        self.assertIn("if (bw && !status.on) await api.bugwatch_on(status.name);", kept)
+        self.assertIn("else if (!bw && status.on) await api.bugwatch_off();", kept)
+        self.assertIn("name: String(got.name || \"\")", js)
 
     def test_the_web_layer_serves_it_and_both_apis_have_the_guard_calls(self):
         webui = (self.SRC / "rusemod" / "webui.py").read_text(encoding="utf-8")

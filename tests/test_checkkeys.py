@@ -21,6 +21,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from rusemod import bugwatch, checkkeys, rules  # noqa: E402
+from rusemod import home as homes  # noqa: E402
 from rusemod.build import BuildError  # noqa: E402
 from rusemod.patch import Finding  # noqa: E402
 
@@ -211,8 +212,9 @@ class HowFarAPlayGot(unittest.TestCase):
     def test_refused_before_any_build(self):
         error = self.play(folders(self.root / "mods"), owned=lambda game: "This copy isn't confirmed.")
         self.assertEqual((error.stage, error.mod_set), ("before", (["cheat-mod-v2@2.0.0"], 1, 1)))
+        # (version 3 of the agreement accepted, or none: the player's own mods are one number, "O")
         self.assertEqual(self.counted(error), {"play:play_copy_not_confirmed": 1, "play:stage:before": 1,
-                                               "play:set:L1-F1-R1": 1, "play:lib:cheat-mod-v2:2.0.0": 1})
+                                               "play:set:L1-O2": 1, "play:lib:cheat-mod-v2:2.0.0": 1})
 
     def test_the_build_raised(self):
         empty = self.root / "mods" / "not-a-mod"
@@ -222,7 +224,7 @@ class HowFarAPlayGot(unittest.TestCase):
         self.assertEqual(error.stage, "build")
         messages = self.counted(error)
         self.assertEqual(messages.pop("play:stage:build"), 1)
-        self.assertEqual(messages.pop("play:set:L0-F1-R0"), 1)
+        self.assertEqual(messages.pop("play:set:L0-O1"), 1)
         (key, n), = messages.items()
         self.assertEqual(key, "play:" + entry(words="has no mod.toml")["check"])
 
@@ -238,7 +240,7 @@ class HowFarAPlayGot(unittest.TestCase):
         self.assertEqual((error.stage, len(error.errors)), ("listed", 2))
         self.assertEqual(error.error_keys, [("nation-models", ""), (found[1].site, "")])
         messages = self.counted(error)
-        self.assertEqual(messages, {"play:play.mods-have-mistakes": 1, "play:stage:listed": 1, "play:set:L1-F1-R0": 1,
+        self.assertEqual(messages, {"play:play.mods-have-mistakes": 1, "play:stage:listed": 1, "play:set:L1-O1": 1,
                                     "play:lib:cheat-mod-v2:2.0.0": 1, "mistake:nation-models": 1,
                                     f"mistake:{found[1].site}": 1})
         self.assertFalse(any(SECRET in k or "Nick" in k for k in messages))
@@ -250,7 +252,29 @@ class HowFarAPlayGot(unittest.TestCase):
             error = self.play([], steam=False)
         self.assertEqual(error.stage, "start")
         self.assertEqual(self.counted(error), {"play:play.steam-didnt-start": 1, "play:stage:start": 1,
-                                               "play:set:L0-F0-R0": 1})
+                                               "play:set:L0-O0": 1})
+
+    def test_under_version_4_the_own_mods_by_format_and_what_they_hold(self):
+        """Version 4 of the agreement accepted ("what a player's own mods hold by kind and count"): the own mods by
+        format and, for each kind of thing they hold, how many hold it; never a name, a word or a path of them."""
+        homes.save_settings(self.home, {**homes.settings(self.home), "guard": {"terms": 4}})
+        mods = folders(self.root / "mods")
+        own = mods[1]
+        (own / "src").mkdir()
+        (own / "src" / "units.rndf").write_text("Nicks_Secret_Tank is clone $/GFX/Everything/Descriptor_Unit_M3_Lee\n"
+                                                "(\n    ProductionPrice = [1, 1, 1, 1, 1]\n)\n", "utf-8")
+        (own / "text").mkdir()
+        (own / "text" / "baseunite.csv").write_text(f"key,us\n{SECRET},Nick's tank\n", "utf-8")
+        (own / "scripts" / "m06_ardennes" / "scripting_chapter1").mkdir(parents=True)
+        (own / "scripts" / "m06_ardennes" / "scripting_chapter1" / "effetmap.py").write_text("x = 1\n", "utf-8")
+        error = self.play(mods, owned=lambda game: "This copy isn't confirmed.")
+        self.assertEqual(error.own_holds, {"folder": 1, "rmod": 1, "data": 1, "new_objects": 1, "texts": 1,
+                                           "scripts": 1})
+        messages = self.counted(error)
+        self.assertEqual(messages, {"play:play_copy_not_confirmed": 1, "play:stage:before": 1, "play:set:L1-F1-R1": 1,
+                                    "play:lib:cheat-mod-v2:2.0.0": 1, "play:own:data": 1, "play:own:new_objects": 1,
+                                    "play:own:texts": 1, "play:own:scripts": 1})
+        self.assertFalse(any(SECRET in k or "Nick" in k or "ardennes" in k for k in messages))
 
     def test_a_play_the_launcher_refused_before_its_job_started(self):
         """The Launcher's own refusals before a Play's job starts (one already starting, a restore, no such set, a set

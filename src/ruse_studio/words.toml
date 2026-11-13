@@ -44050,7 +44050,7 @@ fa = "برای ادامه یک نام کاربری بنویسید."
 [agree_full]
 us = """
 R.U.S.E. 2.0: user and licence agreement
-Version 3, 2 November 2026
+Version 4, 13 November 2026
 
 In short
 - Licences and credit: the licences our apps and their models, sounds and textures use, so the people whose work we use get their credit.
@@ -44093,10 +44093,10 @@ Why: to stop cheating in real R.U.S.E. multiplayer matches. Mods can change how 
 Why: to make the Studio and the Launcher work better for you, and to make development easier. Instead of waiting for someone to report a crash, we see it, see what led to it, and fix it sooner.
 If you tick this, the Studio and the Launcher count what you use and when something goes wrong, and send it to our developers once a day. Settings shows you, word for word, what would be sent. In plain words, it is:
 - a report code, made on your PC the first time (so your crashes can be found together), and your username;
-- the app and its version, the day, your version of Windows, your language, the game's build, and whether RUSE Guard is on;
-- how often each part of the app was used and how long things took, what went wrong and where (in our own code only), which mods from our list you had on and how many minutes you played with each, and how many of our own mods you had (counted, never named);
-- when an app crashes: the kind of error and where in our code; when the game crashes: its crash code, where in the game it stopped and up to 16 places in the game that led there, the place in memory it was trying to read, write or run, the game's own error text with any file path shortened, and the mods that were on.
-Only our developers see it: it's kept on our server and, once it exists, in a private repository only our developers can open. Never sent: your real name, your Steam account, your files or paths; the game's crash files never leave your PC. Your counts and crash reports are deleted after 7 days; only a very severe crash we're still fixing is kept longer, until it's fixed, and after that we keep only totals with no name or code in them (like "12 builds failed on version 0.9.9 that day"). It's off unless you tick it. Untick it any time in Settings: nothing more is counted or sent, and what was kept is deleted. To have everything kept under your report code deleted now, ask on our Discord or GitHub.
+- the app and its version, the day, your version of Windows, your language, the game's build, whether RUSE Guard is on, and which version of this agreement you accepted;
+- how often each part of the app was used and how long things took, what went wrong and where (in our own code only), which mods from our list you had on and how many minutes you played with each, and how many mods of your own you had and what kinds of things they hold, such as units, maps, missions or scripts (counted by kind, never named, and never their words, paths or files);
+- when an app crashes: the kind of error and where in our code; when the game crashes: its crash code, where in the game it stopped and up to 16 places in the game that led there, the place in memory it was trying to read, write or run, the game's own error text with any file path shortened, the map it was on (one of the game's own maps by its name; a map a mod made only as \"a mod's map\", never its name), the game mode, the unit the game was making (one of the game's own units by its number; a unit a mod added only as \"a mod's unit\"), and the mods that were on. The apps send the game mode and the unit only when they can read them from the game's crash report.
+Only our developers see it: it's kept on our server and, once it exists, in a private repository only our developers can open. Never sent: your real name, your Steam account, your files or paths, or the names and words of your own mods; the game's crash files never leave your PC. Your counts and crash reports are deleted after 7 days; only a very severe crash we're still fixing is kept longer, until it's fixed, and after that we keep only totals with no name or code in them (like "12 builds failed on version 0.9.9 that day"). It's off unless you tick it. Untick it any time in Settings: nothing more is counted or sent, and what was kept is deleted. To have everything kept under your report code deleted now, ask on our Discord or GitHub.
 
 7. Sign in through Steam
 Why: to confirm you own R.U.S.E., for online play, RUSE Guard and content downloads. Nothing needs it yet; the apps ask once, and the Launcher's Settings opens it any time.
@@ -44122,7 +44122,7 @@ This English text is the one that counts; the other languages are translations.
 """
 fr = """
 R.U.S.E. 2.0 : accord d'utilisation et de licence
-Version 3, 2 novembre 2026
+Version 4, 13 novembre 2026
 
 En bref
 - Licences et crédits : les licences qu'utilisent nos applications et leurs modèles, sons et textures, pour que les personnes dont nous utilisons le travail soient créditées.
@@ -44165,10 +44165,10 @@ Pourquoi : pour empêcher la triche dans les vraies parties multijoueur de R.U.S
 Pourquoi : pour que le Studio et le Launcher fonctionnent mieux pour vous, et pour faciliter le développement. Au lieu d'attendre que quelqu'un signale un plantage, nous le voyons, nous voyons ce qui y a mené, et nous le corrigeons plus tôt.
 Si vous cochez ceci, le Studio et le Launcher comptent ce que vous utilisez et quand quelque chose tourne mal, et l'envoient à nos développeurs une fois par jour. Les Paramètres vous montrent, mot pour mot, ce qui serait envoyé. En clair, il s'agit de :
 - un code de rapport, créé sur votre PC la première fois (pour retrouver vos plantages ensemble), et votre nom d'utilisateur ;
-- l'application et sa version, le jour, votre version de Windows, votre langue, la version du jeu, et si RUSE Guard est actif ;
-- la fréquence d'utilisation de chaque partie de l'application et la durée des opérations, ce qui a mal tourné et où (dans notre propre code uniquement), quels mods de notre liste vous aviez activés et combien de minutes vous avez joué avec chacun, et combien de mods à vous vous aviez (comptés, jamais nommés) ;
-- quand une application plante : le type d'erreur et l'endroit dans notre code ; quand le jeu plante : son code de plantage, l'endroit du jeu où il s'est arrêté et jusqu'à 16 endroits du jeu qui y ont mené, l'endroit de la mémoire qu'il essayait de lire, d'écrire ou d'exécuter, le texte d'erreur du jeu avec tout chemin de fichier raccourci, et les mods qui étaient activés.
-Seuls nos développeurs le voient : c'est conservé sur notre serveur et, dès qu'il existera, dans un dépôt privé que seuls nos développeurs peuvent ouvrir. Jamais envoyés : votre vrai nom, votre compte Steam, vos fichiers ou chemins ; les fichiers de plantage du jeu ne quittent jamais votre PC. Vos comptages et rapports de plantage sont supprimés après 7 jours ; seul un plantage très grave que nous corrigeons encore est gardé plus longtemps, jusqu'à sa correction, et ensuite nous ne gardons que des totaux sans nom ni code (comme « 12 constructions ont échoué sur la version 0.9.9 ce jour-là »). C'est désactivé sauf si vous le cochez. Décochez-le à tout moment dans les Paramètres : plus rien n'est compté ni envoyé, et ce qui était conservé est supprimé. Pour faire supprimer dès maintenant tout ce qui est conservé sous votre code de rapport, demandez sur notre Discord ou GitHub.
+- l'application et sa version, le jour, votre version de Windows, votre langue, la version du jeu, si RUSE Guard est actif, et quelle version de cet accord vous avez acceptée ;
+- la fréquence d'utilisation de chaque partie de l'application et la durée des opérations, ce qui a mal tourné et où (dans notre propre code uniquement), quels mods de notre liste vous aviez activés et combien de minutes vous avez joué avec chacun, et combien de mods à vous vous aviez et quels genres de choses ils contiennent, comme des unités, des cartes, des missions ou des scripts (comptés par genre, jamais nommés, et jamais leurs mots, chemins ou fichiers) ;
+- quand une application plante : le type d'erreur et l'endroit dans notre code ; quand le jeu plante : son code de plantage, l'endroit du jeu où il s'est arrêté et jusqu'à 16 endroits du jeu qui y ont mené, l'endroit de la mémoire qu'il essayait de lire, d'écrire ou d'exécuter, le texte d'erreur du jeu avec tout chemin de fichier raccourci, la carte où il était (une carte du jeu par son nom ; une carte faite par un mod seulement comme « une carte de mod », jamais son nom), le mode de jeu, l'unité que le jeu était en train de créer (une unité du jeu par son numéro ; une unité ajoutée par un mod seulement comme « une unité de mod »), et les mods qui étaient activés. Les applications n'envoient le mode de jeu et l'unité que lorsqu'elles peuvent les lire dans le rapport de plantage du jeu.
+Seuls nos développeurs le voient : c'est conservé sur notre serveur et, dès qu'il existera, dans un dépôt privé que seuls nos développeurs peuvent ouvrir. Jamais envoyés : votre vrai nom, votre compte Steam, vos fichiers ou chemins, ni les noms et les mots de vos propres mods ; les fichiers de plantage du jeu ne quittent jamais votre PC. Vos comptages et rapports de plantage sont supprimés après 7 jours ; seul un plantage très grave que nous corrigeons encore est gardé plus longtemps, jusqu'à sa correction, et ensuite nous ne gardons que des totaux sans nom ni code (comme « 12 constructions ont échoué sur la version 0.9.9 ce jour-là »). C'est désactivé sauf si vous le cochez. Décochez-le à tout moment dans les Paramètres : plus rien n'est compté ni envoyé, et ce qui était conservé est supprimé. Pour faire supprimer dès maintenant tout ce qui est conservé sous votre code de rapport, demandez sur notre Discord ou GitHub.
 
 7. Connexion via Steam
 Pourquoi : pour confirmer que vous possédez R.U.S.E., pour le jeu en ligne, RUSE Guard et les téléchargements de contenu. Rien ne l'exige encore ; les applications le demandent une fois, et les Paramètres du Launcher l'ouvrent à tout moment.
@@ -44194,7 +44194,7 @@ Le texte anglais fait foi ; les autres langues sont des traductions.
 """
 ger = """
 R.U.S.E. 2.0: Nutzungs- und Lizenzvereinbarung
-Version 3, 2. November 2026
+Version 4, 13. November 2026
 
 Kurz gesagt
 - Lizenzen und Nennung: die Lizenzen, unter denen unsere Apps und ihre Modelle, Sounds und Texturen stehen, damit die Leute, deren Arbeit wir nutzen, genannt werden.
@@ -44237,10 +44237,10 @@ Warum: um Betrug in echten R.U.S.E.-Mehrspielerpartien zu verhindern. Mods könn
 Warum: damit Studio und Launcher für dich besser funktionieren und die Entwicklung leichter wird. Statt zu warten, bis jemand einen Absturz meldet, sehen wir ihn, sehen, was dazu geführt hat, und beheben ihn früher.
 Wenn du dies ankreuzt, zählen Studio und Launcher, was du benutzt und wann etwas schiefgeht, und schicken es einmal am Tag an unsere Entwickler. Die Einstellungen zeigen dir Wort für Wort, was gesendet würde. In einfachen Worten ist es:
 - ein Berichtscode, beim ersten Mal auf deinem PC erzeugt (damit deine Abstürze zusammengefunden werden), und dein Benutzername;
-- die App und ihre Version, der Tag, deine Windows-Version, deine Sprache, der Build des Spiels und ob RUSE Guard an ist;
-- wie oft jeder Teil der App benutzt wurde und wie lange Dinge dauerten, was schiefging und wo (nur in unserem eigenen Code), welche Mods aus unserer Liste du an hattest und wie viele Minuten du mit jedem gespielt hast, und wie viele eigene Mods du hattest (gezählt, nie benannt);
-- wenn eine App abstürzt: die Fehlerart und die Stelle in unserem Code; wenn das Spiel abstürzt: sein Absturzcode, die Stelle im Spiel, an der es stehen blieb, und bis zu 16 Stellen im Spiel, die dorthin geführt haben, die Stelle im Speicher, die es lesen, schreiben oder ausführen wollte, der eigene Fehlertext des Spiels mit gekürzten Dateipfaden, und die Mods, die an waren.
-Nur unsere Entwickler sehen es: Es liegt auf unserem Server und, sobald es existiert, in einem privaten Repository, das nur unsere Entwickler öffnen können. Nie gesendet: dein echter Name, dein Steam-Konto, deine Dateien oder Pfade; die Absturzdateien des Spiels verlassen deinen PC nie. Deine Zählungen und Absturzberichte werden nach 7 Tagen gelöscht; nur ein sehr schwerer Absturz, an dem wir noch arbeiten, bleibt länger, bis er behoben ist, und danach behalten wir nur Summen ohne Namen oder Code (etwa „12 Builds schlugen an diesem Tag auf Version 0.9.9 fehl"). Es ist aus, solange du es nicht ankreuzt. Kreuze es jederzeit in den Einstellungen ab: Nichts mehr wird gezählt oder gesendet, und was aufbewahrt war, wird gelöscht. Um alles, was unter deinem Berichtscode liegt, sofort löschen zu lassen, frag auf unserem Discord oder GitHub.
+- die App und ihre Version, der Tag, deine Windows-Version, deine Sprache, der Build des Spiels, ob RUSE Guard an ist und welche Version dieser Vereinbarung du angenommen hast;
+- wie oft jeder Teil der App benutzt wurde und wie lange Dinge dauerten, was schiefging und wo (nur in unserem eigenen Code), welche Mods aus unserer Liste du an hattest und wie viele Minuten du mit jedem gespielt hast, und wie viele eigene Mods du hattest und welche Arten von Dingen sie enthalten, etwa Einheiten, Karten, Missionen oder Skripte (nach Art gezählt, nie benannt und nie ihre Wörter, Pfade oder Dateien);
+- wenn eine App abstürzt: die Fehlerart und die Stelle in unserem Code; wenn das Spiel abstürzt: sein Absturzcode, die Stelle im Spiel, an der es stehen blieb, und bis zu 16 Stellen im Spiel, die dorthin geführt haben, die Stelle im Speicher, die es lesen, schreiben oder ausführen wollte, der eigene Fehlertext des Spiels mit gekürzten Dateipfaden, die Karte, auf der es war (eine Karte des Spiels mit ihrem Namen; eine Karte, die eine Mod gemacht hat, nur als „eine Mod-Karte“, nie mit ihrem Namen), der Spielmodus, die Einheit, die das Spiel gerade erstellte (eine Einheit des Spiels mit ihrer Nummer; eine Einheit, die eine Mod hinzugefügt hat, nur als „eine Mod-Einheit“), und die Mods, die an waren. Den Spielmodus und die Einheit senden die Apps nur, wenn sie sie aus dem Absturzbericht des Spiels lesen können.
+Nur unsere Entwickler sehen es: Es liegt auf unserem Server und, sobald es existiert, in einem privaten Repository, das nur unsere Entwickler öffnen können. Nie gesendet: dein echter Name, dein Steam-Konto, deine Dateien oder Pfade, noch die Namen und Wörter deiner eigenen Mods; die Absturzdateien des Spiels verlassen deinen PC nie. Deine Zählungen und Absturzberichte werden nach 7 Tagen gelöscht; nur ein sehr schwerer Absturz, an dem wir noch arbeiten, bleibt länger, bis er behoben ist, und danach behalten wir nur Summen ohne Namen oder Code (etwa „12 Builds schlugen an diesem Tag auf Version 0.9.9 fehl"). Es ist aus, solange du es nicht ankreuzt. Kreuze es jederzeit in den Einstellungen ab: Nichts mehr wird gezählt oder gesendet, und was aufbewahrt war, wird gelöscht. Um alles, was unter deinem Berichtscode liegt, sofort löschen zu lassen, frag auf unserem Discord oder GitHub.
 
 7. Anmeldung über Steam
 Warum: um zu bestätigen, dass du R.U.S.E. besitzt, für Online-Spiel, RUSE Guard und Inhalts-Downloads. Noch braucht es nichts; die Apps fragen einmal, und die Einstellungen des Launchers öffnen es jederzeit.
@@ -44266,7 +44266,7 @@ Der englische Text ist maßgeblich; die anderen Sprachen sind Übersetzungen.
 """
 ita = """
 R.U.S.E. 2.0: accordo d'uso e di licenza
-Versione 3, 2 novembre 2026
+Versione 4, 13 novembre 2026
 
 In breve
 - Licenze e crediti: le licenze usate dalle nostre app e dai loro modelli, suoni e texture, perché chi ha fatto il lavoro che usiamo riceva il suo credito.
@@ -44309,10 +44309,10 @@ Perché: per fermare i trucchi nelle vere partite multigiocatore di R.U.S.E. Le 
 Perché: per far funzionare meglio lo Studio e il Launcher per te, e per rendere più facile lo sviluppo. Invece di aspettare che qualcuno segnali un crash, lo vediamo, vediamo cosa l'ha causato e lo correggiamo prima.
 Se lo spunti, lo Studio e il Launcher contano ciò che usi e quando qualcosa va storto, e lo inviano ai nostri sviluppatori una volta al giorno. Le Impostazioni ti mostrano, parola per parola, cosa verrebbe inviato. In parole semplici, è:
 - un codice di rapporto, creato sul tuo PC la prima volta (per ritrovare insieme i tuoi crash), e il tuo nome utente;
-- l'app e la sua versione, il giorno, la tua versione di Windows, la tua lingua, la build del gioco e se RUSE Guard è attivo;
-- quanto spesso è stata usata ogni parte dell'app e quanto hanno impiegato le operazioni, cosa è andato storto e dove (solo nel nostro codice), quali mod del nostro elenco avevi attive e quanti minuti hai giocato con ciascuna, e quante mod tue avevi (contate, mai nominate);
-- quando un'app va in crash: il tipo di errore e il punto nel nostro codice; quando il gioco va in crash: il suo codice di crash, il punto del gioco in cui si è fermato e fino a 16 punti del gioco che hanno portato lì, il punto della memoria che cercava di leggere, scrivere o eseguire, il testo d'errore del gioco con i percorsi dei file accorciati, e le mod che erano attive.
-Lo vedono solo i nostri sviluppatori: è conservato sul nostro server e, quando esisterà, in un repository privato che solo i nostri sviluppatori possono aprire. Mai inviati: il tuo vero nome, il tuo account Steam, i tuoi file o percorsi; i file di crash del gioco non lasciano mai il tuo PC. I tuoi conteggi e rapporti di crash vengono cancellati dopo 7 giorni; solo un crash molto grave che stiamo ancora correggendo resta più a lungo, finché non è corretto, e dopo teniamo solo totali senza nome né codice (come "12 build fallite sulla versione 0.9.9 quel giorno"). È spento finché non lo spunti. Togli la spunta in qualsiasi momento nelle Impostazioni: non viene più contato né inviato nulla, e ciò che era conservato viene cancellato. Per far cancellare subito tutto ciò che è conservato sotto il tuo codice di rapporto, chiedi sul nostro Discord o su GitHub.
+- l'app e la sua versione, il giorno, la tua versione di Windows, la tua lingua, la build del gioco, se RUSE Guard è attivo e quale versione di questo accordo hai accettato;
+- quanto spesso è stata usata ogni parte dell'app e quanto hanno impiegato le operazioni, cosa è andato storto e dove (solo nel nostro codice), quali mod del nostro elenco avevi attive e quanti minuti hai giocato con ciascuna, e quante mod tue avevi e che tipi di cose contengono, come unità, mappe, missioni o script (contate per tipo, mai nominate, e mai le loro parole, percorsi o file);
+- quando un'app va in crash: il tipo di errore e il punto nel nostro codice; quando il gioco va in crash: il suo codice di crash, il punto del gioco in cui si è fermato e fino a 16 punti del gioco che hanno portato lì, il punto della memoria che cercava di leggere, scrivere o eseguire, il testo d'errore del gioco con i percorsi dei file accorciati, la mappa su cui era (una mappa del gioco con il suo nome; una mappa fatta da una mod solo come \"una mappa di una mod\", mai il suo nome), la modalità di gioco, l'unità che il gioco stava creando (un'unità del gioco con il suo numero; un'unità aggiunta da una mod solo come \"un'unità di una mod\"), e le mod che erano attive. Le app inviano la modalità di gioco e l'unità solo quando riescono a leggerle dal rapporto di crash del gioco.
+Lo vedono solo i nostri sviluppatori: è conservato sul nostro server e, quando esisterà, in un repository privato che solo i nostri sviluppatori possono aprire. Mai inviati: il tuo vero nome, il tuo account Steam, i tuoi file o percorsi, né i nomi e le parole delle tue mod; i file di crash del gioco non lasciano mai il tuo PC. I tuoi conteggi e rapporti di crash vengono cancellati dopo 7 giorni; solo un crash molto grave che stiamo ancora correggendo resta più a lungo, finché non è corretto, e dopo teniamo solo totali senza nome né codice (come "12 build fallite sulla versione 0.9.9 quel giorno"). È spento finché non lo spunti. Togli la spunta in qualsiasi momento nelle Impostazioni: non viene più contato né inviato nulla, e ciò che era conservato viene cancellato. Per far cancellare subito tutto ciò che è conservato sotto il tuo codice di rapporto, chiedi sul nostro Discord o su GitHub.
 
 7. Accesso con Steam
 Perché: per confermare che possiedi R.U.S.E., per il gioco online, RUSE Guard e i download di contenuti. Per ora niente lo richiede; le app lo chiedono una volta, e le Impostazioni del Launcher lo aprono in qualsiasi momento.
@@ -44338,7 +44338,7 @@ Fa fede il testo inglese; le altre lingue sono traduzioni.
 """
 spa = """
 R.U.S.E. 2.0: acuerdo de uso y de licencia
-Versión 3, 2 de noviembre de 2026
+Versión 4, 13 de noviembre de 2026
 
 En resumen
 - Licencias y créditos: las licencias que usan nuestras aplicaciones y sus modelos, sonidos y texturas, para que las personas cuyo trabajo usamos reciban su crédito.
@@ -44381,10 +44381,10 @@ Por qué: para impedir las trampas en las partidas multijugador reales de R.U.S.
 Por qué: para que el Studio y el Launcher funcionen mejor para ti, y para facilitar el desarrollo. En lugar de esperar a que alguien informe de un fallo, lo vemos, vemos qué lo provocó y lo corregimos antes.
 Si lo marcas, el Studio y el Launcher cuentan lo que usas y cuándo algo falla, y lo envían a nuestros desarrolladores una vez al día. Ajustes te muestra, palabra por palabra, lo que se enviaría. En pocas palabras, es:
 - un código de informe, creado en tu PC la primera vez (para poder reunir tus fallos), y tu nombre de usuario;
-- la aplicación y su versión, el día, tu versión de Windows, tu idioma, la compilación del juego y si RUSE Guard está activado;
-- con qué frecuencia se usó cada parte de la aplicación y cuánto tardaron las operaciones, qué falló y dónde (solo en nuestro propio código), qué mods de nuestra lista tenías activados y cuántos minutos jugaste con cada uno, y cuántos mods propios tenías (contados, nunca nombrados);
-- cuando una aplicación falla: el tipo de error y el lugar en nuestro código; cuando el juego falla: su código de fallo, el punto del juego en que se detuvo y hasta 16 puntos del juego que llevaron allí, el lugar de la memoria que intentaba leer, escribir o ejecutar, el propio texto de error del juego con las rutas de archivo acortadas y los mods que estaban activados.
-Solo lo ven nuestros desarrolladores: se guarda en nuestro servidor y, cuando exista, en un repositorio privado que solo nuestros desarrolladores pueden abrir. Nunca se envían: tu nombre real, tu cuenta de Steam, tus archivos ni rutas; los archivos de fallo del juego nunca salen de tu PC. Tus recuentos e informes de fallo se borran a los 7 días; solo un fallo muy grave que aún estemos corrigiendo se guarda más tiempo, hasta que esté corregido, y después solo guardamos totales sin nombre ni código (como "12 compilaciones fallaron en la versión 0.9.9 ese día"). Está desactivado a menos que lo marques. Desmárcalo cuando quieras en Ajustes: no se cuenta ni se envía nada más, y lo que se guardaba se borra. Para que se borre ahora todo lo guardado bajo tu código de informe, pídelo en nuestro Discord o GitHub.
+- la aplicación y su versión, el día, tu versión de Windows, tu idioma, la compilación del juego, si RUSE Guard está activado y qué versión de este acuerdo aceptaste;
+- con qué frecuencia se usó cada parte de la aplicación y cuánto tardaron las operaciones, qué falló y dónde (solo en nuestro propio código), qué mods de nuestra lista tenías activados y cuántos minutos jugaste con cada uno, y cuántos mods propios tenías y qué tipos de cosas contienen, como unidades, mapas, misiones o scripts (contados por tipo, nunca nombrados, y nunca sus palabras, rutas ni archivos);
+- cuando una aplicación falla: el tipo de error y el lugar en nuestro código; cuando el juego falla: su código de fallo, el punto del juego en que se detuvo y hasta 16 puntos del juego que llevaron allí, el lugar de la memoria que intentaba leer, escribir o ejecutar, el propio texto de error del juego con las rutas de archivo acortadas, el mapa en que estaba (un mapa del juego por su nombre; un mapa hecho por un mod solo como \"un mapa de mod\", nunca su nombre), el modo de juego, la unidad que el juego estaba creando (una unidad del juego por su número; una unidad añadida por un mod solo como \"una unidad de mod\") y los mods que estaban activados. Las aplicaciones envían el modo de juego y la unidad solo cuando pueden leerlos en el informe de fallo del juego.
+Solo lo ven nuestros desarrolladores: se guarda en nuestro servidor y, cuando exista, en un repositorio privado que solo nuestros desarrolladores pueden abrir. Nunca se envían: tu nombre real, tu cuenta de Steam, tus archivos ni rutas, ni los nombres y las palabras de tus propios mods; los archivos de fallo del juego nunca salen de tu PC. Tus recuentos e informes de fallo se borran a los 7 días; solo un fallo muy grave que aún estemos corrigiendo se guarda más tiempo, hasta que esté corregido, y después solo guardamos totales sin nombre ni código (como "12 compilaciones fallaron en la versión 0.9.9 ese día"). Está desactivado a menos que lo marques. Desmárcalo cuando quieras en Ajustes: no se cuenta ni se envía nada más, y lo que se guardaba se borra. Para que se borre ahora todo lo guardado bajo tu código de informe, pídelo en nuestro Discord o GitHub.
 
 7. Inicio de sesión con Steam
 Por qué: para confirmar que posees R.U.S.E., para el juego en línea, RUSE Guard y las descargas de contenido. Por ahora nada lo necesita; las aplicaciones lo piden una vez, y los Ajustes del Launcher lo abren cuando quieras.
@@ -44410,7 +44410,7 @@ El texto en inglés es el que cuenta; los demás idiomas son traducciones.
 """
 pol = """
 R.U.S.E. 2.0: umowa użytkowania i licencji
-Wersja 3, 2 listopada 2026
+Wersja 4, 13 listopada 2026
 
 W skrócie
 - Licencje i podziękowania: licencje, na których są nasze aplikacje oraz ich modele, dźwięki i tekstury, by osoby, z których pracy korzystamy, były wymienione.
@@ -44453,10 +44453,10 @@ Po co: by powstrzymać oszustwa w prawdziwych meczach wieloosobowych R.U.S.E. Mo
 Po co: by Studio i Launcher działały dla ciebie lepiej i by ułatwić rozwój. Zamiast czekać, aż ktoś zgłosi awarię, widzimy ją, widzimy, co do niej doprowadziło, i naprawiamy ją wcześniej.
 Jeśli to zaznaczysz, Studio i Launcher liczą, czego używasz i kiedy coś idzie źle, i raz dziennie wysyłają to naszym deweloperom. Ustawienia pokazują ci słowo w słowo, co zostałoby wysłane. Mówiąc prosto, są to:
 - kod raportu, utworzony na twoim PC za pierwszym razem (by twoje awarie dało się zebrać razem), oraz twoja nazwa użytkownika;
-- aplikacja i jej wersja, dzień, twoja wersja Windows, twój język, kompilacja gry oraz czy RUSE Guard jest włączony;
-- jak często używano każdej części aplikacji i ile trwały operacje, co poszło źle i gdzie (tylko w naszym własnym kodzie), które mody z naszej listy miałeś włączone i ile minut grałeś z każdym, oraz ile własnych modów miałeś (policzone, nigdy nazwane);
-- gdy aplikacja ulega awarii: rodzaj błędu i miejsce w naszym kodzie; gdy gra ulega awarii: jej kod awarii, miejsce w grze, w którym się zatrzymała, i do 16 miejsc w grze, które do niego doprowadziły, miejsce w pamięci, które próbowała odczytać, zapisać lub wykonać, własny tekst błędu gry ze skróconymi ścieżkami plików oraz włączone mody.
-Widzą to tylko nasi deweloperzy: jest przechowywane na naszym serwerze i, gdy powstanie, w prywatnym repozytorium, które mogą otworzyć tylko nasi deweloperzy. Nigdy nie wysyłane: twoje prawdziwe imię, twoje konto Steam, twoje pliki ani ścieżki; pliki awarii gry nigdy nie opuszczają twojego PC. Twoje liczniki i raporty o awariach są usuwane po 7 dniach; tylko bardzo poważna awaria, którą wciąż naprawiamy, jest trzymana dłużej, aż zostanie naprawiona, a potem zachowujemy tylko sumy bez nazwy i kodu (na przykład „12 kompilacji nie powiodło się tego dnia w wersji 0.9.9"). Jest wyłączony, chyba że go zaznaczysz. Odznacz go w każdej chwili w Ustawieniach: nic więcej nie jest liczone ani wysyłane, a to, co było przechowywane, jest usuwane. By od razu usunąć wszystko przechowywane pod twoim kodem raportu, poproś na naszym Discordzie lub GitHubie.
+- aplikacja i jej wersja, dzień, twoja wersja Windows, twój język, kompilacja gry, czy RUSE Guard jest włączony oraz którą wersję tej umowy zaakceptowałeś;
+- jak często używano każdej części aplikacji i ile trwały operacje, co poszło źle i gdzie (tylko w naszym własnym kodzie), które mody z naszej listy miałeś włączone i ile minut grałeś z każdym, oraz ile własnych modów miałeś i jakie rodzaje rzeczy zawierają, na przykład jednostki, mapy, misje lub skrypty (policzone według rodzaju, nigdy nazwane i nigdy ich słowa, ścieżki ani pliki);
+- gdy aplikacja ulega awarii: rodzaj błędu i miejsce w naszym kodzie; gdy gra ulega awarii: jej kod awarii, miejsce w grze, w którym się zatrzymała, i do 16 miejsc w grze, które do niego doprowadziły, miejsce w pamięci, które próbowała odczytać, zapisać lub wykonać, własny tekst błędu gry ze skróconymi ścieżkami plików, mapa, na której była (mapa gry z jej nazwą; mapa zrobiona przez mod tylko jako „mapa z moda”, nigdy z nazwą), tryb gry, jednostka, którą gra właśnie tworzyła (jednostka gry z jej numerem; jednostka dodana przez mod tylko jako „jednostka z moda”) oraz włączone mody. Tryb gry i jednostkę aplikacje wysyłają tylko wtedy, gdy potrafią je odczytać z raportu o awarii gry.
+Widzą to tylko nasi deweloperzy: jest przechowywane na naszym serwerze i, gdy powstanie, w prywatnym repozytorium, które mogą otworzyć tylko nasi deweloperzy. Nigdy nie wysyłane: twoje prawdziwe imię, twoje konto Steam, twoje pliki ani ścieżki, ani nazwy i słowa twoich własnych modów; pliki awarii gry nigdy nie opuszczają twojego PC. Twoje liczniki i raporty o awariach są usuwane po 7 dniach; tylko bardzo poważna awaria, którą wciąż naprawiamy, jest trzymana dłużej, aż zostanie naprawiona, a potem zachowujemy tylko sumy bez nazwy i kodu (na przykład „12 kompilacji nie powiodło się tego dnia w wersji 0.9.9"). Jest wyłączony, chyba że go zaznaczysz. Odznacz go w każdej chwili w Ustawieniach: nic więcej nie jest liczone ani wysyłane, a to, co było przechowywane, jest usuwane. By od razu usunąć wszystko przechowywane pod twoim kodem raportu, poproś na naszym Discordzie lub GitHubie.
 
 7. Logowanie przez Steam
 Po co: by potwierdzić, że posiadasz R.U.S.E., na potrzeby gry online, RUSE Guard i pobierania zawartości. Na razie nic tego nie wymaga; aplikacje pytają raz, a Ustawienia Launchera otwierają to w każdej chwili.
@@ -44482,7 +44482,7 @@ Wiążący jest tekst angielski; pozostałe języki to tłumaczenia.
 """
 ru = """
 R.U.S.E. 2.0: пользовательское и лицензионное соглашение
-Версия 3, 2 ноября 2026
+Версия 4, 13 ноября 2026
 
 Коротко
 - Лицензии и упоминание авторов: лицензии, под которыми распространяются наши приложения и их модели, звуки и текстуры, чтобы люди, чью работу мы используем, были упомянуты.
@@ -44525,10 +44525,10 @@ R.U.S.E. — игра Eugen Systems, изданная Ubisoft. Вам нужна
 Зачем: чтобы Studio и Launcher лучше работали для вас и чтобы разработка шла легче. Вместо того чтобы ждать, пока кто-то сообщит о сбое, мы видим его, видим, что к нему привело, и исправляем раньше.
 Если вы это отметите, Studio и Launcher считают, чем вы пользуетесь и когда что-то идёт не так, и раз в день отправляют это нашим разработчикам. Настройки показывают вам слово в слово, что будет отправлено. Простыми словами, это:
 - код отчёта, созданный на вашем ПК в первый раз (чтобы ваши сбои можно было собрать вместе), и ваше имя пользователя;
-- приложение и его версия, день, ваша версия Windows, ваш язык, сборка игры и включён ли RUSE Guard;
-- как часто использовалась каждая часть приложения и сколько занимали операции, что пошло не так и где (только в нашем собственном коде), какие моды из нашего списка у вас были включены и сколько минут вы играли с каждым, и сколько у вас было собственных модов (подсчитаны, никогда не названы);
-- при сбое приложения: вид ошибки и место в нашем коде; при сбое игры: её код сбоя, место в игре, где она остановилась, и до 16 мест в игре, которые к нему привели, место в памяти, которое она пыталась прочитать, записать или выполнить, собственный текст ошибки игры с сокращёнными путями к файлам и включённые моды.
-Это видят только наши разработчики: оно хранится на нашем сервере и, когда он появится, в закрытом репозитории, который могут открыть только наши разработчики. Никогда не отправляются: ваше настоящее имя, ваш аккаунт Steam, ваши файлы и пути; файлы сбоев игры никогда не покидают ваш ПК. Ваши подсчёты и отчёты о сбоях удаляются через 7 дней; только очень серьёзный сбой, который мы ещё исправляем, хранится дольше, пока не будет исправлен, а после этого мы храним только итоги без имени и кода (например, «12 сборок не удались в тот день на версии 0.9.9»). Он выключен, пока вы его не отметите. Снимите отметку в любой момент в Настройках: больше ничего не считается и не отправляется, а сохранённое удаляется. Чтобы прямо сейчас удалить всё, что хранится под вашим кодом отчёта, попросите в нашем Discord или на GitHub.
+- приложение и его версия, день, ваша версия Windows, ваш язык, сборка игры, включён ли RUSE Guard и какую версию этого соглашения вы приняли;
+- как часто использовалась каждая часть приложения и сколько занимали операции, что пошло не так и где (только в нашем собственном коде), какие моды из нашего списка у вас были включены и сколько минут вы играли с каждым, и сколько у вас было собственных модов и какого рода вещи в них есть, например юниты, карты, миссии или скрипты (подсчитаны по видам, никогда не названы, и никогда не их слова, пути или файлы);
+- при сбое приложения: вид ошибки и место в нашем коде; при сбое игры: её код сбоя, место в игре, где она остановилась, и до 16 мест в игре, которые к нему привели, место в памяти, которое она пыталась прочитать, записать или выполнить, собственный текст ошибки игры с сокращёнными путями к файлам, карта, на которой она была (карта игры — по её названию; карта, сделанная модом, — только как «карта мода», никогда не по названию), режим игры, юнит, который игра создавала (юнит игры — по его номеру; юнит, добавленный модом, — только как «юнит мода»), и включённые моды. Режим игры и юнит приложения отправляют, только когда могут прочитать их из отчёта игры о сбое.
+Это видят только наши разработчики: оно хранится на нашем сервере и, когда он появится, в закрытом репозитории, который могут открыть только наши разработчики. Никогда не отправляются: ваше настоящее имя, ваш аккаунт Steam, ваши файлы и пути, а также названия и слова ваших собственных модов; файлы сбоев игры никогда не покидают ваш ПК. Ваши подсчёты и отчёты о сбоях удаляются через 7 дней; только очень серьёзный сбой, который мы ещё исправляем, хранится дольше, пока не будет исправлен, а после этого мы храним только итоги без имени и кода (например, «12 сборок не удались в тот день на версии 0.9.9»). Он выключен, пока вы его не отметите. Снимите отметку в любой момент в Настройках: больше ничего не считается и не отправляется, а сохранённое удаляется. Чтобы прямо сейчас удалить всё, что хранится под вашим кодом отчёта, попросите в нашем Discord или на GitHub.
 
 7. Вход через Steam
 Зачем: чтобы подтвердить, что вы владеете R.U.S.E., для сетевой игры, RUSE Guard и загрузки контента. Пока он ничему не нужен; приложения спрашивают один раз, а Настройки Launcher открывают его в любой момент.
@@ -44554,7 +44554,7 @@ R.U.S.E. — игра Eugen Systems, изданная Ubisoft. Вам нужна
 """
 cz = """
 R.U.S.E. 2.0: uživatelská a licenční smlouva
-Verze 3, 2. listopadu 2026
+Verze 4, 13. listopadu 2026
 
 Stručně
 - Licence a poděkování: licence, pod kterými jsou naše aplikace a jejich modely, zvuky a textury, aby lidé, jejichž práci používáme, byli uvedeni.
@@ -44597,10 +44597,10 @@ Proč: aby zastavil podvádění ve skutečných zápasech R.U.S.E. pro více hr
 Proč: aby Studio a Launcher pro vás fungovaly lépe a aby byl vývoj snazší. Místo čekání, až někdo pád nahlásí, ho vidíme, vidíme, co k němu vedlo, a opravíme ho dříve.
 Pokud toto zaškrtnete, Studio a Launcher počítají, co používáte a kdy se něco pokazí, a jednou denně to pošlou našim vývojářům. Nastavení vám slovo od slova ukáže, co by se odeslalo. Jednoduše řečeno jde o:
 - kód hlášení, vytvořený na vašem PC poprvé (aby šlo vaše pády najít pohromadě), a vaše uživatelské jméno;
-- aplikaci a její verzi, den, vaši verzi Windows, váš jazyk, sestavení hry a zda je RUSE Guard zapnutý;
-- jak často se používala která část aplikace a jak dlouho věci trvaly, co se pokazilo a kde (jen v našem vlastním kódu), které módy z našeho seznamu jste měli zapnuté a kolik minut jste s každým hráli, a kolik vlastních módů jste měli (spočítáno, nikdy pojmenováno);
-- když spadne aplikace: druh chyby a místo v našem kódu; když spadne hra: její kód pádu, místo ve hře, kde se zastavila, a až 16 míst ve hře, která tam vedla, místo v paměti, které se pokoušela číst, zapisovat nebo spustit, vlastní chybový text hry se zkrácenými cestami k souborům a módy, které byly zapnuté.
-Vidí to jen naši vývojáři: je to uloženo na našem serveru a, jakmile vznikne, v soukromém repozitáři, který mohou otevřít jen naši vývojáři. Nikdy se neodesílá: vaše skutečné jméno, váš účet Steam, vaše soubory ani cesty; soubory pádů hry nikdy neopustí váš PC. Vaše počty a hlášení o pádech se smažou po 7 dnech; jen velmi vážný pád, který ještě opravujeme, se uchová déle, dokud není opraven, a poté uchováváme jen součty bez jména a kódu (třeba „12 sestavení ten den selhalo na verzi 0.9.9"). Je vypnutý, dokud ho nezaškrtnete. Kdykoli ho v Nastavení odškrtněte: nic dalšího se nepočítá ani neodesílá a to, co bylo uloženo, se smaže. Chcete-li hned smazat vše uložené pod vaším kódem hlášení, požádejte na našem Discordu nebo GitHubu.
+- aplikaci a její verzi, den, vaši verzi Windows, váš jazyk, sestavení hry, zda je RUSE Guard zapnutý, a kterou verzi této smlouvy jste přijali;
+- jak často se používala která část aplikace a jak dlouho věci trvaly, co se pokazilo a kde (jen v našem vlastním kódu), které módy z našeho seznamu jste měli zapnuté a kolik minut jste s každým hráli, a kolik vlastních módů jste měli a jaké druhy věcí obsahují, například jednotky, mapy, mise nebo skripty (spočítáno podle druhu, nikdy pojmenováno a nikdy jejich slova, cesty ani soubory);
+- když spadne aplikace: druh chyby a místo v našem kódu; když spadne hra: její kód pádu, místo ve hře, kde se zastavila, a až 16 míst ve hře, která tam vedla, místo v paměti, které se pokoušela číst, zapisovat nebo spustit, vlastní chybový text hry se zkrácenými cestami k souborům, mapu, na které byla (mapu hry podle jejího názvu; mapu vytvořenou módem jen jako „mapa z módu“, nikdy podle názvu), herní režim, jednotku, kterou hra právě vytvářela (jednotku hry podle jejího čísla; jednotku přidanou módem jen jako „jednotka z módu“) a módy, které byly zapnuté. Herní režim a jednotku aplikace posílají, jen když je dokážou přečíst z hlášení hry o pádu.
+Vidí to jen naši vývojáři: je to uloženo na našem serveru a, jakmile vznikne, v soukromém repozitáři, který mohou otevřít jen naši vývojáři. Nikdy se neodesílá: vaše skutečné jméno, váš účet Steam, vaše soubory ani cesty, ani názvy a slova vašich vlastních módů; soubory pádů hry nikdy neopustí váš PC. Vaše počty a hlášení o pádech se smažou po 7 dnech; jen velmi vážný pád, který ještě opravujeme, se uchová déle, dokud není opraven, a poté uchováváme jen součty bez jména a kódu (třeba „12 sestavení ten den selhalo na verzi 0.9.9"). Je vypnutý, dokud ho nezaškrtnete. Kdykoli ho v Nastavení odškrtněte: nic dalšího se nepočítá ani neodesílá a to, co bylo uloženo, se smaže. Chcete-li hned smazat vše uložené pod vaším kódem hlášení, požádejte na našem Discordu nebo GitHubu.
 
 7. Přihlášení přes Steam
 Proč: aby se potvrdilo, že vlastníte R.U.S.E., pro online hru, RUSE Guard a stahování obsahu. Zatím to nic nevyžaduje; aplikace se zeptají jednou a Nastavení Launcheru to kdykoli otevře.
@@ -44626,7 +44626,7 @@ Závazný je anglický text; ostatní jazyky jsou překlady.
 """
 jpn = """
 R.U.S.E. 2.0: 利用およびライセンス契約
-バージョン 3、2026 年 11 月 2 日
+バージョン 4、2026 年 11 月 13 日
 
 要約
 - ライセンスとクレジット: 私たちのアプリとそのモデル、サウンド、テクスチャが使うライセンス。私たちが使わせてもらう作品の作者がクレジットされるためです。
@@ -44669,10 +44669,10 @@ R.U.S.E. は Eugen Systems が開発し Ubisoft が販売するゲームです�
 目的: Studio と Launcher をあなたにとってより良く動くようにし、開発を楽にするためです。誰かがクラッシュを報告するのを待つ代わりに、私たちはそれを見て、何が原因かを見て、より早く直します。
 これをチェックすると、Studio と Launcher は何を使い、いつ何がうまくいかなかったかを数え、1 日 1 回開発者に送ります。設定では、送られる内容を一語一句そのまま見られます。平たく言えば、次のものです。
 - 最初の起動時に PC 上で作られる報告コード（あなたのクラッシュをまとめて見つけるため）と、あなたのユーザー名。
-- アプリとそのバージョン、日付、Windows のバージョン、言語、ゲームのビルド、RUSE Guard がオンかどうか。
-- アプリの各部分がどれくらい使われ、処理にどれくらいかかったか、何がどこでうまくいかなかったか（私たち自身のコード内のみ）、私たちの一覧のどの Mod をオンにして各 Mod で何分遊んだか、自作の Mod がいくつあったか（数のみ、名前は送りません）。
-- アプリがクラッシュしたとき: エラーの種類と私たちのコード内の場所。ゲームがクラッシュしたとき: クラッシュコード、ゲーム内の停止箇所とそこに至ったゲーム内の最大 16 か所、読み書きまたは実行しようとしていたメモリー上の場所、ファイルパスを短縮したゲーム自身のエラーメッセージ、オンだった Mod。
-見るのは私たちの開発者だけです。私たちのサーバーと、用意でき次第、開発者だけが開ける非公開リポジトリに保管されます。決して送らないもの: あなたの本名、Steam アカウント、ファイルやパス。ゲームのクラッシュファイルがあなたの PC を離れることはありません。集計とクラッシュレポートは 7 日後に削除されます。私たちがまだ修正中の非常に深刻なクラッシュだけが直るまで長く保持され、その後は名前もコードも含まない合計だけ（例:「その日バージョン 0.9.9 で 12 回ビルドが失敗」）を残します。チェックしない限りオフです。設定でいつでもチェックを外せます。それ以降は何も数えず送らず、保管していたものは削除されます。あなたの報告コードのもとに保管されているものを今すぐ削除してほしいときは、私たちの Discord か GitHub で頼んでください。
+- アプリとそのバージョン、日付、Windows のバージョン、言語、ゲームのビルド、RUSE Guard がオンかどうか、この同意書のどのバージョンに同意したか。
+- アプリの各部分がどれくらい使われ、処理にどれくらいかかったか、何がどこでうまくいかなかったか（私たち自身のコード内のみ）、私たちの一覧のどの Mod をオンにして各 Mod で何分遊んだか、自作の Mod がいくつあり、ユニット、マップ、ミッション、スクリプトなど、どんな種類のものを含んでいるか（種類ごとの数のみ。名前も、その中の言葉、パス、ファイルも送りません）。
+- アプリがクラッシュしたとき: エラーの種類と私たちのコード内の場所。ゲームがクラッシュしたとき: クラッシュコード、ゲーム内の停止箇所とそこに至ったゲーム内の最大 16 か所、読み書きまたは実行しようとしていたメモリー上の場所、ファイルパスを短縮したゲーム自身のエラーメッセージ、そのときのマップ（ゲームのマップはその名前、Mod が作ったマップは「Mod のマップ」とだけ送り、名前は送りません）、ゲームモード、ゲームが作っていたユニット（ゲームのユニットはその番号、Mod が追加したユニットは「Mod のユニット」とだけ送ります）、オンだった Mod。ゲームモードとユニットは、アプリがゲームのクラッシュレポートから読み取れるときだけ送ります。
+見るのは私たちの開発者だけです。私たちのサーバーと、用意でき次第、開発者だけが開ける非公開リポジトリに保管されます。決して送らないもの: あなたの本名、Steam アカウント、ファイルやパス、自作 Mod の名前やその中の言葉。ゲームのクラッシュファイルがあなたの PC を離れることはありません。集計とクラッシュレポートは 7 日後に削除されます。私たちがまだ修正中の非常に深刻なクラッシュだけが直るまで長く保持され、その後は名前もコードも含まない合計だけ（例:「その日バージョン 0.9.9 で 12 回ビルドが失敗」）を残します。チェックしない限りオフです。設定でいつでもチェックを外せます。それ以降は何も数えず送らず、保管していたものは削除されます。あなたの報告コードのもとに保管されているものを今すぐ削除してほしいときは、私たちの Discord か GitHub で頼んでください。
 
 7. Steam サインイン
 目的: オンラインプレイ、RUSE Guard、コンテンツのダウンロードのために、あなたが R.U.S.E. を所有していることを確認するためです。今はまだ何も必要としていません。アプリは一度だけ尋ね、Launcher の設定からいつでも開けます。
@@ -44698,7 +44698,7 @@ R.U.S.E. は Eugen Systems が開発し Ubisoft が販売するゲームです�
 """
 sc = """
 R.U.S.E. 2.0：用户与许可协议
-第 3 版，2026 年 11 月 2 日
+第 4 版，2026 年 11 月 13 日
 
 简而言之
 - 许可与署名：我们的应用及其模型、声音和贴图所使用的许可，让我们所使用作品的作者得到署名。
@@ -44741,10 +44741,10 @@ R.U.S.E. 是 Eugen Systems 开发、Ubisoft 发行的游戏。你需要自己的
 目的：让 Studio 和 Launcher 对你运行得更好，并让开发更轻松。我们无需等待有人报告崩溃，就能看到它、看到导致它的原因，并更早修复。
 如果你勾选此项，Studio 和 Launcher 会统计你使用了什么以及何时出了问题，并每天一次发送给我们的开发者。设置中会逐字显示将要发送的内容。简单地说，它包括：
 - 第一次在你电脑上生成的报告码（以便把你的崩溃归在一起），以及你的用户名；
-- 应用及其版本、日期、你的 Windows 版本、语言、游戏的构建版本，以及 RUSE Guard 是否开启；
-- 应用各部分的使用频率和各项操作耗时，出了什么问题以及在哪里（仅限我们自己的代码），你开启了我们列表中的哪些 Mod 以及各玩了多少分钟，以及你有多少个自己的 Mod（只计数，不记名）；
-- 应用崩溃时：错误类型和在我们代码中的位置；游戏崩溃时：崩溃代码、游戏停止的位置和导致停止的游戏中最多 16 个位置、游戏当时试图读写或执行的内存位置、缩短了文件路径的游戏自身错误文本，以及当时开启的 Mod。
-只有我们的开发者能看到：它保存在我们的服务器上，以及（建好后）只有我们的开发者能打开的私有仓库中。绝不发送：你的真实姓名、Steam 账号、文件或路径；游戏的崩溃文件绝不会离开你的电脑。你的统计和崩溃报告会在 7 天后删除；只有我们仍在修复的非常严重的崩溃会保留更久，直到修复为止，之后我们只保留不含姓名和代码的总数（例如"那天 0.9.9 版有 12 次构建失败"）。除非你勾选，否则它是关闭的。你可以随时在设置中取消勾选：之后不再统计或发送任何内容，已保存的内容会被删除。要立即删除你报告码下保存的所有内容，请在我们的 Discord 或 GitHub 上提出。
+- 应用及其版本、日期、你的 Windows 版本、语言、游戏的构建版本、RUSE Guard 是否开启，以及你接受了本协议的哪个版本；
+- 应用各部分的使用频率和各项操作耗时，出了什么问题以及在哪里（仅限我们自己的代码），你开启了我们列表中的哪些 Mod 以及各玩了多少分钟，以及你有多少个自己的 Mod、它们包含哪些种类的内容，例如单位、地图、任务或脚本（只按种类计数，不记名，也绝不包括其中的文字、路径或文件）；
+- 应用崩溃时：错误类型和在我们代码中的位置；游戏崩溃时：崩溃代码、游戏停止的位置和导致停止的游戏中最多 16 个位置、游戏当时试图读写或执行的内存位置、缩短了文件路径的游戏自身错误文本、当时所在的地图（游戏自带地图发送其名称；Mod 制作的地图只发送“Mod 的地图”，绝不发送其名称）、游戏模式、游戏当时正在创建的单位（游戏自带单位发送其编号；Mod 添加的单位只发送“Mod 的单位”），以及当时开启的 Mod。只有当应用能从游戏的崩溃报告中读出游戏模式和单位时，才会发送它们。
+只有我们的开发者能看到：它保存在我们的服务器上，以及（建好后）只有我们的开发者能打开的私有仓库中。绝不发送：你的真实姓名、Steam 账号、文件或路径，以及你自己的 Mod 的名称和其中的文字；游戏的崩溃文件绝不会离开你的电脑。你的统计和崩溃报告会在 7 天后删除；只有我们仍在修复的非常严重的崩溃会保留更久，直到修复为止，之后我们只保留不含姓名和代码的总数（例如"那天 0.9.9 版有 12 次构建失败"）。除非你勾选，否则它是关闭的。你可以随时在设置中取消勾选：之后不再统计或发送任何内容，已保存的内容会被删除。要立即删除你报告码下保存的所有内容，请在我们的 Discord 或 GitHub 上提出。
 
 7. 通过 Steam 登录
 目的：确认你拥有 R.U.S.E.，用于在线游戏、RUSE Guard 和内容下载。目前还没有任何功能需要它；应用只会询问一次，Launcher 的设置中随时可以打开。
@@ -44770,7 +44770,7 @@ R.U.S.E. 是 Eugen Systems 开发、Ubisoft 发行的游戏。你需要自己的
 """
 fa = """
 R.U.S.E. 2.0: توافق‌نامهٔ کاربری و مجوز
-نسخهٔ ۳، ۲ نوامبر ۲۰۲۶
+نسخهٔ ۴، ۱۳ نوامبر ۲۰۲۶
 
 به‌طور خلاصه
 - مجوزها و ذکر نام سازندگان: مجوزهایی که برنامه‌های ما و مدل‌ها، صداها و بافت‌هایشان از آن‌ها استفاده می‌کنند، تا نام کسانی که از کارشان استفاده می‌کنیم ذکر شود.
@@ -44813,10 +44813,10 @@ R.U.S.E. بازی‌ای از Eugen Systems است که Ubisoft منتشر کر�
 چرا: تا Studio و Launcher برای شما بهتر کار کنند و توسعه آسان‌تر شود. به جای این‌که منتظر بمانیم کسی خرابی‌ای را گزارش کند، آن را می‌بینیم، می‌بینیم چه چیزی به آن انجامیده و زودتر برطرفش می‌کنیم.
 اگر تیک این را بزنید، Studio و Launcher می‌شمارند از چه چیزی استفاده می‌کنید و کِی چیزی خراب می‌شود و روزی یک بار آن را برای توسعه‌دهندگان ما می‌فرستند. تنظیمات کلمه به کلمه نشانتان می‌دهد چه چیزی فرستاده خواهد شد. به زبان ساده، این‌ها هستند:
 - یک کد گزارش که بار اول روی رایانهٔ شما ساخته می‌شود (تا خرابی‌های شما کنار هم پیدا شوند)، و نام کاربری شما؛
-- برنامه و نسخه‌اش، روز، نسخهٔ Windows شما، زبان شما، بیلد بازی و این‌که RUSE Guard روشن است یا نه؛
-- هر بخش برنامه چند بار استفاده شده و کارها چقدر طول کشیده‌اند، چه چیزی و کجا خراب شده (فقط در کد خود ما)، کدام مادهای فهرست ما را روشن داشته‌اید و با هر یک چند دقیقه بازی کرده‌اید، و چند ماد از خودتان داشته‌اید (شمرده می‌شود، هرگز نامشان نمی‌آید)؛
-- وقتی برنامه‌ای از کار می‌افتد: نوع خطا و جای آن در کد ما؛ وقتی بازی از کار می‌افتد: کد خرابی‌اش، جایی از بازی که متوقف شده و تا ۱۶ جای بازی که به آن انجامیده‌اند، جایی از حافظه که می‌خواست بخواند، بنویسد یا اجرا کند، متن خطای خود بازی با مسیرهای فایل کوتاه‌شده، و مادهایی که روشن بوده‌اند.
-فقط توسعه‌دهندگان ما آن را می‌بینند: روی سرور ما و، به محض ساخته شدن، در مخزن خصوصی‌ای نگه داشته می‌شود که فقط توسعه‌دهندگان ما می‌توانند بازش کنند. هرگز فرستاده نمی‌شود: نام واقعی شما، حساب Steam شما، فایل‌ها یا مسیرهای شما؛ فایل‌های خرابی بازی هرگز از رایانهٔ شما خارج نمی‌شوند. شمارش‌ها و گزارش‌های خرابی شما پس از ۷ روز حذف می‌شوند؛ فقط یک خرابی بسیار جدی که هنوز در حال برطرف کردنش هستیم بیشتر نگه داشته می‌شود، تا وقتی برطرف شود، و پس از آن فقط جمع‌هایی بدون نام و کد نگه می‌داریم (مثل «آن روز ۱۲ ساخت روی نسخهٔ 0.9.9 ناموفق بود»). تا وقتی تیکش نزنید خاموش است. هر وقت خواستید در تنظیمات تیکش را بردارید: دیگر چیزی شمرده یا فرستاده نمی‌شود و آنچه نگه داشته شده بود حذف می‌شود. برای این‌که هر چه زیر کد گزارش شما نگه داشته شده همین حالا حذف شود، در Discord یا GitHub ما درخواست کنید.
+- برنامه و نسخه‌اش، روز، نسخهٔ Windows شما، زبان شما، بیلد بازی، این‌که RUSE Guard روشن است یا نه، و این‌که کدام نسخهٔ این توافق‌نامه را پذیرفته‌اید؛
+- هر بخش برنامه چند بار استفاده شده و کارها چقدر طول کشیده‌اند، چه چیزی و کجا خراب شده (فقط در کد خود ما)، کدام مادهای فهرست ما را روشن داشته‌اید و با هر یک چند دقیقه بازی کرده‌اید، و چند ماد از خودتان داشته‌اید و چه نوع چیزهایی در آن‌هاست، مثل یگان‌ها، نقشه‌ها، مأموریت‌ها یا اسکریپت‌ها (به تفکیک نوع شمرده می‌شود، هرگز نامشان نمی‌آید و هرگز واژه‌ها، مسیرها یا فایل‌هایشان فرستاده نمی‌شود)؛
+- وقتی برنامه‌ای از کار می‌افتد: نوع خطا و جای آن در کد ما؛ وقتی بازی از کار می‌افتد: کد خرابی‌اش، جایی از بازی که متوقف شده و تا ۱۶ جای بازی که به آن انجامیده‌اند، جایی از حافظه که می‌خواست بخواند، بنویسد یا اجرا کند، متن خطای خود بازی با مسیرهای فایل کوتاه‌شده، نقشه‌ای که در آن بود (نقشه‌های خود بازی با نامشان؛ نقشه‌ای که یک ماد ساخته فقط به صورت «نقشهٔ یک ماد»، هرگز با نامش)، حالت بازی، یگانی که بازی در حال ساختنش بود (یگان‌های خود بازی با شماره‌شان؛ یگانی که یک ماد افزوده فقط به صورت «یگان یک ماد»)، و مادهایی که روشن بوده‌اند. برنامه‌ها حالت بازی و یگان را فقط وقتی می‌فرستند که بتوانند آن‌ها را از گزارش خرابی بازی بخوانند.
+فقط توسعه‌دهندگان ما آن را می‌بینند: روی سرور ما و، به محض ساخته شدن، در مخزن خصوصی‌ای نگه داشته می‌شود که فقط توسعه‌دهندگان ما می‌توانند بازش کنند. هرگز فرستاده نمی‌شود: نام واقعی شما، حساب Steam شما، فایل‌ها یا مسیرهای شما، یا نام‌ها و واژه‌های مادهای خودتان؛ فایل‌های خرابی بازی هرگز از رایانهٔ شما خارج نمی‌شوند. شمارش‌ها و گزارش‌های خرابی شما پس از ۷ روز حذف می‌شوند؛ فقط یک خرابی بسیار جدی که هنوز در حال برطرف کردنش هستیم بیشتر نگه داشته می‌شود، تا وقتی برطرف شود، و پس از آن فقط جمع‌هایی بدون نام و کد نگه می‌داریم (مثل «آن روز ۱۲ ساخت روی نسخهٔ 0.9.9 ناموفق بود»). تا وقتی تیکش نزنید خاموش است. هر وقت خواستید در تنظیمات تیکش را بردارید: دیگر چیزی شمرده یا فرستاده نمی‌شود و آنچه نگه داشته شده بود حذف می‌شود. برای این‌که هر چه زیر کد گزارش شما نگه داشته شده همین حالا حذف شود، در Discord یا GitHub ما درخواست کنید.
 
 ۷. ورود با Steam
 چرا: برای تأیید این‌که R.U.S.E. را دارید؛ برای بازی آنلاین، RUSE Guard و دانلود محتوا. فعلاً هیچ چیزی به آن نیاز ندارد؛ برنامه‌ها یک بار می‌پرسند و تنظیمات Launcher هر وقت بخواهید آن را باز می‌کند.
