@@ -132,12 +132,39 @@ def unit_plays(figures: list, names: list, read, mod: Path | None, unit: str, sk
     return rows
 
 
+TIMED = 1e-4   # a clip whose length is this near its frames at the game's 30 a second is on the game's frames
+#                (rusemod.rig._settle's own measure of "the same length")
+
+
+def on_game_frames(raw: bytes) -> bytes:
+    """A clip as Blender shows it and sends it back: the same clip when its keys fall on the game's frames (30 a
+    second: its length (its frames - 1) / 30), else (RUSE Decoy's speed made it slower or faster, or a file of the
+    unit's own of another timing) the same motion at the same speed sampled at each of the game's frames over its
+    length, as Blender, playing it at 30 a second, would send it back untouched. So what goes out to Blender and what
+    comes back are compared as the same thing (decoyblender: one that comes back as it went out is the mod's clip, not
+    a change). Its length becomes a whole number of frames, the nearest; a clip of one frame stays as it is."""
+    from rusemod import baf
+    c = baf.parse(raw)
+    if c.frames <= 1 or c.duration <= 0 or abs(c.duration - (c.frames - 1) / baf.FPS) < TIMED:
+        return bytes(raw)
+    n = max(2, round(c.duration * baf.FPS) + 1)
+    sk = baf.skeleton(c.skeleton)
+    still = ([(0.0, 0.0, 0.0)] * n, [(0.0, 0.0, 0.0, 1.0)] * n, [(1.0, 1.0, 1.0)] * n)
+    poses = [still] * sk["bones"]           # (a bone with no track: none is written for it)
+    for u, b in enumerate(sk["index"]):
+        got = [baf.sample(c.tracks[u], min(1.0, k / baf.FPS / c.duration)) for k in range(n)]
+        poses[b] = ([g[0] for g in got], [g[1] for g in got], [g[2] for g in got])
+    clip = baf.from_frames((n - 1) / baf.FPS, poses, c.skeleton)
+    return baf.build(clip, max(baf.MOST_BONES, sk["bones"]))
+
+
 def as_clips(rows: list) -> list:
     """unit_plays' rows as rusemod.gltf.model_glb's and rusemod.animglb.own_glb's `clips`: [(name, clip, extras)],
     each animation's extras the actions that play it (rusemod_actions, rusemod_figures) and its clip
-    (rusemod_clip)."""
+    (rusemod_clip). A row's "blender_clip" (on_game_frames') goes out in its "clip"'s place when it has one."""
     from rusemod import baf
-    return [(r["name"], baf.parse(r["clip"]), {"rusemod_clip": r["member"] or r["own"] or "",
+    return [(r["name"], baf.parse(r.get("blender_clip") or r["clip"]),
+             {"rusemod_clip": r["member"] or r["own"] or "",
                                                "rusemod_actions": sorted({k for ks in r["actions"].values() for k in ks}),
                                                "rusemod_figures": r["actions"]}) for r in rows]
 
@@ -145,7 +172,9 @@ def as_clips(rows: list) -> list:
 def write_sent(work: Path, model: str, record: bytes, rows: list) -> None:
     """Keep what went out beside the work file: SENT ({"model", "record" (base64), "animations": [{"name", "file",
     "member", "own", "actions", and "model_animation" when it is one of the model's own animations (the unit's
-    files/anim/units.toml [unit.<name>.animation]: its name there)}]}) and each clip in CLIPS (k.baf, in order)."""
+    files/anim/units.toml [unit.<name>.animation]: its name there), and "blender_file" when what Blender was given
+    isn't the clip itself (the row's "blender_clip", on_game_frames')}]}) and each clip in CLIPS (k.baf, in order;
+    k.blender.baf what Blender was given of it)."""
     work = Path(work)
     folder = work / CLIPS
     if folder.is_dir():
@@ -155,8 +184,13 @@ def write_sent(work: Path, model: str, record: bytes, rows: list) -> None:
     out = []
     for k, r in enumerate(rows):
         (folder / f"{k}.baf").write_bytes(r["clip"])
+        given = r.get("blender_clip")
+        if given is not None and bytes(given) != bytes(r["clip"]):
+            (folder / f"{k}.blender.baf").write_bytes(given)
         out.append({"name": r["name"], "file": f"{CLIPS}/{k}.baf", "member": r["member"], "own": r["own"],
                     "actions": r["actions"],
+                    **({"blender_file": f"{CLIPS}/{k}.blender.baf"}
+                       if given is not None and bytes(given) != bytes(r["clip"]) else {}),
                     **({"model_animation": r["model_animation"]} if r.get("model_animation") else {})})
     part = work / (SENT + ".part")
     part.write_text(json.dumps({"model": model, "record": base64.b64encode(record).decode("ascii"),
@@ -165,7 +199,8 @@ def write_sent(work: Path, model: str, record: bytes, rows: list) -> None:
 
 
 def read_sent(work: Path) -> dict | None:
-    """What went out (write_sent's), with "record" as bytes and each animation's "clip" read back; None when nothing
+    """What went out (write_sent's), with "record" as bytes and each animation's "clip" read back, and its
+    "blender_clip": what Blender was given of it (the clip itself, unless write_sent kept another); None when nothing
     did (no animations went out from this work folder) or it can't be read."""
     work = Path(work)
     try:
@@ -173,6 +208,7 @@ def read_sent(work: Path) -> dict | None:
         sent["record"] = base64.b64decode(sent["record"])
         for a in sent["animations"]:
             a["clip"] = (work / a["file"]).read_bytes()
+            a["blender_clip"] = (work / a["blender_file"]).read_bytes() if a.get("blender_file") else a["clip"]
     except (OSError, ValueError, KeyError, TypeError):
         return None
     return sent

@@ -267,24 +267,41 @@ class DecoyBlenderCalls:
 
     # --- out to Blender ---
     @staticmethod
+    def _said_file_error(exc: OSError, writing, lang: str):
+        """An OSError of the door's own files (a full disk, a file another program holds) as api.file_error says it,
+        in the modder's language (errors.toml), never in Python's own words: a StudioError to raise."""
+        from .api import StudioError, file_error
+        from .errortext import worded
+        return StudioError(worded(str(file_error(exc, writing)), lang))
+
+    @staticmethod
     def _anim_set_aside(work: Path) -> Path:
         """Blender's last sending, never brought back, kept aside whole: moved to sent-not-brought-<time>/ with what
         Send said of it, and a copy of what went out with it (animations.json and its clips), its state and its words,
-        so Bring back the set-aside sending can still take it in. Returns the folder."""
+        so Bring back the set-aside sending can still take it in. Returns the folder. All or nothing: everything else
+        is copied first and the sending itself moved last (the folder is listed, _asides, only once it is there), and a
+        set-aside stopped part way (a full disk, a file another program holds) takes its folder away again, the sending
+        left where it was, waiting; the OSError is raised."""
         from . import animblender
         stamp = time.strftime(f"{ASIDE}%Y%m%d-%H%M%S")
         aside, k = work / stamp, 2
         while aside.exists():
             aside, k = work / f"{stamp}-{k}", k + 1
         aside.mkdir()
-        os.replace(work / SEND, aside / SEND)
-        if (work / ABOUT).is_file():
-            os.replace(work / ABOUT, aside / ABOUT)
-        for name in (animblender.SENT, STATE, "words.json"):
-            if (work / name).is_file():
-                shutil.copy2(work / name, aside / name)
-        if (work / animblender.CLIPS).is_dir():
-            shutil.copytree(work / animblender.CLIPS, aside / animblender.CLIPS)
+        try:
+            for name in (animblender.SENT, STATE, "words.json", ABOUT):
+                if (work / name).is_file():
+                    shutil.copy2(work / name, aside / name)
+            if (work / animblender.CLIPS).is_dir():
+                shutil.copytree(work / animblender.CLIPS, aside / animblender.CLIPS)
+            os.replace(work / SEND, aside / SEND)
+        except OSError:
+            shutil.rmtree(aside, ignore_errors=True)
+            raise
+        try:        # (said of the sending moved: a copy of it is beside it)
+            (work / ABOUT).unlink(missing_ok=True)
+        except OSError:
+            pass    # (left behind, it is never read again: a bring back reads it only beside the sending it names)
         return aside
 
     # --- what a bring back checks against, kept when the animations go out (state.json) ---
@@ -357,6 +374,22 @@ class DecoyBlenderCalls:
                            "bones": {b: [v.get("size"), list(v["turn"]) if v.get("turn") else None]
                                      for b, v in sorted((e.get("bones") or {}).items())}}, sort_keys=True)
 
+    @staticmethod
+    def _at_game_frames(rows: list) -> list:
+        """unit_plays' rows, each with "blender_clip": what Blender is given of its clip, on the game's frames
+        (animblender.on_game_frames: a clip RUSE Decoy's speed made slower or faster, for every unit or this one,
+        sampled at 30 a second). What comes back is compared with that, so one sent back untouched is the mod's clip,
+        never a change (decoy_blender_back)."""
+        from rusemod import baf
+        from . import animblender
+        from .api import StudioError
+        for r in rows:
+            try:
+                r["blender_clip"] = animblender.on_game_frames(r["clip"])
+            except baf.ClipError as exc:     # (a clip file of the mod's that isn't one: says which)
+                raise StudioError(f"{r['name']}: {exc}") from None
+        return rows
+
     def _edits_then(self, unit: str, rows: list) -> dict:
         """{each animation that went out as a game clip the mod may change: _edit_print's text for it now}."""
         from rusemod import anim
@@ -392,24 +425,27 @@ class DecoyBlenderCalls:
         if self._anim_open(work):
             raise StudioError("This unit's animations are open in Blender already: change them there, then bring your "
                               "changes back.")
-        work.mkdir(parents=True, exist_ok=True)
+        try:
+            work.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise self._said_file_error(exc, work, lang) from None
         state = _read(work / STATE)
         send = work / SEND
         # (what can be refused is worked out first, the last sending still waiting where it was: an opening refused
         # leaves it to Bring my changes back; it is set aside only once the new opening's own files are written)
         own_raw, own_record = self._own_bones_model(address)
         lib = models.Library(self._game())
+        start = work / "animations.glb"
         try:
             if own_raw is not None:     # a model on bones of its own, with its own animations
                 record, model = own_record, "own"
-                rows = self._unit_plays(address, lib, own_record, w, own_raw)
+                rows = self._at_game_frames(self._unit_plays(address, lib, own_record, w, own_raw))
                 if not rows:
                     raise StudioError("This unit plays no animation the Studio can open in Blender.")
                 try:
                     data, _summary = animglb.own_glb(own_raw, animblender.as_clips(rows))
                 except animglb.AnimGlbError as exc:
                     raise StudioError(str(exc)) from None
-                start = work / "animations.glb"
                 start.write_bytes(data)
                 points = self._own_points(address, own_raw, own_record)
             else:
@@ -418,7 +454,7 @@ class DecoyBlenderCalls:
                     raise StudioError("This unit has no 3D model the Studio can open.")
                 model = next((m for m in found if not HEAVY.search(m.rsplit("\\", 1)[-1])), found[0])
                 record = lib.skeleton(model) if hasattr(lib, "skeleton") else None
-                rows = self._unit_plays(address, lib, record, w) if record is not None else []
+                rows = self._at_game_frames(self._unit_plays(address, lib, record, w)) if record is not None else []
                 if not rows:
                     raise StudioError("This unit plays no animation the Studio can open in Blender.")
                 try:
@@ -430,27 +466,40 @@ class DecoyBlenderCalls:
                 # (the unit's own model on the game soldier's bones, Import model's: the build draws its figures with
                 # it, so the bones its points lean on count too, its kinds' models on these bones likewise)
                 points |= self._game_bones_own_points(address, record)
+        except OSError as exc:      # (the file Blender opens couldn't be written: a full disk, a file another holds)
+            raise self._said_file_error(exc, start, lang) from None
         finally:
             lib.close()
         edits = self._edits_then(animblender.unit_name(self._own_model_file(address)), rows)
         set_aside = None
-        if send.is_file() and _sha(send) != state.get("brought"):
-            set_aside = self._anim_set_aside(work)
-        else:   # (a sending brought back already is in the mod: a bring back from this opening never reads it again)
-            send.unlink(missing_ok=True)
-            (work / ABOUT).unlink(missing_ok=True)
+        try:
+            if send.is_file() and _sha(send) != state.get("brought"):
+                set_aside = self._anim_set_aside(work)  # (all or nothing: stopped, the sending is where it was)
+            else:   # (a sending brought back already is in the mod: a bring back from this opening never reads it again)
+                send.unlink(missing_ok=True)
+                (work / ABOUT).unlink(missing_ok=True)
+        except OSError as exc:
+            raise self._said_file_error(exc, work, lang) from None
+        writing = work / animblender.SENT
         try:
             animblender.write_sent(work, model, record, rows)
             session = hashlib.sha256(f"{time.time()}|{work}".encode()).hexdigest()[:16]
-            _write(work / "words.json", {"send": w["blender_model_send"], "sent": w["decoy_blender_sent"],
-                                         "hint": [w["blender_anim_hint1"], w["blender_anim_hint2"]],
-                                         "hint_animations": [], "nla": w["decoy_blender_nla"], "session": session})
+            writing = work / "words.json"
+            _write(writing, {"send": w["blender_model_send"], "sent": w["decoy_blender_sent"],
+                             "hint": [w["blender_anim_hint1"], w["blender_anim_hint2"]],
+                             "hint_animations": [], "nla": w["decoy_blender_nla"], "session": session})
             # (a new opening: nothing brought back from it yet, nothing it wrote; what a bring back checks against)
-            _write(work / STATE, {"session": session, "file": str(start), "points": sorted(points), "edits": edits})
+            writing = work / STATE
+            _write(writing, {"session": session, "file": str(start), "points": sorted(points), "edits": edits})
+            writing = None
             self._blenders[str(work)] = open_model_to_change(blender, start, send, work / "words.json")
         except OSError as exc:
-            # (a disk or a file another program holds: the sending set aside is said, so it is never lost unsaid)
-            said = w["decoy_blender_open_failed"].format(why=str(exc))
+            # (a disk or a file another program holds, said as such; Blender itself not started: what to do, Choose
+            # Blender…; either way the sending set aside is said, so it is never lost unsaid)
+            if writing is not None:
+                said = str(self._said_file_error(exc, writing, lang))
+            else:
+                said = w["decoy_blender_open_failed"].format(why=str(exc)) + " " + w["decoy_blender_open_choose"]
             if set_aside is not None:
                 said += " " + w["decoy_blender_set_aside"].format(folder=str(set_aside))
             raise StudioError(said) from None
@@ -508,8 +557,12 @@ class DecoyBlenderCalls:
             # not a game rule: the Studio's own hand-over from Blender, nothing sent from this Blender yet
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring my changes back here.")
-        sha = _sha(send)
-        empty = {"changed": [], "undone": [], "differs": [], "replaced": [], "same": 0, "new": [], "gone": [],
+        try:
+            raw = send.read_bytes()
+        except OSError as exc:      # (held by another program as it is read)
+            raise self._said_file_error(exc, send, lang) from None
+        sha = _sha_of(raw)
+        empty ={"changed": [], "undone": [], "differs": [], "replaced": [], "same": 0, "new": [], "gone": [],
                  "written": 0, "new_bones": [], "halves": [], "unplayed": [], "nla": [], "fps": None, "stretch": None}
         out = {k: list(v) if isinstance(v, list) else v for k, v in empty.items()}
         unit = animblender.unit_name(self._own_model_file(address))
@@ -520,7 +573,6 @@ class DecoyBlenderCalls:
         kept = state.get("wrote") if isinstance(state.get("wrote"), dict) else {}
         wrote = {n: p for n, p in kept.items() if n in went and isinstance(p, dict)
                  and self._in_force(mod, unit, went[n], p)}
-        raw = send.read_bytes()
         try:
             doc, binary = glb_document(raw)
             r = rig.rig_of(doc, binary, send.name)
@@ -594,10 +646,15 @@ class DecoyBlenderCalls:
         by_action, by_name, allowed, models, bones = [], {}, {}, [], {}
         last = False        # (one came back as the mod plays it, but not as it went out)
         seen = set()
-        for got in rig.clips_back(r, back, sent["record"], {n: a["clip"] for n, a in went.items()}, rate=rate):
+        # (compared with what Blender was given, as the same thing: a clip RUSE Decoy slowed went out on the game's
+        # frames, animblender.on_game_frames; one that comes back as it went out is the mod's own clip again)
+        for got in rig.clips_back(r, back, sent["record"], {n: a.get("blender_clip") or a["clip"]
+                                                             for n, a in went.items()}, rate=rate):
             name, a = got["name"], went.get(got["name"])
             if a is None:
                 continue
+            if got["same"]:
+                got = {**got, "clip": a["clip"]}
             seen.add(name)
             prev = wrote.get(name)
             if now.get(name) is not None and _sha_of(got["clip"]) == now[name]:
@@ -658,12 +715,21 @@ class DecoyBlenderCalls:
                 anim.drop_unnamed(mod, unit, before)
         except (anim.AnimError, OSError) as exc:
             if aside is None:       # (what was written is kept in the state: an undo in Blender still undoes it)
-                _write(folder / STATE, {**state, "wrote": wrote})
+                try:
+                    _write(folder / STATE, {**state, "wrote": wrote})
+                except OSError:
+                    pass            # (the same disk or file: what stopped the bring back is what is said)
+            # (a full disk or a file another program holds: said in words, the modder's language, never Python's)
+            why = str(self._said_file_error(exc, Path(mod) / anim.UNITS, lang)) if isinstance(exc, OSError) \
+                else str(exc)
             if current is not None:
-                raise StudioError(f"{current}: {exc}") from None
-            raise StudioError(str(exc)) from None
+                raise StudioError(f"{current}: {why}") from None
+            raise StudioError(why) from None
         if aside is None:
-            _write(folder / STATE, {**state, "brought": sha, "wrote": wrote})
+            try:
+                _write(folder / STATE, {**state, "brought": sha, "wrote": wrote})
+            except OSError as exc:
+                raise self._said_file_error(exc, folder / STATE, lang) from None
         else:                       # (taken in: kept aside no more)
             shutil.rmtree(folder, ignore_errors=True)
         # (an undo puts the rows back as they were before the door first wrote; when the Studio changed the clip beneath
