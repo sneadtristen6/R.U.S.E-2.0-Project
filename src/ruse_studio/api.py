@@ -5805,7 +5805,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _mod_dir(self, kind: str = "mod") -> Path | None:
         """The folder being edited: the mod (`kind` "mod", the Units tab's) or the map (`kind` "map", the Maps
         tab's). Mods and maps are kept apart (the owner, 2026-10-02); a Studio from before kept both in the mod, so
-        until a map is picked, the Maps tab goes on with the mod's maps."""
+        until a map is picked, the Maps tab goes on with the mod's maps. While a job writes a unit into a mod (the Horse
+        Squad's add, once its mod is checked: horse_squad's _horse_pin) this window's mod is that one, whatever another
+        Studio window on the same platform folder picks meanwhile (its pick is the one after)."""
+        pinned = self.__dict__.get("_horse_pin") if kind == "mod" else None
+        if pinned is not None and Path(pinned, "mod.toml").is_file():
+            return Path(pinned)
         settings = self._settings()
         path = settings.get(kind) or (settings.get("mod") if kind == "map" else None)
         return Path(path) if path and Path(path, "mod.toml").is_file() else None
@@ -9728,6 +9733,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if own_class:
                 self._drop_class_table(edits, own_class)
             self._groups_save(edits, *files)
+            self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:

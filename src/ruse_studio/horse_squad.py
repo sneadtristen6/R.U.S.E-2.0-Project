@@ -161,6 +161,9 @@ class HorseSquadCalls:
                 if self._mod_dir() != mod:
                     raise StudioError("The mod being edited changed while the Horse Squad was being made, so it "
                                       "wasn't added: add it again.")
+                # from here every step writes into this mod, even when another Studio window on the same platform
+                # folder picks another mod meanwhile (its _horse_guard is its own: api._mod_dir keeps this one)
+                self.__dict__["_horse_pin"] = mod
                 say(STEPS[1])
                 made, before = None, set(self._new_units())
                 try:
@@ -177,6 +180,7 @@ class HorseSquadCalls:
                     raise
             finally:
                 self.__dict__["_horse_mod"] = None
+                self.__dict__["_horse_pin"] = None
             job.result = {"address": made["address"], "name": made["name"]}
 
         return job.start(work, f"{NAME} is in your mod.", plain=(StudioError, OSError))
@@ -267,32 +271,49 @@ class HorseSquadCalls:
                               "Please report this.")
 
     def _horse_undo(self, address: str | None, before: set) -> None:
-        """A Horse Squad this job couldn't finish, taken out again, and only what this job made: its unit (`address`;
-        else a copy of the US rifle squad that wasn't among the mod's new units `before` it began), with its models and
-        its credit line (era_unit_remove, when the mod's era_units.json names it), never a Horse Squad the mod had
-        already."""
+        """A Horse Squad this job couldn't finish, taken out again, and only what this job made: its unit (`address`,
+        the one _era_make made; only when that never came back, a copy of the US rifle squad that wasn't among the mod's
+        new units `before` _era_make began), with its models, its animations and its credit line (era_unit_remove, when
+        the mod's era_units.json names it), never a Horse Squad the mod had already, nor a copy the modder made while
+        the add ran. Each step is tried even when one before it failed (Delete takes every file of the unit:
+        edits.remove_unit); a StudioError when the unit is still in the mod after all (the job then says that, not
+        that it wasn't added)."""
         from .api import StudioError
         self.__dict__["_horse_undoing"] = True   # (era_unit_remove refuses the page while the add runs, not this)
+        mine = set()
         try:
             units = self._new_units()
-            mine = ({address} if address else set()) | {a for a, u in units.items()
-                                                         if a not in before and u.source == SQUAD}
+            mine = {address} if address else {a for a, u in units.items() if a not in before and u.source == SQUAD}
             recorded = self._era_record().get(KEY)
             if recorded in mine:
-                self.era_unit_remove(KEY, "anyway")
-                mine.discard(recorded)
+                try:
+                    self.era_unit_remove(KEY, "anyway")
+                except (StudioError, OSError):
+                    pass   # (the steps below take what it couldn't)
             for left in sorted(mine):
                 if left not in self._new_units():
                     continue
                 try:
                     self.model_import_remove(left)
                 except (StudioError, OSError):
-                    pass
-                self.delete_unit(left, "anyway")
+                    pass   # (Delete below takes the unit's model files all the same)
+                try:
+                    self.delete_unit(left, "anyway")
+                except (StudioError, OSError):
+                    pass   # (said below: the unit is still in the mod)
         except (StudioError, OSError):
-            pass   # (the job's own failure is what the page says)
+            pass
         finally:
             self.__dict__["_horse_undoing"] = False
+        try:
+            still = [a for a in mine if a in self._new_units()]
+        except (StudioError, OSError):
+            still = sorted(mine)
+        if still:
+            # not a game rule: what this job made couldn't all be taken out of the mod again
+            raise StudioError("The Horse Squad couldn't be added, and taking it back out failed too, so part of it "
+                              "is still in your mod: take it out of your mod on its page in the Units tab, or delete "
+                              "it on its unit page.")
 
     def _horse_guard(self, path, switching: bool = False) -> None:
         """While the Horse Squad's unit is being made in a mod (its models imported, after its files are made), that

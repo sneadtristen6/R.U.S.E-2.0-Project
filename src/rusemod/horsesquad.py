@@ -263,8 +263,10 @@ def _listings_in_game(game: Path) -> dict:
     try:
         base = load_pack(arc).base
         figures = dict(figures_of(base, UNIT))
-    except (KeyError, ValueError, OSError):
-        base, figures = None, {}
+    except (KeyError, ValueError, OSError) as exc:
+        # (a pack that can't be read is said as that, never as animations the game hasn't)
+        raise HorseSquadError(f"Your game's unit data couldn't be read, so the Horse Squad can't be made from it "
+                              f"({exc}).") from None
     finally:
         arc.close()
     out = {}

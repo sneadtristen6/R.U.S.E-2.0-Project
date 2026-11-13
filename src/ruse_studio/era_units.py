@@ -298,24 +298,44 @@ def install_section(root: Path, section: dict, zips: list[Path]) -> None:
     write_index(root, scale_of(section))
 
 
-def credits_text(units: list[dict]) -> str:
+ERA_HEADING = "# Era unit models"
+BUILT_HEADING = "# Made for RUSE 2.0"
+
+
+def era_credit_lines(text: str) -> list[str]:
+    """The era units' credit lines ("- ..." under ERA_HEADING) of a mod's credits file as it stands (`text`)."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith("# "):
+            inside = line.strip() == ERA_HEADING
+        elif inside and line.startswith("- "):
+            out.append(line)
+    return out
+
+
+def credits_text(units: list[dict], kept: list[str] = ()) -> str:
     """The mod's credits file for the era units it has (CC BY asks for the maker, the work, its licence and a note of
     changes), and for the units made for RUSE 2.0 it has ("built": the Horse Squad, by its maker's name; the owner,
-    2026-11-12: "your name, sneadtristen6, in that mod's credits"). A mod with era units only gets the file as before."""
+    2026-11-12: "your name, sneadtristen6, in that mod's credits"). A mod with era units only gets the file as before.
+    `kept`: era credit lines already in the mod whose units the library on this PC can't name (its era isn't downloaded
+    here): kept as they stand, never dropped (a CC BY credit goes with the model, era_units._era_save)."""
     era = [u for u in units if not u.get("built")]
     built = [u for u in units if u.get("built")]
     lines = []
-    if era:
-        lines += ["# Era unit models", "",
-                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
-                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+    made = []
     for u in sorted(era, key=lambda x: (x["era"], x["nation"], x["name"])):
         c = u["credit"]
         extra = f" {c['extra']}." if c.get("extra") else ""
-        lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): \"{c['title']}\" by {c['author']}, {c['licence']}, "
-                     f"{c['url']}.{extra}")
+        made.append(f"- {u['name']} ({u['era']}, {u['nation']}): \"{c['title']}\" by {c['author']}, {c['licence']}, "
+                    f"{c['url']}.{extra}")
+    made += [line for line in kept if line not in made]
+    if made:
+        lines += [ERA_HEADING, "",
+                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
+                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+        lines += made
     if built:
-        lines += ([""] if lines else []) + ["# Made for RUSE 2.0", ""]
+        lines += ([""] if lines else []) + [BUILT_HEADING, ""]
     for u in sorted(built, key=lambda x: (x["era"], x["nation"], x["name"])):
         lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): by {u['credit']['author']}.")
     return "\n".join(lines) + "\n"
@@ -461,13 +481,36 @@ class EraUnitCalls:
         from .horse_squad import BUILT
         mod = self._mod_dir()
         (mod / INDEX).write_text(json.dumps(record, indent=1, ensure_ascii=False), encoding="utf-8")
+        known = {u["key"] for u in lib.get("units", [])}
         mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
         mine += [entry for key, entry in BUILT.items() if key in record]
         credits = mod / CREDITS
-        if mine:
-            credits.write_text(credits_text(mine), encoding="utf-8")
+        # an era unit the mod has whose era isn't downloaded on this PC: the library can't write its credit line, so
+        # the lines already in the mod stay as they are (never a CC BY credit lost because this PC lacks the era)
+        unnamed = [k for k in record if k not in BUILT and k not in known]
+        try:
+            kept = era_credit_lines(credits.read_text(encoding="utf-8")) if unnamed and credits.is_file() else []
+        except (OSError, UnicodeDecodeError):
+            kept = []
+        if mine or kept:
+            credits.write_text(credits_text(mine, kept), encoding="utf-8")
         else:
             credits.unlink(missing_ok=True)
+
+    def _era_forget(self, address: str) -> None:
+        """A unit deleted from the mod (delete_unit): when the mod's era_units.json names it (an era unit, or a unit
+        made for RUSE 2.0 such as the Horse Squad), its line there and its credit go with it, the others' kept
+        (_era_save). Nothing changes for any other unit."""
+        mod = self._mod_dir()
+        if mod is None or not (mod / INDEX).is_file():
+            return
+        try:
+            named = address in json.loads((mod / INDEX).read_text(encoding="utf-8")).values()
+        except (OSError, ValueError, AttributeError):
+            return
+        if named:
+            _folder, lib = self._era_library()
+            self._era_save(self._era_record(), lib)   # (the deleted unit is no longer the mod's: left out)
 
     def era_units_list(self, era: str, kind: str = "all", nation: int = -1, search: str = "",
                        group: str = "all") -> dict:
