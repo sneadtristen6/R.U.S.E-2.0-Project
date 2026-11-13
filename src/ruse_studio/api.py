@@ -8226,10 +8226,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         kind after the first on bones of its own, whether they're the first kind's model's bones (it plays their
         animations), "also": the squad's other figures drawn with the same model ("fallen", "far"), "blender": his
         Change it in Blender work folder (ruse_studio.modelblender: the riflemen's is the unit's), "blender_made":
-        whether it's there}; [] for any other unit or a game unit."""
+        whether it's there, and what his model's import couldn't keep of its shine and side colour when it says so
+        (ruse_studio.modelblender.alpha_lost: "blender_alpha_lost", "alpha_sizes")}; [] for any other unit or a game
+        unit."""
         from rusemod.bonefit import skeleton_key
         from rusemod.unitmodel import model_key
-        from .modelblender import WORK
+        from .modelblender import WORK, alpha_lost
         kinds = self._soldier_kinds(address)
         if not kinds or self._own_model_file(address) is None:
             return []
@@ -8261,7 +8263,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             rows.append({"kind": k, "model": model_key(m), "own": own,
                          "file": Path(str(record.get("from") or "")).name if own else None, "kept": str(target),
                          "skeleton": skeleton, "same_bones": same, "also": also[k],
-                         "blender": str(work), "blender_made": work.is_dir()})
+                         "blender": str(work), "blender_made": work.is_dir(),
+                         **(alpha_lost(record.get("report")) if isinstance(record, dict) else {})})
         return rows
 
     def _kind_file(self, address: str, kind: str | None) -> Path | None:
@@ -8351,12 +8354,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
                    own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None,
-                   out: Path | None = None) -> dict | None:
+                   out: Path | None = None, refit: bool = False) -> dict | None:
         """model_import's fitting, the unit's own copy left as it is (model_resize and model_place fit its model again
         through it): the model saved as the mod's files/models/<the unit's name>.glb (or a kind's of its soldiers,
         _kind_file; or one soldier's own look, `kind` his number), its record beside it; `out`: saved there instead
-        (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). Returns the
-        model's report, or None when no file was picked."""
+        (a soldier about to join, into the squad's Blender folder: ruse_studio.squadblender.soldier_add). `refit`: a
+        Resize or a Move, the file its record names fitted again, so what its Bring back from Blender couldn't keep is
+        still said (ruse_studio.modelblender.keep_said). Returns the model's report, or None when no file was picked."""
         from rusemod.modelin import ModelError, check_move
         from rusemod.unitmodel import UnitModelError, import_model, rigged_first
         try:
@@ -8437,6 +8441,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
         except (OSError, ValueError):
             before = {}
+        if refit and isinstance(before, dict) and str(before.get("from") or "") == str(file):
+            # (the same file fitted again: the parts that came back from Blender with the plain 144 still have it, so
+            # it is still said, in the record and to the page; written anew without it, the page forgot it on the
+            # first Resize, a recheck of 2026-11-12)
+            from .modelblender import keep_said
+            keep_said(before.get("report"), report)
         if place is not None or (kinds and kind != main_kind):
             # another kind's model (the bazooka man's), or one soldier's own look: the unit's animations are its main
             # model's, played by him when his model is on the same bones (rusemod.build._on_main_bones), else he plays
@@ -8590,10 +8600,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, False)   # (a squad's other kinds' models: the same size)
         report = self._fit_model(address, file, size, bool(aircraft), self._pinned_facing(record),
-                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"))
+                                 bool(record.get("own_turret")), bool(record.get("own_propellers")), record.get("move"),
+                                 refit=True)
         for k, r in others:
             self._fit_model(address, r["from"], size, bool(r.get("aircraft")), self._pinned_facing(r),
-                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k)
+                            bool(r.get("own_turret")), bool(r.get("own_propellers")), r.get("move"), k, refit=True)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     def model_place(self, address: str, move) -> dict:
@@ -8612,10 +8623,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
         others = self._kinds_ready(address, True)   # (a squad's other kinds' models: moved with it)
         report = self._fit_model(address, file, float(record.get("size") or 1.0), bool(aircraft),
-                                 self._pinned_facing(record), True, True, move)
+                                 self._pinned_facing(record), True, True, move, refit=True)
         for k, r in others:
             self._fit_model(address, r["from"], float(r.get("size") or 1.0), bool(r.get("aircraft")),
-                            self._pinned_facing(r), True, True, move, k)
+                            self._pinned_facing(r), True, True, move, k, refit=True)
         return {"model": report, "copy_out": False, **self.look(address)}
 
     @staticmethod
