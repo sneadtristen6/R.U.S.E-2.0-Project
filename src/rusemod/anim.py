@@ -46,6 +46,26 @@ moves:
 The build gives every listing of the figures that draw the unit's own model the animation the rule picks (a row of
 the action tables above, RUSE Decoy's or a tool's, still wins), and the unit a ride of its own (rusemod.build).
 A copied unit takes all of it along (copy_unit; the owner, 2026-11-10: "They should have the same animation").
+
+Copies of a clip for the units a modder picks (RUSE Decoy's Copy this animation…; the owner, 2026-11-13: "a way to
+copy an animation so that way you can change an animation and implement it into like certain models and soldiers"):
+`files/anim/copies.toml` holds each copy, made like one of clips.toml's, and the units, or only some figures of a
+unit (its soldiers by kind, a gun's crewmen), that play it in place of the clip:
+
+    [copy.fast_run]
+    name = "Fast run"                             # the modder's name for it
+    clip = "genanim_15/ww2/res3d/units/common/fusilier_courselod0.baf"   # the game's clip it is a copy of
+    speed = 150                                   # as in clips.toml: speed, from, bone; and
+    file = "fast_run.baf"                         # a whole clip in its place (files/anim/copies/fast_run.baf)
+    [copy.fast_run.units]
+    Descriptor_Unit_Horse_Squad = []              # every figure of the unit that plays the clip
+    Descriptor_Unit_Soldat_US_Leger = ["GfxDescriptorBazooka"]   # only these figures, by their paths from the unit
+
+The build makes each copy once, as a clip of its own beside the game's (own_copy_<id>_<name>lod0.baf), and points the
+ticked units' listings of the clip at it (own_listings' by_figure); every other unit plays the clip as before. What
+the unit has of its own for the same listing still wins: an action row above, then its own copy of the clip. A copied
+unit is ticked where its source is (copy_unit); a unit taken out of the mod is unticked (remove_unit, the Studio's
+Delete).
 """
 from __future__ import annotations
 
@@ -62,6 +82,11 @@ CLIPS = "files/anim/clips.toml"
 REPLACE = "files/replace"
 UNITS = "files/anim/units.toml"   # units' own animations
 OWN = "files/anim/own"            # their clip files, a folder each: files/anim/own/<the unit's name>/
+COPIES = "files/anim/copies.toml"   # copies of the game's clips, each for the units (and figures) ticked for it
+COPY_DIR = "files/anim/copies"      # their clip files: files/anim/copies/<a file name>.baf
+COPY_NAME_MOST = 80                 # letters in a copy's name (the Studio's field holds as many)
+_COPY_ID = re.compile(r"^[a-z0-9_]{1,40}$")      # a copy's id: its table's name in copies.toml, and in its clip's
+_COPY_FILE = re.compile(r"^[A-Za-z0-9_-]+\.baf$")  # a copy's clip file, in files/anim/copies/ itself
 PACKS = "genanim_15\\pack\\"
 B = "\\"
 # where a unit's own clips go: loose in ZZ_Win.dat in the folder of the soldiers' clips, as the 2026-11-09 test copy's
@@ -555,11 +580,16 @@ def remove_unit_clip(mod: Path, unit: str, action: str, figure: str | None = Non
 
 
 def remove_unit(mod: Path, unit: str) -> None:
-    """Everything a unit had of its own animations, out of the mod: its tables in units.toml and its folder in
-    files/anim/own (a unit taken out of a mod: a row for a unit no mod makes is an error in the build). All or nothing:
-    the folder is moved aside first (refused while another program holds a file in it), and comes back when units.toml
-    can't be written; the Studio's Delete does this with the unit's other files too (ruse_studio.edits.TakeOut)."""
+    """Everything a unit had of its own animations, out of the mod: its tables in units.toml, its folder in
+    files/anim/own and its ticks in copies.toml (a unit taken out of a mod: a row or a tick for a unit no mod makes is
+    an error in the build). All or nothing: the folder is moved aside first (refused while another program holds a
+    file in it), and it and units.toml come back when a file can't be written; the Studio's Delete does this with the
+    unit's other files too (ruse_studio.edits.TakeOut)."""
     table = read_units(mod)
+    copies = read_copies(mod)
+    unticked = _ticks_moved(copies, unit, None)
+    units_file = Path(mod) / UNITS
+    units_before = units_file.read_bytes() if units_file.is_file() else None
     folder = Path(mod) / OWN / unit
     aside = None
     if _NAME.match(unit) and folder.is_dir():
@@ -570,12 +600,187 @@ def remove_unit(mod: Path, unit: str) -> None:
     try:
         if table.pop(unit, None) is not None:
             write_units(mod, table)
+        if unticked:
+            try:
+                write_copies(mod, copies)
+            except BaseException:   # (units.toml as it was)
+                if units_before is not None:
+                    units_file.write_bytes(units_before)
+                raise
     except BaseException:
         if aside is not None:
             aside.rename(folder)
         raise
     if aside is not None:
         shutil.rmtree(aside, ignore_errors=True)
+
+
+# --- copies of a clip for the units a modder picks: files/anim/copies.toml and files/anim/copies/ ---
+def _bad_text(s) -> bool:
+    """Whether `s` can't be a name or a figure's path in copies.toml: not text, blank, or with a control character."""
+    return not isinstance(s, str) or not s.strip() or any(ord(c) < 32 or ord(c) == 127 for c in s)
+
+
+def mod_copies(folder: Path, text: str | None = None) -> dict:
+    """A mod's copies of the game's clips (RUSE Decoy's Copy this animation…), from its files/anim/copies.toml (or
+    `text`, one not written yet): {copy id: {"name": the modder's name for it, "clip": the game's clip it is a copy of
+    (its path in the packs, backslashes, lower case), "edit": its changes as mod_clips gives them ("file": a whole clip
+    in its place, files/anim/copies/<file>), "units": {a unit's name: the paths of its figures that play the copy, ()
+    for every figure of it that plays the clip}}}, in the file's order; {} without the file."""
+    root = Path(folder)
+    f = root / COPIES
+    if text is None and not f.is_file():
+        return {}
+    try:
+        table = tomllib.loads(f.read_text(encoding="utf-8") if text is None else text)
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise AnimError(f"{COPIES}: {exc}") from None
+    copies = table.get("copy", {})
+    if set(table) - {"copy"} or not isinstance(copies, dict):
+        # not a game rule: how our format names a copy
+        raise AnimError(f"{COPIES}: [copy.<its id>] tables, one a copy")
+    out: dict = {}
+    for cid, v in copies.items():
+        if not _COPY_ID.match(cid) or not isinstance(v, dict) \
+                or set(v) - {"name", "clip", "speed", "from", "file", "bone", "units"}:
+            # not a game rule: our format's names
+            raise AnimError(f"{COPIES}: [copy.{cid}]: a copy's id (lower case letters, digits and _, at most 40), then "
+                            f"its name, clip, speed, from, file, bone and units")
+        where = f"{COPIES}: {cid}"
+        name = v.get("name")
+        if _bad_text(name) or len(name) > COPY_NAME_MOST:
+            raise AnimError(f"{where}: name is the copy's name, 1 to {COPY_NAME_MOST} letters")
+        clip = v.get("clip")
+        if not isinstance(clip, str) or not _member(clip).endswith(".baf"):
+            # not a game rule: a clip is named by its pack path
+            raise AnimError(f"{where}: clip names the game's clip it is a copy of, by its path in the game's packs, "
+                            f"ending .baf")
+        edit = _edit(v, where)
+        if v.get("file"):
+            rel = v["file"]
+            if not isinstance(rel, str) or not _COPY_FILE.match(rel):
+                # not a game rule: where our format keeps a copy's clip
+                raise AnimError(f"{where}: file names a .baf file in {COPY_DIR}/ (letters, digits, _ and -)")
+            edit["file"] = root / COPY_DIR / rel
+            if not edit["file"].is_file():
+                raise AnimError(f"{where}: {COPY_DIR}/{rel} isn't there")
+        units = v.get("units") or {}
+        if not isinstance(units, dict):
+            raise AnimError(f"{where}: [copy.{cid}.units] names the units that play it")
+        ticks: dict = {}
+        for unit, figs in units.items():
+            if not _NAME.match(unit) or not isinstance(figs, list) or any(_bad_text(x) for x in figs) \
+                    or len(set(figs)) != len(figs):
+                # not a game rule: how our format names a unit and its figures
+                raise AnimError(f"{where}: units: {unit} = [the paths of its figures that play the copy], [] for "
+                                f"every one, each once")
+            ticks[unit] = tuple(figs)
+        out[cid] = {"name": name.strip(), "clip": _member(clip), "edit": edit, "units": ticks}
+    return out
+
+
+def read_copies(mod: Path) -> dict:
+    """The mod's copies.toml as it is written ({copy id: its table}), {} without one."""
+    f = Path(mod) / COPIES
+    if not f.is_file():
+        return {}
+    try:
+        return dict(tomllib.loads(f.read_text(encoding="utf-8")).get("copy", {}))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise AnimError(f"{COPIES}: {exc}") from None
+
+
+def copies_toml(table: dict) -> str | None:
+    """copies.toml's text for `table` ({copy id: {"name", "clip", "speed", "from", "file", "bone": {name: {"size",
+    "turn"}}, "units": {a unit's name: [figure paths]}}}), in id order; None when it holds none."""
+    if not table:
+        return None
+    lines = ["# Copies of the game's animations, each played only by the units (or the figures of a unit) under its",
+             "# units, every other unit playing the animation as before (rusemod.anim). RUSE Decoy writes it (Copy this",
+             "# animation…); the build makes each copy a clip of its own. Clip files: files/anim/copies/.", ""]
+    for cid in sorted(table):
+        e = table[cid]
+        head = f"copy.{_bare(cid)}"
+        lines += [f"[{head}]", f"name = {_q(e['name'])}", f"clip = {_q(e['clip'])}"]
+        if e.get("speed") is not None and float(e["speed"]) != 100.0:
+            lines.append(f"speed = {float(e['speed']):g}")
+        if e.get("from"):
+            lines.append(f"from = {_q(e['from'])}")
+        if e.get("file"):
+            lines.append(f"file = {_q(e['file'])}")
+        for bone, b in sorted((e.get("bone") or {}).items()):
+            lines.append(f"[{head}.bone.{_q(bone)}]")
+            if b.get("size") is not None:
+                lines.append(f"size = {float(b['size']):g}")
+            if b.get("turn"):
+                lines.append(f"turn = [{_q(b['turn'][0])}, {float(b['turn'][1]):g}]")
+        units = e.get("units") or {}
+        if units:
+            lines.append(f"[{head}.units]")
+            lines += [f"{_bare(u)} = [{', '.join(_q(x) for x in units[u])}]" for u in sorted(units)]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def write_copies(mod: Path, table: dict) -> None:
+    """Write `table` as the mod's copies.toml (read back as the build reads it before it takes the old one's place);
+    no file when it holds none."""
+    f = Path(mod) / COPIES
+    text = copies_toml(table)
+    if text is None:
+        f.unlink(missing_ok=True)
+        return
+    mod_copies(mod, text)   # (raises on anything the build wouldn't take: the old file stays)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".part")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(f)
+    except OSError:   # (the old file held by another program, or the disk full: no half-written file left beside it)
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def copy_id(name: str, taken) -> str:
+    """A new copy's id from its name: lower case letters, digits and _ (copy when none are left), with _2, _3... when
+    `taken` has it."""
+    base = re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", str(name).lower())).strip("_")[:32] or "copy"
+    cid, k = base, 2
+    while cid in taken:
+        cid, k = f"{base}_{k}", k + 1
+    return cid
+
+
+def _ticks_moved(table: dict, unit: str, target: str | None) -> list:
+    """copies.toml's `table` ({id: its table}) with `unit`'s ticks given to `target` too (None: taken out); returns the
+    ids of the copies it changed, the table changed in place."""
+    changed = []
+    for cid, e in table.items():
+        units = dict(e.get("units") or {})
+        if unit not in units:
+            continue
+        if target is None:
+            units.pop(unit)
+        else:
+            units[target] = list(units[unit])
+        table[cid] = {**e, "units": units}
+        changed.append(cid)
+    return changed
+
+
+def ticked_in(mod: Path, unit: str) -> list:
+    """The ids of the mod's copies ticked for `unit` (any of its figures)."""
+    return [cid for cid, e in read_copies(mod).items() if unit in (e.get("units") or {})]
+
+
+def untick_unit(mod: Path, unit: str) -> list:
+    """`unit` out of every copy of the mod that's ticked for it (a unit taken out of the mod: a tick for a unit no mod
+    makes stops the build). Returns the ids of the copies it was in."""
+    table = read_copies(mod)
+    changed = _ticks_moved(table, unit, None)
+    if changed:
+        write_copies(mod, table)
+    return changed
 
 
 # --- a model's own animations, which one each action plays, its ride; and a copied unit's ---
@@ -692,21 +897,34 @@ def set_ride(mod: Path, unit: str, ride: str | None) -> None:
 def copy_unit(mod: Path, source: str, target: str) -> bool:
     """The unit `target` (a copy of `source` just made) takes `source`'s own animations along: its rows in units.toml
     and its folder of clip files (the owner, 2026-11-10: "They should have the same animation. The only way you
-    should change animation is in Ruse Decoy"). Whether it had any. A target that had rows of its own keeps none of
-    them: the copy plays what the source plays."""
+    should change animation is in Ruse Decoy"), and is ticked in every copy of a clip (copies.toml) that `source` is
+    ticked in, for the same figures. Whether it had any. A target that had rows of its own keeps none of them: the copy
+    plays what the source plays."""
     source, target = _unit_name(source), _unit_name(target)
     table = read_units(mod)
     u = table.get(source)
-    if not u:
+    copies = read_copies(mod)
+    ticked = _ticks_moved(copies, source, target)
+    if not u and not ticked:
         return False
     src, dst = Path(mod) / OWN / source, Path(mod) / OWN / target
     had = dst.exists()
-    if src.is_dir():
-        shutil.copytree(src, dst, dirs_exist_ok=True)
-    table[target] = copy.deepcopy(u)
+    units_file = Path(mod) / UNITS
+    units_before = units_file.read_bytes() if units_file.is_file() else None
     try:
-        write_units(mod, table)
-    except AnimError:
+        if u:
+            if src.is_dir():
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            table[target] = copy.deepcopy(u)
+            write_units(mod, table)
+        if ticked:
+            write_copies(mod, copies)
+    except (AnimError, OSError):   # (units.toml and the target's folder as they were)
+        if u:
+            if units_before is None:
+                units_file.unlink(missing_ok=True)
+            elif units_file.read_bytes() != units_before:
+                units_file.write_bytes(units_before)
         if not had and dst.is_dir():
             shutil.rmtree(dst)
         raise
@@ -777,11 +995,13 @@ def unit_figures(game, name: str) -> list:
     return out
 
 
-def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
+def own_listings(game, name: str, by_clip: dict, by_action: dict, by_figure: dict | None = None) -> dict:
     """Point the clip listings of the unit `name` (a top-level object of `game`, the build's rusemod.patch.Game) at
     clips of its own: every listing whose clip is one of `by_clip`'s ({the game's clip path: the FileName of the
     unit's own}), and every listing of an action in `by_action` ({(action, figure path or None): FileName}: that
-    figure's, or every figure's that lists it), which wins. Only the unit's graphics are walked (its GfxDescriptor*
+    figure's, or every figure's that lists it), which wins; then, for a listing neither names, `by_figure`'s ({(the
+    game's clip path, figure path or None): FileName}: a copy of the clip ticked for that figure, or for every figure
+    of the unit; copies.toml). Only the unit's graphics are walked (its GfxDescriptor*
     parts and the unnamed parts under them: never another unit or a named object of the game's); a part the unit
     shares with other units is copied into it before it changes, so they keep the game's, as build._point_at_copies
     does for models (and as the 2026-11-09 test mods' `patch own` lines did for their listings). Returns
@@ -801,6 +1021,8 @@ def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
         f = a.props.get("FileName") if a is not None else None
         return f if isinstance(f, Text) and f.value else None
 
+    figure_copies = by_figure or {}
+
     def wanted(key, v, figure):
         """The FileName this listing is to name, or None (not one of the unit's own)."""
         f = file_of(v)
@@ -808,7 +1030,8 @@ def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
             return None
         k = key.value if isinstance(key, Text) else None
         got = (by_action.get((k, figure)) or by_action.get((k, None))) if k is not None else None
-        return got or by_clip.get(member_of(f.value))
+        clip = member_of(f.value)
+        return got or by_clip.get(clip) or figure_copies.get((clip, figure)) or figure_copies.get((clip, None))
 
     step = _step
 
@@ -876,9 +1099,10 @@ def own_listings(game, name: str, by_clip: dict, by_action: dict) -> dict:
 
 def own_clip_files(zz, wanted: dict, cache: Path | None = None, say=print) -> dict:
     """{its path in ZZ_Win.dat: bytes} for the units' own clips (build.unit_own_clips: {that path: {"unit", "clip":
-    the game's clip it's made from or None, "edit": its changes, "file": the unit's own file or None}}): each made
-    once (`made`: the game's clip with the unit's changes, or the unit's own file, checked), to be added to ZZ_Win.dat
-    as files of their own. The game's clips are read from `zz` as the game has them, never changed here."""
+    the game's clip it's made from or None, "edit": its changes, "file": the unit's own file or None}}, or for a copy
+    of copies.toml {"copy": its id, "clip", "edit"} in place of "unit"): each made once (`made`: the game's clip with
+    the changes, or the unit's own file, checked), to be added to ZZ_Win.dat as files of their own. The game's clips
+    are read from `zz` as the game has them, never changed here."""
     from .edat import Edat
     packs: list | None = None
 
@@ -900,7 +1124,11 @@ def own_clip_files(zz, wanted: dict, cache: Path | None = None, say=print) -> di
     for member, spec in sorted(wanted.items()):
         if zz.entry(member) is not None:  # not a game rule: unit_own_clips hands out names the game hasn't got
             raise AnimError(f"{member} is one of the game's own files already")
-        where = f"{UNITS}: {spec['unit']}: " + (clip_key(spec["clip"]) if spec.get("clip") else Path(spec["file"]).name)
+        if spec.get("copy"):
+            where = f"{COPIES}: {spec['copy']}: {clip_key(spec['clip'])}"
+        else:
+            where = f"{UNITS}: {spec['unit']}: " + (clip_key(spec["clip"]) if spec.get("clip") else
+                                                   Path(spec["file"]).name)
         if spec.get("clip"):
             base, edit = game_clip(spec["clip"]), spec.get("edit") or {}
             if base is None:
@@ -930,7 +1158,8 @@ def own_clip_files(zz, wanted: dict, cache: Path | None = None, say=print) -> di
             bits.append(f"from {Path(edit['file']).name}")
         bits += [f"{b}" for b in edit.get("bones", {})]
         what = clip_key(spec["clip"]) if spec.get("clip") else f"{OWN}/{spec['unit']}/{Path(spec['file']).name}"
-        say(f"animation of {spec['unit']} alone: {what} {' '.join(x for x in bits if x)}".rstrip()
+        who = f"the copy {spec['copy']}" if spec.get("copy") else f"{spec['unit']} alone"
+        say(f"animation of {who}: {what} {' '.join(x for x in bits if x)}".rstrip()
             + f" -> {member.rsplit(B, 1)[-1]}")
         out[member] = data
     return out

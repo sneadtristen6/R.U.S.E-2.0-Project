@@ -598,6 +598,9 @@
               <!-- opened from a unit's page: Only this unit (its own copy of the clip) or Every unit that plays it
                    (decoy.js scopeChoice, StudioApi.decoy_anim_* with the unit, rusemod.anim's units.toml) -->
               <div id="da-for" class="hidden"></div>
+              <!-- Copy this animation…, and for a copy its name and Who plays it: the units and soldiers ticked play it
+                   (decoy.js copyBox, StudioApi.decoy_copy_*, ruse_studio.decoycopies, rusemod.anim's copies.toml) -->
+              <div id="da-copy" class="da-copy"></div>
               <label class="decoy-slider" id="da-speed-row"><span id="da-speed-label" class="small"></span>
                 <input id="da-speed" type="range" min="25" max="400" step="5" value="100" data-stepper="beside">
                 <span id="da-speed-value" class="decoy-pct">100%</span></label>

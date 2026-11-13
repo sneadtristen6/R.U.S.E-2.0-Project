@@ -184,10 +184,11 @@ def load_mod(path, as_id: str | None = None) -> tuple[ModInfo, list]:
         info.sounds = mod_sounds(path)
         try:
             info.volumes = mod_volumes(path)  # files/sound/volume.toml: how loud it plays each of the game's sounds
-            from .anim import AnimError, mod_clips, mod_unit_clips
+            from .anim import AnimError, mod_clips, mod_copies, mod_unit_clips
             try:
                 info.clips = mod_clips(path)  # files/anim/clips.toml and files/replace/**/*.baf: its animations
                 info.unit_clips = mod_unit_clips(path)  # files/anim/units.toml, files/anim/own: one unit's own
+                info.anim_copies = mod_copies(path)  # files/anim/copies.toml: copies for the units ticked for each
             except AnimError as exc:
                 raise SoundError(str(exc)) from None
             info.ambience = mod_ambience(path, mod_id)  # maps/<map>/background_<n>.wav and sound.toml
@@ -1076,10 +1077,12 @@ def needs_zz_win(mods: list) -> bool:
     (a new unit needs a class in the Python unit list, which lives there), or moves a unit to another nation or model
     (the skirmish mesh packs there say whether its models are loaded for it: unit_models), or puts a unit in a group
     of a build list (menu_groups.toml: the menu script there gets the lines template, menu_lines), or gives a unit
-    animations of its own (files/anim/units.toml: its clips go there, rusemod.anim)."""
+    animations of its own (files/anim/units.toml, or a copy of a clip ticked for it in files/anim/copies.toml: their
+    clips go there, rusemod.anim)."""
     return any(m.texts or m.new_maps or getattr(m, "menu_pictures", None) or getattr(m, "textures", None)
                or getattr(m, "sounds", None) or getattr(m, "new_songs", None) or getattr(m, "ambience", None)
                or getattr(m, "volumes", None) or getattr(m, "clips", None) or getattr(m, "unit_clips", None)
+               or getattr(m, "anim_copies", None)
                or getattr(m, "assets", None) or getattr(m, "looks", None) or getattr(m, "menu_groups", None)
                for m, _ in mods) or \
         any(op.kind in ("create", "clone") or _moves(op) for _, ops in mods for op in ops)
@@ -2090,7 +2093,13 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
     A unit with a model of its own and its model's animations ([unit.<name>.animation]): every listing of the figures
     that draw its own model plays one of them, the one rusemod.animactions' rule picks (the modder's pick, else the
     nearest); a row of the action tables still wins. Its ride on long moves (unless it rides in its truck) is planned
-    in result.own_rides for unit_own_rides."""
+    in result.own_rides for unit_own_rides.
+
+    A mod's copies of a clip (files/anim/copies.toml; RUSE Decoy's Copy this animation…; the owner, 2026-11-13): each
+    copy is made once, as a clip of its own ({"copy": its id, "mod", "clip", "edit"} in the answer), and the listings of
+    that clip on the units ticked for it (or on the figures ticked of a unit) name it, every other unit's as before. A
+    unit's own rows win over a copy for the listings they name (an action row, its own copy of the clip): said
+    (_copy_coverage), as is a tick that nothing plays. Two copies ticked for the same figure: the later mod's plays."""
     from . import anim
     wanted: dict = {}   # unit -> {"clips": {clip: (edit, mod id)}, "actions": {(action, figure): (file, mod id)},
     #                              "animations": {name: (file, mod id)}, "plays": {action: (name, mod id)}, "ride"}
@@ -2107,7 +2116,11 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
                 w["plays"][action] = (n, m.id)
             if u.get("ride"):
                 w["ride"] = (u["ride"], m.id)
-    if not wanted:
+    copies: dict = {}   # (mod id, copy id) -> the copy (anim.mod_copies'), in load order
+    for m in order:
+        for cid, c in (getattr(m, "anim_copies", None) or {}).items():
+            copies[(m.id, cid)] = c
+    if not wanted and not copies:
         return {}
     if zz is None:
         result.findings.append(Finding("error", "these mods give units animations of their own, which go into "
@@ -2126,8 +2139,34 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         taken.add(stem)
         return stem
 
+    def copy_where(key) -> str:
+        return f"{key[0]}: {anim.COPIES}: the copy {copies[key]['name']} ({key[1]})"
+
+    # each copy, its clip's name planned once; and unit by unit, {(the clip, a figure's path or None for every figure of
+    # it): the copy ticked for it}, a later mod's tick winning
+    copy_files: dict = {}   # (mod id, copy id) -> (its path in ZZ_Win.dat, the FileName its listings give it)
+    ticks: dict = {}
+    for key, c in copies.items():
+        stem = fresh(anim.own_stem(f"copy_{key[1]}", c["clip"]))
+        copy_files[key] = (anim.own_member(stem), anim.own_data_name(stem))
+        if not c["units"]:
+            result.findings.append(Finding("note", f"{copy_where(key)} is ticked for no unit, so nothing plays it and "
+                                                   f"it isn't made"))
+        for unit, figs in sorted(c["units"].items()):
+            t = ticks.setdefault(unit, {})
+            for fig in figs or (None,):
+                was = t.get((c["clip"], fig))
+                if was is not None and was != key:
+                    result.findings.append(Finding("warning", f"{copy_where(key)}: {unit}"
+                                                              f"{f' ({fig})' if fig else ''} is ticked for "
+                                                              f"{copy_where(was)} too: it plays {c['name']}, the later"))
+                t[(c["clip"], fig)] = key
+            wanted.setdefault(unit, {"clips": {}, "actions": {}, "animations": {}, "plays": {}, "ride": None})
+    copy_counts: dict = {}   # (mod id, copy id) -> {unit: how many of its listings play the copy}
+
     for unit in sorted(wanted):
         w = wanted[unit]
+        t = ticks.get(unit, {})
         mods = sorted({mid for _e, mid in w["clips"].values()} | {mid for _f, mid in w["actions"].values()}
                       | {mid for _f, mid in w["animations"].values()} | {mid for _n, mid in w["plays"].values()}
                       | ({w["ride"][1]} if w["ride"] else set()))
@@ -2135,12 +2174,19 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
             # not a game rule: animations for a unit nothing makes. Said with what to do, as unit_own_copies' line
-            result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
-                                                    f"has none of that name. If {unit} was deleted from this mod, "
-                                                    f"its animations were left behind: in the Studio, click Take out "
-                                                    f"what it left under this mistake in Test in game's log, or take "
-                                                    f"[unit.{unit}] out of {anim.UNITS} and delete the folder "
-                                                    f"{anim.OWN}/{unit}/"))
+            if mods:
+                result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the "
+                                                        f"game has none of that name. If {unit} was deleted from this "
+                                                        f"mod, its animations were left behind: in the Studio, click "
+                                                        f"Take out what it left under this mistake in Test in game's "
+                                                        f"log, or take [unit.{unit}] out of {anim.UNITS} and delete "
+                                                        f"the folder {anim.OWN}/{unit}/"))
+            for key in sorted(set(t.values())):
+                result.findings.append(Finding("error", f"{copy_where(key)}: it is ticked for a unit {unit}, which no "
+                                                        f"mod in the set makes and the game hasn't got. If {unit} was "
+                                                        f"deleted from this mod, untick it under Who plays it in RUSE "
+                                                        f"Decoy (Your copies), or take {unit} out of "
+                                                        f"[copy.{key[1]}.units] in {anim.COPIES}"))
             continue
         planned, by_clip, by_action, files = {}, {}, {}, {}
         for member in sorted(w["clips"]):
@@ -2164,7 +2210,14 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
                                                              "file": file}
                 return files[file]
             ride_stem = _own_animations(run, unit, name, w, result, where, plan, by_action)
-        got = anim.own_listings(run.game, name, by_clip, by_action)
+        by_figure = {k: copy_files[key][1] for k, key in t.items()}
+        if t:   # (before own_listings points the listings: what each tick finds there)
+            _copy_coverage(run, unit, name, t, by_clip, by_action, copy_where, result)
+        got = anim.own_listings(run.game, name, by_clip, by_action, by_figure)
+        for key in sorted(set(t.values())):
+            n = got["pointed"].get(copy_files[key][1], 0)
+            if n:
+                copy_counts.setdefault(key, {})[unit] = n
         for member in sorted(by_clip):
             if member not in got["plays"]:
                 result.findings.append(Finding("warning", f"{where}: {unit} plays no {anim.clip_key(member)}, so "
@@ -2190,7 +2243,60 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         if names:
             result.findings.append(Finding("note", f"{where}: {unit} plays {len(names)} clip(s) of its own, every "
                                                    f"other unit as before (listings naming each): {', '.join(names)}"))
+    for key, c in copies.items():
+        member, _file = copy_files[key]
+        played = copy_counts.get(key, {})
+        if played:
+            out[member] = {"unit": None, "copy": key[1], "mod": key[0], "clip": c["clip"], "edit": c["edit"],
+                           "file": None}
+            result.findings.append(Finding("note", f"{copy_where(key)} of {anim.clip_key(c['clip'])} plays on "
+                                                   f"{sum(played.values())} listing(s), every other unit's as before: "
+                                                   f"{', '.join(f'{u} ({n})' for u, n in sorted(played.items()))}"))
+        elif c["units"]:
+            result.findings.append(Finding("warning", f"{copy_where(key)}: nothing plays it, so it isn't made: no unit "
+                                                      f"ticked for it plays {anim.clip_key(c['clip'])} where it is "
+                                                      f"ticked"))
     return out
+
+
+def _copy_coverage(run, unit: str, name: str, ticks: dict, by_clip: dict, by_action: dict, copy_where,
+                   result: BuildResult) -> None:
+    """Said for the copies of clips ticked for the unit `unit` (`ticks`: {(the clip, a figure's path or None for every
+    figure): (mod id, copy id)}), walked as anim.own_listings walks the unit and before it points anything: a figure
+    ticked that the unit hasn't got, a tick none of whose listings plays the clip, and the listings where the unit's own
+    rows win over the copy (an action row of units.toml, its own copy of the clip: RUSE Decoy's Only this unit)."""
+    from . import anim
+    from .animlist import member_of
+    figures = anim.unit_figures(run.game, name)
+    paths = {f["path"] for f in figures}
+    for (clip, fig), key in sorted(ticks.items(), key=lambda kv: (kv[0][0], kv[0][1] or "")):
+        who = f"{unit}'s figure {fig}" if fig else unit
+        played = own_rows = own_copy = 0
+        for f in figures:
+            if fig is not None and f["path"] != fig or fig is None and (clip, f["path"]) in ticks:
+                continue   # (another figure; or one ticked for a copy of its own, which wins there)
+            for action, file in f["listings"]:
+                if file is None or member_of(file) != clip:
+                    continue
+                if (action, f["path"]) in by_action or (action, None) in by_action:
+                    own_rows += 1
+                elif clip in by_clip:
+                    own_copy += 1
+                else:
+                    played += 1
+        if fig is not None and fig not in paths:
+            result.findings.append(Finding("warning", f"{copy_where(key)}: {unit} has no figure {fig}, so nothing of "
+                                                      f"it plays the copy"))
+        elif not (played or own_rows or own_copy):
+            result.findings.append(Finding("warning", f"{copy_where(key)}: {who} plays no {anim.clip_key(clip)}, so "
+                                                      f"nothing of it plays the copy"))
+        if own_copy:
+            result.findings.append(Finding("note", f"{copy_where(key)}: {who} has its own copy of "
+                                                   f"{anim.clip_key(clip)} ({anim.UNITS}), which it plays instead"))
+        if own_rows:
+            result.findings.append(Finding("note", f"{copy_where(key)}: {own_rows} of {who}'s listings of "
+                                                   f"{anim.clip_key(clip)} play the unit's own animation for their "
+                                                   f"action ({anim.UNITS}), which wins over the copy there"))
 
 
 def _draws_own_model(model: str | None, unit: str, stems=None) -> bool:

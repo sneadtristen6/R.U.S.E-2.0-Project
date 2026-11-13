@@ -614,6 +614,36 @@ r2.unit.us_marines.name,R2MARINE,US Marines,Marines US,US-Marines,Marines USA,Ma
 
   An older Launcher that reads units.toml stops on these tables (it doesn't know them); one from before units.toml
   (0.9.8.19 and earlier) builds the mod without any of it.
+- **Copies of an animation for the units and soldiers picked (2026-11-13, `rusemod.anim`; RUSE Decoy's Copy this
+  animation…; built and checked offline, not tried in the game yet):** `files/anim/copies.toml` holds copies of the
+  game's clips, each changed like a clip of `clips.toml` and played only by the units, or only some figures of a unit
+  (its soldiers by kind: the riflemen, the bazooka man, the far-zoom figure; a gun's crewmen), ticked for it:
+
+  ```toml
+  [copy.fast_run]
+  name = "Fast run"               # the modder's name for it (RUSE Decoy's list; the game never shows it)
+  clip = "genanim_15/ww2/res3d/units/common/fusilier_courselod0.baf"   # the game's clip it is a copy of
+  speed = 150                     # as in clips.toml: speed, from, bone; and
+  file = "fast_run.baf"           # a whole clip in its place, in files/anim/copies/
+  [copy.fast_run.bone."bip01 head"]
+  size = 1.2
+  [copy.fast_run.units]
+  Descriptor_Unit_Generic_Horse = []                           # every figure of the unit that plays the clip
+  Descriptor_Unit_Soldat_US_Leger = ["GfxDescriptorBazooka"]   # only these figures, by their paths from the unit
+  ```
+
+  The build makes each copy once, as a clip of its own beside the soldiers' clips
+  (`own_copy_<the copy's id>_<the clip's name>lod0.baf`), and points the ticked units' listings of that clip at it, as it
+  does for one unit's own (a part a unit shares with other units is copied into it first); every other unit plays the
+  clip as before, and the game's clips stay as they are, byte for byte. A figure ticked for a copy of its own wins over
+  its unit's tick for another copy of the same clip. What a unit has of its own still wins over a copy for the listings
+  it names (an action row of `units.toml`, then its own copy of the clip), and the build says so. A figure the unit
+  hasn't got, a unit that plays no such clip and a copy nothing plays are warnings; a unit ticked that no mod in the set
+  makes, and the game hasn't got, is an error. A unit the Studio copies is ticked wherever the unit it copies is; a unit
+  deleted in the Studio is unticked. RUSE Decoy writes the file: an animation's *Copy this animation…* (the copy starts
+  as what the editor shows: from a unit's page, as that unit plays it), *Your copies* down the left, and *Who plays it*
+  in a copy's editor, a tick for each unit that plays the clip and for each of its figures that do. A Launcher from
+  before this builds such a mod without the copies: every unit plays the clip as before.
 - **New songs (2026-10-07; heard in the game: a new song in battle lists 1 and 2):** `files/music/list1/<name>.wav` (and `list2`, `list3`) adds a
   song of the mod's own, with a name of its own, to that one of the three lists battles play from: the build makes
   the song (as above), adds it beside the game's songs with its description, and adds a new song object naming it at

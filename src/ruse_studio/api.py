@@ -10130,12 +10130,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         from rusemod import anim
         if isinstance(exc, StudioError):
             return exc
+        # (the file the mistake is in: units.toml, or the mod's copies of animations, copies.toml, whose words start so)
+        table = anim.COPIES if str(exc).startswith(anim.COPIES) else anim.UNITS
         cause = oserror_of(exc)
         if cause is not None:
-            return file_error(cause, folder / anim.UNITS if isinstance(exc, anim.AnimError) else None)
+            return file_error(cause, folder / table if isinstance(exc, anim.AnimError) else None)
         if isinstance(exc, anim.AnimError):
             # not a game rule: the unit's animations are in that file, and it can't be read to take them out
-            return StudioError(f"Nothing was deleted: {folder / anim.UNITS} has a mistake ({exc}), so the unit's "
+            return StudioError(f"Nothing was deleted: {folder / table} has a mistake ({exc}), so the unit's "
                                f"animations can't be taken out with it. Fix that file, then try again.")
         return exc
 
@@ -10153,6 +10155,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             rows = tail in anim.read_units(edits.folder)
         except anim.AnimError:
             rows = (edits.folder / anim.UNITS).is_file()   # (can't be read: tried below, and said in words)
+        try:
+            rows = rows or bool(anim.ticked_in(edits.folder, tail))   # (its ticks in the mod's copies of animations)
+        except anim.AnimError:
+            rows = True   # (copies.toml can't be read: tried below, and said in words)
         if not rows and not unit_files(edits.folder, tail):
             return []
         try:

@@ -1810,6 +1810,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     tip_decoy_unit: "The sounds of the unit whose page sent you here; pick a kind below to see every sound of the game",
     tip_decoy_unit_open: "Open RUSE Decoy on just this unit's sounds: hear each, set its volume or replace it",
     tip_decoy_volume: "How loud your mod plays this sound: 100% is the game's own, 0% silent, 200% twice as loud (the loudest parts are rounded off so it never crackles). Saved when you let go." };
+  // a copy of an animation for the units and soldiers picked (words.toml decoy_copy*, decoy_copies*: decoy.js copyBox)
+  Object.assign(DECOY_WORDS, { decoy_anim_for_copy: "Your copy {name} ({n})", decoy_copies_kind: "Your copies", decoy_copies_none: "No copies yet. Open an animation and click Copy this animation… to make one.", decoy_copy_create: "Make the copy", decoy_copy_default: "{name} copy", decoy_copy_delete: "Delete the copy", decoy_copy_delete_confirm: "Delete the copy {name}? The units ticked for it ({n}) will play the animation as before.", decoy_copy_deleted: "{name}: the copy is out of your mod.", decoy_copy_game_head: "The game's units", decoy_copy_help: "The copy starts the same as this animation as you see it now. Change it, then tick under Who plays it the units and soldiers that play it.", decoy_copy_made: "{name}: a copy of {clip}, made in your mod. Tick under Who plays it the units and soldiers that play it.", decoy_copy_made_unit: "{name}: a copy of {clip} as {unit} plays it, made in your mod. Tick under Who plays it the units and soldiers that play it.", decoy_copy_make: "Copy this animation…", decoy_copy_mark: "your copy: {name}", decoy_copy_mine_head: "Your units", decoy_copy_moved: "Taken out of your copy {names}: a soldier or part plays one copy of an animation.", decoy_copy_name: "Name of the copy", decoy_copy_none_play: "No unit plays this animation, so no unit can play a copy of it.", decoy_copy_of: "a copy of {clip}", decoy_copy_other: "plays your copy {name}: ticking it here takes it out of that one", decoy_copy_own_copy: "has its own copy of this animation (Only this unit), which it plays instead", decoy_copy_own_model: "its parts that wear your own model play that model's own animations, not this copy", decoy_copy_own_rows: "plays its own animation for this (from Blender), which wins over the copy", decoy_copy_renamed: "Renamed: {name}.", decoy_copy_reset: "Back to the game's animation", decoy_copy_reset_done: "{name}: back to the game's animation, still ticked for the same units.", decoy_copy_saved: "{name}: saved in your copy, for the units and soldiers ticked for it.", decoy_copy_ticked: "{unit}: ticked for {name}.", decoy_copy_units: "units that play it: {n}", decoy_copy_units_none: "no unit plays it yet: tick some under Who plays it", decoy_copy_unreached: "These units play it too, but not on a part of their own that a copy can reach: {names}", decoy_copy_unticked: "{unit}: plays the animation as before.", decoy_copy_who: "Who plays it", decoy_copy_who_help: "Tick the units that play this copy in place of the animation, or under a unit only some of its soldiers or parts. Every other unit plays the animation as before. Only units that play the animation are here: the copy moves the same bones.", decoy_copy_who_search: "Find a unit", decoy_mc_used_copy: "{name}: the motion capture is in your copy now.", tip_decoy_anim_for_copy: "This unit plays your copy: the change goes to the copy, and every unit and soldier ticked for it plays it changed (the number in brackets: the units ticked for it).", tip_decoy_copies_kind: "The copies of animations you made in this mod. Each one is played only by the units and soldiers ticked under its Who plays it; every other unit plays the animation as before.", tip_decoy_copy_cancel: "Close this without making a copy.", tip_decoy_copy_create: "Make the copy in your mod and open it here, to change it and tick who plays it.", tip_decoy_copy_delete: "Take the copy out of your mod. The units and soldiers ticked for it play the animation as before.", tip_decoy_copy_figure: "Tick: this one of the unit's soldiers or parts plays your copy; the others play what their own tick says.", tip_decoy_copy_make: "Make a copy of this animation that only the units and soldiers you tick play. It starts the same as what you see here; every other unit keeps playing the animation as before. Not tried in the game yet.", tip_decoy_copy_name: "The copy's name in RUSE Decoy. Only you see it: the game doesn't show it.", tip_decoy_copy_open: "Open the copy: watch it in 3D, change it, and tick the units and soldiers that play it.", tip_decoy_copy_reset: "Take this copy's changes out: the units and soldiers ticked for it play the game's animation, until you change the copy again. Its name and ticks stay.", tip_decoy_copy_unit: "Tick: every soldier and part of this unit that plays the animation plays your copy. Untick: they play the animation as before.", tip_decoy_copy_who_search: "Show only the units whose name or country has these words." });
   // (end of RUSE Decoy's words)
   // a word French or Chinese hasn't got here shows in English, as RUSE Decoy's do (the real Studio has every one)
   const words_ = (lang) => ({ ...words.us, ...DECOY_WORDS, ...(words[lang] || {}) });
@@ -2692,6 +2694,30 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     }
     return e;
   }
+  // the mod's copies of animations (StudioApi.decoy_copy_*, ruse_studio.decoycopies): `${mod}|${id}` -> { id, name,
+  // member, edit: as decoyClipEdits', units: { a unit's name: [its figures], [] every one } }
+  const decoyCopies = new Map();
+  const decoyCopyGet = (id) => {
+    if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+    const c = decoyCopies.get(`${current}|${id}`);
+    if (!c) throw new Error(`This mod has no copy ${id} any more: it may have been deleted.`);
+    return c;
+  };
+  function decoyCopyOut(c) {
+    const clip = decoyClipOf(c.member), e = c.edit || {};
+    return { copy: c.id, member: c.member, kind: clip.kind, name: c.name, clip_name: clip.name, seconds: clip.seconds,
+      frames: clip.frames, bones: clip.bones, names: clip.names, units: Object.keys(c.units).length, clip_units: clip.units,
+      missing: false, speed: e.speed ?? 100, from: e.from || null, mine: Boolean(e.mine), tweaks: e.tweaks || {},
+      changed: Object.keys(e).length > 0, ticked: JSON.parse(JSON.stringify(c.units)) };
+  }
+  // a unit's figures that play a clip, as the build walks them: a squad's riflemen, bazooka man and far-away figure;
+  // any other unit's own figure
+  const decoyFigures = (address, member) => {
+    const clip = decoyClipOf(member), squad = fakeSquad(address);
+    if (squad !== (clip.kind === "infantry")) return [];
+    return squad ? [["GfxDescriptorFusilier", "rifle"], ["GfxDescriptorBazooka", "heavy"],
+      ["GfxDescriptorIcone.PawnDescriptor.DescriptorFigurine", "far"]] : [["GfxDescriptor", "unit"]];
+  };
   // the motion library (StudioApi.decoy_motions): a few made-up moves of the two free sets
   const DECOY_MOVES = [["cmu-02_01", "cmu", "walk", "Walk", "02", 3.4], ["cmu-09_01", "cmu", "run", "Run", "09", 2.6],
     ["cmu-13_29", "cmu", "jump", "Jump", "13", 2.0], ["style-Akimbo_FW", "100style", "walk", "Akimbo", "Akimbo", 6.0, "FW"],
@@ -4380,10 +4406,90 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return { count: members.length, volume: Math.round(percent), saved: decoySetVolumes(members, percent) };
       },
       decoy_unit_anims: async (address) => {   // a squad's soldiers' clips, a vehicle's and a gun crew's
-        const squad = fakeSquad(address);
+        const squad = fakeSquad(address), name = String(address).split("/").pop();
+        const copies = [...decoyCopies.values()].filter((c) => current && decoyCopies.get(`${current}|${c.id}`) === c && name in c.units);
         const rows = DECOY_CLIPS.map(decoyClip).filter((c) => squad ? c.kind === "infantry" : c.kind === "vehicles" || c.kind === "crews")
-          .map((c) => ({ ...decoyUnitClipOut(c, address), role: c.names[0] || c.name }));
+          .map((c) => ({ ...decoyUnitClipOut(c, address), role: c.names[0] || c.name,
+            copies: copies.filter((x) => x.member === c.member).map((x) => ({ ...decoyCopyOut(x), figures: [...x.units[name]] })) }));
         return { rows, total: rows.length, start: 0 };
+      },
+      // Copy this animation… (StudioApi.decoy_copies, decoy_copy_make / _rename / _delete / _players / _tick)
+      decoy_copies: async () => ({ mod: Boolean(current), copies: [...decoyCopies.entries()]
+        .filter(([k]) => current && k.startsWith(`${current}|`)).map(([, c]) => decoyCopyOut(c))
+        .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())) }),
+      decoy_copy_make: async (member, name, unit = null, copy = null) => {
+        const clip = decoyClipOf(member);
+        if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        name = String(name || "").trim();
+        if (!name || name.length > 80) throw new Error("A copy's name is 1 to 80 letters.");
+        const all = [...decoyCopies.entries()].filter(([k]) => k.startsWith(`${current}|`)).map(([, c]) => c);
+        if (all.some((c) => c.name.toLowerCase() === name.toLowerCase())) throw new Error(`This mod has a copy called ${name} already: give this one another name.`);
+        const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32) || "copy";
+        let id = base, k = 2;
+        while (all.some((c) => c.id === id)) id = `${base}_${k++}`;
+        const from = copy ? decoyCopyGet(copy).edit : unit ? (decoyOwnEdits.get(decoyOwnKey(unit, clip.member)) || decoyClipEdits.get(`${current}|${clip.member}`))
+          : decoyClipEdits.get(`${current}|${clip.member}`);
+        const c = { id, name, member: clip.member, edit: { ...(from || {}) }, units: {} };
+        decoyCopies.set(`${current}|${id}`, c);
+        return { ...decoyCopyOut(c), started: copy ? "copy" : from ? (unit ? "own" : "all") : "game" };
+      },
+      decoy_copy_rename: async (copy, name) => {
+        const c = decoyCopyGet(copy);
+        name = String(name || "").trim();
+        if (!name || name.length > 80) throw new Error("A copy's name is 1 to 80 letters.");
+        c.name = name;
+        return decoyCopyOut(c);
+      },
+      decoy_copy_delete: async (copy) => {
+        const c = decoyCopyGet(copy);
+        decoyCopies.delete(`${current}|${copy}`);
+        return { copy, name: c.name, units: Object.keys(c.units).length };
+      },
+      decoy_copy_players: async (copy, lang = "base") => {
+        const c = decoyCopyGet(copy);
+        const others = [...decoyCopies.entries()].filter(([k, o]) => k.startsWith(`${current}|`) && o !== c && o.member === c.member).map(([, o]) => o);
+        const units = (await window.pywebview.api.units(lang)).units.filter((u) => u.kind !== "buildings");
+        const rows = [];
+        for (const u of [...units.filter((x) => x.new), ...units.filter((x) => !x.new)]) {
+          const figs = decoyFigures(u.address, c.member);
+          if (!figs.length) continue;
+          const name = u.address.split("/").pop(), ticked = c.units[name];
+          const figures = figs.map(([path, kind]) => {
+            const on = ticked !== undefined && (!ticked.length || ticked.includes(path));
+            const other = on ? null : (others.find((o) => name in o.units && (!o.units[name].length || o.units[name].includes(path))) || {}).name || null;
+            return { path, kind, number: 0, actions: 2, ticked: on, other, own_rows: 0 };
+          });
+          const n = figures.filter((f) => f.ticked).length;
+          rows.push({ address: u.address, name: u.name, new: Boolean(u.new), nation: u.nation_name || "", figures,
+            ticked: n === figures.length ? "all" : n ? "some" : null,
+            own_copy: Boolean(decoyOwnEdits.get(`${current}|${u.address}|${c.member}`)), own_model: false });
+        }
+        return { copy: decoyCopyOut(c), units: rows, unreached: [] };
+      },
+      decoy_copy_tick: async (copy, address, figures = null) => {
+        const c = decoyCopyGet(copy), name = String(address).split("/").pop();
+        const playing = decoyFigures(address, c.member).map(([p]) => p);
+        let want = null;
+        if (figures !== null) {
+          if (!playing.length) throw new Error("This unit doesn't play this animation, so it can't play a copy of it.");
+          const bad = figures.find((f) => !playing.includes(f));
+          if (bad) throw new Error(`This unit has no soldier or part ${bad} that plays this animation.`);
+          want = !figures.length || playing.every((p) => figures.includes(p)) ? [] : playing.filter((p) => figures.includes(p));
+        }
+        if (want === null) delete c.units[name]; else c.units[name] = want;
+        const moved = [];
+        if (want !== null) {
+          const taking = want.length ? want : playing;
+          for (const [k, o] of decoyCopies) {
+            if (!k.startsWith(`${current}|`) || o === c || o.member !== c.member || !(name in o.units)) continue;
+            const theirs = o.units[name].length ? o.units[name] : playing;
+            if (!theirs.some((p) => taking.includes(p))) continue;
+            const left = playing.filter((p) => theirs.includes(p) && !taking.includes(p));
+            if (left.length) o.units[name] = left; else delete o.units[name];
+            moved.push(o.name);
+          }
+        }
+        return { copy: decoyCopyOut(c), moved };
       },
       // RUSE Decoy's Change its animations in Blender for one unit (StudioApi.decoy_blender_state, decoy_blender,
       // decoy_blender_back): a new unit of the mod only; Blender "opens" (nothing runs here), and bringing back says the
@@ -4436,9 +4542,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
             .map((x) => ({ member: x.member, name: x.name, names: x.names })) };
       },
       decoy_anim_preview: async (member) => { decoyClipOf(member); return { url: null }; },
-      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null, unit = null) => {
+      decoy_anim_set: async (member, speed = null, use = null, bone = null, size = null, turn = null, unit = null, copy = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        if (copy) {   // one of the mod's copies of it (Copy this animation…)
+          const x = decoyCopyGet(copy);
+          x.edit = decoyChanged(x.edit || {}, speed, use, bone, size, turn);
+          return decoyCopyOut(x);
+        }
         if (unit) {   // "Only this unit": its own copy, starting as the change every unit has
           const key = decoyOwnKey(unit, c.member);
           decoyOwnEdits.set(key, decoyChanged(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {},
@@ -4449,8 +4560,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         if (Object.keys(e).length) decoyClipEdits.set(key, e); else decoyClipEdits.delete(key);
         return decoyClipOut(c);
       },
-      decoy_anim_reset: async (member, unit = null) => {
+      decoy_anim_reset: async (member, unit = null, copy = null) => {
         const c = decoyClipOf(member);
+        if (copy) { const x = decoyCopyGet(copy); x.edit = {}; return { member, ...decoyCopyOut(x) }; }
         if (unit) { decoyOwnEdits.delete(decoyOwnKey(unit, c.member)); return { member, ...decoyUnitClipOut(c, unit) }; }
         decoyClipEdits.delete(`${current}|${c.member}`);
         return { member };
@@ -4465,9 +4577,14 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         return got;
       },
       decoy_mocap_preview: async (member) => { decoyClipOf(member); return { url: null, frames: 60, loop: false, scale: 1 }; },
-      decoy_mocap_use: async (member, mid, start, length, inPlace, loop, credit, unit = null) => {
+      decoy_mocap_use: async (member, mid, start, length, inPlace, loop, credit, unit = null, copy = null) => {
         const c = decoyClipOf(member);
         if (!current) throw new Error("Pick or make a mod first: animations are changed in a mod.");
+        if (copy) {   // (the copy's own clip from now on)
+          const x = decoyCopyGet(copy);
+          x.edit = { ...(x.edit || {}), mine: true };
+          return { ...decoyCopyOut(x), frames: 60, loop: false, scale: 1 };
+        }
         if (unit) {   // (only that unit plays it: its own copy names the file)
           const key = decoyOwnKey(unit, c.member);
           decoyOwnEdits.set(key, { ...(decoyOwnEdits.get(key) || decoyClipEdits.get(`${current}|${c.member}`) || {}), mine: true });

@@ -8,16 +8,25 @@
 // sounds (showUnitSounds), and its animations: each change to one is for "Only this unit" (its own copy of the clip,
 // files/anim/units.toml) or "Every unit that plays it" (the clip itself); and, for a new unit of the mod, Change its
 // animations in Blender and Bring my changes back (blenderBox: every animation the unit plays out to Blender, the
-// changed ones back as this unit's own; ruse_studio.decoyblender). Uses app.js's $, el, fill, say, problem and api.
+// changed ones back as this unit's own; ruse_studio.decoyblender). Copy this animation… (copyBox) makes a copy of an
+// animation in the mod that only the units and soldiers ticked under its Who plays it play (whoBox; Your copies down
+// the left, copiesList; StudioApi.decoy_copy_*, ruse_studio.decoycopies; the owner, 2026-11-13: "a way to copy an
+// animation so that way you can change an animation and implement it into like certain models and soldiers").
+// Uses app.js's $, el, fill, say, problem and api.
 (function () {
   "use strict";
   const D = { words: {}, lang: "base", data: null, kind: null, words_q: "", mission: "", in_lang: "", rows: [],
               total: 0, start: 0, timer: null, unit: null, mode: "sound", akind: null, adata: null, anim: null,
-              scope: "all", blender: null, said: null, busy: false };
-  // the animation's changes the editor shows and makes: the unit's own copy ("unit": opened from a unit's page; until
-  // it has one, the clip as it plays now) or the clip every unit plays ("all"), and the unit the calls are for
-  const cur = (a) => (D.scope === "unit" && a.own) ? a.own : a;
-  const scopeUnit = () => (D.scope === "unit" && D.unit) ? D.unit.address : null;
+              scope: "all", blender: null, said: null, busy: false, copy: null, cdata: null, who: null, whoQ: "" };
+  // the animation's changes the editor shows and makes: one of the mod's copies of it (D.copy, its id: opened from Your
+  // copies, or picked under Change it for on a unit's page), the unit's own copy ("unit": opened from a unit's page;
+  // until it has one, the clip as it plays now) or the clip every unit plays ("all"), and the unit the calls are for
+  const copyOf = (a) => D.copy ? (a.copy === D.copy ? a : (a.copies || []).find((c) => c.copy === D.copy) || null) : null;
+  const cur = (a) => copyOf(a) || ((D.scope === "unit" && a.own) ? a.own : a);
+  const scopeUnit = () => (!D.copy && D.scope === "unit" && D.unit) ? D.unit.address : null;
+  // a figure of a unit as the page names it (ruse_studio.modelfit.figure_kind's kinds; app.js fitWho's words)
+  const FIGURE_WORDS = { rifle: "fit_fig_rifle", heavy: "fit_fig_heavy", far: "fit_fig_far", fallen: "fit_fig_fallen",
+                         wreck: "fit_fig_wreck", unit: "fit_fig_unit", other: "fit_fig_other" };
   const W = () => D.words;
   const clock = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
   const shortClock = (s) => s < 10 ? `${s.toFixed(1)} s` : clock(s);
@@ -46,6 +55,7 @@
     let data;
     try { data = await api().decoy(lang); } catch (err) { problem(err); return; }
     try { D.adata = await api().decoy_anims(); } catch (err) { D.adata = { kinds: [] }; problem(err); }
+    try { D.cdata = await api().decoy_copies(); } catch (err) { D.cdata = { copies: [], mod: false }; problem(err); }
     if (!shown()) return;   // another tab meanwhile
     D.data = data;
     $("decoy-nomod").textContent = data.mod ? "" : w.decoy_nomod;
@@ -79,6 +89,19 @@
       ...D.data.kinds.map((k) => button(k, "sound")),
       el("p", { className: "decoy-head", textContent: w.decoy_anims_head, title: w.tip_decoy_anims_head }),
       ...((D.adata && D.adata.kinds) || []).map((k) => button(k, "anim"))];
+    if (D.cdata && D.cdata.mod) {   // Your copies: the mod's copies of animations (copiesList)
+      const on = !D.unit && D.mode === "copies";
+      const b = el("button", { type: "button", className: "decoy-kind" + (on ? " on" : ""), title: w.tip_decoy_copies_kind },
+        el("span", { textContent: w.decoy_copies_kind }),
+        el("span", { className: "muted small", textContent: D.cdata.copies.length.toLocaleString() }));
+      b.addEventListener("click", () => {
+        if (on) return;
+        D.unit = null;
+        D.mode = "copies";
+        kinds(); missions(); list(true);
+      });
+      buttons.push(b);
+    }
     if (D.unit) {
       const u = el("button", { type: "button", className: "decoy-kind on", title: w.tip_decoy_unit },
         el("span", { textContent: fill(w.decoy_unit_kind, { name: D.unit.name }) }),
@@ -113,15 +136,18 @@
   async function list(fresh) {
     const w = W();
     const anims = !D.unit && D.mode === "anim";
-    const music = !D.unit && !anims && D.kind === "music";
-    for (const id of ["decoy-search", "decoy-count", "decoy-more"]) $(id).classList.toggle("hidden", music || (id === "decoy-search" && Boolean(D.unit)));
-    for (const id of ["decoy-all-set"]) $(id).classList.toggle("hidden", anims);
-    $("decoy-all").closest("label").classList.toggle("hidden", anims);
+    const copies = !D.unit && D.mode === "copies";
+    const music = !D.unit && !anims && !copies && D.kind === "music";
+    for (const id of ["decoy-search", "decoy-count", "decoy-more"]) $(id).classList.toggle("hidden", music || copies || (id === "decoy-search" && Boolean(D.unit)));
+    for (const id of ["decoy-all-set"]) $(id).classList.toggle("hidden", anims || copies);
+    $("decoy-all").closest("label").classList.toggle("hidden", anims || copies);
     $("decoy-kind-help").textContent = D.unit ? fill(w.decoy_unit_help_all, { name: D.unit.name })
+      : copies ? w.tip_decoy_copies_kind
       : anims ? (w[`tip_decoy_akind_${D.akind}`] || "") : (w[`tip_decoy_kind_${D.kind}`] || "");
     $("decoy-all").value = "100";
     $("decoy-all-value").textContent = "100%";
     if (music) { await songs(); return; }
+    if (copies) { await copiesList(); return; }
     if (anims) { await animList(fresh); return; }
     if (!D.kind && !D.unit) { $("decoy-rows").replaceChildren(el("p", { className: "muted", textContent: w.decoy_none })); return; }
     if (fresh) { D.start = 0; D.rows = []; }
@@ -263,17 +289,62 @@
     $("decoy-more").classList.toggle("hidden", D.rows.length >= D.total);
   }
 
+  // --- Your copies: the mod's copies of animations (StudioApi.decoy_copies), each opened in the editor as itself ---
+  async function copiesList() {
+    const w = W();
+    let got;
+    try { got = await api().decoy_copies(); } catch (err) { problem(err); return; }
+    if (!(shown() && !D.unit && D.mode === "copies")) return;   // (another kind picked meanwhile)
+    D.cdata = got;
+    kinds();   // (the count beside Your copies, as the list has it now)
+    const rows = got.copies.map(copyRow);
+    $("decoy-rows").replaceChildren(...(rows.length ? rows : [el("p", { className: "muted", textContent: w.decoy_copies_none })]));
+  }
+
+  function copyRow(c) {
+    const w = W();
+    const head = el("div", { className: "music-head" },
+      el("span", { className: "music-name", textContent: c.name }),
+      el("span", { className: "muted small", textContent: `${c.seconds.toFixed(1)} s` }));
+    for (const m of changeMarks(c)) head.append(el("span", { className: "music-mine small", textContent: m }));
+    const bits = [fill(w.decoy_copy_of, { clip: c.clip_name }),
+      c.units ? fill(w.decoy_copy_units, { n: c.units }) : w.decoy_copy_units_none];
+    const edit = el("button", { type: "button", className: "small primary", textContent: "▶ " + w.decoy_anim_open,
+                                title: w.tip_decoy_copy_open });
+    edit.addEventListener("click", () => openAnim(c, c.copy));
+    const del = el("button", { type: "button", className: "link small", textContent: w.decoy_copy_delete,
+                               title: w.tip_decoy_copy_delete });
+    del.addEventListener("click", async () => {
+      if (!window.confirm(fill(w.decoy_copy_delete_confirm, { name: c.name, n: c.units }))) return;
+      try {
+        await api().decoy_copy_delete(c.copy);
+        say(fill(w.decoy_copy_deleted, { name: c.name }), "ok");
+        open(D.words, D.lang);
+      } catch (err) { problem(err); }
+    });
+    return el("div", { className: "music-row" + (c.changed ? " edited" : "") }, head,
+      el("div", { className: "muted small music-where", textContent: bits.join(" · ") }),
+      el("div", { className: "music-actions" }, edit, del));
+  }
+
+  // what the mod changes in an animation (or a copy), as marks beside its name
+  function changeMarks(a) {
+    const w = W(), marks = [];
+    if (a.speed !== 100) marks.push(fill(w.decoy_anim_speed_mark, { pct: Math.round(a.speed) }));
+    if (a.from) marks.push(w.decoy_anim_from_mark);
+    if (Object.keys(a.tweaks || {}).length) marks.push(fill(w.decoy_anim_bones_mark, { n: Object.keys(a.tweaks).length }));
+    if (a.mine) marks.push(w.music_yours);
+    return marks;
+  }
+
   function animRow(a) {
     const w = W();
     const head = el("div", { className: "music-head" },
       el("span", { className: "music-name", textContent: a.name }),
       el("span", { className: "muted small", textContent: `${a.seconds.toFixed(1)} s` }));
-    const marks = [];
-    if (a.speed !== 100) marks.push(fill(w.decoy_anim_speed_mark, { pct: Math.round(a.speed) }));
-    if (a.from) marks.push(w.decoy_anim_from_mark);
-    if (Object.keys(a.tweaks || {}).length) marks.push(fill(w.decoy_anim_bones_mark, { n: Object.keys(a.tweaks).length }));
-    if (a.mine) marks.push(w.music_yours);
+    const marks = changeMarks(a);
     if (a.own) marks.push(w.decoy_anim_own_mark);   // (a unit's list: it has its own copy)
+    for (const c of a.copies || []) marks.push(fill(w.decoy_copy_mark, { name: c.name }));   // (it plays a copy of yours)
     for (const m of marks) head.append(el("span", { className: "music-mine small", textContent: m }));
     const bits = [];
     if (a.role) bits.push(a.role);
@@ -304,7 +375,7 @@
       });
       actions.append(back);
     }
-    return el("div", { className: "music-row" + (a.changed || a.own ? " edited" : "") }, head,
+    return el("div", { className: "music-row" + (a.changed || a.own || (a.copies || []).length ? " edited" : "") }, head,
       el("div", { className: "muted small music-where", textContent: bits.join(" · ") }), actions);
   }
 
@@ -353,7 +424,7 @@
     const w = W();
     $("da-note").textContent = w.decoy_anim_loading;
     let got;
-    try { got = await api().decoy_anim_preview(a.member, scopeUnit()); } catch (err) { $("da-note").textContent = (err && err.message) || String(err); return; }
+    try { got = await api().decoy_anim_preview(a.member, scopeUnit(), D.copy); } catch (err) { $("da-note").textContent = (err && err.message) || String(err); return; }
     playClip(got, w.decoy_anim_on);
   }
 
@@ -548,25 +619,29 @@
     const w = W(), a = D.anim;
     if (!a || !D.mc) return;
     if (!$("da-mc-credit").value.trim()) { say(w.decoy_mc_credit_needed, "warn"); $("da-mc-credit").focus(); return; }
-    const unit = scopeUnit();
+    const unit = scopeUnit(), copy = copyOf(a);
     try {
-      const got = await api().decoy_mocap_use(...mocapArgs(), $("da-mc-credit").value.trim(), unit);
-      Object.assign(a, got);
-      say(unit ? fill(w.decoy_mc_used_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_mc_used, { name: a.name }), "ok");
+      const got = await api().decoy_mocap_use(...mocapArgs(), $("da-mc-credit").value.trim(), unit, D.copy);
+      Object.assign(copy || a, got);
+      say(copy ? fill(w.decoy_mc_used_copy, { name: copy.name })
+        : unit ? fill(w.decoy_mc_used_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_mc_used, { name: a.name }), "ok");
       animControls(a);
       showClip(a);
     } catch (err) { problem(err); }
   }
 
-  async function openAnim(a) {
+  // `copyId`: one of the mod's copies opened as itself (Your copies), `a` being that copy
+  async function openAnim(a, copyId) {
     const w = W();
     D.anim = a;
-    // from a unit's page: its own copy when it has one, or when no change is made for every unit yet
-    D.scope = D.unit && (a.own || !a.changed) ? "unit" : "all";
+    D.who = null;
+    // from a unit's page: its own copy when it has one, else a copy of yours it plays, or the clip as it plays now when
+    // no change is made for every unit yet
+    D.copy = copyId || (D.unit && !a.own && (a.copies || []).length ? a.copies[0].copy : null);
+    D.scope = D.copy ? "copy" : D.unit && (a.own || !a.changed) ? "unit" : "all";
     window.SoundView.stop();
     $("da-title").textContent = a.name;
-    $("da-lead").textContent = [a.names.length ? fill(w.decoy_anim_names, { names: a.names.join(", ") }) : "",
-      a.units ? fill(w.decoy_anim_units, { n: a.units }) : w.decoy_anim_no_units].filter(Boolean).join(" · ");
+    leadLine(a);
     for (const [id, word] of [["da-speed-label", "decoy_anim_speed"], ["da-use-label", "decoy_anim_use"],
       ["da-bones-label", "decoy_anim_bones"], ["da-size-label", "decoy_anim_size"], ["da-axis-label", "decoy_anim_axis"],
       ["da-turn-label", "decoy_anim_turn"], ["da-close", "decoy_anim_done"]]) $(id).textContent = w[word];
@@ -575,9 +650,10 @@
     $("da-use").replaceChildren(el("option", { value: "", textContent: w.decoy_anim_use_own }));
     $("da-bone").replaceChildren();
     scopeChoice(a);
+    copyBox(a);
     animControls(a);
     mocapWords();
-    $("decoy-anim").showModal();
+    if (!$("decoy-anim").open) $("decoy-anim").showModal();   // (already open: a copy just made opens in it)
     showClip(a);
     let info;
     try { info = await api().decoy_anim_info(a.member); } catch (err) { problem(err); return; }
@@ -593,29 +669,188 @@
     boneControls();
   }
 
-  // "Change it for": Only this unit (its own copy of the clip) or Every unit that plays it, when a unit's page sent us
+  // the line under the editor's title: what the animation (or the copy) is, the names the game gives it, who plays it
+  function leadLine(a) {
+    const w = W();
+    $("da-lead").textContent = [a.copy ? fill(w.decoy_copy_of, { clip: a.clip_name }) : "",
+      a.names.length ? fill(w.decoy_anim_names, { names: a.names.join(", ") }) : "",
+      a.copy ? (a.units ? fill(w.decoy_copy_units, { n: a.units }) : w.decoy_copy_units_none)
+        : a.units ? fill(w.decoy_anim_units, { n: a.units }) : w.decoy_anim_no_units].filter(Boolean).join(" · ");
+  }
+
+  // "Change it for": Only this unit (its own copy of the clip), each copy of yours it plays (Copy this animation…) or
+  // Every unit that plays it, when a unit's page sent us; none for a copy opened as itself
   function scopeChoice(a) {
     const w = W(), box = $("da-for");
-    box.classList.toggle("hidden", !D.unit);
-    if (!D.unit) { box.replaceChildren(); return; }
+    const show = Boolean(D.unit) && !a.copy;
+    box.classList.toggle("hidden", !show);
+    if (!show) { box.replaceChildren(); return; }
     const choice = el("div", { className: "choice", role: "radiogroup" }, el("span", { textContent: w.decoy_anim_for }));
+    const now = D.copy ? "copy:" + D.copy : D.scope;
     for (const [scope, text, tip] of [["unit", w.decoy_anim_for_unit, w.tip_decoy_anim_for_unit],
+      ...(a.copies || []).map((c) => ["copy:" + c.copy, fill(w.decoy_anim_for_copy, { name: c.name, n: c.units }),
+                                       w.tip_decoy_anim_for_copy]),
       ["all", fill(w.decoy_anim_for_all, { n: a.units }), w.tip_decoy_anim_for_all]]) {
-      const input = el("input", { type: "radio", name: "da-for", value: scope, checked: D.scope === scope, title: tip });
-      input.addEventListener("change", () => { D.scope = scope; animControls(a); showClip(a); });
+      const input = el("input", { type: "radio", name: "da-for", value: scope, checked: now === scope, title: tip });
+      input.addEventListener("change", () => {
+        D.copy = scope.startsWith("copy:") ? scope.slice(5) : null;
+        D.scope = D.copy ? "copy" : scope;
+        copyBox(a); animControls(a); showClip(a);
+      });
       choice.append(el("label", { title: tip }, input, " " + text));
     }
     box.replaceChildren(choice);
   }
 
+  // --- a copy of this animation (StudioApi.decoy_copy_make / _rename / _players / _tick; ruse_studio.decoycopies):
+  // Copy this animation… (its name, then Make the copy: it opens here), and for a copy its name and Who plays it ---
+  function copyBox(a) {
+    const w = W(), c = copyOf(a), parts = [];
+    if (c) {   // the copy's name, saved when changed
+      const name = el("input", { type: "text", value: c.name, maxLength: 80, autocomplete: "off", title: w.tip_decoy_copy_name });
+      name.setAttribute("aria-label", w.decoy_copy_name);
+      name.addEventListener("change", async () => {
+        try {
+          Object.assign(c, await api().decoy_copy_rename(c.copy, name.value));
+          if (a === c) $("da-title").textContent = c.name;
+          say(fill(w.decoy_copy_renamed, { name: c.name }), "ok");
+        } catch (err) { name.value = c.name; problem(err); }
+      });
+      parts.push(el("label", { className: "da-row", title: w.tip_decoy_copy_name },
+        el("span", { className: "small", textContent: w.decoy_copy_name }), name));
+    }
+    if (D.data && D.data.mod) parts.push(copyForm(a));
+    if (c) parts.push(whoBox());
+    $("da-copy").replaceChildren(...parts);
+    if (c) whoLoad(c);
+  }
+
+  // Copy this animation…: a name (the animation's, or the copy's, then "copy"), then Make the copy; the copy starts as
+  // what the editor shows (the chosen copy, this unit's own, or every unit's) and opens in the editor
+  function copyForm(a) {
+    const w = W();
+    const start = el("button", { type: "button", className: "small", textContent: w.decoy_copy_make, title: w.tip_decoy_copy_make });
+    const form = el("form", { className: "da-copy-form hidden" });
+    const name = el("input", { type: "text", autocomplete: "off", maxLength: 80, required: true,
+                               placeholder: w.decoy_copy_name, title: w.tip_decoy_copy_name });
+    name.setAttribute("aria-label", w.decoy_copy_name);
+    const make = el("button", { type: "submit", className: "small primary", textContent: w.decoy_copy_create,
+                                title: w.tip_decoy_copy_create });
+    const cancel = el("button", { type: "button", className: "small ghost", textContent: w.cancel, title: w.tip_decoy_copy_cancel });
+    cancel.addEventListener("click", () => { form.classList.add("hidden"); start.classList.remove("hidden"); });
+    form.append(name, el("p", { className: "muted small", textContent: w.decoy_copy_help }),
+      el("div", { className: "music-actions" }, make, cancel));
+    start.addEventListener("click", () => {
+      start.classList.add("hidden");
+      form.classList.remove("hidden");
+      name.value = fill(w.decoy_copy_default, { name: (copyOf(a) || a).name }).slice(0, 80);
+      name.select();
+      name.focus();
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!name.value.trim()) return;
+      make.disabled = true;
+      const unit = scopeUnit();
+      try {
+        const got = await api().decoy_copy_make(a.member, name.value.trim(), unit, D.copy);
+        say(fill(unit ? w.decoy_copy_made_unit : w.decoy_copy_made, { name: got.name, clip: got.clip_name,
+                                                                     unit: unit ? D.unit.name : "" }), "ok");
+        openAnim(got, got.copy);
+      } catch (err) { make.disabled = false; problem(err); }
+    });
+    return el("div", { className: "da-copy-make" }, start, form);
+  }
+
+  // Who plays it: the units that play the animation (the mod's own first), each with a tick, and under one with more
+  // than one soldier or part playing it a tick for each (StudioApi.decoy_copy_players, decoy_copy_tick)
+  function whoBox() {
+    const w = W();
+    const search = el("input", { type: "search", value: D.whoQ, placeholder: w.decoy_copy_who_search,
+                                 title: w.tip_decoy_copy_who_search });
+    search.addEventListener("input", () => { D.whoQ = search.value.trim().toLowerCase(); whoDraw(); });
+    return el("fieldset", { className: "da-bones da-who" },
+      el("legend", { className: "small", textContent: w.decoy_copy_who }),
+      el("p", { className: "small muted", textContent: w.decoy_copy_who_help }), search,
+      el("div", { id: "da-who-rows", className: "da-who-rows" }, el("p", { className: "small muted", textContent: w.decoy_anim_loading })));
+  }
+
+  async function whoLoad(c) {
+    let got;
+    try { got = await api().decoy_copy_players(c.copy, D.lang); } catch (err) { problem(err); return; }
+    if (!D.anim || D.copy !== c.copy) return;   // (another copy, or another choice, meanwhile)
+    D.who = got;
+    Object.assign(c, got.copy);
+    if (D.anim === c) leadLine(c);   // (a copy opened as itself: how many units play it now)
+    whoDraw();
+  }
+
+  function whoDraw() {
+    const w = W(), got = D.who, rows = $("da-who-rows");
+    if (!got || !rows) return;
+    const want = D.whoQ.split(/\s+/).filter(Boolean);   // (every word typed, in its name or its country)
+    const shownUnits = got.units.filter((u) => want.every((q) => `${u.name} ${u.nation}`.toLowerCase().includes(q)));
+    const mine = shownUnits.filter((u) => u.new), theirs = shownUnits.filter((u) => !u.new);
+    const out = [];
+    if (mine.length) out.push(el("p", { className: "da-who-head", textContent: w.decoy_copy_mine_head }), ...mine.map(whoUnit));
+    if (theirs.length) out.push(el("p", { className: "da-who-head", textContent: w.decoy_copy_game_head }), ...theirs.map(whoUnit));
+    if (!got.units.length) out.push(el("p", { className: "small muted", textContent: w.decoy_copy_none_play }));
+    if (got.unreached.length) {
+      out.push(el("p", { className: "small muted", textContent: fill(w.decoy_copy_unreached, { names: got.unreached.join(", ") }) }));
+    }
+    rows.replaceChildren(...out);
+  }
+
+  // one unit's tick, its notes (what it plays instead), and a tick for each of its soldiers or parts that play it
+  function whoUnit(u) {
+    const w = W();
+    const box = el("input", { type: "checkbox", checked: u.ticked === "all", title: w.tip_decoy_copy_unit });
+    box.indeterminate = u.ticked === "some";
+    box.addEventListener("change", () => whoTick(u, box.checked ? [] : null));
+    const figNotes = (f) => [f.own_rows ? w.decoy_copy_own_rows : "",
+      f.other ? fill(w.decoy_copy_other, { name: f.other }) : ""].filter(Boolean);
+    const notes = [u.own_copy ? w.decoy_copy_own_copy : "", u.own_model ? w.decoy_copy_own_model : "",
+      ...(u.figures.length === 1 ? figNotes(u.figures[0]) : [])].filter(Boolean);
+    const parts = [el("label", { className: "da-check", title: w.tip_decoy_copy_unit }, box,
+      el("span", { textContent: u.nation ? `${u.name} (${u.nation})` : u.name }))];
+    if (notes.length) parts.push(el("p", { className: "small muted da-who-note", textContent: notes.join(" · ") }));
+    if (u.figures.length > 1) {
+      parts.push(el("div", { className: "da-who-figs" }, ...u.figures.map((f) => {
+        const tick = el("input", { type: "checkbox", checked: f.ticked, title: w.tip_decoy_copy_figure });
+        tick.addEventListener("change", () => {
+          const on = u.figures.filter((g) => (g === f ? tick.checked : g.ticked)).map((g) => g.path);
+          whoTick(u, on.length ? on : null);
+        });
+        const said = figNotes(f);
+        return el("label", { className: "da-check", title: w.tip_decoy_copy_figure }, tick,
+          el("span", { textContent: (w[FIGURE_WORDS[f.kind]] || f.kind) + (f.number ? ` ${f.number}` : "") }),
+          ...(said.length ? [el("span", { className: "small muted", textContent: said.join(" · ") })] : []));
+      })));
+    }
+    return el("div", { className: "da-who-unit" }, ...parts);
+  }
+
+  // `figures`: [] every soldier and part of the unit that plays it, a list those (their paths), null none
+  async function whoTick(u, figures) {
+    const w = W(), c = copyOf(D.anim);
+    if (!c) return;
+    let got;
+    try { got = await api().decoy_copy_tick(c.copy, u.address, figures); } catch (err) { problem(err); whoDraw(); return; }
+    Object.assign(c, got.copy);
+    if (D.anim !== c) scopeChoice(D.anim);   // (a unit's page: Change it for's count of the copy's units)
+    say((figures === null ? fill(w.decoy_copy_unticked, { unit: u.name }) : fill(w.decoy_copy_ticked, { unit: u.name, name: c.name }))
+      + (got.moved.length ? " " + fill(w.decoy_copy_moved, { names: got.moved.join(", ") }) : ""), "ok");
+    whoLoad(c);
+  }
+
   // the speed, stand-in, bones and the way back, as the chosen one (cur) has them
   function animControls(a) {
-    const w = W(), c = cur(a), own = Boolean(scopeUnit());
+    const w = W(), c = cur(a), own = Boolean(scopeUnit()), copy = Boolean(copyOf(a));
     $("da-speed").value = String(Math.round(c.speed));
     $("da-speed-value").textContent = `${Math.round(c.speed)}%`;
     if ([...$("da-use").options].some((o) => o.value === (c.from || ""))) $("da-use").value = c.from || "";
-    $("da-reset").textContent = own ? w.decoy_anim_reset_own : w.decoy_anim_reset;
-    $("da-reset").title = own ? w.tip_decoy_anim_reset_own : w.tip_decoy_anim_reset;
+    $("da-reset").textContent = copy ? w.decoy_copy_reset : own ? w.decoy_anim_reset_own : w.decoy_anim_reset;
+    $("da-reset").title = copy ? w.tip_decoy_copy_reset : own ? w.tip_decoy_anim_reset_own : w.tip_decoy_anim_reset;
     tweaksLine();
     if ($("da-bone").value) boneControls();
   }
@@ -639,13 +874,14 @@
   async function saveAnim(change) {
     const w = W(), a = D.anim;
     if (!a) return;
-    const unit = scopeUnit();
+    const unit = scopeUnit(), copy = copyOf(a);
     try {
       const got = await api().decoy_anim_set(a.member, change.speed ?? null, change.use ?? null, change.bone ?? null,
-                                             change.size ?? null, change.turn ?? null, unit);
-      Object.assign(a, got);
+                                             change.size ?? null, change.turn ?? null, unit, D.copy);
+      Object.assign(copy || a, got);
       tweaksLine();
-      say(unit ? fill(w.decoy_anim_saved_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_anim_saved, { name: a.name }), "ok");
+      say(copy ? fill(w.decoy_copy_saved, { name: copy.name })
+        : unit ? fill(w.decoy_anim_saved_own, { name: a.name, unit: D.unit.name }) : fill(w.decoy_anim_saved, { name: a.name }), "ok");
       showClip(a);
     } catch (err) { problem(err); }
   }
@@ -802,13 +1038,16 @@
     $("da-reset").addEventListener("click", async () => {
       const a = D.anim, unit = scopeUnit();
       if (!a) return;
+      const copy = copyOf(a);
       try {
-        await api().decoy_anim_reset(a.member, unit);
-        if (unit) a.own = null;   // (it plays the clip as every unit does: the controls show that)
+        const got = await api().decoy_anim_reset(a.member, unit, D.copy);
+        if (copy) Object.assign(copy, got);   // (the copy plays the game's clip again, still ticked as it was)
+        else if (unit) a.own = null;   // (it plays the clip as every unit does: the controls show that)
         else Object.assign(a, { speed: 100, from: null, tweaks: {}, changed: false, mine: false });
         animControls(a); showClip(a);
-        say(unit ? fill(W().decoy_anim_reset_own_done, { name: a.name, unit: D.unit.name })
-          : fill(W().decoy_anim_reset_done, { name: a.name }), "ok");
+        say(copy ? fill(W().decoy_copy_reset_done, { name: copy.name })
+          : unit ? fill(W().decoy_anim_reset_own_done, { name: a.name, unit: D.unit.name })
+            : fill(W().decoy_anim_reset_done, { name: a.name }), "ok");
       } catch (err) { problem(err); }
     });
     $("da-close").addEventListener("click", () => $("decoy-anim").close());
@@ -825,7 +1064,10 @@
     });
     $("da-lib-more").addEventListener("click", () => libLoad(false));
     $("da-lib-get").addEventListener("click", libGetSet);
-    $("decoy-anim").addEventListener("close", () => { V.mixer = null; D.anim = null; open(D.words, D.lang); });
+    $("decoy-anim").addEventListener("close", () => {
+      V.mixer = null; D.anim = null; D.copy = null; D.who = null;
+      open(D.words, D.lang);
+    });
     $("decoy-anim").addEventListener("keydown", (e) => e.stopPropagation());
   }
 
