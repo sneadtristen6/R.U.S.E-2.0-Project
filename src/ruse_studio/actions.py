@@ -109,8 +109,11 @@ class ActionCalls:
             except (OSError, baf.ClipError):
                 pass
             info.append({"name": n, "seconds": seconds, "frames": frames})
-        report = record.get("report") or {}
-        models = {model_key(m) for m in [report.get("like"), *(report.get("also") or [])] if m}
+        # (a record's "report" or its "also" of a shape the Studio never writes is as if it weren't there: the one
+        # check's finding 3, its class; never Python's own error on the unit's page)
+        report = record.get("report") if isinstance(record.get("report"), dict) else {}
+        also = report.get("also") if isinstance(report.get("also"), list) else []
+        models = {model_key(m) for m in [report.get("like"), *also] if isinstance(m, str) and m}
         # (a squad's heavy-weapon soldier plays the unit's own animations too when his own model is on the same bones:
         # his actions are in the table, as the build plays them, rusemod.build._on_main_bones)
         for row in self._kind_rows(address):

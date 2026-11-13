@@ -507,6 +507,27 @@ class TheStudio(unittest.TestCase):
         anim.set_animations(self.mod, UNIT, animations)
         return address
 
+    def test_a_record_whose_report_has_a_shape_the_studio_never_writes_still_gives_the_table(self):
+        """The one check's finding 3, its class, on the unit page's action table (the line fixer B asked for in
+        actions.py): a record whose "report" is a list, or whose "also" is a word or holds a number, is read as if that
+        field weren't there, never Python's own error. The table is the one the sound record gives."""
+        address = self.horse({"stand": baf.build(clip()), "gallop": baf.build(clip(lift=2.0, frames=16, seconds=0.5))})
+        record = self.mod / "files" / "models" / f"{UNIT}.json"
+        good = self.api.unit_actions(address)
+        self.assertTrue(good["own"])
+        sound = json.loads(record.read_text(encoding="utf-8"))
+        for report in (["like", "also"], "a word", 7, None,
+                       {"like": SOLDIER_MODEL.lower(), "also": "a word", "rigged": True},
+                       {"like": SOLDIER_MODEL.lower(), "also": [7, None, {"x": 1}], "rigged": True},
+                       {"like": 7, "also": [], "rigged": True}):
+            with self.subTest(report=report):
+                record.write_text(json.dumps(dict(sound, report=report)), encoding="utf-8")
+                got = self.api.unit_actions(address)
+                self.assertTrue(got["own"])
+                self.assertEqual([a["name"] for a in got["animations"]], ["stand", "gallop"])
+                if isinstance(report, dict) and report.get("like") == SOLDIER_MODEL.lower():
+                    self.assertEqual(got, good)
+
     def test_the_table(self):
         address = self.horse({"stand": baf.build(clip()), "gallop": baf.build(clip(lift=2.0, frames=16, seconds=0.5))})
         got = self.api.unit_actions(address)

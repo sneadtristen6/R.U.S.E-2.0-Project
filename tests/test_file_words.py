@@ -384,18 +384,23 @@ class OnTheGame(unittest.TestCase):
         view = self.add()
         self.assertEqual(view["state"], "done")
         index = self.mod / era_units.INDEX
-        real = pathlib.Path.write_text
+        real = os.replace
 
-        def write_text(path, *args, **kw):
-            if Path(path) == index:
-                raise PermissionError(errno.EACCES, "Permission denied", str(index))
-            return real(path, *args, **kw)
-        with mock.patch.object(pathlib.Path, "write_text", write_text), self.assertRaises(OSError) as raised:
+        # (the stand-in for the hold, as the file is written since the mend of the one check's findings 1 and 6: whole
+        # beside itself, then put in place, which is what Windows refuses while another program holds it; before, the
+        # stand-in was Path.write_text on the file itself. The take-out's failure now comes worded, a StudioError.
+        # Every assertion below is as it was.)
+        def replace(src, dst, *args, **kw):
+            if Path(dst) == index:
+                raise PermissionError(errno.EACCES, "Permission denied", str(src), None, str(dst))
+            return real(src, dst, *args, **kw)
+        with mock.patch.object(os, "replace", replace), self.assertRaises((OSError, StudioError)) as raised:
             self.api.era_unit_remove(KEY, "anyway")
         for lang in ("us", "fr", "jpn", "fa"):
             self.api.set_pref("lang", lang)
             try:
-                said = self.api.page_error(raised.exception)
+                # (what the page shows: page_error's wording, or the error as it came when it needs none)
+                said = self.api.page_error(raised.exception) or raised.exception
             finally:
                 self.api.set_pref("lang", "us")
             self.assertIsInstance(said, StudioError, lang)
