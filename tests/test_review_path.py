@@ -196,12 +196,20 @@ class TheWholePath(unittest.TestCase):
         self.assertEqual({n: f for n, f in found.items() if f}, {})
 
     def test_the_export_carries_none_of_the_game_s_own_pictures(self):
-        """FINDING (owned copies): the Horse Squad is made on each player's PC from his own game because "Its models
-        are made from the game's own horse and rifleman, which can't go in a download: nothing of it is downloaded"
-        (ruse_studio/horse_squad.py; CLAUDE.md: the tools "never ship the game's files"). The exported file, which the
-        Launcher library, Share's .zip and Publish pass on, carries the game's own textures pixel for pixel in its two
-        models (the scenery horse's and the US infantry's). What Export should do with them is the owner's to say."""
-        from rusemod.gltf import _split, glb_views
+        """FINDING (owned copies), with the owner's one exception for now: the Horse Squad is made on each player's PC
+        from his own game because "Its models are made from the game's own horse and rifleman, which can't go in a
+        download: nothing of it is downloaded" (ruse_studio/horse_squad.py; CLAUDE.md: the tools "never ship the game's
+        files"). The exported file, which the Launcher library, Share's .zip and Publish pass on, carries the game's
+        own textures pixel for pixel in its two models (the scenery horse's and the US infantry's).
+        The owner, 2026-11-12, asked "What should Export do with the Horse Squad's made files?" (his answer in the
+        question dialog, as the lead quoted it): "Just the exception for now to the game files being exported is this
+        horse squad. horse squad shoul d have a diff picture of a horse. ideally horse squad is just a generic unit
+        people can make custom for each country for a ww1 mod or something." So the Horse Squad's two made models
+        (the unit the exported era record names for it, and its heavy-weapon soldier's) may carry them, for now. No
+        other model in the file may: the game's picture in any other model, under any other unit's name, is still a
+        finding (checked below on a copy of the file with one added)."""
+        from rusemod.dxt import png_bytes
+        from rusemod.gltf import _Glb, _split, glb_views
         from rusemod.models import Library
         from rusemod.png import read_png
 
@@ -216,24 +224,60 @@ class TheWholePath(unittest.TestCase):
                 out.append((w, rgb(w, h, px)))
             return out
 
-        textures = set()
-        for f in (self.home / horse_squad.FOLDER).glob("*.glb"):
-            doc, _views = glb_views(f.read_bytes())
-            textures |= {(m.get("extras") or {}).get("rusemod_texture") for m in doc.get("materials", [])} - {None}
-        self.assertTrue(textures)
-        with zipfile.ZipFile(self.export) as z:
-            shipped = [(n, w, px) for n in z.namelist() if n.endswith(".glb") for w, px in pictures(z.read(n))]
+        def named_textures(raw):
+            doc, _views = glb_views(raw)
+            return {(m.get("extras") or {}).get("rusemod_texture") for m in doc.get("materials", [])} - {None}
+
+        made = {f.name: f.read_bytes() for f in (self.home / horse_squad.FOLDER).glob("*.glb")}
+        self.assertTrue(set().union(*(named_textures(raw) for raw in made.values())))
+
+        def game_pictures(export: Path) -> list:
+            """(model, the game's texture) for each picture of a model in `export` that is the game's own, pixel for
+            pixel: against the textures the Horse Squad's made files and every model in the file name."""
+            with zipfile.ZipFile(export) as z:
+                models = {n: z.read(n) for n in z.namelist() if n.endswith(".glb")}
+            textures = set().union(*(named_textures(raw) for raw in [*made.values(), *models.values()]))
+            shipped = [(n, w, px) for n, raw in models.items() for w, px in pictures(raw)]
+            lib = Library(GAME)
+            try:
+                game = {}
+                for tex in sorted(textures):
+                    for width in sorted({w for _n, w, _px in shipped}):
+                        got = lib.picture(tex, most=width)
+                        if got is not None:
+                            game[_split(got[2])[0]] = tex
+            finally:
+                lib.close()
+            return sorted({(n, game[px]) for n, _w, px in shipped if px in game})
+
+        def his_exception(export: Path) -> set:
+            """The Horse Squad's two made models in `export`: those of the unit its era record names for it."""
+            with zipfile.ZipFile(export) as z:
+                record = json.loads(z.read(era_units.INDEX)) if era_units.INDEX in z.namelist() else {}
+            tail = str(record.get(KEY) or "").rsplit("/", 1)[-1]
+            return {f"files/models/{tail}.glb", f"files/models/{tail}@bazooka.glb"} if tail else set()
+
+        tail = self.unit.rsplit("/", 1)[-1]
+        self.assertEqual(his_exception(self.export), {f"files/models/{tail}.glb", f"files/models/{tail}@bazooka.glb"})
+        self.assertEqual([p for p in game_pictures(self.export) if p[0] not in his_exception(self.export)], [])
+        # strict for every other model: the game's own US infantry picture in another unit's model is a finding
+        infantry = "gen\\ww2\\res3d\\units\\us\\infanterie\\tscother_diffusetexture01.tgv"
         lib = Library(GAME)
         try:
-            game = {}
-            for tex in sorted(textures):
-                for width in sorted({w for _n, w, _px in shipped}):
-                    got = lib.picture(tex, most=width)
-                    if got is not None:
-                        game[_split(got[2])[0]] = tex
+            w, h, px = lib.picture(infantry, most=64)
         finally:
             lib.close()
-        self.assertEqual(sorted({(n, game[px]) for n, _w, px in shipped if px in game}), [])
+        g = _Glb()
+        g.doc["materials"].append({"name": "uniform", "extras": {"rusemod_texture": infantry}, "pbrMetallicRoughness": {
+            "baseColorTexture": {"index": g.image(png_bytes(_split(px)[0], w, h), "uniform")}}})
+        another = Path(tempfile.mkdtemp(prefix="review-path-another-"))
+        self.addCleanup(shutil.rmtree, another, True)
+        shutil.copyfile(self.export, another / self.export.name)
+        with zipfile.ZipFile(another / self.export.name, "a") as z:
+            z.writestr("files/models/Descriptor_Unit_Other_Rifles.glb", g.to_bytes())
+        self.assertEqual([p for p in game_pictures(another / self.export.name)
+                          if p[0] not in his_exception(another / self.export.name)],
+                         [("files/models/Descriptor_Unit_Other_Rifles.glb", infantry)])
 
 
 @unittest.skipUnless(READY, WHY_SKIPPED)

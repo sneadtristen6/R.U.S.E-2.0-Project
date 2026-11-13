@@ -8,12 +8,21 @@ PackageError whose message is written for the person holding the file.
 
 The manifest inside the package carries the game build the mod was made on and the mod's fingerprint (§12), written
 by `pack()` into the folder's own `mod.toml` first, so the next export starts from them.
+
+No folder of the maker's PC goes out in a package (FL-110): the owner, 2026-11-12, asked what Export should do with
+the full path of each imported model's source file in its record (often C:\\Users\\<his Windows name>\\...), answered
+"Keep file name only": Export writes only the file's own name, never a folder. `pack()` does that for every file it
+packs (folders_out): a model's record, the data inside a .glb model (an imported scenery model names the file it was
+made from), and any text. The mod's own files on the maker's PC keep theirs: Resize and Move fit a model again from
+the file its record names.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
+import struct
 import tempfile
 import tomllib
 import unicodedata
@@ -28,9 +37,15 @@ from .rndf import RndfError
 EXTENSION = ".rusemod"
 MANIFEST = "mod.toml"
 SIZE_LIMIT = 500_000_000  # bytes unpacked: a mod of data files is a few MB; anything near this isn't one
+# the era units a mod has (the Studio's ruse_studio.era_units CREDITS and INDEX): their makers' credits, as their
+# licences ask (the Horse Squad's line too: "your name, sneadtristen6, in that mod's credits"), and which of the mod's
+# units they are ({era unit key: its unit's address}), so another player's Studio knows them as added (the owner,
+# 2026-11-12: "Take both along"). A record naming no unit stays behind: a mod without era units packs as before.
+ERA_CREDITS, ERA_RECORD = "CREDITS-era-units.md", "era_units.json"
 TOP_FILES = ("mod.toml", "menus.toml", "depots.toml", "flag-types.toml", MENU_GROUPS, "README.md", "LICENSE",
-             "CHANGELOG.md")  # loose files a package keeps (flag-types.toml: the Studio's flag types, so a copy of the
-# mod can still change them; menu_groups.toml: the group of a build list each unit stands in, which the build reads)
+             "CHANGELOG.md", ERA_CREDITS, ERA_RECORD)  # loose files a package keeps (flag-types.toml: the Studio's
+# flag types, so a copy of the mod can still change them; menu_groups.toml: the group of a build list each unit stands
+# in, which the build reads)
 FOLDERS = ("src", "text", "files", "maps", "scripts")             # folders a package keeps (§2; scripts/: §9)
 SKIP = {"__pycache__", ".git", "cache", "build", "dist"}
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -165,11 +180,12 @@ def update_manifest(folder, mod: dict | None = None, game: dict | None = None,
 
 # --- pack ---
 def files_of(folder) -> list[Path]:
-    """The files of a mod folder that go into its package: mod.toml and the other loose files of §2, the .rmod a
-    community mod's mod.toml names ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/
-    and scripts/ (never caches, hidden files or build output)."""
+    """The files of a mod folder that go into its package: mod.toml and the other loose files of §2 (the era units'
+    credits and record among them, a record naming no unit left out), the .rmod a community mod's mod.toml names
+    ([rmod] file: the mod itself), and everything under src/, text/, files/, maps/ and scripts/ (never caches, hidden
+    files or build output)."""
     folder = Path(folder)
-    out = [folder / f for f in TOP_FILES if (folder / f).is_file()]
+    out = [folder / f for f in TOP_FILES if (folder / f).is_file() and (f != ERA_RECORD or _names_a_unit(folder / f))]
     try:
         named = tomllib.loads((folder / MANIFEST).read_text(encoding="utf-8")).get("rmod", {}).get("file")
     except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError, AttributeError):
@@ -185,15 +201,152 @@ def files_of(folder) -> list[Path]:
     return out
 
 
+def _names_a_unit(record: Path) -> bool:
+    """Whether a mod's era_units.json names an era unit (the Studio leaves {} once the last is taken out)."""
+    try:
+        data = json.loads(record.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(data, dict) and bool(data)
+
+
+# --- no folder of the maker's PC in a package (FL-110, the owner's "Keep file name only") ---
+_NAME = r"[^\\/:*?\"<>|\r\n\t]"                       # a letter of a folder's name (Windows allows none of :*?"<>|)
+_AFTER = r"(?<![^\s\"'(\[{=,;<>])"                    # at the start, or after a space, a quote or a bracket
+
+
+def _folder_pattern(sep: str, part: str) -> re.Pattern:
+    """An absolute path's folder, up to its last separator: C:\\ (any drive, either slash), a network folder
+    (\\\\server\\), or a home or temporary folder elsewhere (/home/, /Users/, /tmp/...), then each folder below."""
+    return re.compile(rf"(?:(?<![A-Za-z0-9])[A-Za-z]:{sep}"
+                      rf"|{_AFTER}(?:\\\\){{1,2}}[^\\/\s\"'<>|:*?]+{sep}"
+                      rf"|{_AFTER}/(?:home|Users|root|tmp|mnt|media|run/media|var/folders)/)"
+                      rf"(?:{part}{sep})*")
+
+
+FOLDER = _folder_pattern(r"[\\/]", rf"{_NAME}*")      # a path as it is (a JSON string read, a Markdown text)
+# a path as TOML writes it in a string: its backslashes doubled, a letter beyond ASCII as \u00e9 (part of a name)
+FOLDER_WRITTEN = _folder_pattern(r"(?:\\\\|\\(?!u[0-9A-Fa-f]{4})|/)", rf"(?:{_NAME}|\\u[0-9A-Fa-f]{{4}})*")
+TEXT_FILES = {".json", ".gltf", ".toml", ".md", ".txt", ".csv", ".rndf", ".ndf", ".xml", ".ini", ".cfg", ".yml",
+              ".yaml", ".html", ".htm", ".py"}         # (and LICENSE, which has no ending)
+
+
+def folders_out(text: str, written: bool = False) -> str:
+    """`text` with the folder of each absolute path in it taken out, the file's own name left: C:\\Users\\<name>\\
+    tank.glb (any drive, either slash) becomes tank.glb, as do \\\\server\\share\\tank.glb and /home/<name>/tank.glb;
+    a path that is only a folder goes altogether. `written`: the text as TOML writes it (C:\\\\Users\\\\<name>\\\\...,
+    \\u00e9 for a letter in a name)."""
+    return (FOLDER_WRITTEN if written else FOLDER).sub("", text)
+
+
+def _strings(value, found: set) -> None:
+    if isinstance(value, str):
+        found.add(value)
+    elif isinstance(value, list):
+        for v in value:
+            _strings(v, found)
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            found.add(k)
+            _strings(v, found)
+
+
+def _swapped(value, swap: dict):
+    if isinstance(value, str):
+        return swap.get(value, value)
+    if isinstance(value, list):
+        return [_swapped(v, swap) for v in value]
+    if isinstance(value, dict):
+        return {swap.get(k, k): _swapped(v, swap) for k, v in value.items()}
+    return value
+
+
+def _json_swaps(doc) -> dict:
+    """{each string (value or key) of a JSON document holding a folder of the PC: the same with only its file's name}."""
+    found: set = set()
+    _strings(doc, found)
+    return {s: out for s in found if (out := folders_out(s)) != s}
+
+
+def _json_out(text: str) -> str | None:
+    """A JSON file's text with only file names where it named folders, every other byte as it was (the strings
+    replaced where they're written; written anew, indented as the Studio writes its records, when that can't be
+    done); None when it names none."""
+    doc = json.loads(text)
+    swap = _json_swaps(doc)
+    if not swap:
+        return None
+    want, out = _swapped(doc, swap), text
+    for old, new in swap.items():
+        for ascii_only in (True, False):
+            out = out.replace(json.dumps(old, ensure_ascii=ascii_only), json.dumps(new, ensure_ascii=ascii_only))
+    try:
+        if json.loads(out) == want:
+            return out
+    except ValueError:
+        pass
+    return json.dumps(want, indent=1)
+
+
+def _glb_out(raw: bytes) -> bytes | None:
+    """A .glb model with only file names where its JSON part named folders (its binary part as it was); None when it
+    names none or isn't a .glb."""
+    if len(raw) < 20 or raw[:4] != b"glTF":
+        return None
+    version, total = struct.unpack_from("<II", raw, 4)
+    length, kind = struct.unpack_from("<I4s", raw, 12)
+    if kind != b"JSON":
+        return None
+    try:
+        doc = json.loads(raw[20:20 + length].decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    swap = _json_swaps(doc)
+    if not swap:
+        return None
+    js = json.dumps(_swapped(doc, swap), separators=(",", ":")).encode()
+    js += b" " * (-len(js) % 4)
+    return (struct.pack("<4sII", b"glTF", version, total + len(js) - length) + struct.pack("<I4s", len(js), b"JSON")
+            + js + raw[20 + length:])
+
+
+def packed_bytes(path) -> bytes | None:
+    """What a package holds of the mod's file at `path` when that isn't the file as it is: a record, a model's own data
+    (.glb) or a text naming a folder of the maker's PC, with only file names there (folders_out); None for a file
+    that goes out as it is."""
+    path = Path(path)
+    suffix = path.suffix.lower()
+    if suffix == ".glb":
+        return _glb_out(path.read_bytes())
+    if suffix not in TEXT_FILES and path.name != "LICENSE":
+        return None
+    data = path.read_bytes()
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if suffix in (".json", ".gltf"):
+        try:
+            out = _json_out(text)
+        except (ValueError, RecursionError):
+            out = folders_out(text, written=True)
+    else:
+        out = folders_out(text, written=suffix == ".toml")
+    return None if out is None or out == text else out.encode("utf-8")
+
+
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
-         fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None) -> Path:
+         fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None,
+         cleaned: list | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
     its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
     tool that made it (`made_with`: {"tool", "version", "page"}: the credit line the list shows) under [made_with].
     `solved`: the answers the mod's build worked out for its maps (BuildResult.solved, §8 "Worked-out answers"),
     written into the folder as maps/<map>/solved.bin first, so the package carries them and players' builds take
-    them instead of working them out."""
+    them instead of working them out. A file naming a folder of the maker's PC goes in with only the file's own name
+    there (packed_bytes; the folder's own file stays as it is); `cleaned`, a list, gets each such file's path inside
+    the package."""
     folder = Path(folder)
     if not (folder / MANIFEST).is_file():
         raise PackageError(f"{folder} isn't a mod: it has no {MANIFEST} in it.")
@@ -224,7 +377,16 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     tmp = target.with_name(target.name + ".part")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
         for f in files_of(folder):
-            z.write(f, f.relative_to(folder).as_posix())
+            name = f.relative_to(folder).as_posix()
+            data = packed_bytes(f)
+            if data is None:
+                z.write(f, name)
+                continue
+            member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
+            member.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(member, data)
+            if cleaned is not None:
+                cleaned.append(name)
     os.replace(tmp, target)
     return target
 
