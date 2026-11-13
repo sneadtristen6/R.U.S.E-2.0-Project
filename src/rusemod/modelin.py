@@ -1010,7 +1010,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         x, y, z = n
         return _unit((x * f[0] + y * f[1], x * r[0] + y * r[1], z))
 
-    pictures, pic_of, missing, own_alpha, notes = fit_pictures(model, folders, side)
+    pictures, pic_of, missing, own_alpha, notes, sizes = fit_pictures(model, folders, side)
     out: list[Part] = []
     groups: dict = {}
     for m, k in zip(model.meshes, parts):
@@ -1041,7 +1041,7 @@ def prepare(model: Model, folder, like: dict, size: float = 1.0, side: int = 102
         part.normals = [g if g is not None else n for g, n in zip(given, computed)]
         own_normals += sum(g is not None for g in given)
         out.append(part)
-    report = fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes)
+    report = fit_report(model, parts, axis, sign, scale, out, pictures, missing, own_normals, own_alpha, notes, sizes)
     if ring is not None and like.get("own_turret"):
         report["own_turret"] = [float(ring[0] + shift[0]), float(ring[1] + shift[1])]   # where it turns, for the build
     if like.get("move"):
@@ -1054,7 +1054,7 @@ def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: 
     its bones, in the game's axes and scale, nothing moved or scaled, because its bones are where the skeleton has them. One part per mesh and picture, each keeping the game
     model's draw it came from. `like` "root": the bone for a point the file gives none."""
     from .gltf import SCALE
-    pictures, pic_of, missing, own_alpha, notes = fit_pictures(model, folders, side)
+    pictures, pic_of, missing, own_alpha, notes, sizes = fit_pictures(model, folders, side)
     notes = list(notes)
     if size != 1.0:
         notes.append(f"a model rigged to the unit's own bones keeps its size: size {size:g} wasn't used")
@@ -1092,7 +1092,8 @@ def _prepare_rigged(model: Model, folders: list, like: dict, size: float, side: 
             part.normals = [g if g is not None else n for g, n in zip(given, computed)]
             own_normals += sum(g is not None for g in given)
             out.append(part)
-    report = fit_report(model, [RIGGED] * len(model.meshes), 0, 1, 1.0 / SCALE, out, pictures, missing, own_normals, own_alpha, notes)
+    report = fit_report(model, [RIGGED] * len(model.meshes), 0, 1, 1.0 / SCALE, out, pictures, missing, own_normals, own_alpha, notes,
+                        sizes)
     report["rigged"] = True
     if no_bone:
         report["no_bone"] = no_bone    # (the page says it in the player's language: words.toml model_no_bone)
@@ -1250,7 +1251,8 @@ def hull_extent(model: Model, like: dict | None = None) -> tuple[float, float]:
 
 def fit_pictures(model: Model, folders: list, side: int) -> tuple:
     """prepare's pictures: (pictures, picture of each material, the pictures named but not found, those whose alpha is
-    the model's own, notes)."""
+    the model's own, notes, sizes: [{"picture", "alpha": [w, h], "colour": [w, h]}] each picture whose own alpha
+    picture isn't its size, so has the plain alpha: its note's own values, for a page to say in its words)."""
     # pictures: one per material that has one (a flat colour for those that don't)
     pictures, pic_of, missing, alphas = [], {}, [], []
     for k, mat in enumerate(model.materials):
@@ -1273,7 +1275,7 @@ def fit_pictures(model: Model, folders: list, side: int) -> tuple:
     # colours as the model has them; alpha (side colour where low, shine where high) the model's own alpha picture
     # when it names one (sized the same way as the colour), else the game's plain value. Said in the report, never
     # dropped silently (2026-10-05: a model's shine map was lost here before).
-    own_alpha, notes = [], []
+    own_alpha, notes, sizes = [], [], []
     for pic, alpha in zip(pictures, alphas):
         px = bytearray(pic[3])
         values = None
@@ -1284,16 +1286,18 @@ def fit_pictures(model: Model, folders: list, side: int) -> tuple:
             else:
                 notes.append(f"{pic[0]}: its alpha picture is {aw} x {ah}, the colour {pic[1]} x {pic[2]}; "
                              f"plain alpha used")
+                sizes.append({"picture": pic[0], "alpha": [aw, ah], "colour": [pic[1], pic[2]]})
         px[3::4] = values if values is not None else bytes([PLAIN_ALPHA]) * (pic[1] * pic[2])
         if values is not None:
             own_alpha.append(pic[0])
         pic[3] = bytes(px)
-    return pictures, pic_of, missing, own_alpha, notes
+    return pictures, pic_of, missing, own_alpha, notes, sizes
 
 
 def fit_report(model: Model, parts: list, axis: int, sign: int, scale: float, out: list, pictures: list,
-               missing: list, own_normals: int, own_alpha: list, notes: list) -> dict:
-    """prepare's report: the parts and their roles, facing, scale, counts, pictures, normals and alpha."""
+               missing: list, own_normals: int, own_alpha: list, notes: list, sizes: list | None = None) -> dict:
+    """prepare's report: the parts and their roles, facing, scale, counts, pictures, normals and alpha; "alpha_sizes"
+    (fit_pictures' sizes) only when a picture's own alpha picture isn't its size."""
     vertices = sum(len(p.positions) for p in out)
     return {"parts": {m.name: k for m, k in zip(model.meshes, parts)}, "facing": ("x" if axis == 0 else "y", sign),
             "scale": scale, "vertices": vertices, "triangles": sum(len(p.triangles) for p in out),
@@ -1301,7 +1305,7 @@ def fit_report(model: Model, parts: list, axis: int, sign: int, scale: float, ou
             "normals": ("the model's own" if own_normals == vertices else "worked out" if own_normals == 0
                         else f"the model's own for {own_normals} of {vertices} points, the rest worked out"),
             "alpha": {p[0]: ("the model's own" if p[0] in own_alpha else f"plain {PLAIN_ALPHA}") for p in pictures},
-            "notes": notes}
+            "notes": notes, **({"alpha_sizes": list(sizes)} if sizes else {})}
 
 
 def smooth_normals(positions: list, triangles: list) -> list:

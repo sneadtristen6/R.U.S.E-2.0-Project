@@ -20,8 +20,8 @@
 // (the owner, 2026-11-12). The squad's uniform stays in the Look and moves section beside the values (app.js
 // lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender, squad_blender_back,
 // soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), soldier_plus,
-// soldier_minus, look, units. Uses app.js's el, fill, say, problem, api, state, keptRow, fitBox and testInGame;
-// app.js's showUnit puts it on the page when squad_info answers for the unit.
+// soldier_minus, look, units. Uses app.js's el, fill, say, stayToast, problem, api, state, keptRow, fitBox,
+// alphaLostLines and testInGame; app.js's showUnit puts it on the page when squad_info answers for the unit.
 (function () {
   "use strict";
 
@@ -251,8 +251,15 @@
       const text = r.joined ? fill(w.squad_added, { n: r.count }) : !changed.length ? w.squad_back_none : same.length
         ? fill(w.squad_back_some, { changed: named(changed), unchanged: named(same) })
         : fill(w.squad_back_all, { changed: named(changed) });
-      S.said = el("p", { className: "squad-result" + (changed.length ? "" : " none"), role: "status", textContent: text });
-      say(text, changed.length ? "ok" : "");
+      // what Blender sent on no soldier, not brought back (its answer's left_out), on the card too
+      const left = (r.left_out || []).length ? fill(w.blender_squad_left_out_back, { names: r.left_out.join(", ") }) : "";
+      const result = [text, left].filter(Boolean).join(" ");
+      S.said = el("p", { className: "squad-result" + (changed.length ? "" : " none"), role: "status", textContent: result });
+      // what a soldier brought back couldn't keep of his shine and side colour (his import's report: app.js
+      // alphaLostLines), in the pop-up, which then waits to be closed; his line says it too, from squad_info
+      const lost = Object.values(r.reports || {}).flatMap((report) => alphaLostLines(report));
+      if (lost.length || left) stayToast(say([result, ...lost].join(" "), "warn"));
+      else say(result, changed.length ? "ok" : "");
       drawCard();
     };
 
@@ -288,9 +295,12 @@
         }
         if (can.remove) acts.append(...removeParts(s));
       }
+      // the parts of his model without their own shine and side colour, and why, for as long as it has them (squad_info
+      // says them on the first soldier who wears that model: app.js alphaLostLines)
+      const lost = alphaLostLines(s).map((line) => el("span", { className: "squad-lost", textContent: line }));
       return el("div", { className: "squad-soldier" }, face,
         el("div", { className: "squad-who" }, el("strong", { textContent: soldierWords(s) }),
-          el("span", { className: "squad-now", textContent: now })), acts);
+          el("span", { className: "squad-now", textContent: now }), ...lost), acts);
     };
 
     // his model from a file: the file picker, then what came in said (a Custom uniform it took the place of, too)

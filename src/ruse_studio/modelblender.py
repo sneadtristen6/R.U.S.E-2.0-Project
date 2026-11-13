@@ -29,7 +29,19 @@ picture came back "plain 144"). So Change it in Blender notes which alpha pictur
 by that name (rusemod.gltf.with_alpha, the squad page's), as <work>/kept/<its name>.glb: the file Import model takes
 in, and Resize and Move fit again from. A material that comes back under a name none went out with (renamed or new in
 Blender) has the plain 144, and the import's report says so ("blender_alpha", and its notes). A model imported from a
-file keeps the plain 144 as before (the owner, the same day: "Keep it flat")."""
+file keeps the plain 144 as before (the owner, the same day: "Keep it flat").
+
+What a Bring back couldn't keep is shown to the modder on the page, in his language (a review of 2026-11-12 found it
+said only in the import's report and the model's record, which no page read): the report's "blender_alpha_lost" lists
+by name each material that came back with the plain 144 because no alpha picture went out under its name ("none",
+rusemod.gltf.ALPHA_NONE: renamed or new in Blender here; new there on the squad page, whose Blender carries a renamed
+material's picture with it), because its alpha picture is gone from the Blender folder ("gone"), and each that went out
+with one and didn't come back under that name ("not_back"); Import model's own "alpha_sizes" (rusemod.modelin) each
+picture whose alpha picture isn't its size (a picture swapped in Blender for one of another size), so has the plain 144
+too. Both doors write them (the squad page's Bring my changes back too: ruse_studio.squadblender), the model's record
+keeps them, through a Resize or a Move as well (keep_said: the same file fitted again has the same loss), look()'s
+own_model and kinds rows and squad_info's soldiers carry them (alpha_lost), and the page says them (app.js
+alphaLostLines): in the Bring back's pop-up, and beside the model for as long as it has them."""
 from __future__ import annotations
 
 import json
@@ -45,6 +57,47 @@ KEPT = "kept"          # <work>/kept/<its name>.glb: what Bring back the model t
 # riflemen's model (Import model's first kind; the heavy-weapon soldier keeps the copied unit's until he gets his own,
 # the owner, 2026-11-11: "when you copy a fucking unit, it should copy the unit")
 HEAVY = re.compile(r"bazooka|panzerschreck|piat|flame|lanceflamme|mortier|mortar", re.I)
+LOST = ("blender_alpha_lost", "alpha_sizes")   # what an import's report says it couldn't keep (alpha_lost)
+SAID = ("blender_alpha", "blender_alpha_lost")  # what _alpha_said adds to a report (keep_said carries them)
+
+
+def alpha_lost(report) -> dict:
+    """Of an import's report (a model's record's "report"), what it says couldn't be kept of the model's own shine and
+    side colour, for the page (app.js alphaLostLines): "blender_alpha_lost" and "alpha_sizes", those it has."""
+    if not isinstance(report, dict):
+        return {}
+    return {k: json.loads(json.dumps(report[k])) for k in LOST if report.get(k)}
+
+
+def blender_notes(report: dict) -> list:
+    """The import's notes (in the record, in English) on what came back from Blender with the plain 144: each material
+    that came back without an alpha picture of its own, in the order Blender sent them ("blender_alpha"), and each that
+    went out with one and didn't come back under its name ("blender_alpha_lost")."""
+    from rusemod.modelin import PLAIN_ALPHA
+    lost = report.get("blender_alpha_lost") or {}
+    flat_names = {str(m) for k in ("none", "gone") for m in lost.get(k) or []}
+    flat = [m for m in (report.get("blender_alpha") or {}) if str(m) in flat_names]
+    notes = []
+    if flat:
+        notes.append(f"Back from Blender without an alpha picture of their own, so with the plain {PLAIN_ALPHA} (no "
+                     f"shine or side colour of their own): {', '.join(str(m) for m in flat)}.")
+    if lost.get("not_back"):
+        notes.append(f"Went out to Blender with an alpha picture and didn't come back under that name: "
+                     f"{', '.join(str(m) for m in lost['not_back'])}.")
+    return notes
+
+
+def keep_said(before, report: dict) -> None:
+    """A Resize or a Move fits the model again from the file it was made from (StudioApi._fit_model): what its Bring
+    back said it couldn't keep (_alpha_said, in the record's report `before`) is still so, as that file is the same, so
+    the new `report` says it too (in the record and to the page), as the Custom uniform a model took the place of stays
+    kept through them. Nothing for a model that didn't come back from Blender."""
+    if not isinstance(before, dict) or not isinstance(report, dict) or not any(before.get(k) for k in SAID):
+        return
+    for k in SAID:
+        if before.get(k):
+            report[k] = json.loads(json.dumps(before[k]))
+    report.setdefault("notes", []).extend(blender_notes(report))
 
 
 class ModelBlenderCalls:
@@ -119,11 +172,15 @@ class ModelBlenderCalls:
                 out[name] = found[0]
         return out
 
-    def _alpha_said(self, address: str, kind: str | None, res: dict, got: dict, went: dict) -> None:
+    def _alpha_said(self, address: str, kind: str | None, res: dict, got: dict, went: dict,
+                    lost: list | None = None) -> None:
         """Import model's report of what Bring back the model took in (res["model"]), and the model's record beside it,
         told what each material Blender sent got for alpha ("blender_alpha": `got`, rusemod.gltf.with_alpha's word on
         each), and in its notes which have the plain 144 and why, and which went out (`went`) and didn't come back
-        under their names: no material's shine and side colour lost without a word."""
+        under their names (`lost`: those that didn't come back, when the door knows better than by name: the squad
+        page's, whose Blender carries a renamed material's alpha with it): no material's shine and side colour lost
+        without a word. The same for the page, by name, in "blender_alpha_lost" ({"none", "gone", "not_back"}: see the
+        module's note), and in the answer's look() parts drawn from the record (own_model, a kind's row)."""
         from rusemod.gltf import ALPHA_BACK, ALPHA_GONE, ALPHA_NONE
         from rusemod.modelin import PLAIN_ALPHA
         report = res.get("model")
@@ -135,15 +192,15 @@ class ModelBlenderCalls:
                             f"new there)",
                 ALPHA_GONE: f"{plain}: the alpha picture that went out with it isn't in its Blender folder any more"}
         report["blender_alpha"] = {m: said[g] for m, g in got.items()}
-        flat = [m for m, g in got.items() if g != ALPHA_BACK]
-        lost = [m for m in went if m not in got]
-        notes = report.setdefault("notes", [])
-        if flat:
-            notes.append(f"Back from Blender without an alpha picture of their own, so with the {plain} (no shine or "
-                         f"side colour of their own): {', '.join(flat)}.")
-        if lost:
-            notes.append(f"Went out to Blender with an alpha picture and didn't come back under that name: "
-                         f"{', '.join(lost)}.")
+        lost = [m for m in went if m not in got] if lost is None else list(lost)
+        page = {"none": [m for m, g in got.items() if g == ALPHA_NONE],
+                "gone": [m for m, g in got.items() if g == ALPHA_GONE], "not_back": lost}
+        page = {k: v for k, v in page.items() if v}
+        if page:
+            report["blender_alpha_lost"] = page
+        else:
+            report.pop("blender_alpha_lost", None)
+        report.setdefault("notes", []).extend(blender_notes(report))
         target = self._kind_file(address, kind) if kind else self._own_model_file(address)
         record = target.with_suffix(".json") if target is not None else None
         try:
@@ -155,6 +212,12 @@ class ModelBlenderCalls:
             record.write_text(json.dumps(data, indent=1), encoding="utf-8")
             if not kind and "own_model" in res:   # (look()'s, read before this was said)
                 res["own_model"] = json.loads(json.dumps(report))
+            # (look()'s row of his kind in the answer, the riflemen's the first: read before this was said too)
+            rows = [r for r in res.get("kinds") or [] if isinstance(r, dict)]
+            for row in [r for r in rows if r.get("kind") == kind] if kind else rows[:1]:
+                for k in LOST:
+                    row.pop(k, None)
+                row.update(alpha_lost(report))
 
     def model_blender(self, address: str, lang: str = "us", kind: str | None = None) -> dict:
         """Open the unit's model in Blender to be changed (see the module's note); `kind`: one of a squad's other

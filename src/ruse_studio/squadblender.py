@@ -36,7 +36,9 @@ section 2 (#4463065).
   side colour where low, shine where high) goes back in with him: Blender's export drops it (it keeps no picture a
   material doesn't show), so the alpha the Studio gave each material comes back by its name (rusemod.gltf.with_alpha,
   which the single model's Bring back the model shares; rusemod.modelin reads it from the material's
-  rusemod_alpha_texture).
+  rusemod_alpha_texture). A material that comes back without it (new in Blender, its alpha picture gone, or deleted
+  there) is named in his report and record ("blender_alpha_lost", ruse_studio.modelblender's note), and the page says
+  it, as it says the objects sent with nobody.
 - soldier_import, soldier_reset: Import model for one soldier (model_import with his kind), and Back to the game's look
   for him alone (soldier_reset's note: the owner's pick 3, 2026-11-12).
 The calls the d43f0c6d page used (model_blender, model_blender_back with a kind) stay as they were.
@@ -111,6 +113,16 @@ def _put(path: Path, data: bytes) -> None:
     part = path.with_name(path.name + ".part")
     part.write_bytes(data)
     os.replace(part, path)
+
+
+def _went_back(manifest: dict, sid: str, sent: dict) -> tuple:
+    """For one soldier brought back (his id `sid`; `sent`: his line of what Blender sent), (the alpha picture each of
+    his materials went out to Blender with, {its name as it went: the picture's path}, those of them that didn't come
+    back): Blender carries each one on its material and lists it at Send under the material's name there, so a material
+    renamed in Blender keeps its own (it is no loss) and one deleted there is the one that didn't come back."""
+    went = next(((s.get("alpha") or {}) for s in manifest.get("soldiers") or [] if s.get("id") == sid), {})
+    came = {str(p) for p in ((sent or {}).get("alpha") or {}).values()}
+    return went, [m for m, p in went.items() if str(p) not in came]
 
 
 def plural_form(lang: str, n: int) -> str:
@@ -378,14 +390,16 @@ class SquadBlenderCalls:
         a new unit of this mod (only those get models of their own), "count", "line": one sentence in `lang`,
         "soldiers": one row per line, the riflemen first: {"id", "label", "count", "fires", "preview", "own_model",
         "from": the file his model was made from (its name), "blender_changed": whether his model came back from
-        Blender, "kept": where the mod keeps his model, made or not}, "blender": {"open", "work", "made", "found":
+        Blender, "kept": where the mod keeps his model, made or not, and what that model's import couldn't keep of its
+        shine and side colour when it says so, on the first soldier who wears it (ruse_studio.modelblender.alpha_lost:
+        "blender_alpha_lost", "alpha_sizes")}, "blender": {"open", "work", "made", "found":
         whether the Studio finds Blender, "waiting": whether this squad's Blender sent something not brought back},
         "can": {"blender", "import", "reset", "add", "remove"}, "why_not": a sentence when it can't be changed}. Its
         weapons are named in the game's texts in `lang`; the game has no Persian texts, so in Persian they read in
         English (rusemod.schema.game_lang), the Studio's own words around them in Persian."""
         from .api import words
         from .edits import EditsFileError
-        from .modelblender import WORK
+        from .modelblender import WORK, alpha_lost
         if not self._soldiers(address):
             return None
         try:
@@ -414,6 +428,7 @@ class SquadBlenderCalls:
             models = []
         blender_root = (self._mod_dir() / WORK).resolve() if self._mod_dir() is not None else None
         rows = []
+        said = set()   # (a model's words on what it couldn't keep: once, on the first soldier who wears it)
         for ln, (_look, carried) in zip(lines, men):
             own = self._kind_file(address, ln["kind"]) if own_unit else None
             mine = own is not None and own.is_file()
@@ -431,12 +446,15 @@ class SquadBlenderCalls:
                     changed = Path(src).resolve().is_relative_to(blender_root)
                 except (OSError, ValueError):
                     changed = False
+            lost = alpha_lost(record.get("report")) if has and str(worn) not in said else {}
+            if has:
+                said.add(str(worn))
             rows.append({"id": ln["id"], "number": ln["number"], "label": w[f"blender_squad_{ln['word']}"], "count": 1,
                          "fires": list(dict.fromkeys(full for full, _k, _n in carried)),
                          "preview": self._soldier_preview(address, ln, worn if has else None, models),
                          "own_model": has, "wears": "own" if mine else "kind" if has else "game",
                          "from": Path(src).name if src else None, "blender_changed": changed,
-                         "kept": str(own) if own is not None else None})
+                         "kept": str(own) if own is not None else None, **lost})
         work = self._squad_work(address)
         state = _read(work / "state.json") if work is not None else {}
         sent = work / "sent" / "sent.json" if work is not None else None
@@ -669,8 +687,9 @@ class SquadBlenderCalls:
         in) is taken in with Import model and his kind, his alpha pictures back in it, from <work>/kept/<his model's
         name>.glb (what Resize and Move fit again from); every other soldier's files stay as they were (but see the
         module's note on a Custom uniform). Returns squad_info with "changed", "unchanged", "uniform_kept", "left_out"
-        (objects Blender sent with nobody), "reports" (each taken-in soldier's Import model report), "work" and
-        "message"."""
+        (objects Blender sent with nobody), "reports" (each taken-in soldier's Import model report, with what of his
+        shine and side colour couldn't be kept: ruse_studio.modelblender._alpha_said's "blender_alpha_lost", and Import
+        model's "alpha_sizes"; the page says them), "work" and "message"."""
         from rusemod import gltf
         from rusemod.blender import ask_to_send
         from .api import StudioError, words
@@ -720,7 +739,8 @@ class SquadBlenderCalls:
         for i in take:
             target = self._kind_file(address, lines[i]["kind"])
             kept = work / "kept" / f"{target.stem}.glb"
-            _put(kept, gltf.with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {})[0])
+            data, put = gltf.with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {})
+            _put(kept, data)
             record = _read(target.with_suffix(".json")) if target.is_file() else {}
             if not record and "base" in lines[i]:   # (his first own look: the size of the model he wore, if any)
                 worn = self._kind_file(address, lines[i]["base"])
@@ -729,6 +749,8 @@ class SquadBlenderCalls:
             kind = lines[i]["kind"]
             res = self.model_import(address, str(kept), size, kind=kind) if kind else \
                 self.model_import(address, str(kept), size)
+            # what of his shine and side colour couldn't be kept, in his report and record (the page says it)
+            self._alpha_said(address, kind, res, put, *_went_back(manifest, i, got[i]))
             reports[i] = res.get("model")
             state["taken"][i] = {"kept": _sha(kept), "model": _sha(target)}
             base[i] = now[i]
@@ -953,7 +975,8 @@ class SquadBlenderCalls:
         self._write_count(address, n + 1)
         target = self._kind_file(address, str(at))
         kept = work / "kept" / f"{target.stem}.glb"
-        _put(kept, gltf.with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {})[0])
+        data, put = gltf.with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {})
+        _put(kept, data)
         try:
             res = self.model_import(address, str(kept), size, kind=str(at))
         except BaseException:
@@ -965,6 +988,8 @@ class SquadBlenderCalls:
             self._renumber(address, work, state, at + 1, -1)
             _write(work / "state.json", state)
             raise
+        # what of his shine and side colour couldn't be kept, in his report and record (the page says it)
+        self._alpha_said(address, str(at), res, put, *_went_back(manifest, adding["id"], new))
         state.setdefault("taken", {})[str(at)] = {"kept": _sha(kept), "model": _sha(target)}
         state.update({"session": manifest.get("session"), "base": {}, "brought": _sha(sent)})
         _write(work / "state.json", state)

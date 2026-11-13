@@ -46142,6 +46142,61 @@ jpn = "モデルの{n}個の点に骨がないため、兵士の腰と一緒に�
 sc = "你的模型有 {n} 个点没有骨骼，所以它们只随士兵的髋部移动。要让它们随手臂或腿移动：在 Blender 中选择你的模型，切换到 Weight Paint，把这些点画到骨骼上，然后再发送一次。"
 fa = "{n} نقطه از مدل شما استخوان ندارد، پس فقط با لگن سرباز حرکت می‌کند. برای اینکه با دست یا پا حرکت کنند: در Blender مدلتان را انتخاب کنید، به Weight Paint بروید، آن نقطه‌ها را روی استخوان رنگ کنید و دوباره بفرستید."
 
+# --- what a model's import couldn't keep of its own shine and side-colour layer (the alpha of its pictures), said on
+# the page (app.js alphaLostLines): a Bring back from Blender's parts that came back without it, and a picture whose
+# layer isn't its size (a review of 2026-11-12: said only in the model's record, which no page read) ---
+[model_alpha_none]
+us = "Back from Blender without their own shine and side-colour layer, so with the plain one a model from a file gets: {names}. None went out to Blender under these names."
+fr = "Revenus de Blender sans leur propre couche de brillance et de couleur de camp, donc avec la couche simple d'un modèle importé d'un fichier : {names}. Aucune n'est partie vers Blender sous ces noms."
+ger = "Ohne eigene Glanz- und Seitenfarben-Ebene aus Blender zurückgekommen, also mit der einfachen, die ein Modell aus einer Datei bekommt: {names}. Unter diesen Namen ging keine nach Blender."
+ita = "Tornati da Blender senza il proprio livello di lucentezza e colore di fazione, quindi con quello semplice che riceve un modello da file: {names}. Nessuno è andato in Blender con questi nomi."
+spa = "Volvieron de Blender sin su propia capa de brillo y color de bando, así que tienen la capa simple que recibe un modelo de un archivo: {names}. Ninguna salió hacia Blender con estos nombres."
+pol = "Wróciły z Blendera bez własnej warstwy połysku i koloru strony, więc mają zwykłą, jaką dostaje model z pliku: {names}. Pod tymi nazwami żadna nie trafiła do Blendera."
+ru = "Вернулись из Blender без своего слоя блеска и цвета стороны, поэтому с простым слоем, как у модели из файла: {names}. Под этими именами в Blender ничего не уходило."
+cz = "Vrátily se z Blenderu bez vlastní vrstvy lesku a barvy strany, takže mají obyčejnou, jakou dostane model ze souboru: {names}. Pod těmito názvy do Blenderu žádná neodešla."
+jpn = "Blenderから戻りましたが、独自の光沢と陣営色のレイヤーがないため、ファイルから読み込んだモデルと同じ標準のレイヤーになります：{names}。この名前でBlenderに送ったレイヤーはありません。"
+sc = "从 Blender 带回时没有自己的光泽和阵营色图层，因此使用从文件导入的模型所用的普通图层：{names}。没有以这些名称发送到 Blender 的图层。"
+fa = "بدون لایهٔ درخشش و رنگ طرفِ خودشان از Blender برگشتند، پس همان لایهٔ سادهٔ مدلی را دارند که از فایل وارد شده: {names}. با این نام‌ها چیزی به Blender نرفته بود."
+
+[model_alpha_gone]
+us = "Back from Blender without their own shine and side-colour layer, so with the plain one a model from a file gets: {names}. Theirs isn't in the Blender folder any more."
+fr = "Revenus de Blender sans leur propre couche de brillance et de couleur de camp, donc avec la couche simple d'un modèle importé d'un fichier : {names}. La leur n'est plus dans le dossier Blender."
+ger = "Ohne eigene Glanz- und Seitenfarben-Ebene aus Blender zurückgekommen, also mit der einfachen, die ein Modell aus einer Datei bekommt: {names}. Ihre liegt nicht mehr im Blender-Ordner."
+ita = "Tornati da Blender senza il proprio livello di lucentezza e colore di fazione, quindi con quello semplice che riceve un modello da file: {names}. Il loro non è più nella cartella di Blender."
+spa = "Volvieron de Blender sin su propia capa de brillo y color de bando, así que tienen la capa simple que recibe un modelo de un archivo: {names}. La suya ya no está en la carpeta de Blender."
+pol = "Wróciły z Blendera bez własnej warstwy połysku i koloru strony, więc mają zwykłą, jaką dostaje model z pliku: {names}. Ich warstwy nie ma już w folderze Blendera."
+ru = "Вернулись из Blender без своего слоя блеска и цвета стороны, поэтому с простым слоем, как у модели из файла: {names}. Их слоя больше нет в папке Blender."
+cz = "Vrátily se z Blenderu bez vlastní vrstvy lesku a barvy strany, takže mají obyčejnou, jakou dostane model ze souboru: {names}. Jejich vrstva už ve složce Blenderu není."
+jpn = "Blenderから戻りましたが、独自の光沢と陣営色のレイヤーがないため、ファイルから読み込んだモデルと同じ標準のレイヤーになります：{names}。そのレイヤーはもうBlenderフォルダーにありません。"
+sc = "从 Blender 带回时没有自己的光泽和阵营色图层，因此使用从文件导入的模型所用的普通图层：{names}。它们的图层已不在 Blender 文件夹中。"
+fa = "بدون لایهٔ درخشش و رنگ طرفِ خودشان از Blender برگشتند، پس همان لایهٔ سادهٔ مدلی را دارند که از فایل وارد شده: {names}. لایهٔ خودشان دیگر در پوشهٔ Blender نیست."
+
+[model_alpha_not_back]
+us = "Went out to Blender with their own shine and side-colour layer and didn't come back under that name: {names}."
+fr = "Partis vers Blender avec leur propre couche de brillance et de couleur de camp, et pas revenus sous ce nom : {names}."
+ger = "Mit eigener Glanz- und Seitenfarben-Ebene nach Blender gegangen und nicht unter diesem Namen zurückgekommen: {names}."
+ita = "Andati in Blender con il proprio livello di lucentezza e colore di fazione e non tornati con quel nome: {names}."
+spa = "Salieron hacia Blender con su propia capa de brillo y color de bando y no volvieron con ese nombre: {names}."
+pol = "Trafiły do Blendera z własną warstwą połysku i koloru strony i nie wróciły pod tą nazwą: {names}."
+ru = "Ушли в Blender со своим слоем блеска и цвета стороны и не вернулись под этим именем: {names}."
+cz = "Odešly do Blenderu s vlastní vrstvou lesku a barvy strany a pod tímto názvem se nevrátily: {names}."
+jpn = "独自の光沢と陣営色のレイヤー付きでBlenderに送りましたが、その名前では戻りませんでした：{names}。"
+sc = "带着自己的光泽和阵营色图层发送到 Blender，但没有以该名称带回：{names}。"
+fa = "با لایهٔ درخشش و رنگ طرفِ خودشان به Blender رفتند و با همان نام برنگشتند: {names}."
+
+[model_alpha_size]
+us = "{name} has the plain shine and side-colour layer a model from a file gets, not its own: its picture is {picture} and its layer {layer}, and the two have to be the same size."
+fr = "{name} a la couche simple de brillance et de couleur de camp d'un modèle importé d'un fichier, pas la sienne : son image fait {picture} et sa couche {layer}, et les deux doivent avoir la même taille."
+ger = "{name} hat die einfache Glanz- und Seitenfarben-Ebene, die ein Modell aus einer Datei bekommt, nicht die eigene: sein Bild ist {picture} groß und seine Ebene {layer}, und beide müssen gleich groß sein."
+ita = "{name} ha il livello semplice di lucentezza e colore di fazione che riceve un modello da file, non il proprio: la sua immagine è {picture} e il suo livello {layer}, e i due devono avere la stessa dimensione."
+spa = "{name} tiene la capa simple de brillo y color de bando que recibe un modelo de un archivo, no la suya: su imagen mide {picture} y su capa {layer}, y las dos tienen que tener el mismo tamaño."
+pol = "{name} ma zwykłą warstwę połysku i koloru strony, jaką dostaje model z pliku, a nie własną: jego obraz ma {picture}, a warstwa {layer}, a oba muszą mieć ten sam rozmiar."
+ru = "У {name} простой слой блеска и цвета стороны, как у модели из файла, а не свой: его изображение {picture}, а слой {layer}, и они должны быть одного размера."
+cz = "{name} má obyčejnou vrstvu lesku a barvy strany, jakou dostane model ze souboru, ne vlastní: jeho obrázek má {picture} a vrstva {layer} a obojí musí mít stejnou velikost."
+jpn = "{name}は独自のものではなく、ファイルから読み込んだモデルと同じ標準の光沢と陣営色のレイヤーになります。画像は{picture}、レイヤーは{layer}で、両方を同じサイズにする必要があります。"
+sc = "{name} 使用的是从文件导入的模型所用的普通光泽和阵营色图层，而不是它自己的：它的图片是 {picture}，图层是 {layer}，两者必须大小相同。"
+fa = "{name} لایهٔ سادهٔ درخشش و رنگ طرفی را دارد که مدلِ واردشده از فایل می‌گیرد، نه لایهٔ خودش را: تصویرش {picture} است و لایه‌اش {layer}، و این دو باید هم‌اندازه باشند."
+
 [model_removed_copy_back_squad]
 us = "Your model is out, and its Custom uniform is back, with its paint."
 fr = "Votre modèle est retiré, et son Uniforme personnalisé est revenu, avec sa peinture."
