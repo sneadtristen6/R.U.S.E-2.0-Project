@@ -231,13 +231,16 @@
       let opened = false;
       try {
         const r = await api().blender_open(address, ticks, state.lang);
-        if (r && r.soldiers) S.info = r;   // (squad_info's answer, with its work folder and who was opened)
+        // (the squad's own Blender answers with squad_info, its work folder and who was opened; the model's Blender,
+        // the Generic Horse's, with the unit's look, which has soldiers too but no squad's blender: taken as the
+        // squad's, the card's redraw threw on it, found in the stand-in page's console 2026-11-13)
+        if (r && r.door === "squad" && r.soldiers) S.info = r;
         opened = true;
         say(w.squad_blender_opened, "ok");
       } catch (err) { problem(err); }
       S.busy = false;
       // (read again, so the button reads Bring my changes back: the model's Blender too, the Generic Horse's, whose
-      // answer isn't the squad's; it kept Open in Blender, found on the stand-in page 2026-11-13)
+      // answer isn't the squad's)
       if (opened) await reload(false);
       else draw();
     };

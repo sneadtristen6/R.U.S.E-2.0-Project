@@ -148,6 +148,10 @@ class ThePage(unittest.TestCase):
         # (the ticks read before the card is drawn again: a redraw had ticked everything again, so an unticked part
         # went to Blender all the same; found on the stand-in page, 2026-11-13)
         self.assertLess(opening.index("S.ticks.ticks()"), opening.index("drawCard();"))
+        # (only the squad's own Blender answers with squad_info: the model's, the Generic Horse's, answers with the
+        # unit's look, which has soldiers too; taken as the squad's, the card's redraw threw, 2026-11-13)
+        self.assertIn('if (r && r.door === "squad" && r.soldiers) S.info = r;', opening)
+        self.assertNotIn("if (r && r.soldiers) S.info = r;", opening)
         self.assertIn("api().blender_back(address, state.lang)", inner(self.squad, "bringBack"))
         self.assertNotRegex(self.squad, r"api\(\)\.squad_blender")
         # who changed and who didn't, said plainly on the card
