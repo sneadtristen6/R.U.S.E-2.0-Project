@@ -10,6 +10,7 @@ differently, waits on the owner). A unit on the game soldier's bones keeps RUSE 
 needed."""
 import json
 import re
+import struct
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -28,12 +29,13 @@ ADDRESS = E + UNIT
 BONES = ("Hips", "Spine", "Head")
 
 
-def beast_glb(names=("Walk", "Run", "Idle"), extras=None, bones=BONES) -> bytes:
+def beast_glb(names=("Walk", "Run", "Idle"), extras=None, bones=BONES, holder=None, step=0.1) -> bytes:
     """test_animmodel's little three-bone beast (test_ownrig.little_glb, `bones` its bones' names) with an animation
-    for each of `names` (its first bone moved, a second long); `extras`: {animation name: its extras}."""
-    anims = [(n, [(1, "translation", [0.0, 1.0], [(0.0, 1.0, 0.0), (0.0, 1.0, 0.1 * (k + 1))], "LINEAR")])
+    for each of `names` (its first bone moved `step` times its place, a second long); `extras`: {animation name: its
+    extras}; `holder`: its armature node's move, turn or size (the same bones on another rest)."""
+    anims = [(n, [(1, "translation", [0.0, 1.0], [(0.0, 1.0, 0.0), (0.0, 1.0, step * (k + 1))], "LINEAR")])
              for k, n in enumerate(names)]
-    data = little_glb(anims, names=bones)
+    data = little_glb(anims, names=bones, holder=holder)
     if not extras:
         return data
     doc, binary = modelin.glb_document(data)
@@ -199,6 +201,19 @@ class Refit(unittest.TestCase):
         self.assertEqual((lines[1].split("\t")[0], json.loads(lines[1].split("\t")[2])),
                          ("not_kept", {"animations": ["Walk"], "picks": []}))
 
+    def test_the_same_bone_names_on_another_rest_are_other_bones(self):
+        """A change is kept only on the bones it was made on, which its clip carries: the file made again with the same
+        bone names on another rest (its armature twice the size) takes its own animation in its place, named (the
+        resize recheck, round 1: the bones check had no test that failed without it)."""
+        self.imported(beast_glb())
+        self.decoy("Walk")
+        self.src.write_bytes(beast_glb(holder={"scale": [2.0, 2.0, 2.0]}))
+        new = self.clips_of_file()
+        got = self.api.model_resize(ADDRESS, 1.0)
+        self.assertEqual(self.record()["bones"], [b.lower() for b in BONES])     # (the same names)
+        self.assertEqual(self.clips(), new)
+        self.assertEqual(got["model"][NOT_KEPT], {"animations": ["Walk"], "picks": []})
+
     def clips_of_file(self) -> dict:
         """The clips the import makes of the file now (rusemod.unitmodel._import_own_bones' own way)."""
         from rusemod import rig
@@ -244,6 +259,134 @@ class Refit(unittest.TestCase):
         self.assertIn(FROM_FILE, self.record())             # (written now)
         self.api.model_resize(ADDRESS, 1.0)
         self.assertEqual(self.clips()["Walk"], changed)
+
+    def from_before(self) -> None:
+        """The model's record as a Studio before FROM_FILE wrote it (this branch before 2026-11-12)."""
+        record = self.record()
+        del record[FROM_FILE]
+        self.target.with_suffix(".json").write_text(json.dumps(record, indent=1), encoding="utf-8")
+
+    def test_a_record_from_before_follows_a_file_made_again_where_the_modder_changed_nothing(self):
+        """A record from before the fingerprints, its file made again since: what the model's own file carries tells
+        what the last fit took in, so the animations the modder left alone follow the file (as with a record's
+        fingerprints) and his RUSE Decoy change stays."""
+        self.imported(beast_glb())
+        changed = self.decoy("Walk")
+        self.from_before()
+        self.src.write_bytes(beast_glb(step=0.2))             # (every animation of the file made again)
+        new = self.clips_of_file()
+        got = self.api.model_resize(ADDRESS, 1.0)
+        self.assertEqual(self.clips(), {**new, "Walk": changed})
+        self.assertNotIn(NOT_KEPT, got["model"])
+
+    def test_a_record_from_before_import_model_again_names_the_change(self):
+        """Import model again over a record from before the fingerprints names the RUSE Decoy change it puts back (the
+        resize recheck, round 1, tests/test_recheck_resize.py ARecordFromBefore), and nothing the modder left alone:
+        from the same file; from another file, the one it was made from still there (what it gives tells) or gone
+        (what the model's own file carries tells); with neither readable, every animation it had that the new model
+        doesn't bring back as it was is named (never dropped without a word)."""
+        other = self.src.with_name("other.glb")
+        other.write_bytes(beast_glb(step=0.2))                # (another model: each of its animations another)
+        for how in ("the same file", "another file", "another file, the first one gone",
+                    "another file, the first one gone and the model's own file cut short"):
+            with self.subTest(how=how):
+                self.src.write_bytes(beast_glb())
+                self.api.model_import(ADDRESS, str(self.src))
+                self.decoy("Walk")
+                self.from_before()
+                if how == "the same file":
+                    got = self.api.model_import(ADDRESS, str(self.src))
+                else:
+                    if "gone" in how:
+                        self.src.unlink()
+                    if "cut short" in how:
+                        self.target.write_bytes(self.target.read_bytes()[:16])
+                    got = self.api.model_import(ADDRESS, str(other))
+                came = self.clips_of(self.src.read_bytes() if how == "the same file" else other.read_bytes())
+                self.assertEqual(self.clips(), came)          # (the new model's own, as before)
+                said = got["model"][NOT_KEPT]["animations"]
+                self.assertEqual(said, ["Walk", "Run", "Idle"] if "cut short" in how else ["Walk"])
+        # left alone, nothing to name
+        self.src.write_bytes(beast_glb())
+        self.api.model_import(ADDRESS, str(self.src))
+        self.from_before()
+        self.assertNotIn(NOT_KEPT, self.api.model_import(ADDRESS, str(other))["model"])
+
+    def test_animations_that_came_along_with_a_copy_go_as_before_when_a_model_comes_in(self):
+        """A copy of a unit takes its animations along with no model of its own (ruse_studio.actions; the owner,
+        2026-11-10): the first model brought in brings its own in their place without a word, as before (no record of a
+        fit of its own to tell a change of the modder's by; the unit it copies keeps them)."""
+        anim.set_animations(self.mod, UNIT, self.clips_of(beast_glb(step=0.3)))   # (as anim.copy_unit leaves them)
+        got = self.imported(beast_glb())
+        self.assertEqual(self.clips(), self.clips_of(beast_glb()))
+        self.assertNotIn(NOT_KEPT, got["model"])
+
+    def test_a_record_from_before_with_a_model_on_the_game_soldier_s_bones_in_its_place(self):
+        self.imported(beast_glb())
+        self.decoy("Run")
+        self.from_before()
+        self.soldier = True
+        got = self.imported(beast_glb())
+        self.assertEqual(self.clips(), {})
+        self.assertEqual(got["model"][NOT_KEPT], {"animations": ["Run"], "picks": []})
+
+    def test_a_record_from_before_bring_back_the_model_names_the_change(self):
+        from ruse_studio.modelblender import WORK
+        self.imported(beast_glb())
+        self.decoy("Walk")
+        self.from_before()
+        work = self.mod / WORK / UNIT
+        work.mkdir(parents=True)
+        (work / f"{UNIT}.glb").write_bytes(beast_glb())
+        got = self.api.model_blender_back(ADDRESS, 1.0)
+        self.assertEqual(self.clips(), self.clips_of_file())
+        self.assertEqual(got["model"][NOT_KEPT], {"animations": ["Walk"], "picks": []})
+
+    def test_files_of_the_mod_that_can_t_be_read_never_stop_a_fit(self):
+        """A clip file or the model's own file damaged on disk: Resize and Move write them anew from the file as before
+        the fingerprints and name what they took the place of; nothing stops them (the resize recheck, round 1: a clip
+        file whose bones' table runs past its end, and a model file cut short, stopped Resize, Move and every unit at
+        once)."""
+        self.imported(beast_glb())
+        file = self.clips()
+        bad = struct.pack("<IfHHIIII", 15, 1.0, 1, 1000, 28, 36, 8, 0) + bytes(8)
+        walk = self.mod / anim.OWN / UNIT / anim.own_animations(self.mod, UNIT)["animations"]["Walk"]
+        walk.write_bytes(bad)
+        got = self.api.model_place(ADDRESS, [10, 0, 0])
+        self.assertEqual((self.clips(), got["model"][NOT_KEPT]), (file, {"animations": ["Walk"], "picks": []}))
+        # the model's own file cut short, a change of his made: kept (its clip carries its bones), the file whole again
+        changed = self.decoy("Run")
+        self.api.model_resize(ADDRESS, 1.0)
+        whole = self.target.read_bytes()
+        self.target.write_bytes(whole[:16])
+        got = self.api.model_resize(ADDRESS, 1.0)
+        self.assertEqual((self.clips()["Run"], self.target.read_bytes()), (changed, whole))
+        self.assertNotIn(NOT_KEPT, got["model"])
+        # and with a record from before the fingerprints too (only the file it was made from tells then)
+        self.from_before()
+        self.target.write_bytes(whole[:16])
+        got = self.api.model_resize(ADDRESS, 1.0)
+        self.assertEqual((self.clips(), self.target.read_bytes()), ({**file, "Run": changed}, whole))
+        self.assertNotIn(NOT_KEPT, got["model"])
+
+    def test_every_unit_at_once_goes_on_past_one_that_fails_another_way(self):
+        """One that can't be fitted leaves the rest, whatever stopped it; the job then ends failed with it (for a bug
+        report), never as done (the resize recheck, round 1)."""
+        units = ["$/GFX/Everything/Descriptor_Unit_One", ADDRESS]
+        self.api._own_models_of = lambda kind: units
+        self.api._new_units = lambda: {units[0]: SimpleNamespace(name="One"), ADDRESS: SimpleNamespace(name="Beast")}
+        self.imported(beast_glb())
+        real = self.api.model_resize
+
+        def resize(address, size):
+            if address == units[0]:
+                raise KeyError("a fault of the Studio")
+            return real(address, size)
+        self.api.model_resize = resize
+        view = finished(self.api, self.api.models_resize_all("ground", "game")["job"], 120)
+        self.assertEqual(view["lines"], ["skipped\tOne\tKeyError: 'a fault of the Studio'", "resized\tBeast\t1"])
+        self.assertEqual((view["state"], view["message"]),
+                         ("failed", "Something went wrong: KeyError: 'a fault of the Studio'"))
 
     def test_ruse_decoy_s_bring_back_keeps_the_fingerprints(self):
         self.imported(beast_glb())
@@ -327,9 +470,45 @@ class Refit(unittest.TestCase):
         return {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()}
 
 
+class Near(unittest.TestCase):
+    """What the model's own file carries is read back near the clips a fit wrote into it (24 of the Horse Squad's 25
+    byte for byte, one with moves off by 7.7e-6): near is a float's last places, never a change RUSE Decoy keeps."""
+
+    def setUp(self):
+        self.clip = Refit.clips_of(beast_glb())["Walk"]
+        self.c = baf.parse(self.clip)
+
+    def moved(self, by: float) -> bytes:
+        t = self.c.tracks[0]
+        first = t.T[0]
+        tracks = [baf.Track([(first[0], first[1] + by, *first[2:])] + list(t.T[1:]), t.S, t.R)] + self.c.tracks[1:]
+        return baf.build(baf.Clip(self.c.duration, self.c.frames, tracks, self.c.skeleton))
+
+    def test_near(self):
+        from ruse_studio.animmodel_calls import _near
+        bone = baf.skeleton(self.c.skeleton)["names"][0]
+        self.assertTrue(_near(self.clip, self.clip))
+        self.assertTrue(_near(self.clip, self.moved(7.7e-6)))
+        self.assertFalse(_near(self.clip, self.moved(1e-3)))
+        self.assertFalse(_near(self.clip, baf.build(baf.with_bone(self.c, bone, turn=("x", 0.03)))))
+        self.assertFalse(_near(self.clip, baf.build(baf.with_speed(self.c, 101.0))))
+        self.assertFalse(_near(self.clip, struct.pack("<IfHHIIII", 15, 1.0, 1, 1000, 28, 36, 8, 0) + bytes(8)))
+        self.assertFalse(_near(self.clip, Refit.clips_of(beast_glb(holder={"scale": [2.0, 2.0, 2.0]}))["Walk"]))
+
+
 class ThePage(unittest.TestCase):
     """What couldn't be kept is said in words, after the fit's own, in every language."""
     UI = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
+
+    def test_every_unit_at_once_says_a_job_that_failed_as_an_error(self):
+        """The row read a job that stopped as done, with the ok mark (the resize recheck, round 1, from reading)."""
+        app = (self.UI / "app.js").read_text(encoding="utf-8")
+        row = app[app.index("function resizeAllRow("):]
+        row = row[:row.index("\n}\n")]
+        self.assertIn('if (st.state === "failed") failed = st.message', row)
+        self.assertIn('say(note.textContent, failed || skipped.length || notKept.length ? "" : "ok");', row)
+        self.assertIn('if (failed) say(failed, "error");', row)
+        self.assertNotIn("problem(err); break;", row)     # (a job that can't be followed is the same: failed)
 
     def test_resize_move_import_bring_back_and_every_unit_say_it(self):
         app = (self.UI / "app.js").read_text(encoding="utf-8")
