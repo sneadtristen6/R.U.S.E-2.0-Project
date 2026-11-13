@@ -148,12 +148,13 @@ class Round2(Door):
         self.assertEqual({f: (self.mod / anim.OWN / UNIT / f).read_bytes() for f in files.values()}, before)
 
     # --- D-F2's class: compared with what the mod plays now ---
-    def unit_clip_edit(self, member: str, speed: float) -> None:
-        """RUSE Decoy's Only this unit: the unit's own copy of a game clip at another speed (units.toml's clip
-        table)."""
+    def unit_clip_edit(self, member: str, speed: float | None = None, turn: tuple | None = None) -> None:
+        """RUSE Decoy's Only this unit: the unit's own copy of a game clip at another speed, or with the head turned
+        (units.toml's clip table)."""
         table = anim.read_units(self.mod)
         u = dict(table.get(UNIT) or {})
-        u["clip"] = {**(u.get("clip") or {}), anim.clip_key(member): {"speed": speed}}
+        edit = {"speed": speed} if speed else {"bone": {"bip01 head": {"turn": list(turn)}}}
+        u["clip"] = {**(u.get("clip") or {}), anim.clip_key(member): edit}
         table[UNIT] = u
         anim.write_units(self.mod, table)
 
@@ -168,6 +169,30 @@ class Round2(Door):
                       "the Studio's change stays, not what Blender sent: Run (made_run).", got["message"])
         self.assertNotIn("came back as it went out", got["message"])
         self.assertEqual((self.mod / anim.UNITS).read_bytes(), before)      # (RUSE Decoy's change as it was)
+
+    def test_a_ruse_decoy_reset_or_every_unit_change_while_blender_was_open_is_said_too(self):
+        """The same for RUSE Decoy's other ways: the unit's own copy taken out (Only this unit, reset) after the run
+        went out with it, and a change for every unit (files/anim/clips.toml): each keeps the Studio's, said. (The
+        copy turns the head: a copy at another speed has its frames at another rate, which comes back from Blender
+        as a change of its own, a separate finding.)"""
+        self.unit_clip_edit(RUN, turn=("z", 30.0))
+        start = self.open()                                   # (the run goes out with the head turned, its own copy)
+        table = anim.read_units(self.mod)
+        table.pop(UNIT)
+        anim.write_units(self.mod, table)                     # (reset: every unit's run again)
+        self.send.write_bytes(Blenderish(start).send())
+        got = self.back()
+        self.assertEqual((got["differs"], got["written"]), (["Run (made_run)"], 0))
+        self.assertFalse((self.mod / anim.UNITS).exists())
+        self.tearDown()
+        self.setUp()
+        start = self.open()
+        clips = self.mod / anim.CLIPS
+        clips.parent.mkdir(parents=True, exist_ok=True)
+        clips.write_text(f'[clip."{anim.clip_key(RUN)}"]\nspeed = 50\n', encoding="utf-8")
+        self.send.write_bytes(Blenderish(start).send())
+        got = self.back()
+        self.assertEqual((got["differs"], got["written"]), (["Run (made_run)"], 0))
 
     def test_a_change_made_in_both_takes_blender_s_and_says_so(self):
         start = self.open()
