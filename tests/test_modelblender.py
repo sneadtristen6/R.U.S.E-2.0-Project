@@ -532,5 +532,146 @@ class ItsOwnShine(unittest.TestCase):
         self.assertNotIn("blender_alpha", res["model"])
 
 
+class ItsOwnModel(unittest.TestCase):
+    """Change it in Blender on a unit that has a model of its own and nothing sent yet opens that model, not the game's
+    (the owner, 2026-11-13, to "The Generic Horse: should 'Change it in Blender' open its own model? A test waits on
+    this.": "yes"; the squad page's Change the squad in Blender starts a soldier from his own model the same way). Its
+    alpha pictures go out beside it, listed by material, and come back in by name. ItsOwnShine's stand-ins (borrowed:
+    its own tests aren't run again here)."""
+    setUp, tearDown = ItsOwnShine.setUp, ItsOwnShine.tearDown
+    patched, trip, record = ItsOwnShine.patched, ItsOwnShine.trip, ItsOwnShine.record
+
+    def own_model_then_nothing_sent(self, address=TANK, kind=None) -> Path:
+        """A model of its own made by a first trip, then the work folder gone (a model made by Import model, by the
+        squad page, or the Generic Horse's Add, before any Change it in Blender): the model's file."""
+        import shutil
+        self.trip(address, kind=kind)
+        work = Path(self.mod / "blender")
+        shutil.rmtree(work)
+        self.opened.clear()
+        return next(self.models.glob("*.glb")) if kind is None else self.models / f"{SQUAD.rsplit('/', 1)[-1]}@{kind}.glb"
+
+    def test_its_own_model_opens_with_its_alpha_beside_it(self):
+        own = self.own_model_then_nothing_sent()
+        before = own.read_bytes()
+        with self.patched():
+            res = self.api.model_blender(TANK)
+        start = self.opened[-1]
+        self.assertEqual(start, self.work / "Descriptor_Unit_My_Tank_own.glb")
+        self.assertEqual(res["file"], str(start))
+        doc, _bin = modelin.glb_document(start.read_bytes())
+        self.assertEqual([m["name"] for m in doc["materials"]], ["test_tank_hull", "test_tank_turret"])
+        self.assertFalse([m for m in doc["materials"] if "rusemod_alpha_texture" in (m.get("extras") or {})])
+        listed = json.loads((self.work / "alpha.json").read_text(encoding="utf-8"))
+        self.assertEqual(listed["start"], start.name)
+        self.assertEqual(sorted(listed["alpha"]), ["test_tank_hull", "test_tank_turret"])
+        for material, file in listed["alpha"].items():
+            _w, _h, rgba = read_png((self.work / file).read_bytes())
+            self.assertEqual(bytes(rgba[0::4]), GAME_ALPHA[material], material)
+        self.assertEqual(own.read_bytes(), before)                     # (opening it changes nothing in the mod)
+
+    def test_brought_back_its_own_shine_stays(self):
+        self.own_model_then_nothing_sent()
+        with self.patched():
+            res = self.api.model_blender(TANK)
+            blender_sends(self.opened[-1], self.send)
+            back = self.api.model_blender_back(TANK)
+        self.assertEqual(res["file"], str(self.work / "Descriptor_Unit_My_Tank_own.glb"))
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+        self.assertEqual(set(back["model"]["blender_alpha"].values()), {"its own, put back"})
+
+    def test_a_model_on_bones_of_its_own_goes_out_as_it_is(self):
+        """The Generic Horse's kind: its record says "skeleton": "own", so its file goes out with its own bones (no
+        game skeleton is read to put them at rest)."""
+        own = self.own_model_then_nothing_sent()
+        record = json.loads(own.with_suffix(".json").read_text(encoding="utf-8"))
+        own.with_suffix(".json").write_text(json.dumps(dict(record, skeleton="own")), encoding="utf-8")
+
+        class NoLibrary:
+            def __init__(self, _game=None):
+                raise AssertionError("a model on bones of its own reads no game skeleton")
+        with self.patched(), mock.patch("rusemod.models.Library", NoLibrary):
+            self.api.model_blender(TANK)
+        doc, _bin = modelin.glb_document(self.opened[-1].read_bytes())
+        was, _b = modelin.glb_document(own.read_bytes())
+        self.assertEqual(doc["nodes"], was["nodes"])
+
+    def test_the_bazooka_man_s_own_opens_alone(self):
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.api._look_models = lambda address: ([BAZOOKA, RIFLEMAN], [])
+        self.own_model_then_nothing_sent(SQUAD, kind="bazooka")
+        with self.patched():
+            res = self.api.model_blender(SQUAD, "us", "bazooka")
+        self.assertEqual(self.opened[-1].name, "Descriptor_Unit_My_Riflemen@bazooka_own.glb")
+        self.assertEqual(res["kind"], "bazooka")
+
+    def test_its_own_model_unreadable_is_said_and_nothing_opens(self):
+        from ruse_studio.api import StudioError
+        own = self.own_model_then_nothing_sent()
+        own.write_bytes(b"not a model")
+        with self.patched(), self.assertRaisesRegex(StudioError, "Descriptor_Unit_My_Tank.glb"):
+            self.api.model_blender(TANK)
+        self.assertEqual(self.opened, [])
+
+
+def skinned(order: list, joints_of_points: list, names=("A", "B", "C")) -> bytes:
+    """A .glb of three bones A (its children the others) on one skin whose joints are `names` in `order`, three points
+    each leaning wholly on the bone named in `joints_of_points`, each bone's inverse bind matrix its own numbers."""
+    import struct as st
+    doc = {"asset": {"version": "2.0"}, "nodes": [{"name": names[0], "children": [1, 2]}, {"name": names[1]},
+                                                  {"name": names[2]}, {"name": "mesh", "mesh": 0, "skin": 0}],
+           "scenes": [{"nodes": [0, 3]}], "scene": 0, "accessors": [], "bufferViews": []}
+    views = []
+
+    def add(data: bytes, kind: str, comp: int, count: int) -> int:
+        doc["bufferViews"].append({"buffer": 0, "byteOffset": 0, "byteLength": len(data)})
+        views.append(data)
+        doc["accessors"].append({"bufferView": len(views) - 1, "componentType": comp, "count": count, "type": kind})
+        return len(doc["accessors"]) - 1
+    joint_index = {names.index(n): k for k, n in enumerate(order)}   # node -> joint number
+    pos = add(st.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0), "VEC3", 5126, 3)
+    joints = add(bytes(b for n in joints_of_points for b in (joint_index[names.index(n)], 0, 0, 0)), "VEC4", 5121, 3)
+    weights = add(st.pack("<12f", *([1.0, 0, 0, 0] * 3)), "VEC4", 5126, 3)
+    ibm = add(b"".join(st.pack("<16f", *([float(names.index(n) + 1)] * 16)) for n in order), "MAT4", 5126, 3)
+    doc["meshes"] = [{"primitives": [{"attributes": {"POSITION": pos, "JOINTS_0": joints, "WEIGHTS_0": weights}}]}]
+    doc["skins"] = [{"joints": [names.index(n) for n in order], "inverseBindMatrices": ibm}]
+    return gltf.pack_glb(doc, views)
+
+
+class JointOrder(unittest.TestCase):
+    """A file back from Blender with its bones in the order they went out in (gltf.joints_like): Blender 4.5's export
+    wrote the Generic Horse's 62 joints in another order (measured 2026-11-13), and the riflemen's model came in on bones
+    the bazooka man's wasn't on any more (rusemod.bonefit.skeleton_key)."""
+
+    def joints(self, raw: bytes):
+        doc, views = gltf.glb_views(raw)
+        names = [doc["nodes"][j]["name"] for j in doc["skins"][0]["joints"]]
+        acc = doc["accessors"][doc["meshes"][0]["primitives"][0]["attributes"]["JOINTS_0"]]
+        data = views[acc["bufferView"]][acc.get("byteOffset", 0):][:12]
+        ibm = doc["accessors"][doc["skins"][0]["inverseBindMatrices"]]
+        firsts = [__import__("struct").unpack_from("<f", views[ibm["bufferView"]], ibm.get("byteOffset", 0) + 64 * k)[0]
+                  for k in range(3)]
+        return names, [names[data[4 * p]] for p in range(3)], firsts
+
+    def test_back_in_the_order_it_went_out_in_each_point_on_its_own_bone(self):
+        went = skinned(["A", "B", "C"], ["B", "C", "A"])
+        sent = skinned(["A", "C", "B"], ["B", "C", "A"])
+        self.assertEqual(self.joints(sent)[0], ["A", "C", "B"])
+        got = gltf.joints_like(sent, went)
+        names, leaning, ibm = self.joints(got)
+        self.assertEqual(names, ["A", "B", "C"])
+        self.assertEqual(leaning, ["B", "C", "A"])                  # (each point still on the bone it leaned on)
+        self.assertEqual(ibm, [1.0, 2.0, 3.0])                       # (each bone's matrix moved with it)
+        self.assertEqual(self.joints(got), self.joints(went))
+
+    def test_left_as_it_is_when_the_bones_arent_the_same_or_already_in_order(self):
+        went = skinned(["A", "B", "C"], ["B", "C", "A"])
+        same = skinned(["A", "B", "C"], ["A", "A", "B"])
+        self.assertEqual(gltf.joints_like(same, went), same)
+        renamed = skinned(["A", "C", "D"], ["A", "C", "D"], names=("A", "D", "C"))
+        self.assertEqual(gltf.joints_like(renamed, went), renamed)
+        self.assertEqual(gltf.joints_like(b"not a model", went), b"not a model")
+
+
 if __name__ == "__main__":
     unittest.main()

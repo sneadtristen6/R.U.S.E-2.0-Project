@@ -47,6 +47,10 @@ from ruse_studio.api import StudioApi, StudioError
 from ruse_studio.edits import ModEdits
 
 KEY, SQUAD = horse_squad.KEY, horse_squad.SQUAD
+# the unit OnTheGame's Add makes: from the name it gives, "Generic Horse" (6bd35afa changed that name from "Horse
+# Squad" and left these file names: three tests here failed and three checks could no longer fail; agent-horse,
+# 2026-11-13)
+TAIL = "Descriptor_Unit_Generic_Horse"
 LIBERTY = "WWI|USA|Mark VIII Liberty"
 TMP = os.environ.get("RUSE_TEST_TMP") or None
 # the riflemen's file of before the horse's fall (2026-11-10): what the platform folder holds when made differently
@@ -101,7 +105,7 @@ class OnTheGame(unittest.TestCase):
         with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, heavy, during=during)}):
             return finished(api, api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
 
-    def kind_files(self, tail: str = "Descriptor_Unit_Generic_Horse") -> list:
+    def kind_files(self, tail: str = TAIL) -> list:
         models = self.mod / "files" / "models"
         return sorted(p.name for p in models.glob(f"{tail}@*")) if models.is_dir() else []
 
@@ -113,8 +117,7 @@ class OnTheGame(unittest.TestCase):
         Descriptor_Unit_Horse_Squad")."""
         view = self.add()
         self.assertEqual(view["state"], "done")
-        self.assertEqual(self.kind_files(), ["Descriptor_Unit_Generic_Horse@bazooka.glb",
-                                             "Descriptor_Unit_Generic_Horse@bazooka.json"])
+        self.assertEqual(self.kind_files(), [f"{TAIL}@bazooka.glb", f"{TAIL}@bazooka.json"])
         address = view["result"]["address"]
         try:
             self.api.delete_unit(address)
@@ -205,7 +208,7 @@ class OnTheGame(unittest.TestCase):
         with mock.patch.object(StudioApi, "_horse_check", check), \
                 mock.patch.object(StudioApi, "model_import_remove", remove):
             view = self.add()
-        left = "$/GFX/Everything/Descriptor_Unit_Generic_Horse" in ModEdits(self.mod).new_units
+        left = f"$/GFX/Everything/{TAIL}" in ModEdits(self.mod).new_units
         self.assertEqual(view["state"], "failed")
         self.assertFalse(left and "wasn't added" in view["message"], (left, view["message"]))
 
@@ -235,7 +238,7 @@ class OnTheGame(unittest.TestCase):
         with mock.patch.object(StudioApi, "model_import", importing):
             view = self.add()
         self.assertEqual(len(switched), 1)
-        tail = "Descriptor_Unit_Generic_Horse"
+        tail = TAIL
         if view["state"] == "done":                     # all of it, in the mod it was added to
             self.assertEqual(self.kind_files(tail), [f"{tail}@bazooka.glb", f"{tail}@bazooka.json"])
             self.assertTrue((self.mod / "files" / "models" / f"{tail}.glb").is_file())
@@ -310,7 +313,7 @@ class OnTheGame(unittest.TestCase):
         out = package.pack(self.mod, self.home / "exported-for-this-test")
         with zipfile.ZipFile(out) as z:
             packed = {n: z.read(n).decode("utf-8", errors="replace") for n in z.namelist() if n.endswith(".json")}
-        self.assertIn("files/models/Descriptor_Unit_Generic_Horse.json", packed)
+        self.assertIn(f"files/models/{TAIL}.json", packed)
         naming = [name for name, text in packed.items()
                   if str(self.home).lower() in text.replace("\\\\", "\\").lower()]
         self.assertEqual(naming, [])

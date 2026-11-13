@@ -92,6 +92,7 @@ class TheAddsOwnWritesOnAFullDisk(unittest.TestCase):
         """Seen on 70de183f: "horse-squad-rifle-death.glb: [Errno 28] No space left on device" in English, French and
         Japanese alike (api._fit_model / animmodel_calls._own_bones_fit turn the OSError into a StudioError with
         Python's words before the job's own OSError words can say it)."""
+        # (the unit the Add makes, from the name it gives, "Generic Horse": 6bd35afa changed that name and left this)
         view = self.add_on_a_full_disk(lambda p: p.name == "Descriptor_Unit_Generic_Horse.glb")
         self.assertEqual(view["lines"], ["build", "unit", "riflemen"])
         self.assert_in_words(view)

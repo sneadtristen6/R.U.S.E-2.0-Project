@@ -70,6 +70,7 @@ from .music import MusicCalls
 from .decoy import DecoyCalls, DecoyError
 from .era_units import EraUnitCalls
 from .horse_squad import HorseSquadCalls
+from .homemove import HomeMoveCalls
 from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
@@ -632,7 +633,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, GroundTextureCalls, MissionCalls, RoleCalls,
+                DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, HomeMoveCalls, GroundTextureCalls, MissionCalls,
+                RoleCalls,
                 WeaponClassCalls,
                 FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, DecoyBlenderCalls, ActionCalls,
                 ModelFitCalls, AnimModelCalls,
@@ -10502,11 +10504,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 revision = revisions[0] if len(revisions) == 1 else None
                 fingerprint = fingerprint_text(result.fingerprint) if result.fingerprint else None
                 answers = result.solved  # (what the long map steps worked out: players' builds take it from the file)
-            # (FL-110, the owner, 2026-11-12: "Keep file name only": only where the Studio itself wrote a path of this
-            # PC, package.STUDIO_PATHS; nothing a modder wrote is changed, a text naming his home folder only said)
+            # (FL-110, the owner, 2026-11-12: "Keep file name only": where the Studio itself wrote a path of this PC,
+            # package.STUDIO_PATHS, and in his README, 2026-11-13 "cut to file name"; nothing else a modder wrote is
+            # changed, a text naming his home folder only said: "yes only warn")
             kinds: dict = {}
             home_in: list = []
             left_out: list = []   # (files the Studio left half written: package.is_work_file, the one check's 13)
+            cuts: dict = {}       # (his README's folder paths cut to their names: the owner, 2026-11-13, "cut to file
+            #                       name"; package.readme_paths_out)
             with self._saving:
                 stale = self._era_tidy(folder)   # (no record or credit line of a unit the mod no longer has goes out)
                 if stale:
@@ -10514,7 +10519,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         f"out: {', '.join(stale)}.")
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
                                     solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out)
+                                    left_out=left_out, cuts=cuts)
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10535,6 +10540,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if imports:
                 say(f"In the exported file, these map import records name only the folders each map was made from, not "
                     f"where they are on your PC; nothing else in them changed: {', '.join(imports)}.")
+            if cuts:
+                said = "; ".join(f"{member} ({', '.join(package.cut_shown(p, n) for p, n in pairs)})"
+                                 for member, pairs in cuts.items())
+                say(f"In the exported file, each folder path in these README files of yours is cut to its own name, "
+                    f"every other word as you wrote it; the files in your mod stay as they are: {said}.")
             if home_in:
                 say(f"These files of the mod name your PC's home folder ({package.home_shown()}) and go out as they are, "
                     f"since Export never changes what you wrote: change them in the mod if that shouldn't be shared: "

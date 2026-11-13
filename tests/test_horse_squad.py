@@ -445,5 +445,60 @@ class OnTheGame(unittest.TestCase):
         self.assertEqual(left, fresh)
 
 
+GERMAN = "$/GFX/Everything/Descriptor_Unit_Soldat_Allemand_Leger"
+
+
+@unittest.skipUnless(GAME is not None and GAME.is_dir() and INDEX.is_file(),
+                     "RUSE_GAME names no game folder, or the Studio's game index isn't there")
+class ItsCountry(unittest.TestCase):
+    """The country it is from (the owner, 2026-11-13: "generic horse should be fully editable so people can change
+    what countmry its from"): Add to my mod with another country's rifle squad picked in Start from, through the REAL
+    builder (rusemod.horsesquad), on the game and the Studio's index (both only read)."""
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp(prefix="horse-country-"))
+        self.addCleanup(shutil.rmtree, self.home, True)
+        self.api = StudioApi(index_path=INDEX, game_dir=GAME, home=self.home)
+
+    def test_its_page_offers_each_country_s_rifle_squad_the_us_one_first(self):
+        page = self.api.era_unit_page(KEY, "us")
+        self.assertEqual([s["address"] for s in page["start"]], list(horse_squad.SQUADS))
+        self.assertEqual([s["country"] for s in page["start"]], ["USA", "Germany", "UK", "France"])
+        self.assertEqual([s["suggested"] for s in page["start"]], [True, False, False, False])
+        price = self.api.era_unit_start(KEY, GERMAN, 1, 8, "us")["price"]
+        self.assertEqual(price, self.api._era_price(GERMAN))        # (its values: the German rifle squad's)
+
+    def test_a_german_horse_has_german_riders_its_own_files_and_its_country_in_its_credit(self):
+        mod = Path(self.api.new_mod("Kavallerie")["current"])
+        view = finished(self.api, self.api.horse_squad_add(1, 8, "Reiter", 5, None, None, None, "new",
+                                                           source=GERMAN)["job"])
+        self.assertEqual((view["state"], view["message"]), ("done", "Generic Horse is in your mod."))
+        unit = view["result"]["address"]
+        self.assertEqual(ModEdits(mod).new_units[unit].source, GERMAN)
+        kept = self.home / horse_squad.FOLDER
+        self.assertEqual(sorted(os.listdir(kept)), ["horse-squad-ger-bazooka.glb", "horse-squad-ger-rifle.glb"])
+        tail = unit.rsplit("/", 1)[-1]
+        for stem, made in ((tail, "horse-squad-ger-rifle.glb"), (f"{tail}@bazooka", "horse-squad-ger-bazooka.glb")):
+            record = json.loads((mod / "files" / "models" / f"{stem}.json").read_text(encoding="utf-8"))
+            self.assertEqual((record["from"], record["skeleton"]), (str(kept / made), "own"))
+        rows = {r["kind"]: r for r in self.api.look(unit)["kinds"]}
+        self.assertEqual((rows["fusilier"]["skeleton"], rows["bazooka"]["own"], rows["bazooka"]["same_bones"]),
+                         ("own", True, True))
+        self.assertIn("- Generic Horse (WWII, Germany): by sneadtristen6.",
+                      (mod / era_units.CREDITS).read_text(encoding="utf-8"))
+        out = self.api.era_unit_remove(KEY)                         # (taken out as any Generic Horse is)
+        self.assertEqual(out["removed"], unit)
+        self.assertNotIn(era_units.CREDITS, os.listdir(mod))
+
+    def test_a_squad_it_isnt_made_from_is_refused_before_anything(self):
+        mod = Path(self.api.new_mod("Cavalleria")["current"])
+        before = tree(mod)
+        with self.assertRaisesRegex(StudioError, "The Generic Horse's riders are made from one of these rifle squads"):
+            self.api.horse_squad_add(4, 8, "Cavalli", 5, None, None, None, "new",
+                                     source="$/GFX/Everything/Descriptor_Unit_Soldat_ITA_Leger")
+        self.assertEqual(tree(mod), before)
+        self.assertFalse((self.home / horse_squad.FOLDER).exists())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,9 +15,15 @@ the full path of each imported model's source file in its record (often C:\\User
 the Studio itself writes a path of the PC into (STUDIO_PATHS, packed_bytes): a model's record ("from", and the
 pictures its report names), the data inside a .glb model the Studio made from a scenery or building model (its
 source's path), and a map's import record (the folders it was made from). The file's own name and every other byte stay as they were.
-Nothing a modder wrote is changed (README, descriptions, .rndf, .csv, notes, credits: byte for byte), so no sentence
-can be cut; a text naming this PC's home folder goes out as written, and Export says so (home_named). The mod's own
-files on the maker's PC keep theirs: Resize and Move fit a model again from the file its record names.
+A modder's own README (README.md, and any README of his in the mod's folders: is_readme) goes out with each folder
+path in it cut to the file's own name (the owner, 2026-11-13, asked "A folder path in a modder's own README, in an
+exported mod: cut it to the file name, or keep it with a warning?", answered "cut to file name"): only the path's
+folders go, every word around it and every other byte stays (readme_paths_out), and Export says each cut. Everything
+else a modder wrote is changed nowhere (descriptions, CHANGELOG.md, LICENSE, .rndf, .csv, notes, credits: byte for
+byte; his answer to "Full paths elsewhere in a modder's own text, such as their mod's description: only warn and never
+change them, as now?" was "yes only warn"): a text naming this PC's home folder goes out as written, and Export says so
+(home_named). The mod's own files on the maker's PC keep theirs: Resize and Move fit a model again from the file its
+record names, and his README in the mod stays as he wrote it.
 """
 from __future__ import annotations
 
@@ -237,9 +243,10 @@ def _names_a_unit(record: Path) -> bool:
 # --- no folder of the maker's PC in a package (FL-110, the owner's "Keep file name only") ---
 # Only the fields the Studio itself writes a path of the PC into are changed, each to the file's (or folder's) own
 # name, whatever the folder looks like on whatever system: no list of known folders to fall out of, and no guessing at
-# paths inside a modder's words (a README, a description, a .rndf, a .csv, a credit, a note go out byte for byte: the
-# round-1 cleaner that read paths out of any text cut "Made from C:\models\tank.glb, and docs\turret.md tells how."
-# down to "Made from turret.md tells how.", the export recheck of 2026-11-12, F2).
+# paths inside a modder's words (a description, a .rndf, a .csv, a credit, a note go out byte for byte: the round-1
+# cleaner that read paths out of any text cut "Made from C:\models\tank.glb, and docs\turret.md tells how." down to
+# "Made from turret.md tells how.", the export recheck of 2026-11-12, F2). His README alone is read for paths, by the
+# owner's answer of 2026-11-13, and only a path's folders go (readme_paths_out, below).
 STUDIO_PATHS = {
     # what the Studio writes where (each place's member, and the words its export line uses for it)
     "record": "files/models/<unit>.json (ruse_studio.api._fit_model): \"from\", the file the model was made from "
@@ -467,6 +474,121 @@ def packed_bytes(path, name: str | None = None) -> bytes | None:
     return got[0] if got is not None else None
 
 
+# --- a folder path in a modder's own README, cut to the file's own name (the owner, 2026-11-13: "cut to file name") ---
+# The 2026-11-12 recheck's F2 is what this must never do again: round 1 cut "Made from C:\models\tank.glb, and
+# docs\turret.md tells how." down to "Made from turret.md tells how.", taking the modder's words with the folders. So
+# only a path's root and its folders are taken out, the name after them and every word around them stay; a folder is
+# read only up to the next slash or backslash, and a run that reads as words more than as a folder's name (a comma, a
+# full stop, a semicolon, ! or ? before a space; a word with a file's ending, "tank.glb", before a space; a space at its
+# start or end) ends the path before it. A path counts when it starts at the top of a disk or a home (C:\ or C:/ on any
+# drive, \\server\ and \\?\, ~/, %NAME%\, file:) and names at least one folder before its last name, or, starting at /
+# alone (a slash is common in words: "and/or", "/r/ruse"), at least two. A relative path ("docs\turret.md") is the
+# mod's own and stays.
+README_STEM = re.compile(r"readme(?:$|[ ._-])", re.IGNORECASE)
+_NAME_LETTERS = r"[^\\/:*?\"<>|`\x00-\x1f]"        # a letter of a file's or folder's name (Windows allows none of
+#                                                   \/:*?"<>| nor a control; ` is Markdown's, never a name's here)
+_BEFORE = r"(?<![^\s\"'`(\[{<=,;*_])"              # at the start, or after a space, a quote, ` a bracket, =, , ; * _
+_ROOT = re.compile(rf"(?P<file>(?<![A-Za-z0-9])file:/{{2,3}}(?:[A-Za-z]:[\\/]+)?)"
+                   rf"|(?P<unc>{_BEFORE}\\\\(?:\?\\(?:[A-Za-z]:[\\/]+)?)?)"
+                   rf"|(?P<drive>(?<![A-Za-z0-9])[A-Za-z]:[\\/]+)"
+                   rf"|(?P<home>{_BEFORE}~[\\/]+)"
+                   rf"|(?P<var>{_BEFORE}%[A-Za-z0-9_()]+%[\\/]+)"
+                   rf"|(?P<unix>{_BEFORE}/(?![/\s]))", re.IGNORECASE)
+_FOLDER_RUN = re.compile(rf"({_NAME_LETTERS}+)([\\/]+)")
+_LAST_NAME = re.compile(r"[^\s\\/:*?\"<>|`\x00-\x1f]+")
+_WORDS_NOT_A_NAME = re.compile(r"[,;!?.]\s|[^\s.]\.[A-Za-z][A-Za-z0-9]{0,7}\s")
+
+
+def is_readme(name) -> bool:
+    """Whether a member called `name` (its path in the mod) is a README of the modder's: its file name, case aside,
+    README, or README followed by a dot, a space, - or _ (README.md, readme.txt, README-fr.md), and a text
+    (TEXT_FILES, or no ending)."""
+    file = PurePosixPath(str(name).replace("\\", "/")).name
+    suffix = PurePosixPath(file).suffix.lower()
+    return bool(README_STEM.match(file)) and (suffix in TEXT_FILES or suffix == "" or file.lower() == "readme")
+
+
+def _folder_name_ok(run: str) -> bool:
+    """Whether a run of letters before a slash or backslash reads as a folder's name rather than as words."""
+    if not run or run != run.strip() or len(run) > 255:
+        return False
+    if not any(c.isspace() for c in run):
+        return True
+    # (with a space in it, words read so: a sentence's stop, a file's ending before a space, a bracket left open, a
+    # home's ~: "python (assuming ~guido" in a README of the tools, 2026-11-13, is words between two paths)
+    return not (_WORDS_NOT_A_NAME.search(run) or run.count("(") != run.count(")") or "~" in run)
+
+
+def paths_cut(text: str) -> tuple[str, list]:
+    """`text` with each folder path in it cut to its own name (see above): (the text, [(the path as written, the name
+    it became)] in the text's order). A path whose last name is missing (it ends with a slash) keeps its last folder's
+    name, the slash after it as written. A server's name (\\\\server\\share\\...) counts as a folder."""
+    out, cuts, i, pos = [], [], 0, 0
+    while True:
+        m = _ROOT.search(text, pos)
+        if m is None:
+            break
+        start, j = m.start(), m.end()
+        folders = []      # (its name, where it starts, where its slashes end)
+        forward = m.lastgroup in ("unix", "home", "file")    # (a path of these is written with / only: a \ after
+        server = m.group(0) == "\\\\"                        # "/Iinclude share" says it is a switch and words; a
+        while True:                                          # server's name, \\server\, has no space in it)
+            f = _FOLDER_RUN.match(text, j)
+            if f is None or not _folder_name_ok(f.group(1)) or (forward and "\\" in f.group(2)) \
+                    or (server and not folders and any(c.isspace() for c in f.group(1))):
+                break
+            folders.append((f.group(1), f.start(), f.end()))
+            j = f.end()
+        last = _LAST_NAME.match(text, j)
+        last_name = last.group(0) if last is not None else ""
+        names = len(folders) + (1 if last_name else 0)
+        if names < (3 if m.lastgroup == "unix" else 2):
+            pos = start + 1                  # (not a path that names a folder: the words stay, look further on)
+            continue
+        if last_name:
+            cut_to, end = j, last.end()      # everything before the last name goes
+        else:
+            cut_to, end = folders[-1][1], folders[-1][2]   # the last folder's name stays, with its slash
+        out.append(text[i:start])
+        cuts.append((text[start:end], last_name or folders[-1][0]))
+        i, pos = cut_to, end                 # (the text from cut_to on is kept as written)
+    out.append(text[i:])
+    return "".join(out), cuts
+
+
+_TRAILING = ".,;:!?'\""
+
+
+def cut_shown(path: str, name: str) -> str:
+    """One of paths_cut's cuts as Export's line says it: "C:\\models\\tank.glb → tank.glb", without the full stop,
+    comma or bracket after it that the text has (they stayed where they were)."""
+    def bare(s: str) -> str:
+        s = s.rstrip(_TRAILING)
+        while s.endswith(")") and s.count(")") > s.count("("):
+            s = s[:-1].rstrip(_TRAILING)
+        return s
+    return f"{bare(path) or path} \u2192 {bare(name) or name}"
+
+
+def readme_paths_out(path, name: str | None = None) -> tuple[bytes, list] | None:
+    """What a package holds of the modder's README at `path` (`name`: its path inside the mod; is_readme) when a
+    folder path is in it: (its bytes with each such path cut to its own name, paths_cut's list of what was cut); None
+    for a file that goes out as it is (no folder path in it, not a README, or not UTF-8 text: then it goes out as
+    written, and Export says when it names this PC's home folder)."""
+    path = Path(path)
+    if not is_readme(name or path.name):
+        return None
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    new, cuts = paths_cut(text)
+    if not cuts or new == text:
+        return None
+    return new.encode("utf-8"), cuts
+
+
 def _home_forms(home) -> list[bytes]:
     """This PC's home folder as a file could write it: as it is, with forward slashes, with each backslash twice."""
     s = str(home or "").rstrip("\\/")
@@ -492,7 +614,7 @@ def home_shown() -> str:
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
          fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None,
          cleaned: list | None = None, kinds: dict | None = None, home_in: list | None = None,
-         home=None, left_out: list | None = None) -> Path:
+         home=None, left_out: list | None = None, cuts: dict | None = None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
     its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
@@ -502,8 +624,11 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     them instead of working them out. A file the Studio wrote a path of the maker's PC into goes in with only the
     file's own name there (studio_paths_out, STUDIO_PATHS; the folder's own file stays as it is); `cleaned`, a list,
     gets each such file's path inside the package, `kinds`, a dict, {that path: the kind of place, "record", "model"
-    or "import"}. Every other file goes in byte for byte. `home_in`, a list, gets each member that still names this
-    PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left as he wrote it.
+    or "import"}. A README of the modder's goes in with each folder path in it cut to its own name
+    (readme_paths_out), its kind "readme", and `cuts`, a dict, gets {its path inside the package: [(the path as
+    written, the name it became)]}. Every other file goes in byte for byte. `home_in`, a list, gets each member that
+    still names this PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left
+    as he wrote it.
     A file the Studio left half written (is_work_file) never goes in; `left_out`, a list, gets each one's path in the
     mod folder, as a package would name it."""
     folder = Path(folder)
@@ -547,6 +672,12 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
         for f in files:
             name = f.relative_to(folder).as_posix()
             got = studio_paths_out(f, name)
+            if got is None:
+                readme = readme_paths_out(f, name)   # (the owner's "cut to file name", 2026-11-13: his README only)
+                if readme is not None:
+                    got = (readme[0], "readme")
+                    if cuts is not None:
+                        cuts[name] = readme[1]
             if got is None:
                 z.write(f, name)
                 if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"

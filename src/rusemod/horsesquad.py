@@ -30,8 +30,9 @@ Windows' own sin and cos (not rounded to the nearest at 11 of the fall's 284 hal
 differ between processors: not tested). The same bytes on two PCs (an AMD Zen 4, an Intel Coffee Lake); on others
 with the same Python (its zlib packs the pictures): not tested.
 
-    horse_squad_glbs(game, out, index=the Studio's game index) -> {"rifle": the riflemen's file, "bazooka": the
-    heavy-weapon soldier's}; HorseSquadError when the game can't give what it needs.
+    horse_squad_glbs(game, out, index=the Studio's game index, squad=None) -> {"rifle": the riflemen's file,
+    "bazooka": the heavy-weapon soldier's}; HorseSquadError when the game can't give what it needs. `squad`: the
+    country's rifle squad the riders are made from (SQUADS; None: the US one, whose files are the passed copy's bytes).
 """
 from __future__ import annotations
 
@@ -89,6 +90,56 @@ FIGURES = {"rifle": ["GfxDescriptorFusilier"], "bazooka": ["GfxDescriptorBazooka
 RIDE = "hr_ride"
 RIDE_FIGURE = "Descriptor_Unit_Horse_Ride:GfxDescriptor"   # the 11-09 ride's figure: drew the rifle model, idle1
 FILES = {"rifle": "horse-squad-rifle.glb", "bazooka": "horse-squad-bazooka.glb"}
+# The horse's picture of our own (rusemod.horsepaint; the owner, 2026-11-13: "new picture of horse"): OFF until he has
+# looked at its previews (agent-horse's report: scratch/release-0920/agent-horse/paint/render5) and said so; then True,
+# and every Add makes the files with it (the riders keep their game pictures, his exception "for now"). Off, the files
+# are the passed copy's bytes, as before.
+OWN_PICTURE = False
+
+
+# --- the country it is from (the owner, 2026-11-13: "generic horse should be fully editable so people can change what
+# countmry its from"): the riders made from that nation's rifle squad, as from the US one. Each squad here was read
+# from the game (agent-horse's nation_probe.py, 2026-11-13): its rifleman and its heavy-weapon soldier are two models
+# on the US rifleman's very bones (41, 30 of them from the hips up: 62 with the horse's 32), its figures list only the
+# soldiers' shared clips, and the game has each clip the riders play. Italy's and the USSR's rifle squads aren't here:
+# their heavy-weapon soldier wears the rifleman's own model (one look), which the two files and their kinds can't be
+# made from as they are; what to make theirs from is the owner's to say (agent-horse's report).
+class Squad:
+    """One country's riders: `unit` the rifle squad (its figures' listings, the unit the Studio copies), `rifle` and
+    `heavy` its two soldiers' models, `new` the two models' names in the files, `files` the files' names."""
+
+    def __init__(self, unit: str, folder: str, rifle: str, heavy: str, prefix: str, files: dict | None = None):
+        path = B.join(["ww2", "res3d", "units", folder, "infanterie"]) + B
+        self.unit, self.rifle, self.heavy = unit, path + rifle, path + heavy
+        self.new = {"rifle": path + f"{prefix}_horserider_modellod0.ase2ndfbin",
+                    "bazooka": path + f"{prefix}_horserider_bazooka_modellod0.ase2ndfbin"}
+        self.files = files or {"rifle": f"horse-squad-{prefix}-rifle.glb", "bazooka": f"horse-squad-{prefix}-bazooka.glb"}
+        self.parts = {self.rifle: "r", self.heavy: "b", HORSE: "h"}
+
+
+SQUADS = {   # by the squad's address; the US one is the passed copy's (its names, files and bytes as they were)
+    UNIT: Squad(UNIT, "us", "us_soldier_modellod0.ase2ndfbin", "us_soldier_bazooka_modellod0.ase2ndfbin", "us", FILES),
+    "$/GFX/Everything/Descriptor_Unit_Soldat_Allemand_Leger": Squad(
+        "$/GFX/Everything/Descriptor_Unit_Soldat_Allemand_Leger", "ger", "ger_volksgrenadier_modellod0.ase2ndfbin",
+        "ger_volksgrenadier_bazooka_modellod0.ase2ndfbin", "ger"),
+    "$/GFX/Everything/Descriptor_Unit_Soldat_UK_Leger": Squad(
+        "$/GFX/Everything/Descriptor_Unit_Soldat_UK_Leger", "uk", "uk_infantry_soldier_modellod0.ase2ndfbin",
+        "uk_infantry_soldier_bazooka_modellod0.ase2ndfbin", "uk"),
+    "$/GFX/Everything/Descriptor_Unit_Soldat_FR_Leger": Squad(
+        "$/GFX/Everything/Descriptor_Unit_Soldat_FR_Leger", "fr", "fr_soldier_modellod0.ase2ndfbin",
+        "fr_soldier_bazooka_modellod0.ase2ndfbin", "fr"),
+}
+
+
+def squad_of(unit: str | None) -> Squad:
+    """The country `unit` (a rifle squad's address; None: the US one) makes the riders from; HorseSquadError for one
+    that isn't in SQUADS."""
+    got = SQUADS.get(unit or UNIT)
+    if got is None:
+        # not a game rule: the squads the riders are made from, each read from the game first (SQUADS)
+        raise HorseSquadError(f"The Generic Horse's riders can't be made from {unit}: it isn't one of the rifle squads "
+                              f"they are made from.")
+    return got
 # the names it writes while it works, its own (made_from's scratch folder: tempfile's 8 letters after WORK_PREFIX, a
 # folder for each game model in it): short, so a deep folder leaves the most room under Windows' 260 characters (a
 # platform folder of 140 characters stopped the Add on 2026-11-12, when they took 120: .making-<8>\horse-squad-<8>\
@@ -97,46 +148,49 @@ WORK_PREFIX = "h"
 WORK_PARTS = {SOLDIER: "r", BAZOOKA: "b", HORSE: "h"}
 
 
-def longest_written(out: Path) -> int:
+def longest_written(out: Path, squad: str | None = None) -> int:
     """The length of the longest path horse_squad_glbs writes into `out` (its scratch folder's random letters
-    counted), so a caller can tell before the long part whether Windows will take it."""
-    out = Path(out)
+    counted) for the riders of `squad` (SQUADS; None: the US one), so a caller can tell before the long part whether
+    Windows will take it."""
+    out, sq = Path(out), squad_of(squad)
     work = out / (WORK_PREFIX + "x" * 8)       # (tempfile.mkdtemp's names: the prefix and 8 letters)
-    names = [work / part / (_stem_of(model) + ".glb") for model, part in WORK_PARTS.items()]
-    names += [out / f for f in FILES.values()]
+    names = [work / part / (_stem_of(model) + ".glb") for model, part in sq.parts.items()]
+    names += [out / f for f in sq.files.values()]
     return max(len(str(p)) for p in names)
 
 
-def horse_squad_glbs(game: Path, out: Path, *, index: Path | None = None, say=print) -> dict:
+def horse_squad_glbs(game: Path, out: Path, *, index: Path | None = None, say=print, squad: str | None = None) -> dict:
     """The Horse Squad's two .glb files made from the game at `game` (its folder) into the folder `out` (made when
-    missing; FILES's names): {"rifle": the riflemen's horse and rider, "bazooka": the heavy-weapon soldier's}, both on
-    the same 62 bones with the same 25 animations, what the Studio's Import model takes (the riflemen's, then the
-    other with kind "bazooka"). `index`: the Studio's game index (an SQLite file), for the squad's clip listings;
-    None, or one that hasn't them: read from the game's unit data instead (about 2.5 s more). The same game gives the
-    same bytes. HorseSquadError, in plain words, when the game can't give what it needs."""
-    game, out = Path(game), Path(out)
-    made = made_from(game, out, index=index, say=say)
+    missing; FILES's names, or its country's: SQUADS): {"rifle": the riflemen's horse and rider, "bazooka": the
+    heavy-weapon soldier's}, both on the same 62 bones with the same 25 animations, what the Studio's Import model
+    takes (the riflemen's, then the other with kind "bazooka"). `index`: the Studio's game index (an SQLite file), for
+    the squad's clip listings; None, or one that hasn't them: read from the game's unit data instead (about 2.5 s
+    more). `squad`: the rifle squad the riders are made from (SQUADS; None: the US one, as the passed copy). The same
+    game gives the same bytes. HorseSquadError, in plain words, when the game can't give what it needs."""
+    game, out, sq = Path(game), Path(out), squad_of(squad)
+    made = made_from(game, out, index=index, say=say, squad=sq.unit)
     done = {}
-    for variant in NEW:
-        done[variant] = out / FILES[variant]
+    for variant in sq.new:
+        done[variant] = out / sq.files[variant]
         done[variant].write_bytes(made["files"][variant])
     say(f"Generic Horse: {done['rifle'].name} and {done['bazooka'].name} made")
     return done
 
 
-def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print) -> dict:
+def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print, squad: str | None = None) -> dict:
     """Everything horse_squad_glbs makes, kept in memory, step by step (for checking each against what the game test
     was made with): {"record": the 62-bone skeleton record, "pack": the rifleman's MESH_PACK with the two models in
     it, "clips": {name: clip bytes} (24), "listings": {figure part: [(action, clip stem)]}, "glbs": {variant: the
     .glb before the horse's fall}, "files": {variant: the finished .glb}}. `work_in`: a folder (made when missing) to
-    hold a scratch folder of the game's models while they're read; it is removed after."""
-    game, work_in = Path(game), Path(work_in)
+    hold a scratch folder of the game's models while they're read; it is removed after. `squad`: horse_squad_glbs's."""
+    game, work_in, sq = Path(game), Path(work_in), squad_of(squad)
+    SOLDIER, BAZOOKA, NEW = sq.rifle, sq.heavy, sq.new   # (the US one's are the module's own, as before)
     if find_pack(game, "ZZ_Win.dat") is None or find_pack(game, DEFAULT_PACK) is None:
         # not a game rule: the builder's own check of what the Horse Squad is made from
         raise HorseSquadError(f"The Generic Horse is made from your game's own files, and {game} isn't a R.U.S.E. game "
                               "folder (ZZ_Win.dat or ZZ_GladPatchableWin.dat isn't in it).")
     say("Generic Horse: reading the horse, the rifleman and the bazooka man from your game")
-    listings = _listings(game, index)
+    listings = _listings(game, index, sq.unit)
     work_in.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix=WORK_PREFIX, dir=work_in))
     zz = Edat.open(str(find_pack(game, "ZZ_Win.dat")))
@@ -155,9 +209,9 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
         _check_record(blob)
         say("Generic Horse: making the models")
         lib = _Few(zz, held, {HORSE: horse_blob, SOLDIER: rider_blob, BAZOOKA: bazooka_blob})
-        rifle = _rider_parts(_parts_of(lib, SOLDIER, work / WORK_PARTS[SOLDIER]))
-        bazooka = _rider_parts(_parts_of(lib, BAZOOKA, work / WORK_PARTS[BAZOOKA]))
-        horse = _horse_parts(_parts_of(lib, HORSE, work / WORK_PARTS[HORSE]))
+        rifle = _rider_parts(_parts_of(lib, SOLDIER, work / sq.parts[SOLDIER]))
+        bazooka = _rider_parts(_parts_of(lib, BAZOOKA, work / sq.parts[BAZOOKA]))
+        horse = _horse_parts(_parts_of(lib, HORSE, work / sq.parts[HORSE]))
         mesh_packs = held[SOLDIER][1]
         if sorted(held[BAZOOKA][1]) != sorted(mesh_packs) or MESH_PACK not in mesh_packs:
             # not a game rule: the builder's own check of what the Horse Squad is made from
@@ -202,6 +256,9 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
                 "top": [bones.names[i] for i in sorted(bones.rmap.values())],
                 "bottom": [bones.names[i] for i in sorted(bones.hmap.values())]}})
             files[variant] = _with_death(glbs[variant])
+            if OWN_PICTURE:   # (our own picture of the horse in place of the game's, once the owner has seen it)
+                from .horsepaint import with_own_picture
+                files[variant] = with_own_picture(files[variant])
         return {"record": blob, "pack": pack_bytes, "clips": clips, "listings": listings, "glbs": glbs,
                 "files": files}
     finally:
@@ -237,17 +294,17 @@ def _stem(file_name: str) -> str:
     return file_name.replace("/", B).rsplit(B, 1)[-1].lower().replace(".ase2ndfbin", "")
 
 
-def _listings(game: Path, index: Path | None) -> dict:
+def _listings(game: Path, index: Path | None, unit: str = UNIT) -> dict:
     """{figure part (LISTED): [(action, clip stem)] in the figure's order}, from the game index when it has them,
     else from the game's unit data, as the build walks a unit (the two agree on the game: tests/test_horsesquad.py)."""
     if index is not None and Path(index).is_file():
-        got = _listings_in_index(Path(index))
+        got = _listings_in_index(Path(index), unit)
         if got is not None:
             return got
-    return _listings_in_game(game)
+    return _listings_in_game(game, unit)
 
 
-def _listings_in_index(index: Path) -> dict | None:
+def _listings_in_index(index: Path, unit: str = UNIT) -> dict | None:
     try:
         db = sqlite3.connect(index.resolve().as_uri() + "?mode=ro", uri=True)   # (read-only, as rusemod.index opens it)
     except (sqlite3.Error, ValueError, OSError):
@@ -255,7 +312,7 @@ def _listings_in_index(index: Path) -> dict | None:
     try:
         out = {}
         for part in LISTED:
-            row = db.execute("SELECT id FROM object WHERE address = ? AND shadow = 0", (UNIT + ":" + part,)).fetchone()
+            row = db.execute("SELECT id FROM object WHERE address = ? AND shadow = 0", (unit + ":" + part,)).fetchone()
             if row is None:
                 return None
             rows = []
@@ -275,7 +332,7 @@ def _listings_in_index(index: Path) -> dict | None:
         db.close()
 
 
-def _listings_in_game(game: Path) -> dict:
+def _listings_in_game(game: Path, unit: str = UNIT) -> dict:
     from .animmodel import figures_of
     from .build import load_pack
     from .patch import Inline, Ref, Text
@@ -283,7 +340,7 @@ def _listings_in_game(game: Path) -> dict:
     arc = Edat.open(str(pack))
     try:
         base = load_pack(arc).base
-        figures = dict(figures_of(base, UNIT))
+        figures = dict(figures_of(base, unit))
     except (KeyError, ValueError, OSError):
         # (a pack that can't be read is said as that, never as animations the game hasn't; by its file, never in the
         # reader's own English words: the Studio says this in the modder's language, errors.toml)
@@ -301,9 +358,13 @@ def _listings_in_game(game: Path) -> dict:
             f = a.props.get("FileName") if a is not None else None
             if isinstance(k, Text) and isinstance(f, Text):
                 rows.append((k.value, _stem(f.value)))
-        if not rows:
+        if not rows and unit == UNIT:
             # not a game rule: the builder's own check of what the Horse Squad is made from
             raise HorseSquadError("Your game's US rifle squad hasn't the animations the Generic Horse's riders play.")
+        if not rows:
+            # not a game rule: the builder's own check of what the Horse Squad is made from (another country's riders)
+            raise HorseSquadError(f"Your game's rifle squad {unit.rsplit('/', 1)[-1]} hasn't the animations the Generic "
+                                  f"Horse's riders play.")
         out[part] = rows
     return out
 

@@ -251,6 +251,7 @@
         return;
       }
       say(j.message, "error");  // refused in words (the game couldn't give what it needs): nothing was made
+      await moveFix();  // (a path longer than Windows takes: the quick fix beside the words)
       break;
     }
     horseJob = null;
@@ -258,6 +259,54 @@
     const { status, add } = shown();
     if (status) status.textContent = "";
     if (add) add.disabled = false;
+  }
+
+  // A folder too deep for Windows (its 259 characters, with its long paths off): the refusal's words say what to do by
+  // hand, and this box beside them does it in one click (StudioApi.home_move_offer, home_move; ruse_studio.homemove;
+  // the owner, 2026-11-13: "tell the modder, provide a quick fix that auto does it if they dont want to do it
+  // manually"): everything copied to a short folder, checked, switched to, the Studio started again, nothing deleted.
+  async function moveFix() {
+    const w = W();
+    let o;
+    try { o = await api().home_move_offer(); } catch (err) { problem(err); return; }
+    const old = $("detail").querySelector("[data-home-move]");
+    if (old) old.remove();
+    if (!o.needed || !o.can) return;
+    const status = el("p", { className: "small", textContent: "" });
+    const go = el("button", { type: "button", className: "primary", textContent: fill(w.home_move_button, { to: o.to }),
+      title: fill(w.tip_home_move, { to: o.to }) });
+    const box = el("div", { className: "notice warn" },
+      el("h3", { textContent: w.home_move_title }),
+      el("p", { textContent: w.home_move_why }),
+      el("p", { className: "small", textContent: fill(w.home_move_what, { from: o.from, to: o.to, n: o.count,
+        size: o.size_text }) }),
+      ...(o.files ? [el("p", { className: "small", textContent: fill(w.home_move_files, { files: o.files, to: o.to }) })] : []),
+      el("p", { className: "small", textContent: w.home_move_close_launcher }),
+      el("div", { className: "actions" }, go), status);
+    go.addEventListener("click", async () => {
+      go.disabled = true;
+      let job;
+      try { job = (await api().home_move()).job; } catch (err) { problem(err); go.disabled = false; return; }
+      let seen = 0;
+      for (;;) {
+        let j;
+        try { j = await api().job(job, seen); } catch (err) { problem(err); go.disabled = false; return; }
+        seen = j.count;
+        if (j.lines.length) status.textContent = j.lines[j.lines.length - 1];
+        if (j.state === "running") { await new Promise((r) => setTimeout(r, 500)); continue; }
+        if (j.state === "done") {
+          const r = j.result || {};
+          say(fill(r.restarting ? w.home_move_done : w.home_move_done_start_again,
+            { to: r.to || o.to, old: (r.old || []).join(", ") }), "ok");
+          return;
+        }
+        say(j.message, "error");  // nothing switched: the words say why, the copy taken away
+        go.disabled = false;
+        return;
+      }
+    });
+    box.dataset.homeMove = "1";
+    $("detail").append(box);
   }
 
   // in the mod already: to its page (every value changed there), or out of the mod again
@@ -308,8 +357,10 @@
     const form = el("form", { className: "new-unit" });
     const name = el("input", { autocomplete: "off", maxLength: 60, required: true, value: unitName(p), title: w.tip_eras_name });
     name.setAttribute("aria-label", w.new_unit_name);
-    // (the Horse Squad starts from its own unit only: its horses and riders are made for that unit's soldiers)
-    const start = el("select", { title: p.built ? w.tip_eras_horse_start : w.tip_eras_start_from, disabled: Boolean(p.built) });
+    // (the Horse Squad starts from one of its countries' rifle squads only: its riders are made from that squad's
+    // soldiers; the owner, 2026-11-13: "people can change what countmry its from")
+    const start = el("select", { title: p.built ? w.tip_eras_horse_start : w.tip_eras_start_from,
+      disabled: Boolean(p.built) && p.start.length < 2 });
     start.setAttribute("aria-label", w.eras_start_from);
     const groups = [[w.eras_suggested, p.start.filter((s) => s.suggested)],
       [w.eras_start_same, p.start.filter((s) => !s.suggested && s.same_type)],
@@ -496,10 +547,14 @@
       if (p.built) {  // the Horse Squad: its horses and riders made from the modder's own game first, a job followed
         try {
           const res = await api().horse_squad_add(Number(nation.value), Number(factory.value), name.value.trim(), cost,
-            from, from ? rp : null, from ? rt : null, offer ? groupPick.value : null);
+            from, from ? rp : null, from ? rt : null, offer ? groupPick.value : null, start.value);
           if (!horseJob || horseJob.id !== res.job) horseJob = { id: res.job, began: Date.now() };
           followHorse();
-        } catch (err) { problem(err); add.disabled = Boolean(offer && (offer.full || offer.pick)); }
+        } catch (err) {
+          problem(err);
+          add.disabled = Boolean(offer && (offer.full || offer.pick));
+          await moveFix();  // (its folder too deep for Windows: the quick fix beside the words)
+        }
         return;
       }
       try {

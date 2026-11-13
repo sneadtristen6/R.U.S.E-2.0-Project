@@ -19,7 +19,14 @@ the same bones of their own. Its name, price, build menu, group and research are
 (era_units._era_plan and _era_make, shared); its credit line goes in the mod's CREDITS-era-units.md beside the era
 units' (era_units.credits_text), and Take it out of my mod takes the unit, both models, their animations and the line
 out again (era_unit_remove). The game can't give what the builder needs, or the builder isn't in this Studio: refused
-in words, nothing made. Anything that fails once the unit is made takes it out again, so nothing is left half made."""
+in words, nothing made. Anything that fails once the unit is made takes it out again, so nothing is left half made.
+
+Its country (the owner, 2026-11-13: "generic horse should be fully editable so people can change what countmry its
+from add saddle etc"): the add form's Start from offers each country's rifle squad the builder makes riders from
+(SQUADS: the US one, as before, then Germany's, the UK's, France's); the unit starts from that squad's values, its
+riders are that squad's rifleman and heavy-weapon soldier, its two files that country's in the platform folder's
+horse_squad/ (made once per PC, as before: his "once per pc"), and its credit line names that country (built_entry).
+Its look is changed like any unit's own model: Change it in Blender opens its own horse and riders (modelblender)."""
 from __future__ import annotations
 
 import importlib
@@ -33,6 +40,15 @@ KEY = "horse-squad"     # its key among the era units (the mod's era_units.json)
 NAME = "Generic Horse"    # its name in English: the new unit's when the form gives none, and the credits'
 AUTHOR = "sneadtristen6"   # the name on his mods
 SQUAD = "$/GFX/Everything/Descriptor_Unit_Soldat_US_Leger"   # the US rifle squad it's made from, as horse-studio2 was
+# the country it is from (the owner, 2026-11-13: "generic horse should be fully editable so people can change what
+# countmry its from add saddle etc"): the rifle squad picked in its add form's Start from, whose soldiers its riders
+# are made from and whose values it starts with (the US one unless another is picked, as before), each by the country
+# its credit line names. The builder's own list (rusemod.horsesquad.SQUADS, each squad read from the game first:
+# rifleman and heavy-weapon soldier two models on the US rifleman's bones, every clip the riders play there); Italy's
+# and the USSR's rifle squads have one look for both soldiers, so they aren't here (a question for the owner)
+SQUADS = {SQUAD: "USA", "$/GFX/Everything/Descriptor_Unit_Soldat_Allemand_Leger": "Germany",
+          "$/GFX/Everything/Descriptor_Unit_Soldat_UK_Leger": "UK",
+          "$/GFX/Everything/Descriptor_Unit_Soldat_FR_Leger": "France"}
 BUILDER = "rusemod.horsesquad"   # its two model files from the player's own game (horse_squad_glbs, HorseSquadError)
 FOLDER = "horse_squad"  # in the platform folder: the two files the builder made last, which the mod's records name
 ROLES = ("rifle", "bazooka")    # the builder's answer: the riflemen's file, the heavy-weapon soldier's
@@ -53,6 +69,22 @@ WORK = ".m"             # the Add's own folder in horse_squad/ while the builder
 CLIP_LONGEST = 24       # the longest name of the Horse Squad's animations (hr_t_mort_balle_violente,
 #                         hr_t_bazooka_transition1: the passed copy's files), written as <name>.part, then <name>.baf
 OWN_CLIPS = ("files", "anim", "own")   # where Import model puts a unit's own animations: <mod>/files/anim/own/<unit>/
+
+
+def built_entry(mod: Path, key: str, address: str) -> dict:
+    """The unit made for RUSE 2.0 called `key` (BUILT) as the mod at `mod` has it at `address`: its entry, its country
+    the one of the rifle squad it was made from (SQUADS: its credit line names it, "Generic Horse (WWII, Germany)");
+    the entry's own (USA) when the mod's unit can't be read or wasn't made from one of them."""
+    from .edits import EditsFileError, ModEdits
+    entry = BUILT[key]
+    if key != KEY:
+        return entry
+    try:
+        unit = ModEdits(mod).new_units.get(address)
+    except (OSError, ValueError, EditsFileError):   # (the mod's units can't be read: its entry's own, as before)
+        return entry
+    country = SQUADS.get(getattr(unit, "source", None)) if unit is not None else None
+    return dict(entry, nation=country) if country else entry
 
 
 def long_paths_on() -> bool:
@@ -138,12 +170,15 @@ class HorseSquadCalls:
         record = self._era_record() if self._mod_dir() is not None else {}
         ix = self._open()
         try:
-            name = self._names(ix, [SQUAD], lang if lang in schema.LANGS else "us").get(SQUAD) or SQUAD.rsplit("/", 1)[-1]
+            rows = {u["address"]: u for u in self._all_units(ix) if u["address"] in SQUADS}
+            names = self._names(ix, list(rows), lang if lang in schema.LANGS else "us")
             card = self._horse_card(ix, lang) or entry["card"]
         finally:
             ix.close()
-        start = [{"address": SQUAD, "name": name, "nation": entry["game_nation"], "suggested": True,
-                  "same_type": True}]
+        # (each country's rifle squad the game has, by its game name: the US one first, suggested, as before)
+        start = [{"address": a, "name": names.get(a) or a.rsplit("/", 1)[-1],
+                  "nation": rows[a]["nation"] if a != SQUAD else entry["game_nation"], "suggested": a == SQUAD,
+                  "same_type": True, "country": SQUADS[a]} for a in SQUADS if a in rows]
         options = self._era_options(None, {}, entry, SQUAD, entry["game_nation"], entry["factory"], lang)
         return dict(entry, card=card, added=record.get(KEY), picture=None, start=start, has_model=False,
                     building=self._horse_running(), **options)
@@ -155,30 +190,36 @@ class HorseSquadCalls:
 
     # --- adding it ---
     def horse_squad_add(self, nation: int, factory: int, name: str | None = None, price=None, research_from=None,
-                        research_price=None, research_time=None, group=None) -> dict:
+                        research_price=None, research_time=None, group=None, source: str | None = None) -> dict:
         """Add the Horse Squad to the current mod, as era_unit_add adds an era unit (its name, `price`, nation
         `nation`'s build menu `factory`, the unit it's `research_from` with `research_price` and `research_time`, its
-        `group`: the add form's, era_units._era_plan; it always starts from the US rifle squad), its models made first
-        from the player's own game: a job the page follows (Job lines STEPS, in turn: "build" its two files with the
-        builder, "unit" the unit made, "riflemen" and "bazooka" each one's model imported). Done, its "result" is
-        {"address", "name"}; failed, its message says why in words and nothing is left made. What's asked is checked
-        before anything starts (refused at once, as era_unit_add refuses it); a second ask while one runs follows it.
-        Returns {"job": id}."""
+        `group`: the add form's, era_units._era_plan; it starts from `source`, one of SQUADS: the rifle squad whose
+        soldiers its riders are made from, the US one when none is given), its models made first from the player's
+        own game: a job the page follows (Job lines STEPS, in turn: "build" its two files with the builder, "unit" the
+        unit made, "riflemen" and "bazooka" each one's model imported). Done, its "result" is {"address", "name"};
+        failed, its message says why in words and nothing is left made. What's asked is checked before anything starts
+        (refused at once, as era_unit_add refuses it); a second ask while one runs follows it. Returns {"job": id}."""
         from rusemod.webui import Job
         from .api import StudioError
+        self.__dict__["_too_deep"] = None    # (this Add's own refusal of a folder too deep, if any: home_move_offer)
+        source = source or SQUAD
+        if source not in SQUADS:
+            # not a game rule: the rifle squads its riders are made from (each read from the game first: SQUADS)
+            raise StudioError(f"The Generic Horse's riders are made from one of these rifle squads: "
+                              f"{', '.join(a.rsplit('/', 1)[-1] for a in SQUADS)}. {source} isn't one of them.")
         entry = self._era_built_entry(KEY)
         mod = self._mod_dir()
         # everything asked for, checked before the long part (era_unit_add's checks: the mod, already in it, the
         # research, the group's room, the research price and time; and the name's address free)
-        self._era_plan(KEY, None, {}, entry, nation, factory, SQUAD, None, research_from, research_price,
+        self._era_plan(KEY, None, {}, entry, nation, factory, source, None, research_from, research_price,
                        research_time, group)
-        self._horse_name_free(name)
+        self._horse_name_free(name, source)
         game = self._game()
         if game is None:
             # not a game rule: the game or one of its files isn't found
             raise StudioError("We couldn't find R.U.S.E.: the Generic Horse is made from your own copy of the game.")
         builder = self._horse_builder()
-        self._horse_room(builder, mod, name)
+        self._horse_room(builder, mod, name, source)
         with _LOCK:
             running = self._horse_running()
             if running:
@@ -195,7 +236,7 @@ class HorseSquadCalls:
             where, reading = self._home / FOLDER, None
             try:
                 say(STEPS[0])
-                files = self._horse_build(builder, game)
+                files = self._horse_build(builder, game, source)
                 where = mod
                 self.__dict__["_horse_mod"] = mod      # from here its mod stays the one edited (_horse_guard)
                 try:
@@ -209,7 +250,7 @@ class HorseSquadCalls:
                     say(STEPS[1])
                     made, before = None, set(self._new_units())
                     try:
-                        plan = self._era_plan(KEY, None, {}, entry, nation, factory, SQUAD, None, research_from,
+                        plan = self._era_plan(KEY, None, {}, entry, nation, factory, source, None, research_from,
                                               research_price, research_time, group)
                         made = self._era_make(KEY, self._era_library()[1], entry, plan, nation, factory, name, price)
                         say(STEPS[2])
@@ -221,25 +262,27 @@ class HorseSquadCalls:
                         reading = None
                         self._horse_check(made["address"])
                     except BaseException:
-                        self._horse_undo(made["address"] if made else None, before)
+                        self._horse_undo(made["address"] if made else None, before, source)
                         raise
                 finally:
                     self.__dict__["_horse_mod"] = None
                     self.__dict__["_horse_pin"] = None
             except OSError as exc:
                 # (in words, never Python's own: the job's message goes to the page in the modder's language)
+                self._horse_too_long(exc)
                 raise self._horse_file_error(exc, where, reading) from exc
             except StudioError as exc:
                 # a file the Studio's own import couldn't read or write (api.file_error, raised from its OSError): said
                 # as one of the add's own steps' is, that the Horse Squad wasn't added (the import's words don't say)
                 if not isinstance(exc.__cause__, OSError):
                     raise
+                self._horse_too_long(exc.__cause__)
                 raise self._horse_file_error(exc.__cause__, where, reading) from exc.__cause__
             job.result = {"address": made["address"], "name": made["name"]}
 
         return job.start(work, f"{NAME} is in your mod.", plain=(StudioError, OSError))
 
-    def _horse_name_free(self, name) -> None:
+    def _horse_name_free(self, name, source: str = SQUAD) -> None:
         """A name given whose address is taken (a unit of the game's, or one the mod made), refused before the long
         part, in _unit_new's words (it names a copy of the US rifle squad so); no name given: _era_make's own way."""
         from .api import _PREFIX, StudioError, safe_name
@@ -247,7 +290,7 @@ class HorseSquadCalls:
         stem = safe_name(wanted) if wanted else ""
         if not stem:
             return    # (none given, or no letters A-Z: _unit_new finds it a free address)
-        namespace, tail = SQUAD.rsplit("/", 1)
+        namespace, tail = source.rsplit("/", 1)
         m = _PREFIX.match(tail)
         prefix = m.group(1) if m else "Descriptor_Unit_"
         target = f"{namespace}/{prefix}{stem}"
@@ -265,30 +308,34 @@ class HorseSquadCalls:
         if taken:
             raise StudioError(f"There's already a unit called {prefix}{stem} (from {wanted!r}). Pick another name.")
 
-    def _horse_room(self, builder, mod: Path, name) -> None:
+    def _horse_room(self, builder, mod: Path, name, source: str = SQUAD) -> None:
         """Before the long part: the longest path the Add is going to write, in the platform folder (the builder's
         scratch files under horse_squad/: its longest_written, when it says) and in the mod (each animation of the unit
         as Import model writes it, under the name the unit is going to get: `name`, else its own and the one it takes
         when that's taken); a StudioError saying which folder is too deep and by how much, and what to change, when
         Windows won't take it (PATH_MOST; nothing when this program may write longer paths: long_paths_on)."""
         from .api import _PREFIX, StudioError, safe_name
+        self.__dict__["_too_deep"] = None
         if long_paths_on():
             return
         root = self._home / FOLDER
         work = root / (WORK + "x" * 8)
         longest = getattr(builder, "longest_written", None)
         try:
-            need = int(longest(work)) if callable(longest) else len(str(work))
+            asked = (work,) if source == SQUAD else (work, source)    # (another country's riders: their own files)
+            need = int(longest(*asked)) if callable(longest) else len(str(work))
         except (TypeError, ValueError):
             need = len(str(work))
         if need > PATH_MOST:
+            # (the page offers the quick fix beside these words: ruse_studio.homemove, home_move_offer's "needed")
+            self.__dict__["_too_deep"] = {"what": "platform", "folder": str(self._home), "over": need - PATH_MOST}
             # not a game rule: Windows' longest path, which the files the Horse Squad is made into must fit
             raise StudioError(f"The Generic Horse can't be added: the folder the Studio keeps its own files in "
                               f"({self._home}) is too deep for it. Adding it would write a file whose path is "
                               f"{need - PATH_MOST} character(s) longer than Windows takes ({PATH_MOST} at most). Move "
                               f"it to a folder with a shorter path, and set the Windows environment variable "
                               f"RUSE_PLATFORM_HOME to that folder, then add it again.")
-        m = _PREFIX.match(SQUAD.rsplit("/", 1)[-1])
+        m = _PREFIX.match(source.rsplit("/", 1)[-1])
         prefix = m.group(1) if m else "Descriptor_Unit_"
         wanted = (name or "").strip()
         stems = [safe_name(wanted)] if wanted and safe_name(wanted) else \
@@ -296,6 +343,7 @@ class HorseSquadCalls:
         tail = max((prefix + s for s in stems), key=len)
         need = len(str(Path(mod, *OWN_CLIPS, tail, "x" * CLIP_LONGEST + ".part"))) if mod is not None else 0
         if need > PATH_MOST:
+            self.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": need - PATH_MOST}
             # not a game rule: Windows' longest path, which the Horse Squad's animations in the mod must fit
             raise StudioError(f"The Generic Horse can't be added: your mod's folder ({mod}) is too deep for it. Adding "
                               f"it would write a file whose path is {need - PATH_MOST} character(s) longer than "
@@ -324,6 +372,13 @@ class HorseSquadCalls:
                                f"loaded. Please report this.")
         return StudioError("This Studio can't make the Generic Horse: a part it needs couldn't be loaded. Please report "
                            "this.")
+
+    def _horse_too_long(self, exc: OSError) -> None:
+        """A path longer than Windows takes that stopped the Add (_horse_file_error says it): kept for the page, which
+        offers the quick fix beside those words (ruse_studio.homemove)."""
+        long = [str(f) for f in (exc.filename, exc.filename2) if f is not None and len(str(f)) > PATH_MOST]
+        if long and not long_paths_on():
+            self.__dict__["_too_deep"] = {"what": "path", "folder": long[0], "over": len(long[0]) - PATH_MOST}
 
     @staticmethod
     def _horse_file_error(exc: OSError, folder, reading=None):
@@ -358,7 +413,7 @@ class HorseSquadCalls:
         return StudioError(f"The Generic Horse couldn't be added: {path} couldn't be read or written (error {code}). "
                            f"Please report this.")
 
-    def _horse_build(self, builder, game: Path) -> dict:
+    def _horse_build(self, builder, game: Path, source: str = SQUAD) -> dict:
         """The Horse Squad's two model files made from the player's own game (`game`) by `builder`: into a folder of
         their own first, then into the platform folder's horse_squad/ under the names the builder gave them (the files
         made before are replaced: the mod's model records name them, for Resize and Move). Returns {"rifle",
@@ -374,7 +429,8 @@ class HorseSquadCalls:
         work.mkdir(parents=True)
         try:
             try:
-                got = builder.horse_squad_glbs(Path(game), work, index=self._path(), say=lambda _line: None)
+                got = builder.horse_squad_glbs(Path(game), work, index=self._path(), say=lambda _line: None,
+                                               **({} if source == SQUAD else {"squad": source}))
             except refusals as exc:
                 # not a game rule: the builder's own refusal, in its plain words, of what the game gave it
                 raise StudioError(f"The Generic Horse can't be made from your game: {exc}") from None
@@ -425,7 +481,7 @@ class HorseSquadCalls:
             raise StudioError("The Generic Horse's two models didn't come in on the same bones, so it wasn't added. "
                               "Please report this.")
 
-    def _horse_undo(self, address: str | None, before: set) -> None:
+    def _horse_undo(self, address: str | None, before: set, source: str = SQUAD) -> None:
         """A Horse Squad this job couldn't finish, taken out again, and only what this job made: its unit (`address`,
         the one _era_make made; only when that never came back, a copy of the US rifle squad that wasn't among the mod's
         new units `before` _era_make began), with its models, its animations and its credit line (era_unit_remove, when
@@ -438,7 +494,7 @@ class HorseSquadCalls:
         mine = set()
         try:
             units = self._new_units()
-            mine = {address} if address else {a for a, u in units.items() if a not in before and u.source == SQUAD}
+            mine = {address} if address else {a for a, u in units.items() if a not in before and u.source == source}
             recorded = self._era_record().get(KEY)
             if recorded in mine:
                 try:
