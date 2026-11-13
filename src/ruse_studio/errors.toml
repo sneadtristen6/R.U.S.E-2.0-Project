@@ -5749,3 +5749,31 @@ cz = "Záznam tohoto modelu v modu ({0}) nejde přečíst nebo chybí, takže ho
 jpn = "MOD内のこのモデルの記録（{0}）を読めないか見つからないため、合わせ直せません：モデルをもう一度インポートしてください。"
 sc = "模组中这个模型的记录（{0}）无法读取或缺失，因此无法重新适配：请重新导入该模型。"
 fa = "سابقهٔ این مدل در ماد ({0}) خوانده نمی‌شود یا نیست، پس نمی‌شود دوباره جایش انداخت: مدل را دوباره وارد کنید."
+
+# Mend A (2026-11-13, the one check's findings 1 and 6): a Delete or Take it out that can't finish leaves the mod as
+# it was (api.delete_unit, era_units.leftovers_fix)
+[e4d70ad4a50]
+us = "Nothing was deleted: {0} has a mistake ({1}), so the unit's animations can't be taken out with it. Fix that file, then try again."
+fr = "Rien n'a été supprimé : {0} contient une erreur ({1}), donc les animations de l'unité ne peuvent pas être retirées avec elle. Corrigez ce fichier, puis réessayez."
+ger = "Nichts wurde gelöscht: {0} enthält einen Fehler ({1}), daher können die Animationen der Einheit nicht mit ihr entfernt werden. Behebe diese Datei und versuche es dann erneut."
+ita = "Non è stato eliminato nulla: {0} contiene un errore ({1}), quindi le animazioni dell'unità non si possono togliere con essa. Correggi quel file, poi riprova."
+spa = "No se borró nada: {0} tiene un error ({1}), así que las animaciones de la unidad no se pueden quitar con ella. Corrige ese archivo y vuelve a intentarlo."
+pol = "Nic nie zostało usunięte: {0} zawiera błąd ({1}), więc animacji jednostki nie da się usunąć razem z nią. Popraw ten plik, a potem spróbuj ponownie."
+ru = "Ничего не удалено: в {0} ошибка ({1}), поэтому анимации юнита нельзя убрать вместе с ним. Исправьте этот файл, затем попробуйте снова."
+cz = "Nic nebylo smazáno: {0} obsahuje chybu ({1}), takže animace jednotky s ní nejde odebrat. Oprav ten soubor a pak to zkus znovu."
+jpn = "何も削除されていません：{0} に誤りがある（{1}）ため、ユニットのアニメーションを一緒に取り除けません。そのファイルを直してから、もう一度お試しください。"
+sc = "未删除任何内容：{0} 有错误（{1}），因此无法将该单位的动画一并移除。请修正该文件，然后重试。"
+fa = "چیزی حذف نشد: {0} اشتباهی دارد ({1})، پس انیمیشن‌های یگان را نمی‌شود همراه آن بیرون برد. آن فایل را درست کنید، سپس دوباره امتحان کنید."
+
+[ecc5634902d]
+us = "Nothing that {0} left behind is in the mod any more, or it is a unit the mod or the game has."
+fr = "Plus rien de ce que {0} a laissé n'est dans le mod, ou c'est une unité que le mod ou le jeu a."
+ger = "Nichts, was {0} hinterlassen hat, ist noch im Mod, oder es ist eine Einheit, die der Mod oder das Spiel hat."
+ita = "Nella mod non c'è più nulla di ciò che {0} ha lasciato, oppure è un'unità che la mod o il gioco hanno."
+spa = "Ya no queda en el mod nada de lo que dejó {0}, o es una unidad que tiene el mod o el juego."
+pol = "W modzie nie ma już nic z tego, co zostawiła {0}, albo to jednostka, którą ma mod lub gra."
+ru = "В моде больше нет ничего из того, что оставил {0}, или это юнит, который есть в моде или в игре."
+cz = "V modu už není nic z toho, co {0} zanechala, nebo je to jednotka, kterou má mod nebo hra."
+jpn = "{0} が残したものはもう MOD にないか、MOD かゲームにあるユニットです。"
+sc = "模组中已没有 {0} 留下的任何内容，或者它是模组或游戏中已有的单位。"
+fa = "دیگر چیزی از آنچه {0} به‌جا گذاشته در ماد نیست، یا یگانی است که ماد یا بازی دارد."

@@ -425,8 +425,12 @@ def write_units(mod: Path, table: dict) -> None:
     mod_unit_clips(mod, text)   # (raises on anything the build wouldn't take: the old file stays)
     f.parent.mkdir(parents=True, exist_ok=True)
     tmp = f.with_suffix(".part")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(f)
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(f)
+    except OSError:   # (the old file held by another program, or the disk full: no half-written file left beside it)
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def _file_name(name: str) -> str:
@@ -552,13 +556,26 @@ def remove_unit_clip(mod: Path, unit: str, action: str, figure: str | None = Non
 
 def remove_unit(mod: Path, unit: str) -> None:
     """Everything a unit had of its own animations, out of the mod: its tables in units.toml and its folder in
-    files/anim/own (a unit taken out of a mod: a row for a unit no mod makes is an error in the build)."""
+    files/anim/own (a unit taken out of a mod: a row for a unit no mod makes is an error in the build). All or nothing:
+    the folder is moved aside first (refused while another program holds a file in it), and comes back when units.toml
+    can't be written; the Studio's Delete does this with the unit's other files too (ruse_studio.edits.TakeOut)."""
     table = read_units(mod)
-    if table.pop(unit, None) is not None:
-        write_units(mod, table)
     folder = Path(mod) / OWN / unit
+    aside = None
     if _NAME.match(unit) and folder.is_dir():
-        shutil.rmtree(folder)
+        aside = folder.with_name(f".{unit}.taking-out")
+        if aside.exists():
+            shutil.rmtree(aside)
+        folder.rename(aside)
+    try:
+        if table.pop(unit, None) is not None:
+            write_units(mod, table)
+    except BaseException:
+        if aside is not None:
+            aside.rename(folder)
+        raise
+    if aside is not None:
+        shutil.rmtree(aside, ignore_errors=True)
 
 
 # --- a model's own animations, which one each action plays, its ride; and a copied unit's ---

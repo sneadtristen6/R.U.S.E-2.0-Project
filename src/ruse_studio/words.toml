@@ -49933,3 +49933,31 @@ jpn = "取っておいた送信はごみ箱に移りました。何も取り込�
 sc = "另存的发送现在在回收站中，其中的内容都没有收入。"
 fa = "ارسالِ کنارگذاشته اکنون در سطل بازیافت است و چیزی از آن گرفته نشد."
 
+
+# Mend A (2026-11-13, the one check's finding 1): Test in game's log offers to take out what a unit deleted from the
+# mod half way left behind (era_units.leftovers_fix; the build's line names this button)
+[test_fix_unit_leftovers]
+us = "Take out what it left"
+fr = "Retirer ce qu'elle a laissé"
+ger = "Entfernen, was sie hinterlassen hat"
+ita = "Togli ciò che ha lasciato"
+spa = "Quitar lo que dejó"
+pol = "Usuń to, co zostawiła"
+ru = "Убрать то, что осталось"
+cz = "Odebrat, co zanechala"
+jpn = "残ったものを取り除く"
+sc = "移除它留下的内容"
+fa = "حذف آنچه به‌جا گذاشته"
+
+[tip_test_fix_unit_leftovers]
+us = "Takes out of the mod what a unit deleted from it left behind (its animations, its own copy of a model, its files): the build stops on them. Never anything of a unit the mod or the game still has."
+fr = "Retire du mod ce qu'une unité supprimée y a laissé (ses animations, sa propre copie d'un modèle, ses fichiers) : la construction s'arrête dessus. Jamais rien d'une unité que le mod ou le jeu a encore."
+ger = "Entfernt aus dem Mod, was eine daraus gelöschte Einheit hinterlassen hat (ihre Animationen, ihre eigene Kopie eines Modells, ihre Dateien): der Build bricht daran ab. Nie etwas von einer Einheit, die der Mod oder das Spiel noch hat."
+ita = "Toglie dalla mod ciò che un'unità eliminata vi ha lasciato (le sue animazioni, la sua copia di un modello, i suoi file): la build si ferma su di essi. Mai nulla di un'unità che la mod o il gioco hanno ancora."
+spa = "Quita del mod lo que dejó una unidad borrada de él (sus animaciones, su propia copia de un modelo, sus archivos): la compilación se detiene en ellos. Nunca nada de una unidad que el mod o el juego aún tienen."
+pol = "Usuwa z moda to, co zostawiła usunięta z niego jednostka (jej animacje, jej własną kopię modelu, jej pliki): budowanie na nich staje. Nigdy nic z jednostki, którą mod albo gra wciąż ma."
+ru = "Убирает из мода то, что оставил удалённый из него юнит (его анимации, его собственную копию модели, его файлы): сборка на них останавливается. Никогда ничего от юнита, который ещё есть в моде или в игре."
+cz = "Odebere z modu, co v něm zanechala smazaná jednotka (její animace, její vlastní kopii modelu, její soubory): sestavení se na nich zastaví. Nikdy nic z jednotky, kterou mod nebo hra pořád má."
+jpn = "MOD から削除したユニットが残したもの（アニメーション、モデルの独自コピー、ファイル）を取り除きます。ビルドはそれらで止まります。MOD やゲームにまだあるユニットのものは決して取り除きません。"
+sc = "从模组中移除被删除的单位留下的内容（它的动画、它自己的模型副本、它的文件）：构建会因它们而停止。绝不移除模组或游戏中仍有的单位的任何内容。"
+fa = "آنچه یگانی که از ماد حذف شده به‌جا گذاشته (انیمیشن‌هایش، نسخهٔ خودش از یک مدل، فایل‌هایش) را از ماد بیرون می‌برد: ساخت روی آن‌ها متوقف می‌شود. هرگز چیزی از یگانی که ماد یا بازی هنوز دارد."

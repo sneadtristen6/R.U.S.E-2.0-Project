@@ -665,11 +665,11 @@ where = "rusemod.build:unit_own_copies"
 kind = "mistake"
 us = "{0}: {1} has two models: one you imported (files/models/{2}.glb) and its own copy of the game's model (this file, a squad's Custom uniform). Each of its figures is drawn with one model, so it can't use both. In the Studio, on this unit's page, click Back to the default uniform (or Use the shared model again, for a unit that isn't a squad) to keep your model, or Use the copied unit's model to keep the copy"
 
-[c95da0af091]
+[cf784db36f0]
 check = "build.unit_own_copies-2"
 where = "rusemod.build:unit_own_copies"
 kind = "mistake"
-us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name. If {2} was deleted from this mod, this file was left behind: in the Studio, click Take out what it left under this mistake in Test in game's log, or delete this file"
 
 [c8b28eceda5]
 check = "build.unit_own_copies-3"
@@ -689,11 +689,11 @@ where = "rusemod.build:unit_own_clips"
 kind = "mistake"
 us = "these mods give units animations of their own, which go into ZZ_Win.dat; it wasn't given"
 
-[cf67ba54f23]
+[ca619013f75]
 check = "build.unit_own_clips-2"
 where = "rusemod.build:unit_own_clips"
 kind = "mistake"
-us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
+us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name. If {2} was deleted from this mod, its animations were left behind: in the Studio, click Take out what it left under this mistake in Test in game's log, or take [unit.{3}] out of {4} and delete the folder {5}/{6}/"
 
 [cb4e2a7f510]
 check = "build.unit_own_rides"

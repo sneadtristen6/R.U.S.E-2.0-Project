@@ -18,6 +18,8 @@ import hashlib
 import io
 import os
 import re
+import shutil
+import tempfile
 import time
 from dataclasses import dataclass
 from decimal import Decimal
@@ -32,6 +34,128 @@ NAMES_FILE = Path("text") / "studio.baseunite.csv"  # into baseunite.dic, the ga
 HEADER = ("// Made by the RUSE Studio, which rewrites this file after every change.\n"
           "// Hand-written changes belong in other .rndf files in src/.\n")
 NAME_PROP = "NameInMenuToken"
+TAKING_OUT = ".taking-out"   # <mod>/.taking-out/: what a take-out set aside until it's done (a dot folder: Export and
+#                              the build never read it)
+
+
+def unit_files(folder, tail: str) -> list[Path]:
+    """Every file and folder of the mod at `folder` that belongs to the new unit called `tail` (Descriptor_Unit_X),
+    besides its block in src/studio.rndf and its rows in files/anim/units.toml: its own card, its model and the model's
+    record, a squad's own number of soldiers (<unit>.squad.toml), its other kinds' models and its soldiers' own looks
+    with their records (<unit>@<kind>, <unit>@<number>), its own copy of the game's model (<unit>.copy.toml: a squad's
+    Custom uniform), a new building's own look (files/buildings/<its name>/) and its clips' folder (files/anim/own/
+    <unit>/). Each of them names the unit, and stops the build when no mod makes it. Only those there."""
+    from rusemod import anim
+    from rusemod.buildinglook import LOOKS
+    from rusemod.squads import SUFFIX
+    from rusemod.unitmodel import COPY
+    folder = Path(folder)
+    models = folder / "files" / "models"
+    out = [folder / "files" / "cards" / f"{tail}.png"] + [models / f"{tail}{s}" for s in (".glb", ".json", SUFFIX, COPY)]
+    if tail and "/" not in tail and "\\" not in tail and tail not in (".", ".."):
+        out.append(folder / LOOKS / tail)
+    # a unit's name has no "@", so <its name>@ is its own files and no other unit's
+    out += sorted(f for f in (models.glob(f"{glob_safe(tail)}@*") if models.is_dir() else ())
+                  if f.is_file() and f.suffix.lower() in (".glb", ".json"))
+    if anim._NAME.match(tail):
+        out.append(folder / anim.OWN / tail)
+    return [p for p in out if p.exists()]
+
+
+def glob_safe(name: str) -> str:
+    """`name` with the characters a glob pattern reads ([, ], *, ?) taken as themselves."""
+    return re.sub(r"([\[\]*?])", r"[\1]", name)
+
+
+def _put(path: Path, data: bytes, in_place: bool = False) -> None:
+    """`data` as the file `path`, whole (through a .partial file: when the replace isn't allowed, the file stays as it
+    was and the OSError is raised), or with `in_place` written over it then (putting a file back as it was)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    part = path.with_name(path.name + ".partial")
+    try:
+        part.write_bytes(data)
+        os.replace(part, path)
+    except OSError:
+        part.unlink(missing_ok=True)
+        if not in_place:
+            raise
+        path.write_bytes(data)
+
+
+class TakeOut:
+    """One take-out of a unit, all or nothing (the owner's check, 2026-11-13: a Delete that couldn't finish left a mod
+    that no longer built, and no way back). Every file it rewrites is kept as it was first (keep: a file that can't be
+    read stops it before anything changed), every file and folder it removes is set aside first (set_aside: moved into
+    <mod>/.taking-out/, which Windows refuses while another program has the file, or a file in the folder, open), so
+    that put_back leaves the mod as it was when a later step fails; done removes what was set aside."""
+
+    def __init__(self, folder):
+        self.folder = Path(folder)
+        self.kept: dict[Path, bytes | None] = {}
+        self.aside: list[tuple[Path, Path]] = []
+        self.hold: Path | None = None
+
+    def keep(self, path) -> None:
+        path = Path(path)
+        if path not in self.kept:
+            try:
+                self.kept[path] = path.read_bytes() if path.is_file() else None
+            except OSError as exc:   # (a part of it locked: the read's error names no file; the modder is told this one)
+                exc.filename, exc.filename2 = str(path), None
+                raise
+
+    def set_aside(self, path) -> None:
+        path = Path(path)
+        if self.hold is None:
+            root = self.folder / TAKING_OUT
+            root.mkdir(parents=True, exist_ok=True)
+            self.hold = Path(tempfile.mkdtemp(prefix="", dir=root))
+        to = self.hold / str(len(self.aside))
+        try:
+            os.rename(path, to)
+        except OSError as exc:   # (named by the mod's file another program holds, never the place it was going to)
+            exc.filename, exc.filename2 = str(path), None
+            raise
+        self.aside.append((path, to))
+
+    def put_back(self) -> list[Path]:
+        """Everything as it was before; returns the files it couldn't put back (none, unless one is held now)."""
+        failed = []
+        for path, to in reversed(self.aside):
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                os.rename(to, path)
+            except OSError:
+                failed.append(path)
+        for path, data in self.kept.items():
+            try:
+                if data is None:
+                    if path.is_file():
+                        path.unlink()
+                elif not path.is_file() or path.read_bytes() != data:
+                    _put(path, data, in_place=True)
+            except OSError:
+                failed.append(path)
+        if not failed:
+            self._clear()
+        self.aside, self.kept = [], {}
+        return failed
+
+    def done(self) -> None:
+        """The take-out finished: what it set aside goes (a part another program holds stays in .taking-out, which
+        nothing reads)."""
+        self.aside, self.kept = [], {}
+        self._clear()
+
+    def _clear(self) -> None:
+        # only this take-out's own: a folder left by a Studio stopped half way holds files of a unit still in the mod
+        if self.hold is not None:
+            shutil.rmtree(self.hold, ignore_errors=True)
+            self.hold = None
+        try:
+            (self.folder / TAKING_OUT).rmdir()   # (when empty)
+        except OSError:
+            pass
 
 
 class Link(str):
@@ -331,32 +455,67 @@ class ModEdits:
         self.save()
         return unit
 
-    def remove_unit(self, target: str) -> None:
-        """Delete a new unit: its copy, every change made to it and its parts, its name, its own card, its own
-        model and its own animations (a card, a model or an animation with no unit is an error in the build)."""
-        self.new_units.pop(target, None)
-        for key in [k for k in self.edits if k[0] == target]:
-            del self.edits[key]
-        self.save()
-        tail = target.rsplit("/", 1)[-1]
-        (self.folder / "files" / "cards" / f"{tail}.png").unlink(missing_ok=True)
-        for suffix in (".glb", ".json"):
-            (self.folder / "files" / "models" / f"{tail}{suffix}").unlink(missing_ok=True)
-        # a squad's own number of soldiers, its soldiers' own looks (<unit>@<number>, rusemod.squads) and its other
-        # kinds' models (<unit>@<kind>: a squad's heavy-weapon soldier's, api._kind_file), with their records: a model
-        # file with no unit stops the build ("no mod in the set makes a new unit"). A unit's name has no "@", so
-        # <its name>@ is its own files and no other unit's.
-        from rusemod.squads import SUFFIX
-        models = self.folder / "files" / "models"
-        (models / f"{tail}{SUFFIX}").unlink(missing_ok=True)
-        for f in (list(models.glob(f"{tail}@*")) if models.is_dir() else []):
-            if f.is_file() and f.suffix.lower() in (".glb", ".json"):
-                f.unlink(missing_ok=True)
-        from rusemod import anim
+    def remove_unit(self, target: str, take: TakeOut | None = None) -> None:
+        """Delete a new unit: its copy, every change made to it and its parts, its name, and every file of its own
+        (unit_files: its card, models, records, copy, clips' folder) with its rows in files/anim/units.toml (a card, a
+        model or an animation with no unit is an error in the build). All or nothing: the files are set aside and the
+        rows taken out BEFORE the unit leaves src/studio.rndf, and a step that fails (a file another program holds, a
+        units.toml that can't be read: raised as it came, anim.AnimError or OSError) puts back what was done, so the mod
+        is as it was and trying again works. `take`: a bigger take-out this is part of (api.delete_unit), which puts it
+        all back or finishes it; none: this call's own."""
+        own = take is None
+        take = take if take is not None else TakeOut(self.folder)
+        units, edits = dict(self.new_units), dict(self.edits)
+        unit = self.new_units.get(target)
         try:
-            anim.remove_unit(self.folder, tail)   # (files/anim/units.toml's rows and files/anim/own/<its name>/)
-        except anim.AnimError:   # a units.toml that can't be read: the unit still goes, the build says what's wrong
-            pass
+            take.keep(self.file)
+            take.keep(self.names_file)
+            # (an ammunition's copy, named False, and an object made from scratch never have files or animations)
+            if (unit is None or unit.named) and target not in self.new_objects:
+                self._take_files(target.rsplit("/", 1)[-1], take)
+            self.new_units.pop(target, None)
+            for key in [k for k in self.edits if k[0] == target]:
+                del self.edits[key]
+            self.save()
+        except BaseException:
+            self.new_units, self.edits = units, edits
+            if own:
+                take.put_back()
+            raise
+        if own:
+            take.done()
+
+    def remove_leftovers(self, tail: str) -> list[str]:
+        """What a unit this mod no longer has left behind (a Delete that stopped half way in a Studio before
+        2026-11-13): its rows in files/anim/units.toml and its own files (unit_files), out of the mod, all or nothing as
+        remove_unit. Never for a unit the mod has (ValueError): the caller makes sure the game has no unit of that name
+        either. Returns what was taken out, as paths in the mod ("files/anim/units.toml [unit.<name>]" for its rows)."""
+        if any(t.rsplit("/", 1)[-1] == tail for t in self.new_units):
+            raise ValueError(f"{tail} is a unit of this mod")
+        take = TakeOut(self.folder)
+        try:
+            gone = self._take_files(tail, take)
+        except BaseException:
+            take.put_back()
+            raise
+        take.done()
+        return gone
+
+    def _take_files(self, tail: str, take: TakeOut) -> list[str]:
+        """The unit `tail`'s own files set aside and its rows out of units.toml, in `take` (put back if a later step
+        fails). The rows last: a file that can't be moved stops it with units.toml as it was."""
+        from rusemod import anim
+        table_file = self.folder / anim.UNITS
+        take.keep(table_file)
+        table = anim.read_units(self.folder)   # (a units.toml that can't be read stops it here: nothing changed yet)
+        gone = []
+        for path in unit_files(self.folder, tail):
+            take.set_aside(path)
+            gone.append(path.relative_to(self.folder).as_posix())
+        if table.pop(tail, None) is not None:
+            anim.write_units(self.folder, table)
+            gone.append(f"{anim.UNITS} [unit.{tail}]")
+        return gone
 
     def new_unit_of(self, address: str) -> NewUnit | None:
         """The new unit an address belongs to (the unit itself, or a part inside it), or None."""

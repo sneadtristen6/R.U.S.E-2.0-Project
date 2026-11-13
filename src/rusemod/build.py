@@ -2045,9 +2045,15 @@ def unit_own_copies(run, order: list, result: BuildResult) -> dict:
             continue
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
+            # Said with what to do (the owner, 2026-11-12: "this is not going to work because of this. You need to
+            # change this."): a unit deleted from the mod by a Studio that stopped half way left it (ruse_studio.edits.
+            # remove_leftovers takes such leftovers out).
             # not a game rule: a copy for a unit nothing makes
             result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
-                                                    f"has none of that name"))
+                                                    f"has none of that name. If {unit} was deleted from this mod, "
+                                                    f"this file was left behind: in the Studio, click Take out what "
+                                                    f"it left under this mistake in Test in game's log, or delete "
+                                                    f"this file"))
             continue
         if not of:  # (a file naming no model: the one its GfxDescriptor draws, as the first copies were made)
             source = _own_model_part(run, by_name, unit, where, result) if name in by_name.values() else None
@@ -2128,9 +2134,13 @@ def unit_own_clips(run, order: list, result: BuildResult, zz=None) -> dict:
         where = f"{', '.join(mods)}: {anim.UNITS}"
         name = by_name.get(unit) or _game_unit(run, unit)
         if name is None:
-            # not a game rule: animations for a unit nothing makes
+            # not a game rule: animations for a unit nothing makes. Said with what to do, as unit_own_copies' line
             result.findings.append(Finding("error", f"{where}: no mod in the set makes a unit {unit}, and the game "
-                                                    f"has none of that name"))
+                                                    f"has none of that name. If {unit} was deleted from this mod, "
+                                                    f"its animations were left behind: in the Studio, click Take out "
+                                                    f"what it left under this mistake in Test in game's log, or take "
+                                                    f"[unit.{unit}] out of {anim.UNITS} and delete the folder "
+                                                    f"{anim.OWN}/{unit}/"))
             continue
         planned, by_clip, by_action, files = {}, {}, {}, {}
         for member in sorted(w["clips"]):

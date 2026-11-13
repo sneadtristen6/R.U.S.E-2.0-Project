@@ -9885,24 +9885,101 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         the warning). Returns {"deleted": its address, "source", "saved", "relinked", "left"}, or {"deleted": None,
         "ask": the units researched from it} when the modder is to be warned first (nothing changed). Its line in the
         mod's menu_groups.toml goes, and the units its group stood under move to the first remaining unit of that
-        group (groups.py)."""
+        group (groups.py).
+
+        All or nothing (the owner's check, 2026-11-13): every file it changes is kept as it was and every file it
+        removes set aside first (edits.TakeOut), so a step that can't finish (a file another program holds, a
+        units.toml that can't be read) leaves the mod as it was, research links too, and says in words which file and
+        what to do; trying again then works. A unit this mod no longer has but whose files or animations are still in
+        it (a Delete that stopped half way in an older Studio): those leftovers are taken out instead, never a game
+        unit's (_take_leftovers), and {"deleted": None, "leftovers": what went} returned."""
+        from rusemod import anim, menugroups
+        from .edits import TakeOut
+        from .era_units import CREDITS, INDEX
         edits = self._edits()
         if edits is None or address not in edits.new_units:
+            left = self._take_leftovers(edits, address)
+            if left:
+                return {"deleted": None, "leftovers": left, "relinked": [], "left": []}
             raise StudioError(f"{address} isn't a unit made in this mod, so it can't be deleted here")
-        research = self._research_gone(address, researched)
-        if "ask" in research:
-            return {"deleted": None, "ask": research["ask"]}
-        with self._saving:
-            edits = ModEdits(edits.folder)
-            source = edits.new_units[address].source if address in edits.new_units else None
-            files = self._groups_gone(edits, address)
-            own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
-            edits.remove_unit(address)
-            if own_class:
-                self._drop_class_table(edits, own_class)
-            self._groups_save(edits, *files)
-            self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
+        folder = edits.folder
+        take = TakeOut(folder)
+        try:
+            for f in (edits.file, edits.names_file, folder / menugroups.FILE, folder / INDEX, folder / CREDITS):
+                take.keep(f)   # (as they are before anything changes: research links, groups, era lines too)
+            research = self._research_gone(address, researched)
+            if "ask" in research:
+                return {"deleted": None, "ask": research["ask"]}
+            with self._saving:
+                edits = ModEdits(folder)
+                source = edits.new_units[address].source if address in edits.new_units else None
+                files = self._groups_gone(edits, address)
+                own_class = self.class_table_of(edits, address)  # an ammunition's own weapon class goes with it
+                edits.remove_unit(address, take)
+                if own_class:
+                    self._drop_class_table(edits, own_class)
+                self._groups_save(edits, *files)
+                self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
+        except BaseException as exc:
+            take.put_back()
+            worded = self._take_error(exc, folder)
+            if worded is exc:
+                raise
+            raise worded from exc
+        take.done()
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
+
+    def _take_error(self, exc: BaseException, folder: Path) -> BaseException:
+        """A take-out's failure (delete_unit) in words: a file that couldn't be read or written names the file and
+        what to do (file_error); a units.toml with a mistake says so; anything else as it came."""
+        from rusemod import anim
+        if isinstance(exc, StudioError):
+            return exc
+        cause = oserror_of(exc)
+        if cause is not None:
+            return file_error(cause, folder / anim.UNITS if isinstance(exc, anim.AnimError) else None)
+        if isinstance(exc, anim.AnimError):
+            # not a game rule: the unit's animations are in that file, and it can't be read to take them out
+            return StudioError(f"Nothing was deleted: {folder / anim.UNITS} has a mistake ({exc}), so the unit's "
+                               f"animations can't be taken out with it. Fix that file, then try again.")
+        return exc
+
+    def _take_leftovers(self, edits, address: str) -> list[str]:
+        """The files and animations a unit this mod no longer has left behind, taken out (edits.remove_leftovers); []
+        when there are none, or the address is a unit of the game's (its animations and copy are the mod's changes to
+        it), or the game's index can't say."""
+        from rusemod import anim
+        from .edits import unit_files
+        tail = _tail(address)
+        if edits is None or not address.startswith("$/GFX/Everything/") or ":" in address or not anim._NAME.match(tail) \
+                or any(_tail(t) == tail for t in edits.new_units):   # (never a unit the mod has)
+            return []
+        try:
+            rows = tail in anim.read_units(edits.folder)
+        except anim.AnimError:
+            rows = (edits.folder / anim.UNITS).is_file()   # (can't be read: tried below, and said in words)
+        if not rows and not unit_files(edits.folder, tail):
+            return []
+        try:
+            ix = self._open()
+        except Exception:  # noqa: BLE001 - no game index: a game unit can't be told apart, so nothing is taken
+            return []
+        try:
+            try:
+                ix._object(address)
+                return []                     # the game's own unit: never taken out here
+            except KeyError:
+                pass
+        finally:
+            ix.close()
+        with self._saving:
+            try:
+                return ModEdits(edits.folder).remove_leftovers(tail)
+            except BaseException as exc:
+                worded = self._take_error(exc, edits.folder)
+                if worded is exc:
+                    raise
+                raise worded from exc
 
     def test_in_game(self) -> dict:
         """Build the current mod into the PC's one modded copy (`Modded game` where Settings says, the Launcher's too:
@@ -10234,6 +10311,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             kinds: dict = {}
             home_in: list = []
             with self._saving:
+                stale = self._era_tidy(folder)   # (no record or credit line of a unit the mod no longer has goes out)
+                if stale:
+                    say(f"The era units' record and credits named units no longer in the mod; their lines were taken "
+                        f"out: {', '.join(stale)}.")
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
                                     solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in)
             self._last_export = Path(path)
