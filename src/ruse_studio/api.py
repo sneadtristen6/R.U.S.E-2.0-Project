@@ -409,6 +409,16 @@ def file_error(exc: OSError, writing, reading=None) -> StudioError:
     return StudioError(f"{path} couldn't be read or written (error {code}). Please report this.")
 
 
+def page_file_error(exc: OSError) -> StudioError | None:
+    """An OSError a page call raised as it came (Take it out of my mod, Delete, Remove model: a file of the mod that
+    couldn't be read or written, Python's own words, English in every language) said in words (file_error): one naming a
+    file, or a full disk naming none. None for any other (a connection refused, say: not a file's), passed on as it was."""
+    named = file_named(exc)
+    if disk_full(exc) and named is None:
+        return StudioError("A disk the Studio was writing to is full. Make room on it, then try again.")
+    return file_error(exc, named) if named is not None else None
+
+
 # the ways a mod's map files can be wrong, as their readers say it
 _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scenario.ScenarioError,
                   scenery.SceneryEditError, RoadNetError, NewMapError, PictureError, PlayersError)
@@ -748,7 +758,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def page_error(self, exc):
         """A page call's StudioError said again in the Studio's language (rusemod.webui page_api), or None to pass it
-        on as it is."""
+        on as it is. An OSError a call raised as it came (a file it couldn't read or write) is said in words too, in
+        English as well (page_file_error): never Python's own words."""
+        if isinstance(exc, OSError):
+            plain = page_file_error(exc)
+            return StudioError(self._worded(str(plain))) if plain is not None else None
         if not isinstance(exc, StudioError):
             return None
         said = self._worded(str(exc))

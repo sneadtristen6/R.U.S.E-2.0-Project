@@ -18,8 +18,9 @@ tests/test_recheck_words.py).
   Studio's language, naming that unit's model when the error names no file.
 - On the game (RUSE_GAME, the Studio's index and the passed copy's two files, as tests/test_horse_squad.py; skipped
   without them): the import's reader failing on the Horse Squad's file (read_rig wraps the OSError in its own error),
-  the import's look at its bones failing on it (once swallowed, then said as another reason), and a Resize whose
-  model record can't be written (a full disk), each in words. Nothing of the game's is written."""
+  the import's look at its bones failing on it (once swallowed, then said as another reason), its model taken out
+  with a file of its animations held, and a Resize whose model record can't be written (a full disk), each in words.
+  Nothing of the game's is written."""
 import errno
 import json
 import os
@@ -241,6 +242,65 @@ class EveryGroundUnitSaysAFileErrorInWords(WithLibrary):
                     self.assertNotEqual(why, expected)
 
 
+class APageCallSaysAFileErrorInWords(unittest.TestCase):
+    """A page call (Take it out of my mod, Delete, Remove model, Resize and Move of one unit) whose file couldn't be read
+    or written reached the page as Python's own words ("[Errno 13] Permission denied: '...'"), English in every
+    language: page_error says it in words (api.page_file_error), a raised OSError naming a file, or a full disk; any
+    other error passed on as before."""
+
+    def setUp(self):
+        tmp = Path(tempfile.mkdtemp(prefix="page-words-", dir=os.environ.get("RUSE_TEST_TMP") or None))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        self.api = StudioApi(game_dir=tmp / "nowhere", home=tmp / "home", index_path=tmp / "x.sqlite")
+
+    def said_in(self, exc, lang):
+        self.api.set_pref("lang", lang)
+        try:
+            return self.api.page_error(exc)
+        finally:
+            self.api.set_pref("lang", "us")
+
+    def test_a_file_error_is_said_in_words_in_every_language(self):
+        e = entries()
+        cases = [
+            (PermissionError(errno.EACCES, "Permission denied", KEPT), "held", (KEPT,)),
+            (PermissionError(errno.EACCES, "Access is denied", NEW, None, KEPT), "held", (KEPT,)),
+            (FileNotFoundError(errno.ENOENT, "No such file or directory", KEPT), "gone", (KEPT,)),
+            (OSError(errno.ENOSPC, "No space left on device", KEPT), "full", (KEPT,)),
+            (OSError(errno.EIO, "Input/output error", KEPT), "code", (KEPT, errno.EIO)),
+        ]
+        for exc, how, values in cases:
+            for lang in ("us", *OTHERS):
+                with self.subTest(exc=repr(exc), lang=lang):
+                    said = self.said_in(exc, lang)
+                    self.assertIsInstance(said, StudioError)
+                    self.assertEqual(str(said), e[errortext.key_of(TRY_AGAIN[how])][lang].format(*values))
+                    for words in PYTHONS:
+                        self.assertNotIn(words, str(said))
+
+    def test_a_full_disk_naming_no_file_is_said_in_words(self):
+        e = entries()
+        exc = OSError(errno.ENOSPC, "No space left on device")
+        for lang in ("us", *OTHERS):
+            with self.subTest(lang=lang):
+                said = self.said_in(exc, lang)
+                self.assertIsInstance(said, StudioError)
+                self.assertEqual(str(said), e[errortext.key_of(DISK_FULL)][lang])
+
+    def test_other_errors_are_passed_on_as_before(self):
+        """The control: an error that isn't a file's (a connection refused, an OSError naming no file, not ours at
+        all) is passed on as it was (None), and the Studio's own refusals are said as before."""
+        for exc in (ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused"),
+                    OSError(errno.EIO, "Input/output error"), ValueError("not ours")):
+            with self.subTest(exc=repr(exc)):
+                self.assertIsNone(self.said_in(exc, "fr"))
+        self.assertEqual(str(self.said_in(StudioError("Pick or make a mod first."), "ita")),
+                         "Scegli o crea prima una mod.")
+
+
+DISK_FULL = "A disk the Studio was writing to is full. Make room on it, then try again."
+
+
 @unittest.skipUnless(ON_THE_GAME, WHY_SKIPPED)
 class OnTheGame(unittest.TestCase):
     """The Horse Squad's Add into a new mod with its builder standing in with the passed copy's two files, the Studio's
@@ -297,10 +357,54 @@ class OnTheGame(unittest.TestCase):
         self.assert_the_riflemen_s_file_named_in_words(
             self.add(mock.patch("rusemod.animmodel.own_bones_on", own_bones_on)))
 
+    def test_its_model_taken_out_with_its_animations_file_held_is_said_in_words(self):
+        """Taking its model out takes its animations out (_animations_out): a file there another program holds was
+        said as "The animations of the model it had can't be taken out: [Errno 13] ...", Python's words inside the
+        modder's language."""
+        view = self.add()
+        self.assertEqual(view["state"], "done")
+        address = view["result"]["address"]
+        table = self.mod / "files" / "anim" / "units.toml"
+
+        def drop_animations(mod, unit):
+            raise PermissionError(errno.EACCES, "Access is denied", str(table))
+        with mock.patch("rusemod.anim.drop_animations", drop_animations), self.assertRaises(StudioError) as said:
+            self.api.model_import_remove(address)
+        self.assertEqual(str(said.exception), TRY_AGAIN["held"].format(table))
+        self.api.set_pref("lang", "fr")
+        try:
+            worded = str(self.api.page_error(said.exception))
+        finally:
+            self.api.set_pref("lang", "us")
+        self.assertEqual(worded, entries()[errortext.key_of(TRY_AGAIN["held"])]["fr"].format(table))
+
+    def test_taking_it_out_with_its_era_record_held_is_said_in_words(self):
+        """Take it out of my mod (era_unit_remove) writing the mod's era_units.json that another program holds: the
+        page call's error was Python's "[Errno 13] Permission denied: '...era_units.json'" in every language."""
+        view = self.add()
+        self.assertEqual(view["state"], "done")
+        index = self.mod / era_units.INDEX
+        real = pathlib.Path.write_text
+
+        def write_text(path, *args, **kw):
+            if Path(path) == index:
+                raise PermissionError(errno.EACCES, "Permission denied", str(index))
+            return real(path, *args, **kw)
+        with mock.patch.object(pathlib.Path, "write_text", write_text), self.assertRaises(OSError) as raised:
+            self.api.era_unit_remove(KEY, "anyway")
+        for lang in ("us", "fr", "jpn", "fa"):
+            self.api.set_pref("lang", lang)
+            try:
+                said = self.api.page_error(raised.exception)
+            finally:
+                self.api.set_pref("lang", "us")
+            self.assertIsInstance(said, StudioError, lang)
+            self.assertEqual(str(said), entries()[errortext.key_of(TRY_AGAIN["held"])][lang].format(index))
+
     def test_a_resize_whose_model_record_can_t_be_written_is_said_in_words(self):
         view = self.add()
         self.assertEqual(view["state"], "done")
-        address = view["result"]["address"] if view.get("result") else self.api._era_record()[KEY]
+        address = view["result"]["address"]
         record = self.api._own_model_file(address).with_suffix(".json")
         real = pathlib.Path.write_text
 
