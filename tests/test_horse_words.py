@@ -128,7 +128,7 @@ class TheBuildersRefusals(unittest.TestCase):
         """Every refusal in the builder's code has an entry marked with the Studio's frame, and no other entry is
         marked (test_errortext checks every language and blank of each; the frame is a Studio error of the code)."""
         found, e = builder_templates(), entries()
-        self.assertEqual(len(found), 28)
+        self.assertEqual(len(found), 30)   # (28, and 2 of 2026-11-13: a squad it isn't made from, another country's clips)
         self.assertEqual(sorted(w["us"] for w in e.values() if isinstance(w, dict) and "within" in w), sorted(found))
         self.assertEqual({e[errortext.key_of(t)]["within"] for t in found}, {FRAME})
         self.assertEqual(list(errortext.WITHIN), [FRAME])

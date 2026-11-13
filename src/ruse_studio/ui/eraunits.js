@@ -357,8 +357,10 @@
     const form = el("form", { className: "new-unit" });
     const name = el("input", { autocomplete: "off", maxLength: 60, required: true, value: unitName(p), title: w.tip_eras_name });
     name.setAttribute("aria-label", w.new_unit_name);
-    // (the Horse Squad starts from its own unit only: its horses and riders are made for that unit's soldiers)
-    const start = el("select", { title: p.built ? w.tip_eras_horse_start : w.tip_eras_start_from, disabled: Boolean(p.built) });
+    // (the Horse Squad starts from one of its countries' rifle squads only: its riders are made from that squad's
+    // soldiers; the owner, 2026-11-13: "people can change what countmry its from")
+    const start = el("select", { title: p.built ? w.tip_eras_horse_start : w.tip_eras_start_from,
+      disabled: Boolean(p.built) && p.start.length < 2 });
     start.setAttribute("aria-label", w.eras_start_from);
     const groups = [[w.eras_suggested, p.start.filter((s) => s.suggested)],
       [w.eras_start_same, p.start.filter((s) => !s.suggested && s.same_type)],
@@ -545,7 +547,7 @@
       if (p.built) {  // the Horse Squad: its horses and riders made from the modder's own game first, a job followed
         try {
           const res = await api().horse_squad_add(Number(nation.value), Number(factory.value), name.value.trim(), cost,
-            from, from ? rp : null, from ? rt : null, offer ? groupPick.value : null);
+            from, from ? rp : null, from ? rt : null, offer ? groupPick.value : null, start.value);
           if (!horseJob || horseJob.id !== res.job) horseJob = { id: res.job, began: Date.now() };
           followHorse();
         } catch (err) {
