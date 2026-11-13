@@ -165,12 +165,14 @@ class PageCase:
         return got
 
     def problems(self, got: dict, case: str, clean: str, names: list, also=()) -> list:
-        """What's wrong, in each language, with case `case`'s page for the things `names` that weren't kept, beside
-        case `clean`'s (the same Bring back with nothing lost): `also`, the other names in the two cases, taken out of
-        a line with them to judge its words. A line naming one that the clean page shows the same way (its words
-        alike) is one of the page's usual lines, not a word on the loss."""
+        """What's wrong, in each language, with case `case`'s page for the things `names` that weren't kept (each a
+        name, or a tuple of the names it may be called by: a renamed material's new name, or its picture's, which kept
+        the old one), beside case `clean`'s (the same Bring back with nothing lost): `also`, the other names in the two
+        cases, taken out of a line with them to judge its words. A line naming one that the clean page shows the same
+        way (its words alike) is one of the page's usual lines, not a word on the loss."""
         out = []
-        every = list(names) + list(also)
+        wants = [(n,) if isinstance(n, str) else tuple(n) for n in names]
+        every = [n for w in wants for n in w] + list(also)
         for lang in LANGS:
             res, ok = got[lang][case], got[lang][clean]
             stopped = [r["error"].splitlines()[0] for r in (res, ok) if r.get("error")]
@@ -178,14 +180,15 @@ class PageCase:
                 out += [f"{lang}: the page stopped: {s}" for s in stopped]
                 continue
             usual = {bare(t, every) for t, _w in lines_of(ok, every)}
-            for name in names:
-                naming = [(t, w) for t, w in lines_of(res, every) if name in t]
+            for want in wants:
+                name = " or ".join(repr(n) for n in want)
+                naming = [(t, w) for t, w in lines_of(res, every) if any(n in t for n in want)]
                 mine = [(t, w) for t, w in naming if bare(t, every) not in usual]
                 if not mine:
-                    out.append(f"{lang}: nothing on the page names {name!r}" + (
+                    out.append(f"{lang}: nothing on the page names {name}" + (
                         f" but what it shows when nothing was lost too: {[t for t, _w in naming]}" if naming else ""))
                     continue
-                english = {bare(t, every) for t, _w in lines_of(got["us"][case], every) if name in t}
+                english = {bare(t, every) for t, _w in lines_of(got["us"][case], every) if any(n in t for n in want)}
                 for text, where in mine:
                     if re.search(r"\{\w+\}", text):
                         out.append(f"{lang}: a blank left unfilled in {text!r}")
@@ -246,17 +249,22 @@ class UnitPage(PageCase, unittest.TestCase):
     def test_a_material_renamed_in_blender_is_named_on_the_page(self):
         """The riflemen's model (the Model row's Bring back the model), its turret's material renamed in Blender:
         "My turret" has the plain 144 (no alpha picture went out under that name). Fails on fddc462a: nothing on the
-        page names it, in any language (the answer's report has it, in English)."""
+        page names it, in any language (the answer's report has it, in English). (As built, a material renamed in
+        Blender gets the plain 144; whether it keeps its own instead is the shine agent's question 2, waiting on the
+        owner: his "keep its own" would leave nothing lost here, and this case would change with it.)"""
         got = self.run_page([self.case("renamed", rename={"test_tank_turret": "My turret"}), self.case("clean")])
-        self.assertEqual(self.problems(got, "renamed", "clean", ["My turret"], also=self.BOTH), [])
+        self.assertEqual(self.problems(got, "renamed", "clean", [("My turret", "test_tank_turret")], also=self.BOTH),
+                         [])
         self.assertEqual(self.warned(got, "clean", self.BOTH), [])
 
     def test_a_kind_s_own_bring_back_names_its_renamed_material_on_the_page(self):
         """The bazooka man's own Bring back the model (under Its soldiers), his turret's material renamed in Blender:
-        "His turret" has the plain 144. Fails on fddc462a: nothing on the page names it."""
+        "His turret" has the plain 144. Fails on fddc462a: nothing on the page names it. (The owner's question 2, as
+        the test above.)"""
         got = self.run_page([self.case("kind", kind="bazooka", rename={"test_tank_turret": "His turret"}),
                              self.case("kind clean", kind="bazooka")])
-        self.assertEqual(self.problems(got, "kind", "kind clean", ["His turret"], also=self.BOTH), [])
+        self.assertEqual(self.problems(got, "kind", "kind clean", [("His turret", "test_tank_turret")], also=self.BOTH),
+                         [])
         self.assertEqual(self.warned(got, "kind clean", self.BOTH), [])
 
     def test_an_alpha_picture_gone_from_the_blender_folder_is_named_on_the_page(self):
