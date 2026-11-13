@@ -228,12 +228,14 @@ class HorseSquadCalls:
                     self.__dict__["_horse_pin"] = None
             except OSError as exc:
                 # (in words, never Python's own: the job's message goes to the page in the modder's language)
+                self._horse_too_long(exc)
                 raise self._horse_file_error(exc, where, reading) from exc
             except StudioError as exc:
                 # a file the Studio's own import couldn't read or write (api.file_error, raised from its OSError): said
                 # as one of the add's own steps' is, that the Horse Squad wasn't added (the import's words don't say)
                 if not isinstance(exc.__cause__, OSError):
                     raise
+                self._horse_too_long(exc.__cause__)
                 raise self._horse_file_error(exc.__cause__, where, reading) from exc.__cause__
             job.result = {"address": made["address"], "name": made["name"]}
 
@@ -272,6 +274,7 @@ class HorseSquadCalls:
         when that's taken); a StudioError saying which folder is too deep and by how much, and what to change, when
         Windows won't take it (PATH_MOST; nothing when this program may write longer paths: long_paths_on)."""
         from .api import _PREFIX, StudioError, safe_name
+        self.__dict__["_too_deep"] = None
         if long_paths_on():
             return
         root = self._home / FOLDER
@@ -282,6 +285,8 @@ class HorseSquadCalls:
         except (TypeError, ValueError):
             need = len(str(work))
         if need > PATH_MOST:
+            # (the page offers the quick fix beside these words: ruse_studio.homemove, home_move_offer's "needed")
+            self.__dict__["_too_deep"] = {"what": "platform", "folder": str(self._home), "over": need - PATH_MOST}
             # not a game rule: Windows' longest path, which the files the Horse Squad is made into must fit
             raise StudioError(f"The Generic Horse can't be added: the folder the Studio keeps its own files in "
                               f"({self._home}) is too deep for it. Adding it would write a file whose path is "
@@ -296,6 +301,7 @@ class HorseSquadCalls:
         tail = max((prefix + s for s in stems), key=len)
         need = len(str(Path(mod, *OWN_CLIPS, tail, "x" * CLIP_LONGEST + ".part"))) if mod is not None else 0
         if need > PATH_MOST:
+            self.__dict__["_too_deep"] = {"what": "mod", "folder": str(mod), "over": need - PATH_MOST}
             # not a game rule: Windows' longest path, which the Horse Squad's animations in the mod must fit
             raise StudioError(f"The Generic Horse can't be added: your mod's folder ({mod}) is too deep for it. Adding "
                               f"it would write a file whose path is {need - PATH_MOST} character(s) longer than "
@@ -324,6 +330,13 @@ class HorseSquadCalls:
                                f"loaded. Please report this.")
         return StudioError("This Studio can't make the Generic Horse: a part it needs couldn't be loaded. Please report "
                            "this.")
+
+    def _horse_too_long(self, exc: OSError) -> None:
+        """A path longer than Windows takes that stopped the Add (_horse_file_error says it): kept for the page, which
+        offers the quick fix beside those words (ruse_studio.homemove)."""
+        long = [str(f) for f in (exc.filename, exc.filename2) if f is not None and len(str(f)) > PATH_MOST]
+        if long and not long_paths_on():
+            self.__dict__["_too_deep"] = {"what": "path", "folder": long[0], "over": len(long[0]) - PATH_MOST}
 
     @staticmethod
     def _horse_file_error(exc: OSError, folder, reading=None):

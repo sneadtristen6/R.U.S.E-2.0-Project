@@ -4883,6 +4883,12 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
       horse_squad_add: async (nation, factory, name = null, price = null, researchFrom = null, researchPrice = null,
         researchTime = null, group = null) => fakeHorseAdd(nation, factory, name, price, researchFrom, researchPrice,
         researchTime, group),
+      // the quick fix beside a folder too deep for Windows (StudioApi.home_move_offer, home_move; ruse_studio.homemove):
+      // the preview's folders are never too deep, so nothing is offered and nothing moves
+      home_move_offer: async () => ({ needed: null, can: false, from: "C:\\Users\\you\\AppData\\Local\\RUSE Mod Platform",
+        files: "C:\\Users\\you\\Documents\\RUSE 2.0", to: "C:\\RUSE2", count: 0, size: 0, size_text: "1 KB",
+        leave: ["webview"] }),
+      home_move: async () => { throw new Error("Windows takes long paths for the Studio on this PC, so its folders don't need to move."); },
       // in `group` of that building ("new": a group of its own; null: its research parent's, else its kind's, the
       // library card), refused, nothing made, when that has no room
       era_unit_add: async (key, nation, factory, source, name, price, size, researchFrom, researchPrice, researchTime,

@@ -70,6 +70,7 @@ from .music import MusicCalls
 from .decoy import DecoyCalls, DecoyError
 from .era_units import EraUnitCalls
 from .horse_squad import HorseSquadCalls
+from .homemove import HomeMoveCalls
 from .groundtex_calls import GroundTextureCalls
 from .missionedit import MissionCalls
 from .nations import NationCalls
@@ -632,7 +633,8 @@ def words(lang: str = schema.BASE) -> dict:
 
 
 class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCalls, OwnedPassCalls, BackupCalls, startlog.StartCalls, MusicCalls,
-                DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, GroundTextureCalls, MissionCalls, RoleCalls,
+                DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, HomeMoveCalls, GroundTextureCalls, MissionCalls,
+                RoleCalls,
                 WeaponClassCalls,
                 FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, DecoyBlenderCalls, ActionCalls,
                 ModelFitCalls, AnimModelCalls,

@@ -17,7 +17,7 @@ from . import wordedtext
 FILE = Path(__file__).with_name("buildtext.toml")
 ROOT = Path(__file__).parents[1]
 # the files whose say / warn / Finding texts go to the player, and which argument holds the text
-SOURCES = ("rusemod/build.py", "rusemod/play.py", "ruse_studio/api.py", "ruse_launcher/api.py")
+SOURCES = ("rusemod/build.py", "rusemod/play.py", "ruse_studio/api.py", "ruse_launcher/api.py", "ruse_studio/homemove.py")
 CALLS = {"say": 0, "warn": 0, "Finding": 1}
 
 # how the build marks a finding in its lines: "warning: ..." (said at once) and "  error    ..." (the report)
