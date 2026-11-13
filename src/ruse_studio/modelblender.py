@@ -410,12 +410,15 @@ class ModelBlenderCalls:
         self._blenders[str(work)] = open_model_to_change(blender, start, send, work / "words.json")
         return {**self.look(address), "work": str(work), "file": str(start), "kind": kind}
 
-    def model_blender_back(self, address: str, size: float = 1.0, kind: str | None = None) -> dict:
+    def model_blender_back(self, address: str, size: float = 1.0, kind: str | None = None, keep_bones: bool = False,
+                           keep_paint: bool = False) -> dict:
         """Take what Blender sent in as the unit's own model (Import model's way), or, with `kind`, as that soldier's
         own model alone (the squad's others keep theirs): an open Blender is asked to send first; a closed one's last
         sending is used. Each material's alpha picture that went out goes back in by its name (rusemod.gltf.
         with_alpha), into <work>/kept/<its name>.glb, the file Import model takes in; its report says what each got
-        (_alpha_said). Returns model_import()'s answer with "work" and "kind"."""
+        (_alpha_said). `keep_bones`, `keep_paint` (the one Blender button with Bones or Paint unticked): the bones or
+        pictures that went out put back (rusemod.gltf.bones_like, paint_like). Returns model_import()'s answer with
+        "work", "kind" and "kept" ({"bones": bones_like's word or None, "paint": the materials put back or None})."""
         from rusemod import gltf
         from rusemod.blender import ask_to_send
         from .api import StudioError
@@ -433,8 +436,13 @@ class ModelBlenderCalls:
         # own is read on that order, its animations and the squad's other soldiers' models made on it: rusemod.gltf.
         # joints_like; the Generic Horse's bazooka man was otherwise no longer on the riflemen's bones)
         start = work / str(_read_json(work / ALPHA).get("start") or "")
+        kept_words = {"bones": None, "paint": None}
         if start.name and start.is_file() and start != send:
             raw = gltf.joints_like(raw, start.read_bytes())
+            if keep_bones:   # (the one Blender button's unticked Bones: the bones that went out put back)
+                raw, kept_words["bones"] = gltf.bones_like(raw, start.read_bytes())
+            if keep_paint:   # (its unticked Paint: the pictures that went out put back)
+                raw, kept_words["paint"] = gltf.paint_like(raw, start.read_bytes())
         went = self._alphas_back(work, send, raw)
         data, put = gltf.with_alpha(raw, {m: str(p) for m, p in went.items()})
         kept = work / KEPT / send.name
@@ -451,4 +459,4 @@ class ModelBlenderCalls:
                 _put(kept, before)
             raise
         self._alpha_said(address, kind, got, put, went)
-        return {**got, "work": str(work), "kind": kind}
+        return {**got, "work": str(work), "kind": kind, "kept": kept_words}

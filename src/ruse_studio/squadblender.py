@@ -681,7 +681,8 @@ class SquadBlenderCalls:
         _write(work / "state.json", state)
         self._blenders[str(work)] = open_squad_to_change(blender, work / "squad.json")
 
-    def squad_blender_back(self, address: str, lang: str = "us") -> dict:
+    def squad_blender_back(self, address: str, lang: str = "us", keep_bones: bool = False,
+                           keep_paint: bool = False) -> dict:
         """Bring my changes back: the open Blender is asked to send (a closed one's last sending is used), and each
         soldier whose file differs from the one Blender wrote of him when the squad opened (or when he was last taken
         in) is taken in with Import model and his kind, his alpha pictures back in it, from <work>/kept/<his model's
@@ -689,7 +690,9 @@ class SquadBlenderCalls:
         module's note on a Custom uniform). Returns squad_info with "changed", "unchanged", "uniform_kept", "left_out"
         (objects Blender sent with nobody), "reports" (each taken-in soldier's Import model report, with what of his
         shine and side colour couldn't be kept: ruse_studio.modelblender._alpha_said's "blender_alpha_lost", and Import
-        model's "alpha_sizes"; the page says them), "work" and "message"."""
+        model's "alpha_sizes"; the page says them), "work" and "message". `keep_bones`, `keep_paint` (the one Blender button
+        with Bones or Paint unticked): each taken-in soldier's own bones or pictures put back as they went out
+        (rusemod.gltf.bones_like, paint_like); "kept" says what each got."""
         from rusemod import gltf
         from rusemod.blender import ask_to_send
         from .api import StudioError, words
@@ -735,6 +738,7 @@ class SquadBlenderCalls:
         take = [i for i in ids if i in changed or i in uniform_kept]
         lines = {ln["id"]: ln for ln in self._squad_lines(address)}
         reports = {}
+        kept_words = {"bones": {}, "paint": {}}
         state.setdefault("taken", {})
         for i in take:
             target = self._kind_file(address, lines[i]["kind"])
@@ -743,6 +747,11 @@ class SquadBlenderCalls:
             start = work / "start" / i / f"{i}.glb"   # (his bones back in the order they went out in: gltf.joints_like)
             if start.is_file():
                 raw = gltf.joints_like(raw, start.read_bytes())
+                # the one Blender button's unticked Bones and Paint: his own put back, as they went out
+                if keep_bones:
+                    raw, kept_words["bones"][i] = gltf.bones_like(raw, start.read_bytes())
+                if keep_paint:
+                    raw, kept_words["paint"][i] = gltf.paint_like(raw, start.read_bytes())
             data, put = gltf.with_alpha(raw, got[i].get("alpha") or {})
             _put(kept, data)
             record = _read(target.with_suffix(".json")) if target.is_file() else {}
@@ -780,7 +789,7 @@ class SquadBlenderCalls:
             message += " " + w["blender_squad_left_out_back"].format(names=", ".join(left))
         return {**self.squad_info(address, lang), "changed": changed, "unchanged": unchanged,
                 "uniform_kept": uniform_kept, "left_out": left, "reports": reports, "work": str(work),
-                "message": message}
+                "message": message, "kept": kept_words}
 
     # --- one soldier at a time ---
     def _soldier_kind(self, address: str, soldier: str) -> str | None:

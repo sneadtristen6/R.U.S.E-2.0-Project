@@ -78,6 +78,7 @@ from .roles import RoleCalls, hits_mount
 from .weaponclass import WeaponClassCalls
 from .modelblender import ModelBlenderCalls
 from .squadblender import SquadBlenderCalls
+from .oneblender import OneBlenderCalls
 from .decoyblender import DecoyBlenderCalls
 from .actions import ActionCalls
 from .modelfit import ModelFitCalls
@@ -636,7 +637,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 DecoyCalls, NationCalls, EraUnitCalls, HorseSquadCalls, HomeMoveCalls, GroundTextureCalls, MissionCalls,
                 RoleCalls,
                 WeaponClassCalls,
-                FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, DecoyBlenderCalls, ActionCalls,
+                FlagTypeCalls, BoardCalls, ModelBlenderCalls, SquadBlenderCalls, OneBlenderCalls, DecoyBlenderCalls,
+                ActionCalls,
                 ModelFitCalls, AnimModelCalls,
                 GroupCalls, StartScreenCalls, GuardCalls, BugWatchCalls):
     UPDATE_APP, UPDATE_VERSION = "studio", __version__  # rusemod.update: the app looks for its newer releases
