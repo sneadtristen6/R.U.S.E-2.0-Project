@@ -10491,13 +10491,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # PC, package.STUDIO_PATHS; nothing a modder wrote is changed, a text naming his home folder only said)
             kinds: dict = {}
             home_in: list = []
+            left_out: list = []   # (files the Studio left half written: package.is_work_file, the one check's 13)
             with self._saving:
                 stale = self._era_tidy(folder)   # (no record or credit line of a unit the mod no longer has goes out)
                 if stale:
                     say(f"The era units' record and credits named units no longer in the mod; their lines were taken "
                         f"out: {', '.join(stale)}.")
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in)
+                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
+                                    left_out=left_out)
+            if left_out:
+                say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
+                    f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
+                    f"no build reads them.")
             self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
