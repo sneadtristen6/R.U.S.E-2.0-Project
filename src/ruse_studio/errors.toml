@@ -5775,3 +5775,16 @@ cz = "Jízdní družstvo nelze přidat: složka tvého modu ({0}) je na něj př
 jpn = "騎馬分隊を追加できません。Mod のフォルダー（{0}）の場所が深すぎます。追加すると、パスが Windows の受け付ける長さ（最大 {2} 文字）より {1} 文字長いファイルを書くことになります。フォームで短い名前を付けるか、Mod をパスの短いフォルダーに移してから、もう一度追加してください。"
 sc = "无法添加骑兵小队：你的模组文件夹（{0}）位置太深。添加它会写入一个路径比 Windows 能接受的（最多 {2} 个字符）还长 {1} 个字符的文件。请在表单里给它一个更短的名字，或把模组放到路径更短的文件夹，然后重新添加。"
 fa = "جوخهٔ سواره را نمی‌توان اضافه کرد: پوشهٔ ماد شما ({0}) برای آن بیش از حد عمیق است. اضافه کردنش فایلی می‌نویسد که مسیرش {1} نویسه از آنچه Windows می‌پذیرد (حداکثر {2}) بلندتر است. در فرم نام کوتاه‌تری به آن بدهید، یا ماد را در پوشه‌ای با مسیر کوتاه‌تر بگذارید، سپس دوباره اضافه‌اش کنید."
+
+[e297c630e7e]
+us = "The Horse Squad couldn't be added: {0} is {1} character(s) longer than Windows takes in a path ({2} at most). Put the folder it is in somewhere with a shorter path, then add it again."
+fr = "L'Escouade à cheval n'a pas pu être ajoutée : {0} dépasse de {1} caractère(s) ce que Windows accepte dans un chemin ({2} au plus). Mettez le dossier où il se trouve à un endroit au chemin plus court, puis ajoutez-la à nouveau."
+ger = "Der Reitertrupp konnte nicht hinzugefügt werden: {0} ist {1} Zeichen länger, als Windows in einem Pfad annimmt (höchstens {2}). Lege den Ordner, in dem es liegt, an eine Stelle mit kürzerem Pfad, dann füge ihn erneut hinzu."
+ita = "Non è stato possibile aggiungere la Squadra a cavallo: {0} supera di {1} carattere/i quello che Windows accetta in un percorso ({2} al massimo). Metti la cartella in cui si trova in un posto con un percorso più corto, poi aggiungila di nuovo."
+spa = "No se pudo añadir el Pelotón a caballo: {0} supera en {1} carácter(es) lo que Windows admite en una ruta ({2} como máximo). Pon la carpeta donde está en un sitio con una ruta más corta y vuelve a añadirlo."
+pol = "Nie udało się dodać Oddziału konnego: {0} jest o {1} znak(ów) dłuższe, niż Windows przyjmuje w ścieżce (najwyżej {2}). Przenieś folder, w którym to jest, w miejsce o krótszej ścieżce, a potem dodaj go ponownie."
+ru = "Конный отряд не удалось добавить: {0} на {1} символ(ов) длиннее, чем Windows принимает в пути (не больше {2}). Перенесите папку, в которой это лежит, туда, где путь короче, затем добавьте его снова."
+cz = "Jízdní družstvo se nepodařilo přidat: {0} je o {1} znak(ů) delší, než Windows v cestě přijme (nejvýš {2}). Dej složku, ve které to je, na místo s kratší cestou a pak ho přidej znovu."
+jpn = "騎馬分隊を追加できませんでした。{0} は Windows がパスとして受け付ける長さ（最大 {2} 文字）より {1} 文字長いです。それがあるフォルダーをパスの短い場所に移してから、もう一度追加してください。"
+sc = "无法添加骑兵小队：{0} 比 Windows 在路径中能接受的（最多 {2} 个字符）还长 {1} 个字符。请把它所在的文件夹放到路径更短的地方，然后重新添加。"
+fa = "جوخهٔ سواره اضافه نشد: {0} به اندازهٔ {1} نویسه از آنچه Windows در یک مسیر می‌پذیرد (حداکثر {2}) بلندتر است. پوشه‌ای را که در آن است به جایی با مسیر کوتاه‌تر ببرید، سپس دوباره اضافه‌اش کنید."

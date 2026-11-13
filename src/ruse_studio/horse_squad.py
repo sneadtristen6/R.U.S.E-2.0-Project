@@ -338,6 +338,13 @@ class HorseSquadCalls:
             return StudioError(f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on "
                                f"it, then add it again.")
         path = file_named(exc, reading if reading is not None else folder)
+        long = [str(f) for f in (exc.filename, exc.filename2) if f is not None and len(str(f)) > PATH_MOST]
+        if long and not long_paths_on():
+            # not a game rule: Windows' longest path (one _horse_room's sum didn't see coming: said as what it is,
+            # never as a file that "isn't there")
+            return StudioError(f"The Horse Squad couldn't be added: {long[0]} is {len(long[0]) - PATH_MOST} "
+                               f"character(s) longer than Windows takes in a path ({PATH_MOST} at most). Put the "
+                               f"folder it is in somewhere with a shorter path, then add it again.")
         code = getattr(exc, "winerror", None) or exc.errno
         if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
             return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written, because "

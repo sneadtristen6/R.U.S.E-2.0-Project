@@ -235,6 +235,29 @@ class TheAddsRoom(WithMod):
         self.assertEqual(view["state"], "done", view.get("message"))
 
 
+class AFileTooLongAfterAll(unittest.TestCase):
+    """A path the sum didn't see coming (a write Windows stopped for its length: Python's FileNotFoundError, as on
+    2026-11-12) is said as a path too long, never as a file that "isn't there"; a file truly not there still is."""
+
+    def test_a_path_past_windows_longest_is_said_as_too_long(self):
+        import errno
+        folder = Path("D:/" + "d" * 200) / horse_squad.FOLDER
+        long = folder / ".m1234abcd" / "h1234abcd" / "b" / "us_soldier_bazooka_model_TSCOther_diffuseTexture01.png"
+        with mock.patch.object(horse_squad, "long_paths_on", lambda: False):
+            said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(long)), folder)
+            self.assertEqual(str(said), (
+                f"The Horse Squad couldn't be added: {long} is {len(str(long)) - horse_squad.PATH_MOST} character(s) "
+                f"longer than Windows takes in a path ({horse_squad.PATH_MOST} at most). Put the folder it is in "
+                f"somewhere with a shorter path, then add it again."))
+            self.assertIn("dépasse", errortext.worded(str(said), "fr"))
+            short = Path("D:/m/horse_squad/horse-squad-rifle.glb")
+            said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(short)), folder)
+            self.assertEqual(str(said), f"The Horse Squad couldn't be added: {short} isn't there.")
+        with mock.patch.object(horse_squad, "long_paths_on", lambda: True):
+            said = StudioApi._horse_file_error(FileNotFoundError(errno.ENOENT, "No such file", str(long)), folder)
+            self.assertEqual(str(said), f"The Horse Squad couldn't be added: {long} isn't there.")
+
+
 class TheBuildersNames(unittest.TestCase):
     def test_its_scratch_names_are_short_and_its_files_keep_their_names(self):
         from rusemod import horsesquad
