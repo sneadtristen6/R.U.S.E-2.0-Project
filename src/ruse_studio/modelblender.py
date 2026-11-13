@@ -54,6 +54,16 @@ from pathlib import Path
 
 from .animmodel_calls import read_record, write_record
 
+
+def _read_json(path: Path) -> dict:
+    """A small JSON file of the work folder as a dict ({} when it isn't there or isn't one)."""
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 WORK = "blender"
 SEND_WAIT = 60.0   # seconds Bring back the model waits for an open Blender to send
 ALPHA = "alpha.json"   # in the work folder: the alpha picture that went out with each material, by the material's name
@@ -419,6 +429,12 @@ class ModelBlenderCalls:
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring back the model here.")
         raw = send.read_bytes()
+        # (its bones back in the order they went out in: Blender writes them in its own, and a model on bones of its
+        # own is read on that order, its animations and the squad's other soldiers' models made on it: rusemod.gltf.
+        # joints_like; the Generic Horse's bazooka man was otherwise no longer on the riflemen's bones)
+        start = work / str(_read_json(work / ALPHA).get("start") or "")
+        if start.name and start.is_file() and start != send:
+            raw = gltf.joints_like(raw, start.read_bytes())
         went = self._alphas_back(work, send, raw)
         data, put = gltf.with_alpha(raw, {m: str(p) for m, p in went.items()})
         kept = work / KEPT / send.name

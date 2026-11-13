@@ -614,5 +614,64 @@ class ItsOwnModel(unittest.TestCase):
         self.assertEqual(self.opened, [])
 
 
+def skinned(order: list, joints_of_points: list, names=("A", "B", "C")) -> bytes:
+    """A .glb of three bones A (its children the others) on one skin whose joints are `names` in `order`, three points
+    each leaning wholly on the bone named in `joints_of_points`, each bone's inverse bind matrix its own numbers."""
+    import struct as st
+    doc = {"asset": {"version": "2.0"}, "nodes": [{"name": names[0], "children": [1, 2]}, {"name": names[1]},
+                                                  {"name": names[2]}, {"name": "mesh", "mesh": 0, "skin": 0}],
+           "scenes": [{"nodes": [0, 3]}], "scene": 0, "accessors": [], "bufferViews": []}
+    views = []
+
+    def add(data: bytes, kind: str, comp: int, count: int) -> int:
+        doc["bufferViews"].append({"buffer": 0, "byteOffset": 0, "byteLength": len(data)})
+        views.append(data)
+        doc["accessors"].append({"bufferView": len(views) - 1, "componentType": comp, "count": count, "type": kind})
+        return len(doc["accessors"]) - 1
+    joint_index = {names.index(n): k for k, n in enumerate(order)}   # node -> joint number
+    pos = add(st.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0), "VEC3", 5126, 3)
+    joints = add(bytes(b for n in joints_of_points for b in (joint_index[names.index(n)], 0, 0, 0)), "VEC4", 5121, 3)
+    weights = add(st.pack("<12f", *([1.0, 0, 0, 0] * 3)), "VEC4", 5126, 3)
+    ibm = add(b"".join(st.pack("<16f", *([float(names.index(n) + 1)] * 16)) for n in order), "MAT4", 5126, 3)
+    doc["meshes"] = [{"primitives": [{"attributes": {"POSITION": pos, "JOINTS_0": joints, "WEIGHTS_0": weights}}]}]
+    doc["skins"] = [{"joints": [names.index(n) for n in order], "inverseBindMatrices": ibm}]
+    return gltf.pack_glb(doc, views)
+
+
+class JointOrder(unittest.TestCase):
+    """A file back from Blender with its bones in the order they went out in (gltf.joints_like): Blender 4.5's export
+    wrote the Generic Horse's 62 joints in another order (measured 2026-11-13), and the riflemen's model came in on bones
+    the bazooka man's wasn't on any more (rusemod.bonefit.skeleton_key)."""
+
+    def joints(self, raw: bytes):
+        doc, views = gltf.glb_views(raw)
+        names = [doc["nodes"][j]["name"] for j in doc["skins"][0]["joints"]]
+        acc = doc["accessors"][doc["meshes"][0]["primitives"][0]["attributes"]["JOINTS_0"]]
+        data = views[acc["bufferView"]][acc.get("byteOffset", 0):][:12]
+        ibm = doc["accessors"][doc["skins"][0]["inverseBindMatrices"]]
+        firsts = [__import__("struct").unpack_from("<f", views[ibm["bufferView"]], ibm.get("byteOffset", 0) + 64 * k)[0]
+                  for k in range(3)]
+        return names, [names[data[4 * p]] for p in range(3)], firsts
+
+    def test_back_in_the_order_it_went_out_in_each_point_on_its_own_bone(self):
+        went = skinned(["A", "B", "C"], ["B", "C", "A"])
+        sent = skinned(["A", "C", "B"], ["B", "C", "A"])
+        self.assertEqual(self.joints(sent)[0], ["A", "C", "B"])
+        got = gltf.joints_like(sent, went)
+        names, leaning, ibm = self.joints(got)
+        self.assertEqual(names, ["A", "B", "C"])
+        self.assertEqual(leaning, ["B", "C", "A"])                  # (each point still on the bone it leaned on)
+        self.assertEqual(ibm, [1.0, 2.0, 3.0])                       # (each bone's matrix moved with it)
+        self.assertEqual(self.joints(got), self.joints(went))
+
+    def test_left_as_it_is_when_the_bones_arent_the_same_or_already_in_order(self):
+        went = skinned(["A", "B", "C"], ["B", "C", "A"])
+        same = skinned(["A", "B", "C"], ["A", "A", "B"])
+        self.assertEqual(gltf.joints_like(same, went), same)
+        renamed = skinned(["A", "C", "D"], ["A", "C", "D"], names=("A", "D", "C"))
+        self.assertEqual(gltf.joints_like(renamed, went), renamed)
+        self.assertEqual(gltf.joints_like(b"not a model", went), b"not a model")
+
+
 if __name__ == "__main__":
     unittest.main()

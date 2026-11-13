@@ -739,7 +739,11 @@ class SquadBlenderCalls:
         for i in take:
             target = self._kind_file(address, lines[i]["kind"])
             kept = work / "kept" / f"{target.stem}.glb"
-            data, put = gltf.with_alpha(Path(got[i]["file"]).read_bytes(), got[i].get("alpha") or {})
+            raw = Path(got[i]["file"]).read_bytes()
+            start = work / "start" / i / f"{i}.glb"   # (his bones back in the order they went out in: gltf.joints_like)
+            if start.is_file():
+                raw = gltf.joints_like(raw, start.read_bytes())
+            data, put = gltf.with_alpha(raw, got[i].get("alpha") or {})
             _put(kept, data)
             record = _read(target.with_suffix(".json")) if target.is_file() else {}
             if not record and "base" in lines[i]:   # (his first own look: the size of the model he wore, if any)
@@ -975,7 +979,11 @@ class SquadBlenderCalls:
         self._write_count(address, n + 1)
         target = self._kind_file(address, str(at))
         kept = work / "kept" / f"{target.stem}.glb"
-        data, put = gltf.with_alpha(Path(new["file"]).read_bytes(), new.get("alpha") or {})
+        raw = Path(new["file"]).read_bytes()
+        start = work / "start" / adding["id"] / f"{adding['id']}.glb"   # (his bones in the order they went out in)
+        if start.is_file():
+            raw = gltf.joints_like(raw, start.read_bytes())
+        data, put = gltf.with_alpha(raw, new.get("alpha") or {})
         _put(kept, data)
         try:
             res = self.model_import(address, str(kept), size, kind=str(at))

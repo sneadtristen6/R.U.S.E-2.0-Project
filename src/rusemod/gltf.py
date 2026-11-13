@@ -490,6 +490,98 @@ def pack_glb(doc: dict, views: list) -> bytes:
             + struct.pack("<I4s", len(binary), b"BIN\0") + bytes(binary))
 
 
+def _skin_bones(doc: dict) -> tuple[list, list] | None:
+    """(each joint's name in the one skin's order, each one's parent's name or None) of a glTF document; None for one
+    with no skin, more than one, or two joints of one name."""
+    skins = doc.get("skins") or []
+    if len(skins) != 1:
+        return None
+    nodes = doc.get("nodes", [])
+    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+    joints = skins[0].get("joints") or []
+    names = [nodes[j].get("name") for j in joints]
+    if len(set(names)) != len(names):
+        return None
+    return names, [nodes[parent[j]].get("name") if j in parent else None for j in joints]
+
+
+def joints_like(raw: bytes, model: bytes) -> bytes:
+    """A .glb sent from Blender (`raw`) with its skin's joints in the order of the skin of the file that went out to
+    Blender (`model`), matched by the bones' names: Blender's glTF export writes the joints in an order of its own (each
+    bone's children right after it: measured 2026-11-13 with Blender 4.5.14 on the Generic Horse, its 62 joints the same
+    bones, names and parents, from the fifth on in another order). A model on bones of its own is read on its joints'
+    order (rusemod.modelin), and its animations and a squad's other soldiers' models are made on that order: in
+    another one its heavy-weapon soldier was no longer on the riflemen's bones (rusemod.bonefit.skeleton_key; the
+    build then leaves him his figure's clips, made on other bones). The joints, their inverse bind matrices and every
+    draw's JOINTS_0 are put in that order, nothing else changes. As it is when it already is, when the bones (names
+    and parents) aren't the same as the model's (one added, renamed or moved in Blender: Import model says what it
+    makes of that), or when either file can't be read so."""
+    import array
+    import sys
+    from .modelin import glb_document
+    try:
+        doc, views = glb_views(raw)
+        went = glb_document(model)[0]
+    except (ValueError, struct.error, OSError):
+        return raw
+    have, want = _skin_bones(doc), _skin_bones(went)
+    if have is None or want is None or have[0] == want[0]:
+        return raw
+    if sorted(have[0]) != sorted(want[0]) or dict(zip(*have)) != dict(zip(*want)):
+        return raw
+    order = [have[0].index(n) for n in want[0]]                 # new joint k is old joint order[k]
+    new_of = [0] * len(order)
+    for new, old in enumerate(order):
+        new_of[old] = new
+    acc = doc.get("accessors", [])
+
+    def part(i: int, sizes: dict):
+        """(accessor i's bytes as one run, the size of one of its numbers), or None when it isn't laid out so."""
+        a = acc[i]
+        size = sizes.get(a.get("componentType"))
+        n = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}.get(a.get("type"))
+        if "sparse" in a or "bufferView" not in a or not size or not n:
+            return None
+        bv = doc["bufferViews"][a["bufferView"]]
+        if bv.get("byteStride") and bv["byteStride"] != size * n:
+            return None
+        start = a.get("byteOffset", 0)
+        data = views[a["bufferView"]][start:start + a["count"] * n * size]
+        return (data, size) if len(data) == a["count"] * n * size else None
+
+    skin = doc["skins"][0]
+    changes = []
+    if "inverseBindMatrices" in skin:                            # (one 64-byte matrix a joint, moved with it)
+        got = part(skin["inverseBindMatrices"], {5126: 4})
+        if got is None or len(got[0]) != 64 * len(order):
+            return raw
+        changes.append((skin["inverseBindMatrices"], b"".join(got[0][64 * old:64 * old + 64] for old in order)))
+    seen = set()
+    for mesh in doc.get("meshes", []):
+        for prim in mesh.get("primitives", []):
+            for name, index in prim.get("attributes", {}).items():
+                if not name.startswith("JOINTS_") or index in seen:   # (an accessor two draws share: once)
+                    continue
+                seen.add(index)
+                got = part(index, {5121: 1, 5123: 2, 5125: 4})
+                if got is None:
+                    return raw
+                numbers = array.array({1: "B", 2: "H", 4: "I"}[got[1]], got[0])
+                if sys.byteorder != "little":
+                    numbers.byteswap()
+                if numbers and max(numbers) >= len(order):
+                    return raw
+                numbers = array.array(numbers.typecode, (new_of[v] for v in numbers))
+                if sys.byteorder != "little":
+                    numbers.byteswap()
+                changes.append((index, numbers.tobytes()))
+    skin["joints"] = [skin["joints"][old] for old in order]
+    for index, data in changes:
+        acc[index]["bufferView"] = add_view(doc, views, data)
+        acc[index]["byteOffset"] = 0
+    return pack_glb(doc, views)
+
+
 ALPHA_BACK, ALPHA_NONE, ALPHA_GONE = "back", "none", "gone"   # with_alpha's word on each material
 
 
