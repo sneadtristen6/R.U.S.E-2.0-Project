@@ -513,19 +513,20 @@ class EraUnitCalls:
             self._era_save(self._era_record(), lib)   # (the deleted unit is no longer the mod's: left out)
 
     def era_units_list(self, era: str, kind: str = "all", nation: int = -1, search: str = "",
-                       group: str = "all") -> dict:
+                       group: str = "all", lang: str = "base") -> dict:
         """One era's units for the Units list: {"library": found or not, "units": [{key, name, nation, code (the
         nation chip), card, kind, added, built, by}], "types": the card types there, sorted}, filtered as the Units
         list is: by kind (ground or air), nation chip, words in the name (a built unit's in any of the Studio's
         languages) and card type ("type:<card>"). "installed": whether the era's library units are on this PC (else
         the page offers its download). The units made for RUSE 2.0 ("built": the Horse Squad, horse_squad.py; "by":
         its maker, else None) are listed in their era whether it's downloaded or not: nothing of theirs is
-        downloaded."""
+        downloaded; their card is the game's type in the Studio's language `lang` (as the Units list says a game
+        unit's: English for Persian and the code names), an era unit's the library's own."""
         from .horse_squad import BUILT
         folder, lib = self._era_library()
         record = self._era_record() if self._mod_dir() is not None else {}
         words = (search or "").casefold().split()
-        built = self._era_built() if any(e["era"] == era for e in BUILT.values()) else []   # (the game's index read)
+        built = self._era_built(lang) if any(e["era"] == era for e in BUILT.values()) else []   # (the game's index)
         rows = [u for u in lib["units"] if u["era"] == era] + [u for u in built if u["era"] == era]
         rows = [u for u in rows if kind in ("all", kind_of(u)) and nation in (-1, NATION_CODE.get(u["nation"], -1))]
         types = sorted({u["card"] for u in rows if u["card"]})
@@ -868,6 +869,10 @@ class EraUnitCalls:
         _era_make makes it from: {"source", "record", "has_model", "size", "research", "research_from", "costs",
         "rows", "target", "edits"}."""
         from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
+        from .horse_squad import KEY as HORSE
+        # (an era unit's name is its library's, a proper name said as it is; the Horse Squad's is the Studio's own,
+        # said in the modder's language: its refusals are their own texts, in English as the era units' say it
+        # (horse_squad.NAME), each with its name in every language in errors.toml)
         if self._mod_dir() is None or self._edits() is None:
             raise StudioError("Pick or make a mod first: an era unit is added to a mod.")
         source = source or entry.get("copies")
@@ -875,6 +880,8 @@ class EraUnitCalls:
             raise StudioError(f"{entry['name']}: pick a unit to start from")
         record = self._era_record()
         if key in record:
+            if key == HORSE:
+                raise StudioError("Horse Squad is already in this mod")
             raise StudioError(f"{entry['name']} is already in this mod")
         # everything asked for is checked before the unit is made, so a refusal leaves nothing half made
         has_model = bool(folder is not None and entry.get("model") and (folder / entry["model"]).is_file())
@@ -903,9 +910,16 @@ class EraUnitCalls:
             if research_from == SUGGESTED:
                 research_from = research["suggested"]
             if research_from is not None and research_from not in menu:
+                if key == HORSE:
+                    # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
+                    raise StudioError(f"Horse Squad can't be researched from {research_from} in that build menu")
                 # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
                 raise StudioError(f"{entry['name']} can't be researched from {research_from} in that build menu")
             if research_from is not None and rows and research_from not in (target or {"units": ()})["units"]:
+                if key == HORSE:
+                    # the game's way: researched from a unit of that building it's an upgrade, drawn in that group
+                    raise StudioError(f"Horse Squad can't be researched from {research_from}: that unit is in another "
+                                      f"group of the building than the one picked.")
                 # the game's way: researched from a unit of that building it's an upgrade, drawn in that unit's group
                 raise StudioError(f"{entry['name']} can't be researched from {research_from}: that unit is in another "
                                   f"group of the building than the one picked.")
@@ -996,6 +1010,8 @@ class EraUnitCalls:
         record = self._era_record()
         address = record.get(key)
         if address is None:
+            if key in BUILT:   # (by its name, in the modder's language: never its key)
+                raise StudioError("Horse Squad isn't in this mod")
             raise StudioError(f"{key}: not in this mod")
         research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
         if "ask" in research:

@@ -5009,6 +5009,58 @@ jpn = "騎馬分隊を追加できず、取り除くこともできなかった�
 sc = "无法添加骑兵小队，取回也失败了，所以它的一部分仍在你的模组中：请在单位标签页里它的页面上把它从模组中移除，或在它的单位页面上删除它。"
 fa = "جوخهٔ سواره اضافه نشد و برداشتنش هم ناموفق بود، پس بخشی از آن هنوز در ماد شماست: آن را در صفحه‌اش در زبانهٔ یگان‌ها از ماد بردارید، یا در صفحهٔ یگانش حذفش کنید."
 
+[eb68cea348d]
+us = "Horse Squad is already in this mod"
+fr = "L'Escouade à cheval est déjà dans ce mod"
+ger = "Der Reitertrupp ist schon in diesem Mod"
+ita = "La Squadra a cavallo è già in questa mod"
+spa = "El Pelotón a caballo ya está en este mod"
+pol = "Oddział konny już jest w tym modzie"
+ru = "Конный отряд уже есть в этом моде"
+cz = "Jízdní družstvo už v tomto modu je"
+jpn = "騎馬分隊はすでにこの Mod にあります"
+sc = "骑兵小队已在此模组中"
+fa = "جوخهٔ سواره از قبل در این ماد هست"
+
+[ebd80c14e01]
+us = "Horse Squad isn't in this mod"
+fr = "L'Escouade à cheval n'est pas dans ce mod"
+ger = "Der Reitertrupp ist nicht in diesem Mod"
+ita = "La Squadra a cavallo non è in questa mod"
+spa = "El Pelotón a caballo no está en este mod"
+pol = "Oddziału konnego nie ma w tym modzie"
+ru = "Конного отряда нет в этом моде"
+cz = "Jízdní družstvo v tomto modu není"
+jpn = "騎馬分隊はこの Mod にありません"
+sc = "骑兵小队不在此模组中"
+fa = "جوخهٔ سواره در این ماد نیست"
+
+[ef560a42ca8]
+us = "Horse Squad can't be researched from {0} in that build menu"
+fr = "L'Escouade à cheval ne peut pas être recherchée à partir de {0} dans ce menu de construction"
+ger = "Der Reitertrupp kann in diesem Baumenü nicht aus {0} erforscht werden"
+ita = "La Squadra a cavallo non può essere ricercata da {0} in quel menu di costruzione"
+spa = "El Pelotón a caballo no se puede investigar desde {0} en ese menú de construcción"
+pol = "Oddział konny nie może być badany z {0} w tym menu budowy"
+ru = "Конный отряд нельзя исследовать из {0} в этом меню постройки"
+cz = "Jízdní družstvo nelze v této nabídce stavby vyzkoumat z {0}"
+jpn = "その建設メニューでは騎馬分隊を {0} から研究できません"
+sc = "在该建造菜单中，骑兵小队无法由 {0} 研究得到"
+fa = "در آن منوی ساخت نمی‌توان جوخهٔ سواره را از {0} تحقیق کرد"
+
+[e7a22906f74]
+us = "Horse Squad can't be researched from {0}: that unit is in another group of the building than the one picked."
+fr = "L'Escouade à cheval ne peut pas être recherchée depuis {0} : cette unité est dans un autre groupe du bâtiment que celui choisi."
+ger = "Der Reitertrupp kann nicht von {0} aus erforscht werden: Diese Einheit ist in einer anderen Gruppe des Gebäudes als der gewählten."
+ita = "La Squadra a cavallo non può essere ricercata da {0}: quell'unità è in un gruppo dell'edificio diverso da quello scelto."
+spa = "El Pelotón a caballo no puede investigarse desde {0}: esa unidad está en otro grupo del edificio, no en el elegido."
+pol = "Oddział konny nie może być badany od {0}: ta jednostka jest w innej grupie budynku niż wybrana."
+ru = "Конный отряд нельзя исследовать от {0}: этот юнит в другой группе здания, не в выбранной."
+cz = "Jízdní družstvo nelze vyzkoumat z {0}: ta jednotka je v jiné skupině budovy než ve vybrané."
+jpn = "騎馬分隊は {0} から研究できません。そのユニットは選んだものとは別の、建物のグループにあります。"
+sc = "骑兵小队不能从 {0} 研究：该单位在建筑的另一个组里，而不是所选的组。"
+fa = "جوخهٔ سواره را نمی‌توان از {0} پژوهش کرد: آن یگان در گروه دیگری از ساختمان است، نه گروهی که انتخاب شده."
+
 [e2cb10333e9]
 us = "This Studio can't make the Horse Squad: a part it needs couldn't be loaded. Please report this."
 fr = "Ce Studio ne peut pas fabriquer l'Escouade à cheval : une partie dont il a besoin n'a pas pu être chargée. Merci de le signaler."
