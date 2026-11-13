@@ -1811,18 +1811,18 @@ jpn = "エクスポートしたファイルでは、これらのモデルの記�
 sc = "在导出的文件里，这些模型记录只写每个模型来自的文件名，不写它在你电脑上的文件夹；其中其他内容都没有改动：{0}。"
 fa = "در فایل خروجی، این سوابق مدل فقط نام فایلی را می‌برند که هر مدل از آن ساخته شد، نه پوشه‌ای از رایانهٔ شما که در آن است؛ چیز دیگری در آن‌ها تغییر نکرد: {0}."
 
-[e279a510606]
-us = "In the exported file, these scenery models name only the file each was made from, not the folder on your PC it is in; nothing else in them changed: {0}."
-fr = "Dans le fichier exporté, ces modèles de décor ne nomment que le fichier dont chacun a été fait, pas le dossier de votre PC où il se trouve ; rien d'autre n'y a changé : {0}."
-ger = "In der exportierten Datei nennen diese Landschaftsmodelle nur die Datei, aus der jedes gemacht wurde, nicht den Ordner Ihres PCs, in dem sie liegt; sonst hat sich darin nichts geändert: {0}."
-ita = "Nel file esportato, questi modelli dello scenario nominano solo il file da cui è stato fatto ciascuno, non la cartella del tuo PC in cui si trova; nient'altro vi è cambiato: {0}."
-spa = "En el archivo exportado, estos modelos del escenario nombran solo el archivo del que se hizo cada uno, no la carpeta de tu PC en la que está; nada más cambió en ellos: {0}."
-pol = "W wyeksportowanym pliku te modele krajobrazu podają tylko plik, z którego zrobiono każdy z nich, a nie folder na twoim komputerze, w którym leży; nic innego się w nich nie zmieniło: {0}."
-ru = "В экспортированном файле эти модели декораций называют только файл, из которого сделана каждая, а не папку на вашем ПК, где он лежит; больше в них ничего не изменилось: {0}."
-cz = "V exportovaném souboru tyto modely scenérie uvádějí jen soubor, ze kterého byl každý udělán, ne složku vašeho PC, ve které leží; nic jiného se v nich nezměnilo: {0}."
-jpn = "エクスポートしたファイルでは、これらの風景のモデルはそれぞれの元のファイル名だけを記し、PC 上のフォルダーは記していません。それ以外は何も変えていません：{0}。"
-sc = "在导出的文件里，这些场景模型只写各自来自的文件名，不写它在你电脑上的文件夹；其中其他内容都没有改动：{0}。"
-fa = "در فایل خروجی، این مدل‌های منظره فقط نام فایلی را می‌برند که هرکدام از آن ساخته شد، نه پوشه‌ای از رایانهٔ شما که در آن است؛ چیز دیگری در آن‌ها تغییر نکرد: {0}."
+[e5c85e886c1]
+us = "In the exported file, these models name only the file each was made from, not the folder on your PC it is in; nothing else in them changed: {0}."
+fr = "Dans le fichier exporté, ces modèles ne nomment que le fichier dont chacun a été fait, pas le dossier de votre PC où il se trouve ; rien d'autre n'y a changé : {0}."
+ger = "In der exportierten Datei nennen diese Modelle nur die Datei, aus der jedes gemacht wurde, nicht den Ordner Ihres PCs, in dem sie liegt; sonst hat sich darin nichts geändert: {0}."
+ita = "Nel file esportato, questi modelli nominano solo il file da cui è stato fatto ciascuno, non la cartella del tuo PC in cui si trova; nient'altro vi è cambiato: {0}."
+spa = "En el archivo exportado, estos modelos nombran solo el archivo del que se hizo cada uno, no la carpeta de tu PC en la que está; nada más cambió en ellos: {0}."
+pol = "W wyeksportowanym pliku te modele podają tylko plik, z którego zrobiono każdy z nich, a nie folder na twoim komputerze, w którym leży; nic innego się w nich nie zmieniło: {0}."
+ru = "В экспортированном файле эти модели называют только файл, из которого сделана каждая, а не папку на вашем ПК, где он лежит; больше в них ничего не изменилось: {0}."
+cz = "V exportovaném souboru tyto modely uvádějí jen soubor, ze kterého byl každý udělán, ne složku vašeho PC, ve které leží; nic jiného se v nich nezměnilo: {0}."
+jpn = "エクスポートしたファイルでは、これらのモデルはそれぞれの元のファイル名だけを記し、PC 上のフォルダーは記していません。それ以外は何も変えていません：{0}。"
+sc = "在导出的文件里，这些模型只写各自来自的文件名，不写它在你电脑上的文件夹；其中其他内容都没有改动：{0}。"
+fa = "در فایل خروجی، این مدل‌ها فقط نام فایلی را می‌برند که هرکدام از آن ساخته شد، نه پوشه‌ای از رایانهٔ شما که در آن است؛ چیز دیگری در آن‌ها تغییر نکرد: {0}."
 
 [e0cfc954f06]
 us = "In the exported file, these map import records name only the folders each map was made from, not where they are on your PC; nothing else in them changed: {0}."

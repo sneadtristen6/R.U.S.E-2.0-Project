@@ -13,8 +13,8 @@ No folder of the maker's PC goes out in a package (FL-110): the owner, 2026-11-1
 the full path of each imported model's source file in its record (often C:\\Users\\<his Windows name>\\...), answered
 "Keep file name only": Export writes only the file's own name, never a folder. `pack()` does that only in the fields
 the Studio itself writes a path of the PC into (STUDIO_PATHS, packed_bytes): a model's record ("from", and the
-pictures its report names), the data inside a .glb model the Studio made from a scenery model (its source's path), and
-a map's import record (the folders it was made from). The file's own name and every other byte stay as they were.
+pictures its report names), the data inside a .glb model the Studio made from a scenery or building model (its
+source's path), and a map's import record (the folders it was made from). The file's own name and every other byte stay as they were.
 Nothing a modder wrote is changed (README, descriptions, .rndf, .csv, notes, credits: byte for byte), so no sentence
 can be cut; a text naming this PC's home folder goes out as written, and Export says so (home_named). The mod's own
 files on the maker's PC keep theirs: Resize and Move fit a model again from the file its record names.
@@ -222,10 +222,10 @@ def _names_a_unit(record: Path) -> bool:
 STUDIO_PATHS = {
     # what the Studio writes where (each place's member, and the words its export line uses for it)
     "record": "files/models/<unit>.json (ruse_studio.api._fit_model): \"from\", the file the model was made from "
-              "(always a path); its report's \"file\", and the pictures its report names but didn't find (\"missing\", the "
-              "model file's own names for them), wherever the report repeats them (its \"pictures\", \"alpha\", "
+              "(always a path); its report's \"file\", and the pictures its report names but didn't find "
+              "(\"missing\", the model file's own names for them), wherever the report repeats them (its \"pictures\", \"alpha\", "
               "\"notes\")",
-    "model": "a .glb the Studio made from a scenery model (rusemod.meshlod.glb_bytes): its asset's extras' "
+    "model": "a .glb the Studio made from a scenery or building model (rusemod.meshlod): its asset's extras' "
              "\"rusemod_version\" and each mesh named the same, the source's path (and its ring, \"(far)\")",
     "import": "maps/<Pack>/import.toml (rusemod.placebase, the real-place import): [base] folder, engine_run and "
               "engine_code, the folders the map was made from",

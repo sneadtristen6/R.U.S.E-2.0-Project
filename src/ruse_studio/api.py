@@ -10083,7 +10083,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say(f"In the exported file, these model records name only the file each model was made from, not the "
                     f"folder on your PC it is in; nothing else in them changed: {', '.join(records)}.")
             if models:
-                say(f"In the exported file, these scenery models name only the file each was made from, not the folder "
+                say(f"In the exported file, these models name only the file each was made from, not the folder "
                     f"on your PC it is in; nothing else in them changed: {', '.join(models)}.")
             if imports:
                 say(f"In the exported file, these map import records name only the folders each map was made from, not "
