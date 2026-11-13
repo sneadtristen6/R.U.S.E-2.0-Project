@@ -125,8 +125,9 @@ class ADamagedClipFile(unittest.TestCase):
 
 class ARecordFromBefore(ADamagedClipFile):
     """A model record written before e86eabec has no fingerprints of what its fit took in ("from_file"): every own-bones
-    record of this branch's mods made before the fix, the owner's own Horse Squad mods among them (their RUSE Decoy
-    changes of 2026-11-12 too). Import model again, the same file: the change made in RUSE Decoy goes back to the
+    record of this branch's mods made before the fix, such as the mod behind the owner's test copy decoy-blender2
+    (its Horse Squad's RUSE Decoy changes of 2026-11-12: stand, run, ride; whether that mod is used again is not
+    known). Import model again, the same file: the change made in RUSE Decoy goes back to the
     file's and nothing names it (the fixer's known limit: "Import model again over such a record can't name his
     changes"), though the same file tells it, as Resize tells it on such a record. FAILS on e469d4d4 and on db2abbfb
     (not a regression: the class not closed on this route)."""
