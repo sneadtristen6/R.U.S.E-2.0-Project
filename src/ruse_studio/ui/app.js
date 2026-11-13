@@ -2949,6 +2949,7 @@ function notKeptSaid(lost) {
   const said = [];
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
+  if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
   return said.join(" ");
 }
 

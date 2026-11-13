@@ -40,6 +40,23 @@ NOT_KEPT = "not_kept"     # a fit's report: what of the modder's own it couldn't
 UNREAD = (ValueError, IndexError, struct.error)   # a clip's bytes rusemod.baf can't read (its ClipError a ValueError)
 
 
+def write_record(path: Path, data: dict) -> None:
+    """A model's record (files/models/<unit>.json) written whole or not at all: beside itself first, then put in its
+    place, so a write that stops part way (the disk full, the Studio closed) leaves the record as it was, never one cut
+    short that no fit can read (the resize recheck, round 2: written in place, it was). The same text as before."""
+    path = Path(path)
+    part = path.with_name(path.name + ".part")
+    try:
+        part.write_text(json.dumps(data, indent=1), encoding="utf-8")
+        os.replace(part, path)
+    except BaseException:
+        try:
+            part.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
 def _sha(data: bytes) -> str:
     return hashlib.sha256(bytes(data)).hexdigest()
 
@@ -102,7 +119,7 @@ class AnimModelCalls:
             raise StudioError(f"{Path(file).name}: {exc}") from None
 
     def _record_more(self, address: str, report: dict, file: Path, clips: dict, before: dict, refit: bool = False,
-                     carried: dict | None = None) -> dict:
+                     carried: dict | None = None, lost: bool = False) -> dict:
         """What the model's record says of its bones and animations (rusemod.animmodel's record), the unit's own clips
         and rows written for a model on bones of its own; `before`: the record as it was (a model brought in before
         this one), whose animations go when the new model has none of its own. Its notes go into `report`.
@@ -116,7 +133,14 @@ class AnimModelCalls:
         before. Either way, what of his couldn't be kept goes into the report's NOT_KEPT (the page says it), and the
         record's FROM_FILE says what this fit took in (see the module's note). `carried`: what the unit's own model
         file carried before this fit wrote it anew (_carried_before), for an animation the record has no fingerprint
-        of (_last_fit)."""
+        of (_last_fit).
+
+        `lost` (StudioApi._fit_model): the unit's model file is there but no record says what it is (one that can't be
+        read, cut short, gone, or holding a split alone). `carried` is then every animation that file gives (_file_clips),
+        and it alone tells the modder's changes from what the last fit took in: a model on bones of its own before
+        this one when it gives any, its changed animations named when the new model takes their place; when it gives
+        none, every animation the new model's take the place of is named (nothing tells them apart: said, never put back
+        without a word, the resize recheck, round 2)."""
         from rusemod import animmodel, baf
         from rusemod.anim import AnimError
         from rusemod.modelin import OWN_SKELETON
@@ -125,7 +149,7 @@ class AnimModelCalls:
         target = self._own_model_file(address)
         unit, mod = target.stem, self._mod_dir()
         was_own = before.get("skeleton") == "own"
-        previous = before.get("animations") if was_own else None
+        previous = before.get("animations") if was_own else (list(carried) if lost and carried else None)
         last = before.get(FROM_FILE) if was_own and isinstance(before.get(FROM_FILE), dict) else {}
         last_clips = last.get("animations") if isinstance(last.get("animations"), dict) else {}
         last_plays = last.get("plays") if isinstance(last.get("plays"), dict) else None
@@ -133,7 +157,7 @@ class AnimModelCalls:
         # (what the last fit took in, read again only for an animation with no fingerprint: a record from before them.
         # With no model on bones of its own before this one, the animations the unit has came along with a copy of a
         # unit, ruse_studio.actions, not from a fit of a model of its own: nothing to tell them by, as before)
-        last_fit = (lambda: self._last_fit(before, file, clips, carried)) if was_own else None
+        last_fit = (lambda: self._last_fit(before, file, clips, carried)) if was_own or lost else None
         if not report.get(OWN_SKELETON):
             if previous:   # (the clips were made on the old model's bones: they go with it)
                 with self._saving:

@@ -80,7 +80,7 @@ from .squadblender import SquadBlenderCalls
 from .decoyblender import DecoyBlenderCalls
 from .actions import ActionCalls
 from .modelfit import ModelFitCalls
-from .animmodel_calls import NOT_KEPT, AnimModelCalls
+from .animmodel_calls import NOT_KEPT, AnimModelCalls, write_record
 from .flagtypes import FlagTypeCalls
 from .board import BoardCalls
 from .groups import PROPS as GROUP_PROPS, GroupCalls
@@ -8345,9 +8345,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         record = target.with_suffix(".json") if target is not None else None
         if record is None or not record.is_file():
             return
-        data = json.loads(record.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(record.read_text(encoding="utf-8"))
+        except (OSError, ValueError):   # (one that can't be read: the uniform is kept all the same, never lost with
+            data = {}                   # it; the model's next fit reads its animations from the model's own file)
+        data = data if isinstance(data, dict) else {}
         data["copy_kept"] = copy_text
-        record.write_text(json.dumps(data, indent=1), encoding="utf-8")
+        write_record(record, data)   # (whole or not at all)
 
     def _fit_model(self, address: str, file: str | None, size: float, aircraft: bool, facing: list | None,
                    own_turret: bool, own_propellers: bool, move: list | None, kind: str | None = None,
@@ -8410,16 +8414,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if out is not None:
             target = Path(out)
         record = target.with_suffix(".json")
+        unread = False   # (a record there that can't be read: what it held is said as not kept, never dropped quietly)
         try:
             before = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
         except (OSError, ValueError):
-            before = {}
-        before = before if isinstance(before, dict) else {}
+            before, unread = {}, True
+        if not isinstance(before, dict):
+            before, unread = {}, True
+        main = out is None and place is None and not (kinds and kind != main_kind)
+        # (the unit's own model, its file there, with no record that says what it is: one that can't be read, cut
+        # short, gone, or holding the split alone. What its last fit took in is then read from the model's own file
+        # alone, so a change the modder made since is named or kept, never put back without a word: the resize
+        # recheck, round 2)
+        lost = main and target.is_file() and not before.get("from")
         # (the unit's own model on bones of its own, read before it's written anew: the animations its file carries,
         # when one of the unit's animations has no fingerprint in its record, a record from before them; the fit
         # tells the modder's RUSE Decoy changes from what its last fit took in by them: AnimModelCalls._last_fit)
-        carried = self._carried_before(target, before) if out is None and place is None \
-            and not (kinds and kind != main_kind) else None
+        carried = (self._file_clips(target) if lost else self._carried_before(target, before)) if main else None
         # the first of its models a new one can be fitted to: a jeep's crew figure can come first (the Kubelwagen's
         # driver, 2026-10-09: every era jeep copying it failed on "no chassis bone")
         report, first_error = None, None
@@ -8460,23 +8471,27 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                         "soldiers play what the copied unit's played, made on the game soldier's bones: that can stop "
                         "the game. Import a model on the same bones for the riflemen too.")
         else:
-            more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried)
+            more = self._record_more(address, report, Path(file), clips, before, refit=refit, carried=carried,
+                                     lost=lost)
             if kinds:
                 more["for"] = kind
-        record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
-                                      "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
-                                      **({"facing": list(facing)} if facing else {}),
-                                      **({"move": move} if report.get("moved") else {}),
-                                      "report": report, **more,
-                                      # (the modder's choices last: a split chosen on the page wins over the one
-                                      # the file names; Part 3's kept_choices, item 5 merge)
-                                      **kept_choices(record),
-                                      # (a Custom uniform the model took the place of stays kept through Resize, Move
-                                      # and a new import, so taking the model out still gives it back: written anew
-                                      # without it, it was lost on the first Resize, 2026-11-11)
-                                      **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
-                                         and isinstance(before.get("copy_kept"), str) else {})},
-                                     indent=1), encoding="utf-8")
+        if unread:   # (what else it held, a split chosen on the page, a Custom uniform it took the place of: said)
+            report.setdefault(NOT_KEPT, {"animations": [], "picks": []})["record"] = True
+        # (written whole beside itself, then put in place: a write that stops, the disk full or the Studio closed,
+        # leaves the record as it was, never one cut short: the resize recheck, round 2)
+        write_record(record, {"from": str(file), "size": size, "aircraft": bool(aircraft),
+                              "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
+                              **({"facing": list(facing)} if facing else {}),
+                              **({"move": move} if report.get("moved") else {}),
+                              "report": report, **more,
+                              # (the modder's choices last: a split chosen on the page wins over the one
+                              # the file names; Part 3's kept_choices, item 5 merge)
+                              **kept_choices(record),
+                              # (a Custom uniform the model took the place of stays kept through Resize, Move
+                              # and a new import, so taking the model out still gives it back: written anew
+                              # without it, it was lost on the first Resize, 2026-11-11)
+                              **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
+                                 and isinstance(before.get("copy_kept"), str) else {})})
         return report
 
     def _kind_records(self, address: str) -> list:
@@ -8534,6 +8549,19 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             return None
         return record if isinstance(record, dict) else None
 
+    def _record_readable(self, address: str, record: dict | None) -> None:
+        """Before Resize or Move: a StudioError in words when the unit's own model file is there but its record
+        (_own_model_record: `record`) can't be read or doesn't say the file it was made from (cut short, gone, or
+        holding a split alone), so the model can't be fitted again from it. Import model again then names what of the
+        modder's it can't keep (AnimModelCalls._record_more's `lost`). Said as "import one first" before, of a model
+        the page still showed (the resize recheck, round 2)."""
+        target = self._own_model_file(address)
+        if target is None or not target.is_file() or (record is not None and record.get("from")):
+            return
+        # not a game rule: only a model whose record says the file it was made from can be fitted again from it
+        raise StudioError(f"This model's record in the mod ({target.with_suffix('.json').name}) can't be read or is "
+                          f"missing, so it can't be fitted again: import the model again.")
+
     def _unit_kinds(self, addresses) -> dict:
         """Each unit's kind ("ground", "infantry", "air", "buildings"; None when unknown), a new unit's as the unit it
         copies."""
@@ -8589,6 +8617,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         be is named in the report's "not_kept", which the page says. Returns model_import()'s answer; an own copy of the
         unit's (a mod made with both, by an older Studio or by hand) stays: only a new import takes it out."""
         record = self._own_model_record(address)
+        self._record_readable(address, record)
         if record is None:
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to resize: import one first.")
@@ -8612,6 +8641,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         It's fitted the way a new import is: its turret's bones go with it, so the turret keeps turning where the model's turret is, and its propellers stay on it; a model fitted before
         there was own_turret or own_propellers takes that too once it's moved. Returns model_import()'s answer (an own copy stays, as model_resize)."""
         record = self._own_model_record(address)
+        self._record_readable(address, record)
         if record is None:
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to move: import one first.")
@@ -8646,7 +8676,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _own_models_of(self, kind: str) -> list[str]:
         """The current mod's new units with a model of their own, of `kind` ("air": planes; "ground": the rest, the
         ground units and infantry; "all")."""
-        have = [a for a in sorted(self._new_units()) if self._own_model_record(a) is not None]
+        # (one whose model file is there with a record that can't be read is listed too: every unit at once then says
+        # it was skipped and why, _record_readable, never leaving it out unsaid)
+        have = [a for a in sorted(self._new_units()) if self._own_model_record(a) is not None
+                or ((f := self._own_model_file(a)) is not None and f.is_file())]
         kinds = self._unit_kinds(have) if have else {}
         return [a for a in have if kind == "all" or (kind == "air") == (kinds[a] == "air")]
 

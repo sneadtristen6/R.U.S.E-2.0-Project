@@ -13705,6 +13705,21 @@ jpn = "これらの動作は、選ばれていたものをもう再生しませ�
 sc = "这些动作不再播放为它们选定的内容：{actions}。请在“它的动画”中检查。"
 fa = "این کارها دیگر آنچه برایشان انتخاب شده بود را پخش نمی‌کنند: {actions}. آن‌ها را در «انیمیشن‌هایش» بررسی کنید."
 
+# (its record in the mod, files/models/<unit>.json, couldn't be read: what else it held is gone; StudioApi._fit_model's
+# not_kept "record")
+[model_kept_not_record]
+us = "The model's record in the mod couldn't be read, so these weren't kept, if it had them: the bone chosen under Its two halves, and a Custom uniform the model took the place of. Check them."
+fr = "Le registre du modèle dans le mod n'a pas pu être lu, donc ceci n'a pas été gardé, s'il l'avait : l'os choisi sous Ses deux moitiés, et un Uniforme personnalisé que le modèle remplaçait. Vérifiez-les."
+ger = "Der Eintrag des Modells im Mod konnte nicht gelesen werden, deshalb wurde dies nicht behalten, falls es das hatte: der unter Seine zwei Hälften gewählte Knochen und eine Eigene Uniform, deren Platz das Modell eingenommen hat. Prüfe sie."
+ita = "Il registro del modello nella mod non si è potuto leggere, quindi questo non è stato tenuto, se c'era: l'osso scelto in Le sue due metà e un'Uniforme personalizzata di cui il modello ha preso il posto. Controllali."
+spa = "No se pudo leer el registro del modelo en el mod, así que esto no se ha conservado, si lo tenía: el hueso elegido en Sus dos mitades y un Uniforme personalizado cuyo lugar ocupó el modelo. Revísalos."
+pol = "Nie udało się odczytać zapisu modelu w modzie, więc nie zachowano tego, jeśli to miał: kości wybranej w sekcji Dwie połowy oraz Własnego munduru, którego miejsce zajął model. Sprawdź je."
+ru = "Запись модели в моде не удалось прочитать, поэтому это не сохранилось, если было: кость, выбранная в разделе «Две половины», и Своя форма, место которой заняла модель. Проверьте их."
+cz = "Záznam modelu v modu se nepodařilo přečíst, takže tohle nebylo zachováno, pokud to měl: kost zvolená v části Jeho dvě poloviny a Vlastní uniforma, jejíž místo model zaujal. Zkontroluj je."
+jpn = "MOD内のモデルの記録を読めなかったため、次のものはあったとしても残りませんでした：「上半身と下半身」で選んだ骨と、モデルが置き換えたカスタム軍服。確かめてください。"
+sc = "无法读取模组中该模型的记录，因此以下内容（如果有的话）没有保留：在“上下两半”中选择的骨骼，以及该模型所取代的自定义制服。请检查它们。"
+fa = "سابقهٔ مدل در ماد خوانده نشد، پس این‌ها اگر بودند نگه داشته نشدند: استخوانی که در «دو نیمهٔ آن» انتخاب شده بود، و اونیفرم سفارشی‌ای که مدل جایش را گرفت. آن‌ها را بررسی کنید."
+
 [model_size_when]
 us = "A unit's size can't change while the game runs (it reads the model when it loads): a new size shows from the next build."
 fr = "La taille d'une unité ne peut pas changer pendant la partie (le jeu lit le modèle au chargement) : une nouvelle taille se voit à la prochaine construction."
