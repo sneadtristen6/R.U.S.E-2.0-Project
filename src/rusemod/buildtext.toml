@@ -1798,6 +1798,19 @@ jpn = "ファイルには {0} マップ分の算出済みの答えがロック�
 sc = "该文件包含 {0} 张地图的预算答案并已锁定：玩家构建时直接使用，无需重新计算。"
 fa = "فایل پاسخ‌های ازپیش‌محاسبه‌شده برای {0} نقشه را، قفل‌شده، همراه دارد: ساختِ بازیکن به‌جای محاسبهٔ دوباره، همین‌ها را برمی‌دارد."
 
+[e426ba7b78d]
+us = "Your PC's folders were left out of the exported file: {0} of the mod's files named one, and there they name only the file ({1}{2})."
+fr = "Les dossiers de votre PC ont été laissés hors du fichier exporté : {0} des fichiers du mod en nommaient un, et là ils ne nomment que le fichier ({1}{2})."
+ger = "Die Ordner Ihres PCs blieben aus der exportierten Datei draußen: {0} der Dateien des Mods nannten einen, und dort nennen sie nur die Datei ({1}{2})."
+ita = "Le cartelle del tuo PC sono rimaste fuori dal file esportato: {0} dei file della mod ne nominavano una, e lì nominano solo il file ({1}{2})."
+spa = "Las carpetas de tu PC quedaron fuera del archivo exportado: {0} de los archivos del mod nombraban una, y allí solo nombran el archivo ({1}{2})."
+pol = "Foldery twojego komputera zostały pominięte w wyeksportowanym pliku: {0} plików moda wskazywało folder, a tam wskazują tylko sam plik ({1}{2})."
+ru = "Папки вашего ПК не попали в экспортированный файл: файлов мода, где была указана папка: {0}; там в них указан только сам файл ({1}{2})."
+cz = "Složky vašeho PC zůstaly mimo exportovaný soubor: {0} souborů modu nějakou uvádělo a tam uvádějí jen samotný soubor ({1}{2})."
+jpn = "PC のフォルダーはエクスポートしたファイルに入れていません：フォルダーを記していた Mod のファイル {0} 個は、そこではファイル名だけを記しています（{1}{2}）。"
+sc = "导出的文件中不含你电脑上的文件夹：模组中有 {0} 个文件写有文件夹，在导出的文件里它们只写文件名（{1}{2}）。"
+fa = "پوشه‌های رایانهٔ شما در فایل خروجی گنجانده نشد: {0} فایل از فایل‌های ماد پوشه‌ای را نام می‌بردند و آنجا فقط نام خود فایل را می‌برند ({1}{2})."
+
 [ef046b049f4]
 us = "In the Launcher's mod library as {0} {1}{2}: tick it in a mod set and press Play."
 fr = "Dans la bibliothèque de mods du Launcher sous {0} {1}{2} : cochez-le dans un ensemble de mods et appuyez sur Jouer."

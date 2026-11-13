@@ -8499,7 +8499,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         others = self._kind_records(address)
         for _k, r in others:
             file = r.get("from")
-            if file and Path(file).is_file():
+            if self._made_from(r) is not None:
                 continue
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
@@ -8584,7 +8584,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to resize: import one first.")
         file = record.get("from")
-        if not file or not Path(file).is_file():
+        if self._made_from(record) is None:
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8606,7 +8606,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             # not a game rule: only a model the Studio fitted has a file to fit again
             raise StudioError("This unit has no model of its own to move: import one first.")
         file = record.get("from")
-        if not file or not Path(file).is_file():
+        if self._made_from(record) is None:
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8617,6 +8617,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             self._fit_model(address, r["from"], float(r.get("size") or 1.0), bool(r.get("aircraft")),
                             self._pinned_facing(r), True, True, move, k)
         return {"model": report, "copy_out": False, **self.look(address)}
+
+    @staticmethod
+    def _made_from(record: dict) -> Path | None:
+        """The file a new unit's model was made from, as its record names it ("from"), when it's on this PC; None
+        when it isn't. An exported mod's records name only the file's own name (rusemod.package: no folder of the
+        maker's PC goes out), which is never looked for in the folder the Studio happens to run in."""
+        file = record.get("from") if isinstance(record, dict) else None
+        if not isinstance(file, str) or not file:
+            return None
+        path = Path(file)
+        return path if path.is_absolute() and path.is_file() else None
 
     @staticmethod
     def _pinned_facing(record: dict) -> list | None:
@@ -8649,9 +8660,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if record is None:
             return None
         kind = "air" if self._unit_kind(address) == "air" else "ground"
-        file = record.get("from")
         stands = (record.get("report") or {}).get("stands")
-        return {"size": float(record.get("size") or 1.0), "resizable": bool(file) and Path(file).is_file(),
+        return {"size": float(record.get("size") or 1.0), "resizable": self._made_from(record) is not None,
                 "kind": kind, "same_kind": len(self._own_models_of(kind)), "marks": self.model_size_marks(address, lang),
                 "move": list(record.get("move") or (0, 0, 0)), "length": stands[3] if stands else None}
 
@@ -10055,13 +10065,17 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 revision = revisions[0] if len(revisions) == 1 else None
                 fingerprint = fingerprint_text(result.fingerprint) if result.fingerprint else None
                 answers = result.solved  # (what the long map steps worked out: players' builds take it from the file)
+            cleaned: list = []   # (the files naming a folder of this PC: in the file with only the file's own name)
             with self._saving:
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH)
+                                    solved=answers, made_with=self.MADE_WITH, cleaned=cleaned)
             self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
                     f"them instead of working them out again.")
+            if cleaned:   # (FL-110, the owner, 2026-11-12: "Keep file name only")
+                say(f"Your PC's folders were left out of the exported file: {len(cleaned)} of the mod's files named one, "
+                    f"and there they name only the file ({', '.join(cleaned[:5])}{', …' if len(cleaned) > 5 else ''}).")
             say(f"Saved as {path}")
             job.result = self._share_view(path)
             say(f"Size: {job.result['size']} bytes")
