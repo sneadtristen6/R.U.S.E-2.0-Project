@@ -12,6 +12,8 @@ design, until that route is fixed too:
   animation rewritten, no word (the points the door checks are the copied game models' only);
 - D-F11's class: Change its animations in Blender failing after it set the last sending aside says nothing of it, and
   Bring my changes back then answers "Nothing has come back from Blender yet";
+- D-F4's and D-F8's class (real Blender, RUSE_BLENDER set): the scene's Time Stretching makes Blender play every
+  animation at half speed; each comes back cut to its first half and is written so, said only "Changed in Blender";
 - D-F3's class (on the game, RUSE_GAME and the game index and the Horse Squad's files): a horse unit made from the US
   paratroopers, which ride in no truck, so the build gives it no ride of its own; its hr_ride, which no listing plays
   by the build's rule, changed in Blender is said "Changed in Blender" and nothing else, though nothing plays it (the
@@ -34,6 +36,7 @@ from rusemod import anim, animactions, animlist, baf, modelin
 from test_animblender import CLIP_BYTES, RUN, SQUAD, Closed
 from test_animglb import Blenderish
 import test_fix_door2 as fd2       # (its helpers by name: its tests would run here too)
+import test_review_decoy as rd     # (RealBlender's helper and BLENDER, by name likewise)
 from test_gltf_bones import RECORD
 from test_recheck_door import moved
 from test_review_decoy import SPINE_TURN, UNIT, Door
@@ -183,6 +186,43 @@ class Recheck2(Door):
         self.assertIn("bip01 head", got["message"],
                       f"the head moved in Edit Mode, which the unit's own model leans on, taken in with no word: "
                       f"{got['message']}")
+
+
+TIME_STRETCH = r'''
+import bpy
+sc = bpy.context.scene
+sc.render.frame_map_old, sc.render.frame_map_new = 100, 200    # Time Stretching: Blender plays everything at half speed
+bpy.ops.ruse.send_model()
+'''
+
+
+@unittest.skipUnless(rd.BLENDER and Path(rd.BLENDER).is_file(), "set RUSE_BLENDER to Blender 4.5's blender.exe")
+class Recheck2RealBlender(Door):
+    """The door with real Blender doing the modder's part (headless), on the made-up model."""
+    blender = rd.RealBlender.blender    # (its helper, not its test)
+
+    def test_time_stretching_is_taken_in_as_blender_plays_it_or_said(self):
+        """FAILS on 659fc768 (with RUSE_BLENDER). D-F4's and D-F8's class, timing done in Blender: the scene's Time
+        Stretching (Output Properties > Frame Range: Old 100, New 200) makes Blender play every animation at half speed,
+        each over twice its frames. Send samples each action over its own frame range with the scene's time so
+        stretched, so what comes back of each is its first half at half speed; the door writes every animation so as
+        the unit's own and says only "Changed in Blender, this unit's own now: Stand (made_stand), Run (made_run).":
+        the second half of each is gone in the game, and nothing says why (Send's note beside the file has the scene's
+        frames a second and the NLA's timing, not this). (Real Blender on the game's US rifleman: all 41 rewritten so,
+        scratch/animmodels/fix-door/recheck2/walks/x-time-stretch.json.) The run must be taken in whole, as Blender
+        plays it, or the stretching must be said (by Blender's name for it, or as the frames a second it comes to)."""
+        self.open()
+        self.blender(self.start, TIME_STRETCH)
+        got = self.back()
+        if "Run (made_run)" in got["changed"]:
+            file = (anim.read_units(self.mod).get(UNIT) or {}).get("figure", {}).get("GfxDescriptorFusilier", {}) \
+                .get("action", {}).get("b_course")
+            run = baf.parse((self.mod / anim.OWN / UNIT / file).read_bytes())
+            if abs(run.duration - 2 * baf.parse(CLIP_BYTES[RUN]).duration) < 1e-3:
+                return      # (taken in whole, at half speed: as Blender plays it)
+        self.assertTrue("Time Stretching" in got["message"] or "15 frames a second" in got["message"],
+                        f"every animation cut to its first half at half speed, the stretching not said: "
+                        f"{got['message']}")
 
 
 GAME = Path(os.environ["RUSE_GAME"]) if os.environ.get("RUSE_GAME") else None
