@@ -4126,7 +4126,8 @@ async function showTestProblems() {
     spawn_remove: [w.test_fix_remove_spawn, w.tip_test_fix_remove_spawn],
     spawns_neutral_all: [w.test_fix_neutral_all, w.tip_test_fix_neutral_all],
     spawns_remove_all: [w.test_fix_remove_all, w.tip_test_fix_remove_all],
-    road_remove: [w.test_fix_remove_road, w.tip_test_fix_remove_road] };
+    road_remove: [w.test_fix_remove_road, w.tip_test_fix_remove_road],
+    unit_leftovers: [w.test_fix_unit_leftovers, w.tip_test_fix_unit_leftovers] };
   box.replaceChildren(el("p", { className: "test-problems-title", textContent: fillText(w.test_problems_title, { n: list.length }) }),
     ...list.map((p) => {
       const row = el("div", { className: "check-row" }, el("span", { textContent: p.text }));

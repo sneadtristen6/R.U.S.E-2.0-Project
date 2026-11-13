@@ -472,8 +472,33 @@ class OnTheStudio(WithMod):
         self.assertEqual(self.api._era_tidy(self.mod), [])
         self.assertEqual(tree(self.mod), before)
 
+    # (the fix wired into Test in game's mistakes at the join: api._problem, api.test_fix, app.js; fixer A's two tests)
+    def test_problems_offer_it_and_the_fix_takes_it(self):
+        from rusemod.webui import Job
+        from ruse_studio.edits import unit_files
+        self.half_deleted()
+        job = Job()
+        job.state, job.errors = "failed", [self.build_line(False), "my-mod: map.toml: x"]
+        self.api._jobs[job.id] = job
+        self.api._test_job, self.api._test_folders = job.id, [str(self.mod)]
+        problems = self.api.test_problems()["problems"]
+        self.assertEqual(problems[0]["fixes"], [{"kind": "unit_leftovers", "path": str(self.mod), "unit": self.tail}])
+        self.assertEqual(problems[0]["mod"], self.mod.name)
+        self.assertEqual(problems[1]["fixes"], [])
+        self.api.set_pref("lang", "fr")
+        self.assertIn("Retirer ce qu'elle a laissé", self.api.test_problems()["problems"][0]["text"])
+        self.api.set_pref("lang", "us")
+        done = self.api.test_fix(problems[0]["fixes"][0])["done"]
+        self.assertIn(self.tail, done)
+        self.assertEqual(unit_files(self.mod, self.tail), [])
 
-ON_THE_GAME = msvcrt is not None and GAME is not None and GAME.is_dir() and INDEX.is_file() and RIFLE.is_file() \
+    def test_the_page_labels_the_button(self):
+        import ruse_studio
+        js = (Path(ruse_studio.__file__).parent / "ui" / "app.js").read_text(encoding="utf-8")
+        self.assertIn("unit_leftovers: [w.test_fix_unit_leftovers, w.tip_test_fix_unit_leftovers]", js)
+
+
+ON_THE_GAME =msvcrt is not None and GAME is not None and GAME.is_dir() and INDEX.is_file() and RIFLE.is_file() \
     and HEAVY.is_file()
 
 

@@ -693,19 +693,6 @@ jpn = "{0}：{1} には二つのモデルがあります。読み込んだモデ
 sc = "{0}：{1} 有两个模型：一个是你导入的（files/models/{2}.glb），一个是游戏模型的自有副本（此文件，小队的“自定义制服”）。它的每个人物都只用一个模型绘制，所以不能同时使用两者。在 Studio 中这个单位的页面上，点击“改回默认制服”（不是小队的单位点击“重新使用共享模型”）可保留你的模型，点击“使用所复制单位的模型”可保留副本"
 fa = "{0}: {1} دو مدل دارد: یکی که شما وارد کرده‌اید (files/models/{2}.glb) و کپی جداگانه‌اش از مدل بازی (همین فایل، «اونیفرم سفارشی» یک جوخه). هر یک از پیکره‌هایش با یک مدل کشیده می‌شود، پس نمی‌تواند از هر دو استفاده کند. در استودیو، در صفحهٔ این یگان، برای نگه داشتن مدلتان روی «بازگشت به اونیفرم پیش‌فرض» (یا «استفادهٔ دوباره از مدل مشترک»، برای یگانی که جوخه نیست) کلیک کنید، یا برای نگه داشتن کپی روی «استفاده از مدلِ یگانِ کپی‌شده»"
 
-[e01d155d139]
-us = "{0}: no mod in the set makes a unit {1}, and the game has none of that name"
-fr = "{0} : aucun mod de l'ensemble ne crée d'unité {1}, et le jeu n'en a aucune de ce nom"
-ger = "{0}: kein Mod im Set macht eine Einheit {1}, und das Spiel hat keine dieses Namens"
-ita = "{0}: nessuna mod dell'insieme crea un'unità {1}, e il gioco non ne ha nessuna con quel nome"
-spa = "{0}: ningún mod del conjunto crea una unidad {1}, y el juego no tiene ninguna con ese nombre"
-pol = "{0}: żaden mod w zestawie nie tworzy jednostki {1}, a gra nie ma żadnej o tej nazwie"
-ru = "{0}: ни один мод набора не создаёт юнит {1}, и в игре нет юнита с таким именем"
-cz = "{0}: žádný mod v sadě nevytváří jednotku {1} a hra žádnou takového jména nemá"
-jpn = "{0}：セット内のどの Mod もユニット {1} を作っておらず、ゲームにもその名前のユニットはありません"
-sc = "{0}：组合中没有模组创建单位 {1}，游戏中也没有该名称的单位"
-fa = "{0}: هیچ مادی در مجموعه یگانی به نام {1} نمی‌سازد، و بازی هم یگانی با این نام ندارد"
-
 [e4400f2cdb2]
 us = "{0}, so new objects got no class in it (the game only uses units that have one)"
 fr = "{0} : les nouveaux objets n'y ont donc reçu aucune classe (le jeu n'utilise que les unités qui en ont une)"

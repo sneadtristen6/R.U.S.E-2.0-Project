@@ -10274,6 +10274,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       "points": [list(p) for p in r.points]})
                         mod = mod or folder.name
                 seen += len(roads)
+        if not fixes:   # what a unit deleted half way left behind (era_units._leftovers_problem)
+            fixes = self._leftovers_problem(text, folders)
+            mod = Path(fixes[0]["path"]).name if fixes else mod
         return {"text": text, "mod": mod, "fixes": fixes}
 
     @staticmethod
@@ -10289,6 +10292,8 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         """Apply one of test_problems' fixes to the file it names (only a file of the last test's mods): a spawn made
         neutral or taken out, a road taken out. The item is found again by what it is, not by its number, so two fixes
         in one file never hit the wrong one. Returns {"done": what was changed}."""
+        if fix.get("kind") == "unit_leftovers":   # (a mod folder, not a map file: era_units.leftovers_fix checks it)
+            return self.leftovers_fix(fix)
         path = Path(str(fix.get("path", "")))
         mine = [Path(f).resolve() for f in getattr(self, "_test_folders", [])]
         if not any(path.resolve().is_relative_to(f / "maps") for f in mine):
