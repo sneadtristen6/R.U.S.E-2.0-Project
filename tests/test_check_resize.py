@@ -165,8 +165,13 @@ class AnotherFileDiskFull(_Check):
         facts["after_resize_run_is_other"] = self.clips()["Run"] != a_run
         facts["resize_named"] = self.named(got)
         print("\nANOTHER-FILE-DISK-FULL FACTS:", json.dumps(facts))
-        # (a fact for the owner: the model the mod held between, the other file's, and what Resize then fitted)
-        self.assertTrue(facts["after_resize_run_is_other"] or facts["resize_named"], facts)
+        # (the one check's finding 5, mended by fixer B, 2026-11-13: the stopped import is put back whole, FitUndo, so
+        # between the two the mod holds the first file's model, animations and record together, and Resize fits the
+        # first file again with the first file's animations. Before the mend this recorded the other file's Run
+        # between and after the Resize, nothing said)
+        self.assertEqual(facts, {"between_run_is_other": False, "record_from_is_first": True,
+                                 "after_resize_run_is_other": False, "resize_named": None})
+        self.assertEqual(self.clips()["Run"], a_run)
 
 
 class ARecordNotAnObject(_Check):

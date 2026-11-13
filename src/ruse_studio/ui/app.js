@@ -2947,6 +2947,8 @@ function notKeptSaid(lost) {
   if (!lost) return "";
   const action = (a) => w[`act_${a}`] || fill(w.actions_other, { key: a });
   const said = [];
+  // (a fit of it stopped mid-way by a Studio that ended was put back first: StudioApi._fit_cut_off, FitUndo)
+  if (lost.cut_off) said.push(w.model_kept_not_cut_off);
   if (lost.animations && lost.animations.length) said.push(fill(w.model_kept_not_anims, { names: lost.animations.join(", ") }));
   if (lost.picks && lost.picks.length) said.push(fill(w.model_kept_not_picks, { actions: lost.picks.map(action).join(", ") }));
   if (lost.record) said.push(w.model_kept_not_record);   // (its record couldn't be read: what else it held)
@@ -3027,6 +3029,8 @@ function kindsBox(address, kinds, draw, changed) {
     // (on bones of its own that aren't the riflemen's model's: he plays what he played, which can stop the game)
     if (row.same_bones === false) box.append(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));
     if (i === 0) return;   // (the riflemen's model is Import model's and Change it in Blender's, above)
+    // his model's record can't be read or is missing: said, with what mends it (StudioApi._kind_rows' record_unread)
+    if (row.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread }));
     // his model's parts without their own shine and side colour, and why (the riflemen's: in the Model row's box)
     for (const line of alphaLostLines(row)) box.append(el("p", { className: "notice warn", textContent: line }));
     const actions = el("div", { className: "actions" });
@@ -3059,8 +3063,13 @@ function kindsBox(address, kinds, draw, changed) {
       try {
         const r = await api().model_blender_back(address, 1, row.kind);
         if (r.model) {
-          // (and what it couldn't keep of its shine and side colour, in the pop-up and on his row)
-          sayBroughtBack(fill(w.model_kind_done, { file: r.model.file || "" }), r.model);
+          // (what of his the model brought back took the place of, then what it couldn't keep of its shine and side
+          // colour, in the pop-up and on his row: both said, as the Model row's Bring back does; the one check,
+          // finding 10)
+          const lost = notKeptSaid(r.model.not_kept);
+          const done = fill(w.model_kind_done, { file: r.model.file || "" }) + (lost ? ` ${lost}` : "");
+          if (alphaLostLines(r.model).length) sayBroughtBack(done, r.model);
+          else say(done, lost ? "" : "ok");
           if (changed) changed();
         }
         draw(r);
@@ -3074,7 +3083,9 @@ function kindsBox(address, kinds, draw, changed) {
         drop.disabled = true;
         try {
           const r = await api().model_import_remove(address, row.kind);
-          say(w.model_kind_removed, "ok");
+          // (his record couldn't be read: a Custom uniform it may have held isn't given back, said)
+          if (r.record_unread) say(`${w.model_kind_removed} ${w.model_kept_not_record}`, "");
+          else say(w.model_kind_removed, "ok");
           draw(r);
           if (changed) changed();
         } catch (err) { problem(err); drop.disabled = false; }
@@ -3094,7 +3105,9 @@ async function kindImport(address, row, draw, changed, pick) {
   try {
     const r = await api().model_import(address, null, 1, false, null, true, true, null, row.kind);
     if (r.model) {  // (none: the file picker was closed)
-      say(fill(w.model_kind_done, { file: r.model.file || "" }), "ok");
+      // (what of his it couldn't keep, said as the Model row's Import model says it: the one check, finding 10)
+      const lost = notKeptSaid(r.model.not_kept);
+      say(fill(w.model_kind_done, { file: r.model.file || "" }) + (lost ? ` ${lost}` : ""), lost ? "" : "ok");
       if (changed) changed();
     }
     draw(r);
@@ -3303,6 +3316,9 @@ function modelBox(address, info, draw, changed) {
   if (own) {
     box.append(el("p", { className: "small", textContent: fill(w.model_own, { file: own.file || "",
       points: (own.vertices || 0).toLocaleString(), triangles: (own.triangles || 0).toLocaleString() }) }));
+    // its record in the mod can't be read or is missing (look()'s record_unread): said, with what mends it, Import
+    // model again (this row's main button), never Python's own words (the one check, finding 3)
+    if (own.record_unread) box.append(el("p", { className: "notice warn", textContent: w.model_record_unread }));
     // (a model on bones of its own: what came in with it is in the Sounds and animation row, ownAnimationsBox)
     const turret = Object.entries(own.parts || {}).filter(([, role]) => role === "turret" || role === "gun").map(([name]) => name);
     if (turret.length) box.append(el("p", { className: "muted small", textContent: fill(w.model_turret, { parts: turret.join(", ") }) }));
@@ -3332,8 +3348,11 @@ function modelBox(address, info, draw, changed) {
         // (a heavy-weapon soldier's model on its bones went with it: StudioApi.model_import_remove's "kinds_out")
         const went = (r.kinds_out || []).length
           ? " " + fill(w.model_kinds_out, { who: r.kinds_out.map(kindLabel).join(", ") }) : "";
+        // (its record couldn't be read: a Custom uniform it may have held isn't given back, said: the one check,
+        // finding 3)
+        const unread = r.record_unread ? ` ${w.model_kept_not_record}` : "";
         say((r.copy_back ? (squad ? w.model_removed_copy_back_squad : w.model_removed_copy_back)
-          : (squad ? w.model_removed_squad : w.model_removed)) + went, "ok");
+          : (squad ? w.model_removed_squad : w.model_removed)) + went + unread, unread ? "" : "ok");
         draw(r);
         if (changed) changed();
       } catch (err) { problem(err); }

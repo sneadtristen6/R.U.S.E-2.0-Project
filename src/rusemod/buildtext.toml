@@ -3178,3 +3178,17 @@ cz = "skipped\t{0}\t{1}: {2}"
 jpn = "skipped\t{0}\t{1}: {2}"
 sc = "skipped\t{0}\t{1}: {2}"
 fa = "skipped\t{0}\t{1}: {2}"
+
+# "Resize every ground unit"'s last line and its job's message (StudioApi.models_resize_all; the one check, finding 11)
+[e5165931cdd]
+us = "{0} model(s) fitted, {1} skipped."
+fr = "{0} modèle(s) ajusté(s), {1} ignoré(s)."
+ger = "{0} Modell(e) angepasst, {1} übersprungen."
+ita = "{0} modello/i adattato/i, {1} saltato/i."
+spa = "{0} modelo(s) ajustado(s), {1} omitido(s)."
+pol = "Dopasowane modele: {0}, pominięte: {1}."
+ru = "Подогнано моделей: {0}, пропущено: {1}."
+cz = "Napasované modely: {0}, přeskočené: {1}."
+jpn = "{0} 個のモデルを合わせ直し、{1} 個を飛ばしました。"
+sc = "已适配 {0} 个模型，跳过 {1} 个。"
+fa = "{0} مدل جا انداخته شد، {1} مدل رد شد."

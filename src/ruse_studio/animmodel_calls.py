@@ -57,6 +57,223 @@ def write_record(path: Path, data: dict) -> None:
         raise
 
 
+UNDO = ".fitting"          # <mod>/.fitting/<the model file's name>/: a fit's FitUndo (hidden: never packed or built)
+UNDO_MANIFEST = "manifest.json"
+FIT_MARK = "fit"           # the model's record: the mark of the fit that wrote it (FitUndo.put_back tells by it)
+
+
+class FitUndo:
+    """A model's fit written together or not at all (the one check, findings 4 and 5). A fit writes three things one
+    after the other: the model file (rusemod.unitmodel.import_model), the unit's own animations (files/anim/units.toml
+    and files/anim/own/<unit>/, AnimModelCalls._record_more) and last the model's record. Stopped between them (the
+    disk full, a file another program holds, the Studio closed), the new animations stood beside the old record: a
+    RUSE Decoy change gone with nothing named, or after an import of another file stopped there, Resize fitting the
+    first file again with the other file's animations on it.
+
+    So before its first write a fit keeps what it is about to write, as it is (take: copies in <mod>/.fitting/<the
+    model file's name>/, a hidden folder of the mod Export never packs and the build never reads; on the same disk, so
+    putting them back is a move that needs no room). Any failure after the first write puts every one of them back
+    (restore) and the modder is told in words why the fit stopped, nothing of it kept. A Studio that ends mid-way (no
+    failure to catch) leaves the copies and their list (UNDO_MANIFEST): the next fit of that model finds them before
+    anything else (put_back) and puts back what the stopped fit wrote, said on the page (NOT_KEPT's "cut_off"),
+    never taken for the modder's own change. The record is the fit's last write and carries the fit's mark (FIT_MARK):
+    a record with it means the fit got to its end (the Studio closed only before the copies were cleared): nothing is
+    put back. What
+    changed after the stopped fit wrote it (an animation changed in RUSE Decoy since) is left as it is: the fit notes
+    what it wrote (wrote) before the record, and only a file still as it wrote it is put back."""
+
+    def __init__(self, mod: Path, target: Path, unit: str | None = None):
+        from rusemod import anim
+        self.mod = Path(mod)
+        self.target = Path(target)
+        self.record = self.target.with_suffix(".json")
+        self.files = [self.target, self.record] + ([self.mod / anim.UNITS] if unit else [])
+        self.own = self.mod / anim.OWN / unit if unit else None   # (the unit's own animations' folder)
+        self.folder = self.mod / UNDO / self.target.name
+        self.id = None   # (take's: this fit's own mark, in its list and in the record it writes, FIT_MARK)
+
+    def _rel(self, path: Path) -> str:
+        return Path(path).relative_to(self.mod).as_posix()
+
+    def _write_manifest(self, data: dict) -> None:
+        part = self.folder / (UNDO_MANIFEST + ".part")
+        part.write_text(json.dumps(data, indent=1), encoding="utf-8")
+        os.replace(part, self.folder / UNDO_MANIFEST)
+
+    def _manifest(self) -> dict | None:
+        data = read_record(self.folder / UNDO_MANIFEST)
+        return data if data and isinstance(data.get("files"), dict) else None
+
+    def take(self) -> None:
+        """Keep what the fit is about to write, as it is; an OSError (the disk full: no room even for the copies)
+        before anything of the mod is written, the copies made so far gone again."""
+        import shutil
+        import uuid
+        shutil.rmtree(self.folder, ignore_errors=True)   # (copies whose list never got written: an earlier take's)
+        self.id = uuid.uuid4().hex
+        try:
+            (self.folder / "files").mkdir(parents=True, exist_ok=True)
+            files = {}
+            for i, path in enumerate(self.files):
+                files[self._rel(path)] = str(i) if path.is_file() else None
+                if path.is_file():
+                    shutil.copyfile(path, self.folder / "files" / str(i))
+            own = None
+            if self.own is not None:
+                own = {"path": self._rel(self.own), "was": self.own.is_dir()}
+                if self.own.is_dir():
+                    shutil.copytree(self.own, self.folder / "own")
+            self._write_manifest({"fit": self.id, "files": files, "own": own})
+        except BaseException:
+            self._clear()
+            raise
+
+    def _clear(self) -> None:
+        import shutil
+        shutil.rmtree(self.folder, ignore_errors=True)
+        try:
+            self.folder.parent.rmdir()   # (the last: the mod keeps no empty .fitting)
+        except OSError:
+            pass
+
+    def _now(self) -> dict:
+        """{each file this fit writes, its path in the mod: the SHA-256 of its bytes now, None when it isn't there}."""
+        out = {}
+        for path in self.files:
+            out[self._rel(path)] = _sha(path.read_bytes()) if path.is_file() else None
+        if self.own is not None and self.own.is_dir():
+            for f in sorted(p for p in self.own.rglob("*") if p.is_file()):
+                out[self._rel(f)] = _sha(f.read_bytes())
+        return out
+
+    def wrote(self) -> None:
+        """Note what the fit wrote, before its last write (the record): put_back then puts back only a file still as
+        the fit left it."""
+        data = self._manifest()
+        if data is not None:
+            data["wrote"] = self._now()
+            self._write_manifest(data)
+
+    def finish(self) -> None:
+        """The fit got to its end: its copies go (a list that can't be removed is harmless: the record carries this
+        fit's mark, so put_back puts nothing back)."""
+        try:
+            (self.folder / UNDO_MANIFEST).unlink(missing_ok=True)
+        except OSError:
+            return
+        self._clear()
+
+    def restore(self, stopped: bool = False) -> list[str]:
+        """Put back what was kept: every file the fit wrote as it was before it, one that wasn't there taken out again.
+        `stopped` (put_back: a Studio that ended mid-way): only a file still as the stopped fit wrote it (`wrote`;
+        everything when it never got to note it). Returns the files of the mod it couldn't put back (none: the copies
+        go)."""
+        import shutil
+        data = self._manifest()
+        if data is None:
+            return []
+        wrote = data.get("wrote") if stopped and isinstance(data.get("wrote"), dict) else None
+        now = self._now() if wrote is not None else {}
+        failed: list[str] = []
+
+        def ours(rel: str) -> bool:   # (as the fit left it: never something changed since)
+            return wrote is None or now.get(rel) == wrote.get(rel)
+
+        def put(dst: Path, src: Path | None) -> None:
+            rel = self._rel(dst)
+            if not ours(rel):
+                return
+            try:
+                if src is None:
+                    dst.unlink(missing_ok=True)
+                elif src.is_file() and (not dst.is_file() or dst.read_bytes() != src.read_bytes()):
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    if dst == self.record:   # (a small file: copied, so a second try still has it)
+                        part = dst.with_name(dst.name + ".part")
+                        shutil.copyfile(src, part)
+                        os.replace(part, dst)
+                    else:                    # (a move: it needs no room on a full disk)
+                        os.replace(src, dst)
+            except OSError:
+                failed.append(rel)
+
+        for rel, name in data["files"].items():
+            if isinstance(rel, str) and (name is None or isinstance(name, str)):
+                put(self.mod / rel, None if name is None else self.folder / "files" / name)
+        own = data.get("own")
+        if isinstance(own, dict) and isinstance(own.get("path"), str):
+            folder, back = self.mod / own["path"], self.folder / "own"
+            before = {p.relative_to(back) for p in back.rglob("*") if p.is_file()} if back.is_dir() else set()
+            current = {p.relative_to(folder) for p in folder.rglob("*") if p.is_file()} if folder.is_dir() else set()
+            for f in sorted(current - before):
+                put(folder / f, None)
+            for f in sorted(before):
+                put(folder / f, back / f)
+            if not own.get("was") and folder.is_dir() and not any(folder.rglob("*")):
+                shutil.rmtree(folder, ignore_errors=True)
+        if not failed:
+            self.finish()
+        return failed
+
+    def put_back(self) -> bool:
+        """Before a fit of this model: a fit stopped mid-way by a Studio that ended (its copies and their list still
+        there) has what it wrote put back (restore, `stopped`). True when it did; False when there was none, or that
+        fit got to its end (the record carries its mark, FIT_MARK: its copies just go; a record changed since by
+        RUSE Decoy keeps the mark it had, so it's never taken for one). An OSError (a file another program holds) when
+        what it wrote can't all be put back: the copies stay for the next try."""
+        data = self._manifest()
+        if data is None:
+            return False
+        record = read_record(self.record)
+        if isinstance(record, dict) and data.get("fit") and record.get(FIT_MARK) == data.get("fit"):
+            self.finish()     # (its record was written: that fit got to its end)
+            return False
+        failed = self.restore(stopped=True)
+        if failed:
+            raise OSError(13, "can't be put back", str(self.mod / failed[0]))
+        return True
+
+
+def read_record(path) -> dict | None:
+    """A model's record (files/models/<unit>.json, or a kind's) as the Studio can trust it: the JSON object it holds,
+    {} when there is none, None when it is there but can't be read or isn't a JSON object (cut short, damaged by hand,
+    written over by another program: null, a list, a word). Every reading of a model's record goes through here, so
+    one that isn't an object never ends a click in Python's own error (the one check, finding 3); the caller says it
+    in words where it matters (Import model again mends it)."""
+    path = Path(path)
+    try:
+        if not path.is_file():
+            return {}
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def record_report(record) -> dict:
+    """A record's "report" (the import's), {} when the record has none or one that isn't an object: a field of the
+    wrong shape is a field that isn't there."""
+    report = record.get("report") if isinstance(record, dict) else None
+    return report if isinstance(report, dict) else {}
+
+
+def record_number(value, default: float) -> float:
+    """A number a record holds (its "size"), `default` when it holds something else."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    value = float(value)
+    return value if value == value and value not in (float("inf"), float("-inf")) else default
+
+
+def record_numbers(value, n: int) -> list | None:
+    """A list of at least `n` numbers a record holds (a report's "stands", a "move"), None when it holds something
+    else."""
+    if not isinstance(value, (list, tuple)) or len(value) < n or \
+            any(isinstance(x, bool) or not isinstance(x, (int, float)) for x in value[:n]):
+        return None
+    return list(value)
+
+
 def _sha(data: bytes) -> str:
     return hashlib.sha256(bytes(data)).hexdigest()
 
@@ -401,20 +618,23 @@ class AnimModelCalls:
     def _animations_out(self, address: str, record: Path) -> list:
         """Take out the animations a model on bones of its own brought in (its record's), with the model: the actions
         that played one go back to what they played before (rusemod.animmodel.drop_animations)."""
-        from rusemod import animmodel
         from rusemod.anim import AnimError
         from .api import StudioError, file_error, oserror_of
-        try:
-            data = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
-        except (OSError, ValueError):
-            data = {}
+        data = read_record(record)
+        if data is None:
+            # (a record that can't be read: the model's own file tells whether it was on bones of its own, with
+            # animations of its own, which then go with it; never left behind with no model to play them)
+            target = Path(record).with_suffix(".glb")
+            gives = self._file_clips(target) if target.is_file() else {}
+            data = {"skeleton": "own", "animations": [{"name": n} for n in gives]} if gives else {}
         if data.get("skeleton") != "own" or not data.get("animations"):
             return []
         from rusemod import anim
         mod = self._mod_dir()
         try:
             anim.drop_animations(mod, record.stem)   # (Part 2's table: the merge's one store)
-            return [a.get("name") for a in data["animations"] if isinstance(a, dict)]
+            listed = data["animations"] if isinstance(data["animations"], list) else []
+            return [a.get("name") for a in listed if isinstance(a, dict)]
         except (AnimError, OSError) as exc:
             cause = oserror_of(exc)
             if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
@@ -429,10 +649,7 @@ class AnimModelCalls:
         target = self._own_model_file(address)
         if target is None or not target.is_file():
             return {"own": False}
-        try:
-            data = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {"own": False}
+        data = read_record(target.with_suffix(".json"))
         if not isinstance(data, dict) or data.get("skeleton") != "own":
             return {"own": False}
         # (item 5's merge: which animation each action plays is Part 2's table and rule, read live, so this box and
@@ -449,9 +666,12 @@ class AnimModelCalls:
             if row.get("how") == "nearest":
                 empty.append(row.get("action"))
         rows = []
-        for a in data.get("animations") or []:
-            rows.append({"name": a.get("name"), "seconds": a.get("seconds"), "frames": a.get("frames"),
-                         "actions": plays.get(a.get("name"), [])})
-        return {"own": True, "bones": len(data.get("bones") or []), "animations": rows,
+        listed = data.get("animations") if isinstance(data.get("animations"), list) else []
+        for a in (a for a in listed if isinstance(a, dict)):   # (a field of the wrong shape: as if it weren't there)
+            name = a.get("name") if isinstance(a.get("name"), str) else None
+            rows.append({"name": name, "seconds": a.get("seconds"), "frames": a.get("frames"),
+                         "actions": plays.get(name, [])})
+        bones = data.get("bones") if isinstance(data.get("bones"), list) else []
+        return {"own": True, "bones": len(bones), "animations": rows,
                 "actions": len(table.get("rows") or []) if table.get("own") else 0, "empty": empty,
-                "split": data.get("split")}
+                "split": data.get("split") if isinstance(data.get("split"), str) else None}

@@ -21,7 +21,7 @@
 // lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender, squad_blender_back,
 // soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), soldier_plus,
 // soldier_minus, look, units. Uses app.js's el, fill, say, stayToast, problem, api, state, keptRow, fitBox,
-// alphaLostLines and testInGame; app.js's showUnit puts it on the page when squad_info answers for the unit.
+// alphaLostLines, notKeptSaid and testInGame; app.js's showUnit puts it on the page when squad_info answers for the unit.
 (function () {
   "use strict";
 
@@ -258,6 +258,11 @@
       // what a soldier brought back couldn't keep of his shine and side colour (his import's report: app.js
       // alphaLostLines), in the pop-up, which then waits to be closed; his line says it too, from squad_info
       const lost = Object.values(r.reports || {}).flatMap((report) => alphaLostLines(report));
+      // and what of the modder's a soldier's model brought back took the place of (its report's not_kept: app.js
+      // notKeptSaid), as the unit page's Bring back says it (the one check, finding 10)
+      const notKept = Object.values(r.reports || {}).map((report) => notKeptSaid(report && report.not_kept))
+        .filter(Boolean).filter((t, i, all) => all.indexOf(t) === i);
+      lost.push(...notKept);
       if (lost.length || left) stayToast(say([result, ...lost].join(" "), "warn"));
       else say(result, changed.length ? "ok" : "");
       drawCard();

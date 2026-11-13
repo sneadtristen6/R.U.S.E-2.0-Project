@@ -538,9 +538,9 @@ class SquadBlenderCalls:
                     doc, _bin = glb_document(raw)
                 except (ValueError, struct.error) as exc:
                     raise StudioError(f"{target.name}: {exc}") from None
-                like = ((record.get("report") or {}).get("like")
+                like = ((record.get("report") if isinstance(record.get("report"), dict) else {}).get("like")
                         or ((doc.get("asset") or {}).get("extras") or {}).get("rusemod_like"))
-                skeleton = lib.skeleton(like) if like else None
+                skeleton = lib.skeleton(like) if isinstance(like, str) and like else None
                 placed = gltf.rest_bones_glb(raw, skeleton) if skeleton is not None else None
                 raw = placed or raw
         else:

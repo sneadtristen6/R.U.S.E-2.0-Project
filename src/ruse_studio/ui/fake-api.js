@@ -4057,7 +4057,8 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
           fakeModels.set(a, { ...m, scale: 2.46 * size, size });
           lines.push(`resized\t${a.split("/").pop()}\t${size}`);
         }
-        fakeJobs.set("resize", { state: "done", message: `${lines.length} model(s) done.`, lines });
+        const told = `${lines.length} model(s) fitted, 0 skipped.`;   // (as StudioApi.models_resize_all's last line)
+        fakeJobs.set("resize", { state: "done", message: told, lines: [...lines, told] });
         return { job: "resize" };
       },
       look_open: async (address) => {
