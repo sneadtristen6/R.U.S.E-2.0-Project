@@ -13690,7 +13690,7 @@ ru = "Изменения этих анимаций не сохранились: 
 cz = "Změny těchto animací nebyly zachovány: {names}. Pokud jsi je udělal v RUSE Decoy, udělej je tam znovu."
 jpn = "これらのアニメーションへの変更は残りませんでした：{names}。RUSE Decoyで変えたものなら、そこでもう一度変えてください。"
 sc = "对这些动画的修改没有保留：{names}。如果是在 RUSE Decoy 中修改的，请在那里重新修改。"
-fa = "تغییرات این انیمیشن‌ها نگه داشته نشد: {names}. اگر آن‌ها را در RUSE Decoy داده بودید، دوباره همان‌جا انجامشان دهید."
+fa = "تغییرات این انیمیشن‌ها نگه داشته نشد: {names}. اگر آن‌ها را در RUSE Decoy انجام داده بودید، دوباره همان‌جا انجامشان دهید."
 
 [model_kept_not_picks]
 us = "These actions don't play what was chosen for them any more: {actions}. Check them under Its animations."
