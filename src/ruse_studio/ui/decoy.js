@@ -170,6 +170,16 @@
     const go = el("button", { type: "button", className: "primary", textContent: w.decoy_blender,
       title: w.tip_decoy_blender, disabled: D.busy || Boolean(st.open) });
     go.addEventListener("click", () => blenderOpen(box));
+    // Choose Blender… (StudioApi.choose_blender, as the unit's page has it): where blender.exe is, which a Blender
+    // that couldn't be opened is told to use (decoyblender's decoy_blender_open_choose)
+    const choose = el("button", { type: "button", className: "ghost", textContent: w.look_choose_blender,
+      title: w.tip_look_choose_blender, disabled: D.busy });
+    choose.addEventListener("click", async () => {
+      try {
+        const r = await api().choose_blender();
+        if (r && r.message) say(r.message, "error");
+      } catch (err) { problem(err); }
+    });
     const buttons = [go];
     if (st.open || st.waiting) {   // (its Blender open, or a sending not brought back yet)
       const back = el("button", { type: "button", textContent: w.decoy_blender_back, title: w.tip_decoy_blender_back,
@@ -177,6 +187,7 @@
       back.addEventListener("click", () => blenderBack(box));
       buttons.push(back);
     }
+    buttons.push(choose);
     // every sending kept aside when its animations were opened again, never brought back (newest first): each can be
     // brought back, or put in the Recycle Bin, so none is out of reach behind another
     const asides = (st.asides || []).map((a) => {

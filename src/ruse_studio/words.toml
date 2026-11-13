@@ -49933,3 +49933,16 @@ jpn = "取っておいた送信はごみ箱に移りました。何も取り込�
 sc = "另存的发送现在在回收站中，其中的内容都没有收入。"
 fa = "ارسالِ کنارگذاشته اکنون در سطل بازیافت است و چیزی از آن گرفته نشد."
 
+[decoy_blender_open_choose]
+us = "Use Choose Blender… on this page to show the Studio where blender.exe is, then click Change its animations in Blender again."
+fr = "Utilisez Choisir Blender… sur cette page pour indiquer au Studio où se trouve blender.exe, puis cliquez de nouveau sur Changer ses animations dans Blender."
+ger = "Zeigen Sie dem Studio mit Blender auswählen… auf dieser Seite, wo blender.exe liegt, und klicken Sie dann erneut auf Seine Animationen in Blender ändern."
+ita = "Usa Scegli Blender… in questa pagina per mostrare allo Studio dove si trova blender.exe, poi fai di nuovo clic su Cambia le sue animazioni in Blender."
+spa = "Usa Elegir Blender… en esta página para mostrar al Studio dónde está blender.exe y luego vuelve a hacer clic en Cambiar sus animaciones en Blender."
+pol = "Użyj Wybierz Blendera… na tej stronie, aby wskazać Studiu, gdzie jest blender.exe, a potem znów kliknij Zmień jego animacje w Blenderze."
+ru = "Нажмите «Выбрать Blender…» на этой странице, чтобы показать Studio, где находится blender.exe, затем снова нажмите «Изменить его анимации в Blender»."
+cz = "Pomocí Vybrat Blender… na této stránce ukažte Studiu, kde je blender.exe, a pak znovu klikněte na Změnit jeho animace v Blenderu."
+jpn = "このページの「Blenderを選択…」でblender.exeの場所をStudioに示してから、もう一度「アニメーションをBlenderで変更」をクリックしてください。"
+sc = "用本页的“选择 Blender…”告诉 Studio blender.exe 在哪里，然后再次点击“在 Blender 中修改它的动画”。"
+fa = "با «انتخاب Blender…» در همین صفحه به Studio نشان دهید blender.exe کجاست، سپس دوباره روی «تغییر انیمیشن‌هایش در Blender» کلیک کنید."
+
