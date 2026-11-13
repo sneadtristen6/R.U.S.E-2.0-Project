@@ -98,7 +98,7 @@ Per una squadra (fucilieri, paracadutisti, qualsiasi fanteria) lo Studio fa la p
 squadra comincia con la sua scheda della squadra e una riga per ciascuno dei suoi soldati; [[Cambiare una squadra|Cambiare-una-squadra]] li percorre.
 
 1. **Crea la squadra** come al passo 2 sopra, partendo da una squadra (la squadra di fucilieri USA, per esempio).
-2. **Apri la squadra in Blender.** Sulla scheda della squadra, clicca **Cambia la squadra in Blender**. Blender si apre con tutti i soldati della squadra uno accanto all'altro, ognuno sulle sue ossa, ognuno con la sua copia delle sue immagini. Non hai ancora Blender? **Scarica Blender (gratis)** lo installa; **Scegli Blender…** mostra allo Studio dov'è.
+2. **Apri la squadra in Blender.** Sulla scheda della squadra, clicca **Apri in Blender**. Blender si apre con tutti i soldati della squadra uno accanto all'altro, ognuno sulle sue ossa, ognuno con la sua copia delle sue immagini. Non hai ancora Blender? **Scarica Blender (gratis)** lo installa; **Scegli Blender…** mostra allo Studio dov'è.
 3. **Modifica un soldato, o metti il tuo modello sulle sue ossa.** Per modificarlo, lavoralo lì. Per un tuo modello: importalo con **File > Import** nella stessa scena e posalo sul soldato; clicca il tuo modello, **Maiusc+clic** sulle sue ossa, poi **Ctrl+P > With Automatic Weights**. Elimina il soldato del gioco se non lo tieni.
 4. **Invialo.** Clicca **Invia al R.U.S.E. Studio** in alto in Blender.
 5. **Riportalo.** Sulla scheda della squadra, clicca **Riporta le mie modifiche**. Ogni soldato riceve solo ciò che è stato fatto a lui, e quello che non hai toccato resta com'era: la scheda dice chi è cambiato e chi no. **Prova in gioco** lo mostra.

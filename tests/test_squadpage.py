@@ -23,8 +23,12 @@ from test_lookmoves import BLANK, LANGS, controls, function_text, read
 
 UI = Path(__file__).resolve().parents[1] / "src" / "ruse_studio" / "ui"
 WORDS = UI.parent / "words.toml"
-# the Studio's calls the page draws (the contracts' section 4): Phase 1's (agent B's), and a later step's (agent D's)
-PHASE1 = {"squad_info": ["address", "lang"], "squad_blender": ["address", "lang"], "squad_blender_back": ["address", "lang"],
+# the Studio's calls the page draws (the contracts' section 4): Phase 1's (agent B's), and a later step's (agent D's);
+# the squad's own Blender pair (squad_blender, squad_blender_back) since 2026-11-13 behind the one Blender button
+# (ruse_studio.oneblender: blender_parts, blender_open, blender_back; the owner: "Why is there two different buttons
+# doing the same thing")
+PHASE1 = {"squad_info": ["address", "lang"], "blender_parts": ["address", "lang"],
+          "blender_open": ["address", "ticks", "lang"], "blender_back": ["address", "lang"],
           "soldier_import": ["address", "soldier", "file", "size"], "soldier_reset": ["address", "soldier"]}
 LATER = {"soldier_add": ["address", "source", "of", "unit", "file"], "soldier_remove": ["address", "soldier"],
          "soldier_plus": ["address"], "soldier_minus": ["address"]}   # (−1 and +1: the owner, 2026-11-12)
@@ -81,13 +85,15 @@ class TheWords(unittest.TestCase):
         names = {  # a sentence, and the words of the buttons (and boxes) it names
             "squad_blender_open_how": ("blender_model_send", "squad_blender_back"),
             "squad_blender_opened": ("blender_model_send", "squad_blender_back"),
-            "tip_squad_blender": ("blender_model_send",), "tip_squad_blender_back_closed": ("blender_model_send",),
+            "tip_squad_blender_back_closed": ("blender_model_send",),
             "squad_back_none": ("blender_model_send",), "squad_back_some": ("test_in_game",),
             "squad_back_all": ("test_in_game",), "squad_import_done": ("test_in_game",),
             "tip_squad_import": ("test_in_game",), "tip_squad_import_all": ("test_in_game",),
-            "tip_squad_blender_back": ("test_in_game",),
             "squad_blender_needs": ("look_get_blender", "look_choose_blender"),
-            "tip_squad_folder_none": ("squad_import", "squad_blender"), "tip_squad_blender_folder_none": ("squad_blender",),
+            # (the one Blender button, Open in Blender, and its Bring my changes back)
+            "tip_squad_folder_none": ("squad_import", "look_open"), "tip_squad_blender_folder_none": ("look_open",),
+            "tip_one_open": ("squad_blender_back",), "tip_one_parts": ("squad_blender_back",),
+            "one_how_model": ("squad_blender_back",),
             "squad_uniform_own_model": ("squad_reset",), "tip_squad_uniform_custom_own_model": ("squad_reset",),
             "squad_both": ("uniform_default_again", "uniform_title", "squad_reset", "test_in_game"),
             "squad_more_bones": ("squad_import",),
@@ -128,13 +134,22 @@ class ThePage(unittest.TestCase):
         self.assertIn("window.SquadView = { infoOf, section };", self.squad)
 
     def test_one_big_blender_button(self):
+        # the one Blender button (the owner, 2026-11-13: one button, "select which ones you want to bring into Blender")
         big = inner(self.squad, "blenderParts")
-        self.assertIn("textContent: open ? w.squad_blender_back : w.squad_blender, "
-                      "title: open ? w.tip_squad_blender_back : w.tip_squad_blender", big)
+        self.assertIn("textContent: open ? w.squad_blender_back : w.look_open, "
+                      "title: open ? w.tip_one_back : w.tip_one_open", big)
         self.assertIn('big.addEventListener("click", open ? bringBack : openBlender);', big)
-        self.assertIn("const open = Boolean(info.blender && info.blender.open);", big)
-        self.assertIn("api().squad_blender(address, state.lang)", inner(self.squad, "openBlender"))
-        self.assertIn("api().squad_blender_back(address, state.lang)", inner(self.squad, "bringBack"))
+        self.assertIn("const open = Boolean(info.blender && info.blender.open) || Boolean(S.parts && S.parts.open);", big)
+        # What goes to Blender beside it while it opens, its ticks kept when the card is drawn again
+        self.assertIn("S.ticks = !open && S.parts && S.parts.can ? oneBlenderTicks(S.parts, S.ticks ? S.ticks.ticks() "
+                      ": null) : null;", big)
+        opening = inner(self.squad, "openBlender")
+        self.assertIn("api().blender_open(address, ticks, state.lang)", opening)
+        # (the ticks read before the card is drawn again: a redraw had ticked everything again, so an unticked part
+        # went to Blender all the same; found on the stand-in page, 2026-11-13)
+        self.assertLess(opening.index("S.ticks.ticks()"), opening.index("drawCard();"))
+        self.assertIn("api().blender_back(address, state.lang)", inner(self.squad, "bringBack"))
+        self.assertNotRegex(self.squad, r"api\(\)\.squad_blender")
         # who changed and who didn't, said plainly on the card
         back = inner(self.squad, "bringBack")
         self.assertIn("const changed = r.changed || [], same = r.unchanged || [];", back)
@@ -259,7 +274,10 @@ class ThePage(unittest.TestCase):
         self.assertIn("function lookMovesBox(u, view, startNew, squadPage = false) {", self.app)
         self.assertIn("label.textContent = w.uniform_title;", look)
         self.assertIn("label.title = w.tip_squad_uniform_row;", look)
-        self.assertIn("if (squad && paintable) rest.push(repaintBox(address, info, drawLook, changed));", look)
+        # (a squad of this mod paints through its card's one Blender button, its Paint ticked: no second Open in
+        # Blender in its Uniform row; a game squad's row keeps it)
+        self.assertIn("if (squad && paintable && !(info.new_unit && state.mod)) rest.push(repaintBox(address, info, "
+                      "drawLook, changed));", look)
         uniform = function_text(self.app, "uniformBox")
         self.assertIn("squadPage ? w.tip_squad_uniform_custom_own_model : w.tip_uniform_custom_own_model", uniform)
         self.assertIn("squadPage ? w.squad_uniform_own_model : w.uniform_own_model", uniform)
@@ -301,7 +319,7 @@ class TheWiki(unittest.TestCase):
              "ita": "ita/Cambiare-una-squadra", "spa": "spa/Cambiar-un-pelotón", "pol": "pol/Zmiana-oddziału",
              "ru": "ru/Изменение-отряда", "cz": "cz/Změna-družstva", "jpn": "jpn/分隊の変更", "sc": "sc/修改小队",
              "fa": "fa/تغییر-جوخه"}
-    BUTTONS = ("squad_blender", "squad_blender_back", "squad_import", "squad_reset", "squad_each", "squad_more",
+    BUTTONS = ("look_open", "one_parts", "squad_blender_back", "squad_import", "squad_reset", "squad_each", "squad_more",
                "where_show", "look_get_blender", "look_choose_blender", "blender_model_send", "test_in_game",
                "model_want_button", "create", "units_tab", "uniform_custom", "unit_look", "lm_title",
                # (a soldier more or fewer: the owner, 2026-11-12, "Yes, update it" to the page's own update)

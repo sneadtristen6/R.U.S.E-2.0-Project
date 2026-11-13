@@ -46,6 +46,29 @@ class OneBlenderCalls:
         mod = self._mod_dir()
         return None if mod is None else mod / WORK / address.rsplit("/", 1)[-1] / ONE
 
+    def _squad_door(self, address: str) -> tuple:
+        """The squad's own Blender (its soldiers side by side, as the one button, Add a soldier and the Studio before
+        the one button open it): (whether it has something to bring back, Blender still open on it or a sending of its
+        last opening not brought back; that opening's session)."""
+        from .squadblender import _sha
+        work = self._squad_work(address)
+        if work is None:
+            return False, None
+        state = _read(work / "state.json")
+        sent = work / "sent" / "sent.json"
+        proc = self._blenders.get(str(work))
+        running = proc is not None and proc.poll() is None
+        waiting = sent.is_file() and _sha(sent) != state.get("brought") and \
+            _read(sent).get("session") == state.get("session")
+        return bool(running or waiting), state.get("session")
+
+    def _model_door(self, address: str, kind: str | None) -> bool:
+        """Whether the model's own Blender (Change it in Blender's, for `kind` or the riflemen) has something to bring
+        back: a sending, or Blender still open on it (its Bring back then asks it to send)."""
+        work, send = self._model_work(address, self._blender_kind(address, kind))
+        proc = self._blenders.get(str(work))
+        return send.is_file() or (proc is not None and proc.poll() is None)
+
     def _own_bones(self, address: str) -> bool:
         """Whether the unit's own model (its riflemen's, for a squad) is on bones of its own (the Generic Horse)."""
         from rusemod import bonefit
@@ -80,8 +103,9 @@ class OneBlenderCalls:
         elif squad:
             out["route"] = "squad"
             info = self.squad_info(address, lang) or {}
-            out["soldiers"] = [{"id": str(s["id"]), "label": s.get("label") or str(s["id"])}
-                               for s in info.get("soldiers") or []]
+            out["soldiers"] = [{"id": str(s["id"]), "label": w["blender_squad_numbered"].format(
+                label=s.get("label") or "", n=s.get("number", s["id"])) if s.get("label") else str(s["id"])}
+                for s in info.get("soldiers") or []]   # ("Rifleman 3", as Blender names him)
         return out
 
     def blender_open(self, address: str, ticks: dict, lang: str = "us") -> dict:
@@ -109,7 +133,9 @@ class OneBlenderCalls:
             kind = str(ticks.get("kind") or "") or None if parts["route"] == "kinds" else None
             got, door = self.model_blender(address, lang, kind), "model"
         state = {"format": 1, "door": door, "kind": kind, "keep_bones": not ticks.get("bones", True),
-                 "keep_paint": not paint, "back": False}
+                 "keep_paint": not paint, "back": False,
+                 # (the squad Blender's own session: Add a soldier opens that Blender too, without these ticks)
+                 "session": self._squad_door(address)[1] if door == "squad" else None}
         one = self._one_file(address)
         one.parent.mkdir(parents=True, exist_ok=True)
         one.write_text(json.dumps(state, indent=1), encoding="utf-8")
@@ -122,17 +148,30 @@ class OneBlenderCalls:
         from .api import StudioError
         one = self._one_file(address)
         state = _read(one) if one is not None else {}
-        door = state.get("door")
-        if door not in ("model", "squad", "paint"):
+        door = state.get("door") if state.get("door") in ("model", "squad", "paint") else None
+        keep_bones, keep_paint = bool(state.get("keep_bones")), bool(state.get("keep_paint"))
+        if self._soldiers(address):
+            # the squad's own Blender opened by something other than the one button (Add a soldier, or the Studio
+            # before the one button, its Blender open or its sending waiting across the update): that Blender comes
+            # back, and nothing in it was unticked; one.json stays the one button's
+            pending, session = self._squad_door(address)
+            if pending and (door != "squad" or state.get("session") != session):
+                back = self.squad_blender_back(address, lang)
+                return {**back, "door": "squad"}
+        if door is None:
             # not a game rule: the Studio's own hand-over from Blender, nothing opened from this page yet
             raise StudioError("Open this unit in Blender first, change it there, then Bring my changes back.")
-        keep_bones, keep_paint = bool(state.get("keep_bones")), bool(state.get("keep_paint"))
         if door == "paint":
             got = self.look_bring_back(address)
         elif door == "squad":
             got = self.squad_blender_back(address, lang, keep_bones=keep_bones, keep_paint=keep_paint)
         else:
             kind = state.get("kind") or None
+            if not self._model_door(address, kind):
+                # not a game rule: the Studio's own hand-over from Blender, nothing sent yet (said with this button's
+                # name: the model's own refusal names its Bring back the model)
+                raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. "
+                                  "Studio at the top, then Bring my changes back here.")
             own = self._kind_file(address, kind) if kind else self._own_model_file(address)
             record = _read(own.with_suffix(".json")) if own is not None else {}
             size = record.get("size") if isinstance(record.get("size"), (int, float)) else 1.0

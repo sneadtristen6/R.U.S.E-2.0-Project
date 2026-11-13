@@ -14,8 +14,10 @@ In the **Units** tab, pick a squad (**Infantry**, the US rifle squad, say). Its 
 
 ## 2. The whole squad in Blender
 
-1. Click **Change the squad in Blender** on the card. Blender opens with every soldier of the squad side by side. No
+1. Click **Open in Blender** on the card. Blender opens with every soldier of the squad side by side. No
    Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
+   Only part of it? Click **What goes to Blender** beside the button and untick what should stay as it is (a soldier,
+   the bones, the paint); **Bring my changes back** then leaves it as it was. Everything is ticked to start.
 2. Change any soldier: his shape, his colours, his gear. Each soldier has his own copy of his pictures, so painting
    one changes only him.
 3. Your own helmet, backpack or bazooka on one soldier: **File > Import** it, put it on him, click it, **Shift+click**

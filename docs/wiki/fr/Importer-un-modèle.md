@@ -101,7 +101,7 @@ Pour une escouade (fusiliers, parachutistes, toute infanterie), le Studio fait l
 escouade commence par sa carte d'escouade et une ligne pour chacun de ses soldats ; [[Changer une escouade|Changer-une-escouade]] les parcourt.
 
 1. **Créez l'escouade** comme à l'étape 2 plus haut, à partir d'une escouade (les fusiliers américains, par exemple).
-2. **Ouvrez l'escouade dans Blender.** Sur la carte d'escouade, cliquez sur **Changer l'escouade dans Blender**. Blender s'ouvre avec tous les soldats de l'escouade côte à côte, chacun sur ses os, chacun avec sa propre copie de ses images. Pas encore Blender ? **Obtenir Blender (gratuit)** l'installe ; **Choisir Blender…** montre au Studio où il est.
+2. **Ouvrez l'escouade dans Blender.** Sur la carte d'escouade, cliquez sur **Ouvrir dans Blender**. Blender s'ouvre avec tous les soldats de l'escouade côte à côte, chacun sur ses os, chacun avec sa propre copie de ses images. Pas encore Blender ? **Obtenir Blender (gratuit)** l'installe ; **Choisir Blender…** montre au Studio où il est.
 3. **Modifiez un soldat, ou posez votre propre modèle sur ses os.** Pour le modifier, éditez-le là. Pour un modèle à vous : importez-le avec **File > Import** dans la même scène et placez-le sur le soldat ; cliquez sur votre modèle, **Maj+clic** sur ses os, puis **Ctrl+P > With Automatic Weights**. Supprimez le soldat du jeu si vous ne le gardez pas.
 4. **Envoyez-le.** Cliquez sur **Envoyer au R.U.S.E. Studio** en haut de Blender.
 5. **Ramenez-le.** Sur la carte d'escouade, cliquez sur **Ramener mes changements**. Chaque soldat reçoit seulement ce qui lui a été fait, et celui que vous n'avez pas touché reste comme il était : la carte dit qui a changé et qui non. **Tester en jeu** le montre.

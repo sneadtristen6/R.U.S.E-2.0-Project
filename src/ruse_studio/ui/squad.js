@@ -5,9 +5,11 @@
 // individually"; his "Yes, it matches" to the squad contracts' list the same night). Full width at the top of the page:
 //
 // - the squad card: the squad in 3D (the page's own view, with its Use this view as the card), its name, what it is
-//   made of (squad_info's line), and ONE big button, Change the squad in Blender: every soldier in one Blender, side by
-//   side; change one and only he changes. While its Blender is open the same place reads Bring my changes back, and
-//   afterwards the card says who changed and who didn't. Test in game beside it.
+//   made of (squad_info's line), and ONE big button, Open in Blender (the one Blender button, ruse_studio.oneblender:
+//   the owner, 2026-11-13, "you can either take the whole unit or ... select which ones you want to bring into
+//   Blender"): what's ticked under it (its soldiers, its model, its bones, its paint) in one Blender, the soldiers side
+//   by side; change one and only he changes. While its Blender is open the same place reads Bring my changes back, and
+//   afterwards the card says who changed and who didn't, and what unticked was kept. Test in game beside it.
 // - a line per soldier: his picture, his name and how many ("Rifleman ×4"), what he fires, Import a model… (his model
 //   from a file) and, once he has one, Back to the game's look.
 // - More options, small, last: where the files are kept, each soldier's model and what of it won't work in the game.
@@ -18,10 +20,11 @@
 // his own look: one line per soldier ("Soldier 3: Rifleman"); Add a soldier opens Blender with just him, and he joins
 // the squad when Bring my changes back brings him; −1 and +1 above it take one away or add one at once, no Blender
 // (the owner, 2026-11-12). The squad's uniform stays in the Look and moves section beside the values (app.js
-// lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, squad_blender, squad_blender_back,
+// lookMovesBox, its row then named Uniform). Calls: StudioApi.squad_info, blender_parts, blender_open, blender_back,
 // soldier_import, soldier_reset, soldier_add, soldier_remove (the squad contracts' section 4), soldier_plus,
 // soldier_minus, look, units. Uses app.js's el, fill, say, stayToast, problem, api, state, keptRow, fitBox,
-// alphaLostLines, notKeptSaid and testInGame; app.js's showUnit puts it on the page when squad_info answers for the unit.
+// alphaLostLines, notKeptSaid, sayBroughtBack, oneBlenderTicks, oneKeptSaid and testInGame; app.js's showUnit puts it on
+// the page when squad_info answers for the unit.
 (function () {
   "use strict";
 
@@ -174,21 +177,24 @@
       words.replaceChildren(...parts);
     };
 
-    // the big button: Change the squad in Blender, or Bring my changes back while its Blender is open; without Blender
-    // on the PC, the way to get it
+    // the big button: Open in Blender with what's ticked under it, or Bring my changes back while its Blender is open;
+    // without Blender on the PC, the way to get it
     const blenderParts = () => {
       const w = W(), info = S.info, can = info.can || {};
-      const open = Boolean(info.blender && info.blender.open);
+      const open = Boolean(info.blender && info.blender.open) || Boolean(S.parts && S.parts.open);
       const missing = Boolean(S.look) && S.look.blender === "" && !open;   // (look(): Blender isn't found on this PC)
       const big = el("button", { type: "button", className: "primary squad-big",
-        textContent: open ? w.squad_blender_back : w.squad_blender, title: open ? w.tip_squad_blender_back : w.tip_squad_blender,
+        textContent: open ? w.squad_blender_back : w.look_open, title: open ? w.tip_one_back : w.tip_one_open,
         disabled: S.busy || missing || !can.blender });
       big.addEventListener("click", open ? bringBack : openBlender);
       const test = el("button", { type: "button", className: "squad-test", textContent: w.test_in_game, title: w.tip_test });
       test.addEventListener("click", () => testInGame());
       // (what the last bring-back did, right under the button that did it)
-      const out = [el("div", { className: "squad-go" }, big, test), ...(S.said ? [S.said] : []),
-        el("p", { className: "squad-how", textContent: open ? w.squad_blender_open_how : w.squad_blender_how })];
+      S.ticks = !open && S.parts && S.parts.can ? oneBlenderTicks(S.parts, S.ticks ? S.ticks.ticks() : null) : null;
+      const out = [el("div", { className: "squad-go" }, big, test, ...(S.ticks ? [S.ticks.toggle] : [])),
+        ...(S.ticks ? [S.ticks.box] : []), ...(S.said ? [S.said] : []),
+        el("p", { className: "squad-how", textContent: open ? w.squad_blender_open_how
+          : S.parts && S.parts.route === "kinds" ? w.one_how_model : w.one_how_squad })];   // (one model, or the ticked)
       if (missing) {
         const get = el("button", { type: "button", textContent: w.look_get_blender, title: w.tip_look_get_blender });
         get.addEventListener("click", () => api().get_blender().catch(problem));
@@ -217,17 +223,23 @@
 
     const openBlender = async () => {
       const w = W();
+      const ticks = S.ticks ? S.ticks.ticks() : { model: true };   // (read before the card is drawn again)
       S.busy = true;
       S.said = null;
       drawCard();
       say(w.squad_blender_opening);
+      let opened = false;
       try {
-        const r = await api().squad_blender(address, state.lang);
+        const r = await api().blender_open(address, ticks, state.lang);
         if (r && r.soldiers) S.info = r;   // (squad_info's answer, with its work folder and who was opened)
+        opened = true;
         say(w.squad_blender_opened, "ok");
       } catch (err) { problem(err); }
       S.busy = false;
-      draw();
+      // (read again, so the button reads Bring my changes back: the model's Blender too, the Generic Horse's, whose
+      // answer isn't the squad's; it kept Open in Blender, found on the stand-in page 2026-11-13)
+      if (opened) await reload(false);
+      else draw();
     };
 
     // who changed and who didn't, plainly, on the card and in a pop-up
@@ -238,10 +250,26 @@
       drawCard();
       say(w.squad_blender_bringing);
       let r = null;
-      try { r = await api().squad_blender_back(address, state.lang); } catch (err) { problem(err); }
+      try { r = await api().blender_back(address, state.lang); } catch (err) { problem(err); }
       S.busy = false;
       if (!r) { draw(); return; }
       await reload(true);
+      if (r.door && r.door !== "squad") {   // (the model's Blender, a squad on bones of its own, or the paint's)
+        // the model's: whose model it is now (the riflemen's, the heavy-weapon soldier keeping his; or his), what of
+        // the modder's it took the place of and what of its shine and side colour it couldn't keep, as the Model row's
+        // Bring back the model said them
+        const m = (r.door === "model" && r.model) || {};
+        const kinds = Boolean(S.parts && S.parts.kinds && S.parts.kinds.length > 1);
+        const head = r.door === "paint" ? r.message : r.kind ? fill(w.model_kind_done, { file: m.file || "" })
+          : kinds ? w.model_blender_done_kinds : w.model_blender_done;
+        const lost = notKeptSaid(m.not_kept);
+        const done = [head, lost, oneKeptSaid(r)].filter(Boolean).join(" ");
+        S.said = el("p", { className: "squad-result", role: "status", textContent: done });
+        if (alphaLostLines(m).length) sayBroughtBack(done, m);
+        else say(done, lost ? "" : "ok");
+        drawCard();
+        return;
+      }
       const named = (ids) => (ids || []).map((id) => {
         const s = S.info.soldiers.find((x) => x.id === id) || (r.soldiers || []).find((x) => x.id === id);
         return s ? soldierName(s) : String(id);
@@ -253,7 +281,7 @@
         : fill(w.squad_back_all, { changed: named(changed) });
       // what Blender sent on no soldier, not brought back (its answer's left_out), on the card too
       const left = (r.left_out || []).length ? fill(w.blender_squad_left_out_back, { names: r.left_out.join(", ") }) : "";
-      const result = [text, left].filter(Boolean).join(" ");
+      const result = [text, left, oneKeptSaid(r)].filter(Boolean).join(" ");
       S.said = el("p", { className: "squad-result" + (changed.length ? "" : " none"), role: "status", textContent: result });
       // what a soldier brought back couldn't keep of his shine and side colour (his import's report: app.js
       // alphaLostLines), in the pop-up, which then waits to be closed; his line says it too, from squad_info
@@ -574,6 +602,7 @@
       try { next = await api().squad_info(address, state.lang); } catch (err) { problem(err); }
       if (next && next.soldiers) S.info = next;
       S.look = await api().look(address).catch(() => null);
+      S.parts = await api().blender_parts(address, state.lang).catch(() => null);
       draw();
       if (views) {
         if (page.view && page.view.reload) page.view.reload();
@@ -584,6 +613,8 @@
 
     draw();
     api().look(address).then((look) => { S.look = look; draw(); }).catch(() => {});
+    // the one Blender button's tick list (StudioApi.blender_parts: its soldiers, or which model, its bones, its paint)
+    api().blender_parts(address, state.lang).then((p) => { S.parts = p; draw(); }).catch(() => {});
     // the card in sight when the squad's page opens (`page.fresh`: another unit was shown; the same one drawn again keeps
     // its place), and a squad just made (New unit) at its big button, lit a moment, as the Model row is for other units
     const made = state.focusModel === address;

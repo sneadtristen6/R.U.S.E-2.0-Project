@@ -36499,10 +36499,10 @@ jpn = "モデルを取り込みました。分隊の小銃兵がこのモデル�
 sc = "你的模型已放入：小队的步枪兵使用它，它的重武器士兵保留他自己的。在游戏中测试即可看到。"
 fa = "مدل شما اضافه شد: تفنگداران جوخه آن را می‌پوشند و سرباز سلاح سنگینش مدل خودش را نگه می‌دارد. «آزمایش در بازی» آن را نشان می‌دهد."
 
-# A squad's page (ui/squad.js; StudioApi.squad_info, squad_blender, squad_blender_back, soldier_import, soldier_reset,
-# the squad contracts' section 4): the squad card first (its name, what it is made of, one big Change the squad in
-# Blender that reads Bring my changes back while its Blender is open), a line per soldier (Import a model…, Back to the
-# game's look), More options last. The owner, 2026-11-11, of the page before: "so stupidly laid out", "squint down at
+# A squad's page (ui/squad.js; StudioApi.squad_info, blender_parts, blender_open, blender_back, soldier_import,
+# soldier_reset, the squad contracts' section 4): the squad card first (its name, what it is made of, the one Blender
+# button, Open in Blender, that reads Bring my changes back while its Blender is open), a line per soldier (Import a
+# model…, Back to the game's look), More options last. The owner, 2026-11-11, of the page before: "so stupidly laid out", "squint down at
 # this tiny text", "so many things that say change it in Blender, bring back the model. It's overwhelming"; who it is
 # for: someone "not very good with computers", "an older person". Add a soldier and Remove: a later step's calls, shown
 # only once the Studio says a squad can (squad_info's "can")
@@ -36532,44 +36532,8 @@ jpn = "これはゲーム本来の分隊です。兵士を変えるには、こ�
 sc = "这是游戏自带的小队：要修改它的士兵，请以它制作一个新单位。"
 fa = "این یکی از جوخه‌های خود بازی است: برای تغییر سربازانش، از روی آن یک یگان جدید بسازید."
 
-[squad_blender]
-us = "Change the squad in Blender"
-fr = "Changer l'escouade dans Blender"
-ger = "Den Trupp in Blender ändern"
-ita = "Cambia la squadra in Blender"
-spa = "Cambiar el pelotón en Blender"
-pol = "Zmień oddział w Blenderze"
-ru = "Изменить отряд в Blender"
-cz = "Změnit družstvo v Blenderu"
-jpn = "分隊をBlenderで変更"
-sc = "在 Blender 中修改小队"
-fa = "تغییر جوخه در Blender"
 
-[tip_squad_blender]
-us = "Opens Blender, a free 3D program, with every soldier of this squad side by side, each with his own copy of his pictures: change one, and only he changes. When you're done, click Send to the R.U.S.E. Studio at the top of Blender."
-fr = "Ouvre Blender, un logiciel 3D gratuit, avec tous les soldats de cette escouade côte à côte, chacun avec sa propre copie de ses images : changez-en un, et lui seul change. Quand vous avez fini, cliquez sur Envoyer au R.U.S.E. Studio en haut de Blender."
-ger = "Öffnet Blender, ein kostenloses 3D-Programm, mit allen Soldaten dieses Trupps nebeneinander, jeder mit seiner eigenen Kopie seiner Bilder: Änderst du einen, ändert sich nur er. Wenn du fertig bist, klicke oben in Blender auf An das R.U.S.E. Studio senden."
-ita = "Apre Blender, un programma 3D gratuito, con tutti i soldati di questa squadra uno accanto all'altro, ognuno con la sua copia delle sue immagini: ne cambi uno, e cambia solo lui. Quando hai finito, clicca Invia al R.U.S.E. Studio in alto in Blender."
-spa = "Abre Blender, un programa 3D gratuito, con todos los soldados de este pelotón uno al lado del otro, cada uno con su propia copia de sus imágenes: cambias uno y solo cambia él. Cuando termines, pulsa Enviar a R.U.S.E. Studio arriba en Blender."
-pol = "Otwiera Blendera, darmowy program 3D, ze wszystkimi żołnierzami tego oddziału obok siebie, każdy z własną kopią swoich obrazków: zmieniasz jednego i zmienia się tylko on. Gdy skończysz, kliknij Wyślij do R.U.S.E. Studio u góry Blendera."
-ru = "Открывает Blender, бесплатную 3D-программу, со всеми солдатами этого отряда рядом друг с другом, у каждого своя копия его картинок: измените одного, и изменится только он. Когда закончите, нажмите «Отправить в R.U.S.E. Studio» вверху Blender."
-cz = "Otevře Blender, bezplatný 3D program, se všemi vojáky tohoto družstva vedle sebe, každý s vlastní kopií svých obrázků: změníš jednoho a změní se jen on. Až budeš hotov, klikni nahoře v Blenderu na Poslat do R.U.S.E. Studia."
-jpn = "無料の3DソフトBlenderを開き、この分隊の兵士全員を横に並べます。兵士はそれぞれ自分の画像のコピーを持つので、1人を変えるとその兵士だけが変わります。終わったら、Blender上部の「R.U.S.E. Studioへ送る」を押してください。"
-sc = "打开免费的 3D 软件 Blender，这个小队的所有士兵并排站好，每人都有自己的一份图片副本：改一个，只有他会变。完成后，点击 Blender 顶部的“发送到 R.U.S.E. Studio”。"
-fa = "Blender، یک برنامهٔ سه‌بعدی رایگان، را با همهٔ سربازان این جوخه کنار هم باز می‌کند و هر کدام نسخهٔ خودش از تصاویرش را دارد: یکی را تغییر دهید، فقط همان تغییر می‌کند. وقتی تمام شد، بالای Blender روی «ارسال به R.U.S.E. Studio» کلیک کنید."
 
-[squad_blender_how]
-us = "Blender opens with every soldier of this squad side by side. Change any of them: only the one you change changes."
-fr = "Blender s'ouvre avec tous les soldats de cette escouade côte à côte. Changez celui que vous voulez : seul celui que vous changez change."
-ger = "Blender öffnet sich mit allen Soldaten dieses Trupps nebeneinander. Ändere, wen du willst: Nur der, den du änderst, ändert sich."
-ita = "Blender si apre con tutti i soldati di questa squadra uno accanto all'altro. Cambia chi vuoi: cambia solo quello che modifichi."
-spa = "Blender se abre con todos los soldados de este pelotón uno al lado del otro. Cambia el que quieras: solo cambia el que tú cambias."
-pol = "Blender otworzy się ze wszystkimi żołnierzami tego oddziału obok siebie. Zmień, którego chcesz: zmieni się tylko ten, którego zmienisz."
-ru = "Blender откроется со всеми солдатами этого отряда рядом друг с другом. Меняйте любого: изменится только тот, кого вы измените."
-cz = "Blender se otevře se všemi vojáky tohoto družstva vedle sebe. Změň, koho chceš: změní se jen ten, koho změníš."
-jpn = "Blenderでこの分隊の兵士全員が横に並んで開きます。どの兵士を変えても、変わるのはその兵士だけです。"
-sc = "Blender 会打开这个小队的所有士兵，并排站好。想改哪个就改哪个：只有你改的那个会变。"
-fa = "Blender با همهٔ سربازان این جوخه کنار هم باز می‌شود. هر کدام را خواستید تغییر دهید: فقط همان که تغییرش می‌دهید عوض می‌شود."
 
 [squad_blender_back]
 us = "Bring my changes back"
@@ -36584,18 +36548,6 @@ jpn = "変更を戻す"
 sc = "带回我的修改"
 fa = "بازگرداندن تغییراتم"
 
-[tip_squad_blender_back]
-us = "Takes what you changed in Blender into your mod: each soldier gets only what was done to him, and a soldier you didn't touch stays as he was. Test in game shows it."
-fr = "Prend ce que vous avez changé dans Blender dans votre mod : chaque soldat reçoit seulement ce qui lui a été fait, et un soldat que vous n'avez pas touché reste comme il était. Tester en jeu le montre."
-ger = "Übernimmt, was du in Blender geändert hast, in deinen Mod: Jeder Soldat bekommt nur, was an ihm gemacht wurde, und ein Soldat, den du nicht angefasst hast, bleibt, wie er war. Im Spiel testen zeigt es."
-ita = "Porta nella tua mod ciò che hai cambiato in Blender: ogni soldato riceve solo ciò che è stato fatto a lui, e un soldato che non hai toccato resta com'era. Prova in gioco lo mostra."
-spa = "Lleva a tu mod lo que cambiaste en Blender: cada soldado recibe solo lo que se le hizo a él, y un soldado que no tocaste se queda como estaba. Probar en el juego lo muestra."
-pol = "Przenosi do twojego moda to, co zmieniłeś w Blenderze: każdy żołnierz dostaje tylko to, co zrobiono z nim, a żołnierz, którego nie ruszałeś, zostaje taki, jaki był. Testuj w grze to pokaże."
-ru = "Переносит в ваш мод то, что вы изменили в Blender: каждый солдат получает только то, что сделали с ним, а солдат, которого вы не трогали, остаётся прежним. «Проверить в игре» покажет это."
-cz = "Přenese do tvého modu, co jsi změnil v Blenderu: každý voják dostane jen to, co se dělalo s ním, a voják, na kterého jsi nesáhl, zůstane, jaký byl. Vyzkoušet ve hře to ukáže."
-jpn = "Blenderで変えたものをMODに取り込みます。兵士はそれぞれ自分に加えられた変更だけを受け取り、触れなかった兵士はそのままです。ゲームでテストすると表示されます。"
-sc = "把你在 Blender 中的修改带进你的模组：每个士兵只得到对他做的修改，你没动过的士兵保持原样。在游戏中测试即可看到。"
-fa = "آنچه را در Blender تغییر دادید به ماد شما می‌آورد: هر سرباز فقط همان تغییری را می‌گیرد که روی خودش انجام شد، و سربازی که به او دست نزدید همان‌طور که بود می‌ماند. «آزمایش در بازی» آن را نشان می‌دهد."
 
 [tip_squad_blender_back_closed]
 us = "Blender is closed: this takes what you last sent from it with Send to the R.U.S.E. Studio. A soldier who didn't change stays as he was."
@@ -37014,17 +36966,17 @@ sc = "{who}：还没有他自己的模型。有了之后，你的模组会把它
 fa = "{who}: هنوز مدل مخصوص خودش را ندارد. وقتی داشته باشد، ماد شما آن را اینجا نگه می‌دارد:"
 
 [tip_squad_folder_none]
-us = "There's nothing there yet: click Import a model… or Change the squad in Blender first."
-fr = "Il n'y a encore rien là : cliquez d'abord sur Importer un modèle… ou Changer l'escouade dans Blender."
-ger = "Dort ist noch nichts: klicke zuerst auf Ein Modell importieren… oder Den Trupp in Blender ändern."
-ita = "Lì non c'è ancora niente: clicca prima Importa un modello… o Cambia la squadra in Blender."
-spa = "Todavía no hay nada ahí: pulsa primero Importar un modelo… o Cambiar el pelotón en Blender."
-pol = "Jeszcze nic tam nie ma: najpierw kliknij Importuj model… albo Zmień oddział w Blenderze."
-ru = "Там пока ничего нет: сначала нажмите «Импортировать модель…» или «Изменить отряд в Blender»."
-cz = "Zatím tam nic není: nejdřív klikni na Importovat model… nebo Změnit družstvo v Blenderu."
-jpn = "まだ何もありません。先に「モデルを読み込む…」か「分隊をBlenderで変更」を押してください。"
-sc = "那里还什么都没有：请先点击“导入模型…”或“在 Blender 中修改小队”。"
-fa = "هنوز چیزی آنجا نیست: اول روی «وارد کردن یک مدل…» یا «تغییر جوخه در Blender» کلیک کنید."
+us = "There's nothing there yet: click Import a model… or Open in Blender first."
+fr = "Il n'y a encore rien là : cliquez d'abord sur Importer un modèle… ou Ouvrir dans Blender."
+ger = "Dort ist noch nichts: klicke zuerst auf Ein Modell importieren… oder In Blender öffnen."
+ita = "Lì non c'è ancora niente: clicca prima Importa un modello… o Apri in Blender."
+spa = "Todavía no hay nada ahí: pulsa primero Importar un modelo… o Abrir en Blender."
+pol = "Jeszcze nic tam nie ma: najpierw kliknij Importuj model… albo Otwórz w Blenderze."
+ru = "Там пока ничего нет: сначала нажмите «Импортировать модель…» или «Открыть в Blender»."
+cz = "Zatím tam nic není: nejdřív klikni na Importovat model… nebo Otevřít v Blenderu."
+jpn = "まだ何もありません。先に「モデルを読み込む…」か「Blenderで開く」を押してください。"
+sc = "那里还什么都没有：请先点击“导入模型…”或“在 Blender 中打开”。"
+fa = "هنوز چیزی آنجا نیست: اول روی «وارد کردن یک مدل…» یا «باز کردن در Blender» کلیک کنید."
 
 [squad_blender_kept]
 us = "Your Blender files for this squad are kept here:"
@@ -37053,17 +37005,17 @@ sc = "这个小队的 Blender 文件将保存在这里："
 fa = "فایل‌های Blender شما برای این جوخه اینجا نگه داشته خواهند شد:"
 
 [tip_squad_blender_folder_none]
-us = "There's nothing there yet: click Change the squad in Blender first."
-fr = "Il n'y a encore rien là : cliquez d'abord sur Changer l'escouade dans Blender."
-ger = "Dort ist noch nichts: klicke zuerst auf Den Trupp in Blender ändern."
-ita = "Lì non c'è ancora niente: clicca prima Cambia la squadra in Blender."
-spa = "Todavía no hay nada ahí: pulsa primero Cambiar el pelotón en Blender."
-pol = "Jeszcze nic tam nie ma: najpierw kliknij Zmień oddział w Blenderze."
-ru = "Там пока ничего нет: сначала нажмите «Изменить отряд в Blender»."
-cz = "Zatím tam nic není: nejdřív klikni na Změnit družstvo v Blenderu."
-jpn = "まだ何もありません。先に「分隊をBlenderで変更」を押してください。"
-sc = "那里还什么都没有：请先点击“在 Blender 中修改小队”。"
-fa = "هنوز چیزی آنجا نیست: اول روی «تغییر جوخه در Blender» کلیک کنید."
+us = "There's nothing there yet: click Open in Blender first."
+fr = "Il n'y a encore rien là : cliquez d'abord sur Ouvrir dans Blender."
+ger = "Dort ist noch nichts: klicke zuerst auf In Blender öffnen."
+ita = "Lì non c'è ancora niente: clicca prima Apri in Blender."
+spa = "Todavía no hay nada ahí: pulsa primero Abrir en Blender."
+pol = "Jeszcze nic tam nie ma: najpierw kliknij Otwórz w Blenderze."
+ru = "Там пока ничего нет: сначала нажмите «Открыть в Blender»."
+cz = "Zatím tam nic není: nejdřív klikni na Otevřít v Blenderu."
+jpn = "まだ何もありません。先に「Blenderで開く」を押してください。"
+sc = "那里还什么都没有：请先点击“在 Blender 中打开”。"
+fa = "هنوز چیزی آنجا نیست: اول روی «باز کردن در Blender» کلیک کنید."
 
 [squad_more_models]
 us = "Each soldier's model"
@@ -50292,3 +50244,27 @@ cz = "Jeho kosti nemohly zůstat, jaké byly: v Blenderu byla kost přidána, od
 jpn = "骨を元のままにできませんでした。Blenderで骨が追加・削除・名前変更されたため、Blenderが送ったとおりに戻しました。"
 sc = "无法保持它的骨骼原样：在 Blender 中有骨骼被添加、删除或改名，所以按 Blender 发送的样子带回。"
 fa = "استخوان‌هایش نتوانستند همان‌طور بمانند: در Blender استخوانی اضافه، حذف یا تغییرنام داده شد، پس همان‌طور که Blender فرستاد برگشتند."
+[one_how_squad]
+us = "Blender opens with the soldiers ticked, side by side. Change any of them: only the one you change changes."
+fr = "Blender s'ouvre avec les soldats cochés, côte à côte. Modifiez-en un : seul celui que vous modifiez change."
+ger = "Blender öffnet sich mit den angekreuzten Soldaten nebeneinander. Ändere einen davon: Nur der, den du änderst, ändert sich."
+ita = "Blender si apre con i soldati spuntati, uno accanto all'altro. Modificane uno: cambia solo quello che modifichi."
+spa = "Blender se abre con los soldados marcados, uno al lado del otro. Cambia cualquiera: solo cambia el que cambies."
+pol = "Blender otwiera się z zaznaczonymi żołnierzami obok siebie. Zmień dowolnego: zmieni się tylko ten, którego zmienisz."
+ru = "Blender откроется с отмеченными солдатами рядом друг с другом. Измените любого: изменится только тот, кого вы измените."
+cz = "Blender se otevře se zaškrtnutými vojáky vedle sebe. Změň kteréhokoli: změní se jen ten, kterého změníš."
+jpn = "チェックした兵士が横に並んだ状態でBlenderが開きます。どれかを変更すると、変更した兵士だけが変わります。"
+sc = "Blender 会打开已勾选的士兵，并排摆放。修改其中任何一个：只有你修改的那个会改变。"
+fa = "Blender با سربازان تیک‌خورده کنار هم باز می‌شود. هر کدام را تغییر دهید: فقط همانی که تغییر می‌دهید تغییر می‌کند."
+[one_how_model]
+us = "Blender opens with the model picked, with its bones and its animations. Change it there and send it from Blender, then click Bring my changes back here. Its animations are changed in RUSE Decoy."
+fr = "Blender s'ouvre avec le modèle choisi, avec ses os et ses animations. Modifiez-le là-bas et envoyez-le depuis Blender, puis cliquez sur Ramener mes changements ici. Ses animations se modifient dans RUSE Decoy."
+ger = "Blender öffnet sich mit dem gewählten Modell, mit seinen Knochen und Animationen. Ändere es dort und schicke es aus Blender, dann klicke hier auf Meine Änderungen zurückholen. Seine Animationen änderst du in RUSE Decoy."
+ita = "Blender si apre con il modello scelto, con le sue ossa e le sue animazioni. Modificalo lì e invialo da Blender, poi fai clic qui su Riporta le mie modifiche. Le sue animazioni si cambiano in RUSE Decoy."
+spa = "Blender se abre con el modelo elegido, con sus huesos y sus animaciones. Cámbialo allí y envíalo desde Blender; luego haz clic aquí en Traer mis cambios. Sus animaciones se cambian en RUSE Decoy."
+pol = "Blender otwiera się z wybranym modelem, z jego kośćmi i animacjami. Zmień go tam i wyślij z Blendera, potem kliknij tutaj Przenieś moje zmiany. Jego animacje zmienia się w RUSE Decoy."
+ru = "Blender откроется с выбранной моделью, её костями и анимациями. Измените её там и отправьте из Blender, затем нажмите здесь «Вернуть мои изменения». Её анимации меняются в RUSE Decoy."
+cz = "Blender se otevře s vybraným modelem, s jeho kostmi a animacemi. Změň ho tam a pošli ho z Blenderu, pak tady klikni na Přenést moje změny. Jeho animace se mění v RUSE Decoy."
+jpn = "選んだモデルが骨とアニメーションごとBlenderで開きます。そこで変更してBlenderから送り、ここで「変更を戻す」をクリックします。アニメーションはRUSE Decoyで変更します。"
+sc = "Blender 会打开所选模型及其骨骼和动画。在那里修改并从 Blender 发送，然后在这里点击“带回我的修改”。它的动画在 RUSE Decoy 中修改。"
+fa = "Blender با مدل انتخاب‌شده، استخوان‌ها و انیمیشن‌هایش باز می‌شود. همان‌جا تغییرش دهید و از Blender بفرستید، بعد اینجا روی «بازگرداندن تغییراتم» کلیک کنید. انیمیشن‌هایش در RUSE Decoy تغییر می‌کنند."

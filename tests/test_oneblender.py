@@ -20,9 +20,17 @@ class Stand(OneBlenderCalls):
     def __init__(self, root: Path, squad=False, own_bones=False, game_unit=False):
         self.root, self.squad, self.own_bones_, self.game_unit = root, squad, own_bones, game_unit
         self.calls = []
+        self.door = (False, None)   # the squad's own Blender: (something to bring back, its opening's session)
+        self.model_sent = True      # the model's own Blender: something sent, or Blender open on it
 
     def _mod_dir(self):
         return self.root / "mod"
+
+    def _squad_door(self, address):
+        return self.door
+
+    def _model_door(self, address, kind):
+        return self.model_sent
 
     def _soldiers(self, address):
         return self.squad
@@ -53,6 +61,7 @@ class Stand(OneBlenderCalls):
 
     def _into_blender(self, address, lang, only=None):
         self.calls.append(("squad_blender", only))
+        self.door = (True, f"session {len(self.calls)}")   # (a new session in the squad's state, Blender open on it)
         return {"opened": only}
 
     def squad_blender_back(self, address, lang="us", keep_bones=False, keep_paint=False):
@@ -139,6 +148,72 @@ class OneButton(unittest.TestCase):
         self.assertTrue(s.blender_parts(E + "Descriptor_Unit_Tank")["open"])
         s.blender_back(E + "Descriptor_Unit_Tank")
         self.assertFalse(s.blender_parts(E + "Descriptor_Unit_Tank")["open"])
+
+
+class OtherOpeners(unittest.TestCase):
+    """The squad's own Blender opened by something other than the one button: Add a soldier (his Blender, on the squad
+    card's same Bring my changes back), or the Studio before the one button (its Blender open, or its sending waiting,
+    when the modder updates). Before this, Bring my changes back refused it ("Open this unit in Blender first"), and
+    after an earlier opening it brought back with that opening's ticks (found by the squad page's tests 2026-11-13)."""
+    SQUAD = E + "Descriptor_Unit_My_Riflemen"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_add_a_soldiers_blender_comes_back_with_nothing_unticked(self):
+        s = Stand(self.root, squad=True)
+        s.door = (True, "his session")   # (Add a soldier's Blender, the one button never used on this squad)
+        got = s.blender_back(self.SQUAD)
+        self.assertEqual((s.calls, got["door"]), ([("squad_blender_back", False, False)], "squad"))
+
+    def test_a_blender_opened_before_the_update_comes_back(self):
+        s = Stand(self.root, squad=True, own_bones=True)   # (the Generic Horse: the old Studio opened its squad Blender)
+        s.door = (True, "the old Studio's session")
+        s.blender_back(E + "Descriptor_Unit_Generic_Horse")
+        self.assertEqual(s.calls, [("squad_blender_back", False, False)])
+
+    def test_add_a_soldier_after_the_one_button_comes_back_without_its_ticks(self):
+        s = Stand(self.root, squad=True)
+        s.blender_open(self.SQUAD, {"model": True, "soldiers": ["1"], "bones": False, "paint": False})
+        s.blender_back(self.SQUAD)
+        s.door = (True, "Add a soldier's session")   # (Blender closed; then Add a soldier opened it again)
+        s.blender_back(self.SQUAD)
+        self.assertEqual(s.calls, [("squad_blender", ["1"]), ("squad_blender_back", True, True),
+                                   ("squad_blender_back", False, False)])
+
+    def test_the_same_blender_brought_back_twice_keeps_its_ticks(self):
+        s = Stand(self.root, squad=True)
+        s.blender_open(self.SQUAD, {"model": True, "bones": False})
+        s.blender_back(self.SQUAD)
+        s.blender_back(self.SQUAD)   # (Blender still open: changed again, sent again)
+        self.assertEqual(s.calls[1:], [("squad_blender_back", True, False), ("squad_blender_back", True, False)])
+
+    def test_add_a_soldier_beside_the_one_buttons_model_blender_comes_back_first(self):
+        s = Stand(self.root, squad=True, own_bones=True)
+        s.blender_open(E + "Descriptor_Unit_Generic_Horse", {"model": True, "kind": "", "bones": False})
+        s.door = (True, "Add a soldier's session")   # (the model's Blender closed, its sending not brought back yet)
+        s.blender_back(E + "Descriptor_Unit_Generic_Horse")
+        s.door = (False, "Add a soldier's session")   # (he joined; then the model's own sending)
+        s.blender_back(E + "Descriptor_Unit_Generic_Horse")
+        self.assertEqual(s.calls, [("model_blender", None), ("squad_blender_back", False, False),
+                                   ("model_blender_back", None, True, False)])
+
+    def test_nothing_waiting_anywhere_is_still_refused(self):
+        s = Stand(self.root, squad=True)
+        with self.assertRaises(StudioError):
+            s.blender_back(self.SQUAD)
+        self.assertEqual(s.calls, [])
+
+    def test_the_models_blender_with_nothing_sent_names_this_button(self):
+        """The model's own refusal names its own Bring back the model, a button the squad card hasn't got."""
+        s = Stand(self.root, squad=True, own_bones=True)
+        s.blender_open(E + "Descriptor_Unit_Generic_Horse", {"model": True, "kind": ""})
+        s.model_sent = False   # (Blender closed without Send to the R.U.S.E. Studio)
+        with self.assertRaisesRegex(StudioError, "then Bring my changes back here"):
+            s.blender_back(E + "Descriptor_Unit_Generic_Horse")
+        self.assertEqual(s.calls, [("model_blender", None)])
 
 
 if __name__ == "__main__":

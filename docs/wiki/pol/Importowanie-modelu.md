@@ -99,7 +99,7 @@ Przy oddziale (strzelcy, spadochroniarze, dowolna piechota) Studio robi z tobą 
 się od karty oddziału i wiersza dla każdego z jego żołnierzy; [[Zmiana oddziału|Zmiana-oddziału]] przechodzi przez nie.
 
 1. **Utwórz oddział** jak w kroku 2 powyżej, zaczynając od oddziału (na przykład amerykańskiego oddziału strzelców).
-2. **Otwórz oddział w Blenderze.** Na karcie oddziału kliknij **Zmień oddział w Blenderze**. Blender otworzy się ze wszystkimi żołnierzami oddziału obok siebie, każdy na swoich kościach, każdy z własną kopią swoich obrazków. Nie masz jeszcze Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
+2. **Otwórz oddział w Blenderze.** Na karcie oddziału kliknij **Otwórz w Blenderze**. Blender otworzy się ze wszystkimi żołnierzami oddziału obok siebie, każdy na swoich kościach, każdy z własną kopią swoich obrazków. Nie masz jeszcze Blendera? **Pobierz Blendera (za darmo)** go instaluje; **Wybierz Blendera…** pokazuje Studiu, gdzie jest.
 3. **Zmień żołnierza albo załóż własny model na jego kości.** Żeby go zmienić, edytuj go tam. Własny model: wczytaj go przez **File > Import** do tej samej sceny i połóż na żołnierzu; kliknij swój model, **Shift+klik** na jego kości, potem **Ctrl+P > With Automatic Weights**. Usuń żołnierza z gry, jeśli go nie zostawiasz.
 4. **Wyślij.** Kliknij **Wyślij do R.U.S.E. Studio** u góry Blendera.
 5. **Przenieś z powrotem.** Na karcie oddziału kliknij **Przenieś moje zmiany**. Każdy żołnierz dostaje tylko to, co zrobiono z nim, a ten, którego nie ruszałeś, zostaje taki, jaki był: karta mówi, kto się zmienił, a kto nie. **Testuj w grze** to pokaże.

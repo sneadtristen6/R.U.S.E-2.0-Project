@@ -466,6 +466,10 @@ tr.edited .boxes input[type="color"] { border-color: var(--accent); }
 .squad-go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .squad-go button { padding: 8px 16px; font-size: 15px; }
 .squad-go button.squad-big { padding: 12px 24px; font-size: 18px; }
+/* the one Blender button's tick list (app.js oneBlenderTicks): one tick a line, under the button */
+.one-parts { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
+.one-tick { display: flex; align-items: center; gap: 8px; }
+.one-parts strong { margin-top: 4px; }
 .squad-how { font-size: 15px; color: var(--muted); }
 .squad-result { padding: 8px 12px; font-size: 16px; border-left: 3px solid var(--ok); background: var(--panel-hi);
                 border-radius: 0 var(--radius) var(--radius) 0; }

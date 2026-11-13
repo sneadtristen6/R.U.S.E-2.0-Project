@@ -2719,7 +2719,9 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
     // this row is on its squad card
     if (squadPage) {
       const rest = squad ? [uniformBox(address, info, drawLook, changed, true)] : [];
-      if (squad && paintable) rest.push(repaintBox(address, info, drawLook, changed));
+      // (a squad of this mod paints through its card's one Blender button, its Paint ticked: no second Open in Blender
+      // here; the owner, 2026-11-13: "Why is there two different buttons doing the same thing")
+      if (squad && paintable && !(info.new_unit && state.mod)) rest.push(repaintBox(address, info, drawLook, changed));
       if (squad && info.painted && info.painted.length) {
         rest.push(el("p", { className: paintable ? "small" : "notice warn",
           textContent: fill(paintable ? w.look_painted : w.uniform_shared_paint, { n: info.painted.length }) }));
@@ -2851,6 +2853,75 @@ function lookMovesBox(u, view, startNew, squadPage = false) {
   load();
   box.reload = load;   // (a squad's card changed its soldiers' models: an import brings animations)
   return box;
+}
+
+// --- the one Blender button's tick list (StudioApi.blender_parts; ruse_studio.oneblender; the owner, 2026-11-13: "you
+// can either take the whole unit or ... select which ones you want to bring into Blender ... I want to bring everything
+// but the bones. So then you just uncheck the bones and then you're good to go"): What goes to Blender, one level under
+// the one button (as Look and moves' More), everything ticked to start. `parts`: blender_parts' answer. Returns {box,
+// toggle, ticks()}: the list, the button beside the one button that shows it, and ticks() the answer blender_open
+// takes ({model, bones, paint, soldiers, kind}, and whether the list was open) ---
+// `before`: the list as it was (the card drawn again keeps what was ticked and whether the list was open: a redraw on
+// Open in Blender had ticked everything again, so an unticked part went to Blender all the same; found in the stand-in
+// page, 2026-11-13)
+function oneBlenderTicks(parts, before = null) {
+  const w = state.words;
+  const box = el("div", { className: "one-parts" + (before && before.open ? "" : " hidden") });
+  const toggle = el("button", { type: "button", className: "small ghost one-toggle", textContent: `${w.one_parts} ▾`,
+    title: w.tip_one_parts });
+  toggle.setAttribute("aria-expanded", String(Boolean(before && before.open)));
+  toggle.addEventListener("click", () => {
+    const on = box.classList.toggle("hidden") === false;
+    toggle.setAttribute("aria-expanded", String(on));
+  });
+  const was = (name, value) => {   // (ticked as before, or ticked: everything is ticked to start)
+    if (!before) return true;
+    if (name === "one-soldier") return (before.soldiers || []).includes(value);
+    return before[value] !== false;
+  };
+  const tick = (label, value, name = "one-part") => {
+    const input = el("input", { type: "checkbox", checked: was(name, value), value, name });
+    return { input, row: el("label", { className: "one-tick" }, input, el("span", { textContent: label })) };
+  };
+  const soldiers = (parts.soldiers || []).map((s) => tick(s.label, s.id, "one-soldier"));
+  if (soldiers.length) box.append(el("strong", { className: "small", textContent: w.one_part_soldiers }),
+    ...soldiers.map((t) => t.row));
+  let kinds = [];
+  if ((parts.kinds || []).length) {
+    box.append(el("strong", { className: "small", textContent: w.one_part_which }));
+    kinds = parts.kinds.map((k, i) => {
+      const input = el("input", { type: "radio", name: "one-kind", value: k.id,
+        checked: before && parts.kinds.some((x) => x.id === before.kind) ? k.id === before.kind : i === 0 });
+      box.append(el("label", { className: "one-tick" }, input, el("span", { textContent: k.label })));
+      return input;
+    });
+  }
+  const others = {};
+  for (const p of parts.parts || []) {
+    if (p.id === "model" && (soldiers.length || kinds.length)) continue;   // (a squad's soldiers, or which model)
+    others[p.id] = tick(p.label, p.id);
+    box.append(others[p.id].row);
+  }
+  const ticks = () => {
+    const picked = soldiers.filter((t) => t.input.checked).map((t) => t.input.value);
+    const kind = kinds.find((k) => k.checked);
+    return { model: soldiers.length ? picked.length > 0 : (others.model ? others.model.input.checked : true),
+      soldiers: picked, kind: kind ? kind.value : "", bones: others.bones ? others.bones.input.checked : true,
+      paint: others.paint ? others.paint.input.checked : true, open: !box.classList.contains("hidden") };
+  };
+  return { box, toggle, ticks };
+}
+
+// what the one button's Bring back kept as it was, in words (blender_back's "kept": the model's, or each soldier's)
+function oneKeptSaid(r) {
+  const w = state.words, kept = (r && r.kept) || {};
+  const bones = kept.bones && typeof kept.bones === "object" ? Object.values(kept.bones) : [kept.bones];
+  const paint = kept.paint && !Array.isArray(kept.paint) ? Object.values(kept.paint).flat() : kept.paint || [];
+  const out = [];
+  if (bones.includes("differ")) out.push(w.one_kept_bones_differ);
+  else if (bones.includes("kept") || bones.includes("same")) out.push(w.one_kept_bones);
+  if (paint.length) out.push(w.one_kept_paint);
+  return out.join(" ");
 }
 
 // Repaint in Blender (the Model row's More; StudioApi.look_open, look_bring_back): the unit's own copy of its model

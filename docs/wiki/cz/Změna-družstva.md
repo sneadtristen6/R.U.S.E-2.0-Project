@@ -14,8 +14,9 @@ Na kartě **Jednotky** vyber družstvo (třeba americké střelecké družstvo).
 
 ## 2. Celé družstvo v Blenderu
 
-1. Klikni na kartě na **Změnit družstvo v Blenderu**. Blender se otevře se všemi vojáky družstva vedle sebe. Ještě nemáš
+1. Klikni na kartě na **Otevřít v Blenderu**. Blender se otevře se všemi vojáky družstva vedle sebe. Ještě nemáš
    Blender? **Získat Blender (zdarma)** ho nainstaluje; **Vybrat Blender…** ukáže Studiu, kde je.
+   Jen část? Klikni vedle tlačítka na **Co jde do Blenderu** a odškrtni, co má zůstat, jak je (vojáka, kosti, barvy); **Přenést moje změny** to pak nechá, jak to bylo. Na začátku je zaškrtnuté vše.
 2. Změň, koho chceš: jeho tvar, barvy, výstroj. Každý voják má vlastní kopii svých obrázků: když jednoho přemaluješ,
    změní se jen on.
 3. Vlastní helma, batoh nebo bazuka na jednom vojákovi: načti je přes **File > Import**, nasaď je na něj, klikni na ně,

@@ -100,7 +100,7 @@ Para un pelotón (fusileros, paracaidistas, cualquier infantería) el Studio hac
 pelotón empieza por su tarjeta de pelotón y una línea para cada uno de sus soldados; [[Cambiar un pelotón|Cambiar-un-pelotón]] los recorre.
 
 1. **Crea el pelotón** como en el paso 2 de arriba, a partir de un pelotón (el pelotón de fusileros de EE. UU., por ejemplo).
-2. **Abre el pelotón en Blender.** En la tarjeta de pelotón, pulsa **Cambiar el pelotón en Blender**. Blender se abre con todos los soldados del pelotón uno al lado del otro, cada uno sobre sus huesos, cada uno con su propia copia de sus imágenes. ¿Todavía no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
+2. **Abre el pelotón en Blender.** En la tarjeta de pelotón, pulsa **Abrir en Blender**. Blender se abre con todos los soldados del pelotón uno al lado del otro, cada uno sobre sus huesos, cada uno con su propia copia de sus imágenes. ¿Todavía no tienes Blender? **Conseguir Blender (gratis)** lo instala; **Elegir Blender…** le muestra al Studio dónde está.
 3. **Cambia un soldado, o pon tu propio modelo sobre sus huesos.** Para cambiarlo, edítalo allí. Para un modelo tuyo: tráelo con **File > Import** a la misma escena y colócalo sobre el soldado; haz clic en tu modelo, **Mayús+clic** en sus huesos y luego **Ctrl+P > With Automatic Weights**. Borra el soldado del juego si no te lo quedas.
 4. **Envíalo.** Pulsa **Enviar a R.U.S.E. Studio** arriba en Blender.
 5. **Tráelo de vuelta.** En la tarjeta de pelotón, pulsa **Traer mis cambios**. Cada soldado recibe solo lo que se le hizo a él, y el que no tocaste se queda como estaba: la tarjeta dice quién cambió y quién no. **Probar en el juego** lo muestra.

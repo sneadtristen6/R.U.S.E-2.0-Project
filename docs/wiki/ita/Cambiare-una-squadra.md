@@ -15,8 +15,9 @@ scheda.
 
 ## 2. Tutta la squadra in Blender
 
-1. Clicca **Cambia la squadra in Blender** sulla scheda. Blender si apre con tutti i soldati della squadra uno accanto
+1. Clicca **Apri in Blender** sulla scheda. Blender si apre con tutti i soldati della squadra uno accanto
    all'altro. Non hai ancora Blender? **Scarica Blender (gratis)** lo installa; **Scegli Blender…** mostra allo Studio dov'è.
+   Solo una parte? Clicca **Cosa va in Blender** accanto al pulsante e togli la spunta a ciò che deve restare com'è (un soldato, le ossa, la pittura); **Riporta le mie modifiche** lo lascia poi com'era. All'inizio è tutto spuntato.
 2. Cambia il soldato che vuoi: la forma, i colori, l'equipaggiamento. Ogni soldato ha la sua copia delle sue immagini:
    dipingerne uno cambia solo lui.
 3. Il tuo elmetto, zaino o bazooka su un solo soldato: importalo con **File > Import**, mettilo su di lui, cliccalo,

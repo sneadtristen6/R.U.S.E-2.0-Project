@@ -104,7 +104,7 @@ Für einen Trupp (Schützen, Fallschirmjäger, jede Infanterie) erledigt das Stu
 Trupps beginnt mit seiner Trupp-Karte und einer Zeile für jeden seiner Soldaten; [[Einen Trupp ändern|Einen-Trupp-ändern]] geht sie durch.
 
 1. **Erstelle den Trupp** wie in Schritt 2 oben, ausgehend von einem Trupp (etwa dem US-Schützentrupp).
-2. **Öffne den Trupp in Blender.** Klicke auf der Trupp-Karte auf **Den Trupp in Blender ändern**. Blender öffnet sich mit allen Soldaten des Trupps nebeneinander, jeder auf seinen Knochen, jeder mit seiner eigenen Kopie seiner Bilder. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio, wo es ist.
+2. **Öffne den Trupp in Blender.** Klicke auf der Trupp-Karte auf **In Blender öffnen**. Blender öffnet sich mit allen Soldaten des Trupps nebeneinander, jeder auf seinen Knochen, jeder mit seiner eigenen Kopie seiner Bilder. Noch kein Blender? **Blender holen (kostenlos)** installiert es; **Blender auswählen…** zeigt dem Studio, wo es ist.
 3. **Ändere einen Soldaten, oder setze dein eigenes Modell auf seine Knochen.** Zum Ändern bearbeite ihn dort. Für ein eigenes Modell: hole es mit **File > Import** in dieselbe Szene und lege es auf den Soldaten; klicke dein Modell an, **Umschalt+Klick** auf seine Knochen, dann **Strg+P > With Automatic Weights**. Lösche den Soldaten des Spiels, wenn du ihn nicht behältst.
 4. **Sende es.** Klicke oben in Blender auf **An das R.U.S.E. Studio senden**.
 5. **Hol es zurück.** Klicke auf der Trupp-Karte auf **Meine Änderungen zurückholen**. Jeder Soldat bekommt nur, was an ihm gemacht wurde, und einer, den du nicht angefasst hast, bleibt, wie er war: Die Karte sagt, wer sich geändert hat und wer nicht. **Im Spiel testen** zeigt es.

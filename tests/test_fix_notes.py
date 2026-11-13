@@ -304,8 +304,8 @@ class ThePage(PageCase, unittest.TestCase):
                 "click": {"text": click[0], "index": click[1]}}
 
     def squad_case(self, name, steps) -> dict:
-        """The squad page (its card on squad_info, as showUnit draws it): `steps(door)` done before; then Change the
-        squad in Blender clicked (Blender opens, stood in: his line stays as squad_info has it)."""
+        """The squad page (its card on squad_info, as showUnit draws it): `steps(door)` done before; then its one
+        Blender button, Open in Blender, clicked (Blender opens, stood in: his line stays as squad_info has it)."""
         def make(lang):
             door = SquadDoor()
             try:
@@ -315,7 +315,7 @@ class ThePage(PageCase, unittest.TestCase):
                 raise
             return door.t.api, door.close   # (the page's own calls too with the game's library stood in: SquadDoor's)
         return {"name": name, "page": "squad", "unit": {"address": sb.SQUAD, "name": "My Riflemen"}, "make": make,
-                "click": {"text": "squad_blender"}}
+                "click": {"text": "look_open"}}
 
     def lines_in(self, out: dict, cls: str) -> list:
         """The text of each element of class `cls` the page shows (none hidden, nor inside a hidden one)."""

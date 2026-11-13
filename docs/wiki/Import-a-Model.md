@@ -95,7 +95,7 @@ For a squad (riflemen, paratroopers, any infantry) the Studio does the Blender p
 its squad card and a line for each of its soldiers; [[Change a squad|Change-a-Squad]] goes through them.
 
 1. **Make the squad** as in step 2 above, starting from a squad (the US rifle squad, say).
-2. **Open the squad in Blender.** On the squad card, click **Change the squad in Blender**. Blender opens with every soldier of the squad side by side, each on his bones, each with his own copy of his pictures. No Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
+2. **Open the squad in Blender.** On the squad card, click **Open in Blender**. Blender opens with every soldier of the squad side by side, each on his bones, each with his own copy of his pictures. No Blender yet? **Get Blender (free)** installs it; **Choose Blender…** shows the Studio where it is.
 3. **Change a soldier, or put your own model on his bones.** To change him, edit him there. To use a model of your own: **File > Import** it into the same scene and place it over the soldier; click your model, **Shift+click** his bones, then press **Ctrl+P > With Automatic Weights**. Delete the game's soldier if you don't keep him.
 4. **Send it.** Click **Send to the R.U.S.E. Studio** at the top of Blender.
 5. **Bring it back.** On the squad card, click **Bring my changes back**. Each soldier gets only what was done to him, and one you didn't touch stays as he was: the card says who changed and who didn't. **Test in game** shows it.

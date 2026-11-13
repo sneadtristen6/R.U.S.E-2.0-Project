@@ -95,7 +95,7 @@ U družstva (střelci, výsadkáři, jakákoli pěchota) s tebou Studio udělá 
 družstva a řádkem pro každého jeho vojáka; [[Změna družstva|Změna-družstva]] je projde.
 
 1. **Vytvoř družstvo** jako v kroku 2 výše, z nějakého družstva (třeba amerického střeleckého družstva).
-2. **Otevři družstvo v Blenderu.** Na kartě družstva klikni na **Změnit družstvo v Blenderu**. Blender se otevře se všemi vojáky družstva vedle sebe, každý na svých kostech, každý s vlastní kopií svých obrázků. Ještě nemáš Blender? **Získat Blender (zdarma)** ho nainstaluje; **Vybrat Blender…** ukáže Studiu, kde je.
+2. **Otevři družstvo v Blenderu.** Na kartě družstva klikni na **Otevřít v Blenderu**. Blender se otevře se všemi vojáky družstva vedle sebe, každý na svých kostech, každý s vlastní kopií svých obrázků. Ještě nemáš Blender? **Získat Blender (zdarma)** ho nainstaluje; **Vybrat Blender…** ukáže Studiu, kde je.
 3. **Změň vojáka, nebo nasaď vlastní model na jeho kosti.** Chceš-li ho změnit, uprav ho tam. Pro vlastní model: načti ho přes **File > Import** do téže scény a polož ho na vojáka; klikni na svůj model, **Shift+klik** na jeho kosti, pak **Ctrl+P > With Automatic Weights**. Vojáka ze hry smaž, pokud si ho nenecháš.
 4. **Pošli ho.** Klikni nahoře v Blenderu na **Poslat do R.U.S.E. Studia**.
 5. **Přenes ho zpět.** Na kartě družstva klikni na **Přenést moje změny**. Každý voják dostane jen to, co se dělalo s ním, a ten, na kterého jsi nesáhl, zůstane, jaký byl: karta řekne, kdo se změnil a kdo ne. **Vyzkoušet ve hře** to ukáže.
