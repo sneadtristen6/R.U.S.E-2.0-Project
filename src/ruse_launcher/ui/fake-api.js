@@ -173,9 +173,16 @@
   const myCode = "RUSE1:0C4F2V9R3DNQ6M8T1KXH4Q0Z9WJ2FP3ACVQ5RT7B9EGX0J";
   // Bug Watch's words (words.toml set_bugwatch_*, bugwatch_*, tip_bugwatch_*)
   Object.assign(words.us, { set_bugwatch_title: "Bug Watch", set_bugwatch_help: "Recommended: it helps us fix crashes and bugs faster. When it's on, the Studio and the Launcher count what you use and when something goes wrong, including the game's crashes and which mods were on, and send it to our developers once a day with the username you choose. No real names, no Steam account, no files. It's off unless you tick it, and you can untick it any time.", bugwatch_on_label: "Bug Watch (Recommended)", bugwatch_name_hint: "Your username", bugwatch_save: "Save username", bugwatch_code: "You're {name}. Your report code is {code}: put it in a bug report so we can find your crashes.", bugwatch_show: "Show what's sent", bugwatch_need_name: "Type a username first, then tick Bug Watch.", bugwatch_now_on: "Bug Watch is on. Thank you!", bugwatch_now_off: "Bug Watch is off: nothing more is counted or sent, and what was kept is deleted.", tip_bugwatch_on: "Send counts and crash reports to our developers once a day. Off unless you tick it.", tip_bugwatch_name: "The name our developers see with your counts and crashes. A # and four numbers are added so it's unique.", tip_bugwatch_save: "Keep this username (a new name gets new numbers).", tip_bugwatch_show: "See, word for word, what Bug Watch would send." });
+  // Play waiting for the clash check, and the mod list's known-problem notes (words.toml)
+  Object.assign(words.us, { tip_play_waits: "Play waits a moment: the Launcher is checking whether these mods go together.",
+    known_campaign_chapters_stop: "Known problem: with this mod on, some campaign chapters stop about a second after they start. It replaces their maps with ones that lack places their missions use.",
+    known_tutorial_stops: "Known problem: with this mod on, the tutorial stops about a second after it starts. It replaces the tutorial's map with one that lacks places its mission uses." });
   let fakeBugwatch = { available: true, on: false, name: "", code: "" };  // ?fake=bugoff hides the card, as bugwatch.ON = False does
   if (new URLSearchParams(location.search).get("fake") === "bugoff") fakeBugwatch.available = false;
-  let fakeTerms = mode === "agree" ? 0 : 3;  // ?fake=agree: the first-start agreement hasn't been accepted yet
+  // ?fake=agree: the first-start agreement hasn't been accepted yet; ?fake=agree-again: version 3 was, by a player
+  // with a username and Bug Watch on (rusemod.guard.TERMS_VERSION is 4)
+  let fakeTerms = mode === "agree" ? 0 : mode === "agree-again" ? 3 : 4;
+  if (mode === "agree-again") fakeBugwatch = { ...fakeBugwatch, on: true, name: "Nick#4821", code: "Zx3k9QpL" };
   // The first-start agreement + username words (words.toml agree_*, username_*), for the ?fake=agree preview
   Object.assign(words.us, { agree_title: "R.U.S.E. 2.0: user and licence agreement", agree_intro: "This covers RUSE Studio, RUSE Launcher and our online services. R.U.S.E. is a game by Eugen Systems, published by Ubisoft, and you need your own copy: the apps work only with a copy of the game you own. R.U.S.E. 2.0 is a free community project, not made, approved or supported by them.", agree_guard_title: "RUSE Guard: our anti-cheat (required)", agree_guard: "Why: to stop cheating in real R.U.S.E. multiplayer matches, so every match is fair. It acts only in multiplayer and co-op matches, never in single-player, skirmish against the computer, the campaign, replays, or while you make mods. As part of it, during those matches it checks your running programs against a list of known cheat tools: it reads only the programs' names, reports only a name that is on that list, and looks at nothing else. It never collects your files, your screen, your keystrokes or your computer's memory. A modded copy built with a cheat or test tool is for offline play only: taken into a multiplayer match, it surrenders and then stops the game, and the Launcher sends us the line the game's crash report carries about it; honest copies are never stopped. Using the Studio and Launcher means accepting RUSE Guard, including this check.", agree_full_toggle: "Read the full agreement", agree_full: "R.U.S.E. 2.0: user and licence agreement\nVersion 2, 31 October 2026\n\n(The full agreement text appears here in the app.)", agree_accept_note: "Accepting RUSE Guard is required to use the apps. This English text is the one that counts; other languages are translations.", agree_accept: "Accept and continue", username_title: "Choose your username", username_help: "A name our developers see with your RUSE Guard matches or your Bug Watch reports, so we can help you. A # and four numbers are added so it's unique, like Nick#4821. One name works for both apps, and you can change it in Settings.", username_save: "Save and continue", username_need: "Type a username to continue." });
   const wordsOf = (lang) => words[lang] || words.us;
@@ -268,6 +275,10 @@
       homepage: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/tree/main/mods/passable-forests",
       download: "https://example.invalid/passable-forests-1.0.0.rusemod", size: 2744, sha256: "1fe29ca1b796b3e6034f1a4710d6ed0f10236f487ec88492a3550b19692d2102",
       game_build: "24087620", fingerprint: "", tags: ["movement"] },
+    { id: "rscbm2-v1", name: "RSCBM2", version: "1.0.1", author: "SuperCrumpets", description: "Balance changes: Ruses: Starting Ruse Cards 2->3 ...",
+      homepage: "", download: "https://example.invalid/rscbm2-v1-1.0.1.rusemod", size: 182137,
+      sha256: "0000000000000000000000000000000000000000000000000000000000000000",
+      game_build: "24087620", fingerprint: "", tags: ["gameplay"], known_issues: ["tutorial-stops"] },
     { id: "cheat-mod-v2", name: "Cheat Mod 2.0", version: "2.0.0", author: "", description: "Every unit AND every building costs $1 to build, every unit's ProductionTime is 0, and the global MinProductionTime floor is lowered to 0.01 seconds so 0-second production actually takes effect instead of being clamped back up to 1 second. Extends the example Cheat Mod (units-only $1 pricing) with building pricing and the confirmed-working instant-production fix.",
       homepage: "https://github.com/sneadtristen6/R.U.S.E-2.0-Project/tree/main/mods/cheat-mod-v2",
       download: "https://example.invalid/cheat-mod-v2-2.0.0.rusemod", size: 4918, sha256: "e010c5cc810fdc29a84704f4bc73dedd671132bd18adb9896e2867a03fae587c",
@@ -459,8 +470,8 @@
       // ?fake=agree (on, with the terms not yet accepted, so the first-start agreement shows)
       fair_play_on: async () => ({ on: /^(fair|agree)/.test(String(mode || "")) }),
       // the guard terms the agreement screen reads and sets (rusemod.guard; ?fake=agree starts with them unaccepted)
-      guard_status: async () => ({ terms: fakeTerms, terms_version: 3, scan: false, on: true }),
-      guard_accept_terms: async () => { fakeTerms = 3; return { terms: 3 }; },
+      guard_status: async () => ({ terms: fakeTerms, terms_version: 4, scan: false, on: true }),
+      guard_accept_terms: async () => { fakeTerms = 4; return { terms: 4 }; },
       // (a copy built with a test tool has its join code too: it plays with players who have the same build)
       fair_play: async () => ({ built: true, code: mode === "fairchanged" ? null : myCode,
         why: mode === "fairoffline" ? "offline" : mode === "fairchanged" ? "changed" : null, fingerprint: "K7Q2-M9XD",

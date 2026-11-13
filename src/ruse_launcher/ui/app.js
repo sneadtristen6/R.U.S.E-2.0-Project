@@ -682,8 +682,13 @@ function renderActive() {
       setMessage(fill(w.clash_use_done, { name: set.name, a: c.a, b: c.b, file: c.what.split("/").pop() }), "good");
     } catch (e) { problem(e); }
   } : null);
-  play.disabled = state.playing || Boolean(set.error) || Boolean(check && check.hard.length)
+  // Play waits for the clash check's answer (check null: still asked; the owner, 2026-11-13, "yes make it wait for
+  // check"): pressed before it, a set whose mods can't go together went to the build and was refused there, a Play
+  // failed for nothing (round 2's FL-99 reading)
+  const waiting = !set.error && check === null;
+  play.disabled = state.playing || Boolean(set.error) || waiting || Boolean(check && check.hard.length)
     || backupState().busy === "restore";  // a copy built now would take half-restored files
+  play.title = waiting ? w.tip_play_waits : w.tip_play;
 }
 
 // --- mods that don't go together (rusemod.rmod.clashes): asked for whenever a set is shown or its mods change ---
@@ -697,9 +702,17 @@ function checkOf(mods, then) {
   if (!state.checking) state.checking = {};
   if (!state.checking[key]) {
     state.checking[key] = api().check_mods(mods).then((res) => { state.checks[key] = res; then(res); })
-      .catch(problem).finally(() => { delete state.checking[key]; });
+      .catch((err) => {
+        // a check that couldn't answer is said, and counts as answered with nothing found, so Play doesn't wait on
+        // it for ever (the build itself still refuses mods that can't go together); asked again when the library
+        // changes (state.checks emptied)
+        problem(err);
+        state.checks[key] = { hard: [], soft: [], failed: true };
+        then(state.checks[key]);
+      })
+      .finally(() => { delete state.checking[key]; });
   }
-  return null;  // not known yet: the boxes stay empty until the answer comes
+  return null;  // not known yet: the boxes stay empty and Play waits until the answer comes (renderActive)
 }
 
 function clashText(c) {
@@ -1172,6 +1185,9 @@ function renderPickList(holder, view) {
         : mod.state === "update" ? fill(w.update_to, { v: mod.version }) : "" }),
       el("span", { className: "meta", textContent: meta }));
     if (mod.description) li.append(el("span", { className: "desc", textContent: mod.description }));
+    // the list's note on a known problem (rusemod.mod_index.KNOWN_ISSUES), in the player's language
+    const known = { "campaign-chapters-stop": w.known_campaign_chapters_stop, "tutorial-stops": w.known_tutorial_stops };
+    for (const k of mod.known_issues || []) if (known[k]) li.append(el("span", { className: "known", textContent: known[k] }));
     if (mod.tags && mod.tags.length) li.append(el("span", { className: "tags", textContent: mod.tags.join(" · ") }));
     if (mod.homepage) {
       const link = el("button", { type: "button", className: "link", textContent: w.more_info });

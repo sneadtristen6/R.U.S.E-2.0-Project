@@ -124,6 +124,17 @@ RULES: dict[str, Rule] = {
                 "are in the project's private notes). The owner the same day: \"don't allow that to happen. There "
                 "shouldn't be a unit hidden behind a research one shown in the menu\"; with the links taken out, the "
                 "next test ran"),
+    "mission-zones": Rule(
+        "A mission whose script looks for a named place its map's layout doesn't hold stops about a second after it "
+        "starts; six library mods each replace some missions' layouts (campaign chapters, or the tutorial) with ones "
+        "holding no named place, so the build warns about them (rusemod.knownissues).",
+        "studied", "A player's crash report (Bug Watch, 2026-11-06): a mission's place check failed (the game's "
+                   "script error), with the Pinnacle Map Pack among twelve library mods on. Why: the "
+                   "mission's script looks for named places, and the mod's layout for that chapter holds none (the "
+                   "game's scripts and the mods' files read, round 2 on FL-101, 2026-11-10: the details are in the "
+                   "project's private notes). Which library mods do it alone (six) was found by reading every library "
+                   "mod's files; 2026-11-13 the six's replaced layouts were read again with the apps' own reader: no "
+                   "named place in any. Not tried in the game: only the one player's crash was seen"),
     "unit-far-upgrade": Rule(
         "A unit leaves its build list the moment ANY upgrade of it is researched, in whatever building that upgrade "
         "is made; so an upgrade (IsUpgrade 1) of a unit made in another building is made a research of its own "

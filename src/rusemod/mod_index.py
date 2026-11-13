@@ -27,6 +27,11 @@ FORMAT = 1
 INDEX_LIMIT = 5_000_000  # bytes: an index is a few KB per mod
 FIELDS = ("id", "version", "download", "size", "sha256")  # an entry needs these; name and the rest are optional
 CHEAT_TAG = "cheat"   # a mod tagged so is a cheat or a test tool: shown in its own group, never ticked by default
+# an entry's known problems the Launcher says in the player's language (its words.toml known_*), shown on the mod's
+# card: the list's note on the library mods that stop some of the game's missions on their own (the owner, 2026-11-13:
+# "build warning and a note so both"; the build's warning: rusemod.knownissues). A key the Launcher doesn't know is
+# left out (an older Launcher shows none: it never reads the field)
+KNOWN_ISSUES = ("campaign-chapters-stop", "tutorial-stops")
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _HEADERS = {"User-Agent": "RUSE-Mod-Platform"}
@@ -102,6 +107,13 @@ def is_cheat(tags) -> bool:
     return any(str(t).strip().lower() == CHEAT_TAG for t in tags or [])
 
 
+def _known_issues(e: dict) -> list[str]:
+    """The entry's known problems (KNOWN_ISSUES keys), each once, in the list's order; anything else left out."""
+    found = e.get("known_issues", [])
+    found = [found] if isinstance(found, str) else found if isinstance(found, list) else []
+    return list(dict.fromkeys(k.strip() for k in found if isinstance(k, str) and k.strip() in KNOWN_ISSUES))
+
+
 def _entry(e: dict) -> dict:
     tags = _tags(e)
     return {"id": str(e["id"]), "name": str(e.get("name") or e["id"]), "version": str(e["version"]),
@@ -109,7 +121,7 @@ def _entry(e: dict) -> dict:
             "homepage": str(e.get("homepage", "")), "download": str(e["download"]), "size": int(e["size"]),
             "sha256": str(e["sha256"]).lower(), "game_build": str(e.get("game_build", "")),
             "fingerprint": str(e.get("fingerprint", "")), "made_with": str(e.get("made_with", "")), "tags": tags,
-            "cheat": is_cheat(tags)}
+            "cheat": is_cheat(tags), "known_issues": _known_issues(e)}
 
 
 def entry_text(info: dict, size: int, sha256: str, download: str = "") -> str:

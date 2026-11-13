@@ -69,19 +69,31 @@
     text($("agree-accept"), w.agree_accept);
   }
 
-  function accept(api, words, bugwatch) {
+  // `status`: bugwatch_status() as the app had it ({available, on, name}). A player shown a new version of the
+  // agreement (rusemod.guard.TERMS_VERSION raised) has a username already: it stays (asked again, a new #number would
+  // have replaced it, and with it whose crashes and matches are whose), and the Bug Watch tick starts as it is now,
+  // so the box says what accepting leaves on; untick it and Bug Watch goes off, tick it and it comes on.
+  function accept(api, words, status) {
     return new Promise((done) => {
-      renderAgreement(words, bugwatch);
+      renderAgreement(words, status.available);
+      $("agree-bugwatch").checked = Boolean(status.available && status.on);
       const btn = $("agree-accept");
       const handler = async () => {
-        const bw = bugwatch && $("agree-bugwatch").checked;
+        const bw = status.available && $("agree-bugwatch").checked;
         btn.disabled = true;
         try {
           await api.guard_accept_terms();   // RUSE Guard, with its program check, is on for everyone who accepts
         } catch (e) { btn.disabled = false; return; }  // a failure keeps the screen up; the player can try again
         btn.removeEventListener("click", handler);
         $("agree").classList.add("agree-hidden");
-        await askUsername(api, words, bw);   // RUSE Guard is required, so a username is always needed
+        if (status.name) {   // agreed to an earlier version: the username stays, Bug Watch as the tick says
+          try {
+            if (bw && !status.on) await api.bugwatch_on(status.name);
+            else if (!bw && status.on) await api.bugwatch_off();
+          } catch (e) { /* Settings keeps the switch */ }
+        } else {
+          await askUsername(api, words, bw);   // RUSE Guard is required, so a username is always needed
+        }
         done();
       };
       btn.addEventListener("click", handler);
@@ -125,9 +137,12 @@
     try { st = await api.guard_status(); } catch (e) { return; }  // an older back end: no guard
     if ((st.terms || 0) >= (st.terms_version || 1)) return;     // already accepted
     inject();
-    let bugwatch = false;
-    try { bugwatch = !!(await api.bugwatch_status()).available; } catch (e) { bugwatch = false; }
-    await accept(api, words, bugwatch);
+    let status = { available: false, on: false, name: "" };
+    try {
+      const got = await api.bugwatch_status();
+      status = { available: Boolean(got.available), on: Boolean(got.on), name: String(got.name || "") };
+    } catch (e) { /* an older back end: no Bug Watch box, the username asked */ }
+    await accept(api, words, status);
   }
 
   window.Agreement = { open };

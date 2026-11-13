@@ -262,6 +262,7 @@ function useMods(res) {
     state.maps = res.mods;
     state.map = res.current;
     renderMods();
+    checkMod();  // the map's own folder is checked too (StudioApi.check_mod), as Test in game builds it
     return;
   }
   if (res.current !== state.mod) state.exported = null;  // "Share your mod" shows the file of the mod being edited
@@ -312,7 +313,8 @@ async function renderFormat() {
 const fillText = (text, values) => String(text || "").replace(/\{(\w+)\}/g, (_, k) => values[k] ?? "");
 
 async function checkMod() {
-  if (!state.mod) { state.problems = []; renderCheck(); return true; }
+  // the mod and the map being edited (a folder of its own when it isn't the mod's), as Test in game builds both
+  if (!state.mod && !state.map) { state.problems = []; renderCheck(); return true; }
   try {
     state.problems = (await api().check_mod()).problems || [];
   } catch (err) { problem(err); return false; }
@@ -337,7 +339,7 @@ function renderCheck() {
       if (p.set_aside && !(p.fixes || []).some((f) => f.fix === "set_aside")) buttons.append(fixButton(p, { fix: "set_aside", file: p.file }));
       if (needsFolder(p)) {
         const open = el("button", { type: "button", className: "small", textContent: w.pp_fix_open_folder, title: w.tip_pp_open_folder });
-        open.addEventListener("click", async () => { try { await api().open_mod_in_folder(); } catch (err) { problem(err); } });
+        open.addEventListener("click", async () => { try { await api().open_mod_in_folder(p.where || "mod"); } catch (err) { problem(err); } });
         buttons.append(open);
       }
       const details = el("button", { type: "button", className: "small ghost", textContent: w.pp_details, title: w.tip_pp_details });
@@ -348,7 +350,7 @@ function renderCheck() {
         button.addEventListener("click", async () => {
           button.disabled = true;
           try {
-            state.problems = (await api().rename_map_folder(p.file.split("/")[1], p.rename_to)).problems || [];
+            state.problems = (await api().rename_map_folder(p.file.split("/")[1], p.rename_to, p.where || "mod")).problems || [];
             renderCheck();
             if (window.MapView && window.MapView.modChanged) window.MapView.modChanged();
           } catch (err) { problem(err); button.disabled = false; }
@@ -428,7 +430,7 @@ function fixButton(p, f) {
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
-      const res = await api().fix_problem(f);
+      const res = await api().fix_problem({ ...f, where: p.where || "mod" });  // in the mod, or the map's own folder
       state.problems = res.problems || [];
       renderCheck();
       say(res.kept ? fillText(w.check_aside_done, { file: res.kept }) : res.message || w.pp_fixed, "ok");
@@ -4083,7 +4085,7 @@ async function testInGame() {
   button.dataset.running = "1";
   if (!await checkMod()) {
     button.dataset.running = "0";
-    button.disabled = !state.mod;
+    button.disabled = !(state.mod || state.map);  // (a map alone can be tested too)
     say(state.words.check_stop, "error");
     return;
   }
@@ -4099,7 +4101,7 @@ async function testInGame() {
   addToastAction(card.card, showLog);
   const finish = (ok, message, j) => {
     button.dataset.running = "0";
-    button.disabled = !state.mod;
+    button.disabled = !(state.mod || state.map);
     if (state.view === "settings") renderBackup();
     if (message) lastSaid = message;
     const report = { label: w.report, tip: w.tip_report, act: () => api().report_problem(message || "").catch(() => {}) };

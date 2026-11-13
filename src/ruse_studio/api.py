@@ -5671,18 +5671,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def check_mod(self) -> dict:
         """Every file of the current mod read as the build reads it, each mistake in plain words: {"mod": its folder
         or None, "problems": [{"file": its path in the mod (None: the mod as a whole), "problem": what's wrong,
-        "set_aside": whether Set aside can take the file out}]}. The window runs it when a mod is picked and
-        before Test in game."""
+        "set_aside": whether Set aside can take the file out, "where": "mod", or "map" for one in the map being edited
+        when that is a folder of its own}]}. The window runs it when a mod or a map is picked and before Test in game,
+        which builds both: until 2026-11-13 the map's own folder was left out, and its mistakes showed only after the
+        build had stopped on them (round 2, FL-98)."""
         folder = self._mod_dir()
-        if folder is None:
-            return {"mod": None, "problems": []}
+        found = []
         from rusemod.plainproblems import explain
-        found = [explain(p) for p in check_mod_folder(folder, self._game()) + self._research_problems()]
-        for p in found:  # the map's name as the menus say it, in each language, for the plain words
-            pack = p["plain"].get("map")
-            if pack:
-                p["plain"]["map_titles"] = self._map_titles(pack, folder)
-        return {"mod": str(folder), "problems": found}
+        for where, checked in (("mod", folder), ("map", self._mod_dir("map"))):
+            if checked is None or (where == "map" and folder is not None and checked.resolve() == folder.resolve()):
+                continue  # (a mod that holds its maps: checked once, as the mod)
+            problems = check_mod_folder(checked, self._game()) + (self._research_problems() if where == "mod" else [])
+            for p in (explain(p) for p in problems):
+                pack = p["plain"].get("map")
+                if pack:  # the map's name as the menus say it, in each language, for the plain words
+                    p["plain"]["map_titles"] = self._map_titles(pack, checked)
+                found.append(p | {"where": where})
+        return {"mod": str(folder) if folder is not None else None, "problems": found}
 
     def _map_titles(self, pack: str, folder: Path) -> dict:
         """{language: the map's name in its menus} for the map pack `pack` (a new map of the mod: its own name from
@@ -5727,24 +5732,32 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             tms = Tms(bytes(arc.read(arc.find(LODS["highdef"]))))
         return float(tms.to_world(2, tms.base_water()))
 
-    def open_mod_in_folder(self) -> dict:
+    def open_mod_in_folder(self, where: str = "mod") -> dict:
         """Open the current mod's folder on the PC (the mod check's fix for what a button can't fix: mod.toml by
-        hand). Returns {"opened": the folder}."""
-        return self.show_folder("mod")
+        hand), or the map's (`where` "map": a mistake check_mod found in the map's own folder). Returns {"opened": the
+        folder}."""
+        return self.show_folder(where if where in ("mod", "map") else "mod")
+
+    def _checked_dir(self, where) -> Path:
+        """The folder a mod check's problem is in: the mod's, or the map's (`where` "map", check_mod)."""
+        kind = "map" if where == "map" else "mod"
+        folder = self._mod_dir(kind)
+        if folder is None:
+            raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
+        return folder
 
     def fix_problem(self, fix: dict) -> dict:
         """Make one of the fixes the mod check offers (rusemod.plainproblems.explain): "fill" a missing value the
         Studio knows (a water stroke's level: the map's own water height), "remove_key" a setting the game doesn't
         know, "remove_item" one item of a map file (a stroke, an object, a spawn...), or "set_aside" a whole file.
         A map file is kept as it was the first time it's fixed, beside it (<name>.before-fix.toml: the build doesn't
-        read it). Returns check_mod() and "message"."""
+        read it). `fix["where"]` "map": the file is in the map's own folder (check_mod). Returns check_mod() and
+        "message"."""
         from rusemod import plainproblems as pp
         kind = str((fix or {}).get("fix", ""))
         if kind == "set_aside":
-            return self.set_aside(fix.get("file"))
-        folder = self._mod_dir()
-        if folder is None:
-            raise StudioError("Pick or make a mod first.")
+            return self.set_aside(fix.get("file"), fix.get("where", "mod"))
+        folder = self._checked_dir(fix.get("where", "mod"))
         path = folder / str(fix.get("file") or "")
         if path.name not in MAP_FILES or path.parent.parent != folder / "maps" or not path.is_file():
             raise StudioError(f"{fix.get('file')} isn't one of this mod's map files")
@@ -5827,12 +5840,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 out.append((child, parent))
         return out
 
-    def rename_map_folder(self, name: str, to: str) -> dict:
-        """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers). Refused when maps/<to>
-        already exists (the two would need merging by hand). Returns check_mod()."""
-        folder = self._mod_dir()
-        if folder is None:
-            raise StudioError("Pick or make a mod first.")
+    def rename_map_folder(self, name: str, to: str, where: str = "mod") -> dict:
+        """Rename the current mod's maps/<name> to maps/<to> (the fix the mod check offers; `where` "map": in the map's
+        own folder). Refused when maps/<to> already exists (the two would need merging by hand). Returns
+        check_mod()."""
+        folder = self._checked_dir(where)
         pattern = r"[A-Za-z0-9_]+"
         if not (re.fullmatch(pattern, str(name or "")) and re.fullmatch(pattern, str(to or ""))):
             raise StudioError("A map folder's name is letters, digits and _ only")
@@ -5845,13 +5857,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             source.rename(target)
         return self.check_mod()
 
-    def set_aside(self, file: str) -> dict:
-        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it) out of
-        the current mod: it's renamed beside it (_aside), never deleted, and the build skips it. Returns check_mod()
-        and "kept": the renamed file."""
-        folder = self._mod_dir()
-        if folder is None:
-            raise StudioError("Pick or make a mod first.")
+    def set_aside(self, file: str, where: str = "mod") -> dict:
+        """Take a broken map, unit changes or text file (`file`: its path in the mod, as check_mod gives it; `where`
+        "map": in the map's own folder) out of the current mod: it's renamed beside it (_aside), never deleted, and the
+        build skips it. Returns check_mod() and "kept": the renamed file."""
+        folder = self._checked_dir(where)
         path = folder / str(file or "")
         # a map file, a unit changes file or a text file (the last two renamed <name>.broken)
         map_file = path.name in MAP_FILES and path.parent.parent == folder / "maps"

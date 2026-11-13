@@ -3744,6 +3744,30 @@ def patches_fingerprint(fp: bytes, patches: list) -> bytes:
     return fp
 
 
+def known_issue_findings(infos) -> list:
+    """A warning for each library mod in the set known to stop some of the game's missions on its own
+    (rusemod.knownissues: six library mods, each known by its .rmod file's bytes; the owner, 2026-11-13: "build warning
+    and a note so both"). Only warns: the set builds and plays as before, battles and multiplayer included."""
+    from .knownissues import missions_stop
+    out, seen = [], set()
+    for info in infos:
+        known = missions_stop(info.rmod) if getattr(info, "rmod", None) is not None else None
+        if known is None or known.name in seen:
+            continue
+        seen.add(known.name)
+        if known.stops == "tutorial":
+            # rule: mission-zones
+            out.append(Finding("warning", f"{known.name} replaces the tutorial's map with one that lacks places its "
+                                          f"mission uses: with it on, the tutorial stops about a second after it "
+                                          f"starts"))
+        else:
+            # rule: mission-zones
+            out.append(Finding("warning", f"{known.name} replaces the maps of {known.count} campaign chapter(s) with "
+                                          f"ones that lack places their missions use: with it on, those chapters "
+                                          f"stop about a second after they start"))
+    return out
+
+
 def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Path | None = None,
                     instance: Path | None = None, say=print, show_all: bool = False,
                     cache: Path | None = None, built_from: dict | None = None, fairplay=None,
@@ -3774,6 +3798,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
     fair = fairplay if fairplay is not None else \
         fair_play.check_infos([m for m, _ops in mods]) if fair_play.ON else fair_play.FairPlay()
     rmods = [m for m, _ops in mods if m.rmod is not None]
+    known = known_issue_findings(rmods)  # library mods known to stop some of the game's missions (a warning each)
     mods = [(m, ops) for m, ops in mods if m.rmod is None or ops or m.texts]
     overwrites: list = []
     if len(rmods) > 1:
@@ -3858,6 +3883,7 @@ def build_and_write(game: Path, mods: list, *, pack: str = DEFAULT_PACK, out: Pa
                     rmod_far_upgrades(arc, build_id, cache, result)
         except ResolveError as exc:
             raise BuildError(f"load order: {exc}") from None
+        result.findings[:0] = known
         if run:
             first = [m.id for m in rmods]
             result.order = first + [i for i in result.order if i not in first]

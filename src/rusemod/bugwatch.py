@@ -37,6 +37,15 @@ failed Play or Test in game by how far it got ("play:stage:before" | build | lis
 our list by id and version and the player's own as counts of folder and .rmod mods ("play:set:L1-F0-R1"); a game
 that closed within a minute with no crash report, "game:closed-under-1-min" (Watch._failed, GameWatch).
 
+VERSION 4 OF THE AGREEMENT (rusemod.guard.TERMS_VERSION 4, 2026-11-13; the owner's "sure" to its items): only for a
+player who accepted it (allows_v4), a send also says which version was accepted ("agreement"); a game crash report the
+map the game's script-error text names (the game's own map by its name, any other only as "own": map_of) and what
+the player's own mods hold (own_holds: for each kind of thing, OWN_KINDS, how many of them hold it); a day the same
+kinds, the most of any game that day; a failed Play or Test in game its own mods by format and the kinds they hold.
+Under version 3 a failed Play's own mods are one number ("play:set:L1-O2"), as version 3's words say. The unit the
+game was making at a model crash and the game mode are in version 4's words, but nothing here can read them from the
+game's crash report yet (reading the unit needs details of the game's program in the app: the owner's question).
+
 Checked our_tools.json: crash_site.py reads a whole crash report for our own research and is private; this module
 reads only the exception record, the module list and the crashed thread's stack of the game's crash report, on the
 player's PC, as any crash reporter does, and sends the crash code, the module's name and the offset, the access and
@@ -176,6 +185,137 @@ def status(home) -> dict:
             "code": player["id"][:8] if _good_id(player.get("id")) else ""}
 
 
+# --- what version 4 of the agreement added (the owner, 2026-11-13: "sure", to "What version 4 of the agreement adds:
+# the unit at a model crash, the game mode, and what a player's own mod holds"; the map of a script error with it) ----
+AGREEMENT_V4 = 4  # the agreement's version (rusemod.guard.TERMS_VERSION) from which the fields below may go
+# What a player's own mods hold, by kind: for each kind, how many of the player's own mods hold it (never a name, a
+# word, a path or a file; own_holds). "folder" and "rmod": how many are of each format.
+OWN_KINDS = ("folder", "rmod", "data", "new_objects", "texts", "maps", "missions", "scripts", "models", "pictures",
+             "sounds", "game_files", "assets")
+# the map the game's script-error text names ("Current Map: DataDir:\DATASMAP\<map pack>", the game's own words)
+CURRENT_MAP = re.compile(rb"Current Map: DataDir:[\\/]+DATASMAP[\\/]+([A-Za-z0-9_]{1,64})")
+OWN_MAP = "own"  # a map the game's install hasn't got (a mod made it): said only as this, never by its name
+
+
+def agreement(home) -> int:
+    """The version of the agreement the player accepted (settings.json guard.terms, rusemod.guardcalls), 0 for none."""
+    terms = (_settings(home).get("guard") or {}).get("terms", 0)
+    return terms if isinstance(terms, int) and not isinstance(terms, bool) and terms > 0 else 0
+
+
+def allows_v4(home) -> bool:
+    """Whether what version 4 of the agreement added may be counted and sent: Bug Watch on (enabled) and version 4 or
+    later accepted. A player who ticked Bug Watch under version 3 sends only what version 3 lists until the apps have
+    shown version 4 and the player accepted it (the agreement screen, at the next start)."""
+    return enabled(home) and agreement(home) >= AGREEMENT_V4
+
+
+def game_maps(game) -> dict[str, str]:
+    """The game's own map packs, from its install: {name in lower case: the pack's own name}, from
+    Maps/PC/DataMap<name>_v09.dat. A map a mod makes is only in the modded copy, never in the install, so it isn't
+    here."""
+    try:
+        return {p.name[7:-8].lower(): p.name[7:-8] for p in (Path(game) / "Maps" / "PC").glob("DataMap*_v09.dat")
+                if len(p.name) > 15}
+    except (OSError, TypeError):
+        return {}
+
+
+def map_of(data: bytes, maps: dict[str, str]) -> str | None:
+    """The map a crash report's script-error text names: the game's own map by its pack's name, any other as OWN_MAP
+    (its name is a mod's), None when the report names none."""
+    found = CURRENT_MAP.search(data)
+    if found is None:
+        return None
+    return maps.get(found.group(1).decode("ascii").lower(), OWN_MAP)
+
+
+def _folder_holds(folder: Path) -> set[str]:
+    """What kinds of thing one mod folder in our format holds (OWN_KINDS), from where its files are (MOD_FORMAT.md)."""
+    found = set()
+
+    def has(pattern: str) -> bool:
+        return next(folder.glob(pattern), None) is not None
+
+    rndf = sorted(folder.glob("src/**/*.rndf"))
+    if rndf:
+        found.add("data")
+        from .rndf import parse
+        for f in rndf:
+            try:
+                if any(op.kind in ("create", "clone") for op in parse(f.read_text(encoding="utf-8"), file=f.name,
+                                                                         mod="mod")):
+                    found.add("new_objects")
+                    break
+            except Exception:  # noqa: BLE001 - a file the build itself would refuse: its kind is still "data"
+                continue
+    if has("text/*.csv"):
+        found.add("texts")
+    maps = [p for p in folder.glob("maps/*/*") if p.is_file()]
+    if any(p.name.lower() not in ("mission.toml",) for p in maps):
+        found.add("maps")
+    if any(p.name.lower() == "mission.toml" for p in maps) or has("menus.toml"):
+        found.add("missions")
+    if has("scripts/**/*.py") or has("scripts/**/*.xyz"):
+        found.add("scripts")
+    if has("files/models/**/*") or has("files/anim/**/*") or has("files/replace/**/*"):
+        found.add("models")
+    if has("files/cards/**/*") or has("files/textures/**/*") or has("files/ground/**/*"):
+        found.add("pictures")
+    if has("files/sound/**/*") or has("files/music/**/*") or has("maps/*/*.wav"):
+        found.add("sounds")
+    if has("files/game/**/*"):
+        found.add("game_files")
+    if has("files/assets/**/*") or has("files/buildings/**/*"):
+        found.add("assets")
+    return found
+
+
+def _rmod_holds(path) -> set[str]:
+    """What kinds of thing one .rmod mod holds (OWN_KINDS), from what it changes (rusemod.rmod.edits_of)."""
+    from .rmod import edits_of, file_kind
+    edits = edits_of(path)
+    if edits is None:
+        return set()
+    found = set()
+    for key in edits.values:
+        found.add("maps" if str(key[1]).lower().endswith((".scenario", ".win")) else "data")
+    if edits.creates:
+        found.add("new_objects")
+    if edits.texts:
+        found.add("texts")
+    kinds = {"script": "scripts", "script archive": "scripts", "picture": "pictures", "sound": "sounds",
+             "sound archive": "sounds", "map file": "maps", "text file": "texts", "video": "game_files",
+             "game data": "game_files"}
+    for _digest, path_in in list(edits.files.values()) + [v[:2] for v in edits.inside.values()]:
+        found.add(kinds.get(file_kind(path_in), "game_files"))
+    return found
+
+
+def own_holds(folders) -> dict[str, int]:
+    """What the player's own mods among these mod folders hold (mods_of: any not from our mod list), by kind
+    (OWN_KINDS): how many of them hold each kind, the kinds none holds left out. Never a name, a word, a path or a
+    file. Never raises: a mod that can't be read counts by its format only."""
+    from .rmod import rmod_of
+    out: dict[str, int] = {}
+    for folder in folders or []:
+        folder = Path(folder)
+        try:
+            if mods_of([folder])[1] == 0:
+                continue  # one from our mod list: named already, by id and version
+            rmod = rmod_of(folder) is not None
+            kinds = {"rmod" if rmod else "folder"}   # its format: an .rmod (or one converted for the Studio), or ours
+            if rmod:
+                kinds |= _rmod_holds(folder)
+            if folder.is_dir() and (folder / "mod.toml").is_file():
+                kinds |= _folder_holds(folder)       # our format's own parts (an .rmod converted for the Studio too)
+        except Exception:  # noqa: BLE001 - counting must never stop the app
+            continue
+        for kind in kinds & set(OWN_KINDS):
+            out[kind] = out.get(kind, 0) + 1
+    return {k: out[k] for k in OWN_KINDS if out.get(k)}
+
+
 # --- making what's sent safe ------------------------------------------------------------------------------------
 def no_paths(text: str) -> str:
     """`text` with no path left in it: the player's own folders written as Windows names them for anyone
@@ -267,12 +407,17 @@ def set_of(folders) -> tuple[list[str], int, int]:
 
 def failed_at(error, stage: str, folders) -> None:
     """Mark an error leaving a Play or a Test in game (rusemod.play.Starter.modded) with how far it got and the set's
-    mods (set_of), for Watch.job. Never raises."""
+    mods (set_of), for Watch.job; under version 4 of the agreement also what the player's own mods hold (own_holds).
+    Never raises."""
     try:
         if getattr(error, "stage", None) is None:
             error.stage = stage if stage in STAGES else None
         if getattr(error, "mod_set", None) is None:
             error.mod_set = set_of(list(folders or []))
+        watch = current()
+        if getattr(error, "own_holds", None) is None and error.mod_set[1] + error.mod_set[2] \
+                and watch is not None and allows_v4(watch.home):
+            error.own_holds = own_holds(list(folders or []))
     except Exception:  # noqa: BLE001 - an error that takes no attributes, or a mod folder that can't be read
         pass
 
@@ -370,16 +515,18 @@ class Watch:
         """What a failed Play or Test in game tells beyond its kind, under "messages" (2026-11-10: FL-98, FL-99), each a
         key of our own, never the words:
         - "play:stage:before" | build | listed | start: how far it got (rusemod.play.Starter.modded);
-        - "play:set:L2-F1-R0": the set's mods, L from our mod list, F the player's own folder mods, R the player's own
-          .rmod files (counted, never named), and "play:lib:cheat-mod-v2:2.0.0" for each from the list (id:version);
+        - "play:set:L2-O1": the set's mods, L from our mod list, O the player's own (counted, never named), and
+          "play:lib:cheat-mod-v2:2.0.0" for each from the list (id:version); under version 4 of the agreement (its "by
+          kind and count") the own ones by format, "play:set:L2-F1-R0" (F folder mods, R .rmod files), and
+          "play:own:<kind>" for each kind of thing they hold (OWN_KINDS: how many of them hold it, own_holds);
         - "mistake:<check>" for each listed mistake (rusemod.checkkeys: a rule's id, or the module and function that
           found it), "cause:<check or module.function>" for the caught error one said again, and for the refusal's
           own cause.
         Returns whether the error said its mistakes' checks (then the sites aren't counted again)."""
-        def add(text: str) -> None:
+        def add(text: str, n: int = 1) -> None:
             k = _name(text)
             if k and len(text) <= 64 and (k in day["messages"] or len(day["messages"]) < 4 * MOST["messages"]):
-                day["messages"][k] = day["messages"].get(k, 0) + 1
+                day["messages"][k] = day["messages"].get(k, 0) + max(1, int(n))
 
         try:
             stage = getattr(error, "stage", None)
@@ -388,7 +535,14 @@ class Watch:
             found = getattr(error, "mod_set", None)
             if isinstance(found, tuple) and len(found) == 3:
                 listed, folders, rmods = found
-                add(f"{job}:set:L{len(listed)}-F{int(folders)}-R{int(rmods)}")
+                if allows_v4(self.home):
+                    add(f"{job}:set:L{len(listed)}-F{int(folders)}-R{int(rmods)}")
+                    holds = getattr(error, "own_holds", None)
+                    for kind, n in (holds.items() if isinstance(holds, dict) else ()):
+                        if kind in OWN_KINDS and kind not in ("folder", "rmod") and isinstance(n, int) and n > 0:
+                            add(f"{job}:own:{kind}", n)
+                else:  # version 3 lists "how many ... (counted, never named)": one number (the owner's question)
+                    add(f"{job}:set:L{len(listed)}-O{int(folders) + int(rmods)}")
                 for mod in listed[:MOST["mods"]]:
                     if MOD_RE.fullmatch(str(mod)):
                         add(f"{job}:lib:{str(mod).replace('@', ':')}")
@@ -451,8 +605,10 @@ class Watch:
                 day[group][name] = day[group].get(name, 0) + 1
             self._changed()
 
-    def played(self, minutes: float, listed: list[str], own: int) -> None:
-        """A game that ran `minutes` with these mods: `listed` the mod-list mods as id@version, `own` any others."""
+    def played(self, minutes: float, listed: list[str], own: int, holds: dict | None = None) -> None:
+        """A game that ran `minutes` with these mods: `listed` the mod-list mods as id@version, `own` any others;
+        `holds`: what those others hold (own_holds), kept only under version 4 of the agreement, each kind the most
+        of any game that day."""
         mins = max(0, int(round(minutes)))
         with self.lock:
             day = self._day()
@@ -464,6 +620,11 @@ class Watch:
                     day["mods"][mod] = 1
                     day["played"]["mods"][mod] = min(MAX_MINUTES, day["played"]["mods"].get(mod, 0) + mins)
             day["own_mods"] = max(day["own_mods"], max(0, int(own)))
+            if holds and own and allows_v4(self.home):
+                kept = day.setdefault("own_holds", {})
+                for kind, n in holds.items():
+                    if kind in OWN_KINDS and isinstance(n, int) and n > 0:
+                        kept[kind] = min(MOST["mods"], max(kept.get(kind, 0), n))
             self.save()
 
     def save(self) -> None:
@@ -529,6 +690,12 @@ class Watch:
         mods = sorted(counts.get("mods", {}))[:MOST["mods"]]
         if mods or counts.get("own_mods"):
             out["mods"] = {"list": mods, "own": counts.get("own_mods", 0)}
+        v4 = allows_v4(self.home)
+        if v4:  # what version 4 of the agreement added: the version accepted, what the player's own mods hold
+            out["agreement"] = agreement(self.home)
+            holds = {k: v for k, v in (counts.get("own_holds") or {}).items() if k in OWN_KINDS and v}
+            if holds and counts.get("own_mods"):
+                out["mods"]["holds"] = holds
         played = counts.get("played") or {}
         if played.get("total"):
             out["played"] = {"total": played["total"],
@@ -656,7 +823,11 @@ class Watch:
                 self.save()
         self.crash({"kind": "app", "error": _kind(exc_type.__name__), "frames": our_frames(tb)})
 
-    def game_crash(self, found: dict, listed: list[str], own: int, send=True) -> Path | None:
+    def game_crash(self, found: dict, listed: list[str], own: int, send=True, holds: dict | None = None) -> Path | None:
+        """A game crash report (read_dump's `found`) with the mods that were on. Under version 4 of the agreement also
+        the version accepted, the map the game's script-error text names (the game's own by its name, any other only
+        as OWN_MAP) and what the player's own mods hold (`holds`, own_holds). The unit the game was making and the
+        game mode are in version 4 too, but nothing here can read them from the game's crash report yet."""
         if not enabled(self.home):
             return None
         body = {"kind": "game", "code": found["code"], "module": found["module"], "offset": found["offset"],
@@ -667,6 +838,15 @@ class Watch:
             body["chain"] = found["chain"][:CHAIN_MOST]
         if found.get("traceback"):
             body["traceback"] = found["traceback"]
+        if isinstance(found.get("ignored"), int) and found["ignored"] > 0:
+            body["ignored"] = min(MAX_COUNT, found["ignored"])  # (the game's own text: version 3 lists it)
+        if allows_v4(self.home):
+            body["agreement"] = agreement(self.home)
+            if isinstance(found.get("map"), str) and re.fullmatch(r"[A-Za-z0-9_]{1,64}", found["map"]):
+                body["map"] = found["map"]
+            kept = {k: v for k, v in (holds or {}).items() if k in OWN_KINDS and isinstance(v, int) and v > 0}
+            if kept and own:
+                body["own"] = kept
         return self.crash(body, send)
 
 
@@ -766,12 +946,15 @@ def _memory_at(data: bytes, streams: dict, address: int) -> tuple[int, int, int]
     return None
 
 
-def read_dump(path, exe=None) -> dict | None:
+def read_dump(path, exe=None, install=None) -> dict | None:
     """From a crash report file, read on this PC only: {"code", "module", "offset"}; for a bad memory access
     (0xc0000005) "access", what the game tried to do and where ("read 0x20"); with the copy's RUSE.exe (`exe`) given,
     "chain": the places in RUSE.exe the crashed thread's stack returns to, nearest first (up to CHAIN_MOST, each one
-    right after a call); and for the game's script-error stop (0x29a), "traceback" (the game Python's text, paths cut).
-    None if it can't be read. The dump never leaves the PC (the plan, §2)."""
+    right after a call); and for the game's script-error stop (0x29a), "traceback" (the game Python's text, paths cut),
+    "ignored" (the number on the game's "Previously ignored errors: N" line before it, when there is one: each of our
+    script guards adds 1 when it steps in, rusemod.scriptguards) and, with the game's install (`install`) given, "map":
+    the map its text names, the game's own by its name, a mod's as OWN_MAP (map_of; sent only under version 4 of the
+    agreement: Watch.game_crash). None if it can't be read. The dump never leaves the PC (the plan, §2)."""
     try:
         data = Path(path).read_bytes()
     except OSError:
@@ -842,7 +1025,17 @@ def read_dump(path, exe=None) -> dict | None:
         text = script_error_text(data)
         if text:
             out["traceback"] = no_paths(text)[:TRACEBACK_CHARS]
+        ignored = IGNORED.search(data)
+        if ignored is not None:
+            out["ignored"] = min(MAX_COUNT, int(ignored.group(1)))
+        if install is not None:
+            found_map = map_of(data, game_maps(install))
+            if found_map:
+                out["map"] = found_map
     return out
+
+
+IGNORED = re.compile(rb"Previously ignored errors: (\d{1,9})")  # the game's own line, before its script-error text
 
 
 TRACEBACK_MARK = b"Traceback (most recent call last)"
@@ -891,8 +1084,10 @@ class GameWatch(threading.Thread):
     any crash report it left since it started."""
 
     def __init__(self, watch: Watch, process, listed: list[str], own: int, sleep=time.sleep, clock=time.time,
-                 local: str | None = None, exe=None):
+                 local: str | None = None, exe=None, folders=None, game=None):
         super().__init__(daemon=True, name="bug-watch-game")
+        self.folders = list(folders or [])  # the mods' folders: what the player's own hold (own_holds, version 4)
+        self.game = game  # the game's install: which maps are the game's own (read_dump's map)
         self.watch, self.process, self.listed, self.own = watch, process, listed, own
         self.sleep, self.clock, self.local, self.started = sleep, clock, local, clock()
         self.exe = exe  # the copy's RUSE.exe, for a crash's chain (read_dump)
@@ -901,13 +1096,14 @@ class GameWatch(threading.Thread):
         while self.process.poll() is None:
             self.sleep(5)
         ran = self.clock() - self.started
-        self.watch.played(ran / 60.0, self.listed, self.own)
+        holds = own_holds(self.folders) if self.own and self.folders and allows_v4(self.watch.home) else None
+        self.watch.played(ran / 60.0, self.listed, self.own, holds)
         crashed = False
         for dump in crash_dumps_since(self.started, self.local):
-            found = read_dump(dump, self.exe)
+            found = read_dump(dump, self.exe, install=self.game)
             if found:
                 crashed = True
-                self.watch.game_crash(found, self.listed, self.own)
+                self.watch.game_crash(found, self.listed, self.own, holds=holds)
         if ran < QUICK_CLOSE and not crashed:  # the game didn't get going, or was quit at once (2026-11-10)
             self.watch.count("messages", "game:closed-under-1-min")
 

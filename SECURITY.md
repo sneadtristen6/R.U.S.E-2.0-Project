@@ -69,7 +69,7 @@ Someone cheating in a match isn't a security problem in our apps: tell us on the
 
 R.U.S.E. multiplayer has no anti-cheat of its own. RUSE Guard was DomesticNukes' idea, and the name is his;
 sneadtristen6 and Claude built it. It keeps cheats out of matches against other players without catching honest ones.
-Accepting it is part of the agreement the apps show at their first start (version 3, 2 November 2026), and these are
+Accepting it is part of the agreement the apps show at their first start (version 4, 13 November 2026), and these are
 its rules:
 
 1. **Multiplayer only.** It acts only in multiplayer and co-op matches: never in single-player, skirmish against the
@@ -102,9 +102,9 @@ its rules:
 ## Bug Watch and Sign in through Steam
 
 - **Bug Watch** is off unless you tick it. When it's on, the apps send counts of what you use and what goes wrong,
-  once a day, with your username: never your real name, your Steam account, your files or paths. Settings shows,
-  word for word, what would be sent. Counts and crash reports are deleted after 7 days; untick it any time and what
-  was kept is deleted.
+  once a day, with your username: never your real name, your Steam account, your files or paths, or the names and
+  words of your own mods. Settings shows, word for word, what would be sent. Counts and crash reports are deleted
+  after 7 days; untick it any time and what was kept is deleted.
 - **Sign in through Steam** happens on Steam's own page; we never see your password. Our server keeps a one-way code
   made from your Steam account, never your Steam ID or IP address, and your PC keeps a pass for 30 days. Nothing needs
   it yet.
