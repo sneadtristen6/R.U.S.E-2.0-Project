@@ -11,10 +11,13 @@ by `pack()` into the folder's own `mod.toml` first, so the next export starts fr
 
 No folder of the maker's PC goes out in a package (FL-110): the owner, 2026-11-12, asked what Export should do with
 the full path of each imported model's source file in its record (often C:\\Users\\<his Windows name>\\...), answered
-"Keep file name only": Export writes only the file's own name, never a folder. `pack()` does that for every file it
-packs (folders_out): a model's record, the data inside a .glb model (an imported scenery model names the file it was
-made from), and any text. The mod's own files on the maker's PC keep theirs: Resize and Move fit a model again from
-the file its record names.
+"Keep file name only": Export writes only the file's own name, never a folder. `pack()` does that only in the fields
+the Studio itself writes a path of the PC into (STUDIO_PATHS, packed_bytes): a model's record ("from", and the
+pictures its report names), the data inside a .glb model the Studio made from a scenery model (its source's path), and
+a map's import record (the folders it was made from). The file's own name and every other byte stay as they were.
+Nothing a modder wrote is changed (README, descriptions, .rndf, .csv, notes, credits: byte for byte), so no sentence
+can be cut; a text naming this PC's home folder goes out as written, and Export says so (home_named). The mod's own
+files on the maker's PC keep theirs: Resize and Move fit a model again from the file its record names.
 """
 from __future__ import annotations
 
@@ -211,86 +214,147 @@ def _names_a_unit(record: Path) -> bool:
 
 
 # --- no folder of the maker's PC in a package (FL-110, the owner's "Keep file name only") ---
-_NAME = r"[^\\/:*?\"<>|\r\n\t]"                       # a letter of a folder's name (Windows allows none of :*?"<>|)
-_AFTER = r"(?<![^\s\"'(\[{=,;<>])"                    # at the start, or after a space, a quote or a bracket
-
-
-def _folder_pattern(sep: str, part: str) -> re.Pattern:
-    """An absolute path's folder, up to its last separator: C:\\ (any drive, either slash), a network folder
-    (\\\\server\\), or a home or temporary folder elsewhere (/home/, /Users/, /tmp/...), then each folder below."""
-    return re.compile(rf"(?:(?<![A-Za-z0-9])[A-Za-z]:{sep}"
-                      rf"|{_AFTER}(?:\\\\){{1,2}}[^\\/\s\"'<>|:*?]+{sep}"
-                      rf"|{_AFTER}/(?:home|Users|root|tmp|mnt|media|run/media|var/folders)/)"
-                      rf"(?:{part}{sep})*")
-
-
-FOLDER = _folder_pattern(r"[\\/]", rf"{_NAME}*")      # a path as it is (a JSON string read, a Markdown text)
-# a path as TOML writes it in a string: its backslashes doubled, a letter beyond ASCII as \u00e9 (part of a name)
-FOLDER_WRITTEN = _folder_pattern(r"(?:\\\\|\\(?!u[0-9A-Fa-f]{4})|/)", rf"(?:{_NAME}|\\u[0-9A-Fa-f]{{4}})*")
+# Only the fields the Studio itself writes a path of the PC into are changed, each to the file's (or folder's) own
+# name, whatever the folder looks like on whatever system: no list of known folders to fall out of, and no guessing at
+# paths inside a modder's words (a README, a description, a .rndf, a .csv, a credit, a note go out byte for byte: the
+# round-1 cleaner that read paths out of any text cut "Made from C:\models\tank.glb, and docs\turret.md tells how."
+# down to "Made from turret.md tells how.", the export recheck of 2026-11-12, F2).
+STUDIO_PATHS = {
+    # what the Studio writes where (each place's member, and the words its export line uses for it)
+    "record": "files/models/<unit>.json (ruse_studio.api._fit_model): \"from\", the file the model was made from "
+              "(always a path); its report's \"file\", and the pictures its report names but didn't find (\"missing\", the "
+              "model file's own names for them), wherever the report repeats them (its \"pictures\", \"alpha\", "
+              "\"notes\")",
+    "model": "a .glb the Studio made from a scenery model (rusemod.meshlod.glb_bytes): its asset's extras' "
+             "\"rusemod_version\" and each mesh named the same, the source's path (and its ring, \"(far)\")",
+    "import": "maps/<Pack>/import.toml (rusemod.placebase, the real-place import): [base] folder, engine_run and "
+              "engine_code, the folders the map was made from",
+}
 TEXT_FILES = {".json", ".gltf", ".toml", ".md", ".txt", ".csv", ".rndf", ".ndf", ".xml", ".ini", ".cfg", ".yml",
               ".yaml", ".html", ".htm", ".py"}         # (and LICENSE, which has no ending)
+_SEPARATOR = re.compile(r"[\\/]")
+# a path that starts at the top of a disk or a home: C:\ or C:/ (any drive), \ or / (a network folder, \\?\, /home,
+# /var/home, /Volumes, /opt: any), ~/, a file: address, %USERPROFILE%\ (any such name)
+_ABSOLUTE = re.compile(r"^(?:[A-Za-z]:[\\/]|[\\/]|~[\\/]|file:|%[A-Za-z0-9_()]+%[\\/])", re.IGNORECASE)
 
 
-def folders_out(text: str, written: bool = False) -> str:
-    """`text` with the folder of each absolute path in it taken out, the file's own name left: C:\\Users\\<name>\\
-    tank.glb (any drive, either slash) becomes tank.glb, as do \\\\server\\share\\tank.glb and /home/<name>/tank.glb;
-    a path that is only a folder goes altogether. `written`: the text as TOML writes it (C:\\\\Users\\\\<name>\\\\...,
-    \\u00e9 for a letter in a name)."""
-    return (FOLDER_WRITTEN if written else FOLDER).sub("", text)
+def own_name(value: str) -> str:
+    """The file's (or a folder's) own name in a path the Studio wrote: what follows its last slash or backslash, on
+    any system, a trailing slash left aside (C:\\Users\\<name>\\x.glb, /var/home/<name>/x.glb, \\\\server\\share\\
+    x.glb, file:///home/<name>/x.glb: x.glb; a scenery model's "D:\\maps\\a.gltf (far)": "a.gltf (far)")."""
+    parts = [p for p in _SEPARATOR.split(value) if p]
+    return parts[-1] if parts else ""
 
 
-def _strings(value, found: set) -> None:
+def is_absolute(value) -> bool:
+    """Whether a string a model file or the Studio wrote is a path from the top of a disk or a home (any system)."""
+    return isinstance(value, str) and bool(_ABSOLUTE.match(value))
+
+
+def _named(value, name: str):
+    return own_name(value) if isinstance(value, str) and _SEPARATOR.search(value) else value
+
+
+def _swapped(value, swap: dict, inside: bool = False):
+    """`value` with each string in `swap` replaced: whole strings (values and keys); `inside`: also where a string
+    holds one (a note naming a picture)."""
     if isinstance(value, str):
-        found.add(value)
-    elif isinstance(value, list):
-        for v in value:
-            _strings(v, found)
-    elif isinstance(value, dict):
-        for k, v in value.items():
-            found.add(k)
-            _strings(v, found)
-
-
-def _swapped(value, swap: dict):
-    if isinstance(value, str):
-        return swap.get(value, value)
+        if value in swap:
+            return swap[value]
+        if inside:
+            for old in sorted(swap, key=len, reverse=True):
+                value = value.replace(old, swap[old])
+        return value
     if isinstance(value, list):
-        return [_swapped(v, swap) for v in value]
+        return [_swapped(v, swap, inside) for v in value]
     if isinstance(value, dict):
-        return {swap.get(k, k): _swapped(v, swap) for k, v in value.items()}
+        return {swap.get(k, k): _swapped(v, swap, inside) for k, v in value.items()}
     return value
 
 
-def _json_swaps(doc) -> dict:
-    """{each string (value or key) of a JSON document holding a folder of the PC: the same with only its file's name}."""
-    found: set = set()
-    _strings(doc, found)
-    return {s: out for s in found if (out := folders_out(s)) != s}
+def _record_swap(doc) -> dict:
+    """{each path the Studio wrote into a model's record: its own name}; {} when it wrote none."""
+    if not isinstance(doc, dict):
+        return {}
+    swap = {}
+    made = doc.get("from")
+    if isinstance(made, str) and _SEPARATOR.search(made):
+        swap[made] = own_name(made)
+    report = doc.get("report")
+    if isinstance(report, dict):
+        if isinstance(report.get("file"), str) and _SEPARATOR.search(report["file"]):
+            swap[report["file"]] = own_name(report["file"])
+        for picture in report.get("missing") or ():
+            if is_absolute(picture):
+                swap[picture] = own_name(picture)
+    return swap
 
 
-def _json_out(text: str) -> str | None:
-    """A JSON file's text with only file names where it named folders, every other byte as it was (the strings
-    replaced where they're written; written anew, indented as the Studio writes its records, when that can't be
-    done); None when it names none."""
-    doc = json.loads(text)
-    swap = _json_swaps(doc)
-    if not swap:
-        return None
-    want, out = _swapped(doc, swap), text
-    for old, new in swap.items():
+def _record_want(doc, swap: dict):
+    """The record with its paths named only by their own names: "from" and the report (where the report repeats a
+    picture, in its notes too); everything else, "copy_kept" among it (the uniform's text kept for Take it out), as it
+    was."""
+    want = dict(doc)
+    for k in ("from",):
+        if isinstance(want.get(k), str):
+            want[k] = swap.get(want[k], want[k])
+    if isinstance(want.get("report"), dict):
+        want["report"] = _swapped(want["report"], swap, inside=True)
+    return want
+
+
+def _json_written(text: str, doc, want, indent) -> str:
+    """`text` (the JSON `doc` as written) changed to `want`, which differs from `doc` only in some strings: each such
+    string replaced where it's written, every other byte as it was; written anew (as `indent` says) when that can't be
+    done (the same string also written where it stays, say)."""
+    out = text
+    pairs = dict(_pairs(doc, want))
+    for old in sorted(pairs, key=len, reverse=True):
         for ascii_only in (True, False):
-            out = out.replace(json.dumps(old, ensure_ascii=ascii_only), json.dumps(new, ensure_ascii=ascii_only))
+            out = out.replace(json.dumps(old, ensure_ascii=ascii_only), json.dumps(pairs[old], ensure_ascii=ascii_only))
     try:
         if json.loads(out) == want:
             return out
     except ValueError:
         pass
-    return json.dumps(want, indent=1)
+    return json.dumps(want, indent=indent) if indent is not None else json.dumps(want, separators=(",", ":"))
 
 
-def _glb_out(raw: bytes) -> bytes | None:
-    """A .glb model with only file names where its JSON part named folders (its binary part as it was); None when it
-    names none or isn't a .glb."""
+def _pairs(was, now):
+    """Each (string as it was, as it is now) where `now` differs from `was` in a string (value or key)."""
+    if isinstance(was, str) and isinstance(now, str):
+        if was != now:
+            yield was, now
+    elif isinstance(was, list) and isinstance(now, list):
+        for a, b in zip(was, now):
+            yield from _pairs(a, b)
+    elif isinstance(was, dict) and isinstance(now, dict):
+        for (ka, va), (kb, vb) in zip(was.items(), now.items()):
+            if ka != kb:
+                yield ka, kb
+            yield from _pairs(va, vb)
+
+
+def _record_out(text: str) -> str | None:
+    """A model's record with only file names where the Studio wrote paths, every other byte as it was; None when it
+    names none (or isn't a record)."""
+    try:
+        doc = json.loads(text)
+    except (ValueError, RecursionError):
+        return None
+    swap = _record_swap(doc)
+    if not swap:
+        return None
+    want = _record_want(doc, swap)
+    if want == doc:
+        return None
+    return _json_written(text, doc, want, 1)
+
+
+def _model_out(raw: bytes) -> bytes | None:
+    """A .glb with only its source's own name where the Studio's scenery import wrote the source's path (its asset's
+    extras' rusemod_version and each mesh named the same), its binary part and every other field as they were; None
+    when it names no such path or isn't a .glb."""
     if len(raw) < 20 or raw[:4] != b"glTF":
         return None
     version, total = struct.unpack_from("<II", raw, 4)
@@ -298,55 +362,127 @@ def _glb_out(raw: bytes) -> bytes | None:
     if kind != b"JSON":
         return None
     try:
-        doc = json.loads(raw[20:20 + length].decode("utf-8"))
-    except (ValueError, UnicodeDecodeError):
+        text = raw[20:20 + length].decode("utf-8")
+        doc = json.loads(text)
+    except (ValueError, UnicodeDecodeError, RecursionError):
         return None
-    swap = _json_swaps(doc)
-    if not swap:
+    extras = (doc.get("asset") or {}).get("extras") if isinstance(doc, dict) and isinstance(doc.get("asset"), dict) \
+        else None
+    source = extras.get("rusemod_version") if isinstance(extras, dict) else None
+    if not isinstance(source, str) or not _SEPARATOR.search(source):
         return None
-    js = json.dumps(_swapped(doc, swap), separators=(",", ":")).encode()
+    name = own_name(source)
+    want = json.loads(text)
+    want["asset"]["extras"]["rusemod_version"] = name
+    for mesh in want.get("meshes") or ():
+        if isinstance(mesh, dict) and mesh.get("name") == source:
+            mesh["name"] = name
+    js = _json_written(text.rstrip(" "), doc, want, None).encode("utf-8")
     js += b" " * (-len(js) % 4)
     return (struct.pack("<4sII", b"glTF", version, total + len(js) - length) + struct.pack("<I4s", len(js), b"JSON")
             + js + raw[20 + length:])
 
 
-def packed_bytes(path) -> bytes | None:
-    """What a package holds of the mod's file at `path` when that isn't the file as it is: a record, a model's own data
-    (.glb) or a text naming a folder of the maker's PC, with only file names there (folders_out); None for a file
-    that goes out as it is."""
+_IMPORT_KEYS = ("folder", "engine_run", "engine_code")
+_TABLE = re.compile(r"^\s*\[([^\[\]]+)\]\s*(?:#.*)?$")
+_KEY_LINE = re.compile(r'^(\s*([A-Za-z0-9_-]+)\s*=\s*)("(?:[^"\\]|\\.)*")(\s*(?:#.*)?)$')
+
+
+def _import_out(text: str) -> str | None:
+    """A map's import record (maps/<Pack>/import.toml, written by the real-place import) with only the folders' own
+    names in [base] folder, engine_run and engine_code; every other line as it was. None when it isn't such a record
+    or names no path."""
+    try:
+        doc = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return None
+    if not isinstance(doc.get("made"), dict) or doc["made"].get("importer") != "rusemod.placebase":
+        return None
+    lines, table, changed = text.splitlines(keepends=True), None, False
+    for i, line in enumerate(lines):
+        body = line.rstrip("\r\n")
+        m = _TABLE.match(body)
+        if m:
+            table = m.group(1).strip()
+            continue
+        m = _KEY_LINE.match(body)
+        if table != "base" or not m or m.group(2) not in _IMPORT_KEYS:
+            continue
+        value = tomllib.loads(f"v = {m.group(3)}")["v"]
+        if not _SEPARATOR.search(value):
+            continue
+        lines[i] = (m.group(1) + json.dumps(own_name(value), ensure_ascii=False) + m.group(4)
+                    + line[len(body):])
+        changed = True
+    return "".join(lines) if changed else None
+
+
+def studio_paths_out(path, name: str | None = None) -> tuple[bytes, str] | None:
+    """What a package holds of the mod's file at `path` (`name`: its path inside the mod, as the package names it)
+    when the Studio wrote a path of the PC into it (STUDIO_PATHS): (the bytes with only the file's own name there,
+    the kind of place: "record", "model" or "import"); None for a file that goes out as it is."""
     path = Path(path)
+    name = (name or path.as_posix()).replace("\\", "/")
     suffix = path.suffix.lower()
     if suffix == ".glb":
-        return _glb_out(path.read_bytes())
-    if suffix not in TEXT_FILES and path.name != "LICENSE":
+        out = _model_out(path.read_bytes())
+        return (out, "model") if out is not None else None
+    parts = name.split("/")
+    is_record = suffix == ".json" and len(parts) >= 3 and parts[-3:-1] == ["files", "models"]
+    is_import = path.name == "import.toml" and len(parts) >= 3 and parts[-3] == "maps"
+    if not (is_record or is_import):
         return None
-    data = path.read_bytes()
     try:
-        text = data.decode("utf-8")
+        text = path.read_bytes().decode("utf-8")
     except UnicodeDecodeError:
         return None
-    if suffix in (".json", ".gltf"):
-        try:
-            out = _json_out(text)
-        except (ValueError, RecursionError):
-            out = folders_out(text, written=True)
-    else:
-        out = folders_out(text, written=suffix == ".toml")
-    return None if out is None or out == text else out.encode("utf-8")
+    out = _record_out(text) if is_record else _import_out(text)
+    return (out.encode("utf-8"), "record" if is_record else "import") if out is not None and out != text else None
+
+
+def packed_bytes(path, name: str | None = None) -> bytes | None:
+    """studio_paths_out's bytes: what a package holds of the file at `path` when that isn't the file as it is."""
+    got = studio_paths_out(path, name)
+    return got[0] if got is not None else None
+
+
+def _home_forms(home) -> list[bytes]:
+    """This PC's home folder as a file could write it: as it is, with forward slashes, with each backslash twice."""
+    s = str(home or "").rstrip("\\/")
+    if len(_SEPARATOR.split(s)) < 2 or len(s) < 4:     # (no folder to look for: "/", "C:")
+        return []
+    return [f.encode("utf-8") for f in {s, s.replace("\\", "/"), s.replace("\\", "\\\\")}]
+
+
+def home_named(data: bytes, home) -> bool:
+    """Whether a member's bytes as packed name this PC's home folder (`home`, Path.home()) in any of its written forms:
+    a modder's text that goes out as he wrote it, which the export says (nothing is changed in it)."""
+    return any(form in data for form in _home_forms(home))
+
+
+def home_shown() -> str:
+    """This PC's home folder, as pack looks for it (Path.home()), for the export's line."""
+    try:
+        return str(Path.home())
+    except RuntimeError:
+        return ""
 
 
 def pack(folder, out, *, build_id: str | None = None, data_revision: str | None = None,
          fingerprint: str | None = None, solved: dict | None = None, made_with: dict | None = None,
-         cleaned: list | None = None) -> Path:
+         cleaned: list | None = None, kinds: dict | None = None, home_in: list | None = None,
+         home=None) -> Path:
     """Zip the mod at `folder` into one file. `out` is the file to write, or a folder to put `<id>-<version>.rusemod`
     in. The mod is checked first (its manifest, and that it reads like a build would); the build it was made on and
     its fingerprint, when given, are written into the manifest (the folder's and the package's) under [game], and the
     tool that made it (`made_with`: {"tool", "version", "page"}: the credit line the list shows) under [made_with].
     `solved`: the answers the mod's build worked out for its maps (BuildResult.solved, §8 "Worked-out answers"),
     written into the folder as maps/<map>/solved.bin first, so the package carries them and players' builds take
-    them instead of working them out. A file naming a folder of the maker's PC goes in with only the file's own name
-    there (packed_bytes; the folder's own file stays as it is); `cleaned`, a list, gets each such file's path inside
-    the package."""
+    them instead of working them out. A file the Studio wrote a path of the maker's PC into goes in with only the
+    file's own name there (studio_paths_out, STUDIO_PATHS; the folder's own file stays as it is); `cleaned`, a list,
+    gets each such file's path inside the package, `kinds`, a dict, {that path: the kind of place, "record", "model"
+    or "import"}. Every other file goes in byte for byte. `home_in`, a list, gets each member that still names this
+    PC's home folder (`home`, Path.home() when not given) as packed: a text the modder wrote, left as he wrote it."""
     folder = Path(folder)
     if not (folder / MANIFEST).is_file():
         raise PackageError(f"{folder} isn't a mod: it has no {MANIFEST} in it.")
@@ -375,18 +511,31 @@ def pack(folder, out, *, build_id: str | None = None, data_revision: str | None 
     target = out / file_name(info) if out.is_dir() or out.suffix.lower() != EXTENSION else out
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_name(target.name + ".part")
+    if home is None and home_in is not None:
+        try:
+            home = Path.home()
+        except RuntimeError:                              # (no home folder known: nothing to look for)
+            home = None
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
         for f in files_of(folder):
             name = f.relative_to(folder).as_posix()
-            data = packed_bytes(f)
-            if data is None:
+            got = studio_paths_out(f, name)
+            if got is None:
                 z.write(f, name)
+                if home_in is not None and (f.suffix.lower() in TEXT_FILES or f.suffix.lower() == ".glb"
+                                            or f.name == "LICENSE") and home_named(f.read_bytes(), home):
+                    home_in.append(name)
                 continue
+            data, kind = got
             member = zipfile.ZipInfo.from_file(f, name)   # (its date and attributes, as z.write gives them)
             member.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(member, data)
             if cleaned is not None:
                 cleaned.append(name)
+            if kinds is not None:
+                kinds[name] = kind
+            if home_in is not None and home_named(data, home):
+                home_in.append(name)
     os.replace(tmp, target)
     return target
 

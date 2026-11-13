@@ -10065,17 +10065,33 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 revision = revisions[0] if len(revisions) == 1 else None
                 fingerprint = fingerprint_text(result.fingerprint) if result.fingerprint else None
                 answers = result.solved  # (what the long map steps worked out: players' builds take it from the file)
-            cleaned: list = []   # (the files naming a folder of this PC: in the file with only the file's own name)
+            # (FL-110, the owner, 2026-11-12: "Keep file name only": only where the Studio itself wrote a path of this
+            # PC, package.STUDIO_PATHS; nothing a modder wrote is changed, a text naming his home folder only said)
+            kinds: dict = {}
+            home_in: list = []
             with self._saving:
                 path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH, cleaned=cleaned)
+                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in)
             self._last_export = Path(path)
             if answers:
                 say(f"The file carries the worked-out answers for {len(answers)} map(s), locked: a player's build takes "
                     f"them instead of working them out again.")
-            if cleaned:   # (FL-110, the owner, 2026-11-12: "Keep file name only")
-                say(f"Your PC's folders were left out of the exported file: {len(cleaned)} of the mod's files named one, "
-                    f"and there they name only the file ({', '.join(cleaned[:5])}{', …' if len(cleaned) > 5 else ''}).")
+            records = [n for n, k in kinds.items() if k == "record"]
+            models = [n for n, k in kinds.items() if k == "model"]
+            imports = [n for n, k in kinds.items() if k == "import"]
+            if records:
+                say(f"In the exported file, these model records name only the file each model was made from, not the "
+                    f"folder on your PC it is in; nothing else in them changed: {', '.join(records)}.")
+            if models:
+                say(f"In the exported file, these scenery models name only the file each was made from, not the folder "
+                    f"on your PC it is in; nothing else in them changed: {', '.join(models)}.")
+            if imports:
+                say(f"In the exported file, these map import records name only the folders each map was made from, not "
+                    f"where they are on your PC; nothing else in them changed: {', '.join(imports)}.")
+            if home_in:
+                say(f"These files of the mod name your PC's home folder ({package.home_shown()}) and go out as they are, "
+                    f"since Export never changes what you wrote: change them in the mod if that shouldn't be shared: "
+                    f"{', '.join(home_in)}.")
             say(f"Saved as {path}")
             job.result = self._share_view(path)
             say(f"Size: {job.result['size']} bytes")
