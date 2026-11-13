@@ -287,6 +287,20 @@ class Round2(Door):
         got = self.back()
         self.assertEqual((got["unplayed"], got["halves"]), ([], ["extra (bip01 head)"]))
 
+    def test_a_game_index_that_can_t_be_read_falls_back_to_the_names_half_after_writing(self):
+        """The listings are read after what came back is written: an index that can't be read then doesn't turn a
+        bring back that was taken in into an error; the half is told by the name, as without an index."""
+        import sqlite3
+        self.own_bones_unit({"t_stand": CLIP_BYTES[STAND], "b_run": CLIP_BYTES[RUN]}, split="bip01 spine")
+        start = self.open()
+
+        def broken(address):
+            raise sqlite3.DatabaseError("file is not a database")
+        self.api._unit_figures = broken
+        self.send.write_bytes(Blenderish(start).send(change=("b_run", "bip01 head", HEAD_TURN)))
+        got = self.back()
+        self.assertEqual((got["changed"], got["written"], got["halves"]), (["b_run"], 1, ["b_run (bip01 head)"]))
+
     # --- D-F8's words ---
     def test_the_rate_said_is_the_scene_s_as_send_read_it(self):
         """Blender's 29.97 preset: its keys come 1/30.03 s apart, and Send's note beside the file says 29.97. Each

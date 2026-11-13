@@ -830,9 +830,15 @@ class DecoyBlenderCalls:
         that one), a t_ listing on the top half, a b_ one on the bottom, any other on the whole body; its ride, unless
         it rides in its truck, animactions.ride's, on the whole body. Every figure of the unit counts (the build's are
         those wearing its model: one that doesn't adds a listing, so a half can only be said where it isn't played,
-        never left unsaid). None without the unit's figures (no game index)."""
+        never left unsaid). None without the unit's figures (no game index, or one that can't be read: what came back is
+        in the mod already, so the name's half is said instead, _halves_unplayed)."""
+        import sqlite3
         from rusemod import animactions
-        figures = [f for f in self._unit_figures(address) if f.get("clips")]
+        from .api import StudioError
+        try:
+            figures = [f for f in self._unit_figures(address) if f.get("clips")]
+        except (sqlite3.Error, OSError, ValueError, StudioError):
+            figures = []
         if not figures or not names:
             return None
         picks = {a: n for a, n in (mine.get("plays") or {}).items() if n in names}
