@@ -5,13 +5,16 @@ of 2026-11-12 (his question dialog, as the lead quoted them):
   are era units), so another player's Studio knows them as added: its Take it out works there, its Add says the unit
   is in the mod already. A mod without era units packs as before, byte for byte;
 - no folder of the maker's PC goes out (FL-110, "Keep file name only": Export writes only the file's own name in each
-  record, never a folder): a model's record ("from"), the data inside a .glb (an imported scenery model names the
-  file it was made from, its middle and far versions the model they were made from), and any text; the mod's own
-  files on his PC keep theirs. A record naming only a file's name is never looked for in the folder the Studio runs
-  in (Resize and Move take a model's file only by its full path).
+  record, never a folder) in the fields the Studio itself writes a path into: a model's record ("from", the pictures
+  its report names), the data inside a .glb the Studio made from a scenery model (the file it was made from), a map's
+  import record (its folders); the mod's own files on his PC keep theirs. Round 2 (the export recheck's F2 and F1):
+  nothing a modder wrote changes (README, description, .rndf, .csv, credits: byte for byte), the Studio's fields name
+  their file on any system. A record naming only a file's name is never looked for in the folder the Studio runs in
+  (Resize and Move take a model's file only by its full path).
 On the Studio tests' made-up game, the Horse Squad's builder and model import stood in for (as tests/test_horse_squad.py
 does): what's checked here is what goes into the file and comes out of it."""
 import json
+import tomllib
 import os
 import struct
 import sys
@@ -69,27 +72,42 @@ def members(path: Path) -> dict:
         return {n: z.read(n) for n in z.namelist()}
 
 
-class FoldersOut(unittest.TestCase):
-    def test_a_path_keeps_its_file_s_own_name(self):
+# (round 2 of the export fix, 2026-11-12: "Export never changes what a modder wrote, except a folder of this PC that
+# the Studio itself put there, and then only that folder." Round 1's folders_out read paths out of any text and cut a
+# modder's words, the recheck's F2; it is gone, and these tests say what replaced it.)
+# Every text the export recheck's probe (fix-export/recheck1/try_paths.py) tried, with the README line of its F2 test:
+MODDER_TEXTS = ("/var/home/jane/Models/tank.glb", "/Volumes/Jane Drive/models/tank.glb", "/opt/models/tank.glb",
+                "/data/jane/models/tank.glb", "~/Models/tank.glb", "made from `/home/jane/x.glb`",
+                "file:///home/jane/x.glb", "made from (/home/jane/x.glb)", "file:///C:/Users/jane/x.glb",
+                "\\\\?\\C:\\Users\\jane\\x.glb", "Plan B:/C", "Hold sector A:\\ then B", "Phase 1: Take bridge X:/Y",
+                "%USERPROFILE%\\Documents\\tank.glb", "C:\\Users\\jane\\x.glb; then see the manual\\page 3",
+                "Made from C:\\models\\tank.glb, and docs\\turret.md tells how.", "https://example.org/x")
+
+
+class StudioPaths(unittest.TestCase):
+    def test_a_path_the_studio_wrote_keeps_its_file_s_own_name_on_any_system(self):
         for text, want in (
                 (PC + "\\horse_squad\\horse-squad-rifle.glb", "horse-squad-rifle.glb"),
                 ("D:/RUSE-2.0/scratch/x/Boulder01.glb (far)", "Boulder01.glb (far)"),
                 ("\\\\server\\share\\models\\tank.glb", "tank.glb"),
                 ("/home/jane/models/tank.glb", "tank.glb"),
-                ("Read C:\\models\\tank.glb and C:\\models\\turret.glb.", "Read tank.glb and turret.glb."),
-                ("C:\\Users\\jane\\u1945.glb", "u1945.glb"),
-                ("C:\\Users\\jane\\Desktop\\", "")):
-            self.assertEqual(package.folders_out(text), want, text)
-        written = 'from = "C:\\\\Users\\\\Jane Doe\\\\caf\\u00e9.glb" # D:/work/make.py'
-        self.assertEqual(package.folders_out(written, written=True), 'from = "caf\\u00e9.glb" # make.py')
+                ("/var/home/jane/.local/share/ruse-mod-platform/horse_squad/horse-squad-rifle.glb",
+                 "horse-squad-rifle.glb"),
+                ("/Volumes/Jane Drive/models/tank.glb", "tank.glb"), ("/opt/models/tank.glb", "tank.glb"),
+                ("/data/jane/models/tank.glb", "tank.glb"), ("~/Models/tank.glb", "tank.glb"),
+                ("file:///home/jane/x.glb", "x.glb"), ("file:///C:/Users/jane/x.glb", "x.glb"),
+                ("\\\\?\\C:\\Users\\jane\\x.glb", "x.glb"), ("%USERPROFILE%\\Documents\\tank.glb", "tank.glb"),
+                ("C:\\Users\\jane\\u1945.glb", "u1945.glb"), ("C:\\Users\\Jane Doe\\Desktop\\", "Desktop"),
+                ("C:\\Users\\jane\\tank (2).glb (far)", "tank (2).glb (far)"), ("tank.glb", "tank.glb")):
+            self.assertEqual(package.own_name(text), want, text)
 
-    def test_what_isnt_a_folder_of_the_pc_stays(self):
-        for text in ("$/GFX/Everything/Descriptor_Unit_Horse_Squad",
-                     "gen\\ww2\\res3d\\units\\us\\infanterie\\tscother_diffusetexture01.tgv",
-                     "Horse Squad (WWII, USA): by sneadtristen6, https://github.com/sneadtristen6/R.U.S.E-2.0-Project",
-                     "https://example.org/home/x", "a ratio of 3:/4", "files/models/Descriptor_Unit_X.glb"):
-            self.assertEqual(package.folders_out(text), text)
-            self.assertEqual(package.folders_out(text, written=True), text)
+    def test_which_picture_names_are_paths(self):
+        for text in (PC + "\\coat.png", "/var/home/jane/coat.png", "\\\\server\\coat.png", "~/coat.png",
+                     "file:///home/jane/coat.png", "%USERPROFILE%\\coat.png", "c:/coat.png"):
+            self.assertTrue(package.is_absolute(text), text)
+        for text in ("coat.png", "textures/coat.png", "textures\\coat.png", "$/GFX/Everything/X",
+                     "https://example.org/coat.png", "Plan B:/C", None):
+            self.assertFalse(package.is_absolute(text), text)
 
 
 class Packing(unittest.TestCase):
@@ -154,21 +172,31 @@ class Packing(unittest.TestCase):
         self.assertEqual((into / era_units.CREDITS).read_bytes(), (self.mod / era_units.CREDITS).read_bytes())
 
     def test_a_model_record_goes_out_naming_only_its_file(self):
+        coat = f"{PC}\\pictures\\coat.png"                   # (a picture the model file names, not found)
+        note = f"{coat}: its alpha picture is 4 x 4, the colour 8 x 8; plain alpha used"
         mine = {"from": PC + "\\horse_squad\\horse-squad-rifle.glb", "size": 1.0, "aircraft": False,
-                "report": {"file": "horse-squad-rifle.glb", "notes": [f"read {PC}\\pictures\\coat.png"]},
-                "for": "fusilier", "skeleton": "own"}
+                "report": {"file": "horse-squad-rifle.glb", "missing": [coat, "textures/belt.png"],
+                           "pictures": [[coat, 4, 4]], "alpha": {coat: "plain 255"},
+                           "notes": [note, "Plan B:/C and docs\\turret.md stay as written"]},
+                "for": "fusilier", "skeleton": "own", "copy_kept": f"# kept\nfrom = '{coat}'\n"}
         record = self.write("files/models/Descriptor_Unit_Horse_Squad.json", json.dumps(mine, indent=1))
         on_disk = record.read_bytes()
-        cleaned = []
-        out = package.pack(self.mod, self.root / "out", cleaned=cleaned)
+        cleaned, kinds = [], {}
+        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds)
         self.assertEqual(cleaned, ["files/models/Descriptor_Unit_Horse_Squad.json"])
+        self.assertEqual(kinds, {"files/models/Descriptor_Unit_Horse_Squad.json": "record"})
         self.assertEqual(record.read_bytes(), on_disk)       # his own record keeps its folder: Resize uses it
         packed = members(out)["files/models/Descriptor_Unit_Horse_Squad.json"]
         self.assertEqual(json.loads(packed), dict(mine, **{"from": "horse-squad-rifle.glb", "report": {
-            "file": "horse-squad-rifle.glb", "notes": ["read coat.png"]}}))
-        # every other byte as it was: only the two strings naming a folder are written anew
+            "file": "horse-squad-rifle.glb", "missing": ["coat.png", "textures/belt.png"],
+            "pictures": [["coat.png", 4, 4]], "alpha": {"coat.png": "plain 255"},
+            "notes": [note.replace(coat, "coat.png"), "Plan B:/C and docs\\turret.md stay as written"]}}))
+        # every other byte as it was: only the strings naming those paths are written anew (the uniform's text kept
+        # for Take it out, copy_kept, as it was)
         self.assertEqual(packed, on_disk.replace(json.dumps(mine["from"]).encode(), b'"horse-squad-rifle.glb"')
-                         .replace(json.dumps(mine["report"]["notes"][0]).encode(), b'"read coat.png"'))
+                         .replace(json.dumps(note).encode(), json.dumps(note.replace(coat, "coat.png")).encode())
+                         .replace(json.dumps(coat).encode(), b'"coat.png"'))
+        self.assertEqual(json.loads(packed)["copy_kept"], mine["copy_kept"])
         with zipfile.ZipFile(self.root / "as-it-is.zip", "w", zipfile.ZIP_DEFLATED) as z:
             z.write(record, "files/models/Descriptor_Unit_Horse_Squad.json")   # (how every other member goes in)
         with zipfile.ZipFile(out) as z, zipfile.ZipFile(self.root / "as-it-is.zip") as plain:
@@ -194,27 +222,120 @@ class Packing(unittest.TestCase):
         raw = got["files/assets/Boulder01/Boulder01_far.glb"]
         self.assertEqual(struct.unpack_from("<I", raw, 8)[0], len(raw))
 
-    def test_no_member_names_a_folder_of_the_pc(self):
+    def test_only_what_the_studio_wrote_changes_and_the_modder_s_words_go_out_as_written(self):
+        """The Studio's record and scenery model name only their files; the modder's own texts (a README, a TOML of
+        his, a .rndf, a .csv) go out byte for byte, even naming a folder of his PC, and pack says which name his home
+        folder. (Round 1 cut paths out of every text, and with them his words: the export recheck's F2.)"""
         self.write("files/models/Descriptor_Unit_X.json", json.dumps({"from": "D:/models/x.glb"}))
         doubled = PC.replace("\\", "\\\\")                   # (a TOML string writes each backslash twice)
         self.write("files/notes/made.toml", f'# made from {PC}\\x.blend\n[x]\nfile = "{doubled}\\\\x.glb"\n')
         self.write("README.md", f"Made on {PC}\\mods\\cavalry by sneadtristen6.\n")
+        self.write("src/units.rndf", f"// made from {PC}\\x.blend; Plan B:/C\npatch $/B ( ProductionPrice *= 0.5 )\n")
+        self.write("text/units.csv", f"key,us\nk1,Made from C:\\models\\tank.glb and docs\\turret.md\n")
         self.write("files/assets/A/A.glb", glb_naming("/home/jane/models/a.gltf"))
+        cleaned, kinds, home_in = [], {}, []
+        out = package.pack(self.mod, self.root / "out", cleaned=cleaned, kinds=kinds, home_in=home_in, home=PC)
+        self.assertEqual(kinds, {"files/assets/A/A.glb": "model", "files/models/Descriptor_Unit_X.json": "record"})
+        self.assertEqual(sorted(cleaned), ["files/assets/A/A.glb", "files/models/Descriptor_Unit_X.json"])
+        self.assertEqual(sorted(home_in), ["README.md", "files/notes/made.toml", "src/units.rndf"])
+        got = members(out)
+        for rel in ("README.md", "files/notes/made.toml", "src/units.rndf", "text/units.csv", "mod.toml"):
+            self.assertEqual(got[rel], self.text(rel), rel)
+        self.assertEqual(json.loads(got["files/models/Descriptor_Unit_X.json"]), {"from": "x.glb"})
+        doc, _binary = glb_document(got["files/assets/A/A.glb"])
+        self.assertEqual((doc["meshes"][0]["name"], doc["asset"]["extras"]["rusemod_version"]), ("a.gltf", "a.gltf"))
+        self.assertEqual(package.check(out)["id"], "cavalry")
+
+    def test_every_text_the_recheck_tried_goes_out_byte_for_byte(self):
+        """Each text of the recheck's probe, in each kind of text a modder writes (README.md, mod.toml's description,
+        a .rndf comment, a .csv text, CHANGELOG.md, the era credits): the member is the file, byte for byte."""
+        texts = "\n".join(MODDER_TEXTS)
+        self.write("README.md", texts + "\n")
+        self.write("CHANGELOG.md", texts.encode("utf-8").replace(b"\n", b"\r\n"))
+        self.write(era_units.CREDITS, f"# credits\n\n{texts}\n")
+        self.write("src/units.rndf",
+                   "".join(f"// {t}\n" for t in MODDER_TEXTS) + "patch $/B ( ProductionPrice *= 0.5 )\n")
+        self.write("text/units.csv", "key,us\n" + "".join(f'k{i},"{t}"\n' for i, t in enumerate(MODDER_TEXTS)))
+        manifest = self.mod / "mod.toml"
+        manifest.write_text(manifest.read_text(encoding="utf-8") + "description = "
+                            + json.dumps(" / ".join(MODDER_TEXTS)) + "\n", encoding="utf-8")
+        self.assertIn("Plan B:/C", tomllib.loads(manifest.read_text(encoding="utf-8"))["mod"]["description"])
         cleaned = []
         out = package.pack(self.mod, self.root / "out", cleaned=cleaned)
-        self.assertEqual(sorted(cleaned), ["README.md", "files/assets/A/A.glb", "files/models/Descriptor_Unit_X.json",
-                                           "files/notes/made.toml"])
+        self.assertEqual(cleaned, [])
         got = members(out)
-        for name, data in got.items():
-            for form in ("Jane Doe", "D:/models", "/home/jane", "C:\\", "C:/", "D:\\"):
-                self.assertNotIn(form.encode(), data, name)
-        self.assertEqual(got["README.md"], self.text("README.md").replace(f"{PC}\\mods\\".encode(), b""))
-        self.assertEqual(got["files/notes/made.toml"], self.text("files/notes/made.toml")
-                         .replace(f"{PC}\\".encode(), b"").replace(f"{doubled}\\\\".encode(), b""))
-        self.assertIn(b"Made on cavalry by sneadtristen6.", got["README.md"])
-        self.assertIn(b'# made from x.blend', got["files/notes/made.toml"])
-        self.assertIn(b'file = "x.glb"', got["files/notes/made.toml"])
-        self.assertEqual(package.check(out)["id"], "cavalry")
+        for rel in ("README.md", "CHANGELOG.md", era_units.CREDITS, "src/units.rndf", "text/units.csv", "mod.toml"):
+            self.assertEqual(got[rel], self.text(rel), rel)
+
+    def test_a_record_from_any_system_names_only_its_file(self):
+        """F1 of the export recheck, as a class: the record's "from" is the file's own name wherever the folder was
+        (no list of known folders), its other bytes as they were."""
+        for i, made in enumerate(("/var/home/jane/.local/share/ruse-mod-platform/horse_squad/horse-squad-rifle.glb",
+                                  "/Volumes/Jane Drive/models/horse-squad-rifle.glb",
+                                  "/opt/models/horse-squad-rifle.glb", "/data/jane/horse-squad-rifle.glb",
+                                  "\\\\?\\C:\\Users\\jane\\horse-squad-rifle.glb",
+                                  "file:///home/jane/horse-squad-rifle.glb",
+                                  "E:\\Mods & Models\\Jane's (2026)\\horse-squad-rifle.glb")):
+            rel = f"files/models/Descriptor_Unit_X{i}.json"
+            self.write(rel, json.dumps({"from": made, "size": 1.0, "report": {"file": "horse-squad-rifle.glb"}},
+                                       indent=1))
+        got = members(package.pack(self.mod, self.root / "out"))
+        for i in range(7):
+            rel = f"files/models/Descriptor_Unit_X{i}.json"
+            packed = json.loads(got[rel])
+            self.assertEqual(packed["from"], "horse-squad-rifle.glb", rel)
+            self.assertEqual(got[rel], self.text(rel).replace(
+                json.dumps(json.loads(self.text(rel))["from"]).encode(), b'"horse-squad-rifle.glb"'), rel)
+
+    def test_a_model_the_modder_made_keeps_its_own_names(self):
+        """A .glb of his (from Blender: no scenery source the Studio wrote) goes out byte for byte, a mesh name
+        holding a path among it; a scenery model whose mesh name the modder changed keeps his name, its source the
+        file's name only."""
+        g = _Glb()
+        g.doc["meshes"] = [{"name": "C:\\Users\\jane\\turret", "primitives": [{"attributes": {"POSITION": g.packed(
+            struct.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0), 3, "VEC3", 5126, low=[0, 0, 0], high=[1, 1, 0])}}]}]
+        g.doc["asset"]["generator"] = "Khronos glTF Blender I/O"
+        his = self.write("files/models/Descriptor_Unit_Y.glb", g.to_bytes())
+        made = glb_naming("D:\\maps\\a\\files\\assets\\Rock\\Rock.glb (far)")
+        doc, binary = glb_document(made)
+        doc["meshes"][0]["name"] = "his rock/far"
+        js = json.dumps(doc, separators=(",", ":")).encode()
+        js += b" " * (-len(js) % 4)
+        renamed = (struct.pack("<4sII", b"glTF", 2, 28 + len(js) + len(binary)) + struct.pack("<I4s", len(js), b"JSON")
+                   + js + struct.pack("<I4s", len(binary), b"BIN\x00") + binary)
+        self.write("files/assets/Rock/Rock_far.glb", renamed)
+        got = members(package.pack(self.mod, self.root / "out"))
+        self.assertEqual(got["files/models/Descriptor_Unit_Y.glb"], his.read_bytes())
+        doc, _binary = glb_document(got["files/assets/Rock/Rock_far.glb"])
+        self.assertEqual((doc["meshes"][0]["name"], doc["asset"]["extras"]["rusemod_version"]),
+                         ("his rock/far", "Rock.glb (far)"))
+
+    def test_a_map_import_record_names_only_its_folders(self):
+        """maps/<Pack>/import.toml as the real-place import writes it (rusemod.placebase._import_toml, on the
+        importer's branch): [base] folder, engine_run and engine_code name only their folders; every other line as it
+        was. An import.toml the import didn't write goes out as it is."""
+        def q(v):
+            return json.dumps(v, ensure_ascii=False)
+        lines = ["# The import's record (rusemod.placebase): what this map was made from, by what, with what choice.",
+                 "# The build does not read it; the Studio's Import panel will.", "", "[place]", 'slug = "utah"',
+                 f"note = {q('see C:/Users/jane/x for how')}", "", "[base]",
+                 f"folder = {q(PC + chr(92) + 'places' + chr(92) + 'utah' + chr(92) + 'base-full')}",
+                 'manifest_sha256 = "f7"', f"files = {q(json.dumps({'heights': 'ab'}))}",
+                 f"engine_run = {q('/var/home/jane/terraform/builds/tf-base-land6')}",
+                 f"engine_code = {q('D:/RUSE-2.0/scratch/terraform/run.py')}", "", "[made]", 'pack = "Utah"',
+                 'importer = "rusemod.placebase"', "", "[said]", f"notes = [{q('heights from C:/data/dem.tif')}]", ""]
+        record = self.write("maps/Utah/import.toml", "\n".join(lines))
+        other = self.write("maps/Mine/import.toml", f'[base]\nfolder = {q(PC)}\n')
+        kinds = {}
+        got = members(package.pack(self.mod, self.root / "out", kinds=kinds))
+        self.assertEqual(kinds, {"maps/Utah/import.toml": "import"})
+        self.assertEqual(got["maps/Mine/import.toml"], other.read_bytes())
+        want = record.read_bytes().decode("utf-8").splitlines(keepends=True)
+        for k, name in ((8, 'folder = "base-full"'), (11, 'engine_run = "tf-base-land6"'),
+                        (12, 'engine_code = "run.py"')):
+            want[k] = name + want[k][len(want[k].rstrip("\r\n")):]
+        self.assertEqual(got["maps/Utah/import.toml"].decode("utf-8"), "".join(want))
+        self.assertEqual(tomllib.loads(got["maps/Utah/import.toml"].decode("utf-8"))["base"]["folder"], "base-full")
 
 
 class OnTheMadeUpGame(WithMod):
@@ -268,15 +389,39 @@ class OnTheMadeUpGame(WithMod):
         self.assertEqual(json.loads(got[record.relative_to(folder).as_posix()])["from"], self.rifle.name)
         self.assertEqual(json.loads(record.read_text(encoding="utf-8"))["from"],
                          str(self.home / horse_squad.FOLDER / self.rifle.name))   # his own record keeps its folder
-        said = [ln for ln in view["lines"] if ln.startswith("Your PC's folders were left out")]
-        self.assertEqual(said, ["Your PC's folders were left out of the exported file: 1 of the mod's files named "
-                                f"one, and there they name only the file ({record.relative_to(folder).as_posix()})."])
+        said = [ln for ln in view["lines"] if ln.startswith("In the exported file,")]
+        self.assertEqual(said, ["In the exported file, these model records name only the file each model was made "
+                                "from, not the folder on your PC it is in; nothing else in them changed: "
+                                f"{record.relative_to(folder).as_posix()}."])
         self.api.set_pref("lang", "fr")
-        worded = [ln for ln in self.api.job(view["id"])["lines"] if "dossiers de votre PC" in ln]
+        worded = [ln for ln in self.api.job(view["id"])["lines"] if "ces fiches de modèle" in ln]
         self.assertEqual(len(worded), 1)
         library = self.home / "library" / package.info_of(folder)["id"]   # (Export puts it in his Launcher's library)
         self.assertEqual((library / era_units.INDEX).read_bytes(), got[era_units.INDEX])
         self.assertEqual((library / era_units.CREDITS).read_bytes(), got[era_units.CREDITS])
+
+    def test_his_own_words_go_out_as_written_and_the_export_says_which_name_his_home(self):
+        """A README and a description of his naming folders of his PC (his home among them): Export changes none of
+        it, and says which files name his home folder, in his language."""
+        folder = Path(self.api.new_mod("Shared")["current"])
+        readme = f"Made from {PC}\\models\\tank.glb, and docs\\turret.md tells how.\nPlan B:/C\n"
+        (folder / "README.md").write_bytes(readme.encode("utf-8"))
+        self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
+        with mock.patch("pathlib.Path.home", return_value=Path(PC)):
+            view = finished(self.api, self.api.export_mod("1.0.0", "a modder", f"Plan B:/C from {PC}\\x.glb")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        got = members(Path(view["result"]["path"]))
+        self.assertEqual(got["README.md"], readme.encode("utf-8"))
+        self.assertEqual(got["mod.toml"], (folder / "mod.toml").read_bytes())
+        self.assertIn(f"Plan B:/C from {PC}\\x.glb", tomllib.loads(got["mod.toml"].decode("utf-8"))["mod"]
+                      .get("description", ""))
+        said = [ln for ln in view["lines"] if ln.startswith("These files of the mod name your PC's home folder")]
+        self.assertEqual(said, [f"These files of the mod name your PC's home folder ({PC}) and go out as they are, "
+                                "since Export never changes what you wrote: change them in the mod if that shouldn't "
+                                "be shared: mod.toml, README.md."])
+        self.assertFalse([ln for ln in view["lines"] if ln.startswith("In the exported file,")])
+        self.api.set_pref("lang", "ger")
+        self.assertEqual(len([ln for ln in self.api.job(view["id"])["lines"] if "Benutzerordner" in ln]), 1)
 
     def test_another_player_s_studio_knows_its_era_units_are_in_the_mod(self):
         _folder, _record, export, _view = self.exported()
