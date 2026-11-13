@@ -244,6 +244,38 @@ class Failures(Door):
             self.assertIn(words(lang)["decoy_blender_open_choose"], said)
             self.assertIn(words(lang)["look_choose_blender"], said)
 
+    def test_a_bring_back_whose_units_file_is_held_is_said_and_can_be_done_again(self):
+        """The same class at Bring my changes back: the mod's animation rows held by another program as the change is
+        written: said in words (not Python's), and once that program lets go, the same sending is taken in."""
+        from ruse_studio.api import StudioError
+        self.sending_waiting()
+
+        def held(*a, **k):
+            raise PermissionError(errno.EACCES, "Access is denied", str(self.mod / anim.UNITS))
+        with mock.patch("rusemod.anim.add_unit_clip", held):
+            with self.assertRaises(StudioError) as caught:
+                self.back()
+        said = str(caught.exception)
+        self.assertIn("units.toml couldn't be read or written, because another program has it open", said)
+        self.assertNotIn("Errno", said)
+        self.assertEqual(self.back()["changed"], ["Run (made_run)"])
+
+    def test_a_sending_held_as_it_is_read_is_said(self):
+        from ruse_studio.api import StudioError
+        self.sending_waiting()
+        real = Path.read_bytes
+
+        def held(path):
+            if path.name == "send.glb":
+                raise PermissionError(errno.EACCES, "Access is denied", str(path))
+            return real(path)
+        with mock.patch.object(Path, "read_bytes", held):
+            with self.assertRaises(StudioError) as caught:
+                self.back()
+        self.assertIn("send.glb couldn't be read or written, because another program has it open",
+                      str(caught.exception))
+        self.assertEqual(self.back()["changed"], ["Run (made_run)"])
+
     def test_a_set_aside_that_works_is_still_listed_and_brought_back(self):
         """The legitimate case: nothing held, the sending is set aside whole, listed, and brought back."""
         self.sending_waiting()

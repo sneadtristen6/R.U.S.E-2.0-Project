@@ -557,8 +557,12 @@ class DecoyBlenderCalls:
             # not a game rule: the Studio's own hand-over from Blender, nothing sent from this Blender yet
             raise StudioError("Nothing has come back from Blender yet: in Blender, click Send to the R.U.S.E. Studio at "
                               "the top, then Bring my changes back here.")
-        sha = _sha(send)
-        empty = {"changed": [], "undone": [], "differs": [], "replaced": [], "same": 0, "new": [], "gone": [],
+        try:
+            raw = send.read_bytes()
+        except OSError as exc:      # (held by another program as it is read)
+            raise self._said_file_error(exc, send, lang) from None
+        sha = _sha_of(raw)
+        empty ={"changed": [], "undone": [], "differs": [], "replaced": [], "same": 0, "new": [], "gone": [],
                  "written": 0, "new_bones": [], "halves": [], "unplayed": [], "nla": [], "fps": None, "stretch": None}
         out = {k: list(v) if isinstance(v, list) else v for k, v in empty.items()}
         unit = animblender.unit_name(self._own_model_file(address))
@@ -569,7 +573,6 @@ class DecoyBlenderCalls:
         kept = state.get("wrote") if isinstance(state.get("wrote"), dict) else {}
         wrote = {n: p for n, p in kept.items() if n in went and isinstance(p, dict)
                  and self._in_force(mod, unit, went[n], p)}
-        raw = send.read_bytes()
         try:
             doc, binary = glb_document(raw)
             r = rig.rig_of(doc, binary, send.name)
@@ -712,12 +715,21 @@ class DecoyBlenderCalls:
                 anim.drop_unnamed(mod, unit, before)
         except (anim.AnimError, OSError) as exc:
             if aside is None:       # (what was written is kept in the state: an undo in Blender still undoes it)
-                _write(folder / STATE, {**state, "wrote": wrote})
+                try:
+                    _write(folder / STATE, {**state, "wrote": wrote})
+                except OSError:
+                    pass            # (the same disk or file: what stopped the bring back is what is said)
+            # (a full disk or a file another program holds: said in words, the modder's language, never Python's)
+            why = str(self._said_file_error(exc, Path(mod) / anim.UNITS, lang)) if isinstance(exc, OSError) \
+                else str(exc)
             if current is not None:
-                raise StudioError(f"{current}: {exc}") from None
-            raise StudioError(str(exc)) from None
+                raise StudioError(f"{current}: {why}") from None
+            raise StudioError(why) from None
         if aside is None:
-            _write(folder / STATE, {**state, "brought": sha, "wrote": wrote})
+            try:
+                _write(folder / STATE, {**state, "brought": sha, "wrote": wrote})
+            except OSError as exc:
+                raise self._said_file_error(exc, folder / STATE, lang) from None
         else:                       # (taken in: kept aside no more)
             shutil.rmtree(folder, ignore_errors=True)
         # (an undo puts the rows back as they were before the door first wrote; when the Studio changed the clip beneath
