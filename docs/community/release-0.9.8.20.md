@@ -1,5 +1,5 @@
 ---
-title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands"
+title: "Studio 0.9.8.20 and Launcher 0.4.8.20: guards where some mod sets stopped the game; an upgrade made in another building keeps its unit; a squad's own soldier, changed in Blender; Bug Watch says why; RUSE Guard lets players with the same build play together (not fully supported yet); imported models sit where the unit stands; a squad soldier by soldier, animations for one unit and the Horse Squad"
 category: Announcements
 order: 25
 ---
@@ -44,6 +44,70 @@ with the R.U.S.E. Field Manual and the Balance Overhaul Mod together.
   (counted by kind, never named), Plays refused before they started, and updates offered, installed or failed. Never
   the words shown, a path, or anything your own mods hold. All of it is in the agreement you accepted (version 3), so
   it isn't shown to you again.
+
+**Also new in 0.9.8.20, in the Studio: a squad soldier by soldier, animations for one unit, models with animations of
+their own and the Horse Squad.**
+
+- **A squad, soldier by soldier:** a squad's page now starts with its squad card and a line for each soldier, in place
+  of its **Its own model** box. **Change the squad in Blender** opens all its soldiers side by side, each with his own
+  copy of his pictures; after **Send to the R.U.S.E. Studio** in Blender, **Bring my changes back** gives each soldier
+  only what was done to him. On his line a soldier has **Import a model…** and, once he has a model of his own, **Back
+  to the game's look**. Seen from far away, the squad's little figures wear the look most of its soldiers wear. Tested
+  in the game with a squad whose bazooka man alone was painted red.
+- **More or fewer soldiers:** **Add a soldier** brings in a copy of one in the squad, a soldier from another squad, or
+  a model file; **Remove** takes one out; **+1 soldier** and **−1 soldier** add or take away a rifleman at once,
+  without Blender. A squad has 2 to 8 soldiers, and a soldier can have a look of his own that no other soldier wears.
+  The game gets these through a small game patch, downloaded once and applied only to your modded copy, never to the
+  game in your Steam folder; every other squad stays as the game has it. Tested in the game with squads of 3 and 7
+  made with these buttons, and with one rifleman alone painted red; a soldier from another squad or a model file, and
+  squads of 2 or 8, not yet.
+- **Animations for one unit:** a unit's page now has **Look and moves**: its model, its soldiers, its sounds and
+  animations and what it rides in, row by row. **Change in RUSE Decoy** on the **Sounds and animation** row opens
+  RUSE Decoy on that unit, and a change to one of its animations can be for **Only this unit**, which then plays its
+  own copy, or for every unit that plays it. **Back to what every unit plays** takes the unit's own copy out. **Motion
+  capture** goes on one unit the same way. Tested in the game with a squad dancing on the spot while every other squad
+  stood as before; a speed, a stand-in or a bone changed for one unit, not yet.
+- **Animations changed in Blender:** for a new unit made in your mod, **Change its animations in Blender** in RUSE
+  Decoy opens Blender with the unit and every animation it plays, each named for what it does in it. Change one, click
+  **Send to the R.U.S.E. Studio**, then **Bring my changes back**: the changed ones become that unit's own, and every
+  other unit keeps the game's. A sending you never brought back is set aside, and **Bring back the set-aside sending**
+  takes it in. Tested in the game with a squad standing and running with an arm raised, and a Horse Squad whose horses
+  hold their heads up.
+- **Models with bones and animations of their own:** **Import model…** now also takes a .glb on bones of its own with
+  its animations: a horse and rider, or any creature. **Its animations** shows which animation the unit plays for each
+  thing it does; pick another, or leave it on **Nearest**. **On long moves** a squad can go as itself, playing one of
+  them, instead of in its truck. **Its two halves** picks the bone where the model splits into the upper and lower
+  halves the game animates at once (a rider aims while his horse runs), and **Will it work in the game?** says what in
+  the model could stop the game or look wrong. In a squad, the riflemen and the heavy-weapon soldier each take a model
+  of their own on their own line. Tested in the game with a Horse Squad made this way: riflemen and a bazooka man on
+  horses, firing, riding as themselves on long moves, each horse falling with its rider; another animation picked by
+  hand or another split, not yet.
+- **The Horse Squad:** riflemen and a heavy-weapon soldier, each on a horse of his own, now listed in the **Units** tab
+  with the units from other eras (**WWII+**, USA), off until you add it. **Add to my mod** makes its horses and riders
+  on your PC from your own copy of the game (nothing is downloaded), adds it as a new unit of your mod and puts
+  sneadtristen6 in your mod's credits; **Take it out of my mod** takes it all out again. It is made the same way as the
+  Horse Squad tested above; added from the **Units** tab, not yet tried in the game.
+- **Its own shine after Blender:** a model sent to Blender with **Change it in Blender** and brought back with **Bring
+  back the model** keeps its own shine and side-colour layer; before, it came back with the plain one a model from a
+  file gets. When one can't be kept, the page says which. Not yet tried in the game.
+- **Where your model is kept:** the **Model** row (on a squad's page, **More options**) says where your mod keeps the
+  unit's own model on your PC, with **Show in folder**.
+- **The Nations tab:** **Start a new mod** now asks only for a name and opens the Studio on the new mod; the guided
+  steps are off for now. What only they had is on the **Nations** tab: **Keep its units** or **Start it empty** for
+  each nation, and **No research** or **Keep the game's research** for the whole mod.
+- **A unit with no card picture (Studio and Launcher):** a unit shown in a build menu with no card picture is now
+  refused when the game is built, with what to change. In a test the game stopped as it started with such a unit (a
+  copy of the HQ truck shown in a build menu).
+- **Export leaves your PC's folders out:** an exported mod no longer carries the folders of your PC that the Studio
+  wrote into its model records (often with your Windows user name in them): only the file's own name goes. What you
+  wrote yourself (README, descriptions, credits) goes out as you wrote it, and Export tells you if it names your home
+  folder. The credits of units from other eras, the Horse Squad's too, now go with the mod.
+- **Smaller things:** each factory is called by its building's name; in Persian, the game's names show in English,
+  never as code names.
+- **Players, update your Launcher:** a mod whose squads have soldiers of their own, or whose units have animations of
+  their own, needs Launcher 0.4.8.20 or newer: an older one can't give them. This Launcher gets the small game patch
+  such squads need by itself, downloaded once and applied only to your modded copy. Not yet tried in the game from the
+  Launcher.
 
 **In 0.9.8.19, right before it: RUSE Guard lets players with the same build play together, cheat mods or not. Not fully
 supported yet.** A player told us that he and a friend, both with the same mod pack, were thrown out of every
