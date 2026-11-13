@@ -149,8 +149,13 @@
   async function refreshEraList() {
     const w = W();
     let res;
-    try {
-      res = await api().era_units_list(state.era, state.kind, state.nation, state.search, state.group || "all");
+    try {  // (the Horse Squad's type in the Studio's language: the game's word for it; an era unit's its library's)
+      res = await api().era_units_list(state.era, state.kind, state.nation, state.search, state.group || "all",
+        state.lang);
+      if ((state.group || "").startsWith("type:") && !(res.types || []).includes(state.group.slice(5))) {
+        state.group = "all";  // a type picked in another language: show them all again (as app.js refreshList)
+        res = await api().era_units_list(state.era, state.kind, state.nation, state.search, "all", state.lang);
+      }
     } catch (err) { problem(err); return; }
     $("era-note").classList.toggle("hidden", !res.installed);  // the models' note only over models
     $("count").textContent = w.units.replace("{n}", res.units.length);

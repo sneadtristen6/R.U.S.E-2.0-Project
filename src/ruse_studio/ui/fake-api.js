@@ -3368,6 +3368,9 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
     credit: { author: "sneadtristen6" } };
   const FAKE_HORSE_NAMES = ["Horse Squad", "Escouade à cheval", "Reitertrupp", "Squadra a cavallo", "Pelotón a caballo",
     "Oddział konny", "Конный отряд", "Jízdní družstvo", "騎馬分隊", "骑兵小队", "جوخهٔ سواره"];  // (words.toml eras_horse_name)
+  // its type as the list and its page show it (StudioApi._horse_card): the game's word on the US rifle squad's card, in
+  // the Studio's language (English where the game has none); its group goes by the English one (FAKE_HORSE.card)
+  const fakeHorseCard = (lang) => { const t = FAKE_TYPES.Soldat_US_Leger; return t[lang] || t.us; };
   let fakeHorseJob = null;  // the job adding it, while it runs
   function fakeHorseAdd(nation, factory, name, price, researchFrom, researchPrice, researchTime, group) {
     if (!current) throw new Error("Pick or make a mod first: an era unit is added to a mod.");
@@ -4835,26 +4838,29 @@ const mapsView = () => ({ mods: maps.slice(), kind: "map", current: currentMap }
         units: FAKE_ERA_UNITS.filter((u) => u.era === era).length, size: era === "Modern" ? 1240000000 : 640000000,
         state: eraHere.has(era) ? "current" : "new" })) }),
       era_download: async (era) => { eraHere.add(era); return { job: "era" }; },
-      era_units_list: async (era, kind = "all", nation = -1, search = "", group = "all") => {
+      era_units_list: async (era, kind = "all", nation = -1, search = "", group = "all", lang = "base") => {
         const code = { USA: 0, Germany: 1, UK: 2, France: 3, Italy: 4, USSR: 5, Russia: 5, Japan: 6, China: 7 };
-        // (the Horse Squad: in its era whether that's downloaded or not, found by its name in any language)
+        // (the Horse Squad: in its era whether that's downloaded or not, found by its name in any language, its type
+        // in the Studio's language; an era unit's type is its library's)
+        const cardOf = (u) => (u.built ? fakeHorseCard(lang) : u.card);
         let rows = (eraHere.has(era) ? FAKE_ERA_UNITS : []).concat([FAKE_HORSE])
           .filter((u) => u.era === era && ["all", u.aircraft ? "air" : "ground"].includes(kind)
           && (nation === -1 || code[u.nation] === nation));
-        const types = [...new Set(rows.map((u) => u.card))].sort();
-        if (group.startsWith("type:")) rows = rows.filter((u) => u.card === group.slice(5));
+        const types = [...new Set(rows.map(cardOf))].sort();
+        if (group.startsWith("type:")) rows = rows.filter((u) => cardOf(u) === group.slice(5));
         const words = (search || "").toLowerCase().split(/\s+/).filter(Boolean);
         rows = rows.filter((u) => (u.built ? FAKE_HORSE_NAMES : [u.name])
           .some((n) => words.every((w) => n.toLowerCase().includes(w))));
         return { library: true, installed: eraHere.has(era), types, units: rows.map((u) => ({ key: u.key, name: u.name,
-          nation: u.nation, code: code[u.nation], card: u.card, kind: u.aircraft ? "air" : "ground",
+          nation: u.nation, code: code[u.nation], card: cardOf(u), kind: u.aircraft ? "air" : "ground",
           added: eraAdded.get(u.key) || null, built: Boolean(u.built), by: u.built ? u.credit.author : null })) };
       },
       era_unit_page: async (key, lang = "us") => {
         if (key === FAKE_HORSE.key) {  // its own unit only to start from; "building": the job adding it, while it runs
           const g = units.find((x) => E + x.id === FAKE_HORSE.copies);
           const j = fakeHorseJob && backupJobs[fakeHorseJob];
-          return { ...FAKE_HORSE, added: eraAdded.get(key) || null, picture: null, has_model: false,
+          return { ...FAKE_HORSE, card: fakeHorseCard(lang), added: eraAdded.get(key) || null, picture: null,
+            has_model: false,
             start: [{ address: FAKE_HORSE.copies, name: (g.names[lang] || g.names.us), nation: g.nation, suggested: true,
               same_type: true }],
             building: j && j.step < j.lines.length ? fakeHorseJob : null,

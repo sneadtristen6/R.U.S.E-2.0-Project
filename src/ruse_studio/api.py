@@ -352,6 +352,73 @@ class StudioError(Exception):
     pass
 
 
+def file_named(exc: OSError, fallback=None):
+    """The file an OSError is about, as the modder can find it: the one it names, else `fallback`. An error naming two
+    is a file put in another's place (the Studio writes a new file beside the one it replaces, then puts it there): it is
+    about the second, the file in that place, which another program can hold open; the first is the Studio's own new
+    file, removed right after. A missing file is the first (the one to be put there). A file's number, which an error can
+    carry in place of its name, is never said."""
+    named = [f for f in (exc.filename, exc.filename2) if isinstance(f, (str, os.PathLike)) and str(f)]
+    if not named:
+        return fallback
+    return named[0] if isinstance(exc, FileNotFoundError) else named[-1]
+
+
+def oserror_of(exc: BaseException) -> OSError | None:
+    """The OSError an error is, or the one whose words (Python's) it carries: a reader that couldn't read a file and
+    said so in its own error with Python's words inside ("x.glb: [Errno 13] Permission denied": rusemod.rig.read_rig,
+    animmodel.record_of, anim's units.toml), raised from it or while handling it. None for any other error, one raised
+    after an OSError in words of its own too."""
+    if isinstance(exc, OSError):
+        return exc
+    text, seen, e = str(exc), set(), exc.__cause__ or exc.__context__
+    while e is not None and id(e) not in seen:
+        seen.add(id(e))
+        if isinstance(e, OSError) and str(e) and str(e) in text:
+            return e
+        e = e.__cause__ or e.__context__
+    return None
+
+
+def disk_full(exc: OSError) -> bool:
+    """Whether an OSError is a full disk: Python's ENOSPC (Windows' ERROR_DISK_FULL, 112, comes as that) or Windows'
+    ERROR_HANDLE_DISK_FULL (39, which Python gives as EINVAL)."""
+    import errno
+    return exc.errno == errno.ENOSPC or getattr(exc, "winerror", None) in (39, 112)
+
+
+def file_error(exc: OSError, writing, reading=None) -> StudioError:
+    """An OSError (a file that couldn't be read or written) said in words, never in Python's own (English inside the
+    modder's language: the review of 2026-11-12): the disk full, a file another program has open or Windows didn't
+    allow, a file not there, else its error number. The file is the one the error names (file_named), else the one being
+    written then, `writing` (a write that fails part way names none: a full disk is always a write), or for anything else
+    the one being read then, `reading` (a part of a file another program has locked fails part way too), when given.
+    Raise it from the OSError (`raise file_error(exc, target) from exc`): a job can then say it in its own words (the
+    Horse Squad's add, horse_squad.py)."""
+    if disk_full(exc):
+        return StudioError(f"The disk holding {file_named(exc, writing)} is full. Make room on it, then try again.")
+    path = file_named(exc, reading if reading is not None else writing)
+    if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
+        return StudioError(f"{path} couldn't be read or written, because another program has it open or Windows didn't "
+                           f"allow it. Close that program, then try again.")
+    if isinstance(exc, FileNotFoundError):
+        return StudioError(f"{path} isn't there.")
+    code = getattr(exc, "winerror", None) or exc.errno
+    if code is None:
+        return StudioError(f"{path} couldn't be read or written. Please report this.")
+    return StudioError(f"{path} couldn't be read or written (error {code}). Please report this.")
+
+
+def page_file_error(exc: OSError) -> StudioError | None:
+    """An OSError a page call raised as it came (Take it out of my mod, Delete, Remove model: a file of the mod that
+    couldn't be read or written, Python's own words, English in every language) said in words (file_error): one naming a
+    file, or a full disk naming none. None for any other (a connection refused, say: not a file's), passed on as it was."""
+    named = file_named(exc)
+    if disk_full(exc) and named is None:
+        return StudioError("A disk the Studio was writing to is full. Make room on it, then try again.")
+    return file_error(exc, named) if named is not None else None
+
+
 # the ways a mod's map files can be wrong, as their readers say it
 _FILE_MISTAKES = (tomllib.TOMLDecodeError, UnicodeDecodeError, BrushError, scenario.ScenarioError,
                   scenery.SceneryEditError, RoadNetError, NewMapError, PictureError, PlayersError)
@@ -691,7 +758,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
 
     def page_error(self, exc):
         """A page call's StudioError said again in the Studio's language (rusemod.webui page_api), or None to pass it
-        on as it is."""
+        on as it is. An OSError a call raised as it came (a file it couldn't read or write) is said in words too, in
+        English as well (page_file_error): never Python's own words."""
+        if isinstance(exc, OSError):
+            plain = page_file_error(exc)
+            return StudioError(self._worded(str(plain))) if plain is not None else None
         if not isinstance(exc, StudioError):
             return None
         said = self._worded(str(exc))
@@ -5805,7 +5876,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
     def _mod_dir(self, kind: str = "mod") -> Path | None:
         """The folder being edited: the mod (`kind` "mod", the Units tab's) or the map (`kind` "map", the Maps
         tab's). Mods and maps are kept apart (the owner, 2026-10-02); a Studio from before kept both in the mod, so
-        until a map is picked, the Maps tab goes on with the mod's maps."""
+        until a map is picked, the Maps tab goes on with the mod's maps. While a job writes a unit into a mod (the Horse
+        Squad's add, once its mod is checked: horse_squad's _horse_pin) this window's mod is that one, whatever another
+        Studio window on the same platform folder picks meanwhile (its pick is the one after)."""
+        pinned = self.__dict__.get("_horse_pin") if kind == "mod" else None
+        if pinned is not None and Path(pinned, "mod.toml").is_file():
+            return Path(pinned)
         settings = self._settings()
         path = settings.get(kind) or (settings.get("mod") if kind == "map" else None)
         return Path(path) if path and Path(path, "mod.toml").is_file() else None
@@ -8319,11 +8395,14 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if report is not None:
             copy = self._own_copy_file(address)
             if copy is not None and copy.is_file():
-                with self._saving:
-                    # kept in the model's own record, so taking the model out gives the copy back in one click
-                    # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
-                    self._keep_in_model_record(address, copy.read_text(encoding="utf-8"), kind)
-                    copy.unlink(missing_ok=True)
+                try:
+                    with self._saving:
+                        # kept in the model's own record, so taking the model out gives the copy back in one click
+                        # (model_import_remove; the owner's "intuitive" for first-time modders, 2026-11-10)
+                        self._keep_in_model_record(address, copy.read_text(encoding="utf-8"), kind)
+                        copy.unlink(missing_ok=True)
+                except OSError as exc:      # (said in words, never in Python's own)
+                    raise file_error(exc, copy) from exc
                 copy_out = True
         return {"model": report, "copy_out": copy_out, "kind": kind, **self.look(address)}
 
@@ -8425,9 +8504,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                                       own_turret=bool(own_turret), own_propellers=bool(own_propellers), others=found,
                                       **({"facing": facing} if facing else {}), **({"move": move} if move else {}))
                 break
-            except UnitModelError as exc:     # this model has no bones or hull to fit to: try the next one
-                first_error = first_error or exc
             except (ModelError, OSError, ValueError) as exc:
+                cause = oserror_of(exc)
+                if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                    raise file_error(cause, target, Path(file)) from cause
+                if isinstance(exc, UnitModelError):   # this model has no bones or hull to fit to: try the next one
+                    first_error = first_error or exc
+                    continue
                 raise StudioError(f"{Path(file).name}: {exc}") from None
         clips: dict = {}
         if report is None:   # a model on bones of its own (a horse, any creature), its animations with it (item 5)
@@ -8466,20 +8549,23 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             more = self._record_more(address, report, Path(file), clips, before if isinstance(before, dict) else {})
             if kinds:
                 more["for"] = kind
-        record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
-                                      "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
-                                      **({"facing": list(facing)} if facing else {}),
-                                      **({"move": move} if report.get("moved") else {}),
-                                      "report": report, **more,
-                                      # (the modder's choices last: a split chosen on the page wins over the one
-                                      # the file names; Part 3's kept_choices, item 5 merge)
-                                      **kept_choices(record),
-                                      # (a Custom uniform the model took the place of stays kept through Resize, Move
-                                      # and a new import, so taking the model out still gives it back: written anew
-                                      # without it, it was lost on the first Resize, 2026-11-11)
-                                      **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
-                                         and isinstance(before.get("copy_kept"), str) else {})},
-                                     indent=1), encoding="utf-8")
+        try:
+            record.write_text(json.dumps({"from": str(file), "size": size, "aircraft": bool(aircraft),
+                                          "own_turret": bool(own_turret), "own_propellers": bool(own_propellers),
+                                          **({"facing": list(facing)} if facing else {}),
+                                          **({"move": move} if report.get("moved") else {}),
+                                          "report": report, **more,
+                                          # (the modder's choices last: a split chosen on the page wins over the one
+                                          # the file names; Part 3's kept_choices, item 5 merge)
+                                          **kept_choices(record),
+                                          # (a Custom uniform the model took the place of stays kept through Resize,
+                                          # Move and a new import, so taking the model out still gives it back:
+                                          # written anew without it, it was lost on the first Resize, 2026-11-11)
+                                          **({"copy_kept": before["copy_kept"]} if isinstance(before, dict)
+                                             and isinstance(before.get("copy_kept"), str) else {})},
+                                         indent=1), encoding="utf-8")
+        except OSError as exc:      # (said in words, never in Python's own)
+            raise file_error(exc, record) from exc
         return report
 
     def _kind_records(self, address: str) -> list:
@@ -8511,6 +8597,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             file = r.get("from")
             if file and Path(file).is_file():
                 continue
+            self._horse_gone(address, file, moving)   # (the Horse Squad's files: never the modder's to import)
             # (the page's words: model_kinds_title is the box his model is imported in)
             if moving:
                 raise StudioError(f"The file the model of one of its soldiers was made from isn't there any more "
@@ -8595,6 +8682,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("This unit has no model of its own to resize: import one first.")
         file = record.get("from")
         if not file or not Path(file).is_file():
+            self._horse_gone(address, file, False)   # (the Horse Squad's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to change its size.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8618,6 +8706,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             raise StudioError("This unit has no model of its own to move: import one first.")
         file = record.get("from")
         if not file or not Path(file).is_file():
+            self._horse_gone(address, file, True)   # (the Horse Squad's files: never the modder's to import)
             raise StudioError(f"The file this model was made from isn't there any more ({file}): import it again "
                               f"to move it.")
         aircraft = record["aircraft"] if "aircraft" in record else self._unit_kind(address) == "air"
@@ -8686,6 +8775,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 raise StudioError("Times is a number above 0: 0.5 is half the size, 2 twice.")
         units = self._own_models_of(kind)
         names = {a: u.name for a, u in self._new_units().items()}
+        models = {a: self._own_model_file(a) for a in units}    # (each one's model: the file being written)
         job = Job()
         self._jobs[job.id] = job
 
@@ -8706,7 +8796,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                     self.model_resize(address, size)
                     say(f"resized\t{name}\t{size:g}")
                 except (StudioError, ValueError, OSError) as exc:  # (one that can't be fitted leaves the rest)
-                    say(f"skipped\t{name}\t{exc}")
+                    if isinstance(exc, OSError):    # (a file it couldn't read or write: in words, never Python's own)
+                        exc = file_error(exc, models.get(address))
+                    # why, in the Studio's language (a refusal's words, errortext): never English inside the line
+                    say(f"skipped\t{name}\t{self._worded(str(exc)) if isinstance(exc, StudioError) else exc}")
 
         return job.start(work, f"{len(units)} model(s) done.", plain=(StudioError,))
 
@@ -9739,6 +9832,7 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if own_class:
                 self._drop_class_table(edits, own_class)
             self._groups_save(edits, *files)
+            self._era_forget(address)     # an era unit's (or the Horse Squad's) record line and credit go with it
         return {"deleted": address, "source": source, "saved": str(edits.file), **research}
 
     def test_in_game(self) -> dict:

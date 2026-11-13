@@ -298,24 +298,44 @@ def install_section(root: Path, section: dict, zips: list[Path]) -> None:
     write_index(root, scale_of(section))
 
 
-def credits_text(units: list[dict]) -> str:
+ERA_HEADING = "# Era unit models"
+BUILT_HEADING = "# Made for RUSE 2.0"
+
+
+def era_credit_lines(text: str) -> list[str]:
+    """The era units' credit lines ("- ..." under ERA_HEADING) of a mod's credits file as it stands (`text`)."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith("# "):
+            inside = line.strip() == ERA_HEADING
+        elif inside and line.startswith("- "):
+            out.append(line)
+    return out
+
+
+def credits_text(units: list[dict], kept: list[str] = ()) -> str:
     """The mod's credits file for the era units it has (CC BY asks for the maker, the work, its licence and a note of
     changes), and for the units made for RUSE 2.0 it has ("built": the Horse Squad, by its maker's name; the owner,
-    2026-11-12: "your name, sneadtristen6, in that mod's credits"). A mod with era units only gets the file as before."""
+    2026-11-12: "your name, sneadtristen6, in that mod's credits"). A mod with era units only gets the file as before.
+    `kept`: era credit lines already in the mod whose units the library on this PC can't name (its era isn't downloaded
+    here): kept as they stand, never dropped (a CC BY credit goes with the model, era_units._era_save)."""
     era = [u for u in units if not u.get("built")]
     built = [u for u in units if u.get("built")]
     lines = []
-    if era:
-        lines += ["# Era unit models", "",
-                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
-                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+    made = []
     for u in sorted(era, key=lambda x: (x["era"], x["nation"], x["name"])):
         c = u["credit"]
         extra = f" {c['extra']}." if c.get("extra") else ""
-        lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): \"{c['title']}\" by {c['author']}, {c['licence']}, "
-                     f"{c['url']}.{extra}")
+        made.append(f"- {u['name']} ({u['era']}, {u['nation']}): \"{c['title']}\" by {c['author']}, {c['licence']}, "
+                    f"{c['url']}.{extra}")
+    made += [line for line in kept if line not in made]
+    if made:
+        lines += [ERA_HEADING, "",
+                  "These units use free 3D models by their makers, under the licence named. Changes: fitted to the "
+                  "game (turned, scaled) and the unit's nation's markings added (older markings covered).", ""]
+        lines += made
     if built:
-        lines += ([""] if lines else []) + ["# Made for RUSE 2.0", ""]
+        lines += ([""] if lines else []) + [BUILT_HEADING, ""]
     for u in sorted(built, key=lambda x: (x["era"], x["nation"], x["name"])):
         lines.append(f"- {u['name']} ({u['era']}, {u['nation']}): by {u['credit']['author']}.")
     return "\n".join(lines) + "\n"
@@ -461,28 +481,52 @@ class EraUnitCalls:
         from .horse_squad import BUILT
         mod = self._mod_dir()
         (mod / INDEX).write_text(json.dumps(record, indent=1, ensure_ascii=False), encoding="utf-8")
+        known = {u["key"] for u in lib.get("units", [])}
         mine = [u for u in lib.get("units", []) if u["key"] in record and u["key"] not in BUILT]
         mine += [entry for key, entry in BUILT.items() if key in record]
         credits = mod / CREDITS
-        if mine:
-            credits.write_text(credits_text(mine), encoding="utf-8")
+        # an era unit the mod has whose era isn't downloaded on this PC: the library can't write its credit line, so
+        # the lines already in the mod stay as they are (never a CC BY credit lost because this PC lacks the era)
+        unnamed = [k for k in record if k not in BUILT and k not in known]
+        try:
+            kept = era_credit_lines(credits.read_text(encoding="utf-8")) if unnamed and credits.is_file() else []
+        except (OSError, UnicodeDecodeError):
+            kept = []
+        if mine or kept:
+            credits.write_text(credits_text(mine, kept), encoding="utf-8")
         else:
             credits.unlink(missing_ok=True)
 
+    def _era_forget(self, address: str) -> None:
+        """A unit deleted from the mod (delete_unit): when the mod's era_units.json names it (an era unit, or a unit
+        made for RUSE 2.0 such as the Horse Squad), its line there and its credit go with it, the others' kept
+        (_era_save). Nothing changes for any other unit."""
+        mod = self._mod_dir()
+        if mod is None or not (mod / INDEX).is_file():
+            return
+        try:
+            named = address in json.loads((mod / INDEX).read_text(encoding="utf-8")).values()
+        except (OSError, ValueError, AttributeError):
+            return
+        if named:
+            _folder, lib = self._era_library()
+            self._era_save(self._era_record(), lib)   # (the deleted unit is no longer the mod's: left out)
+
     def era_units_list(self, era: str, kind: str = "all", nation: int = -1, search: str = "",
-                       group: str = "all") -> dict:
+                       group: str = "all", lang: str = "base") -> dict:
         """One era's units for the Units list: {"library": found or not, "units": [{key, name, nation, code (the
         nation chip), card, kind, added, built, by}], "types": the card types there, sorted}, filtered as the Units
         list is: by kind (ground or air), nation chip, words in the name (a built unit's in any of the Studio's
         languages) and card type ("type:<card>"). "installed": whether the era's library units are on this PC (else
         the page offers its download). The units made for RUSE 2.0 ("built": the Horse Squad, horse_squad.py; "by":
         its maker, else None) are listed in their era whether it's downloaded or not: nothing of theirs is
-        downloaded."""
+        downloaded; their card is the game's type in the Studio's language `lang` (as the Units list says a game
+        unit's: English for Persian and the code names), an era unit's the library's own."""
         from .horse_squad import BUILT
         folder, lib = self._era_library()
         record = self._era_record() if self._mod_dir() is not None else {}
         words = (search or "").casefold().split()
-        built = self._era_built() if any(e["era"] == era for e in BUILT.values()) else []   # (the game's index read)
+        built = self._era_built(lang) if any(e["era"] == era for e in BUILT.values()) else []   # (the game's index)
         rows = [u for u in lib["units"] if u["era"] == era] + [u for u in built if u["era"] == era]
         rows = [u for u in rows if kind in ("all", kind_of(u)) and nation in (-1, NATION_CODE.get(u["nation"], -1))]
         types = sorted({u["card"] for u in rows if u["card"]})
@@ -825,6 +869,10 @@ class EraUnitCalls:
         _era_make makes it from: {"source", "record", "has_model", "size", "research", "research_from", "costs",
         "rows", "target", "edits"}."""
         from .api import MODEL_SIZES, RESEARCH, StudioError, _whole
+        from .horse_squad import KEY as HORSE
+        # (an era unit's name is its library's, a proper name said as it is; the Horse Squad's is the Studio's own,
+        # said in the modder's language: its refusals are their own texts, in English as the era units' say it
+        # (horse_squad.NAME), each with its name in every language in errors.toml)
         if self._mod_dir() is None or self._edits() is None:
             raise StudioError("Pick or make a mod first: an era unit is added to a mod.")
         source = source or entry.get("copies")
@@ -832,6 +880,8 @@ class EraUnitCalls:
             raise StudioError(f"{entry['name']}: pick a unit to start from")
         record = self._era_record()
         if key in record:
+            if key == HORSE:
+                raise StudioError("Horse Squad is already in this mod")
             raise StudioError(f"{entry['name']} is already in this mod")
         # everything asked for is checked before the unit is made, so a refusal leaves nothing half made
         has_model = bool(folder is not None and entry.get("model") and (folder / entry["model"]).is_file())
@@ -860,9 +910,16 @@ class EraUnitCalls:
             if research_from == SUGGESTED:
                 research_from = research["suggested"]
             if research_from is not None and research_from not in menu:
+                if key == HORSE:
+                    # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
+                    raise StudioError(f"Horse Squad can't be researched from {research_from} in that build menu")
                 # not a game rule: what the Upgrade box offers (the same nation's units in the same build menu)
                 raise StudioError(f"{entry['name']} can't be researched from {research_from} in that build menu")
             if research_from is not None and rows and research_from not in (target or {"units": ()})["units"]:
+                if key == HORSE:
+                    # the game's way: researched from a unit of that building it's an upgrade, drawn in that group
+                    raise StudioError(f"Horse Squad can't be researched from {research_from}: that unit is in another "
+                                      f"group of the building than the one picked.")
                 # the game's way: researched from a unit of that building it's an upgrade, drawn in that unit's group
                 raise StudioError(f"{entry['name']} can't be researched from {research_from}: that unit is in another "
                                   f"group of the building than the one picked.")
@@ -953,6 +1010,8 @@ class EraUnitCalls:
         record = self._era_record()
         address = record.get(key)
         if address is None:
+            if key in BUILT:   # (by its name, in the modder's language: never its key)
+                raise StudioError("Horse Squad isn't in this mod")
             raise StudioError(f"{key}: not in this mod")
         research = self._research_gone(address, researched)   # before anything goes: a refusal leaves it whole
         if "ask" in research:

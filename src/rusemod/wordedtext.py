@@ -106,25 +106,40 @@ def _entries(path: str, stamp: float) -> list[tuple[re.Pattern, dict, int]]:
     return out
 
 
-def worded(catalogue: Path, text: str, lang: str) -> str:
+def worded(catalogue: Path, text: str, lang: str, within=frozenset()) -> str:
     """`text` (as the code made it, in English) in `lang` (the game's language codes; "us" or "base": as it is), from
-    the catalogue at `catalogue`. A text no template makes, or a template not in that language yet, stays as it is."""
+    the catalogue at `catalogue`. A text no template makes, or a template not in that language yet, stays as it is.
+    `within`: templates (their English) whose blanks hold a message of their own made deeper down: each blank is said
+    in `lang` too by the catalogue's entries for that message, those whose "within" names that template, so no English
+    is left inside it; a blank none of them makes stays as it came (never taken apart by an entry for other texts).
+    Those entries say only such a blank: a whole text is never theirs ("{0}: its points lean on a bone..." would take
+    a frame with its blank, leaving the frame English)."""
     if lang not in LANGS or lang == "us" or not isinstance(text, str):
         return text
     try:
         entries = _entries(str(catalogue), catalogue.stat().st_mtime)
     except (OSError, tomllib.TOMLDecodeError):
         return text
+    return _said(entries, text, lang, within, None)
+
+
+def _said(entries: list, text: str, lang: str, within, inside: str | None) -> str:
+    """worded's matching: `inside` None, every entry but those for a frame's blank; else only the entries whose
+    "within" is `inside` (the template whose blank `text` is)."""
     for pattern, words, _own in entries:
+        if words.get("within") != inside:
+            continue
         m = pattern.fullmatch(text)
         if m is None:
             continue
         said = words.get(lang)
         if not said:
             return text
-        blanks = sorted((int(k[1:]), v) for k, v in m.groupdict().items())
+        values = [v for _k, v in sorted((int(k[1:]), v) for k, v in m.groupdict().items())]
+        if words["us"] in within:
+            values = [_said(entries, v, lang, within, words["us"]) for v in values]
         try:
-            return said.format(*[v for _k, v in blanks])
+            return said.format(*values)
         except (IndexError, KeyError, ValueError):
             return text
     return text

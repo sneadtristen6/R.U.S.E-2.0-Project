@@ -26,19 +26,25 @@ class AnimModelCalls:
         from rusemod import animmodel
         from rusemod.modelin import ModelError
         from rusemod.unitmodel import import_model
-        from .api import StudioError
+        from .api import StudioError, file_error, oserror_of
         if Path(file).suffix.lower() not in (".glb", ".gltf"):
             return None
         try:
             on = animmodel.own_bones_on(self._game(), Path(file), found)
-        except (ModelError, OSError, ValueError):   # (a file the importer can't read: the loop said why)
-            return None
+        except (ModelError, OSError, ValueError) as exc:
+            cause = oserror_of(exc)
+            if cause is not None:   # (a file it couldn't read: in words, never Python's own nor another reason)
+                raise file_error(cause, target, Path(file)) from cause
+            return None             # (a file the importer can't read: the loop said why)
         if on is None:
             return None
         try:
             return import_model(self._game(), on, Path(file), target, size=size, others=found, own_bones=True,
                                 clips=clips)
         except (ModelError, OSError, ValueError) as exc:
+            cause = oserror_of(exc)
+            if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                raise file_error(cause, target, Path(file)) from cause
             raise StudioError(f"{Path(file).name}: {exc}") from None
 
     def _record_more(self, address: str, report: dict, file: Path, clips: dict, before: dict) -> dict:
@@ -48,10 +54,11 @@ class AnimModelCalls:
         from rusemod import animmodel, baf
         from rusemod.anim import AnimError
         from rusemod.modelin import OWN_SKELETON
-        from .api import StudioError
+        from .api import StudioError, file_error, oserror_of
         from rusemod import anim
         target = self._own_model_file(address)
         unit, mod = target.stem, self._mod_dir()
+        own = Path(mod) / anim.OWN / unit     # (its animations' folder: written when a file there names none)
         was_own = before.get("skeleton") == "own"
         previous = before.get("animations") if was_own else None
         if not report.get(OWN_SKELETON):
@@ -60,14 +67,26 @@ class AnimModelCalls:
                     try:
                         anim.drop_animations(mod, unit)
                     except (AnimError, OSError) as exc:
+                        cause = oserror_of(exc)
+                        if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                            raise file_error(cause, own) from cause
                         raise StudioError(f"The animations of the model it had can't be taken out: {exc}") from None
             return {"skeleton": "soldier", "animations": []} if report.get("rigged") else {}
         try:
             record = animmodel.record_of(target)
+        except (animmodel.AnimModelError, ValueError, OSError) as exc:
+            cause = oserror_of(exc)
+            if cause is not None:   # (the model just written, read back: in words, never Python's own)
+                raise file_error(cause, target, target) from cause
+            raise StudioError(f"{Path(file).name}: {exc}") from None
+        try:
             from rusemod.rig import read_rig
             rig = read_rig(file)
             said, halves = animmodel.file_says(animmodel.file_document(file), [a.name for a in rig.animations])
         except (animmodel.AnimModelError, ValueError, OSError) as exc:
+            cause = oserror_of(exc)
+            if cause is not None:   # (the file imported, read: in words, never Python's own)
+                raise file_error(cause, target, Path(file)) from cause
             raise StudioError(f"{Path(file).name}: {exc}") from None
         if list(clips) != animmodel.clip_names(rig):   # (one reading of the file, two answers: never expected)
             raise StudioError(f"{Path(file).name}: its animations came out two different ways when read: please report "
@@ -94,6 +113,9 @@ class AnimModelCalls:
                             report.setdefault("notes", []).append(
                                 f"{name}: the file says it plays {listing}, which isn't one of the unit's actions")
             except (AnimError, OSError) as exc:
+                cause = oserror_of(exc)
+                if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                    raise file_error(cause, own) from cause
                 raise StudioError(f"{Path(file).name}: its animations can't be kept: {exc}") from None
         animations = []
         for name, data in clips.items():
@@ -136,18 +158,22 @@ class AnimModelCalls:
         that played one go back to what they played before (rusemod.animmodel.drop_animations)."""
         from rusemod import animmodel
         from rusemod.anim import AnimError
-        from .api import StudioError
+        from .api import StudioError, file_error, oserror_of
         try:
             data = json.loads(record.read_text(encoding="utf-8")) if record.is_file() else {}
         except (OSError, ValueError):
             data = {}
         if data.get("skeleton") != "own" or not data.get("animations"):
             return []
+        from rusemod import anim
+        mod = self._mod_dir()
         try:
-            from rusemod import anim
-            anim.drop_animations(self._mod_dir(), record.stem)   # (Part 2's table: the merge's one store)
+            anim.drop_animations(mod, record.stem)   # (Part 2's table: the merge's one store)
             return [a.get("name") for a in data["animations"] if isinstance(a, dict)]
         except (AnimError, OSError) as exc:
+            cause = oserror_of(exc)
+            if cause is not None:   # (a file it couldn't read or write: in words, never Python's own)
+                raise file_error(cause, Path(mod) / anim.OWN / record.stem if mod is not None else record) from cause
             raise StudioError(f"The animations of the model it had can't be taken out: {exc}") from None
 
     def model_animations(self, address: str) -> dict:

@@ -52,31 +52,42 @@ class HorseSquadCalls:
     model_import_remove, delete_unit and _kind_rows."""
 
     # --- what the Units tab lists ---
-    def _horse_entry(self) -> dict | None:
+    def _horse_entry(self, lang: str = "us") -> dict | None:
         """The Horse Squad as the Units tab lists it: ENTRY, with what the game's index says of the US rifle squad
-        it's made from: its build menu ("game_nation", "factory": the add form's first pick) and its type in English
-        ("card": the kind of unit its group goes by, as an era unit's library card); "names": its name in each of
-        the Studio's languages (words.toml eras_horse_name, for the search box). None when the game has no US rifle
-        squad: it can't be made then."""
+        it's made from: its build menu ("game_nation", "factory": the add form's first pick) and its type ("card": the
+        game's word for its kind of unit, on the US rifle squad's card); "names": its name in each of the Studio's
+        languages (words.toml eras_horse_name, for the search box). The type in English by default: the kind its group
+        goes by (era_units._era_group, as an era unit's library card); in `lang` for the page and the list (_horse_card).
+        None when the game has no US rifle squad: it can't be made then."""
         from .api import _words
         ix = self._open()
         try:
             row = next((u for u in self._all_units(ix) if u["address"] == SQUAD), None)
             if row is None:
                 return None
-            key = row.get("type_key")
-            card = ((ix.names([key], "us").get(key) or "") if key else "").strip()
+            card = self._horse_card(ix, lang)
         finally:
             ix.close()
         names = sorted({t for t in _words().get("eras_horse_name", {}).values() if isinstance(t, str) and t.strip()})
         return dict(ENTRY, game_nation=row["nation"], factory=row["factory"], card=card, names=names)
 
-    def _era_built(self) -> list[dict]:
-        """The units made for RUSE 2.0 the game can make (era_units_list's "built" rows): none while the game's index
-        can't be read."""
+    def _horse_card(self, ix, lang: str) -> str:
+        """The US rifle squad's type (the game's word on its card: the Horse Squad's type) in the Studio's language
+        `lang`, as the Units list says a game unit's type (api.units: its HTML entities undone too): a language the game
+        has its own, else (Persian, the code names' "base") the game's English; "" when the index has none."""
+        import html
+        from rusemod import schema
+        row = next((u for u in self._all_units(ix) if u["address"] == SQUAD), None)
+        key = row.get("type_key") if row is not None else None
+        told = lang if lang in schema.LANGS else "us"
+        return html.unescape((ix.names([key], told).get(key) or "") if key else "").strip()
+
+    def _era_built(self, lang: str = "us") -> list[dict]:
+        """The units made for RUSE 2.0 the game can make (era_units_list's "built" rows), their type in `lang`: none
+        while the game's index can't be read."""
         import sqlite3
         try:
-            entry = self._horse_entry()
+            entry = self._horse_entry(lang)
         except (OSError, KeyError, sqlite3.Error):
             return []
         return [entry] if entry is not None else []
@@ -94,22 +105,23 @@ class HorseSquadCalls:
         return entry
 
     def _horse_page(self, entry: dict, lang: str = "base") -> dict:
-        """era_unit_page for the Horse Squad: its entry, "added" (its unit's address in this mod, or None), "start":
-        the US rifle squad alone (by its game name: its models are made for that unit's soldiers), "has_model" False
-        (no library model: its models are made when it's added), "building": the job adding it while one runs (the
-        page follows it), and era_unit_start's "price", "size", "size_info", "research" and "group" for its own
-        build menu."""
+        """era_unit_page for the Horse Squad: its entry, its type ("card") in the Studio's language `lang`, "added" (its
+        unit's address in this mod, or None), "start": the US rifle squad alone (by its game name: its models are made
+        for that unit's soldiers), "has_model" False (no library model: its models are made when it's added),
+        "building": the job adding it while one runs (the page follows it), and era_unit_start's "price", "size",
+        "size_info", "research" and "group" for its own build menu (its group by its type in English, `entry`'s)."""
         from rusemod import schema
         record = self._era_record() if self._mod_dir() is not None else {}
         ix = self._open()
         try:
             name = self._names(ix, [SQUAD], lang if lang in schema.LANGS else "us").get(SQUAD) or SQUAD.rsplit("/", 1)[-1]
+            card = self._horse_card(ix, lang) or entry["card"]
         finally:
             ix.close()
         start = [{"address": SQUAD, "name": name, "nation": entry["game_nation"], "suggested": True,
                   "same_type": True}]
         options = self._era_options(None, {}, entry, SQUAD, entry["game_nation"], entry["factory"], lang)
-        return dict(entry, added=record.get(KEY), picture=None, start=start, has_model=False,
+        return dict(entry, card=card, added=record.get(KEY), picture=None, start=start, has_model=False,
                     building=self._horse_running(), **options)
 
     def _horse_running(self) -> str | None:
@@ -153,30 +165,51 @@ class HorseSquadCalls:
             self.__dict__["_horse_mod"] = None   # the mod being written while its unit is made (_horse_guard)
 
         def work(say):
-            say(STEPS[0])
-            files = self._horse_build(builder, game)
-            self.__dict__["_horse_mod"] = mod      # from here its mod stays the one edited (_horse_guard)
+            # the folder being written (the platform folder's, then the mod) and the file being read (each soldier's
+            # file while its model is imported): said when a file can't be read or written and the error names none
+            where, reading = self._home / FOLDER, None
             try:
-                # the mod it was asked for, still the one being edited: nothing is made in another
-                if self._mod_dir() != mod:
-                    raise StudioError("The mod being edited changed while the Horse Squad was being made, so it "
-                                      "wasn't added: add it again.")
-                say(STEPS[1])
-                made, before = None, set(self._new_units())
+                say(STEPS[0])
+                files = self._horse_build(builder, game)
+                where = mod
+                self.__dict__["_horse_mod"] = mod      # from here its mod stays the one edited (_horse_guard)
                 try:
-                    plan = self._era_plan(KEY, None, {}, entry, nation, factory, SQUAD, None, research_from,
-                                          research_price, research_time, group)
-                    made = self._era_make(KEY, self._era_library()[1], entry, plan, nation, factory, name, price)
-                    say(STEPS[2])
-                    self.model_import(made["address"], str(files["rifle"]))
-                    say(STEPS[3])
-                    self.model_import(made["address"], str(files["bazooka"]), kind=HEAVY)
-                    self._horse_check(made["address"])
-                except BaseException:
-                    self._horse_undo(made["address"] if made else None, before)
+                    # the mod it was asked for, still the one being edited: nothing is made in another
+                    if self._mod_dir() != mod:
+                        raise StudioError("The mod being edited changed while the Horse Squad was being made, so it "
+                                          "wasn't added: add it again.")
+                    # from here every step writes into this mod, even when another Studio window on the same platform
+                    # folder picks another mod meanwhile (its _horse_guard is its own: api._mod_dir keeps this one)
+                    self.__dict__["_horse_pin"] = mod
+                    say(STEPS[1])
+                    made, before = None, set(self._new_units())
+                    try:
+                        plan = self._era_plan(KEY, None, {}, entry, nation, factory, SQUAD, None, research_from,
+                                              research_price, research_time, group)
+                        made = self._era_make(KEY, self._era_library()[1], entry, plan, nation, factory, name, price)
+                        say(STEPS[2])
+                        reading = files["rifle"]
+                        self.model_import(made["address"], str(files["rifle"]))
+                        say(STEPS[3])
+                        reading = files["bazooka"]
+                        self.model_import(made["address"], str(files["bazooka"]), kind=HEAVY)
+                        reading = None
+                        self._horse_check(made["address"])
+                    except BaseException:
+                        self._horse_undo(made["address"] if made else None, before)
+                        raise
+                finally:
+                    self.__dict__["_horse_mod"] = None
+                    self.__dict__["_horse_pin"] = None
+            except OSError as exc:
+                # (in words, never Python's own: the job's message goes to the page in the modder's language)
+                raise self._horse_file_error(exc, where, reading) from exc
+            except StudioError as exc:
+                # a file the Studio's own import couldn't read or write (api.file_error, raised from its OSError): said
+                # as one of the add's own steps' is, that the Horse Squad wasn't added (the import's words don't say)
+                if not isinstance(exc.__cause__, OSError):
                     raise
-            finally:
-                self.__dict__["_horse_mod"] = None
+                raise self._horse_file_error(exc.__cause__, where, reading) from exc.__cause__
             job.result = {"address": made["address"], "name": made["name"]}
 
         return job.start(work, f"{NAME} is in your mod.", plain=(StudioError, OSError))
@@ -208,21 +241,62 @@ class HorseSquadCalls:
             raise StudioError(f"There's already a unit called {prefix}{stem} (from {wanted!r}). Pick another name.")
 
     def _horse_builder(self):
-        """The builder (BUILDER), or a StudioError when this Studio hasn't got it."""
+        """The builder (BUILDER), or a StudioError when this Studio hasn't got it, or has it but a part it needs
+        (numpy, say) can't be loaded: said as that, never as the builder not being in it."""
         from .api import StudioError
         try:
             return importlib.import_module(BUILDER)
-        except ImportError:
+        except ImportError as exc:
+            if exc.name != BUILDER:
+                raise self._horse_part_missing(exc) from exc
             # not a game rule: the part of the Studio that makes it
             raise StudioError("This Studio can't make the Horse Squad yet: the part that makes it from your game "
                               "isn't in it.") from None
+
+    @staticmethod
+    def _horse_part_missing(exc: ImportError):
+        """The StudioError for a part the builder needs that couldn't be loaded (`exc`), named when Python names it."""
+        from .api import StudioError
+        if exc.name:
+            return StudioError(f"This Studio can't make the Horse Squad: a part it needs ({exc.name}) couldn't be "
+                               f"loaded. Please report this.")
+        return StudioError("This Studio can't make the Horse Squad: a part it needs couldn't be loaded. Please report "
+                           "this.")
+
+    @staticmethod
+    def _horse_file_error(exc: OSError, folder, reading=None):
+        """The StudioError for a file that couldn't be read or written while the Horse Squad was being made or added
+        (`exc`), in words and never in Python's own (English, inside the modder's language): the disk full, a file
+        another program holds or Windows didn't allow, a file not there, else its error number. A full disk is the one
+        holding `folder`, the folder being written then; any other names the file `exc` names (api.file_named: of two,
+        the one in the place a new file was being put, never the add's own new one), else the file being read then,
+        `reading`, else `folder` (api.file_error's rule)."""
+        from .api import StudioError, disk_full, file_named
+        if disk_full(exc):
+            return StudioError(f"The Horse Squad couldn't be added: the disk holding {folder} is full. Make room on "
+                               f"it, then add it again.")
+        path = file_named(exc, reading if reading is not None else folder)
+        code = getattr(exc, "winerror", None) or exc.errno
+        if isinstance(exc, PermissionError):   # (a file another program has open comes as this on Windows)
+            return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written, because "
+                               f"another program has it open or Windows didn't allow it. Close that program, then add "
+                               f"it again.")
+        if isinstance(exc, FileNotFoundError):
+            return StudioError(f"The Horse Squad couldn't be added: {path} isn't there.")
+        if code is None:
+            return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written. Please report "
+                               f"this.")
+        return StudioError(f"The Horse Squad couldn't be added: {path} couldn't be read or written (error {code}). "
+                           f"Please report this.")
 
     def _horse_build(self, builder, game: Path) -> dict:
         """The Horse Squad's two model files made from the player's own game (`game`) by `builder`: into a folder of
         their own first, then into the platform folder's horse_squad/ under the names the builder gave them (the files
         made before are replaced: the mod's model records name them, for Resize and Move). Returns {"rifle",
-        "bazooka": its path there}. The builder's own refusal is said in its words (HorseSquadError); files it didn't
-        make where it was asked to, refused."""
+        "bazooka": its path there}. The builder's own refusal is said in its words (HorseSquadError, in the modder's
+        language with the frame: errortext.WITHIN); a part it needs that can't be loaded, memory run out, or anything
+        else it stopped on, said in words too (an OSError: by the job, horse_squad_add); files it didn't make where it
+        was asked to, refused."""
         from .api import StudioError
         refusal = getattr(builder, "HorseSquadError", None)
         refusals = (refusal,) if isinstance(refusal, type) and issubclass(refusal, Exception) else ()
@@ -233,7 +307,22 @@ class HorseSquadCalls:
             try:
                 got = builder.horse_squad_glbs(Path(game), work, index=self._path(), say=lambda _line: None)
             except refusals as exc:
+                # not a game rule: the builder's own refusal, in its plain words, of what the game gave it
                 raise StudioError(f"The Horse Squad can't be made from your game: {exc}") from None
+            except OSError:
+                raise
+            except ImportError as exc:   # (a part it loads as it goes)
+                raise self._horse_part_missing(exc) from exc
+            except MemoryError:
+                # not a game rule: this PC's memory
+                raise StudioError("The Horse Squad can't be made from your game: this PC ran out of memory while "
+                                  "making it. Close other programs, then add it again.") from None
+            except Exception as exc:
+                # (the builder stopped on something it doesn't check for: a mistake of its own, or game data unlike any
+                # it was tried on; Bug Watch counts where, from the error it was raised from)
+                # not a game rule: what the builder didn't expect
+                raise StudioError("The Horse Squad can't be made from your game: making it stopped on something the "
+                                  "Studio didn't expect. Please report this.") from exc
             files = {}
             for role in ROLES:
                 path = Path(got[role]) if isinstance(got, dict) and got.get(role) else None
@@ -243,6 +332,7 @@ class HorseSquadCalls:
                     break
                 files[role] = path
             if not files or len({p.name.lower() for p in files.values()}) != len(ROLES):
+                # not a game rule: what the builder hands over (two .glb files of its own, where it was asked)
                 raise StudioError("The Horse Squad can't be made from your game: its two model files didn't come out. "
                                   "Please report this.")
             out = {}
@@ -267,32 +357,71 @@ class HorseSquadCalls:
                               "Please report this.")
 
     def _horse_undo(self, address: str | None, before: set) -> None:
-        """A Horse Squad this job couldn't finish, taken out again, and only what this job made: its unit (`address`;
-        else a copy of the US rifle squad that wasn't among the mod's new units `before` it began), with its models and
-        its credit line (era_unit_remove, when the mod's era_units.json names it), never a Horse Squad the mod had
-        already."""
+        """A Horse Squad this job couldn't finish, taken out again, and only what this job made: its unit (`address`,
+        the one _era_make made; only when that never came back, a copy of the US rifle squad that wasn't among the mod's
+        new units `before` _era_make began), with its models, its animations and its credit line (era_unit_remove, when
+        the mod's era_units.json names it), never a Horse Squad the mod had already, nor a copy the modder made while
+        the add ran. Each step is tried even when one before it failed (Delete takes every file of the unit:
+        edits.remove_unit); a StudioError when the unit is still in the mod after all (the job then says that, not
+        that it wasn't added)."""
         from .api import StudioError
         self.__dict__["_horse_undoing"] = True   # (era_unit_remove refuses the page while the add runs, not this)
+        mine = set()
         try:
             units = self._new_units()
-            mine = ({address} if address else set()) | {a for a, u in units.items()
-                                                         if a not in before and u.source == SQUAD}
+            mine = {address} if address else {a for a, u in units.items() if a not in before and u.source == SQUAD}
             recorded = self._era_record().get(KEY)
             if recorded in mine:
-                self.era_unit_remove(KEY, "anyway")
-                mine.discard(recorded)
+                try:
+                    self.era_unit_remove(KEY, "anyway")
+                except (StudioError, OSError):
+                    pass   # (the steps below take what it couldn't)
             for left in sorted(mine):
                 if left not in self._new_units():
                     continue
                 try:
                     self.model_import_remove(left)
                 except (StudioError, OSError):
-                    pass
-                self.delete_unit(left, "anyway")
+                    pass   # (Delete below takes the unit's model files all the same)
+                try:
+                    self.delete_unit(left, "anyway")
+                except (StudioError, OSError):
+                    pass   # (said below: the unit is still in the mod)
         except (StudioError, OSError):
-            pass   # (the job's own failure is what the page says)
+            pass
         finally:
             self.__dict__["_horse_undoing"] = False
+        try:
+            still = [a for a in mine if a in self._new_units()]
+        except (StudioError, OSError):
+            still = sorted(mine)
+        if still:
+            # not a game rule: what this job made couldn't all be taken out of the mod again
+            raise StudioError("The Horse Squad couldn't be added, and taking it back out failed too, so part of it "
+                              "is still in your mod: take it out of your mod on its page in the Units tab, or delete "
+                              "it on its unit page.")
+
+    def _horse_gone(self, address: str, file, moving: bool) -> None:
+        """Before Resize or Move (`moving`) is refused because the file a model was made from isn't there any more
+        (api.model_resize, model_place, _kinds_ready: their words say "import it again"): when `address` is this mod's
+        Horse Squad, whose two files the Studio made in the platform folder (the modder never had them to import), a
+        StudioError saying its way out instead: taken out of the mod and added again, its files are made again, and
+        what was changed on it goes with it. Nothing for any other unit (a Horse Squad made by hand too: its files
+        are the modder's own)."""
+        from .api import EditsFileError, StudioError
+        try:
+            mine = self._era_record().get(KEY) == address
+        except (OSError, ValueError, EditsFileError):
+            return
+        if not mine:
+            return
+        if moving:
+            raise StudioError(f"The file the Horse Squad's model was made from isn't there any more ({file}), so it "
+                              f"can't be moved. To have it made again, on its page in the Units tab (WWII+) click Take "
+                              f"it out of my mod, then Add to my mod: what you changed on it is lost.")
+        raise StudioError(f"The file the Horse Squad's model was made from isn't there any more ({file}), so its size "
+                          f"can't be changed. To have it made again, on its page in the Units tab (WWII+) click Take it "
+                          f"out of my mod, then Add to my mod: what you changed on it is lost.")
 
     def _horse_guard(self, path, switching: bool = False) -> None:
         """While the Horse Squad's unit is being made in a mod (its models imported, after its files are made), that
