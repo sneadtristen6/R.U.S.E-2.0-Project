@@ -49662,6 +49662,32 @@ jpn = "Blenderのシーンは毎秒{fps}フレーム、ゲームは毎秒30フ�
 sc = "Blender 的场景以每秒 {fps} 帧播放，而游戏是每秒 30 帧：每一帧都作为游戏的一帧收入，所以游戏以自己的速度播放这些动画，而不是 Blender 中显示的速度。"
 fa = "صحنهٔ Blender با {fps} فریم در ثانیه پخش می‌شد و بازی با 30: هر فریم به‌عنوان یک فریم بازی گرفته شد، پس بازی انیمیشن‌ها را با سرعت خودش پخش می‌کند، نه با سرعتی که Blender نشان می‌داد."
 
+[decoy_blender_stretch]
+us = "Blender's scene has Time Stretching on (Output Properties, Old {old}, New {new}), so Blender played every animation slower or faster than the game will. Send to the R.U.S.E. Studio sent each one whole, frame by frame as the Action Editor shows it, without the stretching: the game plays them at its own speed."
+fr = "La scène de Blender a le Time Stretching activé (Output Properties, Old {old}, New {new}), donc Blender jouait chaque animation plus lentement ou plus vite que le jeu ne le fera. Envoyer au R.U.S.E. Studio a envoyé chacune en entier, image par image comme l'Action Editor la montre, sans l'étirement : le jeu les joue à sa propre vitesse."
+ger = "In Blenders Szene ist Time Stretching an (Output Properties, Old {old}, New {new}), also spielte Blender jede Animation langsamer oder schneller, als das Spiel es tun wird. An das R.U.S.E. Studio senden hat jede ganz gesendet, Bild für Bild, wie der Action Editor sie zeigt, ohne die Dehnung: Das Spiel spielt sie in seinem eigenen Tempo."
+ita = "La scena di Blender ha il Time Stretching attivo (Output Properties, Old {old}, New {new}), quindi Blender riproduceva ogni animazione più lenta o più veloce di come la riprodurrà il gioco. Invia al R.U.S.E. Studio ha inviato ciascuna intera, fotogramma per fotogramma come la mostra l'Action Editor, senza lo stiramento: il gioco le riproduce alla sua velocità."
+spa = "La escena de Blender tiene el Time Stretching activado (Output Properties, Old {old}, New {new}), así que Blender reproducía cada animación más lenta o más rápida de lo que lo hará el juego. Enviar a R.U.S.E. Studio envió cada una entera, fotograma a fotograma como la muestra el Action Editor, sin el estiramiento: el juego las reproduce a su propia velocidad."
+pol = "Scena Blendera ma włączone Time Stretching (Output Properties, Old {old}, New {new}), więc Blender odtwarzał każdą animację wolniej lub szybciej, niż zrobi to gra. Wyślij do R.U.S.E. Studio wysłał każdą w całości, klatka po klatce, tak jak pokazuje ją Action Editor, bez rozciągnięcia: gra odtwarza je we własnym tempie."
+ru = "В сцене Blender включено Time Stretching (Output Properties, Old {old}, New {new}), поэтому Blender играл каждую анимацию медленнее или быстрее, чем будет играть игра. «Отправить в R.U.S.E. Studio» отправило каждую целиком, кадр за кадром, как её показывает Action Editor, без растяжения: игра играет их со своей скоростью."
+cz = "Scéna Blenderu má zapnuté Time Stretching (Output Properties, Old {old}, New {new}), takže Blender hrál každou animaci pomaleji nebo rychleji, než ji bude hrát hra. Poslat do R.U.S.E. Studia poslalo každou celou, snímek po snímku, jak ji ukazuje Action Editor, bez natažení: hra je hraje svou vlastní rychlostí."
+jpn = "BlenderのシーンでTime Stretchingがオンになっています（Output Properties、Old {old}、New {new}）。そのためBlenderでは各アニメーションがゲームより遅く、または速く再生されていました。「R.U.S.E. Studioへ送る」は各アニメーションを引き伸ばしなしで、Action Editorに見えるとおり1フレームずつ丸ごと送りました。ゲームでは自身の速さで再生されます。"
+sc = "Blender 的场景开启了 Time Stretching（Output Properties，Old {old}，New {new}），所以 Blender 播放每个动画都比游戏慢或快。“发送到 R.U.S.E. Studio”不带这种拉伸，按 Action Editor 中显示的样子逐帧完整发送了每个动画：游戏以自己的速度播放它们。"
+fa = "در صحنهٔ Blender گزینهٔ Time Stretching روشن است (Output Properties، Old {old}، New {new})، پس Blender هر انیمیشن را کندتر یا تندتر از بازی پخش می‌کرد. «ارسال به R.U.S.E. Studio» هر کدام را کامل، فریم به فریم همان‌طور که Action Editor نشان می‌دهد و بدون این کشش فرستاد: بازی آن‌ها را با سرعت خودش پخش می‌کند."
+
+[decoy_blender_open_failed]
+us = "Blender couldn't be opened ({why})."
+fr = "Blender n'a pas pu être ouvert ({why})."
+ger = "Blender konnte nicht geöffnet werden ({why})."
+ita = "Non è stato possibile aprire Blender ({why})."
+spa = "No se pudo abrir Blender ({why})."
+pol = "Nie udało się otworzyć Blendera ({why})."
+ru = "Не удалось открыть Blender ({why})."
+cz = "Blender se nepodařilo otevřít ({why})."
+jpn = "Blenderを開けませんでした（{why}）。"
+sc = "无法打开 Blender（{why}）。"
+fa = "Blender باز نشد ({why})."
+
 [decoy_blender_nothing_new]
 us = "Nothing new has come from Blender since your changes were last brought back."
 fr = "Rien de nouveau n'est venu de Blender depuis le dernier retour de vos changements."

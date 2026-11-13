@@ -165,13 +165,14 @@ def unsent_timing() -> list:
     return out
 
 
-def say_about(unsent: list) -> None:
+def say_about(unsent: list, stretch: list | None = None) -> None:
     """ABOUT beside SEND: {"glb": the SHA-256 of the file sent (so a stale one is never read with another), "fps": the
-    scene's frames a second, "nla": unsent's, "session": the opening this Blender was started for (the words'
-    "session": a Blender left open from an earlier opening is told apart)}."""
+    scene's frames a second, "nla": unsent's, "stretch": [Old, New] of the scene's Time Stretching when it stretches
+    (send sends each action whole without it), else None, "session": the opening this Blender was started for (the
+    words' "session": a Blender left open from an earlier opening is told apart)}."""
     scene = bpy.context.scene
     about = {"glb": hashlib.sha256(SEND.read_bytes()).hexdigest(),
-             "fps": scene.render.fps / (scene.render.fps_base or 1.0), "nla": unsent,
+             "fps": scene.render.fps / (scene.render.fps_base or 1.0), "nla": unsent, "stretch": stretch,
              "session": WORDS.get("session")}
     path = SEND.with_name(SEND.name + ABOUT)
     part = path.with_name(path.name + ".part")
@@ -203,14 +204,26 @@ def send() -> str:
                     export_frame_step=1, export_frame_range=False, export_anim_slide_to_zero=False,
                     export_anim_single_armature=True, export_reset_pose_bones=True, export_def_bones=False,
                     export_optimize_animation_size=False)
+    # Output Properties' Time Stretching (Old, New) makes Blender play every action slower or faster, and sampling
+    # with it on would send each one cut short or cut long: each is sent whole, frame by frame, as the Action Editor
+    # keys it, the stretching put back after, and said beside the file (say_about's "stretch")
+    render = bpy.context.scene.render
+    stretch = None
+    if ANIMATED and render.frame_map_old != render.frame_map_new:
+        stretch = [int(render.frame_map_old), int(render.frame_map_new)]
+        render.frame_map_new = render.frame_map_old
     try:
-        bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB", **settings)
-    except TypeError:  # an older Blender without one of them: its own
-        bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB")
+        try:
+            bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB", **settings)
+        except TypeError:  # an older Blender without one of them: its own
+            bpy.ops.export_scene.gltf(filepath=str(part), export_format="GLB")
+    finally:
+        if stretch is not None:
+            render.frame_map_new = stretch[1]
     os.replace(part, SEND)
     if ANIMATED:
         try:
-            say_about(UNSENT)
+            say_about(UNSENT, stretch)
         except Exception:  # noqa: BLE001  (shown in Blender's console; the sending is made)
             traceback.print_exc()
     print("rusemod: sent", SEND)
