@@ -498,6 +498,27 @@ def _named_files(u: dict) -> set:
     return named
 
 
+def files_named(mod: Path, unit: str) -> set:
+    """The clip files the unit's tables in units.toml name (its own folder's), as written there."""
+    return _named_files(read_units(mod).get(unit) or {})
+
+
+def drop_unnamed(mod: Path, unit: str, before: set) -> list:
+    """Each of `before` (files_named's, taken before a change) that no table of the unit names now, out of its folder:
+    a clip file nothing plays would still go out with the mod (Export packs all of files/). A name that isn't a path
+    under the folder is left alone. Returns the names taken out."""
+    gone = []
+    for rel in sorted(set(before) - files_named(mod, unit)):
+        if not isinstance(rel, str) or not rel.lower().endswith(".baf") or "\\" in rel or rel.startswith("/") \
+                or ":" in rel or any(part in ("", ".", "..") for part in rel.split("/")):
+            continue
+        f = Path(mod) / OWN / unit / rel
+        if f.is_file():
+            f.unlink()
+            gone.append(rel)
+    return gone
+
+
 def remove_unit_clip(mod: Path, unit: str, action: str, figure: str | None = None) -> bool:
     """Take add_unit_clip's row out (the action plays what it did before); its file goes too when no other row of
     the unit names it. Whether there was such a row."""
