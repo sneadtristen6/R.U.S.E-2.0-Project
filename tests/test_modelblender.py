@@ -672,6 +672,100 @@ class JointOrder(unittest.TestCase):
         self.assertEqual(gltf.joints_like(renamed, went), renamed)
         self.assertEqual(gltf.joints_like(b"not a model", went), b"not a model")
 
+    def test_put_back_in_order_when_blender_named_the_armature_after_its_soldier(self):
+        """Change the squad in Blender names each soldier's armature after him ("Rifleman 1"): the bones' parents among
+        themselves are what count (measured 2026-11-13: with the armature's name compared, a Generic Horse rider came
+        back off the riflemen's bones)."""
+        went = armatured(["A", "B", "C"], "us_soldier_model_bones")
+        sent = armatured(["A", "C", "B"], "Rifleman 1")
+        names = [n["name"] for n in gltf.glb_views(gltf.joints_like(sent, went))[0]["nodes"]]
+        got = gltf.glb_views(gltf.joints_like(sent, went))[0]
+        self.assertEqual([got["nodes"][j]["name"] for j in got["skins"][0]["joints"]], ["A", "B", "C"])
+        self.assertIn("Rifleman 1", names)                     # (the armature's own name stays Blender's)
+
+
+def armatured(order: list, armature: str, moved: dict | None = None) -> bytes:
+    """A .glb of bones A (its children B and C) under an armature node named `armature`, one skin with the joints in
+    `order`, each bone placed at its own translation (A at 0, B at 1, C at 2 up) unless `moved` {name: its height},
+    each bind matrix the inverse of its place; three points, one on each bone."""
+    import struct as st
+    heights = {"A": 0.0, "B": 1.0, "C": 2.0, **(moved or {})}
+    doc = {"asset": {"version": "2.0"},
+           "nodes": [{"name": armature, "children": [1]},
+                     {"name": "A", "translation": [0.0, heights["A"], 0.0], "children": [2, 3]},
+                     {"name": "B", "translation": [0.0, heights["B"] - heights["A"], 0.0]},
+                     {"name": "C", "translation": [0.0, heights["C"] - heights["A"], 0.0]},
+                     {"name": "mesh", "mesh": 0, "skin": 0}],
+           "scenes": [{"nodes": [0, 4]}], "scene": 0, "accessors": [], "bufferViews": []}
+    views = []
+
+    def add(data: bytes, kind: str, comp: int, count: int) -> int:
+        doc["bufferViews"].append({"buffer": 0, "byteOffset": 0, "byteLength": len(data)})
+        views.append(data)
+        doc["accessors"].append({"bufferView": len(views) - 1, "componentType": comp, "count": count, "type": kind})
+        return len(doc["accessors"]) - 1
+    node_of = {"A": 1, "B": 2, "C": 3}
+    joint_of = {n: k for k, n in enumerate(order)}
+    pos = add(st.pack("<9f", 0, 0, 0, 0, 1, 0, 0, 2, 0), "VEC3", 5126, 3)
+    joints = add(bytes(b for n in ("A", "B", "C") for b in (joint_of[n], 0, 0, 0)), "VEC4", 5121, 3)
+    weights = add(st.pack("<12f", *([1.0, 0, 0, 0] * 3)), "VEC4", 5126, 3)
+
+    def inverse_place(n: str) -> tuple:   # (a bind matrix, by columns: the inverse of a move up by the bone's height)
+        return (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -heights[n], 0, 1)
+    ibm = add(b"".join(st.pack("<16f", *inverse_place(n)) for n in order), "MAT4", 5126, 3)
+    doc["meshes"] = [{"primitives": [{"attributes": {"POSITION": pos, "JOINTS_0": joints, "WEIGHTS_0": weights}}]}]
+    doc["skins"] = [{"joints": [node_of[n] for n in order], "inverseBindMatrices": ibm}]
+    return gltf.pack_glb(doc, views)
+
+
+class BonesKept(unittest.TestCase):
+    """The one Blender button's Bones unticked (the owner, 2026-11-13: "I want to bring everything but the bones. So
+    then you just uncheck the bones"): gltf.bones_like puts the bones of the file that went out back into what Blender
+    sent, the mesh and the rest as Blender sent them (a bone moved in Blender came back into the mod: measured on the
+    Generic Horse the same day)."""
+
+    def place(self, raw: bytes, name: str) -> tuple:
+        doc, views = gltf.glb_views(raw)
+        nodes = doc["nodes"]
+        j = next(j for j in doc["skins"][0]["joints"] if nodes[j]["name"] == name)
+        k = doc["skins"][0]["joints"].index(j)
+        acc = doc["accessors"][doc["skins"][0]["inverseBindMatrices"]]
+        bind = __import__("struct").unpack_from("<16f", views[acc["bufferView"]], acc.get("byteOffset", 0) + 64 * k)
+        return tuple(nodes[j].get("translation", ())), bind[13]
+
+    def test_a_bone_moved_in_blender_goes_back_where_it_was_and_the_mesh_stays_blenders(self):
+        went = armatured(["A", "B", "C"], "bones")
+        sent = armatured(["A", "B", "C"], "bones", moved={"B": 1.05})
+        self.assertNotEqual(self.place(sent, "B"), self.place(went, "B"))
+        got, word = gltf.bones_like(sent, went)
+        self.assertEqual(word, gltf.BONES_KEPT)
+        self.assertEqual(self.place(got, "B"), self.place(went, "B"))
+        self.assertEqual(self.place(got, "A"), self.place(went, "A"))
+        doc_sent, views_sent = gltf.glb_views(sent)
+        doc_got, views_got = gltf.glb_views(got)
+        self.assertEqual(doc_got["meshes"], doc_sent["meshes"])            # (the mesh as Blender sent it)
+        pos = doc_got["accessors"][doc_got["meshes"][0]["primitives"][0]["attributes"]["POSITION"]]
+        self.assertEqual(views_got[pos["bufferView"]], views_sent[pos["bufferView"]])
+
+    def test_in_blenders_order_and_under_its_armature_name_each_bone_still_gets_its_own_place_back(self):
+        went = armatured(["A", "B", "C"], "us_soldier_model_bones")
+        sent = armatured(["A", "C", "B"], "Rifleman 1", moved={"C": 2.5})
+        got, word = gltf.bones_like(sent, went)
+        self.assertEqual(word, gltf.BONES_KEPT)
+        for name in ("A", "B", "C"):
+            self.assertEqual(self.place(got, name), self.place(went, name), name)
+
+    def test_nothing_changed_said_so_and_the_file_as_it_was(self):
+        went = armatured(["A", "B", "C"], "bones")
+        got, word = gltf.bones_like(went, went)
+        self.assertEqual((got, word), (went, gltf.BONES_SAME))
+
+    def test_a_bone_renamed_or_the_file_unreadable_left_as_blender_sent_it_and_said(self):
+        went = skinned(["A", "B", "C"], ["B", "C", "A"])
+        renamed = skinned(["A", "C", "D"], ["A", "C", "D"], names=("A", "D", "C"))
+        self.assertEqual(gltf.bones_like(renamed, went), (renamed, gltf.BONES_DIFFER))
+        self.assertEqual(gltf.bones_like(b"not a model", went), (b"not a model", gltf.BONES_UNREAD))
+
 
 if __name__ == "__main__":
     unittest.main()

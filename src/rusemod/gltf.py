@@ -491,8 +491,11 @@ def pack_glb(doc: dict, views: list) -> bytes:
 
 
 def _skin_bones(doc: dict) -> tuple[list, list] | None:
-    """(each joint's name in the one skin's order, each one's parent's name or None) of a glTF document; None for one
-    with no skin, more than one, or two joints of one name."""
+    """(each joint's name in the one skin's order, the name of each one's nearest parent that is a joint itself, or
+    None) of a glTF document; None for one with no skin, more than one, or two joints of one name. Only bones count as
+    parents: the node above the top bone is the armature's, which Blender names after what it holds (Change the squad
+    in Blender names each soldier's "Rifleman 1": measured 2026-11-13 on the Generic Horse with Blender 4.5.14, so the
+    bones' order was never put back there and a rider came in off the riflemen's bones)."""
     skins = doc.get("skins") or []
     if len(skins) != 1:
         return None
@@ -502,7 +505,14 @@ def _skin_bones(doc: dict) -> tuple[list, list] | None:
     names = [nodes[j].get("name") for j in joints]
     if len(set(names)) != len(names):
         return None
-    return names, [nodes[parent[j]].get("name") if j in parent else None for j in joints]
+    is_joint = set(joints)
+    ups = []
+    for j in joints:
+        p = parent.get(j)
+        while p is not None and p not in is_joint:
+            p = parent.get(p)
+        ups.append(nodes[p].get("name") if p is not None else None)
+    return names, ups
 
 
 def joints_like(raw: bytes, model: bytes) -> bytes:
@@ -580,6 +590,123 @@ def joints_like(raw: bytes, model: bytes) -> bytes:
         acc[index]["bufferView"] = add_view(doc, views, data)
         acc[index]["byteOffset"] = 0
     return pack_glb(doc, views)
+
+
+# --- a model's own bones put back (one Blender button, Bones unticked) ---
+NODE_PLACE = ("translation", "rotation", "scale", "matrix")   # what of a node says where it is
+BONES_KEPT, BONES_SAME, BONES_DIFFER, BONES_UNREAD = "kept", "same", "differ", "unread"   # bones_like's word
+
+
+def _node_matrix(node: dict) -> list:
+    """A node's own place as a 4x4 matrix (rows): its "matrix" (glTF keeps it by columns), or its translation,
+    rotation (x, y, z, w) and scale."""
+    if "matrix" in node:
+        m = [float(v) for v in node["matrix"]]
+        return [[m[c * 4 + r] for c in range(4)] for r in range(4)]
+    tx, ty, tz = (float(v) for v in node.get("translation", (0.0, 0.0, 0.0)))
+    x, y, z, w = (float(v) for v in node.get("rotation", (0.0, 0.0, 0.0, 1.0)))
+    sx, sy, sz = (float(v) for v in node.get("scale", (1.0, 1.0, 1.0)))
+    r = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+         [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+    return [[r[0][0] * sx, r[0][1] * sy, r[0][2] * sz, tx], [r[1][0] * sx, r[1][1] * sy, r[1][2] * sz, ty],
+            [r[2][0] * sx, r[2][1] * sy, r[2][2] * sz, tz], [0.0, 0.0, 0.0, 1.0]]
+
+
+def _above_bones(doc: dict) -> dict:
+    """{the name of each bone whose parent isn't a bone: where the nodes above it put it (their matrices, the top
+    first)} of a document with one skin."""
+    nodes = doc.get("nodes", [])
+    parent = {c: i for i, n in enumerate(nodes) for c in n.get("children", [])}
+    joints = doc["skins"][0].get("joints") or []
+    is_joint = set(joints)
+    out = {}
+    for j in joints:
+        p = parent.get(j)
+        if p is not None and p in is_joint:
+            continue
+        chain = []
+        while p is not None:
+            chain.insert(0, p)
+            p = parent.get(p)
+        m = [[1.0 if i == k else 0.0 for k in range(4)] for i in range(4)]
+        for n in chain:
+            b = _node_matrix(nodes[n])
+            m = [[sum(m[i][k] * b[k][c] for k in range(4)) for c in range(4)] for i in range(4)]
+        out[nodes[j].get("name")] = m
+    return out
+
+
+def _bind_matrices(doc: dict, views: list) -> list | None:
+    """The one skin's inverse bind matrices, 16 numbers a joint in its order, or None when it has none or they aren't
+    laid out as one run of float32 numbers."""
+    skin = doc["skins"][0]
+    if "inverseBindMatrices" not in skin:
+        return None
+    a = doc["accessors"][skin["inverseBindMatrices"]]
+    if a.get("componentType") != 5126 or a.get("type") != "MAT4" or "sparse" in a or "bufferView" not in a:
+        return None
+    bv = doc["bufferViews"][a["bufferView"]]
+    if bv.get("byteStride") and bv["byteStride"] != 64:
+        return None
+    start = a.get("byteOffset", 0)
+    data = views[a["bufferView"]][start:start + 64 * a["count"]]
+    if len(data) != 64 * a["count"] or a["count"] != len(skin.get("joints") or []):
+        return None
+    return [struct.unpack_from("<16f", data, 64 * k) for k in range(a["count"])]
+
+
+def bones_like(raw: bytes, model: bytes) -> tuple[bytes, str]:
+    """A .glb sent from Blender (`raw`) with the bones of the file that went out to Blender (`model`) put back, matched by
+    the bones' names: each bone's own place (its node's translation, rotation, scale or matrix) and its inverse bind
+    matrix; the mesh, its pictures and its animations stay as Blender sent them. For the one Blender button's Bones
+    unticked (the owner, 2026-11-13: "I want to bring everything but the bones. So then you just uncheck the bones"): a
+    bone moved in Blender came back into the mod through Bring back (measured 2026-11-13 with Blender 4.5.14 on the
+    Generic Horse: "horse spine1" raised 5 cm in Blender, 5 cm higher in the mod after). Returns (the file, its word):
+    BONES_KEPT (put back), BONES_SAME (nothing about the bones had changed), BONES_DIFFER (a bone added, taken away or
+    renamed in Blender, a bone under another one, or the whole armature moved: the file as Blender sent it, for the
+    caller to say), BONES_UNREAD (either file isn't a model with one skin and its bind matrices: as Blender sent it)."""
+    try:
+        doc, views = glb_views(raw)
+        went, went_views = glb_views(model)
+    except (ValueError, struct.error, OSError):
+        return raw, BONES_UNREAD
+    have, want = _skin_bones(doc), _skin_bones(went)
+    if have is None or want is None:
+        return raw, BONES_UNREAD
+    if sorted(have[0]) != sorted(want[0]) or dict(zip(*have)) != dict(zip(*want)):
+        return raw, BONES_DIFFER
+    top_have, top_want = _above_bones(doc), _above_bones(went)
+    if set(top_have) != set(top_want) or any(
+            abs(top_have[n][i][k] - top_want[n][i][k]) > 1e-4 for n in top_have for i in range(4) for k in range(4)):
+        return raw, BONES_DIFFER
+    binds_have, binds_want = _bind_matrices(doc, views), _bind_matrices(went, went_views)
+    if binds_have is None or binds_want is None:
+        return raw, BONES_UNREAD
+    nodes, went_nodes = doc["nodes"], went["nodes"]
+    went_joints = went["skins"][0]["joints"]
+    number = {went_nodes[j].get("name"): k for k, j in enumerate(went_joints)}
+    changed, binds = False, []
+    for k, j in enumerate(doc["skins"][0]["joints"]):
+        name = nodes[j].get("name")
+        source = went_nodes[went_joints[number[name]]]
+        before = {key: nodes[j].get(key) for key in NODE_PLACE}
+        for key in NODE_PLACE:
+            if key in source:
+                nodes[j][key] = source[key]
+            else:
+                nodes[j].pop(key, None)
+        if {key: nodes[j].get(key) for key in NODE_PLACE} != before:
+            changed = True
+        bind = binds_want[number[name]]
+        changed = changed or bind != binds_have[k]
+        binds.append(bind)
+    if not changed:
+        return raw, BONES_SAME
+    acc = doc["accessors"][doc["skins"][0]["inverseBindMatrices"]]
+    acc["bufferView"] = add_view(doc, views, b"".join(struct.pack("<16f", *m) for m in binds))
+    acc["byteOffset"] = 0
+    return pack_glb(doc, views), BONES_KEPT
 
 
 ALPHA_BACK, ALPHA_NONE, ALPHA_GONE = "back", "none", "gone"   # with_alpha's word on each material
