@@ -3004,6 +3004,8 @@ function kindsBox(address, kinds, draw, changed) {
     // (on bones of its own that aren't the riflemen's model's: he plays what he played, which can stop the game)
     if (row.same_bones === false) box.append(el("p", { className: "notice warn", textContent: w.model_kind_bones_other }));
     if (i === 0) return;   // (the riflemen's model is Import model's and Change it in Blender's, above)
+    // his model's parts without their own shine and side colour, and why (the riflemen's: in the Model row's box)
+    for (const line of alphaLostLines(row)) box.append(el("p", { className: "notice warn", textContent: line }));
     const actions = el("div", { className: "actions" });
     if (!row.inHead) {   // (the one whose import is the Its soldiers row's own button, Look and moves, has it there)
       const pick = el("button", { type: "button", textContent: w.model_import, title: w.tip_model_kind_import });
@@ -3034,7 +3036,8 @@ function kindsBox(address, kinds, draw, changed) {
       try {
         const r = await api().model_blender_back(address, 1, row.kind);
         if (r.model) {
-          say(fill(w.model_kind_done, { file: r.model.file || "" }), "ok");
+          // (and what it couldn't keep of its shine and side colour, in the pop-up and on his row)
+          sayBroughtBack(fill(w.model_kind_done, { file: r.model.file || "" }), r.model);
           if (changed) changed();
         }
         draw(r);
@@ -3073,6 +3076,37 @@ async function kindImport(address, row, draw, changed, pick) {
     }
     draw(r);
   } catch (err) { problem(err); } finally { pick.disabled = false; }
+}
+
+// What an import couldn't keep of a model's own shine and side-colour layer (the alpha of its pictures: shine where
+// high, side colour where low), one sentence each in the page's language naming the parts: those that came back from
+// Blender with the plain one a model from a file gets, as none went out to Blender under their name, or as their layer
+// isn't in the Blender folder any more, those that went out with their own and didn't come back under that name
+// ("blender_alpha_lost": ruse_studio.modelblender), and each picture whose own layer isn't its size ("alpha_sizes":
+// rusemod.modelin). `r`: an import's report (a Bring back's answer, look()'s own_model) or a row that carries them
+// (look()'s kinds, squad_info's soldiers). [] when it kept everything (a review of 2026-11-12: it was said only in the
+// model's record, which no page read)
+function alphaLostLines(r) {
+  const w = state.words, lost = (r && r.blender_alpha_lost) || {};
+  const sized = (s) => (Array.isArray(s) && s.length === 2 ? `${s[0]} × ${s[1]}` : "?");
+  const out = [];
+  for (const [key, word] of [["none", w.model_alpha_none], ["gone", w.model_alpha_gone], ["not_back", w.model_alpha_not_back]]) {
+    const list = Array.isArray(lost[key]) ? lost[key] : [];
+    if (list.length) out.push(fill(word, { names: list.map((n) => String(n ?? "")).join(", ") }));
+  }
+  for (const s of (r && Array.isArray(r.alpha_sizes) ? r.alpha_sizes : [])) {
+    out.push(fill(w.model_alpha_size, { name: String((s && s.picture) ?? ""), picture: sized(s && s.colour),
+      layer: sized(s && s.alpha) }));
+  }
+  return out;
+}
+
+// A Bring back's pop-up: what came in (`done`), and what of its shine and side colour it couldn't keep, which waits to
+// be closed (alphaLostLines)
+function sayBroughtBack(done, report) {
+  const lost = alphaLostLines(report);
+  if (!lost.length) return say(done, "ok");
+  return stayToast(say([done, ...lost].join(" "), "warn"));
 }
 
 // A new unit's model (the Look and moves section's Model row: its Import model button, box.pick, is the row's main
@@ -3198,7 +3232,8 @@ function modelBox(address, info, draw, changed) {
         try {
           const r = await api().model_blender_back(address, Number(size.value) || 1);
           if (r.model) {
-            say(kinds ? w.model_blender_done_kinds : w.model_blender_done, "ok");
+            // (and what it couldn't keep of its shine and side colour, in the pop-up and beside the model below)
+            sayBroughtBack(kinds ? w.model_blender_done_kinds : w.model_blender_done, r.model);
             if (changed) changed();
           }
           draw(r);
@@ -3252,6 +3287,9 @@ function modelBox(address, info, draw, changed) {
     // points the model file gave no bone (Blender's automatic weights leave some): they follow the hips
     // (rusemod.modelin.BLENDER_NO_BONE; item 4, 2026-11-10)
     if (own.no_bone) box.append(el("p", { className: "notice warn", textContent: fill(w.model_no_bone, { n: own.no_bone }) }));
+    // parts without their own shine and side colour, and why (a Bring back from Blender, a picture of another size),
+    // for as long as the model has them
+    for (const line of alphaLostLines(own)) box.append(el("p", { className: "notice warn", textContent: line }));
     // a mod made with both (by an older Studio, or by hand): the build stops on it (rusemod.build.unit_own_copies)
     if (info.own_copy) box.append(el("p", { className: "notice warn", textContent: squad ? w.model_both_squad : w.model_both }));
     const drop = el("button", { type: "button", className: "ghost", textContent: w.model_remove,
