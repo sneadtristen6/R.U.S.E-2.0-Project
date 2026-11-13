@@ -90,6 +90,11 @@ FIGURES = {"rifle": ["GfxDescriptorFusilier"], "bazooka": ["GfxDescriptorBazooka
 RIDE = "hr_ride"
 RIDE_FIGURE = "Descriptor_Unit_Horse_Ride:GfxDescriptor"   # the 11-09 ride's figure: drew the rifle model, idle1
 FILES = {"rifle": "horse-squad-rifle.glb", "bazooka": "horse-squad-bazooka.glb"}
+# The horse's picture of our own (rusemod.horsepaint; the owner, 2026-11-13: "new picture of horse"): OFF until he has
+# looked at its previews (agent-horse's report: scratch/release-0920/agent-horse/paint/render5) and said so; then True,
+# and every Add makes the files with it (the riders keep their game pictures, his exception "for now"). Off, the files
+# are the passed copy's bytes, as before.
+OWN_PICTURE = False
 
 
 # --- the country it is from (the owner, 2026-11-13: "generic horse should be fully editable so people can change what
@@ -251,6 +256,9 @@ def made_from(game: Path, work_in: Path, *, index: Path | None = None, say=print
                 "top": [bones.names[i] for i in sorted(bones.rmap.values())],
                 "bottom": [bones.names[i] for i in sorted(bones.hmap.values())]}})
             files[variant] = _with_death(glbs[variant])
+            if OWN_PICTURE:   # (our own picture of the horse in place of the game's, once the owner has seen it)
+                from .horsepaint import with_own_picture
+                files[variant] = with_own_picture(files[variant])
         return {"record": blob, "pack": pack_bytes, "clips": clips, "listings": listings, "glbs": glbs,
                 "files": files}
     finally:
