@@ -532,5 +532,87 @@ class ItsOwnShine(unittest.TestCase):
         self.assertNotIn("blender_alpha", res["model"])
 
 
+class ItsOwnModel(unittest.TestCase):
+    """Change it in Blender on a unit that has a model of its own and nothing sent yet opens that model, not the game's
+    (the owner, 2026-11-13, to "The Generic Horse: should 'Change it in Blender' open its own model? A test waits on
+    this.": "yes"; the squad page's Change the squad in Blender starts a soldier from his own model the same way). Its
+    alpha pictures go out beside it, listed by material, and come back in by name. ItsOwnShine's stand-ins (borrowed:
+    its own tests aren't run again here)."""
+    setUp, tearDown = ItsOwnShine.setUp, ItsOwnShine.tearDown
+    patched, trip, record = ItsOwnShine.patched, ItsOwnShine.trip, ItsOwnShine.record
+
+    def own_model_then_nothing_sent(self, address=TANK, kind=None) -> Path:
+        """A model of its own made by a first trip, then the work folder gone (a model made by Import model, by the
+        squad page, or the Generic Horse's Add, before any Change it in Blender): the model's file."""
+        import shutil
+        self.trip(address, kind=kind)
+        work = Path(self.mod / "blender")
+        shutil.rmtree(work)
+        self.opened.clear()
+        return next(self.models.glob("*.glb")) if kind is None else self.models / f"{SQUAD.rsplit('/', 1)[-1]}@{kind}.glb"
+
+    def test_its_own_model_opens_with_its_alpha_beside_it(self):
+        own = self.own_model_then_nothing_sent()
+        before = own.read_bytes()
+        with self.patched():
+            res = self.api.model_blender(TANK)
+        start = self.opened[-1]
+        self.assertEqual(start, self.work / "Descriptor_Unit_My_Tank_own.glb")
+        self.assertEqual(res["file"], str(start))
+        doc, _bin = modelin.glb_document(start.read_bytes())
+        self.assertEqual([m["name"] for m in doc["materials"]], ["test_tank_hull", "test_tank_turret"])
+        self.assertFalse([m for m in doc["materials"] if "rusemod_alpha_texture" in (m.get("extras") or {})])
+        listed = json.loads((self.work / "alpha.json").read_text(encoding="utf-8"))
+        self.assertEqual(listed["start"], start.name)
+        self.assertEqual(sorted(listed["alpha"]), ["test_tank_hull", "test_tank_turret"])
+        for material, file in listed["alpha"].items():
+            _w, _h, rgba = read_png((self.work / file).read_bytes())
+            self.assertEqual(bytes(rgba[0::4]), GAME_ALPHA[material], material)
+        self.assertEqual(own.read_bytes(), before)                     # (opening it changes nothing in the mod)
+
+    def test_brought_back_its_own_shine_stays(self):
+        self.own_model_then_nothing_sent()
+        with self.patched():
+            res = self.api.model_blender(TANK)
+            blender_sends(self.opened[-1], self.send)
+            back = self.api.model_blender_back(TANK)
+        self.assertEqual(res["file"], str(self.work / "Descriptor_Unit_My_Tank_own.glb"))
+        self.assertEqual(alphas_in(self.models / "Descriptor_Unit_My_Tank.glb"), GAME_ALPHA)
+        self.assertEqual(set(back["model"]["blender_alpha"].values()), {"its own, put back"})
+
+    def test_a_model_on_bones_of_its_own_goes_out_as_it_is(self):
+        """The Generic Horse's kind: its record says "skeleton": "own", so its file goes out with its own bones (no
+        game skeleton is read to put them at rest)."""
+        own = self.own_model_then_nothing_sent()
+        record = json.loads(own.with_suffix(".json").read_text(encoding="utf-8"))
+        own.with_suffix(".json").write_text(json.dumps(dict(record, skeleton="own")), encoding="utf-8")
+
+        class NoLibrary:
+            def __init__(self, _game=None):
+                raise AssertionError("a model on bones of its own reads no game skeleton")
+        with self.patched(), mock.patch("rusemod.models.Library", NoLibrary):
+            self.api.model_blender(TANK)
+        doc, _bin = modelin.glb_document(self.opened[-1].read_bytes())
+        was, _b = modelin.glb_document(own.read_bytes())
+        self.assertEqual(doc["nodes"], was["nodes"])
+
+    def test_the_bazooka_man_s_own_opens_alone(self):
+        self.api._soldier_kinds = lambda address: {"fusilier": RIFLEMAN, "bazooka": BAZOOKA}
+        self.api._look_models = lambda address: ([BAZOOKA, RIFLEMAN], [])
+        self.own_model_then_nothing_sent(SQUAD, kind="bazooka")
+        with self.patched():
+            res = self.api.model_blender(SQUAD, "us", "bazooka")
+        self.assertEqual(self.opened[-1].name, "Descriptor_Unit_My_Riflemen@bazooka_own.glb")
+        self.assertEqual(res["kind"], "bazooka")
+
+    def test_its_own_model_unreadable_is_said_and_nothing_opens(self):
+        from ruse_studio.api import StudioError
+        own = self.own_model_then_nothing_sent()
+        own.write_bytes(b"not a model")
+        with self.patched(), self.assertRaisesRegex(StudioError, "Descriptor_Unit_My_Tank.glb"):
+            self.api.model_blender(TANK)
+        self.assertEqual(self.opened, [])
+
+
 if __name__ == "__main__":
     unittest.main()

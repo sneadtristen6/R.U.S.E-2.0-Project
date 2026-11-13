@@ -7,7 +7,10 @@ rest_bones) into the unit's work folder, <mod>/blender/<the unit's name>/, and o
 Blender's own tools, then clicks Send to the R.U.S.E. Studio. Bring back the model (model_blender_back) asks that Blender
 to send it (rusemod.blender.ask_to_send) and takes it in with Import model, as the unit's own model.
 The work folder sits beside the mod's src/ and files/: Export doesn't pack it (rusemod.package), the build doesn't read
-it, and the modder finds his Blender files there. What was sent last is where the next Change it in Blender starts.
+it, and the modder finds his Blender files there. What was sent last is where the next Change it in Blender starts;
+before anything was sent, a unit with a model of its own starts from that model (the owner, 2026-11-13, "yes" to the
+Generic Horse's Change it in Blender opening its own model: its horse, its rider, its bones and its animations), as the
+squad page's Change the squad in Blender starts a soldier from his; a unit without one, from the game's model.
 Unlike Open in Blender in the Look box, this needs no Custom uniform: it changes the unit's own model, never the game's
 pictures that other units wear.
 Each of a squad's soldiers has his own (the owner, 2026-11-11, on the step-4 test copy: the big-head squad's bazooka
@@ -275,12 +278,80 @@ class ModelBlenderCalls:
                     row.pop(k, None)
                 row.update(alpha_lost(report))
 
+    def _own_start(self, own: Path, work: Path) -> tuple[Path, dict]:
+        """The unit's own model (`own`: files/models/<unit>.glb, or a kind's), as Change it in Blender starts from it,
+        the way Change the squad in Blender starts a soldier from his (ruse_studio.squadblender._start_file, "model"):
+        a model on bones of its own (the Generic Horse's horse and rider, its animations in it) as it is, one on the
+        game soldier's bones with them put at their rest poses (rusemod.gltf.rest_bones_glb). Each material's alpha
+        picture (Import model keeps it in the file, its "rusemod_alpha_texture") is written beside it and listed by
+        the material's name for Bring back the model (alpha.json; Blender keeps no picture a material doesn't show),
+        each material named once. Returns (the file, {material: its alpha picture's file name in `work`})."""
+        import struct as _struct
+        from rusemod import gltf, models
+        from .api import StudioError, file_error
+        from .squadblender import _put
+        try:
+            raw = own.read_bytes()
+        except OSError as exc:      # (said in words, never in Python's own)
+            raise file_error(exc, own) from exc
+        record = read_record(own.with_suffix(".json"))
+        record = record if isinstance(record, dict) else {}
+        try:
+            doc, views = gltf.glb_views(raw)
+        except (ValueError, _struct.error) as exc:   # (his model file unreadable: said, never another model opened)
+            raise StudioError(f"{own.name}: {exc}") from None
+        if record.get("skeleton") != "own":   # (a model on bones of its own carries its whole skeleton at rest)
+            report = record.get("report") if isinstance(record.get("report"), dict) else {}
+            like = report.get("like") or ((doc.get("asset") or {}).get("extras") or {}).get("rusemod_like")
+            if isinstance(like, str) and like:
+                lib = models.Library(self._game())
+                try:
+                    skeleton = lib.skeleton(like) if hasattr(lib, "skeleton") else None
+                finally:
+                    lib.close()
+                placed = gltf.rest_bones_glb(raw, skeleton) if skeleton is not None else None
+                if placed:
+                    doc, views = gltf.glb_views(placed)
+        alphas, names = {}, set()
+        for k, mat in enumerate(doc.get("materials", [])):
+            name = mat.get("name") if isinstance(mat.get("name"), str) and mat.get("name") else f"{own.stem} {k + 1}"
+            while name in names:            # (named once: Bring back puts each alpha back by the material's name)
+                name = f"{name} {k + 1}"
+            names.add(name)
+            mat["name"] = name
+            extras = mat.get("extras") if isinstance(mat.get("extras"), dict) else {}
+            index = extras.pop("rusemod_alpha_texture", None)
+            try:
+                data = views[doc["images"][doc["textures"][index]["source"]]["bufferView"]] \
+                    if isinstance(index, int) else None
+            except (IndexError, KeyError, TypeError):
+                data = None                 # (an alpha the file names but hasn't: the plain 144, as an import says)
+            if data is not None:
+                file = f"{own.stem}_{k + 1}_alpha.png"
+                try:
+                    _put(work / file, data)
+                except OSError as exc:      # (said in words, never in Python's own)
+                    raise file_error(exc, work / file) from exc
+                alphas[name] = file
+            if extras:
+                mat["extras"] = extras
+            else:
+                mat.pop("extras", None)
+        start = work / f"{own.stem}_own.glb"
+        try:
+            _put(start, gltf.pack_glb(doc, views))
+        except OSError as exc:              # (said in words, never in Python's own)
+            raise file_error(exc, start) from exc
+        return start, alphas
+
     def model_blender(self, address: str, lang: str = "us", kind: str | None = None) -> dict:
         """Open the unit's model in Blender to be changed (see the module's note); `kind`: one of a squad's other
-        soldiers, opened alone (his last sending, or the game model his figure draws). The game model goes out with
-        the alpha picture of each material beside it, listed in the work folder's alpha.json (Bring back the model
-        puts them back). Returns look() with "work" (the work folder), "file" (what Blender opened) and "kind" (None
-        for the riflemen)."""
+        soldiers, opened alone (his last sending, his own model, or the game model his figure draws). What Blender
+        opens: what it sent last, else the unit's own model when it has one (the owner, 2026-11-13, to "The Generic
+        Horse: should 'Change it in Blender' open its own model?": "yes"; _own_start, the squad page's way), else the
+        game model, which goes out with the alpha picture of each material beside it. Either way the alpha pictures
+        are listed in the work folder's alpha.json (Bring back the model puts them back). Returns look() with "work"
+        (the work folder), "file" (what Blender opened) and "kind" (None for the riflemen)."""
         from rusemod import gltf, models
         from rusemod.blender import open_model_to_change
         from .api import StudioError, words
@@ -291,8 +362,16 @@ class ModelBlenderCalls:
         if blender is None:
             raise StudioError("Blender isn't found on this PC. Get it free from blender.org (Get Blender), then use "
                               "Choose Blender… to show the Studio where blender.exe is.")
+        own = self._kind_file(address, kind) if kind else self._own_model_file(address)
         if send.is_file():
             start = send  # what was sent last time: the work goes on from it
+        elif own is not None and own.is_file():
+            # the unit's own model (a model of its own, Import model's or the Generic Horse's horse and rider with its
+            # bones and animations): brought back as the game's soldier, it lost them all without a word (the review
+            # of 2026-11-12, test_review_loss's test_change_it_in_blender_opens_its_own_model)
+            work.mkdir(parents=True, exist_ok=True)
+            start, alphas = self._own_start(own, work)
+            _write(work / ALPHA, {"format": 1, "start": start.name, "alpha": alphas})
         else:
             found = [m for m in self._look_models(address)[0] if "_dest" not in m.lower()]
             if not found:
