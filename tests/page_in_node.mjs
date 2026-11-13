@@ -192,7 +192,11 @@ class Elem {
   }
   addEventListener(t, f) { (this.listeners[t] ||= []).push(f); }
   removeEventListener(t, f) { this.listeners[t] = (this.listeners[t] || []).filter((x) => x !== f); }
-  dispatchEvent(e) { for (const f of this.listeners[e.type] || []) f.call(this, e); return true; }
+  dispatchEvent(e) {
+    for (const f of this.listeners[e.type] || []) f.call(this, e);
+    if (typeof this[`on${e.type}`] === "function") this[`on${e.type}`].call(this, e);   // (an el(..., { onclick }) too)
+    return true;
+  }
   click() { return this.dispatchEvent({ type: "click", target: this, currentTarget: this, preventDefault() {}, stopPropagation() {} }); }
   setAttribute(k, v) { this.attrs[k] = String(v); if (k === "class") this.className = v; if (k === "id") this.id = String(v); }
   getAttribute(k) { return k === "class" ? this.className : k in this.attrs ? this.attrs[k] : null; }
@@ -294,9 +298,10 @@ const settle = async () => {
   }
 };
 
+// (hidden: the page's "hidden" class, the hidden property or attribute, or display: none)
 function tree(n) {
   if (n instanceof TextNode) return n.data;
-  const hidden = n._cls.has("hidden") || n.hidden === true || n.attrs.hidden !== undefined;
+  const hidden = n._cls.has("hidden") || n.hidden === true || n.attrs.hidden !== undefined || n.style.display === "none";
   return [n.tagName, n.className, hidden, n.childNodes.map(tree)];
 }
 

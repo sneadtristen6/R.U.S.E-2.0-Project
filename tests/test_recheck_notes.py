@@ -123,44 +123,44 @@ class PageCase:
         with tempfile.TemporaryDirectory(dir=TMP) as d:
             given = Path(d) / "scenario.json"
             given.write_text(json.dumps(scenario, ensure_ascii=False), encoding="utf-8")
-            run = subprocess.Popen([NODE, str(PAGE), str(UI), str(given)], stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
-            errors: list = []
-            drain = threading.Thread(target=lambda: errors.extend(run.stderr), daemon=True)
-            drain.start()
-            watch = threading.Timer(WAIT, run.kill)
-            watch.start()
-            api, away = None, None
-            try:   # (a case that can't be made, or anything else here, stops the page's run too)
-                for line in run.stdout:
-                    m = json.loads(line)
-                    reply: dict = {"id": m["id"]}
-                    if "begin" in m:
-                        api, away = makers[m["begin"]](m["lang"])
-                    elif "call" in m:
-                        try:
-                            if m["call"].startswith("_") or not callable(getattr(api, m["call"], None)):
-                                raise AttributeError(f"the Studio has no call {m['call']}")
-                            reply["value"] = plain(getattr(api, m["call"])(*m["args"]))
-                        except Exception as exc:   # (as the window's bridge: the page gets the error's message)
-                            reply["error"] = str(exc) or type(exc).__name__
-                    elif "end" in m:
-                        got[m["lang"]][m["end"]] = m["out"]
+            with subprocess.Popen([NODE, str(PAGE), str(UI), str(given)], stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8") as run:
+                errors: list = []
+                drain = threading.Thread(target=lambda: errors.extend(run.stderr), daemon=True)
+                drain.start()
+                watch = threading.Timer(WAIT, run.kill)
+                watch.start()
+                api, away = None, None
+                try:   # (a case that can't be made, or anything else here, stops the page's run too)
+                    for line in run.stdout:
+                        m = json.loads(line)
+                        reply: dict = {"id": m["id"]}
+                        if "begin" in m:
+                            api, away = makers[m["begin"]](m["lang"])
+                        elif "call" in m:
+                            try:
+                                if m["call"].startswith("_") or not callable(getattr(api, m["call"], None)):
+                                    raise AttributeError(f"the Studio has no call {m['call']}")
+                                reply["value"] = plain(getattr(api, m["call"])(*m["args"]))
+                            except Exception as exc:   # (as the window's bridge: the page gets the error's message)
+                                reply["error"] = str(exc) or type(exc).__name__
+                        elif "end" in m:
+                            got[m["lang"]][m["end"]] = m["out"]
+                            away()
+                            api, away = None, None
+                        run.stdin.write(json.dumps(reply) + "\n")
+                        run.stdin.flush()
+                        if m.get("done"):
+                            break
+                except BaseException:
+                    run.kill()
+                    raise
+                finally:
+                    watch.cancel()
+                    if away:
                         away()
-                        api, away = None, None
-                    run.stdin.write(json.dumps(reply) + "\n")
-                    run.stdin.flush()
-                    if m.get("done"):
-                        break
-            except BaseException:
-                run.kill()
-                raise
-            finally:
-                watch.cancel()
-                if away:
-                    away()
-                run.wait(timeout=60)
-            drain.join(timeout=10)
+                    run.wait(timeout=60)
+                    drain.join(timeout=10)
             self.assertEqual(run.returncode, 0, f"the page didn't run in Node: {''.join(errors)[-3000:]}")
         return got
 
@@ -356,6 +356,21 @@ class SquadPage(PageCase, unittest.TestCase):
         got = self.run_page([made, clean])
         self.assertEqual(self.problems(got, "join", "join clean", ["Helmet paint"], also=[his]), [])
         self.assertEqual(self.warned(got, "join clean", [his]), [])
+
+    def test_an_alpha_picture_gone_from_the_squad_s_blender_folder_is_named_on_the_page(self):
+        """Soldier 5 sent back with his own material, but its alpha picture (in the squad's Blender folder, as the
+        squad's opening wrote it) taken out before the Bring back: rusemod.gltf.with_alpha gives it the plain 144 and
+        says so, and squadblender drops that word. Fails on fddc462a: nothing on the page names his material."""
+        def send(gone):
+            def go(t, his):
+                t.blender_sends({**t.figures, "5": sb.glb_from(b"PNG-red", his)})
+                if gone:
+                    Path(next(s for s in t.manifest()["soldiers"] if s["id"] == "5")["alpha"][his]).unlink()
+            return go
+        his = self.material()
+        got = self.run_page([self.case("gone", send(True)), self.case("gone clean", send(False))])
+        self.assertEqual(self.problems(got, "gone", "gone clean", [his]), [])
+        self.assertEqual(self.warned(got, "gone clean", [his]), [])
 
     def test_objects_blender_sent_on_no_soldier_are_named_on_the_page(self):
         """An object Blender sent on no soldier ("My Cube": on no soldier's bones or collection) isn't brought back:
