@@ -171,6 +171,65 @@ class HisReadme(unittest.TestCase):
         self.assertEqual(package.cut_shown("C:\\a\\x.glb)", "x.glb)"), "C:\\a\\x.glb \u2192 x.glb")
         self.assertEqual(package.cut_shown("C:\\a\\tank (2).glb", "tank (2).glb"), "C:\\a\\tank (2).glb \u2192 tank (2).glb")
 
+    def test_a_path_that_ends_at_a_user_s_own_folder_goes_whole(self):
+        """The owner, 2026-11-13, to "A path that ends at the user folder, such as "C:\\Users\\Jane Doe", keeps the
+        user name. Take those paths out completely?": "Probably take the username path out". On e9a092c3 each of these
+        kept the user's name ("Made on Jane Doe by me."). Each answer is written out here by hand."""
+        for text, want, gone in (
+                ("Made on C:\\Users\\Jane Doe by me.", "Made on  by me.", "C:\\Users\\Jane Doe"),
+                ("Made on C:\\Users\\Jane Doe.", "Made on .", "C:\\Users\\Jane Doe"),
+                ("Made on C:\\Users\\jane, then more", "Made on , then more", "C:\\Users\\jane"),
+                ("D:/Users/Jane Q Doe is mine", " is mine", "D:/Users/Jane Q Doe"),
+                ("c:\\users\\JANE DOE and Bob", " and Bob", "c:\\users\\JANE DOE"),
+                ("C:\\Users\\Jane Doe\\ and more", " and more", "C:\\Users\\Jane Doe\\"),     # (its slash after it)
+                ('Set "C:\\Users\\jane doe" there', 'Set "" there', "C:\\Users\\jane doe"),    # (in quotes: to them)
+                ("[home](C:\\Users\\Jane Doe)", "[home]()", "C:\\Users\\Jane Doe"),
+                ("`C:\\Users\\jane doe`", "``", "C:\\Users\\jane doe"),
+                ("(see C:\\Users\\Jane Doe)", "(see )", "C:\\Users\\Jane Doe"),
+                ("\\\\server\\Users\\jane is shared", " is shared", "\\\\server\\Users\\jane"),   # a server's share
+                ("\\\\?\\C:\\Users\\Jane Doe", "", "\\\\?\\C:\\Users\\Jane Doe"),
+                ("file:///C:/Users/Jane%20Doe", "", "file:///C:/Users/Jane%20Doe"),
+                ("C:\\\\Users\\\\jane", "", "C:\\\\Users\\\\jane"),
+                ("C:\\Documents and Settings\\Jane Doe", "", "C:\\Documents and Settings\\Jane Doe"),
+                ("/var/home/jane", "", "/var/home/jane"), ("see /home/jane", "see ", "/home/jane"),
+                ("/usr/home/jane", "", "/usr/home/jane"), ("file:///home/jane", "", "file:///home/jane"),
+                ("file://server/Users/jane", "", "file://server/Users/jane"),
+                ("%SystemDrive%\\Users\\jane", "", "%SystemDrive%\\Users\\jane"),
+                ("D:\\Users\\Mary Ann Smith-Jones and more", " and more", "D:\\Users\\Mary Ann Smith-Jones"),
+                ("C:\\Users\\Jane!", "!", "C:\\Users\\Jane"),
+                ("C:\\Users\\jsmith.CONTOSO is mine", " is mine", "C:\\Users\\jsmith.CONTOSO"),
+                ("C:\\Users\\Иван Петров\nnext line", "\nnext line", "C:\\Users\\Иван Петров")):
+            self.assertEqual(package.paths_cut(text), (want, [(gone, "")]), text)
+        self.assertEqual(package.paths_cut("/home/jane and /Users/jane"), (" and ", [("/home/jane", ""),
+                                                                                   ("/Users/jane", "")]))
+
+    def test_a_user_s_name_known_exactly_goes_whole(self):
+        """A user's name in small letters with a space: known from this PC's own home folder (pack's), or from the same
+        text writing it with a slash after it; else only its first word is sure to be the name (the rest stays: the
+        modder's words are never guessed away)."""
+        text = "Made on C:\\Users\\kim lee by me"
+        self.assertEqual(package.paths_cut(text, ("kim lee",)), ("Made on  by me", [("C:\\Users\\kim lee", "")]))
+        self.assertEqual(package.paths_cut(text), ("Made on  lee by me", [("C:\\Users\\kim", "")]))
+        self.assertEqual(package.paths_cut("C:\\Users\\kim lee\\x.glb and C:\\Users\\kim lee too"),
+                         ("x.glb and  too", [("C:\\Users\\kim lee\\x.glb", "x.glb"), ("C:\\Users\\kim lee", "")]))
+        self.assertEqual(package.user_of("C:\\Users\\kim lee\\AppData\\Local\\RUSE Mod Platform"), "kim lee")
+        self.assertEqual(package.user_of("/home/kim"), "kim")
+        self.assertIsNone(package.user_of("D:\\Games\\RUSE"))
+
+    def test_a_path_past_a_user_s_folder_and_what_names_no_user_stay_as_before(self):
+        """The legitimate cases that must keep working: a path that goes on past the user's folder is cut to its own
+        name (the user's name was one of its folders); a folder called users or home that isn't where a system keeps
+        its users' folders is any folder, its file's name kept ("cut to file name"); what names no folder stays."""
+        for text, want in (("C:\\Users\\Jane Doe\\Desktop\\tank.glb", "tank.glb"), ("/home/jane/mods", "mods"),
+                           ("Made on C:\\Users\\Jane Doe\\AppData\\Local\\RUSE Mod Platform\\mods\\cavalry by me.",
+                            "Made on cavalry by me."),
+                           ("D:\\Mods\\users\\list.txt", "list.txt"), ("C:\\Mods\\home\\tank.glb", "tank.glb"),
+                           ("C:\\Mods\\home\\ and", "home\\ and"), ("~/home/x.glb", "x.glb")):
+            self.assertEqual(package.paths_cut(text)[0], want, text)
+        for text in ("C:\\Users", "C:\\Users\\ is where", "/home", "the /home/ folder", "Join /r/ruse today",
+                     "/opt/x.glb", "and/or", "~/x.glb"):
+            self.assertEqual(package.paths_cut(text), (text, []), text)
+
     def test_which_files_are_his_readmes(self):
         for name in ("README.md", "readme.txt", "files/docs/README", "src/README-fr.md", "maps/X/Readme_old.TXT",
                      "README.en.md", "readme"):
@@ -388,6 +447,24 @@ class Packing(unittest.TestCase):
         for rel in readmes:                                  # (his own files as he wrote them)
             self.assertEqual(self.text(rel), readmes[rel], rel)
 
+    def test_his_readme_s_paths_to_a_user_s_own_folder_go_whole(self):
+        """pack: a README path that ends at a user's own folder goes whole (the owner, 2026-11-13: "Probably take the
+        username path out"), this PC's user's name known exactly from its home folder (`home`); `cuts` lists each, its
+        name "", beside a path cut to its name as before; his README in the mod as he wrote it."""
+        mine = "C:\\Users\\kim lee\\AppData\\Local\\RUSE Mod Platform"
+        readme = ("Made on C:\\Users\\Jane Doe by me, on C:\\Users\\kim lee too.\n"
+                  "From C:\\models\\tank.glb, and docs\\turret.md tells how.\n")
+        self.write("README.md", readme)
+        cuts = {}
+        out = package.pack(self.mod, self.root / "out", cuts=cuts, home=mine)
+        self.assertEqual(cuts, {"README.md": [("C:\\Users\\Jane Doe", ""), ("C:\\Users\\kim lee", ""),
+                                              ("C:\\models\\tank.glb,", "tank.glb,")]})
+        got = members(out)["README.md"].decode("utf-8")
+        self.assertEqual(got.splitlines(), ["Made on  by me, on  too.", "From tank.glb, and docs\\turret.md tells how."])
+        for name in ("Jane", "Doe", "kim", "lee", "Users"):
+            self.assertNotIn(name, got, name)
+        self.assertEqual(self.text("README.md").decode("utf-8").splitlines(), readme.splitlines())
+
     def test_a_record_from_any_system_names_only_its_file(self):
         """F1 of the export recheck, as a class: the record's "from" is the file's own name wherever the folder was
         (no list of known folders), its other bytes as they were."""
@@ -554,6 +631,33 @@ class OnTheMadeUpGame(WithMod):
                          ["In der exportierten Datei ist jeder Ordnerpfad in diesen README-Dateien von Ihnen auf seinen "
                           "eigenen Namen gekürzt, jedes andere Wort so, wie Sie es geschrieben haben; die Dateien in "
                           f"Ihrem Mod bleiben, wie sie sind: README.md ({PC}\\models\\tank.glb \u2192 tank.glb)."])
+
+    def test_export_says_which_paths_to_a_user_s_own_folder_it_took_out(self):
+        """Export's list of cuts says a path that ends at a user's own folder was taken out completely (a line of its
+        own), in his language; a path cut to its name keeps its own line, as before."""
+        folder = Path(self.api.new_mod("Shared")["current"])
+        readme = "Made on C:\\Users\\Jane Doe by me.\nFrom C:\\models\\tank.glb.\n"
+        (folder / "README.md").write_bytes(readme.encode("utf-8"))
+        self.api._game = lambda: None                        # (packed without a build: what's packed is checked)
+        with mock.patch("pathlib.Path.home", return_value=Path(PC)):
+            view = finished(self.api, self.api.export_mod("1.0.0", "a modder", "")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.assertEqual(members(Path(view["result"]["path"]))["README.md"], b"Made on  by me.\nFrom tank.glb.\n")
+        said = [ln for ln in view["lines"] if ln.startswith("In the exported file, each")]
+        self.assertEqual(said, [
+            "In the exported file, each folder path in these README files of yours is cut to its own name, every other "
+            "word as you wrote it; the files in your mod stay as they are: README.md (C:\\models\\tank.glb \u2192 "
+            "tank.glb).",
+            "In the exported file, each path in these README files of yours that ends at a user's own folder, and so "
+            "names the user, is taken out completely; every other word stays as you wrote it, and the files in your "
+            "mod stay as they are: README.md (C:\\Users\\Jane Doe)."])
+        self.api.set_pref("lang", "ger")
+        lines = self.api.job(view["id"])["lines"]
+        self.assertEqual([ln for ln in lines if ln.startswith("In der exportierten Datei ist jeder Pfad")],
+                         ["In der exportierten Datei ist jeder Pfad in diesen README-Dateien von Ihnen, der am eigenen "
+                          "Ordner eines Benutzers endet und so den Benutzer nennt, ganz entfernt; jedes andere Wort "
+                          "bleibt so, wie Sie es geschrieben haben, und die Dateien in Ihrem Mod bleiben, wie sie "
+                          "sind: README.md (C:\\Users\\Jane Doe)."])
 
     def test_another_player_s_studio_knows_its_era_units_are_in_the_mod(self):
         _folder, _record, export, _view = self.exported()

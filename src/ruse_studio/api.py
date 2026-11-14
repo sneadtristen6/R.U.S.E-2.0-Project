@@ -10548,11 +10548,20 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             if imports:
                 say(f"In the exported file, these map import records name only the folders each map was made from, not "
                     f"where they are on your PC; nothing else in them changed: {', '.join(imports)}.")
-            if cuts:
+            named = {member: [(p, n) for p, n in pairs if n] for member, pairs in cuts.items()}
+            if any(named.values()):
                 said = "; ".join(f"{member} ({', '.join(package.cut_shown(p, n) for p, n in pairs)})"
-                                 for member, pairs in cuts.items())
+                                 for member, pairs in named.items() if pairs)
                 say(f"In the exported file, each folder path in these README files of yours is cut to its own name, "
                     f"every other word as you wrote it; the files in your mod stay as they are: {said}.")
+            # (a path that ends at a user's own folder, taken out whole: the owner, 2026-11-13, "Probably take the
+            # username path out"; package.paths_cut gives it the name "")
+            gone = {member: [p for p, n in pairs if not n] for member, pairs in cuts.items()}
+            if any(gone.values()):
+                said = "; ".join(f"{member} ({', '.join(paths)})" for member, paths in gone.items() if paths)
+                say(f"In the exported file, each path in these README files of yours that ends at a user's own folder, "
+                    f"and so names the user, is taken out completely; every other word stays as you wrote it, and the "
+                    f"files in your mod stay as they are: {said}.")
             if home_in:
                 say(f"These files of the mod name your PC's home folder ({package.home_shown()}) and go out as they are, "
                     f"since Export never changes what you wrote: change them in the mod if that shouldn't be shared: "
