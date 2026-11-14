@@ -93,12 +93,11 @@ class OneButton(ModelScenario):
         self.assertEqual((got["kept"]["paint"], self.paint()), (["Paint"], self.first))
         self.assert_builds()
 
-    @unittest.expectedFailure
     def test_m3_paint_unticked_on_a_later_trip_keeps_the_repaint_brought_back(self):
-        """M-3 (the paint-unticked loss; PROPOSED FIX on work/0920c-paint-unticked): repainted red and brought back,
-        then a trip with Its paint unticked, repainted blue there: the tank is back to the paint it was imported with,
-        (90, 110, 60), and the answer says its paint was kept ("kept": {"paint": ["Paint"]}). What should happen: it
-        stays red, the paint it has now."""
+        """M-3 (the paint-unticked loss): repainted red and brought back, then a trip with Its paint unticked, repainted
+        blue there: the tank went back to the paint it was imported with, (90, 110, 60), and the answer said its paint
+        was kept ("kept": {"paint": ["Paint"]}) (work/0920c-scen-models eccd02d9). PROPOSED FIX on
+        work/0920c-paint-unticked (4680a5eb): it stays red, the paint it has now."""
         self.opens()
         self.sends(RED)
         self.page.blender_back(self.unit)
