@@ -64,6 +64,7 @@ from rusemod.players import PlayersError
 from rusemod.roadnet import RoadNetError
 from rusemod.terrain import LODS, ground_png, map_list, pack_file, terrain
 from rusemod.webui import Job, job_view, pick_file, pick_folder, pick_save
+from ruse_mod_engine.mod_project import _WIN_RESERVED   # names Windows keeps for its devices (CON, NUL, COM1...)
 
 from .edits import REMOVED, EditsFileError, Link, Literal, ModEdits, NewUnit, plain_name
 from .music import MusicCalls
@@ -606,7 +607,7 @@ def _pack_name(name: str, taken: set) -> str:
         base = "NewMap" + base
     base = base[:36]
     out, n = base, 2
-    while out.lower() in taken:
+    while out.lower() in taken or out.upper() in _WIN_RESERVED:   # (a folder called Nul can't be made on Windows)
         out, n = f"{base}{n}", n + 1
     return out
 
@@ -5998,7 +5999,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         # where they go now and where they were before (_roots)
         others = self._roots(next(k for k in self.KINDS if k != kind))
         folder, n = base / slug, 2
-        while folder.exists() or any((root / folder.name).exists() for root in others):
+        # (a name Windows keeps for its devices, like nul, is never a folder: before the mods folder is made, exists()
+        # can't tell)
+        while folder.exists() or folder.name.upper() in _WIN_RESERVED or \
+                any((root / folder.name).exists() for root in others):
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."

@@ -214,21 +214,20 @@ class Names(MapGame):
 
     # FINDING F1: a map called "Nul" (Windows' NUL device name) can't be made. As the first map (no map changes yet)
     # the page is told "<home>\maps\nul\maps isn't there."; in a map project already made, Duplicate map stops on its
-    # pack folder maps/Nul the same way. The name is a fine one for the menus.
-    @unittest.expectedFailure
+    # pack folder maps/Nul the same way. The name is a fine one for the menus. (PROPOSED FIX: such a name is taken as
+    # taken, the folders get nul-2 and Nul2.)
     def test_f1_a_first_map_called_nul_is_made(self):
         self.assertEqual(page_said(self.api, "duplicate_map", BLITZ, "Nul"), "")
         pack = next(m["pack"] for m in self.api.maps()["maps"] if m["pack"] != BLITZ)
         self.assertTrue((self.map_folder(pack) / "map.toml").is_file())
+        self.assertEqual(self.toml(pack)["name"], "Nul")   # the menus' name as typed
         self.assertBuilds()
 
-    @unittest.expectedFailure
     def test_f1_a_map_called_nul_in_a_map_project_is_made(self):
         self.api.new_mod("My maps", "map")
         self.assertEqual(page_said(self.api, "duplicate_map", BLITZ, "Nul"), "")
         self.assertBuilds()
 
-    @unittest.expectedFailure
     def test_f1_the_first_map_changes_called_nul_are_made(self):
         self.assertEqual(page_said(self.api, "new_mod", "Nul", "map"), "")  # (no maps folder made yet)
         self.assertTrue((self.map_dir() / "mod.toml").is_file())
