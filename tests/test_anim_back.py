@@ -13,6 +13,7 @@ import keeps (rusemod.rig.kept_clips). On the game (RUSE_GAME, the Studio's inde
 files, as tests/test_horse_squad.py; skipped without them): the Generic Horse added through the Studio's own Add and
 taken through the one Blender button's Open in Blender and Bring my changes back, the mod's files judged byte for
 byte. The real Blender's walks are scratch/release-0920/agents/anims/animwalk.py's."""
+import json
 import math
 import os
 import shutil
@@ -393,3 +394,324 @@ class OnTheGame(unittest.TestCase):
         self.assertIsNone((back.get("model") or {}).get("not_kept"))
         after = self.animation_files()
         self.assertEqual([k for k in before if after[k] != before[k]], [])
+
+
+class Open:
+    """A stand-in for the Blender the Studio started: open until it is closed."""
+
+    def __init__(self):
+        self.running = True
+
+    def poll(self):
+        return None if self.running else 0
+
+
+STAND, SPINE2 = "hr_b_stand", "horse spine2"
+TICKS = {"model": True, "kind": "", "bones": True, "paint": True}
+
+
+@unittest.skipUnless(ON_THE_GAME, WHY_SKIPPED)
+class OpenedAgain(unittest.TestCase):
+    """The review of 278fe767 (scratch/release-0920/agents/reports-v2/review-anims.json) and what it found of the same
+    kind: nothing of the modder's lost on the way through the model's own Blender, by how Blender is opened again, by
+    a Studio change made while it is open, by a sending set against animations it wasn't made from, by Its bones
+    unticked, or by one clip file that can't be read. The Generic Horse through the one Blender button with Blender's
+    stand-in, as OnTheGame; each failed on 278fe767's code (the controls pass there too)."""
+
+    def setUp(self):
+        from ruse_studio.api import StudioApi
+        self.home = Path(tempfile.mkdtemp(prefix="anim-again-", dir=TMP))
+        self.addCleanup(shutil.rmtree, self.home, True)
+        self.api = StudioApi(index_path=INDEX, game_dir=GAME, home=self.home, instances=self.home / "copies")
+        self.mod = Path(self.api.new_mod("Mine")["current"])
+        with mock.patch.dict(sys.modules, {horse_squad.BUILDER: stand_in(RIFLE, HEAVY)}):
+            view = finished(self.api, self.api.horse_squad_add(0, 8, "Generic Horse", 5, None, None, None, "new")["job"])
+        self.assertEqual(view["state"], "done", view.get("message"))
+        self.address = view["result"]["address"]
+        self.tail = self.address.rsplit("/", 1)[-1]
+        self.api._blender = lambda: Path("C:/b/blender.exe")
+        self.run_file, self.stand_file = f"own/{self.tail}/{RUN}.baf", f"own/{self.tail}/{STAND}.baf"
+
+    def files(self) -> dict:
+        base = self.mod / "files" / "anim"
+        return {p.relative_to(base).as_posix(): p.read_bytes() for p in sorted(base.rglob("*")) if p.is_file()}
+
+    def open(self, proc=None, ticks=None, direct: bool = False) -> dict:
+        """The one Blender button's Open in Blender (`ticks`, everything ticked unless given), or (`direct`) the
+        Model row's own Change it in Blender (model_blender): what Blender was handed, and the session its words carry."""
+        handed = {}
+
+        def started(b, model, send, words):
+            handed.update(model=Path(model), send=Path(send),
+                          session=json.loads(Path(words).read_text(encoding="utf-8")).get("session"))
+            return proc or Closed()
+        with mock.patch("rusemod.blender.open_model_to_change", started):
+            if direct:
+                self.api.model_blender(self.address, "us")
+            else:
+                self.api.blender_open(self.address, ticks or TICKS, "us")
+        return handed
+
+    @staticmethod
+    def send(scene: bytes, to: Path, change=None, session: str | None = None, bone_moved: float = 0.0) -> bytes:
+        """Blender's stand-in sending the scene `scene` (a file as Blender has it) to `to`, its bones and animations in
+        orders of its own, as Blender 4.5 does; `change`: Blenderish.send's; `session`: what Send writes beside it
+        (rusemod.blender_model.say_about), the opening's session; `bone_moved`: the horse's spine1 moved where it rests
+        by this much (its Edit Mode)."""
+        blender = Blenderish(scene)
+        joints = len(blender.doc["skins"][0]["joints"])
+        doc, binary = modelin.glb_document(blender.send(change=change, order=list(reversed(range(joints)))))
+        doc["animations"].sort(key=lambda a: a["name"])
+        if bone_moved:
+            node = next(j for j in doc["skins"][0]["joints"] if doc["nodes"][j]["name"] == HORSE_SPINE)
+            doc["nodes"][node]["translation"][1] += bone_moved
+        data = gltf_bytes(doc, binary)
+        to.write_bytes(data)
+        if session is not None:
+            import hashlib
+            to.with_name(to.name + ".json").write_text(json.dumps(
+                {"glb": hashlib.sha256(data).hexdigest(), "fps": 30.0, "nla": [], "stretch": None,
+                 "session": session}), encoding="utf-8")
+        return data
+
+    def back(self, direct: bool = False) -> dict:
+        """Bring my changes back (`direct`: the Model row's own Bring back the model), an open Blender's stand-in having
+        sent already."""
+        with mock.patch("rusemod.blender.ask_to_send", lambda send, wait: send):
+            if direct:
+                return self.api.model_blender_back(self.address, 1.0)
+            return self.api.blender_back(self.address, "us")
+
+    def decoy(self, name: str, bone: str, degrees: float) -> bytes:
+        """`name` changed in RUSE Decoy's store (files/anim/own/<unit>/, its Only this unit): `bone` turned."""
+        own = anim.own_animations(self.mod, self.tail)["animations"]
+        folder = self.mod / anim.OWN / self.tail
+        mine = {n: (folder / f).read_bytes() for n, f in own.items()}
+        mine[name] = baf.build(baf.with_bone(baf.parse(mine[name]), bone, turn=("x", degrees)))
+        anim.set_animations(self.mod, self.tail, mine)
+        return mine[name]
+
+    def turned(self, a: bytes, b: bytes, bone: str) -> float:
+        """The most, in degrees, `bone`'s turn in clip `a` is off its turn in clip `b`, over their frames."""
+        ta, tb = tracks_of(a)[bone], tracks_of(b)[bone]
+        n = max(baf.parse(a).frames, 2)
+        worst = 0.0
+        for k in range(n):
+            qa, qb = baf.sample(ta, k / (n - 1))[1], baf.sample(tb, k / (n - 1))[1]
+            worst = max(worst, math.degrees(2 * math.acos(min(1.0, abs(sum(x * y for x, y in zip(qa, qb)))))))
+        return worst
+
+    def opened_clip(self, file: Path, name: str) -> bytes:
+        """An animation as the file Blender opened has it, the way an import takes it in."""
+        _r, _record, clips = read_back(file.read_bytes())
+        return clips[name]
+
+    # --- the review's first finding: Blender opened again on a sending never brought back ---
+    def test_a_sending_never_brought_back_is_where_blender_opens_again(self):
+        """The modder brings the run's change back while Blender is open, goes on there (the stand's spine1 turned
+        too), clicks Send and closes Blender: that sending was never brought back. Opened again, Blender opens it with
+        the stand's change (278fe767 put the mod's animations in its place, the stand as before the trip, without a
+        word), and sent back untouched the stand's change comes in, the run as its first Bring back left it, every other
+        file byte for byte."""
+        before = self.files()
+        proc = Open()
+        handed = self.open(proc)
+        first = self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        mid = self.files()
+        self.assertEqual([k for k in before if mid[k] != before[k]], [self.run_file])
+        self.send(first, handed["send"], change=(STAND, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        proc.running = False
+        again = self.open()
+        self.assertGreater(self.turned(self.opened_clip(again["model"], STAND), before[self.stand_file], HORSE_SPINE),
+                           9.0)
+        self.send(again["model"].read_bytes(), again["send"])
+        back = self.back()
+        after = self.files()
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        self.assertGreater(self.turned(after[self.stand_file], before[self.stand_file], HORSE_SPINE), 9.0)
+        self.assertEqual(after[self.run_file], mid[self.run_file])
+        self.assertEqual([k for k in before if after[k] != before[k]], [self.run_file, self.stand_file])
+        got, was = tracks_of(after[self.stand_file]), tracks_of(before[self.stand_file])
+        self.assertEqual([b for b in was if got[b] != was[b]], [HORSE_SPINE])
+
+    def test_opened_twice_without_a_bring_back_keeps_the_first_sending_s_change(self):
+        """The Model row's own Change it in Blender (drawn when a squad's card can't be read) clicked again before any
+        Bring back: Blender opens what it sent, the run's change in it, and that change comes in with the next Bring
+        back (278fe767 opened the mod's run in its place: the change was gone)."""
+        before = self.files()
+        handed = self.open(direct=True)
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        again = self.open(direct=True)
+        self.send(again["model"].read_bytes(), again["send"])
+        self.back(direct=True)
+        after = self.files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [self.run_file])
+        self.assertGreater(self.turned(after[self.run_file], before[self.run_file], HORSE_SPINE), 9.0)
+
+    def test_a_change_undone_in_blender_after_its_bring_back_stays_undone_when_opened_again(self):
+        """The run's change brought back, then undone in Blender and sent (never brought back), Blender closed: opened
+        again, Blender opens the run as it was undone there, and sent back untouched the run is as before the trip, byte
+        for byte (278fe767 opened the mod's run, with the change, in its place: the undo was gone)."""
+        before = self.files()
+        proc = Open()
+        handed = self.open(proc)
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        self.send(handed["model"].read_bytes(), handed["send"])     # (undone there: the scene as it opened)
+        proc.running = False
+        again = self.open()
+        self.assertLess(self.turned(self.opened_clip(again["model"], RUN), before[self.run_file], HORSE_SPINE), 0.1)
+        self.send(again["model"].read_bytes(), again["send"])
+        self.back()
+        after = self.files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [])
+
+    def test_control_a_sending_brought_back_opens_again_with_the_mod_s_animations_as_they_are_now(self):
+        """The control: a sending brought back is in the mod, so Blender opened again starts from it with the mod's
+        animations as they are now, a RUSE Decoy change made since too (the walk's spine2 turned); sent back
+        untouched, every file stays as it was after the first trip and that change."""
+        handed = self.open()
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        walk = self.decoy("hr_b_walk", SPINE2, 25.0)
+        mid = self.files()
+        again = self.open()
+        self.assertLess(self.turned(self.opened_clip(again["model"], "hr_b_walk"), walk, SPINE2), 0.1)
+        self.send(again["model"].read_bytes(), again["send"])
+        back = self.back()
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        after = self.files()
+        self.assertEqual([k for k in mid if after[k] != mid[k]], [])
+
+    # --- its second finding: a RUSE Decoy change made while the model's Blender is open ---
+    def test_a_ruse_decoy_change_made_while_blender_is_open_stays_when_it_comes_back_untouched(self):
+        """Open in Blender; the run changed in RUSE Decoy while that Blender is open (its spine2 turned 25 degrees);
+        sent back with nothing changed there: the run stays as RUSE Decoy made it, byte for byte, nothing named lost,
+        and the answer names it as kept the Studio's ("differs", as RUSE Decoy's own Bring back says it); a Resize after
+        keeps it too (278fe767 put the run that went out back over it and named it lost)."""
+        handed = self.open(Open())
+        self.decoy(RUN, SPINE2, 25.0)
+        before = self.files()
+        self.send(handed["model"].read_bytes(), handed["send"])
+        back = self.back()
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        self.assertEqual(back.get("differs"), [RUN])
+        self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+        self.api.model_resize(self.address, 1.0)
+        after = self.files()
+        self.assertEqual([k for k in before if after.get(k) != before[k]], [])
+
+    def test_control_a_change_made_in_both_is_blender_s_and_the_ruse_decoy_change_named(self):
+        """The control: the run changed in RUSE Decoy while Blender is open and changed in Blender too (its spine1):
+        Blender's comes in and the RUSE Decoy change is named, as before (Changes to these animations weren't kept)."""
+        handed = self.open(Open())
+        decoyed = self.decoy(RUN, SPINE2, 25.0)
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        back = self.back()
+        self.assertEqual(((back.get("model") or {}).get("not_kept") or {}).get("animations"), [RUN])
+        self.assertFalse(back.get("differs"))
+        after = self.files()
+        self.assertGreater(self.turned(after[self.run_file], decoyed, SPINE2), 20.0)
+
+    def test_control_a_change_brought_back_then_undone_in_the_same_blender_is_undone(self):
+        """The control: the run's change brought back while Blender is open, then undone there and sent: the Bring back
+        puts the run back as it went out (Blender's undo), never kept as the Studio's."""
+        before = self.files()
+        handed = self.open(Open())
+        self.send(handed["model"].read_bytes(), handed["send"], change=(RUN, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        self.send(handed["model"].read_bytes(), handed["send"])
+        back = self.back()
+        self.assertFalse(back.get("differs"))
+        self.assertIsNone((back.get("model") or {}).get("not_kept"))
+        after = self.files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [])
+
+    # --- its third suspicion: a sending set against animations it wasn't made from ---
+    def test_a_brought_back_sending_is_never_set_against_what_went_out_after_it(self):
+        """Brought back, Blender closed, the run changed in RUSE Decoy, Blender opened again and never sending (it
+        didn't start, or didn't answer): Bring back says nothing came back and the run stays as RUSE Decoy made it
+        (278fe767 set the old sending against the new run: RUSE Decoy's spine2 put back without a word)."""
+        from ruse_studio.api import StudioError
+        handed = self.open()
+        self.send(handed["model"].read_bytes(), handed["send"], change=(STAND, HORSE_SPINE, baf.axis_angle("x", 10.0)))
+        self.back()
+        self.decoy(RUN, SPINE2, 25.0)
+        before = self.files()
+        again = self.open()
+        self.assertFalse(again["send"].is_file())     # (brought back: in the mod, taken out of the Blender folder)
+        with self.assertRaises(StudioError):
+            self.back()
+        self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+
+    def test_what_a_blender_opened_before_the_last_one_sends_is_refused(self):
+        """A Blender left open when the Studio started again (the one button then offers Open in Blender): opened again,
+        then the old Blender sends. Its sending is refused, nothing written (278fe767 set it against what the new
+        opening sent: the run's RUSE Decoy change made between them put back without a word); the Blender opened last
+        sends and is taken in."""
+        from ruse_studio.api import StudioError
+        handed = self.open(Open())
+        old = self.send(handed["model"].read_bytes(), handed["send"], change=(STAND, HORSE_SPINE, baf.axis_angle("x", 10.0)),
+                        session=handed["session"])
+        self.back()
+        self.decoy(RUN, SPINE2, 25.0)
+        self.api._blenders.clear()        # (the Studio started again: it knows of no Blender)
+        again = self.open()
+        self.assertNotEqual(again["session"], handed["session"])
+        before = self.files()
+        self.send(old, handed["send"], session=handed["session"])
+        with self.assertRaises(StudioError) as said:
+            self.back()
+        self.assertIn("opened before the one opened last", str(said.exception))
+        self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+        self.send(again["model"].read_bytes(), again["send"], session=again["session"])
+        self.back()
+        self.assertEqual([k for k in before if self.files()[k] != before[k]], [])
+
+    # --- its second suspicion: Its bones unticked set against the first opening's file ---
+    def test_bones_unticked_after_a_bone_moved_and_brought_back_keeps_it_and_every_animation(self):
+        """The horse's spine1 moved where it rests in Blender and brought back (Its bones ticked); opened again with Its
+        bones unticked and sent back untouched: the bones stay as the mod has them, the moved one too, and every
+        animation file byte for byte (278fe767 put back the first opening's bones: the spine moved back and all 25
+        files made again on them)."""
+        handed = self.open()
+        self.send(handed["model"].read_bytes(), handed["send"], bone_moved=0.05)
+        self.back()
+        mid = self.files()
+        record = baf.parse(mid[self.run_file]).skeleton
+        again = self.open(ticks={**TICKS, "bones": False})
+        self.send(again["model"].read_bytes(), again["send"])
+        back = self.back()
+        self.assertIn((back.get("kept") or {}).get("bones"), ("kept", "same"))
+        after = self.files()
+        self.assertEqual([k for k in mid if after[k] != mid[k]], [])
+        self.assertEqual(baf.parse(after[self.run_file]).skeleton, record)
+
+    def test_control_bones_unticked_on_the_first_trip_keeps_everything(self):
+        """The control: Its bones unticked on the first trip, nothing changed: every file byte for byte."""
+        before = self.files()
+        handed = self.open(ticks={**TICKS, "bones": False})
+        self.send(handed["model"].read_bytes(), handed["send"])
+        self.back()
+        after = self.files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [])
+
+    # --- its fifth suspicion: one clip file that can't be read ---
+    def test_one_clip_file_that_cant_be_read_leaves_the_others_byte_for_byte(self):
+        """One of the unit's clip files damaged (not a clip any more): an untouched trip takes the model's own file's
+        animation in its place and names it, as before, and every other file comes back byte for byte (278fe767 sent
+        every animation as the model's file carries it then, and all 25 came back rewritten)."""
+        damaged = f"own/{self.tail}/hr_t_stand.baf"
+        (self.mod / "files" / "anim" / damaged).write_bytes(b"not a clip")
+        before = self.files()
+        back = self.trip_untouched()
+        after = self.files()
+        self.assertEqual([k for k in before if after[k] != before[k]], [damaged])
+        self.assertIn("hr_t_stand", ((back.get("model") or {}).get("not_kept") or {}).get("animations") or [])
+        baf.check(baf.parse(after[damaged]))
+
+    def trip_untouched(self) -> dict:
+        handed = self.open()
+        self.send(handed["model"].read_bytes(), handed["send"])
+        return self.back()

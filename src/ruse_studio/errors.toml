@@ -6108,3 +6108,18 @@ cz = "Nejdřív otevři tuto jednotku v Blenderu, změň ji tam, pak Přenést m
 jpn = "まずこのユニットをBlenderで開き、そこで変更してから「変更を戻す」を押してください。"
 sc = "请先在 Blender 中打开这个单位，在那里修改，然后点击“带回我的修改”。"
 fa = "اول این یگان را در Blender باز کنید، همان‌جا تغییرش دهید، بعد «بازگرداندن تغییراتم»."
+
+# Item 45's fix (anims, 2026-11-13): Bring back the model refuses what a Blender opened before the last one sent
+# (ruse_studio.modelblender.model_blender_back)
+[ebf49ea9da9]
+us = "What came back was sent by a Blender opened before the one opened last, so it can't be taken in: close that Blender, then in the one opened last click Send to the R.U.S.E. Studio and bring your changes back."
+fr = "Ce qui est revenu a été envoyé par un Blender ouvert avant celui ouvert en dernier, donc il ne peut pas être pris : fermez ce Blender, puis dans celui ouvert en dernier cliquez sur Envoyer au R.U.S.E. Studio et ramenez vos changements."
+ger = "Was zurückkam, wurde von einem Blender gesendet, das vor dem zuletzt geöffneten geöffnet wurde, also kann es nicht übernommen werden: Schließe dieses Blender, klicke dann in dem zuletzt geöffneten auf An das R.U.S.E. Studio senden und hole deine Änderungen zurück."
+ita = "Ciò che è tornato è stato inviato da un Blender aperto prima di quello aperto per ultimo, quindi non può essere preso: chiudi quel Blender, poi in quello aperto per ultimo clicca Invia al R.U.S.E. Studio e riporta le tue modifiche."
+spa = "Lo que volvió lo envió un Blender abierto antes del abierto por último, así que no se puede tomar: cierra ese Blender y, en el abierto por último, pulsa Enviar a R.U.S.E. Studio y trae tus cambios."
+pol = "To, co wróciło, wysłał Blender otwarty przed otwartym ostatnio, więc nie można tego przyjąć: zamknij ten Blender, potem w otwartym ostatnio kliknij Wyślij do R.U.S.E. Studio i przenieś swoje zmiany."
+ru = "То, что вернулось, отправил Blender, открытый раньше открытого последним, поэтому это нельзя взять: закройте тот Blender, затем в открытом последним нажмите «Отправить в R.U.S.E. Studio» и верните изменения."
+cz = "To, co se vrátilo, poslal Blender otevřený před tím otevřeným naposledy, takže to nelze převzít: zavři ten Blender, pak v tom otevřeném naposledy klikni na Poslat do R.U.S.E. Studia a přenes své změny."
+jpn = "戻ってきたものは、最後に開いたBlenderより前に開いたBlenderから送られたため、取り込めません。そのBlenderを閉じ、最後に開いたBlenderで「R.U.S.E. Studioへ送る」を押してから、変更を戻してください。"
+sc = "带回的内容是由最后打开的那个 Blender 之前打开的 Blender 发送的，所以无法收入：请关闭那个 Blender，然后在最后打开的那个中点击“发送到 R.U.S.E. Studio”，再带回你的修改。"
+fa = "آنچه برگشت را Blenderی فرستاده که پیش از آخرین Blender بازشده باز شده بود، پس نمی‌توان آن را گرفت: آن Blender را ببندید، سپس در Blenderی که آخر باز شد روی «ارسال به R.U.S.E. Studio» کلیک کنید و تغییراتتان را بازگردانید."
