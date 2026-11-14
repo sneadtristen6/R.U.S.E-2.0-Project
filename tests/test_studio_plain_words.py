@@ -130,6 +130,30 @@ class CodeNames(WithMod):
         self.assertIn("Panther", self.page.new_unit(M4, "Panther", 10, group="new")["address"])  # (made)
 
 
+class TheStudiosOtherRefusals(Base):
+    """The Studio's own refusals of Ground paint, the Nations tab, RUSE Decoy, the Music tab, flag types and the
+    missions (their own kinds of error, not StudioError): English in every language until now, though in plain words.
+    A few the page can meet without the game, each in another language; the control: English."""
+
+    def test_ground_paint_s_and_the_nations_tab_s_refusals_in_the_studio_s_language(self):
+        self.assertEqual(self.refused("ita", "online_texture", "usgs", "", "lots"),
+                         "La dimensione di una foto è un numero di metri.")
+        self.assertEqual(self.refused("cz", "add_ground_picture", "Mud", "data:image/png;base64,AAAA"),
+                         "Nejprve vyberte nebo vytvořte mod: jeho obrázky se ukládají do něj.")
+        self.assertEqual(self.refused("ru", "nation_words_set", 6, "army", {}),
+                         "У армии Японии в игре нет названия, которое можно изменить.")
+        self.assertEqual(self.refused("fa", "nation_words_set", 6, "motto", {}),
+                         "چیزی به نام 'motto' برای تغییر نیست.")
+
+    def test_control_in_english(self):
+        self.api.set_pref("lang", "us")   # (passed on as it was raised: the words are the same)
+        for call, args, words in (("online_texture", ("usgs", "", "lots"), "A photo's size is a number of metres."),
+                                  ("nation_words_set", (6, "army", {}), "Japan's army has no name to change in the game.")):
+            with self.subTest(call=call), self.assertRaises(Exception) as caught:
+                getattr(self.page, call)(*args)
+            self.assertEqual(str(caught.exception), words)
+
+
 class TheChangesFileBrokenByHand(WithMod):
     """The units scenarios' U-11: the mod's src/studio.rndf broken by hand made the unit page's notice and every
     refusal English in every language (an EditsFileError, which the page never said again). Now its frame is said in

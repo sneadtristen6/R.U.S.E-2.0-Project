@@ -31,12 +31,20 @@ WITHIN = {"The Generic Horse can't be made from your game: {0}":
           # units scenarios' U-12, "[WinError 10061] No connection could be made..." inside English words)
           "the era units list couldn't be loaded ({0})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py",
                                                           {"_why": 0}),
-          "{0} couldn't be downloaded ({1})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py", {"_why": 0})}
+          "{0} couldn't be downloaded ({1})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py", {"_why": 0}),
+          # (and a ground texture's or photo's: groundtex_online.py)
+          "{0} couldn't be loaded ({1})": (Path(__file__).parents[1] / "rusemod" / "mod_index.py", {"_why": 0})}
 # the Studio's other refusals that reach the page whole, said in the player's language like a StudioError: the era
 # units list's and downloads' (era_units.py: a download job's refusal, and why the list couldn't be had), and the mod's
 # changes file broken by hand (edits.py EditsFileError: the units scenarios' U-11, its frame in every language now; the
 # mistake it names inside, the file reader's own words, stays as it came)
-OTHERS = {"EraDownloadError": 0, "EditsFileError": 0}
+OTHERS = {"EraDownloadError": 0, "EditsFileError": 0,
+          # the Studio's own refusals of RUSE Decoy, the Music tab, the Units tab's flag types, Ground paint and its
+          # photos, the Nations tab and the missions: plain words, English in every language until now (the
+          # plain-words job, 2026-11-14); those raised in rusemod's own files (the nations', ground textures' and
+          # missions' readers) stay as they came
+          "DecoyError": 0, "MusicError": 0, "FlagTypeError": 0, "OnlineError": 0, "TextureError": 0,
+          "NationError": 0, "MissionError": 0}
 
 
 def templates_in(paths) -> list[str]:
