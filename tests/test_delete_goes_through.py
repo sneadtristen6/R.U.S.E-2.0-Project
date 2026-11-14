@@ -15,9 +15,10 @@ everything back; a card of no unit that the record doesn't name still stops the 
 the waiting file's place since (the unit made again under its name) is never left out or taken out; a record changed by
 hand names nothing outside the mod's own files.
 
-On e9a092c3's code (run with its src first on the path) every test here fails but the four controls, which pass on
+On e9a092c3's code (run with its src first on the path) every test here fails but the five controls, which pass on
 both:
     test_a_units_toml_that_can_t_be_read_still_stops_it_before_anything_changes
+    test_a_copies_toml_that_can_t_be_read_still_stops_it_before_anything_changes
     test_a_held_units_toml_still_stops_it_everything_put_back_and_nothing_named
     test_a_card_of_no_unit_the_record_doesnt_name_still_stops_the_build
     test_a_plain_delete_leaves_nothing_behind
@@ -233,6 +234,41 @@ class HeldOnAModFolder(unittest.TestCase):
         self.assertEqual(unit_files(self.mod, self.tail), [])
         self.assertFalse((self.mod / ".taking-out").exists())
         self.others_kept()
+
+    def test_every_reader_of_the_build_leaves_its_waiting_file_out(self):
+        """Held: its squad file, its own copy of the model, a soldier's look record and its building look (the readers
+        that read inside a file, mod_squads, mod_copies, mod_game_looks, mod_looks): the build reads none of them and
+        Export packs none, the other unit's all read and packed."""
+        from rusemod.squads import GAME
+        models = self.mod / "files" / "models"
+        for t in (self.tail, self.other):   # (soldier 2 of each wears the game's look: a record mod_game_looks takes)
+            (models / f"{t}@2.json").write_text(json.dumps({"for": "2", "look": GAME}), encoding="utf-8")
+        held = [models / f"{self.tail}.squad.toml", models / f"{self.tail}.copy.toml", models / f"{self.tail}@2.json",
+                self.mod / "files" / "buildings" / self.tail / "building.toml"]
+        for path in held:
+            self.held(path)
+        with quick():
+            ModEdits(self.mod).remove_unit(UNIT)
+        self.assertEqual(sorted(e["path"] for e in record(self.mod)["files"]),
+                         sorted(p.relative_to(self.mod).as_posix() for p in held))
+        info = load_mod(self.mod)[0]
+        self.assertEqual((sorted(info.squads), sorted(info.model_copies), sorted(info.looks), info.squad_game),
+                         ([self.other], [self.other], [self.other], {self.other: [2]}))
+        packed = {p.relative_to(self.mod).as_posix() for p in package.files_of(self.mod)}
+        self.assertEqual(packed & {p.relative_to(self.mod).as_posix() for p in held}, set())
+        self.assertIn(f"files/models/{self.other}.squad.toml", packed)
+        self.assertIn(f"files/buildings/{self.other}/building.toml", packed)
+
+    def test_a_copies_toml_that_can_t_be_read_still_stops_it_before_anything_changes(self):
+        """(Can't be read: not TOML at all, as anim.read_copies reads it. A copies.toml that reads but holds a wrong
+        value, name = 1, never stopped Delete, before or now: the take-out only takes the unit's ticks out of it.)"""
+        self.held(self.card)
+        (self.mod / anim.COPIES).write_text("[copy.\n", encoding="utf-8")
+        before = tree(self.mod)
+        with quick(), self.assertRaises(anim.AnimError):
+            ModEdits(self.mod).remove_unit(UNIT)
+        self.assertEqual(tree(self.mod), before)
+        self.assertFalse((self.mod / ".taking-out").exists())
 
     def test_a_file_let_go_within_the_few_seconds_goes_with_the_rest(self):
         f = self.held(self.card)
