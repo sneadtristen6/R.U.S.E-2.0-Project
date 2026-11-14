@@ -15,6 +15,7 @@ page's own word.
 
 What can't be read from the words alone stays the reviewer's: which page a line is shown on. ALLOWED below says it for
 each line naming the card-less squad's or the repaint box's buttons, from the page's code."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import tomllib
 import unittest

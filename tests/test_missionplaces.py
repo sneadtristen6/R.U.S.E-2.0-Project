@@ -10,6 +10,7 @@ What a mission needs from its start: the zones (TagZoneDetection, found by name 
 conditions on its start-up list (PostInit) watch; the game as sold misses none. What is said: only what the set adds,
 and which change is why (the layout, the script, or the two together); a cluster pointing a chapter at a script that
 watches nothing (as 1 VS 7 AI's does) leaves nothing to miss."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import copy
 import os
 import tempfile

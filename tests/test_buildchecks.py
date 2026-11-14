@@ -13,6 +13,7 @@ so it runs on the code before these checks too: on e9a092c3 the warnings and the
 
 The made-up files (a compiled match script, a layout, the menus, a cluster) are also what tests/test_missionplaces.py
 checks the reading on."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
 import struct
