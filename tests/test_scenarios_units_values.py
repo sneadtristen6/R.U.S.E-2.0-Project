@@ -268,6 +268,39 @@ class TheStudiosOwnFilesBrokenByHand(Player):
                     self.assertNotIn("Invalid initial character", text)
 
 
+class ReadOnlyFiles(Player):
+    """The mod's changes file marked read-only (a mod unzipped by a tool that keeps that mark, or a synced folder): a
+    change, a new unit, a Delete refused in words the player can act on, in every language; nothing lost; once the
+    mark is off, they work."""
+    GAME = "studio"
+
+    def test_the_changes_file_marked_read_only(self):
+        import os
+        import stat
+        folder = self.mod("Read only")
+        made = self.call("new_unit", M4, "Kept", 40, -1, -1, False, "new")["address"]
+        rndf = folder / "src" / "studio.rndf"
+        before = rndf.read_bytes()
+        os.chmod(rndf, stat.S_IREAD)
+        self.addCleanup(os.chmod, rndf, stat.S_IREAD | stat.S_IWRITE)
+        for call, args in (("edit", (M4, "SeuilMort", 15, "", "")), ("new_unit", (M4, "More", 40, -1, -1, False, "new")),
+                           ("delete_unit", (made, None))):
+            with self.subTest(call=call):
+                said = {}
+                for lang in ("us", "fr", "jpn"):   # (each refusal waits for the file a few seconds first)
+                    with self.assertRaises(Refused) as cm:
+                        self.call(call, *args, lang=lang)
+                    said[lang] = cm.exception.text
+                self.assertEqual(self.english_left(said), [], said["fr"])
+                for text in said.values():
+                    self.assertNotIn("Errno", text)
+                self.assertEqual(rndf.read_bytes(), before)
+        os.chmod(rndf, stat.S_IREAD | stat.S_IWRITE)
+        self.call("edit", M4, "SeuilMort", 15, "", "")
+        self.call("delete_unit", made, None)
+        self.assertEqual(self.build(folder)[0], [])
+
+
 class DecimalsOfTheAITab(Player):
     """U-9's kind of value in the AI and player settings tab (ai_edit takes a decimal as it comes, as the Units tab's
     edit did), on test_ai's made-up game: a profile's AttaqueTempsActivation, a 4-byte decimal number."""
