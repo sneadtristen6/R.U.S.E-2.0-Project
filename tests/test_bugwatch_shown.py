@@ -5,6 +5,7 @@ Players' reports (2026-11-02 to 11-08) had 14 of 36 "New mod set" tries refused 
 and `messages` empty and `updates` 0, 0, 0 in every report although players updated: nothing called the counting.
 No network, no game: a made-up Launcher home and made-up releases.
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import sys
 import tempfile

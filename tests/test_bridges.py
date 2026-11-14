@@ -1,5 +1,6 @@
 """Bridges where a new road crosses water (rusemod.bridges), and the movement graphs opened along them (rusemod.nav
 Graph.open), on made-up maps: a tiny mesh with one strip of water, a three-circle graph."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import dataclasses
 import struct
 import unittest

@@ -2,6 +2,7 @@
 read and written, a group's order put in its places, the moves worked out (rusemod.missionsteps.run/move), and, when
 the game is here, the game's own menus: every mission named as his registry binds it, a group reordered in the menus'
 file by the build's step, and the Studio's Move up and Game's order saving it in a mod."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import types
@@ -82,13 +83,12 @@ class RealGame(unittest.TestCase):
     """The game's own menus (only when the game and its index are here)."""
 
     def setUp(self):
-        from rusemod.index import default_path
         from rusemod.steam import find_game
         found = find_game()
         if found is None:
             self.skipTest("R.U.S.E. isn't installed here")
         self.game = Path(found["game_dir"])
-        self.index = Path(default_path(self.game))
+        self.index = home_guard.game_index(self.game)   # (the real home's, read only: home_guard)
 
     def test_every_mission_named_and_a_group_reordered(self):
         from rusemod.build import _menu_orders, find_pack

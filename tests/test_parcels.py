@@ -1,6 +1,7 @@
 """rusemod.parcels: a dab's parcel, the ground the map's own paint and borders give the field under it (made-up
 pictures), and scenery.expand_field_parcel on it (test_scenery's made-up map). Skipped without numpy: the apps carry
 it, and without it the field brush keeps to the fields' squares (test_scenery)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import unittest
 

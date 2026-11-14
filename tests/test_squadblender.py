@@ -4,6 +4,7 @@ Blender, the game index and the game's model library, as tests/test_modelblender
 The owner, 2026-11-11 (#4462883, #4462962, #4463065): the whole squad in one Blender, and "you change one soldier's
 color, only that soldier should change color". Blender's own side (rusemod.blender_model's squad mode) runs in real
 Blender in scratch/animmodels/squadblender/walk_squad.py; here only what the Studio hands it and takes back."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import json
 import re

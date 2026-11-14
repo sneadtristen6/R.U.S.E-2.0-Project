@@ -20,6 +20,7 @@ The first two and the last on the game (RUSE_GAME, the Studio's index RUSE_STUDI
 RUSE_HORSE_SQUAD_GLBS, as tests/test_horse_squad.py; skipped without them), the disk full made at the write itself
 (what a write raises then), the lock a real one (Windows' byte-range lock); the third on the Studio tests' made-up
 game, on Windows (where a file held open can't be replaced). Nothing of the game's is written."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import errno
 import hashlib
 import os

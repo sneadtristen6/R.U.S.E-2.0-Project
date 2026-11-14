@@ -1,4 +1,5 @@
 """The `ruse` tool, Steam detection and the text view, on a made-up Steam install and game (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import io
 import os

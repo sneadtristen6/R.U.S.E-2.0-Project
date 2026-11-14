@@ -1,6 +1,7 @@
 """The build's worker programs start without Numba (rusemod.mend._pool: with it a paint worker lost its call queue's
 semaphore before its first job, 2026-10-16), the program that starts them keeping what it has: dxtnb and tgu1nb
 give the same bytes either way (test_dxt, test_tgu1nb)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import unittest
 

@@ -3,6 +3,7 @@ or guard going forward that each update gets its own like announcement and like 
 
 The apps' versions in the source are the update being made: the Discussions post (docs/community, posted by
 tools/post_discussions.py) and the README's "latest" line have to name them before it goes out."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import sys

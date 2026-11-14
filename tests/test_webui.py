@@ -1,6 +1,7 @@
 """What a window's page may call (rusemod.webui.page_api): only the API's own public methods, walked and looked up the
 way pywebview does it (6.2.1's util.inject_pywebview get_functions and js_bridge_call's lookup, copied below), so a
 Path, a dict or a private attribute of the API never reaches the page."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import inspect
 import unittest
 from pathlib import Path

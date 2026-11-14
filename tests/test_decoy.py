@@ -1,6 +1,7 @@
 """RUSE Decoy's calls (ruse_studio.decoy, DecoyCalls): every game sound by kind, a mission's lines with their words, a
 sound's volume saved in the mod, a whole kind's at once, a unit's own sounds, and any sound replaced through the
 Music tab's calls."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sqlite3
 import tempfile
 import threading

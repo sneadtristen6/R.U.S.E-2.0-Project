@@ -1,6 +1,7 @@
 """A map's own pictures in the menus (rusemod.menupicture, map.toml picture, wide_picture, start_dots): any PNG cut to
 each picture's shape from its middle, scaled, and written as the game's own menu pictures are (D-Day's: 640 x 360
 and 680 x 200, one level of DXT5, packed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 
 from rusemod import menupicture

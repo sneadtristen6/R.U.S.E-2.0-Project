@@ -1,5 +1,6 @@
 """Answers a mod brings with it (rusemod.solved): named by what they were worked out from, locked with the game's own
 file, never trusted as they are; and the movement step taking them (rusemod.nav), on made-up graphs."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import unittest
 from unittest import mock
 

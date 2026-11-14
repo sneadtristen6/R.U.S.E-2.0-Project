@@ -5,6 +5,7 @@ another unit with its own name and price, its credit in the mod's CREDITS-era-un
 taking it out again. And the download: an era from the release's list, each file checked, updated when a newer one is
 out, refused when a file isn't right. Its size (its real width against the start unit, else 1) and the unit it's
 researched from (the build menu's units, a suggestion, chains of era units), and the add form's words and tooltips."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import json
 import os

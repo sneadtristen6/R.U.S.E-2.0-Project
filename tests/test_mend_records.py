@@ -7,6 +7,7 @@ On test_refit_keeps' made-up game (a model on bones of its own, its animations, 
 test_fix_notes' squad door (a squad's riflemen and bazooka man): no game needed."""
 from __future__ import annotations
 
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import unittest

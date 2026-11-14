@@ -1,5 +1,6 @@
 """A map's scenery (rusemod.scenery) on small made-up files: the file, its blocks and items, the walk, what the
 Studio shows, and the scenery types from made-up descriptor NDFs (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import dataclasses
 import hashlib
 import math

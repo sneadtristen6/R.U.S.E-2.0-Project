@@ -2,6 +2,7 @@
 this patch"): a nation's lobby and army texts, its flag picture found from the game's flag list, the flag badge (a plain
 A8R8G8B8 picture) written as a mod's picture with the badge's own shape kept, and the Studio's calls, on made-up data
 (no game files)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import sqlite3
 import struct

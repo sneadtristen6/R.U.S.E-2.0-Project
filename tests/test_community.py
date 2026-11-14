@@ -1,4 +1,5 @@
 """Help and bug reports (rusemod.community): the report's link, and no Windows user name in it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import unittest
 from unittest import mock

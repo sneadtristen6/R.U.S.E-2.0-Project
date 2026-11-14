@@ -1,4 +1,5 @@
 """Reading `.rndf` mod files (MOD_FORMAT §5), and mods written as text running through the rules engine."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import unittest
 import uuid

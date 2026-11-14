@@ -1,4 +1,5 @@
 """Terrain mesh (.tms): stream codecs, container round trip and height edits on small made-up meshes."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import random
 import struct
 import unittest

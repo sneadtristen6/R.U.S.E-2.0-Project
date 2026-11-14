@@ -13,6 +13,7 @@ import keeps (rusemod.rig.kept_clips). On the game (RUSE_GAME, the Studio's inde
 files, as tests/test_horse_squad.py; skipped without them): the Generic Horse added through the Studio's own Add and
 taken through the one Blender button's Open in Blender and Bring my changes back, the mod's files judged byte for
 byte. The real Blender's walks are scratch/release-0920/agents/anims/animwalk.py's."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import math
 import os

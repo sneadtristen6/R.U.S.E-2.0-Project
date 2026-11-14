@@ -2,6 +2,7 @@
 repaint stroke, painted by its new shape with the theme's palette (rock where steep, mud under a new lake, sand on its
 shore, grass elsewhere); on test_tms's made-up meshes (2 x 2 cells of 1,000 map units), the grid's squares made
 small to fit."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tomllib
 import unittest
 from unittest import mock

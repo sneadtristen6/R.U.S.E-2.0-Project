@@ -1,6 +1,7 @@
 """Bridge floors (rusemod.floors): a new bridge gets the floor of a shipped bridge of its kind, on its own banks, in
 the objects-only tree, rebuilt as one subtree whose leaves list every triangle reaching into them. On a made-up file
 (test_kdt's), with a made-up shipped floor like Pont_Metallique_02's: four sections along the deck."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import unittest
 

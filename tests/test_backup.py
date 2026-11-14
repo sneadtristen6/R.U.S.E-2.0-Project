@@ -1,5 +1,6 @@
 """The clean game backup (rusemod.backup) on small made-up game folders: made, checked, restored, and what's refused.
 No real game is needed, and nothing here touches one."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import errno
 import hashlib

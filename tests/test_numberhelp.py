@@ -3,6 +3,7 @@ it that relates to these units and buildings", "Include all numbers"): every num
 and of the parts they own or link to has an entry (tests/data/unit_numbers.tsv: each class and property, read from
 the game's data of build 24670294), its unit shows in plain units, and the page has its words. No game files
 needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import tomllib
 import unittest

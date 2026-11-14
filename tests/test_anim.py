@@ -1,6 +1,7 @@
 """rusemod.baf (the game's animation clips read, written, sampled and changed) and rusemod.anim (a mod's animations,
 put in by the build into every pack that holds the clip; one unit's own animations, files of their own that only that
 unit's listings name)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import io
 import math

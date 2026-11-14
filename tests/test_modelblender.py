@@ -4,6 +4,7 @@ a player couldn't give a squad a model of his own (Open in Blender was a paintin
 ItsOwnShine: a tank, a plane or a soldier brought back keeps its own shine and side colour (the owner, 2026-11-12,
 "Keep its own"), through the Studio's real export, Import model's real reading and fitting of pictures, and a
 stand-in for what Blender does to materials and pictures."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import re
 import tempfile

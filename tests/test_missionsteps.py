@@ -2,6 +2,7 @@
 own code): the packs read as his engine reads them, a built copy's over the game's; the chain's links worded; a
 battle map's missing mission script and texts not called broken (none of the game's has them); and, when the game is
 here, every shipped mission read through the Studio."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import tempfile
 import tomllib
 import unittest
@@ -95,8 +96,8 @@ class RealGame(unittest.TestCase):
         found = find_game()
         if found is None:
             self.skipTest("R.U.S.E. isn't installed here")
-        from rusemod.index import default_path
-        if not Path(default_path(found["game_dir"])).is_file():
+        index = home_guard.game_index(found["game_dir"])   # (the real home's, read only: home_guard)
+        if not index.is_file():
             self.skipTest("the game index isn't built here")
         from ruse_mod_engine import scenario_registry as SR
         from ruse_studio.api import StudioApi
@@ -114,7 +115,7 @@ class RealGame(unittest.TestCase):
                         self.assertEqual(ch["broken"], 0, (map_dir, b.scenario_name))
                         self.assertTrue({link["why"] for link in ch["links"]} <= set(WHYS))
         self.assertEqual(seen, {"mp": 30, "operation": 14, "campaign": 24})
-        api = StudioApi()
+        api = StudioApi(index_path=index, game_dir=game)   # (its home: this run's own, home_guard)
         first = next((d, b) for d, bs in bound.items() for b in bs if b.kind == "operation" and b.has_file)
         got = api.mission_steps(first[0].upper(), first[1].scenario_name + ".scenario", "us")
         self.assertTrue(got["menu"]["listed"])

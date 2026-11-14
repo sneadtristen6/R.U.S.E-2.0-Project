@@ -9,6 +9,7 @@ times on 2026-09-30, and a test built a pack with a broken name). So:
   - Every text file: no control characters other than tab, newline and carriage return, and no tab inside a
     Windows-looking path in Markdown (`D:\\Games<TAB>errain` was `\\terrain`).
 """
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import io
 import re
 import tokenize

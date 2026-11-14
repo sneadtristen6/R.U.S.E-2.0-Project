@@ -18,6 +18,7 @@ On the made-up model, skeleton and clips of test_gltf_bones and test_animglb (no
 test_animglb's stand-in (Blenderish) doing what real Blender 4.5 sends for that edit (measured for the moves in Edit and
 Object mode: scratch/animmodels/fix-door/round2/real_probe_rest.py, out/real_probe_rest.json). RealBlender's tests run
 Blender itself: set RUSE_BLENDER to Blender 4.5's blender.exe, else they are skipped."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import copy
 import hashlib
 import json

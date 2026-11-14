@@ -1,4 +1,5 @@
 """tools/rmod_to_mod.py, run on made-up mods (no game files needed)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import contextlib
 import io
 import json

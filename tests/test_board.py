@@ -1,6 +1,7 @@
 """The board (ruse_studio/board.py, ui/board.js; the owner, 2026-10-18: "a new screen for buildings where you're able to
 edit the order and how many units are for what building", research "you'll select it and then select the spot where it
 goes"), the start screen and a new mod's steps (ruse_studio/startscreen.py, ui/startflow.js), on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import struct
 import tempfile

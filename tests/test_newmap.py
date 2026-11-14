@@ -1,6 +1,7 @@
 """New maps (rusemod.newmap, maps/<NewName>/map.toml copy_of): a shipped map copied under a name of its own, on a
 made-up game laid out like the real one: Blitz (SuperCrossRoads4) with its map-list entry, BATTLES entry, scenario
 cluster, map cluster, constants, scenario, grid, menu texts and pack, and a campaign map BATTLES doesn't list."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import tomllib

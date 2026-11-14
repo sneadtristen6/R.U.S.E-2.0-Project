@@ -1,6 +1,7 @@
 """A map's data kept between runs (StudioApi._kept_on_disk) and in memory (MAP_DATA_KEPT). Issue #15: "a map is slow to
 open": the memory kept 3 entries in all, so one map's own kinds pushed each other out as it opened, and every run read
 the game files again (seconds a map on M03_Italie)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import os
 import tempfile
 import unittest

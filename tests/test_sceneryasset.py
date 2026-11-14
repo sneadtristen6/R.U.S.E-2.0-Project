@@ -2,6 +2,7 @@
 draws of at most 65,535 points, a tree's leaves and wood apart), its pictures (a mask as their alpha), written into
 every mesh pack holding its kind's game model and read back, its textures and stand-ins added, a mod's asset.toml read,
 and its scenery type's rules."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import tempfile

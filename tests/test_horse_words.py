@@ -20,6 +20,7 @@ the words group: review-loss F14, review-path F5 and F6; the brief: "English lef
 On the Studio tests' made-up game (WithMod) with a stand-in builder, as tests/test_horse_squad.py; the type on the
 Studio's game index (RUSE_GAME_INDEX or RUSE_STUDIO_INDEX, this PC's by default; skipped without it). Nothing of the
 game's is written."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import errno
 import hashlib
 import json

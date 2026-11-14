@@ -15,6 +15,7 @@ struct.error instead, so:
 Each test here FAILS on e469d4d4 by design until fixed; ADamagedClipFile's pass on db2abbfb, ARecordFromBefore's fails
 there too. On test_animmodel's made-up game (the stand-ins of tests/test_refit_keeps.py, written out here so the file
 runs on the code before the fix too): no game needed."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import tempfile

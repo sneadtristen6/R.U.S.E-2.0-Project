@@ -1,5 +1,6 @@
 """Game patches (rusemod.gamepatch): only the exact file the apps know is used, only on the game build it's made for,
 only with every expected byte in place, and the result is the one promised."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import shutil
 import tempfile

@@ -6,6 +6,7 @@ is. Should be intuitive."
 
 Made-up skeletons, clips and unit data always run. With RUSE_HORSE_GLB naming the owner's Horse Squad of 2026-11-09
 (scratch/animmodels/horse-squad-rifle.glb), its suggested split and its own animations are checked as well."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import base64
 import json
 import os

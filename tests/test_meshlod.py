@@ -1,6 +1,7 @@
 """A map asset's lighter versions (rusemod.meshlod) on made-up shapes: off by at most a cell where solid, no crack
 along a picture seam, leaf cards thinned and grown to cover what they did, the materials kept, and a version saved as
 .glb and read back as it was."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import math
 import tempfile
 import unittest

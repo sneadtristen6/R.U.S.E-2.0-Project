@@ -27,6 +27,7 @@ Each test here FAILS on 07a688b5 by design, for the fault it names, until that f
 On the Studio tests' made-up game (WithMod) where the models aren't needed; on the game where they are (RUSE_GAME, the
 Studio's index RUSE_STUDIO_INDEX and the passed copy's two files RUSE_HORSE_SQUAD_GLBS, as tests/test_horse_squad.py;
 skipped without them). Temporary folders go where RUSE_TEST_TMP says (else the system's)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

@@ -2,6 +2,7 @@
 shown; his items 24 and 26): Bug Watch's game crash point lists the map, the unit the game was making and the mods
 that were on, and no longer the game mode (nothing can read the mode from the game's crash report), in the eleven
 languages of both apps. The unit stays (his answer to 25), and RUSE Guard's own match details keep their mode."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import functools
 import tomllib
 import unittest

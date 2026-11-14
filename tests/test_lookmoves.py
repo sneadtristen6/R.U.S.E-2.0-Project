@@ -10,6 +10,7 @@ its rows in the order a modder works, a tooltip on every control, every word in 
 stand-in page, no fold inside a row's More, every call the Studio's and the stand-in page's, the unit page built with
 it (a building's page as before); the start screen's Start a new mod opening the Studio's own New mod box, and a new
 mod's steps called from nowhere. RUSE Decoy's own_clips count is in test_decoy (OnlyThisUnit)."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import re
 import tomllib
 import unittest

@@ -2,6 +2,7 @@
 bomb on a forward mount), a B-25 (bomber, carpet bombs in a bomb bay), an ME109 (fighter, a cannon that hits planes)
 and a Panzer IV (an AP and an HE shell on one turret). What the game ties together was seen in T50-T52 (2026-10-14):
 a bomber drops only from a bomb bay, and what a weapon hits comes from its ammo's Arme."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import struct
 import tempfile
 import tomllib

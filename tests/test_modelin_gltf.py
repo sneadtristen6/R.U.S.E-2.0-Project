@@ -2,6 +2,7 @@
 files the .gltf names, as a .glb holds them; a see-through material's alphaMode kept, and its mask picture found
 beside its colour picture as Poly Haven's plants come (<name>_alpha_<size>.png for <name>_diff_<size>.jpg); never a
 file outside the model's folder."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import struct
 import tempfile

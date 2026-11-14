@@ -2,6 +2,7 @@
 the Studio's Show this mod's folder, Delete a mod… and Where your files are (the owner, 2026-10-30: "the file paths for
 new mods ... not very clear or easy to follow", "delete the various mods in the studio, just like ... boop, I don't want
 this anymore"). The Recycle Bin is a stand-in here: no test fills the PC's own bin."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import json
 import os
 import shutil

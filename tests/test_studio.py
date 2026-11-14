@@ -1,4 +1,5 @@
 """The Studio app's back end (ruse_studio.api) and the display names (rusemod.schema), on a made-up game."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import csv
 import hashlib
 import json

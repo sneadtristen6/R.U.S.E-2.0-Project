@@ -2,6 +2,7 @@
 
 Checked our_tools.json: none of its tools runs this check; these tests read no program, only made-up lines that name
 the words the check refuses, and the crash table's own numbers, by name, to look for them in the other files."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import sys
 import unittest
 from pathlib import Path

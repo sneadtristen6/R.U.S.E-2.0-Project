@@ -1,4 +1,5 @@
 """The mod index (MOD_FORMAT §15, rusemod.mod_index) on a local web server: read, kept for offline, downloads checked."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import tempfile
 import time

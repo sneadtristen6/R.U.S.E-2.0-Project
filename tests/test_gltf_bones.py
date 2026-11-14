@@ -3,6 +3,7 @@ Blender gives for changing a unit's model), on a made-up skinned model and skele
 bone at the record's rest pose (a bone the game sizes or mirrors as the plain turn nearest it, at its place), the
 points, bone names and weights the same bytes as without it, and without it every byte as the released Studio
 wrote it."""
+import home_guard  # noqa: F401  (first: this test run's Studio home is a scratch folder, never the real one)
 import hashlib
 import json
 import math
