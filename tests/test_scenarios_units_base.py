@@ -139,6 +139,7 @@ def write_studio_game(root: Path) -> None:
 
 
 GAMES = {"menus": write_menus_game, "studio": write_studio_game}
+GAME_EXE = "RUSE.exe"   # the made-up game's two-byte stand-in program file (the scenario files take it from here)
 TMP = os.environ.get("RUSE_TEST_TMP") or None
 # what a player must never see in a page's words: the game's code names, an address, Python's quotes round a name
 CODE_NAME = re.compile(r"Descriptor_|\$/GFX|GFX/Everything|Ammo_[A-Z]|TUniteAuSol|TInfanterie|TAvion|TBatiment")
@@ -166,7 +167,7 @@ class Player(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory(dir=TMP)
         cls.game = Path(cls.tmp.name, "game")
         GAMES[cls.GAME](cls.game)
-        (cls.game / "RUSE.exe").write_bytes(b"MZ")
+        (cls.game / GAME_EXE).write_bytes(b"MZ")
         cls.index = build_index(cls.game, Path(cls.tmp.name, "index.sqlite"), say=lambda line: None)
 
     @classmethod

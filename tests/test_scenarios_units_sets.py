@@ -7,19 +7,15 @@ value of the same unit; two mods each making a new unit of the same name; one mo
 researched from; two mods filling one group past six.
 
 Each test marked expectedFailure shows a finding (its number in the comment above it; the agent's report lists them);
-it passes once the finding is mended.
-
-Checked our_tools.json: none of its tools is for this; this file reads no program: the made-up game's stand-in
-RUSE.exe (tests/test_studio.py's way) is only where Play's stand-in starts it."""
+it passes once the finding is mended. The made-up game, its stand-in program file included, comes from
+test_scenarios_units_base."""
 import time
 import unittest
 
 from rusemod import Edat, Ndf
 from rusemod.play import SHARED
 from ruse_launcher.api import LauncherApi
-from test_scenarios_units_base import M1, M2, H1, Player
-
-GAME_EXE = "RUSE.exe"
+from test_scenarios_units_base import GAME_EXE, M1, M2, H1, Player
 
 
 def wait(api, job: str, seconds: float = 120) -> dict:
