@@ -275,12 +275,11 @@ class RemoveASoldier(Adding):
         self.assertEqual(sorted(result.own_models), [f"{STEM}@2"])
         self.assertEqual(self.problems(), [])
 
-    @unittest.expectedFailure    # finding SQ-3: Remove keeps his own look aside without a word (-1 says it)
     def test_the_page_says_where_his_look_went(self):
-        """Remove on the line of a soldier with a look of his own keeps that look aside (StudioApi.soldier_remove's
-        look_kept), as -1 does; the page says so after -1 (squad.js countBy: squad_minus_kept, "His own look is kept
-        with your Blender files for this squad: More options says where.") but not after Remove (squad.js removeParts
-        reads only copy_back)."""
+        """Finding SQ-3, its PROPOSED FIX: Remove on the line of a soldier with a look of his own keeps that look aside
+        (StudioApi.soldier_remove's look_kept), as -1 does; the page said so after -1 (squad.js countBy:
+        squad_minus_kept, "His own look is kept with your Blender files for this squad: More options says where.") but
+        not after Remove (squad.js removeParts read only copy_back). Now both read it."""
         self.assertIn("look_kept", page_part("countBy"))
         self.assertIn("look_kept", page_part("removeParts"))
 
@@ -405,15 +404,18 @@ class ASendingNeverBroughtBack(Adding):
                                   r["message"])
                 time.sleep(1.1)
 
-    @unittest.expectedFailure    # finding SQ-2: the page never says a Blender sending was kept aside
     def test_the_page_says_it(self):
-        """Each of the page's five ways reads the answer's set_aside (or Open in Blender's message) and says where the
-        sending went: squad.js openBlender says its own squad_blender_opened, addSoldier squad_add_opened, countBy
-        squad_added / squad_removed, removeParts squad_removed; none reads set_aside or the message."""
+        """Finding SQ-2, its PROPOSED FIX: each of the page's five ways reads the answer's set_aside (or Open in
+        Blender's message) and says where the sending went, with the Studio's own words for it in each language
+        (blender_squad_set_aside). Before, squad.js openBlender said its own squad_blender_opened, addSoldier
+        squad_add_opened, countBy squad_added / squad_removed, removeParts squad_removed, and none read set_aside or the
+        message."""
         for part in ("openBlender", "addSoldier", "countBy", "removeParts"):
             with self.subTest(part=part):
                 code = page_part(part)
                 self.assertTrue("set_aside" in code or ".message" in code, part)
+                self.assertIn("blender_squad_set_aside", code)
+        self.assert_worded({lang: fill(self.words(lang)["blender_squad_set_aside"], folder="D:\\x") for lang in LANGS})
 
 
 class ThePageCodeRead(unittest.TestCase):
