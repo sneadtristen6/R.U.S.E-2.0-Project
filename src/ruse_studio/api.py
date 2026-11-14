@@ -344,6 +344,18 @@ def _whole(value, kind: str, prop: str):
     return r
 
 
+ID_MOST = 40   # a new mod's id (its folder's and file's name) at most, from a name of any length (as a RUSE Decoy copy's id:
+#               rusemod.anim, "at most 40"): room left in Windows' 259 characters for the mod's own folders
+
+
+def _ascii_digits(text: str) -> str:
+    """`text` with full-width letters and signs as the plain ones they stand for (NFKC: a Japanese or Chinese keyboard's
+    １．０．０), and each digit of another script (Persian ۱, Arabic ١...) as 0-9: a version typed so is the version
+    every other player's file and list read (the export scenarios' FE-5: "１.０.０" went out as it was)."""
+    text = unicodedata.normalize("NFKC", text)
+    return "".join(str(unicodedata.decimal(c)) if c.isdecimal() and not "0" <= c <= "9" else c for c in text)
+
+
 def safe_name(name: str) -> str:
     """The part of a new unit's address made from its name: ASCII letters, digits and _ only (accents dropped, other
     letters left out), which the game's data, its Python unit list and .rndf files all accept."""
@@ -6007,7 +6019,15 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         if kind == "mod":
             self._horse_guard(None, switching=True)   # (the Horse Squad's unit being made in the mod edited now)
         name = name.strip()
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or ("my-map" if kind == "map" else "my-mod")
+        # (its letters without their accents first, as a unit's address keeps them, safe_name: "Équipe de char" was
+        # quipe-de-char, the é dropped; the export scenarios' FE-3)
+        plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+        slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")
+        if len(slug) > ID_MOST:   # (a long name's folder Windows refused: "[WinError 3] The system cannot find the path
+            #                       specified", the export scenarios' FE-4; the name itself stays whole in mod.toml)
+            cut = slug[:ID_MOST]
+            slug = (cut.rsplit("-", 1)[0] if "-" in cut else cut).strip("-")
+        slug = slug or ("my-map" if kind == "map" else "my-mod")
         base = self._folders()[self.KINDS[kind][0]]
         # a name the other kind has is taken too: its folder name is its id, and Test in game builds the unit mod and
         # the map changes together (two of one id stopped a tester's build, 2026-10-30); the other kind's folders are
@@ -6018,8 +6038,10 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
             folder, n = base / f"{slug}-{n}", n + 1
         (folder / ("maps" if kind == "map" else "src")).mkdir(parents=True)
         made = "A map made in the RUSE Studio." if kind == "map" else "Made in the RUSE Studio."
+        # (the name as TOML writes it, package._toml: json.dumps wrote a letter outside the first 65,536, an emoji, as
+        # two \ud8xx halves TOML refuses, so the new mod's own mod.toml couldn't be read: the export scenarios' FE-1)
         (folder / "mod.toml").write_text(
-            f'[mod]\nid          = "{folder.name}"\nname        = {json.dumps(name or folder.name)}\n'
+            f'[mod]\nid          = "{folder.name}"\nname        = {package._toml(name or folder.name)}\n'
             f'version     = "0.1.0"\ndescription = "{made}"\n', encoding="utf-8")
         modformat.stamp(folder, self.MADE_WITH["tool"], self.MADE_WITH["version"])  # in this Studio's mod format
         return self.choose_mod(str(folder), kind)
@@ -10547,9 +10569,13 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         folder = self._mod_dir(kind)
         if folder is None:
             raise StudioError("Pick or make a map first." if kind == "map" else "Pick or make a mod first.")
-        version = (version or "").strip()
-        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        version = _ascii_digits((version or "").strip())
+        if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
             raise StudioError("The version should be three numbers, like 1.0.0.")
+        exports = self.__dict__.setdefault("_exports", [])   # (this Studio's export jobs)
+        if any(getattr(self._jobs.get(j), "state", None) == "running" for j in exports):
+            # not a game rule: two exports at once wrote one file together (the export scenarios' FE-15)
+            raise StudioError("The Studio is busy with another job: wait for it to finish, then click again.")
         problem = package.edit_problem(folder)  # not a game rule: an edit never goes out under the original's name
         if problem:
             raise StudioError(problem)
@@ -10582,8 +10608,11 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 say("R.U.S.E. wasn't found, so the file carries no game build or fingerprint.")
             else:
                 say("Building the mod on the game, to record the game build and the fingerprint…")
-                result = build_and_write(game, [load_mod(folder)], say=lambda line: say("  " + line),
-                                         cache=build_cache())
+                try:
+                    mod = load_mod(folder)
+                except OSError as exc:   # (a file another program holds: said in words, naming it; FE-13)
+                    raise file_error(package.named_file(exc, package.files_of(folder)), target) from exc
+                result = build_and_write(game, [mod], say=lambda line: say("  " + line), cache=build_cache())
                 if result.errors:
                     raise BuildError("Fix the mod first: the build above has errors, so nothing was exported.")
                 build_id = build_of(game)
@@ -10605,9 +10634,12 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
                 if stale:
                     say(f"The era units' record and credits named units no longer in the mod; their lines were taken "
                         f"out: {', '.join(stale)}.")
-                path = package.pack(folder, target, build_id=build_id, data_revision=revision, fingerprint=fingerprint,
-                                    solved=answers, made_with=self.MADE_WITH, kinds=kinds, home_in=home_in,
-                                    left_out=left_out, cuts=cuts, unread=unread)
+                try:
+                    path = package.pack(folder, target, build_id=build_id, data_revision=revision,
+                                        fingerprint=fingerprint, solved=answers, made_with=self.MADE_WITH, kinds=kinds,
+                                        home_in=home_in, left_out=left_out, cuts=cuts, unread=unread)
+                except OSError as exc:   # (a file another program holds, named by pack, or a full disk: in words)
+                    raise file_error(exc, target) from exc
             if left_out:
                 say(f"Left out of the exported file: {', '.join(left_out)}. These are files the Studio left half "
                     f"written when it was stopped while writing them (their names end in .part, .partial or .tmp); "
@@ -10666,7 +10698,9 @@ class StudioApi(UpdateCalls, PrefsCalls, LanguageCalls, CommunityCalls, OwnedCal
         job = Job()
         job.result = None  # the exported file's size, SHA-256 and list entry, for "Share your mod"
         self._jobs[job.id] = job
-        return job.start(work, f"Saved as {target}", plain=(BuildError, RndfError, OSError, package.PackageError))
+        exports[:] = [j for j in exports if j in self._jobs] + [job.id]
+        return job.start(work, f"Saved as {target}",
+                         plain=(BuildError, RndfError, OSError, package.PackageError, StudioError))
 
     # --- Share your mod: how an exported mod gets onto the supported-mods list (MOD_FORMAT §15) ---
     @staticmethod
